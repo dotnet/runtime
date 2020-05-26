@@ -9,6 +9,7 @@ using System.IO;
 using System.Net.Http.Headers;
 using System.Runtime.CompilerServices;
 using System.Runtime.ExceptionServices;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -1370,17 +1371,9 @@ namespace System.Net.Http
 
                 public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken) => throw new NotSupportedException();
 
-                public override void Write(byte[] buffer, int offset, int count)
+                public override void Write(ReadOnlySpan<byte> buffer)
                 {
-                    ValidateBufferArgs(buffer, offset, count);
-                    Http2Stream? http2Stream = _http2Stream;
-                    if (http2Stream == null)
-                    {
-                        throw new ObjectDisposedException(nameof(Http2WriteStream));
-                    }
-
-                    // Sync-over-async.  See comment on Http2Connection.SendAsync.
-                    http2Stream.SendDataAsync(new ReadOnlyMemory<byte>(buffer, offset, count), cancellationToken: default).AsTask().GetAwaiter().GetResult();
+                    WriteAsync(new ReadOnlyMemory<byte>(buffer.ToArray()), cancellationToken: default).AsTask().GetAwaiter().GetResult();
                 }
 
                 public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken)

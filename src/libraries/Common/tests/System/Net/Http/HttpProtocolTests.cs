@@ -20,15 +20,14 @@ namespace System.Net.Http.Functional.Tests
 
         public HttpProtocolTests(ITestOutputHelper output) : base(output) { }
 
-        [ConditionalFact]
+        [Fact]
         public async Task GetAsync_RequestVersion10_Success()
         {
-#if WINHTTPHANDLER_TEST
-            if (UseVersion > HttpVersion.Version11)
+            if (IsWinHttpHandler && UseVersion >= HttpVersion20.Value)
             {
-                throw new SkipTestException($"Test doesn't support {UseVersion} protocol.");
+                return;
             }
-#endif
+
             await LoopbackServer.CreateServerAsync(async (server, url) =>
             {
                 using (HttpClient client = CreateHttpClient())
@@ -521,7 +520,9 @@ namespace System.Net.Http.Functional.Tests
         [InlineData("delete", "DELETE")]
         [InlineData("options", "OPTIONS")]
         [InlineData("trace", "TRACE")]
+#if !WINHTTPHANDLER_TEST
         [InlineData("patch", "PATCH")]
+#endif
         [InlineData("other", "other")]
         [InlineData("SometHING", "SometHING")]
         public async Task CustomMethod_SentUppercasedIfKnown(string specifiedMethod, string expectedMethod)

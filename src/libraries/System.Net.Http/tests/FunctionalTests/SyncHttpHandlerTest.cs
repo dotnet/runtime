@@ -2,22 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.IO;
-using System.Linq;
-using System.Net.Quic;
-using System.Net.Security;
-using System.Net.Sockets;
-using System.Net.Test.Common;
-using System.Runtime.CompilerServices;
-using System.Security.Authentication;
-using System.Security.Cryptography.X509Certificates;
-using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
-using Microsoft.DotNet.RemoteExecutor;
-using Xunit;
 using Xunit.Abstractions;
 
 namespace System.Net.Http.Functional.Tests
@@ -71,15 +55,17 @@ namespace System.Net.Http.Functional.Tests
         protected override bool TestAsync => false;
     }
 
-    /*public sealed class SocketsHttpHandlerTest_Cookies : HttpClientHandlerTest_Cookies
+    public sealed class SyncHttpHandlerTest_Cookies : HttpClientHandlerTest_Cookies
     {
-        public SocketsHttpHandlerTest_Cookies(ITestOutputHelper output) : base(output) { }
+        public SyncHttpHandlerTest_Cookies(ITestOutputHelper output) : base(output) { }
+        protected override bool TestAsync => false;
     }
 
-    public sealed class SocketsHttpHandlerTest_Cookies_Http11 : HttpClientHandlerTest_Cookies_Http11
+    public sealed class SyncHttpHandlerTest_Cookies_Http11 : HttpClientHandlerTest_Cookies_Http11
     {
-        public SocketsHttpHandlerTest_Cookies_Http11(ITestOutputHelper output) : base(output) { }
-    }*/
+        public SyncHttpHandlerTest_Cookies_Http11(ITestOutputHelper output) : base(output) { }
+        protected override bool TestAsync => false;
+    }
 
     public sealed class SyncHttpHandler_HttpClientHandler_Cancellation_Test : HttpClientHandler_Http11_Cancellation_Test
     {

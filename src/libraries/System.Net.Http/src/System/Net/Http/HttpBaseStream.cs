@@ -97,14 +97,16 @@ namespace System.Net.Http
             return ReadAsync(new Memory<byte>(buffer, offset, count), cancellationToken).AsTask();
         }
 
-        public override void Write(byte[] buffer, int offset, int count)
+        public sealed override void WriteByte(byte value)
+        {
+            Write(MemoryMarshal.CreateReadOnlySpan(ref value, 1));
+        }
+
+        public sealed override void Write(byte[] buffer, int offset, int count)
         {
             ValidateBufferArgs(buffer, offset, count);
             Write(new ReadOnlySpan<byte>(buffer, offset, count));
         }
-
-        public sealed override void WriteByte(byte value) =>
-            Write(MemoryMarshal.CreateReadOnlySpan(ref value, 1));
 
         public sealed override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
@@ -126,10 +128,7 @@ namespace System.Net.Http
 
         public abstract override int Read(Span<byte> buffer);
         public abstract override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken);
+        public abstract override void Write(ReadOnlySpan<byte> buffer);
         public abstract override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken);
-
-        // Either Write(byte[], int, int) or Write(ReadOnlySpan<byte>) should also be overridden.  If the former is overridden,
-        // the default implementation of the latter will call the former; if the latter is overridden, this type's override
-        // of the former will call the latter.  If neither is overridden, stack overflows will result.
     }
 }

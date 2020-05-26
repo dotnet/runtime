@@ -1235,6 +1235,11 @@ namespace System.Net.Http
                 return _stream.ReadResponseContentAsync(_response, buffer, cancellationToken);
             }
 
+            public override void Write(ReadOnlySpan<byte> buffer)
+            {
+                throw new NotSupportedException();
+            }
+
             public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken)
             {
                 throw new NotSupportedException();
@@ -1267,6 +1272,11 @@ namespace System.Net.Http
             }
 
             public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken)
+            {
+                throw new NotSupportedException();
+            }
+
+            public override void Write(ReadOnlySpan<byte> buffer)
             {
                 throw new NotSupportedException();
             }

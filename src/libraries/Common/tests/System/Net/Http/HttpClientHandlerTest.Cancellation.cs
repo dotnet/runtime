@@ -26,7 +26,7 @@ namespace System.Net.Http.Functional.Tests
     {
         public HttpClientHandler_Cancellation_Test(ITestOutputHelper output) : base(output) { }
 
-        [ConditionalTheory]
+        [Theory]
         [InlineData(false, CancellationMode.Token)]
         [InlineData(true, CancellationMode.Token)]
         public async Task PostAsync_CancelDuringRequestContentSend_TaskCanceledQuickly(bool chunkedTransfer, CancellationMode mode)
@@ -37,12 +37,10 @@ namespace System.Net.Http.Functional.Tests
                 return;
             }
 
-#if WINHTTPHANDLER_TEST
-            if (UseVersion >= HttpVersion20.Value)
+            if (IsWinHttpHandler && UseVersion >= HttpVersion20.Value)
             {
-                throw new SkipTestException($"Test doesn't support {UseVersion} protocol.");
+                return;
             }
-#endif
 
             var serverRelease = new TaskCompletionSource<bool>();
             await LoopbackServerFactory.CreateClientAndServerAsync(async uri =>
@@ -84,7 +82,7 @@ namespace System.Net.Http.Functional.Tests
             });
         }
 
-        [ConditionalTheory]
+        [Theory]
         [MemberData(nameof(OneBoolAndCancellationMode))]
         public async Task GetAsync_CancelDuringResponseHeadersReceived_TaskCanceledQuickly(bool connectionClose, CancellationMode mode)
         {
@@ -94,12 +92,10 @@ namespace System.Net.Http.Functional.Tests
                 return;
             }
 
-#if WINHTTPHANDLER_TEST
-            if (UseVersion >= HttpVersion20.Value)
+            if (IsWinHttpHandler && UseVersion >= HttpVersion20.Value)
             {
-                throw new SkipTestException($"Test doesn't support {UseVersion} protocol.");
+                return;
             }
-#endif
 
             using (HttpClient client = CreateHttpClient())
             {
@@ -197,7 +193,7 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        [ConditionalTheory]
+        [Theory]
         [MemberData(nameof(ThreeBools))]
         public async Task GetAsync_CancelDuringResponseBodyReceived_Unbuffered_TaskCanceledQuickly(bool chunkedTransfer, bool connectionClose, bool readOrCopyToAsync)
         {
@@ -206,13 +202,11 @@ namespace System.Net.Http.Functional.Tests
                 // There is no chunked encoding or connection header in HTTP/2 and later
                 return;
             }
-
-#if WINHTTPHANDLER_TEST
-            if (UseVersion >= HttpVersion20.Value)
+            
+            if (IsWinHttpHandler && UseVersion >= HttpVersion20.Value)
             {
-                throw new SkipTestException($"Test doesn't support {UseVersion} protocol.");
+                return;
             }
-#endif
 
             using (HttpClient client = CreateHttpClient())
             {
@@ -259,19 +253,18 @@ namespace System.Net.Http.Functional.Tests
                 });
             }
         }
-        [ConditionalTheory]
+        [Theory]
         [InlineData(CancellationMode.CancelPendingRequests, false)]
         [InlineData(CancellationMode.DisposeHttpClient, false)]
         [InlineData(CancellationMode.CancelPendingRequests, true)]
         [InlineData(CancellationMode.DisposeHttpClient, true)]
         public async Task GetAsync_CancelPendingRequests_DoesntCancelReadAsyncOnResponseStream(CancellationMode mode, bool copyToAsync)
         {
-#if WINHTTPHANDLER_TEST
-            if (UseVersion >= HttpVersion20.Value)
+            if (IsWinHttpHandler && UseVersion >= HttpVersion20.Value)
             {
-                throw new SkipTestException($"Test doesn't support {UseVersion} protocol.");
+                return;
             }
-#endif
+
             using (HttpClient client = CreateHttpClient())
             {
                 client.Timeout = Timeout.InfiniteTimeSpan;
@@ -336,7 +329,7 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        [ConditionalFact]
+        [Fact]
         public async Task MaxConnectionsPerServer_WaitingConnectionsAreCancelable()
         {
             if (LoopbackServerFactory.Version >= HttpVersion20.Value)
@@ -519,16 +512,15 @@ namespace System.Net.Http.Functional.Tests
 
 #if !NETFRAMEWORK
         [OuterLoop("Uses Task.Delay")]
-        [ConditionalTheory]
+        [Theory]
         [MemberData(nameof(PostAsync_Cancel_CancellationTokenPassedToContent_MemberData))]
         public async Task PostAsync_Cancel_CancellationTokenPassedToContent(HttpContent content, CancellationTokenSource cancellationTokenSource)
         {
-#if WINHTTPHANDLER_TEST
-            if (UseVersion > HttpVersion.Version11)
+            if (IsWinHttpHandler && UseVersion >= HttpVersion20.Value)
             {
-                throw new SkipTestException($"Test doesn't support {UseVersion} protocol.");
+                return;
             }
-#endif
+
             await LoopbackServerFactory.CreateClientAndServerAsync(
                 async uri =>
                 {
@@ -611,87 +603,5 @@ namespace System.Net.Http.Functional.Tests
             from second in BoolValues
             from third in BoolValues
             select new object[] { first, second, third };
-    }
-
-    public abstract class HttpClientHandler_Http11_Cancellation_Test : HttpClientHandler_Cancellation_Test
-    {
-        protected HttpClientHandler_Http11_Cancellation_Test(ITestOutputHelper output) : base(output) { }
-
-        [OuterLoop]
-        [Fact]
-        public async Task ConnectTimeout_TimesOutSSLAuth_Throws()
-        {
-            var releaseServer = new TaskCompletionSource<bool>();
-            await LoopbackServer.CreateClientAndServerAsync(async uri =>
-            {
-                using (var handler = new SocketsHttpHandler())
-                using (var invoker = new HttpMessageInvoker(handler))
-                {
-                    handler.ConnectTimeout = TimeSpan.FromSeconds(1);
-
-                    var sw = Stopwatch.StartNew();
-
-                    await Assert.ThrowsAnyAsync<OperationCanceledException>(() =>
-                        invoker.SendAsync(TestAsync, new HttpRequestMessage(HttpMethod.Get,
-                            new UriBuilder(uri) { Scheme = "https" }.ToString())
-                        { Version = UseVersion }, default));
-                    sw.Stop();
-
-                    Assert.InRange(sw.ElapsedMilliseconds, 500, 60_000);
-                    releaseServer.SetResult(true);
-                }
-            }, server => releaseServer.Task); // doesn't establish SSL connection
-        }
-
-        [OuterLoop("Incurs significant delay")]
-        [Fact]
-        public async Task Expect100Continue_WaitsExpectedPeriodOfTimeBeforeSendingContent()
-        {
-            await LoopbackServer.CreateClientAndServerAsync(async uri =>
-            {
-                using (var handler = new SocketsHttpHandler())
-                using (var invoker = new HttpMessageInvoker(handler))
-                {
-                    TimeSpan delay = TimeSpan.FromSeconds(3);
-                    handler.Expect100ContinueTimeout = delay;
-
-                    var tcs = new TaskCompletionSource<bool>();
-                    var content = new SetTcsContent(new MemoryStream(new byte[1]), tcs);
-                    var request = new HttpRequestMessage(HttpMethod.Post, uri) { Content = content, Version = UseVersion };
-                    request.Headers.ExpectContinue = true;
-
-                    var sw = Stopwatch.StartNew();
-                    (await invoker.SendAsync(TestAsync, request, default)).Dispose();
-                    sw.Stop();
-
-                    Assert.InRange(sw.Elapsed, delay - TimeSpan.FromSeconds(.5), delay * 20); // arbitrary wiggle room
-                }
-            }, async server =>
-            {
-                await server.AcceptConnectionAsync(async connection =>
-                {
-                    await connection.ReadRequestHeaderAsync();
-                    await connection.ReadAsync(new byte[1], 0, 1);
-                    await connection.SendResponseAsync();
-                });
-            });
-        }
-
-        private sealed class SetTcsContent : StreamContent
-        {
-            private readonly TaskCompletionSource<bool> _tcs;
-
-            public SetTcsContent(Stream stream, TaskCompletionSource<bool> tcs) : base(stream) => _tcs = tcs;
-
-            protected override void SerializeToStream(Stream stream, TransportContext context,
-                CancellationToken cancellationToken) =>
-                SerializeToStreamAsync(stream, context).GetAwaiter().GetResult();
-
-            protected override Task SerializeToStreamAsync(Stream stream, TransportContext context)
-            {
-                _tcs.SetResult(true);
-                return base.SerializeToStreamAsync(stream, context);
-            }
-        }
     }
 }

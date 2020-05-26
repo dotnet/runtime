@@ -127,9 +127,11 @@ namespace System.Net.Http.Functional.Tests
                 _sendingContent = sendingContent;
             }
 
+#if NETCOREAPP
             protected override void SerializeToStream(Stream stream, TransportContext context,
                 CancellationToken cancellationToken) =>
                 SerializeToStreamAsync(stream, context).GetAwaiter().GetResult();
+#endif
 
             protected override async Task SerializeToStreamAsync(Stream stream, TransportContext context)
             {
