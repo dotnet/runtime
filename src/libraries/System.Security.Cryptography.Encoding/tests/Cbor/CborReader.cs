@@ -61,7 +61,7 @@ namespace System.Formats.Cbor
         public bool HasData => _offset != _data.Length;
 
         /// <summary>
-        ///   Construct a <see cref="AsnValueReader"/> instance over <paramref name="data"/> with given configuration.
+        ///   Construct a <see cref="CborReader"/> instance over <paramref name="data"/> with given configuration.
         /// </summary>
         /// <param name="data">The CBOR encoded data to read.</param>
         /// <param name="conformanceLevel">

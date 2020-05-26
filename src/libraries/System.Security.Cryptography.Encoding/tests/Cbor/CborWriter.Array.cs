@@ -36,7 +36,6 @@ namespace System.Formats.Cbor
         /// <summary>
         ///   Writes the start of an indefinite-length array (major type 4).
         /// </summary>
-        /// <param name="definiteLength">The definite length of the array.</param>
         /// <exception cref="InvalidOperationException">
         ///   Writing a new value exceeds the definite length of the parent data item -or-
         ///   The major type of the encoded value is not permitted in the parent data item -or-

@@ -211,7 +211,7 @@ namespace System.Formats.Cbor
 
             if (exp == 0)
             {
-                value = Math.ScaleB(mant, -24); 
+                value = Math.ScaleB(mant, -24);
             }
             else if (exp != 31)
             {

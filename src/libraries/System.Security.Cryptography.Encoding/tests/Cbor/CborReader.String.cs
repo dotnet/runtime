@@ -113,7 +113,6 @@ namespace System.Formats.Cbor
         /// <summary>
         ///   Reads the next data item as the start of an indefinite-length byte string (major type 2).
         /// </summary>
-        /// <returns>The decoded byte array.</returns>
         /// <exception cref="InvalidOperationException">
         ///   the next data item does not have the correct major type. -or-
         ///   the next data item is a definite-length encoded string.
@@ -213,7 +212,7 @@ namespace System.Formats.Cbor
         ///   Reads the next data item as a UTF-8 text string (major type 3).
         /// </summary>
         /// <param name="destination">The buffer in which to write.</param>
-        /// <param name="bytesWritten">
+        /// <param name="charsWritten">
         ///   On success, receives the number of chars written to <paramref name="destination"/>.
         /// </param>
         /// <returns>

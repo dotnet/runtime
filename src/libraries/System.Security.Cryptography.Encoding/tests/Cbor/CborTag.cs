@@ -40,17 +40,17 @@ namespace System.Formats.Cbor
         BigFloat = 5,
 
         /// <summary>
-        ///   Tag value for byte strings, meant for later encoding to a base64url string representation. 
+        ///   Tag value for byte strings, meant for later encoding to a base64url string representation.
         /// </summary>
         Base64UrlLaterEncoding = 21,
 
         /// <summary>
-        ///   Tag value for byte strings, meant for later encoding to a base64 string representation. 
+        ///   Tag value for byte strings, meant for later encoding to a base64 string representation.
         /// </summary>
         Base64StringLaterEncoding = 22,
 
         /// <summary>
-        ///   Tag value for byte strings, meant for later encoding to a base16 string representation. 
+        ///   Tag value for byte strings, meant for later encoding to a base16 string representation.
         /// </summary>
         Base16StringLaterEncoding = 23,
 

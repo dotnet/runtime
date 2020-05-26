@@ -32,7 +32,7 @@ namespace System.Formats.Cbor
         ///   For instance, a map of size <c>1</c> containing a key of type int with a value of type string
         ///   must be consumed by successive calls to <see cref="ReadInt32"/> and <see cref="ReadTextString"/>.
         ///   It is up to the caller to keep track of whether the next value is a key or a value.
-        ///   
+        ///
         ///   Fundamentally, this is a technical restriction stemming from the fact that CBOR allows keys of arbitrary type,
         ///   for instance a map can contain keys that are maps themselves.
         /// </remarks>

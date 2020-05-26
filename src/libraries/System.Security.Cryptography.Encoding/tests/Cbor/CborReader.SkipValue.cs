@@ -46,14 +46,14 @@ namespace System.Formats.Cbor
         ///   there was an unexpected end of CBOR encoding data. -or-
         ///   the next value uses a CBOR encoding that is not valid under the current conformance level.
         /// </exception>
-        public void SkipToParent(bool disabledConformanceLevelChecks = false)
+        public void SkipToParent(bool disableConformanceLevelChecks = false)
         {
             if (_currentMajorType is null)
             {
                 throw new InvalidOperationException(SR.Cbor_Reader_IsAtRootContext);
             }
 
-            SkipToAncestor(1, disabledConformanceLevelChecks);
+            SkipToAncestor(1, disableConformanceLevelChecks);
         }
 
         private void SkipToAncestor(int depth, bool disableConformanceLevelChecks)
