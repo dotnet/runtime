@@ -124,16 +124,22 @@ namespace System.Net.Security
 
             var key = new SslCredKey(thumbPrint, (int)sslProtocols, isServer, encryptionPolicy);
 
-            SafeCredentialReference? cached;
-            if (!s_cachedCreds.TryGetValue(key, out cached) || cached.Target.IsClosed || cached.Target.IsInvalid)
+            //SafeCredentialReference? cached;
+            SafeFreeCredentials? credentials = GetCachedCredential(key);
+            if (credentials == null || credentials.IsClosed || credentials.IsInvalid)
             {
                 if (NetEventSource.IsEnabled) NetEventSource.Info(null, $"Not found or invalid, Current Cache Count = {s_cachedCreds.Count}");
                 return null;
             }
 
-            if (NetEventSource.IsEnabled) NetEventSource.Info(null, $"Found a cached Handle = {cached.Target}");
+            if (NetEventSource.IsEnabled) NetEventSource.Info(null, $"Found a cached Handle = {credentials}");
 
-            return cached.Target;
+            return credentials;
+        }
+
+        private static SafeFreeCredentials? GetCachedCredential(SslCredKey key)
+        {
+            return s_cachedCreds.TryGetValue(key, out SafeCredentialReference? cached) ? cached.Target : null;
         }
 
         //
@@ -156,15 +162,16 @@ namespace System.Net.Security
 
             var key = new SslCredKey(thumbPrint, (int)sslProtocols, isServer, encryptionPolicy);
 
-            SafeCredentialReference? cached;
+            SafeFreeCredentials? credentials = GetCachedCredential(key);
 
-            if (!s_cachedCreds.TryGetValue(key, out cached) || cached.Target.IsClosed || cached.Target.IsInvalid)
+            if (credentials == null || credentials.IsClosed || credentials.IsInvalid)
             {
                 lock (s_cachedCreds)
                 {
-                    if (!s_cachedCreds.TryGetValue(key, out cached) || cached.Target.IsClosed)
+                    credentials = GetCachedCredential(key);
+                    if (credentials == null || credentials.IsClosed)
                     {
-                        cached = SafeCredentialReference.CreateReference(creds);
+                        var cached = SafeCredentialReference.CreateReference(creds);
 
                         if (cached == null)
                         {
@@ -191,20 +198,13 @@ namespace System.Net.Security
 
                             for (int i = 0; i < toRemoveAttempt.Length; ++i)
                             {
-                                cached = toRemoveAttempt[i].Value;
+                                var freeCreds = toRemoveAttempt[i].Value.Target;
 
-                                if (cached != null)
+                                if (freeCreds == null || freeCreds.IsClosed || freeCreds.IsInvalid)
                                 {
-                                    creds = cached.Target;
-                                    cached.Dispose();
-
-                                    if (!creds.IsClosed && !creds.IsInvalid && (cached = SafeCredentialReference.CreateReference(creds)) != null)
+                                    if (s_cachedCreds.TryRemove(toRemoveAttempt[i].Key, out var removedCached))
                                     {
-                                        s_cachedCreds[toRemoveAttempt[i].Key] = cached;
-                                    }
-                                    else
-                                    {
-                                        s_cachedCreds.TryRemove(toRemoveAttempt[i].Key, out cached);
+                                        removedCached.Dispose();
                                     }
                                 }
                             }
@@ -213,13 +213,13 @@ namespace System.Net.Security
                     }
                     else if (NetEventSource.IsEnabled)
                     {
-                        if (NetEventSource.IsEnabled) NetEventSource.Info(null, $"CacheCredential() (locked retry) Found already cached Handle = {cached.Target}");
+                        if (NetEventSource.IsEnabled) NetEventSource.Info(null, $"CacheCredential() (locked retry) Found already cached Handle = {credentials}");
                     }
                 }
             }
             else if (NetEventSource.IsEnabled)
             {
-                if (NetEventSource.IsEnabled) NetEventSource.Info(null, $"CacheCredential() Ignoring incoming handle = {creds} since found already cached Handle = {cached.Target}");
+                if (NetEventSource.IsEnabled) NetEventSource.Info(null, $"CacheCredential() Ignoring incoming handle = {creds} since found already cached Handle = {credentials}");
             }
         }
     }

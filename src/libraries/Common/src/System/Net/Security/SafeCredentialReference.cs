@@ -12,7 +12,7 @@ namespace System.Net.Security
         //
         // Static cache will return the target handle if found the reference in the table.
         //
-        internal SafeFreeCredentials Target { get; private set; }
+        internal SafeFreeCredentials? Target { get; private set; }
 
         internal static SafeCredentialReference? CreateReference(SafeFreeCredentials target)
         {
@@ -43,7 +43,7 @@ namespace System.Net.Security
         {
             SafeFreeCredentials? target = Target;
             target?.DangerousRelease();
-            Target = null!;
+            Target = null;
         }
 
         ~SafeCredentialReference()
