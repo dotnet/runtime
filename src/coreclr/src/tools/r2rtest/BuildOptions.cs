@@ -28,6 +28,7 @@ namespace R2RTest
         public bool Framework { get; set; }
         public bool UseFramework { get; set; }
         public bool Release { get; set; }
+        public string Architecture { get; set; }
         public bool LargeBubble { get; set; }
         public bool Composite { get; set; }
         public int Crossgen2Parallelism { get; set; }
@@ -44,6 +45,9 @@ namespace R2RTest
         public string InputFileSearchString { get; set; }
         public string ConfigurationSuffix => (Release ? "-ret.out" : "-chk.out");
         public string GCStress { get; set; }
+
+        public bool ArchitectureIsArm => StringComparer.OrdinalIgnoreCase.Equals(Architecture, "arm");
+        public bool ArchitectureIsArm64 => StringComparer.OrdinalIgnoreCase.Equals(Architecture, "arm64");
 
         public IEnumerable<string> ReferencePaths()
         {

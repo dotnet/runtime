@@ -7,6 +7,7 @@ using System.CommandLine;
 using System.CommandLine.Builder;
 using System.CommandLine.Invocation;
 using System.IO;
+using System.Runtime.InteropServices;
 
 namespace R2RTest
 {
@@ -45,6 +46,7 @@ namespace R2RTest
                         Framework(),
                         UseFramework(),
                         Release(),
+                        Architecture(),
                         LargeBubble(),
                         Composite(),
                         Crossgen2Parallelism(),
@@ -79,6 +81,7 @@ namespace R2RTest
                         Framework(),
                         UseFramework(),
                         Release(),
+                        Architecture(),
                         LargeBubble(),
                         Composite(),
                         Crossgen2Parallelism(),
@@ -103,6 +106,7 @@ namespace R2RTest
                         DegreeOfParallelism(),
                         Sequential(),
                         Release(),
+                        Architecture(),
                         LargeBubble(),
                         Composite(),
                         ReferencePath(),
@@ -216,6 +220,9 @@ namespace R2RTest
 
             Option Release() =>
                 new Option(new[] { "--release" }, "Build the tests in release mode", new Argument<bool>());
+
+            Option Architecture() =>
+                new Option(new[] { "--architecture" }, "Build architecture - one of: x86, x64, arm, arm64.", new Argument<string>());
 
             Option LargeBubble() =>
                 new Option(new[] { "--large-bubble" }, "Assume all input files as part of one version bubble", new Argument<bool>());

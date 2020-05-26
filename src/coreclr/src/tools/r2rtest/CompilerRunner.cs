@@ -120,7 +120,8 @@ namespace R2RTest
 
             ProcessParameters processParameters = new ProcessParameters();
             processParameters.ProcessPath = CompilerPath;
-            processParameters.UseShellExecute = true; // Crossgen1 on Linux ARM / ARM64 needs Shell execute
+            // Native Crossgen1 on Linux ARM / ARM64 needs to be run using Shell execute
+            processParameters.UseShellExecute = _options.ArchitectureIsARM || _options.ArchitectureIsARM64;
             processParameters.Arguments = $"@{responseFile}";
             if (_options.CompilationTimeoutMinutes != 0)
             {
