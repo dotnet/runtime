@@ -2066,10 +2066,17 @@ namespace System.Net.Sockets
             {
                 receiveOperation?.Process();
             }
+            else if (receiveOperation == null)
+            {
+                sendOperation.Process();
+            }
             else
             {
-                receiveOperation?.Schedule();
-                sendOperation.Process();
+                // When there are two operations perfer to run the receive operation and scehedule the send operation.
+                // The send is completion of something that has already happened, whereas the receive is fresh
+                // data ready to be processed so it has a greater urgency.
+                sendOperation.Schedule();
+                receiveOperation.Process();
             }
         }
 
