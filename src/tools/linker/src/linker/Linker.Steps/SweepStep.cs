@@ -582,51 +582,12 @@ namespace Mono.Linker.Steps
 					UpdateForwardedTypesScope (attribute);
 				} else {
 					CustomAttributeUsageRemoved (provider, attribute);
-					removed.Add (attribute);
+					removed.Add (provider.CustomAttributes[i]);
 					provider.CustomAttributes.RemoveAt (i);
 				}
 			}
 
 			return removed;
-		}
-
-		void SweepCustomAttributes (AssemblyDefinition assembly)
-		{
-			var aca = assembly.CustomAttributes;
-			for (int i = aca.Count - 1; i >= 0; i--) {
-				var attribute = aca[i];
-				if (!Annotations.IsMarked (attribute)) {
-					CustomAttributeUsageRemoved (assembly, attribute);
-					aca.RemoveAt (i);
-					continue;
-				}
-
-				if (attribute.AttributeType.IsTypeOf ("System.Runtime.CompilerServices", "InternalsVisibleToAttribute") &&
-					IsInternalsVisibleToUnusedAssembly (attribute)) {
-					CustomAttributeUsageRemoved (assembly, attribute);
-					aca.RemoveAt (i);
-					continue;
-				}
-
-				UpdateForwardedTypesScope (attribute);
-			}
-		}
-
-		bool IsInternalsVisibleToUnusedAssembly (CustomAttribute attribute)
-		{
-			var fqn = attribute.ConstructorArguments[0].Value as string;
-			if (fqn == null)
-				return false;
-
-			int comma = fqn.IndexOf (',');
-			if (comma != -1)
-				fqn = fqn.Substring (0, comma);
-
-			AssemblyDefinition assembly = Context.GetLoadedAssembly (fqn);
-			if (assembly == null)
-				return true;
-
-			return !IsUsedAssembly (assembly);
 		}
 
 		protected void SweepCustomAttributeCollection<T> (Collection<T> providers) where T : ICustomAttributeProvider
