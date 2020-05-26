@@ -125,9 +125,11 @@ typedef void (*EventPipeSessionSynchronousCallback)(
     DWORD eventVersion,
     ULONG cbMetadataBlob,
     LPCBYTE metadataBlob,
-    DWORD eventThreadId,
     ULONG cbEventData,
     LPCBYTE eventData,
+    LPCGUID pActivityId,
+    LPCGUID pRelatedActivityId,
+    Thread *pEventThread,
     ULONG numStackFrames,
     UINT_PTR stackFrames[]);
 

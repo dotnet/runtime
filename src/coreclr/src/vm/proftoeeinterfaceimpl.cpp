@@ -7077,9 +7077,11 @@ HRESULT ProfToEEInterfaceImpl::EventPipeStartSession(
                                 DWORD eventVersion,
                                 ULONG cbMetadataBlob,
                                 LPCBYTE metadataBlob,
-                                DWORD eventThreadId,
                                 ULONG cbEventData,
                                 LPCBYTE eventData,
+                                LPCGUID pActivityId,
+                                LPCGUID pRelatedActivityId,
+                                Thread *pEventThread,
                                 ULONG numStackFrames,
                                 UINT_PTR stackFrames[])
         {
@@ -7089,9 +7091,11 @@ HRESULT ProfToEEInterfaceImpl::EventPipeStartSession(
                                                                        eventVersion,
                                                                        cbMetadataBlob,
                                                                        metadataBlob,
-                                                                       eventThreadId,
                                                                        cbEventData,
                                                                        eventData,
+                                                                       pActivityId,
+                                                                       pRelatedActivityId,
+                                                                       pEventThread,
                                                                        numStackFrames,
                                                                        stackFrames);
             END_PIN_PROFILER();

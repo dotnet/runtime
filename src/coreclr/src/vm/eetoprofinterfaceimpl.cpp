@@ -6270,9 +6270,11 @@ HRESULT EEToProfInterfaceImpl::EventPipeEventDelivered(
     DWORD eventVersion,
     ULONG cbMetadataBlob,
     LPCBYTE metadataBlob,
-    DWORD eventThreadId,
     ULONG cbEventData,
     LPCBYTE eventData,
+    LPCGUID pActivityId,
+    LPCGUID pRelatedActivityId,
+    Thread *pEventThread,
     ULONG numStackFrames,
     UINT_PTR stackFrames[])
 {
@@ -6297,7 +6299,18 @@ HRESULT EEToProfInterfaceImpl::EventPipeEventDelivered(
     }
 
     EVENTPIPE_PROVIDER providerID = (EVENTPIPE_PROVIDER)provider;
-    return m_pCallback10->EventPipeEventDelivered(providerID, eventId, eventVersion, cbMetadataBlob, metadataBlob, eventThreadId, cbEventData, eventData, numStackFrames, stackFrames);
+    return m_pCallback10->EventPipeEventDelivered(providerID,
+                                                  eventId,
+                                                  eventVersion,
+                                                  cbMetadataBlob,
+                                                  metadataBlob,
+                                                  cbEventData,
+                                                  eventData,
+                                                  pActivityId,
+                                                  pRelatedActivityId,
+                                                  reinterpret_cast<ThreadID>(pEventThread),
+                                                  numStackFrames,
+                                                  stackFrames);
 #else // FEATURE_PERFTRACING
     return E_NOTIMPL;
 #endif // FEATURE_PERFTRACING

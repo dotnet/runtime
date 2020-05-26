@@ -336,9 +336,11 @@ bool EventPipeSession::WriteEvent(
                                   event.GetEventVersion(),
                                   event.GetMetadataLength(),
                                   event.GetMetadata(),
-                                  pEventThread == nullptr ? 0 : pEventThread->GetThreadId(),
                                   payload.GetSize(),
                                   payload.GetFlatData(),
+                                  pActivityId,
+                                  pRelatedActivityId,
+                                  pEventThread,
                                   pStack == nullptr ? 0 : pStack->GetSize(),
                                   pStack == nullptr ? nullptr : reinterpret_cast<UINT_PTR *>(pStack->GetPointer()));
             return true;

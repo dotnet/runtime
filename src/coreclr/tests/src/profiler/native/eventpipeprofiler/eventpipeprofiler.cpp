@@ -259,7 +259,7 @@ HRESULT EventPipeProfiler::FunctionSeen(FunctionID functionID)
 
         HRESULT hr = _pCorProfilerInfo12->EventPipeWriteEvent(
                         _allTypesEvent,
-                        sizeof(eventData)/sizeof(eventData[0]),
+                        sizeof(eventData)/sizeof(COR_PRF_EVENT_DATA),
                         eventData,
                         NULL,
                         NULL);
@@ -305,8 +305,8 @@ HRESULT EventPipeProfiler::FunctionSeen(FunctionID functionID)
         {
             hr = _pCorProfilerInfo12->EventPipeWriteEvent(
                         _emptyEvent,
-                        NULL,
                         0,
+                        NULL,
                         NULL,
                         NULL);
             if (FAILED(hr))

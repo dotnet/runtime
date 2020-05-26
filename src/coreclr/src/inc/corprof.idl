@@ -2541,9 +2541,11 @@ interface ICorProfilerCallback10 : ICorProfilerCallback9
         [in] DWORD eventVersion,
         [in] ULONG cbMetadataBlob,
         [in, size_is(cbMetadataBlob)] LPCBYTE metadataBlob,
-        [in] DWORD eventThreadId,
         [in] ULONG cbEventData,
         [in, size_is(cbEventData)] LPCBYTE eventData,
+        [in] LPCGUID pActivityId,
+        [in] LPCGUID pRelatedActivityId,
+        [in] ThreadID eventThread,
         [in] ULONG numStackFrames,
         [in, length_is(numStackFrames)] UINT_PTR stackFrames[]);
 
