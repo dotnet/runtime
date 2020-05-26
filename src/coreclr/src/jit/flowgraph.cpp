@@ -271,23 +271,16 @@ void Compiler::fgInstrumentMethod()
 
     HRESULT res = info.compCompHnd->allocMethodBlockCounts(countOfBlocks, &profileBlockCountsStart);
 
-    Statement* stmt;
-
     if (!SUCCEEDED(res))
     {
         // The E_NOTIMPL status is returned when we are profiling a generic method from a different assembly
         if (res == E_NOTIMPL)
         {
-            // In such cases we still want to add the method entry callback node
-
-            GenTreeCall::Use* args = gtNewCallArgs(gtNewIconEmbMethHndNode(info.compMethodHnd));
-            GenTree*          call = gtNewHelperCallNode(CORINFO_HELP_BBT_FCN_ENTER, TYP_VOID, args);
-
-            stmt = gtNewStmt(call);
+            // expected failure...
         }
         else
         {
-            noway_assert(!"Error:  failed to allocate profileBlockCounts");
+            noway_assert(!"Error: failed to allocate profileBlockCounts");
             return;
         }
     }
@@ -310,8 +303,8 @@ void Compiler::fgInstrumentMethod()
             }
 
             // Assign the current block's IL offset into the profile data
-            currentBlockCounts->ILOffset = block->bbCodeOffs;
-            assert(currentBlockCounts->ExecutionCount == 0); // This value should already be zero-ed out
+            currentBlockCounts->ILOffset       = block->bbCodeOffs;
+            currentBlockCounts->ExecutionCount = 0;
 
             size_t addrOfCurrentExecutionCount = (size_t)&currentBlockCounts->ExecutionCount;
 
@@ -337,50 +330,51 @@ void Compiler::fgInstrumentMethod()
         // Check that we allocated and initialized the same number of BlockCounts tuples
         noway_assert(countOfBlocks == 0);
 
-        // Add the method entry callback node
-
-        GenTree* arg;
+        // When prejitting, add the method entry callback node
+        if (opts.jitFlags->IsSet(JitFlags::JIT_FLAG_PREJIT))
+        {
+            GenTree* arg;
 
 #ifdef FEATURE_READYTORUN_COMPILER
-        if (opts.IsReadyToRun())
-        {
-            mdMethodDef currentMethodToken = info.compCompHnd->getMethodDefFromMethod(info.compMethodHnd);
+            if (opts.IsReadyToRun())
+            {
+                mdMethodDef currentMethodToken = info.compCompHnd->getMethodDefFromMethod(info.compMethodHnd);
 
-            CORINFO_RESOLVED_TOKEN resolvedToken;
-            resolvedToken.tokenContext = MAKE_METHODCONTEXT(info.compMethodHnd);
-            resolvedToken.tokenScope   = info.compScopeHnd;
-            resolvedToken.token        = currentMethodToken;
-            resolvedToken.tokenType    = CORINFO_TOKENKIND_Method;
+                CORINFO_RESOLVED_TOKEN resolvedToken;
+                resolvedToken.tokenContext = MAKE_METHODCONTEXT(info.compMethodHnd);
+                resolvedToken.tokenScope   = info.compScopeHnd;
+                resolvedToken.token        = currentMethodToken;
+                resolvedToken.tokenType    = CORINFO_TOKENKIND_Method;
 
-            info.compCompHnd->resolveToken(&resolvedToken);
+                info.compCompHnd->resolveToken(&resolvedToken);
 
-            arg = impTokenToHandle(&resolvedToken);
-        }
-        else
+                arg = impTokenToHandle(&resolvedToken);
+            }
+            else
 #endif
-        {
-            arg = gtNewIconEmbMethHndNode(info.compMethodHnd);
+            {
+                arg = gtNewIconEmbMethHndNode(info.compMethodHnd);
+            }
+
+            GenTreeCall::Use* args = gtNewCallArgs(arg);
+            GenTree*          call = gtNewHelperCallNode(CORINFO_HELP_BBT_FCN_ENTER, TYP_VOID, args);
+
+            // Get the address of the first blocks ExecutionCount
+            size_t addrOfFirstExecutionCount = (size_t)&profileBlockCountsStart->ExecutionCount;
+
+            // Read Basic-Block count value
+            GenTree* valueNode = gtNewIndOfIconHandleNode(TYP_INT, addrOfFirstExecutionCount, GTF_ICON_BBC_PTR, false);
+
+            // Compare Basic-Block count value against zero
+            GenTree*   relop = gtNewOperNode(GT_NE, TYP_INT, valueNode, gtNewIconNode(0, TYP_INT));
+            GenTree*   colon = new (this, GT_COLON) GenTreeColon(TYP_VOID, gtNewNothingNode(), call);
+            GenTree*   cond  = gtNewQmarkNode(TYP_VOID, relop, colon);
+            Statement* stmt  = gtNewStmt(cond);
+
+            fgEnsureFirstBBisScratch();
+            fgInsertStmtAtEnd(fgFirstBB, stmt);
         }
-
-        GenTreeCall::Use* args = gtNewCallArgs(arg);
-        GenTree*          call = gtNewHelperCallNode(CORINFO_HELP_BBT_FCN_ENTER, TYP_VOID, args);
-
-        // Get the address of the first blocks ExecutionCount
-        size_t addrOfFirstExecutionCount = (size_t)&profileBlockCountsStart->ExecutionCount;
-
-        // Read Basic-Block count value
-        GenTree* valueNode = gtNewIndOfIconHandleNode(TYP_INT, addrOfFirstExecutionCount, GTF_ICON_BBC_PTR, false);
-
-        // Compare Basic-Block count value against zero
-        GenTree* relop = gtNewOperNode(GT_NE, TYP_INT, valueNode, gtNewIconNode(0, TYP_INT));
-        GenTree* colon = new (this, GT_COLON) GenTreeColon(TYP_VOID, gtNewNothingNode(), call);
-        GenTree* cond  = gtNewQmarkNode(TYP_VOID, relop, colon);
-        stmt           = gtNewStmt(cond);
     }
-
-    fgEnsureFirstBBisScratch();
-
-    fgInsertStmtAtEnd(fgFirstBB, stmt);
 }
 
 /*****************************************************************************
