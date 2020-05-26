@@ -157,15 +157,23 @@ namespace System.Net.Http
                 switch (value)
                 {
                     case ClientCertificateOption.Manual:
+#if TARGETS_BROWSER
+                        _clientCertificateOptions = value;
+#else
                         ThrowForModifiedManagedSslOptionsIfStarted();
                         _clientCertificateOptions = value;
                         _underlyingHandler.SslOptions.LocalCertificateSelectionCallback = (sender, targetHost, localCertificates, remoteCertificate, acceptableIssuers) => CertificateHelper.GetEligibleClientCertificate(ClientCertificates)!;
+#endif
                         break;
 
                     case ClientCertificateOption.Automatic:
+#if TARGETS_BROWSER
+                        _clientCertificateOptions = value;
+#else
                         ThrowForModifiedManagedSslOptionsIfStarted();
                         _clientCertificateOptions = value;
                         _underlyingHandler.SslOptions.LocalCertificateSelectionCallback = (sender, targetHost, localCertificates, remoteCertificate, acceptableIssuers) => CertificateHelper.GetEligibleClientCertificate()!;
+#endif
                         break;
 
                     default:
