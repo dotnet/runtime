@@ -8,7 +8,7 @@
 
   <!-- Generate a self-contained app bundle for Android with tests. -->
   <UsingTask Condition="'$(TargetOS)' == 'Android'"
-             TaskName="AndroidAppBuilderTask" 
+             TaskName="AndroidAppBuilderTask"
              AssemblyFile="$(AndroidAppBuilderTasksAssemblyPath)" />
 
   <Target Condition="'$(TargetOS)' == 'Android'" Name="BundleTestAndroidApp">
@@ -50,7 +50,7 @@
 
   <!-- Generate a self-contained app bundle for iOS with tests. -->
   <UsingTask Condition="'$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'tvOS'"
-             TaskName="AppleAppBuilderTask" 
+             TaskName="AppleAppBuilderTask"
              AssemblyFile="$(AppleAppBuilderTasksAssemblyPath)" />
   <UsingTask TaskName="MonoAOTCompiler"
              AssemblyFile="$(MonoAOTCompilerTasksAssemblyPath)" />
@@ -107,12 +107,12 @@
   </Target>
 
   <Target Name="AddTestRunnersToPublishedFiles"
-          AfterTargets="ComputeFilesToPublish">
+          AfterTargets="ComputeResolvedFilesToPublishList">
     <ItemGroup>
       <_runnerFilesToPublish Include="$(AndroidTestRunnerDir)*" Condition="'$(TargetOS)' == 'Android'" />
       <_runnerFilesToPublish Include="$(AppleTestRunnerDir)*" Condition="'$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'tvOS'" />
 
-      <ResolvedFileToPublish Include="@(_runnerFilesToPublish)" RelativePath="%(FileName)%(Extension)" CopyToPublishDirectory="PreserveNewest" />
+      <ResolvedFileToPublish Include="@(_runnerFilesToPublish)" RelativePath="%(FileName)%(Extension)" CopyToPublishDirectory="PreserveNewest" PostprocessAssembly="true" />
     </ItemGroup>
   </Target>
 
