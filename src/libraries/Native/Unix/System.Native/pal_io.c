@@ -932,15 +932,15 @@ int32_t SystemNative_Poll(PollEvent* pollEvents, uint32_t eventCount, int32_t mi
     }
 
     struct pollfd stackBuffer[(uint32_t)(2048/sizeof(struct pollfd))];
-    int useStackBuffer = eventCount <= (sizeof(stackBuffer)/sizeof(stackBuffer[0]));
+    int useStackBuffer = eventCount <= ARRAY_SIZE(stackBuffer);
     struct pollfd* pollfds = NULL;
     if (useStackBuffer)
     {
-        pollfds = (struct pollfd*)&stackBuffer[0];
+        pollfds = &stackBuffer[0];
     }
     else
     {
-        pollfds = (struct pollfd*)calloc(eventCount, sizeof(*pollfds));
+        pollfds = calloc(eventCount, sizeof(*pollfds));
         if (pollfds == NULL)
         {
             return Error_ENOMEM;

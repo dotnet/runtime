@@ -404,7 +404,7 @@ static const UCollator* GetCollatorFromSortHandle(SortHandle* pSortHandle, int32
         pCollator = CloneCollatorWithOptions(pSortHandle->collatorsPerOption[0], options, pErr);
         UCollator* pNull = NULL;
 
-        if (!pal_atomic_cas_ptr((void* volatile*)&pSortHandle->collatorsPerOption[options], &pNull, pCollator))
+        if (!pal_atomic_cas_ptr((void* volatile*)&pSortHandle->collatorsPerOption[options], pCollator, pNull))
         {
             ucol_close(pCollator);
             pCollator = pSortHandle->collatorsPerOption[options];

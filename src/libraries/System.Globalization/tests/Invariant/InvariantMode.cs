@@ -476,6 +476,12 @@ namespace System.Globalization.Tests
             yield return new object[] { "xn--de-jg4avhby1noc0d", 0, 21, "\u30D1\u30D5\u30A3\u30FC\u0064\u0065\u30EB\u30F3\u30D0" };
         }
 
+        [Fact]
+        public static void IcuShouldNotBeLoaded()
+        {
+            Assert.False(PlatformDetection.IsIcuGlobalization);
+        }
+
         [Theory]
         [MemberData(nameof(Cultures_TestData))]
         public void TestCultureData(string cultureName)

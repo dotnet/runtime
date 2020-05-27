@@ -7,7 +7,6 @@ include(CheckStructHasMember)
 include(CheckSymbolExists)
 include(CheckTypeSize)
 
-
 if (CLR_CMAKE_TARGET_ANDROID)
     set(PAL_UNIX_NAME \"ANDROID\")
 elseif (CLR_CMAKE_TARGET_ARCH_WASM)
@@ -36,7 +35,7 @@ elseif (CLR_CMAKE_TARGET_SUNOS)
     set(CMAKE_LIBRARY_PATH ${CMAKE_LIBRARY_PATH} /opt/local/lib)
     include_directories(SYSTEM /opt/local/include)
 else ()
-    message(FATAL_ERROR "Unknown platform.  Cannot define PAL_UNIX_NAME, used by RuntimeInformation.")
+    message(FATAL_ERROR "Unknown platform. Cannot define PAL_UNIX_NAME, used by RuntimeInformation.")
 endif ()
 
 # We compile with -Werror, so we need to make sure these code fragments compile without warnings.
@@ -232,6 +231,16 @@ check_symbol_exists(
     "termios.h"
     HAVE_TCSANOW)
 
+check_symbol_exists(
+    cfsetspeed
+    termios.h
+    HAVE_CFSETSPEED)
+
+check_symbol_exists(
+    cfmakeraw
+    termios.h
+    HAVE_CFMAKERAW)
+
 check_struct_has_member(
     "struct utsname"
     domainname
@@ -303,8 +312,7 @@ set(CMAKE_EXTRA_INCLUDE_FILES ${STATFS_INCLUDES})
 check_symbol_exists(
     "statfs"
     ${STATFS_INCLUDES}
-    HAVE_STATFS
-)
+    HAVE_STATFS)
 
 check_type_size(
     "struct statfs"
@@ -578,8 +586,7 @@ check_c_source_compiles(
         return 0;
     }
     "
-    BIND_ADDRLEN_UNSIGNED
-)
+    BIND_ADDRLEN_UNSIGNED)
 
 check_c_source_compiles(
     "
@@ -594,8 +601,7 @@ check_c_source_compiles(
         return 0;
     }
     "
-    IPV6MR_INTERFACE_UNSIGNED
-)
+    IPV6MR_INTERFACE_UNSIGNED)
 
 check_include_files(
     "sys/inotify.h"
@@ -629,6 +635,13 @@ check_prototype_definition(
     0
     "sys/types.h;sys/event.h"
     KEVENT_REQUIRES_INT_PARAMS)
+
+check_prototype_definition(
+    statfs
+    "int statfs(const char *path, struct statfs *buf)"
+    0
+    ${STATFS_INCLUDES}
+    HAVE_NON_LEGACY_STATFS)
 
 check_c_source_compiles(
     "
@@ -671,8 +684,7 @@ check_c_source_compiles(
     #include <netinet/tcp_var.h>
     int main(void) { return 0; }
     "
-    HAVE_NETINET_TCP_VAR_H
-)
+    HAVE_NETINET_TCP_VAR_H)
 
 check_c_source_compiles(
     "
@@ -686,8 +698,7 @@ check_c_source_compiles(
     #include <netinet/udp_var.h>
     int main(void) { return 0; }
     "
-    HAVE_NETINET_UDP_VAR_H
-)
+    HAVE_NETINET_UDP_VAR_H)
 
 check_c_source_compiles(
     "
@@ -699,8 +710,7 @@ check_c_source_compiles(
     #include <netinet/ip_var.h>
     int main(void) { return 0; }
     "
-    HAVE_NETINET_IP_VAR_H
-)
+    HAVE_NETINET_IP_VAR_H)
 
 check_c_source_compiles(
     "
@@ -713,8 +723,7 @@ check_c_source_compiles(
     #include <netinet/icmp_var.h>
     int main(void) { return 0; }
     "
-    HAVE_NETINET_ICMP_VAR_H
-)
+    HAVE_NETINET_ICMP_VAR_H)
 
 check_include_files(
     sys/cdefs.h
@@ -734,16 +743,19 @@ check_c_source_compiles(
     #include <netinet/tcp.h>
     int main(void) { int x = TCP_ESTABLISHED; return x; }
     "
-    HAVE_TCP_H_TCPSTATE_ENUM
-)
+    HAVE_TCP_H_TCPSTATE_ENUM)
 
 set(CMAKE_REQUIRED_DEFINITIONS)
 
 check_symbol_exists(
     TCPS_ESTABLISHED
     "netinet/tcp_fsm.h"
-    HAVE_TCP_FSM_H
-)
+    HAVE_TCP_FSM_H)
+
+check_symbol_exists(
+    getgrouplist
+    "unistd.h;grp.h"
+    HAVE_GETGROUPLIST)
 
 if(CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS)
     set(HAVE_IOS_NET_ROUTE_H 1)
@@ -772,6 +784,26 @@ set(CMAKE_EXTRA_INCLUDE_FILES) # reset CMAKE_EXTRA_INCLUDE_FILES
 check_include_files(
     "sys/types.h;sys/sysctl.h"
     HAVE_SYS_SYSCTL_H)
+
+check_include_files(
+    "sys/ioctl.h"
+    HAVE_SYS_IOCTL_H)
+
+check_include_files(
+    "sys/filio.h"
+    HAVE_SYS_FILIO_H)
+
+check_include_files(
+    "sys/types.h;netpacket/packet.h"
+    HAVE_NETPACKET_PACKET_H)
+
+check_include_files(
+    "net/if_arp.h"
+    HAVE_NET_IF_ARP_H)
+
+check_include_files(
+    "sys/mntent.h"
+    HAVE_SYS_MNTENT_H)
 
 check_include_files(
     "stdint.h;net/if_media.h"
@@ -816,8 +848,7 @@ check_c_source_compiles(
         return 0;
     }
     "
-    HAVE_GETDOMAINNAME_SIZET
-)
+    HAVE_GETDOMAINNAME_SIZET)
 set (CMAKE_REQUIRED_FLAGS ${PREVIOUS_CMAKE_REQUIRED_FLAGS})
 
 set (PREVIOUS_CMAKE_REQUIRED_LIBRARIES ${CMAKE_REQUIRED_LIBRARIES})

@@ -6,18 +6,18 @@ namespace System.Globalization
 {
     internal static partial class GlobalizationMode
     {
-        internal static bool Invariant { get; } = GetGlobalizationInvariantMode();
+        private static bool GetInvariantSwitchValue() =>
+            GetSwitchValue("System.Globalization.Invariant", "DOTNET_SYSTEM_GLOBALIZATION_INVARIANT");
 
-        // GetInvariantSwitchValue calls CLRConfig first to detect if the switch is defined in the config file.
+        // GetSwitchValue calls CLRConfig first to detect if the switch is defined in the config file.
         // if the switch is defined we just use the value of this switch. otherwise, we'll try to get the switch
         // value from the environment variable if it is defined.
-        internal static bool GetInvariantSwitchValue()
+        private static bool GetSwitchValue(string switchName, string envVariable)
         {
-            bool ret = CLRConfig.GetBoolValue("System.Globalization.Invariant", out bool exist);
+            bool ret = CLRConfig.GetBoolValue(switchName, out bool exist);
             if (!exist)
             {
-                // Linux doesn't support environment variable names include dots
-                string? switchValue = Environment.GetEnvironmentVariable("DOTNET_SYSTEM_GLOBALIZATION_INVARIANT");
+                string? switchValue = Environment.GetEnvironmentVariable(envVariable);
                 if (switchValue != null)
                 {
                     ret = bool.IsTrueStringIgnoreCase(switchValue) || switchValue.Equals("1");

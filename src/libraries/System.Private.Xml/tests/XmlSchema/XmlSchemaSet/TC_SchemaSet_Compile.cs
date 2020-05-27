@@ -149,5 +149,32 @@ namespace System.Xml.Tests
                 Assert.Equal(0, errorCount);
             }
         }
+
+        [Fact]
+        public void FractionDigitsMismatch_Throws()
+        {
+            string schema = @"<?xml version='1.0' encoding='utf-8' ?>
+<xs:schema elementFormDefault='qualified'
+           xmlns:xs='http://www.w3.org/2001/XMLSchema'>
+    <xs:simpleType name='foo'>
+        <xs:restriction base='xs:decimal'>
+            <xs:fractionDigits value='8' fixed='true'/>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name='bar'>
+        <xs:restriction base='foo'>
+            <xs:fractionDigits value='9'/>
+        </xs:restriction>
+    </xs:simpleType>
+</xs:schema>
+";
+
+            XmlSchemaSet ss = new XmlSchemaSet();
+            ss.Add(null, XmlReader.Create(new StringReader(schema)));
+
+            Exception ex = Assert.Throws<XmlSchemaException>(() => ss.Compile());
+            Assert.Contains("fractionDigits", ex.Message);
+            Assert.DoesNotContain("totalDigits", ex.Message);
+        }
     }
 }

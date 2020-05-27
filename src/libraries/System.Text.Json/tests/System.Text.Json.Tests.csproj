@@ -83,6 +83,7 @@
     <Compile Include="Serialization\PolymorphicTests.cs" />
     <Compile Include="Serialization\PropertyNameTests.cs" />
     <Compile Include="Serialization\PropertyVisibilityTests.cs" />
+    <Compile Include="Serialization\PropertyVisibilityTests.NonPublicAccessors.cs" />
     <Compile Include="Serialization\ReadValueTests.cs" />
     <Compile Include="Serialization\ReferenceHandlingTests.cs" />
     <Compile Include="Serialization\ReferenceHandlingTests.Deserialize.cs" />

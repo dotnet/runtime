@@ -54,7 +54,10 @@ namespace System.Globalization
             _cultureName = _cultureData.CultureName;
             _textInfoName = _cultureData.TextInfoName;
 
-            FinishInitialization();
+            if (GlobalizationMode.UseNls)
+            {
+                _sortHandle = CompareInfo.NlsGetSortHandle(_textInfoName);
+            }
         }
 
         private TextInfo(CultureData cultureData, bool readOnly)
@@ -176,7 +179,7 @@ namespace System.Globalization
             Debug.Assert(!GlobalizationMode.Invariant);
 
             char dst = default;
-            ChangeCase(&c, 1, &dst, 1, toUpper);
+            ChangeCaseCore(&c, 1, &dst, 1, toUpper);
             return dst;
         }
 
@@ -301,7 +304,7 @@ namespace System.Globalization
                 // has a case conversion that's different from the invariant culture, even for ASCII data (e.g., tr-TR converts
                 // 'i' (U+0069) to Latin Capital Letter I With Dot Above (U+0130)).
 
-                ChangeCase(pSource + currIdx, charCount, pDestination + currIdx, charCount, toUpper);
+                ChangeCaseCore(pSource + currIdx, charCount, pDestination + currIdx, charCount, toUpper);
             }
 
         Return:
@@ -406,7 +409,7 @@ namespace System.Globalization
                     // and run the culture-aware logic over the remainder of the data
                     fixed (char* pResult = result)
                     {
-                        ChangeCase(pSource + currIdx, source.Length - (int)currIdx, pResult + currIdx, result.Length - (int)currIdx, toUpper);
+                        ChangeCaseCore(pSource + currIdx, source.Length - (int)currIdx, pResult + currIdx, result.Length - (int)currIdx, toUpper);
                     }
                     return result;
                 }
@@ -813,6 +816,18 @@ namespace System.Globalization
                 }
             }
             return inputIndex;
+        }
+
+        private unsafe void ChangeCaseCore(char* src, int srcLen, char* dstBuffer, int dstBufferCapacity, bool bToUpper)
+        {
+            if (GlobalizationMode.UseNls)
+            {
+                NlsChangeCase(src, srcLen, dstBuffer, dstBufferCapacity, bToUpper);
+            }
+            else
+            {
+                IcuChangeCase(src, srcLen, dstBuffer, dstBufferCapacity, bToUpper);
+            }
         }
 
         // Used in ToTitleCase():

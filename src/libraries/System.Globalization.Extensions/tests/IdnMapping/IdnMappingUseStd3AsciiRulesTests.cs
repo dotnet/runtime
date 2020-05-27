@@ -22,8 +22,6 @@ namespace System.Globalization.Tests
     /// </summary>
     public class UseStd3AsciiRules
     {
-        private static bool s_isWindows = RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
-
         [Fact]
         public void UseStd3AsciiRules_IsFalseByDefault()
         {
@@ -52,7 +50,7 @@ namespace System.Globalization.Tests
             var idnStd3False = new IdnMapping { UseStd3AsciiRules = false };
             var idnStd3True = new IdnMapping { UseStd3AsciiRules = true };
 
-            if (containsInvalidHyphen && !s_isWindows)
+            if (containsInvalidHyphen && PlatformDetection.IsIcuGlobalization)
             {
                 // ICU always fails on leading/trailing hyphens regardless of the Std3 rules option.
                 AssertExtensions.Throws<ArgumentException>("unicode", () => idnStd3False.GetAscii(unicode));

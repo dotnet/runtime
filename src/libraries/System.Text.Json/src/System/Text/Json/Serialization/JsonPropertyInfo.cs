@@ -222,8 +222,7 @@ namespace System.Text.Json
                 }
                 else
                 {
-                    JsonConverter<object> converter = (JsonConverter<object>)
-                        state.Current.JsonPropertyInfo!.RuntimeClassInfo.ElementClassInfo!.PropertyInfoForClassInfo.ConverterBase;
+                    JsonConverter<object> converter = (JsonConverter<object>)Options.GetConverter(typeof(object));
 
                     if (!converter.TryRead(ref reader, typeof(JsonElement), Options, ref state, out object? value))
                     {
@@ -240,8 +239,7 @@ namespace System.Text.Json
                 Debug.Assert(propValue is IDictionary<string, JsonElement>);
                 IDictionary<string, JsonElement> dictionaryJsonElement = (IDictionary<string, JsonElement>)propValue;
 
-                JsonConverter<JsonElement> converter = (JsonConverter<JsonElement>)
-                    state.Current.JsonPropertyInfo!.RuntimeClassInfo.ElementClassInfo!.PropertyInfoForClassInfo.ConverterBase;
+                JsonConverter<JsonElement> converter = (JsonConverter<JsonElement>)Options.GetConverter(typeof(JsonElement));
 
                 if (!converter.TryRead(ref reader, typeof(JsonElement), Options, ref state, out JsonElement value))
                 {

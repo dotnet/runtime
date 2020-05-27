@@ -74,9 +74,9 @@ void TreeLifeUpdater<ForCodeGen>::UpdateLifeVar(GenTree* tree)
     }
 
     // if it's a partial definition then variable "x" must have had a previous, original, site to be born.
-    bool isBorn  = ((tree->gtFlags & GTF_VAR_DEF) != 0 && (tree->gtFlags & GTF_VAR_USEASG) == 0);
-    bool isDying = ((tree->gtFlags & GTF_VAR_DEATH) != 0);
-    bool spill   = ((tree->gtFlags & GTF_SPILL) != 0);
+    bool isBorn  = ((lclVarTree->gtFlags & GTF_VAR_DEF) != 0 && (lclVarTree->gtFlags & GTF_VAR_USEASG) == 0);
+    bool isDying = ((lclVarTree->gtFlags & GTF_VAR_DEATH) != 0);
+    bool spill   = ((lclVarTree->gtFlags & GTF_SPILL) != 0);
 
     // Since all tracked vars are register candidates, but not all are in registers at all times,
     // we maintain two separate sets of variables - the total set of variables that are either

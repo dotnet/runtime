@@ -377,6 +377,7 @@
     <Compile Include="Headers\HttpResponseHeadersTest.cs" />
     <Compile Include="Headers\Int32NumberHeaderParserTest.cs" />
     <Compile Include="Headers\Int64NumberHeaderParserTest.cs" />
+    <Compile Include="Headers\KnownHeadersTest.cs" />
     <Compile Include="Headers\MediaTypeHeaderParserTest.cs" />
     <Compile Include="Headers\MediaTypeHeaderValueTest.cs" />
     <Compile Include="Headers\MediaTypeWithQualityHeaderValueTest.cs" />

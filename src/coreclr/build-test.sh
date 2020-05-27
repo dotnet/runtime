@@ -183,12 +183,22 @@ precompile_coreroot_fx()
 
     local totalPrecompiled=0
     local failedToPrecompile=0
+    local compositeCommandLine="$overlayDir/corerun"
+    compositeCommandLine+=" $overlayDir/crossgen2/crossgen2.dll"
+    compositeCommandLine+=" --composite"
+    compositeCommandLine+=" -O"
+    compositeCommandLine+=" --out:$outputDir/framework-r2r.dll"
     declare -a failedAssemblies
 
-    filesToPrecompile=$(find -L "$overlayDir" -maxdepth 1 -iname Microsoft.\*.dll -o -iname System.\*.dll -type f)
+    filesToPrecompile=$(find -L "$overlayDir" -maxdepth 1 -iname Microsoft.\*.dll -o -iname System.\*.dll -o -iname netstandard.dll -o -iname mscorlib.dll -type f)
     for fileToPrecompile in ${filesToPrecompile}; do
         local filename="$fileToPrecompile"
         if is_skip_crossgen_test "$(basename $filename)"; then
+            continue
+        fi
+
+        if [[ "$__CompositeBuildMode" != 0 ]]; then
+            compositeCommandLine+=" $filename"
             continue
         fi
 
@@ -223,6 +233,17 @@ precompile_coreroot_fx()
         totalPrecompiled=$((totalPrecompiled+1))
         echo "Processed: $totalPrecompiled, failed $failedToPrecompile"
     done
+
+    if [[ "$__CompositeBuildMode" != 0 ]]; then
+        # Compile the entire framework in composite build mode
+        echo "Compiling composite R2R framework: $compositeCommandLine"
+        $compositeCommandLine
+        local exitCode="$?"
+        if [[ "$exitCode" != 0 ]]; then
+            echo Unable to precompile composite framework, exit code is "$exitCode".
+            exit 1
+        fi
+    fi
 
     if [[ "$__DoCrossgen2" != 0 ]]; then
         # Copy the Crossgen-compiled assemblies back to CORE_ROOT
@@ -536,6 +557,12 @@ handle_arguments_local() {
             __TestBuildMode=crossgen2
             ;;
 
+        composite|-composite)
+            __CompositeBuildMode=1
+            __DoCrossgen2=1
+            __TestBuildMode=crossgen2
+            ;;
+
         generatetesthostonly|-generatetesthostonly)
             __GenerateTestHostOnly=1
             ;;
@@ -603,6 +630,7 @@ __CrossBuild=0
 __DistroRid=""
 __DoCrossgen=0
 __DoCrossgen2=0
+__CompositeBuildMode=0
 __DotNetCli="$__RepoRootDir/dotnet.sh"
 __GenerateLayoutOnly=
 __GenerateTestHostOnly=

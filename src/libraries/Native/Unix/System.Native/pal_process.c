@@ -42,26 +42,6 @@ c_static_assert(PAL_LOG_WARNING == LOG_WARNING);
 c_static_assert(PAL_LOG_NOTICE == LOG_NOTICE);
 c_static_assert(PAL_LOG_INFO == LOG_INFO);
 c_static_assert(PAL_LOG_DEBUG == LOG_DEBUG);
-c_static_assert(PAL_LOG_KERN == LOG_KERN);
-c_static_assert(PAL_LOG_USER == LOG_USER);
-c_static_assert(PAL_LOG_MAIL == LOG_MAIL);
-c_static_assert(PAL_LOG_DAEMON == LOG_DAEMON);
-c_static_assert(PAL_LOG_AUTH == LOG_AUTH);
-c_static_assert(PAL_LOG_SYSLOG == LOG_SYSLOG);
-c_static_assert(PAL_LOG_LPR == LOG_LPR);
-c_static_assert(PAL_LOG_NEWS == LOG_NEWS);
-c_static_assert(PAL_LOG_UUCP == LOG_UUCP);
-c_static_assert(PAL_LOG_CRON == LOG_CRON);
-c_static_assert(PAL_LOG_AUTHPRIV == LOG_AUTHPRIV);
-c_static_assert(PAL_LOG_FTP == LOG_FTP);
-c_static_assert(PAL_LOG_LOCAL0 == LOG_LOCAL0);
-c_static_assert(PAL_LOG_LOCAL1 == LOG_LOCAL1);
-c_static_assert(PAL_LOG_LOCAL2 == LOG_LOCAL2);
-c_static_assert(PAL_LOG_LOCAL3 == LOG_LOCAL3);
-c_static_assert(PAL_LOG_LOCAL4 == LOG_LOCAL4);
-c_static_assert(PAL_LOG_LOCAL5 == LOG_LOCAL5);
-c_static_assert(PAL_LOG_LOCAL6 == LOG_LOCAL6);
-c_static_assert(PAL_LOG_LOCAL7 == LOG_LOCAL7);
 
 // Validate that out PriorityWhich values are correct for the platform
 c_static_assert(PAL_PRIO_PROCESS == (int)PRIO_PROCESS);
@@ -546,12 +526,21 @@ static int32_t ConvertRLimitResourcesPalToPlatform(RLimitResources value)
             return RLIMIT_CORE;
         case PAL_RLIMIT_AS:
             return RLIMIT_AS;
+#ifdef RLIMIT_RSS
         case PAL_RLIMIT_RSS:
             return RLIMIT_RSS;
+#endif
+#ifdef RLIMIT_MEMLOCK
         case PAL_RLIMIT_MEMLOCK:
             return RLIMIT_MEMLOCK;
+#elif defined(RLIMIT_VMEM)
+        case PAL_RLIMIT_MEMLOCK:
+            return RLIMIT_VMEM;
+#endif
+#ifdef RLIMIT_NPROC
         case PAL_RLIMIT_NPROC:
             return RLIMIT_NPROC;
+#endif
         case PAL_RLIMIT_NOFILE:
             return RLIMIT_NOFILE;
     }
@@ -656,7 +645,7 @@ int32_t SystemNative_GetSid(int32_t pid)
 
 void SystemNative_SysLog(SysLogPriority priority, const char* message, const char* arg1)
 {
-    syslog((int)priority, message, arg1);
+    syslog((int)(LOG_USER | priority), message, arg1);
 }
 
 int32_t SystemNative_WaitIdAnyExitedNoHangNoWait()

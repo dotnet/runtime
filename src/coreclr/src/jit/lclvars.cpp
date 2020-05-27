@@ -3794,7 +3794,8 @@ void Compiler::lvaMarkLclRefs(GenTree* tree, BasicBlock* block, Statement* stmt,
                      allowStructs || genActualType(varDsc->TypeGet()) == genActualType(tree->gtType) ||
                      (tree->gtType == TYP_BYREF && varDsc->TypeGet() == TYP_I_IMPL) ||
                      (tree->gtType == TYP_I_IMPL && varDsc->TypeGet() == TYP_BYREF) || (tree->gtFlags & GTF_VAR_CAST) ||
-                     varTypeIsFloating(varDsc->TypeGet()) && varTypeIsFloating(tree->gtType));
+                     (varTypeIsFloating(varDsc) && varTypeIsFloating(tree)) ||
+                     (varTypeIsStruct(varDsc) == varTypeIsStruct(tree)));
 
         /* Remember the type of the reference */
 

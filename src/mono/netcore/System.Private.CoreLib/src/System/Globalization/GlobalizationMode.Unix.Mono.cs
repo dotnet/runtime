@@ -8,6 +8,8 @@ namespace System.Globalization
 {
     internal partial class GlobalizationMode
     {
+        internal static bool UseNls => false;
+
         private static bool GetGlobalizationInvariantMode()
         {
             bool invariantEnabled = GetInvariantSwitchValue();
@@ -19,7 +21,7 @@ namespace System.Globalization
         }
 
         // Keep this in a separate method to avoid loading the native lib in invariant mode
-        [MethodImplAttribute(MethodImplOptions.NoInlining)]
+        [MethodImpl(MethodImplOptions.NoInlining)]
         private static void LoadICU()
         {
             int res = Interop.Globalization.LoadICU();

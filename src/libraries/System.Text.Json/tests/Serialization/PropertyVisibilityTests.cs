@@ -9,7 +9,7 @@ using System.Numerics;
 
 namespace System.Text.Json.Serialization.Tests
 {
-    public static class PropertyVisibilityTests
+    public static partial class PropertyVisibilityTests
     {
         [Fact]
         public static void NoSetter()
@@ -864,6 +864,30 @@ namespace System.Text.Json.Serialization.Tests
             public string MyString { get; }
 
             public ClassWithReadOnlyString_IgnoreWhenNull(string myString) => MyString = myString;
+        }
+
+        [Fact]
+        public static void NonPublicMembersAreNotIncluded()
+        {
+            Assert.Equal("{}", JsonSerializer.Serialize(new ClassWithNonPublicProperties()));
+
+            string json = @"{""MyInt"":1,""MyString"":""Hello"",""MyFloat"":2,""MyDouble"":3}";
+            var obj = JsonSerializer.Deserialize<ClassWithNonPublicProperties>(json);
+            Assert.Equal(0, obj.MyInt);
+            Assert.Null(obj.MyString);
+            Assert.Equal(0, obj.GetMyFloat);
+            Assert.Equal(0, obj.GetMyDouble);
+        }
+
+        private class ClassWithNonPublicProperties
+        {
+            internal int MyInt { get; set; }
+            internal string MyString { get; private set; }
+            internal float MyFloat { private get; set; }
+            private double MyDouble { get; set; }
+
+            internal float GetMyFloat => MyFloat;
+            internal double GetMyDouble => MyDouble;
         }
     }
 }

@@ -11,6 +11,7 @@ parameters:
   readyToRun: false
   liveLibrariesBuildConfig: ''
   crossgen2: false
+  compositeBuildMode: false
   helixQueues: ''
   # If true, run the corefx tests instead of the coreclr ones
   corefxTests: false
@@ -91,6 +92,9 @@ jobs:
           value: 'crossgen2'
         - name: LogNamePrefix
           value: TestRunLogs_R2R_CG2
+      - ${{ if eq(parameters.compositeBuildMode, true) }}:
+        - name: crossgenArg
+          value: 'composite'
 
     # Set job timeouts
     #
@@ -141,6 +145,10 @@ jobs:
       - name: timeoutPerTestInMinutes
         value: 90
 
+    - ${{ if eq(parameters.compositeBuildMode, true) }}:
+      - name: crossgenArg
+        value: 'composite'
+
     - ${{ if eq(variables['System.TeamProject'], 'internal') }}:
       - group: DotNet-HelixApi-Access
 
@@ -148,7 +156,7 @@ jobs:
 
     # TODO: update these numbers as they were determined long ago
     ${{ if eq(parameters.testGroup, 'innerloop') }}:
-      timeoutInMinutes: 150
+      timeoutInMinutes: 200
     ${{ if in(parameters.testGroup, 'outerloop', 'jit-experimental') }}:
       timeoutInMinutes: 270
     ${{ if in(parameters.testGroup, 'gc-longrunning', 'gc-simulator') }}:
@@ -277,6 +285,7 @@ jobs:
 
         runCrossGen: ${{ and(eq(parameters.readyToRun, true), ne(parameters.crossgen2, true)) }}
         runCrossGen2: ${{ and(eq(parameters.readyToRun, true), eq(parameters.crossgen2, true)) }}
+        compositeBuildMode: ${{ parameters.compositeBuildMode }}
         runInUnloadableContext: ${{ parameters.runInUnloadableContext }}
 
         ${{ if eq(variables['System.TeamProject'], 'internal') }}:
