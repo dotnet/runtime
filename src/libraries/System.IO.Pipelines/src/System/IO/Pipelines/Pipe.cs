@@ -624,18 +624,17 @@ namespace System.IO.Pipelines
                 success = _operationState.TryEndRead();
             }
 
-            if (success)
-            {
-                TrySchedule(_writerScheduler, completionData);
-            }
-
             // Return the block before throwing the exception if there is one.
             if (blockToReturn != null)
             {
                 blockToReturn.Dispose();
             }
 
-            if (!success)
+            if (success)
+            {
+                TrySchedule(_writerScheduler, completionData);
+            }
+            else
             {
                 ThrowHelper.ThrowInvalidOperationException_NoReadToComplete();
             }
