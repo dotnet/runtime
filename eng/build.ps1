@@ -5,6 +5,7 @@ Param(
   [ValidateSet("Debug","Release","Checked")][string[]][Alias('c')]$configuration = @("Debug"),
   [string][Alias('f')]$framework,
   [string]$vs,
+  [string][Alias('v')]$verbosity = "minimal",
   [ValidateSet("Windows_NT","Linux","OSX","Browser")][string]$os,
   [switch]$allconfigurations,
   [switch]$coverage,
@@ -65,14 +66,14 @@ if ($vs) {
   if (-Not (Test-Path $vs)) {
     $solution = $vs
     # Search for the solution in libraries
-    $vs = Join-Path (Join-Path (Split-Path $PSScriptRoot -Parent) "\src\libraries") $vs | Join-Path -ChildPath "$vs.sln"
+    $vs = Split-Path $PSScriptRoot -Parent | Join-Path -ChildPath "src\libraries" | Join-Path -ChildPath $vs | Join-Path -ChildPath "$vs.sln"
     if (-Not (Test-Path $vs)) {
       $vs = $solution
       # Search for the solution in installer
       if (-Not ($vs.endswith(".sln"))) {
         $vs = "$vs.sln"
       }
-      $vs = Join-Path (Join-Path (Split-Path $PSScriptRoot -Parent) "\src\installer") $vs
+      $vs = Split-Path $PSScriptRoot -Parent | Join-Path -ChildPath "src\installer" | Join-Path -ChildPath $vs
       if (-Not (Test-Path $vs)) {
         Write-Error "Passed in solution cannot be resolved."
         exit 1
@@ -125,6 +126,7 @@ foreach ($argument in $PSBoundParameters.Keys)
     "os"                     { $arguments += " /p:TargetOS=$($PSBoundParameters[$argument])" }
     "allconfigurations"      { $arguments += " /p:BuildAllConfigurations=true" }
     "properties"             { $arguments += " " + $properties }
+    "verbosity"              { $arguments += " -$argument " + $($PSBoundParameters[$argument]) }
     # configuration and arch can be specified multiple times, so they should be no-ops here
     "configuration"          {}
     "arch"                   {}
