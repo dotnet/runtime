@@ -35,7 +35,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Reference Include="System.DIagnostics.DiagnosticSource" />
+    <Reference Include="System.Diagnostics.DiagnosticSource" />
   </ItemGroup>
 
 </Project>
