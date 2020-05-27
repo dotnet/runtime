@@ -3,8 +3,14 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.IO;
+using System.Threading;
+using System.Globalization;
+using System.Text;
+using System.Diagnostics;
 using System.Collections.Generic;
 using System.Linq;
+using Microsoft.DotNet.RemoteExecutor;
 using System.Text.RegularExpressions;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -1170,6 +1176,82 @@ namespace Microsoft.Extensions.Logging.Test
             Assert.NotNull(logger.ScopeProvider);
         }
 
+        [Fact]
+        public void TestActivityIds()
+        {
+            RemoteExecutor.Invoke(() =>
+            {
+                string activity1String;
+                string activity2String;
+
+                StringWriter output = new StringWriter();
+                System.Console.SetOut(output);
+                var loggerFactory = LoggerFactory.Create(builder =>
+                {
+                    builder.AddConsole(o => { o.IncludeScopes = true; });
+
+                    // Enable logging trace context info in the logging scopes.
+                    builder.Configure(o => o.ActivityTrackingOptions = ActivityTrackingOptions.TraceId | ActivityTrackingOptions.SpanId | ActivityTrackingOptions.ParentId);
+                });
+
+                var logger = loggerFactory.CreateLogger<ConsoleLoggerTest>();
+                using (logger.BeginScope(new { Scope1 = 1 }))
+                {
+                    logger.LogInformation("Inside Scope 1 & No Activity Yet.");
+
+                    var activity1 = new Activity("MyActivity1");
+                    activity1.Start();
+
+                    activity1String = string.Format(CultureInfo.InvariantCulture, "=> SpanId:{0}, TraceId:{1}, ParentId:{2}",
+                                                    activity1.GetSpanId(), activity1.GetTraceId(), activity1.GetParentId());
+
+                    logger.LogInformation("Inside Scope 1 with Activity 1.");
+
+                    using (logger.BeginScope(new { Scope2 = 2 }))
+                    {
+                        logger.LogInformation("Inside Scope 2 with Activity 1.");
+                        var activity2 = new Activity("MyActivity2");
+                        activity2.Start();
+                        activity2String = string.Format(CultureInfo.InvariantCulture, "=> SpanId:{0}, TraceId:{1}, ParentId:{2}",
+                                                    activity2.GetSpanId(), activity2.GetTraceId(), activity2.GetParentId());
+
+                        logger.LogInformation("Inside Scope 2 with Activity 2.");
+                        activity2.Stop();
+                        logger.LogInformation("Back to Scope 2 with Activity 1.");
+                    }
+
+                    logger.LogInformation("Back to Scope 1 with Activity 1.");
+
+                    activity1.Stop();
+                }
+
+                // give chance for logs to be written.
+                Thread.Sleep(1000);
+
+                string expectedOutput =
+                        $"info: Microsoft.Extensions.Logging.Test.ConsoleLoggerTest[0]{Environment.NewLine}" +
+                        $"      => {{ Scope1 = 1 }}{Environment.NewLine}" +
+                        $"      Inside Scope 1 & No Activity Yet.{Environment.NewLine}" +
+                        $"info: Microsoft.Extensions.Logging.Test.ConsoleLoggerTest[0]{Environment.NewLine}" +
+                        $"      {activity1String} => {{ Scope1 = 1 }}{Environment.NewLine}" +
+                        $"      Inside Scope 1 with Activity 1.{Environment.NewLine}" +
+                        $"info: Microsoft.Extensions.Logging.Test.ConsoleLoggerTest[0]{Environment.NewLine}" +
+                        $"      {activity1String} => {{ Scope1 = 1 }} => {{ Scope2 = 2 }}{Environment.NewLine}" +
+                        $"      Inside Scope 2 with Activity 1.{Environment.NewLine}" +
+                        $"info: Microsoft.Extensions.Logging.Test.ConsoleLoggerTest[0]{Environment.NewLine}" +
+                        $"      {activity2String} => {{ Scope1 = 1 }} => {{ Scope2 = 2 }}{Environment.NewLine}" +
+                        $"      Inside Scope 2 with Activity 2.{Environment.NewLine}" +
+                        $"info: Microsoft.Extensions.Logging.Test.ConsoleLoggerTest[0]{Environment.NewLine}" +
+                        $"      {activity1String} => {{ Scope1 = 1 }} => {{ Scope2 = 2 }}{Environment.NewLine}" +
+                        $"      Back to Scope 2 with Activity 1.{Environment.NewLine}" +
+                        $"info: Microsoft.Extensions.Logging.Test.ConsoleLoggerTest[0]{Environment.NewLine}" +
+                        $"      {activity1String} => {{ Scope1 = 1 }}{Environment.NewLine}" +
+                        $"      Back to Scope 1 with Activity 1.{Environment.NewLine}";
+
+                Assert.Equal(expectedOutput, output.ToString());
+            }).Dispose();
+        }
+
         public static TheoryData<ConsoleLoggerFormat, LogLevel> FormatsAndLevels
         {
             get
@@ -1273,6 +1355,39 @@ namespace Microsoft.Extensions.Logging.Test
         {
             _options = options;
             _onChange?.Invoke(options, "");
+        }
+    }
+
+    internal static class ActivityExtensions
+    {
+        public static string GetSpanId(this Activity activity)
+        {
+            return activity.IdFormat switch
+            {
+                ActivityIdFormat.Hierarchical => activity.Id,
+                ActivityIdFormat.W3C => activity.SpanId.ToHexString(),
+                _ => null,
+            } ?? string.Empty;
+        }
+
+        public static string GetTraceId(this Activity activity)
+        {
+            return activity.IdFormat switch
+            {
+                ActivityIdFormat.Hierarchical => activity.RootId,
+                ActivityIdFormat.W3C => activity.TraceId.ToHexString(),
+                _ => null,
+            } ?? string.Empty;
+        }
+
+        public static string GetParentId(this Activity activity)
+        {
+            return activity.IdFormat switch
+            {
+                ActivityIdFormat.Hierarchical => activity.ParentId,
+                ActivityIdFormat.W3C => activity.ParentSpanId.ToHexString(),
+                _ => null,
+            } ?? string.Empty;
         }
     }
 }
