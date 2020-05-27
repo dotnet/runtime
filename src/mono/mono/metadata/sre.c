@@ -381,6 +381,7 @@ mono_save_custom_attrs (MonoImage *image, void *obj, MonoArray *cattrs)
 		return;
 
 	ainfo = mono_custom_attrs_from_builders (image, image, cattrs);
+
 	mono_loader_lock ();
 	tmp = (MonoCustomAttrInfo *)mono_image_property_lookup (image, obj, MONO_PROP_DYNAMIC_CATTR);
 	if (tmp)
@@ -4633,13 +4634,13 @@ ves_icall_ModuleBuilder_WriteToFile (MonoReflectionModuleBuilderHandle mb, HANDL
 {
 	mono_image_create_pefile (MONO_HANDLE_RAW (mb), file, error);
 }
-#endif
 
 void
 ves_icall_ModuleBuilder_build_metadata (MonoReflectionModuleBuilderHandle mb, MonoError* error)
 {
 	mono_image_build_metadata (MONO_HANDLE_RAW (mb), error);
 }
+#endif
 
 void
 ves_icall_ModuleBuilder_RegisterToken (MonoReflectionModuleBuilderHandle mb, MonoObjectHandle obj, guint32 token, MonoError *error)
