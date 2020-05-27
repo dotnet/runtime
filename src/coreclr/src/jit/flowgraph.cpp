@@ -14528,17 +14528,29 @@ bool Compiler::fgOptimizeSwitchBranches(BasicBlock* block)
 //     for tail-duplicating its successor (such as assigning a constant to a local).
 //  Args:
 //      block: BasicBlock we are considering duplicating the successor of
+//      lclNum: local that is used by the successor block, provided by
+//        prior call to fgBlockIsGoodTailDuplicationCandidate
 //  Returns:
-//      true if it seems like a good idea
+//     true if block end is favorable for tail duplication
 //
-bool Compiler::fgBlockEndFavorsTailDuplication(BasicBlock* block)
+bool Compiler::fgBlockEndFavorsTailDuplication(BasicBlock* block, unsigned lclNum)
 {
     if (block->isRunRarely())
     {
         return false;
     }
 
-    Statement* lastStmt = block->lastStmt();
+    // If the local is address exposed, we currently can't optimize.
+    //
+    LclVarDsc* const lclDsc = lvaGetDesc(lclNum);
+
+    if (lclDsc->lvAddrExposed)
+    {
+        return false;
+    }
+
+    Statement* const lastStmt  = block->lastStmt();
+    Statement* const firstStmt = block->FirstNonPhiDef();
 
     if (lastStmt == nullptr)
     {
@@ -14549,37 +14561,66 @@ bool Compiler::fgBlockEndFavorsTailDuplication(BasicBlock* block)
     // is an assignment of a constant, arraylength, or a relop.
     // This is because these statements produce information about values
     // that would otherwise be lost at the upcoming merge point.
-    GenTree* tree = lastStmt->GetRootNode();
-    if (tree->gtOper != GT_ASG)
+    //
+    // Check up to N statements...
+    //
+    const int  limit = 2;
+    int        count = 0;
+    Statement* stmt  = lastStmt;
+
+    while (count < limit)
     {
-        return false;
+        count++;
+        GenTree* const tree = stmt->GetRootNode();
+        if (tree->OperIs(GT_ASG) && !tree->OperIsBlkOp())
+        {
+            GenTree* const op1 = tree->AsOp()->gtOp1;
+
+            if (op1->IsLocal())
+            {
+                const unsigned op1LclNum = op1->AsLclVarCommon()->GetLclNum();
+
+                if (op1LclNum == lclNum)
+                {
+                    GenTree* const op2 = tree->AsOp()->gtOp2;
+
+                    if (op2->OperIs(GT_ARR_LENGTH) || op2->OperIsConst() || op2->OperIsCompare())
+                    {
+                        return true;
+                    }
+                }
+            }
+        }
+
+        Statement* const prevStmt = stmt->GetPrevStmt();
+
+        if (prevStmt == lastStmt)
+        {
+            break;
+        }
+
+        stmt = prevStmt;
     }
 
-    if (tree->OperIsBlkOp())
-    {
-        return false;
-    }
-
-    GenTree* op2 = tree->AsOp()->gtOp2;
-    if (op2->gtOper != GT_ARR_LENGTH && !op2->OperIsConst() && ((op2->OperKind() & GTK_RELOP) == 0))
-    {
-        return false;
-    }
-
-    return true;
+    return false;
 }
 
 //-------------------------------------------------------------
 // fgBlockIsGoodTailDuplicationCandidate:
 //     Heuristic function that examines a block (presumably one that is a merge point) to determine
 //     if it should be duplicated.
+//
 // args:
 //     target - the tail block (candidate for duplication)
-// returns:
-//     true if this block seems like a good candidate for duplication
 //
-bool Compiler::fgBlockIsGoodTailDuplicationCandidate(BasicBlock* target)
+// returns:
+//     true if this is a good candidate, false otherwise
+//     if true, lclNum is set to lcl to scan for in predecessor block
+//
+bool Compiler::fgBlockIsGoodTailDuplicationCandidate(BasicBlock* target, unsigned* lclNum)
 {
+    *lclNum = BAD_VAR_NUM;
+
     // Here we are looking for blocks with a single statement feeding a conditional branch.
     // These blocks are small, and when duplicated onto the tail of blocks that end in
     // assignments, there is a high probability of the branch completely going away.
@@ -14612,8 +14653,8 @@ bool Compiler::fgBlockIsGoodTailDuplicationCandidate(BasicBlock* target)
     }
 
     // must be some kind of relational operator
-    GenTree* cond = tree->AsOp()->gtOp1;
-    if (!(cond->OperKind() & GTK_RELOP))
+    GenTree* const cond = tree->AsOp()->gtOp1;
+    if (!cond->OperIsCompare())
     {
         return false;
     }
@@ -14624,6 +14665,7 @@ bool Compiler::fgBlockIsGoodTailDuplicationCandidate(BasicBlock* target)
     {
         op1 = op1->AsOp()->gtOp1;
     }
+
     if (!op1->IsLocal() && !op1->OperIsConst())
     {
         return false;
@@ -14635,7 +14677,40 @@ bool Compiler::fgBlockIsGoodTailDuplicationCandidate(BasicBlock* target)
     {
         op2 = op2->AsOp()->gtOp1;
     }
+
     if (!op2->IsLocal() && !op2->OperIsConst())
+    {
+        return false;
+    }
+
+    // Tree must have one constant and one local, or be comparing
+    // the same local to itself.
+    unsigned lcl1 = BAD_VAR_NUM;
+    unsigned lcl2 = BAD_VAR_NUM;
+
+    if (op1->IsLocal())
+    {
+        lcl1 = op1->AsLclVarCommon()->GetLclNum();
+    }
+
+    if (op2->IsLocal())
+    {
+        lcl2 = op2->AsLclVarCommon()->GetLclNum();
+    }
+
+    if ((lcl1 != BAD_VAR_NUM) && op2->OperIsConst())
+    {
+        *lclNum = lcl1;
+    }
+    else if ((lcl2 != BAD_VAR_NUM) && op1->OperIsConst())
+    {
+        *lclNum = lcl2;
+    }
+    else if ((lcl1 != BAD_VAR_NUM) && (lcl1 == lcl2))
+    {
+        *lclNum = lcl1;
+    }
+    else
     {
         return false;
     }
@@ -14653,23 +14728,22 @@ bool Compiler::fgBlockIsGoodTailDuplicationCandidate(BasicBlock* target)
 //    target - block which is target of first block
 //
 // returns: true if changes were made
-
+//
 bool Compiler::fgOptimizeUncondBranchToSimpleCond(BasicBlock* block, BasicBlock* target)
 {
-    assert(block->bbJumpKind == BBJ_ALWAYS);
-    assert(block->bbJumpDest == target);
-
     if (!BasicBlock::sameEHRegion(block, target))
     {
         return false;
     }
 
-    if (!fgBlockIsGoodTailDuplicationCandidate(target))
+    unsigned lclNum = BAD_VAR_NUM;
+
+    if (!fgBlockIsGoodTailDuplicationCandidate(target, &lclNum))
     {
         return false;
     }
 
-    if (!fgBlockEndFavorsTailDuplication(block))
+    if (!fgBlockEndFavorsTailDuplication(block, lclNum))
     {
         return false;
     }
@@ -14704,6 +14778,8 @@ bool Compiler::fgOptimizeUncondBranchToSimpleCond(BasicBlock* block, BasicBlock*
 
     JITDUMP("fgOptimizeUncondBranchToSimpleCond(from " FMT_BB " to cond " FMT_BB "), created new uncond " FMT_BB "\n",
             block->bbNum, target->bbNum, next->bbNum);
+    JITDUMP("   expecting opts to key off V%02u, added cloned compare [%06u] to " FMT_BB "\n", lclNum,
+            dspTreeID(cloned), block->bbNum);
 
     if (fgStmtListThreaded)
     {
@@ -14715,8 +14791,10 @@ bool Compiler::fgOptimizeUncondBranchToSimpleCond(BasicBlock* block, BasicBlock*
     return true;
 }
 
+//-------------------------------------------------------------
 // fgOptimizeBranchToNext:
 //    Optimize a block which has a branch to the following block
+//
 // Args:
 //    block - block with a branch
 //    bNext - block which is both next and the target of the first block
@@ -16735,6 +16813,18 @@ bool Compiler::fgUpdateFlowGraph(bool doTailDuplication)
             {
                 bDest = block->bbJumpDest;
                 if (doTailDuplication && fgOptimizeUncondBranchToSimpleCond(block, bDest))
+                {
+                    change   = true;
+                    modified = true;
+                    bDest    = block->bbJumpDest;
+                    bNext    = block->bbNext;
+                }
+            }
+
+            if (block->bbJumpKind == BBJ_NONE)
+            {
+                bDest = nullptr;
+                if (doTailDuplication && fgOptimizeUncondBranchToSimpleCond(block, block->bbNext))
                 {
                     change   = true;
                     modified = true;
