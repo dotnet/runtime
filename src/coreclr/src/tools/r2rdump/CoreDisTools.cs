@@ -175,6 +175,7 @@ namespace R2RDump
                 MnemonicIndentation = NakedWithOffsetIndentation + byteDumpLength;
             }
 
+            // This leaves 7 characters for the mnemonic
             OperandsIndentation = MnemonicIndentation + 8;
         }
 
