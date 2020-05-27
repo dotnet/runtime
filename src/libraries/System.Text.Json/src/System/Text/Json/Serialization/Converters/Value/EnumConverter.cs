@@ -94,6 +94,9 @@ namespace System.Text.Json.Serialization.Converters
                     return value;
                 }
             }
+            if (_converterOptions.HasFlag(EnumConverterOptions.AllowStrings) && token == JsonTokenType.Null && _stringToEnumCache != null && _stringToEnumCache.TryGetValue(ValueTuple.Create(null), out T value)) {
+                return value;
+            }
 
             if (token != JsonTokenType.Number || !_converterOptions.HasFlag(EnumConverterOptions.AllowNumbers))
             {
@@ -186,7 +189,12 @@ namespace System.Text.Json.Serialization.Converters
             if (_converterOptions.HasFlag(EnumConverterOptions.AllowStrings))
             {
                 if (_enumToStringCache != null &&_enumToStringCache.TryGetValue(value, out string? stringValue)) {
-                     writer.WriteStringValue(stringValue);
+                    if (stringValue != null) {
+                        writer.WriteStringValue(stringValue);
+                    }
+                    else {
+                        writer.WriteNullValue();
+                    }
                     return;
                 }
 
