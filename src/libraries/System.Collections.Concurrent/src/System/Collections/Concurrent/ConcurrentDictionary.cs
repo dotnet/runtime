@@ -192,7 +192,8 @@ namespace System.Collections.Concurrent
 
             if (_budget == 0)
             {
-                _budget = _tables._buckets.Length / _tables._locks.Length;
+                Tables tables = _tables;
+                _budget = tables._buckets.Length / tables._locks.Length;
             }
         }
 
@@ -240,7 +241,12 @@ namespace System.Collections.Concurrent
             _tables = new Tables(buckets, locks, countPerLock);
 
             _defaultComparer = EqualityComparer<TKey>.Default;
-            _comparer = ReferenceEquals(_defaultComparer, comparer) ? null : comparer;
+            if (comparer != null &&
+                !ReferenceEquals(comparer, _defaultComparer) && // if this is the default comparer, take the optimized path
+                !ReferenceEquals(comparer, StringComparer.Ordinal)) // strings as keys are extremely common, so special-case StringComparer.Ordinal, which is the same as the default comparer
+            {
+                _comparer = comparer;
+            }
             _growLockArray = growLockArray;
             _budget = buckets.Length / locks.Length;
         }
@@ -635,7 +641,8 @@ namespace System.Collections.Concurrent
             {
                 AcquireAllLocks(ref locksAcquired);
 
-                var newTables = new Tables(new Node[DefaultCapacity], _tables._locks, new int[_tables._countPerLock.Length]);
+                Tables tables = _tables;
+                var newTables = new Tables(new Node[DefaultCapacity], tables._locks, new int[tables._countPerLock.Length]);
                 _tables = newTables;
                 _budget = Math.Max(1, newTables._buckets.Length / newTables._locks.Length);
             }
@@ -2001,9 +2008,10 @@ namespace System.Collections.Concurrent
         {
             Debug.Assert(fromInclusive <= toExclusive);
 
+            Tables tables = _tables;
             for (int i = fromInclusive; i < toExclusive; i++)
             {
-                Monitor.Exit(_tables._locks[i]);
+                Monitor.Exit(tables._locks[i]);
             }
         }
 
