@@ -137,6 +137,8 @@
 
   <Target Name="Cleanup">
     <RemoveDir Directories="$(PublishDir)" />
+  </Target>
+
   <UsingTask TaskName="WasmAppBuilder"
              AssemblyFile="$(WasmAppBuilderTasksAssemblyPath)" />
 
