@@ -11752,7 +11752,7 @@ void CodeGen::genRegCopy(GenTree* treeNode)
         GenTreeCopyOrReload* copyNode = treeNode->AsCopyOrReload();
         unsigned             regCount = copyNode->GetRegCount();
         // GenTreeCopyOrReload only reports the number of registers that are valid.
-        assert(regCount <= 2);
+        assert(regCount <= MAX_MULTIREG_COUNT);
 
         // First set the source registers as busy if they haven't been spilled.
         // (Note that this is just for verification that we don't have circular dependencies.)
