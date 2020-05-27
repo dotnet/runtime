@@ -88,9 +88,10 @@ __LogsDir="$__RootBinDir/log"
 __MsbuildDebugLogsDir="$__LogsDir/MsbuildDebugLogs"
 
 # Set the remaining variables based upon the determined build configuration
+__ConfigTriplet="$(echo $__TargetOS-$__BuildArch |  tr '[:upper:]' '[:lower:]').$__BuildType"
 __DistroRidLower="$(echo $__DistroRid | tr '[:upper:]' '[:lower:]')"
-__BinDir="$__RootBinDir/bin/$__DistroRidLower.$__BuildType"
-__IntermediatesDir="$__RootBinDir/obj/$__DistroRidLower.$__BuildType"
+__BinDir="$__RootBinDir/bin/$__ConfigTriplet"
+__IntermediatesDir="$__RootBinDir/obj/$__ConfigTriplet"
 
 export __BinDir __IntermediatesDir __CoreClrArtifacts __NativeLibsArtifacts __RuntimeFlavor
 
