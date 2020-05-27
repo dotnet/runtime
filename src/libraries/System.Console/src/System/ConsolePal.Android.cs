@@ -11,7 +11,7 @@ namespace System
 {
     internal sealed unsafe class LogcatStream : ConsoleStream
     {
-        private StringBuilder _buffer = new StringBuilder();
+        private readonly StringBuilder _buffer = new StringBuilder();
 
         public LogcatStream() : base(FileAccess.Write) {}
 
