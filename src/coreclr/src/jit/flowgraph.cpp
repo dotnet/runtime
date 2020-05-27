@@ -14526,12 +14526,21 @@ bool Compiler::fgOptimizeSwitchBranches(BasicBlock* block)
 // fgBlockEndFavorsTailDuplication:
 //     Heuristic function that returns true if this block ends in a statement that looks favorable
 //     for tail-duplicating its successor (such as assigning a constant to a local).
-//  Args:
+//
+//  Arguments:
 //      block: BasicBlock we are considering duplicating the successor of
 //      lclNum: local that is used by the successor block, provided by
 //        prior call to fgBlockIsGoodTailDuplicationCandidate
+//
 //  Returns:
 //     true if block end is favorable for tail duplication
+//
+//  Notes:
+//     This is the second half of the evaluation for tail duplication, where we try
+//     to determine if this predecessor block assigns a constant or provides useful
+//     information about a local that is tested in an unconditionally executed successor.
+//     If so then duplicating the successor will likely allow the test to be
+//     optimized away.
 //
 bool Compiler::fgBlockEndFavorsTailDuplication(BasicBlock* block, unsigned lclNum)
 {
@@ -14594,6 +14603,9 @@ bool Compiler::fgBlockEndFavorsTailDuplication(BasicBlock* block, unsigned lclNu
 
         Statement* const prevStmt = stmt->GetPrevStmt();
 
+        // The statement list prev links wrap from first->last, so exit
+        // when we see lastStmt again, as we've now seen all statements.
+        //
         if (prevStmt == lastStmt)
         {
             break;
@@ -14608,14 +14620,21 @@ bool Compiler::fgBlockEndFavorsTailDuplication(BasicBlock* block, unsigned lclNu
 //-------------------------------------------------------------
 // fgBlockIsGoodTailDuplicationCandidate:
 //     Heuristic function that examines a block (presumably one that is a merge point) to determine
-//     if it should be duplicated.
+//     if it is a good candidate to be duplicated.
 //
-// args:
+// Arguments:
 //     target - the tail block (candidate for duplication)
 //
-// returns:
+// Returns:
 //     true if this is a good candidate, false otherwise
 //     if true, lclNum is set to lcl to scan for in predecessor block
+//
+// Notes:
+//     The current heuristic is that tail duplication is deemed favorable if this
+//     block simply tests the value of a local against a constant or some other local.
+//
+//     This is the first half of the evaluation for tail duplication. We subsequently
+//     need to check if predecessors of this block assigns a constant to the local.
 //
 bool Compiler::fgBlockIsGoodTailDuplicationCandidate(BasicBlock* target, unsigned* lclNum)
 {
@@ -14723,11 +14742,14 @@ bool Compiler::fgBlockIsGoodTailDuplicationCandidate(BasicBlock* target, unsigne
 //    For a block which has an unconditional branch, look to see if its target block
 //    is a good candidate for tail duplication, and if so do that duplication.
 //
-// Args:
+// Arguments:
 //    block  - block with uncond branch
 //    target - block which is target of first block
 //
-// returns: true if changes were made
+// Returns: true if changes were made
+//
+// Notes:
+//   This optimization generally reduces code size and path length.
 //
 bool Compiler::fgOptimizeUncondBranchToSimpleCond(BasicBlock* block, BasicBlock* target)
 {
@@ -14738,11 +14760,16 @@ bool Compiler::fgOptimizeUncondBranchToSimpleCond(BasicBlock* block, BasicBlock*
 
     unsigned lclNum = BAD_VAR_NUM;
 
+    // First check if the successor tests a local and then branches on the result
+    // of a test, and obtain the local if so.
+    //
     if (!fgBlockIsGoodTailDuplicationCandidate(target, &lclNum))
     {
         return false;
     }
 
+    // See if this block assigns constant or other interesting tree to that same local.
+    //
     if (!fgBlockEndFavorsTailDuplication(block, lclNum))
     {
         return false;
