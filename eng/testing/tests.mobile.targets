@@ -9,6 +9,7 @@
 
   <ItemGroup>
     <RunScriptCommands Include="TEST_NAME=$(TestProjectName)" />
+    <RunScriptCommands Include="TARGET_ARCH=$(TargetArchitecture)" />
   </ItemGroup>
 
   <Target Name="GenerateRunScript">
