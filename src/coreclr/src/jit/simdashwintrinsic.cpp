@@ -415,6 +415,48 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
             switch (intrinsic)
             {
 #if defined(TARGET_XARCH)
+                case NI_Vector2_get_One:
+                case NI_Vector3_get_One:
+                case NI_Vector4_get_One:
+                case NI_VectorT128_get_One:
+                case NI_VectorT256_get_One:
+                {
+                    switch (baseType)
+                    {
+                        case TYP_BYTE:
+                        case TYP_UBYTE:
+                        case TYP_SHORT:
+                        case TYP_USHORT:
+                        case TYP_INT:
+                        case TYP_UINT:
+                        {
+                            op1 = gtNewIconNode(1, TYP_INT);
+                            break;
+                        }
+
+                        case TYP_LONG:
+                        case TYP_ULONG:
+                        {
+                            op1 = gtNewLconNode(1, TYP_LONG);
+                            break;
+                        }
+
+                        case TYP_FLOAT:
+                        case TYP_DOUBLE:
+                        {
+                            op1 = gtNewDconNode(1.0, baseType);
+                            break;
+                        }
+
+                        default:
+                        {
+                            unreached();
+                        }
+                    }
+
+                    return gtNewSimdCreateBroadcastNode(retType, op1, baseType, simdSize);
+                }
+
                 case NI_VectorT128_get_Count:
                 case NI_VectorT256_get_Count:
                 {
@@ -423,6 +465,47 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
                     return countNode;
                 }
 #elif defined(TARGET_ARM64)
+                case NI_Vector2_get_One:
+                case NI_Vector3_get_One:
+                case NI_Vector4_get_One:
+                case NI_VectorT128_get_One:
+                {
+                    switch (baseType)
+                    {
+                        case TYP_BYTE:
+                        case TYP_UBYTE:
+                        case TYP_SHORT:
+                        case TYP_USHORT:
+                        case TYP_INT:
+                        case TYP_UINT:
+                        {
+                            op1 = gtNewIconNode(1, TYP_INT);
+                            break;
+                        }
+
+                        case TYP_LONG:
+                        case TYP_ULONG:
+                        {
+                            op1 = gtNewLconNode(1, TYP_LONG);
+                            break;
+                        }
+
+                        case TYP_FLOAT:
+                        case TYP_DOUBLE:
+                        {
+                            op1 = gtNewDconNode(1.0, baseType);
+                            break;
+                        }
+
+                        default:
+                        {
+                            unreached();
+                        }
+                    }
+
+                    return gtNewSimdCreateBroadcastNode(retType, op1, baseType, simdSize);
+                }
+
                 case NI_VectorT128_get_Count:
                 {
                     GenTreeIntCon* countNode = gtNewIconNode(getSIMDVectorLength(simdSize, baseType), TYP_INT);
