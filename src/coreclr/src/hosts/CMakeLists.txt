@@ -12,3 +12,5 @@ else(CLR_CMAKE_HOST_WIN32)
     add_subdirectory(osxbundlerun)
   endif(CLR_CMAKE_HOST_DARWIN)
 endif(CLR_CMAKE_HOST_WIN32)
+
+add_definitions(-D_FILE_OFFSET_BITS=64)
