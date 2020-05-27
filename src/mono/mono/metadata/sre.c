@@ -436,15 +436,12 @@ mono_reflection_resolution_scope_from_image (MonoDynamicImage *assembly, MonoIma
 		mono_metadata_decode_row (&image->tables [MONO_TABLE_ASSEMBLY], 0, cols, MONO_ASSEMBLY_SIZE);
 	}
 
-	printf("updating assemblyref for %s (adding %s)\n", assembly->image.assembly_name, image->assembly_name);
 	table = &assembly->tables [MONO_TABLE_ASSEMBLYREF];
 	token = table->next_idx ++;
 	table->rows ++;
 	alloc_table (table, table->rows);
 	values = table->values + token * MONO_ASSEMBLYREF_SIZE;
-	guint32 tok = string_heap_insert (&assembly->sheap, image->assembly_name);
-	printf ("tok: %d\n", tok);
-	values [MONO_ASSEMBLYREF_NAME] = tok;
+	values [MONO_ASSEMBLYREF_NAME] = string_heap_insert (&assembly->sheap, image->assembly_name);
 	values [MONO_ASSEMBLYREF_MAJOR_VERSION] = cols [MONO_ASSEMBLY_MAJOR_VERSION];
 	values [MONO_ASSEMBLYREF_MINOR_VERSION] = cols [MONO_ASSEMBLY_MINOR_VERSION];
 	values [MONO_ASSEMBLYREF_BUILD_NUMBER] = cols [MONO_ASSEMBLY_BUILD_NUMBER];
@@ -452,7 +449,6 @@ mono_reflection_resolution_scope_from_image (MonoDynamicImage *assembly, MonoIma
 	values [MONO_ASSEMBLYREF_FLAGS] = 0;
 	values [MONO_ASSEMBLYREF_CULTURE] = 0;
 	values [MONO_ASSEMBLYREF_HASH_VALUE] = 0;
-	printf("now assemblyref counts is %d\n", table->rows);
 
 	if (strcmp ("", image->assembly->aname.culture)) {
 		values [MONO_ASSEMBLYREF_CULTURE] = string_heap_insert (&assembly->sheap,

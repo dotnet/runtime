@@ -5511,7 +5511,6 @@ ves_icall_System_Reflection_Assembly_InternalGetReferencedAssemblies (MonoReflec
 		MonoTableInfo *t = &image->tables [MONO_TABLE_ASSEMBLYREF];
 		count = t->rows;
 	}
-	printf ("%d\n", count);
 
 	GPtrArray *result = g_ptr_array_sized_new (count);
 

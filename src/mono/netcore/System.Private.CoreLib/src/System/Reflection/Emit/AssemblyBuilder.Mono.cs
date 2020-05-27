@@ -405,11 +405,6 @@ namespace System.Reflection.Emit
                 cattrs[0] = customBuilder;
             }
 
-            /*
-            Only update the native list of custom attributes if we're adding one that is known to change dynamic execution behavior.
-            */
-            //if (customBuilder.Ctor != null && customBuilder.Ctor.DeclaringType == typeof(System.Runtime.CompilerServices.RuntimeCompatibilityAttribute))
-            ModuleBuilder.build_metadata(manifest_module);
             UpdateNativeCustomAttributes(this);
         }
 

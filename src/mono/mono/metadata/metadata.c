@@ -1062,7 +1062,7 @@ mono_metadata_string_heap_checked (MonoImage *meta, guint32 index, MonoError *er
 		MonoDynamicImage* img = (MonoDynamicImage*) meta;
 		const char *image_name = meta && meta->name ? meta->name : "unknown image";
 		if (G_UNLIKELY (!(index < img->sheap.index)))
-			mono_error_set_bad_image_by_name (error, image_name, "string heap index %ud out bounds %u: %s", index, meta->heap_strings.size, image_name);
+			mono_error_set_bad_image_by_name (error, image_name, "string heap index %ud out bounds %u: %s", index, img->sheap.index, image_name);
 		return img->sheap.data + index;
 	}
 	else if (G_UNLIKELY (!(index < meta->heap_strings.size))) {
@@ -1267,7 +1267,7 @@ mono_metadata_decode_row_dynamic_checked (const MonoDynamicImage *image, const M
 		mono_error_set_bad_image_by_name (error, image_name, "row index %d out of bounds: %d rows: %s", idx, t->rows, image_name);
 		return FALSE;
 	}
-	guint32 *data = t->values + (idx +1 )* count;
+	guint32 *data = t->values + (idx + 1) * count;
 
 	if (G_UNLIKELY (res_size != count)) {
 		mono_error_set_bad_image_by_name (error, image_name, "res_size %d != count %d: %s", res_size, count, image_name);
@@ -1275,7 +1275,6 @@ mono_metadata_decode_row_dynamic_checked (const MonoDynamicImage *image, const M
 	}
 
 	for (i = 0; i < count; i++) {
-		printf("data: %d\n", *data);
 		res [i] = *data;
 		data++;
 	}
