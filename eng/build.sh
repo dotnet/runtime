@@ -18,7 +18,7 @@ usage()
 {
   echo "Common settings:"
   echo "  --subset                   Build a subset, print available subsets with -subset help (short: -s)"
-  echo "  --os                       Build operating system: Windows_NT, Linux, FreeBSD, OSX, tvOS, iOS, Android, Browser, NetBSD or SunOS"
+  echo "  --os                       Build operating system: Windows_NT, Linux, FreeBSD, OSX, tvOS, iOS, Android, Browser, NetBSD, Illumos or Solaris"
   echo "  --arch                     Build platform: x86, x64, arm, armel, arm64 or wasm"
   echo "  --configuration            Build configuration: Debug, Release or [CoreCLR]Checked (short: -c)"
   echo "  --runtimeConfiguration     Runtime build configuration: Debug, Release or [CoreCLR]Checked (short: -rc)"
@@ -62,7 +62,7 @@ usage()
 
 initDistroRid()
 {
-    source $scriptroot/native/init-distro-rid.sh
+    source "$scriptroot"/native/init-distro-rid.sh
 
     local passedRootfsDir=""
     local targetOs="$1"
@@ -138,7 +138,7 @@ while [[ $# > 0 ]]; do
       ;;
 
      -configuration|-c)
-      if [ -z ${2+x} ]; then 
+      if [ -z ${2+x} ]; then
         echo "No configuration supplied. See help (--help) for supported configurations." 1>&2
         exit 1
       fi
@@ -190,11 +190,13 @@ while [[ $# > 0 ]]; do
           os="Android" ;;
         browser)
           os="Browser" ;;
-        sunos)
-          os="SunOS" ;;
+        illumos)
+          os="Illumos" ;;
+        solaris)
+          os="Solaris" ;;
         *)
           echo "Unsupported target OS '$2'."
-          echo "The allowed values are Windows_NT, Linux, FreeBSD, OSX, tvOS, iOS, Android, Browser, and SunOS."
+          echo "The allowed values are Windows_NT, Linux, FreeBSD, OSX, tvOS, iOS, Android, Browser, Illumos and Solaris."
           exit 1
           ;;
       esac

@@ -130,6 +130,34 @@
       <Versions>11;12;13</Versions>
     </RuntimeGroup>
 
+    <RuntimeGroup Include="solaris">
+      <Parent>unix</Parent>
+      <Architectures>x64</Architectures>
+      <Versions>11</Versions>
+    </RuntimeGroup>
+
+    <RuntimeGroup Include="illumos">
+      <Parent>unix</Parent>
+      <Architectures>x64</Architectures>
+    </RuntimeGroup>
+
+    <RuntimeGroup Include="omnios">
+      <Parent>illumos</Parent>
+      <Architectures>x64</Architectures>
+      <Versions>15</Versions>
+    </RuntimeGroup>
+
+    <RuntimeGroup Include="openindiana">
+      <Parent>illumos</Parent>
+      <Architectures>x64</Architectures>
+    </RuntimeGroup>
+
+    <RuntimeGroup Include="smartos">
+      <Parent>illumos</Parent>
+      <Architectures>x64</Architectures>
+      <Versions>2020;2021</Versions>
+    </RuntimeGroup>
+
     <!-- rhel 6 is independent -->
     <RuntimeGroup Include="rhel">
       <Parent>linux</Parent>

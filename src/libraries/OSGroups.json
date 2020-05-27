@@ -1,6 +1,6 @@
 {
   "runtimes": {
-    "Unix" : {      
+    "Unix" : {
     },
     "Browser" : {
       "#import": [
@@ -38,6 +38,28 @@
         ]
       },
     "NetBSD": {
+      "#import": [
+        "Unix"
+        ]
+      },
+    "Illumos": {
+      "#import": [
+        "Unix"
+        ]
+      }
+    },
+    "Solaris": {
+      "#import": [
+        "Unix"
+        ]
+      },
+    "Illumos": {
+      "#import": [
+        "Unix"
+        ]
+      }
+    },
+    "Solaris": {
       "#import": [
         "Unix"
         ]
