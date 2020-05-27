@@ -36,17 +36,15 @@ XHARNESS_OUT="$EXECUTION_DIR/xharness-output"
 
 if [ -x "$(command -v xharness)" ]
 then
-    dotnet xharness ios test \
+    xharness ios test \
         --targets="$TARGET" \
-        --app="$APP_BUNDLE" 
-        -o=$HELIX_WORKITEM_UPLOAD_ROOT -v
-
-    cp $HELIX_WORKITEM_UPLOAD_ROOT/*.xml ./
+        --app="$APP_BUNDLE" \
+        --output-directory=$XHARNESS_OUT
 else
     dotnet xharness ios test \
         --targets="$TARGET" \
-        --app="$APP_BUNDLE" 
-        -o=$EXECUTION_DIR/TestResults -v
+        --app="$APP_BUNDLE" \
+        --output-directory=$XHARNESS_OUT
 fi
 
 _exitCode=$?
