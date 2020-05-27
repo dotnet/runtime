@@ -61,6 +61,8 @@ jobs:
         - ${{ parameters.variables }}
         - ${{ if eq(parameters.osGroup, 'Browser') }}:
           - EMSDK_PATH: /usr/local/emscripten
+        - ${{ if eq(parameters.osGroup, 'Android') }}:
+          - ANDROID_OPENSSL_AAR: /tmp/openssl-android
         # for coreclr library builds (when not testing) build corelib as well.   
         - ${{ if and(eq(parameters.runtimeFlavor, 'coreclr'), eq(parameters.testScope, '')) }}:
           - _subset: clr.corelib+libs
@@ -75,7 +77,7 @@ jobs:
         - ${{ if eq(parameters.isOfficialBuild, true) }}:
           - template: /eng/pipelines/common/restore-internal-tools.yml
 
-        - ${{ if in(parameters.osGroup, 'OSX', 'iOS', 'tvOS') }}:
+        - ${{ if in(parameters.osGroup, 'OSX', 'iOS', 'tvOS', 'Android') }}:
           - script: $(Build.SourcesDirectory)/eng/install-native-dependencies.sh ${{ parameters.osGroup }}
             displayName: Install Build Dependencies
 
