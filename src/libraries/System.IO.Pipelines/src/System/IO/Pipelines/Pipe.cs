@@ -176,28 +176,66 @@ namespace System.IO.Pipelines
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void AllocateWriteHeadIfNeeded(int sizeHint)
         {
-            // If writing is currently active and enough space, don't need to take the lock to just set WritingActive.
-            // IsWritingActive is needed to prevent the reader releasing the writers memory when it fully consumes currently written.
-            if (!_operationState.IsWritingActive ||
-                _writingHeadMemory.Length == 0 || _writingHeadMemory.Length < sizeHint)
-            {
-                // Set wrtiting before checking anything; this is important as AdvanceReader
-                // can release the write head to free up memory if it considers the Pipe to be idle.
-                _operationState.BeginWrite();
+            // The very first operations we do are set IsWriting and check IsReading
+            // as they are our guards and we may be in a data race to avoid taking a lock.
 
-                // Ensure a read is not in progress as it may have released the write head, but not yet returned
-                // the segments in which case we cannot access them without a lock.
-                // We must confirm IsReadingActive is false prior to using this path as it is a guard.
-                if (!_operationState.IsReadingActive && _writingHead == null)
+            // Set IsWrtiting before checking anything; this is important as AdvanceReader
+            // can release the write head to free up memory if it considers the Pipe to be idle.
+            if (_operationState.SetWritingIfNotWriting())
+            {
+                // Writing wasn't active; we need to be careful.
+                if (!_operationState.IsReadingActive)
                 {
-                    // No reader in progress and no existing data; so we don't need the lock to allocate and initalize.
-                    BufferSegment newSegment = AllocateSegment(sizeHint);
-                    // Set all the pointers
-                    _writingHead = _readHead = _readTail = newSegment;
-                    _lastExaminedIndex = 0;
+                    int bytesLeftInBuffer = _writingHeadMemory.Length;
+                    if (bytesLeftInBuffer > 0 && bytesLeftInBuffer >= sizeHint)
+                    {
+                        // Reading wasn't active and we already have enough memory,
+                        // so we can return directly.
+                        return;
+                    }
+
+                    if (_writingHead == null)
+                    {
+                        // If the Reader wasn't active after setting Writing active there will
+                        // be no Read head so we are fully uncontended on BufferSegments, but
+                        // we need to set everything up.
+                        Debug.Assert(_readHead == null && _readTail == null, "Read heads can't be allocated at this point");
+
+                        BufferSegment newSegment = AllocateSegment(sizeHint);
+                        // Set all the pointers
+                        _writingHead = _readHead = _readTail = newSegment;
+                        _lastExaminedIndex = 0;
+                    }
+                    else
+                    {
+                        // Not enough room in current buffer; we need to rent a new BufferSegment,
+                        // since the pipe is active we need a lock for that.
+                        // (BufferSegment pool is shared and not guarded by the IsWriting/IsReading flags).
+                        AllocateWriteHeadSynchronized(sizeHint);
+                    }
                 }
                 else
                 {
+                    // Writing wasn't active and overlapped with Read activity; we need to take a lock,
+                    // to protect the Read/Write heads.
+                    AllocateWriteHeadSynchronized(sizeHint);
+                }
+            }
+            else
+            {
+                Debug.Assert(_writingHead != null, "Writing can't be active without a Write head");
+                // Writing was already active so we are safe; except if we need a new BufferSegment.
+                int bytesLeftInBuffer = _writingHeadMemory.Length;
+                if (bytesLeftInBuffer > 0 && bytesLeftInBuffer >= sizeHint)
+                {
+                    // We already have enough memory, so we can return directly.
+                    return;
+                }
+                else
+                {
+                    // Not enough room in current buffer; we need to rent a new BufferSegment,
+                    // since the pipe was active we need a lock for that.
+                    // (BufferSegment pool is shared and not guarded by the IsWriting/IsReading flags).
                     AllocateWriteHeadSynchronized(sizeHint);
                 }
             }
@@ -989,16 +1027,16 @@ namespace System.IO.Pipelines
 
         internal ValueTask<FlushResult> WriteAsync(ReadOnlyMemory<byte> source, CancellationToken cancellationToken)
         {
-            if (_writerCompletion.IsCompleted)
-            {
-                ThrowHelper.ThrowInvalidOperationException_NoWritingAllowed();
-            }
-
             CompletionData completionData;
             ValueTask<FlushResult> result;
 
             lock (_sync)
             {
+                if (_writerCompletion.IsCompleted)
+                {
+                    ThrowHelper.ThrowInvalidOperationException_NoWritingAllowed();
+                }
+
                 // Allocate whatever the pool gives us so we can write, this also marks the
                 // state as writing
                 AllocateWriteHeadIfNeeded(0);

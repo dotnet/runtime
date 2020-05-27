@@ -64,9 +64,15 @@ namespace System.IO.Pipelines
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void BeginWrite()
+        public bool SetWritingIfNotWriting()
         {
-            _writerData._writeState = WriteState.Writing;
+            if (_writerData._writeState != WriteState.Writing)
+            {
+                _writerData._writeState = WriteState.Writing;
+                return true;
+            }
+
+            return false;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
