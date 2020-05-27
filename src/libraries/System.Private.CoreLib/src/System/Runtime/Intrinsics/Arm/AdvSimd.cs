@@ -6697,6 +6697,174 @@ namespace System.Runtime.Intrinsics.Arm
         public static Vector128<uint> MultiplyAdd(Vector128<uint> addend, Vector128<uint> left, Vector128<uint> right) => MultiplyAdd(addend, left, right);
 
         /// <summary>
+        /// int16x4_t vmla_n_s16 (int16x4_t a, int16x4_t b, int16_t c)
+        ///   A32: VMLA.I16 Dd, Dn, Dm[0]
+        ///   A64: MLA Vd.4H, Vn.4H, Vm.H[0]
+        /// </summary>
+        public static Vector64<short> MultiplyAddByScalar(Vector64<short> addend, Vector64<short> left, Vector64<short> right) => MultiplyAddByScalar(addend, left, right);
+
+        /// <summary>
+        /// int32x2_t vmla_n_s32 (int32x2_t a, int32x2_t b, int32_t c)
+        ///   A32: VMLA.I32 Dd, Dn, Dm[0]
+        ///   A64: MLA Vd.2S, Vn.2S, Vm.S[0]
+        /// </summary>
+        public static Vector64<int> MultiplyAddByScalar(Vector64<int> addend, Vector64<int> left, Vector64<int> right) => MultiplyAddByScalar(addend, left, right);
+
+        /// <summary>
+        /// uint16x4_t vmla_n_u16 (uint16x4_t a, uint16x4_t b, uint16_t c)
+        ///   A32: VMLA.I16 Dd, Dn, Dm[0]
+        ///   A64: MLA Vd.4H, Vn.4H, Vm.H[0]
+        /// </summary>
+        public static Vector64<ushort> MultiplyAddByScalar(Vector64<ushort> addend, Vector64<ushort> left, Vector64<ushort> right) => MultiplyAddByScalar(addend, left, right);
+
+        /// <summary>
+        /// uint32x2_t vmla_n_u32 (uint32x2_t a, uint32x2_t b, uint32_t c)
+        ///   A32: VMLA.I32 Dd, Dn, Dm[0]
+        ///   A64: MLA Vd.2S, Vn.2S, Vm.S[0]
+        /// </summary>
+        public static Vector64<uint> MultiplyAddByScalar(Vector64<uint> addend, Vector64<uint> left, Vector64<uint> right) => MultiplyAddByScalar(addend, left, right);
+
+        /// <summary>
+        /// int16x8_t vmlaq_n_s16 (int16x8_t a, int16x8_t b, int16_t c)
+        ///   A32: VMLA.I16 Qd, Qn, Dm[0]
+        ///   A64: MLA Vd.8H, Vn.8H, Vm.H[0]
+        /// </summary>
+        public static Vector128<short> MultiplyAddByScalar(Vector128<short> addend, Vector128<short> left, Vector64<short> right) => MultiplyAddByScalar(addend, left, right);
+
+        /// <summary>
+        /// int32x4_t vmlaq_n_s32 (int32x4_t a, int32x4_t b, int32_t c)
+        ///   A32: VMLA.I32 Qd, Qn, Dm[0]
+        ///   A64: MLA Vd.4S, Vn.4S, Vm.S[0]
+        /// </summary>
+        public static Vector128<int> MultiplyAddByScalar(Vector128<int> addend, Vector128<int> left, Vector64<int> right) => MultiplyAddByScalar(addend, left, right);
+
+        /// <summary>
+        /// uint16x8_t vmlaq_n_u16 (uint16x8_t a, uint16x8_t b, uint16_t c)
+        ///   A32: VMLA.I16 Qd, Qn, Dm[0]
+        ///   A64: MLA Vd.8H, Vn.8H, Vm.H[0]
+        /// </summary>
+        public static Vector128<ushort> MultiplyAddByScalar(Vector128<ushort> addend, Vector128<ushort> left, Vector64<ushort> right) => MultiplyAddByScalar(addend, left, right);
+
+        /// <summary>
+        /// uint32x4_t vmlaq_n_u32 (uint32x4_t a, uint32x4_t b, uint32_t c)
+        ///   A32: VMLA.I32 Qd, Qn, Dm[0]
+        ///   A64: MLA Vd.4S, Vn.4S, Vm.S[0]
+        /// </summary>
+        public static Vector128<uint> MultiplyAddByScalar(Vector128<uint> addend, Vector128<uint> left, Vector64<uint> right) => MultiplyAddByScalar(addend, left, right);
+
+        /// <summary>
+        /// int16x4_t vmla_lane_s16 (int16x4_t a, int16x4_t b, int16x4_t v, const int lane)
+        ///   A32: VMLA.I16 Dd, Dn, Dm[lane]
+        ///   A64: MLA Vd.4H, Vn.4H, Vm.H[lane]
+        /// </summary>
+        public static Vector64<short> MultiplyAddBySelectedScalar(Vector64<short> addend, Vector64<short> left, Vector64<short> right, byte rightIndex) => MultiplyAddBySelectedScalar(addend, left, right, rightIndex);
+
+        /// <summary>
+        /// int16x4_t vmla_laneq_s16 (int16x4_t a, int16x4_t b, int16x8_t v, const int lane)
+        ///   A32: VMLA.I16 Dd, Dn, Dm[lane]
+        ///   A64: MLA Vd.4H, Vn.4H, Vm.H[lane]
+        /// </summary>
+        public static Vector64<short> MultiplyAddBySelectedScalar(Vector64<short> addend, Vector64<short> left, Vector128<short> right, byte rightIndex) => MultiplyAddBySelectedScalar(addend, left, right, rightIndex);
+
+        /// <summary>
+        /// int32x2_t vmla_lane_s32 (int32x2_t a, int32x2_t b, int32x2_t v, const int lane)
+        ///   A32: VMLA.I32 Dd, Dn, Dm[lane]
+        ///   A64: MLA Vd.2S, Vn.2S, Vm.S[lane]
+        /// </summary>
+        public static Vector64<int> MultiplyAddBySelectedScalar(Vector64<int> addend, Vector64<int> left, Vector64<int> right, byte rightIndex) => MultiplyAddBySelectedScalar(addend, left, right, rightIndex);
+
+        /// <summary>
+        /// int32x2_t vmla_laneq_s32 (int32x2_t a, int32x2_t b, int32x4_t v, const int lane)
+        ///   A32: VMLA.I32 Dd, Dn, Dm[lane]
+        ///   A64: MLA Vd.2S, Vn.2S, Vm.S[lane]
+        /// </summary>
+        public static Vector64<int> MultiplyAddBySelectedScalar(Vector64<int> addend, Vector64<int> left, Vector128<int> right, byte rightIndex) => MultiplyAddBySelectedScalar(addend, left, right, rightIndex);
+
+        /// <summary>
+        /// uint16x4_t vmla_lane_u16 (uint16x4_t a, uint16x4_t b, uint16x4_t v, const int lane)
+        ///   A32: VMLA.I16 Dd, Dn, Dm[lane]
+        ///   A64: MLA Vd.4H, Vn.4H, Vm.H[lane]
+        /// </summary>
+        public static Vector64<ushort> MultiplyAddBySelectedScalar(Vector64<ushort> addend, Vector64<ushort> left, Vector64<ushort> right, byte rightIndex) => MultiplyAddBySelectedScalar(addend, left, right, rightIndex);
+
+        /// <summary>
+        /// uint16x4_t vmla_laneq_u16 (uint16x4_t a, uint16x4_t b, uint16x8_t v, const int lane)
+        ///   A32: VMLA.I16 Dd, Dn, Dm[lane]
+        ///   A64: MLA Vd.4H, Vn.4H, Vm.H[lane]
+        /// </summary>
+        public static Vector64<ushort> MultiplyAddBySelectedScalar(Vector64<ushort> addend, Vector64<ushort> left, Vector128<ushort> right, byte rightIndex) => MultiplyAddBySelectedScalar(addend, left, right, rightIndex);
+
+        /// <summary>
+        /// uint32x2_t vmla_lane_u32 (uint32x2_t a, uint32x2_t b, uint32x2_t v, const int lane)
+        ///   A32: VMLA.I32 Dd, Dn, Dm[lane]
+        ///   A64: MLA Vd.2S, Vn.2S, Vm.S[lane]
+        /// </summary>
+        public static Vector64<uint> MultiplyAddBySelectedScalar(Vector64<uint> addend, Vector64<uint> left, Vector64<uint> right, byte rightIndex) => MultiplyAddBySelectedScalar(addend, left, right, rightIndex);
+
+        /// <summary>
+        /// uint32x2_t vmla_laneq_u32 (uint32x2_t a, uint32x2_t b, uint32x4_t v, const int lane)
+        ///   A32: VMLA.I32 Dd, Dn, Dm[lane]
+        ///   A64: MLA Vd.2S, Vn.2S, Vm.S[lane]
+        /// </summary>
+        public static Vector64<uint> MultiplyAddBySelectedScalar(Vector64<uint> addend, Vector64<uint> left, Vector128<uint> right, byte rightIndex) => MultiplyAddBySelectedScalar(addend, left, right, rightIndex);
+
+        /// <summary>
+        /// int16x8_t vmlaq_lane_s16 (int16x8_t a, int16x8_t b, int16x4_t v, const int lane)
+        ///   A32: VMLA.I16 Qd, Qn, Dm[lane]
+        ///   A64: MLA Vd.8H, Vn.8H, Vm.H[lane]
+        /// </summary>
+        public static Vector128<short> MultiplyAddBySelectedScalar(Vector128<short> addend, Vector128<short> left, Vector64<short> right, byte rightIndex) => MultiplyAddBySelectedScalar(addend, left, right, rightIndex);
+
+        /// <summary>
+        /// int16x8_t vmlaq_laneq_s16 (int16x8_t a, int16x8_t b, int16x8_t v, const int lane)
+        ///   A32: VMLA.I16 Qd, Qn, Dm[lane]
+        ///   A64: MLA Vd.8H, Vn.8H, Vm.H[lane]
+        /// </summary>
+        public static Vector128<short> MultiplyAddBySelectedScalar(Vector128<short> addend, Vector128<short> left, Vector128<short> right, byte rightIndex) => MultiplyAddBySelectedScalar(addend, left, right, rightIndex);
+
+        /// <summary>
+        /// int32x4_t vmlaq_lane_s32 (int32x4_t a, int32x4_t b, int32x2_t v, const int lane)
+        ///   A32: VMLA.I32 Qd, Qn, Dm[lane]
+        ///   A64: MLA Vd.4S, Vn.4S, Vm.S[lane]
+        /// </summary>
+        public static Vector128<int> MultiplyAddBySelectedScalar(Vector128<int> addend, Vector128<int> left, Vector64<int> right, byte rightIndex) => MultiplyAddBySelectedScalar(addend, left, right, rightIndex);
+
+        /// <summary>
+        /// int32x4_t vmlaq_laneq_s32 (int32x4_t a, int32x4_t b, int32x4_t v, const int lane)
+        ///   A32: VMLA.I32 Qd, Qn, Dm[lane]
+        ///   A64: MLA Vd.4S, Vn.4S, Vm.S[lane]
+        /// </summary>
+        public static Vector128<int> MultiplyAddBySelectedScalar(Vector128<int> addend, Vector128<int> left, Vector128<int> right, byte rightIndex) => MultiplyAddBySelectedScalar(addend, left, right, rightIndex);
+
+        /// <summary>
+        /// uint16x8_t vmlaq_lane_u16 (uint16x8_t a, uint16x8_t b, uint16x4_t v, const int lane)
+        ///   A32: VMLA.I16 Qd, Qn, Dm[lane]
+        ///   A64: MLA Vd.8H, Vn.8H, Vm.H[lane]
+        /// </summary>
+        public static Vector128<ushort> MultiplyAddBySelectedScalar(Vector128<ushort> addend, Vector128<ushort> left, Vector64<ushort> right, byte rightIndex) => MultiplyAddBySelectedScalar(addend, left, right, rightIndex);
+
+        /// <summary>
+        /// uint16x8_t vmlaq_laneq_u16 (uint16x8_t a, uint16x8_t b, uint16x8_t v, const int lane)
+        ///   A32: VMLA.I16 Qd, Qn, Dm[lane]
+        ///   A64: MLA Vd.8H, Vn.8H, Vm.H[lane]
+        /// </summary>
+        public static Vector128<ushort> MultiplyAddBySelectedScalar(Vector128<ushort> addend, Vector128<ushort> left, Vector128<ushort> right, byte rightIndex) => MultiplyAddBySelectedScalar(addend, left, right, rightIndex);
+
+        /// <summary>
+        /// uint32x4_t vmlaq_lane_u32 (uint32x4_t a, uint32x4_t b, uint32x2_t v, const int lane)
+        ///   A32: VMLA.I32 Qd, Qn, Dm[lane]
+        ///   A64: MLA Vd.4S, Vn.4S, Vm.S[lane]
+        /// </summary>
+        public static Vector128<uint> MultiplyAddBySelectedScalar(Vector128<uint> addend, Vector128<uint> left, Vector64<uint> right, byte rightIndex) => MultiplyAddBySelectedScalar(addend, left, right, rightIndex);
+
+        /// <summary>
+        /// uint32x4_t vmlaq_laneq_u32 (uint32x4_t a, uint32x4_t b, uint32x4_t v, const int lane)
+        ///   A32: VMLA.I32 Qd, Qn, Dm[lane]
+        ///   A64: MLA Vd.4S, Vn.4S, Vm.S[lane]
+        /// </summary>
+        public static Vector128<uint> MultiplyAddBySelectedScalar(Vector128<uint> addend, Vector128<uint> left, Vector128<uint> right, byte rightIndex) => MultiplyAddBySelectedScalar(addend, left, right, rightIndex);
+
+        /// <summary>
         /// int16x4_t vmul_n_s16 (int16x4_t a, int16_t b)
         ///   A32: VMUL.I16 Dd, Dn, Dm[0]
         ///   A64: MUL Vd.4H, Vn.4H, Vm.H[0]
