@@ -327,6 +327,39 @@ namespace System.Text.Json.Serialization.Tests
                 () => JsonSerializer.Deserialize<ClassTwiceInheritedWithPropertyPolicyConflictWhichThrows>(json, options));
         }
 
+        [Fact]
+        public static void HiddenPropertiesIgnored_WhenOverridesIgnored_AndPropertyNameConflicts()
+        {
+            string serialized = JsonSerializer.Serialize(new DerivedClass_With_IgnoredOverride());
+            Assert.Equal(@"{""MyProp"":false}", serialized);
+
+            serialized = JsonSerializer.Serialize(new DerivedClass_With_IgnoredOverride_And_ConflictingPropertyName());
+            Assert.Equal(@"{""MyProp"":null}", serialized);
+
+            serialized = JsonSerializer.Serialize(new DerivedClass_With_NewProperty());
+            Assert.Equal(@"{""MyProp"":false}", serialized);
+
+            serialized = JsonSerializer.Serialize(new DerivedClass_With_NewProperty_And_ConflictingPropertyName());
+            Assert.Equal(@"{""MyProp"":null}", serialized);
+
+            serialized = JsonSerializer.Serialize(new DerivedClass_WithNewProperty_Of_DifferentType());
+            Assert.Equal(@"{""MyProp"":false}", serialized);
+
+            serialized = JsonSerializer.Serialize(new DerivedClass_WithNewProperty_Of_DifferentType_And_ConflictingPropertyName());
+            Assert.Equal(@"{""MyProp"":null}", serialized);
+
+            serialized = JsonSerializer.Serialize(new DerivedClass_WithIgnoredOverride());
+            Assert.Equal(@"{""MyProp"":false}", serialized);
+
+            serialized = JsonSerializer.Serialize(new FurtherDerivedClass_With_ConflictingPropertyName());
+            Assert.Equal(@"{""MyProp"":null}", serialized);
+
+            Assert.Throws<InvalidOperationException>(() => JsonSerializer.Serialize(new DerivedClass_WithConflictingPropertyName()));
+
+            serialized = JsonSerializer.Serialize(new FurtherDerivedClass_With_IgnoredOverride());
+            Assert.Equal(@"{""MyProp"":null}", serialized);
+        }
+
         public class ClassWithInternalProperty
         {
             internal string MyString { get; set; } = "DefaultValue";
@@ -472,6 +505,85 @@ namespace System.Text.Json.Serialization.Tests
         {
             [JsonPropertyName("MyNewNumeric")]
             public new decimal MyNumeric { get; set; } = 1.5M;
+        }
+
+        private class Class_With_VirtualProperty
+        {
+            public virtual bool MyProp { get; set; }
+        }
+
+        private class DerivedClass_With_IgnoredOverride : Class_With_VirtualProperty
+        {
+            [JsonIgnore]
+            public override bool MyProp { get; set; }
+        }
+
+        private class DerivedClass_With_IgnoredOverride_And_ConflictingPropertyName : Class_With_VirtualProperty
+        {
+            [JsonPropertyName("MyProp")]
+            public string MyString { get; set; }
+
+            [JsonIgnore]
+            public override bool MyProp { get; set; }
+        }
+
+        private class Class_With_Property
+        {
+            public bool MyProp { get; set; }
+        }
+
+        private class DerivedClass_With_NewProperty : Class_With_Property
+        {
+            [JsonIgnore]
+            public new bool MyProp { get; set; }
+        }
+
+        private class DerivedClass_With_NewProperty_And_ConflictingPropertyName : Class_With_Property
+        {
+            [JsonPropertyName("MyProp")]
+            public string MyString { get; set; }
+
+            [JsonIgnore]
+            public new bool MyProp { get; set; }
+        }
+
+        private class DerivedClass_WithNewProperty_Of_DifferentType : Class_With_Property
+        {
+            [JsonIgnore]
+            public new int MyProp { get; set; }
+        }
+
+        private class DerivedClass_WithNewProperty_Of_DifferentType_And_ConflictingPropertyName : Class_With_Property
+        {
+            [JsonPropertyName("MyProp")]
+            public string MyString { get; set; }
+
+            [JsonIgnore]
+            public new int MyProp { get; set; }
+        }
+
+        private class DerivedClass_WithIgnoredOverride : Class_With_VirtualProperty
+        {
+            [JsonIgnore]
+            public override bool MyProp { get; set; }
+        }
+
+        private class FurtherDerivedClass_With_ConflictingPropertyName : DerivedClass_WithIgnoredOverride
+        {
+            [JsonPropertyName("MyProp")]
+            public string MyString { get; set; }
+        }
+
+        private class DerivedClass_WithConflictingPropertyName : Class_With_VirtualProperty
+        {
+            [JsonPropertyName("MyProp")]
+            public string MyString { get; set; }
+        }
+
+        private class FurtherDerivedClass_With_IgnoredOverride : DerivedClass_WithConflictingPropertyName
+        {
+            [JsonIgnore]
+            public override bool MyProp { get; set; }
         }
 
         [Fact]
