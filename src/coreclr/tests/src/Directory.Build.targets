@@ -106,11 +106,6 @@
     <SkipImportILTargets Condition="'$(CLRTestBuildAllTargets)' != '' And '$(CLRTestNeedTarget)' != '$(CLRTestBuildAllTargets)'">true</SkipImportILTargets>
   </PropertyGroup>
 
-  <Import Project="CLRTest.Execute.targets" />
-  <Target Name="CreateExecuteScript"
-          Condition="'$(GenerateRunScript)' != 'false' And ('$(_WillCLRTestProjectBuild)' == 'true')"
-          DependsOnTargets="GenerateExecutionScriptsInternal" />
-
   <Target Name="CopyNativeProjectBinaries" Condition="'$(_CopyNativeProjectBinaries)' == 'true'">
 
      <ItemGroup>
@@ -195,7 +190,14 @@
 
   </Target>
 
-  <Target Name="CopyAllNativeProjectReferenceBinaries" DependsOnTargets="ResolveCmakeNativeProjectReference;ConsolidateNativeProjectReference;CreateExecuteScript" />
+  <Target Name="CopyAllNativeProjectReferenceBinaries" DependsOnTargets="ResolveCmakeNativeProjectReference;ConsolidateNativeProjectReference" />
+
+  <!-- Build shell or command scripts whenever we copy native binaries -->
+  <Import Project="CLRTest.Execute.targets" />
+  <Target Name="CreateExecuteScript"
+          BeforeTargets="Build;CopyAllNativeProjectReferenceBinaries"
+          Condition="'$(_CopyNativeProjectBinaries)' == 'true' And '$(GenerateRunScript)' != 'false' And ('$(_WillCLRTestProjectBuild)' == 'true')"
+          DependsOnTargets="GenerateExecutionScriptsInternal" />
 
   <Target Name="UpdateReferenceItems"
           BeforeTargets="BeforeResolveReferences"
