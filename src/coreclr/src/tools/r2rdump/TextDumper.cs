@@ -134,7 +134,7 @@ namespace R2RDump
         internal override void DumpAllMethods()
         {
             WriteDivider("R2R Methods");
-            _writer.WriteLine($"{_r2r.Methods.Count} methods");
+            _writer.WriteLine($"{_r2r.Methods.Sum(kvp => kvp.Value.Count)} methods");
             SkipLine();
             foreach (ReadyToRunMethod method in NormalizedMethods())
             {
@@ -207,10 +207,10 @@ namespace R2RDump
         /// </summary>
         internal override void DumpDisasm(RuntimeFunction rtf, int imageOffset)
         {
-            int indent = (_options.Naked ? _options.HideOffsets ? 4 : 11 : 32);
-            string indentString = new string(' ', indent);
-            int rtfOffset = 0;
+            string indentString = new string(' ', _disassembler.MnemonicIndentation);
             int codeOffset = rtf.CodeOffset;
+            int rtfOffset = 0;
+
             while (rtfOffset < rtf.Size)
             {
                 string instr;

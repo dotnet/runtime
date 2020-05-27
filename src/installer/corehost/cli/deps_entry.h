@@ -53,7 +53,7 @@ struct deps_entry_t
     bool is_rid_specific;
 
     // Given a "base" dir, yield the file path within this directory or single-file bundle.
-    bool to_dir_path(const pal::string_t& base, bool look_in_bundle, pal::string_t* str) const;
+    bool to_dir_path(const pal::string_t& base, bool look_in_bundle, pal::string_t* str, bool& loaded_from_bundle) const;
 
     // Given a "base" dir, yield the relative path in the package layout.
     bool to_rel_path(const pal::string_t& base, bool look_in_bundle, pal::string_t* str) const;
@@ -64,7 +64,7 @@ struct deps_entry_t
 private:
     // Given a "base" dir, yield the filepath within this directory or relative to this directory based on "look_in_base"
     // Returns a path within the single-file bundle, or a file on disk,
-    bool to_path(const pal::string_t& base, const pal::string_t& ietf_code, bool look_in_base, bool look_in_bundle, pal::string_t* str) const;
+    bool to_path(const pal::string_t& base, const pal::string_t& ietf_code, bool look_in_base, bool look_in_bundle, pal::string_t* str, bool & loaded_from_bundle) const;
 };
 
 #endif // __DEPS_ENTRY_H_

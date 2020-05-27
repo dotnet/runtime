@@ -27,8 +27,7 @@ namespace Microsoft.NET.HostModel.Tests
         {
             var fixture = (minorVersion == 0) ? sharedTestState.TestFixture30.Copy() : sharedTestState.TestFixture31.Copy();
 
-            // Targetting netcoreap3.x implies BundleOption.BundleAllContent
-            var singleFile = BundleHelper.BundleApp(fixture, BundleOptions.None, new Version(3, minorVersion));
+            var singleFile = BundleHelper.BundleApp(fixture, targetFrameworkVersion: new Version(3, minorVersion));
 
             Command.Create(singleFile)
                 .CaptureStdErr()
@@ -49,7 +48,6 @@ namespace Microsoft.NET.HostModel.Tests
 
             return fixture;
         }
-
 
         public class SharedTestState : IDisposable
         {

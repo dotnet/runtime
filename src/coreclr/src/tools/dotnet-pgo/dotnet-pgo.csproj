@@ -14,8 +14,8 @@
 
   <ItemGroup>
     <ProjectReference Include="../crossgen2/ILCompiler.TypeSystem.ReadyToRun/ILCompiler.TypeSystem.ReadyToRun.csproj" />
-    <PackageReference Include="Microsoft.Diagnostics.Tracing.TraceEvent" Version="2.0.48" />
-    <PackageReference Include="System.CommandLine.Experimental" Version="0.3.0-alpha.19405.1" />
-    <PackageReference Include="System.Reflection.Metadata" Version="1.7.0" />
+    <PackageReference Include="Microsoft.Diagnostics.Tracing.TraceEvent" Version="2.0.55" />
+    <PackageReference Include="System.CommandLine" Version="$(SystemCommandLineVersion)" />
+    <PackageReference Include="System.Reflection.Metadata" Version="1.8.1" />
   </ItemGroup>
 </Project>

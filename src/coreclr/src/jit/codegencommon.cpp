@@ -4596,8 +4596,9 @@ void CodeGen::genCheckUseBlockInit()
         // double-counting the initialization impact of any locals.
         bool counted = false;
 
-        if (varDsc->lvIsParam)
+        if (!varDsc->lvIsInReg() && !varDsc->lvOnFrame)
         {
+            noway_assert(varDsc->lvRefCnt() == 0);
             continue;
         }
 
@@ -4608,50 +4609,22 @@ void CodeGen::genCheckUseBlockInit()
             continue;
         }
 
-        // Likewise, initialization of the GS cookie is handled specially for OSR.
-        // Could do this for non-OSR too.. (likewise for the dummy)
-        if (compiler->opts.IsOSR() && varNum == compiler->lvaGSSecurityCookie)
+        if (compiler->fgVarIsNeverZeroInitializedInProlog(varNum))
         {
             continue;
         }
-
-        if (!varDsc->lvIsInReg() && !varDsc->lvOnFrame)
-        {
-            noway_assert(varDsc->lvRefCnt() == 0);
-            continue;
-        }
-
-        if (varNum == compiler->lvaInlinedPInvokeFrameVar || varNum == compiler->lvaStubArgumentVar ||
-            varNum == compiler->lvaRetAddrVar)
-        {
-            continue;
-        }
-
-#if FEATURE_FIXED_OUT_ARGS
-        if (varNum == compiler->lvaPInvokeFrameRegSaveVar)
-        {
-            continue;
-        }
-        if (varNum == compiler->lvaOutgoingArgSpaceVar)
-        {
-            continue;
-        }
-#endif
-
-#if defined(FEATURE_EH_FUNCLETS)
-        // There's no need to force 0-initialization of the PSPSym, it will be
-        // initialized with a real value in the prolog
-        if (varNum == compiler->lvaPSPSym)
-        {
-            continue;
-        }
-#endif
 
         if (compiler->lvaIsFieldOfDependentlyPromotedStruct(varDsc))
         {
             // For Compiler::PROMOTION_TYPE_DEPENDENT type of promotion, the whole struct should have been
             // initialized by the parent struct. No need to set the lvMustInit bit in the
             // field locals.
+            continue;
+        }
+
+        if (varDsc->lvHasExplicitInit)
+        {
+            varDsc->lvMustInit = 0;
             continue;
         }
 
@@ -11777,9 +11750,9 @@ void CodeGen::genRegCopy(GenTree* treeNode)
         // There should never be any circular dependencies, and we will check that here.
 
         GenTreeCopyOrReload* copyNode = treeNode->AsCopyOrReload();
-        unsigned             regCount = copyNode->GetRegCount();
-        // GenTreeCopyOrReload only reports the number of registers that are valid.
-        assert(regCount <= 2);
+        // GenTreeCopyOrReload only reports the highest index that has a valid register.
+        unsigned regCount = copyNode->GetRegCount();
+        assert(regCount <= MAX_MULTIREG_COUNT);
 
         // First set the source registers as busy if they haven't been spilled.
         // (Note that this is just for verification that we don't have circular dependencies.)
@@ -11794,13 +11767,15 @@ void CodeGen::genRegCopy(GenTree* treeNode)
         // First do any copies - we'll do the reloads after all the copies are complete.
         for (unsigned i = 0; i < regCount; ++i)
         {
-            regNumber sourceReg     = op1->GetRegByIndex(i);
-            regNumber targetReg     = copyNode->GetRegNumByIdx(i);
-            regMaskTP targetRegMask = genRegMask(targetReg);
-            // GenTreeCopyOrReload only reports the number of registers that are valid.
+            regNumber sourceReg = op1->GetRegByIndex(i);
+            regNumber targetReg = copyNode->GetRegNumByIdx(i);
+            // GenTreeCopyOrReload only reports the highest index that has a valid register.
+            // However there may be lower indices that have no valid register (i.e. the register
+            // on the source is still valid at the consumer).
             if (targetReg != REG_NA)
             {
                 // We shouldn't specify a no-op move.
+                regMaskTP targetRegMask = genRegMask(targetReg);
                 assert(sourceReg != targetReg);
                 assert((busyRegs & targetRegMask) == 0);
                 // Clear sourceReg from the busyRegs, and add targetReg.

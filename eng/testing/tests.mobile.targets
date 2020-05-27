@@ -138,12 +138,30 @@
   <Target Name="Cleanup">
     <RemoveDir Directories="$(PublishDir)" />
   </Target>
+  
+  <UsingTask TaskName="WasmAppBuilder"
+             AssemblyFile="$(WasmAppBuilderTasksAssemblyPath)" />
+
+  <Target Condition="'$(TargetOS)' == 'Browser'" Name="BundleTestWasmApp">
+    <ItemGroup>
+      <AssemblySearchPaths Include="$(PublishDir)"/>
+    </ItemGroup>
+    <Error Condition="!Exists('$(RuntimePackRidDir)')" Text="RuntimePackRidDir=$(RuntimePackRidDir) doesn't exist" />
+    <WasmAppBuilder
+      AppDir="$(BundleDir)"
+      RuntimePackDir="$(RuntimePackRidDir)"
+      MainAssembly="$(PublishDir)\WasmTestRunner.dll"
+      MainJS="$(MonoProjectRoot)\wasm\runtime-test.js"
+      ExtraAssemblies="$(PublishDir)\$(AssemblyName).dll"
+      AssemblySearchPaths="@(AssemblySearchPaths)"/>
+  </Target>
 
   <Target Name="AddTestRunnersToPublishedFiles"
           AfterTargets="ComputeResolvedFilesToPublishList">
     <ItemGroup>
       <_runnerFilesToPublish Include="$(AndroidTestRunnerDir)*" Condition="'$(TargetOS)' == 'Android'" />
       <_runnerFilesToPublish Include="$(AppleTestRunnerDir)*" Condition="'$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'tvOS'" />
+      <_runnerFilesToPublish Include="$(WasmTestRunnerDir)*" Condition="'$(TargetOS)' == 'Browser'" />
 
       <ResolvedFileToPublish Include="@(_runnerFilesToPublish)" RelativePath="%(FileName)%(Extension)" CopyToPublishDirectory="PreserveNewest" PostprocessAssembly="true" />
     </ItemGroup>
@@ -165,5 +183,9 @@
   <Target Name="PublishTestAsSelfContained"
           Condition="'$(IsCrossTargetingBuild)' != 'true'"
           AfterTargets="Build"
+<<<<<<< HEAD
           DependsOnTargets="UpdateRuntimePack;Publish;BundleTestAppleApp;BundleTestAndroidApp;ArchiveTests;Cleanup" />
+=======
+          DependsOnTargets="UpdateRuntimePack;Publish;BundleTestAppleApp;BundleTestAndroidApp;BundleTestWasmApp" />
+>>>>>>> upstream/master
 </Project>
