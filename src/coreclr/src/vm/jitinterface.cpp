@@ -4502,7 +4502,7 @@ TypeCompareState CEEInfo::compareTypesForCast(
 #endif // FEATURE_COMINTEROP
 
     // If casting from ICastable, don't try to optimize
-    if (fromHnd.GetMethodTable()->IsICastable())
+    if (fromHnd.GetMethodTable()->IsICastable() || fromHnd.GetMethodTable()->IsICastableObject())
     {
         result = TypeCompareState::May;
     }

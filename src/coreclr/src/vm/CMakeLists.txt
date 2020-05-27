@@ -304,6 +304,7 @@ set(VM_SOURCES_WKS
     cachelinealloc.cpp
     callhelpers.cpp
     callsiteinspect.cpp
+    castableobject.cpp
     ceemain.cpp
     clrconfignative.cpp
     clrex.cpp

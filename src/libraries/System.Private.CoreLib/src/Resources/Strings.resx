@@ -3739,4 +3739,13 @@
   <data name="SwitchExpressionException_UnmatchedValue" xml:space="preserve">
     <value>Unmatched value was {0}.</value>
   </data>
+  <data name="ICastableObject_DoesNotImplementRequested" xml:space="preserve">
+    <value>Type '{0}' returned by ICastableObject does not implement the requested interface '{1}'.</value>
+  </data>
+  <data name="ICastableObject_MissingImplementationAttribute" xml:space="preserve">
+    <value>Type '{0}' returned by ICastableObject does not have the attribute '{1}'.</value>
+  </data>
+  <data name="ICastableObject_NotInterface" xml:space="preserve">
+    <value>Type '{0}' returned by ICastableObject is not an interface.</value>
+  </data>
 </root>

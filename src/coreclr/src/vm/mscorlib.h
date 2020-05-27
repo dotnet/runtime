@@ -1173,10 +1173,13 @@ DEFINE_FIELD_U(_condition,          ContractExceptionObject,    _Condition)
 
 DEFINE_CLASS(MODULEBASE,        Reflection,         Module)
 
+DEFINE_CLASS(ICASTABLEOBJECT,   CompilerServices,   ICastableObject)
+DEFINE_CLASS(ICASTABLEHELPERS,  CompilerServices,   ICastableHelpers)
+DEFINE_METHOD(ICASTABLEHELPERS, GET_INTERFACE_IMPLEMENTATION,   GetInterfaceImplementation, SM_ICastableObject_RuntimeType_Bool_RetRtType)
+
 #ifdef FEATURE_ICASTABLE
 DEFINE_CLASS(ICASTABLE,         CompilerServices,   ICastable)
 
-DEFINE_CLASS(ICASTABLEHELPERS,         CompilerServices,   ICastableHelpers)
 DEFINE_METHOD(ICASTABLEHELPERS,        ISINSTANCEOF,       IsInstanceOfInterface, SM_ICastable_RtType_RefException_RetBool)
 DEFINE_METHOD(ICASTABLEHELPERS,        GETIMPLTYPE,        GetImplType, SM_ICastable_RtType_RetRtType)
 

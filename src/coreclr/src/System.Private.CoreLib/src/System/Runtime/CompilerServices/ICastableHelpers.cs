@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Diagnostics.CodeAnalysis;
+using System.Reflection;
 
 namespace System.Runtime.CompilerServices
 {
@@ -21,6 +22,31 @@ namespace System.Runtime.CompilerServices
         internal static RuntimeType GetImplType(ICastable castable, RuntimeType interfaceType)
         {
             return castable.GetImplType(new RuntimeTypeHandle(interfaceType)).GetRuntimeType();
+        }
+
+        [Diagnostics.StackTraceHidden]
+        internal static RuntimeType? GetInterfaceImplementation(ICastableObject castableObject, RuntimeType interfaceType, bool throwIfNotFound)
+        {
+            RuntimeTypeHandle handle = castableObject.GetInterfaceImplementation(new RuntimeTypeHandle(interfaceType), throwIfNotFound);
+            if (handle.Equals(default))
+            {
+                if (throwIfNotFound)
+                    throw new InvalidCastException(SR.Format(SR.InvalidCast_FromTo, castableObject.GetType().ToString(), interfaceType.ToString()));
+
+                return null;
+            }
+
+            RuntimeType implType = handle.GetRuntimeType();
+            if (!implType.IsInterface)
+                throw new InvalidProgramException(SR.Format(SR.ICastableObject_NotInterface, implType.ToString()));
+
+            if (implType.GetCustomAttribute<CastableObjectImplementationAttribute>() == null)
+                throw new InvalidProgramException(SR.Format(SR.ICastableObject_MissingImplementationAttribute, implType.ToString(), nameof(CastableObjectImplementationAttribute)));
+
+            if (!implType.ImplementInterface(interfaceType))
+                throw new InvalidProgramException(SR.Format(SR.ICastableObject_DoesNotImplementRequested, implType.ToString(), interfaceType.ToString()));
+
+            return implType;
         }
     }
 }

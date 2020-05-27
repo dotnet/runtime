@@ -589,6 +589,8 @@ DEFINE_METASIG_T(SM(ICastable_RtType_RefException_RetBool, C(ICASTABLE) C(CLASS)
 DEFINE_METASIG_T(SM(ICastable_RtType_RetRtType, C(ICASTABLE) C(CLASS), C(CLASS)))
 #endif // FEATURE_ICASTABLE
 
+DEFINE_METASIG_T(SM(ICastableObject_RuntimeType_Bool_RetRtType, C(ICASTABLEOBJECT) C(CLASS) F, C(CLASS)))
+
 DEFINE_METASIG_T(IM(ArrByte_Int_Int_AsyncCallback_Object_RetIAsyncResult, a(b) i i C(ASYNCCALLBACK) j, C(IASYNCRESULT)))
 DEFINE_METASIG_T(IM(IAsyncResult_RetInt, C(IASYNCRESULT), i))
 DEFINE_METASIG_T(IM(IAsyncResult_RetVoid, C(IASYNCRESULT), v))
