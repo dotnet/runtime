@@ -5,6 +5,7 @@ Param(
   [ValidateSet("Debug","Release","Checked")][string[]][Alias('c')]$configuration = @("Debug"),
   [string][Alias('f')]$framework,
   [string]$vs,
+  [string][Alias('v')]$verbosity = "minimal",
   [ValidateSet("Windows_NT","Linux","OSX","Browser")][string]$os,
   [switch]$allconfigurations,
   [switch]$coverage,
@@ -20,7 +21,7 @@ Param(
 function Get-Help() {
   Write-Host "Common settings:"
   Write-Host "  -subset                   Build a subset, print available subsets with -subset help (short: -s)"
-  Write-Host "  -vs                       Open the solution with VS for Test Explorer support. Path or solution name (ie -vs Microsoft.CSharp)"
+  Write-Host "  -vs                       Open the solution with VS using the locally acquired SDK. Path or solution name (ie -vs Microsoft.CSharp)"
   Write-Host "  -os                       Build operating system: Windows_NT, Linux, OSX, or Browser"
   Write-Host "  -arch                     Build platform: x86, x64, arm, arm64, or wasm (short: -a). Pass a comma-separated list to build for multiple architectures."
   Write-Host "  -configuration            Build configuration: Debug, Release or [CoreCLR]Checked (short: -c). Pass a comma-separated list to build for multiple configurations"
@@ -59,38 +60,32 @@ if ($help -or (($null -ne $properties) -and ($properties.Contains('/help') -or $
   exit 0
 }
 
-# VS Test Explorer support for libraries
 if ($vs) {
-  Write-Host "VS Test Explorer now works without needing to call build.cmd. The -vs switch will be removed eventually."
   . $PSScriptRoot\common\tools.ps1
 
-  # Microsoft.DotNet.CoreSetup.sln is special - hosting tests are currently meant to run on the
-  # bootstrapped .NET Core, not on the live-built runtime.
-  if (([System.IO.Path]::GetFileName($vs) -ieq "Microsoft.DotNet.CoreSetup.sln") -or ($vs -ieq "Microsoft.DotNet.CoreSetup")) {
+  if (-Not (Test-Path $vs)) {
+    $solution = $vs
+    # Search for the solution in libraries
+    $vs = Split-Path $PSScriptRoot -Parent | Join-Path -ChildPath "src\libraries" | Join-Path -ChildPath $vs | Join-Path -ChildPath "$vs.sln"
     if (-Not (Test-Path $vs)) {
-      if (-Not ( $vs.endswith(".sln"))) {
-          $vs = "$vs.sln"
+      $vs = $solution
+      # Search for the solution in installer
+      if (-Not ($vs.endswith(".sln"))) {
+        $vs = "$vs.sln"
       }
-      $vs = Join-Path "$PSScriptRoot\..\src\installer" $vs
+      $vs = Split-Path $PSScriptRoot -Parent | Join-Path -ChildPath "src\installer" | Join-Path -ChildPath $vs
+      if (-Not (Test-Path $vs)) {
+        Write-Error "Passed in solution cannot be resolved."
+        exit 1
+      }
     }
-
-    # This tells .NET Core to use the bootstrapped runtime to run the tests
-    $env:DOTNET_ROOT=InitializeDotNetCli -install:$false
   }
-  else {
-    if (-Not (Test-Path $vs)) {
-      $vs = Join-Path "$PSScriptRoot\..\src\libraries" $vs | Join-Path -ChildPath "$vs.sln"
-    }
 
-    $archTestHost = if ($arch) { $arch } else { "x64" }
-
-    # This tells .NET Core to use the same dotnet.exe that build scripts use
-    $env:DOTNET_ROOT="$PSScriptRoot\..\artifacts\bin\testhost\net5.0-Windows_NT-$configuration-$archTestHost";
-    $env:DEVPATH="$PSScriptRoot\..\artifacts\bin\testhost\net472-Windows_NT-$configuration-$archTestHost";
-  }
+  # This tells .NET Core to use the bootstrapped runtime
+  $env:DOTNET_ROOT=InitializeDotNetCli -install:$false
 
   # This tells MSBuild to load the SDK from the directory of the bootstrapped SDK
-  $env:DOTNET_MSBUILD_SDK_RESOLVER_CLI_DIR=InitializeDotNetCli -install:$false
+  $env:DOTNET_MSBUILD_SDK_RESOLVER_CLI_DIR=$env:DOTNET_ROOT
 
   # This tells .NET Core not to go looking for .NET Core in other places
   $env:DOTNET_MULTILEVEL_LOOKUP=0;
@@ -131,6 +126,7 @@ foreach ($argument in $PSBoundParameters.Keys)
     "os"                     { $arguments += " /p:TargetOS=$($PSBoundParameters[$argument])" }
     "allconfigurations"      { $arguments += " /p:BuildAllConfigurations=true" }
     "properties"             { $arguments += " " + $properties }
+    "verbosity"              { $arguments += " -$argument " + $($PSBoundParameters[$argument]) }
     # configuration and arch can be specified multiple times, so they should be no-ops here
     "configuration"          {}
     "arch"                   {}
