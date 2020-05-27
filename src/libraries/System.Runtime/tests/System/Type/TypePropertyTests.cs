@@ -195,6 +195,7 @@ namespace System.Tests.Types
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34196", TestRuntimes.Mono)]
         public void IsByRef_Get_ReturnsExpected()
         {
             Type t = CreateType();
