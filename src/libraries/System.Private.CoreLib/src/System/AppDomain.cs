@@ -7,6 +7,7 @@
 using System.Diagnostics;
 using System.IO;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Runtime.ExceptionServices;
 using System.Runtime.Loader;
 using System.Runtime.Remoting;
@@ -386,6 +387,8 @@ namespace System
             return oh?.Unwrap();
         }
 
+        [PreserveDependency("GetDefaultInstance", "System.Security.Principal.GenericPrincipal", "System.Security.Claims")]
+        [PreserveDependency("GetDefaultInstance", "System.Security.Principal.WindowsPrincipal", "System.Security.Principal.Windows")]
         internal IPrincipal? GetThreadPrincipal()
         {
             IPrincipal? principal = _defaultPrincipal;
@@ -402,7 +405,7 @@ namespace System
                             // Don't throw PNSE if null like for WindowsPrincipal as UnauthenticatedPrincipal should
                             // be available on all platforms.
                             Volatile.Write(ref s_getUnauthenticatedPrincipal,
-                                (Func<IPrincipal>)mi.CreateDelegate(typeof(Func<IPrincipal>)));
+                                mi.CreateDelegate<Func<IPrincipal>>());
                         }
 
                         principal = s_getUnauthenticatedPrincipal();
@@ -418,7 +421,7 @@ namespace System
                                 throw new PlatformNotSupportedException(SR.PlatformNotSupported_Principal);
                             }
                             Volatile.Write(ref s_getWindowsPrincipal,
-                                (Func<IPrincipal>)mi.CreateDelegate(typeof(Func<IPrincipal>)));
+                                mi.CreateDelegate<Func<IPrincipal>>());
                         }
 
                         principal = s_getWindowsPrincipal();

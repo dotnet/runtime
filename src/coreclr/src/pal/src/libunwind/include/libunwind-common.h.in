@@ -30,19 +30,6 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.  */
 #define UNW_VERSION_CODE(maj,min)	(((maj) << 16) | (min))
 #define UNW_VERSION	UNW_VERSION_CODE(UNW_VERSION_MAJOR, UNW_VERSION_MINOR)
 
-#ifdef __sun
-// On SmartOS, gcc fails with the following error:
-//
-// ../include/libunwind-common.h:43:41: error: expected identifier or '(' before numeric constant
-// # define UNW_PREFIX UNW_PASTE(UNW_PASTE(_U,UNW_TARGET),_)
-//                                         ^
-//
-// workaround is to undefine _U explicitly.
-// see https://github.com/libunwind/libunwind/issues/118 for more details.
-//
-#undef _U
-#endif
-
 #define UNW_PASTE2(x,y)	x##y
 #define UNW_PASTE(x,y)	UNW_PASTE2(x,y)
 #define UNW_OBJ(fn)	UNW_PASTE(UNW_PREFIX, fn)
@@ -253,6 +240,7 @@ unw_save_loc_t;
 #define unw_set_fpreg		UNW_OBJ(set_fpreg)
 #define unw_get_save_loc	UNW_OBJ(get_save_loc)
 #define unw_is_signal_frame	UNW_OBJ(is_signal_frame)
+#define unw_handle_signal_frame	UNW_OBJ(handle_signal_frame)
 #define unw_get_proc_name	UNW_OBJ(get_proc_name)
 #define unw_set_caching_policy	UNW_OBJ(set_caching_policy)
 #define unw_set_cache_size	UNW_OBJ(set_cache_size)
@@ -285,6 +273,7 @@ extern int unw_get_fpreg (unw_cursor_t *, int, unw_fpreg_t *);
 extern int unw_set_fpreg (unw_cursor_t *, int, unw_fpreg_t);
 extern int unw_get_save_loc (unw_cursor_t *, int, unw_save_loc_t *);
 extern int unw_is_signal_frame (unw_cursor_t *);
+extern int unw_handle_signal_frame (unw_cursor_t *);
 extern int unw_get_proc_name (unw_cursor_t *, char *, size_t, unw_word_t *);
 extern const char *unw_strerror (int);
 extern int unw_backtrace (void **, int);

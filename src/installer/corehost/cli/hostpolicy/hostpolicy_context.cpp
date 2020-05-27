@@ -113,17 +113,24 @@ int hostpolicy_context_t::initialize(hostpolicy_init_t &hostpolicy_init, const a
     // Get path in which CoreCLR is present.
     clr_dir = get_directory(clr_path);
 
+    // If this is a self-contained single-file bundle,
+    // System.Private.CoreLib.dll is expected to be within the bundle, unless it is explicitly excluded from the bundle.
+    // In all other cases, 
     // System.Private.CoreLib.dll is expected to be next to CoreCLR.dll - add its path to the TPA list.
-    pal::string_t corelib_path = clr_dir;
-    append_path(&corelib_path, CORELIB_NAME);
-
-    // Append CoreLib path
-    if (!probe_paths.tpa.empty() && probe_paths.tpa.back() != PATH_SEPARATOR)
+    if (!bundle::info_t::is_single_file_bundle() ||
+        bundle::runner_t::app()->probe(CORELIB_NAME) == nullptr)
     {
-        probe_paths.tpa.push_back(PATH_SEPARATOR);
-    }
+        pal::string_t corelib_path = clr_dir;
+        append_path(&corelib_path, CORELIB_NAME);
 
-    probe_paths.tpa.append(corelib_path);
+        // Append CoreLib path
+        if (!probe_paths.tpa.empty() && probe_paths.tpa.back() != PATH_SEPARATOR)
+        {
+            probe_paths.tpa.push_back(PATH_SEPARATOR);
+        }
+
+        probe_paths.tpa.append(corelib_path);
+    }
 
     const fx_definition_vector_t &fx_definitions = resolver.get_fx_definitions();
 

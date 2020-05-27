@@ -249,7 +249,6 @@ namespace pal
     inline void err_flush() { std::fflush(stderr); }
     inline void out_flush() { std::fflush(stdout); }
 
-    // Based upon https://github.com/dotnet/core-setup/blob/master/src/Microsoft.DotNet.PlatformAbstractions/Native/PlatformApis.cs
     string_t get_current_os_rid_platform();
     inline string_t get_current_os_fallback_rid()
     {

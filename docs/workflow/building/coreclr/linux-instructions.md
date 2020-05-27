@@ -71,47 +71,7 @@ Minimum RAM required to build is 1GB. The build is known to fail on 512 MB VMs (
 Toolchain Setup
 ---------------
 
-Add Kitware's APT feed to your configuration for a newer version of CMake. See their instructions at <https://apt.kitware.com/>.
-
-Install the following packages for the toolchain:
-
-- cmake (at least 3.15.5)
-- llvm-3.9
-- clang-9
-- libunwind8
-- libunwind8-dev
-- gettext
-- libicu-dev
-- liblttng-ust-dev
-- libcurl4-openssl-dev
-- libssl-dev
-- libkrb5-dev
-- libnuma-dev (optional, enables numa support)
-
-Note: ARM clang has a known issue with CompareExchange
-([#15074](https://github.com/dotnet/coreclr/issues/15074)), so for ARM you must
-use clang-4.0 or higher.  Moreover, when building with clang-5.0, the
-following errors occur:
-
-```
-src/coreclr/src/debug/inc/arm/primitives.h:66:1: error: __declspec attribute 'selectany' is
-      not supported [-Werror,-Wignored-attributes]
-```
-
-This is fixed in clang-5.0.2, which can be installed from the apt
-repository listed below.
-
-For other version of Debian/Ubuntu, please visit http://apt.llvm.org/.
-
-Then install the packages you need:
-
-    ~$ sudo apt-get install cmake llvm-3.9 clang-9 libunwind8 libunwind8-dev gettext libicu-dev liblttng-ust-dev libcurl4-openssl-dev libssl-dev libnuma-dev libkrb5-dev
-
-You now have all the required components.
-
-If you are using Fedora, then you will need to install the following packages:
-
-    ~$ sudo dnf install llvm cmake clang lldb-devel libunwind-devel lttng-ust-devel libicu-devel numactl-devel
+Follow instructions and install dependencies listed [here](https://github.com/dotnet/runtime/blob/master/docs/workflow/requirements/linux-requirements.md#toolchain-setup).
 
 Git Setup
 ---------

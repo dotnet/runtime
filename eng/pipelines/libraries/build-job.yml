@@ -5,7 +5,6 @@ parameters:
   archType: ''
   crossrootfsDir: ''
   framework: ''
-  isSourceBuild: false
   isOfficialBuild: false
   isOfficialAllConfigurations: false
   runtimeVariant: ''
@@ -38,7 +37,6 @@ jobs:
       framework:  ${{ parameters.framework }}
       isOfficialBuild: ${{ parameters.isOfficialBuild }}
       isOfficialAllConfigurations: ${{ parameters.isOfficialAllConfigurations }}
-      isSourceBuild: ${{ parameters.isSourceBuild }}
       liveRuntimeBuildConfig: ${{ parameters.liveRuntimeBuildConfig }}
       runtimeFlavor: ${{ parameters.runtimeFlavor }}
       timeoutInMinutes: ${{ parameters.timeoutInMinutes }}
@@ -78,7 +76,7 @@ jobs:
           - template: /eng/pipelines/common/restore-internal-tools.yml
 
         - ${{ if in(parameters.osGroup, 'OSX', 'iOS', 'tvOS') }}:
-          - script: sh $(Build.SourcesDirectory)/eng/install-native-dependencies.sh ${{ parameters.osGroup }}
+          - script: $(Build.SourcesDirectory)/eng/install-native-dependencies.sh ${{ parameters.osGroup }}
             displayName: Install Build Dependencies
 
           - script: |
@@ -98,7 +96,7 @@ jobs:
               df -h
             displayName: Disk Usage after Build
 
-        - ${{ if and(eq(parameters.runTests, false), ne(parameters.isSourceBuild, true)) }}:
+        - ${{ if eq(parameters.runTests, false) }}:
           - ${{ if ne(parameters.isOfficialBuild, true) }}:            
             - task: CopyFiles@2
               displayName: Prepare testhost folder to publish

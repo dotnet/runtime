@@ -7844,6 +7844,15 @@ GenTreeCall* Compiler::gtCloneExprCallHelper(GenTreeCall* tree, unsigned addFlag
 
     copy->CopyOtherRegFlags(tree);
 
+    // We keep track of the number of no return calls, so if we've cloned
+    // one of these, update the tracking.
+    //
+    if (tree->IsNoReturn())
+    {
+        assert(copy->IsNoReturn());
+        setMethodHasNoReturnCalls();
+    }
+
     return copy;
 }
 
@@ -16511,13 +16520,7 @@ bool GenTree::isContained() const
     {
         // We have to cast away const-ness since AsOp() method is non-const.
         const GenTree* childNode = AsOp()->gtGetOp1();
-        assert((isMarkedContained == false) || childNode->IsSIMDEqualityOrInequality());
-    }
-
-    // these either produce a result in register or set flags reg.
-    else if (IsSIMDEqualityOrInequality())
-    {
-        assert(!isMarkedContained);
+        assert(isMarkedContained == false);
     }
 
     // if it's contained it can't be unused.
@@ -18442,13 +18445,8 @@ bool GenTree::isCommutativeSIMDIntrinsic()
         case SIMDIntrinsicAdd:
         case SIMDIntrinsicBitwiseAnd:
         case SIMDIntrinsicBitwiseOr:
-        case SIMDIntrinsicBitwiseXor:
         case SIMDIntrinsicEqual:
-        case SIMDIntrinsicMax:
-        case SIMDIntrinsicMin:
         case SIMDIntrinsicMul:
-        case SIMDIntrinsicOpEquality:
-        case SIMDIntrinsicOpInEquality:
             return true;
         default:
             return false;

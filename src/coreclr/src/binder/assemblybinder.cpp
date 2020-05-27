@@ -14,7 +14,6 @@
 
 #include "assemblybinder.hpp"
 #include "assemblyname.hpp"
-
 #include "assembly.hpp"
 #include "applicationcontext.hpp"
 #include "bindertracing.h"
@@ -380,23 +379,36 @@ namespace BINDER_SPACE
 
         _ASSERTE(ppSystemAssembly != NULL);
 
-        StackSString sCoreLibDir(systemDirectory);
         ReleaseHolder<Assembly> pSystemAssembly;
 
-        if (!sCoreLibDir.EndsWith(DIRECTORY_SEPARATOR_CHAR_W))
-        {
-            sCoreLibDir.Append(DIRECTORY_SEPARATOR_CHAR_W);
-        }
-
-        StackSString sCoreLib;
-
         // At run-time, System.Private.CoreLib.dll is expected to be the NI image.
-        sCoreLib = sCoreLibDir;
-        sCoreLib.Append(CoreLibName_IL_W);
+        // System.Private.CoreLib.dll is expected to be found at one of the following locations:
+        //   * Non-single-file app: In systemDirectory, beside coreclr.dll
+        //   * Framework-dependent single-file app: In systemDirectory, beside coreclr.dll
+        //   * Self-contained single-file app: Within the single-file bundle.
+        //
+        //   CoreLib path (sCoreLib):
+        //   * Absolute path when looking for a file on disk
+        //   * Bundle-relative path when looking within the single-file bundle.
+
+        StackSString sCoreLibName(CoreLibName_IL_W);
+        StackSString sCoreLib;
+        BinderTracing::PathSource pathSource = BinderTracing::PathSource::Bundle;
+        BundleFileLocation bundleFileLocation = Bundle::ProbeAppBundle(sCoreLibName, /*pathIsBundleRelative */ true);
+        if (!bundleFileLocation.IsValid())
+        {
+            sCoreLib.Set(systemDirectory);
+            pathSource = BinderTracing::PathSource::ApplicationAssemblies;
+        }
+        CombinePath(sCoreLib, sCoreLibName, sCoreLib);
+
         IF_FAIL_GO(AssemblyBinder::GetAssembly(sCoreLib,
                                                TRUE /* fIsInGAC */,
                                                fBindToNativeImage,
-                                               &pSystemAssembly));
+                                               &pSystemAssembly,
+                                               NULL /* szMDAssemblyPath */,
+                                               bundleFileLocation));
+        BinderTracing::PathProbed(sCoreLib, pathSource, hr);
 
         *ppSystemAssembly = pSystemAssembly.Extract();
 
@@ -406,10 +418,10 @@ namespace BINDER_SPACE
 
 
     /* static */
-    HRESULT AssemblyBinder::BindToSystemSatellite(SString   &systemDirectory,
-                                                  SString   &simpleName,
-                                                  SString   &cultureName,
-                                                  Assembly **ppSystemAssembly)
+    HRESULT AssemblyBinder::BindToSystemSatellite(SString& systemDirectory,
+        SString& simpleName,
+        SString& cultureName,
+        Assembly** ppSystemAssembly)
     {
         // Indirect check that binder was initialized.
         _ASSERTE(g_BinderVariables != NULL);
@@ -418,25 +430,43 @@ namespace BINDER_SPACE
 
         _ASSERTE(ppSystemAssembly != NULL);
 
-        StackSString sMscorlibSatellite(systemDirectory);
-        ReleaseHolder<Assembly> pSystemAssembly;
+        // Satellite assembly's relative path
+        StackSString relativePath;
 
         // append culture name
         if (!cultureName.IsEmpty())
         {
-            CombinePath(sMscorlibSatellite, cultureName, sMscorlibSatellite);
+            CombinePath(relativePath, cultureName, relativePath);
         }
 
         // append satellite assembly's simple name
-        CombinePath(sMscorlibSatellite, simpleName, sMscorlibSatellite);
+        CombinePath(relativePath, simpleName, relativePath);
 
         // append extension
-        sMscorlibSatellite.Append(W(".dll"));
+        relativePath.Append(W(".dll"));
 
+        // Satellite assembly's path:
+        //   * Absolute path when looking for a file on disk
+        //   * Bundle-relative path when looking within the single-file bundle.
+        StackSString sMscorlibSatellite;
+
+        BinderTracing::PathSource pathSource = BinderTracing::PathSource::Bundle;
+        BundleFileLocation bundleFileLocation = Bundle::ProbeAppBundle(relativePath, /*pathIsBundleRelative */ true);
+        if (!bundleFileLocation.IsValid())
+        {
+            sMscorlibSatellite.Set(systemDirectory);
+            pathSource = BinderTracing::PathSource::ApplicationAssemblies;
+        }
+        CombinePath(sMscorlibSatellite, relativePath, sMscorlibSatellite);
+
+        ReleaseHolder<Assembly> pSystemAssembly;
         IF_FAIL_GO(AssemblyBinder::GetAssembly(sMscorlibSatellite,
                                                TRUE /* fIsInGAC */,
                                                FALSE /* fExplicitBindToNativeImage */,
-                                               &pSystemAssembly));
+                                               &pSystemAssembly,
+                                               NULL /* szMDAssemblyPath */,
+                                               bundleFileLocation));
+        BinderTracing::PathProbed(sMscorlibSatellite, pathSource, hr);
 
         *ppSystemAssembly = pSystemAssembly.Extract();
 
@@ -553,7 +583,9 @@ namespace BINDER_SPACE
                                // specified.  Generally only NGEN PDB generation has
                                // this TRUE.
                                fExplicitBindToNativeImage,
-                               &pAssembly));
+                               &pAssembly,
+                               NULL /* szMDAssemblyPath */,
+                               Bundle::ProbeAppBundle(assemblyPath)));
 
         AssemblyName *pAssemblyName;
         pAssemblyName = pAssembly->GetAssemblyName();
@@ -721,36 +753,75 @@ namespace BINDER_SPACE
 
     namespace
     {
-        typedef void (*OnPathProbed)(const WCHAR *path, HRESULT hr);
-
-        HRESULT BindSatelliteResourceByProbingPaths(
-            const StringArrayList   *pResourceRoots,
-            AssemblyName            *pRequestedAssemblyName,
-            BindResult              *pBindResult,
-            OnPathProbed            onPathProbed)
+        HRESULT BindSatelliteResourceFromBundle(
+            AssemblyName*          pRequestedAssemblyName,
+            SString               &relativePath,
+            BindResult*            pBindResult)
         {
             HRESULT hr = S_OK;
 
-            SString &simpleNameRef = pRequestedAssemblyName->GetSimpleName();
-            SString &cultureRef = pRequestedAssemblyName->GetCulture();
+            BundleFileLocation bundleFileLocation = Bundle::ProbeAppBundle(relativePath, /* pathIsBundleRelative */ true);
+            if (!bundleFileLocation.IsValid())
+            {
+                return hr;
+            }
 
-            _ASSERTE(!cultureRef.IsEmpty() && !cultureRef.EqualsCaseInsensitive(g_BinderVariables->cultureNeutral));
+            ReleaseHolder<Assembly> pAssembly;
+            hr = AssemblyBinder::GetAssembly(relativePath,
+                                             FALSE /* fIsInGAC */,
+                                             FALSE /* fExplicitBindToNativeImage */,
+                                             &pAssembly,
+                                             NULL,  // szMDAssemblyPath
+                                             bundleFileLocation);
+
+            BinderTracing::PathProbed(relativePath, BinderTracing::PathSource::Bundle, hr);
+
+            // Missing files are okay and expected when probing
+            if (hr == HRESULT_FROM_WIN32(ERROR_FILE_NOT_FOUND))
+            {
+                return S_OK;
+            }
+
+            pBindResult->SetAttemptResult(hr, pAssembly);
+            if (FAILED(hr))
+                return hr;
+
+            AssemblyName* pBoundAssemblyName = pAssembly->GetAssemblyName();
+            if (TestCandidateRefMatchesDef(pRequestedAssemblyName, pBoundAssemblyName, false /*tpaListAssembly*/))
+            {
+                pBindResult->SetResult(pAssembly);
+                hr = S_OK;
+            }
+            else
+            {
+                hr = FUSION_E_REF_DEF_MISMATCH;
+            }
+
+            pBindResult->SetAttemptResult(hr, pAssembly);
+            return hr;
+        }
+
+        HRESULT BindSatelliteResourceByProbingPaths(
+            const StringArrayList    *pResourceRoots,
+            AssemblyName             *pRequestedAssemblyName,
+            SString                  &relativePath,
+            BindResult               *pBindResult,
+            BinderTracing::PathSource pathSource)
+        {
+            HRESULT hr = S_OK;
 
             for (UINT i = 0; i < pResourceRoots->GetCount(); i++)
             {
                 ReleaseHolder<Assembly> pAssembly;
                 SString &wszBindingPath = (*pResourceRoots)[i];
                 SString fileName(wszBindingPath);
-
-                CombinePath(fileName, cultureRef, fileName);
-                CombinePath(fileName, simpleNameRef, fileName);
-                fileName.Append(W(".dll"));
+                CombinePath(fileName, relativePath, fileName);
 
                 hr = AssemblyBinder::GetAssembly(fileName,
                                                  FALSE /* fIsInGAC */,
                                                  FALSE /* fExplicitBindToNativeImage */,
                                                  &pAssembly);
-                onPathProbed(fileName, hr);
+                BinderTracing::PathProbed(fileName, pathSource, hr);
 
                 // Missing files are okay and expected when probing
                 if (hr == HRESULT_FROM_WIN32(ERROR_FILE_NOT_FOUND))
@@ -781,6 +852,59 @@ namespace BINDER_SPACE
             return  S_OK;
         }
 
+        HRESULT BindSatelliteResource(
+            ApplicationContext* pApplicationContext,
+            AssemblyName* pRequestedAssemblyName,
+            BindResult* pBindResult)
+        {
+            // Satellite resource probing strategy is to look:
+            //   * First within the single-file bundle
+            //   * Then under each of the Platform Resource Roots
+            //   * Then under each of the App Paths.
+            //
+            // During each search, if we find a platform resource file with matching file name, but whose ref-def didn't match,
+            // fall back to application resource lookup to handle case where a user creates resources with the same
+            // names as platform ones.
+
+            HRESULT hr = S_OK;
+            SString& simpleNameRef = pRequestedAssemblyName->GetSimpleName();
+            SString& cultureRef = pRequestedAssemblyName->GetCulture();
+
+            _ASSERTE(!cultureRef.IsEmpty() && !cultureRef.EqualsCaseInsensitive(g_BinderVariables->cultureNeutral));
+
+            ReleaseHolder<Assembly> pAssembly;
+            SString fileName;
+            CombinePath(fileName, cultureRef, fileName);
+            CombinePath(fileName, simpleNameRef, fileName);
+            fileName.Append(W(".dll"));
+
+            hr = BindSatelliteResourceFromBundle(pRequestedAssemblyName, fileName, pBindResult);
+
+            if (pBindResult->HaveResult() || (FAILED(hr) && hr != FUSION_E_CONFIGURATION_ERROR))
+            {
+                return hr;
+            }
+
+            hr = BindSatelliteResourceByProbingPaths(pApplicationContext->GetPlatformResourceRoots(),
+                                                     pRequestedAssemblyName,
+                                                     fileName,
+                                                     pBindResult,
+                                                     BinderTracing::PathSource::PlatformResourceRoots);
+
+            if (pBindResult->HaveResult() || (FAILED(hr) && hr != FUSION_E_CONFIGURATION_ERROR))
+            {
+                return hr;
+            }
+
+            hr = BindSatelliteResourceByProbingPaths(pApplicationContext->GetAppPaths(),
+                                                     pRequestedAssemblyName,
+                                                     fileName,
+                                                     pBindResult,
+                                                     BinderTracing::PathSource::AppPaths);
+
+            return hr;
+        }
+
         HRESULT BindAssemblyByProbingPaths(
             const StringArrayList   *pBindingPaths,
             AssemblyName            *pRequestedAssemblyName,
@@ -788,7 +912,6 @@ namespace BINDER_SPACE
             Assembly                **ppAssembly)
         {
             SString &simpleName = pRequestedAssemblyName->GetSimpleName();
-
             BinderTracing::PathSource pathSource = useNativeImages ? BinderTracing::PathSource::AppNativeImagePaths : BinderTracing::PathSource::AppPaths;
             // Loop through the binding paths looking for a matching assembly
             for (DWORD i = 0; i < pBindingPaths->GetCount(); i++)
@@ -850,6 +973,13 @@ namespace BINDER_SPACE
 
     /*
      * BindByTpaList is the entry-point for the custom binding algorithm in CoreCLR.
+     *
+     * The search for assemblies will proceed in the following order:
+     *
+     * If this application is a single-file bundle, the meta-data contained in the bundle
+     * will be probed to find the requested assembly. If the assembly is not found,
+     * The list of platform assemblies (TPAs) are considered next.
+     *
      * Platform assemblies are specified as a list of files.  This list is the only set of
      * assemblies that we will load as platform.  They can be specified as IL or NIs.
      *
@@ -875,39 +1005,65 @@ namespace BINDER_SPACE
 
         if (!culture.IsEmpty() && !culture.EqualsCaseInsensitive(g_BinderVariables->cultureNeutral))
         {
-            //
-            // Satellite resource probing strategy is to look under each of the Platform Resource Roots
-            // followed by App Paths.
-            //
-
-            hr = BindSatelliteResourceByProbingPaths(pApplicationContext->GetPlatformResourceRoots(),
-                                                     pRequestedAssemblyName,
-                                                     pBindResult,
-                                                     [](const WCHAR *path, HRESULT res) { BinderTracing::PathProbed(path, BinderTracing::PathSource::PlatformResourceRoots, res); });
-
-            // We found a platform resource file with matching file name, but whose ref-def didn't match.  Fall
-            // back to application resource lookup to handle case where a user creates resources with the same
-            // names as platform ones.
-            if (hr != FUSION_E_CONFIGURATION_ERROR)
-            {
-                IF_FAIL_GO(hr);
-            }
-
-            if (!pBindResult->HaveResult())
-            {
-                IF_FAIL_GO(BindSatelliteResourceByProbingPaths(pApplicationContext->GetAppPaths(),
-                                                               pRequestedAssemblyName,
-                                                               pBindResult,
-                                                               [](const WCHAR *path, HRESULT res) { BinderTracing::PathProbed(path, BinderTracing::PathSource::AppPaths, res); }));
-            }
+            IF_FAIL_GO(BindSatelliteResource(pApplicationContext, pRequestedAssemblyName, pBindResult));
         }
         else
         {
+            ReleaseHolder<Assembly> pTPAAssembly;
+            SString& simpleName = pRequestedAssemblyName->GetSimpleName();
+
+            // Is assembly in the bundle?
+            // Single-file bundle contents take precedence over TPA.
+            // The list of bundled assemblies is contained in the bundle manifest, and NOT in the TPA.
+            // Therefore the bundle is first probed using the assembly's simple name.
+            // If found, the assembly is loaded from the bundle.  
+            if (Bundle::AppIsBundle())
+            {
+                // Search Assembly.ni.dll, then Assembly.dll
+                // The Assembly.ni.dll paths are rare, and intended for supporting managed C++ R2R assemblies.
+                SString candidates[] = { W(".ni.dll"),  W(".dll") };
+
+                // Loop through the binding paths looking for a matching assembly
+                for (int i = 0; i < 2; i++)
+                {
+                    SString assemblyFileName(simpleName);
+                    assemblyFileName.Append(candidates[i]);
+
+                    SString assemblyFilePath(Bundle::AppBundle->BasePath());
+                    assemblyFilePath.Append(assemblyFileName);
+
+                    BundleFileLocation bundleFileLocation = Bundle::ProbeAppBundle(assemblyFileName, /* pathIsBundleRelative */ true);
+                    if (bundleFileLocation.IsValid())
+                    {
+                        hr = GetAssembly(assemblyFilePath,
+                                         TRUE,  // fIsInGAC
+                                         FALSE, // fExplicitBindToNativeImage
+                                         &pTPAAssembly,
+                                         NULL,  // szMDAssemblyPath
+                                         bundleFileLocation);
+
+                        BinderTracing::PathProbed(assemblyFilePath, BinderTracing::PathSource::Bundle, hr);
+
+                        if (hr != HRESULT_FROM_WIN32(ERROR_FILE_NOT_FOUND))
+                        {
+                            // Any other error is fatal
+                            IF_FAIL_GO(hr);
+
+                            if (TestCandidateRefMatchesDef(pRequestedAssemblyName, pTPAAssembly->GetAssemblyName(), true /*tpaListAssembly*/))
+                            {
+                                // We have found the requested assembly match in the bundle with validation of the full-qualified name. 
+                                // Bind to it.
+                                pBindResult->SetResult(pTPAAssembly);
+                                GO_WITH_HRESULT(S_OK);
+                            }
+                        }
+                    }
+                }
+            }
+
             // Is assembly on TPA list?
-            SString &simpleName = pRequestedAssemblyName->GetSimpleName();
             SimpleNameToFileNameMap * tpaMap = pApplicationContext->GetTpaList();
             const SimpleNameToFileNameMapEntry *pTpaEntry = tpaMap->LookupPtr(simpleName.GetUnicode());
-            ReleaseHolder<Assembly> pTPAAssembly;
             if (pTpaEntry != nullptr)
             {
                 if (pTpaEntry->m_wszNIFileName != nullptr)
@@ -1020,20 +1176,21 @@ namespace BINDER_SPACE
     }
 
     /* static */
-    HRESULT AssemblyBinder::GetAssembly(SString     &assemblyPath,
-                                        BOOL         fIsInGAC,
+    HRESULT AssemblyBinder::GetAssembly(SString            &assemblyPath,
+                                        BOOL               fIsInGAC,
 
                                         // When binding to the native image, should we
                                         // assume assemblyPath explicitly specifies that
                                         // NI?  (If not, infer the path to the NI
                                         // implicitly.)
-                                        BOOL         fExplicitBindToNativeImage,
+                                        BOOL               fExplicitBindToNativeImage,
 
-                                        Assembly   **ppAssembly,
+                                        Assembly           **ppAssembly,
 
                                         // If assemblyPath refers to a native image without metadata,
                                         // szMDAssemblyPath gives the alternative file to get metadata.
-                                        LPCTSTR      szMDAssemblyPath)
+                                        LPCTSTR            szMDAssemblyPath,
+                                        BundleFileLocation bundleFileLocation)
     {
         HRESULT hr = S_OK;
 
@@ -1053,7 +1210,7 @@ namespace BINDER_SPACE
         {
             LPCTSTR szAssemblyPath = const_cast<LPCTSTR>(assemblyPath.GetUnicode());
 
-            hr = BinderAcquirePEImage(szAssemblyPath, &pPEImage, &pNativePEImage, fExplicitBindToNativeImage);
+            hr = BinderAcquirePEImage(szAssemblyPath, &pPEImage, &pNativePEImage, fExplicitBindToNativeImage, bundleFileLocation);
             IF_FAIL_GO(hr);
 
             // If we found a native image, it might be an MSIL assembly masquerading as an native image
@@ -1068,7 +1225,7 @@ namespace BINDER_SPACE
                     BinderReleasePEImage(pPEImage);
                     BinderReleasePEImage(pNativePEImage);
 
-                    hr = BinderAcquirePEImage(szAssemblyPath, &pPEImage, &pNativePEImage, false);
+                    hr = BinderAcquirePEImage(szAssemblyPath, &pPEImage, &pNativePEImage, false, bundleFileLocation);
                     IF_FAIL_GO(hr);
                 }
             }
@@ -1094,7 +1251,7 @@ namespace BINDER_SPACE
                 }
                 else
                 {
-                    hr = BinderAcquirePEImage(szMDAssemblyPath, &pPEImage, NULL, FALSE);
+                    hr = BinderAcquirePEImage(szMDAssemblyPath, &pPEImage, NULL, FALSE, bundleFileLocation);
                     IF_FAIL_GO(hr);
 
                     hr = BinderAcquireImport(pPEImage, &pIMetaDataAssemblyImport, dwPAFlags, FALSE);

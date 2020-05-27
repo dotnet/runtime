@@ -203,22 +203,18 @@ if(CLR_CMAKE_TARGET_BROWSER)
     # skip for now
 elseif(CLR_CMAKE_TARGET_IOS)
     add_subdirectory(System.Net.Security.Native)
-    #add_subdirectory(System.Globalization.Native) # TODO: reenable
     # System.Security.Cryptography.Native is intentionally disabled on iOS
     # it is only used for interacting with OpenSSL which isn't useful there
 elseif(CLR_CMAKE_TARGET_TVOS)
     #add_subdirectory(System.Net.Security.Native) # no gssapi on tvOS, see https://developer.apple.com/documentation/gss
-    #add_subdirectory(System.Globalization.Native) # TODO: reenable
     # System.Security.Cryptography.Native is intentionally disabled on tvOS
     # it is only used for interacting with OpenSSL which isn't useful there
 elseif(CLR_CMAKE_TARGET_ANDROID AND NOT CROSS_ROOTFS)
-    add_subdirectory(System.Globalization.Native)
     #add_subdirectory(System.Net.Security.Native) # TODO: reenable
     if (NOT "$ENV{ANDROID_OPENSSL_AAR}" STREQUAL "")
         add_subdirectory(System.Security.Cryptography.Native)
     endif()
 else()
-    add_subdirectory(System.Globalization.Native)
     add_subdirectory(System.Net.Security.Native)
     add_subdirectory(System.Security.Cryptography.Native)
 endif()

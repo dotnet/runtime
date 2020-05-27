@@ -1723,12 +1723,11 @@ namespace ILCompiler.Reflection.ReadyToRun
         /// <summary>
         /// Read a string token from the signature stream and convert it to the actual string.
         /// </summary>
-        /// <returns></returns>
         private void ParseStringHandle(StringBuilder builder)
         {
             uint rid = ReadUIntAndEmitInlineSignatureBinary(builder);
             UserStringHandle stringHandle = MetadataTokens.UserStringHandle((int)rid);
-            builder.Append(_metadataReader.GetUserString(stringHandle));
+            builder.AppendEscapedString(_metadataReader.GetUserString(stringHandle));
         }
     }
 }

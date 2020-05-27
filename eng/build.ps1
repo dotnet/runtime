@@ -5,12 +5,12 @@ Param(
   [ValidateSet("Debug","Release","Checked")][string[]][Alias('c')]$configuration = @("Debug"),
   [string][Alias('f')]$framework,
   [string]$vs,
-  [ValidateSet("Windows_NT","Linux","OSX")][string]$os,
+  [ValidateSet("Windows_NT","Linux","OSX","Browser")][string]$os,
   [switch]$allconfigurations,
   [switch]$coverage,
   [string]$testscope,
   [switch]$testnobuild,
-  [ValidateSet("x86","x64","arm","arm64")][string[]][Alias('a')]$arch = @([System.Runtime.InteropServices.RuntimeInformation]::ProcessArchitecture.ToString().ToLowerInvariant()),
+  [ValidateSet("x86","x64","arm","arm64","wasm")][string[]][Alias('a')]$arch = @([System.Runtime.InteropServices.RuntimeInformation]::ProcessArchitecture.ToString().ToLowerInvariant()),
   [Parameter(Position=0)][string][Alias('s')]$subset,
   [ValidateSet("Debug","Release","Checked")][string][Alias('rc')]$runtimeConfiguration,
   [ValidateSet("Debug","Release")][string][Alias('lc')]$librariesConfiguration,
@@ -21,8 +21,8 @@ function Get-Help() {
   Write-Host "Common settings:"
   Write-Host "  -subset                   Build a subset, print available subsets with -subset help (short: -s)"
   Write-Host "  -vs                       Open the solution with VS for Test Explorer support. Path or solution name (ie -vs Microsoft.CSharp)"
-  Write-Host "  -os                       Build operating system: Windows_NT, Linux or OSX"
-  Write-Host "  -arch                     Build platform: x86, x64, arm or arm64 (short: -a). Pass a comma-separated list to build for multiple architectures."
+  Write-Host "  -os                       Build operating system: Windows_NT, Linux, OSX, or Browser"
+  Write-Host "  -arch                     Build platform: x86, x64, arm, arm64, or wasm (short: -a). Pass a comma-separated list to build for multiple architectures."
   Write-Host "  -configuration            Build configuration: Debug, Release or [CoreCLR]Checked (short: -c). Pass a comma-separated list to build for multiple configurations"
   Write-Host "  -runtimeConfiguration     Runtime build configuration: Debug, Release or [CoreCLR]Checked (short: -rc)"
   Write-Host "  -librariesConfiguration   Libraries build configuration: Debug or Release (short: -lc)"

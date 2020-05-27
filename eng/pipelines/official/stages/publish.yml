@@ -18,8 +18,7 @@ stages:
       publishUsingPipelines: true
       dependsOn: PrepareSignedArtifacts
       pool:
-        name: NetCoreInternal-Pool
-        queue: buildpool.windows.10.amd64.vs2017
+        vmImage: vs2017-win2016
 
 # Stages-based publishing entry point
 - template: /eng/common/templates/post-build/post-build.yml
