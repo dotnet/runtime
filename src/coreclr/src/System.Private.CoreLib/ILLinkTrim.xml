@@ -55,8 +55,6 @@
     <!-- Accessed via private reflection and by native code. -->
     <type fullname="System.Diagnostics.Tracing.RuntimeEventSource" />
     <type fullname="System.Diagnostics.Tracing.NativeRuntimeEventSource" />
-    <!-- Accessed via reflection in TraceLogging-style EventSource events. -->
-    <type fullname="*f__AnonymousType*" />
     <type fullname="System.Diagnostics.Tracing.PropertyValue/ReferenceTypeHelper`1">
       <!-- Instantiated via reflection -->
       <method name=".ctor" />
