@@ -170,7 +170,7 @@ namespace System.Threading
             public WaitThread()
             {
                 _waitHandles[0] = _changeHandlesEvent.SafeWaitHandle;
-                Thread waitThread = new Thread(WaitThreadStart);
+                Thread waitThread = new Thread(WaitThreadStart, SmallStackSizeBytes);
                 waitThread.IsThreadPoolThread = true;
                 waitThread.IsBackground = true;
                 waitThread.Name = ".NET ThreadPool Wait";

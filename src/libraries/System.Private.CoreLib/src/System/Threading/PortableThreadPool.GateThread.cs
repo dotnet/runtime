@@ -171,7 +171,7 @@ namespace System.Threading
                 bool created = false;
                 try
                 {
-                    Thread gateThread = new Thread(GateThreadStart);
+                    Thread gateThread = new Thread(GateThreadStart, SmallStackSizeBytes);
                     gateThread.IsThreadPoolThread = true;
                     gateThread.IsBackground = true;
                     gateThread.Name = ".NET ThreadPool Gate";
