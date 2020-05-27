@@ -1373,12 +1373,6 @@
         <ExcludeList Include="$(XunitTestBinBase)JIT/Methodical/tailcall_v4/hijacking/**">
             <Issue>https://github.com/dotnet/runtime/issues/34068</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/VT/callconv/_il_dbgjumps4/**">
-            <Issue>https://github.com/dotnet/runtime/issues/34379</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/VT/callconv/_il_reljumps4/**">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/opt/ObjectStackAllocation/ObjectStackAllocationTests/**">
             <Issue>needs triage</Issue>
         </ExcludeList>
