@@ -122,7 +122,6 @@ namespace System.Text.Json
                                     Debug.Assert(jsonPropertyInfo != null && jsonPropertyInfo.NameAsString != null);
 
                                     string propertyName = propertyInfo.Name;
-                                    bool isIgnored = jsonPropertyInfo.IsIgnored;
 
                                     // The JsonPropertyNameAttribute or naming policy resulted in a collision.
                                     if (!JsonHelpers.TryAdd(cache, jsonPropertyInfo.NameAsString, jsonPropertyInfo))
@@ -134,15 +133,17 @@ namespace System.Text.Json
                                             // Overwrite previously cached property since it has [JsonIgnore].
                                             cache[jsonPropertyInfo.NameAsString] = jsonPropertyInfo;
                                         }
-                                        else if (!(isIgnored || other.PropertyInfo!.Name == propertyName || ignoredProperties?.Contains(propertyName) == true))
+                                        else if (
+                                            // Does the current property have `JsonIgnoreAttribute`?
+                                            !jsonPropertyInfo.IsIgnored &&
+                                            // Is the current property hidden by the previously cached property
+                                            // (with `new` keyword, or by overriding)?
+                                            other.PropertyInfo!.Name != propertyName &&
+                                            // Was a property with the same CLR name was ignored? That property hid the current property,
+                                            // thus, if it was ignored, the current property should be ignored too.
+                                            ignoredProperties?.Contains(propertyName) != true)
                                         {
-                                            // The collision is invalid if none of the following is true:
-                                            // 1. The current property has [JsonIgnore].
-                                            // 2. The current property was hidden by a previously cached property with the same CLR property name
-                                            //    (either by overriding or with the new operator).
-                                            // 3. The current property has a conflicting name with a previously cached property that did not hide it.
-                                            //    The property that hid it has [JsonIgnore] (and was overwritten from the caches),
-                                            //    so we'll ignore this one as well.
+                                            // We throw if we have two public properties that have the same JSON property name, and neither have been ignored.
                                             ThrowHelper.ThrowInvalidOperationException_SerializerPropertyNameConflict(Type, jsonPropertyInfo);
                                         }
                                         // Ignore the current property.
