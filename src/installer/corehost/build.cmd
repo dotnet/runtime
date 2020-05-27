@@ -14,10 +14,12 @@ set "__LinkArgs= "
 set "__LinkLibraries= "
 set __PortableBuild=0
 set __IncrementalNativeBuild=0
+set __BuildType=Debug
+set __TargetOS=Windows_NT
 
 :Arg_Loop
 if [%1] == [] goto :ToolsVersion
-if /i [%1] == [Release]     ( set CMAKE_BUILD_TYPE=Release&&shift&goto Arg_Loop)
+if /i [%1] == [Release]     ( set CMAKE_BUILD_TYPE=Release&&set __BuildType=Release&&shift&goto Arg_Loop)
 if /i [%1] == [Debug]       ( set CMAKE_BUILD_TYPE=Debug&&shift&goto Arg_Loop)
 
 if /i [%1] == [AnyCPU]      ( set __BuildArch=x64&&set __VCBuildArch=x86_amd64&&shift&goto Arg_Loop)
@@ -38,6 +40,8 @@ if /i [%1] == [commit]      (set __CommitSha=%2&&shift&&shift&goto Arg_Loop)
 
 if /i [%1] == [incremental-native-build] ( set __IncrementalNativeBuild=1&&shift&goto Arg_Loop)
 if /i [%1] == [rootDir]     ( set __rootDir=%2&&shift&&shift&goto Arg_Loop)
+if /i [%1] == [coreclrartifacts]  (set __CoreClrArtifacts=%2&&shift&&shift&goto Arg_Loop)
+
 
 shift
 goto :Arg_Loop

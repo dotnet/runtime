@@ -70,6 +70,9 @@ add_library_clr(coreclr_static
     ${CLR_SOURCES}
 )
 
+# make coreclr_static dependent on coreclr to not compete for def files.
+add_dependencies(coreclr_static coreclr)
+
 add_custom_target(coreclr_exports DEPENDS ${EXPORTS_FILE})
 add_dependencies(coreclr coreclr_exports)
 
@@ -89,17 +92,13 @@ endif(FEATURE_MERGE_JIT_AND_ENGINE)
 # library.
 set(CORECLR_LIBRARIES
     utilcode
+    ${START_LIBRARY_GROUP} # Start group of libraries that have circular references
     cordbee_wks
     debug-pal
     ${LIB_UNWINDER}
     cee_wks
     v3binder
-
-    # Intentionally duplicated to ensure symbols are properly defined
-    cordbee_wks
-    debug-pal
-    ${LIB_UNWINDER}
-
+    ${END_LIBRARY_GROUP} # End group of libraries that have circular references
     mdcompiler_wks
     mdruntime_wks
     mdruntimerw_wks
@@ -227,6 +226,9 @@ endif(CLR_CMAKE_TARGET_WIN32)
 
 # add the install targets
 install_clr(TARGETS coreclr ADDITIONAL_DESTINATION sharedFramework)
+
+# publish coreclr_static lib
+_install(TARGETS coreclr_static DESTINATION lib)
 
 # Enable profile guided optimization
 add_pgo(coreclr)
