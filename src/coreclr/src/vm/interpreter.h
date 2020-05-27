@@ -13,6 +13,7 @@
 #include "stack.h"
 #include "crst.h"
 #include "callhelpers.h"
+#include "codeversion.h"
 
 typedef SSIZE_T NativeInt;
 typedef SIZE_T NativeUInt;

@@ -1636,6 +1636,7 @@ void Interpreter::JitMethodIfAppropriate(InterpreterMethodInfo* interpMethInfo, 
 
         if (InterpretationStubToMethodInfo(stub) == md)
         {
+            CodeVersionManager::LockHolder _lockHolder;
 #if INTERP_TRACING
             if (s_TraceInterpreterJITTransitionFlag.val(CLRConfig::INTERNAL_TraceInterpreterJITTransition))
             {
