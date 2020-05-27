@@ -424,15 +424,7 @@ namespace System
         {
             if (Method is null)
             {
-#nullable disable
-                // FIXME: This code cannot handle null argument values
-                Type[] mtypes = new Type[args.Length];
-                for (int i = 0; i < args.Length; ++i)
-                {
-                    mtypes[i] = args[i].GetType();
-                }
-                method_info = _target.GetType().GetMethod(data.method_name, mtypes);
-#nullable restore
+                    throw new NullReferenceException ("method_info is null");
             }
 
             object? target = _target;
