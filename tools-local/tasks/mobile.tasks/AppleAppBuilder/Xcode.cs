@@ -22,10 +22,15 @@ internal class Xcode
         bool preferDylibs,
         bool useConsoleUiTemplate,
         bool useAotForSimulator,
+        bool stripDebugSymbols,
         string? nativeMainSource = null)
     {
         // bundle everything as resources excluding native files
-        string[] excludes = {".dll.o", ".dll.s", ".dwarf", ".m", ".h", ".a", ".bc"};
+        var excludes = new List<string> { ".dll.o", ".dll.s", ".dwarf", ".m", ".h", ".a", ".bc", "libmonosgen-2.0.dylib" };
+        if (stripDebugSymbols)
+        {
+            excludes.Add(".pdb");
+        }
 
         string[] resources = Directory.GetFiles(workspace)
             .Where(f => !excludes.Any(e => f.EndsWith(e, StringComparison.InvariantCultureIgnoreCase)))
@@ -150,7 +155,16 @@ internal class Xcode
         args.Append(" -configuration ").Append(config);
 
         Utils.RunProcess("xcodebuild", args.ToString(), workingDir: Path.GetDirectoryName(xcodePrjPath));
-        return Path.Combine(Path.GetDirectoryName(xcodePrjPath)!, config + "-" + sdk,
+
+        string appPath = Path.Combine(Path.GetDirectoryName(xcodePrjPath)!, config + "-" + sdk,
             Path.GetFileNameWithoutExtension(xcodePrjPath) + ".app");
+
+        long appSize = new DirectoryInfo(appPath)
+            .EnumerateFiles("*", SearchOption.AllDirectories)
+            .Sum(file => file.Length);
+
+        Utils.LogInfo($"\nAPP size: {(appSize / 1000_000.0):0.#} Mb.\n");
+
+        return appPath;
     }
 }
