@@ -84,7 +84,7 @@ namespace System.Text.Json
 
             if (options.ReferenceHandler != null)
             {
-                ReferenceResolver = options.ReferenceHandler.CreateResolver();
+                ReferenceResolver = options.ReferenceHandler.CreateResolver(writing: true);
                 ShouldWritePreservedReferences = true;
             }
 

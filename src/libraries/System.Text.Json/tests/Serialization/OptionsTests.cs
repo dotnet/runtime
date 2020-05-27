@@ -552,7 +552,6 @@ namespace System.Text.Json.Serialization.Tests
                 PropertyNameCaseInsensitive = true,
                 PropertyNamingPolicy = new SimpleSnakeCasePolicy(),
                 ReadCommentHandling = JsonCommentHandling.Disallow,
-                ReferenceHandler = ReferenceHandler.Default,
                 WriteIndented = true,
             };
 

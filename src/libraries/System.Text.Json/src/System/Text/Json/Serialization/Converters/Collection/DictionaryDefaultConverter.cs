@@ -174,6 +174,9 @@ namespace System.Text.Json.Serialization.Converters
 
                         value = (TCollection)state.Current.ReturnValue!;
                         state.ReferenceResolver.AddReference(state.Current.MetadataId, value);
+                        // Clear metadata name, if the next read fails
+                        // we want to point the JSON path to the property's object.
+                        state.Current.JsonPropertyName = null;
                     }
 
                     state.Current.ObjectState = StackFrameObjectState.CreatedObject;

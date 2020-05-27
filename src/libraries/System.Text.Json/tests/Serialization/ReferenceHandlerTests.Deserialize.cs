@@ -1256,7 +1256,7 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Equal("$.$id", ex.Path);
         }
 
-        [Fact(Skip = "TODO: Decide whether update the test to no longer point to $id or try to append $id back to the JSON Path.")]
+        [Fact]
         public static void DuplicatedId()
         {
             string json = @"[
@@ -1273,6 +1273,32 @@ namespace System.Text.Json.Serialization.Tests
             JsonException ex = Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<List<Employee>>(json, s_deserializerOptionsPreserve));
 
             Assert.Equal("$[1].$id", ex.Path);
+            Assert.Contains("'1'", ex.Message);
+        }
+
+        class ClassWithTwoListProperties
+        {
+            public List<string> List1 { get; set; }
+            public List<string> List2 { get; set; }
+        }
+
+        [Fact]
+        public static void DuplicatedIdArray()
+        {
+            string json = @"{
+                ""List1"": {
+                        ""$id"": ""1"",
+                        ""$values"": []
+                    },
+                ""List2"": {
+                        ""$id"": ""1"",
+                        ""$values"": []
+                    }
+            }";
+
+            JsonException ex = Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<ClassWithTwoListProperties>(json, s_deserializerOptionsPreserve));
+
+            Assert.Equal("$.List2.$id", ex.Path);
             Assert.Contains("'1'", ex.Message);
         }
 

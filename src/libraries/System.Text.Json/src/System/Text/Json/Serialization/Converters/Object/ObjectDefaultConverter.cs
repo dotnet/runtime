@@ -106,6 +106,9 @@ namespace System.Text.Json.Serialization.Converters
                     if (state.Current.MetadataId != null)
                     {
                         state.ReferenceResolver.AddReference(state.Current.MetadataId, obj);
+                        // Clear metadata name, if the next read fails
+                        // we want to point the JSON path to the property's object.
+                        state.Current.JsonPropertyName = null;
                     }
 
                     state.Current.ReturnValue = obj;

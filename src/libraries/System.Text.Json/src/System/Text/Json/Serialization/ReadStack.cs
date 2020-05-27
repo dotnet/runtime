@@ -91,7 +91,7 @@ namespace System.Text.Json
 
             if (options.ReferenceHandler != null)
             {
-                ReferenceResolver = options.ReferenceHandler.CreateResolver();
+                ReferenceResolver = options.ReferenceHandler.CreateResolver(writing: false);
                 ShouldReadPreservedReferences = true;
             }
 
@@ -250,8 +250,10 @@ namespace System.Text.Json
                         return;
                     }
 
-                    // Once all elements are read, the exception is not within the array.
-                    if (frame.ObjectState < StackFrameObjectState.ReadElements)
+                    // For continuation scenarios only, before or after all elements are read, the exception is not within the array.
+                    if (frame.ObjectState == StackFrameObjectState.None ||
+                        frame.ObjectState == StackFrameObjectState.CreatedObject ||
+                        frame.ObjectState == StackFrameObjectState.ReadElements)
                     {
                         sb.Append('[');
                         sb.Append(GetCount(enumerable));

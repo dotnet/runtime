@@ -135,7 +135,14 @@ namespace System.Text.Json.Serialization.Converters
                     if (state.Current.MetadataId != null)
                     {
                         value = (TCollection)state.Current.ReturnValue!;
+
+                        // Remember the prior metadata and temporarily use '$id' to write it in the path in case AddReference throws
+                        // in this case, the last property seen will be '$values' when we reach this point.
+                        byte[]? lastMetadataProperty = state.Current.JsonPropertyName;
+                        state.Current.JsonPropertyName = JsonSerializer.s_idPropertyName;
+
                         state.ReferenceResolver.AddReference(state.Current.MetadataId, value);
+                        state.Current.JsonPropertyName = lastMetadataProperty;
                     }
 
                     state.Current.JsonPropertyInfo = state.Current.JsonClassInfo.ElementClassInfo!.PropertyInfoForClassInfo;
