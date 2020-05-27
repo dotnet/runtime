@@ -64,7 +64,9 @@ namespace System.Collections.Concurrent
             // Section 12.6.6 of ECMA CLI explains which types can be read and written atomically without
             // the risk of tearing. See https://www.ecma-international.org/publications/files/ECMA-ST/ECMA-335.pdf
 
-            if (!typeof(TValue).IsValueType)
+            if (!typeof(TValue).IsValueType ||
+                typeof(TValue) == typeof(IntPtr) ||
+                typeof(TValue) == typeof(UIntPtr))
             {
                 return true;
             }
