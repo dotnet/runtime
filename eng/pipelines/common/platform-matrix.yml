@@ -202,25 +202,25 @@ jobs:
 
 # Android x64
 
-- ${{ if containsValue(parameters.platforms, 'Android_x64') }}:
-  - template: xplat-setup.yml
-    parameters:
-      jobTemplate: ${{ parameters.jobTemplate }}
-      helixQueuesTemplate: ${{ parameters.helixQueuesTemplate }}
-      osGroup: Android
-      archType: x64
-      platform: Android_x64
-      container:
-        image: ubuntu-18.04-android-20200422191843-e2c3f83
-        registry: mcr
-      jobParameters:
-        runtimeFlavor: mono
-        stagedBuild: ${{ parameters.stagedBuild }}
-        buildConfig: ${{ parameters.buildConfig }}
-        ${{ if eq(parameters.passPlatforms, true) }}:
-          platforms: ${{ parameters.platforms }}
-        helixQueueGroup: ${{ parameters.helixQueueGroup }}
-        ${{ insert }}: ${{ parameters.jobParameters }}
+#- ${{ if containsValue(parameters.platforms, 'Android_x64') }}:
+#  - template: xplat-setup.yml
+#    parameters:
+#      jobTemplate: ${{ parameters.jobTemplate }}
+#      helixQueuesTemplate: ${{ parameters.helixQueuesTemplate }}
+#      osGroup: Android
+#      archType: x64
+#      platform: Android_x64
+#      container:
+#        image: ubuntu-18.04-android-20200422191843-e2c3f83
+#        registry: mcr
+#      jobParameters:
+#        runtimeFlavor: mono
+#        stagedBuild: ${{ parameters.stagedBuild }}
+#        buildConfig: ${{ parameters.buildConfig }}
+#        ${{ if eq(parameters.passPlatforms, true) }}:
+#          platforms: ${{ parameters.platforms }}
+#        helixQueueGroup: ${{ parameters.helixQueueGroup }}
+#        ${{ insert }}: ${{ parameters.jobParameters }}
 
 # Android x86
 
