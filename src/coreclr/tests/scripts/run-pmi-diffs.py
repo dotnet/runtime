@@ -64,7 +64,7 @@ Unix_name_map = {
     'FreeBSD': 'FreeBSD',
     'OpenBSD': 'OpenBSD',
     'NetBSD': 'NetBSD',
-    'SunOS': 'Illumos' if Is_illumos else 'Solaris'
+    'SunOS': 'illumos' if Is_illumos else 'Solaris'
 }
 
 Is_windows = (os.name == 'nt')

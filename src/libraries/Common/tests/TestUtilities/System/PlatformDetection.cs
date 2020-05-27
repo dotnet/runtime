@@ -26,8 +26,8 @@ namespace System
         public static bool IsNetBSD => RuntimeInformation.IsOSPlatform(OSPlatform.Create("NETBSD"));
         public static bool IsiOS => RuntimeInformation.IsOSPlatform(OSPlatform.Create("IOS"));
         public static bool IstvOS => RuntimeInformation.IsOSPlatform(OSPlatform.Create("TVOS"));
-        public static bool IsIllumos => RuntimeInformation.IsOSPlatform(OSPlatform.Create("Illumos"));
-        public static bool IsSolaris => RuntimeInformation.IsOSPlatform(OSPlatform.Create("Solaris"));
+        public static bool IsIllumos => RuntimeInformation.IsOSPlatform(OSPlatform.Create("ILLUMOS"));
+        public static bool IsSolaris => RuntimeInformation.IsOSPlatform(OSPlatform.Create("SOLARIS"));
 
         public static bool IsArmProcess => RuntimeInformation.ProcessArchitecture == Architecture.Arm;
         public static bool IsNotArmProcess => !IsArmProcess;
@@ -274,7 +274,7 @@ namespace System
             }
             else if (IsOpenSslSupported)
             {
-                // Covers Linux, FreeBSD, Illumos and Solaris
+                // Covers Linux, FreeBSD, illumos and Solaris
                 return OpenSslVersion >= new Version(1,1,1);
             }
 

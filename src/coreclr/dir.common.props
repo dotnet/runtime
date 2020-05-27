@@ -55,7 +55,7 @@
     <TargetsFreeBSD Condition="'$(TargetOS)' == 'FreeBSD'">true</TargetsFreeBSD>
     <TargetsLinux Condition="'$(TargetOS)' == 'Linux'">true</TargetsLinux>
     <TargetsNetBSD Condition="'$(TargetOS)' == 'NetBSD'">true</TargetsNetBSD>
-    <TargetsIllumos Condition="'$(TargetOS)' == 'Illumos'">true</TargetsIllumos>
+    <TargetsIllumos Condition="'$(TargetOS)' == 'illumos'">true</TargetsIllumos>
     <TargetsSolaris Condition="'$(TargetOS)' == 'Solaris'">true</TargetsSolaris>
     <TargetsOSX Condition="'$(TargetOS)' == 'OSX'">true</TargetsOSX>
     <TargetsWindows Condition="'$(TargetOS)' == 'Windows_NT'">true</TargetsWindows>

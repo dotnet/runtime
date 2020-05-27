@@ -42,23 +42,11 @@
         "Unix"
         ]
       },
-    "Illumos": {
-      "#import": [
-        "Unix"
-        ]
-      }
-    },
-    "Solaris": {
+    "illumos": {
       "#import": [
         "Unix"
         ]
       },
-    "Illumos": {
-      "#import": [
-        "Unix"
-        ]
-      }
-    },
     "Solaris": {
       "#import": [
         "Unix"

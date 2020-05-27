@@ -21,9 +21,10 @@ esac
 # and `uname -p` returns processor type (e.g. i386 on amd64).
 # The appropriate tool to determine CPU is isainfo(1) https://docs.oracle.com/cd/E36784_01/html/E36870/isainfo-1.html.
 if [ "$os" = "SunOS" ]; then
-    os="Solaris"
     if uname -o 2>&1 | grep -q illumos; then
-        os="Illumos"
+        os="illumos"
+    else
+        os="Solaris"
     fi
     CPUName=$(isainfo -n)
 else

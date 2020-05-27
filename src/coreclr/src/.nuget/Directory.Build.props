@@ -28,7 +28,7 @@
 
     <RuntimeOS Condition="'$(RuntimeOS)' == ''">$(OSRid)</RuntimeOS>
 
-    <SupportedPackageOSGroups Condition="'$(SupportedPackageOSGroups)' == ''">Windows_NT;OSX;Android;Linux;FreeBSD;NetBSD;Illumos;Solaris</SupportedPackageOSGroups>
+    <SupportedPackageOSGroups Condition="'$(SupportedPackageOSGroups)' == ''">Windows_NT;OSX;Android;Linux;FreeBSD;NetBSD;illumos;Solaris</SupportedPackageOSGroups>
     <SupportedPackageOSGroups>;$(SupportedPackageOSGroups);</SupportedPackageOSGroups>
 
     <!-- Identify OS family based upon the RuntimeOS, which could be distro specific (e.g. osx.10.12) or
@@ -183,7 +183,7 @@
   <ItemGroup Condition="$(SupportedPackageOSGroups.Contains(';NetBSD;'))">
     <OfficialBuildRID Include="netbsd-x64" />
   </ItemGroup>
-  <ItemGroup Condition="$(SupportedPackageOSGroups.Contains(';Illumos;'))">
+  <ItemGroup Condition="$(SupportedPackageOSGroups.Contains(';illumos;'))">
     <OfficialBuildRID Include="illumos-x64" />
   </ItemGroup>
   <ItemGroup Condition="$(SupportedPackageOSGroups.Contains(';Solaris;'))">

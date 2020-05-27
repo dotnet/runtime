@@ -18,7 +18,7 @@ usage()
 {
   echo "Common settings:"
   echo "  --subset                   Build a subset, print available subsets with -subset help (short: -s)"
-  echo "  --os                       Build operating system: Windows_NT, Linux, FreeBSD, OSX, tvOS, iOS, Android, Browser, NetBSD, Illumos or Solaris"
+  echo "  --os                       Build operating system: Windows_NT, Linux, FreeBSD, OSX, tvOS, iOS, Android, Browser, NetBSD, illumos or Solaris"
   echo "  --arch                     Build platform: x86, x64, arm, armel, arm64 or wasm"
   echo "  --configuration            Build configuration: Debug, Release or [CoreCLR]Checked (short: -c)"
   echo "  --runtimeConfiguration     Runtime build configuration: Debug, Release or [CoreCLR]Checked (short: -rc)"
@@ -191,12 +191,12 @@ while [[ $# > 0 ]]; do
         browser)
           os="Browser" ;;
         illumos)
-          os="Illumos" ;;
+          os="illumos" ;;
         solaris)
           os="Solaris" ;;
         *)
           echo "Unsupported target OS '$2'."
-          echo "The allowed values are Windows_NT, Linux, FreeBSD, OSX, tvOS, iOS, Android, Browser, Illumos and Solaris."
+          echo "The allowed values are Windows_NT, Linux, FreeBSD, OSX, tvOS, iOS, Android, Browser, illumos and Solaris."
           exit 1
           ;;
       esac

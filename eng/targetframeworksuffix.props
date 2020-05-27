@@ -62,7 +62,7 @@
         <PackageTargetRuntime>netbsd</PackageTargetRuntime>
       </PropertyGroup>
     </When>
-    <When Condition="'$(TargetFrameworkSuffix)' == 'Illumos'">
+    <When Condition="'$(TargetFrameworkSuffix)' == 'illumos'">
       <PropertyGroup>
         <TargetsUnix>true</TargetsUnix>
         <TargetsIllumos>true</TargetsIllumos>
