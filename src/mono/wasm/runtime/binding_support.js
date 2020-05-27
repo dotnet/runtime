@@ -5,7 +5,7 @@
 var BindingSupportLib = {
 	$BINDING__postset: 'BINDING.export_functions (Module);',
 	$BINDING: {
-		BINDING_ASM: "[WebAssembly.Bindings]WebAssembly.Runtime",
+		BINDING_ASM: "[System.Runtime.InteropServices.JavaScript]System.Runtime.InteropServices.JavaScript.Runtime",
 		mono_wasm_object_registry: [],
 		mono_wasm_ref_counter: 0,
 		mono_wasm_free_list: [],
@@ -57,7 +57,7 @@ var BindingSupportLib = {
 
 			if (binding_fqn_class !== null && typeof binding_fqn_class !== "undefined")
 			{
-				var namespace = "WebAssembly";
+				var namespace = "System.Runtime.InteropServices.JavaScript";
 				var classname = binding_fqn_class.length > 0 ? binding_fqn_class : "Runtime";
 				if (binding_fqn_class.indexOf(".") != -1) {
 					var idx = binding_fqn_class.lastIndexOf(".");
@@ -83,7 +83,7 @@ var BindingSupportLib = {
 			this.unbind_js_obj_and_free = get_method ("UnBindJSObjectAndFree");			
 			this.unbind_raw_obj_and_free = get_method ("UnBindRawJSObjectAndFree");			
 			this.get_js_id = get_method ("GetJSObjectId");
-			this.get_raw_mono_obj = get_method ("GetMonoObject");
+			this.get_raw_mono_obj = get_method ("GetDotNetObject");
 
 			this.box_js_int = get_method ("BoxInt");
 			this.box_js_double = get_method ("BoxDouble");
@@ -103,7 +103,6 @@ var BindingSupportLib = {
 			this.create_date_time = get_method ("CreateDateTime");
 			this.create_uri = get_method ("CreateUri");
 
-			this.object_to_enum = get_method ("ObjectToEnum");
 			this.init = true;
 		},
 

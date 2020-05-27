@@ -123,7 +123,7 @@ public class ApkBuilder
         string cmake = "cmake";
         string zip = "zip";
 
-        Utils.RunProcess(zip, workingDir: Path.Combine(OutputDir, "assets-tozip"), args: "-r ../assets/assets.zip .");
+        Utils.RunProcess(zip, workingDir: Path.Combine(OutputDir, "assets-tozip"), args: "-q -r ../assets/assets.zip .");
         Directory.Delete(Path.Combine(OutputDir, "assets-tozip"), true);
         
         if (!File.Exists(androidJar))
