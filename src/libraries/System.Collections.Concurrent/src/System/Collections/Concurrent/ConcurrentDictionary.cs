@@ -345,13 +345,16 @@ namespace System.Collections.Concurrent
         /// <param name="oldValue">The conditional value to compare against if <paramref name="matchValue"/> is true</param>
         private bool TryRemoveInternal(TKey key, [MaybeNullWhen(false)] out TValue value, bool matchValue, [AllowNull] TValue oldValue)
         {
-            int hashcode = _comparer is null ? key.GetHashCode() : _comparer.GetHashCode(key);
+            IEqualityComparer<TKey>? comparer = _comparer;
+            int hashcode = comparer is null ? key.GetHashCode() : comparer.GetHashCode(key);
             while (true)
             {
                 Tables tables = _tables;
-                GetBucketAndLockNo(hashcode, out int bucketNo, out int lockNo, tables._buckets.Length, tables._locks.Length);
+                Node?[] buckets = tables._buckets;
+                object[] locks = tables._locks;
+                GetBucketAndLockNo(hashcode, out int bucketNo, out int lockNo, buckets.Length, locks.Length);
 
-                lock (tables._locks[lockNo])
+                lock (locks[lockNo])
                 {
                     // If the table just got resized, we may not be holding the right lock, and must retry.
                     // This should be a rare occurrence.
@@ -361,11 +364,11 @@ namespace System.Collections.Concurrent
                     }
 
                     Node? prev = null;
-                    for (Node? curr = tables._buckets[bucketNo]; curr != null; curr = curr._next)
+                    for (Node? curr = buckets[bucketNo]; curr != null; curr = curr._next)
                     {
-                        Debug.Assert((prev is null && curr == tables._buckets[bucketNo]) || prev!._next == curr);
+                        Debug.Assert((prev is null && curr == buckets[bucketNo]) || prev!._next == curr);
 
-                        if (hashcode == curr._hashcode && (_comparer is null ? _defaultComparer.Equals(curr._key, key) : _comparer.Equals(curr._key, key)))
+                        if (hashcode == curr._hashcode && (comparer is null ? _defaultComparer.Equals(curr._key, key) : comparer.Equals(curr._key, key)))
                         {
                             if (matchValue)
                             {
@@ -379,7 +382,7 @@ namespace System.Collections.Concurrent
 
                             if (prev is null)
                             {
-                                Volatile.Write(ref tables._buckets[bucketNo], curr._next);
+                                Volatile.Write(ref buckets[bucketNo], curr._next);
                             }
                             else
                             {
@@ -421,14 +424,16 @@ namespace System.Collections.Concurrent
             // The Volatile.Read on the array element then ensures that we have a copy of the reference to tables._buckets[bucketNo]:
             // this protects us from reading fields ('_hashcode', '_key', '_value' and '_next') of different instances.
             Tables tables = _tables;
+            Node?[] buckets = tables._buckets;
 
-            if (_comparer is null)
+            IEqualityComparer<TKey>? comparer = _comparer;
+            if (comparer is null)
             {
                 int hashcode = key.GetHashCode();
-                int bucketNo = GetBucket(hashcode, tables._buckets.Length);
+                int bucketNo = GetBucket(hashcode, buckets.Length);
                 if (typeof(TKey).IsValueType)
                 {
-                    for (Node? n = Volatile.Read(ref tables._buckets[bucketNo]); n != null; n = n._next)
+                    for (Node? n = Volatile.Read(ref buckets[bucketNo]); n != null; n = n._next)
                     {
                         if (hashcode == n._hashcode && EqualityComparer<TKey>.Default.Equals(n._key, key))
                         {
@@ -439,7 +444,7 @@ namespace System.Collections.Concurrent
                 }
                 else
                 {
-                    for (Node? n = Volatile.Read(ref tables._buckets[bucketNo]); n != null; n = n._next)
+                    for (Node? n = Volatile.Read(ref buckets[bucketNo]); n != null; n = n._next)
                     {
                         if (hashcode == n._hashcode && _defaultComparer.Equals(n._key, key))
                         {
@@ -451,12 +456,11 @@ namespace System.Collections.Concurrent
             }
             else
             {
-
-                int hashcode = _comparer.GetHashCode(key);
-                int bucketNo = GetBucket(hashcode, tables._buckets.Length);
-                for (Node? n = Volatile.Read(ref tables._buckets[bucketNo]); n != null; n = n._next)
+                int hashcode = comparer.GetHashCode(key);
+                uint bucketNo = GetBucket(hashcode, buckets.Length);
+                for (Node? n = Volatile.Read(ref buckets[bucketNo]); n != null; n = n._next)
                 {
-                    if (hashcode == n._hashcode && _comparer.Equals(n._key, key))
+                    if (hashcode == n._hashcode && comparer.Equals(n._key, key))
                     {
                         value = n._value;
                         return true;
@@ -476,14 +480,15 @@ namespace System.Collections.Concurrent
             // The Volatile.Read on the array element then ensures that we have a copy of the reference to tables._buckets[bucketNo]:
             // this protects us from reading fields ('_hashcode', '_key', '_value' and '_next') of different instances.
             Tables tables = _tables;
+            Node?[] buckets = tables._buckets;
+            int bucketNo = GetBucket(hashcode, buckets.Length);
 
-            int bucketNo = GetBucket(hashcode, tables._buckets.Length);
-
-            if (_comparer is null)
+            IEqualityComparer<TKey>? comparer = _comparer;
+            if (comparer is null)
             {
                 if (typeof(TKey).IsValueType)
                 {
-                    for (Node? n = Volatile.Read(ref tables._buckets[bucketNo]); n != null; n = n._next)
+                    for (Node? n = Volatile.Read(ref buckets[bucketNo]); n != null; n = n._next)
                     {
                         if (hashcode == n._hashcode && EqualityComparer<TKey>.Default.Equals(n._key, key))
                         {
@@ -494,7 +499,7 @@ namespace System.Collections.Concurrent
                 }
                 else
                 {
-                    for (Node? n = Volatile.Read(ref tables._buckets[bucketNo]); n != null; n = n._next)
+                    for (Node? n = Volatile.Read(ref buckets[bucketNo]); n != null; n = n._next)
                     {
                         if (hashcode == n._hashcode && _defaultComparer.Equals(n._key, key))
                         {
@@ -506,9 +511,9 @@ namespace System.Collections.Concurrent
             }
             else
             {
-                for (Node? n = Volatile.Read(ref tables._buckets[bucketNo]); n != null; n = n._next)
+                for (Node? n = Volatile.Read(ref buckets[bucketNo]); n != null; n = n._next)
                 {
-                    if (hashcode == n._hashcode && _comparer.Equals(n._key, key))
+                    if (hashcode == n._hashcode && comparer.Equals(n._key, key))
                     {
                         value = n._value;
                         return true;
@@ -563,24 +568,28 @@ namespace System.Collections.Concurrent
         /// <exception cref="ArgumentNullException"><paramref name="key"/> is a null reference.</exception>
         private bool TryUpdateInternal(TKey key, int? nullableHashcode, TValue newValue, TValue comparisonValue)
         {
+            IEqualityComparer<TKey>? comparer = _comparer;
+
             Debug.Assert(
                 nullableHashcode is null ||
-                (_comparer is null && key.GetHashCode() == nullableHashcode) ||
-                (_comparer != null && _comparer.GetHashCode(key) == nullableHashcode));
+                (comparer is null && key.GetHashCode() == nullableHashcode) ||
+                (comparer != null && comparer.GetHashCode(key) == nullableHashcode));
 
             int hashcode =
                 nullableHashcode.HasValue ? nullableHashcode.GetValueOrDefault() :
-                _comparer is null ? key.GetHashCode() :
-                _comparer.GetHashCode(key);
+                comparer is null ? key.GetHashCode() :
+                comparer.GetHashCode(key);
 
             EqualityComparer<TValue> valueComparer = EqualityComparer<TValue>.Default;
 
             while (true)
             {
                 Tables tables = _tables;
-                GetBucketAndLockNo(hashcode, out int bucketNo, out int lockNo, tables._buckets.Length, tables._locks.Length);
+                Node?[] buckets = tables._buckets;
+                object[] locks = tables._locks;
+                GetBucketAndLockNo(hashcode, out int bucketNo, out int lockNo, buckets.Length, locks.Length);
 
-                lock (tables._locks[lockNo])
+                lock (locks[lockNo])
                 {
                     // If the table just got resized, we may not be holding the right lock, and must retry.
                     // This should be a rare occurrence.
@@ -591,10 +600,10 @@ namespace System.Collections.Concurrent
 
                     // Try to find this key in the bucket
                     Node? prev = null;
-                    for (Node? node = tables._buckets[bucketNo]; node != null; node = node._next)
+                    for (Node? node = buckets[bucketNo]; node != null; node = node._next)
                     {
-                        Debug.Assert((prev is null && node == tables._buckets[bucketNo]) || prev!._next == node);
-                        if (hashcode == node._hashcode && (_comparer is null ? _defaultComparer.Equals(node._key, key) : _comparer.Equals(node._key, key)))
+                        Debug.Assert((prev is null && node == buckets[bucketNo]) || prev!._next == node);
+                        if (hashcode == node._hashcode && (comparer is null ? _defaultComparer.Equals(node._key, key) : comparer.Equals(node._key, key)))
                         {
                             if (valueComparer.Equals(node._value, comparisonValue))
                             {
@@ -608,7 +617,7 @@ namespace System.Collections.Concurrent
 
                                     if (prev is null)
                                     {
-                                        Volatile.Write(ref tables._buckets[bucketNo], newNode);
+                                        Volatile.Write(ref buckets[bucketNo], newNode);
                                     }
                                     else
                                     {
@@ -818,20 +827,24 @@ namespace System.Collections.Concurrent
         /// </summary>
         private bool TryAddInternal(TKey key, int? nullableHashcode, TValue value, bool updateIfExists, bool acquireLock, out TValue resultingValue)
         {
+            IEqualityComparer<TKey>? comparer = _comparer;
+
             Debug.Assert(
                 nullableHashcode is null ||
-                (_comparer is null && key.GetHashCode() == nullableHashcode) ||
-                (_comparer != null && _comparer.GetHashCode(key) == nullableHashcode));
+                (comparer is null && key.GetHashCode() == nullableHashcode) ||
+                (comparer != null && comparer.GetHashCode(key) == nullableHashcode));
 
             int hashcode =
                 nullableHashcode.HasValue ? nullableHashcode.GetValueOrDefault() :
-                _comparer is null ? key.GetHashCode() :
-                _comparer.GetHashCode(key);
+                comparer is null ? key.GetHashCode() :
+                comparer.GetHashCode(key);
 
             while (true)
             {
                 Tables tables = _tables;
-                GetBucketAndLockNo(hashcode, out int bucketNo, out int lockNo, tables._buckets.Length, tables._locks.Length);
+                Node?[] buckets = tables._buckets;
+                object[] locks = tables._locks;
+                GetBucketAndLockNo(hashcode, out int bucketNo, out int lockNo, buckets.Length, locks.Length);
 
                 bool resizeDesired = false;
                 bool lockTaken = false;
@@ -839,7 +852,7 @@ namespace System.Collections.Concurrent
                 {
                     if (acquireLock)
                     {
-                        Monitor.Enter(tables._locks[lockNo], ref lockTaken);
+                        Monitor.Enter(locks[lockNo], ref lockTaken);
                     }
 
                     // If the table just got resized, we may not be holding the right lock, and must retry.
@@ -851,10 +864,10 @@ namespace System.Collections.Concurrent
 
                     // Try to find this key in the bucket
                     Node? prev = null;
-                    for (Node? node = tables._buckets[bucketNo]; node != null; node = node._next)
+                    for (Node? node = buckets[bucketNo]; node != null; node = node._next)
                     {
-                        Debug.Assert((prev is null && node == tables._buckets[bucketNo]) || prev!._next == node);
-                        if (hashcode == node._hashcode && (_comparer is null ? _defaultComparer.Equals(node._key, key) : _comparer.Equals(node._key, key)))
+                        Debug.Assert((prev is null && node == buckets[bucketNo]) || prev!._next == node);
+                        if (hashcode == node._hashcode && (comparer is null ? _defaultComparer.Equals(node._key, key) : comparer.Equals(node._key, key)))
                         {
                             // The key was found in the dictionary. If updates are allowed, update the value for that key.
                             // We need to create a new node for the update, in order to support TValue types that cannot
@@ -870,7 +883,7 @@ namespace System.Collections.Concurrent
                                     var newNode = new Node(node._key, value, hashcode, node._next);
                                     if (prev is null)
                                     {
-                                        Volatile.Write(ref tables._buckets[bucketNo], newNode);
+                                        Volatile.Write(ref buckets[bucketNo], newNode);
                                     }
                                     else
                                     {
@@ -889,7 +902,7 @@ namespace System.Collections.Concurrent
                     }
 
                     // The key was not found in the bucket. Insert the key-value pair.
-                    Volatile.Write(ref tables._buckets[bucketNo], new Node(key, value, hashcode, tables._buckets[bucketNo]));
+                    Volatile.Write(ref buckets[bucketNo], new Node(key, value, hashcode, buckets[bucketNo]));
                     checked
                     {
                         tables._countPerLock[lockNo]++;
@@ -909,7 +922,7 @@ namespace System.Collections.Concurrent
                 {
                     if (lockTaken)
                     {
-                        Monitor.Exit(tables._locks[lockNo]);
+                        Monitor.Exit(locks[lockNo]);
                     }
                 }
 
@@ -1048,7 +1061,8 @@ namespace System.Collections.Concurrent
                 ThrowHelper.ThrowArgumentNullException(nameof(valueFactory));
             }
 
-            int hashcode = _comparer is null ? key.GetHashCode() : _comparer.GetHashCode(key);
+            IEqualityComparer<TKey>? comparer = _comparer;
+            int hashcode = comparer is null ? key.GetHashCode() : comparer.GetHashCode(key);
 
             if (!TryGetValueInternal(key, hashcode, out TValue resultingValue))
             {
@@ -1086,7 +1100,8 @@ namespace System.Collections.Concurrent
                 ThrowHelper.ThrowArgumentNullException(nameof(valueFactory));
             }
 
-            int hashcode = _comparer is null ? key.GetHashCode() : _comparer.GetHashCode(key);
+            IEqualityComparer<TKey>? comparer = _comparer;
+            int hashcode = comparer is null ? key.GetHashCode() : comparer.GetHashCode(key);
 
             if (!TryGetValueInternal(key, hashcode, out TValue resultingValue))
             {
@@ -1115,7 +1130,8 @@ namespace System.Collections.Concurrent
                 ThrowHelper.ThrowKeyNullException();
             }
 
-            int hashcode = _comparer is null ? key.GetHashCode() : _comparer.GetHashCode(key);
+            IEqualityComparer<TKey>? comparer = _comparer;
+            int hashcode = comparer is null ? key.GetHashCode() : comparer.GetHashCode(key);
 
             if (!TryGetValueInternal(key, hashcode, out TValue resultingValue))
             {
@@ -1163,7 +1179,8 @@ namespace System.Collections.Concurrent
                 ThrowHelper.ThrowArgumentNullException(nameof(updateValueFactory));
             }
 
-            int hashcode = _comparer is null ? key.GetHashCode() : _comparer.GetHashCode(key);
+            IEqualityComparer<TKey>? comparer = _comparer;
+            int hashcode = comparer is null ? key.GetHashCode() : comparer.GetHashCode(key);
 
             while (true)
             {
@@ -1223,7 +1240,8 @@ namespace System.Collections.Concurrent
                 ThrowHelper.ThrowArgumentNullException(nameof(updateValueFactory));
             }
 
-            int hashcode = _comparer is null ? key.GetHashCode() : _comparer.GetHashCode(key);
+            IEqualityComparer<TKey>? comparer = _comparer;
+            int hashcode = comparer is null ? key.GetHashCode() : comparer.GetHashCode(key);
 
             while (true)
             {
@@ -1276,7 +1294,8 @@ namespace System.Collections.Concurrent
                 ThrowHelper.ThrowArgumentNullException(nameof(updateValueFactory));
             }
 
-            int hashcode = _comparer is null ? key.GetHashCode() : _comparer.GetHashCode(key);
+            IEqualityComparer<TKey>? comparer = _comparer;
+            int hashcode = comparer is null ? key.GetHashCode() : comparer.GetHashCode(key);
 
             while (true)
             {
@@ -1894,9 +1913,9 @@ namespace System.Collections.Concurrent
                 var newCountPerLock = new int[newLocks.Length];
 
                 // Copy all data into a new table, creating new nodes for all elements
-                for (int i = 0; i < tables._buckets.Length; i++)
+                foreach (Node? bucket in tables._buckets)
                 {
-                    Node? current = tables._buckets[i];
+                    Node? current = bucket;
                     while (current != null)
                     {
                         Node? next = current._next;
@@ -2065,7 +2084,7 @@ namespace System.Collections.Concurrent
                     ThrowHelper.ThrowOutOfMemoryException();
                 }
 
-                List<TValue> values = new List<TValue>(count);
+                var values = new List<TValue>(count);
                 Node?[] buckets = _tables._buckets;
                 for (int i = 0; i < buckets.Length; i++)
                 {
