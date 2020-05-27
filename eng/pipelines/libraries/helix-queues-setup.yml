@@ -78,6 +78,13 @@ jobs:
       - ${{ if eq(parameters.jobParameters.isFullMatrix, false) }}:
         - Ubuntu.1804.Amd64.Android.Open
 
+    # iOS x64/x86
+    - ${{ if in(parameters.platform, 'iOS_x64', 'iOS_x86') }}:
+      - ${{ if eq(parameters.jobParameters.isFullMatrix, true) }}:
+        - OSX.1015.Amd64.Open
+      - ${{ if eq(parameters.jobParameters.isFullMatrix, false) }}:
+        - OSX.1015.Amd64.Open
+
     # OSX x64
     - ${{ if eq(parameters.platform, 'OSX_x64') }}:
       - ${{ if eq(parameters.jobParameters.isFullMatrix, true) }}:
