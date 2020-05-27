@@ -94,7 +94,7 @@ namespace System.Text.Json.Serialization.Converters
                     return value;
                 }
             }
-            if (_converterOptions.HasFlag(EnumConverterOptions.AllowStrings) && token == JsonTokenType.Null && _stringToEnumCache != null && _stringToEnumCache.TryGetValue(ValueTuple.Create(null), out T value)) {
+            if (_converterOptions.HasFlag(EnumConverterOptions.AllowStrings) && token == JsonTokenType.Null && _stringToEnumCache != null && _stringToEnumCache.TryGetValue(ValueTuple.Create<string>(null), out T value)) {
                 return value;
             }
 
