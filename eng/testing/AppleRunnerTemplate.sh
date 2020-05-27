@@ -1,10 +1,7 @@
 ﻿#!/usr/bin/env bash
 
 EXECUTION_DIR=$(dirname $0)
-TEST_NAME=$1
-TARGET_ARCH=$2
-TARGET=
-SCHEME_SDK=
+[[RunCommands]]
 
 if [ "$TARGET_ARCH" == "arm" ]; then
     TARGET=ios-device
