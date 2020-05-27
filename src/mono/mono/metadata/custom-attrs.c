@@ -711,8 +711,8 @@ mono_custom_attrs_from_builders_handle (MonoImage *alloc_img, MonoImage *image, 
 			continue;
 
 		if (image_is_dynamic(image)) {
-			printf("dynamic adding %s to %s\n", ctor_method->klass->image->assembly_name, image->assembly_name);
-			mono_reflection_resolution_scope_from_image ((MonoDynamicImage *)image, m_class_get_image (ctor_method->klass));
+			// printf("adding %s to %s\n", ctor_method->klass->image->assembly_name, image->assembly_name);
+			mono_reflection_resolution_scope_from_image ((MonoDynamicImage *)image->assembly->image, m_class_get_image (ctor_method->klass));
 		}
 
 		MONO_HANDLE_GET (cattr_data, cattr, data);

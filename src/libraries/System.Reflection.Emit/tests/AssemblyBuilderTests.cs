@@ -307,7 +307,8 @@ namespace System.Reflection.Emit.Tests
         public void GetReferencedAssemblies()
         {
             // create an assembly tagged with a custom attribute
-            var cattr_asm = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("custom_attr_assembly"), AssemblyBuilderAccess.Run);
+            string assembly_name = "custom_attr_assembly";
+            var cattr_asm = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName(assembly_name), AssemblyBuilderAccess.Run);
 
             ConstructorInfo classCtorInfo = typeof(CustomAttribute).GetConstructor(new Type[] { });
             CustomAttributeBuilder cattr = new CustomAttributeBuilder(
@@ -319,6 +320,7 @@ namespace System.Reflection.Emit.Tests
             cattr_asm.SetCustomAttribute(cattr);
 
             Assert.Equal(1, cattr_asm.GetReferencedAssemblies().Length); // Should now have a single reference, to this assembly
+            Assert.Equal(assembly_name, cattr_asm.GetReferencedAssemblies()[0].Name);
         }
 
         private static void VerifyAssemblyBuilder(AssemblyBuilder assembly, AssemblyName name, IEnumerable<CustomAttributeBuilder> attributes)

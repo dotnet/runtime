@@ -442,7 +442,9 @@ mono_reflection_resolution_scope_from_image (MonoDynamicImage *assembly, MonoIma
 	table->rows ++;
 	alloc_table (table, table->rows);
 	values = table->values + token * MONO_ASSEMBLYREF_SIZE;
-	values [MONO_ASSEMBLYREF_NAME] = string_heap_insert (&assembly->sheap, image->assembly_name);
+	guint32 tok = string_heap_insert (&assembly->sheap, image->assembly_name);
+	printf ("tok: %d\n", tok);
+	values [MONO_ASSEMBLYREF_NAME] = tok;
 	values [MONO_ASSEMBLYREF_MAJOR_VERSION] = cols [MONO_ASSEMBLY_MAJOR_VERSION];
 	values [MONO_ASSEMBLYREF_MINOR_VERSION] = cols [MONO_ASSEMBLY_MINOR_VERSION];
 	values [MONO_ASSEMBLYREF_BUILD_NUMBER] = cols [MONO_ASSEMBLY_BUILD_NUMBER];
