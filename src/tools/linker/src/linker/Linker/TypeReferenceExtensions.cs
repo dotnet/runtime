@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Text;
 using Mono.Cecil;
 using System.Collections.Generic;
 using System.Linq;
@@ -34,6 +35,42 @@ namespace Mono.Linker
 			}
 
 			return type.Resolve ()?.BaseType;
+		}
+
+		public static TypeReference GetInflatedDeclaringType (this TypeReference type)
+		{
+			if (type == null)
+				return null;
+
+			if (type.IsGenericParameter || type.IsByReference || type.IsPointer)
+				return null;
+
+			if (type is SentinelType sentinelType)
+				return sentinelType.ElementType.GetInflatedDeclaringType ();
+
+			if (type is PinnedType pinnedType)
+				return pinnedType.ElementType.GetInflatedDeclaringType ();
+
+			if (type is RequiredModifierType requiredModifierType)
+				return requiredModifierType.ElementType.GetInflatedDeclaringType ();
+
+			if (type is GenericInstanceType genericInstance) {
+				var declaringType = genericInstance.DeclaringType;
+
+				if (declaringType.HasGenericParameters) {
+					var result = new GenericInstanceType (declaringType);
+					for (var i = 0; i < declaringType.GenericParameters.Count; ++i)
+						result.GenericArguments.Add (genericInstance.GenericArguments[i]);
+
+					return result;
+				}
+
+				return declaringType;
+			}
+
+			var resolved = type.Resolve ();
+			System.Diagnostics.Debug.Assert (resolved == type);
+			return resolved?.DeclaringType;
 		}
 
 		public static IEnumerable<TypeReference> GetInflatedInterfaces (this TypeReference typeRef)

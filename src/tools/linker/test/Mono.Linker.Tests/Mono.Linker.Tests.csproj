@@ -3,6 +3,7 @@
 
   <PropertyGroup>
     <LangVersion>latest</LangVersion>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(MonoBuild)' == ''">
