@@ -261,7 +261,7 @@ add_library(coreclrpal
 #
 if(CLR_CMAKE_TARGET_LINUX)
   add_library(tracepointprovider
-    STATIC
+    OBJECT
     misc/tracepointprovider.cpp
   )
 endif(CLR_CMAKE_TARGET_LINUX)

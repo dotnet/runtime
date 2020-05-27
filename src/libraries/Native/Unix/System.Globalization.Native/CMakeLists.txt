@@ -80,7 +80,7 @@ if (GEN_SHARED_LIB)
 endif()
 
 add_library(System.Globalization.Native-Static
-    STATIC
+    OBJECT
     ${NATIVEGLOBALIZATION_SOURCES}
 )
 
