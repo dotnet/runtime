@@ -1061,8 +1061,10 @@ mono_metadata_string_heap_checked (MonoImage *meta, guint32 index, MonoError *er
 	{
 		MonoDynamicImage* img = (MonoDynamicImage*) meta;
 		const char *image_name = meta && meta->name ? meta->name : "unknown image";
-		if (G_UNLIKELY (!(index < img->sheap.index)))
+		if (G_UNLIKELY (!(index < img->sheap.index))) {
 			mono_error_set_bad_image_by_name (error, image_name, "string heap index %ud out bounds %u: %s", index, img->sheap.index, image_name);
+			return NULL;
+		}
 		return img->sheap.data + index;
 	}
 	else if (G_UNLIKELY (!(index < meta->heap_strings.size))) {
@@ -1133,6 +1135,17 @@ mono_metadata_blob_heap_null_ok (MonoImage *meta, guint32 index)
 const char *
 mono_metadata_blob_heap_checked (MonoImage *meta, guint32 index, MonoError *error)
 {
+	if (mono_image_is_dynamic (meta)) {
+		MonoDynamicImage* img = (MonoDynamicImage*) meta;
+		const char *image_name = meta && meta->name ? meta->name : "unknown image";
+		if (G_UNLIKELY (!(index < img->blob.index))) {
+			mono_error_set_bad_image_by_name (error, image_name, "blob heap index %u out of bounds %u: %s", index, img->blob.index, image_name);
+			return NULL;
+		}
+		if (G_UNLIKELY (index == 0 && img->blob.alloc_size == 0))
+			return NULL;
+		return img->blob.data + index;
+	}
 	if (G_UNLIKELY (index == 0 && meta->heap_blob.size == 0))
 		return NULL;
 	if (G_UNLIKELY (!(index < meta->heap_blob.size))) {

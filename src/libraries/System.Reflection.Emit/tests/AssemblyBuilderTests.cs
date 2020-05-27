@@ -306,7 +306,7 @@ namespace System.Reflection.Emit.Tests
         [Fact]
         public void GetReferencedAssemblies()
         {
-            // create an assembly tagged with a custom attribute
+            // Create an assembly tagged with a custom attribute
             var cattr_asm = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("custom_attr_assembly"), AssemblyBuilderAccess.Run);
 
             ConstructorInfo classCtorInfo = typeof(CustomAttribute).GetConstructor(new Type[] { });
@@ -318,7 +318,10 @@ namespace System.Reflection.Emit.Tests
 
             cattr_asm.SetCustomAttribute(cattr);
 
-            Assert.Equal(1, cattr_asm.GetReferencedAssemblies().Length); // Should now have a single reference, to this assembly
+            // Should now have a single reference, to this assembly
+            Assert.Equal(1, cattr_asm.GetReferencedAssemblies().Length);
+            Assert.Equal(typeof(CustomAttribute).Assembly.GetName().Name, cattr_asm.GetReferencedAssemblies()[0].Name);
+            Assert.Equal(typeof(CustomAttribute).Assembly.GetName().GetPublicKeyToken(), cattr_asm.GetReferencedAssemblies()[0].GetPublicKeyToken());
         }
 
         private static void VerifyAssemblyBuilder(AssemblyBuilder assembly, AssemblyName name, IEnumerable<CustomAttributeBuilder> attributes)
