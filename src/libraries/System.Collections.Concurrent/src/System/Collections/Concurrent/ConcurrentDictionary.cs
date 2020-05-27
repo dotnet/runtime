@@ -25,7 +25,13 @@ namespace System.Collections.Concurrent
         /// <summary>Internal tables of the dictionary.</summary>
         private volatile Tables _tables;
         /// <summary>Key equality comparer.</summary>
-        private readonly IEqualityComparer<TKey> _comparer;
+        private readonly IEqualityComparer<TKey>? _comparer;
+        /// <summary>Default comparer for TKey.</summary>
+        /// <remarks>
+        /// Used to avoid repeatedly accessing the shared default generic static, in particular for reference types where it's
+        /// currently not devirtualized: https://github.com/dotnet/runtime/issues/10050.
+        /// </remarks>
+        private readonly EqualityComparer<TKey> _defaultComparer;
         /// <summary>Whether to dynamically increase the size of the striped lock.</summary>
         private readonly bool _growLockArray;
         /// <summary>The maximum number of elements per lock before a resize operation is triggered.</summary>
@@ -58,13 +64,12 @@ namespace System.Collections.Concurrent
             // Section 12.6.6 of ECMA CLI explains which types can be read and written atomically without
             // the risk of tearing. See https://www.ecma-international.org/publications/files/ECMA-ST/ECMA-335.pdf
 
-            Type valueType = typeof(TValue);
-            if (!valueType.IsValueType)
+            if (!typeof(TValue).IsValueType)
             {
                 return true;
             }
 
-            switch (Type.GetTypeCode(valueType))
+            switch (Type.GetTypeCode(typeof(TValue)))
             {
                 case TypeCode.Boolean:
                 case TypeCode.Byte:
@@ -179,7 +184,7 @@ namespace System.Collections.Concurrent
                     ThrowHelper.ThrowKeyNullException();
                 }
 
-                if (!TryAddInternal(pair.Key, _comparer.GetHashCode(pair.Key), pair.Value, updateIfExists: false, acquireLock: false, out _))
+                if (!TryAddInternal(pair.Key, null, pair.Value, updateIfExists: false, acquireLock: false, out _))
                 {
                     throw new ArgumentException(SR.ConcurrentDictionary_SourceContainsDuplicateKeys);
                 }
@@ -224,7 +229,8 @@ namespace System.Collections.Concurrent
             }
 
             var locks = new object[concurrencyLevel];
-            for (int i = 0; i < locks.Length; i++)
+            locks[0] = locks; // reuse array as the first lock object just to avoid an additional allocation
+            for (int i = 1; i < locks.Length; i++)
             {
                 locks[i] = new object();
             }
@@ -233,7 +239,8 @@ namespace System.Collections.Concurrent
             var buckets = new Node[capacity];
             _tables = new Tables(buckets, locks, countPerLock);
 
-            _comparer = comparer ?? EqualityComparer<TKey>.Default;
+            _defaultComparer = EqualityComparer<TKey>.Default;
+            _comparer = ReferenceEquals(_defaultComparer, comparer) ? null : comparer;
             _growLockArray = growLockArray;
             _budget = buckets.Length / locks.Length;
         }
@@ -256,7 +263,7 @@ namespace System.Collections.Concurrent
                 ThrowHelper.ThrowKeyNullException();
             }
 
-            return TryAddInternal(key, _comparer.GetHashCode(key), value, updateIfExists: false, acquireLock: true, out _);
+            return TryAddInternal(key, null, value, updateIfExists: false, acquireLock: true, out _);
         }
 
         /// <summary>
@@ -332,7 +339,7 @@ namespace System.Collections.Concurrent
         /// <param name="oldValue">The conditional value to compare against if <paramref name="matchValue"/> is true</param>
         private bool TryRemoveInternal(TKey key, [MaybeNullWhen(false)] out TValue value, bool matchValue, [AllowNull] TValue oldValue)
         {
-            int hashcode = _comparer.GetHashCode(key);
+            int hashcode = _comparer is null ? key.GetHashCode() : _comparer.GetHashCode(key);
             while (true)
             {
                 Tables tables = _tables;
@@ -352,7 +359,7 @@ namespace System.Collections.Concurrent
                     {
                         Debug.Assert((prev is null && curr == tables._buckets[bucketNo]) || prev!._next == curr);
 
-                        if (hashcode == curr._hashcode && _comparer.Equals(curr._key, key))
+                        if (hashcode == curr._hashcode && (_comparer is null ? _defaultComparer.Equals(curr._key, key) : _comparer.Equals(curr._key, key)))
                         {
                             if (matchValue)
                             {
@@ -404,12 +411,60 @@ namespace System.Collections.Concurrent
                 ThrowHelper.ThrowKeyNullException();
             }
 
-            return TryGetValueInternal(key, _comparer.GetHashCode(key), out value);
+            // We must capture the volatile _tables field into a local variable: it is set to a new table on each table resize.
+            // The Volatile.Read on the array element then ensures that we have a copy of the reference to tables._buckets[bucketNo]:
+            // this protects us from reading fields ('_hashcode', '_key', '_value' and '_next') of different instances.
+            Tables tables = _tables;
+
+            if (_comparer is null)
+            {
+                int hashcode = key.GetHashCode();
+                int bucketNo = GetBucket(hashcode, tables._buckets.Length);
+                if (typeof(TKey).IsValueType)
+                {
+                    for (Node? n = Volatile.Read(ref tables._buckets[bucketNo]); n != null; n = n._next)
+                    {
+                        if (hashcode == n._hashcode && EqualityComparer<TKey>.Default.Equals(n._key, key))
+                        {
+                            value = n._value;
+                            return true;
+                        }
+                    }
+                }
+                else
+                {
+                    for (Node? n = Volatile.Read(ref tables._buckets[bucketNo]); n != null; n = n._next)
+                    {
+                        if (hashcode == n._hashcode && _defaultComparer.Equals(n._key, key))
+                        {
+                            value = n._value;
+                            return true;
+                        }
+                    }
+                }
+            }
+            else
+            {
+
+                int hashcode = _comparer.GetHashCode(key);
+                int bucketNo = GetBucket(hashcode, tables._buckets.Length);
+                for (Node? n = Volatile.Read(ref tables._buckets[bucketNo]); n != null; n = n._next)
+                {
+                    if (hashcode == n._hashcode && _comparer.Equals(n._key, key))
+                    {
+                        value = n._value;
+                        return true;
+                    }
+                }
+            }
+
+            value = default;
+            return false;
         }
 
         private bool TryGetValueInternal(TKey key, int hashcode, [MaybeNullWhen(false)] out TValue value)
         {
-            Debug.Assert(_comparer.GetHashCode(key) == hashcode);
+            Debug.Assert((_comparer is null ? key.GetHashCode() : _comparer.GetHashCode(key)) == hashcode);
 
             // We must capture the volatile _tables field into a local variable: it is set to a new table on each table resize.
             // The Volatile.Read on the array element then ensures that we have a copy of the reference to tables._buckets[bucketNo]:
@@ -418,12 +473,40 @@ namespace System.Collections.Concurrent
 
             int bucketNo = GetBucket(hashcode, tables._buckets.Length);
 
-            for (Node? n = Volatile.Read(ref tables._buckets[bucketNo]); n != null; n = n._next)
+            if (_comparer is null)
             {
-                if (hashcode == n._hashcode && _comparer.Equals(n._key, key))
+                if (typeof(TKey).IsValueType)
                 {
-                    value = n._value;
-                    return true;
+                    for (Node? n = Volatile.Read(ref tables._buckets[bucketNo]); n != null; n = n._next)
+                    {
+                        if (hashcode == n._hashcode && EqualityComparer<TKey>.Default.Equals(n._key, key))
+                        {
+                            value = n._value;
+                            return true;
+                        }
+                    }
+                }
+                else
+                {
+                    for (Node? n = Volatile.Read(ref tables._buckets[bucketNo]); n != null; n = n._next)
+                    {
+                        if (hashcode == n._hashcode && _defaultComparer.Equals(n._key, key))
+                        {
+                            value = n._value;
+                            return true;
+                        }
+                    }
+                }
+            }
+            else
+            {
+                for (Node? n = Volatile.Read(ref tables._buckets[bucketNo]); n != null; n = n._next)
+                {
+                    if (hashcode == n._hashcode && _comparer.Equals(n._key, key))
+                    {
+                        value = n._value;
+                        return true;
+                    }
                 }
             }
 
@@ -453,7 +536,7 @@ namespace System.Collections.Concurrent
                 ThrowHelper.ThrowKeyNullException();
             }
 
-            return TryUpdateInternal(key, _comparer.GetHashCode(key), newValue, comparisonValue);
+            return TryUpdateInternal(key, null, newValue, comparisonValue);
         }
 
         /// <summary>
@@ -462,7 +545,7 @@ namespace System.Collections.Concurrent
         /// </summary>
         /// <param name="key">The key whose value is compared with <paramref name="comparisonValue"/> and
         /// possibly replaced.</param>
-        /// <param name="hashcode">The hashcode computed for <paramref name="key"/>.</param>
+        /// <param name="nullableHashcode">The hashcode computed for <paramref name="key"/>.</param>
         /// <param name="newValue">The value that replaces the value of the element with <paramref
         /// name="key"/> if the comparison results in equality.</param>
         /// <param name="comparisonValue">The value that is compared to the value of the element with
@@ -472,11 +555,19 @@ namespace System.Collections.Concurrent
         /// replaced with <paramref name="newValue"/>; otherwise, false.
         /// </returns>
         /// <exception cref="ArgumentNullException"><paramref name="key"/> is a null reference.</exception>
-        private bool TryUpdateInternal(TKey key, int hashcode, TValue newValue, TValue comparisonValue)
+        private bool TryUpdateInternal(TKey key, int? nullableHashcode, TValue newValue, TValue comparisonValue)
         {
-            Debug.Assert(_comparer.GetHashCode(key) == hashcode);
+            Debug.Assert(
+                nullableHashcode is null ||
+                (_comparer is null && key.GetHashCode() == nullableHashcode) ||
+                (_comparer != null && _comparer.GetHashCode(key) == nullableHashcode));
 
-            IEqualityComparer<TValue> valueComparer = EqualityComparer<TValue>.Default;
+            int hashcode =
+                nullableHashcode.HasValue ? nullableHashcode.GetValueOrDefault() :
+                _comparer is null ? key.GetHashCode() :
+                _comparer.GetHashCode(key);
+
+            EqualityComparer<TValue> valueComparer = EqualityComparer<TValue>.Default;
 
             while (true)
             {
@@ -497,7 +588,7 @@ namespace System.Collections.Concurrent
                     for (Node? node = tables._buckets[bucketNo]; node != null; node = node._next)
                     {
                         Debug.Assert((prev is null && node == tables._buckets[bucketNo]) || prev!._next == node);
-                        if (hashcode == node._hashcode && _comparer.Equals(node._key, key))
+                        if (hashcode == node._hashcode && (_comparer is null ? _defaultComparer.Equals(node._key, key) : _comparer.Equals(node._key, key)))
                         {
                             if (valueComparer.Equals(node._value, comparisonValue))
                             {
@@ -718,9 +809,17 @@ namespace System.Collections.Concurrent
         /// If key exists, we always return false; and if updateIfExists == true we force update with value;
         /// If key doesn't exist, we always add value and return true;
         /// </summary>
-        private bool TryAddInternal(TKey key, int hashcode, TValue value, bool updateIfExists, bool acquireLock, out TValue resultingValue)
+        private bool TryAddInternal(TKey key, int? nullableHashcode, TValue value, bool updateIfExists, bool acquireLock, out TValue resultingValue)
         {
-            Debug.Assert(_comparer.GetHashCode(key) == hashcode);
+            Debug.Assert(
+                nullableHashcode is null ||
+                (_comparer is null && key.GetHashCode() == nullableHashcode) ||
+                (_comparer != null && _comparer.GetHashCode(key) == nullableHashcode));
+
+            int hashcode =
+                nullableHashcode.HasValue ? nullableHashcode.GetValueOrDefault() :
+                _comparer is null ? key.GetHashCode() :
+                _comparer.GetHashCode(key);
 
             while (true)
             {
@@ -748,7 +847,7 @@ namespace System.Collections.Concurrent
                     for (Node? node = tables._buckets[bucketNo]; node != null; node = node._next)
                     {
                         Debug.Assert((prev is null && node == tables._buckets[bucketNo]) || prev!._next == node);
-                        if (hashcode == node._hashcode && _comparer.Equals(node._key, key))
+                        if (hashcode == node._hashcode && (_comparer is null ? _defaultComparer.Equals(node._key, key) : _comparer.Equals(node._key, key)))
                         {
                             // The key was found in the dictionary. If updates are allowed, update the value for that key.
                             // We need to create a new node for the update, in order to support TValue types that cannot
@@ -854,7 +953,7 @@ namespace System.Collections.Concurrent
                     ThrowHelper.ThrowKeyNullException();
                 }
 
-                TryAddInternal(key, _comparer.GetHashCode(key), value, updateIfExists: true, acquireLock: true, out _);
+                TryAddInternal(key, null, value, updateIfExists: true, acquireLock: true, out _);
             }
         }
 
@@ -942,7 +1041,7 @@ namespace System.Collections.Concurrent
                 ThrowHelper.ThrowArgumentNullException(nameof(valueFactory));
             }
 
-            int hashcode = _comparer.GetHashCode(key);
+            int hashcode = _comparer is null ? key.GetHashCode() : _comparer.GetHashCode(key);
 
             if (!TryGetValueInternal(key, hashcode, out TValue resultingValue))
             {
@@ -980,7 +1079,7 @@ namespace System.Collections.Concurrent
                 ThrowHelper.ThrowArgumentNullException(nameof(valueFactory));
             }
 
-            int hashcode = _comparer.GetHashCode(key);
+            int hashcode = _comparer is null ? key.GetHashCode() : _comparer.GetHashCode(key);
 
             if (!TryGetValueInternal(key, hashcode, out TValue resultingValue))
             {
@@ -1009,7 +1108,7 @@ namespace System.Collections.Concurrent
                 ThrowHelper.ThrowKeyNullException();
             }
 
-            int hashcode = _comparer.GetHashCode(key);
+            int hashcode = _comparer is null ? key.GetHashCode() : _comparer.GetHashCode(key);
 
             if (!TryGetValueInternal(key, hashcode, out TValue resultingValue))
             {
@@ -1057,7 +1156,7 @@ namespace System.Collections.Concurrent
                 ThrowHelper.ThrowArgumentNullException(nameof(updateValueFactory));
             }
 
-            int hashcode = _comparer.GetHashCode(key);
+            int hashcode = _comparer is null ? key.GetHashCode() : _comparer.GetHashCode(key);
 
             while (true)
             {
@@ -1117,7 +1216,7 @@ namespace System.Collections.Concurrent
                 ThrowHelper.ThrowArgumentNullException(nameof(updateValueFactory));
             }
 
-            int hashcode = _comparer.GetHashCode(key);
+            int hashcode = _comparer is null ? key.GetHashCode() : _comparer.GetHashCode(key);
 
             while (true)
             {
@@ -1170,7 +1269,7 @@ namespace System.Collections.Concurrent
                 ThrowHelper.ThrowArgumentNullException(nameof(updateValueFactory));
             }
 
-            int hashcode = _comparer.GetHashCode(key);
+            int hashcode = _comparer is null ? key.GetHashCode() : _comparer.GetHashCode(key);
 
             while (true)
             {
