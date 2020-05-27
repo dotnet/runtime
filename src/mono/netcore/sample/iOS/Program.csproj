@@ -23,12 +23,12 @@
     <Message Text="Packaged ID: %(RuntimePack.PackageDirectory)" Importance="high" />
   </Target>
 
-  <Import Project="/Users/egorbo/prj/runtime/tools-local/tasks/mobile.tasks/AotCompilerTask/MonoAOTCompiler.props" />
+  <Import Project="$(RepoRoot)tools-local\tasks\mobile.tasks\AotCompilerTask\MonoAOTCompiler.props" />
   <UsingTask TaskName="AppleAppBuilderTask"
-             AssemblyFile="$(ArtifactsBinDir)AppleAppBuilder\$(Platform)\$(NetCoreAppCurrent)\AppleAppBuilder.dll" />
+             AssemblyFile="$(ArtifactsBinDir)AppleAppBuilder\Debug\$(NetCoreAppCurrent)\AppleAppBuilder.dll" />
 
   <UsingTask TaskName="MonoAOTCompiler"
-             AssemblyFile="$(ArtifactsBinDir)MonoAOTCompiler\$(Configuration)\$(NetCoreAppCurrent)\MonoAOTCompiler.dll" />
+             AssemblyFile="$(ArtifactsBinDir)MonoAOTCompiler\Debug\$(NetCoreAppCurrent)\MonoAOTCompiler.dll" />
 
   <Target Name="BuildAppBundle" AfterTargets="CopyFilesToPublishDirectory">
     <PropertyGroup>
