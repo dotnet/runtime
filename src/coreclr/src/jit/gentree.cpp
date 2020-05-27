@@ -697,7 +697,7 @@ int GenTree::GetRegisterDstCount() const
 #if FEATURE_ARG_SPLIT
     else if (OperIsPutArgSplit())
     {
-        return (const_cast<GenTree*>(this))->AsPutArgSplit()->gtNumRegs;
+        return AsPutArgSplit()->gtNumRegs;
     }
 #endif
 #if !defined(TARGET_64BIT)
@@ -742,7 +742,6 @@ regMaskTP GenTree::gtGetRegMask() const
 
     if (IsMultiRegCall())
     {
-        // temporarily cast away const-ness as AsCall() method is not declared const
         resultMask = genRegMask(GetRegNum());
         resultMask |= AsCall()->GetOtherRegMask();
     }
@@ -10205,30 +10204,32 @@ void Compiler::gtDispRegVal(GenTree* tree)
             break;
     }
 
-    if (tree->IsMultiRegCall())
+    GenTreeCall* call = nullptr;
+    if (tree->IsCall())
+    {
+        call = tree->AsCall();
+    }
+    else if (tree->IsCopyOrReload())
+    {
+        GenTree* op1 = tree->AsCopyOrReload()->gtGetOp1();
+        if (op1->IsCall())
+        {
+            call = op1->AsCall();
+        }
+    }
+
+#if FEATURE_MULTIREG_RET
+    if (call != nullptr && (call->GetReturnTypeDesc()->TryGetReturnRegCount() > 1))
     {
         // 0th reg is GettRegNum(), which is already printed above.
         // Print the remaining regs of a multi-reg call node.
-        const GenTreeCall* call     = tree->AsCall();
-        const unsigned     regCount = call->GetReturnTypeDesc()->TryGetReturnRegCount();
+        const unsigned regCount = call->GetReturnTypeDesc()->TryGetReturnRegCount();
         for (unsigned i = 1; i < regCount; ++i)
         {
             printf(",%s", compRegVarName(call->GetRegNumByIdx(i)));
         }
     }
-    else if (tree->IsCopyOrReloadOfMultiRegCall())
-    {
-        const GenTreeCopyOrReload* copyOrReload = tree->AsCopyOrReload();
-        const GenTreeCall*         call         = tree->gtGetOp1()->AsCall();
-        const unsigned             regCount     = call->GetReturnTypeDesc()->TryGetReturnRegCount();
-        for (unsigned i = 1; i < regCount; ++i)
-        {
-            printf(",%s", compRegVarName(copyOrReload->GetRegNumByIdx(i)));
-        }
-    }
-
-#if FEATURE_MULTIREG_RET
-    if (tree->IsCopyOrReload())
+    else if (tree->IsCopyOrReload())
     {
         for (int i = 1; i < MAX_RET_REG_COUNT; i++)
         {
@@ -16518,7 +16519,6 @@ bool GenTree::isContained() const
     // They can only produce a result if the child is a SIMD equality comparison.
     else if (OperKind() & GTK_RELOP)
     {
-        // We have to cast away const-ness since AsOp() method is non-const.
         const GenTree* childNode = AsOp()->gtGetOp1();
         assert(isMarkedContained == false);
     }
