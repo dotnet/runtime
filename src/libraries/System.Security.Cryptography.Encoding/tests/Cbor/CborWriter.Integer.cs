@@ -15,9 +15,9 @@ namespace System.Formats.Cbor
         /// </summary>
         /// <param name="value">The value to write</param>
         /// <exception cref="InvalidOperationException">
-        ///   Writing a new value exceeds the definite length of the parent data item -or-
-        ///   The major type of the encoded value is not permitted in the parent data item -or-
-        ///   The written data is not accepted under the current conformance level
+        ///   Writing a new value exceeds the definite length of the parent data item. -or-
+        ///   The major type of the encoded value is not permitted in the parent data item. -or-
+        ///   The written data is not accepted under the current conformance level.
         /// </exception>
         public void WriteInt32(int value) => WriteInt64(value);
 
@@ -26,9 +26,9 @@ namespace System.Formats.Cbor
         /// </summary>
         /// <param name="value">The value to write</param>
         /// <exception cref="InvalidOperationException">
-        ///   Writing a new value exceeds the definite length of the parent data item -or-
-        ///   The major type of the encoded value is not permitted in the parent data item -or-
-        ///   The written data is not accepted under the current conformance level
+        ///   Writing a new value exceeds the definite length of the parent data item. -or-
+        ///   The major type of the encoded value is not permitted in the parent data item. -or-
+        ///   The written data is not accepted under the current conformance level.
         /// </exception>
         public void WriteInt64(long value)
         {
@@ -50,9 +50,9 @@ namespace System.Formats.Cbor
         /// </summary>
         /// <param name="value">The value to write</param>
         /// <exception cref="InvalidOperationException">
-        ///   Writing a new value exceeds the definite length of the parent data item -or-
-        ///   The major type of the encoded value is not permitted in the parent data item -or-
-        ///   The written data is not accepted under the current conformance level
+        ///   Writing a new value exceeds the definite length of the parent data item. -or-
+        ///   The major type of the encoded value is not permitted in the parent data item. -or-
+        ///   The written data is not accepted under the current conformance level.
         /// </exception>
         public void WriteUInt32(uint value) => WriteUInt64(value);
 
@@ -61,9 +61,9 @@ namespace System.Formats.Cbor
         /// </summary>
         /// <param name="value">The value to write</param>
         /// <exception cref="InvalidOperationException">
-        ///   Writing a new value exceeds the definite length of the parent data item -or-
-        ///   The major type of the encoded value is not permitted in the parent data item -or-
-        ///   The written data is not accepted under the current conformance level
+        ///   Writing a new value exceeds the definite length of the parent data item. -or-
+        ///   The major type of the encoded value is not permitted in the parent data item. -or-
+        ///   The written data is not accepted under the current conformance level.
         /// </exception>
         public void WriteUInt64(ulong value)
         {
@@ -76,9 +76,9 @@ namespace System.Formats.Cbor
         /// </summary>
         /// <param name="value">An unsigned integer denoting -1 minus the integer.</param>
         /// <exception cref="InvalidOperationException">
-        ///   Writing a new value exceeds the definite length of the parent data item -or-
-        ///   The major type of the encoded value is not permitted in the parent data item -or-
-        ///   The written data is not accepted under the current conformance level
+        ///   Writing a new value exceeds the definite length of the parent data item. -or-
+        ///   The major type of the encoded value is not permitted in the parent data item. -or-
+        ///   The written data is not accepted under the current conformance level.
         /// </exception>
         /// <remarks>
         ///   This method supports encoding integers between -18446744073709551616 and -1.

@@ -98,8 +98,8 @@ namespace System.Formats.Cbor
         /// </summary>
         /// <param name="value">The value to write.</param>
         /// <exception cref="InvalidOperationException">
-        ///   Writing a new value exceeds the definite length of the parent data item -or-
-        ///   The major type of the encoded value is not permitted in the parent data item -or-
+        ///   Writing a new value exceeds the definite length of the parent data item. -or-
+        ///   The major type of the encoded value is not permitted in the parent data item. -or-
         ///   The written data is not accepted under the current conformance level
         /// </exception>
         public void WriteBigInteger(BigInteger value)

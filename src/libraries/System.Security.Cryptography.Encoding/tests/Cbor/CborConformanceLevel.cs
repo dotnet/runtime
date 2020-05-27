@@ -47,7 +47,7 @@ namespace System.Formats.Cbor
         ///   <item>Indefinite-length items must be made into definite-length items.</item>
         ///   <item>Integers must be encoded as small as possible.</item>
         ///   <item>The representations of any floating-point values are not changed.</item>
-        ///   <item>CBOR tags are not permitted.</item>
+        ///   <item>CBOR tags (major type 6) are not permitted.</item>
         ///   </list>
         /// </summary>
         Ctap2Canonical,

@@ -24,16 +24,16 @@ namespace System.Formats.Cbor
         ///   The <paramref name="definiteLength"/> parameter cannot be negative.
         /// </exception>
         /// <exception cref="InvalidOperationException">
-        ///   Writing a new value exceeds the definite length of the parent data item -or-
+        ///   Writing a new value exceeds the definite length of the parent data item. -or-
         ///   The major type of the encoded value is not permitted in the parent data item
         /// </exception>
         /// <remarks>
-        ///   Map contents are written as if they were arrays twice the length of the map's declared size.
+        ///   Map contents are written as if arrays twice the length of the map's declared size.
         ///   For instance, a map of size <c>1</c> containing a key of type int with a value of type string
         ///   must be written by successive calls to <see cref="WriteInt32(int)"/> and <see cref="WriteTextString(ReadOnlySpan{char})"/>.
         ///   It is up to the caller to keep track of whether the next call is a key or a value.
         ///
-        ///   Fundamentally, this is a technical restriction stemming from the fact that CBOR allows keys of arbitrary type,
+        ///   Fundamentally, this is a technical restriction stemming from the fact that CBOR allows keys of any type,
         ///   for instance a map can contain keys that are maps themselves.
         /// </remarks>
         public void WriteStartMap(int definiteLength)
@@ -52,20 +52,20 @@ namespace System.Formats.Cbor
         ///   Writes the start of an indefinite-length map (major type 5).
         /// </summary>
         /// <exception cref="InvalidOperationException">
-        ///   Writing a new value exceeds the definite length of the parent data item -or-
-        ///   The major type of the encoded value is not permitted in the parent data item -or-
+        ///   Writing a new value exceeds the definite length of the parent data item. -or-
+        ///   The major type of the encoded value is not permitted in the parent data item. -or-
         ///   The written data is not accepted under the current conformance level
         /// </exception>
         /// <remarks>
         ///   In canonical conformance levels, the writer will reject indefinite-length writes unless
         ///   the <see cref="ConvertIndefiniteLengthEncodings"/> flag is enabled.
         ///
-        ///   Map contents are written as if they were arrays twice the length of the map's declared size.
+        ///   Map contents are written as if arrays twice the length of the map's declared size.
         ///   For instance, a map of size <c>1</c> containing a key of type int with a value of type string
         ///   must be written by successive calls to <see cref="WriteInt32(int)"/> and <see cref="WriteTextString(ReadOnlySpan{char})"/>.
         ///   It is up to the caller to keep track of whether the next call is a key or a value.
         ///
-        ///   Fundamentally, this is a technical restriction stemming from the fact that CBOR allows keys of arbitrary type,
+        ///   Fundamentally, this is a technical restriction stemming from the fact that CBOR allows keys of any type,
         ///   for instance a map can contain keys that are maps themselves.
         /// </remarks>
         public void WriteStartMap()
@@ -85,7 +85,9 @@ namespace System.Formats.Cbor
         ///   Writes the end of a map (major type 5).
         /// </summary>
         /// <exception cref="InvalidOperationException">
-        ///   The written data is not accepted under the current conformance level
+        ///   The written data is not accepted under the current conformance level. -or-
+        ///   The definite-length map anticipates more data items. -or-
+        ///   The latest key/value pair is lacking a value.
         /// </exception>
         public void WriteEndMap()
         {

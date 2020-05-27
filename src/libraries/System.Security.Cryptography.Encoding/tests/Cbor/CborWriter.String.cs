@@ -21,8 +21,8 @@ namespace System.Formats.Cbor
         /// </summary>
         /// <param name="value">The value to write.</param>
         /// <exception cref="InvalidOperationException">
-        ///   Writing a new value exceeds the definite length of the parent data item -or-
-        ///   The major type of the encoded value is not permitted in the parent data item -or-
+        ///   Writing a new value exceeds the definite length of the parent data item. -or-
+        ///   The major type of the encoded value is not permitted in the parent data item. -or-
         ///   The written data is not accepted under the current conformance level
         /// </exception>
         public void WriteByteString(ReadOnlySpan<byte> value)
@@ -48,11 +48,12 @@ namespace System.Formats.Cbor
         ///   Writes the start of an indefinite-length byte string (major type 2).
         /// </summary>
         /// <exception cref="InvalidOperationException">
-        ///   Writing a new value exceeds the definite length of the parent data item -or-
-        ///   The major type of the encoded value is not permitted in the parent data item -or-
+        ///   Writing a new value exceeds the definite length of the parent data item. -or-
+        ///   The major type of the encoded value is not permitted in the parent data item. -or-
         ///   The written data is not accepted under the current conformance level
         /// </exception>
         /// <remarks>
+        ///   Pushes a context where definite-length chunks of the same major type can be written.
         ///   In canonical conformance levels, the writer will reject indefinite-length writes unless
         ///   the <see cref="ConvertIndefiniteLengthEncodings"/> flag is enabled.
         /// </remarks>
@@ -93,8 +94,8 @@ namespace System.Formats.Cbor
         /// </summary>
         /// <param name="value">The value to write.</param>
         /// <exception cref="InvalidOperationException">
-        ///   Writing a new value exceeds the definite length of the parent data item -or-
-        ///   The major type of the encoded value is not permitted in the parent data item -or-
+        ///   Writing a new value exceeds the definite length of the parent data item. -or-
+        ///   The major type of the encoded value is not permitted in the parent data item. -or-
         ///   The written data is not accepted under the current conformance level
         /// </exception>
         public void WriteTextString(ReadOnlySpan<char> value)
@@ -132,11 +133,12 @@ namespace System.Formats.Cbor
         ///   Writes the start of an indefinite-length UTF-8 string (major type 3).
         /// </summary>
         /// <exception cref="InvalidOperationException">
-        ///   Writing a new value exceeds the definite length of the parent data item -or-
-        ///   The major type of the encoded value is not permitted in the parent data item -or-
+        ///   Writing a new value exceeds the definite length of the parent data item. -or-
+        ///   The major type of the encoded value is not permitted in the parent data item. -or-
         ///   The written data is not accepted under the current conformance level
         /// </exception>
         /// <remarks>
+        ///   Pushes a context where definite-length chunks of the same major type can be written.
         ///   In canonical conformance levels, the writer will reject indefinite-length writes unless
         ///   the <see cref="ConvertIndefiniteLengthEncodings"/> flag is enabled.
         /// </remarks>

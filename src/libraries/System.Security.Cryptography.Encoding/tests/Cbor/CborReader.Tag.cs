@@ -43,6 +43,9 @@ namespace System.Formats.Cbor
         ///   there was an unexpected end of CBOR encoding data. -or-
         ///   the next value uses a CBOR encoding that is not valid under the current conformance level.
         /// </exception>
+        /// <remarks>
+        ///   Useful in scenaria where the semantic value decoder needs to be determined at runtime.
+        /// </remarks>
         public CborTag PeekTag() => PeekTagCore(out int _);
 
         /// <summary>
@@ -57,7 +60,7 @@ namespace System.Formats.Cbor
         /// <exception cref="FormatException">
         ///   the next value has an invalid CBOR encoding. -or-
         ///   there was an unexpected end of CBOR encoding data. -or-
-        ///   invalid semantic date/time encoding -or-
+        ///   invalid semantic date/time encoding. -or-
         ///   the next value uses a CBOR encoding that is not valid under the current conformance level.
         /// </exception>
         public DateTimeOffset ReadDateTimeOffset()
@@ -108,7 +111,7 @@ namespace System.Formats.Cbor
         /// <exception cref="FormatException">
         ///   the next value has an invalid CBOR encoding. -or-
         ///   there was an unexpected end of CBOR encoding data. -or-
-        ///   invalid semantic date/time encoding -or-
+        ///   invalid semantic date/time encoding. -or-
         ///   the next value uses a CBOR encoding that is not valid under the current conformance level.
         /// </exception>
         public DateTimeOffset ReadUnixTimeSeconds()
@@ -163,7 +166,7 @@ namespace System.Formats.Cbor
         /// <exception cref="FormatException">
         ///   the next value has an invalid CBOR encoding. -or-
         ///   there was an unexpected end of CBOR encoding data. -or-
-        ///   invalid semantic bignum encoding -or-
+        ///   invalid semantic bignum encoding. -or-
         ///   the next value uses a CBOR encoding that is not valid under the current conformance level.
         /// </exception>
         public BigInteger ReadBigInteger()
@@ -216,7 +219,7 @@ namespace System.Formats.Cbor
         /// <exception cref="FormatException">
         ///   the next value has an invalid CBOR encoding. -or-
         ///   there was an unexpected end of CBOR encoding data. -or-
-        ///   invalid semantic decimal fraction encoding -or-
+        ///   invalid semantic decimal fraction encoding. -or-
         ///   the next value uses a CBOR encoding that is not valid under the current conformance level.
         /// </exception>
         public decimal ReadDecimal()

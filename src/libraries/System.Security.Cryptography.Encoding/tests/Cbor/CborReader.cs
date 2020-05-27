@@ -105,7 +105,7 @@ namespace System.Formats.Cbor
         /// </summary>
         /// <returns>A <see cref="ReadOnlySpan{T}"/> view of the encoded value.</returns>
         /// <exception cref="FormatException">
-        ///   The data item is not a valid CBOR data item encoding -or-
+        ///   The data item is not a valid CBOR data item encoding. -or-
         ///   The CBOR encoding is not valid under the current conformance level
         /// </exception>
         public ReadOnlySpan<byte> ReadEncodedValue()

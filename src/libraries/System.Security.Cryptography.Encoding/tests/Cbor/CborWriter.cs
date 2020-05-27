@@ -129,7 +129,7 @@ namespace System.Formats.Cbor
         /// </summary>
         /// <param name="encodedValue">The encoded value to write.</param>
         /// <exception cref="ArgumentException">
-        ///   <paramref name="encodedValue"/> is not a well-formed CBOR encoding -or-
+        ///   <paramref name="encodedValue"/> is not a well-formed CBOR encoding. -or-
         ///   <paramref name="encodedValue"/> is not valid under the current conformance level
         /// </exception>
         public void WriteEncodedValue(ReadOnlyMemory<byte> encodedValue)

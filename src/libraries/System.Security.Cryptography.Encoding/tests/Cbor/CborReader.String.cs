@@ -144,7 +144,7 @@ namespace System.Formats.Cbor
         ///   End reading an indefinite-length byte string (major type 2).
         /// </summary>
         /// <exception cref="InvalidOperationException">
-        ///   the current context is not an indefinite-length string -or-
+        ///   the current context is not an indefinite-length string. -or-
         ///   the reader is not at the end of the string
         /// </exception>
         /// <exception cref="FormatException">
@@ -300,7 +300,7 @@ namespace System.Formats.Cbor
         ///   End reading an indefinite-length UTF-8 text string (major type 3).
         /// </summary>
         /// <exception cref="InvalidOperationException">
-        ///   the current context is not an indefinite-length string -or-
+        ///   the current context is not an indefinite-length string. -or-
         ///   the reader is not at the end of the string
         /// </exception>
         /// <exception cref="FormatException">

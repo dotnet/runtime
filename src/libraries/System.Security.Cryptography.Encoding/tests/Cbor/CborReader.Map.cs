@@ -77,7 +77,7 @@ namespace System.Formats.Cbor
         ///   Reads the end of a map (major type 5).
         /// </summary>
         /// <exception cref="InvalidOperationException">
-        ///   the current context is not a map -or-
+        ///   the current context is not a map. -or-
         ///   the reader is not at the end of the map
         /// </exception>
         /// <exception cref="FormatException">

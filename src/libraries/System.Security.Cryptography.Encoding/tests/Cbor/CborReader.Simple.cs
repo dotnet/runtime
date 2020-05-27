@@ -15,8 +15,8 @@ namespace System.Formats.Cbor
         /// </summary>
         /// <returns>The decoded value.</returns>
         /// <exception cref="InvalidOperationException">
-        ///   the next data item does not have the correct major type -or-
-        ///   the next simple value is not a floating-point number encoding -or-
+        ///   the next data item does not have the correct major type. -or-
+        ///   the next simple value is not a floating-point number encoding. -or-
         ///   the encoded value is a double-precision float
         /// </exception>
         /// <exception cref="FormatException">
@@ -60,7 +60,7 @@ namespace System.Formats.Cbor
         /// </summary>
         /// <returns>The decoded <see cref="double"/> value.</returns>
         /// <exception cref="InvalidOperationException">
-        ///   the next data item does not have the correct major type -or-
+        ///   the next data item does not have the correct major type. -or-
         ///   the next simple value is not a floating-point number encoding
         /// </exception>
         /// <exception cref="FormatException">
@@ -107,7 +107,7 @@ namespace System.Formats.Cbor
         /// </summary>
         /// <returns>The decoded <see cref="bool"/> value.</returns>
         /// <exception cref="InvalidOperationException">
-        ///   the next data item does not have the correct major type -or-
+        ///   the next data item does not have the correct major type. -or-
         ///   the next simple value is not a boolean encoding
         /// </exception>
         /// <exception cref="FormatException">
@@ -135,7 +135,7 @@ namespace System.Formats.Cbor
         ///   Reads the next data item as a null value (major type 7).
         /// </summary>
         /// <exception cref="InvalidOperationException">
-        ///   the next data item does not have the correct major type -or-
+        ///   the next data item does not have the correct major type. -or-
         ///   the next simple value is not a null value encoding
         /// </exception>
         /// <exception cref="FormatException">
@@ -163,7 +163,7 @@ namespace System.Formats.Cbor
         /// </summary>
         /// <returns>The decoded <see cref="CborSimpleValue"/> value.</returns>
         /// <exception cref="InvalidOperationException">
-        ///   the next data item does not have the correct major type -or-
+        ///   the next data item does not have the correct major type. -or-
         ///   the next simple value is not a simple value encoding
         /// </exception>
         /// <exception cref="FormatException">

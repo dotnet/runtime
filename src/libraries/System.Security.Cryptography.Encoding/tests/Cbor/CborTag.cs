@@ -5,7 +5,7 @@
 namespace System.Formats.Cbor
 {
     /// <summary>
-    ///   Represents a CBOR semantic tag, as described in RFC7049 section 2.4.
+    ///   Represents a CBOR semantic tag (major type 6).
     /// </summary>
     public enum CborTag : ulong
     {
@@ -91,7 +91,7 @@ namespace System.Formats.Cbor
     }
 
     /// <summary>
-    ///   Represents a CBOR simple value, as described in RFC7049 section 2.3.
+    ///   Represents a CBOR simple value (major type 7).
     /// </summary>
     public enum CborSimpleValue : byte
     {

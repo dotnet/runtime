@@ -18,7 +18,7 @@ namespace System.Formats.Cbor
         ///   the next data item does not have the correct major type.
         /// </exception>
         /// <exception cref="OverflowException">
-        ///   the encoded integer is out of range for <see cref="int"/>
+        ///   the encoded integer is out of range for <see cref="int"/>.
         /// </exception>
         /// <exception cref="FormatException">
         ///   the next value has an invalid CBOR encoding. -or-
@@ -41,7 +41,7 @@ namespace System.Formats.Cbor
         ///   the next data item does not have the correct major type.
         /// </exception>
         /// <exception cref="OverflowException">
-        ///   the encoded integer is out of range for <see cref="uint"/>
+        ///   the encoded integer is out of range for <see cref="uint"/>.
         /// </exception>
         /// <exception cref="FormatException">
         ///   the next value has an invalid CBOR encoding. -or-
@@ -64,7 +64,7 @@ namespace System.Formats.Cbor
         ///   the next data item does not have the correct major type.
         /// </exception>
         /// <exception cref="OverflowException">
-        ///   the encoded integer is out of range for <see cref="long"/>
+        ///   the encoded integer is out of range for <see cref="long"/>.
         /// </exception>
         /// <exception cref="FormatException">
         ///   the next value has an invalid CBOR encoding. -or-
@@ -87,7 +87,7 @@ namespace System.Formats.Cbor
         ///   the next data item does not have the correct major type.
         /// </exception>
         /// <exception cref="OverflowException">
-        ///   the encoded integer is out of range for <see cref="ulong"/>
+        ///   the encoded integer is out of range for <see cref="ulong"/>.
         /// </exception>
         /// <exception cref="FormatException">
         ///   the next value has an invalid CBOR encoding. -or-
