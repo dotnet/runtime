@@ -409,9 +409,6 @@ void COMToCLRWorkerBody_Rare(Thread * pThread, ComMethodFrame * pFrame, ComCallW
 
     maskedFlags &= ~(enum_NativeR4Retval|enum_NativeR8Retval);
 
-    CONSISTENCY_CHECK(maskedFlags != (                      enum_IsVirtual));
-    CONSISTENCY_CHECK(maskedFlags != (enum_IsDelegateInvoke|enum_IsVirtual));
-    CONSISTENCY_CHECK(maskedFlags != (enum_IsDelegateInvoke               ));
     switch (maskedFlags)
     {
     case enum_IsDelegateInvoke|enum_IsVirtual:
@@ -489,9 +486,6 @@ void COMToCLRWorkerBody(
         enum_NativeR8Retval);
     DWORD maskedFlags = pCMD->GetFlags() & mask;
 
-    CONSISTENCY_CHECK(maskedFlags != (                      enum_IsVirtual));
-    CONSISTENCY_CHECK(maskedFlags != (enum_IsDelegateInvoke|enum_IsVirtual));
-    CONSISTENCY_CHECK(maskedFlags != (enum_IsDelegateInvoke               ));
     switch (maskedFlags)
     {
     case enum_IsDelegateInvoke|enum_IsVirtual:
@@ -984,10 +978,6 @@ void ComCallMethodDesc::InitMethod(MethodDesc *pMD, MethodDesc *pInterfaceMD)
     m_dwSlotInfo = 0;
     m_pwStubStackSlotOffsets = NULL;
 #endif // TARGET_X86
-
-    // check whether this is a WinRT ctor/static/event method
-    MethodDesc *pCallMD = GetCallMethodDesc();
-    MethodTable *pCallMT = pCallMD->GetMethodTable();
 
     if (!SystemDomain::GetCurrentDomain()->IsCompilationDomain())
     {
