@@ -29,6 +29,7 @@ public class WasmAppBuilder : Task
     [Required]
     public ITaskItem[]? AssemblySearchPaths { get; set; }
     public ITaskItem[]? ExtraAssemblies { get; set; }
+    public ITaskItem[]? ExtraFiles { get; set; }
 
     Dictionary<string, Assembly>? Assemblies;
     Resolver? Resolver;
@@ -70,6 +71,11 @@ public class WasmAppBuilder : Task
         foreach (var f in new string [] { "dotnet.wasm", "dotnet.js" })
             File.Copy (Path.Join (RuntimePackDir, "native", "wasm", "runtimes", "release", f), Path.Join (AppDir, f), true);
         File.Copy (MainJS!, Path.Join (AppDir, "runtime.js"),  true);
+
+        if (ExtraFiles != null) {
+            foreach (var item in ExtraFiles)
+                File.Copy (item.ItemSpec, Path.Join (AppDir, Path.GetFileName (item.ItemSpec)),  true);
+        }
 
         using (var sw = File.CreateText (Path.Join (AppDir, "mono-config.js"))) {
             sw.WriteLine ("config = {");
