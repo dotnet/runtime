@@ -91,6 +91,10 @@ if !ENABLE_ILGEN
 ilgen_libraries = libmono-ilgen.la
 endif
 
+if ENABLE_PERFTRACING
+eventpipe_libs = $(top_builddir)/mono/eventpipe/libeventpipe.la
+endif
+
 BUNDLE_ZLIB_PATH=$(top_builddir)/mono/zlib/libz.la
 
 if HAVE_STATIC_ZLIB
@@ -169,7 +173,7 @@ if BITCODE
 if WASM
 libmono_icall_table_la_LIBADD = # empty to avoid duplicate symbols when enabling dynamic linking
 else
-libmono_icall_table_la_LIBADD = $(glib_libs) ../utils/libmonoutils.la ../sgen/libmonosgen.la libmonoruntimesgen.la
+libmono_icall_table_la_LIBADD = $(glib_libs) ../utils/libmonoutils.la ../sgen/libmonosgen.la $(eventpipe_libs) libmonoruntimesgen.la
 endif
 endif
 endif
@@ -193,7 +197,7 @@ if BITCODE
 if WASM
 libmono_ilgen_la_LIBADD =  # empty to avoid duplicate symbols when enabling dynamic linking
 else
-libmono_ilgen_la_LIBADD = $(glib_libs) ../utils/libmonoutils.la ../sgen/libmonosgen.la libmonoruntimesgen.la
+libmono_ilgen_la_LIBADD = $(glib_libs) ../utils/libmonoutils.la ../sgen/libmonosgen.la $(eventpipe_libs) libmonoruntimesgen.la
 endif
 endif
 endif
@@ -260,6 +264,7 @@ common_sources = \
 	domain-internals.h	\
 	environment.c		\
 	environment.h		\
+	icall-eventpipe.c	\
 	exception.c		\
 	exception.h		\
 	exception-internals.h	\

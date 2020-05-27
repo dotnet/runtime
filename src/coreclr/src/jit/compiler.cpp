@@ -4690,6 +4690,8 @@ void Compiler::compCompile(void** methodCodePtr, ULONG* methodCodeSize, JitFlags
                 DoPhase(this, PHASE_BUILD_SSA, &Compiler::fgSsaBuild);
             }
 
+            DoPhase(this, PHASE_ZERO_INITS, &Compiler::optRemoveRedundantZeroInits);
+
             if (doEarlyProp)
             {
                 // Propagate array length and rewrite getType() method call

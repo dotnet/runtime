@@ -66,6 +66,10 @@
 #include "perfmap.h"
 #endif
 
+#ifdef FEATURE_PGO
+#include "pgo.h"
+#endif
+
 #include "tailcallhelp.h"
 
 // The Stack Overflow probe takes place in the COOPERATIVE_TRANSITION_BEGIN() macro
@@ -11807,8 +11811,6 @@ HRESULT CEEJitInfo::allocMethodBlockCounts (
 
     JIT_TO_EE_TRANSITION();
 
-#ifdef FEATURE_PREJIT
-
     // We need to know the code size. Typically we can get the code size
     // from m_ILHeader. For dynamic methods, m_ILHeader will be NULL, so
     // for that case we need to use DynamicResolver to get the code size.
@@ -11826,11 +11828,16 @@ HRESULT CEEJitInfo::allocMethodBlockCounts (
         codeSize = m_ILHeader->GetCodeSize();
     }
 
+#ifdef FEATURE_PREJIT
     *pBlockCounts = m_pMethodBeingCompiled->GetLoaderModule()->AllocateMethodBlockCounts(m_pMethodBeingCompiled->GetMemberDef(), count, codeSize);
     hr = (*pBlockCounts != nullptr) ? S_OK : E_OUTOFMEMORY;
 #else // FEATURE_PREJIT
+#ifdef FEATURE_PGO
+    hr = PgoManager::allocMethodBlockCounts(m_pMethodBeingCompiled, count, pBlockCounts, codeSize);
+#else
     _ASSERTE(!"allocMethodBlockCounts not implemented on CEEJitInfo!");
     hr = E_NOTIMPL;
+#endif // !FEATURE_PGO
 #endif // !FEATURE_PREJIT
 
     EE_TO_JIT_TRANSITION();
@@ -11847,9 +11854,55 @@ HRESULT CEEJitInfo::getMethodBlockCounts (
     UINT32 *                      pNumRuns
     )
 {
-    LIMITED_METHOD_CONTRACT;
+    CONTRACTL {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_PREEMPTIVE;
+    } CONTRACTL_END;
+
+    HRESULT hr = E_FAIL;
+    *pCount = 0;
+    *pBlockCounts = NULL;
+    *pNumRuns = 0;
+
+    JIT_TO_EE_TRANSITION();
+
+#ifdef FEATURE_PGO
+
+    // For now, only return the info for the method being jitted.
+    // Will need to fix this to gain access to pgo data for inlinees.
+    MethodDesc* pMD = (MethodDesc*)ftnHnd;
+
+    if (pMD == m_pMethodBeingCompiled)
+    {
+        unsigned codeSize = 0;
+        if (pMD->IsDynamicMethod())
+        {
+            unsigned stackSize, ehSize;
+            CorInfoOptions options;
+            DynamicResolver * pResolver = m_pMethodBeingCompiled->AsDynamicMethodDesc()->GetResolver();
+            pResolver->GetCodeInfo(&codeSize, &stackSize, &options, &ehSize);
+        }
+        else
+        {
+            codeSize = m_ILHeader->GetCodeSize();
+        }
+
+        hr = PgoManager::getMethodBlockCounts(pMD, codeSize, pCount, pBlockCounts, pNumRuns);
+    }
+    else
+    {
+        hr = E_NOTIMPL;
+    }
+
+#else
     _ASSERTE(!"getMethodBlockCounts not implemented on CEEJitInfo!");
-    return E_NOTIMPL;
+    hr = E_NOTIMPL;
+#endif
+
+    EE_TO_JIT_TRANSITION();
+    
+    return hr;
 }
 
 void CEEJitInfo::allocMem (
@@ -12571,6 +12624,30 @@ CORJIT_FLAGS GetCompileFlags(MethodDesc * ftn, CORJIT_FLAGS flags, CORINFO_METHO
         // no debug info available for IL stubs
         flags.Clear(CORJIT_FLAGS::CORJIT_FLAG_DEBUG_INFO);
     }
+
+#ifdef FEATURE_PGO
+
+    if (CLRConfig::GetConfigValue(CLRConfig::INTERNAL_WritePGOData) > 0)
+    {
+        flags.Set(CORJIT_FLAGS::CORJIT_FLAG_BBINSTR);
+    }
+    else if ((CLRConfig::GetConfigValue(CLRConfig::INTERNAL_TieredPGO) > 0)
+        && flags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_TIER0))
+    {
+        flags.Set(CORJIT_FLAGS::CORJIT_FLAG_BBINSTR);
+    }
+
+    if (CLRConfig::GetConfigValue(CLRConfig::INTERNAL_ReadPGOData) > 0)
+    {
+        flags.Set(CORJIT_FLAGS::CORJIT_FLAG_BBOPT);
+    }
+    else if ((CLRConfig::GetConfigValue(CLRConfig::INTERNAL_TieredPGO) > 0)
+        && flags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_TIER1))
+    {
+        flags.Set(CORJIT_FLAGS::CORJIT_FLAG_BBOPT);
+    }
+    
+#endif
 
     return flags;
 }
