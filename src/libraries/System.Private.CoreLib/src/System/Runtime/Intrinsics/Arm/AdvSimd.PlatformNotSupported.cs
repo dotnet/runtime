@@ -7522,6 +7522,174 @@ namespace System.Runtime.Intrinsics.Arm
         public static Vector128<uint> MultiplySubtract(Vector128<uint> minuend, Vector128<uint> left, Vector128<uint> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
+        /// int16x4_t vmls_n_s16 (int16x4_t a, int16x4_t b, int16_t c)
+        ///   A32: VMLS.I16 Dd, Dn, Dm[0]
+        ///   A64: MLS Vd.4H, Vn.4H, Vm.H[0]
+        /// </summary>
+        public static Vector64<short> MultiplySubtractByScalar(Vector64<short> minuend, Vector64<short> left, Vector64<short> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int32x2_t vmls_n_s32 (int32x2_t a, int32x2_t b, int32_t c)
+        ///   A32: VMLS.I32 Dd, Dn, Dm[0]
+        ///   A64: MLS Vd.2S, Vn.2S, Vm.S[0]
+        /// </summary>
+        public static Vector64<int> MultiplySubtractByScalar(Vector64<int> minuend, Vector64<int> left, Vector64<int> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint16x4_t vmls_n_u16 (uint16x4_t a, uint16x4_t b, uint16_t c)
+        ///   A32: VMLS.I16 Dd, Dn, Dm[0]
+        ///   A64: MLS Vd.4H, Vn.4H, Vm.H[0]
+        /// </summary>
+        public static Vector64<ushort> MultiplySubtractByScalar(Vector64<ushort> minuend, Vector64<ushort> left, Vector64<ushort> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint32x2_t vmls_n_u32 (uint32x2_t a, uint32x2_t b, uint32_t c)
+        ///   A32: VMLS.I32 Dd, Dn, Dm[0]
+        ///   A64: MLS Vd.2S, Vn.2S, Vm.S[0]
+        /// </summary>
+        public static Vector64<uint> MultiplySubtractByScalar(Vector64<uint> minuend, Vector64<uint> left, Vector64<uint> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int16x8_t vmlsq_n_s16 (int16x8_t a, int16x8_t b, int16_t c)
+        ///   A32: VMLS.I16 Qd, Qn, Dm[0]
+        ///   A64: MLS Vd.8H, Vn.8H, Vm.H[0]
+        /// </summary>
+        public static Vector128<short> MultiplySubtractByScalar(Vector128<short> minuend, Vector128<short> left, Vector64<short> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int32x4_t vmlsq_n_s32 (int32x4_t a, int32x4_t b, int32_t c)
+        ///   A32: VMLS.I32 Qd, Qn, Dm[0]
+        ///   A64: MLS Vd.4S, Vn.4S, Vm.S[0]
+        /// </summary>
+        public static Vector128<int> MultiplySubtractByScalar(Vector128<int> minuend, Vector128<int> left, Vector64<int> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint16x8_t vmlsq_n_u16 (uint16x8_t a, uint16x8_t b, uint16_t c)
+        ///   A32: VMLS.I16 Qd, Qn, Dm[0]
+        ///   A64: MLS Vd.8H, Vn.8H, Vm.H[0]
+        /// </summary>
+        public static Vector128<ushort> MultiplySubtractByScalar(Vector128<ushort> minuend, Vector128<ushort> left, Vector64<ushort> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint32x4_t vmlsq_n_u32 (uint32x4_t a, uint32x4_t b, uint32_t c)
+        ///   A32: VMLS.I32 Qd, Qn, Dm[0]
+        ///   A64: MLS Vd.4S, Vn.4S, Vm.S[0]
+        /// </summary>
+        public static Vector128<uint> MultiplySubtractByScalar(Vector128<uint> minuend, Vector128<uint> left, Vector64<uint> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int16x4_t vmls_lane_s16 (int16x4_t a, int16x4_t b, int16x4_t v, const int lane)
+        ///   A32: VMLS.I16 Dd, Dn, Dm[lane]
+        ///   A64: MLS Vd.4H, Vn.4H, Vm.H[lane]
+        /// </summary>
+        public static Vector64<short> MultiplySubtractBySelectedScalar(Vector64<short> minuend, Vector64<short> left, Vector64<short> right, byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int16x4_t vmls_laneq_s16 (int16x4_t a, int16x4_t b, int16x8_t v, const int lane)
+        ///   A32: VMLS.I16 Dd, Dn, Dm[lane]
+        ///   A64: MLS Vd.4H, Vn.4H, Vm.H[lane]
+        /// </summary>
+        public static Vector64<short> MultiplySubtractBySelectedScalar(Vector64<short> minuend, Vector64<short> left, Vector128<short> right, byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int32x2_t vmls_lane_s32 (int32x2_t a, int32x2_t b, int32x2_t v, const int lane)
+        ///   A32: VMLS.I32 Dd, Dn, Dm[lane]
+        ///   A64: MLS Vd.2S, Vn.2S, Vm.S[lane]
+        /// </summary>
+        public static Vector64<int> MultiplySubtractBySelectedScalar(Vector64<int> minuend, Vector64<int> left, Vector64<int> right, byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int32x2_t vmls_laneq_s32 (int32x2_t a, int32x2_t b, int32x4_t v, const int lane)
+        ///   A32: VMLS.I32 Dd, Dn, Dm[lane]
+        ///   A64: MLS Vd.2S, Vn.2S, Vm.S[lane]
+        /// </summary>
+        public static Vector64<int> MultiplySubtractBySelectedScalar(Vector64<int> minuend, Vector64<int> left, Vector128<int> right, byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint16x4_t vmls_lane_u16 (uint16x4_t a, uint16x4_t b, uint16x4_t v, const int lane)
+        ///   A32: VMLS.I16 Dd, Dn, Dm[lane]
+        ///   A64: MLS Vd.4H, Vn.4H, Vm.H[lane]
+        /// </summary>
+        public static Vector64<ushort> MultiplySubtractBySelectedScalar(Vector64<ushort> minuend, Vector64<ushort> left, Vector64<ushort> right, byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint16x4_t vmls_laneq_u16 (uint16x4_t a, uint16x4_t b, uint16x8_t v, const int lane)
+        ///   A32: VMLS.I16 Dd, Dn, Dm[lane]
+        ///   A64: MLS Vd.4H, Vn.4H, Vm.H[lane]
+        /// </summary>
+        public static Vector64<ushort> MultiplySubtractBySelectedScalar(Vector64<ushort> minuend, Vector64<ushort> left, Vector128<ushort> right, byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint32x2_t vmls_lane_u32 (uint32x2_t a, uint32x2_t b, uint32x2_t v, const int lane)
+        ///   A32: VMLS.I32 Dd, Dn, Dm[lane]
+        ///   A64: MLS Vd.2S, Vn.2S, Vm.S[lane]
+        /// </summary>
+        public static Vector64<uint> MultiplySubtractBySelectedScalar(Vector64<uint> minuend, Vector64<uint> left, Vector64<uint> right, byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint32x2_t vmls_laneq_u32 (uint32x2_t a, uint32x2_t b, uint32x4_t v, const int lane)
+        ///   A32: VMLS.I32 Dd, Dn, Dm[lane]
+        ///   A64: MLS Vd.2S, Vn.2S, Vm.S[lane]
+        /// </summary>
+        public static Vector64<uint> MultiplySubtractBySelectedScalar(Vector64<uint> minuend, Vector64<uint> left, Vector128<uint> right, byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int16x8_t vmlsq_lane_s16 (int16x8_t a, int16x8_t b, int16x4_t v, const int lane)
+        ///   A32: VMLS.I16 Qd, Qn, Dm[lane]
+        ///   A64: MLS Vd.8H, Vn.8H, Vm.H[lane]
+        /// </summary>
+        public static Vector128<short> MultiplySubtractBySelectedScalar(Vector128<short> minuend, Vector128<short> left, Vector64<short> right, byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int16x8_t vmlsq_laneq_s16 (int16x8_t a, int16x8_t b, int16x8_t v, const int lane)
+        ///   A32: VMLS.I16 Qd, Qn, Dm[lane]
+        ///   A64: MLS Vd.8H, Vn.8H, Vm.H[lane]
+        /// </summary>
+        public static Vector128<short> MultiplySubtractBySelectedScalar(Vector128<short> minuend, Vector128<short> left, Vector128<short> right, byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int32x4_t vmlsq_lane_s32 (int32x4_t a, int32x4_t b, int32x2_t v, const int lane)
+        ///   A32: VMLS.I32 Qd, Qn, Dm[lane]
+        ///   A64: MLS Vd.4S, Vn.4S, Vm.S[lane]
+        /// </summary>
+        public static Vector128<int> MultiplySubtractBySelectedScalar(Vector128<int> minuend, Vector128<int> left, Vector64<int> right, byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int32x4_t vmlsq_laneq_s32 (int32x4_t a, int32x4_t b, int32x4_t v, const int lane)
+        ///   A32: VMLS.I32 Qd, Qn, Dm[lane]
+        ///   A64: MLS Vd.4S, Vn.4S, Vm.S[lane]
+        /// </summary>
+        public static Vector128<int> MultiplySubtractBySelectedScalar(Vector128<int> minuend, Vector128<int> left, Vector128<int> right, byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint16x8_t vmlsq_lane_u16 (uint16x8_t a, uint16x8_t b, uint16x4_t v, const int lane)
+        ///   A32: VMLS.I16 Qd, Qn, Dm[lane]
+        ///   A64: MLS Vd.8H, Vn.8H, Vm.H[lane]
+        /// </summary>
+        public static Vector128<ushort> MultiplySubtractBySelectedScalar(Vector128<ushort> minuend, Vector128<ushort> left, Vector64<ushort> right, byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint16x8_t vmlsq_laneq_u16 (uint16x8_t a, uint16x8_t b, uint16x8_t v, const int lane)
+        ///   A32: VMLS.I16 Qd, Qn, Dm[lane]
+        ///   A64: MLS Vd.8H, Vn.8H, Vm.H[lane]
+        /// </summary>
+        public static Vector128<ushort> MultiplySubtractBySelectedScalar(Vector128<ushort> minuend, Vector128<ushort> left, Vector128<ushort> right, byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint32x4_t vmlsq_lane_u32 (uint32x4_t a, uint32x4_t b, uint32x2_t v, const int lane)
+        ///   A32: VMLS.I32 Qd, Qn, Dm[lane]
+        ///   A64: MLS Vd.4S, Vn.4S, Vm.S[lane]
+        /// </summary>
+        public static Vector128<uint> MultiplySubtractBySelectedScalar(Vector128<uint> minuend, Vector128<uint> left, Vector64<uint> right, byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint32x4_t vmlsq_laneq_u32 (uint32x4_t a, uint32x4_t b, uint32x4_t v, const int lane)
+        ///   A32: VMLS.I32 Qd, Qn, Dm[lane]
+        ///   A64: MLS Vd.4S, Vn.4S, Vm.S[lane]
+        /// </summary>
+        public static Vector128<uint> MultiplySubtractBySelectedScalar(Vector128<uint> minuend, Vector128<uint> left, Vector128<uint> right, byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
         /// uint16x8_t vmull_u8 (uint8x8_t a, uint8x8_t b)
         ///   A32: VMULL.U8 Qd, Dn, Dm
         ///   A64: UMULL Vd.8H, Vn.8B, Vm.8B
