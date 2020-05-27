@@ -12,7 +12,7 @@ using Xunit;
 
 namespace ILVerification.Tests
 {
-    public class ILTypeVerificationTester
+    public class ILTypeVerificationTester : XunitBase
     {
         [Theory(DisplayName = "")]
         [MemberData(nameof(TestDataLoader.GetTypesWithValidType), MemberType = typeof(TestDataLoader))]
@@ -61,6 +61,11 @@ namespace ILVerification.Tests
             var type = (EcmaType)module.GetType(typeHandle);
             var verifier = new Verifier((ILVerifyTypeSystemContext)type.Context, new VerifierOptions() { IncludeMetadataTokensInErrorMessages = true });
             return verifier.Verify(module.PEReader, typeHandle);
+        }
+
+        public static int Main(string[] args)
+        {
+            return new ILTypeVerificationTester().RunTests();
         }
     }
 }
