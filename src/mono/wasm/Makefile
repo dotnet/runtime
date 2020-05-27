@@ -1,6 +1,9 @@
 TOP=$(realpath $(CURDIR)/../../..)
 -include Make.config
 
+DOTNET=$(TOP)/dotnet.sh
+JSVU=$(HOME)/.jsvu
+
 #
 # These variables are set by wasm.targets
 #
@@ -100,3 +103,13 @@ clean-emsdk:
 clean:
 	$(RM) -rf $(BUILDS_BIN_DIR) $(BUILDS_OBJ_DIR)
 	$(RM) emsdk_env.sh
+
+# Helper targets
+test-runner:
+	$(DOTNET) build $(TOP)/src/libraries/Common/tests/WasmTestRunner /p:Configuration=$(CONFIG)
+
+app-builder:
+	$(DOTNET) build $(TOP)/tools-local/tasks/mobile.tasks/WasmAppBuilder
+
+run-tests-%:
+	PATH="$(JSVU):$(PATH)" $(DOTNET) build $(TOP)/src/libraries/$*/tests/ /t:Test /p:TargetOS=Browser /p:TargetArchitecture=wasm /p:Configuration=Release
