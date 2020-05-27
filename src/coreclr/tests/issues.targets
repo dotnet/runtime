@@ -79,7 +79,6 @@
         <ExcludeList Include="$(XunitTestBinBase)/readytorun/r2rdump/R2RDumpTest/*">
             <Issue>19441;22020</Issue>
         </ExcludeList>
-
 	    <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/generics/Variance/Methods/Method002/*">
             <Issue>https://github.com/dotnet/runtime/issues/3893</Issue>
         </ExcludeList>
@@ -116,9 +115,12 @@
         <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/generics/Variance/Interfaces/Interfaces001/*">
             <Issue>https://github.com/dotnet/runtime/issues/3893</Issue>
         </ExcludeList>
-	<ExcludeList Include="$(XunitTestBinBase)/baseservices/mono/runningmono/*">
+        <ExcludeList Include="$(XunitTestBinBase)/GC/API/GC/AddThresholdTest/**">
+            <Issue>https://github.com/dotnet/runtime/issues/36850</Issue>
+        </ExcludeList>
+	    <ExcludeList Include="$(XunitTestBinBase)/baseservices/mono/runningmono/*">
             <Issue>This test is to verify we are running mono, and therefore only makes sense on mono.</Issue>
-	</ExcludeList>
+	    </ExcludeList>
     </ItemGroup>
 
     <!-- All Unix targets on all runtimes -->
@@ -332,9 +334,6 @@
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/JitBlue/GitHub_26491/**/*">
             <Issue>https://github.com/dotnet/runtime/issues/13355</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/GC/API/GC/AddThresholdTest/**">
-            <Issue>https://github.com/dotnet/runtime/issues/36850</Issue>
         </ExcludeList>
     </ItemGroup>
 

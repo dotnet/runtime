@@ -4596,8 +4596,9 @@ void CodeGen::genCheckUseBlockInit()
         // double-counting the initialization impact of any locals.
         bool counted = false;
 
-        if (varDsc->lvIsParam)
+        if (!varDsc->lvIsInReg() && !varDsc->lvOnFrame)
         {
+            noway_assert(varDsc->lvRefCnt() == 0);
             continue;
         }
 
@@ -4608,50 +4609,22 @@ void CodeGen::genCheckUseBlockInit()
             continue;
         }
 
-        // Likewise, initialization of the GS cookie is handled specially for OSR.
-        // Could do this for non-OSR too.. (likewise for the dummy)
-        if (compiler->opts.IsOSR() && varNum == compiler->lvaGSSecurityCookie)
+        if (compiler->fgVarIsNeverZeroInitializedInProlog(varNum))
         {
             continue;
         }
-
-        if (!varDsc->lvIsInReg() && !varDsc->lvOnFrame)
-        {
-            noway_assert(varDsc->lvRefCnt() == 0);
-            continue;
-        }
-
-        if (varNum == compiler->lvaInlinedPInvokeFrameVar || varNum == compiler->lvaStubArgumentVar ||
-            varNum == compiler->lvaRetAddrVar)
-        {
-            continue;
-        }
-
-#if FEATURE_FIXED_OUT_ARGS
-        if (varNum == compiler->lvaPInvokeFrameRegSaveVar)
-        {
-            continue;
-        }
-        if (varNum == compiler->lvaOutgoingArgSpaceVar)
-        {
-            continue;
-        }
-#endif
-
-#if defined(FEATURE_EH_FUNCLETS)
-        // There's no need to force 0-initialization of the PSPSym, it will be
-        // initialized with a real value in the prolog
-        if (varNum == compiler->lvaPSPSym)
-        {
-            continue;
-        }
-#endif
 
         if (compiler->lvaIsFieldOfDependentlyPromotedStruct(varDsc))
         {
             // For Compiler::PROMOTION_TYPE_DEPENDENT type of promotion, the whole struct should have been
             // initialized by the parent struct. No need to set the lvMustInit bit in the
             // field locals.
+            continue;
+        }
+
+        if (varDsc->lvHasExplicitInit)
+        {
+            varDsc->lvMustInit = 0;
             continue;
         }
 

@@ -24,8 +24,17 @@ namespace R2RTest
 
             return parser;
 
+            Command CreateCommand(string name, string description, Option[] options, Func<BuildOptions, int> action)
+            {
+                Command command = new Command(name, description);
+                foreach (var option in options)
+                    command.AddOption(option);
+                command.Handler = CommandHandler.Create<BuildOptions>(action);
+                return command;
+            }
+
             Command CompileFolder() =>
-                new Command("compile-directory", "Compile all assemblies in directory",
+                CreateCommand("compile-directory", "Compile all assemblies in directory",
                     new Option[]
                     {
                         InputDirectory(),
@@ -56,10 +65,10 @@ namespace R2RTest
                         MeasurePerf(),
                         InputFileSearchString(),
                     },
-                    handler: CommandHandler.Create<BuildOptions>(CompileDirectoryCommand.CompileDirectory));
+                    CompileDirectoryCommand.CompileDirectory);
 
             Command CompileSubtree() =>
-                new Command("compile-subtree", "Build each directory in a given subtree containing any managed assemblies as a separate app",
+                CreateCommand("compile-subtree", "Build each directory in a given subtree containing any managed assemblies as a separate app",
                     new Option[]
                     {
                         InputDirectory(),
@@ -89,10 +98,10 @@ namespace R2RTest
                         R2RDumpPath(),
                         GCStress(),
                     },
-                    handler: CommandHandler.Create<BuildOptions>(CompileSubtreeCommand.CompileSubtree));
+                    CompileSubtreeCommand.CompileSubtree);
 
             Command CompileFramework() =>
-                new Command("compile-framework", "Compile managed framework assemblies in Core_Root",
+                CreateCommand("compile-framework", "Compile managed framework assemblies in Core_Root",
                     new Option[]
                     {
                         CoreRootDirectory(),
@@ -112,10 +121,10 @@ namespace R2RTest
                         MeasurePerf(),
                         InputFileSearchString(),
                     },
-                    handler: CommandHandler.Create<BuildOptions>(CompileFrameworkCommand.CompileFramework));
+                    CompileFrameworkCommand.CompileFramework);
 
             Command CompileNugetPackages() =>
-                new Command("compile-nuget", "Restore a list of Nuget packages into an empty console app, publish, and optimize with Crossgen / CPAOT",
+                CreateCommand("compile-nuget", "Restore a list of Nuget packages into an empty console app, publish, and optimize with Crossgen / CPAOT",
                     new Option[]
                     {
                         R2RDumpPath(),
@@ -129,10 +138,10 @@ namespace R2RTest
                         CompilationTimeoutMinutes(),
                         ExecutionTimeoutMinutes(),
                     },
-                    handler: CommandHandler.Create<BuildOptions>(CompileNugetCommand.CompileNuget));
+                    CompileNugetCommand.CompileNuget);
 
             Command CompileCrossgenRsp() =>
-                new Command("compile-crossgen-rsp", "Use existing Crossgen .rsp file(s) to build assemblies, optionally rewriting base paths",
+                CreateCommand("compile-crossgen-rsp", "Use existing Crossgen .rsp file(s) to build assemblies, optionally rewriting base paths",
                     new Option[]
                     {
                         InputDirectory(),
@@ -146,11 +155,11 @@ namespace R2RTest
                         RewriteOldPath(),
                         RewriteNewPath(),
                     },
-                    handler: CommandHandler.Create<BuildOptions>(CompileFromCrossgenRspCommand.CompileFromCrossgenRsp));
+                    CompileFromCrossgenRspCommand.CompileFromCrossgenRsp);
 
             Command CompileSerp() =>
-                new Command("compile-serp", "Compile existing application",
-                    new Symbol[]
+                CreateCommand("compile-serp", "Compile existing application",
+                    new Option[]
                     {
                         InputDirectory(),
                         OutputDirectory(),
@@ -160,117 +169,121 @@ namespace R2RTest
                         Composite(),
                         PartialComposite(),
                     },
-                    handler: CommandHandler.Create<BuildOptions>(CompileSerpCommand.CompileSerpAssemblies));
+                    CompileSerpCommand.CompileSerpAssemblies);
 
             // Todo: Input / Output directories should be required arguments to the command when they're made available to handlers
             // https://github.com/dotnet/command-line-api/issues/297
             Option InputDirectory() =>
-                new Option(new[] { "--input-directory", "-in" }, "Folder containing assemblies to optimize", new Argument<DirectoryInfo>().ExistingOnly());
+                new Option<DirectoryInfo>(new[] { "--input-directory", "-in" }, "Folder containing assemblies to optimize").ExistingOnly();
 
             Option OutputDirectory() =>
-                new Option(new[] { "--output-directory", "-out" }, "Folder to emit compiled assemblies", new Argument<DirectoryInfo>().LegalFilePathsOnly());
+                new Option<DirectoryInfo>(new[] { "--output-directory", "-out" }, "Folder to emit compiled assemblies").LegalFilePathsOnly();
 
             Option CoreRootDirectory() =>
-                new Option(new[] { "--core-root-directory", "-cr" }, "Location of the CoreCLR CORE_ROOT folder", new Argument<DirectoryInfo>().ExistingOnly());
+                new Option<DirectoryInfo>(new[] { "--core-root-directory", "-cr" }, "Location of the CoreCLR CORE_ROOT folder").ExistingOnly();
 
             Option ReferencePath() =>
-                new Option(new[] { "--reference-path", "-r" }, "Folder containing assemblies to reference during compilation", new Argument<DirectoryInfo[]>() { Arity = ArgumentArity.ZeroOrMore }.ExistingOnly());
+                new Option<DirectoryInfo[]>(new[] { "--reference-path", "-r" }, "Folder containing assemblies to reference during compilation")
+                    { Argument = new Argument<DirectoryInfo[]>() { Arity = ArgumentArity.ZeroOrMore }.ExistingOnly() };
 
             Option Crossgen() =>
-                new Option(new[] { "--crossgen" }, "Compile the apps using Crossgen in the CORE_ROOT folder", new Argument<bool>());
+                new Option<bool>(new[] { "--crossgen" }, "Compile the apps using Crossgen in the CORE_ROOT folder");
 
             Option CrossgenPath() =>
-                new Option(new[] { "--crossgen-path", "-cp" }, "Explicit Crossgen path (useful for cross-targeting)", new Argument<FileInfo>().ExistingOnly());
+                new Option<FileInfo>(new[] { "--crossgen-path", "-cp" }, "Explicit Crossgen path (useful for cross-targeting)").ExistingOnly();
 
             Option NoJit() =>
-                new Option(new[] { "--nojit" }, "Don't run tests in JITted mode", new Argument<bool>());
+                new Option<bool>(new[] { "--nojit" }, "Don't run tests in JITted mode");
 
             Option NoCrossgen2() =>
-                new Option(new[] { "--nocrossgen2" }, "Don't run tests in Crossgen2 mode", new Argument<bool>());
+                new Option<bool>(new[] { "--nocrossgen2" }, "Don't run tests in Crossgen2 mode");
 
             Option Exe() =>
-                new Option(new[] { "--exe" }, "Don't compile tests, just execute them", new Argument<bool>());
+                new Option<bool>(new[] { "--exe" }, "Don't compile tests, just execute them");
 
             Option NoExe() =>
-                new Option(new[] { "--noexe" }, "Compilation-only mode (don't execute the built apps)", new Argument<bool>());
+                new Option<bool>(new[] { "--noexe" }, "Compilation-only mode (don't execute the built apps)");
 
             Option NoEtw() =>
-                new Option(new[] { "--noetw" }, "Don't capture jitted methods using ETW", new Argument<bool>());
+                new Option<bool>(new[] { "--noetw" }, "Don't capture jitted methods using ETW");
 
             Option NoCleanup() =>
-                new Option(new[] { "--nocleanup" }, "Don't clean up compilation artifacts after test runs", new Argument<bool>());
+                new Option<bool>(new[] { "--nocleanup" }, "Don't clean up compilation artifacts after test runs");
 
             Option Map() =>
-                new Option(new[] { "--map" }, "Generate a map file (Crossgen2)", new Argument<bool>());
+                new Option<bool>(new[] { "--map" }, "Generate a map file (Crossgen2)");
 
             Option DegreeOfParallelism() =>
-                new Option(new[] { "--degree-of-parallelism", "-dop" }, "Override default compilation / execution DOP (default = logical processor count)", new Argument<int>());
+                new Option<int>(new[] { "--degree-of-parallelism", "-dop" }, "Override default compilation / execution DOP (default = logical processor count)");
 
             Option Sequential() =>
-                new Option(new[] { "--sequential" }, "Run tests sequentially", new Argument<bool>());
+                new Option<bool>(new[] { "--sequential" }, "Run tests sequentially");
 
             Option Framework() =>
-                new Option(new[] { "--framework" }, "Precompile and use native framework", new Argument<bool>());
+                new Option<bool>(new[] { "--framework" }, "Precompile and use native framework");
 
             Option UseFramework() =>
-                new Option(new[] { "--use-framework" }, "Use native framework (don't precompile, assume previously compiled)", new Argument<bool>());
+                new Option<bool>(new[] { "--use-framework" }, "Use native framework (don't precompile, assume previously compiled)");
 
             Option Release() =>
-                new Option(new[] { "--release" }, "Build the tests in release mode", new Argument<bool>());
+                new Option<bool>(new[] { "--release" }, "Build the tests in release mode");
 
             Option LargeBubble() =>
-                new Option(new[] { "--large-bubble" }, "Assume all input files as part of one version bubble", new Argument<bool>());
+                new Option<bool>(new[] { "--large-bubble" }, "Assume all input files as part of one version bubble");
 
             Option Composite() =>
-                new Option(new[] { "--composite" }, "Compile tests in composite R2R mode", new Argument<bool>());
+                new Option<bool>(new[] { "--composite" }, "Compile tests in composite R2R mode");
 
             Option Crossgen2Parallelism() =>
-                new Option(new[] { "--crossgen2-parallelism" }, "Max number of threads to use in Crossgen2 (default = logical processor count)", new Argument<int>());
+                new Option<int>(new[] { "--crossgen2-parallelism" }, "Max number of threads to use in Crossgen2 (default = logical processor count)");
 
             Option IssuesPath() =>
-                new Option(new[] { "--issues-path", "-ip" }, "Path to issues.targets", new Argument<FileInfo[]>() { Arity = ArgumentArity.ZeroOrMore });
+                new Option<FileInfo[]>(new[] { "--issues-path", "-ip" }, "Path to issues.targets")
+                    { Argument = new Argument<FileInfo[]>() { Arity = ArgumentArity.ZeroOrMore } };
 
             Option CompilationTimeoutMinutes() =>
-                new Option(new[] { "--compilation-timeout-minutes", "-ct" }, "Compilation timeout (minutes)", new Argument<int>());
+                new Option<int>(new[] { "--compilation-timeout-minutes", "-ct" }, "Compilation timeout (minutes)");
 
             Option ExecutionTimeoutMinutes() =>
-                new Option(new[] { "--execution-timeout-minutes", "-et" }, "Execution timeout (minutes)", new Argument<int>());
+                new Option<int>(new[] { "--execution-timeout-minutes", "-et" }, "Execution timeout (minutes)");
 
             Option R2RDumpPath() =>
-                new Option(new[] { "--r2r-dump-path", "-r2r" }, "Path to R2RDump.exe/dll", new Argument<FileInfo>().ExistingOnly());
+                new Option<FileInfo>(new[] { "--r2r-dump-path", "-r2r" }, "Path to R2RDump.exe/dll").ExistingOnly();;
 
             Option CrossgenResponseFile() =>
-                new Option(new [] { "--crossgen-response-file", "-rsp" }, "Response file to transpose", new Argument<FileInfo>().ExistingOnly());
+                new Option<FileInfo>(new [] { "--crossgen-response-file", "-rsp" }, "Response file to transpose").ExistingOnly();;
 
             Option RewriteOldPath() =>
-                new Option(new [] { "--rewrite-old-path" }, "Path substring to replace", new Argument<DirectoryInfo[]>(){ Arity = ArgumentArity.ZeroOrMore });
+                new Option<DirectoryInfo[]>(new[] { "--rewrite-old-path" }, "Path substring to replace")
+                    { Argument = new Argument<DirectoryInfo[]>() { Arity = ArgumentArity.ZeroOrMore } };
 
             Option RewriteNewPath() =>
-                new Option(new [] { "--rewrite-new-path" }, "Path substring to use instead", new Argument<DirectoryInfo[]>(){ Arity = ArgumentArity.ZeroOrMore });
+                new Option<DirectoryInfo[]>(new[] { "--rewrite-new-path" }, "Path substring to use instead")
+                    { Argument = new Argument<DirectoryInfo[]>() { Arity = ArgumentArity.ZeroOrMore } };
 
             Option MeasurePerf() =>
-                new Option(new[] { "--measure-perf" }, "Print out compilation time", new Argument<bool>());
+                new Option<bool>(new[] { "--measure-perf" }, "Print out compilation time");
 
             Option InputFileSearchString() =>
-                new Option(new[] { "--input-file-search-string", "-input-file" }, "Search string for input files in the input directory", new Argument<string>());
+                new Option<string>(new[] { "--input-file-search-string", "-input-file" }, "Search string for input files in the input directory");
 
             Option GCStress() =>
-                new Option(new[] { "--gcstress" }, "Run tests with the specified GC stress level enabled (the argument value is in hex)", new Argument<string>());
+                new Option<string>(new[] { "--gcstress" }, "Run tests with the specified GC stress level enabled (the argument value is in hex)");
 
             //
             // compile-nuget specific options
             //
             Option PackageList() =>
-                new Option(new[] { "--package-list", "-pl" }, "Text file containing a package name on each line", new Argument<FileInfo>().ExistingOnly());
+                new Option<FileInfo>(new[] { "--package-list", "-pl" }, "Text file containing a package name on each line").ExistingOnly();;
 
             //
             // compile-serp specific options
             //
             Option AspNetPath() =>
-                new Option(new[] { "--asp-net-path", "-asp" }, "Path to SERP's ASP.NET Core folder", new Argument<DirectoryInfo>().ExistingOnly());
+                new Option<DirectoryInfo>(new[] { "--asp-net-path", "-asp" }, "Path to SERP's ASP.NET Core folder").ExistingOnly();
 
             Option PartialComposite() =>
-                new Option(new[] { "--partial-composite", "-pc" }, "Add references to framework and asp.net instead of unrooted inputs", new Argument<bool>());
+                new Option<bool>(new[] { "--partial-composite", "-pc" }, "Add references to framework and asp.net instead of unrooted inputs");
         }
     }
 }

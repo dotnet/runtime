@@ -48,22 +48,6 @@ namespace System.Text.Json
         // Use an array (instead of List<T>) for highest performance.
         private volatile PropertyRef[]? _propertyRefsSorted;
 
-        private Dictionary<string, JsonPropertyInfo> CreatePropertyCache(int capacity)
-        {
-            StringComparer comparer;
-
-            if (Options.PropertyNameCaseInsensitive)
-            {
-                comparer = StringComparer.OrdinalIgnoreCase;
-            }
-            else
-            {
-                comparer = StringComparer.Ordinal;
-            }
-
-            return new Dictionary<string, JsonPropertyInfo>(capacity, comparer);
-        }
-
         public Dictionary<string, JsonParameterInfo> CreateParameterCache(int capacity, JsonSerializerOptions options)
         {
             if (options.PropertyNameCaseInsensitive)
