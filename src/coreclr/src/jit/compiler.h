@@ -3757,7 +3757,7 @@ protected:
                                   CORINFO_CLASS_HANDLE  clsHnd,
                                   CORINFO_METHOD_HANDLE method,
                                   CORINFO_SIG_INFO*     sig,
-                                  bool                  mustExpand);
+                                  GenTree*              newobjThis);
 
 protected:
     bool compSupportsHWIntrinsic(CORINFO_InstructionSet isa);
@@ -3767,7 +3767,8 @@ protected:
                                          CORINFO_SIG_INFO*    sig,
                                          var_types            retType,
                                          var_types            baseType,
-                                         unsigned             simdSize);
+                                         unsigned             simdSize,
+                                         GenTree*             newobjThis);
 
     GenTree* impSimdAsHWIntrinsicCndSel(CORINFO_CLASS_HANDLE clsHnd,
                                         var_types            retType,

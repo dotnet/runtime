@@ -18634,7 +18634,7 @@ GenTreeHWIntrinsic* Compiler::gtNewSimdCreateBroadcastNode(var_types type,
                                                            GenTree*  op1,
                                                            var_types baseType,
                                                            unsigned  size,
-                                                           bool      isSimdAsHWIntrinsic);
+                                                           bool      isSimdAsHWIntrinsic)
 {
     NamedIntrinsic hwIntrinsicID = NI_Vector128_Create;
 
