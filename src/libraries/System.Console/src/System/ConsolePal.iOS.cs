@@ -11,7 +11,7 @@ namespace System
 {
     internal sealed class NSLogStream : ConsoleStream
     {
-        private StringBuilder _buffer = new StringBuilder();
+        private readonly StringBuilder _buffer = new StringBuilder();
 
         public NSLogStream() : base(FileAccess.Write) {}
 
