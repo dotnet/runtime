@@ -209,7 +209,7 @@ namespace R2RDump
 
             // CoreDisTools dumps instructions in the following format:
             //
-            //      address: bytes padding \t mnemonic \t operands \n
+            //      address: bytes [padding] \t mnemonic [\t operands] \n
             //
             // However, due to an LLVM issue regarding instruction prefixes (https://bugs.llvm.org/show_bug.cgi?id=7709),
             // multiple lines may be returned for a single x86/x64 instruction.
@@ -232,7 +232,7 @@ namespace R2RDump
                     {
                         if (!_options.HideOffsets)
                         {
-                            // All lines but the last one must represent single-byte prefixes
+                            // All lines but the last one must represent single-byte prefixes, so add lineNum to the offset
                             builder.Append($"{rtf.CodeOffset + rtfOffset + lineNum,8:x4}:");
                         }
                     }
@@ -261,7 +261,7 @@ namespace R2RDump
                         builder.Append(' ');
                     }
 
-                    // Now handle mnemonic and operands. Ensure proper indentation for the mnemonic.
+                    // Now handle the mnemonic and operands. Ensure proper indentation for the mnemonic.
                     EnsureIndentation(builder, lineStartIndex, MnemonicIndentation);
 
                     int tab2Index = line.IndexOf('\t', tab1Index + 1);
