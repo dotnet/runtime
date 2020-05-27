@@ -4,20 +4,53 @@
 
 using System.IO;
 using System.Text;
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 
 namespace System
 {
     internal sealed unsafe class LogcatStream : ConsoleStream
     {
+        private StringBuilder _buffer = new StringBuilder();
+
         public LogcatStream() : base(FileAccess.Write) {}
 
         public override int Read(byte[] buffer, int offset, int count) => throw Error.GetReadNotSupported();
 
         public override unsafe void Write(byte[] buffer, int offset, int count)
         {
-            string log = ConsolePal.OutputEncoding.GetString(buffer, offset, count);
-            Interop.Logcat.AndroidLogPrint(Interop.Logcat.LogLevel.Info, "DOTNET", log);
+            ValidateWrite(buffer, offset, count);
+
+            Span<byte> bufferSpan = buffer.AsSpan(offset, count);
+
+            Debug.Assert(ConsolePal.OutputEncoding == Encoding.Unicode);
+            Debug.Assert(bufferSpan.Length % 2 == 0);
+
+            Span<char> charSpan = MemoryMarshal.Cast<byte, char>(bufferSpan);
+
+            lock (_buffer)
+            {
+                if (charSpan.Contains('\n'))
+                {
+                    string logLine;
+                    if (_buffer.Length > 0)
+                    {
+                        _buffer.Append(charSpan);
+                        logLine = _buffer.ToString();
+                        _buffer.Clear();
+                    }
+                    else
+                    {
+                        logLine = charSpan.ToString();
+                    }
+                    Interop.Logcat.AndroidLogPrint(Interop.Logcat.LogLevel.Info, "DOTNET", logLine);
+                }
+                else
+                {
+                    // accumulate results until "\n" is written
+                    _buffer.Append(charSpan);
+                }
+            }
         }
     }
 

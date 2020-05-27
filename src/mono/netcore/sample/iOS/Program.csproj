@@ -25,7 +25,7 @@
 
   <Import Project="/Users/egorbo/prj/runtime/tools-local/tasks/mobile.tasks/AotCompilerTask/MonoAOTCompiler.props" />
   <UsingTask TaskName="AppleAppBuilderTask"
-             AssemblyFile="$(ArtifactsBinDir)AppleAppBuilder\$(Configuration)\$(NetCoreAppCurrent)\AppleAppBuilder.dll" />
+             AssemblyFile="$(ArtifactsBinDir)AppleAppBuilder\$(Platform)\$(NetCoreAppCurrent)\AppleAppBuilder.dll" />
 
   <UsingTask TaskName="MonoAOTCompiler"
              AssemblyFile="$(ArtifactsBinDir)MonoAOTCompiler\$(Configuration)\$(NetCoreAppCurrent)\MonoAOTCompiler.dll" />

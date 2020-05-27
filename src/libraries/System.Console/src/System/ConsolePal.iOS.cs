@@ -4,11 +4,15 @@
 
 using System.IO;
 using System.Text;
+using System.Diagnostics;
+using System.Runtime.InteropServices;
 
 namespace System
 {
     internal sealed class NSLogStream : ConsoleStream
     {
+        private StringBuilder _buffer = new StringBuilder();
+
         public NSLogStream() : base(FileAccess.Write) {}
 
         public override int Read(byte[] buffer, int offset, int count) => throw Error.GetReadNotSupported();
@@ -17,9 +21,41 @@ namespace System
         {
             ValidateWrite(buffer, offset, count);
 
-            fixed (byte* ptr = buffer)
+            Span<byte> bufferSpan = buffer.AsSpan(offset, count);
+
+            Debug.Assert(ConsolePal.OutputEncoding == Encoding.Unicode);
+            Debug.Assert(bufferSpan.Length % 2 == 0);
+
+            Span<char> charSpan = MemoryMarshal.Cast<byte, char>(bufferSpan);
+
+            lock (_buffer)
             {
-                Interop.Sys.Log(ptr + offset, count);
+                if (charSpan.Contains('\n'))
+                {
+                    string logLine;
+                    if (_buffer.Length > 0)
+                    {
+                        _buffer.Append(charSpan);
+                        logLine = _buffer.ToString();
+                        _buffer.Clear();
+                        fixed (char* ptr = logLine)
+                        {
+                            Interop.Sys.Log((byte*)ptr, logLine.Length * 2);
+                        }
+                    }
+                    else
+                    {
+                        fixed (byte* ptr = buffer)
+                        {
+                            Interop.Sys.Log(ptr + offset, count);
+                        }
+                    }
+                }
+                else
+                {
+                    // accumulate results until "\n" is written
+                    _buffer.Append(charSpan);
+                }
             }
         }
     }
