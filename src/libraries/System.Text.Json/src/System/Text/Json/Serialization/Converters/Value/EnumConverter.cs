@@ -50,14 +50,15 @@ namespace System.Text.Json.Serialization.Converters
             _namingPolicy = namingPolicy;
 
             if (_converterOptions.HasFlag(EnumConverterOptions.AllowStrings)) {
-                var fields = typeof(T).GetFields();
+                var enumType = typeof(T);
+                var fields = enumType.GetFields();
                 foreach (var field in fields) {
                     var attribute = field.GetCustomAttribute<JsonStringEnumMemberAttribute>(false);
 
                     if (attribute != null) {
                         _enumToStringCache ??= new ConcurrentDictionary<T, string>();
                         _stringToEnumCache ??= new ConcurrentDictionary<ValueTuple<string?>, T>();
-                        var enumValue = Enum.Parse<T>(field.Name);
+                        var enumValue = (T) Enum.Parse(enumType, field.Name);
                         _enumToStringCache[enumValue] = attribute.Name;
                         _stringToEnumCache[ValueTuple.Create(attribute.Name)] = enumValue;
                     }
