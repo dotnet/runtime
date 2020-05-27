@@ -198,7 +198,7 @@ namespace System.Collections.Concurrent
         /// <remarks>For <see cref="ConcurrentQueue{T}"/>, this operation will attempt to remove the object
         /// from the beginning of the <see cref="ConcurrentQueue{T}"/>.
         /// </remarks>
-        bool IProducerConsumerCollection<T>.TryTake(out T item) => TryDequeue(out item);
+        bool IProducerConsumerCollection<T>.TryTake([MaybeNullWhen(false)] out T item) => TryDequeue(out item);
 
         /// <summary>
         /// Gets a value that indicates whether the <see cref="ConcurrentQueue{T}"/> is empty.

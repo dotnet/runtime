@@ -1943,8 +1943,8 @@ enum {
  /* 
   * Information about a trampoline function.
   */
- struct MonoTrampInfo
- {
+struct MonoTrampInfo
+{
 	/* 
 	 * The native code of the trampoline. Not owned by this structure.
 	 */
@@ -1965,6 +1965,11 @@ enum {
 	GSList *unwind_ops;
 
 	MonoJitICallInfo *jit_icall_info;
+
+	/*
+	 * The method the trampoline is associated with, if any.
+	 */
+	MonoMethod *method;
 
 	 /*
 	  * Encoded unwind info loaded from AOT images
@@ -2948,6 +2953,16 @@ typedef enum {
 	SIMD_OP_SSE_PMADDUBSW,
 	SIMD_OP_SSE_PMULHRSW,
 	SIMD_OP_SSE_LDDQU,
+	SIMD_OP_SSE_TESTC,
+	SIMD_OP_SSE_TESTNZ,
+	SIMD_OP_SSE_TESTZ,
+	SIMD_OP_SSE_PACKUSDW,
+	SIMD_OP_SSE_PHMINPOSUW,
+	SIMD_OP_AES_IMC,
+	SIMD_OP_AES_ENC,
+	SIMD_OP_AES_ENCLAST,
+	SIMD_OP_AES_DEC,
+	SIMD_OP_AES_DECLAST,
 	SIMD_OP_ARM64_CRC32B,
 	SIMD_OP_ARM64_CRC32H,
 	SIMD_OP_ARM64_CRC32W,

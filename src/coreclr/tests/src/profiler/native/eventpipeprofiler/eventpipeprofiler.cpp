@@ -24,7 +24,7 @@ HRESULT EventPipeProfiler::Initialize(IUnknown* pICorProfilerInfoUnk)
     }
 
     // No event mask, just calling the EventPipe APIs.
-    if (FAILED(hr = _pCorProfilerInfo12->SetEventMask2(COR_PRF_MONITOR_JIT_COMPILATION, 0)))
+    if (FAILED(hr = _pCorProfilerInfo12->SetEventMask2(COR_PRF_MONITOR_JIT_COMPILATION | COR_PRF_MONITOR_CACHE_SEARCHES, 0)))
     {
         _failures++;
         printf("FAIL: ICorProfilerInfo::SetEventMask2() failed hr=0x%x\n", hr);
@@ -144,6 +144,22 @@ HRESULT EventPipeProfiler::Shutdown()
 }
 
 HRESULT EventPipeProfiler::JITCompilationStarted(FunctionID functionId, BOOL fIsSafeToBlock)
+{
+    return FunctionSeen(functionId);
+}
+
+HRESULT STDMETHODCALLTYPE EventPipeProfiler::JITCachedFunctionSearchFinished(FunctionID functionId, COR_PRF_JIT_CACHE result)
+{
+    if (result == COR_PRF_CACHED_FUNCTION_FOUND)
+    {
+        return FunctionSeen(functionId);
+    }
+
+    return S_OK;
+}
+
+
+HRESULT EventPipeProfiler::FunctionSeen(FunctionID functionId)
 {
     String functionName = GetFunctionIDName(functionId);
     if (functionName == WCHAR("TriggerMethod"))

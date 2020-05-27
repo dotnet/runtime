@@ -211,7 +211,7 @@ namespace System.Diagnostics
             {
                 StringBuilder sb = new StringBuilder("\"");
                 EscapeMessage(message, sb);
-                sb.Append("\"");
+                sb.Append('"');
                 Write(sb.ToString());
             }
         }
@@ -235,7 +235,7 @@ namespace System.Diagnostics
                 EscapeMessage(operation, sb);
             }
 
-            sb.Append("\"");
+            sb.Append('"');
             Write(sb.ToString());
         }
 

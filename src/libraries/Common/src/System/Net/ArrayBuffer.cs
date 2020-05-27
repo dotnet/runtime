@@ -50,7 +50,7 @@ namespace System.Net
 
                 if (array != null)
                 {
-                    ArrayPool<byte>.Shared.Return(array, true);
+                    ArrayPool<byte>.Shared.Return(array);
                 }
             }
         }

@@ -117,8 +117,8 @@ This is the default case for applications - running against an installed .NET ru
 ```XML
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <!-- Ensure that the target framework is correct e.g. 'netcoreapp5.0' -->
-    <TargetFramework>netcoreapp5.0</TargetFramework>
+    <!-- Ensure that the target framework is correct e.g. 'net5.0' -->
+    <TargetFramework>net5.0</TargetFramework>
     <!-- modify version in this line with one reported by `dotnet --info` under ".NET runtimes installed" -> Microsoft.NETCore.App -->
     <RuntimeFrameworkVersion>5.0.0-preview.1.20120.5</RuntimeFrameworkVersion>
   </PropertyGroup>
@@ -140,8 +140,8 @@ make it self-contained by adding a RuntimeIdentifier (RID).
 ```XML
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <!-- Ensure that the target framework is correct e.g. 'netcoreapp5.0' -->
-    <TargetFramework>netcoreapp5.0</TargetFramework>
+    <!-- Ensure that the target framework is correct e.g. 'net5.0' -->
+    <TargetFramework>net5.0</TargetFramework>
     <!-- modify build in this line with version reported by `dotnet --info` as above under ".NET runtimes installed" -> Microsoft.NETCore.App -->
     <!-- moreover, this can be any valid Microsoft.NETCore.App package version from https://dotnetfeed.blob.core.windows.net/dotnet-core/index.json -->
     <RuntimeFrameworkVersion>5.0.0-preview.1.20120.5</RuntimeFrameworkVersion>
@@ -152,7 +152,7 @@ make it self-contained by adding a RuntimeIdentifier (RID).
 ```
 $ dotnet restore
 $ dotnet publish
-$ bin\Debug\netcoreapp5.0\win-x64\publish\App.exe
+$ bin\Debug\net5.0\win-x64\publish\App.exe
 ```
 
 ## More Advanced Scenario - Using your local CoreFx build

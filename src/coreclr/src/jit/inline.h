@@ -662,7 +662,7 @@ public:
     }
 
     // Get the code pointer for this context.
-    BYTE* GetCode() const
+    const BYTE* GetCode() const
     {
         return m_Code;
     }
@@ -731,7 +731,7 @@ private:
     InlineContext*    m_Parent;            // logical caller (parent)
     InlineContext*    m_Child;             // first child
     InlineContext*    m_Sibling;           // next child of the parent
-    BYTE*             m_Code;              // address of IL buffer for the method
+    const BYTE*       m_Code;              // address of IL buffer for the method
     unsigned          m_ILSize;            // size of IL buffer for the method
     unsigned          m_ImportedILSize;    // estimated size of imported IL
     IL_OFFSETX        m_Offset;            // call site location within parent

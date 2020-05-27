@@ -17,12 +17,10 @@
     <Compile Include="System\Net\WebSockets\WebSocketMessageType.cs" />
     <Compile Include="System\Net\WebSockets\WebSocketReceiveResult.cs" />
     <Compile Include="System\Net\WebSockets\WebSocketState.cs" />
-    <Compile Include="$(CommonPath)System\Net\WebSockets\WebSocketValidate.cs">
-      <Link>Common\System\Net\WebSockets\WebSocketValidate.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)System\Net\WebSockets\ManagedWebSocket.cs">
-      <Link>Common\System\Net\WebSockets\ManagedWebSocket.cs</Link>
-    </Compile>
+    <Compile Include="$(CommonPath)System\Net\WebSockets\WebSocketValidate.cs"
+             Link="Common\System\Net\WebSockets\WebSocketValidate.cs" />
+    <Compile Include="$(CommonPath)System\Net\WebSockets\ManagedWebSocket.cs"
+             Link="Common\System\Net\WebSockets\ManagedWebSocket.cs" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="Microsoft.Win32.Primitives" />

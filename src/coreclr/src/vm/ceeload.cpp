@@ -99,10 +99,10 @@ BOOL Module::HasNativeOrReadyToRunInlineTrackingMap()
 {
     LIMITED_METHOD_DAC_CONTRACT;
 #ifdef FEATURE_READYTORUN
-	if (IsReadyToRun() && GetReadyToRunInfo()->GetInlineTrackingMap() != NULL)
-	{
-		return TRUE;
-	}
+    if (IsReadyToRun() && GetReadyToRunInfo()->GetInlineTrackingMap() != NULL)
+    {
+        return TRUE;
+    }
 #endif
     return (m_pPersistentInlineTrackingMapNGen != NULL);
 }
@@ -500,10 +500,9 @@ BOOL Module::IsPersistedObject(void *address)
 
 uint32_t Module::GetNativeMetadataAssemblyCount()
 {
-    NativeImage *compositeImage = GetCompositeNativeImage();
-    if (compositeImage != NULL)
+    if (m_pNativeImage != NULL)
     {
-        return compositeImage->GetComponentAssemblyCount();
+        return m_pNativeImage->GetManifestAssemblyCount();
     }
     else
     {
@@ -593,15 +592,25 @@ void Module::Initialize(AllocMemTracker *pamTracker, LPCWSTR szName)
 #endif // FEATURE_COLLECTIBLE_TYPES
 
 #ifdef FEATURE_READYTORUN
+    m_pNativeImage = NULL;
     if (!HasNativeImage() && !IsResource())
     {
         if ((m_pReadyToRunInfo = ReadyToRunInfo::Initialize(this, pamTracker)) != NULL)
         {
-            COUNT_T cMeta = 0;
-            if (GetFile()->GetOpenedILimage()->GetNativeManifestMetadata(&cMeta) != NULL)
+            m_pNativeImage = m_pReadyToRunInfo->GetNativeImage();
+            if (m_pNativeImage != NULL)
             {
-                // Load the native assembly import
-                GetNativeAssemblyImport(TRUE /* loadAllowed */);
+                m_NativeMetadataAssemblyRefMap = m_pNativeImage->GetManifestMetadataAssemblyRefMap();
+            }
+            else
+            {
+                // For composite images, manifest metadata gets loaded as part of the native image
+                COUNT_T cMeta = 0;
+                if (GetFile()->GetOpenedILimage()->GetNativeManifestMetadata(&cMeta) != NULL)
+                {
+                    // Load the native assembly import
+                    GetNativeAssemblyImport(TRUE /* loadAllowed */);
+                }
             }
         }
     }
@@ -3374,15 +3383,29 @@ BOOL Module::IsInSameVersionBubble(Module *target)
         return FALSE;
     }
 
-    // Check if the current module's image has native manifest metadata, otherwise the current->GetNativeAssemblyImport() asserts.
-    COUNT_T cMeta=0;
-    const void* pMeta = GetFile()->GetOpenedILimage()->GetNativeManifestMetadata(&cMeta);
-    if (pMeta == NULL)
-    {
-        return FALSE;
-    }
+    NativeImage *nativeImage = this->GetCompositeNativeImage();
+    IMDInternalImport* pMdImport = NULL;
 
-    IMDInternalImport* pMdImport = GetNativeAssemblyImport();
+    if (nativeImage != NULL)
+    {
+        if (nativeImage == target->GetCompositeNativeImage())
+        {
+            // Fast path for modules contained within the same native image
+            return TRUE;
+        }
+        pMdImport = nativeImage->GetManifestMetadata();
+    }
+    else
+    {
+        // Check if the current module's image has native manifest metadata, otherwise the current->GetNativeAssemblyImport() asserts.
+        COUNT_T cMeta=0;
+        const void* pMeta = GetFile()->GetOpenedILimage()->GetNativeManifestMetadata(&cMeta);
+        if (pMeta == NULL)
+        {
+            return FALSE;
+        }
+        pMdImport = GetNativeAssemblyImport();
+    }
 
     LPCUTF8 targetName = target->GetAssembly()->GetSimpleName();
 
@@ -9605,7 +9628,14 @@ void Module::Fixup(DataImage *image)
     image->ZeroField(this, offsetof(Module, m_AssemblyRefByNameCount), sizeof(m_AssemblyRefByNameCount));
     image->ZeroPointerField(this, offsetof(Module, m_AssemblyRefByNameTable));
 
-    image->ZeroPointerField(this,offsetof(Module, m_NativeMetadataAssemblyRefMap));
+#ifdef FEATURE_READYTORUN
+    // For composite ready-to-run images, the manifest assembly ref map is stored in the native image
+    // and shared by all its component images.
+    if (m_pNativeImage == NULL)
+#endif
+    {
+        image->ZeroPointerField(this,offsetof(Module, m_NativeMetadataAssemblyRefMap));
+    }
 
     //
     // Fixup statics

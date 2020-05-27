@@ -7,6 +7,7 @@
 //
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 
 namespace System.Text
@@ -31,15 +32,15 @@ namespace System.Text
         internal static readonly UTF7Encoding s_default = new UTF7Encoding();
 
         // The set of base 64 characters.
-        private byte[] _base64Bytes = null!;
+        private byte[] _base64Bytes;
         // The decoded bits for every base64 values. This array has a size of 128 elements.
         // The index is the code point value of the base 64 characters.  The value is -1 if
         // the code point is not a valid base 64 character.  Otherwise, the value is a value
         // from 0 ~ 63.
-        private sbyte[] _base64Values = null!;
+        private sbyte[] _base64Values;
         // The array to decide if a Unicode code point below 0x80 can be directly encoded in UTF7.
         // This array has a size of 128.
-        private bool[] _directEncode = null!;
+        private bool[] _directEncode;
 
         private readonly bool _allowOptionals;
 
@@ -60,6 +61,9 @@ namespace System.Text
             MakeTables();
         }
 
+        [MemberNotNull(nameof(_base64Bytes))]
+        [MemberNotNull(nameof(_base64Values))]
+        [MemberNotNull(nameof(_directEncode))]
         private void MakeTables()
         {
             // Build our tables

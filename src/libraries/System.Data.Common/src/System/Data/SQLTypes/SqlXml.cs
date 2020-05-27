@@ -10,6 +10,7 @@ using System.Data.Common;
 using System.Diagnostics;
 using System.Text;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 
 namespace System.Data.SqlTypes
 {
@@ -122,11 +123,12 @@ namespace System.Data.SqlTypes
         {
             Debug.Assert(CreateSqlReaderMethodInfo != null, "MethodInfo reference for XmlReader.CreateSqlReader should not be null.");
 
-            return (Func<Stream, XmlReaderSettings, XmlParserContext, XmlReader>)CreateSqlReaderMethodInfo.CreateDelegate(typeof(Func<Stream, XmlReaderSettings, XmlParserContext, XmlReader>));
+            return CreateSqlReaderMethodInfo.CreateDelegate<Func<Stream, XmlReaderSettings, XmlParserContext, XmlReader>>();
         }
 
         private static MethodInfo CreateSqlReaderMethodInfo
         {
+            [PreserveDependency("CreateSqlReader", "System.Xml.XmlReader", "System.Private.Xml")]
             get
             {
                 if (s_createSqlReaderMethodInfo == null)

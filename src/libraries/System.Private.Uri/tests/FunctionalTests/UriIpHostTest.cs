@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Net;
-using System.Net.Sockets;
 
 using Xunit;
 
@@ -162,8 +161,7 @@ namespace System.PrivateUri.Tests
         [Fact]
         public void UriIPv4Host_UriWithPort_Success()
         {
-            Uri testUri;
-            Assert.True(Uri.TryCreate("http://" + IPAddress.Loopback.ToString() + ":9090", UriKind.Absolute, out testUri));
+            Assert.True(Uri.TryCreate($"http://{IPAddress.Loopback}:9090", UriKind.Absolute, out Uri testUri));
             Assert.Equal(UriHostNameType.IPv4, testUri.HostNameType);
             Assert.Equal(IPAddress.Loopback.ToString(), testUri.Host);
             Assert.Equal(IPAddress.Loopback.ToString(), testUri.DnsSafeHost);
@@ -172,8 +170,7 @@ namespace System.PrivateUri.Tests
         [Fact]
         public void UriIPv4Host_UriWithQuery_Success()
         {
-            Uri testUri;
-            Assert.True(Uri.TryCreate("http://" + IPAddress.Loopback.ToString() + "?Query", UriKind.Absolute, out testUri));
+            Assert.True(Uri.TryCreate($"http://{IPAddress.Loopback}?Query", UriKind.Absolute, out Uri testUri));
             Assert.Equal(UriHostNameType.IPv4, testUri.HostNameType);
             Assert.Equal(IPAddress.Loopback.ToString(), testUri.Host);
             Assert.Equal(IPAddress.Loopback.ToString(), testUri.DnsSafeHost);
@@ -182,8 +179,7 @@ namespace System.PrivateUri.Tests
         [Fact]
         public void UriIPv4Host_UriWithFragment_Success()
         {
-            Uri testUri;
-            Assert.True(Uri.TryCreate("http://" + IPAddress.Loopback.ToString() + "#fragment", UriKind.Absolute, out testUri));
+            Assert.True(Uri.TryCreate($"http://{IPAddress.Loopback}#fragment", UriKind.Absolute, out Uri testUri));
             Assert.Equal(UriHostNameType.IPv4, testUri.HostNameType);
             Assert.Equal(IPAddress.Loopback.ToString(), testUri.Host);
             Assert.Equal(IPAddress.Loopback.ToString(), testUri.DnsSafeHost);
@@ -199,8 +195,7 @@ namespace System.PrivateUri.Tests
         private void ParseIPv4Address(string ipv4String, string expected)
         {
             // TryCreate
-            Uri testUri;
-            Assert.True(Uri.TryCreate("http://" + ipv4String, UriKind.Absolute, out testUri), ipv4String);
+            Assert.True(Uri.TryCreate("http://" + ipv4String, UriKind.Absolute, out Uri testUri), ipv4String);
             Assert.Equal(UriHostNameType.IPv4, testUri.HostNameType);
             Assert.Equal(expected, testUri.Host);
             Assert.Equal(expected, testUri.DnsSafeHost);
@@ -221,8 +216,7 @@ namespace System.PrivateUri.Tests
             Assert.NotEqual(UriHostNameType.IPv4, Uri.CheckHostName(badIpv4String));
 
             // TryCreate
-            Uri testUri;
-            if (Uri.TryCreate("http://" + badIpv4String + "/", UriKind.Absolute, out testUri))
+            if (Uri.TryCreate($"http://{badIpv4String}/", UriKind.Absolute, out Uri testUri))
             {
                 Assert.NotEqual(UriHostNameType.IPv4, testUri.HostNameType);
             }
@@ -376,14 +370,13 @@ namespace System.PrivateUri.Tests
             string expectedResultWithBrackets = $"[{((scopeIndex == -1) ? expected : expected.Substring(0, scopeIndex))}]";
 
             // TryCreate
-            Uri testUri;
-            Assert.True(Uri.TryCreate("http://[" + ipv6String + "]", UriKind.Absolute, out testUri), ipv6String);
+            Assert.True(Uri.TryCreate($"http://[{ipv6String}]", UriKind.Absolute, out Uri testUri), ipv6String);
             Assert.Equal(UriHostNameType.IPv6, testUri.HostNameType);
             Assert.Equal(expectedResultWithBrackets, testUri.Host);
             Assert.Equal(expected, testUri.DnsSafeHost);
 
             // Constructor
-            testUri = new Uri("http://[" + ipv6String + "]");
+            testUri = new Uri($"http://[{ipv6String}]");
             Assert.Equal(UriHostNameType.IPv6, testUri.HostNameType);
             Assert.Equal(expectedResultWithBrackets, testUri.Host);
             Assert.Equal(expected, testUri.DnsSafeHost);
@@ -398,9 +391,7 @@ namespace System.PrivateUri.Tests
             Assert.NotEqual(UriHostNameType.IPv6, Uri.CheckHostName(badIpv6String));
 
             // TryCreate
-            Uri testUri;
-            Assert.False(Uri.TryCreate("http://[" + badIpv6String + "]/", UriKind.Absolute, out testUri),
-                badIpv6String);
+            Assert.False(Uri.TryCreate($"http://[{badIpv6String}]/", UriKind.Absolute, out _), badIpv6String);
         }
 
         #endregion Helpers

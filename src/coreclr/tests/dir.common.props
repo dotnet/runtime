@@ -12,7 +12,7 @@
   <PropertyGroup>
     <OSPlatformConfig>$(TargetOS).$(TargetArchitecture).$(Configuration)</OSPlatformConfig>
 
-    <TestSrcDir>$(MSBuildThisFileDirectory)src</TestSrcDir>
+    <TestSrcDir Condition="'$(TestSrcDir)' == ''">$(MSBuildThisFileDirectory)src</TestSrcDir>
     <BuildProjectRelativeDir>$([MSBuild]::MakeRelative($(TestSrcDir), $(MSBuildProjectDirectory)))\$(MSBuildProjectName)\</BuildProjectRelativeDir>
 
     <!-- BaseIntermediateOutputPath is used by the SDK as the location

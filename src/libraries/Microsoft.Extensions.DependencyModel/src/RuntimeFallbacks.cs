@@ -18,7 +18,7 @@ namespace Microsoft.Extensions.DependencyModel
         {
             if (string.IsNullOrEmpty(runtime))
             {
-                throw new ArgumentException(nameof(runtime));
+                throw new ArgumentException(null, nameof(runtime));
             }
             if (fallbacks == null)
             {

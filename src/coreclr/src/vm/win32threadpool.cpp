@@ -2771,14 +2771,7 @@ void ThreadpoolMgr::ProcessWaitCompletion(WaitInfo* waitInfo,
         if (asyncCallback)
             ReleaseAsyncCallback(asyncCallback);
 
-        if (SwallowUnhandledExceptions())
-        {
-            // Do nothing to swallow the exception
-        }
-        else
-        {
-            EX_RETHROW;
-        }
+        EX_RETHROW;
     }
     EX_END_CATCH(SwallowAllExceptions);
 }
@@ -4563,14 +4556,7 @@ void ThreadpoolMgr::TimerThreadFire()
     EX_CATCH {
         // Assert on debug builds since a dead timer thread is a fatal error
         _ASSERTE(FALSE);
-        if (SwallowUnhandledExceptions())
-        {
-            // Do nothing to swallow the exception
-        }
-        else
-        {
-            EX_RETHROW;
-        }
+        EX_RETHROW;
     }
     EX_END_CATCH(SwallowAllExceptions);
 }

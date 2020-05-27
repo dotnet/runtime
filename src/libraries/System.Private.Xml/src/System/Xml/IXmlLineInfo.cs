@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 namespace System.Xml
 {
     public interface IXmlLineInfo
@@ -19,7 +20,7 @@ namespace System.Xml
 
         public static PositionInfo GetPositionInfo(object o)
         {
-            IXmlLineInfo li = o as IXmlLineInfo;
+            IXmlLineInfo? li = o as IXmlLineInfo;
             if (li != null)
             {
                 return new ReaderPositionInfo(li);

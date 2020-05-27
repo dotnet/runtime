@@ -4,6 +4,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 
 namespace System.Globalization
@@ -87,7 +88,7 @@ namespace System.Globalization
         private const string sortableDateTimePattern = "yyyy'-'MM'-'dd'T'HH':'mm':'ss";
         private const string universalSortableDateTimePattern = "yyyy'-'MM'-'dd HH':'mm':'ss'Z'";
 
-        private Calendar calendar = null!; // initialized in helper called by ctors
+        private Calendar calendar;
 
         private int firstDayOfWeek = -1;
         private int calendarWeekRule = -1;
@@ -389,6 +390,7 @@ namespace System.Globalization
                 Debug.Assert(calendar != null, "DateTimeFormatInfo.Calendar: calendar != null");
                 return calendar;
             }
+            [MemberNotNull(nameof(calendar))]
             set
             {
                 if (IsReadOnly)
@@ -732,12 +734,17 @@ namespace System.Globalization
                 // Remember the new string
                 longDatePattern = value;
 
-                // Clear the token hash table
-                ClearTokenHashTable();
-
-                // Clean up cached values that will be affected by this property.
-                fullDateTimePattern = null;
+                OnLongDatePatternChanged();
             }
+        }
+
+        private void OnLongDatePatternChanged()
+        {
+            // Clear the token hash table
+            ClearTokenHashTable();
+
+            // Clean up cached values that will be affected by this property.
+            fullDateTimePattern = null;
         }
 
         /// <summary>
@@ -764,14 +771,19 @@ namespace System.Globalization
                 // Remember the new string
                 longTimePattern = value;
 
-                // Clear the token hash table
-                ClearTokenHashTable();
-
-                // Clean up cached values that will be affected by this property.
-                fullDateTimePattern = null;     // Full date = long date + long Time
-                generalLongTimePattern = null;  // General long date = short date + long Time
-                dateTimeOffsetPattern = null;
+                OnLongTimePatternChanged();
             }
+        }
+
+        private void OnLongTimePatternChanged()
+        {
+            // Clear the token hash table
+            ClearTokenHashTable();
+
+            // Clean up cached values that will be affected by this property.
+            fullDateTimePattern = null;     // Full date = long date + long Time
+            generalLongTimePattern = null;  // General long date = short date + long Time
+            dateTimeOffsetPattern = null;
         }
 
         /// <remarks>
@@ -862,14 +874,19 @@ namespace System.Globalization
                 // Remember the new string
                 shortDatePattern = value;
 
-                // Clear the token hash table, note that even short dates could require this
-                ClearTokenHashTable();
-
-                // Clean up cached values that will be affected by this property.
-                generalLongTimePattern = null;   // General long time = short date + long time
-                generalShortTimePattern = null;  // General short time = short date + short Time
-                dateTimeOffsetPattern = null;
+                OnShortDatePatternChanged();
             }
+        }
+
+        private void OnShortDatePatternChanged()
+        {
+            // Clear the token hash table, note that even short dates could require this
+            ClearTokenHashTable();
+
+            // Clean up cached values that will be affected by this property.
+            generalLongTimePattern = null;   // General long time = short date + long time
+            generalShortTimePattern = null;  // General short time = short date + short Time
+            dateTimeOffsetPattern = null;
         }
 
         /// <summary>
@@ -896,12 +913,17 @@ namespace System.Globalization
                 // Remember the new string
                 shortTimePattern = value;
 
-                // Clear the token hash table, note that even short times could require this
-                ClearTokenHashTable();
-
-                // Clean up cached values that will be affected by this property.
-                generalShortTimePattern = null; // General short date = short date + short time.
+                OnShortTimePatternChanged();
             }
+        }
+
+        private void OnShortTimePatternChanged()
+        {
+            // Clear the token hash table, note that even short times could require this
+            ClearTokenHashTable();
+
+            // Clean up cached values that will be affected by this property.
+            generalShortTimePattern = null; // General short date = short date + short time.
         }
 
         public string SortableDateTimePattern => sortableDateTimePattern;
@@ -1036,9 +1058,14 @@ namespace System.Globalization
                 // Remember the new string
                 yearMonthPattern = value;
 
-                // Clear the token hash table, note that even short times could require this
-                ClearTokenHashTable();
+                OnYearMonthPatternChanged();
             }
+        }
+
+        private void OnYearMonthPatternChanged()
+        {
+            // Clear the token hash table, note that even short times could require this
+            ClearTokenHashTable();
         }
 
         /// <summary>
@@ -1682,7 +1709,7 @@ namespace System.Globalization
             {
                 if (patterns[i] == null)
                 {
-                    throw new ArgumentNullException("patterns[" + i + "]", SR.ArgumentNull_ArrayValue);
+                    throw new ArgumentNullException(nameof(patterns) + "[" + i + "]", SR.ArgumentNull_ArrayValue);
                 }
             }
 
@@ -1692,35 +1719,37 @@ namespace System.Globalization
                 case 'd':
                     allShortDatePatterns = patterns;
                     shortDatePattern = allShortDatePatterns[0];
+                    OnShortDatePatternChanged();
                     break;
 
                 case 'D':
                     allLongDatePatterns = patterns;
                     longDatePattern = allLongDatePatterns[0];
+                    OnLongDatePatternChanged();
                     break;
 
                 case 't':
                     allShortTimePatterns = patterns;
                     shortTimePattern = allShortTimePatterns[0];
+                    OnShortTimePatternChanged();
                     break;
 
                 case 'T':
                     allLongTimePatterns = patterns;
                     longTimePattern = allLongTimePatterns[0];
+                    OnLongTimePatternChanged();
                     break;
 
                 case 'y':
                 case 'Y':
                     allYearMonthPatterns = patterns;
                     yearMonthPattern = allYearMonthPatterns[0];
+                    OnYearMonthPatternChanged();
                     break;
 
                 default:
                     throw new ArgumentException(SR.Format(SR.Format_BadFormatSpecifier, format), nameof(format));
             }
-
-            // Clear the token hash table, note that even short dates could require this
-            ClearTokenHashTable();
         }
 
         public string[] AbbreviatedMonthGenitiveNames

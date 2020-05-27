@@ -98,6 +98,8 @@ void mono_img_writer_emit_int16 (MonoImageWriter *w, int value);
 
 void mono_img_writer_emit_int32 (MonoImageWriter *w, int value);
 
+void mono_img_writer_emit_symbol (MonoImageWriter *w, const char *symbol);
+
 void mono_img_writer_emit_symbol_diff (MonoImageWriter *w, const char *end, const char* start, int offset);
 
 void mono_img_writer_emit_zero_bytes (MonoImageWriter *w, int num);

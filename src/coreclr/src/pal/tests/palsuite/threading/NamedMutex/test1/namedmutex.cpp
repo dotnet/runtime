@@ -60,9 +60,12 @@ extern bool WriteHeaderInfo(const char *path, char sharedMemoryType, char versio
         { \
             if (!g_isParent) \
             { \
-                Trace("Child process: "); \
+                Trace("'paltest_namedmutex_test1' child process failed at line %u. Expression: " #expression "\n", __LINE__); \
             } \
-            Trace("'paltest_namedmutex_test1' failed at line %u. Expression: " #expression "\n", __LINE__); \
+            else \
+            { \
+                Trace("'paltest_namedmutex_test1' failed at line %u. Expression: " #expression "\n", __LINE__); \
+            } \
             fflush(stdout); \
             return false; \
         } \
@@ -516,7 +519,7 @@ bool MutualExclusionTests_Parent()
     TestAssert(WaitForSingleObject(m, static_cast<DWORD>(-1)) == WAIT_OBJECT_0); // lock the mutex with no timeout and release
     TestAssert(m.Release());
 
-    UninitializeParent(testName, parentEvents);
+    TestAssert(UninitializeParent(testName, parentEvents));
     return true;
 }
 
@@ -539,7 +542,7 @@ DWORD PALAPI MutualExclusionTests_Child(void *arg = nullptr)
         TestAssert(m.Release()); // release the lock
     }
 
-    UninitializeChild(childRunningEvent, parentEvents, childEvents);
+    TestAssert(UninitializeChild(childRunningEvent, parentEvents, childEvents));
     return 0;
 }
 
@@ -622,7 +625,7 @@ bool LifetimeTests_Parent()
     TestAssert(YieldToChild(parentEvents, childEvents, ei)); // child closes second reference
     TestAssert(!TestFileExists(BuildGlobalShmFilePath(testName, name, NamePrefix)));
 
-    UninitializeParent(testName, parentEvents);
+    TestAssert(UninitializeParent(testName, parentEvents));
     return true;
 }
 
@@ -653,7 +656,7 @@ DWORD PALAPI LifetimeTests_Child(void *arg = nullptr)
         TestAssert(YieldToParent(parentEvents, childEvents, ei)); // parent verifies
     }
 
-    UninitializeChild(childRunningEvent, parentEvents, childEvents);
+    TestAssert(UninitializeChild(childRunningEvent, parentEvents, childEvents));
     return 0;
 }
 
@@ -702,11 +705,11 @@ bool AbandonTests_Parent()
         TestAssert(parentEvents[1].Release()); // child sleeps for short duration and abandons the mutex
         TestAssert(WaitForSingleObject(m, FailTimeoutMilliseconds) == WAIT_ABANDONED_0); // attempt to lock and see abandoned mutex
 
-        UninitializeParent(testName, parentEvents, false /* releaseParentEvents */); // parent events are released above
+        TestAssert(UninitializeParent(testName, parentEvents, false /* releaseParentEvents */)); // parent events are released above
     }
 
     // Verify that the mutex lock is owned by this thread, by starting a new thread and trying to lock it
-    StartThread(AbandonTests_Child_TryLock);
+    TestAssert(StartThread(AbandonTests_Child_TryLock));
     {
         AutoCloseMutexHandle parentEvents[2], childEvents[2];
         TestAssert(InitializeParent(testName, parentEvents, childEvents));
@@ -714,11 +717,11 @@ bool AbandonTests_Parent()
 
         TestAssert(YieldToChild(parentEvents, childEvents, ei)); // child tries to lock mutex
 
-        UninitializeParent(testName, parentEvents);
+        TestAssert(UninitializeParent(testName, parentEvents));
     }
 
     // Verify that the mutex lock is owned by this thread, by starting a new process and trying to lock it
-    StartProcess("AbandonTests_Child_TryLock");
+    TestAssert(StartProcess("AbandonTests_Child_TryLock"));
     AutoCloseMutexHandle parentEvents[2], childEvents[2];
     TestAssert(InitializeParent(testName, parentEvents, childEvents));
     int ei = 0;
@@ -730,7 +733,7 @@ bool AbandonTests_Parent()
     TestAssert(WaitForSingleObject(m, FailTimeoutMilliseconds) == WAIT_OBJECT_0); // lock again to see it's not abandoned anymore
     TestAssert(m.Release());
 
-    UninitializeParent(testName, parentEvents, false /* releaseParentEvents */); // parent events are released above
+    TestAssert(UninitializeParent(testName, parentEvents));
 
     // Since the child abandons the mutex, and a child process may not release the file lock on the shared memory file before
     // indicating completion to the parent, make sure to delete the shared memory file by repeatedly opening/closing the mutex
@@ -772,7 +775,7 @@ DWORD PALAPI AbandonTests_Child_GracefulExit_Close(void *arg = nullptr)
         m.Close(); // close mutex without releasing lock
     }
 
-    UninitializeChild(childRunningEvent, parentEvents, childEvents);
+    TestAssert(UninitializeChild(childRunningEvent, parentEvents, childEvents));
     return 0;
 }
 
@@ -801,7 +804,7 @@ DWORD AbandonTests_Child_GracefulExit_NoClose(void *arg = nullptr)
         m.Abandon(); // don't close the mutex
     }
 
-    UninitializeChild(childRunningEvent, parentEvents, childEvents);
+    TestAssert(UninitializeChild(childRunningEvent, parentEvents, childEvents));
     return 0;
 }
 
@@ -830,7 +833,7 @@ DWORD AbandonTests_Child_AbruptExit(void *arg = nullptr)
             m.Abandon(); // don't close the mutex
         }
 
-        UninitializeChild(childRunningEvent, parentEvents, childEvents);
+        TestAssert(UninitializeChild(childRunningEvent, parentEvents, childEvents));
     }
 
     TestAssert(test_kill(currentPid) == 0); // abandon the mutex abruptly
@@ -894,7 +897,7 @@ DWORD AbandonTests_Child_FileLocksNotInherited_Child_AbruptExit(void *arg = null
         m.Close(); // close mutex without releasing lock (root parent expects the mutex to be abandoned)
     }
 
-    UninitializeChild(childRunningEvent, parentEvents, childEvents);
+    TestAssert(UninitializeChild(childRunningEvent, parentEvents, childEvents));
     return 0;
 }
 
@@ -917,14 +920,12 @@ DWORD PALAPI AbandonTests_Child_TryLock(void *arg)
         TestAssert(WaitForSingleObject(m, g_expectedTimeoutMilliseconds) == WAIT_TIMEOUT);
     }
 
-    UninitializeChild(childRunningEvent, parentEvents, childEvents);
+    TestAssert(UninitializeChild(childRunningEvent, parentEvents, childEvents));
     return 0;
 }
 
 bool AbandonTests()
 {
-    const char *testName = "AbandonTests";
-
     // Abandon by graceful exit where the lock owner closes the mutex before releasing it, unblocks a waiter
     TestAssert(StartThread(AbandonTests_Child_GracefulExit_Close));
     TestAssert(AbandonTests_Parent());
@@ -945,6 +946,151 @@ bool AbandonTests()
     return true;
 }
 
+bool LockAndCloseWithoutThreadExitTests_Parent_CloseOnSameThread()
+{
+    const char *testName = "LockAndCloseWithoutThreadExitTests";
+
+    AutoCloseMutexHandle parentEvents[2], childEvents[2];
+    TestAssert(InitializeParent(testName, parentEvents, childEvents));
+    int ei = 0;
+    char name[MaxPathSize];
+    AutoCloseMutexHandle m;
+
+    TestCreateMutex(m, BuildName(testName, name, GlobalPrefix, NamePrefix));
+    TestAssert(m != nullptr);
+
+    TestAssert(YieldToChild(parentEvents, childEvents, ei)); // child locks mutex and closes second reference to mutex on lock-owner thread
+    TestAssert(WaitForSingleObject(m, 0) == WAIT_TIMEOUT); // attempt to lock and fail
+
+    TestAssert(YieldToChild(parentEvents, childEvents, ei)); // child closes last reference to mutex on lock-owner thread
+    TestAssert(WaitForSingleObject(m, 0) == WAIT_ABANDONED_0); // attempt to lock and see abandoned mutex
+    TestAssert(m.Release());
+
+    TestAssert(YieldToChild(parentEvents, childEvents, ei)); // child exits
+    TestAssert(TestFileExists(BuildGlobalShmFilePath(testName, name, NamePrefix)));
+    m.Close();
+    TestAssert(!TestFileExists(BuildGlobalShmFilePath(testName, name, NamePrefix)));
+
+    TestAssert(UninitializeParent(testName, parentEvents));
+    return true;
+}
+
+DWORD PALAPI LockAndCloseWithoutThreadExitTests_Child_CloseOnSameThread(void *arg = nullptr)
+{
+    const char *testName = "LockAndCloseWithoutThreadExitTests";
+
+    TestAssert(test_getpid() != g_parentPid); // this test needs to run in a separate process
+
+    AutoCloseMutexHandle childRunningEvent, parentEvents[2], childEvents[2];
+    TestAssert(InitializeChild(testName, childRunningEvent, parentEvents, childEvents));
+    int ei = 0;
+    char name[MaxPathSize];
+
+    // ... parent waits for child to lock and close second reference to mutex
+    AutoCloseMutexHandle m(TestOpenMutex(BuildName(testName, name, GlobalPrefix, NamePrefix)));
+    TestAssert(m != nullptr);
+    TestAssert(WaitForSingleObject(m, 0) == WAIT_OBJECT_0);
+    TestAssert(AutoCloseMutexHandle(TestOpenMutex(BuildName(testName, name, GlobalPrefix, NamePrefix))) != nullptr);
+    TestAssert(YieldToParent(parentEvents, childEvents, ei)); // parent waits for child to close last reference to mutex
+
+    m.Close(); // close mutex on lock-owner thread without releasing lock
+    TestAssert(YieldToParent(parentEvents, childEvents, ei)); // parent verifies while this thread is still active
+
+    TestAssert(UninitializeChild(childRunningEvent, parentEvents, childEvents));
+    return 0;
+}
+
+DWORD PALAPI LockAndCloseWithoutThreadExitTests_ChildThread_CloseMutex(void *arg);
+
+bool LockAndCloseWithoutThreadExitTests_Parent_CloseOnDifferentThread()
+{
+    const char *testName = "LockAndCloseWithoutThreadExitTests";
+
+    AutoCloseMutexHandle parentEvents[2], childEvents[2];
+    TestAssert(InitializeParent(testName, parentEvents, childEvents));
+    int ei = 0;
+    char name[MaxPathSize];
+    AutoCloseMutexHandle m;
+
+    TestCreateMutex(m, BuildName(testName, name, GlobalPrefix, NamePrefix));
+    TestAssert(m != nullptr);
+
+    TestAssert(YieldToChild(parentEvents, childEvents, ei)); // child locks mutex and closes second reference to mutex on lock-owner thread
+    TestAssert(WaitForSingleObject(m, 0) == WAIT_TIMEOUT); // attempt to lock and fail
+
+    TestAssert(YieldToChild(parentEvents, childEvents, ei)); // child closes last reference to mutex on non-lock-owner thread
+    TestAssert(WaitForSingleObject(m, 0) == WAIT_TIMEOUT); // attempt to lock and fail
+    m.Close();
+    m = TestOpenMutex(BuildName(testName, name, GlobalPrefix, NamePrefix));
+    TestAssert(m != nullptr); // child has implicit reference to mutex
+
+    TestAssert(YieldToChild(parentEvents, childEvents, ei)); // child closes new reference to mutex on lock-owner thread
+    TestAssert(WaitForSingleObject(m, 0) == WAIT_ABANDONED_0); // attempt to lock and see abandoned mutex
+    TestAssert(m.Release());
+
+    TestAssert(YieldToChild(parentEvents, childEvents, ei)); // child exits
+    TestAssert(TestFileExists(BuildGlobalShmFilePath(testName, name, NamePrefix)));
+    m.Close();
+    TestAssert(!TestFileExists(BuildGlobalShmFilePath(testName, name, NamePrefix)));
+
+    TestAssert(UninitializeParent(testName, parentEvents));
+    return true;
+}
+
+DWORD PALAPI LockAndCloseWithoutThreadExitTests_Child_CloseOnDifferentThread(void *arg = nullptr)
+{
+    const char *testName = "LockAndCloseWithoutThreadExitTests";
+
+    TestAssert(test_getpid() != g_parentPid); // this test needs to run in a separate process
+
+    AutoCloseMutexHandle childRunningEvent, parentEvents[2], childEvents[2];
+    TestAssert(InitializeChild(testName, childRunningEvent, parentEvents, childEvents));
+    int ei = 0;
+    char name[MaxPathSize];
+
+    // ... parent waits for child to lock and close second reference to mutex
+    AutoCloseMutexHandle m(TestOpenMutex(BuildName(testName, name, GlobalPrefix, NamePrefix)));
+    TestAssert(m != nullptr);
+    TestAssert(WaitForSingleObject(m, 0) == WAIT_OBJECT_0);
+    TestAssert(AutoCloseMutexHandle(TestOpenMutex(BuildName(testName, name, GlobalPrefix, NamePrefix))) != nullptr);
+    TestAssert(YieldToParent(parentEvents, childEvents, ei)); // parent waits for child to close last reference to mutex
+
+    // Close the mutex on a thread that is not the lock-owner thread, without releasing the lock
+    HANDLE closeMutexThread = nullptr;
+    TestAssert(StartThread(LockAndCloseWithoutThreadExitTests_ChildThread_CloseMutex, (HANDLE)m, &closeMutexThread));
+    TestAssert(closeMutexThread != nullptr);
+    TestAssert(WaitForSingleObject(closeMutexThread, FailTimeoutMilliseconds) == WAIT_OBJECT_0);
+    TestAssert(CloseHandle(closeMutexThread));
+    m.Abandon(); // mutex is already closed, don't close it again
+    TestAssert(YieldToParent(parentEvents, childEvents, ei)); // parent verifies while this lock-owner thread is still active
+
+    m = TestOpenMutex(BuildName(testName, name, GlobalPrefix, NamePrefix));
+    TestAssert(m != nullptr);
+    m.Close(); // close mutex on lock-owner thread without releasing lock
+    TestAssert(YieldToParent(parentEvents, childEvents, ei)); // parent verifies while this thread is still active
+
+    TestAssert(UninitializeChild(childRunningEvent, parentEvents, childEvents));
+    return 0;
+}
+
+DWORD PALAPI LockAndCloseWithoutThreadExitTests_ChildThread_CloseMutex(void *arg)
+{
+    TestAssert(arg != nullptr);
+    AutoCloseMutexHandle((HANDLE)arg).Close();
+    return 0;
+}
+
+bool LockAndCloseWithoutThreadExitTests()
+{
+    TestAssert(StartProcess("LockAndCloseWithoutThreadExitTests_Child_CloseOnSameThread"));
+    TestAssert(LockAndCloseWithoutThreadExitTests_Parent_CloseOnSameThread());
+
+    TestAssert(StartProcess("LockAndCloseWithoutThreadExitTests_Child_CloseOnDifferentThread"));
+    TestAssert(LockAndCloseWithoutThreadExitTests_Parent_CloseOnDifferentThread());
+
+    return true;
+}
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Test harness
 
@@ -954,7 +1100,8 @@ bool (*const (TestList[]))() =
     HeaderMismatchTests,
     MutualExclusionTests,
     LifetimeTests,
-    AbandonTests
+    AbandonTests,
+    LockAndCloseWithoutThreadExitTests
 };
 
 bool RunTests()
@@ -1124,6 +1271,14 @@ int __cdecl main(int argc, char **argv)
     else if (test_strcmp(argv[2], "AbandonTests_Child_TryLock") == 0)
     {
         AbandonTests_Child_TryLock();
+    }
+    else if (test_strcmp(argv[2], "LockAndCloseWithoutThreadExitTests_Child_CloseOnSameThread") == 0)
+    {
+        LockAndCloseWithoutThreadExitTests_Child_CloseOnSameThread();
+    }
+    else if (test_strcmp(argv[2], "LockAndCloseWithoutThreadExitTests_Child_CloseOnDifferentThread") == 0)
+    {
+        LockAndCloseWithoutThreadExitTests_Child_CloseOnDifferentThread();
     }
     ExitProcess(PASS);
     return PASS;

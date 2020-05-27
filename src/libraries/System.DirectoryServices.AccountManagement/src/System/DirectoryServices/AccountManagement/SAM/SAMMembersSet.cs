@@ -26,7 +26,6 @@ namespace System.DirectoryServices.AccountManagement
                                     ctxBase.Path);
 
             _storeCtx = storeCtx;
-            _ctxBase = ctxBase;
 
             _group = group;
             _originalGroup = group;
@@ -100,8 +99,6 @@ namespace System.DirectoryServices.AccountManagement
             do
             {
                 needToRetry = false;
-
-                object[] nativeMembers = new object[1];
 
                 bool f = _membersEnumerator.MoveNext();
 
@@ -407,17 +404,15 @@ namespace System.DirectoryServices.AccountManagement
             bool isLocal = false;
 
             // Ask the OS to resolve the SID to its target.
-            int accountUsage = 0;
-            string name;
             string domainName;
 
             int err = Utils.LookupSid(
                                 _storeCtx.MachineUserSuppliedName,
                                 _storeCtx.Credentials,
                                 sid,
-                                out name,
+                                out _,
                                 out domainName,
-                                out accountUsage);
+                                out _);
 
             if (err != 0)
             {
@@ -577,7 +572,6 @@ namespace System.DirectoryServices.AccountManagement
         private bool _disposed = false;
 
         private readonly SAMStoreCtx _storeCtx;
-        private readonly DirectoryEntry _ctxBase;
 
         private bool _atBeginning = true;
 

@@ -1,14 +1,8 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <RuntimeIdentifier>$(PackageRID)</RuntimeIdentifier>
-    <!-- We're using ToolRuntimeRID as a placeholder for the real corelib/runtime components until we have an actual set of runtime bits to consume for webassembly/ios/android. -->
-    <RuntimeIdentifier Condition="'$(RuntimeOS)' == 'webassembly' or '$(RuntimeOS)' == 'ios' or '$(RuntimeOS)' == 'android'">$(ToolRuntimeRID)</RuntimeIdentifier>
     <NoWarn>$(NoWarn);NU1603;NU1605</NoWarn>
     <SwapNativeForIL Condition="'$(SwapNativeForIL)' == '' and ('$(Configuration)' == 'Debug' or '$(Coverage)' == 'true') and '$(RuntimeFlavor)' != 'Mono'">true</SwapNativeForIL>
-    <CoreCLRTargetOS Condition="'$(CoreCLRTargetOS)' == ''">$(TargetOS)</CoreCLRTargetOS>
-    <CoreCLRConfiguration Condition="'$(CoreCLRConfiguration)' == ''">$(Configuration)</CoreCLRConfiguration>
-    <MonoTargetOS Condition="'$(MonoTargetOS)' == ''">$(TargetOS)</MonoTargetOS>
-    <MonoConfiguration Condition="'$(MonoConfiguration)' == ''">$(Configuration)</MonoConfiguration>
     <BinPlaceForTargetVertical>false</BinPlaceForTargetVertical>
     <TargetFrameworks>netcoreapp3.0-Windows_NT;netcoreapp3.0-Unix;$(netcoreappCurrent)-Windows_NT;$(netcoreappCurrent)-Unix</TargetFrameworks>
   </PropertyGroup>
@@ -17,16 +11,14 @@
     <PackageReference Include="Microsoft.DiaSymReader.Native" Version="1.7.0" />
   </ItemGroup>
 
-  <ItemGroup>
+  <ItemGroup Condition="'$(TargetsMobile)' != 'true'">
     <PackageReference Include="Microsoft.NETCore.DotNetHost" Version="$(MicrosoftNETCoreDotNetHostVersion)" />
     <PackageReference Include="Microsoft.NETCore.DotNetHostPolicy" Version="$(MicrosoftNETCoreDotNetHostPolicyVersion)" />
     <!-- We do not need apphost.exe and the 3.0 SDK will actually remove it.
          Exclude here so that when building with the 2.x SDK we don't place it in the test shared framework.
          This can be removed once we have a new SDK -->
     <FileToExclude Include="apphost" />
-  </ItemGroup>
 
-  <ItemGroup>
     <!-- System.Data.SqlClient is not live-built anymore -->
     <PackageReference Include="System.Data.SqlClient" Version="$(SystemDataSqlClientVersion)" />
     <!-- Exclude live-built dependencies -->
@@ -42,20 +34,26 @@
   <!-- Setup the testing shared framework host -->
   <Target Name="SetupTestingHost"
           Condition="'$(BinPlaceTestSharedFramework)' == 'true'"
+          DependsOnTargets="OverrideRuntimeMono"
           AfterTargets="AfterResolveReferences">
     <PropertyGroup>
-      <GlobalJsonContent>$([System.IO.File]::ReadAllText('$(RepoRoot)global.json'))</GlobalJsonContent>
-      <DotNetVersion>$([System.Text.RegularExpressions.Regex]::Match($(GlobalJsonContent), '(%3F&lt;="dotnet": ").*(%3F=")'))</DotNetVersion>
-
       <HostFxrFileName Condition="'$(TargetsWindows)' == 'true'">hostfxr</HostFxrFileName>
       <HostFxrFileName Condition="'$(TargetsWindows)' != 'true'">libhostfxr</HostFxrFileName>
+      <HostPolicyFileName Condition="'$(TargetsWindows)' == 'true'">hostpolicy</HostPolicyFileName>
+      <HostPolicyFileName Condition="'$(TargetsWindows)' != 'true'">libhostpolicy</HostPolicyFileName>
 
       <UseHardlink>true</UseHardlink>
       <!-- workaround core-setup problem for hardlinking dotnet executable to testhost: core-setup #4742 -->
       <UseHardlink Condition="'$(_runtimeOSFamily)' == 'FreeBSD'">false</UseHardlink>
     </PropertyGroup>
 
-    <ItemGroup>
+    <ItemGroup Condition="'$(RuntimeFlavor)' == 'Mono'">
+      <HostFxFile Include="@(StoreTestHostFiles)" Condition="'%(StoreTestHostFiles.Filename)' == '$(HostFxrFileName)'" />
+      <HostPolicyFile Include="@(StoreTestHostFiles)" Condition="'%(StoreTestHostFiles.Filename)' == '$(HostPolicyFileName)'" />
+      <DotnetExe Include="@(StoreTestHostFiles)" Condition="'%(StoreTestHostFiles.Filename)' == 'dotnet'" />
+    </ItemGroup>
+
+    <ItemGroup Condition="'$(RuntimeFlavor)' != 'Mono'">
       <HostFxFile Include="@(ReferenceCopyLocalPaths)" Condition="'%(ReferenceCopyLocalPaths.Filename)' == '$(HostFxrFileName)'" />
       <DotnetExe Include="@(ReferenceCopyLocalPaths)" Condition="'%(ReferenceCopyLocalPaths.Filename)' == 'dotnet'" />
     </ItemGroup>
@@ -70,7 +68,30 @@
           SkipUnchangedFiles="true"
           UseHardlinksIfPossible="$(UseHardlink)" />
 
+    <Copy Condition="'$(RuntimeFlavor)' == 'Mono'"
+          SourceFiles="@(HostPolicyFile)"
+          DestinationFolder="$(TestHostRootPath)shared\Microsoft.NETCore.App\$(ProductVersion)"
+          SkipUnchangedFiles="true"
+          UseHardlinksIfPossible="$(UseHardlink)" />
+
     <Exec Command="chmod +x $(TestHostRootPath)%(DotnetExe.Filename)%(DotnetExe.Extension)" Condition="'$(TargetOS)' != 'Windows_NT' and '$(OS)' != 'Windows_NT'"/>
+  </Target>
+
+  <Target Name="SetupRuntimePackNative"
+          Condition="'$(RuntimeFlavor)' == 'Mono'"
+          AfterTargets="AfterResolveReferences">
+    <ItemGroup>
+      <NativeBinPlaceItem Include="@(RuntimeFiles)" />
+      <NativeBinPlaceItem Include="@(MonoCrossFiles)">
+        <DestinationSubDirectory>cross/</DestinationSubDirectory>
+      </NativeBinPlaceItem>
+      <NativeBinPlaceItem Include="@(MonoIncludeFiles)">
+        <DestinationSubDirectory>include/%(RecursiveDir)</DestinationSubDirectory>
+      </NativeBinPlaceItem>
+    </ItemGroup>
+    <ItemGroup Condition="'$(TargetsMobile)' != 'true'">
+      <TestHostBinPlaceItem Include="@(RuntimeFiles)" />
+    </ItemGroup>
   </Target>
 
   <Target Name="OverrideRuntimeCoreCLR"
@@ -90,7 +111,8 @@
           AfterTargets="AfterResolveReferences;FilterNugetPackages"
           Condition="'$(RuntimeFlavor)' == 'Mono'">
     <ItemGroup>
-      <ReferenceCopyLocalPaths Include="@(RuntimeFiles)" />
+      <StoreTestHostFiles Include="@(ReferenceCopyLocalPaths)" />
+      <ReferenceCopyLocalPaths Remove="@(ReferenceCopyLocalPaths)" />
     </ItemGroup>
   </Target>
 

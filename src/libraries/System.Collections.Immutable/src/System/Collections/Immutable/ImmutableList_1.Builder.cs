@@ -5,7 +5,6 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Diagnostics.Contracts;
 
 namespace System.Collections.Immutable
 {
@@ -540,7 +539,6 @@ namespace System.Collections.Immutable
             /// elements in the ImmutableList&lt;T&gt; that extends from index
             /// to the last element, if found; otherwise, -1.
             /// </returns>
-            [Pure]
             public int IndexOf(T item, int index) =>
                 _root.IndexOf(item, index, this.Count - index, EqualityComparer<T>.Default);
 
@@ -565,7 +563,6 @@ namespace System.Collections.Immutable
             /// elements in the ImmutableList&lt;T&gt; that starts at index and
             /// contains count number of elements, if found; otherwise, -1.
             /// </returns>
-            [Pure]
             public int IndexOf(T item, int index, int count) =>
                 _root.IndexOf(item, index, count, EqualityComparer<T>.Default);
 
@@ -594,7 +591,6 @@ namespace System.Collections.Immutable
             /// elements in the ImmutableList&lt;T&gt; that starts at index and
             /// contains count number of elements, if found; otherwise, -1.
             /// </returns>
-            [Pure]
             public int IndexOf(T item, int index, int count, IEqualityComparer<T>? equalityComparer) =>
                 _root.IndexOf(item, index, count, equalityComparer);
 
@@ -613,7 +609,6 @@ namespace System.Collections.Immutable
             /// in the ImmutableList&lt;T&gt; that contains count number of elements
             /// and ends at index, if found; otherwise, -1.
             /// </returns>
-            [Pure]
             public int LastIndexOf(T item)
             {
                 if (this.Count == 0)
@@ -640,7 +635,6 @@ namespace System.Collections.Immutable
             /// in the ImmutableList&lt;T&gt; that contains count number of elements
             /// and ends at index, if found; otherwise, -1.
             /// </returns>
-            [Pure]
             public int LastIndexOf(T item, int startIndex)
             {
                 if (this.Count == 0 && startIndex == 0)
@@ -668,7 +662,6 @@ namespace System.Collections.Immutable
             /// in the ImmutableList&lt;T&gt; that contains count number of elements
             /// and ends at index, if found; otherwise, -1.
             /// </returns>
-            [Pure]
             public int LastIndexOf(T item, int startIndex, int count) =>
                 _root.LastIndexOf(item, startIndex, count, EqualityComparer<T>.Default);
 
@@ -690,7 +683,6 @@ namespace System.Collections.Immutable
             /// in the ImmutableList&lt;T&gt; that contains count number of elements
             /// and ends at index, if found; otherwise, -1.
             /// </returns>
-            [Pure]
             public int LastIndexOf(T item, int startIndex, int count, IEqualityComparer<T>? equalityComparer) =>
                 _root.LastIndexOf(item, startIndex, count, equalityComparer);
 

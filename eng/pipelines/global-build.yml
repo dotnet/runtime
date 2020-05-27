@@ -15,6 +15,7 @@ pr:
     - docs/manpages/*
     - eng/pipelines/global-build.yml
     exclude:
+    - .github/*
     - docs/*
     - eng/pipelines/coreclr/*.*
     - eng/pipelines/libraries/*.*
@@ -92,3 +93,16 @@ jobs:
       testGroup: innerloop
       nameSuffix: Mono_Libraries
       buildArgs: -subset mono+libs /p:RuntimeFlavor=Mono
+
+#
+# SourceBuild Build
+#
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
+    jobTemplate: /eng/pipelines/common/global-build-job.yml
+    buildConfig: release
+    platforms:
+    - Linux_x64
+    jobParameters:
+      nameSuffix: SourceBuild
+      buildArgs: /p:DotNetBuildFromSource=true

@@ -14,7 +14,7 @@ namespace System.Tests
         public static void Ctor_Empty()
         {
             var exception = new OverflowException();
-            ExceptionUtility.ValidateExceptionProperties(exception, hResult: COR_E_OVERFLOW, validateMessage: false);
+            ExceptionHelpers.ValidateExceptionProperties(exception, hResult: COR_E_OVERFLOW, validateMessage: false);
         }
 
         [Fact]
@@ -22,7 +22,7 @@ namespace System.Tests
         {
             string message = "overflow";
             var exception = new OverflowException(message);
-            ExceptionUtility.ValidateExceptionProperties(exception, hResult: COR_E_OVERFLOW, message: message);
+            ExceptionHelpers.ValidateExceptionProperties(exception, hResult: COR_E_OVERFLOW, message: message);
         }
 
         [Fact]
@@ -31,7 +31,7 @@ namespace System.Tests
             string message = "overflow";
             var innerException = new Exception("Inner exception");
             var exception = new OverflowException(message, innerException);
-            ExceptionUtility.ValidateExceptionProperties(exception, hResult: COR_E_OVERFLOW, innerException: innerException, message: message);
+            ExceptionHelpers.ValidateExceptionProperties(exception, hResult: COR_E_OVERFLOW, innerException: innerException, message: message);
         }
     }
 }

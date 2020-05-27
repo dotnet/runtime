@@ -172,12 +172,6 @@ int g_IGCconcurrent = 1;
 
 int g_IGCHoardVM = 0;
 
-#ifdef GCTRIMCOMMIT
-
-int g_IGCTrimCommit = 0;
-
-#endif
-
 //
 // Global state variable indicating if the EE is in its init phase.
 //

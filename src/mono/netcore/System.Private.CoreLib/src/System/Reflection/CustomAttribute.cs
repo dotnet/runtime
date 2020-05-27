@@ -551,7 +551,7 @@ namespace System.Reflection
         {
             if (attributeType == null)
                 throw new ArgumentNullException(nameof(attributeType));
-            if (!attributeType.IsSubclassOf(typeof(Attribute)) && attributeType != typeof(Attribute))
+            if (!attributeType.IsSubclassOf(typeof(Attribute)) && !attributeType.IsInterface && attributeType != typeof(Attribute))
                 throw new ArgumentException(SR.Argument_MustHaveAttributeBaseClass + " " + attributeType.FullName);
 
             AttributeUsageAttribute? usage = null;
@@ -667,7 +667,10 @@ namespace System.Reflection
                     MethodInfo bmethod = ((RuntimeMethodInfo)method).GetBaseMethod();
                     if (bmethod == method)
                         return null;
-                    return bmethod.GetParameters()[parinfo.Position];
+                    int position = parinfo.Position;
+                    if (position == -1)
+                        return bmethod.ReturnParameter;
+                    return bmethod.GetParameters()[position];
                 }
             }
             /*

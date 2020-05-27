@@ -113,7 +113,7 @@ enum ComIpType
 //--------------------------------------------------------------------------------
 // IUnknown *GetComIPFromObjectRef(OBJECTREF *poref, MethodTable *pMT, ...);
 // Convert ObjectRef to a COM IP, based on MethodTable* pMT.
-IUnknown *GetComIPFromObjectRef(OBJECTREF *poref, MethodTable *pMT, BOOL bSecurityCheck = TRUE, BOOL bEnableCustomizedQueryInterface = TRUE);
+IUnknown *GetComIPFromObjectRef(OBJECTREF *poref, MethodTable *pMT, BOOL bEnableCustomizedQueryInterface = TRUE);
 
 
 //--------------------------------------------------------------------------------

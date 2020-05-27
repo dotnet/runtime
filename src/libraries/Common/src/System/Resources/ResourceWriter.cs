@@ -325,7 +325,7 @@ namespace System.Resources
                     ResourceTypeCode typeCode = FindTypeCode(value, typeNames);
 
                     // Write out type code
-                    Write7BitEncodedInt(data, (int)typeCode);
+                    data.Write7BitEncodedInt((int)typeCode);
 
                     var userProvidedResource = value as PrecannedResource;
                     if (userProvidedResource != null)
@@ -415,20 +415,6 @@ namespace System.Resources
 
             // Indicate we've called Generate
             _resourceList = null;
-        }
-
-        private static void Write7BitEncodedInt(BinaryWriter store, int value)
-        {
-            Debug.Assert(store != null);
-            // Write out an int 7 bits at a time.  The high bit of the byte,
-            // when on, tells reader to continue reading more bytes.
-            uint v = (uint)value;   // support negative numbers
-            while (v >= 0x80)
-            {
-                store.Write((byte)(v | 0x80));
-                v >>= 7;
-            }
-            store.Write((byte)v);
         }
 
         // Finds the ResourceTypeCode for a type, or adds this type to the

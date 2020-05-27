@@ -25,8 +25,6 @@
 #define g_CollectionsGenericReadOnlyCollectionItfName "System.Collections.Generic.IReadOnlyCollection`1"
 
 #ifdef FEATURE_COMINTEROP
-#define g_ECMAKeyToken "B77A5C561934E089"       // The ECMA key used by some framework assemblies: mscorlib, system, etc.
-#define g_FXKeyToken "b03f5f7f11d50a3a"         // The FX key used by other framework assemblies: System.Web, System.Drawing, etc.
 #define g_CorelibAsmName "System.Private.CoreLib"
 #define g_SystemAsmName "System"
 #define g_SystemRuntimeAsmName "System.Runtime"
@@ -152,7 +150,7 @@
 #define g_CompilerServicesIntrinsicAttribute "System.Runtime.CompilerServices.IntrinsicAttribute"
 #define g_UnmanagedFunctionPointerAttribute "System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute"
 #define g_DefaultDllImportSearchPathsAttribute "System.Runtime.InteropServices.DefaultDllImportSearchPathsAttribute"
-#define g_NativeCallableAttribute "System.Runtime.InteropServices.NativeCallableAttribute"
+#define g_UnmanagedCallersOnlyAttribute "System.Runtime.InteropServices.UnmanagedCallersOnlyAttribute"
 #define g_FixedBufferAttribute "System.Runtime.CompilerServices.FixedBufferAttribute"
 
 #define g_CompilerServicesTypeDependencyAttribute "System.Runtime.CompilerServices.TypeDependencyAttribute"

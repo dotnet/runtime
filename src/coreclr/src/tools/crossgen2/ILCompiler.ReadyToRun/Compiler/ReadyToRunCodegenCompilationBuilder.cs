@@ -28,13 +28,14 @@ namespace ILCompiler
         private InstructionSetSupport _instructionSetSupport;
 
         private string _jitPath;
+        private string _outputFile;
 
         // These need to provide reasonable defaults so that the user can optionally skip
         // calling the Use/Configure methods and still get something reasonable back.
         private KeyValuePair<string, string>[] _ryujitOptions = Array.Empty<KeyValuePair<string, string>>();
         private ILProvider _ilProvider = new ReadyToRunILProvider();
 
-        public ReadyToRunCodegenCompilationBuilder(CompilerTypeSystemContext context, CompilationModuleGroup group, IEnumerable<string> inputFiles)
+        public ReadyToRunCodegenCompilationBuilder(CompilerTypeSystemContext context, ReadyToRunCompilationModuleGroupBase group, IEnumerable<string> inputFiles)
             : base(context, group, new CoreRTNameMangler())
         {
             _inputFiles = inputFiles;
@@ -115,13 +116,20 @@ namespace ILCompiler
             return this;
         }
 
+        public ReadyToRunCodegenCompilationBuilder GenerateOutputFile(string outputFile)
+        {
+            _outputFile = outputFile;
+            return this;
+        }
+
         public override ICompilation ToCompilation()
         {
             // TODO: only copy COR headers for single-assembly build and for composite build with embedded MSIL
             IEnumerable<EcmaModule> inputModules = _compilationGroup.CompilationModuleSet;
-            CopiedCorHeaderNode corHeaderNode = (_compilationGroup.IsCompositeBuildMode ? null : new CopiedCorHeaderNode(inputModules.First()));
+            EcmaModule singleModule = _compilationGroup.IsCompositeBuildMode ? null : inputModules.First();
+            CopiedCorHeaderNode corHeaderNode = new CopiedCorHeaderNode(singleModule);
             // TODO: proper support for multiple input files
-            DebugDirectoryNode debugDirectoryNode = new DebugDirectoryNode(inputModules.First());
+            DebugDirectoryNode debugDirectoryNode = new DebugDirectoryNode(singleModule, _outputFile);
 
             // Produce a ResourceData where the IBC PROFILE_DATA entry has been filtered out
             // TODO: proper support for multiple input files

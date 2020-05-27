@@ -56,7 +56,10 @@ MONO_HWCAP_VAR(s390x_has_mlt)
 MONO_HWCAP_VAR(s390x_has_ia)
 MONO_HWCAP_VAR(s390x_has_gie)
 MONO_HWCAP_VAR(s390x_has_mie2)
+MONO_HWCAP_VAR(s390x_has_mie3)
 MONO_HWCAP_VAR(s390x_has_gs)
+MONO_HWCAP_VAR(s390x_has_vef2)
+MONO_HWCAP_VAR(s390x_has_eif)
 
 #elif defined (TARGET_SPARC) || defined (TARGET_SPARC64)
 

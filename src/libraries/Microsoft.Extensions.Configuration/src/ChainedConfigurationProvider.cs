@@ -29,7 +29,7 @@ namespace Microsoft.Extensions.Configuration
             }
             if (source.Configuration == null)
             {
-                throw new ArgumentNullException(nameof(source.Configuration));
+                throw new ArgumentException(SR.Format(SR.InvalidNullArgument, "source.Configuration"), nameof(source));
             }
 
             _config = source.Configuration;

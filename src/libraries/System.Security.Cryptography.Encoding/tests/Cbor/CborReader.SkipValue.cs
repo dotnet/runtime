@@ -2,18 +2,46 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-namespace System.Security.Cryptography.Encoding.Tests.Cbor
-{
-    internal partial class CborReader
-    {
-        public void SkipValue()
-        {
-            int depth = 0;
+#nullable enable
+using System.Diagnostics;
 
-            do
+namespace System.Formats.Cbor
+{
+    public partial class CborReader
+    {
+        public void SkipValue(bool validateConformance = false) => SkipToAncestor(0, validateConformance);
+        public void SkipToParent(bool validateConformance = false)
+        {
+            if (_currentMajorType is null)
             {
-                SkipNextNode(ref depth);
-            } while (depth > 0);
+                throw new InvalidOperationException("CBOR reader is at the root context.");
+            }
+
+            SkipToAncestor(1, validateConformance);
+        }
+
+        private void SkipToAncestor(int depth, bool validateConformance)
+        {
+            Debug.Assert(0 <= depth && depth <= Depth);
+            Checkpoint checkpoint = CreateCheckpoint();
+            _isConformanceLevelCheckEnabled = validateConformance;
+
+            try
+            {
+                do
+                {
+                    SkipNextNode(ref depth);
+                } while (depth > 0);
+            }
+            catch
+            {
+                RestoreCheckpoint(in checkpoint);
+                throw;
+            }
+            finally
+            {
+                _isConformanceLevelCheckEnabled = true;
+            }
         }
 
         private void SkipNextNode(ref int depth)
@@ -21,7 +49,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             CborReaderState state;
 
             // peek, skipping any tags we might encounter
-            while ((state = Peek()) == CborReaderState.Tag)
+            while ((state = PeekState()) == CborReaderState.Tag)
             {
                 ReadTag();
             }
@@ -97,7 +125,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
                 case CborReaderState.Null:
                 case CborReaderState.Boolean:
                 case CborReaderState.SpecialValue:
-                    ReadSpecialValue();
+                    ReadSimpleValue();
                     break;
 
                 case CborReaderState.EndOfData:

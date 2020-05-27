@@ -558,7 +558,7 @@ FCIMPL2(LPVOID, MarshalNative::GCHandleInternalAlloc, Object *obj, int type)
 
     OBJECTREF objRef(obj);
 
-    assert(type >= HNDTYPE_WEAK_SHORT && type <= HNDTYPE_WEAK_WINRT);
+    assert(type >= HNDTYPE_WEAK_SHORT && type <= HNDTYPE_WEAK_NATIVE_COM);
 
     if (CORProfilerTrackGC())
     {
@@ -923,7 +923,7 @@ FCIMPL4(IUnknown*, MarshalNative::GetComInterfaceForObjectNative, Object* orefUN
     if (fOnlyInContext && !IsObjectInContext(&oref))
         retVal = NULL;
     else
-        retVal = GetComIPFromObjectRef(&oref, th.GetMethodTable(), TRUE, bEnableCustomizedQueryInterface);
+        retVal = GetComIPFromObjectRef(&oref, th.GetMethodTable(), bEnableCustomizedQueryInterface);
 
     HELPER_METHOD_FRAME_END();
     return retVal;

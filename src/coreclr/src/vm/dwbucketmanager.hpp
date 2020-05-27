@@ -431,7 +431,7 @@ void BaseBucketParamsManager::PopulateBucketParameter(BucketParameterIndex param
     CONTRACTL
     {
         NOTHROW;
-        GC_NOTRIGGER;
+        GC_TRIGGERS;
         MODE_ANY;
     }
     CONTRACTL_END;
@@ -452,7 +452,7 @@ void BaseBucketParamsManager::GetAppName(__out_ecount(maxLength) WCHAR* targetPa
     {
         NOTHROW;
         GC_NOTRIGGER;
-        MODE_ANY;
+        MODE_PREEMPTIVE;
     }
     CONTRACTL_END;
 
@@ -475,8 +475,8 @@ void BaseBucketParamsManager::GetAppVersion(__out_ecount(maxLength) WCHAR* targe
     CONTRACTL
     {
         NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
+        GC_TRIGGERS;
+        MODE_PREEMPTIVE;
     }
     CONTRACTL_END;
 
@@ -511,7 +511,7 @@ void BaseBucketParamsManager::GetAppTimeStamp(__out_ecount(maxLength) WCHAR* tar
     {
         NOTHROW;
         GC_NOTRIGGER;
-        MODE_ANY;
+        MODE_PREEMPTIVE;
     }
     CONTRACTL_END;
 
@@ -543,7 +543,7 @@ void BaseBucketParamsManager::GetModuleName(__out_ecount(maxLength) WCHAR* targe
     {
         NOTHROW;
         GC_NOTRIGGER;
-        MODE_ANY;
+        MODE_PREEMPTIVE;
     }
     CONTRACTL_END;
 
@@ -632,8 +632,8 @@ void BaseBucketParamsManager::GetModuleVersion(__out_ecount(maxLength) WCHAR* ta
     CONTRACTL
     {
         NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
+        GC_TRIGGERS;
+        MODE_PREEMPTIVE;
     }
     CONTRACTL_END;
 
@@ -689,7 +689,7 @@ void BaseBucketParamsManager::GetModuleTimeStamp(__out_ecount(maxLength) WCHAR* 
     {
         NOTHROW;
         GC_NOTRIGGER;
-        MODE_ANY;
+        MODE_PREEMPTIVE;
     }
     CONTRACTL_END;
 
@@ -742,7 +742,7 @@ void BaseBucketParamsManager::GetMethodDef(__out_ecount(maxLength) WCHAR* target
     {
         NOTHROW;
         GC_NOTRIGGER;
-        MODE_ANY;
+        MODE_PREEMPTIVE;
     }
     CONTRACTL_END;
 
@@ -767,7 +767,7 @@ void BaseBucketParamsManager::GetIlOffset(__out_ecount(maxLength) WCHAR* targetP
     {
         NOTHROW;
         GC_NOTRIGGER;
-        MODE_ANY;
+        MODE_PREEMPTIVE;
     }
     CONTRACTL_END;
 
@@ -786,7 +786,7 @@ void BaseBucketParamsManager::GetExceptionName(__out_ecount(maxLength) WCHAR* ta
     {
         NOTHROW;
         GC_NOTRIGGER;
-        MODE_ANY;
+        MODE_PREEMPTIVE;
     }
     CONTRACTL_END;
 
@@ -954,8 +954,8 @@ bool BaseBucketParamsManager::GetFileVersionInfoForModule(Module* pModule, USHOR
     CONTRACTL
     {
         NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
+        GC_TRIGGERS;
+        MODE_PREEMPTIVE;
         PRECONDITION(pModule != NULL);
     }
     CONTRACTL_END;
@@ -1215,10 +1215,13 @@ void CLR20r3BucketParamsManager::PopulateBucketParameters()
     CONTRACTL
     {
         NOTHROW;
-        GC_NOTRIGGER;
+        GC_TRIGGERS;
         MODE_ANY;
     }
     CONTRACTL_END;
+
+    // Preempt to let GC suspend
+    GCX_PREEMP();
 
     PopulateEventName(g_WerEventTraits[CLR20r3].EventName);
 

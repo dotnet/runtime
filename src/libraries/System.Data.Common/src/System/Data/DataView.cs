@@ -476,9 +476,7 @@ namespace System.Data
         [RefreshProperties(RefreshProperties.All)]
         public DataTable Table
         {
-            [PreserveDependency(".ctor", "System.Data.DataTableTypeConverter")] // TODO: Remove when https://github.com/mono/linker/issues/800 is fixed
             get { return _table; }
-            [PreserveDependency(".ctor", "System.Data.DataTableTypeConverter")] // TODO: Remove when https://github.com/mono/linker/issues/800 is fixed
             set
             {
                 DataCommonEventSource.Log.Trace("<ds.DataView.set_Table|API> {0}, {1}", ObjectID, (value != null) ? value.ObjectID : 0);

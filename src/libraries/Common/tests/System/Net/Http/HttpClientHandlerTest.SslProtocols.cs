@@ -150,9 +150,7 @@ namespace System.Net.Http.Functional.Tests
         public static IEnumerable<object[]> SupportedSSLVersionServers()
         {
 #pragma warning disable 0618 // SSL2/3 are deprecated
-            if (PlatformDetection.IsWindows ||
-                PlatformDetection.IsOSX ||
-                (RuntimeInformation.IsOSPlatform(OSPlatform.Linux) && PlatformDetection.OpenSslVersion < new Version(1, 0, 2) && !PlatformDetection.IsDebian))
+            if (PlatformDetection.SupportsSsl3)
             {
                 yield return new object[] { SslProtocols.Ssl3, Configuration.Http.SSLv3RemoteServer };
             }
@@ -197,7 +195,7 @@ namespace System.Net.Http.Functional.Tests
         public static IEnumerable<object[]> NotSupportedSSLVersionServers()
         {
 #pragma warning disable 0618
-            if (PlatformDetection.IsWindows10Version1607OrGreater)
+            if (PlatformDetection.SupportsSsl2)
             {
                 yield return new object[] { SslProtocols.Ssl2, Configuration.Http.SSLv2RemoteServer };
             }

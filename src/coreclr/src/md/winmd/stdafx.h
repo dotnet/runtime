@@ -19,9 +19,11 @@
 #include <cor.h>
 #include <corpriv.h>
 
-#include <ndpversion.h>
 #include "nsutilpriv.h"
 
 #include "utsem.h"
+
+#include <metamodelro.h>
+#include <liteweightstgdb.h>
 
 #endif  // __STDAFX_H_

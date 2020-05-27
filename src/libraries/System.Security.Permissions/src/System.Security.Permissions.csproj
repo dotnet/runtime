@@ -1,11 +1,11 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
-    <TargetFrameworks>netcoreapp3.0;netstandard2.0;net461;$(NetCoreAppCurrent);$(NetFrameworkCurrent)</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent);netcoreapp3.0;netstandard2.0;net461;$(NetFrameworkCurrent)</TargetFrameworks>
     <ExcludeCurrentNetCoreAppFromPackage>true</ExcludeCurrentNetCoreAppFromPackage>
     <ExcludeCurrentFullFrameworkFromPackage>true</ExcludeCurrentFullFrameworkFromPackage>
   </PropertyGroup>
-  <ItemGroup Condition="'$(TargetsNetFx)' != 'true'">
+  <ItemGroup Condition="!$(TargetFramework.StartsWith('net4'))">
     <Compile Include="System\ApplicationIdentity.cs" />
     <Compile Include="System\Configuration\ConfigurationPermission.cs" />
     <Compile Include="System\Configuration\ConfigurationPermissionAttribute.cs" />
@@ -178,24 +178,21 @@
     <Compile Include="System\Web\AspNetHostingPermissionAttribute.cs" />
     <Compile Include="System\Web\AspNetHostingPermissionLevel.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsNetCoreApp)' == 'true'">
+  <ItemGroup Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)' or '$(TargetFramework)' == 'netcoreapp3.0'">
     <Compile Include="System\Xaml\Permissions\XamlLoadPermission.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsNetStandard)' == 'true'">
-    <Compile Include="..\..\System.Private.CoreLib\src\System\Security\IStackWalk.cs">
-      <Link>System\Security\IStackWalk.cs</Link>
-    </Compile>
-    <Compile Include="..\..\System.Private.CoreLib\src\System\Security\PermissionSet.cs">
-      <Link>System\Security\PermissionSet.cs</Link>
-    </Compile>
-    <Compile Include="..\..\System.Private.CoreLib\src\System\Security\Permissions\PermissionState.cs">
-      <Link>System\Security\Permissions\PermissionState.cs</Link>
-    </Compile>
+  <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
+    <Compile Include="..\..\System.Private.CoreLib\src\System\Security\IStackWalk.cs"
+             Link="System\Security\IStackWalk.cs" />
+    <Compile Include="..\..\System.Private.CoreLib\src\System\Security\PermissionSet.cs"
+             Link="System\Security\PermissionSet.cs" />
+    <Compile Include="..\..\System.Private.CoreLib\src\System\Security\Permissions\PermissionState.cs"
+             Link="System\Security\Permissions\PermissionState.cs" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="System.Security.AccessControl" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsNetFx)' == 'true'">
+  <ItemGroup Condition="$(TargetFramework.StartsWith('net4'))">
     <Reference Include="mscorlib" />
     <Reference Include="System" />
     <Reference Include="System.Configuration" />
@@ -211,7 +208,7 @@
     <Reference Include="System.Xaml" />
     <Reference Include="WindowsBase" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsNetCoreApp)' == 'true'">
+  <ItemGroup Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)' or '$(TargetFramework)' == 'netcoreapp3.0'">
     <Reference Include="System.Collections" />
     <Reference Include="System.Collections.NonGeneric" />
     <Reference Include="System.ComponentModel.Primitives" />

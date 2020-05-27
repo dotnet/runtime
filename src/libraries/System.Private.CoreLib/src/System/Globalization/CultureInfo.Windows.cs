@@ -11,37 +11,12 @@ namespace System.Globalization
             if (GlobalizationMode.Invariant)
                 return CultureInfo.InvariantCulture;
 
-            string? strDefault = CultureData.GetLocaleInfoEx(Interop.Kernel32.LOCALE_NAME_USER_DEFAULT, Interop.Kernel32.LOCALE_SNAME);
-            if (strDefault == null)
-            {
-                strDefault = CultureData.GetLocaleInfoEx(Interop.Kernel32.LOCALE_NAME_SYSTEM_DEFAULT, Interop.Kernel32.LOCALE_SNAME);
+            string? strDefault = CultureData.GetLocaleInfoEx(Interop.Kernel32.LOCALE_NAME_USER_DEFAULT, Interop.Kernel32.LOCALE_SNAME) ??
+                                 CultureData.GetLocaleInfoEx(Interop.Kernel32.LOCALE_NAME_SYSTEM_DEFAULT, Interop.Kernel32.LOCALE_SNAME);
 
-                if (strDefault == null)
-                {
-                    // If system default doesn't work, use invariant
-                    return CultureInfo.InvariantCulture;
-                }
-            }
-
-            return GetCultureByName(strDefault);
-        }
-
-        private static CultureInfo GetPredefinedCultureInfo(string name)
-        {
-            CultureInfo culture = GetCultureInfo(name);
-            string englishName = culture.EnglishName;
-
-            // Check if the English Name starts with "Unknown Locale" or "Unknown Language" terms.
-            const int SecondTermIndex = 8;
-
-            if (englishName.StartsWith("Unknown ", StringComparison.Ordinal) && englishName.Length > SecondTermIndex &&
-                (englishName.IndexOf("Locale", SecondTermIndex, StringComparison.Ordinal) == SecondTermIndex ||
-                 englishName.IndexOf("Language", SecondTermIndex, StringComparison.Ordinal) == SecondTermIndex))
-            {
-                throw new CultureNotFoundException(nameof(name), SR.Format(SR.Argument_InvalidPredefinedCultureName, name));
-            }
-
-            return culture;
+            return strDefault != null ?
+                GetCultureByName(strDefault) :
+                CultureInfo.InvariantCulture;
         }
 
         private static unsafe CultureInfo GetUserDefaultUICulture()
@@ -55,18 +30,12 @@ namespace System.Globalization
 
             if (Interop.Kernel32.GetUserPreferredUILanguages(MUI_LANGUAGE_NAME, &langCount, null, &bufLen) != Interop.BOOL.FALSE)
             {
-                char[] languages = new char[bufLen];
+                Span<char> languages = bufLen <= 256 ? stackalloc char[(int)bufLen] : new char[bufLen];
                 fixed (char* pLanguages = languages)
                 {
                     if (Interop.Kernel32.GetUserPreferredUILanguages(MUI_LANGUAGE_NAME, &langCount, pLanguages, &bufLen) != Interop.BOOL.FALSE)
                     {
-                        int index = 0;
-                        while (languages[index] != (char)0 && index < languages.Length)
-                        {
-                            index++;
-                        }
-
-                        return GetCultureByName(new string(languages, 0, index));
+                        return GetCultureByName(languages.ToString());
                     }
                 }
             }

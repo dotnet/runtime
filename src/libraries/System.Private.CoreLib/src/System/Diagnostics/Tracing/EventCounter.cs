@@ -6,6 +6,7 @@
 using System;
 using System.Diagnostics;
 #endif
+using System.Diagnostics.CodeAnalysis;
 using System.Threading;
 
 #if ES_BUILD_STANDALONE
@@ -135,9 +136,10 @@ namespace System.Diagnostics.Tracing
         // Values buffering
         private const int BufferedSize = 10;
         private const double UnusedBufferSlotValue = double.NegativeInfinity;
-        private volatile double[] _bufferedValues = null!;
+        private volatile double[] _bufferedValues;
         private volatile int _bufferedValuesIndex;
 
+        [MemberNotNull(nameof(_bufferedValues))]
         private void InitializeBuffer()
         {
             _bufferedValues = new double[BufferedSize];

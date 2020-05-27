@@ -230,55 +230,31 @@ namespace System.Net.Sockets
         {
             try
             {
-                Socket? attemptSocket;
-                IPAddress? attemptAddress = GetNextAddress(out attemptSocket);
-
+                IPAddress? attemptAddress = GetNextAddress(out Socket? attemptSocket);
                 if (attemptAddress == null)
                 {
                     return new SocketException((int)SocketError.NoData);
                 }
+                Debug.Assert(attemptSocket != null);
 
-                _internalArgs!.RemoteEndPoint = new IPEndPoint(attemptAddress, _endPoint!.Port);
-
-                return AttemptConnection(attemptSocket!, _internalArgs);
-            }
-            catch (Exception e)
-            {
-                if (e is ObjectDisposedException)
-                {
-                    NetEventSource.Fail(this, "unexpected ObjectDisposedException");
-                }
-                return e;
-            }
-        }
-
-        private Exception? AttemptConnection(Socket attemptSocket, SocketAsyncEventArgs args)
-        {
-            try
-            {
-                if (attemptSocket == null)
-                {
-                    NetEventSource.Fail(null, "attemptSocket is null!");
-                }
-
-                bool pending = attemptSocket.ConnectAsync(args);
-                if (!pending)
+                SocketAsyncEventArgs args = _internalArgs!;
+                args.RemoteEndPoint = new IPEndPoint(attemptAddress, _endPoint!.Port);
+                if (!attemptSocket.ConnectAsync(args))
                 {
                     InternalConnectCallback(null, args);
                 }
+
+                return null;
             }
             catch (ObjectDisposedException)
             {
-                // This can happen if the user closes the socket, and is equivalent to a call
-                // to CancelConnectAsync
+                // This can happen if the user closes the socket and is equivalent to a call to CancelConnectAsync.
                 return new SocketException((int)SocketError.OperationAborted);
             }
             catch (Exception e)
             {
                 return e;
             }
-
-            return null;
         }
 
         protected abstract void OnSucceed();

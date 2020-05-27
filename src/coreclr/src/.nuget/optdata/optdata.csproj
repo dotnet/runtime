@@ -6,6 +6,7 @@
     <OptimizationDataSupported Condition="'$(TargetOS)' == 'Windows_NT' And ('$(TargetArchitecture)' == 'x64' Or '$(TargetArchitecture)' == 'x86')">True</OptimizationDataSupported>
     <OptimizationDataSupported Condition="'$(TargetOS)' == 'Linux' And '$(TargetArchitecture)' == 'x64'">True</OptimizationDataSupported>
     <RuntimeIdentifiers>win7-x64;win7-x86;linux-x64</RuntimeIdentifiers>
+    <ExcludeFromSourceBuild>true</ExcludeFromSourceBuild>
     <_TargetOSArchLowercase>$(TargetOS.ToLower())-$(TargetArchitecture.ToLower())</_TargetOSArchLowercase>
   </PropertyGroup>
 

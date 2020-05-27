@@ -213,7 +213,7 @@ namespace System.Resources.Extensions
             // Only write the format if we resources are in DeserializingResourceReader format
             if (_requiresDeserializingResourceReader)
             {
-                Write7BitEncodedInt(writer, (int)record.Format);
+                writer.Write7BitEncodedInt((int)record.Format);
             }
 
             try
@@ -228,7 +228,7 @@ namespace System.Resources.Extensions
                             // doesn't constrain binaryFormatter
                             if (_requiresDeserializingResourceReader)
                             {
-                                Write7BitEncodedInt(writer, data.Length);
+                                writer.Write7BitEncodedInt(data.Length);
                             }
 
                             writer.Write(data);
@@ -243,7 +243,7 @@ namespace System.Resources.Extensions
 
                             stream.Position = 0;
 
-                            Write7BitEncodedInt(writer, (int)stream.Length);
+                            writer.Write7BitEncodedInt((int)stream.Length);
 
                             stream.CopyTo(writer.BaseStream);
 
@@ -252,7 +252,7 @@ namespace System.Resources.Extensions
                     case SerializationFormat.TypeConverterByteArray:
                         {
                             byte[] data = (byte[])record.Data;
-                            Write7BitEncodedInt(writer, data.Length);
+                            writer.Write7BitEncodedInt(data.Length);
                             writer.Write(data);
                             break;
                         }

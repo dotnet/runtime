@@ -223,8 +223,8 @@ namespace ILCompiler.PEWriter
         /// <param name="objectData">Object data to emit</param>
         /// <param name="section">Target section</param>
         /// <param name="name">Textual name of the object data for diagnostic purposese</param>
-        /// <param name="mapFile">Optional map file to output the data item to</param>
-        public void AddObjectData(ObjectNode.ObjectData objectData, ObjectNodeSection section, string name, TextWriter mapFile)
+        /// <param name="mapFileBuilder">Optional map file builder to output the data item to</param>
+        public void AddObjectData(ObjectNode.ObjectData objectData, ObjectNodeSection section, string name, MapFileBuilder mapFileBuilder)
         {
             if (_written)
             {
@@ -248,7 +248,7 @@ namespace ILCompiler.PEWriter
                     throw new NotImplementedException();
             }
 
-            _sectionBuilder.AddObjectData(objectData, targetSectionIndex, name, mapFile);
+            _sectionBuilder.AddObjectData(objectData, targetSectionIndex, name, mapFileBuilder);
         }
 
         public int GetSymbolFilePosition(ISymbolNode symbol)
@@ -274,6 +274,15 @@ namespace ILCompiler.PEWriter
             SetPEHeaderTimeStamp(outputStream, timeDateStamp);
 
             _written = true;
+        }
+
+        /// <summary>
+        /// Fill in map builder section table.
+        /// </summary>
+        /// <param name="mapFileBuilder">Map file builder to set up</param>
+        public void AddSections(MapFileBuilder mapFileBuilder)
+        {
+            _sectionBuilder.AddSections(mapFileBuilder);
         }
 
         /// <summary>

@@ -11,7 +11,7 @@
 #include <io.h>
 
 #include <windows.h>
-#include <fxver.h>
+#include <clrversion.h>
 #include <mscorsvc.h>
 
 #include "palclr.h"
@@ -93,7 +93,7 @@ void ErrorWin32(DWORD err)
 void PrintLogoHelper()
 {
     Output(W("Microsoft (R) CoreCLR Native Image "));
-    Outputf(W("Generator - Version %S\n"), VER_FILEVERSION_STR);
+    Outputf(W("Generator - Version %S\n"), CLR_PRODUCT_VERSION);
     Outputf(W("%S\n"), VER_LEGALCOPYRIGHT_LOGO_STR);
     Output(W("\n"));
 }

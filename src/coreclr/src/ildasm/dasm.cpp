@@ -23,7 +23,7 @@
 //#define MAX_FILENAME_LENGTH         2048     //moved to dis.h
 
 #include <corsym.h>
-#include <ndpversion.h>
+#include <clrversion.h>
 
 // Disable the "initialization of static local vars is no thread safe" error
 #ifdef _MSC_VER
@@ -39,6 +39,9 @@
 #define NATIVE_STRING_RESOURCE_NAME dasm_rc
 DECLARE_NATIVE_STRING_RESOURCE_TABLE(NATIVE_STRING_RESOURCE_NAME);
 #endif
+
+#include "mdfileformat.h"
+
 
 struct MIDescriptor
 {
@@ -6955,7 +6958,7 @@ void DumpPreamble()
     else if(g_fDumpRTF)
     {
     }
-    sprintf_s(szString,SZSTRING_SIZE,"//  Microsoft (R) .NET Framework IL Disassembler.  Version " VER_FILEVERSION_STR);
+    sprintf_s(szString,SZSTRING_SIZE,"//  Microsoft (R) .NET IL Disassembler.  Version " CLR_PRODUCT_VERSION);
     printLine(g_pFile,COMMENT(szString));
     if(g_fDumpHTML)
     {

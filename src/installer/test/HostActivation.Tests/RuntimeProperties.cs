@@ -18,27 +18,6 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
         }
 
         [Fact]
-        public void CommonProperty_AppCanGetData()
-        {
-            var fixture = sharedState.RuntimePropertiesFixture
-                .Copy();
-
-            string name = "FX_PRODUCT_VERSION";
-            string value = fixture.RepoDirProvider.MicrosoftNETCoreAppVersion;
-
-            var dotnet = fixture.BuiltDotnet;
-            var appDll = fixture.TestProject.AppDll;
-            dotnet.Exec(appDll, name)
-                .EnvironmentVariable("COREHOST_TRACE", "1")
-                .CaptureStdErr()
-                .CaptureStdOut()
-                .Execute()
-                .Should().Pass()
-                .And.HaveStdErrContaining($"Property {name} = {value}")
-                .And.HaveStdOutContaining($"AppContext.GetData({name}) = {value}");
-        }
-
-        [Fact]
         public void AppConfigProperty_AppCanGetData()
         {
             var fixture = sharedState.RuntimePropertiesFixture
@@ -102,7 +81,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
             var fixture = sharedState.RuntimePropertiesFixture
                 .Copy();
 
-            string name = "FX_PRODUCT_VERSION";
+            string name = "RUNTIME_IDENTIFIER";
             RuntimeConfig.FromFile(fixture.TestProject.RuntimeConfigJson)
                 .WithProperty(name, sharedState.AppTestPropertyValue)
                 .Save();

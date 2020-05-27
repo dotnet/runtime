@@ -150,7 +150,7 @@ STDMETHODIMP CLRServicesImpl::AddMemoryPressure(UINT64 bytesAllocated)
     HRESULT hr = S_OK;
     BEGIN_EXTERNAL_ENTRYPOINT(&hr)
     {
-        GCInterface::NewAddMemoryPressure(bytesAllocated);
+        GCInterface::AddMemoryPressure(bytesAllocated);
     }
     END_EXTERNAL_ENTRYPOINT;
     return hr;
@@ -168,7 +168,7 @@ STDMETHODIMP CLRServicesImpl::RemoveMemoryPressure(UINT64 bytesAllocated)
     HRESULT hr = S_OK;
     BEGIN_EXTERNAL_ENTRYPOINT(&hr)
     {
-        GCInterface::NewRemoveMemoryPressure(bytesAllocated);
+        GCInterface::RemoveMemoryPressure(bytesAllocated);
     }
     END_EXTERNAL_ENTRYPOINT;
     return hr;
@@ -570,7 +570,7 @@ void RCWWalker::WalkRCWs()
     {
         hr = GET_EXCEPTION()->GetHR();
     }
-    EX_END_CATCH(RethrowCorruptingExceptions)   // Make sure we crash on AV (instead of swallowing everything)
+    EX_END_CATCH(RethrowTerminalExceptions)
 
     if (FAILED(hr))
     {

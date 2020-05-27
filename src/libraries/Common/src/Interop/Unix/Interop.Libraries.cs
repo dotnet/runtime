@@ -8,11 +8,11 @@ internal static partial class Interop
     {
         // Shims
         internal const string SystemNative = "libSystem.Native";
-        internal const string GlobalizationNative = "libSystem.Globalization.Native";
         internal const string NetSecurityNative = "libSystem.Net.Security.Native";
         internal const string CryptoNative = "libSystem.Security.Cryptography.Native.OpenSsl";
         internal const string CompressionNative = "libSystem.IO.Compression.Native";
         internal const string IOPortsNative = "libSystem.IO.Ports.Native";
         internal const string Libdl = "libdl";
+        internal const string HostPolicy = "libhostpolicy";
     }
 }

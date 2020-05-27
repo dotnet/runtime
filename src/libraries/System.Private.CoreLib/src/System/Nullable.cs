@@ -111,7 +111,7 @@ namespace System
                 {
                     if (nullableEEType.IsNullable)
                     {
-                        return Internal.Reflection.Core.NonPortable.RuntimeTypeUnifier.GetRuntimeTypeForEEType(nullableEEType.NullableType);
+                        return Type.GetTypeFromEETypePtr(nullableEEType.NullableType);
                     }
                 }
                 return null;

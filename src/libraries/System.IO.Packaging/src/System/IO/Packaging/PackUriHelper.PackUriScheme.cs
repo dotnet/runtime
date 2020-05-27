@@ -79,7 +79,7 @@ namespace System.IO.Packaging
 
             if (fragment != null)
             {
-                if (fragment == string.Empty || fragment[0] != '#')
+                if (fragment.Length == 0 || fragment[0] != '#')
                     throw new ArgumentException(SR.Format(SR.FragmentMustStartWithHash, nameof(fragment)));
             }
 
@@ -323,7 +323,7 @@ namespace System.IO.Packaging
 
             string partName = GetStringForPartUriFromAnyUri(packUri);
 
-            if (partName == string.Empty)
+            if (partName.Length == 0)
                 return null;
             else
                 return ValidatePartUri(new Uri(partName, UriKind.Relative));

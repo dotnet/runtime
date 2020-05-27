@@ -181,7 +181,11 @@ typedef struct _StackFragment StackFragment;
 struct _StackFragment {
 	guint8 *pos, *end;
 	struct _StackFragment *next;
-	double data [1];
+#if SIZEOF_VOID_P == 4
+	/* Align data field to MINT_VT_ALIGNMENT */
+	gint32 pad;
+#endif
+	double data [MONO_ZERO_LEN_ARRAY];
 };
 
 typedef struct {

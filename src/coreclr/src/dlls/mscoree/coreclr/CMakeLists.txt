@@ -32,7 +32,7 @@ else(CLR_CMAKE_HOST_WIN32)
     set(EXPORTS_FILE ${CMAKE_CURRENT_BINARY_DIR}/coreclr.exports)
     generate_exports_file(${DEF_SOURCES} ${EXPORTS_FILE})
 
-    if(CLR_CMAKE_TARGET_LINUX OR CLR_CMAKE_TARGET_FREEBSD OR CLR_CMAKE_TARGET_NETBSD)
+    if(CLR_CMAKE_TARGET_LINUX OR CLR_CMAKE_TARGET_FREEBSD OR CLR_CMAKE_TARGET_NETBSD OR CLR_CMAKE_TARGET_SUNOS)
         # This option is necessary to ensure that the overloaded delete operator defined inside
         # of the utilcode will be used instead of the standard library delete operator.
         add_link_options("LINKER:-Bsymbolic")
@@ -46,8 +46,12 @@ else(CLR_CMAKE_HOST_WIN32)
         set(START_WHOLE_ARCHIVE -Wl,--whole-archive)
         set(END_WHOLE_ARCHIVE -Wl,--no-whole-archive)
 
-        set(EXPORTS_LINKER_OPTION -Wl,--version-script=${EXPORTS_FILE})
-    endif(CLR_CMAKE_TARGET_LINUX OR CLR_CMAKE_TARGET_FREEBSD OR CLR_CMAKE_TARGET_NETBSD)
+        if(CLR_CMAKE_TARGET_SUNOS)
+            set(EXPORTS_LINKER_OPTION -Wl,-M,${EXPORTS_FILE})
+        elseif(CLR_CMAKE_TARGET_SUNOS)
+            set(EXPORTS_LINKER_OPTION -Wl,--version-script=${EXPORTS_FILE})
+        endif(CLR_CMAKE_TARGET_SUNOS)
+    endif(CLR_CMAKE_TARGET_LINUX OR CLR_CMAKE_TARGET_FREEBSD OR CLR_CMAKE_TARGET_NETBSD OR CLR_CMAKE_TARGET_SUNOS)
 
     if(CLR_CMAKE_TARGET_OSX)
         # These options are used to force every object to be included even if it's unused.
@@ -59,7 +63,7 @@ else(CLR_CMAKE_HOST_WIN32)
 
     if(CLR_CMAKE_TARGET_ANDROID AND CLR_CMAKE_HOST_ARCH_ARM)
         set(EXPORTS_LINKER_OPTION "${EXPORTS_LINKER_OPTION} -Wl,--no-warn-shared-textrel")
-    endif()
+    endif(CLR_CMAKE_TARGET_ANDROID AND CLR_CMAKE_HOST_ARCH_ARM)
 
 endif (CLR_CMAKE_HOST_WIN32)
 
@@ -146,6 +150,10 @@ if(CLR_CMAKE_TARGET_LINUX)
         tracepointprovider
         ${END_WHOLE_ARCHIVE}
     )
+elseif(CLR_CMAKE_TARGET_SUNOS)
+    list(APPEND CORECLR_LIBRARIES
+        socket
+    )
 endif(CLR_CMAKE_TARGET_LINUX)
 
 if(FEATURE_PERFTRACING)
@@ -167,24 +175,7 @@ target_link_libraries(coreclr ${CORECLR_LIBRARIES})
 # Create the runtime module index header file containing the coreclr build id
 # for xplat and the timestamp/size on Windows.
 if(FEATURE_SINGLE_FILE_DIAGNOSTICS)
-    set(
-        RUNTIME_MODULE_INDEX_FILE 
-        ${GENERATED_INCLUDE_DIR}/runtimemoduleindex.h
-    )
-    add_custom_command(
-        OUTPUT ${RUNTIME_MODULE_INDEX_FILE}
-        COMMAND ${CLR_DOTNET_COMMAND} ${CMAKE_INSTALL_PREFIX}/GetModuleIndex/GetModuleIndex.dll $<TARGET_FILE:coreclr> ${RUNTIME_MODULE_INDEX_FILE}
-        DEPENDS coreclr
-        COMMENT "Generating runtime module index file -> ${RUNTIME_MODULE_INDEX_FILE}"
-    )
-    set_source_files_properties(
-        ${RUNTIME_MODULE_INDEX_FILE} 
-        PROPERTIES GENERATED TRUE
-    )
-    add_custom_target(
-        runtime_module_index_header
-        DEPENDS ${RUNTIME_MODULE_INDEX_FILE} 
-    )
+    generate_module_index(coreclr ${GENERATED_INCLUDE_DIR}/runtimemoduleindex.h)
 endif(FEATURE_SINGLE_FILE_DIAGNOSTICS)
 
 if(CLR_CMAKE_TARGET_WIN32)

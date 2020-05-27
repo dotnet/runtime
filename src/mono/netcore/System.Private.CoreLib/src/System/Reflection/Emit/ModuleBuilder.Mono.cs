@@ -154,7 +154,7 @@ namespace System.Reflection.Emit
         {
             if (name == null)
                 throw new ArgumentNullException(nameof(name));
-            if (name == string.Empty)
+            if (name.Length == 0)
                 throw new ArgumentException("name cannot be empty", nameof(name));
             if (global_type_created != null)
                 throw new InvalidOperationException("global fields already created");

@@ -245,7 +245,7 @@ namespace System.Runtime.Serialization.Json
             {
                 return JsonGlobals.xmlPrefix;
             }
-            if (ns == string.Empty)
+            if (ns.Length == 0)
             {
                 return string.Empty;
             }

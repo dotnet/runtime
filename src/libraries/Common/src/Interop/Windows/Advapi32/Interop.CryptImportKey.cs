@@ -10,9 +10,9 @@ internal partial class Interop
     internal partial class Advapi32
     {
         [DllImport(Libraries.Advapi32, CharSet = CharSet.Unicode, SetLastError = true)]
-        internal static extern bool CryptImportKey(
+        internal static extern unsafe bool CryptImportKey(
             SafeProvHandle hProv,
-            byte[] pbData,
+            byte* pbData,
             int dwDataLen,
             SafeKeyHandle hPubKey,
             int dwFlags,

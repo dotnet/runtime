@@ -39,7 +39,7 @@
 
   <!-- We don't have any native components when building for netfx. -->
   <Target Name="BuildNativeWindows"
-          Condition="'$(TargetOS)' == 'Windows_NT' and '$(TargetsNetFx)' != 'true'">
+          Condition="'$(TargetOS)' == 'Windows_NT' and !$(TargetFramework.StartsWith('net4'))">
 
     <!-- Run script that invokes Cmake to create VS files, and then calls msbuild to compile them -->
     <Message Text="&quot;$(MSBuildProjectDirectory)\build-native.cmd&quot; $(_BuildNativeArgs)" Importance="High"/>

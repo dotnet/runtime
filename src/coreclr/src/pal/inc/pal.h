@@ -47,6 +47,9 @@ Abstract:
 #include <string.h>
 #include <errno.h>
 #include <ctype.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <unistd.h>
 #endif
 
 #ifdef  __cplusplus
@@ -2365,6 +2368,8 @@ PALIMPORT BOOL PALAPI PAL_VirtualUnwindOutOfProc(CONTEXT *context, KNONVOLATILE_
 #define PAL_CS_NATIVE_DATA_SIZE 56
 #elif defined(__NetBSD__) && defined(__i386__)
 #define PAL_CS_NATIVE_DATA_SIZE 56
+#elif defined(__sun) && defined(__x86_64__)
+#define PAL_CS_NATIVE_DATA_SIZE 48
 #else
 #warning
 #error  PAL_CS_NATIVE_DATA_SIZE is not defined for this architecture
@@ -2541,6 +2546,7 @@ Abstract
 
 Parameters:
     IN hFile    - The file to load
+    IN offset - offset within hFile where the PE "file" is located
 
 Return value:
     A valid base address if successful.
@@ -2549,7 +2555,7 @@ Return value:
 PALIMPORT
 PVOID
 PALAPI
-PAL_LOADLoadPEFile(HANDLE hFile);
+PAL_LOADLoadPEFile(HANDLE hFile, size_t offset);
 
 /*++
     PAL_LOADUnloadPEFile
@@ -3935,7 +3941,11 @@ PALIMPORT int    __cdecl memcmp(const void *, const void *, size_t);
 PALIMPORT void * __cdecl memset(void *, int, size_t);
 PALIMPORT void * __cdecl memmove(void *, const void *, size_t);
 PALIMPORT void * __cdecl memchr(const void *, int, size_t);
-PALIMPORT long long int __cdecl atoll(const char *) THROW_DECL;
+PALIMPORT long long int __cdecl atoll(const char *)
+#ifndef __sun
+THROW_DECL
+#endif
+;
 PALIMPORT size_t __cdecl strlen(const char *);
 PALIMPORT int __cdecl strcmp(const char*, const char *);
 PALIMPORT int __cdecl strncmp(const char*, const char *, size_t);
@@ -4028,14 +4038,14 @@ PALIMPORT int __cdecl _wtoi(const WCHAR *);
 
 #ifdef __cplusplus
 extern "C++" {
-inline WCHAR *PAL_wcschr(WCHAR *_S, WCHAR _C)
-        {return ((WCHAR *)PAL_wcschr((const WCHAR *)_S, _C)); }
-inline WCHAR *PAL_wcsrchr(WCHAR *_S, WCHAR _C)
-        {return ((WCHAR *)PAL_wcsrchr((const WCHAR *)_S, _C)); }
-inline WCHAR *PAL_wcspbrk(WCHAR *_S, const WCHAR *_P)
-        {return ((WCHAR *)PAL_wcspbrk((const WCHAR *)_S, _P)); }
-inline WCHAR *PAL_wcsstr(WCHAR *_S, const WCHAR *_P)
-        {return ((WCHAR *)PAL_wcsstr((const WCHAR *)_S, _P)); }
+inline WCHAR *PAL_wcschr(WCHAR* S, WCHAR C)
+        {return ((WCHAR *)PAL_wcschr((const WCHAR *)S, C)); }
+inline WCHAR *PAL_wcsrchr(WCHAR* S, WCHAR C)
+        {return ((WCHAR *)PAL_wcsrchr((const WCHAR *)S, C)); }
+inline WCHAR *PAL_wcspbrk(WCHAR* S, const WCHAR* P)
+        {return ((WCHAR *)PAL_wcspbrk((const WCHAR *)S, P)); }
+inline WCHAR *PAL_wcsstr(WCHAR* S, const WCHAR* P)
+        {return ((WCHAR *)PAL_wcsstr((const WCHAR *)S, P)); }
 }
 #endif
 
@@ -4107,9 +4117,17 @@ PALIMPORT double __cdecl acosh(double);
 PALIMPORT double __cdecl asin(double);
 PALIMPORT double __cdecl asinh(double);
 PALIMPORT double __cdecl atan(double) THROW_DECL;
-PALIMPORT double __cdecl atanh(double) THROW_DECL;
+PALIMPORT double __cdecl atanh(double)
+#ifndef __sun
+THROW_DECL
+#endif
+;
 PALIMPORT double __cdecl atan2(double, double);
-PALIMPORT double __cdecl cbrt(double) THROW_DECL;
+PALIMPORT double __cdecl cbrt(double)
+#ifndef __sun
+THROW_DECL
+#endif
+;
 PALIMPORT double __cdecl ceil(double);
 PALIMPORT double __cdecl cos(double);
 PALIMPORT double __cdecl cosh(double);
@@ -4138,10 +4156,22 @@ PALIMPORT float __cdecl acosf(float);
 PALIMPORT float __cdecl acoshf(float);
 PALIMPORT float __cdecl asinf(float);
 PALIMPORT float __cdecl asinhf(float);
-PALIMPORT float __cdecl atanf(float) THROW_DECL;
-PALIMPORT float __cdecl atanhf(float) THROW_DECL;
+PALIMPORT float __cdecl atanf(float)
+#ifndef __sun
+THROW_DECL
+#endif
+;
+PALIMPORT float __cdecl atanhf(float)
+#ifndef __sun
+THROW_DECL
+#endif
+;
 PALIMPORT float __cdecl atan2f(float, float);
-PALIMPORT float __cdecl cbrtf(float) THROW_DECL;
+PALIMPORT float __cdecl cbrtf(float)
+#ifndef __sun
+THROW_DECL
+#endif
+;
 PALIMPORT float __cdecl ceilf(float);
 PALIMPORT float __cdecl cosf(float);
 PALIMPORT float __cdecl coshf(float);

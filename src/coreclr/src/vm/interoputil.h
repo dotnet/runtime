@@ -479,7 +479,7 @@ public:
 IUnknown* MarshalObjectToInterface(OBJECTREF* ppObject, MethodTable* pItfMT, MethodTable* pClassMT, DWORD dwFlags);
 void UnmarshalObjectFromInterface(OBJECTREF *ppObjectDest, IUnknown **ppUnkSrc, MethodTable *pItfMT, MethodTable *pClassMT, DWORD dwFlags);
 
-#define DEFINE_ASM_QUAL_TYPE_NAME(varname, typename, asmname, version, publickeytoken)          static const char varname##[] = { typename##", "##asmname##", Culture=neutral, PublicKeyToken="##publickeytoken##", Version="##version };
+#define DEFINE_ASM_QUAL_TYPE_NAME(varname, typename, asmname)          static const char varname##[] = { typename##", "##asmname## };
 
 class ICOMInterfaceMarshalerCallback;
 void GetNativeWinRTFactoryObject(MethodTable *pMT, Thread *pThread, MethodTable *pFactoryIntfMT, BOOL bNeedUniqueRCW, ICOMInterfaceMarshalerCallback *pCallback, OBJECTREF *prefFactory);

@@ -10,9 +10,9 @@ internal static partial class Interop
     internal static partial class Winsock
     {
         [DllImport(Interop.Libraries.Ws2_32, SetLastError = true)]
-        internal static extern SocketError getsockname(
-            [In] SafeSocketHandle socketHandle,
-            [Out] byte[] socketAddress,
-            [In, Out] ref int socketAddressSize);
+        internal static extern unsafe SocketError getsockname(
+            SafeSocketHandle socketHandle,
+            byte* socketAddress,
+            int* socketAddressSize);
     }
 }

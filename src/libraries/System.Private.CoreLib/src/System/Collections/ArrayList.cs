@@ -28,17 +28,11 @@ namespace System.Collections
     [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public class ArrayList : IList, ICloneable
     {
-        private object?[] _items = null!; // Do not rename (binary serialization)
+        private object?[] _items; // Do not rename (binary serialization)
         private int _size; // Do not rename (binary serialization)
         private int _version; // Do not rename (binary serialization)
 
         private const int _defaultCapacity = 4;
-
-        // Note: this constructor is a bogus constructor that does nothing
-        // and is for use only with SyncArrayList.
-        internal ArrayList(bool trash)
-        {
-        }
 
         // Constructs a ArrayList. The list is initially empty and has a capacity
         // of zero. Upon adding the first element to the list the capacity is
@@ -1196,7 +1190,6 @@ namespace System.Collections
             private readonly object _root;
 
             internal SyncArrayList(ArrayList list)
-                : base(false)
             {
                 _list = list;
                 _root = list.SyncRoot;
@@ -2215,7 +2208,7 @@ namespace System.Collections
             private int _baseSize;
             private int _baseVersion;
 
-            internal Range(ArrayList list, int index, int count) : base(false)
+            internal Range(ArrayList list, int index, int count)
             {
                 _baseList = list;
                 _baseIndex = index;

@@ -32,6 +32,8 @@ namespace System.Text.Json.Serialization.Converters
                 args: null,
                 culture: null)!;
 
+            converter.Initialize(options);
+
             return converter;
         }
     }
