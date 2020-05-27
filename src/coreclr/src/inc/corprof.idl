@@ -757,12 +757,8 @@ typedef enum
     COR_PRF_EVENTPIPE_DATETIME = 16,      // DateTime
     COR_PRF_EVENTPIPE_GUID = 17,          // Guid
     COR_PRF_EVENTPIPE_STRING = 18,        // Unicode character string
+    COR_PRF_EVENTPIPE_ARRAY = 19,         // Arbitrary length array
 } COR_PRF_EVENTPIPE_PARAM_TYPE;
-
-typedef enum
-{
-    COR_PRF_EVENTPIPE_FLAG_ARRAY_TYPE = 1
-} COR_PRF_EVENTPIPE_PARAM_FLAGS;
 
 typedef enum
 {
@@ -776,8 +772,9 @@ typedef enum
 
 typedef struct
 {
-    UINT32       flags;
     UINT32       type;
+    // Used if type == ArrayType
+    UINT32       elementType;
     const WCHAR *name;
 } COR_PRF_EVENTPIPE_PARAM_DESC;
 

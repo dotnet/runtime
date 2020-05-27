@@ -636,17 +636,12 @@ enum __MIDL___MIDL_itf_corprof_0000_0000_0013
         COR_PRF_EVENTPIPE_DECIMAL   = 15,
         COR_PRF_EVENTPIPE_DATETIME  = 16,
         COR_PRF_EVENTPIPE_GUID  = 17,
-        COR_PRF_EVENTPIPE_STRING    = 18
+        COR_PRF_EVENTPIPE_STRING    = 18,
+        COR_PRF_EVENTPIPE_ARRAY = 19
     }   COR_PRF_EVENTPIPE_PARAM_TYPE;
 
 typedef /* [public] */
 enum __MIDL___MIDL_itf_corprof_0000_0000_0014
-    {
-        COR_PRF_EVENTPIPE_FLAG_ARRAY_TYPE   = 1
-    }   COR_PRF_EVENTPIPE_PARAM_FLAGS;
-
-typedef /* [public] */
-enum __MIDL___MIDL_itf_corprof_0000_0000_0015
     {
         COR_PRF_EVENTPIPE_LOGALWAYS = 0,
         COR_PRF_EVENTPIPE_CRITICAL  = 1,
@@ -656,14 +651,14 @@ enum __MIDL___MIDL_itf_corprof_0000_0000_0015
         COR_PRF_EVENTPIPE_VERBOSE   = 5
     }   COR_PRF_EVENTPIPE_LEVEL;
 
-typedef /* [public][public] */ struct __MIDL___MIDL_itf_corprof_0000_0000_0016
+typedef /* [public][public] */ struct __MIDL___MIDL_itf_corprof_0000_0000_0015
     {
-    UINT32 flags;
     UINT32 type;
+    UINT32 elementType;
     const WCHAR *name;
     }   COR_PRF_EVENTPIPE_PARAM_DESC;
 
-typedef /* [public][public] */ struct __MIDL___MIDL_itf_corprof_0000_0000_0017
+typedef /* [public][public] */ struct __MIDL___MIDL_itf_corprof_0000_0000_0016
     {
     UINT64 ptr;
     UINT32 size;

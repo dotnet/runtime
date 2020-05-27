@@ -36,11 +36,7 @@ enum class EventPipeParameterType
     DateTime = 16,      // DateTime
     Guid = 17,          // Guid
     String = 18,        // Unicode character string
-};
-
-enum class EventPipeParameterFlags
-{
-    ArrayType = 1
+    Array = 19,         // Indicates the type is an arbitrary sized array
 };
 
 enum class EventPipeMetadataTag
@@ -52,8 +48,9 @@ enum class EventPipeMetadataTag
 // Contains the metadata associated with an EventPipe event parameter.
 struct EventPipeParameterDesc
 {
-    UINT32 Flags;
     EventPipeParameterType Type;
+    // Only used for array types to indicate what type the array elements are
+    EventPipeParameterType ElementType;
     LPCWSTR Name;
 };
 

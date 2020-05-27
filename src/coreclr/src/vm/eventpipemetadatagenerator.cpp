@@ -23,7 +23,7 @@ bool EventPipeMetadataGenerator::HasV2ParamTypes(
 
     for (UINT32 i = 0; i < paramCount; ++i)
     {
-        if ((pParams[i].Flags & (UINT32)EventPipeParameterFlags::ArrayType) != 0)
+        if (pParams[i].Type == EventPipeParameterType::Array)
         {
             return true;
         }
@@ -77,8 +77,10 @@ void EventPipeMetadataGenerator::GetEventMetadataLength(
         // need 4 bytes for the length of the tag
         // 1 byte for the tag identifier
         // and 4 bytes for the count of params
-        *v2Length = 9;
         *totalLength += 9;
+        // The metadata tag length does not include the required
+        // length and tag fields
+        *v2Length = 4;
 
         // Each parameter has an optional array identifier and then a 4 byte
         // TypeCode + the field name (parameterName.Length + 1) * 2 bytes.
@@ -88,7 +90,7 @@ void EventPipeMetadataGenerator::GetEventMetadataLength(
             // For v2 metadata, fields start with a length (4 bytes) and then the field name
             size_t paramSize = 4 + ((wcslen(pParams[i].Name) + 1) * sizeof(WCHAR));
 
-            if ((pParams[i].Flags & (UINT32)EventPipeParameterFlags::ArrayType) != 0)
+            if (pParams[i].Type == EventPipeParameterType::Array)
             {
                 // If it's an array type we write the array descriptor (4 bytes)
                 paramSize += 4;
@@ -232,7 +234,7 @@ BYTE* EventPipeMetadataGenerator::GenerateEventMetadata(
             EventPipeParameterDesc *pParam = &pParams[i];
             size_t parameterNameLength = wcslen(pParam->Name);
             size_t parameterNameBytes = ((parameterNameLength + 1) * sizeof(WCHAR));
-            if ((pParam->Flags & (UINT32)EventPipeParameterFlags::ArrayType) != 0)
+            if (pParam->Type == EventPipeParameterType::Array)
             {
                 // For an array type, length is 12 (4 bytes length field, 4 bytes array descriptor, 4 bytes typecode)
                 // + name length
@@ -240,7 +242,9 @@ BYTE* EventPipeMetadataGenerator::GenerateEventMetadata(
                 // Now write the event name
                 WriteToBuffer(pMetadata, *pMetadataLength, &offset, pParam->Name, parameterNameLength);
                 // And there is the array descriptor
-                WriteToBuffer<UINT32>(pMetadata, *pMetadataLength, &offset, EventPipeTypeCodeArray);
+                WriteToBuffer<UINT32>(pMetadata, *pMetadataLength, &offset, (UINT32)EventPipeParameterType::Array);
+                // Now write the underlying type
+                WriteToBuffer<UINT32>(pMetadata, *pMetadataLength, &offset, (UINT32)pParam->ElementType);
             }
             else
             {
@@ -249,9 +253,9 @@ BYTE* EventPipeMetadataGenerator::GenerateEventMetadata(
                 WriteToBuffer<UINT32>(pMetadata, *pMetadataLength, &offset, (UINT32)(8 + parameterNameBytes));
                 // Now write the event name
                 WriteToBuffer(pMetadata, *pMetadataLength, &offset, pParam->Name, parameterNameLength);
+                // And then the type
+                WriteToBuffer<UINT32>(pMetadata, *pMetadataLength, &offset, (UINT32)pParam->Type);
             }
-
-            WriteToBuffer<UINT32>(pMetadata, *pMetadataLength, &offset, (UINT32)pParam->Type);
         }
     }
 
