@@ -295,10 +295,7 @@ namespace System.Net.Sockets
             {
                 bool shutdown = false;
                 Interop.Sys.SocketEvent* buffer = _buffer;
-                ConcurrentDictionary<IntPtr, SocketAsyncContextWrapper> handleToContextMap = _handleToContextMap;
-                ConcurrentQueue<SocketIOEvent> eventQueue = _eventQueue;
-                IntPtr shutdownHandle = ShutdownHandle;
-                SocketAsyncContext? context = null;
+
                 while (!shutdown)
                 {
                     int numEvents = EventBufferCount;
@@ -311,39 +308,7 @@ namespace System.Net.Sockets
                     // The native shim is responsible for ensuring this condition.
                     Debug.Assert(numEvents > 0, $"Unexpected numEvents: {numEvents}");
 
-                    bool enqueuedEvent = false;
-                    foreach (var socketEvent in new ReadOnlySpan<Interop.Sys.SocketEvent>(buffer, numEvents))
-                    {
-                        IntPtr handle = socketEvent.Data;
-
-                        if (handleToContextMap.TryGetValue(handle, out SocketAsyncContextWrapper contextWrapper) && (context = contextWrapper.Context) != null)
-                        {
-                            Debug.Assert(handle.ToInt64() < MaxHandles.ToInt64(), $"Unexpected values: handle={handle}, MaxHandles={MaxHandles}");
-
-                            Interop.Sys.SocketEvents events = context.HandleSyncEventsSpeculatively(socketEvent.Events);
-                            if (events != Interop.Sys.SocketEvents.None)
-                            {
-                                var ev = new SocketIOEvent(context, events);
-                                eventQueue.Enqueue(ev);
-                                enqueuedEvent = true;
-
-                                // This is necessary when the JIT generates unoptimized code (debug builds, live debugging,
-                                // quick JIT, etc.) to ensure that the context does not remain referenced by this method, as
-                                // such code may keep the stack location live for longer than necessary
-                                ev = default;
-                            }
-
-                            // This is necessary when the JIT generates unoptimized code (debug builds, live debugging,
-                            // quick JIT, etc.) to ensure that the context does not remain referenced by this method, as
-                            // such code may keep the stack location live for longer than necessary
-                            context = null;
-                            contextWrapper = default;
-                        }
-                        else if (handle == shutdownHandle)
-                        {
-                            shutdown = true;
-                        }
-                    }
+                    bool enqueuedEvent = HandleSocketEvents(buffer, numEvents, ref shutdown);
 
                     if (enqueuedEvent)
                     {
@@ -357,6 +322,52 @@ namespace System.Net.Sockets
             {
                 Environment.FailFast("Exception thrown from SocketAsyncEngine event loop: " + e.ToString(), e);
             }
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private bool HandleSocketEvents(Interop.Sys.SocketEvent* buffer, int numEvents, ref bool shutdown)
+        {
+            ConcurrentDictionary<IntPtr, SocketAsyncContextWrapper> handleToContextMap = _handleToContextMap;
+            ConcurrentQueue<SocketIOEvent> eventQueue = _eventQueue;
+            IntPtr shutdownHandle = ShutdownHandle;
+            SocketAsyncContext? context = null;
+            bool enqueuedEvent = false;
+            foreach (var socketEvent in new ReadOnlySpan<Interop.Sys.SocketEvent>(buffer, numEvents))
+            {
+                IntPtr handle = socketEvent.Data;
+
+                if (handleToContextMap.TryGetValue(handle, out SocketAsyncContextWrapper contextWrapper) &&
+                    (context = contextWrapper.Context) != null)
+                {
+                    Debug.Assert(handle.ToInt64() < MaxHandles.ToInt64(),
+                        $"Unexpected values: handle={handle}, MaxHandles={MaxHandles}");
+
+                    Interop.Sys.SocketEvents events = context.HandleSyncEventsSpeculatively(socketEvent.Events);
+                    if (events != Interop.Sys.SocketEvents.None)
+                    {
+                        var ev = new SocketIOEvent(context, events);
+                        eventQueue.Enqueue(ev);
+                        enqueuedEvent = true;
+
+                        // This is necessary when the JIT generates unoptimized code (debug builds, live debugging,
+                        // quick JIT, etc.) to ensure that the context does not remain referenced by this method, as
+                        // such code may keep the stack location live for longer than necessary
+                        ev = default;
+                    }
+
+                    // This is necessary when the JIT generates unoptimized code (debug builds, live debugging,
+                    // quick JIT, etc.) to ensure that the context does not remain referenced by this method, as
+                    // such code may keep the stack location live for longer than necessary
+                    context = null;
+                    contextWrapper = default;
+                }
+                else if (handle == shutdownHandle)
+                {
+                    shutdown = true;
+                }
+            }
+
+            return enqueuedEvent;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
