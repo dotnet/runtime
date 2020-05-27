@@ -36,17 +36,15 @@ XHARNESS_OUT="$EXECUTION_DIR/xharness-output"
 
 if [ -x "$(command -v xharness)" ]
 then
-    dotnet xharness ios test -i="net.dot.MonoRunner" \
+    dotnet xharness ios test \
         --targets="$TARGET" \
-        --package-name="net.dot.$TEST_NAME" \
         --app="$APP_BUNDLE" 
         -o=$HELIX_WORKITEM_UPLOAD_ROOT -v
 
     cp $HELIX_WORKITEM_UPLOAD_ROOT/*.xml ./
 else
-    dotnet xharness ios test -i="net.dot.MonoRunner" \
+    dotnet xharness ios test \
         --targets="$TARGET" \
-        --package-name="net.dot.$TEST_NAME" \
         --app="$APP_BUNDLE" 
         -o=$EXECUTION_DIR/TestResults -v
 fi
