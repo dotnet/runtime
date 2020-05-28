@@ -3,6 +3,8 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Globalization;
+using System.Diagnostics;
 using System.Collections.Generic;
 using Microsoft.Extensions.DependencyInjection;
 using Moq;
@@ -90,6 +92,45 @@ namespace Microsoft.Extensions.Logging.Test
             // Assert
             throwingProvider.As<IDisposable>()
                 .Verify(p => p.Dispose(), Times.Once());
+        }
+
+        [Fact]
+        public void TestActivityIds()
+        {
+            var loggerProvider = new ExternalScopeLoggerProvider();
+
+            var loggerFactory = LoggerFactory.Create(builder =>
+            {
+                builder
+                .Configure(o => o.ActivityTrackingOptions = ActivityTrackingOptions.TraceId | ActivityTrackingOptions.SpanId | ActivityTrackingOptions.ParentId)
+                .AddProvider(loggerProvider);
+            });
+
+            var logger = loggerFactory.CreateLogger("Logger");
+
+            Activity a = new Activity("ScopeActivity");
+            a.Start();
+            string activity1String = string.Format(CultureInfo.InvariantCulture, "SpanId:{0}, TraceId:{1}, ParentId:{2}", a.GetSpanId(), a.GetTraceId(), a.GetParentId());
+            string activity2String;
+
+            using (logger.BeginScope("Scope 1"))
+            {
+                logger.LogInformation("Message 1");
+                Activity b = new Activity("ScopeActivity");
+                b.Start();
+                activity2String = string.Format(CultureInfo.InvariantCulture, "SpanId:{0}, TraceId:{1}, ParentId:{2}", b.GetSpanId(), b.GetTraceId(), b.GetParentId());
+
+                using (logger.BeginScope("Scope 2"))
+                {
+                    logger.LogInformation("Message 2");
+                }
+                b.Stop();
+            }
+
+            a.Stop();
+
+            Assert.Equal(activity1String, loggerProvider.LogText[1]);
+            Assert.Equal(activity2String, loggerProvider.LogText[4]);
         }
 
         [Fact]
@@ -259,6 +300,39 @@ namespace Microsoft.Extensions.Logging.Test
                 BeginScopeCalledTimes++;
                 return null;
             }
+        }
+    }
+
+    internal static class ActivityExtensions
+    {
+        public static string GetSpanId(this Activity activity)
+        {
+            return activity.IdFormat switch
+            {
+                ActivityIdFormat.Hierarchical => activity.Id,
+                ActivityIdFormat.W3C => activity.SpanId.ToHexString(),
+                _ => null,
+            } ?? string.Empty;
+        }
+
+        public static string GetTraceId(this Activity activity)
+        {
+            return activity.IdFormat switch
+            {
+                ActivityIdFormat.Hierarchical => activity.RootId,
+                ActivityIdFormat.W3C => activity.TraceId.ToHexString(),
+                _ => null,
+            } ?? string.Empty;
+        }
+
+        public static string GetParentId(this Activity activity)
+        {
+            return activity.IdFormat switch
+            {
+                ActivityIdFormat.Hierarchical => activity.ParentId,
+                ActivityIdFormat.W3C => activity.ParentSpanId.ToHexString(),
+                _ => null,
+            } ?? string.Empty;
         }
     }
 }
