@@ -78,9 +78,9 @@ Building individual libraries
 
 More information and examples can be found in the [libraries](./README.md#building-individual-libraries) document.
 
-## Building the webassembly runtime files
+## Building the WebAssembly runtime files
 
-The webassembly implementation files are built and made available in the assembly bin.  If you are working on the code base and need to compile just these modules then the following will allow one to do that.
+The WebAssembly implementation files are built and made available in the artifacts folder.  If you are working on the code base and need to compile just these modules then the following will allow one to do that.
 
 For Linux and MacOSX:
 ```bash
