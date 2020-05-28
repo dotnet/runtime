@@ -198,7 +198,7 @@ namespace System.Text.Json.Serialization.Tests
         }
         [InlineData("One", "\"one_\"", "0")]
         [InlineData("Two", "\"two_\"", "1")]
-        [InlineData("Null", "null", "3")]
+        [InlineData("Null", "null", "2")]
         [Theory]
         public void EnumWithJsonStringEnumMemberAttribute(string enumString, string serializedString, string serializedNumber)
         {
