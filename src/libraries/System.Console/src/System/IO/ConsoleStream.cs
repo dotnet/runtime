@@ -94,7 +94,7 @@ namespace System.IO
             if (!_canWrite) throw Error.GetWriteNotSupported();
         }
 
-        private static void AccumulateNewLines(StringBuilder accumulator, ReadOnlySpan<char> buffer, Action<string> printer)
+        protected static void AccumulateNewLines(StringBuilder accumulator, ReadOnlySpan<char> buffer, Action<string> printer)
         {
             int lineStartIndex = 0;
             for (int i = 0; i < buffer.Length; i++)

@@ -21,7 +21,7 @@ namespace System
         {
             ValidateWrite(buffer, offset, count);
 
-            ReadOnlySpan<byte> bufferSpan = new ReadOnlySpan<byte>(buffer, offset, count)
+            ReadOnlySpan<byte> bufferSpan = new ReadOnlySpan<byte>(buffer, offset, count);
 
             Debug.Assert(ConsolePal.OutputEncoding == Encoding.Unicode);
             Debug.Assert(bufferSpan.Length % 2 == 0);
