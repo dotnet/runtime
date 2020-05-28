@@ -37,7 +37,7 @@ The libraries build contains some native code. This includes shims over libc, op
 ./src/libraries/Native/build-native.sh wasm Debug outconfig net5.0-Browser-Debug-wasm -os Browser
 ```
 
-- Building in release mode for platform wasm and Browser os
+- Building in release mode for platform wasm and Browser operating system
 ```bash
 ./src/libraries/Native/build-native.sh wasm Release outconfig net5.0-Browser-Release-wasm -os Browser
 ```
