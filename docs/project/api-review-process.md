@@ -42,7 +42,7 @@ APIs and some code samples that show how it should be used. If changes are neces
 
  There are three methods to get an API review:
 
-* **Get into the backlog**. Generally speaking, filing an issue in `dotnet/runtime` and slapping the label `api-ready-for-review` on it will make your issue show up during API reviews. The downside is that we generally walk the backlog oldest-newest, so your issue might not be looked at for a while.
+* **Get into the backlog**. Generally speaking, filing an issue in `dotnet/runtime` and applying the label `api-ready-for-review` on it will make your issue show up during API reviews. The downside is that we generally walk the backlog oldest-newest, so your issue might not be looked at for a while.
 * **Fast track**. If you need to bypass the backlog apply both `api-ready-for-review` and `blocking`. All blocking issues are looked at before we walk the backlog.
 * **Dedicated review**. If your issue needs an hour or longer, send an email to FXDC and we book dedicated time. Rule of thumb: if your API proposal has more than a dozen APIs or your APIs have complex policy, then you need 60 min or more. When in doubt, send mail to FXDC.
 
