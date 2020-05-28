@@ -348,7 +348,9 @@ namespace System.Diagnostics.Tracing
         /// which it is embedded.  This parameter specifies what name will be used</param>
         /// <returns>The XML data string</returns>
         public static string? GenerateManifest(
+#if !ES_BUILD_STANDALONE
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicNestedTypes | DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.NonPublicMethods)]
+#endif
             Type eventSourceType,
             string? assemblyPathToIncludeInManifest)
         {
@@ -367,7 +369,9 @@ namespace System.Diagnostics.Tracing
         /// this returns null when the eventSourceType does not require explicit registration</param>
         /// <returns>The XML data string or null</returns>
         public static string? GenerateManifest(
+#if !ES_BUILD_STANDALONE
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicNestedTypes | DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.NonPublicMethods)]
+#endif
             Type eventSourceType,
             string? assemblyPathToIncludeInManifest,
             EventManifestOptions flags)
@@ -3066,7 +3070,9 @@ namespace System.Diagnostics.Tracing
         // When that is the case, we have the build the custom assemblies on a member by hand.
         internal static Attribute? GetCustomAttributeHelper(
             MemberInfo member,
+#if !ES_BUILD_STANDALONE
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.PublicProperties)]
+#endif
             Type attributeType,
             EventManifestOptions flags = EventManifestOptions.None)
         {
@@ -3196,7 +3202,9 @@ namespace System.Diagnostics.Tracing
         // at run time.  'source' is the event source to place the descriptors.  If it is null,
         // then the descriptors are not creaed, and just the manifest is generated.
         private static byte[]? CreateManifestAndDescriptors(
+#if !ES_BUILD_STANDALONE
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicNestedTypes | DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.NonPublicMethods)]
+#endif
             Type eventSourceType,
             string? eventSourceDllName,
             EventSource? source,
