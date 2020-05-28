@@ -23,9 +23,6 @@ public:
         /* [retval][out] */ UINT_PTR* pBinderId);
 
     NativeImage *LoadNativeImage(Module *componentModule, LPCUTF8 nativeImageName);
-
-private:
-    SArray<NativeImage *> m_nativeImages;
 };
 
 #endif

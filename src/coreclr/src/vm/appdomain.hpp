@@ -1559,6 +1559,14 @@ public:
     OBJECTREF GetRawExposedObject() { LIMITED_METHOD_CONTRACT; return NULL; }
     OBJECTHANDLE GetRawExposedObjectHandleForDebugger() { LIMITED_METHOD_DAC_CONTRACT; return NULL; }
 
+#ifdef FEATURE_COMINTEROP
+    MethodTable *GetRedirectedType(WinMDAdapter::RedirectedTypeIndex index);
+#endif // FEATURE_COMINTEROP
+
+#ifndef DACCESS_COMPILE
+    PTR_NativeImage GetNativeImage(PTR_VOID imageBase);
+    PTR_NativeImage SetNativeImage(PTR_VOID imageBase, PTR_NativeImage pNativeImage);
+#endif // DACCESS_COMPILE
 
     //****************************************************************************************
 
@@ -2317,6 +2325,12 @@ private:
 
     // Hash table that maps a clsid to a type
     PtrHashMap          m_clsidHash;
+
+    // Map of loaded composite native images indexed by base load addresses
+#ifndef DACCESS_COMPILE
+    CrstExplicitInit m_nativeImageLoadCrst;
+    MapSHash<PTR_VOID, PTR_NativeImage> m_nativeImageMap;
+#endif
 
 #ifdef FEATURE_COMINTEROP
     // this cache stores the RCWs in this domain

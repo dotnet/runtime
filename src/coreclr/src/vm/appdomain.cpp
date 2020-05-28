@@ -2262,7 +2262,6 @@ AppDomain::AppDomain()
 #ifdef FEATURE_PREJIT
     m_pDomainFileWithNativeImageList = NULL;
 #endif
-
 } // AppDomain::AppDomain
 
 AppDomain::~AppDomain()
@@ -2360,6 +2359,8 @@ void AppDomain::Init()
     m_tieredCompilationManager.Init();
 #endif
 #endif // CROSSGEN_COMPILE
+
+    m_nativeImageLoadCrst.Init(CrstNativeImageLoad);
 } // AppDomain::Init
 
 
@@ -6074,6 +6075,32 @@ PTR_DomainAssembly AppDomain::FindAssembly(PTR_ICLRPrivAssembly pHostAssembly)
         }
     }
 }
+
+#ifndef DACCESS_COMPILE
+// Return native image for a given base address, NULL when not found.
+PTR_NativeImage AppDomain::GetNativeImage(PTR_VOID imageBase)
+{
+    CrstHolder ch(&m_nativeImageLoadCrst);
+    PTR_NativeImage pExistingImage;
+    if (m_nativeImageMap.Lookup(imageBase, &pExistingImage))
+    {
+        return pExistingImage;
+    }
+    return nullptr;
+}
+
+PTR_NativeImage AppDomain::SetNativeImage(PTR_VOID imageBase, PTR_NativeImage pNativeImage)
+{
+    CrstHolder ch(&m_nativeImageLoadCrst);
+    PTR_NativeImage pExistingImage;
+    if (m_nativeImageMap.Lookup(imageBase, &pExistingImage))
+    {
+        return pExistingImage;
+    }
+    m_nativeImageMap.Add(imageBase, pNativeImage);
+    return nullptr;
+}
+#endif//DACCESS_COMPILE
 
 #if !defined(DACCESS_COMPILE) && defined(FEATURE_NATIVE_IMAGE_GENERATION)
 

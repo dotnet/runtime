@@ -278,6 +278,8 @@ namespace ILCompiler
                     var targetDetails = new TargetDetails(_targetArchitecture, _targetOS, TargetAbi.CoreRT, instructionSetSupport.GetVectorTSimdVector());
                     CompilerTypeSystemContext typeSystemContext = new ReadyToRunCompilerContext(targetDetails, genericsMode);
 
+                    string compositeRootPath = _commandLineOptions.CompositeRootPath?.FullName;
+
                     //
                     // TODO: To support our pre-compiled test tree, allow input files that aren't managed assemblies since
                     // some tests contain a mixture of both managed and native binaries.
@@ -298,6 +300,10 @@ namespace ILCompiler
                             allInputFilePaths.Add(inputFile.Key, inputFile.Value);
                             inputFilePaths.Add(inputFile.Key, inputFile.Value);
                             referenceableModules.Add(module);
+                            if (compositeRootPath == null)
+                            {
+                                compositeRootPath = Path.GetDirectoryName(inputFile.Value);
+                            }
                         }
                         catch (TypeSystemException.BadImageFormatException)
                         {
@@ -316,6 +322,10 @@ namespace ILCompiler
                                 allInputFilePaths.Add(unrootedInputFile.Key, unrootedInputFile.Value);
                                 unrootedInputFilePaths.Add(unrootedInputFile.Key, unrootedInputFile.Value);
                                 referenceableModules.Add(module);
+                                if (compositeRootPath == null)
+                                {
+                                    compositeRootPath = Path.GetDirectoryName(unrootedInputFile.Value);
+                                }
                             }
                         }
                         catch (TypeSystemException.BadImageFormatException)
@@ -477,7 +487,7 @@ namespace ILCompiler
                     //
 
                     ReadyToRunCodegenCompilationBuilder builder = new ReadyToRunCodegenCompilationBuilder(
-                        typeSystemContext, compilationGroup, allInputFilePaths.Values);
+                        typeSystemContext, compilationGroup, allInputFilePaths.Values, compositeRootPath);
                     string compilationUnitPrefix = "";
                     builder.UseCompilationUnitPrefix(compilationUnitPrefix);
 
