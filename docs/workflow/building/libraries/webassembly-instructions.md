@@ -39,7 +39,7 @@ The libraries build contains some native code. This includes shims over libc, op
 
 - Building in release mode for platform wasm and Browser operating system
 ```bash
-./src/libraries/Native/build-native.sh wasm Release outconfig net5.0-Browser-Release-wasm -os Browser
+./build.sh --arch wasm --os Browser --subset Libs.Native --configuration Release
 ```
 
 ## How to build mono System.Private.CoreLib
