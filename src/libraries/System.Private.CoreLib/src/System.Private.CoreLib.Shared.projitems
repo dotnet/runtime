@@ -838,7 +838,6 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\SpanHelpers.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\SpanHelpers.T.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\SpanSplitEnumerator.T.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\String.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\SR.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\StackOverflowException.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\String.Comparison.cs" />
