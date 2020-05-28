@@ -474,7 +474,7 @@ namespace System.Reflection
         private extern Module[] GetModulesInternal();
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern IntPtr InternalGetReferencedAssemblies(Assembly module);
+        private static extern IntPtr InternalGetReferencedAssemblies(Assembly module);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private extern object GetFilesInternal(string? name, bool getResourceModules);
