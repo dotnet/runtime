@@ -71,7 +71,7 @@ namespace System.Formats.Cbor
         public bool IsWriteCompleted => _currentMajorType is null && _itemsWritten > 0;
 
         /// <summary>
-        ///   Create a new <see cref="CborWriter"/> instance with given configuration.
+        ///   Create a new CborWriter instance with given configuration.
         /// </summary>
         /// <param name="conformanceLevel">
         ///   Specifies a <see cref="CborConformanceLevel"/> guiding the conformance checks performed on the encoded data.

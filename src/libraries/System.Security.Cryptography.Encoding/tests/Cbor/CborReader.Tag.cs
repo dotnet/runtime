@@ -12,7 +12,7 @@ namespace System.Formats.Cbor
         /// <summary>
         ///   Reads the next data item as a semantic tag (major type 6).
         /// </summary>
-        /// <returns>The decoded <see cref="CborTag"/> value.</returns>
+        /// <returns>The decoded value.</returns>
         /// <exception cref="InvalidOperationException">
         ///   the next data item does not have the correct major type.
         /// </exception>
@@ -34,7 +34,7 @@ namespace System.Formats.Cbor
         ///   Reads the next data item as a semantic tag (major type 6),
         ///   without advancing the reader.
         /// </summary>
-        /// <returns>The decoded <see cref="CborTag"/> value.</returns>
+        /// <returns>The decoded value.</returns>
         /// <exception cref="InvalidOperationException">
         ///   the next data item does not have the correct major type.
         /// </exception>
@@ -52,7 +52,7 @@ namespace System.Formats.Cbor
         ///   Reads the next data item as a tagged date/time string,
         ///   as described in RFC7049 section 2.4.1.
         /// </summary>
-        /// <returns>The decoded <see cref="DateTimeOffset"/> value.</returns>
+        /// <returns>The decoded value.</returns>
         /// <exception cref="InvalidOperationException">
         ///   the next data item does not have the correct major type. -or-
         ///   the next date item does not have the correct semantic tag.
@@ -103,7 +103,7 @@ namespace System.Formats.Cbor
         ///   Reads the next data item as a tagged unix time in seconds,
         ///   as described in RFC7049 section 2.4.1.
         /// </summary>
-        /// <returns>The decoded <see cref="DateTimeOffset"/> value.</returns>
+        /// <returns>The decoded value.</returns>
         /// <exception cref="InvalidOperationException">
         ///   the next data item does not have the correct major type. -or-
         ///   the next date item does not have the correct semantic tag.
@@ -158,7 +158,7 @@ namespace System.Formats.Cbor
         ///   Reads the next data item as a tagged bignum encoding,
         ///   as described in RFC7049 section 2.4.2.
         /// </summary>
-        /// <returns>The decoded <see cref="BigInteger"/> value.</returns>
+        /// <returns>The decoded value.</returns>
         /// <exception cref="InvalidOperationException">
         ///   the next data item does not have the correct major type. -or-
         ///   the next date item does not have the correct semantic tag.
@@ -208,7 +208,7 @@ namespace System.Formats.Cbor
         ///   Reads the next data item as a tagged decimal fraction encoding,
         ///   as described in RFC7049 section 2.4.3.
         /// </summary>
-        /// <returns>The decoded <see cref="decimal"/> value.</returns>
+        /// <returns>The decoded value.</returns>
         /// <exception cref="InvalidOperationException">
         ///   the next data item does not have the correct major type. -or-
         ///   the next date item does not have the correct semantic tag.

@@ -36,7 +36,7 @@ namespace System.Formats.Cbor
         private CborReaderState _cachedState = CborReaderState.None;
 
         /// <summary>
-        ///   The <see cref="CborConformanceLevel"/> used by this reader.
+        ///   The conformance level used by this reader.
         /// </summary>
         public CborConformanceLevel ConformanceLevel { get; }
 
@@ -61,11 +61,11 @@ namespace System.Formats.Cbor
         public bool HasData => _offset != _data.Length;
 
         /// <summary>
-        ///   Construct a <see cref="CborReader"/> instance over <paramref name="data"/> with given configuration.
+        ///   Construct a CborReader instance over <paramref name="data"/> with given configuration.
         /// </summary>
         /// <param name="data">The CBOR encoded data to read.</param>
         /// <param name="conformanceLevel">
-        ///   Specifies a <see cref="CborConformanceLevel"/> guiding the conformance checks performed on the encoded data.
+        ///   Specifies a conformance level guiding the conformance checks performed on the encoded data.
         ///   Defaults to <see cref="CborConformanceLevel.Lax" /> conformance level.
         /// </param>
         /// <param name="allowMultipleRootLevelValues">

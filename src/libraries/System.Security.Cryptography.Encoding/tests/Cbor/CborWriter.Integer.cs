@@ -11,7 +11,7 @@ namespace System.Formats.Cbor
         // Implements major type 0,1 encoding per https://tools.ietf.org/html/rfc7049#section-2.1
 
         /// <summary>
-        ///   Writes an <see cref="int"/> value as a signed integer encoding (major types 0,1)
+        ///   Writes an value as a signed integer encoding (major types 0,1)
         /// </summary>
         /// <param name="value">The value to write</param>
         /// <exception cref="InvalidOperationException">
@@ -22,7 +22,7 @@ namespace System.Formats.Cbor
         public void WriteInt32(int value) => WriteInt64(value);
 
         /// <summary>
-        ///   Writes a <see cref="long"/> value as a signed integer encoding (major types 0,1)
+        ///   Writes a value as a signed integer encoding (major types 0,1)
         /// </summary>
         /// <param name="value">The value to write</param>
         /// <exception cref="InvalidOperationException">
@@ -46,7 +46,7 @@ namespace System.Formats.Cbor
         }
 
         /// <summary>
-        ///   Writes an <see cref="uint"/> value as an unsigned integer encoding (major type 0).
+        ///   Writes anvalue as an unsigned integer encoding (major type 0).
         /// </summary>
         /// <param name="value">The value to write</param>
         /// <exception cref="InvalidOperationException">
@@ -57,7 +57,7 @@ namespace System.Formats.Cbor
         public void WriteUInt32(uint value) => WriteUInt64(value);
 
         /// <summary>
-        ///   Writes an <see cref="ulong"/> value as an unsigned integer encoding (major type 0).
+        ///   Writes an value as an unsigned integer encoding (major type 0).
         /// </summary>
         /// <param name="value">The value to write</param>
         /// <exception cref="InvalidOperationException">
@@ -72,7 +72,7 @@ namespace System.Formats.Cbor
         }
 
         /// <summary>
-        ///   Writes a <see cref="ulong"/> value as a negative integer encoding (major type 1).
+        ///   Writes a value as a negative integer encoding (major type 1).
         /// </summary>
         /// <param name="value">An unsigned integer denoting -1 minus the integer.</param>
         /// <exception cref="InvalidOperationException">
