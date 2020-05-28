@@ -6,6 +6,7 @@ using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Globalization;
 using System.Runtime.CompilerServices;
+using System.Text.Encodings.Web;
 
 namespace System.Text.Json.Serialization.Converters
 {
@@ -21,22 +22,43 @@ namespace System.Text.Json.Serialization.Converters
 
         private readonly EnumConverterOptions _converterOptions;
         private readonly JsonNamingPolicy? _namingPolicy;
-        private readonly ConcurrentDictionary<T, JsonEncodedText> _nameCache = new ConcurrentDictionary<T, JsonEncodedText>();
+        private readonly ConcurrentDictionary<ulong, JsonEncodedText> _nameCache;
 
         public override bool CanConvert(Type type)
         {
             return type.IsEnum;
         }
 
-        public EnumConverter(EnumConverterOptions options)
-            : this(options, namingPolicy: null)
+        public EnumConverter(EnumConverterOptions converterOptions, JsonSerializerOptions serializerOptions)
+            : this(converterOptions, namingPolicy: null, serializerOptions)
         {
         }
 
-        public EnumConverter(EnumConverterOptions options, JsonNamingPolicy? namingPolicy)
+        public EnumConverter(EnumConverterOptions converterOptions, JsonNamingPolicy? namingPolicy, JsonSerializerOptions serializerOptions)
         {
-            _converterOptions = options;
+            _converterOptions = converterOptions;
             _namingPolicy = namingPolicy;
+            _nameCache = new ConcurrentDictionary<ulong, JsonEncodedText>();
+
+            string[] names = Enum.GetNames(TypeToConvert);
+            Array values = Enum.GetValues(TypeToConvert);
+            Debug.Assert(names.Length > 0 && names.Length == values.Length);
+
+            JavaScriptEncoder? encoder = serializerOptions.Encoder;
+
+            for (int i = 0; i < names.Length; i++)
+            {
+                T value = (T)values.GetValue(i)!;
+                // Enum values can be represented as ulong. Note that F# supports char as enum backing types.
+                ulong key = Unsafe.As<T, ulong>(ref value);
+                string name = names[i];
+
+                _nameCache.TryAdd(
+                    key,
+                    namingPolicy == null
+                        ? JsonEncodedText.Encode(name, encoder)
+                        : FormatEnumValue(name, encoder));
+            }
         }
 
         public override T Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
@@ -152,7 +174,9 @@ namespace System.Text.Json.Serialization.Converters
             // If strings are allowed, attempt to write it out as a string value
             if (_converterOptions.HasFlag(EnumConverterOptions.AllowStrings))
             {
-                if (_nameCache.TryGetValue(value, out JsonEncodedText transformed))
+                ulong key = Unsafe.As<T, ulong>(ref value);
+
+                if (_nameCache.TryGetValue(key, out JsonEncodedText transformed))
                 {
                     writer.WriteStringValue(transformed);
                     return;
@@ -161,12 +185,18 @@ namespace System.Text.Json.Serialization.Converters
                 string original = value.ToString();
                 if (IsValidIdentifier(original))
                 {
+                    JavaScriptEncoder? encoder = options.Encoder;
+
+                    // We are dealing with flags since all literal values were cached during warm-up.
                     transformed = _namingPolicy == null
-                        ? JsonEncodedText.Encode(original, options.Encoder)
-                        : FormatEnumValue(original, options);
+                        ? JsonEncodedText.Encode(original, encoder)
+                        : FormatEnumValue(original, encoder);
 
                     writer.WriteStringValue(transformed);
-                    _nameCache.TryAdd(value, transformed);
+
+                    // Since the value represents a valid identifier, malicious user input is not added to the cache.
+                    _nameCache.TryAdd(key, transformed);
+
                     return;
                 }
             }
@@ -208,7 +238,7 @@ namespace System.Text.Json.Serialization.Converters
             }
         }
 
-        private JsonEncodedText FormatEnumValue(string value, JsonSerializerOptions options)
+        private JsonEncodedText FormatEnumValue(string value, JavaScriptEncoder? encoder)
         {
             Debug.Assert(_namingPolicy != null);
             string converted;
@@ -236,7 +266,7 @@ namespace System.Text.Json.Serialization.Converters
                 converted = string.Join(ValueSeparator, enumValues);
             }
 
-            return JsonEncodedText.Encode(converted, options.Encoder);
+            return JsonEncodedText.Encode(converted, encoder);
         }
     }
 }
