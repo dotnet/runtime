@@ -514,7 +514,6 @@ namespace System.Net.Quic.Implementations.Managed
 
             await CloseAsync((long)TransportErrorCode.NoError).ConfigureAwait(false);
 
-            // TODO-RZ: this may be dangerous, since _tls is accessed from background thread.
             Tls.Dispose();
             _gcHandle.Free();
 
@@ -665,11 +664,23 @@ namespace System.Net.Quic.Implementations.Managed
             return stream;
         }
 
-        internal override SslApplicationProtocol NegotiatedApplicationProtocol => Tls.GetAlpnProtocol();
+        internal override SslApplicationProtocol NegotiatedApplicationProtocol
+        {
+            get
+            {
+                ThrowIfDisposed();
+                return Tls.GetAlpnProtocol();
+            }
+        }
 
         internal override async ValueTask CloseAsync(long errorCode, CancellationToken cancellationToken = default)
         {
             ThrowIfDisposed();
+
+            if (_closeTcs.IsSet)
+            {
+                return;
+            }
 
             if (!Connected)
             {

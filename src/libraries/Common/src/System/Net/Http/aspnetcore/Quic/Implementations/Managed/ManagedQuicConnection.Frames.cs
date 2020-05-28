@@ -323,7 +323,7 @@ namespace System.Net.Quic.Implementations.Managed
             Debug.Assert(stream!.CanWrite);
 
             // duplicate receipt is handled internally (guarded state transitions)
-            stream.OutboundBuffer!.Abort(frame.ApplicationErrorCode);
+            stream.OutboundBuffer!.RequestAbort(frame.ApplicationErrorCode);
             _streams.MarkForUpdate(stream);
 
             return ProcessPacketResult.Ok;

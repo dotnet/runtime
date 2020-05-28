@@ -1,5 +1,6 @@
 using System.Net.Quic.Implementations.Managed.Internal;
 using System.Net.Quic.Implementations.Managed.Internal.Buffers;
+using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -27,7 +28,7 @@ namespace System.Net.Quic.Tests
         public void ReturnsCorrectPendingRange()
         {
             EnqueueBytes(10);
-            Assert.False(buffer.IsFlushable); // MaxData is 0 yet
+            Assert.False(buffer.IsFlushable); // MaxData is still 0
 
             buffer.UpdateMaxData(10);
             Assert.True(buffer.IsFlushable);
@@ -133,6 +134,27 @@ namespace System.Net.Quic.Tests
             buffer.OnAck(5, 5, true);
 
             Assert.Equal(SendStreamState.DataReceived, buffer.StreamState);
+        }
+
+        [Fact]
+        public async Task RequestingAbortAbortsWriters()
+        {
+            var destination = new byte[100];
+
+            var exnTask = Assert.ThrowsAsync<QuicStreamAbortedException>(
+                async () =>
+                {
+                    while (true)
+                    {
+                        await buffer.EnqueueAsync(destination);
+                        await buffer.FlushChunkAsync();
+                    }
+                });
+
+            buffer.RequestAbort(10000);
+
+            var exn = await exnTask.TimeoutAfter(5_000);
+            Assert.Equal(10000, exn.ErrorCode);
         }
     }
 }

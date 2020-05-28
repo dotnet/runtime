@@ -115,10 +115,10 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Buffers
                                      _dequedBytes < MaxData && BytesInChannel > 0;
 
         /// <summary>
-        ///     Aborts the outbound stream with given error code.
+        ///     Requests that the outbound stream be aborted with given error code.
         /// </summary>
         /// <param name="errorCode"></param>
-        internal void Abort(long errorCode)
+        internal void RequestAbort(long errorCode)
         {
             // TODO-RZ: this is the only situation when state is set from user thread, maybe we can
             // find a way to remove the need for the lock
@@ -145,6 +145,9 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Buffers
                 ReturnBuffer(_toBeQueuedChunk.Buffer);
                 _toBeQueuedChunk = default;
             }
+
+            // we need to release once more to make sure writers are not blocked on the semaphore
+            _bufferLimitSemaphore.Release();
 
             // other buffered data will be dropped from socket thread once RESET_STREAM is sent.
         }
@@ -236,7 +239,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Buffers
             MaxData = Math.Max(MaxData, value);
         }
 
-        internal async ValueTask EnqueueAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken)
+        internal async ValueTask EnqueueAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default)
         {
             Debug.Assert(!SizeKnown);
 
@@ -460,14 +463,19 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Buffers
 
         private byte[] RentBuffer()
         {
-            // TODO-RZ: we need to be able to cancel this
             _bufferLimitSemaphore.Wait();
+            // throwing here is a bit ugly, but there is no way of interrupting synchronous wait on semaphore,
+            // the semaphore is released when stream is aborted to make the caller writer throw
+            ThrowIfAborted();
             return QuicBufferPool.Rent();
         }
 
         private async ValueTask<byte[]> RentBufferAsync(CancellationToken cancellationToken)
         {
             await _bufferLimitSemaphore.WaitAsync(cancellationToken).ConfigureAwait(false);
+            // throwing here is a bit ugly, but saves us from registering cancellation on the semaphore
+            // the semaphore is released when stream is aborted to make the caller writer throw
+            ThrowIfAborted();
             return QuicBufferPool.Rent();
         }
 
@@ -475,6 +483,14 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Buffers
         {
             QuicBufferPool.Return(buffer);
             _bufferLimitSemaphore.Release();
+        }
+
+        private void ThrowIfAborted()
+        {
+            if (Error != null)
+            {
+                throw new QuicStreamAbortedException("Stream aborted", Error.Value);
+            }
         }
     }
 }

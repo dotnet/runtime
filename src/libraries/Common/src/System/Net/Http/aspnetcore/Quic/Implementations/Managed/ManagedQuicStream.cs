@@ -91,7 +91,7 @@ namespace System.Net.Quic.Implementations.Managed
         internal override int Read(Span<byte> buffer)
         {
             ThrowIfDisposed();
-            ThrowIfError();
+            ThrowIfConnectionError();
             ThrowIfNotReadable();
 
             if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
@@ -109,7 +109,7 @@ namespace System.Net.Quic.Implementations.Managed
         internal override async ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
         {
             ThrowIfDisposed();
-            ThrowIfError();
+            ThrowIfConnectionError();
             ThrowIfNotReadable();
 
             if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
@@ -148,10 +148,9 @@ namespace System.Net.Quic.Implementations.Managed
 
             if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
 
-            OutboundBuffer.Abort(errorCode);
+            OutboundBuffer.RequestAbort(errorCode);
             _shutdownCompleted.TryCompleteException(new QuicStreamAbortedException("Stream was aborted", errorCode));
             _connection.OnStreamStateUpdated(this);
-            // TODO-RZ: abort current writes
 
             if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
         }
@@ -162,7 +161,7 @@ namespace System.Net.Quic.Implementations.Managed
         internal void Write(ReadOnlySpan<byte> buffer, bool endStream)
         {
             ThrowIfDisposed();
-            ThrowIfError();
+            ThrowIfConnectionError();
             ThrowIfNotWritable();
 
             if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
@@ -186,7 +185,7 @@ namespace System.Net.Quic.Implementations.Managed
         internal override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, bool endStream, CancellationToken cancellationToken = default)
         {
             ThrowIfDisposed();
-            ThrowIfError();
+            ThrowIfConnectionError();
             ThrowIfNotWritable();
 
             // TODO-RZ: optimize away some of the copying
@@ -196,7 +195,7 @@ namespace System.Net.Quic.Implementations.Managed
         internal override async ValueTask WriteAsync(ReadOnlySequence<byte> buffers, CancellationToken cancellationToken = default)
         {
             ThrowIfDisposed();
-            ThrowIfError();
+            ThrowIfConnectionError();
             ThrowIfNotWritable();
 
             foreach (ReadOnlyMemory<byte> buffer in buffers)
@@ -208,7 +207,7 @@ namespace System.Net.Quic.Implementations.Managed
         internal override async ValueTask WriteAsync(ReadOnlySequence<byte> buffers, bool endStream, CancellationToken cancellationToken = default)
         {
             ThrowIfDisposed();
-            ThrowIfError();
+            ThrowIfConnectionError();
             ThrowIfNotWritable();
 
             foreach (ReadOnlyMemory<byte> buffer in buffers)
@@ -227,7 +226,7 @@ namespace System.Net.Quic.Implementations.Managed
         internal override async ValueTask WriteAsync(ReadOnlyMemory<ReadOnlyMemory<byte>> buffers, bool endStream, CancellationToken cancellationToken = default)
         {
             ThrowIfDisposed();
-            ThrowIfError();
+            ThrowIfConnectionError();
             ThrowIfNotWritable();
 
             for (int i = 0; i < buffers.Span.Length; i++)
@@ -239,7 +238,7 @@ namespace System.Net.Quic.Implementations.Managed
         internal override async ValueTask ShutdownWriteCompleted(CancellationToken cancellationToken = default)
         {
             ThrowIfDisposed();
-            ThrowIfError();
+            ThrowIfConnectionError();
             ThrowIfNotWritable();
 
             OutboundBuffer!.MarkEndOfData();
@@ -268,7 +267,7 @@ namespace System.Net.Quic.Implementations.Managed
         internal override void Shutdown()
         {
             ThrowIfDisposed();
-            ThrowIfError();
+            ThrowIfConnectionError();
             ThrowIfNotWritable();
 
             if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
@@ -286,7 +285,7 @@ namespace System.Net.Quic.Implementations.Managed
         internal override void Flush()
         {
             ThrowIfDisposed();
-            ThrowIfError();
+            ThrowIfConnectionError();
             ThrowIfNotWritable();
 
             if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
@@ -298,7 +297,7 @@ namespace System.Net.Quic.Implementations.Managed
         internal override async Task FlushAsync(CancellationToken cancellationToken)
         {
             ThrowIfDisposed();
-            ThrowIfError();
+            ThrowIfConnectionError();
             ThrowIfNotWritable();
 
             if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
@@ -398,7 +397,7 @@ namespace System.Net.Quic.Implementations.Managed
             }
         }
 
-        private void ThrowIfError()
+        private void ThrowIfConnectionError()
         {
             _connection.ThrowIfError();
         }
