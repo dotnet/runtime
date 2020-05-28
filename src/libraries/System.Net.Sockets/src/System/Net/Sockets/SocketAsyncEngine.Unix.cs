@@ -293,16 +293,11 @@ namespace System.Net.Sockets
         {
             try
             {
-                bool shutdown = false;
-                Interop.Sys.SocketEvent* buffer = _buffer;
-                ConcurrentDictionary<IntPtr, SocketAsyncContextWrapper> handleToContextMap = _handleToContextMap;
-                ConcurrentQueue<SocketIOEvent> eventQueue = _eventQueue;
-                IntPtr shutdownHandle = ShutdownHandle;
-                SocketAsyncContext? context = null;
-                while (!shutdown)
+                SocketEventHandler handler = new SocketEventHandler(this);
+                while (!handler.Shutdown)
                 {
                     int numEvents = EventBufferCount;
-                    Interop.Error err = Interop.Sys.WaitForSocketEvents(_port, buffer, &numEvents);
+                    Interop.Error err = Interop.Sys.WaitForSocketEvents(_port, handler.Buffer, &numEvents);
                     if (err != Interop.Error.SUCCESS)
                     {
                         throw new InternalException(err);
@@ -311,41 +306,7 @@ namespace System.Net.Sockets
                     // The native shim is responsible for ensuring this condition.
                     Debug.Assert(numEvents > 0, $"Unexpected numEvents: {numEvents}");
 
-                    bool enqueuedEvent = false;
-                    foreach (var socketEvent in new ReadOnlySpan<Interop.Sys.SocketEvent>(buffer, numEvents))
-                    {
-                        IntPtr handle = socketEvent.Data;
-
-                        if (handleToContextMap.TryGetValue(handle, out SocketAsyncContextWrapper contextWrapper) && (context = contextWrapper.Context) != null)
-                        {
-                            Debug.Assert(handle.ToInt64() < MaxHandles.ToInt64(), $"Unexpected values: handle={handle}, MaxHandles={MaxHandles}");
-
-                            Interop.Sys.SocketEvents events = context.HandleSyncEventsSpeculatively(socketEvent.Events);
-                            if (events != Interop.Sys.SocketEvents.None)
-                            {
-                                var ev = new SocketIOEvent(context, events);
-                                eventQueue.Enqueue(ev);
-                                enqueuedEvent = true;
-
-                                // This is necessary when the JIT generates unoptimized code (debug builds, live debugging,
-                                // quick JIT, etc.) to ensure that the context does not remain referenced by this method, as
-                                // such code may keep the stack location live for longer than necessary
-                                ev = default;
-                            }
-
-                            // This is necessary when the JIT generates unoptimized code (debug builds, live debugging,
-                            // quick JIT, etc.) to ensure that the context does not remain referenced by this method, as
-                            // such code may keep the stack location live for longer than necessary
-                            context = null;
-                            contextWrapper = default;
-                        }
-                        else if (handle == shutdownHandle)
-                        {
-                            shutdown = true;
-                        }
-                    }
-
-                    if (enqueuedEvent)
+                    if (handler.HandleSocketEvents(numEvents))
                     {
                         ScheduleToProcessEvents();
                     }
@@ -463,6 +424,60 @@ namespace System.Net.Sockets
             error = Interop.Sys.TryChangeSocketEventRegistration(_port, socket, Interop.Sys.SocketEvents.None,
                 Interop.Sys.SocketEvents.Read | Interop.Sys.SocketEvents.Write, handle);
             return error == Interop.Error.SUCCESS;
+        }
+
+        // An on-stack cache of SocketAsyncEngine members needed to process epoll events.
+        // The event handling logic is delegated to a non-inlined processing method
+        // to make sure the runtime doesn't make internal copies of SocketAsyncContext,
+        // so unreferenced Socket instances always get collected by the GC.
+        // See discussion: https://github.com/dotnet/runtime/issues/37064
+        private struct SocketEventHandler
+        {
+            public bool Shutdown { get; private set; }
+            public Interop.Sys.SocketEvent* Buffer { get; }
+
+            private ConcurrentDictionary<IntPtr, SocketAsyncContextWrapper> _handleToContextMap;
+            private ConcurrentQueue<SocketIOEvent> _eventQueue;
+            private IntPtr _shutdownHandle;
+
+            public SocketEventHandler(SocketAsyncEngine engine)
+            {
+                Shutdown = false;
+                Buffer = engine._buffer;
+                _handleToContextMap = engine._handleToContextMap;
+                _eventQueue = engine._eventQueue;
+                _shutdownHandle = ShutdownHandle;
+            }
+
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            public bool HandleSocketEvents(int numEvents)
+            {
+                SocketAsyncContext? context = null;
+                bool enqueuedEvent = false;
+                foreach (var socketEvent in new ReadOnlySpan<Interop.Sys.SocketEvent>(Buffer, numEvents))
+                {
+                    IntPtr handle = socketEvent.Data;
+
+                    if (_handleToContextMap.TryGetValue(handle, out SocketAsyncContextWrapper contextWrapper) && (context = contextWrapper.Context) != null)
+                    {
+                        Debug.Assert(handle.ToInt64() < MaxHandles.ToInt64(), $"Unexpected values: handle={handle}, MaxHandles={MaxHandles}");
+
+                        Interop.Sys.SocketEvents events = context.HandleSyncEventsSpeculatively(socketEvent.Events);
+                        if (events != Interop.Sys.SocketEvents.None)
+                        {
+                            var ev = new SocketIOEvent(context, events);
+                            _eventQueue.Enqueue(ev);
+                            enqueuedEvent = true;
+                        }
+                    }
+                    else if (handle == _shutdownHandle)
+                    {
+                        Shutdown = true;
+                    }
+                }
+
+                return enqueuedEvent;
+            }
         }
 
         // struct wrapper is used in order to improve the performance of the epoll thread hot path by up to 3% of some TechEmpower benchmarks
