@@ -22,7 +22,7 @@ namespace System.Formats.Cbor
         public void WriteInt32(int value) => WriteInt64(value);
 
         /// <summary>
-        ///   Writes a value as a signed integer encoding (major types 0,1)
+        ///   Writes the provided value as a signed integer encoding (major types 0,1)
         /// </summary>
         /// <param name="value">The value to write</param>
         /// <exception cref="InvalidOperationException">
@@ -72,7 +72,7 @@ namespace System.Formats.Cbor
         }
 
         /// <summary>
-        ///   Writes a value as a negative integer encoding (major type 1).
+        ///   Writes the provided value as a negative integer encoding (major type 1).
         /// </summary>
         /// <param name="value">An unsigned integer denoting -1 minus the integer.</param>
         /// <exception cref="InvalidOperationException">

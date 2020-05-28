@@ -34,7 +34,7 @@ namespace System.Formats.Cbor
         private HashSet<(int Offset, int Length)>? _keyEncodingRanges = null; // all key encoding ranges up to encoding equality
 
         /// <summary>
-        ///   The <see cref="CborConformanceLevel"/> used by this writer.
+        ///   The conformance level used by this writer.
         /// </summary>
         public CborConformanceLevel ConformanceLevel { get; }
 

@@ -32,7 +32,7 @@ namespace System.Formats.Cbor
         }
 
         /// <summary>
-        ///   Writes a <see cref="DateTimeOffset"/> value as a tagged date/time string,
+        ///   Writes the provided value as a tagged date/time string,
         ///   as described in RFC7049 section 2.4.1.
         /// </summary>
         /// <param name="value">The value to write.</param>
@@ -93,7 +93,7 @@ namespace System.Formats.Cbor
         }
 
         /// <summary>
-        ///   Writes a <see cref="BigInteger"/> value as a tagged bignum encoding,
+        ///   Writes the provided value as a tagged bignum encoding,
         ///   as described in RFC7049 section 2.4.2.
         /// </summary>
         /// <param name="value">The value to write.</param>
@@ -113,7 +113,7 @@ namespace System.Formats.Cbor
         }
 
         /// <summary>
-        ///   Writes a <see cref="decimal"/> value as a tagged decimal fraction encoding,
+        ///   Writes the provided value value as a tagged decimal fraction encoding,
         ///   as described in RFC7049 section 2.4.3
         /// </summary>
         /// <param name="value">The value to write.</param>
