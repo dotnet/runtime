@@ -175,7 +175,7 @@
         $(LibrariesAllBinArtifactsPath)*.pdb"
         IsNative="" />
       <ExcludeNativeLibrariesRuntimeFiles Condition="'$(IncludeOOBLibraries)' != 'true'"
-                                          Include="$(LibrariesNativeArtifactsPath)/libSystem.IO.Ports.Native.*" />
+                                          Include="$(LibrariesNativeArtifactsPath)libSystem.IO.Ports.Native.*" />
       <LibrariesRuntimeFiles Include="
         $(LibrariesNativeArtifactsPath)*.dll;
         $(LibrariesNativeArtifactsPath)*.dylib;
