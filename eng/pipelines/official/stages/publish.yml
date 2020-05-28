@@ -46,9 +46,6 @@ stages:
         -TsaRepositoryName "$(TsaRepositoryName)"
         -TsaCodebaseName "$(TsaCodebaseName)"
         -TsaPublish $True
-    # Allow symbol publish to emit expected warnings without failing the build. Include single
-    # quotes inside the string so that it passes through to MSBuild without script interference.
-    symbolPublishingAdditionalParameters: "'-warnAsError:$false'"
     
     # The following checks are not available after the build and continue to be run here
     enableSourceLinkValidation: true
