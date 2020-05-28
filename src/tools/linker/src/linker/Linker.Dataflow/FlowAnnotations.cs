@@ -288,8 +288,9 @@ namespace Mono.Linker.Dataflow
 			// It's necessary to be able to implement a custom "Type" type in tests to validate
 			// the correct propagation of the annotations on "this" parameter. And tests can't really
 			// override System.Type - as it creates too many issues.
-			return (typeReference.Name.StartsWith ("Type") || typeReference.Name == "String") &&
-				typeReference.Namespace == "System";
+			// It also covers TypeBuilder and RuntimeType.
+			return typeReference.MetadataType == MetadataType.String ||
+				(typeReference.Name.Contains ("Type") && typeReference.Namespace.StartsWith ("System"));
 		}
 
 		readonly struct TypeAnnotations
