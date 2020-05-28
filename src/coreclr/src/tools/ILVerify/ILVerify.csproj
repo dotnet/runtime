@@ -1,0 +1,55 @@
+<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <RootNamespace>ILVerify</RootNamespace>
+    <AssemblyName>ILVerify</AssemblyName>
+    <AssemblyOriginatorKeyFile>..\..\ILVerification\StrongNameKeys\ILVerify.snk</AssemblyOriginatorKeyFile>
+    <SignAssembly>true</SignAssembly>
+    <!-- Suppress signing done by buildtools sign.targets -->
+    <SkipSigning>true</SkipSigning>
+    <!-- Delete once we pick up fix for https://github.com/dotnet/roslyn/issues/8210 -->
+    <DelaySign Condition="'$(OS)' != 'Windows_NT'">true</DelaySign>
+    <TargetFramework>netcoreapp2.1</TargetFramework>
+    <CopyNugetImplementations>false</CopyNugetImplementations>
+    <!-- Force .dll extension even if output type is exe. -->
+    <TargetExt>.dll</TargetExt>
+  </PropertyGroup>
+  
+  <ItemGroup>
+    <Compile Include="Program.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="System.CommandLine" Version="0.1.0-e160909-1" />
+    <ProjectReference Include="..\..\ILVerification\src\ILVerification.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="..\..\Common\src\CommandLine\CommandLineException.cs">
+      <Link>CommandLine\CommandLineException.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\CommandLine\CommandLineHelpers.cs">
+      <Link>CommandLine\CommandLineHelpers.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\System\NotImplemented.cs">
+      <Link>System\NotImplemented.cs</Link>
+    </Compile>
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="..\..\ILVerification\StrongNameKeys\ILVerify.snk" Link="ILVerify.snk" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="ILVerify.runtimeconfig.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup> 
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
+
+   <PropertyGroup>
+    <RunCommand Condition="'$(OS)' == 'Windows_NT'">$(TargetDir)$(AssemblyName).exe</RunCommand>
+    <RunCommand Condition="'$(OS)' != 'Windows_NT'">$(TargetDir)$(AssemblyName)</RunCommand>
+    <RunArguments>$(StartArguments)</RunArguments>
+  </PropertyGroup>
+  
+</Project>
