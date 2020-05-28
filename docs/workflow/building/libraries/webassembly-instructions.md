@@ -87,12 +87,11 @@ For Linux and MacOSX:
 ./dotnet.sh build --configuration release /p:TargetArchitecture=wasm /p:TargetOS=Browser src/libraries/src.proj /t:NativeBinPlace 
 ```
 
-## Building the webassembly app builder
+## Building the WebAssembly app builder
 
-The app builder is a custom build task to build webassembly modules.  If you are working on the code base and need to compile just the module then the following will allow one to do that.
+The app builder is a custom build task to build WebAssembly modules.  If you are working on the code base and need to compile just the module then the following will allow one to do that.
 
 Rebuild and Publish the WasmAppBuilder for Linux and MacOSX:
 ```bash
 ./build.sh --arch wasm --os Browser --configuration release --projects tools-local/tasks/mobile.tasks/WasmAppBuilder/WasmAppBuilder.csproj
 ```
-
