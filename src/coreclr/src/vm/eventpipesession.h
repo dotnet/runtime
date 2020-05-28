@@ -109,7 +109,6 @@ public:
         uint32_t circularBufferSizeInMB,
         const EventPipeProviderConfiguration *pProviders,
         uint32_t numProviders,
-        bool rundownEnabled = false,
         EventPipeSessionSynchronousCallback callback = nullptr);
 
     ~EventPipeSession();
@@ -196,6 +195,10 @@ public:
 
     bool WriteAllBuffersToFile(bool *pEventsWritten);
 
+    // If a session is non-synchronous (i.e. a file, pipe, etc) WriteEvent will
+    // put the event in a buffer and return as quick as possible. If a session is
+    // synchronous (callback to the profiler) then this method will block until the
+    // profiler is done parsing and reacting to it.
     bool WriteEvent(
         Thread *pThread,
         EventPipeEvent &event,

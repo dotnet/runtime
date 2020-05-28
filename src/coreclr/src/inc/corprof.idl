@@ -4118,12 +4118,11 @@ interface ICorProfilerInfo11 : ICorProfilerInfo10
 interface ICorProfilerInfo12 : ICorProfilerInfo11
 {
     HRESULT EventPipeStartSession(
-        [in]  const WCHAR*                      szProviderName,
         [in]  UINT32                            cProviderConfigs,
         [in, size_is(cProviderConfigs)]
               COR_PRF_EVENTPIPE_PROVIDER_CONFIG pProviderConfigs[],
         [in]  BOOL                              requestRundown,
-        [in]  BOOL                              requestSamples,
+        [in]  BOOL                              requestCPUSamples,
         [out] EVENTPIPE_SESSION*                pSession);
 
     HRESULT EventPipeAddProviderToSession(
@@ -4134,7 +4133,7 @@ interface ICorProfilerInfo12 : ICorProfilerInfo11
         [in] EVENTPIPE_SESSION session);
 
     HRESULT EventPipeCreateProvider(
-                [in, string] const WCHAR    *szName,
+                [in, string] const WCHAR    *providerName,
                 [out] EVENTPIPE_PROVIDER    *pProvider);
 
     HRESULT EventPipeGetProviderInfo(
@@ -4142,11 +4141,11 @@ interface ICorProfilerInfo12 : ICorProfilerInfo11
                 [in]  ULONG      cchName,
                 [out] ULONG      *pcchName,
                 [out, annotation("_Out_writes_to_(cchName, *pcchName)")]
-                      WCHAR      szName[]);
+                      WCHAR      providerName[]);
 
     HRESULT EventPipeDefineEvent(
                 [in] EVENTPIPE_PROVIDER     provider,
-                [in, string] const WCHAR   *szName,
+                [in, string] const WCHAR   *eventName,
                 [in] UINT32                 eventID,
                 [in] UINT64                 keywords,
                 [in] UINT32                 eventVersion,

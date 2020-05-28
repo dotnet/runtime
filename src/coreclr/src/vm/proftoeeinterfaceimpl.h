@@ -645,11 +645,10 @@ public:
     // begin ICorProfilerInfo12
 
     COM_METHOD EventPipeStartSession(
-        const WCHAR* szProviderName,
         UINT32 cProviderConfigs,
         COR_PRF_EVENTPIPE_PROVIDER_CONFIG pProviderConfigs[],
         BOOL requestRundown,
-        BOOL requestSamples,
+        BOOL requestCPUSamples,
         EVENTPIPE_SESSION* pSession);
 
     COM_METHOD EventPipeAddProviderToSession(
@@ -660,18 +659,18 @@ public:
         EVENTPIPE_SESSION session);
 
     COM_METHOD EventPipeCreateProvider(
-        const WCHAR *szName,
+        const WCHAR *providerName,
         EVENTPIPE_PROVIDER *pProvider);
 
     COM_METHOD EventPipeGetProviderInfo(
                 EVENTPIPE_PROVIDER provider,
                 ULONG      cchName,
                 ULONG      *pcchName,
-                WCHAR      szName[]);
+                WCHAR      providerName[]);
 
     COM_METHOD EventPipeDefineEvent(
         EVENTPIPE_PROVIDER provider,
-        const WCHAR *szName,
+        const WCHAR *eventName,
         UINT32 eventID,
         UINT64 keywords,
         UINT32 eventVersion,
@@ -694,6 +693,19 @@ public:
 protected:
 
     // Internal Helper Functions
+
+    static void EventPipeCallbackHelper(EventPipeProvider *provider,
+                                        DWORD eventId,
+                                        DWORD eventVersion,
+                                        ULONG cbMetadataBlob,
+                                        LPCBYTE metadataBlob,
+                                        ULONG cbEventData,
+                                        LPCBYTE eventData,
+                                        LPCGUID pActivityId,
+                                        LPCGUID pRelatedActivityId,
+                                        Thread *pEventThread,
+                                        ULONG numStackFrames,
+                                        UINT_PTR stackFrames[]);
 
     HRESULT GetCodeInfoHelper(FunctionID functionId,
                                ReJITID  reJitId,

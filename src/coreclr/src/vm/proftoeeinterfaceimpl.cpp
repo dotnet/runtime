@@ -7031,11 +7031,10 @@ HRESULT ProfToEEInterfaceImpl::SetEnvironmentVariable(const WCHAR *szName, const
 }
 
 HRESULT ProfToEEInterfaceImpl::EventPipeStartSession(
-    const WCHAR* szProviderName,
     UINT32 cProviderConfigs,
     COR_PRF_EVENTPIPE_PROVIDER_CONFIG pProviderConfigs[],
     BOOL requestRundown,
-    BOOL requestSamples,
+    BOOL requestCPUSamples,
     EVENTPIPE_SESSION* pSession)
 {
     CONTRACTL
@@ -7061,8 +7060,7 @@ HRESULT ProfToEEInterfaceImpl::EventPipeStartSession(
                   && sizeof(EventPipeProviderConfiguration) == sizeof(COR_PRF_EVENTPIPE_PROVIDER_CONFIG),
         "Layouts of EventPipeProviderConfiguration type and COR_PRF_EVENTPIPE_PROVIDER_CONFIG type do not match!");
 
-    if (szProviderName == NULL
-        || cProviderConfigs == 0
+    if (cProviderConfigs == 0
         || pProviderConfigs == NULL
         || pSession == NULL)
     {
@@ -7072,35 +7070,6 @@ HRESULT ProfToEEInterfaceImpl::EventPipeStartSession(
     HRESULT hr = S_OK;
     EX_TRY
     {
-        auto eventPipeFunc = [](EventPipeProvider *provider,
-                                DWORD eventId,
-                                DWORD eventVersion,
-                                ULONG cbMetadataBlob,
-                                LPCBYTE metadataBlob,
-                                ULONG cbEventData,
-                                LPCBYTE eventData,
-                                LPCGUID pActivityId,
-                                LPCGUID pRelatedActivityId,
-                                Thread *pEventThread,
-                                ULONG numStackFrames,
-                                UINT_PTR stackFrames[])
-        {
-            BEGIN_PIN_PROFILER(CORProfilerIsMonitoringEventPipe());
-            g_profControlBlock.pProfInterface->EventPipeEventDelivered(provider,
-                                                                       eventId,
-                                                                       eventVersion,
-                                                                       cbMetadataBlob,
-                                                                       metadataBlob,
-                                                                       cbEventData,
-                                                                       eventData,
-                                                                       pActivityId,
-                                                                       pRelatedActivityId,
-                                                                       pEventThread,
-                                                                       numStackFrames,
-                                                                       stackFrames);
-            END_PIN_PROFILER();
-        };
-
         EventPipeProviderConfiguration *pProviders = reinterpret_cast<EventPipeProviderConfiguration *>(pProviderConfigs);
         UINT64 sessionID = EventPipe::Enable(NULL,
                                              0, // We don't use a circular buffer since it's synchronous
@@ -7110,8 +7079,8 @@ HRESULT ProfToEEInterfaceImpl::EventPipeStartSession(
                                              EventPipeSerializationFormat::NetTraceV4,
                                              requestRundown,
                                              NULL,
-                                             requestSamples,
-                                             eventPipeFunc);
+                                             requestCPUSamples,
+                                             &ProfToEEInterfaceImpl::EventPipeCallbackHelper);
         EventPipe::StartStreaming(sessionID);
 
         *pSession = sessionID;
@@ -7207,7 +7176,9 @@ HRESULT ProfToEEInterfaceImpl::EventPipeStopSession(
 #endif // FEATURE_PERFTRACING
 }
 
-HRESULT ProfToEEInterfaceImpl::EventPipeCreateProvider(const WCHAR *szName, EVENTPIPE_PROVIDER *pProvider)
+HRESULT ProfToEEInterfaceImpl::EventPipeCreateProvider(
+    const WCHAR *providerName,
+    EVENTPIPE_PROVIDER *pProvider)
 {
     CONTRACTL
     {
@@ -7224,7 +7195,7 @@ HRESULT ProfToEEInterfaceImpl::EventPipeCreateProvider(const WCHAR *szName, EVEN
         "**PROF: EventPipeCreateProvider.\n"));
 
 #ifdef FEATURE_PERFTRACING
-    if (szName == NULL || pProvider == NULL)
+    if (providerName == NULL || pProvider == NULL)
     {
         return E_INVALIDARG;
     }
@@ -7232,7 +7203,7 @@ HRESULT ProfToEEInterfaceImpl::EventPipeCreateProvider(const WCHAR *szName, EVEN
     HRESULT hr = S_OK;
     EX_TRY
     {
-        EventPipeProvider *pRealProvider = EventPipe::CreateProvider(szName, NULL, NULL);
+        EventPipeProvider *pRealProvider = EventPipe::CreateProvider(providerName, NULL, NULL);
         if (pRealProvider == NULL)
         {
             hr = E_FAIL;
@@ -7321,7 +7292,7 @@ HRESULT ProfToEEInterfaceImpl::EventPipeGetProviderInfo(
 
 HRESULT ProfToEEInterfaceImpl::EventPipeDefineEvent(
     EVENTPIPE_PROVIDER provider,
-    const WCHAR *szName,
+    const WCHAR *eventName,
     UINT32 eventID,
     UINT64 keywords,
     UINT32 eventVersion,
@@ -7348,7 +7319,7 @@ HRESULT ProfToEEInterfaceImpl::EventPipeDefineEvent(
 
 #ifdef FEATURE_PERFTRACING
     EventPipeProvider *pProvider = reinterpret_cast<EventPipeProvider *>(provider);
-    if (pProvider == NULL || szName == NULL || pEvent == NULL)
+    if (pProvider == NULL || eventName == NULL || pEvent == NULL)
     {
         return E_INVALIDARG;
     }
@@ -7381,7 +7352,7 @@ HRESULT ProfToEEInterfaceImpl::EventPipeDefineEvent(
         size_t metadataLength;
         NewArrayHolder<BYTE> pMetadata = EventPipeMetadataGenerator::GenerateEventMetadata(
             eventID,
-            szName,
+            eventName,
             keywords,
             eventVersion,
             (EventPipeEventLevel)level,
@@ -7451,6 +7422,43 @@ HRESULT ProfToEEInterfaceImpl::EventPipeWriteEvent(
     return E_NOTIMPL;
 #endif // FEATURE_PERFTRACING
 }
+
+void ProfToEEInterfaceImpl::EventPipeCallbackHelper(EventPipeProvider *provider,
+                                                    DWORD eventId,
+                                                    DWORD eventVersion,
+                                                    ULONG cbMetadataBlob,
+                                                    LPCBYTE metadataBlob,
+                                                    ULONG cbEventData,
+                                                    LPCBYTE eventData,
+                                                    LPCGUID pActivityId,
+                                                    LPCGUID pRelatedActivityId,
+                                                    Thread *pEventThread,
+                                                    ULONG numStackFrames,
+                                                    UINT_PTR stackFrames[])
+{
+    // If we got here we know a profiler has started an EventPipe session
+    BEGIN_PIN_PROFILER(true);
+    // But, a profiler could always register for a session and then detach without
+    // closing the session. So check if we have an interface before proceeding.
+    if (g_profControlBlock.pProfInterface != nullptr)
+    {
+        g_profControlBlock.pProfInterface->EventPipeEventDelivered(provider,
+                                                                   eventId,
+                                                                   eventVersion,
+                                                                   cbMetadataBlob,
+                                                                   metadataBlob,
+                                                                   cbEventData,
+                                                                   eventData,
+                                                                   pActivityId,
+                                                                   pRelatedActivityId,
+                                                                   pEventThread,
+                                                                   numStackFrames,
+                                                                   stackFrames);
+    }
+    END_PIN_PROFILER();
+};
+
+
 
 /*
  * GetStringLayout

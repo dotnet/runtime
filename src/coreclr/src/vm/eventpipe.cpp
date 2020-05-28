@@ -338,7 +338,6 @@ EventPipeSessionID EventPipe::Enable(
             circularBufferSizeInMB,
             pProviders,
             numProviders,
-            false, //TODO: what is the difference between rundownRequested above and this rundownEnabled?
             callback);
 
         const bool fSuccess = EnableInternal(pSession, pEventPipeProviderCallbackDataQueue, enableSampleProfiler);
