@@ -1,0 +1,98 @@
+# Build for WebAssembly
+
+## Prerequisites
+
+If you haven't already done so, please read [this document](../../README.md#Build_Requirements) to understand the build requirements for your operating system.
+
+An installation of the emsdk needs to be installed.  Follow the installation guide [here](https://emscripten.org/docs/getting_started/downloads.html#sdk-download-and-install).  Once installed the EMSDK_PATH needs to be set:
+
+On Linux and MacOSX:
+
+For Linux and MacOSX:
+```bash
+export EMSDK_PATH=PATH_TO_SDK_INSTALL/emsdk
+```
+
+## Building everything
+
+At this time no other build configurations are necessary to start building for webassembly.  The CoreLib for webassembly build configurations will be built by default using the webassembly configuration shown below. 
+
+This document explains how to work on libraries. In order to work on library projects or run library tests it is necessary to have built the runtime to give the libraries something to run on. IIf you haven't already done so, please read [this document](../../README.md#Configurations) to understand configurations.
+
+
+For Linux and MacOSX:
+```bash
+./build.sh --arch wasm --os Browser --configuration release
+```
+
+Detailed information about building and testing runtimes and the libraries is in the documents linked below.
+
+## How to build native components only
+
+The libraries build contains some native code. This includes shims over libc, openssl, gssapi, and zlib. The build system uses CMake to generate Makefiles using clang. The build also uses git for generating some version information.
+
+**Examples**
+
+- Building in debug mode for platform wasm and Browser os
+```bash
+./src/libraries/Native/build-native.sh wasm Debug outconfig net5.0-Browser-Debug-wasm -os Browser
+```
+
+- Building in release mode for platform wasm and Browser os
+```bash
+./src/libraries/Native/build-native.sh wasm Release outconfig net5.0-Browser-Release-wasm -os Browser
+```
+
+## How to build mono System.Private.CoreLib
+
+If you are working on core parts of mono libraries you will probably need to build the [System.Private.CoreLib](../../../design/coreclr/botr/corelib.md) which can be built with the following:
+
+
+```bash
+./build.sh --arch wasm --os Browser --configuration release --subset Mono
+```
+
+Building the managed libraries as well:
+
+```bash
+./build.sh --arch wasm --os Browser --configuration release --subset Mono+Libs
+```
+
+## Building individual libraries
+
+One can individual projects as well by specifying the build configuration
+Building individual libraries
+**Examples**
+
+- Build all projects for a given library (e.g.: System.Net.Http) including running the tests
+
+```bash
+ ./build.sh --arch wasm --os Browser --configuration release --projects src/libraries/System.Net.Http/System.Net.Http.sln
+```
+
+- Build only the source project of a given library (e.g.: System.Net.Http)
+
+```bash
+ ./build.sh --arch wasm --os Browser --configuration release --projects src/libraries/System.Net.Http/src/System.Net.Http.csproj
+```
+
+More information and examples can be found in the [libraries](./README.md) document.
+
+## Building the webassembly runtime files
+
+The webassembly implementation are built and made available in the assembly bin.  If you are working on the code base and need to compile just the module then the following will allow one to do that.
+
+For Linux and MacOSX:
+```bash
+./dotnet.sh build --configuration release /p:TargetArchitecture=wasm /p:TargetOS=Browser src/libraries/src.proj /t:NativeBinPlace 
+```
+
+## Building the webassembly app builder
+
+The app builder is a custom build task to build webassembly modules.  If you are working on the code base and need to compile just the module then the following will allow one to do that.
+
+Rebuild and Publish the WasmAppBuilder for Linux and MacOSX:
+```bash
+./build.sh --arch wasm --os Browser --configuration release --projects tools-local/tasks/mobile.tasks/WasmAppBuilder/WasmAppBuilder.csproj
+```
+
