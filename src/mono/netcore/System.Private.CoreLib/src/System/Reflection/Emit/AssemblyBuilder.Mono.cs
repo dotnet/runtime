@@ -405,11 +405,7 @@ namespace System.Reflection.Emit
                 cattrs[0] = customBuilder;
             }
 
-            /*
-            Only update the native list of custom attributes if we're adding one that is known to change dynamic execution behavior.
-            */
-            if (customBuilder.Ctor != null && customBuilder.Ctor.DeclaringType == typeof(System.Runtime.CompilerServices.RuntimeCompatibilityAttribute))
-                UpdateNativeCustomAttributes(this);
+            UpdateNativeCustomAttributes(this);
         }
 
         [ComVisible(true)]
@@ -528,14 +524,7 @@ namespace System.Reflection.Emit
             return AssemblyName.Create(_mono_assembly, null);
         }
 
-        // FIXME: "This always returns an empty array"
-        public override AssemblyName[] GetReferencedAssemblies()
-        {
-            throw new NotImplementedException();
-#if FALSE
-			return GetReferencedAssemblies (this);
-#endif
-        }
+        public override AssemblyName[] GetReferencedAssemblies() => RuntimeAssembly.GetReferencedAssemblies (this);
 
         public override Module[] GetLoadedModules(bool getResourceModules)
         {

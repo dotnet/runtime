@@ -314,9 +314,9 @@ namespace System.Reflection
             return GetModules(getResourceModules);
         }
 
-        public override AssemblyName[] GetReferencedAssemblies()
+        internal static AssemblyName[] GetReferencedAssemblies(Assembly assembly)
         {
-            using (var nativeNames = new Mono.SafeGPtrArrayHandle(InternalGetReferencedAssemblies(this)))
+            using (var nativeNames = new Mono.SafeGPtrArrayHandle(InternalGetReferencedAssemblies(assembly)))
             {
                 int numAssemblies = nativeNames.Length;
                 try
@@ -350,6 +350,8 @@ namespace System.Reflection
                 }
             }
         }
+
+        public override AssemblyName[] GetReferencedAssemblies() => RuntimeAssembly.GetReferencedAssemblies (this);
 
         public override Assembly GetSatelliteAssembly(CultureInfo culture)
         {
