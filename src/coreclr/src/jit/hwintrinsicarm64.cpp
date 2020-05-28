@@ -359,12 +359,15 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
     switch (intrinsic)
     {
         case NI_Vector64_AsByte:
+        case NI_Vector64_AsDouble:
         case NI_Vector64_AsInt16:
         case NI_Vector64_AsInt32:
+        case NI_Vector64_AsInt64:
         case NI_Vector64_AsSByte:
         case NI_Vector64_AsSingle:
         case NI_Vector64_AsUInt16:
         case NI_Vector64_AsUInt32:
+        case NI_Vector64_AsUInt64:
         case NI_Vector128_As:
         case NI_Vector128_AsByte:
         case NI_Vector128_AsDouble:
