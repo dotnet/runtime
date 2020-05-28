@@ -9,22 +9,58 @@ namespace System.Formats.Cbor
 {
     public partial class CborReader
     {
-        public void SkipValue(bool validateConformance = false) => SkipToAncestor(0, validateConformance);
-        public void SkipToParent(bool validateConformance = false)
+        /// <summary>
+        ///   Reads the contents of the next value, discarding the result and advancing the reader.
+        /// </summary>
+        /// <param name="disableConformanceLevelChecks">
+        ///   Disable conformance level validation for the skipped value,
+        ///   equivalent to using <see cref="CborConformanceLevel.Lax"/>.
+        /// </param>
+        /// <exception cref="InvalidOperationException">
+        ///   the reader is not at the start of new value.
+        /// </exception>
+        /// <exception cref="FormatException">
+        ///   the next value has an invalid CBOR encoding. -or-
+        ///   there was an unexpected end of CBOR encoding data. -or-
+        ///   the next value uses a CBOR encoding that is not valid under the current conformance level.
+        /// </exception>
+        public void SkipValue(bool disableConformanceLevelChecks = false)
+        {
+            SkipToAncestor(0, disableConformanceLevelChecks);
+        }
+
+        /// <summary>
+        ///   Reads the remaining contents of the current value context,
+        ///   discarding results and advancing the reader to the next value
+        ///   in the parent context.
+        /// </summary>
+        /// <param name="disableConformanceLevelChecks">
+        ///   Disable conformance level validation for the skipped values,
+        ///   equivalent to using <see cref="CborConformanceLevel.Lax"/>.
+        /// </param>
+        /// <exception cref="InvalidOperationException">
+        ///   the reader is at the root context
+        /// </exception>
+        /// <exception cref="FormatException">
+        ///   the next value has an invalid CBOR encoding. -or-
+        ///   there was an unexpected end of CBOR encoding data. -or-
+        ///   the next value uses a CBOR encoding that is not valid under the current conformance level.
+        /// </exception>
+        public void SkipToParent(bool disableConformanceLevelChecks = false)
         {
             if (_currentMajorType is null)
             {
-                throw new InvalidOperationException("CBOR reader is at the root context.");
+                throw new InvalidOperationException(SR.Cbor_Reader_IsAtRootContext);
             }
 
-            SkipToAncestor(1, validateConformance);
+            SkipToAncestor(1, disableConformanceLevelChecks);
         }
 
-        private void SkipToAncestor(int depth, bool validateConformance)
+        private void SkipToAncestor(int depth, bool disableConformanceLevelChecks)
         {
-            Debug.Assert(0 <= depth && depth <= Depth);
+            Debug.Assert(0 <= depth && depth <= CurrentDepth);
             Checkpoint checkpoint = CreateCheckpoint();
-            _isConformanceLevelCheckEnabled = validateConformance;
+            _isConformanceLevelCheckEnabled = !disableConformanceLevelChecks;
 
             try
             {
@@ -49,7 +85,7 @@ namespace System.Formats.Cbor
             CborReaderState state;
 
             // peek, skipping any tags we might encounter
-            while ((state = PeekState()) == CborReaderState.Tag)
+            while ((state = PeekStateCore(throwOnFormatErrors: true)) == CborReaderState.Tag)
             {
                 ReadTag();
             }
@@ -73,24 +109,24 @@ namespace System.Formats.Cbor
                     break;
 
                 case CborReaderState.StartByteString:
-                    ReadStartByteStringIndefiniteLength();
+                    ReadStartByteString();
                     depth++;
                     break;
 
                 case CborReaderState.EndByteString:
                     ValidatePop(state, depth);
-                    ReadEndByteStringIndefiniteLength();
+                    ReadEndByteString();
                     depth--;
                     break;
 
                 case CborReaderState.StartTextString:
-                    ReadStartTextStringIndefiniteLength();
+                    ReadStartTextString();
                     depth++;
                     break;
 
                 case CborReaderState.EndTextString:
                     ValidatePop(state, depth);
-                    ReadEndTextStringIndefiniteLength();
+                    ReadEndTextString();
                     depth--;
                     break;
 
@@ -124,17 +160,18 @@ namespace System.Formats.Cbor
 
                 case CborReaderState.Null:
                 case CborReaderState.Boolean:
-                case CborReaderState.SpecialValue:
+                case CborReaderState.SimpleValue:
                     ReadSimpleValue();
                     break;
 
                 case CborReaderState.EndOfData:
-                    throw new FormatException("Unexpected end of buffer.");
+                    throw new FormatException(SR.Cbor_Reader_InvalidCbor_UnexpectedEndOfBuffer);
                 case CborReaderState.FormatError:
-                    throw new FormatException("Invalid CBOR format.");
+                    Debug.Fail("Peek format errors should be surfaced as FormatExceptions.");
+                    throw new FormatException();
 
                 default:
-                    throw new InvalidOperationException($"Unexpected CBOR reader state {state}.");
+                    throw new InvalidOperationException(SR.Format(SR.Cbor_Reader_Skip_InvalidState, state));
             }
 
             // guards against cases where the caller attempts to skip when reader is not positioned at the start of a value
@@ -142,7 +179,7 @@ namespace System.Formats.Cbor
             {
                 if (depth == 0)
                 {
-                    throw new InvalidOperationException($"Reader state {state} is not at start of a data item.");
+                    throw new InvalidOperationException(SR.Format(SR.Cbor_Reader_Skip_InvalidState, state));
                 }
             }
         }
