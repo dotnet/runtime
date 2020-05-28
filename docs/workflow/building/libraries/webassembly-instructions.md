@@ -32,7 +32,7 @@ The libraries build contains some native code. This includes shims over libc, op
 
 **Examples**
 
-- Building in debug mode for platform wasm and Browser os
+- Building in debug mode for platform wasm and Browser operating system
 ```bash
 ./src/libraries/Native/build-native.sh wasm Debug outconfig net5.0-Browser-Debug-wasm -os Browser
 ```
