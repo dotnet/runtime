@@ -1,10 +1,13 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+﻿using System.Runtime.Serialization;
+using System.Linq;
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Concurrent;
 using System.Globalization;
 using System.Runtime.CompilerServices;
+using System.Reflection;
 
 namespace System.Text.Json.Serialization.Converters
 {
@@ -19,6 +22,9 @@ namespace System.Text.Json.Serialization.Converters
         private readonly EnumConverterOptions _converterOptions;
         private readonly JsonNamingPolicy _namingPolicy;
         private readonly ConcurrentDictionary<string, string>? _nameCache;
+        private readonly ConcurrentDictionary<T, string>? _enumToStringCache;
+        private readonly ConcurrentDictionary<ValueTuple<string?>, T>? _stringToEnumCache;
+
 
         public override bool CanConvert(Type type)
         {
@@ -42,13 +48,29 @@ namespace System.Text.Json.Serialization.Converters
                 namingPolicy = JsonNamingPolicy.Default;
             }
             _namingPolicy = namingPolicy;
+
+            if (_converterOptions.HasFlag(EnumConverterOptions.AllowStrings)) {
+                var enumType = typeof(T);
+                var fields = enumType.GetFields();
+                foreach (var field in fields) {
+                    var attribute = field.GetCustomAttribute<JsonStringEnumMemberAttribute>(false);
+
+                    if (attribute != null) {
+                        _enumToStringCache ??= new ConcurrentDictionary<T, string>();
+                        _stringToEnumCache ??= new ConcurrentDictionary<ValueTuple<string?>, T>();
+                        var enumValue = (T) Enum.Parse(enumType, field.Name);
+                        _enumToStringCache[enumValue] = attribute.Name;
+                        _stringToEnumCache[ValueTuple.Create(attribute.Name)] = enumValue;
+                    }
+                }
+            }
         }
 
         public override T Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {
             JsonTokenType token = reader.TokenType;
 
-            if (token == JsonTokenType.String)
+            if (token == JsonTokenType.String || token == JsonTokenType.Null)
             {
                 if (!_converterOptions.HasFlag(EnumConverterOptions.AllowStrings))
                 {
@@ -58,13 +80,19 @@ namespace System.Text.Json.Serialization.Converters
 
                 // Try parsing case sensitive first
                 string? enumString = reader.GetString();
-                if (!Enum.TryParse(enumString, out T value)
-                    && !Enum.TryParse(enumString, ignoreCase: true, out value))
-                {
-                    ThrowHelper.ThrowJsonException();
-                    return default;
+                if (_stringToEnumCache != null &&_stringToEnumCache.TryGetValue(ValueTuple.Create(enumString), out T value)) {
+                    return value;
                 }
-                return value;
+                else
+                {
+                    if (!Enum.TryParse(enumString, out value)
+                        && !Enum.TryParse(enumString, ignoreCase: true, out value))
+                    {
+                        ThrowHelper.ThrowJsonException();
+                        return default;
+                    }
+                    return value;
+                }
             }
 
             if (token != JsonTokenType.Number || !_converterOptions.HasFlag(EnumConverterOptions.AllowNumbers))
@@ -157,6 +185,16 @@ namespace System.Text.Json.Serialization.Converters
             // If strings are allowed, attempt to write it out as a string value
             if (_converterOptions.HasFlag(EnumConverterOptions.AllowStrings))
             {
+                if (_enumToStringCache != null &&_enumToStringCache.TryGetValue(value, out string? stringValue)) {
+                    if (stringValue != null) {
+                        writer.WriteStringValue(stringValue);
+                    }
+                    else {
+                        writer.WriteNullValue();
+                    }
+                    return;
+                }
+
                 string original = value.ToString();
                 if (_nameCache != null && _nameCache.TryGetValue(original, out string? transformed))
                 {
