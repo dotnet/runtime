@@ -524,6 +524,20 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                     GetEmitter()->emitIns_R_F(INS_fmov, emitTypeSize(intrin.baseType), targetReg, dataValue,
                                               INS_OPTS_NONE);
                 }
+                else if (intrin.op3->isContained() && intrin.op3->OperIs(GT_HWINTRINSIC))
+                {
+                    const HWIntrinsic hwIntrin(intrin.op3->AsHWIntrinsic());
+
+                    assert(intrin.op2->isContainedIntOrIImmed());
+                    assert((hwIntrin.id == NI_Vector64_GetElement) || (hwIntrin.id == NI_Vector128_GetElement));
+                    assert(hwIntrin.op2->isContainedIntOrIImmed());
+
+                    // Combine Insert/GetElement in mov target[index1], reg1[index2]
+                    const int index1 = (int)intrin.op2->AsIntCon()->gtIconVal;
+                    const int index2 = (int)hwIntrin.op2->AsIntCon()->gtIconVal;
+                    GetEmitter()->emitIns_R_R_I_I(INS_mov, emitTypeSize(intrin.baseType), targetReg,
+                                                  hwIntrin.op1->GetRegNum(), index1, index2);
+                }
                 else
                 {
                     HWIntrinsicImmOpHelper helper(this, intrin.op2, node);

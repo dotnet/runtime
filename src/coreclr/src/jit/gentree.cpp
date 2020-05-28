@@ -18503,7 +18503,18 @@ bool GenTree::isContainableHWIntrinsic() const
         }
     }
 #else
-    return false;
+    switch (AsHWIntrinsic()->gtHWIntrinsicId)
+    {
+        case NI_Vector64_GetElement:
+        case NI_Vector128_GetElement:
+        {
+            return true;
+        }
+        default:
+        {
+            return false;
+        }
+    }
 #endif // TARGET_XARCH
 }
 

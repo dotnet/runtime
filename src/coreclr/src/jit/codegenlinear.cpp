@@ -1446,6 +1446,15 @@ void CodeGen::genConsumeRegs(GenTree* tree)
         }
 #endif // FEATURE_HW_INTRINSICS
 #endif // TARGET_XARCH
+#if defined(FEATURE_HW_INTRINSICS) && defined(TARGET_ARMARCH)
+        else if (tree->OperIs(GT_HWINTRINSIC))
+        {
+            const HWIntrinsic hwIntrin(tree->AsHWIntrinsic());
+
+            assert((hwIntrin.id == NI_Vector64_GetElement) || (hwIntrin.id == NI_Vector128_GetElement));
+            genConsumeReg(tree->gtGetOp1());
+        }
+#endif // defined(FEATURE_HW_INTRINSICS) && defined(TARGET_ARMARCH)
         else if (tree->OperIs(GT_BITCAST))
         {
             genConsumeReg(tree->gtGetOp1());
