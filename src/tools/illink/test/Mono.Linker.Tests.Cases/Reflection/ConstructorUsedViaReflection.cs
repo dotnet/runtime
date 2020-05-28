@@ -62,7 +62,10 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		}
 
 		[UnrecognizedReflectionAccessPattern (
-			typeof (Type), nameof (Type.GetConstructor), new Type[] { typeof (Type[]) })]
+			typeof (Type), nameof (Type.GetConstructor), new Type[] { typeof (Type[]) },
+			"The return value of method 'System.Type Mono.Linker.Tests.Cases.Reflection.ConstructorUsedViaReflection::FindType()' with dynamically accessed member kinds 'None' " +
+			"is passed into the implicit 'this' parameter of method 'System.Reflection.ConstructorInfo System.Type::GetConstructor(System.Type[])' which requires dynamically accessed member kinds 'PublicConstructors'. " +
+			"To fix this add DynamicallyAccessedMembersAttribute to it and specify at least these member kinds 'PublicConstructors'.")]
 		[Kept]
 		static void TestDataFlowType ()
 		{

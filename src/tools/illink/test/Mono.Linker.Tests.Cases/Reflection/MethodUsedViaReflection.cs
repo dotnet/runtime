@@ -132,6 +132,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		}
 
 		[Kept]
+		[RecognizedReflectionAccessPattern]
 		static void TestNullType ()
 		{
 			Type type = null;
@@ -146,7 +147,10 @@ namespace Mono.Linker.Tests.Cases.Reflection
 
 		[Kept]
 		[UnrecognizedReflectionAccessPattern (
-			typeof (Type), nameof (Type.GetMethod), new Type[] { typeof (string), typeof (BindingFlags) })]
+			typeof (Type), nameof (Type.GetMethod), new Type[] { typeof (string), typeof (BindingFlags) },
+			"The return value of method 'System.Type Mono.Linker.Tests.Cases.Reflection.MethodUsedViaReflection::FindType()' with dynamically accessed member kinds 'None' " +
+			"is passed into the implicit 'this' parameter of method 'System.Reflection.MethodInfo System.Type::GetMethod(System.String,System.Reflection.BindingFlags)' which requires dynamically accessed member kinds 'PublicMethods'. " +
+			"To fix this add DynamicallyAccessedMembersAttribute to it and specify at least these member kinds 'PublicMethods'.")]
 		static void TestDataFlowType ()
 		{
 			Type type = FindType ();

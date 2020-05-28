@@ -44,8 +44,37 @@ namespace Mono.Linker
 
 		public void UnrecognizedReflectionAccessPattern (MethodDefinition sourceMethod, Instruction reflectionMethodCall, IMetadataTokenProvider accessedItem, string message)
 		{
-			_context.LogMessage (MessageContainer.CreateWarningMessage (message, 2006, "Unrecognized reflection pattern",
-				reflectionMethodCall != null ? MessageOrigin.TryGetOrigin (sourceMethod, reflectionMethodCall.Offset) : null));
+			var origin = reflectionMethodCall != null ? MessageOrigin.TryGetOrigin (sourceMethod, reflectionMethodCall.Offset) : null;
+			var locationInfo = origin == null ? (sourceMethod.DeclaringType.FullName + "::" + GetSignature (sourceMethod) + ": ") : string.Empty;
+			_context.LogMessage (MessageContainer.CreateWarningMessage (locationInfo + message, 2006, "Unrecognized reflection pattern", origin));
+		}
+
+		static string GetSignature (MethodDefinition method)
+		{
+			var builder = new System.Text.StringBuilder ();
+			builder.Append (method.Name);
+			if (method.HasGenericParameters) {
+				builder.Append ('<');
+
+				for (int i = 0; i < method.GenericParameters.Count - 1; i++)
+					builder.Append ($"{method.GenericParameters[i]},");
+
+				builder.Append ($"{method.GenericParameters[method.GenericParameters.Count - 1]}>");
+			}
+
+			builder.Append ("(");
+
+			if (method.HasParameters) {
+				for (int i = 0; i < method.Parameters.Count - 1; i++) {
+					builder.Append ($"{method.Parameters[i].ParameterType},");
+				}
+
+				builder.Append (method.Parameters[method.Parameters.Count - 1].ParameterType);
+			}
+
+			builder.Append (")");
+
+			return builder.ToString ();
 		}
 	}
 }
