@@ -21,35 +21,19 @@ namespace System
         {
             ValidateWrite(buffer, offset, count);
 
-            Span<byte> bufferSpan = buffer.AsSpan(offset, count);
+            ReadOnlySpan<byte> bufferSpan = new ReadOnlySpan<byte>(buffer, offset, count)
 
             Debug.Assert(ConsolePal.OutputEncoding == Encoding.Unicode);
             Debug.Assert(bufferSpan.Length % 2 == 0);
 
-            Span<char> charSpan = MemoryMarshal.Cast<byte, char>(bufferSpan);
+            ReadOnlySpan<char> charSpan = MemoryMarshal.Cast<byte, char>(bufferSpan);
 
             lock (_buffer)
             {
-                if (charSpan.Contains('\n'))
+                AccumulateNewLines(_buffer, charSpan, line =>
                 {
-                    string logLine;
-                    if (_buffer.Length > 0)
-                    {
-                        _buffer.Append(charSpan);
-                        logLine = _buffer.ToString();
-                        _buffer.Clear();
-                    }
-                    else
-                    {
-                        logLine = charSpan.ToString();
-                    }
-                    Interop.Logcat.AndroidLogPrint(Interop.Logcat.LogLevel.Info, "DOTNET", logLine);
-                }
-                else
-                {
-                    // accumulate results until "\n" is written
-                    _buffer.Append(charSpan);
-                }
+                    Interop.Logcat.AndroidLogPrint(Interop.Logcat.LogLevel.Info, "DOTNET", line);
+                });
             }
         }
     }

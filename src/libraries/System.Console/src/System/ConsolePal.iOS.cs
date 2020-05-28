@@ -21,41 +21,22 @@ namespace System
         {
             ValidateWrite(buffer, offset, count);
 
-            Span<byte> bufferSpan = buffer.AsSpan(offset, count);
+            ReadOnlySpan<byte> bufferSpan = new ReadOnlySpan<byte>(buffer, offset, count)
 
             Debug.Assert(ConsolePal.OutputEncoding == Encoding.Unicode);
             Debug.Assert(bufferSpan.Length % 2 == 0);
 
-            Span<char> charSpan = MemoryMarshal.Cast<byte, char>(bufferSpan);
+            ReadOnlySpan<char> charSpan = MemoryMarshal.Cast<byte, char>(bufferSpan);
 
             lock (_buffer)
             {
-                if (charSpan.Contains('\n'))
+                AccumulateNewLines(_buffer, charSpan, line =>
                 {
-                    string logLine;
-                    if (_buffer.Length > 0)
+                    fixed (char* ptr = line)
                     {
-                        _buffer.Append(charSpan);
-                        logLine = _buffer.ToString();
-                        _buffer.Clear();
-                        fixed (char* ptr = logLine)
-                        {
-                            Interop.Sys.Log((byte*)ptr, logLine.Length * 2);
-                        }
+                        Interop.Sys.Log((byte*)ptr, line.Length * 2);
                     }
-                    else
-                    {
-                        fixed (byte* ptr = buffer)
-                        {
-                            Interop.Sys.Log(ptr + offset, count);
-                        }
-                    }
-                }
-                else
-                {
-                    // accumulate results until "\n" is written
-                    _buffer.Append(charSpan);
-                }
+                });
             }
         }
     }
