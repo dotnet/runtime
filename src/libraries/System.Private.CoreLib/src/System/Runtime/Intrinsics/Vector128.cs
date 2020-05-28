@@ -1571,11 +1571,24 @@ namespace System.Runtime.Intrinsics
         public static Vector128<T> WithLower<T>(this Vector128<T> vector, Vector64<T> value)
             where T : struct
         {
-            ThrowHelper.ThrowForUnsupportedVectorBaseType<T>();
+            if (AdvSimd.IsSupported)
+            {
+                // Note: The 3rd operand GetElement() should be the argument to Insert(). Storing the
+                // result of GetElement() in a local variable and then passing local variable to Insert()
+                // would not merge insert/getelement in a single instruction.
+                return AdvSimd.Insert(vector.AsUInt64(), 0, value.AsUInt64().GetElement(0)).As<ulong, T>();
+            }
 
-            Vector128<T> result = vector;
-            Unsafe.As<Vector128<T>, Vector64<T>>(ref result) = value;
-            return result;
+            return SoftwareFallback(vector, value);
+
+            static Vector128<T> SoftwareFallback(Vector128<T> vector, Vector64<T> value)
+            {
+                ThrowHelper.ThrowForUnsupportedVectorBaseType<T>();
+
+                Vector128<T> result = vector;
+                Unsafe.As<Vector128<T>, Vector64<T>>(ref result) = value;
+                return result;
+            }
         }
 
         /// <summary>Gets the value of the upper 64-bits as a new <see cref="Vector64{T}" />.</summary>
