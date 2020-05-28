@@ -18,8 +18,8 @@ namespace System
 
     public ref struct SpanSplitEnumerator<T> where T : IEquatable<T>
     {
-        private readonly ReadOnlySpan<T> _sequence;
-        private readonly ReadOnlySpan<T> _separators;
+        private readonly ReadOnlySpan<T> _buffer;
+        private readonly ReadOnlySpan<T> _separatorSequence;
         private readonly T _separator;
         private readonly bool _isSequence;
         private readonly int _separatorLength;
@@ -29,17 +29,17 @@ namespace System
         public SpanSplitEnumerator<T> GetEnumerator() => this;
         public readonly Range Current => new Range(_offset, _offset + _index - _separatorLength);
 
-        internal SpanSplitEnumerator(ReadOnlySpan<T> span, ReadOnlySpan<T> separators)
+        internal SpanSplitEnumerator(ReadOnlySpan<T> buffer, ReadOnlySpan<T> separator)
         {
             _sequence = span;
             _separators = separators;
-            _separator = default;
+            _separator = default!;
             _isSequence = true;
             (_index, _offset) = (0, 0);
             _separatorLength = _isSequence ? _separators.Length : 1;
         }
 
-        internal SpanSplitEnumerator(ReadOnlySpan<T> span, T separator)
+        internal SpanSplitEnumerator(ReadOnlySpan<T> buffer, T separator)
         {
             _sequence = span;
             _separator = separator;
