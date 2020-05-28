@@ -11750,8 +11750,8 @@ void CodeGen::genRegCopy(GenTree* treeNode)
         // There should never be any circular dependencies, and we will check that here.
 
         GenTreeCopyOrReload* copyNode = treeNode->AsCopyOrReload();
-        unsigned             regCount = copyNode->GetRegCount();
-        // GenTreeCopyOrReload only reports the number of registers that are valid.
+        // GenTreeCopyOrReload only reports the highest index that has a valid register.
+        unsigned regCount = copyNode->GetRegCount();
         assert(regCount <= MAX_MULTIREG_COUNT);
 
         // First set the source registers as busy if they haven't been spilled.
@@ -11767,13 +11767,15 @@ void CodeGen::genRegCopy(GenTree* treeNode)
         // First do any copies - we'll do the reloads after all the copies are complete.
         for (unsigned i = 0; i < regCount; ++i)
         {
-            regNumber sourceReg     = op1->GetRegByIndex(i);
-            regNumber targetReg     = copyNode->GetRegNumByIdx(i);
-            regMaskTP targetRegMask = genRegMask(targetReg);
-            // GenTreeCopyOrReload only reports the number of registers that are valid.
+            regNumber sourceReg = op1->GetRegByIndex(i);
+            regNumber targetReg = copyNode->GetRegNumByIdx(i);
+            // GenTreeCopyOrReload only reports the highest index that has a valid register.
+            // However there may be lower indices that have no valid register (i.e. the register
+            // on the source is still valid at the consumer).
             if (targetReg != REG_NA)
             {
                 // We shouldn't specify a no-op move.
+                regMaskTP targetRegMask = genRegMask(targetReg);
                 assert(sourceReg != targetReg);
                 assert((busyRegs & targetRegMask) == 0);
                 // Clear sourceReg from the busyRegs, and add targetReg.

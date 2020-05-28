@@ -25,6 +25,7 @@
     <MobileRunnersDirSuffix>$(NetCoreAppCurrent)-$(Configuration)</MobileRunnersDirSuffix>
     <AppleTestRunnerDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'AppleTestRunner', '$(MobileRunnersDirSuffix)'))</AppleTestRunnerDir>
     <AndroidTestRunnerDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'AndroidTestRunner', '$(MobileRunnersDirSuffix)'))</AndroidTestRunnerDir>
+    <WasmTestRunnerDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'WasmTestRunner', '$(MobileRunnersDirSuffix)'))</WasmTestRunnerDir>
 
     <RuntimeIdentifier>$(PackageRID)</RuntimeIdentifier>
     <SelfContained>true</SelfContained>
