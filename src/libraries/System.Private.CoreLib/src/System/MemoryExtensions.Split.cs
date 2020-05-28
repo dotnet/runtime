@@ -36,7 +36,7 @@ namespace System
             _separator = default!;
             _isSequence = true;
             (_index, _offset) = (0, 0);
-            _separatorLength = _isSequence ? _separators.Length : 1;
+            _separatorLength = _separators.Length;
         }
 
         internal SpanSplitEnumerator(ReadOnlySpan<T> buffer, T separator)
@@ -46,7 +46,7 @@ namespace System
             _separators = default;
             _isSequence = false;
             (_index, _offset) = (0, 0);
-            _separatorLength = _isSequence ? _separators.Length : 1;
+            _separatorLength = 1;
         }
 
         public bool MoveNext()
