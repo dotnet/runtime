@@ -1498,10 +1498,13 @@ mono_get_object_from_blob (MonoDomain *domain, MonoType *type, const char *blob,
 
 static int
 assembly_name_to_aname (MonoAssemblyName *assembly, char *p) {
+
 	int found_sep;
 	char *s;
 	gboolean quoted = FALSE;
+	g_strchomp(p);
 
+	assembly->has_version =  FALSE;
 	memset (assembly, 0, sizeof (MonoAssemblyName));
 	assembly->culture = "";
 	memset (assembly->public_key_token, 0, MONO_PUBLIC_KEY_TOKEN_LENGTH);
@@ -1511,7 +1514,7 @@ assembly_name_to_aname (MonoAssemblyName *assembly, char *p) {
 		p++;
 	}
 	assembly->name = p;
-	while (*p && (isalnum (*p) || *p == '.' || *p == '-' || *p == '_' || *p == '$' || *p == '@' || g_ascii_isspace (*p)))
+	while (*p && (isalnum (*p) || *p == '.' || *p == '-' || *p == '_' || *p == '$' || *p == '@' || (quoted && g_ascii_isspace (*p))))
 		p++;
 	if (quoted) {
 		if (*p != '"')
@@ -1531,6 +1534,7 @@ assembly_name_to_aname (MonoAssemblyName *assembly, char *p) {
 		p++;
 	while (*p) {
 		if ((*p == 'V' || *p == 'v') && g_ascii_strncasecmp (p, "Version=", 8) == 0) {
+			assembly->has_version =  TRUE;
 			p += 8;
 			assembly->major = strtoul (p, &s, 10);
 			if (s == p || *s != '.')
@@ -1550,15 +1554,9 @@ assembly_name_to_aname (MonoAssemblyName *assembly, char *p) {
 			p = s;
 		} else if ((*p == 'C' || *p == 'c') && g_ascii_strncasecmp (p, "Culture=", 8) == 0) {
 			p += 8;
-			if (g_ascii_strncasecmp (p, "neutral", 7) == 0) {
-				assembly->culture = "";
-				p += 7;
-			} else {
 				assembly->culture = p;
-				while (*p && *p != ',') {
+				while (*p && *p != ',') 
 					p++;
-				}
-			}
 		} else if ((*p == 'P' || *p == 'p') && g_ascii_strncasecmp (p, "PublicKeyToken=", 15) == 0) {
 			p += 15;
 			if (strncmp (p, "null", 4) == 0) {
@@ -1592,6 +1590,7 @@ assembly_name_to_aname (MonoAssemblyName *assembly, char *p) {
 	}
 
 	return 0;
+
 }
 
 /*

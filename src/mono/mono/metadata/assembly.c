@@ -1251,14 +1251,22 @@ mono_stringify_assembly_name (MonoAssemblyName *aname)
 {
 	const char *quote = (aname->name && g_ascii_isspace (aname->name [0])) ? "\"" : "";
 
-	return g_strdup_printf (
-		"%s%s%s, Version=%d.%d.%d.%d, Culture=%s, PublicKeyToken=%s%s",
-		quote, aname->name, quote,
-		aname->major, aname->minor, aname->build, aname->revision,
-		aname->culture && *aname->culture? aname->culture: "neutral",
-		aname->public_key_token [0] ? (char *)aname->public_key_token : "null",
-		(aname->flags & ASSEMBLYREF_RETARGETABLE_FLAG) ? ", Retargetable=Yes" : "");
+	GString *str;
+	str = g_string_new (NULL);
+	g_string_append_printf (str, "%s%s%s", quote, aname->name, quote);
+
+	if (aname->culture [0])
+		g_string_append_printf (str, ", Culture=%s", aname->culture);
+	if (aname->public_key_token [0])
+		g_string_append_printf (str,", PublicKeyToken=%s%s", aname->public_key_token, (aname->flags & ASSEMBLYREF_RETARGETABLE_FLAG) ? ", Retargetable=Yes" : "");
+	if (aname->has_version ==  TRUE)
+		g_string_append_printf (str,", Version=%d.%d.%d.%d", aname->major, aname->minor, aname->build, aname->revision);
+
+	char *result = g_string_free (str, FALSE); //  result is the final formatted string.
+
+	return result;
 }
+
 
 static gchar*
 assemblyref_public_tok (MonoImage *image, guint32 key_index, guint32 flags)

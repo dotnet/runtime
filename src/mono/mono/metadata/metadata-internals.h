@@ -164,6 +164,7 @@ struct _MonoAssemblyName {
 	const char *culture;
 	const char *hash_value;
 	const mono_byte* public_key;
+	gboolean has_version;
 	// string of 16 hex chars + 1 NULL
 	mono_byte public_key_token [MONO_PUBLIC_KEY_TOKEN_LENGTH];
 	uint32_t hash_alg;
