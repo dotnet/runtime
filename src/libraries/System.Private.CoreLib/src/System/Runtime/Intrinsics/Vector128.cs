@@ -1603,8 +1603,10 @@ namespace System.Runtime.Intrinsics
         {
             if (AdvSimd.IsSupported)
             {
-                ulong upperValueToUse = value.AsUInt64().GetElement(0);
-                return AdvSimd.Insert(vector.AsUInt64(), 1, upperValueToUse).As<ulong, T>();
+                // Note: The 3rd operand GetElement() should be the argument to Insert(). Storing the
+                // result of GetElement() in a local variable and then passing local variable to Insert()
+                // would not merge insert/getelement in a single instruction.
+                return AdvSimd.Insert(vector.AsUInt64(), 1, value.AsUInt64().GetElement(0)).As<ulong, T>();
             }
 
             return SoftwareFallback(vector, value);
