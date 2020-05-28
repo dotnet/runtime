@@ -157,12 +157,12 @@ namespace System.Net.Quic.Implementations.Managed
                 }
                 else
                 {
-                    // TODO-RZ: RFC: An ACK frame SHOULD be generated for at least every second ack-
+                    // RFC: An ACK frame SHOULD be generated for at least every second ack-
                     // eliciting packet.  This recommendation is in keeping with standard practice
                     // for TCP [RFC5681].
 
                     // if timer is set, then we received a second ack-eliciting frame without
-                    // sending an ack back. set timer to fire immediately to ensure ack is sent as
+                    // sending an ack back. Set timer to fire immediately to ensure ack is sent as
                     // soon as possible to the peer.
                     pnSpace.NextAckTimer = context.Timestamp;
                 }
@@ -338,7 +338,6 @@ namespace System.Net.Quic.Implementations.Managed
             EncryptionLevel level = GetEncryptionLevel(packetType);
             var stream = GetPacketNumberSpace(level).CryptoInboundBuffer;
 
-            // TODO-RZ: don't buffer if not needed, just pass directly to tls
             stream.Receive(crypto.Offset, crypto.CryptoData);
 
             // process also buffered data received earlier
@@ -381,7 +380,6 @@ namespace System.Net.Quic.Implementations.Managed
             if (IsClosing) return ProcessPacketResult.Ok;
 
             if (!StreamHelpers.CanWrite(_isServer, frame.StreamId))
-                // TODO-RZ: check stream state
                 return CloseConnection(TransportErrorCode.StreamStateError,
                     QuicError.NotInRecvState, FrameType.MaxStreamData);
 
@@ -795,7 +793,6 @@ namespace System.Net.Quic.Implementations.Managed
             Debug.Assert(ranges.Count > 0); // implied by AckElicited
             Debug.Assert(pnSpace.LargestReceivedPacketTimestamp != 0);
 
-            // TODO-RZ check max ack delay to avoid sending acks every packet?
             long ackDelay = Timestamp.GetMicroseconds(context.Timestamp - pnSpace.LargestReceivedPacketTimestamp) >>
                             (int)_localTransportParameters.AckDelayExponent;
             // sanity check

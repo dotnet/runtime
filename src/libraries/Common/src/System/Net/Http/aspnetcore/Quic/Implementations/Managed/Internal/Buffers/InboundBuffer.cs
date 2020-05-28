@@ -237,7 +237,6 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Buffers
 
         private void OnAllReceived()
         {
-            // TODO-RZ: allow transmission from ResetReceived? (optional in RFC)
             if (StreamState == RecvStreamState.SizeKnown)
             {
                 lock (SyncObject)
