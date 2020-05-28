@@ -35,7 +35,7 @@ namespace System.Net.Quic.Tests.Harness
         {
             base.Serialize(writer, context);
 
-            SharedPacketData.Write(writer, new SharedPacketData(HeaderHelpers.ComposeLongHeaderByte(PacketType, PacketNumberLength), Token ?? Array.Empty<byte>(), 1000 /* anything with 2B encoding */));
+            SharedPacketData.Write(writer, new SharedPacketData(HeaderHelpers.ComposeLongHeaderByte(PacketType, PacketNumberLength, ReservedBits), Token ?? Array.Empty<byte>(), 1000 /* anything with 2B encoding */));
 
             SerializePayloadWithFrames(writer, context, Frames);
         }

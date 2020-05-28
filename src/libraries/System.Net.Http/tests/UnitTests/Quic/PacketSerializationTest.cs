@@ -56,7 +56,7 @@ namespace System.Net.Quic.Tests
             int pnLength = 2;
             var scid = new byte[] {1, 2, 3, 4, 5, 6, 7, 8, 9, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0};
             var dcid = scid.Select(i => (byte)(i * 10)).ToArray();
-            var expected = new LongPacketHeader(PacketType.Initial, pnLength, QuicVersion.Draft27, dcid, scid);
+            var expected = new LongPacketHeader(PacketType.Initial, pnLength, 0, QuicVersion.Draft27, dcid, scid);
             Assert.Equal(PacketType.Initial, expected.PacketType);
 
             LongPacketHeader.Write(writer, expected);
@@ -99,7 +99,7 @@ namespace System.Net.Quic.Tests
         {
             int pnLength = 2;
             var token = new byte[] {1, 2, 3, 4, 5, 6, 7, 8, 9, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0};
-            byte firstByte = HeaderHelpers.ComposeLongHeaderByte(PacketType.Initial, pnLength);
+            byte firstByte = HeaderHelpers.ComposeLongHeaderByte(PacketType.Initial, pnLength, 0);
 
             var expected = new SharedPacketData(firstByte, token, 1234);
 
@@ -123,7 +123,7 @@ namespace System.Net.Quic.Tests
             var idCollection = new ConnectionIdCollection();
             idCollection.Add(dcid);
 
-            var expected = new ShortPacketHeader(true, false, 2, dcid);
+            var expected = new ShortPacketHeader(true, false, 0, 2, dcid);
 
             ShortPacketHeader.Write(writer, expected);
             reader.Reset(buffer.AsMemory(0, writer.BytesWritten));

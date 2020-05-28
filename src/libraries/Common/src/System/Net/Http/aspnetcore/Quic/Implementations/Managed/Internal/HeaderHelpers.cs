@@ -1,3 +1,4 @@
+using System.ComponentModel.DataAnnotations;
 using System.Diagnostics;
 using System.Net.Security;
 
@@ -65,7 +66,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal
             return (firstByte & PacketNumberLengthMask) + 1;
         }
 
-        internal static byte ComposeShortHeaderByte(bool spin, bool keyPhase, int packetNumberLength)
+        internal static byte ComposeShortHeaderByte(bool spin, bool keyPhase, byte reservedBits, int packetNumberLength)
         {
             Debug.Assert((uint) packetNumberLength - 1 <= 3, "Too large packet number encoding");
 
@@ -73,17 +74,20 @@ namespace System.Net.Quic.Implementations.Managed.Internal
             int firstByte = (packetNumberLength - 1) | FixedBitMask;
             if (spin) firstByte |= SpinBitMask;
             if (keyPhase) firstByte |= KeyPhaseBitMask;
-
-            return (byte)firstByte;
+            return SetShortHeaderReservedBits((byte) firstByte, reservedBits);
         }
 
-        internal static byte ComposeLongHeaderByte(PacketType packetType, int packetNumberLength)
+        internal static byte ComposeLongHeaderByte(PacketType packetType, int packetNumberLength, byte reservedBits)
         {
             Debug.Assert((uint) packetType <= 3, "Wrong type of packet when creating long header.");
             Debug.Assert((uint) packetNumberLength - 1 <= 3, "Too large packet number encoding");
 
             // first two bits are always set (form + fixed bit)
-            return (byte)(0xc0 | ((int)packetType << 4) | (packetNumberLength - 1));
+            byte first = 0xc0;
+            first = SetLongHeaderReservedBits(first, reservedBits);
+            first |= (byte)((int)packetType << 4);
+            first |= (byte)(packetNumberLength - 1);
+            return first;
         }
 
         internal static bool GetFixedBit(byte firstByte)
@@ -101,9 +105,21 @@ namespace System.Net.Quic.Implementations.Managed.Internal
             return (byte)((firstByte & ShortReservedBitsMask) >> 3);
         }
 
+        internal static byte SetShortHeaderReservedBits(byte firstByte, byte value)
+        {
+            return (byte)((firstByte & ~ShortReservedBitsMask) |
+                          ((value << 3) & ShortReservedBitsMask));
+        }
+
         internal static byte GetLongHeaderReservedBits(byte firstByte)
         {
             return (byte)((firstByte & LongReservedBitsMask) >> 2);
+        }
+
+        internal static byte SetLongHeaderReservedBits(byte firstByte, byte value)
+        {
+            return (byte)((firstByte & ~LongReservedBitsMask) |
+                          ((value << 2) & LongReservedBitsMask));
         }
 
         internal static bool GetKeyPhase(byte firstByte)

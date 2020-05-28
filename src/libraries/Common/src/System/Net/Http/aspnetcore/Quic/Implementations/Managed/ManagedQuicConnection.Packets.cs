@@ -118,7 +118,7 @@ namespace System.Net.Quic.Implementations.Managed
                             goto case PacketType.Handshake;
                         case PacketType.Handshake:
                         case PacketType.ZeroRtt:
-                            // TODO-RZ: validate reserved bits etc.
+                            // Note: reserved bits can be validated only if decryption succeeds
                             if (headerData.Length > reader.BytesLeft)
                             {
                                 return ProcessPacketResult.DropPacket;
@@ -187,7 +187,7 @@ namespace System.Net.Quic.Implementations.Managed
                 // refresh the first byte
                 header = new ShortPacketHeader(reader.Buffer.Span[0], header.DestinationConnectionId);
 
-                // TODO-RZ: validate reserved bits etc.
+                // Note: reserved bits can be validated only if decryption succeeds
                 if (!header.FixedBit)
                 {
                     return ProcessPacketResult.DropPacket;
@@ -221,7 +221,23 @@ namespace System.Net.Quic.Implementations.Managed
                 PacketType packetType = PacketType.OneRtt;
                 int payloadLength = reader.BytesLeft;
 
-                return ReceiveProtectedFrames(reader, pnSpace, pnOffset, header.PacketNumberLength, payloadLength, packetType, recvSeal,
+                if (!recvSeal.DecryptPacket(reader.Buffer.Span, pnOffset, payloadLength,
+                    pnSpace.LargestReceivedPacketNumber))
+                {
+                    // decryption failed, drop the packet.
+                    reader.Advance(payloadLength);
+                    return ProcessPacketResult.DropPacket;
+                }
+
+                // we check value of reserved bits now, because if the packet was decrypted successfully, then we can be
+                // sure that it was sent by the expected peer
+                if (header.ReservedBits != 0)
+                {
+                    return CloseConnection(TransportErrorCode.ProtocolViolation,
+                        QuicError.InvalidReservedBits);
+                }
+
+                return ReceiveProtectedFrames(reader, pnSpace, pnOffset, header.PacketNumberLength, packetType, recvSeal,
                     context);
             }
         }
@@ -283,15 +299,8 @@ namespace System.Net.Quic.Implementations.Managed
             int pnOffset = reader.BytesRead;
             int payloadLength = (int)headerData.Length;
             PacketType packetType = header.PacketType;
+            var seal = pnSpace.RecvCryptoSeal!;
 
-            return ReceiveProtectedFrames(reader, pnSpace, pnOffset, header.PacketNumberLength, payloadLength, packetType, pnSpace.RecvCryptoSeal!,
-                context);
-        }
-
-        private ProcessPacketResult ReceiveProtectedFrames(QuicReader reader, PacketNumberSpace pnSpace, int pnOffset,
-            int pnLength, int payloadLength,
-            PacketType packetType, CryptoSeal seal, QuicSocketContext.RecvContext context)
-        {
             if (!seal.DecryptPacket(reader.Buffer.Span, pnOffset, payloadLength,
                 pnSpace.LargestReceivedPacketNumber))
             {
@@ -300,6 +309,22 @@ namespace System.Net.Quic.Implementations.Managed
                 return ProcessPacketResult.DropPacket;
             }
 
+            // we check value of reserved bits now, because if the packet was decrypted successfully, then we can be
+            // sure that it was sent by the expected peer
+            if (header.ReservedBits != 0)
+            {
+                return CloseConnection(TransportErrorCode.ProtocolViolation,
+                    QuicError.InvalidReservedBits);
+            }
+
+            return ReceiveProtectedFrames(reader, pnSpace, pnOffset, header.PacketNumberLength, packetType, seal,
+                context);
+        }
+
+        private ProcessPacketResult ReceiveProtectedFrames(QuicReader reader, PacketNumberSpace pnSpace, int pnOffset,
+            int pnLength,
+            PacketType packetType, CryptoSeal seal, QuicSocketContext.RecvContext context)
+        {
             reader.TryReadPacketNumber(pnLength, pnSpace.LargestReceivedPacketNumber, out long packetNumber);
 
             if (pnSpace.ReceivedPacketNumbers.Contains(packetNumber))
@@ -551,18 +576,20 @@ namespace System.Net.Quic.Implementations.Managed
             {
                 // 1-RTT packets are the only ones using short header
                 // TODO-RZ: implement spin
+                const bool spin = false;
                 // TODO-RZ: implement key update fully
                 bool keyPhase = _doKeyUpdate
                     ? !_currentKeyPhase
                     : _currentKeyPhase;
                 ShortPacketHeader.Write(writer,
-                    new ShortPacketHeader(false, keyPhase, pnLength, DestinationConnectionId!));
+                    new ShortPacketHeader(spin, keyPhase, 0 /*reserved bits*/, pnLength, DestinationConnectionId!));
             }
             else
             {
                 LongPacketHeader.Write(writer, new LongPacketHeader(
                     packetType,
                     pnLength,
+                    0 /*reserved bits*/,
                     version,
                     DestinationConnectionId!.Data,
                     SourceConnectionId!.Data));

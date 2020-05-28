@@ -50,10 +50,10 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Headers
         /// </summary>
         internal readonly ReadOnlySpan<byte> SourceConnectionId;
 
-        internal LongPacketHeader(PacketType type, int packetNumberLength, QuicVersion version,
+        internal LongPacketHeader(PacketType type, int packetNumberLength, byte reservedBits, QuicVersion version,
             ReadOnlySpan<byte> destinationConnectionId,
             ReadOnlySpan<byte> sourceConnectionId)
-            : this(HeaderHelpers.ComposeLongHeaderByte(type, packetNumberLength), version, destinationConnectionId,
+            : this(HeaderHelpers.ComposeLongHeaderByte(type, packetNumberLength, reservedBits), version, destinationConnectionId,
                 sourceConnectionId)
         {
         }

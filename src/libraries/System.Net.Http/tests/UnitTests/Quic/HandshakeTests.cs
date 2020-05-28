@@ -179,5 +179,20 @@ namespace System.Net.Quic.Tests
                 TransportErrorCode.ProtocolViolation,
                 QuicError.UnexpectedToken);
         }
+
+        [Fact]
+        public void SendsConnectionCloseWhenReservedBitsAreSet_LongHeader()
+        {
+            InterceptFlight(Client, Server, flight =>
+            {
+                Assert.IsType<InitialPacket>(flight.Packets[0]).ReservedBits = 0x01;
+            });
+
+            InterceptInitial(Server, Client, initial =>
+            {
+                initial.ShouldHaveConnectionClose(TransportErrorCode.ProtocolViolation,
+                    QuicError.InvalidReservedBits);
+            });
+        }
     }
 }

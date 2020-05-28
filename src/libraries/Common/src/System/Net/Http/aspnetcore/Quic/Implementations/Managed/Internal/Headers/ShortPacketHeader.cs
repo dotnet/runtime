@@ -49,9 +49,9 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Headers
             DestinationConnectionId = destinationConnectionId;
         }
 
-        internal ShortPacketHeader(bool spin, bool keyPhase, int packetNumberLength,
+        internal ShortPacketHeader(bool spin, bool keyPhase, byte reservedBits, int packetNumberLength,
             ConnectionId destinationConnectionId)
-            : this(HeaderHelpers.ComposeShortHeaderByte(spin, keyPhase, packetNumberLength),
+            : this(HeaderHelpers.ComposeShortHeaderByte(spin, keyPhase, reservedBits, packetNumberLength),
                 destinationConnectionId)
         {
         }

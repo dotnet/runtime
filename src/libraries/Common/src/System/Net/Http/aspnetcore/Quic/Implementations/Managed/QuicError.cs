@@ -37,6 +37,7 @@ namespace System.Net.Quic.Implementations.Managed
         internal const string NewConnectionIdFrameWhenZeroLengthCIDUsed = "Cannot issue new connection ids when zero-length CID is used";
         internal const string ConnectionIdTooLong = "Connection id too long";
         internal const string UnexpectedToken = "Server may not send Token in initial packet";
+        internal const string InvalidReservedBits = "Invalid value for ReservedBits";
 
         internal const string InconsistentNewConnectionIdFrame = "Inconsistent NEW_CONNECTION_ID frame contents";
     }

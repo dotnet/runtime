@@ -12,7 +12,7 @@ namespace System.Net.Quic.Tests.Harness
 
         internal override void Serialize(QuicWriter writer, ITestHarnessContext context)
         {
-            LongPacketHeader.Write(writer, new LongPacketHeader(PacketType, PacketNumberLength, Version, DestinationConnectionId, SourceConnectionId));
+            LongPacketHeader.Write(writer, new LongPacketHeader(PacketType, PacketNumberLength, ReservedBits, Version, DestinationConnectionId, SourceConnectionId));
         }
 
         internal override void Deserialize(QuicReader reader, ITestHarnessContext context)
