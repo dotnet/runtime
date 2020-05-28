@@ -428,7 +428,7 @@ namespace System.Net.Sockets
 
         // An on-stack cache of SocketAsyncEngine members needed to process epoll events.
         // The event handling logic is delegated to a non-inlined processing method
-        // to make sure the runtime doesn't make internal copies of SocketAsyncContext,
+        // to make sure the runtime doesn't retain internal copies of SocketAsyncContext longer than necessary,
         // so unreferenced Socket instances always get collected by the GC.
         // See discussion: https://github.com/dotnet/runtime/issues/37064
         private struct SocketEventHandler
