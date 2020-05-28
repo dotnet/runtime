@@ -1601,12 +1601,23 @@ namespace System.Runtime.Intrinsics
         public static Vector128<T> WithUpper<T>(this Vector128<T> vector, Vector64<T> value)
             where T : struct
         {
-            ThrowHelper.ThrowForUnsupportedVectorBaseType<T>();
+            if (AdvSimd.IsSupported)
+            {
+                ulong upperValueToUse = value.AsUInt64().GetElement(0);
+                return AdvSimd.Insert(vector.AsUInt64(), 1, upperValueToUse).As<ulong, T>();
+            }
 
-            Vector128<T> result = vector;
-            ref Vector64<T> lower = ref Unsafe.As<Vector128<T>, Vector64<T>>(ref result);
-            Unsafe.Add(ref lower, 1) = value;
-            return result;
+            return SoftwareFallback(vector, value);
+
+            static Vector128<T> SoftwareFallback(Vector128<T> vector, Vector64<T> value)
+            {
+                ThrowHelper.ThrowForUnsupportedVectorBaseType<T>();
+
+                Vector128<T> result = vector;
+                ref Vector64<T> lower = ref Unsafe.As<Vector128<T>, Vector64<T>>(ref result);
+                Unsafe.Add(ref lower, 1) = value;
+                return result;
+            }
         }
 
         /// <summary>Converts the given vector to a scalar containing the value of the first element.</summary>
