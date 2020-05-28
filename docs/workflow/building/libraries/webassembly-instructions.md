@@ -14,7 +14,7 @@ export EMSDK_PATH=PATH_TO_SDK_INSTALL/emsdk
 
 ## Building everything
 
-At this time no other build configurations are necessary to start building for webassembly.  The CoreLib for webassembly build configurations will be built by default using the webassembly configuration shown below. 
+At this time no other build configurations are necessary to start building for WebAssembly.  The CoreLib for WebAssembly build configurations will be built by default using the WebAssembly configuration shown below. 
 
 This document explains how to work on libraries. In order to work on library projects or run library tests it is necessary to have built the runtime to give the libraries something to run on. If you haven't already done so, please read [this document](../../README.md#Configurations) to understand configurations.
 
