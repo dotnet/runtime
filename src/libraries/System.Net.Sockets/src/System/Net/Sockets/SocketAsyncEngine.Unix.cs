@@ -293,7 +293,7 @@ namespace System.Net.Sockets
         {
             try
             {
-                EpollEventHandler handler = new EpollEventHandler(this);
+                SocketEventHandler handler = new SocketEventHandler(this);
                 while (!handler.Shutdown)
                 {
                     int numEvents = EventBufferCount;
@@ -431,7 +431,7 @@ namespace System.Net.Sockets
         // to make sure the runtime doesn't make internal copies of SocketAsyncContext,
         // so unreferenced Socket instances always get collected by the GC.
         // See discussion: https://github.com/dotnet/runtime/issues/37064
-        private struct EpollEventHandler
+        private struct SocketEventHandler
         {
             public bool Shutdown { get; private set; }
             public Interop.Sys.SocketEvent* Buffer { get; }
@@ -440,7 +440,7 @@ namespace System.Net.Sockets
             private ConcurrentQueue<SocketIOEvent> _eventQueue;
             private IntPtr _shutdownHandle;
 
-            public EpollEventHandler(SocketAsyncEngine engine)
+            public SocketEventHandler(SocketAsyncEngine engine)
             {
                 Shutdown = false;
                 Buffer = engine._buffer;
