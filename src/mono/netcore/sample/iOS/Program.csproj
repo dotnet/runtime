@@ -4,7 +4,6 @@
     <OutputPath>bin</OutputPath>
     <DebugType>Portable</DebugType>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
-    <TargetOS>iOS</TargetOS>
     <RuntimePackDir>$(ArtifactsBinDir)lib-runtime-packs\$(NetCoreAppCurrent)-iOS-$(Configuration)-$(TargetArchitecture)\runtimes\ios-$(TargetArchitecture)</RuntimePackDir>
     <EnableTargetingPackDownload>false</EnableTargetingPackDownload>
     <RuntimeIdentifier>ios-$(TargetArchitecture)</RuntimeIdentifier>
@@ -24,11 +23,8 @@
   </Target>
 
   <Import Project="$(RepoRoot)tools-local\tasks\mobile.tasks\AotCompilerTask\MonoAOTCompiler.props" />
-  <UsingTask TaskName="AppleAppBuilderTask"
-             AssemblyFile="$(ArtifactsBinDir)AppleAppBuilder\Debug\$(NetCoreAppCurrent)\AppleAppBuilder.dll" />
-
-  <UsingTask TaskName="MonoAOTCompiler"
-             AssemblyFile="$(ArtifactsBinDir)MonoAOTCompiler\Debug\$(NetCoreAppCurrent)\MonoAOTCompiler.dll" />
+  <UsingTask TaskName="AppleAppBuilderTask" AssemblyFile="$(AppleAppBuilderTasksAssemblyPath)" />
+  <UsingTask TaskName="MonoAOTCompiler" AssemblyFile="$(MonoAOTCompilerTasksAssemblyPath)" />
 
   <Target Name="BuildAppBundle" AfterTargets="CopyFilesToPublishDirectory">
     <PropertyGroup>
