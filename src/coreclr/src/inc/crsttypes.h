@@ -232,7 +232,7 @@ int g_rgCrstLevelMap[] =
     3,          // CrstFCall
     7,          // CrstFriendAccessCache
     7,          // CrstFuncPtrStubs
-    5,          // CrstFusionAppCtx
+    10,         // CrstFusionAppCtx
     10,         // CrstGCCover
     13,         // CrstGlobalStrLiteralMap
     1,          // CrstHandleTable
