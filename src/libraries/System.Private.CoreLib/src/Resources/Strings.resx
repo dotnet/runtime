@@ -370,6 +370,9 @@
   <data name="Arg_HandleNotSync" xml:space="preserve">
     <value>Handle does not support synchronous operations. The parameters to the FileStream constructor may need to be changed to indicate that the handle was opened asynchronously (that is, it was opened explicitly for overlapped I/O).</value>
   </data>
+  <data name="Arg_HSCapacityOverflow" xml:space="preserve">
+    <value>HashSet capacity is too big.</value>
+  </data>
   <data name="Arg_HexStyleNotSupported" xml:space="preserve">
     <value>The number style AllowHexSpecifier is not supported on floating point data types.</value>
   </data>
