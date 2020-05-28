@@ -5,6 +5,7 @@
     <CLSCompliant>false</CLSCompliant>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <TargetFramework>netstandard2.0</TargetFramework>
+    <PlatformTarget>AnyCPU</PlatformTarget>
   </PropertyGroup>
 
   <ItemGroup>
@@ -299,7 +300,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="System.IO.MemoryMappedFiles" Version="4.3.0" />
-    <PackageReference Include="System.Reflection.Metadata" Version="1.6.0" />
+    <PackageReference Include="System.Reflection.Metadata" Version="1.8.1" />
   </ItemGroup>
 </Project>
