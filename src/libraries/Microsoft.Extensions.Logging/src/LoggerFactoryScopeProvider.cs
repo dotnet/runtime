@@ -97,45 +97,57 @@ namespace Microsoft.Extensions.Logging
 
         private class ActivityLogScope : IReadOnlyList<KeyValuePair<string, object>>
         {
-            private readonly Activity _activity;
-            private readonly ActivityTrackingOptions _activityTrackingOption;
-
             private string _cachedToString;
+            private const int MaxItems = 5;
+            private KeyValuePair<string, object> [] _items = new KeyValuePair<string, object>[MaxItems];
 
-            public int Count
+            public ActivityLogScope(Activity activity, ActivityTrackingOptions activityTrackingOption)
             {
-                get
+                Debug.Assert(activity != null);
+                Debug.Assert(activityTrackingOption != ActivityTrackingOptions.None);
+
+                int count = 0;
+                if ((activityTrackingOption & ActivityTrackingOptions.SpanId) != 0)
                 {
-                    return 3;
+                    _items[count++] = new KeyValuePair<string, object>("SpanId", activity.GetSpanId());
                 }
+
+                if ((activityTrackingOption & ActivityTrackingOptions.TraceId) != 0)
+                {
+                    _items[count++] = new KeyValuePair<string, object>("TraceId", activity.GetTraceId());
+                }
+
+                if ((activityTrackingOption & ActivityTrackingOptions.ParentId) != 0)
+                {
+                    _items[count++] = new KeyValuePair<string, object>("ParentId", activity.GetParentId());
+                }
+
+                if ((activityTrackingOption & ActivityTrackingOptions.TraceState) != 0)
+                {
+                    _items[count++] = new KeyValuePair<string, object>("TraceState", activity.TraceStateString);
+                }
+
+                if ((activityTrackingOption & ActivityTrackingOptions.TraceFlags) != 0)
+                {
+                    _items[count++] = new KeyValuePair<string, object>("TraceFlags", activity.ActivityTraceFlags);
+                }
+
+                Count = count;
             }
+
+            public int Count { get; }
 
             public KeyValuePair<string, object> this[int index]
             {
                 get
                 {
-                    if (index == 0)
+                    if (index >= Count)
                     {
-                        return new KeyValuePair<string, object>("SpanId", _activity.GetSpanId());
-                    }
-                    else if (index == 1)
-                    {
-                        return new KeyValuePair<string, object>("TraceId", _activity.GetTraceId());
-                    }
-                    else if (index == 2)
-                    {
-                        return new KeyValuePair<string, object>("ParentId", _activity.GetParentId());
+                        throw new ArgumentOutOfRangeException(nameof(index));
                     }
 
-                    throw new ArgumentOutOfRangeException(nameof(index));
+                    return _items[index];
                 }
-            }
-
-            public ActivityLogScope(Activity activity, ActivityTrackingOptions activityTrackingOption)
-            {
-                Debug.Assert(activityTrackingOption != ActivityTrackingOptions.None);
-                _activityTrackingOption = activityTrackingOption;
-                _activity = activity;
             }
 
             public override string ToString()
@@ -143,33 +155,19 @@ namespace Microsoft.Extensions.Logging
                 if (_cachedToString == null)
                 {
                     StringBuilder sb = new StringBuilder();
-                    if ((_activityTrackingOption & ActivityTrackingOptions.SpanId) != 0)
-                    {
-                        sb.Append($"SpanId:{_activity.GetSpanId()}");
-                    }
 
-                    if ((_activityTrackingOption & ActivityTrackingOptions.TraceId) != 0)
-                    {
-                        sb.Append(sb.Length > 0 ? $", TraceId:{_activity.GetTraceId()}" : $"TraceId:{_activity.GetTraceId()}");
-                    }
+                    sb.Append(_items[0].Key);
+                    sb.Append(':');
+                    sb.Append(_items[0].Value);
 
-                    if ((_activityTrackingOption & ActivityTrackingOptions.ParentId) != 0)
+                    for (int i = 1; i < Count; i++)
                     {
-                        sb.Append(sb.Length > 0 ? $", ParentId:{_activity.GetParentId()}" : $"TraceId:{_activity.GetParentId()}");
+                        sb.Append(", ");
+                        sb.Append(_items[i].Key);
+                        sb.Append(':');
+                        sb.Append(_items[i].Value);
                     }
-
-                    if ((_activityTrackingOption & ActivityTrackingOptions.TraceFlags) != 0)
-                    {
-                        sb.Append(sb.Length > 0 ? $", TraceFlags:{_activity.ActivityTraceFlags}" : $"TraceFlags:{_activity.ActivityTraceFlags}");
-                    }
-
-                    if ((_activityTrackingOption & ActivityTrackingOptions.TraceState) != 0 && _activity.TraceStateString != null)
-                    {
-                        sb.Append(sb.Length > 0 ? $", TraceState:{_activity.TraceStateString}" : $"TraceState:{_activity.TraceStateString}");
-                    }
-
                     _cachedToString = sb.ToString();
-
                 }
 
                 return _cachedToString;

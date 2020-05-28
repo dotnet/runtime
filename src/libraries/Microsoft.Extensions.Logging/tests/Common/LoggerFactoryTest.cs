@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Text;
 using System.Globalization;
 using System.Diagnostics;
 using System.Collections.Generic;
@@ -94,15 +95,80 @@ namespace Microsoft.Extensions.Logging.Test
                 .Verify(p => p.Dispose(), Times.Once());
         }
 
-        [Fact]
-        public void TestActivityIds()
+        private static string GetActivityLogString(ActivityTrackingOptions options)
+        {
+            Activity activity = Activity.Current;
+            if (activity == null)
+            {
+                return string.Empty;
+            }
+
+            StringBuilder sb = new StringBuilder();
+            if ((options & ActivityTrackingOptions.SpanId) != 0)
+            {
+                sb.Append($"SpanId:{activity.GetSpanId()}");
+            }
+
+            if ((options & ActivityTrackingOptions.TraceId) != 0)
+            {
+                sb.Append(sb.Length > 0 ? $", TraceId:{activity.GetTraceId()}" : $"TraceId:{activity.GetTraceId()}");
+            }
+
+            if ((options & ActivityTrackingOptions.ParentId) != 0)
+            {
+                sb.Append(sb.Length > 0 ? $", ParentId:{activity.GetParentId()}" : $"ParentId:{activity.GetParentId()}");
+            }
+
+            if ((options & ActivityTrackingOptions.TraceState) != 0)
+            {
+                sb.Append(sb.Length > 0 ? $", TraceState:{activity.TraceStateString}" : $"TraceState:{activity.TraceStateString}");
+            }
+
+            if ((options & ActivityTrackingOptions.TraceFlags) != 0)
+            {
+                sb.Append(sb.Length > 0 ? $", TraceFlags:{activity.ActivityTraceFlags}" : $"TraceFlags:{activity.ActivityTraceFlags}");
+            }
+
+            return sb.ToString();
+        }
+
+        [Theory]
+        [InlineData(ActivityTrackingOptions.SpanId)]
+        [InlineData(ActivityTrackingOptions.TraceId)]
+        [InlineData(ActivityTrackingOptions.ParentId)]
+        [InlineData(ActivityTrackingOptions.TraceState)]
+        [InlineData(ActivityTrackingOptions.TraceFlags)]
+        [InlineData(ActivityTrackingOptions.SpanId | ActivityTrackingOptions.TraceId)]
+        [InlineData(ActivityTrackingOptions.SpanId | ActivityTrackingOptions.ParentId)]
+        [InlineData(ActivityTrackingOptions.SpanId | ActivityTrackingOptions.TraceState)]
+        [InlineData(ActivityTrackingOptions.SpanId | ActivityTrackingOptions.TraceFlags)]
+        [InlineData(ActivityTrackingOptions.TraceId | ActivityTrackingOptions.ParentId)]
+        [InlineData(ActivityTrackingOptions.TraceId | ActivityTrackingOptions.TraceState)]
+        [InlineData(ActivityTrackingOptions.TraceId | ActivityTrackingOptions.TraceFlags)]
+        [InlineData(ActivityTrackingOptions.ParentId | ActivityTrackingOptions.TraceState)]
+        [InlineData(ActivityTrackingOptions.ParentId | ActivityTrackingOptions.TraceFlags)]
+        [InlineData(ActivityTrackingOptions.TraceState | ActivityTrackingOptions.TraceFlags)]
+        [InlineData(ActivityTrackingOptions.SpanId | ActivityTrackingOptions.TraceId | ActivityTrackingOptions.ParentId)]
+        [InlineData(ActivityTrackingOptions.SpanId | ActivityTrackingOptions.TraceId | ActivityTrackingOptions.TraceState)]
+        [InlineData(ActivityTrackingOptions.SpanId | ActivityTrackingOptions.TraceId | ActivityTrackingOptions.TraceFlags)]
+        [InlineData(ActivityTrackingOptions.SpanId | ActivityTrackingOptions.ParentId | ActivityTrackingOptions.TraceState)]
+        [InlineData(ActivityTrackingOptions.SpanId | ActivityTrackingOptions.ParentId | ActivityTrackingOptions.TraceFlags)]
+        [InlineData(ActivityTrackingOptions.SpanId | ActivityTrackingOptions.TraceState | ActivityTrackingOptions.TraceFlags)]
+        [InlineData(ActivityTrackingOptions.TraceId | ActivityTrackingOptions.ParentId | ActivityTrackingOptions.TraceState)]
+        [InlineData(ActivityTrackingOptions.TraceId | ActivityTrackingOptions.ParentId | ActivityTrackingOptions.TraceFlags)]
+        [InlineData(ActivityTrackingOptions.TraceId | ActivityTrackingOptions.TraceState | ActivityTrackingOptions.TraceFlags)]
+        [InlineData(ActivityTrackingOptions.SpanId | ActivityTrackingOptions.TraceId | ActivityTrackingOptions.ParentId | ActivityTrackingOptions.TraceState)]
+        [InlineData(ActivityTrackingOptions.SpanId | ActivityTrackingOptions.TraceId | ActivityTrackingOptions.ParentId | ActivityTrackingOptions.TraceFlags)]
+        [InlineData(ActivityTrackingOptions.TraceId | ActivityTrackingOptions.ParentId | ActivityTrackingOptions.TraceState | ActivityTrackingOptions.TraceFlags)]
+        [InlineData(ActivityTrackingOptions.SpanId | ActivityTrackingOptions.TraceId | ActivityTrackingOptions.ParentId | ActivityTrackingOptions.TraceState | ActivityTrackingOptions.TraceFlags)]
+        public void TestActivityIds(ActivityTrackingOptions options)
         {
             var loggerProvider = new ExternalScopeLoggerProvider();
 
             var loggerFactory = LoggerFactory.Create(builder =>
             {
                 builder
-                .Configure(o => o.ActivityTrackingOptions = ActivityTrackingOptions.TraceId | ActivityTrackingOptions.SpanId | ActivityTrackingOptions.ParentId)
+                .Configure(o => o.ActivityTrackingOptions = options)
                 .AddProvider(loggerProvider);
             });
 
@@ -110,7 +176,7 @@ namespace Microsoft.Extensions.Logging.Test
 
             Activity a = new Activity("ScopeActivity");
             a.Start();
-            string activity1String = string.Format(CultureInfo.InvariantCulture, "SpanId:{0}, TraceId:{1}, ParentId:{2}", a.GetSpanId(), a.GetTraceId(), a.GetParentId());
+            string activity1String = GetActivityLogString(options);
             string activity2String;
 
             using (logger.BeginScope("Scope 1"))
@@ -118,7 +184,7 @@ namespace Microsoft.Extensions.Logging.Test
                 logger.LogInformation("Message 1");
                 Activity b = new Activity("ScopeActivity");
                 b.Start();
-                activity2String = string.Format(CultureInfo.InvariantCulture, "SpanId:{0}, TraceId:{1}, ParentId:{2}", b.GetSpanId(), b.GetTraceId(), b.GetParentId());
+                activity2String = GetActivityLogString(options);
 
                 using (logger.BeginScope("Scope 2"))
                 {
@@ -126,7 +192,6 @@ namespace Microsoft.Extensions.Logging.Test
                 }
                 b.Stop();
             }
-
             a.Stop();
 
             Assert.Equal(activity1String, loggerProvider.LogText[1]);
