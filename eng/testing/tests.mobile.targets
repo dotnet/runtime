@@ -138,7 +138,7 @@
   <Target Name="Cleanup">
     <RemoveDir Directories="$(PublishDir)" />
   </Target>
-  
+
   <UsingTask TaskName="WasmAppBuilder"
              AssemblyFile="$(WasmAppBuilderTasksAssemblyPath)" />
 
@@ -183,9 +183,5 @@
   <Target Name="PublishTestAsSelfContained"
           Condition="'$(IsCrossTargetingBuild)' != 'true'"
           AfterTargets="Build"
-<<<<<<< HEAD
-          DependsOnTargets="UpdateRuntimePack;Publish;BundleTestAppleApp;BundleTestAndroidApp;ArchiveTests;Cleanup" />
-=======
-          DependsOnTargets="UpdateRuntimePack;Publish;BundleTestAppleApp;BundleTestAndroidApp;BundleTestWasmApp" />
->>>>>>> upstream/master
+          DependsOnTargets="UpdateRuntimePack;Publish;BundleTestAppleApp;BundleTestAndroidApp;BundleTestWasmApp;ArchiveTests;Cleanup" />
 </Project>
