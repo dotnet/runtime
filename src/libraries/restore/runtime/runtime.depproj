@@ -88,9 +88,6 @@
       <NativeBinPlaceItem Include="@(MonoIncludeFiles)">
         <DestinationSubDirectory>include/%(RecursiveDir)</DestinationSubDirectory>
       </NativeBinPlaceItem>
-      <NativeBinPlaceItem Include="@(WasmDistFiles)">
-        <DestinationSubDirectory>wasm/%(RecursiveDir)</DestinationSubDirectory>
-      </NativeBinPlaceItem>
     </ItemGroup>
     <ItemGroup Condition="'$(TargetsMobile)' != 'true'">
       <TestHostBinPlaceItem Include="@(RuntimeFiles)" />

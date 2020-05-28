@@ -186,7 +186,6 @@
       <Compile Include="$(BclSourcesRoot)\System\WeakReference.T.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\__ComObject.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Internal.cs" />
-      <Compile Include="$(BclSourcesRoot)\System\Globalization\GlobalizationMode.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Collections\Generic\ArraySortHelper.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Collections\Generic\Comparer.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Collections\Generic\EqualityComparer.Mono.cs" />
@@ -273,7 +272,6 @@
   <ItemGroup Condition="'$(TargetsUnix)' == 'true'">
       <Compile Include="$(BclSourcesRoot)\Microsoft\Win32\SafeHandles\SafeWaitHandle.Unix.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Environment.Unix.Mono.cs" />
-      <Compile Include="$(BclSourcesRoot)\System\Globalization\GlobalizationMode.Unix.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Threading\EventWaitHandle.Unix.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Threading\Mutex.Unix.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Threading\Semaphore.Unix.Mono.cs" />
@@ -282,7 +280,6 @@
       <Compile Include="$(BclSourcesRoot)\System\IO\MonoIOError.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
-      <Compile Include="$(BclSourcesRoot)\System\Globalization\GlobalizationMode.Windows.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\WindowsRuntime\EventRegistrationToken.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\WindowsRuntime\EventRegistrationTokenTable.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\WindowsRuntime\WindowsRuntimeMarshal.cs" />

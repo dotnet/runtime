@@ -13,11 +13,20 @@ native_dirs = native
 endif
 
 if ENABLE_NETCORE
-btls_dirs = 
+btls_dirs =
+managed_unit_test_dirs =
+native_unit_test_dirs =
+else
+managed_unit_test_dirs = tests
+native_unit_test_dirs = unit-tests
+endif
+
+if ENABLE_PERFTRACING
+eventpipe_dirs = eventpipe
 endif
 
 if ENABLE_NETCORE
-SUBDIRS = eglib arch utils sgen zlib metadata mini profiler
+SUBDIRS = eglib arch utils sgen zlib $(eventpipe_dirs) metadata mini profiler $(native_unit_test_dirs)
 else
 
 if CROSS_COMPILING
@@ -26,9 +35,9 @@ else
 if INSTALL_MONOTOUCH
 SUBDIRS = $(btls_dirs) eglib arch utils zlib $(sgen_dirs) metadata mini profiler $(native_dirs)
 else
-SUBDIRS = $(btls_dirs) eglib arch utils cil zlib $(sgen_dirs) metadata mini dis tests unit-tests benchmark profiler $(native_dirs)
+SUBDIRS = $(btls_dirs) eglib arch utils cil zlib $(sgen_dirs) metadata mini dis $(managed_unit_test_dirs) $(native_unit_test_dirs) benchmark profiler $(native_dirs)
 endif
 endif
 endif
 
-DIST_SUBDIRS = btls native eglib arch utils cil zlib $(sgen_dirs) metadata mini dis tests unit-tests benchmark profiler
+DIST_SUBDIRS = btls native eglib arch utils cil zlib $(sgen_dirs) metadata mini dis $(managed_unit_test_dirs) $(native_unit_test_dirs) benchmark profiler
