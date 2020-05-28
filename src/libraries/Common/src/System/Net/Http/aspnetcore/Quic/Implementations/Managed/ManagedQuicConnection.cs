@@ -307,6 +307,7 @@ namespace System.Net.Quic.Implementations.Managed
             if (timestamp >= _idleTimeout)
             {
                 // TODO-RZ: Force close the connection with error
+                CloseConnection(TransportErrorCode.NoError);
                 SignalConnectionClose();
             }
 

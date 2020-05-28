@@ -70,9 +70,12 @@ namespace System.Net.Quic.Implementations.Managed
             await OutboundBuffer!.EnqueueAsync(buffer, cancellationToken).ConfigureAwait(false);
 
             if (endStream)
-                OutboundBuffer!.MarkEndOfData();
+            {
+                OutboundBuffer.MarkEndOfData();
+                await OutboundBuffer.FlushChunkAsync(cancellationToken);
+            }
 
-            if (OutboundBuffer!.WrittenBytes - buffer.Length < OutboundBuffer.MaxData)
+            if (OutboundBuffer.WrittenBytes - buffer.Length < OutboundBuffer.MaxData)
             {
                 _connection.OnStreamDataWritten(this);
             }
@@ -168,9 +171,12 @@ namespace System.Net.Quic.Implementations.Managed
             OutboundBuffer!.Enqueue(buffer);
 
             if (endStream)
-                OutboundBuffer!.MarkEndOfData();
+            {
+                OutboundBuffer.MarkEndOfData();
+                OutboundBuffer.FlushChunk();
+            }
 
-            if (OutboundBuffer!.WrittenBytes - buffer.Length < OutboundBuffer.MaxData)
+            if (OutboundBuffer.WrittenBytes - buffer.Length < OutboundBuffer.MaxData)
             {
                 _connection.OnStreamDataWritten(this);
             }
@@ -272,7 +278,6 @@ namespace System.Net.Quic.Implementations.Managed
 
             if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
 
-            // TODO-RZ: is this really intended use for this method?
             if (CanWrite)
             {
                 OutboundBuffer!.MarkEndOfData();
