@@ -598,7 +598,7 @@
       <_MonoConfigureParams Include="--disable-icall-tables"/>
       <_MonoConfigureParams Include="--disable-crash-reporting"/>
       <_MonoConfigureParams Include="--with-bitcode=yes"/>
-      <_MonoConfigureParams Include="--enable-minimal=ssa,com,jit,reflection_emit_save,portability,assembly_remapping,attach,verifier,full_messages,appdomains,security,sgen_marksweep_conc,sgen_split_nursery,sgen_gc_bridge,logging,remoting,shared_perfcounters,sgen_debug_helpers,soft_debug,interpreter,assert_messages,cleanup,mdb,gac"/>
+      <_MonoConfigureParams Include="--enable-minimal=ssa,com,jit,reflection_emit_save,portability,assembly_remapping,attach,verifier,full_messages,appdomains,security,sgen_marksweep_conc,sgen_split_nursery,sgen_gc_bridge,logging,remoting,shared_perfcounters,sgen_debug_helpers,soft_debug,interpreter,assert_messages,cleanup,mdb,gac,threads"/>
       <!-- FIXME: -Os -->
       <_MonoCFLAGS Include="-fexceptions" />
       <_MonoCXXFLAGS Include="-fexceptions -s DISABLE_EXCEPTION_CATCHING=0" />
