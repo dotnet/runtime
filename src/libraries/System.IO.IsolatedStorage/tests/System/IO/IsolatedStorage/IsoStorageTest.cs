@@ -78,7 +78,7 @@ namespace System.IO.IsolatedStorage
                     PresetScopes.UserStoreForDomain,
                 };
 
-                // https://github.com/dotnet/corefx/issues/12628
+                // https://github.com/dotnet/runtime/issues/2092
                 if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)
                     && !PlatformDetection.IsInAppContainer)
                 {

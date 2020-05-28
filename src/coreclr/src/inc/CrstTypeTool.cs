@@ -65,7 +65,7 @@ class CrstTypeTool
         {
             // Calculate the filenames of the input and output files.
             string inputFile = "CrstTypes.def";
-            string outputFile = "CrstTypes.h";
+            string outputFile = "crsttypes.h";
 
             // A common error is to forget to check out the CrstTypes.h file first. Handle this case specially
             // so we can give a good error message.

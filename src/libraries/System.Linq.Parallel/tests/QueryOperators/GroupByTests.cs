@@ -162,7 +162,7 @@ namespace System.Linq.Parallel.Tests
 
         [Theory]
         [MemberData(nameof(Sources.Ranges), new[] { 0, 1, 2, GroupFactor - 1, GroupFactor, GroupFactor * 2 - 1, GroupFactor * 2 }, MemberType = typeof(Sources))]
-        // GroupBy doesn't select the first 'identical' key.  Issue #1490
+        // GroupBy doesn't select the first 'identical' key.  https://github.com/dotnet/runtime/issues/14472
         public static void GroupBy_CustomComparator(Labeled<ParallelQuery<int>> labeled, int count)
         {
             ParallelQuery<int> query = labeled.Item;

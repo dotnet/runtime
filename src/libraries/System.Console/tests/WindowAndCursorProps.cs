@@ -224,6 +224,7 @@ public class WindowAndCursorProps
     }
 
     [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))] // Nano currently ignores set title
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/34454", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
     [InlineData(0)]
     [InlineData(1)]
     [InlineData(254)]

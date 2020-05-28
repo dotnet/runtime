@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using Microsoft.Win32.SafeHandles;
 
 using System.Diagnostics;
@@ -18,7 +19,7 @@ namespace System.Net.Security
     internal sealed class SafeFreeCertContext : SafeHandle
     {
 #endif
-        private readonly SafeX509Handle _certificate;
+        private readonly SafeX509Handle? _certificate;
 
         public SafeFreeCertContext(SafeX509Handle certificate) : base(IntPtr.Zero, true)
         {
@@ -44,7 +45,7 @@ namespace System.Net.Security
 
         protected override bool ReleaseHandle()
         {
-            _certificate.DangerousRelease();
+            _certificate!.DangerousRelease();
             _certificate.Dispose();
             return true;
         }

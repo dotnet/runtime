@@ -9,6 +9,7 @@ namespace System.Reflection.Emit.Tests
     public class GenericTypeParameterBuilderSetInterfaceConstraints
     {
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/2389", TestRuntimes.Mono)]
         public void SetInterfaceConstraints_OneCustomInterface()
         {
             TypeBuilder type = Helpers.DynamicType(TypeAttributes.Public);
@@ -39,6 +40,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/2389", TestRuntimes.Mono)]
         public void SetInterfaceConstraints_MultipleCustomInterfaces()
         {
             TypeBuilder type = Helpers.DynamicType(TypeAttributes.Public);

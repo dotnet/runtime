@@ -1,0 +1,8 @@
+<configuration>
+	<dllmap dll="cygwin1.dll" target="@LIBC@" />
+	<dllmap dll="libc" target="@LIBC@" />
+	<dllmap dll="System.Native" target="$mono_libdir/@MONO_NATIVE_LIBRARY_NAME@@libsuffix@" os="!windows" />
+	<dllmap os="windows" cpu="x86" dll="libtest" target="../../msvc/build/sgen/Win32/bin/Release/libtest.dll" />
+	<dllmap os="windows" cpu="x86-64" dll="libtest" target="../../msvc/build/sgen/x64/bin/Release/libtest.dll" />
+</configuration>
+

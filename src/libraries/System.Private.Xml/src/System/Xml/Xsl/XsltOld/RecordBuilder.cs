@@ -43,7 +43,7 @@ namespace System.Xml.Xsl.XsltOld
         private const int HaveRecord = 2;      // Record was fully generated
 
         private const char s_Minus = '-';
-        private const string s_Space = " ";
+        private const char s_Space = ' ';
         private const string s_SpaceMinus = " -";
         private const char s_Question = '?';
         private const char s_Greater = '>';
@@ -655,7 +655,7 @@ namespace System.Xml.Xsl.XsltOld
             }
             else if (minus)
             {
-                _mainNode.ValueAppend(s_Space, false);
+                _mainNode.ValueAppend(" ", false);
             }
         }
 

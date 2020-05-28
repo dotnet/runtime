@@ -204,7 +204,7 @@ namespace System.IO
         {
             Interop.Kernel32.FILE_STANDARD_INFO info;
 
-            if (!Interop.Kernel32.GetFileInformationByHandleEx(_fileHandle, Interop.Kernel32.FILE_INFO_BY_HANDLE_CLASS.FileStandardInfo, out info, (uint)sizeof(Interop.Kernel32.FILE_STANDARD_INFO)))
+            if (!Interop.Kernel32.GetFileInformationByHandleEx(_fileHandle, Interop.Kernel32.FileStandardInfo, &info, (uint)sizeof(Interop.Kernel32.FILE_STANDARD_INFO)))
                 throw Win32Marshal.GetExceptionForLastWin32Error(_path);
             long len = info.EndOfFile;
 
@@ -270,7 +270,7 @@ namespace System.IO
         private async ValueTask DisposeAsyncCore()
         {
             // Same logic as in Dispose(), except with async counterparts.
-            // TODO: https://github.com/dotnet/corefx/issues/32837: FlushAsync does synchronous work.
+            // TODO: https://github.com/dotnet/runtime/issues/27643: FlushAsync does synchronous work.
             try
             {
                 if (_fileHandle != null && !_fileHandle.IsClosed && _writePos > 0)
@@ -1148,11 +1148,6 @@ namespace System.IO
             return completionSource.Task;
         }
 
-        // Windows API definitions, from winbase.h and others
-
-        internal const int GENERIC_READ = unchecked((int)0x80000000);
-        private const int GENERIC_WRITE = 0x40000000;
-
         // Error codes (not HRESULTS), from winerror.h
         internal const int ERROR_BROKEN_PIPE = 109;
         internal const int ERROR_NO_DATA = 232;
@@ -1554,7 +1549,7 @@ namespace System.IO
             if (_fileHandle.IsClosed)
                 throw Error.GetFileNotOpen();
 
-            // TODO: https://github.com/dotnet/corefx/issues/32837 (stop doing this synchronous work!!).
+            // TODO: https://github.com/dotnet/runtime/issues/27643 (stop doing this synchronous work!!).
             // The always synchronous data transfer between the OS and the internal buffer is intentional
             // because this is needed to allow concurrent async IO requests. Concurrent data transfer
             // between the OS and the internal buffer will result in race conditions. Since FlushWrite and

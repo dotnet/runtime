@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System.Buffers;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
@@ -12,7 +13,7 @@ namespace System.Security.Cryptography
 {
     internal sealed class EccSecurityTransforms : IDisposable
     {
-        private SecKeyPair _keys;
+        private SecKeyPair? _keys;
         private bool _disposed;
         private readonly string _disposedName;
 
@@ -90,7 +91,7 @@ namespace System.Security.Cryptography
         {
             ThrowIfDisposed();
 
-            SecKeyPair current = _keys;
+            SecKeyPair? current = _keys;
 
             if (current != null)
             {
@@ -111,9 +112,20 @@ namespace System.Security.Cryptography
         {
             ThrowIfDisposed();
 
-            SecKeyPair current = _keys;
+            SecKeyPair? current = _keys;
             _keys = keyPair;
             current?.Dispose();
+        }
+
+        internal static ECParameters ExportPublicParametersFromPrivateKey(SafeSecKeyRefHandle handle)
+        {
+            const string ExportPassword = "DotnetExportPassphrase";
+            byte[] keyBlob = Interop.AppleCrypto.SecKeyExport(handle, exportPrivate: true, password: ExportPassword);
+            EccKeyFormatHelper.ReadEncryptedPkcs8(keyBlob, ExportPassword, out _, out ECParameters key);
+            CryptographicOperations.ZeroMemory(key.D);
+            CryptographicOperations.ZeroMemory(keyBlob);
+            key.D = null;
+            return key;
         }
 
         internal ECParameters ExportParameters(bool includePrivateParameters, int keySizeInBits)
@@ -165,6 +177,7 @@ namespace System.Security.Cryptography
             ThrowIfDisposed();
 
             bool isPrivateKey = parameters.D != null;
+            bool hasPublicParameters = parameters.Q.X != null && parameters.Q.Y != null;
             SecKeyPair newKeys;
 
             if (isPrivateKey)
@@ -175,8 +188,17 @@ namespace System.Security.Cryptography
                 // Public import should go off without a hitch.
                 SafeSecKeyRefHandle privateKey = ImportKey(parameters);
 
-                ECParameters publicOnly = parameters;
-                publicOnly.D = null;
+                ECParameters publicOnly;
+
+                if (hasPublicParameters)
+                {
+                    publicOnly = parameters;
+                    publicOnly.D = null;
+                }
+                else
+                {
+                    publicOnly = ExportPublicParametersFromPrivateKey(privateKey);
+                }
 
                 SafeSecKeyRefHandle publicKey;
                 try

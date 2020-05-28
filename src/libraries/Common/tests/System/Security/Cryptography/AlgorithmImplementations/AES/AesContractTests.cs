@@ -62,11 +62,11 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
         [InlineData(64, false)]        // too small
         [InlineData(129, false)]       // in valid range but not valid increment
         [InlineData(384, false)]       // too large
-        // Skip on netfx because change is not ported https://github.com/dotnet/corefx/issues/18690
+        // Skip on .NET Framework because change is not ported https://github.com/dotnet/runtime/issues/21236
         [InlineData(536870928, true)] // number of bits overflows and wraps around to a valid size
         public static void InvalidKeySizes(int invalidKeySize, bool skipOnNetfx)
         {
-            if (skipOnNetfx && PlatformDetection.IsFullFramework)
+            if (skipOnNetfx && PlatformDetection.IsNetFramework)
                 return;
 
             using (Aes aes = AesFactory.Create())
@@ -97,11 +97,11 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
         [Theory]
         [InlineData(64, false)]        // smaller than default BlockSize
         [InlineData(129, false)]       // larger than default BlockSize
-        // Skip on netfx because change is not ported https://github.com/dotnet/corefx/issues/18690
+        // Skip on .NET Framework because change is not ported https://github.com/dotnet/runtime/issues/21236
         [InlineData(536870928, true)] // number of bits overflows and wraps around to default BlockSize
         public static void InvalidIVSizes(int invalidIvSize, bool skipOnNetfx)
         {
-            if (skipOnNetfx && PlatformDetection.IsFullFramework)
+            if (skipOnNetfx && PlatformDetection.IsNetFramework)
                 return;
 
             using (Aes aes = AesFactory.Create())
@@ -195,7 +195,7 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "In NetFX AesCryptoServiceProvider requires a set key and throws otherwise. See #19023.")]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "In .NET Framework AesCryptoServiceProvider requires a set key and throws otherwise. See https://github.com/dotnet/runtime/issues/21393.")]
         public static void ValidateDecryptorProperties()
         {
             using (Aes aes = AesFactory.Create())

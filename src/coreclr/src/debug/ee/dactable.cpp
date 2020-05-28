@@ -40,6 +40,7 @@ extern DWORD gAppDomainTLSIndex;
 extern BOOL g_fAppX;
 #endif // FEATURE_APPX
 
+DLLEXPORT 
 DacGlobals g_dacTable;
 
 // DAC global pointer table initialization

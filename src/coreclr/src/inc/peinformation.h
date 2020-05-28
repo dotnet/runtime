@@ -43,19 +43,19 @@ inline bool IsPEMSIL(PEKIND x)
     return ( (x == peMSIL) );
 }
 
-#ifdef BIT64
+#ifdef HOST_64BIT
 inline bool IsProcess32() { return false; }
 #else
 inline bool IsProcess32() { return true; }
 #endif
 
-#if defined(_TARGET_X86_)
+#if defined(TARGET_X86)
 inline PEKIND TargetNativePEKIND() { return peI386; }
-#elif defined(_TARGET_AMD64_)
+#elif defined(TARGET_AMD64)
 inline PEKIND TargetNativePEKIND() { return peAMD64; }
-#elif defined(_TARGET_ARM_)
+#elif defined(TARGET_ARM)
 inline PEKIND TargetNativePEKIND() { return peARM; }
-#elif defined(_TARGET_ARM64_)
+#elif defined(TARGET_ARM64)
 inline PEKIND TargetNativePEKIND() { return peARM64; }
 #else
 #error Need to define valid TargetNativePEKIND()

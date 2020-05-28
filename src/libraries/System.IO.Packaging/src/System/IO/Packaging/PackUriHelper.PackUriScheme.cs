@@ -79,14 +79,14 @@ namespace System.IO.Packaging
 
             if (fragment != null)
             {
-                if (fragment == string.Empty || fragment[0] != '#')
+                if (fragment.Length == 0 || fragment[0] != '#')
                     throw new ArgumentException(SR.Format(SR.FragmentMustStartWithHash, nameof(fragment)));
             }
 
             // Step 2 - Remove fragment identifier from the package URI, if it is present
             // Since '#" is an excluded character in Uri syntax, it can only occur as the
             // fragment identifier, in all other places it should be escaped.
-            // Hence we can safely use IndexOf to find the begining of the fragment.
+            // Hence we can safely use IndexOf to find the beginning of the fragment.
             string absolutePackageUri = packageUri.GetComponents(UriComponents.AbsoluteUri, UriFormat.UriEscaped);
 
             if (!string.IsNullOrEmpty(packageUri.Fragment))
@@ -100,7 +100,7 @@ namespace System.IO.Packaging
             // Step 4 - Replace all '/' with ',' in the resulting string
             absolutePackageUri = absolutePackageUri.Replace('/', ',');
 
-            // Step 5 - Append pack:// at the begining and a '/' at the end of the pack uri obtained so far
+            // Step 5 - Append pack:// at the beginning and a '/' at the end of the pack uri obtained so far
             absolutePackageUri = string.Concat(PackUriHelper.UriSchemePack, Uri.SchemeDelimiter, absolutePackageUri);
 
             Uri packUri = new Uri(absolutePackageUri);
@@ -323,7 +323,7 @@ namespace System.IO.Packaging
 
             string partName = GetStringForPartUriFromAnyUri(packUri);
 
-            if (partName == string.Empty)
+            if (partName.Length == 0)
                 return null;
             else
                 return ValidatePartUri(new Uri(partName, UriKind.Relative));

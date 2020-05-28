@@ -103,7 +103,7 @@ namespace Windows.UI.Xaml.Tests
             Assert.Equal(expected, duration1 - duration2);
         }
 
-        public static IEnumerable<object[]> Compare_TestData()
+        public static IEnumerable<object[]> Compare_TestData_Data()
         {
             yield return new object[] { new Duration(TimeSpan.FromSeconds(1)), new Duration(TimeSpan.FromSeconds(2)), -1 };
             yield return new object[] { new Duration(TimeSpan.FromSeconds(2)), new Duration(TimeSpan.FromSeconds(1)), 1 };
@@ -121,7 +121,7 @@ namespace Windows.UI.Xaml.Tests
         }
 
         [Theory]
-        [MemberData(nameof(Compare_TestData))]
+        [MemberData(nameof(Compare_TestData_Data))]
         public void Compare_TestData(Duration duration1, Duration duration2, int expected)
         {
             bool bothOrNoneAutomatic = (duration1 == Duration.Automatic) == (duration2 == Duration.Automatic);
@@ -145,7 +145,7 @@ namespace Windows.UI.Xaml.Tests
 
         [Theory]
         [MemberData(nameof(Equals_TestData))]
-        [MemberData(nameof(Compare_TestData))]
+        [MemberData(nameof(Compare_TestData_Data))]
         public void Equals_Object_ReturnsExpected(Duration duration, object other, int expected)
         {
             Assert.Equal(expected == 0, duration.Equals(other));

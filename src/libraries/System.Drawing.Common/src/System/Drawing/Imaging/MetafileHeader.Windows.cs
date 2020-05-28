@@ -14,8 +14,8 @@ namespace System.Drawing.Imaging
     public sealed class MetafileHeader
     {
         // determine which to use by nullity
-        internal MetafileHeaderWmf wmf;
-        internal MetafileHeaderEmf emf;
+        internal MetafileHeaderWmf? wmf;
+        internal MetafileHeaderEmf? emf;
 
         internal MetafileHeader()
         {
@@ -28,7 +28,7 @@ namespace System.Drawing.Imaging
         {
             get
             {
-                return IsWmf() ? wmf.type : emf.type;
+                return IsWmf() ? wmf!.type : emf!.type;
             }
         }
 
@@ -39,7 +39,7 @@ namespace System.Drawing.Imaging
         {
             get
             {
-                return IsWmf() ? wmf.size : emf.size;
+                return IsWmf() ? wmf!.size : emf!.size;
             }
         }
 
@@ -50,7 +50,7 @@ namespace System.Drawing.Imaging
         {
             get
             {
-                return IsWmf() ? wmf.version : emf.version;
+                return IsWmf() ? wmf!.version : emf!.version;
             }
         }
 
@@ -61,7 +61,7 @@ namespace System.Drawing.Imaging
         {
             get
             {
-                return IsWmf() ? wmf.dpiX : emf.dpiX;
+                return IsWmf() ? wmf!.dpiX : emf!.dpiX;
             }
         }
 
@@ -72,7 +72,7 @@ namespace System.Drawing.Imaging
         {
             get
             {
-                return IsWmf() ? wmf.dpiY : emf.dpiY;
+                return IsWmf() ? wmf!.dpiY : emf!.dpiY;
             }
         }
 
@@ -84,8 +84,8 @@ namespace System.Drawing.Imaging
             get
             {
                 return IsWmf() ?
-                    new Rectangle(wmf.X, wmf.Y, wmf.Width, wmf.Height) :
-                    new Rectangle(emf.X, emf.Y, emf.Width, emf.Height);
+                    new Rectangle(wmf!.X, wmf.Y, wmf.Width, wmf.Height) :
+                    new Rectangle(emf!.X, emf.Y, emf.Width, emf.Height);
             }
         }
 
@@ -181,7 +181,7 @@ namespace System.Drawing.Imaging
         public bool IsDisplay()
         {
             return IsEmfPlus() &&
-               (((unchecked((int)emf.emfPlusFlags)) & ((int)EmfPlusFlags.Display)) != 0);
+               (((unchecked((int)emf!.emfPlusFlags)) & ((int)EmfPlusFlags.Display)) != 0);
         }
 
         /// <summary>
@@ -208,7 +208,7 @@ namespace System.Drawing.Imaging
                 if (wmf == null && emf == null)
                     throw Gdip.StatusException(Gdip.InvalidParameter);
 
-                return IsWmf() ? wmf.EmfPlusHeaderSize : emf.EmfPlusHeaderSize;
+                return IsWmf() ? wmf!.EmfPlusHeaderSize : emf!.EmfPlusHeaderSize;
             }
         }
 
@@ -222,7 +222,7 @@ namespace System.Drawing.Imaging
                 if (wmf == null && emf == null)
                     throw Gdip.StatusException(Gdip.InvalidParameter);
 
-                return IsWmf() ? wmf.LogicalDpiX : emf.LogicalDpiX;
+                return IsWmf() ? wmf!.LogicalDpiX : emf!.LogicalDpiX;
             }
         }
 
@@ -236,7 +236,7 @@ namespace System.Drawing.Imaging
                 if (wmf == null && emf == null)
                     throw Gdip.StatusException(Gdip.InvalidParameter);
 
-                return IsWmf() ? wmf.LogicalDpiY : emf.LogicalDpiX;
+                return IsWmf() ? wmf!.LogicalDpiY : emf!.LogicalDpiX;
             }
         }
     }

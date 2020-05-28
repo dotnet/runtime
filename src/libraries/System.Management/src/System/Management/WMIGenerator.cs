@@ -825,7 +825,7 @@ namespace System.Management
 
             if (strTemp.Length > 0)
             {
-                string strFirstChar = strTemp.Substring(0, 1).ToUpper(CultureInfo.InvariantCulture);
+                string strFirstChar = strTemp.Substring(0, 1).ToUpperInvariant();
                 strTemp = strFirstChar + strTemp.Substring(1, strTemp.Length - 1);
             }
 
@@ -846,7 +846,7 @@ namespace System.Management
             {
                 strNs = OriginalNamespace;
                 strNs = strNs.Replace('\\', '.');
-                strNs = strNs.ToUpper(CultureInfo.InvariantCulture);
+                strNs = strNs.ToUpperInvariant();
             }
             else
             {
@@ -870,7 +870,7 @@ namespace System.Management
                 strClass = OriginalClassName;
             }
 
-            // Check if the name of the class starts with a charachter. If not add "C" to the begining of the name
+            // Check if the name of the class starts with a charachter. If not add "C" to the beginning of the name
             if (char.IsLetter(strClass[0]) == false)
             {
                 strClass = "C" + strClass;
@@ -1141,7 +1141,7 @@ namespace System.Management
                     strPropName[j - i] = strPropTemp[j];
                 }
 
-                cmp.Name = (new string(strPropName)).ToUpper(CultureInfo.InvariantCulture);
+                cmp.Name = (new string(strPropName)).ToUpperInvariant();
                 cmp.Attributes = MemberAttributes.Public | MemberAttributes.Final;
                 cmp.Type = ConvertCIMType(prop.Type, prop.IsArray);
 
@@ -4727,7 +4727,7 @@ namespace System.Management
             bool bAdd = true;
             if (str.Length == 0)
             {
-                return string.Copy("");
+                return string.Empty;
             }
 
             char[] arrString = str.ToCharArray();
@@ -4837,7 +4837,7 @@ namespace System.Management
 
                     case CodeLanguage.JScript:
                         strProvider = "JScript.NET.";
-                        bSucceeded = false; // JScriptCodeProvider does not exist on CoreFx
+                        bSucceeded = false; // JScriptCodeProvider does not exist on .NET Core
                         break;
 
                     case CodeLanguage.CSharp:
@@ -5006,7 +5006,7 @@ namespace System.Management
             string strTemp = "0x";
             int ret = 0;
 
-            if (bitMap.StartsWith(strTemp, StringComparison.Ordinal) || bitMap.StartsWith(strTemp.ToUpper(CultureInfo.InvariantCulture), StringComparison.Ordinal))
+            if (bitMap.StartsWith(strTemp, StringComparison.Ordinal) || bitMap.StartsWith(strTemp.ToUpperInvariant(), StringComparison.Ordinal))
             {
                 strTemp = string.Empty;
                 char[] arrString = bitMap.ToCharArray();
@@ -5298,7 +5298,7 @@ namespace System.Management
         */
 
         /// <summary>
-        /// Adds comments at the begining of the class defination
+        /// Adds comments at the beginning of the class defination
         /// </summary>
         private void AddClassComments(CodeTypeDeclaration cc)
         {
@@ -5927,28 +5927,28 @@ namespace System.Management
         /// Internal function used to create code to convert DateTime or ManagementPath to String
         /// convert a expression. Used in adding code for Property Set for DateTime and Reference properties
         /// </summary>
-        private CodeExpression ConvertPropertyToString(string strType, CodeExpression beginingExpression)
+        private CodeExpression ConvertPropertyToString(string strType, CodeExpression beginningExpression)
         {
             switch (strType)
             {
                 case "System.DateTime":
 
                     CodeMethodInvokeExpression cmie1 = new CodeMethodInvokeExpression();
-                    cmie1.Parameters.Add(new CodeCastExpression(new CodeTypeReference("System.DateTime"), beginingExpression));
+                    cmie1.Parameters.Add(new CodeCastExpression(new CodeTypeReference("System.DateTime"), beginningExpression));
                     cmie1.Method.MethodName = PrivateNamesUsed["ToDMTFDateTimeMethod"].ToString();
                     return cmie1;
 
                 case "System.TimeSpan":
 
                     CodeMethodInvokeExpression cmie2 = new CodeMethodInvokeExpression();
-                    cmie2.Parameters.Add(new CodeCastExpression(new CodeTypeReference("System.TimeSpan"), beginingExpression));
+                    cmie2.Parameters.Add(new CodeCastExpression(new CodeTypeReference("System.TimeSpan"), beginningExpression));
                     cmie2.Method.MethodName = PrivateNamesUsed["ToDMTFTimeIntervalMethod"].ToString();
                     return cmie2;
 
                 case "System.Management.ManagementPath":
                     return new CodePropertyReferenceExpression(new CodeCastExpression(
                         new CodeTypeReference(PublicNamesUsed["PathClass"].ToString()),
-                        beginingExpression), PublicNamesUsed["PathProperty"].ToString());
+                        beginningExpression), PublicNamesUsed["PathProperty"].ToString());
 
 
             }

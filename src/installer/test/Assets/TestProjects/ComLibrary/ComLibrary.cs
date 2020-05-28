@@ -1,8 +1,19 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
+
 using System;
 using System.Runtime.InteropServices;
 
 namespace ComLibrary
 {
+    // User defined attribute on types. Ensure that user defined
+    // attributes don't break us from parsing metadata.
+    public class UserDefinedAttribute : Attribute
+    {
+    }
+
+    [UserDefined]
     [ComVisible(true)]
     [Guid("438968CE-5950-4FBC-90B0-E64691350DF5")]
     public class Server
@@ -22,6 +33,7 @@ namespace ComLibrary
     [Guid("36e75747-aecd-43bf-9082-1a605889c762")]
     public class ComVisible
     {
+        [UserDefined]
         [ComVisible(true)]
         [Guid("c82e4585-58bd-46e0-a76d-c0b6975e5984")]
         public class Nested

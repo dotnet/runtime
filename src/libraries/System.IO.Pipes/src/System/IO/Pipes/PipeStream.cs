@@ -16,7 +16,7 @@ namespace System.IO.Pipes
         internal const string AnonymousPipeName = "anonymous";
         private static readonly Task<int> s_zeroTask = Task.FromResult(0);
 
-        private SafePipeHandle _handle;
+        private SafePipeHandle? _handle;
         private bool _canRead;
         private bool _canWrite;
         private bool _isAsync;
@@ -94,7 +94,7 @@ namespace System.IO.Pipes
         // Once a PipeStream has a handle ready, it should call this method to set up the PipeStream.  If
         // the pipe is in a connected state already, it should also set the IsConnected (protected) property.
         // This method may also be called to uninitialize a handle, setting it to null.
-        protected void InitializeHandle(SafePipeHandle handle, bool isExposed, bool isAsync)
+        protected void InitializeHandle(SafePipeHandle? handle, bool isExposed, bool isAsync)
         {
             if (isAsync && handle != null)
             {
@@ -199,7 +199,7 @@ namespace System.IO.Pipes
             return ReadAsyncCore(buffer, cancellationToken);
         }
 
-        public override IAsyncResult BeginRead(byte[] buffer, int offset, int count, AsyncCallback callback, object state)
+        public override IAsyncResult BeginRead(byte[] buffer, int offset, int count, AsyncCallback? callback, object? state)
         {
             if (_isAsync)
                 return TaskToApm.Begin(ReadAsync(buffer, offset, count, CancellationToken.None), callback, state);
@@ -305,7 +305,7 @@ namespace System.IO.Pipes
             return new ValueTask(WriteAsyncCore(buffer, cancellationToken));
         }
 
-        public override IAsyncResult BeginWrite(byte[] buffer, int offset, int count, AsyncCallback callback, object state)
+        public override IAsyncResult BeginWrite(byte[] buffer, int offset, int count, AsyncCallback? callback, object? state)
         {
             if (_isAsync)
                 return TaskToApm.Begin(WriteAsync(buffer, offset, count, CancellationToken.None), callback, state);
@@ -424,7 +424,6 @@ namespace System.IO.Pipes
         // message, otherwise it is set to true.
         public bool IsMessageComplete
         {
-            [SuppressMessage("Microsoft.Security", "CA2122:DoNotIndirectlyExposeMethodsWithLinkDemands", Justification = "Security model of pipes: demand at creation but no subsequent demands")]
             get
             {
                 // omitting pipe broken exception to allow reader to finish getting message
@@ -465,7 +464,6 @@ namespace System.IO.Pipes
 
         public SafePipeHandle SafePipeHandle
         {
-            [SuppressMessage("Microsoft.Security", "CA2122:DoNotIndirectlyExposeMethodsWithLinkDemands", Justification = "Security model of pipes: demand at creation but no subsequent demands")]
             get
             {
                 if (_handle == null)
@@ -482,7 +480,7 @@ namespace System.IO.Pipes
             }
         }
 
-        internal SafePipeHandle InternalHandle
+        internal SafePipeHandle? InternalHandle
         {
             get
             {

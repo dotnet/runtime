@@ -5,6 +5,7 @@
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Dynamic.Utils;
 
 namespace System.Linq.Expressions.Compiler
@@ -32,14 +33,15 @@ namespace System.Linq.Expressions.Compiler
         {
         }
 
-        public override Expression Visit(Expression node)
+        [return: NotNullIfNotNull("node")]
+        public override Expression? Visit(Expression? node)
         {
             // When compiling deep trees, we run the risk of triggering a terminating StackOverflowException,
             // so we use the StackGuard utility here to probe for sufficient stack and continue the work on
             // another thread when we run out of stack space.
             if (!_guard.TryEnterOnCurrentStack())
             {
-                return _guard.RunOnEmptyStack((VariableBinder @this, Expression e) => @this.Visit(e), this, node);
+                return _guard.RunOnEmptyStack((VariableBinder @this, Expression? e) => @this.Visit(e), this, node);
             }
 
             return base.Visit(node);
@@ -60,7 +62,7 @@ namespace System.Linq.Expressions.Compiler
                 return node;
             }
 
-            _constants.Peek().AddReference(node.Value, node.Type);
+            _constants.Peek().AddReference(node.Value!, node.Type);
             return node;
         }
 
@@ -92,7 +94,7 @@ namespace System.Linq.Expressions.Compiler
 
         protected internal override Expression VisitInvocation(InvocationExpression node)
         {
-            LambdaExpression lambda = node.LambdaOperand;
+            LambdaExpression? lambda = node.LambdaOperand;
 
             // optimization: inline code for literal lambda's directly
             if (lambda != null)
@@ -179,7 +181,7 @@ namespace System.Linq.Expressions.Compiler
                     // Otherwise, merge it
                     if (currentScope.MergedScopes == null)
                     {
-                        currentScope.MergedScopes = new HashSet<BlockExpression>(ReferenceEqualityComparer<object>.Instance);
+                        currentScope.MergedScopes = new HashSet<BlockExpression>(ReferenceEqualityComparer.Instance);
                     }
                     currentScope.MergedScopes.Add(block);
                     foreach (ParameterExpression v in block.Variables)
@@ -201,7 +203,7 @@ namespace System.Linq.Expressions.Compiler
             // Track reference count so we can emit it in a more optimal way if
             // it is used a lot.
             //
-            CompilerScope referenceScope = null;
+            CompilerScope? referenceScope = null;
             foreach (CompilerScope scope in _scopes)
             {
                 //
@@ -241,7 +243,7 @@ namespace System.Linq.Expressions.Compiler
 
         private void Reference(ParameterExpression node, VariableStorageKind storage)
         {
-            CompilerScope definition = null;
+            CompilerScope? definition = null;
             foreach (CompilerScope scope in _scopes)
             {
                 if (scope.Definitions.ContainsKey(node))
@@ -269,14 +271,13 @@ namespace System.Linq.Expressions.Compiler
             }
         }
 
-        private string CurrentLambdaName
+        private string? CurrentLambdaName
         {
             get
             {
                 foreach (CompilerScope scope in _scopes)
                 {
-                    var lambda = scope.Node as LambdaExpression;
-                    if (lambda != null)
+                    if (scope.Node is LambdaExpression lambda)
                     {
                         return lambda.Name;
                     }

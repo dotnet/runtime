@@ -31,7 +31,7 @@ const unsigned        OFFSET_MASK  = 0x3;  // mask to access the low 2 bits
 //
 const unsigned  byref_OFFSET_FLAG  = 0x1;  // the offset is an interior ptr
 const unsigned pinned_OFFSET_FLAG  = 0x2;  // the offset is a pinned ptr
-#if !defined(_TARGET_X86_) || !defined(FEATURE_EH_FUNCLETS)
+#if !defined(TARGET_X86) || !defined(FEATURE_EH_FUNCLETS)
 const unsigned   this_OFFSET_FLAG  = 0x2;  // the offset is "this"
 #endif
 
@@ -40,19 +40,6 @@ const unsigned   this_OFFSET_FLAG  = 0x2;  // the offset is "this"
 //-----------------------------------------------------------------------------
 
 #define GCINFO_VERSION 2
-
-#define MIN_GCINFO_VERSION_WITH_RETURN_KIND 2
-#define MIN_GCINFO_VERSION_WITH_REV_PINVOKE_FRAME 2
-
-inline BOOL GCInfoEncodesReturnKind(UINT32 version=GCINFO_VERSION)
-{
-    return version >= MIN_GCINFO_VERSION_WITH_RETURN_KIND;
-}
-
-inline BOOL GCInfoEncodesRevPInvokeFrame(UINT32 version=GCINFO_VERSION)
-{
-    return version >= MIN_GCINFO_VERSION_WITH_REV_PINVOKE_FRAME;
-}
 
 //-----------------------------------------------------------------------------
 // GCInfoToken: A wrapper that contains the GcInfo data and version number.
@@ -73,20 +60,10 @@ struct GCInfoToken
     PTR_VOID Info;
     UINT32 Version;
 
-    BOOL IsReturnKindAvailable()
-    {
-        return GCInfoEncodesReturnKind(Version);
-    }
-    BOOL IsReversePInvokeFrameAvailable()
-    {
-        return GCInfoEncodesRevPInvokeFrame(Version);
-    }
-
     static UINT32 ReadyToRunVersionToGcInfoVersion(UINT32 readyToRunMajorVersion)
     {
-        // GcInfo version is 1 up to ReadyTorun version 1.x
         // GcInfo version is current from  ReadyToRun version 2.0
-        return (readyToRunMajorVersion == 1) ? 1 : GCINFO_VERSION;
+        return GCINFO_VERSION;
     }
 };
 

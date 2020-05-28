@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 // ------------------------------------------------------------------------------
-// Changes to this file must follow the http://aka.ms/api-review process.
+// Changes to this file must follow the https://aka.ms/api-review process.
 // ------------------------------------------------------------------------------
 
 namespace System.Xml
@@ -1201,7 +1201,7 @@ namespace System.Xml
         public override void WriteContentTo(System.Xml.XmlWriter w) { }
         public override void WriteTo(System.Xml.XmlWriter w) { }
     }
-    public abstract partial class XmlWriter : System.IDisposable
+    public abstract partial class XmlWriter : System.IDisposable, System.IAsyncDisposable
     {
         protected XmlWriter() { }
         public virtual System.Xml.XmlWriterSettings Settings { get { throw null; } }
@@ -1306,6 +1306,8 @@ namespace System.Xml
         public virtual void WriteValue(string value) { }
         public abstract void WriteWhitespace(string ws);
         public virtual System.Threading.Tasks.Task WriteWhitespaceAsync(string ws) { throw null; }
+        public System.Threading.Tasks.ValueTask DisposeAsync() { throw null; }
+        protected virtual System.Threading.Tasks.ValueTask DisposeAsyncCore() { throw null;  }
     }
     public sealed partial class XmlWriterSettings
     {

@@ -3,20 +3,21 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Net.Http.Headers
 {
     public class RangeConditionHeaderValue : ICloneable
     {
         private DateTimeOffset? _date;
-        private EntityTagHeaderValue _entityTag;
+        private EntityTagHeaderValue? _entityTag;
 
         public DateTimeOffset? Date
         {
             get { return _date; }
         }
 
-        public EntityTagHeaderValue EntityTag
+        public EntityTagHeaderValue? EntityTag
         {
             get { return _entityTag; }
         }
@@ -57,14 +58,15 @@ namespace System.Net.Http.Headers
         {
             if (_entityTag == null)
             {
+                Debug.Assert(_date != null);
                 return HttpDateParser.DateToString(_date.Value);
             }
             return _entityTag.ToString();
         }
 
-        public override bool Equals(object obj)
+        public override bool Equals(object? obj)
         {
-            RangeConditionHeaderValue other = obj as RangeConditionHeaderValue;
+            RangeConditionHeaderValue? other = obj as RangeConditionHeaderValue;
 
             if (other == null)
             {
@@ -73,6 +75,7 @@ namespace System.Net.Http.Headers
 
             if (_entityTag == null)
             {
+                Debug.Assert(_date != null);
                 return (other._date != null) && (_date.Value == other._date.Value);
             }
 
@@ -83,34 +86,34 @@ namespace System.Net.Http.Headers
         {
             if (_entityTag == null)
             {
+                Debug.Assert(_date != null);
                 return _date.Value.GetHashCode();
             }
 
             return _entityTag.GetHashCode();
         }
 
-        public static RangeConditionHeaderValue Parse(string input)
+        public static RangeConditionHeaderValue Parse(string? input)
         {
             int index = 0;
             return (RangeConditionHeaderValue)GenericHeaderParser.RangeConditionParser.ParseValue(
                 input, null, ref index);
         }
 
-        public static bool TryParse(string input, out RangeConditionHeaderValue parsedValue)
+        public static bool TryParse([NotNullWhen(true)] string? input, [NotNullWhen(true)] out RangeConditionHeaderValue? parsedValue)
         {
             int index = 0;
-            object output;
             parsedValue = null;
 
-            if (GenericHeaderParser.RangeConditionParser.TryParseValue(input, null, ref index, out output))
+            if (GenericHeaderParser.RangeConditionParser.TryParseValue(input, null, ref index, out object? output))
             {
-                parsedValue = (RangeConditionHeaderValue)output;
+                parsedValue = (RangeConditionHeaderValue)output!;
                 return true;
             }
             return false;
         }
 
-        internal static int GetRangeConditionLength(string input, int startIndex, out object parsedValue)
+        internal static int GetRangeConditionLength(string? input, int startIndex, out object? parsedValue)
         {
             Debug.Assert(startIndex >= 0);
 
@@ -126,7 +129,7 @@ namespace System.Net.Http.Headers
 
             // Caller must remove leading whitespace.
             DateTimeOffset date = DateTimeOffset.MinValue;
-            EntityTagHeaderValue entityTag = null;
+            EntityTagHeaderValue? entityTag = null;
 
             // Entity tags are quoted strings optionally preceded by "W/". By looking at the first two character we
             // can determine whether the string is en entity tag or a date.
@@ -154,7 +157,7 @@ namespace System.Net.Http.Headers
             }
             else
             {
-                if (!HttpDateParser.TryStringToDate(input.AsSpan(current), out date))
+                if (!HttpDateParser.TryParse(input.AsSpan(current), out date))
                 {
                     return 0;
                 }

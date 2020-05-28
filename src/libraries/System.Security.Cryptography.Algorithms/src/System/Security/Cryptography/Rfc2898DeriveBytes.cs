@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Buffers;
+using System.Buffers.Binary;
 using System.Text;
 using System.Diagnostics;
 
@@ -20,7 +21,7 @@ namespace System.Security.Cryptography
         private HMAC _hmac;
         private readonly int _blockSize;
 
-        private byte[] _buffer;
+        private byte[] _buffer = null!; // Initialized in helper
         private uint _block;
         private int _startIndex;
         private int _endIndex;
@@ -145,7 +146,7 @@ namespace System.Security.Cryptography
                 if (_hmac != null)
                 {
                     _hmac.Dispose();
-                    _hmac = null;
+                    _hmac = null!;
                 }
 
                 if (_buffer != null)
@@ -222,7 +223,7 @@ namespace System.Security.Cryptography
             Initialize();
         }
 
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA5350", Justification = "HMACSHA1 is needed for compat. (https://github.com/dotnet/corefx/issues/9438)")]
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA5350", Justification = "HMACSHA1 is needed for compat. (https://github.com/dotnet/runtime/issues/17618)")]
         private HMAC OpenHmac()
         {
             Debug.Assert(_password != null);
@@ -258,7 +259,7 @@ namespace System.Security.Cryptography
         // where i is the block number.
         private void Func()
         {
-            Helpers.WriteInt(_block, _salt, _salt.Length - sizeof(uint));
+            BinaryPrimitives.WriteUInt32BigEndian(_salt.AsSpan(_salt.Length - sizeof(uint)), _block);
             Debug.Assert(_blockSize == _buffer.Length);
 
             // The biggest _blockSize we have is from SHA512, which is 64 bytes.

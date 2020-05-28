@@ -22,11 +22,11 @@ using namespace CorUnix;
 
 #if HAVE_MACH_EXCEPTIONS
 
-#if defined(_AMD64_)
+#if defined(HOST_AMD64)
 #define MACH_EH_TYPE(x) mach_##x
 #else
 #define MACH_EH_TYPE(x) x
-#endif // defined(_AMD64_)
+#endif // defined(HOST_AMD64)
 
 // The vast majority of Mach calls we make in this module are critical: we cannot recover from failures of
 // these methods (principally because we're handling hardware exceptions in the context of a single dedicated

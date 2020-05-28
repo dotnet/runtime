@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -11,6 +11,7 @@ using System.Diagnostics;
 
 using Internal.TypeSystem;
 using Internal.CorConstants;
+using Internal.JitInterface;
 
 namespace ILCompiler.DependencyAnalysis.ReadyToRun
 {
@@ -76,7 +77,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         public abstract int OffsetOfArgumentRegisters { get; }
 
         /// <summary>
-        /// Only overridden on ARM64 to return offset of the X8 register.
+        /// The offset of the first slot in a GC ref map. Overridden on ARM64 to return the offset of the X8 register.
         /// </summary>
         public virtual int OffsetOfFirstGCRefMapSlot => OffsetOfArgumentRegisters;
 
@@ -104,11 +105,9 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         /// Recalculate pos in GC ref map to actual offset. This is the default implementation for all architectures
         /// except for X86 where it's overridden to supply a more complex algorithm.
         /// </summary>
-        /// <param name="pos"></param>
-        /// <returns></returns>
         public virtual int OffsetFromGCRefMapPos(int pos)
         {
-            return OffsetOfArgumentRegisters + pos * PointerSize;
+            return OffsetOfFirstGCRefMapSlot + pos * PointerSize;
         }
 
         /// <summary>
@@ -265,45 +264,64 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                     {
                         Debug.Assert(!thRetType.IsNull() && thRetType.IsValueType());
 
-                        if (thRetType.IsHFA() && !isVarArgMethod)
+                        if ((Architecture == TargetArchitecture.X64) && IsX64UnixABI)
                         {
-                            CorElementType hfaType = thRetType.GetHFAType();
+                            SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR descriptor;
+                            SystemVStructClassificator.GetSystemVAmd64PassStructInRegisterDescriptor(thRetType.GetRuntimeTypeHandle(), out descriptor);
 
-                            switch (Architecture)
+                            if (descriptor.passedInRegisters)
                             {
-                                case TargetArchitecture.ARM:
-                                    fpReturnSize = (hfaType == CorElementType.ELEMENT_TYPE_R4) ?
-                                        (4 * (uint)sizeof(float)) :
-                                        (4 * (uint)sizeof(double));
-                                    break;
+                                if (descriptor.eightByteCount == 1)
+                                {
+                                    if (descriptor.eightByteClassifications0 == SystemVClassificationType.SystemVClassificationTypeSSE)
+                                    {
+                                        // Structs occupying just one eightbyte are treated as int / double
+                                        fpReturnSize = sizeof(double);
+                                    }
+                                }
+                                else
+                                {
+                                    // Size of the struct is 16 bytes
+                                    fpReturnSize = 16;
+                                    // The lowest two bits of the size encode the order of the int and SSE fields
+                                    if (descriptor.eightByteClassifications0 == SystemVClassificationType.SystemVClassificationTypeSSE)
+                                    {
+                                        fpReturnSize += 1;
+                                    }
 
-                                case TargetArchitecture.ARM64:
-                                    // DESKTOP BEHAVIOR fpReturnSize = (hfaType == CorElementType.ELEMENT_TYPE_R4) ? (4 * (uint)sizeof(float)) : (4 * (uint)sizeof(double));
-                                    // S and D registers overlap. Since we copy D registers in the UniversalTransitionThunk, we'll
-                                    // thread floats like doubles during copying.
-                                    fpReturnSize = 4 * (uint)sizeof(double);
-                                    break;
+                                    if (descriptor.eightByteClassifications0 == SystemVClassificationType.SystemVClassificationTypeSSE)
+                                    {
+                                        fpReturnSize += 2;
+                                    }
+                                }
 
-                                default:
-                                    throw new NotImplementedException();
-                            }
-                            break;
-                        }
-
-                        uint size = (uint)thRetType.GetSize();
-
-                        if (IsX86 || IsX64)
-                        {
-                            // Return value types of size which are not powers of 2 using a RetBuffArg
-                            if ((size & (size - 1)) != 0)
-                            {
-                                usesRetBuffer = true;
                                 break;
                             }
                         }
+                        else
+                        {
+                            if (thRetType.IsHomogeneousAggregate() && !isVarArgMethod)
+                            {
+                                int haElementSize = thRetType.GetHomogeneousAggregateElementSize();
+                                fpReturnSize = 4 * (uint)haElementSize;
+                                break;
+                            }
 
-                        if (size <= EnregisteredReturnTypeIntegerMaxSize)
-                            break;
+                            uint size = (uint)thRetType.GetSize();
+
+                            if (IsX86 || IsX64)
+                            {
+                                // Return value types of size which are not powers of 2 using a RetBuffArg
+                                if ((size & (size - 1)) != 0)
+                                {
+                                    usesRetBuffer = true;
+                                    break;
+                                }
+                            }
+
+                            if (size <= EnregisteredReturnTypeIntegerMaxSize)
+                                break;
+                        }
                     }
 
                     // Value types are returned using return buffer by default
@@ -361,7 +379,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         /// <summary>
         /// X64 properties common to Windows and Unix ABI.
         /// </summary>
-        private abstract class X64TransitionBlock : TransitionBlock
+        internal abstract class X64TransitionBlock : TransitionBlock
         {
             public override TargetArchitecture Architecture => TargetArchitecture.X64;
             public override int PointerSize => 8;
@@ -398,9 +416,11 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             public override int EnregisteredReturnTypeIntegerMaxSize => 8;
         }
 
-        private sealed class X64UnixTransitionBlock : X64TransitionBlock
+        internal sealed class X64UnixTransitionBlock : X64TransitionBlock
         {
             public static readonly TransitionBlock Instance = new X64UnixTransitionBlock();
+
+            public override bool IsX64UnixABI => true;
 
             public const int NUM_FLOAT_ARGUMENT_REGISTERS = 8;
 
@@ -414,6 +434,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             public override int OffsetOfFloatArgumentRegisters => SizeOfM128A * NUM_FLOAT_ARGUMENT_REGISTERS;
             public override int EnregisteredParamTypeMaxSize => 16;
             public override int EnregisteredReturnTypeIntegerMaxSize => 16;
+            public override bool IsArgPassedByRef(TypeHandle th) => false;
         }
 
         private sealed class Arm32TransitionBlock : TransitionBlock
@@ -433,14 +454,15 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             public override int OffsetOfFloatArgumentRegisters => 8 * sizeof(double) + PointerSize;
             public override int EnregisteredParamTypeMaxSize => 0;
             public override int EnregisteredReturnTypeIntegerMaxSize => 4;
+
+            public override bool IsArgPassedByRef(TypeHandle th) => false;
+
             public override int GetRetBuffArgOffset(bool hasThis) => OffsetOfArgumentRegisters + (hasThis ? PointerSize : 0);
         }
 
         private sealed class Arm64TransitionBlock : TransitionBlock
         {
             public static TransitionBlock Instance = new Arm64TransitionBlock();
-
-            private int OffsetOfX8Register => OffsetOfArgumentRegisters - PointerSize;
 
             public override TargetArchitecture Architecture => TargetArchitecture.ARM64;
             public override int PointerSize => 8;
@@ -451,6 +473,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             // Callee-saves, padding, m_x8RetBuffReg, argument registers
             public override int SizeOfTransitionBlock => SizeOfCalleeSavedRegisters + 2 * PointerSize + SizeOfArgumentRegisters;
             public override int OffsetOfArgumentRegisters => SizeOfCalleeSavedRegisters + 2 * PointerSize;
+            private int OffsetOfX8Register => OffsetOfArgumentRegisters - PointerSize;
             public override int OffsetOfFirstGCRefMapSlot => OffsetOfX8Register;
 
             // D0..D7
@@ -464,12 +487,12 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 Debug.Assert(th.IsValueType());
 
                 // Composites greater than 16 bytes are passed by reference
-                return (th.GetSize() > EnregisteredParamTypeMaxSize) && !th.IsHFA();
+                return (th.GetSize() > EnregisteredParamTypeMaxSize) && !th.IsHomogeneousAggregate();
             }
 
             public override int GetRetBuffArgOffset(bool hasThis) => OffsetOfX8Register;
 
-            public override bool IsRetBuffPassedAsFirstArg => true;
+            public override bool IsRetBuffPassedAsFirstArg => false;
         }
-    };
+    }
 }

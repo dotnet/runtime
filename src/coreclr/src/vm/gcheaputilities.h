@@ -124,7 +124,7 @@ public:
     {
         // When running on a single-proc Intel system, it's more efficient to use a single global
         // allocation context for SOH allocations than to use one for every thread.
-#if (defined(_TARGET_X86_) || defined(_TARGET_AMD64_)) && !defined(FEATURE_PAL)
+#if (defined(TARGET_X86) || defined(TARGET_AMD64)) && !defined(TARGET_UNIX)
         return IsServerHeap() || ::g_SystemInfo.dwNumberOfProcessors != 1 || CPUGroupInfo::CanEnableGCCPUGroups();
 #else
         return true;

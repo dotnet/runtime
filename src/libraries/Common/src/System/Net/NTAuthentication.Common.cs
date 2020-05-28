@@ -2,7 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Net.Security;
 using System.Runtime.InteropServices;
 using System.Security.Authentication.ExtendedProtection;
@@ -13,21 +15,21 @@ namespace System.Net
     {
         private bool _isServer;
 
-        private SafeFreeCredentials _credentialsHandle;
-        private SafeDeleteContext _securityContext;
-        private string _spn;
+        private SafeFreeCredentials? _credentialsHandle;
+        private SafeDeleteContext? _securityContext;
+        private string? _spn;
 
         private int _tokenSize;
         private ContextFlagsPal _requestedContextFlags;
         private ContextFlagsPal _contextFlags;
 
         private bool _isCompleted;
-        private string _package;
-        private string _lastProtocolName;
-        private string _protocolName;
-        private string _clientSpecifiedSpn;
+        private string _package = null!;
+        private string? _lastProtocolName;
+        private string? _protocolName;
+        private string? _clientSpecifiedSpn;
 
-        private ChannelBinding _channelBinding;
+        private ChannelBinding? _channelBinding = null;
 
         // If set, no more calls should be made.
         internal bool IsCompleted => _isCompleted;
@@ -37,7 +39,7 @@ namespace System.Net
         // True indicates this instance is for Server and will use AcceptSecurityContext SSPI API.
         internal bool IsServer => _isServer;
 
-        internal string ClientSpecifiedSpn
+        internal string? ClientSpecifiedSpn
         {
             get
             {
@@ -57,11 +59,11 @@ namespace System.Net
                 // Note: May return string.Empty if the auth is not done yet or failed.
                 if (_protocolName == null)
                 {
-                    string negotiationAuthenticationPackage = null;
+                    string? negotiationAuthenticationPackage = null;
 
                     if (IsValidContext)
                     {
-                        negotiationAuthenticationPackage = NegotiateStreamPal.QueryContextAuthenticationPackage(_securityContext);
+                        negotiationAuthenticationPackage = NegotiateStreamPal.QueryContextAuthenticationPackage(_securityContext!);
                         if (IsCompleted)
                         {
                             _protocolName = negotiationAuthenticationPackage;
@@ -91,12 +93,12 @@ namespace System.Net
         //
         // This overload does not attempt to impersonate because the caller either did it already or the original thread context is still preserved.
         //
-        internal NTAuthentication(bool isServer, string package, NetworkCredential credential, string spn, ContextFlagsPal requestedContextFlags, ChannelBinding channelBinding)
+        internal NTAuthentication(bool isServer, string package, NetworkCredential credential, string? spn, ContextFlagsPal requestedContextFlags, ChannelBinding? channelBinding)
         {
             Initialize(isServer, package, credential, spn, requestedContextFlags, channelBinding);
         }
 
-        private void Initialize(bool isServer, string package, NetworkCredential credential, string spn, ContextFlagsPal requestedContextFlags, ChannelBinding channelBinding)
+        private void Initialize(bool isServer, string package, NetworkCredential credential, string? spn, ContextFlagsPal requestedContextFlags, ChannelBinding? channelBinding)
         {
             if (NetEventSource.IsEnabled) NetEventSource.Enter(this, package, spn, requestedContextFlags);
 
@@ -126,7 +128,7 @@ namespace System.Net
             }
         }
 
-        internal SafeDeleteContext GetContext(out SecurityStatusPal status)
+        internal SafeDeleteContext? GetContext(out SecurityStatusPal status)
         {
             status = new SecurityStatusPal(SecurityStatusPalErrorCode.OK);
             if (!(IsCompleted && IsValidContext))
@@ -158,22 +160,22 @@ namespace System.Net
 
         internal int VerifySignature(byte[] buffer, int offset, int count)
         {
-            return NegotiateStreamPal.VerifySignature(_securityContext, buffer, offset, count);
+            return NegotiateStreamPal.VerifySignature(_securityContext!, buffer, offset, count);
         }
 
-        internal int MakeSignature(byte[] buffer, int offset, int count, ref byte[] output)
+        internal int MakeSignature(byte[] buffer, int offset, int count, [AllowNull] ref byte[] output)
         {
-            return NegotiateStreamPal.MakeSignature(_securityContext, buffer, offset, count, ref output);
+            return NegotiateStreamPal.MakeSignature(_securityContext!, buffer, offset, count, ref output);
         }
 
-        internal string GetOutgoingBlob(string incomingBlob)
+        internal string? GetOutgoingBlob(string? incomingBlob)
         {
-            byte[] decodedIncomingBlob = null;
+            byte[]? decodedIncomingBlob = null;
             if (incomingBlob != null && incomingBlob.Length > 0)
             {
                 decodedIncomingBlob = Convert.FromBase64String(incomingBlob);
             }
-            byte[] decodedOutgoingBlob = null;
+            byte[]? decodedOutgoingBlob = null;
 
             if ((IsValidContext || IsCompleted) && decodedIncomingBlob == null)
             {
@@ -187,7 +189,7 @@ namespace System.Net
                 decodedOutgoingBlob = GetOutgoingBlob(decodedIncomingBlob, true, out statusCode);
             }
 
-            string outgoingBlob = null;
+            string? outgoingBlob = null;
             if (decodedOutgoingBlob != null && decodedOutgoingBlob.Length > 0)
             {
                 outgoingBlob = Convert.ToBase64String(decodedOutgoingBlob);
@@ -201,18 +203,18 @@ namespace System.Net
             return outgoingBlob;
         }
 
-        internal byte[] GetOutgoingBlob(byte[] incomingBlob, bool thrownOnError)
+        internal byte[]? GetOutgoingBlob(byte[]? incomingBlob, bool thrownOnError)
         {
             SecurityStatusPal statusCode;
             return GetOutgoingBlob(incomingBlob, thrownOnError, out statusCode);
         }
 
         // Accepts an incoming binary security blob and returns an outgoing binary security blob.
-        internal byte[] GetOutgoingBlob(byte[] incomingBlob, bool throwOnError, out SecurityStatusPal statusCode)
+        internal byte[]? GetOutgoingBlob(byte[]? incomingBlob, bool throwOnError, out SecurityStatusPal statusCode)
         {
             if (NetEventSource.IsEnabled) NetEventSource.Enter(this, incomingBlob);
 
-            var result = new byte[_tokenSize];
+            byte[]? result = new byte[_tokenSize];
 
             bool firstTime = _securityContext == null;
             try
@@ -221,7 +223,7 @@ namespace System.Net
                 {
                     // client session
                     statusCode = NegotiateStreamPal.InitializeSecurityContext(
-                        ref _credentialsHandle,
+                        ref _credentialsHandle!,
                         ref _securityContext,
                         _spn,
                         _requestedContextFlags,
@@ -312,14 +314,14 @@ namespace System.Net
             return result;
         }
 
-        private string GetClientSpecifiedSpn()
+        private string? GetClientSpecifiedSpn()
         {
             if (!(IsValidContext && IsCompleted))
             {
                 NetEventSource.Fail(this, "Trying to get the client SPN before handshaking is done!");
             }
 
-            string spn = NegotiateStreamPal.QueryContextClientSpecifiedSpn(_securityContext);
+            string? spn = NegotiateStreamPal.QueryContextClientSpecifiedSpn(_securityContext!);
 
             if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"The client specified SPN is [{spn}]");
 

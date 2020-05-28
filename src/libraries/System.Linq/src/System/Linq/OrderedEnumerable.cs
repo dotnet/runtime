@@ -74,40 +74,6 @@ namespace System.Linq
             new OrderedEnumerable<TElement, TKey>(_source, keySelector, comparer, @descending, this);
 
         [return: MaybeNull]
-        public TElement TryGetFirst(Func<TElement, bool> predicate, out bool found)
-        {
-            CachingComparer<TElement> comparer = GetComparer();
-            using (IEnumerator<TElement> e = _source.GetEnumerator())
-            {
-                TElement value;
-                do
-                {
-                    if (!e.MoveNext())
-                    {
-                        found = false;
-                        return default!;
-                    }
-
-                    value = e.Current;
-                }
-                while (!predicate(value));
-
-                comparer.SetElement(value);
-                while (e.MoveNext())
-                {
-                    TElement x = e.Current;
-                    if (predicate(x) && comparer.Compare(x, true) < 0)
-                    {
-                        value = x;
-                    }
-                }
-
-                found = true;
-                return value;
-            }
-        }
-
-        [return: MaybeNull]
         public TElement TryGetLast(Func<TElement, bool> predicate, out bool found)
         {
             CachingComparer<TElement> comparer = GetComparer();
@@ -374,13 +340,10 @@ namespace System.Linq
             return (_descending != (c > 0)) ? 1 : -1;
         }
 
-
         private int CompareKeys(int index1, int index2) => index1 == index2 ? 0 : CompareAnyKeys(index1, index2);
 
         protected override void QuickSort(int[] keys, int lo, int hi) =>
-            Array.Sort(keys, lo, hi - lo + 1, Comparer<int>.Create(CompareAnyKeys)); // TODO #24115: Remove Create call when delegate-based overload is available
-
-
+            new Span<int>(keys, lo, hi - lo + 1).Sort(CompareAnyKeys);
 
         // Sorts the k elements between minIdx and maxIdx without sorting all elements
         // Time complexity: O(n + k log k) best and average case. O(n^2) worse case.

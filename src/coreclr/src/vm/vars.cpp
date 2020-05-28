@@ -30,7 +30,7 @@ const char g_psBaseLibrarySatelliteAssemblyName[]  = CoreLibSatelliteName_A;
 
 Volatile<LONG>       g_TrapReturningThreads;
 
-HINSTANCE            g_pMSCorEE;
+HINSTANCE            g_hThisInst;
 BBSweep              g_BBSweep;
 
 #ifdef _DEBUG
@@ -41,7 +41,7 @@ Volatile<LONG>       g_trtChgInFlight = 0;
 
 const char *         g_ExceptionFile;   // Source of the last thrown exception (COMPLUSThrow())
 DWORD                g_ExceptionLine;   // ... ditto ...
-void *               g_ExceptionEIP;    // Managed EIP of the last guy to call JITThrow.
+void *               g_ExceptionEIP;    // Managed EIP of the last JITThrow caller.
 #endif // _DEBUG
 void *               g_LastAccessViolationEIP;  // The EIP of the place we last threw an AV.   Used to diagnose stress issues.
 
@@ -53,7 +53,7 @@ GPTR_IMPL(IdDispenser,       g_pModuleIndexDispenser);
 IBCLogger                    g_IBCLogger;
 
 // For [<I1, etc. up to and including [Object
-GARY_IMPL(PTR_ArrayTypeDesc, g_pPredefinedArrayTypes, ELEMENT_TYPE_MAX);
+GARY_IMPL(TypeHandle, g_pPredefinedArrayTypes, ELEMENT_TYPE_MAX);
 
 GPTR_IMPL(EEConfig, g_pConfig);     // configuration data (from the registry)
 
@@ -172,14 +172,6 @@ int g_IGCconcurrent = 1;
 
 int g_IGCHoardVM = 0;
 
-#ifdef GCTRIMCOMMIT
-
-int g_IGCTrimCommit = 0;
-
-#endif
-
-BOOL g_fEnableETW = FALSE;
-
 //
 // Global state variable indicating if the EE is in its init phase.
 //
@@ -197,19 +189,16 @@ GVAL_IMPL(bool, g_fProcessDetach);
 
 GVAL_IMPL_INIT(DWORD, g_fEEShutDown, 0);
 
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
 GVAL_IMPL(SIZE_T, g_runtimeLoadedBaseAddress);
 GVAL_IMPL(SIZE_T, g_runtimeVirtualSize);
-#endif // !FEATURE_PAL
+#endif // !TARGET_UNIX
 
 #ifndef DACCESS_COMPILE
 
 Volatile<LONG> g_fForbidEnterEE = false;
 bool g_fManagedAttach = false;
 bool g_fNoExceptions = false;
-#ifdef FEATURE_COMINTEROP
-bool g_fShutDownCOM = false;
-#endif //FEATURE_COMINTEROP
 
 DWORD g_FinalizerWaiterStatus = 0;
 
@@ -223,12 +212,6 @@ bool g_fWeControlLifetime = false;
 bool dbg_fDrasticShutdown = false;
 #endif
 bool g_fInControlC = false;
-
-//
-//
-// IJW needs the shim HINSTANCE
-//
-HINSTANCE g_hInstShim = NULL;
 
 #endif // #ifndef DACCESS_COMPILE
 

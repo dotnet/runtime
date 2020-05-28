@@ -13,7 +13,7 @@ namespace System.Security.Cryptography
         {
             private readonly ECCngKey _key = new ECCngKey(AlgorithmName.ECDsa, nameof(ECDsa));
 
-            private string GetCurveName(out string oidValue) => _key.GetCurveName(KeySize, out oidValue);
+            private string? GetCurveName(out string? oidValue) => _key.GetCurveName(KeySize, out oidValue);
 
             public override void GenerateKey(ECCurve curve)
             {

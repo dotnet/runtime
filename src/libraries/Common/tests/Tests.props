@@ -1,5 +1,0 @@
-<Project>
-  <PropertyGroup>
-    <CommonPath>$(MSBuildThisFileDirectory)</CommonPath>
-  </PropertyGroup>
-</Project>

@@ -7,7 +7,10 @@ using System.Diagnostics;
 using System.IO;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+
+#if SYSTEM_PRIVATE_CORELIB
 using Internal.Runtime.CompilerServices;
+#endif
 
 namespace System.Text.Unicode
 {
@@ -22,7 +25,11 @@ namespace System.Text.Unicode
         /// <summary>
         /// The UTF-8 representation of <see cref="UnicodeUtility.ReplacementChar"/>.
         /// </summary>
+#if !NETSTANDARD2_0
         private static ReadOnlySpan<byte> ReplacementCharSequence => new byte[] { 0xEF, 0xBF, 0xBD };
+#else
+        private static readonly byte[] ReplacementCharSequence = new byte[] { 0xEF, 0xBF, 0xBD };
+#endif
 
         /// <summary>
         /// Returns the byte index in <paramref name="utf8Data"/> where the first invalid UTF-8 sequence begins,
@@ -83,6 +90,7 @@ namespace System.Text.Unicode
             // (The faster implementation is in the dev/utf8string_bak branch currently.)
 
             MemoryStream memStream = new MemoryStream();
+#if !NETSTANDARD2_0
             memStream.Write(valueAsBytes.Slice(0, idxOfFirstInvalidData));
 
             valueAsBytes = valueAsBytes.Slice(idxOfFirstInvalidData);
@@ -101,6 +109,37 @@ namespace System.Text.Unicode
 
                 valueAsBytes = valueAsBytes.Slice(bytesConsumed);
             } while (!valueAsBytes.IsEmpty);
+#else
+            if (!MemoryMarshal.TryGetArray(value.AsMemoryBytes(), out ArraySegment<byte> valueArraySegment))
+            {
+                Debug.Fail("Utf8String on netstandard should always be backed by an array.");
+            }
+
+            memStream.Write(valueArraySegment.Array, valueArraySegment.Offset, idxOfFirstInvalidData);
+
+            valueArraySegment = new ArraySegment<byte>(
+                valueArraySegment.Array,
+                idxOfFirstInvalidData,
+                valueArraySegment.Count - idxOfFirstInvalidData);
+            do
+            {
+                if (Rune.DecodeFromUtf8(valueArraySegment, out _, out int bytesConsumed) == OperationStatus.Done)
+                {
+                    // Valid scalar value - copy data as-is to MemoryStream
+                    memStream.Write(valueArraySegment.Array, valueArraySegment.Offset, bytesConsumed);
+                }
+                else
+                {
+                    // Invalid scalar value - copy U+FFFD to MemoryStream
+                    memStream.Write(ReplacementCharSequence, 0, ReplacementCharSequence.Length);
+                }
+
+                valueArraySegment = new ArraySegment<byte>(
+                    valueArraySegment.Array,
+                    valueArraySegment.Offset + bytesConsumed,
+                    valueArraySegment.Count - bytesConsumed);
+            } while (valueArraySegment.Count > 0);
+#endif
 
             bool success = memStream.TryGetBuffer(out ArraySegment<byte> memStreamBuffer);
             Debug.Assert(success, "Couldn't get underlying MemoryStream buffer.");

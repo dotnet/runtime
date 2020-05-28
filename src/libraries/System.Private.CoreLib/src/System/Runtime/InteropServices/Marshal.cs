@@ -10,13 +10,6 @@ using System.Text;
 using Internal.Runtime.CompilerServices;
 using System.Diagnostics.CodeAnalysis;
 
-#pragma warning disable SA1121 // explicitly using type aliases instead of built-in types
-#if BIT64
-using nuint = System.UInt64;
-#else
-using nuint = System.UInt32;
-#endif
-
 namespace System.Runtime.InteropServices
 {
     /// <summary>
@@ -170,7 +163,7 @@ namespace System.Runtime.InteropServices
             if (arr is null)
                 throw new ArgumentNullException(nameof(arr));
 
-            void* pRawData = Unsafe.AsPointer(ref arr.GetRawSzArrayData());
+            void* pRawData = Unsafe.AsPointer(ref MemoryMarshal.GetArrayDataReference(arr));
             return (IntPtr)((byte*)pRawData + (uint)index * (nuint)Unsafe.SizeOf<T>());
         }
 
@@ -350,7 +343,7 @@ namespace System.Runtime.InteropServices
 
         public static IntPtr ReadIntPtr(object ptr, int ofs)
         {
-#if BIT64
+#if TARGET_64BIT
             return (IntPtr)ReadInt64(ptr, ofs);
 #else // 32
             return (IntPtr)ReadInt32(ptr, ofs);
@@ -359,7 +352,7 @@ namespace System.Runtime.InteropServices
 
         public static IntPtr ReadIntPtr(IntPtr ptr, int ofs)
         {
-#if BIT64
+#if TARGET_64BIT
             return (IntPtr)ReadInt64(ptr, ofs);
 #else // 32
             return (IntPtr)ReadInt32(ptr, ofs);
@@ -464,7 +457,7 @@ namespace System.Runtime.InteropServices
 
         public static void WriteIntPtr(IntPtr ptr, int ofs, IntPtr val)
         {
-#if BIT64
+#if TARGET_64BIT
             WriteInt64(ptr, ofs, (long)val);
 #else // 32
             WriteInt32(ptr, ofs, (int)val);
@@ -473,7 +466,7 @@ namespace System.Runtime.InteropServices
 
         public static void WriteIntPtr(object ptr, int ofs, IntPtr val)
         {
-#if BIT64
+#if TARGET_64BIT
             WriteInt64(ptr, ofs, (long)val);
 #else // 32
             WriteInt32(ptr, ofs, (int)val);
@@ -873,6 +866,9 @@ namespace System.Runtime.InteropServices
                 throw new ArgumentException(SR.Argument_NeedNonGenericType, nameof(t));
             }
 
+            // COMPAT: This block of code isn't entirely correct.
+            // Users passing in typeof(MulticastDelegate) as 't' skip this check
+            // since Delegate is a base type of MulticastDelegate.
             Type? c = t.BaseType;
             if (c != typeof(Delegate) && c != typeof(MulticastDelegate))
             {
@@ -912,8 +908,6 @@ namespace System.Runtime.InteropServices
 
             return (dwLastError & 0x0000FFFF) | unchecked((int)0x80070000);
         }
-
-        public static IntPtr /* IDispatch */ GetIDispatchForObject(object o) => throw new PlatformNotSupportedException();
 
         public static unsafe void ZeroFreeBSTR(IntPtr s)
         {

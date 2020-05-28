@@ -69,7 +69,7 @@ namespace System.Reflection
             // copy the arguments in a different array so we detach from any user changes
             object[] copyOfParameters = new object[parameters.Length];
 
-            ParameterInfo[] p = null!;
+            ParameterInfo[]? p = null;
             for (int i = 0; i < parameters.Length; i++)
             {
                 object arg = parameters[i];

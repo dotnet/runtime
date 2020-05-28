@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -117,7 +118,7 @@ namespace System
             return (byte)i;
         }
 
-        public static bool TryParse(string? s, out byte result)
+        public static bool TryParse([NotNullWhen(true)] string? s, out byte result)
         {
             if (s == null)
             {
@@ -133,7 +134,7 @@ namespace System
             return TryParse(s, NumberStyles.Integer, NumberFormatInfo.CurrentInfo, out result);
         }
 
-        public static bool TryParse(string? s, NumberStyles style, IFormatProvider? provider, out byte result)
+        public static bool TryParse([NotNullWhen(true)] string? s, NumberStyles style, IFormatProvider? provider, out byte result)
         {
             NumberFormatInfo.ValidateParseStyleInteger(style);
 
@@ -166,7 +167,7 @@ namespace System
 
         public override string ToString()
         {
-            return Number.UInt32ToDecStr(m_value, -1);
+            return Number.UInt32ToDecStr(m_value);
         }
 
         public string ToString(string? format)
@@ -176,7 +177,7 @@ namespace System
 
         public string ToString(IFormatProvider? provider)
         {
-            return Number.FormatUInt32(m_value, null, provider);
+            return Number.UInt32ToDecStr(m_value);
         }
 
         public string ToString(string? format, IFormatProvider? provider)

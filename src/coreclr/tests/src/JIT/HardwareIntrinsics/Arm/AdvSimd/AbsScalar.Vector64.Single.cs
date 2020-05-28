@@ -165,7 +165,7 @@ namespace JIT.HardwareIntrinsics.Arm
             {
                 var testStruct = new TestStruct();
 
-                for (var i = 0; i < Op1ElementCount; i++) { _data1[i] = -TestLibrary.Generator.GetSingle(); }
+                for (var i = 0; i < Op1ElementCount; i++) { _data1[i] = TestLibrary.Generator.GetSingle(); }
                 Unsafe.CopyBlockUnaligned(ref Unsafe.As<Vector64<Single>, byte>(ref testStruct._fld1), ref Unsafe.As<Single, byte>(ref _data1[0]), (uint)Unsafe.SizeOf<Vector64<Single>>());
 
                 return testStruct;
@@ -208,7 +208,7 @@ namespace JIT.HardwareIntrinsics.Arm
 
         static SimpleUnaryOpTest__AbsScalar_Vector64_Single()
         {
-            for (var i = 0; i < Op1ElementCount; i++) { _data1[i] = -TestLibrary.Generator.GetSingle(); }
+            for (var i = 0; i < Op1ElementCount; i++) { _data1[i] = TestLibrary.Generator.GetSingle(); }
             Unsafe.CopyBlockUnaligned(ref Unsafe.As<Vector64<Single>, byte>(ref _clsVar1), ref Unsafe.As<Single, byte>(ref _data1[0]), (uint)Unsafe.SizeOf<Vector64<Single>>());
         }
 
@@ -216,10 +216,10 @@ namespace JIT.HardwareIntrinsics.Arm
         {
             Succeeded = true;
 
-            for (var i = 0; i < Op1ElementCount; i++) { _data1[i] = -TestLibrary.Generator.GetSingle(); }
+            for (var i = 0; i < Op1ElementCount; i++) { _data1[i] = TestLibrary.Generator.GetSingle(); }
             Unsafe.CopyBlockUnaligned(ref Unsafe.As<Vector64<Single>, byte>(ref _fld1), ref Unsafe.As<Single, byte>(ref _data1[0]), (uint)Unsafe.SizeOf<Vector64<Single>>());
 
-            for (var i = 0; i < Op1ElementCount; i++) { _data1[i] = -TestLibrary.Generator.GetSingle(); }
+            for (var i = 0; i < Op1ElementCount; i++) { _data1[i] = TestLibrary.Generator.GetSingle(); }
             _dataTable = new DataTable(_data1, new Single[RetElementCount], LargestVectorSize);
         }
 
@@ -402,7 +402,7 @@ namespace JIT.HardwareIntrinsics.Arm
             Unsafe.Write(_dataTable.outArrayPtr, result);
             ValidateResult(test._fld1, _dataTable.outArrayPtr);
         }
-        
+
         public void RunStructFldScenario()
         {
             TestLibrary.TestFramework.BeginScenario(nameof(RunStructFldScenario));
@@ -466,7 +466,7 @@ namespace JIT.HardwareIntrinsics.Arm
         {
             bool succeeded = true;
 
-            if (BitConverter.SingleToInt32Bits(result[0]) != BitConverter.SingleToInt32Bits(Math.Abs(firstOp[0])))
+            if (BitConverter.SingleToInt32Bits(Helpers.Abs(firstOp[0])) != BitConverter.SingleToInt32Bits(result[0]))
             {
                 succeeded = false;
             }

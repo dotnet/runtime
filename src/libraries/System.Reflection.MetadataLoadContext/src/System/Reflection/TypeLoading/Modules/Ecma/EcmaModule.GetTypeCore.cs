@@ -17,7 +17,7 @@ namespace System.Reflection.TypeLoading.Ecma
         /// If a type is not contained or forwarded from the assembly, this method returns null (does not throw.)
         /// This supports the "throwOnError: false" behavior of Module.GetType(string, bool).
         /// </summary>
-        protected sealed override RoDefinitionType GetTypeCoreNoCache(ReadOnlySpan<byte> ns, ReadOnlySpan<byte> name, out Exception e)
+        protected sealed override RoDefinitionType? GetTypeCoreNoCache(ReadOnlySpan<byte> ns, ReadOnlySpan<byte> name, out Exception? e)
         {
             MetadataReader reader = Reader;
 
@@ -53,7 +53,7 @@ namespace System.Reflection.TypeLoading.Ecma
                 if (!(et.Namespace.Equals(ns, reader)))
                     continue;
 
-                RoAssembly assembly = ((AssemblyReferenceHandle)implementation).TryResolveAssembly(this, out e);
+                RoAssembly? assembly = ((AssemblyReferenceHandle)implementation).TryResolveAssembly(this, out e);
                 return assembly?.GetTypeCore(ns, name, ignoreCase: false, out e);
             }
 

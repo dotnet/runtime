@@ -9,11 +9,11 @@
 #pragma hdrstop
 #endif
 
-#if defined(_TARGET_AMD64_)
+#if defined(TARGET_AMD64)
 
 #include "target.h"
 
 const char*            Target::g_tgtCPUName  = "x64";
 const Target::ArgOrder Target::g_tgtArgOrder = ARG_ORDER_R2L;
 
-#endif // _TARGET_AMD64_
+#endif // TARGET_AMD64

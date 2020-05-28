@@ -625,7 +625,7 @@ void QCALLTYPE Buffer::Clear(void *dst, size_t length)
 {
     QCALL_CONTRACT;
 
-#if defined(_X86_) || defined(_AMD64_)
+#if defined(HOST_X86) || defined(HOST_AMD64)
     if (length > 0x100)
     {
         // memset ends up calling rep stosb if the hardware claims to support it efficiently. rep stosb is up to 2x slower
@@ -671,17 +671,12 @@ void QCALLTYPE Buffer::MemMove(void *dst, void *src, size_t length)
 //
 // GCInterface
 //
-
-UINT64   GCInterface::m_ulMemPressure = 0;
-UINT64   GCInterface::m_ulThreshold = MIN_GC_MEMORYPRESSURE_THRESHOLD;
 INT32    GCInterface::m_gc_counts[3] = {0,0,0};
-CrstStatic GCInterface::m_MemoryPressureLock;
-
-UINT64   GCInterface::m_addPressure[NEW_PRESSURE_COUNT] = {0, 0, 0, 0};   // history of memory pressure additions
-UINT64   GCInterface::m_remPressure[NEW_PRESSURE_COUNT] = {0, 0, 0, 0};   // history of memory pressure removals
+UINT64   GCInterface::m_addPressure[MEM_PRESSURE_COUNT] = {0, 0, 0, 0};   // history of memory pressure additions
+UINT64   GCInterface::m_remPressure[MEM_PRESSURE_COUNT] = {0, 0, 0, 0};   // history of memory pressure removals
 
 // incremented after a gen2 GC has been detected,
-// (m_iteration % NEW_PRESSURE_COUNT) is used as an index into m_addPressure and m_remPressure
+// (m_iteration % MEM_PRESSURE_COUNT) is used as an index into m_addPressure and m_remPressure
 UINT     GCInterface::m_iteration = 0;
 
 FCIMPL6(void, GCInterface::GetMemoryInfo, UINT64* highMemLoadThreshold, UINT64* totalAvailableMemoryBytes, UINT64* lastRecordedMemLoadBytes, UINT32* lastRecordedMemLoadPct, size_t* lastRecordedHeapSizeBytes, size_t* lastRecordedFragmentationBytes)
@@ -846,7 +841,7 @@ FCIMPL0(UINT64, GCInterface::GetSegmentSize)
 FCIMPLEND
 
 /*================================CollectionCount=================================
-**Action: Returns the number of collections for this generation since the begining of the life of the process
+**Action: Returns the number of collections for this generation since the beginning of the life of the process
 **Returns: The collection count.
 **Arguments: args->generation -- The generation
 **Exceptions: Argument exception if args->generation is < 0 or > GetMaxGeneration();
@@ -917,7 +912,7 @@ FCIMPL1(int, GCInterface::GetGenerationWR, LPVOID handle)
     OBJECTREF temp;
     temp = ObjectFromHandle((OBJECTHANDLE) handle);
     if (temp == NULL)
-        COMPlusThrowArgumentNull(W("weak handle"));
+        COMPlusThrowArgumentNull(W("wo"));
 
     iRetVal = (INT32)GCHeapUtilities::GetGCHeap()->WhichGeneration(OBJECTREFToObject(temp));
 
@@ -1033,7 +1028,7 @@ FCIMPL0(INT64, GCInterface::GetAllocatedBytesForCurrentThread)
     INT64 currentAllocated = 0;
     Thread *pThread = GetThread();
     gc_alloc_context* ac = pThread->GetAllocContext();
-    currentAllocated = ac->alloc_bytes + ac->alloc_bytes_loh - (ac->alloc_limit - ac->alloc_ptr);
+    currentAllocated = ac->alloc_bytes + ac->alloc_bytes_uoh - (ac->alloc_limit - ac->alloc_ptr);
 
     return currentAllocated;
 }
@@ -1047,7 +1042,7 @@ FCIMPLEND
 **           zeroingOptional -> whether caller prefers to skip clearing the content of the array, if possible.
 **Exceptions: IDS_EE_ARRAY_DIMENSIONS_EXCEEDED when size is too large. OOM if can't allocate.
 ==============================================================================*/
-FCIMPL3(Object*, GCInterface::AllocateNewArray, void* arrayTypeHandle, INT32 length, CLR_BOOL zeroingOptional)
+FCIMPL3(Object*, GCInterface::AllocateNewArray, void* arrayTypeHandle, INT32 length, INT32 flags)
 {
     CONTRACTL {
         FCALL_CHECK;
@@ -1058,7 +1053,10 @@ FCIMPL3(Object*, GCInterface::AllocateNewArray, void* arrayTypeHandle, INT32 len
 
     HELPER_METHOD_FRAME_BEGIN_RET_0();
 
-    pRet = AllocateSzArray(arrayType, length, zeroingOptional ? GC_ALLOC_ZEROING_OPTIONAL : GC_ALLOC_NO_FLAGS);
+    //Only the following flags are used by GC.cs, so we'll just assert it here.
+    _ASSERTE((flags & ~(GC_ALLOC_ZEROING_OPTIONAL | GC_ALLOC_PINNED_OBJECT_HEAP)) == 0);
+
+    pRet = AllocateSzArray(arrayType, length, (GC_ALLOC_FLAGS)flags);
 
     HELPER_METHOD_FRAME_END();
 
@@ -1073,7 +1071,7 @@ FCIMPL1(INT64, GCInterface::GetTotalAllocatedBytes, CLR_BOOL precise)
 
     if (!precise)
     {
-#ifdef _TARGET_64BIT_
+#ifdef TARGET_64BIT
         uint64_t unused_bytes = Thread::dead_threads_non_alloc_bytes;
 #else
         // As it could be noticed we read 64bit values that may be concurrently updated.
@@ -1270,84 +1268,16 @@ void QCALLTYPE GCInterface::_AddMemoryPressure(UINT64 bytesAllocated)
 {
     QCALL_CONTRACT;
 
-    // AddMemoryPressure could cause a GC, so we need a frame
     BEGIN_QCALL;
     AddMemoryPressure(bytesAllocated);
     END_QCALL;
 }
 
-void GCInterface::AddMemoryPressure(UINT64 bytesAllocated)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    SendEtwAddMemoryPressureEvent(bytesAllocated);
-
-    UINT64 newMemValue = InterlockedAdd(&m_ulMemPressure, bytesAllocated);
-
-    if (newMemValue > m_ulThreshold)
-    {
-        INT32 gen_collect = 0;
-        {
-            GCX_PREEMP();
-            CrstHolder holder(&m_MemoryPressureLock);
-
-            // to avoid collecting too often, take the max threshold of the linear and geometric growth
-            // heuristics.
-            UINT64 addMethod;
-            UINT64 multMethod;
-            UINT64 bytesAllocatedMax = (UINT64_MAX - m_ulThreshold) / 8;
-
-            if (bytesAllocated >= bytesAllocatedMax) // overflow check
-            {
-                addMethod = UINT64_MAX;
-            }
-            else
-            {
-                addMethod = m_ulThreshold + bytesAllocated * 8;
-            }
-
-            multMethod = newMemValue + newMemValue / 10;
-            if (multMethod < newMemValue) // overflow check
-            {
-                multMethod = UINT64_MAX;
-            }
-
-            m_ulThreshold = (addMethod > multMethod) ? addMethod : multMethod;
-            for (int i = 0; i <= 1; i++)
-            {
-                if ((GCHeapUtilities::GetGCHeap()->CollectionCount(i) / RELATIVE_GC_RATIO) > GCHeapUtilities::GetGCHeap()->CollectionCount(i + 1))
-                {
-                    gen_collect = i + 1;
-                    break;
-                }
-            }
-        }
-
-        PREFIX_ASSUME(gen_collect <= 2);
-
-        if ((gen_collect == 0) || (m_gc_counts[gen_collect] == GCHeapUtilities::GetGCHeap()->CollectionCount(gen_collect)))
-        {
-            GarbageCollectModeAny(gen_collect);
-        }
-
-        for (int i = 0; i < 3; i++)
-        {
-            m_gc_counts [i] = GCHeapUtilities::GetGCHeap()->CollectionCount(i);
-        }
-    }
-}
-
-#ifdef BIT64
+#ifdef HOST_64BIT
 const unsigned MIN_MEMORYPRESSURE_BUDGET = 4 * 1024 * 1024;        // 4 MB
-#else // BIT64
+#else // HOST_64BIT
 const unsigned MIN_MEMORYPRESSURE_BUDGET = 3 * 1024 * 1024;        // 3 MB
-#endif // BIT64
+#endif // HOST_64BIT
 
 const unsigned MAX_MEMORYPRESSURE_RATIO = 10;                      // 40 MB or 30 MB
 
@@ -1368,17 +1298,16 @@ void GCInterface::CheckCollectionCount()
 
         m_iteration++;
 
-        UINT p = m_iteration % NEW_PRESSURE_COUNT;
+        UINT p = m_iteration % MEM_PRESSURE_COUNT;
 
         m_addPressure[p] = 0;   // new pressure will be accumulated here
         m_remPressure[p] = 0;
     }
 }
 
-
-// New AddMemoryPressure implementation (used by RCW and the CLRServicesImpl class)
+// AddMemoryPressure implementation
 //
-//   1. Less sensitive than the original implementation (start budget 3 MB)
+//   1. Start budget - MIN_MEMORYPRESSURE_BUDGET
 //   2. Focuses more on newly added memory pressure
 //   3. Budget adjusted by effectiveness of last 3 triggered GC (add / remove ratio, max 10x)
 //   4. Budget maxed with 30% of current managed GC size
@@ -1392,7 +1321,7 @@ void GCInterface::CheckCollectionCount()
 //   and would be calculated based on historic data using standard exponential approximation:
 //   Xnew = UMDeath/UMTotal * 0.5 + Xprev
 //
-void GCInterface::NewAddMemoryPressure(UINT64 bytesAllocated)
+void GCInterface::AddMemoryPressure(UINT64 bytesAllocated)
 {
     CONTRACTL
     {
@@ -1404,11 +1333,11 @@ void GCInterface::NewAddMemoryPressure(UINT64 bytesAllocated)
 
     CheckCollectionCount();
 
-    UINT p = m_iteration % NEW_PRESSURE_COUNT;
+    UINT p = m_iteration % MEM_PRESSURE_COUNT;
 
     UINT64 newMemValue = InterlockedAdd(&m_addPressure[p], bytesAllocated);
 
-    static_assert(NEW_PRESSURE_COUNT == 4, "NewAddMemoryPressure contains unrolled loops which depend on NEW_PRESSURE_COUNT");
+    static_assert(MEM_PRESSURE_COUNT == 4, "AddMemoryPressure contains unrolled loops which depend on MEM_PRESSURE_COUNT");
 
     UINT64 add = m_addPressure[0] + m_addPressure[1] + m_addPressure[2] + m_addPressure[3] - m_addPressure[p];
     UINT64 rem = m_remPressure[0] + m_remPressure[1] + m_remPressure[2] + m_remPressure[3] - m_remPressure[p];
@@ -1422,7 +1351,7 @@ void GCInterface::NewAddMemoryPressure(UINT64 bytesAllocated)
     {
         UINT64 budget = MIN_MEMORYPRESSURE_BUDGET;
 
-        if (m_iteration >= NEW_PRESSURE_COUNT) // wait until we have enough data points
+        if (m_iteration >= MEM_PRESSURE_COUNT) // wait until we have enough data points
         {
             // Adjust according to effectiveness of GC
             // Scale budget according to past m_addPressure / m_remPressure ratio
@@ -1486,54 +1415,9 @@ void GCInterface::RemoveMemoryPressure(UINT64 bytesAllocated)
     }
     CONTRACTL_END;
 
-    SendEtwRemoveMemoryPressureEvent(bytesAllocated);
-
-    UINT64 newMemValue = InterlockedSub(&m_ulMemPressure, bytesAllocated);
-    UINT64 new_th;
-    UINT64 bytesAllocatedMax = (m_ulThreshold / 4);
-    UINT64 addMethod;
-    UINT64 multMethod = (m_ulThreshold - m_ulThreshold / 20); // can never underflow
-    if (bytesAllocated >= bytesAllocatedMax) // protect against underflow
-    {
-        m_ulThreshold = MIN_GC_MEMORYPRESSURE_THRESHOLD;
-        return;
-    }
-    else
-    {
-        addMethod = m_ulThreshold - bytesAllocated * 4;
-    }
-
-    new_th = (addMethod < multMethod) ? addMethod : multMethod;
-
-    if (newMemValue <= new_th)
-    {
-        GCX_PREEMP();
-        CrstHolder holder(&m_MemoryPressureLock);
-        if (new_th > MIN_GC_MEMORYPRESSURE_THRESHOLD)
-            m_ulThreshold = new_th;
-        else
-            m_ulThreshold = MIN_GC_MEMORYPRESSURE_THRESHOLD;
-
-        for (int i = 0; i < 3; i++)
-        {
-            m_gc_counts [i] = GCHeapUtilities::GetGCHeap()->CollectionCount(i);
-        }
-    }
-}
-
-void GCInterface::NewRemoveMemoryPressure(UINT64 bytesAllocated)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_TRIGGERS;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
     CheckCollectionCount();
 
-    UINT p = m_iteration % NEW_PRESSURE_COUNT;
+    UINT p = m_iteration % MEM_PRESSURE_COUNT;
 
     SendEtwRemoveMemoryPressureEvent(bytesAllocated);
 
@@ -1645,22 +1529,6 @@ FCIMPL3(INT32, COMInterlocked::CompareExchange, INT32* location, INT32 value, IN
     }
 
     return FastInterlockCompareExchange((LONG*)location, value, comparand);
-}
-FCIMPLEND
-
-FCIMPL4(INT32, COMInterlocked::CompareExchangeReliableResult, INT32* location, INT32 value, INT32 comparand, CLR_BOOL* succeeded)
-{
-    FCALL_CONTRACT;
-
-    if( NULL == location) {
-        FCThrow(kNullReferenceException);
-    }
-
-    INT32 result = FastInterlockCompareExchange((LONG*)location, value, comparand);
-    if (result == comparand)
-        *succeeded = true;
-
-    return result;
 }
 FCIMPLEND
 
@@ -1808,6 +1676,15 @@ FCIMPL0(void, COMInterlocked::FCMemoryBarrier)
     FCALL_CONTRACT;
 
     MemoryBarrier();
+    FC_GC_POLL();
+}
+FCIMPLEND
+
+FCIMPL0(void, COMInterlocked::FCMemoryBarrierLoad)
+{
+    FCALL_CONTRACT;
+
+    VolatileLoadBarrier();
     FC_GC_POLL();
 }
 FCIMPLEND

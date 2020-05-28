@@ -106,12 +106,12 @@ public:
     //====================================================================
     // return an Object for IUnknown
     //====================================================================
-    static FCDECL1(Object*, GetObjectForIUnknown, IUnknown* pUnk);
+    static FCDECL1(Object*, GetObjectForIUnknownNative, IUnknown* pUnk);
 
     //====================================================================
     // return a unique cacheless Object for IUnknown
     //====================================================================
-    static FCDECL1(Object*, GetUniqueObjectForIUnknown, IUnknown* pUnk);
+    static FCDECL1(Object*, GetUniqueObjectForIUnknownNative, IUnknown* pUnk);
 
     //====================================================================
     // return a unique cacheless Object for IUnknown
@@ -178,11 +178,6 @@ public:
     static FCDECL2(Object*, GetObjectsForNativeVariants, VARIANT* aSrcNativeVariant, int cVars);
 
     //====================================================================
-    // This method generates a guid for the specified type.
-    //====================================================================
-    static FCDECL2(void, DoGenerateGuidForType, GUID * result, ReflectClassBaseObject* refTypeUNSAFE);
-
-    //====================================================================
     // Methods to retrieve information from TypeLibs and TypeInfos.
     //====================================================================
     static FCDECL2(void, DoGetTypeLibGuid, GUID * result, Object* refTlbUNSAFE);
@@ -201,9 +196,6 @@ public:
     //====================================================================
     static FCDECL1(int, GetStartComSlot, ReflectClassBaseObject* tUNSAFE);
     static FCDECL1(int, GetEndComSlot, ReflectClassBaseObject* tUNSAFE);
-    static FCDECL3(Object*, GetMethodInfoForComSlot, ReflectClassBaseObject* tUNSAFE, INT32 slot, ComMemberType* pMemberType);
-
-    static FCDECL1(int, GetComSlotForMethodInfo, ReflectMethodObject* pMethodUNSAFE);
 
     static FCDECL1(Object*, WrapIUnknownWithComObject, IUnknown* pUnk);
 

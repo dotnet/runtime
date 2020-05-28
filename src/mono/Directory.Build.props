@@ -1,0 +1,113 @@
+<Project>
+  <PropertyGroup>
+    <SkipImportArcadeSdkFromRoot>true</SkipImportArcadeSdkFromRoot>
+  </PropertyGroup>
+  <Import Project="..\..\Directory.Build.props" />
+  
+  <!-- Set default Platform -->
+  <PropertyGroup>
+    <HostArch>$([System.Runtime.InteropServices.RuntimeInformation]::ProcessArchitecture.ToString().ToLowerInvariant)</HostArch>
+    <TargetArchitecture Condition="'$(TargetArchitecture)' == ''">$(HostArch)</TargetArchitecture>
+    <Platform>$(TargetArchitecture)</Platform>
+
+    <PlatformConfigPathPart>$(TargetOS).$(Platform).$(Configuration)</PlatformConfigPathPart>
+  </PropertyGroup>
+
+  <!-- Common properties -->
+  <PropertyGroup>
+    <ProjectDir>$(MSBuildThisFileDirectory)</ProjectDir>
+    <SourceDir>$(ProjectDir)src\</SourceDir>
+    <BinDir>$(ArtifactsBinDir)mono\$(PlatformConfigPathPart)\</BinDir>
+
+    <BaseIntermediateOutputPath>$(ArtifactsObjDir)mono\$(MSBuildProjectName)\</BaseIntermediateOutputPath>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <!-- Central place to set the versions of all nuget packages produced in the repo -->
+    <PackageVersion Condition="'$(PackageVersion)' == ''">5.0.0</PackageVersion>
+
+    <!-- Set the boolean below to true to generate packages with stabilized versions -->
+    <StabilizePackageVersion Condition="'$(StabilizePackageVersion)' == ''">false</StabilizePackageVersion>
+    <StableVersion Condition="'$(StabilizePackageVersion)' == 'true' and '$(StableVersion)' == ''">$(PackageVersion)</StableVersion>
+  </PropertyGroup>
+
+  <!-- Set up common target properties that we use to conditionally include sources -->
+  <PropertyGroup>
+    <TargetsFreeBSD Condition="'$(TargetOS)' == 'FreeBSD'">true</TargetsFreeBSD>
+    <TargetsLinux Condition="'$(TargetOS)' == 'Linux' or '$(TargetOS)' == 'Android'">true</TargetsLinux>
+    <TargetsNetBSD Condition="'$(TargetOS)' == 'NetBSD'">true</TargetsNetBSD>
+    <TargetsOSX Condition="'$(TargetOS)' == 'OSX'">true</TargetsOSX>
+    <TargetsiOS Condition="'$(TargetOS)' == 'iOS'">true</TargetsiOS>
+    <TargetstvOS Condition="'$(TargetOS)' == 'tvOS'">true</TargetstvOS>
+    <TargetsiOSSimulator Condition="'$(TargetsiOS)' == 'true' and ('$(Platform)' == 'x64' or '$(Platform)' == 'x86')">true</TargetsiOSSimulator>
+    <TargetstvOSSimulator Condition="'$(TargetstvOS)' == 'true' and '$(Platform)' == 'x64'">true</TargetstvOSSimulator>
+    <TargetsAndroid Condition="'$(TargetOS)' == 'Android'">true</TargetsAndroid>
+    <TargetsBrowser Condition="'$(TargetOS)' == 'Browser'">true</TargetsBrowser>
+    <TargetsWindows Condition="'$(TargetOS)' == 'Windows_NT'">true</TargetsWindows>
+    <TargetsUnix Condition="'$(TargetsFreeBSD)' == 'true' or '$(TargetsLinux)' == 'true' or '$(TargetsNetBSD)' == 'true' or '$(TargetsOSX)' == 'true' or '$(TargetstvOS)' == 'true' or '$(TargetsiOS)' == 'true' or '$(TargetsAndroid)' == 'true' or '$(TargetsBrowser)' == 'true'">true</TargetsUnix>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <!-- Minimum target OS version, keep in sync with src/libraries/Native/build-native.sh -->
+    <iOSVersionMin Condition="'$(TargetsiOS)' == 'true' and '$(TargetsiOSSimulator)' != 'true'">7.0</iOSVersionMin>
+    <iOSVersionMin Condition="'$(TargetsiOS)' == 'true' and '$(TargetsiOSSimulator)' == 'true'">8.0</iOSVersionMin>
+    <tvOSVersionMin>9.0</tvOSVersionMin>
+    <watchOSVersionMin>2.0</watchOSVersionMin>
+    <watchOS64_32VersionMin>5.1</watchOS64_32VersionMin>
+    <macOSVersionMin>10.13</macOSVersionMin>
+
+    <!-- Version of the OS SDK we target -->
+    <iOSVersion></iOSVersion>
+    <tvOSVersion></tvOSVersion>
+    <watchOSVersion></watchOSVersion>
+    <watchOS64_32Version></watchOS64_32Version>
+    <macOSVersion></macOSVersion>
+
+    <!-- Version of the Android SDK we target, keep in sync with src/libraries/Native/build-native.sh -->
+    <AndroidApiVersion>21</AndroidApiVersion>
+  </PropertyGroup>
+
+  <!-- Set the kind of PDB to Portable -->
+  <PropertyGroup>
+    <DebugType Condition="'$(DebugType)' == ''">Portable</DebugType>
+  </PropertyGroup>
+
+  <!-- Output paths -->
+  <PropertyGroup>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+  </PropertyGroup>
+
+  <!-- Ensure our properties are set before Arcade defines defaults -->
+  <Import Project="Sdk.props" Sdk="Microsoft.DotNet.Arcade.Sdk" />
+
+  <PropertyGroup Condition="'$(CopyrightNetFoundation)' != ''">
+    <Copyright>$(CopyrightNetFoundation)</Copyright>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <SignAssembly Condition="'$(UsingMicrosoftNETSdk)'!='true'">false</SignAssembly>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <CL_MPCount>$(NumberOfCores)</CL_MPCount>
+  </PropertyGroup>
+  <PropertyGroup>
+    <!-- Enables Strict mode for Roslyn compiler -->
+    <Features>strict;nullablePublicOnly</Features>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <MonoObjDir>$(ArtifactsObjDir)mono/$(PlatformConfigPathPart)/</MonoObjDir>
+    <MonoLLVMDir Condition="('$(MonoEnableLLVM)' == 'true' or '$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'tvOS' or '$(TargetOS)' == 'Browser') and '$(MonoLLVMDir)' == ''">$(MonoObjDir)llvm</MonoLLVMDir>
+  </PropertyGroup>
+
+  <!-- Paths for Mobile App Projects  -->
+  <PropertyGroup>
+    <AppleAppBuilderProjDirectory>$([MSBuild]::NormalizeDirectory('$(RepoTasksDir)', 'mobile.tasks', 'AppleAppBuilder'))</AppleAppBuilderProjDirectory>
+    <AppleTestRunnerProjDirectory>$([MSBuild]::NormalizeDirectory('$(LibrariesProjectRoot)', 'Common', tests, 'AppleTestRunner'))</AppleTestRunnerProjDirectory>
+    <AndroidAppBuilderProjDirectory>$([MSBuild]::NormalizeDirectory('$(RepoTasksDir)', 'mobile.tasks', 'AndroidAppBuilder'))</AndroidAppBuilderProjDirectory>
+    <AndroidTestRunnerProjDirectory>$([MSBuild]::NormalizeDirectory('$(LibrariesProjectRoot)', 'Common', tests, 'AndroidTestRunner'))</AndroidTestRunnerProjDirectory>
+    <MonoAOTCompilerProjDirectory>$([MSBuild]::NormalizeDirectory('$(RepoTasksDir)', 'mobile.tasks', 'AotCompilerTask'))</MonoAOTCompilerProjDirectory>
+  </PropertyGroup>
+</Project>

@@ -93,7 +93,7 @@ namespace System.Threading.Tests
             // GetRandomName prevents name collision when two tests run at the same time
             string name = GetRandomName() + new string('x', Interop.Kernel32.MAX_PATH);
 
-            if (PlatformDetection.IsFullFramework)
+            if (PlatformDetection.IsNetFramework)
             {
                 Assert.Throws<ArgumentException>(() =>
                 {

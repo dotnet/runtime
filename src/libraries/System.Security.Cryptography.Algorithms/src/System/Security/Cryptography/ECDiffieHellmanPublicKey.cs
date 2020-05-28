@@ -23,7 +23,7 @@ namespace System.Security.Cryptography
                 throw new ArgumentNullException(nameof(keyBlob));
             }
 
-            _keyBlob = keyBlob.Clone() as byte[];
+            _keyBlob = (byte[])keyBlob.Clone();
         }
 
         public void Dispose()
@@ -35,7 +35,7 @@ namespace System.Security.Cryptography
 
         public virtual byte[] ToByteArray()
         {
-            return _keyBlob.Clone() as byte[];
+            return (byte[])_keyBlob.Clone();
         }
 
         // This method must be implemented by derived classes. In order to conform to the contract, it cannot be abstract.

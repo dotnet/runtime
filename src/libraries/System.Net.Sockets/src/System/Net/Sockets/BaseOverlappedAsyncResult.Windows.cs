@@ -14,12 +14,12 @@ namespace System.Net.Sockets
     internal partial class BaseOverlappedAsyncResult : ContextAwareResult
     {
         private int _cleanupCount;
-        private SafeNativeOverlapped _nativeOverlapped;
+        private SafeNativeOverlapped? _nativeOverlapped;
 
         // The WinNT Completion Port callback.
         private static readonly unsafe IOCompletionCallback s_ioCallback = new IOCompletionCallback(CompletionPortCallback);
 
-        internal BaseOverlappedAsyncResult(Socket socket, object asyncState, AsyncCallback asyncCallback)
+        internal BaseOverlappedAsyncResult(Socket socket, object? asyncState, AsyncCallback? asyncCallback)
             : base(socket, asyncState, asyncCallback)
         {
             _cleanupCount = 1;
@@ -34,9 +34,9 @@ namespace System.Net.Sockets
         // These calls are outside the runtime and are unmanaged code, so we need
         // to prepare specific structures and ints that lie in unmanaged memory
         // since the overlapped calls may complete asynchronously.
-        internal void SetUnmanagedStructures(object objectsToPin)
+        internal void SetUnmanagedStructures(object? objectsToPin)
         {
-            Socket s = (Socket)AsyncObject;
+            Socket s = (Socket)AsyncObject!;
 
             // Bind the Win32 Socket Handle to the ThreadPool
             Debug.Assert(s != null, "m_CurrentSocket is null");
@@ -60,86 +60,78 @@ namespace System.Net.Sockets
 
         private static unsafe void CompletionPortCallback(uint errorCode, uint numBytes, NativeOverlapped* nativeOverlapped)
         {
-#if DEBUG
-            DebugThreadTracking.SetThreadSource(ThreadKinds.CompletionPort);
-            using (DebugThreadTracking.SetThreadKind(ThreadKinds.System))
+            BaseOverlappedAsyncResult asyncResult = (BaseOverlappedAsyncResult)ThreadPoolBoundHandle.GetNativeOverlappedState(nativeOverlapped)!;
+
+            if (asyncResult.InternalPeekCompleted)
             {
-#endif
-                BaseOverlappedAsyncResult asyncResult = (BaseOverlappedAsyncResult)ThreadPoolBoundHandle.GetNativeOverlappedState(nativeOverlapped);
+                NetEventSource.Fail(null, $"asyncResult.IsCompleted: {asyncResult}");
+            }
+            if (NetEventSource.IsEnabled) NetEventSource.Info(null, $"errorCode:{errorCode} numBytes:{numBytes} nativeOverlapped:{(IntPtr)nativeOverlapped}");
 
-                if (asyncResult.InternalPeekCompleted)
+            // Complete the IO and invoke the user's callback.
+            SocketError socketError = (SocketError)errorCode;
+
+            if (socketError != SocketError.Success && socketError != SocketError.OperationAborted)
+            {
+                // There are cases where passed errorCode does not reflect the details of the underlined socket error.
+                // "So as of today, the key is the difference between WSAECONNRESET and ConnectionAborted,
+                //  .e.g remote party or network causing the connection reset or something on the local host (e.g. closesocket
+                // or receiving data after shutdown (SD_RECV)).  With Winsock/TCP stack rewrite in longhorn, there may
+                // be other differences as well."
+
+                Socket? socket = asyncResult.AsyncObject as Socket;
+                if (socket == null)
                 {
-                    NetEventSource.Fail(null, $"asyncResult.IsCompleted: {asyncResult}");
+                    socketError = SocketError.NotSocket;
                 }
-                if (NetEventSource.IsEnabled) NetEventSource.Info(null, $"errorCode:{errorCode} numBytes:{numBytes} nativeOverlapped:{(IntPtr)nativeOverlapped}");
-
-                // Complete the IO and invoke the user's callback.
-                SocketError socketError = (SocketError)errorCode;
-
-                if (socketError != SocketError.Success && socketError != SocketError.OperationAborted)
+                else if (socket.Disposed)
                 {
-                    // There are cases where passed errorCode does not reflect the details of the underlined socket error.
-                    // "So as of today, the key is the difference between WSAECONNRESET and ConnectionAborted,
-                    //  .e.g remote party or network causing the connection reset or something on the local host (e.g. closesocket
-                    // or receiving data after shutdown (SD_RECV)).  With Winsock/TCP stack rewrite in longhorn, there may
-                    // be other differences as well."
-
-                    Socket socket = asyncResult.AsyncObject as Socket;
-                    if (socket == null)
+                    socketError = SocketError.OperationAborted;
+                }
+                else
+                {
+                    try
                     {
-                        socketError = SocketError.NotSocket;
+                        // The async IO completed with a failure.
+                        // Here we need to call WSAGetOverlappedResult() just so GetLastSocketError() will return the correct error.
+                        SocketFlags ignore;
+                        bool success = Interop.Winsock.WSAGetOverlappedResult(
+                            socket.SafeHandle,
+                            nativeOverlapped,
+                            out numBytes,
+                            false,
+                            out ignore);
+                        if (!success)
+                        {
+                            socketError = SocketPal.GetLastSocketError();
+                        }
+                        if (success)
+                        {
+                            NetEventSource.Fail(asyncResult, $"Unexpectedly succeeded. errorCode:{errorCode} numBytes:{numBytes}");
+                        }
                     }
-                    else if (socket.Disposed)
+                    catch (ObjectDisposedException)
                     {
+                        // Disposed check above does not always work since this code is subject to race conditions
                         socketError = SocketError.OperationAborted;
                     }
-                    else
-                    {
-                        try
-                        {
-                            // The async IO completed with a failure.
-                            // Here we need to call WSAGetOverlappedResult() just so GetLastSocketError() will return the correct error.
-                            SocketFlags ignore;
-                            bool success = Interop.Winsock.WSAGetOverlappedResult(
-                                socket.SafeHandle,
-                                nativeOverlapped,
-                                out numBytes,
-                                false,
-                                out ignore);
-                            if (!success)
-                            {
-                                socketError = SocketPal.GetLastSocketError();
-                            }
-                            if (success)
-                            {
-                                NetEventSource.Fail(asyncResult, $"Unexpectedly succeeded. errorCode:{errorCode} numBytes:{numBytes}");
-                            }
-                        }
-                        catch (ObjectDisposedException)
-                        {
-                            // Disposed check above does not always work since this code is subject to race conditions
-                            socketError = SocketError.OperationAborted;
-                        }
-                    }
                 }
-
-                // Set results and invoke callback
-                asyncResult.CompletionCallback((int)numBytes, socketError);
-#if DEBUG
             }
-#endif
+
+            // Set results and invoke callback
+            asyncResult.CompletionCallback((int)numBytes, socketError);
         }
 
         // Called either synchronously from SocketPal async routines or asynchronously via CompletionPortCallback above.
         private void CompletionCallback(int numBytes, SocketError socketError)
         {
             ErrorCode = (int)socketError;
-            object result = PostCompletion(numBytes);
+            object? result = PostCompletion(numBytes);
             ReleaseUnmanagedStructures(); // must come after PostCompletion, as overrides may use these resources
             InvokeCallback(result);
         }
 
-        internal unsafe NativeOverlapped* DangerousOverlappedPointer => (NativeOverlapped*)_nativeOverlapped.DangerousGetHandle();
+        internal unsafe NativeOverlapped* DangerousOverlappedPointer => (NativeOverlapped*)_nativeOverlapped!.DangerousGetHandle();
 
         // Check the result of the overlapped operation.
         // Handle synchronous success by completing the asyncResult here.
@@ -149,7 +141,7 @@ namespace System.Net.Sockets
             if (success)
             {
                 // Synchronous success.
-                Socket socket = (Socket)AsyncObject;
+                Socket socket = (Socket)AsyncObject!;
                 if (socket.SafeHandle.SkipCompletionPortOnSuccess)
                 {
                     // The socket handle is configured to skip completion on success,
@@ -206,7 +198,7 @@ namespace System.Net.Sockets
         {
             // Free the unmanaged memory if allocated.
             if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
-            _nativeOverlapped.Dispose();
+            _nativeOverlapped!.Dispose();
             _nativeOverlapped = null;
             GC.SuppressFinalize(this);
         }

@@ -20,7 +20,7 @@ void reset_redirected_error_writer()
     get_redirected_error_stream().swap(newstream);
 }
 
-void redirected_error_writer(const pal::char_t* msg)
+void __cdecl redirected_error_writer(const pal::char_t* msg)
 {
     get_redirected_error_stream() << msg;
 }

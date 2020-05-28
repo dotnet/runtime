@@ -194,7 +194,7 @@ namespace System.IO.Tests
         [PlatformSpecific(TestPlatforms.Windows)]
         public void TrailingWhiteSpace_NotTrimmed(string component)
         {
-            // In CoreFX we don't trim anything other than space (' ')
+            // In .NET Core we don't trim anything other than space (' ')
             string path = GetTestFilePath() + component;
             FileInfo testFile = new FileInfo(path);
             testFile.Create().Dispose();

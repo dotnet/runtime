@@ -14,17 +14,15 @@
 
 #include "assemblybinder.hpp"
 #include "assemblyname.hpp"
-
 #include "assembly.hpp"
 #include "applicationcontext.hpp"
+#include "bindertracing.h"
 #include "loadcontext.hpp"
 #include "bindresult.inl"
 #include "failurecache.hpp"
 #include "utils.hpp"
 #include "variables.hpp"
 #include "stringarraylist.h"
-
-#include "strongname.h"
 
 #define APP_DOMAIN_LOCKED_UNLOCKED        0x02
 #define APP_DOMAIN_LOCKED_CONTEXT         0x04
@@ -52,83 +50,66 @@ namespace BINDER_SPACE
         //
         // This defines the assembly equivalence relation
         //
-        HRESULT IsValidAssemblyVersion(/* in */ AssemblyName *pRequestedName,
-                                       /* in */ AssemblyName *pFoundName,
-                                       /* in */ ApplicationContext *pApplicationContext)
+        bool IsCompatibleAssemblyVersion(/* in */ AssemblyName *pRequestedName,
+                                         /* in */ AssemblyName *pFoundName)
         {
-            HRESULT hr = S_OK;
             AssemblyVersion *pRequestedVersion = pRequestedName->GetVersion();
             AssemblyVersion *pFoundVersion = pFoundName->GetVersion();
 
-            do
+            if (!pRequestedVersion->HasMajor())
             {
-                if (!pRequestedVersion->HasMajor())
-                {
-                    // An unspecified requested version component matches any value for the same component in the found version,
-                    // regardless of lesser-order version components
-                    break;
-                }
-                if (!pFoundVersion->HasMajor() || pRequestedVersion->GetMajor() > pFoundVersion->GetMajor())
-                {
-                    // - A specific requested version component does not match an unspecified value for the same component in
-                    //   the found version, regardless of lesser-order version components
-                    // - Or, the requested version is greater than the found version
-                    hr = FUSION_E_APP_DOMAIN_LOCKED;
-                    break;
-                }
-                if (pRequestedVersion->GetMajor() < pFoundVersion->GetMajor())
-                {
-                    // The requested version is less than the found version
-                    break;
-                }
-
-                if (!pRequestedVersion->HasMinor())
-                {
-                    break;
-                }
-                if (!pFoundVersion->HasMinor() || pRequestedVersion->GetMinor() > pFoundVersion->GetMinor())
-                {
-                    hr = FUSION_E_APP_DOMAIN_LOCKED;
-                    break;
-                }
-                if (pRequestedVersion->GetMinor() < pFoundVersion->GetMinor())
-                {
-                    break;
-                }
-
-                if (!pRequestedVersion->HasBuild())
-                {
-                    break;
-                }
-                if (!pFoundVersion->HasBuild() || pRequestedVersion->GetBuild() > pFoundVersion->GetBuild())
-                {
-                    hr = FUSION_E_APP_DOMAIN_LOCKED;
-                    break;
-                }
-                if (pRequestedVersion->GetBuild() < pFoundVersion->GetBuild())
-                {
-                    break;
-                }
-
-                if (!pRequestedVersion->HasRevision())
-                {
-                    break;
-                }
-                if (!pFoundVersion->HasRevision() || pRequestedVersion->GetRevision() > pFoundVersion->GetRevision())
-                {
-                    hr = FUSION_E_APP_DOMAIN_LOCKED;
-                    break;
-                }
-            } while (false);
-
-            if (pApplicationContext->IsTpaListProvided() && hr == FUSION_E_APP_DOMAIN_LOCKED)
+                // An unspecified requested version component matches any value for the same component in the found version,
+                // regardless of lesser-order version components
+                return true;
+            }
+            if (!pFoundVersion->HasMajor() || pRequestedVersion->GetMajor() > pFoundVersion->GetMajor())
             {
-                // For our new binding models, use a more descriptive error code than APP_DOMAIN_LOCKED for bind
-                // failures.
-                hr = FUSION_E_REF_DEF_MISMATCH;
+                // - A specific requested version component does not match an unspecified value for the same component in
+                //   the found version, regardless of lesser-order version components
+                // - Or, the requested version is greater than the found version
+                return false;
+            }
+            if (pRequestedVersion->GetMajor() < pFoundVersion->GetMajor())
+            {
+                // The requested version is less than the found version
+                return true;
             }
 
-            return hr;
+            if (!pRequestedVersion->HasMinor())
+            {
+                return true;
+            }
+            if (!pFoundVersion->HasMinor() || pRequestedVersion->GetMinor() > pFoundVersion->GetMinor())
+            {
+                return false;
+            }
+            if (pRequestedVersion->GetMinor() < pFoundVersion->GetMinor())
+            {
+                return true;
+            }
+
+            if (!pRequestedVersion->HasBuild())
+            {
+                return true;
+            }
+            if (!pFoundVersion->HasBuild() || pRequestedVersion->GetBuild() > pFoundVersion->GetBuild())
+            {
+                return false;
+            }
+            if (pRequestedVersion->GetBuild() < pFoundVersion->GetBuild())
+            {
+                return true;
+            }
+
+            if (!pRequestedVersion->HasRevision())
+            {
+                return true;
+            }
+            if (!pFoundVersion->HasRevision() || pRequestedVersion->GetRevision() > pFoundVersion->GetRevision())
+            {
+                return false;
+            }
+            return true;
         }
 
         HRESULT URLToFullPath(PathString &assemblyPath)
@@ -303,6 +284,9 @@ namespace BINDER_SPACE
         LONG kContextVersion = 0;
         BindResult bindResult;
 
+        // Tracing happens outside the binder lock to avoid calling into managed code within the lock
+        BinderTracing::ResolutionAttemptedOperation tracer{pAssemblyName, pApplicationContext->GetBinderID(), 0 /*managedALC*/, hr};
+
 #ifndef CROSSGEN_COMPILE
     Retry:
         {
@@ -349,9 +333,10 @@ namespace BINDER_SPACE
 #endif
 
     Exit:
+        tracer.TraceBindResult(bindResult);
+
         if (bindResult.HaveResult())
         {
-
 #ifndef CROSSGEN_COMPILE
             BindResult hostBindResult;
 
@@ -394,23 +379,36 @@ namespace BINDER_SPACE
 
         _ASSERTE(ppSystemAssembly != NULL);
 
-        StackSString sCoreLibDir(systemDirectory);
         ReleaseHolder<Assembly> pSystemAssembly;
 
-        if (!sCoreLibDir.EndsWith(DIRECTORY_SEPARATOR_CHAR_W))
-        {
-            sCoreLibDir.Append(DIRECTORY_SEPARATOR_CHAR_W);
-        }
-
-        StackSString sCoreLib;
-
         // At run-time, System.Private.CoreLib.dll is expected to be the NI image.
-        sCoreLib = sCoreLibDir;
-        sCoreLib.Append(CoreLibName_IL_W);
+        // System.Private.CoreLib.dll is expected to be found at one of the following locations:
+        //   * Non-single-file app: In systemDirectory, beside coreclr.dll
+        //   * Framework-dependent single-file app: In systemDirectory, beside coreclr.dll
+        //   * Self-contained single-file app: Within the single-file bundle.
+        //
+        //   CoreLib path (sCoreLib):
+        //   * Absolute path when looking for a file on disk
+        //   * Bundle-relative path when looking within the single-file bundle.
+
+        StackSString sCoreLibName(CoreLibName_IL_W);
+        StackSString sCoreLib;
+        BinderTracing::PathSource pathSource = BinderTracing::PathSource::Bundle;
+        BundleFileLocation bundleFileLocation = Bundle::ProbeAppBundle(sCoreLibName, /*pathIsBundleRelative */ true);
+        if (!bundleFileLocation.IsValid())
+        {
+            sCoreLib.Set(systemDirectory);
+            pathSource = BinderTracing::PathSource::ApplicationAssemblies;
+        }
+        CombinePath(sCoreLib, sCoreLibName, sCoreLib);
+
         IF_FAIL_GO(AssemblyBinder::GetAssembly(sCoreLib,
                                                TRUE /* fIsInGAC */,
                                                fBindToNativeImage,
-                                               &pSystemAssembly));
+                                               &pSystemAssembly,
+                                               NULL /* szMDAssemblyPath */,
+                                               bundleFileLocation));
+        BinderTracing::PathProbed(sCoreLib, pathSource, hr);
 
         *ppSystemAssembly = pSystemAssembly.Extract();
 
@@ -420,10 +418,10 @@ namespace BINDER_SPACE
 
 
     /* static */
-    HRESULT AssemblyBinder::BindToSystemSatellite(SString   &systemDirectory,
-                                                  SString   &simpleName,
-                                                  SString   &cultureName,
-                                                  Assembly **ppSystemAssembly)
+    HRESULT AssemblyBinder::BindToSystemSatellite(SString& systemDirectory,
+        SString& simpleName,
+        SString& cultureName,
+        Assembly** ppSystemAssembly)
     {
         // Indirect check that binder was initialized.
         _ASSERTE(g_BinderVariables != NULL);
@@ -432,25 +430,43 @@ namespace BINDER_SPACE
 
         _ASSERTE(ppSystemAssembly != NULL);
 
-        StackSString sMscorlibSatellite(systemDirectory);
-        ReleaseHolder<Assembly> pSystemAssembly;
+        // Satellite assembly's relative path
+        StackSString relativePath;
 
         // append culture name
         if (!cultureName.IsEmpty())
         {
-            CombinePath(sMscorlibSatellite, cultureName, sMscorlibSatellite);
+            CombinePath(relativePath, cultureName, relativePath);
         }
 
         // append satellite assembly's simple name
-        CombinePath(sMscorlibSatellite, simpleName, sMscorlibSatellite);
+        CombinePath(relativePath, simpleName, relativePath);
 
         // append extension
-        sMscorlibSatellite.Append(W(".dll"));
+        relativePath.Append(W(".dll"));
 
+        // Satellite assembly's path:
+        //   * Absolute path when looking for a file on disk
+        //   * Bundle-relative path when looking within the single-file bundle.
+        StackSString sMscorlibSatellite;
+
+        BinderTracing::PathSource pathSource = BinderTracing::PathSource::Bundle;
+        BundleFileLocation bundleFileLocation = Bundle::ProbeAppBundle(relativePath, /*pathIsBundleRelative */ true);
+        if (!bundleFileLocation.IsValid())
+        {
+            sMscorlibSatellite.Set(systemDirectory);
+            pathSource = BinderTracing::PathSource::ApplicationAssemblies;
+        }
+        CombinePath(sMscorlibSatellite, relativePath, sMscorlibSatellite);
+
+        ReleaseHolder<Assembly> pSystemAssembly;
         IF_FAIL_GO(AssemblyBinder::GetAssembly(sMscorlibSatellite,
                                                TRUE /* fIsInGAC */,
                                                FALSE /* fExplicitBindToNativeImage */,
-                                               &pSystemAssembly));
+                                               &pSystemAssembly,
+                                               NULL /* szMDAssemblyPath */,
+                                               bundleFileLocation));
+        BinderTracing::PathProbed(sMscorlibSatellite, pathSource, hr);
 
         *ppSystemAssembly = pSystemAssembly.Extract();
 
@@ -567,7 +583,9 @@ namespace BINDER_SPACE
                                // specified.  Generally only NGEN PDB generation has
                                // this TRUE.
                                fExplicitBindToNativeImage,
-                               &pAssembly));
+                               &pAssembly,
+                               NULL /* szMDAssemblyPath */,
+                               Bundle::ProbeAppBundle(assemblyPath)));
 
         AssemblyName *pAssemblyName;
         pAssemblyName = pAssembly->GetAssemblyName();
@@ -610,41 +628,63 @@ namespace BINDER_SPACE
     {
         HRESULT hr = S_OK;
 
+        bool isTpaListProvided = pApplicationContext->IsTpaListProvided();
 #ifndef CROSSGEN_COMPILE
         ContextEntry *pContextEntry = NULL;
-        IF_FAIL_GO(FindInExecutionContext(pApplicationContext, pAssemblyName, &pContextEntry));
+        hr = FindInExecutionContext(pApplicationContext, pAssemblyName, &pContextEntry);
+
+        // Add the attempt to the bind result on failure / not found. On success, it will be added after the version check.
+        if (FAILED(hr) || pContextEntry == NULL)
+            pBindResult->SetAttemptResult(hr, pContextEntry);
+
+        IF_FAIL_GO(hr);
         if (pContextEntry != NULL)
         {
-#if !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
-            if (skipVersionCompatibilityCheck)
-            {
-                // Skip RefDef matching if we have been asked to.
-            }
-#endif // !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
-            else
+            if (!skipVersionCompatibilityCheck)
             {
                 // Can't give higher version than already bound
-                IF_FAIL_GO(IsValidAssemblyVersion(pAssemblyName, pContextEntry->GetAssemblyName(), pApplicationContext));
+                bool isCompatible = IsCompatibleAssemblyVersion(pAssemblyName, pContextEntry->GetAssemblyName());
+                hr = isCompatible ? S_OK : FUSION_E_APP_DOMAIN_LOCKED;
+                pBindResult->SetAttemptResult(hr, pContextEntry);
+
+                // TPA binder returns FUSION_E_REF_DEF_MISMATCH for incompatible version
+                if (hr == FUSION_E_APP_DOMAIN_LOCKED && isTpaListProvided)
+                    hr = FUSION_E_REF_DEF_MISMATCH;
             }
+            else
+            {
+                pBindResult->SetAttemptResult(hr, pContextEntry);
+            }
+
+            IF_FAIL_GO(hr);
 
             pBindResult->SetResult(pContextEntry);
         }
         else
 #endif // !CROSSGEN_COMPILE
-        if (pApplicationContext->IsTpaListProvided())
+        if (isTpaListProvided)
         {
-            IF_FAIL_GO(BindByTpaList(pApplicationContext,
+            // BindByTpaList handles setting attempt results on the bind result
+            hr = BindByTpaList(pApplicationContext,
                                      pAssemblyName,
                                      excludeAppPaths,
-                                     pBindResult));
-            if (pBindResult->HaveResult())
+                                     pBindResult);
+            if (SUCCEEDED(hr) && pBindResult->HaveResult())
             {
-                hr = IsValidAssemblyVersion(pAssemblyName, pBindResult->GetAssemblyName(), pApplicationContext);
-                if (FAILED(hr))
-                {
-                    pBindResult->SetNoResult();
-                }
+                bool isCompatible = IsCompatibleAssemblyVersion(pAssemblyName, pBindResult->GetAssemblyName());
+                hr = isCompatible ? S_OK : FUSION_E_APP_DOMAIN_LOCKED;
+                pBindResult->SetAttemptResult(hr, pBindResult->GetAsAssembly());
+
+                // TPA binder returns FUSION_E_REF_DEF_MISMATCH for incompatible version
+                if (hr == FUSION_E_APP_DOMAIN_LOCKED && isTpaListProvided)
+                    hr = FUSION_E_REF_DEF_MISMATCH;
             }
+
+            if (FAILED(hr))
+            {
+                pBindResult->SetNoResult();
+            }
+            IF_FAIL_GO(hr);
         }
     Exit:
         return hr;
@@ -665,20 +705,20 @@ namespace BINDER_SPACE
         ExecutionContext *pExecutionContext = pApplicationContext->GetExecutionContext();
         ContextEntry *pContextEntry = pExecutionContext->Lookup(pAssemblyName);
 
+        // Set any found context entry. It is up to the caller to check the returned HRESULT
+        // for errors due to validation
+        *ppContextEntry = pContextEntry;
         if (pContextEntry != NULL)
         {
             AssemblyName *pContextName = pContextEntry->GetAssemblyName();
             if (pAssemblyName->GetIsDefinition() &&
                 (pContextName->GetArchitecture() != pAssemblyName->GetArchitecture()))
             {
-                IF_FAIL_GO(FUSION_E_APP_DOMAIN_LOCKED);
+                return FUSION_E_APP_DOMAIN_LOCKED;
             }
         }
 
-        *ppContextEntry = pContextEntry;
-
-    Exit:
-        return hr;
+        return pContextEntry != NULL ? S_OK : S_FALSE;
     }
 
 #endif //CROSSGEN_COMPILE
@@ -713,32 +753,75 @@ namespace BINDER_SPACE
 
     namespace
     {
-        HRESULT BindSatelliteResourceByProbingPaths(
-            const StringArrayList   *pResourceRoots,
-            AssemblyName            *pRequestedAssemblyName,
-            BindResult              *pBindResult)
+        HRESULT BindSatelliteResourceFromBundle(
+            AssemblyName*          pRequestedAssemblyName,
+            SString               &relativePath,
+            BindResult*            pBindResult)
         {
             HRESULT hr = S_OK;
 
-            SString &simpleNameRef = pRequestedAssemblyName->GetSimpleName();
-            SString &cultureRef = pRequestedAssemblyName->GetCulture();
+            BundleFileLocation bundleFileLocation = Bundle::ProbeAppBundle(relativePath, /* pathIsBundleRelative */ true);
+            if (!bundleFileLocation.IsValid())
+            {
+                return hr;
+            }
 
-            _ASSERTE(!cultureRef.IsEmpty() && !cultureRef.EqualsCaseInsensitive(g_BinderVariables->cultureNeutral));
+            ReleaseHolder<Assembly> pAssembly;
+            hr = AssemblyBinder::GetAssembly(relativePath,
+                                             FALSE /* fIsInGAC */,
+                                             FALSE /* fExplicitBindToNativeImage */,
+                                             &pAssembly,
+                                             NULL,  // szMDAssemblyPath
+                                             bundleFileLocation);
+
+            BinderTracing::PathProbed(relativePath, BinderTracing::PathSource::Bundle, hr);
+
+            // Missing files are okay and expected when probing
+            if (hr == HRESULT_FROM_WIN32(ERROR_FILE_NOT_FOUND))
+            {
+                return S_OK;
+            }
+
+            pBindResult->SetAttemptResult(hr, pAssembly);
+            if (FAILED(hr))
+                return hr;
+
+            AssemblyName* pBoundAssemblyName = pAssembly->GetAssemblyName();
+            if (TestCandidateRefMatchesDef(pRequestedAssemblyName, pBoundAssemblyName, false /*tpaListAssembly*/))
+            {
+                pBindResult->SetResult(pAssembly);
+                hr = S_OK;
+            }
+            else
+            {
+                hr = FUSION_E_REF_DEF_MISMATCH;
+            }
+
+            pBindResult->SetAttemptResult(hr, pAssembly);
+            return hr;
+        }
+
+        HRESULT BindSatelliteResourceByProbingPaths(
+            const StringArrayList    *pResourceRoots,
+            AssemblyName             *pRequestedAssemblyName,
+            SString                  &relativePath,
+            BindResult               *pBindResult,
+            BinderTracing::PathSource pathSource)
+        {
+            HRESULT hr = S_OK;
 
             for (UINT i = 0; i < pResourceRoots->GetCount(); i++)
             {
                 ReleaseHolder<Assembly> pAssembly;
                 SString &wszBindingPath = (*pResourceRoots)[i];
                 SString fileName(wszBindingPath);
-
-                CombinePath(fileName, cultureRef, fileName);
-                CombinePath(fileName, simpleNameRef, fileName);
-                fileName.Append(W(".dll"));
+                CombinePath(fileName, relativePath, fileName);
 
                 hr = AssemblyBinder::GetAssembly(fileName,
                                                  FALSE /* fIsInGAC */,
                                                  FALSE /* fExplicitBindToNativeImage */,
                                                  &pAssembly);
+                BinderTracing::PathProbed(fileName, pathSource, hr);
 
                 // Missing files are okay and expected when probing
                 if (hr == HRESULT_FROM_WIN32(ERROR_FILE_NOT_FOUND))
@@ -746,21 +829,79 @@ namespace BINDER_SPACE
                     continue;
                 }
 
-                IF_FAIL_GO(hr);
+                pBindResult->SetAttemptResult(hr, pAssembly);
+                if (FAILED(hr))
+                    return hr;
 
                 AssemblyName *pBoundAssemblyName = pAssembly->GetAssemblyName();
                 if (TestCandidateRefMatchesDef(pRequestedAssemblyName, pBoundAssemblyName, false /*tpaListAssembly*/))
                 {
                     pBindResult->SetResult(pAssembly);
-                    GO_WITH_HRESULT(S_OK);
+                    hr = S_OK;
+                }
+                else
+                {
+                    hr = FUSION_E_REF_DEF_MISMATCH;
                 }
 
-                IF_FAIL_GO(FUSION_E_REF_DEF_MISMATCH);
+                pBindResult->SetAttemptResult(hr, pAssembly);
+                return hr;
             }
 
             // Up-stack expects S_OK when we don't find any candidate assemblies and no fatal error occurred (ie, no S_FALSE)
-            hr = S_OK;
-        Exit:
+            return  S_OK;
+        }
+
+        HRESULT BindSatelliteResource(
+            ApplicationContext* pApplicationContext,
+            AssemblyName* pRequestedAssemblyName,
+            BindResult* pBindResult)
+        {
+            // Satellite resource probing strategy is to look:
+            //   * First within the single-file bundle
+            //   * Then under each of the Platform Resource Roots
+            //   * Then under each of the App Paths.
+            //
+            // During each search, if we find a platform resource file with matching file name, but whose ref-def didn't match,
+            // fall back to application resource lookup to handle case where a user creates resources with the same
+            // names as platform ones.
+
+            HRESULT hr = S_OK;
+            SString& simpleNameRef = pRequestedAssemblyName->GetSimpleName();
+            SString& cultureRef = pRequestedAssemblyName->GetCulture();
+
+            _ASSERTE(!cultureRef.IsEmpty() && !cultureRef.EqualsCaseInsensitive(g_BinderVariables->cultureNeutral));
+
+            ReleaseHolder<Assembly> pAssembly;
+            SString fileName;
+            CombinePath(fileName, cultureRef, fileName);
+            CombinePath(fileName, simpleNameRef, fileName);
+            fileName.Append(W(".dll"));
+
+            hr = BindSatelliteResourceFromBundle(pRequestedAssemblyName, fileName, pBindResult);
+
+            if (pBindResult->HaveResult() || (FAILED(hr) && hr != FUSION_E_CONFIGURATION_ERROR))
+            {
+                return hr;
+            }
+
+            hr = BindSatelliteResourceByProbingPaths(pApplicationContext->GetPlatformResourceRoots(),
+                                                     pRequestedAssemblyName,
+                                                     fileName,
+                                                     pBindResult,
+                                                     BinderTracing::PathSource::PlatformResourceRoots);
+
+            if (pBindResult->HaveResult() || (FAILED(hr) && hr != FUSION_E_CONFIGURATION_ERROR))
+            {
+                return hr;
+            }
+
+            hr = BindSatelliteResourceByProbingPaths(pApplicationContext->GetAppPaths(),
+                                                     pRequestedAssemblyName,
+                                                     fileName,
+                                                     pBindResult,
+                                                     BinderTracing::PathSource::AppPaths);
+
             return hr;
         }
 
@@ -771,7 +912,7 @@ namespace BINDER_SPACE
             Assembly                **ppAssembly)
         {
             SString &simpleName = pRequestedAssemblyName->GetSimpleName();
-
+            BinderTracing::PathSource pathSource = useNativeImages ? BinderTracing::PathSource::AppNativeImagePaths : BinderTracing::PathSource::AppPaths;
             // Loop through the binding paths looking for a matching assembly
             for (DWORD i = 0; i < pBindingPaths->GetCount(); i++)
             {
@@ -789,6 +930,7 @@ namespace BINDER_SPACE
                                                  FALSE, // fIsInGAC
                                                  useNativeImages, // fExplicitBindToNativeImage
                                                  &pAssembly);
+                BinderTracing::PathProbed(fileName, pathSource, hr);
 
                 if (FAILED(hr))
                 {
@@ -798,6 +940,7 @@ namespace BINDER_SPACE
                                                      FALSE, // fIsInGAC
                                                      useNativeImages, // fExplicitBindToNativeImage
                                                      &pAssembly);
+                    BinderTracing::PathProbed(fileName, pathSource, hr);
                 }
 
                 // Since we're probing, file not founds are ok and we should just try another
@@ -807,6 +950,8 @@ namespace BINDER_SPACE
                     continue;
                 }
 
+                // Set any found assembly. It is up to the caller to check the returned HRESULT for errors due to validation
+                *ppAssembly = pAssembly.Extract();
                 if (FAILED(hr))
                     return hr;
 
@@ -819,7 +964,6 @@ namespace BINDER_SPACE
                 if (!TestCandidateRefMatchesDef(pRequestedAssemblyName, pAssembly->GetAssemblyName(), false /*tpaListAssembly*/))
                     return FUSION_E_REF_DEF_MISMATCH;
 
-                *ppAssembly = pAssembly.Extract();
                 return S_OK;
             }
 
@@ -829,6 +973,13 @@ namespace BINDER_SPACE
 
     /*
      * BindByTpaList is the entry-point for the custom binding algorithm in CoreCLR.
+     *
+     * The search for assemblies will proceed in the following order:
+     *
+     * If this application is a single-file bundle, the meta-data contained in the bundle
+     * will be probed to find the requested assembly. If the assembly is not found,
+     * The list of platform assemblies (TPAs) are considered next.
+     *
      * Platform assemblies are specified as a list of files.  This list is the only set of
      * assemblies that we will load as platform.  They can be specified as IL or NIs.
      *
@@ -854,37 +1005,65 @@ namespace BINDER_SPACE
 
         if (!culture.IsEmpty() && !culture.EqualsCaseInsensitive(g_BinderVariables->cultureNeutral))
         {
-            //
-            // Satellite resource probing strategy is to look under each of the Platform Resource Roots
-            // followed by App Paths.
-            //
-
-            hr = BindSatelliteResourceByProbingPaths(pApplicationContext->GetPlatformResourceRoots(),
-                                                     pRequestedAssemblyName,
-                                                     pBindResult);
-
-            // We found a platform resource file with matching file name, but whose ref-def didn't match.  Fall
-            // back to application resource lookup to handle case where a user creates resources with the same
-            // names as platform ones.
-            if (hr != FUSION_E_CONFIGURATION_ERROR)
-            {
-                IF_FAIL_GO(hr);
-            }
-
-            if (!pBindResult->HaveResult())
-            {
-                IF_FAIL_GO(BindSatelliteResourceByProbingPaths(pApplicationContext->GetAppPaths(),
-                                                               pRequestedAssemblyName,
-                                                               pBindResult));
-            }
+            IF_FAIL_GO(BindSatelliteResource(pApplicationContext, pRequestedAssemblyName, pBindResult));
         }
         else
         {
+            ReleaseHolder<Assembly> pTPAAssembly;
+            SString& simpleName = pRequestedAssemblyName->GetSimpleName();
+
+            // Is assembly in the bundle?
+            // Single-file bundle contents take precedence over TPA.
+            // The list of bundled assemblies is contained in the bundle manifest, and NOT in the TPA.
+            // Therefore the bundle is first probed using the assembly's simple name.
+            // If found, the assembly is loaded from the bundle.  
+            if (Bundle::AppIsBundle())
+            {
+                // Search Assembly.ni.dll, then Assembly.dll
+                // The Assembly.ni.dll paths are rare, and intended for supporting managed C++ R2R assemblies.
+                SString candidates[] = { W(".ni.dll"),  W(".dll") };
+
+                // Loop through the binding paths looking for a matching assembly
+                for (int i = 0; i < 2; i++)
+                {
+                    SString assemblyFileName(simpleName);
+                    assemblyFileName.Append(candidates[i]);
+
+                    SString assemblyFilePath(Bundle::AppBundle->BasePath());
+                    assemblyFilePath.Append(assemblyFileName);
+
+                    BundleFileLocation bundleFileLocation = Bundle::ProbeAppBundle(assemblyFileName, /* pathIsBundleRelative */ true);
+                    if (bundleFileLocation.IsValid())
+                    {
+                        hr = GetAssembly(assemblyFilePath,
+                                         TRUE,  // fIsInGAC
+                                         FALSE, // fExplicitBindToNativeImage
+                                         &pTPAAssembly,
+                                         NULL,  // szMDAssemblyPath
+                                         bundleFileLocation);
+
+                        BinderTracing::PathProbed(assemblyFilePath, BinderTracing::PathSource::Bundle, hr);
+
+                        if (hr != HRESULT_FROM_WIN32(ERROR_FILE_NOT_FOUND))
+                        {
+                            // Any other error is fatal
+                            IF_FAIL_GO(hr);
+
+                            if (TestCandidateRefMatchesDef(pRequestedAssemblyName, pTPAAssembly->GetAssemblyName(), true /*tpaListAssembly*/))
+                            {
+                                // We have found the requested assembly match in the bundle with validation of the full-qualified name. 
+                                // Bind to it.
+                                pBindResult->SetResult(pTPAAssembly);
+                                GO_WITH_HRESULT(S_OK);
+                            }
+                        }
+                    }
+                }
+            }
+
             // Is assembly on TPA list?
-            SString &simpleName = pRequestedAssemblyName->GetSimpleName();
             SimpleNameToFileNameMap * tpaMap = pApplicationContext->GetTpaList();
             const SimpleNameToFileNameMapEntry *pTpaEntry = tpaMap->LookupPtr(simpleName.GetUnicode());
-            ReleaseHolder<Assembly> pTPAAssembly;
             if (pTpaEntry != nullptr)
             {
                 if (pTpaEntry->m_wszNIFileName != nullptr)
@@ -895,6 +1074,7 @@ namespace BINDER_SPACE
                                      TRUE,  // fIsInGAC
                                      TRUE,  // fExplicitBindToNativeImage
                                      &pTPAAssembly);
+                    BinderTracing::PathProbed(fileName, BinderTracing::PathSource::ApplicationAssemblies, hr);
                 }
                 else
                 {
@@ -905,7 +1085,10 @@ namespace BINDER_SPACE
                                      TRUE,  // fIsInGAC
                                      FALSE, // fExplicitBindToNativeImage
                                      &pTPAAssembly);
+                    BinderTracing::PathProbed(fileName, BinderTracing::PathSource::ApplicationAssemblies, hr);
                 }
+
+                pBindResult->SetAttemptResult(hr, pTPAAssembly);
 
                 // On file not found, simply fall back to app path probing
                 if (hr != HRESULT_FROM_WIN32(ERROR_FILE_NOT_FOUND))
@@ -917,12 +1100,14 @@ namespace BINDER_SPACE
                     {
                         // We have found the requested assembly match on TPA with validation of the full-qualified name. Bind to it.
                         pBindResult->SetResult(pTPAAssembly);
+                        pBindResult->SetAttemptResult(S_OK, pTPAAssembly);
                         GO_WITH_HRESULT(S_OK);
                     }
                     else
                     {
                         // We found the assembly on TPA but it didn't match the RequestedAssembly assembly-name. In this case, lets proceed to see if we find the requested
                         // assembly in the App paths.
+                        pBindResult->SetAttemptResult(FUSION_E_REF_DEF_MISMATCH, pTPAAssembly);
                         fPartialMatchOnTpa = true;
                     }
                 }
@@ -946,6 +1131,7 @@ namespace BINDER_SPACE
                                                     &pAssembly);
                 }
 
+                pBindResult->SetAttemptResult(hr, pAssembly);
                 if (hr != HRESULT_FROM_WIN32(ERROR_FILE_NOT_FOUND))
                 {
                     IF_FAIL_GO(hr);
@@ -960,6 +1146,7 @@ namespace BINDER_SPACE
                         {
                             // Fullname (SimpleName+Culture+PKT) matched for TPA and app assembly - so bind to TPA instance.
                             pBindResult->SetResult(pTPAAssembly);
+                            pBindResult->SetAttemptResult(hr, pTPAAssembly);
                             GO_WITH_HRESULT(S_OK);
                         }
                         else
@@ -980,31 +1167,30 @@ namespace BINDER_SPACE
         }
 
         // Couldn't find a matching assembly in any of the probing paths
-        // Return S_OK here.  BindByName will interpret a lack of BindResult
-        // as a failure to find a matching assembly.  Other callers of this
-        // function, such as BindLockedOrService will interpret as deciding
-        // not to override an explicit bind with a probed assembly
-        hr = S_OK;
+        // Return S_FALSE here. BindByName will interpret a successful HRESULT
+        // and lack of BindResult as a failure to find a matching assembly.
+        hr = S_FALSE;
 
     Exit:
         return hr;
     }
 
     /* static */
-    HRESULT AssemblyBinder::GetAssembly(SString     &assemblyPath,
-                                        BOOL         fIsInGAC,
+    HRESULT AssemblyBinder::GetAssembly(SString            &assemblyPath,
+                                        BOOL               fIsInGAC,
 
                                         // When binding to the native image, should we
                                         // assume assemblyPath explicitly specifies that
                                         // NI?  (If not, infer the path to the NI
                                         // implicitly.)
-                                        BOOL         fExplicitBindToNativeImage,
+                                        BOOL               fExplicitBindToNativeImage,
 
-                                        Assembly   **ppAssembly,
+                                        Assembly           **ppAssembly,
 
                                         // If assemblyPath refers to a native image without metadata,
                                         // szMDAssemblyPath gives the alternative file to get metadata.
-                                        LPCTSTR      szMDAssemblyPath)
+                                        LPCTSTR            szMDAssemblyPath,
+                                        BundleFileLocation bundleFileLocation)
     {
         HRESULT hr = S_OK;
 
@@ -1024,7 +1210,7 @@ namespace BINDER_SPACE
         {
             LPCTSTR szAssemblyPath = const_cast<LPCTSTR>(assemblyPath.GetUnicode());
 
-            hr = BinderAcquirePEImage(szAssemblyPath, &pPEImage, &pNativePEImage, fExplicitBindToNativeImage);
+            hr = BinderAcquirePEImage(szAssemblyPath, &pPEImage, &pNativePEImage, fExplicitBindToNativeImage, bundleFileLocation);
             IF_FAIL_GO(hr);
 
             // If we found a native image, it might be an MSIL assembly masquerading as an native image
@@ -1039,7 +1225,7 @@ namespace BINDER_SPACE
                     BinderReleasePEImage(pPEImage);
                     BinderReleasePEImage(pNativePEImage);
 
-                    hr = BinderAcquirePEImage(szAssemblyPath, &pPEImage, &pNativePEImage, false);
+                    hr = BinderAcquirePEImage(szAssemblyPath, &pPEImage, &pNativePEImage, false, bundleFileLocation);
                     IF_FAIL_GO(hr);
                 }
             }
@@ -1065,7 +1251,7 @@ namespace BINDER_SPACE
                 }
                 else
                 {
-                    hr = BinderAcquirePEImage(szMDAssemblyPath, &pPEImage, NULL, FALSE);
+                    hr = BinderAcquirePEImage(szMDAssemblyPath, &pPEImage, NULL, FALSE, bundleFileLocation);
                     IF_FAIL_GO(hr);
 
                     hr = BinderAcquireImport(pPEImage, &pIMetaDataAssemblyImport, dwPAFlags, FALSE);
@@ -1117,7 +1303,7 @@ namespace BINDER_SPACE
         // This method is invoked under a lock (by its caller), so we are thread safe.
         ContextEntry *pContextEntry = NULL;
         hr = FindInExecutionContext(pApplicationContext, pBindResult->GetAssemblyName(), &pContextEntry);
-        if (hr == S_OK)
+        if (SUCCEEDED(hr))
         {
             if (pContextEntry == NULL)
             {
@@ -1203,7 +1389,7 @@ namespace BINDER_SPACE
 
             hr = FindInExecutionContext(pApplicationContext, pAssemblyName, &pContextEntry);
 
-            if ((hr == S_OK) && (pContextEntry == NULL))
+            if (SUCCEEDED(hr) && (pContextEntry == NULL))
             {
                 // We can accept this bind in the domain
                 GO_WITH_HRESULT(S_OK);
@@ -1262,15 +1448,19 @@ HRESULT AssemblyBinder::BindUsingPEImage(/* in */  ApplicationContext *pApplicat
     // Prepare binding data
     *ppAssembly = NULL;
 
+    // Tracing happens outside the binder lock to avoid calling into managed code within the lock
+    BinderTracing::ResolutionAttemptedOperation tracer{pAssemblyName, pApplicationContext->GetBinderID(), 0 /*managedALC*/, hr};
+
     // Attempt the actual bind (eventually more than once)
 Retry:
+    bool mvidMismatch = false;
     {
         // Lock the application context
         CRITSEC_Holder contextLock(pApplicationContext->GetCriticalSectionCookie());
 
         // Attempt uncached bind and register stream if possible
         // We skip version compatibility check - so assemblies with same simple name will be reported
-        // as a successfull bind. Below we compare MVIDs in that case instead (which is a more precise equality check).
+        // as a successful bind. Below we compare MVIDs in that case instead (which is a more precise equality check).
         hr = BindByName(pApplicationContext,
                         pAssemblyName,
                         true,  // skipFailureCaching
@@ -1308,14 +1498,15 @@ Retry:
                 // load.
                 IF_FAIL_GO(bindResult.GetAsAssembly()->GetMVID(&boundMVID));
 
-                if (incomingMVID != boundMVID)
+                mvidMismatch = incomingMVID != boundMVID;
+                if (mvidMismatch)
                 {
                     // MVIDs do not match, so fail the load.
                     IF_FAIL_GO(COR_E_FILELOAD);
                 }
 
                 // MVIDs match - request came in for the same assembly that was previously loaded.
-                // Let is through...
+                // Let it through...
             }
         }
 
@@ -1336,6 +1527,8 @@ Retry:
 
         if (hr == S_FALSE)
         {
+            tracer.TraceBindResult(bindResult);
+
             // Another bind interfered. We need to retry entire bind.
             // This by design loops as long as needed because by construction we eventually
             // will succeed or fail the bind.
@@ -1349,6 +1542,7 @@ Retry:
     }
 
 Exit:
+    tracer.TraceBindResult(bindResult, mvidMismatch);
     return hr;
 }
 #endif // !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)

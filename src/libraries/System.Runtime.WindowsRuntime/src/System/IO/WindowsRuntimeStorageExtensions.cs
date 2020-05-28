@@ -176,7 +176,7 @@ namespace System.IO
         }
 
         [CLSCompliant(false)]
-        public static SafeFileHandle CreateSafeFileHandle(
+        public static SafeFileHandle? CreateSafeFileHandle(
             this IStorageFile windowsRuntimeFile,
             FileAccess access = FileAccess.ReadWrite,
             FileShare share = FileShare.Read,
@@ -189,7 +189,7 @@ namespace System.IO
             HANDLE_SHARING_OPTIONS sharingOptions = FileShareToHandleSharingOptions(share);
             HANDLE_OPTIONS handleOptions = FileOptionsToHandleOptions(options);
 
-            IStorageItemHandleAccess handleAccess = ((object)windowsRuntimeFile) as IStorageItemHandleAccess;
+            IStorageItemHandleAccess? handleAccess = ((object)windowsRuntimeFile) as IStorageItemHandleAccess;
 
             if (handleAccess == null)
                 return null;
@@ -210,7 +210,7 @@ namespace System.IO
         }
 
         [CLSCompliant(false)]
-        public static SafeFileHandle CreateSafeFileHandle(
+        public static SafeFileHandle? CreateSafeFileHandle(
             this IStorageFolder rootDirectory,
             string relativePath,
             FileMode mode)
@@ -219,7 +219,7 @@ namespace System.IO
         }
 
         [CLSCompliant(false)]
-        public static SafeFileHandle CreateSafeFileHandle(
+        public static SafeFileHandle? CreateSafeFileHandle(
             this IStorageFolder rootDirectory,
             string relativePath,
             FileMode mode,
@@ -237,7 +237,7 @@ namespace System.IO
             HANDLE_SHARING_OPTIONS sharingOptions = FileShareToHandleSharingOptions(share);
             HANDLE_OPTIONS handleOptions = FileOptionsToHandleOptions(options);
 
-            IStorageFolderHandleAccess handleAccess = ((object)rootDirectory) as IStorageFolderHandleAccess;
+            IStorageFolderHandleAccess? handleAccess = ((object)rootDirectory) as IStorageFolderHandleAccess;
 
             if (handleAccess == null)
                 return null;

@@ -6,7 +6,7 @@
     <Nullable>enable</Nullable>
     <!-- Disable 1685 (aka multiple type definitions) warning so it doesn't turn into an error -->
     <NoWarn>$(NoWarn);1685</NoWarn>
-    <Configurations>netcoreapp-Unix-Debug;netcoreapp-Unix-Release;netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release</Configurations>
+    <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)-Unix</TargetFrameworks>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System\Diagnostics\StackFrameExtensions.cs" />
@@ -27,8 +27,6 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\System.Collections.Concurrent\src\System.Collections.Concurrent.csproj" />
-    <ProjectReference Include="..\..\System.Diagnostics.Debug\src\System.Diagnostics.Debug.csproj" />
-    <ProjectReference Include="..\..\System.IO\src\System.IO.csproj" />
     <ProjectReference Include="..\..\System.IO.FileSystem\src\System.IO.FileSystem.csproj" />
     <ProjectReference Include="..\..\System.Runtime\src\System.Runtime.csproj" />
     <ProjectReference Include="..\..\System.Runtime.Extensions\src\System.Runtime.Extensions.csproj" />

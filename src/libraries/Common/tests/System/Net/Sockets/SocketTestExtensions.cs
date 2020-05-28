@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Threading;
+
 namespace System.Net.Sockets.Tests
 {
     internal static class SocketTestExtensions
@@ -35,6 +37,46 @@ namespace System.Net.Sockets.Tests
                 socket.Blocking = false;
                 socket.Blocking = true;
             }
+        }
+
+        public static (Socket, Socket) CreateConnectedSocketPair()
+        {
+            using Socket listener = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+            listener.Bind(new IPEndPoint(IPAddress.Loopback, 0));
+            listener.Listen(1);
+
+            Socket client = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+            client.Connect(listener.LocalEndPoint);
+            Socket server = listener.Accept();
+
+            return (client, server);
+        }
+
+        // Tries to connect within the provided timeout interval
+        // Useful to speed up "can not connect" assertions on Windows
+        public static bool TryConnect(this Socket socket, EndPoint remoteEndpoint, int millisecondsTimeout)
+        {
+            var mre = new ManualResetEventSlim(false);
+            using var sea = new SocketAsyncEventArgs()
+            {
+                RemoteEndPoint = remoteEndpoint,
+                UserToken = mre
+            };
+
+            sea.Completed += (s, e) => ((ManualResetEventSlim)e.UserToken).Set();
+
+            bool pending = socket.ConnectAsync(sea);
+            if (!pending || mre.Wait(millisecondsTimeout))
+            {
+                mre.Dispose();
+                return sea.SocketError == SocketError.Success;
+            }
+
+            Socket.CancelConnectAsync(sea); // this will close the socket!
+
+            // In case of time-out, ManualResetEventSlim is left undisposed to avoid race conditions,
+            // letting SafeHandle's finalizer to do the cleanup.
+            return false;
         }
     }
 }

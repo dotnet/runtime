@@ -7,8 +7,10 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Numerics;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using Internal.Runtime.CompilerServices;
 
 namespace System
@@ -24,6 +26,11 @@ namespace System
         // We have different max sizes for arrays with elements of size 1 for backwards compatibility
         internal const int MaxArrayLength = 0X7FEFFFFF;
         internal const int MaxByteArrayLength = 0x7FFFFFC7;
+
+        // This is the threshold where Introspective sort switches to Insertion sort.
+        // Empirically, 16 seems to speed up most cases without slowing down others, at least for integers.
+        // Large value types may benefit from a smaller number.
+        internal const int IntrosortSizeThreshold = 16;
 
         // This ctor exists solely to prevent C# from generating a protected .ctor that violates the surface area.
         private protected Array() { }
@@ -57,6 +64,8 @@ namespace System
                 Copy(larray, 0, newArray, 0, larray.Length > newSize ? newSize : larray.Length);
                 array = newArray;
             }
+
+            Debug.Assert(array != null);
         }
 
         public static Array CreateInstance(Type elementType, params long[] lengths)
@@ -374,14 +383,14 @@ namespace System
             if (comparer == null)
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.comparer);
 
-            int ret = 0;
+            HashCode hashCode = default;
 
             for (int i = (this.Length >= 8 ? this.Length - 8 : 0); i < this.Length; i++)
             {
-                ret = HashCode.Combine(ret, comparer.GetHashCode(GetValue(i)!));
+                hashCode.Add(comparer.GetHashCode(GetValue(i)!));
             }
 
-            return ret;
+            return hashCode.ToHashCode();
         }
 
         // Searches an array for a given element using a binary search algorithm.
@@ -509,9 +518,7 @@ namespace System
             if (comparer == Comparer.Default)
             {
                 CorElementType et = array.GetCorElementTypeOfElementType();
-                if (et.IsPrimitiveType()
-                    // IntPtr/UIntPtr does not implement IComparable
-                    && (et != CorElementType.ELEMENT_TYPE_I) && (et != CorElementType.ELEMENT_TYPE_U))
+                if (et.IsPrimitiveType())
                 {
                     if (value == null)
                         return ~index;
@@ -537,15 +544,27 @@ namespace System
                                 result = GenericBinarySearch<ushort>(array, adjustedIndex, length, value);
                                 break;
                             case CorElementType.ELEMENT_TYPE_I4:
+#if TARGET_32BIT
+                            case CorElementType.ELEMENT_TYPE_I:
+#endif
                                 result = GenericBinarySearch<int>(array, adjustedIndex, length, value);
                                 break;
                             case CorElementType.ELEMENT_TYPE_U4:
+#if TARGET_32BIT
+                            case CorElementType.ELEMENT_TYPE_U:
+#endif
                                 result = GenericBinarySearch<uint>(array, adjustedIndex, length, value);
                                 break;
                             case CorElementType.ELEMENT_TYPE_I8:
+#if TARGET_64BIT
+                            case CorElementType.ELEMENT_TYPE_I:
+#endif
                                 result = GenericBinarySearch<long>(array, adjustedIndex, length, value);
                                 break;
                             case CorElementType.ELEMENT_TYPE_U8:
+#if TARGET_64BIT
+                            case CorElementType.ELEMENT_TYPE_U:
+#endif
                                 result = GenericBinarySearch<ulong>(array, adjustedIndex, length, value);
                                 break;
                             case CorElementType.ELEMENT_TYPE_R4:
@@ -1020,7 +1039,7 @@ namespace System
                             break;
                         case CorElementType.ELEMENT_TYPE_I4:
                         case CorElementType.ELEMENT_TYPE_U4:
-#if !BIT64
+#if TARGET_32BIT
                         case CorElementType.ELEMENT_TYPE_I:
                         case CorElementType.ELEMENT_TYPE_U:
 #endif
@@ -1028,7 +1047,7 @@ namespace System
                             break;
                         case CorElementType.ELEMENT_TYPE_I8:
                         case CorElementType.ELEMENT_TYPE_U8:
-#if BIT64
+#if TARGET_64BIT
                         case CorElementType.ELEMENT_TYPE_I:
                         case CorElementType.ELEMENT_TYPE_U:
 #endif
@@ -1115,7 +1134,7 @@ namespace System
                 if (Unsafe.SizeOf<T>() == sizeof(byte))
                 {
                     int result = SpanHelpers.IndexOf(
-                        ref Unsafe.Add(ref array.GetRawSzArrayData(), startIndex),
+                        ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(Unsafe.As<byte[]>(array)), startIndex),
                         Unsafe.As<T, byte>(ref value),
                         count);
                     return (result >= 0 ? startIndex : 0) + result;
@@ -1123,7 +1142,7 @@ namespace System
                 else if (Unsafe.SizeOf<T>() == sizeof(char))
                 {
                     int result = SpanHelpers.IndexOf(
-                        ref Unsafe.Add(ref Unsafe.As<byte, char>(ref array.GetRawSzArrayData()), startIndex),
+                        ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(Unsafe.As<char[]>(array)), startIndex),
                         Unsafe.As<T, char>(ref value),
                         count);
                     return (result >= 0 ? startIndex : 0) + result;
@@ -1131,7 +1150,7 @@ namespace System
                 else if (Unsafe.SizeOf<T>() == sizeof(int))
                 {
                     int result = SpanHelpers.IndexOf(
-                        ref Unsafe.Add(ref Unsafe.As<byte, int>(ref array.GetRawSzArrayData()), startIndex),
+                        ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(Unsafe.As<int[]>(array)), startIndex),
                         Unsafe.As<T, int>(ref value),
                         count);
                     return (result >= 0 ? startIndex : 0) + result;
@@ -1139,7 +1158,7 @@ namespace System
                 else if (Unsafe.SizeOf<T>() == sizeof(long))
                 {
                     int result = SpanHelpers.IndexOf(
-                        ref Unsafe.Add(ref Unsafe.As<byte, long>(ref array.GetRawSzArrayData()), startIndex),
+                        ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(Unsafe.As<long[]>(array)), startIndex),
                         Unsafe.As<T, long>(ref value),
                         count);
                     return (result >= 0 ? startIndex : 0) + result;
@@ -1250,7 +1269,7 @@ namespace System
                             break;
                         case CorElementType.ELEMENT_TYPE_I4:
                         case CorElementType.ELEMENT_TYPE_U4:
-#if !BIT64
+#if TARGET_32BIT
                         case CorElementType.ELEMENT_TYPE_I:
                         case CorElementType.ELEMENT_TYPE_U:
 #endif
@@ -1258,7 +1277,7 @@ namespace System
                             break;
                         case CorElementType.ELEMENT_TYPE_I8:
                         case CorElementType.ELEMENT_TYPE_U8:
-#if BIT64
+#if TARGET_64BIT
                         case CorElementType.ELEMENT_TYPE_I:
                         case CorElementType.ELEMENT_TYPE_U:
 #endif
@@ -1363,7 +1382,7 @@ namespace System
                 {
                     int endIndex = startIndex - count + 1;
                     int result = SpanHelpers.LastIndexOf(
-                        ref Unsafe.Add(ref array.GetRawSzArrayData(), endIndex),
+                        ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(Unsafe.As<byte[]>(array)), endIndex),
                         Unsafe.As<T, byte>(ref value),
                         count);
 
@@ -1373,7 +1392,7 @@ namespace System
                 {
                     int endIndex = startIndex - count + 1;
                     int result = SpanHelpers.LastIndexOf(
-                        ref Unsafe.Add(ref Unsafe.As<byte, char>(ref array.GetRawSzArrayData()), endIndex),
+                        ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(Unsafe.As<char[]>(array)), endIndex),
                         Unsafe.As<T, char>(ref value),
                         count);
 
@@ -1383,7 +1402,7 @@ namespace System
                 {
                     int endIndex = startIndex - count + 1;
                     int result = SpanHelpers.LastIndexOf(
-                        ref Unsafe.Add(ref Unsafe.As<byte, int>(ref array.GetRawSzArrayData()), endIndex),
+                        ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(Unsafe.As<int[]>(array)), endIndex),
                         Unsafe.As<T, int>(ref value),
                         count);
 
@@ -1393,7 +1412,7 @@ namespace System
                 {
                     int endIndex = startIndex - count + 1;
                     int result = SpanHelpers.LastIndexOf(
-                        ref Unsafe.Add(ref Unsafe.As<byte, long>(ref array.GetRawSzArrayData()), endIndex),
+                        ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(Unsafe.As<long[]>(array)), endIndex),
                         Unsafe.As<T, long>(ref value),
                         count);
 
@@ -1459,7 +1478,7 @@ namespace System
                     return;
                 case CorElementType.ELEMENT_TYPE_I4:
                 case CorElementType.ELEMENT_TYPE_U4:
-#if !BIT64
+#if TARGET_32BIT
                 case CorElementType.ELEMENT_TYPE_I:
                 case CorElementType.ELEMENT_TYPE_U:
 #endif
@@ -1468,7 +1487,7 @@ namespace System
                     return;
                 case CorElementType.ELEMENT_TYPE_I8:
                 case CorElementType.ELEMENT_TYPE_U8:
-#if BIT64
+#if TARGET_64BIT
                 case CorElementType.ELEMENT_TYPE_I:
                 case CorElementType.ELEMENT_TYPE_U:
 #endif
@@ -1515,7 +1534,7 @@ namespace System
             if (length <= 1)
                 return;
 
-            ref T first = ref Unsafe.Add(ref Unsafe.As<byte, T>(ref array.GetRawSzArrayData()), index);
+            ref T first = ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(array), index);
             ref T last = ref Unsafe.Add(ref Unsafe.Add(ref first, length), -1);
             do
             {
@@ -1673,15 +1692,27 @@ namespace System
                             GenericSort<ushort>(keys, items, adjustedIndex, length);
                             return;
                         case CorElementType.ELEMENT_TYPE_I4:
+#if TARGET_32BIT
+                        case CorElementType.ELEMENT_TYPE_I:
+#endif
                             GenericSort<int>(keys, items, adjustedIndex, length);
                             return;
                         case CorElementType.ELEMENT_TYPE_U4:
+#if TARGET_32BIT
+                        case CorElementType.ELEMENT_TYPE_U:
+#endif
                             GenericSort<uint>(keys, items, adjustedIndex, length);
                             return;
                         case CorElementType.ELEMENT_TYPE_I8:
+#if TARGET_64BIT
+                        case CorElementType.ELEMENT_TYPE_I:
+#endif
                             GenericSort<long>(keys, items, adjustedIndex, length);
                             return;
                         case CorElementType.ELEMENT_TYPE_U8:
+#if TARGET_64BIT
+                        case CorElementType.ELEMENT_TYPE_U:
+#endif
                             GenericSort<ulong>(keys, items, adjustedIndex, length);
                             return;
                         case CorElementType.ELEMENT_TYPE_R4:
@@ -1690,10 +1721,6 @@ namespace System
                         case CorElementType.ELEMENT_TYPE_R8:
                             GenericSort<double>(keys, items, adjustedIndex, length);
                             return;
-                        case CorElementType.ELEMENT_TYPE_I:
-                        case CorElementType.ELEMENT_TYPE_U:
-                            // IntPtr/UIntPtr does not implement IComparable
-                            break;
                     }
 
                     static void GenericSort<T>(Array keys, Array? items, int adjustedIndex, int length) where T: struct
@@ -1721,7 +1748,7 @@ namespace System
 
             if (array.Length > 1)
             {
-                var span = new Span<T>(ref Unsafe.As<byte, T>(ref array.GetRawSzArrayData()), array.Length);
+                var span = new Span<T>(ref MemoryMarshal.GetArrayDataReference(array), array.Length);
                 ArraySortHelper<T>.Default.Sort(span, null);
             }
         }
@@ -1770,7 +1797,7 @@ namespace System
 
             if (length > 1)
             {
-                var span = new Span<T>(ref Unsafe.Add(ref Unsafe.As<byte, T>(ref array.GetRawSzArrayData()), index), length);
+                var span = new Span<T>(ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(array), index), length);
                 ArraySortHelper<T>.Default.Sort(span, comparer);
             }
         }
@@ -1794,8 +1821,8 @@ namespace System
                     return;
                 }
 
-                var spanKeys = new Span<TKey>(ref Unsafe.Add(ref Unsafe.As<byte, TKey>(ref keys.GetRawSzArrayData()), index), length);
-                var spanItems = new Span<TValue>(ref Unsafe.Add(ref Unsafe.As<byte, TValue>(ref items.GetRawSzArrayData()), index), length);
+                var spanKeys = new Span<TKey>(ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(keys), index), length);
+                var spanItems = new Span<TValue>(ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(items), index), length);
                 ArraySortHelper<TKey, TValue>.Default.Sort(spanKeys, spanItems, comparer);
             }
         }
@@ -1812,7 +1839,7 @@ namespace System
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.comparison);
             }
 
-            var span = new Span<T>(ref Unsafe.As<byte, T>(ref array.GetRawSzArrayData()), array.Length);
+            var span = new Span<T>(ref MemoryMarshal.GetArrayDataReference(array), array.Length);
             ArraySortHelper<T>.Sort(span, comparison);
         }
 
@@ -1897,11 +1924,11 @@ namespace System
 
                 try
                 {
-                    IntroSort(left, length + left - 1, 2 * IntrospectiveSortUtilities.FloorLog2PlusOne(length));
+                    IntroSort(left, length + left - 1, 2 * (BitOperations.Log2((uint)length) + 1));
                 }
                 catch (IndexOutOfRangeException)
                 {
-                    IntrospectiveSortUtilities.ThrowOrIgnoreBadComparer(comparer);
+                    ThrowHelper.ThrowArgumentException_BadComparer(comparer);
                 }
                 catch (Exception e)
                 {
@@ -1911,20 +1938,22 @@ namespace System
 
             private void IntroSort(int lo, int hi, int depthLimit)
             {
+                Debug.Assert(hi >= lo);
+                Debug.Assert(depthLimit >= 0);
+
                 while (hi > lo)
                 {
                     int partitionSize = hi - lo + 1;
-                    if (partitionSize <= IntrospectiveSortUtilities.IntrosortSizeThreshold)
+                    if (partitionSize <= IntrosortSizeThreshold)
                     {
-                        if (partitionSize == 1)
-                        {
-                            return;
-                        }
+                        Debug.Assert(partitionSize >= 2);
+
                         if (partitionSize == 2)
                         {
                             SwapIfGreater(lo, hi);
                             return;
                         }
+
                         if (partitionSize == 3)
                         {
                             SwapIfGreater(lo, hi - 1);
@@ -1952,8 +1981,11 @@ namespace System
 
             private int PickPivotAndPartition(int lo, int hi)
             {
+                Debug.Assert(hi - lo >= IntrosortSizeThreshold);
+
                 // Compute median-of-three.  But also partition them, since we've done the comparison.
                 int mid = lo + (hi - lo) / 2;
+
                 // Sort lo, mid and hi appropriately, then pick mid as the pivot.
                 SwapIfGreater(lo, mid);
                 SwapIfGreater(lo, hi);
@@ -1975,7 +2007,10 @@ namespace System
                 }
 
                 // Put pivot in the right location.
-                Swap(left, hi - 1);
+                if (left != hi - 1)
+                {
+                    Swap(left, hi - 1);
+                }
                 return left;
             }
 
@@ -2103,11 +2138,11 @@ namespace System
 
                 try
                 {
-                    IntroSort(left, length + left - 1, 2 * IntrospectiveSortUtilities.FloorLog2PlusOne(length));
+                    IntroSort(left, length + left - 1, 2 * (BitOperations.Log2((uint)length) + 1));
                 }
                 catch (IndexOutOfRangeException)
                 {
-                    IntrospectiveSortUtilities.ThrowOrIgnoreBadComparer(comparer);
+                    ThrowHelper.ThrowArgumentException_BadComparer(comparer);
                 }
                 catch (Exception e)
                 {
@@ -2117,20 +2152,22 @@ namespace System
 
             private void IntroSort(int lo, int hi, int depthLimit)
             {
+                Debug.Assert(hi >= lo);
+                Debug.Assert(depthLimit >= 0);
+
                 while (hi > lo)
                 {
                     int partitionSize = hi - lo + 1;
-                    if (partitionSize <= IntrospectiveSortUtilities.IntrosortSizeThreshold)
+                    if (partitionSize <= IntrosortSizeThreshold)
                     {
-                        if (partitionSize == 1)
-                        {
-                            return;
-                        }
+                        Debug.Assert(partitionSize >= 2);
+
                         if (partitionSize == 2)
                         {
                             SwapIfGreater(lo, hi);
                             return;
                         }
+
                         if (partitionSize == 3)
                         {
                             SwapIfGreater(lo, hi - 1);
@@ -2158,6 +2195,8 @@ namespace System
 
             private int PickPivotAndPartition(int lo, int hi)
             {
+                Debug.Assert(hi - lo >= IntrosortSizeThreshold);
+
                 // Compute median-of-three.  But also partition them, since we've done the comparison.
                 int mid = lo + (hi - lo) / 2;
 
@@ -2181,7 +2220,10 @@ namespace System
                 }
 
                 // Put pivot in the right location.
-                Swap(left, hi - 1);
+                if (left != hi - 1)
+                {
+                    Swap(left, hi - 1);
+                }
                 return left;
             }
 

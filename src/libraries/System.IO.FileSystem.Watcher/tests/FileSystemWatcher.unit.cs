@@ -15,6 +15,7 @@ using Xunit.Abstractions;
 
 namespace System.IO.Tests
 {
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/34583", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
     public class FileSystemWatcherTests : FileSystemWatcherTest
     {
         private static void ValidateDefaults(FileSystemWatcher watcher, string path, string filter)
@@ -312,7 +313,7 @@ namespace System.IO.Tests
             watcher.NotifyFilter = 0;
             Assert.Equal((NotifyFilters)0, watcher.NotifyFilter);
 
-            // These throw InvalidEnumException on desktop, but ArgumentException on K
+            // These throw InvalidEnumException on .NET Framework, but ArgumentException on K
             Assert.ThrowsAny<ArgumentException>(() => watcher.NotifyFilter = (NotifyFilters)(-1));
             Assert.ThrowsAny<ArgumentException>(() => watcher.NotifyFilter = (NotifyFilters)int.MinValue);
             Assert.ThrowsAny<ArgumentException>(() => watcher.NotifyFilter = (NotifyFilters)int.MaxValue);

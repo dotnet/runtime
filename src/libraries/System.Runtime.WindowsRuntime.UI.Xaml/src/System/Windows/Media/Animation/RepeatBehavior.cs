@@ -2,10 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-//
-
-//
-
 using System;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -113,17 +109,17 @@ namespace Windows.UI.Xaml.Media.Animation
             return InternalToString(null, null);
         }
 
-        public string ToString(IFormatProvider formatProvider)
+        public string ToString(IFormatProvider? formatProvider)
         {
             return InternalToString(null, formatProvider);
         }
 
-        string IFormattable.ToString(string format, IFormatProvider formatProvider)
+        string IFormattable.ToString(string? format, IFormatProvider? formatProvider)
         {
             return InternalToString(format, formatProvider);
         }
 
-        internal string InternalToString(string format, IFormatProvider formatProvider)
+        internal string InternalToString(string? format, IFormatProvider? formatProvider)
         {
             switch (_Type)
             {
@@ -147,11 +143,11 @@ namespace Windows.UI.Xaml.Media.Animation
                     return _Duration.ToString();
 
                 default:
-                    return null;
+                    return string.Empty;
             }
         }
 
-        public override bool Equals(object value)
+        public override bool Equals(object? value)
         {
             if (value is RepeatBehavior)
             {

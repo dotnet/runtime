@@ -10,9 +10,6 @@
 
 #include "assembler.h"
 
-//#include "ceefilegenwriter.h"
-#include "strongname.h"
-
 int ist=0;
 #define REPT_STEP   //printf("Step %d\n",++ist);
 

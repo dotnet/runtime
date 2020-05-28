@@ -6,9 +6,9 @@ namespace System.Security.Cryptography
 {
     public class RSAOAEPKeyExchangeFormatter : AsymmetricKeyExchangeFormatter
     {
-        private byte[] ParameterValue;
-        private RSA _rsaKey;
-        private RandomNumberGenerator RngValue;
+        private byte[]? ParameterValue;
+        private RSA? _rsaKey;
+        private RandomNumberGenerator? RngValue;
 
         public RSAOAEPKeyExchangeFormatter() { }
         public RSAOAEPKeyExchangeFormatter(AsymmetricAlgorithm key)
@@ -19,7 +19,7 @@ namespace System.Security.Cryptography
             _rsaKey = (RSA)key;
         }
 
-        public byte[] Parameter
+        public byte[]? Parameter
         {
             get
             {
@@ -43,12 +43,12 @@ namespace System.Security.Cryptography
             }
         }
 
-        public override string Parameters
+        public override string? Parameters
         {
             get { return null; }
         }
 
-        public RandomNumberGenerator Rng
+        public RandomNumberGenerator? Rng
         {
             get { return RngValue; }
             set { RngValue = value; }
@@ -62,7 +62,7 @@ namespace System.Security.Cryptography
             _rsaKey = (RSA)key;
         }
 
-        public override byte[] CreateKeyExchange(byte[] rgbData, Type symAlgType)
+        public override byte[] CreateKeyExchange(byte[] rgbData, Type? symAlgType)
         {
             return CreateKeyExchange(rgbData);
         }

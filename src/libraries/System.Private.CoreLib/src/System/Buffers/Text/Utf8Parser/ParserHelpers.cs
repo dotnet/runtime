@@ -2,7 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
+using Internal.Runtime.CompilerServices;
 
 namespace System.Buffers.Text
 {
@@ -69,6 +72,24 @@ namespace System.Buffers.Text
         {
             value = default;
             return TryParseThrowFormatException(out bytesConsumed);
+        }
+
+        //
+        // Enable use of ThrowHelper from TryParse() routines without introducing dozens of non-code-coveraged "value= default; bytesConsumed = 0; return false" boilerplate.
+        //
+        [DoesNotReturn]
+        [StackTraceHidden]
+        public static bool TryParseThrowFormatException<T>(ReadOnlySpan<byte> source, out T value, out int bytesConsumed) where T : struct
+        {
+            // The parameters to this method are ordered the same as our callers' parameters
+            // allowing the JIT to avoid unnecessary register swapping or spilling.
+
+            Unsafe.SkipInit(out value); // bypass language initialization rules since we're about to throw
+            Unsafe.SkipInit(out bytesConsumed);
+            ThrowHelper.ThrowFormatException_BadFormatSpecifier();
+
+            Debug.Fail("Control should never reach this point.");
+            return false;
         }
     }
 }

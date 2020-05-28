@@ -122,7 +122,7 @@ namespace System.ComponentModel.Tests
 
         [Theory]
         [MemberData(nameof(Equals_TestData))]
-        public static void Equals(DefaultValueAttribute attr1, object obj, bool expected)
+        public static void EqualsTest(DefaultValueAttribute attr1, object obj, bool expected)
         {
             Assert.Equal(expected, attr1.Equals(obj));
 

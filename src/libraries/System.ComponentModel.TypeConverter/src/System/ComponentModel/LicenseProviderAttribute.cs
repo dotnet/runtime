@@ -52,7 +52,6 @@ namespace System.ComponentModel
         /// </summary>
         public Type LicenseProvider
         {
-            [SuppressMessage("Microsoft.Security", "CA2113:SecureLateBindingMethods")]
             get
             {
                 if (_licenseProviderType == null && _licenseProviderName != null)

@@ -27,14 +27,14 @@ namespace Internal.Cryptography
             int i = 0;
             foreach (byte b in bytes)
             {
-                chars[i++] = NibbleToHex((byte)(b >> 4));
-                chars[i++] = NibbleToHex((byte)(b & 0xF));
+                HexConverter.ToCharsBuffer(b, chars, i, HexConverter.Casing.Upper);
+                i += 2;
             }
         }
 
         // Encode a byte array as an upper case hex string.
         public static string ToHexStringUpper(this byte[] bytes) =>
-            string.Create(bytes.Length * 2, bytes, (chars, src) => ToHexArrayUpper(src, chars));
+            HexConverter.ToString(bytes.AsSpan(), HexConverter.Casing.Upper);
 
         // Decode a hex string-encoded byte array passed to various X509 crypto api.
         // The parsing rules are overly forgiving but for compat reasons, they cannot be tightened.
@@ -86,8 +86,8 @@ namespace Internal.Cryptography
                 }
             }
 
-            // Desktop compat:
-            // The desktop algorithm removed all whitespace before the loop, then went up to length/2
+            // .NET Framework compat:
+            // The .NET Framework algorithm removed all whitespace before the loop, then went up to length/2
             // of what was left.  This means that in the event of odd-length input the last char is
             // ignored, no exception should be raised.
             Debug.Assert(index == cbHex, "index == cbHex");
@@ -107,24 +107,26 @@ namespace Internal.Cryptography
                 return 0xFF;
         }
 
-        private static char NibbleToHex(byte b)
+        public static bool ContentsEqual(this byte[]? a1, byte[]? a2)
         {
-            Debug.Assert(b >= 0 && b <= 15);
-            return (char)(b >= 0 && b <= 9 ?
-                '0' + b :
-                'A' + (b - 10));
-        }
+            if (a1 == null)
+            {
+                return a2 == null;
+            }
 
-        public static bool ContentsEqual(this byte[] a1, byte[] a2)
-        {
-            if (a1.Length != a2.Length)
+            if (a2 == null || a1.Length != a2.Length)
+            {
                 return false;
+            }
 
             for (int i = 0; i < a1.Length; i++)
             {
                 if (a1[i] != a2[i])
+                {
                     return false;
+                }
             }
+
             return true;
         }
 

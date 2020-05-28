@@ -92,7 +92,9 @@ namespace System.Globalization
             {
                 fixed (char* pUnicode = unicode)
                 {
-                    return GetAsciiCore(unicode, pUnicode + index, count);
+                    return GlobalizationMode.UseNls ?
+                        NlsGetAsciiCore(unicode, pUnicode + index, count) :
+                        IcuGetAsciiCore(unicode, pUnicode + index, count);
                 }
             }
         }
@@ -134,7 +136,9 @@ namespace System.Globalization
             {
                 fixed (char* pAscii = ascii)
                 {
-                    return GetUnicodeCore(ascii, pAscii + index, count);
+                    return GlobalizationMode.UseNls ?
+                        NlsGetUnicodeCore(ascii, pAscii + index, count) :
+                        IcuGetUnicodeCore(ascii, pAscii + index, count);
                 }
             }
         }
@@ -331,8 +335,8 @@ namespace System.Globalization
                 bool bRightToLeft = false;
 
                 // Check for RTL.  If right-to-left, then 1st & last chars must be RTL
-                BidiCategory eBidi = CharUnicodeInfo.GetBidiCategory(unicode, iAfterLastDot);
-                if (eBidi == BidiCategory.RightToLeft || eBidi == BidiCategory.RightToLeftArabic)
+                StrongBidiCategory eBidi = CharUnicodeInfo.GetBidiCategory(unicode, iAfterLastDot);
+                if (eBidi == StrongBidiCategory.StrongRightToLeft)
                 {
                     // It has to be right to left.
                     bRightToLeft = true;
@@ -345,7 +349,7 @@ namespace System.Globalization
                     }
 
                     eBidi = CharUnicodeInfo.GetBidiCategory(unicode, iTest);
-                    if (eBidi != BidiCategory.RightToLeft && eBidi != BidiCategory.RightToLeftArabic)
+                    if (eBidi != StrongBidiCategory.StrongRightToLeft)
                     {
                         // Oops, last wasn't RTL, last should be RTL if first is RTL
                         throw new ArgumentException(SR.Argument_IdnBadBidi, nameof(unicode));
@@ -361,17 +365,17 @@ namespace System.Globalization
                     Debug.Assert(!char.IsLowSurrogate(unicode, basicCount), "[IdnMapping.punycode_encode]Unexpected low surrogate");
 
                     // Double check our bidi rules
-                    BidiCategory testBidi = CharUnicodeInfo.GetBidiCategory(unicode, basicCount);
+                    StrongBidiCategory testBidi = CharUnicodeInfo.GetBidiCategory(unicode, basicCount);
 
                     // If we're RTL, we can't have LTR chars
-                    if (bRightToLeft && testBidi == BidiCategory.LeftToRight)
+                    if (bRightToLeft && testBidi == StrongBidiCategory.StrongLeftToRight)
                     {
                         // Oops, throw error
                         throw new ArgumentException(SR.Argument_IdnBadBidi, nameof(unicode));
                     }
 
                     // If we're not RTL we can't have RTL chars
-                    if (!bRightToLeft && (testBidi == BidiCategory.RightToLeft || testBidi == BidiCategory.RightToLeftArabic))
+                    if (!bRightToLeft && testBidi == StrongBidiCategory.StrongRightToLeft)
                     {
                         // Oops, throw error
                         throw new ArgumentException(SR.Argument_IdnBadBidi, nameof(unicode));
@@ -749,8 +753,8 @@ namespace System.Globalization
                     bool bRightToLeft = false;
 
                     // Check for RTL.  If right-to-left, then 1st & last chars must be RTL
-                    BidiCategory eBidi = CharUnicodeInfo.GetBidiCategory(output, iOutputAfterLastDot);
-                    if (eBidi == BidiCategory.RightToLeft || eBidi == BidiCategory.RightToLeftArabic)
+                    StrongBidiCategory eBidi = CharUnicodeInfo.GetBidiCategory(output, iOutputAfterLastDot);
+                    if (eBidi == StrongBidiCategory.StrongRightToLeft)
                     {
                         // It has to be right to left.
                         bRightToLeft = true;
@@ -765,13 +769,13 @@ namespace System.Globalization
 
                         // Check to see if its LTR
                         eBidi = CharUnicodeInfo.GetBidiCategory(output, iTest);
-                        if ((bRightToLeft && eBidi == BidiCategory.LeftToRight) ||
-                            (!bRightToLeft && (eBidi == BidiCategory.RightToLeft || eBidi == BidiCategory.RightToLeftArabic)))
+                        if ((bRightToLeft && eBidi == StrongBidiCategory.StrongLeftToRight) ||
+                            (!bRightToLeft && eBidi == StrongBidiCategory.StrongRightToLeft))
                             throw new ArgumentException(SR.Argument_IdnBadBidi, nameof(ascii));
                     }
 
                     // Its also a requirement that the last one be RTL if 1st is RTL
-                    if (bRightToLeft && eBidi != BidiCategory.RightToLeft && eBidi != BidiCategory.RightToLeftArabic)
+                    if (bRightToLeft && eBidi != StrongBidiCategory.StrongRightToLeft)
                     {
                         // Oops, last wasn't RTL, last should be RTL if first is RTL
                         throw new ArgumentException(SR.Argument_IdnBadBidi, nameof(ascii));

@@ -29,15 +29,6 @@ FCIMPL1(INT32, ArrayNative::GetCorElementTypeOfElementType, ArrayBase* arrayUNSA
 }
 FCIMPLEND
 
-FCIMPL2(FC_BOOL_RET, ArrayNative::IsValueOfElementType, ArrayBase* arrayUNSAFE, Object* valueUNSAFE)
-{
-    _ASSERTE(arrayUNSAFE != NULL);
-    _ASSERTE(valueUNSAFE != NULL);
-
-    FC_RETURN_BOOL(arrayUNSAFE->GetArrayElementTypeHandle() == valueUNSAFE->GetTypeHandle());
-}
-FCIMPLEND
-
 // array is GC protected by caller
 void ArrayInitializeWorker(ARRAYBASEREF * arrayRef,
                            MethodTable* pArrayMT,
@@ -60,7 +51,7 @@ void ArrayInitializeWorker(ARRAYBASEREF * arrayRef,
 
     PCODE ctorFtn = pCanonMT->GetSlot(slot);
 
-#if defined(_TARGET_X86_) && !defined(FEATURE_PAL)
+#if defined(TARGET_X86) && !defined(TARGET_UNIX)
     BEGIN_CALL_TO_MANAGED();
 
 
@@ -91,7 +82,7 @@ void ArrayInitializeWorker(ARRAYBASEREF * arrayRef,
     }
 
     END_CALL_TO_MANAGED();
-#else // _TARGET_X86_ && !FEATURE_PAL
+#else // TARGET_X86 && !TARGET_UNIX
     //
     // This is quite a bit slower, but it is portable.
     //
@@ -115,7 +106,7 @@ void ArrayInitializeWorker(ARRAYBASEREF * arrayRef,
 
         offset += size;
     }
-#endif // !_TARGET_X86_ || FEATURE_PAL
+#endif // !TARGET_X86 || TARGET_UNIX
 }
 
 
@@ -368,7 +359,7 @@ void ArrayNative::BoxEachElement(BASEARRAYREF pSrc, unsigned int srcIndex, BASEA
     _ASSERTE(!destTH.GetMethodTable()->IsValueType());
 
     // Get method table of type we're copying from - we need to allocate objects of that type.
-    MethodTable * pSrcMT = srcTH.GetMethodTable();
+    MethodTable * pSrcMT = srcTH.AsMethodTable();
     PREFIX_ASSUME(pSrcMT != NULL);
 
     if (!pSrcMT->IsClassInited())
@@ -437,7 +428,7 @@ void ArrayNative::UnBoxEachElement(BASEARRAYREF pSrc, unsigned int srcIndex, BAS
     _ASSERTE(destTH.GetSignatureCorElementType() == ELEMENT_TYPE_CLASS || destTH.GetSignatureCorElementType() == ELEMENT_TYPE_VALUETYPE || CorTypeInfo::IsPrimitiveType(pDest->GetArrayElementType()));
     _ASSERTE(!srcTH.GetMethodTable()->IsValueType());
 
-    MethodTable * pDestMT = destTH.GetMethodTable();
+    MethodTable * pDestMT = destTH.AsMethodTable();
     PREFIX_ASSUME(pDestMT != NULL);
 
     SIZE_T destSize = pDest->GetComponentSize();
@@ -824,6 +815,13 @@ FCIMPLEND
 // Check we're allowed to create an array with the given element type.
 void ArrayNative::CheckElementType(TypeHandle elementType)
 {
+    // Checks apply recursively for arrays of arrays etc.
+    if (elementType.IsArray())
+    {
+        CheckElementType(elementType.GetArrayElementTypeHandle());
+        return;
+    }
+
     // Check for simple types first.
     if (!elementType.IsTypeDesc())
     {
@@ -842,13 +840,6 @@ void ArrayNative::CheckElementType(TypeHandle elementType)
             COMPlusThrow(kNotSupportedException, W("NotSupported_VoidArray"));
 
         // That's all the dangerous simple types we know, it must be OK.
-        return;
-    }
-
-    // Checks apply recursively for arrays of arrays etc.
-    if (elementType.IsArray())
-    {
-        CheckElementType(elementType.GetElementType());
         return;
     }
 
@@ -1040,7 +1031,7 @@ FCIMPL2(void, ArrayNative::SetValue, TypedByRef * target, Object* objUNSAFE)
 
     TypeHandle thTarget(target->type);
 
-    MethodTable* pTargetMT = thTarget.GetMethodTable();
+    MethodTable* pTargetMT = thTarget.AsMethodTable();
     PREFIX_ASSUME(NULL != pTargetMT);
 
     if (obj == NULL)

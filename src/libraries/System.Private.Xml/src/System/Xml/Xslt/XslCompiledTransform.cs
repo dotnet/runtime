@@ -350,12 +350,11 @@ namespace System.Xml.Xsl
 
         //------------------------------------------------
         // Transform methods which take a uri
-        // SxS Note: Annotations should propagate to the caller to have him either check that
+        // SxS Note: Annotations should propagate to the caller to have them either check that
         // the passed URIs are SxS safe or decide that they don't have to be SxS safe and
         // suppress the message.
         //------------------------------------------------
 
-        [SuppressMessage("Microsoft.Design", "CA1054:UriParametersShouldNotBeStrings")]
         public void Transform(string inputUri, XmlWriter results)
         {
             CheckArguments(inputUri, results);
@@ -365,7 +364,6 @@ namespace System.Xml.Xsl
             }
         }
 
-        [SuppressMessage("Microsoft.Design", "CA1054:UriParametersShouldNotBeStrings")]
         public void Transform(string inputUri, XsltArgumentList arguments, XmlWriter results)
         {
             CheckArguments(inputUri, results);
@@ -375,7 +373,6 @@ namespace System.Xml.Xsl
             }
         }
 
-        [SuppressMessage("Microsoft.Design", "CA1054:UriParametersShouldNotBeStrings")]
         public void Transform(string inputUri, XsltArgumentList arguments, TextWriter results)
         {
             CheckArguments(inputUri, results);
@@ -387,7 +384,6 @@ namespace System.Xml.Xsl
             }
         }
 
-        [SuppressMessage("Microsoft.Design", "CA1054:UriParametersShouldNotBeStrings")]
         public void Transform(string inputUri, XsltArgumentList arguments, Stream results)
         {
             CheckArguments(inputUri, results);
@@ -399,7 +395,6 @@ namespace System.Xml.Xsl
             }
         }
 
-        [SuppressMessage("Microsoft.Design", "CA1054:UriParametersShouldNotBeStrings")]
         public void Transform(string inputUri, string resultsFile)
         {
             if (inputUri == null)

@@ -5,12 +5,13 @@
 using System.Collections;
 using System.Globalization;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Reflection.Emit
 {
     internal sealed class TypeBuilderInstantiation : TypeInfo
     {
-        public override bool IsAssignableFrom(System.Reflection.TypeInfo? typeInfo)
+        public override bool IsAssignableFrom([NotNullWhen(true)] TypeInfo? typeInfo)
         {
             if (typeInfo == null) return false;
             return IsAssignableFrom(typeInfo.AsType());
@@ -208,7 +209,7 @@ namespace System.Reflection.Emit
         public override MethodBase? DeclaringMethod => null;
         public override Type GetGenericTypeDefinition() { return m_type; }
         public override Type MakeGenericType(params Type[] inst) { throw new InvalidOperationException(SR.Format(SR.Arg_NotGenericTypeDefinition, this)); }
-        public override bool IsAssignableFrom(Type? c) { throw new NotSupportedException(); }
+        public override bool IsAssignableFrom([NotNullWhen(true)] Type? c) { throw new NotSupportedException(); }
 
         public override bool IsSubclassOf(Type c)
         {

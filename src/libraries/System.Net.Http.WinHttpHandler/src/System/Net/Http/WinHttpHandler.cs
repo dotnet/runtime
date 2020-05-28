@@ -18,11 +18,7 @@ using SafeWinHttpHandle = Interop.WinHttp.SafeWinHttpHandle;
 
 namespace System.Net.Http
 {
-#if HTTP_DLL
-    internal enum WindowsProxyUsePolicy
-#else
     public enum WindowsProxyUsePolicy
-#endif
     {
         DoNotUseProxy = 0, // Don't use a proxy at all.
         UseWinHttpProxy = 1, // Use configuration as specified by "netsh winhttp" machine config command. Automatic detect not supported.
@@ -30,22 +26,14 @@ namespace System.Net.Http
         UseCustomProxy = 3 // Use the custom proxy specified in the Proxy property.
     }
 
-#if HTTP_DLL
-    internal enum CookieUsePolicy
-#else
     public enum CookieUsePolicy
-#endif
     {
         IgnoreCookies = 0,
         UseInternalCookieStoreOnly = 1,
         UseSpecifiedCookieContainer = 2
     }
 
-#if HTTP_DLL
-    internal class WinHttpHandler : HttpMessageHandler
-#else
     public class WinHttpHandler : HttpMessageHandler
-#endif
     {
         // These are normally defined already in System.Net.Primitives as part of the HttpVersion type.
         // However, these are not part of 'netstandard'. WinHttpHandler currently builds against
@@ -502,15 +490,9 @@ namespace System.Net.Http
             base.Dispose(disposing);
         }
 
-#if HTTP_DLL
-        protected internal override Task<HttpResponseMessage> SendAsync(
-            HttpRequestMessage request,
-            CancellationToken cancellationToken)
-#else
         protected override Task<HttpResponseMessage> SendAsync(
             HttpRequestMessage request,
             CancellationToken cancellationToken)
-#endif
         {
             if (request == null)
             {
@@ -662,7 +644,8 @@ namespace System.Net.Http
             // Serialize entity-body (content) headers.
             if (requestMessage.Content != null)
             {
-                // TODO (#5523): Content-Length header isn't getting correctly placed using ToString()
+                // TODO https://github.com/dotnet/runtime/issues/16162:
+                // Content-Length header isn't getting correctly placed using ToString()
                 // This is a bug in HttpContentHeaders that needs to be fixed.
                 if (requestMessage.Content.Headers.ContentLength.HasValue)
                 {
@@ -802,6 +785,8 @@ namespace System.Net.Http
             try
             {
                 EnsureSessionHandleExists(state);
+
+                SetEnableHttp2PlusClientCertificate(state.RequestMessage.RequestUri, state.RequestMessage.Version);
 
                 // Specify an HTTP server.
                 connectHandle = Interop.WinHttp.WinHttpConnect(
@@ -1013,7 +998,7 @@ namespace System.Net.Http
             SetRequestHandleRedirectionOptions(state.RequestHandle);
             SetRequestHandleCookieOptions(state.RequestHandle);
             SetRequestHandleTlsOptions(state.RequestHandle);
-            SetRequestHandleClientCertificateOptions(state.RequestHandle, state.RequestMessage.RequestUri);
+            SetRequestHandleClientCertificateOptions(state.RequestHandle, state.RequestMessage.RequestUri, state.RequestMessage.Version);
             SetRequestHandleCredentialsOptions(state);
             SetRequestHandleBufferingOptions(state.RequestHandle);
             SetRequestHandleHttp2Options(state.RequestHandle, state.RequestMessage.Version);
@@ -1170,7 +1155,7 @@ namespace System.Net.Http
             }
         }
 
-        private void SetRequestHandleClientCertificateOptions(SafeWinHttpHandle requestHandle, Uri requestUri)
+        private void SetRequestHandleClientCertificateOptions(SafeWinHttpHandle requestHandle, Uri requestUri, Version requestVersion)
         {
             if (requestUri.Scheme != UriScheme.Https)
             {
@@ -1198,6 +1183,29 @@ namespace System.Net.Http
             else
             {
                 SetNoClientCertificate(requestHandle);
+            }
+        }
+
+        private void SetEnableHttp2PlusClientCertificate(Uri requestUri, Version requestVersion)
+        {
+            if (requestUri.Scheme != UriScheme.Https || requestVersion != HttpVersion20)
+            {
+                return;
+            }
+
+            // Newer versions of WinHTTP fully support HTTP/2 with TLS client certificates.
+            // But the support must be opted in.
+            uint optionData = Interop.WinHttp.WINHTTP_HTTP2_PLUS_CLIENT_CERT_FLAG;
+            if (Interop.WinHttp.WinHttpSetOption(
+                _sessionHandle,
+                Interop.WinHttp.WINHTTP_OPTION_ENABLE_HTTP2_PLUS_CLIENT_CERT,
+                ref optionData))
+            {
+                if (NetEventSource.IsEnabled) NetEventSource.Info(this, "HTTP/2 with TLS client cert supported");
+            }
+            else
+            {
+                if (NetEventSource.IsEnabled) NetEventSource.Info(this, "HTTP/2 with TLS client cert not supported");
             }
         }
 
@@ -1392,13 +1400,7 @@ namespace System.Net.Http
         {
             using (var requestStream = new WinHttpRequestStream(state, chunkedModeForSend))
             {
-                await state.RequestMessage.Content.CopyToAsync(
-#if HTTP_DLL
-                    requestStream, state.TransportContext, state.CancellationToken
-#else
-                    requestStream, state.TransportContext
-#endif
-                    ).ConfigureAwait(false);
+                await state.RequestMessage.Content.CopyToAsync(requestStream, state.TransportContext).ConfigureAwait(false);
                 await requestStream.EndUploadAsync(state.CancellationToken).ConfigureAwait(false);
             }
         }

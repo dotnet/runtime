@@ -617,7 +617,7 @@ namespace System.Diagnostics.Contracts
         #region Private Methods
 
         /// <summary>
-        /// This method is used internally to trigger a failure indicating to the "programmer" that he is using the interface incorrectly.
+        /// This method is used internally to trigger a failure indicating to the "programmer" that they are using the interface incorrectly.
         /// It is NEVER used to indicate failure of actual contracts at runtime.
         /// </summary>
         private static void AssertMustUseRewriter(ContractFailureKind kind, string contractKind)

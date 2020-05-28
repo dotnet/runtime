@@ -35,6 +35,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/2389", TestRuntimes.Mono)]
         public void TestThrowsExceptionForCreateTypeCalled()
         {
             TypeBuilder type = Helpers.DynamicType(TypeAttributes.Class | TypeAttributes.Public);

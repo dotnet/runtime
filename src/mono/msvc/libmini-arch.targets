@@ -1,0 +1,155 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <ExcludeFromWindowsBuild>true</ExcludeFromWindowsBuild>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(ExcludeFromWindows32Build)'==''">
+    <ExcludeFromWindows32Build>false</ExcludeFromWindows32Build>
+    <ExcludeFromWindows32Build Condition="'$(Platform)'=='Win32'">true</ExcludeFromWindows32Build>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(ExcludeFromWindows64Build)'==''">
+    <ExcludeFromWindows64Build>false</ExcludeFromWindows64Build>
+    <ExcludeFromWindows64Build Condition="'$(Platform)'=='x64'">true</ExcludeFromWindows64Build>
+  </PropertyGroup>
+  <ItemGroup Label="arch_wasm_sources">
+    <ClCompile Include="$(MonoSourceLocation)\mono\mini\mini-wasm.c">
+      <ExcludedFromBuild>$(ExcludeFromWindowsBuild)</ExcludedFromBuild>
+    </ClCompile>
+    <ClInclude Include="$(MonoSourceLocation)\mono\mini\mini-wasm.h"/>
+    <ClCompile Include="$(MonoSourceLocation)\mono\mini\exceptions-wasm.c">
+      <ExcludedFromBuild>$(ExcludeFromWindowsBuild)</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="$(MonoSourceLocation)\mono\mini\tramp-wasm.c">
+      <ExcludedFromBuild>$(ExcludeFromWindowsBuild)</ExcludedFromBuild>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup Label="arch_x86_sources">
+    <ClCompile Include="$(MonoSourceLocation)\mono\mini\mini-x86.c">
+      <ExcludedFromBuild>$(ExcludeFromWindows64Build)</ExcludedFromBuild>
+    </ClCompile>
+    <ClInclude Include="$(MonoSourceLocation)\mono\mini\mini-x86.h"/>
+    <CustomBuildStep Include="$(MonoSourceLocation)\mono\mini\mini-x86.h">
+      <ExcludedFromBuild>$(ExcludeFromWindows64Build)</ExcludedFromBuild>
+    </CustomBuildStep>
+    <ClCompile Include="$(MonoSourceLocation)\mono\mini\exceptions-x86.c">
+      <ExcludedFromBuild>$(ExcludeFromWindows64Build)</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="$(MonoSourceLocation)\mono\mini\tramp-x86.c">
+      <ExcludedFromBuild>$(ExcludeFromWindows64Build)</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="$(MonoSourceLocation)\mono\mini\mini-x86-gsharedvt.c">
+      <ExcludedFromBuild>$(ExcludeFromWindows64Build)</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="$(MonoSourceLocation)\mono\mini\tramp-x86-gsharedvt.c">
+      <ExcludedFromBuild>$(ExcludeFromWindows64Build)</ExcludedFromBuild>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup Label="arch_amd64_sources">
+    <ClCompile Include="$(MonoSourceLocation)\mono\mini\mini-amd64.c">
+      <ExcludedFromBuild>$(ExcludeFromWindows32Build)</ExcludedFromBuild>
+    </ClCompile>
+    <ClInclude Include="$(MonoSourceLocation)\mono\mini\mini-amd64.h"/>
+    <CustomBuildStep Include="$(MonoSourceLocation)\mono\mini\mini-amd64.h">
+      <ExcludedFromBuild>$(ExcludeFromWindows32Build)</ExcludedFromBuild>
+    </CustomBuildStep>
+    <ClCompile Include="$(MonoSourceLocation)\mono\mini\exceptions-amd64.c">
+      <ExcludedFromBuild>$(ExcludeFromWindows32Build)</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="$(MonoSourceLocation)\mono\mini\tramp-amd64.c">
+      <ExcludedFromBuild>$(ExcludeFromWindows32Build)</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="$(MonoSourceLocation)\mono\mini\mini-amd64-gsharedvt.c">
+      <ExcludedFromBuild>$(ExcludeFromWindows32Build)</ExcludedFromBuild>
+    </ClCompile>
+    <ClInclude Include="$(MonoSourceLocation)\mono\mini\mini-amd64-gsharedvt.h" />
+    <ClCompile Include="$(MonoSourceLocation)\mono\mini\tramp-amd64-gsharedvt.c">
+      <ExcludedFromBuild>$(ExcludeFromWindows32Build)</ExcludedFromBuild>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup Label="arch_ppc_sources">
+    <ClCompile Include="$(MonoSourceLocation)\mono\mini\mini-ppc.c">
+      <ExcludedFromBuild>$(ExcludeFromWindowsBuild)</ExcludedFromBuild>
+    </ClCompile>
+    <ClInclude Include="$(MonoSourceLocation)\mono\mini\mini-ppc.h"/>
+    <ClCompile Include="$(MonoSourceLocation)\mono\mini\exceptions-ppc.c">
+      <ExcludedFromBuild>$(ExcludeFromWindowsBuild)</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="$(MonoSourceLocation)\mono\mini\tramp-ppc.c">
+      <ExcludedFromBuild>$(ExcludeFromWindowsBuild)</ExcludedFromBuild>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup Label="arch_arm_sources">
+    <ClCompile Include="$(MonoSourceLocation)\mono\mini\mini-arm.c">
+      <ExcludedFromBuild>$(ExcludeFromWindowsBuild)</ExcludedFromBuild>
+    </ClCompile>
+    <ClInclude Include="$(MonoSourceLocation)\mono\mini\mini-arm.h"/>
+    <ClCompile Include="$(MonoSourceLocation)\mono\mini\exceptions-arm.c">
+      <ExcludedFromBuild>$(ExcludeFromWindowsBuild)</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="$(MonoSourceLocation)\mono\mini\tramp-arm.c">
+      <ExcludedFromBuild>$(ExcludeFromWindowsBuild)</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="$(MonoSourceLocation)\mono\mini\mini-arm-gsharedvt.c">
+      <ExcludedFromBuild>$(ExcludeFromWindowsBuild)</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="$(MonoSourceLocation)\mono\mini\tramp-arm-gsharedvt.c">
+      <ExcludedFromBuild>$(ExcludeFromWindowsBuild)</ExcludedFromBuild>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup Label="arch_arm64_sources">
+    <ClCompile Include="$(MonoSourceLocation)\mono\mini\mini-arm64.c">
+      <ExcludedFromBuild>$(ExcludeFromWindowsBuild)</ExcludedFromBuild>
+    </ClCompile>
+    <ClInclude Include="$(MonoSourceLocation)\mono\mini\mini-arm64.h"/>
+    <ClCompile Include="$(MonoSourceLocation)\mono\mini\exceptions-arm64.c">
+      <ExcludedFromBuild>$(ExcludeFromWindowsBuild)</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="$(MonoSourceLocation)\mono\mini\tramp-arm64.c">
+      <ExcludedFromBuild>$(ExcludeFromWindowsBuild)</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="$(MonoSourceLocation)\mono\mini\mini-arm64-gsharedvt.c">
+      <ExcludedFromBuild>$(ExcludeFromWindowsBuild)</ExcludedFromBuild>
+    </ClCompile>
+    <ClInclude Include="$(MonoSourceLocation)\mono\mini\mini-arm64-gsharedvt.h" />
+    <ClCompile Include="$(MonoSourceLocation)\mono\mini\tramp-arm64-gsharedvt.c">
+      <ExcludedFromBuild>$(ExcludeFromWindowsBuild)</ExcludedFromBuild>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup Label="arch_mips_sources">
+    <ClCompile Include="$(MonoSourceLocation)\mono\mini\mini-mips.c">
+      <ExcludedFromBuild>$(ExcludeFromWindowsBuild)</ExcludedFromBuild>
+    </ClCompile>
+    <ClInclude Include="$(MonoSourceLocation)\mono\mini\mini-mips.h"/>
+    <ClCompile Include="$(MonoSourceLocation)\mono\mini\exceptions-mips.c">
+      <ExcludedFromBuild>$(ExcludeFromWindowsBuild)</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="$(MonoSourceLocation)\mono\mini\tramp-mips.c">
+      <ExcludedFromBuild>$(ExcludeFromWindowsBuild)</ExcludedFromBuild>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup Label="arch_sparc_sources">
+    <ClCompile Include="$(MonoSourceLocation)\mono\mini\mini-sparc.c">
+      <ExcludedFromBuild>$(ExcludeFromWindowsBuild)</ExcludedFromBuild>
+    </ClCompile>
+    <ClInclude Include="$(MonoSourceLocation)\mono\mini\mini-sparc.h"/>
+    <ClCompile Include="$(MonoSourceLocation)\mono\mini\exceptions-sparc.c">
+      <ExcludedFromBuild>$(ExcludeFromWindowsBuild)</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="$(MonoSourceLocation)\mono\mini\tramp-sparc.c">
+      <ExcludedFromBuild>$(ExcludeFromWindowsBuild)</ExcludedFromBuild>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup Label="arch_s390x_sources">
+    <ClCompile Include="$(MonoSourceLocation)\mono\mini\mini-s390x.c">
+      <ExcludedFromBuild>$(ExcludeFromWindowsBuild)</ExcludedFromBuild>
+    </ClCompile>
+    <ClInclude Include="$(MonoSourceLocation)\mono\mini\mini-s390x.h"/>
+    <ClInclude Include="$(MonoSourceLocation)\mono\mini\support-s390x.h"/>
+    <ClCompile Include="$(MonoSourceLocation)\mono\mini\exceptions-s390x.c">
+      <ExcludedFromBuild>$(ExcludeFromWindowsBuild)</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="$(MonoSourceLocation)\mono\mini\tramp-s390x.c">
+      <ExcludedFromBuild>$(ExcludeFromWindowsBuild)</ExcludedFromBuild>
+    </ClCompile>
+  </ItemGroup>
+</Project>

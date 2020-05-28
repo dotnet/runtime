@@ -43,7 +43,7 @@ namespace System.Security.Cryptography.X509Certificates
                     _decoded = true;
                 }
                 OidCollection oids = new OidCollection();
-                foreach (Oid oid in _enhancedKeyUsages)
+                foreach (Oid oid in _enhancedKeyUsages!)
                     oids.Add(oid);
                 return oids;
             }
@@ -62,7 +62,7 @@ namespace System.Security.Cryptography.X509Certificates
             return X509Pal.Instance.EncodeX509EnhancedKeyUsageExtension(enhancedKeyUsages);
         }
 
-        private OidCollection _enhancedKeyUsages;
+        private OidCollection? _enhancedKeyUsages;
         private bool _decoded;
     }
 }

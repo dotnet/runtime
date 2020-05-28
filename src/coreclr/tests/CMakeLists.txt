@@ -1,19 +1,18 @@
-cmake_minimum_required(VERSION 3.14)
+cmake_minimum_required(VERSION 3.14.2)
 
 cmake_policy(SET CMP0042 NEW)
 project(Tests)
 
+include(${CLR_ENG_NATIVE_DIR}/configurecompiler.cmake)
+
 set(INC_PLATFORM_DIR ${CMAKE_CURRENT_SOURCE_DIR}/src/Common/Platform)
-if (WIN32)
+if (CLR_CMAKE_TARGET_WIN32)
     add_definitions(-DWINDOWS)
 endif()
 
-# Include global configure settings
-include(${CMAKE_CURRENT_SOURCE_DIR}/../configurecompiler.cmake)
-include(${CMAKE_CURRENT_SOURCE_DIR}/../configuretools.cmake)
 # Compile options
 
-if (WIN32)
+if (CLR_CMAKE_HOST_WIN32)
     # 4100 - unreferenced formal parameter
     # 4514 - unreferenced inline function has been removed
     # 4625 - copy constructor was implicitly defined as deleted because a base class copy constructor is inaccessible or deleted
@@ -28,7 +27,7 @@ if (WIN32)
     # 5027 - move assignment operator was implicitly defined as deleted
     # 5039 - pointer or reference to potentially throwing function passed to extern C function under -EHc. Undefined behavior may occur if this function throws an exception.
     add_compile_options(-wd4100 -wd4514 -wd4625 -wd4626 -wd4668 -wd4710 -wd4711 -wd4774 -wd4820 -wd5025 -wd5026 -wd5027 -wd5039)
-    set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /EHsc")
+    add_compile_options(/EHa) # enable C++ EH (w/ SEH exceptions)
 endif()
 
 MACRO(SUBDIRLIST result curdir)

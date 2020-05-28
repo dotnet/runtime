@@ -38,7 +38,7 @@ namespace System.Threading.Channels
             Writer = new UnboundedChannelWriter(this);
         }
 
-        [DebuggerDisplay("Items={ItemsCountForDebugger}")]
+        [DebuggerDisplay("Items={Count}")]
         [DebuggerTypeProxy(typeof(DebugEnumeratorDebugView<>))]
         private sealed class UnboundedChannelReader : ChannelReader<T>, IDebugEnumerable<T>
         {
@@ -54,6 +54,10 @@ namespace System.Threading.Channels
             }
 
             public override Task Completion => _parent._completion.Task;
+
+            public override bool CanCount => true;
+
+            public override int Count => _parent._items.Count;
 
             public override ValueTask<T> ReadAsync(CancellationToken cancellationToken)
             {
@@ -178,9 +182,6 @@ namespace System.Threading.Channels
                     return waiter.ValueTaskOfT;
                 }
             }
-
-            /// <summary>Gets the number of items in the channel.  This should only be used by the debugger.</summary>
-            private int ItemsCountForDebugger => _parent._items.Count;
 
             /// <summary>Gets an enumerator the debugger can use to show the contents of the channel.</summary>
             IEnumerator<T> IDebugEnumerable<T>.GetEnumerator() => _parent._items.GetEnumerator();

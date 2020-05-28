@@ -2,16 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.Collections.Generic;
-using System.Net;
-using System.Net.Http;
 
 using Xunit;
 
 namespace System.Net.Http.Functional.Tests
 {
-    public partial class HttpMethodTest
+    public class HttpMethodTest
     {
         public static IEnumerable<object[]> StaticHttpMethods { get;  }
 
@@ -30,8 +27,6 @@ namespace System.Net.Http.Functional.Tests
             AddStaticHttpMethods(staticHttpMethods);
             StaticHttpMethods = staticHttpMethods;
         }
-
-        static partial void AddStaticHttpMethods(List<object[]> staticHttpMethods);
 
         [Fact]
         public void StaticProperties_VerifyValues_PropertyNameMatchesHttpMethodName()
@@ -148,6 +143,17 @@ namespace System.Net.Http.Functional.Tests
         {
             HttpMethod method = new HttpMethod("custom");
             Assert.Equal("custom", method.Method);
+        }
+
+        [Fact]
+        public void Patch_VerifyValue_PropertyNameMatchesHttpMethodName()
+        {
+            Assert.Equal("PATCH", HttpMethod.Patch.Method);
+        }
+
+        private static void AddStaticHttpMethods(List<object[]> staticHttpMethods)
+        {
+            staticHttpMethods.Add(new object[] { HttpMethod.Patch });
         }
     }
 }

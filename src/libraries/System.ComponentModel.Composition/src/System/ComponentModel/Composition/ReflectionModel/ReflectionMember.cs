@@ -16,7 +16,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
 
         public Type DeclaringType
         {
-            get { return UnderlyingMember.DeclaringType; }
+            get { return UnderlyingMember.DeclaringType!; }
         }
 
         public override string Name
@@ -36,6 +36,6 @@ namespace System.ComponentModel.Composition.ReflectionModel
 
         public abstract MemberInfo UnderlyingMember { get; }
 
-        public abstract object GetValue(object instance);
+        public abstract object? GetValue(object? instance);
     }
 }

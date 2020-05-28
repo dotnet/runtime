@@ -4,6 +4,81 @@
 
 namespace System.Security.Cryptography.Asn1
 {
+    internal ref partial struct AsnValueReader
+    {
+        /// <summary>
+        ///   Reads the next value as a SEQUENCE or SEQUENCE-OF with tag UNIVERSAL 16
+        ///   and returns the result as an <see cref="AsnValueReader"/> positioned at the first
+        ///   value in the sequence (or with <see cref="HasData"/> == <c>false</c>).
+        /// </summary>
+        /// <returns>
+        ///   an <see cref="AsnValueReader"/> positioned at the first
+        ///   value in the sequence (or with <see cref="HasData"/> == <c>false</c>).
+        /// </returns>
+        /// <remarks>
+        ///   the nested content is not evaluated by this method, and may contain data
+        ///   which is not valid under the current encoding rules.
+        /// </remarks>
+        /// <exception cref="CryptographicException">
+        ///   the next value does not have the correct tag --OR--
+        ///   the length encoding is not valid under the current encoding rules --OR--
+        ///   the contents are not valid under the current encoding rules
+        /// </exception>
+        /// <see cref="ReadSequence(Asn1Tag)"/>
+        public AsnValueReader ReadSequence() => ReadSequence(Asn1Tag.Sequence);
+
+        /// <summary>
+        ///   Reads the next value as a SEQUENCE or SEQUENCE-OF with the specified tag
+        ///   and returns the result as an <see cref="AsnValueReader"/> positioned at the first
+        ///   value in the sequence (or with <see cref="HasData"/> == <c>false</c>).
+        /// </summary>
+        /// <param name="expectedTag">The tag to check for before reading.</param>
+        /// <returns>
+        ///   an <see cref="AsnValueReader"/> positioned at the first
+        ///   value in the sequence (or with <see cref="HasData"/> == <c>false</c>).
+        /// </returns>
+        /// <remarks>
+        ///   the nested content is not evaluated by this method, and may contain data
+        ///   which is not valid under the current encoding rules.
+        /// </remarks>
+        /// <exception cref="CryptographicException">
+        ///   the next value does not have the correct tag --OR--
+        ///   the length encoding is not valid under the current encoding rules --OR--
+        ///   the contents are not valid under the current encoding rules
+        /// </exception>
+        /// <exception cref="ArgumentException">
+        ///   <paramref name="expectedTag"/>.<see cref="Asn1Tag.TagClass"/> is
+        ///   <see cref="TagClass.Universal"/>, but
+        ///   <paramref name="expectedTag"/>.<see cref="Asn1Tag.TagValue"/> is not correct for
+        ///   the method
+        /// </exception>
+        public AsnValueReader ReadSequence(Asn1Tag expectedTag)
+        {
+            Asn1Tag tag = ReadTagAndLength(out int? length, out int headerLength);
+            CheckExpectedTag(tag, expectedTag, UniversalTagNumber.Sequence);
+
+            // T-REC-X.690-201508 sec 8.9.1
+            // T-REC-X.690-201508 sec 8.10.1
+            if (!tag.IsConstructed)
+            {
+                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
+            }
+
+            int suffix = 0;
+
+            if (length == null)
+            {
+                length = SeekEndOfContents(_data.Slice(headerLength));
+                suffix = EndOfContentsEncodedLength;
+            }
+
+            ReadOnlySpan<byte> contents = Slice(_data, headerLength, length.Value);
+
+            _data = _data.Slice(headerLength + contents.Length + suffix);
+            return OpenUnchecked(contents, RuleSet);
+        }
+    }
+
     internal partial class AsnReader
     {
         /// <summary>
@@ -54,28 +129,14 @@ namespace System.Security.Cryptography.Asn1
         /// </exception>
         public AsnReader ReadSequence(Asn1Tag expectedTag)
         {
-            Asn1Tag tag = ReadTagAndLength(out int? length, out int headerLength);
-            CheckExpectedTag(tag, expectedTag, UniversalTagNumber.Sequence);
+            AsnValueReader valueReader = OpenValueReader();
+            AsnValueReader innerValueReader = valueReader.ReadSequence(expectedTag);
 
-            // T-REC-X.690-201508 sec 8.9.1
-            // T-REC-X.690-201508 sec 8.10.1
-            if (!tag.IsConstructed)
-            {
-                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
-            }
+            AsnReader ret = new AsnReader(_data, RuleSet);
+            innerValueReader.MatchSlice(ref ret._data);
 
-            int suffix = 0;
-
-            if (length == null)
-            {
-                length = SeekEndOfContents(_data.Slice(headerLength));
-                suffix = EndOfContentsEncodedLength;
-            }
-
-            ReadOnlyMemory<byte> contents = Slice(_data, headerLength, length.Value);
-
-            _data = _data.Slice(headerLength + contents.Length + suffix);
-            return new AsnReader(contents, RuleSet);
+            valueReader.MatchSlice(ref _data);
+            return ret;
         }
     }
 }

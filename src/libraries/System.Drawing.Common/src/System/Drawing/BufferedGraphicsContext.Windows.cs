@@ -18,8 +18,8 @@ namespace System.Drawing
         private IntPtr _compatDC;
         private IntPtr _dib;
         private IntPtr _oldBitmap;
-        private Graphics _compatGraphics;
-        private BufferedGraphics _buffer;
+        private Graphics? _compatGraphics;
+        private BufferedGraphics? _buffer;
         private int _busy;
         private bool _invalidateWhenFree;
 
@@ -30,7 +30,7 @@ namespace System.Drawing
         /// <summary>
         /// Returns a BufferedGraphics that is matched for the specified target HDC object.
         /// </summary>
-        private BufferedGraphics AllocBuffer(Graphics targetGraphics, IntPtr targetDC, Rectangle targetRectangle)
+        private BufferedGraphics AllocBuffer(Graphics? targetGraphics, IntPtr targetDC, Rectangle targetRectangle)
         {
             int oldBusy = Interlocked.CompareExchange(ref _busy, BufferBusyPainting, BufferFree);
 
@@ -89,7 +89,7 @@ namespace System.Drawing
         /// table or bitmasks, as appropriate.
         /// </summary>
         /// <returns>True if successful, false otherwise.</returns>
-        private bool FillBitmapInfo(IntPtr hdc, IntPtr hpal, ref NativeMethods.BITMAPINFO_FLAT pbmi)
+        private unsafe bool FillBitmapInfo(IntPtr hdc, IntPtr hpal, ref NativeMethods.BITMAPINFO_FLAT pbmi)
         {
             IntPtr hbm = IntPtr.Zero;
             bool bRet = false;
@@ -104,8 +104,7 @@ namespace System.Drawing
                     throw new OutOfMemoryException(SR.GraphicsBufferQueryFail);
                 }
 
-                pbmi.bmiHeader_biSize = Marshal.SizeOf(typeof(NativeMethods.BITMAPINFOHEADER));
-                pbmi.bmiColors = new byte[NativeMethods.BITMAPINFO_MAX_COLORSIZE * 4];
+                pbmi.bmiHeader_biSize = sizeof(NativeMethods.BITMAPINFOHEADER);
 
                 // Call first time to fill in BITMAPINFO header.
                 SafeNativeMethods.GetDIBits(new HandleRef(null, hdc),
@@ -304,7 +303,7 @@ namespace System.Drawing
                 // Create the DIB section. Let Win32 allocate the memory and return
                 // a pointer to the bitmap surface.
                 hbmRet = SafeNativeMethods.CreateDIBSection(new HandleRef(null, hdc), ref pbmi, NativeMethods.DIB_RGB_COLORS, ref ppvBits, IntPtr.Zero, 0);
-                Win32Exception ex = null;
+                Win32Exception? ex = null;
                 if (hbmRet == IntPtr.Zero)
                 {
                     ex = new Win32Exception(Marshal.GetLastWin32Error());

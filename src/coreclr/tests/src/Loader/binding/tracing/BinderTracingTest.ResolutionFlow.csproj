@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <!-- Test creates non-collectible AssemblyLoadContext -->
+    <UnloadabilityIncompatible>true</UnloadabilityIncompatible>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="BinderTracingTest.EventHandlers.cs" />
+    <Compile Include="BinderTracingTest.ResolutionFlow.cs" />
+  </ItemGroup>
+  <Import Project="BinderTracingTest.targets" />
+</Project>

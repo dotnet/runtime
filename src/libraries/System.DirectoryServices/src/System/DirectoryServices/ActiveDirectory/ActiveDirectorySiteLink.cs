@@ -268,7 +268,7 @@ namespace System.DirectoryServices.ActiveDirectory
                     throw new ObjectDisposedException(GetType().Name);
 
                 if (value < 0)
-                    throw new ArgumentException(nameof(value));
+                    throw new ArgumentException(null, nameof(value));
 
                 try
                 {
@@ -704,7 +704,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
             propertyList.Add(propertyName);
             Hashtable values = Utils.GetValuesWithRangeRetrieval(cachedEntry, "(objectClass=*)", propertyList, SearchScope.Base);
-            ArrayList siteLists = (ArrayList)values[propertyName.ToLower(CultureInfo.InvariantCulture)];
+            ArrayList siteLists = (ArrayList)values[propertyName.ToLowerInvariant()];
 
             // somehow no site list
             if (siteLists == null)

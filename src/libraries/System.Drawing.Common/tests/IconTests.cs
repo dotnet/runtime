@@ -76,7 +76,7 @@ namespace System.Drawing.Tests
             yield return new object[] { "256x256_one_entry_32bit.ico", new Size(int.MaxValue, int.MaxValue), new Size(256, 256) };
         }
 
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalTheory(Helpers.IsDrawingSupported)]
         [MemberData(nameof(Size_TestData))]
         public void Ctor_FilePath_Width_Height(string fileName, Size size, Size expectedSize)
@@ -89,7 +89,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalTheory(Helpers.IsDrawingSupported)]
         [MemberData(nameof(Size_TestData))]
         public void Ctor_FilePath_Size(string fileName, Size size, Size expectedSize)
@@ -122,7 +122,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalTheory(Helpers.IsDrawingSupported)]
         [MemberData(nameof(Size_TestData))]
         public void Ctor_Stream_Width_Height(string fileName, Size size, Size expectedSize)
@@ -136,7 +136,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalTheory(Helpers.IsDrawingSupported)]
         [MemberData(nameof(Size_TestData))]
         public void Ctor_Stream_Size(string fileName, Size size, Size expectedSize)
@@ -187,7 +187,7 @@ namespace System.Drawing.Tests
 
                 // There is no such thing as a negative number in the native struct, we're throwing ArgumentException
                 // here now as the data size doesn't match what is expected (as other inputs above).
-                PlatformDetection.IsFullFramework ? typeof(Win32Exception) : typeof(ArgumentException)
+                PlatformDetection.IsNetFramework ? typeof(Win32Exception) : typeof(ArgumentException)
             };
 
             // The size of an entry is negative.
@@ -205,7 +205,7 @@ namespace System.Drawing.Tests
                 new byte[] { 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 255, 255, 255, 127, 255, 255, 255, 127 },
 
                 // Another case where we weren't checking data integrity before invoking.
-                PlatformDetection.IsFullFramework ? typeof(Win32Exception) : typeof(ArgumentException)
+                PlatformDetection.IsNetFramework ? typeof(Win32Exception) : typeof(ArgumentException)
             };
 
             // The offset and the size of the list of entries overflows.
@@ -215,7 +215,7 @@ namespace System.Drawing.Tests
             yield return new object[] { new byte[] { 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }, typeof(Win32Exception) };
         }
 
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalTheory(Helpers.IsDrawingSupported)]
         [MemberData(nameof(Ctor_InvalidBytesInStream_TestData))]
         public void Ctor_InvalidBytesInStream_ThrowsException(byte[] bytes, Type exceptionType)
@@ -229,7 +229,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalTheory(Helpers.IsDrawingSupported)]
         [MemberData(nameof(Size_TestData))]
         public void Ctor_Icon_Width_Height(string fileName, Size size, Size expectedSize)
@@ -244,7 +244,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalTheory(Helpers.IsDrawingSupported)]
         [MemberData(nameof(Size_TestData))]
         public void Ctor_Icon_Size(string fileName, Size size, Size expectedSize)
@@ -264,27 +264,6 @@ namespace System.Drawing.Tests
         {
             AssertExtensions.Throws<ArgumentNullException, ArgumentException>("original", null, () => new Icon((Icon)null, 32, 32));
             AssertExtensions.Throws<ArgumentNullException, ArgumentException>("original", null, () => new Icon((Icon)null, new Size(32, 32)));
-        }
-
-        // libgdiplus causes a segfault when given an invalid Icon handle.
-        [PlatformSpecific(TestPlatforms.Windows)]
-        [ConditionalFact(Helpers.IsDrawingSupported)]
-        public void Ctor_InvalidHandle_Success()
-        {
-            using (Icon icon = Icon.FromHandle((IntPtr)1))
-            using (var stream = new MemoryStream())
-            {
-                Exception ex = Assert.ThrowsAny<Exception>(() => icon.Save(stream));
-                Assert.True(ex is COMException || ex is ObjectDisposedException || ex is FileNotFoundException, $"{ex.GetType().ToString()} was thrown.");
-
-                AssertExtensions.Throws<ArgumentException>(null, () => icon.ToBitmap());
-                Assert.Equal(Size.Empty, icon.Size);
-
-                using (var newIcon = new Icon(icon, 10, 10))
-                {
-                    Assert.Throws<ObjectDisposedException>(() => newIcon.Handle);
-                }
-            }
         }
 
         [ConditionalFact(Helpers.IsDrawingSupported)]
@@ -349,7 +328,7 @@ namespace System.Drawing.Tests
             Assert.Throws<ObjectDisposedException>(() => icon.Handle);
         }
 
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.IsDrawingSupported)]
         public void Dispose_OwnsHandle_DestroysHandle()
         {
@@ -397,11 +376,11 @@ namespace System.Drawing.Tests
         [ConditionalFact(Helpers.IsDrawingSupported)]
         public void ExtractAssociatedIcon_FilePath_Success()
         {
-            ExtractAssociatedIcon_FilePath_Success(Helpers.GetTestBitmapPath("48x48_multiple_entries_4bit.ico"));
+            ExtractAssociatedIcon_FilePath_Success_Helper(Helpers.GetTestBitmapPath("48x48_multiple_entries_4bit.ico"));
         }
 
         [PlatformSpecific(TestPlatforms.Windows)] // UNC
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Fix for #34122")]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Fix for https://github.com/dotnet/runtime/issues/28220")]
         [ConditionalFact(Helpers.IsDrawingSupported)]
         public void ExtractAssociatedIcon_UNCFilePath_Success()
         {
@@ -422,10 +401,10 @@ namespace System.Drawing.Tests
 
             Assert.True(new Uri(bitmapUncPath).IsUnc);
 
-            ExtractAssociatedIcon_FilePath_Success(bitmapUncPath);
+            ExtractAssociatedIcon_FilePath_Success_Helper(bitmapUncPath);
         }
 
-        private void ExtractAssociatedIcon_FilePath_Success(string filePath)
+        private void ExtractAssociatedIcon_FilePath_Success_Helper(string filePath)
         {
             using (Icon icon = Icon.ExtractAssociatedIcon(filePath))
             {
@@ -434,12 +413,12 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.IsDrawingSupported)]
         public void ExtractAssociatedIcon_NonFilePath_ThrowsFileNotFound()
         {
             // Used to return null at the expense of creating a URI
-            if (PlatformDetection.IsFullFramework)
+            if (PlatformDetection.IsNetFramework)
             {
                 Assert.Null(Icon.ExtractAssociatedIcon("http://microsoft.com"));
             }
@@ -514,8 +493,9 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.IsDrawingSupported)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34591", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         public void Save_NullOutputStreamNoIconData_ThrowsArgumentNullException()
         {
             using (var source = new Icon(Helpers.GetTestBitmapPath("48x48_multiple_entries_4bit.ico")))
@@ -523,11 +503,11 @@ namespace System.Drawing.Tests
                 var icon = Icon.FromHandle(source.Handle);
                 icon.Dispose();
 
-                AssertExtensions.Throws<ArgumentNullException>("dataStream", () => icon.Save(null));
+                AssertExtensions.Throws<ArgumentNullException>("outputStream", "dataStream", () => icon.Save(null));
             }
         }
 
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.IsDrawingSupported)]
         public void Save_ClosedOutputStreamIconData_ThrowsException()
         {
@@ -540,7 +520,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.IsDrawingSupported)]
         public void Save_ClosedOutputStreamNoIconData_DoesNothing()
         {
@@ -554,7 +534,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.IsDrawingSupported)]
         public void Save_NoIconDataOwnsHandleAndDisposed_ThrowsObjectDisposedException()
         {
@@ -614,7 +594,7 @@ namespace System.Drawing.Tests
 
         private const string DontSupportPngFramesInIcons = "Switch.System.Drawing.DontSupportPngFramesInIcons";
 
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.IsDrawingSupported)]
         public void ToBitmap_PngIconSupportedInSwitches_Success()
         {
@@ -651,7 +631,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.IsDrawingSupported)]
         public void ToBitmap_PngIconNotSupportedInSwitches_ThrowsArgumentOutOfRangeException()
         {
@@ -703,6 +683,7 @@ namespace System.Drawing.Tests
         }
 
         [ConditionalFact(Helpers.IsDrawingSupported)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34591", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         public void FromHandle_IconHandleOneTime_Success()
         {
             using (var icon1 = new Icon(Helpers.GetTestBitmapPath("16x16_one_entry_4bit.ico")))
@@ -715,6 +696,7 @@ namespace System.Drawing.Tests
         }
 
         [ConditionalFact(Helpers.IsDrawingSupported)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34591", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         public void FromHandle_IconHandleMultipleTime_Success()
         {
             using (var icon1 = new Icon(Helpers.GetTestBitmapPath("16x16_one_entry_4bit.ico")))
@@ -735,6 +717,7 @@ namespace System.Drawing.Tests
         }
 
         [ConditionalFact(Helpers.IsDrawingSupported)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34591", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         public void FromHandle_BitmapHandleOneTime_Success()
         {
             IntPtr handle;
@@ -751,6 +734,7 @@ namespace System.Drawing.Tests
         }
 
         [ConditionalFact(Helpers.IsDrawingSupported)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34591", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         public void FromHandle_BitmapHandleMultipleTime_Success()
         {
             IntPtr handle;
@@ -849,7 +833,7 @@ namespace System.Drawing.Tests
                         }
                         else
                         {
-                            string fieldName = PlatformDetection.IsFullFramework ? "bitDepth" : "s_bitDepth";
+                            string fieldName = PlatformDetection.IsNetFramework ? "bitDepth" : "s_bitDepth";
                             FieldInfo fi = typeof(Icon).GetField(fieldName, BindingFlags.Static | BindingFlags.NonPublic);
                             expectedBitDepth = (int)fi.GetValue(null);
                         }

@@ -411,14 +411,38 @@ namespace System.Data.OleDb
             _dbBindings = bindings;
         }
 
-        private void ApplyParameterBindings(UnsafeNativeMethods.ICommandWithParameters commandWithParameters, tagDBPARAMBINDINFO[] bindInfo)
+        private unsafe void ApplyParameterBindings(UnsafeNativeMethods.ICommandWithParameters commandWithParameters, tagDBPARAMBINDINFO[] bindInfo)
         {
             IntPtr[] ordinals = new IntPtr[bindInfo.Length];
             for (int i = 0; i < ordinals.Length; ++i)
             {
                 ordinals[i] = (IntPtr)(i + 1);
             }
-            OleDbHResult hr = commandWithParameters.SetParameterInfo((IntPtr)bindInfo.Length, ordinals, bindInfo);
+
+            OleDbHResult hr;
+
+            if (ODB.IsRunningOnX86)
+            {
+                tagDBPARAMBINDINFO_x86[] bindInfo_x86 = new tagDBPARAMBINDINFO_x86[bindInfo.Length];
+                for (int i = 0; i < bindInfo.Length; i++)
+                {
+                    fixed (tagDBPARAMBINDINFO* p = &bindInfo[i])
+                    {
+                        bindInfo_x86[i] = *(tagDBPARAMBINDINFO_x86*)p;
+                    }
+                }
+                fixed (tagDBPARAMBINDINFO_x86* p = &bindInfo_x86[0])
+                {
+                    hr = commandWithParameters.SetParameterInfo((IntPtr)bindInfo.Length, ordinals, (IntPtr)p);
+                }
+            }
+            else
+            {
+                fixed (tagDBPARAMBINDINFO* p = &bindInfo[0])
+                {
+                    hr = commandWithParameters.SetParameterInfo((IntPtr)bindInfo.Length, ordinals, (IntPtr)p);
+                }
+            }
 
             if (hr < 0)
             {
@@ -1222,7 +1246,7 @@ namespace System.Data.OleDb
             if (null != _icommandText)
             {
                 OleDbHResult hr;
-                tagDBPROP[] dbprops;
+                ItagDBPROP[] dbprops;
                 UnsafeNativeMethods.ICommandProperties icommandProperties = ICommandProperties();
 
                 using (PropertyIDSet propidset = new PropertyIDSet(propertySet, propertyID))
@@ -1305,22 +1329,22 @@ namespace System.Data.OleDb
             {
                 propSet = new DBPropSet(1);
 
-                tagDBPROP[] dbprops = new tagDBPROP[count];
+                ItagDBPROP[] dbprops = new ItagDBPROP[count];
 
-                dbprops[0] = new tagDBPROP(ODB.DBPROP_COMMANDTIMEOUT, false, CommandTimeout);
+                dbprops[0] = OleDbStructHelpers.CreateTagDbProp(ODB.DBPROP_COMMANDTIMEOUT, false, CommandTimeout);
 
                 if (_executeQuery)
                 {
                     // 'Microsoft.Jet.OLEDB.4.0' default is DBPROPVAL_AO_SEQUENTIAL
-                    dbprops[1] = new tagDBPROP(ODB.DBPROP_ACCESSORDER, false, ODB.DBPROPVAL_AO_RANDOM);
+                    dbprops[1] = OleDbStructHelpers.CreateTagDbProp(ODB.DBPROP_ACCESSORDER, false, ODB.DBPROPVAL_AO_RANDOM);
 
                     if (keyInfo)
                     {
                         // 'Unique Rows' property required for SQLOLEDB to retrieve things like 'BaseTableName'
-                        dbprops[2] = new tagDBPROP(ODB.DBPROP_UNIQUEROWS, false, keyInfo);
+                        dbprops[2] = OleDbStructHelpers.CreateTagDbProp(ODB.DBPROP_UNIQUEROWS, false, keyInfo);
 
                         // otherwise 'Microsoft.Jet.OLEDB.4.0' doesn't support IColumnsRowset
-                        dbprops[3] = new tagDBPROP(ODB.DBPROP_IColumnsRowset, false, true);
+                        dbprops[3] = OleDbStructHelpers.CreateTagDbProp(ODB.DBPROP_IColumnsRowset, false, true);
                     }
                 }
                 propSet.SetPropertySet(0, OleDbPropertySetGuid.Rowset, dbprops);

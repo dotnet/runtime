@@ -857,7 +857,7 @@ namespace System.Collections.Tests
             {
                 IList keys = sortList2.GetKeyList();
                 AssertExtensions.Throws<ArgumentNullException>("destinationArray", "dest", () => keys.CopyTo(null, 0)); // Array is null
-                AssertExtensions.Throws<ArgumentException>("array", null, () => keys.CopyTo(new object[10, 10], 0)); // Array is multidimensional -- in netfx ParamName is null
+                AssertExtensions.Throws<ArgumentException>("array", null, () => keys.CopyTo(new object[10, 10], 0)); // Array is multidimensional -- in .NET Framework ParamName is null
 
                 // Index < 0
                 AssertExtensions.Throws<ArgumentOutOfRangeException>("destinationIndex", "dstIndex", () => keys.CopyTo(new object[100], -1));
@@ -1099,7 +1099,7 @@ namespace System.Collections.Tests
             {
                 IList values = sortList2.GetValueList();
                 AssertExtensions.Throws<ArgumentNullException>("destinationArray", "dest", () => values.CopyTo(null, 0)); // Array is null
-                AssertExtensions.Throws<ArgumentException>("array", null, () => values.CopyTo(new object[10, 10], 0)); // Array is multidimensional -- in netfx ParamName is null
+                AssertExtensions.Throws<ArgumentException>("array", null, () => values.CopyTo(new object[10, 10], 0)); // Array is multidimensional -- in .NET Framework ParamName is null
 
                 AssertExtensions.Throws<ArgumentOutOfRangeException>("destinationIndex", "dstIndex", () => values.CopyTo(new object[100], -1)); // Index < 0
                 AssertExtensions.Throws<ArgumentException>("destinationArray", string.Empty, () => values.CopyTo(new object[150], 51)); // Index + list.Count > array.Count

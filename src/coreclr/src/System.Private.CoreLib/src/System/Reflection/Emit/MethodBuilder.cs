@@ -620,7 +620,7 @@ namespace System.Reflection.Emit
             // We need to lock here to prevent a method from being "tokenized" twice.
             // We don't need to synchronize this with Type.DefineMethod because it only appends newly
             // constructed MethodBuilders to the end of m_listMethods
-            lock (m_containingType.m_listMethods)
+            lock (m_containingType.m_listMethods!)
             {
                 if (m_tkMethod.Token != 0)
                 {
@@ -651,8 +651,7 @@ namespace System.Reflection.Emit
         {
             Debug.Assert(m_tkMethod.Token == 0, "m_tkMethod should not have been initialized");
 
-            int sigLength;
-            byte[] sigBytes = GetMethodSignature().InternalGetSignature(out sigLength);
+            byte[] sigBytes = GetMethodSignature().InternalGetSignature(out int sigLength);
             ModuleBuilder module = m_module;
 
             int token = TypeBuilder.DefineMethod(new QCallModule(ref module), m_containingType.MetadataTokenInternal, m_strName, sigBytes, sigLength, Attributes);

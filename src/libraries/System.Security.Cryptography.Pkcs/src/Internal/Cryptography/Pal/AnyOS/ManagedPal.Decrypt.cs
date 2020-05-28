@@ -29,13 +29,13 @@ namespace Internal.Cryptography.Pal.AnyOS
                 _envelopedData = envelopedDataAsn;
             }
 
-            public override unsafe ContentInfo TryDecrypt(
+            public override unsafe ContentInfo? TryDecrypt(
                 RecipientInfo recipientInfo,
-                X509Certificate2 cert,
-                AsymmetricAlgorithm privateKey,
+                X509Certificate2? cert,
+                AsymmetricAlgorithm? privateKey,
                 X509Certificate2Collection originatorCerts,
                 X509Certificate2Collection extraStore,
-                out Exception exception)
+                out Exception? exception)
             {
                 // When encryptedContent is null Windows seems to decrypt the CEK first,
                 // then return a 0 byte answer.
@@ -44,7 +44,7 @@ namespace Internal.Cryptography.Pal.AnyOS
 
                 if (recipientInfo.Pal is ManagedKeyTransPal ktri)
                 {
-                    RSA key = privateKey as RSA;
+                    RSA? key = privateKey as RSA;
 
                     if (privateKey != null && key == null)
                     {
@@ -52,7 +52,7 @@ namespace Internal.Cryptography.Pal.AnyOS
                         return null;
                     }
 
-                    byte[] cek = ktri.DecryptCek(cert, key, out exception);
+                    byte[]? cek = ktri.DecryptCek(cert, key, out exception);
                     // Pin CEK to prevent it from getting copied during heap compaction.
                     fixed (byte* pinnedCek = cek)
                     {
@@ -64,7 +64,7 @@ namespace Internal.Cryptography.Pal.AnyOS
                             }
 
                             return TryDecryptCore(
-                                cek,
+                                cek!,
                                 _envelopedData.EncryptedContentInfo.ContentType,
                                 _envelopedData.EncryptedContentInfo.EncryptedContent,
                                 _envelopedData.EncryptedContentInfo.ContentEncryptionAlgorithm,
@@ -89,12 +89,12 @@ namespace Internal.Cryptography.Pal.AnyOS
                 }
             }
 
-            public static unsafe ContentInfo TryDecryptCore(
+            public static unsafe ContentInfo? TryDecryptCore(
                 byte[] cek,
                 string contentType,
                 ReadOnlyMemory<byte>? content,
                 AlgorithmIdentifierAsn contentEncryptionAlgorithm,
-                out Exception exception)
+                out Exception? exception)
             {
                 if (content == null)
                 {
@@ -105,7 +105,7 @@ namespace Internal.Cryptography.Pal.AnyOS
                         Array.Empty<byte>());
                 }
 
-                byte[] decrypted = DecryptContent(content.Value, cek, contentEncryptionAlgorithm, out exception);
+                byte[]? decrypted = DecryptContent(content.Value, cek, contentEncryptionAlgorithm, out exception);
 
                 if (exception != null)
                 {
@@ -117,7 +117,7 @@ namespace Internal.Cryptography.Pal.AnyOS
                 // existing CMS that have the incorrect wrapping, we attempt to remove it.
                 if (contentType == Oids.Pkcs7Data)
                 {
-                    byte[] tmp = null;
+                    byte[]? tmp = null;
 
                     try
                     {
@@ -129,7 +129,7 @@ namespace Internal.Cryptography.Pal.AnyOS
                         }
                         else
                         {
-                            tmp = CryptoPool.Rent(decrypted.Length);
+                            tmp = CryptoPool.Rent(decrypted!.Length);
 
                             if (reader.TryCopyOctetStringBytes(tmp, out int written))
                             {
@@ -165,7 +165,7 @@ namespace Internal.Cryptography.Pal.AnyOS
                 exception = null;
                 return new ContentInfo(
                     new Oid(contentType),
-                    decrypted);
+                    decrypted!);
             }
 
             private static byte[] GetAsnSequenceWithContentNoValidation(ReadOnlySpan<byte> content)
@@ -185,15 +185,15 @@ namespace Internal.Cryptography.Pal.AnyOS
                 }
             }
 
-            private static byte[] DecryptContent(
+            private static byte[]? DecryptContent(
                 ReadOnlyMemory<byte> encryptedContent,
                 byte[] cek,
                 AlgorithmIdentifierAsn contentEncryptionAlgorithm,
-                out Exception exception)
+                out Exception? exception)
             {
                 exception = null;
                 int encryptedContentLength = encryptedContent.Length;
-                byte[] encryptedContentArray = CryptoPool.Rent(encryptedContentLength);
+                byte[]? encryptedContentArray = CryptoPool.Rent(encryptedContentLength);
 
                 try
                 {

@@ -46,7 +46,7 @@ void __stdcall DecoderInit(void *pThis, COR_ILMETHOD *header)
     }
     if (header->Fat.IsFat())
     {
-#ifdef BIT64
+#ifdef HOST_64BIT
         if((((size_t) header) & 3) == 0)        // header is aligned
 #else
         _ASSERTE((((size_t) header) & 3) == 0);        // header is aligned

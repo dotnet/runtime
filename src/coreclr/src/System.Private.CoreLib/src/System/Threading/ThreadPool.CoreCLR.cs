@@ -46,9 +46,6 @@ namespace System.Threading
 
         internal void SetWaitObject(WaitHandle waitObject)
         {
-            // needed for DangerousAddRef
-            RuntimeHelpers.PrepareConstrainedRegions();
-
             m_internalWaitObject = waitObject;
             if (waitObject != null)
             {
@@ -61,8 +58,6 @@ namespace System.Threading
              )
         {
             bool result = false;
-            // needed for DangerousRelease
-            RuntimeHelpers.PrepareConstrainedRegions();
 
             // lock(this) cannot be used reliably in Cer since thin lock could be
             // promoted to syncblock and that is not a guaranteed operation
@@ -197,6 +192,13 @@ namespace System.Threading
         // Time in ms for which ThreadPoolWorkQueue.Dispatch keeps executing work items before returning to the OS
         private const uint DispatchQuantum = 30;
 
+        private static bool GetEnableWorkerTracking()
+        {
+            bool enableWorkerTracking = false;
+            InitializeVMTp(ref enableWorkerTracking);
+            return enableWorkerTracking;
+        }
+
         internal static bool KeepDispatching(int startTickCount)
         {
             // Note: this function may incorrectly return false due to TickCount overflow
@@ -265,7 +267,7 @@ namespace System.Threading
             get;
         }
 
-        private static RegisteredWaitHandle RegisterWaitForSingleObject(  // throws RegisterWaitException
+        private static RegisteredWaitHandle RegisterWaitForSingleObject(
              WaitHandle waitObject,
              WaitOrTimerCallback callBack,
              object? state,
@@ -307,25 +309,6 @@ namespace System.Threading
         public static unsafe bool UnsafeQueueNativeOverlapped(NativeOverlapped* overlapped) =>
             PostQueuedCompletionStatus(overlapped);
 
-        // The thread pool maintains a per-appdomain managed work queue.
-        // New thread pool entries are added in the managed queue.
-        // The VM is responsible for the actual growing/shrinking of
-        // threads.
-        private static void EnsureInitialized()
-        {
-            if (!ThreadPoolGlobals.threadPoolInitialized)
-            {
-                EnsureVMInitializedCore(); // separate out to help with inlining
-            }
-        }
-
-        [MethodImpl(MethodImplOptions.NoInlining)]
-        private static void EnsureVMInitializedCore()
-        {
-            InitializeVMTp(ref ThreadPoolGlobals.enableWorkerTracking);
-            ThreadPoolGlobals.threadPoolInitialized = true;
-        }
-
         // Native methods:
 
         [MethodImpl(MethodImplOptions.InternalCall)]
@@ -351,7 +334,6 @@ namespace System.Threading
 
         internal static void NotifyWorkItemProgress()
         {
-            EnsureInitialized();
             NotifyWorkItemProgressNative();
         }
 
@@ -383,7 +365,6 @@ namespace System.Threading
 
             bool ret = false;
             bool mustReleaseSafeHandle = false;
-            RuntimeHelpers.PrepareConstrainedRegions();
             try
             {
                 osHandle.DangerousAddRef(ref mustReleaseSafeHandle);

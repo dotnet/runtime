@@ -1,22 +1,40 @@
 project(System.Security.Cryptography.Native C)
 
-set(CMAKE_INCLUDE_CURRENT_DIR ON)
-
 # These are happening inside of OpenSSL-defined macros out of our control
 add_compile_options(-Wno-cast-align)
 add_compile_options(-Wno-reserved-id-macro)
 add_compile_options(-Wno-documentation)
 add_compile_options(-Wno-used-but-marked-unused)
 
-add_definitions(-DPIC=1 -DOPENSSL_API_COMPAT=0x10100000L)
+add_definitions(-DOPENSSL_API_COMPAT=0x10100000L)
 
 if(CMAKE_STATIC_LIB_LINK)
    set(CMAKE_FIND_LIBRARY_SUFFIXES .a)
 endif(CMAKE_STATIC_LIB_LINK)
 
-find_package(OpenSSL)
+if(CLR_CMAKE_TARGET_ANDROID AND NOT CROSS_ROOTFS)
+    # TEMP: consume OpenSSL dependencies from external sources via env. variables
+    set(OPENSSL_FOUND 1)
+    set(OPENSSL_INCLUDE_DIR $ENV{ANDROID_OPENSSL_AAR}/prefab/modules/ssl/include)
+    if(CLR_CMAKE_TARGET_ARCH_ARM64)
+        set(OPENSSL_CRYPTO_LIBRARY $ENV{ANDROID_OPENSSL_AAR}/prefab/modules/crypto/libs/android.arm64-v8a/libcrypto.so)
+        set(OPENSSL_SSL_LIBRARY $ENV{ANDROID_OPENSSL_AAR}/prefab/modules/ssl/libs/android.arm64-v8a/libssl.so)
+    elseif(CLR_CMAKE_TARGET_ARCH_ARM)
+        set(OPENSSL_CRYPTO_LIBRARY $ENV{ANDROID_OPENSSL_AAR}/prefab/modules/crypto/libs/android.armeabi-v7a/libcrypto.so)
+        set(OPENSSL_SSL_LIBRARY $ENV{ANDROID_OPENSSL_AAR}/prefab/modules/ssl/libs/android.armeabi-v7a/libssl.so)
+    elseif(CLR_CMAKE_TARGET_ARCH_I386)
+        set(OPENSSL_CRYPTO_LIBRARY $ENV{ANDROID_OPENSSL_AAR}/prefab/modules/crypto/libs/android.x86/libcrypto.so)
+        set(OPENSSL_SSL_LIBRARY $ENV{ANDROID_OPENSSL_AAR}/prefab/modules/ssl/libs/android.x86/libssl.so)
+    else()
+        set(OPENSSL_CRYPTO_LIBRARY $ENV{ANDROID_OPENSSL_AAR}/prefab/modules/crypto/libs/android.x86_64/libcrypto.so)
+        set(OPENSSL_SSL_LIBRARY $ENV{ANDROID_OPENSSL_AAR}/prefab/modules/ssl/libs/android.x86_64/libssl.so)
+    endif()
+else()
+    find_package(OpenSSL)
+endif()
+
 if(NOT OPENSSL_FOUND)
-    message(FATAL_ERROR "!!! Cannot find libssl and System.Security.Cryptography.Native cannot build without it. Try installing libssl-dev (or the appropriate package for your platform) !!!")
+    message(FATAL_ERROR "!!! Cannot find libssl and System.Security.Cryptography.Native cannot build without it. Try installing libssl-dev (on Linux, but this may vary by distro) or openssl (on macOS) !!!. See the requirements document for your specific operating system: https://github.com/dotnet/runtime/tree/master/docs/workflow/requirements.")
 endif(NOT OPENSSL_FOUND)
 
 include_directories(${OPENSSL_INCLUDE_DIR})
@@ -51,11 +69,14 @@ set(NATIVECRYPTO_SOURCES
     pal_x509ext.c
 )
 
-if (FEATURE_DISTRO_AGNOSTIC_SSL)
-    if (NOT CMAKE_SYSTEM_NAME STREQUAL Linux)
-        message(FATAL_ERROR "FEATURE_DISTRO_AGNOSTIC_SSL can only be enabled for Linux")
-    endif()
+# Always build portable on macOS because OpenSSL is not a system component
+# and our prebuilts should not assume a specific ABI version for the types
+# that use OpenSSL at runtime.
+if (CLR_CMAKE_TARGET_OSX)
+    set(FEATURE_DISTRO_AGNOSTIC_SSL True)
+endif()
 
+if (FEATURE_DISTRO_AGNOSTIC_SSL)
     list(APPEND NATIVECRYPTO_SOURCES
         opensslshim.c
     )
@@ -74,21 +95,23 @@ add_library(System.Security.Cryptography.Native.OpenSsl-Static
     $<TARGET_OBJECTS:objlib>
 )
 
-# Disable the "lib" prefix.
-set_target_properties(System.Security.Cryptography.Native.OpenSsl PROPERTIES PREFIX "")
-
-# Disable the "lib" prefix and override default name
-set_target_properties(System.Security.Cryptography.Native.OpenSsl-Static PROPERTIES PREFIX "")
 set_target_properties(System.Security.Cryptography.Native.OpenSsl-Static PROPERTIES OUTPUT_NAME System.Security.Cryptography.Native.OpenSsl CLEAN_DIRECT_OUTPUT 1)
 
 if (FEATURE_DISTRO_AGNOSTIC_SSL)
-    add_custom_command(TARGET System.Security.Cryptography.Native.OpenSsl POST_BUILD
-        COMMENT "Verifying System.Security.Cryptography.Native.OpenSsl.so dependencies"
-        COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/../verify-so.sh 
-            $<TARGET_FILE:System.Security.Cryptography.Native.OpenSsl> 
-            "Verification failed. System.Security.Cryptography.Native.OpenSsl.so has undefined dependencies. These are likely OpenSSL APIs that need to be added to opensslshim.h"
-        VERBATIM
-    )
+    # on macOS the link step fails with undefined symbols, and the script doesn't run.
+    # if the build succeeds, the script would succeed, except it uses a Linux-only command.
+    #
+    # on Linux, the build will succeed with undefined symbols, then the script reports them
+    # and fails the build for us.
+    if (NOT APPLE)
+        add_custom_command(TARGET System.Security.Cryptography.Native.OpenSsl POST_BUILD
+            COMMENT "Verifying System.Security.Cryptography.Native.OpenSsl.so dependencies"
+            COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/../verify-so.sh
+                $<TARGET_FILE:System.Security.Cryptography.Native.OpenSsl>
+                "Verification failed. System.Security.Cryptography.Native.OpenSsl.so has undefined dependencies. These are likely OpenSSL APIs that need to be added to opensslshim.h"
+            VERBATIM
+        )
+    endif()
 
     # Link with libdl.so to get the dlopen / dlsym / dlclose
     target_link_libraries(System.Security.Cryptography.Native.OpenSsl
@@ -99,25 +122,9 @@ else()
       ${OPENSSL_CRYPTO_LIBRARY}
       ${OPENSSL_SSL_LIBRARY}
     )
-  
-    # On OS X every library emits the manner in which it should be referenced.
-    # All of our libraries are referenced via @rpath, which is similar to how Linux and Windows
-    # libraries are loaded. The homebrew installation of OpenSSL (libcrypto, libssl) uses the
-    # full path to the library installation. This means that this library is not flexible to
-    # users installing newer libcrypto in the working directory, or to systems which do not
-    # install to the same path as homebrew does.
-    #
-    # So, after compiling, rewrite the references to libcrypto to be more flexible.
-    if (APPLE)
-        add_custom_command(TARGET System.Security.Cryptography.Native.OpenSsl POST_BUILD
-            COMMAND ${CMAKE_INSTALL_NAME_TOOL} -change /usr/local/opt/openssl/lib/libcrypto.1.0.0.dylib @rpath/libcrypto.1.0.0.dylib $<TARGET_FILE:System.Security.Cryptography.Native.OpenSsl>
-            COMMAND ${CMAKE_INSTALL_NAME_TOOL} -change /usr/local/opt/openssl/lib/libssl.1.0.0.dylib @rpath/libssl.1.0.0.dylib $<TARGET_FILE:System.Security.Cryptography.Native.OpenSsl>
-            COMMAND ${CMAKE_INSTALL_NAME_TOOL} -add_rpath @loader_path $<TARGET_FILE:System.Security.Cryptography.Native.OpenSsl>
-            )
-    endif()
 endif()
 
 include(configure.cmake)
 
-install_library_and_symbols (System.Security.Cryptography.Native.OpenSsl)
+install_with_stripped_symbols (System.Security.Cryptography.Native.OpenSsl PROGRAMS .)
 install (TARGETS System.Security.Cryptography.Native.OpenSsl-Static DESTINATION .)

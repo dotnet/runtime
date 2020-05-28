@@ -32,8 +32,8 @@ internal static partial class Interop
         public unsafe struct NetworkInterfaceInfo
         {
             public fixed byte Name[16];
+            public long Speed;
             public int InterfaceIndex;
-            public int Speed;
             public int Mtu;
             public ushort HardwareType;
             public byte OperationalState;
@@ -51,8 +51,8 @@ internal static partial class Interop
         [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_EnumerateInterfaceAddresses")]
         public static extern int EnumerateInterfaceAddresses(
             IPv4AddressDiscoveredCallback ipv4Found,
-            IPv6AddressDiscoveredCallback ipv6Found,
-            LinkLayerAddressDiscoveredCallback linkLayerFound);
+            IPv6AddressDiscoveredCallback? ipv6Found,
+            LinkLayerAddressDiscoveredCallback? linkLayerFound);
 
         [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_EnumerateGatewayAddressesForInterface")]
         public static extern int EnumerateGatewayAddressesForInterface(uint interfaceIndex, DnsAddessDiscoveredCallback onGatewayFound);

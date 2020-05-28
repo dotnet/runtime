@@ -26,7 +26,7 @@ namespace Internal.Cryptography.Pal
         // .*.pfx ({thumbprint}.{ordinal}.pfx)
         private const string PfxOrdinalWildcard = "." + PfxWildcard;
 
-        private static string s_userStoreRoot;
+        private static string? s_userStoreRoot;
 
         private readonly string _storePath;
 
@@ -146,7 +146,7 @@ namespace Internal.Cryptography.Pal
                 bool findOpenSlot;
 
                 // The odds are low that we'd have a thumbprint collision, but check anyways.
-                string existingFilename = FindExistingFilename(copy, _storePath, out findOpenSlot);
+                string? existingFilename = FindExistingFilename(copy, _storePath, out findOpenSlot);
 
                 if (existingFilename != null)
                 {
@@ -193,7 +193,7 @@ namespace Internal.Cryptography.Pal
                 using (FileStream stream = new FileStream(destinationFilename, mode))
                 {
                     EnsureFilePermissions(stream, userId);
-                    byte[] pkcs12 = copy.Export(X509ContentType.Pkcs12);
+                    byte[] pkcs12 = copy.Export(X509ContentType.Pkcs12)!;
                     stream.Write(pkcs12, 0, pkcs12.Length);
                 }
             }
@@ -208,7 +208,7 @@ namespace Internal.Cryptography.Pal
 
             using (X509Certificate2 copy = new X509Certificate2(cert.DuplicateHandles()))
             {
-                string currentFilename;
+                string? currentFilename;
 
                 do
                 {
@@ -229,12 +229,12 @@ namespace Internal.Cryptography.Pal
             }
         }
 
-        SafeHandle IStorePal.SafeHandle
+        SafeHandle? IStorePal.SafeHandle
         {
             get { return null; }
         }
 
-        private static string FindExistingFilename(X509Certificate2 cert, string storePath, out bool hadCandidates)
+        private static string? FindExistingFilename(X509Certificate2 cert, string storePath, out bool hadCandidates)
         {
             hadCandidates = false;
 
@@ -485,7 +485,7 @@ namespace Internal.Cryptography.Pal
                 // Since CloneTo always says the store is empty, no measurable work is ever done.
             }
 
-            SafeHandle IStorePal.SafeHandle { get; } = null;
+            SafeHandle? IStorePal.SafeHandle { get; } = null;
         }
     }
 }

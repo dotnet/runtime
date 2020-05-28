@@ -1,0 +1,285 @@
+trigger:
+  batch: true
+  branches:
+    include:
+    - master
+    - release/*
+  paths:
+    include:
+    - '*'
+    - docs/manpages/*
+    exclude:
+    - .github/*
+    - docs/*
+    - CODE-OF-CONDUCT.md
+    - CONTRIBUTING.md
+    - LICENSE.TXT
+    - PATENTS.TXT
+    - README.md
+    - SECURITY.md
+    - THIRD-PARTY-NOTICES.TXT
+
+pr: none
+
+variables:
+- template: /eng/pipelines/common/variables.yml
+# TODO: (Consolidation) Switch away from old signing/validation variables from former Core-Setup. https://github.com/dotnet/runtime/issues/1027
+- name: TeamName
+  value: dotnet-core-acquisition
+# Set the target blob feed for package publish during official and validation builds.
+- name: _DotNetArtifactsCategory
+  value: .NETCore
+- name: _DotNetValidationArtifactsCategory
+  value: .NETCoreValidation
+
+stages:
+- stage: Build
+  jobs:
+  #
+  # Checkout repository
+  #
+  - template: /eng/pipelines/common/checkout-job.yml
+
+  #
+  # Build CoreCLR
+  #
+  - template: /eng/pipelines/common/platform-matrix.yml
+    parameters:
+      jobTemplate: /eng/pipelines/coreclr/templates/build-job.yml
+      buildConfig: release
+      platforms:
+      - OSX_x64
+      - Linux_x64
+      - Linux_arm
+      - Linux_arm64
+      - Linux_musl_x64
+      - Linux_musl_arm64
+      - Windows_NT_x86
+      - Windows_NT_x64
+      - Windows_NT_arm
+      - Windows_NT_arm64
+      jobParameters:
+        isOfficialBuild: ${{ variables.isOfficialBuild }}
+
+  #
+  # Build Mono release
+  #
+  - template: /eng/pipelines/common/platform-matrix.yml
+    parameters:
+      jobTemplate: /eng/pipelines/mono/templates/build-job.yml
+      runtimeFlavor: mono
+      buildConfig: release
+      platforms:
+      - Android_x64
+      - Android_x86
+      - Android_arm
+      - Android_arm64
+      - tvOS_x64
+      - tvOS_arm64
+      - iOS_x64
+      - iOS_x86
+      - iOS_arm
+      - iOS_arm64
+      - OSX_x64
+      - Linux_x64
+      - Linux_arm
+      - Linux_arm64
+      - Linux_musl_x64
+      - Browser_wasm
+      # - Linux_musl_arm64
+      - Windows_NT_x64
+      # - Windows_NT_x86
+      # - Windows_NT_arm
+      # - Windows_NT_arm64
+      jobParameters:
+        isOfficialBuild: ${{ variables.isOfficialBuild }}
+
+  #
+  # Build Mono LLVM release
+  #
+  - template: /eng/pipelines/common/platform-matrix.yml
+    parameters:
+      jobTemplate: /eng/pipelines/mono/templates/build-job.yml
+      runtimeFlavor: mono
+      buildConfig: release
+      platforms:
+      - OSX_x64
+      - Linux_x64
+      # - Linux_arm
+      # - Linux_arm64
+      # - Linux_musl_x64
+      # - Linux_musl_arm64
+      # - Windows_NT_x64
+      # - Windows_NT_x86
+      # - Windows_NT_arm
+      # - Windows_NT_arm64
+      jobParameters:
+        runtimeVariant: LLVMJIT
+        isOfficialBuild: ${{ variables.isOfficialBuild }}
+
+  - template: /eng/pipelines/common/platform-matrix.yml
+    parameters:
+      jobTemplate: /eng/pipelines/mono/templates/build-job.yml
+      runtimeFlavor: mono
+      buildConfig: release
+      platforms:
+      - OSX_x64
+      - Linux_x64
+      # - Linux_arm
+      # - Linux_arm64
+      # - Linux_musl_x64
+      # - Linux_musl_arm64
+      # - Windows_NT_x64
+      # - Windows_NT_x86
+      # - Windows_NT_arm
+      # - Windows_NT_arm64
+      jobParameters:
+        runtimeVariant: LLVMAOT
+        isOfficialBuild: ${{ variables.isOfficialBuild }}
+
+  #
+  # Build libraries using live CoreLib from CoreCLR
+  #
+  - template: /eng/pipelines/common/platform-matrix.yml
+    parameters:
+      jobTemplate: /eng/pipelines/libraries/build-job.yml
+      buildConfig: Release
+      platforms:
+      - OSX_x64
+      - Linux_x64
+      - Linux_arm
+      - Linux_arm64
+      - Linux_musl_x64
+      - Linux_musl_arm64
+      - Windows_NT_x86
+      - Windows_NT_x64
+      - Windows_NT_arm
+      - Windows_NT_arm64
+      jobParameters:
+        isOfficialBuild: ${{ variables.isOfficialBuild }}
+        liveRuntimeBuildConfig: release
+
+  #
+  # Build libraries using live CoreLib from Mono
+  #
+  - template: /eng/pipelines/common/platform-matrix.yml
+    parameters:
+      jobTemplate: /eng/pipelines/libraries/build-job.yml
+      buildConfig: Release
+      runtimeFlavor: mono
+      platforms:
+      - Android_x64
+      - Android_x86
+      - Android_arm
+      - Android_arm64
+      - tvOS_x64
+      - tvOS_arm64
+      - iOS_x64
+      - iOS_x86
+      - iOS_arm
+      - iOS_arm64
+      - Browser_wasm
+      jobParameters:
+        isOfficialBuild: ${{ variables.isOfficialBuild }}
+        liveRuntimeBuildConfig: release
+
+  #
+  # Build libraries AllConfigurations for packages
+  #
+  - template: /eng/pipelines/common/platform-matrix.yml
+    parameters:
+      jobTemplate: /eng/pipelines/libraries/build-job.yml
+      buildConfig: Release
+      platforms:
+      - Windows_NT_x64
+      jobParameters:
+        framework: allConfigurations
+        isOfficialBuild: ${{ variables.isOfficialBuild }}
+        isOfficialAllConfigurations: true
+        liveRuntimeBuildConfig: release
+
+  #
+  # Installer Build
+  #
+  - template: /eng/pipelines/installer/installer-matrix.yml
+    parameters:
+      jobParameters:
+        liveRuntimeBuildConfig: release
+        liveLibrariesBuildConfig: Release
+        isOfficialBuild: ${{ variables.isOfficialBuild }}
+        useOfficialAllConfigurations: true
+        buildFullPlatformManifest: true
+      platforms:
+      - OSX_x64
+      - Linux_x64
+      - Linux_arm
+      - Linux_arm64
+      - Linux_musl_x64
+      - Linux_musl_arm64
+      - Windows_NT_x86
+      - Windows_NT_x64
+      - Windows_NT_arm
+      - Windows_NT_arm64
+
+    #
+    # Installer Build for platforms using Mono
+    #
+  - template: /eng/pipelines/installer/installer-matrix.yml
+    parameters:
+      jobParameters:
+        liveRuntimeBuildConfig: release
+        liveLibrariesBuildConfig: Release
+        isOfficialBuild: ${{ variables.isOfficialBuild }}
+        useOfficialAllConfigurations: false
+        buildFullPlatformManifest: false
+      runtimeFlavor: mono
+      platforms:
+      - OSX_x64
+      - Linux_x64
+      - tvOS_x64
+      - tvOS_arm64
+      - iOS_arm
+      - iOS_arm64
+      - iOS_x64
+      - iOS_x86
+      - Android_arm
+      - Android_arm64
+      - Android_x64
+      - Android_x86
+      - Browser_wasm
+
+    #
+    # Installer Build for platforms using Mono
+    #
+  - template: /eng/pipelines/installer/installer-matrix.yml
+    parameters:
+      jobParameters:
+        liveRuntimeBuildConfig: release
+        liveLibrariesBuildConfig: Release
+        isOfficialBuild: ${{ variables.isOfficialBuild }}
+        useOfficialAllConfigurations: false
+        buildFullPlatformManifest: false
+        runtimeVariant: LLVMJIT
+      runtimeFlavor: mono
+      platforms:
+      - OSX_x64
+      - Linux_x64
+
+  - template: /eng/pipelines/installer/installer-matrix.yml
+    parameters:
+      jobParameters:
+        liveRuntimeBuildConfig: release
+        liveLibrariesBuildConfig: Release
+        isOfficialBuild: ${{ variables.isOfficialBuild }}
+        useOfficialAllConfigurations: false
+        buildFullPlatformManifest: false
+        runtimeVariant: LLVMAOT
+      runtimeFlavor: mono
+      platforms:
+      - OSX_x64
+      - Linux_x64
+
+- ${{ if eq(variables.isOfficialBuild, true) }}:
+  - template: /eng/pipelines/official/stages/publish.yml
+    parameters:
+      isOfficialBuild: ${{ variables.isOfficialBuild }}

@@ -32,11 +32,11 @@ namespace System.Reflection.TypeLoading
         protected sealed override CallingConventions ComputeCallingConvention() => _decoder.ComputeCallingConvention();
         protected sealed override MethodImplAttributes ComputeMethodImplementationFlags() => _decoder.ComputeMethodImplementationFlags();
         protected sealed override MethodSig<RoParameter> ComputeMethodSig() => _decoder.SpecializeMethodSig(this);
-        public sealed override MethodBody GetMethodBody() => _decoder.SpecializeMethodBody(this);
+        public sealed override MethodBody? GetMethodBody() => _decoder.SpecializeMethodBody(this);
         protected sealed override MethodSig<string> ComputeMethodSigStrings() => _decoder.SpecializeMethodSigStrings(TypeContext);
         protected sealed override MethodSig<RoType> ComputeCustomModifiers() => _decoder.SpecializeCustomModifiers(TypeContext);
 
-        public sealed override bool Equals(object obj)
+        public sealed override bool Equals(object? obj)
         {
             if (!(obj is RoDefinitionConstructor<TMethodDecoder> other))
                 return false;

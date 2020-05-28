@@ -25,6 +25,7 @@ void GCToCLREventSink::FireDynamicEvent(const char* eventName, void* payload, ui
 
 void GCToCLREventSink::FireGCStart_V2(uint32_t count, uint32_t depth, uint32_t reason, uint32_t type)
 {
+#ifdef FEATURE_EVENT_TRACE
     LIMITED_METHOD_CONTRACT;
 
     ETW::GCLog::ETW_GC_INFO gcStartInfo;
@@ -33,6 +34,7 @@ void GCToCLREventSink::FireGCStart_V2(uint32_t count, uint32_t depth, uint32_t r
     gcStartInfo.GCStart.Reason = static_cast<ETW::GCLog::ETW_GC_INFO::GC_REASON>(reason);
     gcStartInfo.GCStart.Type = static_cast<ETW::GCLog::ETW_GC_INFO::GC_TYPE>(type);
     ETW::GCLog::FireGcStart(&gcStartInfo);
+#endif
 }
 
 void GCToCLREventSink::FireGCGenerationRange(uint8_t generation, void* rangeStart, uint64_t rangeUsedLength, uint64_t rangeReservedLength)
@@ -49,7 +51,7 @@ void GCToCLREventSink::FireGCEnd_V1(uint32_t count, uint32_t depth)
     FireEtwGCEnd_V1(count, depth, GetClrInstanceId());
 }
 
-void GCToCLREventSink::FireGCHeapStats_V1(
+void GCToCLREventSink::FireGCHeapStats_V2(
         uint64_t generationSize0,
         uint64_t totalPromotedSize0,
         uint64_t generationSize1,
@@ -58,6 +60,8 @@ void GCToCLREventSink::FireGCHeapStats_V1(
         uint64_t totalPromotedSize2,
         uint64_t generationSize3,
         uint64_t totalPromotedSize3,
+        uint64_t generationSize4,
+        uint64_t totalPromotedSize4,
         uint64_t finalizationPromotedSize,
         uint64_t finalizationPromotedCount,
         uint32_t pinnedObjectCount,
@@ -66,10 +70,11 @@ void GCToCLREventSink::FireGCHeapStats_V1(
 {
     LIMITED_METHOD_CONTRACT;
 
-    FireEtwGCHeapStats_V1(generationSize0, totalPromotedSize0, generationSize1, totalPromotedSize1,
+    FireEtwGCHeapStats_V2(generationSize0, totalPromotedSize0, generationSize1, totalPromotedSize1,
                           generationSize2, totalPromotedSize2, generationSize3, totalPromotedSize3,
                           finalizationPromotedSize, finalizationPromotedCount, pinnedObjectCount,
-                          sinkBlockCount, gcHandleCount, GetClrInstanceId());
+                          sinkBlockCount, gcHandleCount, GetClrInstanceId(),
+                          generationSize4, totalPromotedSize4);
 }
 
 void GCToCLREventSink::FireGCCreateSegment_V1(void* address, size_t size, uint32_t type)
@@ -121,19 +126,21 @@ void GCToCLREventSink::FireGCJoin_V2(uint32_t heap, uint32_t joinTime, uint32_t 
     FireEtwGCJoin_V2(heap, joinTime, joinType, GetClrInstanceId(), joinId);
 }
 
-void GCToCLREventSink::FireGCGlobalHeapHistory_V2(uint64_t finalYoungestDesired,
+void GCToCLREventSink::FireGCGlobalHeapHistory_V3(uint64_t finalYoungestDesired,
         int32_t numHeaps,
         uint32_t condemnedGeneration,
         uint32_t gen0reductionCount,
         uint32_t reason,
         uint32_t globalMechanisms,
         uint32_t pauseMode,
-        uint32_t memoryPressure)
+        uint32_t memoryPressure,
+        uint32_t condemnReasons0,
+        uint32_t condemnReasons1)
 {
     LIMITED_METHOD_CONTRACT;
 
-    FireEtwGCGlobalHeapHistory_V2(finalYoungestDesired, numHeaps, condemnedGeneration, gen0reductionCount, reason,
-        globalMechanisms, GetClrInstanceId(), pauseMode, memoryPressure);
+    FireEtwGCGlobalHeapHistory_V3(finalYoungestDesired, numHeaps, condemnedGeneration, gen0reductionCount, reason,
+        globalMechanisms, GetClrInstanceId(), pauseMode, memoryPressure, condemnReasons0, condemnReasons1);
 }
 
 void GCToCLREventSink::FireGCAllocationTick_V1(uint32_t allocationAmount, uint32_t allocationKind)
@@ -299,9 +306,9 @@ void GCToCLREventSink::FireBGCRevisit(uint64_t pages, uint64_t objects, uint32_t
     FireEtwBGCRevisit(pages, objects, isLarge, GetClrInstanceId());
 }
 
-void GCToCLREventSink::FireBGCOverflow(uint64_t min, uint64_t max, uint64_t objects, uint32_t isLarge)
+void GCToCLREventSink::FireBGCOverflow_V1(uint64_t min, uint64_t max, uint64_t objects, uint32_t isLarge, uint32_t genNumber)
 {
-    FireEtwBGCOverflow(min, max, objects, isLarge, GetClrInstanceId());
+    FireEtwBGCOverflow_V1(min, max, objects, isLarge, GetClrInstanceId(), genNumber);
 }
 
 void GCToCLREventSink::FireBGCAllocWaitBegin(uint32_t reason)

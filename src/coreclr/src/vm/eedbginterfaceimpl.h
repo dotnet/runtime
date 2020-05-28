@@ -271,8 +271,9 @@ public:
     void DisableTraceCall(Thread *thread);
 
     void GetRuntimeOffsets(SIZE_T *pTLSIndex,
-                           SIZE_T *pTLSIsSpecialIndex,
-                           SIZE_T *pTLSCantStopIndex,
+                           SIZE_T *pTLSEEThreadOffset,
+                           SIZE_T *pTLSIsSpecialOffset,
+                           SIZE_T *pTLSCantStopOffset,
                            SIZE_T *pEEThreadStateOffset,
                            SIZE_T *pEEThreadStateNCOffset,
                            SIZE_T *pEEThreadPGCDisabledOffset,
@@ -282,7 +283,6 @@ public:
                            DWORD  *pEEThreadSteppingStateMask,
                            DWORD  *pEEMaxFrameValue,
                            SIZE_T *pEEThreadDebuggerFilterContextOffset,
-                           SIZE_T *pEEThreadCantStopOffset,
                            SIZE_T *pEEFrameNextOffset,
                            DWORD  *pEEIsManagedExceptionStateMask);
 
@@ -345,7 +345,7 @@ public:
 #endif
 
 #ifndef DACCESS_COMPILE
-    virtual BOOL AdjustContextForWriteBarrierForDebugger(CONTEXT* context);
+    virtual BOOL AdjustContextForJITHelpersForDebugger(CONTEXT* context);
 #endif
 };
 

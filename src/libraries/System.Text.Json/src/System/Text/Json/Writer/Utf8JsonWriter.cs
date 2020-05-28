@@ -41,9 +41,9 @@ namespace System.Text.Json
         private const int DefaultGrowthSize = 4096;
         private const int InitialGrowthSize = 256;
 
-        private IBufferWriter<byte> _output;
-        private Stream _stream;
-        private ArrayBufferWriter<byte> _arrayBufferWriter;
+        private IBufferWriter<byte>? _output;
+        private Stream? _stream;
+        private ArrayBufferWriter<byte>? _arrayBufferWriter;
 
         private Memory<byte> _memory;
 
@@ -78,13 +78,7 @@ namespace System.Text.Json
         /// the <see cref="Utf8JsonWriter"/> which indicates whether to format the output
         /// while writing and whether to skip structural JSON validation or not.
         /// </summary>
-        public JsonWriterOptions Options
-        {
-            get
-            {
-                return _options;
-            }
-        }
+        public JsonWriterOptions Options => _options;
 
         private int Indentation => CurrentDepth * JsonConstants.SpacesPerIndent;
 
@@ -107,21 +101,7 @@ namespace System.Text.Json
         public Utf8JsonWriter(IBufferWriter<byte> bufferWriter, JsonWriterOptions options = default)
         {
             _output = bufferWriter ?? throw new ArgumentNullException(nameof(bufferWriter));
-            _stream = default;
-            _arrayBufferWriter = default;
-
-            BytesPending = default;
-            BytesCommitted = default;
-            _memory = default;
-
-            _inObject = default;
-            _tokenType = default;
-            _currentDepth = default;
             _options = options;
-
-            // Only allocate if the user writes a JSON payload beyond the depth that the _allocationFreeContainer can handle.
-            // This way we avoid allocations in the common, default cases, and allocate lazily.
-            _bitStack = default;
         }
 
         /// <summary>
@@ -142,21 +122,8 @@ namespace System.Text.Json
                 throw new ArgumentException(SR.StreamNotWritable);
 
             _stream = utf8Json;
-            _arrayBufferWriter = new ArrayBufferWriter<byte>();
-            _output = default;
-
-            BytesPending = default;
-            BytesCommitted = default;
-            _memory = default;
-
-            _inObject = default;
-            _tokenType = default;
-            _currentDepth = default;
             _options = options;
-
-            // Only allocate if the user writes a JSON payload beyond the depth that the _allocationFreeContainer can handle.
-            // This way we avoid allocations in the common, default cases, and allocate lazily.
-            _bitStack = default;
+            _arrayBufferWriter = new ArrayBufferWriter<byte>();
         }
 
         /// <summary>
@@ -249,8 +216,6 @@ namespace System.Text.Json
             _tokenType = default;
             _currentDepth = default;
 
-            // Only allocate if the user writes a JSON payload beyond the depth that the _allocationFreeContainer can handle.
-            // This way we avoid allocations in the common, default cases, and allocate lazily.
             _bitStack = default;
         }
 
@@ -694,7 +659,7 @@ namespace System.Text.Json
             Debug.Assert(int.MaxValue / JsonConstants.MaxExpansionFactorWhileEscaping >= utf8PropertyName.Length);
             Debug.Assert(firstEscapeIndexProp >= 0 && firstEscapeIndexProp < utf8PropertyName.Length);
 
-            byte[] propertyArray = null;
+            byte[]? propertyArray = null;
 
             int length = JsonWriterHelper.GetMaxEscapedLength(utf8PropertyName.Length, firstEscapeIndexProp);
 
@@ -837,7 +802,7 @@ namespace System.Text.Json
             Debug.Assert(int.MaxValue / JsonConstants.MaxExpansionFactorWhileEscaping >= propertyName.Length);
             Debug.Assert(firstEscapeIndexProp >= 0 && firstEscapeIndexProp < propertyName.Length);
 
-            char[] propertyArray = null;
+            char[]? propertyArray = null;
 
             int length = JsonWriterHelper.GetMaxEscapedLength(propertyName.Length, firstEscapeIndexProp);
 

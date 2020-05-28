@@ -470,9 +470,9 @@ namespace System.Diagnostics
                     string currentCategoryName = _categoryName;
                     string currentMachineName = _machineName;
 
-                    if (currentCategoryName == string.Empty)
+                    if (currentCategoryName.Length == 0)
                         throw new InvalidOperationException(SR.CategoryNameMissing);
-                    if (_counterName == string.Empty)
+                    if (_counterName.Length == 0)
                         throw new InvalidOperationException(SR.CounterNameMissing);
 
                     if (ReadOnly)
@@ -521,7 +521,7 @@ namespace System.Diagnostics
                         if (string.IsNullOrEmpty(_instanceName) && InstanceLifetime == PerformanceCounterInstanceLifetime.Process)
                             throw new InvalidOperationException(SR.InstanceLifetimeProcessforSingleInstance);
 
-                        _sharedCounter = new SharedPerformanceCounter(currentCategoryName.ToLower(CultureInfo.InvariantCulture), _counterName.ToLower(CultureInfo.InvariantCulture), _instanceName.ToLower(CultureInfo.InvariantCulture), _instanceLifetime);
+                        _sharedCounter = new SharedPerformanceCounter(currentCategoryName.ToLowerInvariant(), _counterName.ToLowerInvariant(), _instanceName.ToLowerInvariant(), _instanceLifetime);
                         _initialized = true;
                     }
                 }
@@ -593,7 +593,7 @@ namespace System.Diagnostics
                 throw new InvalidOperationException(SR.ReadOnlyRemoveInstance);
 
             Initialize();
-            _sharedCounter.RemoveInstance(_instanceName.ToLower(CultureInfo.InvariantCulture), _instanceLifetime);
+            _sharedCounter.RemoveInstance(_instanceName.ToLowerInvariant(), _instanceLifetime);
         }
     }
 }

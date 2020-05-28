@@ -18,6 +18,7 @@
 #include <corehost_context_contract.h>
 #include <hostpolicy.h>
 #include "hostpolicy_context.h"
+#include "bundle/runner.h"
 
 namespace
 {
@@ -44,7 +45,7 @@ namespace
     std::atomic<bool> g_context_initializing(false);
     std::condition_variable g_context_initializing_cv;
 
-    int create_coreclr()
+    int HOSTPOLICY_CALLTYPE create_coreclr()
     {
         int rc;
         {
@@ -266,7 +267,7 @@ int run_app_for_context(
     return exit_code;
 }
 
-int run_app(const int argc, const pal::char_t *argv[])
+int HOSTPOLICY_CALLTYPE run_app(const int argc, const pal::char_t *argv[])
 {
     const std::shared_ptr<hostpolicy_context_t> context = get_hostpolicy_context(/*require_runtime*/ true);
     if (context == nullptr)
@@ -354,7 +355,7 @@ int corehost_init(
 }
 
 int corehost_main_init(
-    hostpolicy_init_t &hostpolicy_init,
+    hostpolicy_init_t& hostpolicy_init,
     const int argc,
     const pal::char_t* argv[],
     const pal::string_t& location,
@@ -365,6 +366,15 @@ int corehost_main_init(
     {
         // For backwards compat (older hostfxr), default the host_info
         hostpolicy_init.host_info.parse(argc, argv);
+    }
+
+    if (bundle::info_t::is_single_file_bundle())
+    {
+        StatusCode status = bundle::runner_t::process_manifest_and_extract();
+        if (status != StatusCode::Success)
+        {
+            return status;
+        }
     }
 
     return corehost_init(hostpolicy_init, argc, argv, location, args);
@@ -434,12 +444,15 @@ int corehost_libhost_init(const hostpolicy_init_t &hostpolicy_init, const pal::s
     // Host info should always be valid in the delegate scenario
     assert(hostpolicy_init.host_info.is_valid(host_mode_t::libhost));
 
+    // Single-file bundle is only expected in apphost mode.
+    assert(!bundle::info_t::is_single_file_bundle());
+
     return corehost_init(hostpolicy_init, 0, nullptr, location, args);
 }
 
 namespace
 {
-    int get_delegate(coreclr_delegate_type type, void **delegate)
+    int HOSTPOLICY_CALLTYPE get_delegate(coreclr_delegate_type type, void **delegate)
     {
         if (delegate == nullptr)
             return StatusCode::InvalidArgFailure;
@@ -492,7 +505,7 @@ namespace
         }
     }
 
-    int get_property(const pal::char_t *key, const pal::char_t **value)
+    int HOSTPOLICY_CALLTYPE get_property(const pal::char_t *key, const pal::char_t **value)
     {
         if (key == nullptr)
             return StatusCode::InvalidArgFailure;
@@ -507,7 +520,7 @@ namespace
         return StatusCode::Success;
     }
 
-    int set_property(const pal::char_t *key, const pal::char_t *value)
+    int HOSTPOLICY_CALLTYPE set_property(const pal::char_t *key, const pal::char_t *value)
     {
         if (key == nullptr)
             return StatusCode::InvalidArgFailure;
@@ -531,7 +544,7 @@ namespace
         return StatusCode::Success;
     }
 
-    int get_properties(size_t * count, const pal::char_t **keys, const pal::char_t **values)
+    int HOSTPOLICY_CALLTYPE get_properties(size_t * count, const pal::char_t **keys, const pal::char_t **values)
     {
         if (count == nullptr)
             return StatusCode::InvalidArgFailure;

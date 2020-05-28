@@ -26,8 +26,8 @@ namespace System.Reflection.Metadata
 
         // Maps names of projected types to projection information for each type.
         // Both arrays are of the same length and sorted by the type name.
-        private static string[] s_projectedTypeNames;
-        private static ProjectionInfo[] s_projectionInfos;
+        private static string[]? s_projectedTypeNames;
+        private static ProjectionInfo[]? s_projectionInfos;
 
         private readonly struct ProjectionInfo
         {
@@ -64,14 +64,14 @@ namespace System.Reflection.Metadata
 
             StringHandle name = TypeDefTable.GetName(typeDef);
 
-            int index = StringHeap.BinarySearchRaw(s_projectedTypeNames, name);
+            int index = StringHeap.BinarySearchRaw(s_projectedTypeNames!, name);
             if (index < 0)
             {
                 return TypeDefTreatment.None;
             }
 
             StringHandle namespaceName = TypeDefTable.GetNamespace(typeDef);
-            if (StringHeap.EqualsRaw(namespaceName, StringHeap.GetVirtualString(s_projectionInfos[index].ClrNamespace)))
+            if (StringHeap.EqualsRaw(namespaceName, StringHeap.GetVirtualString(s_projectionInfos![index].ClrNamespace)))
             {
                 return s_projectionInfos[index].Treatment;
             }
@@ -89,8 +89,8 @@ namespace System.Reflection.Metadata
         {
             InitializeProjectedTypes();
 
-            int index = StringHeap.BinarySearchRaw(s_projectedTypeNames, TypeRefTable.GetName(typeRef));
-            if (index >= 0 && StringHeap.EqualsRaw(TypeRefTable.GetNamespace(typeRef), s_projectionInfos[index].WinRTNamespace))
+            int index = StringHeap.BinarySearchRaw(s_projectedTypeNames!, TypeRefTable.GetName(typeRef));
+            if (index >= 0 && StringHeap.EqualsRaw(TypeRefTable.GetNamespace(typeRef), s_projectionInfos![index].WinRTNamespace))
             {
                 isIDisposable = s_projectionInfos[index].IsIDisposable;
                 return index;
@@ -214,7 +214,7 @@ namespace System.Reflection.Metadata
         internal static string[] GetProjectedTypeNames()
         {
             InitializeProjectedTypes();
-            return s_projectedTypeNames;
+            return s_projectedTypeNames!;
         }
 
         #endregion

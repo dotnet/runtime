@@ -68,5 +68,11 @@ namespace System.Security.Cryptography.Hashing.Algorithms.Tests
         {
             VerifyHmacRfc2104_2();
         }
+
+        [Fact]
+        public void HmacSha256_ThrowsArgumentNullForNullConstructorKey()
+        {
+            AssertExtensions.Throws<ArgumentNullException>("key", () => new HMACSHA256(null));
+        }
     }
 }

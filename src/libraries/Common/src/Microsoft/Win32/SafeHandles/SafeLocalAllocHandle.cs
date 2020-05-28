@@ -7,7 +7,7 @@ using System.Runtime.InteropServices;
 
 namespace Microsoft.Win32.SafeHandles
 {
-    internal sealed class SafeLocalAllocHandle : SafeBuffer, IDisposable
+    internal sealed class SafeLocalAllocHandle : SafeBuffer
     {
         private SafeLocalAllocHandle() : base(true) { }
 
@@ -15,13 +15,10 @@ namespace Microsoft.Win32.SafeHandles
 
         internal static SafeLocalAllocHandle LocalAlloc(int cb)
         {
-            SafeLocalAllocHandle result = Interop.Kernel32.LocalAlloc(Interop.Kernel32.LMEM_FIXED, (UIntPtr)cb);
-            if (result.IsInvalid)
-            {
-                result.SetHandleAsInvalid();
-                throw new OutOfMemoryException();
-            }
-            return result;
+            var h = new SafeLocalAllocHandle();
+            h.SetHandle(Marshal.AllocHGlobal(cb));
+            h.Initialize((ulong)cb);
+            return h;
         }
 
         // 0 is an Invalid Handle
@@ -40,7 +37,8 @@ namespace Microsoft.Win32.SafeHandles
 
         protected override bool ReleaseHandle()
         {
-            return Interop.Kernel32.LocalFree(handle) == IntPtr.Zero;
+            Marshal.FreeHGlobal(handle);
+            return true;
         }
     }
 }

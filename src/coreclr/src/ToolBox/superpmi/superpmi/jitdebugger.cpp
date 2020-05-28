@@ -18,9 +18,9 @@
 // JIT debugging is broken due to utilcode changes to support LongFile. We need to re-copy
 // or adjust the implementation of the below functions so they link properly.
 #if 0
-#ifndef FEATURE_PAL // No just-in-time debugger under PAL
+#ifndef TARGET_UNIX // No just-in-time debugger under PAL
 #define FEATURE_JIT_DEBUGGING
-#endif // !FEATURE_PAL
+#endif // !TARGET_UNIX
 #endif // 0
 
 #ifndef FEATURE_JIT_DEBUGGING

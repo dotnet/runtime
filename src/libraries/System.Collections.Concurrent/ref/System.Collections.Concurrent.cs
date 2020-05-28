@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 // ------------------------------------------------------------------------------
-// Changes to this file must follow the http://aka.ms/api-review process.
+// Changes to this file must follow the https://aka.ms/api-review process.
 // ------------------------------------------------------------------------------
 
 namespace System.Collections.Concurrent
@@ -113,7 +113,7 @@ namespace System.Collections.Concurrent
         void System.Collections.Generic.IDictionary<TKey, TValue>.Add(TKey key, TValue value) { }
         bool System.Collections.Generic.IDictionary<TKey, TValue>.Remove(TKey key) { throw null; }
         void System.Collections.ICollection.CopyTo(System.Array array, int index) { }
-        void System.Collections.IDictionary.Add(object key, object value) { }
+        void System.Collections.IDictionary.Add(object key, object? value) { }
         bool System.Collections.IDictionary.Contains(object key) { throw null; }
         System.Collections.IDictionaryEnumerator System.Collections.IDictionary.GetEnumerator() { throw null; }
         void System.Collections.IDictionary.Remove(object key) { }

@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$(MSBuildThisFileDirectory)libmonoutils-common.targets" />
+  <Import Project="$(MSBuildThisFileDirectory)libmonoutils-win32.targets" />
+  <Import Project="$(MSBuildThisFileDirectory)libmonoutils-posix.targets" />
+  <Import Project="$(MSBuildThisFileDirectory)libmonoutils-arch.targets" />
+</Project>

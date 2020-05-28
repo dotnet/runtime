@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -501,6 +501,16 @@ namespace ILCompiler
             }
 
             return constrainedType ?? genericParam.Context.GetWellKnownType(WellKnownType.Object);
+        }
+
+        /// <summary>
+        /// Return true when the type in question is marked with the NonVersionable attribute.
+        /// </summary>
+        /// <param name="type">Type to check</param>
+        /// <returns>True when the type is marked with the non-versionable custom attribute, false otherwise.</returns>
+        public static bool IsNonVersionable(this MetadataType type)
+        {
+            return type.HasCustomAttribute("System.Runtime.Versioning", "NonVersionableAttribute");
         }
     }
 }

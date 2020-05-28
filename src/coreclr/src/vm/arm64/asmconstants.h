@@ -7,9 +7,9 @@
 // Be sure to rebuild clr/src/vm/ceemain.cpp after changing this file, to
 // ensure that the constants match the expected C/C++ values
 
-// #ifndef _ARM64_
+// #ifndef HOST_ARM64
 // #error this file should only be used on an ARM platform
-// #endif // _ARM64_
+// #endif // HOST_ARM64
 
 #include "../../inc/switches.h"
 
@@ -156,15 +156,6 @@ ASMCONSTANTS_C_ASSERT(UnmanagedToManagedFrame__m_pvDatum == offsetof(UnmanagedTo
 
 #endif // FEATURE_COMINTEROP
 
-
-#define UMEntryThunk__m_pUMThunkMarshInfo 0x18
-ASMCONSTANTS_C_ASSERT(UMEntryThunk__m_pUMThunkMarshInfo == offsetof(UMEntryThunk, m_pUMThunkMarshInfo))
-
-#define UMThunkMarshInfo__m_pILStub 0x00
-ASMCONSTANTS_C_ASSERT(UMThunkMarshInfo__m_pILStub == offsetof(UMThunkMarshInfo, m_pILStub))
-
-#define UMThunkMarshInfo__m_cbActualArgSize 0x08
-ASMCONSTANTS_C_ASSERT(UMThunkMarshInfo__m_cbActualArgSize == offsetof(UMThunkMarshInfo, m_cbActualArgSize))
 
 #define REDIRECTSTUB_SP_OFFSET_CONTEXT 0
 

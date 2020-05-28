@@ -52,13 +52,13 @@ namespace System.Linq.Expressions
         {
             if (body == Body & testValues != null)
             {
-                if (ExpressionUtils.SameElements(ref testValues, TestValues))
+                if (ExpressionUtils.SameElements(ref testValues!, TestValues))
                 {
                     return this;
                 }
             }
 
-            return Expression.SwitchCase(body, testValues);
+            return Expression.SwitchCase(body, testValues!);
         }
     }
 

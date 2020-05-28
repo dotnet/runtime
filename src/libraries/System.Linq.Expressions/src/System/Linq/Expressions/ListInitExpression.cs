@@ -84,15 +84,15 @@ namespace System.Linq.Expressions
         /// <returns>This expression if no children changed, or an expression with the updated children.</returns>
         public ListInitExpression Update(NewExpression newExpression, IEnumerable<ElementInit> initializers)
         {
-            if (newExpression == NewExpression & initializers != null)
+            if (newExpression == NewExpression && initializers != null)
             {
-                if (ExpressionUtils.SameElements(ref initializers, Initializers))
+                if (ExpressionUtils.SameElements(ref initializers!, Initializers))
                 {
                     return this;
                 }
             }
 
-            return ListInit(newExpression, initializers);
+            return ListInit(newExpression, initializers!);
         }
     }
 
@@ -126,7 +126,7 @@ namespace System.Linq.Expressions
                 return new ListInitExpression(newExpression, EmptyReadOnlyCollection<ElementInit>.Instance);
             }
 
-            MethodInfo addMethod = FindMethod(newExpression.Type, "Add", null, new Expression[] { initializerlist[0] }, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+            MethodInfo? addMethod = FindMethod(newExpression.Type, "Add", null, new Expression[] { initializerlist[0] }, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
             return ListInit(newExpression, addMethod, initializerlist);
         }
 
@@ -137,7 +137,7 @@ namespace System.Linq.Expressions
         /// <param name="addMethod">A <see cref="MethodInfo"/> that represents an instance method named "Add" (case insensitive), that adds an element to a collection.</param>
         /// <param name="initializers">An array of <see cref="Expression"/> objects to use to populate the <see cref="ListInitExpression.Initializers"/> collection.</param>
         /// <returns>A <see cref="ListInitExpression"/> that has the <see cref="NodeType"/> property equal to <see cref="ExpressionType.ListInit"/> and the <see cref="ListInitExpression.NewExpression"/> property set to the specified value.</returns>
-        public static ListInitExpression ListInit(NewExpression newExpression, MethodInfo addMethod, params Expression[] initializers)
+        public static ListInitExpression ListInit(NewExpression newExpression, MethodInfo? addMethod, params Expression[] initializers)
         {
             return ListInit(newExpression, addMethod, initializers as IEnumerable<Expression>);
         }
@@ -149,7 +149,7 @@ namespace System.Linq.Expressions
         /// <param name="addMethod">A <see cref="MethodInfo"/> that represents an instance method named "Add" (case insensitive), that adds an element to a collection.</param>
         /// <param name="initializers">An <see cref="IEnumerable{T}"/> that contains <see cref="Expression"/> objects to use to populate the Initializers collection.</param>
         /// <returns>A <see cref="ListInitExpression"/> that has the <see cref="NodeType"/> property equal to <see cref="ExpressionType.ListInit"/> and the <see cref="ListInitExpression.NewExpression"/> property set to the specified value.</returns>
-        public static ListInitExpression ListInit(NewExpression newExpression, MethodInfo addMethod, IEnumerable<Expression> initializers)
+        public static ListInitExpression ListInit(NewExpression newExpression, MethodInfo? addMethod, IEnumerable<Expression> initializers)
         {
             if (addMethod == null)
             {

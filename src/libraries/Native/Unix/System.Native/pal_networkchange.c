@@ -10,28 +10,40 @@
 #include "pal_utilities.h"
 
 #include <errno.h>
-#include <linux/rtnetlink.h>
 #include <net/if.h>
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <sys/uio.h>
 #include <unistd.h>
+#if HAVE_LINUX_RTNETLINK_H
+#include <linux/rtnetlink.h>
+#elif HAVE_RT_MSGHDR
+#include <net/route.h>
+#else
+#error System must have linux/rtnetlink.h or net/route.h.
+#endif
 
 #pragma clang diagnostic ignored "-Wcast-align" // NLMSG_* macros trigger this
 
 Error SystemNative_CreateNetworkChangeListenerSocket(int32_t* retSocket)
 {
+#if HAVE_LINUX_RTNETLINK_H
     struct sockaddr_nl sa;
     memset(&sa, 0, sizeof(struct sockaddr_nl));
 
     sa.nl_family = AF_NETLINK;
     sa.nl_groups = RTMGRP_LINK | RTMGRP_IPV4_IFADDR | RTMGRP_IPV4_ROUTE | RTMGRP_IPV6_ROUTE;
     int32_t sock = socket(AF_NETLINK, SOCK_RAW, NETLINK_ROUTE);
+#elif HAVE_RT_MSGHDR
+    int32_t sock = socket(PF_ROUTE, SOCK_RAW, 0);
+#endif
     if (sock == -1)
     {
         *retSocket = -1;
         return (Error)(SystemNative_ConvertErrorPlatformToPal(errno));
     }
+
+#if HAVE_LINUX_RTNETLINK_H
     if (bind(sock, (struct sockaddr*)(&sa), sizeof(sa)) != 0)
     {
         *retSocket = -1;
@@ -39,6 +51,7 @@ Error SystemNative_CreateNetworkChangeListenerSocket(int32_t* retSocket)
         close(sock);
         return palError;
     }
+#endif
 
     *retSocket = sock;
     return Error_SUCCESS;
@@ -50,6 +63,7 @@ Error SystemNative_CloseNetworkChangeListenerSocket(int32_t socket)
     return err == 0 || CheckInterrupted(err) ? Error_SUCCESS : (Error)(SystemNative_ConvertErrorPlatformToPal(errno));
 }
 
+#if HAVE_LINUX_RTNETLINK_H
 static NetworkChangeKind ReadNewLinkMessage(struct nlmsghdr* hdr)
 {
     assert(hdr != NULL);
@@ -117,3 +131,42 @@ void SystemNative_ReadEvents(int32_t sock, NetworkChangeEvent onNetworkChange)
         }
     }
 }
+#elif HAVE_RT_MSGHDR
+void SystemNative_ReadEvents(int32_t sock, NetworkChangeEvent onNetworkChange)
+{
+    char buffer[4096];
+    ssize_t count = read(sock, buffer, sizeof(buffer));
+    if (count < 0)
+    {
+        return;
+    }
+
+    struct rt_msghdr msghdr;
+    for (char *ptr = buffer; (ptr + sizeof(struct rt_msghdr)) <= (buffer + count); ptr += msghdr.rtm_msglen)
+    {
+        memcpy(&msghdr, ptr, sizeof(msghdr));
+        if (msghdr.rtm_version != RTM_VERSION)
+        {
+            // version mismatch
+            return;
+        }
+
+        switch (msghdr.rtm_type)
+        {
+            case RTM_NEWADDR:
+                onNetworkChange(sock, AddressAdded);
+                break;
+            case RTM_DELADDR:
+                onNetworkChange(sock, AddressRemoved);
+                break;
+            case RTM_ADD:
+            case RTM_DELETE:
+            case RTM_REDIRECT:
+                onNetworkChange(sock, AvailabilityChanged);
+                return;
+            default:
+                break;
+        }
+    }
+}
+#endif

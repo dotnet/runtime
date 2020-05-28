@@ -26,7 +26,7 @@ namespace Internal.Cryptography.Pal.Windows
             using (SafeCryptMsgHandle hCryptMsg = EncodeHelpers.CreateCryptMsgHandleToEncode(recipients, contentInfo.ContentType, contentEncryptionAlgorithm, originatorCerts, unprotectedAttributes))
             {
                 byte[] encodedContent;
-                if (contentInfo.ContentType.Value.Equals(Oids.Pkcs7Data, StringComparison.OrdinalIgnoreCase))
+                if (contentInfo.ContentType.Value!.Equals(Oids.Pkcs7Data, StringComparison.OrdinalIgnoreCase))
                 {
                     encodedContent = PkcsHelpers.EncodeOctetString(contentInfo.Content);
                 }
@@ -106,7 +106,7 @@ namespace Internal.Cryptography.Pal.Windows
                     unsafe
                     {
                         CMSG_ENVELOPED_ENCODE_INFO* pEnvelopedEncodeInfo = CreateCmsEnvelopedEncodeInfo(recipients, contentEncryptionAlgorithm, originatorCerts, unprotectedAttributes, hb);
-                        SafeCryptMsgHandle hCryptMsg = Interop.Crypt32.CryptMsgOpenToEncode(MsgEncodingType.All, 0, CryptMsgType.CMSG_ENVELOPED, pEnvelopedEncodeInfo, innerContentType.Value, IntPtr.Zero);
+                        SafeCryptMsgHandle hCryptMsg = Interop.Crypt32.CryptMsgOpenToEncode(MsgEncodingType.All, 0, CryptMsgType.CMSG_ENVELOPED, pEnvelopedEncodeInfo, innerContentType.Value!, IntPtr.Zero);
                         if (hCryptMsg == null || hCryptMsg.IsInvalid)
                             throw Marshal.GetLastWin32Error().ToCryptographicException();
 
@@ -124,10 +124,10 @@ namespace Internal.Cryptography.Pal.Windows
                 pEnvelopedEncodeInfo->cbSize = sizeof(CMSG_ENVELOPED_ENCODE_INFO);
                 pEnvelopedEncodeInfo->hCryptProv = IntPtr.Zero;
 
-                string algorithmOidValue = contentEncryptionAlgorithm.Oid.Value;
+                string algorithmOidValue = contentEncryptionAlgorithm.Oid.Value!;
                 pEnvelopedEncodeInfo->ContentEncryptionAlgorithm.pszObjId = hb.AllocAsciiString(algorithmOidValue);
 
-                // Desktop compat: Though it seems like we could copy over the contents of contentEncryptionAlgorithm.Parameters, that property is for retrieving information from decoded Cms's only, and it
+                // .NET Framework compat: Though it seems like we could copy over the contents of contentEncryptionAlgorithm.Parameters, that property is for retrieving information from decoded Cms's only, and it
                 // massages the raw data so it wouldn't be usable here anyway. To hammer home that fact, the EncryptedCms constructor rather rudely forces contentEncryptionAlgorithm.Parameters to be the empty array.
                 pEnvelopedEncodeInfo->ContentEncryptionAlgorithm.Parameters.cbData = 0;
                 pEnvelopedEncodeInfo->ContentEncryptionAlgorithm.Parameters.pbData = IntPtr.Zero;
@@ -175,7 +175,7 @@ namespace Internal.Cryptography.Pal.Windows
                     for (int i = 0; i < numUnprotectedAttributes; i++)
                     {
                         CryptographicAttributeObject attribute = unprotectedAttributes[i];
-                        pCryptAttribute[i].pszObjId = hb.AllocAsciiString(attribute.Oid.Value);
+                        pCryptAttribute[i].pszObjId = hb.AllocAsciiString(attribute.Oid.Value!);
                         AsnEncodedDataCollection values = attribute.Values;
                         int numValues = values.Count;
                         pCryptAttribute[i].cValue = numValues;
@@ -244,7 +244,7 @@ namespace Internal.Cryptography.Pal.Windows
 
                     pEncodeInfo->cbSize = sizeof(CMSG_KEY_TRANS_RECIPIENT_ENCODE_INFO);
 
-                    RSAEncryptionPadding padding = recipient.RSAEncryptionPadding;
+                    RSAEncryptionPadding? padding = recipient.RSAEncryptionPadding;
 
                     if (padding is null)
                     {
@@ -336,7 +336,7 @@ namespace Internal.Cryptography.Pal.Windows
                     pEncodeInfo->pvKeyEncryptionAuxInfo = null;
 
                     string oidValue;
-                    AlgId algId = contentEncryptionAlgorithm.Oid.Value.ToAlgId();
+                    AlgId algId = contentEncryptionAlgorithm.Oid.Value!.ToAlgId();
                     if (algId == AlgId.CALG_RC2)
                         oidValue = Oids.CmsRc2Wrap;
                     else
@@ -417,7 +417,7 @@ namespace Internal.Cryptography.Pal.Windows
             //
             private static IntPtr GenerateEncryptionAuxInfoIfNeeded(AlgorithmIdentifier contentEncryptionAlgorithm, HeapBlockRetainer hb)
             {
-                string algorithmOidValue = contentEncryptionAlgorithm.Oid.Value;
+                string algorithmOidValue = contentEncryptionAlgorithm.Oid.Value!;
                 AlgId algId = algorithmOidValue.ToAlgId();
                 if (!(algId == AlgId.CALG_RC2 || algId == AlgId.CALG_RC4))
                     return IntPtr.Zero;
@@ -429,7 +429,7 @@ namespace Internal.Cryptography.Pal.Windows
                     pRc2AuxInfo->dwBitLen = contentEncryptionAlgorithm.KeyLength;
                     if (pRc2AuxInfo->dwBitLen == 0)
                     {
-                        // Desktop compat: If the caller didn't set the KeyLength property, set dwBitLength to the maxmium key length supported by RC2/RC4. The desktop queries CAPI for this but
+                        // .NET Framework compat: If the caller didn't set the KeyLength property, set dwBitLength to the maxmium key length supported by RC2/RC4. The .NET Framework queries CAPI for this but
                         // since that requires us to use a prohibited api (CryptAcquireContext), we'll just hardcode what CAPI returns for RC2 and RC4.
                         pRc2AuxInfo->dwBitLen = KeyLengths.DefaultKeyLengthForRc2AndRc4;
                     }

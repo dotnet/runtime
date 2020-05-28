@@ -20,7 +20,7 @@ typedef LPVOID  DictionaryEntry;
 /* Define the implementation dependent size types */
 
 #ifndef _INTPTR_T_DEFINED
-#ifdef  BIT64
+#ifdef  HOST_64BIT
 typedef __int64             intptr_t;
 #else
 typedef int                 intptr_t;
@@ -29,7 +29,7 @@ typedef int                 intptr_t;
 #endif
 
 #ifndef _UINTPTR_T_DEFINED
-#ifdef  BIT64
+#ifdef  HOST_64BIT
 typedef unsigned __int64    uintptr_t;
 #else
 typedef unsigned int        uintptr_t;
@@ -38,7 +38,7 @@ typedef unsigned int        uintptr_t;
 #endif
 
 #ifndef _PTRDIFF_T_DEFINED
-#ifdef  BIT64
+#ifdef  HOST_64BIT
 typedef __int64             ptrdiff_t;
 #else
 typedef int                 ptrdiff_t;
@@ -48,7 +48,7 @@ typedef int                 ptrdiff_t;
 
 
 #ifndef _SIZE_T_DEFINED
-#ifdef  BIT64
+#ifdef  HOST_64BIT
 typedef unsigned __int64 size_t;
 #else
 typedef unsigned int     size_t;
@@ -339,16 +339,15 @@ class REF : public OBJECTREF
 class EEConfig;
 class ClassLoaderList;
 class Module;
-class ArrayTypeDesc;
 
 #define EXTERN extern
 
 // For [<I1, etc. up to and including [Object
-GARY_DECL(PTR_ArrayTypeDesc, g_pPredefinedArrayTypes, ELEMENT_TYPE_MAX);
+GARY_DECL(TypeHandle, g_pPredefinedArrayTypes, ELEMENT_TYPE_MAX);
 
 extern "C" Volatile<LONG>   g_TrapReturningThreads;
 
-EXTERN HINSTANCE            g_pMSCorEE;
+EXTERN HINSTANCE            g_hThisInst;
 EXTERN BBSweep              g_BBSweep;
 EXTERN IBCLogger            g_IBCLogger;
 
@@ -468,12 +467,6 @@ EXTERN HINSTANCE            g_pDebuggerDll;
 EXTERN int g_IGCconcurrent;
 extern int g_IGCHoardVM;
 
-#ifdef GCTRIMCOMMIT
-extern int g_IGCTrimCommit;
-#endif
-
-extern BOOL g_fEnableETW;
-
 // Returns a BOOL to indicate if the runtime is active or not
 BOOL IsRuntimeActive();
 
@@ -505,9 +498,6 @@ EXTERN Volatile<LONG> g_fForbidEnterEE;
 GVAL_DECL(bool, g_fProcessDetach);
 EXTERN bool g_fManagedAttach;
 EXTERN bool g_fNoExceptions;
-#ifdef FEATURE_COMINTEROP
-EXTERN bool g_fShutDownCOM;
-#endif // FEATURE_COMINTEROP
 
 // Indicates whether we're executing shut down as a result of DllMain
 // (DLL_PROCESS_DETACH). See comments at code:EEShutDown for details.
@@ -524,9 +514,9 @@ enum FWStatus
 
 EXTERN DWORD g_FinalizerWaiterStatus;
 
-#if defined(FEATURE_PAL) && defined(FEATURE_EVENT_TRACE)
+#if defined(TARGET_UNIX) && defined(FEATURE_EVENT_TRACE)
 extern Volatile<BOOL> g_TriggerHeapDump;
-#endif // FEATURE_PAL
+#endif // TARGET_UNIX
 
 #ifndef DACCESS_COMPILE
 //
@@ -633,16 +623,10 @@ inline bool CORDebuggerAttached()
 
 
 
-
-//
-// IJW needs the shim HINSTANCE
-//
-EXTERN HINSTANCE g_hInstShim;
-
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
 GVAL_DECL(SIZE_T, g_runtimeLoadedBaseAddress);
 GVAL_DECL(SIZE_T, g_runtimeVirtualSize);
-#endif // !FEATURE_PAL
+#endif // !TARGET_UNIX
 
 
 #ifndef MAXULONG
@@ -706,12 +690,23 @@ struct ModuleIndex
 
 typedef DPTR(GSCookie) PTR_GSCookie;
 
+#ifdef _MSC_VER
+#define READONLY_ATTR
+#else
+#ifdef __APPLE__
+#define READONLY_ATTR_ARGS section("__TEXT,__const")
+#else
+#define READONLY_ATTR_ARGS section(".rodata")
+#endif
+#define READONLY_ATTR __attribute__((READONLY_ATTR_ARGS))
+#endif
+
 #ifndef DACCESS_COMPILE
 // const is so that it gets placed in the .text section (which is read-only)
 // volatile is so that accesses to it do not get optimized away because of the const
 //
 
-extern "C" RAW_KEYWORD(volatile) const GSCookie s_gsCookie;
+extern "C" RAW_KEYWORD(volatile) READONLY_ATTR const GSCookie s_gsCookie;
 
 inline
 GSCookie * GetProcessGSCookiePtr() { return  const_cast<GSCookie *>(&s_gsCookie); }

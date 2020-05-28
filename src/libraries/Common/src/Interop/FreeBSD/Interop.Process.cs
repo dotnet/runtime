@@ -256,7 +256,7 @@ internal static partial class Interop
         /// Gets executable name for process given it's PID
         /// </summary>
         /// <param name="pid">The PID of the process</param>
-        public static unsafe string GetProcPath(int pid)
+        public static unsafe string? GetProcPath(int pid)
         {
             Span<int> sysctlName = stackalloc int[4];
             byte* pBuffer = null;
@@ -359,7 +359,7 @@ internal static partial class Interop
                 // Get the process information for the specified pid
                 info = new ProcessInfo();
 
-                info.ProcessName = Marshal.PtrToStringAnsi((IntPtr)kinfo->ki_comm);
+                info.ProcessName = Marshal.PtrToStringAnsi((IntPtr)kinfo->ki_comm)!;
                 info.BasePriority = kinfo->ki_nice;
                 info.VirtualBytes = (long)kinfo->ki_size;
                 info.WorkingSet = kinfo->ki_rssize;

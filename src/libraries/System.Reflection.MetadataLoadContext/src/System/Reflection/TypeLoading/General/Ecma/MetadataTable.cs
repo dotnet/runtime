@@ -19,12 +19,12 @@ namespace System.Reflection.TypeLoading.Ecma
     internal sealed class MetadataTable<T, C>
         where T : class
     {
-        private readonly T[] _table;
+        private readonly T?[] _table;
 
         public MetadataTable(int count)
         {
             Count = count;
-            _table = new T[count];
+            _table = new T?[count];
         }
 
         public T GetOrAdd(EntityHandle handle, C context, Func<EntityHandle, C, T> factory)
@@ -33,8 +33,8 @@ namespace System.Reflection.TypeLoading.Ecma
             Debug.Assert(factory != null);
 
             int index = handle.GetToken().GetTokenRowNumber() - 1;
-            T[] table = _table;
-            T result = Volatile.Read(ref table[index]);
+            T?[] table = _table;
+            T? result = Volatile.Read(ref table[index]);
             if (result != null)
                 return result;
             T newValue = factory(handle, context);
@@ -46,7 +46,7 @@ namespace System.Reflection.TypeLoading.Ecma
         /// <summary>
         /// Return a read-only enumeration of the table (safe to hand back to app code.)
         /// </summary>
-        public IEnumerable<T> EnumerateValues(int skip = 0)
+        public IEnumerable<T?> EnumerateValues(int skip = 0)
         {
             for (int i = skip; i < _table.Length; i++)
             {

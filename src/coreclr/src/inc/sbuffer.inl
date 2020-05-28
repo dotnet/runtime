@@ -183,6 +183,10 @@ inline SBuffer::~SBuffer()
         DeleteBuffer(m_buffer, m_allocation);
     }
 
+#ifdef _DEBUG
+    m_revision = 0;
+#endif
+
     RETURN;
 }
 

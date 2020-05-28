@@ -1,10 +1,10 @@
 # Nullability annotations
 
-C# 8 provides an opt-in feature that allows for the compiler to  track reference type nullability in order to catch potential null dereferences.  We are adopting that feature across .NET Core's libraries, working up from the bottom of the stack.  We're doing this for three primary reasons, in order of importance:
+C# 8 provides an opt-in feature that allows for the compiler to  track reference type nullability in order to catch potential null dereferences.  We are adopting that feature across .NET's libraries, working up from the bottom of the stack.  We're doing this for three primary reasons, in order of importance:
 
-- **To annotate the .NET Core surface area with appropriate nullability annotations.**  While this could be done solely in the reference assemblies, we're doing it first in the implementation to help validate the selected annotations.
+- **To annotate the .NET surface area with appropriate nullability annotations.**  While this could be done solely in the reference assemblies, we're doing it first in the implementation to help validate the selected annotations.
 - **To help validate the nullability feature itself.**  With millions of lines of C# code, we have a very large and robust codebase with which to try out the feature and find areas in which it shines and areas in which we can improve it.  The work to annotate System.Private.CoreLib in .NET Core 3.0 helped to improve the feature as shipped in C# 8, and annotating the rest of the libraries will continue to be helpful in this regard.
-- **To find null-related bugs in .NET Core itself.** We expect to find relatively few meaningful bugs, due to how relatively well-tested the codebases are and how long they've been around.
+- **To find null-related bugs in .NET Runtime itself.** We expect to find relatively few meaningful bugs, due to how relatively well-tested the codebases are and how long they've been around.
 
 ## Breaking Change Guidance
 
@@ -46,9 +46,12 @@ However, there are some gray areas that require case-by-case analysis to determi
 
 Things are generally easier when looking at return values (and `out` parameters), as those can largely be driven by what the API's implementation is capable of:
 
-- **DO** define a return value or out parameter as nullable if it may be assigned `null` under any circumstance.
+- **DO** define a return value or out/ref parameter as nullable if `null` may be returned under any circumstance.
 - **DO** define all other return values or out parameters as non-nullable.
 - **DO** define the type of events as nullable.  (The only incredibly rare exception to this is if the implementation guarantees that the event will always have at least one delegate registered with it.)
+- **CONSIDER** special-casing public properties and fields on structs.  By default, reference type fields of structs are null, and so if those fields are public, or if a property exposes such a field without performing further validation or manipulation, they technically must be nullable, and when annotating, that is how such fields should be annotated initially.  However, we must also consider expected usage, and whether the default value of such structs should ever be used.  In limited circumstances, we may decide that, although technically `default(Struct)` could be used to create a default instance and thus its exposed fields could be null and thus they should be nullable, such a use is considered invalid and such we shouldn't use it for annotation purposes.  Let's consider two examples on opposite ends of the spectrum.  First, `System.Threading.CancellationToken`.  `CancellationToken` has a `CancellationTokenSource` field, and `default(CancellationToken)` is considered a perfectly valid instance to use... its `CancellationTokenSource` field must be nullable.  But second, let's consider `System.Reflection.InterfaceMapping`.  `InterfaceMapping` is a simple wrapper around four public reference type fields, and so technically they should all be nullable.  But it's considered invalid to just use a `default(InterfaceMapping)`; no one ever does it, as you only ever get an `InterfaceMapping` back from some reflection method calls that produce proper instances, and those instances will have all of these fields initialized to non-null.  Making them nullable, while technically correct, would harm the 100% correct use case in favor of the 0% invalid use case.
+- **DO NOT** be concerned with the validity of annotations after an object has been Dispose'd.  In general in .NET, using an instance after it's been disposed is a violation of its contract, and so similarly we generally (if the object isn't supposed to be used after disposal) don't consider the nullable annotations to be meaningful after disposal.  This means, for example, that if a property is initialized in a ctor and is always non-null until disposal but then may return null after disposal, it should still be annotated as non-nullable.
+- **DO NOT** be concerned with the validity of an enumerator's Current annotations when used before MoveNext has been called or after MoveNext has returned false.  As with Dispose, such use is considered invalid, and we don't want to harm the correct consumption of Current by catering to incorrect consumption.
 
 Annotating one of our return types as non-nullable is equivalent to documenting a guarantee that it will never return `null`.  Violations of that guarantee are bugs to be fixed in the implementation. However, there is a huge gap here, in the form of overridable members…
 
@@ -72,6 +75,15 @@ As such, for now, we've annotated `Object.ToString` as returning `string?`.  We 
 
 In contrast, we've annotated `Exception.Message` (which is also virtual) as being non-nullable, even though technically a derived class could override it to return `null`, because doing so is so rare that we couldn't find any meaningful examples where `null` is returned.
 
+### Interface implementations
+
+- **DO** implement `IComparable<T?>` instead of `IComparable<T>` on a reference type `T`.
+- **DO** implement `IEquatable<T?>` instead of `IEquatable<T>` on a reference type `T`.
+e.g.
+```C#
+public sealed class Version : IComparable<Version?>, IEquatable<Version?>, ...
+```
+
 ### Nullable attributes
 
 The C# compiler respects a set of attributes that impact its flow analysis.  We make use of these attributes when simple annotation is insufficient to fully express the contract of a method.
@@ -82,6 +94,10 @@ The C# compiler respects a set of attributes that impact its flow analysis.  We 
 - **DO** annotate `ref` arguments that guarantee the argument will be non-`null` upon exit (e.g. lazy initialization helpers) with `[NotNull]`.
 - **DO** annotate properties where a getter will never return `null` but a setter allows `null` as being non-nullable but also `[AllowNull]`.
 - **DO** annotate properties where a getter may return `null` but a setter throws for `null` as being nullable but also `[DisallowNull]`.
+- **DO** add `[NotNullWhen(true)]` to nullable arguments of `Try` methods that will definitively be non-`null` if the method returns `true`.  For example, if `Int32.TryParse(string? s)` returns `true`, `s` is known to not be `null`, and so the method should be `public static bool TryParse([NotNullWhen(true)] string? s, out int result)`.
+- **DO** add `[NotNullIfNotNull(string)]` if nullable ref argument will be non-`null` upon exit, when an other argument passed evaluated to non-`null`, pass that argument name as string. Example: `public void Exchange([NotNullIfNotNull("value")] ref object? location, object? value);`.
+- **DO** add `[return: NotNullIfNotNull(string)]` if a method would not return `null` in case an argument passed evaluated to non-`null`, pass that argument name as string. Example: `[return: NotNullIfNotNull("name")] public string? FormatName(string? name);`
+- **DO** add `[MemberNotNull(params string[])]` for a helper method which initializes member field(s), pass the field name. Example: `[MemberNotNull("_buffer")] private void InitializeBuffer()`
 
 ## Code Review Guidance
 

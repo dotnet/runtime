@@ -12,4 +12,4 @@ Shims CCRandomGenerateBytes, putting the resulting CCRNGStatus value in pkCCStat
 
 Returns 1 on success, 0 on system error (see pkCCStatus), -1 on input error.
 */
-DLLEXPORT int32_t AppleCryptoNative_GetRandomBytes(uint8_t* pBuf, uint32_t cbBuf, int32_t* pkCCStatus);
+PALEXPORT int32_t AppleCryptoNative_GetRandomBytes(uint8_t* pBuf, uint32_t cbBuf, int32_t* pkCCStatus);

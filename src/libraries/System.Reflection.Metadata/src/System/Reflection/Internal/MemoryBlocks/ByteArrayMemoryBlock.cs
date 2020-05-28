@@ -25,7 +25,7 @@ namespace System.Reflection.Internal
 
         public override void Dispose()
         {
-            _provider = null;
+            _provider = null!;
         }
 
         public unsafe override byte* Pointer => _provider.Pointer + _start;

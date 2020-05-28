@@ -180,19 +180,12 @@ namespace JIT.HardwareIntrinsics.Arm
         {
             bool succeeded = true;
 
-            if (firstOp[0] != result[0])
+            for (var i = 0; i < RetElementCount; i++)
             {
-                succeeded = false;
-            }
-            else
-            {
-                for (var i = 1; i < RetElementCount; i++)
+                if (firstOp[i] != result[i])
                 {
-                    if (firstOp[i] != result[i])
-                    {
-                        succeeded = false;
-                        break;
-                    }
+                    succeeded = false;
+                    break;
                 }
             }
 

@@ -152,7 +152,7 @@ Namespace Microsoft.VisualBasic.FileIO
         Private Shared Function GetDirectoryPath(ByVal Directory As String, ByVal DirectoryNameResID As String) As String
             ' Only need to worry about Directory being "" since it comes from Framework.
             If Directory = "" Then
-                Throw ExUtils.GetDirectoryNotFoundException(SR.IO_SpecialDirectoryNotExist, GetResourceString(DirectoryNameResID))
+                Throw ExUtils.GetDirectoryNotFoundException(SR.IO_SpecialDirectoryNotExist, DirectoryNameResID)
             End If
             Return FileSystem.NormalizePath(Directory)
         End Function

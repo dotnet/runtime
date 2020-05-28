@@ -4422,6 +4422,26 @@ namespace NativeVarargTest
             return returnValue == (short)arg;
         }
 
+        // Tests that take the address of a parameter of a vararg method
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static bool TestEchoFourDoubleStructManagedViaAddress()
+        {
+            FourDoubleStruct arg = new FourDoubleStruct();
+            arg.a = 1.0;
+            arg.b = 2.0;
+            arg.c = 3.0;
+            arg.d = 4.0;
+
+            FourDoubleStruct returnValue = ManagedNativeVarargTests.TestEchoFourDoubleStructManagedViaAddress(arg, __arglist(arg));
+            bool equal = arg.a == returnValue.a &&
+                         arg.b == returnValue.b &&
+                         arg.c == returnValue.c &&
+                         arg.d == returnValue.d;
+
+            return equal;
+        }
+
         ////////////////////////////////////////////////////////////////////////
         // Report Failure
         ////////////////////////////////////////////////////////////////////////
@@ -5042,6 +5062,9 @@ namespace NativeVarargTest
 
             success = ReportFailure(TestShortInByteOutNoVararg(7), "TestShortInByteOutNoVararg(7)", success, 108);
             success = ReportFailure(TestByteInShortOutNoVararg(8), "TestByteInShortOutNoVararg(8)", success, 109);
+
+            // Parameter address tests
+            success = ReportFailure(TestEchoFourDoubleStructManagedViaAddress(), "TestEchoFourDoubleStructManagedViaAddress()", success, 155);
 
             printf("\n", __arglist());
             printf("%d Tests run. %d Passed, %d Failed.\n", __arglist(m_testCount, m_passCount, m_failCount));

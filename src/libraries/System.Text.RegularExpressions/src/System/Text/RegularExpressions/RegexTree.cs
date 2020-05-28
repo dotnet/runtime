@@ -6,6 +6,7 @@
 // global information attached.
 
 using System.Collections;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Text.RegularExpressions
 {
@@ -18,8 +19,9 @@ namespace System.Text.RegularExpressions
         public readonly Hashtable CapNames;
         public readonly string[] CapsList;
         public readonly RegexOptions Options;
+        public readonly int MinRequiredLength;
 
-        internal RegexTree(RegexNode root, Hashtable caps, int[] capNumList, int capTop, Hashtable capNames, string[] capsList, RegexOptions options)
+        internal RegexTree(RegexNode root, Hashtable caps, int[] capNumList, int capTop, Hashtable capNames, string[] capsList, RegexOptions options, int minRequiredLength)
         {
             Root = root;
             Caps = caps;
@@ -28,21 +30,18 @@ namespace System.Text.RegularExpressions
             CapNames = capNames;
             CapsList = capsList;
             Options = options;
+            MinRequiredLength = minRequiredLength;
         }
 
 #if DEBUG
-        public void Dump()
-        {
-            Root.Dump();
-        }
+        [ExcludeFromCodeCoverage]
+        public void Dump() => Root.Dump();
 
-        public bool Debug
-        {
-            get
-            {
-                return (Options & RegexOptions.Debug) != 0;
-            }
-        }
+        [ExcludeFromCodeCoverage]
+        public override string ToString() => Root.ToString();
+
+        [ExcludeFromCodeCoverage]
+        public bool Debug => (Options & RegexOptions.Debug) != 0;
 #endif
     }
 }

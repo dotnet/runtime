@@ -217,7 +217,7 @@ namespace System.Linq.Parallel
             while (_source.MoveNext(ref element!, ref key))
             {
                 if ((loopCount++ & CancellationState.POLL_INTERVAL) == 0)
-                    CancellationState.ThrowIfCanceled(_cancellationToken);
+                    _cancellationToken.ThrowIfCancellationRequested();;
 
                 // Calculate the element's destination partition index, placing it into the
                 // appropriate buffer from which partitions will later enumerate.

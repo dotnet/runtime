@@ -26,7 +26,7 @@ namespace System.Reflection.TypeLoading
             _reflectedType = reflectedType;
         }
 
-        public abstract override bool Equals(object obj);
+        public abstract override bool Equals(object? obj);
         public abstract override int GetHashCode();
         public abstract override string ToString();
 
@@ -37,7 +37,7 @@ namespace System.Reflection.TypeLoading
 
         public sealed override string Name => _lazyName ?? (_lazyName = ComputeName());
         protected abstract string ComputeName();
-        private volatile string _lazyName;
+        private volatile string? _lazyName;
 
         public sealed override Module Module => GetRoModule();
         internal abstract RoModule GetRoModule();
@@ -55,7 +55,7 @@ namespace System.Reflection.TypeLoading
 
                 if (_declaringType.IsExplicitLayout)
                 {
-                    ConstructorInfo ci = Loader.TryGetFieldOffsetCtor();
+                    ConstructorInfo? ci = Loader.TryGetFieldOffsetCtor();
                     if (ci != null)
                     {
                         int offset = GetExplicitFieldOffset();
@@ -67,7 +67,7 @@ namespace System.Reflection.TypeLoading
 
                 if (0 != (Attributes & FieldAttributes.HasFieldMarshal))
                 {
-                    CustomAttributeData cad = CustomAttributeHelpers.TryComputeMarshalAsCustomAttributeData(ComputeMarshalAsAttribute, Loader);
+                    CustomAttributeData? cad = CustomAttributeHelpers.TryComputeMarshalAsCustomAttributeData(ComputeMarshalAsAttribute, Loader);
                     if (cad != null)
                         yield return cad;
                 }
@@ -85,10 +85,10 @@ namespace System.Reflection.TypeLoading
 
         public sealed override Type FieldType => _lazyFieldType ?? (_lazyFieldType = ComputeFieldType());
         protected abstract Type ComputeFieldType();
-        private volatile Type _lazyFieldType;
+        private volatile Type? _lazyFieldType;
 
-        public sealed override object GetRawConstantValue() => IsLiteral ? ComputeRawConstantValue() : throw new InvalidOperationException();
-        protected abstract object ComputeRawConstantValue();
+        public sealed override object? GetRawConstantValue() => IsLiteral ? ComputeRawConstantValue() : throw new InvalidOperationException();
+        protected abstract object? ComputeRawConstantValue();
 
         public abstract override Type[] GetOptionalCustomModifiers();
         public abstract override Type[] GetRequiredCustomModifiers();
@@ -103,9 +103,9 @@ namespace System.Reflection.TypeLoading
         public sealed override object[] GetCustomAttributes(Type attributeType, bool inherit) => throw new InvalidOperationException(SR.Arg_InvalidOperation_Reflection);
         public sealed override bool IsDefined(Type attributeType, bool inherit) => throw new InvalidOperationException(SR.Arg_InvalidOperation_Reflection);
         public sealed override RuntimeFieldHandle FieldHandle => throw new InvalidOperationException(SR.Arg_InvalidOperation_Reflection);
-        public sealed override object GetValue(object obj) => throw new InvalidOperationException(SR.Arg_InvalidOperation_Reflection);
+        public sealed override object GetValue(object? obj) => throw new InvalidOperationException(SR.Arg_InvalidOperation_Reflection);
         public sealed override object GetValueDirect(TypedReference obj) => throw new InvalidOperationException(SR.Arg_InvalidOperation_Reflection);
-        public sealed override void SetValue(object obj, object value, BindingFlags invokeAttr, Binder binder, CultureInfo culture) => throw new InvalidOperationException(SR.Arg_InvalidOperation_Reflection);
+        public sealed override void SetValue(object? obj, object? value, BindingFlags invokeAttr, Binder? binder, CultureInfo? culture) => throw new InvalidOperationException(SR.Arg_InvalidOperation_Reflection);
         public sealed override void SetValueDirect(TypedReference obj, object value) => throw new InvalidOperationException(SR.Arg_InvalidOperation_Reflection);
 
         private MetadataLoadContext Loader => GetRoModule().Loader;

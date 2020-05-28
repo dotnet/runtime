@@ -1,10 +1,8 @@
 <Project InitialTargets="_ClearResolvePackageAssets" TreatAsLocalProperty="ExcludeRestorePackageImports">
   <PropertyGroup>
     <!-- Disable restoring of package references in our projects -->
-    <RestoreProjectStyle Condition="'$(MSBuildProjectExtension)' != '.depproj'">None</RestoreProjectStyle>
+    <RestoreProjectStyle Condition="'$(MSBuildProjectExtension)' != '.depproj'">Unknown</RestoreProjectStyle>
   </PropertyGroup>
-
-  <Import Project="$(RepositoryEngineeringDir)codeAnalysis.targets" />
 
   <PropertyGroup>
     <!-- Nuget will normally disable all generated imports as part of a restore to avoid 

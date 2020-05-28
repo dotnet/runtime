@@ -9,26 +9,26 @@ namespace System.Reflection.TypeLoading
     /// </summary>
     internal sealed class CoreTypes
     {
-        private readonly RoType[] _coreTypes;
-        private readonly Exception[] _exceptions;
+        private readonly RoType?[] _coreTypes;
+        private readonly Exception?[] _exceptions;
 
-        internal CoreTypes(MetadataLoadContext loader, string coreAssemblyName)
+        internal CoreTypes(MetadataLoadContext loader, string? coreAssemblyName)
         {
             int numCoreTypes = (int)CoreType.NumCoreTypes;
-            RoType[] coreTypes = new RoType[numCoreTypes];
-            Exception[] exceptions = new Exception[numCoreTypes];
-            RoAssembly coreAssembly = loader.TryGetCoreAssembly(coreAssemblyName, out Exception e);
+            RoType?[] coreTypes = new RoType[numCoreTypes];
+            Exception?[] exceptions = new Exception[numCoreTypes];
+            RoAssembly? coreAssembly = loader.TryGetCoreAssembly(coreAssemblyName, out Exception? e);
             if (coreAssembly == null)
             {
                 // If the core assembly was not found, don't continue.
-                throw e;
+                throw e!;
             }
             else
             {
                 for (int i = 0; i < numCoreTypes; i++)
                 {
                     ((CoreType)i).GetFullName(out byte[] ns, out byte[] name);
-                    RoType type = coreAssembly.GetTypeCore(ns, name, ignoreCase: false, out e);
+                    RoType? type = coreAssembly.GetTypeCore(ns, name, ignoreCase: false, out e);
                     coreTypes[i] = type;
                     if (type == null)
                     {
@@ -43,7 +43,7 @@ namespace System.Reflection.TypeLoading
         /// <summary>
         /// Returns null if the specific core type did not exist or could not be loaded. Call GetException(coreType) to get detailed info.
         /// </summary>
-        public RoType this[CoreType coreType] => _coreTypes[(int)coreType];
-        public Exception GetException(CoreType coreType) => _exceptions[(int)coreType];
+        public RoType? this[CoreType coreType] => _coreTypes[(int)coreType];
+        public Exception? GetException(CoreType coreType) => _exceptions[(int)coreType];
     }
 }

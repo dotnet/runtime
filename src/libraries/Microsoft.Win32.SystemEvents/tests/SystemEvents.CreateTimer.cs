@@ -29,7 +29,7 @@ namespace Microsoft.Win32.SystemEventsTests
             Assert.Throws<ArgumentException>(() => SystemEvents.CreateTimer(int.MinValue));
         }
 
-        [ActiveIssue(29166)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/25920")]
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
         public void TimerElapsedSignaled()
         {
@@ -50,9 +50,9 @@ namespace Microsoft.Win32.SystemEventsTests
             SystemEvents.TimerElapsed += handler;
             try
             {
-                if (PlatformDetection.IsFullFramework)
+                if (PlatformDetection.IsNetFramework)
                 {
-                    // desktop has a bug where it will allow EnsureSystemEvents to proceed without actually creating the HWND
+                    // .NET Framework has a bug where it will allow EnsureSystemEvents to proceed without actually creating the HWND
                     SystemEventsTest.WaitForSystemEventsWindow();
                 }
 
@@ -100,9 +100,9 @@ namespace Microsoft.Win32.SystemEventsTests
             SystemEvents.TimerElapsed += handler;
             try
             {
-                if (PlatformDetection.IsFullFramework)
+                if (PlatformDetection.IsNetFramework)
                 {
-                    // netfx has a bug where it will allow EnsureSystemEvents to proceed without actually creating the HWND
+                    // .NET Framework has a bug where it will allow EnsureSystemEvents to proceed without actually creating the HWND
                     SystemEventsTest.WaitForSystemEventsWindow();
                 }
 

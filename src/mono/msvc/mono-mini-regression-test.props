@@ -1,0 +1,40 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup Label="UserMacros">
+    <MONO_MINI_REGRESSION_TEST_DIR>$(MONO_DIR)/mono/mini</MONO_MINI_REGRESSION_TEST_DIR>
+    <MONO_PATH>$(MONO_PATH);$(MONO_MINI_REGRESSION_TEST_DIR)</MONO_PATH>
+    <MONO_CFG_DIR>$(MONO_DIR)/runtime/etc</MONO_CFG_DIR>
+    <MONO_CONFIG_ARG>--config "$(MONO_CFG_DIR)/mono/config"</MONO_CONFIG_ARG>
+    <MONO_MINI_REGRESSION_TESTS>basic.exe basic-float.exe basic-long.exe basic-calls.exe objects.exe arrays.exe basic-math.exe exceptions.exe iltests.exe devirtualization.exe generics.exe basic-simd.exe</MONO_MINI_REGRESSION_TESTS>
+    <MONO_MINI_ALL_REGRESSION_TEST_ARG>--regression $(MONO_MINI_REGRESSION_TESTS)</MONO_MINI_ALL_REGRESSION_TEST_ARG>
+    <MONO_MINI_ONE_REGRESSION_TEST_ARG>--regression basic.exe</MONO_MINI_ONE_REGRESSION_TEST_ARG>
+    <MONO_MINI_REGRESSION_TEST_ARGS>--handlers=atexit-waitkeypress $(MONO_CONFIG_ARG) $(MONO_MINI_ALL_REGRESSION_TEST_ARG)</MONO_MINI_REGRESSION_TEST_ARGS>
+  </PropertyGroup>
+  <ItemGroup>
+    <BuildMacro Include="MONO_MINI_REGRESSION_TEST_DIR">
+      <Value>$(MONO_MINI_REGRESSION_TEST_DIR)</Value>
+    </BuildMacro>
+    <BuildMacro Include="MONO_PATH">
+      <Value>$(MONO_PATH)</Value>
+    </BuildMacro>
+    <BuildMacro Include="MONO_CFG_DIR">
+      <Value>$(MONO_CFG_DIR)</Value>
+    </BuildMacro>
+    <BuildMacro Include="MONO_CONFIG_ARG">
+      <Value>$(MONO_CONFIG_ARG)</Value>
+    </BuildMacro>
+    <BuildMacro Include="MONO_MINI_REGRESSION_TESTS">
+      <Value>$(MONO_MINI_REGRESSION_TESTS)</Value>
+    </BuildMacro>
+    <BuildMacro Include="MONO_MINI_ALL_REGRESSION_TEST_ARG">
+      <Value>$(MONO_MINI_ALL_REGRESSION_TEST_ARG)</Value>
+    </BuildMacro>
+    <BuildMacro Include="MONO_MINI_ONE_REGRESSION_TEST_ARG">
+      <Value>$(MONO_MINI_ONE_REGRESSION_TEST_ARG)</Value>
+    </BuildMacro>
+    <BuildMacro Include="MONO_MINI_REGRESSION_TEST_ARGS">
+      <Value>$(MONO_MINI_REGRESSION_TEST_ARGS)</Value>
+    </BuildMacro>
+  </ItemGroup>
+  <ItemDefinitionGroup />
+</Project>

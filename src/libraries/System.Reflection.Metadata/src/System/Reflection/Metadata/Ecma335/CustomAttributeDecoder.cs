@@ -102,7 +102,7 @@ namespace System.Reflection.Metadata.Ecma335
                 }
 
                 ArgumentTypeInfo info = DecodeNamedArgumentType(ref valueReader);
-                string name = valueReader.ReadSerializedString();
+                string? name = valueReader.ReadSerializedString();
                 CustomAttributeTypedArgument<TType> argument = DecodeArgument(ref valueReader, info);
                 arguments.Add(new CustomAttributeNamedArgument<TType>(name, kind, argument.Type, argument.Value));
             }
@@ -231,8 +231,8 @@ namespace System.Reflection.Metadata.Ecma335
                     break;
 
                 case SerializationTypeCode.Enum:
-                    string typeName = valueReader.ReadSerializedString();
-                    info.Type = _provider.GetTypeFromSerializedName(typeName);
+                    string? typeName = valueReader.ReadSerializedString();
+                    info.Type = _provider.GetTypeFromSerializedName(typeName!);
                     info.TypeCode = (SerializationTypeCode)_provider.GetUnderlyingEnumType(info.Type);
                     break;
 
@@ -250,9 +250,9 @@ namespace System.Reflection.Metadata.Ecma335
                 info = DecodeNamedArgumentType(ref valueReader);
             }
 
-            // PERF_TODO: https://github.com/dotnet/corefx/issues/6533
+            // PERF_TODO: https://github.com/dotnet/runtime/issues/16551
             //   Cache /reuse common arguments to avoid boxing (small integers, true, false).
-            object value;
+            object? value;
             switch (info.TypeCode)
             {
                 case SerializationTypeCode.Boolean:
@@ -308,8 +308,8 @@ namespace System.Reflection.Metadata.Ecma335
                     break;
 
                 case SerializationTypeCode.Type:
-                    string typeName = valueReader.ReadSerializedString();
-                    value = _provider.GetTypeFromSerializedName(typeName);
+                    string? typeName = valueReader.ReadSerializedString();
+                    value = _provider.GetTypeFromSerializedName(typeName!);
                     break;
 
                 case SerializationTypeCode.SZArray:

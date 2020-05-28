@@ -14,7 +14,7 @@
 // clang-format off
 enum instruction : unsigned
 {
-#if defined(_TARGET_XARCH_)
+#if defined(TARGET_XARCH)
     #define INST0(id, nm, um, mr,                 flags) INS_##id,
     #define INST1(id, nm, um, mr,                 flags) INS_##id,
     #define INST2(id, nm, um, mr, mi,             flags) INS_##id,
@@ -23,7 +23,7 @@ enum instruction : unsigned
     #define INST5(id, nm, um, mr, mi, rm, a4, rr, flags) INS_##id,
     #include "instrs.h"
 
-#elif defined(_TARGET_ARM_)
+#elif defined(TARGET_ARM)
     #define INST1(id, nm, fp, ldst, fmt, e1                                ) INS_##id,
     #define INST2(id, nm, fp, ldst, fmt, e1, e2                            ) INS_##id,
     #define INST3(id, nm, fp, ldst, fmt, e1, e2, e3                        ) INS_##id,
@@ -36,14 +36,14 @@ enum instruction : unsigned
 
     INS_lea,   // Not a real instruction. It is used for load the address of stack locals
 
-#elif defined(_TARGET_ARM64_)
-    #define INST1(id, nm, fp, ldst, fmt, e1                                ) INS_##id,
-    #define INST2(id, nm, fp, ldst, fmt, e1, e2                            ) INS_##id,
-    #define INST3(id, nm, fp, ldst, fmt, e1, e2, e3                        ) INS_##id,
-    #define INST4(id, nm, fp, ldst, fmt, e1, e2, e3, e4                    ) INS_##id,
-    #define INST5(id, nm, fp, ldst, fmt, e1, e2, e3, e4, e5                ) INS_##id,
-    #define INST6(id, nm, fp, ldst, fmt, e1, e2, e3, e4, e5, e6            ) INS_##id,
-    #define INST9(id, nm, fp, ldst, fmt, e1, e2, e3, e4, e5, e6, e7, e8, e9) INS_##id,
+#elif defined(TARGET_ARM64)
+    #define INST1(id, nm, ldst, fmt, e1                                ) INS_##id,
+    #define INST2(id, nm, ldst, fmt, e1, e2                            ) INS_##id,
+    #define INST3(id, nm, ldst, fmt, e1, e2, e3                        ) INS_##id,
+    #define INST4(id, nm, ldst, fmt, e1, e2, e3, e4                    ) INS_##id,
+    #define INST5(id, nm, ldst, fmt, e1, e2, e3, e4, e5                ) INS_##id,
+    #define INST6(id, nm, ldst, fmt, e1, e2, e3, e4, e5, e6            ) INS_##id,
+    #define INST9(id, nm, ldst, fmt, e1, e2, e3, e4, e5, e6, e7, e8, e9) INS_##id,
     #include "instrs.h"
 
     INS_lea,   // Not a real instruction. It is used for load the address of stack locals
@@ -86,7 +86,7 @@ enum GCtype : unsigned
     GCT_BYREF
 };
 
-#if defined(_TARGET_XARCH_)
+#if defined(TARGET_XARCH)
 enum insFlags: uint8_t
 {
     INS_FLAGS_None = 0x00,
@@ -96,11 +96,11 @@ enum insFlags: uint8_t
     INS_Flags_IsDstDstSrcAVXInstruction = 0x08,
     INS_Flags_IsDstSrcSrcAVXInstruction = 0x10,
 
-    //  TODO-Cleanup:  Remove this flag and its usage from _TARGET_XARCH_
+    //  TODO-Cleanup:  Remove this flag and its usage from TARGET_XARCH
     INS_FLAGS_DONT_CARE = 0x00,
 };
-#elif defined(_TARGET_ARM_) || defined(_TARGET_ARM64_)
-// TODO-Cleanup: Move 'insFlags' under _TARGET_ARM_
+#elif defined(TARGET_ARM) || defined(TARGET_ARM64)
+// TODO-Cleanup: Move 'insFlags' under TARGET_ARM
 enum insFlags: unsigned
 {
     INS_FLAGS_NOT_SET = 0x00,
@@ -111,7 +111,7 @@ enum insFlags: unsigned
 #error Unsupported target architecture
 #endif
 
-#if defined(_TARGET_ARM_)
+#if defined(TARGET_ARM)
 enum insOpts: unsigned
 {
     INS_OPTS_NONE,
@@ -124,7 +124,7 @@ enum insOpts: unsigned
     INS_OPTS_ASR,
     INS_OPTS_ROR
 };
-#elif defined(_TARGET_ARM64_)
+#elif defined(TARGET_ARM64)
 enum insOpts : unsigned
 {
     INS_OPTS_NONE,
@@ -257,7 +257,7 @@ enum emitAttr : unsigned
                 EA_32BYTE        = 0x020,
                 EA_SIZE_MASK     = 0x03F,
 
-#ifdef _TARGET_64BIT_
+#ifdef TARGET_64BIT
                 EA_PTRSIZE       = EA_8BYTE,
 #else
                 EA_PTRSIZE       = EA_4BYTE,
@@ -292,71 +292,6 @@ enum emitAttr : unsigned
 
 #define EmitSize(x)                 (EA_ATTR(genTypeSize(TypeGet(x))))
 
-enum InstructionSet
-{
-    InstructionSet_ILLEGAL = 0,
-#ifdef _TARGET_XARCH_
-    InstructionSet_Vector128,
-    InstructionSet_Vector256,
-    // Start linear order SIMD instruction sets
-    // These ISAs have strictly generation to generation order.
-    InstructionSet_SSE,
-    InstructionSet_SSE2,
-    InstructionSet_SSE3,
-    InstructionSet_SSSE3,
-    InstructionSet_SSE41,
-    InstructionSet_SSE42,
-    InstructionSet_AVX,
-    InstructionSet_AVX2,
-    // End linear order SIMD instruction sets.
-    InstructionSet_AES,
-    InstructionSet_BMI1,
-    InstructionSet_BMI2,
-    InstructionSet_FMA,
-    InstructionSet_LZCNT,
-    InstructionSet_PCLMULQDQ,
-    InstructionSet_POPCNT,
-    InstructionSet_BMI1_X64,
-    InstructionSet_BMI2_X64,
-    InstructionSet_LZCNT_X64,
-    InstructionSet_POPCNT_X64,
-    InstructionSet_SSE_X64,
-    InstructionSet_SSE2_X64,
-    InstructionSet_SSE41_X64,
-    InstructionSet_SSE42_X64,
-#elif defined(_TARGET_ARM_)
-    InstructionSet_NEON,
-#elif defined(_TARGET_ARM64_)
-    InstructionSet_AdvSimd,       // ID_AA64PFR0_EL1.AdvSIMD is 0 or better
-    InstructionSet_AdvSimd_Arm64,
-    InstructionSet_AdvSimd_Fp16,  // ID_AA64PFR0_EL1.AdvSIMD is 1 or better
-    InstructionSet_AdvSimd_v81,   // ID_AA64ISAR0_EL1.RDM is 1 or better
-    InstructionSet_Aes,           // ID_AA64ISAR0_EL1.AES is 1 or better
-    InstructionSet_ArmBase,
-    InstructionSet_ArmBase_Arm64,
-    InstructionSet_Atomics,       // ID_AA64ISAR0_EL1.Atomic is 2 or better
-    InstructionSet_Crc32,         // ID_AA64ISAR0_EL1.CRC32 is 1 or better
-    InstructionSet_Crc32_Arm64,
-    InstructionSet_Dcpop,         // ID_AA64ISAR1_EL1.DPB is 1 or better
-    InstructionSet_Dp,            // ID_AA64ISAR0_EL1.DP is 1 or better
-    InstructionSet_Fcma,          // ID_AA64ISAR1_EL1.FCMA is 1 or better
-    InstructionSet_Fp,            // ID_AA64PFR0_EL1.FP is 0 or better
-    InstructionSet_Fp16,          // ID_AA64PFR0_EL1.FP is 1 or better
-    InstructionSet_Jscvt,         // ID_AA64ISAR1_EL1.JSCVT is 1 or better
-    InstructionSet_Lrcpc,         // ID_AA64ISAR1_EL1.LRCPC is 1 or better
-    InstructionSet_Pmull,         // ID_AA64ISAR0_EL1.AES is 2 or better
-    InstructionSet_Sha1,          // ID_AA64ISAR0_EL1.SHA1 is 1 or better
-    InstructionSet_Sha256,        // ID_AA64ISAR0_EL1.SHA2 is 1 or better
-    InstructionSet_Sha512,        // ID_AA64ISAR0_EL1.SHA2 is 2 or better
-    InstructionSet_Sha3,          // ID_AA64ISAR0_EL1.SHA3 is 1 or better
-    InstructionSet_Sm3,           // ID_AA64ISAR0_EL1.SM3 is 1 or better
-    InstructionSet_Sm4,           // ID_AA64ISAR0_EL1.SM4 is 1 or better
-    InstructionSet_Sve,           // ID_AA64PFR0_EL1.SVE is 1 or better
-    InstructionSet_Vector64,
-    InstructionSet_Vector128,
-#endif
-    InstructionSet_NONE       // No instruction set is available indicating an invalid value
-};
 // clang-format on
 
 /*****************************************************************************/

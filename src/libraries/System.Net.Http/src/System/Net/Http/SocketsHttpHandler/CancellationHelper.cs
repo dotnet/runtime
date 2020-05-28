@@ -24,13 +24,13 @@ namespace System.Net.Http
         /// <param name="innerException">The inner exception to wrap. May be null.</param>
         /// <param name="cancellationToken">The <see cref="CancellationToken"/> that triggered the cancellation.</param>
         /// <returns>The cancellation exception.</returns>
-        internal static Exception CreateOperationCanceledException(Exception innerException, CancellationToken cancellationToken) =>
+        internal static Exception CreateOperationCanceledException(Exception? innerException, CancellationToken cancellationToken) =>
             new TaskCanceledException(s_cancellationMessage, innerException, cancellationToken); // TCE for compatibility with other handlers that use TaskCompletionSource.TrySetCanceled()
 
         /// <summary>Throws a cancellation exception.</summary>
         /// <param name="innerException">The inner exception to wrap. May be null.</param>
         /// <param name="cancellationToken">The <see cref="CancellationToken"/> that triggered the cancellation.</param>
-        private static void ThrowOperationCanceledException(Exception innerException, CancellationToken cancellationToken) =>
+        private static void ThrowOperationCanceledException(Exception? innerException, CancellationToken cancellationToken) =>
             throw CreateOperationCanceledException(innerException, cancellationToken);
 
         /// <summary>Throws a cancellation exception if cancellation has been requested via <paramref name="cancellationToken"/>.</summary>

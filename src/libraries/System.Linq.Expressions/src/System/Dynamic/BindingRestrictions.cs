@@ -21,7 +21,6 @@ namespace System.Dynamic
         /// <summary>
         /// Represents an empty set of binding restrictions. This field is read-only.
         /// </summary>
-        [SuppressMessage("Microsoft.Security", "CA2104:DoNotDeclareReadOnlyMutableReferenceTypes")]
         public static readonly BindingRestrictions Empty = new CustomRestriction(AstUtils.Constant(true));
 
         private const int TypeRestrictionHash =                    0b_0100_1001_0010_0100_1001_0010_0100_1001;
@@ -93,7 +92,7 @@ namespace System.Dynamic
         /// <param name="expression">The expression to test.</param>
         /// <param name="instance">The exact object instance to test.</param>
         /// <returns>The new binding restrictions.</returns>
-        public static BindingRestrictions GetInstanceRestriction(Expression expression, object instance)
+        public static BindingRestrictions GetInstanceRestriction(Expression expression, object? instance)
         {
             ContractUtils.RequiresNotNull(expression, nameof(expression));
 
@@ -121,7 +120,7 @@ namespace System.Dynamic
         /// </summary>
         /// <param name="contributingObjects">The list of <see cref="DynamicMetaObject"/> instances from which to combine restrictions.</param>
         /// <returns>The new set of binding restrictions.</returns>
-        public static BindingRestrictions Combine(IList<DynamicMetaObject> contributingObjects)
+        public static BindingRestrictions Combine(IList<DynamicMetaObject>? contributingObjects)
         {
             BindingRestrictions res = Empty;
             if (contributingObjects != null)
@@ -215,8 +214,7 @@ namespace System.Dynamic
                 BindingRestrictions top = this;
                 while (true)
                 {
-                    var m = top as MergedRestriction;
-                    if (m != null)
+                    if (top is MergedRestriction m)
                     {
                         stack.Push(m.Right);
                         top = m.Left;
@@ -245,10 +243,9 @@ namespace System.Dynamic
                 _expression = expression;
             }
 
-            public override bool Equals(object obj)
+            public override bool Equals(object? obj)
             {
-                var other = obj as CustomRestriction;
-                return other?._expression == _expression;
+                return obj is CustomRestriction other && other._expression == _expression;
             }
 
             public override int GetHashCode() => CustomRestrictionHash ^ _expression.GetHashCode();
@@ -269,10 +266,9 @@ namespace System.Dynamic
                 _type = type;
             }
 
-            public override bool Equals(object obj)
+            public override bool Equals(object? obj)
             {
-                var other = obj as TypeRestriction;
-                return other?._expression == _expression && TypeUtils.AreEquivalent(other._type, _type);
+                return obj is TypeRestriction other && other._expression == _expression && TypeUtils.AreEquivalent(other._type, _type);
             }
 
             public override int GetHashCode() => TypeRestrictionHash ^ _expression.GetHashCode() ^ _type.GetHashCode();
@@ -283,23 +279,22 @@ namespace System.Dynamic
         private sealed class InstanceRestriction : BindingRestrictions
         {
             private readonly Expression _expression;
-            private readonly object _instance;
+            private readonly object? _instance;
 
-            internal InstanceRestriction(Expression parameter, object instance)
+            internal InstanceRestriction(Expression parameter, object? instance)
             {
                 Debug.Assert(parameter != null);
                 _expression = parameter;
                 _instance = instance;
             }
 
-            public override bool Equals(object obj)
+            public override bool Equals(object? obj)
             {
-                var other = obj as InstanceRestriction;
-                return other?._expression == _expression && other._instance == _instance;
+                return obj is InstanceRestriction other && other._expression == _expression && other._instance == _instance;
             }
 
             public override int GetHashCode()
-                => InstanceRestrictionHash ^ RuntimeHelpers.GetHashCode(_instance) ^ _expression.GetHashCode();
+                => InstanceRestrictionHash ^ RuntimeHelpers.GetHashCode(_instance!) ^ _expression.GetHashCode();
 
             internal override Expression GetExpression()
             {
@@ -372,8 +367,7 @@ namespace System.Dynamic
                     BindingRestrictions top = _node;
                     while (true)
                     {
-                        var m = top as MergedRestriction;
-                        if (m != null)
+                        if (top is MergedRestriction m)
                         {
                             stack.Push(m.Right);
                             top = m.Left;

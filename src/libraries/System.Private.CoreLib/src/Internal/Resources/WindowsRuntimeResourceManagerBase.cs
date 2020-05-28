@@ -12,7 +12,7 @@ namespace Internal.Resources
     {
         public abstract bool Initialize(string libpath, string reswFilename, out PRIExceptionInfo? exceptionInfo);
 
-        public abstract string GetString(string stringName, string? startingCulture, string? neutralResourcesCulture);
+        public abstract string? GetString(string stringName, string? startingCulture, string? neutralResourcesCulture);
 
         public abstract CultureInfo? GlobalResourceContextBestFitCultureInfo
         {

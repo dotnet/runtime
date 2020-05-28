@@ -16,25 +16,21 @@ namespace System.Xml.Linq
         /// <summary>
         /// Event argument for a <see cref="XObjectChange.Add"/> change event.
         /// </summary>
-        [SuppressMessage("Microsoft.Security", "CA2104:DoNotDeclareReadOnlyMutableReferenceTypes", Justification = "XObjectChangeEventArgs is in fact immutable.")]
         public static readonly XObjectChangeEventArgs Add = new XObjectChangeEventArgs(XObjectChange.Add);
 
         /// <summary>
         /// Event argument for a <see cref="XObjectChange.Remove"/> change event.
         /// </summary>
-        [SuppressMessage("Microsoft.Security", "CA2104:DoNotDeclareReadOnlyMutableReferenceTypes", Justification = "XObjectChangeEventArgs is in fact immutable.")]
         public static readonly XObjectChangeEventArgs Remove = new XObjectChangeEventArgs(XObjectChange.Remove);
 
         /// <summary>
         /// Event argument for a <see cref="XObjectChange.Name"/> change event.
         /// </summary>
-        [SuppressMessage("Microsoft.Security", "CA2104:DoNotDeclareReadOnlyMutableReferenceTypes", Justification = "XObjectChangeEventArgs is in fact immutable.")]
         public static readonly XObjectChangeEventArgs Name = new XObjectChangeEventArgs(XObjectChange.Name);
 
         /// <summary>
         /// Event argument for a <see cref="XObjectChange.Value"/> change event.
         /// </summary>
-        [SuppressMessage("Microsoft.Security", "CA2104:DoNotDeclareReadOnlyMutableReferenceTypes", Justification = "XObjectChangeEventArgs is in fact immutable.")]
         public static readonly XObjectChangeEventArgs Value = new XObjectChangeEventArgs(XObjectChange.Value);
 
         /// <summary>

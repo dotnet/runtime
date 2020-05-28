@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System.Collections;
 using System.Collections.Generic;
 using System.Runtime.Serialization;
@@ -25,7 +26,7 @@ namespace System.Net
 
         private readonly ArrayList m_list = new ArrayList();
 
-        private int m_version; // Do not rename (binary serialization). This field only exists for netfx serialization compatibility.
+        private int m_version; // Do not rename (binary serialization). This field only exists for .NET Framework serialization compatibility.
         private DateTime m_TimeStamp = DateTime.MinValue; // Do not rename (binary serialization)
         private bool m_has_other_versions; // Do not rename (binary serialization)
 
@@ -41,17 +42,17 @@ namespace System.Net
                 {
                     throw new ArgumentOutOfRangeException(nameof(index));
                 }
-                return m_list[index] as Cookie;
+                return (m_list[index] as Cookie)!;
             }
         }
 
-        public Cookie this[string name]
+        public Cookie? this[string name]
         {
             get
             {
-                foreach (Cookie c in m_list)
+                foreach (Cookie? c in m_list)
                 {
-                    if (string.Equals(c.Name, name, StringComparison.OrdinalIgnoreCase))
+                    if (string.Equals(c!.Name, name, StringComparison.OrdinalIgnoreCase))
                     {
                         return c;
                     }
@@ -89,9 +90,9 @@ namespace System.Net
             {
                 throw new ArgumentNullException(nameof(cookies));
             }
-            foreach (Cookie cookie in cookies.m_list)
+            foreach (Cookie? cookie in cookies.m_list)
             {
-                Add(cookie);
+                Add(cookie!);
             }
         }
 
@@ -200,14 +201,16 @@ namespace System.Net
             if (isStrict)
             {
                 int idx = 0;
-                foreach (Cookie c in m_list)
+                int listCount = m_list.Count;
+                for (int i = 0; i < listCount; i++)
                 {
+                    Cookie c = (Cookie)m_list[i]!;
                     if (CookieComparer.Compare(cookie, c) == 0)
                     {
                         ret = 0; // Will replace or reject
 
                         // Cookie2 spec requires that new Variant cookie overwrite the old one.
-                        if (c.Variant <= cookie.Variant)
+                        if (c!.Variant <= cookie.Variant)
                         {
                             m_list[idx] = cookie;
                         }
@@ -234,9 +237,9 @@ namespace System.Net
         internal int IndexOf(Cookie cookie)
         {
             int idx = 0;
-            foreach (Cookie c in m_list)
+            foreach (Cookie? c in m_list)
             {
-                if (CookieComparer.Compare(cookie, c) == 0)
+                if (CookieComparer.Compare(cookie, c!) == 0)
                 {
                     return idx;
                 }
@@ -252,9 +255,9 @@ namespace System.Net
 
         IEnumerator<Cookie> IEnumerable<Cookie>.GetEnumerator()
         {
-            foreach (Cookie cookie in m_list)
+            foreach (Cookie? cookie in m_list)
             {
-                yield return cookie;
+                yield return cookie!;
             }
         }
 

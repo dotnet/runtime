@@ -108,7 +108,7 @@ namespace System
 
         private static void AccumulateDecimalDigitsIntoBigInteger(ref NumberBuffer number, uint firstIndex, uint lastIndex, out BigInteger result)
         {
-            result = new BigInteger(0);
+            BigInteger.SetZero(out result);
 
             byte* src = number.GetDigitsPointer() + firstIndex;
             uint remaining = lastIndex - firstIndex;

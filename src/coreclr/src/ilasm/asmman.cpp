@@ -9,7 +9,7 @@
 #include "ilasmpch.h"
 
 #include "assembler.h"
-#include "strongname.h"
+#include "strongnameinternal.h"
 #include <limits.h>
 #include <fusion.h>
 

@@ -17,6 +17,10 @@
 #ifndef __PALSUITE_H__
 #define __PALSUITE_H__
 
+#ifndef __cplusplus
+typedef unsigned short char16_t;
+#endif
+
 #include <pal_assert.h>
 #include <pal.h>
 #include <palprivate.h>

@@ -24,9 +24,9 @@ namespace System.Security.Cryptography
             return new AesImplementation();
         }
 
-        public static new Aes Create(string algorithmName)
+        public static new Aes? Create(string algorithmName)
         {
-            return (Aes)CryptoConfig.CreateFromName(algorithmName);
+            return (Aes?)CryptoConfig.CreateFromName(algorithmName);
         }
 
         private static readonly KeySizes[] s_legalBlockSizes = { new KeySizes(128, 128, 0) };

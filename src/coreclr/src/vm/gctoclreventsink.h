@@ -14,7 +14,7 @@ public:
     void FireGCStart_V2(uint32_t count, uint32_t depth, uint32_t reason, uint32_t type);
     void FireGCEnd_V1(uint32_t count, uint32_t depth);
     void FireGCGenerationRange(uint8_t generation, void* rangeStart, uint64_t rangeUsedLength, uint64_t rangeReservedLength);
-    void FireGCHeapStats_V1(uint64_t generationSize0,
+    void FireGCHeapStats_V2(uint64_t generationSize0,
                             uint64_t totalPromotedSize0,
                             uint64_t generationSize1,
                             uint64_t totalPromotedSize1,
@@ -22,6 +22,8 @@ public:
                             uint64_t totalPromotedSize2,
                             uint64_t generationSize3,
                             uint64_t totalPromotedSize3,
+                            uint64_t generationSize4,
+                            uint64_t totalPromotedSize4,
                             uint64_t finalizationPromotedSize,
                             uint64_t finalizationPromotedCount,
                             uint32_t pinnedObjectCount,
@@ -34,14 +36,16 @@ public:
     void FireGCTriggered(uint32_t reason);
     void FireGCMarkWithType(uint32_t heapNum, uint32_t type, uint64_t bytes);
     void FireGCJoin_V2(uint32_t heap, uint32_t joinTime, uint32_t joinType, uint32_t joinId);
-    void FireGCGlobalHeapHistory_V2(uint64_t finalYoungestDesired,
+    void FireGCGlobalHeapHistory_V3(uint64_t finalYoungestDesired,
                                     int32_t numHeaps,
                                     uint32_t condemnedGeneration,
                                     uint32_t gen0reductionCount,
                                     uint32_t reason,
                                     uint32_t globalMechanisms,
                                     uint32_t pauseMode,
-                                    uint32_t memoryPressure);
+                                    uint32_t memoryPressure,
+                                    uint32_t condemnReasons0,
+                                    uint32_t condemnReasons1);
     void FireGCAllocationTick_V1(uint32_t allocationAmount, uint32_t allocationKind);
     void FireGCAllocationTick_V3(uint64_t allocationAmount, uint32_t allocationKind, uint32_t heapIndex, void* objectAddress);
     void FirePinObjectAtGCTime(void* object, uint8_t** ppObject);
@@ -72,7 +76,7 @@ public:
     void FireBGC2ndConEnd();
     void FireBGCDrainMark(uint64_t objects);
     void FireBGCRevisit(uint64_t pages, uint64_t objects, uint32_t isLarge);
-    void FireBGCOverflow(uint64_t min, uint64_t max, uint64_t objects, uint32_t isLarge);
+    void FireBGCOverflow_V1(uint64_t min, uint64_t max, uint64_t objects, uint32_t isLarge, uint32_t genNumber);
     void FireBGCAllocWaitBegin(uint32_t reason);
     void FireBGCAllocWaitEnd(uint32_t reason);
     void FireGCFullNotify_V1(uint32_t genNumber, uint32_t isAlloc);

@@ -1,7 +1,7 @@
 
-if (WIN32)
+if (CLR_CMAKE_TARGET_WIN32)
   list(APPEND CORDBEE_SOURCES_DAC ${CORDBEE_HEADERS_DAC})
-endif (WIN32)
+endif (CLR_CMAKE_TARGET_WIN32)
 
 add_library_clr(cordbee_dac ${CORDBEE_SOURCES_DAC})
 set_target_properties(cordbee_dac PROPERTIES DAC_COMPONENT TRUE)

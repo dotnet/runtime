@@ -1155,6 +1155,40 @@ internal class Program
         return true;
     }
 
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static string ObjectToStringOnGenericParamTestWorker<T>(ref T t)
+    {
+        return t.ToString();
+    }
+
+    struct LocallyDefinedStructWithToString
+    {
+        public object StoredValue;
+        public override string ToString()
+        {
+            StoredValue = new object();
+            return "LocallyDefined";
+        }
+    }
+
+    private static bool ObjectToStringOnGenericParamTestSByte()
+    {
+        sbyte intVal = 42;
+        string returnedString = ObjectToStringOnGenericParamTestWorker<sbyte>(ref intVal);
+        if (returnedString != "42") return false;
+        return true;
+    }
+
+    private static bool ObjectToStringOnGenericParamTestVersionBubbleLocalStruct()
+    {
+        LocallyDefinedStructWithToString versionBubbleLocalStruct = new LocallyDefinedStructWithToString();
+        string returnedString = ObjectToStringOnGenericParamTestWorker(ref versionBubbleLocalStruct);
+        if (returnedString != "LocallyDefined") return false;
+        if (versionBubbleLocalStruct.StoredValue == null) return false; // ToString method should update struct in place.
+
+        return true;
+    }
+
     private static string EmitTextFileForTesting()
     {
         string file = Path.GetTempFileName();
@@ -1177,9 +1211,7 @@ internal class Program
         RunTest("ChkCast", ChkCast());
         RunTest("ChkCastValueType", ChkCastValueType());
         RunTest("BoxUnbox", BoxUnbox());
-        // TODO: enabling this test requires fixes to IsManagedSequential I'm going to send out
-        // in a subsequent PR together with removal of this temporary clause [trylek]
-        // RunTest("NullableWithExplicitLayoutTest", NullableWithExplicitLayoutTest());
+        RunTest("NullableWithExplicitLayoutTest", NullableWithExplicitLayoutTest());
         RunTest("CastClassWithCharTest", CastClassWithCharTest());
         RunTest("TypeHandle", TypeHandle());
         RunTest("RuntimeTypeHandle", RuntimeTypeHandle());
@@ -1219,6 +1251,8 @@ internal class Program
         RunTest("GVMTest", GVMTest());
         RunTest("RuntimeMethodHandle", RuntimeMethodHandle());
         RunTest("ObjectGetTypeOnGenericParamTest", ObjectGetTypeOnGenericParamTest());
+        RunTest("ObjectToStringOnGenericParamTestSByte", ObjectToStringOnGenericParamTestSByte());
+        RunTest("ObjectToStringOnGenericParamTestVersionBubbleLocalStruct", ObjectToStringOnGenericParamTestVersionBubbleLocalStruct());
 
         File.Delete(TextFileName);
 

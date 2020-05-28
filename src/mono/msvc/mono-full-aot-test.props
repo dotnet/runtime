@@ -1,0 +1,48 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup Label="UserMacros">
+    <MONO_FULL_AOT_TEST_DIR>$(MONO_DIR)/mono/mini</MONO_FULL_AOT_TEST_DIR>
+    <MONO_PATH>$(MONO_PATH);$(MONO_FULL_AOT_TEST_DIR)</MONO_PATH>
+    <MONO_CFG_DIR>$(MONO_DIR)/runtime/etc</MONO_CFG_DIR>
+    <MONO_FULL_AOT_COMPILE_SYSTEM_TARGETS>mscorlib.dll,System.Core.dll,System.dll,Mono.Posix.dll,System.Configuration.dll,System.Security.dll,System.Xml.dll,Mono.Security.dll,Mono.Simd.dll,I18N.dll,I18N.West.dll</MONO_FULL_AOT_COMPILE_SYSTEM_TARGETS>
+    <MONO_FULL_AOT_COMPILE_TEST_SUPPORT_TARGETS>TestDriver.dll</MONO_FULL_AOT_COMPILE_TEST_SUPPORT_TARGETS>
+    <MONO_FULL_AOT_COMPILE_TARGETS>basic.exe</MONO_FULL_AOT_COMPILE_TARGETS>
+    <MONO_FULL_AOT_COMPILE_ARGS>--handlers=atexit-waitkeypress --aot=full,tool-prefix="$(MONO_TOOLCHAIN_PREFIX)",print-skipped $(MONO_FULL_AOT_COMPILE_TARGETS)</MONO_FULL_AOT_COMPILE_ARGS>
+    <MONO_FULL_AOT_RUN_TARGET>basic.exe</MONO_FULL_AOT_RUN_TARGET>
+    <MONO_FULL_AOT_RUN_ADDITIONAL_ARGS>--exclude "!FULLAOT" --exclude "!FULLAOT-AMD64"</MONO_FULL_AOT_RUN_ADDITIONAL_ARGS>
+    <MONO_FULL_AOT_RUN_ARGS>--handlers=atexit-waitkeypress --full-aot "$(MONO_FULL_AOT_RUN_TARGET)" $(MONO_FULL_AOT_RUN_ADDITIONAL_ARGS)</MONO_FULL_AOT_RUN_ARGS>
+  </PropertyGroup>
+  <ItemGroup>
+    <BuildMacro Include="MONO_FULL_AOT_TEST_DIR">
+      <Value>$(MONO_FULL_AOT_TEST_DIR)</Value>
+    </BuildMacro>
+    <BuildMacro Include="MONO_PATH">
+      <Value>$(MONO_PATH)</Value>
+    </BuildMacro>
+    <BuildMacro Include="MONO_CFG_DIR">
+      <Value>$(MONO_CFG_DIR)</Value>
+    </BuildMacro>
+    <BuildMacro Include="MONO_FULL_AOT_COMPILE_SYSTEM_TARGETS">
+      <Value>$(MONO_FULL_AOT_COMPILE_SYSTEM_TARGETS)</Value>
+    </BuildMacro>
+    <BuildMacro Include="MONO_FULL_AOT_COMPILE_TEST_SUPPORT_TARGETS">
+      <Value>$(MONO_FULL_AOT_COMPILE_TEST_SUPPORT_TARGETS)</Value>
+    </BuildMacro>
+    <BuildMacro Include="MONO_FULL_AOT_COMPILE_TARGETS">
+      <Value>$(MONO_FULL_AOT_COMPILE_TARGETS)</Value>
+    </BuildMacro>
+    <BuildMacro Include="MONO_FULL_AOT_COMPILE_ARGS">
+      <Value>$(MONO_FULL_AOT_COMPILE_ARGS)</Value>
+    </BuildMacro>
+    <BuildMacro Include="MONO_FULL_AOT_RUN_TARGET">
+      <Value>$(MONO_FULL_AOT_RUN_TARGET)</Value>
+    </BuildMacro>
+    <BuildMacro Include="MONO_FULL_AOT_RUN_ADDITIONAL_ARGS">
+      <Value>$(MONO_FULL_AOT_RUN_ADDITIONAL_ARGS)</Value>
+    </BuildMacro>
+    <BuildMacro Include="MONO_FULL_AOT_RUN_ARGS">
+      <Value>$(MONO_FULL_AOT_RUN_ARGS)</Value>
+    </BuildMacro>
+  </ItemGroup>
+  <ItemDefinitionGroup />
+</Project>

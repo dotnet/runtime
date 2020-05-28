@@ -149,22 +149,4 @@ void* QCALLTYPE SynchronizationContextNative::GetWinRTDispatcherForCurrentThread
     return result;
 }
 
-void SynchronizationContextNative::Cleanup()
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_TRIGGERS;
-        MODE_ANY;
-    } CONTRACTL_END;
-
-    if (g_pICoreWindowStatic)
-    {
-        SafeRelease(g_pICoreWindowStatic);
-        g_pICoreWindowStatic = NULL;
-    }
-}
-
-
-
 #endif //FEATURE_APPX

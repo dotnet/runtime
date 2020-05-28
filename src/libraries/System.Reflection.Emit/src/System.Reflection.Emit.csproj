@@ -1,31 +1,9 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <AssemblyName>System.Reflection.Emit</AssemblyName>
-    <IsPartialFacadeAssembly Condition="'$(TargetsNetStandard)' != 'true'">true</IsPartialFacadeAssembly>
-    <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetsNetStandard)' == 'true'">SR.PlatformNotSupported_RefEmit</GeneratePlatformNotSupportedAssemblyMessage>
-    <OmitResources>$(IsPartialFacadeAssembly)</OmitResources>
-    <Configurations>netcoreapp-Unix-Debug;netcoreapp-Unix-Release;netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release;netstandard2.0-Debug;netstandard2.0-Release;netstandard1.1-Debug;netstandard1.1-Release</Configurations>
-    <Nullable>enable</Nullable>
+    <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
+    <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)-Unix</TargetFrameworks>
   </PropertyGroup>
-  <ItemGroup Condition="'$(IsPartialFacadeAssembly)' == 'true'">
+  <ItemGroup>
     <ReferenceFromRuntime Include="System.Private.CoreLib" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(IsPartialFacadeAssembly)' != 'true'">
-    <Reference Include="System.IO" />
-    <Reference Include="System.Reflection" />
-    <Reference Include="System.Reflection.Emit.ILGeneration" />
-    <Reference Include="System.Reflection.Primitives" />
-    <Reference Include="System.Resources.ResourceManager" />
-    <Reference Include="System.Runtime" />
-    <Reference Include="System.Runtime.InteropServices" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == 'netstandard1.1'">
-    <!-- copy the System.Runtime based not supported assembly to netcore50 aot.  -->
-    <PackageDestination Include="lib/netstandard1.1">
-      <TargetFramework>netstandard1.1</TargetFramework>
-    </PackageDestination>
-    <PackageDestination Include="runtimes/aot/lib/netcore50">
-      <TargetFramework>netcore50</TargetFramework>
-    </PackageDestination>
   </ItemGroup>
 </Project>

@@ -227,6 +227,7 @@ namespace System.Linq.Expressions.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/mono/mono/issues/14919", TestRuntimes.Mono)]
         public static void InsignificantBlock()
         {
             Expression<Action> nop = Expression.Lambda<Action>(

@@ -21,7 +21,7 @@ namespace System.Security.Cryptography
         /// <summary>
         /// Private Key. Not always present.
         /// </summary>
-        public byte[] D;
+        public byte[]? D;
 
         /// <summary>
         /// The Curve.
@@ -36,25 +36,24 @@ namespace System.Security.Cryptography
         /// </exception>
         public void Validate()
         {
-            bool hasErrors = false;
+            bool hasErrors = true;
 
-            if (Q.X == null ||
-                Q.Y == null ||
-                Q.X.Length != Q.Y.Length)
-            {
-                hasErrors = true;
-            }
+            if (D != null && Q.Y is null && Q.X is null)
+                hasErrors = false;
+            if (Q.Y != null && Q.X != null && Q.Y.Length == Q.X.Length)
+                hasErrors = false;
 
             if (!hasErrors)
             {
                 if (Curve.IsExplicit)
                 {
                     // Explicit curves require D length to match Curve.Order
-                    hasErrors = (D != null && (D.Length != Curve.Order.Length));
+                    hasErrors = (D != null && (D.Length != Curve.Order!.Length));
                 }
-                else if (Curve.IsNamed)
+                else if (Curve.IsNamed && Q.X != null)
                 {
-                    // Named curves require D length to match Q.X and Q.Y
+                    // Named curves require D length to match Q.X and Q.Y if Q
+                    // is present.
                     hasErrors = (D != null && (D.Length != Q.X.Length));
                 }
             }

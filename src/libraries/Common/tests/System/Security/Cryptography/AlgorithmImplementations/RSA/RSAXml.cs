@@ -1327,7 +1327,7 @@ zM=
   </Modulus>
 </RSA"));
 
-                if (PlatformDetection.IsFullFramework)
+                if (PlatformDetection.IsNetFramework)
                 {
                     Assert.Equal("System.Security.XmlSyntaxException", exception.GetType().FullName);
                 }
@@ -1340,7 +1340,7 @@ zM=
         }
 
         [Fact]
-        [ActiveIssue(37595, TestPlatforms.OSX)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/29515", TestPlatforms.OSX)]
         public static void FromNonsenseXml()
         {
             // This is DiminishedDPParameters XML, but with a P that is way too long.

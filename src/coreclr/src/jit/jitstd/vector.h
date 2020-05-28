@@ -679,11 +679,11 @@ typename vector<T, Allocator>::size_type vector<T, Allocator>::size() const
 template <typename T, typename Allocator>
 void vector<T, Allocator>::swap(vector<T, Allocator>& vec)
 {
-    jitstd::swap(m_pArray, vec.m_pArray);
-    jitstd::swap(m_nSize, vec.m_nSize);
-    jitstd::swap(m_nCapacity, vec.m_nCapacity);
-    jitstd::swap(m_nCapacity, vec.m_nCapacity);
-    jitstd::swap(m_allocator, vec.m_allocator);
+    std::swap(m_pArray, vec.m_pArray);
+    std::swap(m_nSize, vec.m_nSize);
+    std::swap(m_nCapacity, vec.m_nCapacity);
+    std::swap(m_nCapacity, vec.m_nCapacity);
+    std::swap(m_allocator, vec.m_allocator);
 }
 
 // =======================================================================================

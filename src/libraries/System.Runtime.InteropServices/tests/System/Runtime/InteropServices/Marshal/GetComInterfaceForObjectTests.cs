@@ -141,8 +141,8 @@ namespace System.Runtime.InteropServices.Tests
         [PlatformSpecific(TestPlatforms.Windows)]
         public void GetComInterfaceForObject_NullType_ThrowsArgumentNullException()
         {
-            AssertExtensions.Throws<ArgumentNullException>("t", () => Marshal.GetComInterfaceForObject(new object(), null));
-            AssertExtensions.Throws<ArgumentNullException>("t", () => Marshal.GetComInterfaceForObject(new object(), null, CustomQueryInterfaceMode.Allow));
+            AssertExtensions.Throws<ArgumentNullException>("T", () => Marshal.GetComInterfaceForObject(new object(), null));
+            AssertExtensions.Throws<ArgumentNullException>("T", () => Marshal.GetComInterfaceForObject(new object(), null, CustomQueryInterfaceMode.Allow));
         }
 
         public static IEnumerable<object[]> GetComInterfaceForObject_InvalidType_TestData()

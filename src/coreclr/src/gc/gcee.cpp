@@ -17,8 +17,8 @@ uint64_t g_TotalTimeSinceLastGCEnd = 0;
 
 uint32_t g_percentTimeInGCSinceLastGC = 0;
 
-size_t g_GenerationSizes[NUMBERGENERATIONS];
-size_t g_GenerationPromotedSizes[NUMBERGENERATIONS];
+size_t g_GenerationSizes[total_generation_count];
+size_t g_GenerationPromotedSizes[total_generation_count];
 
 void GCHeap::UpdatePreGCCounters()
 {
@@ -28,34 +28,8 @@ void GCHeap::UpdatePreGCCounters()
     gc_heap* hp = pGenGCHeap;
 #endif //MULTIPLE_HEAPS
 
-    size_t allocation_0 = 0;
-    size_t allocation_3 = 0;
-
     // Publish perf stats
     g_TotalTimeInGC = GCToOSInterface::QueryPerformanceCounter();
-
-#ifdef MULTIPLE_HEAPS
-    int hn = 0;
-    for (hn = 0; hn < gc_heap::n_heaps; hn++)
-    {
-        hp = gc_heap::g_heaps [hn];
-
-        allocation_0 +=
-            dd_desired_allocation (hp->dynamic_data_of (0))-
-            dd_new_allocation (hp->dynamic_data_of (0));
-        allocation_3 +=
-            dd_desired_allocation (hp->dynamic_data_of (max_generation+1))-
-            dd_new_allocation (hp->dynamic_data_of (max_generation+1));
-    }
-#else
-    allocation_0 =
-        dd_desired_allocation (hp->dynamic_data_of (0))-
-        dd_new_allocation (hp->dynamic_data_of (0));
-    allocation_3 =
-        dd_desired_allocation (hp->dynamic_data_of (max_generation+1))-
-        dd_new_allocation (hp->dynamic_data_of (max_generation+1));
-
-#endif //MULTIPLE_HEAPS
 
 #ifdef MULTIPLE_HEAPS
         //take the first heap....
@@ -132,7 +106,7 @@ void GCHeap::UpdatePostGCCounters()
 #endif //FEATURE_REDHAWK
 
     // per generation calculation.
-    for (int gen_index = 0; gen_index <= (max_generation+1); gen_index++)
+    for (int gen_index = 0; gen_index < total_generation_count; gen_index++)
     {
 #ifdef MULTIPLE_HEAPS
         int hn = 0;
@@ -157,7 +131,7 @@ void GCHeap::UpdatePostGCCounters()
                     g_GenerationPromotedSizes[gen_index] += dd_promoted_size (dd);
                 }
 
-                if ((gen_index == (max_generation+1)) && (condemned_gen == max_generation))
+                if ((gen_index == loh_generation) && (condemned_gen == max_generation))
                 {
                     g_GenerationPromotedSizes[gen_index] += dd_promoted_size (dd);
                 }
@@ -193,11 +167,12 @@ void GCHeap::UpdatePostGCCounters()
         g_GenerationSizes[3], g_GenerationPromotedSizes[3]));
 #endif //SIMPLE_DPRINTF
 
-    FIRE_EVENT(GCHeapStats_V1,
+    FIRE_EVENT(GCHeapStats_V2,
         g_GenerationSizes[0], g_GenerationPromotedSizes[0],
         g_GenerationSizes[1], g_GenerationPromotedSizes[1],
         g_GenerationSizes[2], g_GenerationPromotedSizes[2],
         g_GenerationSizes[3], g_GenerationPromotedSizes[3],
+        g_GenerationSizes[4], g_GenerationPromotedSizes[4],
         promoted_finalization_mem,
         GetFinalizablePromotedCount(),
         static_cast<uint32_t>(total_num_pinned_objects),
@@ -352,7 +327,22 @@ bool GCHeap::IsConcurrentGCInProgress()
 #ifdef FEATURE_EVENT_TRACE
 void gc_heap::fire_etw_allocation_event (size_t allocation_amount, int gen_number, uint8_t* object_address)
 {
-    gc_etw_alloc_kind kind = gen_number == 0 ? gc_etw_alloc_soh : gc_etw_alloc_loh;
+    gc_etw_alloc_kind kind;
+    switch (gen_number)
+    {
+    case 0:
+        kind = gc_etw_alloc_soh;
+        break;
+    case 3:
+        kind = gc_etw_alloc_loh;
+        break;
+    case 4:
+        kind = gc_etw_alloc_poh;
+        break;
+    default:
+        __UNREACHABLE();
+    }
+
     FIRE_EVENT(GCAllocationTick_V3, static_cast<uint64_t>(allocation_amount), kind, heap_number, object_address);
 }
 
@@ -397,17 +387,6 @@ uint32_t gc_heap::background_gc_wait (alloc_wait_reason awr, int time_out_ms)
     return dwRet;
 }
 
-// Wait for background gc to finish sweeping large objects
-void gc_heap::background_gc_wait_lh (alloc_wait_reason awr)
-{
-    dprintf(2, ("Waiting end of background large sweep"));
-    assert (gc_lh_block_event.IsValid());
-    fire_alloc_wait_event_begin (awr);
-    user_thread_wait (&gc_lh_block_event, FALSE);
-    fire_alloc_wait_event_end (awr);
-    dprintf(2, ("Waiting end of background large sweep is done"));
-}
-
 #endif //BACKGROUND_GC
 
 
@@ -438,12 +417,18 @@ void GCHeap::DiagTraceGCSegments()
             FIRE_EVENT(GCCreateSegment_V1, address, size, static_cast<uint32_t>(type));
         }
 
-        // large obj segments
-        for (seg = generation_start_segment (h->generation_of (max_generation+1)); seg != 0; seg = heap_segment_next(seg))
+        // uoh segments
+        for (int i = uoh_start_generation; i < total_generation_count; i++)
         {
-            uint8_t* address = heap_segment_mem (seg);
-            size_t size = heap_segment_reserved (seg) - heap_segment_mem (seg);
-            FIRE_EVENT(GCCreateSegment_V1, address, size, static_cast<uint32_t>(gc_etw_segment_large_object_heap));
+            for (seg = generation_start_segment (h->generation_of (i)); seg != 0; seg = heap_segment_next(seg))
+            {
+                uint8_t* address = heap_segment_mem (seg);
+                size_t size = heap_segment_reserved (seg) - heap_segment_mem (seg);
+                gc_etw_segment_type segment_type = (i == loh_generation) ?
+                    gc_etw_segment_large_object_heap :
+                    gc_etw_segment_pinned_object_heap;
+                FIRE_EVENT(GCCreateSegment_V1, address, size, static_cast<uint32_t>(segment_type));
+            }
         }
     }
 #endif // FEATURE_EVENT_TRACE

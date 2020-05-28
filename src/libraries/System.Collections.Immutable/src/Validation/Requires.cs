@@ -22,7 +22,7 @@ namespace System.Collections.Immutable
         /// <param name="parameterName">The name of the parameter to include in any thrown exception.</param>
         /// <exception cref="ArgumentNullException">Thrown if <paramref name="value"/> is <c>null</c></exception>
         [DebuggerStepThrough]
-        public static void NotNull<T>([ValidatedNotNull]T value, string parameterName)
+        public static void NotNull<T>([ValidatedNotNull]T value, string? parameterName)
             where T : class // ensures value-types aren't passed to a null checking method
         {
             if (value == null)
@@ -40,7 +40,7 @@ namespace System.Collections.Immutable
         /// <returns>The value of the parameter.</returns>
         /// <exception cref="ArgumentNullException">Thrown if <paramref name="value"/> is <c>null</c></exception>
         [DebuggerStepThrough]
-        public static T NotNullPassthrough<T>([ValidatedNotNull]T value, string parameterName)
+        public static T NotNullPassthrough<T>([ValidatedNotNull]T value, string? parameterName)
             where T : class // ensures value-types aren't passed to a null checking method
         {
             NotNull(value, parameterName);
@@ -59,7 +59,7 @@ namespace System.Collections.Immutable
         /// may or may not be a class, but certainly cannot be null.
         /// </remarks>
         [DebuggerStepThrough]
-        public static void NotNullAllowStructs<T>([ValidatedNotNull]T value, string parameterName)
+        public static void NotNullAllowStructs<T>([ValidatedNotNull]T value, string? parameterName)
         {
             if (null == value)
             {
@@ -72,7 +72,7 @@ namespace System.Collections.Immutable
         /// </summary>
         /// <param name="parameterName">The name of the parameter that was null.</param>
         [DebuggerStepThrough]
-        private static void FailArgumentNullException(string parameterName)
+        private static void FailArgumentNullException(string? parameterName)
         {
             // Separating out this throwing operation helps with inlining of the caller
             throw new ArgumentNullException(parameterName);
@@ -82,7 +82,7 @@ namespace System.Collections.Immutable
         /// Throws an <see cref="ArgumentOutOfRangeException"/> if a condition does not evaluate to true.
         /// </summary>
         [DebuggerStepThrough]
-        public static void Range(bool condition, string parameterName, string message = null)
+        public static void Range(bool condition, string? parameterName, string? message = null)
         {
             if (!condition)
             {
@@ -94,7 +94,7 @@ namespace System.Collections.Immutable
         /// Throws an <see cref="ArgumentOutOfRangeException"/>.
         /// </summary>
         [DebuggerStepThrough]
-        public static void FailRange(string parameterName, string message = null)
+        public static void FailRange(string? parameterName, string? message = null)
         {
             if (string.IsNullOrEmpty(message))
             {
@@ -110,7 +110,7 @@ namespace System.Collections.Immutable
         /// Throws an <see cref="ArgumentException"/> if a condition does not evaluate to true.
         /// </summary>
         [DebuggerStepThrough]
-        public static void Argument(bool condition, string parameterName, string message)
+        public static void Argument(bool condition, string? parameterName, string? message)
         {
             if (!condition)
             {
@@ -121,7 +121,6 @@ namespace System.Collections.Immutable
         /// <summary>
         /// Throws an <see cref="ArgumentException"/> if a condition does not evaluate to true.
         /// </summary>
-        [SuppressMessage("Microsoft.Usage", "CA2208:InstantiateArgumentExceptionsCorrectly")]
         [DebuggerStepThrough]
         public static void Argument(bool condition)
         {
@@ -142,7 +141,7 @@ namespace System.Collections.Immutable
         {
             // separating out this throwing helps with inlining of the caller, especially
             // due to the retrieval of the type's name
-            throw new ObjectDisposedException(disposed.GetType().FullName);
+            throw new ObjectDisposedException(disposed!.GetType().FullName);
         }
     }
 }

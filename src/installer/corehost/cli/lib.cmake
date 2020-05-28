@@ -5,6 +5,7 @@
 project(${DOTNET_PROJECT_NAME})
 
 include(${CMAKE_CURRENT_LIST_DIR}/common.cmake)
+include(${CMAKE_CURRENT_LIST_DIR}/hostmisc/hostmisc.cmake)
 
 add_definitions(-D_NO_ASYNCRTIMP)
 add_definitions(-D_NO_PPLXIMP)

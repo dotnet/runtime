@@ -29,9 +29,9 @@ internal partial class Interop
         public static extern bool CryptSignHash(
             SafeHashHandle hHash,
             KeySpec dwKeySpec,
-            string szDescription,
+            string? szDescription,
             CryptSignAndVerifyHashFlags dwFlags,
-            [Out] byte[] pbSignature,
+            [Out] byte[]? pbSignature,
             [In, Out] ref int pdwSigLen);
 
         [DllImport(Libraries.Advapi32, CharSet = CharSet.Unicode, SetLastError = true, EntryPoint = "CryptVerifySignatureW")]
@@ -40,7 +40,7 @@ internal partial class Interop
             byte[] pbSignature,
             int dwSigLen,
             SafeKeyHandle hPubKey,
-            string szDescription,
+            string? szDescription,
             CryptSignAndVerifyHashFlags dwFlags);
     }
 }

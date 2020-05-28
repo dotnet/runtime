@@ -11,8 +11,6 @@ using System.IO;
 using System.Text;
 using System.Threading;
 using System.Security;
-using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 
 using Internal.IO;
 
@@ -24,6 +22,7 @@ namespace System
         private const string ZoneTabFileName = "zone.tab";
         private const string TimeZoneEnvironmentVariable = "TZ";
         private const string TimeZoneDirectoryEnvironmentVariable = "TZDIR";
+        private const string FallbackCultureName = "en-US";
 
         private TimeZoneInfo(byte[] data, string id, bool dstDisabled)
         {
@@ -80,9 +79,10 @@ namespace System
             }
             _displayName = _standardDisplayName;
 
-            GetDisplayName(Interop.Globalization.TimeZoneDisplayNameType.Generic, ref _displayName);
-            GetDisplayName(Interop.Globalization.TimeZoneDisplayNameType.Standard, ref _standardDisplayName);
-            GetDisplayName(Interop.Globalization.TimeZoneDisplayNameType.DaylightSavings, ref _daylightDisplayName);
+            string uiCulture = CultureInfo.CurrentUICulture.Name.Length == 0 ? FallbackCultureName : CultureInfo.CurrentUICulture.Name; // ICU doesn't work nicely with Invariant
+            GetDisplayName(Interop.Globalization.TimeZoneDisplayNameType.Generic, uiCulture, ref _displayName);
+            GetDisplayName(Interop.Globalization.TimeZoneDisplayNameType.Standard, uiCulture, ref _standardDisplayName);
+            GetDisplayName(Interop.Globalization.TimeZoneDisplayNameType.DaylightSavings, uiCulture, ref _daylightDisplayName);
 
             if (_standardDisplayName == _displayName)
             {
@@ -108,7 +108,7 @@ namespace System
             ValidateTimeZoneInfo(_id, _baseUtcOffset, _adjustmentRules, out _supportsDaylightSavingTime);
         }
 
-        private unsafe void GetDisplayName(Interop.Globalization.TimeZoneDisplayNameType nameType, ref string? displayName)
+        private unsafe void GetDisplayName(Interop.Globalization.TimeZoneDisplayNameType nameType, string uiCulture, ref string? displayName)
         {
             if (GlobalizationMode.Invariant)
             {
@@ -125,10 +125,27 @@ namespace System
                         return Interop.Globalization.GetTimeZoneDisplayName(locale, id, type, bufferPtr, buffer.Length);
                     }
                 },
-                CultureInfo.CurrentUICulture.Name,
+                uiCulture,
                 _id,
                 nameType,
                 out timeZoneDisplayName);
+
+            if (!result && uiCulture != FallbackCultureName)
+            {
+                // Try to fallback using FallbackCultureName just in case we can make it work.
+                result = Interop.CallStringMethod(
+                    (buffer, locale, id, type) =>
+                    {
+                        fixed (char* bufferPtr = buffer)
+                        {
+                            return Interop.Globalization.GetTimeZoneDisplayName(locale, id, type, bufferPtr, buffer.Length);
+                        }
+                    },
+                    FallbackCultureName,
+                    _id,
+                    nameType,
+                    out timeZoneDisplayName);
+            }
 
             // If there is an unknown error, don't set the displayName field.
             // It will be set to the abbreviation that was read out of the tzfile.
@@ -156,20 +173,20 @@ namespace System
 
             for (int i = 0; i < _adjustmentRules.Length; i++)
             {
-                var rule = _adjustmentRules[i];
-                var start = rule.DateStart.Kind == DateTimeKind.Utc ?
+                AdjustmentRule? rule = _adjustmentRules[i];
+                DateTime start = rule.DateStart.Kind == DateTimeKind.Utc ?
                             // At the daylight start we didn't start the daylight saving yet then we convert to Local time
                             // by adding the _baseUtcOffset to the UTC time
                             new DateTime(rule.DateStart.Ticks + _baseUtcOffset.Ticks, DateTimeKind.Unspecified) :
                             rule.DateStart;
-                var end = rule.DateEnd.Kind == DateTimeKind.Utc ?
+                DateTime end = rule.DateEnd.Kind == DateTimeKind.Utc ?
                             // At the daylight saving end, the UTC time is mapped to local time which is already shifted by the daylight delta
                             // we calculate the local time by adding _baseUtcOffset + DaylightDelta to the UTC time
                             new DateTime(rule.DateEnd.Ticks + _baseUtcOffset.Ticks + rule.DaylightDelta.Ticks, DateTimeKind.Unspecified) :
                             rule.DateEnd;
 
-                var startTransition = TimeZoneInfo.TransitionTime.CreateFixedDateRule(new DateTime(1, 1, 1, start.Hour, start.Minute, start.Second), start.Month, start.Day);
-                var endTransition = TimeZoneInfo.TransitionTime.CreateFixedDateRule(new DateTime(1, 1, 1, end.Hour, end.Minute, end.Second), end.Month, end.Day);
+                TransitionTime startTransition = TimeZoneInfo.TransitionTime.CreateFixedDateRule(new DateTime(1, 1, 1, start.Hour, start.Minute, start.Second), start.Month, start.Day);
+                TransitionTime endTransition = TimeZoneInfo.TransitionTime.CreateFixedDateRule(new DateTime(1, 1, 1, end.Hour, end.Minute, end.Second), end.Month, end.Day);
 
                 rules[i] = TimeZoneInfo.AdjustmentRule.CreateAdjustmentRule(start.Date, end.Date, rule.DaylightDelta, startTransition, endTransition);
             }
@@ -919,8 +936,8 @@ namespace System
                         DateTime.MinValue,
                         endTransitionDate.AddTicks(-1),
                         daylightDelta,
-                        default(TransitionTime),
-                        default(TransitionTime),
+                        default,
+                        default,
                         baseUtcDelta,
                         noDaylightTransitions: true);
 
@@ -955,7 +972,7 @@ namespace System
                 }
                 else
                 {
-                    dstStart = default(TransitionTime);
+                    dstStart = default;
                 }
 
                 AdjustmentRule r = AdjustmentRule.CreateAdjustmentRule(
@@ -963,7 +980,7 @@ namespace System
                         endTransitionDate.AddTicks(-1),
                         daylightDelta,
                         dstStart,
-                        default(TransitionTime),
+                        default,
                         baseUtcDelta,
                         noDaylightTransitions: true);
 
@@ -981,21 +998,11 @@ namespace System
                 // NOTE: index == dts.Length
                 DateTime startTransitionDate = dts[index - 1];
 
-                if (!string.IsNullOrEmpty(futureTransitionsPosixFormat))
-                {
-                    AdjustmentRule? r = TZif_CreateAdjustmentRuleForPosixFormat(futureTransitionsPosixFormat, startTransitionDate, timeZoneBaseUtcOffset);
+                AdjustmentRule? r = !string.IsNullOrEmpty(futureTransitionsPosixFormat) ?
+                    TZif_CreateAdjustmentRuleForPosixFormat(futureTransitionsPosixFormat, startTransitionDate, timeZoneBaseUtcOffset) :
+                    null;
 
-                    if (r != null)
-                    {
-                        if (!IsValidAdjustmentRuleOffest(timeZoneBaseUtcOffset, r))
-                        {
-                            NormalizeAdjustmentRuleOffset(timeZoneBaseUtcOffset, ref r);
-                        }
-
-                        rulesList.Add(r);
-                    }
-                }
-                else
+                if (r == null)
                 {
                     // just use the last transition as the rule which will be used until the end of time
 
@@ -1004,22 +1011,22 @@ namespace System
                     TimeSpan daylightDelta = transitionType.IsDst ? transitionOffset : TimeSpan.Zero;
                     TimeSpan baseUtcDelta = transitionType.IsDst ? TimeSpan.Zero : transitionOffset;
 
-                    AdjustmentRule r = AdjustmentRule.CreateAdjustmentRule(
+                    r = AdjustmentRule.CreateAdjustmentRule(
                         startTransitionDate,
                         DateTime.MaxValue,
                         daylightDelta,
-                        default(TransitionTime),
-                        default(TransitionTime),
+                        default,
+                        default,
                         baseUtcDelta,
                         noDaylightTransitions: true);
-
-                    if (!IsValidAdjustmentRuleOffest(timeZoneBaseUtcOffset, r))
-                    {
-                        NormalizeAdjustmentRuleOffset(timeZoneBaseUtcOffset, ref r);
-                    }
-
-                    rulesList.Add(r);
                 }
+
+                if (!IsValidAdjustmentRuleOffest(timeZoneBaseUtcOffset, r))
+                {
+                    NormalizeAdjustmentRuleOffset(timeZoneBaseUtcOffset, ref r);
+                }
+
+                rulesList.Add(r);
             }
 
             index++;
@@ -1111,15 +1118,20 @@ namespace System
                             daylightSavingsTimeSpan = TZif_CalculateTransitionOffsetFromBase(daylightSavingsTimeSpan, baseOffset);
                         }
 
-                        TransitionTime dstStart = TZif_CreateTransitionTimeFromPosixRule(start, startTime);
-                        TransitionTime dstEnd = TZif_CreateTransitionTimeFromPosixRule(end, endTime);
+                        TransitionTime? dstStart = TZif_CreateTransitionTimeFromPosixRule(start, startTime);
+                        TransitionTime? dstEnd = TZif_CreateTransitionTimeFromPosixRule(end, endTime);
+
+                        if (dstStart == null || dstEnd == null)
+                        {
+                            return null;
+                        }
 
                         return AdjustmentRule.CreateAdjustmentRule(
                             startTransitionDate,
                             DateTime.MaxValue,
                             daylightSavingsTimeSpan,
-                            dstStart,
-                            dstEnd,
+                            dstStart.GetValueOrDefault(),
+                            dstEnd.GetValueOrDefault(),
                             baseOffset,
                             noDaylightTransitions: false);
                     }
@@ -1130,8 +1142,8 @@ namespace System
                                startTransitionDate,
                                DateTime.MaxValue,
                                TimeSpan.Zero,
-                               default(TransitionTime),
-                               default(TransitionTime),
+                               default,
+                               default,
                                baseOffset,
                                noDaylightTransitions: true);
                     }
@@ -1185,7 +1197,7 @@ namespace System
             TimeSpan? timeOffset = TZif_ParseOffsetString(time);
             if (timeOffset.HasValue)
             {
-                // This logic isn't correct and can't be corrected until https://github.com/dotnet/corefx/issues/2618 is fixed.
+                // This logic isn't correct and can't be corrected until https://github.com/dotnet/runtime/issues/14966 is fixed.
                 // Some time zones use time values like, "26", "144", or "-2".
                 // This allows the week to sometimes be week 4 and sometimes week 5 in the month.
                 // For now, strip off any 'days' in the offset, and just get the time of day correct
@@ -1210,11 +1222,11 @@ namespace System
             return timeOfDay;
         }
 
-        private static TransitionTime TZif_CreateTransitionTimeFromPosixRule(ReadOnlySpan<char> date, ReadOnlySpan<char> time)
+        private static TransitionTime? TZif_CreateTransitionTimeFromPosixRule(ReadOnlySpan<char> date, ReadOnlySpan<char> time)
         {
             if (date.IsEmpty)
             {
-                return default;
+                return null;
             }
 
             if (date[0] == 'M')
@@ -1241,7 +1253,7 @@ namespace System
                     //
                     // This specifies the Julian day, with n between 0 and 365. February 29 is counted in leap years.
                     //
-                    // n would be a relative number from the begining of the year. which should handle if the
+                    // n would be a relative number from the beginning of the year. which should handle if the
                     // the year is a leap year or not.
                     //
                     // In leap year, n would be counted as:
@@ -1260,7 +1272,8 @@ namespace System
                     //
                     // If we need to support n format, we'll have to have a floating adjustment rule support this case.
 
-                    throw new InvalidTimeZoneException(SR.InvalidTimeZone_NJulianDayNotSupported);
+                    // Since we can't support this rule, return null to indicate to skip the POSIX rule.
+                    return null;
                 }
 
                 // Julian day
@@ -1344,7 +1357,7 @@ namespace System
 
             month = 0;
             week = 0;
-            dayOfWeek = default(DayOfWeek);
+            dayOfWeek = default;
             return false;
         }
 

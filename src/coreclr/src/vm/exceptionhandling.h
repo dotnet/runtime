@@ -13,10 +13,6 @@
 #include "eexcp.h"
 #include "exstatecommon.h"
 
-#if defined(_TARGET_ARM_) || defined(_TARGET_X86_)
-#define USE_PER_FRAME_PINVOKE_INIT
-#endif // _TARGET_ARM_ || _TARGET_X86_
-
 // This address lies in the NULL pointer partition of the process memory.
 // Accessing it will result in AV.
 #define INVALID_RESUME_ADDRESS 0x000000000000bad0
@@ -69,15 +65,10 @@ public:
         m_StackTraceInfo.Init();
 #endif //  DACCESS_COMPILE
 
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
         // Init the WatsonBucketTracker
         m_WatsonBucketTracker.Init();
-#endif // !FEATURE_PAL
-
-#ifdef FEATURE_CORRUPTING_EXCEPTIONS
-        // Initialize the default exception severity to NotCorrupting
-        m_CorruptionSeverity = NotSet;
-#endif // FEATURE_CORRUPTING_EXCEPTIONS
+#endif // !TARGET_UNIX
 
         // By default, mark the tracker as not having delivered the first
         // chance exception notification
@@ -99,7 +90,7 @@ public:
         m_pLimitFrame = NULL;
         m_csfEHClauseOfCollapsedTracker.Clear();
 
-#ifdef FEATURE_PAL
+#ifdef TARGET_UNIX
         m_fOwnsExceptionPointers = FALSE;
 #endif
     }
@@ -129,15 +120,10 @@ public:
 
         m_StackTraceInfo.Init();
 
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
         // Init the WatsonBucketTracker
         m_WatsonBucketTracker.Init();
-#endif // !FEATURE_PAL
-
-#ifdef FEATURE_CORRUPTING_EXCEPTIONS
-        // Initialize the default exception severity to NotCorrupting
-        m_CorruptionSeverity = NotSet;
-#endif // FEATURE_CORRUPTING_EXCEPTIONS
+#endif // !TARGET_UNIX
 
         // By default, mark the tracker as not having delivered the first
         // chance exception notification
@@ -158,7 +144,7 @@ public:
         m_pInitialExplicitFrame = NULL;
         m_csfEHClauseOfCollapsedTracker.Clear();
 
-#ifdef FEATURE_PAL
+#ifdef TARGET_UNIX
         m_fOwnsExceptionPointers = FALSE;
 #endif
     }
@@ -195,10 +181,8 @@ public:
         DWORD dwExceptionFlags,
         StackFrame sf,
         Thread* pThread,
-        StackTraceState STState
-#ifdef USE_PER_FRAME_PINVOKE_INIT
-        , PVOID pICFSetAsLimitFrame
-#endif // USE_PER_FRAME_PINVOKE_INIT
+        StackTraceState STState,
+        PVOID pICFSetAsLimitFrame
         );
 
     CLRUnwindStatus ProcessExplicitFrame(
@@ -299,7 +283,7 @@ public:
         return m_pInitialExplicitFrame;
     }
 
-#ifdef FEATURE_PAL
+#ifdef TARGET_UNIX
     // Reset the range of explicit frames, the limit frame and the scanned
     // stack range before unwinding a sequence of native frames. These frames
     // will be in the unwound part of the stack.
@@ -309,7 +293,7 @@ public:
         m_pLimitFrame = NULL;
         m_ScannedStackRange.Reset();
     }
-#endif // FEATURE_PAL
+#endif // TARGET_UNIX
 
     // Determines if we have unwound to the specified parent method frame.
     // Currently this is only used for funclet skipping.
@@ -383,7 +367,7 @@ public:
 
     bool IsStackOverflowException();
 
-#if defined(FEATURE_PAL) && !defined(CROSS_COMPILE)
+#if defined(TARGET_UNIX) && !defined(CROSS_COMPILE)
     void TakeExceptionPointersOwnership(PAL_SEHException* ex)
     {
         _ASSERTE(ex->GetExceptionRecord() == m_ptrs.ExceptionRecord);
@@ -391,7 +375,7 @@ public:
         ex->Clear();
         m_fOwnsExceptionPointers = TRUE;
     }
-#endif // FEATURE_PAL && !CROSS_COMPILE
+#endif // TARGET_UNIX && !CROSS_COMPILE
 
 private:
     DWORD_PTR
@@ -581,7 +565,7 @@ public:
         return m_EnclosingClauseInfoOfCollapsedTracker.GetEnclosingClauseCallerSP();
     }
 
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
 private:
     EHWatsonBucketTracker m_WatsonBucketTracker;
 public:
@@ -590,26 +574,7 @@ public:
         LIMITED_METHOD_CONTRACT;
         return PTR_EHWatsonBucketTracker(PTR_HOST_MEMBER_TADDR(ExceptionTracker, this, m_WatsonBucketTracker));
     }
-#endif // !FEATURE_PAL
-
-#ifdef FEATURE_CORRUPTING_EXCEPTIONS
-private:
-    CorruptionSeverity      m_CorruptionSeverity;
-public:
-    inline CorruptionSeverity GetCorruptionSeverity()
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        return (CorruptionSeverity)GET_CORRUPTION_SEVERITY(m_CorruptionSeverity);
-    }
-
-    inline void SetCorruptionSeverity(CorruptionSeverity severityToSet)
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        m_CorruptionSeverity = severityToSet;
-    }
-#endif // FEATURE_CORRUPTING_EXCEPTIONS
+#endif // !TARGET_UNIX
 
 private:
     BOOL                    m_fDeliveredFirstChanceNotification;
@@ -712,7 +677,7 @@ private: ;
 
     StackRange              m_ScannedStackRange;
     DAC_EXCEPTION_POINTERS  m_ptrs;
-#ifdef FEATURE_PAL
+#ifdef TARGET_UNIX
     BOOL                    m_fOwnsExceptionPointers;
 #endif
     OBJECTHANDLE            m_hThrowable;

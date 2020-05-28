@@ -10,16 +10,6 @@
         "CommonTypes": [ ]
     },
     {
-        "Name": "Microsoft.NETCore.Runtime.CoreCLR",
-        "Description": "The .NET Core runtime, called CoreCLR, and the base library, called System.Private.CoreLib. It includes the garbage collector, JIT compiler, base .NET data types and many low-level classes.",
-        "CommonTypes": [ ]
-    },
-    {
-        "Name": "Microsoft.TargetingPack.Private.CoreCLR",
-        "Description": "Contains a private targeting pack which contains only the CoreCLR System.Private.CoreLib reference assembly. Used for producing platform specific libraries such as facades.",
-        "CommonTypes": [ ]
-    },
-    {
         "Name": "Microsoft.NETCore.ILAsm",
         "Description": "The .NET IL Assembler.",
         "CommonTypes": [ ]
@@ -30,11 +20,6 @@
         "CommonTypes": [ ]
     },
     {
-        "Name": "Microsoft.NETCore.Jit",
-        "Description": "The .NET JIT compiler.",
-        "CommonTypes": [ ]
-    },
-    {
         "Name": "Microsoft.NETCore.TestHost",
         "Description": "CoreCLR application host for test applications",
         "CommonTypes": [ ]
@@ -42,16 +27,6 @@
     {
         "Name": "Microsoft.NET.Sdk.IL",
         "Description": "Provides support for building IL projects.",
-        "CommonTypes": [ ]
-    },
-    {
-        "Name": "Microsoft.NETCore.Native",
-        "Description": "Native shims for .NET Core runtime",
-        "CommonTypes": [ ]
-    },
-    {
-        "Name": "Microsoft.NETCore.Crossgen2",
-        "Description": "The .NET Crossgen2 compiler.",
         "CommonTypes": [ ]
     }
 ]

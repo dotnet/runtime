@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Buffers.Binary;
 using System.Diagnostics;
 using System.IO;
 using Internal.NativeCrypto;
@@ -13,8 +14,8 @@ namespace System.Security.Cryptography
         private int _keySize;
         private readonly CspParameters _parameters;
         private readonly bool _randomKeyContainer;
-        private SafeKeyHandle _safeKeyHandle;
-        private SafeProvHandle _safeProvHandle;
+        private SafeKeyHandle? _safeKeyHandle;
+        private SafeProvHandle? _safeProvHandle;
         private readonly SHA1 _sha1;
         private static volatile CspProviderFlags s_useMachineKeyStore = 0;
         private bool _disposed;
@@ -49,7 +50,7 @@ namespace System.Security.Cryptography
         /// for the cryptographic service provider (CSP).
         /// </summary>
         /// <param name="parameters">The parameters for the CSP.</param>
-        public DSACryptoServiceProvider(CspParameters parameters)
+        public DSACryptoServiceProvider(CspParameters? parameters)
             : this(0, parameters)
         {
         }
@@ -61,7 +62,7 @@ namespace System.Security.Cryptography
         /// <param name="dwKeySize">The size of the key for the cryptographic algorithm in bits.</param>
         /// <param name="parameters">The parameters for the CSP.</param>
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA5350", Justification = "SHA1 is required by the FIPS 186-2 DSA spec.")]
-        public DSACryptoServiceProvider(int dwKeySize, CspParameters parameters)
+        public DSACryptoServiceProvider(int dwKeySize, CspParameters? parameters)
         {
             if (dwKeySize < 0)
                 throw new ArgumentOutOfRangeException(nameof(dwKeySize), SR.ArgumentOutOfRange_NeedNonNegNum);
@@ -114,7 +115,7 @@ namespace System.Security.Cryptography
             {
                 lock (_parameters)
                 {
-                    SafeProvHandle current = _safeProvHandle;
+                    SafeProvHandle? current = _safeProvHandle;
 
                     if (ReferenceEquals(value, current))
                     {
@@ -123,7 +124,7 @@ namespace System.Security.Cryptography
 
                     if (current != null)
                     {
-                        SafeKeyHandle keyHandle = _safeKeyHandle;
+                        SafeKeyHandle? keyHandle = _safeKeyHandle;
                         _safeKeyHandle = null;
                         keyHandle?.Dispose();
                         current.Dispose();
@@ -166,7 +167,7 @@ namespace System.Security.Cryptography
             {
                 lock (_parameters)
                 {
-                    SafeKeyHandle current = _safeKeyHandle;
+                    SafeKeyHandle? current = _safeKeyHandle;
 
                     if (ReferenceEquals(value, current))
                     {
@@ -186,7 +187,7 @@ namespace System.Security.Cryptography
         {
             get
             {
-                // Desktop compat: Read the SafeKeyHandle property to force the key to load,
+                // .NET Framework compat: Read the SafeKeyHandle property to force the key to load,
                 // because it might throw here.
                 SafeKeyHandle localHandle = SafeKeyHandle;
                 Debug.Assert(localHandle != null);
@@ -200,7 +201,7 @@ namespace System.Security.Cryptography
             get
             {
                 byte[] keySize = CapiHelper.GetKeyParameter(SafeKeyHandle, Constants.CLR_KEYLEN);
-                _keySize = (keySize[0] | (keySize[1] << 8) | (keySize[2] << 16) | (keySize[3] << 24));
+                _keySize = BinaryPrimitives.ReadInt32LittleEndian(keySize);
                 return _keySize;
             }
         }
@@ -263,7 +264,7 @@ namespace System.Security.Cryptography
             }
         }
 
-        public override string KeyExchangeAlgorithm => null;
+        public override string? KeyExchangeAlgorithm => null;
         public override string SignatureAlgorithm => "http://www.w3.org/2000/09/xmldsig#dsa-sha1";
 
         protected override void Dispose(bool disposing)
@@ -297,7 +298,7 @@ namespace System.Security.Cryptography
         public override DSAParameters ExportParameters(bool includePrivateParameters)
         {
             byte[] cspBlob = ExportCspBlob(includePrivateParameters);
-            byte[] cspPublicBlob = null;
+            byte[]? cspPublicBlob = null;
 
             if (includePrivateParameters)
             {
@@ -473,7 +474,7 @@ namespace System.Security.Cryptography
         /// <param name="rgbHash">The hash value of the data to be signed.</param>
         /// <param name="str">The name of the hash algorithm used to create the hash value of the data.</param>
         /// <returns>The DSA signature for the specified hash value.</returns>
-        public byte[] SignHash(byte[] rgbHash, string str)
+        public byte[] SignHash(byte[] rgbHash, string? str)
         {
             if (rgbHash == null)
                 throw new ArgumentNullException(nameof(rgbHash));
@@ -501,7 +502,7 @@ namespace System.Security.Cryptography
         /// <param name="str">The name of the hash algorithm used to create the hash value of the data.</param>
         /// <param name="rgbSignature">The signature data to be verified.</param>
         /// <returns>true if the signature verifies as valid; otherwise, false.</returns>
-        public bool VerifyHash(byte[] rgbHash, string str, byte[] rgbSignature)
+        public bool VerifyHash(byte[] rgbHash, string? str, byte[] rgbSignature)
         {
             if (rgbHash == null)
                 throw new ArgumentNullException(nameof(rgbHash));

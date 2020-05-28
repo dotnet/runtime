@@ -202,7 +202,7 @@ namespace System.Linq.Parallel
                 while (_source.MoveNext(ref currentElement!, ref currentKey))
                 {
                     if ((i++ & CancellationState.POLL_INTERVAL) == 0)
-                        CancellationState.ThrowIfCanceled(_cancellationToken);
+                        _cancellationToken.ThrowIfCancellationRequested();;
 
                     if (_resultFoundFlag.Value)
                     {

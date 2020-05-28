@@ -44,7 +44,7 @@ namespace System.Reflection.Metadata.Tests
         [Fact]
         public unsafe void EncodingLightUpHasSucceededAndTestsStillPassWithPortableFallbackAsWell()
         {
-            Assert.True(EncodingHelper.TestOnly_LightUpEnabled); // tests run on desktop only right now.
+            Assert.True(EncodingHelper.TestOnly_LightUpEnabled); // tests run on .NET Framework only right now.
 
             try
             {

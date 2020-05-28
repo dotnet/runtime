@@ -13,37 +13,37 @@ namespace System.Net.Test.Common
         {
             private static readonly string DefaultHttp2AzureServer = "corefx-net-http2.azurewebsites.net";
 
-            public static string Host => GetValue("COREFX_HTTPHOST", DefaultAzureServer);
+            public static string Host => GetValue("DOTNET_TEST_HTTPHOST", DefaultAzureServer);
 
-            public static string SecureHost => GetValue("COREFX_SECUREHTTPHOST", DefaultAzureServer);
+            public static string SecureHost => GetValue("DOTNET_TEST_SECUREHTTPHOST", DefaultAzureServer);
 
-            public static string Http2Host => GetValue("COREFX_HTTP2HOST", DefaultHttp2AzureServer);
+            public static string Http2Host => GetValue("DOTNET_TEST_HTTP2HOST", DefaultHttp2AzureServer);
 
             // This server doesn't use HTTP/2 server push (push promise) feature. Some HttpClient implementations
             // don't support servers that use push right now.
-            public static string Http2NoPushHost => GetValue("COREFX_HTTP2NOPUSHHOST", "www.microsoft.com");
+            public static string Http2NoPushHost => GetValue("DOTNET_TEST_HTTP2NOPUSHHOST", "www.microsoft.com");
 
             // Domain server environment.
-            public static string DomainJoinedHttpHost => GetValue("COREFX_DOMAINJOINED_HTTPHOST");
-            public static string DomainJoinedProxyHost => GetValue("COREFX_DOMAINJOINED_PROXYHOST");
-            public static string DomainJoinedProxyPort => GetValue("COREFX_DOMAINJOINED_PROXYPORT");
+            public static string DomainJoinedHttpHost => GetValue("DOTNET_TEST_DOMAINJOINED_HTTPHOST");
+            public static string DomainJoinedProxyHost => GetValue("DOTNET_TEST_DOMAINJOINED_PROXYHOST");
+            public static string DomainJoinedProxyPort => GetValue("DOTNET_TEST_DOMAINJOINED_PROXYPORT");
 
             // Standalone server environment.
-            public static string WindowsServerHttpHost => GetValue("COREFX_WINDOWSSERVER_HTTPHOST");
+            public static string WindowsServerHttpHost => GetValue("DOTNET_TEST_WINDOWSSERVER_HTTPHOST");
 
-            public static string SSLv2RemoteServer => GetValue("COREFX_HTTPHOST_SSL2", "https://www.ssllabs.com:10200/");
-            public static string SSLv3RemoteServer => GetValue("COREFX_HTTPHOST_SSL3", "https://www.ssllabs.com:10300/");
-            public static string TLSv10RemoteServer => GetValue("COREFX_HTTPHOST_TLS10", "https://www.ssllabs.com:10301/");
-            public static string TLSv11RemoteServer => GetValue("COREFX_HTTPHOST_TLS11", "https://www.ssllabs.com:10302/");
-            public static string TLSv12RemoteServer => GetValue("COREFX_HTTPHOST_TLS12", "https://www.ssllabs.com:10303/");
+            public static string SSLv2RemoteServer => GetValue("DOTNET_TEST_HTTPHOST_SSL2", "https://www.ssllabs.com:10200/");
+            public static string SSLv3RemoteServer => GetValue("DOTNET_TEST_HTTPHOST_SSL3", "https://www.ssllabs.com:10300/");
+            public static string TLSv10RemoteServer => GetValue("DOTNET_TEST_HTTPHOST_TLS10", "https://www.ssllabs.com:10301/");
+            public static string TLSv11RemoteServer => GetValue("DOTNET_TEST_HTTPHOST_TLS11", "https://www.ssllabs.com:10302/");
+            public static string TLSv12RemoteServer => GetValue("DOTNET_TEST_HTTPHOST_TLS12", "https://www.ssllabs.com:10303/");
 
-            public static string ExpiredCertRemoteServer => GetValue("COREFX_HTTPHOST_EXPIREDCERT", "https://expired.badssl.com/");
-            public static string WrongHostNameCertRemoteServer => GetValue("COREFX_HTTPHOST_WRONGHOSTNAME", "https://wrong.host.badssl.com/");
-            public static string SelfSignedCertRemoteServer => GetValue("COREFX_HTTPHOST_SELFSIGNEDCERT", "https://self-signed.badssl.com/");
-            public static string RevokedCertRemoteServer => GetValue("COREFX_HTTPHOST_REVOKEDCERT", "https://revoked.badssl.com/");
+            public static string ExpiredCertRemoteServer => GetValue("DOTNET_TEST_HTTPHOST_EXPIREDCERT", "https://expired.badssl.com/");
+            public static string WrongHostNameCertRemoteServer => GetValue("DOTNET_TEST_HTTPHOST_WRONGHOSTNAME", "https://wrong.host.badssl.com/");
+            public static string SelfSignedCertRemoteServer => GetValue("DOTNET_TEST_HTTPHOST_SELFSIGNEDCERT", "https://self-signed.badssl.com/");
+            public static string RevokedCertRemoteServer => GetValue("DOTNET_TEST_HTTPHOST_REVOKEDCERT", "https://revoked.badssl.com/");
 
-            public static string EchoClientCertificateRemoteServer => GetValue("COREFX_HTTPHOST_ECHOCLIENTCERT", "https://corefx-net-tls.azurewebsites.net/EchoClientCertificate.ashx");
-            public static string Http2ForceUnencryptedLoopback => GetValue("COREFX_HTTP2_FORCEUNENCRYPTEDLOOPBACK");
+            public static string EchoClientCertificateRemoteServer => GetValue("DOTNET_TEST_HTTPHOST_ECHOCLIENTCERT", "https://corefx-net-tls.azurewebsites.net/EchoClientCertificate.ashx");
+            public static string Http2ForceUnencryptedLoopback => GetValue("DOTNET_TEST_HTTP2_FORCEUNENCRYPTEDLOOPBACK");
 
             private const string EchoHandler = "Echo.ashx";
             private const string EmptyContentHandler = "EmptyContent.ashx";

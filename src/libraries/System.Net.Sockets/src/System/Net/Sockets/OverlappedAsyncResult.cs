@@ -10,14 +10,14 @@ namespace System.Net.Sockets
     // from the BeginSend, BeginSendTo, BeginReceive, BeginReceiveFrom calls.
     internal partial class OverlappedAsyncResult : BaseOverlappedAsyncResult
     {
-        private Internals.SocketAddress _socketAddress;
+        private Internals.SocketAddress? _socketAddress;
 
-        internal OverlappedAsyncResult(Socket socket, object asyncState, AsyncCallback asyncCallback) :
+        internal OverlappedAsyncResult(Socket socket, object? asyncState, AsyncCallback? asyncCallback) :
             base(socket, asyncState, asyncCallback)
         {
         }
 
-        internal Internals.SocketAddress SocketAddress
+        internal Internals.SocketAddress? SocketAddress
         {
             get { return _socketAddress; }
             set { _socketAddress = value; }
@@ -26,11 +26,11 @@ namespace System.Net.Sockets
 
     internal sealed class OriginalAddressOverlappedAsyncResult : OverlappedAsyncResult
     {
-        internal OriginalAddressOverlappedAsyncResult(Socket socket, object asyncState, AsyncCallback asyncCallback) :
+        internal OriginalAddressOverlappedAsyncResult(Socket socket, object? asyncState, AsyncCallback? asyncCallback) :
             base(socket, asyncState, asyncCallback)
         {
         }
 
-        internal Internals.SocketAddress SocketAddressOriginal { get; set; }
+        internal Internals.SocketAddress? SocketAddressOriginal { get; set; }
     }
 }

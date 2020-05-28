@@ -10,6 +10,6 @@ internal partial class Interop
     internal partial class Kernel32
     {
         [DllImport(Libraries.Kernel32, SetLastError = true)]
-        internal static extern bool IsWow64Process(SafeProcessHandle hProcess, ref bool Wow64Process);
+        internal static extern bool IsWow64Process(SafeProcessHandle hProcess, out bool Wow64Process);
     }
 }

@@ -998,7 +998,7 @@ thread_act_t MachMessage::GetThreadFromState(thread_state_flavor_t eFlavor, thre
     // thread).
     switch (eFlavor)
     {
-#ifdef _X86_
+#ifdef HOST_X86
     case x86_THREAD_STATE:
         targetSP = ((x86_thread_state_t*)pState)->uts.ts32.esp;
         break;
@@ -1006,7 +1006,7 @@ thread_act_t MachMessage::GetThreadFromState(thread_state_flavor_t eFlavor, thre
     case x86_THREAD_STATE32:
         targetSP = ((x86_thread_state32_t*)pState)->esp;
         break;
-#elif defined(_AMD64_)
+#elif defined(HOST_AMD64)
     case x86_THREAD_STATE:
         targetSP = ((x86_thread_state_t*)pState)->uts.ts64.__rsp;
         break;
@@ -1041,9 +1041,9 @@ thread_act_t MachMessage::GetThreadFromState(thread_state_flavor_t eFlavor, thre
             // threads sharing the same stack which is very bad). Conversely the thread we're looking for is
             // suspended in the kernel so its SP should not change. We should always be able to find an exact
             // match as a result.
-#ifdef _X86_
+#ifdef HOST_X86
             if (threadState.uts.ts32.esp == targetSP)
-#elif defined(_AMD64_)
+#elif defined(HOST_AMD64)
             if (threadState.uts.ts64.__rsp == targetSP)
 #else
 #error Unexpected architecture.

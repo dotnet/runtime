@@ -5,7 +5,6 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Diagnostics.Contracts;
 using System.Globalization;
 using System.Linq;
 
@@ -23,7 +22,6 @@ namespace System.Collections.Immutable
         /// <summary>
         /// An empty sorted dictionary with default sort and equality comparers.
         /// </summary>
-        [SuppressMessage("Microsoft.Security", "CA2104:DoNotDeclareReadOnlyMutableReferenceTypes")]
         public static readonly ImmutableSortedDictionary<TKey, TValue> Empty = new ImmutableSortedDictionary<TKey, TValue>();
 
         /// <summary>
@@ -51,7 +49,7 @@ namespace System.Collections.Immutable
         /// </summary>
         /// <param name="keyComparer">The key comparer.</param>
         /// <param name="valueComparer">The value comparer.</param>
-        internal ImmutableSortedDictionary(IComparer<TKey> keyComparer = null, IEqualityComparer<TValue> valueComparer = null)
+        internal ImmutableSortedDictionary(IComparer<TKey>? keyComparer = null, IEqualityComparer<TValue>? valueComparer = null)
         {
             _keyComparer = keyComparer ?? Comparer<TKey>.Default;
             _valueComparer = valueComparer ?? EqualityComparer<TValue>.Default;
@@ -244,7 +242,6 @@ namespace System.Collections.Immutable
         /// This is an O(1) operation and results in only a single (small) memory allocation.
         /// The mutable collection that is returned is *not* thread-safe.
         /// </remarks>
-        [Pure]
         public Builder ToBuilder()
         {
             // We must not cache the instance created here and return it to various callers.
@@ -256,7 +253,6 @@ namespace System.Collections.Immutable
         /// <summary>
         /// See the <see cref="IImmutableDictionary{TKey, TValue}"/> interface.
         /// </summary>
-        [Pure]
         public ImmutableSortedDictionary<TKey, TValue> Add(TKey key, TValue value)
         {
             Requires.NotNullAllowStructs(key, nameof(key));
@@ -268,7 +264,6 @@ namespace System.Collections.Immutable
         /// <summary>
         /// See the <see cref="IImmutableDictionary{TKey, TValue}"/> interface.
         /// </summary>
-        [Pure]
         public ImmutableSortedDictionary<TKey, TValue> SetItem(TKey key, TValue value)
         {
             Requires.NotNullAllowStructs(key, nameof(key));
@@ -282,8 +277,6 @@ namespace System.Collections.Immutable
         /// </summary>
         /// <param name="items">The key=value pairs to set on the map.  Any keys that conflict with existing keys will overwrite the previous values.</param>
         /// <returns>An immutable dictionary.</returns>
-        [SuppressMessage("Microsoft.Design", "CA1006:DoNotNestGenericTypesInMemberSignatures")]
-        [Pure]
         public ImmutableSortedDictionary<TKey, TValue> SetItems(IEnumerable<KeyValuePair<TKey, TValue>> items)
         {
             Requires.NotNull(items, nameof(items));
@@ -294,8 +287,6 @@ namespace System.Collections.Immutable
         /// <summary>
         /// See the <see cref="IImmutableDictionary{TKey, TValue}"/> interface.
         /// </summary>
-        [SuppressMessage("Microsoft.Design", "CA1006:DoNotNestGenericTypesInMemberSignatures")]
-        [Pure]
         public ImmutableSortedDictionary<TKey, TValue> AddRange(IEnumerable<KeyValuePair<TKey, TValue>> items)
         {
             Requires.NotNull(items, nameof(items));
@@ -306,7 +297,6 @@ namespace System.Collections.Immutable
         /// <summary>
         /// See the <see cref="IImmutableDictionary{TKey, TValue}"/> interface.
         /// </summary>
-        [Pure]
         public ImmutableSortedDictionary<TKey, TValue> Remove(TKey value)
         {
             Requires.NotNullAllowStructs(value, nameof(value));
@@ -318,7 +308,6 @@ namespace System.Collections.Immutable
         /// <summary>
         /// See the <see cref="IImmutableDictionary{TKey, TValue}"/> interface.
         /// </summary>
-        [Pure]
         public ImmutableSortedDictionary<TKey, TValue> RemoveRange(IEnumerable<TKey> keys)
         {
             Requires.NotNull(keys, nameof(keys));
@@ -342,8 +331,7 @@ namespace System.Collections.Immutable
         /// <summary>
         /// See the <see cref="IImmutableDictionary{TKey, TValue}"/> interface.
         /// </summary>
-        [Pure]
-        public ImmutableSortedDictionary<TKey, TValue> WithComparers(IComparer<TKey> keyComparer, IEqualityComparer<TValue> valueComparer)
+        public ImmutableSortedDictionary<TKey, TValue> WithComparers(IComparer<TKey>? keyComparer, IEqualityComparer<TValue>? valueComparer)
         {
             if (keyComparer == null)
             {
@@ -381,8 +369,7 @@ namespace System.Collections.Immutable
         /// <summary>
         /// See the <see cref="IImmutableDictionary{TKey, TValue}"/> interface.
         /// </summary>
-        [Pure]
-        public ImmutableSortedDictionary<TKey, TValue> WithComparers(IComparer<TKey> keyComparer)
+        public ImmutableSortedDictionary<TKey, TValue> WithComparers(IComparer<TKey>? keyComparer)
         {
             return this.WithComparers(keyComparer, _valueComparer);
         }
@@ -399,7 +386,6 @@ namespace System.Collections.Immutable
         /// true if the <see cref="ImmutableSortedDictionary{TKey, TValue}"/> contains
         /// an element with the specified value; otherwise, false.
         /// </returns>
-        [Pure]
         public bool ContainsValue(TValue value)
         {
             return _root.ContainsValue(value, _valueComparer);
@@ -484,10 +470,10 @@ namespace System.Collections.Immutable
         /// <summary>
         /// See the <see cref="IImmutableDictionary{TKey, TValue}"/> interface.
         /// </summary>
-        public bool TryGetValue(TKey key, out TValue value)
+        public bool TryGetValue(TKey key, [MaybeNullWhen(false)] out TValue value)
         {
             Requires.NotNullAllowStructs(key, nameof(key));
-            return _root.TryGetValue(key, _keyComparer, out value);
+            return _root.TryGetValue(key, _keyComparer, out value!);
         }
 
         /// <summary>
@@ -623,7 +609,7 @@ namespace System.Collections.Immutable
         /// </summary>
         /// <param name="key">The <see cref="object"/> to use as the key of the element to add.</param>
         /// <param name="value">The <see cref="object"/> to use as the value of the element to add.</param>
-        void IDictionary.Add(object key, object value)
+        void IDictionary.Add(object key, object? value)
         {
             throw new NotSupportedException();
         }
@@ -665,7 +651,7 @@ namespace System.Collections.Immutable
         /// </summary>
         /// <param name="key">The key.</param>
         /// <returns></returns>
-        object IDictionary.this[object key]
+        object? IDictionary.this[object key]
         {
             get { return this[(TKey)key]; }
             set { throw new NotSupportedException(); }
@@ -777,7 +763,6 @@ namespace System.Collections.Immutable
         /// <param name="keyComparer">The key comparer to use for the map.</param>
         /// <param name="valueComparer">The value comparer to use for the map.</param>
         /// <returns>The immutable sorted set instance.</returns>
-        [Pure]
         private static ImmutableSortedDictionary<TKey, TValue> Wrap(Node root, int count, IComparer<TKey> keyComparer, IEqualityComparer<TValue> valueComparer)
         {
             return root.IsEmpty
@@ -792,7 +777,7 @@ namespace System.Collections.Immutable
         /// <param name="sequence">The sequence that may have come from an immutable map.</param>
         /// <param name="other">Receives the concrete <see cref="ImmutableSortedDictionary{TKey, TValue}"/> typed value if one can be found.</param>
         /// <returns><c>true</c> if the cast was successful; <c>false</c> otherwise.</returns>
-        private static bool TryCastToImmutableMap(IEnumerable<KeyValuePair<TKey, TValue>> sequence, out ImmutableSortedDictionary<TKey, TValue> other)
+        private static bool TryCastToImmutableMap(IEnumerable<KeyValuePair<TKey, TValue>> sequence, [NotNullWhen(true)] out ImmutableSortedDictionary<TKey, TValue>? other)
         {
             other = sequence as ImmutableSortedDictionary<TKey, TValue>;
             if (other != null)
@@ -800,8 +785,7 @@ namespace System.Collections.Immutable
                 return true;
             }
 
-            var builder = sequence as Builder;
-            if (builder != null)
+            if (sequence is Builder builder)
             {
                 other = builder.ToImmutable();
                 return true;
@@ -816,7 +800,6 @@ namespace System.Collections.Immutable
         /// <param name="items">The entries to add.</param>
         /// <param name="overwriteOnCollision"><c>true</c> to allow the <paramref name="items"/> sequence to include duplicate keys and let the last one win; <c>false</c> to throw on collisions.</param>
         /// <param name="avoidToSortedMap"><c>true</c> when being called from <see cref="WithComparers(IComparer{TKey}, IEqualityComparer{TValue})"/> to avoid a stack overflow.</param>
-        [Pure]
         private ImmutableSortedDictionary<TKey, TValue> AddRange(IEnumerable<KeyValuePair<TKey, TValue>> items, bool overwriteOnCollision, bool avoidToSortedMap)
         {
             Requires.NotNull(items, nameof(items));
@@ -857,7 +840,6 @@ namespace System.Collections.Immutable
         /// <param name="root">The root node to wrap.</param>
         /// <param name="adjustedCountIfDifferentRoot">The number of elements in the new tree, assuming it's different from the current tree.</param>
         /// <returns>A wrapping collection type for the new tree.</returns>
-        [Pure]
         private ImmutableSortedDictionary<TKey, TValue> Wrap(Node root, int adjustedCountIfDifferentRoot)
         {
             if (_root != root)
@@ -873,7 +855,6 @@ namespace System.Collections.Immutable
         /// <summary>
         /// Efficiently creates a new collection based on the contents of some sequence.
         /// </summary>
-        [Pure]
         private ImmutableSortedDictionary<TKey, TValue> FillFromEmpty(IEnumerable<KeyValuePair<TKey, TValue>> items, bool overwriteOnCollision)
         {
             Debug.Assert(this.IsEmpty);
@@ -881,15 +862,14 @@ namespace System.Collections.Immutable
 
             // If the items being added actually come from an ImmutableSortedSet<T>,
             // and the sort order is equivalent, then there is no value in reconstructing it.
-            ImmutableSortedDictionary<TKey, TValue> other;
+            ImmutableSortedDictionary<TKey, TValue>? other;
             if (TryCastToImmutableMap(items, out other))
             {
                 return other.WithComparers(this.KeyComparer, this.ValueComparer);
             }
 
-            var itemsAsDictionary = items as IDictionary<TKey, TValue>;
             SortedDictionary<TKey, TValue> dictionary;
-            if (itemsAsDictionary != null)
+            if (items is IDictionary<TKey, TValue> itemsAsDictionary)
             {
                 dictionary = new SortedDictionary<TKey, TValue>(itemsAsDictionary, this.KeyComparer);
             }
@@ -905,7 +885,7 @@ namespace System.Collections.Immutable
                     else
                     {
                         TValue value;
-                        if (dictionary.TryGetValue(item.Key, out value))
+                        if (dictionary.TryGetValue(item.Key, out value!))
                         {
                             if (!_valueComparer.Equals(value, item.Value))
                             {

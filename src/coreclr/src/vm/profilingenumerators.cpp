@@ -77,7 +77,7 @@ BOOL ProfilerFunctionEnum::Init(BOOL fWithReJITIDs)
 
         if (fWithReJITIDs)
         {
-            // This guy causes triggering and locking, while the non-rejitid case does not.
+            // This causes triggering and locking, while the non-rejitid case does not.
             element->reJitId = ReJitManager::GetReJitId(pMD, heapIterator.GetMethodCode());
         }
         else

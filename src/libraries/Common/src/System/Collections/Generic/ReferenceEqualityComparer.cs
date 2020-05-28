@@ -2,27 +2,65 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
+
 using System.Runtime.CompilerServices;
 
 namespace System.Collections.Generic
 {
-    internal sealed class ReferenceEqualityComparer<T> : IEqualityComparer<T>
-        where T : class
+    /// <summary>
+    /// An <see cref="IEqualityComparer{Object}"/> that uses reference equality (<see cref="object.ReferenceEquals(object?, object?)"/>)
+    /// instead of value equality (<see cref="object.Equals(object?)"/>) when comparing two object instances.
+    /// </summary>
+    /// <remarks>
+    /// The <see cref="ReferenceEqualityComparer"/> type cannot be instantiated. Instead, use the <see cref="Instance"/> property
+    /// to access the singleton instance of this type.
+    /// </remarks>
+#if SYSTEM_PRIVATE_CORELIB
+    public
+#else
+    internal
+#endif
+    sealed class ReferenceEqualityComparer : IEqualityComparer<object?>, IEqualityComparer
     {
-        internal static readonly ReferenceEqualityComparer<T> Instance = new ReferenceEqualityComparer<T>();
+        private ReferenceEqualityComparer() { }
 
-        private ReferenceEqualityComparer()
-        {
-        }
+        /// <summary>
+        /// Gets the singleton <see cref="ReferenceEqualityComparer"/> instance.
+        /// </summary>
+        public static ReferenceEqualityComparer Instance { get; } = new ReferenceEqualityComparer();
 
-        public bool Equals(T x, T y)
-        {
-            return ReferenceEquals(x, y);
-        }
+        /// <summary>
+        /// Determines whether two object references refer to the same object instance.
+        /// </summary>
+        /// <param name="x">The first object to compare.</param>
+        /// <param name="y">The second object to compare.</param>
+        /// <returns>
+        /// <see langword="true"/> if both <paramref name="x"/> and <paramref name="y"/> refer to the same object instance
+        /// or if both are <see langword="null"/>; otherwise, <see langword="false"/>.
+        /// </returns>
+        /// <remarks>
+        /// This API is a wrapper around <see cref="object.ReferenceEquals(object?, object?)"/>.
+        /// It is not necessarily equivalent to calling <see cref="object.Equals(object?, object?)"/>.
+        /// </remarks>
+        public new bool Equals(object? x, object? y) => ReferenceEquals(x, y);
 
-        public int GetHashCode(T obj)
+        /// <summary>
+        /// Returns a hash code for the specified object. The returned hash code is based on the object
+        /// identity, not on the contents of the object.
+        /// </summary>
+        /// <param name="obj">The object for which to retrieve the hash code.</param>
+        /// <returns>A hash code for the identity of <paramref name="obj"/>.</returns>
+        /// <remarks>
+        /// This API is a wrapper around <see cref="RuntimeHelpers.GetHashCode(object)"/>.
+        /// It is not necessarily equivalent to calling <see cref="object.GetHashCode()"/>.
+        /// </remarks>
+        public int GetHashCode(object? obj)
         {
-            return RuntimeHelpers.GetHashCode(obj);
+            // Depending on target framework, RuntimeHelpers.GetHashCode might not be annotated
+            // with the proper nullability attribute. We'll suppress any warning that might
+            // result.
+            return RuntimeHelpers.GetHashCode(obj!);
         }
     }
 }

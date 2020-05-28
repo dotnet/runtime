@@ -93,6 +93,13 @@ namespace CorUnix
         );
 
     PAL_ERROR
+    InternalSetThreadDescription(
+        CPalThread *,
+        HANDLE,
+        PCWSTR
+        );
+
+    PAL_ERROR
     CreateThreadData(
         CPalThread **ppThread
         );

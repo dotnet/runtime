@@ -62,28 +62,18 @@ HRESULT SecurityUtil::GetACLOfPid(DWORD pid, PACL *ppACL)
     SidBuffer sidTargetProcessAppContainer;
 
     // Get sid for current process.
-    EX_TRY
+    if (SUCCEEDED(sidCurrentProcess.InitFromProcessNoThrow(GetCurrentProcessId())))
     {
-        sidCurrentProcess.InitFromProcess(GetCurrentProcessId()); // throw on error.
         pCurrentProcessSid = sidCurrentProcess.GetSid().RawSid();
         cSid++;
     }
-    EX_CATCH
-    {
-    }
-    EX_END_CATCH(RethrowTerminalExceptions);
 
     // Get sid for target process.
-    EX_TRY
+    if (SUCCEEDED(sidTargetProcess.InitFromProcessNoThrow(pid)))
     {
-        sidTargetProcess.InitFromProcess(pid); // throws on error.
         pTargetProcessSid = sidTargetProcess.GetSid().RawSid();
         cSid++;
     }
-    EX_CATCH
-    {
-    }
-    EX_END_CATCH(RethrowTerminalExceptions);
 
     //FISHY: what is the scenario where only one of the above calls succeeds?
     if (cSid == 0)

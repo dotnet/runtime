@@ -14,7 +14,7 @@
 #include "mdutil.h"
 #include "rwutil.h"
 #include "mdlog.h"
-#include "strongname.h"
+#include "strongnameinternal.h"
 #include "sstring.h"
 
 #define COM_RUNTIME_LIBRARY "ComRuntimeLibrary"
@@ -1397,13 +1397,10 @@ HRESULT ImportHelper::FindAssemblyRef(
                 return E_FAIL;
 #else //!FEATURE_METADATA_EMIT_IN_DEBUGGER || DACCESS_COMPILE
                 // Need to compress target public key to see if it matches.
-                if (!StrongNameTokenFromPublicKey((BYTE*)pbTmp,
-                                                  cbTmp,
-                                                  (BYTE**)&pbTmpToken,
-                                                  &cbTmpToken))
-                {
-                    return StrongNameErrorInfo();
-                }
+                IfFailRet(StrongNameTokenFromPublicKey((BYTE*)pbTmp,
+                    cbTmp,
+                    (BYTE**)&pbTmpToken,
+                    &cbTmpToken));
                 fMatch = cbTmpToken == cbPublicKeyOrToken && !memcmp(pbTmpToken, pbPublicKeyOrToken, cbTmpToken);
                 StrongNameFreeBuffer((BYTE*)pbTmpToken);
                 if (!fMatch)
@@ -1419,13 +1416,10 @@ HRESULT ImportHelper::FindAssemblyRef(
 #if defined(FEATURE_METADATA_EMIT_IN_DEBUGGER) && !defined(DACCESS_COMPILE)
                     return E_FAIL;
 #else //!FEATURE_METADATA_EMIT_IN_DEBUGGER || DACCESS_COMPILE
-                    if (!StrongNameTokenFromPublicKey((BYTE*)pbPublicKeyOrToken,
-                                                      cbPublicKeyOrToken,
-                                                      (BYTE**)&pbToken,
-                                                      &cbToken))
-                    {
-                        return StrongNameErrorInfo();
-                    }
+                    IfFailRet(StrongNameTokenFromPublicKey((BYTE*)pbPublicKeyOrToken,
+                        cbPublicKeyOrToken,
+                        (BYTE**)&pbToken,
+                        &cbToken));
 #endif //!FEATURE_METADATA_EMIT_IN_DEBUGGER || DACCESS_COMPILE
                 }
                 if (cbTmp != cbToken || memcmp(pbTmp, pbToken, cbToken))
@@ -3254,11 +3248,10 @@ ImportHelper::CreateAssemblyRefFromAssembly(
     {
         _ASSERTE(IsAfPublicKey(dwFlags));
         dwFlags &= ~afPublicKey;
-        if (!StrongNameTokenFromPublicKey((BYTE*)pbPublicKey,
-                                          cbPublicKey,
-                                          (BYTE**)&pbToken,
-                                          &cbToken))
-            IfFailGo(StrongNameErrorInfo());
+        IfFailGo(StrongNameTokenFromPublicKey((BYTE*)pbPublicKey,
+            cbPublicKey,
+            (BYTE**)&pbToken,
+            &cbToken));
     }
     else
         _ASSERTE(!IsAfPublicKey(dwFlags));
@@ -3393,11 +3386,10 @@ HRESULT ImportHelper::CompareAssemblyRefToAssembly(    // S_OK, S_FALSE or error
             return S_FALSE;
 
         // Otherwise we need to compress the def public key into a token.
-        if (!StrongNameTokenFromPublicKey((BYTE*)pbPublicKey2,
-                                          cbPublicKey2,
-                                          (BYTE**)&pbToken,
-                                          &cbToken))
-            return StrongNameErrorInfo();
+        IfFailRet(StrongNameTokenFromPublicKey((BYTE*)pbPublicKey2,
+            cbPublicKey2,
+            (BYTE**)&pbToken,
+            &cbToken));
 
         fMatch = cbPublicKeyOrToken1 == cbToken &&
             !memcmp(pbPublicKeyOrToken1, pbToken, cbPublicKeyOrToken1);

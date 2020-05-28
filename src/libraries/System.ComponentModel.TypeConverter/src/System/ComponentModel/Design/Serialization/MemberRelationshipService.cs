@@ -35,7 +35,6 @@ namespace System.ComponentModel.Design.Serialization
         /// can also be passed as the property value, in which case the relationship will
         /// be cleared.
         /// </summary>
-        [SuppressMessage("Microsoft.Design", "CA1043:UseIntegralOrStringArgumentForIndexers")]
         public MemberRelationship this[MemberRelationship source]
         {
             get
@@ -45,7 +44,7 @@ namespace System.ComponentModel.Design.Serialization
                 // and not the other as the main constructor performs argument validation.
                 if (source.Owner == null)
                 {
-                    throw new ArgumentNullException(nameof(MemberRelationship.Owner));
+                    throw new ArgumentException(SR.Format(SR.InvalidNullArgument, "source.Owner"), nameof(source));
                 }
 
                 Debug.Assert(source.Member != null);
@@ -58,7 +57,7 @@ namespace System.ComponentModel.Design.Serialization
                 // and not the other as the main constructor performs argument validation.
                 if (source.Owner == null)
                 {
-                    throw new ArgumentNullException(nameof(MemberRelationship.Owner));
+                    throw new ArgumentException(SR.Format(SR.InvalidNullArgument, "source.Owner"), nameof(source));
                 }
 
                 Debug.Assert(source.Member != null);
@@ -71,7 +70,6 @@ namespace System.ComponentModel.Design.Serialization
         /// Also sets a relationship between two objects. Null can be passed as the property value, in which
         /// case the relationship will be cleared.
         /// </summary>
-        [SuppressMessage("Microsoft.Design", "CA1023:IndexersShouldNotBeMultidimensional")]
         public MemberRelationship this[object sourceOwner, MemberDescriptor sourceMember]
         {
             get

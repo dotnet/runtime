@@ -13,7 +13,7 @@ namespace System.Linq.Expressions.Compiler
 {
     internal sealed class AssemblyGen
     {
-        private static AssemblyGen s_assembly;
+        private static AssemblyGen? s_assembly;
 
         private readonly ModuleBuilder _myModule;
 
@@ -36,7 +36,7 @@ namespace System.Linq.Expressions.Compiler
             var name = new AssemblyName("Snippets");
 
             AssemblyBuilder myAssembly = AssemblyBuilder.DefineDynamicAssembly(name, AssemblyBuilderAccess.Run);
-            _myModule = myAssembly.DefineDynamicModule(name.Name);
+            _myModule = myAssembly.DefineDynamicModule(name.Name!);
         }
 
         private TypeBuilder DefineType(string name, Type parent, TypeAttributes attr)
@@ -47,7 +47,7 @@ namespace System.Linq.Expressions.Compiler
             StringBuilder sb = new StringBuilder(name);
 
             int index = Interlocked.Increment(ref _index);
-            sb.Append("$");
+            sb.Append('$');
             sb.Append(index);
 
             // An unhandled Exception: System.Runtime.InteropServices.COMException (0x80131130): Record not found on lookup.

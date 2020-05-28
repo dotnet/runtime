@@ -10,6 +10,6 @@ internal partial class Interop
     {
         [DllImport(Libraries.Kernel32, CharSet = CharSet.Unicode, SetLastError = true, BestFitMapping = false, EntryPoint = "WaitNamedPipeW")]
         [return: MarshalAs(UnmanagedType.Bool)]
-        internal static extern bool WaitNamedPipe(string name, int timeout);
+        internal static extern bool WaitNamedPipe(string? name, int timeout);
     }
 }

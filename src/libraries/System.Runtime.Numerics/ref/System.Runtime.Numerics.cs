@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 // ------------------------------------------------------------------------------
-// Changes to this file must follow the http://aka.ms/api-review process.
+// Changes to this file must follow the https://aka.ms/api-review process.
 // ------------------------------------------------------------------------------
 
 namespace System.Numerics
@@ -161,8 +161,8 @@ namespace System.Numerics
         public bool TryFormat(System.Span<char> destination, out int charsWritten, System.ReadOnlySpan<char> format = default(System.ReadOnlySpan<char>), System.IFormatProvider? provider = null) { throw null; }
         public static bool TryParse(System.ReadOnlySpan<char> value, System.Globalization.NumberStyles style, System.IFormatProvider? provider, out System.Numerics.BigInteger result) { throw null; }
         public static bool TryParse(System.ReadOnlySpan<char> value, out System.Numerics.BigInteger result) { throw null; }
-        public static bool TryParse(string? value, System.Globalization.NumberStyles style, System.IFormatProvider? provider, out System.Numerics.BigInteger result) { throw null; }
-        public static bool TryParse(string? value, out System.Numerics.BigInteger result) { throw null; }
+        public static bool TryParse([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? value, System.Globalization.NumberStyles style, System.IFormatProvider? provider, out System.Numerics.BigInteger result) { throw null; }
+        public static bool TryParse([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? value, out System.Numerics.BigInteger result) { throw null; }
         public bool TryWriteBytes(System.Span<byte> destination, out int bytesWritten, bool isUnsigned = false, bool isBigEndian = false) { throw null; }
     }
     public partial struct Complex : System.IEquatable<System.Numerics.Complex>, System.IFormattable

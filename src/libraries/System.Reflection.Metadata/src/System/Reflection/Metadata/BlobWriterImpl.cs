@@ -145,7 +145,7 @@ namespace System.Reflection.Metadata
             }
         }
 
-        internal static void WriteConstant(ref BlobWriter writer, object value)
+        internal static void WriteConstant(ref BlobWriter writer, object? value)
         {
             if (value == null)
             {
@@ -218,7 +218,7 @@ namespace System.Reflection.Metadata
             }
         }
 
-        internal static void WriteConstant(BlobBuilder writer, object value)
+        internal static void WriteConstant(BlobBuilder writer, object? value)
         {
             if (value == null)
             {

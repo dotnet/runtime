@@ -42,7 +42,6 @@ namespace System.Text.Json.Tests
             yield return new object[] { "\"1997-07-16T19:20:30.6666660\"", "1997-07-16T19:20:30.666666" };
 
             // Test fraction truncation.
-            yield return new object[] { "\"1997-07-16T19:20:30.0000000\"", "1997-07-16T19:20:30" };
             yield return new object[] { "\"1997-07-16T19:20:30.00000001\"", "1997-07-16T19:20:30" };
             yield return new object[] { "\"1997-07-16T19:20:30.000000001\"", "1997-07-16T19:20:30" };
             yield return new object[] { "\"1997-07-16T19:20:30.77777770\"", "1997-07-16T19:20:30.7777777" };
@@ -153,7 +152,6 @@ namespace System.Text.Json.Tests
             // Invalid fractions.
             yield return new object[] { "\"1997-07-16T19.45\"" };
             yield return new object[] { "\"1997-07-16T19:20.45\"" };
-            yield return new object[] { "\"1997-07-16T19:20:30a\"" };
             yield return new object[] { "\"1997-07-16T19:20:30,45\"" };
             yield return new object[] { "\"1997-07-16T19:20:30.\"" };
             yield return new object[] { "\"1997-07-16T19:20:30.a\"" };
@@ -168,7 +166,6 @@ namespace System.Text.Json.Tests
             yield return new object[] { "\"1997-07-16T19:20:30.4555555+01Z\"" };
             yield return new object[] { "\"1997-07-16T19:20:30.4555555+01:\"" };
             yield return new object[] { "\"1997-07-16T19:20:30.4555555 +01:00\"" };
-            yield return new object[] { "\"1997-07-16T19:20:30.4555555+01:\"" };
             yield return new object[] { "\"1997-07-16T19:20:30.4555555- 01:00\"" };
             yield return new object[] { "\"1997-07-16T19:20:30.4555555+04 :30\"" };
             yield return new object[] { "\"1997-07-16T19:20:30.4555555-04: 30\"" };
@@ -229,6 +226,10 @@ namespace System.Text.Json.Tests
             yield return new object[] { "\"199\\u0037-07\\u002d16T1\\u0039:20:30.4555555+\\u002dZ\"" };
             // Proper format but invalid calendar date, time, or time zone designator fields 1997-00-16
             yield return new object[] { "\"\\u0031\\u0039\\u0039\\u0037\\u002d\\u0030\\u0030\\u002d\\u0031\\u0036\"" };
+
+            // High byte expansion - parsing fails early at 254 characters.
+            yield return new object[] { "\"" + new string('\u20AC', 250) + "\"" };
+            yield return new object[] { "\"" + new string('\u20AC', 260) + "\"" };
         }
 
         public static IEnumerable<object[]> DateTimeFractionTrimBaseTests()

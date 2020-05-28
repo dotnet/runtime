@@ -11,13 +11,13 @@ namespace System.Net.Sockets
     {
         private Interop.Winsock.WSAMsg* _message;
         private WSABuffer* _wsaBuffer;
-        private byte[] _wsaBufferArray;
-        private byte[] _controlBuffer;
-        internal byte[] _messageBuffer;
+        private byte[]? _wsaBufferArray;
+        private byte[]? _controlBuffer;
+        internal byte[]? _messageBuffer;
 
         private IntPtr GetSocketAddressSizePtr()
         {
-            return Marshal.UnsafeAddrOfPinnedArrayElement(_socketAddress.Buffer, _socketAddress.GetAddressSizeOffset());
+            return Marshal.UnsafeAddrOfPinnedArrayElement(_socketAddress!.Buffer, _socketAddress.GetAddressSizeOffset());
         }
 
         internal unsafe int GetSocketAddressSize()
@@ -37,7 +37,7 @@ namespace System.Net.Sockets
             _wsaBufferArray = new byte[sizeof(WSABuffer)];
 
             bool ipv4, ipv6;
-            Socket.GetIPProtocolInformation(((Socket)AsyncObject).AddressFamily, socketAddress, out ipv4, out ipv6);
+            Socket.GetIPProtocolInformation(((Socket)AsyncObject!).AddressFamily, socketAddress, out ipv4, out ipv6);
 
             // Prepare control buffer.
             if (ipv4)
@@ -91,12 +91,13 @@ namespace System.Net.Sockets
 
         private unsafe void InitIPPacketInformation()
         {
-            if (_controlBuffer.Length == sizeof(Interop.Winsock.ControlData))
+            int? controlBufferLength = _controlBuffer?.Length;
+            if (controlBufferLength == sizeof(Interop.Winsock.ControlData))
             {
                 // IPv4
                 _ipPacketInformation = SocketPal.GetIPPacketInformation((Interop.Winsock.ControlData*)_message->controlBuffer.Pointer);
             }
-            else if (_controlBuffer.Length == sizeof(Interop.Winsock.ControlDataIPv6))
+            else if (controlBufferLength == sizeof(Interop.Winsock.ControlDataIPv6))
             {
                 // IPv6
                 _ipPacketInformation = SocketPal.GetIPPacketInformation((Interop.Winsock.ControlDataIPv6*)_message->controlBuffer.Pointer);
@@ -114,7 +115,7 @@ namespace System.Net.Sockets
             base.ForceReleaseUnmanagedStructures();
         }
 
-        internal override object PostCompletion(int numBytes)
+        internal override object? PostCompletion(int numBytes)
         {
             InitIPPacketInformation();
             if (ErrorCode == 0 && NetEventSource.IsEnabled)

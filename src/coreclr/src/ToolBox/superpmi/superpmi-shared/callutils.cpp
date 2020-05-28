@@ -224,7 +224,7 @@ bool CallUtils::HasRetBuffArg(MethodContext* mc, CORINFO_SIG_INFO args)
         return false;
     }
 
-#if defined(_TARGET_AMD64_)
+#if defined(TARGET_AMD64)
     // We don't need a return buffer if:
     //   i) TYP_STRUCT argument that can fit into a single register and
     //  ii) Power of two sized TYP_STRUCT on AMD64.
@@ -258,12 +258,14 @@ const char* CallUtils::GetMethodName(MethodContext* mc, CORINFO_METHOD_HANDLE me
 }
 
 // Originally from src/jit/eeinterface.cpp
-const char* CallUtils::GetMethodFullName(MethodContext* mc, CORINFO_METHOD_HANDLE hnd, CORINFO_SIG_INFO sig)
+// If `ignoreMethodName` is `true`, we construct the function signature with a dummy method name that will be the
+// same for all methods.
+const char* CallUtils::GetMethodFullName(MethodContext* mc, CORINFO_METHOD_HANDLE hnd, CORINFO_SIG_INFO sig, bool ignoreMethodName /* = false */)
 {
     const char* returnType = NULL;
 
-    const char* className;
-    const char* methodName = GetMethodName(mc, hnd, &className);
+    const char* className = ignoreMethodName ? "CLASS" : nullptr;
+    const char* methodName = ignoreMethodName ? "METHOD" : GetMethodName(mc, hnd, &className);
     if ((GetHelperNum(hnd) != CORINFO_HELP_UNDEF) || IsNativeMethod(hnd))
     {
         return methodName;

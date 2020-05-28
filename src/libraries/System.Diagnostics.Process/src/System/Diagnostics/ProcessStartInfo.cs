@@ -18,15 +18,15 @@ namespace System.Diagnostics
     /// </devdoc>
     public sealed partial class ProcessStartInfo
     {
-        private string _fileName;
-        private string _arguments;
-        private string _directory;
-        private string _userName;
-        private string _verb;
-        private Collection<string> _argumentList;
+        private string? _fileName;
+        private string? _arguments;
+        private string? _directory;
+        private string? _userName;
+        private string? _verb;
+        private Collection<string>? _argumentList;
         private ProcessWindowStyle _windowStyle;
 
-        internal DictionaryWrapper _environmentVariables;
+        internal DictionaryWrapper? _environmentVariables;
 
         /// <devdoc>
         ///     Default constructor.  At least the <see cref='System.Diagnostics.ProcessStartInfo.FileName'/>
@@ -77,9 +77,9 @@ namespace System.Diagnostics
 
         public bool CreateNoWindow { get; set; }
 
-        public StringDictionary EnvironmentVariables => new StringDictionaryWrapper(Environment as DictionaryWrapper);
+        public StringDictionary EnvironmentVariables => new StringDictionaryWrapper((Environment as DictionaryWrapper)!);
 
-        public IDictionary<string, string> Environment
+        public IDictionary<string, string?> Environment
         {
             get
             {
@@ -88,7 +88,7 @@ namespace System.Diagnostics
                     IDictionary envVars = System.Environment.GetEnvironmentVariables();
 
 #pragma warning disable 0429 // CaseSensitiveEnvironmentVaribles is constant but varies depending on if we build for Unix or Windows
-                    _environmentVariables = new DictionaryWrapper(new Dictionary<string, string>(
+                    _environmentVariables = new DictionaryWrapper(new Dictionary<string, string?>(
                         envVars.Count,
                         CaseSensitiveEnvironmentVariables ? StringComparer.Ordinal : StringComparer.OrdinalIgnoreCase));
 #pragma warning restore 0429
@@ -99,7 +99,7 @@ namespace System.Diagnostics
                     while (e.MoveNext())
                     {
                         DictionaryEntry entry = e.Entry;
-                        _environmentVariables.Add((string)entry.Key, (string)entry.Value);
+                        _environmentVariables.Add((string)entry.Key, (string?)entry.Value);
                     }
                 }
                 return _environmentVariables;
@@ -110,11 +110,11 @@ namespace System.Diagnostics
         public bool RedirectStandardOutput { get; set; }
         public bool RedirectStandardError { get; set; }
 
-        public Encoding StandardInputEncoding { get; set; }
+        public Encoding? StandardInputEncoding { get; set; }
 
-        public Encoding StandardErrorEncoding { get; set; }
+        public Encoding? StandardErrorEncoding { get; set; }
 
-        public Encoding StandardOutputEncoding { get; set; }
+        public Encoding? StandardOutputEncoding { get; set; }
 
         /// <devdoc>
         ///    <para>

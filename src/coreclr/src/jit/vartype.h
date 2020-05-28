@@ -25,10 +25,7 @@ enum var_types : BYTE
 #define DEF_TP(tn, nm, jitType, verType, sz, sze, asze, st, al, tf, howUsed) TYP_##tn,
 #include "typelist.h"
 #undef DEF_TP
-
-    TYP_COUNT,
-
-    TYP_lastIntrins = TYP_DOUBLE
+    TYP_COUNT
 };
 
 /*****************************************************************************
@@ -36,7 +33,7 @@ enum var_types : BYTE
  * platform
  */
 
-#ifdef _TARGET_64BIT_
+#ifdef TARGET_64BIT
 #define TYP_I_IMPL TYP_LONG
 #define TYP_U_IMPL TYP_ULONG
 #define TYPE_REF_IIM TYPE_REF_LNG
@@ -116,6 +113,12 @@ inline bool varTypeIsUnsigned(T vt)
     return ((varTypeClassification[TypeGet(vt)] & (VTF_UNS)) != 0);
 }
 
+template <class T>
+inline bool varTypeIsSigned(T vt)
+{
+    return varTypeIsIntegralOrI(vt) && !varTypeIsUnsigned(vt);
+}
+
 // If "vt" is an unsigned integral type, returns the corresponding signed integral type, otherwise
 // return "vt".
 inline var_types varTypeUnsignedToSigned(var_types vt)
@@ -133,6 +136,32 @@ inline var_types varTypeUnsignedToSigned(var_types vt)
                 return TYP_INT;
             case TYP_ULONG:
                 return TYP_LONG;
+            default:
+                unreached();
+        }
+    }
+    else
+    {
+        return vt;
+    }
+}
+
+// If "vt" is a signed integral type, returns the corresponding unsigned integral type, otherwise
+// return "vt".
+inline var_types varTypeSignedToUnsigned(var_types vt)
+{
+    if (varTypeIsSigned(vt))
+    {
+        switch (vt)
+        {
+            case TYP_BYTE:
+                return TYP_UBYTE;
+            case TYP_SHORT:
+                return TYP_USHORT;
+            case TYP_INT:
+                return TYP_UINT;
+            case TYP_LONG:
+                return TYP_ULONG;
             default:
                 unreached();
         }
@@ -207,9 +236,9 @@ template <class T>
 inline bool varTypeIsIntOrI(T vt)
 {
     return ((TypeGet(vt) == TYP_INT)
-#ifdef _TARGET_64BIT_
+#ifdef TARGET_64BIT
             || (TypeGet(vt) == TYP_I_IMPL)
-#endif // _TARGET_64BIT_
+#endif // TARGET_64BIT
                 );
 }
 
@@ -228,7 +257,7 @@ inline bool varTypeIsLong(T vt)
 template <class T>
 inline bool varTypeIsMultiReg(T vt)
 {
-#ifdef _TARGET_64BIT_
+#ifdef TARGET_64BIT
     return false;
 #else
     return (TypeGet(vt) == TYP_LONG);
@@ -258,9 +287,9 @@ template <class T>
 inline bool varTypeIsPromotable(T vt)
 {
     return (varTypeIsStruct(vt) || (TypeGet(vt) == TYP_BLK)
-#if !defined(_TARGET_64BIT_)
+#if !defined(TARGET_64BIT)
             || varTypeIsLong(vt)
-#endif // !defined(_TARGET_64BIT_)
+#endif // !defined(TARGET_64BIT)
                 );
 }
 
@@ -281,7 +310,7 @@ inline bool varTypeUsesFloatReg(T vt)
 template <class T>
 inline bool varTypeUsesFloatArgReg(T vt)
 {
-#ifdef _TARGET_ARM64_
+#ifdef TARGET_ARM64
     // Arm64 passes SIMD types in floating point registers.
     return varTypeUsesFloatReg(vt);
 #else
@@ -311,11 +340,11 @@ inline bool varTypeIsValidHfaType(T vt)
     bool isValid = (TypeGet(vt) != TYP_UNDEF);
     if (isValid)
     {
-#ifdef _TARGET_ARM64_
+#ifdef TARGET_ARM64
         assert(varTypeUsesFloatReg(vt));
-#else  // !_TARGET_ARM64_
+#else  // !TARGET_ARM64
         assert(varTypeIsFloating(vt));
-#endif // !_TARGET_ARM64_
+#endif // !TARGET_ARM64
     }
     return isValid;
 #else  // !FEATURE_HFA

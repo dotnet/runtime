@@ -63,7 +63,7 @@ void RegValueHome::SetContextRegister(DT_CONTEXT *     pContext,
     case REGISTER_INSTRUCTION_POINTER:  CORDbgSetIP(pContext, (LPVOID)newVal); break;
     case REGISTER_STACK_POINTER:        CORDbgSetSP(pContext, (LPVOID)newVal); break;
 
-#if defined(DBG_TARGET_X86)
+#if defined(TARGET_X86)
     case REGISTER_FRAME_POINTER:        CORDbgSetFP(pContext, (LPVOID)newVal);
                                           _UpdateFrame();                         break;
 
@@ -80,7 +80,7 @@ void RegValueHome::SetContextRegister(DT_CONTEXT *     pContext,
     case REGISTER_X86_EDI:              pContext->Edi = newVal;
                                         _UpdateFrame();                        break;
 
-#elif defined(DBG_TARGET_AMD64)
+#elif defined(TARGET_AMD64)
     case REGISTER_AMD64_RBP:            pContext->Rbp = newVal;
                                         _UpdateFrame();                        break;
     case REGISTER_AMD64_RAX:            pContext->Rax = newVal;
@@ -111,7 +111,7 @@ void RegValueHome::SetContextRegister(DT_CONTEXT *     pContext,
                                         _UpdateFrame();                        break;
     case REGISTER_AMD64_R15:            pContext->R15 = newVal;
                                         _UpdateFrame();                        break;
-#elif defined(DBG_TARGET_ARM)
+#elif defined(TARGET_ARM)
     case REGISTER_ARM_R0:               pContext->R0 = newVal;
                                         _UpdateFrame();                        break;
     case REGISTER_ARM_R1:               pContext->R1 = newVal;
@@ -140,7 +140,7 @@ void RegValueHome::SetContextRegister(DT_CONTEXT *     pContext,
                                         _UpdateFrame();                        break;
     case REGISTER_ARM_LR:               pContext->Lr = newVal;
                                         _UpdateFrame();                        break;
-#elif defined(DBG_TARGET_ARM64)
+#elif defined(TARGET_ARM64)
     case REGISTER_ARM64_X0:
     case REGISTER_ARM64_X1:
     case REGISTER_ARM64_X2:
@@ -204,10 +204,10 @@ void RegValueHome::SetEnregisteredValue(MemoryRange newValue, DT_CONTEXT * pCont
                      extendedVal = (SSIZE_T) *(short*)newValue.StartAddress();          break;
             case 4:  _ASSERTE(sizeof(DWORD) == 4);
                      extendedVal = (SSIZE_T) *(int*)newValue.StartAddress();            break;
-#if defined(DBG_TARGET_64BIT)
+#if defined(TARGET_64BIT)
             case 8:  _ASSERTE(sizeof(ULONGLONG) == 8);
                      extendedVal = (SSIZE_T) *(ULONGLONG*)newValue.StartAddress();      break;
-#endif // DBG_TARGET_64BIT
+#endif // TARGET_64BIT
             default: _ASSERTE(!"bad size");
         }
     }
@@ -222,10 +222,10 @@ void RegValueHome::SetEnregisteredValue(MemoryRange newValue, DT_CONTEXT * pCont
                      extendedVal = *( WORD*)newValue.StartAddress();     break;
             case 4:  _ASSERTE(sizeof(DWORD) == 4);
                      extendedVal = *(DWORD*)newValue.StartAddress();     break;
-#if defined(DBG_TARGET_64BIT)
+#if defined(TARGET_64BIT)
             case 8:  _ASSERTE(sizeof(ULONGLONG) == 8);
                      extendedVal = *(ULONGLONG*)newValue.StartAddress(); break;
-#endif // DBG_TARGET_64BIT
+#endif // TARGET_64BIT
             default: _ASSERTE(!"bad size");
         }
     }
@@ -453,9 +453,9 @@ void FloatRegValueHome::SetEnregisteredValue(MemoryRange newValue,
                                              bool        fIsSigned)
 {
     // TODO: : implement CordbValue::SetEnregisteredValue for RAK_FLOAT
-    #if defined(DBG_TARGET_AMD64)
+    #if defined(TARGET_AMD64)
     PORTABILITY_ASSERT("NYI: SetEnregisteredValue (divalue.cpp): RAK_FLOAT for AMD64");
-    #endif // DBG_TARGET_AMD64
+    #endif // TARGET_AMD64
 
     _ASSERTE((newValue.Size() == 4) || (newValue.Size() == 8));
 
@@ -464,14 +464,14 @@ void FloatRegValueHome::SetEnregisteredValue(MemoryRange newValue,
 
     memcpy(&newVal, newValue.StartAddress(), newValue.Size());
 
-    #if defined(DBG_TARGET_X86)
+    #if defined(TARGET_X86)
 
     // This is unfortunately non-portable. Luckily we can live with this for now since we only support
     // Win/X86 debugging a Mac/X86 platform.
 
-    #if !defined(_TARGET_X86_)
+    #if !defined(TARGET_X86)
     #error Unsupported target platform
-    #endif // !_TARGET_X86_
+    #endif // !TARGET_X86
 
     // What a pain, on X86 take the floating
     // point state in the context and make it our current FP
@@ -565,7 +565,7 @@ void FloatRegValueHome::SetEnregisteredValue(MemoryRange newValue,
         : "m"(currentFPUState)
     );
     #endif
-    #endif // DBG_TARGET_X86
+    #endif // TARGET_X86
 
     // update the thread's floating point stack
     void * valueAddress = (void *) &(m_pFrame->m_pThread->m_floatValues[m_floatIndex]);
@@ -844,14 +844,14 @@ void RegisterValueHome::SetEnregisteredValue(MemoryRange src, bool fIsSigned)
 //       or for 64-bit platforms
 void RegisterValueHome::GetEnregisteredValue(MemoryRange dest)
 {
-#if !defined(DBG_TARGET_X86)
+#if !defined(TARGET_X86)
     _ASSERTE(!"@TODO IA64/AMD64 -- Not Yet Implemented");
     ThrowHR(E_NOTIMPL);
-#else // DBG_TARGET_X86
+#else // TARGET_X86
     _ASSERTE(m_pRemoteRegAddr != NULL);
 
     m_pRemoteRegAddr->GetEnregisteredValue(dest); // throws
-#endif // !DBG_TARGET_X86
+#endif // !TARGET_X86
 } // RegisterValueHome::GetEnregisteredValue
 
 // Is this a signed type or unsigned type?

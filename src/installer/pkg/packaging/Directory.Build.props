@@ -1,5 +1,5 @@
 <Project>
-  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory).., Directory.Build.props))\Directory.Build.props" />
+  <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.props, $(MSBuildThisFileDirectory)..))" />
 
   <PropertyGroup>
     <PackagingRoot>$(InstallerProjectRoot)pkg/packaging/</PackagingRoot>
@@ -14,6 +14,7 @@
     <SharedFrameworkPublishRoot>$(IntermediateOutputRootPath)sharedFx/</SharedFrameworkPublishRoot>
     <CombinedPublishRoot>$(IntermediateOutputRootPath)combined-framework-host/</CombinedPublishRoot>
     <NetHostPublishRoot>$(IntermediateOutputRootPath)nethost/</NetHostPublishRoot>
+    <Crossgen2PublishRoot>$(IntermediateOutputRootPath)crossgen2/</Crossgen2PublishRoot>
   </PropertyGroup>
 
 </Project>

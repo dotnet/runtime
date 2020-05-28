@@ -3,7 +3,6 @@
     <OutputType>Exe</OutputType>
   </PropertyGroup>
   <PropertyGroup>
-    <LangVersion>latest</LangVersion>
     <DebugType>None</DebugType>
     <Optimize>True</Optimize>
   </PropertyGroup>

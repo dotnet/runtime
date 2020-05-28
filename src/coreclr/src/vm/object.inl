@@ -154,44 +154,6 @@ FORCEINLINE bool Object::TryEnterObjMonitorSpinHelper()
 
 #endif // DACCESS_COMPILE
 
-inline TypeHandle ArrayBase::GetTypeHandle() const
-{
-    WRAPPER_NO_CONTRACT;
-    return GetTypeHandle(GetMethodTable());
-}
-
-inline /* static */ TypeHandle ArrayBase::GetTypeHandle(MethodTable * pMT)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        FORBID_FAULT;
-        SUPPORTS_DAC;
-    }
-    CONTRACTL_END
-
-    _ASSERTE(pMT != NULL);
-
-    // This ensures that we can always get the typehandle for an object in hand
-    // without triggering the noisy parts of the loader.
-    //
-    // The debugger can cause this routine to be called on an unmanaged thread
-    // so this really is important.
-    ENABLE_FORBID_GC_LOADER_USE_IN_THIS_SCOPE();
-
-    CorElementType kind = pMT->GetInternalCorElementType();
-    unsigned rank = pMT->GetRank();
-    // Note that this load should always succeed because there is an invariant that
-    // if we have allocated an array object of type T then the ArrayTypeDesc
-    // for T[] is available and restored
-
-    // == FailIfNotLoadedOrNotRestored
-    TypeHandle arrayType = ClassLoader::LoadArrayTypeThrowing(pMT->GetArrayElementTypeHandle(), kind, rank, ClassLoader::DontLoadTypes);
-    CONSISTENCY_CHECK(!arrayType.IsNull());
-    return(arrayType);
-}
-
         // Get the CorElementType for the elements in the array.  Avoids creating a TypeHandle
 inline CorElementType ArrayBase::GetArrayElementType() const
 {
@@ -212,32 +174,6 @@ inline DWORD ArrayBase::GetNumComponents() const
     SUPPORTS_DAC;
     return m_NumComponents;
 }
-
-#ifndef DACCESS_COMPILE
-inline void ArrayBase::SetArrayMethodTable(MethodTable *pArrayMT)
-{
-    LIMITED_METHOD_CONTRACT;
-
-    SetMethodTable(pArrayMT
-                   DEBUG_ARG(TRUE));
-
-#ifdef _DEBUG
-    AssertArrayTypeDescLoaded();
-#endif // _DEBUG
-}
-
-inline void ArrayBase::SetArrayMethodTableForLargeObject(MethodTable *pArrayMT)
-{
-    LIMITED_METHOD_CONTRACT;
-
-    SetMethodTableForLargeObject(pArrayMT
-                                 DEBUG_ARG(TRUE));
-
-#ifdef _DEBUG
-    AssertArrayTypeDescLoaded();
-#endif // _DEBUG
-}
-#endif // !DACCESS_COMPILE
 
 inline /* static */ unsigned ArrayBase::GetDataPtrOffset(MethodTable* pMT)
 {
@@ -293,7 +229,7 @@ __forceinline BOOL Nullable::IsNullableForType(TypeHandle type, MethodTable* par
         return FALSE;
     if (!type.AsMethodTable()->HasInstantiation())            // shortcut, if it is not generic it can't be Nullable<T>
         return FALSE;
-	return Nullable::IsNullableForTypeHelper(type.AsMethodTable(), paramMT);
+    return Nullable::IsNullableForTypeHelper(type.AsMethodTable(), paramMT);
 }
 
 //===============================================================================
@@ -305,7 +241,7 @@ __forceinline BOOL Nullable::IsNullableForTypeNoGC(TypeHandle type, MethodTable*
         return FALSE;
     if (!type.AsMethodTable()->HasInstantiation())            // shortcut, if it is not generic it can't be Nullable<T>
         return FALSE;
-	return Nullable::IsNullableForTypeHelperNoGC(type.AsMethodTable(), paramMT);
+    return Nullable::IsNullableForTypeHelperNoGC(type.AsMethodTable(), paramMT);
 }
 
 //===============================================================================
@@ -334,11 +270,7 @@ inline TypeHandle Object::GetTypeHandle()
     CONTRACTL_END
 
     _ASSERTE(m_pMethTab == GetGCSafeMethodTable());
-
-    if (m_pMethTab->IsArray())
-        return (dac_cast<PTR_ArrayBase>(this))->GetTypeHandle();
-    else
-        return TypeHandle(m_pMethTab);
+    return TypeHandle(m_pMethTab);
 }
 
 inline TypeHandle Object::GetGCSafeTypeHandle() const
@@ -354,10 +286,7 @@ inline TypeHandle Object::GetGCSafeTypeHandle() const
     MethodTable * pMT = GetGCSafeMethodTable();
     _ASSERTE(pMT != NULL);
 
-    if (pMT->IsArray())
-        return ArrayBase::GetTypeHandle(pMT);
-    else
-        return TypeHandle(pMT);
+    return TypeHandle(pMT);
 }
 
 template<class F>
@@ -367,9 +296,7 @@ inline void FindByRefPointerOffsetsInByRefLikeObject(PTR_MethodTable pMT, SIZE_T
     _ASSERTE(pMT != nullptr);
     _ASSERTE(pMT->IsByRefLike());
 
-    // TODO: TypedReference should ideally be implemented as a by-ref-like struct containing a ByReference<T> field,
-    // in which case the check for g_TypedReferenceMT below would not be necessary
-    if (pMT == g_TypedReferenceMT || pMT->HasSameTypeDefAs(g_pByReferenceClass))
+    if (pMT->HasSameTypeDefAs(g_pByReferenceClass))
     {
         processPointerOffset(baseOffset);
         return;

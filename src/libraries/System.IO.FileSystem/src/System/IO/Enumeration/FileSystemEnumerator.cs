@@ -20,7 +20,7 @@ namespace System.IO.Enumeration
         /// </summary>
         /// <param name="directory">The directory to search in.</param>
         /// <param name="options">Enumeration options to use.</param>
-        public FileSystemEnumerator(string directory, EnumerationOptions options = null)
+        public FileSystemEnumerator(string directory, EnumerationOptions? options = null)
             : this(directory, isNormalized: false, options)
         {
         }
@@ -31,7 +31,7 @@ namespace System.IO.Enumeration
         /// <param name="directory">The directory to search in.</param>
         /// <param name="isNormalized">Whether the directory path is already normalized or not.</param>
         /// <param name="options">Enumeration options to use.</param>
-        internal FileSystemEnumerator(string directory, bool isNormalized, EnumerationOptions options = null)
+        internal FileSystemEnumerator(string directory, bool isNormalized, EnumerationOptions? options = null)
         {
             _originalRootDirectory = directory ?? throw new ArgumentNullException(nameof(directory));
 
@@ -72,7 +72,7 @@ namespace System.IO.Enumeration
 
         public TResult Current => _current;
 
-        object IEnumerator.Current => Current;
+        object? IEnumerator.Current => Current;
 
         private void DirectoryFinished()
         {

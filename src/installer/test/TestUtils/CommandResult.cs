@@ -27,7 +27,7 @@ namespace Microsoft.DotNet.Cli.Build.Framework
 
         public void EnsureSuccessful(bool suppressOutput = false)
         {
-            if(ExitCode != 0)
+            if (ExitCode != 0)
             {
                 StringBuilder message = new StringBuilder($"Command failed with exit code {ExitCode}: {StartInfo.FileName} {StartInfo.Arguments}");
 

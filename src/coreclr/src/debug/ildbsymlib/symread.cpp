@@ -233,7 +233,7 @@ HRESULT SymReader::InitializeFromStream(
     BYTE *pSignature;
     HRESULT hr = S_OK;
 
-    // Reset the stream to the begining
+    // Reset the stream to the beginning
     LARGE_INTEGER li;
     li.u.HighPart = 0;
     li.u.LowPart = 0;

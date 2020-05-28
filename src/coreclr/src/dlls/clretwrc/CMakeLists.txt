@@ -1,6 +1,6 @@
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
 
-if(WIN32)
+if(CLR_CMAKE_HOST_WIN32)
     # remove /ltcg from resource-only libraries
     string(REPLACE "/LTCG" "" CMAKE_SHARED_LINKER_FLAGS_RELEASE ${CMAKE_SHARED_LINKER_FLAGS_RELEASE})
     string(REPLACE "/LTCG" "" CMAKE_STATIC_LINKER_FLAGS_RELEASE ${CMAKE_STATIC_LINKER_FLAGS_RELEASE})
@@ -11,7 +11,7 @@ if(WIN32)
     string(REPLACE "/guard:cf" "" CMAKE_SHARED_LINKER_FLAGS ${CMAKE_SHARED_LINKER_FLAGS})
 
     set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} /NOENTRY")
-endif(WIN32)
+endif(CLR_CMAKE_HOST_WIN32)
 
 add_definitions(-DFX_VER_INTERNALNAME_STR=clretwrc.dll)
 
@@ -20,7 +20,6 @@ add_library_clr(clretwrc SHARED
 )
 
 # add the install targets
-install_clr(TARGETS clretwrc)
-install_clr(TARGETS clretwrc DESTINATION sharedFramework SKIP_STRIP)
+install_clr(TARGETS clretwrc ADDITIONAL_DESTINATION sharedFramework)
 
 add_dependencies(clretwrc eventing_headers)

@@ -89,8 +89,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         {
             IBindableVector _this = Unsafe.As<IBindableVector>(this);
 
-            uint index;
-            bool exists = _this.IndexOf(item, out index);
+            bool exists = _this.IndexOf(item, out uint index);
 
             if (!exists)
                 return -1;
@@ -118,8 +117,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         {
             IBindableVector _this = Unsafe.As<IBindableVector>(this);
 
-            uint index;
-            bool exists = _this.IndexOf(item, out index);
+            bool exists = _this.IndexOf(item, out uint index);
 
             if (exists)
             {

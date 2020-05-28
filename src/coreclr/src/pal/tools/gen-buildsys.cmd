@@ -40,7 +40,7 @@ shift
 goto loop
 :end_loop
 
-"%CMakePath%" -DCMAKE_USER_MAKE_RULES_OVERRIDE= "-DCMAKE_INSTALL_PREFIX=%__CMakeBinDir%" "-DCLR_CMAKE_HOST_ARCH=%__Arch%" %__ExtraCmakeParams% -G "%__CmakeGenerator%" -S %__SourceDir% -B %__IntermediatesDir%
+"%CMakePath%" "-DCMAKE_INSTALL_PREFIX=%__CMakeBinDir%" "-DCLR_CMAKE_HOST_ARCH=%__Arch%" %__ExtraCmakeParams% -G "%__CmakeGenerator%" -S %__SourceDir% -B %__IntermediatesDir%
 endlocal
 exit /B !errorlevel!
 

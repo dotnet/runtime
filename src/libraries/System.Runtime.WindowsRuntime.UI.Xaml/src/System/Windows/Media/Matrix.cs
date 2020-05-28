@@ -2,10 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-//
-
-//
-
 using System;
 using System.Runtime.InteropServices;
 using Point = Windows.Foundation.Point;
@@ -136,19 +132,19 @@ namespace Windows.UI.Xaml.Media
             return ConvertToString(null /* format string */, null /* format provider */);
         }
 
-        public string ToString(IFormatProvider provider)
+        public string ToString(IFormatProvider? provider)
         {
             // Delegate to the internal method which implements all ToString calls.
             return ConvertToString(null /* format string */, provider);
         }
 
-        string IFormattable.ToString(string format, IFormatProvider provider)
+        string IFormattable.ToString(string? format, IFormatProvider? provider)
         {
             // Delegate to the internal method which implements all ToString calls.
             return ConvertToString(format, provider);
         }
 
-        private string ConvertToString(string format, IFormatProvider provider)
+        private string ConvertToString(string? format, IFormatProvider? provider)
         {
             if (IsIdentity)
             {
@@ -188,7 +184,7 @@ namespace Windows.UI.Xaml.Media
                    OffsetY.GetHashCode();
         }
 
-        public override bool Equals(object o)
+        public override bool Equals(object? o)
         {
             return o is Matrix && Matrix.Equals(this, (Matrix)o);
         }

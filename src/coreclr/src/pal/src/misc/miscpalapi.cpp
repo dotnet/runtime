@@ -245,7 +245,7 @@ PAL_Random(
     {
         do
         {
-            rand_des = open("/dev/urandom", O_RDONLY, O_CLOEXEC);
+            rand_des = open("/dev/urandom", O_RDONLY | O_CLOEXEC);
         }
         while ((rand_des == -1) && (errno == EINTR));
 

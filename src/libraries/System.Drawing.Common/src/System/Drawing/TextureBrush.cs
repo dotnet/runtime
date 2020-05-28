@@ -96,7 +96,7 @@ namespace System.Drawing
 
         public TextureBrush(Image image, RectangleF dstRect) : this(image, dstRect, null) { }
 
-        public TextureBrush(Image image, RectangleF dstRect, ImageAttributes imageAttr)
+        public TextureBrush(Image image, RectangleF dstRect, ImageAttributes? imageAttr)
         {
             if (image == null)
             {
@@ -119,7 +119,7 @@ namespace System.Drawing
 
         public TextureBrush(Image image, Rectangle dstRect) : this(image, dstRect, null) { }
 
-        public TextureBrush(Image image, Rectangle dstRect, ImageAttributes imageAttr)
+        public TextureBrush(Image image, Rectangle dstRect, ImageAttributes? imageAttr)
         {
             if (image == null)
             {

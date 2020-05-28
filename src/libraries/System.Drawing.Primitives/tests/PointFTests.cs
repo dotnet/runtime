@@ -135,7 +135,7 @@ namespace System.Drawing.PrimitivesTests
 
             // If PointF implements IEquatable<PointF> (e.g. in .NET Core), then classes that are implicitly
             // convertible to PointF can potentially be equal.
-            // See https://github.com/dotnet/corefx/issues/5255.
+            // See https://github.com/dotnet/runtime/issues/16050.
             bool expectsImplicitCastToPointF = typeof(IEquatable<PointF>).IsAssignableFrom(point.GetType());
             Assert.Equal(expectsImplicitCastToPointF, point.Equals(new Point(0, 0)));
 

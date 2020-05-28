@@ -729,7 +729,7 @@ namespace System.DirectoryServices.Protocols
                 Marshal.WriteIntPtr(tempPtr, IntPtr.Zero);
 
                 bool critical = IsCritical;
-                int error = Wldap32.ldap_create_sort_control(UtilityHandle.GetHandle(), memHandle, critical ? (byte)1 : (byte)0, ref control);
+                int error = LdapPal.CreateDirectorySortControl(UtilityHandle.GetHandle(), memHandle, critical ? (byte)1 : (byte)0, ref control);
 
                 if (error != 0)
                 {
@@ -759,7 +759,7 @@ namespace System.DirectoryServices.Protocols
             {
                 if (control != IntPtr.Zero)
                 {
-                    Wldap32.ldap_control_free(control);
+                    LdapPal.FreeDirectoryControl(control);
                 }
 
                 if (memHandle != IntPtr.Zero)
@@ -950,9 +950,9 @@ namespace System.DirectoryServices.Protocols
             // encode Target if it is not null
             if (Target.Length != 0)
             {
-                seq.Append("t");
+                seq.Append('t');
                 objList.Add(0x80 | 0x1);
-                seq.Append("o");
+                seq.Append('o');
                 objList.Add(Target);
             }
             else
@@ -962,17 +962,17 @@ namespace System.DirectoryServices.Protocols
                 seq.Append("ii");
                 objList.Add(Offset);
                 objList.Add(EstimateCount);
-                seq.Append("}");
+                seq.Append('}');
             }
 
             // encode the contextID if present
             if (ContextId.Length != 0)
             {
-                seq.Append("o");
+                seq.Append('o');
                 objList.Add(ContextId);
             }
 
-            seq.Append("}");
+            seq.Append('}');
             object[] values = new object[objList.Count];
             for (int i = 0; i < objList.Count; i++)
             {

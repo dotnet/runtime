@@ -33,17 +33,17 @@ class RCWWalker
 {
     friend struct _DacGlobals;
 
-private :
+private:
     static VolatilePtr<IJupiterGCManager>  s_pGCManager;            // The one and only GCManager instance
     static BOOL                     s_bGCStarted;                   // Has GC started?
+
+public:
     SVAL_DECL(BOOL,                 s_bIsGlobalPeggingOn);           // Do we need to peg every CCW?
 
-public :
 #ifndef DACCESS_COMPILE
     static void OnJupiterRCWCreated(RCW *pRCW, IJupiterObject *pJupiterObject);
     static void AfterJupiterRCWCreated(RCW *pRCW);
     static void BeforeJupiterRCWDestroyed(RCW *pRCW);
-    static void OnEEShutdown();
 
     //
     // Send out a AddRefFromTrackerSource callback to notify Jupiter we've done a AddRef

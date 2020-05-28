@@ -105,7 +105,7 @@ namespace System.ComponentModel.Composition.Primitives
         ///         </note>
         ///      </para>
         /// </remarks>
-        public virtual IDictionary<string, object> Metadata
+        public virtual IDictionary<string, object?> Metadata
         {
             get
             {
@@ -155,7 +155,7 @@ namespace System.ComponentModel.Composition.Primitives
         /// <exception cref="ComposablePartException">
         ///     An error occurred getting the exported value described by the <see cref="ExportDefinition"/>.
         /// </exception>
-        public abstract object GetExportedValue(ExportDefinition definition);
+        public abstract object? GetExportedValue(ExportDefinition definition);
 
         /// <summary>
         ///     Sets the import described by the specified definition with the specified exports.

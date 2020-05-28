@@ -41,16 +41,16 @@ namespace System.Net.Sockets
         private readonly ProtocolType _protocolType;
         private readonly object _lockObject;
 
-        private AcceptExDelegate _acceptEx;
-        private GetAcceptExSockaddrsDelegate _getAcceptExSockaddrs;
-        private ConnectExDelegate _connectEx;
-        private TransmitPacketsDelegate _transmitPackets;
+        private AcceptExDelegate? _acceptEx;
+        private GetAcceptExSockaddrsDelegate? _getAcceptExSockaddrs;
+        private ConnectExDelegate? _connectEx;
+        private TransmitPacketsDelegate? _transmitPackets;
 
-        private DisconnectExDelegate _disconnectEx;
-        private DisconnectExDelegateBlocking _disconnectExBlocking;
+        private DisconnectExDelegate? _disconnectEx;
+        private DisconnectExDelegateBlocking? _disconnectExBlocking;
 
-        private WSARecvMsgDelegate _recvMsg;
-        private WSARecvMsgDelegateBlocking _recvMsgBlocking;
+        private WSARecvMsgDelegate? _recvMsg;
+        private WSARecvMsgDelegateBlocking? _recvMsgBlocking;
 
         private DynamicWinsockMethods(AddressFamily addressFamily, SocketType socketType, ProtocolType protocolType)
         {
@@ -84,11 +84,13 @@ namespace System.Net.Sockets
             else if (typeof(T) == typeof(DisconnectExDelegate))
             {
                 EnsureDisconnectEx(socketHandle);
+                Debug.Assert(_disconnectEx != null);
                 return (T)(object)_disconnectEx;
             }
             else if (typeof(T) == typeof(DisconnectExDelegateBlocking))
             {
                 EnsureDisconnectEx(socketHandle);
+                Debug.Assert(_disconnectExBlocking != null);
                 return (T)(object)_disconnectExBlocking;
             }
             else if (typeof(T) == typeof(WSARecvMsgDelegate))

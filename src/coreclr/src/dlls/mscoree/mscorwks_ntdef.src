@@ -26,8 +26,5 @@ EXPORTS
         coreclr_shutdown
         coreclr_shutdown_2
 
-        ; il{d}asm
+        ; Used by profilers
         MetaDataGetDispenser
-        GetMetaDataInternalInterface
-        GetMetaDataInternalInterfaceFromPublic
-        GetMetaDataPublicInterfaceFromInternal

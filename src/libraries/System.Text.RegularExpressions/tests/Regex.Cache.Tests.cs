@@ -2,8 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Collections.Generic;
-using System.Diagnostics;
+using System.Collections;
 using System.Globalization;
 using System.Reflection;
 using Microsoft.DotNet.RemoteExecutor;
@@ -11,6 +10,7 @@ using Xunit;
 
 namespace System.Text.RegularExpressions.Tests
 {
+    [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
     public class RegexCacheTests
     {
         [Theory]
@@ -137,9 +137,10 @@ namespace System.Text.RegularExpressions.Tests
 
         private int GetCachedItemsNum()
         {
-            return (int)typeof(Regex)
-                .GetField("s_cacheCount", BindingFlags.NonPublic | BindingFlags.Static)
-                .GetValue(null);
+            return ((ICollection)typeof(Regex).Assembly
+                .GetType("System.Text.RegularExpressions.RegexCache")
+                .GetField("s_cacheList", BindingFlags.NonPublic | BindingFlags.Static)
+                .GetValue(null)).Count;
         }
     }
 }

@@ -8,7 +8,7 @@ using Xunit;
 //
 // About the "desktopQuirk"
 //
-//   On the desktop CLR, GetRuntimeProperties() and GetRuntimeEvents() behave inconsistently from the other
+//   On the .NET Framework, GetRuntimeProperties() and GetRuntimeEvents() behave inconsistently from the other
 //   GetRuntime*() apis in that they suppress hidden instance properties and events from base classes.
 //
 //   On .NET Native, the GetRuntime*() apis all behave consistently (i.e. the results include hidden instance

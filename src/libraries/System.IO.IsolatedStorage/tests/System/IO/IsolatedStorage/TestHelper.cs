@@ -32,8 +32,8 @@ namespace System.IO.IsolatedStorage
             // Application scope doesn't go under a random dir
             s_roots.Add(Path.Combine(userRoot, hash));
 
-            // https://github.com/dotnet/corefx/issues/12628
-            // https://github.com/dotnet/corefx/issues/19839
+            // https://github.com/dotnet/runtime/issues/2092
+            // https://github.com/dotnet/runtime/issues/21742
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)
                 && !PlatformDetection.IsInAppContainer)
             {
@@ -49,7 +49,7 @@ namespace System.IO.IsolatedStorage
         /// </summary>
         public static string GetUserRootDirectory(this IsolatedStorageFile isf)
         {
-            // CoreFX and NetFX use the same internal property
+            // .NET Core and .NET Framework use the same internal property
             return (string)s_rootDirectoryProperty.GetValue(isf);
         }
 

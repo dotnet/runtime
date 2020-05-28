@@ -138,21 +138,16 @@ namespace System
             }
         }
 
-        public static bool UserInteractive => true;
-
         public static Version Version
         {
             get
             {
-                // FX_PRODUCT_VERSION is expected to be set by the host
-                // Use AssemblyInformationalVersionAttribute as fallback if the exact product version is not specified by the host
-                string? versionString = (string?)AppContext.GetData("FX_PRODUCT_VERSION") ??
-                    typeof(object).Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion;
+                string? versionString = typeof(object).Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion;
 
                 ReadOnlySpan<char> versionSpan = versionString.AsSpan();
 
                 // Strip optional suffixes
-                int separatorIndex = versionSpan.IndexOfAny("-+ ");
+                int separatorIndex = versionSpan.IndexOfAny('-', '+', ' ');
                 if (separatorIndex != -1)
                     versionSpan = versionSpan.Slice(0, separatorIndex);
 

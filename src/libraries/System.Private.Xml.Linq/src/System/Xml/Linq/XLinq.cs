@@ -690,7 +690,6 @@ namespace System.Xml.Linq
         None = 0x00000000,
 
         /// <summary>Preserve whitespace.</summary>
-        [SuppressMessage("Microsoft.Naming", "CA1702:CompoundWordsShouldBeCasedCorrectly", Justification = "Back-compat with System.Xml.")]
         PreserveWhitespace = 0x00000001,
 
         /// <summary>Set the BaseUri property.</summary>

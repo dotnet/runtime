@@ -14,19 +14,19 @@ namespace System.Diagnostics
     {
         private readonly string _fileName;
 
-        private string _companyName;
-        private string _fileDescription;
-        private string _fileVersion;
-        private string _internalName;
-        private string _legalCopyright;
-        private string _originalFilename;
-        private string _productName;
-        private string _productVersion;
-        private string _comments;
-        private string _legalTrademarks;
-        private string _privateBuild;
-        private string _specialBuild;
-        private string _language;
+        private string? _companyName;
+        private string? _fileDescription;
+        private string? _fileVersion;
+        private string? _internalName;
+        private string? _legalCopyright;
+        private string? _originalFilename;
+        private string? _productName;
+        private string? _productVersion;
+        private string? _comments;
+        private string? _legalTrademarks;
+        private string? _privateBuild;
+        private string? _specialBuild;
+        private string? _language;
         private int _fileMajor;
         private int _fileMinor;
         private int _fileBuild;
@@ -44,7 +44,7 @@ namespace System.Diagnostics
         /// <summary>
         /// Gets the comments associated with the file.
         /// </summary>
-        public string Comments
+        public string? Comments
         {
             get { return _comments; }
         }
@@ -52,7 +52,7 @@ namespace System.Diagnostics
         /// <summary>
         /// Gets the name of the company that produced the file.
         /// </summary>
-        public string CompanyName
+        public string? CompanyName
         {
             get { return _companyName; }
         }
@@ -68,7 +68,7 @@ namespace System.Diagnostics
         /// <summary>
         /// Gets the description of the file.
         /// </summary>
-        public string FileDescription
+        public string? FileDescription
         {
             get { return _fileDescription; }
         }
@@ -108,7 +108,7 @@ namespace System.Diagnostics
         /// <summary>
         /// Gets the file version number.
         /// </summary>
-        public string FileVersion
+        public string? FileVersion
         {
             get { return _fileVersion; }
         }
@@ -116,7 +116,7 @@ namespace System.Diagnostics
         /// <summary>
         /// Gets the internal name of the file, if one exists.
         /// </summary>
-        public string InternalName
+        public string? InternalName
         {
             get { return _internalName; }
         }
@@ -167,7 +167,7 @@ namespace System.Diagnostics
         /// <summary>
         /// Gets the default language string for the version info block.
         /// </summary>
-        public string Language
+        public string? Language
         {
             get { return _language; }
         }
@@ -175,7 +175,7 @@ namespace System.Diagnostics
         /// <summary>
         /// Gets all copyright notices that apply to the specified file.
         /// </summary>
-        public string LegalCopyright
+        public string? LegalCopyright
         {
             get { return _legalCopyright; }
         }
@@ -183,7 +183,7 @@ namespace System.Diagnostics
         /// <summary>
         /// Gets the trademarks and registered trademarks that apply to the file.
         /// </summary>
-        public string LegalTrademarks
+        public string? LegalTrademarks
         {
             get { return _legalTrademarks; }
         }
@@ -191,7 +191,7 @@ namespace System.Diagnostics
         /// <summary>
         /// Gets the name the file was created with.
         /// </summary>
-        public string OriginalFilename
+        public string? OriginalFilename
         {
             get { return _originalFilename; }
         }
@@ -199,7 +199,7 @@ namespace System.Diagnostics
         /// <summary>
         /// Gets information about a private version of the file.
         /// </summary>
-        public string PrivateBuild
+        public string? PrivateBuild
         {
             get { return _privateBuild; }
         }
@@ -231,7 +231,7 @@ namespace System.Diagnostics
         /// <summary>
         /// Gets the name of the product this file is distributed with.
         /// </summary>
-        public string ProductName
+        public string? ProductName
         {
             get { return _productName; }
         }
@@ -247,7 +247,7 @@ namespace System.Diagnostics
         /// <summary>
         /// Gets the version of the product this file is distributed with.
         /// </summary>
-        public string ProductVersion
+        public string? ProductVersion
         {
             get { return _productVersion; }
         }
@@ -255,7 +255,7 @@ namespace System.Diagnostics
         /// <summary>
         /// Gets the special build information for the file.
         /// </summary>
-        public string SpecialBuild
+        public string? SpecialBuild
         {
             get { return _specialBuild; }
         }

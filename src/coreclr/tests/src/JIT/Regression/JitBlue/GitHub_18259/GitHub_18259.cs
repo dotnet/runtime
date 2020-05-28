@@ -4,7 +4,7 @@
 
 using System;
 
-// Test case for issue 18259
+// Test case for https://github.com/dotnet/coreclr/issues/18259
 //
 // We were a missing check for ZeroOffsetFldSeq values on LclVar reads
 // 

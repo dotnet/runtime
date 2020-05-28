@@ -13,6 +13,7 @@ namespace System.Drawing
     public static class Helpers
     {
         public const string IsDrawingSupported = nameof(Helpers) + "." + nameof(GetIsDrawingSupported);
+        public const string IsWindowsOrAtLeastLibgdiplus6 = nameof(Helpers) + "." + nameof(GetIsWindowsOrAtLeastLibgdiplus6);
         public const string RecentGdiplusIsAvailable = nameof(Helpers) + "." + nameof(GetRecentGdiPlusIsAvailable);
         public const string RecentGdiplusIsAvailable2 = nameof(Helpers) + "." + nameof(GetRecentGdiPlusIsAvailable2);
         public const string GdiPlusIsAvailableNotRedhat73 = nameof(Helpers) + "." + nameof(GetGdiPlusIsAvailableNotRedhat73);
@@ -22,14 +23,44 @@ namespace System.Drawing
 
         public static bool GetIsDrawingSupported() => PlatformDetection.IsDrawingSupported;
 
+        public static bool GetIsWindowsOrAtLeastLibgdiplus6()
+        {
+            if (!PlatformDetection.IsDrawingSupported)
+            {
+                return false;
+            }
+
+            if (PlatformDetection.IsWindows)
+            {
+                return true;
+            }
+
+            Version installedVersion;
+
+            try
+            {
+                installedVersion = new Version(GetLibgdiplusVersion());
+            }
+            catch (DllNotFoundException)
+            {
+                return false;
+            }
+            catch (EntryPointNotFoundException)
+            {
+                return false;
+            }
+
+            return installedVersion.Major >= 6;
+        }
+
         public static bool IsNotUnix => PlatformDetection.IsWindows;
 
         public static bool IsWindowsRS3OrEarlier => !PlatformDetection.IsWindows10Version1803OrGreater;
 
         public static bool GetRecentGdiPlusIsAvailable2()
         {
-            // RedHat and Ubuntu 14.04, as well as Fedora 25 and OpenSUSE 4.22 are running outdated versions of libgdiplus
-            if (PlatformDetection.IsRedHatFamily || PlatformDetection.IsUbuntu1404 || PlatformDetection.IsFedora || PlatformDetection.IsOpenSUSE)
+            // RedHat as well as Fedora 25 and OpenSUSE 4.22 are running outdated versions of libgdiplus
+            if (PlatformDetection.IsRedHatFamily || PlatformDetection.IsFedora || PlatformDetection.IsOpenSUSE)
             {
                 return false;
             }
@@ -59,8 +90,8 @@ namespace System.Drawing
 
         public static bool GetRecentGdiPlusIsAvailable()
         {
-            // RedHat and Ubuntu 14.04 are running outdated versions of libgdiplus
-            if (PlatformDetection.IsRedHatFamily || PlatformDetection.IsUbuntu1404)
+            // RedHat is running outdated versions of libgdiplus
+            if (PlatformDetection.IsRedHatFamily)
             {
                 return false;
             }
@@ -138,6 +169,9 @@ namespace System.Drawing
         }
 
         private const int MONITOR_DEFAULTTOPRIMARY = 1;
+
+        [DllImport("libgdiplus", ExactSpelling = true)]
+        internal static extern string GetLibgdiplusVersion();
 
         [DllImport("user32.dll", SetLastError = true)]
         private static extern IntPtr MonitorFromWindow(IntPtr hWnd, int dwFlags);

@@ -8,11 +8,11 @@ namespace System.Net.Test.Common
     {
         public static partial class WebSockets
         {
-            public static string ProxyServerUri => GetValue("COREFX_WEBSOCKETPROXYSERVERURI");
+            public static string ProxyServerUri => GetValue("DOTNET_TEST_WEBSOCKETPROXYSERVERURI");
 
-            public static string Host => GetValue("COREFX_WEBSOCKETHOST", DefaultAzureServer);
+            public static string Host => GetValue("DOTNET_TEST_WEBSOCKETHOST", DefaultAzureServer);
 
-            public static string SecureHost => GetValue("COREFX_SECUREWEBSOCKETHOST", DefaultAzureServer);
+            public static string SecureHost => GetValue("DOTNET_TEST_SECUREWEBSOCKETHOST", DefaultAzureServer);
 
             private const string EchoHandler = "WebSocket/EchoWebSocket.ashx";
             private const string EchoHeadersHandler = "WebSocket/EchoWebSocketHeaders.ashx";

@@ -35,7 +35,7 @@ namespace System.DirectoryServices.Protocols
                     if (servers[i] != null)
                     {
                         string trimmedName = servers[i].Trim();
-                        string[] result = trimmedName.Split(new char[] { ' ' });
+                        string[] result = trimmedName.Split(' ');
                         if (result.Length > 1)
                         {
                             throw new ArgumentException(SR.WhiteSpaceServerName);

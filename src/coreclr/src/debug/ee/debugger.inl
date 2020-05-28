@@ -231,7 +231,7 @@ inline void FuncEvalFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
 #endif // !FEATURE_EH_FUNCLETS
 
 
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
     // Update all registers in the reg display from the CONTEXT we stored when the thread was hijacked for this func
     // eval. We have to update all registers, not just the callee saved registers, because we can hijack a thread at any
     // point for a func eval, not just at a call site.
@@ -246,7 +246,7 @@ inline void FuncEvalFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
     pRD->PCTAddr = GetReturnAddressPtr();
     pRD->ControlPC = *PTR_PCODE(pRD->PCTAddr);
 
-#elif defined(_TARGET_AMD64_)
+#elif defined(TARGET_AMD64)
     pRD->IsCallerContextValid = FALSE;
     pRD->IsCallerSPValid      = FALSE;        // Don't add usage of this flag.  This is only temporary.
 
@@ -272,7 +272,7 @@ inline void FuncEvalFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
     // SyncRegDisplayToCurrentContext() sets the pRD->SP and pRD->ControlPC on AMD64.
     SyncRegDisplayToCurrentContext(pRD);
 
-#elif defined(_TARGET_ARM_)
+#elif defined(TARGET_ARM)
     pRD->IsCallerContextValid = FALSE;
     pRD->IsCallerSPValid      = FALSE;        // Don't add usage of this flag.  This is only temporary.
 
@@ -296,7 +296,7 @@ inline void FuncEvalFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
 
     SyncRegDisplayToCurrentContext(pRD);
 
-#elif defined(_TARGET_ARM64_)
+#elif defined(TARGET_ARM64)
     pRD->IsCallerContextValid = FALSE;
     pRD->IsCallerSPValid = FALSE;        // Don't add usage of this flag.  This is only temporary.
 

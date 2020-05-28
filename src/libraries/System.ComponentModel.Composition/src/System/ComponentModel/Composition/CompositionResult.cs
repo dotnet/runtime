@@ -12,21 +12,21 @@ namespace System.ComponentModel.Composition
     internal struct CompositionResult
     {
         public static readonly CompositionResult SucceededResult;
-        private readonly IEnumerable<CompositionError> _errors;
+        private readonly IEnumerable<CompositionError>? _errors;
 
         public CompositionResult(params CompositionError[] errors)
             : this((IEnumerable<CompositionError>)errors)
         {
         }
 
-        public CompositionResult(IEnumerable<CompositionError> errors)
+        public CompositionResult(IEnumerable<CompositionError>? errors)
         {
             _errors = errors;
         }
 
         public bool Succeeded
         {
-            get { return _errors == null || !_errors.FastAny(); }
+            get { return _errors == null || !_errors.Any(); }
         }
 
         public IEnumerable<CompositionError> Errors
@@ -52,7 +52,7 @@ namespace System.ComponentModel.Composition
             return MergeErrors(new CompositionError[] { error });
         }
 
-        public CompositionResult MergeErrors(IEnumerable<CompositionError> errors)
+        public CompositionResult MergeErrors(IEnumerable<CompositionError>? errors)
         {
             return new CompositionResult(_errors.ConcatAllowingNull(errors));
         }
@@ -67,7 +67,7 @@ namespace System.ComponentModel.Composition
             ThrowOnErrors(null);
         }
 
-        public void ThrowOnErrors(AtomicComposition atomicComposition)
+        public void ThrowOnErrors(AtomicComposition? atomicComposition)
         {
             if (!Succeeded)
             {

@@ -11,7 +11,6 @@ namespace System.Collections.Immutable
     /// <content>
     /// Contains the inner <see cref="ImmutableHashSet{T}.Builder"/> class.
     /// </content>
-    [SuppressMessage("Microsoft.Naming", "CA1710:IdentifiersShouldHaveCorrectSuffix", Justification = "Ignored")]
     public sealed partial class ImmutableHashSet<T>
     {
         /// <summary>
@@ -28,8 +27,6 @@ namespace System.Collections.Immutable
         /// Instance members of this class are <em>not</em> thread-safe.
         /// </para>
         /// </remarks>
-        [SuppressMessage("Microsoft.Naming", "CA1710:IdentifiersShouldHaveCorrectSuffix", Justification = "Ignored")]
-        [SuppressMessage("Microsoft.Design", "CA1034:NestedTypesShouldNotBeVisible", Justification = "Ignored")]
         [DebuggerDisplay("Count = {Count}")]
         public sealed class Builder : IReadOnlyCollection<T>, ISet<T>
         {
@@ -57,7 +54,7 @@ namespace System.Collections.Immutable
             /// Caches an immutable instance that represents the current state of the collection.
             /// </summary>
             /// <value>Null if no immutable view has been created for the current version.</value>
-            private ImmutableHashSet<T> _immutable;
+            private ImmutableHashSet<T>? _immutable;
 
             /// <summary>
             /// A number that increments every time the builder changes its contents.
@@ -204,6 +201,24 @@ namespace System.Collections.Immutable
                 }
 
                 return _immutable;
+            }
+
+            /// <summary>
+            /// Searches the set for a given value and returns the equal value it finds, if any.
+            /// </summary>
+            /// <param name="equalValue">The value for which to search.</param>
+            /// <param name="actualValue">The value from the set that the search found, or the original value if the search yielded no match.</param>
+            /// <returns>A value indicating whether the search was successful.</returns>
+            public bool TryGetValue(T equalValue, out T actualValue)
+            {
+                int hashCode = equalValue != null ? _equalityComparer.GetHashCode(equalValue) : 0;
+                if (_root.TryGetValue(hashCode, out HashBucket bucket))
+                {
+                    return bucket.TryExchange(equalValue, _equalityComparer, out actualValue);
+                }
+
+                actualValue = equalValue;
+                return false;
             }
 
             #endregion

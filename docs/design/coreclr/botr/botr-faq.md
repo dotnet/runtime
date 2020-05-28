@@ -3,7 +3,7 @@ Book of the Runtime (BotR) FAQ
 
 # What is the BotR?
 
-The [Book of the Runtime](https://github.com/dotnet/coreclr#learn-about-coreclr) is a set of documents that describe components in the CLR and BCL. They are intended to focus more on architecture and invariants and not an annotated description of the codebase.
+The [Book of the Runtime](https://github.com/dotnet/runtime/blob/master/docs/design/coreclr/botr/README.md) is a set of documents that describe components in the CLR and BCL. They are intended to focus more on architecture and invariants and not an annotated description of the codebase.
 
 It was originally created within Microsoft in ~ 2007, including this document. Developers were responsible to document their feature areas. This helped new devs joining the team and also helped share the product architecture across the team.
 
@@ -29,7 +29,7 @@ A design doc is what you write before you start implementation. A BotR chapter i
 
 A new dev can be a great contributor to BotR as one of the most important purposes of BotR is to help new devs with getting up to speed. Here are some ways you can contribute:
 
-- Be a reviewer! If you think some things are not clear or could be explained better, do not hesitate to contact the author of the chapter and chat with him/her to see how you can make it more understandable.
+- Be a reviewer! If you think some things are not clear or could be explained better, do not hesitate to contact the author of the chapter and chat with them to see how you can make it more understandable.
 - As you are getting up to speed in your area, look over the BotR chapters for your area and see if there are any errors or anything that requires an update and make the modifications yourself.
 - Volunteer to write a chapter or part of a chapter. This might seem like a daunting task but you can start by just accumulating knowledge - take notes as you learn stuff about your area and gradually mold it into a BotR chapter.
 

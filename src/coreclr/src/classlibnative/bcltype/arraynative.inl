@@ -58,7 +58,7 @@ FORCEINLINE void InlinedForwardGCSafeCopyHelper(void *dest, const void *src, siz
             ++dptr;
         }
 
-#if defined(_AMD64_) && (defined(_MSC_VER) || defined(__GNUC__))
+#if defined(HOST_AMD64) && (defined(_MSC_VER) || defined(__GNUC__))
         if ((len & (2 * sizeof(SIZE_T))) != 0)
         {
             __m128 v = _mm_loadu_ps((float *)sptr);
@@ -104,7 +104,7 @@ FORCEINLINE void InlinedForwardGCSafeCopyHelper(void *dest, const void *src, siz
         {
             return;
         }
-#else // !(defined(_AMD64_) && (defined(_MSC_VER) || defined(__GNUC__)))
+#else // !(defined(HOST_AMD64) && (defined(_MSC_VER) || defined(__GNUC__)))
         if ((len & (2 * sizeof(SIZE_T))) != 0)
         {
             // Read two values and write two values to hint the use of wide loads and stores
@@ -144,7 +144,7 @@ FORCEINLINE void InlinedForwardGCSafeCopyHelper(void *dest, const void *src, siz
             sptr += 4;
             dptr += 4;
         }
-#endif // defined(_AMD64_) && (defined(_MSC_VER) || defined(__GNUC__))
+#endif // defined(HOST_AMD64) && (defined(_MSC_VER) || defined(__GNUC__))
     }
 }
 
@@ -193,7 +193,7 @@ FORCEINLINE void InlinedBackwardGCSafeCopyHelper(void *dest, const void *src, si
             }
         }
 
-#if defined(_AMD64_) && (defined(_MSC_VER) || defined(__GNUC__))
+#if defined(HOST_AMD64) && (defined(_MSC_VER) || defined(__GNUC__))
         if ((len & (2 * sizeof(SIZE_T))) != 0)
         {
             sptr -= 2;
@@ -242,7 +242,7 @@ FORCEINLINE void InlinedBackwardGCSafeCopyHelper(void *dest, const void *src, si
         {
             return;
         }
-#else // !(defined(_AMD64_) && (defined(_MSC_VER) || defined(__GNUC__)))
+#else // !(defined(HOST_AMD64) && (defined(_MSC_VER) || defined(__GNUC__)))
         if ((len & (2 * sizeof(SIZE_T))) != 0)
         {
             sptr -= 2;
@@ -281,7 +281,7 @@ FORCEINLINE void InlinedBackwardGCSafeCopyHelper(void *dest, const void *src, si
             len -= 4 * sizeof(SIZE_T);
         } while (len != 0);
         return;
-#endif // defined(_AMD64_) && (defined(_MSC_VER) || defined(__GNUC__))
+#endif // defined(HOST_AMD64) && (defined(_MSC_VER) || defined(__GNUC__))
     }
 }
 

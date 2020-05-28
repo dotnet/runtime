@@ -228,8 +228,6 @@ typedef DPTR(InlineTrackingMap) PTR_InlineTrackingMap;
 //
 // The resulting serialized format is a sequence of blobs:
 // 1) Header (4 byte aligned)
-//       short   MajorVersion - currently set to 1, increment on breaking change
-//       short   MinorVersion - currently set to 0, increment on non-breaking format addition
 //       int     SizeOfInlineIndex - size in bytes of the inline index
 //
 // 2) InlineIndex - Immediately following header. This is a sorted (by ZapInlineeRecord.key) array of ZapInlineeRecords, given a method token (32 bits)
@@ -359,7 +357,7 @@ public:
 #ifndef DACCESS_COMPILE
     static BOOL TryLoad(Module* pModule, const BYTE* pBuffer, DWORD cbBuffer, AllocMemTracker *pamTracker, PersistentInlineTrackingMapR2R** ppLoadedMap);
 #endif
-    COUNT_T GetInliners(PTR_Module inlineeOwnerMod, mdMethodDef inlineeTkn, COUNT_T inlinersSize, MethodInModule inliners[], BOOL *incompleteData);
+    virtual COUNT_T GetInliners(PTR_Module inlineeOwnerMod, mdMethodDef inlineeTkn, COUNT_T inlinersSize, MethodInModule inliners[], BOOL *incompleteData);
 
 
     // compile time serialization
@@ -370,6 +368,29 @@ public:
 };
 
 typedef DPTR(PersistentInlineTrackingMapR2R) PTR_PersistentInlineTrackingMapR2R;
+
+#ifndef DACCESS_COMPILE
+class PersistentInlineTrackingMapR2R2 : private PersistentInlineTrackingMapR2R
+{
+private:
+    PTR_Module m_module;
+
+    NativeFormat::NativeReader m_reader;
+    NativeFormat::NativeHashtable m_hashtable;
+
+public:
+
+    // runtime deserialization
+    static BOOL TryLoad(Module* pModule, const BYTE* pBuffer, DWORD cbBuffer, AllocMemTracker* pamTracker, PersistentInlineTrackingMapR2R2** ppLoadedMap);
+    virtual COUNT_T GetInliners(PTR_Module inlineeOwnerMod, mdMethodDef inlineeTkn, COUNT_T inlinersSize, MethodInModule inliners[], BOOL* incompleteData) override;
+
+private:
+    Module* GetModuleByIndex(DWORD index);
+};
+
+typedef DPTR(PersistentInlineTrackingMapR2R2) PTR_PersistentInlineTrackingMapR2R2;
+#endif
+
 #endif //FEATURE_READYTORUN
 
 #if !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)

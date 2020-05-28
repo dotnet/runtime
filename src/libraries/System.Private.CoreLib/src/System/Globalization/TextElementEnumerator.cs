@@ -4,49 +4,44 @@
 
 using System.Collections;
 using System.Diagnostics;
+using System.Text.Unicode;
 
 namespace System.Globalization
 {
     public class TextElementEnumerator : IEnumerator
     {
         private readonly string _str;
-        private int _index;
-        private readonly int _startIndex;
+        private readonly int _strStartIndex; // where in _str the enumeration should begin
 
-        // This is the length of the total string, counting from the beginning of string.
-        private readonly int _strLen;
+        private int _currentTextElementOffset;
+        private int _currentTextElementLength;
+        private string? _currentTextElementSubstr;
 
-        // The current text element lenght after MoveNext() is called.
-        private int _currTextElementLen;
-
-        private UnicodeCategory _uc;
-
-        // The next abstract char to look at after MoveNext() is called.
-        // It could be 1 or 2, depending on if it is a surrogate or not.
-        private int _charLen;
-
-        internal TextElementEnumerator(string str, int startIndex, int strLen)
+        internal TextElementEnumerator(string str, int startIndex)
         {
             Debug.Assert(str != null, "TextElementEnumerator(): str != null");
-            Debug.Assert(startIndex >= 0 && strLen >= 0, "TextElementEnumerator(): startIndex >= 0 && strLen >= 0");
-            Debug.Assert(strLen >= startIndex, "TextElementEnumerator(): strLen >= startIndex");
+            Debug.Assert(startIndex >= 0 && startIndex <= str.Length, "TextElementEnumerator(): startIndex >= 0 && startIndex <= str.Length");
+
             _str = str;
-            _startIndex = startIndex;
-            _strLen = strLen;
+            _strStartIndex = startIndex;
+
             Reset();
         }
 
         public bool MoveNext()
         {
-            if (_index >= _strLen)
+            _currentTextElementSubstr = null; // clear any cached substr
+
+            int newOffset = _currentTextElementOffset + _currentTextElementLength;
+            _currentTextElementOffset = newOffset; // advance
+            _currentTextElementLength = 0; // prevent future calls to MoveNext() or get_Current from succeeding if we've hit end of data
+
+            if (newOffset >= _str.Length)
             {
-                // Make the _index to be greater than _strLen so that we can throw exception if GetTextElement() is called.
-                _index = _strLen + 1;
-                return false;
+                return false; // reached the end of the data
             }
 
-            _currTextElementLen = StringInfo.GetCurrentTextElementLen(_str, _index, _strLen, ref _uc, ref _charLen);
-            _index += _currTextElementLen;
+            _currentTextElementLength = TextSegmentationUtility.GetLengthOfFirstUtf16ExtendedGraphemeCluster(_str.AsSpan(newOffset));
             return true;
         }
 
@@ -54,39 +49,45 @@ namespace System.Globalization
 
         public string GetTextElement()
         {
-            if (_index == _startIndex)
+            // Returned the cached substr if we've already generated it.
+            // Otherwise perform the substr operation now.
+
+            string? currentSubstr = _currentTextElementSubstr;
+            if (currentSubstr is null)
             {
-                throw new InvalidOperationException(SR.InvalidOperation_EnumNotStarted);
-            }
-            if (_index > _strLen)
-            {
-                throw new InvalidOperationException(SR.InvalidOperation_EnumEnded);
+                if (_currentTextElementOffset >= _str.Length)
+                {
+                    throw new InvalidOperationException(SR.InvalidOperation_EnumOpCantHappen);
+                }
+
+                currentSubstr = _str.Substring(_currentTextElementOffset, _currentTextElementLength);
+                _currentTextElementSubstr = currentSubstr;
             }
 
-            return _str.Substring(_index - _currTextElementLen, _currTextElementLen);
+            return currentSubstr;
         }
 
         public int ElementIndex
         {
             get
             {
-                if (_index == _startIndex)
+                if (_currentTextElementOffset >= _str.Length)
                 {
-                    throw new InvalidOperationException(SR.InvalidOperation_EnumNotStarted);
+                    throw new InvalidOperationException(SR.InvalidOperation_EnumOpCantHappen);
                 }
 
-                return _index - _currTextElementLen;
+                return _currentTextElementOffset - _strStartIndex;
             }
         }
 
         public void Reset()
         {
-            _index = _startIndex;
-            if (_index < _strLen)
-            {
-                // If we have more than 1 character, get the category of the current char.
-                _uc = CharUnicodeInfo.InternalGetUnicodeCategory(_str, _index, out _charLen);
-            }
+            // These first two fields are set to intentionally out-of-range values.
+            // They'll be fixed up once the enumerator starts.
+
+            _currentTextElementOffset = _str.Length;
+            _currentTextElementLength = _strStartIndex - _str.Length;
+            _currentTextElementSubstr = null;
         }
     }
 }

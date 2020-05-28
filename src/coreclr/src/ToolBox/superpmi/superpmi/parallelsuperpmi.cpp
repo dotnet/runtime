@@ -277,7 +277,7 @@ Cleanup:
     }
 }
 
-#ifndef FEATURE_PAL // TODO-Porting: handle Ctrl-C signals gracefully on Unix
+#ifndef TARGET_UNIX // TODO-Porting: handle Ctrl-C signals gracefully on Unix
 BOOL WINAPI CtrlHandler(DWORD fdwCtrlType)
 {
     // Since the child SuperPMI.exe processes share the same console
@@ -286,7 +286,7 @@ BOOL WINAPI CtrlHandler(DWORD fdwCtrlType)
     closeRequested = true; // set a flag to indicate we need to quit
     return TRUE;
 }
-#endif // !FEATURE_PAL
+#endif // !TARGET_UNIX
 
 int __cdecl compareInt(const void* arg1, const void* arg2)
 {
@@ -410,14 +410,14 @@ int doParallelSuperPMI(CommandLine::Options& o)
     SimpleTimer st;
     st.Start();
 
-#ifndef FEATURE_PAL // TODO-Porting: handle Ctrl-C signals gracefully on Unix
+#ifndef TARGET_UNIX // TODO-Porting: handle Ctrl-C signals gracefully on Unix
     // Register a ConsoleCtrlHandler
     if (!SetConsoleCtrlHandler(CtrlHandler, TRUE))
     {
         LogError("Failed to set control handler.");
         return 1;
     }
-#endif // !FEATURE_PAL
+#endif // !TARGET_UNIX
 
     char tempPath[MAX_PATH];
     if (!GetTempPath(MAX_PATH, tempPath))
@@ -469,11 +469,11 @@ int doParallelSuperPMI(CommandLine::Options& o)
 
     // Add a random number to the temporary file names to allow multiple parallel SuperPMI to happen at once.
     unsigned int randNumber = 0;
-#ifdef FEATURE_PAL
+#ifdef TARGET_UNIX
     PAL_Random(&randNumber, sizeof(randNumber));
-#else  // !FEATURE_PAL
+#else  // !TARGET_UNIX
     rand_s(&randNumber);
-#endif // !FEATURE_PAL
+#endif // !TARGET_UNIX
 
     for (int i = 0; i < o.workerCount; i++)
     {

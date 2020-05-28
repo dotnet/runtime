@@ -77,6 +77,7 @@ public:
 #endif //FEATURE_PREJIT
 
 protected:
+    DAC_ALIGNAS(CMiniMdTemplate<CMiniMd>) // Align the first member to the alignment of the base class
     // Table info.
     MetaData::TableRO m_Tables[TBL_COUNT];
 #ifdef FEATURE_PREJIT

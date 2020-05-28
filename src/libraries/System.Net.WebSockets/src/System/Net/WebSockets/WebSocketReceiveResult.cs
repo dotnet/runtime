@@ -17,7 +17,7 @@ namespace System.Net.WebSockets
             WebSocketMessageType messageType,
             bool endOfMessage,
             WebSocketCloseStatus? closeStatus,
-            string closeStatusDescription)
+            string? closeStatusDescription)
         {
             if (count < 0)
             {
@@ -35,6 +35,6 @@ namespace System.Net.WebSockets
         public bool EndOfMessage { get; }
         public WebSocketMessageType MessageType { get; }
         public WebSocketCloseStatus? CloseStatus { get; }
-        public string CloseStatusDescription { get; }
+        public string? CloseStatusDescription { get; }
     }
 }

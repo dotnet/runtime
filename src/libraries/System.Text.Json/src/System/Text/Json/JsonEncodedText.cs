@@ -32,6 +32,15 @@ namespace System.Text.Json
             _utf8Value = utf8Value;
         }
 
+        private JsonEncodedText(string stringValue, byte[] utf8Value)
+        {
+            Debug.Assert(stringValue != null);
+            Debug.Assert(utf8Value != null);
+
+            _value = stringValue;
+            _utf8Value = utf8Value;
+        }
+
         /// <summary>
         /// Encodes the string text value as a JSON string.
         /// </summary>
@@ -43,7 +52,7 @@ namespace System.Text.Json
         /// <exception cref="ArgumentException">
         /// Thrown when the specified value is too large or if it contains invalid UTF-16 characters.
         /// </exception>
-        public static JsonEncodedText Encode(string value, JavaScriptEncoder encoder = null)
+        public static JsonEncodedText Encode(string value, JavaScriptEncoder? encoder = null)
         {
             if (value == null)
                 throw new ArgumentNullException(nameof(value));
@@ -59,7 +68,7 @@ namespace System.Text.Json
         /// <exception cref="ArgumentException">
         /// Thrown when the specified value is too large or if it contains invalid UTF-16 characters.
         /// </exception>
-        public static JsonEncodedText Encode(ReadOnlySpan<char> value, JavaScriptEncoder encoder = null)
+        public static JsonEncodedText Encode(ReadOnlySpan<char> value, JavaScriptEncoder? encoder = null)
         {
             if (value.Length == 0)
             {
@@ -69,7 +78,7 @@ namespace System.Text.Json
             return TranscodeAndEncode(value, encoder);
         }
 
-        private static JsonEncodedText TranscodeAndEncode(ReadOnlySpan<char> value, JavaScriptEncoder encoder)
+        private static JsonEncodedText TranscodeAndEncode(ReadOnlySpan<char> value, JavaScriptEncoder? encoder)
         {
             JsonWriterHelper.ValidateValue(value);
 
@@ -100,7 +109,7 @@ namespace System.Text.Json
         /// <exception cref="ArgumentException">
         /// Thrown when the specified value is too large or if it contains invalid UTF-8 bytes.
         /// </exception>
-        public static JsonEncodedText Encode(ReadOnlySpan<byte> utf8Value, JavaScriptEncoder encoder = null)
+        public static JsonEncodedText Encode(ReadOnlySpan<byte> utf8Value, JavaScriptEncoder? encoder = null)
         {
             if (utf8Value.Length == 0)
             {
@@ -111,7 +120,7 @@ namespace System.Text.Json
             return EncodeHelper(utf8Value, encoder);
         }
 
-        private static JsonEncodedText EncodeHelper(ReadOnlySpan<byte> utf8Value, JavaScriptEncoder encoder)
+        private static JsonEncodedText EncodeHelper(ReadOnlySpan<byte> utf8Value, JavaScriptEncoder? encoder)
         {
             int idx = JsonWriterHelper.NeedsEscaping(utf8Value, encoder);
 
@@ -125,12 +134,43 @@ namespace System.Text.Json
             }
         }
 
-        private static byte[] GetEscapedString(ReadOnlySpan<byte> utf8Value, int firstEscapeIndexVal, JavaScriptEncoder encoder)
+        /// <summary>
+        /// Internal version that keeps the existing string and byte[] references if there is no escaping required.
+        /// </summary>
+        internal static JsonEncodedText Encode(string stringValue, byte[] utf8Value, JavaScriptEncoder? encoder = null)
+        {
+            Debug.Assert(stringValue.Equals(JsonHelpers.Utf8GetString(utf8Value)));
+
+            if (utf8Value.Length == 0)
+            {
+                return new JsonEncodedText(stringValue, utf8Value);
+            }
+
+            JsonWriterHelper.ValidateValue(utf8Value);
+            return EncodeHelper(stringValue, utf8Value, encoder);
+        }
+
+        private static JsonEncodedText EncodeHelper(string stringValue, byte[] utf8Value, JavaScriptEncoder? encoder)
+        {
+            int idx = JsonWriterHelper.NeedsEscaping(utf8Value, encoder);
+
+            if (idx != -1)
+            {
+                return new JsonEncodedText(GetEscapedString(utf8Value, idx, encoder));
+            }
+            else
+            {
+                // Encoding is not necessary; use the same stringValue and utf8Value references.
+                return new JsonEncodedText(stringValue, utf8Value);
+            }
+        }
+
+        private static byte[] GetEscapedString(ReadOnlySpan<byte> utf8Value, int firstEscapeIndexVal, JavaScriptEncoder? encoder)
         {
             Debug.Assert(int.MaxValue / JsonConstants.MaxExpansionFactorWhileEscaping >= utf8Value.Length);
             Debug.Assert(firstEscapeIndexVal >= 0 && firstEscapeIndexVal < utf8Value.Length);
 
-            byte[] valueArray = null;
+            byte[]? valueArray = null;
 
             int length = JsonWriterHelper.GetMaxEscapedLength(utf8Value.Length, firstEscapeIndexVal);
 
@@ -174,7 +214,7 @@ namespace System.Text.Json
         /// <remarks>
         /// If <paramref name="obj"/> is null, the method returns false.
         /// </remarks>
-        public override bool Equals(object obj)
+        public override bool Equals(object? obj)
         {
             if (obj is JsonEncodedText encodedText)
             {

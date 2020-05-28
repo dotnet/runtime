@@ -22,10 +22,7 @@
 #include "cgensys.h"
 #include "asmconstants.h"
 #include "virtualcallstub.h"
-#include "callingconvention.h"
-#include "customattribute.h"
 #include "typestring.h"
-#include "../md/compiler/custattr.h"
 #ifdef FEATURE_COMINTEROP
 #include "comcallablewrapper.h"
 #endif // FEATURE_COMINTEROP
@@ -35,7 +32,7 @@
 
 #ifndef DACCESS_COMPILE
 
-#if defined(_TARGET_X86_)
+#if defined(TARGET_X86)
 
 // Return an encoded shuffle entry describing a general register or stack offset that needs to be shuffled.
 static UINT16 ShuffleOfs(INT ofs, UINT stackSizeDelta = 0)
@@ -321,7 +318,7 @@ BOOL GenerateShuffleArrayPortable(MethodDesc* pMethodSrc, MethodDesc *pMethodDst
 
     UINT stackSizeDelta = 0;
 
-#if defined(_TARGET_X86_) && !defined(UNIX_X86_ABI)
+#if defined(TARGET_X86) && !defined(UNIX_X86_ABI)
     {
         UINT stackSizeSrc = sArgPlacerSrc.SizeOfArgStack();
         UINT stackSizeDst = sArgPlacerDst.SizeOfArgStack();
@@ -336,7 +333,7 @@ BOOL GenerateShuffleArrayPortable(MethodDesc* pMethodSrc, MethodDesc *pMethodDst
 
         stackSizeDelta = stackSizeSrc - stackSizeDst;
     }
-#endif // Callee pop architectures - defined(_TARGET_X86_) && !defined(UNIX_X86_ABI)
+#endif // Callee pop architectures - defined(TARGET_X86) && !defined(UNIX_X86_ABI)
 
     INT ofsSrc;
     INT ofsDst;
@@ -381,7 +378,7 @@ BOOL GenerateShuffleArrayPortable(MethodDesc* pMethodSrc, MethodDesc *pMethodDst
     {
         // The return buffer argument is implicit in both signatures.
 
-#if !defined(_TARGET_ARM64_) || !defined(CALLDESCR_RETBUFFARGREG)
+#if !defined(TARGET_ARM64) || !defined(CALLDESCR_RETBUFFARGREG)
         // The ifdef above disables this code if the ret buff arg is always in the same register, which
         // means that we don't need to do any shuffling for it.
 
@@ -390,7 +387,7 @@ BOOL GenerateShuffleArrayPortable(MethodDesc* pMethodSrc, MethodDesc *pMethodDst
 
         if (!AddNextShuffleEntryToArray(sArgSrc, sArgDst, pShuffleEntryArray, shuffleType))
             return FALSE;
-#endif // !defined(_TARGET_ARM64_) || !defined(CALLDESCR_RETBUFFARGREG)
+#endif // !defined(TARGET_ARM64) || !defined(CALLDESCR_RETBUFFARGREG)
     }
 
     // Iterate all the regular arguments. mapping source registers and stack locations to the corresponding
@@ -548,7 +545,7 @@ VOID GenerateShuffleArray(MethodDesc* pInvoke, MethodDesc *pTargetMeth, SArray<S
 #ifdef FEATURE_PORTABLE_SHUFFLE_THUNKS
     // Portable default implementation
     GenerateShuffleArrayPortable(pInvoke, pTargetMeth, pShuffleEntryArray, ShuffleComputationType::DelegateShuffleThunk);
-#elif defined(_TARGET_X86_)
+#elif defined(TARGET_X86)
     ShuffleEntry entry;
     ZeroMemory(&entry, sizeof(entry));
 
@@ -885,7 +882,7 @@ FCIMPL5(FC_BOOL_RET, COMDelegate::BindToMethodName,
                                                                  false /* do not allow code with a shared-code calling convention to be returned */,
                                                                  true /* Ensure that methods on generic interfaces are returned as instantiated method descs */);
                 BOOL fIsOpenDelegate;
-                if (!COMDelegate::IsMethodDescCompatible((gc.target == NULL) ? TypeHandle() : gc.target->GetTrueTypeHandle(),
+                if (!COMDelegate::IsMethodDescCompatible((gc.target == NULL) ? TypeHandle() : gc.target->GetTypeHandle(),
                                                         methodType,
                                                         pCurMethod,
                                                         gc.refThis->GetTypeHandle(),
@@ -903,8 +900,7 @@ FCIMPL5(FC_BOOL_RET, COMDelegate::BindToMethodName,
                              &gc.target,
                              pCurMethod,
                              methodType.GetMethodTable(),
-                             fIsOpenDelegate,
-                             TRUE);
+                             fIsOpenDelegate);
 
                 pMatchingMethod = pCurMethod;
                 goto done;
@@ -966,7 +962,7 @@ FCIMPL5(FC_BOOL_RET, COMDelegate::BindToMethodInfo, Object* refThisUNSAFE, Objec
                                                      true /* Ensure that methods on generic interfaces are returned as instantiated method descs */);
 
     BOOL fIsOpenDelegate;
-    if (COMDelegate::IsMethodDescCompatible((gc.refFirstArg == NULL) ? TypeHandle() : gc.refFirstArg->GetTrueTypeHandle(),
+    if (COMDelegate::IsMethodDescCompatible((gc.refFirstArg == NULL) ? TypeHandle() : gc.refFirstArg->GetTypeHandle(),
                                             TypeHandle(pMethMT),
                                             method,
                                             gc.refThis->GetTypeHandle(),
@@ -979,8 +975,7 @@ FCIMPL5(FC_BOOL_RET, COMDelegate::BindToMethodInfo, Object* refThisUNSAFE, Objec
                      &gc.refFirstArg,
                      method,
                      pMethMT,
-                     fIsOpenDelegate,
-                     !(flags & DBF_SkipSecurityChecks));
+                     fIsOpenDelegate);
     }
     else
         result = FALSE;
@@ -999,8 +994,7 @@ void COMDelegate::BindToMethod(DELEGATEREF   *pRefThis,
                                OBJECTREF     *pRefFirstArg,
                                MethodDesc    *pTargetMethod,
                                MethodTable   *pExactMethodType,
-                               BOOL           fIsOpenDelegate,
-                               BOOL           fCheckSecurity)
+                               BOOL           fIsOpenDelegate)
 {
     CONTRACTL
     {
@@ -1018,37 +1012,6 @@ void COMDelegate::BindToMethod(DELEGATEREF   *pRefThis,
     // keeps track of the real (i.e. non-wrapper) delegate whether or not this is required.
     DELEGATEREF refRealDelegate = NULL;
     GCPROTECT_BEGIN(refRealDelegate);
-
-    // Security checks (i.e. whether the creator of the delegate is allowed to access the target method) are the norm. They are only
-    // disabled when:
-    //   1. this is called by deserialization to recreate an existing delegate instance, where such checks are unwarranted.
-    //   2. this is called from DynamicMethod.CreateDelegate which doesn't need access check.
-    if (fCheckSecurity)
-    {
-        MethodTable *pInstanceMT = pExactMethodType;
-        bool targetPossiblyRemoted = false;
-
-        if (fIsOpenDelegate)
-        {
-            _ASSERTE(pRefFirstArg == NULL || *pRefFirstArg == NULL);
-
-        }
-        else
-        {
-            // closed-static is OK and we can check the target in the closed-instance case
-            pInstanceMT = (*pRefFirstArg == NULL ? NULL : (*pRefFirstArg)->GetMethodTable());
-        }
-
-        RefSecContext sCtx(InvokeUtil::GetInvocationAccessCheckType(targetPossiblyRemoted));
-
-        // Check visibility of the target method. If it's an instance method, we have to pass the type
-        // of the instance being accessed which we get from the first argument or from the method itself.
-        // The type of the instance is necessary for visibility checks of protected methods.
-        InvokeUtil::CheckAccessMethod(&sCtx,
-                                      pExactMethodType,
-                                      pTargetMethod->IsStatic() ? NULL : pInstanceMT,
-                                      pTargetMethod);
-    }
 
     // If we didn't wrap the real delegate in a wrapper delegate then the real delegate is the one passed in.
     if (refRealDelegate == NULL)
@@ -1166,73 +1129,28 @@ void COMDelegate::BindToMethod(DELEGATEREF   *pRefThis,
     GCPROTECT_END();
 }
 
-// Marshals a managed method to an unmanaged callback provided the
-// managed method is static and it's parameters require no marshalling.
-PCODE COMDelegate::ConvertToCallback(MethodDesc* pMD)
+#if defined(TARGET_X86)
+// Marshals a managed method to an unmanaged callback.
+PCODE COMDelegate::ConvertToUnmanagedCallback(MethodDesc* pMD)
 {
     CONTRACTL
     {
         THROWS;
-    GC_TRIGGERS;
-    INJECT_FAULT(COMPlusThrowOM());
+        GC_TRIGGERS;
+        PRECONDITION(pMD != NULL);
+        PRECONDITION(pMD->HasUnmanagedCallersOnlyAttribute());
+        INJECT_FAULT(COMPlusThrowOM());
     }
     CONTRACTL_END;
-
-    PCODE pCode = NULL;
-
-    // only static methods are allowed
-    if (!pMD->IsStatic())
-        COMPlusThrow(kNotSupportedException, W("NotSupported_NonStaticMethod"));
-
-    // no generic methods
-    if (pMD->IsGenericMethodDefinition())
-        COMPlusThrow(kNotSupportedException, W("NotSupported_GenericMethod"));
-
-    // Arguments
-    if (NDirect::MarshalingRequired(pMD, pMD->GetSig(), pMD->GetModule()))
-        COMPlusThrow(kNotSupportedException, W("NotSupported_NonBlittableTypes"));
 
     // Get UMEntryThunk from the thunk cache.
     UMEntryThunk *pUMEntryThunk = pMD->GetLoaderAllocator()->GetUMEntryThunkCache()->GetUMEntryThunk(pMD);
 
-#if defined(_TARGET_X86_) && !defined(FEATURE_STUBS_AS_IL)
-
-    // System.Runtime.InteropServices.NativeCallableAttribute
-    BYTE* pData = NULL;
-    LONG cData = 0;
-    CorPinvokeMap callConv = (CorPinvokeMap)0;
-
-    HRESULT hr = pMD->GetCustomAttribute(WellKnownAttribute::NativeCallable, (const VOID **)(&pData), (ULONG *)&cData);
-    IfFailThrow(hr);
-
-    if (cData > 0)
-    {
-        CustomAttributeParser ca(pData, cData);
-        // NativeCallable has two optional named arguments CallingConvention and EntryPoint.
-        CaNamedArg namedArgs[2];
-        CaTypeCtor caType(SERIALIZATION_TYPE_STRING);
-        // First, the void constructor.
-        IfFailThrow(ParseKnownCaArgs(ca, NULL, 0));
-
-        // Now the optional named properties
-        namedArgs[0].InitI4FieldEnum("CallingConvention", "System.Runtime.InteropServices.CallingConvention", (ULONG)callConv);
-        namedArgs[1].Init("EntryPoint", SERIALIZATION_TYPE_STRING, caType);
-        IfFailThrow(ParseKnownCaNamedArgs(ca, namedArgs, lengthof(namedArgs)));
-
-        callConv = (CorPinvokeMap)(namedArgs[0].val.u4 << 8);
-        // Let UMThunkMarshalInfo choose the default if calling convension not definied.
-        if (namedArgs[0].val.type.tag != SERIALIZATION_TYPE_UNDEFINED)
-        {
-            UMThunkMarshInfo* pUMThunkMarshalInfo = pUMEntryThunk->GetUMThunkMarshInfo();
-            pUMThunkMarshalInfo->SetCallingConvention(callConv);
-        }
-}
-#endif  //_TARGET_X86_ && !FEATURE_STUBS_AS_IL
-
-    pCode = (PCODE)pUMEntryThunk->GetCode();
+    PCODE pCode = (PCODE)pUMEntryThunk->GetCode();
     _ASSERTE(pCode != NULL);
     return pCode;
 }
+#endif // defined(TARGET_X86)
 
 // Marshals a delegate to a unmanaged callback.
 LPVOID COMDelegate::ConvertToCallback(OBJECTREF pDelegateObj)
@@ -1358,13 +1276,10 @@ OBJECTREF COMDelegate::ConvertToDelegate(LPVOID pCallback, MethodTable* pMT)
         THROWS;
         GC_TRIGGERS;
         MODE_COOPERATIVE;
+        PRECONDITION(pCallback != NULL);
+        PRECONDITION(pMT != NULL);
     }
     CONTRACTL_END;
-
-    if (!pCallback)
-    {
-        return NULL;
-    }
 
     //////////////////////////////////////////////////////////////////////////////////////////////////////////
     // Check if this callback was originally a managed method passed out to unmanaged code.
@@ -1382,25 +1297,13 @@ OBJECTREF COMDelegate::ConvertToDelegate(LPVOID pCallback, MethodTable* pMT)
     if (DelegateHnd != (LPVOID)INVALIDENTRY)
     {
         // Found a managed callsite
-        OBJECTREF pDelegate = NULL;
-        GCPROTECT_BEGIN(pDelegate);
-
-        pDelegate = ObjectFromHandle((OBJECTHANDLE)DelegateHnd);
-
-        // Make sure we're not trying to sneak into another domain.
-        SyncBlock* pSyncBlock = pDelegate->GetSyncBlock();
-        _ASSERTE(pSyncBlock);
-
-        InteropSyncBlockInfo* pInteropInfo = pSyncBlock->GetInteropInfo();
-        _ASSERTE(pInteropInfo);
-
-        pUMEntryThunk = (UMEntryThunk*)pInteropInfo->GetUMEntryThunk();
-        _ASSERTE(pUMEntryThunk);
-
-        GCPROTECT_END();
-        return pDelegate;
+        return ObjectFromHandle((OBJECTHANDLE)DelegateHnd);
     }
 
+    // Validate the MethodTable is a delegate type
+    // See Marshal.GetDelegateForFunctionPointer() for exception details.
+    if (!pMT->IsDelegate())
+        COMPlusThrowArgumentException(W("t"), W("Arg_MustBeDelegate"));
 
     //////////////////////////////////////////////////////////////////////////////////////////////////////////
     // This is an unmanaged callsite. We need to create a new delegate.
@@ -1461,7 +1364,7 @@ OBJECTREF COMDelegate::ConvertToDelegate(LPVOID pCallback, MethodTable* pMT)
         delObj->SetInvocationCount(DELEGATE_MARKER_UNMANAGEDFPTR);
     }
 
-#if defined(_TARGET_X86_)
+#if defined(TARGET_X86)
     GCPROTECT_BEGIN(delObj);
 
     Stub *pInterceptStub = NULL;
@@ -1484,7 +1387,7 @@ OBJECTREF COMDelegate::ConvertToDelegate(LPVOID pCallback, MethodTable* pMT)
     }
 
     GCPROTECT_END();
-#endif // _TARGET_X86_
+#endif // TARGET_X86
 
     return delObj;
 }
@@ -1735,10 +1638,10 @@ FCIMPL3(PCODE, COMDelegate::AdjustTarget, Object* refThisUNSAFE, Object* targetU
 }
 FCIMPLEND
 
-#if defined(_MSC_VER) && !defined(FEATURE_PAL)
+#if defined(_MSC_VER) && !defined(TARGET_UNIX)
 // VC++ Compiler intrinsic.
 extern "C" void * _ReturnAddress(void);
-#endif // _MSC_VER && !FEATURE_PAL
+#endif // _MSC_VER && !TARGET_UNIX
 
 // This is the single constructor for all Delegates.  The compiler
 //  doesn't provide an implementation of the Delegate constructor.  We
@@ -2071,7 +1974,7 @@ PCODE COMDelegate::TheDelegateInvokeStub()
     }
     CONTRACT_END;
 
-#if defined(_TARGET_X86_) && !defined(FEATURE_STUBS_AS_IL)
+#if defined(TARGET_X86) && !defined(FEATURE_STUBS_AS_IL)
     static PCODE s_pInvokeStub;
 
     if (s_pInvokeStub == NULL)
@@ -2091,7 +1994,7 @@ PCODE COMDelegate::TheDelegateInvokeStub()
     RETURN s_pInvokeStub;
 #else
     RETURN GetEEFuncEntryPoint(SinglecastDelegateInvokeStub);
-#endif // _TARGET_X86_ && !FEATURE_STUBS_AS_IL
+#endif // TARGET_X86 && !FEATURE_STUBS_AS_IL
 }
 
 // Get the cpu stub for a delegate invoke.
@@ -2198,11 +2101,34 @@ FCIMPLEND
 
 #endif // CROSSGEN_COMPILE
 
+void COMDelegate::ThrowIfInvalidUnmanagedCallersOnlyUsage(MethodDesc* pMD)
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+        PRECONDITION(pMD != NULL);
+        PRECONDITION(pMD->HasUnmanagedCallersOnlyAttribute());
+    }
+    CONTRACTL_END;
+
+    if (!pMD->IsStatic())
+        EX_THROW(EEResourceException, (kInvalidProgramException, W("InvalidProgram_NonStaticMethod")));
+
+    // No generic methods
+    if (pMD->HasClassOrMethodInstantiation())
+        EX_THROW(EEResourceException, (kInvalidProgramException, W("InvalidProgram_GenericMethod")));
+
+    // Arguments
+    if (NDirect::MarshalingRequired(pMD, pMD->GetSig(), pMD->GetModule()))
+        EX_THROW(EEResourceException, (kInvalidProgramException, W("InvalidProgram_NonBlittableTypes")));
+}
+
 BOOL COMDelegate::NeedsWrapperDelegate(MethodDesc* pTargetMD)
 {
     LIMITED_METHOD_CONTRACT;
 
-#ifdef _TARGET_ARM_
+#ifdef TARGET_ARM
     // For arm VSD expects r4 to contain the indirection cell. However r4 is a non-volatile register
     // and its value must be preserved. So we need to erect a frame and store indirection cell in r4 before calling
     // virtual stub dispatch. Erecting frame is already done by wrapper delegates so the Wrapper Delegate infrastructure
@@ -2778,22 +2704,6 @@ BOOL COMDelegate::IsMethodDescCompatible(TypeHandle   thFirstArg,
     if (!pTargetMethod->IsStatic() && Nullable::IsNullableType(pTargetMethod->GetMethodTable()))
         return FALSE;
 
-    // Have to be careful with automatically generated array methods (Get, Set, etc.). The TypeHandle here may actually be one
-    // of the "special case" MethodTables (such as Object[]) instead of an ArrayTypeDesc and our TypeHandle CanCastTo code can't
-    // cope with all the different possible combinations. In general we want to normalize the TypeHandle into an ArrayTypeDesc
-    // for these cases.
-    if (thExactMethodType.IsArrayType() && !thExactMethodType.IsArray())
-    {
-        TypeHandle thElement = thExactMethodType.AsMethodTable()->GetArrayElementTypeHandle();
-        CorElementType etElement = thExactMethodType.AsMethodTable()->GetInternalCorElementType();
-        unsigned uRank = thExactMethodType.AsMethodTable()->GetRank();
-
-        thExactMethodType = ClassLoader::LoadArrayTypeThrowing(thElement,
-                                                               etElement,
-                                                               uRank,
-                                                               ClassLoader::DontLoadTypes);
-    }
-
     // Get signatures for the delegate invoke and target methods.
     MetaSig sigInvoke(pInvokeMethod, thDelegate);
     MetaSig sigTarget(pTargetMethod, thExactMethodType);
@@ -3019,11 +2929,11 @@ MethodDesc* COMDelegate::GetDelegateCtor(TypeHandle delegateType, MethodDesc *pT
     // associated with the instantiation.
     BOOL fMaybeCollectibleAndStatic = FALSE;
 
-    // Do not allow static methods with [NativeCallableAttribute] to be a delegate target.
-    // A native callable method is special and allowing it to be delegate target will destabilize the runtime.
-    if (pTargetMethod->HasNativeCallableAttribute())
+    // Do not allow static methods with [UnmanagedCallersOnlyAttribute] to be a delegate target.
+    // A method marked UnmanagedCallersOnly is special and allowing it to be delegate target will destabilize the runtime.
+    if (pTargetMethod->HasUnmanagedCallersOnlyAttribute())
     {
-        COMPlusThrow(kNotSupportedException, W("NotSupported_NativeCallableTarget"));
+        COMPlusThrow(kNotSupportedException, W("NotSupported_UnmanagedCallersOnlyTarget"));
     }
 
     if (isStatic)
@@ -3372,44 +3282,7 @@ static void InvokeUnhandledSwallowing(OBJECTREF *pDelegate,
 
     EX_TRY
     {
-#if defined(FEATURE_CORRUPTING_EXCEPTIONS)
-        BOOL fCanMethodHandleException = g_pConfig->LegacyCorruptedStateExceptionsPolicy();
-        if (!fCanMethodHandleException)
-        {
-            // CSE policy has not been overridden - proceed with our checks.
-            //
-            // Notifications for CSE are only delivered if the delegate target follows CSE rules.
-            // So, get the corruption severity of the active exception that has gone unhandled.
-            //
-            // By Default, assume that the active exception is not corrupting.
-            CorruptionSeverity severity = NotCorrupting;
-            Thread *pCurThread = GetThread();
-            _ASSERTE(pCurThread != NULL);
-            ThreadExceptionState *pExState = pCurThread->GetExceptionState();
-            if (pExState->IsExceptionInProgress())
-            {
-                // If an exception is active, it implies we have a tracker for it.
-                // Hence, get the corruption severity from the active exception tracker.
-                severity = pExState->GetCurrentExceptionTracker()->GetCorruptionSeverity();
-                _ASSERTE(severity > NotSet);
-            }
-
-            // Notifications are delivered based upon corruption severity of the exception
-            fCanMethodHandleException = ExceptionNotifications::CanDelegateBeInvokedForException(pDelegate, severity);
-            if (!fCanMethodHandleException)
-            {
-                LOG((LF_EH, LL_INFO100, "InvokeUnhandledSwallowing: ADUEN Delegate cannot be invoked for corruption severity %d\n",
-                    severity));
-            }
-        }
-
-        if (fCanMethodHandleException)
-#endif // defined(FEATURE_CORRUPTING_EXCEPTIONS)
-        {
-            // We've already exercised the prestub on this delegate's COMDelegate::GetMethodDesc,
-            // as part of wiring up a reliable event sink. Deliver the notification.
-            ExceptionNotifications::DeliverExceptionNotification(UnhandledExceptionHandler, pDelegate, pDomain, pEventArgs);
-        }
+        ExceptionNotifications::DeliverExceptionNotification(UnhandledExceptionHandler, pDelegate, pDomain, pEventArgs);
     }
     EX_CATCH
     {

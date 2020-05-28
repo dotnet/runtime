@@ -4,14 +4,15 @@
 
 #include "common.h"
 #include "diagnosticserver.h"
+#include "ipcstreamfactory.h"
 #include "eventpipeprotocolhelper.h"
 #include "dumpdiagnosticprotocolhelper.h"
 #include "profilerdiagnosticprotocolhelper.h"
 #include "diagnosticsprotocol.h"
 
-#ifdef FEATURE_PAL
+#ifdef TARGET_UNIX
 #include "pal.h"
-#endif // FEATURE_PAL
+#endif // TARGET_UNIX
 
 #ifdef FEATURE_AUTO_TRACE
 #include "autotrace.h"
@@ -19,7 +20,6 @@
 
 #ifdef FEATURE_PERFTRACING
 
-IpcStream::DiagnosticsIpc *DiagnosticServer::s_pIpc = nullptr;
 Volatile<bool> DiagnosticServer::s_shuttingDown(false);
 
 DWORD WINAPI DiagnosticServer::DiagnosticsServerThread(LPVOID)
@@ -29,11 +29,11 @@ DWORD WINAPI DiagnosticServer::DiagnosticsServerThread(LPVOID)
         NOTHROW;
         GC_TRIGGERS;
         MODE_PREEMPTIVE;
-        PRECONDITION(s_pIpc != nullptr);
+        PRECONDITION(IpcStreamFactory::HasActiveConnections());
     }
     CONTRACTL_END;
 
-    if (s_pIpc == nullptr)
+    if (!IpcStreamFactory::HasActiveConnections())
     {
         STRESS_LOG0(LF_DIAGNOSTICS_PORT, LL_ERROR, "Diagnostics IPC listener was undefined\n");
         return 1;
@@ -47,8 +47,7 @@ DWORD WINAPI DiagnosticServer::DiagnosticsServerThread(LPVOID)
     {
         while (!s_shuttingDown)
         {
-            // FIXME: Ideally this would be something like a std::shared_ptr
-            IpcStream *pStream = s_pIpc->Accept(LoggingCallback);
+            IpcStream *pStream = IpcStreamFactory::GetNextAvailableStream(LoggingCallback);
 
             if (pStream == nullptr)
                 continue;
@@ -76,11 +75,9 @@ DWORD WINAPI DiagnosticServer::DiagnosticsServerThread(LPVOID)
                 EventPipeProtocolHelper::HandleIpcMessage(message, pStream);
                 break;
 
-#ifdef FEATURE_PAL
             case DiagnosticsIpc::DiagnosticServerCommandSet::Dump:
                 DumpDiagnosticProtocolHelper::HandleIpcMessage(message, pStream);
                 break;
-#endif
 
 #ifdef FEATURE_PROFAPI_ATTACH_DETACH
             case DiagnosticsIpc::DiagnosticServerCommandSet::Profiler:
@@ -135,11 +132,26 @@ bool DiagnosticServer::Initialize()
                 szMessage);                                           // data2
         };
 
-        // TODO: Should we handle/assert that (s_pIpc == nullptr)?
-        s_pIpc = IpcStream::DiagnosticsIpc::Create(
-            "dotnet-diagnostic", ErrorCallback);
+        NewArrayHolder<char> address = nullptr;
+        CLRConfigStringHolder wAddress = CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_DOTNET_DiagnosticsMonitorAddress);
+        int nCharactersWritten = 0;
+        if (wAddress != nullptr)
+        {
+            nCharactersWritten = WideCharToMultiByte(CP_UTF8, 0, wAddress, -1, NULL, 0, NULL, NULL);
+            if (nCharactersWritten != 0)
+            {
+                address = new char[nCharactersWritten];
+                nCharactersWritten = WideCharToMultiByte(CP_UTF8, 0, wAddress, -1, address, nCharactersWritten, NULL, NULL);
+                assert(nCharactersWritten != 0);
+            }
 
-        if (s_pIpc != nullptr)
+            // Create the client mode connection
+            fSuccess &= IpcStreamFactory::CreateClient(address, ErrorCallback);
+        }
+
+        fSuccess &= IpcStreamFactory::CreateServer(nullptr, ErrorCallback);
+
+        if (IpcStreamFactory::HasActiveConnections())
         {
 #ifdef FEATURE_AUTO_TRACE
             auto_trace_init();
@@ -150,14 +162,13 @@ bool DiagnosticServer::Initialize()
                 nullptr,                     // no security attribute
                 0,                           // default stack size
                 DiagnosticsServerThread,     // thread proc
-                (LPVOID)s_pIpc,              // thread parameter
+                nullptr,                     // thread parameter
                 0,                           // not suspended
                 &dwThreadId);                // returns thread ID
 
             if (hServerThread == NULL)
             {
-                delete s_pIpc;
-                s_pIpc = nullptr;
+                IpcStreamFactory::CloseConnections();
 
                 // Failed to create IPC thread.
                 STRESS_LOG1(
@@ -202,7 +213,7 @@ bool DiagnosticServer::Shutdown()
 
     EX_TRY
     {
-        if (s_pIpc != nullptr)
+        if (IpcStreamFactory::HasActiveConnections())
         {
             auto ErrorCallback = [](const char *szMessage, uint32_t code) {
                 STRESS_LOG2(
@@ -212,7 +223,8 @@ bool DiagnosticServer::Shutdown()
                     code,                                                 // data1
                     szMessage);                                           // data2
             };
-            s_pIpc->Close(ErrorCallback); // This will break the accept waiting for client connection.
+
+            IpcStreamFactory::Shutdown(ErrorCallback);
         }
         fSuccess = true;
     }

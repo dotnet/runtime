@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 // ------------------------------------------------------------------------------
-// Changes to this file must follow the http://aka.ms/api-review process.
+// Changes to this file must follow the https://aka.ms/api-review process.
 // ------------------------------------------------------------------------------
 
 namespace System.Threading.Channels
@@ -44,7 +44,9 @@ namespace System.Threading.Channels
     public abstract partial class ChannelReader<T>
     {
         protected ChannelReader() { }
+        public virtual bool CanCount { get { throw null; } }
         public virtual System.Threading.Tasks.Task Completion { get { throw null; } }
+        public virtual int Count { get { throw null; } }
         public virtual System.Threading.Tasks.ValueTask<T> ReadAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
         public abstract bool TryRead([System.Diagnostics.CodeAnalysis.MaybeNullWhen(false)] out T item);
         public abstract System.Threading.Tasks.ValueTask<bool> WaitToReadAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));

@@ -369,8 +369,6 @@ namespace System.Net.Http
                 case Interop.WinHttp.API_QUERY_DATA_AVAILABLE:
                     if (asyncResult.dwError == Interop.WinHttp.ERROR_WINHTTP_OPERATION_CANCELLED)
                     {
-                        // TODO: Issue #2165. We need to pass in the cancellation token from the
-                        // user's ReadAsync() call into the TrySetCanceled().
                         if (NetEventSource.IsEnabled) NetEventSource.Error(state, "QUERY_DATA_AVAILABLE - ERROR_WINHTTP_OPERATION_CANCELLED");
                         state.LifecycleAwaitable.SetCanceled();
                     }
@@ -384,8 +382,6 @@ namespace System.Net.Http
                 case Interop.WinHttp.API_READ_DATA:
                     if (asyncResult.dwError == Interop.WinHttp.ERROR_WINHTTP_OPERATION_CANCELLED)
                     {
-                        // TODO: Issue #2165. We need to pass in the cancellation token from the
-                        // user's ReadAsync() call into the TrySetCanceled().
                         if (NetEventSource.IsEnabled) NetEventSource.Error(state, "API_READ_DATA - ERROR_WINHTTP_OPERATION_CANCELLED");
                         state.LifecycleAwaitable.SetCanceled();
                     }
@@ -398,8 +394,6 @@ namespace System.Net.Http
                 case Interop.WinHttp.API_WRITE_DATA:
                     if (asyncResult.dwError == Interop.WinHttp.ERROR_WINHTTP_OPERATION_CANCELLED)
                     {
-                        // TODO: Issue #2165. We need to pass in the cancellation token from the
-                        // user's WriteAsync() call into the TrySetCanceled().
                         if (NetEventSource.IsEnabled) NetEventSource.Error(state, "API_WRITE_DATA - ERROR_WINHTTP_OPERATION_CANCELLED");
                         state.TcsInternalWriteDataToRequestStream.TrySetCanceled();
                     }

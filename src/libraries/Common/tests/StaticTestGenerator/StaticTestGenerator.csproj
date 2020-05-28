@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <TargetFramework>netcoreapp3.0</TargetFramework>
@@ -8,7 +8,6 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <NoWarn />
     <Nullable>enable</Nullable>
-    <Configurations>Debug;Release</Configurations>
   </PropertyGroup>
   <PropertyGroup>
   </PropertyGroup>

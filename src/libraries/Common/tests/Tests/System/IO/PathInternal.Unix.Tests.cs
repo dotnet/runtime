@@ -47,7 +47,7 @@ namespace Tests.System.IO
         public void IsCaseInsensitive_OSX()
         {
             // There have been reports of casing handling not being appropriate on MacOS
-            // https://github.com/dotnet/corefx/issues/26797
+            // https://github.com/dotnet/runtime/issues/24898
             Assert.False(PathInternal.IsCaseSensitive);
         }
     }

@@ -22,7 +22,7 @@ namespace System.Data.OleDb.Tests
         [ConditionalTheory(Helpers.IsDriverAvailable)]
         [InlineData(CommandType.Text)]
         [InlineData(CommandType.TableDirect)]
-        public void DeriveParameters_NullCommand_Throws(CommandType commandType)
+        public void DeriveParameters_InvalidCommandType_Throws(CommandType commandType)
         {
             using (var cmd = (OleDbCommand)OleDbFactory.Instance.CreateCommand())
             {
@@ -92,7 +92,7 @@ namespace System.Data.OleDb.Tests
                 command.CommandText = @"SELECT * FROM " + tableName;
                 using (var builder = (OleDbCommandBuilder)OleDbFactory.Instance.CreateCommandBuilder())
                 {
-                    if (PlatformDetection.IsFullFramework)
+                    if (PlatformDetection.IsNetFramework)
                     {
                         AssertExtensions.Throws<ArgumentNullException>(
                             () => builder.QuoteIdentifier(null, command.Connection),

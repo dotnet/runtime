@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.Build.Traversal">
+
+  <PropertyGroup>
+    <TraversalGlobalProperties>BuildAllProjects=true</TraversalGlobalProperties>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <GeneratedShimProject Include="shims\generated\*.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="$(MSBuildThisFileDirectory)*\ref\*.*proj" Exclude="@(ProjectExclusions)" />
+    <!-- Restore only and build later. -->
+    <ProjectReference Include="@(GeneratedShimProject)" Condition="'$(MSBuildRestoreSessionId)' != ''" />
+  </ItemGroup>
+
+  <Target Name="BuildGeneratedShims"
+          AfterTargets="Build">
+    <MSBuild Targets="Build"
+             Projects="@(GeneratedShimProject)"
+             Properties="$(TraversalGlobalProperties)" />
+  </Target>
+
+</Project>

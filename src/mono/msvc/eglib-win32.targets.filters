@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="win32_sources">
+    <ClCompile Include="$(MonoSourceLocation)\mono\eglib\gdate-win32.c">
+      <Filter>Source Files$(EGLibFilterSubFolder)\win32</Filter>
+    </ClCompile>
+    <ClCompile Include="$(MonoSourceLocation)\mono\eglib\gdir-win32.c">
+      <Filter>Source Files$(EGLibFilterSubFolder)\win32</Filter>
+    </ClCompile>
+    <ClCompile Include="$(MonoSourceLocation)\mono\eglib\gfile-win32.c">
+      <Filter>Source Files$(EGLibFilterSubFolder)\win32</Filter>
+    </ClCompile>
+    <ClCompile Include="$(MonoSourceLocation)\mono\eglib\gmisc-win32.c">
+      <Filter>Source Files$(EGLibFilterSubFolder)\win32</Filter>
+    </ClCompile>
+    <ClCompile Include="$(MonoSourceLocation)\mono\eglib\gmodule-win32.c">
+      <Filter>Source Files$(EGLibFilterSubFolder)\win32</Filter>
+    </ClCompile>
+    <ClInclude Include="$(MonoSourceLocation)\mono\eglib\gmodule-win32-internals.h">
+      <Filter>Header Files$(EGLibFilterSubFolder)\win32</Filter>
+    </ClInclude>
+    <ClCompile Include="$(MonoSourceLocation)\mono\eglib\gtimer-win32.c">
+      <Filter>Source Files$(EGLibFilterSubFolder)\win32</Filter>
+    </ClCompile>
+    <ClCompile Include="$(MonoSourceLocation)\mono\eglib\gunicode-win32.c">
+      <Filter>Source Files$(EGLibFilterSubFolder)\win32</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="Header Files$(EGLibFilterSubFolder)\win32">
+      <UniqueIdentifier>{80953075-5d05-41b9-be90-82497081b11c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files$(EGLibFilterSubFolder)\win32">
+      <UniqueIdentifier>{c6e3ed6c-6b52-4823-bc4f-2dc9f84e3f5d}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>

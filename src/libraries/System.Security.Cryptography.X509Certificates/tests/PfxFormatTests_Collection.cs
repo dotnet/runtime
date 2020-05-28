@@ -84,6 +84,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 () => coll.Import(pfxBytes, wrongPassword, s_importFlags));
 
             AssertMessageContains("password", ex);
+            Assert.Equal(ErrorInvalidPasswordHResult, ex.HResult);
         }
 
         protected override void ReadUnreadablePfx(

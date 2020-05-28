@@ -71,9 +71,9 @@ namespace System.Linq.Expressions
         /// <summary>
         /// Gets the implementing method for the binary operation.
         /// </summary>
-        public MethodInfo Method => GetMethod();
+        public MethodInfo? Method => GetMethod();
 
-        internal virtual MethodInfo GetMethod() => null;
+        internal virtual MethodInfo? GetMethod() => null;
 
         // Note: takes children in evaluation order, which is also the order
         // that ExpressionVisitor visits them. Having them this way reduces the
@@ -89,7 +89,7 @@ namespace System.Linq.Expressions
         /// <param name="conversion">The <see cref="Conversion"/> property of the result.</param>
         /// <param name="right">The <see cref="Right"/> property of the result.</param>
         /// <returns>This expression if no children changed, or an expression with the updated children.</returns>
-        public BinaryExpression Update(Expression left, LambdaExpression conversion, Expression right)
+        public BinaryExpression Update(Expression left, LambdaExpression? conversion, Expression right)
         {
             if (left == Left && right == Right && conversion == Conversion)
             {
@@ -162,7 +162,7 @@ namespace System.Linq.Expressions
             // v = v (op) r
             ExpressionType op = GetBinaryOpFromAssignmentOp(NodeType);
             Expression r = Expression.MakeBinary(op, Left, Right, false, Method);
-            LambdaExpression conversion = GetConversion();
+            LambdaExpression? conversion = GetConversion();
             if (conversion != null)
             {
                 r = Expression.Invoke(conversion, r);
@@ -195,7 +195,7 @@ namespace System.Linq.Expressions
                 // 2. temp2 = temp1.b (op) r
                 ExpressionType op = GetBinaryOpFromAssignmentOp(NodeType);
                 Expression e2 = Expression.MakeBinary(op, Expression.MakeMemberAccess(temp1, member.Member), Right, false, Method);
-                LambdaExpression conversion = GetConversion();
+                LambdaExpression? conversion = GetConversion();
                 if (conversion != null)
                 {
                     e2 = Expression.Invoke(conversion, e2);
@@ -234,7 +234,7 @@ namespace System.Linq.Expressions
             var vars = new ArrayBuilder<ParameterExpression>(index.ArgumentCount + 2);
             var exprs = new ArrayBuilder<Expression>(index.ArgumentCount + 3);
 
-            ParameterExpression tempObj = Expression.Variable(index.Object.Type, "tempObj");
+            ParameterExpression tempObj = Expression.Variable(index.Object!.Type, "tempObj");
             vars.UncheckedAdd(tempObj);
             exprs.UncheckedAdd(Expression.Assign(tempObj, index.Object));
 
@@ -254,7 +254,7 @@ namespace System.Linq.Expressions
             // tempValue = tempObj[tempArg0, ... tempArgN] (op) r
             ExpressionType binaryOp = GetBinaryOpFromAssignmentOp(NodeType);
             Expression op = Expression.MakeBinary(binaryOp, tempIndex, Right, false, Method);
-            LambdaExpression conversion = GetConversion();
+            LambdaExpression? conversion = GetConversion();
             if (conversion != null)
             {
                 op = Expression.Invoke(conversion, op);
@@ -272,9 +272,9 @@ namespace System.Linq.Expressions
         /// <summary>
         /// Gets the type conversion function that is used by a coalescing or compound assignment operation.
         /// </summary>
-        public LambdaExpression Conversion => GetConversion();
+        public LambdaExpression? Conversion => GetConversion();
 
-        internal virtual LambdaExpression GetConversion() => null;
+        internal virtual LambdaExpression? GetConversion() => null;
 
         /// <summary>
         /// Gets a value that indicates whether the expression tree node represents a lifted call to an operator.
@@ -289,7 +289,7 @@ namespace System.Linq.Expressions
                 }
                 if (Left.Type.IsNullableType())
                 {
-                    MethodInfo method = GetMethod();
+                    MethodInfo? method = GetMethod();
                     return method == null ||
                         !TypeUtils.AreEquivalent(method.GetParametersCached()[0].ParameterType.GetNonRefType(), Left.Type);
                 }
@@ -310,7 +310,7 @@ namespace System.Linq.Expressions
             return visitor.VisitBinary(this);
         }
 
-        internal static BinaryExpression Create(ExpressionType nodeType, Expression left, Expression right, Type type, MethodInfo method, LambdaExpression conversion)
+        internal static BinaryExpression Create(ExpressionType nodeType, Expression left, Expression right, Type type, MethodInfo? method, LambdaExpression? conversion)
         {
             Debug.Assert(nodeType != ExpressionType.Assign);
             if (conversion != null)
@@ -335,7 +335,7 @@ namespace System.Linq.Expressions
             {
                 Type left = Left.Type;
                 Type right = Right.Type;
-                MethodInfo method = GetMethod();
+                MethodInfo? method = GetMethod();
                 ExpressionType kind = NodeType;
 
                 return
@@ -353,7 +353,7 @@ namespace System.Linq.Expressions
             {
                 Type left = Left.Type;
                 Type right = Right.Type;
-                MethodInfo method = GetMethod();
+                MethodInfo? method = GetMethod();
                 ExpressionType kind = NodeType;
 
                 return (kind == ExpressionType.Equal || kind == ExpressionType.NotEqual) &&
@@ -397,7 +397,7 @@ namespace System.Linq.Expressions
             ParameterExpression left = Parameter(Left.Type, "left");
             ParameterExpression right = Parameter(Right.Type, "right");
             string opName = NodeType == ExpressionType.AndAlso ? "op_False" : "op_True";
-            MethodInfo opTrueFalse = TypeUtils.GetBooleanOperator(Method.DeclaringType, opName);
+            MethodInfo? opTrueFalse = TypeUtils.GetBooleanOperator(Method!.DeclaringType!, opName);
             Debug.Assert(opTrueFalse != null);
 
             return Block(
@@ -581,10 +581,10 @@ namespace System.Linq.Expressions
 
         #endregion
 
-        private static BinaryExpression GetUserDefinedBinaryOperator(ExpressionType binaryType, string name, Expression left, Expression right, bool liftToNull)
+        private static BinaryExpression? GetUserDefinedBinaryOperator(ExpressionType binaryType, string name, Expression left, Expression right, bool liftToNull)
         {
             // try exact match first
-            MethodInfo method = GetUserDefinedBinaryOperator(binaryType, left.Type, right.Type, name);
+            MethodInfo? method = GetUserDefinedBinaryOperator(binaryType, left.Type, right.Type, name);
             if (method != null)
             {
                 return new MethodBinaryExpression(binaryType, left, right, method.ReturnType, method);
@@ -641,7 +641,7 @@ namespace System.Linq.Expressions
             throw Error.OperandTypesDoNotMatchParameters(binaryType, method.Name);
         }
 
-        private static BinaryExpression GetMethodBasedAssignOperator(ExpressionType binaryType, Expression left, Expression right, MethodInfo method, LambdaExpression conversion, bool liftToNull)
+        private static BinaryExpression GetMethodBasedAssignOperator(ExpressionType binaryType, Expression left, Expression right, MethodInfo method, LambdaExpression? conversion, bool liftToNull)
         {
             BinaryExpression b = GetMethodBasedBinaryOperator(binaryType, left, right, method, liftToNull);
             if (conversion == null)
@@ -649,24 +649,24 @@ namespace System.Linq.Expressions
                 // return type must be assignable back to the left type
                 if (!TypeUtils.AreReferenceAssignable(left.Type, b.Type))
                 {
-                    throw Error.UserDefinedOpMustHaveValidReturnType(binaryType, b.Method.Name);
+                    throw Error.UserDefinedOpMustHaveValidReturnType(binaryType, b.Method!.Name);
                 }
             }
             else
             {
                 // add the conversion to the result
-                ValidateOpAssignConversionLambda(conversion, b.Left, b.Method, b.NodeType);
-                b = new OpAssignMethodConversionBinaryExpression(b.NodeType, b.Left, b.Right, b.Left.Type, b.Method, conversion);
+                ValidateOpAssignConversionLambda(conversion, b.Left, b.Method!, b.NodeType);
+                b = new OpAssignMethodConversionBinaryExpression(b.NodeType, b.Left, b.Right, b.Left.Type, b.Method!, conversion);
             }
             return b;
         }
 
         private static BinaryExpression GetUserDefinedBinaryOperatorOrThrow(ExpressionType binaryType, string name, Expression left, Expression right, bool liftToNull)
         {
-            BinaryExpression b = GetUserDefinedBinaryOperator(binaryType, name, left, right, liftToNull);
+            BinaryExpression? b = GetUserDefinedBinaryOperator(binaryType, name, left, right, liftToNull);
             if (b != null)
             {
-                ParameterInfo[] pis = b.Method.GetParametersCached();
+                ParameterInfo[] pis = b.Method!.GetParametersCached();
                 ValidateParamswithOperandsOrThrow(pis[0].ParameterType, left.Type, binaryType, name);
                 ValidateParamswithOperandsOrThrow(pis[1].ParameterType, right.Type, binaryType, name);
                 return b;
@@ -674,7 +674,7 @@ namespace System.Linq.Expressions
             throw Error.BinaryOperatorNotDefined(binaryType, left.Type, right.Type);
         }
 
-        private static BinaryExpression GetUserDefinedAssignOperatorOrThrow(ExpressionType binaryType, string name, Expression left, Expression right, LambdaExpression conversion, bool liftToNull)
+        private static BinaryExpression GetUserDefinedAssignOperatorOrThrow(ExpressionType binaryType, string name, Expression left, Expression right, LambdaExpression? conversion, bool liftToNull)
         {
             BinaryExpression b = GetUserDefinedBinaryOperatorOrThrow(binaryType, name, left, right, liftToNull);
             if (conversion == null)
@@ -682,26 +682,26 @@ namespace System.Linq.Expressions
                 // return type must be assignable back to the left type
                 if (!TypeUtils.AreReferenceAssignable(left.Type, b.Type))
                 {
-                    throw Error.UserDefinedOpMustHaveValidReturnType(binaryType, b.Method.Name);
+                    throw Error.UserDefinedOpMustHaveValidReturnType(binaryType, b.Method!.Name);
                 }
             }
             else
             {
                 // add the conversion to the result
-                ValidateOpAssignConversionLambda(conversion, b.Left, b.Method, b.NodeType);
-                b = new OpAssignMethodConversionBinaryExpression(b.NodeType, b.Left, b.Right, b.Left.Type, b.Method, conversion);
+                ValidateOpAssignConversionLambda(conversion, b.Left, b.Method!, b.NodeType);
+                b = new OpAssignMethodConversionBinaryExpression(b.NodeType, b.Left, b.Right, b.Left.Type, b.Method!, conversion);
             }
             return b;
         }
 
-        private static MethodInfo GetUserDefinedBinaryOperator(ExpressionType binaryType, Type leftType, Type rightType, string name)
+        private static MethodInfo? GetUserDefinedBinaryOperator(ExpressionType binaryType, Type leftType, Type rightType, string name)
         {
             // This algorithm is wrong, we should be checking for uniqueness and erroring if
             // it is defined on both types.
             Type[] types = new Type[] { leftType, rightType };
             Type nnLeftType = leftType.GetNonNullableType();
             Type nnRightType = rightType.GetNonNullableType();
-            MethodInfo method = nnLeftType.GetAnyStaticMethodValidated(name, types);
+            MethodInfo? method = nnLeftType.GetAnyStaticMethodValidated(name, types);
             if (method == null && !TypeUtils.AreEquivalent(leftType, rightType))
             {
                 method = nnRightType.GetAnyStaticMethodValidated(name, types);
@@ -714,7 +714,7 @@ namespace System.Linq.Expressions
             return method;
         }
 
-        private static bool IsLiftingConditionalLogicalOperator(Type left, Type right, MethodInfo method, ExpressionType binaryType)
+        private static bool IsLiftingConditionalLogicalOperator(Type left, Type right, MethodInfo? method, ExpressionType binaryType)
         {
             return right.IsNullableType() &&
                     left.IsNullableType() &&
@@ -726,7 +726,7 @@ namespace System.Linq.Expressions
         {
             Type pType = pi.ParameterType;
             if (pType.IsByRef)
-                pType = pType.GetElementType();
+                pType = pType.GetElementType()!;
             return TypeUtils.AreReferenceAssignable(pType, argType);
         }
 
@@ -804,13 +804,13 @@ namespace System.Linq.Expressions
             {
                 left = left.GetNonNullableType();
             }
-            Type declaringType = method.DeclaringType;
+            Type? declaringType = method.DeclaringType;
             if (declaringType == null)
             {
                 throw Error.LogicalOperatorMustHaveBooleanOperators(nodeType, method.Name);
             }
-            MethodInfo opTrue = TypeUtils.GetBooleanOperator(declaringType, "op_True");
-            MethodInfo opFalse = TypeUtils.GetBooleanOperator(declaringType, "op_False");
+            MethodInfo? opTrue = TypeUtils.GetBooleanOperator(declaringType, "op_True");
+            MethodInfo? opFalse = TypeUtils.GetBooleanOperator(declaringType, "op_False");
             if (opTrue == null || opTrue.ReturnType != typeof(bool) ||
                 opFalse == null || opFalse.ReturnType != typeof(bool))
             {
@@ -861,7 +861,7 @@ namespace System.Linq.Expressions
         /// <param name="liftToNull">true to set IsLiftedToNull to true; false to set IsLiftedToNull to false.</param>
         /// <param name="method">A MethodInfo that specifies the implementing method.</param>
         /// <returns>The BinaryExpression that results from calling the appropriate factory method.</returns>
-        public static BinaryExpression MakeBinary(ExpressionType binaryType, Expression left, Expression right, bool liftToNull, MethodInfo method)
+        public static BinaryExpression MakeBinary(ExpressionType binaryType, Expression left, Expression right, bool liftToNull, MethodInfo? method)
         {
             return MakeBinary(binaryType, left, right, liftToNull, method, conversion: null);
         }
@@ -877,8 +877,7 @@ namespace System.Linq.Expressions
         /// <param name="method">A MethodInfo that specifies the implementing method.</param>
         /// <param name="conversion">A LambdaExpression that represents a type conversion function. This parameter is used if binaryType is Coalesce or compound assignment.</param>
         /// <returns>The BinaryExpression that results from calling the appropriate factory method.</returns>
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Maintainability", "CA1502:AvoidExcessiveComplexity")]
-        public static BinaryExpression MakeBinary(ExpressionType binaryType, Expression left, Expression right, bool liftToNull, MethodInfo method, LambdaExpression conversion) =>
+        public static BinaryExpression MakeBinary(ExpressionType binaryType, Expression left, Expression right, bool liftToNull, MethodInfo? method, LambdaExpression? conversion) =>
             binaryType switch
             {
                 ExpressionType.Add => Add(left, right, method),
@@ -947,7 +946,7 @@ namespace System.Linq.Expressions
         /// <returns>A <see cref="BinaryExpression"/> that has the <see cref="NodeType"/> property equal to <see cref="ExpressionType.Equal"/>
         /// and the <see cref="BinaryExpression.Left"/>, <see cref="BinaryExpression.Right"/>, <see cref="BinaryExpression.IsLiftedToNull"/>, and <see cref="BinaryExpression.Method"/> properties set to the specified values.
         /// </returns>
-        public static BinaryExpression Equal(Expression left, Expression right, bool liftToNull, MethodInfo method)
+        public static BinaryExpression Equal(Expression left, Expression right, bool liftToNull, MethodInfo? method)
         {
             ExpressionUtils.RequiresCanRead(left, nameof(left));
             ExpressionUtils.RequiresCanRead(right, nameof(right));
@@ -999,7 +998,7 @@ namespace System.Linq.Expressions
         /// <returns>A <see cref="BinaryExpression"/> that has the <see cref="NodeType"/> property equal to <see cref="ExpressionType.NotEqual"/>
         /// and the <see cref="BinaryExpression.Left"/>, <see cref="BinaryExpression.Right"/>, <see cref="BinaryExpression.IsLiftedToNull"/>, and <see cref="BinaryExpression.Method"/> properties set to the specified values.
         /// </returns>
-        public static BinaryExpression NotEqual(Expression left, Expression right, bool liftToNull, MethodInfo method)
+        public static BinaryExpression NotEqual(Expression left, Expression right, bool liftToNull, MethodInfo? method)
         {
             ExpressionUtils.RequiresCanRead(left, nameof(left));
             ExpressionUtils.RequiresCanRead(right, nameof(right));
@@ -1047,7 +1046,7 @@ namespace System.Linq.Expressions
                 }
             }
             // look for user defined operator
-            BinaryExpression b = GetUserDefinedBinaryOperator(binaryType, opName, left, right, liftToNull);
+            BinaryExpression? b = GetUserDefinedBinaryOperator(binaryType, opName, left, right, liftToNull);
             if (b != null)
             {
                 return b;
@@ -1092,7 +1091,7 @@ namespace System.Linq.Expressions
         /// <returns>A <see cref="BinaryExpression"/> that has the <see cref="NodeType"/> property equal to <see cref="ExpressionType.GreaterThan"/>
         /// and the <see cref="BinaryExpression.Left"/>, <see cref="BinaryExpression.Right"/>, <see cref="BinaryExpression.IsLiftedToNull"/>, and <see cref="BinaryExpression.Method"/> properties set to the specified values.
         /// </returns>
-        public static BinaryExpression GreaterThan(Expression left, Expression right, bool liftToNull, MethodInfo method)
+        public static BinaryExpression GreaterThan(Expression left, Expression right, bool liftToNull, MethodInfo? method)
         {
             ExpressionUtils.RequiresCanRead(left, nameof(left));
             ExpressionUtils.RequiresCanRead(right, nameof(right));
@@ -1126,7 +1125,7 @@ namespace System.Linq.Expressions
         /// <returns>A <see cref="BinaryExpression"/> that has the <see cref="NodeType"/> property equal to <see cref="ExpressionType.LessThan"/>
         /// and the <see cref="BinaryExpression.Left"/>, <see cref="BinaryExpression.Right"/>, <see cref="BinaryExpression.IsLiftedToNull"/>, and <see cref="BinaryExpression.Method"/> properties set to the specified values.
         /// </returns>
-        public static BinaryExpression LessThan(Expression left, Expression right, bool liftToNull, MethodInfo method)
+        public static BinaryExpression LessThan(Expression left, Expression right, bool liftToNull, MethodInfo? method)
         {
             ExpressionUtils.RequiresCanRead(left, nameof(left));
             ExpressionUtils.RequiresCanRead(right, nameof(right));
@@ -1159,7 +1158,7 @@ namespace System.Linq.Expressions
         /// <returns>A <see cref="BinaryExpression"/> that has the <see cref="NodeType"/> property equal to <see cref="ExpressionType.GreaterThanOrEqual"/>
         /// and the <see cref="BinaryExpression.Left"/>, <see cref="BinaryExpression.Right"/>, <see cref="BinaryExpression.IsLiftedToNull"/>, and <see cref="BinaryExpression.Method"/> properties set to the specified values.
         /// </returns>
-        public static BinaryExpression GreaterThanOrEqual(Expression left, Expression right, bool liftToNull, MethodInfo method)
+        public static BinaryExpression GreaterThanOrEqual(Expression left, Expression right, bool liftToNull, MethodInfo? method)
         {
             ExpressionUtils.RequiresCanRead(left, nameof(left));
             ExpressionUtils.RequiresCanRead(right, nameof(right));
@@ -1192,7 +1191,7 @@ namespace System.Linq.Expressions
         /// <returns>A <see cref="BinaryExpression"/> that has the <see cref="NodeType"/> property equal to <see cref="ExpressionType.LessThanOrEqual"/>
         /// and the <see cref="BinaryExpression.Left"/>, <see cref="BinaryExpression.Right"/>, <see cref="BinaryExpression.IsLiftedToNull"/>, and <see cref="BinaryExpression.Method"/> properties set to the specified values.
         /// </returns>
-        public static BinaryExpression LessThanOrEqual(Expression left, Expression right, bool liftToNull, MethodInfo method)
+        public static BinaryExpression LessThanOrEqual(Expression left, Expression right, bool liftToNull, MethodInfo? method)
         {
             ExpressionUtils.RequiresCanRead(left, nameof(left));
             ExpressionUtils.RequiresCanRead(right, nameof(right));
@@ -1244,7 +1243,7 @@ namespace System.Linq.Expressions
         /// <returns>A <see cref="BinaryExpression"/> that has the <see cref="NodeType"/> property equal to <see cref="ExpressionType.AndAlso"/>
         /// and the <see cref="BinaryExpression.Left"/>, <see cref="BinaryExpression.Right"/>, and <see cref="BinaryExpression.Method"/> properties set to the specified values.
         /// </returns>
-        public static BinaryExpression AndAlso(Expression left, Expression right, MethodInfo method)
+        public static BinaryExpression AndAlso(Expression left, Expression right, MethodInfo? method)
         {
             ExpressionUtils.RequiresCanRead(left, nameof(left));
             ExpressionUtils.RequiresCanRead(right, nameof(right));
@@ -1297,7 +1296,7 @@ namespace System.Linq.Expressions
         /// <returns>A <see cref="BinaryExpression"/> that has the <see cref="NodeType"/> property equal to <see cref="ExpressionType.OrElse"/>
         /// and the <see cref="BinaryExpression.Left"/>, <see cref="BinaryExpression.Right"/>, and <see cref="BinaryExpression.Method"/> properties set to the specified values.
         /// </returns>
-        public static BinaryExpression OrElse(Expression left, Expression right, MethodInfo method)
+        public static BinaryExpression OrElse(Expression left, Expression right, MethodInfo? method)
         {
             ExpressionUtils.RequiresCanRead(left, nameof(left));
             ExpressionUtils.RequiresCanRead(right, nameof(right));
@@ -1354,7 +1353,7 @@ namespace System.Linq.Expressions
         /// <returns>A <see cref="BinaryExpression" /> that has the <see cref="NodeType"/> property equal to <see cref="ExpressionType.Coalesce"/>
         /// and the <see cref="BinaryExpression.Left"/>, <see cref="BinaryExpression.Right"/> and <see cref="BinaryExpression.Conversion"/> properties set to the specified values.
         /// </returns>
-        public static BinaryExpression Coalesce(Expression left, Expression right, LambdaExpression conversion)
+        public static BinaryExpression Coalesce(Expression left, Expression right, LambdaExpression? conversion)
         {
             ExpressionUtils.RequiresCanRead(left, nameof(left));
             ExpressionUtils.RequiresCanRead(right, nameof(right));
@@ -1451,7 +1450,7 @@ namespace System.Linq.Expressions
         /// <returns>A <see cref="BinaryExpression"/> that has the <see cref="NodeType"/> property equal to <see cref="ExpressionType.Add"/>
         /// and the <see cref="BinaryExpression.Left"/>, <see cref="BinaryExpression.Right"/>, and <see cref="BinaryExpression.Method"/> properties set to the specified values.
         /// </returns>
-        public static BinaryExpression Add(Expression left, Expression right, MethodInfo method)
+        public static BinaryExpression Add(Expression left, Expression right, MethodInfo? method)
         {
             ExpressionUtils.RequiresCanRead(left, nameof(left));
             ExpressionUtils.RequiresCanRead(right, nameof(right));
@@ -1487,7 +1486,7 @@ namespace System.Linq.Expressions
         /// <returns>A <see cref="BinaryExpression"/> that has the <see cref="NodeType"/> property equal to <see cref="ExpressionType.AddAssign"/>
         /// and the <see cref="BinaryExpression.Left"/>, <see cref="BinaryExpression.Right"/>, and <see cref="BinaryExpression.Method"/> properties set to the specified values.
         /// </returns>
-        public static BinaryExpression AddAssign(Expression left, Expression right, MethodInfo method)
+        public static BinaryExpression AddAssign(Expression left, Expression right, MethodInfo? method)
         {
             return AddAssign(left, right, method, conversion: null);
         }
@@ -1503,7 +1502,7 @@ namespace System.Linq.Expressions
         /// and the <see cref="BinaryExpression.Left"/>, <see cref="BinaryExpression.Right"/>, <see cref="BinaryExpression.Method"/>,
         /// and <see cref="BinaryExpression.Conversion"/> properties set to the specified values.
         /// </returns>
-        public static BinaryExpression AddAssign(Expression left, Expression right, MethodInfo method, LambdaExpression conversion)
+        public static BinaryExpression AddAssign(Expression left, Expression right, MethodInfo? method, LambdaExpression? conversion)
         {
             ExpressionUtils.RequiresCanRead(left, nameof(left));
             RequiresCanWrite(left, nameof(left));
@@ -1570,7 +1569,7 @@ namespace System.Linq.Expressions
         /// <returns>A <see cref="BinaryExpression"/> that has the <see cref="NodeType"/> property equal to <see cref="ExpressionType.AddAssignChecked"/>
         /// and the <see cref="BinaryExpression.Left"/>, <see cref="BinaryExpression.Right"/>, and <see cref="BinaryExpression.Method"/> properties set to the specified values.
         /// </returns>
-        public static BinaryExpression AddAssignChecked(Expression left, Expression right, MethodInfo method)
+        public static BinaryExpression AddAssignChecked(Expression left, Expression right, MethodInfo? method)
         {
             return AddAssignChecked(left, right, method, conversion: null);
         }
@@ -1586,7 +1585,7 @@ namespace System.Linq.Expressions
         /// and the <see cref="BinaryExpression.Left"/>, <see cref="BinaryExpression.Right"/>, <see cref="BinaryExpression.Method"/>,
         /// and <see cref="BinaryExpression.Conversion"/> properties set to the specified values.
         /// </returns>
-        public static BinaryExpression AddAssignChecked(Expression left, Expression right, MethodInfo method, LambdaExpression conversion)
+        public static BinaryExpression AddAssignChecked(Expression left, Expression right, MethodInfo? method, LambdaExpression? conversion)
         {
             ExpressionUtils.RequiresCanRead(left, nameof(left));
             RequiresCanWrite(left, nameof(left));
@@ -1629,7 +1628,7 @@ namespace System.Linq.Expressions
         /// <returns>A <see cref="BinaryExpression"/> that has the <see cref="NodeType"/> property equal to <see cref="ExpressionType.AddChecked"/>
         /// and the <see cref="BinaryExpression.Left"/>, <see cref="BinaryExpression.Right"/>, and <see cref="BinaryExpression.Method"/> properties set to the specified values.
         /// </returns>
-        public static BinaryExpression AddChecked(Expression left, Expression right, MethodInfo method)
+        public static BinaryExpression AddChecked(Expression left, Expression right, MethodInfo? method)
         {
             ExpressionUtils.RequiresCanRead(left, nameof(left));
             ExpressionUtils.RequiresCanRead(right, nameof(right));
@@ -1665,7 +1664,7 @@ namespace System.Linq.Expressions
         /// <returns>A <see cref="BinaryExpression"/> that has the <see cref="NodeType"/> property equal to <see cref="ExpressionType.Subtract"/>
         /// and the <see cref="BinaryExpression.Left"/>, <see cref="BinaryExpression.Right"/>, and <see cref="BinaryExpression.Method"/> properties set to the specified values.
         /// </returns>
-        public static BinaryExpression Subtract(Expression left, Expression right, MethodInfo method)
+        public static BinaryExpression Subtract(Expression left, Expression right, MethodInfo? method)
         {
             ExpressionUtils.RequiresCanRead(left, nameof(left));
             ExpressionUtils.RequiresCanRead(right, nameof(right));
@@ -1701,7 +1700,7 @@ namespace System.Linq.Expressions
         /// <returns>A <see cref="BinaryExpression"/> that has the <see cref="NodeType"/> property equal to <see cref="ExpressionType.SubtractAssign"/>
         /// and the <see cref="BinaryExpression.Left"/>, <see cref="BinaryExpression.Right"/>, and <see cref="BinaryExpression.Method"/> properties set to the specified values.
         /// </returns>
-        public static BinaryExpression SubtractAssign(Expression left, Expression right, MethodInfo method)
+        public static BinaryExpression SubtractAssign(Expression left, Expression right, MethodInfo? method)
         {
             return SubtractAssign(left, right, method, conversion: null);
         }
@@ -1717,7 +1716,7 @@ namespace System.Linq.Expressions
         /// and the <see cref="BinaryExpression.Left"/>, <see cref="BinaryExpression.Right"/>, <see cref="BinaryExpression.Method"/>,
         /// and <see cref="BinaryExpression.Conversion"/> properties set to the specified values.
         /// </returns>
-        public static BinaryExpression SubtractAssign(Expression left, Expression right, MethodInfo method, LambdaExpression conversion)
+        public static BinaryExpression SubtractAssign(Expression left, Expression right, MethodInfo? method, LambdaExpression? conversion)
         {
             ExpressionUtils.RequiresCanRead(left, nameof(left));
             RequiresCanWrite(left, nameof(left));
@@ -1759,7 +1758,7 @@ namespace System.Linq.Expressions
         /// <returns>A <see cref="BinaryExpression"/> that has the <see cref="NodeType"/> property equal to <see cref="ExpressionType.SubtractAssignChecked"/>
         /// and the <see cref="BinaryExpression.Left"/>, <see cref="BinaryExpression.Right"/>, and <see cref="BinaryExpression.Method"/> properties set to the specified values.
         /// </returns>
-        public static BinaryExpression SubtractAssignChecked(Expression left, Expression right, MethodInfo method)
+        public static BinaryExpression SubtractAssignChecked(Expression left, Expression right, MethodInfo? method)
         {
             return SubtractAssignChecked(left, right, method, conversion: null);
         }
@@ -1775,7 +1774,7 @@ namespace System.Linq.Expressions
         /// and the <see cref="BinaryExpression.Left"/>, <see cref="BinaryExpression.Right"/>, <see cref="BinaryExpression.Method"/>,
         /// and <see cref="BinaryExpression.Conversion"/> properties set to the specified values.
         /// </returns>
-        public static BinaryExpression SubtractAssignChecked(Expression left, Expression right, MethodInfo method, LambdaExpression conversion)
+        public static BinaryExpression SubtractAssignChecked(Expression left, Expression right, MethodInfo? method, LambdaExpression? conversion)
         {
             ExpressionUtils.RequiresCanRead(left, nameof(left));
             RequiresCanWrite(left, nameof(left));
@@ -1817,7 +1816,7 @@ namespace System.Linq.Expressions
         /// <returns>A <see cref="BinaryExpression"/> that has the <see cref="NodeType"/> property equal to <see cref="ExpressionType.SubtractChecked"/>
         /// and the <see cref="BinaryExpression.Left"/>, <see cref="BinaryExpression.Right"/>, and <see cref="BinaryExpression.Method"/> properties set to the specified values.
         /// </returns>
-        public static BinaryExpression SubtractChecked(Expression left, Expression right, MethodInfo method)
+        public static BinaryExpression SubtractChecked(Expression left, Expression right, MethodInfo? method)
         {
             ExpressionUtils.RequiresCanRead(left, nameof(left));
             ExpressionUtils.RequiresCanRead(right, nameof(right));
@@ -1853,7 +1852,7 @@ namespace System.Linq.Expressions
         /// <returns>A <see cref="BinaryExpression"/> that has the <see cref="NodeType"/> property equal to <see cref="ExpressionType.Divide"/>
         /// and the <see cref="BinaryExpression.Left"/>, <see cref="BinaryExpression.Right"/>, and <see cref="BinaryExpression.Method"/> properties set to the specified values.
         /// </returns>
-        public static BinaryExpression Divide(Expression left, Expression right, MethodInfo method)
+        public static BinaryExpression Divide(Expression left, Expression right, MethodInfo? method)
         {
             ExpressionUtils.RequiresCanRead(left, nameof(left));
             ExpressionUtils.RequiresCanRead(right, nameof(right));
@@ -1889,7 +1888,7 @@ namespace System.Linq.Expressions
         /// <returns>A <see cref="BinaryExpression"/> that has the <see cref="NodeType"/> property equal to <see cref="ExpressionType.DivideAssign"/>
         /// and the <see cref="BinaryExpression.Left"/>, <see cref="BinaryExpression.Right"/>, and <see cref="BinaryExpression.Method"/> properties set to the specified values.
         /// </returns>
-        public static BinaryExpression DivideAssign(Expression left, Expression right, MethodInfo method)
+        public static BinaryExpression DivideAssign(Expression left, Expression right, MethodInfo? method)
         {
             return DivideAssign(left, right, method, conversion: null);
         }
@@ -1905,7 +1904,7 @@ namespace System.Linq.Expressions
         /// and the <see cref="BinaryExpression.Left"/>, <see cref="BinaryExpression.Right"/>, <see cref="BinaryExpression.Method"/>,
         /// and <see cref="BinaryExpression.Conversion"/> properties set to the specified values.
         /// </returns>
-        public static BinaryExpression DivideAssign(Expression left, Expression right, MethodInfo method, LambdaExpression conversion)
+        public static BinaryExpression DivideAssign(Expression left, Expression right, MethodInfo? method, LambdaExpression? conversion)
         {
             ExpressionUtils.RequiresCanRead(left, nameof(left));
             RequiresCanWrite(left, nameof(left));
@@ -1947,7 +1946,7 @@ namespace System.Linq.Expressions
         /// <returns>A <see cref="BinaryExpression"/> that has the <see cref="NodeType"/> property equal to <see cref="ExpressionType.Modulo"/>
         /// and the <see cref="BinaryExpression.Left"/>, <see cref="BinaryExpression.Right"/>, and <see cref="BinaryExpression.Method"/> properties set to the specified values.
         /// </returns>
-        public static BinaryExpression Modulo(Expression left, Expression right, MethodInfo method)
+        public static BinaryExpression Modulo(Expression left, Expression right, MethodInfo? method)
         {
             ExpressionUtils.RequiresCanRead(left, nameof(left));
             ExpressionUtils.RequiresCanRead(right, nameof(right));
@@ -1983,7 +1982,7 @@ namespace System.Linq.Expressions
         /// <returns>A <see cref="BinaryExpression"/> that has the <see cref="NodeType"/> property equal to <see cref="ExpressionType.ModuloAssign"/>
         /// and the <see cref="BinaryExpression.Left"/>, <see cref="BinaryExpression.Right"/>, and <see cref="BinaryExpression.Method"/> properties set to the specified values.
         /// </returns>
-        public static BinaryExpression ModuloAssign(Expression left, Expression right, MethodInfo method)
+        public static BinaryExpression ModuloAssign(Expression left, Expression right, MethodInfo? method)
         {
             return ModuloAssign(left, right, method, conversion: null);
         }
@@ -1999,7 +1998,7 @@ namespace System.Linq.Expressions
         /// and the <see cref="BinaryExpression.Left"/>, <see cref="BinaryExpression.Right"/>, <see cref="BinaryExpression.Method"/>,
         /// and <see cref="BinaryExpression.Conversion"/> properties set to the specified values.
         /// </returns>
-        public static BinaryExpression ModuloAssign(Expression left, Expression right, MethodInfo method, LambdaExpression conversion)
+        public static BinaryExpression ModuloAssign(Expression left, Expression right, MethodInfo? method, LambdaExpression? conversion)
         {
             ExpressionUtils.RequiresCanRead(left, nameof(left));
             RequiresCanWrite(left, nameof(left));
@@ -2041,7 +2040,7 @@ namespace System.Linq.Expressions
         /// <returns>A <see cref="BinaryExpression"/> that has the <see cref="NodeType"/> property equal to <see cref="ExpressionType.Multiply"/>
         /// and the <see cref="BinaryExpression.Left"/>, <see cref="BinaryExpression.Right"/>, and <see cref="BinaryExpression.Method"/> properties set to the specified values.
         /// </returns>
-        public static BinaryExpression Multiply(Expression left, Expression right, MethodInfo method)
+        public static BinaryExpression Multiply(Expression left, Expression right, MethodInfo? method)
         {
             ExpressionUtils.RequiresCanRead(left, nameof(left));
             ExpressionUtils.RequiresCanRead(right, nameof(right));
@@ -2077,7 +2076,7 @@ namespace System.Linq.Expressions
         /// <returns>A <see cref="BinaryExpression"/> that has the <see cref="NodeType"/> property equal to <see cref="ExpressionType.MultiplyAssign"/>
         /// and the <see cref="BinaryExpression.Left"/>, <see cref="BinaryExpression.Right"/>, and <see cref="BinaryExpression.Method"/> properties set to the specified values.
         /// </returns>
-        public static BinaryExpression MultiplyAssign(Expression left, Expression right, MethodInfo method)
+        public static BinaryExpression MultiplyAssign(Expression left, Expression right, MethodInfo? method)
         {
             return MultiplyAssign(left, right, method, conversion: null);
         }
@@ -2093,7 +2092,7 @@ namespace System.Linq.Expressions
         /// and the <see cref="BinaryExpression.Left"/>, <see cref="BinaryExpression.Right"/>, <see cref="BinaryExpression.Method"/>,
         /// and <see cref="BinaryExpression.Conversion"/> properties set to the specified values.
         /// </returns>
-        public static BinaryExpression MultiplyAssign(Expression left, Expression right, MethodInfo method, LambdaExpression conversion)
+        public static BinaryExpression MultiplyAssign(Expression left, Expression right, MethodInfo? method, LambdaExpression? conversion)
         {
             ExpressionUtils.RequiresCanRead(left, nameof(left));
             RequiresCanWrite(left, nameof(left));
@@ -2135,7 +2134,7 @@ namespace System.Linq.Expressions
         /// <returns>A <see cref="BinaryExpression"/> that has the <see cref="NodeType"/> property equal to <see cref="ExpressionType.MultiplyAssignChecked"/>
         /// and the <see cref="BinaryExpression.Left"/>, <see cref="BinaryExpression.Right"/>, and <see cref="BinaryExpression.Method"/> properties set to the specified values.
         /// </returns>
-        public static BinaryExpression MultiplyAssignChecked(Expression left, Expression right, MethodInfo method)
+        public static BinaryExpression MultiplyAssignChecked(Expression left, Expression right, MethodInfo? method)
         {
             return MultiplyAssignChecked(left, right, method, conversion: null);
         }
@@ -2151,7 +2150,7 @@ namespace System.Linq.Expressions
         /// and the <see cref="BinaryExpression.Left"/>, <see cref="BinaryExpression.Right"/>, <see cref="BinaryExpression.Method"/>,
         /// and <see cref="BinaryExpression.Conversion"/> properties set to the specified values.
         /// </returns>
-        public static BinaryExpression MultiplyAssignChecked(Expression left, Expression right, MethodInfo method, LambdaExpression conversion)
+        public static BinaryExpression MultiplyAssignChecked(Expression left, Expression right, MethodInfo? method, LambdaExpression? conversion)
         {
             ExpressionUtils.RequiresCanRead(left, nameof(left));
             RequiresCanWrite(left, nameof(left));
@@ -2193,7 +2192,7 @@ namespace System.Linq.Expressions
         /// <returns>A <see cref="BinaryExpression"/> that has the <see cref="NodeType"/> property equal to <see cref="ExpressionType.MultiplyChecked"/>
         /// and the <see cref="BinaryExpression.Left"/>, <see cref="BinaryExpression.Right"/>, and <see cref="BinaryExpression.Method"/> properties set to the specified values.
         /// </returns>
-        public static BinaryExpression MultiplyChecked(Expression left, Expression right, MethodInfo method)
+        public static BinaryExpression MultiplyChecked(Expression left, Expression right, MethodInfo? method)
         {
             ExpressionUtils.RequiresCanRead(left, nameof(left));
             ExpressionUtils.RequiresCanRead(right, nameof(right));
@@ -2245,7 +2244,7 @@ namespace System.Linq.Expressions
         /// <returns>A <see cref="BinaryExpression"/> that has the <see cref="NodeType"/> property equal to <see cref="ExpressionType.LeftShift"/>
         /// and the <see cref="BinaryExpression.Left"/>, <see cref="BinaryExpression.Right"/>, and <see cref="BinaryExpression.Method"/> properties set to the specified values.
         /// </returns>
-        public static BinaryExpression LeftShift(Expression left, Expression right, MethodInfo method)
+        public static BinaryExpression LeftShift(Expression left, Expression right, MethodInfo? method)
         {
             ExpressionUtils.RequiresCanRead(left, nameof(left));
             ExpressionUtils.RequiresCanRead(right, nameof(right));
@@ -2282,7 +2281,7 @@ namespace System.Linq.Expressions
         /// <returns>A <see cref="BinaryExpression"/> that has the <see cref="NodeType"/> property equal to <see cref="ExpressionType.LeftShiftAssign"/>
         /// and the <see cref="BinaryExpression.Left"/>, <see cref="BinaryExpression.Right"/>, and <see cref="BinaryExpression.Method"/> properties set to the specified values.
         /// </returns>
-        public static BinaryExpression LeftShiftAssign(Expression left, Expression right, MethodInfo method)
+        public static BinaryExpression LeftShiftAssign(Expression left, Expression right, MethodInfo? method)
         {
             return LeftShiftAssign(left, right, method, conversion: null);
         }
@@ -2298,7 +2297,7 @@ namespace System.Linq.Expressions
         /// and the <see cref="BinaryExpression.Left"/>, <see cref="BinaryExpression.Right"/>, <see cref="BinaryExpression.Method"/>,
         /// and <see cref="BinaryExpression.Conversion"/> properties set to the specified values.
         /// </returns>
-        public static BinaryExpression LeftShiftAssign(Expression left, Expression right, MethodInfo method, LambdaExpression conversion)
+        public static BinaryExpression LeftShiftAssign(Expression left, Expression right, MethodInfo? method, LambdaExpression? conversion)
         {
             ExpressionUtils.RequiresCanRead(left, nameof(left));
             RequiresCanWrite(left, nameof(left));
@@ -2341,7 +2340,7 @@ namespace System.Linq.Expressions
         /// <returns>A <see cref="BinaryExpression"/> that has the <see cref="NodeType"/> property equal to <see cref="ExpressionType.RightShift"/>
         /// and the <see cref="BinaryExpression.Left"/>, <see cref="BinaryExpression.Right"/>, and <see cref="BinaryExpression.Method"/> properties set to the specified values.
         /// </returns>
-        public static BinaryExpression RightShift(Expression left, Expression right, MethodInfo method)
+        public static BinaryExpression RightShift(Expression left, Expression right, MethodInfo? method)
         {
             ExpressionUtils.RequiresCanRead(left, nameof(left));
             ExpressionUtils.RequiresCanRead(right, nameof(right));
@@ -2378,7 +2377,7 @@ namespace System.Linq.Expressions
         /// <returns>A <see cref="BinaryExpression"/> that has the <see cref="NodeType"/> property equal to <see cref="ExpressionType.RightShiftAssign"/>
         /// and the <see cref="BinaryExpression.Left"/>, <see cref="BinaryExpression.Right"/>, and <see cref="BinaryExpression.Method"/> properties set to the specified values.
         /// </returns>
-        public static BinaryExpression RightShiftAssign(Expression left, Expression right, MethodInfo method)
+        public static BinaryExpression RightShiftAssign(Expression left, Expression right, MethodInfo? method)
         {
             return RightShiftAssign(left, right, method, conversion: null);
         }
@@ -2394,7 +2393,7 @@ namespace System.Linq.Expressions
         /// and the <see cref="BinaryExpression.Left"/>, <see cref="BinaryExpression.Right"/>, <see cref="BinaryExpression.Method"/>,
         /// and <see cref="BinaryExpression.Conversion"/> properties set to the specified values.
         /// </returns>
-        public static BinaryExpression RightShiftAssign(Expression left, Expression right, MethodInfo method, LambdaExpression conversion)
+        public static BinaryExpression RightShiftAssign(Expression left, Expression right, MethodInfo? method, LambdaExpression? conversion)
         {
             ExpressionUtils.RequiresCanRead(left, nameof(left));
             RequiresCanWrite(left, nameof(left));
@@ -2437,7 +2436,7 @@ namespace System.Linq.Expressions
         /// <returns>A <see cref="BinaryExpression"/> that has the <see cref="NodeType"/> property equal to <see cref="ExpressionType.And"/>
         /// and the <see cref="BinaryExpression.Left"/>, <see cref="BinaryExpression.Right"/>, and <see cref="BinaryExpression.Method"/> properties set to the specified values.
         /// </returns>
-        public static BinaryExpression And(Expression left, Expression right, MethodInfo method)
+        public static BinaryExpression And(Expression left, Expression right, MethodInfo? method)
         {
             ExpressionUtils.RequiresCanRead(left, nameof(left));
             ExpressionUtils.RequiresCanRead(right, nameof(right));
@@ -2473,7 +2472,7 @@ namespace System.Linq.Expressions
         /// <returns>A <see cref="BinaryExpression"/> that has the <see cref="NodeType"/> property equal to <see cref="ExpressionType.AndAssign"/>
         /// and the <see cref="BinaryExpression.Left"/>, <see cref="BinaryExpression.Right"/>, and <see cref="BinaryExpression.Method"/> properties set to the specified values.
         /// </returns>
-        public static BinaryExpression AndAssign(Expression left, Expression right, MethodInfo method)
+        public static BinaryExpression AndAssign(Expression left, Expression right, MethodInfo? method)
         {
             return AndAssign(left, right, method, conversion: null);
         }
@@ -2489,7 +2488,7 @@ namespace System.Linq.Expressions
         /// and the <see cref="BinaryExpression.Left"/>, <see cref="BinaryExpression.Right"/>, <see cref="BinaryExpression.Method"/>,
         /// and <see cref="BinaryExpression.Conversion"/> properties set to the specified values.
         /// </returns>
-        public static BinaryExpression AndAssign(Expression left, Expression right, MethodInfo method, LambdaExpression conversion)
+        public static BinaryExpression AndAssign(Expression left, Expression right, MethodInfo? method, LambdaExpression? conversion)
         {
             ExpressionUtils.RequiresCanRead(left, nameof(left));
             RequiresCanWrite(left, nameof(left));
@@ -2531,7 +2530,7 @@ namespace System.Linq.Expressions
         /// <returns>A <see cref="BinaryExpression"/> that has the <see cref="NodeType"/> property equal to <see cref="ExpressionType.Or"/>
         /// and the <see cref="BinaryExpression.Left"/>, <see cref="BinaryExpression.Right"/>, and <see cref="BinaryExpression.Method"/> properties set to the specified values.
         /// </returns>
-        public static BinaryExpression Or(Expression left, Expression right, MethodInfo method)
+        public static BinaryExpression Or(Expression left, Expression right, MethodInfo? method)
         {
             ExpressionUtils.RequiresCanRead(left, nameof(left));
             ExpressionUtils.RequiresCanRead(right, nameof(right));
@@ -2567,7 +2566,7 @@ namespace System.Linq.Expressions
         /// <returns>A <see cref="BinaryExpression"/> that has the <see cref="NodeType"/> property equal to <see cref="ExpressionType.OrAssign"/>
         /// and the <see cref="BinaryExpression.Left"/>, <see cref="BinaryExpression.Right"/>, and <see cref="BinaryExpression.Method"/> properties set to the specified values.
         /// </returns>
-        public static BinaryExpression OrAssign(Expression left, Expression right, MethodInfo method)
+        public static BinaryExpression OrAssign(Expression left, Expression right, MethodInfo? method)
         {
             return OrAssign(left, right, method, conversion: null);
         }
@@ -2583,7 +2582,7 @@ namespace System.Linq.Expressions
         /// and the <see cref="BinaryExpression.Left"/>, <see cref="BinaryExpression.Right"/>, <see cref="BinaryExpression.Method"/>,
         /// and <see cref="BinaryExpression.Conversion"/> properties set to the specified values.
         /// </returns>
-        public static BinaryExpression OrAssign(Expression left, Expression right, MethodInfo method, LambdaExpression conversion)
+        public static BinaryExpression OrAssign(Expression left, Expression right, MethodInfo? method, LambdaExpression? conversion)
         {
             ExpressionUtils.RequiresCanRead(left, nameof(left));
             RequiresCanWrite(left, nameof(left));
@@ -2625,7 +2624,7 @@ namespace System.Linq.Expressions
         /// <returns>A <see cref="BinaryExpression"/> that has the <see cref="NodeType"/> property equal to <see cref="ExpressionType.ExclusiveOr"/>
         /// and the <see cref="BinaryExpression.Left"/>, <see cref="BinaryExpression.Right"/>, and <see cref="BinaryExpression.Method"/> properties set to the specified values.
         /// </returns>
-        public static BinaryExpression ExclusiveOr(Expression left, Expression right, MethodInfo method)
+        public static BinaryExpression ExclusiveOr(Expression left, Expression right, MethodInfo? method)
         {
             ExpressionUtils.RequiresCanRead(left, nameof(left));
             ExpressionUtils.RequiresCanRead(right, nameof(right));
@@ -2661,7 +2660,7 @@ namespace System.Linq.Expressions
         /// <returns>A <see cref="BinaryExpression"/> that has the <see cref="NodeType"/> property equal to <see cref="ExpressionType.ExclusiveOrAssign"/>
         /// and the <see cref="BinaryExpression.Left"/>, <see cref="BinaryExpression.Right"/>, and <see cref="BinaryExpression.Method"/> properties set to the specified values.
         /// </returns>
-        public static BinaryExpression ExclusiveOrAssign(Expression left, Expression right, MethodInfo method)
+        public static BinaryExpression ExclusiveOrAssign(Expression left, Expression right, MethodInfo? method)
         {
             return ExclusiveOrAssign(left, right, method, conversion: null);
         }
@@ -2677,7 +2676,7 @@ namespace System.Linq.Expressions
         /// and the <see cref="BinaryExpression.Left"/>, <see cref="BinaryExpression.Right"/>, <see cref="BinaryExpression.Method"/>,
         /// and <see cref="BinaryExpression.Conversion"/> properties set to the specified values.
         /// </returns>
-        public static BinaryExpression ExclusiveOrAssign(Expression left, Expression right, MethodInfo method, LambdaExpression conversion)
+        public static BinaryExpression ExclusiveOrAssign(Expression left, Expression right, MethodInfo? method, LambdaExpression? conversion)
         {
             ExpressionUtils.RequiresCanRead(left, nameof(left));
             RequiresCanWrite(left, nameof(left));
@@ -2719,7 +2718,7 @@ namespace System.Linq.Expressions
         /// <returns>A <see cref="BinaryExpression"/> that has the <see cref="NodeType"/> property equal to <see cref="ExpressionType.Power"/>
         /// and the <see cref="BinaryExpression.Left"/>, <see cref="BinaryExpression.Right"/>, and <see cref="BinaryExpression.Method"/> properties set to the specified values.
         /// </returns>
-        public static BinaryExpression Power(Expression left, Expression right, MethodInfo method)
+        public static BinaryExpression Power(Expression left, Expression right, MethodInfo? method)
         {
             ExpressionUtils.RequiresCanRead(left, nameof(left));
             ExpressionUtils.RequiresCanRead(right, nameof(right));
@@ -2735,7 +2734,7 @@ namespace System.Linq.Expressions
                     // VB uses op_Exponent, F# uses op_Exponentiation. This inconsistency is unfortunate, but we can
                     // test for either.
                     string name = "op_Exponent";
-                    BinaryExpression b = GetUserDefinedBinaryOperator(ExpressionType.Power, name, left, right, liftToNull: true);
+                    BinaryExpression? b = GetUserDefinedBinaryOperator(ExpressionType.Power, name, left, right, liftToNull: true);
                     if (b == null)
                     {
                         name = "op_Exponentiation";
@@ -2746,7 +2745,7 @@ namespace System.Linq.Expressions
                         }
                     }
 
-                    ParameterInfo[] pis = b.Method.GetParametersCached();
+                    ParameterInfo[] pis = b.Method!.GetParametersCached();
                     ValidateParamswithOperandsOrThrow(pis[0].ParameterType, left.Type, ExpressionType.Power, name);
                     ValidateParamswithOperandsOrThrow(pis[1].ParameterType, right.Type, ExpressionType.Power, name);
                     return b;
@@ -2777,7 +2776,7 @@ namespace System.Linq.Expressions
         /// <returns>A <see cref="BinaryExpression"/> that has the <see cref="NodeType"/> property equal to <see cref="ExpressionType.PowerAssign"/>
         /// and the <see cref="BinaryExpression.Left"/>, <see cref="BinaryExpression.Right"/>, and <see cref="BinaryExpression.Method"/> properties set to the specified values.
         /// </returns>
-        public static BinaryExpression PowerAssign(Expression left, Expression right, MethodInfo method)
+        public static BinaryExpression PowerAssign(Expression left, Expression right, MethodInfo? method)
         {
             return PowerAssign(left, right, method, conversion: null);
         }
@@ -2793,7 +2792,7 @@ namespace System.Linq.Expressions
         /// and the <see cref="BinaryExpression.Left"/>, <see cref="BinaryExpression.Right"/>, <see cref="BinaryExpression.Method"/>,
         /// and <see cref="BinaryExpression.Conversion"/> properties set to the specified values.
         /// </returns>
-        public static BinaryExpression PowerAssign(Expression left, Expression right, MethodInfo method, LambdaExpression conversion)
+        public static BinaryExpression PowerAssign(Expression left, Expression right, MethodInfo? method, LambdaExpression? conversion)
         {
             ExpressionUtils.RequiresCanRead(left, nameof(left));
             RequiresCanWrite(left, nameof(left));
@@ -2839,7 +2838,7 @@ namespace System.Linq.Expressions
                 throw Error.IncorrectNumberOfIndexes();
             }
 
-            return new SimpleBinaryExpression(ExpressionType.ArrayIndex, array, index, arrayType.GetElementType());
+            return new SimpleBinaryExpression(ExpressionType.ArrayIndex, array, index, arrayType.GetElementType()!);
         }
 
         #endregion

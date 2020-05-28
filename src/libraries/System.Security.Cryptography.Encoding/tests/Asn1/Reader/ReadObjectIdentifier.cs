@@ -196,19 +196,31 @@ namespace System.Security.Cryptography.Tests.Asn1
             int tagValue)
         {
             byte[] inputData = inputHex.HexToByteArray();
+            Asn1Tag constructedTag = new Asn1Tag((TagClass)tagClass, tagValue, true);
+            Asn1Tag primitiveTag = new Asn1Tag((TagClass)tagClass, tagValue, false);
             AsnReader reader = new AsnReader(inputData, (AsnEncodingRules)ruleSet);
 
-            string val1 = reader.ReadObjectIdentifierAsString(new Asn1Tag((TagClass)tagClass, tagValue, true));
-
+            string val1 = reader.ReadObjectIdentifierAsString(constructedTag);
             Assert.False(reader.HasData);
 
             reader = new AsnReader(inputData, (AsnEncodingRules)ruleSet);
 
-            string val2 = reader.ReadObjectIdentifierAsString(new Asn1Tag((TagClass)tagClass, tagValue, false));
+            Oid oid1 = reader.ReadObjectIdentifier(constructedTag);
+            Assert.False(reader.HasData);
 
+            reader = new AsnReader(inputData, (AsnEncodingRules)ruleSet);
+
+            string val2 = reader.ReadObjectIdentifierAsString(primitiveTag);
+            Assert.False(reader.HasData);
+
+            reader = new AsnReader(inputData, (AsnEncodingRules)ruleSet);
+
+            Oid oid2 = reader.ReadObjectIdentifier(primitiveTag);
             Assert.False(reader.HasData);
 
             Assert.Equal(val1, val2);
+            Assert.Equal(oid1.Value, oid2.Value);
+            Assert.Equal(oid1.Value, val1);
         }
 
         [Theory]

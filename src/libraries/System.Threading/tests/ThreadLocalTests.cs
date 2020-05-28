@@ -217,7 +217,7 @@ namespace System.Threading.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsPreciseGcSupported))]
         public static void RunThreadLocalTest7_WeakReference()
         {
             var threadLocalWeakReferenceTest = new ThreadLocalWeakReferenceTest();
@@ -315,8 +315,7 @@ namespace System.Threading.Tests
             Assert.Throws<ObjectDisposedException>(() => values = tl.Values);
         }
 
-        [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.Mono, "This test requires precise stack scanning")]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsPreciseGcSupported))]
         public static void RunThreadLocalTest8_Values_NegativeCases()
         {
             // Test that Dispose works and that objects are released on dispose

@@ -752,6 +752,7 @@ PAL_UnregisterModule(
 
 Parameters:
     IN hFile - file to map
+    IN offset - offset within hFile where the PE "file" is located
 
 Return value:
     non-NULL - the base address of the mapped image
@@ -759,11 +760,11 @@ Return value:
 --*/
 PVOID
 PALAPI
-PAL_LOADLoadPEFile(HANDLE hFile)
+PAL_LOADLoadPEFile(HANDLE hFile, size_t offset)
 {
-    ENTRY("PAL_LOADLoadPEFile (hFile=%p)\n", hFile);
+    ENTRY("PAL_LOADLoadPEFile (hFile=%p, offset=%zx)\n", hFile, offset);
 
-    void * loadedBase = MAPMapPEFile(hFile);
+    void* loadedBase = MAPMapPEFile(hFile, offset);
 
 #ifdef _DEBUG
     if (loadedBase != nullptr)
@@ -775,7 +776,7 @@ PAL_LOADLoadPEFile(HANDLE hFile)
             {
                 TRACE("Forcing failure of PE file map, and retry\n");
                 PAL_LOADUnloadPEFile(loadedBase); // unload it
-                loadedBase = MAPMapPEFile(hFile); // load it again
+                loadedBase = MAPMapPEFile(hFile, offset); // load it again
             }
 
             free(envVar);
@@ -961,8 +962,8 @@ BOOL LOADInitializeModules()
     exe_module.refcount = -1;
     exe_module.next = &exe_module;
     exe_module.prev = &exe_module;
-    exe_module.pDllMain = nullptr;
-    exe_module.hinstance = nullptr;
+    exe_module.pDllMain = (PDLLMAIN)dlsym(exe_module.dl_handle, "DllMain");
+    exe_module.hinstance = (HINSTANCE)&exe_module;
     exe_module.threadLibCalls = TRUE;
     return TRUE;
 }
@@ -1547,7 +1548,8 @@ static MODSTRUCT *LOADAddModule(NATIVE_LIBRARY_HANDLE dl_handle, LPCSTR libraryN
         {
             /* found the handle. increment the refcount and return the
                existing module structure */
-            TRACE("Found matching module %p for module name %s\n", module, libraryNameOrPath);
+            TRACE("Found matching module %p for module name %s\n", module,
+                (libraryNameOrPath != nullptr) ? libraryNameOrPath : "nullptr");
 
             if (module->refcount != -1)
             {
@@ -1709,13 +1711,7 @@ BOOL LOADInitializeCoreCLRModule()
         ERROR("Can not load the PAL module\n");
         return FALSE;
     }
-    PDLLMAIN pRuntimeDllMain = (PDLLMAIN)dlsym(module->dl_handle, "CoreDllMain");
-    if (!pRuntimeDllMain)
-    {
-        ERROR("Can not find the CoreDllMain entry point\n");
-        return FALSE;
-    }
-    return pRuntimeDllMain(module->hinstance, DLL_PROCESS_ATTACH, nullptr);
+    return TRUE;
 }
 
 /*++

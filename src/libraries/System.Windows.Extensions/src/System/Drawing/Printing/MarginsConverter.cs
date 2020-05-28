@@ -63,7 +63,7 @@ namespace System.Drawing.Printing
                         culture = CultureInfo.CurrentCulture;
                     }
                     char sep = culture.TextInfo.ListSeparator[0];
-                    string[] tokens = text.Split(new char[] { sep });
+                    string[] tokens = text.Split(sep);
                     int[] values = new int[tokens.Length];
                     TypeConverter intConverter = TypeDescriptor.GetConverter(typeof(int));
                     for (int i = 0; i < values.Length; i++)

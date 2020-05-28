@@ -153,8 +153,7 @@ namespace System.Data.Common.Tests
             }
         }
 
-        [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.Mono, "GC has different behavior on Mono")]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsPreciseGcSupported))]
         public void CanBeFinalized()
         {
             FinalizingCommand.CreateAndRelease();

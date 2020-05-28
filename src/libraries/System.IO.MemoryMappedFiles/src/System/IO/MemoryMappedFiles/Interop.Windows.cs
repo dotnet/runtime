@@ -12,13 +12,15 @@ internal partial class Interop
 {
     public static unsafe void CheckForAvailableVirtualMemory(ulong nativeSize)
     {
-        Interop.Kernel32.MEMORYSTATUSEX memStatus;
-        memStatus.dwLength = (uint)sizeof(Interop.Kernel32.MEMORYSTATUSEX);
-        Interop.Kernel32.GlobalMemoryStatusEx(out memStatus);
-        ulong totalVirtual = memStatus.ullTotalVirtual;
-        if (nativeSize >= totalVirtual)
+        Interop.Kernel32.MEMORYSTATUSEX memoryStatus = default;
+        memoryStatus.dwLength = (uint)sizeof(Interop.Kernel32.MEMORYSTATUSEX);
+        if (Interop.Kernel32.GlobalMemoryStatusEx(ref memoryStatus))
         {
-            throw new IOException(SR.IO_NotEnoughMemory);
+            ulong totalVirtual = memoryStatus.ullTotalVirtual;
+            if (nativeSize >= totalVirtual)
+            {
+                throw new IOException(SR.IO_NotEnoughMemory);
+            }
         }
     }
 

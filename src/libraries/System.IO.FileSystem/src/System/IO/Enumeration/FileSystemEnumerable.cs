@@ -18,17 +18,17 @@ namespace System.IO.Enumeration
     /// </summary>
     public class FileSystemEnumerable<TResult> : IEnumerable<TResult>
     {
-        private DelegateEnumerator _enumerator;
+        private DelegateEnumerator? _enumerator;
         private readonly FindTransform _transform;
         private readonly EnumerationOptions _options;
         private readonly string _directory;
 
-        public FileSystemEnumerable(string directory, FindTransform transform, EnumerationOptions options = null)
+        public FileSystemEnumerable(string directory, FindTransform transform, EnumerationOptions? options = null)
             : this(directory, transform, options, isNormalized: false)
         {
         }
 
-        internal FileSystemEnumerable(string directory, FindTransform transform, EnumerationOptions options, bool isNormalized)
+        internal FileSystemEnumerable(string directory, FindTransform transform, EnumerationOptions? options, bool isNormalized)
         {
             _directory = directory ?? throw new ArgumentNullException(nameof(directory));
             _transform = transform ?? throw new ArgumentNullException(nameof(transform));
@@ -39,8 +39,8 @@ namespace System.IO.Enumeration
             _enumerator = new DelegateEnumerator(this, isNormalized);
         }
 
-        public FindPredicate ShouldIncludePredicate { get; set; }
-        public FindPredicate ShouldRecursePredicate { get; set; }
+        public FindPredicate? ShouldIncludePredicate { get; set; }
+        public FindPredicate? ShouldRecursePredicate { get; set; }
 
         public IEnumerator<TResult> GetEnumerator()
         {

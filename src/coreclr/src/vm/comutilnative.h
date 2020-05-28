@@ -74,25 +74,17 @@ public:
     static void QCALLTYPE Clear(void *dst, size_t length);
 };
 
-#define MIN_GC_MEMORYPRESSURE_THRESHOLD 100000
-#define RELATIVE_GC_RATIO 8
-
-const UINT NEW_PRESSURE_COUNT = 4;
+const UINT MEM_PRESSURE_COUNT = 4;
 
 class GCInterface {
 private:
-
-    static UINT64   m_ulMemPressure;
-    static UINT64   m_ulThreshold;
     static INT32    m_gc_counts[3];
 
-    static UINT64   m_addPressure[NEW_PRESSURE_COUNT];
-    static UINT64   m_remPressure[NEW_PRESSURE_COUNT];
+    static UINT64   m_addPressure[MEM_PRESSURE_COUNT];
+    static UINT64   m_remPressure[MEM_PRESSURE_COUNT];
     static UINT     m_iteration;
 
 public:
-    static CrstStatic m_MemoryPressureLock;
-
     static FORCEINLINE UINT64 InterlockedAdd(UINT64 *pAugend, UINT64 addend);
     static FORCEINLINE UINT64 InterlockedSub(UINT64 *pMinuend, UINT64 subtrahend);
 
@@ -128,7 +120,7 @@ public:
     static FCDECL0(INT64,    GetAllocatedBytesForCurrentThread);
     static FCDECL1(INT64,    GetTotalAllocatedBytes, CLR_BOOL precise);
 
-    static FCDECL3(Object*, AllocateNewArray, void* elementTypeHandle, INT32 length, CLR_BOOL zeroingOptional);
+    static FCDECL3(Object*, AllocateNewArray, void* elementTypeHandle, INT32 length, INT32 flags);
 
 #ifdef FEATURE_BASICFREEZE
     static
@@ -150,15 +142,12 @@ public:
     static
     void QCALLTYPE _RemoveMemoryPressure(UINT64 bytesAllocated);
 
-    static void RemoveMemoryPressure(UINT64 bytesAllocated);
-    static void AddMemoryPressure(UINT64 bytesAllocated);
     NOINLINE static void SendEtwRemoveMemoryPressureEvent(UINT64 bytesAllocated);
     static void SendEtwAddMemoryPressureEvent(UINT64 bytesAllocated);
 
-    // New less sensitive implementation of Add/RemoveMemoryPressure:
     static void CheckCollectionCount();
-    static void NewRemoveMemoryPressure(UINT64 bytesAllocated);
-    static void NewAddMemoryPressure(UINT64 bytesAllocated);
+    static void RemoveMemoryPressure(UINT64 bytesAllocated);
+    static void AddMemoryPressure(UINT64 bytesAllocated);
 
 private:
     // Out-of-line helper to avoid EH prolog/epilog in functions that otherwise don't throw.
@@ -172,7 +161,6 @@ public:
         static FCDECL2_IV(INT64,   Exchange64, INT64 *location, INT64 value);
         static FCDECL2(LPVOID, ExchangePointer, LPVOID* location, LPVOID value);
         static FCDECL3(INT32, CompareExchange,        INT32* location, INT32 value, INT32 comparand);
-        static FCDECL4(INT32, CompareExchangeReliableResult,        INT32* location, INT32 value, INT32 comparand, CLR_BOOL* succeeded);
         static FCDECL3_IVV(INT64, CompareExchange64,        INT64* location, INT64 value, INT64 comparand);
         static FCDECL3(LPVOID, CompareExchangePointer, LPVOID* location, LPVOID value, LPVOID comparand);
         static FCDECL2_IV(float, ExchangeFloat, float *location, float value);
@@ -185,6 +173,7 @@ public:
         static FCDECL2_IV(INT64, ExchangeAdd64, INT64 *location, INT64 value);
 
         static FCDECL0(void, FCMemoryBarrier);
+        static FCDECL0(void, FCMemoryBarrierLoad);
         static void QCALLTYPE MemoryBarrierProcessWide();
 };
 

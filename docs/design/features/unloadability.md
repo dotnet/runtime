@@ -98,8 +98,9 @@ The dashed lines represent indirect links from MethodTables of the objects to th
 ### First phase of unloading
 Unloading is initialized by the user code calling `AssemblyLoadContext.Unload` metod or by execution of the `AssemblyLoadContext` finalizer. The following steps are performed to start the unloading process.
 * The `AssemblyLoadContext` fires the `Unloading` event to allow the user code to perform cleanup if required (e.g. stop threads running inside of the context, remove references and destroy handles, etc.)
-* `AssemblyNative::PrepareForAssemblyLoadContextRelease` method is called, which in turn calls `CLRPrivBinderAssemblyLoadContext::PrepareForLoadContextRelease`
-* That method changes the handle referring to the `AssemblyLoadContext` to strong to keep the `AssemblyLoadContext` around until the unload is complete. For example, finalizers of types that are loaded into the `AssemblyLoadContext` may need access to the `AssemblyLoadContext`.
+* The `AssemblyLoadContext.InitiateUnload` method is called. It creates a strong GC handle referring to the `AssemblyLoadContext` to keep it around until the unload is complete. For example, finalizers of types that are loaded into the `AssemblyLoadContext` may need access to the `AssemblyLoadContext`.
+* Then it calls `AssemblyNative::PrepareForAssemblyLoadContextRelease` method with that strong handle as an argument, which in turn calls `CLRPrivBinderAssemblyLoadContext::PrepareForLoadContextRelease`
+* That method stores the passed in strong GC handle in `CLRPrivBinderAssemblyLoadContext::m_ptrManagedStrongAssemblyLoadContext`. 
 * Then it decrements refcount of the `AssemblyLoaderAllocator` the `CLRPrivBinderAssemblyLoadContext` points to.
 * Finally, it destroys the strong handle to the managed `LoaderAllocator`. That allows the `LoaderAllocator` to be collected.
 ### Second phase of unloading
@@ -109,5 +110,5 @@ This phase is initiated after all instances of types from assemblies loaded into
 * This method decrements reference count of all the `LoaderAllocators` that reference this `LoaderAllocator` and then the reference count of this `LoaderAllocator` itself.
 * If it was not the last reference, the native `AssemblyLoaderAllocator` must stay alive until there are no references to it, so there is nothing else to be done now. It will be destroyed later in `LoaderAllocator::GCLoaderAllocators` after the last reference goes away.
 * If we have released the last reference, the `LoaderAllocator::GCLoaderAllocators` is executed. This function finds all collectible LoaderAllocators that are not alive anymore and cleans up all domain assemblies in them. The cleanup removes each `DomainAssembly` from the `AppDomain` and also from the binding cache, it notifies debugger and finally destroys the `DomainAssembly`.
-* Strong handle to the managed `AssemblyLoadContext` in each of these LoaderAllocators is now destroyed. That enables these related AssemblyLoadContexts to be collected by GC.
-* Finally, these LoaderAllocators are registered for cleanup in the `AppDomain`. Their actual destruction happens on the finalizer thread in `Thread::DoExtraWorkForFinalizer`. When a `LoaderAllocator` is destroyed, the related `CLRPrivBinderAssemblyLoadContext` is destroyed too.
+* The strong and long weak handles to the managed `AssemblyLoadContext` in each of these LoaderAllocators are now destroyed. That enables these related `AssemblyLoadContext`s to be collected by GC.
+* Finally, these `LoaderAllocator`s are registered for cleanup in the `AppDomain`. Their actual destruction happens on the finalizer thread in `Thread::DoExtraWorkForFinalizer`. When a `LoaderAllocator` is destroyed, the related `CLRPrivBinderAssemblyLoadContext` is destroyed too.

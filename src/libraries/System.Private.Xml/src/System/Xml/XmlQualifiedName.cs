@@ -2,8 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-// Warning: Do not port implementation of GetHashCode to Desktop. See notes in SecureStringHasher
-
 using System.Collections;
 using System.Diagnostics;
 

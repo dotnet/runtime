@@ -399,10 +399,10 @@ public:
         }
         CONTRACTL_END;
 
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
         if (m_pwStubStackSlotOffsets != NULL)
             delete [] m_pwStubStackSlotOffsets;
-#endif // _TARGET_X86_
+#endif // TARGET_X86
     }
 
     static void ReleaseComCallMethodDesc(ComCallMethodDesc *pCMD)
@@ -433,7 +433,7 @@ private:
     PCODE m_pILStub;        // IL stub for COM to CLR call, invokes GetCallMethodDesc()
 
     // Platform specific data needed for efficient IL stub invocation:
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
     union
     {
         struct
@@ -451,7 +451,7 @@ private:
     // This is an array of m_wStubStackSlotCount numbers where each element is the offset
     // on the source stack where the particular stub stack slot should be copied from.
     UINT16  *m_pwStubStackSlotOffsets;
-#endif // _TARGET_X86_
+#endif // TARGET_X86
 
     // Number of stack bytes pushed by the unmanaged caller.
     UINT16  m_StackBytes;

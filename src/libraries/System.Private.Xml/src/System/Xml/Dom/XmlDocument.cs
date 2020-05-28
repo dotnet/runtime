@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Text;
@@ -673,19 +674,20 @@ namespace System.Xml
             SchemaElementDecl ed = GetSchemaElementDecl(elem);
             if (ed != null && ed.AttDefs != null)
             {
-                IDictionaryEnumerator attrDefs = ed.AttDefs.GetEnumerator();
-                while (attrDefs.MoveNext())
+                foreach (KeyValuePair<XmlQualifiedName, SchemaAttDef> attrDefs in ed.AttDefs)
                 {
-                    SchemaAttDef attdef = (SchemaAttDef)attrDefs.Value;
+                    SchemaAttDef attdef = attrDefs.Value;
                     if (attdef.Presence == SchemaDeclBase.Use.Default ||
                          attdef.Presence == SchemaDeclBase.Use.Fixed)
                     {
                         //build a default attribute and return
-                        string attrPrefix = string.Empty;
+                        string attrPrefix;
                         string attrLocalname = attdef.Name.Name;
                         string attrNamespaceURI = string.Empty;
                         if (schInfo.SchemaType == SchemaType.DTD)
+                        {
                             attrPrefix = attdef.Name.Namespace;
+                        }
                         else
                         {
                             attrPrefix = attdef.Prefix;
@@ -1687,10 +1689,9 @@ namespace System.Xml
             SchemaElementDecl ed = GetSchemaElementDecl(elem);
             if (ed != null && ed.AttDefs != null)
             {
-                IDictionaryEnumerator attrDefs = ed.AttDefs.GetEnumerator();
-                while (attrDefs.MoveNext())
+                foreach (KeyValuePair<XmlQualifiedName, SchemaAttDef> attrDefs in ed.AttDefs)
                 {
-                    SchemaAttDef attdef = (SchemaAttDef)attrDefs.Value;
+                    SchemaAttDef attdef = attrDefs.Value;
                     if (attdef.Presence == SchemaDeclBase.Use.Default ||
                         attdef.Presence == SchemaDeclBase.Use.Fixed)
                     {

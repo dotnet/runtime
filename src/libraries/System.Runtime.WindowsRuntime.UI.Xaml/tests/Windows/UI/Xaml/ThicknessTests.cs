@@ -35,7 +35,7 @@ namespace Windows.UI.Xaml.Tests
 
         [Theory]
         [MemberData(nameof(Values_TestData))]
-        public void Ctor_Default(double uniformLength)
+        public void Ctor_WithLengthParameter(double uniformLength)
         {
             var thickness = new Thickness(uniformLength);
             Assert.Equal(uniformLength, thickness.Left);

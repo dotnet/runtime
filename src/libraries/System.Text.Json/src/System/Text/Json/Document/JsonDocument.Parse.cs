@@ -4,6 +4,7 @@
 
 using System.Buffers;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
@@ -118,7 +119,7 @@ namespace System.Text.Json
             }
 
             ArraySegment<byte> drained = ReadToEnd(utf8Json);
-
+            Debug.Assert(drained.Array != null);
             try
             {
                 return Parse(drained.AsMemory(), options.GetReaderOptions(), drained.Array);
@@ -167,7 +168,7 @@ namespace System.Text.Json
             CancellationToken cancellationToken = default)
         {
             ArraySegment<byte> drained = await ReadToEndAsync(utf8Json, cancellationToken).ConfigureAwait(false);
-
+            Debug.Assert(drained.Array != null);
             try
             {
                 return Parse(drained.AsMemory(), options.GetReaderOptions(), drained.Array);
@@ -284,7 +285,7 @@ namespace System.Text.Json
         /// <exception cref="JsonException">
         ///   A value could not be read from the reader.
         /// </exception>
-        public static bool TryParseValue(ref Utf8JsonReader reader, out JsonDocument document)
+        public static bool TryParseValue(ref Utf8JsonReader reader, [NotNullWhen(true)] out JsonDocument? document)
         {
             return TryParseValue(ref reader, out document, shouldThrow: false);
         }
@@ -326,12 +327,12 @@ namespace System.Text.Json
         /// </exception>
         public static JsonDocument ParseValue(ref Utf8JsonReader reader)
         {
-            bool ret = TryParseValue(ref reader, out JsonDocument document, shouldThrow: true);
+            bool ret = TryParseValue(ref reader, out JsonDocument? document, shouldThrow: true);
             Debug.Assert(ret, "TryParseValue returned false with shouldThrow: true.");
-            return document;
+            return document!;
         }
 
-        private static bool TryParseValue(ref Utf8JsonReader reader, out JsonDocument document, bool shouldThrow)
+        private static bool TryParseValue(ref Utf8JsonReader reader, [NotNullWhen(true)] out JsonDocument? document, bool shouldThrow)
         {
             JsonReaderState state = reader.CurrentState;
             CheckSupportedOptions(state.Options, nameof(reader));
@@ -379,31 +380,18 @@ namespace System.Text.Json
                     {
                         long startingOffset = reader.TokenStartIndex;
 
-                        // Placeholder until reader.Skip() is written (#33295)
+                        if (!reader.TrySkip())
                         {
-                            int depth = reader.CurrentDepth;
-
-                            // CurrentDepth rises late and falls fast,
-                            // a payload of "[ 1, 2, 3, 4 ]" will report post-Read()
-                            // CurrentDepth values of { 0, 1, 1, 1, 1, 0 },
-                            // Since we're logically at 0 ([), Read() once and keep
-                            // reading until we've come back down to 0 (]).
-                            do
+                            if (shouldThrow)
                             {
-                                if (!reader.Read())
-                                {
-                                    if (shouldThrow)
-                                    {
-                                        ThrowHelper.ThrowJsonReaderException(
-                                            ref reader,
-                                            ExceptionResource.ExpectedJsonTokens);
-                                    }
+                                ThrowHelper.ThrowJsonReaderException(
+                                    ref reader,
+                                    ExceptionResource.ExpectedJsonTokens);
+                            }
 
-                                    reader = restore;
-                                    document = null;
-                                    return false;
-                                }
-                            } while (reader.CurrentDepth > depth);
+                            reader = restore;
+                            document = null;
+                            return false;
                         }
 
                         long totalLength = reader.BytesConsumed - startingOffset;
@@ -551,7 +539,7 @@ namespace System.Text.Json
         private static JsonDocument Parse(
             ReadOnlyMemory<byte> utf8Json,
             JsonReaderOptions readerOptions,
-            byte[] extraRentedBytes)
+            byte[]? extraRentedBytes)
         {
             ReadOnlySpan<byte> utf8JsonSpan = utf8Json.Span;
             var database = new MetadataDb(utf8Json.Length);
@@ -577,7 +565,7 @@ namespace System.Text.Json
         private static ArraySegment<byte> ReadToEnd(Stream stream)
         {
             int written = 0;
-            byte[] rented = null;
+            byte[]? rented = null;
 
             ReadOnlySpan<byte> utf8Bom = JsonConstants.Utf8Bom;
 
@@ -659,7 +647,7 @@ namespace System.Text.Json
             CancellationToken cancellationToken)
         {
             int written = 0;
-            byte[] rented = null;
+            byte[]? rented = null;
 
             try
             {
@@ -687,9 +675,13 @@ namespace System.Text.Json
                     Debug.Assert(rented.Length >= JsonConstants.Utf8Bom.Length);
 
                     lastRead = await stream.ReadAsync(
+#if BUILDING_INBOX_LIBRARY
+                        rented.AsMemory(written, utf8BomLength - written),
+#else
                         rented,
                         written,
                         utf8BomLength - written,
+#endif
                         cancellationToken).ConfigureAwait(false);
 
                     written += lastRead;
@@ -714,9 +706,13 @@ namespace System.Text.Json
                     }
 
                     lastRead = await stream.ReadAsync(
+#if BUILDING_INBOX_LIBRARY
+                        rented.AsMemory(written),
+#else
                         rented,
                         written,
                         rented.Length - written,
+#endif
                         cancellationToken).ConfigureAwait(false);
 
                     written += lastRead;

@@ -129,7 +129,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
 
         Friend Overloads Overrides Sub Lock(ByVal lStart As Long, ByVal lEnd As Long)
             If lStart > lEnd Then
-                Throw New ArgumentException(GetResourceString(SR.Argument_InvalidValue1, "Start"))
+                Throw New ArgumentException(SR.Format(SR.Argument_InvalidValue1, "Start"))
             End If
 
             Dim lStartByte As Long
@@ -143,7 +143,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
 
         Friend Overloads Overrides Sub Unlock(ByVal lStart As Long, ByVal lEnd As Long)
             If lStart > lEnd Then
-                Throw New ArgumentException(GetResourceString(SR.Argument_InvalidValue1, "Start"))
+                Throw New ArgumentException(SR.Format(SR.Argument_InvalidValue1, "Start"))
             End If
 
             Dim lStartByte As Long
@@ -275,13 +275,13 @@ Namespace Microsoft.VisualBasic.CompilerServices
                 ElseIf vtype = VT.DBNull AndAlso ContainedInVariant Then
                     Value = DBNull.Value
                 ElseIf vtype = VT.DBNull Then
-                    Throw VbMakeException(New ArgumentException(GetResourceString(SR.Argument_UnsupportedIOType1, "DBNull")), vbErrors.IllegalFuncCall)
+                    Throw VbMakeException(New ArgumentException(SR.Format(SR.Argument_UnsupportedIOType1, "DBNull")), vbErrors.IllegalFuncCall)
                 ElseIf vtype = VT.Empty Then
                     Value = Nothing
                 ElseIf vtype = VT.Currency Then
-                    Throw VbMakeException(New ArgumentException(GetResourceString(SR.Argument_UnsupportedIOType1, "Currency")), vbErrors.IllegalFuncCall)
+                    Throw VbMakeException(New ArgumentException(SR.Format(SR.Argument_UnsupportedIOType1, "Currency")), vbErrors.IllegalFuncCall)
                 Else
-                    Throw VbMakeException(New ArgumentException(GetResourceString(SR.Argument_UnsupportedIOType1, typ.FullName)), vbErrors.IllegalFuncCall)
+                    Throw VbMakeException(New ArgumentException(SR.Format(SR.Argument_UnsupportedIOType1, typ.FullName)), vbErrors.IllegalFuncCall)
                 End If
             End If
         End Sub
@@ -297,7 +297,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
             ValidateReadable()
 
             If (Value Is Nothing) Then
-                Throw New ArgumentException(GetResourceString(SR.Argument_ArrayNotInitialized))
+                Throw New ArgumentException(SR.Argument_ArrayNotInitialized)
             End If
 
             Dim typ As Type = Value.GetType().GetElementType
@@ -319,7 +319,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
                 ElseIf cDims = 2 Then
                     obj = Value.GetValue(0, 0)
                 Else '0 or > 2
-                    Throw New ArgumentException(GetResourceString(SR.Argument_UnsupportedArrayDimensions))
+                    Throw New ArgumentException(SR.Argument_UnsupportedArrayDimensions)
                 End If
 
                 If obj Is Nothing Then
@@ -329,7 +329,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
                 End If
 
                 If len = 0 Then
-                    Throw New ArgumentException(GetResourceString(SR.Argument_InvalidFixedLengthString))
+                    Throw New ArgumentException(SR.Argument_InvalidFixedLengthString)
                 End If
             End If
 
@@ -345,7 +345,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
             ElseIf cDims = 2 Then
                 SecondBound = Value.GetUpperBound(1)
             Else '0 or > 2
-                Throw New ArgumentException(GetResourceString(SR.Argument_UnsupportedArrayDimensions))
+                Throw New ArgumentException(SR.Argument_UnsupportedArrayDimensions)
             End If
 
             If ArrayIsDynamic Then
@@ -440,7 +440,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
             typ = Value.GetType
 
             If typ Is Nothing Then
-                Throw VbMakeException(New ArgumentException(GetResourceString(SR.Argument_UnsupportedIOType1, "Empty")), vbErrors.IllegalFuncCall)
+                Throw VbMakeException(New ArgumentException(SR.Format(SR.Argument_UnsupportedIOType1, "Empty")), vbErrors.IllegalFuncCall)
             ElseIf typ.IsArray Then
                 PutDynamicArray(RecordNumber, CType(Value, System.Array))
                 Exit Sub
@@ -489,16 +489,16 @@ Namespace Microsoft.VisualBasic.CompilerServices
             End Select
 
             If typ Is GetType(System.Reflection.Missing) Then
-                Throw VbMakeException(New ArgumentException(GetResourceString(SR.Argument_UnsupportedIOType1, "Missing")), vbErrors.IllegalFuncCall)
+                Throw VbMakeException(New ArgumentException(SR.Format(SR.Argument_UnsupportedIOType1, "Missing")), vbErrors.IllegalFuncCall)
 
             ElseIf typ.IsValueType() AndAlso Not ContainedInVariant Then
                 PutRecord(RecordNumber, CType(Value, ValueType))
 
             ElseIf ContainedInVariant AndAlso typ.IsValueType Then
-                Throw VbMakeException(New ArgumentException(GetResourceString(SR.Argument_PutObjectOfValueType1, VBFriendlyName(typ, Value))), vbErrors.IllegalFuncCall)
+                Throw VbMakeException(New ArgumentException(SR.Format(SR.Argument_PutObjectOfValueType1, VBFriendlyName(typ, Value))), vbErrors.IllegalFuncCall)
 
             Else
-                Throw VbMakeException(New ArgumentException(GetResourceString(SR.Argument_UnsupportedIOType1, VBFriendlyName(typ, Value))), vbErrors.IllegalFuncCall)
+                Throw VbMakeException(New ArgumentException(SR.Format(SR.Argument_UnsupportedIOType1, VBFriendlyName(typ, Value))), vbErrors.IllegalFuncCall)
             End If
         End Sub
 
@@ -600,13 +600,13 @@ Namespace Microsoft.VisualBasic.CompilerServices
 
         Protected Sub ValidateWriteable()
             If (m_access <> OpenAccess.ReadWrite) AndAlso (m_access <> OpenAccess.Write) Then
-                Throw VbMakeExceptionEx(vbErrors.PathFileAccess, GetResourceString(SR.FileOpenedNoWrite))
+                Throw VbMakeExceptionEx(vbErrors.PathFileAccess, SR.FileOpenedNoWrite)
             End If
         End Sub
 
         Protected Sub ValidateReadable()
             If (m_access <> OpenAccess.ReadWrite) AndAlso (m_access <> OpenAccess.Read) Then
-                Throw VbMakeExceptionEx(vbErrors.PathFileAccess, GetResourceString(SR.FileOpenedNoRead))
+                Throw VbMakeExceptionEx(vbErrors.PathFileAccess, SR.FileOpenedNoRead)
             End If
         End Sub
 

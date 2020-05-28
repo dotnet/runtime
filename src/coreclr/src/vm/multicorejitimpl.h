@@ -350,9 +350,9 @@ private:
     bool                      m_fAborted;
     bool                      m_fAppxMode;
 
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
     static TP_TIMER         * s_delayedWriteTimer;
-#endif // !FEATURE_PAL
+#endif // !TARGET_UNIX
 
 
     unsigned FindModule(Module * pModule);
@@ -370,9 +370,9 @@ private:
 
     void PreRecordFirstMethod();
 
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
     static void CALLBACK WriteMulticoreJitProfiler(PTP_CALLBACK_INSTANCE pInstance, PVOID pvContext, PTP_TIMER pTimer);
-#endif // !FEATURE_PAL
+#endif // !TARGET_UNIX
 
 public:
 
@@ -395,7 +395,7 @@ public:
         m_stats.Clear();
     }
 
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
     static bool CloseTimer()
     {
         LIMITED_METHOD_CONTRACT;
@@ -418,7 +418,7 @@ public:
 
         CloseTimer();
     }
-#endif // !FEATURE_PAL
+#endif // !TARGET_UNIX
 
     bool IsAtFullCapacity() const
     {

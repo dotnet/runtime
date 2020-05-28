@@ -4,7 +4,7 @@
          to its own obsolete API. -->
     <NoWarn>$(NoWarn);618</NoWarn>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <Configurations>netcoreapp-Debug;netcoreapp-Release</Configurations>
+    <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
     <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>
@@ -13,9 +13,6 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\System.Collections\ref\System.Collections.csproj" />
-    <ProjectReference Include="..\..\System.Reflection\ref\System.Reflection.csproj" />
-    <ProjectReference Include="..\..\System.Reflection.Primitives\ref\System.Reflection.Primitives.csproj" />
     <ProjectReference Include="..\..\System.Runtime\ref\System.Runtime.csproj" />
-    <ProjectReference Include="..\..\System.Runtime.Handles\ref\System.Runtime.Handles.csproj" />
   </ItemGroup>
 </Project>

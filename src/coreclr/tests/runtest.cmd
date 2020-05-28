@@ -10,17 +10,17 @@ set __ThisScriptDir="%~dp0"
 :: Set the default arguments
 set __BuildArch=x64
 set __BuildType=Debug
-set __BuildOS=Windows_NT
+set __TargetOS=Windows_NT
 
 set "__ProjectDir=%~dp0"
 :: remove trailing slash
 if %__ProjectDir:~-1%==\ set "__ProjectDir=%__ProjectDir:~0,-1%"
 set "__ProjectFilesDir=%__ProjectDir%"
-set "__RootBinDir=%__ProjectDir%\..\artifacts"
+set "__RootBinDir=%~dp0..\..\..\artifacts"
 set "__LogsDir=%__RootBinDir%\log"
 set "__MsbuildDebugLogsDir=%__LogsDir%\MsbuildDebugLogs"
 set __ToolsDir=%__ProjectDir%\..\Tools
-set "DotNetCli=%__ProjectDir%\..\dotnet.cmd"
+set "DotNetCli=%__ProjectDir%\..\..\..\dotnet.cmd"
 
 set __Sequential=
 set __msbuildExtraArgs=
@@ -28,10 +28,8 @@ set __LongGCTests=
 set __GCSimulatorTests=
 set __JitDisasm=
 set __IlasmRoundTrip=
-set __CollectDumps=
 set __DoCrossgen=
 set __CrossgenAltJit=
-set __BuildXUnitWrappers=
 set __PrintLastResultsOnly=
 set RunInUnloadableContext=
 
@@ -49,14 +47,14 @@ if /i "%1" == "x64"                                     (set __BuildArch=x64&shi
 if /i "%1" == "x86"                                     (set __BuildArch=x86&shift&goto Arg_Loop)
 if /i "%1" == "arm"                                     (set __BuildArch=arm&shift&goto Arg_Loop)
 if /i "%1" == "arm64"                                   (set __BuildArch=arm64&shift&goto Arg_Loop)
-            
+
 if /i "%1" == "debug"                                   (set __BuildType=Debug&shift&goto Arg_Loop)
 if /i "%1" == "release"                                 (set __BuildType=Release&shift&goto Arg_Loop)
 if /i "%1" == "checked"                                 (set __BuildType=Checked&shift&goto Arg_Loop)
-            
+
 if /i "%1" == "vs2017"                                  (set __VSVersion=%1&shift&goto Arg_Loop)
 if /i "%1" == "vs2019"                                  (set __VSVersion=%1&shift&goto Arg_Loop)
-            
+
 if /i "%1" == "TestEnv"                                 (set __TestEnv=%2&shift&shift&goto Arg_Loop)
 if /i "%1" == "AgainstPackages"                         (echo error: Remove /AgainstPackages switch&&echo /b 1)
 if /i "%1" == "sequential"                              (set __Sequential=1&shift&goto Arg_Loop)
@@ -71,7 +69,6 @@ if /i "%1" == "jitforcerelocs"                          (set COMPlus_ForceRelocs
 if /i "%1" == "jitdisasm"                               (set __JitDisasm=1&shift&goto Arg_Loop)
 if /i "%1" == "ilasmroundtrip"                          (set __IlasmRoundTrip=1&shift&goto Arg_Loop)
 
-if /i "%1" == "buildxunitwrappers"                      (set __BuildXunitWrappers=1&shift&goto Arg_Loop)
 if /i "%1" == "printlastresultsonly"                    (set __PrintLastResultsOnly=1&shift&goto Arg_Loop)
 if /i "%1" == "runcrossgentests"                        (set RunCrossGen=true&shift&goto Arg_Loop)
 if /i "%1" == "runcrossgen2tests"                       (set RunCrossGen2=true&shift&goto Arg_Loop)
@@ -87,7 +84,6 @@ if /i "%1" == "altjitarch"                              (set __AltJitArch=%2&shi
 
 REM change it to COMPlus_GCStress when we stop using xunit harness
 if /i "%1" == "gcstresslevel"                           (set COMPlus_GCStress=%2&set __TestTimeout=1800000&shift&shift&goto Arg_Loop)
-if /i "%1" == "collectdumps"                            (set __CollectDumps=true&shift&goto Arg_Loop)
 
 if /i "%1" == "runincontext"                            (set RunInUnloadableContext=1&shift&goto Arg_Loop)
 
@@ -102,7 +98,7 @@ goto CollectMsbuildArgs
 
 set CORE_ROOT=%1
 echo %__MsgPrefix%CORE_ROOT is initially set to: "%CORE_ROOT%"
-shift 
+shift
 :ArgsDone
 
 :: Done with argument processing. Check argument values for validity.
@@ -112,8 +108,8 @@ if defined __TestEnv (if not exist %__TestEnv% echo %__MsgPrefix%Error: Test Env
 :: Set the remaining variables based upon the determined configuration
 set __MSBuildBuildArch=%__BuildArch%
 
-set "__BinDir=%__RootBinDir%\bin\coreclr\%__BuildOS%.%__BuildArch%.%__BuildType%"
-set "__TestWorkingDir=%__RootBinDir%\tests\coreclr\%__BuildOS%.%__BuildArch%.%__BuildType%"
+set "__BinDir=%__RootBinDir%\bin\coreclr\%__TargetOS%.%__BuildArch%.%__BuildType%"
+set "__TestWorkingDir=%__RootBinDir%\tests\coreclr\%__TargetOS%.%__BuildArch%.%__BuildType%"
 
 :: Default global test environment variables
 :: REVIEW: are these ever expected to be defined on entry to this script? Why? By whom?
@@ -153,10 +149,6 @@ if defined __Sequential (
     set __RuntestPyArgs=%__RuntestPyArgs% --sequential
 )
 
-if defined __BuildXUnitWrappers (
-    set __RuntestPyArgs=%__RuntestPyArgs% --build_xunit_test_wrappers
-)
-
 if defined RunCrossGen (
     set __RuntestPyArgs=%__RuntestPyArgs% --run_crossgen_tests
 )
@@ -185,7 +177,6 @@ if defined RunInUnloadableContext (
     set __RuntestPyArgs=%__RuntestPyArgs% --run_in_context
 )
 
-REM __ProjectDir is poorly named, it is actually <projectDir>/tests
 set NEXTCMD=python "%__ProjectDir%\runtest.py" %__RuntestPyArgs%
 echo !NEXTCMD!
 !NEXTCMD!
@@ -197,7 +188,7 @@ exit /b %ERRORLEVEL%
 :: Note: We've disabled node reuse because it causes file locking issues.
 ::       The issue is that we extend the build with our own targets which
 ::       means that that rebuilding cannot successfully delete the task
-::       assembly. 
+::       assembly.
 set __msbuildCommonArgs=/nologo /nodeReuse:false %__msbuildExtraArgs% /p:Platform=%__MSBuildBuildArch%
 
 if not defined __Sequential (
@@ -217,8 +208,8 @@ REM Set up the directory for MSBuild debug logs.
 set MSBUILDDEBUGPATH=%__MsbuildDebugLogsDir%
 
 REM These log files are created automatically by the test run process. Q: what do they depend on being set?
-set __TestRunHtmlLog=%__LogsDir%\TestRun_%__BuildOS%__%__BuildArch%__%__BuildType%.html
-set __TestRunXmlLog=%__LogsDir%\TestRun_%__BuildOS%__%__BuildArch%__%__BuildType%.xml
+set __TestRunHtmlLog=%__LogsDir%\TestRun_%__TargetOS%__%__BuildArch%__%__BuildType%.html
+set __TestRunXmlLog=%__LogsDir%\TestRun_%__TargetOS%__%__BuildArch%__%__BuildType%.xml
 
 REM Prepare the Test Drop
 
@@ -270,22 +261,6 @@ if not exist %XunitTestBinBase% (
     exit /b 1
 )
 
-if "%__CollectDumps%"=="true" (
-    :: Install dumpling
-    set "__DumplingHelperPath=%__ProjectDir%\..\Tools\DumplingHelper.py"
-    python "!__DumplingHelperPath!" install_dumpling
-
-    :: Create the crash dump folder if necessary
-    set "__CrashDumpFolder=%tmp%\CoreCLRTestCrashDumps"
-    if not exist "!__CrashDumpFolder!" (
-        mkdir "!__CrashDumpFolder!"
-    )
-
-    :: Grab the current time before execution begins. This will be used to determine which crash dumps
-    :: will be uploaded.
-    for /f "delims=" %%a in ('python !__DumplingHelperPath! get_timestamp') do @set __StartTime=%%a
-)
-
 echo %__MsgPrefix%CORE_ROOT that will be used is: %CORE_ROOT%
 echo %__MsgPrefix%Starting test run at %TIME%
 
@@ -293,9 +268,6 @@ set __BuildLogRootName=TestRunResults
 call :msbuild "%__ProjectFilesDir%\src\runtest.proj" /p:Runtests=true /clp:showcommandline
 set __errorlevel=%errorlevel%
 
-if "%__CollectDumps%"=="true" (
-    python "%__DumplingHelperPath%" collect_dump %errorlevel% "%__CrashDumpFolder%" %__StartTime% "CoreCLR_Tests"
-)
 
 if %__errorlevel% GEQ 1 (
     echo %__MsgPrefix%Test Run failed. Refer to the following:
@@ -332,7 +304,7 @@ REM Skip mscorlib since it is already precompiled.
 if /I "%3" == "mscorlib.dll" exit /b 0
 if /I "%3" == "mscorlib.ni.dll" exit /b 0
 
-"%1\crossgen.exe" /Platform_Assemblies_Paths "%CORE_ROOT%" "%2" >nul 2>nul
+"%1\crossgen.exe" /nologo /Platform_Assemblies_Paths "%CORE_ROOT%" "%2" >nul 2>nul
 set /a __exitCode = %errorlevel%
 if "%__exitCode%" == "-2146230517" (
     echo %2 is not a managed assembly.
@@ -343,7 +315,7 @@ if %__exitCode% neq 0 (
     echo Unable to precompile %2
     exit /b 0
 )
-    
+
 echo %__MsgPrefix%Successfully precompiled %2
 exit /b 0
 
@@ -405,9 +377,9 @@ REM ============================================================================
 
 echo %__MsgPrefix%Invoking msbuild
 
-set "__BuildLog=%__LogsDir%\%__BuildLogRootName%_%__BuildOS%__%__BuildArch%__%__BuildType%.log"
-set "__BuildWrn=%__LogsDir%\%__BuildLogRootName%_%__BuildOS%__%__BuildArch%__%__BuildType%.wrn"
-set "__BuildErr=%__LogsDir%\%__BuildLogRootName%_%__BuildOS%__%__BuildArch%__%__BuildType%.err"
+set "__BuildLog=%__LogsDir%\%__BuildLogRootName%_%__TargetOS%__%__BuildArch%__%__BuildType%.log"
+set "__BuildWrn=%__LogsDir%\%__BuildLogRootName%_%__TargetOS%__%__BuildArch%__%__BuildType%.wrn"
+set "__BuildErr=%__LogsDir%\%__BuildLogRootName%_%__TargetOS%__%__BuildArch%__%__BuildType%.err"
 
 set __msbuildLogArgs=^
 /fileloggerparameters:Verbosity=normal;LogFile="%__BuildLog%";Append ^
@@ -484,7 +456,7 @@ REM ============================================================================
 :ResolveDependencies
 
 set __BuildLogRootName=Tests_GenerateRuntimeLayout
-call :msbuild "%__ProjectFilesDir%\src\runtest.proj" /p:GenerateRuntimeLayout=true 
+call :msbuild "%__ProjectFilesDir%\src\runtest.proj" /p:GenerateRuntimeLayout=true
 if errorlevel 1 (
     echo %__MsgPrefix%Test Dependency Resolution Failed
     exit /b 1

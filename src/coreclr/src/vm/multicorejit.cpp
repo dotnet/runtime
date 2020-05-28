@@ -654,7 +654,7 @@ HRESULT MulticoreJitModuleEnumerator::EnumerateLoadedModules(AppDomain * pDomain
 
 // static: single instace within a process
 
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
 TP_TIMER * MulticoreJitRecorder::s_delayedWriteTimer; // = NULL;
 
 // static
@@ -683,7 +683,7 @@ MulticoreJitRecorder::WriteMulticoreJitProfiler(PTP_CALLBACK_INSTANCE pInstance,
     }
 }
 
-#endif // !FEATURE_PAL
+#endif // !TARGET_UNIX
 
 void MulticoreJitRecorder::PreRecordFirstMethod()
 {
@@ -705,7 +705,7 @@ void MulticoreJitRecorder::PreRecordFirstMethod()
         // Get the timeout in seconds.
         int profileWriteTimeout = (int)CLRConfig::GetConfigValue(CLRConfig::INTERNAL_MultiCoreJitProfileWriteDelay);
 
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
         // Using the same threadpool timer used by UsageLog to write out profile when running under Appx or CoreCLR.
         s_delayedWriteTimer = CreateThreadpoolTimer(WriteMulticoreJitProfiler, this, NULL);
 
@@ -723,7 +723,7 @@ void MulticoreJitRecorder::PreRecordFirstMethod()
             // This function is safe to call
             SetThreadpoolTimer(s_delayedWriteTimer, &ftDueTime, 0, 2000 /* large 2000 ms window for executing this timer is acceptable as the timing here is very much not critical */);
         }
-#endif // !FEATURE_PAL
+#endif // !TARGET_UNIX
     }
 }
 
@@ -1009,7 +1009,7 @@ PCODE MulticoreJitRecorder::RequestMethodCode(MethodDesc * pMethod, MulticoreJit
 // API Function: SettProfileRoot, store information with MulticoreJitManager class
 // Threading: protected by InterlockedExchange(m_fMulticoreJITEnabled)
 
-void MulticoreJitManager::SetProfileRoot(AppDomain * pDomain, const WCHAR * pProfilePath)
+void MulticoreJitManager::SetProfileRoot(const WCHAR * pProfilePath)
 {
     STANDARD_VM_CONTRACT;
 
@@ -1211,7 +1211,7 @@ void MulticoreJitManager::AutoStartProfile(AppDomain * pDomain)
     {
         int suffix = (int) InterlockedIncrement(& g_nMulticoreAutoStart);
 
-        SetProfileRoot(pDomain, W("")); // Fake a SetProfileRoot call
+        SetProfileRoot(W("")); // Fake a SetProfileRoot call
 
         StartProfile(
             pDomain,
@@ -1438,7 +1438,7 @@ void QCALLTYPE MultiCoreJITNative::InternalSetProfileRoot(__in_z LPCWSTR wszProf
 
     AppDomain * pDomain = GetAppDomain();
 
-    pDomain->GetMulticoreJitManager().SetProfileRoot(pDomain, wszProfilePath);
+    pDomain->GetMulticoreJitManager().SetProfileRoot(wszProfilePath);
 
     END_QCALL;
 }

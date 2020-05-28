@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <Configurations>netcoreapp-Debug;netcoreapp-Release;netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release</Configurations>
+    <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)</TargetFrameworks>
     <TestRuntime>true</TestRuntime>
   </PropertyGroup>
   <ItemGroup Condition="'$(TargetsWindows)' == 'true'">

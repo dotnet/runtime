@@ -10,7 +10,7 @@ namespace System.Reflection.Metadata
     /// Local constant. Stored in debug metadata.
     /// </summary>
     /// <remarks>
-    /// See https://github.com/dotnet/corefx/blob/master/src/System.Reflection.Metadata/specs/PortablePdb-Metadata.md#localconstant-table-0x34.
+    /// See https://github.com/dotnet/runtime/blob/master/src/libraries/System.Reflection.Metadata/specs/PortablePdb-Metadata.md#localconstant-table-0x34.
     /// </remarks>
     public readonly struct LocalConstant
     {

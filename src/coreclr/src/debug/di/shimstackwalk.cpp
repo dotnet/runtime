@@ -15,10 +15,10 @@
 #include "stdafx.h"
 #include "primitives.h"
 
-#if defined(_TARGET_X86_)
+#if defined(TARGET_X86)
 static const ULONG32 REGISTER_X86_MAX  = REGISTER_X86_FPSTACK_7 + 1;
 static const ULONG32 MAX_MASK_COUNT    = (REGISTER_X86_MAX + 7) >> 3;
-#elif defined(_TARGET_AMD64_)
+#elif defined(TARGET_AMD64)
 static const ULONG32 REGISTER_AMD64_MAX = REGISTER_AMD64_XMM15 + 1;
 static const ULONG32 MAX_MASK_COUNT     = (REGISTER_AMD64_MAX + 7) >> 3;
 #endif
@@ -1097,7 +1097,7 @@ void ShimStackWalk::AppendChain(ChainInfo * pChainInfo, StackWalkInfo * pStackWa
             // We need to send an extra enter-managed chain.
             _ASSERTE(pChainInfo->m_fLeafNativeContextIsValid);
             BYTE * sp = reinterpret_cast<BYTE *>(CORDbgGetSP(&(pChainInfo->m_leafNativeContext)));
-#if !defined(_TARGET_ARM_) &&  !defined(_TARGET_ARM64_)
+#if !defined(TARGET_ARM) &&  !defined(TARGET_ARM64)
             // Dev11 324806: on ARM we use the caller's SP for a frame's ending delimiter so we cannot
             // subtract 4 bytes from the chain's ending delimiter else the frame might never be in range.
             // TODO: revisit overlapping ranges on ARM, it would be nice to make it consistent with the other architectures.

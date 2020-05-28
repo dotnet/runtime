@@ -2,10 +2,9 @@
   <PropertyGroup>
     <AssemblyName>System.Resources.ResourceManager</AssemblyName>
     <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
-    <Configurations>netcoreapp-Unix-Debug;netcoreapp-Unix-Release;netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release</Configurations>
+    <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)-Unix</TargetFrameworks>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="System.Diagnostics.Tools" />
     <ReferenceFromRuntime Include="System.Private.CoreLib" />
   </ItemGroup>
 </Project>

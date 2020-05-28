@@ -1178,11 +1178,8 @@ namespace System.Management
         }
         internal int GetObject_(string strObjectPath, int lFlags, IWbemContext pCtx, ref IWbemClassObjectFreeThreaded ppObject, IntPtr ppCallResult)
         {
-            //It is assumed that caller always passes ppCallResult as IntPtr.Zero.
-            //If it changes let this call go through wminet_utils.dll. Check implementation of CreateInstanceEnum_ for more information.
             int status = (int)tag_WBEMSTATUS.WBEM_E_FAILED;
-            if (!object.ReferenceEquals(ppCallResult, IntPtr.Zero))
-                status = pWbemServiecsSecurityHelper.GetObject_(strObjectPath, lFlags, pCtx, out ppObject, ppCallResult);
+            status = pWbemServiecsSecurityHelper.GetObject_(strObjectPath, lFlags, pCtx, out ppObject, ppCallResult);
             return status;
         }
 
@@ -1220,11 +1217,8 @@ namespace System.Management
         }
         internal int DeleteClass_(string strClass, int lFlags, IWbemContext pCtx, IntPtr ppCallResult)
         {
-            //It is assumed that caller always passes ppCallResult as IntPtr.Zero.
-            //If it changes let this call go through wminet_utils.dll. Check implementation of CreateInstanceEnum_ for more information.
             int status = (int)tag_WBEMSTATUS.WBEM_E_FAILED;
-            if (!object.ReferenceEquals(ppCallResult, IntPtr.Zero))
-                status = pWbemServiecsSecurityHelper.DeleteClass_(strClass, lFlags, pCtx, ppCallResult);
+            status = pWbemServiecsSecurityHelper.DeleteClass_(strClass, lFlags, pCtx, ppCallResult);
             return status;
         }
         internal int DeleteClassAsync_(string strClass, int lFlags, IWbemContext pCtx, IWbemObjectSink pResponseHandler)
@@ -1287,11 +1281,8 @@ namespace System.Management
         }
         internal int DeleteInstance_(string strObjectPath, int lFlags, IWbemContext pCtx, IntPtr ppCallResult)
         {
-            //It is assumed that caller always passes ppCallResult as IntPtr.Zero.
-            //If it changes let this call go through wminet_utils.dll. Check implementation of CreateInstanceEnum_ for more information.
             int status = (int)tag_WBEMSTATUS.WBEM_E_FAILED;
-            if (!object.ReferenceEquals(ppCallResult, IntPtr.Zero))
-                status = pWbemServiecsSecurityHelper.DeleteInstance_(strObjectPath, lFlags, pCtx, ppCallResult);
+            status = pWbemServiecsSecurityHelper.DeleteInstance_(strObjectPath, lFlags, pCtx, ppCallResult);
             return status;
         }
         internal int DeleteInstanceAsync_(string strObjectPath, int lFlags, IWbemContext pCtx, IWbemObjectSink pResponseHandler)
@@ -1383,11 +1374,8 @@ namespace System.Management
         }
         internal int ExecMethod_(string strObjectPath, string strMethodName, int lFlags, IWbemContext pCtx, IWbemClassObjectFreeThreaded pInParams, ref IWbemClassObjectFreeThreaded ppOutParams, IntPtr ppCallResult)
         {
-            //It is assumed that caller always passes ppCallResult as IntPtr.Zero.
-            //If it changes let this call go through wminet_utils.dll. Check implementation of CreateInstanceEnum_ for more information.
             int status = (int)tag_WBEMSTATUS.WBEM_E_FAILED;
-            if (!object.ReferenceEquals(ppCallResult, IntPtr.Zero))
-                status = pWbemServiecsSecurityHelper.ExecMethod_(strObjectPath, strMethodName, lFlags, pCtx, pInParams, out ppOutParams, ppCallResult);
+            status = pWbemServiecsSecurityHelper.ExecMethod_(strObjectPath, strMethodName, lFlags, pCtx, pInParams, out ppOutParams, ppCallResult);
             return status;
         }
         internal int ExecMethodAsync_(string strObjectPath, string strMethodName, int lFlags, IWbemContext pCtx, IWbemClassObjectFreeThreaded pInParams, IWbemObjectSink pResponseHandler)

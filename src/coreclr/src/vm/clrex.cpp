@@ -927,7 +927,7 @@ void CLRException::HandlerState::SetupCatch(INDEBUG_COMMA(__in_z const char * sz
             if (exceptionCode == STATUS_STACK_OVERFLOW)
             {
                 // We have called HandleStackOverflow for soft SO through our vectored exception handler.
-                EEPolicy::HandleStackOverflow(SOD_UnmanagedFrameHandler, FRAME_TOP);
+                EEPolicy::HandleStackOverflow();
             }
         }
     }
@@ -990,21 +990,21 @@ struct WinRtHR_to_ExceptionKind_Map
 enum WinRtOnly_ExceptionKind {
 #define DEFINE_EXCEPTION_HR_WINRT_ONLY(ns, reKind, ...) kWinRtEx##reKind,
 #define DEFINE_EXCEPTION(ns, reKind, bHRformessage, ...)
-#define DEFINE_EXCEPTION_IN_OTHER_FX_ASSEMBLY(ns, reKind, assemblySimpleName, publicKeyToken, bHRformessage, ...)
+#define DEFINE_EXCEPTION_IN_OTHER_FX_ASSEMBLY(ns, reKind, assemblySimpleName, bHRformessage, ...)
 #include "rexcep.h"
 kWinRtExLastException
 };
 
 #define DEFINE_EXCEPTION_HR_WINRT_ONLY(ns, reKind, ...) static const HRESULT s_##reKind##WinRtOnlyHRs[] = { __VA_ARGS__ };
 #define DEFINE_EXCEPTION(ns, reKind, bHRformessage, ...)
-#define DEFINE_EXCEPTION_IN_OTHER_FX_ASSEMBLY(ns, reKind, assemblySimpleName, publicKeyToken, bHRformessage, ...)
+#define DEFINE_EXCEPTION_IN_OTHER_FX_ASSEMBLY(ns, reKind, assemblySimpleName, bHRformessage, ...)
 #include "rexcep.h"
 
 static const
 WinRtHR_to_ExceptionKind_Map gWinRtHR_to_ExceptionKind_Maps[] = {
 #define DEFINE_EXCEPTION_HR_WINRT_ONLY(ns, reKind, ...) { k##reKind, sizeof(s_##reKind##WinRtOnlyHRs) / sizeof(HRESULT), s_##reKind##WinRtOnlyHRs },
 #define DEFINE_EXCEPTION(ns, reKind, bHRformessage, ...)
-#define DEFINE_EXCEPTION_IN_OTHER_FX_ASSEMBLY(ns, reKind, assemblySimpleName, publicKeyToken, bHRformessage, ...)
+#define DEFINE_EXCEPTION_IN_OTHER_FX_ASSEMBLY(ns, reKind, assemblySimpleName, bHRformessage, ...)
 #include "rexcep.h"
 };
 
@@ -1018,14 +1018,14 @@ struct ExceptionHRInfo
 
 #define DEFINE_EXCEPTION(ns, reKind, bHRformessage, ...) static const HRESULT s_##reKind##HRs[] = { __VA_ARGS__ };
 #define DEFINE_EXCEPTION_HR_WINRT_ONLY(ns, reKind, ...)
-#define DEFINE_EXCEPTION_IN_OTHER_FX_ASSEMBLY(ns, reKind, assemblySimpleName, publicKeyToken, bHRformessage, ...) DEFINE_EXCEPTION(ns, reKind, bHRformessage, __VA_ARGS__)
+#define DEFINE_EXCEPTION_IN_OTHER_FX_ASSEMBLY(ns, reKind, assemblySimpleName, bHRformessage, ...) DEFINE_EXCEPTION(ns, reKind, bHRformessage, __VA_ARGS__)
 #include "rexcep.h"
 
 static const
 ExceptionHRInfo gExceptionHRInfos[] = {
 #define DEFINE_EXCEPTION(ns, reKind, bHRformessage, ...) {sizeof(s_##reKind##HRs) / sizeof(HRESULT), s_##reKind##HRs},
 #define DEFINE_EXCEPTION_HR_WINRT_ONLY(ns, reKind, ...)
-#define DEFINE_EXCEPTION_IN_OTHER_FX_ASSEMBLY(ns, reKind, assemblySimpleName, publicKeyToken, bHRformessage, ...) DEFINE_EXCEPTION(ns, reKind, bHRformessage, __VA_ARGS__)
+#define DEFINE_EXCEPTION_IN_OTHER_FX_ASSEMBLY(ns, reKind, assemblySimpleName, bHRformessage, ...) DEFINE_EXCEPTION(ns, reKind, bHRformessage, __VA_ARGS__)
 #include "rexcep.h"
 };
 
@@ -1035,7 +1035,7 @@ bool gShouldDisplayHR[] =
 {
 #define DEFINE_EXCEPTION(ns, reKind, bHRformessage, ...) bHRformessage,
 #define DEFINE_EXCEPTION_HR_WINRT_ONLY(ns, reKind, ...)
-#define DEFINE_EXCEPTION_IN_OTHER_FX_ASSEMBLY(ns, reKind, assemblySimpleName, publicKeyToken, bHRformessage, ...) DEFINE_EXCEPTION(ns, reKind, bHRformessage, __VA_ARGS__)
+#define DEFINE_EXCEPTION_IN_OTHER_FX_ASSEMBLY(ns, reKind, assemblySimpleName, bHRformessage, ...) DEFINE_EXCEPTION(ns, reKind, bHRformessage, __VA_ARGS__)
 #include "rexcep.h"
 };
 
@@ -2489,7 +2489,7 @@ CLRLastThrownObjectException* CLRLastThrownObjectException::Validate()
 // Helper function to get an exception from outside the exception.
 //  Create and return a LastThrownObjectException.  Its virtual destructor
 //  will clean up properly.
-void GetLastThrownObjectExceptionFromThread_Internal(Exception **ppException)
+void GetLastThrownObjectExceptionFromThread(Exception **ppException)
 {
     CONTRACTL
     {
@@ -2511,7 +2511,7 @@ void GetLastThrownObjectExceptionFromThread_Internal(Exception **ppException)
         *ppException = NULL;
     }
 
-} // void GetLastThrownObjectExceptionFromThread_Internal()
+} // void GetLastThrownObjectExceptionFromThread()
 
 #endif // CROSSGEN_COMPILE
 
@@ -2595,7 +2595,7 @@ ArrayReference<const HRESULT> GetHRESULTsForExceptionKind(RuntimeExceptionKind k
                 return ArrayReference<const HRESULT>(s_##reKind##HRs);    \
                 break;
         #define DEFINE_EXCEPTION_HR_WINRT_ONLY(ns, reKind, ...)
-        #define DEFINE_EXCEPTION_IN_OTHER_FX_ASSEMBLY(ns, reKind, assemblySimpleName, publicKeyToken, bHRformessage, ...) DEFINE_EXCEPTION(ns, reKind, bHRformessage, __VA_ARGS__)
+        #define DEFINE_EXCEPTION_IN_OTHER_FX_ASSEMBLY(ns, reKind, assemblySimpleName, bHRformessage, ...) DEFINE_EXCEPTION(ns, reKind, bHRformessage, __VA_ARGS__)
         #include "rexcep.h"
 
         default:

@@ -3,7 +3,6 @@
   <PropertyGroup>
     <OutputType>exe</OutputType>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <DefineConstants>$(DefineConstants);STATIC</DefineConstants>
     <!-- Test unsupported outside of windows -->
     <TestUnsupportedOutsideWindows>true</TestUnsupportedOutsideWindows>
     <DisableProjectBuild Condition="'$(TargetsUnix)' == 'true'">true</DisableProjectBuild>

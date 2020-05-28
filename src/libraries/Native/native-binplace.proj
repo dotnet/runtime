@@ -1,30 +1,41 @@
-<Project DefaultTargets="Build">
+<Project>
+  <Import Sdk="Microsoft.NET.Sdk" Project="Sdk.props" />
+
   <PropertyGroup>
-    <BuildConfigurations>
-      netcoreapp;
-      netstandard2.0;
-      netfx;
-    </BuildConfigurations>
+    <TargetFrameworks>$(NetCoreAppCurrent);netstandard2.0;$(NetFrameworkCurrent)</TargetFrameworks>
+    <TargetFramework>$(BuildTargetFramework)</TargetFramework>
   </PropertyGroup>
-  <Import Project="..\Directory.Build.props" />
-  <Target Name="Build" DependsOnTargets="BinPlace" />
-  <Target Name="Clean" />
-  <Target Name="Rebuild" DependsOnTargets="Clean;Build" />
 
-  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), Directory.Build.targets))\Directory.Build.targets" />
+  <Import Sdk="Microsoft.NET.Sdk" Project="Sdk.targets" />
 
+  <!-- Ordering matters! Overriding GetBinPlaceItems and Build targets after the Sdk import. -->
   <Target Name="GetBinPlaceItems">
     <ItemGroup>
-      <BinPlaceItem Include="$(NativeBinDir)/*.dll" />
-      <BinPlaceItem Include="$(NativeBinDir)/*.pdb" />
-      <BinPlaceItem Include="$(NativeBinDir)/*.lib" />
-      <BinPlaceItem Include="$(NativeBinDir)/*.a" />
-      <BinPlaceItem Include="$(NativeBinDir)/*.bc" />
-      <BinPlaceItem Include="$(NativeBinDir)/*.so" />
-      <BinPlaceItem Include="$(NativeBinDir)/*.dbg" />
-      <BinPlaceItem Include="$(NativeBinDir)/*.dylib" />
-      <BinPlaceItem Include="$(NativeBinDir)/*.dwarf" />
-      <FileWrites Include="@(BinPlaceItem)" />
+      <NativeBinPlaceItem Include="$(NativeBinDir)*.dll" />
+      <NativeBinPlaceItem Include="$(NativeBinDir)*.pdb" />
+      <NativeBinPlaceItem Include="$(NativeBinDir)*.lib" />
+      <NativeBinPlaceItem Include="$(NativeBinDir)*.a" />
+      <NativeBinPlaceItem Include="$(NativeBinDir)*.bc" />
+      <NativeBinPlaceItem Include="$(NativeBinDir)*.so" />
+      <NativeBinPlaceItem Include="$(NativeBinDir)*.dbg" />
+      <NativeBinPlaceItem Include="$(NativeBinDir)*.dylib" />
+      <NativeBinPlaceItem Include="$(NativeBinDir)*.dwarf" />
+      <NativeBinPlaceItem Condition="'$(TargetOS)' == 'Browser'" Include="$(NativeBinDir)wasm\runtimes\debug\dotnet.js;$(NativeBinDir)wasm\runtimes\debug\dotnet.wasm">
+        <DestinationSubDirectory>wasm\runtimes\debug\</DestinationSubDirectory>
+      </NativeBinPlaceItem>
+      <NativeBinPlaceItem Condition="'$(TargetOS)' == 'Browser'" Include="$(NativeBinDir)wasm\runtimes\release\dotnet.js;$(NativeBinDir)wasm\runtimes\release\dotnet.wasm">
+        <DestinationSubDirectory>wasm\runtimes\release\</DestinationSubDirectory>
+      </NativeBinPlaceItem>
+
+      <BinPlaceItem Condition="'$(BinPlaceTestRuntimePack)' != 'true'" Include="@(NativeBinPlaceItem)" />
+      <FileWrites Include="@(NativeBinPlaceItem)" />
+    </ItemGroup>
+    <ItemGroup Condition="'$(BinPlaceTestRuntimePack)' == 'true' and '$(TargetsMobile)' != 'true'">
+      <TestHostBinPlaceItem Include="%(NativeBinPlaceItem.Identity)" />
+      <FileWrites Include="@(TestHostBinPlaceItem)" />
     </ItemGroup>
   </Target>
+
+  <Target Name="Build" DependsOnTargets="BinPlace" />
+  <Target Name="CreateManifestResourceNames" />
 </Project>

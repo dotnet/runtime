@@ -1,0 +1,13 @@
+/Makefile
+/Makefile.in
+/.libs
+/.deps
+/*.lo
+/*.la
+/*.o
+/semantic.cache
+/.project
+/.cproject
+/assertf
+/test-eglib
+/test-glib

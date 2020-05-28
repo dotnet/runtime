@@ -1,8 +1,0 @@
-﻿<Project DefaultTargets="Build">
-  <PropertyGroup>
-    <BuildConfigurations>
-      netcoreapp;
-      netfx;
-    </BuildConfigurations>
-  </PropertyGroup>
-</Project>

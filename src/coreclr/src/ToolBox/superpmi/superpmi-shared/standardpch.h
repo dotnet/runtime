@@ -64,16 +64,16 @@
 #include <stdarg.h>
 
 // Getting STL to work with PAL is difficult, so reimplement STL functionality to not require it.
-#ifdef FEATURE_PAL
+#ifdef TARGET_UNIX
 #include "clr_std/string"
 #include "clr_std/algorithm"
-#else // !FEATURE_PAL
+#else // !TARGET_UNIX
 #ifndef USE_STL
 #define USE_STL
 #endif // USE_STL
 #include <string>
 #include <algorithm>
-#endif // !FEATURE_PAL
+#endif // !TARGET_UNIX
 
 #ifdef USE_MSVCDIS
 #define DISLIB
@@ -90,22 +90,22 @@
 #endif
 
 #ifndef W
-#ifdef PLATFORM_UNIX
+#ifdef TARGET_UNIX
 #define W(str) u##str
-#else // PLATFORM_UNIX
+#else // TARGET_UNIX
 #define W(str) L##str
-#endif // PLATFORM_UNIX
+#endif // TARGET_UNIX
 #endif // !W
 
 #ifndef DIRECTORY_SEPARATOR_STR_W
 #define DIRECTORY_SEPARATOR_STR_W W("\\")
 #endif
 
-#ifdef FEATURE_PAL
+#ifdef TARGET_UNIX
 #define PLATFORM_SHARED_LIB_SUFFIX_A PAL_SHLIB_SUFFIX
-#else // !FEATURE_PAL
+#else // !TARGET_UNIX
 #define PLATFORM_SHARED_LIB_SUFFIX_A ".dll"
-#endif // !FEATURE_PAL
+#endif // !TARGET_UNIX
 
 #define DEFAULT_REAL_JIT_NAME_A MAKEDLLNAME_A("clrjit2")
 #define DEFAULT_REAL_JIT_NAME_W MAKEDLLNAME_W("clrjit2")

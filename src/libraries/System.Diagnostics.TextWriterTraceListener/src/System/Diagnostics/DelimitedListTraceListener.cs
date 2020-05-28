@@ -14,6 +14,7 @@ namespace System.Diagnostics
     {
         private string _delimiter = ";";
         private string _secondaryDelim = ",";
+        private bool _initializedDelim;
 
         public DelimitedListTraceListener(Stream stream) : base(stream)
         {
@@ -43,6 +44,17 @@ namespace System.Diagnostics
         {
             get
             {
+                lock (this)
+                {
+                    if (!_initializedDelim)
+                    {
+                        if (Attributes.ContainsKey("delimiter"))
+                        {
+                            _delimiter = Attributes["delimiter"];
+                        }
+                        _initializedDelim = true;
+                    }
+                }
                 return _delimiter;
             }
             set
@@ -56,6 +68,7 @@ namespace System.Diagnostics
                 lock (this)
                 {
                     _delimiter = value;
+                    _initializedDelim = true;
                 }
 
                 if (_delimiter == ",")
@@ -198,7 +211,7 @@ namespace System.Diagnostics
             {
                 StringBuilder sb = new StringBuilder("\"");
                 EscapeMessage(message, sb);
-                sb.Append("\"");
+                sb.Append('"');
                 Write(sb.ToString());
             }
         }
@@ -222,7 +235,7 @@ namespace System.Diagnostics
                 EscapeMessage(operation, sb);
             }
 
-            sb.Append("\"");
+            sb.Append('"');
             Write(sb.ToString());
         }
 

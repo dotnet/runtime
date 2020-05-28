@@ -343,7 +343,7 @@ namespace System.Text.Json.Serialization.Tests
 
         private static void AssertFloatingPointBehavior<T>(T netcoreExpectedValue, Func<T> testCode)
         {
-            if (PlatformDetection.IsFullFramework)
+            if (PlatformDetection.IsNetFramework)
             {
                 Assert.Throws<JsonException>(() => testCode());
             }
@@ -355,7 +355,7 @@ namespace System.Text.Json.Serialization.Tests
 
         private static void AssertFloatingPointBehavior<T>(T netfxExpectedValue, T netcoreExpectedValue, Func<T> testCode)
         {
-            if (PlatformDetection.IsFullFramework)
+            if (PlatformDetection.IsNetFramework)
             {
                 Assert.Equal(netfxExpectedValue, testCode());
             }

@@ -4,7 +4,7 @@
 
 
 .assembly extern mscorlib { auto }
-.assembly extern System.Private.CoreLib { auto }
+.assembly extern System.Runtime { auto }
 
 .assembly GitHub_13822
 {
@@ -14,7 +14,7 @@
 // =============== CLASS MEMBERS DECLARATION ===================
 
 .class public sequential ansi sealed beforefieldinit GCStruct
-       extends [System.Private.CoreLib]System.ValueType
+       extends [System.Runtime]System.ValueType
 {
   .field public string str
   .field public int32 i
@@ -44,7 +44,7 @@
   // before calling the constructor on each iteration of the loop.
 
 .class public auto ansi beforefieldinit Test
-       extends [System.Private.CoreLib]System.Object
+       extends [System.Runtime]System.Object
 {
   .method public hidebysig static int32  Main() cil managed
   {
@@ -94,7 +94,7 @@
     // Code size       7 (0x7)
     .maxstack  8
               ldarg.0
-              call       instance void [System.Private.CoreLib]System.Object::.ctor()
+              call       instance void [System.Runtime]System.Object::.ctor()
               ret
   } // end of method Test::.ctor
 

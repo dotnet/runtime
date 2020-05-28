@@ -28,7 +28,6 @@ unsigned emitEndCodeGen(Compiler* comp,
                         bool      contTrkPtrLcls,
                         bool      fullyInt,
                         bool      fullPtrMap,
-                        bool      returnsGCr,
                         unsigned  xcptnsCount,
                         unsigned* prologSize,
                         unsigned* epilogSize,
@@ -84,17 +83,17 @@ void emitIns_J(instruction ins, BasicBlock* dst, int instrCount = 0);
 /*                   Emit initialized data sections                     */
 /************************************************************************/
 
-UNATIVE_OFFSET emitDataGenBeg(UNATIVE_OFFSET size, bool align);
+UNATIVE_OFFSET emitDataGenBeg(UNATIVE_OFFSET size, UNATIVE_OFFSET alignment);
 
 UNATIVE_OFFSET emitBBTableDataGenBeg(unsigned numEntries, bool relativeAddr);
 
-void emitDataGenData(unsigned offs, const void* data, size_t size);
+void emitDataGenData(unsigned offs, const void* data, UNATIVE_OFFSET size);
 
 void emitDataGenData(unsigned offs, BasicBlock* label);
 
 void emitDataGenEnd();
 
-UNATIVE_OFFSET emitDataConst(const void* cnsAddr, unsigned cnsSize, bool dblAlign);
+UNATIVE_OFFSET emitDataConst(const void* cnsAddr, UNATIVE_OFFSET cnsSize, UNATIVE_OFFSET cnsAlign);
 
 UNATIVE_OFFSET emitDataSize();
 
@@ -102,7 +101,7 @@ UNATIVE_OFFSET emitDataSize();
 /*                   Instruction information                            */
 /************************************************************************/
 
-#ifdef _TARGET_XARCH_
+#ifdef TARGET_XARCH
 static bool instrIs3opImul(instruction ins);
 static bool instrIsExtendedReg3opImul(instruction ins);
 static bool instrHasImplicitRegPairDest(instruction ins);
@@ -137,7 +136,7 @@ static void InitTranslator(PDBRewriter* pPDB, int* rgSecMap, IMAGE_SECTION_HEADE
 /*                   Interface for generating unwind information        */
 /************************************************************************/
 
-#ifdef _TARGET_ARMARCH_
+#ifdef TARGET_ARMARCH
 
 bool emitIsFuncEnd(emitLocation* emitLoc, emitLocation* emitLocNextFragment = NULL);
 
@@ -149,10 +148,10 @@ void emitSplit(emitLocation*         startLoc,
 
 void emitUnwindNopPadding(emitLocation* locFrom, Compiler* comp);
 
-#endif // _TARGET_ARMARCH_
+#endif // TARGET_ARMARCH
 
-#if defined(_TARGET_ARM_)
+#if defined(TARGET_ARM)
 
 unsigned emitGetInstructionSize(emitLocation* emitLoc);
 
-#endif // defined(_TARGET_ARM_)
+#endif // defined(TARGET_ARM)

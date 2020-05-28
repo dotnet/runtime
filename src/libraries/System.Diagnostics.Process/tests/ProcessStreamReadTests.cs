@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
+using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
@@ -14,7 +15,7 @@ using Xunit;
 
 namespace System.Diagnostics.Tests
 {
-    public partial class ProcessStreamReadTests : ProcessTestBase
+    public class ProcessStreamReadTests : ProcessTestBase
     {
         [Fact]
         public void TestSyncErrorStream()
@@ -142,6 +143,7 @@ namespace System.Diagnostics.Tests
 
                     // Wait child process close to be sure that output buffer has been flushed
                     Assert.True(p.WaitForExit(WaitInMS), "Child process didn't close");
+                    p.WaitForExit(); // wait for event handlers to complete
 
                     Assert.Equal(1, dataReceived.Count);
                     Assert.Equal(1, dataReceived[0]);
@@ -238,6 +240,7 @@ namespace System.Diagnostics.Tests
 
                     // Wait child process close
                     Assert.True(p.WaitForExit(WaitInMS), "Child process didn't close");
+                    p.WaitForExit(); // wait for event handlers to complete
 
                     // Wait for value 7,8,9
                     using (CancellationTokenSource cts = new CancellationTokenSource(WaitInMS))
@@ -311,6 +314,42 @@ namespace System.Diagnostics.Tests
             }
         }
 
+        [PlatformSpecific(~TestPlatforms.Windows)] // currently on Windows these operations async-over-sync on Windows
+        [Fact]
+        public async Task ReadAsync_OutputStreams_Cancel_RespondsQuickly()
+        {
+            Process p = CreateProcessLong();
+            try
+            {
+                p.StartInfo.RedirectStandardOutput = true;
+                p.StartInfo.RedirectStandardError = true;
+                Assert.True(p.Start());
+
+                using (var cts = new CancellationTokenSource())
+                {
+                    ValueTask<int> vt = p.StandardOutput.ReadAsync(new char[1].AsMemory(), cts.Token);
+                    await Task.Delay(1);
+                    Assert.False(vt.IsCompleted);
+                    cts.Cancel();
+                    await Assert.ThrowsAnyAsync<OperationCanceledException>(async () => await vt);
+                }
+
+                using (var cts = new CancellationTokenSource())
+                {
+                    ValueTask<int> vt = p.StandardError.ReadAsync(new char[1].AsMemory(), cts.Token);
+                    await Task.Delay(1);
+                    Assert.False(vt.IsCompleted);
+                    cts.Cancel();
+                    await Assert.ThrowsAnyAsync<OperationCanceledException>(async () => await vt);
+                }
+            }
+            finally
+            {
+                p.Kill();
+                p.Dispose();
+            }
+        }
+
         [Fact]
         public void TestSyncStreams()
         {
@@ -325,12 +364,13 @@ namespace System.Diagnostics.Tests
                 writer.WriteLine(expected);
             }
             Assert.True(p.WaitForExit(WaitInMS));
+            p.WaitForExit(); // wait for event handlers to complete
         }
 
         [Fact]
         public void TestEOFReceivedWhenStdInClosed()
         {
-            // This is the test for the fix of dotnet/corefx issue #13447.
+            // This is the test for the fix of https://github.com/dotnet/runtime/issues/19277.
             //
             // Summary of the issue:
             // When an application starts more than one child processes with their standard inputs redirected on Unix,
@@ -367,6 +407,7 @@ namespace System.Diagnostics.Tests
                 // The first child process should be unblocked and write out 'NULL', and then exit.
                 p1.StandardInput.Close();
                 Assert.True(p1.WaitForExit(WaitInMS));
+                p1.WaitForExit(); // wait for event handlers to complete
             }
             finally
             {
@@ -376,6 +417,7 @@ namespace System.Diagnostics.Tests
 
             // Cleanup
             Assert.True(p2.WaitForExit(WaitInMS));
+            p2.WaitForExit(); // wait for event handlers to complete
             p2.Dispose();
             p1.Dispose();
         }
@@ -450,6 +492,7 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
+        [SkipOnCoreClr("Avoid asserts in FileStream.Read when concurrently disposed", ~RuntimeConfiguration.Release)]
         public void TestClosingStreamsAsyncDoesNotThrow()
         {
             Process p = CreateProcessPortable(RemotelyInvokable.WriteLinesAfterClose);
@@ -525,6 +568,7 @@ namespace System.Diagnostics.Tests
                 Assert.Throws<InvalidOperationException>(() => p.StandardOutput);
                 Assert.Throws<InvalidOperationException>(() => p.StandardError);
                 Assert.True(p.WaitForExit(WaitInMS));
+                p.WaitForExit(); // wait for event handlers to complete
             }
 
             {
@@ -542,7 +586,51 @@ namespace System.Diagnostics.Tests
                 Assert.Throws<InvalidOperationException>(() => p.BeginOutputReadLine());
                 Assert.Throws<InvalidOperationException>(() => p.BeginErrorReadLine());
                 Assert.True(p.WaitForExit(WaitInMS));
+                p.WaitForExit(); // wait for event handlers to complete
             }
+        }
+
+        [Fact]
+        public void TestCustomStandardInputEncoding()
+        {
+            var process = CreateProcessPortable(RemotelyInvokable.ReadLineWithCustomEncodingWriteLineWithUtf8, Encoding.UTF32.WebName);
+            process.StartInfo.RedirectStandardInput = true;
+            process.StartInfo.StandardInputEncoding = Encoding.UTF32;
+            process.StartInfo.RedirectStandardOutput = true;
+            process.StartInfo.StandardOutputEncoding = Encoding.UTF8;
+            process.Start();
+
+            const string TestLine = "\U0001f627\U0001f62e\U0001f62f";
+            process.StandardInput.WriteLine(TestLine);
+            process.StandardInput.Close();
+
+            var output = process.StandardOutput.ReadLine();
+            Assert.Equal(TestLine, output);
+
+            Assert.True(process.WaitForExit(WaitInMS));
+            Assert.Equal(RemotelyInvokable.SuccessExitCode, process.ExitCode);
+        }
+
+        [Fact]
+        public void TestMismatchedStandardInputEncoding()
+        {
+            var process = CreateProcessPortable(RemotelyInvokable.ReadLineWithCustomEncodingWriteLineWithUtf8, Encoding.UTF32.WebName);
+            process.StartInfo.RedirectStandardInput = true;
+            // incorrect: the process will be writing in UTF-32
+            process.StartInfo.StandardInputEncoding = Encoding.ASCII;
+            process.StartInfo.RedirectStandardOutput = true;
+            process.StartInfo.StandardOutputEncoding = Encoding.UTF8;
+            process.Start();
+
+            const string TestLine = "\U0001f627\U0001f62e\U0001f62f";
+            process.StandardInput.WriteLine(TestLine);
+            process.StandardInput.Close();
+
+            var output = process.StandardOutput.ReadLine();
+            Assert.NotEqual(TestLine, output);
+
+            Assert.True(process.WaitForExit(WaitInMS));
+            Assert.Equal(RemotelyInvokable.SuccessExitCode, process.ExitCode);
         }
     }
 }

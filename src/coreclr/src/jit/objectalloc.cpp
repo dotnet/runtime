@@ -23,16 +23,18 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 //          morph each GT_ALLOCOBJ node either into an allocation helper
 //          call or stack allocation.
 //
+// Returns:
+//    PhaseStatus indicating, what, if anything, was modified
+//
 // Notes:
 //    Runs only if Compiler::optMethodFlags has flag OMF_HAS_NEWOBJ set.
-
-void ObjectAllocator::DoPhase()
+//
+PhaseStatus ObjectAllocator::DoPhase()
 {
-    JITDUMP("\n*** ObjectAllocationPhase: ");
     if ((comp->optMethodFlags & OMF_HAS_NEWOBJ) == 0)
     {
         JITDUMP("no newobjs in this method; punting\n");
-        return;
+        return PhaseStatus::MODIFIED_NOTHING;
     }
 
     if (IsObjectStackAllocationEnabled())
@@ -51,6 +53,11 @@ void ObjectAllocator::DoPhase()
     {
         ComputeStackObjectPointers(&m_bitVecTraits);
         RewriteUses();
+        return PhaseStatus::MODIFIED_EVERYTHING;
+    }
+    else
+    {
+        return PhaseStatus::MODIFIED_NOTHING;
     }
 }
 
@@ -510,8 +517,11 @@ unsigned int ObjectAllocator::MorphAllocObjNodeIntoStackAlloc(GenTreeAllocObj* a
     const int unsafeValueClsCheck = true;
     comp->lvaSetStruct(lclNum, allocObj->gtAllocObjClsHnd, unsafeValueClsCheck);
 
-    // Initialize the object memory if necessary
-    if (comp->fgStructTempNeedsExplicitZeroInit(comp->lvaTable + lclNum, block))
+    // Initialize the object memory if necessary.
+    bool             bbInALoop  = (block->bbFlags & BBF_BACKWARD_JUMP) != 0;
+    bool             bbIsReturn = block->bbJumpKind == BBJ_RETURN;
+    LclVarDsc* const lclDsc     = comp->lvaGetDesc(lclNum);
+    if (comp->fgVarNeedsExplicitZeroInit(lclNum, bbInALoop, bbIsReturn))
     {
         //------------------------------------------------------------------------
         // STMTx (IL 0x... ???)
@@ -528,6 +538,12 @@ unsigned int ObjectAllocator::MorphAllocObjNodeIntoStackAlloc(GenTreeAllocObj* a
         Statement* newStmt = comp->gtNewStmt(tree);
 
         comp->fgInsertStmtBefore(block, stmt, newStmt);
+    }
+    else
+    {
+        JITDUMP("\nSuppressing zero-init for V%02u -- expect to zero in prolog\n", lclNum);
+        lclDsc->lvSuppressedZeroInit = 1;
+        comp->compSuppressedZeroInit = true;
     }
 
     //------------------------------------------------------------------------

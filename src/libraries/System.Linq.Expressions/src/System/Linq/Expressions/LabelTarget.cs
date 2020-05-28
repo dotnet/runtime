@@ -11,7 +11,7 @@ namespace System.Linq.Expressions
     /// </summary>
     public sealed class LabelTarget
     {
-        internal LabelTarget(Type type, string name)
+        internal LabelTarget(Type type, string? name)
         {
             Type = type;
             Name = name;
@@ -21,13 +21,12 @@ namespace System.Linq.Expressions
         /// Gets the name of the label.
         /// </summary>
         /// <remarks>The label's name is provided for information purposes only.</remarks>
-        public string Name { get; }
+        public string? Name { get; }
 
         /// <summary>
         /// The type of value that is passed when jumping to the label
         /// (or System.Void if no value should be passed).
         /// </summary>
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA1721:PropertyNamesShouldNotMatchGetMethods")]
         public Type Type { get; }
 
         /// <summary>
@@ -56,7 +55,7 @@ namespace System.Linq.Expressions
         /// </summary>
         /// <param name="name">The name of the label.</param>
         /// <returns>The new <see cref="LabelTarget"/>.</returns>
-        public static LabelTarget Label(string name)
+        public static LabelTarget Label(string? name)
         {
             return Label(typeof(void), name);
         }
@@ -77,7 +76,7 @@ namespace System.Linq.Expressions
         /// <param name="type">The type of value that is passed when jumping to the label.</param>
         /// <param name="name">The name of the label.</param>
         /// <returns>The new <see cref="LabelTarget"/>.</returns>
-        public static LabelTarget Label(Type type, string name)
+        public static LabelTarget Label(Type type, string? name)
         {
             ContractUtils.RequiresNotNull(type, nameof(type));
             TypeUtils.ValidateType(type, nameof(type));

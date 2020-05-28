@@ -52,25 +52,7 @@ namespace System.Reflection
                 throw new ArgumentNullException(nameof(assemblyRef));
 
             StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
-            return Load(assemblyRef, ref stackMark, AssemblyLoadContext.CurrentContextualReflectionContext);
-        }
-
-        // Locate an assembly by its name. The name can be strong or
-        // weak. The assembly is loaded into the domain of the caller.
-        internal static Assembly Load(AssemblyName assemblyRef, ref StackCrawlMark stackMark, AssemblyLoadContext? assemblyLoadContext)
-        {
-            AssemblyName modifiedAssemblyRef;
-            if (assemblyRef.CodeBase != null)
-            {
-                modifiedAssemblyRef = (AssemblyName)assemblyRef.Clone();
-                modifiedAssemblyRef.CodeBase = null;
-            }
-            else
-            {
-                modifiedAssemblyRef = assemblyRef;
-            }
-
-            return RuntimeAssembly.InternalLoadAssemblyName(modifiedAssemblyRef, ref stackMark, assemblyLoadContext);
+            return RuntimeAssembly.InternalLoad(assemblyRef, ref stackMark, AssemblyLoadContext.CurrentContextualReflectionContext);
         }
 
         [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
@@ -80,7 +62,7 @@ namespace System.Reflection
         {
             RuntimeAssembly? retAssembly = null;
             GetExecutingAssemblyNative(new StackCrawlMarkHandle(ref stackMark), ObjectHandleOnStack.Create(ref retAssembly));
-            return retAssembly;
+            return retAssembly!;
         }
 
         // Get the assembly that the current code is running from.
@@ -104,14 +86,8 @@ namespace System.Reflection
         [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
         private static extern void GetEntryAssemblyNative(ObjectHandleOnStack retAssembly);
 
-        // internal test hook
-        private static bool s_forceNullEntryPoint = false;
-
-        public static Assembly? GetEntryAssembly()
+        private static Assembly? GetEntryAssemblyInternal()
         {
-            if (s_forceNullEntryPoint)
-                return null;
-
             RuntimeAssembly? entryAssembly = null;
             GetEntryAssemblyNative(ObjectHandleOnStack.Create(ref entryAssembly));
             return entryAssembly;

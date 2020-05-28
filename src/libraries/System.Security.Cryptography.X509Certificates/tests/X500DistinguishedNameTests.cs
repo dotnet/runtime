@@ -201,6 +201,15 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             Assert.Equal("OID.1.1.1.2.2.3=123 654 7890, CN=Test", dn.Decode(X500DistinguishedNameFlags.None));
         }
 
+        [Fact]
+        public static void OrganizationUnitMultiValueWithIncorrectlySortedDerSet()
+        {
+            X500DistinguishedName dn = new X500DistinguishedName(
+                "301C311A300B060355040B13047A7A7A7A300B060355040B130461616161".HexToByteArray());
+
+            Assert.Equal("OU=zzzz + OU=aaaa", dn.Decode(X500DistinguishedNameFlags.None));
+        }
+
         public static readonly object[][] WhitespaceBeforeCases =
         {
             // Regular space.
@@ -431,7 +440,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
         public static readonly object[][] T61Cases =
         {
-            // https://github.com/dotnet/corefx/issues/27466
+            // https://github.com/dotnet/runtime/issues/25195
             new object[]
             {
                 "CN=GrapeCity inc., OU=Tools Development, O=GrapeCity inc., " +

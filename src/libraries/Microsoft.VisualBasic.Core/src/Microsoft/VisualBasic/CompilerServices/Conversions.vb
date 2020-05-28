@@ -2638,7 +2638,7 @@ MisMatch:
 
                 ElseIf Result = ConversionClass.Ambiguous Then
                     Throw New InvalidCastException(
-                        GetResourceString(
+                        SR.Format(
                             SR.AmbiguousCast2,
                             VBFriendlyName(SourceType),
                             VBFriendlyName(TargetType)))
@@ -2647,7 +2647,7 @@ MisMatch:
             End If
 
             Throw New InvalidCastException(
-                GetResourceString(
+                SR.Format(
                     SR.InvalidCast_FromTo,
                     VBFriendlyName(SourceType),
                     VBFriendlyName(TargetType)))

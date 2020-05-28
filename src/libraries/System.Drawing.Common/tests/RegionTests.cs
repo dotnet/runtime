@@ -51,7 +51,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalTheory(Helpers.IsDrawingSupported)]
         [InlineData(-1, -2, -3, -4, true)]
         [InlineData(0, 0, 0, 0, true)]
@@ -68,7 +68,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalTheory(Helpers.IsDrawingSupported)]
         [InlineData(1, 2, 3, float.NegativeInfinity, true)]
         [InlineData(-1, -2, -3, -4, true)]
@@ -139,7 +139,7 @@ namespace System.Drawing.Tests
             AssertExtensions.Throws<ArgumentNullException>("rgnData", () => new Region((RegionData)null));
         }
 
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalTheory(Helpers.IsDrawingSupported)]
         [InlineData(0)]
         [InlineData(1)]
@@ -155,7 +155,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.IsDrawingSupported)]
         public void Ctor_EmptyGraphicsPath_ThrowsExternalException()
         {
@@ -178,7 +178,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.IsDrawingSupported)]
         public void Ctor_GraphicsPath()
         {
@@ -242,7 +242,7 @@ namespace System.Drawing.Tests
             yield return new object[] { path6, true };
         }
 
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalTheory(Helpers.IsDrawingSupported)]
         [MemberData(nameof(Ctor_InfiniteGraphicsPath_TestData))]
         public void Ctor_InfiniteGraphicsPath_IsInfinite(GraphicsPath path, bool isInfinite)
@@ -454,7 +454,7 @@ namespace System.Drawing.Tests
             AssertExtensions.Throws<ArgumentException>(null, () => new Region().Complement(CreateDisposedRegion()));
         }
 
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.IsDrawingSupported)]
         public void Complement_SameRegion_ThrowsInvalidOperationException()
         {
@@ -522,7 +522,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ActiveIssue(24525, TestPlatforms.AnyUnix)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/23784", TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.IsDrawingSupported)]
         public void Complement_GraphicsPathWithMultipleRectangles_Success()
         {
@@ -636,7 +636,7 @@ namespace System.Drawing.Tests
             yield return new object[] { new Region(graphics1), new Region(graphics6), false };
         }
 
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalTheory(Helpers.IsDrawingSupported)]
         [MemberData(nameof(Equals_TestData))]
         public void Equals_Valid_ReturnsExpected(Region region, Region other, bool expected)
@@ -898,7 +898,7 @@ namespace System.Drawing.Tests
             AssertExtensions.Throws<ArgumentException>(null, () => new Region().Exclude(CreateDisposedRegion()));
         }
 
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.IsDrawingSupported)]
         public void Exclude_SameRegion_ThrowsInvalidOperationException()
         {
@@ -908,7 +908,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalTheory(Helpers.IsDrawingSupported)]
         [MemberData(nameof(Exclude_TestData))]
         public void Exclude_Rectangle_Success(Region region, RectangleF[] rectangles, RectangleF[] expectedScans)
@@ -927,7 +927,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalTheory(Helpers.IsDrawingSupported)]
         [MemberData(nameof(Exclude_TestData))]
         public void Exclude_RectangleF_Success(Region region, RectangleF[] rectangles, RectangleF[] expectedScans)
@@ -946,7 +946,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalTheory(Helpers.IsDrawingSupported)]
         [MemberData(nameof(Exclude_TestData))]
         public void Exclude_GraphicsPath_Success(Region region, RectangleF[] rectangles, RectangleF[] expectedScans)
@@ -1059,7 +1059,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.IsDrawingSupported)]
         public void GetHrgn_NullGraphics_ThrowsArgumentNullException()
         {
@@ -1117,7 +1117,7 @@ namespace System.Drawing.Tests
             AssertExtensions.Throws<ArgumentException>(null, () => CreateDisposedRegion().GetRegionData());
         }
 
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.IsDrawingSupported)]
         public void GetRegionScans_CustomMatrix_TransformsRegionScans()
         {
@@ -1151,7 +1151,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.IsDrawingSupported)]
         public void GetRegionScans_DisposedMatrix_ThrowsArgumentException()
         {
@@ -1237,7 +1237,7 @@ namespace System.Drawing.Tests
             };
         }
 
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalTheory(Helpers.IsDrawingSupported)]
         [MemberData(nameof(Intersect_TestData))]
         public void Intersect_Region_Success(Region region, RectangleF[] rectangles, RectangleF[] expectedScans)
@@ -1287,7 +1287,7 @@ namespace System.Drawing.Tests
             AssertExtensions.Throws<ArgumentException>(null, () => new Region().Intersect(CreateDisposedRegion()));
         }
 
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.IsDrawingSupported)]
         public void Intersect_SameRegion_ThrowsInvalidOperationException()
         {
@@ -1361,7 +1361,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalTheory(Helpers.IsDrawingSupported)]
         [MemberData(nameof(Intersect_TestData))]
         public void Intersect_GraphicsPath_Success(Region region, RectangleF[] rectangles, RectangleF[] expectedScans)
@@ -1836,7 +1836,7 @@ namespace System.Drawing.Tests
             };
         }
 
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalTheory(Helpers.IsDrawingSupported)]
         [MemberData(nameof(Union_TestData))]
         public void Union_Region_Success(Region region, RectangleF[] rectangles, RectangleF[] expectedScans)
@@ -1858,7 +1858,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.IsDrawingSupported)]
         public void Union_InfiniteRegion_Success()
         {
@@ -1890,7 +1890,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.IsDrawingSupported)]
         public void Union_SameRegion_ThrowsInvalidOperationException()
         {
@@ -2158,7 +2158,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalTheory(Helpers.IsDrawingSupported)]
         [InlineData(float.MaxValue)]
         [InlineData(float.MinValue)]
@@ -2244,7 +2244,7 @@ namespace System.Drawing.Tests
             };
         }
 
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalTheory(Helpers.IsDrawingSupported)]
         [MemberData(nameof(Xor_TestData))]
         public void Xor_Region_Success(Region region, RectangleF[] rectangles, RectangleF[] expectedScans)
@@ -2303,7 +2303,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.IsDrawingSupported)]
         public void Xor_SameRegion_ThrowsInvalidOperationException()
         {
@@ -2313,7 +2313,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalTheory(Helpers.IsDrawingSupported)]
         [MemberData(nameof(Xor_TestData))]
         public void Xor_Rectangle_Success(Region region, RectangleF[] rectangles, RectangleF[] expectedScans)
@@ -2332,7 +2332,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalTheory(Helpers.IsDrawingSupported)]
         [MemberData(nameof(Xor_TestData))]
         public void Xor_RectangleF_Success(Region region, RectangleF[] rectangles, RectangleF[] expectedScans)
@@ -2351,7 +2351,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalTheory(Helpers.IsDrawingSupported)]
         [MemberData(nameof(Xor_TestData))]
         public void Xor_GraphicsPath_Success(Region region, RectangleF[] rectangles, RectangleF[] expectedScans)

@@ -75,7 +75,7 @@ class Stack
         return m_elems[m_elemsCount-1];
     }
 
-    // Caller should take care to only side-effect the return reference if he/she is *sure*
+    // Caller should take care to only side-effect the return reference if they are *sure*
     // that the stack will not be popped in the interim!
     T& PeekRef()
     {

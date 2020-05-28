@@ -46,7 +46,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
 
             End If
 
-            Throw New InvalidCastException(GetResourceString(SR.InvalidCast_FromTo, VBFriendlyName(Value), "Char()"))
+            Throw New InvalidCastException(SR.Format(SR.InvalidCast_FromTo, VBFriendlyName(Value), "Char()"))
 
         End Function
 

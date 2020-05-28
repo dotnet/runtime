@@ -61,6 +61,15 @@ def del_rw(action, name, exc):
     os.chmod(name, 0o651)
     os.remove(name)
 
+def cleanup(jitUtilsPath, bootstrapPath):
+    if os.path.isdir(jitUtilsPath):
+        print("Deleting " + jitUtilsPath)
+        shutil.rmtree(jitUtilsPath, onerror=del_rw)
+
+    if os.path.isfile(bootstrapPath):
+        print("Deleting " + bootstrapPath)
+        os.remove(bootstrapPath)
+
 def main(argv):
     parser = argparse.ArgumentParser()
     required = parser.add_argument_group('required arguments')
@@ -103,9 +112,7 @@ def main(argv):
 
     jitUtilsPath = os.path.join(coreclr, "jitutils")
 
-    if os.path.isdir(jitUtilsPath):
-        print("Deleting " + jitUtilsPath)
-        shutil.rmtree(jitUtilsPath, onerror=del_rw)
+    cleanup(jitUtilsPath, '')
 
     if platform == 'Linux' or platform == 'OSX':
         bootstrapFilename = "bootstrap.sh"
@@ -155,6 +162,11 @@ def main(argv):
             print('Running:', bootstrapPath)
             proc = subprocess.Popen([bootstrapPath], env=my_env)
             output,error = proc.communicate()
+
+        if proc.returncode != 0:
+            cleanup('', bootstrapPath)
+            print("Bootstrap failed")
+            return -1
 
         # Run jit-format
 
@@ -207,17 +219,12 @@ def main(argv):
     if returncode != 0:
         # Create a patch file
         print("Creating patch file " + patchFilePath)
+        jitSrcPath = os.path.join(coreclr, "src", "jit")
         patchFile = open(patchFilePath, "w")
-        proc = subprocess.Popen(["git", "diff", "--patch", "-U20"], env=my_env, stdout=patchFile)
+        proc = subprocess.Popen(["git", "diff", "--patch", "-U20", "--", jitSrcPath], env=my_env, stdout=patchFile)
         output,error = proc.communicate()
 
-    if os.path.isdir(jitUtilsPath):
-        print("Deleting " + jitUtilsPath)
-        shutil.rmtree(jitUtilsPath, onerror=del_rw)
-
-    if os.path.isfile(bootstrapPath):
-        print("Deleting " + bootstrapPath)
-        os.remove(bootstrapPath)
+    cleanup(jitUtilsPath, bootstrapPath)
 
     if returncode != 0:
         print("There were errors in formatting. Please run jit-format locally with: \n")

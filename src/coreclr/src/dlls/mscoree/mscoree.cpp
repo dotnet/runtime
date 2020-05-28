@@ -16,22 +16,16 @@
 #include "metadataexports.h"
 #include "ex.h"
 
-#include "product_version.h"
-
-#ifdef FEATURE_COMINTEROP
-#include "ComCallUnmarshal.h"
-#endif // FEATURE_COMINTEROP
-
 #include <dbgenginemetrics.h>
+
+// Globals
+extern HINSTANCE g_hThisInst;
 
 // Locals.
 BOOL STDMETHODCALLTYPE EEDllMain( // TRUE on success, FALSE on error.
                        HINSTANCE    hInst,                  // Instance handle of the loaded module.
                        DWORD        dwReason,               // Reason for loading.
                        LPVOID       lpReserved);                // Unused.
-
-// Globals.
-HINSTANCE g_hThisInst;  // This library.
 
 #ifndef CROSSGEN_COMPILE
 //*****************************************************************************
@@ -40,27 +34,18 @@ HINSTANCE g_hThisInst;  // This library.
 
 #include <shlwapi.h>
 
+#ifdef TARGET_WINDOWS
+
 #include <process.h> // for __security_init_cookie()
 
-extern "C" IExecutionEngine* IEE();
-
-#ifdef NO_CRT_INIT
-#define _CRT_INIT(hInstance, dwReason, lpReserved) (TRUE)
-#else
 extern "C" BOOL WINAPI _CRT_INIT(HANDLE hInstance, DWORD dwReason, LPVOID lpReserved);
-#endif
-
 extern "C" BOOL WINAPI DllMain(HANDLE hInstance, DWORD dwReason, LPVOID lpReserved);
 
 // For the CoreClr, this is the real DLL entrypoint. We make ourselves the first entrypoint as
 // we need to capture coreclr's hInstance before the C runtime initializes. This function
 // will capture hInstance, let the C runtime initialize and then invoke the "classic"
 // DllMain that initializes everything else.
-extern "C"
-#ifdef FEATURE_PAL
-DLLEXPORT // For Win32 PAL LoadLibrary emulation
-#endif
-BOOL WINAPI CoreDllMain(HANDLE hInstance, DWORD dwReason, LPVOID lpReserved)
+extern "C" BOOL WINAPI CoreDllMain(HANDLE hInstance, DWORD dwReason, LPVOID lpReserved)
 {
     STATIC_CONTRACT_NOTHROW;
 
@@ -68,22 +53,16 @@ BOOL WINAPI CoreDllMain(HANDLE hInstance, DWORD dwReason, LPVOID lpReserved)
     switch (dwReason)
     {
         case DLL_PROCESS_ATTACH:
-#ifndef FEATURE_PAL
             // Make sure the /GS security cookie is initialized before we call anything else.
             // BinScope detects the call to __security_init_cookie in its "Has Non-GS-friendly
             // Initialization" check and makes it pass.
             __security_init_cookie();
-#endif // FEATURE_PAL
 
-            // It's critical that we invoke InitUtilCode() before the CRT initializes.
+            // It's critical that we initialize g_hmodCoreCLR before the CRT initializes.
             // We have a lot of global ctors that will break if we let the CRT initialize without
             // this step having been done.
 
-            CoreClrCallbacks cccallbacks;
-            cccallbacks.m_hmodCoreCLR               = (HINSTANCE)hInstance;
-            cccallbacks.m_pfnIEE                    = IEE;
-            cccallbacks.m_pfnGetCORSystemDirectory  = GetCORSystemDirectoryInternaL;
-            InitUtilcode(cccallbacks);
+            g_hmodCoreCLR = (HINSTANCE)hInstance;
 
             if (!(result = _CRT_INIT(hInstance, dwReason, lpReserved)))
             {
@@ -112,8 +91,11 @@ BOOL WINAPI CoreDllMain(HANDLE hInstance, DWORD dwReason, LPVOID lpReserved)
     return result;
 }
 
+#endif // TARGET_WINDOWS
+
+
 extern "C"
-#ifdef FEATURE_PAL
+#ifdef TARGET_UNIX
 DLLEXPORT // For Win32 PAL LoadLibrary emulation
 #endif
 BOOL WINAPI DllMain(HANDLE hInstance, DWORD dwReason, LPVOID lpReserved)
@@ -124,6 +106,10 @@ BOOL WINAPI DllMain(HANDLE hInstance, DWORD dwReason, LPVOID lpReserved)
     {
     case DLL_PROCESS_ATTACH:
         {
+#ifndef TARGET_WINDOWS
+            g_hmodCoreCLR = (HINSTANCE)hInstance;
+#endif
+
             // Save the module handle.
             g_hThisInst = (HINSTANCE)hInstance;
 
@@ -153,61 +139,6 @@ BOOL WINAPI DllMain(HANDLE hInstance, DWORD dwReason, LPVOID lpReserved)
 
     return TRUE;
 }
-
-#ifdef FEATURE_COMINTEROP
-// ---------------------------------------------------------------------------
-// %%Function: DllCanUnloadNowInternal
-//
-// Returns:
-//  S_FALSE                 - Indicating that COR, once loaded, may not be
-//                            unloaded.
-// ---------------------------------------------------------------------------
-STDAPI DllCanUnloadNowInternal(void)
-{
-    STATIC_CONTRACT_NOTHROW;
-    STATIC_CONTRACT_ENTRY_POINT;
-
-    //we should never unload unless the process is dying
-    return S_FALSE;
-}  // DllCanUnloadNowInternal
-
-// ---------------------------------------------------------------------------
-// %%Function: DllRegisterServerInternal
-//
-// Description:
-//  Registers
-// ---------------------------------------------------------------------------
-STDAPI DllRegisterServerInternal(HINSTANCE hMod, LPCWSTR version)
-{
-
-    CONTRACTL{
-        NOTHROW;
-        GC_NOTRIGGER;
-        ENTRY_POINT;
-        PRECONDITION(CheckPointer(version));
-    } CONTRACTL_END;
-
-    return S_OK;
-}  // DllRegisterServerInternal
-
-// ---------------------------------------------------------------------------
-// %%Function: DllUnregisterServerInternal
-// ---------------------------------------------------------------------------
-STDAPI DllUnregisterServerInternal(void)
-{
-
-    CONTRACTL
-    {
-        GC_NOTRIGGER;
-        NOTHROW;
-        ENTRY_POINT;
-    }
-    CONTRACTL_END;
-
-    return S_OK;
-
-}  // DllUnregisterServerInternal
-#endif // FEATURE_COMINTEROP
 
 #endif // CROSSGEN_COMPILE
 
@@ -383,21 +314,6 @@ STDAPI ReOpenMetaDataWithMemoryEx(
     return hr;
 }
 
-// Replacement for legacy shim API GetCORRequiredVersion(...) used in linked libraries.
-// Used in code:TiggerStorage::GetDefaultVersion#CallTo_CLRRuntimeHostInternal_GetImageVersionString.
-HRESULT
-CLRRuntimeHostInternal_GetImageVersionString(
-    __out_ecount_opt(*pcchBuffer) LPWSTR wszBuffer,
-    __inout                       DWORD *pcchBuffer)
-{
-    // Simply forward the call to the ICLRRuntimeHostInternal implementation.
-    STATIC_CONTRACT_WRAPPER;
-
-    HRESULT hr = GetCORVersionInternal(wszBuffer, *pcchBuffer, pcchBuffer);
-
-    return hr;
-} // CLRRuntimeHostInternal_GetImageVersionString
-
 STDAPI GetCORSystemDirectoryInternaL(SString& pBuffer)
 {
     CONTRACTL {
@@ -429,67 +345,6 @@ STDAPI GetCORSystemDirectoryInternaL(SString& pBuffer)
 
     END_ENTRYPOINT_NOTHROW;
     return hr;
-}
-
-//
-// Returns version of the runtime (null-terminated).
-//
-// Arguments:
-//    pBuffer - [out] Output buffer allocated by caller of size cchBuffer.
-//    cchBuffer - Size of pBuffer in characters.
-//    pdwLength - [out] Size of the version string in characters (incl. null-terminator). Will be filled
-//                even if ERROR_INSUFFICIENT_BUFFER is returned.
-//
-// Return Value:
-//    S_OK - Output buffer contains the version string.
-//    HRESULT_FROM_WIN32(ERROR_INSUFFICIENT_BUFFER) - *pdwLength contains required size of the buffer in
-//                                                    characters.
-
-STDAPI GetCORVersionInternal(
-__out_ecount_z_opt(cchBuffer) LPWSTR pBuffer,
-                              DWORD cchBuffer,
-                        __out DWORD *pdwLength)
-{
-    CONTRACTL {
-        NOTHROW;
-        GC_NOTRIGGER;
-        ENTRY_POINT;
-        PRECONDITION(CheckPointer(pBuffer, NULL_OK));
-        PRECONDITION(CheckPointer(pdwLength));
-    } CONTRACTL_END;
-
-    HRESULT hr;
-    BEGIN_ENTRYPOINT_NOTHROW;
-
-    if ((pBuffer != NULL) && (cchBuffer > 0))
-    {   // Initialize the output for case the function fails
-        *pBuffer = W('\0');
-    }
-
-#define VERSION_NUMBER_NOSHIM W("v") QUOTE_MACRO_L(CLR_MAJOR_VERSION.CLR_MINOR_VERSION.CLR_BUILD_VERSION)
-
-    DWORD length = (DWORD)(wcslen(VERSION_NUMBER_NOSHIM) + 1);
-    if (length > cchBuffer)
-    {
-        hr = HRESULT_FROM_WIN32(ERROR_INSUFFICIENT_BUFFER);
-    }
-    else
-    {
-        if (pBuffer == NULL)
-        {
-            hr = E_POINTER;
-        }
-        else
-        {
-            CopyMemory(pBuffer, VERSION_NUMBER_NOSHIM, length * sizeof(WCHAR));
-            hr = S_OK;
-        }
-    }
-    *pdwLength = length;
-
-    END_ENTRYPOINT_NOTHROW;
-    return hr;
-
 }
 
 static DWORD g_dwSystemDirectory = 0;

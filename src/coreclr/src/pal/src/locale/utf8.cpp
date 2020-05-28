@@ -335,7 +335,7 @@ protected:
                     else
                     {
                         // Low surrogate
-                        if (bHighSurrogate == false)
+                        if (!bHighSurrogate)
                             throw ArgumentException("String 'chars' contains invalid Unicode code points.");
                         bHighSurrogate = false;
                     }
@@ -391,7 +391,7 @@ protected:
                     else
                     {
                         // Low surrogate
-                        if (bHighSurrogate == false)
+                        if (!bHighSurrogate)
                             throw ArgumentException("String 'chars' contains invalid Unicode code points.");
                         bHighSurrogate = false;
                     }

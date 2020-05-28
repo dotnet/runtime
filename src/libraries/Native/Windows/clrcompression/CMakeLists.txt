@@ -24,9 +24,8 @@ if($ENV{__BuildArch} STREQUAL x86 OR $ENV{__BuildArch} STREQUAL x64)
         zlib-intel/trees.c
         zlib-intel/x86.c
         zlib-intel/zutil.c
-        ../../AnyOS/zlib/pal_zlib.c
 )
-elseif($ENV{__BuildArch} STREQUAL arm OR $ENV{__BuildArch} STREQUAL arm64)
+else()
     set(NATIVECOMPRESSION_SOURCES
         zlib/adler32.c
         zlib/compress.c
@@ -37,45 +36,38 @@ elseif($ENV{__BuildArch} STREQUAL arm OR $ENV{__BuildArch} STREQUAL arm64)
         zlib/inftrees.c
         zlib/trees.c
         zlib/zutil.c
-        ../../AnyOS/zlib/pal_zlib.c
     )
 endif()
 
-if($ENV{__appContainer} STREQUAL true)
-    set (NATIVECOMPRESSION_SOURCES
-        ${NATIVECOMPRESSION_SOURCES}
-        clrcompression.Uap.def
-    )
-else()
-    set (NATIVECOMPRESSION_SOURCES
-        ${NATIVECOMPRESSION_SOURCES}
-        clrcompression.def
-        ../../AnyOS/brotli/common/dictionary.c
-        ../../AnyOS/brotli/common/transform.c
-        ../../AnyOS/brotli/dec/bit_reader.c
-        ../../AnyOS/brotli/dec/decode.c
-        ../../AnyOS/brotli/dec/huffman.c
-        ../../AnyOS/brotli/dec/state.c
-        ../../AnyOS/brotli/enc/backward_references.c
-        ../../AnyOS/brotli/enc/backward_references_hq.c
-        ../../AnyOS/brotli/enc/bit_cost.c
-        ../../AnyOS/brotli/enc/block_splitter.c
-        ../../AnyOS/brotli/enc/brotli_bit_stream.c
-        ../../AnyOS/brotli/enc/cluster.c
-        ../../AnyOS/brotli/enc/compress_fragment.c
-        ../../AnyOS/brotli/enc/compress_fragment_two_pass.c
-        ../../AnyOS/brotli/enc/dictionary_hash.c
-        ../../AnyOS/brotli/enc/encode.c
-        ../../AnyOS/brotli/enc/encoder_dict.c
-        ../../AnyOS/brotli/enc/entropy_encode.c
-        ../../AnyOS/brotli/enc/histogram.c
-        ../../AnyOS/brotli/enc/literal_cost.c
-        ../../AnyOS/brotli/enc/memory.c
-        ../../AnyOS/brotli/enc/metablock.c
-        ../../AnyOS/brotli/enc/static_dict.c
-        ../../AnyOS/brotli/enc/utf8_util.c
-    )
-endif()
+set (NATIVECOMPRESSION_SOURCES
+    ${NATIVECOMPRESSION_SOURCES}
+    ../../AnyOS/zlib/pal_zlib.c
+    ../../AnyOS/brotli/common/dictionary.c
+    ../../AnyOS/brotli/common/transform.c
+    ../../AnyOS/brotli/dec/bit_reader.c
+    ../../AnyOS/brotli/dec/decode.c
+    ../../AnyOS/brotli/dec/huffman.c
+    ../../AnyOS/brotli/dec/state.c
+    ../../AnyOS/brotli/enc/backward_references.c
+    ../../AnyOS/brotli/enc/backward_references_hq.c
+    ../../AnyOS/brotli/enc/bit_cost.c
+    ../../AnyOS/brotli/enc/block_splitter.c
+    ../../AnyOS/brotli/enc/brotli_bit_stream.c
+    ../../AnyOS/brotli/enc/cluster.c
+    ../../AnyOS/brotli/enc/compress_fragment.c
+    ../../AnyOS/brotli/enc/compress_fragment_two_pass.c
+    ../../AnyOS/brotli/enc/dictionary_hash.c
+    ../../AnyOS/brotli/enc/encode.c
+    ../../AnyOS/brotli/enc/encoder_dict.c
+    ../../AnyOS/brotli/enc/entropy_encode.c
+    ../../AnyOS/brotli/enc/histogram.c
+    ../../AnyOS/brotli/enc/literal_cost.c
+    ../../AnyOS/brotli/enc/memory.c
+    ../../AnyOS/brotli/enc/metablock.c
+    ../../AnyOS/brotli/enc/static_dict.c
+    ../../AnyOS/brotli/enc/utf8_util.c
+    clrcompression.def
+)
 
 #Include Brotli include files
 include_directories("../../AnyOS/brotli/include")
@@ -87,13 +79,23 @@ add_library(clrcompression
     ${CMAKE_REPO_ROOT}/artifacts/obj/NativeVersion.rc
 )
 
+add_library(clrcompression-static
+    STATIC
+    ${NATIVECOMPRESSION_SOURCES}
+)
+
+SET_TARGET_PROPERTIES(clrcompression-static PROPERTIES PREFIX "")
+SET_TARGET_PROPERTIES(clrcompression-static PROPERTIES OUTPUT_NAME libclrcompression)
+
 # Allow specification of arguments that should be passed to the linker
 SET_TARGET_PROPERTIES(clrcompression PROPERTIES LINK_FLAGS ${__LinkArgs})
+SET_TARGET_PROPERTIES(clrcompression-static PROPERTIES LINK_FLAGS ${__LinkArgs})
 
 # Allow specification of libraries that should be linked against
 # CMake doesn't like space delimiters as input to target_link_libraries
 separate_arguments(linker_libs_sanitized WINDOWS_COMMAND ${__LinkLibraries})
 target_link_libraries(clrcompression ${linker_libs_sanitized})
+target_link_libraries(clrcompression-static ${linker_libs_sanitized})
 
 GENERATE_EXPORT_HEADER( clrcompression
      BASE_NAME clrcompression
@@ -103,5 +105,6 @@ GENERATE_EXPORT_HEADER( clrcompression
 )
 
 install (TARGETS clrcompression DESTINATION .)
+install (TARGETS clrcompression-static DESTINATION .)
 install (FILES ${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_BUILD_TYPE}/clrcompression.pdb DESTINATION .)
 

@@ -284,7 +284,7 @@ namespace System.Linq.Expressions.Tests
 
         [Theory]
         [ClassData(typeof(CompilationTypes))]
-        [ActiveIssue(13007)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/19094")]
         public static void Left_ValueTypeContainsChildTryExpression(bool useInterpreter)
         {
             Expression tryExpression = Expression.TryFinally(
@@ -305,7 +305,7 @@ namespace System.Linq.Expressions.Tests
 
         [Theory]
         [ClassData(typeof(CompilationTypes))]
-        [ActiveIssue(13007)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/19094")]
         public static void ValueTypeIndexAssign(bool useInterpreter)
         {
             Expression index = Expression.Property(Expression.Constant(new StructWithPropertiesAndFields()), typeof(StructWithPropertiesAndFields).GetProperty("Item"), new Expression[] { Expression.Constant(1) });

@@ -15,13 +15,13 @@ namespace System.Security.Cryptography.Pkcs
     public sealed class Pkcs12Builder
     {
         private ReadOnlyMemory<byte> _sealedData;
-        private List<ContentInfoAsn> _contents;
+        private List<ContentInfoAsn>? _contents;
 
         public bool IsSealed => !_sealedData.IsEmpty;
 
         public void AddSafeContentsEncrypted(
             Pkcs12SafeContents safeContents,
-            byte[] passwordBytes,
+            byte[]? passwordBytes,
             PbeParameters pbeParameters)
         {
             AddSafeContentsEncrypted(
@@ -41,7 +41,7 @@ namespace System.Security.Cryptography.Pkcs
             if (pbeParameters == null)
                 throw new ArgumentNullException(nameof(pbeParameters));
             if (pbeParameters.IterationCount < 1)
-                throw new ArgumentOutOfRangeException(nameof(pbeParameters.IterationCount));
+                throw new ArgumentOutOfRangeException(nameof(pbeParameters));
             if (safeContents.ConfidentialityMode != Pkcs12ConfidentialityMode.None)
                 throw new ArgumentException(SR.Cryptography_Pkcs12_CannotProcessEncryptedSafeContents, nameof(safeContents));
             if (IsSealed)
@@ -69,7 +69,7 @@ namespace System.Security.Cryptography.Pkcs
 
         public void AddSafeContentsEncrypted(
             Pkcs12SafeContents safeContents,
-            string password,
+            string? password,
             PbeParameters pbeParameters)
         {
             AddSafeContentsEncrypted(
@@ -89,7 +89,7 @@ namespace System.Security.Cryptography.Pkcs
             if (pbeParameters == null)
                 throw new ArgumentNullException(nameof(pbeParameters));
             if (pbeParameters.IterationCount < 1)
-                throw new ArgumentOutOfRangeException(nameof(pbeParameters.IterationCount));
+                throw new ArgumentOutOfRangeException(nameof(pbeParameters));
             if (safeContents.ConfidentialityMode != Pkcs12ConfidentialityMode.None)
                 throw new ArgumentException(SR.Cryptography_Pkcs12_CannotProcessEncryptedSafeContents, nameof(safeContents));
             if (IsSealed)
@@ -141,7 +141,7 @@ namespace System.Security.Cryptography.Pkcs
         }
 
         public void SealWithMac(
-            string password,
+            string? password,
             HashAlgorithmName hashAlgorithm,
             int iterationCount)
         {
@@ -162,9 +162,9 @@ namespace System.Security.Cryptography.Pkcs
             if (IsSealed)
                 throw new InvalidOperationException(SR.Cryptography_Pkcs12_PfxIsSealed);
 
-            byte[] rentedAuthSafe = null;
+            byte[]? rentedAuthSafe = null;
             Span<byte> authSafeSpan = default;
-            byte[] rentedMac = null;
+            byte[]? rentedMac = null;
             Span<byte> macSpan = default;
             Span<byte> salt = stackalloc byte[0];
 

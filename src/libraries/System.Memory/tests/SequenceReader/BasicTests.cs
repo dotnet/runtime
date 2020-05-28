@@ -112,6 +112,7 @@ namespace System.Memory.Tests.SequenceReader
             SequenceReader<T> reader = default;
             Assert.Equal(0, reader.CurrentSpan.Length);
             Assert.Equal(0, reader.UnreadSpan.Length);
+            Assert.Equal(0, reader.UnreadSequence.Length);
             Assert.Equal(0, reader.Consumed);
             Assert.Equal(0, reader.CurrentSpanIndex);
             Assert.Equal(0, reader.Length);
@@ -138,6 +139,7 @@ namespace System.Memory.Tests.SequenceReader
             Assert.False(reader.TryAdvanceToAny(array));
             Assert.Equal(0, reader.CurrentSpan.Length);
             Assert.Equal(0, reader.UnreadSpan.Length);
+            Assert.Equal(0, reader.UnreadSequence.Length);
             Assert.Equal(0, reader.Consumed);
             Assert.Equal(0, reader.CurrentSpanIndex);
             Assert.Equal(0, reader.Length);
@@ -240,7 +242,6 @@ namespace System.Memory.Tests.SequenceReader
             Assert.False(reader.TryPeek(0, out T defaultValue));
             Assert.Equal(default, defaultValue);
         }
-
 
         [Fact]
         public void TryPeekOffset_MultiSegment_StarAhead()
@@ -644,6 +645,209 @@ namespace System.Memory.Tests.SequenceReader
                     Assert.Equal(inputData[i + 1], value);
                 }
             }
+        }
+
+        [Fact]
+        public void AdvanceTo_End()
+        {
+            ReadOnlySpan<T> data = (T[])_inputData.Clone();
+
+            SequenceSegment<T> last = new SequenceSegment<T>();
+            last.SetMemory(new OwnedArray<T>(data.Slice(5).ToArray()), 0, 5);
+
+            SequenceSegment<T> first = new SequenceSegment<T>();
+            first.SetMemory(new OwnedArray<T>(data.Slice(0, 5).ToArray()), 0, 5);
+            first.SetNext(last);
+
+            ReadOnlySequence<T> sequence = new ReadOnlySequence<T>(first, first.Start, last, last.End);
+            SequenceReader<T> reader = new SequenceReader<T>(sequence);
+
+            reader.AdvanceToEnd();
+
+            Assert.Equal(data.Length, reader.Length);
+            Assert.Equal(data.Length, reader.Consumed);
+            Assert.Equal(reader.Length, reader.Consumed);
+            Assert.True(reader.End);
+            Assert.Equal(0, reader.CurrentSpanIndex);
+            Assert.Equal(sequence.End, reader.Position);
+            Assert.Equal(0, reader.Remaining);
+            Assert.True(default == reader.UnreadSpan);
+            Assert.True(default == reader.CurrentSpan);
+        }
+
+        [Fact]
+        public void AdvanceTo_End_EmptySegment()
+        {
+            ReadOnlySpan<T> data = (T[])_inputData.Clone();
+
+            // Empty segment
+            SequenceSegment<T> third = new SequenceSegment<T>();
+
+            SequenceSegment<T> second = new SequenceSegment<T>();
+            second.SetMemory(new OwnedArray<T>(data.Slice(5).ToArray()), 0, 5);
+            second.SetNext(third);
+
+            SequenceSegment<T> first = new SequenceSegment<T>();
+            first.SetMemory(new OwnedArray<T>(data.Slice(0, 5).ToArray()), 0, 5);
+            first.SetNext(second);
+
+            ReadOnlySequence<T> sequence = new ReadOnlySequence<T>(first, first.Start, third, third.End);
+            SequenceReader<T> reader = new SequenceReader<T>(sequence);
+
+            reader.AdvanceToEnd();
+
+            Assert.Equal(first.Length + second.Length, reader.Length);
+            Assert.Equal(first.Length + second.Length, reader.Consumed);
+            Assert.Equal(reader.Length, reader.Consumed);
+            Assert.True(reader.End);
+            Assert.Equal(0, reader.CurrentSpanIndex);
+            Assert.Equal(sequence.End, reader.Position);
+            Assert.Equal(0, reader.Remaining);
+            Assert.True(default == reader.UnreadSpan);
+            Assert.True(default == reader.CurrentSpan);
+        }
+
+        [Fact]
+        public void AdvanceTo_End_Rewind_Advance()
+        {
+            ReadOnlySpan<T> data = (T[])_inputData.Clone();
+
+            SequenceSegment<T> last = new SequenceSegment<T>();
+            last.SetMemory(new OwnedArray<T>(data.Slice(5).ToArray()), 0, 5);
+
+            SequenceSegment<T> first = new SequenceSegment<T>();
+            first.SetMemory(new OwnedArray<T>(data.Slice(0, 5).ToArray()), 0, 5);
+            first.SetNext(last);
+
+            ReadOnlySequence<T> sequence = new ReadOnlySequence<T>(first, first.Start, last, last.End);
+            SequenceReader<T> reader = new SequenceReader<T>(sequence);
+
+            reader.AdvanceToEnd();
+
+            Assert.Equal(data.Length, reader.Length);
+            Assert.Equal(data.Length, reader.Consumed);
+            Assert.Equal(reader.Length, reader.Consumed);
+            Assert.True(reader.End);
+            Assert.Equal(0, reader.CurrentSpanIndex);
+            Assert.Equal(sequence.End, reader.Position);
+            Assert.Equal(0, reader.Remaining);
+            Assert.True(default == reader.UnreadSpan);
+            Assert.True(default == reader.CurrentSpan);
+
+            // Rewind to second element
+            reader.Rewind(9);
+
+            Assert.Equal(1, reader.Consumed);
+            Assert.False(reader.End);
+            Assert.Equal(1, reader.CurrentSpanIndex);
+            Assert.Equal(9, reader.Remaining);
+            Assert.Equal(sequence.Slice(1), reader.UnreadSequence);
+
+            // Consume next five elements and stop at second element of second segment
+            reader.Advance(5);
+
+            Assert.Equal(6, reader.Consumed);
+            Assert.False(reader.End);
+            Assert.Equal(1, reader.CurrentSpanIndex);
+            Assert.Equal(4, reader.Remaining);
+            Assert.Equal(sequence.Slice(6), reader.UnreadSequence);
+
+            reader.AdvanceToEnd();
+
+            Assert.Equal(data.Length, reader.Length);
+            Assert.Equal(data.Length, reader.Consumed);
+            Assert.Equal(reader.Length, reader.Consumed);
+            Assert.True(reader.End);
+            Assert.Equal(0, reader.CurrentSpanIndex);
+            Assert.Equal(sequence.End, reader.Position);
+            Assert.Equal(0, reader.Remaining);
+            Assert.True(default == reader.UnreadSpan);
+            Assert.True(default == reader.CurrentSpan);
+        }
+
+        [Fact]
+        public void AdvanceTo_End_Multiple()
+        {
+            ReadOnlySpan<T> data = (T[])_inputData.Clone();
+
+            SequenceSegment<T> last = new SequenceSegment<T>();
+            last.SetMemory(new OwnedArray<T>(data.Slice(5).ToArray()), 0, 5);
+
+            SequenceSegment<T> first = new SequenceSegment<T>();
+            first.SetMemory(new OwnedArray<T>(data.Slice(0, 5).ToArray()), 0, 5);
+            first.SetNext(last);
+
+            ReadOnlySequence<T> sequence = new ReadOnlySequence<T>(first, first.Start, last, last.End);
+            SequenceReader<T> reader = new SequenceReader<T>(sequence);
+
+            reader.AdvanceToEnd();
+            reader.AdvanceToEnd();
+            reader.AdvanceToEnd();
+
+            Assert.Equal(data.Length, reader.Length);
+            Assert.Equal(data.Length, reader.Consumed);
+            Assert.Equal(reader.Length, reader.Consumed);
+            Assert.True(reader.End);
+            Assert.Equal(0, reader.CurrentSpanIndex);
+            Assert.Equal(sequence.End, reader.Position);
+            Assert.Equal(0, reader.Remaining);
+            Assert.True(default == reader.UnreadSpan);
+            Assert.True(default == reader.CurrentSpan);
+        }
+
+        [Fact]
+        public void UnreadSequence()
+        {
+            ReadOnlySpan<T> data = (T[])_inputData.Clone();
+
+            SequenceSegment<T> last = new SequenceSegment<T>();
+            last.SetMemory(new OwnedArray<T>(data.Slice(5).ToArray()), 0, 5);
+
+            SequenceSegment<T> first = new SequenceSegment<T>();
+            first.SetMemory(new OwnedArray<T>(data.Slice(0, 5).ToArray()), 0, 5);
+            first.SetNext(last);
+
+            ReadOnlySequence<T> sequence = new ReadOnlySequence<T>(first, first.Start, last, last.End);
+            SequenceReader<T> reader = new SequenceReader<T>(sequence);
+
+            Assert.Equal(sequence, reader.UnreadSequence);
+            Assert.Equal(data.Length, reader.UnreadSequence.Length);
+            Assert.True(reader.TryRead(out T _));
+            Assert.True(reader.TryRead(out T _));
+            Assert.Equal(sequence.Slice(2), reader.UnreadSequence);
+            // Advance to the end
+            reader.Advance(8);
+            Assert.Equal(0, reader.UnreadSequence.Length);
+        }
+
+        [Fact]
+        public void UnreadSequence_EmptySegment()
+        {
+            ReadOnlySpan<T> data = (T[])_inputData.Clone();
+
+            // Empty segment
+            SequenceSegment<T> third = new SequenceSegment<T>();
+
+            SequenceSegment<T> second = new SequenceSegment<T>();
+            second.SetMemory(new OwnedArray<T>(data.Slice(5).ToArray()), 0, 5);
+            second.SetNext(third);
+
+            SequenceSegment<T> first = new SequenceSegment<T>();
+            first.SetMemory(new OwnedArray<T>(data.Slice(0, 5).ToArray()), 0, 5);
+            first.SetNext(second);
+
+            ReadOnlySequence<T> sequence = new ReadOnlySequence<T>(first, first.Start, third, third.End);
+            SequenceReader<T> reader = new SequenceReader<T>(sequence);
+
+            // Drain until the expected end of data with simple read
+            for (int i = 0; i < data.Length; i++)
+            {
+                reader.TryRead(out T _);
+            }
+
+            Assert.Equal(sequence.Slice(data.Length), reader.UnreadSequence);
+            Assert.Equal(0, reader.UnreadSequence.Length);
+            Assert.False(reader.TryRead(out T _));
         }
 
         [Fact]

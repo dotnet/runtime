@@ -16,10 +16,10 @@ fi
 
 if [ "$1" == "sdk" ] ; then
 	InstallationScript="SdkInstallation.sh"
-	echo -e ".NET Core SDK varification test result\n" > $InstallationTestResult
+	echo -e ".NET SDK verification test result\n" > $InstallationTestResult
 elif [ "$1" == "runtime" ] ; then
 	InstallationScript="RuntimeInstallation.sh"
-	echo -e ".NET Core Runtime varification test result\n" > $InstallationTestResult
+	echo -e ".NET Runtime verification test result\n" > $InstallationTestResult
 fi
 
 while IFS='' read -r image || [[ -n "$image" ]]; do

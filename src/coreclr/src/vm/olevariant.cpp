@@ -299,115 +299,110 @@ VARTYPE OleVariant::GetVarTypeForTypeHandle(TypeHandle type)
     if (elemType <= ELEMENT_TYPE_R8)
         return GetVarTypeForCVType(CorElementTypeToCVTypes(elemType));
 
+    // Types incompatible with interop.
+    if (type.IsTypeDesc())
+        COMPlusThrow(kArgumentException, IDS_EE_COM_UNSUPPORTED_SIG);
+
     // Handle objects.
-    if (!type.IsTypeDesc())
-    {
-        MethodTable * pMT = type.AsMethodTable();
+    MethodTable * pMT = type.AsMethodTable();
 
-        if (pMT == g_pStringClass)
-            return VT_BSTR;
-        if (pMT == g_pObjectClass)
-            return VT_VARIANT;
+    if (pMT == g_pStringClass)
+        return VT_BSTR;
+    if (pMT == g_pObjectClass)
+        return VT_VARIANT;
 
-        // We need to make sure the CVClasses table is populated.
-        if(MscorlibBinder::IsClass(pMT, CLASS__DATE_TIME))
-            return VT_DATE;
-        if(MscorlibBinder::IsClass(pMT, CLASS__DECIMAL))
-            return VT_DECIMAL;
+    // We need to make sure the CVClasses table is populated.
+    if(MscorlibBinder::IsClass(pMT, CLASS__DATE_TIME))
+        return VT_DATE;
+    if(MscorlibBinder::IsClass(pMT, CLASS__DECIMAL))
+        return VT_DECIMAL;
 
-#ifdef BIT64
-        if (MscorlibBinder::IsClass(pMT, CLASS__INTPTR))
-            return VT_I8;
-        if (MscorlibBinder::IsClass(pMT, CLASS__UINTPTR))
-            return VT_UI8;
+#ifdef HOST_64BIT
+    if (MscorlibBinder::IsClass(pMT, CLASS__INTPTR))
+        return VT_I8;
+    if (MscorlibBinder::IsClass(pMT, CLASS__UINTPTR))
+        return VT_UI8;
 #else
-        if (MscorlibBinder::IsClass(pMT, CLASS__INTPTR))
-            return VT_INT;
-        if (MscorlibBinder::IsClass(pMT, CLASS__UINTPTR))
-            return VT_UINT;
+    if (MscorlibBinder::IsClass(pMT, CLASS__INTPTR))
+        return VT_INT;
+    if (MscorlibBinder::IsClass(pMT, CLASS__UINTPTR))
+        return VT_UINT;
 #endif
 
 #ifdef FEATURE_COMINTEROP
-        if (MscorlibBinder::IsClass(pMT, CLASS__DISPATCH_WRAPPER))
-            return VT_DISPATCH;
-        if (MscorlibBinder::IsClass(pMT, CLASS__UNKNOWN_WRAPPER))
-            return VT_UNKNOWN;
-        if (MscorlibBinder::IsClass(pMT, CLASS__ERROR_WRAPPER))
-            return VT_ERROR;
-        if (MscorlibBinder::IsClass(pMT, CLASS__CURRENCY_WRAPPER))
-            return VT_CY;
-        if (MscorlibBinder::IsClass(pMT, CLASS__BSTR_WRAPPER))
-            return VT_BSTR;
+    if (MscorlibBinder::IsClass(pMT, CLASS__DISPATCH_WRAPPER))
+        return VT_DISPATCH;
+    if (MscorlibBinder::IsClass(pMT, CLASS__UNKNOWN_WRAPPER))
+        return VT_UNKNOWN;
+    if (MscorlibBinder::IsClass(pMT, CLASS__ERROR_WRAPPER))
+        return VT_ERROR;
+    if (MscorlibBinder::IsClass(pMT, CLASS__CURRENCY_WRAPPER))
+        return VT_CY;
+    if (MscorlibBinder::IsClass(pMT, CLASS__BSTR_WRAPPER))
+        return VT_BSTR;
 
-        // VariantWrappers cannot be stored in VARIANT's.
-        if (MscorlibBinder::IsClass(pMT, CLASS__VARIANT_WRAPPER))
-            COMPlusThrow(kArgumentException, IDS_EE_COM_UNSUPPORTED_SIG);
+    // VariantWrappers cannot be stored in VARIANT's.
+    if (MscorlibBinder::IsClass(pMT, CLASS__VARIANT_WRAPPER))
+        COMPlusThrow(kArgumentException, IDS_EE_COM_UNSUPPORTED_SIG);
 #endif // FEATURE_COMINTEROP
 
-        if (pMT->IsEnum())
-            return GetVarTypeForCVType((CVTypes)type.GetInternalCorElementType());
+    if (pMT->IsEnum())
+        return GetVarTypeForCVType((CVTypes)type.GetInternalCorElementType());
 
-        if (pMT->IsValueType())
-            return VT_RECORD;
+    if (pMT->IsValueType())
+        return VT_RECORD;
+
+    if (pMT->IsArray())
+        return VT_ARRAY;
 
 #ifdef FEATURE_COMINTEROP
-        // There is no VT corresponding to SafeHandles as they cannot be stored in
-        // VARIANTs or Arrays. The same applies to CriticalHandle.
-        if (type.CanCastTo(TypeHandle(MscorlibBinder::GetClass(CLASS__SAFE_HANDLE))))
-            COMPlusThrow(kArgumentException, IDS_EE_COM_UNSUPPORTED_SIG);
-        if (type.CanCastTo(TypeHandle(MscorlibBinder::GetClass(CLASS__CRITICAL_HANDLE))))
-            COMPlusThrow(kArgumentException, IDS_EE_COM_UNSUPPORTED_SIG);
+    // There is no VT corresponding to SafeHandles as they cannot be stored in
+    // VARIANTs or Arrays. The same applies to CriticalHandle.
+    if (type.CanCastTo(TypeHandle(MscorlibBinder::GetClass(CLASS__SAFE_HANDLE))))
+        COMPlusThrow(kArgumentException, IDS_EE_COM_UNSUPPORTED_SIG);
+    if (type.CanCastTo(TypeHandle(MscorlibBinder::GetClass(CLASS__CRITICAL_HANDLE))))
+        COMPlusThrow(kArgumentException, IDS_EE_COM_UNSUPPORTED_SIG);
 
-        if (pMT->IsInterface())
+    if (pMT->IsInterface())
+    {
+        CorIfaceAttr ifaceType = pMT->GetComInterfaceType();
+        return static_cast<VARTYPE>(IsDispatchBasedItf(ifaceType) ? VT_DISPATCH : VT_UNKNOWN);
+    }
+
+    TypeHandle hndDefItfClass;
+    DefaultInterfaceType DefItfType = GetDefaultInterfaceForClassWrapper(type, &hndDefItfClass);
+    switch (DefItfType)
+    {
+        case DefaultInterfaceType_Explicit:
         {
-            CorIfaceAttr ifaceType = pMT->GetComInterfaceType();
+            CorIfaceAttr ifaceType = hndDefItfClass.GetMethodTable()->GetComInterfaceType();
             return static_cast<VARTYPE>(IsDispatchBasedItf(ifaceType) ? VT_DISPATCH : VT_UNKNOWN);
         }
 
-        TypeHandle hndDefItfClass;
-        DefaultInterfaceType DefItfType = GetDefaultInterfaceForClassWrapper(type, &hndDefItfClass);
-        switch (DefItfType)
+        case DefaultInterfaceType_AutoDual:
         {
-            case DefaultInterfaceType_Explicit:
-            {
-                CorIfaceAttr ifaceType = hndDefItfClass.GetMethodTable()->GetComInterfaceType();
-                return static_cast<VARTYPE>(IsDispatchBasedItf(ifaceType) ? VT_DISPATCH : VT_UNKNOWN);
-            }
-
-            case DefaultInterfaceType_AutoDual:
-            {
-                return VT_DISPATCH;
-            }
-
-            case DefaultInterfaceType_IUnknown:
-            case DefaultInterfaceType_BaseComClass:
-            {
-                return VT_UNKNOWN;
-            }
-
-            case DefaultInterfaceType_AutoDispatch:
-            {
-                return VT_DISPATCH;
-            }
-
-            default:
-            {
-                _ASSERTE(!"Invalid default interface type!");
-            }
+            return VT_DISPATCH;
         }
+
+        case DefaultInterfaceType_IUnknown:
+        case DefaultInterfaceType_BaseComClass:
+        {
+            return VT_UNKNOWN;
+        }
+
+        case DefaultInterfaceType_AutoDispatch:
+        {
+            return VT_DISPATCH;
+        }
+
+        default:
+        {
+            _ASSERTE(!"Invalid default interface type!");
+        }
+    }
 #endif // FEATURE_COMINTEROP
 
-        return VT_UNKNOWN;
-    }
-
-    // Handle array's.
-    if (!CorTypeInfo::IsArray(elemType))
-    {
-        // Non interop compatible type.
-        COMPlusThrow(kArgumentException, IDS_EE_COM_UNSUPPORTED_SIG);
-    }
-
-    return VT_ARRAY;
+    return VT_UNKNOWN;
 }
 
 //
@@ -723,8 +718,8 @@ UINT OleVariant::GetElementSizeForVarType(VARTYPE vt, MethodTable *pInterfaceMT)
 {
     CONTRACTL
     {
-        NOTHROW;
-        GC_NOTRIGGER;
+        THROWS;
+        GC_TRIGGERS;
         MODE_ANY;
     }
     CONTRACTL_END;
@@ -1840,7 +1835,7 @@ void OleVariant::MarshalIUnknownArrayComToOle(BASEARRAYREF *pComArray, void *ole
     MarshalInterfaceArrayComToOleHelper(pComArray, oleArray, pElementMT, FALSE, cElements);
 }
 
-void OleVariant::ClearInterfaceArray(BASEARRAYREF* pComArray, void *oleArray, SIZE_T cElements, MethodTable *pInterfaceMT, PCODE pManagedMarshalerCode)
+void OleVariant::ClearInterfaceArray(void *oleArray, SIZE_T cElements, MethodTable *pInterfaceMT, PCODE pManagedMarshalerCode)
 {
     CONTRACTL
     {
@@ -2014,7 +2009,7 @@ void OleVariant::MarshalBSTRArrayComToOle(BASEARRAYREF *pComArray, void *oleArra
     GCPROTECT_END();
 }
 
-void OleVariant::ClearBSTRArray(BASEARRAYREF* pComArray, void *oleArray, SIZE_T cElements, MethodTable *pInterfaceMT, PCODE pManagedMarshalerCode)
+void OleVariant::ClearBSTRArray(void *oleArray, SIZE_T cElements, MethodTable *pInterfaceMT, PCODE pManagedMarshalerCode)
 {
     CONTRACTL
     {
@@ -2106,18 +2101,19 @@ void OleVariant::MarshalNonBlittableRecordArrayComToOle(BASEARRAYREF *pComArray,
         FillMemory(pOle, pOleEnd - pOle, 0);
     }
 
-    SIZE_T srcofs = ArrayBase::GetDataPtrOffset( (*pComArray)->GetMethodTable() );
+    const SIZE_T compSize = (*pComArray)->GetComponentSize();
+    SIZE_T offset = 0;
     while (pOle < pOleEnd)
     {
-        BYTE* managedData = (BYTE*)(*(LPVOID*)pComArray) + srcofs;
+        BYTE* managedData = (*pComArray)->GetDataPtr() + offset;
         MarshalStructViaILStubCode(pManagedMarshalerCode, managedData, pOle, StructMarshalStubs::MarshalOperation::Marshal);
 
         pOle += elemSize;
-        srcofs += (*pComArray)->GetComponentSize();
+        offset += compSize;
     }
 }
 
-void OleVariant::ClearNonBlittableRecordArray(BASEARRAYREF* pComArray, void *oleArray, SIZE_T cElements, MethodTable *pInterfaceMT, PCODE pManagedMarshalerCode)
+void OleVariant::ClearNonBlittableRecordArray(void *oleArray, SIZE_T cElements, MethodTable *pInterfaceMT, PCODE pManagedMarshalerCode)
 {
     CONTRACTL
     {
@@ -2129,20 +2125,15 @@ void OleVariant::ClearNonBlittableRecordArray(BASEARRAYREF* pComArray, void *ole
     }
     CONTRACTL_END;
 
-    ASSERT_PROTECTED(pComArray);
-
     SIZE_T elemSize     = pInterfaceMT->GetNativeSize();
+    SIZE_T componentSize = TypeHandle(pInterfaceMT).MakeSZArray().GetMethodTable()->GetComponentSize();
     BYTE *pOle = (BYTE *) oleArray;
     BYTE *pOleEnd = pOle + elemSize * cElements;
-    SIZE_T srcofs = *pComArray != NULL ? ArrayBase::GetDataPtrOffset((*pComArray)->GetMethodTable()) : 0;
     while (pOle < pOleEnd)
     {
-        BYTE* managedData = (BYTE*)(*(LPVOID*)pComArray) + srcofs;
-
-        MarshalStructViaILStubCode(pManagedMarshalerCode, managedData, pOle, StructMarshalStubs::MarshalOperation::Cleanup);
+        MarshalStructViaILStubCode(pManagedMarshalerCode, nullptr, pOle, StructMarshalStubs::MarshalOperation::Cleanup);
 
         pOle += elemSize;
-        srcofs += (*pComArray)->GetComponentSize();
     }
 }
 
@@ -2260,7 +2251,7 @@ void OleVariant::MarshalLPWSTRRArrayComToOle(BASEARRAYREF *pComArray, void *oleA
     }
 }
 
-void OleVariant::ClearLPWSTRArray(BASEARRAYREF* pComArray, void *oleArray, SIZE_T cElements, MethodTable *pInterfaceMT, PCODE pManagedMarshalerCode)
+void OleVariant::ClearLPWSTRArray(void *oleArray, SIZE_T cElements, MethodTable *pInterfaceMT, PCODE pManagedMarshalerCode)
 {
     CONTRACTL
     {
@@ -2397,7 +2388,7 @@ void OleVariant::MarshalLPSTRRArrayComToOle(BASEARRAYREF *pComArray, void *oleAr
     }
 }
 
-void OleVariant::ClearLPSTRArray(BASEARRAYREF* pComArray, void *oleArray, SIZE_T cElements, MethodTable *pInterfaceMT, PCODE pManagedMarshalerCode)
+void OleVariant::ClearLPSTRArray(void *oleArray, SIZE_T cElements, MethodTable *pInterfaceMT, PCODE pManagedMarshalerCode)
 {
     CONTRACTL
     {
@@ -2741,7 +2732,7 @@ void OleVariant::MarshalRecordArrayComToOle(BASEARRAYREF *pComArray, void *oleAr
 }
 
 
-void OleVariant::ClearRecordArray(BASEARRAYREF* pComArray, void *oleArray, SIZE_T cElements, MethodTable *pElementMT, PCODE pManagedMarshalerCode)
+void OleVariant::ClearRecordArray(void *oleArray, SIZE_T cElements, MethodTable *pElementMT, PCODE pManagedMarshalerCode)
 {
     CONTRACTL
     {
@@ -2756,7 +2747,7 @@ void OleVariant::ClearRecordArray(BASEARRAYREF* pComArray, void *oleArray, SIZE_
     if (!pElementMT->IsBlittable())
     {
         _ASSERTE(pElementMT->HasLayout());
-        ClearNonBlittableRecordArray(pComArray, oleArray, cElements, pElementMT, pManagedMarshalerCode);
+        ClearNonBlittableRecordArray(oleArray, cElements, pElementMT, pManagedMarshalerCode);
     }
 }
 
@@ -3542,11 +3533,11 @@ void OleVariant::MarshalComVariantForOleVariant(VARIANT *pOle, VariantData *pCom
             if (V_ISBYREF(pOle))
             {
                 // Must set ObjectRef field of Variant to a specific instance.
-#ifdef BIT64
+#ifdef HOST_64BIT
                 VariantData::NewVariant(pCom, CV_U8, (INT64)(size_t)V_BYREF(pOle));
-#else // BIT64
+#else // HOST_64BIT
                 VariantData::NewVariant(pCom, CV_U4, (INT32)(size_t)V_BYREF(pOle));
-#endif // BIT64
+#endif // HOST_64BIT
             }
             else
             {
@@ -4077,7 +4068,7 @@ void OleVariant::MarshalVariantArrayComToOle(BASEARRAYREF *pComArray, void *oleA
     GCPROTECT_END();
 }
 
-void OleVariant::ClearVariantArray(BASEARRAYREF* pComArray, void *oleArray, SIZE_T cElements, MethodTable *pInterfaceMT, PCODE pManagedMarshalerCode)
+void OleVariant::ClearVariantArray(void *oleArray, SIZE_T cElements, MethodTable *pInterfaceMT, PCODE pManagedMarshalerCode)
 {
     CONTRACTL
     {

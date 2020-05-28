@@ -146,7 +146,6 @@ namespace System.ComponentModel
         /// <summary>
         /// Converts the specified value to a culture-invariant string representation.
         /// </summary>
-        [SuppressMessage("Microsoft.Security", "CA2122:DoNotIndirectlyExposeMethodsWithLinkDemands")]
         public string ConvertToInvariantString(ITypeDescriptorContext context, object value)
         {
             return ConvertToString(context, CultureInfo.InvariantCulture, value);

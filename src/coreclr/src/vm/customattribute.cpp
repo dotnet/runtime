@@ -735,7 +735,7 @@ FCIMPL6(LPVOID, COMCustomAttribute::CreateCaObject, ReflectModuleBaseObject* pAt
                         TypeHandle th = pSig->GetLastTypeHandleThrowing();
                         if (th.IsArray())
                             // get the array element
-                            th = th.AsArray()->GetArrayElementTypeHandle();
+                            th = th.GetArrayElementTypeHandle();
                         ARG_SLOT data = GetDataFromBlob(pCtorMD->GetAssembly(), (CorSerializationType)type, th, &pBlob, pEndBlob, gc.refAttributedModule->GetModule(), &bObjectCreated);
                         if (bObjectCreated)
                             argToProtect[i] = ArgSlotToObj(data);
@@ -1227,7 +1227,7 @@ void COMCustomAttribute::ReadArray(Assembly *pCtorAssembly,
         *pArray = (BASEARRAYREF)AllocateObjectArray(size, th);
         if (arrayType == SERIALIZATION_TYPE_SZARRAY)
             // switch the th to be the proper one
-            th = th.AsArray()->GetArrayElementTypeHandle();
+            th = th.GetArrayElementTypeHandle();
         for (int i = 0; i < size; i++) {
             element = GetDataFromBlob(pCtorAssembly, arrayType, th, pBlob, endBlob, pModule, &isObject);
             _ASSERTE(isObject || element == NULL);

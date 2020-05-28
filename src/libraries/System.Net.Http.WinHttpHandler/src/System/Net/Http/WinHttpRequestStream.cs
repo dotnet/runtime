@@ -22,7 +22,6 @@ namespace System.Net.Http
         private readonly WinHttpRequestState _state;
         private readonly bool _chunkedMode;
 
-        // TODO (Issue 2505): temporary pinned buffer caches of 1 item. Will be replaced by PinnableBufferCache.
         private GCHandle _cachedSendPinnedBuffer;
 
         internal WinHttpRequestStream(WinHttpRequestState state, bool chunkedMode)
@@ -173,9 +172,6 @@ namespace System.Net.Http
             if (!_disposed)
             {
                 _disposed = true;
-
-                // TODO (Issue 2508): Pinned buffers must be released in the callback, when it is guaranteed no further
-                // operations will be made to the send/receive buffers.
                 if (_cachedSendPinnedBuffer.IsAllocated)
                 {
                     _cachedSendPinnedBuffer.Free();
@@ -226,7 +222,6 @@ namespace System.Net.Http
         {
             Debug.Assert(count > 0);
 
-            // TODO (Issue 2505): replace with PinnableBufferCache.
             if (!_cachedSendPinnedBuffer.IsAllocated || _cachedSendPinnedBuffer.Target != buffer)
             {
                 if (_cachedSendPinnedBuffer.IsAllocated)
@@ -252,8 +247,6 @@ namespace System.Net.Http
                         new IOException(SR.net_http_io_write, WinHttpException.CreateExceptionUsingLastError(nameof(Interop.WinHttp.WinHttpWriteData))));
                 }
             }
-
-            // TODO: Issue #2165. Register callback on cancellation token to cancel WinHTTP operation.
 
             return _state.TcsInternalWriteDataToRequestStream.Task;
         }

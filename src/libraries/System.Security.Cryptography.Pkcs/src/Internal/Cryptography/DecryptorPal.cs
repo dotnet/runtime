@@ -21,7 +21,7 @@ namespace Internal.Cryptography
         /// <summary>
         /// Return the managed representation of the recipients.
         ///
-        /// Desktop compat: Unlike the desktop, we compute this once and then latch it. Since both RecipientInfo and RecipientInfoCollection are immutable objects, this should be
+        /// .NET Framework compat: Unlike the desktop, we compute this once and then latch it. Since both RecipientInfo and RecipientInfoCollection are immutable objects, this should be
         /// a safe optimization to make.
         /// </summary>
         public RecipientInfoCollection RecipientInfos { get; }
@@ -31,13 +31,13 @@ namespace Internal.Cryptography
         /// to a valid Exception object. Do not throw the exception as EnvelopedCms will want to continue decryption attempts against other recipients. Only if all the recipients fail to
         /// decrypt will then EnvelopedCms throw the exception from the last failed attempt.
         /// </summary>
-        public abstract ContentInfo TryDecrypt(
+        public abstract ContentInfo? TryDecrypt(
             RecipientInfo recipientInfo,
-            X509Certificate2 cert,
-            AsymmetricAlgorithm privateKey,
+            X509Certificate2? cert,
+            AsymmetricAlgorithm? privateKey,
             X509Certificate2Collection originatorCerts,
             X509Certificate2Collection extraStore,
-            out Exception exception);
+            out Exception? exception);
 
         public abstract void Dispose();
     }

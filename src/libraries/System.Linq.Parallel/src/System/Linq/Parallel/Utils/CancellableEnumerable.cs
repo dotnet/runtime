@@ -30,7 +30,7 @@ namespace System.Linq.Parallel
             foreach (TElement element in source)
             {
                 if ((count++ & CancellationState.POLL_INTERVAL) == 0)
-                    CancellationState.ThrowIfCanceled(token);
+                    token.ThrowIfCancellationRequested();
 
                 yield return element;
             }

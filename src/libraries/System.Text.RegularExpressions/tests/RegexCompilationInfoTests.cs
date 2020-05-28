@@ -24,7 +24,17 @@ namespace System.Text.RegularExpressions.Tests
         [MemberData(nameof(Ctor_MemberData))]
         public void Ctor_ValidArguments_CheckProperties(string pattern, RegexOptions options, string name, string fullnamespace, bool ispublic, TimeSpan matchTimeout)
         {
-            var regexCompilationInfo = new RegexCompilationInfo(pattern, options, name, fullnamespace, ispublic, matchTimeout);
+            RegexCompilationInfo regexCompilationInfo;
+
+            regexCompilationInfo = new RegexCompilationInfo(pattern, options, name, fullnamespace, ispublic);
+            Assert.Equal(pattern, regexCompilationInfo.Pattern);
+            Assert.Equal(options, regexCompilationInfo.Options);
+            Assert.Equal(name, regexCompilationInfo.Name);
+            Assert.Equal(fullnamespace, regexCompilationInfo.Namespace);
+            Assert.Equal(ispublic, regexCompilationInfo.IsPublic);
+            Assert.Equal(Regex.InfiniteMatchTimeout, regexCompilationInfo.MatchTimeout);
+
+            regexCompilationInfo = new RegexCompilationInfo(pattern, options, name, fullnamespace, ispublic, matchTimeout);
             Assert.Equal(pattern, regexCompilationInfo.Pattern);
             Assert.Equal(options, regexCompilationInfo.Options);
             Assert.Equal(name, regexCompilationInfo.Name);

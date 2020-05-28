@@ -107,7 +107,7 @@ namespace VirtualMemoryLogging
     // An entry in the in-memory log
     struct LogRecord
     {
-        LONG RecordId;
+        ULONG RecordId;
         DWORD Operation;
         LPVOID CurrentThread;
         LPVOID RequestedAddress;
@@ -118,14 +118,14 @@ namespace VirtualMemoryLogging
     };
 
     // Maximum number of records in the in-memory log
-    const LONG MaxRecords = 128;
+    const ULONG MaxRecords = 128;
 
     // Buffer used to store the logged data
     volatile LogRecord logRecords[MaxRecords];
 
     // Current record number. Use (recordNumber % MaxRecords) to determine
     // the current position in the circular buffer.
-    volatile LONG recordNumber = 0;
+    volatile ULONG recordNumber = 0;
 
     // Record an entry in the in-memory log
     void LogVaOperation(
@@ -137,11 +137,11 @@ namespace VirtualMemoryLogging
         IN LPVOID returnedAddress,
         IN BOOL result)
     {
-        LONG i = InterlockedIncrement(&recordNumber) - 1;
+        ULONG i = (ULONG)InterlockedIncrement((LONG *)&recordNumber) - 1;
         LogRecord* curRec = (LogRecord*)&logRecords[i % MaxRecords];
 
         curRec->RecordId = i;
-        curRec->CurrentThread = (LPVOID)pthread_self();
+        curRec->CurrentThread = reinterpret_cast<LPVOID>(pthread_self());
         curRec->RequestedAddress = requestedAddress;
         curRec->ReturnedAddress = returnedAddress;
         curRec->Size = size;
@@ -847,7 +847,7 @@ static LPVOID VIRTUALResetMemory(
 #endif
     {
         // In case the MADV_FREE is not supported, use MADV_DONTNEED
-        st = madvise((LPVOID)StartBoundary, MemSize, MADV_DONTNEED);
+        st = posix_madvise((LPVOID)StartBoundary, MemSize, POSIX_MADV_DONTNEED);
     }
 
     if (st == 0)
@@ -1272,7 +1272,7 @@ PAL_VirtualReserveFromExecutableMemoryAllocatorWithinRange(
     IN LPCVOID lpEndAddress,
     IN SIZE_T dwSize)
 {
-#ifdef BIT64
+#ifdef HOST_64BIT
     PERF_ENTRY(PAL_VirtualReserveFromExecutableMemoryAllocatorWithinRange);
     ENTRY(
         "PAL_VirtualReserveFromExecutableMemoryAllocatorWithinRange(lpBeginAddress = %p, lpEndAddress = %p, dwSize = %Iu)\n",
@@ -1315,9 +1315,9 @@ PAL_VirtualReserveFromExecutableMemoryAllocatorWithinRange(
     LOGEXIT("PAL_VirtualReserveFromExecutableMemoryAllocatorWithinRange returning %p\n", address);
     PERF_EXIT(PAL_VirtualReserveFromExecutableMemoryAllocatorWithinRange);
     return address;
-#else // !BIT64
+#else // !HOST_64BIT
     return nullptr;
-#endif // BIT64
+#endif // HOST_64BIT
 }
 
 /*++
@@ -1835,7 +1835,7 @@ static void VM_ALLOCATE_VirtualQuery(LPCVOID lpAddress, PMEMORY_BASIC_INFORMATIO
     vm_region_flavor_t vm_flavor;
     mach_msg_type_number_t infoCnt;
     mach_port_t object_name;
-#ifdef BIT64
+#ifdef HOST_64BIT
     vm_region_basic_info_data_64_t info;
     infoCnt = VM_REGION_BASIC_INFO_COUNT_64;
     vm_flavor = VM_REGION_BASIC_INFO_64;
@@ -1846,7 +1846,7 @@ static void VM_ALLOCATE_VirtualQuery(LPCVOID lpAddress, PMEMORY_BASIC_INFORMATIO
 #endif
 
     vm_address = (vm_address_t)lpAddress;
-#ifdef BIT64
+#ifdef HOST_64BIT
     MachRet = vm_region_64(
 #else
     MachRet = vm_region(
@@ -2041,48 +2041,6 @@ size_t GetVirtualPageSize()
 }
 
 /*++
-Function:
-  GetWriteWatch
-
-See MSDN doc.
---*/
-UINT
-PALAPI
-GetWriteWatch(
-  IN DWORD dwFlags,
-  IN PVOID lpBaseAddress,
-  IN SIZE_T dwRegionSize,
-  OUT PVOID *lpAddresses,
-  IN OUT PULONG_PTR lpdwCount,
-  OUT PULONG lpdwGranularity
-)
-{
-    // TODO: implement this method
-    *lpAddresses = NULL;
-    *lpdwCount = 0;
-    // Until it is implemented, return non-zero value as an indicator of failure
-    return 1;
-}
-
-/*++
-Function:
-  ResetWriteWatch
-
-See MSDN doc.
---*/
-UINT
-PALAPI
-ResetWriteWatch(
-  IN LPVOID lpBaseAddress,
-  IN SIZE_T dwRegionSize
-)
-{
-    // TODO: implement this method
-    // Until it is implemented, return non-zero value as an indicator of failure
-    return 1;
-}
-
-/*++
 Function :
     ReserveMemoryFromExecutableAllocator
 
@@ -2092,15 +2050,15 @@ Function :
 --*/
 void* ReserveMemoryFromExecutableAllocator(CPalThread* pThread, SIZE_T allocationSize)
 {
-#ifdef BIT64
+#ifdef HOST_64BIT
     InternalEnterCriticalSection(pThread, &virtual_critsec);
     void* mem = g_executableMemoryAllocator.AllocateMemory(allocationSize);
     InternalLeaveCriticalSection(pThread, &virtual_critsec);
 
     return mem;
-#else // !BIT64
+#else // !HOST_64BIT
     return nullptr;
-#endif // BIT64
+#endif // HOST_64BIT
 }
 
 /*++
@@ -2121,9 +2079,9 @@ void ExecutableMemoryAllocator::Initialize()
 
     // Enable the executable memory allocator on 64-bit platforms only
     // because 32-bit platforms have limited amount of virtual address space.
-#ifdef BIT64
+#ifdef HOST_64BIT
     TryReserveInitialMemory();
-#endif // BIT64
+#endif // HOST_64BIT
 
 }
 
@@ -2237,7 +2195,7 @@ Function:
 --*/
 void* ExecutableMemoryAllocator::AllocateMemory(SIZE_T allocationSize)
 {
-#ifdef BIT64
+#ifdef HOST_64BIT
     void* allocatedMemory = nullptr;
 
     // Alignment to a 64 KB granularity should not be necessary (alignment to page size should be sufficient), but
@@ -2257,9 +2215,9 @@ void* ExecutableMemoryAllocator::AllocateMemory(SIZE_T allocationSize)
     }
 
     return allocatedMemory;
-#else // !BIT64
+#else // !HOST_64BIT
     return nullptr;
-#endif // BIT64
+#endif // HOST_64BIT
 }
 
 /*++
@@ -2275,7 +2233,7 @@ Function:
 --*/
 void *ExecutableMemoryAllocator::AllocateMemoryWithinRange(const void *beginAddress, const void *endAddress, SIZE_T allocationSize)
 {
-#ifdef BIT64
+#ifdef HOST_64BIT
     _ASSERTE(beginAddress <= endAddress);
 
     // Alignment to a 64 KB granularity should not be necessary (alignment to page size should be sufficient), but see
@@ -2305,9 +2263,9 @@ void *ExecutableMemoryAllocator::AllocateMemoryWithinRange(const void *beginAddr
     m_nextFreeAddress = nextFreeAddress;
     m_remainingReservedMemory -= allocationSize;
     return address;
-#else // !BIT64
+#else // !HOST_64BIT
     return nullptr;
-#endif // BIT64
+#endif // HOST_64BIT
 }
 
 /*++
@@ -2318,6 +2276,12 @@ Function:
     at which the allocator should start allocating memory from its reserved memory range.
 
 --*/
+#ifdef __sun
+// The upper limit of the random() function on SunOS derived operating systems is not RAND_MAX, but 2^31-1.
+#define OFFSET_RAND_MAX 0x7FFFFFFF
+#else
+#define OFFSET_RAND_MAX RAND_MAX
+#endif
 int32_t ExecutableMemoryAllocator::GenerateRandomStartOffset()
 {
     int32_t pageCount;
@@ -2326,7 +2290,7 @@ int32_t ExecutableMemoryAllocator::GenerateRandomStartOffset()
     // This code is similar to what coreclr runtime does on Windows.
     // It generates a random number of pages to skip between 0...MaxStartPageOffset.
     srandom(time(NULL));
-    pageCount = (int32_t)(MaxStartPageOffset * (int64_t)random() / RAND_MAX);
+    pageCount = (int32_t)(MaxStartPageOffset * (int64_t)random() / OFFSET_RAND_MAX);
 
     return pageCount * GetVirtualPageSize();
 }

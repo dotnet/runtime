@@ -16,7 +16,7 @@ Param (
 # Import configuration.
 . .\setup_common.ps1
 
-$script:COREFX_ROLE_NAME = "COREFX_NET_AD_DC"
+$script:LIBRARIES_ROLE_NAME = "LIBRARIES_NET_AD_DC"
 
 Function EnableAD
 {
@@ -41,7 +41,7 @@ Function ConfigureDNS
 {
     Write-Host -ForegroundColor Cyan "Configuring DNS."
     
-    $iisServer  = GetRole "COREFX_NET_IISSERVER"
+    $iisServer  = GetRole "LIBRARIES_NET_IISSERVER"
 
     $serverName = ($script:iisServerFQDN).Split('.')[0];
     $zoneName = ($script:iisServerFQDN).Substring($serverName.Length + 1)  
@@ -53,7 +53,7 @@ Function ConfigureDNS
 
 Function Install
 {
-    Write-Host -ForegroundColor Cyan "Installing prerequisites for test role: $($script:COREFX_ROLE_NAME)."
+    Write-Host -ForegroundColor Cyan "Installing prerequisites for test role: $($script:LIBRARIES_ROLE_NAME)."
 
     if ((-not (EnvironmentIsRoleInstalled)) -and (-not (EnvironmentIsRoleRebootPending)))
     {
@@ -69,14 +69,14 @@ Function Install
         ConfigureDNS
         Enable-PSRemoting
         EnvironmentSetInstalledRoleStatus
-        Write-Host -ForegroundColor Cyan "Prerequisites installed for $($script:COREFX_ROLE_NAME)."
+        Write-Host -ForegroundColor Cyan "Prerequisites installed for $($script:LIBRARIES_ROLE_NAME)."
         Write-Host
     }
 }
 
 Function Uninstall
 {
-    Write-Host -ForegroundColor Cyan "Removing prerequisites for test role: $($script:COREFX_ROLE_NAME)."
+    Write-Host -ForegroundColor Cyan "Removing prerequisites for test role: $($script:LIBRARIES_ROLE_NAME)."
 
     EnvironmentCheckUninstallRoleStatus
     EnvironmentRemoveRoleStatus

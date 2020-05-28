@@ -9,7 +9,7 @@
 
 void reset_redirected_error_writer();
 
-void redirected_error_writer(const pal::char_t* msg);
+void __cdecl redirected_error_writer(const pal::char_t* msg);
 
 pal::string_t get_redirected_error_string();
 

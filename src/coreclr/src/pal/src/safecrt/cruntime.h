@@ -31,9 +31,9 @@
 #error ERROR: Use of C runtime library internal header file.
 #endif  /* _CRTBLD */
 
-#if defined (_SYSCRT) && defined (BIT64)
+#if defined (_SYSCRT) && defined (HOST_64BIT)
 #define _USE_OLD_STDCPP 1
-#endif  /* defined (_SYSCRT) && defined (BIT64) */
+#endif  /* defined (_SYSCRT) && defined (HOST_64BIT) */
 
 #if !defined (UNALIGNED)
 #if defined (_M_AMD64)

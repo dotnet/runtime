@@ -13,6 +13,6 @@ namespace Internal.Cryptography.Pal
         void CloneTo(X509Certificate2Collection collection);
         void Add(ICertificatePal cert);
         void Remove(ICertificatePal cert);
-        SafeHandle SafeHandle { get; }
+        SafeHandle? SafeHandle { get; }
     }
 }

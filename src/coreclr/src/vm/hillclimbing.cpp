@@ -249,7 +249,7 @@ int HillClimbing::Update(int currentThreadCount, double sampleDuration, int numC
     // is exactly in phase with the thread signal, this will be the same as taking the magnitude of
     // the complex move and moving that far up.  If they're 180 degrees out of phase, we'll move
     // backward (because this indicates that our changes are having the opposite of the intended effect).
-    // If they're 90 degrees out of phase, we won't move at all, because we can't tell wether we're
+    // If they're 90 degrees out of phase, we won't move at all, because we can't tell whether we're
     // having a negative or positive effect on throughput.
     //
     double move = min(1.0, max(-1.0, ratio.r));

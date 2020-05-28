@@ -13,7 +13,7 @@ namespace System.Reflection.Metadata
         private const char AltDirectorySeparatorChar = '/';
         private const char VolumeSeparatorChar = ':';
 
-        private static string s_platformSpecificDirectorySeparator;
+        private static string? s_platformSpecificDirectorySeparator;
 
         private static string PlatformSpecificDirectorySeparator
         {

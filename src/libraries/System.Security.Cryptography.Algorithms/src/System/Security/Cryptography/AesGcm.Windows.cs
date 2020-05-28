@@ -10,11 +10,11 @@ namespace System.Security.Cryptography
     public partial class AesGcm
     {
         private static readonly SafeAlgorithmHandle s_aesGcm = AesBCryptModes.OpenAesAlgorithm(Cng.BCRYPT_CHAIN_MODE_GCM);
-        private SafeKeyHandle _keyHandle;
+        private SafeKeyHandle _keyHandle = null!; // Always initialized in helper
 
         private void ImportKey(ReadOnlySpan<byte> key)
         {
-            _keyHandle = s_aesGcm.BCryptImportKey(key);
+            _keyHandle = Interop.BCrypt.BCryptImportKey(s_aesGcm, key);
         }
 
         private void EncryptInternal(

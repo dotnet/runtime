@@ -36,7 +36,6 @@ namespace System.Linq
         public bool MoveNext() => false;
 
         [ExcludeFromCodeCoverage] // Shouldn't be called, and as undefined can return or throw anything anyway.
-        [MaybeNull]
         public TElement Current => default!;
 
         [ExcludeFromCodeCoverage] // Shouldn't be called, and as undefined can return or throw anything anyway.

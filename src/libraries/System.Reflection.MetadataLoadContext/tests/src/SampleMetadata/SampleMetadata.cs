@@ -113,24 +113,24 @@ namespace SampleMetadata
 
     public class ClassWithConstructor1<T>
     {
-        public ClassWithConstructor1(int x, T t) => throw null;
+        public ClassWithConstructor1(int x, T t) => throw null!;
     }
 
     public class ClassWithMethods1<T>
     {
-        public bool Method1(int x, T t) => throw null;
+        public bool Method1(int x, T t) => throw null!;
 
-        public void TestPrimitives1(bool bo, byte b, char c, short s, int i, long l, IntPtr ip, sbyte sb, ushort us, uint ui, ulong ul, UIntPtr uip, float fl, double db, object o, string str, TypedReference tr) => throw null;
+        public void TestPrimitives1(bool bo, byte b, char c, short s, int i, long l, IntPtr ip, sbyte sb, ushort us, uint ui, ulong ul, UIntPtr uip, float fl, double db, object o, string str, TypedReference tr) => throw null!;
     }
 
     public class ClassWithGenericMethods1
     {
-        public void GenericMethod1<M, N>() => throw null;
+        public void GenericMethod1<M, N>() => throw null!;
     }
 
     public class GenericClassWithGenericMethods1<T, U>
     {
-        public void GenericMethod1<M, N>(GenericClass5<N, M[], IEnumerable<U>, T[,], int> g) => throw null;
+        public void GenericMethod1<M, N>(GenericClass5<N, M[], IEnumerable<U>, T[,], int> g) => throw null!;
     }
 
     public class ClassWithLiteralFields
@@ -203,7 +203,7 @@ namespace SampleMetadata
 
     public class ParametersWithPseudoCustomtAttributes
     {
-        public void Foo([In] int i, [Out] out object o, [Optional] object opt, [MarshalAs(UnmanagedType.I4)] int fa) => throw null;
+        public void Foo([In] int i, [Out] out object o, [Optional] object opt, [MarshalAs(UnmanagedType.I4)] int fa) => throw null!;
     }
 
     public class SampleCustomAttribute : Attribute
@@ -488,14 +488,14 @@ namespace SampleMetadata
         public int PublicProtectedProp { get; protected set; }
         public int PublicInternalProp { get; internal set; }
 
-        public string this[int i, T t] => throw null;
+        public string this[int i, T t] => throw null!;
     }
 
     public class DerivedFromPropertyHolder1<T> : PropertyHolder1<T> { }
 
     public class EventHolder1<T>
     {
-        public event Action<T> MyEvent { add { throw null; } remove { throw null; } }
+        public event Action<T> MyEvent { add { throw null!; } remove { throw null!; } }
     }
 
     public class DerivedFromEventHolder1<T> : EventHolder1<T>

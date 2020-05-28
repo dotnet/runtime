@@ -1,0 +1,46 @@
+{
+  "runtimes": {
+    "Unix" : {      
+    },
+    "Browser" : {
+      "#import": [
+        "Linux"
+      ]
+    },
+    "Linux": {
+      "#import": [
+          "Unix"
+        ]
+      },
+    "OSX": {
+      "#import": [
+        "Unix"
+        ]
+      },
+    "iOS": {
+      "#import": [
+        "Unix"
+        ]
+      },
+    "tvOS": {
+      "#import": [
+        "Unix"
+        ]
+      },
+    "Android": {
+      "#import": [
+        "Linux"
+        ]
+      },
+    "FreeBSD": {
+      "#import": [
+        "Unix"
+        ]
+      },
+    "NetBSD": {
+      "#import": [
+        "Unix"
+        ]
+      }
+    }
+}

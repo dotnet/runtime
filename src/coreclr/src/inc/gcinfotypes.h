@@ -143,21 +143,21 @@ struct GcStackSlot
 // RT_Unset should have a valid encoding, whose bits are actually stored in the image.
 // For X86, there are no free bits, and there's no RT_Unused enumeration.
 
-#if defined(_TARGET_X86_)
+#if defined(TARGET_X86)
 
 // 00    RT_Scalar
 // 01    RT_Object
 // 10    RT_ByRef
 // 11    RT_Float
 
-#elif defined(_TARGET_ARM_)
+#elif defined(TARGET_ARM)
 
 // 00    RT_Scalar
 // 01    RT_Object
 // 10    RT_ByRef
 // 11    RT_Unset
 
-#elif defined(_TARGET_AMD64_) || defined(_TARGET_ARM64_)
+#elif defined(TARGET_AMD64) || defined(TARGET_ARM64)
 
 // Slim Header:
 
@@ -193,11 +193,11 @@ enum ReturnKind {
     RT_Object = 1,
     RT_ByRef = 2,
 
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
     RT_Float = 3,       // Encoding 3 means RT_Float on X86
 #else
     RT_Unset = 3,       // RT_Unset on other platforms
-#endif // _TARGET_X86_
+#endif // TARGET_X86
 
     // Cases for Struct Return in two registers
     //
@@ -239,9 +239,9 @@ enum ReturnKind {
 inline bool IsValidReturnKind(ReturnKind returnKind)
 {
     return (returnKind != RT_Illegal)
-#ifndef _TARGET_X86_
+#ifndef TARGET_X86
         && (returnKind != RT_Unset)
-#endif // _TARGET_X86_
+#endif // TARGET_X86
         ;
 }
 
@@ -276,9 +276,9 @@ inline bool IsStructReturnKind(ReturnKind returnKind)
 inline bool IsScalarReturnKind(ReturnKind returnKind)
 {
     return (returnKind == RT_Scalar)
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
         || (returnKind == RT_Float)
-#endif // _TARGET_X86_
+#endif // TARGET_X86
         ;
 }
 
@@ -328,11 +328,11 @@ inline const char *ReturnKindToString(ReturnKind returnKind)
     case RT_Scalar: return "Scalar";
     case RT_Object: return "Object";
     case RT_ByRef:  return "ByRef";
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
     case RT_Float:  return "Float";
 #else
     case RT_Unset:         return "UNSET";
-#endif // _TARGET_X86_
+#endif // TARGET_X86
     case RT_Scalar_Obj:    return "{Scalar, Object}";
     case RT_Scalar_ByRef:  return "{Scalar, ByRef}";
     case RT_Obj_Obj:       return "{Object, Object}";
@@ -345,7 +345,7 @@ inline const char *ReturnKindToString(ReturnKind returnKind)
     }
 }
 
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
 
 #include <stdlib.h>     // For memcmp()
 #include "bitvector.h"  // for ptrArgTP
@@ -603,7 +603,7 @@ void FASTCALL decodeCallPattern(int         pattern,
 #define NO_REVERSE_PINVOKE_FRAME  (-1)
 #define NO_PSP_SYM                (-1)
 
-#if defined(_TARGET_AMD64_)
+#if defined(TARGET_AMD64)
 
 #ifndef TARGET_POINTER_SIZE
 #define TARGET_POINTER_SIZE 8    // equal to sizeof(void*) and the managed pointer size in bytes for this target
@@ -659,7 +659,7 @@ void FASTCALL decodeCallPattern(int         pattern,
 #define LIVESTATE_RLE_RUN_ENCBASE 2
 #define LIVESTATE_RLE_SKIP_ENCBASE 4
 
-#elif defined(_TARGET_ARM_)
+#elif defined(TARGET_ARM)
 
 #ifndef TARGET_POINTER_SIZE
 #define TARGET_POINTER_SIZE 4   // equal to sizeof(void*) and the managed pointer size in bytes for this target
@@ -717,7 +717,7 @@ void FASTCALL decodeCallPattern(int         pattern,
 #define LIVESTATE_RLE_RUN_ENCBASE 2
 #define LIVESTATE_RLE_SKIP_ENCBASE 4
 
-#elif defined(_TARGET_ARM64_)
+#elif defined(TARGET_ARM64)
 
 #ifndef TARGET_POINTER_SIZE
 #define TARGET_POINTER_SIZE 8    // equal to sizeof(void*) and the managed pointer size in bytes for this target
@@ -774,7 +774,7 @@ void FASTCALL decodeCallPattern(int         pattern,
 
 #else
 
-#ifndef _TARGET_X86_
+#ifndef TARGET_X86
 #ifdef PORTABILITY_WARNING
 PORTABILITY_WARNING("Please specialize these definitions for your platform!")
 #endif

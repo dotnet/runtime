@@ -903,7 +903,7 @@ void DispatchMemberInfo::SetUpMethodMarshalerInfo(MethodDesc *pMD, BOOL bReturnV
 
             MarshalInfo Info(msig.GetModule(), msig.GetArgProps(), msig.GetSigTypeContext(), paramDef, MarshalInfo::MARSHAL_SCENARIO_COMINTEROP,
                              (CorNativeLinkType)0, (CorNativeLinkFlags)0,
-                             TRUE, iParam, numArgs, BestFit, ThrowOnUnmappableChar, FALSE, TRUE, pMD, TRUE, FALSE
+                             TRUE, iParam, numArgs, BestFit, ThrowOnUnmappableChar, FALSE, TRUE, pMD, TRUE
     #ifdef _DEBUG
                      , pMD->m_pszDebugMethodName, pMD->m_pszDebugClassName, iParam
     #endif
@@ -940,7 +940,7 @@ void DispatchMemberInfo::SetUpMethodMarshalerInfo(MethodDesc *pMD, BOOL bReturnV
     {
         MarshalInfo Info(msig.GetModule(), msig.GetReturnProps(), msig.GetSigTypeContext(), returnParamDef, MarshalInfo::MARSHAL_SCENARIO_COMINTEROP,
                          (CorNativeLinkType)0, (CorNativeLinkFlags)0,
-                         FALSE, 0, numArgs, BestFit, ThrowOnUnmappableChar, FALSE, TRUE, pMD, TRUE, FALSE
+                         FALSE, 0, numArgs, BestFit, ThrowOnUnmappableChar, FALSE, TRUE, pMD, TRUE
 #ifdef _DEBUG
                          , pMD->m_pszDebugMethodName, pMD->m_pszDebugClassName, 0
 #endif
@@ -2193,10 +2193,8 @@ HRESULT DispatchInfo::InvokeMember(SimpleComCallWrapper *pSimpleWrap, DISPID id,
         EX_CATCH
         {
             pThrowable = GET_THROWABLE();
-
-            // RethrowCorruptingExceptionsEx, in EX_END_CATCH below, will ensure that CEs are rethrown.
         }
-        EX_END_CATCH(RethrowCorruptingExceptionsEx(!CEHelper::CanIDispatchTargetHandleException()))
+        EX_END_CATCH(RethrowTerminalExceptions)
         catchFrame.Pop();
 
         if (pThrowable != NULL)

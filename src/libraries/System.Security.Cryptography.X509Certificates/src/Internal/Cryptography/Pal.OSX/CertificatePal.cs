@@ -15,17 +15,17 @@ namespace Internal.Cryptography.Pal
 {
     internal sealed partial class CertificatePal
     {
-        public static ICertificatePal FromHandle(IntPtr handle)
+        public static ICertificatePal? FromHandle(IntPtr handle)
         {
             return FromHandle(handle, true);
         }
 
-        internal static ICertificatePal FromHandle(IntPtr handle, bool throwOnFail)
+        internal static ICertificatePal? FromHandle(IntPtr handle, bool throwOnFail)
         {
             return AppleCertificatePal.FromHandle(handle, throwOnFail);
         }
 
-        public static ICertificatePal FromOtherCert(X509Certificate cert)
+        public static ICertificatePal? FromOtherCert(X509Certificate cert)
         {
             return AppleCertificatePal.FromOtherCert(cert);
         }

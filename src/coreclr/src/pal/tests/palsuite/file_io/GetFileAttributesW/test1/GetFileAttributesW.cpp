@@ -147,7 +147,7 @@ BOOL SetUpDirs()
     DWORD ret = 0;
     for (i = 0; i < numDirTests - 1; i++ )
     {
-        result = CreateDirectory(gfaTestsDir[i].name,
+        result = CreateDirectoryA(gfaTestsDir[i].name,
                          NULL);
 
         if(!result )

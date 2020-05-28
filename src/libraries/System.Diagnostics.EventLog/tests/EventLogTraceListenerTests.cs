@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Text;
 using Xunit;
+using Microsoft.DotNet.XUnitExtensions;
 
 namespace System.Diagnostics.Tests
 {
@@ -87,6 +88,7 @@ namespace System.Diagnostics.Tests
                 listener.Close(); // shouldn't fail.
         }
 
+        [Trait(XunitConstants.Category, XunitConstants.IgnoreForCI)] // Unreliable Win32 API call
         [ConditionalFact(typeof(Helpers), nameof(Helpers.IsElevatedAndSupportsEventLogs))]
         public void WriteTest()
         {
@@ -113,7 +115,7 @@ namespace System.Diagnostics.Tests
             }
         }
 
-        [ActiveIssue(40224, TestPlatforms.Windows)]
+        [Trait(XunitConstants.Category, XunitConstants.IgnoreForCI)] // Unreliable Win32 API call
         [ConditionalTheory(typeof(Helpers), nameof(Helpers.IsElevatedAndSupportsEventLogs))]
         [InlineData(TraceEventType.Information, EventLogEntryType.Information, ushort.MaxValue + 1, ushort.MaxValue)]
         [InlineData(TraceEventType.Error, EventLogEntryType.Error, ushort.MinValue - 1, ushort.MinValue)]
@@ -155,6 +157,7 @@ namespace System.Diagnostics.Tests
             yield return new object[] { new object[] { "one string + null", null } };
         }
 
+        [Trait(XunitConstants.Category, XunitConstants.IgnoreForCI)] // Unreliable Win32 API call
         [ConditionalTheory(typeof(Helpers), nameof(Helpers.IsElevatedAndSupportsEventLogs))]
         [MemberData(nameof(GetTraceDataParams_MemberData))]
         public void TraceDataParamsData(object[] parameters)
@@ -183,9 +186,9 @@ namespace System.Diagnostics.Tests
             yield return new object[] { "This is a format with 1 object {0}", new object[] { 123 } };
             yield return new object[] { "This is a weird {0}{1}{2} format that has multiple inputs {3}", new object[] { 0, 1, "two", "." } };
             yield return new object[] { "This is a weird {0}{1}{2} format that but args are null", null };
-            if (!PlatformDetection.IsFullFramework)
+            if (!PlatformDetection.IsNetFramework)
             {
-                // Full framework doesn't check for args.Length == 0 and if format is not null or empty, it calls string.Format
+                // .NET Framework doesn't check for args.Length == 0 and if format is not null or empty, it calls string.Format
                 yield return new object[] { "This is a weird {0}{1}{2} format that but args length is 0", new object[] { } };
             }
 
@@ -195,7 +198,7 @@ namespace System.Diagnostics.Tests
             yield return new object[] { null, new object[] { "thanks, 00", "i like it...", 111 } };
         }
 
-        [ActiveIssue(40224, TestPlatforms.Windows)]
+        [Trait(XunitConstants.Category, XunitConstants.IgnoreForCI)] // Unreliable Win32 API call
         [ConditionalTheory(typeof(Helpers), nameof(Helpers.IsElevatedAndSupportsEventLogs))]
         [MemberData(nameof(GetTraceEventFormat_MemberData))]
         public void TraceEventFormatAndParams(string format, object[] parameters)
@@ -251,6 +254,7 @@ namespace System.Diagnostics.Tests
             }
         }
 
+        [Trait(XunitConstants.Category, XunitConstants.IgnoreForCI)] // Unreliable Win32 API call
         [ConditionalFact(typeof(Helpers), nameof(Helpers.IsElevatedAndSupportsEventLogs))]
         public void TraceWithFilters()
         {

@@ -308,7 +308,7 @@ struct LC_Array
     }
 
     // Get a tree representation for this symbolic a.length
-    GenTree* ToGenTree(Compiler* comp);
+    GenTree* ToGenTree(Compiler* comp, BasicBlock* bb);
 };
 
 /**
@@ -387,7 +387,7 @@ struct LC_Ident
     }
 
     // Convert this symbolic representation into a tree node.
-    GenTree* ToGenTree(Compiler* comp);
+    GenTree* ToGenTree(Compiler* comp, BasicBlock* bb);
 };
 
 /**
@@ -438,7 +438,7 @@ struct LC_Expr
     }
 
     // Convert LC_Expr into a tree node.
-    GenTree* ToGenTree(Compiler* comp);
+    GenTree* ToGenTree(Compiler* comp, BasicBlock* bb);
 };
 
 /**
@@ -477,7 +477,7 @@ struct LC_Condition
     }
 
     // Convert this conditional operation into a GenTree.
-    GenTree* ToGenTree(Compiler* comp);
+    GenTree* ToGenTree(Compiler* comp, BasicBlock* bb);
 };
 
 /**

@@ -20,7 +20,13 @@ namespace System.Net.NetworkInformation
 
         public override long GetScopeId(ScopeLevel scopeLevel)
         {
-            throw new PlatformNotSupportedException(SR.net_InformationUnavailableOnPlatform);
+            if (scopeLevel == ScopeLevel.None || scopeLevel == ScopeLevel.Interface ||
+                scopeLevel == ScopeLevel.Link || scopeLevel == ScopeLevel.Subnet)
+            {
+                return _linuxNetworkInterface.Index;
+            }
+
+            return 0;
         }
     }
 }

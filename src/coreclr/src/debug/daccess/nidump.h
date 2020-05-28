@@ -244,7 +244,7 @@ private:
     NativeFormat::NativeReader  m_nativeReader;
     NativeFormat::NativeArray   m_methodDefEntryPoints;
 
-    IMAGE_DATA_DIRECTORY * FindReadyToRunSection(DWORD type);
+    IMAGE_DATA_DIRECTORY * FindReadyToRunSection(ReadyToRunSectionType type);
 
 public:
     void DumpReadyToRun();

@@ -18,7 +18,7 @@ jobs:
 
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:
-    jobTemplate: /eng/pipelines/coreclr/templates/build-job.yml
+    jobTemplate: /eng/pipelines/common/build-coreclr-and-libraries-job.yml
     buildConfig: release
     platforms:
     - Linux_x64
@@ -30,7 +30,7 @@ jobs:
 
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:
-    jobTemplate: /eng/pipelines/coreclr/templates/build-test-job.yml
+    jobTemplate: /eng/pipelines/common/templates/runtimes/build-test-job.yml
     buildConfig: release
     platforms:
     - Linux_x64
@@ -39,10 +39,11 @@ jobs:
     - Windows_NT_arm64
     jobParameters:
       testGroup: gc-longrunning
+      liveLibrariesBuildConfig: Release
 
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:
-    jobTemplate: /eng/pipelines/coreclr/templates/run-test-job.yml
+    jobTemplate: /eng/pipelines/common/templates/runtimes/run-test-job.yml
     buildConfig: release
     platforms:
     - Linux_x64
@@ -54,3 +55,4 @@ jobs:
     managedOsxBuild: false
     jobParameters:
       testGroup: gc-longrunning
+      liveLibrariesBuildConfig: Release

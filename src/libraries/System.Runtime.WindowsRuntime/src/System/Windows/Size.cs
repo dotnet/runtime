@@ -103,7 +103,7 @@ namespace Windows.Foundation
             return !(size1 == size2);
         }
 
-        public override bool Equals(object o)
+        public override bool Equals(object? o)
         {
             return o is Size && Size.Equals(this, (Size)o);
         }

@@ -24,7 +24,7 @@ namespace System.ComponentModel.Composition
         ///         using a generated type.
         ///     </para>
         /// </remarks>
-        public MetadataViewImplementationAttribute(Type implementationType)
+        public MetadataViewImplementationAttribute(Type? implementationType)
         {
             ImplementationType = implementationType;
         }
@@ -37,6 +37,6 @@ namespace System.ComponentModel.Composition
         ///     <see langword="null"/> which means that the type will be obtained by looking at the type on
         ///     the member that this export is attached to.
         /// </value>
-        public Type ImplementationType { get; private set; }
+        public Type? ImplementationType { get; private set; }
     }
 }

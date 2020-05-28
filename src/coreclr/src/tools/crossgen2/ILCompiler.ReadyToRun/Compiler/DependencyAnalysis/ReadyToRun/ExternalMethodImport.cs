@@ -1,4 +1,4 @@
-﻿
+
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
@@ -14,12 +14,11 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         private readonly MethodWithToken _method;
 
         public ExternalMethodImport(
-            ReadyToRunCodegenNodeFactory factory,
+            NodeFactory factory,
             ReadyToRunFixupKind fixupKind,
             MethodWithToken method,
             bool isUnboxingStub,
-            bool isInstantiatingStub,
-            SignatureContext signatureContext)
+            bool isInstantiatingStub)
             : base(
                   factory,
                   factory.MethodImports,
@@ -28,8 +27,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                       fixupKind,
                       method,
                       isUnboxingStub,
-                      isInstantiatingStub,
-                      signatureContext))
+                      isInstantiatingStub))
         {
             _method = method;
         }

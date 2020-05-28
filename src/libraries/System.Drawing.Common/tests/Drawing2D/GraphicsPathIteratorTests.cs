@@ -63,7 +63,7 @@ namespace System.Drawing.Drawing2D.Tests
             }
         }
 
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.IsDrawingSupported)]
         public void NextSubpath_PathFigureNotClosed_ReturnsExpeced()
         {
@@ -87,7 +87,7 @@ namespace System.Drawing.Drawing2D.Tests
             }
         }
 
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.IsDrawingSupported)]
         public void NextSubpath_NullPath_ReturnsExpected()
         {
@@ -98,9 +98,9 @@ namespace System.Drawing.Drawing2D.Tests
             }
         }
 
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.IsDrawingSupported)]
-        public void NextSubpath_FigureNotClosed_ReturnsExpeced()
+        public void NextSubpath_FigureNotClosed_ReturnsExpected()
         {
             using (GraphicsPath gp = new GraphicsPath())
             using (GraphicsPathIterator gpi = new GraphicsPathIterator(gp))
@@ -239,7 +239,7 @@ namespace System.Drawing.Drawing2D.Tests
             }
         }
 
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.IsDrawingSupported)]
         public void Rewind_Success()
         {

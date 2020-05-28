@@ -54,7 +54,6 @@ HRESULT SigParser::SkipExactlyOne()
             case ELEMENT_TYPE_PTR:
             case ELEMENT_TYPE_PINNED:
             case ELEMENT_TYPE_SZARRAY:
-            case ELEMENT_TYPE_NATIVE_ARRAY_TEMPLATE_ZAPSIG:
             case ELEMENT_TYPE_NATIVE_VALUETYPE_ZAPSIG:
                 IfFailRet(SkipExactlyOne());              // Skip referenced type
                 break;

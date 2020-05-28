@@ -52,7 +52,7 @@ namespace System.Collections.Immutable
             /// </summary>
             /// <param name="firstElement">The first element.</param>
             /// <param name="additionalElements">The additional elements.</param>
-            private HashBucket(T firstElement, ImmutableList<T>.Node additionalElements = null)
+            private HashBucket(T firstElement, ImmutableList<T>.Node? additionalElements = null)
             {
                 _firstValue = firstElement;
                 _additionalElements = additionalElements ?? ImmutableList<T>.Node.EmptyNode;
@@ -80,7 +80,7 @@ namespace System.Collections.Immutable
             /// <summary>
             /// Throws an exception to catch any errors in comparing <see cref="HashBucket"/> instances.
             /// </summary>
-            public override bool Equals(object obj)
+            public override bool Equals(object? obj)
             {
                 // This should never be called, as hash buckets don't know how to equate themselves.
                 throw new NotSupportedException();
@@ -221,7 +221,7 @@ namespace System.Collections.Immutable
                     {
                         // We can promote any element from the list into the first position, but it's most efficient
                         // to remove the root node in the binary tree that implements the list.
-                        int indexOfRootNode = _additionalElements.Left.Count;
+                        int indexOfRootNode = _additionalElements.Left!.Count;
                         result = OperationResult.SizeChanged;
                         return new HashBucket(_additionalElements.Key, _additionalElements.RemoveAt(indexOfRootNode));
                     }
@@ -317,7 +317,7 @@ namespace System.Collections.Immutable
                 /// <summary>
                 /// Gets the current element.
                 /// </summary>
-                object IEnumerator.Current
+                object? IEnumerator.Current
                 {
                     get { return this.Current; }
                 }

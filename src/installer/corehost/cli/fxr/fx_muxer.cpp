@@ -27,6 +27,7 @@
 #include "sdk_info.h"
 #include "sdk_resolver.h"
 #include "roll_fwd_on_no_candidate_fx_option.h"
+#include "bundle/info.h"
 
 namespace
 {
@@ -65,27 +66,17 @@ namespace
     }
 }
 
-template<typename T>
 int load_hostpolicy(
     const pal::string_t& lib_dir,
     pal::dll_t* h_host,
-    hostpolicy_contract_t &hostpolicy_contract,
-    const char *main_entry_symbol,
-    T* main_fn)
+    hostpolicy_contract_t& hostpolicy_contract)
 {
-    assert(main_entry_symbol != nullptr && main_fn != nullptr);
-
     int rc = hostpolicy_resolver::load(lib_dir, h_host, hostpolicy_contract);
     if (rc != StatusCode::Success)
     {
         trace::error(_X("An error occurred while loading required library %s from [%s]"), LIBHOSTPOLICY_NAME, lib_dir.c_str());
         return rc;
     }
-
-    // Obtain entrypoint symbol
-    *main_fn = reinterpret_cast<T>(pal::get_symbol(*h_host, main_entry_symbol));
-    if (*main_fn == nullptr)
-        return StatusCode::CoreHostEntryPointFailure;
 
     return StatusCode::Success;
 }
@@ -113,7 +104,18 @@ static int execute_app(
     hostpolicy_contract_t hostpolicy_contract{};
     corehost_main_fn host_main = nullptr;
 
-    int code = load_hostpolicy(impl_dll_dir, &hostpolicy_dll, hostpolicy_contract, "corehost_main", &host_main);
+    int code = load_hostpolicy(impl_dll_dir, &hostpolicy_dll, hostpolicy_contract);
+
+    // Obtain entrypoint symbol
+    if (code == StatusCode::Success)
+    {
+        host_main = hostpolicy_contract.corehost_main;
+        if (host_main == nullptr)
+        {
+            code = StatusCode::CoreHostEntryPointFailure;
+        }
+    }
+
     if (code != StatusCode::Success)
     {
         handle_initialize_failure_or_abort();
@@ -163,7 +165,18 @@ static int execute_host_command(
     hostpolicy_contract_t hostpolicy_contract{};
     corehost_main_with_output_buffer_fn host_main = nullptr;
 
-    int code = load_hostpolicy(impl_dll_dir, &hostpolicy_dll, hostpolicy_contract, "corehost_main_with_output_buffer", &host_main);
+    int code = load_hostpolicy(impl_dll_dir, &hostpolicy_dll, hostpolicy_contract);
+
+    // Obtain entrypoint symbol
+    if (code == StatusCode::Success)
+    {
+        host_main = hostpolicy_contract.corehost_main_with_output_buffer;
+        if (host_main == nullptr)
+        {
+            code = StatusCode::CoreHostEntryPointFailure;
+        }
+    }
+
     if (code != StatusCode::Success)
         return code;
 
@@ -262,6 +275,7 @@ namespace
         pal::string_t& runtime_config,
         const runtime_config_t::settings_t& override_settings)
     {
+        // Check for the runtimeconfig.json file specified at the command line
         if (!runtime_config.empty() && !pal::realpath(&runtime_config))
         {
             trace::error(_X("The specified runtimeconfig.json [%s] does not exist"), runtime_config.c_str());
@@ -293,6 +307,11 @@ namespace
 
     host_mode_t detect_operating_mode(const host_startup_info_t& host_info)
     {
+        if (bundle::info_t::is_single_file_bundle())
+        {
+            return host_mode_t::apphost;
+        }
+
         if (coreclr_exists_in_dir(host_info.dotnet_root))
         {
             // Detect between standalone apphost or legacy split mode (specifying --depsfile and --runtimeconfig)
@@ -357,6 +376,7 @@ namespace
     {
         pal::string_t runtime_config = command_line::get_option_value(opts, known_options::runtime_config, _X(""));
 
+        // This check is for --depsfile option, which must be an actual file.
         pal::string_t deps_file = command_line::get_option_value(opts, known_options::deps_file, _X(""));
         if (!deps_file.empty() && !pal::realpath(&deps_file))
         {
@@ -463,7 +483,7 @@ namespace
 
         if (!hostpolicy_resolver::try_get_dir(mode, host_info.dotnet_root, fx_definitions, app_candidate, deps_file, probe_realpaths, &hostpolicy_dir))
         {
-            return CoreHostLibMissingFailure;
+            return StatusCode::CoreHostLibMissingFailure;
         }
 
         init.reset(new corehost_init_t(host_command, host_info, deps_file, additional_deps_serialized, probe_realpaths, mode, fx_definitions));
@@ -531,7 +551,14 @@ int fx_muxer_t::execute(
     int result = command_line::parse_args_for_mode(mode, host_info, argc, argv, &new_argoff, app_candidate, opts);
     if (static_cast<StatusCode>(result) == AppArgNotRunnable)
     {
-        return handle_cli(host_info, argc, argv, app_candidate);
+        if (host_command.empty())
+        {
+            return handle_cli(host_info, argc, argv, app_candidate);
+        }
+        else
+        {
+            return result;
+        }
     }
 
     if (!result)
@@ -1002,11 +1029,11 @@ int fx_muxer_t::handle_cli(
             return StatusCode::Success;
         }
 
-        trace::error(_X("Could not execute because the application was not found or a compatible .NET Core SDK is not installed."));
+        trace::error(_X("Could not execute because the application was not found or a compatible .NET SDK is not installed."));
         trace::error(_X("Possible reasons for this include:"));
-        trace::error(_X("  * You intended to execute a .NET Core program:"));
+        trace::error(_X("  * You intended to execute a .NET program:"));
         trace::error(_X("      The application '%s' does not exist."), app_candidate.c_str());
-        trace::error(_X("  * You intended to execute a .NET Core SDK command:"));
+        trace::error(_X("  * You intended to execute a .NET SDK command:"));
         resolver.print_resolution_error(host_info.dotnet_root, _X("      "));
 
         return StatusCode::LibHostSdkFindFailure;
@@ -1016,7 +1043,7 @@ int fx_muxer_t::handle_cli(
 
     if (!pal::file_exists(sdk_dotnet))
     {
-        trace::error(_X("Found .NET Core SDK, but did not find dotnet.dll at [%s]"), sdk_dotnet.c_str());
+        trace::error(_X("Found .NET SDK, but did not find dotnet.dll at [%s]"), sdk_dotnet.c_str());
         return StatusCode::LibHostSdkFindFailure;
     }
 
@@ -1028,7 +1055,7 @@ int fx_muxer_t::handle_cli(
     new_argv.push_back(sdk_dotnet.c_str());
     new_argv.insert(new_argv.end(), argv + 1, argv + argc);
 
-    trace::verbose(_X("Using .NET Core SDK dll=[%s]"), sdk_dotnet.c_str());
+    trace::verbose(_X("Using .NET SDK dll=[%s]"), sdk_dotnet.c_str());
 
     int new_argoff;
     pal::string_t sdk_app_candidate;

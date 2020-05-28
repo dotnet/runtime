@@ -123,7 +123,6 @@ class AssemblySpec  : public BaseAssemblySpec
         WRAPPER_NO_CONTRACT;
         BaseAssemblySpec::SetCodeBase(szCodeBase);
     }
-    void SetCodeBase(StackingAllocator* alloc, STRINGREF *pCodeBase);
 
     void SetParentAssembly(DomainAssembly *pAssembly)
     {

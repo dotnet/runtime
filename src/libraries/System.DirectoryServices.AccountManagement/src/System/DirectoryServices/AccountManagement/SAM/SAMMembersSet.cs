@@ -26,7 +26,6 @@ namespace System.DirectoryServices.AccountManagement
                                     ctxBase.Path);
 
             _storeCtx = storeCtx;
-            _ctxBase = ctxBase;
 
             _group = group;
             _originalGroup = group;
@@ -101,8 +100,6 @@ namespace System.DirectoryServices.AccountManagement
             {
                 needToRetry = false;
 
-                object[] nativeMembers = new object[1];
-
                 bool f = _membersEnumerator.MoveNext();
 
                 if (f) // got a value
@@ -154,7 +151,7 @@ namespace System.DirectoryServices.AccountManagement
 
                         // Build the "WinNT://machineName/" portion of the new path
                         adsPath.Append(_storeCtx.MachineUserSuppliedName);
-                        adsPath.Append("/");
+                        adsPath.Append('/');
 
                         // Build the "WinNT://machineName/foo" portion of the new path
                         int cElements = pathName.GetNumElements();
@@ -166,7 +163,7 @@ namespace System.DirectoryServices.AccountManagement
                         for (int i = cElements - 2; i >= 0; i--)
                         {
                             adsPath.Append(pathName.GetElement(i));
-                            adsPath.Append("/");
+                            adsPath.Append('/');
                         }
 
                         adsPath.Remove(adsPath.Length - 1, 1);  // remove the trailing "/"
@@ -407,17 +404,15 @@ namespace System.DirectoryServices.AccountManagement
             bool isLocal = false;
 
             // Ask the OS to resolve the SID to its target.
-            int accountUsage = 0;
-            string name;
             string domainName;
 
             int err = Utils.LookupSid(
                                 _storeCtx.MachineUserSuppliedName,
                                 _storeCtx.Credentials,
                                 sid,
-                                out name,
+                                out _,
                                 out domainName,
-                                out accountUsage);
+                                out _);
 
             if (err != 0)
             {
@@ -577,7 +572,6 @@ namespace System.DirectoryServices.AccountManagement
         private bool _disposed = false;
 
         private readonly SAMStoreCtx _storeCtx;
-        private readonly DirectoryEntry _ctxBase;
 
         private bool _atBeginning = true;
 

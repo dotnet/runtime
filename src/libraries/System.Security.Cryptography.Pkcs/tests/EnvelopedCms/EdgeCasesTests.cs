@@ -107,14 +107,14 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
             EnvelopedCms ecms = new EnvelopedCms();
             ecms.Decode(content);
 
-            int expected = PlatformDetection.IsFullFramework ? 6 : 0; // Desktop bug gives 6
+            int expected = PlatformDetection.IsNetFramework ? 6 : 0; // Desktop bug gives 6
             Assert.Equal(expected, ecms.ContentInfo.Content.Length);
             Assert.Equal(Oids.Pkcs7Data, ecms.ContentInfo.ContentType.Value);
         }
 
         [Fact]
         [OuterLoop(/* Leaks key on disk if interrupted */)]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Desktop rejects zero length content: corefx#18724")]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, ".NET Framework rejects zero length content: https://github.com/dotnet/runtime/issues/21257")]
         public static void ZeroLengthContent_RoundTrip()
         {
             ContentInfo contentInfo = new ContentInfo(Array.Empty<byte>());
@@ -149,7 +149,7 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
             //
             // Combination of RC4 over a CAPI certificate.
             //
-            //  This works as long as the PKCS implementation opens the cert using CAPI. If he creates a CNG wrapper handle (by passing CRYPT_ACQUIRE_PREFER_NCRYPT_KEY_FLAG),
+            //  This works as long as the PKCS implementation opens the cert using CAPI. If it creates a CNG wrapper handle (by passing CRYPT_ACQUIRE_PREFER_NCRYPT_KEY_FLAG),
             //  the test fails with a NOTSUPPORTED crypto exception inside Decrypt(). The same happens if the key is genuinely CNG.
             //
 
@@ -192,7 +192,7 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
                 ContentInfo contentInfo = ecms.ContentInfo;
                 byte[] content = contentInfo.Content;
 
-                int expected = PlatformDetection.IsFullFramework ? 6 : 0; // Desktop bug gives 6
+                int expected = PlatformDetection.IsNetFramework ? 6 : 0; // Desktop bug gives 6
                 Assert.Equal(expected, content.Length);
             }
         }

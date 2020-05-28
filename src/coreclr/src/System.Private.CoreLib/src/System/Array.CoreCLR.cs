@@ -9,13 +9,6 @@ using System.Runtime.CompilerServices;
 using System.Reflection;
 using Internal.Runtime.CompilerServices;
 
-#pragma warning disable SA1121 // explicitly using type aliases instead of built-in types
-#if BIT64
-using nuint = System.UInt64;
-#else
-using nuint = System.UInt32;
-#endif
-
 namespace System
 {
     // Note that we make a T[] (single-dimensional w/ zero as the lower bound) implement both
@@ -150,8 +143,8 @@ namespace System
                 (uint)length <= (nuint)destinationArray.LongLength)
             {
                 nuint byteCount = (uint)length * (nuint)pMT->ComponentSize;
-                ref byte src = ref sourceArray.GetRawSzArrayData();
-                ref byte dst = ref destinationArray.GetRawSzArrayData();
+                ref byte src = ref Unsafe.As<RawArrayData>(sourceArray).Data;
+                ref byte dst = ref Unsafe.As<RawArrayData>(destinationArray).Data;
 
                 if (pMT->ContainsGCPointers)
                     Buffer.BulkMoveWithWriteBarrier(ref dst, ref src, byteCount);
@@ -182,8 +175,8 @@ namespace System
                 {
                     nuint elementSize = (nuint)pMT->ComponentSize;
                     nuint byteCount = (uint)length * elementSize;
-                    ref byte src = ref Unsafe.AddByteOffset(ref sourceArray.GetRawSzArrayData(), (uint)sourceIndex * elementSize);
-                    ref byte dst = ref Unsafe.AddByteOffset(ref destinationArray.GetRawSzArrayData(), (uint)destinationIndex * elementSize);
+                    ref byte src = ref Unsafe.AddByteOffset(ref Unsafe.As<RawArrayData>(sourceArray).Data, (uint)sourceIndex * elementSize);
+                    ref byte dst = ref Unsafe.AddByteOffset(ref Unsafe.As<RawArrayData>(destinationArray).Data, (uint)destinationIndex * elementSize);
 
                     if (pMT->ContainsGCPointers)
                         Buffer.BulkMoveWithWriteBarrier(ref dst, ref src, byteCount);
@@ -478,8 +471,11 @@ namespace System
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal extern CorElementType GetCorElementTypeOfElementType();
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private extern bool IsValueOfElementType(object value);
+        private unsafe bool IsValueOfElementType(object value)
+        {
+            MethodTable* thisMT = RuntimeHelpers.GetMethodTable(this);
+            return (IntPtr)thisMT->ElementType == (IntPtr)RuntimeHelpers.GetMethodTable(value);
+        }
 
         // if this is an array of value classes and that value class has a default constructor
         // then this calls this default constructor on every element in the value class array.

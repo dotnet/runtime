@@ -9,6 +9,12 @@ namespace System.Runtime.CompilerServices.Tests
     public static class AttributesTests
     {
         [Fact]
+        public static void SkipLocalsInitAttributeTests()
+        {
+            new SkipLocalsInitAttribute();
+        }
+
+        [Fact]
         public static void AccessedThroughPropertyAttributeTests()
         {
             var attr1 = new AccessedThroughPropertyAttribute(null);

@@ -33,7 +33,7 @@ namespace System.ComponentModel.Composition.Hosting
                 }
             }
 
-            public ReflectionContext ReflectionContext
+            public ReflectionContext? ReflectionContext
             {
                 get
                 {

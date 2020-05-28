@@ -19,7 +19,7 @@
 enum SIMDLevel
 {
     SIMD_Not_Supported = 0,
-#ifdef _TARGET_XARCH_
+#ifdef TARGET_XARCH
     // SSE2 - The min bar of SIMD ISA on x86/x64.
     // Vector<T> length is 128-bit.
     // Floating-point instructions are legacy SSE encoded.
@@ -61,7 +61,7 @@ struct SIMDIntrinsicInfo
     var_types       supportedBaseTypes[SIMD_INTRINSIC_MAX_BASETYPE_COUNT];
 };
 
-#ifdef _TARGET_XARCH_
+#ifdef TARGET_XARCH
 // SSE2 Shuffle control byte to shuffle vector <W, Z, Y, X>
 // These correspond to shuffle immediate byte in shufps SSE2 instruction.
 #define SHUFFLE_XXXX 0x00 // 00 00 00 00

@@ -4,6 +4,7 @@
 
 using System;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Security.Cryptography.Asn1;
 using Internal.Cryptography;
 
@@ -51,7 +52,8 @@ namespace System.Security.Cryptography.Pkcs
         // Private methods.
         //
 
-        private static byte[] Decode(byte[] rawData)
+        [return: NotNullIfNotNull("rawData")]
+        private static byte[]? Decode(byte[]? rawData)
         {
             if (rawData == null)
                 return null;
@@ -59,6 +61,6 @@ namespace System.Security.Cryptography.Pkcs
             return PkcsHelpers.DecodeOctetString(rawData);
         }
 
-        private volatile byte[] _lazyMessageDigest = null;
+        private volatile byte[]? _lazyMessageDigest = null;
     }
 }

@@ -48,7 +48,7 @@ namespace Internal.NativeCrypto
             bool isPrivate = (dsaParameters.X != null && dsaParameters.X.Length > 0);
 
             // The private key should be the same length as Q
-            if (isPrivate && dsaParameters.X.Length != DSS_Q_LEN)
+            if (isPrivate && dsaParameters.X!.Length != DSS_Q_LEN)
                 throw GetBadDataException();
 
             uint bitLenP = (uint)dsaParameters.P.Length * 8;
@@ -86,7 +86,7 @@ namespace Internal.NativeCrypto
 
                     if (isPrivate)
                     {
-                        bw.Write((uint)dsaParameters.X.Length * 8);
+                        bw.Write((uint)dsaParameters.X!.Length * 8);
                     }
 
                     WriteDSSSeed(dsaParameters, bw);
@@ -97,14 +97,14 @@ namespace Internal.NativeCrypto
 
                     if (bitLenJ != 0)
                     {
-                        bw.WriteReversed(dsaParameters.J);
+                        bw.WriteReversed(dsaParameters.J!);
                     }
 
-                    bw.WriteReversed(dsaParameters.Y);
+                    bw.WriteReversed(dsaParameters.Y!);
 
                     if (isPrivate)
                     {
-                        bw.WriteReversed(dsaParameters.X);
+                        bw.WriteReversed(dsaParameters.X!);
                     }
                 }
                 else
@@ -128,10 +128,11 @@ namespace Internal.NativeCrypto
 
                     if (isPrivate)
                     {
-                        bw.WriteReversed(dsaParameters.X);
+                        bw.WriteReversed(dsaParameters.X!);
                     }
                     else
                     {
+                        Debug.Assert(dsaParameters.Y != null);
                         bw.WriteReversed(dsaParameters.Y);
                     }
 
@@ -147,7 +148,7 @@ namespace Internal.NativeCrypto
         /// <summary>
         /// Helper for DSACryptoServiceProvider.ExportParameters()
         /// </summary>
-        internal static DSAParameters ToDSAParameters(this byte[] cspBlob, bool includePrivateParameters, byte[] cspPublicBlob)
+        internal static DSAParameters ToDSAParameters(this byte[] cspBlob, bool includePrivateParameters, byte[]? cspPublicBlob)
         {
             try
             {

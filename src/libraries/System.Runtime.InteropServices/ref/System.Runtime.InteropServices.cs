@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 // ------------------------------------------------------------------------------
-// Changes to this file must follow the http://aka.ms/api-review process.
+// Changes to this file must follow the https://aka.ms/api-review process.
 // ------------------------------------------------------------------------------
 
 namespace System
@@ -74,43 +74,6 @@ namespace System.IO
         public void WriteArray<T>(long position, T[] array, int offset, int count) where T : struct { }
         public void Write<T>(long position, ref T structure) where T : struct { }
     }
-    public partial class UnmanagedMemoryStream : System.IO.Stream
-    {
-        protected UnmanagedMemoryStream() { }
-        [System.CLSCompliantAttribute(false)]
-        public unsafe UnmanagedMemoryStream(byte* pointer, long length) { }
-        [System.CLSCompliantAttribute(false)]
-        public unsafe UnmanagedMemoryStream(byte* pointer, long length, long capacity, System.IO.FileAccess access) { }
-        public UnmanagedMemoryStream(System.Runtime.InteropServices.SafeBuffer buffer, long offset, long length) { }
-        public UnmanagedMemoryStream(System.Runtime.InteropServices.SafeBuffer buffer, long offset, long length, System.IO.FileAccess access) { }
-        public override bool CanRead { get { throw null; } }
-        public override bool CanSeek { get { throw null; } }
-        public override bool CanWrite { get { throw null; } }
-        public long Capacity { get { throw null; } }
-        public override long Length { get { throw null; } }
-        public override long Position { get { throw null; } set { } }
-        [System.CLSCompliantAttribute(false)]
-        public unsafe byte* PositionPointer { get { throw null; } set { } }
-        public override void CopyTo(System.Buffers.ReadOnlySpanAction<byte, object?> callback, object? state, int bufferSize) { }
-        protected override void Dispose(bool disposing) { }
-        public override void Flush() { }
-        public override System.Threading.Tasks.Task FlushAsync(System.Threading.CancellationToken cancellationToken) { throw null; }
-        [System.CLSCompliantAttribute(false)]
-        protected unsafe void Initialize(byte* pointer, long length, long capacity, System.IO.FileAccess access) { }
-        protected void Initialize(System.Runtime.InteropServices.SafeBuffer buffer, long offset, long length, System.IO.FileAccess access) { }
-        public override int Read(byte[] buffer, int offset, int count) { throw null; }
-        public override int Read(System.Span<byte> destination) { throw null; }
-        public override System.Threading.Tasks.Task<int> ReadAsync(byte[] buffer, int offset, int count, System.Threading.CancellationToken cancellationToken) { throw null; }
-        public override System.Threading.Tasks.ValueTask<int> ReadAsync(System.Memory<byte> buffer, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
-        public override int ReadByte() { throw null; }
-        public override long Seek(long offset, System.IO.SeekOrigin loc) { throw null; }
-        public override void SetLength(long value) { }
-        public override void Write(byte[] buffer, int offset, int count) { }
-        public override void Write(System.ReadOnlySpan<byte> source) { }
-        public override System.Threading.Tasks.Task WriteAsync(byte[] buffer, int offset, int count, System.Threading.CancellationToken cancellationToken) { throw null; }
-        public override System.Threading.Tasks.ValueTask WriteAsync(System.ReadOnlyMemory<byte> buffer, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
-        public override void WriteByte(byte value) { }
-    }
 }
 namespace System.Runtime.CompilerServices
 {
@@ -161,7 +124,6 @@ namespace System.Runtime.InteropServices
         public bool BestFitMapping { get { throw null; } }
     }
     [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
-    [System.ObsoleteAttribute("BStrWrapper and support for marshalling to the VARIANT type may be unavailable in future releases.")]
     public sealed partial class BStrWrapper
     {
         public BStrWrapper(object? value) { }
@@ -210,7 +172,6 @@ namespace System.Runtime.InteropServices
         public string Value { get { throw null; } }
     }
     [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
-    [System.ObsoleteAttribute("ComAwareEventInfo may be unavailable in future releases.")]
     public partial class ComAwareEventInfo : System.Reflection.EventInfo
     {
         public ComAwareEventInfo(System.Type type, string eventName) { }
@@ -220,9 +181,9 @@ namespace System.Runtime.InteropServices
         public override System.Reflection.Module Module { get { throw null; } }
         public override string Name { get { throw null; } }
         public override System.Type? ReflectedType { get { throw null; } }
-#pragma warning disable CS8610
+#pragma warning disable CS8765 // Nullability of parameters 'target' and 'handler' don't match overridden member
         public override void AddEventHandler(object target, System.Delegate handler) { }
-#pragma warning restore CS8610
+#pragma warning restore CS8765
         public override System.Reflection.MethodInfo? GetAddMethod(bool nonPublic) { throw null; }
         public override object[] GetCustomAttributes(bool inherit) { throw null; }
         public override object[] GetCustomAttributes(System.Type attributeType, bool inherit) { throw null; }
@@ -231,9 +192,9 @@ namespace System.Runtime.InteropServices
         public override System.Reflection.MethodInfo? GetRaiseMethod(bool nonPublic) { throw null; }
         public override System.Reflection.MethodInfo? GetRemoveMethod(bool nonPublic) { throw null; }
         public override bool IsDefined(System.Type attributeType, bool inherit) { throw null; }
-#pragma warning disable CS8610
+#pragma warning disable CS8765 // Nullability of parameters 'target' and 'handler' don't match overridden member
         public override void RemoveEventHandler(object target, System.Delegate handler) { }
-#pragma warning restore CS8610
+#pragma warning restore CS8765
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.Assembly, Inherited=false)]
     public sealed partial class ComCompatibleVersionAttribute : System.Attribute
@@ -257,7 +218,6 @@ namespace System.Runtime.InteropServices
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.Interface, Inherited=false)]
     [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
-    [System.ObsoleteAttribute("ComEventInterfaceAttribute may be unavailable in future releases.")]
     public sealed partial class ComEventInterfaceAttribute : System.Attribute
     {
         public ComEventInterfaceAttribute(System.Type SourceInterface, System.Type EventProvider) { }
@@ -265,7 +225,6 @@ namespace System.Runtime.InteropServices
         public System.Type SourceInterface { get { throw null; } }
     }
     [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
-    [System.ObsoleteAttribute("ComEventsHelper may be unavailable in future releases.")]
     public static partial class ComEventsHelper
     {
         public static void Combine(object rcw, System.Guid iid, int dispid, System.Delegate d) { }
@@ -309,7 +268,6 @@ namespace System.Runtime.InteropServices
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.Class, Inherited=true)]
     [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
-    [System.ObsoleteAttribute("ComSourceInterfacesAttribute may be unavailable in future releases.")]
     public sealed partial class ComSourceInterfacesAttribute : System.Attribute
     {
         public ComSourceInterfacesAttribute(string sourceInterfaces) { }
@@ -364,7 +322,6 @@ namespace System.Runtime.InteropServices
         public object? Value { get { throw null; } }
     }
     [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
-    [System.ObsoleteAttribute("DispatchWrapper and support for marshalling to the VARIANT type may be unavailable in future releases.")]
     public sealed partial class DispatchWrapper
     {
         public DispatchWrapper(object? obj) { }
@@ -403,7 +360,6 @@ namespace System.Runtime.InteropServices
         SafeDirectories = 4096,
     }
     [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
-    [System.ObsoleteAttribute("ErrorWrapper and support for marshalling to the VARIANT type may be unavailable in future releases.")]
     public sealed partial class ErrorWrapper
     {
         public ErrorWrapper(System.Exception e) { }
@@ -439,7 +395,6 @@ namespace System.Runtime.InteropServices
         public static System.IntPtr ToIntPtr(System.Runtime.InteropServices.HandleRef value) { throw null; }
     }
     [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
-    [System.ObsoleteAttribute("ICustomAdapter may be unavailable in future releases.")]
     public partial interface ICustomAdapter
     {
         object GetUnderlyingObject();
@@ -787,29 +742,6 @@ namespace System.Runtime.InteropServices
         public SafeArrayTypeMismatchException(string? message) { }
         public SafeArrayTypeMismatchException(string? message, System.Exception? inner) { }
     }
-    public abstract partial class SafeBuffer : Microsoft.Win32.SafeHandles.SafeHandleZeroOrMinusOneIsInvalid
-    {
-        protected SafeBuffer(bool ownsHandle) : base (default(bool)) { }
-        [System.CLSCompliantAttribute(false)]
-        public ulong ByteLength { get { throw null; } }
-        [System.CLSCompliantAttribute(false)]
-        public unsafe void AcquirePointer(ref byte* pointer) { }
-        [System.CLSCompliantAttribute(false)]
-        public void Initialize(uint numElements, uint sizeOfEachElement) { }
-        [System.CLSCompliantAttribute(false)]
-        public void Initialize(ulong numBytes) { }
-        [System.CLSCompliantAttribute(false)]
-        public void Initialize<T>(uint numElements) where T : struct { }
-        [System.CLSCompliantAttribute(false)]
-        public void ReadArray<T>(ulong byteOffset, T[] array, int index, int count) where T : struct { }
-        [System.CLSCompliantAttribute(false)]
-        public T Read<T>(ulong byteOffset) where T : struct { throw null; }
-        public void ReleasePointer() { }
-        [System.CLSCompliantAttribute(false)]
-        public void WriteArray<T>(ulong byteOffset, T[] array, int index, int count) where T : struct { }
-        [System.CLSCompliantAttribute(false)]
-        public void Write<T>(ulong byteOffset, T value) where T : struct { }
-    }
     public partial class SEHException : System.Runtime.InteropServices.ExternalException
     {
         public SEHException() { }
@@ -917,7 +849,6 @@ namespace System.Runtime.InteropServices
         public int MinorVersion { get { throw null; } }
     }
     [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
-    [System.ObsoleteAttribute("UnknownWrapper and support for marshalling to the VARIANT type may be unavailable in future releases.")]
     public sealed partial class UnknownWrapper
     {
         public UnknownWrapper(object? obj) { }
@@ -1037,11 +968,54 @@ namespace System.Runtime.InteropServices
         VT_BYREF = 16384,
     }
     [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
-    [System.ObsoleteAttribute("VariantWrapper and support for marshalling to the VARIANT type may be unavailable in future releases.")]
     public sealed partial class VariantWrapper
     {
         public VariantWrapper(object? obj) { }
         public object? WrappedObject { get { throw null; } }
+    }
+    [System.FlagsAttribute]
+    public enum CreateComInterfaceFlags
+    {
+        None = 0,
+        CallerDefinedIUnknown = 1,
+        TrackerSupport = 2,
+    }
+    [System.FlagsAttribute]
+    public enum CreateObjectFlags
+    {
+        None = 0,
+        TrackerObject = 1,
+        UniqueInstance = 2,
+    }
+    [System.CLSCompliantAttribute(false)]
+    public abstract class ComWrappers
+    {
+        public struct ComInterfaceEntry
+        {
+            public System.Guid IID;
+            public System.IntPtr Vtable;
+        }
+        public struct ComInterfaceDispatch
+        {
+            public System.IntPtr Vtable;
+            public static unsafe T GetInstance<T>(ComInterfaceDispatch* dispatchPtr) where T : class { throw null; }
+        }
+        public System.IntPtr GetOrCreateComInterfaceForObject(object instance, CreateComInterfaceFlags flags) { throw null; }
+        protected unsafe abstract ComInterfaceEntry* ComputeVtables(object obj, CreateComInterfaceFlags flags, out int count);
+        public object GetOrCreateObjectForComInstance(System.IntPtr externalComObject, CreateObjectFlags flags) { throw null; }
+        protected abstract object CreateObject(System.IntPtr externalComObject, CreateObjectFlags flags);
+        public object GetOrRegisterObjectForComInstance(System.IntPtr externalComObject, CreateObjectFlags flags, object wrapper) { throw null; }
+        protected abstract void ReleaseObjects(System.Collections.IEnumerable objects);
+        public static void RegisterForTrackerSupport(ComWrappers instance) { }
+        public static void RegisterForMarshalling(ComWrappers instance) { }
+        protected static void GetIUnknownImpl(out System.IntPtr fpQueryInterface, out System.IntPtr fpAddRef, out System.IntPtr fpRelease) { throw null; }
+    }
+    [System.AttributeUsageAttribute(System.AttributeTargets.Method)]
+    public sealed class UnmanagedCallersOnlyAttribute : System.Attribute
+    {
+        public UnmanagedCallersOnlyAttribute() { }
+        public System.Runtime.InteropServices.CallingConvention CallingConvention;
+        public string? EntryPoint;
     }
 }
 namespace System.Runtime.InteropServices.ComTypes
@@ -1765,7 +1739,6 @@ namespace System.Security
         public void RemoveAt(int index) { }
         public void SetAt(int index, char c) { }
     }
-    [System.CLSCompliantAttribute(false)]
     public static partial class SecureStringMarshal
     {
         public static System.IntPtr SecureStringToCoTaskMemAnsi(System.Security.SecureString s) { throw null; }

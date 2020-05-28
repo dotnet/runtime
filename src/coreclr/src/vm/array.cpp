@@ -173,7 +173,7 @@ VOID ArrayClass::GenerateArrayAccessorCallSig(
             break;
     }
 
-#if defined(FEATURE_ARRAYSTUB_AS_IL ) && !defined(_TARGET_X86_)
+#if defined(FEATURE_ARRAYSTUB_AS_IL ) && !defined(TARGET_X86)
     if(dwFuncType == ArrayMethodDesc::ARRAY_FUNC_ADDRESS && fForStubAsIL)
     {
         *pSig++ = ELEMENT_TYPE_I;
@@ -188,7 +188,7 @@ VOID ArrayClass::GenerateArrayAccessorCallSig(
         *pSig++ = ELEMENT_TYPE_VAR;
         *pSig++ = 0;        // variable 0
     }
-#if defined(FEATURE_ARRAYSTUB_AS_IL ) && defined(_TARGET_X86_)
+#if defined(FEATURE_ARRAYSTUB_AS_IL ) && defined(TARGET_X86)
     else if(dwFuncType == ArrayMethodDesc::ARRAY_FUNC_ADDRESS && fForStubAsIL)
     {
         *pSig++ = ELEMENT_TYPE_I;
@@ -261,7 +261,7 @@ MethodTable* Module::CreateArrayMethodTable(TypeHandle elemTypeHnd, CorElementTy
     {
         // This is loading the canonical version of the array so we can override
         OVERRIDE_TYPE_LOAD_LEVEL_LIMIT(CLASS_LOADED);
-        pCanonMT = ClassLoader::LoadArrayTypeThrowing(TypeHandle(g_pObjectClass), arrayKind, Rank).GetMethodTable();
+        pCanonMT = ClassLoader::LoadArrayTypeThrowing(TypeHandle(g_pObjectClass), arrayKind, Rank).AsMethodTable();
     }
 
     BOOL            containsPointers = CorTypeInfo::IsObjRef(elemType);
@@ -278,9 +278,9 @@ MethodTable* Module::CreateArrayMethodTable(TypeHandle elemTypeHnd, CorElementTy
     {
         numCtors = 1;
         TypeHandle ptr = elemTypeHnd;
-        while (ptr.IsTypeDesc() && ptr.AsTypeDesc()->GetInternalCorElementType() == ELEMENT_TYPE_SZARRAY) {
+        while (ptr.GetInternalCorElementType() == ELEMENT_TYPE_SZARRAY) {
             numCtors++;
-            ptr = ptr.AsTypeDesc()->GetTypeParam();
+            ptr = ptr.GetArrayElementTypeHandle();
         }
     }
 
@@ -479,10 +479,10 @@ MethodTable* Module::CreateArrayMethodTable(TypeHandle elemTypeHnd, CorElementTy
     if (arrayKind == ELEMENT_TYPE_ARRAY)
         baseSize += Rank*sizeof(DWORD)*2;
 
-#if !defined(_TARGET_64BIT_) && (DATA_ALIGNMENT > 4)
+#if !defined(TARGET_64BIT) && (DATA_ALIGNMENT > 4)
     if (dwComponentSize >= DATA_ALIGNMENT)
         baseSize = (DWORD)ALIGN_UP(baseSize, DATA_ALIGNMENT);
-#endif // !defined(_TARGET_64BIT_) && (DATA_ALIGNMENT > 4)
+#endif // !defined(TARGET_64BIT) && (DATA_ALIGNMENT > 4)
     pMT->SetBaseSize(baseSize);
     // Because of array method table persisting, we need to copy the map
     for (unsigned index = 0; index < pParentClass->GetNumInterfaces(); ++index)
@@ -505,7 +505,7 @@ MethodTable* Module::CreateArrayMethodTable(TypeHandle elemTypeHnd, CorElementTy
 
     // The type is sufficiently initialized for most general purpose accessor methods to work.
     // Mark the type as restored to avoid asserts. Note that this also enables IBC logging.
-    pMTWriteableData->SetIsFullyLoadedForBuildMethodTable();
+    pMTWriteableData->SetIsRestoredForBuildArrayMethodTable();
 
     {
         // Fill out the vtable indirection slots
@@ -782,7 +782,7 @@ public:
         UINT hiddenArgIdx = rank;
         _ASSERTE(rank>0);
 
-#ifndef _TARGET_X86_
+#ifndef TARGET_X86
         if(m_pMD->GetArrayFuncIndex() == ArrayMethodDesc::ARRAY_FUNC_ADDRESS)
         {
             firstIdx = 1;
@@ -836,19 +836,12 @@ public:
                 m_pCode->EmitLDARG(hiddenArgIdx); // hidden param
                 m_pCode->EmitBRFALSE(pTypeCheckPassed);
                 m_pCode->EmitLDARG(hiddenArgIdx);
-                m_pCode->EmitLDFLDA(tokRawData);
-                m_pCode->EmitLDC(offsetof(ParamTypeDesc, m_Arg) - (Object::GetOffsetOfFirstField()+2));
-                m_pCode->EmitADD();
-                m_pCode->EmitLDIND_I();
 
                 m_pCode->EmitLoadThis();
                 m_pCode->EmitLDFLDA(tokRawData);
                 m_pCode->EmitLDC(Object::GetOffsetOfFirstField());
                 m_pCode->EmitSUB();
                 m_pCode->EmitLDIND_I(); // Array MT
-                m_pCode->EmitLDC(MethodTable::GetOffsetOfArrayElementTypeHandle());
-                m_pCode->EmitADD();
-                m_pCode->EmitLDIND_I();
 
                 m_pCode->EmitCEQ();
                 m_pCode->EmitBRFALSE(pTypeMismatchExceptionLabel); // throw exception if not same
@@ -1181,7 +1174,7 @@ void GenerateArrayOpScript(ArrayMethodDesc *pMD, ArrayOpScript *paos)
 
     ArgIterator argit(&msig);
 
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
     paos->m_cbretpop = argit.CbStackPop();
 #endif
 

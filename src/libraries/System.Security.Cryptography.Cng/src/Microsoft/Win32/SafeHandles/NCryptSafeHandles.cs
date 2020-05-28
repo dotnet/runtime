@@ -4,6 +4,7 @@
 
 using System;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 
 using ErrorCode = Interop.NCrypt.ErrorCode;
@@ -61,9 +62,9 @@ namespace Microsoft.Win32.SafeHandles
         /// <summary>
         ///     If the handle is a Duplicate, this points at the safe handle which actually owns the native handle.
         /// </summary>
-        private SafeNCryptHandle _holder;
+        private SafeNCryptHandle? _holder;
 
-        private SafeHandle _parentHandle;
+        private SafeHandle? _parentHandle;
 
         protected SafeNCryptHandle() : base(true)
         {
@@ -98,6 +99,7 @@ namespace Microsoft.Win32.SafeHandles
         /// <summary>
         ///     Wrapper for the _holder field which ensures that we're in a consistent state
         /// </summary>
+        [MaybeNull]
         private SafeNCryptHandle Holder
         {
             get
@@ -166,7 +168,7 @@ namespace Microsoft.Win32.SafeHandles
                         {
                             if (acquiredHolder)
                             {
-                                Holder.DangerousRelease();
+                                Holder!.DangerousRelease();
                             }
                         }
 
@@ -239,7 +241,7 @@ namespace Microsoft.Win32.SafeHandles
             bool addedRef = false;
             T duplicate = new T();
 
-            Holder.DangerousAddRef(ref addedRef);
+            Holder!.DangerousAddRef(ref addedRef);
             duplicate.SetHandle(Holder.DangerousGetHandle());
             duplicate.Holder = Holder;              // Transitions to OwnershipState.Duplicate
 
@@ -309,7 +311,7 @@ namespace Microsoft.Win32.SafeHandles
         {
             if (_ownershipState == OwnershipState.Duplicate)
             {
-                Holder.DangerousRelease();
+                Holder!.DangerousRelease();
                 return true;
             }
             else if (_parentHandle != null)

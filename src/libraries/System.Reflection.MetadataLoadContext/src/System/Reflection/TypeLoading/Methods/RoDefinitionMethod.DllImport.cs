@@ -12,7 +12,7 @@ namespace System.Reflection.TypeLoading
     /// </summary>
     internal sealed partial class RoDefinitionMethod<TMethodDecoder>
     {
-        private CustomAttributeData ComputeDllImportCustomAttributeDataIfAny()
+        private CustomAttributeData? ComputeDllImportCustomAttributeDataIfAny()
         {
             if ((Attributes & MethodAttributes.PinvokeImpl) == 0)
                 return null;
@@ -25,7 +25,7 @@ namespace System.Reflection.TypeLoading
                 ct[CoreType.CharSet] == null ||
                 ct[CoreType.CallingConvention] == null)
                 return null;
-            ConstructorInfo ctor = Loader.TryGetDllImportCtor();
+            ConstructorInfo? ctor = Loader.TryGetDllImportCtor();
             if (ctor == null)
                 return null;
 
@@ -34,10 +34,10 @@ namespace System.Reflection.TypeLoading
                 {
                     // The expensive work goes in here.
 
-                    Type attributeType = ctor.DeclaringType;
+                    Type attributeType = ctor.DeclaringType!;
                     DllImportAttribute dia = _decoder.ComputeDllImportAttribute();
 
-                    CustomAttributeTypedArgument[] cats = { new CustomAttributeTypedArgument(ct[CoreType.String], dia.Value) };
+                    CustomAttributeTypedArgument[] cats = { new CustomAttributeTypedArgument(ct[CoreType.String]!, dia.Value) };
                     CustomAttributeNamedArgument[] cans =
                     {
                         attributeType.ToCustomAttributeNamedArgument(nameof(DllImportAttribute.EntryPoint), ct[CoreType.String], dia.EntryPoint),

@@ -5,11 +5,11 @@
 using System.Buffers;
 using System.Diagnostics;
 
+#nullable enable
 namespace System.Security.Cryptography.Asn1
 {
-    internal partial class AsnReader
+    internal ref partial struct AsnValueReader
     {
-
         /// <summary>
         ///   Reads the next value as a UTCTime with tag UNIVERSAL 23.
         /// </summary>
@@ -29,7 +29,6 @@ namespace System.Security.Cryptography.Asn1
         /// <seealso cref="ReadUtcTime(System.Security.Cryptography.Asn1.Asn1Tag,int)"/>
         public DateTimeOffset ReadUtcTime(int twoDigitYearMax = 2049) =>
             ReadUtcTime(Asn1Tag.UtcTime, twoDigitYearMax);
-
 
         /// <summary>
         ///   Reads the next value as a UTCTime with a specified tag.
@@ -70,9 +69,16 @@ namespace System.Security.Cryptography.Asn1
             // CER and DER are restricted to YYMMDDhhmmssZ
             // T-REC-X.690-201510 sec 11.8
 
-            byte[] rented = null;
-            // The longest format is 17 bytes.
-            Span<byte> tmpSpace = stackalloc byte[17];
+            byte[]? rented = null;
+            Span<byte> tmpSpace;
+
+            unsafe
+            {
+                // The longest format is 17 bytes.
+                const int StackBufSize = 17;
+                byte* stackBuf = stackalloc byte[StackBufSize];
+                tmpSpace = new Span<byte>(stackBuf, StackBufSize);
+            }
 
             ReadOnlySpan<byte> contents = GetOctetStringContents(
                 expectedTag,
@@ -221,6 +227,60 @@ namespace System.Security.Cryptography.Asn1
             {
                 throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding, e);
             }
+        }
+    }
+
+    internal partial class AsnReader
+    {
+        /// <summary>
+        ///   Reads the next value as a UTCTime with tag UNIVERSAL 23.
+        /// </summary>
+        /// <param name="twoDigitYearMax">
+        ///   The largest year to represent with this value.
+        ///   The default value, 2049, represents the 1950-2049 range for X.509 certificates.
+        /// </param>
+        /// <returns>
+        ///   a DateTimeOffset representing the value encoded in the UTCTime.
+        /// </returns>
+        /// <exception cref="CryptographicException">
+        ///   the next value does not have the correct tag --OR--
+        ///   the length encoding is not valid under the current encoding rules --OR--
+        ///   the contents are not valid under the current encoding rules
+        /// </exception>
+        /// <seealso cref="System.Globalization.Calendar.TwoDigitYearMax"/>
+        /// <seealso cref="ReadUtcTime(System.Security.Cryptography.Asn1.Asn1Tag,int)"/>
+        public DateTimeOffset ReadUtcTime(int twoDigitYearMax = 2049) =>
+            ReadUtcTime(Asn1Tag.UtcTime, twoDigitYearMax);
+
+        /// <summary>
+        ///   Reads the next value as a UTCTime with a specified tag.
+        /// </summary>
+        /// <param name="expectedTag">The tag to check for before reading.</param>
+        /// <param name="twoDigitYearMax">
+        ///   The largest year to represent with this value.
+        ///   The default value, 2049, represents the 1950-2049 range for X.509 certificates.
+        /// </param>
+        /// <returns>
+        ///   a DateTimeOffset representing the value encoded in the UTCTime.
+        /// </returns>
+        /// <exception cref="CryptographicException">
+        ///   the next value does not have the correct tag --OR--
+        ///   the length encoding is not valid under the current encoding rules --OR--
+        ///   the contents are not valid under the current encoding rules
+        /// </exception>
+        /// <exception cref="ArgumentException">
+        ///   <paramref name="expectedTag"/>.<see cref="Asn1Tag.TagClass"/> is
+        ///   <see cref="TagClass.Universal"/>, but
+        ///   <paramref name="expectedTag"/>.<see cref="Asn1Tag.TagValue"/> is not correct for
+        ///   the method
+        /// </exception>
+        /// <seealso cref="System.Globalization.Calendar.TwoDigitYearMax"/>
+        public DateTimeOffset ReadUtcTime(Asn1Tag expectedTag, int twoDigitYearMax = 2049)
+        {
+            AsnValueReader valueReader = OpenValueReader();
+            DateTimeOffset ret = valueReader.ReadUtcTime(expectedTag, twoDigitYearMax);
+            valueReader.MatchSlice(ref _data);
+            return ret;
         }
     }
 }

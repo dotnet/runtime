@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System.Buffers;
 using System.Diagnostics;
 using System.IO;
@@ -26,7 +27,7 @@ namespace System.Security.Cryptography
         {
             public sealed partial class DSASecurityTransforms : DSA
             {
-                private SecKeyPair _keys;
+                private SecKeyPair? _keys;
                 private bool _disposed;
 
                 public DSASecurityTransforms()
@@ -144,7 +145,7 @@ namespace System.Security.Cryptography
                     if (parameters.G.Length != keySize || parameters.Y.Length != keySize)
                         throw new ArgumentException(SR.Cryptography_InvalidDsaParameters_MismatchedPGY);
 
-                    if (hasPrivateKey && parameters.X.Length != parameters.Q.Length)
+                    if (hasPrivateKey && parameters.X!.Length != parameters.Q.Length)
                         throw new ArgumentException(SR.Cryptography_InvalidDsaParameters_MismatchedQX);
 
                     if (!(8 * parameters.P.Length).IsLegalSize(LegalKeySizes))
@@ -275,9 +276,7 @@ namespace System.Security.Cryptography
                     // Since the AppleCrypto implementation is limited to FIPS 186-2, signature field sizes
                     // are always 160 bits / 20 bytes (the size of SHA-1, and the only legal length for Q).
                     byte[] ieeeFormatSignature = AsymmetricAlgorithmHelpers.ConvertDerToIeee1363(
-                        derFormatSignature,
-                        0,
-                        derFormatSignature.Length,
+                        derFormatSignature.AsSpan(0, derFormatSignature.Length),
                         fieldSizeBits: 160);
 
                     return ieeeFormatSignature;
@@ -353,7 +352,7 @@ namespace System.Security.Cryptography
                 {
                     ThrowIfDisposed();
 
-                    SecKeyPair current = _keys;
+                    SecKeyPair? current = _keys;
 
                     if (current != null)
                     {
@@ -372,7 +371,7 @@ namespace System.Security.Cryptography
                 {
                     ThrowIfDisposed();
 
-                    SecKeyPair current = _keys;
+                    SecKeyPair? current = _keys;
                     _keys = newKeyPair;
                     current?.Dispose();
 

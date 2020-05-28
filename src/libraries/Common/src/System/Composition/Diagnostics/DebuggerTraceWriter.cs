@@ -10,7 +10,7 @@ namespace System.Composition.Diagnostics
 {
     internal sealed class DebuggerTraceWriter : TraceWriter
     {
-        private static readonly string s_sourceName = typeof(DebuggerTraceWriter).Assembly.GetName().Name;
+        private static readonly string s_sourceName = typeof(DebuggerTraceWriter).Assembly.GetName().Name!;
 
         public override bool CanWriteInformation
         {
@@ -57,7 +57,7 @@ namespace System.Composition.Diagnostics
         {
             StringBuilder messageBuilder = new StringBuilder();
 
-            // Format taken from TraceListener.TraceEvent in full framework
+            // Format taken from TraceListener.TraceEvent in .NET Framework
             messageBuilder.AppendFormat(CultureInfo.InvariantCulture, "{0} {1}: {2} : ",
                 s_sourceName, eventType.ToString(), (int)traceId);
 

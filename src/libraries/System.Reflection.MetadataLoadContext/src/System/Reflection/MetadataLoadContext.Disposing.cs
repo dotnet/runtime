@@ -35,7 +35,7 @@ namespace System.Reflection
                 ConcurrentBag<IDisposable> disposables = _disposables;
                 if (disposables != null)
                 {
-                    _disposables = null;
+                    _disposables = null!;
 
                     foreach (IDisposable disposable in disposables)
                     {

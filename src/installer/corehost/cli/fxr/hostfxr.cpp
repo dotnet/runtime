@@ -14,6 +14,7 @@
 #include "sdk_resolver.h"
 #include "hostfxr.h"
 #include "host_context.h"
+#include "bundle/info.h"
 
 namespace
 {
@@ -23,6 +24,23 @@ namespace
         trace::info(_X("--- Invoked %s [commit hash: %s]"), entry_point, _STRINGIFY(REPO_COMMIT_HASH));
     }
 }
+
+SHARED_API int HOSTFXR_CALLTYPE hostfxr_main_bundle_startupinfo(const int argc, const pal::char_t* argv[], const pal::char_t* host_path, const pal::char_t* dotnet_root, const pal::char_t* app_path, int64_t bundle_header_offset)
+{
+    trace_hostfxr_entry_point(_X("hostfxr_main_bundle_startupinfo"));
+
+    StatusCode bundleStatus = bundle::info_t::process_bundle(host_path, app_path, bundle_header_offset);
+    if (bundleStatus != StatusCode::Success)
+    {
+        trace::error(_X("A fatal error occured while processing application bundle"));
+        return bundleStatus;
+    }
+
+    host_startup_info_t startup_info(host_path, dotnet_root, app_path);
+
+    return fx_muxer_t::execute(pal::string_t(), argc, argv, startup_info, nullptr, 0, nullptr);
+}
+
 
 SHARED_API int HOSTFXR_CALLTYPE hostfxr_main_startupinfo(const int argc, const pal::char_t* argv[], const pal::char_t* host_path, const pal::char_t* dotnet_root, const pal::char_t* app_path)
 {
@@ -353,6 +371,13 @@ SHARED_API int32_t HOSTFXR_CALLTYPE hostfxr_get_native_search_directories(const 
         return InvalidArgFailure;
     }
 
+    // Reset the output buffer to empty, so that if the below fails, we return a valid value.
+    *required_buffer_size = 0;
+    if (buffer_size > 0)
+    {
+        buffer[0] = '\0';
+    }
+
     host_startup_info_t startup_info;
     startup_info.parse(argc, argv);
 
@@ -413,7 +438,7 @@ namespace
         if (startup_info.dotnet_root.empty())
         {
             pal::string_t mod_path;
-            if (!pal::get_own_module_path(&mod_path))
+            if (!pal::get_method_module_path(&mod_path, (void*)&hostfxr_set_error_writer))
                 return StatusCode::CoreHostCurHostFindFailure;
 
             startup_info.dotnet_root = get_dotnet_root_from_fxr_path(mod_path);

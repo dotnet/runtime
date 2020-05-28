@@ -16,6 +16,8 @@ namespace JIT.HardwareIntrinsics.Arm
                 ["LeadingSignCount.Int64"] = LeadingSignCount_Int64,
                 ["LeadingZeroCount.Int64"] = LeadingZeroCount_Int64,
                 ["LeadingZeroCount.UInt64"] = LeadingZeroCount_UInt64,
+                ["ReverseElementBits.Int64"] = ReverseElementBits_Int64,
+                ["ReverseElementBits.UInt64"] = ReverseElementBits_UInt64,
             };
         }
     }

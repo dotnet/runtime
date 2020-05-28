@@ -26,7 +26,7 @@ namespace System.ComponentModel.Composition.Hosting
                 _export = export;
             }
 
-            public override IDictionary<string, object> Metadata
+            public override IDictionary<string, object?> Metadata
             {
                 get { return MetadataServices.EmptyMetadata; }
             }
@@ -41,7 +41,7 @@ namespace System.ComponentModel.Composition.Hosting
                 get { return Enumerable.Empty<ImportDefinition>(); }
             }
 
-            public override object GetExportedValue(ExportDefinition definition)
+            public override object? GetExportedValue(ExportDefinition definition)
             {
                 Requires.NotNull(definition, nameof(definition));
 

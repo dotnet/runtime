@@ -97,7 +97,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
             oAssemblyData = ProjectData.GetProjectData().GetAssemblyData(assem)
 
             If oAssemblyData.m_DirFiles Is Nothing Then
-                Throw New ArgumentException(GetResourceString(SR.DIR_IllegalCall))
+                Throw New ArgumentException(SR.DIR_IllegalCall)
             End If
 
             If oAssemblyData.m_DirNextFileIndex > oAssemblyData.m_DirFiles.GetUpperBound(0) Then

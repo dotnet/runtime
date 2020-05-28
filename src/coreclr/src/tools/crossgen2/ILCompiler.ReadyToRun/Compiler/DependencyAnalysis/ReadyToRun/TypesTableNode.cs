@@ -18,13 +18,19 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 {
     public class TypesTableNode : HeaderTableNode
     {
-        public TypesTableNode(TargetDetails target)
-            : base(target) {}
+        private readonly EcmaModule _module;
+
+        public TypesTableNode(TargetDetails target, EcmaModule module)
+            : base(target)
+        {
+            _module = module;
+        }
         
         public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
             sb.Append(nameMangler.CompilationUnitPrefix);
-            sb.Append("__ReadyToRunAvailableTypesTable");
+            sb.Append("__ReadyToRunAvailableTypesTable__");
+            sb.Append(_module.Assembly.GetName().Name);
         }
 
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly = false)
@@ -40,8 +46,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             section.Place(typesHashtable);
 
             ReadyToRunTableManager r2rManager = (ReadyToRunTableManager)factory.MetadataManager;
-
-            foreach (TypeInfo<TypeDefinitionHandle> defTypeInfo in r2rManager.GetDefinedTypes())
+            foreach (TypeInfo<TypeDefinitionHandle> defTypeInfo in r2rManager.GetDefinedTypes(_module))
             {
                 TypeDefinitionHandle defTypeHandle = defTypeInfo.Handle;
                 int hashCode = 0;
@@ -60,7 +65,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 typesHashtable.Append(unchecked((uint)hashCode), section.Place(new UnsignedConstant(((uint)MetadataTokens.GetRowNumber(defTypeInfo.Handle) << 1) | 0)));
             }
 
-            foreach (TypeInfo<ExportedTypeHandle> expTypeInfo in r2rManager.GetExportedTypes())
+            foreach (TypeInfo<ExportedTypeHandle> expTypeInfo in r2rManager.GetExportedTypes(_module))
             {
                 ExportedTypeHandle expTypeHandle = expTypeInfo.Handle;
                 int hashCode = 0;
@@ -88,6 +93,12 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 relocs: null,
                 alignment: 8,
                 definedSymbols: new ISymbolDefinitionNode[] { this });
+        }
+
+        public override int CompareToImpl(ISortableNode other, CompilerComparer comparer)
+        {
+            TypesTableNode otherTypesTable = (TypesTableNode)other;
+            return _module.Assembly.GetName().Name.CompareTo(otherTypesTable._module.Assembly.GetName().Name);
         }
 
         public override int ClassCode => -944318825;

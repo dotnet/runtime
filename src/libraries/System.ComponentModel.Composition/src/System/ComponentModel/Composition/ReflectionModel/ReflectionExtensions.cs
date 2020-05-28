@@ -51,13 +51,13 @@ namespace System.ComponentModel.Composition.ReflectionModel
 
             if (member.MemberType == MemberTypes.Property)
             {
-                PropertyInfo property = member as PropertyInfo;
+                PropertyInfo? property = member as PropertyInfo;
                 if (property == null)
                 {
                     throw new Exception(SR.Diagnostic_InternalExceptionMessage);
                 }
 
-                MemberInfo[] accessors = new MemberInfo[] { property.GetGetMethod(true), property.GetSetMethod(true) };
+                MemberInfo[] accessors = new MemberInfo[] { property.GetGetMethod(true)!, property.GetSetMethod(true)! };
                 return new LazyMemberInfo(MemberTypes.Property, accessors);
             }
             else
@@ -73,7 +73,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
                 throw new Exception(SR.Diagnostic_InternalExceptionMessage);
             }
 
-            ReflectionWritableMember reflectionMember = lazyMember.ToReflectionMember() as ReflectionWritableMember;
+            ReflectionWritableMember? reflectionMember = lazyMember.ToReflectionMember() as ReflectionWritableMember;
             if (reflectionMember == null)
             {
                 throw new Exception(SR.Diagnostic_InternalExceptionMessage);
@@ -89,7 +89,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
                 throw new ArgumentNullException(nameof(property));
             }
 
-            return CreateReflectionProperty(property.GetGetMethod(true), property.GetSetMethod(true));
+            return CreateReflectionProperty(property.GetGetMethod(true)!, property.GetSetMethod(true)!);
         }
 
         public static ReflectionProperty CreateReflectionProperty(MethodInfo getMethod, MethodInfo setMethod)

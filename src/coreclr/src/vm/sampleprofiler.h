@@ -27,7 +27,7 @@ public:
     static void Initialize(EventPipeProviderCallbackDataQueue* pEventPipeProviderCallbackDataQueue);
 
     // Enable profiling.
-    static void Enable(EventPipeProviderCallbackDataQueue *pEventPipeProviderCallbackDataQueue);
+    static void Enable();
 
     // Disable profiling.
     static void Disable();
@@ -70,11 +70,11 @@ private:
     static bool LoadDependencies();
     static void UnloadDependencies();
 
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
     static HINSTANCE s_hMultimediaLib;
     static PVOID s_timeBeginPeriodFn;
     static PVOID s_timeEndPeriodFn;
-#endif //FEATURE_PAL
+#endif //TARGET_UNIX
 
     static void SetTimeGranularity();
     static void ResetTimeGranularity();

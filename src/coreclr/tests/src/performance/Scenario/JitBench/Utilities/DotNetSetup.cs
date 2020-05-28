@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.IO;
 using System.IO.Compression;
 using System.Net;
@@ -201,8 +201,6 @@ namespace JitBench
             }
         }
 
-        
-
         public static string GetRuntimeDownloadLink(string version, Architecture arch)
         {
             return GetFrameworkDownloadLink(DefaultAzureFeed, version, DefaultOSPlatform, arch);
@@ -235,7 +233,11 @@ namespace JitBench
 
         public static string GetTargetFrameworkMonikerForFrameworkVersion(string runtimeVersion)
         {
-            if (runtimeVersion.StartsWith("3.0"))
+            if (runtimeVersion.StartsWith("5.0"))
+            {
+                return "net5.0";
+            }
+            else if (runtimeVersion.StartsWith("3.0"))
             {
                 return "netcoreapp3.0";
             }
@@ -299,7 +301,6 @@ namespace JitBench
                 "sos.NETCore.dll",
                 GetNativeDllNameConvention("clretwrc", os),
                 "System.Private.CoreLib.dll",
-                "mscorrc.debug.dll",
                 "mscorrc.dll"
             };
         }
@@ -338,7 +339,7 @@ namespace JitBench
             }
         }
 
-        public string DotNetExe { get; } 
+        public string DotNetExe { get; }
         public string DotNetDir { get; }
         public string FrameworkDir { get; }
         public string FrameworkVersion { get; }

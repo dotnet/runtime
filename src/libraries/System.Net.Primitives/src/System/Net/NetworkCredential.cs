@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 using System.Security;
 
@@ -15,9 +16,9 @@ namespace System.Net
     /// </devdoc>
     public class NetworkCredential : ICredentials, ICredentialsByHost
     {
-        private string _domain;
-        private string _userName;
-        private object _password;
+        private string _domain = null!;
+        private string _userName = string.Empty;
+        private object? _password;
 
         public NetworkCredential()
             : this(string.Empty, string.Empty, string.Empty)
@@ -30,7 +31,7 @@ namespace System.Net
         ///       class with name and password set as specified.
         ///    </para>
         /// </devdoc>
-        public NetworkCredential(string userName, string password)
+        public NetworkCredential(string? userName, string? password)
         : this(userName, password, string.Empty)
         {
         }
@@ -41,7 +42,7 @@ namespace System.Net
         ///       class with name, password and domain set as specified.
         ///    </para>
         /// </devdoc>
-        public NetworkCredential(string userName, string password, string domain)
+        public NetworkCredential(string? userName, string? password, string? domain)
         {
             UserName = userName;
             Password = password;
@@ -49,13 +50,13 @@ namespace System.Net
         }
 
         [CLSCompliant(false)]
-        public NetworkCredential(string userName, SecureString password)
+        public NetworkCredential(string? userName, SecureString? password)
         : this(userName, password, string.Empty)
         {
         }
 
         [CLSCompliant(false)]
-        public NetworkCredential(string userName, SecureString password, string domain)
+        public NetworkCredential(string? userName, SecureString? password, string? domain)
         {
             UserName = userName;
             SecurePassword = password;
@@ -67,6 +68,7 @@ namespace System.Net
         ///       The user name associated with this credential.
         ///    </para>
         /// </devdoc>
+        [AllowNull]
         public string UserName
         {
             get { return _userName; }
@@ -78,41 +80,43 @@ namespace System.Net
         ///       The password for the user name.
         ///    </para>
         /// </devdoc>
+        [AllowNull]
         public string Password
         {
             get
             {
-                SecureString sstr = _password as SecureString;
+                SecureString? sstr = _password as SecureString;
                 if (sstr != null)
                 {
                     return MarshalToString(sstr);
                 }
-                return (string)_password ?? string.Empty;
+                return (string?)_password ?? string.Empty;
             }
             set
             {
-                SecureString old = _password as SecureString;
+                SecureString? old = _password as SecureString;
                 _password = value;
                 old?.Dispose();
             }
         }
 
         [CLSCompliant(false)]
+        [AllowNull]
         public SecureString SecurePassword
         {
             get
             {
-                string str = _password as string;
+                string? str = _password as string;
                 if (str != null)
                 {
                     return MarshalToSecureString(str);
                 }
-                SecureString sstr = _password as SecureString;
+                SecureString? sstr = _password as SecureString;
                 return sstr != null ? sstr.Copy() : new SecureString();
             }
             set
             {
-                SecureString old = _password as SecureString;
+                SecureString? old = _password as SecureString;
                 _password = value?.Copy();
                 old?.Dispose();
             }
@@ -124,6 +128,7 @@ namespace System.Net
         ///       the credentials. Usually this is the host machine.
         ///    </para>
         /// </devdoc>
+        [AllowNull]
         public string Domain
         {
             get { return _domain; }
@@ -136,12 +141,12 @@ namespace System.Net
         ///       authentication type.
         ///    </para>
         /// </devdoc>
-        public NetworkCredential GetCredential(Uri uri, string authenticationType)
+        public NetworkCredential GetCredential(Uri? uri, string? authenticationType)
         {
             return this;
         }
 
-        public NetworkCredential GetCredential(string host, int port, string authenticationType)
+        public NetworkCredential GetCredential(string? host, int port, string? authenticationType)
         {
             return this;
         }
@@ -158,7 +163,7 @@ namespace System.Net
             try
             {
                 ptr = Marshal.SecureStringToGlobalAllocUnicode(sstr);
-                result = Marshal.PtrToStringUni(ptr);
+                result = Marshal.PtrToStringUni(ptr)!;
             }
             finally
             {

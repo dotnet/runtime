@@ -15,16 +15,16 @@ namespace System.Security.Cryptography.X509Certificates.Asn1
     {
         internal string IssuerDomainPolicy;
         internal string SubjectDomainPolicy;
-      
+
         internal void Encode(AsnWriter writer)
         {
             Encode(writer, Asn1Tag.Sequence);
         }
-    
+
         internal void Encode(AsnWriter writer, Asn1Tag tag)
         {
             writer.PushSequence(tag);
-            
+
             writer.WriteObjectIdentifier(IssuerDomainPolicy);
             writer.WriteObjectIdentifier(SubjectDomainPolicy);
             writer.PopSequence(tag);
@@ -34,32 +34,26 @@ namespace System.Security.Cryptography.X509Certificates.Asn1
         {
             return Decode(Asn1Tag.Sequence, encoded, ruleSet);
         }
-        
+
         internal static CertificatePolicyMappingAsn Decode(Asn1Tag expectedTag, ReadOnlyMemory<byte> encoded, AsnEncodingRules ruleSet)
         {
-            AsnReader reader = new AsnReader(encoded, ruleSet);
-            
-            Decode(reader, expectedTag, out CertificatePolicyMappingAsn decoded);
+            AsnValueReader reader = new AsnValueReader(encoded.Span, ruleSet);
+
+            Decode(ref reader, expectedTag, encoded, out CertificatePolicyMappingAsn decoded);
             reader.ThrowIfNotEmpty();
             return decoded;
         }
 
-        internal static void Decode(AsnReader reader, out CertificatePolicyMappingAsn decoded)
+        internal static void Decode(ref AsnValueReader reader, ReadOnlyMemory<byte> rebind, out CertificatePolicyMappingAsn decoded)
         {
-            if (reader == null)
-                throw new ArgumentNullException(nameof(reader));
-
-            Decode(reader, Asn1Tag.Sequence, out decoded);
+            Decode(ref reader, Asn1Tag.Sequence, rebind, out decoded);
         }
 
-        internal static void Decode(AsnReader reader, Asn1Tag expectedTag, out CertificatePolicyMappingAsn decoded)
+        internal static void Decode(ref AsnValueReader reader, Asn1Tag expectedTag, ReadOnlyMemory<byte> rebind, out CertificatePolicyMappingAsn decoded)
         {
-            if (reader == null)
-                throw new ArgumentNullException(nameof(reader));
-
             decoded = default;
-            AsnReader sequenceReader = reader.ReadSequence(expectedTag);
-            
+            AsnValueReader sequenceReader = reader.ReadSequence(expectedTag);
+
             decoded.IssuerDomainPolicy = sequenceReader.ReadObjectIdentifierAsString();
             decoded.SubjectDomainPolicy = sequenceReader.ReadObjectIdentifierAsString();
 

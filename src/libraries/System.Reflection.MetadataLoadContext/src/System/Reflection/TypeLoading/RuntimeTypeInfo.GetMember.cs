@@ -24,22 +24,22 @@ namespace System.Reflection.TypeLoading
             return GetMemberImpl(name, type, bindingAttr);
         }
 
-        private MemberInfo[] GetMemberImpl(string optionalNameOrPrefix, MemberTypes type, BindingFlags bindingAttr)
+        private MemberInfo[] GetMemberImpl(string? optionalNameOrPrefix, MemberTypes type, BindingFlags bindingAttr)
         {
             bool prefixSearch = optionalNameOrPrefix != null && optionalNameOrPrefix.EndsWith("*", StringComparison.Ordinal);
-            string optionalName = prefixSearch ? null : optionalNameOrPrefix;
+            string? optionalName = prefixSearch ? null : optionalNameOrPrefix;
 
-            Func<MemberInfo, bool> predicate = null;
+            Func<MemberInfo, bool>? predicate = null;
             if (prefixSearch)
             {
                 bool ignoreCase = (bindingAttr & BindingFlags.IgnoreCase) != 0;
                 StringComparison comparisonType = ignoreCase ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal;
-                string prefix = optionalNameOrPrefix.Substring(0, optionalNameOrPrefix.Length - 1);
+                string prefix = optionalNameOrPrefix!.Substring(0, optionalNameOrPrefix.Length - 1);
 
                 predicate = (member => member.Name.StartsWith(prefix, comparisonType));
             }
 
-            MemberInfo[] results;
+            MemberInfo[]? results;
 
             if ((results = QuerySpecificMemberTypeIfRequested(type, optionalName, bindingAttr, predicate, MemberTypes.Method, out QueryResult<MethodInfo> methods)) != null)
                 return results;
@@ -86,7 +86,7 @@ namespace System.Reflection.TypeLoading
             return results;
         }
 
-        private M[] QuerySpecificMemberTypeIfRequested<M>(MemberTypes memberType, string optionalName, BindingFlags bindingAttr, Func<MemberInfo, bool> optionalPredicate, MemberTypes targetMemberType, out QueryResult<M> queryResult) where M : MemberInfo
+        private M[]? QuerySpecificMemberTypeIfRequested<M>(MemberTypes memberType, string? optionalName, BindingFlags bindingAttr, Func<MemberInfo, bool>? optionalPredicate, MemberTypes targetMemberType, out QueryResult<M> queryResult) where M : MemberInfo
         {
             if ((memberType & targetMemberType) == 0)
             {
@@ -97,12 +97,12 @@ namespace System.Reflection.TypeLoading
 
             queryResult = Query<M>(optionalName, bindingAttr, optionalPredicate);
 
-            // Desktop compat: If exactly one type of member was requested, the returned array has to be of that specific type (M[], not MemberInfo[]). Create it now and return it
+            // .NET Framework compat: If exactly one type of member was requested, the returned array has to be of that specific type (M[], not MemberInfo[]). Create it now and return it
             // to cause GetMember() to short-cut the search.
             if ((memberType & ~targetMemberType) == 0)
                 return queryResult.ToArray();
 
-            // Desktop compat: If we got here, than one MemberType was requested. Return null to signal GetMember() to keep querying the other member types and concatenate the results.
+            // .NET Framework compat: If we got here, than one MemberType was requested. Return null to signal GetMember() to keep querying the other member types and concatenate the results.
             return null;
         }
     }

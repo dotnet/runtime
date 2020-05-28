@@ -56,7 +56,7 @@ namespace System.Net.Tests
             Assert.True(request.UsePassive);
         }
 
-        [OuterLoop] // TODO: Issue #11345
+        [OuterLoop]
         [Fact]
         public void GetResponse_ServerNameNotInDns_ThrowsWebException()
         {
@@ -65,7 +65,7 @@ namespace System.Net.Tests
             WebException ex = Assert.Throws<WebException>(() => request.GetResponse());
         }
 
-        [OuterLoop] // TODO: Issue #11345
+        [OuterLoop]
         [Fact]
         public void GetResponse_ConnectFailure_ThrowsWebException()
         {

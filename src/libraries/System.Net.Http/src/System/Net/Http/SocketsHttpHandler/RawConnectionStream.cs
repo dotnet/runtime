@@ -23,7 +23,7 @@ namespace System.Net.Http
 
             public override int Read(Span<byte> buffer)
             {
-                HttpConnection connection = _connection;
+                HttpConnection? connection = _connection;
                 if (connection == null || buffer.Length == 0)
                 {
                     // Response body fully consumed or the caller didn't ask for any data
@@ -45,7 +45,7 @@ namespace System.Net.Http
             {
                 CancellationHelper.ThrowIfCancellationRequested(cancellationToken);
 
-                HttpConnection connection = _connection;
+                HttpConnection? connection = _connection;
                 if (connection == null || buffer.Length == 0)
                 {
                     // Response body fully consumed or the caller didn't ask for any data
@@ -97,7 +97,7 @@ namespace System.Net.Http
                     return Task.FromCanceled(cancellationToken);
                 }
 
-                HttpConnection connection = _connection;
+                HttpConnection? connection = _connection;
                 if (connection == null)
                 {
                     // null if response body fully consumed
@@ -154,7 +154,7 @@ namespace System.Net.Http
 
             public override void Write(ReadOnlySpan<byte> buffer)
             {
-                HttpConnection connection = _connection;
+                HttpConnection? connection = _connection;
                 if (connection == null)
                 {
                     throw new IOException(SR.ObjectDisposed_StreamClosed);
@@ -173,7 +173,7 @@ namespace System.Net.Http
                     return new ValueTask(Task.FromCanceled(cancellationToken));
                 }
 
-                HttpConnection connection = _connection;
+                HttpConnection? connection = _connection;
                 if (connection == null)
                 {
                     return new ValueTask(Task.FromException(ExceptionDispatchInfo.SetCurrentStackTrace(new IOException(SR.ObjectDisposed_StreamClosed))));
@@ -199,7 +199,7 @@ namespace System.Net.Http
                     return Task.FromCanceled(cancellationToken);
                 }
 
-                HttpConnection connection = _connection;
+                HttpConnection? connection = _connection;
                 if (connection == null)
                 {
                     return Task.CompletedTask;

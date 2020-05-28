@@ -64,6 +64,7 @@ namespace System.Reflection.Tests
         }
 
         [Theory]
+        [ActiveIssue("https://github.com/mono/mono/issues/15317", TestRuntimes.Mono)]
         [MemberData(nameof(Invoke_Invalid_TestData))]
         public void Invoke_Invalid(Type constructorParent, Type[] constructorTypeParameters, object[] parameters, Type exceptionType)
         {

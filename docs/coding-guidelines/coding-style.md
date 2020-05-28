@@ -3,16 +3,16 @@ C# Coding Style
 
 For C++ files (*.cpp and *.h), we use clang-format (version 3.6+) to ensure code styling. After changing any Cpp or H file and before merging, src/Native/format-code.sh must be run. This script will ensure that all native code files adhere to the coding style guidelines.
 
-For non code files (xml, etc), our current best guidance is consistency. When editing files, keep new code and changes consistent with the style in the files. For new files, it should conform to the style for that component. If there is a completely new component, anything that is reasonably broadly accepted is fine.
+For other types of files (xml, bat, sh, etc), our current best guidance is consistency. When editing files, keep new code and changes consistent with the style in the files. For new files, it should conform to the style for that component. If there is a completely new component, anything that is reasonably broadly accepted is fine. For script files, please refer to the scripting blog for [tips](https://devblogs.microsoft.com/scripting/tag/powertip) and [best practices](https://devblogs.microsoft.com/scripting/tag/best-practices).
 
 The general rule we follow is "use Visual Studio defaults".
 
 1. We use [Allman style](http://en.wikipedia.org/wiki/Indent_style#Allman_style) braces, where each brace begins on a new line. A single line statement block can go without braces but the block must be properly indented on its own line and must not be nested in other statement blocks that use braces (See rule 17 for more details). One exception is that a `using` statement is permitted to be nested within another `using` statement by starting on the following line at the same indentation level, even if the nested `using` contains a controlled block.
 2. We use four spaces of indentation (no tabs).
 3. We use `_camelCase` for internal and private fields and use `readonly` where possible. Prefix internal and private instance fields with `_`, static fields with `s_` and thread static fields with `t_`. When used on static fields, `readonly` should come after `static` (e.g. `static readonly` not `readonly static`).  Public fields should be used sparingly and should use PascalCasing with no prefix when used.
-4. We avoid `this.` unless absolutely necessary. 
+4. We avoid `this.` unless absolutely necessary.
 5. We always specify the visibility, even if it's the default (e.g.
-   `private string _foo` not `string _foo`). Visibility should be the first modifier (e.g. 
+   `private string _foo` not `string _foo`). Visibility should be the first modifier (e.g.
    `public abstract` not `abstract public`).
 6. Namespace imports should be specified at the top of the file, *outside* of
    `namespace` declarations, and should be sorted alphabetically, with the exception of `System.*` namespaces, which are to be placed on top of all others.
@@ -35,7 +35,7 @@ The general rule we follow is "use Visual Studio defaults".
     - Using braces is always accepted, and required if any block of an `if`/`else if`/.../`else` compound statement uses braces or if a single statement body spans multiple lines.
     - Braces may be omitted only if the body of *every* block associated with an `if`/`else if`/.../`else` compound statement is placed on a single line.
 
-An [EditorConfig](https://editorconfig.org "EditorConfig homepage") file (`.editorconfig`) has been provided at the root of the corefx repository, enabling C# auto-formatting conforming to the above guidelines.
+An [EditorConfig](https://editorconfig.org "EditorConfig homepage") file (`.editorconfig`) has been provided at the root of the runtime repository, enabling C# auto-formatting conforming to the above guidelines.
 
 We also use the [.NET Codeformatter Tool](https://github.com/dotnet/codeformatter) to ensure the code base maintains a consistent style over time, the tool automatically fixes the code base to conform to the guidelines outlined above.
 
@@ -77,7 +77,7 @@ namespace System.Collections.Generic
             get { return _count; }
         }
 
-        public ObservableLinkedListNode AddLast(T value) 
+        public ObservableLinkedListNode AddLast(T value)
         {
             var newNode = new LinkedListNode<T>(this, value);
 
@@ -95,9 +95,9 @@ namespace System.Collections.Generic
 
         private void InsertNodeBefore(LinkedListNode<T> node, LinkedListNode<T> newNode)
         {
-           ...
+            ...
         }
-        
+
         ...
     }
 }
@@ -124,10 +124,10 @@ namespace System.Collections.Generics
                 _parent = parent;
                 _value = value;
             }
-            
+
             public T Value
             {
-               get { return _value; }
+                get { return _value; }
             }
         }
 

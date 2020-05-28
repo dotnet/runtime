@@ -2,11 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.IO;
-using System.Globalization;
-using System.Reflection;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
+using System.IO;
+using System.Reflection;
 
 namespace System.Resources
 {
@@ -120,7 +121,7 @@ namespace System.Resources
         private Version? _satelliteContractVersion;
         private bool _lookedForSatelliteContractVersion;
 
-        private IResourceGroveler _resourceGroveler = null!;
+        private IResourceGroveler _resourceGroveler;
 
         public static readonly int MagicNumber = unchecked((int)0xBEEFCACE);  // If only hex had a K...
 
@@ -234,6 +235,7 @@ namespace System.Resources
 
         // Trying to unify code as much as possible, even though having to do a
         // security check in each constructor prevents it.
+        [MemberNotNull(nameof(_resourceGroveler))]
         private void CommonAssemblyInit()
         {
 #if FEATURE_APPX
@@ -501,8 +503,7 @@ namespace System.Resources
             lock (localResourceSets)
             {
                 // If another thread added this culture, return that.
-                ResourceSet? lostRace;
-                if (localResourceSets.TryGetValue(cultureName, out lostRace))
+                if (localResourceSets.TryGetValue(cultureName, out ResourceSet? lostRace))
                 {
                     if (!object.ReferenceEquals(lostRace, rs))
                     {

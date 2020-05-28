@@ -398,7 +398,7 @@ namespace System.Reflection.Metadata.Ecma335
                         _ => throw ExceptionUtilities.UnexpectedValue(treatment),
                     };
                 case HandleKind.TypeSpecification:
-                    // TODO: https://github.com/dotnet/corefx/issues/8139
+                    // TODO: https://github.com/dotnet/runtime/issues/17146
                     // We need more work here in differentiating case because instantiations can project class
                     // to value type as in IReference<T> -> Nullable<T>. Unblocking Roslyn work where the differentiation
                     // feature is not used. Note that the use-case of custom-mods will not hit this because there is no

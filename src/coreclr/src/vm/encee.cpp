@@ -727,7 +727,7 @@ NOINLINE void EditAndContinueModule::FixContextAndResume(
     memcpy(&context, pContext, sizeof(CONTEXT));
     pContext = &context;
 
-#if defined(_TARGET_AMD64_)
+#if defined(TARGET_AMD64)
     // Since we made a copy of the incoming CONTEXT in context, clear any new flags we
     // don't understand (like XSAVE), since we'll eventually be passing a CONTEXT based
     // on this copy to RtlRestoreContext, and this copy doesn't have the extra info
@@ -736,7 +736,7 @@ NOINLINE void EditAndContinueModule::FixContextAndResume(
     // FUTURE: No reason to ifdef this for amd64-only, except to make this late fix as
     // surgical as possible.  Would be nice to enable this on x86 early in the next cycle.
     pContext->ContextFlags &= CONTEXT_ALL;
-#endif // defined(_TARGET_AMD64_)
+#endif // defined(TARGET_AMD64)
 
     EECodeInfo oldCodeInfo;
     memcpy(&oldCodeInfo, pOldCodeInfo, sizeof(EECodeInfo));
@@ -757,7 +757,7 @@ NOINLINE void EditAndContinueModule::FixContextAndResume(
     g_pDebugInterface->GetVarInfo(pMD, oldDebuggerFuncHandle, &oldVarInfoCount, &pOldVarInfo);
     g_pDebugInterface->GetVarInfo(pMD, NULL,                  &newVarInfoCount, &pNewVarInfo);
 
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
     // save the frame pointer as FixContextForEnC might step on it.
     LPVOID oldSP = dac_cast<PTR_VOID>(GetSP(pContext));
 
@@ -802,7 +802,7 @@ NOINLINE void EditAndContinueModule::FixContextAndResume(
     // and return because we are potentially writing new vars onto the stack.
     pCurThread->SetFilterContext( NULL );
 
-#if defined(_TARGET_X86_)
+#if defined(TARGET_X86)
     ResumeAtJit(pContext, oldSP);
 #else
     RtlRestoreContext(pContext, NULL);

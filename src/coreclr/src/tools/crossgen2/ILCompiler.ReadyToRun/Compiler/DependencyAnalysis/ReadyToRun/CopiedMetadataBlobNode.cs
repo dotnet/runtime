@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -59,7 +59,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 {
                     var methodDefHandle = MetadataTokens.EntityHandle(TableIndex.MethodDef, i);
                     EcmaMethod method = _sourceModule.GetMethod(methodDefHandle) as EcmaMethod;
-                    builder.EmitReloc(((ReadyToRunCodegenNodeFactory)factory).CopiedMethodIL(method), RelocType.IMAGE_REL_BASED_ADDR32NB);
+                    builder.EmitReloc(factory.CopiedMethodIL(method), RelocType.IMAGE_REL_BASED_ADDR32NB);
                 }
 
                 // Skip the rest of the row
@@ -73,7 +73,8 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             MetadataReader metadataReader = _sourceModule.MetadataReader;
             var tableIndex = TableIndex.FieldRva;
             int rowCount = metadataReader.GetTableRowCount(tableIndex);
-
+            bool compressedFieldRef = 6 == metadataReader.GetTableRowSize(TableIndex.FieldRva);
+            
             for (int i = 1; i <= rowCount; i++)
             {
                 Debug.Assert(builder.CountBytes == reader.Offset);
@@ -81,13 +82,28 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 // Rva
                 reader.ReadInt32();
 
-                short fieldToken = reader.ReadInt16();
+                int fieldToken;
+                if (compressedFieldRef)
+                {
+                    fieldToken = reader.ReadInt16();
+                }
+                else
+                {
+                    fieldToken = reader.ReadInt32();
+                }
                 EntityHandle fieldHandle = MetadataTokens.EntityHandle(TableIndex.Field, fieldToken);
                 EcmaField fieldDesc = (EcmaField)_sourceModule.GetField(fieldHandle);
                 Debug.Assert(fieldDesc.HasRva);
 
-                builder.EmitReloc(((ReadyToRunCodegenNodeFactory)factory).CopiedFieldRva(fieldDesc), RelocType.IMAGE_REL_BASED_ADDR32NB);
-                builder.EmitShort(fieldToken);
+                builder.EmitReloc(factory.CopiedFieldRva(fieldDesc), RelocType.IMAGE_REL_BASED_ADDR32NB);
+                if (compressedFieldRef)
+                {
+                    builder.EmitUShort((ushort)fieldToken);
+                }
+                else
+                {
+                    builder.EmitUInt((uint)fieldToken);
+                }
             }
         }
 

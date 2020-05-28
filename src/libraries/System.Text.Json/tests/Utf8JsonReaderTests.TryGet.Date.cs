@@ -149,8 +149,8 @@ namespace System.Text.Json.Tests
         }
 
         [Fact]
-        // https://github.com/dotnet/corefx/issues/39067.
-        public static void Regression39067_TestingDateTimeMinValue()
+        // https://github.com/dotnet/runtime/issues/30095
+        public static void TestingDateTimeMinValue_UtcOffsetGreaterThan0()
         {
             string jsonString = @"""0001-01-01T00:00:00""";
             string expectedString = "0001-01-01T00:00:00";

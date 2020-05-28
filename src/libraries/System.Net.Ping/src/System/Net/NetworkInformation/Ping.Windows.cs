@@ -23,22 +23,22 @@ namespace System.Net.NetworkInformation
 
         private int _sendSize = 0;  // Needed to determine what the reply size is for ipv6 in callback.
         private bool _ipv6 = false;
-        private ManualResetEvent _pingEvent;
-        private RegisteredWaitHandle _registeredWait;
-        private SafeLocalAllocHandle _requestBuffer;
-        private SafeLocalAllocHandle _replyBuffer;
-        private Interop.IpHlpApi.SafeCloseIcmpHandle _handlePingV4;
-        private Interop.IpHlpApi.SafeCloseIcmpHandle _handlePingV6;
-        private TaskCompletionSource<PingReply> _taskCompletionSource;
+        private ManualResetEvent? _pingEvent;
+        private RegisteredWaitHandle? _registeredWait;
+        private SafeLocalAllocHandle? _requestBuffer;
+        private SafeLocalAllocHandle? _replyBuffer;
+        private Interop.IpHlpApi.SafeCloseIcmpHandle? _handlePingV4;
+        private Interop.IpHlpApi.SafeCloseIcmpHandle? _handlePingV6;
+        private TaskCompletionSource<PingReply>? _taskCompletionSource;
 
-        private PingReply SendPingCore(IPAddress address, byte[] buffer, int timeout, PingOptions options)
+        private PingReply SendPingCore(IPAddress address, byte[] buffer, int timeout, PingOptions? options)
         {
             // Since isAsync == false, DoSendPingCore will execute synchronously and return a completed
             // Task - so no blocking here
             return DoSendPingCore(address, buffer, timeout, options, isAsync: false).GetAwaiter().GetResult();
         }
 
-        private Task<PingReply> SendPingAsyncCore(IPAddress address, byte[] buffer, int timeout, PingOptions options)
+        private Task<PingReply> SendPingAsyncCore(IPAddress address, byte[] buffer, int timeout, PingOptions? options)
         {
             // Since isAsync == true, DoSendPingCore will execute asynchronously and return an active Task
             return DoSendPingCore(address, buffer, timeout, options, isAsync: true);
@@ -46,9 +46,9 @@ namespace System.Net.NetworkInformation
 
         // Any exceptions that escape synchronously will be caught by the caller and wrapped in a PingException.
         // We do not need to or want to capture such exceptions into the returned task.
-        private Task<PingReply> DoSendPingCore(IPAddress address, byte[] buffer, int timeout, PingOptions options, bool isAsync)
+        private Task<PingReply> DoSendPingCore(IPAddress address, byte[] buffer, int timeout, PingOptions? options, bool isAsync)
         {
-            TaskCompletionSource<PingReply> tcs = null;
+            TaskCompletionSource<PingReply>? tcs = null;
             if (isAsync)
             {
                 _taskCompletionSource = tcs = new TaskCompletionSource<PingReply>();
@@ -97,8 +97,10 @@ namespace System.Net.NetworkInformation
                 }
             }
 
-            if (isAsync)
+            if (tcs != null)
+            {
                 return tcs.Task;
+            }
 
             Cleanup(isAsync);
             return Task.FromResult(CreatePingReply());
@@ -115,7 +117,7 @@ namespace System.Net.NetworkInformation
                 _pingEvent.Reset();
             }
 
-            _registeredWait = ThreadPool.RegisterWaitForSingleObject(_pingEvent, (state, _) => ((Ping)state).PingCallback(), this, -1, true);
+            _registeredWait = ThreadPool.RegisterWaitForSingleObject(_pingEvent, (state, _) => ((Ping)state!).PingCallback(), this, -1, true);
         }
 
         private void UnregisterWaitHandle()
@@ -136,7 +138,7 @@ namespace System.Net.NetworkInformation
         {
             if (async)
             {
-                return _pingEvent.GetSafeWaitHandle();
+                return _pingEvent!.GetSafeWaitHandle();
             }
 
             return s_nullSafeWaitHandle;
@@ -164,23 +166,23 @@ namespace System.Net.NetworkInformation
             }
         }
 
-        private int SendEcho(IPAddress address, byte[] buffer, int timeout, PingOptions options, bool isAsync)
+        private int SendEcho(IPAddress address, byte[] buffer, int timeout, PingOptions? options, bool isAsync)
         {
             Interop.IpHlpApi.IPOptions ipOptions = new Interop.IpHlpApi.IPOptions(options);
             if (!_ipv6)
             {
                 return (int)Interop.IpHlpApi.IcmpSendEcho2(
-                    _handlePingV4,
+                    _handlePingV4!,
                     GetWaitHandle(isAsync),
                     IntPtr.Zero,
                     IntPtr.Zero,
 #pragma warning disable CS0618 // Address is marked obsolete
                     (uint)address.Address,
 #pragma warning restore CS0618
-                    _requestBuffer,
+                    _requestBuffer!,
                     (ushort)buffer.Length,
                     ref ipOptions,
-                    _replyBuffer,
+                    _replyBuffer!,
                     MaxUdpPacket,
                     (uint)timeout);
             }
@@ -190,23 +192,23 @@ namespace System.Net.NetworkInformation
             byte[] sourceAddr = new byte[28];
 
             return (int)Interop.IpHlpApi.Icmp6SendEcho2(
-                _handlePingV6,
+                _handlePingV6!,
                 GetWaitHandle(isAsync),
                 IntPtr.Zero,
                 IntPtr.Zero,
                 sourceAddr,
                 remoteAddr.Buffer,
-                _requestBuffer,
+                _requestBuffer!,
                 (ushort)buffer.Length,
                 ref ipOptions,
-                _replyBuffer,
+                _replyBuffer!,
                 MaxUdpPacket,
                 (uint)timeout);
         }
 
         private PingReply CreatePingReply()
         {
-            SafeLocalAllocHandle buffer = _replyBuffer;
+            SafeLocalAllocHandle buffer = _replyBuffer!;
 
             // Marshals and constructs new reply.
             if (_ipv6)
@@ -261,11 +263,12 @@ namespace System.Net.NetworkInformation
         // Private callback invoked when icmpsendecho APIs succeed.
         private void PingCallback()
         {
-            TaskCompletionSource<PingReply> tcs = _taskCompletionSource;
+            TaskCompletionSource<PingReply>? tcs = _taskCompletionSource;
             _taskCompletionSource = null;
+            Debug.Assert(tcs != null);
 
-            PingReply reply = null;
-            Exception error = null;
+            PingReply? reply = null;
+            Exception? error = null;
             bool canceled = false;
 
             try
@@ -345,7 +348,7 @@ namespace System.Net.NetworkInformation
             IPStatus ipStatus = GetStatusFromCode((int)reply.status);
 
             long rtt;
-            PingOptions options;
+            PingOptions? options;
             byte[] buffer;
 
             if (ipStatus == IPStatus.Success)
@@ -358,8 +361,8 @@ namespace System.Net.NetworkInformation
             }
             else
             {
-                rtt = default(long);
-                options = default(PingOptions);
+                rtt = 0;
+                options = null;
                 buffer = Array.Empty<byte>();
             }
 
@@ -383,11 +386,11 @@ namespace System.Net.NetworkInformation
             }
             else
             {
-                rtt = default(long);
+                rtt = 0;
                 buffer = Array.Empty<byte>();
             }
 
-            return new PingReply(address, default(PingOptions), ipStatus, rtt, buffer);
+            return new PingReply(address, null, ipStatus, rtt, buffer);
         }
 
         static partial void InitializeSockets()

@@ -2,13 +2,24 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Buffers;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Runtime.CompilerServices;
 
 namespace System.Text.Json
 {
     internal static partial class JsonHelpers
     {
+        /// <summary>
+        /// Returns the span for the given reader.
+        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static ReadOnlySpan<byte> GetSpan(this ref Utf8JsonReader reader)
+        {
+            return reader.HasValueSequence ? reader.ValueSequence.ToArray() : reader.ValueSpan;
+        }
+
 #if !BUILDING_INBOX_LIBRARY
         /// <summary>
         /// Returns <see langword="true"/> if <paramref name="value"/> is a valid Unicode scalar
@@ -65,6 +76,17 @@ namespace System.Text.Json
         public static bool IsDigit(byte value) => (uint)(value - '0') <= '9' - '0';
 
         /// <summary>
+        /// Perform a Read() with a Debug.Assert verifying the reader did not return false.
+        /// This should be called when the Read() return value is not used, such as non-Stream cases where there is only one buffer.
+        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void ReadWithVerify(this ref Utf8JsonReader reader)
+        {
+            bool result = reader.Read();
+            Debug.Assert(result);
+        }
+
+        /// <summary>
         /// Calls Encoding.UTF8.GetString that supports netstandard.
         /// </summary>
         /// <param name="bytes">The utf8 bytes to convert.</param>
@@ -81,7 +103,7 @@ namespace System.Text.Json
         /// <summary>
         /// Emulates Dictionary.TryAdd on netstandard.
         /// </summary>
-        internal static bool TryAdd<TKey, TValue>(Dictionary<TKey, TValue> dictionary, TKey key, TValue value)
+        internal static bool TryAdd<TKey, TValue>(Dictionary<TKey, TValue> dictionary, TKey key, TValue value) where TKey : notnull
         {
 #if NETSTANDARD2_0 || NETFRAMEWORK
             if (!dictionary.ContainsKey(key))

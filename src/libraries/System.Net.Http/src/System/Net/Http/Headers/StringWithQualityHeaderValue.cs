@@ -3,13 +3,14 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 
 namespace System.Net.Http.Headers
 {
     public class StringWithQualityHeaderValue : ICloneable
     {
-        private string _value;
+        private string _value = null!;
         private double? _quality;
 
         public string Value
@@ -64,9 +65,9 @@ namespace System.Net.Http.Headers
             return _value;
         }
 
-        public override bool Equals(object obj)
+        public override bool Equals(object? obj)
         {
-            StringWithQualityHeaderValue other = obj as StringWithQualityHeaderValue;
+            StringWithQualityHeaderValue? other = obj as StringWithQualityHeaderValue;
 
             if (other == null)
             {
@@ -103,29 +104,28 @@ namespace System.Net.Http.Headers
             return result;
         }
 
-        public static StringWithQualityHeaderValue Parse(string input)
+        public static StringWithQualityHeaderValue Parse(string? input)
         {
             int index = 0;
             return (StringWithQualityHeaderValue)GenericHeaderParser.SingleValueStringWithQualityParser.ParseValue(
                 input, null, ref index);
         }
 
-        public static bool TryParse(string input, out StringWithQualityHeaderValue parsedValue)
+        public static bool TryParse([NotNullWhen(true)] string? input, [NotNullWhen(true)] out StringWithQualityHeaderValue? parsedValue)
         {
             int index = 0;
-            object output;
             parsedValue = null;
 
             if (GenericHeaderParser.SingleValueStringWithQualityParser.TryParseValue(
-                input, null, ref index, out output))
+                input, null, ref index, out object? output))
             {
-                parsedValue = (StringWithQualityHeaderValue)output;
+                parsedValue = (StringWithQualityHeaderValue)output!;
                 return true;
             }
             return false;
         }
 
-        internal static int GetStringWithQualityLength(string input, int startIndex, out object parsedValue)
+        internal static int GetStringWithQualityLength(string? input, int startIndex, out object? parsedValue)
         {
             Debug.Assert(startIndex >= 0);
 

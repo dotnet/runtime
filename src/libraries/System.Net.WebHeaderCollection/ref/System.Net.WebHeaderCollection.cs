@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 // ------------------------------------------------------------------------------
-// Changes to this file must follow the http://aka.ms/api-review process.
+// Changes to this file must follow the https://aka.ms/api-review process.
 // ------------------------------------------------------------------------------
 
 namespace System.Net
@@ -97,7 +97,9 @@ namespace System.Net
         public void Add(System.Net.HttpRequestHeader header, string? value) { }
         public void Add(System.Net.HttpResponseHeader header, string? value) { }
         public void Add(string header) { }
+#pragma warning disable CS8765 // Nullability of parameter 'name' doesn't match overridden member
         public override void Add(string name, string? value) { }
+#pragma warning restore CS8765
         protected void AddWithoutValidate(string headerName, string? headerValue) { }
         public override void Clear() { }
         public override string? Get(int index) { throw null; }
@@ -106,16 +108,22 @@ namespace System.Net
         public override string GetKey(int index) { throw null; }
         public override void GetObjectData(System.Runtime.Serialization.SerializationInfo serializationInfo, System.Runtime.Serialization.StreamingContext streamingContext) { }
         public override string[]? GetValues(int index) { throw null; }
+#pragma warning disable CS8765 // Nullability of parameter 'header' doesn't match overridden member
         public override string[]? GetValues(string header) { throw null; }
+#pragma warning restore CS8765
         public static bool IsRestricted(string headerName) { throw null; }
         public static bool IsRestricted(string headerName, bool response) { throw null; }
         public override void OnDeserialization(object? sender) { }
         public void Remove(System.Net.HttpRequestHeader header) { }
         public void Remove(System.Net.HttpResponseHeader header) { }
+#pragma warning disable CS8765 // Nullability of parameter 'name' doesn't match overridden member
         public override void Remove(string name) { }
+#pragma warning restore CS8765
         public void Set(System.Net.HttpRequestHeader header, string? value) { }
         public void Set(System.Net.HttpResponseHeader header, string? value) { }
+#pragma warning disable CS8765 // Nullability of parameter 'name' doesn't match overridden member
         public override void Set(string name, string? value) { }
+#pragma warning restore CS8765
         void System.Runtime.Serialization.ISerializable.GetObjectData(System.Runtime.Serialization.SerializationInfo serializationInfo, System.Runtime.Serialization.StreamingContext streamingContext) { }
         public byte[] ToByteArray() { throw null; }
         public override string ToString() { throw null; }

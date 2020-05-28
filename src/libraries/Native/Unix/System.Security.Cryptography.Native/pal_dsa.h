@@ -11,7 +11,7 @@ Shims the DSA_up_ref method.
 
 Returns 1 upon success, otherwise 0.
 */
-DLLEXPORT int32_t CryptoNative_DsaUpRef(DSA* dsa);
+PALEXPORT int32_t CryptoNative_DsaUpRef(DSA* dsa);
 
 /*
 Cleans up and deletes a DSA instance.
@@ -22,38 +22,38 @@ No-op if dsa is null.
 The given DSA pointer is invalid after this call.
 Always succeeds.
 */
-DLLEXPORT void CryptoNative_DsaDestroy(DSA* dsa);
+PALEXPORT void CryptoNative_DsaDestroy(DSA* dsa);
 
 /*
 Shims the DSA_generate_key_ex method.
 
 Returns 1 upon success, otherwise 0.
 */
-DLLEXPORT int32_t CryptoNative_DsaGenerateKey(DSA** dsa, int32_t bits);
+PALEXPORT int32_t CryptoNative_DsaGenerateKey(DSA** dsa, int32_t bits);
 
 /*
 Shims the DSA_size method.
 
 Returns the size of the ASN.1 encoded signature.
 */
-DLLEXPORT int32_t CryptoNative_DsaSizeSignature(DSA* dsa);
+PALEXPORT int32_t CryptoNative_DsaSizeSignature(DSA* dsa);
 
 /*
 Returns the size of the p parameter in bytes.
 */
-DLLEXPORT int32_t CryptoNative_DsaSizeP(DSA* dsa);
+PALEXPORT int32_t CryptoNative_DsaSizeP(DSA* dsa);
 
 /*
 Returns the size of the q parameter in bytes.
 */
-DLLEXPORT int32_t CryptoNative_DsaSizeQ(DSA* dsa);
+PALEXPORT int32_t CryptoNative_DsaSizeQ(DSA* dsa);
 
 /*
 Shims the DSA_sign method.
 
 Returns 1 upon success, otherwise 0.
 */
-DLLEXPORT int32_t
+PALEXPORT int32_t
 CryptoNative_DsaSign(
     DSA* dsa,
     const uint8_t* hash,
@@ -66,7 +66,7 @@ Shims the DSA_verify method.
 
 Returns 1 upon success, otherwise 0.
 */
-DLLEXPORT int32_t
+PALEXPORT int32_t
 CryptoNative_DsaVerify(
     DSA* dsa,
     const uint8_t* hash,
@@ -79,7 +79,7 @@ Gets all the parameters from the DSA instance.
 
 Returns 1 upon success, otherwise 0.
 */
-DLLEXPORT int32_t CryptoNative_GetDsaParameters(
+PALEXPORT int32_t CryptoNative_GetDsaParameters(
     const DSA* dsa,
     const BIGNUM** p, int32_t* pLength,
     const BIGNUM** q, int32_t* qLength,
@@ -90,7 +90,7 @@ DLLEXPORT int32_t CryptoNative_GetDsaParameters(
 /*
 Sets all the parameters on the DSA instance.
 */
-DLLEXPORT int32_t CryptoNative_DsaKeyCreateByExplicitParameters(
+PALEXPORT int32_t CryptoNative_DsaKeyCreateByExplicitParameters(
     DSA** dsa,
     uint8_t* p,
     int32_t pLength,

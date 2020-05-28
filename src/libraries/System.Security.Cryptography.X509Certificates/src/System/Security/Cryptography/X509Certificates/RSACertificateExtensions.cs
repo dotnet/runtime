@@ -16,7 +16,7 @@ namespace System.Security.Cryptography.X509Certificates
         /// <summary>
         /// Gets the <see cref="RSA" /> public key from the certificate or null if the certificate does not have an RSA public key.
         /// </summary>
-        public static RSA GetRSAPublicKey(this X509Certificate2 certificate)
+        public static RSA? GetRSAPublicKey(this X509Certificate2 certificate)
         {
             return certificate.GetPublicKey<RSA>();
         }
@@ -24,7 +24,7 @@ namespace System.Security.Cryptography.X509Certificates
         /// <summary>
         /// Gets the <see cref="RSA" /> private key from the certificate or null if the certificate does not have an RSA private key.
         /// </summary>
-        public static RSA GetRSAPrivateKey(this X509Certificate2 certificate)
+        public static RSA? GetRSAPrivateKey(this X509Certificate2 certificate)
         {
             return certificate.GetPrivateKey<RSA>();
         }
@@ -39,7 +39,7 @@ namespace System.Security.Cryptography.X509Certificates
             if (certificate.HasPrivateKey)
                 throw new InvalidOperationException(SR.Cryptography_Cert_AlreadyHasPrivateKey);
 
-            using (RSA publicKey = GetRSAPublicKey(certificate))
+            using (RSA? publicKey = GetRSAPublicKey(certificate))
             {
                 if (publicKey == null)
                     throw new ArgumentException(SR.Cryptography_PrivateKey_WrongAlgorithm);

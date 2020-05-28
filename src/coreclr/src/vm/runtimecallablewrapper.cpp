@@ -52,6 +52,7 @@ SLIST_HEADER RCW::s_RCWStandbyList;
 #endif // FEATURE_COMINTEROP_APARTMENT_SUPPORT
 
 #ifdef FEATURE_COMINTEROP_UNMANAGED_ACTIVATION
+#include "interoplibinterface.h"
 
 #ifndef CROSSGEN_COMPILE
 
@@ -246,6 +247,8 @@ IUnknown *ComClassFactory::CreateInstanceFromClassFactory(IClassFactory *pClassF
     ComCallWrapper *ccw = GetCCWFromIUnknown(pUnk);
     if (ccw != NULL)
         ccw->MarkComActivated();
+
+    ComWrappersNative::MarkWrapperAsComActivated(pUnk);
 
     pUnk.SuppressRelease();
     RETURN pUnk;
@@ -2429,22 +2432,11 @@ void RCW::AddMemoryPressure(GCPressureSize pressureSize)
     CONTRACTL_END;
 
     int pressure = s_rGCPressureTable[pressureSize];
-
-    if (pressureSize >= GCPressureSize_WinRT_Base)
-    {
-        // use the new implementation for WinRT RCWs
-        GCInterface::NewAddMemoryPressure(pressure);
-    }
-    else
-    {
-        // use the old implementation for classic COM interop
-        GCInterface::AddMemoryPressure(pressure);
-    }
+    GCInterface::AddMemoryPressure(pressure);
 
     // Remember the pressure we set.
     m_Flags.m_GCPressure = pressureSize;
 }
-
 
 void RCW::RemoveMemoryPressure()
 {
@@ -2461,17 +2453,7 @@ void RCW::RemoveMemoryPressure()
         return;
 
     int pressure = s_rGCPressureTable[m_Flags.m_GCPressure];
-
-    if (m_Flags.m_GCPressure >= GCPressureSize_WinRT_Base)
-    {
-        // use the new implementation for WinRT RCWs
-        GCInterface::NewRemoveMemoryPressure(pressure);
-    }
-    else
-    {
-        // use the old implementation for classic COM interop
-        GCInterface::RemoveMemoryPressure(pressure);
-    }
+    GCInterface::RemoveMemoryPressure(pressure);
 
     m_Flags.m_GCPressure = GCPressureSize_None;
 }
@@ -4080,16 +4062,6 @@ BOOL RCW::AllowEagerSTACleanup()
     // We only consider STA threads. MTA threads should have been dealt
     // with before calling this.
     _ASSERTE(GetSTAThread() != NULL);
-
-    // If the client has called CoEEShutdownCOM, then we should always try to
-    // clean up RCWs, even if they have previously opted out by calling
-    // DisableComObjectEagerCleanup. There's no way for clients to re-enable
-    // eager cleanup so, if we don't clean up now, they will be leaked. After
-    // shutting down COM, clients would not expect any RCWs to be left over.
-    if( g_fShutDownCOM )
-    {
-        return TRUE;
-    }
 
     return m_Flags.m_fAllowEagerSTACleanup;
 }

@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFrameworks>$(NetCoreAppCurrent);$(NetFrameworkCurrent)</TargetFrameworks>
+    <EnableDefaultItems>true</EnableDefaultItems>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="..\..\..\..\..\Common\tests\Extensions\TestingUtils\Microsoft.AspNetCore.Testing\src\ShortClassNameAttribute.cs"
+             Link="Common\tests\Extensions\TestingUtils\Microsoft.AspNetCore.Testing\src\ShortClassNameAttribute.cs" />
+    <Compile Include="..\src\LogLevelAttribute.cs"
+             Link="tests\DI.Common\Common\src\LogLevelAttribute.cs" />
+    <Compile Include="..\src\LogValuesAssert.cs"
+             Link="tests\DI.Common\Common\src\LogValuesAssert.cs" />
+    <Compile Include="..\..\..\Common\TestLoggerBuilder.cs"
+             Link="tests\Common\TestLoggerBuilder.cs" />
+    <Compile Include="..\src\XunitLoggerFactoryExtensions.cs"
+             Link="tests\DI.Common\Common\src\XunitLoggerFactoryExtensions.cs" />
+    <Compile Include="..\src\XunitLoggerProvider.cs"
+             Link="tests\DI.Common\Common\src\XunitLoggerProvider.cs" />
+  </ItemGroup>
+</Project>

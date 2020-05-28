@@ -24,7 +24,7 @@ namespace System.Text.Json
             public void Dispose()
             {
                 byte[] toReturn = _rentedBuffer;
-                _rentedBuffer = null;
+                _rentedBuffer = null!;
                 _topOfStack = 0;
 
                 if (toReturn != null)

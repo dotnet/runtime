@@ -12,6 +12,7 @@ using Xunit;
 
 namespace System.Net.Tests
 {
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/2391", TestRuntimes.Mono)]
     [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))] // httpsys component missing in Nano.
     public class HttpListenerRequestTests : IDisposable
     {
@@ -141,19 +142,6 @@ namespace System.Net.Tests
             HttpListenerRequest request = await GetRequest(method, "", contentLengthString.Split('\n'), content: "\r\n");
             Assert.Equal(expected, request.ContentLength64);
             Assert.Equal(hasEntityBody, request.HasEntityBody);
-        }
-
-        [Fact]
-        [ActiveIssue(20294, TargetFrameworkMonikers.Netcoreapp)]
-        public async Task ContentLength_ManuallyRemovedFromHeaders_DoesNotAffect()
-        {
-            HttpListenerRequest request = await GetRequest("POST", null, new string[] { "Content-Length: 1" }, content: "\r\n");
-            Assert.Equal("1", request.Headers["Content-Length"]);
-
-            request.Headers.Remove("Content-Length");
-            Assert.Equal(1, request.ContentLength64);
-
-            Assert.True(request.HasEntityBody);
         }
 
         [Fact]

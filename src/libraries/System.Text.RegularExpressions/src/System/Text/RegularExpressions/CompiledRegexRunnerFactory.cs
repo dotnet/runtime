@@ -2,9 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-// This is the only concrete implementation of RegexRunnerFactory,
-// but we cannot combine them due to RegexRunnerFactory having shipped public.
-
 using System.Reflection.Emit;
 
 namespace System.Text.RegularExpressions
@@ -13,23 +10,23 @@ namespace System.Text.RegularExpressions
     {
         private readonly DynamicMethod _goMethod;
         private readonly DynamicMethod _findFirstCharMethod;
-        private readonly DynamicMethod _initTrackCountMethod;
+        private readonly int _trackcount;
 
-        public CompiledRegexRunnerFactory(DynamicMethod go, DynamicMethod firstChar, DynamicMethod trackCount)
+        // Delegates are lazily created to avoid forcing JIT'ing until the regex is actually executed.
+        private Action<RegexRunner>? _go;
+        private Func<RegexRunner, bool>? _findFirstChar;
+
+        public CompiledRegexRunnerFactory(DynamicMethod goMethod, DynamicMethod findFirstCharMethod, int trackcount)
         {
-            _goMethod = go;
-            _findFirstCharMethod = firstChar;
-            _initTrackCountMethod = trackCount;
+            _goMethod = goMethod;
+            _findFirstCharMethod = findFirstCharMethod;
+            _trackcount = trackcount;
         }
 
-        protected internal override RegexRunner CreateInstance()
-        {
-            CompiledRegexRunner runner = new CompiledRegexRunner();
-            runner.SetDelegates((Action<RegexRunner>)_goMethod.CreateDelegate(typeof(Action<RegexRunner>)),
-                                (Func<RegexRunner, bool>)_findFirstCharMethod.CreateDelegate(typeof(Func<RegexRunner, bool>)),
-                                (Action<RegexRunner>)_initTrackCountMethod.CreateDelegate(typeof(Action<RegexRunner>)));
-
-            return runner;
-        }
+        protected internal override RegexRunner CreateInstance() =>
+            new CompiledRegexRunner(
+                _go ??= _goMethod.CreateDelegate<Action<RegexRunner>>(),
+                _findFirstChar ??= _findFirstCharMethod.CreateDelegate<Func<RegexRunner, bool>>(),
+                _trackcount);
     }
 }

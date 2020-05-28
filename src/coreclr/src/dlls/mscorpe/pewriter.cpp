@@ -246,7 +246,7 @@ static inline HRESULT SubOvf_U_U32(UINT64 & a, unsigned int b)
     return S_OK;
 }
 
-#ifndef _AMD64_
+#ifndef HOST_AMD64
 /* subtract two unsigned pointers yeilding a signed pointer sized int */
 static inline HRESULT SubOvf_U_U(INT64 & r, UINT64 a, UINT64 b)
 {
@@ -482,7 +482,7 @@ HRESULT PEWriterSection::applyRelocs(IMAGE_NT_HEADERS  *  pNtHeaders,
         else if (curType == srRelocRelative)
         {
             if (externalAddress) {
-#if defined(_AMD64_)
+#if defined(HOST_AMD64)
                 newStarPos = GET_UNALIGNED_INT32(pos);
 #else  // x86
                 UINT64 targetAddr = GET_UNALIGNED_VAL32(pos);
@@ -954,7 +954,7 @@ HRESULT PEWriter::Init(PESectionMan *pFrom, DWORD createFlags, LPCWSTR seedFileN
         m_hSeedFileMap = hMapFile;
         m_pSeedFileDecoder = pPEDecoder;
 
-#ifdef BIT64
+#ifdef HOST_64BIT
         m_pSeedFileNTHeaders = pPEDecoder->GetNTHeaders64();
 #else
         m_pSeedFileNTHeaders = pPEDecoder->GetNTHeaders32();
@@ -1914,9 +1914,9 @@ HRESULT PEWriter::fixup(CeeGenTokenMapper *pMapper)
             switch((int)rcur->type)
             {
                 case 0x7FFA: // Ptr to symbol name
-#ifdef BIT64
+#ifdef HOST_64BIT
                     _ASSERTE(!"this is probably broken!!");
-#endif // BIT64
+#endif // HOST_64BIT
                     szSymbolName = (char*)(UINT_PTR)(rcur->offset);
                     break;
 
@@ -1934,16 +1934,16 @@ HRESULT PEWriter::fixup(CeeGenTokenMapper *pMapper)
                     else return E_OUTOFMEMORY;
                     TokInSymbolTable[NumberOfSymbols++] = 0;
                     memset(&is,0,sizeof(IMAGE_SYMBOL));
-#ifdef BIT64
+#ifdef HOST_64BIT
                     _ASSERTE(!"this is probably broken!!");
-#endif // BIT64
+#endif // HOST_64BIT
                     strcpy_s((char*)&is,sizeof(is),(char*)(UINT_PTR)(rcur->offset));
                     if((pch = reloc->getBlock(sizeof(IMAGE_SYMBOL))))
                         memcpy(pch,&is,sizeof(IMAGE_SYMBOL));
                     else return E_OUTOFMEMORY;
-#ifdef BIT64
+#ifdef HOST_64BIT
                     _ASSERTE(!"this is probably broken!!");
-#endif // BIT64
+#endif // HOST_64BIT
                     delete (char*)(UINT_PTR)(rcur->offset);
                     ToRelocTable = FALSE;
                     tk = 0;

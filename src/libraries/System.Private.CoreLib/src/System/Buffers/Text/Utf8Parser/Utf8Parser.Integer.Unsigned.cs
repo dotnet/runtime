@@ -29,25 +29,30 @@ namespace System.Buffers.Text
         /// </exceptions>
         public static bool TryParse(ReadOnlySpan<byte> source, out byte value, out int bytesConsumed, char standardFormat = default)
         {
-            switch (standardFormat)
+        FastPath:
+            if (standardFormat == default)
             {
-                case default(char):
+                return TryParseByteD(source, out value, out bytesConsumed);
+            }
+
+            // There's small but measurable overhead when entering the switch block below.
+            // We optimize for the default case by hoisting it above the switch block.
+
+            switch (standardFormat | 0x20) // convert to lowercase
+            {
                 case 'g':
-                case 'G':
                 case 'd':
-                case 'D':
-                    return TryParseByteD(source, out value, out bytesConsumed);
+                    standardFormat = default;
+                    goto FastPath;
 
                 case 'n':
-                case 'N':
                     return TryParseByteN(source, out value, out bytesConsumed);
 
                 case 'x':
-                case 'X':
                     return TryParseByteX(source, out value, out bytesConsumed);
 
                 default:
-                    return ParserHelpers.TryParseThrowFormatException(out value, out bytesConsumed);
+                    return ParserHelpers.TryParseThrowFormatException(source, out value, out bytesConsumed);
             }
         }
 
@@ -75,25 +80,30 @@ namespace System.Buffers.Text
         [CLSCompliant(false)]
         public static bool TryParse(ReadOnlySpan<byte> source, out ushort value, out int bytesConsumed, char standardFormat = default)
         {
-            switch (standardFormat)
+        FastPath:
+            if (standardFormat == default)
             {
-                case default(char):
+                return TryParseUInt16D(source, out value, out bytesConsumed);
+            }
+
+            // There's small but measurable overhead when entering the switch block below.
+            // We optimize for the default case by hoisting it above the switch block.
+
+            switch (standardFormat | 0x20) // convert to lowercase
+            {
                 case 'g':
-                case 'G':
                 case 'd':
-                case 'D':
-                    return TryParseUInt16D(source, out value, out bytesConsumed);
+                    standardFormat = default;
+                    goto FastPath;
 
                 case 'n':
-                case 'N':
                     return TryParseUInt16N(source, out value, out bytesConsumed);
 
                 case 'x':
-                case 'X':
                     return TryParseUInt16X(source, out value, out bytesConsumed);
 
                 default:
-                    return ParserHelpers.TryParseThrowFormatException(out value, out bytesConsumed);
+                    return ParserHelpers.TryParseThrowFormatException(source, out value, out bytesConsumed);
             }
         }
 
@@ -121,25 +131,30 @@ namespace System.Buffers.Text
         [CLSCompliant(false)]
         public static bool TryParse(ReadOnlySpan<byte> source, out uint value, out int bytesConsumed, char standardFormat = default)
         {
-            switch (standardFormat)
+        FastPath:
+            if (standardFormat == default)
             {
-                case default(char):
+                return TryParseUInt32D(source, out value, out bytesConsumed);
+            }
+
+            // There's small but measurable overhead when entering the switch block below.
+            // We optimize for the default case by hoisting it above the switch block.
+
+            switch (standardFormat | 0x20) // convert to lowercase
+            {
                 case 'g':
-                case 'G':
                 case 'd':
-                case 'D':
-                    return TryParseUInt32D(source, out value, out bytesConsumed);
+                    standardFormat = default;
+                    goto FastPath;
 
                 case 'n':
-                case 'N':
                     return TryParseUInt32N(source, out value, out bytesConsumed);
 
                 case 'x':
-                case 'X':
                     return TryParseUInt32X(source, out value, out bytesConsumed);
 
                 default:
-                    return ParserHelpers.TryParseThrowFormatException(out value, out bytesConsumed);
+                    return ParserHelpers.TryParseThrowFormatException(source, out value, out bytesConsumed);
             }
         }
 
@@ -167,25 +182,30 @@ namespace System.Buffers.Text
         [CLSCompliant(false)]
         public static bool TryParse(ReadOnlySpan<byte> source, out ulong value, out int bytesConsumed, char standardFormat = default)
         {
-            switch (standardFormat)
+        FastPath:
+            if (standardFormat == default)
             {
-                case default(char):
+                return TryParseUInt64D(source, out value, out bytesConsumed);
+            }
+
+            // There's small but measurable overhead when entering the switch block below.
+            // We optimize for the default case by hoisting it above the switch block.
+
+            switch (standardFormat | 0x20) // convert to lowercase
+            {
                 case 'g':
-                case 'G':
                 case 'd':
-                case 'D':
-                    return TryParseUInt64D(source, out value, out bytesConsumed);
+                    standardFormat = default;
+                    goto FastPath;
 
                 case 'n':
-                case 'N':
                     return TryParseUInt64N(source, out value, out bytesConsumed);
 
                 case 'x':
-                case 'X':
                     return TryParseUInt64X(source, out value, out bytesConsumed);
 
                 default:
-                    return ParserHelpers.TryParseThrowFormatException(out value, out bytesConsumed);
+                    return ParserHelpers.TryParseThrowFormatException(source, out value, out bytesConsumed);
             }
         }
     }

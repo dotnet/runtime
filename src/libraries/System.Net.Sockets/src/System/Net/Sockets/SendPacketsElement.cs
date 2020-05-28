@@ -106,7 +106,7 @@ namespace System.Net.Sockets
             Initialize(null, null, buffer, offset, count, endOfPacket);
         }
 
-        private void Initialize(string filePath, FileStream fileStream, byte[] buffer, long offset, int count, bool endOfPacket)
+        private void Initialize(string? filePath, FileStream? fileStream, byte[]? buffer, long offset, int count, bool endOfPacket)
         {
             FilePath = filePath;
             FileStream = fileStream;
@@ -116,11 +116,11 @@ namespace System.Net.Sockets
             EndOfPacket = endOfPacket;
         }
 
-        public string FilePath { get; private set; }
+        public string? FilePath { get; private set; }
 
-        public FileStream FileStream { get; private set; }
+        public FileStream? FileStream { get; private set; }
 
-        public byte[] Buffer { get; private set; }
+        public byte[]? Buffer { get; private set; }
 
         public int Count { get; private set; }
 

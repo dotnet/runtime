@@ -19,9 +19,9 @@
 #ifndef _BBSWEEP_H_
 #define _BBSWEEP_H_
 
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
 #include <aclapi.h>
-#endif // !FEATURE_PAL
+#endif // !TARGET_UNIX
 
 // The CLR headers don't allow us to use methods like SetEvent directly (instead
 // we need to use the host APIs).  However, this file is included both in the CLR
@@ -315,7 +315,7 @@ cleanup:
         return bInitialized;
     }
 
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
     BOOL IsAppContainerProcess(HANDLE hToken)
     {
 #ifndef TokenIsAppContainer
@@ -330,14 +330,14 @@ cleanup:
         }
         return fIsAppContainerProcess;
     }
-#endif // !FEATURE_PAL
+#endif // !TARGET_UNIX
 
     // helper to get the correct object name prefix
     void GetObjectNamePrefix(DWORD processID, BOOL fromRuntime, __inout_z WCHAR* objectNamePrefix)
     {
         // default prefix
         swprintf_s(objectNamePrefix, MAX_LONGPATH, W("Global"));
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
         //
         // This method can be called:
         // 1. From process init code
@@ -403,7 +403,7 @@ cleanup:
                 }
             }
         }
-#endif // FEATURE_PAL
+#endif // TARGET_UNIX
     }
 private:
 

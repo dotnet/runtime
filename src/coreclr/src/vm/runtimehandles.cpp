@@ -22,6 +22,7 @@
 #include "eeconfig.h"
 #include "eehash.h"
 #include "interoputil.h"
+#include "comdelegate.h"
 #include "typedesc.h"
 #include "virtualcallstub.h"
 #include "contractimpl.h"
@@ -100,7 +101,7 @@ static BOOL CheckCAVisibilityFromDecoratedType(MethodTable* pCAMT, MethodDesc* p
         dwAttr = pCACtor->GetAttrs();
     }
 
-    StaticAccessCheckContext accessContext(NULL, pDecoratedMT, pDecoratedModule->GetAssembly());
+    AccessCheckContext accessContext(NULL, pDecoratedMT, pDecoratedModule->GetAssembly());
 
     return ClassLoader::CanAccess(
         &accessContext,
@@ -448,11 +449,10 @@ FCIMPL1(MethodDesc *, RuntimeTypeHandle::GetFirstIntroducedMethod, ReflectClassB
         FCThrowRes(kArgumentException, W("Arg_InvalidHandle"));
 
     if (typeHandle.IsTypeDesc()) {
-        if (!typeHandle.IsArray())
-            return NULL;
+        return NULL;
     }
 
-    MethodTable* pMT = typeHandle.GetMethodTable();
+    MethodTable* pMT = typeHandle.AsMethodTable();
     if (pMT == NULL)
         return NULL;
 
@@ -573,8 +573,7 @@ FCIMPL1(ReflectClassBaseObject *, RuntimeTypeHandle::GetBaseType, ReflectClassBa
         FCThrowRes(kArgumentException, W("Arg_InvalidHandle"));
 
     if (typeHandle.IsTypeDesc()) {
-        if (!typeHandle.IsArray())
-            return NULL;
+        return NULL;
     }
 
     RETURN_CLASS_OBJECT(typeHandle.GetParent(), refType);
@@ -593,19 +592,22 @@ FCIMPL1(ReflectClassBaseObject *, RuntimeTypeHandle::GetElementType, ReflectClas
         FCThrowRes(kArgumentNullException, W("Arg_InvalidHandle"));
 
     TypeHandle typeHandle = refType->GetType();
-
-    if (!typeHandle.IsTypeDesc())
-        return 0;
-
-    if (typeHandle.IsGenericVariable())
-        return 0;
-
     TypeHandle typeReturn;
 
     if (typeHandle.IsArray())
-        typeReturn = typeHandle.AsArray()->GetArrayElementTypeHandle();
+    {
+        typeReturn = typeHandle.GetArrayElementTypeHandle();
+    }
     else
+    {
+        if (!typeHandle.IsTypeDesc())
+            return 0;
+
+        if (typeHandle.IsGenericVariable())
+            return 0;
+
         typeReturn = typeHandle.AsTypeDesc()->GetTypeParam();
+    }
 
     RETURN_CLASS_OBJECT(typeReturn, refType);
 }
@@ -621,7 +623,7 @@ FCIMPL1(INT32, RuntimeTypeHandle::GetArrayRank, ReflectClassBaseObject *pTypeUNS
 
     REFLECTCLASSBASEREF refType = (REFLECTCLASSBASEREF)ObjectToOBJECTREF(pTypeUNSAFE);
 
-    return (INT32)refType->GetType().AsArray()->GetRank();
+    return (INT32)refType->GetType().GetRank();
 }
 FCIMPLEND
 
@@ -698,7 +700,7 @@ FCIMPL3(FC_BOOL_RET, RuntimeTypeHandle::GetFields, ReflectClassBaseObject *pType
     if (typeHandle.IsGenericVariable())
         FCThrowRes(kArgumentException, W("Arg_InvalidHandle"));
 
-    if (typeHandle.IsTypeDesc()) {
+    if (typeHandle.IsTypeDesc() || typeHandle.IsArray()) {
         *pCount = 0;
         FC_RETURN_BOOL(TRUE);
     }
@@ -850,14 +852,7 @@ FCIMPL1(PtrArray*, RuntimeTypeHandle::GetInterfaces, ReflectClassBaseObject *pTy
     {
         if (typeHandle.IsTypeDesc())
         {
-            if (typeHandle.IsArray())
-            {
-                ifaceCount = typeHandle.GetMethodTable()->GetNumInterfaces();
-            }
-            else
-            {
-                ifaceCount = 0;
-            }
+            ifaceCount = 0;
         }
         else
         {
@@ -908,8 +903,7 @@ FCIMPL1(INT32, RuntimeTypeHandle::GetAttributes, ReflectClassBaseObject *pTypeUN
             return tdPublic;
         }
 
-        if (!typeHandle.IsArray())
-            return 0;
+        return 0;
     }
 
 #ifdef FEATURE_COMINTEROP
@@ -1050,10 +1044,10 @@ FCIMPL1(LPCUTF8, RuntimeTypeHandle::GetUtf8Name, ReflectClassBaseObject* pTypeUN
     if (typeHandle.IsGenericVariable())
         FCThrowRes(kArgumentException, W("Arg_InvalidHandle"));
 
-    if (typeHandle.IsTypeDesc())
+    if (typeHandle.IsTypeDesc() || typeHandle.IsArray())
         FCThrowRes(kArgumentException, W("Arg_InvalidHandle"));
 
-    MethodTable* pMT= typeHandle.GetMethodTable();
+    MethodTable* pMT= typeHandle.AsMethodTable();
 
     if (pMT == NULL)
         FCThrowRes(kArgumentException, W("Arg_InvalidHandle"));
@@ -1087,7 +1081,7 @@ FCIMPL1(INT32, RuntimeTypeHandle::GetToken, ReflectClassBaseObject *pTypeUNSAFE)
 
     TypeHandle typeHandle = refType->GetType();
 
-    if (typeHandle.IsTypeDesc())
+    if (typeHandle.IsTypeDesc() || typeHandle.IsArray())
     {
         if (typeHandle.IsGenericVariable())
         {
@@ -1116,13 +1110,28 @@ PVOID QCALLTYPE RuntimeTypeHandle::GetGCHandle(QCall::TypeHandle pTypeHandle, IN
     GCX_COOP();
 
     TypeHandle th = pTypeHandle.AsTypeHandle();
-    assert(handleType >= HNDTYPE_WEAK_SHORT && handleType <= HNDTYPE_WEAK_WINRT);
+    assert(handleType >= HNDTYPE_WEAK_SHORT && handleType <= HNDTYPE_WEAK_NATIVE_COM);
     objHandle = AppDomain::GetCurrentDomain()->CreateTypedHandle(NULL, static_cast<HandleType>(handleType));
     th.GetLoaderAllocator()->RegisterHandleForCleanup(objHandle);
 
     END_QCALL;
 
     return objHandle;
+}
+
+void QCALLTYPE RuntimeTypeHandle::FreeGCHandle(QCall::TypeHandle pTypeHandle, OBJECTHANDLE objHandle)
+{
+    QCALL_CONTRACT;
+
+    BEGIN_QCALL;
+
+    GCX_COOP();
+
+    TypeHandle th = pTypeHandle.AsTypeHandle();
+    th.GetLoaderAllocator()->UnregisterHandleFromCleanup(objHandle);
+    DestroyTypedHandle(objHandle);
+
+    END_QCALL;
 }
 
 void QCALLTYPE RuntimeTypeHandle::VerifyInterfaceIsImplemented(QCall::TypeHandle pTypeHandle, QCall::TypeHandle pIFaceHandle)
@@ -1138,8 +1147,7 @@ void QCALLTYPE RuntimeTypeHandle::VerifyInterfaceIsImplemented(QCall::TypeHandle
         COMPlusThrow(kArgumentException, W("Arg_InvalidHandle"));
 
     if (typeHandle.IsTypeDesc()) {
-        if (!typeHandle.IsArray())
-            COMPlusThrow(kArgumentException, W("Arg_NotFoundIFace"));
+        COMPlusThrow(kArgumentException, W("Arg_NotFoundIFace"));
     }
 
     if (typeHandle.IsInterface())
@@ -1278,11 +1286,9 @@ FCIMPL1(ReflectClassBaseObject*, RuntimeTypeHandle::GetDeclaringType, ReflectCla
             HELPER_METHOD_FRAME_END();
             goto Exit;
         }
-        if (!typeHandle.IsArray())
-        {
-            retTypeHandle = TypeHandle();
-            goto Exit;
-        }
+
+        retTypeHandle = TypeHandle();
+        goto Exit;
     }
 
     pMT = typeHandle.GetMethodTable();
@@ -1377,7 +1383,7 @@ FCIMPL2(FC_BOOL_RET, RuntimeTypeHandle::CanCastTo, ReflectClassBaseObject *pType
             }
             else
             {
-                iRetVal = fromHandle.AsMethodTable()->CanCastToClassOrInterface(toHandle.AsMethodTable(), /* pVisited */ NULL);
+                iRetVal = fromHandle.AsMethodTable()->CanCastTo(toHandle.AsMethodTable(), /* pVisited */ NULL);
             }
         }
     }
@@ -1716,6 +1722,28 @@ FCIMPL1(IMDInternalImport*, RuntimeTypeHandle::GetMetadataImport, ReflectClassBa
 }
 FCIMPLEND
 
+PVOID QCALLTYPE RuntimeTypeHandle::AllocateTypeAssociatedMemory(QCall::TypeHandle type, UINT32 size)
+{
+    QCALL_CONTRACT;
+
+    void *allocatedMemory = nullptr;
+
+    BEGIN_QCALL;
+
+    TypeHandle typeHandle = type.AsTypeHandle();
+    _ASSERTE(!typeHandle.IsNull());
+
+    // Get the loader allocator for the associated type.
+    // Allocating using the type's associated loader allocator means
+    // that the memory will be freed when the type is unloaded.
+    PTR_LoaderAllocator loaderAllocator = typeHandle.GetMethodTable()->GetLoaderAllocator();
+    LoaderHeap* loaderHeap = loaderAllocator->GetHighFrequencyHeap();
+    allocatedMemory = loaderHeap->AllocMem(S_SIZE_T(size));
+
+    END_QCALL;
+
+    return allocatedMemory;
+}
 
 //***********************************************************************************
 //***********************************************************************************
@@ -1725,11 +1753,29 @@ void * QCALLTYPE RuntimeMethodHandle::GetFunctionPointer(MethodDesc * pMethod)
 {
     QCALL_CONTRACT;
 
-    void* funcPtr = 0;
+    void* funcPtr = NULL;
 
     BEGIN_QCALL;
 
+    // Ensure the method is active so
+    // the function pointer can be used.
+    pMethod->EnsureActive();
+
+#if defined(TARGET_X86)
+    // Deferring X86 support until a need is observed or
+    // time permits investigation into all the potential issues.
+    // https://github.com/dotnet/runtime/issues/33582
+    if (pMethod->HasUnmanagedCallersOnlyAttribute())
+    {
+        funcPtr = (void*)COMDelegate::ConvertToUnmanagedCallback(pMethod);
+    }
+    else
+    {
+        funcPtr = (void*)pMethod->GetMultiCallableAddrOfCode();
+    }
+#else
     funcPtr = (void*)pMethod->GetMultiCallableAddrOfCode();
+#endif
 
     END_QCALL;
 
@@ -2727,7 +2773,7 @@ FCIMPL2(FieldDesc*, RuntimeFieldHandle::GetStaticFieldForGenericType, FieldDesc 
 
     if (!pField)
         FCThrowRes(kArgumentNullException, W("Arg_InvalidHandle"));
-    if (declaringType.IsTypeDesc())
+    if (declaringType.IsTypeDesc() || declaringType.IsArray())
         FCThrowRes(kArgumentNullException, W("Arg_InvalidHandle"));
     MethodTable *pMT = declaringType.AsMethodTable();
 
@@ -3058,22 +3104,3 @@ FCIMPL5(ReflectMethodObject*, ModuleHandle::GetDynamicMethod, ReflectMethodObjec
     return (ReflectMethodObject*)OBJECTREFToObject(gc.retMethod);
 }
 FCIMPLEND
-
-void QCALLTYPE RuntimeMethodHandle::GetCallerType(QCall::StackCrawlMarkHandle pStackMark, QCall::ObjectHandleOnStack retType)
-{
-    QCALL_CONTRACT;
-
-    BEGIN_QCALL;
-    GCX_COOP();
-    MethodTable *pMT = NULL;
-
-    pMT = SystemDomain::GetCallersType(pStackMark);
-
-    if (pMT != NULL)
-        retType.Set(pMT->GetManagedClassObject());
-
-    END_QCALL;
-
-    return;
-}
-

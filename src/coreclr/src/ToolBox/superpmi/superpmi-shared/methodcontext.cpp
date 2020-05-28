@@ -9,7 +9,6 @@
 //----------------------------------------------------------
 
 #include "standardpch.h"
-#include "md5.h"
 #include "methodcontext.h"
 #include "compileresult.h"
 #include "lightweightmap.h"
@@ -35,6 +34,9 @@
 #define DEBUG_REC(x)
 #define DEBUG_REP(x)
 #endif
+
+// static variable initialization
+Hash MethodContext::m_hash;
 
 MethodContext::MethodContext()
 {
@@ -288,7 +290,7 @@ void MethodContext::MethodInitHelper(unsigned char* buff2, unsigned int totalLen
     {
         mcPackets packetType = (mcPackets)buff2[buffIndex++];
         memcpy(&localsize, &buff2[buffIndex], sizeof(unsigned int));
-        buffIndex += 4;
+        buffIndex += sizeof(unsigned int);
 
         switch (packetType)
         {
@@ -478,6 +480,15 @@ void MethodContext::dumpToConsole(int mcNumber)
     {
         printf(" method context #%d", mcNumber);
     }
+
+    // Dump method name, etc., to output.
+    char bufferIdentityInfo[METHOD_IDENTITY_INFO_SIZE];
+    int cbLen = dumpMethodIdentityInfoToBuffer(bufferIdentityInfo, METHOD_IDENTITY_INFO_SIZE);
+    if (cbLen >= 0)
+    {
+        printf(" %s", bufferIdentityInfo);
+    }
+
     printf("\n");
 
 #define LWM(map, key, value) dumpLWM(this, map)
@@ -718,6 +729,7 @@ void MethodContext::repCompileMethod(CORINFO_METHOD_INFO* info, unsigned* flags)
     info->locals.pSig  = (PCCOR_SIGNATURE)CompileMethod->GetBuffer(value.info.locals.pSig_Index);
     info->locals.scope = (CORINFO_MODULE_HANDLE)value.info.locals.scope;
     info->locals.token = (mdToken)value.info.locals.token;
+
     *flags             = (unsigned)value.flags;
     DEBUG_REP(dmpCompileMethod(0, value));
 }
@@ -756,7 +768,7 @@ void MethodContext::recGetClassAttribs(CORINFO_CLASS_HANDLE classHandle, DWORD a
 }
 void MethodContext::dmpGetClassAttribs(DWORDLONG key, DWORD value)
 {
-    printf("GetClassAttribs key %016llX, value %u", key, value);
+    printf("GetClassAttribs key %016llX, value %08X (%s)", key, value, SpmiDumpHelper::DumpCorInfoFlag((CorInfoFlag)value).c_str());
 }
 DWORD MethodContext::repGetClassAttribs(CORINFO_CLASS_HANDLE classHandle)
 {
@@ -780,7 +792,7 @@ void MethodContext::recGetMethodAttribs(CORINFO_METHOD_HANDLE methodHandle, DWOR
 }
 void MethodContext::dmpGetMethodAttribs(DWORDLONG key, DWORD value)
 {
-    printf("GetMethodAttribs key %016llX, value %u", key, value);
+    printf("GetMethodAttribs key %016llX, value %08X (%s)", key, value, SpmiDumpHelper::DumpCorInfoFlag((CorInfoFlag)value).c_str());
 }
 DWORD MethodContext::repGetMethodAttribs(CORINFO_METHOD_HANDLE methodHandle)
 {
@@ -1041,11 +1053,11 @@ void MethodContext::recGetMethodNameFromMetadata(CORINFO_METHOD_HANDLE ftn,
 
 void MethodContext::dmpGetMethodNameFromMetadata(Agnostic_CORINFO_METHODNAME_TOKENin key, Agnostic_CORINFO_METHODNAME_TOKENout value)
 {
-    unsigned char* methodName    = (unsigned char*)GetMethodName->GetBuffer(value.methodName);
-    unsigned char* className     = (unsigned char*)GetMethodName->GetBuffer(value.className);
-    unsigned char* namespaceName = (unsigned char*)GetMethodName->GetBuffer(value.namespaceName);
-    unsigned char* enclosingClassName = (unsigned char*)GetMethodName->GetBuffer(value.enclosingClassName);
-    printf("GetMethodNameFromMetadata key - ftn-%016llX classNonNull-%u namespaceNonNull-%u nclosingClassNonNull-%u, value meth-'%s', "
+    unsigned char* methodName    = (unsigned char*)GetMethodNameFromMetadata->GetBuffer(value.methodName);
+    unsigned char* className     = (unsigned char*)GetMethodNameFromMetadata->GetBuffer(value.className);
+    unsigned char* namespaceName = (unsigned char*)GetMethodNameFromMetadata->GetBuffer(value.namespaceName);
+    unsigned char* enclosingClassName = (unsigned char*)GetMethodNameFromMetadata->GetBuffer(value.enclosingClassName);
+    printf("GetMethodNameFromMetadata key - ftn-%016llX classNonNull-%u namespaceNonNull-%u enclosingClassNonNull-%u, value meth-'%s', "
            "class-'%s', namespace-'%s' enclosingClass-'%s'",
            key.ftn, key.className, key.namespaceName, key.enclosingClassName, methodName, className, namespaceName, enclosingClassName);
     GetMethodNameFromMetadata->Unlock();
@@ -1115,7 +1127,7 @@ void MethodContext::recGetJitFlags(CORJIT_FLAGS* jitFlags, DWORD sizeInBytes, DW
 void MethodContext::dmpGetJitFlags(DWORD key, DD value)
 {
     CORJIT_FLAGS* jitflags = (CORJIT_FLAGS*)GetJitFlags->GetBuffer(value.A);
-    printf("GetJitFlags key %u sizeInBytes-%u jitFlags-%016llX", key, value.B, jitflags->GetFlagsRaw());
+    printf("GetJitFlags key %u sizeInBytes-%u jitFlags-%016llX instructionSetFlags-%016llX", key, value.B, jitflags->GetFlagsRaw(), jitflags->GetInstructionSetFlagsRaw());
     GetJitFlags->Unlock();
 }
 DWORD MethodContext::repGetJitFlags(CORJIT_FLAGS* jitFlags, DWORD sizeInBytes)
@@ -1384,7 +1396,7 @@ void MethodContext::dmpGetCallInfo(const Agnostic_GetCallInfo& key, const Agnost
            " ipl{at-%08X hnd-%016llX}"
            " sdi-%08X"
            " excp-%08X"
-           "stubLookup%s",
+           " stubLookup{%s}",
            value.hMethod, value.methodFlags, value.classFlags,
            SpmiDumpHelper::DumpAgnostic_CORINFO_SIG_INFO(value.sig).c_str(),
            SpmiDumpHelper::DumpAgnostic_CORINFO_SIG_INFO(value.verSig).c_str(), value.instParamLookup.accessType,
@@ -1446,18 +1458,7 @@ void MethodContext::repGetCallInfo(CORINFO_RESOLVED_TOKEN* pResolvedToken,
         (CORINFO_RUNTIME_LOOKUP_KIND)value.stubLookup.lookupKind.runtimeLookupKind;
     if (pResult->stubLookup.lookupKind.needsRuntimeLookup)
     {
-        pResult->stubLookup.runtimeLookup.signature =
-            (LPVOID)value.stubLookup.runtimeLookup.signature; // needs to be a more flexible copy based on
-                                                              // valuevalue.stubLookup.runtimeLookup.signature;
-        pResult->stubLookup.runtimeLookup.helper              = (CorInfoHelpFunc)value.stubLookup.runtimeLookup.helper;
-        pResult->stubLookup.runtimeLookup.indirections        = (WORD)value.stubLookup.runtimeLookup.indirections;
-        pResult->stubLookup.runtimeLookup.testForNull         = value.stubLookup.runtimeLookup.testForNull != 0;
-        pResult->stubLookup.runtimeLookup.testForFixup        = value.stubLookup.runtimeLookup.testForFixup != 0;
-        pResult->stubLookup.runtimeLookup.indirectFirstOffset = value.stubLookup.runtimeLookup.indirectFirstOffset != 0;
-        pResult->stubLookup.runtimeLookup.indirectSecondOffset =
-            value.stubLookup.runtimeLookup.indirectSecondOffset != 0;
-        for (int i                                       = 0; i < CORINFO_MAXINDIRECTIONS; i++)
-            pResult->stubLookup.runtimeLookup.offsets[i] = (SIZE_T)value.stubLookup.runtimeLookup.offsets[i];
+        pResult->stubLookup.runtimeLookup = SpmiRecordsHelper::RestoreCORINFO_RUNTIME_LOOKUP(value.stubLookup.runtimeLookup);
     }
     else
     {
@@ -1625,27 +1626,6 @@ CorInfoUnmanagedCallConv MethodContext::repGetUnmanagedCallConv(CORINFO_METHOD_H
     }
     CorInfoUnmanagedCallConv result = (CorInfoUnmanagedCallConv)GetUnmanagedCallConv->Get((DWORDLONG)method);
     DEBUG_REP(dmpGetUnmanagedCallConv((DWORDLONG)method, (DWORD)result));
-    return result;
-}
-
-void MethodContext::recIsInstantiationOfVerifiedGeneric(CORINFO_METHOD_HANDLE            method,
-                                                        CorInfoInstantiationVerification result)
-{
-    if (IsInstantiationOfVerifiedGeneric == nullptr)
-        IsInstantiationOfVerifiedGeneric = new LightWeightMap<DWORDLONG, DWORD>();
-
-    IsInstantiationOfVerifiedGeneric->Add((DWORDLONG)method, result);
-    DEBUG_REC(dmpIsInstantiationOfVerifiedGeneric((DWORDLONG)method, (DWORD)result));
-}
-void MethodContext::dmpIsInstantiationOfVerifiedGeneric(DWORDLONG key, DWORD value)
-{
-    printf("IsInstantiationOfVerifiedGeneric key ftn-%016llX, value res-%u", key, value);
-}
-CorInfoInstantiationVerification MethodContext::repIsInstantiationOfVerifiedGeneric(CORINFO_METHOD_HANDLE method)
-{
-    CorInfoInstantiationVerification result =
-        (CorInfoInstantiationVerification)IsInstantiationOfVerifiedGeneric->Get((DWORDLONG)method);
-    DEBUG_REP(dmpIsInstantiationOfVerifiedGeneric((DWORDLONG)method, (DWORD)result));
     return result;
 }
 
@@ -1841,25 +1821,6 @@ CorInfoHelpFunc MethodContext::repGetSharedCCtorHelper(CORINFO_CLASS_HANDLE clsH
 {
     CorInfoHelpFunc result = (CorInfoHelpFunc)GetSharedCCtorHelper->Get((DWORDLONG)clsHnd);
     DEBUG_REP(dmpGetSharedCCtorHelper((DWORDLONG)clsHnd, (DWORD)result));
-    return result;
-}
-
-void MethodContext::recGetSecurityPrologHelper(CORINFO_METHOD_HANDLE ftn, CorInfoHelpFunc result)
-{
-    if (GetSecurityPrologHelper == nullptr)
-        GetSecurityPrologHelper = new LightWeightMap<DWORDLONG, DWORD>();
-
-    GetSecurityPrologHelper->Add((DWORDLONG)ftn, result);
-    DEBUG_REC(dmpGetSecurityPrologHelper((DWORDLONG)ftn, (DWORD)result));
-}
-void MethodContext::dmpGetSecurityPrologHelper(DWORDLONG key, DWORD value)
-{
-    printf("GetSecurityPrologHelper key ftn-%016llX, value res-%u", key, value);
-}
-CorInfoHelpFunc MethodContext::repGetSecurityPrologHelper(CORINFO_METHOD_HANDLE ftn)
-{
-    CorInfoHelpFunc result = (CorInfoHelpFunc)GetSecurityPrologHelper->Get((DWORDLONG)ftn);
-    DEBUG_REP(dmpGetSecurityPrologHelper((DWORDLONG)ftn, (DWORD)result));
     return result;
 }
 
@@ -3316,30 +3277,22 @@ void MethodContext::repGetFieldInfo(CORINFO_RESOLVED_TOKEN* pResolvedToken,
     if (GetFieldInfo->GetIndex(key) == -1)
     {
 #ifdef sparseMC
-        key.flags = origFlag ^ (DWORD)CORINFO_ACCESS_UNWRAP;
+        key.flags = origFlag ^ ((DWORD)CORINFO_ACCESS_THIS);
         if (GetFieldInfo->GetIndex(key) != -1)
         {
-            LogDebug("Sparse - repGetFieldInfo found value with inverted CORINFO_ACCESS_UNWRAP");
+            LogDebug(
+                "Sparse - repGetFieldInfo found value with inverted CORINFO_ACCESS_THIS");
         }
         else
         {
-            key.flags = origFlag ^ ((DWORD)CORINFO_ACCESS_THIS | (DWORD)CORINFO_ACCESS_UNWRAP);
+            key.flags = origFlag ^ (DWORD)CORINFO_ACCESS_INLINECHECK;
             if (GetFieldInfo->GetIndex(key) != -1)
             {
-                LogDebug(
-                    "Sparse - repGetFieldInfo found value with inverted CORINFO_ACCESS_UNWRAP|CORINFO_ACCESS_THIS");
+                LogDebug("Sparse - repGetFieldInfo found value with inverted CORINFO_ACCESS_INLINECHECK");
             }
             else
             {
-                key.flags = origFlag ^ (DWORD)CORINFO_ACCESS_INLINECHECK;
-                if (GetFieldInfo->GetIndex(key) != -1)
-                {
-                    LogDebug("Sparse - repGetFieldInfo found value with inverted CORINFO_ACCESS_INLINECHECK");
-                }
-                else
-                {
-                    LogException(EXCEPTIONCODE_MC, "Didn't find %x", pResolvedToken->token);
-                }
+                LogException(EXCEPTIONCODE_MC, "Didn't find %x", pResolvedToken->token);
             }
         }
 #else
@@ -3889,17 +3842,11 @@ void MethodContext::recGetEEInfo(CORINFO_EE_INFO* pEEInfoOut)
     value.offsetOfDelegateInstance                   = (DWORD)pEEInfoOut->offsetOfDelegateInstance;
     value.offsetOfDelegateFirstTarget                = (DWORD)pEEInfoOut->offsetOfDelegateFirstTarget;
     value.offsetOfWrapperDelegateIndirectCell        = (DWORD)pEEInfoOut->offsetOfWrapperDelegateIndirectCell;
-    value.offsetOfTransparentProxyRP                 = (DWORD)pEEInfoOut->offsetOfTransparentProxyRP;
-    value.offsetOfRealProxyServer                    = (DWORD)pEEInfoOut->offsetOfRealProxyServer;
-    value.offsetOfObjArrayData                       = (DWORD)pEEInfoOut->offsetOfObjArrayData;
     value.sizeOfReversePInvokeFrame                  = (DWORD)pEEInfoOut->sizeOfReversePInvokeFrame;
     value.osPageSize                                 = (DWORD)pEEInfoOut->osPageSize;
     value.maxUncheckedOffsetForNullObject            = (DWORD)pEEInfoOut->maxUncheckedOffsetForNullObject;
     value.targetAbi                                  = (DWORD)pEEInfoOut->targetAbi;
     value.osType                                     = (DWORD)pEEInfoOut->osType;
-    value.osMajor                                    = (DWORD)pEEInfoOut->osMajor;
-    value.osMinor                                    = (DWORD)pEEInfoOut->osMinor;
-    value.osBuild                                    = (DWORD)pEEInfoOut->osBuild;
 
     GetEEInfo->Add((DWORD)0, value);
     DEBUG_REC(dmpGetEEInfo((DWORD)0, value));
@@ -3907,17 +3854,15 @@ void MethodContext::recGetEEInfo(CORINFO_EE_INFO* pEEInfoOut)
 void MethodContext::dmpGetEEInfo(DWORD key, const Agnostic_CORINFO_EE_INFO& value)
 {
     printf("GetEEInfo key %u, value icfi{sz-%u ogs-%u ofv-%u ofl-%u ocsp-%u ocsfp-%u oct-%u ora-%u} "
-           "otf-%u ogcs-%u odi-%u odft-%u osdic-%u otrp-%u orps-%u ooad-%u srpf-%u osps-%u muono-%u tabi-%u osType-%u "
-           "osMajor-%u osMinor-%u osBuild-%u",
+           "otf-%u ogcs-%u odi-%u odft-%u osdic-%u srpf-%u osps-%u muono-%u tabi-%u osType-%u",
            key, value.inlinedCallFrameInfo.size, value.inlinedCallFrameInfo.offsetOfGSCookie,
            value.inlinedCallFrameInfo.offsetOfFrameVptr, value.inlinedCallFrameInfo.offsetOfFrameLink,
            value.inlinedCallFrameInfo.offsetOfCallSiteSP, value.inlinedCallFrameInfo.offsetOfCalleeSavedFP,
            value.inlinedCallFrameInfo.offsetOfCallTarget, value.inlinedCallFrameInfo.offsetOfReturnAddress,
            value.offsetOfThreadFrame, value.offsetOfGCState, value.offsetOfDelegateInstance,
            value.offsetOfDelegateFirstTarget, value.offsetOfWrapperDelegateIndirectCell,
-           value.offsetOfTransparentProxyRP, value.offsetOfRealProxyServer, value.offsetOfObjArrayData,
            value.sizeOfReversePInvokeFrame, value.osPageSize, value.maxUncheckedOffsetForNullObject, value.targetAbi,
-           value.osType, value.osMajor, value.osMinor, value.osBuild);
+           value.osType);
 }
 void MethodContext::repGetEEInfo(CORINFO_EE_INFO* pEEInfoOut)
 {
@@ -3944,17 +3889,11 @@ void MethodContext::repGetEEInfo(CORINFO_EE_INFO* pEEInfoOut)
         pEEInfoOut->offsetOfDelegateInstance           = (unsigned)value.offsetOfDelegateInstance;
         pEEInfoOut->offsetOfDelegateFirstTarget        = (unsigned)value.offsetOfDelegateFirstTarget;
         pEEInfoOut->offsetOfWrapperDelegateIndirectCell= (unsigned)value.offsetOfWrapperDelegateIndirectCell;
-        pEEInfoOut->offsetOfTransparentProxyRP         = (unsigned)value.offsetOfTransparentProxyRP;
-        pEEInfoOut->offsetOfRealProxyServer            = (unsigned)value.offsetOfRealProxyServer;
-        pEEInfoOut->offsetOfObjArrayData               = (unsigned)value.offsetOfObjArrayData;
         pEEInfoOut->sizeOfReversePInvokeFrame          = (unsigned)value.sizeOfReversePInvokeFrame;
         pEEInfoOut->osPageSize                         = (size_t)value.osPageSize;
         pEEInfoOut->maxUncheckedOffsetForNullObject    = (size_t)value.maxUncheckedOffsetForNullObject;
         pEEInfoOut->targetAbi                          = (CORINFO_RUNTIME_ABI)value.targetAbi;
         pEEInfoOut->osType                             = (CORINFO_OS)value.osType;
-        pEEInfoOut->osMajor                            = (unsigned)value.osMajor;
-        pEEInfoOut->osMinor                            = (unsigned)value.osMinor;
-        pEEInfoOut->osBuild                            = (unsigned)value.osBuild;
         DEBUG_REP(dmpGetEEInfo((DWORD)0, value));
     }
     else
@@ -3972,17 +3911,15 @@ void MethodContext::repGetEEInfo(CORINFO_EE_INFO* pEEInfoOut)
         pEEInfoOut->offsetOfDelegateInstance                   = (unsigned)0x8;
         pEEInfoOut->offsetOfDelegateFirstTarget                = (unsigned)0x18;
         pEEInfoOut->offsetOfWrapperDelegateIndirectCell        = (unsigned)0x40;
-        pEEInfoOut->offsetOfTransparentProxyRP                 = (unsigned)0x8;
-        pEEInfoOut->offsetOfRealProxyServer                    = (unsigned)0x18;
-        pEEInfoOut->offsetOfObjArrayData                       = (unsigned)0x18;
         pEEInfoOut->sizeOfReversePInvokeFrame                  = (unsigned)0x8;
         pEEInfoOut->osPageSize                                 = (size_t)0x1000;
         pEEInfoOut->maxUncheckedOffsetForNullObject            = (size_t)((32 * 1024) - 1);
         pEEInfoOut->targetAbi                                  = CORINFO_DESKTOP_ABI;
-        pEEInfoOut->osType                                     = (CORINFO_OS)0;
-        pEEInfoOut->osMajor                                    = (unsigned)0;
-        pEEInfoOut->osMinor                                    = (unsigned)0;
-        pEEInfoOut->osBuild                                    = (unsigned)0;
+#ifdef TARGET_UNIX
+        pEEInfoOut->osType                                     = CORINFO_UNIX;
+#else
+        pEEInfoOut->osType                                     = CORINFO_WINNT;
+#endif
     }
 }
 
@@ -4018,6 +3955,39 @@ void MethodContext::repGetGSCookie(GSCookie* pCookieVal, GSCookie** ppCookieVal)
         *pCookieVal = (GSCookie)value.A;
     if (ppCookieVal != nullptr)
         *ppCookieVal = (GSCookie*)value.B;
+}
+
+void MethodContext::recGetOSRInfo(PatchpointInfo* patchpointInfo, unsigned* ilOffset)
+{
+    if (GetOSRInfo == nullptr)
+    {
+        GetOSRInfo = new LightWeightMap<DWORD, Agnostic_GetOSRInfo>();
+    }
+
+    Agnostic_GetOSRInfo value;
+
+    value.index = (DWORD)GetOSRInfo->AddBuffer((const unsigned char*) patchpointInfo, patchpointInfo->PatchpointInfoSize());
+    value.ilOffset = *ilOffset;
+
+    // use 0 for key
+    DWORD key = 0;
+    GetOSRInfo->Add(key, value);
+    DEBUG_REC(dmpGetOSRInfo(key, value));
+}
+
+void MethodContext::dmpGetOSRInfo(DWORD key, const Agnostic_GetOSRInfo& value)
+{
+    // todo - dump patchpoint info?
+    printf("GetOSRInfo key %u, value patchpointInfo-%u {...} iloffset-%u\n",
+        key, value.index, value.ilOffset);
+}
+
+PatchpointInfo* MethodContext::repGetOSRInfo(unsigned* ilOffset)
+{
+    DWORD key = 0;
+    Agnostic_GetOSRInfo value = GetOSRInfo->Get(key);
+    *ilOffset = value.ilOffset;
+    return (PatchpointInfo*)GetOSRInfo->GetBuffer(value.index);
 }
 
 void MethodContext::recGetClassModuleIdForStatics(CORINFO_CLASS_HANDLE   cls,
@@ -4210,10 +4180,10 @@ void MethodContext::dmpGetLocationOfThisType(DWORDLONG key, const Agnostic_CORIN
     printf("GetLocationOfThisType key ftn-%016llX, value %s", key,
            SpmiDumpHelper::DumpAgnostic_CORINFO_LOOKUP_KIND(value).c_str());
 }
-CORINFO_LOOKUP_KIND MethodContext::repGetLocationOfThisType(CORINFO_METHOD_HANDLE context)
+void MethodContext::repGetLocationOfThisType(CORINFO_METHOD_HANDLE context, CORINFO_LOOKUP_KIND* pLookupKind)
 {
     Agnostic_CORINFO_LOOKUP_KIND value = GetLocationOfThisType->Get((DWORDLONG)context);
-    return SpmiRecordsHelper::RestoreCORINFO_LOOKUP_KIND(value);
+    *pLookupKind = SpmiRecordsHelper::RestoreCORINFO_LOOKUP_KIND(value);
 }
 
 void MethodContext::recGetDelegateCtor(CORINFO_METHOD_HANDLE methHnd,
@@ -4480,24 +4450,6 @@ CorInfoInlineTypeCheck MethodContext::repCanInlineTypeCheck(CORINFO_CLASS_HANDLE
     return (CorInfoInlineTypeCheck)CanInlineTypeCheck->Get(key);
 }
 
-void MethodContext::recCanInlineTypeCheckWithObjectVTable(CORINFO_CLASS_HANDLE cls, BOOL result)
-{
-    if (CanInlineTypeCheckWithObjectVTable == nullptr)
-        CanInlineTypeCheckWithObjectVTable = new LightWeightMap<DWORDLONG, DWORD>();
-
-    CanInlineTypeCheckWithObjectVTable->Add((DWORDLONG)cls, (DWORD)result);
-}
-void MethodContext::dmpCanInlineTypeCheckWithObjectVTable(DWORDLONG key, DWORD value)
-{
-    printf("CanInlineTypeCheckWithObjectVTable key cls-%016llX, value res-%u", key, value);
-}
-BOOL MethodContext::repCanInlineTypeCheckWithObjectVTable(CORINFO_CLASS_HANDLE cls)
-{
-    AssertCodeMsg(CanInlineTypeCheckWithObjectVTable != nullptr, EXCEPTIONCODE_MC,
-                  "No map for CanInlineTypeCheckWithObjectVTable");
-    return (BOOL)CanInlineTypeCheckWithObjectVTable->Get((DWORDLONG)cls);
-}
-
 void MethodContext::recSatisfiesMethodConstraints(CORINFO_CLASS_HANDLE  parent,
                                                   CORINFO_METHOD_HANDLE method,
                                                   BOOL                  result)
@@ -4531,36 +4483,6 @@ BOOL MethodContext::repSatisfiesMethodConstraints(CORINFO_CLASS_HANDLE parent, C
     return value;
 }
 
-void MethodContext::recInitConstraintsForVerification(CORINFO_METHOD_HANDLE method,
-                                                      BOOL*                 pfHasCircularClassConstraints,
-                                                      BOOL*                 pfHasCircularMethodConstraint)
-{
-    if (InitConstraintsForVerification == nullptr)
-        InitConstraintsForVerification = new LightWeightMap<DWORDLONG, DD>();
-
-    DD value;
-
-    value.A = (DWORD)*pfHasCircularClassConstraints;
-    value.B = (DWORD)*pfHasCircularMethodConstraint;
-
-    InitConstraintsForVerification->Add((DWORDLONG)method, value);
-}
-void MethodContext::dmpInitConstraintsForVerification(DWORDLONG key, DD value)
-{
-    printf("InitConstraintsForVerification key ftn-%016llX, value circ-%u cirm-%u", key, value.A, value.B);
-}
-void MethodContext::repInitConstraintsForVerification(CORINFO_METHOD_HANDLE method,
-                                                      BOOL*                 pfHasCircularClassConstraints,
-                                                      BOOL*                 pfHasCircularMethodConstraint)
-{
-    DD value;
-
-    value = InitConstraintsForVerification->Get((DWORDLONG)method);
-
-    *pfHasCircularClassConstraints = (BOOL)value.A;
-    *pfHasCircularMethodConstraint = (BOOL)value.B;
-}
-
 void MethodContext::recIsValidStringRef(CORINFO_MODULE_HANDLE module, unsigned metaTOK, BOOL result)
 {
     if (IsValidStringRef == nullptr)
@@ -4590,6 +4512,65 @@ BOOL MethodContext::repIsValidStringRef(CORINFO_MODULE_HANDLE module, unsigned m
 
     BOOL value = (BOOL)IsValidStringRef->Get(key);
     return value;
+}
+
+
+void MethodContext::recGetStringLiteral(CORINFO_MODULE_HANDLE module, unsigned metaTOK, int length, LPCWSTR result)
+{
+    if (GetStringLiteral == nullptr)
+        GetStringLiteral = new LightWeightMap<DLD, DD>();
+
+    DLD key;
+    ZeroMemory(&key, sizeof(DLD)); // We use the input structs as a key and use memcmp to compare.. so we need to zero
+                                   // out padding too
+
+    key.A = (DWORDLONG)module;
+    key.B = (DWORD)metaTOK;
+
+    DWORD strBuf = (DWORD)-1;
+    if (result != nullptr)
+        strBuf = (DWORD)GetStringLiteral->AddBuffer((unsigned char*)result, (unsigned int)((wcslen(result) * 2) + 2));
+
+    DD value;
+    value.A = (DWORD)length;
+    value.B = (DWORD)strBuf;
+
+    GetStringLiteral->Add(key, value);
+}
+
+void MethodContext::dmpGetStringLiteral(DLD key, DD value)
+{
+    printf("GetStringLiteral key mod-%016llX tok-%08X, result-%s, len-%u", key.A, key.B,
+        GetStringLiteral->GetBuffer(value.B), value.A);
+}
+
+LPCWSTR MethodContext::repGetStringLiteral(CORINFO_MODULE_HANDLE module, unsigned metaTOK, int* length)
+{
+    if (GetStringLiteral == nullptr)
+    {
+        *length = -1;
+        return nullptr;
+    }
+
+    DLD key;
+    ZeroMemory(&key, sizeof(DLD)); // We use the input structs as a key and use memcmp to compare.. so we need to zero
+                                   // out padding too
+
+    key.A = (DWORDLONG)module;
+    key.B = (DWORD)metaTOK;
+
+    int itemIndex = GetStringLiteral->GetIndex(key);
+    if (itemIndex < 0)
+    {
+        *length = -1;
+        return nullptr;
+    }
+    else
+    {
+        DD result = GetStringLiteral->Get(key);
+        *length = (int)result.A;
+        return (LPCWSTR)GetStringLiteral->GetBuffer(itemIndex);
+    }
 }
 
 void MethodContext::recGetHelperName(CorInfoHelpFunc funcNum, const char* result)
@@ -4763,35 +4744,6 @@ void MethodContext::dmpHandleException(DWORD key, DWORD value)
     printf("HandleException key %u, value %u", key, value);
 }
 
-void MethodContext::recGetAddressOfPInvokeFixup(CORINFO_METHOD_HANDLE method, void** ppIndirection, void* result)
-{
-    if (GetAddressOfPInvokeFixup == nullptr)
-        GetAddressOfPInvokeFixup = new LightWeightMap<DWORDLONG, DLDL>();
-
-    DLDL value;
-
-    if (ppIndirection != nullptr)
-        value.A = (DWORDLONG)*ppIndirection;
-    else
-        value.A = (DWORDLONG)0;
-    value.B     = (DWORDLONG)result;
-
-    GetAddressOfPInvokeFixup->Add((DWORDLONG)method, value);
-}
-void MethodContext::dmpGetAddressOfPInvokeFixup(DWORDLONG key, DLDL value)
-{
-    printf("GetAddressOfPInvokeFixup key ftn-%016llX, value pp-%016llX res-%016llX", key, value.A, value.B);
-}
-void* MethodContext::repGetAddressOfPInvokeFixup(CORINFO_METHOD_HANDLE method, void** ppIndirection)
-{
-    DLDL value;
-
-    value = GetAddressOfPInvokeFixup->Get((DWORDLONG)method);
-
-    if (ppIndirection != nullptr)
-        *ppIndirection = (void*)value.A;
-    return (void*)value.B;
-}
 void MethodContext::recGetAddressOfPInvokeTarget(CORINFO_METHOD_HANDLE method, CORINFO_CONST_LOOKUP* pLookup)
 {
     if (GetAddressOfPInvokeTarget == nullptr)
@@ -4990,46 +4942,6 @@ BOOL MethodContext::repIsDelegateCreationAllowed(CORINFO_CLASS_HANDLE delegateHn
     return (BOOL)value;
 }
 
-void MethodContext::recCanSkipMethodVerification(CORINFO_METHOD_HANDLE            ftnHandle,
-                                                 BOOL                             skip,
-                                                 CorInfoCanSkipVerificationResult result)
-{
-    if (CanSkipMethodVerification == nullptr)
-        CanSkipMethodVerification = new LightWeightMap<DLD, DWORD>();
-
-    DLD key;
-    ZeroMemory(&key, sizeof(DLD)); // We use the input structs as a key and use memcmp to compare.. so we need to zero
-                                   // out padding too
-
-    key.A = (DWORDLONG)ftnHandle;
-    key.B = (DWORD)skip;
-
-    CanSkipMethodVerification->Add(key, (DWORD)result);
-    DEBUG_REC(dmpCanSkipMethodVerification(key, (DWORD)result));
-}
-void MethodContext::dmpCanSkipMethodVerification(DLD key, DWORD value)
-{
-    printf("CanSkipMethodVerification key ftn-%016llX skp-%u, value res-%u", key.A, key.B, value);
-}
-CorInfoCanSkipVerificationResult MethodContext::repCanSkipMethodVerification(CORINFO_METHOD_HANDLE ftnHandle, BOOL skip)
-{
-    DLD key;
-    ZeroMemory(&key, sizeof(DLD)); // We use the input structs as a key and use memcmp to compare.. so we need to zero
-                                   // out padding too
-
-    key.A = (DWORDLONG)ftnHandle;
-    key.B = (DWORD)skip;
-
-    AssertCodeMsg(CanSkipMethodVerification != nullptr, EXCEPTIONCODE_MC, "Didn't find anything for %016llX",
-                  (DWORDLONG)ftnHandle);
-    AssertCodeMsg(CanSkipMethodVerification->GetIndex(key) != -1, EXCEPTIONCODE_MC, "Didn't find %016llX",
-                  (DWORDLONG)ftnHandle);
-
-    CorInfoCanSkipVerificationResult temp = (CorInfoCanSkipVerificationResult)CanSkipMethodVerification->Get(key);
-    DEBUG_REP(dmpCanSkipMethodVerification(key, (DWORD)temp));
-    return temp;
-}
-
 void MethodContext::recFindCallSiteSig(CORINFO_MODULE_HANDLE  module,
                                        unsigned               methTOK,
                                        CORINFO_CONTEXT_HANDLE context,
@@ -5082,28 +4994,6 @@ void MethodContext::repFindCallSiteSig(CORINFO_MODULE_HANDLE  module,
     *sig = SpmiRecordsHelper::Restore_CORINFO_SIG_INFO(value, FindCallSiteSig);
 
     DEBUG_REP(dmpFindCallSiteSig(key, value));
-}
-
-void MethodContext::recShouldEnforceCallvirtRestriction(CORINFO_MODULE_HANDLE scope, BOOL result)
-{
-    if (ShouldEnforceCallvirtRestriction == nullptr)
-        ShouldEnforceCallvirtRestriction = new LightWeightMap<DWORDLONG, DWORD>();
-    ShouldEnforceCallvirtRestriction->Add((DWORDLONG)scope, (DWORD)result);
-    DEBUG_REC(dmpShouldEnforceCallvirtRestriction((DWORDLONG)scope, (DWORD)result));
-}
-void MethodContext::dmpShouldEnforceCallvirtRestriction(DWORDLONG key, DWORD value)
-{
-    printf("ShouldEnforceCallvirtRestriction key %016llX, value %u", key, value);
-}
-BOOL MethodContext::repShouldEnforceCallvirtRestriction(CORINFO_MODULE_HANDLE scope)
-{
-    AssertCodeMsg(ShouldEnforceCallvirtRestriction != nullptr, EXCEPTIONCODE_MC, "Didn't find anything for %016llX",
-                  (DWORDLONG)scope);
-    AssertCodeMsg(ShouldEnforceCallvirtRestriction->GetIndex((DWORDLONG)scope) != -1, EXCEPTIONCODE_MC,
-                  "Didn't find %016llX", (DWORDLONG)scope);
-    BOOL temp = (BOOL)ShouldEnforceCallvirtRestriction->Get((DWORDLONG)scope);
-    DEBUG_REC(dmpShouldEnforceCallvirtRestriction((DWORDLONG)scope, (DWORD)temp));
-    return temp;
 }
 
 void MethodContext::recGetMethodSync(CORINFO_METHOD_HANDLE ftn, void** ppIndirection, void* result)
@@ -5636,6 +5526,8 @@ void MethodContext::dmpCompareTypesForEquality(DLDL key, DWORD value)
 }
 TypeCompareState MethodContext::repCompareTypesForEquality(CORINFO_CLASS_HANDLE cls1, CORINFO_CLASS_HANDLE cls2)
 {
+    AssertCodeMsg(CompareTypesForEquality != nullptr, EXCEPTIONCODE_MC, "Didn't find anything for CompareTypesForEquality");
+
     DLDL key;
     ZeroMemory(&key, sizeof(DLDL)); // We use the input structs as a key and use memcmp to compare.. so we need to zero
                                     // out padding too
@@ -5829,25 +5721,6 @@ WORD MethodContext::repGetRelocTypeHint(void* target)
         retVal = (WORD)GetRelocTypeHint->Get((DWORDLONG)target);
     DEBUG_REP(dmpGetRelocTypeHint((DWORDLONG)target, retVal));
     return retVal;
-}
-
-void MethodContext::recIsWriteBarrierHelperRequired(CORINFO_FIELD_HANDLE field, bool result)
-{
-    if (IsWriteBarrierHelperRequired == nullptr)
-        IsWriteBarrierHelperRequired = new LightWeightMap<DWORDLONG, DWORD>();
-
-    IsWriteBarrierHelperRequired->Add((DWORDLONG)field, (DWORD)result);
-    DEBUG_REC(dmpIsWriteBarrierHelperRequired((DWORDLONG)field, (DWORD)result));
-}
-void MethodContext::dmpIsWriteBarrierHelperRequired(DWORDLONG key, DWORD value)
-{
-    printf("IsWriteBarrierHelperRequired key fld-%016llX, value res-%u", key, value);
-}
-bool MethodContext::repIsWriteBarrierHelperRequired(CORINFO_FIELD_HANDLE field)
-{
-    bool result = IsWriteBarrierHelperRequired->Get((DWORDLONG)field) != 0;
-    DEBUG_REP(dmpIsWriteBarrierHelperRequired((DWORDLONG)field, result));
-    return result;
 }
 
 void MethodContext::recIsValidToken(CORINFO_MODULE_HANDLE module, unsigned metaTOK, BOOL result)
@@ -6067,44 +5940,76 @@ const WCHAR* MethodContext::repAppendClassName(CORINFO_CLASS_HANDLE cls,
     return name;
 }
 
-void MethodContext::recGetTailCallCopyArgsThunk(CORINFO_SIG_INFO*                    pSig,
-                                                CorInfoHelperTailCallSpecialHandling flags,
-                                                void*                                result)
+void MethodContext::recGetTailCallHelpers(
+    CORINFO_RESOLVED_TOKEN* callToken,
+    CORINFO_SIG_INFO* sig,
+    CORINFO_GET_TAILCALL_HELPERS_FLAGS flags,
+    CORINFO_TAILCALL_HELPERS* pResult)
 {
-    if (GetTailCallCopyArgsThunk == nullptr)
-        GetTailCallCopyArgsThunk = new LightWeightMap<Agnostic_GetTailCallCopyArgsThunk, DWORDLONG>();
+    if (GetTailCallHelpers == nullptr)
+        GetTailCallHelpers = new LightWeightMap<Agnostic_GetTailCallHelpers, Agnostic_CORINFO_TAILCALL_HELPERS>();
 
-    Agnostic_GetTailCallCopyArgsThunk key;
-    ZeroMemory(&key, sizeof(Agnostic_GetTailCallCopyArgsThunk)); // We use the input structs as a key and use memcmp to
-                                                                 // compare.. so we need to zero out padding too
-    key.Sig   = SpmiRecordsHelper::StoreAgnostic_CORINFO_SIG_INFO(*pSig, GetTailCallCopyArgsThunk);
+    Agnostic_GetTailCallHelpers key;
+    ZeroMemory(&key, sizeof(Agnostic_GetTailCallHelpers));
+
+    key.callToken = SpmiRecordsHelper::StoreAgnostic_CORINFO_RESOLVED_TOKEN(callToken, GetTailCallHelpers);
+    key.sig = SpmiRecordsHelper::StoreAgnostic_CORINFO_SIG_INFO(*sig, GetTailCallHelpers);
     key.flags = (DWORD)flags;
 
-    GetTailCallCopyArgsThunk->Add(key, (DWORDLONG)result);
-    DEBUG_REC(dmpGetTailCallCopyArgsThunk(key, (DWORDLONG)result));
-}
-void MethodContext::dmpGetTailCallCopyArgsThunk(const Agnostic_GetTailCallCopyArgsThunk& key, DWORDLONG value)
-{
-    printf("GetTailCallCopyArgsThunk key sig%s flg-%08X",
-           SpmiDumpHelper::DumpAgnostic_CORINFO_SIG_INFO(key.Sig).c_str(), key.flags);
-    printf(", value res-%016llX", value);
-}
-void* MethodContext::repGetTailCallCopyArgsThunk(CORINFO_SIG_INFO* pSig, CorInfoHelperTailCallSpecialHandling flags)
-{
-    AssertCodeMsg(GetTailCallCopyArgsThunk != nullptr, EXCEPTIONCODE_MC, "Didn't find anything for ...");
+    Agnostic_CORINFO_TAILCALL_HELPERS value;
+    ZeroMemory(&value, sizeof(Agnostic_CORINFO_TAILCALL_HELPERS));
 
-    Agnostic_GetTailCallCopyArgsThunk key;
-    ZeroMemory(&key, sizeof(Agnostic_GetTailCallCopyArgsThunk)); // We use the input structs as a key and use memcmp to
-                                                                 // compare.. so we need to zero out padding too
-    key.Sig   = SpmiRecordsHelper::RestoreAgnostic_CORINFO_SIG_INFO(*pSig, GetTailCallCopyArgsThunk);
+    value.result = pResult != nullptr;
+    if (pResult != nullptr)
+    {
+        value.flags = (DWORD)pResult->flags;
+        value.hStoreArgs = (DWORDLONG)pResult->hStoreArgs;
+        value.hCallTarget = (DWORDLONG)pResult->hCallTarget;
+        value.hDispatcher = (DWORDLONG)pResult->hDispatcher;
+    }
+    GetTailCallHelpers->Add(key, value);
+    DEBUG_REC(dmpGetTailCallHelpers(key, value));
+}
+
+void MethodContext::dmpGetTailCallHelpers(const Agnostic_GetTailCallHelpers& key, const Agnostic_CORINFO_TAILCALL_HELPERS& value)
+{
+    printf("GetTailCallHelpers key callToken-%s sig-%s flg-%08X",
+        SpmiDumpHelper::DumpAgnostic_CORINFO_RESOLVED_TOKEN(key.callToken).c_str(),
+        SpmiDumpHelper::DumpAgnostic_CORINFO_SIG_INFO(key.sig).c_str(),
+        key.flags);
+    printf(", value result-%s flg-%08X hStoreArgs-%016llX hCallTarget-%016llX hDispatcher-%016llX",
+        value.result ? "true" : "false",
+        value.flags,
+        value.hStoreArgs,
+        value.hCallTarget,
+        value.hDispatcher);
+}
+
+bool MethodContext::repGetTailCallHelpers(
+    CORINFO_RESOLVED_TOKEN* callToken,
+    CORINFO_SIG_INFO* sig,
+    CORINFO_GET_TAILCALL_HELPERS_FLAGS flags,
+    CORINFO_TAILCALL_HELPERS* pResult)
+{
+    AssertCodeMsg(GetTailCallHelpers != nullptr, EXCEPTIONCODE_MC, "Didn't find anything for ...");
+
+    Agnostic_GetTailCallHelpers key;
+    ZeroMemory(&key, sizeof(Agnostic_GetTailCallHelpers));
+    key.callToken = SpmiRecordsHelper::RestoreAgnostic_CORINFO_RESOLVED_TOKEN(callToken, GetTailCallHelpers);
+    key.sig = SpmiRecordsHelper::RestoreAgnostic_CORINFO_SIG_INFO(*sig, GetTailCallHelpers);
     key.flags = (DWORD)flags;
 
-    AssertCodeMsg(GetTailCallCopyArgsThunk->GetIndex(key) != -1, EXCEPTIONCODE_MC, "Didn't find %016llX",
-                  (DWORDLONG)key.Sig.retTypeClass);
-    void* result = (void*)GetTailCallCopyArgsThunk->Get(key);
-    cr->recAddressMap((void*)0x424242, (void*)result, 1);
-    DEBUG_REP(dmpGetTailCallCopyArgsThunk(key, (DWORDLONG)result));
-    return result;
+    AssertCodeMsg(GetTailCallHelpers->GetIndex(key) != -1, EXCEPTIONCODE_MC, "Could not find matching tail call helper call");
+    Agnostic_CORINFO_TAILCALL_HELPERS value = GetTailCallHelpers->Get(key);
+    if (!value.result)
+        return false;
+
+    pResult->flags = (CORINFO_TAILCALL_HELPERS_FLAGS)value.flags;
+    pResult->hStoreArgs = (CORINFO_METHOD_HANDLE)value.hStoreArgs;
+    pResult->hCallTarget = (CORINFO_METHOD_HANDLE)value.hCallTarget;
+    pResult->hDispatcher = (CORINFO_METHOD_HANDLE)value.hDispatcher;
+    DEBUG_REP(dmpGetTailCallHelpers(key, value));
+    return true;
 }
 
 void MethodContext::recGetMethodDefFromMethod(CORINFO_METHOD_HANDLE hMethod, mdMethodDef result)
@@ -6176,30 +6081,6 @@ BOOL MethodContext::repCheckMethodModifier(CORINFO_METHOD_HANDLE hMethod, LPCSTR
 
     BOOL value = (BOOL)CheckMethodModifier->Get(key);
     return value;
-}
-
-void MethodContext::recGetPInvokeUnmanagedTarget(CORINFO_METHOD_HANDLE method, void** ppIndirection, void* result)
-{
-    if (GetPInvokeUnmanagedTarget == nullptr)
-        GetPInvokeUnmanagedTarget = new LightWeightMap<DWORDLONG, DLDL>();
-    DLDL temp;
-    temp.A = (DWORDLONG)*ppIndirection;
-    temp.B = (DWORDLONG)result;
-
-    GetPInvokeUnmanagedTarget->Add((DWORDLONG)method, temp);
-    DEBUG_REC(dmpGetPInvokeUnmanagedTarget((DWORDLONG)method, temp));
-}
-void MethodContext::dmpGetPInvokeUnmanagedTarget(DWORDLONG key, DLDL value)
-{
-    printf("GetPInvokeUnmanagedTarget key ftn-%016llX, value pp-%016llX res-%016llX", key, value.A, value.B);
-}
-void* MethodContext::repGetPInvokeUnmanagedTarget(CORINFO_METHOD_HANDLE method, void** ppIndirection)
-{
-    DLDL temp      = (DLDL)GetPInvokeUnmanagedTarget->Get((DWORDLONG)method);
-    *ppIndirection = (void*)temp.A;
-    DEBUG_REP(dmpGetPInvokeUnmanagedTarget((DWORDLONG)method, temp));
-
-    return (void*)temp.B;
 }
 
 void MethodContext::recGetArrayRank(CORINFO_CLASS_HANDLE cls, unsigned result)
@@ -6337,44 +6218,56 @@ const WCHAR* MethodContext::repGetStringConfigValue(const WCHAR* name)
     return value;
 }
 
-int MethodContext::dumpMethodIdentityInfoToBuffer(char* buff, int len)
+int MethodContext::dumpMethodIdentityInfoToBuffer(char* buff, int len, bool ignoreMethodName /* = false */, CORINFO_METHOD_INFO* optInfo /* = nullptr */, unsigned optFlags /* = 0 */)
 {
-    char* obuff = buff;
-
     if (len < METHOD_IDENTITY_INFO_SIZE)
         return -1;
 
     // Obtain the Method Info structure for this method
-    CORINFO_METHOD_INFO info;
-    unsigned            flags = 0;
+    CORINFO_METHOD_INFO  info;
+    CORINFO_METHOD_INFO* pInfo = nullptr;
+    unsigned             flags = 0;
 
-    repCompileMethod(&info, &flags);
+    if (optInfo != nullptr)
+    {
+        // Use the info we've already retrieved from repCompileMethod().
+        pInfo = optInfo;
+        flags = optFlags;
+    }
+    else
+    {
+        repCompileMethod(&info, &flags);
+        pInfo = &info;
+    }
+
+    char* obuff = buff;
 
     // Add the Method Signature
-    int t = sprintf_s(buff, len, "%s -- ", CallUtils::GetMethodFullName(this, info.ftn, info.args));
+    int t = sprintf_s(buff, len, "%s -- ", CallUtils::GetMethodFullName(this, pInfo->ftn, pInfo->args, ignoreMethodName));
     buff += t;
     len -= t;
 
     // Add Calling convention information, CorInfoOptions and CorInfoRegionKind
-    t = sprintf_s(buff, len, "CallingConvention: %d, CorInfoOptions: %d, CorInfoRegionKind: %d ", info.args.callConv,
-                  info.options, info.regionKind);
+    t = sprintf_s(buff, len, "CallingConvention: %d, CorInfoOptions: %d, CorInfoRegionKind: %d ", pInfo->args.callConv,
+                  pInfo->options, pInfo->regionKind);
     buff += t;
     len -= t;
 
     // Hash the IL Code for this method and append it to the ID info
     char ilHash[MD5_HASH_BUFFER_SIZE];
-    dumpMD5HashToBuffer(info.ILCode, info.ILCodeSize, ilHash, MD5_HASH_BUFFER_SIZE);
+    dumpMD5HashToBuffer(pInfo->ILCode, pInfo->ILCodeSize, ilHash, MD5_HASH_BUFFER_SIZE);
     t = sprintf_s(buff, len, "ILCode Hash: %s", ilHash);
     buff += t;
     len -= t;
 
     return (int)(buff - obuff);
 }
-int MethodContext::dumpMethodMD5HashToBuffer(char* buff, int len)
+
+int MethodContext::dumpMethodMD5HashToBuffer(char* buff, int len, bool ignoreMethodName /* = false */, CORINFO_METHOD_INFO* optInfo /* = nullptr */, unsigned optFlags /* = 0 */)
 {
     char bufferIdentityInfo[METHOD_IDENTITY_INFO_SIZE];
 
-    int cbLen = dumpMethodIdentityInfoToBuffer(bufferIdentityInfo, METHOD_IDENTITY_INFO_SIZE);
+    int cbLen = dumpMethodIdentityInfoToBuffer(bufferIdentityInfo, METHOD_IDENTITY_INFO_SIZE, ignoreMethodName, optInfo, optFlags);
 
     if (cbLen < 0)
         return cbLen;
@@ -6386,74 +6279,17 @@ int MethodContext::dumpMethodMD5HashToBuffer(char* buff, int len)
 
 int MethodContext::dumpMD5HashToBuffer(BYTE* pBuffer, int bufLen, char* hash, int hashLen)
 {
-#ifdef FEATURE_PAL
-
-    MD5HASHDATA md5_hashdata;
-    MD5         md5_hasher;
-
-    if (hashLen < MD5_HASH_BUFFER_SIZE)
-        return -1;
-
-    md5_hasher.Hash(pBuffer, (ULONG)bufLen, &md5_hashdata);
-
-    DWORD md5_hashdata_size = sizeof(md5_hashdata.rgb) / sizeof(BYTE);
-    Assert(md5_hashdata_size == MD5_HASH_BYTE_SIZE);
-
-    for (DWORD i = 0; i < md5_hashdata_size; i++)
+    // Lazy initialize the MD5 hasher.
+    if (!m_hash.IsInitialized())
     {
-        sprintf_s(hash + i * 2, hashLen - i * 2, "%02X", md5_hashdata.rgb[i]);
+        if (!m_hash.Initialize())
+        {
+            AssertMsg(false, "Failed to initialize the MD5 hasher");
+            return -1;
+        }
     }
 
-    return MD5_HASH_BUFFER_SIZE; // if we had success we wrote MD5_HASH_BUFFER_SIZE bytes to the buffer
-
-#else // !FEATURE_PAL
-
-    HCRYPTPROV hProv = NULL; // CryptoProvider
-    HCRYPTHASH hHash = NULL;
-    BYTE       bHash[MD5_HASH_BYTE_SIZE];
-    DWORD      cbHash = MD5_HASH_BYTE_SIZE;
-
-    if (hashLen < MD5_HASH_BUFFER_SIZE)
-        return -1;
-
-    // Get handle to the crypto provider
-    if (!CryptAcquireContextA(&hProv, NULL, NULL, PROV_RSA_FULL, CRYPT_VERIFYCONTEXT))
-        goto OnError;
-
-    if (!CryptCreateHash(hProv, CALG_MD5, 0, 0, &hHash))
-        goto OnError;
-
-    if (!CryptHashData(hHash, pBuffer, bufLen, 0))
-        goto OnError;
-
-    if (!CryptGetHashParam(hHash, HP_HASHVAL, bHash, &cbHash, 0))
-        goto OnError;
-
-    if (cbHash != MD5_HASH_BYTE_SIZE)
-        goto OnError;
-
-    for (DWORD i = 0; i < MD5_HASH_BYTE_SIZE; i++)
-    {
-        sprintf_s(hash + i * 2, hashLen - i * 2, "%02X", bHash[i]);
-    }
-
-    if (hHash != NULL)
-        CryptDestroyHash(hHash);
-    if (hProv != NULL)
-        CryptReleaseContext(hProv, 0);
-
-    return MD5_HASH_BUFFER_SIZE; // if we had success we wrote MD5_HASH_BUFFER_SIZE bytes to the buffer
-
-OnError:
-    AssertMsg(false, "Failed to create a hash using the Crypto API (Error %X)", GetLastError());
-
-    if (hHash != NULL)
-        CryptDestroyHash(hHash);
-    if (hProv != NULL)
-        CryptReleaseContext(hProv, 0);
-    return -1;
-
-#endif // !FEATURE_PAL
+    return m_hash.HashBuffer(pBuffer, bufLen, hash, hashLen);
 }
 
 MethodContext::Environment MethodContext::cloneEnvironment()

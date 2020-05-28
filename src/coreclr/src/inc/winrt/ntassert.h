@@ -45,7 +45,7 @@ DbgRaiseAssertionFailure (
 
 #endif
 
-#if defined(_AMD64_)
+#if defined(HOST_AMD64)
 
 #if defined(_M_AMD64)
 
@@ -64,7 +64,7 @@ __int2c (
 
 #endif // defined(_M_AMD64)
 
-#elif defined(_X86_)
+#elif defined(HOST_X86)
 
 #if defined(_M_IX86)
 
@@ -131,7 +131,7 @@ __break(
 
 #endif // defined(_M_IA64)
 
-#elif defined(_ARM_)
+#elif defined(HOST_ARM)
 
 #if defined(_M_ARM)
 
@@ -150,7 +150,7 @@ __emit(
 
 #endif // defined(_M_ARM)
 
-#endif // _AMD64_, _X86_, _IA64_, _ARM_
+#endif // HOST_AMD64, HOST_X86, _IA64_, HOST_ARM
 #endif // !defined(_DBGRAISEASSERTIONFAILURE_) && !defined(RC_INVOKED) && !defined(MIDL_PASS)
 
 #ifdef __cplusplus

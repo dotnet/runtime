@@ -788,7 +788,7 @@ namespace System.Data.Common
                 string columnName = columnNameArray[i];
                 if ((null != columnName) && (0 < columnName.Length))
                 {
-                    columnName = columnName.ToLower(CultureInfo.InvariantCulture);
+                    columnName = columnName.ToLowerInvariant();
                     int index;
                     if (hash.TryGetValue(columnName, out index))
                     {
@@ -814,7 +814,7 @@ namespace System.Data.Common
                 }
                 else
                 {
-                    columnName = columnName.ToLower(CultureInfo.InvariantCulture);
+                    columnName = columnName.ToLowerInvariant();
                     if (i != hash[columnName])
                     {
                         GenerateUniqueName(hash, ref columnNameArray[i], i, 1);
@@ -828,7 +828,7 @@ namespace System.Data.Common
             for (; ; ++uniqueIndex)
             {
                 string uniqueName = columnName + uniqueIndex.ToString(CultureInfo.InvariantCulture);
-                string lowerName = uniqueName.ToLower(CultureInfo.InvariantCulture);
+                string lowerName = uniqueName.ToLowerInvariant();
                 if (hash.TryAdd(lowerName, index))
                 {
                     columnName = uniqueName;

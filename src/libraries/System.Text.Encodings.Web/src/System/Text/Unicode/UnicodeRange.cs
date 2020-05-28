@@ -22,7 +22,7 @@ namespace System.Text.Unicode
         public UnicodeRange(int firstCodePoint, int length)
         {
             // Parameter checking: the first code point and last code point must
-            // lie within the BMP. See http://unicode.org/faq/blocks_ranges.html for more info.
+            // lie within the BMP. See https://unicode.org/faq/blocks_ranges.html for more info.
             if (firstCodePoint < 0 || firstCodePoint > 0xFFFF)
             {
                 throw new ArgumentOutOfRangeException(nameof(firstCodePoint));

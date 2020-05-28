@@ -1,5 +1,5 @@
 ﻿<Project DefaultTargets="Build">
-  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), Directory.Build.props))\Directory.Build.props" />
+  <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.props))" />
   <ItemGroup>
     <ProjectReference Include="..\src\Microsoft.XmlSerializer.Generator.csproj" />
   </ItemGroup>
@@ -18,6 +18,6 @@
       <TargetPath>\lib\netstandard2.0\</TargetPath>
     </PackageFile>
   </ItemGroup>
-  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), Directory.Build.targets))\Directory.Build.targets" />
+  <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.targets))" />
   <Import Project=".\GenerateNupkgProps.targets" />
 </Project>

@@ -31,9 +31,9 @@ Abstract:
 #include <time.h>
 #include <limits.h>
 
-#if defined(_AMD64_) || defined(_x86_)
+#if defined(HOST_AMD64) || defined(_x86_)
 #include <xmmintrin.h>
-#endif // defined(_AMD64_) || defined(_x86_)
+#endif // defined(HOST_AMD64) || defined(_x86_)
 #if defined(_DEBUG)
 #include <assert.h>
 #endif //defined(_DEBUG)
@@ -241,7 +241,7 @@ PAL_bsearch(const void *key, const void *base, size_t nmemb, size_t size,
     return retval;
 }
 
-#ifdef _AMD64_
+#ifdef HOST_AMD64
 
 PALIMPORT
 unsigned int PAL__mm_getcsr(void)
@@ -255,7 +255,7 @@ void PAL__mm_setcsr(unsigned int i)
     _mm_setcsr(i);
 }
 
-#endif // _AMD64_
+#endif // HOST_AMD64
 
 /*++
 Function:

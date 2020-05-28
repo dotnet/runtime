@@ -1,0 +1,83 @@
+#!/bin/bash
+
+# Author: Aaron Bockover
+# Licensed under MIT/X11
+# (C) 2006 Novell
+
+if [ "x$1" = "x--help" ]; then
+	echo "Usage: $0 [--show-only-mono]"
+	echo ""
+	echo "This script prints a sorted list of GLib functions used in Mono"
+	echo "that have not yet been implemented in EGlib."
+	echo ""
+	echo "If --show-only-mono is passed, then the script will print all"
+	echo "GLib functions used in Mono, whether or not they have been"
+	echo "implemented in EGlib yet."
+	echo ""
+	echo "This script relies on the MONO_CHECKOUT environment variable."
+	echo "MONO_CHECKOUT should be set to the location of a mono checkout."
+	echo ""
+	exit 1
+fi
+
+IGNORE_FUNCTIONS="g_hash_table_lookup_node g_hash_table_foreach_remove_or_steal  g_hash_table_resize"
+
+if [ -z $MONO_CHECKOUT ]; then
+	if [ -e ../../mono.pc.in ]; then
+		MONO_CHECKOUT=../..
+	else
+		MONO_CHECKOUT=~/cvs/mono/mono
+	fi
+fi
+
+if [ ! -d $MONO_CHECKOUT ]; then 
+	echo "Cannot find mono checkout; set MONO_CHECKOUT"
+	exit 1
+fi
+
+MONO_CHECKOUT="$MONO_CHECKOUT/mono"
+RESULTS_FILE=.results
+
+(for i in `find $MONO_CHECKOUT -iregex \.*.c$`; do 
+	grep -oP "[ \t\(\)]+g_[a-z_]+[ ]{0,1}\([A-Za-z_\&\*\,\(\) ]+\)" $i | 
+		awk 'BEGIN { FS="(" } { print $1 }' |
+		sed -e 's/[^A-Za-z_]//g' 
+	done
+) > $RESULTS_FILE
+
+if [ ! "x$1" = "x--show-only-mono" ]; then
+	IMPLEMENTED_FUNCTIONS=`grep -oP "g_[a-z_]+[ ]{0,1}" ../src/glib.h | awk 'BEGIN { FS="(" } { print $1 }'`
+
+	rm -f $RESULTS_FILE.tmp
+
+	for mono_function in `cat $RESULTS_FILE`; do
+		matched="no"
+		for implemented_function in $IMPLEMENTED_FUNCTIONS; do
+			if [ "x$mono_function" = "x$implemented_function" ]; then
+				matched="yes"
+				break
+			fi
+		done
+
+		for ignore_function in $IGNORE_FUNCTIONS; do
+			if [ "x$ignore_function" = "x$mono_function" ]; then
+				matched="yes"
+				break
+			fi
+		done
+
+		if [ "x$matched" = "xno" ]; then
+			echo $mono_function >> $RESULTS_FILE.tmp
+		fi
+	done
+
+	mv $RESULTS_FILE.tmp $RESULTS_FILE
+fi
+
+(for i in `cat $RESULTS_FILE | sort -u`; do 
+		echo "`grep -c $i $RESULTS_FILE` $i"; 
+	done;
+) | sort -nr
+
+rm $RESULTS_FILE
+

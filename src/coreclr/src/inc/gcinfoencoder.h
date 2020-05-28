@@ -436,14 +436,14 @@ public:
     // Number of slots preserved during EnC remap
     void SetSizeOfEditAndContinuePreservedArea( UINT32 size );
 
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
     // Used to only report a frame once for the leaf function/funclet
     // instead of once for each live function/funclet on the stack.
     // Called only by RyuJIT (not JIT64)
     void SetWantsReportOnlyLeaf();
-#elif defined(_TARGET_ARM_) || defined(_TARGET_ARM64_)
+#elif defined(TARGET_ARM) || defined(TARGET_ARM64)
     void SetHasTailCalls();
-#endif // _TARGET_AMD64_
+#endif // TARGET_AMD64
 
 #ifdef FIXED_STACK_PARAMETER_SCRATCH_AREA
     void SetSizeOfStackOutgoingAndScratchArea( UINT32 size );
@@ -495,11 +495,11 @@ private:
     GcInfoArrayList<LifetimeTransition, 64> m_LifetimeTransitions;
 
     bool   m_IsVarArg;
-#if defined(_TARGET_AMD64_)
+#if defined(TARGET_AMD64)
     bool   m_WantsReportOnlyLeaf;
-#elif defined(_TARGET_ARM_) || defined(_TARGET_ARM64_)
+#elif defined(TARGET_ARM) || defined(TARGET_ARM64)
     bool   m_HasTailCalls;
-#endif // _TARGET_AMD64_
+#endif // TARGET_AMD64
     INT32  m_SecurityObjectStackSlot;
     INT32  m_GSCookieStackSlot;
     UINT32 m_GSCookieValidRangeStart;

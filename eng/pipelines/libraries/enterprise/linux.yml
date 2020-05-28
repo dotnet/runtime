@@ -1,0 +1,74 @@
+
+# Disable pipeline for ordinary pushes to the branches
+trigger: none
+
+# To reduce load on the pipeline, enable it only for PRs that affect critical networking code
+pr:
+  branches:
+    include:
+    - master
+    - release/*.*
+
+  paths:
+    include:
+      - eng/pipelines/libraries/enterprise/*
+      - src/libraries/Common/src/System/Net/*
+      - src/libraries/Common/tests/System/Net/*
+      - src/libraries/Native/Unix/System.Net.Security.Native/*
+      - src/libraries/System.Net.Http/*
+      - src/libraries/System.Net.Security/*
+
+pool:
+  vmImage: 'ubuntu-16.04'
+
+variables:
+  - template: ../variables.yml
+  - name: enterpriseTestsSetup
+    value: $(sourcesRoot)/Common/tests/System/Net/EnterpriseTests/setup
+  - name: containerRunTestsCommand
+    value: /repo/dotnet.sh build /t:test
+  - name: containerLibrariesRoot
+    value: /repo/src/libraries
+
+steps:
+- bash: |
+    cd $(enterpriseTestsSetup)
+    docker-compose build
+  displayName: Build test machine images
+  env:
+    DOTNET_RUNTIME_REPO_ROOT: $(Build.SourcesDirectory)
+
+- bash: |
+    cd $(enterpriseTestsSetup)
+    docker-compose up -d
+  displayName: Start test network and machines
+  env:
+    DOTNET_RUNTIME_REPO_ROOT: $(Build.SourcesDirectory)
+
+- bash: |
+    docker exec linuxclient bash /setup/test-webserver.sh
+  displayName: Test linuxclient connection to web server
+
+- bash: |
+    docker exec linuxclient bash -c '/repo/build.sh -subset clr+libs -runtimeconfiguration release -ci'
+  displayName: Build product sources
+
+- bash: |
+    docker exec linuxclient $(containerRunTestsCommand) $(containerLibrariesRoot)/System.Net.Http/tests/EnterpriseTests/System.Net.Http.Enterprise.Tests.csproj
+    docker exec linuxclient $(containerRunTestsCommand) $(containerLibrariesRoot)/System.Net.Security/tests/EnterpriseTests/System.Net.Security.Enterprise.Tests.csproj
+  displayName: Build and run tests
+
+- bash: |
+    cd $(enterpriseTestsSetup)
+    docker-compose down
+  displayName: Stop test network and machines
+  env:
+    DOTNET_RUNTIME_REPO_ROOT: $(Build.SourcesDirectory)
+
+- task: PublishTestResults@2
+  inputs:
+    testRunner: 'xUnit'
+    testResultsFiles: '**/testResults.xml'
+    testRunTitle: 'Enterprise Tests'
+    mergeTestResults: true
+    failTaskOnFailedTests: true

@@ -21,7 +21,8 @@ namespace System.Diagnostics.Tests
             finally
             {
                 EventLog.DeleteEventSource(source);
-                Helpers.Retry(() => EventLog.Delete(log));  // unlike other tests, throw if delete fails
+                if (EventLog.Exists(log))
+                    Helpers.Retry(() => EventLog.Delete(log));
             }
 
             Assert.False(EventLog.SourceExists(source));
@@ -47,9 +48,12 @@ namespace System.Diagnostics.Tests
             finally
             {
                 EventLog.DeleteEventSource(firstSource);
-                Helpers.Retry(() => EventLog.Delete(firstLog));
+                if (EventLog.Exists(firstLog))
+                    Helpers.Retry(() => EventLog.Delete(firstLog));
+
                 EventLog.DeleteEventSource(secondSource);
-                Helpers.Retry(() => EventLog.Delete(secondLog));
+                if (EventLog.Exists(secondLog))
+                   Helpers.Retry(() => EventLog.Delete(secondLog));
             }
         }
 
@@ -71,7 +75,8 @@ namespace System.Diagnostics.Tests
             finally
             {
                 EventLog.DeleteEventSource(firstSource);
-                Helpers.Retry(() => EventLog.Delete(firstLog));
+                if (EventLog.Exists(firstLog))
+                    Helpers.Retry(() => EventLog.Delete(firstLog));
             }
         }
 
@@ -155,7 +160,8 @@ namespace System.Diagnostics.Tests
             finally
             {
                 EventLog.DeleteEventSource(source);
-                Helpers.RetrySilently(() => EventLog.Delete(log));
+                if (EventLog.Exists(log))
+                    Helpers.RetrySilently(() => EventLog.Delete(log));
             }
         }
 

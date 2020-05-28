@@ -5,7 +5,6 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Diagnostics.Contracts;
 
 namespace System.Collections.Immutable
 {
@@ -25,7 +24,7 @@ namespace System.Collections.Immutable
             /// <summary>
             /// The key associated with this node.
             /// </summary>
-            private readonly T _key;
+            private readonly T _key = default!;
 
             /// <summary>
             /// A value indicating whether this node has been frozen (made immutable).
@@ -55,12 +54,12 @@ namespace System.Collections.Immutable
             /// <summary>
             /// The left tree.
             /// </summary>
-            private Node _left;
+            private Node? _left;
 
             /// <summary>
             /// The right tree.
             /// </summary>
-            private Node _right;
+            private Node? _right;
 
             /// <summary>
             /// Initializes a new instance of the <see cref="ImmutableSortedSet{T}.Node"/> class
@@ -116,7 +115,7 @@ namespace System.Collections.Immutable
             /// <summary>
             /// Gets the left branch of this node.
             /// </summary>
-            public Node Left
+            public Node? Left
             {
                 get { return _left; }
             }
@@ -124,7 +123,7 @@ namespace System.Collections.Immutable
             /// <summary>
             /// Gets the left branch of this node.
             /// </summary>
-            IBinaryTree IBinaryTree.Left
+            IBinaryTree? IBinaryTree.Left
             {
                 get { return _left; }
             }
@@ -132,7 +131,7 @@ namespace System.Collections.Immutable
             /// <summary>
             /// Gets the right branch of this node.
             /// </summary>
-            public Node Right
+            public Node? Right
             {
                 get { return _right; }
             }
@@ -140,7 +139,7 @@ namespace System.Collections.Immutable
             /// <summary>
             /// Gets the right branch of this node.
             /// </summary>
-            IBinaryTree IBinaryTree.Right
+            IBinaryTree? IBinaryTree.Right
             {
                 get { return _right; }
             }
@@ -148,7 +147,7 @@ namespace System.Collections.Immutable
             /// <summary>
             /// Gets the left branch of this node.
             /// </summary>
-            IBinaryTree<T> IBinaryTree<T>.Left
+            IBinaryTree<T>? IBinaryTree<T>.Left
             {
                 get { return _left; }
             }
@@ -156,7 +155,7 @@ namespace System.Collections.Immutable
             /// <summary>
             /// Gets the right branch of this node.
             /// </summary>
-            IBinaryTree<T> IBinaryTree<T>.Right
+            IBinaryTree<T>? IBinaryTree<T>.Right
             {
                 get { return _right; }
             }
@@ -186,17 +185,18 @@ namespace System.Collections.Immutable
             /// Gets the maximum value in the collection, as defined by the comparer.
             /// </summary>
             /// <value>The maximum value in the set.</value>
+            [MaybeNull]
             internal T Max
             {
                 get
                 {
                     if (this.IsEmpty)
                     {
-                        return default(T);
+                        return default(T)!;
                     }
 
                     Node n = this;
-                    while (!n._right.IsEmpty)
+                    while (!n._right!.IsEmpty)
                     {
                         n = n._right;
                     }
@@ -209,17 +209,18 @@ namespace System.Collections.Immutable
             /// Gets the minimum value in the collection, as defined by the comparer.
             /// </summary>
             /// <value>The minimum value in the set.</value>
+            [MaybeNull]
             internal T Min
             {
                 get
                 {
                     if (this.IsEmpty)
                     {
-                        return default(T);
+                        return default(T)!;
                     }
 
                     Node n = this;
-                    while (!n._left.IsEmpty)
+                    while (!n._left!.IsEmpty)
                     {
                         n = n._left;
                     }
@@ -238,6 +239,7 @@ namespace System.Collections.Immutable
                 get
                 {
                     Requires.Range(index >= 0 && index < this.Count, nameof(index));
+                    Debug.Assert(_left != null && _right != null);
 
                     if (index < _left._count)
                     {
@@ -262,6 +264,7 @@ namespace System.Collections.Immutable
             internal ref readonly T ItemRef(int index)
             {
                 Requires.Range(index >= 0 && index < this.Count, nameof(index));
+                Debug.Assert(_left != null && _right != null);
 
                 if (index < _left._count)
                 {
@@ -379,7 +382,7 @@ namespace System.Collections.Immutable
                     int compareResult = comparer.Compare(key, _key);
                     if (compareResult > 0)
                     {
-                        var newRight = _right.Add(key, comparer, out mutated);
+                        var newRight = _right!.Add(key, comparer, out mutated);
                         if (mutated)
                         {
                             result = this.Mutate(right: newRight);
@@ -387,7 +390,7 @@ namespace System.Collections.Immutable
                     }
                     else if (compareResult < 0)
                     {
-                        var newLeft = _left.Add(key, comparer, out mutated);
+                        var newLeft = _left!.Add(key, comparer, out mutated);
                         if (mutated)
                         {
                             result = this.Mutate(left: newLeft);
@@ -421,6 +424,7 @@ namespace System.Collections.Immutable
                 }
                 else
                 {
+                    Debug.Assert(_left != null && _right != null);
                     Node result = this;
                     int compare = comparer.Compare(key, _key);
                     if (compare == 0)
@@ -448,7 +452,7 @@ namespace System.Collections.Immutable
                             // We have two children. Remove the next-highest node and replace
                             // this node with it.
                             var successor = _right;
-                            while (!successor._left.IsEmpty)
+                            while (!successor._left!.IsEmpty)
                             {
                                 successor = successor._left;
                             }
@@ -487,7 +491,6 @@ namespace System.Collections.Immutable
             /// <returns>
             ///   <c>true</c> if the tree contains the specified key; otherwise, <c>false</c>.
             /// </returns>
-            [Pure]
             internal bool Contains(T key, IComparer<T> comparer)
             {
                 Requires.NotNull(comparer, nameof(comparer));
@@ -502,6 +505,7 @@ namespace System.Collections.Immutable
                 // If this node is frozen, all its descendants must already be frozen.
                 if (!_frozen)
                 {
+                    Debug.Assert(_left != null && _right != null);
                     _left.Freeze();
                     _right.Freeze();
                     _frozen = true;
@@ -514,7 +518,6 @@ namespace System.Collections.Immutable
             /// <param name="key">The key to search for.</param>
             /// <param name="comparer">The comparer.</param>
             /// <returns>The matching node, or <see cref="EmptyNode"/> if no match was found.</returns>
-            [Pure]
             internal Node Search(T key, IComparer<T> comparer)
             {
                 Requires.NotNull(comparer, nameof(comparer));
@@ -532,11 +535,11 @@ namespace System.Collections.Immutable
                     }
                     else if (compare > 0)
                     {
-                        return _right.Search(key, comparer);
+                        return _right!.Search(key, comparer);
                     }
                     else
                     {
-                        return _left.Search(key, comparer);
+                        return _left!.Search(key, comparer);
                     }
                 }
             }
@@ -547,7 +550,6 @@ namespace System.Collections.Immutable
             /// <param name="key">The key to search for.</param>
             /// <param name="comparer">The comparer.</param>
             /// <returns>The matching node, or <see cref="EmptyNode"/> if no match was found.</returns>
-            [Pure]
             internal int IndexOf(T key, IComparer<T> comparer)
             {
                 Requires.NotNull(comparer, nameof(comparer));
@@ -558,6 +560,7 @@ namespace System.Collections.Immutable
                 }
                 else
                 {
+                    Debug.Assert(_left != null && _right != null);
                     int compare = comparer.Compare(key, _key);
                     if (compare == 0)
                     {
@@ -595,7 +598,6 @@ namespace System.Collections.Immutable
             /// An enumerator that iterates over the <see cref="ImmutableSortedSet{T}"/>
             /// in reverse order.
             /// </returns>
-            [Pure]
             internal IEnumerator<T> Reverse()
             {
                 return new Enumerator(this, reverse: true);
@@ -613,13 +615,13 @@ namespace System.Collections.Immutable
                 Requires.NotNull(tree, nameof(tree));
                 Debug.Assert(!tree.IsEmpty);
 
-                if (tree._right.IsEmpty)
+                if (tree._right!.IsEmpty)
                 {
                     return tree;
                 }
 
                 var right = tree._right;
-                return right.Mutate(left: tree.Mutate(right: right._left));
+                return right.Mutate(left: tree.Mutate(right: right._left!));
             }
 
             /// <summary>
@@ -632,13 +634,13 @@ namespace System.Collections.Immutable
                 Requires.NotNull(tree, nameof(tree));
                 Debug.Assert(!tree.IsEmpty);
 
-                if (tree._left.IsEmpty)
+                if (tree._left!.IsEmpty)
                 {
                     return tree;
                 }
 
                 var left = tree._left;
-                return left.Mutate(right: tree.Mutate(left: left._right));
+                return left.Mutate(right: tree.Mutate(left: left._right!));
             }
 
             /// <summary>
@@ -651,7 +653,7 @@ namespace System.Collections.Immutable
                 Requires.NotNull(tree, nameof(tree));
                 Debug.Assert(!tree.IsEmpty);
 
-                if (tree._right.IsEmpty)
+                if (tree._right!.IsEmpty)
                 {
                     return tree;
                 }
@@ -670,7 +672,7 @@ namespace System.Collections.Immutable
                 Requires.NotNull(tree, nameof(tree));
                 Debug.Assert(!tree.IsEmpty);
 
-                if (tree._left.IsEmpty)
+                if (tree._left!.IsEmpty)
                 {
                     return tree;
                 }
@@ -684,13 +686,12 @@ namespace System.Collections.Immutable
             /// </summary>
             /// <param name="tree">The tree.</param>
             /// <returns>0 if the tree is in balance, a positive integer if the right side is heavy, or a negative integer if the left side is heavy.</returns>
-            [Pure]
             private static int Balance(Node tree)
             {
                 Requires.NotNull(tree, nameof(tree));
                 Debug.Assert(!tree.IsEmpty);
 
-                return tree._right._height - tree._left._height;
+                return tree._right!._height - tree._left!._height;
             }
 
             /// <summary>
@@ -700,7 +701,6 @@ namespace System.Collections.Immutable
             /// <returns>
             /// <c>true</c> if [is right heavy] [the specified tree]; otherwise, <c>false</c>.
             /// </returns>
-            [Pure]
             private static bool IsRightHeavy(Node tree)
             {
                 Requires.NotNull(tree, nameof(tree));
@@ -711,7 +711,6 @@ namespace System.Collections.Immutable
             /// <summary>
             /// Determines whether the specified tree is left heavy.
             /// </summary>
-            [Pure]
             private static bool IsLeftHeavy(Node tree)
             {
                 Requires.NotNull(tree, nameof(tree));
@@ -724,7 +723,6 @@ namespace System.Collections.Immutable
             /// </summary>
             /// <param name="tree">The tree.</param>
             /// <returns>A balanced tree.</returns>
-            [Pure]
             private static Node MakeBalanced(Node tree)
             {
                 Requires.NotNull(tree, nameof(tree));
@@ -732,12 +730,12 @@ namespace System.Collections.Immutable
 
                 if (IsRightHeavy(tree))
                 {
-                    return Balance(tree._right) < 0 ? DoubleLeft(tree) : RotateLeft(tree);
+                    return Balance(tree._right!) < 0 ? DoubleLeft(tree) : RotateLeft(tree);
                 }
 
                 if (IsLeftHeavy(tree))
                 {
-                    return Balance(tree._left) > 0 ? DoubleRight(tree) : RotateRight(tree);
+                    return Balance(tree._left!) > 0 ? DoubleRight(tree) : RotateRight(tree);
                 }
 
                 return tree;
@@ -752,7 +750,6 @@ namespace System.Collections.Immutable
             /// <param name="start">The starting index within <paramref name="items"/> that should be captured by the node tree.</param>
             /// <param name="length">The number of elements from <paramref name="items"/> that should be captured by the node tree.</param>
             /// <returns>The root of the created node tree.</returns>
-            [Pure]
             internal static Node NodeTreeFromList(IOrderedCollection<T> items, int start, int length)
             {
                 Requires.NotNull(items, nameof(items));
@@ -778,8 +775,9 @@ namespace System.Collections.Immutable
             /// <param name="left">The left branch of the mutated node.</param>
             /// <param name="right">The right branch of the mutated node.</param>
             /// <returns>The mutated (or created) node.</returns>
-            private Node Mutate(Node left = null, Node right = null)
+            private Node Mutate(Node? left = null, Node? right = null)
             {
+                Debug.Assert(_left != null && _right != null);
                 if (_frozen)
                 {
                     return new Node(_key, left ?? _left, right ?? _right);

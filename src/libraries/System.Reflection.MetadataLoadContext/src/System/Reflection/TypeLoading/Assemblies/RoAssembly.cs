@@ -15,7 +15,7 @@ namespace System.Reflection.TypeLoading
     /// </summary>
     internal abstract partial class RoAssembly : LeveledAssembly
     {
-        private readonly RoModule[] _loadedModules; // Any loaded modules indexed by [rid - 1]. Does NOT include the manifest module.
+        private readonly RoModule?[] _loadedModules; // Any loaded modules indexed by [rid - 1]. Does NOT include the manifest module.
 
         protected RoAssembly(MetadataLoadContext loader, int assemblyFileCount)
             : base()
@@ -35,10 +35,10 @@ namespace System.Reflection.TypeLoading
         public sealed override AssemblyName GetName(bool copiedName) => GetAssemblyNameDataNoCopy().CreateAssemblyName();
         internal AssemblyNameData GetAssemblyNameDataNoCopy() => _lazyAssemblyNameData ?? (_lazyAssemblyNameData = ComputeNameData());
         protected abstract AssemblyNameData ComputeNameData();
-        private volatile AssemblyNameData _lazyAssemblyNameData;
+        private volatile AssemblyNameData? _lazyAssemblyNameData;
 
         public sealed override string FullName => _lazyFullName ?? (_lazyFullName = GetName().FullName);
-        private volatile string _lazyFullName;
+        private volatile string? _lazyFullName;
 
         // Location and codebase
         public abstract override string Location { get; }
@@ -51,14 +51,14 @@ namespace System.Reflection.TypeLoading
 
         // Apis to retrieved types physically defined in this module.
         public sealed override Type[] GetTypes() => IsSingleModule ? ManifestModule.GetTypes() : base.GetTypes();
-        public sealed override IEnumerable<TypeInfo> DefinedTypes => GetDefinedRoTypes();
+        public sealed override IEnumerable<TypeInfo> DefinedTypes => GetDefinedRoTypes()!;
 
-        private IEnumerable<RoType> GetDefinedRoTypes() => IsSingleModule ? GetRoManifestModule().GetDefinedRoTypes() : MultiModuleGetDefinedRoTypes();
+        private IEnumerable<RoType>? GetDefinedRoTypes() => IsSingleModule ? GetRoManifestModule().GetDefinedRoTypes() : MultiModuleGetDefinedRoTypes();
         private IEnumerable<RoType> MultiModuleGetDefinedRoTypes()
         {
             foreach (RoModule module in ComputeRoModules(getResourceModules: false))
             {
-                foreach (RoType t in module.GetDefinedRoTypes())
+                foreach (RoType t in module.GetDefinedRoTypes()!)
                 {
                     yield return t;
                 }
@@ -77,7 +77,7 @@ namespace System.Reflection.TypeLoading
         {
             get
             {
-                foreach (RoType type in GetDefinedRoTypes())
+                foreach (RoType type in GetDefinedRoTypes()!)
                 {
                     if (type.IsVisibleOutsideAssembly())
                         yield return type;
@@ -86,7 +86,7 @@ namespace System.Reflection.TypeLoading
         }
 
         // Api to retrieve types by name. Retrieves both types physically defined in this module and types this assembly forwards from another assembly.
-        public sealed override Type GetType(string name, bool throwOnError, bool ignoreCase)
+        public sealed override Type? GetType(string name, bool throwOnError, bool ignoreCase)
         {
             if (name == null)
                 throw new ArgumentNullException(nameof(name));
@@ -107,10 +107,10 @@ namespace System.Reflection.TypeLoading
         /// If a type is not contained or forwarded from the assembly, this method returns null (does not throw.)
         /// This supports the "throwOnError: false" behavior of Assembly.GetType(string, bool).
         /// </summary>
-        internal RoDefinitionType GetTypeCore(string ns, string name, bool ignoreCase, out Exception e) => GetTypeCore(ns.ToUtf8(), name.ToUtf8(), ignoreCase, out e);
-        internal RoDefinitionType GetTypeCore(ReadOnlySpan<byte> ns, ReadOnlySpan<byte> name, bool ignoreCase, out Exception e)
+        internal RoDefinitionType? GetTypeCore(string ns, string name, bool ignoreCase, out Exception? e) => GetTypeCore(ns.ToUtf8(), name.ToUtf8(), ignoreCase, out e);
+        internal RoDefinitionType? GetTypeCore(ReadOnlySpan<byte> ns, ReadOnlySpan<byte> name, bool ignoreCase, out Exception? e)
         {
-            RoDefinitionType result = GetRoManifestModule().GetTypeCore(ns, name, ignoreCase, out e);
+            RoDefinitionType? result = GetRoManifestModule().GetTypeCore(ns, name, ignoreCase, out e);
             if (IsSingleModule || result != null)
                 return result;
 
@@ -142,7 +142,7 @@ namespace System.Reflection.TypeLoading
 
         private AssemblyNameData[] GetReferencedAssembliesNoCopy() => _lazyAssemblyReferences ?? (_lazyAssemblyReferences = ComputeAssemblyReferences());
         protected abstract AssemblyNameData[] ComputeAssemblyReferences();
-        private volatile AssemblyNameData[] _lazyAssemblyReferences;
+        private volatile AssemblyNameData[]? _lazyAssemblyReferences;
 
         // Miscellaneous properties
         public sealed override bool ReflectionOnly => true;
@@ -150,13 +150,13 @@ namespace System.Reflection.TypeLoading
         public sealed override long HostContext => 0;
         public abstract override string ImageRuntimeVersion { get; }
         public abstract override bool IsDynamic { get; }
-        public abstract override MethodInfo EntryPoint { get; }
+        public abstract override MethodInfo? EntryPoint { get; }
 
         // Manifest resource support.
         public abstract override ManifestResourceInfo GetManifestResourceInfo(string resourceName);
         public abstract override string[] GetManifestResourceNames();
-        public abstract override Stream GetManifestResourceStream(string name);
-        public sealed override Stream GetManifestResourceStream(Type type, string name)
+        public abstract override Stream? GetManifestResourceStream(string name);
+        public sealed override Stream? GetManifestResourceStream(Type type, string name)
         {
             StringBuilder sb = new StringBuilder();
             if (type == null)
@@ -166,7 +166,7 @@ namespace System.Reflection.TypeLoading
             }
             else
             {
-                string ns = type.Namespace;
+                string? ns = type.Namespace;
                 if (ns != null)
                 {
                     sb.Append(ns);
@@ -186,14 +186,14 @@ namespace System.Reflection.TypeLoading
 
         // Satellite assemblies
         public sealed override Assembly GetSatelliteAssembly(CultureInfo culture) => throw new NotSupportedException(SR.NotSupported_SatelliteAssembly);
-        public sealed override Assembly GetSatelliteAssembly(CultureInfo culture, Version version) => throw new NotSupportedException(SR.NotSupported_SatelliteAssembly);
+        public sealed override Assembly GetSatelliteAssembly(CultureInfo culture, Version? version) => throw new NotSupportedException(SR.NotSupported_SatelliteAssembly);
 
         // Operations that are invalid for ReflectionOnly objects.
         public sealed override object[] GetCustomAttributes(bool inherit) => throw new InvalidOperationException(SR.Arg_ReflectionOnlyCA);
         public sealed override object[] GetCustomAttributes(Type attributeType, bool inherit) => throw new InvalidOperationException(SR.Arg_ReflectionOnlyCA);
         public sealed override bool IsDefined(Type attributeType, bool inherit) => throw new InvalidOperationException(SR.Arg_ReflectionOnlyCA);
         // Compat quirk: Why ArgumentException instead of InvalidOperationException?
-        public sealed override object CreateInstance(string typeName, bool ignoreCase, BindingFlags bindingAttr, Binder binder, object[] args, CultureInfo culture, object[] activationAttributes) => throw new ArgumentException(SR.Arg_ReflectionOnlyInvoke);
+        public sealed override object CreateInstance(string typeName, bool ignoreCase, BindingFlags bindingAttr, Binder? binder, object?[]? args, CultureInfo? culture, object?[]? activationAttributes) => throw new ArgumentException(SR.Arg_ReflectionOnlyInvoke);
 
         internal MetadataLoadContext Loader { get; }
     }

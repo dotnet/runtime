@@ -308,7 +308,7 @@ public:
 
         if (n == nullptr)
         {
-            n = new (m_alloc) Node(m_table[index], k, jitstd::forward<Args>(args)...);
+            n = new (m_alloc) Node(m_table[index], k, std::forward<Args>(args)...);
 
             m_table[index] = n;
             m_tableCount++;
@@ -768,7 +768,7 @@ private:
         Value m_val;
 
         template <class... Args>
-        Node(Node* next, Key k, Args&&... args) : m_next(next), m_key(k), m_val(jitstd::forward<Args>(args)...)
+        Node(Node* next, Key k, Args&&... args) : m_next(next), m_key(k), m_val(std::forward<Args>(args)...)
         {
         }
 

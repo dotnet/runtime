@@ -1,10 +1,9 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <Configurations>netcoreapp-Debug;netcoreapp-Release</Configurations>
-    <Nullable>enable</Nullable>
+    <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="System.Threading.Timer.cs" />
+    <Compile Include="System.Threading.Timer.Forwards.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\System.Runtime\ref\System.Runtime.csproj" />

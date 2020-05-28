@@ -37,6 +37,10 @@ Revision History:
 #error Either sysctl or sysconf is required for GetSystemInfo.
 #endif
 
+#if HAVE_SYSCTLBYNAME
+#include <sys/sysctl.h>
+#endif
+
 #if HAVE_SYSINFO
 #include <sys/sysinfo.h>
 #endif
@@ -63,12 +67,12 @@ Revision History:
 #include <machine/vmparam.h>
 #endif  // HAVE_MACHINE_VMPARAM_H
 
-#if defined(_TARGET_MAC64)
+#if defined(TARGET_OSX)
 #include <mach/vm_statistics.h>
 #include <mach/mach_types.h>
 #include <mach/mach_init.h>
 #include <mach/mach_host.h>
-#endif // defined(_TARGET_MAC64)
+#endif // defined(TARGET_OSX)
 
 // On some platforms sys/user.h ends up defining _DEBUG; if so
 // remove the definition before including the header and put
@@ -88,6 +92,10 @@ Revision History:
 #include "pal/process.h"
 
 #include <algorithm>
+
+#if HAVE_SWAPCTL
+#include <sys/swap.h>
+#endif
 
 SET_DEFAULT_DEBUG_CHANNEL(MISC);
 
@@ -109,7 +117,7 @@ PAL_GetTotalCpuCount()
 
 #if HAVE_SYSCONF
 
-#if defined(_ARM_) || defined(_ARM64_)
+#if defined(HOST_ARM) || defined(HOST_ARM64)
 #define SYSCONF_GET_NUMPROCS       _SC_NPROCESSORS_CONF
 #define SYSCONF_GET_NUMPROCS_NAME "_SC_NPROCESSORS_CONF"
 #else
@@ -217,9 +225,11 @@ GetSystemInfo(
     lpSystemInfo->lpMaximumApplicationAddress = (PVOID) VM_MAXUSER_ADDRESS;
 #elif defined(__linux__)
     lpSystemInfo->lpMaximumApplicationAddress = (PVOID) (1ull << 47);
+#elif defined(__sun)
+    lpSystemInfo->lpMaximumApplicationAddress = (PVOID) 0xfffffd7fffe00000ul;
 #elif defined(USERLIMIT)
     lpSystemInfo->lpMaximumApplicationAddress = (PVOID) USERLIMIT;
-#elif defined(BIT64)
+#elif defined(HOST_64BIT)
 #if defined(USRSTACK64)
     lpSystemInfo->lpMaximumApplicationAddress = (PVOID) USRSTACK64;
 #else // !USRSTACK64
@@ -400,6 +410,14 @@ GlobalMemoryStatusEx(
             lpBuffer->ullAvailPageFile += (DWORDLONG)avail * pagesize;
         }
     }
+#elif HAVE_SWAPCTL
+    struct anoninfo ai;
+    if (swapctl(SC_AINFO, &ai) != -1)
+    {
+        int pagesize = getpagesize();
+        lpBuffer->ullTotalPageFile = ai.ani_max * pagesize;
+        lpBuffer->ullAvailPageFile = ai.ani_free * pagesize;
+    }
 #elif HAVE_SYSINFO
     // Linux
     struct sysinfo info;
@@ -548,7 +566,7 @@ PAL_GetLogicalProcessorCacheSizeFromOS()
     cacheSize = std::max(cacheSize, (size_t)sysconf(_SC_LEVEL4_CACHE_SIZE));
 #endif
 
-#if defined(_ARM64_)
+#if defined(HOST_ARM64)
     if(cacheSize == 0)
     {
         size_t size;

@@ -58,6 +58,12 @@ namespace SdtEventSources
             WriteEvent(2, msg);
         }
 
+        [Event(3)]
+        public void WriteSimpleInt(int n)
+        {
+            WriteEvent(3, n);
+        }
+
         #region Keywords / Tasks /Opcodes / Channels
         /// <summary>
         /// The keyword definitions for the ETW manifest.

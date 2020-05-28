@@ -52,7 +52,6 @@ private:
 public:
     static ShuffleThunkCache *m_pShuffleThunkCache;
 
-    //REVIEW: reconcile initialization, one init?
     // One time init.
     static void Init();
 
@@ -85,9 +84,11 @@ public:
     // Marshals a delegate to a unmanaged callback.
     static LPVOID ConvertToCallback(OBJECTREF pDelegate);
 
-    // Marshals a managed method to an unmanaged callback , provided the method is static and uses only
-    // blittable parameter types.
-    static PCODE ConvertToCallback(MethodDesc* pMD);
+#if defined(TARGET_X86)
+    // Marshals a managed method to an unmanaged callback.
+    // This is only used on x86. See usage for further details.
+    static PCODE ConvertToUnmanagedCallback(MethodDesc* pMD);
+#endif // defined(TARGET_X86)
 
     // Marshals an unmanaged callback to Delegate
     static OBJECTREF ConvertToDelegate(LPVOID pCallback, MethodTable* pMT);
@@ -126,6 +127,10 @@ public:
 
     static BOOL IsTrueMulticastDelegate(OBJECTREF delegate);
 
+    // Throw if the method violates any usage restrictions
+    // for UnmanagedCallersOnlyAttribute.
+    static void ThrowIfInvalidUnmanagedCallersOnlyUsage(MethodDesc* pMD);
+
 private:
     static Stub* SetupShuffleThunk(MethodTable * pDelMT, MethodDesc *pTargetMeth);
 
@@ -150,8 +155,7 @@ private:
                              OBJECTREF     *pRefFirstArg,
                              MethodDesc    *pTargetMethod,
                              MethodTable   *pExactMethodType,
-                             BOOL           fIsOpenDelegate,
-                             BOOL           fCheckSecurity);
+                             BOOL           fIsOpenDelegate);
 };
 
 // These flags effect the way BindToMethodInfo and BindToMethodName are allowed to bind a delegate to a target method. Their
@@ -164,8 +168,7 @@ enum DelegateBindingFlags
     DBF_ClosedDelegateOnly  =   0x00000008, // Only allow the creation of delegates closed over the 1st argument
     DBF_NeverCloseOverNull  =   0x00000010, // A null target will never been considered as a possible null 1st argument
     DBF_CaselessMatching    =   0x00000020, // Use case insensitive lookup for methods matched by name
-    DBF_SkipSecurityChecks  =   0x00000040, // Skip security checks (visibility, link demand etc.)
-    DBF_RelaxedSignature    =   0x00000080, // Allow relaxed signature matching (co/contra variance)
+    DBF_RelaxedSignature    =   0x00000040, // Allow relaxed signature matching (co/contra variance)
 };
 
 void DistributeEvent(OBJECTREF *pDelegate,

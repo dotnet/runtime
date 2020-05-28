@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Collections.Immutable
 {
@@ -120,6 +121,7 @@ namespace System.Collections.Immutable
         /// The first element that matches the conditions defined by the specified predicate,
         /// if found; otherwise, the default value for type <typeparamref name="T"/>.
         /// </returns>
+        [return: MaybeNull]
         T Find(Predicate<T> match);
 
         /// <summary>
@@ -193,6 +195,7 @@ namespace System.Collections.Immutable
         /// The last element that matches the conditions defined by the specified predicate,
         /// if found; otherwise, the default value for type <typeparamref name="T"/>.
         /// </returns>
+        [return: MaybeNull]
         T FindLast(Predicate<T> match);
 
         /// <summary>
@@ -296,7 +299,7 @@ namespace System.Collections.Immutable
         /// cannot find an implementation of the <see cref="IComparable{T}"/> generic interface
         /// or the <see cref="IComparable"/> interface for type <typeparamref name="T"/>.
         /// </exception>
-        int BinarySearch(T item, IComparer<T> comparer);
+        int BinarySearch(T item, IComparer<T>? comparer);
 
         /// <summary>
         /// Searches a range of elements in the sorted <see cref="IReadOnlyList{T}"/>
@@ -327,6 +330,6 @@ namespace System.Collections.Immutable
         /// cannot find an implementation of the <see cref="IComparable{T}"/> generic interface
         /// or the <see cref="IComparable"/> interface for type <typeparamref name="T"/>.
         /// </exception>
-        int BinarySearch(int index, int count, T item, IComparer<T> comparer);
+        int BinarySearch(int index, int count, T item, IComparer<T>? comparer);
     }
 }

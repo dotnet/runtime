@@ -79,7 +79,7 @@
     <value>Collection was modified; enumeration operation may not execute.</value>
   </data>
   <data name="DuplicateKey" xml:space="preserve">
-    <value>An element with the same key but a different value already exists. Key: {0}</value>
+    <value>An element with the same key but a different value already exists. Key: '{0}'</value>
   </data>
   <data name="InvalidEmptyOperation" xml:space="preserve">
     <value>This operation does not apply to an empty instance.</value>

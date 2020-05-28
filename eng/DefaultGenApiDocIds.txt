@@ -27,6 +27,7 @@ T:System.Runtime.CompilerServices.NullableAttribute
 T:System.Runtime.CompilerServices.NullableContextAttribute
 T:System.Runtime.CompilerServices.PreserveDependencyAttribute
 T:System.Runtime.CompilerServices.TypeForwardedFromAttribute
+T:System.Runtime.ConstrainedExecution.PrePrepareMethodAttribute
 T:System.Runtime.ConstrainedExecution.ReliabilityContractAttribute
 T:System.Runtime.InteropServices.ClassInterfaceAttribute
 T:System.Runtime.InteropServices.ComDefaultInterfaceAttribute

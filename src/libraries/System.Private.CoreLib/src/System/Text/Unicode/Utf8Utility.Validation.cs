@@ -4,30 +4,17 @@
 
 using System.Diagnostics;
 using System.Numerics;
+using System.Runtime.CompilerServices;
 using System.Runtime.Intrinsics.X86;
-using Internal.Runtime.CompilerServices;
 
-#pragma warning disable SA1121 // explicitly using type aliases instead of built-in types
-#if BIT64
-using nint = System.Int64;
-using nuint = System.UInt64;
-#else // BIT64
-using nint = System.Int32;
-using nuint = System.UInt32;
-#endif // BIT64
+#if SYSTEM_PRIVATE_CORELIB
+using Internal.Runtime.CompilerServices;
+#endif
 
 namespace System.Text.Unicode
 {
     internal static unsafe partial class Utf8Utility
     {
-#if DEBUG
-        private static void _ValidateAdditionalNIntDefinitions()
-        {
-            Debug.Assert(sizeof(nint) == IntPtr.Size && nint.MinValue < 0, "nint is defined incorrectly.");
-            Debug.Assert(sizeof(nuint) == IntPtr.Size && nuint.MinValue == 0, "nuint is defined incorrectly.");
-        }
-#endif // DEBUG
-
         // Returns &inputBuffer[inputLength] if the input buffer is valid.
         /// <summary>
         /// Given an input buffer <paramref name="pInputBuffer"/> of byte length <paramref name="inputLength"/>,
@@ -135,7 +122,7 @@ namespace System.Text.Unicode
 
                         do
                         {
-                            if (Sse2.IsSupported && Bmi1.IsSupported)
+                            if (Sse2.IsSupported)
                             {
                                 // pInputBuffer is 32-bit aligned but not necessary 128-bit aligned, so we're
                                 // going to perform an unaligned load. We don't necessarily care about aligning
@@ -171,7 +158,6 @@ namespace System.Text.Unicode
 
                         Debug.Assert(BitConverter.IsLittleEndian);
                         Debug.Assert(Sse2.IsSupported);
-                        Debug.Assert(Bmi1.IsSupported);
 
                         // The 'mask' value will have a 0 bit for each ASCII byte we saw and a 1 bit
                         // for each non-ASCII byte we saw. We can count the number of ASCII bytes,
@@ -180,7 +166,7 @@ namespace System.Text.Unicode
 
                         Debug.Assert(mask != 0);
 
-                        pInputBuffer += Bmi1.TrailingZeroCount(mask);
+                        pInputBuffer += BitOperations.TrailingZeroCount(mask);
                         if (pInputBuffer > pFinalPosWhereCanReadDWordFromInputBuffer)
                         {
                             goto ProcessRemainingBytesSlow;
@@ -411,7 +397,7 @@ namespace System.Text.Unicode
                     // in to the text. If this happens strip it off now before seeing if the next character
                     // consists of three code units.
 
-                    // Branchless: consume a 3-byte UTF-8 sequence and optionally an extra ASCII byte hanging off the end
+                    // Branchless: consume a 3-byte UTF-8 sequence and optionally an extra ASCII byte from the end.
 
                     nint asciiAdjustment;
                     if (BitConverter.IsLittleEndian)

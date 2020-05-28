@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Diagnostics.CodeAnalysis;
 using CultureInfo = System.Globalization.CultureInfo;
 
 namespace System.Reflection.Emit
@@ -16,7 +17,7 @@ namespace System.Reflection.Emit
     // This is a kind of Type object that will represent the compound expression of a parameter type or field type.
     internal sealed class SymbolType : TypeInfo
     {
-        public override bool IsAssignableFrom(TypeInfo? typeInfo)
+        public override bool IsAssignableFrom([NotNullWhen(true)] TypeInfo? typeInfo)
         {
             if (typeInfo == null) return false;
             return IsAssignableFrom(typeInfo.AsType());

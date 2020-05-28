@@ -2,63 +2,47 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System;
+using System.Diagnostics;
 using System.Security.Cryptography;
 
 namespace Internal.Cryptography
 {
     internal abstract partial class AsnFormatter
     {
-        private static readonly char[] s_hexValues =
-            { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F' };
-
         internal static AsnFormatter Instance { get { return s_instance; } }
 
-        public string Format(Oid oid, byte[] rawData, bool multiLine)
+        public string Format(Oid? oid, byte[] rawData, bool multiLine)
         {
-            return FormatNative(oid, rawData, multiLine) ?? EncodeHexString(rawData);
+            return FormatNative(oid, rawData, multiLine) ?? HexConverter.ToString(rawData.AsSpan(), HexConverter.Casing.Upper);
         }
 
-        protected abstract string FormatNative(Oid oid, byte[] rawData, bool multiLine);
+        protected abstract string? FormatNative(Oid? oid, byte[] rawData, bool multiLine);
 
-        protected static string EncodeHexString(byte[] sArray, bool spaceSeparated = false)
+        protected static string EncodeSpaceSeparatedHexString(byte[] sArray)
         {
-            return EncodeHexString(sArray, 0, (uint)sArray.Length, spaceSeparated);
-        }
+            Debug.Assert(sArray != null && sArray.Length != 0);
 
-        private static string EncodeHexString(byte[] sArray, uint start, uint end, bool spaceSeparated)
-        {
-            string result = null;
+            int length = (sArray.Length * 3) - 1; // two chars per byte, plus 1 space between each
 
-            if (sArray != null)
+            return string.Create(length, sArray, (hexOrder, sArray) =>
             {
-                uint len = (end - start) * 2;
+                int j = 0;
 
-                if (spaceSeparated)
+                for (int i = 0; i < sArray.Length; i++)
                 {
-                    // There will be n-1 spaces between n bytes.
-                    len += (end - start - 1);
-                }
-
-                char[] hexOrder = new char[len];
-
-                for (uint i = start, j = 0; i < end; i++)
-                {
-                    if (spaceSeparated && i > start)
+                    if (i != 0)
                     {
                         hexOrder[j++] = ' ';
                     }
 
-                    uint digit = (uint)((sArray[i] & 0xf0) >> 4);
-                    hexOrder[j++] = s_hexValues[digit];
-
-                    digit = (uint)(sArray[i] & 0x0f);
-                    hexOrder[j++] = s_hexValues[digit];
+                    int digit = sArray[i];
+                    hexOrder[j++] = HexConverter.ToCharUpper(digit >> 4);
+                    hexOrder[j++] = HexConverter.ToCharUpper(digit);
                 }
 
-                result = new string(hexOrder);
-            }
-
-            return result;
+                Debug.Assert(j == hexOrder.Length);
+            });
         }
     }
 }

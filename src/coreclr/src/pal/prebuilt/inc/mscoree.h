@@ -70,16 +70,12 @@ extern "C"{
 /* interface __MIDL_itf_mscoree_0000_0000 */
 /* [local] */ 
 
-#define DECLARE_DEPRECATED 
-#define DEPRECATED_CLR_STDAPI STDAPI
-
 struct IActivationFactory;
 
 struct IHostControl;
 
 struct ICLRControl;
 
-EXTERN_GUID(CLSID_ComCallUnmarshalV4, 0x45fb4600,0xe6e8,0x4928,0xb2,0x5e,0x50,0x47,0x6f,0xf7,0x94,0x25);
 EXTERN_GUID(IID_ICLRRuntimeHost, 0x90F1A06C, 0x7712, 0x4762, 0x86, 0xB5, 0x7A, 0x5E, 0xBA, 0x6B, 0xDB, 0x02);
 EXTERN_GUID(IID_ICLRRuntimeHost2, 0x712AB73F, 0x2C22, 0x4807, 0xAD, 0x7E, 0xF5, 0x01, 0xD7, 0xb7, 0x2C, 0x2D);
 EXTERN_GUID(IID_ICLRRuntimeHost4, 0x64F6D366, 0xD7C2, 0x4F1F, 0xB4, 0xB2, 0xE8, 0x16, 0x0C, 0xAC, 0x43, 0xAF);
@@ -133,22 +129,6 @@ enum __MIDL___MIDL_itf_mscoree_0000_0000_0003
         WAIT_NOTINDEADLOCK	= 0x4
     } 	WAIT_OPTION;
 
-typedef 
-enum ETaskType
-    {
-        TT_DEBUGGERHELPER	= 0x1,
-        TT_GC	= 0x2,
-        TT_FINALIZER	= 0x4,
-        TT_THREADPOOL_TIMER	= 0x8,
-        TT_THREADPOOL_GATE	= 0x10,
-        TT_THREADPOOL_WORKER	= 0x20,
-        TT_THREADPOOL_IOCOMPLETION	= 0x40,
-        TT_ADUNLOAD	= 0x80,
-        TT_USER	= 0x100,
-        TT_THREADPOOL_WAIT	= 0x200,
-        TT_UNKNOWN	= 0x80000000
-    } 	ETaskType;
-
 typedef /* [public] */ 
 enum __MIDL___MIDL_itf_mscoree_0000_0000_0004
     {
@@ -183,56 +163,6 @@ typedef struct _BucketParameters
     WCHAR pszEventTypeName[ 255 ];
     WCHAR pszParams[ 10 ][ 255 ];
     } 	BucketParameters;
-
-typedef /* [public] */ 
-enum __MIDL___MIDL_itf_mscoree_0000_0000_0006
-    {
-        OPR_ThreadAbort	= 0,
-        OPR_ThreadRudeAbortInNonCriticalRegion	= ( OPR_ThreadAbort + 1 ) ,
-        OPR_ThreadRudeAbortInCriticalRegion	= ( OPR_ThreadRudeAbortInNonCriticalRegion + 1 ) ,
-        OPR_AppDomainUnload	= ( OPR_ThreadRudeAbortInCriticalRegion + 1 ) ,
-        OPR_AppDomainRudeUnload	= ( OPR_AppDomainUnload + 1 ) ,
-        OPR_ProcessExit	= ( OPR_AppDomainRudeUnload + 1 ) ,
-        OPR_FinalizerRun	= ( OPR_ProcessExit + 1 ) ,
-        MaxClrOperation	= ( OPR_FinalizerRun + 1 ) 
-    } 	EClrOperation;
-
-typedef /* [public] */ 
-enum __MIDL___MIDL_itf_mscoree_0000_0000_0007
-    {
-        FAIL_NonCriticalResource	= 0,
-        FAIL_CriticalResource	= ( FAIL_NonCriticalResource + 1 ) ,
-        FAIL_FatalRuntime	= ( FAIL_CriticalResource + 1 ) ,
-        FAIL_OrphanedLock	= ( FAIL_FatalRuntime + 1 ) ,
-        FAIL_StackOverflow	= ( FAIL_OrphanedLock + 1 ) ,
-        FAIL_AccessViolation	= ( FAIL_StackOverflow + 1 ) ,
-        FAIL_CodeContract	= ( FAIL_AccessViolation + 1 ) ,
-        MaxClrFailure	= ( FAIL_CodeContract + 1 ) 
-    } 	EClrFailure;
-
-typedef /* [public] */ 
-enum __MIDL___MIDL_itf_mscoree_0000_0000_0008
-    {
-        eRuntimeDeterminedPolicy	= 0,
-        eHostDeterminedPolicy	= ( eRuntimeDeterminedPolicy + 1 ) 
-    } 	EClrUnhandledException;
-
-typedef /* [public] */ 
-enum __MIDL___MIDL_itf_mscoree_0000_0000_0009
-    {
-        eNoAction	= 0,
-        eThrowException	= ( eNoAction + 1 ) ,
-        eAbortThread	= ( eThrowException + 1 ) ,
-        eRudeAbortThread	= ( eAbortThread + 1 ) ,
-        eUnloadAppDomain	= ( eRudeAbortThread + 1 ) ,
-        eRudeUnloadAppDomain	= ( eUnloadAppDomain + 1 ) ,
-        eExitProcess	= ( eRudeUnloadAppDomain + 1 ) ,
-        eFastExitProcess	= ( eExitProcess + 1 ) ,
-        eRudeExitProcess	= ( eFastExitProcess + 1 ) ,
-        MaxPolicyAction	= (eRudeExitProcess + 1 )
-    } 	EPolicyAction;
-
-
 
 extern RPC_IF_HANDLE __MIDL_itf_mscoree_0000_0000_v0_0_c_ifspec;
 extern RPC_IF_HANDLE __MIDL_itf_mscoree_0000_0000_v0_0_s_ifspec;
@@ -889,10 +819,6 @@ EXTERN_C const IID IID_ICLRRuntimeHost4;
 
 /* interface __MIDL_itf_mscoree_0000_0003 */
 /* [local] */ 
-
-#undef DEPRECATED_CLR_STDAPI
-#undef DECLARE_DEPRECATED
-#undef DEPRECATED_CLR_API_MESG
 
 
 extern RPC_IF_HANDLE __MIDL_itf_mscoree_0000_0003_v0_0_c_ifspec;

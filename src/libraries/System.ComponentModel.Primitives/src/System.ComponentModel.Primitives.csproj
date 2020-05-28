@@ -2,7 +2,7 @@
   <PropertyGroup>
     <RootNamespace>System.ComponentModel.Primitives</RootNamespace>
     <AssemblyName>System.ComponentModel.Primitives</AssemblyName>
-    <Configurations>netcoreapp-Debug;netcoreapp-Release</Configurations>
+    <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
     <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>
@@ -35,14 +35,9 @@
     <Compile Include="System\ComponentModel\RefreshPropertiesAttribute.cs" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="FxCopBaseline.cs" />
-  </ItemGroup>
-  <ItemGroup>
     <Reference Include="System.Collections.NonGeneric" />
     <Reference Include="System.ComponentModel" />
-    <Reference Include="System.Diagnostics.Tools" />
     <Reference Include="System.ObjectModel" />
-    <Reference Include="System.Resources.ResourceManager" />
     <Reference Include="System.Runtime" />
     <Reference Include="System.Runtime.Extensions" />
     <Reference Include="System.Threading" />

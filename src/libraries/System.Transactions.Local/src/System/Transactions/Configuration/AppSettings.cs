@@ -19,7 +19,7 @@ namespace System.Transactions.Configuration
                     if (!s_settingsInitalized)
                     {
                         // TODO: Determine how to handle configuration.
-                        // This uses System.Configuration on desktop to load:
+                        // This uses System.Configuration on .NET Framework to load:
                         // Transactions:IncludeDistributedTransactionIdInExceptionMessage
                         s_includeDistributedTxIdInExceptionMessage = false;
                     }

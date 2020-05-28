@@ -41,11 +41,11 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #include "msvcdis.h"
 #pragma warning(default : 4640)
 
-#ifdef _TARGET_XARCH_
+#ifdef TARGET_XARCH
 #include "disx86.h"
-#elif defined(_TARGET_ARM64_)
+#elif defined(TARGET_ARM64)
 #include "disarm64.h"
-#else // _TARGET_*
+#else // TARGET*
 #error Unsupported or unset target architecture
 #endif
 
@@ -56,17 +56,17 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
 /*****************************************************************************/
 
-#ifdef _HOST_64BIT_
+#ifdef HOST_64BIT
 template <typename T>
 struct SizeTKeyFuncs : JitLargePrimitiveKeyFuncs<T>
 {
 };
-#else  // !_HOST_64BIT_
+#else  // !HOST_64BIT
 template <typename T>
 struct SizeTKeyFuncs : JitSmallPrimitiveKeyFuncs<T>
 {
 };
-#endif // _HOST_64BIT_
+#endif // HOST_64BIT
 
 typedef JitHashTable<size_t, SizeTKeyFuncs<size_t>, CORINFO_METHOD_HANDLE> AddrToMethodHandleMap;
 typedef JitHashTable<size_t, SizeTKeyFuncs<size_t>, size_t>                AddrToAddrMap;

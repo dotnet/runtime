@@ -62,6 +62,7 @@ public static partial class OverlappedTests
     }
 
     [Fact]
+    [ActiveIssue("https://github.com/mono/mono/issues/15311", TestRuntimes.Mono)]
     public static void PropertyTest3()
     {
         IAsyncResult asyncResult = new Task(() => Console.WriteLine("this is a dummy task"));

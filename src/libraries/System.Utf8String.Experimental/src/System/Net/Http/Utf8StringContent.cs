@@ -2,8 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Buffers;
 using System.IO;
 using System.Net.Http.Headers;
+using System.Runtime.InteropServices;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace System.Net.Http
@@ -19,7 +22,7 @@ namespace System.Net.Http
         {
         }
 
-        public Utf8StringContent(Utf8String content, string mediaType)
+        public Utf8StringContent(Utf8String content, string? mediaType)
         {
             if (content is null)
             {
@@ -36,15 +39,37 @@ namespace System.Net.Http
             };
         }
 
-        protected override Task<Stream> CreateContentReadStreamAsync()
-        {
-            return Task.FromResult<Stream>(new Utf8StringStream(_content));
-        }
+        protected override Task<Stream> CreateContentReadStreamAsync() =>
+            Task.FromResult<Stream>(new Utf8StringStream(_content));
 
-        protected override Task SerializeToStreamAsync(Stream stream, TransportContext context)
+#if NETSTANDARD2_0
+        protected async override Task SerializeToStreamAsync(Stream stream, TransportContext? context)
         {
-            return stream.WriteAsync(_content.AsMemoryBytes()).AsTask();
+            ReadOnlyMemory<byte> buffer = _content.AsMemoryBytes();
+            if (MemoryMarshal.TryGetArray(buffer, out ArraySegment<byte> array))
+            {
+                await stream.WriteAsync(array.Array, array.Offset, array.Count).ConfigureAwait(false);
+            }
+            else
+            {
+                byte[] localBuffer = ArrayPool<byte>.Shared.Rent(buffer.Length);
+                buffer.Span.CopyTo(localBuffer);
+
+                await stream.WriteAsync(localBuffer, 0, buffer.Length).ConfigureAwait(false);
+
+                ArrayPool<byte>.Shared.Return(localBuffer);
+            }
         }
+#elif NETSTANDARD2_1 || NETCOREAPP3_0
+        protected override Task SerializeToStreamAsync(Stream stream, TransportContext? context) =>
+            stream.WriteAsync(_content.AsMemoryBytes()).AsTask();
+#else
+        protected override Task SerializeToStreamAsync(Stream stream, TransportContext? context) =>
+            SerializeToStreamAsync(stream, context, default);
+
+        protected override Task SerializeToStreamAsync(Stream stream, TransportContext? context, CancellationToken cancellationToken) =>
+            stream.WriteAsync(_content.AsMemoryBytes(), cancellationToken).AsTask();
+#endif
 
         protected override bool TryComputeLength(out long length)
         {

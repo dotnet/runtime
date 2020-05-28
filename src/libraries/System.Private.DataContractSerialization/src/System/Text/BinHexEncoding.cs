@@ -9,7 +9,7 @@ namespace System.Text
 {
     internal class BinHexEncoding : Encoding
     {
-        private static readonly byte[] s_char2val = new byte[128]
+        private static ReadOnlySpan<byte> Char2val => new byte[128] // rely on C# compiler optimization to eliminate allocation
         {
             /*    0-15 */
                               0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
@@ -28,8 +28,6 @@ namespace System.Text
             /* 112-127 */
                               0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
         };
-
-        private const string Val2Char = "0123456789ABCDEF";
 
         public override int GetMaxByteCount(int charCount)
         {
@@ -68,7 +66,7 @@ namespace System.Text
                 throw new ArgumentException(SR.XmlArrayTooSmall, nameof(bytes));
             if (charCount > 0)
             {
-                fixed (byte* _char2val = &s_char2val[0])
+                fixed (byte* _char2val = &Char2val[0])
                 {
                     fixed (byte* _bytes = &bytes[byteIndex])
                     {
@@ -138,8 +136,6 @@ namespace System.Text
                 throw new ArgumentException(SR.XmlArrayTooSmall, nameof(chars));
             if (byteCount > 0)
             {
-                fixed (char* _val2char = Val2Char)
-                {
                     fixed (byte* _bytes = &bytes[byteIndex])
                     {
                         fixed (char* _chars = &chars[charIndex])
@@ -149,14 +145,13 @@ namespace System.Text
                             byte* pbMax = _bytes + byteCount;
                             while (pb < pbMax)
                             {
-                                pch[0] = _val2char[pb[0] >> 4];
-                                pch[1] = _val2char[pb[0] & 0x0F];
+                                pch[0] = HexConverter.ToCharUpper(pb[0] >> 4);
+                                pch[1] = HexConverter.ToCharUpper(pb[0]);
                                 pb++;
                                 pch += 2;
                             }
                         }
                     }
-                }
             }
             return charCount;
         }

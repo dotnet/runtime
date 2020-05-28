@@ -9,7 +9,6 @@ namespace System.Composition
     /// <summary>
     ///     Specifies that a type, property, field, or method provides a particular export.
     /// </summary>
-    [SuppressMessage("Microsoft.Performance", "CA1813:AvoidUnsealedAttributes")]
     [AttributeUsage(AttributeTargets.Class | AttributeTargets.Property,
                     AllowMultiple = true, Inherited = false)]
     public class ExportAttribute : Attribute

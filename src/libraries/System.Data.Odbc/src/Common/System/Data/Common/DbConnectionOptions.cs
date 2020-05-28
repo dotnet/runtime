@@ -132,7 +132,7 @@ namespace System.Data.Common
 
             if ((0 < builder.Length) && (';' != builder[builder.Length - 1]))
             {
-                builder.Append(";");
+                builder.Append(';');
             }
 
             if (useOdbcRules)
@@ -143,7 +143,7 @@ namespace System.Data.Common
             {
                 builder.Append(keyName.Replace("=", "=="));
             }
-            builder.Append("=");
+            builder.Append('=');
 
             if (null != keyValue)
             { // else <keyword>=;

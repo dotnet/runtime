@@ -41,12 +41,12 @@ namespace System.Security.Cryptography
         }
 
         // Indexer using an OID friendly name or value.
-        public Oid this[string oid]
+        public Oid? this[string oid]
         {
             get
             {
                 // If we were passed the friendly name, retrieve the value String.
-                string oidValue = OidLookup.ToOid(oid, OidGroup.All, fallBackToAllGroups: false);
+                string? oidValue = OidLookup.ToOid(oid, OidGroup.All, fallBackToAllGroups: false);
                 if (oidValue == null)
                 {
                     oidValue = oid;

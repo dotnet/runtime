@@ -24,11 +24,11 @@ namespace System.Security.Cryptography
         private CngAlgorithmCore _core = new CngAlgorithmCore(nameof(ECDiffieHellmanCng)) { DefaultKeyType = CngAlgorithm.ECDiffieHellman };
         private CngAlgorithm _hashAlgorithm = CngAlgorithm.Sha256;
         private ECDiffieHellmanKeyDerivationFunction _kdf = ECDiffieHellmanKeyDerivationFunction.Hash;
-        private byte[] _hmacKey;
-        private byte[] _label;
-        private byte[] _secretAppend;
-        private byte[] _secretPrepend;
-        private byte[] _seed;
+        private byte[]? _hmacKey;
+        private byte[]? _label;
+        private byte[]? _secretAppend;
+        private byte[]? _secretPrepend;
+        private byte[]? _seed;
 
         public ECDiffieHellmanCng(CngKey key)
         {
@@ -86,7 +86,7 @@ namespace System.Security.Cryptography
         /// <summary>
         ///     Key used with the HMAC KDF
         /// </summary>
-        public byte[] HmacKey
+        public byte[]? HmacKey
         {
             get { return _hmacKey; }
             set { _hmacKey = value; }
@@ -95,7 +95,7 @@ namespace System.Security.Cryptography
         /// <summary>
         ///     Label bytes used for the TLS KDF
         /// </summary>
-        public byte[] Label
+        public byte[]? Label
         {
             get { return _label; }
             set { _label = value; }
@@ -104,7 +104,7 @@ namespace System.Security.Cryptography
         /// <summary>
         ///     Bytes to append to the raw secret agreement before processing by the KDF
         /// </summary>
-        public byte[] SecretAppend
+        public byte[]? SecretAppend
         {
             get { return _secretAppend; }
             set { _secretAppend = value; }
@@ -113,7 +113,7 @@ namespace System.Security.Cryptography
         /// <summary>
         ///     Bytes to prepend to the raw secret agreement before processing by the KDF
         /// </summary>
-        public byte[] SecretPrepend
+        public byte[]? SecretPrepend
         {
             get { return _secretPrepend; }
             set { _secretPrepend = value; }
@@ -122,7 +122,7 @@ namespace System.Security.Cryptography
         /// <summary>
         ///     Seed bytes used for the TLS KDF
         /// </summary>
-        public byte[] Seed
+        public byte[]? Seed
         {
             get { return _seed; }
             set { _seed = value; }
@@ -151,7 +151,7 @@ namespace System.Security.Cryptography
             _core.DisposeKey();
         }
 
-        internal string GetCurveName(out string oidValue)
+        internal string? GetCurveName(out string? oidValue)
         {
             return Key.GetCurveName(out oidValue);
         }

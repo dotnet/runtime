@@ -215,7 +215,7 @@ namespace System.Threading.Tasks.Tests
                     innerTcs.SetException(new InvalidOperationException());
                     break;
                 case TaskStatus.Canceled:
-                    innerTcs.TrySetCanceled(CreateCanceledToken());
+                    innerTcs.SetCanceled(CreateCanceledToken());
                     break;
             }
 
@@ -266,7 +266,7 @@ namespace System.Threading.Tasks.Tests
                     innerTcs.SetException(new InvalidOperationException());
                     break;
                 case TaskStatus.Canceled:
-                    innerTcs.TrySetCanceled(CreateCanceledToken());
+                    innerTcs.SetCanceled(CreateCanceledToken());
                     break;
             }
 
@@ -307,7 +307,7 @@ namespace System.Threading.Tasks.Tests
                     outerTcs.SetResult(null);
                     break;
                 case TaskStatus.Canceled:
-                    outerTcs.TrySetCanceled(CreateCanceledToken());
+                    outerTcs.SetCanceled(CreateCanceledToken());
                     break;
                 case TaskStatus.Faulted:
                     outerTcs.SetException(new InvalidCastException());
@@ -358,7 +358,7 @@ namespace System.Threading.Tasks.Tests
                     outerTcs.SetResult(null); // cancellation
                     break;
                 case TaskStatus.Canceled:
-                    outerTcs.TrySetCanceled(CreateCanceledToken());
+                    outerTcs.SetCanceled(CreateCanceledToken());
                     break;
                 case TaskStatus.Faulted:
                     outerTcs.SetException(new InvalidCastException());

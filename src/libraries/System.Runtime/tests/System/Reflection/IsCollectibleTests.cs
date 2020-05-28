@@ -18,6 +18,7 @@ namespace System.Reflection.Tests
         protected override Assembly Load(AssemblyName assemblyName) => null;
     }
 
+    [ActiveIssue("https://github.com/mono/mono/issues/15142", TestRuntimes.Mono)]
     public class IsCollectibleTests
     {
         public static string asmNameString = "TestCollectibleAssembly";

@@ -3,15 +3,15 @@
 // See the LICENSE file in the project root for more information.
 
 
-.assembly extern System.Private.CoreLib { auto }
+.assembly extern System.Runtime { auto }
 .assembly extern System.Numerics.Vectors { auto }
 .assembly extern System.Runtime.CompilerServices.Unsafe { auto }
 .assembly extern mscorlib { auto }
 
 .assembly GitHub_11804
 {
-  .custom instance void [System.Private.CoreLib]System.Runtime.CompilerServices.CompilationRelaxationsAttribute::.ctor(int32) = ( 01 00 08 00 00 00 00 00 )
-  .custom instance void [System.Private.CoreLib]System.Runtime.CompilerServices.RuntimeCompatibilityAttribute::.ctor() = ( 01 00 01 00 54 02 16 57 72 61 70 4E 6F 6E 45 78   // ....T..WrapNonEx
+  .custom instance void [System.Runtime]System.Runtime.CompilerServices.CompilationRelaxationsAttribute::.ctor(int32) = ( 01 00 08 00 00 00 00 00 )
+  .custom instance void [System.Runtime]System.Runtime.CompilerServices.RuntimeCompatibilityAttribute::.ctor() = ( 01 00 01 00 54 02 16 57 72 61 70 4E 6F 6E 45 78   // ....T..WrapNonEx
                                                                                                                            63 65 70 74 69 6F 6E 54 68 72 6F 77 73 01 )       // ceptionThrows.
 
   .hash algorithm 0x00008004
@@ -28,7 +28,7 @@
 
 
 .class private abstract auto ansi sealed beforefieldinit C
-       extends [System.Private.CoreLib]System.Object
+       extends [System.Runtime]System.Object
 {
   .method private hidebysig static int32
           UnsafeGrab() cil managed noinlining

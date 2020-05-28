@@ -78,19 +78,17 @@ class Thread;
 #define GC_PRESSURE_MACHINE_LOCAL 4004
 #define GC_PRESSURE_REMOTE 4824
 
-#ifdef BIT64
+#ifdef HOST_64BIT
 #define GC_PRESSURE_WINRT_BASE    1000
 #define GC_PRESSURE_WINRT_LOW     12000
 #define GC_PRESSURE_WINRT_MEDIUM  120000
 #define GC_PRESSURE_WINRT_HIGH    1200000
-#else // BIT64
+#else // HOST_64BIT
 #define GC_PRESSURE_WINRT_BASE    750
 #define GC_PRESSURE_WINRT_LOW     8000
 #define GC_PRESSURE_WINRT_MEDIUM  80000
 #define GC_PRESSURE_WINRT_HIGH    800000
-#endif // BIT64
-
-extern bool g_fShutDownCOM;
+#endif // HOST_64BIT
 
 enum {INTERFACE_ENTRY_CACHE_SIZE = 8};
 
@@ -2000,7 +1998,7 @@ private:
         static RCW *Null()                         { LIMITED_METHOD_CONTRACT; return NULL; }
         static bool IsNull(RCW *e)                 { LIMITED_METHOD_CONTRACT; return (e == NULL); }
         static const LPVOID GetKey(RCW *e)         { LIMITED_METHOD_CONTRACT; return e->m_pIdentity; }
-        static count_t Hash(LPVOID key_t)          { LIMITED_METHOD_CONTRACT; return (count_t)key_t; }
+        static count_t Hash(LPVOID key_t)          { LIMITED_METHOD_CONTRACT; return (count_t)(size_t) key_t; }
         static BOOL Equals(LPVOID lhs, LPVOID rhs) { LIMITED_METHOD_CONTRACT; return (lhs == rhs); }
         static RCW *Deleted()                      { LIMITED_METHOD_CONTRACT; return (RCW *)-1; }
         static bool IsDeleted(RCW *e)              { LIMITED_METHOD_CONTRACT; return e == (RCW *)-1; }

@@ -541,7 +541,6 @@ namespace System.Net.Tests
         private const string CookieInvalid = "helloWorld";
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.Mono, "Does not work in Mono")]
         public void GetValues_MultipleSetCookieHeadersWithExpiresAttribute_Success()
         {
             WebHeaderCollection w = new WebHeaderCollection();
@@ -559,7 +558,6 @@ namespace System.Net.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.Mono, "Does not work in Mono")]
         public void GetValues_SingleSetCookieHeaderWithMultipleCookiesWithExpiresAttribute_Success()
         {
             WebHeaderCollection w = new WebHeaderCollection();
@@ -605,7 +603,6 @@ namespace System.Net.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.Mono, "Does not work in Mono")]
         public void GetValues_InvalidSetCookieHeader_Success()
         {
             WebHeaderCollection w = new WebHeaderCollection();

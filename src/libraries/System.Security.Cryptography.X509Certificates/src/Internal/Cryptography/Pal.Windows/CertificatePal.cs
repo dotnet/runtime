@@ -49,7 +49,7 @@ namespace Internal.Cryptography.Pal
         /// </summary>
         public static ICertificatePal FromOtherCert(X509Certificate copyFrom)
         {
-            CertificatePal pal = new CertificatePal((CertificatePal)copyFrom.Pal);
+            CertificatePal pal = new CertificatePal((CertificatePal)copyFrom.Pal!);
             return pal;
         }
 
@@ -88,7 +88,7 @@ namespace Internal.Cryptography.Pal
                 unsafe
                 {
                     CERT_CONTEXT* pCertContext = _certContext.CertContext;
-                    string keyAlgorithm = Marshal.PtrToStringAnsi(pCertContext->pCertInfo->SubjectPublicKeyInfo.Algorithm.pszObjId);
+                    string keyAlgorithm = Marshal.PtrToStringAnsi(pCertContext->pCertInfo->SubjectPublicKeyInfo.Algorithm.pszObjId)!;
                     GC.KeepAlive(this);
                     return keyAlgorithm;
                 }
@@ -102,7 +102,7 @@ namespace Internal.Cryptography.Pal
                 unsafe
                 {
                     CERT_CONTEXT* pCertContext = _certContext.CertContext;
-                    string keyAlgorithmOid = Marshal.PtrToStringAnsi(pCertContext->pCertInfo->SubjectPublicKeyInfo.Algorithm.pszObjId);
+                    string keyAlgorithmOid = Marshal.PtrToStringAnsi(pCertContext->pCertInfo->SubjectPublicKeyInfo.Algorithm.pszObjId)!;
 
                     int algId;
                     if (keyAlgorithmOid == Oids.Rsa)
@@ -142,7 +142,7 @@ namespace Internal.Cryptography.Pal
         {
             unsafe
             {
-                SafeX509ChainHandle certChainContext = null;
+                SafeX509ChainHandle? certChainContext = null;
                 try
                 {
                     int cbData = 0;
@@ -206,7 +206,7 @@ namespace Internal.Cryptography.Pal
                 unsafe
                 {
                     CERT_CONTEXT* pCertContext = _certContext.CertContext;
-                    string signatureAlgorithm = Marshal.PtrToStringAnsi(pCertContext->pCertInfo->SignatureAlgorithm.pszObjId);
+                    string signatureAlgorithm = Marshal.PtrToStringAnsi(pCertContext->pCertInfo->SignatureAlgorithm.pszObjId)!;
                     GC.KeepAlive(this);
                     return signatureAlgorithm;
                 }
@@ -274,7 +274,7 @@ namespace Internal.Cryptography.Pal
             get
             {
                 int uninteresting = 0;
-                bool archivePropertyExists = Interop.crypt32.CertGetCertificateContextProperty(_certContext, CertContextPropId.CERT_ARCHIVED_PROP_ID, null, ref uninteresting);
+                bool archivePropertyExists = Interop.crypt32.CertGetCertificateContextProperty(_certContext, CertContextPropId.CERT_ARCHIVED_PROP_ID, null!, ref uninteresting);
                 return archivePropertyExists;
             }
 
@@ -360,6 +360,11 @@ namespace Internal.Cryptography.Pal
             }
         }
 
+        public PolicyData GetPolicyData()
+        {
+            throw new PlatformNotSupportedException();
+        }
+
         public IEnumerable<X509Extension> Extensions
         {
             get
@@ -372,7 +377,7 @@ namespace Internal.Cryptography.Pal
                     for (int i = 0; i < numExtensions; i++)
                     {
                         CERT_EXTENSION* pCertExtension = pCertInfo->rgExtension + i;
-                        string oidValue = Marshal.PtrToStringAnsi(pCertExtension->pszObjId);
+                        string oidValue = Marshal.PtrToStringAnsi(pCertExtension->pszObjId)!;
                         Oid oid = new Oid(oidValue);
                         bool critical = pCertExtension->fCritical != 0;
                         byte[] rawData = pCertExtension->Value.ToByteArray();
@@ -406,10 +411,10 @@ namespace Internal.Cryptography.Pal
             sb.AppendLine();
             sb.AppendLine("[Private Key]");
 
-            CspKeyContainerInfo cspKeyContainerInfo = null;
+            CspKeyContainerInfo? cspKeyContainerInfo = null;
             try
             {
-                CspParameters parameters = GetPrivateKeyCsp();
+                CspParameters? parameters = GetPrivateKeyCsp();
 
                 if (parameters != null)
                 {
@@ -463,7 +468,7 @@ namespace Internal.Cryptography.Pal
         public void Dispose()
         {
             SafeCertContextHandle certContext = _certContext;
-            _certContext = null;
+            _certContext = null!;
             if (certContext != null && !certContext.IsInvalid)
             {
                 certContext.Dispose();
@@ -536,7 +541,9 @@ namespace Internal.Cryptography.Pal
         {
             using (IExportPal storePal = StorePal.FromCertificate(this))
             {
-                return storePal.Export(contentType, password);
+                byte[]? exported = storePal.Export(contentType, password);
+                Debug.Assert(exported != null);
+                return exported;
             }
         }
     }

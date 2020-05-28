@@ -13,8 +13,8 @@ namespace System.Security.Cryptography
     public sealed class IncrementalHash : IDisposable
     {
         private readonly HashAlgorithmName _algorithmName;
-        private HashProvider _hash;
-        private HMACCommon _hmac;
+        private HashProvider? _hash;
+        private HMACCommon? _hmac;
         private bool _disposed;
 
         private IncrementalHash(HashAlgorithmName name, HashProvider hash)
@@ -104,7 +104,7 @@ namespace System.Security.Cryptography
             }
             else
             {
-                _hmac.AppendHashData(data);
+                _hmac!.AppendHashData(data);
             }
         }
 
@@ -125,7 +125,7 @@ namespace System.Security.Cryptography
             Debug.Assert((_hash != null) ^ (_hmac != null));
             return _hash != null ?
                 _hash.FinalizeHashAndReset() :
-                _hmac.FinalizeHashAndReset();
+                _hmac!.FinalizeHashAndReset();
         }
 
         public bool TryGetHashAndReset(Span<byte> destination, out int bytesWritten)
@@ -138,7 +138,7 @@ namespace System.Security.Cryptography
             Debug.Assert((_hash != null) ^ (_hmac != null));
             return _hash != null ?
                 _hash.TryFinalizeHashAndReset(destination, out bytesWritten) :
-                _hmac.TryFinalizeHashAndReset(destination, out bytesWritten);
+                _hmac!.TryFinalizeHashAndReset(destination, out bytesWritten);
         }
 
         /// <summary>

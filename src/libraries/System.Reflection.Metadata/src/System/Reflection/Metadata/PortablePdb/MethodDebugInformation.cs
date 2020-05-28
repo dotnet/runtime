@@ -10,7 +10,7 @@ namespace System.Reflection.Metadata
     /// Debug information associated with a method definition. Stored in debug metadata.
     /// </summary>
     /// <remarks>
-    /// See https://github.com/dotnet/corefx/blob/master/src/System.Reflection.Metadata/specs/PortablePdb-Metadata.md#methoddebuginformation-table-0x31.
+    /// See https://github.com/dotnet/runtime/blob/master/src/libraries/System.Reflection.Metadata/specs/PortablePdb-Metadata.md#methoddebuginformation-table-0x31.
     /// </remarks>
     public readonly struct MethodDebugInformation
     {
@@ -22,7 +22,6 @@ namespace System.Reflection.Metadata
         internal MethodDebugInformation(MetadataReader reader, MethodDebugInformationHandle handle)
         {
             Debug.Assert(reader != null);
-            Debug.Assert(!handle.IsNil);
 
             _reader = reader;
             _rowId = handle.RowId;

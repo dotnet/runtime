@@ -12,12 +12,11 @@
 
 #include "stdafx.h"
 #include "threadsuspend.h"
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
 
 #include "securitywrapper.h"
 #endif
 #include <aclapi.h>
-#include <hosting.h>
 
 #include "eemessagebox.h"
 
@@ -242,8 +241,8 @@ HRESULT DebuggerIPCControlBlock::Init(
     memset( this, 0, sizeof( DebuggerIPCControlBlock) );
 
     // Setup version checking info.
-    m_verMajor = CLR_BUILD_VERSION;
-    m_verMinor = CLR_BUILD_VERSION_QFE;
+    m_verMajor = RuntimeFileBuildVersion;
+    m_verMinor = RuntimeFileRevisionVersion;
 
 #ifdef _DEBUG
     m_checkedBuild = true;
@@ -543,8 +542,9 @@ HRESULT DebuggerRCThread::SetupRuntimeOffsets(DebuggerIPCControlBlock * pDebugge
 
     // @dbgtodo  inspection - this should all go away or be obtained from DacDbi Primitives.
     g_pEEInterface->GetRuntimeOffsets(&pDebuggerRuntimeOffsets->m_TLSIndex,
-                                      &pDebuggerRuntimeOffsets->m_TLSIsSpecialIndex,
-                                      &pDebuggerRuntimeOffsets->m_TLSCantStopIndex,
+                                      &pDebuggerRuntimeOffsets->m_TLSEEThreadOffset,
+                                      &pDebuggerRuntimeOffsets->m_TLSIsSpecialOffset,
+                                      &pDebuggerRuntimeOffsets->m_TLSCantStopOffset,
                                       &pDebuggerRuntimeOffsets->m_EEThreadStateOffset,
                                       &pDebuggerRuntimeOffsets->m_EEThreadStateNCOffset,
                                       &pDebuggerRuntimeOffsets->m_EEThreadPGCDisabledOffset,
@@ -554,7 +554,6 @@ HRESULT DebuggerRCThread::SetupRuntimeOffsets(DebuggerIPCControlBlock * pDebugge
                                       &pDebuggerRuntimeOffsets->m_EEThreadSteppingStateMask,
                                       &pDebuggerRuntimeOffsets->m_EEMaxFrameValue,
                                       &pDebuggerRuntimeOffsets->m_EEThreadDebuggerFilterContextOffset,
-                                      &pDebuggerRuntimeOffsets->m_EEThreadCantStopOffset,
                                       &pDebuggerRuntimeOffsets->m_EEFrameNextOffset,
                                       &pDebuggerRuntimeOffsets->m_EEIsManagedExceptionStateMask);
 
@@ -1459,7 +1458,7 @@ HRESULT DebuggerRCThread::AsyncStop(void)
         NOTHROW;
         GC_NOTRIGGER;
 
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
         PRECONDITION(!ThisIsHelperThreadWorker());
 #else
         PRECONDITION(!ThisIsHelperThreadWorker());
@@ -1653,7 +1652,7 @@ HRESULT DebuggerRCThread::ReDaclEvents(PSECURITY_DESCRIPTOR pSecurityDescriptor)
 {
     LIMITED_METHOD_CONTRACT;
 
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
     if (m_pDCB != NULL)
     {
         if (m_pDCB->m_rightSideEventAvailable)
@@ -1677,7 +1676,7 @@ HRESULT DebuggerRCThread::ReDaclEvents(PSECURITY_DESCRIPTOR pSecurityDescriptor)
             }
         }
     }
-#endif // FEATURE_PAL
+#endif // TARGET_UNIX
 
     return S_OK;
 }

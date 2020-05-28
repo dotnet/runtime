@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 // ------------------------------------------------------------------------------
-// Changes to this file must follow the http://aka.ms/api-review process.
+// Changes to this file must follow the https://aka.ms/api-review process.
 // ------------------------------------------------------------------------------
 
 
@@ -18,17 +18,17 @@ namespace Windows.Foundation
 {
     public partial struct Point : IFormattable
     {
-        string IFormattable.ToString(string format, IFormatProvider provider) { throw null; }
+        string IFormattable.ToString(string? format, IFormatProvider? provider) { throw null; }
     }
     public partial struct Rect : IFormattable
     {
-        string IFormattable.ToString(string format, IFormatProvider provider) { throw null; }
+        string IFormattable.ToString(string? format, IFormatProvider? provider) { throw null; }
     }
 }
 namespace Windows.UI
 {
     public partial struct Color : IFormattable
     {
-        string IFormattable.ToString(string format, IFormatProvider provider) { throw null; }
+        string IFormattable.ToString(string? format, IFormatProvider? provider) { throw null; }
     }
 }

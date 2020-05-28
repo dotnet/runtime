@@ -10,7 +10,7 @@
 #include "stacklevelsetter.h"
 
 StackLevelSetter::StackLevelSetter(Compiler* compiler)
-    : Phase(compiler, "StackLevelSetter", PHASE_STACK_LEVEL_SETTER)
+    : Phase(compiler, PHASE_STACK_LEVEL_SETTER)
     , currentStackLevel(0)
     , maxStackLevel(0)
     , memAllocator(compiler->getAllocator(CMK_fgArgInfoPtrArr))
@@ -27,6 +27,9 @@ StackLevelSetter::StackLevelSetter(Compiler* compiler)
 //------------------------------------------------------------------------
 // DoPhase: Calculate stack slots numbers for outgoing args.
 //
+// Returns:
+//   PhaseStatus indicating what, if anything, was changed.
+//
 // Notes:
 //   For non-x86 platforms it calculates the max number of slots
 //   that calls inside this method can push on the stack.
@@ -37,7 +40,8 @@ StackLevelSetter::StackLevelSetter(Compiler* compiler)
 //   For x86 it also sets throw-helper blocks incoming stack depth and set
 //   framePointerRequired when it is necessary. These values are used to pop
 //   pushed args when an exception occurs.
-void StackLevelSetter::DoPhase()
+//
+PhaseStatus StackLevelSetter::DoPhase()
 {
     for (BasicBlock* block = comp->fgFirstBB; block != nullptr; block = block->bbNext)
     {
@@ -55,6 +59,9 @@ void StackLevelSetter::DoPhase()
 
     comp->fgSetPtrArgCntMax(maxStackLevel);
     CheckArgCnt();
+
+    // Might want an "other" category for things like this...
+    return PhaseStatus::MODIFIED_NOTHING;
 }
 
 //------------------------------------------------------------------------
@@ -339,7 +346,7 @@ void StackLevelSetter::CheckArgCnt()
 //
 void StackLevelSetter::CheckAdditionalArgs()
 {
-#if defined(_TARGET_X86_)
+#if defined(TARGET_X86)
     if (comp->compIsProfilerHookNeeded())
     {
         if (maxStackLevel == 0)
@@ -348,5 +355,5 @@ void StackLevelSetter::CheckAdditionalArgs()
             maxStackLevel = 1;
         }
     }
-#endif // _TARGET_X86_
+#endif // TARGET_X86
 }

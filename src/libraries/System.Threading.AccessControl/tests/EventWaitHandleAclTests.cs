@@ -98,7 +98,7 @@ namespace System.Threading.Tests
             EventWaitHandleSecurity security = GetBasicEventWaitHandleSecurity();
             EventResetMode mode = EventResetMode.AutoReset;
 
-            if (PlatformDetection.IsFullFramework)
+            if (PlatformDetection.IsNetFramework)
             {
                 Assert.Throws<ArgumentException>(() =>
                 {
@@ -131,7 +131,7 @@ namespace System.Threading.Tests
         [InlineData((EventResetMode)int.MaxValue)]
         public void EventWaitHandle_Create_InvalidMode(EventResetMode mode)
         {
-            if (PlatformDetection.IsFullFramework)
+            if (PlatformDetection.IsNetFramework)
             {
                 Assert.Throws<ArgumentException>(() =>
                 {

@@ -5,6 +5,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
+using System.Numerics;
 using System.Text;
 using Internal.Runtime.CompilerServices;
 
@@ -14,7 +15,7 @@ namespace System
     {
         private const int StackallocIntBufferSizeLimit = 128;
 
-        private static unsafe void FillStringChecked(string dest, int destPos, string src)
+        private static void FillStringChecked(string dest, int destPos, string src)
         {
             Debug.Assert(dest != null);
             Debug.Assert(src != null);
@@ -23,11 +24,10 @@ namespace System
                 throw new IndexOutOfRangeException();
             }
 
-            fixed (char* pDest = &dest._firstChar)
-            fixed (char* pSrc = &src._firstChar)
-            {
-                wstrcpy(pDest + destPos, pSrc, src.Length);
-            }
+            Buffer.Memmove(
+                destination: ref Unsafe.Add(ref dest._firstChar, destPos),
+                source: ref src._firstChar,
+                elementCount: (uint)src.Length);
         }
 
         public static string Concat(object? arg0) => arg0?.ToString() ?? string.Empty;
@@ -968,7 +968,7 @@ namespace System
 
         public string Replace(string oldValue, string? newValue, bool ignoreCase, CultureInfo? culture)
         {
-            return ReplaceCore(oldValue, newValue, culture, ignoreCase ? CompareOptions.IgnoreCase : CompareOptions.None);
+            return ReplaceCore(oldValue, newValue, culture?.CompareInfo, ignoreCase ? CompareOptions.IgnoreCase : CompareOptions.None);
         }
 
         public string Replace(string oldValue, string? newValue, StringComparison comparisonType)
@@ -977,74 +977,92 @@ namespace System
             {
                 case StringComparison.CurrentCulture:
                 case StringComparison.CurrentCultureIgnoreCase:
-                    return ReplaceCore(oldValue, newValue, CultureInfo.CurrentCulture, GetCaseCompareOfComparisonCulture(comparisonType));
+                    return ReplaceCore(oldValue, newValue, CultureInfo.CurrentCulture.CompareInfo, GetCaseCompareOfComparisonCulture(comparisonType));
 
                 case StringComparison.InvariantCulture:
                 case StringComparison.InvariantCultureIgnoreCase:
-                    return ReplaceCore(oldValue, newValue, CultureInfo.InvariantCulture, GetCaseCompareOfComparisonCulture(comparisonType));
+                    return ReplaceCore(oldValue, newValue, CompareInfo.Invariant, GetCaseCompareOfComparisonCulture(comparisonType));
 
                 case StringComparison.Ordinal:
                     return Replace(oldValue, newValue);
 
                 case StringComparison.OrdinalIgnoreCase:
-                    return ReplaceCore(oldValue, newValue, CultureInfo.InvariantCulture, CompareOptions.OrdinalIgnoreCase);
+                    return ReplaceCore(oldValue, newValue, CompareInfo.Invariant, CompareOptions.OrdinalIgnoreCase);
 
                 default:
                     throw new ArgumentException(SR.NotSupported_StringComparison, nameof(comparisonType));
             }
         }
 
-        private unsafe string ReplaceCore(string oldValue, string? newValue, CultureInfo? culture, CompareOptions options)
+        private string ReplaceCore(string oldValue, string? newValue, CompareInfo? ci, CompareOptions options)
         {
-            if (oldValue == null)
+            if (oldValue is null)
+            {
                 throw new ArgumentNullException(nameof(oldValue));
+            }
+
             if (oldValue.Length == 0)
+            {
                 throw new ArgumentException(SR.Argument_StringZeroLength, nameof(oldValue));
+            }
 
             // If they asked to replace oldValue with a null, replace all occurrences
-            // with the empty string.
-            newValue ??= string.Empty;
+            // with the empty string. AsSpan() will normalize appropriately.
+            //
+            // If inner ReplaceCore method returns null, it means no substitutions were
+            // performed, so as an optimization we'll return the original string.
 
-            CultureInfo referenceCulture = culture ?? CultureInfo.CurrentCulture;
+            return ReplaceCore(this, oldValue.AsSpan(), newValue.AsSpan(), ci ?? CultureInfo.CurrentCulture.CompareInfo, options)
+                ?? this;
+        }
+
+        private static unsafe string? ReplaceCore(ReadOnlySpan<char> searchSpace, ReadOnlySpan<char> oldValue, ReadOnlySpan<char> newValue, CompareInfo compareInfo, CompareOptions options)
+        {
+            Debug.Assert(!oldValue.IsEmpty);
+            Debug.Assert(compareInfo != null);
+
             var result = new ValueStringBuilder(stackalloc char[256]);
-            result.EnsureCapacity(this.Length);
-
-            int startIndex = 0;
-            int index = 0;
+            result.EnsureCapacity(searchSpace.Length);
 
             int matchLength = 0;
-
             bool hasDoneAnyReplacements = false;
-            CompareInfo ci = referenceCulture.CompareInfo;
 
-            do
+            while (true)
             {
-                index = ci.IndexOf(this, oldValue, startIndex, this.Length - startIndex, options, &matchLength);
-                if (index >= 0)
-                {
-                    // append the unmodified portion of string
-                    result.Append(this.AsSpan(startIndex, index - startIndex));
+                int index = compareInfo.IndexOf(searchSpace, oldValue, &matchLength, options, fromBeginning: true);
 
-                    // append the replacement
-                    result.Append(newValue);
+                // There's the possibility that 'oldValue' has zero collation weight (empty string equivalent).
+                // If this is the case, we behave as if there are no more substitutions to be made.
 
-                    startIndex = index + matchLength;
-                    hasDoneAnyReplacements = true;
-                }
-                else if (!hasDoneAnyReplacements)
+                if (index < 0 || matchLength == 0)
                 {
-                    // small optimization,
-                    // if we have not done any replacements,
-                    // we will return the original string
-                    result.Dispose();
-                    return this;
+                    break;
                 }
-                else
-                {
-                    result.Append(this.AsSpan(startIndex, this.Length - startIndex));
-                }
-            } while (index >= 0);
 
+                // append the unmodified portion of search space
+                result.Append(searchSpace.Slice(0, index));
+
+                // append the replacement
+                result.Append(newValue);
+
+                searchSpace = searchSpace.Slice(index + matchLength);
+                hasDoneAnyReplacements = true;
+            }
+
+            // Didn't find 'oldValue' in the remaining search space, or the match
+            // consisted only of zero collation weight characters. As an optimization,
+            // if we have not yet performed any replacements, we'll save the
+            // allocation.
+
+            if (!hasDoneAnyReplacements)
+            {
+                result.Dispose();
+                return null;
+            }
+
+            // Append what remains of the search space, then allocate the new string.
+
+            result.Append(searchSpace);
             return result.ToString();
         }
 
@@ -1055,63 +1073,55 @@ namespace System
             if (oldChar == newChar)
                 return this;
 
-            unsafe
+            int firstIndex = IndexOf(oldChar);
+
+            if (firstIndex < 0)
+                return this;
+
+            int remainingLength = Length - firstIndex;
+            string result = FastAllocateString(Length);
+
+            int copyLength = firstIndex;
+
+            // Copy the characters already proven not to match.
+            if (copyLength > 0)
             {
-                int remainingLength = Length;
-
-                fixed (char* pChars = &_firstChar)
-                {
-                    char* pSrc = pChars;
-
-                    while (remainingLength > 0)
-                    {
-                        if (*pSrc == oldChar)
-                        {
-                            break;
-                        }
-
-                        remainingLength--;
-                        pSrc++;
-                    }
-                }
-
-                if (remainingLength == 0)
-                    return this;
-
-                string result = FastAllocateString(Length);
-
-                fixed (char* pChars = &_firstChar)
-                {
-                    fixed (char* pResult = &result._firstChar)
-                    {
-                        int copyLength = Length - remainingLength;
-
-                        // Copy the characters already proven not to match.
-                        if (copyLength > 0)
-                        {
-                            wstrcpy(pResult, pChars, copyLength);
-                        }
-
-                        // Copy the remaining characters, doing the replacement as we go.
-                        char* pSrc = pChars + copyLength;
-                        char* pDst = pResult + copyLength;
-
-                        do
-                        {
-                            char currentChar = *pSrc;
-                            if (currentChar == oldChar)
-                                currentChar = newChar;
-                            *pDst = currentChar;
-
-                            remainingLength--;
-                            pSrc++;
-                            pDst++;
-                        } while (remainingLength > 0);
-                    }
-                }
-
-                return result;
+                Buffer.Memmove(ref result._firstChar, ref _firstChar, (uint)copyLength);
             }
+
+            // Copy the remaining characters, doing the replacement as we go.
+            ref ushort pSrc = ref Unsafe.Add(ref Unsafe.As<char, ushort>(ref _firstChar), copyLength);
+            ref ushort pDst = ref Unsafe.Add(ref Unsafe.As<char, ushort>(ref result._firstChar), copyLength);
+
+            if (Vector.IsHardwareAccelerated && remainingLength >= Vector<ushort>.Count)
+            {
+                Vector<ushort> oldChars = new Vector<ushort>(oldChar);
+                Vector<ushort> newChars = new Vector<ushort>(newChar);
+
+                do
+                {
+                    Vector<ushort> original = Unsafe.ReadUnaligned<Vector<ushort>>(ref Unsafe.As<ushort, byte>(ref pSrc));
+                    Vector<ushort> equals = Vector.Equals(original, oldChars);
+                    Vector<ushort> results = Vector.ConditionalSelect(equals, newChars, original);
+                    Unsafe.WriteUnaligned(ref Unsafe.As<ushort, byte>(ref pDst), results);
+
+                    pSrc = ref Unsafe.Add(ref pSrc, Vector<ushort>.Count);
+                    pDst = ref Unsafe.Add(ref pDst, Vector<ushort>.Count);
+                    remainingLength -= Vector<ushort>.Count;
+                }
+                while (remainingLength >= Vector<ushort>.Count);
+            }
+
+            for (; remainingLength > 0; remainingLength--)
+            {
+                ushort currentChar = pSrc;
+                pDst = currentChar == oldChar ? newChar : currentChar;
+
+                pSrc = ref Unsafe.Add(ref pSrc, 1);
+                pDst = ref Unsafe.Add(ref pDst, 1);
+            }
+
+            return result;
         }
 
         public string Replace(string oldValue, string? newValue)
@@ -1668,18 +1678,17 @@ namespace System
             return InternalSubString(startIndex, length);
         }
 
-        private unsafe string InternalSubString(int startIndex, int length)
+        private string InternalSubString(int startIndex, int length)
         {
             Debug.Assert(startIndex >= 0 && startIndex <= this.Length, "StartIndex is out of range!");
             Debug.Assert(length >= 0 && startIndex <= this.Length - length, "length is out of range!");
 
             string result = FastAllocateString(length);
 
-            fixed (char* dest = &result._firstChar)
-            fixed (char* src = &_firstChar)
-            {
-                wstrcpy(dest, src + startIndex, length);
-            }
+            Buffer.Memmove(
+                elementCount: (uint)result.Length, // derefing Length now allows JIT to prove 'result' not null below
+                destination: ref result._firstChar,
+                source: ref Unsafe.Add(ref _firstChar, startIndex));
 
             return result;
         }
@@ -1697,7 +1706,7 @@ namespace System
         // Creates a copy of this string in lower case based on invariant culture.
         public string ToLowerInvariant()
         {
-            return CultureInfo.InvariantCulture.TextInfo.ToLower(this);
+            return TextInfo.Invariant.ToLower(this);
         }
 
         public string ToUpper() => ToUpper(null);
@@ -1712,7 +1721,7 @@ namespace System
         // Creates a copy of this string in upper case based on invariant culture.
         public string ToUpperInvariant()
         {
-            return CultureInfo.InvariantCulture.TextInfo.ToUpper(this);
+            return TextInfo.Invariant.ToUpper(this);
         }
 
         // Trims the whitespace from both ends of the string.  Whitespace is defined by

@@ -20,9 +20,6 @@
 
 #include "mdinfo.h"
 
-#define LEGACY_ACTIVATION_SHIM_LOAD_LIBRARY WszLoadLibrary
-#define LEGACY_ACTIVATION_SHIM_DEFINE_CoInitializeEE
-
 #define ENUM_BUFFER_SIZE 10
 #define TAB_SIZE 8
 
@@ -1948,11 +1945,11 @@ void MDInfo::DisplayCustomAttributeInfo(mdCustomAttribute inValue, const char *p
         VWrite(" :: %S", qSigName.Ptr());
 
     // Keep track of coff overhead.
-        if (!wcscmp(W("__DecoratedName"), rcName))
-        {
-            bCoffSymbol = true;
-            g_cbCoffNames += cbValue + 6;
-        }
+    if (!wcscmp(W("__DecoratedName"), rcName))
+    {
+        bCoffSymbol = true;
+        g_cbCoffNames += cbValue + 6;
+    }
     WriteLine("");
 
     VWriteLine("%s\tLength: %ld", preFix, cbValue);

@@ -7,9 +7,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Threading.Tasks.Sources;
 
-#if !NETSTANDARD2_0
 using Internal.Runtime.CompilerServices;
-#endif
 
 namespace System.Runtime.CompilerServices
 {
@@ -97,7 +95,7 @@ namespace System.Runtime.CompilerServices
             }
             else if (obj != null)
             {
-                Unsafe.As<IValueTaskSource>(obj).OnCompleted(ThreadPoolGlobals.s_invokeAsyncStateMachineBox, box, _value._token, ValueTaskSourceOnCompletedFlags.UseSchedulingContext);
+                Unsafe.As<IValueTaskSource>(obj).OnCompleted(ThreadPool.s_invokeAsyncStateMachineBox, box, _value._token, ValueTaskSourceOnCompletedFlags.UseSchedulingContext);
             }
             else
             {
@@ -179,7 +177,7 @@ namespace System.Runtime.CompilerServices
             }
             else if (obj != null)
             {
-                Unsafe.As<IValueTaskSource<TResult>>(obj).OnCompleted(ThreadPoolGlobals.s_invokeAsyncStateMachineBox, box, _value._token, ValueTaskSourceOnCompletedFlags.UseSchedulingContext);
+                Unsafe.As<IValueTaskSource<TResult>>(obj).OnCompleted(ThreadPool.s_invokeAsyncStateMachineBox, box, _value._token, ValueTaskSourceOnCompletedFlags.UseSchedulingContext);
             }
             else
             {

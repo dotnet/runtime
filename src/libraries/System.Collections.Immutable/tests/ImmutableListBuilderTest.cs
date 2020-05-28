@@ -184,7 +184,8 @@ namespace System.Collections.Immutable.Tests
         {
             var builder = ImmutableList.CreateBuilder<int>();
             var elemsToRemove = new[]{0, 1, 2, 3, 4, 5}.ToImmutableHashSet();
-            // NOTE: this uses Add instead of AddRange because AddRange doesn't exhibit the same issue due to a different order of tree building.  Don't change it without testing with the bug repro from issue #20609
+            // NOTE: this uses Add instead of AddRange because AddRange doesn't exhibit the same issue due to a different order of tree building.
+            // Don't change it without testing with the bug repro from https://github.com/dotnet/runtime/issues/22093.
             foreach (var elem in new[]{0, 1, 2, 3, 4, 5, 6})
                 builder.Add(elem);
             builder.RemoveAll(elemsToRemove.Contains);

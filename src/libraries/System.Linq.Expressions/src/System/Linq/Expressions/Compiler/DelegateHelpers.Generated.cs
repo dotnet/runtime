@@ -135,7 +135,6 @@ namespace System.Linq.Expressions.Compiler
         /// Creates a new delegate, or uses a func/action
         /// Note: this method does not cache
         /// </summary>
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Maintainability", "CA1502:AvoidExcessiveComplexity")]
         internal static Type MakeNewDelegate(Type[] types)
         {
             Debug.Assert(types != null && types.Length > 0);

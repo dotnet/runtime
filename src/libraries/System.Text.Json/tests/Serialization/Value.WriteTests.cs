@@ -22,18 +22,6 @@ namespace System.Text.Json.Serialization.Tests
             Assert.NotEqual(expected, JsonSerializer.Serialize(inputString));
         }
 
-        // https://github.com/dotnet/corefx/issues/40979
-        [Fact]
-        public static void EscapingShouldntStackOverflow_40979()
-        {
-            var test = new { Name = "\u6D4B\u8A6611" };
-
-            var options = new JsonSerializerOptions { Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping, PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
-            string result = JsonSerializer.Serialize(test, options);
-
-            Assert.Equal("{\"name\":\"\u6D4B\u8A6611\"}", result);
-        }
-
         [Fact]
         public static void WritePrimitives()
         {

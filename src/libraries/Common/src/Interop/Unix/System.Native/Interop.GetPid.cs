@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.Runtime.InteropServices;
 
 internal static partial class Interop
@@ -12,4 +11,6 @@ internal static partial class Interop
         [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_GetPid")]
         internal static extern int GetPid();
     }
+
+    internal static uint GetCurrentProcessId() => (uint)Sys.GetPid();
 }

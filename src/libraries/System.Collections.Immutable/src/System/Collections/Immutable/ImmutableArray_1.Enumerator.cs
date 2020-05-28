@@ -51,7 +51,7 @@ namespace System.Collections.Immutable
                 {
                     // PERF: no need to do a range check, we already did in MoveNext.
                     // if user did not call MoveNext or ignored its result (incorrect use)
-                    // he will still get an exception from the array access range check.
+                    // they will still get an exception from the array access range check.
                     return _array[_index];
                 }
             }
@@ -75,7 +75,7 @@ namespace System.Collections.Immutable
             /// A shareable singleton for enumerating empty arrays.
             /// </summary>
             private static readonly IEnumerator<T> s_EmptyEnumerator =
-                new EnumeratorObject(ImmutableArray<T>.Empty.array);
+                new EnumeratorObject(ImmutableArray<T>.Empty.array!);
 
             /// <summary>
             /// The array being enumerated.
@@ -122,7 +122,7 @@ namespace System.Collections.Immutable
             /// <summary>
             /// Gets the currently enumerated value.
             /// </summary>
-            object IEnumerator.Current
+            object? IEnumerator.Current
             {
                 get { return this.Current; }
             }

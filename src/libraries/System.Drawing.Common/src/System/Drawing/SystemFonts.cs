@@ -10,7 +10,7 @@ namespace System.Drawing
 {
     public static partial class SystemFonts
     {
-        public static Font GetFontByName(string systemFontName)
+        public static Font? GetFontByName(string systemFontName)
         {
             if (nameof(CaptionFont).Equals(systemFontName))
             {

@@ -205,7 +205,7 @@ namespace System.Xml.Tests
         }
 
         [Theory]
-        [ActiveIssue(39106)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/30107")]
         //[Variation(Desc = "v5.2- Test Default value of ProhibitDTD for Add(TextReader) for schema with DTD", Priority = 1, Params = new object[] { "bug356711_a.xsd", 0 })]
         [InlineData("bug356711_a.xsd", 0)]
         //[Variation(Desc = "v5.1- Test Default value of ProhibitDTD for Add(TextReader) with an xs:import for schema with DTD", Priority = 1, Params = new object[] { "bug356711.xsd", 0 })]
@@ -233,7 +233,7 @@ namespace System.Xml.Tests
         }
 
         [Theory]
-        [ActiveIssue(39106)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/30107")]
         //[Variation(Desc = "v6.2- Test Default value of ProhibitDTD for Add(XmlTextReader) for schema with DTD", Priority = 1, Params = new object[] { "bug356711_a.xsd" })]
         [InlineData("bug356711_a.xsd")]
         //[Variation(Desc = "v6.1- Test Default value of ProhibitDTD for Add(XmlTextReader) with an xs:import for schema with DTD", Priority = 1, Params = new object[] { "bug356711.xsd" })]

@@ -4,6 +4,7 @@
 //
 
 .assembly extern mscorlib { }
+.assembly extern System.Runtime { }
 
 .assembly reabstraction { }
 
@@ -187,7 +188,7 @@ PureVirtualDelegateOK:
     pop
     leave Fail
   }
-  catch [System.Private.CoreLib]System.Runtime.AmbiguousImplementationException
+  catch [System.Runtime]System.Runtime.AmbiguousImplementationException
   {
     pop
     leave DiamondCaseOK

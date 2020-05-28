@@ -33,10 +33,10 @@ namespace System.Reflection.Internal
     ///
     ///   (3) Deal with platforms that don't yet have Encoding.GetString(byte*, int).
     ///
-    ///      If we're running on a full framework earlier than 4.6, we will bind to the internal
+    ///      If we're running on a .NET Framework earlier than 4.6, we will bind to the internal
     ///      String.CreateStringFromEncoding which is equivalent and Encoding.GetString is just a trivial
     ///      wrapper around it in .NET 4.6. This means that we always have the fast path on every
-    ///      full framework version we support.
+    ///      .NET Framework version we support.
     ///
     ///      If we can't bind to it via reflection, then we emulate it using what is effectively (2) and
     ///      with an empty prefix.
@@ -202,7 +202,7 @@ namespace System.Reflection.Internal
             //       (note no FromEncoding suffix), which defensively copies to a new byte array on every call -- defeating the entire purpose
             //       of this class!
             //
-            //       For this reason, desktop callers should not implement an interner that falls back to the unsafe string ctor but instead
+            //       For this reason, .NET Framework callers should not implement an interner that falls back to the unsafe string ctor but instead
             //       return null and let us find the best decoding approach for the current platform.
             //
             //       Yet another approach is to use new string('\0', GetCharCount) and use unsafe GetChars to fill it.

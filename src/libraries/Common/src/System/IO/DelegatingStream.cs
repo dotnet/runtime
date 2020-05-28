@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System.Diagnostics;
 using System.IO;
 using System.Threading;
@@ -113,7 +114,7 @@ namespace System.Net.Http
             return _innerStream.ReadAsync(buffer, cancellationToken);
         }
 
-        public override IAsyncResult BeginRead(byte[] buffer, int offset, int count, AsyncCallback callback, object state)
+        public override IAsyncResult BeginRead(byte[] buffer, int offset, int count, AsyncCallback? callback, object? state)
         {
             return _innerStream.BeginRead(buffer, offset, count, callback, state);
         }
@@ -167,7 +168,7 @@ namespace System.Net.Http
             return _innerStream.WriteAsync(buffer, cancellationToken);
         }
 
-        public override IAsyncResult BeginWrite(byte[] buffer, int offset, int count, AsyncCallback callback, object state)
+        public override IAsyncResult BeginWrite(byte[] buffer, int offset, int count, AsyncCallback? callback, object? state)
         {
             return _innerStream.BeginWrite(buffer, offset, count, callback, state);
         }

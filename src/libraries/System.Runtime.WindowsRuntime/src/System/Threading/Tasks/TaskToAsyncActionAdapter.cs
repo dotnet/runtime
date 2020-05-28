@@ -21,7 +21,7 @@ namespace System.Threading.Tasks
         }
 
 
-        internal TaskToAsyncActionAdapter(Task underlyingTask, CancellationTokenSource underlyingCancelTokenSource)
+        internal TaskToAsyncActionAdapter(Task underlyingTask, CancellationTokenSource? underlyingCancelTokenSource)
 
             : base(underlyingTask, underlyingCancelTokenSource, underlyingProgressDispatcher: null)
         {

@@ -1103,7 +1103,9 @@ namespace System.Globalization
             }
             catch (ArgumentException)
             {
+#pragma warning disable CA2208 // Instantiate argument exceptions correctly, combination of arguments used
                 throw new CultureNotFoundException("name/altName", SR.Format(SR.Argument_OneOfCulturesNotSupported, name, altName));
+#pragma warning restore CA2208
             }
 
             lock (nameTable)
@@ -1112,6 +1114,23 @@ namespace System.Globalization
             }
 
             return result;
+        }
+
+        public static CultureInfo GetCultureInfo(string name, bool predefinedOnly)
+        {
+            if (name is null)
+            {
+                throw new ArgumentNullException(nameof(name));
+            }
+
+            if (predefinedOnly)
+            {
+                return GlobalizationMode.UseNls ?
+                    NlsGetPredefinedCultureInfo(name) :
+                    IcuGetPredefinedCultureInfo(name);
+            }
+
+            return GetCultureInfo(name);
         }
 
         private static Dictionary<string, CultureInfo> CachedCulturesByName

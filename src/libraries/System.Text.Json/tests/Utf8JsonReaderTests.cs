@@ -1208,7 +1208,7 @@ namespace System.Text.Json.Tests
             json.Skip();
 
             Assert.Equal(JsonTokenType.Comment, json.TokenType);
-            //Assert.Equal("some comment", json.GetComment()); TODO: https://github.com/dotnet/corefx/issues/33347
+            Assert.Equal("some comment", json.GetComment());
 
             Assert.True(json.Read());
             Assert.Equal(JsonTokenType.Number, json.TokenType);
@@ -1222,7 +1222,7 @@ namespace System.Text.Json.Tests
             Assert.True(json.TrySkip());
 
             Assert.Equal(JsonTokenType.Comment, json.TokenType);
-            //Assert.Equal("some comment", json.GetComment()); TODO: https://github.com/dotnet/corefx/issues/33347
+            Assert.Equal("some comment", json.GetComment());
 
             Assert.True(json.Read());
             Assert.Equal(JsonTokenType.Number, json.TokenType);
@@ -4380,7 +4380,6 @@ namespace System.Text.Json.Tests
                     new object[] {"+0", 0, 0},
                     new object[] {"+1", 0, 0},
                     new object[] {"0e", 0, 2},
-                    new object[] {"0.", 0, 2},
                     new object[] {"0.1e", 0, 4},
                     new object[] {"01", 0, 1},
                     new object[] {"1a", 0, 1},

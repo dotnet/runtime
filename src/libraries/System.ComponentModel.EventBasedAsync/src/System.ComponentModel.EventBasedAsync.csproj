@@ -2,7 +2,8 @@
   <PropertyGroup>
     <RootNamespace>System.ComponentModel.EventBasedAsync</RootNamespace>
     <AssemblyName>System.ComponentModel.EventBasedAsync</AssemblyName>
-    <Configurations>netcoreapp-Debug;netcoreapp-Release</Configurations>
+    <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
+    <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System\ComponentModel\AsyncCompletedEvent.cs" />
@@ -16,9 +17,6 @@
   <ItemGroup>
     <Reference Include="System.ComponentModel" />
     <Reference Include="System.ComponentModel.Primitives" />
-    <Reference Include="System.Diagnostics.Debug" />
-    <Reference Include="System.Diagnostics.Tools" />
-    <Reference Include="System.Resources.ResourceManager" />
     <Reference Include="System.Runtime" />
     <Reference Include="System.Threading" />
   </ItemGroup>

@@ -72,9 +72,6 @@
   <data name="InvalidParameter" xml:space="preserve">
     <value>Invalid value '{1}' for parameter '{0}'.</value>
   </data>
-  <data name="NoMachineName" xml:space="preserve">
-    <value>MachineName was not set.</value>
-  </data>
   <data name="NoService" xml:space="preserve">
     <value>Service '{0}' was not found on computer '{1}'.</value>
   </data>
@@ -94,7 +91,7 @@
     <value>Cannot stop '{0}' service on computer '{1}'.</value>
   </data>
   <data name="Timeout" xml:space="preserve">
-    <value>Time out has expired and the operation has not been completed.</value>
+    <value>The operation requested for service '{0}' has not been completed within the specified time interval.</value>
   </data>
   <data name="PlatformNotSupported_ServiceController" xml:space="preserve">
     <value>ServiceController enables manipulating and accessing Windows services and it is not applicable for other operating systems.</value>
@@ -129,12 +126,6 @@
   <data name="ContinueSuccessful" xml:space="preserve">
     <value>Service continued successfully.</value>
   </data>
-  <data name="InstallSuccessful" xml:space="preserve">
-    <value>Service was installed successfully.</value>
-  </data>
-  <data name="UninstallSuccessful" xml:space="preserve">
-    <value>Service was uninstalled successfully.</value>
-  </data>
   <data name="CommandSuccessful" xml:space="preserve">
     <value>Service command was processed successfully.</value>
   </data>
@@ -153,17 +144,8 @@
   <data name="SessionChangeFailed" xml:space="preserve">
     <value>Failed to process session change. {0}</value>
   </data>
-  <data name="InstallFailed" xml:space="preserve">
-    <value>Failed to install service. Service may have been installed already.</value>
-  </data>
-  <data name="UninstallFailed" xml:space="preserve">
-    <value>Failed to uninstall service. Service may be running.</value>
-  </data>
   <data name="CommandFailed" xml:space="preserve">
     <value>Failed to process service command. {0}</value>
-  </data>
-  <data name="ErrorNumber" xml:space="preserve">
-    <value>Windows Error number: {0}.</value>
   </data>
   <data name="ShutdownOK" xml:space="preserve">
     <value>Service has been successfully shut down.</value>
@@ -176,18 +158,6 @@
   </data>
   <data name="PowerEventFailed" xml:space="preserve">
     <value>Failed in handling the PowerEvent. The error that occurred was: {0}.</value>
-  </data>
-  <data name="InstallOK" xml:space="preserve">
-    <value>Service '{0}' has been successfully installed.</value>
-  </data>
-  <data name="TryToStop" xml:space="preserve">
-    <value>Attempt to stop service '{0}'.</value>
-  </data>
-  <data name="ServiceRemoving" xml:space="preserve">
-    <value>Service '{0}' is being removed from the system...</value>
-  </data>
-  <data name="ServiceRemoved" xml:space="preserve">
-    <value>Service '{0}' was successfully removed from the system.</value>
   </data>
   <data name="ControlService" xml:space="preserve">
     <value>Cannot control '{0}' service on computer '{1}'.</value>

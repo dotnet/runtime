@@ -1892,24 +1892,6 @@ namespace MonoTests.System.Drawing
         }
 
         [ConditionalFact(Helpers.IsDrawingSupported)]
-        [ActiveIssue(20844)]
-        public void MeasureString_MultlineString_Width()
-        {
-            using (Bitmap bitmap = new Bitmap(20, 20))
-            using (Graphics g = Graphics.FromImage(bitmap))
-            using (StringFormat string_format = new StringFormat())
-            {
-                string text1 = "Test\nTest123\nTest 456\nTest 1,2,3,4,5...";
-                string text2 = "Test 1,2,3,4,5...";
-
-                SizeF size1 = g.MeasureString(text1, font, SizeF.Empty, string_format);
-                SizeF size2 = g.MeasureString(text2, font, SizeF.Empty, string_format);
-
-                Assert.Equal((int)size1.Width, (int)size2.Width);
-            }
-        }
-
-        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void MeasureString_CharactersFitted()
         {
             using (Bitmap bitmap = new Bitmap(20, 20))
@@ -2124,7 +2106,7 @@ namespace MonoTests.System.Drawing
                     new CharacterRange (2, 1)
                 };
 
-        Region[] Measure(Graphics gfx, RectangleF rect)
+        Region[] Measure_Helper(Graphics gfx, RectangleF rect)
         {
             using (StringFormat format = StringFormat.GenericTypographic)
             {
@@ -2142,10 +2124,10 @@ namespace MonoTests.System.Drawing
         {
             using (Graphics gfx = Graphics.FromImage(new Bitmap(1, 1)))
             {
-                Region[] zero = Measure(gfx, new RectangleF(0, 0, 0, 0));
+                Region[] zero = Measure_Helper(gfx, new RectangleF(0, 0, 0, 0));
                 Assert.Equal(3, zero.Length);
 
-                Region[] small = Measure(gfx, new RectangleF(0, 0, 100, 100));
+                Region[] small = Measure_Helper(gfx, new RectangleF(0, 0, 100, 100));
                 Assert.Equal(3, small.Length);
                 for (int i = 0; i < 3; i++)
                 {
@@ -2157,7 +2139,7 @@ namespace MonoTests.System.Drawing
                     Assert.Equal(sb.Height, zb.Height);
                 }
 
-                Region[] max = Measure(gfx, new RectangleF(0, 0, float.MaxValue, float.MaxValue));
+                Region[] max = Measure_Helper(gfx, new RectangleF(0, 0, float.MaxValue, float.MaxValue));
                 Assert.Equal(3, max.Length);
                 for (int i = 0; i < 3; i++)
                 {
@@ -2176,7 +2158,7 @@ namespace MonoTests.System.Drawing
         {
             using (Graphics gfx = Graphics.FromImage(new Bitmap(1, 1)))
             {
-                Region[] min = Measure(gfx, new RectangleF(0, 0, float.MinValue, float.MinValue));
+                Region[] min = Measure_Helper(gfx, new RectangleF(0, 0, float.MinValue, float.MinValue));
                 Assert.Equal(3, min.Length);
                 for (int i = 0; i < 3; i++)
                 {
@@ -2187,7 +2169,7 @@ namespace MonoTests.System.Drawing
                     Assert.Equal(8388608.0f, mb.Height);
                 }
 
-                Region[] neg = Measure(gfx, new RectangleF(0, 0, -20, -20));
+                Region[] neg = Measure_Helper(gfx, new RectangleF(0, 0, -20, -20));
                 Assert.Equal(3, neg.Length);
                 for (int i = 0; i < 3; i++)
                 {
@@ -2325,7 +2307,7 @@ namespace MonoTests.System.Drawing
         {
             if (PlatformDetection.IsArmOrArm64Process)
             {
-                //ActiveIssue: 35744
+                // [ActiveIssue("https://github.com/dotnet/runtime/issues/28859")]
                 throw new SkipTestException("Precision on float numbers");
             }
 
@@ -2810,38 +2792,10 @@ namespace MonoTests.System.Drawing
         }
 
         [ConditionalFact(Helpers.IsDrawingSupported)]
-        [ActiveIssue(20844, TestPlatforms.Any)]
-        public void DrawImage_ImageRectangleRectangleGraphicsUnit_Document()
-        {
-            Assert.Throws<NotImplementedException>(() => DrawImage_ImageRectangleRectangleGraphicsUnit(GraphicsUnit.Document));
-        }
-
-        [ConditionalFact(Helpers.IsDrawingSupported)]
-        [ActiveIssue(20844)]
-        public void DrawImage_ImageRectangleRectangleGraphicsUnit_Inch()
-        {
-            Assert.Throws<NotImplementedException>(() => DrawImage_ImageRectangleRectangleGraphicsUnit(GraphicsUnit.Inch));
-        }
-
-        [ConditionalFact(Helpers.IsDrawingSupported)]
-        [ActiveIssue(20844, TestPlatforms.Any)]
-        public void DrawImage_ImageRectangleRectangleGraphicsUnit_Millimeter()
-        {
-            Assert.Throws<NotImplementedException>(() => DrawImage_ImageRectangleRectangleGraphicsUnit(GraphicsUnit.Millimeter));
-        }
-
-        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void DrawImage_ImageRectangleRectangleGraphicsUnit_Pixel()
         {
             // this unit works
             DrawImage_ImageRectangleRectangleGraphicsUnit(GraphicsUnit.Pixel);
-        }
-
-        [ConditionalFact(Helpers.IsDrawingSupported)]
-        [ActiveIssue(20844, TestPlatforms.Any)]
-        public void DrawImage_ImageRectangleRectangleGraphicsUnit_Point()
-        {
-            Assert.Throws<NotImplementedException>(() => DrawImage_ImageRectangleRectangleGraphicsUnit(GraphicsUnit.Point));
         }
 
         [ConditionalFact(Helpers.IsDrawingSupported)]
@@ -3208,7 +3162,7 @@ namespace MonoTests.System.Drawing
             }
         }
 
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.IsDrawingSupported)]
         public void TransformPoints()
         {

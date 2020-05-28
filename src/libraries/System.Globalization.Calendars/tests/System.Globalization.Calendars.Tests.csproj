@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <Configurations>netcoreapp-Debug;netcoreapp-Release</Configurations>
+    <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
     <TestRuntime>true</TestRuntime>
   </PropertyGroup>
   <ItemGroup>
@@ -40,6 +40,7 @@
     <Compile Include="GregorianCalendar\GregorianCalendarToDateTime.cs" />
     <Compile Include="GregorianCalendar\GregorianCalendarToFourDigitYear.cs" />
     <Compile Include="GregorianCalendar\GregorianCalendarTwoDigitYearMax.cs" />
+    <Compile Include="ISOWeek\ISOWeekTests.cs" />
     <Compile Include="JapaneseCalendar\JapaneseCalendarAddMonths.cs" />
     <Compile Include="JapaneseCalendar\JapaneseCalendarToFourDigitYear.cs" />
     <Compile Include="JapaneseCalendar\JapaneseCalendarTwoDigitYearMax.cs" />
@@ -103,8 +104,5 @@
     <Compile Include="ThaiBuddhistCalendar\ThaiBuddhistCalendarTwoDigitYearMax.cs" />
     <Compile Include="$(CommonTestPath)System\RandomDataGenerator.cs" />
     <!-- Helpers -->
-  </ItemGroup>
-  <ItemGroup Condition="'$(TargetsNetCoreApp)' == 'true'">
-    <Compile Include="ISOWeek\ISOWeekTests.netcoreapp.cs" />
   </ItemGroup>
 </Project>

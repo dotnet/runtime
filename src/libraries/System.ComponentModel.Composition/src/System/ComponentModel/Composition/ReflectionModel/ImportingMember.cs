@@ -28,7 +28,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
             _member = member;
         }
 
-        public void SetExportedValue(object instance, object value)
+        public void SetExportedValue(object? instance, object value)
         {
             if (RequiresCollectionNormalization())
             {
@@ -59,7 +59,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
             return true;
         }
 
-        private void SetSingleMemberValue(object instance, object value)
+        private void SetSingleMemberValue(object? instance, object? value)
         {
             EnsureWritable();
 
@@ -106,32 +106,32 @@ namespace System.ComponentModel.Composition.ReflectionModel
             }
         }
 
-        private void SetCollectionMemberValue(object instance, IEnumerable values)
+        private void SetCollectionMemberValue(object? instance, IEnumerable values)
         {
             if (values == null)
             {
                 throw new ArgumentNullException(nameof(values));
             }
 
-            ICollection<object> collection = null;
-            Type itemType = CollectionServices.GetCollectionElementType(ImportType.ActualType);
+            ICollection<object>? collection = null;
+            Type? itemType = CollectionServices.GetCollectionElementType(ImportType.ActualType);
             if (itemType != null)
             {
                 collection = GetNormalizedCollection(itemType, instance);
             }
 
             EnsureCollectionIsWritable(collection);
-            PopulateCollection(collection, values);
+            PopulateCollection(collection!, values);
         }
 
-        private ICollection<object> GetNormalizedCollection(Type itemType, object instance)
+        private ICollection<object> GetNormalizedCollection(Type itemType, object? instance)
         {
             if (itemType == null)
             {
                 throw new ArgumentNullException(nameof(itemType));
             }
 
-            object collectionObject = null;
+            object? collectionObject = null;
 
             if (_member.CanRead)
             {
@@ -152,7 +152,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
 
             if (collectionObject == null)
             {
-                ConstructorInfo constructor = ImportType.ActualType.GetConstructor(Type.EmptyTypes);
+                ConstructorInfo? constructor = ImportType.ActualType.GetConstructor(Type.EmptyTypes);
 
                 // If it contains a default public constructor create a new instance.
                 if (constructor != null)
@@ -188,8 +188,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
             return CollectionServices.GetCollectionWrapper(itemType, collectionObject);
         }
 
-        [SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")]
-        private void EnsureCollectionIsWritable(ICollection<object> collection)
+        private void EnsureCollectionIsWritable(ICollection<object>? collection)
         {
             bool isReadOnly = true;
 
@@ -206,7 +205,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
                     SR.Format(
                         SR.ReflectionModel_ImportCollectionIsReadOnlyThrewException,
                         _member.GetDisplayName(),
-                        collection.GetType().FullName),
+                        collection!.GetType().FullName),
                     Definition.ToElement(),
                     exception);
             }
@@ -221,8 +220,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
             }
         }
 
-        [SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")]
-        private void PopulateCollection(ICollection<object> collection, IEnumerable values)
+        private void PopulateCollection(ICollection<object?> collection, IEnumerable values)
         {
             if (collection == null)
             {
@@ -249,7 +247,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
                     exception);
             }
 
-            foreach (object value in values)
+            foreach (object? value in values)
             {
                 try
                 {

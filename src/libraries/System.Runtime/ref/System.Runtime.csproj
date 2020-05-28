@@ -5,11 +5,10 @@
     <RuntimeMetadataVersion>v4.0.30319</RuntimeMetadataVersion>
     <!-- disable warnings about obsolete APIs -->
     <NoWarn>$(NoWarn);0809;0618</NoWarn>
-    <Configurations>netcoreapp-Debug;netcoreapp-Release</Configurations>
+    <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
     <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System.Runtime.cs" />
-    <Compile Include="System.Runtime.Manual.cs" />
   </ItemGroup>
 </Project>

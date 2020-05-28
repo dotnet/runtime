@@ -2,12 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using Microsoft.Win32.SafeHandles;
 using System.Diagnostics.CodeAnalysis;
-using System.Security;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Diagnostics;
+using Microsoft.Win32.SafeHandles;
 
 namespace System.IO.Pipes
 {
@@ -73,10 +71,29 @@ namespace System.IO.Pipes
         /// </param>
         /// <param name="outBufferSize">Outgoing buffer size, 0 or higher (see above)</param>
         /// <param name="inheritability">Whether handle is inheritable</param>
-        private NamedPipeServerStream(string pipeName, PipeDirection direction, int maxNumberOfServerInstances,
-                PipeTransmissionMode transmissionMode, PipeOptions options, int inBufferSize, int outBufferSize,
-                HandleInheritability inheritability)
+        private NamedPipeServerStream(string pipeName,
+            PipeDirection direction,
+            int maxNumberOfServerInstances,
+            PipeTransmissionMode transmissionMode,
+            PipeOptions options,
+            int inBufferSize,
+            int outBufferSize,
+            HandleInheritability inheritability)
             : base(direction, transmissionMode, outBufferSize)
+        {
+            ValidateParameters(pipeName, direction, maxNumberOfServerInstances, transmissionMode, options, inBufferSize, outBufferSize, inheritability);
+            Create(pipeName, direction, maxNumberOfServerInstances, transmissionMode, options, inBufferSize, outBufferSize, inheritability);
+        }
+
+        private void ValidateParameters(
+            string pipeName,
+            PipeDirection direction,
+            int maxNumberOfServerInstances,
+            PipeTransmissionMode transmissionMode,
+            PipeOptions options,
+            int inBufferSize,
+            int outBufferSize,
+            HandleInheritability inheritability)
         {
             if (pipeName == null)
             {
@@ -86,6 +103,14 @@ namespace System.IO.Pipes
             {
                 throw new ArgumentException(SR.Argument_NeedNonemptyPipeName);
             }
+            if (direction < PipeDirection.In || direction > PipeDirection.InOut)
+            {
+                throw new ArgumentOutOfRangeException(nameof(direction), SR.ArgumentOutOfRange_DirectionModeInOutOrInOut);
+            }
+            if (transmissionMode < PipeTransmissionMode.Byte || transmissionMode > PipeTransmissionMode.Message)
+            {
+                throw new ArgumentOutOfRangeException(nameof(transmissionMode), SR.ArgumentOutOfRange_TransmissionModeByteOrMsg);
+            }
             if ((options & ~(PipeOptions.WriteThrough | PipeOptions.Asynchronous | PipeOptions.CurrentUserOnly)) != 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(options), SR.ArgumentOutOfRange_OptionsInvalid);
@@ -93,6 +118,10 @@ namespace System.IO.Pipes
             if (inBufferSize < 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(inBufferSize), SR.ArgumentOutOfRange_NeedNonNegNum);
+            }
+            if (outBufferSize < 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(outBufferSize), SR.ArgumentOutOfRange_NeedNonNegNum);
             }
             if ((maxNumberOfServerInstances < 1 || maxNumberOfServerInstances > 254) && (maxNumberOfServerInstances != MaxAllowedServerInstances))
             {
@@ -114,9 +143,6 @@ namespace System.IO.Pipes
             {
                 IsCurrentUserOnly = true;
             }
-
-            Create(pipeName, direction, maxNumberOfServerInstances, transmissionMode,
-            options, inBufferSize, outBufferSize, inheritability);
         }
 
         // Create a NamedPipeServerStream from an existing server pipe handle.
@@ -158,7 +184,6 @@ namespace System.IO.Pipes
             TaskToApm.End(asyncResult);
 
         // Server can only connect from Disconnected state
-        [SuppressMessage("Microsoft.Security", "CA2122:DoNotIndirectlyExposeMethodsWithLinkDemands", Justification = "Consistent with security model")]
         private void CheckConnectOperationsServer()
         {
             // we're not checking whether already connected; this allows us to throw IOException

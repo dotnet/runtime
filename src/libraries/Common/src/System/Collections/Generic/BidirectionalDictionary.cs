@@ -2,11 +2,15 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Collections.Generic
 {
     internal sealed class BidirectionalDictionary<T1, T2> : IEnumerable<KeyValuePair<T1, T2>>
+            where T1 : notnull
+            where T2 : notnull
     {
         private readonly Dictionary<T1, T2> _forward;
         private readonly Dictionary<T2, T1> _backward;
@@ -33,12 +37,12 @@ namespace System.Collections.Generic
             _backward.Add(item2, item1);
         }
 
-        public bool TryGetForward(T1 item1, out T2 item2)
+        public bool TryGetForward(T1 item1, [MaybeNullWhen(false)] out T2 item2)
         {
             return _forward.TryGetValue(item1, out item2);
         }
 
-        public bool TryGetBackward(T2 item2, out T1 item1)
+        public bool TryGetBackward(T2 item2, [MaybeNullWhen(false)] out T1 item1)
         {
             return _backward.TryGetValue(item2, out item1);
         }

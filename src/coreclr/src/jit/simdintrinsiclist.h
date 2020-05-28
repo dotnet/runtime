@@ -20,7 +20,7 @@
             e) TODO-Cleanup: when we plumb TYP_SIMD through front-end, replace TYP_STRUCT with TYP_SIMD.
      */
 
-#if defined(_TARGET_XARCH_) || defined(_TARGET_ARM64_)
+#if defined(TARGET_XARCH) || defined(TARGET_ARM64)
 
 // Max number of parameters that we model in the table for SIMD intrinsic methods.
 #define SIMD_INTRINSIC_MAX_MODELED_PARAM_COUNT       3
@@ -76,57 +76,34 @@ SIMD_INTRINSIC("set_Y",                     true,        SetY,                  
 SIMD_INTRINSIC("set_Z",                     true,        SetZ,                     "setZ",                   TYP_VOID,       2,      {TYP_BYREF, TYP_UNKNOWN,   TYP_UNDEF},   {TYP_FLOAT, TYP_UNDEF, TYP_UNDEF, TYP_UNDEF, TYP_UNDEF, TYP_UNDEF, TYP_UNDEF, TYP_UNDEF, TYP_UNDEF, TYP_UNDEF})
 SIMD_INTRINSIC("set_W",                     true,        SetW,                     "setW",                   TYP_VOID,       2,      {TYP_BYREF, TYP_UNKNOWN,   TYP_UNDEF},   {TYP_FLOAT, TYP_UNDEF, TYP_UNDEF, TYP_UNDEF, TYP_UNDEF, TYP_UNDEF, TYP_UNDEF, TYP_UNDEF, TYP_UNDEF, TYP_UNDEF})
 
-// Object.Equals()
-SIMD_INTRINSIC("Equals",                    true,        InstEquals,               "equals",                 TYP_BOOL,       2,      {TYP_BYREF, TYP_STRUCT, TYP_UNDEF},    {TYP_INT, TYP_FLOAT, TYP_DOUBLE, TYP_LONG, TYP_USHORT, TYP_UBYTE, TYP_BYTE, TYP_SHORT, TYP_UINT, TYP_ULONG})
-
-// Operator == and !=
-SIMD_INTRINSIC("op_Equality",               false,       OpEquality,               "==",                     TYP_BOOL,       2,      {TYP_STRUCT, TYP_STRUCT, TYP_UNDEF},   {TYP_INT, TYP_FLOAT, TYP_DOUBLE, TYP_LONG, TYP_USHORT, TYP_UBYTE, TYP_BYTE, TYP_SHORT, TYP_UINT, TYP_ULONG})
-SIMD_INTRINSIC("op_Inequality",             false,       OpInEquality,             "!=",                     TYP_BOOL,       2,      {TYP_STRUCT, TYP_STRUCT, TYP_UNDEF},   {TYP_INT, TYP_FLOAT, TYP_DOUBLE, TYP_LONG, TYP_USHORT, TYP_UBYTE, TYP_BYTE, TYP_SHORT, TYP_UINT, TYP_ULONG})
-
 // Arithmetic Operations
 SIMD_INTRINSIC("op_Addition",               false,       Add,                      "+",                      TYP_STRUCT,     2,      {TYP_STRUCT, TYP_STRUCT, TYP_UNDEF},   {TYP_INT, TYP_FLOAT, TYP_DOUBLE, TYP_LONG, TYP_USHORT, TYP_UBYTE, TYP_BYTE, TYP_SHORT, TYP_UINT, TYP_ULONG})
 SIMD_INTRINSIC("op_Subtraction",            false,       Sub,                      "-",                      TYP_STRUCT,     2,      {TYP_STRUCT, TYP_STRUCT, TYP_UNDEF},   {TYP_INT, TYP_FLOAT, TYP_DOUBLE, TYP_LONG, TYP_USHORT, TYP_UBYTE, TYP_BYTE, TYP_SHORT, TYP_UINT, TYP_ULONG})
 
-#if defined(_TARGET_XARCH_)
+#if defined(TARGET_XARCH)
 SIMD_INTRINSIC("op_Multiply",               false,       Mul,                      "*",                      TYP_STRUCT,     2,      {TYP_STRUCT, TYP_STRUCT, TYP_UNDEF},   {TYP_INT, TYP_FLOAT, TYP_DOUBLE, TYP_SHORT,TYP_UNDEF, TYP_UNDEF, TYP_UNDEF, TYP_UNDEF, TYP_UNDEF, TYP_UNDEF})
-#elif defined(_TARGET_ARM64_)
+#elif defined(TARGET_ARM64)
 // TODO-ARM64-CQ Investigate code sequence to accelerate LONG/ULONG vector multiply
 SIMD_INTRINSIC("op_Multiply",               false,       Mul,                      "*",                      TYP_STRUCT,     2,      {TYP_STRUCT, TYP_STRUCT, TYP_UNDEF},   {TYP_INT, TYP_FLOAT, TYP_DOUBLE, TYP_USHORT, TYP_UBYTE, TYP_BYTE, TYP_SHORT, TYP_UINT, TYP_UNDEF, TYP_UNDEF})
 #endif
 
 SIMD_INTRINSIC("op_Division",               false,       Div,                      "/",                      TYP_STRUCT,     2,      {TYP_STRUCT, TYP_STRUCT, TYP_UNDEF},   {TYP_FLOAT, TYP_DOUBLE, TYP_UNDEF, TYP_UNDEF, TYP_UNDEF, TYP_UNDEF, TYP_UNDEF, TYP_UNDEF, TYP_UNDEF, TYP_UNDEF})
 
-// SquareRoot is recognized as an intrinsic only for float or double vectors
-SIMD_INTRINSIC("SquareRoot",                false,       Sqrt,                     "sqrt",                   TYP_STRUCT,     1,      {TYP_STRUCT, TYP_UNDEF, TYP_UNDEF},    {TYP_FLOAT, TYP_DOUBLE, TYP_UNDEF, TYP_UNDEF, TYP_UNDEF, TYP_UNDEF, TYP_UNDEF, TYP_UNDEF, TYP_UNDEF, TYP_UNDEF})
-
-SIMD_INTRINSIC("Min",                       false,       Min,                      "min",                    TYP_STRUCT,     2,      {TYP_STRUCT, TYP_STRUCT, TYP_UNDEF},   {TYP_INT, TYP_FLOAT, TYP_DOUBLE, TYP_LONG, TYP_USHORT, TYP_UBYTE, TYP_BYTE, TYP_SHORT, TYP_UINT, TYP_ULONG})
-SIMD_INTRINSIC("Max",                       false,       Max,                      "max",                    TYP_STRUCT,     2,      {TYP_STRUCT, TYP_STRUCT, TYP_UNDEF},   {TYP_INT, TYP_FLOAT, TYP_DOUBLE, TYP_LONG, TYP_USHORT, TYP_UBYTE, TYP_BYTE, TYP_SHORT, TYP_UINT, TYP_ULONG})
-SIMD_INTRINSIC("Abs",                       false,       Abs,                      "abs",                    TYP_STRUCT,     1,      {TYP_STRUCT, TYP_UNDEF, TYP_UNDEF },   {TYP_INT, TYP_FLOAT, TYP_DOUBLE, TYP_LONG, TYP_USHORT, TYP_UBYTE, TYP_BYTE, TYP_SHORT, TYP_UINT, TYP_ULONG})
-
 // Vector Relational operators
 SIMD_INTRINSIC("Equals",                    false,       Equal,                    "eq",                     TYP_STRUCT,     2,      {TYP_STRUCT, TYP_STRUCT, TYP_UNDEF},   {TYP_INT, TYP_FLOAT, TYP_DOUBLE, TYP_LONG, TYP_USHORT, TYP_UBYTE, TYP_BYTE, TYP_SHORT, TYP_UINT, TYP_ULONG})
-SIMD_INTRINSIC("LessThan",                  false,       LessThan,                 "lt",                     TYP_STRUCT,     2,      {TYP_STRUCT, TYP_STRUCT, TYP_UNDEF},   {TYP_INT, TYP_FLOAT, TYP_DOUBLE, TYP_LONG, TYP_USHORT, TYP_UBYTE, TYP_BYTE, TYP_SHORT, TYP_UINT, TYP_ULONG})
-SIMD_INTRINSIC("LessThanOrEqual",           false,       LessThanOrEqual,          "le",                     TYP_STRUCT,     2,      {TYP_STRUCT, TYP_STRUCT, TYP_UNDEF},   {TYP_INT, TYP_FLOAT, TYP_DOUBLE, TYP_LONG, TYP_USHORT, TYP_UBYTE, TYP_BYTE, TYP_SHORT, TYP_UINT, TYP_ULONG})
-SIMD_INTRINSIC("GreaterThan",               false,       GreaterThan,              "gt",                     TYP_STRUCT,     2,      {TYP_STRUCT, TYP_STRUCT, TYP_UNDEF},   {TYP_INT, TYP_FLOAT, TYP_DOUBLE, TYP_LONG, TYP_USHORT, TYP_UBYTE, TYP_BYTE, TYP_SHORT, TYP_UINT, TYP_ULONG})
-SIMD_INTRINSIC("GreaterThanOrEqual",        false,       GreaterThanOrEqual,       "ge",                     TYP_STRUCT,     2,      {TYP_STRUCT, TYP_STRUCT, TYP_UNDEF},   {TYP_INT, TYP_FLOAT, TYP_DOUBLE, TYP_LONG, TYP_USHORT, TYP_UBYTE, TYP_BYTE, TYP_SHORT, TYP_UINT, TYP_ULONG})
 
 // Bitwise operations
 SIMD_INTRINSIC("op_BitwiseAnd",             false,       BitwiseAnd,               "&",                      TYP_STRUCT,     2,      {TYP_STRUCT, TYP_STRUCT, TYP_UNDEF},   {TYP_INT, TYP_FLOAT, TYP_DOUBLE, TYP_LONG, TYP_USHORT, TYP_UBYTE, TYP_BYTE, TYP_SHORT, TYP_UINT, TYP_ULONG})
-SIMD_INTRINSIC("AndNot",                    false,       BitwiseAndNot,            "&~",                     TYP_STRUCT,     2,      {TYP_STRUCT, TYP_STRUCT, TYP_UNDEF},   {TYP_INT, TYP_FLOAT, TYP_DOUBLE, TYP_LONG, TYP_USHORT, TYP_UBYTE, TYP_BYTE, TYP_SHORT, TYP_UINT, TYP_ULONG})
 SIMD_INTRINSIC("op_BitwiseOr",              false,       BitwiseOr,                "|",                      TYP_STRUCT,     2,      {TYP_STRUCT, TYP_STRUCT, TYP_UNDEF},   {TYP_INT, TYP_FLOAT, TYP_DOUBLE, TYP_LONG, TYP_USHORT, TYP_UBYTE, TYP_BYTE, TYP_SHORT, TYP_UINT, TYP_ULONG})
-SIMD_INTRINSIC("op_ExclusiveOr",            false,       BitwiseXor,               "^",                      TYP_STRUCT,     2,      {TYP_STRUCT, TYP_STRUCT, TYP_UNDEF},   {TYP_INT, TYP_FLOAT, TYP_DOUBLE, TYP_LONG, TYP_USHORT, TYP_UBYTE, TYP_BYTE, TYP_SHORT, TYP_UINT, TYP_ULONG})
 
 // Dot Product
-#if defined(_TARGET_XARCH_)
+#if defined(TARGET_XARCH)
 // Is supported only on Vector<int> on AVX.
 SIMD_INTRINSIC("Dot",                       false,       DotProduct,               "Dot",                    TYP_UNKNOWN,    2,      {TYP_STRUCT, TYP_STRUCT, TYP_UNDEF},   {TYP_INT, TYP_FLOAT, TYP_DOUBLE, TYP_UNDEF, TYP_UNDEF, TYP_UNDEF, TYP_UNDEF, TYP_UNDEF, TYP_UNDEF, TYP_UNDEF})
-#elif defined(_TARGET_ARM64_)
+#elif defined(TARGET_ARM64)
 // Dot Product does not support LONG/ULONG due to lack of multiply support (see TODO-ARM64-CQ above)
 SIMD_INTRINSIC("Dot",                       false,       DotProduct,               "Dot",                    TYP_UNKNOWN,    2,      {TYP_STRUCT, TYP_STRUCT, TYP_UNDEF},   {TYP_INT, TYP_FLOAT, TYP_DOUBLE, TYP_USHORT, TYP_UBYTE, TYP_BYTE, TYP_SHORT, TYP_UINT, TYP_UNDEF, TYP_UNDEF})
 #endif
-
-// Select
-SIMD_INTRINSIC("ConditionalSelect",         false,       Select,                   "Select",                 TYP_STRUCT,     3,      {TYP_STRUCT, TYP_STRUCT, TYP_STRUCT},  {TYP_INT, TYP_FLOAT, TYP_DOUBLE, TYP_LONG, TYP_USHORT, TYP_UBYTE, TYP_BYTE, TYP_SHORT, TYP_UINT, TYP_ULONG})
 
 // Cast
 SIMD_INTRINSIC("op_Explicit",               false,       Cast,                     "Cast",                   TYP_STRUCT,     1,      {TYP_STRUCT, TYP_UNDEF,  TYP_UNDEF},   {TYP_INT, TYP_FLOAT, TYP_DOUBLE, TYP_LONG, TYP_USHORT, TYP_UBYTE, TYP_BYTE, TYP_SHORT, TYP_UINT, TYP_ULONG})
@@ -147,7 +124,7 @@ SIMD_INTRINSIC("Widen",                     false,       Widen,                 
 // Miscellaneous
 SIMD_INTRINSIC("get_IsHardwareAccelerated", false,       HWAccel,                  "HWAccel",                TYP_BOOL,       0,      {TYP_UNDEF,  TYP_UNDEF,  TYP_UNDEF},   {TYP_UNDEF, TYP_UNDEF, TYP_UNDEF, TYP_UNDEF, TYP_UNDEF, TYP_UNDEF, TYP_UNDEF, TYP_UNDEF, TYP_UNDEF, TYP_UNDEF})
 
-#ifdef _TARGET_XARCH_
+#ifdef TARGET_XARCH
 // Shuffle and Shift operations - these are internal intrinsics as there is no corresponding managed method.
 // To prevent this being accidentally recognized as an intrinsic, all of the arg types and supported base types is made TYP_UNDEF
 SIMD_INTRINSIC("ShuffleSSE2",               false,       ShuffleSSE2,              "ShuffleSSE2",            TYP_STRUCT,     2,      {TYP_UNDEF, TYP_UNDEF, TYP_UNDEF},     {TYP_UNDEF, TYP_UNDEF, TYP_UNDEF, TYP_UNDEF, TYP_UNDEF, TYP_UNDEF, TYP_UNDEF, TYP_UNDEF, TYP_UNDEF, TYP_UNDEF})
@@ -155,7 +132,7 @@ SIMD_INTRINSIC("ShuffleSSE2",               false,       ShuffleSSE2,           
 // Internal, logical shift operations that shift the entire vector register instead of individual elements of the vector.
 SIMD_INTRINSIC("ShiftLeftInternal",         false,       ShiftLeftInternal,        "<< Internal",            TYP_STRUCT,     2,      {TYP_UNDEF, TYP_UNDEF, TYP_UNDEF},     {TYP_UNDEF, TYP_UNDEF, TYP_UNDEF, TYP_UNDEF, TYP_UNDEF, TYP_UNDEF, TYP_UNDEF, TYP_UNDEF, TYP_UNDEF, TYP_UNDEF})
 SIMD_INTRINSIC("ShiftRightInternal",        false,       ShiftRightInternal,       ">> Internal",            TYP_STRUCT,     2,      {TYP_UNDEF, TYP_UNDEF, TYP_UNDEF},     {TYP_UNDEF, TYP_UNDEF, TYP_UNDEF, TYP_UNDEF, TYP_UNDEF, TYP_UNDEF, TYP_UNDEF, TYP_UNDEF, TYP_UNDEF, TYP_UNDEF})
-#endif // _TARGET_XARCH_
+#endif // TARGET_XARCH
 
 // Internal intrinsics for saving & restoring the upper half of a vector register
 SIMD_INTRINSIC("UpperSave",                 false,       UpperSave,                "UpperSave Internal",     TYP_STRUCT,     2,      {TYP_UNDEF, TYP_UNDEF, TYP_UNDEF},     {TYP_UNDEF, TYP_UNDEF, TYP_UNDEF, TYP_UNDEF, TYP_UNDEF, TYP_UNDEF, TYP_UNDEF, TYP_UNDEF, TYP_UNDEF, TYP_UNDEF})
@@ -167,9 +144,9 @@ SIMD_INTRINSIC("WidenLo",                   false,       WidenLo,               
 
 SIMD_INTRINSIC(nullptr,                     false,       Invalid,                   "Invalid",               TYP_UNDEF,      0,      {TYP_UNDEF,  TYP_UNDEF,  TYP_UNDEF},   {TYP_UNDEF, TYP_UNDEF, TYP_UNDEF, TYP_UNDEF, TYP_UNDEF, TYP_UNDEF, TYP_UNDEF, TYP_UNDEF, TYP_UNDEF, TYP_UNDEF})
 #undef SIMD_INTRINSIC
-#else // !defined(_TARGET_XARCH_) && !defined(_TARGET_ARM64_)
+#else // !defined(TARGET_XARCH) && !defined(TARGET_ARM64)
 #error SIMD intrinsics not defined for target arch
-#endif // !defined(_TARGET_XARCH_) && !defined(_TARGET_ARM64_)
+#endif // !defined(TARGET_XARCH) && !defined(TARGET_ARM64)
 
 
 #endif //FEATURE_SIMD

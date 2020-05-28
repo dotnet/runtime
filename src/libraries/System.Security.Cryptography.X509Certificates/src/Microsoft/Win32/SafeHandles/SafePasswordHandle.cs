@@ -15,7 +15,7 @@ namespace Microsoft.Win32.SafeHandles
     {
         internal int Length { get; private set; }
 
-        public SafePasswordHandle(string password)
+        public SafePasswordHandle(string? password)
             : base(ownsHandle: true)
         {
             if (password != null)
@@ -25,7 +25,7 @@ namespace Microsoft.Win32.SafeHandles
             }
         }
 
-        public SafePasswordHandle(SecureString password)
+        public SafePasswordHandle(SecureString? password)
             : base(ownsHandle: true)
         {
             if (password != null)
@@ -70,7 +70,7 @@ namespace Microsoft.Win32.SafeHandles
             SafeHandleCache<SafePasswordHandle>.GetInvalidHandle(
                 () =>
                 {
-                    var handle = new SafePasswordHandle((string)null);
+                    var handle = new SafePasswordHandle((string?)null);
                     handle.handle = (IntPtr)(-1);
                     return handle;
                 });

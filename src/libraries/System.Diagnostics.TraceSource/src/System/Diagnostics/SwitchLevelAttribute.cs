@@ -7,7 +7,7 @@ namespace System.Diagnostics
     [AttributeUsage(AttributeTargets.Class)]
     public sealed class SwitchLevelAttribute : Attribute
     {
-        private Type _type;
+        private Type _type = null!;
 
         public SwitchLevelAttribute(Type switchLevelType)
         {

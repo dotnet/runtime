@@ -2413,59 +2413,46 @@ namespace System.Xml
 
             while (true)
             {
-                //a tmp flag, used to avoid await keyword in unsafe context.
-                bool awaitReadDataInNameAsync = false;
-                unsafe
+                if (_xmlCharType.IsStartNCNameSingleChar(_chars[_curPos]) || _chars[_curPos] == ':')
                 {
-                    if (_xmlCharType.IsStartNCNameSingleChar(_chars[_curPos]) || _chars[_curPos] == ':')
+                    _curPos++;
+                }
+#if XML10_FIFTH_EDITION
+                else if ( curPos + 1 < charsUsed && xmlCharType.IsNCNameSurrogateChar(chars[curPos+1], chars[curPos])) {
+                    curPos += 2;
+                }
+#endif
+                else
+                {
+                    if (_curPos + 1 >= _charsUsed)
+                    {
+                        if (await ReadDataInNameAsync().ConfigureAwait(false))
+                        {
+                            continue;
+                        }
+                        Throw(_curPos, SR.Xml_UnexpectedEOF, "Name");
+                    }
+                    else
+                    {
+                        Throw(_curPos, SR.Xml_BadStartNameChar, XmlException.BuildCharExceptionArgs(_chars, _charsUsed, _curPos));
+                    }
+                }
+
+            ContinueName:
+                while (true)
+                {
+                    if (_xmlCharType.IsNCNameSingleChar(_chars[_curPos]))
                     {
                         _curPos++;
                     }
 #if XML10_FIFTH_EDITION
-                    else if ( curPos + 1 < charsUsed && xmlCharType.IsNCNameSurrogateChar(chars[curPos+1], chars[curPos])) {
+                    else if ( curPos + 1 < charsUsed && xmlCharType.IsNameSurrogateChar(chars[curPos + 1], chars[curPos]) ) {
                         curPos += 2;
                     }
 #endif
                     else
                     {
-                        if (_curPos + 1 >= _charsUsed)
-                        {
-                            awaitReadDataInNameAsync = true;
-                        }
-                        else
-                        {
-                            Throw(_curPos, SR.Xml_BadStartNameChar, XmlException.BuildCharExceptionArgs(_chars, _charsUsed, _curPos));
-                        }
-                    }
-                }
-
-                if (awaitReadDataInNameAsync)
-                {
-                    if (await ReadDataInNameAsync().ConfigureAwait(false))
-                    {
-                        continue;
-                    }
-                    Throw(_curPos, SR.Xml_UnexpectedEOF, "Name");
-                }
-
-            ContinueName:
-                unsafe
-                {
-                    while (true)
-                    {
-                        if (_xmlCharType.IsNCNameSingleChar(_chars[_curPos]))
-                        {
-                            _curPos++;
-                        }
-#if XML10_FIFTH_EDITION
-                        else if ( curPos + 1 < charsUsed && xmlCharType.IsNameSurrogateChar(chars[curPos + 1], chars[curPos]) ) {
-                            curPos += 2;
-                        }
-#endif
-                        else
-                        {
-                            break;
-                        }
+                        break;
                     }
                 }
 
@@ -2525,23 +2512,20 @@ namespace System.Xml
 
             while (true)
             {
-                unsafe
+                while (true)
                 {
-                    while (true)
+                    if (_xmlCharType.IsNCNameSingleChar(_chars[_curPos]) || _chars[_curPos] == ':')
                     {
-                        if (_xmlCharType.IsNCNameSingleChar(_chars[_curPos]) || _chars[_curPos] == ':')
-                        {
-                            _curPos++;
-                        }
+                        _curPos++;
+                    }
 #if XML10_FIFTH_EDITION
-                        else if (curPos + 1 < charsUsed && xmlCharType.IsNCNameSurrogateChar(chars[curPos + 1], chars[curPos])) {
-                            curPos += 2;
-                        }
+                    else if (curPos + 1 < charsUsed && xmlCharType.IsNCNameSurrogateChar(chars[curPos + 1], chars[curPos])) {
+                        curPos += 2;
+                    }
 #endif
-                        else
-                        {
-                            break;
-                        }
+                    else
+                    {
+                        break;
                     }
                 }
 

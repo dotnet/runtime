@@ -21,7 +21,6 @@ namespace System.ComponentModel
         /// value - expression being edited
         /// newValue - return the new value
         /// </summary>
-        [SuppressMessage("Microsoft.Design", "CA1045:DoNotPassTypesByReference")]
         bool Show(string language, string value, ref string newValue);
     }
 }

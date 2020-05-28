@@ -110,7 +110,7 @@ C_FUNC(\Name\()_End):
 
 .macro CHECK_STACK_ALIGNMENT
 #ifdef _DEBUG
-    test    esp, 0Fh
+    test    esp, 0x0F
     je      0f
     int3
 0:

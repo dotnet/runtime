@@ -126,7 +126,7 @@ namespace System.SpanTests
                 try
                 {
                     var span = new Span<byte>(memory.ToPointer(), length);
-                    span.Fill(0);
+                    span.Clear();
                     // Fill last two elements
                     span[int.MaxValue - 2] = 2;
                     span[int.MaxValue - 1] = 3;

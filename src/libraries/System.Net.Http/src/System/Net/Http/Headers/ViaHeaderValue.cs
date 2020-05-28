@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Text;
 
@@ -10,12 +11,12 @@ namespace System.Net.Http.Headers
 {
     public class ViaHeaderValue : ICloneable
     {
-        private string _protocolName;
-        private string _protocolVersion;
-        private string _receivedBy;
-        private string _comment;
+        private string? _protocolName;
+        private string _protocolVersion = null!;
+        private string _receivedBy = null!;
+        private string? _comment;
 
-        public string ProtocolName
+        public string? ProtocolName
         {
             get { return _protocolName; }
         }
@@ -30,7 +31,7 @@ namespace System.Net.Http.Headers
             get { return _receivedBy; }
         }
 
-        public string Comment
+        public string? Comment
         {
             get { return _comment; }
         }
@@ -40,12 +41,12 @@ namespace System.Net.Http.Headers
         {
         }
 
-        public ViaHeaderValue(string protocolVersion, string receivedBy, string protocolName)
+        public ViaHeaderValue(string protocolVersion, string receivedBy, string? protocolName)
             : this(protocolVersion, receivedBy, protocolName, null)
         {
         }
 
-        public ViaHeaderValue(string protocolVersion, string receivedBy, string protocolName, string comment)
+        public ViaHeaderValue(string protocolVersion, string receivedBy, string? protocolName, string? comment)
         {
             HeaderUtilities.CheckValidToken(protocolVersion, nameof(protocolVersion));
             CheckReceivedBy(receivedBy);
@@ -103,9 +104,9 @@ namespace System.Net.Http.Headers
             return StringBuilderCache.GetStringAndRelease(sb);
         }
 
-        public override bool Equals(object obj)
+        public override bool Equals(object? obj)
         {
-            ViaHeaderValue other = obj as ViaHeaderValue;
+            ViaHeaderValue? other = obj as ViaHeaderValue;
 
             if (other == null)
             {
@@ -138,27 +139,26 @@ namespace System.Net.Http.Headers
             return result;
         }
 
-        public static ViaHeaderValue Parse(string input)
+        public static ViaHeaderValue Parse(string? input)
         {
             int index = 0;
             return (ViaHeaderValue)GenericHeaderParser.SingleValueViaParser.ParseValue(input, null, ref index);
         }
 
-        public static bool TryParse(string input, out ViaHeaderValue parsedValue)
+        public static bool TryParse([NotNullWhen(true)] string? input, [NotNullWhen(true)] out ViaHeaderValue? parsedValue)
         {
             int index = 0;
-            object output;
             parsedValue = null;
 
-            if (GenericHeaderParser.SingleValueViaParser.TryParseValue(input, null, ref index, out output))
+            if (GenericHeaderParser.SingleValueViaParser.TryParseValue(input, null, ref index, out object? output))
             {
-                parsedValue = (ViaHeaderValue)output;
+                parsedValue = (ViaHeaderValue)output!;
                 return true;
             }
             return false;
         }
 
-        internal static int GetViaLength(string input, int startIndex, out object parsedValue)
+        internal static int GetViaLength(string? input, int startIndex, out object? parsedValue)
         {
             Debug.Assert(startIndex >= 0);
 
@@ -170,9 +170,7 @@ namespace System.Net.Http.Headers
             }
 
             // Read <protocolName> and <protocolVersion> in '[<protocolName>/]<protocolVersion> <receivedBy> [<comment>]'
-            string protocolName = null;
-            string protocolVersion = null;
-            int current = GetProtocolEndIndex(input, startIndex, out protocolName, out protocolVersion);
+            int current = GetProtocolEndIndex(input, startIndex, out string? protocolName, out string? protocolVersion);
 
             // If we reached the end of the string after reading protocolName/Version we return (we expect at least
             // <receivedBy> to follow). If reading protocolName/Version read 0 bytes, we return.
@@ -183,8 +181,7 @@ namespace System.Net.Http.Headers
             Debug.Assert(protocolVersion != null);
 
             // Read <receivedBy> in '[<protocolName>/]<protocolVersion> <receivedBy> [<comment>]'
-            string receivedBy = null;
-            int receivedByLength = HttpRuleParser.GetHostLength(input, current, true, out receivedBy);
+            int receivedByLength = HttpRuleParser.GetHostLength(input, current, true, out string? receivedBy);
 
             if (receivedByLength == 0)
             {
@@ -194,7 +191,7 @@ namespace System.Net.Http.Headers
             current = current + receivedByLength;
             current = current + HttpRuleParser.GetWhitespaceLength(input, current);
 
-            string comment = null;
+            string? comment = null;
             if ((current < input.Length) && (input[current] == '('))
             {
                 // We have a <comment> in '[<protocolName>/]<protocolVersion> <receivedBy> [<comment>]'
@@ -213,15 +210,15 @@ namespace System.Net.Http.Headers
             ViaHeaderValue result = new ViaHeaderValue();
             result._protocolVersion = protocolVersion;
             result._protocolName = protocolName;
-            result._receivedBy = receivedBy;
+            result._receivedBy = receivedBy!;
             result._comment = comment;
 
             parsedValue = result;
             return current - startIndex;
         }
 
-        private static int GetProtocolEndIndex(string input, int startIndex, out string protocolName,
-            out string protocolVersion)
+        private static int GetProtocolEndIndex(string input, int startIndex, out string? protocolName,
+            out string? protocolVersion)
         {
             // We have a string of the form '[<protocolName>/]<protocolVersion> <receivedBy> [<comment>]'. The first
             // token may either be the protocol name or protocol version. We'll only find out after reading the token
@@ -294,9 +291,8 @@ namespace System.Net.Http.Headers
             }
 
             // 'receivedBy' can either be a host or a token. Since a token is a valid host, we only verify if the value
-            // is a valid host.
-            string host = null;
-            if (HttpRuleParser.GetHostLength(receivedBy, 0, true, out host) != receivedBy.Length)
+            // is a valid host.;
+            if (HttpRuleParser.GetHostLength(receivedBy, 0, true, out string? host) != receivedBy.Length)
             {
                 throw new FormatException(SR.Format(System.Globalization.CultureInfo.InvariantCulture, SR.net_http_headers_invalid_value, receivedBy));
             }

@@ -10,6 +10,7 @@ using System.Linq;
 using System.Runtime.InteropServices;
 using System.Threading;
 using Microsoft.DotNet.XUnitExtensions;
+using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -23,34 +24,43 @@ namespace System.IO.Tests
         {
             Interop.Sys.GetRLimit(Interop.Sys.RlimitResources.RLIMIT_NOFILE, out Interop.Sys.RLimit limits);
             _output.WriteLine("File descriptor limit is {0}", limits.CurrentLimit);
+            _output.WriteLine($"Starting 100/200 test on {TestDirectory}");
 
-            if (limits.CurrentLimit > 50_000)
+            RemoteInvokeOptions options = new RemoteInvokeOptions { TimeOut = 600_000 };
+            RemoteExecutor.Invoke(testDirectory =>
             {
-                throw new SkipTestException($"File descriptor limit is too high {limits.CurrentLimit}.");
-            }
+                ulong maxFd = 200;
+                int count = 100;
+                Interop.Sys.RLimit limits = new Interop.Sys.RLimit { CurrentLimit = maxFd, MaximumLimit = maxFd};
 
-            try {
-                for (int i = 0; i < (int)limits.CurrentLimit; i++)
+                // Set open file limit to given value.
+                Assert.Equal(0, Interop.Sys.SetRLimit(Interop.Sys.RlimitResources.RLIMIT_NOFILE, ref limits));
+                Assert.Equal(0, Interop.Sys.GetRLimit(Interop.Sys.RlimitResources.RLIMIT_NOFILE, out limits));
+                Assert.Equal(maxFd, limits.CurrentLimit);
+
+                try
                 {
-                    using (var watcher = new FileSystemWatcher(TestDirectory))
+                    for (int i = 0; i < count; i++)
                     {
-                        watcher.Created += (s, e) => { } ;
-                        watcher.EnableRaisingEvents = true;
+                        using (var watcher = new FileSystemWatcher(testDirectory))
+                        {
+                            watcher.Created += (s, e) => { } ;
+                            watcher.EnableRaisingEvents = true;
+                        }
                     }
-
-                    // On some OSes system resource is released in finalizer.
-                    GC.Collect();
-                    GC.WaitForPendingFinalizers();
                 }
-            }
-            catch (Exception e)
-            {
-                // If we use all handles we may not have luck writing out errors.
-                // Try our best here.
-                Console.WriteLine(e.Message);
-                _output.WriteLine(e.Message);
-                throw;
-            }
+                catch (Exception e)
+                {
+                    // If we use all handles we may not have luck writing out errors.
+                    // Try our best here. _output is not available within RemoteExec().
+                    // When we run out of fd, exception may be weird from OutOfMem to "unable load type".
+                    Console.WriteLine($"Test failed for count={count}, limit={maxFd} and path='{testDirectory}'.");
+                    Console.WriteLine(e.Message);
+                    return 1;
+                }
+
+                return RemoteExecutor.SuccessExitCode;
+            }, TestDirectory, options).Dispose();
         }
     }
 }

@@ -6,7 +6,6 @@ namespace System.Xml
 {
     internal static partial class BinHexEncoder
     {
-        private const string s_hexDigits = "0123456789ABCDEF";
         private const int CharsChunkSize = 128;
 
         internal static void Encode(byte[] buffer, int index, int count, XmlWriter writer)
@@ -73,12 +72,12 @@ namespace System.Xml
             for (int j = 0; j < count; j++)
             {
                 b = inArray[offsetIn++];
-                outArray[curOffsetOut++] = s_hexDigits[b >> 4];
+                outArray[curOffsetOut++] = HexConverter.ToCharUpper(b >> 4);
                 if (curOffsetOut == lengthOut)
                 {
                     break;
                 }
-                outArray[curOffsetOut++] = s_hexDigits[b & 0xF];
+                outArray[curOffsetOut++] = HexConverter.ToCharUpper(b);
                 if (curOffsetOut == lengthOut)
                 {
                     break;

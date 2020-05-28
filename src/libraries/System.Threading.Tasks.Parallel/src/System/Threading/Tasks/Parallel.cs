@@ -199,7 +199,7 @@ namespace System.Threading.Tasks
                 throw new ArgumentNullException(nameof(parallelOptions));
             }
 
-            // On desktop, we throw an ODE if we're passed a disposed CancellationToken.
+            // On .NET Framework, we throw an ODE if we're passed a disposed CancellationToken.
             // Here, CancellationToken.ThrowIfSourceDisposed() is not exposed.
             // This is benign, because we'll end up throwing ODE when we register
             // with the token later.

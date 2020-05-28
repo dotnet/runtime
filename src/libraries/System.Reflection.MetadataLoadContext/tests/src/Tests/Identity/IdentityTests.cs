@@ -183,8 +183,8 @@ namespace System.Reflection.Tests
             public void MyMethod2<M>() { }
             public void MyParameterizedMethod1(int x, int y) { }
             public void MyParameterizedMethod2(int x, int y) { }
-            public int MyProperty1 { get { throw null; } set { throw null; } }
-            public int MyProperty2 { get { throw null; } set { throw null; } }
+            public int MyProperty1 { get { throw null!; } set { throw null!; } }
+            public int MyProperty2 { get { throw null!; } set { throw null!; } }
         }
 
         private class MemberHolder<T> : MemberHolderBase<T>

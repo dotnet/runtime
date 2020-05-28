@@ -27,21 +27,6 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
-        public void UseOnlyOverlappedIO_AlwaysFalse()
-        {
-            using (var s = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
-            {
-                Assert.Equal(AddressFamily.InterNetwork, s.AddressFamily);
-                Assert.Equal(SocketType.Stream, s.SocketType);
-                Assert.Equal(ProtocolType.Tcp, s.ProtocolType);
-
-                Assert.False(s.UseOnlyOverlappedIO);
-                s.UseOnlyOverlappedIO = true;
-                Assert.False(s.UseOnlyOverlappedIO);
-            }
-        }
-
-        [Fact]
         public void IOControl_FIONREAD_Success()
         {
             using (var client = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
@@ -80,7 +65,7 @@ namespace System.Net.Sockets.Tests
         }
 
         [PlatformSpecific(TestPlatforms.AnyUnix)]
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // [ActiveIssue(11057)]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // [ActiveIssue("https://github.com/dotnet/runtime/issues/18258")]
         public void IOControl_SIOCATMARK_Unix_Success()
         {
             using (var client = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))

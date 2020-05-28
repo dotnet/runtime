@@ -19,9 +19,9 @@ char* GetEnvironmentVariableWithDefaultA(const char* envVarName, const char* def
 
 WCHAR* GetEnvironmentVariableWithDefaultW(const WCHAR* envVarName, const WCHAR* defaultValue = nullptr);
 
-#ifdef FEATURE_PAL
+#ifdef TARGET_UNIX
 LPSTR GetCommandLineA();
-#endif // FEATURE_PAL
+#endif // TARGET_UNIX
 
 bool LoadRealJitLib(HMODULE& realJit, WCHAR* realJitPath);
 

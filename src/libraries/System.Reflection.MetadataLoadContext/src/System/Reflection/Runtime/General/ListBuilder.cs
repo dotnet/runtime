@@ -27,7 +27,7 @@ namespace System.Reflection.Runtime.General
             get
             {
                 Debug.Assert(index < Count);
-                return (_items != null) ? _items[index] : _item;
+                return (_items != null) ? _items[index] : _item!;
             }
         }
 
@@ -41,7 +41,7 @@ namespace System.Reflection.Runtime.General
             if (_count == 0)
                 return Array.Empty<T>();
             if (_count == 1)
-                return new T[1] { _item };
+                return new T[1] { _item! };
 
             Array.Resize(ref _items, _count);
 
@@ -59,11 +59,11 @@ namespace System.Reflection.Runtime.General
 
             if (_count == 1)
             {
-                array[index] = _item;
+                array[index] = _item!;
                 return;
             }
 
-            Array.Copy(_items, 0, array, index, _count);
+            Array.Copy(_items!, 0, array, index, _count);
         }
 
         public int Count
@@ -87,7 +87,7 @@ namespace System.Reflection.Runtime.General
                     if (_capacity < 2)
                         _capacity = 4;
                     _items = new T[_capacity];
-                    _items[0] = _item;
+                    _items[0] = _item!;
                 }
                 else if (_capacity == _count)
                 {
@@ -96,13 +96,13 @@ namespace System.Reflection.Runtime.General
                     _capacity = newCapacity;
                 }
 
-                _items[_count] = item;
+                _items![_count] = item;
             }
             _count++;
         }
 
-        private T[] _items;
-        private T _item;
+        private T[]? _items;
+        private T? _item;
         private int _count;
         private int _capacity;
 #if DEBUG

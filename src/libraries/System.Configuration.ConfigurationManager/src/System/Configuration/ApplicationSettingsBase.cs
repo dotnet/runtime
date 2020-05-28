@@ -751,7 +751,7 @@ namespace System.Configuration
         /// </summary>
         private bool IsFirstRunOfClickOnceApp()
         {
-            // Never ClickOnce app in CoreFX
+            // Always false for .NET Core
             return false;
         }
 
@@ -760,7 +760,7 @@ namespace System.Configuration
         /// </summary>
         internal static bool IsClickOnceDeployed(AppDomain appDomain)
         {
-            // Never ClickOnce app in CoreFX
+            // Always false for .NET Core
             return false;
         }
 

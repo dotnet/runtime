@@ -7,13 +7,13 @@ using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Reflection;
 using Microsoft.Internal;
+using System.Diagnostics;
 
 namespace System.ComponentModel.Composition
 {
     internal static class MetadataViewProvider
     {
-        [SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")]
-        public static TMetadataView GetMetadataView<TMetadataView>(IDictionary<string, object> metadata)
+        public static TMetadataView GetMetadataView<TMetadataView>(IDictionary<string, object?> metadata)
         {
             if (metadata == null)
             {
@@ -23,15 +23,15 @@ namespace System.ComponentModel.Composition
             Type metadataViewType = typeof(TMetadataView);
 
             // If the Metadata dictionary is cast compatible with the passed in type
-            if (metadataViewType.IsAssignableFrom(typeof(IDictionary<string, object>)))
+            if (metadataViewType.IsAssignableFrom(typeof(IDictionary<string, object?>)))
             {
                 return (TMetadataView)metadata;
             }
             // otherwise is it a metadata view
             else
             {
-                Type proxyType = null;
-                MetadataViewGenerator.MetadataViewFactory metadataViewFactory = null;
+                Type? proxyType = null;
+                MetadataViewGenerator.MetadataViewFactory? metadataViewFactory = null;
                 if (metadataViewType.IsInterface)
                 {
                     if (!metadataViewType.IsAttributeDefined<MetadataViewImplementationAttribute>())
@@ -48,13 +48,13 @@ namespace System.ComponentModel.Composition
                     else
                     {
                         var implementationAttribute = metadataViewType.GetFirstAttribute<MetadataViewImplementationAttribute>();
+                        Debug.Assert(implementationAttribute != null);
                         proxyType = implementationAttribute.ImplementationType;
                         if (proxyType == null)
                         {
                             throw new CompositionContractMismatchException(SR.Format(
                                 SR.ContractMismatch_MetadataViewImplementationCanNotBeNull,
-                                metadataViewType.FullName,
-                                proxyType.FullName));
+                                metadataViewType.FullName));
                         }
                         else
                         {
@@ -86,7 +86,7 @@ namespace System.ComponentModel.Composition
                         {
                             throw new Exception(SR.Diagnostic_InternalExceptionMessage);
                         }
-                        return (TMetadataView)proxyType.SafeCreateInstance(metadata);
+                        return (TMetadataView)proxyType.SafeCreateInstance(metadata)!;
                     }
                 }
                 catch (MissingMethodException ex)
@@ -94,14 +94,14 @@ namespace System.ComponentModel.Composition
                     // Unable to create an Instance of the Metadata view '{0}' because a constructor could not be selected.  Ensure that the type implements a constructor which takes an argument of type IDictionary<string, object>.
                     throw new CompositionContractMismatchException(SR.Format(
                         SR.CompositionException_MetadataViewInvalidConstructor,
-                        proxyType.AssemblyQualifiedName), ex);
+                        proxyType!.AssemblyQualifiedName), ex);
                 }
                 catch (TargetInvocationException ex)
                 {
                     //Unwrap known failures that we want to present as CompositionContractMismatchException
                     if (metadataViewType.IsInterface)
                     {
-                        if (ex.InnerException.GetType() == typeof(InvalidCastException))
+                        if (ex.InnerException!.GetType() == typeof(InvalidCastException))
                         {
                             // Unable to create an Instance of the Metadata view {0} because the exporter exported the metadata for the item {1} with the value {2} as type {3} but the view imports it as type {4}.
                             throw new CompositionContractMismatchException(SR.Format(

@@ -14,6 +14,7 @@ namespace System.Runtime.Loader
 {
     public partial class AssemblyLoadContext
     {
+        // Keep in sync with MonoManagedAssemblyLoadContextInternalState in object-internals.h
         private enum InternalState
         {
             /// <summary>
@@ -34,6 +35,7 @@ namespace System.Runtime.Loader
 #region private data members
         // If you modify any of these fields, you must also update the
         // AssemblyLoadContextBaseObject structure in object.h
+        // and MonoManagedAssemblyLoadContext in object-internals.h
 
         // synchronization primitive to protect against usage of this instance while unloading
         private readonly object _unloadLock;
@@ -284,7 +286,7 @@ namespace System.Runtime.Loader
 
             // Attempt to load the assembly, using the same ordering as static load, in the current load context.
             StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
-            return Assembly.Load(assemblyName, ref stackMark, this);
+            return RuntimeAssembly.InternalLoad(assemblyName, ref stackMark, this);
         }
 #endif
 
@@ -364,7 +366,7 @@ namespace System.Runtime.Loader
             byte[]? arrSymbols = null;
             if (assemblySymbols != null)
             {
-                var iSymbolLength = (int)assemblySymbols.Length;
+                int iSymbolLength = (int)assemblySymbols.Length;
                 arrSymbols = new byte[iSymbolLength];
 
                 assemblySymbols.Read(arrSymbols, 0, iSymbolLength);
@@ -466,7 +468,7 @@ namespace System.Runtime.Loader
         ///
         /// The property is stored in an AsyncLocal&lt;AssemblyLoadContext&gt;. This means the setting can be unique for every async or thread in the process.
         ///
-        /// For more details see https://github.com/dotnet/runtime/blob/master/docs/coreclr/design-docs/AssemblyLoadContext.ContextualReflection.md
+        /// For more details see https://github.com/dotnet/runtime/blob/master/docs/design/features/AssemblyLoadContext.ContextualReflection.md
         /// </remarks>
         public static AssemblyLoadContext? CurrentContextualReflectionContext => s_asyncLocalCurrent?.Value;
 
@@ -560,26 +562,6 @@ namespace System.Runtime.Loader
             AssemblyLoadContext context = (AssemblyLoadContext)(GCHandle.FromIntPtr(gchManagedAssemblyLoadContext).Target)!;
 
             return context.ResolveUsingLoad(assemblyName);
-        }
-
-        // This method is invoked by the VM to resolve an assembly reference using the Resolving event
-        // after trying assembly resolution via Load override and TPA load context without success.
-        private static Assembly? ResolveUsingResolvingEvent(IntPtr gchManagedAssemblyLoadContext, AssemblyName assemblyName)
-        {
-            AssemblyLoadContext context = (AssemblyLoadContext)(GCHandle.FromIntPtr(gchManagedAssemblyLoadContext).Target)!;
-
-            // Invoke the AssemblyResolve event callbacks if wired up
-            return context.ResolveUsingEvent(assemblyName);
-        }
-
-        // This method is invoked by the VM to resolve a satellite assembly reference
-        // after trying assembly resolution via Load override without success.
-        private static Assembly? ResolveSatelliteAssembly(IntPtr gchManagedAssemblyLoadContext, AssemblyName assemblyName)
-        {
-            AssemblyLoadContext context = (AssemblyLoadContext)(GCHandle.FromIntPtr(gchManagedAssemblyLoadContext).Target)!;
-
-            // Invoke the ResolveSatelliteAssembly method
-            return context.ResolveSatelliteAssembly(assemblyName);
         }
 
         private Assembly? GetFirstResolvedAssemblyFromResolvingEvent(AssemblyName assemblyName)
@@ -743,21 +725,28 @@ namespace System.Runtime.Loader
 
             string assemblyPath = Path.Combine(parentDirectory, assemblyName.CultureName!, $"{assemblyName.Name}.dll");
 
-            if (Internal.IO.File.InternalExists(assemblyPath))
+            bool exists = Internal.IO.File.InternalExists(assemblyPath);
+            if (!exists && Path.IsCaseSensitive)
             {
-                return parentALC.LoadFromAssemblyPath(assemblyPath);
-            }
-            else if (Path.IsCaseSensitive)
-            {
-                assemblyPath = Path.Combine(parentDirectory, assemblyName.CultureName!.ToLowerInvariant(), $"{assemblyName.Name}.dll");
-
-                if (Internal.IO.File.InternalExists(assemblyPath))
+#if CORECLR
+                if (AssemblyLoadContext.IsTracingEnabled())
                 {
-                    return parentALC.LoadFromAssemblyPath(assemblyPath);
+                    AssemblyLoadContext.TraceSatelliteSubdirectoryPathProbed(assemblyPath, HResults.COR_E_FILENOTFOUND);
                 }
+#endif // CORECLR
+                assemblyPath = Path.Combine(parentDirectory, assemblyName.CultureName!.ToLowerInvariant(), $"{assemblyName.Name}.dll");
+                exists = Internal.IO.File.InternalExists(assemblyPath);
             }
 
-            return null;
+            Assembly? asm = exists ? parentALC.LoadFromAssemblyPath(assemblyPath) : null;
+#if CORECLR
+            if (AssemblyLoadContext.IsTracingEnabled())
+            {
+                AssemblyLoadContext.TraceSatelliteSubdirectoryPathProbed(assemblyPath, exists ? HResults.S_OK : HResults.COR_E_FILENOTFOUND);
+            }
+#endif // CORECLR
+
+            return asm;
         }
 
         internal IntPtr GetResolvedUnmanagedDll(Assembly assembly, string unmanagedDllName)

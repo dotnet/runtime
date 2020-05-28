@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 // ------------------------------------------------------------------------------
-// Changes to this file must follow the http://aka.ms/api-review process.
+// Changes to this file must follow the https://aka.ms/api-review process.
 // ------------------------------------------------------------------------------
 
 namespace System.IO
@@ -24,7 +24,7 @@ namespace System.IO
         public static System.Collections.Generic.IEnumerable<string> EnumerateFileSystemEntries(string path, string searchPattern) { throw null; }
         public static System.Collections.Generic.IEnumerable<string> EnumerateFileSystemEntries(string path, string searchPattern, System.IO.EnumerationOptions enumerationOptions) { throw null; }
         public static System.Collections.Generic.IEnumerable<string> EnumerateFileSystemEntries(string path, string searchPattern, System.IO.SearchOption searchOption) { throw null; }
-        public static bool Exists(string path) { throw null; }
+        public static bool Exists(string? path) { throw null; }
         public static System.DateTime GetCreationTime(string path) { throw null; }
         public static System.DateTime GetCreationTimeUtc(string path) { throw null; }
         public static string GetCurrentDirectory() { throw null; }
@@ -46,7 +46,7 @@ namespace System.IO
         public static System.DateTime GetLastWriteTime(string path) { throw null; }
         public static System.DateTime GetLastWriteTimeUtc(string path) { throw null; }
         public static string[] GetLogicalDrives() { throw null; }
-        public static System.IO.DirectoryInfo GetParent(string path) { throw null; }
+        public static System.IO.DirectoryInfo? GetParent(string path) { throw null; }
         public static void Move(string sourceDirName, string destDirName) { }
         public static void SetCreationTime(string path, System.DateTime creationTime) { }
         public static void SetCreationTimeUtc(string path, System.DateTime creationTimeUtc) { }
@@ -61,7 +61,7 @@ namespace System.IO
         public DirectoryInfo(string path) { }
         public override bool Exists { get { throw null; } }
         public override string Name { get { throw null; } }
-        public System.IO.DirectoryInfo Parent { get { throw null; } }
+        public System.IO.DirectoryInfo? Parent { get { throw null; } }
         public System.IO.DirectoryInfo Root { get { throw null; } }
         public void Create() { }
         public System.IO.DirectoryInfo CreateSubdirectory(string path) { throw null; }
@@ -111,10 +111,10 @@ namespace System.IO
         public static void AppendAllLines(string path, System.Collections.Generic.IEnumerable<string> contents, System.Text.Encoding encoding) { }
         public static System.Threading.Tasks.Task AppendAllLinesAsync(string path, System.Collections.Generic.IEnumerable<string> contents, System.Text.Encoding encoding, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
         public static System.Threading.Tasks.Task AppendAllLinesAsync(string path, System.Collections.Generic.IEnumerable<string> contents, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
-        public static void AppendAllText(string path, string contents) { }
-        public static void AppendAllText(string path, string contents, System.Text.Encoding encoding) { }
-        public static System.Threading.Tasks.Task AppendAllTextAsync(string path, string contents, System.Text.Encoding encoding, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
-        public static System.Threading.Tasks.Task AppendAllTextAsync(string path, string contents, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        public static void AppendAllText(string path, string? contents) { }
+        public static void AppendAllText(string path, string? contents, System.Text.Encoding encoding) { }
+        public static System.Threading.Tasks.Task AppendAllTextAsync(string path, string? contents, System.Text.Encoding encoding, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        public static System.Threading.Tasks.Task AppendAllTextAsync(string path, string? contents, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
         public static System.IO.StreamWriter AppendText(string path) { throw null; }
         public static void Copy(string sourceFileName, string destFileName) { }
         public static void Copy(string sourceFileName, string destFileName, bool overwrite) { }
@@ -125,7 +125,7 @@ namespace System.IO
         public static void Decrypt(string path) { }
         public static void Delete(string path) { }
         public static void Encrypt(string path) { }
-        public static bool Exists(string path) { throw null; }
+        public static bool Exists(string? path) { throw null; }
         public static System.IO.FileAttributes GetAttributes(string path) { throw null; }
         public static System.DateTime GetCreationTime(string path) { throw null; }
         public static System.DateTime GetCreationTimeUtc(string path) { throw null; }
@@ -153,8 +153,8 @@ namespace System.IO
         public static System.Threading.Tasks.Task<string> ReadAllTextAsync(string path, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
         public static System.Collections.Generic.IEnumerable<string> ReadLines(string path) { throw null; }
         public static System.Collections.Generic.IEnumerable<string> ReadLines(string path, System.Text.Encoding encoding) { throw null; }
-        public static void Replace(string sourceFileName, string destinationFileName, string destinationBackupFileName) { }
-        public static void Replace(string sourceFileName, string destinationFileName, string destinationBackupFileName, bool ignoreMetadataErrors) { }
+        public static void Replace(string sourceFileName, string destinationFileName, string? destinationBackupFileName) { }
+        public static void Replace(string sourceFileName, string destinationFileName, string? destinationBackupFileName, bool ignoreMetadataErrors) { }
         public static void SetAttributes(string path, System.IO.FileAttributes fileAttributes) { }
         public static void SetCreationTime(string path, System.DateTime creationTime) { }
         public static void SetCreationTimeUtc(string path, System.DateTime creationTimeUtc) { }
@@ -170,16 +170,16 @@ namespace System.IO
         public static void WriteAllLines(string path, string[] contents, System.Text.Encoding encoding) { }
         public static System.Threading.Tasks.Task WriteAllLinesAsync(string path, System.Collections.Generic.IEnumerable<string> contents, System.Text.Encoding encoding, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
         public static System.Threading.Tasks.Task WriteAllLinesAsync(string path, System.Collections.Generic.IEnumerable<string> contents, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
-        public static void WriteAllText(string path, string contents) { }
-        public static void WriteAllText(string path, string contents, System.Text.Encoding encoding) { }
-        public static System.Threading.Tasks.Task WriteAllTextAsync(string path, string contents, System.Text.Encoding encoding, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
-        public static System.Threading.Tasks.Task WriteAllTextAsync(string path, string contents, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        public static void WriteAllText(string path, string? contents) { }
+        public static void WriteAllText(string path, string? contents, System.Text.Encoding encoding) { }
+        public static System.Threading.Tasks.Task WriteAllTextAsync(string path, string? contents, System.Text.Encoding encoding, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        public static System.Threading.Tasks.Task WriteAllTextAsync(string path, string? contents, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
     }
     public sealed partial class FileInfo : System.IO.FileSystemInfo
     {
         public FileInfo(string fileName) { }
-        public System.IO.DirectoryInfo Directory { get { throw null; } }
-        public string DirectoryName { get { throw null; } }
+        public System.IO.DirectoryInfo? Directory { get { throw null; } }
+        public string? DirectoryName { get { throw null; } }
         public override bool Exists { get { throw null; } }
         public bool IsReadOnly { get { throw null; } set { } }
         public long Length { get { throw null; } }
@@ -200,8 +200,8 @@ namespace System.IO
         public System.IO.FileStream OpenRead() { throw null; }
         public System.IO.StreamReader OpenText() { throw null; }
         public System.IO.FileStream OpenWrite() { throw null; }
-        public System.IO.FileInfo Replace(string destinationFileName, string destinationBackupFileName) { throw null; }
-        public System.IO.FileInfo Replace(string destinationFileName, string destinationBackupFileName, bool ignoreMetadataErrors) { throw null; }
+        public System.IO.FileInfo Replace(string destinationFileName, string? destinationBackupFileName) { throw null; }
+        public System.IO.FileInfo Replace(string destinationFileName, string? destinationBackupFileName, bool ignoreMetadataErrors) { throw null; }
         public override string ToString() { throw null; }
     }
     public abstract partial class FileSystemInfo : System.MarshalByRefObject, System.Runtime.Serialization.ISerializable
@@ -266,9 +266,9 @@ namespace System.IO.Enumeration
     }
     public partial class FileSystemEnumerable<TResult> : System.Collections.Generic.IEnumerable<TResult>, System.Collections.IEnumerable
     {
-        public FileSystemEnumerable(string directory, System.IO.Enumeration.FileSystemEnumerable<TResult>.FindTransform transform, System.IO.EnumerationOptions options = null) { }
-        public System.IO.Enumeration.FileSystemEnumerable<TResult>.FindPredicate ShouldIncludePredicate { get { throw null; } set { } }
-        public System.IO.Enumeration.FileSystemEnumerable<TResult>.FindPredicate ShouldRecursePredicate { get { throw null; } set { } }
+        public FileSystemEnumerable(string directory, System.IO.Enumeration.FileSystemEnumerable<TResult>.FindTransform transform, System.IO.EnumerationOptions? options = null) { }
+        public System.IO.Enumeration.FileSystemEnumerable<TResult>.FindPredicate? ShouldIncludePredicate { get { throw null; } set { } }
+        public System.IO.Enumeration.FileSystemEnumerable<TResult>.FindPredicate? ShouldRecursePredicate { get { throw null; } set { } }
         public System.Collections.Generic.IEnumerator<TResult> GetEnumerator() { throw null; }
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() { throw null; }
         public delegate bool FindPredicate(ref System.IO.Enumeration.FileSystemEntry entry);
@@ -276,9 +276,9 @@ namespace System.IO.Enumeration
     }
     public abstract partial class FileSystemEnumerator<TResult> : System.Runtime.ConstrainedExecution.CriticalFinalizerObject, System.Collections.Generic.IEnumerator<TResult>, System.Collections.IEnumerator, System.IDisposable
     {
-        public FileSystemEnumerator(string directory, System.IO.EnumerationOptions options = null) { }
+        public FileSystemEnumerator(string directory, System.IO.EnumerationOptions? options = null) { }
         public TResult Current { get { throw null; } }
-        object System.Collections.IEnumerator.Current { get { throw null; } }
+        object? System.Collections.IEnumerator.Current { get { throw null; } }
         protected virtual bool ContinueOnError(int error) { throw null; }
         public void Dispose() { }
         protected virtual void Dispose(bool disposing) { }
@@ -293,6 +293,6 @@ namespace System.IO.Enumeration
     {
         public static bool MatchesSimpleExpression(System.ReadOnlySpan<char> expression, System.ReadOnlySpan<char> name, bool ignoreCase = true) { throw null; }
         public static bool MatchesWin32Expression(System.ReadOnlySpan<char> expression, System.ReadOnlySpan<char> name, bool ignoreCase = true) { throw null; }
-        public static string TranslateWin32Expression(string expression) { throw null; }
+        public static string TranslateWin32Expression(string? expression) { throw null; }
     }
 }

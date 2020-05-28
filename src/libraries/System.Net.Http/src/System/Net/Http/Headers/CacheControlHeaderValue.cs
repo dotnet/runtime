@@ -4,6 +4,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.IO;
 using System.Text;
@@ -29,7 +30,7 @@ namespace System.Net.Http.Headers
         private static readonly Action<string> s_checkIsValidToken = CheckIsValidToken;
 
         private bool _noCache;
-        private ObjectCollection<string> _noCacheHeaders;
+        private ObjectCollection<string>? _noCacheHeaders;
         private bool _noStore;
         private TimeSpan? _maxAge;
         private TimeSpan? _sharedMaxAge;
@@ -40,10 +41,10 @@ namespace System.Net.Http.Headers
         private bool _onlyIfCached;
         private bool _publicField;
         private bool _privateField;
-        private ObjectCollection<string> _privateHeaders;
+        private ObjectCollection<string>? _privateHeaders;
         private bool _mustRevalidate;
         private bool _proxyRevalidate;
-        private ObjectCollection<NameValueHeaderValue> _extensions;
+        private ObjectCollection<NameValueHeaderValue>? _extensions;
 
         public bool NoCache
         {
@@ -51,17 +52,7 @@ namespace System.Net.Http.Headers
             set { _noCache = value; }
         }
 
-        public ICollection<string> NoCacheHeaders
-        {
-            get
-            {
-                if (_noCacheHeaders == null)
-                {
-                    _noCacheHeaders = new ObjectCollection<string>(s_checkIsValidToken);
-                }
-                return _noCacheHeaders;
-            }
-        }
+        public ICollection<string> NoCacheHeaders => _noCacheHeaders ??= new ObjectCollection<string>(s_checkIsValidToken);
 
         public bool NoStore
         {
@@ -123,17 +114,7 @@ namespace System.Net.Http.Headers
             set { _privateField = value; }
         }
 
-        public ICollection<string> PrivateHeaders
-        {
-            get
-            {
-                if (_privateHeaders == null)
-                {
-                    _privateHeaders = new ObjectCollection<string>(s_checkIsValidToken);
-                }
-                return _privateHeaders;
-            }
-        }
+        public ICollection<string> PrivateHeaders => _privateHeaders ??= new ObjectCollection<string>(s_checkIsValidToken);
 
         public bool MustRevalidate
         {
@@ -147,17 +128,7 @@ namespace System.Net.Http.Headers
             set { _proxyRevalidate = value; }
         }
 
-        public ICollection<NameValueHeaderValue> Extensions
-        {
-            get
-            {
-                if (_extensions == null)
-                {
-                    _extensions = new ObjectCollection<NameValueHeaderValue>();
-                }
-                return _extensions;
-            }
-        }
+        public ICollection<NameValueHeaderValue> Extensions => _extensions ??= new ObjectCollection<NameValueHeaderValue>();
 
         public CacheControlHeaderValue()
         {
@@ -315,9 +286,9 @@ namespace System.Net.Http.Headers
             return StringBuilderCache.GetStringAndRelease(sb);
         }
 
-        public override bool Equals(object obj)
+        public override bool Equals(object? obj)
         {
-            CacheControlHeaderValue other = obj as CacheControlHeaderValue;
+            CacheControlHeaderValue? other = obj as CacheControlHeaderValue;
 
             if (other == null)
             {
@@ -398,28 +369,27 @@ namespace System.Net.Http.Headers
             return result;
         }
 
-        public static CacheControlHeaderValue Parse(string input)
+        public static CacheControlHeaderValue Parse(string? input)
         {
             int index = 0;
             return (CacheControlHeaderValue)CacheControlHeaderParser.Parser.ParseValue(input, null, ref index);
         }
 
-        public static bool TryParse(string input, out CacheControlHeaderValue parsedValue)
+        public static bool TryParse(string? input, out CacheControlHeaderValue? parsedValue)
         {
             int index = 0;
-            object output;
             parsedValue = null;
 
-            if (CacheControlHeaderParser.Parser.TryParseValue(input, null, ref index, out output))
+            if (CacheControlHeaderParser.Parser.TryParseValue(input, null, ref index, out object? output))
             {
-                parsedValue = (CacheControlHeaderValue)output;
+                parsedValue = (CacheControlHeaderValue?)output;
                 return true;
             }
             return false;
         }
 
-        internal static int GetCacheControlLength(string input, int startIndex, CacheControlHeaderValue storeValue,
-            out CacheControlHeaderValue parsedValue)
+        internal static int GetCacheControlLength(string? input, int startIndex, CacheControlHeaderValue? storeValue,
+            out CacheControlHeaderValue? parsedValue)
         {
             Debug.Assert(startIndex >= 0);
 
@@ -433,7 +403,7 @@ namespace System.Net.Http.Headers
             // Cache-Control header consists of a list of name/value pairs, where the value is optional. So use an
             // instance of NameValueHeaderParser to parse the string.
             int current = startIndex;
-            object nameValue = null;
+            object? nameValue;
             List<NameValueHeaderValue> nameValueList = new List<NameValueHeaderValue>();
             while (current < input.Length)
             {
@@ -442,7 +412,7 @@ namespace System.Net.Http.Headers
                     return 0;
                 }
 
-                nameValueList.Add(nameValue as NameValueHeaderValue);
+                nameValueList.Add((NameValueHeaderValue)nameValue);
             }
 
             // If we get here, we were able to successfully parse the string as list of name/value pairs. Now analyze
@@ -451,7 +421,7 @@ namespace System.Net.Http.Headers
             // Cache-Control is a header supporting lists of values. However, expose the header as an instance of
             // CacheControlHeaderValue. So if we already have an instance of CacheControlHeaderValue, add the values
             // from this string to the existing instances.
-            CacheControlHeaderValue result = storeValue;
+            CacheControlHeaderValue? result = storeValue;
             if (result == null)
             {
                 result = new CacheControlHeaderValue();
@@ -562,7 +532,7 @@ namespace System.Net.Http.Headers
         }
 
         private static bool TrySetOptionalTokenList(NameValueHeaderValue nameValue, ref bool boolField,
-            ref ObjectCollection<string> destination)
+            ref ObjectCollection<string>? destination)
         {
             Debug.Assert(nameValue != null);
 
@@ -604,11 +574,7 @@ namespace System.Net.Http.Headers
                     return false;
                 }
 
-                if (destination == null)
-                {
-                    destination = new ObjectCollection<string>(s_checkIsValidToken);
-                }
-
+                destination ??= new ObjectCollection<string>(s_checkIsValidToken);
                 destination.Add(valueString.Substring(current, tokenLength));
 
                 current = current + tokenLength;

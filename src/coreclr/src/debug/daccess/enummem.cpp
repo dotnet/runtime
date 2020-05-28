@@ -21,13 +21,11 @@
 #include "binder.h"
 #include "win32threadpool.h"
 
-#ifdef FEATURE_PAL
-#include <dactablerva.h>
-#endif
-
 #ifdef FEATURE_APPX
 #include "appxutil.h"
 #endif // FEATURE_APPX
+
+extern HRESULT GetDacTableAddress(ICorDebugDataTarget* dataTarget, ULONG64 baseAddress, PULONG64 dacTableAddress);
 
 #if defined(DAC_MEASURE_PERF)
 
@@ -195,9 +193,14 @@ HRESULT ClrDataAccess::EnumMemCLRStatic(IN CLRDataEnumMemoryFlags flags)
 #define DEFINE_DACVAR(id_type, size_type, id, var) \
     ReportMem(m_globalBase + g_dacGlobals.id, sizeof(size_type));
 
-#ifdef FEATURE_PAL
+#ifdef TARGET_UNIX
+    ULONG64 dacTableAddress;
+    HRESULT hr = GetDacTableAddress(m_pTarget, m_globalBase, &dacTableAddress);
+    if (FAILED(hr)) {
+        return hr;
+    }
     // Add the dac table memory in coreclr
-    CATCH_ALL_EXCEPT_RETHROW_COR_E_OPERATIONCANCELLED ( ReportMem(m_globalBase + DAC_TABLE_RVA, sizeof(g_dacGlobals)); )
+    CATCH_ALL_EXCEPT_RETHROW_COR_E_OPERATIONCANCELLED ( ReportMem((TADDR)dacTableAddress, sizeof(g_dacGlobals)); )
 #endif
 
     // Cannot use CATCH_ALL_EXCEPT_RETHROW_COR_E_OPERATIONCANCELLED
@@ -241,9 +244,9 @@ HRESULT ClrDataAccess::EnumMemCLRStatic(IN CLRDataEnumMemoryFlags flags)
     }
     EX_CATCH_RETHROW_ONLY_COR_E_OPERATIONCANCELLED
 
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
     CATCH_ALL_EXCEPT_RETHROW_COR_E_OPERATIONCANCELLED( g_runtimeLoadedBaseAddress.EnumMem(); )
-#endif // !FEATURE_PAL
+#endif // !TARGET_UNIX
 
     // These are the structures that are pointed by global pointers and we care.
     // Some may reside in heap and some may reside as a static byte array in mscorwks.dll
@@ -265,7 +268,6 @@ HRESULT ClrDataAccess::EnumMemCLRStatic(IN CLRDataEnumMemoryFlags flags)
     CATCH_ALL_EXCEPT_RETHROW_COR_E_OPERATIONCANCELLED( g_pEnumClass.EnumMem(); )
     CATCH_ALL_EXCEPT_RETHROW_COR_E_OPERATIONCANCELLED( g_pThreadClass.EnumMem(); )
     CATCH_ALL_EXCEPT_RETHROW_COR_E_OPERATIONCANCELLED( g_pFreeObjectMethodTable.EnumMem(); )
-    CATCH_ALL_EXCEPT_RETHROW_COR_E_OPERATIONCANCELLED( g_fHostConfig.EnumMem(); )
 
     // These two static pointers are pointed to static data of byte[]
     // then run constructor in place
@@ -280,7 +282,7 @@ HRESULT ClrDataAccess::EnumMemCLRStatic(IN CLRDataEnumMemoryFlags flags)
     CATCH_ALL_EXCEPT_RETHROW_COR_E_OPERATIONCANCELLED( g_pEEDbgInterfaceImpl.EnumMem(); )
     CATCH_ALL_EXCEPT_RETHROW_COR_E_OPERATIONCANCELLED( g_CORDebuggerControlFlags.EnumMem(); )
     CATCH_ALL_EXCEPT_RETHROW_COR_E_OPERATIONCANCELLED( g_Mscorlib.EnumMem(); )
-    CATCH_ALL_EXCEPT_RETHROW_COR_E_OPERATIONCANCELLED( g_pPredefinedArrayTypes[ELEMENT_TYPE_OBJECT]->EnumMemoryRegions(flags); )
+    CATCH_ALL_EXCEPT_RETHROW_COR_E_OPERATIONCANCELLED( g_pPredefinedArrayTypes[ELEMENT_TYPE_OBJECT].EnumMemoryRegions(flags); )
     CATCH_ALL_EXCEPT_RETHROW_COR_E_OPERATIONCANCELLED( StubManager::EnumMemoryRegions(flags); )
     CATCH_ALL_EXCEPT_RETHROW_COR_E_OPERATIONCANCELLED( g_pFinalizerThread.EnumMem(); )
     CATCH_ALL_EXCEPT_RETHROW_COR_E_OPERATIONCANCELLED( g_pSuspensionThread.EnumMem(); )
@@ -511,8 +513,7 @@ HRESULT ClrDataAccess::DumpManagedExcepObject(CLRDataEnumMemoryFlags flags, OBJE
     {
         // first dump the array's element type
         TypeHandle arrayTypeHandle = stackTraceArrayObj->GetTypeHandle();
-        ArrayTypeDesc* pArrayTypeDesc = arrayTypeHandle.AsArray();
-        TypeHandle elementTypeHandle = pArrayTypeDesc->GetArrayElementTypeHandle();
+        TypeHandle elementTypeHandle = arrayTypeHandle.GetArrayElementTypeHandle();
         elementTypeHandle.AsMethodTable()->EnumMemoryRegions(flags);
         elementTypeHandle.AsMethodTable()->GetClass()->EnumMemoryRegions(flags, elementTypeHandle.AsMethodTable());
 
@@ -1297,7 +1298,7 @@ HRESULT ClrDataAccess::EnumMemDumpAllThreadsStack(CLRDataEnumMemoryFlags flags)
 }
 
 
-#ifdef FEATURE_COMINTEROP
+#if defined(FEATURE_COMINTEROP) || defined(FEATURE_COMWRAPPERS)
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 //
 // WinRT stowed exception holds the (CCW)pointer to a managed exception object.
@@ -1430,11 +1431,26 @@ HRESULT ClrDataAccess::DumpStowedExceptionObject(CLRDataEnumMemoryFlags flags, C
     if (ccwPtr == NULL)
         return S_OK;
 
+    OBJECTREF managedExceptionObject = NULL;
+
+#ifdef FEATURE_COMINTEROP
     // dump the managed exception object wrapped in CCW
     // memory of the CCW object itself is dumped later by DacInstanceManager::DumpAllInstances
     DacpCCWData ccwData;
     GetCCWData(ccwPtr, &ccwData);   // this call collects some memory implicitly
-    DumpManagedExcepObject(flags, OBJECTREF(TO_TADDR(ccwData.managedObject)));
+    managedExceptionObject = OBJECTREF(CLRDATA_ADDRESS_TO_TADDR(ccwData.managedObject));
+#endif
+#ifdef FEATURE_COMWRAPPERS
+    if (managedExceptionObject == NULL)
+    {
+        OBJECTREF wrappedObjAddress;
+        if (DACTryGetComWrappersObjectFromCCW(ccwPtr, &wrappedObjAddress) == S_OK)
+        {
+            managedExceptionObject = wrappedObjAddress;
+        }
+    }
+#endif
+    DumpManagedExcepObject(flags, managedExceptionObject);
 
     // dump memory of the 2nd slot in the CCW's vtable
     // this is used in DACGetCCWFromAddress to identify if the passed in pointer is a valid CCW.
@@ -1449,7 +1465,8 @@ HRESULT ClrDataAccess::DumpStowedExceptionObject(CLRDataEnumMemoryFlags flags, C
 
     CATCH_ALL_EXCEPT_RETHROW_COR_E_OPERATIONCANCELLED
     (
-        ReportMem(vTableAddress + sizeof(PBYTE)* TEAR_OFF_SLOT, sizeof(TADDR));
+        ReportMem(vTableAddress, sizeof(TADDR)); // Report the QI slot on the vtable for ComWrappers
+        ReportMem(vTableAddress + sizeof(PBYTE) * TEAR_OFF_SLOT, sizeof(TADDR)); // Report the AddRef slot on the vtable for built-in CCWs
     );
 
     return S_OK;
@@ -1922,7 +1939,7 @@ ClrDataAccess::EnumMemoryRegions(IN ICLRDataEnumMemoryRegionsCallback* callback,
             status = EnumMemoryRegionsWrapper(CLRDATA_ENUM_MEM_MINI);
         }
 
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
         // For all dump types, we need to capture the chain to the IMAGE_DIRECTORY_ENTRY_DEBUG
         // contents, so that DAC can validate against the TimeDateStamp even if the
         // debugger can't find the main CLR module on disk.

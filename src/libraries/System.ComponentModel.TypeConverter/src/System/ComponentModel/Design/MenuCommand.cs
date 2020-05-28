@@ -157,7 +157,6 @@ namespace System.ComponentModel.Design
         /// Provides notification and is called in response to
         /// a <see cref='System.ComponentModel.Design.MenuCommand.CommandChanged'/> event.
         /// </summary>
-        [SuppressMessage("Microsoft.Security", "CA2109:ReviewVisibleEventHandlers")] // Safe: FullTrust LinkDemand to instantiate an object of this class.
         protected virtual void OnCommandChanged(EventArgs e) => CommandChanged?.Invoke(this, e);
 
         /// <summary>

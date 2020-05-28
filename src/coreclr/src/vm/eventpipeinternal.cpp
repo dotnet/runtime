@@ -11,9 +11,9 @@
 #include "eventpipesession.h"
 #include "eventpipesessionprovider.h"
 
-#ifdef FEATURE_PAL
+#ifdef TARGET_UNIX
 #include "pal.h"
-#endif // FEATURE_PAL
+#endif // TARGET_UNIX
 
 #ifdef FEATURE_PERFTRACING
 
@@ -216,27 +216,8 @@ int QCALLTYPE EventPipeInternal::EventActivityIdControl(uint32_t controlCode, GU
     return retVal;
 }
 
-void QCALLTYPE EventPipeInternal::WriteEvent(
-    INT_PTR eventHandle,
-    UINT32 eventID,
-    void *pData,
-    UINT32 length,
-    LPCGUID pActivityId,
-    LPCGUID pRelatedActivityId)
-{
-    QCALL_CONTRACT;
-    BEGIN_QCALL;
-
-    _ASSERTE(eventHandle != NULL);
-    EventPipeEvent *pEvent = reinterpret_cast<EventPipeEvent *>(eventHandle);
-    EventPipe::WriteEvent(*pEvent, (BYTE *)pData, length, pActivityId, pRelatedActivityId);
-
-    END_QCALL;
-}
-
 void QCALLTYPE EventPipeInternal::WriteEventData(
     INT_PTR eventHandle,
-    UINT32 eventID,
     EventData *pEventData,
     UINT32 eventDataCount,
     LPCGUID pActivityId,

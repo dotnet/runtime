@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System;
 using System.Collections;
 using System.IO;
@@ -46,7 +47,7 @@ namespace System.Xml
                 11 => 2,
                 15 => 3,
                 19 => 4,
-                _ => throw new XmlException(SR.XmlBinary_InvalidSqlDecimal, (string[])null),
+                _ => throw new XmlException(SR.XmlBinary_InvalidSqlDecimal, (string[]?)null),
             };
             m_bPrec = data[offset + 1];
             m_bScale = data[offset + 2];
@@ -109,6 +110,7 @@ namespace System.Xml
             iulR = ulCarry;
             MpNormalize(rgulU, ref ciulU);
         }
+
         // Normalize multi-precision number - remove leading zeroes
         private static void MpNormalize(uint[] rgulU,      // In   | Number
                                         ref int ciulU       // InOut| # of digits
@@ -128,13 +130,14 @@ namespace System.Xml
         // The array in Shiloh. Listed here for comparison.
         //private static readonly byte[] rgCLenFromPrec = new byte[] {5,5,5,5,5,5,5,5,5,9,9,9,9,9,
         //    9,9,9,9,9,13,13,13,13,13,13,13,13,13,17,17,17,17,17,17,17,17,17,17};
-        private static readonly byte[] s_rgCLenFromPrec = new byte[] {
+        private static ReadOnlySpan<byte> RgCLenFromPrec => new byte[] { // rely on C# compiler optimization to eliminate allocation
             1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4
         };
+
         private static byte CLenFromPrec(byte bPrec)
         {
             Debug.Assert(bPrec <= s_maxPrecision && bPrec > 0, "bPrec <= MaxPrecision && bPrec > 0", "Invalid numeric precision");
-            return s_rgCLenFromPrec[bPrec - 1];
+            return RgCLenFromPrec[bPrec - 1];
         }
 
         private static char ChFromDigit(uint uiDigit)
@@ -146,7 +149,7 @@ namespace System.Xml
         public decimal ToDecimal()
         {
             if ((int)m_data4 != 0 || m_bScale > 28)
-                throw new XmlException(SR.SqlTypes_ArithOverflow, (string)null);
+                throw new XmlException(SR.SqlTypes_ArithOverflow, (string?)null);
 
             return new decimal((int)m_data1, (int)m_data2, (int)m_data3, !IsPositive, m_bScale);
         }
@@ -452,7 +455,7 @@ namespace System.Xml
                 goto Error;
             return;
 Error:
-            throw new XmlException(SR.SqlTypes_ArithOverflow, (string)null);
+            throw new XmlException(SR.SqlTypes_ArithOverflow, (string?)null);
         }
 
         private static void BreakDownXsdDate(long val, out int yr, out int mnth, out int day, out bool negTimeZone, out int hr, out int min)
@@ -477,7 +480,7 @@ Error:
                 goto Error;
             return;
 Error:
-            throw new XmlException(SR.SqlTypes_ArithOverflow, (string)null);
+            throw new XmlException(SR.SqlTypes_ArithOverflow, (string?)null);
         }
 
         private static void BreakDownXsdTime(long val, out int hr, out int min, out int sec, out int ms)
@@ -495,7 +498,7 @@ Error:
                 goto Error;
             return;
 Error:
-            throw new XmlException(SR.SqlTypes_ArithOverflow, (string)null);
+            throw new XmlException(SR.SqlTypes_ArithOverflow, (string?)null);
         }
 
         public static string XsdDateTimeToString(long val)
@@ -765,7 +768,7 @@ Error:
             }
             else
             {
-                throw new XmlException(SR.SqlTypes_ArithOverflow, (string)null);
+                throw new XmlException(SR.SqlTypes_ArithOverflow, (string?)null);
             }
             return timeTicks * KatmaiTimeScaleMultiplicator[scale];
         }

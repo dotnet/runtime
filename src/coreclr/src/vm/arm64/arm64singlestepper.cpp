@@ -47,7 +47,7 @@ Arm64SingleStepper::Arm64SingleStepper()
 Arm64SingleStepper::~Arm64SingleStepper()
 {
 #if !defined(DACCESS_COMPILE)
-#ifdef FEATURE_PAL
+#ifdef TARGET_UNIX
     SystemDomain::GetGlobalLoaderAllocator()->GetExecutableHeap()->BackoutMem(m_rgCode, kMaxCodeBuffer * sizeof(uint32_t));
 #else
     DeleteExecutable(m_rgCode);
@@ -60,7 +60,7 @@ void Arm64SingleStepper::Init()
 #if !defined(DACCESS_COMPILE)
     if (m_rgCode == NULL)
     {
-#ifdef FEATURE_PAL
+#ifdef TARGET_UNIX
         m_rgCode = (uint32_t *)(void *)SystemDomain::GetGlobalLoaderAllocator()->GetExecutableHeap()->AllocMem(S_SIZE_T(kMaxCodeBuffer * sizeof(uint32_t)));
 #else
         m_rgCode = new (executable) uint32_t[kMaxCodeBuffer];

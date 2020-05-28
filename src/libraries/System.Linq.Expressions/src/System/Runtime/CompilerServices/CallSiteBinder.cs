@@ -21,7 +21,7 @@ namespace System.Runtime.CompilerServices
         /// <summary>
         /// The Level 2 cache - all rules produced for the same binder.
         /// </summary>
-        internal Dictionary<Type, object> Cache;
+        internal Dictionary<Type, object>? Cache;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="CallSiteBinder"/> class.
@@ -40,7 +40,7 @@ namespace System.Runtime.CompilerServices
 
         private sealed class LambdaSignature<T> where T : class
         {
-            private static LambdaSignature<T> s_instance;
+            private static LambdaSignature<T>? s_instance;
 
             internal static LambdaSignature<T> Instance
             {
@@ -106,7 +106,7 @@ namespace System.Runtime.CompilerServices
         /// <param name="site">The CallSite the bind is being performed for.</param>
         /// <param name="args">The arguments for the binder.</param>
         /// <returns>A new delegate which replaces the CallSite Target.</returns>
-        public virtual T BindDelegate<T>(CallSite<T> site, object[] args) where T : class
+        public virtual T? BindDelegate<T>(CallSite<T> site, object[] args) where T : class
         {
             return null;
         }
@@ -116,7 +116,7 @@ namespace System.Runtime.CompilerServices
             //
             // Try to find a precompiled delegate, and return it if found.
             //
-            T result = BindDelegate(site, args);
+            T? result = BindDelegate(site, args);
             if (result != null)
             {
                 return result;
@@ -192,7 +192,7 @@ namespace System.Runtime.CompilerServices
                         Expression.Invoke(
                             Expression.Property(
                                 Expression.Convert(site, siteType),
-                                typeof(CallSite<T>).GetProperty(nameof(CallSite<T>.Update))
+                                typeof(CallSite<T>).GetProperty(nameof(CallSite<T>.Update))!
                             ),
                             @params
                         )
@@ -216,7 +216,7 @@ namespace System.Runtime.CompilerServices
                 Interlocked.CompareExchange(ref Cache, new Dictionary<Type, object>(), null);
             }
 
-            object ruleCache;
+            object? ruleCache;
             var cache = Cache;
             lock (cache)
             {
@@ -226,7 +226,7 @@ namespace System.Runtime.CompilerServices
                 }
             }
 
-            RuleCache<T> result = ruleCache as RuleCache<T>;
+            RuleCache<T>? result = ruleCache as RuleCache<T>;
             Debug.Assert(result != null);
             return result;
         }

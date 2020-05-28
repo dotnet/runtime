@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
@@ -35,7 +36,7 @@ namespace System.Security.Cryptography
                 hashAlgorithm,
                 alg =>
                 {
-                    using (HashProviderCng hashProvider = new HashProviderCng(alg.Name, null))
+                    using (HashProviderCng hashProvider = new HashProviderCng(alg.Name!, null))
                     {
                         return hashProvider.HashSizeInBytes;
                     }
@@ -52,7 +53,7 @@ namespace System.Security.Cryptography
                 throw new ArgumentNullException(nameof(hash));
             }
 
-            string hashAlgorithmName = hashAlgorithm.Name;
+            string? hashAlgorithmName = hashAlgorithm.Name;
             if (string.IsNullOrEmpty(hashAlgorithmName))
             {
                 throw new ArgumentException(SR.Cryptography_HashAlgorithmNameNullOrEmpty, nameof(hashAlgorithm));
@@ -99,7 +100,7 @@ namespace System.Security.Cryptography
 
         public override unsafe bool TrySignHash(ReadOnlySpan<byte> hash, Span<byte> destination, HashAlgorithmName hashAlgorithm, RSASignaturePadding padding, out int bytesWritten)
         {
-            string hashAlgorithmName = hashAlgorithm.Name;
+            string? hashAlgorithmName = hashAlgorithm.Name;
             if (string.IsNullOrEmpty(hashAlgorithmName))
             {
                 throw new ArgumentException(SR.Cryptography_HashAlgorithmNameNullOrEmpty, nameof(hashAlgorithm));
@@ -159,7 +160,7 @@ namespace System.Security.Cryptography
 
         public override unsafe bool VerifyHash(ReadOnlySpan<byte> hash, ReadOnlySpan<byte> signature, HashAlgorithmName hashAlgorithm, RSASignaturePadding padding)
         {
-            string hashAlgorithmName = hashAlgorithm.Name;
+            string? hashAlgorithmName = hashAlgorithm.Name;
             if (string.IsNullOrEmpty(hashAlgorithmName))
             {
                 throw new ArgumentException(SR.Cryptography_HashAlgorithmNameNullOrEmpty, nameof(hashAlgorithm));

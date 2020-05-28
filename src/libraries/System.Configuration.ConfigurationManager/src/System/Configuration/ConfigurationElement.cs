@@ -1138,7 +1138,7 @@ namespace System.Configuration
                     ((_itemLockedFlag & ConfigurationValueFlags.XmlParentInherited) == 0))
                 {
                     dataToWrite = true;
-                    writer?.WriteAttributeString(LockItemKey, true.ToString().ToLower(CultureInfo.InvariantCulture));
+                    writer?.WriteAttributeString(LockItemKey, true.ToString().ToLowerInvariant());
                 }
             }
 
@@ -1246,9 +1246,9 @@ namespace System.Configuration
                         {
                             if (sb.Length != 0)
                                 sb.Append(", ");
-                            sb.Append("'");
+                            sb.Append('\'');
                             sb.Append(validProp.Name);
-                            sb.Append("'");
+                            sb.Append('\'');
                         }
                     }
                     else
@@ -1257,9 +1257,9 @@ namespace System.Configuration
                         {
                             if (sb.Length != 0)
                                 sb.Append(", ");
-                            sb.Append("'");
+                            sb.Append('\'');
                             sb.Append(validProp.Name);
-                            sb.Append("'");
+                            sb.Append('\'');
                         }
                     }
                 }

@@ -107,7 +107,7 @@ private:
             stack = m_alloc.allocate<StackNode>(1);
         }
 
-        return new (stack, jitstd::placement_t()) StackNode(jitstd::forward<Args>(args)...);
+        return new (stack, jitstd::placement_t()) StackNode(std::forward<Args>(args)...);
     }
 
     // Push a SSA number onto a stack

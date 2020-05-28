@@ -29,7 +29,7 @@ internal class Mainy
         }
     }
 
-    public static int Main(String[] args)
+    public static int Main(string[] args)
     {
         long Threads = 1;
 

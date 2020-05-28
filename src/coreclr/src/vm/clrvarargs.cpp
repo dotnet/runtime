@@ -22,7 +22,7 @@ DWORD VARARGS::CalcVaListSize(VARARGS *data)
     // the value since it counts the fixed args as well as the varargs. But that's harmless.
 
     DWORD dwVaListSize = data->ArgCookie->sizeOfArgs;
-#ifndef _TARGET_X86_
+#ifndef TARGET_X86
     dwVaListSize += ARGUMENTREGISTERS_SIZE;
 #endif
     return dwVaListSize;
@@ -32,7 +32,7 @@ void VARARGS::MarshalToManagedVaList(va_list va, VARARGS *dataout)
 {
     WRAPPER_NO_CONTRACT
 
-#ifndef PLATFORM_UNIX
+#ifndef TARGET_UNIX
     _ASSERTE(dataout != NULL);
     dataout->SigPtr = SigPointer(NULL, 0);
     dataout->ArgCookie = NULL;
@@ -49,7 +49,7 @@ void
 VARARGS::MarshalToUnmanagedVaList(
     va_list va, DWORD cbVaListSize, const VARARGS * data)
 {
-#ifndef PLATFORM_UNIX
+#ifndef TARGET_UNIX
     BYTE * pdstbuffer = (BYTE *)va;
 
     int    remainingArgs = data->RemainingArgs;
@@ -84,14 +84,14 @@ VARARGS::MarshalToUnmanagedVaList(
                         cbSize = sizeof(void*);
                     #endif
 
-#ifdef _TARGET_ARM_
+#ifdef TARGET_ARM
                     if (cbSize == 8)
                     {
                         // 64-bit primitives come from and must be copied to 64-bit aligned locations.
                         psrc = (BYTE*)ALIGN_UP(psrc, 8);
                         pdst = (BYTE*)ALIGN_UP(pdst, 8);
                     }
-#endif // _TARGET_ARM_
+#endif // TARGET_ARM
 
                     #ifdef STACK_GROWS_DOWN_ON_ARGS_WALK
                     psrc -= cbSize;

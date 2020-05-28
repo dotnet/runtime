@@ -1,5 +1,5 @@
 ﻿<Project DefaultTargets="Build">
-  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), Directory.Build.props))\Directory.Build.props" />
+  <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.props))" />
   <PropertyGroup>
     <!-- This package is part of the ASP.NET Targeting pack so we require a netcoreapp ref in the package.
     In order to avoid problems with RAR when targeting desktop, we remove all exclude=compile from package dependencies. -->
@@ -12,5 +12,5 @@
     <ProjectReference Include="..\src\System.IO.Pipelines.csproj" />
     <HarvestIncludePaths Include="lib/netstandard1.3" />
   </ItemGroup>
-  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), Directory.Build.targets))\Directory.Build.targets" />
+  <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.targets))" />
 </Project>

@@ -10,7 +10,7 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
 
     public static class DecryptorReusabilty
     {
-        // See https://github.com/dotnet/corefx/issues/18903 for details
+        // See https://github.com/dotnet/runtime/issues/21354 for details
         [ConditionalFact(nameof(ShouldDecryptorBeReusable))]
         public static void TestDecryptorReusability()
         {
@@ -70,7 +70,7 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
 
         private static bool ShouldDecryptorBeReusable()
         {
-            if (!PlatformDetection.IsFullFramework)
+            if (!PlatformDetection.IsNetFramework)
                 return true;
 
             bool doNotResetDecryptor;

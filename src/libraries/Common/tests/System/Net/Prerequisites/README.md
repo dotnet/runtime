@@ -12,7 +12,7 @@ Note: the `config.ps1` file has been added to .gitignore to prevent it being upd
 
 ### Build the server applications 
 
-Prepare the $COREFX_NET_CLIENT_Machine as any Dev station following the instructions at https://github.com/dotnet/runtime/blob/master/docs/libraries/building/windows-instructions.md. Ensure that you can build and test CoreFX on this machine.
+Prepare the $DOTNET_TEST_NET_CLIENT_Machine as any Dev station following the instructions at https://github.com/dotnet/runtime/blob/master/docs/workflow/requirements/windows-requirements.md. Ensure that you can build and test CoreFX on this machine.
 In addition, you will also need to install the _Azure development_ workload for Visual Studio 2017.
 
 From a Visual Studio command prompt:

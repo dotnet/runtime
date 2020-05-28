@@ -23,7 +23,7 @@ namespace System.Collections.Immutable
             /// <summary>
             /// The remaining stack not yet enumerated.
             /// </summary>
-            private ImmutableStack<T> _remainingStack;
+            private ImmutableStack<T>? _remainingStack;
 
             /// <summary>
             /// Initializes a new instance of the <see cref="Enumerator"/> struct.
@@ -87,7 +87,7 @@ namespace System.Collections.Immutable
             /// <summary>
             /// The remaining stack not yet enumerated.
             /// </summary>
-            private ImmutableStack<T> _remainingStack;
+            private ImmutableStack<T>? _remainingStack;
 
             /// <summary>
             /// A flag indicating whether this enumerator has been disposed.
@@ -126,7 +126,7 @@ namespace System.Collections.Immutable
             /// <summary>
             /// Gets the current element.
             /// </summary>
-            object IEnumerator.Current
+            object? IEnumerator.Current
             {
                 get { return this.Current; }
             }

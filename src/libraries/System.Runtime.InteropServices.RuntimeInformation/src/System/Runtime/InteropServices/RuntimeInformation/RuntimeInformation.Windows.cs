@@ -19,7 +19,25 @@ namespace System.Runtime.InteropServices
             return OSPlatform.Windows == osPlatform;
         }
 
-        public static string OSDescription => s_osDescription ??= Interop.NtDll.RtlGetVersion();
+        public static string OSDescription
+        {
+            get
+            {
+                string? osDescription = s_osDescription;
+                if (osDescription is null)
+                {
+                    OperatingSystem os = Environment.OSVersion;
+                    Version v = os.Version;
+
+                    const string Version = "Microsoft Windows";
+                    s_osDescription = osDescription = string.IsNullOrEmpty(os.ServicePack) ?
+                        $"{Version} {(uint)v.Major}.{(uint)v.Minor}.{(uint)v.Build}" :
+                        $"{Version} {(uint)v.Major}.{(uint)v.Minor}.{(uint)v.Build} {os.ServicePack}";
+                }
+
+                return osDescription;
+            }
+        }
 
         public static Architecture OSArchitecture
         {

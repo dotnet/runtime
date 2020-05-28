@@ -2,7 +2,7 @@
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
-    <Configurations>netcoreapp-Debug;netcoreapp-Release;netfx-Debug;netfx-Release</Configurations>
+    <TargetFrameworks>$(NetCoreAppCurrent);$(NetFrameworkCurrent)</TargetFrameworks>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="BitmapTests.cs" />
@@ -21,6 +21,7 @@
     <Compile Include="DrawingTest.cs" />
     <Compile Include="FontTests.cs" />
     <Compile Include="FontFamilyTests.cs" />
+    <Compile Include="GdiplusTests.cs" />
     <Compile Include="GraphicsTests.cs" />
     <Compile Include="Graphics_DrawBezierTests.cs" />
     <Compile Include="Graphics_DrawLineTests.cs" />
@@ -33,7 +34,7 @@
     <Compile Include="mono\System.Drawing.Imaging\GifCodecTests.cs" />
     <Compile Include="mono\System.Drawing.Imaging\IconCodecTests.cs" />
     <Compile Include="mono\System.Drawing.Imaging\JpegCodecTests.cs" />
-    <Compile Include="mono\System.Drawing.Imaging\PngCodecTesst.cs" />
+    <Compile Include="mono\System.Drawing.Imaging\PngCodecTests.cs" />
     <Compile Include="mono\System.Drawing.Imaging\TiffCodecTests.cs" />
     <Compile Include="mono\System.Drawing\GraphicsTests.cs" />
     <Compile Include="mono\System.Imaging\MetafileTest.cs" />
@@ -78,15 +79,12 @@
     <Compile Include="Printing\PaperSizeTests.cs" />
     <Compile Include="Printing\PaperSourceTests.cs" />
     <Compile Include="Printing\PrinterUnitConvertTests.cs" />
-    <Compile Include="$(CommonTestPath)System\Diagnostics\DebuggerAttributes.cs">
-      <Link>Common\System\Diagnostics\DebuggerAttributes.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonTestPath)System\Drawing\Helpers.cs">
-      <Link>Common\System\Drawing\Helpers.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonTestPath)System\IO\TempFile.cs">
-      <Link>Common\System\IO\TempFile.cs</Link>
-    </Compile>
+    <Compile Include="$(CommonTestPath)System\Diagnostics\DebuggerAttributes.cs"
+             Link="Common\System\Diagnostics\DebuggerAttributes.cs" />
+    <Compile Include="$(CommonTestPath)System\Drawing\Helpers.cs"
+             Link="Common\System\Drawing\Helpers.cs" />
+    <Compile Include="$(CommonTestPath)System\IO\TempFile.cs"
+             Link="Common\System\IO\TempFile.cs" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="System.Drawing.Common.TestData" Version="$(SystemDrawingCommonTestDataVersion)" GeneratePathProperty="true" />    

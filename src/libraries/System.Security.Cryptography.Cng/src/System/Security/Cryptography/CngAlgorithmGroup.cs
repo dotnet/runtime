@@ -37,7 +37,7 @@ namespace System.Security.Cryptography
             }
         }
 
-        public static bool operator ==(CngAlgorithmGroup left, CngAlgorithmGroup right)
+        public static bool operator ==(CngAlgorithmGroup? left, CngAlgorithmGroup? right)
         {
             if (object.ReferenceEquals(left, null))
             {
@@ -47,7 +47,7 @@ namespace System.Security.Cryptography
             return left.Equals(right);
         }
 
-        public static bool operator !=(CngAlgorithmGroup left, CngAlgorithmGroup right)
+        public static bool operator !=(CngAlgorithmGroup? left, CngAlgorithmGroup? right)
         {
             if (object.ReferenceEquals(left, null))
             {
@@ -57,14 +57,14 @@ namespace System.Security.Cryptography
             return !left.Equals(right);
         }
 
-        public override bool Equals(object obj)
+        public override bool Equals(object? obj)
         {
             Debug.Assert(_algorithmGroup != null);
 
             return Equals(obj as CngAlgorithmGroup);
         }
 
-        public bool Equals(CngAlgorithmGroup other)
+        public bool Equals(CngAlgorithmGroup? other)
         {
             if (object.ReferenceEquals(other, null))
             {
@@ -130,11 +130,11 @@ namespace System.Security.Cryptography
             }
         }
 
-        private static CngAlgorithmGroup s_dh;
-        private static CngAlgorithmGroup s_dsa;
-        private static CngAlgorithmGroup s_ecdh;
-        private static CngAlgorithmGroup s_ecdsa;
-        private static CngAlgorithmGroup s_rsa;
+        private static CngAlgorithmGroup? s_dh;
+        private static CngAlgorithmGroup? s_dsa;
+        private static CngAlgorithmGroup? s_ecdh;
+        private static CngAlgorithmGroup? s_ecdsa;
+        private static CngAlgorithmGroup? s_rsa;
 
         private readonly string _algorithmGroup;
     }

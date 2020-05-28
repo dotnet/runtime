@@ -9,7 +9,7 @@ namespace System.Security.Cryptography
     /// </summary>
     public struct ECPoint
     {
-        public byte[] X;
-        public byte[] Y;
+        public byte[]? X;
+        public byte[]? Y;
     }
 }

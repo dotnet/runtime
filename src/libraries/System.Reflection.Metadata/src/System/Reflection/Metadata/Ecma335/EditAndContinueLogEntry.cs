@@ -15,7 +15,7 @@ namespace System.Reflection.Metadata.Ecma335
             Operation = operation;
         }
 
-        public override bool Equals(object obj) =>
+        public override bool Equals(object? obj) =>
             obj is EditAndContinueLogEntry && Equals((EditAndContinueLogEntry)obj);
 
         public bool Equals(EditAndContinueLogEntry other) =>

@@ -33,6 +33,7 @@ public:
 
     OBJECTHANDLE ConstructStringLiteral(mdToken metaTok);
     BOOL IsValidStringRef(mdToken metaTok);
+    int GetStringLiteralLength(mdToken metaTok);
     void ResolveToken(mdToken token, TypeHandle * pTH, MethodDesc ** ppMD, FieldDesc ** ppFD);
     SigPointer ResolveSignature(mdToken token);
     SigPointer ResolveSignatureForVarArg(mdToken token);
@@ -46,8 +47,6 @@ public:
     // -----------------------------------
     // ILStubResolver-specific methods
     // -----------------------------------
-    bool IsNativeToCLRInteropStub();
-    bool IsCLRToNativeInteropStub();
     MethodDesc* GetStubMethodDesc();
     MethodDesc* GetStubTargetMethodDesc();
     void SetStubTargetMethodDesc(MethodDesc* pStubTargetMD);
@@ -74,7 +73,6 @@ public:
 
     static void StubGenFailed(ILStubResolver* pResolver);
 
-protected:
     enum ILStubType
     {
         Unassigned = 0,
@@ -96,7 +94,14 @@ protected:
         UnboxingILStub,
         InstantiatingStub,
 #endif
+        TailCallStoreArgsStub,
+        TailCallCallTargetStub,
+        TailCallDispatcherStub,
     };
+
+    ILStubType GetStubType();
+
+protected:
 
     enum CompileTimeStatePtrSpecialValues
     {

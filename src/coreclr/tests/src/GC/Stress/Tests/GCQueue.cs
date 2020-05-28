@@ -40,26 +40,26 @@ namespace DefaultNamespace
     internal class GCQueue
     {
         internal static Queue G_Queue;
-        public static int Main(String[] Args)
+        public static int Main(string[] args)
         {
             int iRep = 0;
             int iObj = 0;
             Console.Out.WriteLine("Test should return with ExitCode 100 ...");
 
-            switch (Args.Length)
+            switch (args.Length)
             {
                 case 1:
-                    if (!Int32.TryParse(Args[0], out iRep))
+                    if (!Int32.TryParse(args[0], out iRep))
                     {
                         iRep = 5;
                     }
                     break;
                 case 2:
-                    if (!Int32.TryParse(Args[0], out iRep))
+                    if (!Int32.TryParse(args[0], out iRep))
                     {
                         iRep = 5;
                     }
-                    if (!Int32.TryParse(Args[1], out iObj))
+                    if (!Int32.TryParse(args[1], out iObj))
                     {
                         iObj = 5000;
                     }

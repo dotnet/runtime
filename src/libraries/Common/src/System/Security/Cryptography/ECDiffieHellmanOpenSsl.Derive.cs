@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System.Diagnostics;
 using Microsoft.Win32.SafeHandles;
 
@@ -22,8 +23,8 @@ namespace System.Security.Cryptography
             public override byte[] DeriveKeyFromHash(
                 ECDiffieHellmanPublicKey otherPartyPublicKey,
                 HashAlgorithmName hashAlgorithm,
-                byte[] secretPrepend,
-                byte[] secretAppend)
+                byte[]? secretPrepend,
+                byte[]? secretAppend)
             {
                 if (otherPartyPublicKey == null)
                     throw new ArgumentNullException(nameof(otherPartyPublicKey));
@@ -43,9 +44,9 @@ namespace System.Security.Cryptography
             public override byte[] DeriveKeyFromHmac(
                 ECDiffieHellmanPublicKey otherPartyPublicKey,
                 HashAlgorithmName hashAlgorithm,
-                byte[] hmacKey,
-                byte[] secretPrepend,
-                byte[] secretAppend)
+                byte[]? hmacKey,
+                byte[]? secretPrepend,
+                byte[]? secretAppend)
             {
                 if (otherPartyPublicKey == null)
                     throw new ArgumentNullException(nameof(otherPartyPublicKey));
@@ -84,7 +85,7 @@ namespace System.Security.Cryptography
             /// <summary>
             /// Get the secret agreement generated between two parties
             /// </summary>
-            private byte[] DeriveSecretAgreement(ECDiffieHellmanPublicKey otherPartyPublicKey, IncrementalHash hasher)
+            private byte[]? DeriveSecretAgreement(ECDiffieHellmanPublicKey otherPartyPublicKey, IncrementalHash? hasher)
             {
                 Debug.Assert(otherPartyPublicKey != null);
 
@@ -92,7 +93,7 @@ namespace System.Security.Cryptography
                 // which will throw an OpenSslCryptoException if no private key is available
                 ECParameters thisKeyExplicit = ExportExplicitParameters(true);
                 bool thisIsNamed = Interop.Crypto.EcKeyHasCurveName(_key.Value);
-                ECDiffieHellmanOpenSslPublicKey otherKey = otherPartyPublicKey as ECDiffieHellmanOpenSslPublicKey;
+                ECDiffieHellmanOpenSslPublicKey? otherKey = otherPartyPublicKey as ECDiffieHellmanOpenSslPublicKey;
                 bool disposeOtherKey = false;
 
                 if (otherKey == null)
@@ -109,9 +110,9 @@ namespace System.Security.Cryptography
 
                 bool otherIsNamed = otherKey.HasCurveName;
 
-                SafeEvpPKeyHandle ourKey = null;
-                SafeEvpPKeyHandle theirKey = null;
-                byte[] rented = null;
+                SafeEvpPKeyHandle? ourKey = null;
+                SafeEvpPKeyHandle? theirKey = null;
+                byte[]? rented = null;
                 int secretLength = 0;
 
                 try

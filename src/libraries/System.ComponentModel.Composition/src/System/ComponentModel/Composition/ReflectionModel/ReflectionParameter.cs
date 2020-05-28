@@ -27,7 +27,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
             get { return _parameter; }
         }
 
-        public override string Name
+        public override string? Name
         {
             get { return UnderlyingParameter.Name; }
         }

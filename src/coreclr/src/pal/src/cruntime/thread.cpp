@@ -37,16 +37,3 @@ PAL_exit(int status)
     LOGEXIT ("exit returns void");
     PERF_EXIT(exit);
 }
-
-int
-PAL_atexit(void (__cdecl *function)(void))
-{
-    int ret;
-
-    PERF_ENTRY(atexit);
-    ENTRY ("atexit(function=%p)\n", function);
-    ret = atexit(function);
-    LOGEXIT ("atexit returns int %d", ret);
-    PERF_EXIT(atexit);
-    return ret;
-}

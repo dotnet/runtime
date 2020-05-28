@@ -13,7 +13,6 @@
 #include "mlinfo.h"
 #include "eeconfig.h"
 #include "olevariant.h"
-#include "nativefieldflags.h"
 
 #ifdef FEATURE_PREJIT
 #include "compile.h"
@@ -47,24 +46,8 @@ enum class ParseNativeTypeFlags : int
 {
     None    = 0x00,
     IsAnsi  = 0x01,
-#ifdef FEATURE_COMINTEROP
     IsWinRT = 0x02,
-#endif // FEATURE_COMINTEROP
 };
-
-VOID ParseNativeType(Module*    pModule,
-    SigPointer                  sig,
-    mdFieldDef                  fd,
-    ParseNativeTypeFlags        flags,
-    NativeFieldDescriptor*      pNFD,
-    const SigTypeContext *      pTypeContext
-#ifdef _DEBUG
-    ,
-    LPCUTF8                     szNamespace,
-    LPCUTF8                     szClassName,
-    LPCUTF8                     szFieldName
-#endif
-);
 
 //=======================================================================
 // This function returns TRUE if the type passed in is either a value class or a class and if it has layout information
@@ -72,14 +55,37 @@ VOID ParseNativeType(Module*    pModule,
 //=======================================================================
 BOOL IsStructMarshalable(TypeHandle th);
 
+bool IsFieldBlittable(
+    Module* pModule,
+    mdFieldDef fd,
+    SigPointer fieldSig,
+    const SigTypeContext* pTypeContext,
+    ParseNativeTypeFlags flags
+);
+
+// Describes specific categories of native fields.
+enum class NativeFieldCategory : short
+{
+    // The native representation of the field is a floating point field.
+    FLOAT,
+    // The field has a nested MethodTable* (i.e. a field of a struct, class, or array)
+    NESTED,
+    // The native representation of the field can be treated as an integer.
+    INTEGER,
+    // The field is illegal to marshal.
+    ILLEGAL
+};
+
 class NativeFieldDescriptor
 {
 public:
     NativeFieldDescriptor();
 
-    NativeFieldDescriptor(NativeFieldFlags flags, ULONG nativeSize, ULONG alignment);
+    NativeFieldDescriptor(PTR_FieldDesc pFD);
 
-    NativeFieldDescriptor(PTR_MethodTable pMT, int numElements = 1, bool isBlittable = false);
+    NativeFieldDescriptor(PTR_FieldDesc pFD, NativeFieldCategory flags, ULONG nativeSize, ULONG alignment);
+
+    NativeFieldDescriptor(PTR_FieldDesc pFD, PTR_MethodTable pMT, int numElements = 1);
 
     NativeFieldDescriptor(const NativeFieldDescriptor& other);
 
@@ -87,34 +93,9 @@ public:
 
     ~NativeFieldDescriptor() = default;
 
-#if defined(FEATURE_PREJIT) && !defined(DACCESS_COMPILE)
-    void Save(DataImage * image)
+    NativeFieldCategory GetCategory() const
     {
-        STANDARD_VM_CONTRACT;
-    }
-
-    void Fixup(DataImage * image)
-    {
-        STANDARD_VM_CONTRACT;
-
-        image->FixupFieldDescPointer(this, &m_pFD);
-
-        if (m_isNestedType)
-        {
-            image->FixupMethodTablePointer(this, &nestedTypeAndCount.m_pNestedType);
-        }
-    }
-#endif // defined(FEATURE_PREJIT) && !defined(DACCESS_COMPILE)
-
-#ifdef _DEBUG
-    BOOL IsRestored() const;
-#endif
-
-    void Restore();
-
-    NativeFieldFlags GetNativeFieldFlags() const
-    {
-        return m_flags;
+        return m_category;
     }
 
     PTR_MethodTable GetNestedNativeMethodTable() const;
@@ -123,7 +104,7 @@ public:
     {
         CONTRACTL
         {
-            PRECONDITION(m_isNestedType);
+            PRECONDITION(IsNestedType());
         }
         CONTRACTL_END;
 
@@ -132,9 +113,10 @@ public:
 
     UINT32 NativeSize() const
     {
-        if (m_isNestedType)
+        if (IsNestedType())
         {
-            return GetNestedNativeMethodTable()->GetLayoutInfo()->GetNativeSize() * GetNumElements();
+            MethodTable* pMT = GetNestedNativeMethodTable();
+            return pMT->GetNativeSize() * GetNumElements();
         }
         else
         {
@@ -142,21 +124,9 @@ public:
         }
     }
 
-    UINT32 AlignmentRequirement() const
-    {
-        if (m_isNestedType)
-        {
-            return GetNestedNativeMethodTable()->GetLayoutInfo()->GetLargestAlignmentRequirementOfAllMembers();
-        }
-        else
-        {
-            return nativeSizeAndAlignment.m_alignmentRequirement;
-        }
-    }
+    UINT32 AlignmentRequirement() const;
 
     PTR_FieldDesc GetFieldDesc() const;
-
-    void SetFieldDesc(PTR_FieldDesc pFD);
 
     UINT32 GetExternalOffset() const
     {
@@ -168,23 +138,23 @@ public:
         m_offset = offset;
     }
 
-    BOOL IsUnmarshalable() const
+    bool IsUnmarshalable() const
     {
-        return m_flags == NATIVE_FIELD_CATEGORY_ILLEGAL ? TRUE : FALSE;
-    }
-
-    BOOL IsBlittable() const
-    {
-        return m_flags & NATIVE_FIELD_SUBCATEGORY_BLITTABLE ? TRUE : FALSE;
+        return m_category == NativeFieldCategory::ILLEGAL;
     }
 
 private:
-    RelativeFixupPointer<PTR_FieldDesc> m_pFD;
+    bool IsNestedType() const
+    {
+        return m_category == NativeFieldCategory::NESTED;
+    }
+
+    PTR_FieldDesc m_pFD;
     union
     {
         struct
         {
-            RelativeFixupPointer<PTR_MethodTable> m_pNestedType;
+            PTR_MethodTable m_pNestedType;
             ULONG m_numElements;
         } nestedTypeAndCount;
         struct
@@ -194,9 +164,22 @@ private:
         } nativeSizeAndAlignment;
     };
     UINT32 m_offset;
-    NativeFieldFlags m_flags;
-    bool m_isNestedType;
+    NativeFieldCategory m_category;
 };
+
+VOID ParseNativeType(Module* pModule,
+    SigPointer                  sig,
+    PTR_FieldDesc               fd,
+    ParseNativeTypeFlags        flags,
+    NativeFieldDescriptor* pNFD,
+    const SigTypeContext* pTypeContext
+#ifdef _DEBUG
+    ,
+    LPCUTF8                     szNamespace,
+    LPCUTF8                     szClassName,
+    LPCUTF8                     szFieldName
+#endif
+);
 
 //=======================================================================
 // The classloader stores an intermediate representation of the layout
@@ -212,17 +195,131 @@ private:
 struct LayoutRawFieldInfo
 {
     mdFieldDef  m_MD;             // mdMemberDefNil for end of array
-    RawFieldPlacementInfo m_nativePlacement; // Description of the native field placement
     ULONG       m_sequence;       // sequence # from metadata
-
-
-    // The LayoutKind.Sequential attribute now affects managed layout as well.
-    // So we need to keep a parallel set of layout data for the managed side. The Size and AlignmentReq
-    // is redundant since we can figure it out from the sig but since we're already accessing the sig
-    // in ParseNativeType, we might as well capture it at that time.
-    RawFieldPlacementInfo m_managedPlacement;
-
+    RawFieldPlacementInfo m_placement;
     NativeFieldDescriptor m_nfd;
 };
 
+
+class EEClassNativeLayoutInfo
+{
+private:
+    uint8_t m_alignmentRequirement;
+#ifdef UNIX_AMD64_ABI
+    bool m_passInRegisters;
+#endif
+#ifdef FEATURE_HFA
+    enum class HFAType : uint8_t
+    {
+        Unset = ELEMENT_TYPE_END,
+        R4 = ELEMENT_TYPE_R4,
+        R8 = ELEMENT_TYPE_R8,
+        R16 = ELEMENT_TYPE_VALUETYPE
+    };
+    HFAType m_hfaType;
+#endif
+    bool m_isMarshalable;
+    uint32_t m_size;
+    uint32_t m_numFields;
+
+    // An array of NativeFieldDescriptors off the end of this object, used to drive call-time
+    // marshaling of NStruct reference parameters. The number of elements
+    // equals m_numFields.
+    NativeFieldDescriptor m_nativeFieldDescriptors[0];
+
+    static PTR_EEClassNativeLayoutInfo CollectNativeLayoutFieldMetadataThrowing(MethodTable* pMT);
+public:
+    static void InitializeNativeLayoutFieldMetadataThrowing(MethodTable* pMT);
+
+    uint32_t GetSize() const
+    {
+        LIMITED_METHOD_CONTRACT;
+        return m_size;
+    }
+
+    uint8_t GetLargestAlignmentRequirement() const
+    {
+        LIMITED_METHOD_CONTRACT;
+        return m_alignmentRequirement;
+    }
+
+    uint32_t GetNumFields() const
+    {
+        LIMITED_METHOD_CONTRACT;
+        return m_numFields;
+    }
+
+    NativeFieldDescriptor * GetNativeFieldDescriptors()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return &m_nativeFieldDescriptors[0];
+    }
+
+    NativeFieldDescriptor const* GetNativeFieldDescriptors() const
+    {
+        LIMITED_METHOD_CONTRACT;
+        return &m_nativeFieldDescriptors[0];
+    }
+
+    CorElementType GetNativeHFATypeRaw() const;
+
+#ifdef FEATURE_HFA
+    bool IsNativeHFA() const
+    {
+        LIMITED_METHOD_CONTRACT;
+        return m_hfaType != HFAType::Unset;
+    }
+
+    CorElementType GetNativeHFAType() const
+    {
+        LIMITED_METHOD_CONTRACT;
+        return (CorElementType)m_hfaType;
+    }
+
+    void SetHFAType(CorElementType hfaType)
+    {
+        LIMITED_METHOD_CONTRACT;
+        // We should call this at most once.
+        _ASSERTE(m_hfaType == HFAType::Unset);
+        m_hfaType = (HFAType)hfaType;
+    }
+#else
+    bool IsNativeHFA() const
+    {
+        return GetNativeHFATypeRaw() != ELEMENT_TYPE_END;
+    }
+    CorElementType GetNativeHFAType() const
+    {
+        return GetNativeHFATypeRaw();
+    }
+#endif
+
+#ifdef UNIX_AMD64_ABI
+    bool IsNativeStructPassedInRegisters() const
+    {
+        LIMITED_METHOD_CONTRACT;
+        return m_passInRegisters;
+    }
+    void SetNativeStructPassedInRegisters()
+    {
+        LIMITED_METHOD_CONTRACT;
+        m_passInRegisters = true;
+    }
+#else
+    bool IsNativeStructPassedInRegisters() const
+    {
+        return false;
+    }
+#endif
+
+    bool IsMarshalable() const
+    {
+        return m_isMarshalable;
+    }
+
+    void SetIsMarshalable(bool isMarshalable)
+    {
+        m_isMarshalable = isMarshalable;
+    }
+};
 #endif // __FieldMarshaler_h__

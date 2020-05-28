@@ -15,16 +15,16 @@ namespace System.Security.Cryptography.X509Certificates.Asn1
     {
         internal System.Security.Cryptography.X509Certificates.Asn1.TimeAsn NotBefore;
         internal System.Security.Cryptography.X509Certificates.Asn1.TimeAsn NotAfter;
-      
+
         internal void Encode(AsnWriter writer)
         {
             Encode(writer, Asn1Tag.Sequence);
         }
-    
+
         internal void Encode(AsnWriter writer, Asn1Tag tag)
         {
             writer.PushSequence(tag);
-            
+
             NotBefore.Encode(writer);
             NotAfter.Encode(writer);
             writer.PopSequence(tag);
@@ -34,34 +34,28 @@ namespace System.Security.Cryptography.X509Certificates.Asn1
         {
             return Decode(Asn1Tag.Sequence, encoded, ruleSet);
         }
-        
+
         internal static ValidityAsn Decode(Asn1Tag expectedTag, ReadOnlyMemory<byte> encoded, AsnEncodingRules ruleSet)
         {
-            AsnReader reader = new AsnReader(encoded, ruleSet);
-            
-            Decode(reader, expectedTag, out ValidityAsn decoded);
+            AsnValueReader reader = new AsnValueReader(encoded.Span, ruleSet);
+
+            Decode(ref reader, expectedTag, encoded, out ValidityAsn decoded);
             reader.ThrowIfNotEmpty();
             return decoded;
         }
 
-        internal static void Decode(AsnReader reader, out ValidityAsn decoded)
+        internal static void Decode(ref AsnValueReader reader, ReadOnlyMemory<byte> rebind, out ValidityAsn decoded)
         {
-            if (reader == null)
-                throw new ArgumentNullException(nameof(reader));
-
-            Decode(reader, Asn1Tag.Sequence, out decoded);
+            Decode(ref reader, Asn1Tag.Sequence, rebind, out decoded);
         }
 
-        internal static void Decode(AsnReader reader, Asn1Tag expectedTag, out ValidityAsn decoded)
+        internal static void Decode(ref AsnValueReader reader, Asn1Tag expectedTag, ReadOnlyMemory<byte> rebind, out ValidityAsn decoded)
         {
-            if (reader == null)
-                throw new ArgumentNullException(nameof(reader));
-
             decoded = default;
-            AsnReader sequenceReader = reader.ReadSequence(expectedTag);
-            
-            System.Security.Cryptography.X509Certificates.Asn1.TimeAsn.Decode(sequenceReader, out decoded.NotBefore);
-            System.Security.Cryptography.X509Certificates.Asn1.TimeAsn.Decode(sequenceReader, out decoded.NotAfter);
+            AsnValueReader sequenceReader = reader.ReadSequence(expectedTag);
+
+            System.Security.Cryptography.X509Certificates.Asn1.TimeAsn.Decode(ref sequenceReader, rebind, out decoded.NotBefore);
+            System.Security.Cryptography.X509Certificates.Asn1.TimeAsn.Decode(ref sequenceReader, rebind, out decoded.NotAfter);
 
             sequenceReader.ThrowIfNotEmpty();
         }

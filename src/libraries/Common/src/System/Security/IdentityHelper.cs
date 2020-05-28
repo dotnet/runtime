@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System.Diagnostics;
 using System.IO;
 using System.Reflection;
@@ -29,7 +30,7 @@ namespace System.Security
         /// </summary>
         internal static string GetNormalizedUriHash(Uri uri)
         {
-            // On desktop System.Security.Url is used as evidence, it has an internal Normalize() method.
+            // On .NET Framework System.Security.Url is used as evidence, it has an internal Normalize() method.
             // Uri.ToString() appears to be functionally equivalent.
             return GetStrongHashSuitableForObjectName(uri.ToString());
         }
@@ -38,9 +39,9 @@ namespace System.Security
         /// Uses the AssemblyName's public key to generate a hash equivalent to what
         /// StrongName.Normalize() gives.
         /// </summary>
-        internal static string GetNormalizedStrongNameHash(AssemblyName name)
+        internal static string? GetNormalizedStrongNameHash(AssemblyName name)
         {
-            byte[] publicKey = name.GetPublicKey();
+            byte[]? publicKey = name.GetPublicKey();
 
             // If we don't have a key, we're not strong named
             if (publicKey == null || publicKey.Length == 0)
@@ -51,8 +52,8 @@ namespace System.Security
             using (BinaryWriter bw = new BinaryWriter(ms))
             {
                 bw.Write(publicKey);
-                bw.Write(name.Version.Major);
-                bw.Write(name.Name);
+                bw.Write(name.Version!.Major);
+                bw.Write(name.Name!);
 
                 ms.Position = 0;
                 return GetStrongHashSuitableForObjectName(ms);
@@ -80,7 +81,7 @@ namespace System.Security
             }
         }
 
-        // This is from the NetFX Path class. The implementation in CoreFx was optimized for internal Path usage so
+        // This is from the .NET Framework Path class. The implementation in the runtime libraries was optimized for internal Path usage so
         // we can't share the implementation.
         internal static string ToBase32StringSuitableForDirName(byte[] buff)
         {

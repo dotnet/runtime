@@ -79,7 +79,7 @@ public:
     //
     void* m_StackAddress; // A pseudo or real stack location for this record.
 
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
 private:
     EHWatsonBucketTracker m_WatsonBucketTracker;
 public:
@@ -89,25 +89,6 @@ public:
         return PTR_EHWatsonBucketTracker(PTR_HOST_MEMBER_TADDR(ExInfo, this, m_WatsonBucketTracker));
     }
 #endif
-
-#ifdef FEATURE_CORRUPTING_EXCEPTIONS
-private:
-    CorruptionSeverity      m_CorruptionSeverity;
-public:
-    inline CorruptionSeverity GetCorruptionSeverity()
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        return (CorruptionSeverity)GET_CORRUPTION_SEVERITY(m_CorruptionSeverity);
-    }
-
-    inline void SetCorruptionSeverity(CorruptionSeverity severityToSet)
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        m_CorruptionSeverity = severityToSet;
-    }
-#endif // FEATURE_CORRUPTING_EXCEPTIONS
 
 private:
     BOOL                    m_fDeliveredFirstChanceNotification;
@@ -156,7 +137,7 @@ public:
     EHClauseInfo        m_EHClauseInfo;
     ExceptionFlags      m_ExceptionFlags;
 
-#if defined(_TARGET_X86_) && defined(DEBUGGING_SUPPORTED)
+#if defined(TARGET_X86) && defined(DEBUGGING_SUPPORTED)
     EHContext           m_InterceptionContext;
     BOOL                m_ValidInterceptionContext;
 #endif
@@ -175,9 +156,9 @@ private:
     ExInfo& operator=(const ExInfo &from);
 };
 
-#if defined(_TARGET_X86_)
+#if defined(TARGET_X86)
 PTR_ExInfo GetEHTrackerForPreallocatedException(OBJECTREF oPreAllocThrowable, PTR_ExInfo pStartingEHTracker);
-#endif // _TARGET_X86_
+#endif // TARGET_X86
 
 #endif // !FEATURE_EH_FUNCLETS
 #endif // __ExInfo_h__

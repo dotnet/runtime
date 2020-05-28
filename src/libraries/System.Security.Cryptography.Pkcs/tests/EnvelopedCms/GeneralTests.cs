@@ -28,7 +28,7 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
 
             // net48 changes the default to AES-256-CBC, older versions (and quirk) are
             // DES3-EDE-CBC
-            if (PlatformDetection.IsFullFramework)
+            if (PlatformDetection.IsNetFramework)
             {
                 supportedAlgorithms = new[] { Oids.TripleDesCbc, Oids.Aes256 };
             }
@@ -165,7 +165,7 @@ KoZIhvcNAwcECJ01qtX2EKx6oIAEEM7op+R2U3GQbYwlEj5X+h0AAAAAAAAAAAAA
 
             string expectedContentHex = "CEE8A7E4765371906D8C25123E57FA1D";
 
-            if (PlatformDetection.IsFullFramework)
+            if (PlatformDetection.IsNetFramework)
             {
                 // .NET Framework over-counts encrypted content.
                 expectedContentHex += "000000000000";
@@ -221,10 +221,10 @@ KoZIhvcNAwcECJ01qtX2EKx6oIAEEM7op+R2U3GQbYwlEj5X+h0AAAAAAAAAAAAA
         [Fact]
         public static void TestContent()
         {
-            // Tests that the content is what it is expected to be, even if it's still encyrpted. This prevents from ambiguous definitions of content.
+            // Tests that the content is what it is expected to be, even if it's still encrypted. This prevents from ambiguous definitions of content.
 
             // The encoded message was built in ASN.1 editor and tested in framework. It contains an enveloped message version 0 with one recipient of
-            // key transport type. The symmetric algorythm is 3DES and the contained type is data.
+            // key transport type. The symmetric algorithm is 3DES and the contained type is data.
             byte[] encodedMessage =
                  ("3082010c06092a864886f70d010703a081fe3081fb0201003181c83081c5020100302e301a311830160603550403130f5253"
                 + "414b65795472616e7366657231021031d935fb63e8cfab48a0bf7b397b67c0300d06092a864886f70d010101050004818013"
@@ -239,7 +239,7 @@ KoZIhvcNAwcECJ01qtX2EKx6oIAEEM7op+R2U3GQbYwlEj5X+h0AAAAAAAAAAAAA
 
             string expectedHex = "BCEA3A10D0737EB9";
 
-            if (PlatformDetection.IsFullFramework)
+            if (PlatformDetection.IsNetFramework)
             {
                 expectedHex = "BCEA3A10D0737EB9000000000000";
             }
@@ -361,7 +361,7 @@ KoZIhvcNAwcECJ01qtX2EKx6oIAEEM7op+R2U3GQbYwlEj5X+h0AAAAAAAAAAAAA
             byte[] encoded = ecms.Encode();
             EnvelopedCms reDecoded = new EnvelopedCms();
             reDecoded.Decode(encoded);
-            int expectedSize = PlatformDetection.IsFullFramework ? 22 : 16; //NetFx compat.
+            int expectedSize = PlatformDetection.IsNetFramework ? 22 : 16; //NetFx compat.
             Assert.Equal(expectedSize, reDecoded.ContentInfo.Content.Length);
         }
 

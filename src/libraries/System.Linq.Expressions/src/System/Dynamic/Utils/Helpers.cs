@@ -3,13 +3,14 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Dynamic.Utils
 {
     // Miscellaneous helpers that don't belong anywhere else
     internal static class Helpers
     {
-        internal static T CommonNode<T>(T first, T second, Func<T, T> parent) where T : class
+        internal static T? CommonNode<T>(T first, T second, Func<T, T> parent) where T : class
         {
             EqualityComparer<T> cmp = EqualityComparer<T>.Default;
             if (cmp.Equals(first, second))
@@ -31,7 +32,7 @@ namespace System.Dynamic.Utils
             return null;
         }
 
-        internal static void IncrementCount<T>(T key, Dictionary<T, int> dict)
+        internal static void IncrementCount<T>(T key, Dictionary<T, int> dict) where T : notnull
         {
             int count;
             dict.TryGetValue(key, out count);

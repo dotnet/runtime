@@ -4,7 +4,6 @@
 
 internal static partial class Interop
 {
-    // TODO #3562: Unify ErrorCodes.
     internal static partial class HttpApi
     {
         public const uint ERROR_SUCCESS = 0;

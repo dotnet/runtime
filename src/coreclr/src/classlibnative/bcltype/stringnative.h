@@ -35,17 +35,15 @@
 
 // Compile the string functionality with these pragma flags (equivalent of the command line /Ox flag)
 // Compiling this functionality differently gives us significant throughout gain in some cases.
-#if defined(_MSC_VER) && defined(_TARGET_X86_)
+#if defined(_MSC_VER) && defined(TARGET_X86)
 #pragma optimize("tgy", on)
 #endif
 
 class COMString {
 public:
     //
-    // Search/Query Methods
+    // Query Methods
     //
-    static FCDECL6(INT32, CompareOrdinalEx, StringObject* strA, INT32 indexA, INT32 countA, StringObject* strB, INT32 indexB, INT32 countB);
-
     static FCDECL2(FC_CHAR_RET, GetCharAt, StringObject* pThisRef, INT32 index);
     static FCDECL1(INT32, Length, StringObject* pThisRef);
 
@@ -57,7 +55,7 @@ public:
 };
 
 // Revert to command line compilation flags
-#if defined(_MSC_VER) && defined(_TARGET_X86_)
+#if defined(_MSC_VER) && defined(TARGET_X86)
 #pragma optimize ("", on)
 #endif
 

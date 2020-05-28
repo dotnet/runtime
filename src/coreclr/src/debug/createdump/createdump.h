@@ -11,14 +11,22 @@
 
 extern bool g_diagnostics;
 
+#ifdef HOST_UNIX
 #define TRACE(args...) \
         if (g_diagnostics) { \
             printf(args); \
         }
+#else
+#define TRACE(args, ...)
+#endif
 
+#ifdef HOST_UNIX
+#include "config.h"
+#endif
+
+#include <windows.h>
 #include <winternl.h>
 #include <winver.h>
-#include <windows.h>
 #include <stdlib.h>
 #include <stdint.h>
 #include <stddef.h>
@@ -32,11 +40,12 @@ extern bool g_diagnostics;
 #include <cordebug.h>
 #include <xcordebug.h>
 #include <mscoree.h>
-#include <dumpcommon.h>
 typedef int T_CONTEXT;
 #include <dacprivate.h>
 #include <arrayholder.h>
 #include <releaseholder.h>
+#ifdef HOST_UNIX
+#include <dumpcommon.h>
 #include <unistd.h>
 #include <signal.h>
 #include <sys/types.h>
@@ -45,19 +54,33 @@ typedef int T_CONTEXT;
 #include <sys/user.h>
 #include <sys/wait.h>
 #include <sys/procfs.h>
+#ifdef HAVE_PROCESS_VM_READV
+#include <sys/uio.h>
+#endif
 #include <dirent.h>
 #include <fcntl.h>
 #include <elf.h>
 #include <link.h>
 #define __STDC_FORMAT_MACROS
 #include <inttypes.h>
+#else
+#include <dbghelp.h>
+#endif
 #include <map>
 #include <set>
 #include <vector>
 #include <array>
 #include <string>
+#ifdef HOST_UNIX
 #include "datatarget.h"
 #include "threadinfo.h"
 #include "memoryregion.h"
 #include "crashinfo.h"
 #include "dumpwriter.h"
+#endif
+
+#ifndef MAX_LONGPATH
+#define MAX_LONGPATH   1024
+#endif
+
+bool CreateDump(const char* dumpPathTemplate, int pid, MINIDUMP_TYPE minidumpType);

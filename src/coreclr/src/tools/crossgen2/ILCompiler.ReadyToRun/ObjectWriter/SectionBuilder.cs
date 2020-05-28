@@ -4,15 +4,11 @@
 
 using System;
 using System.Collections.Generic;
-using System.Collections.Immutable;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Reflection;
 using System.Reflection.Metadata;
-using System.Reflection.Metadata.Ecma335;
 using System.Reflection.PortableExecutable;
-using System.Runtime.CompilerServices;
 
 using ILCompiler.DependencyAnalysis;
 
@@ -245,7 +241,10 @@ namespace ILCompiler.PEWriter
         DirectoryEntry _relocationDirectoryEntry;
 
         /// <summary>
-        /// Symbol representing the ready-to-run header table.
+        /// Symbol representing the ready-to-run COR (MSIL) header table.
+        /// Only present in single-file R2R executables. Composite R2R
+        /// executables don't have a COR header and locate the ReadyToRun
+        /// header directly using the well-known export symbol RTR_HEADER.
         /// </summary>
         ISymbolNode _corHeaderSymbol;
 
@@ -253,6 +252,16 @@ namespace ILCompiler.PEWriter
         /// Size of the ready-to-run header table in bytes.
         /// </summary>
         int _corHeaderSize;
+
+        /// <summary>
+        /// Symbol representing the debug directory.
+        /// </summary>
+        ISymbolNode _debugDirectorySymbol;
+
+        /// <summary>
+        /// Size of the debug directory in bytes.
+        /// </summary>
+        int _debugDirectorySize;
 
         /// <summary>
         /// Symbol representing the start of the win32 resources
@@ -348,6 +357,19 @@ namespace ILCompiler.PEWriter
         }
 
         /// <summary>
+        /// Look up final file position for a given symbol. This assumes the section have already been placed.
+        /// </summary>
+        /// <param name="symbol">Symbol to look up</param>
+        /// <returns>File position of the symbol, from the begining of the emitted image</returns>
+        public int GetSymbolFilePosition(ISymbolNode symbol)
+        {
+            SymbolTarget symbolTarget = _symbolMap[symbol];
+            Section section = _sections[symbolTarget.SectionIndex];
+            Debug.Assert(section.RVAWhenPlaced != 0);
+            return section.FilePosWhenPlaced + symbolTarget.Offset;
+        }
+
+        /// <summary>
         /// Attach an export symbol to the output PE file.
         /// </summary>
         /// <param name="name">Export symbol identifier</param>
@@ -385,6 +407,12 @@ namespace ILCompiler.PEWriter
             _corHeaderSize = headerSize;
         }
 
+        public void SetDebugDirectory(ISymbolNode symbol, int size)
+        {
+            _debugDirectorySymbol = symbol;
+            _debugDirectorySize = size;
+        }
+
         public void SetWin32Resources(ISymbolNode symbol, int resourcesSize)
         {
             _win32ResourcesSymbol = symbol;
@@ -410,8 +438,8 @@ namespace ILCompiler.PEWriter
         /// <param name="data">Block to add</param>
         /// <param name="sectionIndex">Section index</param>
         /// <param name="name">Node name to emit in the map file</param>
-        /// <param name="mapFile">Optional map file to emit</param>
-        public void AddObjectData(ObjectNode.ObjectData objectData, int sectionIndex, string name, TextWriter mapFile)
+        /// <param name="mapFileBuilder">Optional map file to emit</param>
+        public void AddObjectData(ObjectNode.ObjectData objectData, int sectionIndex, string name, MapFileBuilder mapFileBuilder)
         {
             Section section = _sections[sectionIndex];
 
@@ -448,9 +476,21 @@ namespace ILCompiler.PEWriter
                 }
             }
 
-            if (mapFile != null)
+            if (mapFileBuilder != null)
             {
-                mapFile.WriteLine($@"S{sectionIndex}+0x{alignedOffset:X4}..{(alignedOffset + objectData.Data.Length):X4}: {objectData.Data.Length:X4} * {name}");
+                MapFileNode node = new MapFileNode(sectionIndex, alignedOffset, objectData.Data.Length, name);
+                mapFileBuilder.AddNode(node);
+                if (objectData.Relocs != null)
+                {
+                    foreach (Relocation reloc in objectData.Relocs)
+                    {
+                        RelocType fileReloc = Relocation.GetFileRelocationType(reloc.RelocType);
+                        if (fileReloc != RelocType.IMAGE_REL_BASED_ABSOLUTE)
+                        {
+                            mapFileBuilder.AddRelocation(node, fileReloc);
+                        }
+                    }
+                }
             }
 
             section.Content.WriteBytes(objectData.Data);
@@ -459,12 +499,12 @@ namespace ILCompiler.PEWriter
             {
                 foreach (ISymbolDefinitionNode symbol in objectData.DefinedSymbols)
                 {
-                    if (mapFile != null)
+                    if (mapFileBuilder != null)
                     {
                         Utf8StringBuilder sb = new Utf8StringBuilder();
                         symbol.AppendMangledName(GetNameMangler(), sb);
                         int sectionRelativeOffset = alignedOffset + symbol.Offset;
-                        mapFile.WriteLine($@"  +0x{sectionRelativeOffset:X4}: {sb.ToString()}");
+                        mapFileBuilder.AddSymbol(new MapFileSymbol(sectionIndex, sectionRelativeOffset, sb.ToString()));
                     }
                     _symbolMap.Add(symbol, new SymbolTarget(
                         sectionIndex: sectionIndex,
@@ -495,12 +535,15 @@ namespace ILCompiler.PEWriter
                 }
             }
 
-            if (_exportSymbols.Count != 0 && FindSection(R2RPEBuilder.ExportDataSectionName) == null)
-            {
-                sectionList.Add(new SectionInfo(R2RPEBuilder.ExportDataSectionName, SectionCharacteristics.ContainsInitializedData | SectionCharacteristics.MemRead));
-            }
-
             return sectionList;
+        }
+
+        public void AddSections(MapFileBuilder mapFileBuilder)
+        {
+            foreach (Section section in _sections)
+            {
+                mapFileBuilder.AddSection(section);
+            }
         }
 
         /// <summary>
@@ -586,6 +629,14 @@ namespace ILCompiler.PEWriter
             int baseRVA = 0;
             List<ushort> offsetsAndTypes = null;
 
+            Section relocSection = FindSection(R2RPEBuilder.RelocSectionName);
+            if (relocSection != null)
+            {
+                relocSection.FilePosWhenPlaced = sectionLocation.PointerToRawData;
+                relocSection.RVAWhenPlaced = sectionLocation.RelativeVirtualAddress;
+                builder = relocSection.Content;
+            }
+
             // Traverse relocations in all sections in their RVA order
             // By now, all "normal" sections with relocations should already have been laid out
             foreach (Section section in _sections.OrderBy((sec) => sec.RVAWhenPlaced))
@@ -595,7 +646,7 @@ namespace ILCompiler.PEWriter
                     for (int relocIndex = 0; relocIndex < placedObjectData.Relocs.Length; relocIndex++)
                     {
                         RelocType relocType = placedObjectData.Relocs[relocIndex].RelocType;
-                        RelocType fileRelocType = GetFileRelocationType(relocType);
+                        RelocType fileRelocType = Relocation.GetFileRelocationType(relocType);
                         if (fileRelocType != RelocType.IMAGE_REL_BASED_ABSOLUTE)
                         {
                             int relocationRVA = section.RVAWhenPlaced + placedObjectData.Offset + placedObjectData.Relocs[relocIndex].Offset;
@@ -654,7 +705,7 @@ namespace ILCompiler.PEWriter
         /// <param name="location">RVA and file location of the .edata section</param>
         private BlobBuilder SerializeExportSection(SectionLocation sectionLocation)
         {
-            _exportSymbols.Sort((es1, es2) => StringComparer.Ordinal.Compare(es1.Name, es2.Name));
+            _exportSymbols.MergeSort((es1, es2) => StringComparer.Ordinal.Compare(es1.Name, es2.Name));
             
             BlobBuilder builder = new BlobBuilder();
 
@@ -788,6 +839,14 @@ namespace ILCompiler.PEWriter
                 Debug.Assert(section.RVAWhenPlaced != 0);
                 directoriesBuilder.AddressOfEntryPoint = section.RVAWhenPlaced + symbolTarget.Offset;
             }
+
+            if (_debugDirectorySymbol != null)
+            {
+                SymbolTarget symbolTarget = _symbolMap[_debugDirectorySymbol];
+                Section section = _sections[symbolTarget.SectionIndex];
+                Debug.Assert(section.RVAWhenPlaced != 0);
+                directoriesBuilder.DebugTable = new DirectoryEntry(section.RVAWhenPlaced + symbolTarget.Offset, _debugDirectorySize);
+            }
         }
 
         /// <summary>
@@ -824,6 +883,7 @@ namespace ILCompiler.PEWriter
                         SymbolTarget relocationTarget = _symbolMap[relocation.Target];
                         Section targetSection = _sections[relocationTarget.SectionIndex];
                         int targetRVA = targetSection.RVAWhenPlaced + relocationTarget.Offset;
+                        int filePosWhenPlaced = targetSection.FilePosWhenPlaced + relocationTarget.Offset;
 
                         // If relocating to a node's size, switch out the target RVA with data length
                         if (relocation.RelocType == RelocType.IMAGE_REL_SYMBOL_SIZE)
@@ -832,34 +892,13 @@ namespace ILCompiler.PEWriter
                         }
 
                         // Apply the relocation
-                        relocationHelper.ProcessRelocation(relocation.RelocType, relocationRVA, targetRVA);
+                        relocationHelper.ProcessRelocation(relocation.RelocType, relocationRVA, targetRVA, filePosWhenPlaced);
                     }
                 }
             }
 
             // Flush remaining PE file blocks after the last relocation
             relocationHelper.CopyRestOfFile();
-        }
-
-        /// <summary>
-        /// Return file relocation type for the given relocation type. If the relocation
-        /// doesn't require a file-level relocation entry in the .reloc section, 0 is returned
-        /// corresponding to the IMAGE_REL_BASED_ABSOLUTE no-op relocation record.
-        /// </summary>
-        /// <param name="relocationType">Relocation type</param>
-        /// <returns>File-level relocation type or 0 (IMAGE_REL_BASED_ABSOLUTE) if none is required</returns>
-        private static RelocType GetFileRelocationType(RelocType relocationType)
-        {
-            switch (relocationType)
-            {
-                case RelocType.IMAGE_REL_BASED_HIGHLOW:
-                case RelocType.IMAGE_REL_BASED_DIR64:
-                case RelocType.IMAGE_REL_BASED_THUMB_MOV32:
-                    return relocationType;
-                    
-                default:
-                    return RelocType.IMAGE_REL_BASED_ABSOLUTE;
-            }
         }
     }
 }

@@ -6,8 +6,6 @@ using System.Reflection;
 using System.Collections;
 using System.Diagnostics.CodeAnalysis;
 
-[assembly: SuppressMessage("Microsoft.Security", "CA2112:SecuredTypesShouldNotExposeFields", Scope = "type", Target = "System.ComponentModel.AttributeCollection")]
-
 namespace System.ComponentModel
 {
     /// <summary>
@@ -121,7 +119,6 @@ namespace System.ComponentModel
         /// <summary>
         /// Gets the attributes collection.
         /// </summary>
-        [SuppressMessage("Microsoft.Performance", "CA1819:PropertiesShouldNotReturnArrays", Justification = "Matches constructor input type")]
         protected virtual Attribute[] Attributes => _attributes;
 
         /// <summary>

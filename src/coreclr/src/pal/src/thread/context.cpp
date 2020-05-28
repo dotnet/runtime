@@ -29,20 +29,22 @@ SET_DEFAULT_DEBUG_CHANNEL(THREAD); // some headers have code with asserts, so do
 #include "pal/utils.h"
 #include "pal/virtual.h"
 
+#if HAVE_SYS_PTRACE_H
 #include <sys/ptrace.h>
+#endif
 #include <errno.h>
 #include <unistd.h>
 
 extern PGET_GCMARKER_EXCEPTION_CODE g_getGcMarkerExceptionCode;
 
 #define CONTEXT_AREA_MASK 0xffff
-#ifdef _X86_
+#ifdef HOST_X86
 #define CONTEXT_ALL_FLOATING (CONTEXT_FLOATING_POINT | CONTEXT_EXTENDED_REGISTERS)
-#elif defined(_AMD64_)
+#elif defined(HOST_AMD64)
 #define CONTEXT_ALL_FLOATING CONTEXT_FLOATING_POINT
-#elif defined(_ARM_)
+#elif defined(HOST_ARM)
 #define CONTEXT_ALL_FLOATING CONTEXT_FLOATING_POINT
-#elif defined(_ARM64_)
+#elif defined(HOST_ARM64)
 #define CONTEXT_ALL_FLOATING CONTEXT_FLOATING_POINT
 #else
 #error Unexpected architecture.
@@ -65,7 +67,7 @@ typedef int __ptrace_request;
 #include <asm/ptrace.h>
 #endif  // HAVE_PT_REGS
 
-#ifdef _AMD64_
+#ifdef HOST_AMD64
 #define ASSIGN_CONTROL_REGS \
         ASSIGN_REG(Rbp)     \
         ASSIGN_REG(Rip)     \
@@ -89,7 +91,7 @@ typedef int __ptrace_request;
         ASSIGN_REG(R14)     \
         ASSIGN_REG(R15)     \
 
-#elif defined(_X86_)
+#elif defined(HOST_X86)
 #define ASSIGN_CONTROL_REGS \
         ASSIGN_REG(Ebp)     \
         ASSIGN_REG(Eip)     \
@@ -106,7 +108,7 @@ typedef int __ptrace_request;
         ASSIGN_REG(Ecx)     \
         ASSIGN_REG(Eax)     \
 
-#elif defined(_ARM_)
+#elif defined(HOST_ARM)
 #define ASSIGN_CONTROL_REGS \
         ASSIGN_REG(Sp)     \
         ASSIGN_REG(Lr)     \
@@ -127,7 +129,7 @@ typedef int __ptrace_request;
         ASSIGN_REG(R10)     \
         ASSIGN_REG(R11)     \
         ASSIGN_REG(R12)
-#elif defined(_ARM64_)
+#elif defined(HOST_ARM64)
 #define ASSIGN_CONTROL_REGS \
         ASSIGN_REG(Cpsr)    \
         ASSIGN_REG(Fp)      \
@@ -203,7 +205,7 @@ BOOL CONTEXT_GetRegisters(DWORD processId, LPCONTEXT lpContext)
         ucontext_t registers;
 #if HAVE_PT_REGS
         struct pt_regs ptrace_registers;
-        if (ptrace((__ptrace_request)PT_GETREGS, processId, (caddr_t) &ptrace_registers, 0) == -1)
+        if (ptrace((__ptrace_request)PTRACE_GETREGS, processId, (caddr_t) &ptrace_registers, 0) == -1)
 #elif HAVE_BSD_REGS_T
         struct reg ptrace_registers;
         if (PAL_PTRACE(PT_GETREGS, processId, &ptrace_registers, 0) == -1)
@@ -352,7 +354,7 @@ CONTEXT_SetThreadContext(
         (CONTEXT_CONTROL | CONTEXT_INTEGER) & CONTEXT_AREA_MASK)
     {
 #if HAVE_PT_REGS
-        if (ptrace((__ptrace_request)PT_GETREGS, dwProcessId, (caddr_t)&ptrace_registers, 0) == -1)
+        if (ptrace((__ptrace_request)PTRACE_GETREGS, dwProcessId, (caddr_t)&ptrace_registers, 0) == -1)
 #elif HAVE_BSD_REGS_T
         if (PAL_PTRACE(PT_GETREGS, dwProcessId, &ptrace_registers, 0) == -1)
 #endif
@@ -383,7 +385,7 @@ CONTEXT_SetThreadContext(
 #undef ASSIGN_REG
 
 #if HAVE_PT_REGS
-        if (ptrace((__ptrace_request)PT_SETREGS, dwProcessId, (caddr_t)&ptrace_registers, 0) == -1)
+        if (ptrace((__ptrace_request)PTRACE_SETREGS, dwProcessId, (caddr_t)&ptrace_registers, 0) == -1)
 #elif HAVE_BSD_REGS_T
         if (PAL_PTRACE(PT_SETREGS, dwProcessId, &ptrace_registers, 0) == -1)
 #endif
@@ -428,26 +430,33 @@ void CONTEXTToNativeContext(CONST CONTEXT *lpContext, native_context_t *native)
     }
 #undef ASSIGN_REG
 
+#if !HAVE_FPREGS_WITH_CW
 #if HAVE_GREGSET_T || HAVE_GREGSET_T
 #if HAVE_GREGSET_T
     if (native->uc_mcontext.fpregs == nullptr)
 #elif HAVE___GREGSET_T
     if (native->uc_mcontext.__fpregs == nullptr)
-#endif
+#endif // HAVE_GREGSET_T
     {
         // If the pointer to the floating point state in the native context
         // is not valid, we can't copy floating point registers regardless of
         // whether CONTEXT_FLOATING_POINT is set in the CONTEXT's flags.
         return;
     }
-#endif
+#endif // HAVE_GREGSET_T || HAVE_GREGSET_T
+#endif // !HAVE_FPREGS_WITH_CW
 
     if ((lpContext->ContextFlags & CONTEXT_FLOATING_POINT) == CONTEXT_FLOATING_POINT)
     {
-#ifdef _AMD64_
+#ifdef HOST_AMD64
         FPREG_ControlWord(native) = lpContext->FltSave.ControlWord;
         FPREG_StatusWord(native) = lpContext->FltSave.StatusWord;
+#if HAVE_FPREGS_WITH_CW
+        FPREG_TagWord1(native) = lpContext->FltSave.TagWord >> 8;
+        FPREG_TagWord2(native) = lpContext->FltSave.TagWord & 0xff;
+#else
         FPREG_TagWord(native) = lpContext->FltSave.TagWord;
+#endif
         FPREG_ErrorOffset(native) = lpContext->FltSave.ErrorOffset;
         FPREG_ErrorSelector(native) = lpContext->FltSave.ErrorSelector;
         FPREG_DataOffset(native) = lpContext->FltSave.DataOffset;
@@ -464,7 +473,7 @@ void CONTEXTToNativeContext(CONST CONTEXT *lpContext, native_context_t *native)
         {
             FPREG_Xmm(native, i) = lpContext->FltSave.XmmRegisters[i];
         }
-#elif defined(_ARM64_)
+#elif defined(HOST_ARM64)
         fpsimd_context* fp = GetNativeSigSimdContext(native);
         if (fp)
         {
@@ -475,7 +484,7 @@ void CONTEXTToNativeContext(CONST CONTEXT *lpContext, native_context_t *native)
                 *(NEON128*) &fp->vregs[i] = lpContext->V[i];
             }
         }
-#elif defined(_ARM_)
+#elif defined(HOST_ARM)
         VfpSigFrame* fp = GetNativeSigSimdContext(native);
         if (fp)
         {
@@ -489,13 +498,13 @@ void CONTEXTToNativeContext(CONST CONTEXT *lpContext, native_context_t *native)
     }
 
     // TODO: Enable for all Unix systems
-#if defined(_AMD64_) && defined(XSTATE_SUPPORTED)
+#if defined(HOST_AMD64) && defined(XSTATE_SUPPORTED)
     if ((lpContext->ContextFlags & CONTEXT_XSTATE) == CONTEXT_XSTATE)
     {
         _ASSERTE(FPREG_HasYmmRegisters(native));
         memcpy_s(FPREG_Xstate_Ymmh(native), sizeof(M128A) * 16, lpContext->VectorRegister, sizeof(M128A) * 16);
     }
-#endif //_AMD64_ && XSTATE_SUPPORTED
+#endif //HOST_AMD64 && XSTATE_SUPPORTED
 }
 
 /*++
@@ -523,7 +532,7 @@ void CONTEXTFromNativeContext(const native_context_t *native, LPCONTEXT lpContex
     if ((contextFlags & CONTEXT_CONTROL) == CONTEXT_CONTROL)
     {
         ASSIGN_CONTROL_REGS
-#if defined(_ARM_)
+#if defined(HOST_ARM)
         // WinContext assumes that the least bit of Pc is always 1 (denoting thumb)
         // although the pc value retrived from native context might not have set the least bit.
         // This becomes especially problematic if the context is on the JIT_WRITEBARRIER.
@@ -537,12 +546,13 @@ void CONTEXTFromNativeContext(const native_context_t *native, LPCONTEXT lpContex
     }
 #undef ASSIGN_REG
 
+#if !HAVE_FPREGS_WITH_CW
 #if HAVE_GREGSET_T || HAVE___GREGSET_T
 #if HAVE_GREGSET_T
     if (native->uc_mcontext.fpregs == nullptr)
 #elif HAVE___GREGSET_T
     if (native->uc_mcontext.__fpregs == nullptr)
-#endif
+#endif // HAVE_GREGSET_T
     {
         // Reset the CONTEXT_FLOATING_POINT bit(s) and the CONTEXT_XSTATE bit(s) so it's
         // clear that the floating point and extended state data in the CONTEXT is not
@@ -559,14 +569,19 @@ void CONTEXTFromNativeContext(const native_context_t *native, LPCONTEXT lpContex
         // Bail out regardless of whether the caller wanted CONTEXT_FLOATING_POINT or CONTEXT_XSTATE
         return;
     }
-#endif
+#endif // HAVE_GREGSET_T || HAVE___GREGSET_T
+#endif // !HAVE_FPREGS_WITH_CW
 
     if ((contextFlags & CONTEXT_FLOATING_POINT) == CONTEXT_FLOATING_POINT)
     {
-#ifdef _AMD64_
+#ifdef HOST_AMD64
         lpContext->FltSave.ControlWord = FPREG_ControlWord(native);
         lpContext->FltSave.StatusWord = FPREG_StatusWord(native);
+#if HAVE_FPREGS_WITH_CW
+        lpContext->FltSave.TagWord = ((DWORD)FPREG_TagWord1(native) << 8) | FPREG_TagWord2(native);
+#else
         lpContext->FltSave.TagWord = FPREG_TagWord(native);
+#endif
         lpContext->FltSave.ErrorOffset = FPREG_ErrorOffset(native);
         lpContext->FltSave.ErrorSelector = FPREG_ErrorSelector(native);
         lpContext->FltSave.DataOffset = FPREG_DataOffset(native);
@@ -583,7 +598,7 @@ void CONTEXTFromNativeContext(const native_context_t *native, LPCONTEXT lpContex
         {
             lpContext->FltSave.XmmRegisters[i] = FPREG_Xmm(native, i);
         }
-#elif defined(_ARM64_)
+#elif defined(HOST_ARM64)
         const fpsimd_context* fp = GetConstNativeSigSimdContext(native);
         if (fp)
         {
@@ -594,7 +609,7 @@ void CONTEXTFromNativeContext(const native_context_t *native, LPCONTEXT lpContex
                 lpContext->V[i] = *(NEON128*) &fp->vregs[i];
             }
         }
-#elif defined(_ARM_)
+#elif defined(HOST_ARM)
         const VfpSigFrame* fp = GetConstNativeSigSimdContext(native);
         if (fp)
         {
@@ -613,7 +628,7 @@ void CONTEXTFromNativeContext(const native_context_t *native, LPCONTEXT lpContex
 #endif
     }
 
-#ifdef _AMD64_
+#ifdef HOST_AMD64
     if ((contextFlags & CONTEXT_XSTATE) == CONTEXT_XSTATE)
     {
     // TODO: Enable for all Unix systems
@@ -631,7 +646,7 @@ void CONTEXTFromNativeContext(const native_context_t *native, LPCONTEXT lpContex
             lpContext->ContextFlags &= ~xstateFlags;
         }
     }
-#endif // _AMD64_
+#endif // HOST_AMD64
 }
 
 /*++
@@ -649,13 +664,13 @@ Return value :
 --*/
 LPVOID GetNativeContextPC(const native_context_t *context)
 {
-#ifdef _AMD64_
+#ifdef HOST_AMD64
     return (LPVOID)MCREG_Rip(context->uc_mcontext);
-#elif defined(_X86_)
+#elif defined(HOST_X86)
     return (LPVOID) MCREG_Eip(context->uc_mcontext);
-#elif defined(_ARM_)
+#elif defined(HOST_ARM)
     return (LPVOID) MCREG_Pc(context->uc_mcontext);
-#elif defined(_ARM64_)
+#elif defined(HOST_ARM64)
     return (LPVOID) MCREG_Pc(context->uc_mcontext);
 #else
 #   error implement me for this architecture
@@ -677,13 +692,13 @@ Return value :
 --*/
 LPVOID GetNativeContextSP(const native_context_t *context)
 {
-#ifdef _AMD64_
+#ifdef HOST_AMD64
     return (LPVOID)MCREG_Rsp(context->uc_mcontext);
-#elif defined(_X86_)
+#elif defined(HOST_X86)
     return (LPVOID) MCREG_Esp(context->uc_mcontext);
-#elif defined(_ARM_)
+#elif defined(HOST_ARM)
     return (LPVOID) MCREG_Sp(context->uc_mcontext);
-#elif defined(_ARM64_)
+#elif defined(HOST_ARM64)
     return (LPVOID) MCREG_Sp(context->uc_mcontext);
 #else
 #   error implement me for this architecture
@@ -938,7 +953,7 @@ CONTEXT_GetThreadContextFromPort(
     if (lpContext->ContextFlags & (CONTEXT_CONTROL | CONTEXT_INTEGER | CONTEXT_SEGMENTS) & CONTEXT_AREA_MASK)
     {
 
-#ifdef _AMD64_
+#ifdef HOST_AMD64
         x86_thread_state64_t State;
         StateFlavor = x86_THREAD_STATE64;
 #else
@@ -1015,7 +1030,7 @@ CONTEXT_GetThreadContextFromThreadState(
 {
     switch (threadStateFlavor)
     {
-#ifdef _AMD64_
+#ifdef HOST_AMD64
         case x86_THREAD_STATE64:
             if (lpContext->ContextFlags & (CONTEXT_CONTROL | CONTEXT_INTEGER | CONTEXT_SEGMENTS) & CONTEXT_AREA_MASK)
             {
@@ -1174,7 +1189,7 @@ CONTEXT_SetThreadContextOnPort(
 
     if (lpContext->ContextFlags & (CONTEXT_CONTROL|CONTEXT_INTEGER) & CONTEXT_AREA_MASK)
     {
-#ifdef _AMD64_
+#ifdef HOST_AMD64
         x86_thread_state64_t State;
         StateFlavor = x86_THREAD_STATE64;
 
@@ -1222,7 +1237,7 @@ CONTEXT_SetThreadContextOnPort(
     if (lpContext->ContextFlags & CONTEXT_ALL_FLOATING & CONTEXT_AREA_MASK)
     {
 
-#ifdef _AMD64_
+#ifdef HOST_AMD64
 #ifdef XSTATE_SUPPORTED
         // We're relying on the fact that the initial portion of
         // x86_avx_state64_t is identical to x86_float_state64_t.
@@ -1273,7 +1288,7 @@ CONTEXT_SetThreadContextOnPort(
 
         if (lpContext->ContextFlags & CONTEXT_FLOATING_POINT & CONTEXT_AREA_MASK)
         {
-#ifdef _AMD64_
+#ifdef HOST_AMD64
             *(DWORD*)&State.__fpu_fcw = lpContext->FltSave.ControlWord;
             *(DWORD*)&State.__fpu_fsw = lpContext->FltSave.StatusWord;
             State.__fpu_ftw = lpContext->FltSave.TagWord;
@@ -1297,7 +1312,7 @@ CONTEXT_SetThreadContextOnPort(
 #endif
         }
 
-#if defined(_AMD64_) && defined(XSTATE_SUPPORTED)
+#if defined(HOST_AMD64) && defined(XSTATE_SUPPORTED)
         if (lpContext->ContextFlags & CONTEXT_XSTATE & CONTEXT_AREA_MASK)
         {
             memcpy(&State.__fpu_ymmh0, lpContext->VectorRegister, 16 * 16);
@@ -1383,10 +1398,10 @@ DBG_FlushInstructionCache(
                           IN LPCVOID lpBaseAddress,
                           IN SIZE_T dwSize)
 {
-#ifndef _ARM_
+#ifndef HOST_ARM
     // Intrinsic should do the right thing across all platforms (except Linux arm)
     __builtin___clear_cache((char *)lpBaseAddress, (char *)((INT_PTR)lpBaseAddress + dwSize));
-#else // _ARM_
+#else // HOST_ARM
     // On Linux/arm (at least on 3.10) we found that there is a problem with __do_cache_op (arch/arm/kernel/traps.c)
     // implementing cacheflush syscall. cacheflush flushes only the first page in range [lpBaseAddress, lpBaseAddress + dwSize)
     // and leaves other pages in undefined state which causes random tests failures (often due to SIGSEGV) with no particular pattern.
@@ -1406,6 +1421,6 @@ DBG_FlushInstructionCache(
         __builtin___clear_cache((char *)begin, (char *)endOrNextPageBegin);
         begin = endOrNextPageBegin;
     }
-#endif // _ARM_
+#endif // HOST_ARM
     return TRUE;
 }

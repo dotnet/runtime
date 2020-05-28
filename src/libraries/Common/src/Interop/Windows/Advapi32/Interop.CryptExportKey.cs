@@ -15,7 +15,7 @@ internal partial class Interop
             SafeKeyHandle hExpKey,
             int dwBlobType,
             int dwFlags,
-            [In, Out] byte[] pbData,
+            [In, Out] byte[]? pbData,
             ref int dwDataLen);
     }
 }

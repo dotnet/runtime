@@ -101,15 +101,8 @@ namespace System.Runtime.InteropServices
         {
             Debug.Assert(_fullyInitialized);
 
-            // Attempt to set closed state (low order bit of the _state field).
-            // Might have to attempt these repeatedly, if the operation suffers
-            // interference from an AddRef or Release.
-            int oldState, newState;
-            do
-            {
-                oldState = _state;
-                newState = oldState | StateBits.Closed;
-            } while (Interlocked.CompareExchange(ref _state, newState, oldState) != oldState);
+            // Set closed state (low order bit of the _state field).
+            Interlocked.Or(ref _state, StateBits.Closed);
 
             GC.SuppressFinalize(this);
         }

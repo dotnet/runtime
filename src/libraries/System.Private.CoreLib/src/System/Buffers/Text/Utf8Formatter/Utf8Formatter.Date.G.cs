@@ -41,47 +41,49 @@ namespace System.Buffers.Text
             // Hoist most of the bounds checks on buffer.
             { var unused = destination[MinimumBytesNeeded - 1]; }
 
-            // TODO: Introduce an API which can parse DateTime instances efficiently, pulling out
-            // all their properties (Month, Day, etc.) in one shot. This would help avoid the
-            // duplicate work that implicitly results from calling these properties individually.
+            value.GetDate(out int year, out int month, out int day);
+            value.GetTime(out int hour, out int minute, out int second);
 
-            FormattingHelpers.WriteTwoDecimalDigits((uint)value.Month, destination, 0);
+            FormattingHelpers.WriteTwoDecimalDigits((uint)month, destination, 0);
             destination[2] = Utf8Constants.Slash;
 
-            FormattingHelpers.WriteTwoDecimalDigits((uint)value.Day, destination, 3);
+            FormattingHelpers.WriteTwoDecimalDigits((uint)day, destination, 3);
             destination[5] = Utf8Constants.Slash;
 
-            FormattingHelpers.WriteFourDecimalDigits((uint)value.Year, destination, 6);
+            FormattingHelpers.WriteFourDecimalDigits((uint)year, destination, 6);
             destination[10] = Utf8Constants.Space;
 
-            FormattingHelpers.WriteTwoDecimalDigits((uint)value.Hour, destination, 11);
+            FormattingHelpers.WriteTwoDecimalDigits((uint)hour, destination, 11);
             destination[13] = Utf8Constants.Colon;
 
-            FormattingHelpers.WriteTwoDecimalDigits((uint)value.Minute, destination, 14);
+            FormattingHelpers.WriteTwoDecimalDigits((uint)minute, destination, 14);
             destination[16] = Utf8Constants.Colon;
 
-            FormattingHelpers.WriteTwoDecimalDigits((uint)value.Second, destination, 17);
+            FormattingHelpers.WriteTwoDecimalDigits((uint)second, destination, 17);
 
             if (offset != Utf8Constants.NullUtcOffset)
             {
+                int offsetTotalMinutes = (int)(offset.Ticks / TimeSpan.TicksPerMinute);
                 byte sign;
 
-                if (offset < default(TimeSpan) /* a "const" version of TimeSpan.Zero */)
+                if (offsetTotalMinutes < 0)
                 {
                     sign = Utf8Constants.Minus;
-                    offset = TimeSpan.FromTicks(-offset.Ticks);
+                    offsetTotalMinutes = -offsetTotalMinutes;
                 }
                 else
                 {
                     sign = Utf8Constants.Plus;
                 }
 
+                int offsetHours = Math.DivRem(offsetTotalMinutes, 60, out int offsetMinutes);
+
                 // Writing the value backward allows the JIT to optimize by
                 // performing a single bounds check against buffer.
 
-                FormattingHelpers.WriteTwoDecimalDigits((uint)offset.Minutes, destination, 24);
+                FormattingHelpers.WriteTwoDecimalDigits((uint)offsetMinutes, destination, 24);
                 destination[23] = Utf8Constants.Colon;
-                FormattingHelpers.WriteTwoDecimalDigits((uint)offset.Hours, destination, 21);
+                FormattingHelpers.WriteTwoDecimalDigits((uint)offsetHours, destination, 21);
                 destination[20] = sign;
                 destination[19] = Utf8Constants.Space;
             }

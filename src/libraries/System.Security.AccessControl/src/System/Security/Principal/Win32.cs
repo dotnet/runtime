@@ -16,7 +16,7 @@ namespace System.Security.Principal
 {
     internal static class Win32
     {
-        internal static int OpenThreadToken(TokenAccessLevels dwDesiredAccess, WinSecurityContext dwOpenAs, out SafeTokenHandle phThreadToken)
+        internal static int OpenThreadToken(TokenAccessLevels dwDesiredAccess, WinSecurityContext dwOpenAs, out SafeTokenHandle? phThreadToken)
         {
             int hr = 0;
             bool openAsSelf = true;
@@ -41,7 +41,7 @@ namespace System.Security.Principal
             return hr;
         }
 
-        internal static int SetThreadToken(SafeTokenHandle hToken)
+        internal static int SetThreadToken(SafeTokenHandle? hToken)
         {
             int hr = 0;
             if (!Interop.Advapi32.SetThreadToken(IntPtr.Zero, hToken))

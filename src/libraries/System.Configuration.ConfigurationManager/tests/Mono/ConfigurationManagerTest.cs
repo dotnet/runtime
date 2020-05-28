@@ -43,7 +43,7 @@ namespace MonoTests.System.Configuration
     public class ConfigurationManagerTest
     {
         [Fact] // OpenExeConfiguration (ConfigurationUserLevel)
-        [ActiveIssue("dotnet/corefx #19384", TargetFrameworkMonikers.NetFramework)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/21528", TargetFrameworkMonikers.NetFramework)]
         public void OpenExeConfiguration1_UserLevel_None()
         {
             SysConfig config = ConfigurationManager.OpenExeConfiguration(ConfigurationUserLevel.None);
@@ -66,8 +66,8 @@ namespace MonoTests.System.Configuration
             Assert.Equal("user.config", fi.Name);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))] // ActiveIssue: https://github.com/dotnet/corefx/issues/29752
-        [ActiveIssue(15065, TestPlatforms.AnyUnix)]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))] // ActiveIssue: https://github.com/dotnet/runtime/issues/26195
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/19875", TestPlatforms.AnyUnix)]
         public void OpenExeConfiguration1_UserLevel_PerUserRoamingAndLocal()
         {
             SysConfig config = ConfigurationManager.OpenExeConfiguration(ConfigurationUserLevel.PerUserRoamingAndLocal);
@@ -132,7 +132,7 @@ namespace MonoTests.System.Configuration
         }
 
         [Fact]
-        [ActiveIssue("dotnet/corefx #18831", TargetFrameworkMonikers.NetFramework)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/21319", TargetFrameworkMonikers.NetFramework)]
         public void exePath_UserLevelNone()
         {
             string name = TestUtil.ThisApplicationPath;
@@ -155,8 +155,8 @@ namespace MonoTests.System.Configuration
             Assert.Equal("user.config", Path.GetFileName(filePath));
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))] // ActiveIssue: https://github.com/dotnet/corefx/issues/29752
-        [ActiveIssue(15066, TestPlatforms.AnyUnix)]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))] // ActiveIssue: https://github.com/dotnet/runtime/issues/26195
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/19876", TestPlatforms.AnyUnix)]
         public void exePath_UserLevelPerRoamingAndLocal()
         {
             SysConfig config = ConfigurationManager.OpenExeConfiguration(ConfigurationUserLevel.PerUserRoamingAndLocal);
@@ -261,7 +261,7 @@ namespace MonoTests.System.Configuration
         [Fact]
         // Doesn't pass on Mono
         // [Category("NotWorking")]
-        [ActiveIssue("dotnet/corefx #19384", TargetFrameworkMonikers.NetFramework)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/21528", TargetFrameworkMonikers.NetFramework)]
         public void mapped_ExeConfiguration_null()
         {
             SysConfig config = ConfigurationManager.OpenMappedExeConfiguration(null, ConfigurationUserLevel.None);
@@ -287,7 +287,7 @@ namespace MonoTests.System.Configuration
             Assert.True(ConfigurationManager.GetSection("appSettings") is NameValueCollection);
         }
 
-        [Fact] // Test for bug #3412
+        [Fact]
         // Doesn't pass on Mono
         // [Category("NotWorking")]
         public void TestAddRemoveSection()

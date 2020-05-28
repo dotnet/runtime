@@ -1,9 +1,9 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AssemblyName>System.Security.Claims</AssemblyName>
-    <Configurations>netcoreapp-Debug;netcoreapp-Release</Configurations>
+    <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
+    <Nullable>enable</Nullable>
   </PropertyGroup>
-  <!-- Default configurations to help VS understand the options -->
   <ItemGroup>
     <Compile Include="System\Security\Claims\Claim.cs" />
     <Compile Include="System\Security\Claims\ClaimsIdentity.cs" />
@@ -15,7 +15,6 @@
   </ItemGroup>
   <ItemGroup>
     <Reference Include="System.Collections" />
-    <Reference Include="System.Resources.ResourceManager" />
     <Reference Include="System.Runtime" />
     <Reference Include="System.Runtime.Extensions" />
     <Reference Include="System.Security.Principal" />

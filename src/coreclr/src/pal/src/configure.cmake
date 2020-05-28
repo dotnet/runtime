@@ -2,23 +2,24 @@ include(CheckCXXSourceCompiles)
 include(CheckCXXSourceRuns)
 include(CheckCXXSymbolExists)
 include(CheckFunctionExists)
+include(CheckPrototypeDefinition)
 include(CheckIncludeFiles)
 include(CheckStructHasMember)
 include(CheckTypeSize)
 include(CheckLibraryExists)
 
-if(CMAKE_SYSTEM_NAME STREQUAL FreeBSD)
-  set(CMAKE_REQUIRED_INCLUDES /usr/local/include)
-elseif(CMAKE_SYSTEM_NAME STREQUAL SunOS)
+if(CLR_CMAKE_TARGET_FREEBSD)
+  set(CMAKE_REQUIRED_INCLUDES ${CROSS_ROOTFS}/usr/local/include)
+elseif(CLR_CMAKE_TARGET_SUNOS)
   set(CMAKE_REQUIRED_INCLUDES /opt/local/include)
 endif()
-if(NOT CMAKE_SYSTEM_NAME STREQUAL Darwin AND NOT CMAKE_SYSTEM_NAME STREQUAL FreeBSD AND NOT CMAKE_SYSTEM_NAME STREQUAL NetBSD)
+if(NOT CLR_CMAKE_TARGET_OSX AND NOT CLR_CMAKE_TARGET_FREEBSD AND NOT CLR_CMAKE_TARGET_NETBSD)
   set(CMAKE_REQUIRED_DEFINITIONS "-D_BSD_SOURCE -D_SVID_SOURCE -D_DEFAULT_SOURCE -D_POSIX_C_SOURCE=200809L")
 endif()
 
-if(CMAKE_SYSTEM_NAME STREQUAL Linux AND NOT CLR_CMAKE_PLATFORM_ANDROID)
+if(CLR_CMAKE_TARGET_LINUX AND NOT CLR_CMAKE_TARGET_ANDROID)
   set(CMAKE_RT_LIBS rt)
-elseif(CMAKE_SYSTEM_NAME STREQUAL FreeBSD OR CMAKE_SYSTEM_NAME STREQUAL NetBSD)
+elseif(CLR_CMAKE_TARGET_FREEBSD OR CLR_CMAKE_TARGET_NETBSD)
   set(CMAKE_RT_LIBS rt)
 else()
   set(CMAKE_RT_LIBS "")
@@ -45,10 +46,7 @@ check_include_files(sys/prctl.h HAVE_PRCTL_H)
 check_include_files(numa.h HAVE_NUMA_H)
 check_include_files(pthread_np.h HAVE_PTHREAD_NP_H)
 check_include_files("sys/auxv.h;asm/hwcap.h" HAVE_AUXV_HWCAP_H)
-
-if(NOT CMAKE_SYSTEM_NAME STREQUAL Darwin)
-  check_include_files("libintl.h" HAVE_LIBINTL_H)
-endif()
+check_include_files("sys/ptrace.h" HAVE_SYS_PTRACE_H)
 
 set(CMAKE_REQUIRED_LIBRARIES ${CMAKE_DL_LIBS})
 
@@ -147,6 +145,8 @@ check_struct_has_member ("ucontext_t" uc_mcontext.gregs[0] ucontext.h HAVE_GREGS
 check_struct_has_member ("ucontext_t" uc_mcontext.__gregs[0] ucontext.h HAVE___GREGSET_T)
 check_struct_has_member ("ucontext_t" uc_mcontext.fpregs->__glibc_reserved1[0] ucontext.h HAVE_FPSTATE_GLIBC_RESERVED1)
 check_struct_has_member ("struct sysinfo" mem_unit "sys/sysinfo.h" HAVE_SYSINFO_WITH_MEM_UNIT)
+check_struct_has_member ("struct dirent" d_type dirent.h HAVE_DIRENT_D_TYPE)
+check_struct_has_member ("struct _fpchip_state" cw sys/ucontext.h HAVE_FPREGS_WITH_CW)
 
 set(CMAKE_EXTRA_INCLUDE_FILES machine/reg.h)
 check_type_size("struct reg" BSD_REGS_T)
@@ -173,6 +173,7 @@ check_cxx_symbol_exists(CHAR_BIT limits.h HAVE_CHAR_BIT)
 check_cxx_symbol_exists(_DEBUG sys/user.h USER_H_DEFINES_DEBUG)
 check_cxx_symbol_exists(_SC_PHYS_PAGES unistd.h HAVE__SC_PHYS_PAGES)
 check_cxx_symbol_exists(_SC_AVPHYS_PAGES unistd.h HAVE__SC_AVPHYS_PAGES)
+check_cxx_symbol_exists(swapctl sys/swap.h HAVE_SWAPCTL)
 
 check_cxx_source_runs("
 #include <sys/param.h>
@@ -733,7 +734,8 @@ check_cxx_source_runs("
 #include <stdlib.h>
 
 int main(void) {
-  if (!isnan(acos(10))) {
+  volatile double x = 10;
+  if (!isnan(acos(x))) {
     exit(1);
   }
   exit(0);
@@ -745,7 +747,8 @@ check_cxx_source_runs("
 #include <stdlib.h>
 
 int main(void) {
-  if (!isnan(asin(10))) {
+  volatile double arg = 10;
+  if (!isnan(asin(arg))) {
     exit(1);
   }
   exit(0);
@@ -757,29 +760,37 @@ check_cxx_source_runs("
 #include <stdlib.h>
 
 int main(void) {
-  double infinity = 1.0 / 0.0;
-  if (pow(1.0, infinity) != 1.0 || pow(1.0, -infinity) != 1.0) {
+  volatile double base = 1.0;
+  volatile double infinity = 1.0 / 0.0;
+  if (pow(base, infinity) != 1.0 || pow(base, -infinity) != 1.0) {
     exit(1);
   }
-  if (pow(-1.0, infinity) != 1.0 || pow(-1.0, -infinity) != 1.0) {
+  if (pow(-base, infinity) != 1.0 || pow(-base, -infinity) != 1.0) {
     exit(1);
   }
-  if (pow(0.0, infinity) != 0.0) {
+
+  base = 0.0;
+  if (pow(base, infinity) != 0.0) {
     exit(1);
   }
-  if (pow(0.0, -infinity) != infinity) {
+  if (pow(base, -infinity) != infinity) {
     exit(1);
   }
-  if (pow(-1.1, infinity) != infinity || pow(1.1, infinity) != infinity) {
+
+  base = 1.1;
+  if (pow(-base, infinity) != infinity || pow(base, infinity) != infinity) {
     exit(1);
   }
-  if (pow(-1.1, -infinity) != 0.0 || pow(1.1, -infinity) != 0.0) {
+  if (pow(-base, -infinity) != 0.0 || pow(base, -infinity) != 0.0) {
     exit(1);
   }
-  if (pow(-0.0, -1) != -infinity) {
+
+  base = 0.0;
+  volatile int iexp = 1;
+  if (pow(-base, -iexp) != -infinity) {
     exit(1);
   }
-  if (pow(0.0, -1) != infinity) {
+  if (pow(base, -iexp) != infinity) {
     exit(1);
   }
   exit(0);
@@ -792,8 +803,10 @@ check_cxx_source_runs("
 
 int main(int argc, char **argv) {
   double result;
+  volatile double base = 3.2e-10;
+  volatile double exp = 1 - 5e14;
 
-  result = pow(-3.2e-10, -5e14 + 1);
+  result = pow(-base, exp);
   if (result != -1.0 / 0.0) {
     exit(1);
   }
@@ -807,8 +820,10 @@ check_cxx_source_runs("
 
 int main(int argc, char **argv) {
     double result;
+    volatile double base = 3.5;
+    volatile double exp = 3e100;
 
-    result = pow(-3.5, 3e100);
+    result = pow(-base, exp);
     if (result != 1.0 / 0.0) {
         exit(1);
     }
@@ -823,23 +838,25 @@ check_cxx_source_runs("
 int main(void) {
   double pi = 3.14159265358979323846;
   double result;
+  volatile double y = 0.0;
+  volatile double x = 0.0;
 
-  result = atan2(0.0, -0.0);
+  result = atan2(y, -x);
   if (fabs(pi - result) > 0.0000001) {
     exit(1);
   }
 
-  result = atan2(-0.0, -0.0);
+  result = atan2(-y, -x);
   if (fabs(-pi - result) > 0.0000001) {
     exit(1);
   }
 
-  result = atan2 (-0.0, 0.0);
+  result = atan2 (-y, x);
   if (result != 0.0 || copysign (1.0, result) > 0) {
     exit(1);
   }
 
-  result = atan2 (0.0, 0.0);
+  result = atan2 (y, x);
   if (result != 0.0 || copysign (1.0, result) < 0) {
     exit(1);
   }
@@ -899,7 +916,8 @@ check_cxx_source_runs("
 #include <stdlib.h>
 
 int main(void) {
-  if (!isnan(log(-10000))) {
+  volatile int arg = 10000;
+  if (!isnan(log(-arg))) {
     exit(1);
   }
   exit(0);
@@ -911,7 +929,8 @@ check_cxx_source_runs("
 #include <stdlib.h>
 
 int main(void) {
-  if (!isnan(log10(-10000))) {
+  volatile int arg = 10000;
+  if (!isnan(log10(-arg))) {
     exit(1);
   }
   exit(0);
@@ -1102,6 +1121,10 @@ int main(int argc, char **argv)
     return 0;
 }" HAVE_PUBLIC_XSTATE_STRUCT)
 
+if(HAVE_PUBLIC_XSTATE_STRUCT)
+    check_struct_has_member ("struct _fpx_sw_bytes" xstate_bv "signal.h" HAVE__FPX_SW_BYTES_WITH_XSTATE_BV)
+endif()
+
 check_cxx_source_compiles("
 #include <sys/prctl.h>
 
@@ -1146,7 +1169,7 @@ int main()
 }" HAVE_FULLY_FEATURED_PTHREAD_MUTEXES)
 set(CMAKE_REQUIRED_LIBRARIES)
 
-if(NOT CLR_CMAKE_PLATFORM_ARCH_ARM AND NOT CLR_CMAKE_PLATFORM_ARCH_ARM64)
+if(NOT CLR_CMAKE_HOST_ARCH_ARM AND NOT CLR_CMAKE_HOST_ARCH_ARM64)
   set(CMAKE_REQUIRED_LIBRARIES pthread)
   check_cxx_source_runs("
   // This test case verifies the pthread process-shared robust mutex's cross-process abandon detection. The parent process starts
@@ -1335,7 +1358,7 @@ if(NOT CLR_CMAKE_PLATFORM_ARCH_ARM AND NOT CLR_CMAKE_PLATFORM_ARCH_ARM64)
   set(CMAKE_REQUIRED_LIBRARIES)
 endif()
 
-if(CMAKE_SYSTEM_NAME STREQUAL Darwin)
+if(CLR_CMAKE_TARGET_OSX)
   set(HAVE__NSGETENVIRON 1)
   set(DEADLOCK_WHEN_THREAD_IS_SUSPENDED_WHILE_BLOCKED_ON_MUTEX 1)
   set(PAL_PTRACE "ptrace((cmd), (pid), (caddr_t)(addr), (data))")
@@ -1346,7 +1369,7 @@ if(CMAKE_SYSTEM_NAME STREQUAL Darwin)
   set(HAS_FTRUNCATE_LENGTH_ISSUE 1)
   set(HAVE_SCHED_OTHER_ASSIGNABLE 1)
 
-elseif(CMAKE_SYSTEM_NAME STREQUAL FreeBSD)
+elseif(CLR_CMAKE_TARGET_FREEBSD)
   set(DEADLOCK_WHEN_THREAD_IS_SUSPENDED_WHILE_BLOCKED_ON_MUTEX 0)
   set(PAL_PTRACE "ptrace((cmd), (pid), (caddr_t)(addr), (data))")
   set(PAL_PT_ATTACH PT_ATTACH)
@@ -1356,7 +1379,7 @@ elseif(CMAKE_SYSTEM_NAME STREQUAL FreeBSD)
   set(HAS_FTRUNCATE_LENGTH_ISSUE 0)
   set(BSD_REGS_STYLE "((reg).r_##rr)")
   set(HAVE_SCHED_OTHER_ASSIGNABLE 1)
-elseif(CMAKE_SYSTEM_NAME STREQUAL NetBSD)
+elseif(CLR_CMAKE_TARGET_NETBSD)
   set(DEADLOCK_WHEN_THREAD_IS_SUSPENDED_WHILE_BLOCKED_ON_MUTEX 0)
   set(PAL_PTRACE "ptrace((cmd), (pid), (void*)(addr), (data))")
   set(PAL_PT_ATTACH PT_ATTACH)
@@ -1367,7 +1390,7 @@ elseif(CMAKE_SYSTEM_NAME STREQUAL NetBSD)
   set(BSD_REGS_STYLE "((reg).regs[_REG_##RR])")
   set(HAVE_SCHED_OTHER_ASSIGNABLE 0)
 
-elseif(CMAKE_SYSTEM_NAME STREQUAL SunOS)
+elseif(CLR_CMAKE_TARGET_SUNOS)
   set(DEADLOCK_WHEN_THREAD_IS_SUSPENDED_WHILE_BLOCKED_ON_MUTEX 0)
   set(PAL_PTRACE "ptrace((cmd), (pid), (caddr_t)(addr), (data))")
   set(PAL_PT_ATTACH PT_ATTACH)
@@ -1388,6 +1411,32 @@ else() # Anything else is Linux
   set(PAL_PT_WRITE_D PTRACE_POKEDATA)
   set(HAS_FTRUNCATE_LENGTH_ISSUE 0)
   set(HAVE_SCHED_OTHER_ASSIGNABLE 1)
-endif(CMAKE_SYSTEM_NAME STREQUAL Darwin)
+endif(CLR_CMAKE_TARGET_OSX)
+
+check_struct_has_member(
+    "struct statfs"
+    f_fstypename
+    "sys/mount.h"
+    HAVE_STATFS_FSTYPENAME)
+
+check_struct_has_member(
+    "struct statvfs"
+    f_fstypename
+    "sys/mount.h"
+    HAVE_STATVFS_FSTYPENAME)
+
+# statfs: Find whether this struct exists
+if (HAVE_STATFS_FSTYPENAME OR HAVE_STATVFS_FSTYPENAME)
+    set (STATFS_INCLUDES sys/mount.h)
+else ()
+    set (STATFS_INCLUDES sys/statfs.h)
+endif ()
+
+check_prototype_definition(
+    statfs
+    "int statfs(const char *path, struct statfs *buf)"
+    0
+    ${STATFS_INCLUDES}
+    HAVE_NON_LEGACY_STATFS)
 
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/config.h.in ${CMAKE_CURRENT_BINARY_DIR}/config.h)

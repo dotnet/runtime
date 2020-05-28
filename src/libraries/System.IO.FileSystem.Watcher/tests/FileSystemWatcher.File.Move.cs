@@ -4,11 +4,11 @@
 
 using System.Collections.Generic;
 using System.Linq;
-using System.Runtime.InteropServices;
 using Xunit;
 
 namespace System.IO.Tests
 {
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/34583", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
     public class File_Move_Tests : FileSystemWatcherTest
     {
         [Fact]
@@ -48,7 +48,7 @@ namespace System.IO.Tests
         [InlineData(1)]
         [InlineData(2)]
         [InlineData(3)]
-        public void File_Move_From_Watched_To_Unwatched(int filesCount)
+        public void File_Move_Multiple_From_Watched_To_Unwatched(int filesCount)
         {
             FileMove_Multiple_FromWatchedToUnwatched(filesCount, skipOldEvents: false);
         }
@@ -86,11 +86,7 @@ namespace System.IO.Tests
         [Fact]
         public void File_Move_From_Unwatched_To_Watched()
         {
-            // TODO remove OS version check after https://github.com/dotnet/corefx/issues/40034 fixed
-            if (!RuntimeInformation.IsOSPlatform(OSPlatform.OSX) || Environment.OSVersion.Version.Major < 19)
-            {
-                FileMove_FromUnwatchedToWatched(WatcherChangeTypes.Created);
-            }
+            FileMove_FromUnwatchedToWatched(WatcherChangeTypes.Created);
         }
 
         [Theory]

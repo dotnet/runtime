@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System;
 using System.Net.Sockets;
 using System.Runtime.InteropServices;
@@ -13,7 +14,7 @@ internal static partial class Interop
         [DllImport(Interop.Libraries.Ws2_32, ExactSpelling = true, CharSet = CharSet.Unicode, BestFitMapping = false, ThrowOnUnmappableChar = true, SetLastError = true)]
         internal static extern unsafe int GetAddrInfoW(
             [In] string pNameName,
-            [In] string pServiceName,
+            [In] string? pServiceName,
             [In] AddressInfo* pHints,
             [Out] AddressInfo** ppResult);
 

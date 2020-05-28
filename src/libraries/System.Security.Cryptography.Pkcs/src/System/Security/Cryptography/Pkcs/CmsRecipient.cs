@@ -66,7 +66,7 @@ namespace System.Security.Cryptography.Pkcs
 #else
         public
 #endif
-        RSAEncryptionPadding RSAEncryptionPadding { get; }
+        RSAEncryptionPadding? RSAEncryptionPadding { get; }
         public SubjectIdentifierType RecipientIdentifierType { get; }
         public X509Certificate2 Certificate { get; }
 

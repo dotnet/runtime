@@ -1,4 +1,3 @@
-cmake_minimum_required(VERSION 2.6)
 project(b108129_test2)
 include_directories(${INC_PLATFORM_DIR})
 set(CMAKE_SHARED_LIBRARY_PREFIX "")

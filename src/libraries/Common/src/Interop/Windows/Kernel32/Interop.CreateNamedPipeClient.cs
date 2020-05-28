@@ -13,7 +13,7 @@ internal partial class Interop
     {
         [DllImport(Libraries.Kernel32, EntryPoint = "CreateFileW", CharSet = CharSet.Unicode, SetLastError = true, BestFitMapping = false)]
         internal static extern SafePipeHandle CreateNamedPipeClient(
-            string lpFileName,
+            string? lpFileName,
             int dwDesiredAccess,
             System.IO.FileShare dwShareMode,
             ref SECURITY_ATTRIBUTES secAttrs,

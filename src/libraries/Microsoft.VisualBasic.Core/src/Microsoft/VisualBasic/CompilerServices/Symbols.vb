@@ -1055,7 +1055,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
                     If result.Length = 0 Then
                         If reportErrors Then
                             Throw New MissingMemberException(
-                                GetResourceString(SR.MissingMember_NoDefaultMemberFound1, Me.VBFriendlyName))
+                                SR.Format(SR.MissingMember_NoDefaultMemberFound1, Me.VBFriendlyName))
                         End If
 
                         Return result
@@ -1067,7 +1067,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
                     If result.Length = 0 Then
                         If reportErrors Then
                             Throw New MissingMemberException(
-                                GetResourceString(SR.MissingMember_MemberNotFoundOnType2, memberName, Me.VBFriendlyName))
+                                SR.Format(SR.MissingMember_MemberNotFoundOnType2, memberName, Me.VBFriendlyName))
                         End If
 
                         Return result
@@ -1081,7 +1081,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
                 If _instance Is Nothing AndAlso Not IsShared(field) Then
                     'Reference to non-shared member '|1' requires an object reference.
                     Throw New NullReferenceException(
-                        GetResourceString(SR.NullReference_InstanceReqToAccessMember1, FieldToString(field)))
+                        SR.Format(SR.NullReference_InstanceReqToAccessMember1, FieldToString(field)))
                 End If
                 '
                 'BEGIN: SECURITY SECURITY SECURITY SECURITY SECURITY SECURITY SECURITY SECURITY
@@ -1099,13 +1099,13 @@ Namespace Microsoft.VisualBasic.CompilerServices
             Friend Sub SetFieldValue(ByVal field As FieldInfo, ByVal value As Object)
                 If field.IsInitOnly Then
                     Throw New MissingMemberException(
-                        GetResourceString(SR.MissingMember_ReadOnlyField2, field.Name, Me.VBFriendlyName))
+                        SR.Format(SR.MissingMember_ReadOnlyField2, field.Name, Me.VBFriendlyName))
                 End If
 
                 If _instance Is Nothing AndAlso Not IsShared(field) Then
                     'Reference to non-shared member '|1' requires an object reference.
                     Throw New NullReferenceException(
-                        GetResourceString(SR.NullReference_InstanceReqToAccessMember1, FieldToString(field)))
+                        SR.Format(SR.NullReference_InstanceReqToAccessMember1, FieldToString(field)))
                 End If
                 '
                 'BEGIN: SECURITY SECURITY SECURITY SECURITY SECURITY SECURITY SECURITY SECURITY
@@ -1244,7 +1244,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
                 If _instance Is Nothing AndAlso Not IsShared(callTarget) Then
                     'Reference to non-shared member '|1' requires an object reference.
                     Throw New NullReferenceException(
-                        GetResourceString(SR.NullReference_InstanceReqToAccessMember1, targetProcedure.ToString))
+                        SR.Format(SR.NullReference_InstanceReqToAccessMember1, targetProcedure.ToString))
                 End If
                 '
                 'BEGIN: SECURITY SECURITY SECURITY SECURITY SECURITY SECURITY SECURITY SECURITY

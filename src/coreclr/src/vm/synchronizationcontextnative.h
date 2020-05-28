@@ -21,7 +21,6 @@ public:
 
 #ifdef FEATURE_APPX
     static void* QCALLTYPE GetWinRTDispatcherForCurrentThread();
-    static void Cleanup();
 #endif
 };
 #endif // _SYNCHRONIZATIONCONTEXTNATIVE_H

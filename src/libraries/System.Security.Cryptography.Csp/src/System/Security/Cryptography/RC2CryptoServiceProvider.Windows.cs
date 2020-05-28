@@ -51,13 +51,13 @@ namespace System.Security.Cryptography
         }
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA5351", Justification = "This is the implementation of RC2")]
-        public override ICryptoTransform CreateEncryptor(byte[] rgbKey, byte[] rgbIV)
+        public override ICryptoTransform CreateEncryptor(byte[] rgbKey, byte[]? rgbIV)
         {
             return CreateTransform(rgbKey, rgbIV == null ? null : rgbIV.CloneByteArray(), encrypting: true);
         }
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA5351", Justification = "This is the implementation of RC2")]
-        public override ICryptoTransform CreateDecryptor(byte[] rgbKey, byte[] rgbIV)
+        public override ICryptoTransform CreateDecryptor(byte[] rgbKey, byte[]? rgbIV)
         {
             return CreateTransform(rgbKey, rgbIV == null ? null : rgbIV.CloneByteArray(), encrypting: false);
         }
@@ -78,7 +78,7 @@ namespace System.Security.Cryptography
         }
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA5351", Justification = "This is the implementation of RC2")]
-        private ICryptoTransform CreateTransform(byte[] rgbKey, byte[] rgbIV, bool encrypting)
+        private ICryptoTransform CreateTransform(byte[] rgbKey, byte[]? rgbIV, bool encrypting)
         {
             // note: rgbIV is guaranteed to be cloned before this method, so no need to clone it again
 
@@ -97,7 +97,7 @@ namespace System.Security.Cryptography
             else
             {
                 // We truncate IV's that are longer than the block size to 8 bytes : this is
-                // done to maintain backward desktop compatibility with the behavior shipped in V1.x.
+                // done to maintain backward .NET Framework compatibility with the behavior shipped in V1.x.
                 // The call to set the IV in CryptoAPI will ignore any bytes after the first 8
                 // bytes. We'll still reject IV's that are shorter than the block size though.
                 if (rgbIV.Length < 8)

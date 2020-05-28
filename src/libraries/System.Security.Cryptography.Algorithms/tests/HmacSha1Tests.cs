@@ -61,6 +61,12 @@ namespace System.Security.Cryptography.Hashing.Algorithms.Tests
         }
 
         [Fact]
+        public void HmacSha1_ThrowsArgumentNullForNullConstructorKey()
+        {
+            AssertExtensions.Throws<ArgumentNullException>("key", () => new HMACSHA1(null));
+        }
+
+        [Fact]
         public void HmacSha1_Rfc2202_1()
         {
             VerifyHmac(1, "b617318655057264e28bc0b6fb378c8ef146be00");

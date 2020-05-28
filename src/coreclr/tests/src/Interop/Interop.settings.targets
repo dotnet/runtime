@@ -22,8 +22,8 @@
   <ItemGroup
     Condition="'$(TargetsWindows)' == 'true' And ('$(Configuration)' == 'Debug' Or '$(Configuration)' == 'Checked') And '$(CopyDebugCRTDllsToOutputDirectory)' == 'true'" >
 
-    <None Include="$(VCToolsRedistDir)onecore/debug_nonredist/$(Platform)/Microsoft.VC*.DebugCRT/vcruntime*d.dll" Link="%(Filename)%(Extension)" CopyToOutputDirectory="Always" />
-    <None Include="$(VCToolsRedistDir)onecore/debug_nonredist/$(Platform)/Microsoft.VC*.DebugCRT/msvcp*d.dll" Link="%(Filename)%(Extension)" CopyToOutputDirectory="Always" />
-    <None Include="$(ExtensionSdkDir)/Microsoft.UniversalCRT.Debug/$(UCRTVersion)/Redist/Debug/$(Platform)/ucrtbased.dll" CopyToOutputDirectory="Always" />
+    <None Include="$(VCToolsRedistDir)onecore/debug_nonredist/$(TargetArchitecture)/Microsoft.VC*.DebugCRT/vcruntime*d.dll" Link="%(Filename)%(Extension)" CopyToOutputDirectory="Always" />
+    <None Include="$(VCToolsRedistDir)onecore/debug_nonredist/$(TargetArchitecture)/Microsoft.VC*.DebugCRT/msvcp*d.dll" Link="%(Filename)%(Extension)" CopyToOutputDirectory="Always" />
+    <None Include="$(ExtensionSdkDir)/Microsoft.UniversalCRT.Debug/$(UCRTVersion)/Redist/Debug/$(TargetArchitecture)/ucrtbased.dll" CopyToOutputDirectory="Always" />
   </ItemGroup>
 </Project>

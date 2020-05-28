@@ -4,19 +4,18 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <!-- Avoid warnings about type conflicts for types we're building in -->
     <NoWarn>0436</NoWarn>
-    <Configurations>netcoreapp-Unix-Debug;netcoreapp-Unix-Release;netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release</Configurations>
+    <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)-Unix</TargetFrameworks>
+    <Nullable>annotations</Nullable>
   </PropertyGroup>
   <!-- Do not reference these assemblies from the TargetingPack since we are building part of the source code for tests. -->
   <ItemGroup>
     <DefaultReferenceExclusions Include="System.Net.NameResolution" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="..\..\src\System\Net\IPHostEntry.cs">
-      <Link>ProductionCode\System\Net\IPHostEntry.cs</Link>
-    </Compile>
-    <Compile Include="..\..\src\System\Net\Dns.cs">
-      <Link>ProductionCode\System\Net\Dns.cs</Link>
-    </Compile>
+    <Compile Include="..\..\src\System\Net\IPHostEntry.cs"
+             Link="ProductionCode\System\Net\IPHostEntry.cs" />
+    <Compile Include="..\..\src\System\Net\Dns.cs"
+             Link="ProductionCode\System\Net\Dns.cs" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="InitializationTest.cs" />
@@ -31,17 +30,13 @@
   </ItemGroup>
   <!-- Production Code under test-->
   <ItemGroup>
-    <Compile Include="$(CommonPath)System\Net\Internals\SocketExceptionFactory.cs">
-      <Link>ProductionCode\Common\System\Net\Internals\SocketExceptionFactory.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)System\Net\Logging\NetEventSource.Common.cs">
-      <Link>Common\System\Net\Logging\NetEventSource.Common.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)System\Net\InternalException.cs">
-      <Link>Common\System\Net\InternalException.cs</Link>
-    </Compile>
-    <Compile Include="$(CoreLibSharedDir)System\Threading\Tasks\TaskToApm.cs">
-      <Link>System\Threading\Tasks\TaskToApm.cs</Link>
-    </Compile>
+    <Compile Include="$(CommonPath)System\Net\Internals\SocketExceptionFactory.cs"
+             Link="ProductionCode\Common\System\Net\Internals\SocketExceptionFactory.cs" />
+    <Compile Include="$(CommonPath)System\Net\Logging\NetEventSource.Common.cs"
+             Link="Common\System\Net\Logging\NetEventSource.Common.cs" />
+    <Compile Include="$(CommonPath)System\Net\InternalException.cs"
+             Link="Common\System\Net\InternalException.cs" />
+    <Compile Include="$(CommonPath)System\Threading\Tasks\TaskToApm.cs"
+             Link="Common\System\Threading\Tasks\TaskToApm.cs" />
   </ItemGroup>
 </Project>

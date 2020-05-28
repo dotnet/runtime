@@ -655,27 +655,21 @@ namespace System.Xml
                 _doc.Entities = dtNode.Entities;
 
                 //extract the elements which has attribute defined as ID from the element declarations
-                IDictionaryEnumerator elementDecls = schInfo.ElementDecls.GetEnumerator();
-                if (elementDecls != null)
+                foreach (KeyValuePair<XmlQualifiedName, SchemaElementDecl> elementDecls in schInfo.ElementDecls)
                 {
-                    elementDecls.Reset();
-                    while (elementDecls.MoveNext())
+                    SchemaElementDecl elementDecl = elementDecls.Value;
+                    if (elementDecl.AttDefs != null)
                     {
-                        SchemaElementDecl elementDecl = (SchemaElementDecl)elementDecls.Value;
-                        if (elementDecl.AttDefs != null)
+                        foreach (KeyValuePair<XmlQualifiedName, SchemaAttDef> attDefs in elementDecl.AttDefs)
                         {
-                            IDictionaryEnumerator attDefs = elementDecl.AttDefs.GetEnumerator();
-                            while (attDefs.MoveNext())
+                            SchemaAttDef attdef = attDefs.Value;
+                            if (attdef.Datatype.TokenizedType == XmlTokenizedType.ID)
                             {
-                                SchemaAttDef attdef = (SchemaAttDef)attDefs.Value;
-                                if (attdef.Datatype.TokenizedType == XmlTokenizedType.ID)
-                                {
-                                    //we only register the XmlElement based on their Prefix/LocalName and skip the namespace
-                                    _doc.AddIdInfo(
-                                        _doc.AddXmlName(elementDecl.Prefix, elementDecl.Name.Name, string.Empty, null),
-                                        _doc.AddAttrXmlName(attdef.Prefix, attdef.Name.Name, string.Empty, null));
-                                    break;
-                                }
+                                //we only register the XmlElement based on their Prefix/LocalName and skip the namespace
+                                _doc.AddIdInfo(
+                                    _doc.AddXmlName(elementDecl.Prefix, elementDecl.Name.Name, string.Empty, null),
+                                    _doc.AddAttrXmlName(attdef.Prefix, attdef.Name.Name, string.Empty, null));
+                                break;
                             }
                         }
                     }

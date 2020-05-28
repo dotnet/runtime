@@ -27,15 +27,18 @@
 #include "clrprivbinderassemblyloadcontext.h"
 #endif // !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
 
-STDAPI BinderAcquirePEImage(LPCTSTR   szAssemblyPath,
-                            PEImage **ppPEImage,
-                            PEImage **ppNativeImage,
-                            BOOL      fExplicitBindToNativeImage);
+#include "bundle.h"
 
-STDAPI BinderAcquireImport(PEImage                  *pPEImage,
-                           IMDInternalImport       **pIMetaDataAssemblyImport,
-                           DWORD                    *pdwPAFlags,
-                           BOOL                     bNativeImage);
+STDAPI BinderAcquirePEImage(LPCTSTR            szAssemblyPath,
+                            PEImage          **ppPEImage,
+                            PEImage          **ppNativeImage,
+                            BOOL               fExplicitBindToNativeImage,
+                            BundleFileLocation bundleFileLocation);
+
+STDAPI BinderAcquireImport(PEImage            *pPEImage,
+                           IMDInternalImport **pIMetaDataAssemblyImport,
+                           DWORD              *pdwPAFlags,
+                           BOOL                bNativeImage);
 
 STDAPI BinderHasNativeHeader(PEImage *pPEImage,
                              BOOL    *result);

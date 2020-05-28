@@ -3,7 +3,8 @@
     <AssemblyName>System.Dynamic.Runtime</AssemblyName>
     <RootNamespace>System.Dynamic.Runtime</RootNamespace>
     <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
-    <Configurations>netcoreapp-Debug;netcoreapp-Release</Configurations>
+    <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
+    <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="System.Linq.Expressions" />

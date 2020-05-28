@@ -9,7 +9,6 @@ namespace System.Net.Test.Common
 {
     public static partial class Capability
     {
-        // TODO: Using RtlGetVersion is temporary until issue #4741 gets resolved.
         [DllImport("ntdll", CharSet = CharSet.Unicode)]
         private static extern int RtlGetVersion(ref RTL_OSVERSIONINFOW lpVersionInformation);
 

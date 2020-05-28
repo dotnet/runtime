@@ -203,7 +203,7 @@ namespace BenchmarkConsoleApplication
         public bool DoListBenchmarkTagSets; // List out the benchmark tag sets from the .XML file
         public bool DoListBenchmarkExecutables; // List out the benchmark exectubles from the .XML file
         public int NumberOfRunsPerBenchmark; // Number of runs/iterations each benchmark should be run
-        public string ComplusVersion; // COMPlus_VERSION for desktop CLR hosted runs (optional).
+        public string ComplusVersion; // COMPlus_VERSION for .NET Framework hosted runs (optional).
         public string BenchmarksRootDirectory; // Root directory for benchmark tree specified in .XML file.
         public string BenchmarkXmlFileName; // Benchmark .XML filename (default coreclr_benchmarks.xml)
         public string BenchmarkCsvFileName; // Benchmark output .CSV filename (default coreclr_benchmarks.csv)

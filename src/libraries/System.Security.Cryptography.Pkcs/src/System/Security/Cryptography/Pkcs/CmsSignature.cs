@@ -4,6 +4,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Numerics;
 using System.Security.Cryptography.Asn1;
 using System.Security.Cryptography.X509Certificates;
@@ -36,7 +37,7 @@ namespace System.Security.Cryptography.Pkcs
             byte[] valueHash,
             byte[] signature,
 #endif
-            string digestAlgorithmOid,
+            string? digestAlgorithmOid,
             HashAlgorithmName digestAlgorithmName,
             ReadOnlyMemory<byte>? signatureParameters,
             X509Certificate2 certificate);
@@ -49,14 +50,14 @@ namespace System.Security.Cryptography.Pkcs
 #endif
             HashAlgorithmName hashAlgorithmName,
             X509Certificate2 certificate,
-            AsymmetricAlgorithm key,
+            AsymmetricAlgorithm? key,
             bool silent,
-            out Oid signatureAlgorithm,
-            out byte[] signatureValue);
+            [NotNullWhen(true)] out Oid? signatureAlgorithm,
+            [NotNullWhen(true)] out byte[]? signatureValue);
 
-        internal static CmsSignature ResolveAndVerifyKeyType(string signatureAlgorithmOid, AsymmetricAlgorithm key)
+        internal static CmsSignature? ResolveAndVerifyKeyType(string signatureAlgorithmOid, AsymmetricAlgorithm? key)
         {
-            if (s_lookup.TryGetValue(signatureAlgorithmOid, out CmsSignature processor))
+            if (s_lookup.TryGetValue(signatureAlgorithmOid, out CmsSignature? processor))
             {
                 if (key != null && !processor.VerifyKeyType(key))
                 {
@@ -77,12 +78,12 @@ namespace System.Security.Cryptography.Pkcs
 #endif
             HashAlgorithmName hashAlgorithmName,
             X509Certificate2 certificate,
-            AsymmetricAlgorithm key,
+            AsymmetricAlgorithm? key,
             bool silent,
-            out Oid oid,
+            out Oid? oid,
             out ReadOnlyMemory<byte> signatureValue)
         {
-            CmsSignature processor = ResolveAndVerifyKeyType(certificate.GetKeyAlgorithm(), key);
+            CmsSignature? processor = ResolveAndVerifyKeyType(certificate.GetKeyAlgorithm(), key);
 
             if (processor == null)
             {
@@ -91,8 +92,7 @@ namespace System.Security.Cryptography.Pkcs
                 return false;
             }
 
-            byte[] signature;
-            bool signed = processor.Sign(dataHash, hashAlgorithmName, certificate, key, silent, out oid, out signature);
+            bool signed = processor.Sign(dataHash, hashAlgorithmName, certificate, key, silent, out oid, out byte[]? signature);
 
             signatureValue = signature;
             return signed;

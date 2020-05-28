@@ -1,6 +1,6 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <Configurations>netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release</Configurations>
+    <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT</TargetFrameworks>
   </PropertyGroup>
   <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
     <Compile Include="X509Certificate2UITests.cs" />
@@ -8,9 +8,8 @@
     <Compile Include="XamlAccessLevelTests.cs" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="$(CommonTestPath)System\Drawing\Helpers.cs">
-      <Link>Common\System\Drawing\Helpers.cs</Link>
-    </Compile>
+    <Compile Include="$(CommonTestPath)System\Drawing\Helpers.cs"
+             Link="Common\System\Drawing\Helpers.cs" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="System\Drawing\FontConverterTests.cs" />

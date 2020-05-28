@@ -10,6 +10,6 @@ namespace Internal.Cryptography.Pal
 {
     internal interface IExportPal : IDisposable
     {
-        byte[] Export(X509ContentType contentType, SafePasswordHandle password);
+        byte[]? Export(X509ContentType contentType, SafePasswordHandle password);
     }
 }

@@ -277,7 +277,8 @@ namespace System
             "($#)", "-$#", "$-#", "$#-",
             "(#$)", "-#$", "#-$", "#$-",
             "-# $", "-$ #", "# $-", "$ #-",
-            "$ -#", "#- $", "($ #)", "(# $)"
+            "$ -#", "#- $", "($ #)", "(# $)",
+            "$- #"
         };
 
         private static readonly string[] s_posPercentFormats =
@@ -685,143 +686,165 @@ namespace System
             return false;
         }
 
-        public static unsafe string FormatInt32(int value, ReadOnlySpan<char> format, IFormatProvider? provider)
+        private static char GetHexBase(char fmt)
         {
-            // Fast path for default format with a non-negative value
-            if (value >= 0 && format.Length == 0)
-            {
-                return UInt32ToDecStr((uint)value, digits: -1);
-            }
+            // The fmt-(X-A+10) hack has the effect of dictating whether we produce uppercase or lowercase
+            // hex numbers for a-f. 'X' as the fmt code produces uppercase. 'x' as the format code produces lowercase.
+            return (char)(fmt - ('X' - 'A' + 10));
+        }
 
-            char fmt = ParseFormatSpecifier(format, out int digits);
-            char fmtUpper = (char)(fmt & 0xFFDF); // ensure fmt is upper-cased for purposes of comparison
-            if ((fmtUpper == 'G' && digits < 1) || fmtUpper == 'D')
+        public static string FormatInt32(int value, int hexMask, string? format, IFormatProvider? provider)
+        {
+            // Fast path for default format
+            if (string.IsNullOrEmpty(format))
             {
                 return value >= 0 ?
-                    UInt32ToDecStr((uint)value, digits) :
-                    NegativeInt32ToDecStr(value, digits, NumberFormatInfo.GetInstance(provider).NegativeSign);
+                    UInt32ToDecStr((uint)value) :
+                    NegativeInt32ToDecStr(value, digits: -1, NumberFormatInfo.GetInstance(provider).NegativeSign);
             }
-            else if (fmtUpper == 'X')
+
+            return FormatInt32Slow(value, hexMask, format, provider);
+
+            static unsafe string FormatInt32Slow(int value, int hexMask, string? format, IFormatProvider? provider)
             {
-                // The fmt-(X-A+10) hack has the effect of dictating whether we produce uppercase or lowercase
-                // hex numbers for a-f. 'X' as the fmt code produces uppercase. 'x' as the format code produces lowercase.
-                return Int32ToHexStr(value, (char)(fmt - ('X' - 'A' + 10)), digits);
-            }
-            else
-            {
-                NumberFormatInfo info = NumberFormatInfo.GetInstance(provider);
-
-                byte* pDigits = stackalloc byte[Int32NumberBufferLength];
-                NumberBuffer number = new NumberBuffer(NumberBufferKind.Integer, pDigits, Int32NumberBufferLength);
-
-                Int32ToNumber(value, ref number);
-
-                char* stackPtr = stackalloc char[CharStackBufferSize];
-                ValueStringBuilder sb = new ValueStringBuilder(new Span<char>(stackPtr, CharStackBufferSize));
-
-                if (fmt != 0)
+                ReadOnlySpan<char> formatSpan = format;
+                char fmt = ParseFormatSpecifier(formatSpan, out int digits);
+                char fmtUpper = (char)(fmt & 0xFFDF); // ensure fmt is upper-cased for purposes of comparison
+                if (fmtUpper == 'G' ? digits < 1 : fmtUpper == 'D')
                 {
-                    NumberToString(ref sb, ref number, fmt, digits, info);
+                    return value >= 0 ?
+                        UInt32ToDecStr((uint)value, digits) :
+                        NegativeInt32ToDecStr(value, digits, NumberFormatInfo.GetInstance(provider).NegativeSign);
+                }
+                else if (fmtUpper == 'X')
+                {
+                    return Int32ToHexStr(value & hexMask, GetHexBase(fmt), digits);
                 }
                 else
                 {
-                    NumberToStringFormat(ref sb, ref number, format, info);
+                    NumberFormatInfo info = NumberFormatInfo.GetInstance(provider);
+
+                    byte* pDigits = stackalloc byte[Int32NumberBufferLength];
+                    NumberBuffer number = new NumberBuffer(NumberBufferKind.Integer, pDigits, Int32NumberBufferLength);
+
+                    Int32ToNumber(value, ref number);
+
+                    char* stackPtr = stackalloc char[CharStackBufferSize];
+                    ValueStringBuilder sb = new ValueStringBuilder(new Span<char>(stackPtr, CharStackBufferSize));
+
+                    if (fmt != 0)
+                    {
+                        NumberToString(ref sb, ref number, fmt, digits, info);
+                    }
+                    else
+                    {
+                        NumberToStringFormat(ref sb, ref number, formatSpan, info);
+                    }
+                    return sb.ToString();
                 }
-                return sb.ToString();
             }
         }
 
-        public static unsafe bool TryFormatInt32(int value, ReadOnlySpan<char> format, IFormatProvider? provider, Span<char> destination, out int charsWritten)
-        {
-            // Fast path for default format with a non-negative value
-            if (value >= 0 && format.Length == 0)
-            {
-                return TryUInt32ToDecStr((uint)value, digits: -1, destination, out charsWritten);
-            }
-
-            char fmt = ParseFormatSpecifier(format, out int digits);
-            char fmtUpper = (char)(fmt & 0xFFDF); // ensure fmt is upper-cased for purposes of comparison
-            if ((fmtUpper == 'G' && digits < 1) || fmtUpper == 'D')
-            {
-                return value >= 0 ?
-                    TryUInt32ToDecStr((uint)value, digits, destination, out charsWritten) :
-                    TryNegativeInt32ToDecStr(value, digits, NumberFormatInfo.GetInstance(provider).NegativeSign, destination, out charsWritten);
-            }
-            else if (fmtUpper == 'X')
-            {
-                // The fmt-(X-A+10) hack has the effect of dictating whether we produce uppercase or lowercase
-                // hex numbers for a-f. 'X' as the fmt code produces uppercase. 'x' as the format code produces lowercase.
-                return TryInt32ToHexStr(value, (char)(fmt - ('X' - 'A' + 10)), digits, destination, out charsWritten);
-            }
-            else
-            {
-                NumberFormatInfo info = NumberFormatInfo.GetInstance(provider);
-
-                byte* pDigits = stackalloc byte[Int32NumberBufferLength];
-                NumberBuffer number = new NumberBuffer(NumberBufferKind.Integer, pDigits, Int32NumberBufferLength);
-
-                Int32ToNumber(value, ref number);
-
-                char* stackPtr = stackalloc char[CharStackBufferSize];
-                ValueStringBuilder sb = new ValueStringBuilder(new Span<char>(stackPtr, CharStackBufferSize));
-
-                if (fmt != 0)
-                {
-                    NumberToString(ref sb, ref number, fmt, digits, info);
-                }
-                else
-                {
-                    NumberToStringFormat(ref sb, ref number, format, info);
-                }
-                return sb.TryCopyTo(destination, out charsWritten);
-            }
-        }
-
-        public static unsafe string FormatUInt32(uint value, ReadOnlySpan<char> format, IFormatProvider? provider)
+        public static bool TryFormatInt32(int value, int hexMask, ReadOnlySpan<char> format, IFormatProvider? provider, Span<char> destination, out int charsWritten)
         {
             // Fast path for default format
             if (format.Length == 0)
             {
-                return UInt32ToDecStr(value, digits: -1);
+                return value >= 0 ?
+                    TryUInt32ToDecStr((uint)value, digits: -1, destination, out charsWritten) :
+                    TryNegativeInt32ToDecStr(value, digits: -1, NumberFormatInfo.GetInstance(provider).NegativeSign, destination, out charsWritten);
             }
 
-            char fmt = ParseFormatSpecifier(format, out int digits);
-            char fmtUpper = (char)(fmt & 0xFFDF); // ensure fmt is upper-cased for purposes of comparison
-            if ((fmtUpper == 'G' && digits < 1) || fmtUpper == 'D')
+            return TryFormatInt32Slow(value, hexMask, format, provider, destination, out charsWritten);
+
+            static unsafe bool TryFormatInt32Slow(int value, int hexMask, ReadOnlySpan<char> format, IFormatProvider? provider, Span<char> destination, out int charsWritten)
             {
-                return UInt32ToDecStr(value, digits);
-            }
-            else if (fmtUpper == 'X')
-            {
-                // The fmt-(X-A+10) hack has the effect of dictating whether we produce uppercase or lowercase
-                // hex numbers for a-f. 'X' as the fmt code produces uppercase. 'x' as the format code produces lowercase.
-                return Int32ToHexStr((int)value, (char)(fmt - ('X' - 'A' + 10)), digits);
-            }
-            else
-            {
-                NumberFormatInfo info = NumberFormatInfo.GetInstance(provider);
-
-                byte* pDigits = stackalloc byte[UInt32NumberBufferLength];
-                NumberBuffer number = new NumberBuffer(NumberBufferKind.Integer, pDigits, UInt32NumberBufferLength);
-
-                UInt32ToNumber(value, ref number);
-
-                char* stackPtr = stackalloc char[CharStackBufferSize];
-                ValueStringBuilder sb = new ValueStringBuilder(new Span<char>(stackPtr, CharStackBufferSize));
-
-                if (fmt != 0)
+                char fmt = ParseFormatSpecifier(format, out int digits);
+                char fmtUpper = (char)(fmt & 0xFFDF); // ensure fmt is upper-cased for purposes of comparison
+                if (fmtUpper == 'G' ? digits < 1 : fmtUpper == 'D')
                 {
-                    NumberToString(ref sb, ref number, fmt, digits, info);
+                    return value >= 0 ?
+                        TryUInt32ToDecStr((uint)value, digits, destination, out charsWritten) :
+                        TryNegativeInt32ToDecStr(value, digits, NumberFormatInfo.GetInstance(provider).NegativeSign, destination, out charsWritten);
+                }
+                else if (fmtUpper == 'X')
+                {
+                    return TryInt32ToHexStr(value & hexMask, GetHexBase(fmt), digits, destination, out charsWritten);
                 }
                 else
                 {
-                    NumberToStringFormat(ref sb, ref number, format, info);
+                    NumberFormatInfo info = NumberFormatInfo.GetInstance(provider);
+
+                    byte* pDigits = stackalloc byte[Int32NumberBufferLength];
+                    NumberBuffer number = new NumberBuffer(NumberBufferKind.Integer, pDigits, Int32NumberBufferLength);
+
+                    Int32ToNumber(value, ref number);
+
+                    char* stackPtr = stackalloc char[CharStackBufferSize];
+                    ValueStringBuilder sb = new ValueStringBuilder(new Span<char>(stackPtr, CharStackBufferSize));
+
+                    if (fmt != 0)
+                    {
+                        NumberToString(ref sb, ref number, fmt, digits, info);
+                    }
+                    else
+                    {
+                        NumberToStringFormat(ref sb, ref number, format, info);
+                    }
+                    return sb.TryCopyTo(destination, out charsWritten);
                 }
-                return sb.ToString();
             }
         }
 
-        public static unsafe bool TryFormatUInt32(uint value, ReadOnlySpan<char> format, IFormatProvider? provider, Span<char> destination, out int charsWritten)
+        public static string FormatUInt32(uint value, string? format, IFormatProvider? provider)
+        {
+            // Fast path for default format
+            if (string.IsNullOrEmpty(format))
+            {
+                return UInt32ToDecStr(value);
+            }
+
+            return FormatUInt32Slow(value, format, provider);
+
+            static unsafe string FormatUInt32Slow(uint value, string? format, IFormatProvider? provider)
+            {
+                ReadOnlySpan<char> formatSpan = format;
+                char fmt = ParseFormatSpecifier(formatSpan, out int digits);
+                char fmtUpper = (char)(fmt & 0xFFDF); // ensure fmt is upper-cased for purposes of comparison
+                if (fmtUpper == 'G' ? digits < 1 : fmtUpper == 'D')
+                {
+                    return UInt32ToDecStr(value, digits);
+                }
+                else if (fmtUpper == 'X')
+                {
+                    return Int32ToHexStr((int)value, GetHexBase(fmt), digits);
+                }
+                else
+                {
+                    NumberFormatInfo info = NumberFormatInfo.GetInstance(provider);
+
+                    byte* pDigits = stackalloc byte[UInt32NumberBufferLength];
+                    NumberBuffer number = new NumberBuffer(NumberBufferKind.Integer, pDigits, UInt32NumberBufferLength);
+
+                    UInt32ToNumber(value, ref number);
+
+                    char* stackPtr = stackalloc char[CharStackBufferSize];
+                    ValueStringBuilder sb = new ValueStringBuilder(new Span<char>(stackPtr, CharStackBufferSize));
+
+                    if (fmt != 0)
+                    {
+                        NumberToString(ref sb, ref number, fmt, digits, info);
+                    }
+                    else
+                    {
+                        NumberToStringFormat(ref sb, ref number, formatSpan, info);
+                    }
+                    return sb.ToString();
+                }
+            }
+        }
+
+        public static bool TryFormatUInt32(uint value, ReadOnlySpan<char> format, IFormatProvider? provider, Span<char> destination, out int charsWritten)
         {
             // Fast path for default format
             if (format.Length == 0)
@@ -829,182 +852,197 @@ namespace System
                 return TryUInt32ToDecStr(value, digits: -1, destination, out charsWritten);
             }
 
-            char fmt = ParseFormatSpecifier(format, out int digits);
-            char fmtUpper = (char)(fmt & 0xFFDF); // ensure fmt is upper-cased for purposes of comparison
-            if ((fmtUpper == 'G' && digits < 1) || fmtUpper == 'D')
+            return TryFormatUInt32Slow(value, format, provider, destination, out charsWritten);
+
+            static unsafe bool TryFormatUInt32Slow(uint value, ReadOnlySpan<char> format, IFormatProvider? provider, Span<char> destination, out int charsWritten)
             {
-                return TryUInt32ToDecStr(value, digits, destination, out charsWritten);
-            }
-            else if (fmtUpper == 'X')
-            {
-                // The fmt-(X-A+10) hack has the effect of dictating whether we produce uppercase or lowercase
-                // hex numbers for a-f. 'X' as the fmt code produces uppercase. 'x' as the format code produces lowercase.
-                return TryInt32ToHexStr((int)value, (char)(fmt - ('X' - 'A' + 10)), digits, destination, out charsWritten);
-            }
-            else
-            {
-                NumberFormatInfo info = NumberFormatInfo.GetInstance(provider);
-
-                byte* pDigits = stackalloc byte[UInt32NumberBufferLength];
-                NumberBuffer number = new NumberBuffer(NumberBufferKind.Integer, pDigits, UInt32NumberBufferLength);
-
-                UInt32ToNumber(value, ref number);
-
-                char* stackPtr = stackalloc char[CharStackBufferSize];
-                ValueStringBuilder sb = new ValueStringBuilder(new Span<char>(stackPtr, CharStackBufferSize));
-
-                if (fmt != 0)
+                char fmt = ParseFormatSpecifier(format, out int digits);
+                char fmtUpper = (char)(fmt & 0xFFDF); // ensure fmt is upper-cased for purposes of comparison
+                if (fmtUpper == 'G' ? digits < 1 : fmtUpper == 'D')
                 {
-                    NumberToString(ref sb, ref number, fmt, digits, info);
+                    return TryUInt32ToDecStr(value, digits, destination, out charsWritten);
+                }
+                else if (fmtUpper == 'X')
+                {
+                    return TryInt32ToHexStr((int)value, GetHexBase(fmt), digits, destination, out charsWritten);
                 }
                 else
                 {
-                    NumberToStringFormat(ref sb, ref number, format, info);
+                    NumberFormatInfo info = NumberFormatInfo.GetInstance(provider);
+
+                    byte* pDigits = stackalloc byte[UInt32NumberBufferLength];
+                    NumberBuffer number = new NumberBuffer(NumberBufferKind.Integer, pDigits, UInt32NumberBufferLength);
+
+                    UInt32ToNumber(value, ref number);
+
+                    char* stackPtr = stackalloc char[CharStackBufferSize];
+                    ValueStringBuilder sb = new ValueStringBuilder(new Span<char>(stackPtr, CharStackBufferSize));
+
+                    if (fmt != 0)
+                    {
+                        NumberToString(ref sb, ref number, fmt, digits, info);
+                    }
+                    else
+                    {
+                        NumberToStringFormat(ref sb, ref number, format, info);
+                    }
+                    return sb.TryCopyTo(destination, out charsWritten);
                 }
-                return sb.TryCopyTo(destination, out charsWritten);
             }
         }
 
-        public static unsafe string FormatInt64(long value, ReadOnlySpan<char> format, IFormatProvider? provider)
+        public static string FormatInt64(long value, string? format, IFormatProvider? provider)
         {
-            // Fast path for default format with a non-negative value
-            if (value >= 0 && format.Length == 0)
-            {
-                return UInt64ToDecStr((ulong)value, digits: -1);
-            }
-
-            char fmt = ParseFormatSpecifier(format, out int digits);
-            char fmtUpper = (char)(fmt & 0xFFDF); // ensure fmt is upper-cased for purposes of comparison
-            if ((fmtUpper == 'G' && digits < 1) || fmtUpper == 'D')
+            // Fast path for default format
+            if (string.IsNullOrEmpty(format))
             {
                 return value >= 0 ?
-                    UInt64ToDecStr((ulong)value, digits) :
-                    NegativeInt64ToDecStr(value, digits, NumberFormatInfo.GetInstance(provider).NegativeSign);
+                    UInt64ToDecStr((ulong)value, digits: -1) :
+                    NegativeInt64ToDecStr(value, digits: -1, NumberFormatInfo.GetInstance(provider).NegativeSign);
             }
-            else if (fmtUpper == 'X')
+
+            return FormatInt64Slow(value, format, provider);
+
+            static unsafe string FormatInt64Slow(long value, string? format, IFormatProvider? provider)
             {
-                // The fmt-(X-A+10) hack has the effect of dictating whether we produce uppercase or lowercase
-                // hex numbers for a-f. 'X' as the fmt code produces uppercase. 'x' as the format code
-                // produces lowercase.
-                return Int64ToHexStr(value, (char)(fmt - ('X' - 'A' + 10)), digits);
-            }
-            else
-            {
-                NumberFormatInfo info = NumberFormatInfo.GetInstance(provider);
-
-                byte* pDigits = stackalloc byte[Int64NumberBufferLength];
-                NumberBuffer number = new NumberBuffer(NumberBufferKind.Integer, pDigits, Int64NumberBufferLength);
-
-                Int64ToNumber(value, ref number);
-
-                char* stackPtr = stackalloc char[CharStackBufferSize];
-                ValueStringBuilder sb = new ValueStringBuilder(new Span<char>(stackPtr, CharStackBufferSize));
-
-                if (fmt != 0)
+                ReadOnlySpan<char> formatSpan = format;
+                char fmt = ParseFormatSpecifier(formatSpan, out int digits);
+                char fmtUpper = (char)(fmt & 0xFFDF); // ensure fmt is upper-cased for purposes of comparison
+                if (fmtUpper == 'G' ? digits < 1 : fmtUpper == 'D')
                 {
-                    NumberToString(ref sb, ref number, fmt, digits, info);
+                    return value >= 0 ?
+                        UInt64ToDecStr((ulong)value, digits) :
+                        NegativeInt64ToDecStr(value, digits, NumberFormatInfo.GetInstance(provider).NegativeSign);
+                }
+                else if (fmtUpper == 'X')
+                {
+                    return Int64ToHexStr(value, GetHexBase(fmt), digits);
                 }
                 else
                 {
-                    NumberToStringFormat(ref sb, ref number, format, info);
+                    NumberFormatInfo info = NumberFormatInfo.GetInstance(provider);
+
+                    byte* pDigits = stackalloc byte[Int64NumberBufferLength];
+                    NumberBuffer number = new NumberBuffer(NumberBufferKind.Integer, pDigits, Int64NumberBufferLength);
+
+                    Int64ToNumber(value, ref number);
+
+                    char* stackPtr = stackalloc char[CharStackBufferSize];
+                    ValueStringBuilder sb = new ValueStringBuilder(new Span<char>(stackPtr, CharStackBufferSize));
+
+                    if (fmt != 0)
+                    {
+                        NumberToString(ref sb, ref number, fmt, digits, info);
+                    }
+                    else
+                    {
+                        NumberToStringFormat(ref sb, ref number, formatSpan, info);
+                    }
+                    return sb.ToString();
                 }
-                return sb.ToString();
             }
         }
 
-        public static unsafe bool TryFormatInt64(long value, ReadOnlySpan<char> format, IFormatProvider? provider, Span<char> destination, out int charsWritten)
-        {
-            // Fast path for default format with a non-negative value
-            if (value >= 0 && format.Length == 0)
-            {
-                return TryUInt64ToDecStr((ulong)value, digits: -1, destination, out charsWritten);
-            }
-
-            char fmt = ParseFormatSpecifier(format, out int digits);
-            char fmtUpper = (char)(fmt & 0xFFDF); // ensure fmt is upper-cased for purposes of comparison
-            if ((fmtUpper == 'G' && digits < 1) || fmtUpper == 'D')
-            {
-                return value >= 0 ?
-                    TryUInt64ToDecStr((ulong)value, digits, destination, out charsWritten) :
-                    TryNegativeInt64ToDecStr(value, digits, NumberFormatInfo.GetInstance(provider).NegativeSign, destination, out charsWritten);
-            }
-            else if (fmtUpper == 'X')
-            {
-                // The fmt-(X-A+10) hack has the effect of dictating whether we produce uppercase or lowercase
-                // hex numbers for a-f. 'X' as the fmt code produces uppercase. 'x' as the format code
-                // produces lowercase.
-                return TryInt64ToHexStr(value, (char)(fmt - ('X' - 'A' + 10)), digits, destination, out charsWritten);
-            }
-            else
-            {
-                NumberFormatInfo info = NumberFormatInfo.GetInstance(provider);
-
-                byte* pDigits = stackalloc byte[Int64NumberBufferLength];
-                NumberBuffer number = new NumberBuffer(NumberBufferKind.Integer, pDigits, Int64NumberBufferLength);
-
-                Int64ToNumber(value, ref number);
-
-                char* stackPtr = stackalloc char[CharStackBufferSize];
-                ValueStringBuilder sb = new ValueStringBuilder(new Span<char>(stackPtr, CharStackBufferSize));
-
-                if (fmt != 0)
-                {
-                    NumberToString(ref sb, ref number, fmt, digits, info);
-                }
-                else
-                {
-                    NumberToStringFormat(ref sb, ref number, format, info);
-                }
-                return sb.TryCopyTo(destination, out charsWritten);
-            }
-        }
-
-        public static unsafe string FormatUInt64(ulong value, ReadOnlySpan<char> format, IFormatProvider? provider)
+        public static bool TryFormatInt64(long value, ReadOnlySpan<char> format, IFormatProvider? provider, Span<char> destination, out int charsWritten)
         {
             // Fast path for default format
             if (format.Length == 0)
             {
-                return UInt64ToDecStr(value, digits: -1);
+                return value >= 0 ?
+                    TryUInt64ToDecStr((ulong)value, digits: -1, destination, out charsWritten) :
+                    TryNegativeInt64ToDecStr(value, digits: -1, NumberFormatInfo.GetInstance(provider).NegativeSign, destination, out charsWritten);
             }
 
-            char fmt = ParseFormatSpecifier(format, out int digits);
-            char fmtUpper = (char)(fmt & 0xFFDF); // ensure fmt is upper-cased for purposes of comparison
-            if ((fmtUpper == 'G' && digits < 1) || fmtUpper == 'D')
+            return TryFormatInt64Slow(value, format, provider, destination, out charsWritten);
+
+            static unsafe bool TryFormatInt64Slow(long value, ReadOnlySpan<char> format, IFormatProvider? provider, Span<char> destination, out int charsWritten)
             {
-                return UInt64ToDecStr(value, digits);
-            }
-            else if (fmtUpper == 'X')
-            {
-                // The fmt-(X-A+10) hack has the effect of dictating whether we produce uppercase or lowercase
-                // hex numbers for a-f. 'X' as the fmt code produces uppercase. 'x' as the format code
-                // produces lowercase.
-                return Int64ToHexStr((long)value, (char)(fmt - ('X' - 'A' + 10)), digits);
-            }
-            else
-            {
-                NumberFormatInfo info = NumberFormatInfo.GetInstance(provider);
-
-                byte* pDigits = stackalloc byte[UInt64NumberBufferLength];
-                NumberBuffer number = new NumberBuffer(NumberBufferKind.Integer, pDigits, UInt64NumberBufferLength);
-
-                UInt64ToNumber(value, ref number);
-
-                char* stackPtr = stackalloc char[CharStackBufferSize];
-                ValueStringBuilder sb = new ValueStringBuilder(new Span<char>(stackPtr, CharStackBufferSize));
-
-                if (fmt != 0)
+                char fmt = ParseFormatSpecifier(format, out int digits);
+                char fmtUpper = (char)(fmt & 0xFFDF); // ensure fmt is upper-cased for purposes of comparison
+                if (fmtUpper == 'G' ? digits < 1 : fmtUpper == 'D')
                 {
-                    NumberToString(ref sb, ref number, fmt, digits, info);
+                    return value >= 0 ?
+                        TryUInt64ToDecStr((ulong)value, digits, destination, out charsWritten) :
+                        TryNegativeInt64ToDecStr(value, digits, NumberFormatInfo.GetInstance(provider).NegativeSign, destination, out charsWritten);
+                }
+                else if (fmtUpper == 'X')
+                {
+                    return TryInt64ToHexStr(value, GetHexBase(fmt), digits, destination, out charsWritten);
                 }
                 else
                 {
-                    NumberToStringFormat(ref sb, ref number, format, info);
+                    NumberFormatInfo info = NumberFormatInfo.GetInstance(provider);
+
+                    byte* pDigits = stackalloc byte[Int64NumberBufferLength];
+                    NumberBuffer number = new NumberBuffer(NumberBufferKind.Integer, pDigits, Int64NumberBufferLength);
+
+                    Int64ToNumber(value, ref number);
+
+                    char* stackPtr = stackalloc char[CharStackBufferSize];
+                    ValueStringBuilder sb = new ValueStringBuilder(new Span<char>(stackPtr, CharStackBufferSize));
+
+                    if (fmt != 0)
+                    {
+                        NumberToString(ref sb, ref number, fmt, digits, info);
+                    }
+                    else
+                    {
+                        NumberToStringFormat(ref sb, ref number, format, info);
+                    }
+                    return sb.TryCopyTo(destination, out charsWritten);
                 }
-                return sb.ToString();
             }
         }
 
-        public static unsafe bool TryFormatUInt64(ulong value, ReadOnlySpan<char> format, IFormatProvider? provider, Span<char> destination, out int charsWritten)
+        public static string FormatUInt64(ulong value, string? format, IFormatProvider? provider)
+        {
+            // Fast path for default format
+            if (string.IsNullOrEmpty(format))
+            {
+                return UInt64ToDecStr(value, digits: -1);
+            }
+
+            return FormatUInt64Slow(value, format, provider);
+
+            static unsafe string FormatUInt64Slow(ulong value, string? format, IFormatProvider? provider)
+            {
+                ReadOnlySpan<char> formatSpan = format;
+                char fmt = ParseFormatSpecifier(formatSpan, out int digits);
+                char fmtUpper = (char)(fmt & 0xFFDF); // ensure fmt is upper-cased for purposes of comparison
+                if (fmtUpper == 'G' ? digits < 1 : fmtUpper == 'D')
+                {
+                    return UInt64ToDecStr(value, digits);
+                }
+                else if (fmtUpper == 'X')
+                {
+                    return Int64ToHexStr((long)value, GetHexBase(fmt), digits);
+                }
+                else
+                {
+                    NumberFormatInfo info = NumberFormatInfo.GetInstance(provider);
+
+                    byte* pDigits = stackalloc byte[UInt64NumberBufferLength];
+                    NumberBuffer number = new NumberBuffer(NumberBufferKind.Integer, pDigits, UInt64NumberBufferLength);
+
+                    UInt64ToNumber(value, ref number);
+
+                    char* stackPtr = stackalloc char[CharStackBufferSize];
+                    ValueStringBuilder sb = new ValueStringBuilder(new Span<char>(stackPtr, CharStackBufferSize));
+
+                    if (fmt != 0)
+                    {
+                        NumberToString(ref sb, ref number, fmt, digits, info);
+                    }
+                    else
+                    {
+                        NumberToStringFormat(ref sb, ref number, formatSpan, info);
+                    }
+                    return sb.ToString();
+                }
+            }
+        }
+
+        public static bool TryFormatUInt64(ulong value, ReadOnlySpan<char> format, IFormatProvider? provider, Span<char> destination, out int charsWritten)
         {
             // Fast path for default format
             if (format.Length == 0)
@@ -1012,40 +1050,42 @@ namespace System
                 return TryUInt64ToDecStr(value, digits: -1, destination, out charsWritten);
             }
 
-            char fmt = ParseFormatSpecifier(format, out int digits);
-            char fmtUpper = (char)(fmt & 0xFFDF); // ensure fmt is upper-cased for purposes of comparison
-            if ((fmtUpper == 'G' && digits < 1) || fmtUpper == 'D')
+            return TryFormatUInt64Slow(value, format, provider, destination, out charsWritten);
+
+            static unsafe bool TryFormatUInt64Slow(ulong value, ReadOnlySpan<char> format, IFormatProvider? provider, Span<char> destination, out int charsWritten)
             {
-                return TryUInt64ToDecStr(value, digits, destination, out charsWritten);
-            }
-            else if (fmtUpper == 'X')
-            {
-                // The fmt-(X-A+10) hack has the effect of dictating whether we produce uppercase or lowercase
-                // hex numbers for a-f. 'X' as the fmt code produces uppercase. 'x' as the format code
-                // produces lowercase.
-                return TryInt64ToHexStr((long)value, (char)(fmt - ('X' - 'A' + 10)), digits, destination, out charsWritten);
-            }
-            else
-            {
-                NumberFormatInfo info = NumberFormatInfo.GetInstance(provider);
-
-                byte* pDigits = stackalloc byte[UInt64NumberBufferLength];
-                NumberBuffer number = new NumberBuffer(NumberBufferKind.Integer, pDigits, UInt64NumberBufferLength);
-
-                UInt64ToNumber(value, ref number);
-
-                char* stackPtr = stackalloc char[CharStackBufferSize];
-                ValueStringBuilder sb = new ValueStringBuilder(new Span<char>(stackPtr, CharStackBufferSize));
-
-                if (fmt != 0)
+                char fmt = ParseFormatSpecifier(format, out int digits);
+                char fmtUpper = (char)(fmt & 0xFFDF); // ensure fmt is upper-cased for purposes of comparison
+                if (fmtUpper == 'G' ? digits < 1 : fmtUpper == 'D')
                 {
-                    NumberToString(ref sb, ref number, fmt, digits, info);
+                    return TryUInt64ToDecStr(value, digits, destination, out charsWritten);
+                }
+                else if (fmtUpper == 'X')
+                {
+                    return TryInt64ToHexStr((long)value, GetHexBase(fmt), digits, destination, out charsWritten);
                 }
                 else
                 {
-                    NumberToStringFormat(ref sb, ref number, format, info);
+                    NumberFormatInfo info = NumberFormatInfo.GetInstance(provider);
+
+                    byte* pDigits = stackalloc byte[UInt64NumberBufferLength];
+                    NumberBuffer number = new NumberBuffer(NumberBufferKind.Integer, pDigits, UInt64NumberBufferLength);
+
+                    UInt64ToNumber(value, ref number);
+
+                    char* stackPtr = stackalloc char[CharStackBufferSize];
+                    ValueStringBuilder sb = new ValueStringBuilder(new Span<char>(stackPtr, CharStackBufferSize));
+
+                    if (fmt != 0)
+                    {
+                        NumberToString(ref sb, ref number, fmt, digits, info);
+                    }
+                    else
+                    {
+                        NumberToStringFormat(ref sb, ref number, format, info);
+                    }
+                    return sb.TryCopyTo(destination, out charsWritten);
                 }
-                return sb.TryCopyTo(destination, out charsWritten);
             }
         }
 
@@ -1078,6 +1118,13 @@ namespace System
             *dst = (byte)('\0');
 
             number.CheckConsistency();
+        }
+
+        public static string Int32ToDecStr(int value)
+        {
+            return value >= 0 ?
+                UInt32ToDecStr((uint)value) :
+                NegativeInt32ToDecStr(value, -1, NumberFormatInfo.CurrentInfo.NegativeSign);
         }
 
         private static unsafe string NegativeInt32ToDecStr(int value, int digits, string sNegative)
@@ -1221,9 +1268,9 @@ namespace System
             return bufferEnd;
         }
 
-        internal static unsafe string UInt32ToDecStr(uint value, int digits)
+        internal static unsafe string UInt32ToDecStr(uint value)
         {
-            int bufferLength = Math.Max(digits, FormattingHelpers.CountDigits(value));
+            int bufferLength = FormattingHelpers.CountDigits(value);
 
             // For single-digit values that are very common, especially 0 and 1, just return cached strings.
             if (bufferLength == 1)
@@ -1235,19 +1282,28 @@ namespace System
             fixed (char* buffer = result)
             {
                 char* p = buffer + bufferLength;
-                if (digits <= 1)
+                do
                 {
-                    do
-                    {
-                        value = Math.DivRem(value, 10, out uint remainder);
-                        *(--p) = (char)(remainder + '0');
-                    }
-                    while (value != 0);
+                    value = Math.DivRem(value, 10, out uint remainder);
+                    *(--p) = (char)(remainder + '0');
                 }
-                else
-                {
-                    p = UInt32ToDecChars(p, value, digits);
-                }
+                while (value != 0);
+                Debug.Assert(p == buffer);
+            }
+            return result;
+        }
+
+        private static unsafe string UInt32ToDecStr(uint value, int digits)
+        {
+            if (digits <= 1)
+                return UInt32ToDecStr(value);
+
+            int bufferLength = Math.Max(digits, FormattingHelpers.CountDigits(value));
+            string result = string.FastAllocateString(bufferLength);
+            fixed (char* buffer = result)
+            {
+                char* p = buffer + bufferLength;
+                p = UInt32ToDecChars(p, value, digits);
                 Debug.Assert(p == buffer);
             }
             return result;
@@ -1311,6 +1367,13 @@ namespace System
             *dst = (byte)('\0');
 
             number.CheckConsistency();
+        }
+
+        public static string Int64ToDecStr(long value)
+        {
+            return value >= 0 ?
+                UInt64ToDecStr((ulong)value, -1) :
+                NegativeInt64ToDecStr(value, -1, NumberFormatInfo.CurrentInfo.NegativeSign);
         }
 
         private static unsafe string NegativeInt64ToDecStr(long input, int digits, string sNegative)
@@ -2116,7 +2179,7 @@ namespace System
             {
                 if (groupDigits != null)
                 {
-                    Debug.Assert(sGroup != null, "Must be nulll when groupDigits != null");
+                    Debug.Assert(sGroup != null, "Must be null when groupDigits != null");
                     int groupSizeIndex = 0;                             // Index into the groupDigits array.
                     int bufferSize = digPos;                            // The length of the result buffer string.
                     int groupSize = 0;                                  // The current group size.

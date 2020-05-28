@@ -129,9 +129,9 @@ namespace System.Drawing.Imaging
         /// Returns a value indicating whether the specified object is an <see cref='ImageFormat'/> equivalent to this
         /// <see cref='ImageFormat'/>.
         /// </summary>
-        public override bool Equals(object o)
+        public override bool Equals(object? o)
         {
-            ImageFormat format = o as ImageFormat;
+            ImageFormat? format = o as ImageFormat;
             if (format == null)
                 return false;
             return _guid == format._guid;
@@ -145,9 +145,8 @@ namespace System.Drawing.Imaging
             return _guid.GetHashCode();
         }
 
-#if !FEATURE_PAL
         // Find any random encoder which supports this format
-        internal ImageCodecInfo FindEncoder()
+        internal ImageCodecInfo? FindEncoder()
         {
             ImageCodecInfo[] codecs = ImageCodecInfo.GetImageEncoders();
             foreach (ImageCodecInfo codec in codecs)
@@ -157,7 +156,6 @@ namespace System.Drawing.Imaging
             }
             return null;
         }
-#endif
 
         /// <summary>
         /// Converts this <see cref='System.Drawing.Imaging.ImageFormat'/> to a human-readable string.

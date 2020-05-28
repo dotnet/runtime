@@ -133,11 +133,12 @@ namespace System.Threading
         {
             get
             {
-                if (s_asyncLocalPrincipal is null)
+                IPrincipal? principal = s_asyncLocalPrincipal?.Value;
+                if (principal is null)
                 {
-                    CurrentPrincipal = AppDomain.CurrentDomain.GetThreadPrincipal();
+                    CurrentPrincipal = (principal = AppDomain.CurrentDomain.GetThreadPrincipal());
                 }
-                return s_asyncLocalPrincipal?.Value;
+                return principal;
             }
             set
             {
@@ -242,7 +243,7 @@ namespace System.Threading
                     break;
 
                 default:
-                    throw new ArgumentOutOfRangeException(SR.ArgumentOutOfRange_Enum, nameof(state));
+                    throw new ArgumentOutOfRangeException(nameof(state), SR.ArgumentOutOfRange_Enum);
             }
 
             return TrySetApartmentStateUnchecked(state);
@@ -346,8 +347,7 @@ namespace System.Threading
                 Dictionary<string, LocalDataStoreSlot> nameToSlotMap = EnsureNameToSlotMap();
                 lock (nameToSlotMap)
                 {
-                    LocalDataStoreSlot? slot;
-                    if (!nameToSlotMap.TryGetValue(name, out slot))
+                    if (!nameToSlotMap.TryGetValue(name, out LocalDataStoreSlot? slot))
                     {
                         slot = AllocateSlot();
                         nameToSlotMap[name] = slot;

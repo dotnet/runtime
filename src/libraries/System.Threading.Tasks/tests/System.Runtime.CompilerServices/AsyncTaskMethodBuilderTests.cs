@@ -2,17 +2,19 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using Xunit;
-using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Diagnostics.Tracing;
+using System.Linq;
 using System.Runtime.CompilerServices;
-using System.Threading;
-using System.Threading.Tasks;
-using System.Diagnostics;
+using System.Text;
+using Microsoft.DotNet.RemoteExecutor;
+using Xunit;
+using Xunit.Sdk;
 
 namespace System.Threading.Tasks.Tests
 {
-    public partial class AsyncTaskMethodBuilderTests
+    public class AsyncTaskMethodBuilderTests
     {
         // Test captured sync context with successful completion (SetResult)
         [Fact]
@@ -521,7 +523,7 @@ namespace System.Threading.Tasks.Tests
             TaskScheduler.UnobservedTaskException -= handler;
         }
 
-        [ActiveIssue(39155)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/30122")]
         [Fact]
         public static async Task AsyncMethodsDropsStateMachineAndExecutionContextUponCompletion()
         {
@@ -573,7 +575,85 @@ namespace System.Threading.Tasks.Tests
             GC.KeepAlive(t); // ensure the object is stored in the state machine
         }
 
+        [OuterLoop]
+        [Fact]
+        public static void DroppedIncompleteStateMachine_RaisesIncompleteAsyncMethodEvent()
+        {
+            RemoteExecutor.Invoke(() =>
+            {
+                using (var listener = new TestEventListener("System.Threading.Tasks.TplEventSource", EventLevel.Verbose))
+                {
+                    var events = new ConcurrentQueue<EventWrittenEventArgs>();
+                    listener.RunWithCallback(events.Enqueue, () =>
+                    {
+                        NeverCompletes();
+                        GC.Collect();
+                        GC.WaitForPendingFinalizers();
+                        GC.WaitForPendingFinalizers();
+                    });
+
+                    // To help diagnose https://github.com/dotnet/runtime/issues/2198
+                    // Assert.DoesNotContain(events, ev => ev.EventId == 0); // errors from the EventSource itself
+                    var sb = new StringBuilder();
+                    foreach (EventWrittenEventArgs ev in events)
+                    {
+                        if (ev.EventId == 0)
+                        {
+                            sb.AppendLine("Events contained unexpected event:")
+                              .AppendLine($"ActivityId: {ev.ActivityId}")
+                              .AppendLine($"Channel: {ev.Channel}")
+                              .AppendLine($"EventId: {ev.EventId}")
+                              .AppendLine($"EventName: {ev.EventName}")
+                              .AppendLine($"EventSource: {ev.EventSource}")
+                              .AppendLine($"Keywords: {ev.Keywords}")
+                              .AppendLine($"Level: {ev.Level}")
+                              .AppendLine($"Message: {ev.Message}")
+                              .AppendLine($"Opcode: {ev.Opcode}")
+                              .AppendLine($"OSThreadId: {ev.OSThreadId}")
+                              .AppendLine($"Payload: {(ev.Payload != null ? string.Join(", ", ev.Payload) : "(null)")}")
+                              .AppendLine($"PayloadNames: {(ev.PayloadNames != null ? string.Join(", ", ev.PayloadNames) : "(null)")}")
+                              .AppendLine($"RelatedActivityId: {ev.RelatedActivityId}")
+                              .AppendLine($"Tags: {ev.Tags}")
+                              .AppendLine($"Task: {ev.Task}")
+                              .AppendLine($"TimeStamp: {ev.TimeStamp}")
+                              .AppendLine($"Version: {ev.Version}")
+                              .AppendLine();
+                        }
+                    }
+                    if (sb.Length > 0)
+                    {
+                        throw new XunitException(sb.ToString());
+                    }
+
+                    EventWrittenEventArgs iam = events.SingleOrDefault(e => e.EventName == "IncompleteAsyncMethod");
+                    Assert.NotNull(iam);
+                    Assert.NotNull(iam.Payload);
+
+                    string description = iam.Payload[0] as string;
+                    Assert.NotNull(description);
+                    Assert.Contains(nameof(NeverCompletesAsync), description);
+                    Assert.Contains("__state", description);
+                    Assert.Contains("local1", description);
+                    Assert.Contains("local2", description);
+                    Assert.Contains("42", description);
+                    Assert.Contains("stored data", description);
+                }
+            }).Dispose();
+        }
+
         #region Helper Methods / Classes
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static void NeverCompletes() { var ignored = NeverCompletesAsync(); }
+
+        private static async Task NeverCompletesAsync()
+        {
+            int local1 = 42;
+            string local2 = "stored data";
+            await new TaskCompletionSource<bool>().Task; // await will never complete
+            GC.KeepAlive(local1);
+            GC.KeepAlive(local2);
+        }
 
         private static void ValidateFaultedTask(Task t)
         {

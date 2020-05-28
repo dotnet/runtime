@@ -246,38 +246,6 @@ LONG WINAPI CLRVectoredExceptionHandler(PEXCEPTION_POINTERS pExceptionInfo);
 // Actual UEF worker prototype for use by GCUnhandledExceptionFilter.
 extern LONG InternalUnhandledExceptionFilter_Worker(PEXCEPTION_POINTERS pExceptionInfo);
 
-//==========================================================================
-// Installs a handler to unwind exception frames, but not catch the exception
-//==========================================================================
-
-#ifdef FEATURE_CORRUPTING_EXCEPTIONS
-// -----------------------------------------------------------------------
-// Support for Corrupted State Exceptions
-// -----------------------------------------------------------------------
-// This enumeration defines the corruption severity of an exception and
-// whether it should be reused for the next exception thrown or not.
-enum CorruptionSeverity
-{
-    UseLast = 0x0, // When specified, the last active corruption severity from TES should be used
-    NotSet = 0x1, // Corruption Severity has not been set - this is the default/reset value
-    NotCorrupting = 0x2, // Indicates exception is not corrupting
-    ProcessCorrupting = 0x4, // Indicates exception represents process corrupted state
-    ReuseForReraise = 0x2000 // Indicates that the corruption severity should be reused for the next exception thrown,
-                             // provided its not nested and isnt a rethrow. This flag is used typically for propagation of
-                             // severity across boundaries like Reflection invocation, AD transition etc.
-};
-
-#define GET_CORRUPTION_SEVERITY(severity) (((severity) & (~ReuseForReraise)))
-#define CAN_REUSE_CORRUPTION_SEVERITY(severity) (((severity) & ReuseForReraise) == ReuseForReraise)
-
-#endif // FEATURE_CORRUPTING_EXCEPTIONS
-
-VOID DECLSPEC_NORETURN RaiseTheException(OBJECTREF throwable, BOOL rethrow
-#ifdef FEATURE_CORRUPTING_EXCEPTIONS
-                                        , CorruptionSeverity severity
-#endif // FEATURE_CORRUPTING_EXCEPTIONS
-);
-
 VOID DECLSPEC_NORETURN RaiseTheExceptionInternalOnly(OBJECTREF throwable, BOOL rethrow, BOOL fForStackOverflow = FALSE);
 
 #if defined(DACCESS_COMPILE) || defined(CROSSGEN_COMPILE)
@@ -292,7 +260,7 @@ VOID DECLSPEC_NORETURN RaiseTheExceptionInternalOnly(OBJECTREF throwable, BOOL r
 void UnwindAndContinueRethrowHelperInsideCatch(Frame* pEntryFrame, Exception* pException);
 VOID DECLSPEC_NORETURN UnwindAndContinueRethrowHelperAfterCatch(Frame* pEntryFrame, Exception* pException);
 
-#ifdef FEATURE_PAL
+#ifdef TARGET_UNIX
 VOID DECLSPEC_NORETURN DispatchManagedException(PAL_SEHException& ex, bool isHardwareException);
 
 #define INSTALL_MANAGED_EXCEPTION_DISPATCHER        \
@@ -326,18 +294,18 @@ VOID DECLSPEC_NORETURN DispatchManagedException(PAL_SEHException& ex, bool isHar
                 LONG disposition = InternalUnhandledExceptionFilter_Worker(&ex.ExceptionPointers);  \
                 _ASSERTE(disposition == EXCEPTION_CONTINUE_SEARCH);                                 \
             }                                                                                       \
-            TerminateProcess(GetCurrentProcess(), 1);                                               \
+            CrashDumpAndTerminateProcess(1);                                                        \
             UNREACHABLE();                                                                          \
         }
 
-#else // FEATURE_PAL
+#else // TARGET_UNIX
 
 #define INSTALL_MANAGED_EXCEPTION_DISPATCHER
 #define UNINSTALL_MANAGED_EXCEPTION_DISPATCHER
 #define INSTALL_UNHANDLED_MANAGED_EXCEPTION_TRAP
 #define UNINSTALL_UNHANDLED_MANAGED_EXCEPTION_TRAP
 
-#endif // FEATURE_PAL
+#endif // TARGET_UNIX
 
 #define INSTALL_UNWIND_AND_CONTINUE_HANDLER_NO_PROBE                                        \
     {                                                                                       \

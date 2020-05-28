@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using Internal.Cryptography;
 using System.Diagnostics;
 
@@ -43,7 +44,7 @@ namespace System.Security.Cryptography
                 if (parameters.G.Length != keySizeInBytes || parameters.Y.Length != keySizeInBytes)
                     throw new ArgumentException(SR.Cryptography_InvalidDsaParameters_MismatchedPGY);
 
-                if (hasPrivateKey && parameters.X.Length != parameters.Q.Length)
+                if (hasPrivateKey && parameters.X!.Length != parameters.Q.Length)
                     throw new ArgumentException(SR.Cryptography_InvalidDsaParameters_MismatchedQX);
 
                 byte[] blob;
@@ -220,19 +221,19 @@ namespace System.Security.Cryptography
                         }
 
                         // The Q length is hardcoded into BCRYPT_DSA_KEY_BLOB, so check it now we can give a nicer error message.
-                        if (parameters.Q.Length != Sha1HashOutputSize)
+                        if (parameters.Q!.Length != Sha1HashOutputSize)
                             throw new ArgumentException(SR.Cryptography_InvalidDsaParameters_QRestriction_ShortKey);
 
                         Interop.BCrypt.Emit(blob, ref offset, parameters.Q);
 
                         Debug.Assert(offset == sizeof(BCRYPT_DSA_KEY_BLOB), $"Expected offset = sizeof(BCRYPT_DSA_KEY_BLOB), got {offset} != {sizeof(BCRYPT_DSA_KEY_BLOB)}");
 
-                        Interop.BCrypt.Emit(blob, ref offset, parameters.P);
-                        Interop.BCrypt.Emit(blob, ref offset, parameters.G);
-                        Interop.BCrypt.Emit(blob, ref offset, parameters.Y);
+                        Interop.BCrypt.Emit(blob, ref offset, parameters.P!);
+                        Interop.BCrypt.Emit(blob, ref offset, parameters.G!);
+                        Interop.BCrypt.Emit(blob, ref offset, parameters.Y!);
                         if (includePrivate)
                         {
-                            Interop.BCrypt.Emit(blob, ref offset, parameters.X);
+                            Interop.BCrypt.Emit(blob, ref offset, parameters.X!);
                         }
 
                         Debug.Assert(offset == blobSize, $"Expected offset = blobSize, got {offset} != {blobSize}");
@@ -256,12 +257,12 @@ namespace System.Security.Cryptography
                 {
                     int blobSize =
                         sizeof(BCRYPT_DSA_KEY_BLOB_V2) +
-                        (parameters.Seed == null ? parameters.Q.Length : parameters.Seed.Length) + // Use Q size if Seed is not present
-                        parameters.Q.Length +
-                        parameters.P.Length +
-                        parameters.G.Length +
-                        parameters.Y.Length +
-                        (includePrivateParameters ? parameters.X.Length : 0);
+                        (parameters.Seed == null ? parameters.Q!.Length : parameters.Seed.Length) + // Use Q size if Seed is not present
+                        parameters.Q!.Length +
+                        parameters.P!.Length +
+                        parameters.G!.Length +
+                        parameters.Y!.Length +
+                        (includePrivateParameters ? parameters.X!.Length : 0);
 
                     blob = new byte[blobSize];
                     fixed (byte* pDsaBlob = &blob[0])
@@ -317,7 +318,7 @@ namespace System.Security.Cryptography
 
                         if (includePrivateParameters)
                         {
-                            Interop.BCrypt.Emit(blob, ref offset, parameters.X);
+                            Interop.BCrypt.Emit(blob, ref offset, parameters.X!);
                         }
 
                         Debug.Assert(offset == blobSize, $"Expected offset = blobSize, got {offset} != {blobSize}");

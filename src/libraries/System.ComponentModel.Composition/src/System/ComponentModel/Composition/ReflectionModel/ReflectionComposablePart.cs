@@ -10,18 +10,19 @@ using System.Linq;
 using System.Reflection;
 using Microsoft.Internal;
 using Microsoft.Internal.Collections;
+using System.Diagnostics;
 
 namespace System.ComponentModel.Composition.ReflectionModel
 {
     internal class ReflectionComposablePart : ComposablePart, ICompositionElement
     {
         private readonly ReflectionComposablePartDefinition _definition;
-        private volatile Dictionary<ImportDefinition, object> _importValues = null;
-        private volatile Dictionary<ImportDefinition, ImportingItem> _importsCache = null;
-        private volatile Dictionary<int, ExportingMember> _exportsCache = null;
+        private volatile Dictionary<ImportDefinition, object?>? _importValues = null;
+        private volatile Dictionary<ImportDefinition, ImportingItem>? _importsCache = null;
+        private volatile Dictionary<int, ExportingMember>? _exportsCache = null;
         private volatile bool _invokeImportsSatisfied = true;
         private bool _initialCompositionComplete = false;
-        private volatile object _cachedInstance;
+        private volatile object? _cachedInstance;
         private readonly object _lock = new object();
 
         public ReflectionComposablePart(ReflectionComposablePartDefinition definition)
@@ -53,11 +54,11 @@ namespace System.ComponentModel.Composition.ReflectionModel
             EnsureRunning();
         }
 
-        protected virtual void ReleaseInstanceIfNecessary(object instance)
+        protected virtual void ReleaseInstanceIfNecessary(object? instance)
         {
         }
 
-        private Dictionary<ImportDefinition, object> ImportValues
+        private Dictionary<ImportDefinition, object?> ImportValues
         {
             get
             {
@@ -69,7 +70,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
                         value = _importValues;
                         if (value == null)
                         {
-                            value = new Dictionary<ImportDefinition, object>();
+                            value = new Dictionary<ImportDefinition, object?>();
                             _importValues = value;
                         }
                     }
@@ -98,7 +99,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
             }
         }
 
-        protected object CachedInstance
+        protected object? CachedInstance
         {
             get
             {
@@ -118,7 +119,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
             }
         }
 
-        public override IDictionary<string, object> Metadata
+        public override IDictionary<string, object?> Metadata
         {
             get
             {
@@ -157,7 +158,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
 
         // This is the ONLY method which is not executed under the ImportEngine composition lock.
         // We need to protect all state that is accesses
-        public override object GetExportedValue(ExportDefinition definition)
+        public override object? GetExportedValue(ExportDefinition definition)
         {
             RequiresRunning();
             // given the implementation of the ImportEngine, this iwll be called under a lock if the part is still being composed
@@ -169,7 +170,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
             // access to _instance
             Requires.NotNull(definition, nameof(definition));
 
-            ExportingMember member = null;
+            ExportingMember? member = null;
             lock (_lock)
             {
                 member = GetExportingMemberFromDefinition(definition);
@@ -189,7 +190,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
             Requires.NotNull(definition, nameof(definition));
             Requires.NotNull(exports, nameof(exports));
 
-            ImportingItem item = GetImportingItemFromDefinition(definition);
+            ImportingItem? item = GetImportingItemFromDefinition(definition);
             if (item == null)
             {
                 throw ExceptionBuilder.CreateImportDefinitionNotOnThisComposablePart(nameof(definition));
@@ -225,9 +226,9 @@ namespace System.ComponentModel.Composition.ReflectionModel
             return GetDisplayName();
         }
 
-        private object GetExportedValue(ExportingMember member)
+        private object? GetExportedValue(ExportingMember member)
         {
-            object instance = null;
+            object? instance = null;
             if (member.RequiresInstance)
             {   // Only activate the instance if we actually need to
 
@@ -239,7 +240,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
 
         private void SetImport(ImportingItem item, Export[] exports)
         {
-            object value = item.CastExportsToImportType(exports);
+            object? value = item.CastExportsToImportType(exports);
 
             lock (_lock)
             {
@@ -248,7 +249,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
             }
         }
 
-        private object GetInstanceActivatingIfNeeded()
+        private object? GetInstanceActivatingIfNeeded()
         {
             var cachedInstance = _cachedInstance;
 
@@ -258,8 +259,8 @@ namespace System.ComponentModel.Composition.ReflectionModel
             }
             else
             {
-                ConstructorInfo constructor = null;
-                object[] arguments = null;
+                ConstructorInfo? constructor = null;
+                object?[]? arguments = null;
                 // determine whether activation is required, and collect necessary information for activation
                 // we need to do that under a lock
                 lock (_lock)
@@ -282,7 +283,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
                 }
 
                 // create instance outside of the lock
-                object createdInstance = CreateInstance(constructor, arguments);
+                object? createdInstance = CreateInstance(constructor, arguments);
 
                 SetPrerequisiteImports();
 
@@ -300,7 +301,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
                 }
 
                 // if the instance has been already set
-                if (createdInstance == null)
+                if (createdInstance != null)
                 {
                     ReleaseInstanceIfNecessary(createdInstance);
                 }
@@ -309,10 +310,10 @@ namespace System.ComponentModel.Composition.ReflectionModel
             return _cachedInstance;
         }
 
-        private object[] GetConstructorArguments()
+        private object?[] GetConstructorArguments()
         {
             ReflectionParameterImportDefinition[] parameterImports = ImportDefinitions.OfType<ReflectionParameterImportDefinition>().ToArray();
-            object[] arguments = new object[parameterImports.Length];
+            object?[] arguments = new object?[parameterImports.Length];
 
             UseImportedValues(
                 parameterImports,
@@ -349,8 +350,8 @@ namespace System.ComponentModel.Composition.ReflectionModel
             // need activation.
             return ExportDefinitions.Any(definition =>
             {
-                ExportingMember member = GetExportingMemberFromDefinition(definition);
-
+                ExportingMember? member = GetExportingMemberFromDefinition(definition);
+                Debug.Assert(member != null);
                 return member.RequiresInstance;
             });
         }
@@ -411,10 +412,10 @@ namespace System.ComponentModel.Composition.ReflectionModel
             }
         }
 
-        private object CreateInstance(ConstructorInfo constructor, object[] arguments)
+        private object CreateInstance(ConstructorInfo constructor, object?[] arguments)
         {
-            Exception exception = null;
-            object instance = null;
+            Exception? exception = null;
+            object instance = null!;
 
             try
             {
@@ -462,7 +463,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
         {
             ImportingMember importMember = (ImportingMember)import;
 
-            object instance = GetInstanceActivatingIfNeeded();
+            object? instance = GetInstanceActivatingIfNeeded();
 
             importMember.SetExportedValue(instance, value);
         }
@@ -474,10 +475,10 @@ namespace System.ComponentModel.Composition.ReflectionModel
 
             foreach (var definition in definitions)
             {
-                ImportingItem import = GetImportingItemFromDefinition(definition);
+                ImportingItem? import = GetImportingItemFromDefinition(definition);
+                Debug.Assert(import != null);
 
-                object value;
-                if (!TryGetImportValue(definition, out value))
+                if (!TryGetImportValue(definition, out object? value))
                 {
                     if (!errorIfMissing)
                     {
@@ -500,13 +501,13 @@ namespace System.ComponentModel.Composition.ReflectionModel
                     }
                 }
 
-                useImportValue(import, definition, value);
+                useImportValue(import, definition, value!);
             }
 
             result.ThrowOnErrors();
         }
 
-        private bool TryGetImportValue(ImportDefinition definition, out object value)
+        private bool TryGetImportValue(ImportDefinition definition, out object? value)
         {
             lock (_lock)
             {
@@ -521,12 +522,11 @@ namespace System.ComponentModel.Composition.ReflectionModel
             return false;
         }
 
-        [SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")]
         private void NotifyImportSatisfied()
         {
             if (_invokeImportsSatisfied)
             {
-                IPartImportsSatisfiedNotification notify = GetInstanceActivatingIfNeeded() as IPartImportsSatisfiedNotification;
+                IPartImportsSatisfiedNotification? notify = GetInstanceActivatingIfNeeded() as IPartImportsSatisfiedNotification;
 
                 lock (_lock)
                 {
@@ -558,10 +558,9 @@ namespace System.ComponentModel.Composition.ReflectionModel
         }
 
         // this is always called under a lock
-        private ExportingMember GetExportingMemberFromDefinition(ExportDefinition definition)
+        private ExportingMember? GetExportingMemberFromDefinition(ExportDefinition definition)
         {
-            ExportingMember result;
-            ReflectionMemberExportDefinition reflectionExport = definition as ReflectionMemberExportDefinition;
+            ReflectionMemberExportDefinition? reflectionExport = definition as ReflectionMemberExportDefinition;
             if (reflectionExport == null)
             {
                 return null;
@@ -572,7 +571,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
             {
                 _exportsCache = new Dictionary<int, ExportingMember>();
             }
-            if (!_exportsCache.TryGetValue(exportIndex, out result))
+            if (!_exportsCache.TryGetValue(exportIndex, out ExportingMember? result))
             {
                 result = GetExportingMember(definition);
                 if (result != null)
@@ -584,10 +583,9 @@ namespace System.ComponentModel.Composition.ReflectionModel
             return result;
         }
 
-        private ImportingItem GetImportingItemFromDefinition(ImportDefinition definition)
+        private ImportingItem? GetImportingItemFromDefinition(ImportDefinition definition)
         {
-            ImportingItem result;
-            if (!ImportsCache.TryGetValue(definition, out result))
+            if (!ImportsCache.TryGetValue(definition, out ImportingItem? result))
             {
                 result = GetImportingItem(definition);
                 if (result != null)
@@ -599,10 +597,9 @@ namespace System.ComponentModel.Composition.ReflectionModel
             return result;
         }
 
-        private static ImportingItem GetImportingItem(ImportDefinition definition)
+        private static ImportingItem? GetImportingItem(ImportDefinition definition)
         {
-            ReflectionImportDefinition reflectionDefinition = definition as ReflectionImportDefinition;
-            if (reflectionDefinition != null)
+            if (definition is ReflectionImportDefinition reflectionDefinition)
             {
                 return reflectionDefinition.ToImportingItem();
             }
@@ -610,10 +607,9 @@ namespace System.ComponentModel.Composition.ReflectionModel
             return null;
         }
 
-        private static ExportingMember GetExportingMember(ExportDefinition definition)
+        private static ExportingMember? GetExportingMember(ExportDefinition definition)
         {
-            ReflectionMemberExportDefinition exportDefinition = definition as ReflectionMemberExportDefinition;
-            if (exportDefinition != null)
+            if (definition is ReflectionMemberExportDefinition exportDefinition)
             {
                 return exportDefinition.ToExportingMember();
             }

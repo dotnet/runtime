@@ -649,7 +649,7 @@ namespace System.Runtime.Serialization
             {
                 throw new ArgumentOutOfRangeException(nameof(objectID), SR.ArgumentOutOfRange_ObjectID);
             }
-            if (member != null && !(member is FieldInfo)) // desktop checks specifically for RuntimeFieldInfo and SerializationFieldInfo, but the former is an implementation detail in corelib
+            if (member != null && !(member is FieldInfo)) // .NET Framework checks specifically for RuntimeFieldInfo and SerializationFieldInfo, but the former is an implementation detail in corelib
             {
                 throw new SerializationException(SR.Serialization_UnknownMemberInfo);
             }
@@ -778,7 +778,6 @@ namespace System.Runtime.Serialization
 
         internal static ConstructorInfo GetDeserializationConstructor(Type t)
         {
-            // TODO #10530: Use Type.GetConstructor that takes BindingFlags when it's available
             foreach (ConstructorInfo ci in t.GetConstructors(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly))
             {
                 ParameterInfo[] parameters = ci.GetParameters();
@@ -914,7 +913,7 @@ namespace System.Runtime.Serialization
             {
                 throw new ArgumentNullException(nameof(member));
             }
-            if (!(member is FieldInfo)) // desktop checks specifically for RuntimeFieldInfo and SerializationFieldInfo, but the former is an implementation detail in corelib
+            if (!(member is FieldInfo)) // .NET Framework checks specifically for RuntimeFieldInfo and SerializationFieldInfo, but the former is an implementation detail in corelib
             {
                 throw new SerializationException(SR.Format(SR.Serialization_InvalidType, member.GetType()));
             }
@@ -1615,9 +1614,9 @@ namespace System.Runtime.Serialization
     internal static class SerializationInfoExtensions
     {
         private static readonly Action<SerializationInfo, string, object, Type> s_updateValue =
-            (Action<SerializationInfo, string, object, Type>)typeof(SerializationInfo)
+            typeof(SerializationInfo)
             .GetMethod("UpdateValue", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance)!
-            .CreateDelegate(typeof(Action<SerializationInfo, string, object, Type>));
+            .CreateDelegate<Action<SerializationInfo, string, object, Type>>();
 
         public static void UpdateValue(this SerializationInfo si, string name, object value, Type type) =>
             s_updateValue(si, name, value, type);

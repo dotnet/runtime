@@ -104,7 +104,7 @@ namespace System.Linq.Parallel
                     do
                     {
                         if ((i++ & CancellationState.POLL_INTERVAL) == 0)
-                            CancellationState.ThrowIfCanceled(_cancellationToken);
+                            _cancellationToken.ThrowIfCancellationRequested();;
                         tempSum += element;
                     }
                     while (source.MoveNext(ref element, ref keyUnused));

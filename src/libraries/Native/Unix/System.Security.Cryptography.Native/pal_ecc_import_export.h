@@ -19,7 +19,7 @@ typedef enum
 /*
 Returns the ECC key parameters.
 */
-DLLEXPORT int32_t CryptoNative_GetECKeyParameters(
+PALEXPORT int32_t CryptoNative_GetECKeyParameters(
     const EC_KEY* key,
     int32_t includePrivate,
     const BIGNUM** qx, int32_t* cbQx,
@@ -29,7 +29,7 @@ DLLEXPORT int32_t CryptoNative_GetECKeyParameters(
 /*
 Returns the ECC key and curve parameters.
 */
-DLLEXPORT int32_t CryptoNative_GetECCurveParameters(
+PALEXPORT int32_t CryptoNative_GetECCurveParameters(
     const EC_KEY* key,
     int32_t includePrivate,
     ECCurveType* curveType,
@@ -49,7 +49,7 @@ DLLEXPORT int32_t CryptoNative_GetECCurveParameters(
 Creates the new EC_KEY instance using the curve oid (friendly name or value) and public key parameters.
 Returns 1 upon success, -1 if oid was not found, otherwise 0.
 */
-DLLEXPORT int32_t CryptoNative_EcKeyCreateByKeyParameters(
+PALEXPORT int32_t CryptoNative_EcKeyCreateByKeyParameters(
     EC_KEY** key,
     const char* oid,
     uint8_t* qx, int32_t qxLength, 
@@ -59,7 +59,7 @@ DLLEXPORT int32_t CryptoNative_EcKeyCreateByKeyParameters(
 /*
 Returns the new EC_KEY instance using the explicit parameters.
 */
-DLLEXPORT EC_KEY* CryptoNative_EcKeyCreateByExplicitParameters(
+PALEXPORT EC_KEY* CryptoNative_EcKeyCreateByExplicitParameters(
     ECCurveType curveType,
     uint8_t* qx, int32_t qxLength,
     uint8_t* qy, int32_t qyLength,

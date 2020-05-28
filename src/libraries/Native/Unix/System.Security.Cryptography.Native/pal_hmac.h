@@ -24,7 +24,7 @@ typedef struct hmac_ctx_st HMAC_CTX;
  *
  * Returns new HMAC_CTX on success, nullptr on failure.
  */
-DLLEXPORT HMAC_CTX* CryptoNative_HmacCreate(const uint8_t* key, int32_t keyLen, const EVP_MD* md);
+PALEXPORT HMAC_CTX* CryptoNative_HmacCreate(const uint8_t* key, int32_t keyLen, const EVP_MD* md);
 
 /**
  * Cleans up and deletes an HMAC_CTX instance created by HmacCreate.
@@ -37,14 +37,14 @@ DLLEXPORT HMAC_CTX* CryptoNative_HmacCreate(const uint8_t* key, int32_t keyLen, 
  * The given HMAC_CTX pointer is invalid after this call.
  * Always succeeds.
  */
-DLLEXPORT void CryptoNative_HmacDestroy(HMAC_CTX* ctx);
+PALEXPORT void CryptoNative_HmacDestroy(HMAC_CTX* ctx);
 
 /**
  * Resets an HMAC_CTX instance for a new computation, preserving the key and EVP_MD.
  *
  * Implemented by passing all null/0 values but ctx to HMAC_Init_ex.
 */
-DLLEXPORT int32_t CryptoNative_HmacReset(HMAC_CTX* ctx);
+PALEXPORT int32_t CryptoNative_HmacReset(HMAC_CTX* ctx);
 
 /**
  * Appends data to the computation.
@@ -53,7 +53,7 @@ DLLEXPORT int32_t CryptoNative_HmacReset(HMAC_CTX* ctx);
  *
  * Returns 1 for success or 0 for failure. (Always succeeds on platforms where HMAC_Update returns void.)
  */
-DLLEXPORT int32_t CryptoNative_HmacUpdate(HMAC_CTX* ctx, const uint8_t* data, int32_t len);
+PALEXPORT int32_t CryptoNative_HmacUpdate(HMAC_CTX* ctx, const uint8_t* data, int32_t len);
 
 /**
  * Finalizes the computation and obtains the result.
@@ -62,4 +62,4 @@ DLLEXPORT int32_t CryptoNative_HmacUpdate(HMAC_CTX* ctx, const uint8_t* data, in
  *
  * Returns 1 for success or 0 for failure. (Always succeeds on platforms where HMAC_Update returns void.)
  */
-DLLEXPORT int32_t CryptoNative_HmacFinal(HMAC_CTX* ctx, uint8_t* md, int32_t* len);
+PALEXPORT int32_t CryptoNative_HmacFinal(HMAC_CTX* ctx, uint8_t* md, int32_t* len);

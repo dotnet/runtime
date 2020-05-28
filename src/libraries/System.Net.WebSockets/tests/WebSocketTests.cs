@@ -7,8 +7,11 @@ using Xunit;
 
 namespace System.Net.WebSockets.Tests
 {
-    public sealed partial class WebSocketTests
+    public sealed class WebSocketTests : WebSocketCreateTest
     {
+        protected override WebSocket CreateFromStream(Stream stream, bool isServer, string subProtocol, TimeSpan keepAliveInterval) =>
+            WebSocket.CreateFromStream(stream, isServer, subProtocol, keepAliveInterval);
+
         [Fact]
         public static void DefaultKeepAliveInterval_ValidValue()
         {
@@ -91,7 +94,6 @@ namespace System.Net.WebSockets.Tests
             Assert.Throws<PlatformNotSupportedException>(() => WebSocket.RegisterPrefixes());
         }
 
-#if NETCOREAPP
         [Fact]
         public static void IsApplicationTargeting45_AlwaysTrue()
         {
@@ -99,7 +101,6 @@ namespace System.Net.WebSockets.Tests
             Assert.True(WebSocket.IsApplicationTargeting45());
 #pragma warning restore 0618
         }
-#endif
 
         [Theory]
         [InlineData(WebSocketState.None)]
@@ -143,6 +144,32 @@ namespace System.Net.WebSockets.Tests
         public static void ThrowOnInvalidState_SuccessIfInList(WebSocketState state, WebSocketState[] validStates)
         {
             ExposeProtectedWebSocket.ThrowOnInvalidState(state, validStates);
+        }
+
+        [Fact]
+        public void ValueWebSocketReceiveResult_Ctor_InvalidArguments_Throws()
+        {
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => new ValueWebSocketReceiveResult(-1, WebSocketMessageType.Text, true));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => new ValueWebSocketReceiveResult(int.MinValue, WebSocketMessageType.Text, true));
+
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("messageType", () => new ValueWebSocketReceiveResult(0, (WebSocketMessageType)(-1), true));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("messageType", () => new ValueWebSocketReceiveResult(0, (WebSocketMessageType)(3), true));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("messageType", () => new ValueWebSocketReceiveResult(0, (WebSocketMessageType)(int.MinValue), true));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("messageType", () => new ValueWebSocketReceiveResult(0, (WebSocketMessageType)(int.MaxValue), true));
+        }
+
+        [Theory]
+        [InlineData(0, WebSocketMessageType.Text, true)]
+        [InlineData(0, WebSocketMessageType.Text, false)]
+        [InlineData(42, WebSocketMessageType.Binary, false)]
+        [InlineData(int.MaxValue, WebSocketMessageType.Close, false)]
+        [InlineData(int.MaxValue, WebSocketMessageType.Close, true)]
+        public void ValueWebSocketReceiveResult_Ctor_ValidArguments_Roundtrip(int count, WebSocketMessageType messageType, bool endOfMessage)
+        {
+            ValueWebSocketReceiveResult r = new ValueWebSocketReceiveResult(count, messageType, endOfMessage);
+            Assert.Equal(count, r.Count);
+            Assert.Equal(messageType, r.MessageType);
+            Assert.Equal(endOfMessage, r.EndOfMessage);
         }
 
         public abstract class ExposeProtectedWebSocket : WebSocket

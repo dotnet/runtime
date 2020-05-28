@@ -11,6 +11,8 @@ while [[ -h "$source" ]]; do
 done
 scriptroot="$( cd -P "$( dirname "$source" )" && pwd )"
 
+. "$scriptroot/tools.sh"
+
 version='Latest'
 architecture=''
 runtime='dotnet'
@@ -40,7 +42,7 @@ while [[ $# > 0 ]]; do
       runtimeSourceFeedKey="$1"
       ;;
     *)
-      echo "Invalid argument: $1"
+      Write-PipelineTelemetryError -Category 'Build' -Message "Invalid argument: $1"
       exit 1
       ;;
   esac
@@ -61,7 +63,7 @@ case $cpuname in
   amd64|x86_64)
     buildarch=x64
     ;;
-  armv7l)
+  armv*l)
     buildarch=arm
     ;;
   i686)
@@ -73,7 +75,6 @@ case $cpuname in
     ;;
 esac
 
-. "$scriptroot/tools.sh"
 dotnetRoot="$repo_root/.dotnet"
 if [[ $architecture != "" ]] && [[ $architecture != $buildarch ]]; then
   dotnetRoot="$dotnetRoot/$architecture"
@@ -81,7 +82,7 @@ fi
 
 InstallDotNet $dotnetRoot $version "$architecture" $runtime true $runtimeSourceFeed $runtimeSourceFeedKey || {
   local exit_code=$?
-  echo "dotnet-install.sh failed (exit code '$exit_code')." >&2
+  Write-PipelineTelemetryError -Category 'InitializeToolset' -Message "dotnet-install.sh failed (exit code '$exit_code')." >&2
   ExitWithExitCode $exit_code
 }
 

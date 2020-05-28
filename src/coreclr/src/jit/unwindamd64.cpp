@@ -16,7 +16,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #pragma hdrstop
 #endif
 
-#if defined(_TARGET_AMD64_)
+#if defined(TARGET_AMD64)
 #ifdef UNIX_AMD64_ABI
 short Compiler::mapRegNumToDwarfReg(regNumber reg)
 {
@@ -889,4 +889,4 @@ void Compiler::unwindEmitFunc(FuncInfoDsc* func, void* pHotCode, void* pColdCode
     }
 }
 
-#endif // _TARGET_AMD64_
+#endif // TARGET_AMD64

@@ -219,8 +219,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
                 EventRegistrationToken token = addMethod(handler);
                 lock (registrationTokens)
                 {
-                    EventRegistrationTokenList tokens;
-                    if (!registrationTokens.TryGetValue(handler, out tokens))
+                    if (!registrationTokens.TryGetValue(handler, out EventRegistrationTokenList tokens))
                     {
                         tokens = new EventRegistrationTokenList(token);
                         registrationTokens[handler] = tokens;
@@ -247,15 +246,13 @@ namespace System.Runtime.InteropServices.WindowsRuntime
 
                 lock (s_eventRegistrations)
                 {
-                    Dictionary<MethodInfo, Dictionary<object, EventRegistrationTokenList>>? instanceMap = null;
-                    if (!s_eventRegistrations.TryGetValue(instance, out instanceMap))
+                    if (!s_eventRegistrations.TryGetValue(instance, out Dictionary<MethodInfo, Dictionary<object, EventRegistrationTokenList>>? instanceMap))
                     {
                         instanceMap = new Dictionary<MethodInfo, Dictionary<object, EventRegistrationTokenList>>();
                         s_eventRegistrations.Add(instance, instanceMap);
                     }
 
-                    Dictionary<object, EventRegistrationTokenList>? tokens = null;
-                    if (!instanceMap.TryGetValue(removeMethod.Method, out tokens))
+                    if (!instanceMap.TryGetValue(removeMethod.Method, out Dictionary<object, EventRegistrationTokenList>? tokens))
                     {
                         tokens = new Dictionary<object, EventRegistrationTokenList>();
                         instanceMap.Add(removeMethod.Method, tokens);
@@ -277,10 +274,9 @@ namespace System.Runtime.InteropServices.WindowsRuntime
 
                 lock (registrationTokens)
                 {
-                    EventRegistrationTokenList tokens;
 
                     // Failure to find a registration for a token is not an error - it's simply a no-op.
-                    if (!registrationTokens.TryGetValue(handler, out tokens))
+                    if (!registrationTokens.TryGetValue(handler, out EventRegistrationTokenList tokens))
                     {
                         Log("[WinRT_Eventing] no registrationTokens found for instance=" + instance + ", handler= " + handler + "\n");
 
@@ -561,7 +557,6 @@ namespace System.Runtime.InteropServices.WindowsRuntime
 
                 try
                 {
-                    EventRegistrationTokenListWithCount? tokens;
 
                     //
                     // The whole add/remove code has to be protected by a reader/writer lock
@@ -571,8 +566,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
                     try
                     {
                         // Add the method, and make a note of the delegate -> token mapping.
-                        TokenListCount? tokenListCount;
-                        ConditionalWeakTable<object, EventRegistrationTokenListWithCount> registrationTokens = GetOrCreateEventRegistrationTokenTable(instanceKey, removeMethod, out tokenListCount);
+                        ConditionalWeakTable<object, EventRegistrationTokenListWithCount> registrationTokens = GetOrCreateEventRegistrationTokenTable(instanceKey, removeMethod, out TokenListCount tokenListCount);
                         lock (registrationTokens)
                         {
                             //
@@ -588,7 +582,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
                             // will be added into B's token list, but once we unsubscribe B, we might end up removing
                             // the last token in C, and that may lead to crash.
                             //
-                            object? key = FindEquivalentKeyUnsafe(registrationTokens, handler, out tokens);
+                            object? key = FindEquivalentKeyUnsafe(registrationTokens, handler, out EventRegistrationTokenListWithCount? tokens);
                             if (key == null)
                             {
                                 tokens = new EventRegistrationTokenListWithCount(tokenListCount, token);
@@ -652,8 +646,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
 
                 lock (s_eventRegistrations)
                 {
-                    EventCacheEntry eventCacheEntry;
-                    if (!s_eventRegistrations.TryGetValue(eventCacheKey, out eventCacheEntry))
+                    if (!s_eventRegistrations.TryGetValue(eventCacheKey, out EventCacheEntry eventCacheEntry))
                     {
                         if (!createIfNotFound)
                         {
@@ -692,8 +685,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
                 s_eventCacheRWLock.AcquireReaderLock(Timeout.Infinite);
                 try
                 {
-                    TokenListCount? tokenListCount;
-                    ConditionalWeakTable<object, EventRegistrationTokenListWithCount>? registrationTokens = GetEventRegistrationTokenTableNoCreate(instanceKey, removeMethod, out tokenListCount);
+                    ConditionalWeakTable<object, EventRegistrationTokenListWithCount>? registrationTokens = GetEventRegistrationTokenTableNoCreate(instanceKey, removeMethod, out TokenListCount? tokenListCount);
                     if (registrationTokens == null)
                     {
                         // We have no information regarding this particular instance (IUnknown*/type) - just return
@@ -704,7 +696,6 @@ namespace System.Runtime.InteropServices.WindowsRuntime
 
                     lock (registrationTokens)
                     {
-                        EventRegistrationTokenListWithCount? tokens;
 
                         // Note:
                         // When unsubscribing events, we allow subscribing the event using a different delegate
@@ -713,7 +704,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
                         // It actually doesn't matter which delegate - as long as it matches
                         // Note that inside TryGetValueWithValueEquality we assumes that any delegate
                         // with the same value equality would have the same hash code
-                        object? key = FindEquivalentKeyUnsafe(registrationTokens, handler, out tokens);
+                        object? key = FindEquivalentKeyUnsafe(registrationTokens, handler, out EventRegistrationTokenListWithCount? tokens);
                         Debug.Assert((key != null && tokens != null) || (key == null && tokens == null),
                                         "key and tokens must be both null or non-null");
                         if (tokens == null)

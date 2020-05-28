@@ -20,7 +20,7 @@
 
 #include "assemblyspec.hpp"
 #include "eeconfig.h"
-#include "strongname.h"
+#include "strongnameinternal.h"
 #include "strongnameholders.h"
 #include "eventtrace.h"
 
@@ -369,10 +369,6 @@ HRESULT AssemblySpec::InitializeSpec(StackingAllocator* alloc, ASSEMBLYNAMEREF* 
         }
 
         asmInfo.szLocale = 0;
-        asmInfo.ulOS = 0;
-        asmInfo.rOS = 0;
-        asmInfo.ulProcessor = 0;
-        asmInfo.rProcessor = 0;
 
         if ((*pName)->GetCultureInfo() != NULL)
         {
@@ -624,32 +620,6 @@ void AssemblySpec::AssemblyNameInit(ASSEMBLYNAMEREF* pAsmName, PEImage* pImageIn
     GCPROTECT_END();
 }
 
-// This uses thread storage to allocate space. Please use Checkpoint and release it.
-void AssemblySpec::SetCodeBase(StackingAllocator* alloc, STRINGREF *pCodeBase)
-{
-    CONTRACTL
-    {
-        INSTANCE_CHECK;
-        THROWS;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE;
-        PRECONDITION(CheckPointer(pCodeBase));
-        INJECT_FAULT(COMPlusThrowOM(););
-    }
-    CONTRACTL_END;
-
-    // Codebase
-    if (pCodeBase != NULL && *pCodeBase != NULL) {
-        WCHAR* pString;
-        int    iString;
-        (*pCodeBase)->RefInterpretGetStringValuesDangerousForGC(&pString, &iString);
-
-        DWORD dwCodeBase = (DWORD) iString+1;
-        m_wszCodeBase = new (alloc) WCHAR[dwCodeBase];
-        memcpy((void*)m_wszCodeBase, pString, dwCodeBase * sizeof(WCHAR));
-    }
-}
-
 #endif // CROSSGEN_COMPILE
 
 // Check if the supplied assembly's public key matches up with the one in the Spec, if any
@@ -689,11 +659,10 @@ void AssemblySpec::MatchPublicKeys(Assembly *pAssembly)
         StrongNameBufferHolder<BYTE> pbStrongNameToken;
         DWORD cbStrongNameToken;
 
-        if (!StrongNameTokenFromPublicKey((BYTE*) pbPublicKey,
-                                            cbPublicKey,
-                                            &pbStrongNameToken,
-                                            &cbStrongNameToken))
-            ThrowHR(StrongNameErrorInfo());
+        IfFailThrow(StrongNameTokenFromPublicKey((BYTE*)pbPublicKey,
+            cbPublicKey,
+            &pbStrongNameToken,
+            &cbStrongNameToken));
 
         if ((m_cbPublicKeyOrToken != cbStrongNameToken) ||
             memcmp(m_pbPublicKeyOrToken, pbStrongNameToken, cbStrongNameToken))
@@ -1002,12 +971,10 @@ HRESULT AssemblySpec::EmitToken(
         if (m_cbPublicKeyOrToken && fUsePublicKeyToken && IsAfPublicKey(m_dwFlags)) {
             StrongNameBufferHolder<BYTE> pbPublicKeyToken;
             DWORD cbPublicKeyToken;
-            if (!StrongNameTokenFromPublicKey(m_pbPublicKeyOrToken,
-                                              m_cbPublicKeyOrToken,
-                                              &pbPublicKeyToken,
-                                              &cbPublicKeyToken)) {
-                IfFailGo(StrongNameErrorInfo());
-            }
+            IfFailThrow(StrongNameTokenFromPublicKey(m_pbPublicKeyOrToken,
+                m_cbPublicKeyOrToken,
+                &pbPublicKeyToken,
+                &cbPublicKeyToken));
 
             hr = pEmit->DefineAssemblyRef(pbPublicKeyToken,
                                           cbPublicKeyToken,

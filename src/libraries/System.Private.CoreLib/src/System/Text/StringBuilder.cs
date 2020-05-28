@@ -1091,9 +1091,7 @@ namespace System.Text
             }
             Debug.Assert(insertingChars + this.Length < int.MaxValue);
 
-            StringBuilder chunk;
-            int indexInChunk;
-            MakeRoom(index, (int)insertingChars, out chunk, out indexInChunk, false);
+            MakeRoom(index, (int)insertingChars, out StringBuilder chunk, out int indexInChunk, false);
             unsafe
             {
                 fixed (char* valuePtr = value)
@@ -1140,15 +1138,15 @@ namespace System.Text
 
             if (length > 0)
             {
-                StringBuilder chunk;
-                int indexInChunk;
-                Remove(startIndex, length, out chunk, out indexInChunk);
+                Remove(startIndex, length, out _, out _);
             }
 
             return this;
         }
 
+#pragma warning disable CA1830 // Prefer strongly-typed Append and Insert method overloads on StringBuilder. No need to fix for the builder itself
         public StringBuilder Append(bool value) => Append(value.ToString());
+#pragma warning restore CA1830
 
         public StringBuilder Append(char value)
         {
@@ -1978,7 +1976,7 @@ namespace System.Text
                     }
                     else if (replacementsCount >= replacements.Length)
                     {
-                        Array.Resize(ref replacements, replacements.Length * 3 / 2 + 4); // Grow by ~1.5x, but more in the begining
+                        Array.Resize(ref replacements, replacements.Length * 3 / 2 + 4); // Grow by ~1.5x, but more in the beginning
                     }
                     replacements[replacementsCount++] = indexInChunk;
                     indexInChunk += oldValue.Length;
@@ -2140,9 +2138,7 @@ namespace System.Text
 
             if (valueCount > 0)
             {
-                StringBuilder chunk;
-                int indexInChunk;
-                MakeRoom(index, valueCount, out chunk, out indexInChunk, false);
+                MakeRoom(index, valueCount, out StringBuilder chunk, out int indexInChunk, false);
                 ReplaceInPlaceAtChunk(ref chunk!, ref indexInChunk, value, valueCount);
             }
         }

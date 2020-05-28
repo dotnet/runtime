@@ -13,7 +13,7 @@ namespace System.Linq.Tests
     {
         [Theory]
         [InlineData(new int[] { 2, 3, 2, 4, 5 }, new int[] { 1, 9, 4 })]
-        public void SameResultsWithQueryAndRepeatCalls(IEnumerable<int> first, IEnumerable<int> second)
+        public void SameResultsWithQueryAndRepeatCalls_Int(IEnumerable<int> first, IEnumerable<int> second)
         {
             // workaround: xUnit type inference doesn't work if the input type is not T (like IEnumerable<T>)
             SameResultsWithQueryAndRepeatCallsWorker(first, second);
@@ -21,7 +21,7 @@ namespace System.Linq.Tests
 
         [Theory]
         [InlineData(new[] { "AAA", "", "q", "C", "#", "!@#$%^", "0987654321", "Calling Twice" }, new[] { "!@#$%^", "C", "AAA", "", "Calling Twice", "SoS" })]
-        public void SameResultsWithQueryAndRepeatCalls(IEnumerable<string> first, IEnumerable<string> second)
+        public void SameResultsWithQueryAndRepeatCalls_String(IEnumerable<string> first, IEnumerable<string> second)
         {
             // workaround: xUnit type inference doesn't work if the input type is not T (like IEnumerable<T>)
             SameResultsWithQueryAndRepeatCallsWorker(first, second);
@@ -407,7 +407,7 @@ namespace System.Linq.Tests
         [MemberData(nameof(GetToArrayDataSources))]
         public void CollectionInterleavedWithLazyEnumerables_ToArray(IEnumerable<int>[] arrays)
         {
-            // See https://github.com/dotnet/corefx/issues/23680
+            // See https://github.com/dotnet/runtime/issues/23389
 
             IEnumerable<int> concats = arrays[0];
 

@@ -489,7 +489,7 @@ void CordbCommonBase::InitializeCommon()
             unsigned level = REGUTIL::GetConfigDWORD_DontUse_(CLRConfig::EXTERNAL_LogLevel, LL_INFO1000);
             unsigned bytesPerThread = REGUTIL::GetConfigDWORD_DontUse_(CLRConfig::UNSUPPORTED_StressLogSize, STRESSLOG_CHUNK_SIZE * 2);
             unsigned totalBytes = REGUTIL::GetConfigDWORD_DontUse_(CLRConfig::UNSUPPORTED_TotalStressLogSize, STRESSLOG_CHUNK_SIZE * 1024);
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
             StressLog::Initialize(facilities, level, bytesPerThread, totalBytes, GetModuleInst());
 #else
             StressLog::Initialize(facilities, level, bytesPerThread, totalBytes, NULL);
@@ -519,7 +519,7 @@ void CordbCommonBase::InitializeCommon()
 // setting this since V1.0 and removing it may be a breaking change.
 void CordbCommonBase::AddDebugPrivilege()
 {
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
     HANDLE hToken;
     TOKEN_PRIVILEGES Privileges;
     BOOL fSucc;
@@ -1433,11 +1433,7 @@ HRESULT Cordb::SetTargetCLR(HMODULE hmodTargetCLR)
     // the same model because coreclr.dll isn't in this process and hmodTargetCLR
     // is the debuggee target, not the coreclr.dll to bind utilcode to..
 
-    CoreClrCallbacks cccallbacks;
-    cccallbacks.m_hmodCoreCLR               = hmodTargetCLR;
-    cccallbacks.m_pfnIEE                    = NULL;
-    cccallbacks.m_pfnGetCORSystemDirectory  = NULL;
-    InitUtilcode(cccallbacks);
+    g_hmodCoreCLR = hmodTargetCLR;
 
     return S_OK;
 }
@@ -2013,7 +2009,7 @@ HRESULT Cordb::EnumerateProcesses(ICorDebugProcessEnum **ppProcesses)
 //
 typedef LONG NTSTATUS;
 
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
 typedef BOOL (*NTQUERYSYSTEMINFORMATION)(SYSTEM_INFORMATION_CLASS SystemInformationClass,
                                          PVOID SystemInformation,
                                          ULONG SystemInformationLength,

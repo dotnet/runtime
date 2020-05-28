@@ -21,7 +21,7 @@ namespace System.Reflection
         private RoAssembly LoadFromStreamCore(Stream peStream)
         {
             PEReader peReader = new PEReader(peStream);
-            PEReader peReaderToDispose = peReader; // Ensure peReader is disposed immediately if we throw an exception before we're done.
+            PEReader? peReaderToDispose = peReader; // Ensure peReader is disposed immediately if we throw an exception before we're done.
             try
             {
                 if (!peReader.HasMetadata)
@@ -34,7 +34,7 @@ namespace System.Reflection
                 byte[] pkt = defNameData.PublicKeyToken ?? Array.Empty<byte>();
                 if (pkt.Length == 0 && defNameData.PublicKey != null && defNameData.PublicKey.Length != 0)
                 {
-                    pkt = defNameData.PublicKey.ComputePublicKeyToken();
+                    pkt = defNameData.PublicKey.ComputePublicKeyToken()!;
                 }
                 RoAssemblyName defName = new RoAssemblyName(defNameData.Name, defNameData.Version, defNameData.CultureName, pkt, defNameData.Flags);
 

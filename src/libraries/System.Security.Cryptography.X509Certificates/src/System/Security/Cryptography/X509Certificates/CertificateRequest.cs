@@ -18,9 +18,9 @@ namespace System.Security.Cryptography.X509Certificates
     /// </summary>
     public sealed class CertificateRequest
     {
-        private readonly AsymmetricAlgorithm _key;
-        private readonly X509SignatureGenerator _generator;
-        private readonly RSASignaturePadding _rsaPadding;
+        private readonly AsymmetricAlgorithm? _key;
+        private readonly X509SignatureGenerator? _generator;
+        private readonly RSASignaturePadding? _rsaPadding;
 
         /// <summary>
         /// The X.500 Distinguished Name to use as the Subject in a created certificate or certificate request.
@@ -318,14 +318,14 @@ namespace System.Security.Cryptography.X509Certificates
                 notAfter,
                 serialNumber))
             {
-                RSA rsa = _key as RSA;
+                RSA? rsa = _key as RSA;
 
                 if (rsa != null)
                 {
                     return certificate.CopyWithPrivateKey(rsa);
                 }
 
-                ECDsa ecdsa = _key as ECDsa;
+                ECDsa? ecdsa = _key as ECDsa;
 
                 if (ecdsa != null)
                 {
@@ -438,8 +438,8 @@ namespace System.Security.Cryptography.X509Certificates
             // to determine if a chain is valid; and a user can easily call the X509SignatureGenerator overload to
             // bypass this validation.  We're simply helping them at signing time understand that they've
             // chosen the wrong cert.
-            var basicConstraints = (X509BasicConstraintsExtension)issuerCertificate.Extensions[Oids.BasicConstraints2];
-            var keyUsage = (X509KeyUsageExtension)issuerCertificate.Extensions[Oids.KeyUsage];
+            var basicConstraints = (X509BasicConstraintsExtension?)issuerCertificate.Extensions[Oids.BasicConstraints2];
+            var keyUsage = (X509KeyUsageExtension?)issuerCertificate.Extensions[Oids.KeyUsage];
 
             if (basicConstraints == null)
                 throw new ArgumentException(SR.Cryptography_CertReq_BasicConstraintsRequired, nameof(issuerCertificate));
@@ -448,7 +448,7 @@ namespace System.Security.Cryptography.X509Certificates
             if (keyUsage != null && (keyUsage.KeyUsages & X509KeyUsageFlags.KeyCertSign) == 0)
                 throw new ArgumentException(SR.Cryptography_CertReq_IssuerKeyUsageInvalid, nameof(issuerCertificate));
 
-            AsymmetricAlgorithm key = null;
+            AsymmetricAlgorithm? key = null;
             string keyAlgorithm = issuerCertificate.GetKeyAlgorithm();
             X509SignatureGenerator generator;
 
@@ -462,14 +462,14 @@ namespace System.Security.Cryptography.X509Certificates
                             throw new InvalidOperationException(SR.Cryptography_CertReq_RSAPaddingRequired);
                         }
 
-                        RSA rsa = issuerCertificate.GetRSAPrivateKey();
+                        RSA? rsa = issuerCertificate.GetRSAPrivateKey();
                         key = rsa;
-                        generator = X509SignatureGenerator.CreateForRSA(rsa, _rsaPadding);
+                        generator = X509SignatureGenerator.CreateForRSA(rsa!, _rsaPadding);
                         break;
                     case Oids.EcPublicKey:
-                        ECDsa ecdsa = issuerCertificate.GetECDsaPrivateKey();
+                        ECDsa? ecdsa = issuerCertificate.GetECDsaPrivateKey();
                         key = ecdsa;
-                        generator = X509SignatureGenerator.CreateForECDsa(ecdsa);
+                        generator = X509SignatureGenerator.CreateForECDsa(ecdsa!);
                         break;
                     default:
                         throw new ArgumentException(
@@ -560,7 +560,7 @@ namespace System.Security.Cryptography.X509Certificates
 
             if (CertificateExtensions.Count > 0)
             {
-                HashSet<string> usedOids = new HashSet<string>(CertificateExtensions.Count);
+                HashSet<string?> usedOids = new HashSet<string?>(CertificateExtensions.Count);
                 List<X509ExtensionAsn> extensionAsns = new List<X509ExtensionAsn>(CertificateExtensions.Count);
 
                 // An interesting quirk of skipping null values here is that
@@ -574,7 +574,7 @@ namespace System.Security.Cryptography.X509Certificates
                         continue;
                     }
 
-                    if (!usedOids.Add(extension.Oid.Value))
+                    if (!usedOids.Add(extension.Oid!.Value))
                     {
                         throw new InvalidOperationException(
                             SR.Format(SR.Cryptography_CertReq_DuplicateExtension, extension.Oid.Value));

@@ -49,7 +49,7 @@ namespace System.Reflection.TypeLoading
             return sig;
         }
 
-        public sealed override MethodBody GetMethodBody() => null;
+        public sealed override MethodBody? GetMethodBody() => null;
 
         protected sealed override MethodSig<string> ComputeMethodSigStrings()
         {
@@ -65,7 +65,7 @@ namespace System.Reflection.TypeLoading
 
         protected sealed override MethodSig<RoType> ComputeCustomModifiers() => new MethodSig<RoType>(_parameterTypes.Length);
 
-        public sealed override bool Equals(object obj)
+        public sealed override bool Equals(object? obj)
         {
             if (!(obj is RoSyntheticConstructor other))
                 return false;

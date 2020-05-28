@@ -1,0 +1,6 @@
+# /etc/krb5kdc/kadm5.acl -- Kerberos V5 general configuration.
+#
+# The user "root/admin" has full permissions
+# Other users can inquire or list principals or policies
+*/admin@LINUX.CONTOSO.COM  *
+*/*@LINUX.CONTOSO.COM      il

@@ -16,15 +16,15 @@ namespace System.Net.Mail
         internal const int DefaultPort = 25;
 
         private readonly ISmtpAuthenticationModule[] _authenticationModules;
-        private SmtpConnection _connection;
+        private SmtpConnection? _connection;
         private readonly SmtpClient _client;
-        private ICredentialsByHost _credentials;
+        private ICredentialsByHost? _credentials;
         private readonly List<SmtpFailedRecipientException> _failedRecipientExceptions = new List<SmtpFailedRecipientException>();
         private bool _identityRequired;
         private bool _shouldAbort;
 
         private bool _enableSsl = false;
-        private X509CertificateCollection _clientCertificates = null;
+        private X509CertificateCollection? _clientCertificates;
 
         internal SmtpTransport(SmtpClient client) : this(client, SmtpAuthenticationManager.GetModules())
         {
@@ -42,7 +42,7 @@ namespace System.Net.Mail
             _authenticationModules = authenticationModules;
         }
 
-        internal ICredentialsByHost Credentials
+        internal ICredentialsByHost? Credentials
         {
             get
             {
@@ -87,17 +87,7 @@ namespace System.Net.Mail
             }
         }
 
-        internal X509CertificateCollection ClientCertificates
-        {
-            get
-            {
-                if (_clientCertificates == null)
-                {
-                    _clientCertificates = new X509CertificateCollection();
-                }
-                return _clientCertificates;
-            }
-        }
+        internal X509CertificateCollection ClientCertificates => _clientCertificates ??= new X509CertificateCollection();
 
         internal bool ServerSupportsEai
         {
@@ -131,10 +121,10 @@ namespace System.Net.Mail
             finally { }
         }
 
-        internal IAsyncResult BeginGetConnection(ContextAwareResult outerResult, AsyncCallback callback, object state, string host, int port)
+        internal IAsyncResult BeginGetConnection(ContextAwareResult outerResult, AsyncCallback? callback, object? state, string host, int port)
         {
             if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
-            IAsyncResult result = null;
+            IAsyncResult? result = null;
             try
             {
                 _connection = new SmtpConnection(this, _client, _credentials, _authenticationModules);
@@ -165,7 +155,7 @@ namespace System.Net.Mail
             if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
             try
             {
-                _connection.EndGetConnection(result);
+                _connection!.EndGetConnection(result);
             }
             finally
             {
@@ -174,7 +164,7 @@ namespace System.Net.Mail
         }
 
         internal IAsyncResult BeginSendMail(MailAddress sender, MailAddressCollection recipients,
-            string deliveryNotify, bool allowUnicode, AsyncCallback callback, object state)
+            string deliveryNotify, bool allowUnicode, AsyncCallback? callback, object? state)
         {
             if (sender == null)
             {
@@ -186,8 +176,8 @@ namespace System.Net.Mail
                 throw new ArgumentNullException(nameof(recipients));
             }
 
-            SendMailAsyncResult result = new SendMailAsyncResult(_connection, sender, recipients,
-                allowUnicode, _connection.DSNEnabled ? deliveryNotify : null,
+            SendMailAsyncResult result = new SendMailAsyncResult(_connection!, sender, recipients,
+                allowUnicode, _connection!.DSNEnabled ? deliveryNotify : null,
                 callback, state);
             result.Send();
             return result;
@@ -195,10 +185,7 @@ namespace System.Net.Mail
 
         internal void ReleaseConnection()
         {
-            if (_connection != null)
-            {
-                _connection.ReleaseConnection();
-            }
+            _connection?.ReleaseConnection();
         }
 
         internal void Abort()
@@ -228,7 +215,7 @@ namespace System.Net.Mail
         }
 
         internal MailWriter SendMail(MailAddress sender, MailAddressCollection recipients, string deliveryNotify,
-            bool allowUnicode, out SmtpFailedRecipientException exception)
+            bool allowUnicode, out SmtpFailedRecipientException? exception)
         {
             if (sender == null)
             {
@@ -240,7 +227,7 @@ namespace System.Net.Mail
                 throw new ArgumentNullException(nameof(recipients));
             }
 
-            MailCommand.Send(_connection, SmtpCommands.Mail, sender, allowUnicode);
+            MailCommand.Send(_connection!, SmtpCommands.Mail, sender, allowUnicode);
             _failedRecipientExceptions.Clear();
 
             exception = null;
@@ -248,11 +235,11 @@ namespace System.Net.Mail
             foreach (MailAddress address in recipients)
             {
                 string smtpAddress = address.GetSmtpAddress(allowUnicode);
-                string to = smtpAddress + (_connection.DSNEnabled ? deliveryNotify : string.Empty);
+                string to = smtpAddress + (_connection!.DSNEnabled ? deliveryNotify : string.Empty);
                 if (!RecipientCommand.Send(_connection, to, out response))
                 {
                     _failedRecipientExceptions.Add(
-                        new SmtpFailedRecipientException(_connection.Reader.StatusCode, smtpAddress, response));
+                        new SmtpFailedRecipientException(_connection.Reader!.StatusCode, smtpAddress, response));
                 }
             }
 
@@ -274,8 +261,8 @@ namespace System.Net.Mail
                 }
             }
 
-            DataCommand.Send(_connection);
-            return new MailWriter(_connection.GetClosableStream(), encodeForTransport: true);
+            DataCommand.Send(_connection!);
+            return new MailWriter(_connection!.GetClosableStream(), encodeForTransport: true);
         }
     }
 
@@ -283,19 +270,19 @@ namespace System.Net.Mail
     {
         private readonly SmtpConnection _connection;
         private readonly MailAddress _from;
-        private readonly string _deliveryNotify;
+        private readonly string? _deliveryNotify;
         private static readonly AsyncCallback s_sendMailFromCompleted = new AsyncCallback(SendMailFromCompleted);
         private static readonly AsyncCallback s_sendToCollectionCompleted = new AsyncCallback(SendToCollectionCompleted);
         private static readonly AsyncCallback s_sendDataCompleted = new AsyncCallback(SendDataCompleted);
         private readonly List<SmtpFailedRecipientException> _failedRecipientExceptions = new List<SmtpFailedRecipientException>();
-        private Stream _stream;
+        private Stream? _stream;
         private readonly MailAddressCollection _toCollection;
         private int _toIndex;
         private readonly bool _allowUnicode;
 
 
         internal SendMailAsyncResult(SmtpConnection connection, MailAddress from, MailAddressCollection toCollection,
-            bool allowUnicode, string deliveryNotify, AsyncCallback callback, object state)
+            bool allowUnicode, string? deliveryNotify, AsyncCallback? callback, object? state)
             : base(null, state, callback)
         {
             _toCollection = toCollection;
@@ -313,7 +300,7 @@ namespace System.Net.Mail
         internal static MailWriter End(IAsyncResult result)
         {
             SendMailAsyncResult thisPtr = (SendMailAsyncResult)result;
-            object sendMailResult = thisPtr.InternalWaitForCompletion();
+            object? sendMailResult = thisPtr.InternalWaitForCompletion();
 
             // Note the difference between the singular and plural FailedRecipient exceptions.
             // Only fail immediately if we couldn't send to any recipients.
@@ -324,7 +311,7 @@ namespace System.Net.Mail
                 ExceptionDispatchInfo.Throw(e);
             }
 
-            return new MailWriter(thisPtr._stream, encodeForTransport: true);
+            return new MailWriter(thisPtr._stream!, encodeForTransport: true);
         }
         private void SendMailFrom()
         {
@@ -343,7 +330,7 @@ namespace System.Net.Mail
         {
             if (!result.CompletedSynchronously)
             {
-                SendMailAsyncResult thisPtr = (SendMailAsyncResult)result.AsyncState;
+                SendMailAsyncResult thisPtr = (SendMailAsyncResult)result.AsyncState!;
                 try
                 {
                     MailCommand.EndSend(result);
@@ -370,7 +357,7 @@ namespace System.Net.Mail
                 string response;
                 if (!RecipientCommand.EndSend(result, out response))
                 {
-                    _failedRecipientExceptions.Add(new SmtpFailedRecipientException(_connection.Reader.StatusCode,
+                    _failedRecipientExceptions.Add(new SmtpFailedRecipientException(_connection.Reader!.StatusCode,
                         _toCollection[_toIndex - 1].GetSmtpAddress(_allowUnicode), response));
                 }
             }
@@ -381,28 +368,22 @@ namespace System.Net.Mail
         {
             if (!result.CompletedSynchronously)
             {
-                SendMailAsyncResult thisPtr = (SendMailAsyncResult)result.AsyncState;
+                SendMailAsyncResult thisPtr = (SendMailAsyncResult)result.AsyncState!;
                 try
                 {
                     string response;
                     if (!RecipientCommand.EndSend(result, out response))
                     {
                         thisPtr._failedRecipientExceptions.Add(
-                            new SmtpFailedRecipientException(thisPtr._connection.Reader.StatusCode,
+                            new SmtpFailedRecipientException(thisPtr._connection.Reader!.StatusCode,
                                 thisPtr._toCollection[thisPtr._toIndex - 1].GetSmtpAddress(thisPtr._allowUnicode),
                                 response));
 
                         if (thisPtr._failedRecipientExceptions.Count == thisPtr._toCollection.Count)
                         {
-                            SmtpFailedRecipientException exception = null;
-                            if (thisPtr._toCollection.Count == 1)
-                            {
-                                exception = (SmtpFailedRecipientException)thisPtr._failedRecipientExceptions[0];
-                            }
-                            else
-                            {
-                                exception = new SmtpFailedRecipientsException(thisPtr._failedRecipientExceptions, true);
-                            }
+                            SmtpFailedRecipientException exception = thisPtr._toCollection.Count == 1 ?
+                                (SmtpFailedRecipientException)thisPtr._failedRecipientExceptions[0] :
+                                new SmtpFailedRecipientsException(thisPtr._failedRecipientExceptions, true);
                             exception.fatal = true;
                             thisPtr.InvokeCallback(exception);
                             return;
@@ -444,7 +425,7 @@ namespace System.Net.Mail
         {
             if (!result.CompletedSynchronously)
             {
-                SendMailAsyncResult thisPtr = (SendMailAsyncResult)result.AsyncState;
+                SendMailAsyncResult thisPtr = (SendMailAsyncResult)result.AsyncState!;
                 try
                 {
                     DataCommand.EndSend(result);
@@ -470,7 +451,7 @@ namespace System.Net.Mail
         }
 
         // Return the list of non-terminal failures (some recipients failed but not others).
-        internal SmtpFailedRecipientException GetFailedRecipientException()
+        internal SmtpFailedRecipientException? GetFailedRecipientException()
         {
             if (_failedRecipientExceptions.Count == 1)
             {

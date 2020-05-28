@@ -1012,7 +1012,6 @@ namespace System.IO.Ports
             if (value.Length == 0)
                 throw new ArgumentException(SR.Format(SR.InvalidNullEmptyArgument, nameof(value)), nameof(value));
 
-            int startTicks = Environment.TickCount;
             int numCharsRead;
             int timeUsed = 0;
             int timeNow;
@@ -1025,7 +1024,6 @@ namespace System.IO.Ports
             MaybeResizeBuffer(bytesInStream);
 
             _readLen += _internalSerialStream.Read(_inBuffer, _readLen, bytesInStream);
-            int beginReadPos = _readPos;
 
             if (_singleCharBuffer == null)
             {

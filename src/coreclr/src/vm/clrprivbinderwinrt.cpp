@@ -11,7 +11,6 @@
 
 #include "common.h" // precompiled header
 
-#include "clr/fs/file.h"
 #include "clrprivbinderwinrt.h"
 #include "clrprivbinderutil.h"
 

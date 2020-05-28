@@ -7,4 +7,4 @@
 #include "pal_compiler.h"
 #include "pal_types.h"
 
-DLLEXPORT void SystemNative_GetNonCryptographicallySecureRandomBytes(uint8_t* buffer, int32_t bufferLength);
+PALEXPORT void SystemNative_GetNonCryptographicallySecureRandomBytes(uint8_t* buffer, int32_t bufferLength);

@@ -135,9 +135,9 @@ namespace System.Reflection.Context.Virtual
             var sb = new StringBuilder();
 
             sb.Append(ReturnType.ToString());
-            sb.Append(" ");
+            sb.Append(' ');
             sb.Append(Name);
-            sb.Append("(");
+            sb.Append('(');
 
             Type[] parameterTypes = GetParameterTypes();
 

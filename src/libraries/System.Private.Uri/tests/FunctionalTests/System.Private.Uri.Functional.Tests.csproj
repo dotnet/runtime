@@ -1,9 +1,10 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <Configurations>netcoreapp-Debug;netcoreapp-Release</Configurations>
+    <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="AppxUriValue.cs" />
+    <Compile Include="EscapeUnescapeIriTests.cs" />
     <Compile Include="IdnCheckHostNameTest.cs" />
     <Compile Include="IdnDnsSafeHostTest.cs" />
     <Compile Include="IdnHostNameValidationTest.cs" />

@@ -22,7 +22,7 @@ namespace Tracing.Tests
                 "Common",
                 "Rundown", // this assembly
                 "System.Runtime",
-                "System.Diagnostics.Tracing",
+                "Microsoft.Diagnostics.Tracing.TraceEvent",
                 "System.Private.CoreLib"
             };
 

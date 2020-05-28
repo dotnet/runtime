@@ -184,8 +184,7 @@ namespace System
         {
             Debug.Assert(!string.IsNullOrEmpty(asmName));
 
-            Assembly? assembly = null;
-
+            Assembly? assembly;
             if (assemblyResolver == null)
             {
                 if (throwOnError)
@@ -222,7 +221,7 @@ namespace System
         {
             Debug.Assert(names != null && names.Length > 0);
 
-            Type? type = null;
+            Type? type;
 
             // both the customer provided and the default type resolvers accept escaped type names
             string OuterMostTypeName = EscapeTypeName(names[0]);

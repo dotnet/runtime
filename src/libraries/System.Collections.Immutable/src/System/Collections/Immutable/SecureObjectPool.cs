@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Threading;
 
@@ -51,7 +52,7 @@ namespace System.Collections.Immutable
             }
         }
 
-        public bool TryTake(TCaller caller, out SecurePooledObject<T> item)
+        public bool TryTake(TCaller caller, out SecurePooledObject<T>? item)
         {
             if (caller.PoolUserId != SecureObjectPool.UnassignedId && AllocFreeConcurrentStack<SecurePooledObject<T>>.TryTake(out item))
             {
@@ -114,7 +115,7 @@ namespace System.Collections.Immutable
             return _value;
         }
 
-        internal bool TryUse<TCaller>(ref TCaller caller, out T value)
+        internal bool TryUse<TCaller>(ref TCaller caller, [MaybeNullWhen(false)] out T value)
             where TCaller : struct, ISecurePooledObjectUser
         {
             if (IsOwned(ref caller))
@@ -124,7 +125,7 @@ namespace System.Collections.Immutable
             }
             else
             {
-                value = default(T);
+                value = default(T)!;
                 return false;
             }
         }

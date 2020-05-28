@@ -59,7 +59,7 @@ namespace System.Reflection.PortableExecutable
             public int VirtualSize => Builder.Count;
         }
 
-        protected PEBuilder(PEHeaderBuilder header, Func<IEnumerable<Blob>, BlobContentId> deterministicIdProvider)
+        protected PEBuilder(PEHeaderBuilder header, Func<IEnumerable<Blob>, BlobContentId>? deterministicIdProvider)
         {
             if (header == null)
             {

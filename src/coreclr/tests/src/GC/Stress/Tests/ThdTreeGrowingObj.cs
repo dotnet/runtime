@@ -230,13 +230,13 @@ namespace DefaultNamespace
 
     public class ThdTreeGrowingObj
     {
-        public static int Main(System.String[] Args)
+        public static int Main(string[] args)
         {
             int iNofThread = 0;
 
-            if (Args.Length == 1)
+            if (args.Length == 1)
             {
-                if (!Int32.TryParse(Args[0], out iNofThread))
+                if (!Int32.TryParse(args[0], out iNofThread))
                 {
                     iNofThread = 2;
                 }

@@ -97,7 +97,7 @@ namespace System.DirectoryServices.Protocols
                     }
                 }
 
-                // Try to get the results availabe for this asynchronous operation  .
+                // Try to get the results available for this asynchronous operation  .
                 GetResultsHelper(asyncResult);
 
                 // If we are done with the asynchronous search, we need to fire callback and signal the waitable object.
@@ -214,7 +214,7 @@ namespace System.DirectoryServices.Protocols
                 asyncResult._resultStatus = ResultsStatus.Done;
 
                 // Need to abandon this request.
-                Wldap32.ldap_abandon(connection._ldapHandle, asyncResult._messageID);
+                LdapPal.CancelDirectoryAsyncOperation(connection._ldapHandle, asyncResult._messageID);
             }
         }
 

@@ -409,7 +409,7 @@ namespace System.Data.Common
             System.Data.OleDb.OleDbHResult SetParameterInfo(
                 [In] IntPtr cParams,
                 [In, MarshalAs(UnmanagedType.LPArray)] IntPtr[] rgParamOrdinals,
-                [In, MarshalAs(UnmanagedType.LPArray, ArraySubType = UnmanagedType.Struct)] System.Data.OleDb.tagDBPARAMBINDINFO[] rgParamBindInfo);
+                [In] IntPtr rgParamBindInfo);
         }
 
         [Guid("2206CCB1-19C1-11D1-89E0-00C04FD7A829"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown), ComImport, SuppressUnmanagedCodeSecurity]
@@ -741,9 +741,21 @@ namespace System.Data.Common
         [Guid("0C733A5F-2A1C-11CE-ADE5-00AA0044773D"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown), ComImport, SuppressUnmanagedCodeSecurity]
         internal interface ITransactionLocal
         {
-            [Obsolete("not used", true)] void Commit(/*deleted parameter signature*/);
+            [PreserveSig]
+            int Commit
+                (
+                [In] bool fRetaining,
+                [In] uint grfTC,
+                [In] uint grfRM
+                );
 
-            [Obsolete("not used", true)] void Abort(/*deleted parameter signature*/);
+            [PreserveSig]
+            int Abort
+                (
+                [In] IntPtr pboidReason,
+                [In] bool fRetaining,
+                [In] bool fAsync
+                );
 
             [Obsolete("not used", true)] void GetTransactionInfo(/*deleted parameter signature*/);
 

@@ -147,7 +147,7 @@ namespace System.Linq.Parallel
             // element action for each element.
             //
 
-            internal override bool MoveNext([MaybeNull, AllowNull] ref TInput currentElement, ref int currentKey)
+            internal override bool MoveNext([MaybeNullWhen(false), AllowNull] ref TInput currentElement, ref int currentKey)
             {
                 Debug.Assert(_elementAction != null, "expected a compiled operator");
 
@@ -159,13 +159,12 @@ namespace System.Linq.Parallel
                 TInput element = default(TInput)!;
                 TKey keyUnused = default(TKey)!;
                 int i = 0;
-                while (_source.MoveNext(ref element!, ref keyUnused))
+                while (_source.MoveNext(ref element, ref keyUnused))
                 {
                     if ((i++ & CancellationState.POLL_INTERVAL) == 0)
-                        CancellationState.ThrowIfCanceled(_cancellationToken);
+                        _cancellationToken.ThrowIfCancellationRequested();;
                     _elementAction(element);
                 }
-
 
                 return false;
             }

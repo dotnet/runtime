@@ -9,6 +9,7 @@ namespace System.Reflection.Emit.Tests
     public class MethodBuilderDefineTypeInitializer
     {
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/2389", TestRuntimes.Mono)]
         public void DefineTypeInitializer()
         {
             TypeBuilder type = Helpers.DynamicType(TypeAttributes.Public);

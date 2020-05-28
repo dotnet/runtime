@@ -46,7 +46,7 @@ namespace System.IO.Tests
             Assert.Equal(path, info.ToString());
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsFullFramework))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNetFramework))]
         public void ParentToString_Framework()
         {
             ParentToString(false);

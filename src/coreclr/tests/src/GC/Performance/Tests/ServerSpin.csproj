@@ -2,7 +2,6 @@
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <DefineConstants>$(DefineConstants);STATIC;PROJECTK_BUILD</DefineConstants>
     <CLRTestKind>BuildOnly</CLRTestKind>
     <ServerGarbageCollection>true</ServerGarbageCollection>
   </PropertyGroup>

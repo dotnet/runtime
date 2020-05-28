@@ -58,7 +58,7 @@ Namespace Microsoft.VisualBasic
 
             '   Handle invalid parameters
             If Factor <= 0.0# OrElse Salvage < 0.0# OrElse Period <= 0.0# OrElse Period > Life Then
-                Throw New ArgumentException(GetResourceString(SR.Argument_InvalidValue1, "Factor"))
+                Throw New ArgumentException(SR.Format(SR.Argument_InvalidValue1, "Factor"))
             End If
 
             '   Handle special (trivial) cases
@@ -165,7 +165,7 @@ Namespace Microsoft.VisualBasic
         '               arguments.  The value is returned.  The function
         '               Raises an expection if params are invalid. This function
         '               calls FV and PMT. It calculates value of annuity (FV) at the
-        '               begining of period for which IPMT is desired. Since interest
+        '               beginning of period for which IPMT is desired. Since interest
         '               rate is constant FV*rate would give IPMT.
         '
         '               if type = 1 and per = 1 then IPMT = 0.
@@ -190,7 +190,7 @@ Namespace Microsoft.VisualBasic
 
             '   Type = 0 or non-zero only. Offset to calculate FV
             If (Per <= 0.0#) OrElse (Per >= NPer + 1) Then
-                Throw New ArgumentException(GetResourceString(SR.Argument_InvalidValue1, "Per"))
+                Throw New ArgumentException(SR.Format(SR.Argument_InvalidValue1, "Per"))
             End If
 
             If (Due <> DueDate.EndOfPeriod) AndAlso (Per = 1.0#) Then
@@ -260,18 +260,18 @@ Namespace Microsoft.VisualBasic
             Catch ex As System.Threading.ThreadAbortException
                 Throw ex
             Catch
-                Throw New ArgumentException(GetResourceString(SR.Argument_InvalidValue1, "ValueArray"))
+                Throw New ArgumentException(SR.Format(SR.Argument_InvalidValue1, "ValueArray"))
             End Try
 
             lCVal = lUpper + 1
 
             'Function fails for invalid parameters
             If Guess <= (-1.0#) Then
-                Throw New ArgumentException(GetResourceString(SR.Argument_InvalidValue1, "Guess"))
+                Throw New ArgumentException(SR.Format(SR.Argument_InvalidValue1, "Guess"))
             End If
 
             If lCVal <= 1 Then
-                Throw New ArgumentException(GetResourceString(SR.Argument_InvalidValue1, "ValueArray"))
+                Throw New ArgumentException(SR.Format(SR.Argument_InvalidValue1, "ValueArray"))
             End If
 
             'We scale the epsilon depending on cash flow values. It is necessary
@@ -305,7 +305,7 @@ Namespace Microsoft.VisualBasic
             End If
 
             If dRate1 <= (-1.0#) Then
-                Throw New ArgumentException(GetResourceString(SR.Argument_InvalidValue1, "Rate"))
+                Throw New ArgumentException(SR.Format(SR.Argument_InvalidValue1, "Rate"))
             End If
 
             dNpv1 = OptPV2(ValueArray, dRate1)
@@ -319,7 +319,7 @@ Namespace Microsoft.VisualBasic
                     End If
                     dNPv0 = OptPV2(ValueArray, dRate0)
                     If dNpv1 = dNPv0 Then
-                        Throw New ArgumentException(GetResourceString(SR.Argument_InvalidValue))
+                        Throw New ArgumentException(SR.Argument_InvalidValue)
                     End If
                 End If
 
@@ -359,7 +359,7 @@ Namespace Microsoft.VisualBasic
                 dRate1 = dTemp
             Next lIndex
 
-            Throw New ArgumentException(GetResourceString(SR.Argument_InvalidValue))
+            Throw New ArgumentException(SR.Argument_InvalidValue)
         End Function
 
         '-------------------------------------------------------------
@@ -381,7 +381,7 @@ Namespace Microsoft.VisualBasic
             Dim lUpper As Integer
 
             If ValueArray.Rank <> 1 Then
-                Throw New ArgumentException(GetResourceString(SR.Argument_RankEQOne1, "ValueArray"))
+                Throw New ArgumentException(SR.Format(SR.Argument_RankEQOne1, "ValueArray"))
             End If
 
             lLower = 0
@@ -389,20 +389,20 @@ Namespace Microsoft.VisualBasic
             lCVal = lUpper - lLower + 1
 
             If FinanceRate = -1.0# Then
-                Throw New ArgumentException(GetResourceString(SR.Argument_InvalidValue1, "FinanceRate"))
+                Throw New ArgumentException(SR.Format(SR.Argument_InvalidValue1, "FinanceRate"))
             End If
 
             If ReinvestRate = -1.0# Then
-                Throw New ArgumentException(GetResourceString(SR.Argument_InvalidValue1, "ReinvestRate"))
+                Throw New ArgumentException(SR.Format(SR.Argument_InvalidValue1, "ReinvestRate"))
             End If
 
             If lCVal <= 1 Then
-                Throw New ArgumentException(GetResourceString(SR.Argument_InvalidValue1, "ValueArray"))
+                Throw New ArgumentException(SR.Format(SR.Argument_InvalidValue1, "ValueArray"))
             End If
 
             dNpvNeg = LDoNPV(FinanceRate, ValueArray, -1)
             If dNpvNeg = 0.0# Then
-                Throw New DivideByZeroException(GetResourceString(SR.Financial_CalcDivByZero))
+                Throw New DivideByZeroException(SR.Financial_CalcDivByZero)
             End If
 
             dNpvPos = LDoNPV(ReinvestRate, ValueArray, 1) ' npv of +ve values
@@ -412,7 +412,7 @@ Namespace Microsoft.VisualBasic
             dTemp = -dNpvPos * dTemp1 ^ dNTemp2 / (dNpvNeg * (FinanceRate + 1.0#))
 
             If dTemp < 0.0# Then
-                Throw New ArgumentException(GetResourceString(SR.Argument_InvalidValue))
+                Throw New ArgumentException(SR.Argument_InvalidValue)
             End If
 
             dTemp1 = 1 / (lCVal - 1.0#)
@@ -447,12 +447,12 @@ Namespace Microsoft.VisualBasic
 
             '   Checking Error Conditions
             If Rate <= -1.0# Then
-                Throw New ArgumentException(GetResourceString(SR.Argument_InvalidValue1, "Rate"))
+                Throw New ArgumentException(SR.Format(SR.Argument_InvalidValue1, "Rate"))
             End If
 
             If Rate = 0.0# Then
                 If Pmt = 0.0# Then
-                    Throw New ArgumentException(GetResourceString(SR.Argument_InvalidValue1, "Pmt"))
+                    Throw New ArgumentException(SR.Format(SR.Argument_InvalidValue1, "Pmt"))
                 End If
                 Return (-(PV + FV) / Pmt)
             Else
@@ -469,7 +469,7 @@ Namespace Microsoft.VisualBasic
                     dTempFv = -1 * dTempFv
                     dTempPv = -1 * dTempPv
                 ElseIf dTempFv <= 0.0# OrElse dTempPv <= 0.0# Then
-                    Throw New ArgumentException(GetResourceString(SR.Financial_CannotCalculateNPer))
+                    Throw New ArgumentException(SR.Financial_CannotCalculateNPer)
                 End If
 
                 dTemp4 = Rate + 1.0#
@@ -504,11 +504,11 @@ Namespace Microsoft.VisualBasic
             Dim lUpper As Integer
 
             If (ValueArray Is Nothing) Then
-                Throw New ArgumentException(GetResourceString(SR.Argument_InvalidNullValue1, "ValueArray"))
+                Throw New ArgumentException(SR.Format(SR.Argument_InvalidNullValue1, "ValueArray"))
             End If
 
             If ValueArray.Rank <> 1 Then
-                Throw New ArgumentException(GetResourceString(SR.Argument_RankEQOne1, "ValueArray"))
+                Throw New ArgumentException(SR.Format(SR.Argument_RankEQOne1, "ValueArray"))
             End If
 
             lLower = 0
@@ -516,10 +516,10 @@ Namespace Microsoft.VisualBasic
             lCVal = lUpper - lLower + 1
 
             If Rate = (-1.0#) Then
-                Throw New ArgumentException(GetResourceString(SR.Argument_InvalidValue1, "Rate"))
+                Throw New ArgumentException(SR.Format(SR.Argument_InvalidValue1, "Rate"))
             End If
             If lCVal < 1 Then
-                Throw New ArgumentException(GetResourceString(SR.Argument_InvalidValue1, "ValueArray"))
+                Throw New ArgumentException(SR.Format(SR.Argument_InvalidValue1, "ValueArray"))
             End If
 
             NPV = LDoNPV(Rate, ValueArray, 0)
@@ -575,7 +575,7 @@ Namespace Microsoft.VisualBasic
 
             '       Checking for error conditions
             If NPer = 0.0# Then
-                Throw New ArgumentException(GetResourceString(SR.Argument_InvalidValue1, "NPer"))
+                Throw New ArgumentException(SR.Format(SR.Argument_InvalidValue1, "NPer"))
             End If
 
             If Rate = 0.0# Then
@@ -615,7 +615,7 @@ Namespace Microsoft.VisualBasic
 
             '   Checking for error conditions
             If (Per <= 0.0#) OrElse (Per >= (NPer + 1)) Then
-                Throw New ArgumentException(GetResourceString(SR.PPMT_PerGT0AndLTNPer, "Per"))
+                Throw New ArgumentException(SR.Format(SR.PPMT_PerGT0AndLTNPer, "Per"))
             End If
 
             Pmt = PMT_Internal(Rate, NPer, PV, FV, Due)
@@ -703,7 +703,7 @@ Namespace Microsoft.VisualBasic
 
             '   Check for error condition
             If NPer <= 0.0# Then
-                Throw New ArgumentException(GetResourceString(SR.Rate_NPerMustBeGTZero))
+                Throw New ArgumentException(SR.Rate_NPerMustBeGTZero)
             End If
 
             dRate0 = Guess
@@ -725,7 +725,7 @@ Namespace Microsoft.VisualBasic
                     End If
                     dY0 = LEvalRate(dRate0, NPer, Pmt, PV, FV, Due)
                     If dY1 = dY0 Then
-                        Throw New ArgumentException(GetResourceString(SR.Financial_CalcDivByZero))
+                        Throw New ArgumentException(SR.Financial_CalcDivByZero)
                     End If
                 End If
 
@@ -745,7 +745,7 @@ Namespace Microsoft.VisualBasic
                 dRate1 = dTemp
             Next I
 
-            Throw New ArgumentException(GetResourceString(SR.Financial_CannotCalculateRate))
+            Throw New ArgumentException(SR.Financial_CannotCalculateRate)
 
         End Function
 
@@ -765,7 +765,7 @@ Namespace Microsoft.VisualBasic
         Public Function SLN(ByVal Cost As Double, ByVal Salvage As Double, ByVal Life As Double) As Double
 
             If Life = 0.0# Then
-                Throw New ArgumentException(GetResourceString(SR.Financial_LifeNEZero))
+                Throw New ArgumentException(SR.Financial_LifeNEZero)
             End If
 
             Return (Cost - Salvage) / (Life)
@@ -795,13 +795,13 @@ Namespace Microsoft.VisualBasic
             Dim Result As Double
 
             If Salvage < 0.0# Then
-                Throw New ArgumentException(GetResourceString(SR.Financial_ArgGEZero1, "Salvage"))
+                Throw New ArgumentException(SR.Format(SR.Financial_ArgGEZero1, "Salvage"))
             End If
             If Period > Life Then
-                Throw New ArgumentException(GetResourceString(SR.Financial_PeriodLELife))
+                Throw New ArgumentException(SR.Financial_PeriodLELife)
             End If
             If Period <= 0.0# Then
-                Throw New ArgumentException(GetResourceString(SR.Financial_ArgGTZero1, "Period"))
+                Throw New ArgumentException(SR.Format(SR.Financial_ArgGTZero1, "Period"))
             End If
 
             'Avoid OverflowExceptions by dividing before multiplying

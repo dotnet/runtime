@@ -24,7 +24,7 @@ public enum eReasonForUnload
 
 
 /// <summary>
-/// The LoaderClass is how we communicate with other app domains.  He has to do 3 important things:  1) Load assemblies into the
+/// The LoaderClass is how we communicate with other app domains.  It has to do 3 important things:  1) Load assemblies into the
 /// remote app domain (via Load/LoadFrom), 2) get back an object which represents the test (this is either an I...RelibilityTest or 
 /// a string indicating the assembly to run) (via GetTest), and 3) verify  that our app domain is still running & healthy (via StillAlive)
 /// </summary>

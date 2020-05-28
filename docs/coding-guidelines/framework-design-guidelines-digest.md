@@ -307,5 +307,5 @@ conformance to the [Framework Design Guidelines][FDG] (also see [MSDN](https://m
 
 ## Presentations
 
-* [Overview of the Framework Design Guidelines](http://blogs.msdn.com/kcwalina/archive/2007/03/29/1989896.aspx)
-* [TechEd 2007 Presentation about framework engineering](http://blogs.msdn.com/kcwalina/archive/2008/01/08/FrameworkEngineering.aspx)
+* [Overview of the Framework Design Guidelines](https://docs.microsoft.com/en-us/archive/blogs/kcwalina/online-lecture-on-api-design)
+* [TechEd 2007 Presentation about framework engineering](https://docs.microsoft.com/en-us/archive/blogs/kcwalina/video-recording-of-framework-engineering-architecting-designing-and-developing-reusable-libraries)

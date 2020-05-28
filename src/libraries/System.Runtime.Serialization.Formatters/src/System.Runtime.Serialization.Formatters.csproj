@@ -1,9 +1,9 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AssemblyName>System.Runtime.Serialization.Formatters</AssemblyName>
     <RootNamespace>System.Runtime.Serialization.Formatters</RootNamespace>
     <NoWarn>$(NoWarn);CS1573</NoWarn>
-    <Configurations>netcoreapp-Unix-Debug;netcoreapp-Unix-Release;netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release</Configurations>
+    <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)-Unix;</TargetFrameworks>
     <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>
@@ -55,9 +55,8 @@
     <Compile Include="System\Runtime\Serialization\Formatters\Binary\BinaryObjectWriter.cs" />
     <Compile Include="System\Runtime\Serialization\Formatters\Binary\BinaryParser.cs" />
     <Compile Include="System\Runtime\Serialization\Formatters\Binary\BinaryUtilClasses.cs" />
-    <Compile Include="$(CoreLibSharedDir)System\Collections\HashHelpers.cs">
-      <Link>Common\System\Collections\HashHelpers.cs</Link>
-    </Compile>
+    <Compile Include="$(CoreLibSharedDir)System\Collections\HashHelpers.cs"
+             Link="Common\System\Collections\HashHelpers.cs" />
   </ItemGroup>
   <ItemGroup>
     <ReferenceFromRuntime Include="System.Private.CoreLib" />

@@ -4,6 +4,7 @@
 
 namespace System.Reflection.PortableExecutable
 {
+    [Flags]
     public enum Characteristics : ushort
     {
         RelocsStripped = 0x0001,         // Relocation info stripped from file.

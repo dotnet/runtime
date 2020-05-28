@@ -13,7 +13,7 @@ namespace System.Net.WebSockets
     internal static class WebSocketProtocolComponent
     {
         private static readonly string s_dummyWebsocketKeyBase64 = Convert.ToBase64String(new byte[16]);
-        private static readonly SafeLibraryHandle s_webSocketDllHandle;
+        private static readonly IntPtr s_webSocketDllHandle;
         private static readonly string s_supportedVersion;
 
         private static readonly Interop.WebSocket.HttpHeader[] s_initialClientRequestHeaders = new Interop.WebSocket.HttpHeader[]
@@ -75,51 +75,51 @@ namespace System.Net.WebSockets
 #pragma warning disable CA1810 // explicit static cctor
         static WebSocketProtocolComponent()
         {
-            s_webSocketDllHandle = Interop.Kernel32.LoadLibraryExW(Interop.Libraries.WebSocket, IntPtr.Zero, 0);
+            s_webSocketDllHandle = Interop.Kernel32.LoadLibraryEx(Interop.Libraries.WebSocket, IntPtr.Zero, 0);
 
-            if (!s_webSocketDllHandle.IsInvalid)
+            if (s_webSocketDllHandle == IntPtr.Zero)
+                return;
+
+            s_supportedVersion = GetSupportedVersion();
+
+            s_ServerFakeRequestHeaders = new Interop.WebSocket.HttpHeader[]
             {
-                s_supportedVersion = GetSupportedVersion();
-
-                s_ServerFakeRequestHeaders = new Interop.WebSocket.HttpHeader[]
+                new Interop.WebSocket.HttpHeader()
                 {
-                    new Interop.WebSocket.HttpHeader()
-                    {
-                        Name = HttpKnownHeaderNames.Connection,
-                        NameLength = (uint)HttpKnownHeaderNames.Connection.Length,
-                        Value = HttpKnownHeaderNames.Upgrade,
-                        ValueLength = (uint)HttpKnownHeaderNames.Upgrade.Length
-                    },
-                    new Interop.WebSocket.HttpHeader()
-                    {
-                        Name = HttpKnownHeaderNames.Upgrade,
-                        NameLength = (uint)HttpKnownHeaderNames.Upgrade.Length,
-                        Value = HttpWebSocket.WebSocketUpgradeToken,
-                        ValueLength = (uint)HttpWebSocket.WebSocketUpgradeToken.Length
-                    },
-                    new Interop.WebSocket.HttpHeader()
-                    {
-                        Name = HttpKnownHeaderNames.Host,
-                        NameLength = (uint)HttpKnownHeaderNames.Host.Length,
-                        Value = string.Empty,
-                        ValueLength = 0
-                    },
-                    new Interop.WebSocket.HttpHeader()
-                    {
-                        Name = HttpKnownHeaderNames.SecWebSocketVersion,
-                        NameLength = (uint)HttpKnownHeaderNames.SecWebSocketVersion.Length,
-                        Value = s_supportedVersion,
-                        ValueLength = (uint)s_supportedVersion.Length
-                    },
-                    new Interop.WebSocket.HttpHeader()
-                    {
-                        Name = HttpKnownHeaderNames.SecWebSocketKey,
-                        NameLength = (uint)HttpKnownHeaderNames.SecWebSocketKey.Length,
-                        Value = s_dummyWebsocketKeyBase64,
-                        ValueLength = (uint)s_dummyWebsocketKeyBase64.Length
-                    }
-                };
-            }
+                    Name = HttpKnownHeaderNames.Connection,
+                    NameLength = (uint)HttpKnownHeaderNames.Connection.Length,
+                    Value = HttpKnownHeaderNames.Upgrade,
+                    ValueLength = (uint)HttpKnownHeaderNames.Upgrade.Length
+                },
+                new Interop.WebSocket.HttpHeader()
+                {
+                    Name = HttpKnownHeaderNames.Upgrade,
+                    NameLength = (uint)HttpKnownHeaderNames.Upgrade.Length,
+                    Value = HttpWebSocket.WebSocketUpgradeToken,
+                    ValueLength = (uint)HttpWebSocket.WebSocketUpgradeToken.Length
+                },
+                new Interop.WebSocket.HttpHeader()
+                {
+                    Name = HttpKnownHeaderNames.Host,
+                    NameLength = (uint)HttpKnownHeaderNames.Host.Length,
+                    Value = string.Empty,
+                    ValueLength = 0
+                },
+                new Interop.WebSocket.HttpHeader()
+                {
+                    Name = HttpKnownHeaderNames.SecWebSocketVersion,
+                    NameLength = (uint)HttpKnownHeaderNames.SecWebSocketVersion.Length,
+                    Value = s_supportedVersion,
+                    ValueLength = (uint)s_supportedVersion.Length
+                },
+                new Interop.WebSocket.HttpHeader()
+                {
+                    Name = HttpKnownHeaderNames.SecWebSocketKey,
+                    NameLength = (uint)HttpKnownHeaderNames.SecWebSocketKey.Length,
+                    Value = s_dummyWebsocketKeyBase64,
+                    ValueLength = (uint)s_dummyWebsocketKeyBase64.Length
+                }
+            };
         }
 #pragma warning restore CA1810
 
@@ -127,7 +127,7 @@ namespace System.Net.WebSockets
         {
             get
             {
-                if (s_webSocketDllHandle.IsInvalid)
+                if (!IsSupported)
                 {
                     HttpWebSocket.ThrowPlatformNotSupportedException_WSPC();
                 }
@@ -140,13 +140,13 @@ namespace System.Net.WebSockets
         {
             get
             {
-                return !s_webSocketDllHandle.IsInvalid;
+                return s_webSocketDllHandle != IntPtr.Zero;
             }
         }
 
         internal static string GetSupportedVersion()
         {
-            if (s_webSocketDllHandle.IsInvalid)
+            if (!IsSupported)
             {
                 HttpWebSocket.ThrowPlatformNotSupportedException_WSPC();
             }
@@ -212,7 +212,7 @@ namespace System.Net.WebSockets
                 (properties != null && propertyCount == properties.Length),
                 "'propertyCount' MUST MATCH 'properties.Length'.");
 
-            if (s_webSocketDllHandle.IsInvalid)
+            if (!IsSupported)
             {
                 HttpWebSocket.ThrowPlatformNotSupportedException_WSPC();
             }

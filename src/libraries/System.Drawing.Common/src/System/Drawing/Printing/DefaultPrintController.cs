@@ -14,8 +14,8 @@ namespace System.Drawing.Printing
     /// </summary>
     public class StandardPrintController : PrintController
     {
-        private DeviceContext _dc;
-        private Graphics _graphics;
+        private DeviceContext? _dc;
+        private Graphics? _graphics;
 
         /// <summary>
         /// Implements StartPrint for printing to a physical printer.
@@ -23,6 +23,7 @@ namespace System.Drawing.Printing
         public override void OnStartPrint(PrintDocument document, PrintEventArgs e)
         {
             Debug.Assert(_dc == null && _graphics == null, "PrintController methods called in the wrong order?");
+            Debug.Assert(_modeHandle != null);
 
             base.OnStartPrint(document, e);
             // the win32 methods below SuppressUnmanagedCodeAttributes so assertin on UnmanagedCodePermission is redundant
@@ -60,6 +61,7 @@ namespace System.Drawing.Printing
         public override Graphics OnStartPage(PrintDocument document, PrintPageEventArgs e)
         {
             Debug.Assert(_dc != null && _graphics == null, "PrintController methods called in the wrong order?");
+            Debug.Assert(_modeHandle != null);
 
             base.OnStartPage(document, e);
             e.PageSettings.CopyToHdevmode(_modeHandle);
@@ -76,7 +78,7 @@ namespace System.Drawing.Printing
 
             _graphics = Graphics.FromHdcInternal(_dc.Hdc);
 
-            if (_graphics != null && document.OriginAtMargins)
+            if (document.OriginAtMargins)
             {
                 // Adjust the origin of the graphics object to be at the
                 // user-specified margin location

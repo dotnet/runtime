@@ -66,7 +66,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
             /// <summary>Second state argument.</summary>
             private readonly T2 _arg2;
             /// <summary>The action to run when disposed. Null if disposed.</summary>
-            private Action<T1, T2> _action;
+            private Action<T1, T2>? _action;
 
             /// <summary>Initializes the ActionOnDispose.</summary>
             /// <param name="action">The action to run when disposed.</param>
@@ -81,13 +81,12 @@ namespace System.Threading.Tasks.Dataflow.Internal
             }
 
             /// <summary>Gets whether the IDisposable has been disposed.</summary>
-            [SuppressMessage("Microsoft.Performance", "CA1811:AvoidUncalledPrivateCode")]
             private bool Disposed { get { return _action == null; } }
 
             /// <summary>Invoke the action.</summary>
             void IDisposable.Dispose()
             {
-                Action<T1, T2> toRun = _action;
+                Action<T1, T2>? toRun = _action;
                 if (toRun != null &&
                     Interlocked.CompareExchange(ref _action, null, toRun) == toRun)
                 {
@@ -107,7 +106,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
             /// <summary>Third state argument.</summary>
             private readonly T3 _arg3;
             /// <summary>The action to run when disposed. Null if disposed.</summary>
-            private Action<T1, T2, T3> _action;
+            private Action<T1, T2, T3>? _action;
 
             /// <summary>Initializes the ActionOnDispose.</summary>
             /// <param name="action">The action to run when disposed.</param>
@@ -124,13 +123,12 @@ namespace System.Threading.Tasks.Dataflow.Internal
             }
 
             /// <summary>Gets whether the IDisposable has been disposed.</summary>
-            [SuppressMessage("Microsoft.Performance", "CA1811:AvoidUncalledPrivateCode")]
             private bool Disposed { get { return _action == null; } }
 
             /// <summary>Invoke the action.</summary>
             void IDisposable.Dispose()
             {
-                Action<T1, T2, T3> toRun = _action;
+                Action<T1, T2, T3>? toRun = _action;
                 if (toRun != null &&
                     Interlocked.CompareExchange(ref _action, null, toRun) == toRun)
                 {

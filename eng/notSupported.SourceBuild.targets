@@ -3,12 +3,16 @@
           BeforeTargets="BeforeCompile"
           Condition="'$(DotNetBuildFromSource)' == 'true' and
                      ('$(GeneratePlatformNotSupportedAssembly)' == 'true' or '$(GeneratePlatformNotSupportedAssemblyMessage)' != '')">
-                     
+
+    <PropertyGroup>
+      <DotNetSourceBuildIntermediatePath Condition="'$(DotNetSourceBuildIntermediatePath)' == '' and '$(ContinuousIntegrationBuild)' == 'true'">$(IntermediateOutputPath)</DotNetSourceBuildIntermediatePath>
+    </PropertyGroup>
+   
     <Error Condition="'$(DotNetSourceBuildIntermediatePath)' == ''" 
            Text="'DotNetSourceBuildIntermediatePath' must be specified when 'DotNetBuildFromSource' is true" />
 
     <PropertyGroup>
-      <_notSupportedSourceDirectory>$([MSBuild]::NormalizeDirectory('$(DotNetSourceBuildIntermediatePath)', '$(MSBuildProjectName)', '$(TargetGroup)-$(OSGroup)'))</_notSupportedSourceDirectory>
+      <_notSupportedSourceDirectory>$([MSBuild]::NormalizeDirectory('$(DotNetSourceBuildIntermediatePath)', '$(MSBuildProjectName)', '$(TargetFramework)-$(TargetOS)'))</_notSupportedSourceDirectory>
       <NotSupportedSourceFile>$(_notSupportedSourceDirectory)$(TargetName).notsupported.cs</NotSupportedSourceFile>
     </PropertyGroup>
 

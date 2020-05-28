@@ -25,7 +25,7 @@ namespace Internal.Cryptography.Pal
         public static IChainPal BuildChain(
             bool useMachineContext,
             ICertificatePal cert,
-            X509Certificate2Collection extraStore,
+            X509Certificate2Collection? extraStore,
             OidCollection applicationPolicy,
             OidCollection certificatePolicy,
             X509RevocationMode revocationMode,
@@ -68,7 +68,7 @@ namespace Internal.Cryptography.Pal
 
             if (!OpenSslX509ChainProcessor.IsCompleteChain(status))
             {
-                List<X509Certificate2> tmp = null;
+                List<X509Certificate2>? tmp = null;
                 status = chainPal.FindChainViaAia(ref tmp);
 
                 if (tmp != null)
@@ -100,7 +100,7 @@ namespace Internal.Cryptography.Pal
             chainPal.Finish(applicationPolicy, certificatePolicy);
 
 #if DEBUG
-            if (chainPal.ChainElements.Length > 0)
+            if (chainPal.ChainElements!.Length > 0)
             {
                 X509Certificate2 reportedLeaf = chainPal.ChainElements[0].Certificate;
                 Debug.Assert(reportedLeaf != null, "reportedLeaf != null");

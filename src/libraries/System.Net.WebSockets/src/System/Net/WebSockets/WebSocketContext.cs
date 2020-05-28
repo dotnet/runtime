@@ -17,7 +17,7 @@ namespace System.Net.WebSockets
         public abstract string SecWebSocketVersion { get; }
         public abstract string SecWebSocketKey { get; }
         public abstract CookieCollection CookieCollection { get; }
-        public abstract IPrincipal User { get; }
+        public abstract IPrincipal? User { get; }
         public abstract bool IsAuthenticated { get; }
         public abstract bool IsLocal { get; }
         public abstract bool IsSecureConnection { get; }

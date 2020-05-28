@@ -19,15 +19,15 @@ class ZapReadyToRunHeader : public ZapNode
 {
     struct Section
     {
-        DWORD       type;
-        ZapNode *   pSection;
+        ReadyToRunSectionType type;
+        ZapNode *             pSection;
     };
 
     SArray<Section> m_Sections;
 
     static int __cdecl SectionCmp(const void* a_, const void* b_)
     {
-        return ((Section*)a_)->type - ((Section*)b_)->type;
+        return (uint32_t)((Section*)a_)->type - (uint32_t)((Section*)b_)->type;
     }
 
 public:
@@ -35,7 +35,7 @@ public:
     {
     }
 
-    void RegisterSection(DWORD type, ZapNode * pSection)
+    void RegisterSection(ReadyToRunSectionType type, ZapNode * pSection)
     {
         Section section;
         section.type = type;

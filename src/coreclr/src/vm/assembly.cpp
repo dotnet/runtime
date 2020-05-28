@@ -31,7 +31,6 @@
 #include "sha1.h"
 
 #include "eeconfig.h"
-#include "strongname.h"
 
 #include "ceefilegenwriter.h"
 #include "assemblynative.hpp"
@@ -422,8 +421,7 @@ Assembly *Assembly::CreateDynamic(AppDomain *pDomain, CreateDynamicAssemblyArgs 
 
     Assembly *pRetVal = NULL;
 
-    AppDomain  *pCallersDomain;
-    MethodDesc *pmdEmitter = SystemDomain::GetCallersMethod(args->stackMark, &pCallersDomain);
+    MethodDesc *pmdEmitter = SystemDomain::GetCallersMethod(args->stackMark);
 
     // Called either from interop or async delegate invocation. Rejecting because we don't
     // know how to set the correct permission on the new dynamic assembly.

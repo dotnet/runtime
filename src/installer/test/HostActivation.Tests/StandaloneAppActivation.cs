@@ -42,7 +42,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 .Execute()
                 .Should().Pass()
                 .And.HaveStdOutContaining("Hello World")
-                .And.HaveStdOutContaining($"Framework Version:{sharedTestState.RepoDirectories.MicrosoftNETCoreAppVersion}");
+                .And.HaveStdOutContaining(sharedTestState.RepoDirectories.MicrosoftNETCoreAppVersion);
         }
 
         [Fact]
@@ -59,7 +59,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 .Execute()
                 .Should().Pass()
                 .And.HaveStdOutContaining("Hello World")
-                .And.HaveStdOutContaining($"Framework Version:{sharedTestState.RepoDirectories.MicrosoftNETCoreAppVersion}");
+                .And.HaveStdOutContaining(sharedTestState.RepoDirectories.MicrosoftNETCoreAppVersion);
         }
 
         [Fact]
@@ -136,7 +136,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 .Execute()
                 .Should().Pass()
                 .And.HaveStdOutContaining("Hello World")
-                .And.HaveStdOutContaining($"Framework Version:{sharedTestState.RepoDirectories.MicrosoftNETCoreAppVersion}");
+                .And.HaveStdOutContaining(sharedTestState.RepoDirectories.MicrosoftNETCoreAppVersion);
         }
 
         [Fact]
@@ -172,7 +172,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 .Execute()
                 .Should().Pass()
                 .And.HaveStdOutContaining("Hello World")
-                .And.HaveStdOutContaining($"Framework Version:{sharedTestState.RepoDirectories.MicrosoftNETCoreAppVersion}");
+                .And.HaveStdOutContaining(sharedTestState.RepoDirectories.MicrosoftNETCoreAppVersion);
         }
 
         [Fact]
@@ -234,7 +234,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 .Execute()
                 .Should().Pass()
                 .And.HaveStdOutContaining("Hello World")
-                .And.HaveStdOutContaining($"Framework Version:{sharedTestState.RepoDirectories.MicrosoftNETCoreAppVersion}");
+                .And.HaveStdOutContaining(sharedTestState.RepoDirectories.MicrosoftNETCoreAppVersion);
         }
 
         [Fact]

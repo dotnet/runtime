@@ -4,6 +4,7 @@
 
 using System;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Security.Cryptography;
 using System.Security.Cryptography.Asn1;
 using System.Security.Cryptography.Pkcs;
@@ -32,7 +33,7 @@ namespace Internal.Cryptography.Pal.AnyOS
         {
             Debug.Assert(certificate != null);
 
-            X509Extension extension = certificate.Extensions[Oids.SubjectKeyIdentifier];
+            X509Extension? extension = certificate.Extensions[Oids.SubjectKeyIdentifier];
 
             if (extension == null)
             {
@@ -59,25 +60,27 @@ namespace Internal.Cryptography.Pal.AnyOS
             throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
         }
 
+        [return: MaybeNull]
         public override T GetPrivateKeyForSigning<T>(X509Certificate2 certificate, bool silent)
         {
             return GetPrivateKey<T>(certificate);
         }
 
+        [return: MaybeNull]
         public override T GetPrivateKeyForDecryption<T>(X509Certificate2 certificate, bool silent)
         {
             return GetPrivateKey<T>(certificate);
         }
 
-        private T GetPrivateKey<T>(X509Certificate2 certificate) where T : AsymmetricAlgorithm
+        private T? GetPrivateKey<T>(X509Certificate2 certificate) where T : AsymmetricAlgorithm
         {
             if (typeof(T) == typeof(RSA))
-                return (T)(object)certificate.GetRSAPrivateKey();
+                return (T?)(object?)certificate.GetRSAPrivateKey();
             if (typeof(T) == typeof(ECDsa))
-                return (T)(object)certificate.GetECDsaPrivateKey();
+                return (T?)(object?)certificate.GetECDsaPrivateKey();
 #if NETCOREAPP || NETSTANDARD2_1
             if (typeof(T) == typeof(DSA))
-                return (T)(object)certificate.GetDSAPrivateKey();
+                return (T?)(object?)certificate.GetDSAPrivateKey();
 #endif
 
             Debug.Fail($"Unknown key type requested: {typeof(T).FullName}");

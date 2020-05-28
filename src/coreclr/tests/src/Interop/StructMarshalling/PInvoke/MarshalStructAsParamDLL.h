@@ -174,7 +174,7 @@ union InnerArrayExplicit
 
 
 #ifdef WINDOWS
-#ifdef BIT64
+#ifdef HOST_64BIT
 #pragma warning(push) 
 #pragma warning(disable: 4201) // nonstandard extension used: nameless struct/union
 union OUTER3

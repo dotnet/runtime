@@ -26,7 +26,7 @@ namespace System.Diagnostics
                 if (counterName == null)
                     throw new ArgumentNullException(nameof(counterName));
 
-                object objectName = counterName.ToLower(CultureInfo.InvariantCulture);
+                object objectName = counterName.ToLowerInvariant();
                 return (InstanceDataCollection)Dictionary[objectName];
             }
         }
@@ -46,7 +46,7 @@ namespace System.Diagnostics
 
         internal void Add(string counterName, InstanceDataCollection value)
         {
-            object objectName = counterName.ToLower(CultureInfo.InvariantCulture);
+            object objectName = counterName.ToLowerInvariant();
             Dictionary.Add(objectName, value);
         }
 
@@ -55,7 +55,7 @@ namespace System.Diagnostics
             if (counterName == null)
                 throw new ArgumentNullException(nameof(counterName));
 
-            object objectName = counterName.ToLower(CultureInfo.InvariantCulture);
+            object objectName = counterName.ToLowerInvariant();
             return Dictionary.Contains(objectName);
         }
 

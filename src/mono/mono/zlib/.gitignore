@@ -1,0 +1,12 @@
+/Makefile
+/Makefile.in
+/.libs
+/.deps
+/libz.la
+/*.a
+/*.o
+/*.lo
+/semantic.cache
+/.project
+/.cproject
+/TAGS

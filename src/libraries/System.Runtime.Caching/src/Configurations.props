@@ -1,9 +1,0 @@
-﻿<Project>
-  <PropertyGroup>
-    <BuildConfigurations>
-      netstandard2.0;
-      netstandard2.0-Windows_NT;
-      _netfx;
-    </BuildConfigurations>
-  </PropertyGroup>
-</Project>

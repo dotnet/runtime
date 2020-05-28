@@ -4,8 +4,6 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Net.Security;
-using System.Runtime.InteropServices;
 using System.Security.Authentication;
 using System.Security.Authentication.ExtendedProtection;
 using System.Security.Cryptography.X509Certificates;
@@ -27,19 +25,19 @@ namespace System.Net.Security
         {
         }
 
-        public static SecurityStatusPal AcceptSecurityContext(ref SafeFreeCredentials credential, ref SafeDeleteSslContext context,
-            ArraySegment<byte> inputBuffer, ref byte[] outputBuffer, SslAuthenticationOptions sslAuthenticationOptions)
+        public static SecurityStatusPal AcceptSecurityContext(ref SafeFreeCredentials? credential, ref SafeDeleteSslContext? context,
+            ReadOnlySpan<byte> inputBuffer, ref byte[]? outputBuffer, SslAuthenticationOptions sslAuthenticationOptions)
         {
-            return HandshakeInternal(credential, ref context, inputBuffer, ref outputBuffer, sslAuthenticationOptions);
+            return HandshakeInternal(credential!, ref context, inputBuffer, ref outputBuffer, sslAuthenticationOptions);
         }
 
-        public static SecurityStatusPal InitializeSecurityContext(ref SafeFreeCredentials credential, ref SafeDeleteSslContext context, string targetName,
-            ArraySegment<byte> inputBuffer, ref byte[] outputBuffer, SslAuthenticationOptions sslAuthenticationOptions)
+        public static SecurityStatusPal InitializeSecurityContext(ref SafeFreeCredentials? credential, ref SafeDeleteSslContext? context, string? targetName,
+            ReadOnlySpan<byte> inputBuffer, ref byte[]? outputBuffer, SslAuthenticationOptions sslAuthenticationOptions)
         {
-            return HandshakeInternal(credential, ref context, inputBuffer, ref outputBuffer, sslAuthenticationOptions);
+            return HandshakeInternal(credential!, ref context, inputBuffer, ref outputBuffer, sslAuthenticationOptions);
         }
 
-        public static SafeFreeCredentials AcquireCredentialsHandle(X509Certificate certificate,
+        public static SafeFreeCredentials AcquireCredentialsHandle(X509Certificate? certificate,
             SslProtocols protocols, EncryptionPolicy policy, bool isServer)
         {
             return new SafeFreeSslCredentials(certificate, protocols, policy);
@@ -61,9 +59,9 @@ namespace System.Net.Security
             return retVal;
         }
 
-        public static ChannelBinding QueryContextChannelBinding(SafeDeleteContext securityContext, ChannelBindingKind attribute)
+        public static ChannelBinding? QueryContextChannelBinding(SafeDeleteContext securityContext, ChannelBindingKind attribute)
         {
-            ChannelBinding bindingHandle;
+            ChannelBinding? bindingHandle;
 
             if (attribute == ChannelBindingKind.Endpoint)
             {
@@ -84,7 +82,7 @@ namespace System.Net.Security
             return bindingHandle;
         }
 
-        public static void QueryContextStreamSizes(SafeDeleteContext securityContext, out StreamSizes streamSizes)
+        public static void QueryContextStreamSizes(SafeDeleteContext? securityContext, out StreamSizes streamSizes)
         {
             streamSizes = StreamSizes.Default;
         }
@@ -99,31 +97,22 @@ namespace System.Net.Security
             return Interop.Ssl.ConvertAlpnProtocolListToByteArray(applicationProtocols);
         }
 
-        private static SecurityStatusPal HandshakeInternal(SafeFreeCredentials credential, ref SafeDeleteSslContext context,
-            ArraySegment<byte> inputBuffer, ref byte[] outputBuffer, SslAuthenticationOptions sslAuthenticationOptions)
+        private static SecurityStatusPal HandshakeInternal(SafeFreeCredentials credential, ref SafeDeleteSslContext? context,
+            ReadOnlySpan<byte> inputBuffer, ref byte[]? outputBuffer, SslAuthenticationOptions sslAuthenticationOptions)
         {
             Debug.Assert(!credential.IsInvalid);
 
-            byte[] output = null;
+            byte[]? output = null;
             int outputSize = 0;
 
             try
             {
                 if ((null == context) || context.IsInvalid)
                 {
-                    context = new SafeDeleteSslContext(credential as SafeFreeSslCredentials, sslAuthenticationOptions);
+                    context = new SafeDeleteSslContext((credential as SafeFreeSslCredentials)!, sslAuthenticationOptions);
                 }
 
-                bool done;
-
-                if (inputBuffer.Array == null)
-                {
-                    done = Interop.OpenSsl.DoSslHandshake(((SafeDeleteSslContext)context).SslContext, null, 0, 0, out output, out outputSize);
-                }
-                else
-                {
-                    done = Interop.OpenSsl.DoSslHandshake(((SafeDeleteSslContext)context).SslContext, inputBuffer.Array, inputBuffer.Offset, inputBuffer.Count, out output, out outputSize);
-                }
+                bool done = Interop.OpenSsl.DoSslHandshake(((SafeDeleteSslContext)context).SslContext, inputBuffer, out output, out outputSize);
 
                 // When the handshake is done, and the context is server, check if the alpnHandle target was set to null during ALPN.
                 // If it was, then that indicates ALPN failed, send failure.
@@ -137,7 +126,7 @@ namespace System.Net.Security
 
                 outputBuffer =
                     outputSize == 0 ? null :
-                    outputSize == output.Length ? output :
+                    outputSize == output!.Length ? output :
                     new Span<byte>(output, 0, outputSize).ToArray();
 
                 return new SecurityStatusPal(done ? SecurityStatusPalErrorCode.OK : SecurityStatusPalErrorCode.ContinueNeeded);
@@ -147,14 +136,14 @@ namespace System.Net.Security
                 // Even if handshake failed we may have Alert to sent.
                 if (outputSize > 0)
                 {
-                    outputBuffer = outputSize == output.Length ? output : new Span<byte>(output, 0, outputSize).ToArray();
+                    outputBuffer = outputSize == output!.Length ? output : new Span<byte>(output, 0, outputSize).ToArray();
                 }
 
                 return new SecurityStatusPal(SecurityStatusPalErrorCode.InternalError, exc);
             }
         }
 
-        internal static byte[] GetNegotiatedApplicationProtocol(SafeDeleteContext context)
+        internal static byte[]? GetNegotiatedApplicationProtocol(SafeDeleteContext? context)
         {
             if (context == null)
                 return null;
@@ -172,7 +161,7 @@ namespace System.Net.Security
 
                 if (encrypt)
                 {
-                    resultSize = Interop.OpenSsl.Encrypt(scHandle, input, ref output, out errorCode);
+                    resultSize = Interop.OpenSsl.Encrypt(scHandle, input.Span, ref output, out errorCode);
                 }
                 else
                 {
@@ -198,7 +187,7 @@ namespace System.Net.Security
             }
         }
 
-        public static SecurityStatusPal ApplyAlertToken(ref SafeFreeCredentials credentialsHandle, SafeDeleteContext securityContext, TlsAlertType alertType, TlsAlertMessage alertMessage)
+        public static SecurityStatusPal ApplyAlertToken(ref SafeFreeCredentials? credentialsHandle, SafeDeleteContext? securityContext, TlsAlertType alertType, TlsAlertMessage alertMessage)
         {
             // There doesn't seem to be an exposed API for writing an alert,
             // the API seems to assume that all alerts are generated internally by
@@ -206,7 +195,7 @@ namespace System.Net.Security
             return new SecurityStatusPal(SecurityStatusPalErrorCode.OK);
         }
 
-        public static SecurityStatusPal ApplyShutdownToken(ref SafeFreeCredentials credentialsHandle, SafeDeleteContext securityContext)
+        public static SecurityStatusPal ApplyShutdownToken(ref SafeFreeCredentials? credentialsHandle, SafeDeleteContext securityContext)
         {
             SafeDeleteSslContext sslContext = ((SafeDeleteSslContext)securityContext);
 

@@ -140,7 +140,8 @@ namespace System.Security.Cryptography.Xml.Tests
             Assert.Equal(result, el.OuterXml);
         }
 
-        [Fact(Skip = "https://github.com/dotnet/corefx/issues/16685")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/20429")]
+        [Fact]
         public void GetXmlWithSetProperty()
         {
             XmlDocument doc = new XmlDocument();

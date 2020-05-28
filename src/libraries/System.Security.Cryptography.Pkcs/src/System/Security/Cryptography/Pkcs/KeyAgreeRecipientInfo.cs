@@ -70,7 +70,7 @@ namespace System.Security.Cryptography.Pkcs
             }
         }
 
-        public CryptographicAttributeObject OtherKeyAttribute
+        public CryptographicAttributeObject? OtherKeyAttribute
         {
             get
             {
@@ -86,11 +86,11 @@ namespace System.Security.Cryptography.Pkcs
             }
         }
 
-        private volatile SubjectIdentifier _lazyRecipientIdentifier = null;
-        private volatile AlgorithmIdentifier _lazyKeyEncryptionAlgorithm = null;
-        private volatile byte[] _lazyEncryptedKey = null;
-        private volatile SubjectIdentifierOrKey _lazyOriginatorIdentifierKey = null;
+        private volatile SubjectIdentifier? _lazyRecipientIdentifier = null;
+        private volatile AlgorithmIdentifier? _lazyKeyEncryptionAlgorithm = null;
+        private volatile byte[]? _lazyEncryptedKey = null;
+        private volatile SubjectIdentifierOrKey? _lazyOriginatorIdentifierKey = null;
         private DateTime? _lazyDate = default(DateTime?);
-        private volatile CryptographicAttributeObject _lazyOtherKeyAttribute = null;
+        private volatile CryptographicAttributeObject? _lazyOtherKeyAttribute = null;
     }
 }

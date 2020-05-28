@@ -657,7 +657,7 @@ namespace System.Data.Tests
                 val = (int)dr[0] > 3 ? 1 : 2;
                 Assert.Equal(val, dr["computedCol"]);
             }
-            //Now reset the expression and check that the column got his deafult value
+            //Now reset the expression and check that the column got its deafult value
 
             dcComputedParent.Expression = null;
             foreach (DataRow dr in dt.Rows)

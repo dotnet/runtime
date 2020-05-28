@@ -23,7 +23,7 @@ namespace System.Drawing.Imaging
         public int Y;
         public int Width;
         public int Height;
-        public SafeNativeMethods.ENHMETAHEADER EmfHeader;
+        public SafeNativeMethods.ENHMETAHEADER? EmfHeader;
         public int EmfPlusHeaderSize;
         public int LogicalDpiX;
         public int LogicalDpiY;

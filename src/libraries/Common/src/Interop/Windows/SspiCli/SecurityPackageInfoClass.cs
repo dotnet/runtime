@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System.Globalization;
 using System.Runtime.InteropServices;
 
@@ -14,8 +15,8 @@ namespace System.Net
         internal short Version = 0;
         internal short RPCID = 0;
         internal int MaxToken = 0;
-        internal string Name = null;
-        internal string Comment = null;
+        internal string? Name = null;
+        internal string? Comment = null;
 
         /*
             This is to support SSL with no client cert.

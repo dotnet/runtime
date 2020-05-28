@@ -1146,7 +1146,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 str.Append((int)SystemFlag.SystemFlagNtdsDomain);
                 str.Append(")(");
                 str.Append(PropertyManager.DnsRoot);
-                str.Append("=");
+                str.Append('=');
                 str.Append(Utils.GetEscapedFilterValue(partitionName));
                 str.Append("))");
 
@@ -1241,7 +1241,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 str.Append((int)SystemFlag.SystemFlagNtdsDomain);
                 str.Append(")(");
                 str.Append(PropertyManager.TrustParent);
-                str.Append("=");
+                str.Append('=');
                 str.Append(Utils.GetEscapedFilterValue(_crossRefDN));
                 str.Append("))");
 

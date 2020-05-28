@@ -69,7 +69,7 @@ DWORD SPINLOCKTryAcquire (LONG * lock);
 
 // Temporarily disabling usage of pthread process-shared mutexes on ARM/ARM64 due to functional issues that cannot easily be
 // detected with code due to hangs. See https://github.com/dotnet/coreclr/issues/5456.
-#if HAVE_FULLY_FEATURED_PTHREAD_MUTEXES && HAVE_FUNCTIONAL_PTHREAD_ROBUST_MUTEXES && !(defined(_ARM_) || defined(_ARM64_) || defined(__FreeBSD__))
+#if HAVE_FULLY_FEATURED_PTHREAD_MUTEXES && HAVE_FUNCTIONAL_PTHREAD_ROBUST_MUTEXES && !(defined(HOST_ARM) || defined(HOST_ARM64) || defined(__FreeBSD__))
     #define NAMED_MUTEX_USE_PTHREAD_MUTEX 1
 #else
     #define NAMED_MUTEX_USE_PTHREAD_MUTEX 0
@@ -146,7 +146,6 @@ private:
 
 private:
     SharedMemoryProcessDataHeader *m_processDataHeader;
-    NamedMutexSharedData *m_sharedData;
     SIZE_T m_lockCount;
 #if !NAMED_MUTEX_USE_PTHREAD_MUTEX
     HANDLE m_processLockHandle;
@@ -154,6 +153,7 @@ private:
 #endif // !NAMED_MUTEX_USE_PTHREAD_MUTEX
     CorUnix::CPalThread *m_lockOwnerThread;
     NamedMutexProcessData *m_nextInThreadOwnedNamedMutexList;
+    bool m_hasRefFromLockOwnerThread;
 
 public:
     static SharedMemoryProcessDataHeader *CreateOrOpen(LPCSTR name, bool acquireLockIfCreated, bool *createdRef);
@@ -169,7 +169,18 @@ public:
         int sharedLockFileDescriptor
     #endif // !NAMED_MUTEX_USE_PTHREAD_MUTEX
     );
+
+public:
+    virtual bool CanClose() const override;
+    virtual bool HasImplicitRef() const override;
+    virtual void SetHasImplicitRef(bool value) override;
     virtual void Close(bool isAbruptShutdown, bool releaseSharedData) override;
+
+public:
+    bool IsLockOwnedByCurrentThread() const
+    {
+        return GetSharedData()->IsLockOwnedByCurrentThread();
+    }
 
 private:
     NamedMutexSharedData *GetSharedData() const;

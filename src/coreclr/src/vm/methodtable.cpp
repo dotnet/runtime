@@ -138,7 +138,7 @@ class MethodDataCache
     UINT32 m_cEntries;
     UINT32 m_iLastTouched;
 
-#ifdef BIT64
+#ifdef HOST_64BIT
     UINT32 pad;      // insures that we are a multiple of 8-bytes
 #endif
 };  // class MethodDataCache
@@ -1025,7 +1025,7 @@ void MethodTable::FixupExtraInterfaceInfo(DataImage *pImage)
 #endif // FEATURE_NATIVE_IMAGE_GENERATION
 
 // Define a macro that generates a mask for a given bit in a TADDR correctly on either 32 or 64 bit platforms.
-#ifdef BIT64
+#ifdef HOST_64BIT
 #define SELECT_TADDR_BIT(_index) (1ULL << (_index))
 #else
 #define SELECT_TADDR_BIT(_index) (1U << (_index))
@@ -1633,7 +1633,7 @@ BOOL MethodTable::CanCastToClass(MethodTable *pTargetMT, TypeHandlePairList *pVi
 #include <optsmallperfcritical.h>
 
 //==========================================================================================
-BOOL MethodTable::CanCastToClassOrInterface(MethodTable* pTargetMT, TypeHandlePairList* pVisited)
+BOOL MethodTable::CanCastTo(MethodTable* pTargetMT, TypeHandlePairList* pVisited)
 {
     CONTRACTL
     {
@@ -1642,7 +1642,6 @@ BOOL MethodTable::CanCastToClassOrInterface(MethodTable* pTargetMT, TypeHandlePa
         MODE_COOPERATIVE;
         INSTANCE_CHECK;
         PRECONDITION(CheckPointer(pTargetMT));
-        PRECONDITION(!pTargetMT->IsArray());
         PRECONDITION(IsRestored_NoLogging());
     }
     CONTRACTL_END
@@ -1652,6 +1651,23 @@ BOOL MethodTable::CanCastToClassOrInterface(MethodTable* pTargetMT, TypeHandlePa
     // callers should have handled this already according to their rules.
     _ASSERTE(!Nullable::IsNullableForType(TypeHandle(pTargetMT), this));
 #endif // CROSSGEN_COMPILE
+
+    if (IsArray())
+    {
+        if (pTargetMT->IsArray())
+        {
+            return ArrayIsInstanceOf(pTargetMT, pVisited);
+        }
+        else if (pTargetMT->IsInterface() && pTargetMT->HasInstantiation())
+        {
+            return ArraySupportsBizarreInterface(pTargetMT, pVisited);
+        }
+    }
+    else if (pTargetMT->IsArray())
+    {
+        CastCache::TryAddToCache(this, pTargetMT, false);
+        return false;
+    }
 
     BOOL result = pTargetMT->IsInterface() ?
                                 CanCastToInterface(pTargetMT, pVisited) :
@@ -1693,44 +1709,42 @@ BOOL MethodTable::ArraySupportsBizarreInterface(MethodTable * pInterfaceMT, Type
     return result;
 }
 
-BOOL MethodTable::ArrayIsInstanceOf(TypeHandle toTypeHnd, TypeHandlePairList* pVisited)
+BOOL MethodTable::ArrayIsInstanceOf(MethodTable* pTargetMT, TypeHandlePairList* pVisited)
 {
     CONTRACTL{
         THROWS;
         GC_TRIGGERS;
         MODE_COOPERATIVE;
         PRECONDITION(this->IsArray());
-        PRECONDITION(toTypeHnd.IsArray());
+        PRECONDITION(pTargetMT->IsArray());
     } CONTRACTL_END;
 
-    ArrayTypeDesc* toArrayType = toTypeHnd.AsArray();
-
     // GetRank touches EEClass. Try to avoid it for SZArrays.
-    if (toArrayType->GetInternalCorElementType() == ELEMENT_TYPE_SZARRAY)
+    if (pTargetMT->GetInternalCorElementType() == ELEMENT_TYPE_SZARRAY)
     {
         if (this->IsMultiDimArray())
         {
-            CastCache::TryAddToCache(this, toTypeHnd, FALSE);
+            CastCache::TryAddToCache(this, pTargetMT, FALSE);
             return TypeHandle::CannotCast;
         }
     }
     else
     {
-        if (this->GetRank() != toArrayType->GetRank())
+        if (this->GetRank() != pTargetMT->GetRank())
         {
-            CastCache::TryAddToCache(this, toTypeHnd, FALSE);
+            CastCache::TryAddToCache(this, pTargetMT, FALSE);
             return TypeHandle::CannotCast;
         }
     }
-    _ASSERTE(this->GetRank() == toArrayType->GetRank());
+    _ASSERTE(this->GetRank() == pTargetMT->GetRank());
 
     TypeHandle elementTypeHandle = this->GetArrayElementTypeHandle();
-    TypeHandle toElementTypeHandle = toArrayType->GetArrayElementTypeHandle();
+    TypeHandle toElementTypeHandle = pTargetMT->GetArrayElementTypeHandle();
 
     BOOL result = (elementTypeHandle == toElementTypeHandle) ||
         TypeDesc::CanCastParam(elementTypeHandle, toElementTypeHandle, pVisited);
 
-    CastCache::TryAddToCache(this, toTypeHnd, (BOOL)result);
+    CastCache::TryAddToCache(this, pTargetMT, (BOOL)result);
     return result;
 }
 
@@ -1746,6 +1760,11 @@ MethodTable::IsExternallyVisible()
         GC_TRIGGERS;
     }
     CONTRACTL_END;
+
+    if (IsArray())
+    {
+        return GetArrayElementTypeHandle().IsExternallyVisible();
+    }
 
     BOOL bIsVisible = IsTypeDefExternallyVisible(GetCl(), GetModule(), GetClass()->GetAttrClass());
 
@@ -1851,7 +1870,7 @@ MethodTable::DebugDumpVtable(LPCUTF8 szClassName, BOOL fDebug)
                            name,
                            pszName,
                            IsMdFinal(dwAttrs) ? " (final)" : "",
-                           pMD->GetMethodEntryPoint(),
+                           (VOID *)pMD->GetMethodEntryPoint(),
                            pMD->GetSlot()
                           );
                 WszOutputDebugString(buff);
@@ -1865,7 +1884,7 @@ MethodTable::DebugDumpVtable(LPCUTF8 szClassName, BOOL fDebug)
                      pMD->GetClass()->GetDebugClassName(),
                      pszName,
                      IsMdFinal(dwAttrs) ? " (final)" : "",
-                     pMD->GetMethodEntryPoint(),
+                     (VOID *)pMD->GetMethodEntryPoint(),
                      pMD->GetSlot()
                     ));
             }
@@ -2187,7 +2206,6 @@ const char* GetSystemVClassificationTypeName(SystemVClassificationType t)
     case SystemVClassificationTypeIntegerReference:     return "IntegerReference";
     case SystemVClassificationTypeIntegerByRef:         return "IntegerByReference";
     case SystemVClassificationTypeSSE:                  return "SSE";
-    case SystemVClassificationTypeTypedReference:       return "TypedReference";
     default:                                            return "ERROR";
     }
 };
@@ -2198,7 +2216,7 @@ bool MethodTable::ClassifyEightBytes(SystemVStructRegisterPassingHelperPtr helpe
 {
     if (useNativeLayout)
     {
-        return ClassifyEightBytesWithNativeLayout(helperPtr, nestingLevel, startOffsetOfStruct, useNativeLayout);
+        return ClassifyEightBytesWithNativeLayout(helperPtr, nestingLevel, startOffsetOfStruct, GetNativeLayoutInfo());
     }
     else
     {
@@ -2400,8 +2418,7 @@ bool MethodTable::ClassifyEightBytesWithManagedLayout(SystemVStructRegisterPassi
             // use the native classification. If not, continue using the managed layout.
             if (useNativeLayout && pFieldMT->HasLayout())
             {
-
-                structRet = pFieldMT->ClassifyEightBytesWithNativeLayout(helperPtr, nestingLevel + 1, normalizedFieldOffset, useNativeLayout);
+                structRet = pFieldMT->ClassifyEightBytesWithNativeLayout(helperPtr, nestingLevel + 1, normalizedFieldOffset, pFieldMT->GetNativeLayoutInfo());
             }
             else
             {
@@ -2417,64 +2434,6 @@ bool MethodTable::ClassifyEightBytesWithManagedLayout(SystemVStructRegisterPassi
             }
 
             continue;
-        }
-
-        if (fieldClassificationType == SystemVClassificationTypeTypedReference ||
-            CorInfoType2UnixAmd64Classification(GetClass_NoLogging()->GetInternalCorElementType()) == SystemVClassificationTypeTypedReference)
-        {
-            // The TypedReference is a very special type.
-            // In source/metadata it has two fields - Type and Value and both are defined of type IntPtr.
-            // When the VM creates a layout of the type it changes the type of the Value to ByRef type and the
-            // type of the Type field is left to IntPtr (TYPE_I internally - native int type.)
-            // This requires a special treatment of this type. The code below handles the both fields (and this entire type).
-
-            for (unsigned i = 0; i < 2; i++)
-            {
-                fieldSize = 8;
-                fieldOffset = (i == 0 ? 0 : 8);
-                normalizedFieldOffset = fieldOffset + startOffsetOfStruct;
-                fieldClassificationType = (i == 0 ? SystemVClassificationTypeIntegerByRef : SystemVClassificationTypeInteger);
-                if ((normalizedFieldOffset % fieldSize) != 0)
-                {
-                    // The spec requires that struct values on the stack from register passed fields expects
-                    // those fields to be at their natural alignment.
-
-                    LOG((LF_JIT, LL_EVERYTHING, "     %*sxxxx Field %d %s: offset %d (normalized %d), size %d not at natural alignment; not enregistering struct\n",
-                        nestingLevel * 5, "", fieldIndex, (i == 0 ? "Value" : "Type"), fieldOffset, normalizedFieldOffset, fieldSize));
-                    return false;
-                }
-
-                helperPtr->largestFieldOffset = (int)normalizedFieldOffset;
-
-                // Set the data for a new field.
-
-                // The new field classification must not have been initialized yet.
-                _ASSERTE(helperPtr->fieldClassifications[helperPtr->currentUniqueOffsetField] == SystemVClassificationTypeNoClass);
-
-                // There are only a few field classifications that are allowed.
-                _ASSERTE((fieldClassificationType == SystemVClassificationTypeInteger) ||
-                    (fieldClassificationType == SystemVClassificationTypeIntegerReference) ||
-                    (fieldClassificationType == SystemVClassificationTypeIntegerByRef) ||
-                    (fieldClassificationType == SystemVClassificationTypeSSE));
-
-                helperPtr->fieldClassifications[helperPtr->currentUniqueOffsetField] = fieldClassificationType;
-                helperPtr->fieldSizes[helperPtr->currentUniqueOffsetField] = fieldSize;
-                helperPtr->fieldOffsets[helperPtr->currentUniqueOffsetField] = normalizedFieldOffset;
-
-                LOG((LF_JIT, LL_EVERYTHING, "     %*s**** Field %d %s: offset %d (normalized %d), size %d, currentUniqueOffsetField %d, field type classification %s, chosen field classification %s\n",
-                    nestingLevel * 5, "", fieldIndex, (i == 0 ? "Value" : "Type"), fieldOffset, normalizedFieldOffset, fieldSize, helperPtr->currentUniqueOffsetField,
-                    GetSystemVClassificationTypeName(fieldClassificationType),
-                    GetSystemVClassificationTypeName(helperPtr->fieldClassifications[helperPtr->currentUniqueOffsetField])));
-
-                helperPtr->currentUniqueOffsetField++;
-#ifdef _DEBUG
-                ++fieldIndex;
-#endif // _DEBUG
-            }
-
-            // Both fields of the special TypedReference struct are handled.
-            // Done classifying the System.TypedReference struct fields.
-            break;
         }
 
         if ((normalizedFieldOffset % fieldSize) != 0)
@@ -2556,7 +2515,7 @@ bool MethodTable::ClassifyEightBytesWithManagedLayout(SystemVStructRegisterPassi
 bool MethodTable::ClassifyEightBytesWithNativeLayout(SystemVStructRegisterPassingHelperPtr helperPtr,
                                                     unsigned int nestingLevel,
                                                     unsigned int startOffsetOfStruct,
-                                                    bool useNativeLayout)
+                                                    EEClassNativeLayoutInfo const* pNativeLayoutInfo)
 {
     CONTRACTL
     {
@@ -2566,9 +2525,6 @@ bool MethodTable::ClassifyEightBytesWithNativeLayout(SystemVStructRegisterPassin
     }
     CONTRACTL_END;
 
-    // Should be in this method only doing a native layout classification.
-    _ASSERTE(useNativeLayout);
-
 #ifdef DACCESS_COMPILE
     // No register classification for this case.
     return false;
@@ -2577,11 +2533,11 @@ bool MethodTable::ClassifyEightBytesWithNativeLayout(SystemVStructRegisterPassin
     if (!HasLayout())
     {
         // If there is no native layout for this struct use the managed layout instead.
-        return ClassifyEightBytesWithManagedLayout(helperPtr, nestingLevel, startOffsetOfStruct, useNativeLayout);
+        return ClassifyEightBytesWithManagedLayout(helperPtr, nestingLevel, startOffsetOfStruct, true);
     }
 
-    const NativeFieldDescriptor *pNativeFieldDescs = GetLayoutInfo()->GetNativeFieldDescriptors();
-    UINT  numIntroducedFields = GetLayoutInfo()->GetNumCTMFields();
+    const NativeFieldDescriptor *pNativeFieldDescs = pNativeLayoutInfo->GetNativeFieldDescriptors();
+    UINT  numIntroducedFields = pNativeLayoutInfo->GetNumFields();
 
     // No fields.
     if (numIntroducedFields == 0)
@@ -2602,11 +2558,11 @@ bool MethodTable::ClassifyEightBytesWithNativeLayout(SystemVStructRegisterPassin
                                     || firstFieldElementType == ELEMENT_TYPE_VALUETYPE)
                                 && (pNativeFieldDescs->GetExternalOffset() == 0)
                                 && IsValueType()
-                                && (GetLayoutInfo()->GetNativeSize() % pNativeFieldDescs->NativeSize() == 0);
+                                && (pNativeLayoutInfo->GetSize() % pNativeFieldDescs->NativeSize() == 0);
 
     if (isFixedBuffer)
     {
-        numIntroducedFields = GetNativeSize() / pNativeFieldDescs->NativeSize();
+        numIntroducedFields = pNativeLayoutInfo->GetSize() / pNativeFieldDescs->NativeSize();
     }
 
     // The SIMD Intrinsic types are meant to be handled specially and should not be passed as struct registers
@@ -2690,17 +2646,9 @@ bool MethodTable::ClassifyEightBytesWithNativeLayout(SystemVStructRegisterPassin
         pField->GetName_NoThrow(&fieldName);
 #endif // _DEBUG
 
-        NativeFieldFlags nfc = pNFD->GetNativeFieldFlags();
+        NativeFieldCategory nfc = pNFD->GetCategory();
 
-#ifdef FEATURE_COMINTEROP
-        if (nfc & NATIVE_FIELD_SUBCATEGORY_COM_ONLY)
-        {
-            _ASSERTE(false && "COMInterop not supported for CoreCLR on Unix.");
-            return false;
-        }
-        else
-#endif // FEATURE_COMINTEROP
-        if (nfc & NATIVE_FIELD_SUBCATEGORY_NESTED)
+        if (nfc == NativeFieldCategory::NESTED)
         {
             unsigned int numElements = pNFD->GetNumElements();
             unsigned int nestedElementOffset = normalizedFieldOffset;
@@ -2719,7 +2667,7 @@ bool MethodTable::ClassifyEightBytesWithNativeLayout(SystemVStructRegisterPassin
             {
                 bool inEmbeddedStructPrev = helperPtr->inEmbeddedStruct;
                 helperPtr->inEmbeddedStruct = true;
-                bool structRet = pFieldMT->ClassifyEightBytesWithNativeLayout(helperPtr, nestingLevel + 1, nestedElementOffset, useNativeLayout);
+                bool structRet = pFieldMT->ClassifyEightBytesWithNativeLayout(helperPtr, nestingLevel + 1, nestedElementOffset, pFieldMT->GetNativeLayoutInfo());
                 helperPtr->inEmbeddedStruct = inEmbeddedStructPrev;
 
                 if (!structRet)
@@ -2730,15 +2678,15 @@ bool MethodTable::ClassifyEightBytesWithNativeLayout(SystemVStructRegisterPassin
             }
             continue;
         }
-        else if (nfc & NATIVE_FIELD_SUBCATEGORY_FLOAT)
+        else if (nfc == NativeFieldCategory::FLOAT)
         {
             fieldClassificationType = SystemVClassificationTypeSSE;
         }
-        else if (nfc & NATIVE_FIELD_SUBCATEGORY_INTEGER)
+        else if (nfc == NativeFieldCategory::INTEGER)
         {
             fieldClassificationType = SystemVClassificationTypeInteger;
         }
-        else if (nfc & NATIVE_FIELD_SUBCATEGORY_OTHER)
+        else if (nfc == NativeFieldCategory::ILLEGAL)
         {
             return false;
         }
@@ -3175,39 +3123,6 @@ BOOL MethodTable::RunClassInitEx(OBJECTREF *pThrowable)
         // a subclass of Error</TODO>
         *pThrowable = GET_THROWABLE();
         _ASSERTE(fRet == FALSE);
-
-#ifdef FEATURE_CORRUPTING_EXCEPTIONS
-        // If active thread state does not have a CorruptionSeverity set for the exception,
-        // then set one up based upon the current exception code and/or the throwable.
-        //
-        // When can we be here and current exception tracker may not have corruption severity set?
-        // Incase of SO in managed code, SO is never seen by CLR's exception handler for managed code
-        // and if this happens in cctor, we can end up here without the corruption severity set.
-        Thread *pThread = GetThread();
-        _ASSERTE(pThread != NULL);
-        ThreadExceptionState *pCurTES = pThread->GetExceptionState();
-        _ASSERTE(pCurTES != NULL);
-        if (pCurTES->GetLastActiveExceptionCorruptionSeverity() == NotSet)
-        {
-            if (CEHelper::IsProcessCorruptedStateException(GetCurrentExceptionCode()) ||
-                CEHelper::IsProcessCorruptedStateException(*pThrowable))
-            {
-                // Process Corrupting
-                pCurTES->SetLastActiveExceptionCorruptionSeverity(ProcessCorrupting);
-                LOG((LF_EH, LL_INFO100, "MethodTable::RunClassInitEx - Exception treated as ProcessCorrupting.\n"));
-            }
-            else
-            {
-                // Not Corrupting
-                pCurTES->SetLastActiveExceptionCorruptionSeverity(NotCorrupting);
-                LOG((LF_EH, LL_INFO100, "MethodTable::RunClassInitEx - Exception treated as non-corrupting.\n"));
-            }
-        }
-        else
-        {
-            LOG((LF_EH, LL_INFO100, "MethodTable::RunClassInitEx - Exception already has corruption severity set.\n"));
-        }
-#endif // FEATURE_CORRUPTING_EXCEPTIONS
     }
     EX_END_CATCH(SwallowAllExceptions)
 
@@ -3264,7 +3179,7 @@ void MethodTable::DoRunClassInitThrowing()
         // Some error occurred trying to init this class
         ListLockEntry*     pEntry= (ListLockEntry *) _pLock->Find(this);
         _ASSERTE(pEntry!=NULL);
-        _ASSERTE(pEntry->m_pLoaderAllocator == (GetDomain()->IsSharedDomain() ? pDomain->GetLoaderAllocator() : GetLoaderAllocator()));
+        _ASSERTE(pEntry->m_pLoaderAllocator == GetLoaderAllocator());
 
         // If this isn't a TypeInitializationException, then its creation failed
         // somehow previously, so we should make one last attempt to create it. If
@@ -3341,17 +3256,7 @@ void MethodTable::DoRunClassInitThrowing()
             ((EXCEPTIONREF)(gc.pThrowable))->ClearStackTraceForThrow();
         }
 
-        // <FEATURE_CORRUPTING_EXCEPTIONS>
-        // Specify the corruption severity to be used to raise this exception in COMPlusThrow below.
-        // This will ensure that when the exception is seen by the managed code personality routine,
-        // it will setup the correct corruption severity in the exception tracker.
-        // </FEATURE_CORRUPTING_EXCEPTIONS>
-
-        COMPlusThrow(gc.pThrowable
-#ifdef FEATURE_CORRUPTING_EXCEPTIONS
-            , pEntry->m_CorruptionSeverity
-#endif // FEATURE_CORRUPTING_EXCEPTIONS
-            );
+        COMPlusThrow(gc.pThrowable);
     }
 
     description = ".cctor lock";
@@ -3425,7 +3330,7 @@ void MethodTable::DoRunClassInitThrowing()
                                     wszName, &gc.pInnerException, &gc.pInitException, &gc.pThrowable);
                             }
 
-                            pEntry->m_pLoaderAllocator = GetDomain()->IsSharedDomain() ? pDomain->GetLoaderAllocator() : GetLoaderAllocator();
+                            pEntry->m_pLoaderAllocator = GetLoaderAllocator();
 
                             // CreateHandle can throw due to OOM. We need to catch this so that we make sure to set the
                             // init error. Whatever exception was thrown will be rethrown below, so no worries.
@@ -3441,21 +3346,7 @@ void MethodTable::DoRunClassInitThrowing()
                             pEntry->m_hrResultCode = E_FAIL;
                             SetClassInitError();
 
-    #ifdef FEATURE_CORRUPTING_EXCEPTIONS
-                            // Save the corruption severity of the exception so that if the type system
-                            // attempts to pick it up from its cache list and throw again, it should
-                            // treat the exception as corrupting, if applicable.
-                            pEntry->m_CorruptionSeverity = pThread->GetExceptionState()->GetLastActiveExceptionCorruptionSeverity();
-
-                            // We should be having a valid corruption severity at this point
-                            _ASSERTE(pEntry->m_CorruptionSeverity != NotSet);
-    #endif // FEATURE_CORRUPTING_EXCEPTIONS
-
-                            COMPlusThrow(gc.pThrowable
-    #ifdef FEATURE_CORRUPTING_EXCEPTIONS
-                                , pEntry->m_CorruptionSeverity
-    #endif // FEATURE_CORRUPTING_EXCEPTIONS
-                                );
+                            COMPlusThrow(gc.pThrowable);
                         }
 
                         GCPROTECT_END();
@@ -3480,7 +3371,7 @@ void MethodTable::DoRunClassInitThrowing()
                     // An exception may have occurred in the cctor. DoRunClassInit() should return FALSE in that
                     // case.
                     _ASSERTE(pEntry->m_hInitException);
-                    _ASSERTE(pEntry->m_pLoaderAllocator == (GetDomain()->IsSharedDomain() ? pDomain->GetLoaderAllocator() : GetLoaderAllocator()));
+                    _ASSERTE(pEntry->m_pLoaderAllocator == GetLoaderAllocator());
                     _ASSERTE(IsInitError());
 
                     // Throw the saved exception. Since we are rethrowing a previously cached exception, must clear the stack trace first.
@@ -3648,7 +3539,7 @@ OBJECTREF MethodTable::FastBox(void** data)
     return ref;
 }
 
-#if _TARGET_X86_ || _TARGET_AMD64_
+#if TARGET_X86 || TARGET_AMD64
 //==========================================================================================
 static void FastCallFinalize(Object *obj, PCODE funcPtr, BOOL fCriticalCall)
 {
@@ -3658,7 +3549,7 @@ static void FastCallFinalize(Object *obj, PCODE funcPtr, BOOL fCriticalCall)
 
     BEGIN_CALL_TO_MANAGEDEX(fCriticalCall ? EEToManagedCriticalCall : EEToManagedDefault);
 
-#if defined(_TARGET_X86_)
+#if defined(TARGET_X86)
 
     __asm
     {
@@ -3667,16 +3558,16 @@ static void FastCallFinalize(Object *obj, PCODE funcPtr, BOOL fCriticalCall)
         INDEBUG(nop)            // Mark the fact that we can call managed code
     }
 
-#else // _TARGET_X86_
+#else // TARGET_X86
 
     FastCallFinalizeWorker(obj, funcPtr);
 
-#endif // _TARGET_X86_
+#endif // TARGET_X86
 
     END_CALL_TO_MANAGED();
 }
 
-#endif // _TARGET_X86_ || _TARGET_AMD64_
+#endif // TARGET_X86 || TARGET_AMD64
 
 void CallFinalizerOnThreadObject(Object *obj)
 {
@@ -3787,7 +3678,7 @@ void MethodTable::CallFinalizer(Object *obj)
     }
 #endif
 
-#if defined(_TARGET_X86_) || defined(_TARGET_AMD64_)
+#if defined(TARGET_X86) || defined(TARGET_AMD64)
 
 #ifdef DEBUGGING_SUPPORTED
     if (CORDebuggerTraceCall())
@@ -3796,7 +3687,7 @@ void MethodTable::CallFinalizer(Object *obj)
 
     FastCallFinalize(obj, funcPtr, fCriticalFinalizer);
 
-#else // defined(_TARGET_X86_) || defined(_TARGET_AMD64_)
+#else // defined(TARGET_X86) || defined(TARGET_AMD64)
 
     PREPARE_NONVIRTUAL_CALLSITE_USING_CODE(funcPtr);
 
@@ -3811,7 +3702,7 @@ void MethodTable::CallFinalizer(Object *obj)
 
     CALL_MANAGED_METHOD_NORET(args);
 
-#endif // (defined(_TARGET_X86_) && defined(_TARGET_AMD64_)
+#endif // (defined(TARGET_X86) && defined(TARGET_AMD64)
 
 #ifdef STRESS_LOG
     if (fCriticalFinalizer)
@@ -3834,7 +3725,6 @@ OBJECTREF MethodTable::GetManagedClassObject()
         GC_TRIGGERS;
         MODE_COOPERATIVE;
         INJECT_FAULT(COMPlusThrowOM());
-        PRECONDITION(!IsArray());      // Arrays can't go through this path.
         POSTCONDITION(GetWriteableData()->m_hExposedClassObject != 0);
         //REENTRANT
     }
@@ -4049,12 +3939,6 @@ void MethodTable::Save(DataImage *image, DWORD profilingFlags)
     {
         _ASSERTE(!IsStringOrArray());
         SetFlag(enum_flag_NotInPZM);
-    }
-
-    // Set the IsStructMarshallable Bit
-    if (::IsStructMarshalable(this))
-    {
-        SetStructMarshalable();
     }
 
     TADDR start, end;
@@ -5085,7 +4969,7 @@ static VOID DoAccessibilityCheck(MethodTable *pAskingMT, MethodTable *pTargetMT,
     }
     CONTRACTL_END;
 
-    StaticAccessCheckContext accessContext(NULL, pAskingMT);
+    AccessCheckContext accessContext(NULL, pAskingMT);
 
     if (!ClassLoader::CanAccessClass(&accessContext,
                                      pTargetMT,                 //the desired class
@@ -5116,7 +5000,11 @@ VOID DoAccessibilityCheckForConstraint(MethodTable *pAskingMT, TypeHandle thCons
     }
     CONTRACTL_END;
 
-    if (thConstraint.IsTypeDesc())
+    if (thConstraint.IsArray())
+    {
+        DoAccessibilityCheckForConstraint(pAskingMT, thConstraint.GetArrayElementTypeHandle(), resIDWhy);
+    }
+    else if (thConstraint.IsTypeDesc())
     {
         TypeDesc *pTypeDesc = thConstraint.AsTypeDesc();
 
@@ -5426,6 +5314,13 @@ void MethodTable::DoFullyLoad(Generics::RecursionGraph * const pVisited,  const 
     CONSISTENCY_CHECK(IsRestored_NoLogging());
     CONSISTENCY_CHECK(!HasApproxParent());
 
+    if (IsArray())
+    {
+        Generics::RecursionGraph newVisited(pVisited, TypeHandle(this));
+
+        // Fully load the element type
+        GetArrayElementTypeHandle().DoFullyLoad(&newVisited, level, pPending, pfBailed, pInstContext);
+    }
 
     DoFullyLoadLocals locals(pPending, level, this, pVisited);
 
@@ -5498,7 +5393,7 @@ void MethodTable::DoFullyLoad(Generics::RecursionGraph * const pVisited,  const 
         {
             if (!IsComObjectType()) //RCW's are special - they are manufactured by the runtime and derive from the non-public type System.__ComObject
             {
-                // A transparenct type should not be allowed to derive from a critical type.
+                // A transparent type should not be allowed to derive from a critical type.
                 // However since this has never been enforced before we have many classes that
                 // violate this rule. Enforcing it now will be a breaking change.
                 DoAccessibilityCheck(this, pParentMT, E_ACCESSDENIED);
@@ -5517,7 +5412,7 @@ void MethodTable::DoFullyLoad(Generics::RecursionGraph * const pVisited,  const 
             if (IsInterfaceDeclaredOnClass(it.GetIndex())) // only test directly implemented interfaces (it's
                                                            // legal for an inherited interface to be private.)
             {
-                // A transparenct type should not be allowed to implement a critical interface.
+                // A transparent type should not be allowed to implement a critical interface.
                 // However since this has never been enforced before we have many classes that
                 // violate this rule. Enforcing it now will be a breaking change.
                 DoAccessibilityCheck(this, it.GetInterface(), IDS_CLASSLOAD_INTERFACE_NO_ACCESS);
@@ -5589,24 +5484,22 @@ void MethodTable::DoFullyLoad(Generics::RecursionGraph * const pVisited,  const 
     }
 
 #ifdef FEATURE_NATIVE_IMAGE_GENERATION
-    // Fully load the types of fields associated with a field marshaler when ngenning
+    // Fully load the types of instance fields in types with layout when ngenning
     if (HasLayout() && GetAppDomain()->IsCompilationDomain() && !IsZapped())
     {
-        NativeFieldDescriptor* pNativeFieldDescriptors = this->GetLayoutInfo()->GetNativeFieldDescriptors();
-        UINT  numReferenceFields                       = this->GetLayoutInfo()->GetNumCTMFields();
+        ApproxFieldDescIterator fieldDescs(this, ApproxFieldDescIterator::INSTANCE_FIELDS);
 
-        for (UINT i = 0; i < numReferenceFields; ++i)
+        for (int i = 0; i < fieldDescs.Count(); i++)
         {
-            NativeFieldDescriptor* pFM = &pNativeFieldDescriptors[i];
-            FieldDesc *pMarshalerField = pFM->GetFieldDesc();
+            FieldDesc* pFieldDesc = fieldDescs.Next();
 
-            // If the fielddesc pointer here is a token tagged pointer, then the field marshaler that we are
+            // If the fielddesc pointer here is a token tagged pointer, then the field that we are
             // working with will not need to be saved into this ngen image. And as that was the reason that we
             // needed to load this type, thus we will not need to fully load the type associated with this field desc.
             //
-            if (!CORCOMPILE_IS_POINTER_TAGGED(pMarshalerField))
+            if (!CORCOMPILE_IS_POINTER_TAGGED(pFieldDesc))
             {
-                TypeHandle th = pMarshalerField->GetFieldTypeHandleThrowing((ClassLoadLevel) (level-1));
+                TypeHandle th = pFieldDesc->GetFieldTypeHandleThrowing((ClassLoadLevel) (level-1));
                 CONSISTENCY_CHECK(!th.IsNull());
 
                 th.DoFullyLoad(&locals.newVisited, level, pPending, &locals.fBailed, pInstContext);
@@ -5797,8 +5690,8 @@ void MethodTable::DoFullyLoad(Generics::RecursionGraph * const pVisited,  const 
 
             if (locals.fBailed)
             {
-                // We couldn't complete security checks on some dependency because he is already being processed by one of our callers.
-                // Do not mark this class fully loaded yet. Put him on the pending list and he will be marked fully loaded when
+                // We couldn't complete security checks on some dependency because it is already being processed by one of our callers.
+                // Do not mark this class fully loaded yet. Put it on the pending list and it will be marked fully loaded when
                 // everything unwinds.
 
                 *pfBailed = TRUE;
@@ -5817,19 +5710,6 @@ void MethodTable::DoFullyLoad(Generics::RecursionGraph * const pVisited,  const 
             _ASSERTE(!"Can't get here.");
             break;
 
-    }
-
-    if (level >= CLASS_DEPENDENCIES_LOADED && IsArray())
-    {
-        // The array type should be loaded, if template method table is loaded
-        // See also: ArrayBase::SetArrayMethodTable, ArrayBase::SetArrayMethodTableForLargeObject
-        TypeHandle th = ClassLoader::LoadArrayTypeThrowing(GetArrayElementTypeHandle(),
-                                                           GetInternalCorElementType(),
-                                                           GetRank(),
-                                                           ClassLoader::LoadTypes,
-                                                           level);
-        _ASSERTE(th.IsTypeDesc() && th.IsArray());
-        _ASSERTE(!(level == CLASS_LOADED && !th.IsFullyLoaded()));
     }
 #endif //!DACCESS_COMPILE
 } //MethodTable::DoFullyLoad
@@ -6376,7 +6256,7 @@ BOOL MethodTable::IsLegalNonArrayWinRTType()
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        PRECONDITION(!IsArray()); // arrays are not fully described by MethodTable
+        PRECONDITION(!IsArray()); // arrays are handled in the callers
     }
     CONTRACTL_END
 
@@ -6444,7 +6324,7 @@ BOOL MethodTable::IsLegalNonArrayWinRTType()
             for (DWORD i = 0; i < inst.GetNumArgs(); i++)
             {
                 // arrays are not allowed as generic arguments
-                if (inst[i].IsArrayType())
+                if (inst[i].IsArray())
                     return FALSE;
 
                 if (inst[i].IsTypeDesc())
@@ -6824,7 +6704,7 @@ MethodTable::FindDispatchImpl(
                 // Get the type of T (as in IList<T>)
                 TypeHandle theT = pIfcMT->GetInstantiation()[0];
 
-                // Retrieve the corresponding method of SZArrayHelper. This is the guy that will actually execute.
+                // Retrieve the corresponding method of SZArrayHelper. This is what will actually execute.
                 // This method will be an instantiation of a generic method. I.e. if the caller requested
                 // IList<T>.Meth(), he will actually be diverted to SZArrayHelper.Meth<T>().
                 MethodDesc * pActualImplementor = GetActualImplementationForArrayGenericIListOrIReadOnlyListMethod(pIfcMD, theT);
@@ -7607,6 +7487,7 @@ void MethodTable::GetGuid(GUID *pGuid, BOOL bGenerateIfNotFound, BOOL bClassic /
     BOOL        bGenerated = FALSE;     // A flag indicating if we generated the GUID from name.
 
     _ASSERTE(pGuid != NULL);
+    _ASSERTE(!this->IsArray());
 
     // Use the per-EEClass GuidInfo if we are asked for the "classic" non-WinRT GUID of non-WinRT type
     GuidInfo *pInfo = ((bClassic && !IsProjectedFromWinRT()) ? GetClass()->GetGuidInfo() : GetGuidInfo());
@@ -8736,7 +8617,7 @@ MethodDesc *MethodTable::MethodDataInterfaceImpl::GetImplMethodDesc(UINT32 slotN
     if (implSlotNumber == INVALID_SLOT_NUMBER) {
         return NULL;
     }
-    return m_pImpl->GetImplMethodDesc(MapToImplSlotNumber(slotNumber));
+    return m_pImpl->GetImplMethodDesc(implSlotNumber);
 }
 
 //==========================================================================================
@@ -8747,7 +8628,7 @@ void MethodTable::MethodDataInterfaceImpl::InvalidateCachedVirtualSlot(UINT32 sl
     if (implSlotNumber == INVALID_SLOT_NUMBER) {
         return;
     }
-    return m_pImpl->InvalidateCachedVirtualSlot(MapToImplSlotNumber(slotNumber));
+    return m_pImpl->InvalidateCachedVirtualSlot(implSlotNumber);
 }
 
 //==========================================================================================
@@ -9625,7 +9506,7 @@ void MethodTable::SetSlot(UINT32 slotNumber, PCODE slotCode)
 
     // IBC logging is not needed here - slots in ngen images are immutable.
 
-#ifdef _TARGET_ARM_
+#ifdef TARGET_ARM
     // Ensure on ARM that all target addresses are marked as thumb code.
     _ASSERTE(IsThumbCode(slotCode));
 #endif
@@ -9930,6 +9811,57 @@ NOINLINE BYTE *MethodTable::GetLoaderAllocatorObjectForGC()
     }
     BYTE * retVal = *(BYTE**)GetLoaderAllocatorObjectHandle();
     return retVal;
+}
+
+UINT32 MethodTable::GetNativeSize()
+{
+    CONTRACTL
+    {
+        THROWS;
+        MODE_ANY;
+        PRECONDITION(CheckPointer(GetClass()));
+    }
+    CONTRACTL_END;
+    if (IsBlittable())
+    {
+        return GetClass()->GetLayoutInfo()->GetManagedSize();
+    }
+    return GetNativeLayoutInfo()->GetSize();
+}
+
+EEClassNativeLayoutInfo const* MethodTable::GetNativeLayoutInfo()
+{
+    CONTRACTL
+    {
+        THROWS;
+        MODE_ANY;
+        PRECONDITION(HasLayout());
+    }
+    CONTRACTL_END;
+    EEClassNativeLayoutInfo* pNativeLayoutInfo = GetClass()->GetNativeLayoutInfo();
+    if (pNativeLayoutInfo != nullptr)
+    {
+        return pNativeLayoutInfo;
+    }
+    return EnsureNativeLayoutInfoInitialized();
+}
+
+EEClassNativeLayoutInfo const* MethodTable::EnsureNativeLayoutInfoInitialized()
+{
+    CONTRACTL
+    {
+        THROWS;
+        MODE_ANY;
+        PRECONDITION(HasLayout());
+    }
+    CONTRACTL_END;
+#ifndef DACCESS_COMPILE
+    EEClassNativeLayoutInfo::InitializeNativeLayoutFieldMetadataThrowing(this);
+    return this->GetClass()->GetNativeLayoutInfo();
+#else
+    DacNotImpl();
+    return nullptr;
+#endif
 }
 
 #ifdef FEATURE_COMINTEROP

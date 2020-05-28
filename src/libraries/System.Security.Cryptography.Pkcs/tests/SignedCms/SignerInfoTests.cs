@@ -481,6 +481,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
             SignerInfo signer = cms.SignerInfos[0];
 
             ArgumentOutOfRangeException ex = AssertExtensions.Throws<ArgumentOutOfRangeException>(
+                "index",
                 "childIndex",
                 () => signer.RemoveCounterSignature(-1));
 
@@ -594,7 +595,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
 
             Assert.Equal(SubjectIdentifierType.IssuerAndSerialNumber, counterSigner.SignerIdentifier.Type);
 
-            // On NetFx there will be two attributes, because Windows emits the
+            // On .NET Framework there will be two attributes, because Windows emits the
             // content-type attribute even for counter-signers.
             int expectedAttrCount = 1;
             // One of them is a V3 signer.
@@ -642,7 +643,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
 
             Assert.Equal(identifierType, counterSigner.SignerIdentifier.Type);
 
-            // On NetFx there will be two attributes, because Windows emits the
+            // On .NET Framework there will be two attributes, because Windows emits the
             // content-type attribute even for counter-signers.
             int expectedCount = 1;
 #if NETFRAMEWORK
@@ -731,7 +732,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
 
             Assert.Equal(1, counterSigner.Version);
 
-            // On NetFx there will be two attributes, because Windows emits the
+            // On .NET Framework there will be two attributes, because Windows emits the
             // content-type attribute even for counter-signers.
             int expectedCount = 1;
 #if NETFRAMEWORK
@@ -799,7 +800,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
             int expectedVersion = identifierType == SubjectIdentifierType.IssuerAndSerialNumber ? 1 : 3;
             Assert.Equal(expectedVersion, counterSigner.Version);
 
-            // On NetFx there will be two attributes, because Windows emits the
+            // On .NET Framework there will be two attributes, because Windows emits the
             // content-type attribute even for counter-signers.
             int expectedCount = 1;
 #if NETFRAMEWORK
@@ -846,7 +847,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
                             IncludeOption = X509IncludeOption.None,
                         });
 
-                if (PlatformDetection.IsFullFramework)
+                if (PlatformDetection.IsNetFramework)
                 {
                     Assert.ThrowsAny<CryptographicException>(sign);
                 }
@@ -898,7 +899,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
             SignerInfo firstCounterSigner = firstSigner.CounterSignerInfos[0];
             Assert.ThrowsAny<CryptographicException>(() => firstCounterSigner.CheckSignature(true));
 
-            if (PlatformDetection.IsFullFramework)
+            if (PlatformDetection.IsNetFramework)
             {
                 // NetFX's CheckHash only looks at top-level SignerInfos to find the
                 // crypt32 CMS signer ID, so it fails on any check from a countersigner.
@@ -997,7 +998,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
             Assert.Equal(SubjectIdentifierType.NoSignature, firstCounterSigner.SignerIdentifier.Type);
             Assert.ThrowsAny<CryptographicException>(() => firstCounterSigner.CheckSignature(true));
 
-            if (PlatformDetection.IsFullFramework)
+            if (PlatformDetection.IsNetFramework)
             {
                 // NetFX's CheckHash only looks at top-level SignerInfos to find the
                 // crypt32 CMS signer ID, so it fails on any check from a countersigner.

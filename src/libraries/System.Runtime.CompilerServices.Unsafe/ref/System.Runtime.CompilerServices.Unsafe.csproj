@@ -3,7 +3,7 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <CLSCompliant>false</CLSCompliant>
     <Nullable>enable</Nullable>
-    <Configurations>netstandard2.1-Debug;netstandard2.1-Release;netstandard2.0-Debug;netstandard2.0-Release;netstandard1.0-Debug;netstandard1.0-Release</Configurations>
+    <TargetFrameworks>netstandard2.0;netstandard1.0;netstandard2.1</TargetFrameworks>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System.Runtime.CompilerServices.Unsafe.cs" />

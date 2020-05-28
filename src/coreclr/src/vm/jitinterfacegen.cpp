@@ -19,7 +19,7 @@
 #include "field.h"
 #include "ecall.h"
 
-#ifdef BIT64
+#ifdef HOST_64BIT
 
 // These are the fastest(?) versions of JIT helpers as they have the code to GetThread patched into them
 // that does not make a call.
@@ -43,17 +43,17 @@ EXTERN_C Object* JIT_NewArr1OBJ_UP (CORINFO_CLASS_HANDLE arrayMT, INT_PTR size);
 EXTERN_C Object* JIT_NewArr1VC_MP (CORINFO_CLASS_HANDLE arrayMT, INT_PTR size);
 EXTERN_C Object* JIT_NewArr1VC_UP (CORINFO_CLASS_HANDLE arrayMT, INT_PTR size);
 
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
 extern WriteBarrierManager g_WriteBarrierManager;
-#endif // _TARGET_AMD64_
+#endif // TARGET_AMD64
 
-#endif // BIT64
+#endif // HOST_64BIT
 
 /*********************************************************************/
 // Initialize the part of the JIT helpers that require very little of
 // EE infrastructure to be in place.
 /*********************************************************************/
-#ifndef _TARGET_X86_
+#ifndef TARGET_X86
 
 void InitJITHelpers1()
 {
@@ -61,7 +61,7 @@ void InitJITHelpers1()
 
     _ASSERTE(g_SystemInfo.dwNumberOfProcessors != 0);
 
-#if defined(_TARGET_AMD64_)
+#if defined(TARGET_AMD64)
 
     g_WriteBarrierManager.Initialize();
 
@@ -73,7 +73,7 @@ void InitJITHelpers1()
 #endif // _DEBUG
         ))
     {
-#ifdef FEATURE_PAL
+#ifdef TARGET_UNIX
         SetJitHelperFunction(CORINFO_HELP_NEWSFAST, JIT_NewS_MP_FastPortable);
         SetJitHelperFunction(CORINFO_HELP_NEWSFAST_ALIGN8, JIT_NewS_MP_FastPortable);
         SetJitHelperFunction(CORINFO_HELP_NEWARR_1_VC, JIT_NewArr1VC_MP_FastPortable);
@@ -83,7 +83,7 @@ void InitJITHelpers1()
 #ifdef FEATURE_UTF8STRING
         ECall::DynamicallyAssignFCallImpl(GetEEFuncEntryPoint(AllocateUtf8String_MP_FastPortable), ECall::FastAllocateUtf8String);
 #endif // FEATURE_UTF8STRING
-#else // FEATURE_PAL
+#else // TARGET_UNIX
         // if (multi-proc || server GC)
         if (GCHeapUtilities::UseThreadAllocationContexts())
         {
@@ -115,9 +115,9 @@ void InitJITHelpers1()
             ECall::DynamicallyAssignFCallImpl(GetEEFuncEntryPoint(AllocateUtf8String_MP_FastPortable), ECall::FastAllocateUtf8String);
 #endif // FEATURE_UTF8STRING
         }
-#endif // FEATURE_PAL
+#endif // TARGET_UNIX
     }
-#endif // _TARGET_AMD64_
+#endif // TARGET_AMD64
 }
 
-#endif // !_TARGET_X86_
+#endif // !TARGET_X86

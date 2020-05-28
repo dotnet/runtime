@@ -3,14 +3,14 @@
     <IsFrameworkPackage>true</IsFrameworkPackage>
     <ShortFrameworkName>netstandard</ShortFrameworkName>
     <ProductBrandPrefix>Microsoft .NET Standard</ProductBrandPrefix>
-
-    <ProductBandVersion>2.1</ProductBandVersion>
-    <ProductionVersion>$(ProductBandVersion).0</ProductionVersion>
   </PropertyGroup>
 
-  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory).., Directory.Build.props))\Directory.Build.props" />
+  <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.props, $(MSBuildThisFileDirectory)..))" />
 
   <PropertyGroup>
+    <ProductBandVersion>2.1</ProductBandVersion>
+    <PatchVersion>$(NETStandardPatchVersion)</PatchVersion>
+
     <FrameworkListName>.NET Standard 2.1</FrameworkListName>
     <FrameworkListTargetFrameworkIdentifier>.NETStandard</FrameworkListTargetFrameworkIdentifier>
     <FrameworkListTargetFrameworkVersion>2.1</FrameworkListTargetFrameworkVersion>

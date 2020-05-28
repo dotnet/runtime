@@ -4,6 +4,7 @@
 
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Reflection.Internal
 {
@@ -13,6 +14,7 @@ namespace System.Reflection.Internal
     /// </summary>
     internal static class EnumerableExtensions
     {
+        [return: MaybeNull]
         public static T FirstOrDefault<T>(this ImmutableArray<T> collection, Func<T, bool> predicate)
         {
             foreach (var item in collection)
@@ -23,7 +25,7 @@ namespace System.Reflection.Internal
                 }
             }
 
-            return default(T);
+            return default!;
         }
 
         // used only in debugger display so we needn't get fancy with optimizations.

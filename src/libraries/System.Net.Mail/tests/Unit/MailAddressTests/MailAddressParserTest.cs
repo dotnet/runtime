@@ -45,257 +45,257 @@ namespace System.Net.Mail.Tests
         private const string ValidEmailAddressQuotedLocal = "\"jeff\"@example.com";
 
         [Fact]
-        public void ReadFWS_WithOnlyWhiteSpace_ShouldReadAll()
+        public void TryReadFWS_WithOnlyWhiteSpace_ShouldReadAll()
         {
             int index = WhitespaceOnly.Length - 1;
-            index = WhitespaceReader.ReadFwsReverse(WhitespaceOnly, index);
+            Assert.True(WhitespaceReader.TryReadFwsReverse(WhitespaceOnly, index, out index, throwExceptionIfFail: true));
 
             Assert.Equal(-1, index);
         }
 
         [Fact]
-        public void ReadFWS_WithNoWhiteSpace_ShouldDoNothing()
+        public void TryReadFWS_WithNoWhiteSpace_ShouldDoNothing()
         {
             int index = NoWhitespace.Length - 1;
 
-            index = WhitespaceReader.ReadFwsReverse(NoWhitespace, index);
+            Assert.True(WhitespaceReader.TryReadFwsReverse(NoWhitespace, index, out index, throwExceptionIfFail: true));
             Assert.Equal(NoWhitespace.Length - 1, index);
 
             index = WhitespaceInMiddle.Length - 1;
 
-            index = WhitespaceReader.ReadFwsReverse(WhitespaceInMiddle, index);
+            Assert.True(WhitespaceReader.TryReadFwsReverse(WhitespaceInMiddle, index, out index, throwExceptionIfFail: true));
             Assert.Equal(WhitespaceInMiddle.Length - 1, index);
         }
 
         [Fact]
-        public void ReadFWS_AtBeginningOfString_ShouldReadFWS()
+        public void TryReadFWS_AtBeginningOfString_ShouldReadFWS()
         {
             int index = 3;
 
-            index = WhitespaceReader.ReadFwsReverse(WhitespaceAtBeginning, index);
+            Assert.True(WhitespaceReader.TryReadFwsReverse(WhitespaceAtBeginning, index, out index, throwExceptionIfFail: true));
             Assert.Equal(-1, index);
         }
 
         [Fact]
-        public void ReadCFWS_WithSingleSpace_ShouldReadTheSpace()
+        public void TryReadCFWS_WithSingleSpace_ShouldReadTheSpace()
         {
             int index = SingleSpace.Length - 1;
 
-            index = WhitespaceReader.ReadCfwsReverse(SingleSpace, index);
+            Assert.True(WhitespaceReader.TryReadCfwsReverse(SingleSpace, index, out index, throwExceptionIfFail: true));
             Assert.Equal(-1, index);
         }
 
         [Fact]
-        public void ReadCFWS_WithNoComment_ShouldDoNothing()
+        public void TryReadCFWS_WithNoComment_ShouldDoNothing()
         {
             int index = NoComments.Length - 1;
 
-            index = WhitespaceReader.ReadCfwsReverse(NoComments, index);
+            Assert.True(WhitespaceReader.TryReadCfwsReverse(NoComments, index, out index, throwExceptionIfFail: true));
             Assert.Equal(index, NoComments.Length - 1);
         }
 
         [Fact]
-        public void ReadCFWS_WithOnlyComment_ShouldReadAll()
+        public void TryReadCFWS_WithOnlyComment_ShouldReadAll()
         {
             int index = OneComment.Length - 1;
 
-            index = WhitespaceReader.ReadCfwsReverse(OneComment, index);
+            Assert.True(WhitespaceReader.TryReadCfwsReverse(OneComment, index, out index, throwExceptionIfFail: true));
             Assert.Equal(-1, index);
         }
 
         [Fact]
-        public void ReadCFWS_WithNestedComments_ShouldWorkCorrectly()
+        public void TryReadCFWS_WithNestedComments_ShouldWorkCorrectly()
         {
             int index = NestedComments.Length - 1;
 
-            index = WhitespaceReader.ReadCfwsReverse(NestedComments, index);
+            Assert.True(WhitespaceReader.TryReadCfwsReverse(NestedComments, index, out index, throwExceptionIfFail: true));
             Assert.Equal(-1, index);
         }
 
         [Fact]
-        public void ReadCFWS_WithCharsBeforeComment_ShouldWorkCorrectly()
+        public void TryReadCFWS_WithCharsBeforeComment_ShouldWorkCorrectly()
         {
             int index = OneCommentWithAdditionalCharsBefore.Length - 1;
 
-            index = WhitespaceReader.ReadCfwsReverse(OneCommentWithAdditionalCharsBefore, index);
+            Assert.True(WhitespaceReader.TryReadCfwsReverse(OneCommentWithAdditionalCharsBefore, index, out index, throwExceptionIfFail: true));
             Assert.Equal(3, index);
         }
 
         [Fact]
-        public void ReadQuotedPair_WithValidCharacters_ShouldReadCorrectly()
+        public void TryReadQuotedPair_WithValidCharacters_ShouldReadCorrectly()
         {
             // a\\\\b, even quotes, b is unqouted
             string backslashes = "a\\\\\\\\b";
             int index = backslashes.Length - 1;
-            int quotedCharCount = QuotedPairReader.CountQuotedChars(backslashes, index, false);
+            Assert.True(QuotedPairReader.TryCountQuotedChars(backslashes, index, false, out int quotedCharCount, throwExceptionIfFail: true));
 
             Assert.Equal(0, quotedCharCount);
         }
 
         [Fact]
-        public void ReadQuotedPair_WithValidCharacterAndEscapedCharacter_ShouldReadCorrectly()
+        public void TryReadQuotedPair_WithValidCharacterAndEscapedCharacter_ShouldReadCorrectly()
         {
             // this is a\\\\\"
             string backslashes = "a\\\\\\\\\\\"";
             int index = backslashes.Length - 1;
-            int quotedCharCount = QuotedPairReader.CountQuotedChars(backslashes, index, false);
+            Assert.True(QuotedPairReader.TryCountQuotedChars(backslashes, index, false, out int quotedCharCount, throwExceptionIfFail: true));
 
             Assert.Equal(6, quotedCharCount);
         }
 
         [Fact]
-        public void ReadQuotedPair_WithValidCharacterAndEscapedCharacterAndBackslashIsStartOfString_ShouldReadCorrectly()
+        public void TryReadQuotedPair_WithValidCharacterAndEscapedCharacterAndBackslashIsStartOfString_ShouldReadCorrectly()
         {
             // this is \\\\\"
             string backslashes = "\\\\\\\\\\\"";
             int index = backslashes.Length - 1;
-            int quotedCharCount = QuotedPairReader.CountQuotedChars(backslashes, index, false);
+            Assert.True(QuotedPairReader.TryCountQuotedChars(backslashes, index, false, out int quotedCharCount, throwExceptionIfFail: true));
 
             Assert.Equal(6, quotedCharCount);
         }
 
         [Fact]
-        public void ReadQuotedPair_WithInvalidNonescapedCharacter_ShouldThrow()
+        public void TryReadQuotedPair_WithInvalidNonescapedCharacter_ShouldThrow()
         {
             // this is a\\\\"
             string backslashes = "a\\\\\\\\\"";
             int index = backslashes.Length - 1;
-            int quotedCharCount = QuotedPairReader.CountQuotedChars(backslashes, index, false);
+            Assert.True(QuotedPairReader.TryCountQuotedChars(backslashes, index, false, out int quotedCharCount, throwExceptionIfFail: true));
 
             Assert.Equal(0, quotedCharCount);
         }
 
         [Fact]
-        public void ReadDomainLiteral_WithValidDomainLiteral_ShouldReadCorrectly()
+        public void TryReadDomainLiteral_WithValidDomainLiteral_ShouldReadCorrectly()
         {
             int index = ValidDomainLiteral.Length - 1;
-            index = DomainLiteralReader.ReadReverse(ValidDomainLiteral, index);
+            Assert.True(DomainLiteralReader.TryReadReverse(ValidDomainLiteral, index, out index, throwExceptionIfFail: true));
 
             Assert.Equal(-1, index);
         }
 
         [Fact]
-        public void ReadDomainLiteral_WithLongListOfBackslashes_ShouldReadCorrectly()
+        public void TryReadDomainLiteral_WithLongListOfBackslashes_ShouldReadCorrectly()
         {
             int index = ValidDomainBackslashList.Length - 1;
-            index = DomainLiteralReader.ReadReverse(ValidDomainBackslashList, index);
+            Assert.True(DomainLiteralReader.TryReadReverse(ValidDomainBackslashList, index, out index, throwExceptionIfFail: true));
 
             Assert.Equal(-1, index);
         }
 
         [Fact]
-        public void ReadDomainLiteral_WithValidDomainLiteralAndEscapedCharacters_ShouldReadCorrectly()
+        public void TryReadDomainLiteral_WithValidDomainLiteralAndEscapedCharacters_ShouldReadCorrectly()
         {
             int index = ValidDomainLiteralEscapedChars.Length - 1;
-            index = DomainLiteralReader.ReadReverse(ValidDomainLiteralEscapedChars, index);
+            Assert.True(DomainLiteralReader.TryReadReverse(ValidDomainLiteralEscapedChars, index, out index, throwExceptionIfFail: true));
 
             Assert.Equal(-1, index);
         }
 
         [Fact]
-        public void ReadDomainLiteral_WithInvalidCharacter_ShouldThrow()
+        public void TryReadDomainLiteral_WithInvalidCharacter_ShouldThrow()
         {
             int index = InvalidDomainLiteral.Length - 1;
-            Assert.Throws<FormatException>(() => { DomainLiteralReader.ReadReverse(InvalidDomainLiteral, index); });
+            Assert.Throws<FormatException>(() => { DomainLiteralReader.TryReadReverse(InvalidDomainLiteral, index, out int _, throwExceptionIfFail: true); });
         }
 
         [Fact]
-        public void ReadQuotedString_WithUnicodeAndUnicodeIsInvalid_ShouldThrow()
+        public void TryReadQuotedString_WithUnicodeAndUnicodeIsInvalid_ShouldThrow()
         {
             int index = UnicodeQuotedString.Length - 1;
-            Assert.Throws<FormatException>(() => { QuotedStringFormatReader.ReadReverseUnQuoted(UnicodeQuotedString, index, false, false); });
+            Assert.Throws<FormatException>(() => { QuotedStringFormatReader.TryReadReverseUnQuoted(UnicodeQuotedString, index, false, false, out int _, throwExceptionIfFail: true); });
         }
 
         [Fact]
-        public void ReadQuotedString_WithValidUnicodeQuotedString_ShouldReadCorrectly()
+        public void TryReadQuotedString_WithValidUnicodeQuotedString_ShouldReadCorrectly()
         {
             int index = UnicodeQuotedString.Length - 1;
-            index = QuotedStringFormatReader.ReadReverseUnQuoted(UnicodeQuotedString, index, true, false);
+            Assert.True(QuotedStringFormatReader.TryReadReverseUnQuoted(UnicodeQuotedString, index, true, false, out index, throwExceptionIfFail: true));
 
             Assert.Equal(-1, index);
         }
 
         [Fact]
-        public void ReadQuotedString_WithValidQuotedString_ShouldReadCorrectly()
+        public void TryReadQuotedString_WithValidQuotedString_ShouldReadCorrectly()
         {
             int index = ValidQuotedString.Length - 1;
-            index = QuotedStringFormatReader.ReadReverseQuoted(ValidQuotedString, index, false);
+            Assert.True(QuotedStringFormatReader.TryReadReverseQuoted(ValidQuotedString, index, false, out index, throwExceptionIfFail: true));
 
             Assert.Equal(-1, index);
         }
 
         [Fact]
-        public void ReadQuotedString_WithEscapedCharacters_ShouldReadCorrectly()
+        public void TryReadQuotedString_WithEscapedCharacters_ShouldReadCorrectly()
         {
             int index = ValidQuotedStringWithEscapedChars.Length - 1;
-            index = QuotedStringFormatReader.ReadReverseQuoted(ValidQuotedStringWithEscapedChars, index, false);
+            Assert.True(QuotedStringFormatReader.TryReadReverseQuoted(ValidQuotedStringWithEscapedChars, index, false, out index, throwExceptionIfFail: true));
 
             Assert.Equal(-1, index);
         }
 
         [Fact]
-        public void ReadQuotedString_WithInvalidCharacters_ShouldThrow()
+        public void TryReadQuotedString_WithInvalidCharacters_ShouldThrow()
         {
             int index = InvalidQuotedString.Length - 1;
-            Assert.Throws<FormatException>(() => { QuotedStringFormatReader.ReadReverseQuoted(InvalidQuotedString, index, false); });
+            Assert.Throws<FormatException>(() => { QuotedStringFormatReader.TryReadReverseQuoted(InvalidQuotedString, index, false, out int _, throwExceptionIfFail: true); });
         }
 
         [Fact]
-        public void ReadQuotedString_WithValidMultipleStrings_ReturnTheDelimterIndex()
+        public void TryReadQuotedString_WithValidMultipleStrings_ReturnTheDelimterIndex()
         {
             int index = ValidMultipleStrings.Length - 1;
-            index = QuotedStringFormatReader.ReadReverseUnQuoted(ValidMultipleStrings, index, false, true);
+            Assert.True(QuotedStringFormatReader.TryReadReverseUnQuoted(ValidMultipleStrings, index, false, true, out index, throwExceptionIfFail: true));
 
             Assert.Equal(5, index);
         }
 
         [Fact]
-        public void ReadQuotedString_WithValidMultipleQuotedStrings_ReturnTheIndexPastTheQuote()
+        public void TryReadQuotedString_WithValidMultipleQuotedStrings_ReturnTheIndexPastTheQuote()
         {
             int index = ValidMultipleQuotedStrings.Length - 1;
-            index = QuotedStringFormatReader.ReadReverseQuoted(ValidMultipleQuotedStrings, index, false);
+            Assert.True(QuotedStringFormatReader.TryReadReverseQuoted(ValidMultipleQuotedStrings, index, false, out index, throwExceptionIfFail: true));
 
             Assert.Equal(8, index);
         }
 
         [Fact]
-        public void ReadDotAtom_WithValidDotAtom_ShouldReadCorrectly()
+        public void TryReadDotAtom_WithValidDotAtom_ShouldReadCorrectly()
         {
             int index = ValidDotAtom.Length - 1;
-            index = DotAtomReader.ReadReverse(ValidDotAtom, index);
+            Assert.True(DotAtomReader.TryReadReverse(ValidDotAtom, index, out index, throwExceptionIfFail: true));
 
             Assert.Equal(0, index);
         }
 
         [Fact]
-        public void ReadDotAtom_WithValidDotAtomAndDoubleDots_ShouldReadCorrectly()
+        public void TryReadDotAtom_WithValidDotAtomAndDoubleDots_ShouldReadCorrectly()
         {
             int index = ValidDotAtomDoubleDots.Length - 1;
-            index = DotAtomReader.ReadReverse(ValidDotAtomDoubleDots, index);
+            Assert.True(DotAtomReader.TryReadReverse(ValidDotAtomDoubleDots, index, out index, throwExceptionIfFail: true));
 
             Assert.Equal(0, index);
         }
 
         [Fact]
-        public void ReadDotAtom_EndsInDot_ShouldReadCorrectly()
+        public void TryReadDotAtom_EndsInDot_ShouldReadCorrectly()
         {
             int index = ValidDotAtomEndsInDot.Length - 1;
-            index = DotAtomReader.ReadReverse(ValidDotAtomEndsInDot, index);
+            Assert.True(DotAtomReader.TryReadReverse(ValidDotAtomEndsInDot, index, out index, throwExceptionIfFail: true));
 
             Assert.Equal(-1, index);
         }
 
         [Fact]
-        public void ReadDotAtom_WithDotAtBeginning_ShouldThrow()
+        public void TryReadDotAtom_WithDotAtBeginning_ShouldThrow()
         {
             int index = InvalidDotAtomStartsWithDot.Length - 1;
-            Assert.Throws<FormatException>(() => { DotAtomReader.ReadReverse(InvalidDotAtomStartsWithDot, index); });
+            Assert.Throws<FormatException>(() => { DotAtomReader.TryReadReverse(InvalidDotAtomStartsWithDot, index, out int _, throwExceptionIfFail: true); });
         }
 
         [Fact]
-        public void ParseAddress_WithNoQuotes_ShouldReadCorrectly()
+        public void TryParseAddress_WithNoQuotes_ShouldReadCorrectly()
         {
-            MailAddress result = MailAddressParser.ParseAddress("test(comment) test@example.com");
+            Assert.True(MailAddressParser.TryParseAddress("test(comment) test@example.com", out ParseAddressInfo result, throwExceptionIfFail: true));
 
             Assert.Equal("test", result.User);
             Assert.Equal("example.com", result.Host);
@@ -303,10 +303,9 @@ namespace System.Net.Mail.Tests
         }
 
         [Fact]
-        public void ParseAddress_WithDisplayNameAndAddress_ShouldReadCorrectly()
+        public void TryParseAddress_WithDisplayNameAndAddress_ShouldReadCorrectly()
         {
-            MailAddress result;
-            result = MailAddressParser.ParseAddress(ValidEmailAddressWithDisplayName);
+            Assert.True(MailAddressParser.TryParseAddress(ValidEmailAddressWithDisplayName, out ParseAddressInfo result, throwExceptionIfFail: true));
 
             Assert.Equal("jeff", result.DisplayName);
             Assert.Equal("jetucker", result.User);
@@ -314,10 +313,9 @@ namespace System.Net.Mail.Tests
         }
 
         [Fact]
-        public void ParseAddress_WithNoDisplayNameAndAngleAddress_ShouldReadCorrectly()
+        public void TryParseAddress_WithNoDisplayNameAndAngleAddress_ShouldReadCorrectly()
         {
-            MailAddress result;
-            result = MailAddressParser.ParseAddress(ValidEmailAddressWithNoDisplayName);
+            Assert.True(MailAddressParser.TryParseAddress(ValidEmailAddressWithNoDisplayName, out ParseAddressInfo result, throwExceptionIfFail: true));
 
             Assert.Equal(string.Empty, result.DisplayName);
             Assert.Equal("jetucker", result.User);
@@ -325,10 +323,9 @@ namespace System.Net.Mail.Tests
         }
 
         [Fact]
-        public void ParseAddress_WithNoDisplayNameAndNoAngleBrackets_ShouldReadCorrectly()
+        public void TryParseAddress_WithNoDisplayNameAndNoAngleBrackets_ShouldReadCorrectly()
         {
-            MailAddress result;
-            result = MailAddressParser.ParseAddress(ValidEmailAddressWithNoAngleBrackets);
+            Assert.True(MailAddressParser.TryParseAddress(ValidEmailAddressWithNoAngleBrackets, out ParseAddressInfo result, throwExceptionIfFail: true));
 
             Assert.Equal(string.Empty, result.DisplayName);
             Assert.Equal("jetucker", result.User);
@@ -336,10 +333,9 @@ namespace System.Net.Mail.Tests
         }
 
         [Fact]
-        public void ParseAddress_WithDomainLiteral_ShouldReadCorrectly()
+        public void TryParseAddress_WithDomainLiteral_ShouldReadCorrectly()
         {
-            MailAddress result;
-            result = MailAddressParser.ParseAddress(ValidEmailAddressWithDomainLiteral);
+            Assert.True(MailAddressParser.TryParseAddress(ValidEmailAddressWithDomainLiteral, out ParseAddressInfo result, throwExceptionIfFail: true));
 
             Assert.Equal("jeff", result.DisplayName);
             Assert.Equal("jetucker", result.User);
@@ -347,10 +343,9 @@ namespace System.Net.Mail.Tests
         }
 
         [Fact]
-        public void ParseAddress_WithQuotedLocalPartAndNoDisplayName_ShouldReadCorrectly()
+        public void TryParseAddress_WithQuotedLocalPartAndNoDisplayName_ShouldReadCorrectly()
         {
-            MailAddress result;
-            result = MailAddressParser.ParseAddress(ValidEmailAddressQuotedLocal);
+            Assert.True(MailAddressParser.TryParseAddress(ValidEmailAddressQuotedLocal, out ParseAddressInfo result, throwExceptionIfFail: true));
 
             Assert.Equal(string.Empty, result.DisplayName);
             Assert.Equal("\"jeff\"", result.User);
@@ -358,10 +353,9 @@ namespace System.Net.Mail.Tests
         }
 
         [Fact]
-        public void ParseAddress_WithCommentsAndQuotedLocalAndNoDisplayName_ShouldReadCorrectly()
+        public void TryParseAddress_WithCommentsAndQuotedLocalAndNoDisplayName_ShouldReadCorrectly()
         {
-            MailAddress result;
-            result = MailAddressParser.ParseAddress("(comment)\" asciin;,oqu o.tesws \"(comment)@(comment)this.test.this(comment)");
+            Assert.True(MailAddressParser.TryParseAddress("(comment)\" asciin;,oqu o.tesws \"(comment)@(comment)this.test.this(comment)", out ParseAddressInfo result, throwExceptionIfFail: true));
 
             Assert.Equal(string.Empty, result.DisplayName);
             Assert.Equal("\" asciin;,oqu o.tesws \"", result.User);
@@ -369,10 +363,9 @@ namespace System.Net.Mail.Tests
         }
 
         [Fact]
-        public void ParseAddress_WithCommentsAndUnquotedLocalAndUnquotedDisplayName_ShouldReadCorrectly()
+        public void TryParseAddress_WithCommentsAndUnquotedLocalAndUnquotedDisplayName_ShouldReadCorrectly()
         {
-            MailAddress result;
-            result = MailAddressParser.ParseAddress("(comment)this.test.this(comment)<(comment)this.test.this(comment)@(comment)[  test this ](comment)>");
+            Assert.True(MailAddressParser.TryParseAddress("(comment)this.test.this(comment)<(comment)this.test.this(comment)@(comment)[  test this ](comment)>", out ParseAddressInfo result, throwExceptionIfFail: true));
 
             Assert.Equal("(comment)this.test.this(comment)", result.DisplayName);
             Assert.Equal("this.test.this", result.User);
@@ -380,9 +373,9 @@ namespace System.Net.Mail.Tests
         }
 
         [Fact]
-        public void ParseAddress_WithEscapedCharacters_AndQuotedLocalPart_ShouldReadCorrectly()
+        public void TryParseAddress_WithEscapedCharacters_AndQuotedLocalPart_ShouldReadCorrectly()
         {
-            MailAddress result = MailAddressParser.ParseAddress("\"jeff\\\\@\" <(jeff\\@s email)\"jeff\\\"\"@(comment)[  ncl\\@bld-001 \t  ](comment)>");
+            Assert.True(MailAddressParser.TryParseAddress("\"jeff\\\\@\" <(jeff\\@s email)\"jeff\\\"\"@(comment)[  ncl\\@bld-001 \t  ](comment)>", out ParseAddressInfo result, throwExceptionIfFail: true));
 
             Assert.Equal("jeff\\\\@", result.DisplayName);
             Assert.Equal("\"jeff\\\"\"", result.User);
@@ -390,10 +383,9 @@ namespace System.Net.Mail.Tests
         }
 
         [Fact]
-        public void ParseAddress_WithNoDisplayNameAndDotAtom_ShouldReadCorrectly()
+        public void TryParseAddress_WithNoDisplayNameAndDotAtom_ShouldReadCorrectly()
         {
-            MailAddress result;
-            result = MailAddressParser.ParseAddress("a..b_b@example.com");
+            Assert.True(MailAddressParser.TryParseAddress("a..b_b@example.com", out ParseAddressInfo result, throwExceptionIfFail: true));
 
             Assert.Equal(string.Empty, result.DisplayName);
             Assert.Equal("a..b_b", result.User);
@@ -401,10 +393,9 @@ namespace System.Net.Mail.Tests
         }
 
         [Fact]
-        public void ParseAddress_WithQuotedDisplayNameandNoAngleAddress_ShouldReadCorrectly()
+        public void TryParseAddress_WithQuotedDisplayNameandNoAngleAddress_ShouldReadCorrectly()
         {
-            MailAddress result;
-            result = MailAddressParser.ParseAddress("\"Test user\" testuser@nclmailtest.com");
+            Assert.True(MailAddressParser.TryParseAddress("\"Test user\" testuser@nclmailtest.com", out ParseAddressInfo result, throwExceptionIfFail: true));
 
             Assert.Equal("Test user", result.DisplayName);
             Assert.Equal("testuser", result.User);
@@ -412,22 +403,21 @@ namespace System.Net.Mail.Tests
         }
 
         [Fact]
-        public void ParseAddress_WithInvalidLocalPart_ShouldThrow()
+        public void TryParseAddress_WithInvalidLocalPart_ShouldThrow()
         {
-            Assert.Throws<FormatException>(() => { MailAddressParser.ParseAddress("test[test]@test.com"); });
+            Assert.Throws<FormatException>(() => { MailAddressParser.TryParseAddress("test[test]@test.com", out ParseAddressInfo _, true); });
         }
 
         [Fact]
-        public void ParseAddress_WithHangingAngleBracket_ShouldThrow()
+        public void TryParseAddress_WithHangingAngleBracket_ShouldThrow()
         {
-            Assert.Throws<FormatException>(() => { MailAddressParser.ParseAddress("<test@test.com"); });
+            Assert.Throws<FormatException>(() => { MailAddressParser.TryParseAddress("<test@test.com", out ParseAddressInfo _, true); });
         }
 
         [Fact]
-        public void ParseAddress_WithQuotedDisplayNameAndQuotedLocalAndAngleBrackets_ShouldReadCorrectly()
+        public void TryParseAddress_WithQuotedDisplayNameAndQuotedLocalAndAngleBrackets_ShouldReadCorrectly()
         {
-            MailAddress result;
-            result = MailAddressParser.ParseAddress("(comment)\" asciin;,oqu o.tesws \"(comment)<(comment)\" asciin;,oqu o.tesws \"(comment)@(comment)[  test this ](comment)>");
+            Assert.True(MailAddressParser.TryParseAddress("(comment)\" asciin;,oqu o.tesws \"(comment)<(comment)\" asciin;,oqu o.tesws \"(comment)@(comment)[  test this ](comment)>", out ParseAddressInfo result, throwExceptionIfFail: true));
 
             Assert.Equal(" asciin;,oqu o.tesws ", result.DisplayName);
             Assert.Equal("\" asciin;,oqu o.tesws \"", result.User);
@@ -435,15 +425,15 @@ namespace System.Net.Mail.Tests
         }
 
         [Fact]
-        public void ParseAddress_WithInvalidLocalPartAtEnd_ShouldThrow()
+        public void TryParseAddress_WithInvalidLocalPartAtEnd_ShouldThrow()
         {
-            Assert.Throws<FormatException>(() => { MailAddressParser.ParseAddress("[test]test@test.com"); });
+            Assert.Throws<FormatException>(() => { MailAddressParser.TryParseAddress("[test]test@test.com", out ParseAddressInfo _, true); });
         }
 
         [Fact]
-        public void ParseAddress_WithCommaButNoQuotes_ShouldReadCorrectly()
+        public void TryParseAddress_WithCommaButNoQuotes_ShouldReadCorrectly()
         {
-            MailAddress result = MailAddressParser.ParseAddress("unqouted, comma display username@domain");
+            Assert.True(MailAddressParser.TryParseAddress("unqouted, comma display username@domain", out ParseAddressInfo result, throwExceptionIfFail: true));
 
             Assert.Equal("username", result.User);
             Assert.Equal("domain", result.Host);

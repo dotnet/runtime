@@ -165,7 +165,7 @@ namespace JIT.HardwareIntrinsics.Arm
             {
                 var testStruct = new TestStruct();
 
-                for (var i = 0; i < Op1ElementCount; i++) { _data1[i] = (sbyte)-TestLibrary.Generator.GetSByte(); }
+                for (var i = 0; i < Op1ElementCount; i++) { _data1[i] = TestLibrary.Generator.GetSByte(); }
                 Unsafe.CopyBlockUnaligned(ref Unsafe.As<Vector128<SByte>, byte>(ref testStruct._fld1), ref Unsafe.As<SByte, byte>(ref _data1[0]), (uint)Unsafe.SizeOf<Vector128<SByte>>());
 
                 return testStruct;
@@ -208,7 +208,7 @@ namespace JIT.HardwareIntrinsics.Arm
 
         static SimpleUnaryOpTest__LeadingSignCount_Vector128_SByte()
         {
-            for (var i = 0; i < Op1ElementCount; i++) { _data1[i] = (sbyte)-TestLibrary.Generator.GetSByte(); }
+            for (var i = 0; i < Op1ElementCount; i++) { _data1[i] = TestLibrary.Generator.GetSByte(); }
             Unsafe.CopyBlockUnaligned(ref Unsafe.As<Vector128<SByte>, byte>(ref _clsVar1), ref Unsafe.As<SByte, byte>(ref _data1[0]), (uint)Unsafe.SizeOf<Vector128<SByte>>());
         }
 
@@ -216,10 +216,10 @@ namespace JIT.HardwareIntrinsics.Arm
         {
             Succeeded = true;
 
-            for (var i = 0; i < Op1ElementCount; i++) { _data1[i] = (sbyte)-TestLibrary.Generator.GetSByte(); }
+            for (var i = 0; i < Op1ElementCount; i++) { _data1[i] = TestLibrary.Generator.GetSByte(); }
             Unsafe.CopyBlockUnaligned(ref Unsafe.As<Vector128<SByte>, byte>(ref _fld1), ref Unsafe.As<SByte, byte>(ref _data1[0]), (uint)Unsafe.SizeOf<Vector128<SByte>>());
 
-            for (var i = 0; i < Op1ElementCount; i++) { _data1[i] = (sbyte)-TestLibrary.Generator.GetSByte(); }
+            for (var i = 0; i < Op1ElementCount; i++) { _data1[i] = TestLibrary.Generator.GetSByte(); }
             _dataTable = new DataTable(_data1, new SByte[RetElementCount], LargestVectorSize);
         }
 
@@ -402,7 +402,7 @@ namespace JIT.HardwareIntrinsics.Arm
             Unsafe.Write(_dataTable.outArrayPtr, result);
             ValidateResult(test._fld1, _dataTable.outArrayPtr);
         }
-        
+
         public void RunStructFldScenario()
         {
             TestLibrary.TestFramework.BeginScenario(nameof(RunStructFldScenario));
@@ -466,19 +466,12 @@ namespace JIT.HardwareIntrinsics.Arm
         {
             bool succeeded = true;
 
-            if (Helpers.CountLeadingSignBits(firstOp[0]) != result[0])
+            for (var i = 0; i < RetElementCount; i++)
             {
-                succeeded = false;
-            }
-            else
-            {
-                for (var i = 1; i < RetElementCount; i++)
+                if (Helpers.CountLeadingSignBits(firstOp[i]) != result[i])
                 {
-                    if (Helpers.CountLeadingSignBits(firstOp[i]) != result[i])
-                    {
-                        succeeded = false;
-                        break;
-                    }
+                    succeeded = false;
+                    break;
                 }
             }
 

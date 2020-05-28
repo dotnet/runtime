@@ -1,6 +1,6 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <Configurations>netcoreapp-Debug;netcoreapp-Release</Configurations>
+    <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="AggregateTests.cs" />
@@ -42,7 +42,6 @@
     <Compile Include="RepeatTests.cs" />
     <Compile Include="ReverseTests.cs" />
     <Compile Include="SelectManyTests.cs" />
-    <Compile Include="SelectManyTests.netcoreapp.cs" />
     <Compile Include="SelectTests.cs" />
     <Compile Include="SequenceEqualTests.cs" />
     <Compile Include="ShortCircuitingTests.cs" />
@@ -67,13 +66,10 @@
     <Compile Include="UnionTests.cs" />
     <Compile Include="WhereTests.cs" />
     <Compile Include="ZipTests.cs" />
-    <Compile Include="ZipTests.netcoreapp.cs" />
-    <Compile Include="$(CommonTestPath)System\Linq\SkipTakeData.cs">
-      <Link>Common\System\Linq\SkipTakeData.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonTestPath)System\Diagnostics\DebuggerAttributes.cs">
-      <Link>Common\System\Diagnostics\DebuggerAttributes.cs</Link>
-    </Compile>
+    <Compile Include="$(CommonTestPath)System\Linq\SkipTakeData.cs"
+             Link="Common\System\Linq\SkipTakeData.cs" />
+    <Compile Include="$(CommonTestPath)System\Diagnostics\DebuggerAttributes.cs"
+             Link="Common\System\Diagnostics\DebuggerAttributes.cs" />
     <Compile Include="GroupByTests.DebuggerAttributes.cs" />
     <Compile Include="ToLookupTests.DebuggerAttributes.cs" />
     <Compile Include="EnumerableDebugViewTests.cs" />

@@ -341,7 +341,7 @@ namespace System.Collections.Generic
             // This passes functionality down to the underlying tree, clipping edges if necessary
             // There's nothing gained by having a nested subset. May as well draw it from the base
             // Cannot increase the bounds of the subset, can only decrease it
-            public override SortedSet<T> GetViewBetween(T lowerValue, T upperValue)
+            public override SortedSet<T> GetViewBetween([AllowNull] T lowerValue, [AllowNull] T upperValue)
             {
                 if (_lBoundActive && Comparer.Compare(_min, lowerValue) > 0)
                 {

@@ -1,21 +1,27 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AssemblyName>crossgen2</AssemblyName>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <OutputType>Exe</OutputType>
-    <TargetFramework>netcoreapp3.0</TargetFramework>
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <NoWarn>8002,NU1701</NoWarn>
     <Platforms>x64;x86</Platforms>
-    <PlatformTargets Condition="'$(BuildArch)' != ''">$(BuildArch)</PlatformTargets>
+    <PlatformTarget>AnyCPU</PlatformTarget>
     <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
-
-    <!-- We're binplacing these into an existing publish layout so that F5 build in VS updates
-         the same bits tests expect to see in artifacts/crossgen2. That way we never need to wonder which
-         binaries are up to date and which are stale. -->
-    <OutputPath Condition="'$(BuildingInsideVisualStudio)' == 'true'">$(BinDir)/crossgen2</OutputPath>
-    <GenerateDependencyFile>false</GenerateDependencyFile>
-    <GenerateRuntimeConfigurationFiles>false</GenerateRuntimeConfigurationFiles>
+    <AppendTargetFrameworkToOutputPath Condition="'$(BuildingInsideVisualStudio)' == 'true'">true</AppendTargetFrameworkToOutputPath>
+    <OutputPath>$(BinDir)/crossgen2</OutputPath>
+    <GenerateRuntimeConfigurationFiles>true</GenerateRuntimeConfigurationFiles>
+    <EnableDefaultEmbeddedResourceItems>false</EnableDefaultEmbeddedResourceItems>
+    <RuntimeIdentifiers>linux-x64;linux-musl-x64;win-x64</RuntimeIdentifiers>
+    <Configurations>Debug;Release;Checked</Configurations>
   </PropertyGroup>
+
+  <ItemGroup Label="Embedded Resources">
+    <EmbeddedResource Include="Properties\Resources.resx">
+      <GenerateSource>true</GenerateSource>
+      <ClassName>System.SR</ClassName>
+    </EmbeddedResource>
+  </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\ILCompiler.DependencyAnalysisFramework\ILCompiler.DependencyAnalysisFramework.csproj" />
@@ -29,8 +35,40 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="System.CommandLine.Experimental">
-      <Version>0.3.0-alpha.19525.2</Version>
+    <PackageReference Include="System.CommandLine">
+      <Version>$(SystemCommandLineVersion)</Version>
     </PackageReference>
   </ItemGroup>
+
+  <PropertyGroup Condition="'$(TargetsUnix)' == 'true'">
+    <LibraryNamePrefix>lib</LibraryNamePrefix>
+    <LibraryNameExtension>.so</LibraryNameExtension>
+    <LibraryNameExtension Condition="'$(TargetsOSX)' == 'true'">.dylib</LibraryNameExtension>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(TargetsWindows)' == 'true'">
+    <LibraryNamePrefix></LibraryNamePrefix>
+    <LibraryNameExtension>.dll</LibraryNameExtension>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Content Include="$(BinDir)\$(LibraryNamePrefix)jitinterface$(LibraryNameExtension)"
+      CopyToOutputDirectory="PreserveNewest"
+      CopyToPublishDirectory="PreserveNewest"
+      Link="%(FileName)%(Extension)"
+     />
+
+    <Content Include="$(BinDir)\$(LibraryNamePrefix)clrjit$(LibraryNameExtension)"
+      CopyToOutputDirectory="PreserveNewest"
+      CopyToPublishDirectory="PreserveNewest"
+      Link="$(LibraryNamePrefix)clrjitilc$(LibraryNameExtension)"
+     />
+  </ItemGroup>
+
+  <Target Name="GenerateDepsJsonFile" Returns="$(ProjectDepsFilePath)" DependsOnTargets="GenerateBuildDependencyFile" />
+
+  <Target Name="RemoveLongNameDacFromDepsJson" AfterTargets="ResolveRuntimePackAssets" BeforeTargets="GenerateBuildDependencyFile" Condition="'$(RemoveLongNameDac)' == 'true'">
+    <ItemGroup>
+      <RuntimePackAsset Remove="@(RuntimePackAsset)" Condition="$([System.String]::new('%(FileName)').StartsWith('mscordaccore_'))" />
+    </ItemGroup>
+  </Target>
 </Project>

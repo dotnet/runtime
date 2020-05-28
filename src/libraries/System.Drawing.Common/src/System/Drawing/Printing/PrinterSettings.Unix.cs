@@ -43,7 +43,7 @@ namespace System.Drawing.Printing
     public class PrinterSettings : ICloneable
     {
         private string printer_name;
-        private string print_filename;
+        private string? print_filename;
         private short copies;
         private int maximum_page;
         private int minimum_page;
@@ -56,14 +56,14 @@ namespace System.Drawing.Printing
         internal bool supports_color;
         internal int landscape_angle;
         private bool print_tofile;
-        internal PrinterSettings.PrinterResolutionCollection printer_resolutions;
-        internal PrinterSettings.PaperSizeCollection paper_sizes;
-        internal PrinterSettings.PaperSourceCollection paper_sources;
-        private PageSettings default_pagesettings;
+        internal PrinterSettings.PrinterResolutionCollection? printer_resolutions;
+        internal PrinterSettings.PaperSizeCollection? paper_sizes;
+        internal PrinterSettings.PaperSourceCollection? paper_sources;
+        private PageSettings? default_pagesettings;
         private Duplex duplex;
         internal bool is_plotter;
 
-        internal NameValueCollection printer_capabilities; // this stores a list of all the printer options. Used only in cups, but might come in handy on win too.
+        internal NameValueCollection? printer_capabilities; // this stores a list of all the printer options. Used only in cups, but might come in handy on win too.
 
         public PrinterSettings()
         {
@@ -200,7 +200,7 @@ namespace System.Drawing.Printing
             }
         }
 
-        public PrinterSettings.PaperSizeCollection PaperSizes
+        public PrinterSettings.PaperSizeCollection? PaperSizes
         {
             get
             {
@@ -211,7 +211,7 @@ namespace System.Drawing.Printing
             }
         }
 
-        public PrinterSettings.PaperSourceCollection PaperSources
+        public PrinterSettings.PaperSourceCollection? PaperSources
         {
             get
             {
@@ -221,8 +221,7 @@ namespace System.Drawing.Printing
                 return paper_sources;
             }
         }
-        public
-        string PrintFileName
+        public string? PrintFileName
         {
             get { return print_filename; }
             set { print_filename = value; }
@@ -392,10 +391,10 @@ namespace System.Drawing.Printing
             bool ICollection.IsSynchronized { get { return false; } }
             object ICollection.SyncRoot { get { return this; } }
             [EditorBrowsable(EditorBrowsableState.Never)]
-            public int Add(PaperSource paperSource) { return _PaperSources.Add(paperSource); }
+            public int Add(PaperSource? paperSource) { return _PaperSources.Add(paperSource); }
             public void CopyTo(PaperSource[] paperSources, int index) { throw new NotImplementedException(); }
 
-            public virtual PaperSource this[int index]
+            public virtual PaperSource? this[int index]
             {
                 get { return _PaperSources[index] as PaperSource; }
             }
@@ -437,10 +436,10 @@ namespace System.Drawing.Printing
             bool ICollection.IsSynchronized { get { return false; } }
             object ICollection.SyncRoot { get { return this; } }
             [EditorBrowsable(EditorBrowsableState.Never)]
-            public int Add(PaperSize paperSize) { return _PaperSizes.Add(paperSize); }
+            public int Add(PaperSize? paperSize) { return _PaperSizes.Add(paperSize); }
             public void CopyTo(PaperSize[] paperSizes, int index) { throw new NotImplementedException(); }
 
-            public virtual PaperSize this[int index]
+            public virtual PaperSize? this[int index]
             {
                 get { return _PaperSizes[index] as PaperSize; }
             }
@@ -481,10 +480,10 @@ namespace System.Drawing.Printing
             bool ICollection.IsSynchronized { get { return false; } }
             object ICollection.SyncRoot { get { return this; } }
             [EditorBrowsable(EditorBrowsableState.Never)]
-            public int Add(PrinterResolution printerResolution) { return _PrinterResolutions.Add(printerResolution); }
+            public int Add(PrinterResolution? printerResolution) { return _PrinterResolutions.Add(printerResolution); }
             public void CopyTo(PrinterResolution[] printerResolutions, int index) { throw new NotImplementedException(); }
 
-            public virtual PrinterResolution this[int index]
+            public virtual PrinterResolution? this[int index]
             {
                 get { return _PrinterResolutions[index] as PrinterResolution; }
             }
@@ -527,7 +526,7 @@ namespace System.Drawing.Printing
 
             public virtual string this[int index]
             {
-                get { return _Strings[index] as string; }
+                get { return (_Strings[index] as string)!; }
             }
             [EditorBrowsable(EditorBrowsableState.Never)]
             public int Add(string value) { return _Strings.Add(value); }

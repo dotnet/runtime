@@ -7,11 +7,11 @@
 #include <xplatform.h>
 #include <platformdefines.h>
 
-#if defined(_TARGET_XARCH_)
+#if defined(TARGET_XARCH)
     #include <immintrin.h>
 
     typedef __m256 Vector256F;
-#elif defined(_TARGET_ARMARCH_)
+#elif defined(TARGET_ARMARCH)
     typedef struct {
         float e00;
         float e01;
@@ -51,7 +51,7 @@ extern "C" DLL_EXPORT void STDMETHODCALLTYPE GetVector256FOut(float e00, float e
 {
     Vector256F value = GetVector256F(e00, e01, e02, e03, e04, e05, e06, e07);
 
-#if defined(_TARGET_XARCH_)
+#if defined(TARGET_XARCH)
     _mm_storeu_ps((float*)(((__m128*)pValue) + 0), *(((__m128*)&value) + 0));
     _mm_storeu_ps((float*)(((__m128*)pValue) + 1), *(((__m128*)&value) + 1));
 #else

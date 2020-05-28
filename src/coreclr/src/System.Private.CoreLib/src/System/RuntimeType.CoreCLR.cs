@@ -5,16 +5,16 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
+using Internal.Runtime.CompilerServices;
 using DebuggerStepThroughAttribute = System.Diagnostics.DebuggerStepThroughAttribute;
 using MdToken = System.Reflection.MetadataToken;
-using Internal.Runtime.CompilerServices;
-using System.Diagnostics.CodeAnalysis;
 
 namespace System
 {
@@ -244,14 +244,17 @@ namespace System
                     switch (cacheType)
                     {
                         case CacheType.Method:
-                            list = (T[])(object)new RuntimeMethodInfo[1] {
-                            new RuntimeMethodInfo(method, declaringType, m_runtimeTypeCache, methodAttributes, bindingFlags, null)
-                        };
+                            list = (T[])(object)new RuntimeMethodInfo[1]
+                            {
+                                new RuntimeMethodInfo(method, declaringType, m_runtimeTypeCache, methodAttributes, bindingFlags, null)
+                            };
                             break;
+
                         case CacheType.Constructor:
-                            list = (T[])(object)new RuntimeConstructorInfo[1] {
-                            new RuntimeConstructorInfo(method, declaringType, m_runtimeTypeCache, methodAttributes, bindingFlags)
-                        };
+                            list = (T[])(object)new RuntimeConstructorInfo[1]
+                            {
+                                new RuntimeConstructorInfo(method, declaringType, m_runtimeTypeCache, methodAttributes, bindingFlags)
+                            };
                             break;
                     }
 
@@ -367,7 +370,6 @@ namespace System
                 {
                     bool lockTaken = false;
 
-                    RuntimeHelpers.PrepareConstrainedRegions();
                     try
                     {
                         Monitor.Enter(this, ref lockTaken);
@@ -879,8 +881,7 @@ namespace System
 
                     MetadataImport scope = RuntimeTypeHandle.GetMetadataImport(declaringType);
 
-                    MetadataEnumResult tkFields;
-                    scope.EnumFields(tkDeclaringType, out tkFields);
+                    scope.EnumFields(tkDeclaringType, out MetadataEnumResult tkFields);
 
                     for (int i = 0; i < tkFields.Length; i++)
                     {
@@ -888,8 +889,7 @@ namespace System
                         Debug.Assert(MdToken.IsTokenOfType(tkField, MetadataTokenType.FieldDef));
                         Debug.Assert(!MdToken.IsNullToken(tkField));
 
-                        FieldAttributes fieldAttributes;
-                        scope.GetFieldDefProps(tkField, out fieldAttributes);
+                        scope.GetFieldDefProps(tkField, out FieldAttributes fieldAttributes);
 
                         FieldAttributes fieldAccess = fieldAttributes & FieldAttributes.FieldAccessMask;
 
@@ -1054,8 +1054,7 @@ namespace System
                     RuntimeModule moduleHandle = RuntimeTypeHandle.GetModule(declaringType);
                     MetadataImport scope = ModuleHandle.GetMetadataImport(moduleHandle);
 
-                    MetadataEnumResult tkNestedClasses;
-                    scope.EnumNestedTypes(tkEnclosingType, out tkNestedClasses);
+                    scope.EnumNestedTypes(tkEnclosingType, out MetadataEnumResult tkNestedClasses);
 
                     for (int i = 0; i < tkNestedClasses.Length; i++)
                     {
@@ -1127,13 +1126,11 @@ namespace System
 
                     MetadataImport scope = RuntimeTypeHandle.GetMetadataImport(declaringType);
 
-                    MetadataEnumResult tkEvents;
-                    scope.EnumEvents(tkDeclaringType, out tkEvents);
+                    scope.EnumEvents(tkDeclaringType, out MetadataEnumResult tkEvents);
 
                     for (int i = 0; i < tkEvents.Length; i++)
                     {
                         int tkEvent = tkEvents[i];
-                        bool isPrivate;
 
                         Debug.Assert(!MdToken.IsNullToken(tkEvent));
                         Debug.Assert(MdToken.IsTokenOfType(tkEvent, MetadataTokenType.Event));
@@ -1147,7 +1144,7 @@ namespace System
                         }
 
                         RuntimeEventInfo eventInfo = new RuntimeEventInfo(
-                            tkEvent, declaringType, m_runtimeTypeCache, out isPrivate);
+                            tkEvent, declaringType, m_runtimeTypeCache, out bool isPrivate);
 
                         #region Remove Inherited Privates
                         if (declaringType != m_runtimeTypeCache.GetRuntimeType() && isPrivate)
@@ -1230,8 +1227,7 @@ namespace System
 
                     MetadataImport scope = RuntimeTypeHandle.GetMetadataImport(declaringType);
 
-                    MetadataEnumResult tkProperties;
-                    scope.EnumProperties(tkDeclaringType, out tkProperties);
+                    scope.EnumProperties(tkDeclaringType, out MetadataEnumResult tkProperties);
 
                     RuntimeModule declaringModuleHandle = RuntimeTypeHandle.GetModule(declaringType);
 
@@ -1243,7 +1239,6 @@ namespace System
                     for (int i = 0; i < tkProperties.Length; i++)
                     {
                         int tkProperty = tkProperties[i];
-                        bool isPrivate;
 
                         Debug.Assert(!MdToken.IsNullToken(tkProperty));
                         Debug.Assert(MdToken.IsTokenOfType(tkProperty, MetadataTokenType.Property));
@@ -1264,7 +1259,7 @@ namespace System
 
                         RuntimePropertyInfo propertyInfo =
                             new RuntimePropertyInfo(
-                            tkProperty, declaringType, m_runtimeTypeCache, out isPrivate);
+                            tkProperty, declaringType, m_runtimeTypeCache, out bool isPrivate);
 
                         // If this is a class, not an interface
                         if (usedSlots != null)
@@ -1310,8 +1305,7 @@ namespace System
                             if (csPropertyInfos != null)
                             {
                                 string name = propertyInfo.Name;
-                                List<RuntimePropertyInfo>? cache;
-                                if (!csPropertyInfos.TryGetValue(name, out cache))
+                                if (!csPropertyInfos.TryGetValue(name, out List<RuntimePropertyInfo>? cache))
                                 {
                                     cache = new List<RuntimePropertyInfo>(1);
                                     csPropertyInfos[name] = cache;
@@ -1400,7 +1394,7 @@ namespace System
             private MemberInfoCache<RuntimePropertyInfo>? m_propertyInfoCache;
             private MemberInfoCache<RuntimeEventInfo>? m_eventInfoCache;
             private static CerHashtable<RuntimeMethodInfo, RuntimeMethodInfo> s_methodInstantiations;
-            private static object s_methodInstantiationsLock = null!;
+            private static object? s_methodInstantiationsLock;
             private string? m_defaultMemberName;
             private object? m_genericCache; // Generic cache for rare scenario specific data. It is used to cache Enum names and values.
             private object[]? _emptyArray; // Object array cache for Attribute.GetCustomAttributes() pathological no-result case.
@@ -1584,7 +1578,6 @@ namespace System
                     Interlocked.CompareExchange(ref s_methodInstantiationsLock!, new object(), null);
 
                 bool lockTaken = false;
-                RuntimeHelpers.PrepareConstrainedRegions();
                 try
                 {
                     Monitor.Enter(s_methodInstantiationsLock, ref lockTaken);
@@ -2348,7 +2341,7 @@ namespace System
             {
                 if (m_cache != IntPtr.Zero)
                 {
-                    object cache = GCHandle.InternalGet(m_cache);
+                    object? cache = GCHandle.InternalGet(m_cache);
                     Debug.Assert(cache == null || cache is RuntimeTypeCache);
                     return Unsafe.As<RuntimeTypeCache>(cache);
                 }
@@ -2363,7 +2356,7 @@ namespace System
             {
                 if (m_cache != IntPtr.Zero)
                 {
-                    object cache = GCHandle.InternalGet(m_cache);
+                    object? cache = GCHandle.InternalGet(m_cache);
                     if (cache != null)
                     {
                         Debug.Assert(cache is RuntimeTypeCache);
@@ -2379,13 +2372,14 @@ namespace System
         {
             if (m_cache == IntPtr.Zero)
             {
-                IntPtr newgcHandle = new RuntimeTypeHandle(this).GetGCHandle(GCHandleType.WeakTrackResurrection);
+                RuntimeTypeHandle th = new RuntimeTypeHandle(this);
+                IntPtr newgcHandle = th.GetGCHandle(GCHandleType.WeakTrackResurrection);
                 IntPtr gcHandle = Interlocked.CompareExchange(ref m_cache, newgcHandle, IntPtr.Zero);
                 if (gcHandle != IntPtr.Zero)
-                    GCHandle.InternalFree(newgcHandle);
+                    th.FreeGCHandle(newgcHandle);
             }
 
-            RuntimeTypeCache cache = (RuntimeTypeCache)GCHandle.InternalGet(m_cache);
+            RuntimeTypeCache? cache = (RuntimeTypeCache?)GCHandle.InternalGet(m_cache);
             if (cache == null)
             {
                 cache = new RuntimeTypeCache(this);
@@ -2415,9 +2409,7 @@ namespace System
             string? name, int genericParameterCount, BindingFlags bindingAttr, CallingConventions callConv,
             Type[]? types, bool allowPrefixLookup)
         {
-            bool prefixLookup, ignoreCase;
-            MemberListType listType;
-            FilterHelper(bindingAttr, ref name, allowPrefixLookup, out prefixLookup, out ignoreCase, out listType);
+            FilterHelper(bindingAttr, ref name, allowPrefixLookup, out bool prefixLookup, out bool ignoreCase, out MemberListType listType);
 
             RuntimeMethodInfo[] cache = Cache.GetMethodList(listType, name);
 
@@ -2442,9 +2434,7 @@ namespace System
             string? name, BindingFlags bindingAttr, CallingConventions callConv,
             Type[]? types, bool allowPrefixLookup)
         {
-            bool prefixLookup, ignoreCase;
-            MemberListType listType;
-            FilterHelper(bindingAttr, ref name, allowPrefixLookup, out prefixLookup, out ignoreCase, out listType);
+            FilterHelper(bindingAttr, ref name, allowPrefixLookup, out bool prefixLookup, out bool ignoreCase, out MemberListType listType);
 
             RuntimeConstructorInfo[] cache = Cache.GetConstructorList(listType, name);
 
@@ -2465,9 +2455,7 @@ namespace System
         private ListBuilder<PropertyInfo> GetPropertyCandidates(
             string? name, BindingFlags bindingAttr, Type[]? types, bool allowPrefixLookup)
         {
-            bool prefixLookup, ignoreCase;
-            MemberListType listType;
-            FilterHelper(bindingAttr, ref name, allowPrefixLookup, out prefixLookup, out ignoreCase, out listType);
+            FilterHelper(bindingAttr, ref name, allowPrefixLookup, out bool prefixLookup, out bool ignoreCase, out MemberListType listType);
 
             RuntimePropertyInfo[] cache = Cache.GetPropertyList(listType, name);
 
@@ -2490,9 +2478,7 @@ namespace System
 
         private ListBuilder<EventInfo> GetEventCandidates(string? name, BindingFlags bindingAttr, bool allowPrefixLookup)
         {
-            bool prefixLookup, ignoreCase;
-            MemberListType listType;
-            FilterHelper(bindingAttr, ref name, allowPrefixLookup, out prefixLookup, out ignoreCase, out listType);
+            FilterHelper(bindingAttr, ref name, allowPrefixLookup, out bool prefixLookup, out bool ignoreCase, out MemberListType listType);
 
             RuntimeEventInfo[] cache = Cache.GetEventList(listType, name);
 
@@ -2514,9 +2500,7 @@ namespace System
 
         private ListBuilder<FieldInfo> GetFieldCandidates(string? name, BindingFlags bindingAttr, bool allowPrefixLookup)
         {
-            bool prefixLookup, ignoreCase;
-            MemberListType listType;
-            FilterHelper(bindingAttr, ref name, allowPrefixLookup, out prefixLookup, out ignoreCase, out listType);
+            FilterHelper(bindingAttr, ref name, allowPrefixLookup, out bool prefixLookup, out bool ignoreCase, out MemberListType listType);
 
             RuntimeFieldInfo[] cache = Cache.GetFieldList(listType, name);
 
@@ -2538,12 +2522,9 @@ namespace System
 
         private ListBuilder<Type> GetNestedTypeCandidates(string? fullname, BindingFlags bindingAttr, bool allowPrefixLookup)
         {
-            bool prefixLookup;
             bindingAttr &= ~BindingFlags.Static;
-            string? name, ns;
-            MemberListType listType;
-            SplitName(fullname, out name, out ns);
-            FilterHelper(bindingAttr, ref name, allowPrefixLookup, out prefixLookup, out _, out listType);
+            SplitName(fullname, out string? name, out string? ns);
+            FilterHelper(bindingAttr, ref name, allowPrefixLookup, out bool prefixLookup, out _, out MemberListType listType);
 
             RuntimeType[] cache = Cache.GetNestedTypeList(listType, name);
 
@@ -2774,7 +2755,7 @@ namespace System
         protected override PropertyInfo? GetPropertyImpl(
             string name, BindingFlags bindingAttr, Binder? binder, Type? returnType, Type[]? types, ParameterModifier[]? modifiers)
         {
-            if (name == null) throw new ArgumentNullException();
+            if (name == null) throw new ArgumentNullException(nameof(name));
 
             ListBuilder<PropertyInfo> candidates = GetPropertyCandidates(name, bindingAttr, types, false);
 
@@ -2810,11 +2791,9 @@ namespace System
 
         public override EventInfo? GetEvent(string name, BindingFlags bindingAttr)
         {
-            if (name is null) throw new ArgumentNullException();
+            if (name is null) throw new ArgumentNullException(nameof(name));
 
-            bool ignoreCase;
-            MemberListType listType;
-            FilterHelper(bindingAttr, ref name, out ignoreCase, out listType);
+            FilterHelper(bindingAttr, ref name, out _, out MemberListType listType);
 
             RuntimeEventInfo[] cache = Cache.GetEventList(listType, name);
             EventInfo? match = null;
@@ -2840,9 +2819,7 @@ namespace System
         {
             if (name is null) throw new ArgumentNullException();
 
-            bool ignoreCase;
-            MemberListType listType;
-            FilterHelper(bindingAttr, ref name, out ignoreCase, out listType);
+            FilterHelper(bindingAttr, ref name, out _, out MemberListType listType);
 
             RuntimeFieldInfo[] cache = Cache.GetFieldList(listType, name);
             FieldInfo? match = null;
@@ -2877,7 +2854,7 @@ namespace System
 
         public override Type? GetInterface(string fullname, bool ignoreCase)
         {
-            if (fullname is null) throw new ArgumentNullException();
+            if (fullname is null) throw new ArgumentNullException(nameof(fullname));
 
             BindingFlags bindingAttr = BindingFlags.Public | BindingFlags.NonPublic;
 
@@ -2887,9 +2864,8 @@ namespace System
                 bindingAttr |= BindingFlags.IgnoreCase;
 
             string name, ns;
-            MemberListType listType;
             SplitName(fullname, out name!, out ns!);
-            FilterHelper(bindingAttr, ref name, out ignoreCase, out listType);
+            FilterHelper(bindingAttr, ref name, out _, out MemberListType listType);
 
             RuntimeType[] cache = Cache.GetInterfaceList(listType, name);
 
@@ -2912,14 +2888,12 @@ namespace System
 
         public override Type? GetNestedType(string fullname, BindingFlags bindingAttr)
         {
-            if (fullname is null) throw new ArgumentNullException();
+            if (fullname is null) throw new ArgumentNullException(nameof(fullname));
 
-            bool ignoreCase;
             bindingAttr &= ~BindingFlags.Static;
             string name, ns;
-            MemberListType listType;
             SplitName(fullname, out name!, out ns!);
-            FilterHelper(bindingAttr, ref name, out ignoreCase, out listType);
+            FilterHelper(bindingAttr, ref name, out _, out MemberListType listType);
 
             RuntimeType[] cache = Cache.GetNestedTypeList(listType, name);
 
@@ -2942,7 +2916,7 @@ namespace System
 
         public override MemberInfo[] GetMember(string name, MemberTypes type, BindingFlags bindingAttr)
         {
-            if (name is null) throw new ArgumentNullException();
+            if (name is null) throw new ArgumentNullException(nameof(name));
 
             ListBuilder<MethodInfo> methods = default;
             ListBuilder<ConstructorInfo> constructors = default;
@@ -3082,7 +3056,7 @@ namespace System
 
 #if FEATURE_TYPEEQUIVALENCE
         // Reflexive, symmetric, transitive.
-        public override bool IsEquivalentTo(Type? other)
+        public override bool IsEquivalentTo([NotNullWhen(true)] Type? other)
         {
             if (!(other is RuntimeType otherRtType))
             {
@@ -3172,9 +3146,8 @@ namespace System
                 if (!IsGenericParameter)
                     throw new InvalidOperationException(SR.Arg_NotGenericParameter);
 
-                GenericParameterAttributes attributes;
 
-                RuntimeTypeHandle.GetMetadataImport(this).GetGenericParamProps(MetadataToken, out attributes);
+                RuntimeTypeHandle.GetMetadataImport(this).GetGenericParamProps(MetadataToken, out GenericParameterAttributes attributes);
 
                 return attributes;
             }
@@ -3502,7 +3475,19 @@ namespace System
                 // pass LCID_ENGLISH_US if no explicit culture is specified to match the behavior of VB
                 int lcid = (culture == null ? 0x0409 : culture.LCID);
 
-                return InvokeDispMethod(name, bindingFlags, target, providedArgs, isByRef, lcid, namedParams);
+                // If a request to not wrap exceptions was made, we will unwrap
+                // the TargetInvocationException since that is what will be thrown.
+                bool unwrapExceptions = (bindingFlags & BindingFlags.DoNotWrapExceptions) != 0;
+                try
+                {
+                    return InvokeDispMethod(name, bindingFlags, target, providedArgs, isByRef, lcid, namedParams);
+                }
+                catch (TargetInvocationException e) when (unwrapExceptions)
+                {
+                    // For target invocation exceptions, we need to unwrap the inner exception and
+                    // re-throw it.
+                    throw e.InnerException!;
+                }
             }
 #endif // FEATURE_COMINTEROP
 
@@ -3822,12 +3807,12 @@ namespace System
                 throw new NotSupportedException(SR.Acc_CreateVoid);
         }
 
-        internal object CreateInstanceImpl(
+        internal object? CreateInstanceImpl(
             BindingFlags bindingAttr, Binder? binder, object?[]? args, CultureInfo? culture)
         {
             CreateInstanceCheckThis();
 
-            object server;
+            object? instance;
 
             args ??= Array.Empty<object>();
 
@@ -3841,7 +3826,7 @@ namespace System
             if (args.Length == 0 && (bindingAttr & BindingFlags.Public) != 0 && (bindingAttr & BindingFlags.Instance) != 0
                 && (IsGenericCOMObjectImpl() || IsValueType))
             {
-                server = CreateInstanceDefaultCtor(publicOnly, false, true, wrapExceptions);
+                instance = CreateInstanceDefaultCtor(publicOnly, skipCheckThis: false, fillCache: true, wrapExceptions);
             }
             else
             {
@@ -3895,17 +3880,17 @@ namespace System
                     }
 
                     // fast path??
-                    server = Activator.CreateInstance(this, nonPublic: true, wrapExceptions: wrapExceptions)!;
+                    instance = Activator.CreateInstance(this, nonPublic: true, wrapExceptions: wrapExceptions);
                 }
                 else
                 {
-                    server = ((ConstructorInfo)invokeMethod).Invoke(bindingAttr, binder, args, culture);
+                    instance = ((ConstructorInfo)invokeMethod).Invoke(bindingAttr, binder, args, culture);
                     if (state != null)
                         binder.ReorderArgumentArray(ref args, state);
                 }
             }
 
-            return server;
+            return instance;
         }
 
         // the cache entry
@@ -3951,7 +3936,7 @@ namespace System
         /// <summary>
         /// The slow path of CreateInstanceDefaultCtor
         /// </summary>
-        private object CreateInstanceDefaultCtorSlow(bool publicOnly, bool wrapExceptions, bool fillCache)
+        private object? CreateInstanceDefaultCtorSlow(bool publicOnly, bool wrapExceptions, bool fillCache)
         {
             RuntimeMethodHandleInternal runtimeCtor = default;
             bool canBeCached = false;
@@ -3977,7 +3962,7 @@ namespace System
         /// </summary>
         [DebuggerStepThrough]
         [DebuggerHidden]
-        internal object CreateInstanceDefaultCtor(bool publicOnly, bool skipCheckThis, bool fillCache, bool wrapExceptions)
+        internal object? CreateInstanceDefaultCtor(bool publicOnly, bool skipCheckThis, bool fillCache, bool wrapExceptions)
         {
             // Call the cached
             if (GenericCache is ActivatorCache cacheEntry)
@@ -4080,7 +4065,7 @@ namespace System
 
             // Handle arguments that are passed as ByRef and those
             // arguments that need to be wrapped.
-            ParameterModifier[] aParamMod = null!;
+            ParameterModifier[]? aParamMod = null;
             if (cArgs > 0)
             {
                 ParameterModifier paramMod = new ParameterModifier(cArgs);
@@ -4105,7 +4090,7 @@ namespace System
             for (int i = 0; i < cArgs; i++)
             {
                 // Determine if the parameter is ByRef.
-                if (aParamMod[0][i] && aArgs[i] != null)
+                if (aParamMod![0][i] && aArgs[i] != null)
                 {
                     Type argType = aArgsTypes[i];
                     if (!ReferenceEquals(argType, aArgs[i].GetType()))
@@ -4288,7 +4273,7 @@ namespace System
             }
             else
             {
-                return SpanHelpers.SequenceEqual<byte>(ref *s.m_pStringHeap, ref *m_pStringHeap, m_StringHeapByteLength);
+                return SpanHelpers.SequenceEqual(ref *s.m_pStringHeap, ref *m_pStringHeap, (uint)m_StringHeapByteLength);
             }
         }
 

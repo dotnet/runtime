@@ -26,7 +26,7 @@ Required Testing: Validation of the behavior of the affected APIs.
 ## Stress Testing ##
 Stress testing must run for at least **48 hours** against a debug build.
 
-Stress testing for checked and release builds can be run locally. Please following the instructions described in tests\src\GC\Stress\stress_run_readme.txt. You can also request it on pull requests with The .NET CI infrastructure with the trigger phrase:
+Stress testing for checked and release builds can be run locally. Please following the instructions described in [gc-stress-run-readme.md](https://github.com/dotnet/runtime/blob/master/docs/workflow/testing/coreclr/gc-stress-run-readme.md). You can also request it on pull requests with The .NET CI infrastructure with the trigger phrase:
 
 ```
 @dotnet_bot test <platform> <flavor> gc_reliability_framework
@@ -62,4 +62,6 @@ due to poor interactions with the Linux OOM killer. However, they have proven to
 ```
 
 ## Performance Testing ##
-Coming soon.
+Performance tests can be run using the GC Benchmarking Infrastructure hosted within the [benchmarks section](https://github.com/dotnet/performance/tree/master/src/benchmarks/gc) of the _performance_ repo. This tool allows you to run the tests capturing traces through PerfView, and later analyze such traces for detailed results on GC's, heaps, and related behaviors. These tests also allow you to directly compare behaviors and metrics between different .NET builds and machines.
+
+The _README.md_ located at the link mentioned above contains detailed instructions on how to setup and use the tool. Additionally, there is a _docs_ section with all the information to perform further analysis on the traces.

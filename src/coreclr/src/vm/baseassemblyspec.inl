@@ -590,10 +590,6 @@ inline void BaseAssemblySpec::SetContext(ASSEMBLYMETADATA* assemblyData)
     m_context.usMinorVersion=assemblyData->usMinorVersion;
     m_context.usBuildNumber=assemblyData->usBuildNumber;
     m_context.usRevisionNumber=assemblyData->usRevisionNumber;
-    m_context.rProcessor=assemblyData->rProcessor;
-    m_context.ulProcessor=assemblyData->ulProcessor;
-    m_context.rOS=assemblyData->rOS;
-    m_context.ulOS=assemblyData->ulOS;
     m_context.szLocale="";
 };
 

@@ -5,8 +5,6 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 
-[assembly: SuppressMessage("Microsoft.Security", "CA2113:SecureLateBindingMethods", Scope = "member", Target = "System.ComponentModel.PropertyTabAttribute.get_TabClasses():System.Type[]")]
-
 namespace System.ComponentModel
 {
     /// <summary>
@@ -91,8 +89,8 @@ namespace System.ComponentModel
 
                         if (commaIndex != -1)
                         {
-                            className = _tabClassNames[i].Substring(0, commaIndex).Trim();
-                            assemblyName = _tabClassNames[i].Substring(commaIndex + 1).Trim();
+                            className = _tabClassNames[i].AsSpan(0, commaIndex).Trim().ToString();
+                            assemblyName = _tabClassNames[i].AsSpan(commaIndex + 1).Trim().ToString();
                         }
                         else
                         {

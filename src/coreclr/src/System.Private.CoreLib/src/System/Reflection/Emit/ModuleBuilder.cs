@@ -600,7 +600,7 @@ namespace System.Reflection.Emit
             while (startIndex <= className.Length)
             {
                 // Are there any possible special characters left?
-                int i = className.IndexOfAny(new char[] { '[', '*', '&' }, startIndex);
+                int i = className.AsSpan(startIndex).IndexOfAny('[', '*', '&');
                 if (i == -1)
                 {
                     // No, type name is simple.
@@ -608,6 +608,7 @@ namespace System.Reflection.Emit
                     parameters = null;
                     break;
                 }
+                i += startIndex;
 
                 // Found a potential special character, but it might be escaped.
                 int slashes = 0;

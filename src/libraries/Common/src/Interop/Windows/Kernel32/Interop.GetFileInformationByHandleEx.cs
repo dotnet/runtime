@@ -2,19 +2,14 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
+using Microsoft.Win32.SafeHandles;
 using System.Runtime.InteropServices;
 
-internal partial class Interop
+internal static partial class Interop
 {
-    internal partial class Kernel32
+    internal static partial class Kernel32
     {
-        // https://msdn.microsoft.com/en-us/library/windows/desktop/aa364953.aspx
-        [DllImport(Libraries.Kernel32, SetLastError = true, CharSet = CharSet.Unicode, ExactSpelling = true)]
-        public static extern bool GetFileInformationByHandleEx(
-            IntPtr hFile,
-            FILE_INFO_BY_HANDLE_CLASS FileInformationClass,
-            IntPtr lpFileInformation,
-            uint dwBufferSize);
+        [DllImport(Libraries.Kernel32, SetLastError = true, ExactSpelling = true)]
+        internal static extern unsafe bool GetFileInformationByHandleEx(SafeFileHandle hFile, int FileInformationClass, void* lpFileInformation, uint dwBufferSize);
     }
 }

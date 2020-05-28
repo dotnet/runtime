@@ -10,7 +10,7 @@ We have done a lot of work to combat pinning in GC such as
 
 *  POPO (Promote Only Pinned Objects) which actually breaks up a plug if it includes both pinned and non pinned objects so we don’t end up pinning the whole plug if survived pinned objects are adjacent to non pinned objects that might occupy large amounts of memory.
 
-We also have provided framework utilities like <span style="color:red">`PinnableBufferCache`</span> (which only exists in the full framework) and modified various framework components to use it.
+We also have provided framework utilities like <span style="color:red">`PinnableBufferCache`</span> (which only exists in .NET Framework) and modified various framework components to use it.
 
 With these efforts we were able to mitigate perf problems caused by pinned by a lot. But at the end of the day, due to the nature of “pinning already allocated objects”, we cannot eliminate the situation of interleaved pinned and non pinned objects and that can still cause perf problems for GC. And the long lived scattered pins are the most problematic. They can be separated into 2 categories –
 

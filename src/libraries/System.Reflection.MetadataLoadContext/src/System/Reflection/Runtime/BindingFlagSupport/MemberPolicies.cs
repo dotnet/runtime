@@ -10,7 +10,7 @@ using RuntimeTypeInfo = System.Reflection.TypeLoading.RoType;
 namespace System.Reflection.Runtime.BindingFlagSupport
 {
     /// <summary>
-    /// This class encapsulates the minimum set of arcane desktop CLR policies needed to implement the Get*(BindingFlags) apis.
+    /// This class encapsulates the minimum set of arcane .NET Framework CLR policies needed to implement the Get*(BindingFlags) apis.
     /// In particular, it encapsulates behaviors such as what exactly determines the "visibility" of a property and event, and
     /// what determines whether and how they are overridden.
     /// </summary>
@@ -27,7 +27,7 @@ namespace System.Reflection.Runtime.BindingFlagSupport
         // Returns all of the directly declared members on the given TypeInfo whose name matches filter. If filter is null,
         // returns all directly declared members.
         //
-        public abstract IEnumerable<M> CoreGetDeclaredMembers(RuntimeTypeInfo type, NameFilter filter, RuntimeTypeInfo reflectedType);
+        public abstract IEnumerable<M> CoreGetDeclaredMembers(RuntimeTypeInfo type, NameFilter? filter, RuntimeTypeInfo reflectedType);
 
         //
         // Policy to decide whether a member is considered "virtual", "virtual new" and what its member visibility is.
@@ -42,7 +42,7 @@ namespace System.Reflection.Runtime.BindingFlagSupport
         //
         // Does not consider explicit overrides (methodimpls.) Does not consider "overrides" of interface methods.
         //
-        public abstract bool ImplicitlyOverrides(M baseMember, M derivedMember);
+        public abstract bool ImplicitlyOverrides(M? baseMember, M? derivedMember);
 
         //
         // Policy to decide how BindingFlags should be reinterpreted for a given member type.
@@ -61,7 +61,7 @@ namespace System.Reflection.Runtime.BindingFlagSupport
 
         //
         // Policy to decide how or if members in more derived types hide same-named members in base types.
-        // Due to desktop compat concerns, the definitions are a bit more arbitrary than we'd like.
+        // Due to .NET Framework compat concerns, the definitions are a bit more arbitrary than we'd like.
         //
         public abstract bool IsSuppressedByMoreDerivedMember(M member, M[] priorMembers, int startIndex, int endIndex);
 
@@ -147,7 +147,7 @@ namespace System.Reflection.Runtime.BindingFlagSupport
                 if (t1.IsArray && (t1.GetArrayRank() != t2.GetArrayRank()))
                     return false;
 
-                return GenericMethodAwareAreParameterTypesEqual(t1.GetElementType(), t2.GetElementType());
+                return GenericMethodAwareAreParameterTypesEqual(t1.GetElementType()!, t2.GetElementType()!);
             }
 
             if (t1.IsConstructedGenericType)
@@ -227,7 +227,7 @@ namespace System.Reflection.Runtime.BindingFlagSupport
         //
         // This is a singleton class one for each MemberInfo category: Return the appropriate one.
         //
-        public static readonly MemberPolicies<M> Default;
+        public static readonly MemberPolicies<M> Default = null!;
 
         //
         // This returns a fixed value from 0 to MemberIndex.Count-1 with each possible type of M

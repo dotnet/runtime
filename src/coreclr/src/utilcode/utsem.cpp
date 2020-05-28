@@ -22,7 +22,7 @@ Revision History:
 #include "contract.h"
 
 // Consider replacing this with a #ifdef INTEROP_DEBUGGING
-#if !defined(SELF_NO_HOST) && defined(_TARGET_X86_) && !defined(FEATURE_PAL)
+#if !defined(SELF_NO_HOST) && defined(TARGET_X86) && !defined(TARGET_UNIX)
 // For Interop debugging, the UTSemReadWrite class must inform the debugger
 // that this thread can't be suspended currently.  See vm\util.hpp for the
 // implementation of these methods.
@@ -31,7 +31,7 @@ void DecCantStopCount();
 #else
 #define IncCantStopCount()
 #define DecCantStopCount()
-#endif  // !SELF_NO_HOST && _TARGET_X86_
+#endif  // !SELF_NO_HOST && TARGET_X86
 
 /******************************************************************************
 Definitions of the bit fields in UTSemReadWrite::m_dwFlag:
@@ -59,7 +59,7 @@ const ULONG WRITEWAITERS_INCR = 0x00400000;    // amount to add to increment num
 // Copy of definition from file:..\VM\spinlock.h
 #define CALLER_LIMITS_SPINNING 0
 
-#if (defined(SELF_NO_HOST) && !defined(CROSSGEN_COMPILE)) || (defined(FEATURE_PAL) && defined(DACCESS_COMPILE))
+#if (defined(SELF_NO_HOST) && !defined(CROSSGEN_COMPILE)) || (defined(TARGET_UNIX) && defined(DACCESS_COMPILE))
 
 // When we do not have host, we just call OS - see file:..\VM\hosting.cpp#__SwitchToThread
 BOOL __SwitchToThread(DWORD dwSleepMSec, DWORD dwSwitchCount)
@@ -122,8 +122,8 @@ UTSemReadWrite::UTSemReadWrite()
 #endif //SELF_NO_HOST && !CROSSGEN_COMPILE
 
     m_dwFlag = 0;
-    m_pReadWaiterSemaphore = NULL;
-    m_pWriteWaiterEvent = NULL;
+    m_hReadWaiterSemaphore = NULL;
+    m_hWriteWaiterEvent = NULL;
 }
 
 
@@ -143,11 +143,11 @@ UTSemReadWrite::~UTSemReadWrite()
 
     _ASSERTE_MSG((m_dwFlag == (ULONG)0), "Destroying a UTSemReadWrite while in use");
 
-    if (m_pReadWaiterSemaphore != NULL)
-        delete m_pReadWaiterSemaphore;
+    if (m_hReadWaiterSemaphore != NULL)
+        CloseHandle(m_hReadWaiterSemaphore);
 
-    if (m_pWriteWaiterEvent != NULL)
-        delete m_pWriteWaiterEvent;
+    if (m_hWriteWaiterEvent != NULL)
+        CloseHandle(m_hWriteWaiterEvent);
 }
 
 //=======================================================================================
@@ -164,30 +164,17 @@ UTSemReadWrite::Init()
     }
     CONTRACTL_END;
 
-    HRESULT hr = S_OK;
 
-    _ASSERTE(m_pReadWaiterSemaphore == NULL);
-    _ASSERTE(m_pWriteWaiterEvent == NULL);
+    _ASSERTE(m_hReadWaiterSemaphore == NULL);
+    _ASSERTE(m_hWriteWaiterEvent == NULL);
 
-    EX_TRY
-    {
-        CONTRACT_VIOLATION(ThrowsViolation);
+    m_hReadWaiterSemaphore = WszCreateSemaphore(NULL, 0, MAXLONG, NULL);
+    IfNullRet(m_hReadWaiterSemaphore);
 
-        m_pReadWaiterSemaphore = new Semaphore();
-        m_pReadWaiterSemaphore->Create(0, MAXLONG);
+    m_hWriteWaiterEvent = WszCreateEvent(NULL, FALSE, FALSE, NULL);
+    IfNullRet(m_hWriteWaiterEvent);
 
-        m_pWriteWaiterEvent = new Event();
-        m_pWriteWaiterEvent->CreateAutoEvent(FALSE);
-    }
-    EX_CATCH
-    {
-        hr = E_OUTOFMEMORY;
-    }
-    EX_END_CATCH(SwallowAllExceptions)
-    IfFailGo(hr);
-
-ErrExit:
-    return hr;
+    return S_OK;
 } // UTSemReadWrite::Init
 
 /******************************************************************************
@@ -266,7 +253,7 @@ HRESULT UTSemReadWrite::LockRead()
         {   // Try to add waiting reader and then wait for signal
             if (dwFlag == InterlockedCompareExchangeT (&m_dwFlag, dwFlag + READWAITERS_INCR, dwFlag))
             {
-                m_pReadWaiterSemaphore->Wait(INFINITE, FALSE);
+                WaitForSingleObjectEx(m_hReadWaiterSemaphore, INFINITE, FALSE);
                 break;
             }
         }
@@ -354,7 +341,7 @@ HRESULT UTSemReadWrite::LockWrite()
         {   // Try to add waiting writer and then wait for signal
             if (dwFlag == InterlockedCompareExchangeT (&m_dwFlag, dwFlag + WRITEWAITERS_INCR, dwFlag))
             {
-                m_pWriteWaiterEvent->Wait(INFINITE, FALSE);
+                WaitForSingleObjectEx(m_hWriteWaiterEvent, INFINITE, FALSE);
                 break;
             }
         }
@@ -425,7 +412,7 @@ void UTSemReadWrite::UnlockRead()
                         dwFlag - READERS_INCR - WRITEWAITERS_INCR + WRITERS_INCR,
                         dwFlag))
             {
-                m_pWriteWaiterEvent->Set();
+                SetEvent(m_hWriteWaiterEvent);
                 break;
             }
         }
@@ -478,7 +465,7 @@ void UTSemReadWrite::UnlockWrite()
                         dwFlag - WRITERS_INCR - count * READWAITERS_INCR + count * READERS_INCR,
                         dwFlag))
             {
-                m_pReadWaiterSemaphore->Release(count, NULL);
+                ReleaseSemaphore(m_hReadWaiterSemaphore, count, NULL);
                 break;
             }
         }
@@ -489,7 +476,7 @@ void UTSemReadWrite::UnlockWrite()
                 // (remove a writer (us), remove a write waiter, add a writer
             if (dwFlag == InterlockedCompareExchangeT (&m_dwFlag, dwFlag - WRITEWAITERS_INCR, dwFlag))
             {
-                m_pWriteWaiterEvent->Set();
+                SetEvent(m_hWriteWaiterEvent);
                 break;
             }
         }

@@ -12,8 +12,8 @@ namespace System.Diagnostics
                     AttributeTargets.Event | AttributeTargets.Method | AttributeTargets.Property)]
     public sealed class SwitchAttribute : Attribute
     {
-        private Type _type;
-        private string _name;
+        private Type _type = null!; // Initialized using property
+        private string _name = null!;
 
         public SwitchAttribute(string switchName, Type switchType)
         {
@@ -46,7 +46,7 @@ namespace System.Diagnostics
             }
         }
 
-        public string SwitchDescription { get; set; }
+        public string? SwitchDescription { get; set; }
 
         public static SwitchAttribute[] GetAll(Assembly assembly)
         {

@@ -6,6 +6,7 @@
 using System;
 using System.Diagnostics;
 #endif
+using System.Diagnostics.CodeAnalysis;
 using System.Threading;
 
 #if ES_BUILD_STANDALONE
@@ -20,7 +21,7 @@ namespace System.Diagnostics.Tracing
     /// See https://github.com/dotnet/corefx/blob/master/src/System.Diagnostics.Tracing/documentation/EventCounterTutorial.md
     /// for a tutorial guide.
     ///
-    /// See https://github.com/dotnet/corefx/blob/master/src/System.Diagnostics.Tracing/tests/BasicEventSourceTest/TestEventCounter.cs
+    /// See https://github.com/dotnet/runtime/blob/master/src/libraries/System.Diagnostics.Tracing/tests/BasicEventSourceTest/TestEventCounter.cs
     /// which shows tests, which are also useful in seeing actual use.
     /// </summary>
     public partial class EventCounter : DiagnosticCounter
@@ -135,9 +136,10 @@ namespace System.Diagnostics.Tracing
         // Values buffering
         private const int BufferedSize = 10;
         private const double UnusedBufferSlotValue = double.NegativeInfinity;
-        private volatile double[] _bufferedValues = null!;
+        private volatile double[] _bufferedValues;
         private volatile int _bufferedValuesIndex;
 
+        [MemberNotNull(nameof(_bufferedValues))]
         private void InitializeBuffer()
         {
             _bufferedValues = new double[BufferedSize];

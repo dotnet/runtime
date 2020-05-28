@@ -8,7 +8,9 @@ using System.Collections.ObjectModel;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
+using Xunit.Abstractions;
 
 namespace System.Tests
 {
@@ -262,6 +264,39 @@ namespace System.Tests
 
             yield return new object[] { new ulong[0], 0, 0, (ulong)0, null, -1 };
 
+            // // [ActiveIssue("https://github.com/xunit/xunit/issues/1771")]
+            // // IntPtr
+
+            // IntPtr[] intPtrArray = new IntPtr[] { IntPtr.MinValue, (IntPtr)0, (IntPtr)0, IntPtr.MaxValue };
+
+            // yield return new object[] { intPtrArray, 0, 4, IntPtr.MinValue, null, 0 };
+            // yield return new object[] { intPtrArray, 0, 4, (IntPtr)0, null, 1 };
+            // yield return new object[] { intPtrArray, 0, 4, IntPtr.MaxValue, null, 3 };
+            // yield return new object[] { intPtrArray, 0, 4, (IntPtr)1, null, -4 };
+
+            // yield return new object[] { intPtrArray, 0, 1, IntPtr.MinValue, null, 0 };
+            // yield return new object[] { intPtrArray, 1, 3, IntPtr.MaxValue, null, 3 };
+            // yield return new object[] { intPtrArray, 1, 3, IntPtr.MinValue, null, -2 };
+            // yield return new object[] { intPtrArray, 1, 0, (IntPtr)0, null, -2 };
+
+            // yield return new object[] { new IntPtr[0], 0, 0, (IntPtr)0, null, -1 };
+
+            // // UIntPtr
+
+            // UIntPtr[] uintPtrArray = new UIntPtr[] { UIntPtr.MinValue, (UIntPtr)5, (UIntPtr)5, UIntPtr.MaxValue };
+
+            // yield return new object[] { uintPtrArray, 0, 4, UIntPtr.MinValue, null, 0 };
+            // yield return new object[] { uintPtrArray, 0, 4, (UIntPtr)5, null, 1 };
+            // yield return new object[] { uintPtrArray, 0, 4, UIntPtr.MaxValue, null, 3 };
+            // yield return new object[] { uintPtrArray, 0, 4, (UIntPtr)1, null, -2 };
+
+            // yield return new object[] { uintPtrArray, 0, 1, UIntPtr.MinValue, null, 0 };
+            // yield return new object[] { uintPtrArray, 1, 3, UIntPtr.MaxValue, null, 3 };
+            // yield return new object[] { uintPtrArray, 1, 3, UIntPtr.MinValue, null, -2 };
+            // yield return new object[] { uintPtrArray, 1, 0, (UIntPtr)5, null, -2 };
+
+            // yield return new object[] { new UIntPtr[0], 0, 0, (UIntPtr)0, null, -1 };
+
             // Char
             char[] charArray = new char[] { char.MinValue, (char)5, (char)5, char.MaxValue };
 
@@ -437,10 +472,6 @@ namespace System.Tests
 
             // Type does not implement IComparable
             yield return new object[] { new object[] { new object() }, new object() };
-
-            // IntPtr and UIntPtr are not supported
-            yield return new object[] { new IntPtr[] { IntPtr.Zero }, IntPtr.Zero };
-            yield return new object[] { new UIntPtr[] { UIntPtr.Zero }, UIntPtr.Zero };
 
             // Conversion between primitives is not allowed
             yield return new object[] { new sbyte[] { 0 }, 0 };
@@ -1319,25 +1350,6 @@ namespace System.Tests
             Assert.Equal(expected, destinationArrayClone);
         }
 
-        [OuterLoop] // Allocates large array
-        [Fact]
-        public static void Copy_LargeMultiDimensionalArray()
-        {
-            // If this test is run in a 32-bit process, the large allocation will fail.
-            if (IntPtr.Size != sizeof(long))
-            {
-                return;
-            }
-
-            short[,] a = new short[2, 2_000_000_000];
-            a[0, 1] = 42;
-            Array.Copy(a, 1, a, Int32.MaxValue, 2);
-            Assert.Equal(42, a[1, Int32.MaxValue - 2_000_000_000]);
-
-            Array.Clear(a, Int32.MaxValue - 1, 3);
-            Assert.Equal(0, a[1, Int32.MaxValue - 2_000_000_000]);
-        }
-
         [Fact]
         public static void Copy_NullSourceArray_ThrowsArgumentNullException()
         {
@@ -1787,10 +1799,10 @@ namespace System.Tests
         [MemberData(nameof(CreateInstance_TestData))]
         public static void CreateInstance(Type elementType, object repeatedValue)
         {
-            CreateInstance(elementType, new int[] { 10 }, new int[1], repeatedValue);
-            CreateInstance(elementType, new int[] { 0 }, new int[1], repeatedValue);
-            CreateInstance(elementType, new int[] { 1, 2 }, new int[] { 1, 2 }, repeatedValue);
-            CreateInstance(elementType, new int[] { 5, 6 }, new int[] { int.MinValue, 0 }, repeatedValue);
+            CreateInstance_Advanced(elementType, new int[] { 10 }, new int[1], repeatedValue);
+            CreateInstance_Advanced(elementType, new int[] { 0 }, new int[1], repeatedValue);
+            CreateInstance_Advanced(elementType, new int[] { 1, 2 }, new int[] { 1, 2 }, repeatedValue);
+            CreateInstance_Advanced(elementType, new int[] { 5, 6 }, new int[] { int.MinValue, 0 }, repeatedValue);
         }
 
         [Theory]
@@ -1802,7 +1814,7 @@ namespace System.Tests
         [InlineData(typeof(int), new int[] { 7 }, new int[] { 1 }, default(int))]
         [InlineData(typeof(int), new int[] { 7, 8 }, new int[] { 1, 2 }, default(int))]
         [InlineData(typeof(int), new int[] { 7, 8, 9 }, new int[] { 1, 2, 3 }, default(int))]
-        public static void CreateInstance(Type elementType, int[] lengths, int[] lowerBounds, object repeatedValue)
+        public static void CreateInstance_Advanced(Type elementType, int[] lengths, int[] lowerBounds, object repeatedValue)
         {
             bool lowerBoundsAreAllZero = lowerBounds.All(lowerBound => lowerBound == 0);
             if ((!lowerBoundsAreAllZero) && !PlatformDetection.IsNonZeroLowerBoundArraySupported)
@@ -2962,7 +2974,8 @@ namespace System.Tests
         [Fact]
         public static void IStructuralComparable_NullComparer_ThrowsNullReferenceException()
         {
-            // This was not fixed in order to be compatible with the full .NET framework and Xamarin. See #13410
+            // This was not fixed in order to be compatible with the .NET Framework and Xamarin.
+            // See https://github.com/dotnet/runtime/issues/19265
             IStructuralComparable comparable = new int[] { 1, 2, 3 };
             Assert.Throws<NullReferenceException>(() => comparable.CompareTo(new int[] { 1, 2, 3 }, null));
         }
@@ -3005,7 +3018,8 @@ namespace System.Tests
         [Fact]
         public static void IStructuralEquatable_Equals_NullComparer_ThrowsNullReferenceException()
         {
-            // This was not fixed in order to be compatible with the full .NET framework and Xamarin. See #13410
+            // This was not fixed in order to be compatible with the .NET Framework and Xamarin.
+            // See https://github.com/dotnet/runtime/issues/19265
             IStructuralEquatable equatable = new int[] { 1, 2, 3 };
             Assert.Throws<NullReferenceException>(() => equatable.Equals(new int[] { 1, 2, 3 }, null));
         }
@@ -3341,6 +3355,24 @@ namespace System.Tests
             yield return new object[] { new ulong[1], 0, 1, null, new ulong[1] };
             yield return new object[] { new ulong[0], 0, 0, null, new ulong[0] };
 
+            // IntPtr
+            yield return new object[] { new IntPtr[] { (IntPtr)3, (IntPtr)5, (IntPtr)6, (IntPtr)6 }, 0, 4, null, new IntPtr[] { (IntPtr)3, (IntPtr)5, (IntPtr)6, (IntPtr)6 } };
+            yield return new object[] { new IntPtr[] { (IntPtr)5, (IntPtr)6, (IntPtr)3, (IntPtr)6 }, 0, 4, null, new IntPtr[] { (IntPtr)3, (IntPtr)5, (IntPtr)6, (IntPtr)6 } };
+            yield return new object[] { new IntPtr[] { (IntPtr)5, (IntPtr)6, (IntPtr)3, (IntPtr)6 }, 0, 4, null, new IntPtr[] { (IntPtr)3, (IntPtr)5, (IntPtr)6, (IntPtr)6 } };
+            yield return new object[] { new IntPtr[] { (IntPtr)5, (IntPtr)6, (IntPtr)3, (IntPtr)6 }, 1, 2, null, new IntPtr[] { (IntPtr)5, (IntPtr)3, (IntPtr)6, (IntPtr)6 } };
+            yield return new object[] { new IntPtr[] { (IntPtr)5, (IntPtr)6, (IntPtr)3, (IntPtr)6 }, 0, 0, null, new IntPtr[] { (IntPtr)5, (IntPtr)6, (IntPtr)3, (IntPtr)6 } };
+            yield return new object[] { new IntPtr[1], 0, 1, null, new IntPtr[1] };
+            yield return new object[] { new IntPtr[0], 0, 0, null, new IntPtr[0] };
+
+            // UIntPtr
+            yield return new object[] { new UIntPtr[] { (UIntPtr)3, (UIntPtr)5, (UIntPtr)6, (UIntPtr)6 }, 0, 4, null, new UIntPtr[] { (UIntPtr)3, (UIntPtr)5, (UIntPtr)6, (UIntPtr)6 } };
+            yield return new object[] { new UIntPtr[] { (UIntPtr)5, (UIntPtr)6, (UIntPtr)3, (UIntPtr)6 }, 0, 4, null, new UIntPtr[] { (UIntPtr)3, (UIntPtr)5, (UIntPtr)6, (UIntPtr)6 } };
+            yield return new object[] { new UIntPtr[] { (UIntPtr)5, (UIntPtr)6, (UIntPtr)3, (UIntPtr)6 }, 0, 4, null, new UIntPtr[] { (UIntPtr)3, (UIntPtr)5, (UIntPtr)6, (UIntPtr)6 } };
+            yield return new object[] { new UIntPtr[] { (UIntPtr)5, (UIntPtr)6, (UIntPtr)3, (UIntPtr)6 }, 1, 2, null, new UIntPtr[] { (UIntPtr)5, (UIntPtr)3, (UIntPtr)6, (UIntPtr)6 } };
+            yield return new object[] { new UIntPtr[] { (UIntPtr)5, (UIntPtr)6, (UIntPtr)3, (UIntPtr)6 }, 0, 0, null, new UIntPtr[] { (UIntPtr)5, (UIntPtr)6, (UIntPtr)3, (UIntPtr)6 } };
+            yield return new object[] { new UIntPtr[1], 0, 1, null, new UIntPtr[1] };
+            yield return new object[] { new UIntPtr[0], 0, 0, null, new UIntPtr[0] };
+
             // Int64
             yield return new object[] { new long[] { 3, 5, 6, 6 }, 0, 4, null, new long[] { 3, 5, 6, 6 } };
             yield return new object[] { new long[] { 5, 6, 3, 6 }, 0, 4, null, new long[] { 3, 5, 6, 6 } };
@@ -3508,8 +3540,6 @@ namespace System.Tests
         public static IEnumerable<object[]> Sort_NotComparable_TestData()
         {
             yield return new object[] { new object[] { "1", 2, new object() } };
-            yield return new object[] { new IntPtr[2] };
-            yield return new object[] { new UIntPtr[2] };
         }
 
         [Theory]
@@ -3592,7 +3622,7 @@ namespace System.Tests
         [InlineData(10, 1)]
         [InlineData(9, 2)]
         [InlineData(0, 11)]
-        public void Store_NegativeLength_ThrowsArgumentOutOfRangeException(int index, int length)
+        public void Store_NegativeLength_ThrowsArgumentException(int index, int length)
         {
             AssertExtensions.Throws<ArgumentException>(null, () => Array.Sort((Array)new int[10], index, length));
             AssertExtensions.Throws<ArgumentException>(null, () => Array.Sort((Array)new int[10], index, length, null));
@@ -4578,5 +4608,35 @@ namespace System.Tests
         }
 
         public enum Int64Enum : long { }
+    }
+
+    [Collection("NoParallelTests")]
+    public class DangerousArrayTests
+    {
+        [OuterLoop] // Allocates large array
+        [ConditionalFact]
+        public static void Copy_LargeMultiDimensionalArray()
+        {
+            // If this test is run in a 32-bit process, the large allocation will fail.
+            if (IntPtr.Size != sizeof(long))
+            {
+                return;
+            }
+
+            try
+            {
+                short[,] a = new short[2, 2_000_000_000];
+                a[0, 1] = 42;
+                Array.Copy(a, 1, a, Int32.MaxValue, 2);
+                Assert.Equal(42, a[1, Int32.MaxValue - 2_000_000_000]);
+
+                Array.Clear(a, Int32.MaxValue - 1, 3);
+                Assert.Equal(0, a[1, Int32.MaxValue - 2_000_000_000]);
+            }
+            catch (OutOfMemoryException)
+            {
+                throw new SkipTestException("Unable to allocate enough memory");
+            }
+        }
     }
 }

@@ -247,7 +247,7 @@ namespace MonoTests.System.Runtime.Caching
         }
 
         [Fact]
-        [ActiveIssue(37989)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/1429")]
         public void Contains()
         {
             var mc = new PokerMemoryCache("MyCache");
@@ -969,7 +969,8 @@ namespace MonoTests.System.Runtime.Caching
         }
 
         // Due to internal implementation details Trim has very few easily verifiable scenarios
-        [Fact]
+        // ActiveIssue: https://github.com/dotnet/runtime/issues/36488
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotArm64Process))]
         public void Trim()
         {
             var config = new NameValueCollection();

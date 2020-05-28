@@ -57,7 +57,7 @@ namespace System.Net.NetworkInformation
         /// </summary>
         public abstract NetBiosNodeType NodeType { get; }
 
-        public virtual IAsyncResult BeginGetUnicastAddresses(AsyncCallback callback, object state)
+        public virtual IAsyncResult BeginGetUnicastAddresses(AsyncCallback? callback, object? state)
         {
             throw NotImplemented.ByDesignWithMessage(SR.net_MethodNotImplementedException);
         }

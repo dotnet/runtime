@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using Windows.Foundation;
 using Windows.Storage.Streams;
@@ -94,7 +95,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
             if (destination.Capacity - destinationIndex < count) throw new ArgumentException(SR.Argument_InsufficientSpaceInTargetBuffer);
 
             // If destination is backed by a managed array, use the array instead of the pointer as it does not require pinning:
-            byte[] destDataArr;
+            byte[]? destDataArr;
             int destDataOffs;
             if (destination.TryGetUnderlyingData(out destDataArr, out destDataOffs))
             {
@@ -164,7 +165,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
             if (destination.Length - destinationIndex < count) throw new ArgumentException(SR.Argument_InsufficientArrayElementsAfterOffset);
 
             // If source is backed by a managed array, use the array instead of the pointer as it does not require pinning:
-            byte[] srcDataArr;
+            byte[]? srcDataArr;
             int srcDataOffs;
             if (source.TryGetUnderlyingData(out srcDataArr, out srcDataOffs))
             {
@@ -202,7 +203,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
             if (destination.Capacity - destinationIndex < count) throw new ArgumentException(SR.Argument_InsufficientSpaceInTargetBuffer);
 
             // If source are destination are backed by managed arrays, use the arrays instead of the pointers as it does not require pinning:
-            byte[] srcDataArr, destDataArr;
+            byte[]? srcDataArr, destDataArr;
             int srcDataOffs, destDataOffs;
 
             bool srcIsManaged = source.TryGetUnderlyingData(out srcDataArr, out srcDataOffs);
@@ -214,7 +215,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
                 Debug.Assert(sourceIndex <= int.MaxValue);
                 Debug.Assert(destinationIndex <= int.MaxValue);
 
-                Buffer.BlockCopy(srcDataArr, srcDataOffs + (int)sourceIndex, destDataArr, destDataOffs + (int)destinationIndex, (int)count);
+                Buffer.BlockCopy(srcDataArr!, srcDataOffs + (int)sourceIndex, destDataArr!, destDataOffs + (int)destinationIndex, (int)count);
                 return;
             }
 
@@ -226,7 +227,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
                 Debug.Assert(sourceIndex <= int.MaxValue);
 
                 destPtr = destination.GetPointerAtOffset(destinationIndex);
-                Marshal.Copy(srcDataArr, srcDataOffs + (int)sourceIndex, destPtr, (int)count);
+                Marshal.Copy(srcDataArr!, srcDataOffs + (int)sourceIndex, destPtr, (int)count);
                 return;
             }
 
@@ -236,7 +237,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
                 Debug.Assert(destinationIndex <= int.MaxValue);
 
                 srcPtr = source.GetPointerAtOffset(sourceIndex);
-                Marshal.Copy(srcPtr, destDataArr, destDataOffs + (int)destinationIndex, (int)count);
+                Marshal.Copy(srcPtr, destDataArr!, destDataOffs + (int)destinationIndex, (int)count);
                 return;
             }
 
@@ -263,12 +264,12 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         /// <param name="underlyingDataArrayStartOffset">Will be set to the start offset of the buffer data in the backing array
         /// or to <code>-1</code>.</param>
         /// <returns>Whether the <code>IBuffer</code> is backed by a managed byte array.</returns>
-        internal static bool TryGetUnderlyingData(this IBuffer buffer, out byte[] underlyingDataArray, out int underlyingDataArrayStartOffset)
+        internal static bool TryGetUnderlyingData(this IBuffer buffer, [NotNullWhen(true)] out byte[]? underlyingDataArray, out int underlyingDataArrayStartOffset)
         {
             if (buffer == null)
                 throw new ArgumentNullException(nameof(buffer));
 
-            WindowsRuntimeBuffer winRtBuffer = buffer as WindowsRuntimeBuffer;
+            WindowsRuntimeBuffer? winRtBuffer = buffer as WindowsRuntimeBuffer;
             if (winRtBuffer == null)
             {
                 underlyingDataArray = null;
@@ -292,7 +293,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         /// <returns><code>true</code> if the underlying <code>Buffer</code> memory pointer is the same for both specified
         /// <code>IBuffer</code> instances (i.e. if they are backed by the same memory); <code>false</code> otherwise.</returns>
         [CLSCompliant(false)]
-        public static bool IsSameData(this IBuffer buffer, IBuffer otherBuffer)
+        public static bool IsSameData(this IBuffer buffer, IBuffer? otherBuffer)
         {
             if (buffer == null)
                 throw new ArgumentNullException(nameof(buffer));
@@ -303,7 +304,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
             if (buffer == otherBuffer)
                 return true;
 
-            byte[] thisDataArr, otherDataArr;
+            byte[]? thisDataArr, otherDataArr;
             int thisDataOffs, otherDataOffs;
 
             bool thisIsManaged = buffer.TryGetUnderlyingData(out thisDataArr, out thisDataOffs);
@@ -351,7 +352,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
             {
                 throw new UnauthorizedAccessException(SR.UnauthorizedAccess_InternalBuffer);
             }
-            return new WindowsRuntimeBuffer(streamData.Array, (int)streamData.Offset, (int)underlyingStream.Length, underlyingStream.Capacity);
+            return new WindowsRuntimeBuffer(streamData.Array!, (int)streamData.Offset, (int)underlyingStream.Length, underlyingStream.Capacity);
         }
 
 
@@ -369,6 +370,8 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         /// length end, or zero if <code>positionInStream</code> is beyond stream length end, but not more than <code>length</code>.
         /// </summary>
         /// <param name="underlyingStream">A memory stream to share the data memory with the buffer being created.</param>
+        /// <param name="positionInStream">The position of the shared memory region.</param>
+        /// <param name="length">The maximum size of the shared memory region.</param>
         /// <returns>A new <code>IBuffer</code> backed by the same memory as this specified stream.</returns>
         [CLSCompliant(false)]
         public static IBuffer GetWindowsRuntimeBuffer(this MemoryStream underlyingStream, int positionInStream, int length)
@@ -399,7 +402,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
             int originInStream = streamData.Offset;
             int buffCapacity = Math.Min(length, underlyingStream.Capacity - positionInStream);
             int buffLength = Math.Max(0, Math.Min(length, ((int)underlyingStream.Length) - positionInStream));
-            return new WindowsRuntimeBuffer(streamData.Array, originInStream + positionInStream, buffLength, buffCapacity);
+            return new WindowsRuntimeBuffer(streamData.Array!, originInStream + positionInStream, buffLength, buffCapacity);
         }
 
 
@@ -409,7 +412,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
             if (source == null)
                 throw new ArgumentNullException(nameof(source));
 
-            byte[] dataArr;
+            byte[]? dataArr;
             int dataOffs;
             if (source.TryGetUnderlyingData(out dataArr, out dataOffs))
             {
@@ -435,7 +438,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
             if (source == null) throw new ArgumentNullException(nameof(source));
             if (source.Capacity <= byteOffset) throw new ArgumentException(SR.Argument_BufferIndexExceedsCapacity, nameof(byteOffset));
 
-            byte[] srcDataArr;
+            byte[]? srcDataArr;
             int srcDataOffs;
             if (source.TryGetUnderlyingData(out srcDataArr, out srcDataOffs))
             {

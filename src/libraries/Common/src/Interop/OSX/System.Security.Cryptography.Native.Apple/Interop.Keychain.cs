@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -371,7 +372,7 @@ namespace System.Security.Cryptography.Apple
 
                 lock (s_lookup)
                 {
-                    SafeTemporaryKeychainHandle temporaryHandle;
+                    SafeTemporaryKeychainHandle? temporaryHandle;
 
                     if (s_lookup.TryGetValue(keychain.DangerousGetHandle(), out temporaryHandle))
                     {
@@ -393,7 +394,7 @@ namespace System.Security.Cryptography.Apple
 
                 lock (s_lookup)
                 {
-                    SafeTemporaryKeychainHandle temporaryHandle;
+                    SafeTemporaryKeychainHandle? temporaryHandle;
 
                     if (s_lookup.TryGetValue(keychain.DangerousGetHandle(), out temporaryHandle))
                     {

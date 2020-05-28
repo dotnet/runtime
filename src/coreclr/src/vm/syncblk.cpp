@@ -56,10 +56,10 @@ SPTR_IMPL (SyncBlockCache, SyncBlockCache, s_pSyncBlockCache);
 
 
 
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
 // static
 SLIST_HEADER InteropSyncBlockInfo::s_InteropInfoStandbyList;
-#endif // !FEATURE_PAL
+#endif // !TARGET_UNIX
 
 InteropSyncBlockInfo::~InteropSyncBlockInfo()
 {
@@ -75,7 +75,7 @@ InteropSyncBlockInfo::~InteropSyncBlockInfo()
     FreeUMEntryThunkOrInterceptStub();
 }
 
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
 // Deletes all items in code:s_InteropInfoStandbyList.
 void InteropSyncBlockInfo::FlushStandbyList()
 {
@@ -97,7 +97,7 @@ void InteropSyncBlockInfo::FlushStandbyList()
         pEntry = pNextEntry;
     }
 }
-#endif // !FEATURE_PAL
+#endif // !TARGET_UNIX
 
 void InteropSyncBlockInfo::FreeUMEntryThunkOrInterceptStub()
 {
@@ -120,17 +120,17 @@ void InteropSyncBlockInfo::FreeUMEntryThunkOrInterceptStub()
         }
         else
         {
-#if defined(_TARGET_X86_)
+#if defined(TARGET_X86)
             Stub *pInterceptStub = GetInterceptStub();
             if (pInterceptStub != NULL)
             {
                 // There may be multiple chained stubs
                 pInterceptStub->DecRef();
             }
-#else // _TARGET_X86_
+#else // TARGET_X86
             // Intercept stubs are currently not used on other platforms.
             _ASSERTE(GetInterceptStub() == NULL);
-#endif // _TARGET_X86_
+#endif // TARGET_X86
         }
     }
     m_pUMEntryThunkOrInterceptStub = NULL;
@@ -674,9 +674,9 @@ void SyncBlockCache::Start()
 
     SyncBlockCache::GetSyncBlockCache()->m_EphemeralBitmap = bm;
 
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
     InitializeSListHead(&InteropSyncBlockInfo::s_InteropInfoStandbyList);
-#endif // !FEATURE_PAL
+#endif // !TARGET_UNIX
 }
 
 
@@ -993,7 +993,7 @@ void SyncBlockCache::DeleteSyncBlock(SyncBlock *psb)
         CleanupSyncBlockComData(psb->m_pInteropInfo);
 #endif // FEATURE_COMINTEROP
 
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
         if (g_fEEShutDown)
         {
             delete psb->m_pInteropInfo;
@@ -1003,9 +1003,9 @@ void SyncBlockCache::DeleteSyncBlock(SyncBlock *psb)
             psb->m_pInteropInfo->~InteropSyncBlockInfo();
             InterlockedPushEntrySList(&InteropSyncBlockInfo::s_InteropInfoStandbyList, (PSLIST_ENTRY)psb->m_pInteropInfo);
         }
-#else // !FEATURE_PAL
+#else // !TARGET_UNIX
         delete psb->m_pInteropInfo;
-#endif // !FEATURE_PAL
+#endif // !TARGET_UNIX
     }
 
 #ifdef EnC_SUPPORTED
@@ -1669,7 +1669,6 @@ AwareLock::EnterHelperResult ObjHeader::EnterObjMonitorHelperSpin(Thread* pCurTh
             LONG newValue = oldValue | tid;
             if (InterlockedCompareExchangeAcquire((LONG*)&m_SyncBlockValue, newValue, oldValue) == oldValue)
             {
-                pCurThread->IncLockCount();
                 return AwareLock::EnterHelperResult_Entered;
             }
 
@@ -1903,13 +1902,13 @@ DEBUG_NOINLINE void ObjHeader::EnterSpinLock()
     while (TRUE)
     {
 #ifdef _DEBUG
-#ifdef BIT64
+#ifdef HOST_64BIT
         // Give 64bit more time because there isn't a remoting fast path now, and we've hit this assert
         // needlessly in CLRSTRESS.
         if (i++ > 30000)
 #else
         if (i++ > 10000)
-#endif // BIT64
+#endif // HOST_64BIT
             _ASSERTE(!"ObjHeader::EnterLock timed out");
 #endif
         // get the value so that it doesn't get changed under us.
@@ -2279,16 +2278,7 @@ BOOL ObjHeader::Wait(INT32 timeOut, BOOL exitContext)
     if (!pSB->DoesCurrentThreadOwnMonitor())
         COMPlusThrow(kSynchronizationLockException);
 
-#ifdef _DEBUG
-    Thread *pThread = GetThread();
-    DWORD curLockCount = pThread->m_dwLockCount;
-#endif
-
-    BOOL result = pSB->Wait(timeOut,exitContext);
-
-    _ASSERTE (curLockCount == pThread->m_dwLockCount);
-
-    return result;
+    return pSB->Wait(timeOut,exitContext);
 }
 
 void ObjHeader::Pulse()
@@ -2394,7 +2384,6 @@ void AwareLock::Enter()
             // We get here if we successfully acquired the mutex.
             m_HoldingThread = pCurThread;
             m_Recursion = 1;
-            pCurThread->IncLockCount();
 
 #if defined(_DEBUG) && defined(TRACK_SYNC)
             // The best place to grab this is from the ECall frame
@@ -2457,7 +2446,6 @@ BOOL AwareLock::TryEnter(INT32 timeOut)
             // We get here if we successfully acquired the mutex.
             m_HoldingThread = pCurThread;
             m_Recursion = 1;
-            pCurThread->IncLockCount();
 
 #if defined(_DEBUG) && defined(TRACK_SYNC)
             // The best place to grab this is from the ECall frame
@@ -2726,7 +2714,6 @@ BOOL AwareLock::EnterEpilogHelper(Thread* pCurThread, INT32 timeOut)
 
     m_HoldingThread = pCurThread;
     m_Recursion = 1;
-    pCurThread->IncLockCount();
 
 #if defined(_DEBUG) && defined(TRACK_SYNC)
     // The best place to grab this is from the ECall frame
@@ -2968,7 +2955,7 @@ void SyncBlock::SetEnCInfo(EnCSyncBlockInfo *pEnCInfo)
 #endif // EnC_SUPPORTED
 #endif // !DACCESS_COMPILE
 
-#if defined(BIT64) && defined(_DEBUG)
+#if defined(HOST_64BIT) && defined(_DEBUG)
 void ObjHeader::IllegalAlignPad()
 {
     WRAPPER_NO_CONTRACT;
@@ -2979,6 +2966,6 @@ void ObjHeader::IllegalAlignPad()
 #endif
     _ASSERTE(m_alignpad == 0);
 }
-#endif // BIT64 && _DEBUG
+#endif // HOST_64BIT && _DEBUG
 
 

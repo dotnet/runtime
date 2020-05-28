@@ -219,19 +219,19 @@ namespace System.Security.AccessControl
             : base(isContainer, resourceType, null, null)
         { }
 
-        protected ObjectSecurity(bool isContainer, ResourceType resourceType, string name, AccessControlSections includeSections)
+        protected ObjectSecurity(bool isContainer, ResourceType resourceType, string? name, AccessControlSections includeSections)
             : base(isContainer, resourceType, name, includeSections, null, null)
         { }
 
-        protected ObjectSecurity(bool isContainer, ResourceType resourceType, string name, AccessControlSections includeSections, ExceptionFromErrorCode exceptionFromErrorCode, object exceptionContext)
+        protected ObjectSecurity(bool isContainer, ResourceType resourceType, string? name, AccessControlSections includeSections, ExceptionFromErrorCode? exceptionFromErrorCode, object? exceptionContext)
             : base(isContainer, resourceType, name, includeSections, exceptionFromErrorCode, exceptionContext)
         { }
 
-        protected ObjectSecurity(bool isContainer, ResourceType resourceType, SafeHandle safeHandle, AccessControlSections includeSections)
+        protected ObjectSecurity(bool isContainer, ResourceType resourceType, SafeHandle? safeHandle, AccessControlSections includeSections)
             : base(isContainer, resourceType, safeHandle, includeSections, null, null)
         { }
 
-        protected ObjectSecurity(bool isContainer, ResourceType resourceType, SafeHandle safeHandle, AccessControlSections includeSections, ExceptionFromErrorCode exceptionFromErrorCode, object exceptionContext)
+        protected ObjectSecurity(bool isContainer, ResourceType resourceType, SafeHandle? safeHandle, AccessControlSections includeSections, ExceptionFromErrorCode? exceptionFromErrorCode, object? exceptionContext)
             : base(isContainer, resourceType, safeHandle, includeSections, exceptionFromErrorCode, exceptionContext)
         { }
 

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Runtime.InteropServices;
 using System.Runtime.Serialization;
 using System.Reflection;
 using Internal.Runtime.CompilerServices;
@@ -26,7 +27,7 @@ namespace System.Runtime.CompilerServices
 
             (int offset, int length) = range.GetOffsetAndLength(array.Length);
 
-            if (default(T)! != null || typeof(T[]) == array.GetType()) // TODO-NULLABLE: default(T) == null warning (https://github.com/dotnet/roslyn/issues/34757)
+            if (typeof(T).IsValueType || typeof(T[]) == array.GetType())
             {
                 // We know the type of the array to be exactly T[].
 
@@ -37,8 +38,8 @@ namespace System.Runtime.CompilerServices
 
                 var dest = new T[length];
                 Buffer.Memmove(
-                    ref Unsafe.As<byte, T>(ref dest.GetRawSzArrayData()),
-                    ref Unsafe.Add(ref Unsafe.As<byte, T>(ref array.GetRawSzArrayData()), offset),
+                    ref MemoryMarshal.GetArrayDataReference(dest),
+                    ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(array), offset),
                     (uint)length);
                 return dest;
             }

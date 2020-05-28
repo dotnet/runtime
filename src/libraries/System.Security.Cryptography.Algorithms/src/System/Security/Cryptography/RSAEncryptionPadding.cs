@@ -93,19 +93,19 @@ namespace System.Security.Cryptography
             return (((h1 << 5) + h1) ^ h2);
         }
 
-        public override bool Equals(object obj)
+        public override bool Equals(object? obj)
         {
             return Equals(obj as RSAEncryptionPadding);
         }
 
-        public bool Equals(RSAEncryptionPadding other)
+        public bool Equals(RSAEncryptionPadding? other)
         {
             return !object.ReferenceEquals(other, null)
                 && _mode == other._mode
                 && _oaepHashAlgorithm == other._oaepHashAlgorithm;
         }
 
-        public static bool operator ==(RSAEncryptionPadding left, RSAEncryptionPadding right)
+        public static bool operator ==(RSAEncryptionPadding? left, RSAEncryptionPadding? right)
         {
             if (object.ReferenceEquals(left, null))
             {
@@ -115,7 +115,7 @@ namespace System.Security.Cryptography
             return left.Equals(right);
         }
 
-        public static bool operator !=(RSAEncryptionPadding left, RSAEncryptionPadding right)
+        public static bool operator !=(RSAEncryptionPadding? left, RSAEncryptionPadding? right)
         {
             return !(left == right);
         }

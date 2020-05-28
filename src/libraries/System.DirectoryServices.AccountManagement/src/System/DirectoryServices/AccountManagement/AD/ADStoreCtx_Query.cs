@@ -172,7 +172,7 @@ namespace System.DirectoryServices.AccountManagement
                 //
                 // Wrap off the filter
                 //
-                ldapFilter.Append(")");
+                ldapFilter.Append(')');
             }
 
             // We don't need any attributes returned, since we're just going to get a DirectoryEntry
@@ -211,7 +211,7 @@ namespace System.DirectoryServices.AccountManagement
                 StringBuilder SB = new StringBuilder();
                 SB.Append("(&(objectClass=");
                 SB.Append(objClass);
-                SB.Append(")");
+                SB.Append(')');
                 ldapFilter = SB.ToString();
             }
 
@@ -330,12 +330,12 @@ namespace System.DirectoryServices.AccountManagement
 
             if (filter.Value != null)
             {
-                sb.Append("(");
+                sb.Append('(');
                 sb.Append(suggestedAdProperty);
-                sb.Append("=");
+                sb.Append('=');
                 sb.Append(ADUtils.PAPIQueryToLdapQueryString((string)filter.Value));
 
-                sb.Append(")");
+                sb.Append(')');
             }
             else
             {
@@ -355,11 +355,11 @@ namespace System.DirectoryServices.AccountManagement
 
             if (filter.Value != null)
             {
-                sb.Append("(");
+                sb.Append('(');
                 sb.Append(suggestedAdProperty);
-                sb.Append("=");
+                sb.Append('=');
                 sb.Append(!(bool)filter.Value ? "TRUE" : "FALSE");
-                sb.Append(")");
+                sb.Append(')');
             }
             else
             {
@@ -390,17 +390,17 @@ namespace System.DirectoryServices.AccountManagement
                     sb.Append(suggestedAdProperty);
                     sb.Append("=*)(");
                     sb.Append(suggestedAdProperty);
-                    sb.Append("=");
+                    sb.Append('=');
                     sb.Append((bool)filter.Value ? "TRUE" : "FALSE");
                     sb.Append(")))");
                 }
                 else
                 {
-                    sb.Append("(");
+                    sb.Append('(');
                     sb.Append(suggestedAdProperty);
-                    sb.Append("=");
+                    sb.Append('=');
                     sb.Append((bool)filter.Value ? "TRUE" : "FALSE");
-                    sb.Append(")");
+                    sb.Append(')');
                 }
             }
             else
@@ -419,11 +419,11 @@ namespace System.DirectoryServices.AccountManagement
 
                     if (filter.Value != null)
                     {
-                        sb.Append("(");
+                        sb.Append('(');
                         sb.Append(suggestedAdProperty);
-                        sb.Append("=");
+                        sb.Append('=');
                         sb.Append( (bool)filter.Value ? "TRUE" : "FALSE" );
-                        sb.Append(")");
+                        sb.Append(')');
                     }
                     else
                     {
@@ -441,12 +441,12 @@ namespace System.DirectoryServices.AccountManagement
 
             if (filter.Value != null)
             {
-                sb.Append("(");
+                sb.Append('(');
                 sb.Append(suggestedAdProperty);
                 sb.Append("=*");
                 sb.Append(ADUtils.PAPIQueryToLdapQueryString((string)filter.Value));
-                sb.Append("*");
-                sb.Append(")");
+                sb.Append('*');
+                sb.Append(')');
             }
             else
             {
@@ -510,13 +510,13 @@ namespace System.DirectoryServices.AccountManagement
 
                     sb.Append(ldapHexGuid);
 
-                    sb.Append(")");
+                    sb.Append(')');
                     break;
 
                 case UrnScheme.DistinguishedNameScheme:
                     sb.Append("(distinguishedName=");
                     sb.Append(ADUtils.EscapeRFC2254SpecialChars(identity));
-                    sb.Append(")");
+                    sb.Append(')');
                     break;
 
                 case UrnScheme.SidScheme:
@@ -543,19 +543,19 @@ namespace System.DirectoryServices.AccountManagement
 
                     sb.Append("(samAccountName=");
                     sb.Append(ADUtils.EscapeRFC2254SpecialChars(samAccountName));
-                    sb.Append(")");
+                    sb.Append(')');
                     break;
 
                 case UrnScheme.NameScheme:
                     sb.Append("(name=");
                     sb.Append(ADUtils.EscapeRFC2254SpecialChars(identity));
-                    sb.Append(")");
+                    sb.Append(')');
                     break;
 
                 case UrnScheme.UpnScheme:
                     sb.Append("(userPrincipalName=");
                     sb.Append(ADUtils.EscapeRFC2254SpecialChars(identity));
-                    sb.Append(")");
+                    sb.Append(')');
                     break;
 
                 default:
@@ -646,7 +646,7 @@ namespace System.DirectoryServices.AccountManagement
             {
                 filter.Append("(objectSid=");
                 filter.Append(ldapHexSid);
-                filter.Append(")");
+                filter.Append(')');
             }
 
             return true;
@@ -663,7 +663,7 @@ namespace System.DirectoryServices.AccountManagement
 
             sb.Append("(userCertificate=");
             sb.Append(ADUtils.EscapeBinaryValue(rawCertificate));
-            sb.Append(")");
+            sb.Append(')');
 
             return sb.ToString();
         }
@@ -759,9 +759,9 @@ namespace System.DirectoryServices.AccountManagement
 
             if (filter.Value != null)
             {
-                sb.Append("(");
+                sb.Append('(');
                 sb.Append(suggestedAdProperty);
-                sb.Append("=");
+                sb.Append('=');
                 sb.Append(ADUtils.EscapeBinaryValue((byte[])filter.Value));
             }
             else
@@ -771,7 +771,7 @@ namespace System.DirectoryServices.AccountManagement
                 sb.Append("=*))");
             }
 
-            sb.Append(")");
+            sb.Append(')');
 
             return sb.ToString();
         }
@@ -793,7 +793,7 @@ namespace System.DirectoryServices.AccountManagement
             {
                 sb.Append("(accountExpires=");
                 sb.Append(ADUtils.DateTimeToADString(date.Value));
-                sb.Append(")");
+                sb.Append(')');
             }
 
             return sb.ToString();
@@ -824,7 +824,7 @@ namespace System.DirectoryServices.AccountManagement
 
                 sb.Append(ldapHexGuid);
 
-                sb.Append(")");
+                sb.Append(')');
             }
 
             return sb.ToString();
@@ -874,7 +874,7 @@ namespace System.DirectoryServices.AccountManagement
             sb.Append("(|");
             sb.Append(DateTimeFilterBuilder("lastLogon", (DateTime)qmt.Value, LdapConstants.defaultUtcTime, false, qmt.Match));
             sb.Append(DateTimeFilterBuilder("lastLogonTimestamp", (DateTime)qmt.Value, LdapConstants.defaultUtcTime, true, qmt.Match));
-            sb.Append(")");
+            sb.Append(')');
 
             return (sb.ToString());
         }
@@ -952,16 +952,16 @@ namespace System.DirectoryServices.AccountManagement
             {
                 case MatchType.Equals:
                     ldapFilter.Append(attributeName);
-                    ldapFilter.Append("=");
+                    ldapFilter.Append('=');
                     ldapFilter.Append(ldapSearchValue);
                     break;
 
                 case MatchType.NotEquals:
                     ldapFilter.Append("!(");
                     ldapFilter.Append(attributeName);
-                    ldapFilter.Append("=");
+                    ldapFilter.Append('=');
                     ldapFilter.Append(ldapSearchValue);
-                    ldapFilter.Append(")");
+                    ldapFilter.Append(')');
                     break;
 
                 case MatchType.GreaterThanOrEquals:
@@ -977,24 +977,24 @@ namespace System.DirectoryServices.AccountManagement
                     break;
 
                 case MatchType.GreaterThan:
-                    ldapFilter.Append("&");
+                    ldapFilter.Append('&');
 
                     // Greater-than-or-equals (or less-than-or-equals))
-                    ldapFilter.Append("(");
+                    ldapFilter.Append('(');
                     ldapFilter.Append(attributeName);
                     ldapFilter.Append(mt == MatchType.GreaterThan ? ">=" : "<=");
                     ldapFilter.Append(ldapSearchValue);
-                    ldapFilter.Append(")");
+                    ldapFilter.Append(')');
 
                     // And not-equal
                     ldapFilter.Append("(!(");
                     ldapFilter.Append(attributeName);
-                    ldapFilter.Append("=");
+                    ldapFilter.Append('=');
                     ldapFilter.Append(ldapSearchValue);
                     ldapFilter.Append("))");
 
                     // And exists (need to include because of tristate LDAP logic)
-                    ldapFilter.Append("(");
+                    ldapFilter.Append('(');
                     ldapFilter.Append(attributeName);
                     ldapFilter.Append("=*)");
                     break;
@@ -1003,29 +1003,29 @@ namespace System.DirectoryServices.AccountManagement
                     goto case MatchType.GreaterThan;
             }
 
-            ldapFilter.Append(")");
+            ldapFilter.Append(')');
             bool closeFilter = false;
 
             if (defaultNeeded)
             {
                 ldapFilter.Append("(!");
                 ldapFilter.Append(attributeName);
-                ldapFilter.Append("=");
+                ldapFilter.Append('=');
                 ldapFilter.Append(ldapDefaultValue);
-                ldapFilter.Append(")");
+                ldapFilter.Append(')');
                 closeFilter = true;
             }
 
             if (mt == MatchType.NotEquals && requirePresence)
             {
-                ldapFilter.Append("(");
+                ldapFilter.Append('(');
                 ldapFilter.Append(attributeName);
                 ldapFilter.Append("=*)");
                 closeFilter = true;
             }
 
             if (closeFilter)
-                ldapFilter.Append(")");
+                ldapFilter.Append(')');
 
             return (ldapFilter.ToString());
         }
@@ -1065,16 +1065,16 @@ namespace System.DirectoryServices.AccountManagement
             {
                 case MatchType.Equals:
                     ldapFilter.Append(attributeName);
-                    ldapFilter.Append("=");
+                    ldapFilter.Append('=');
                     ldapFilter.Append(ldapValue);
                     break;
 
                 case MatchType.NotEquals:
                     ldapFilter.Append("!(");
                     ldapFilter.Append(attributeName);
-                    ldapFilter.Append("=");
+                    ldapFilter.Append('=');
                     ldapFilter.Append(ldapValue);
-                    ldapFilter.Append(")");
+                    ldapFilter.Append(')');
                     break;
 
                 case MatchType.GreaterThanOrEquals:
@@ -1090,24 +1090,24 @@ namespace System.DirectoryServices.AccountManagement
                     break;
 
                 case MatchType.GreaterThan:
-                    ldapFilter.Append("&");
+                    ldapFilter.Append('&');
 
                     // Greater-than-or-equals (or less-than-or-equals))
-                    ldapFilter.Append("(");
+                    ldapFilter.Append('(');
                     ldapFilter.Append(attributeName);
                     ldapFilter.Append(mt == MatchType.GreaterThan ? ">=" : "<=");
                     ldapFilter.Append(ldapValue);
-                    ldapFilter.Append(")");
+                    ldapFilter.Append(')');
 
                     // And not-equal
                     ldapFilter.Append("(!(");
                     ldapFilter.Append(attributeName);
-                    ldapFilter.Append("=");
+                    ldapFilter.Append('=');
                     ldapFilter.Append(ldapValue);
                     ldapFilter.Append("))");
 
                     // And exists (need to include because of tristate LDAP logic)
-                    ldapFilter.Append("(");
+                    ldapFilter.Append('(');
                     ldapFilter.Append(attributeName);
                     ldapFilter.Append("=*)");
                     break;
@@ -1116,7 +1116,7 @@ namespace System.DirectoryServices.AccountManagement
                     goto case MatchType.GreaterThan;
             }
 
-            ldapFilter.Append(")");
+            ldapFilter.Append(')');
 
             return ldapFilter.ToString();
         }

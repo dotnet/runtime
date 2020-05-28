@@ -1,8 +1,10 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
 using Internal.TypeSystem;
+
+using Debug = System.Diagnostics.Debug;
 
 namespace ILCompiler
 {
@@ -17,6 +19,31 @@ namespace ILCompiler
         public static bool IsRawPInvoke(this MethodDesc method)
         {
             return method.IsPInvoke && (method is Internal.IL.Stubs.PInvokeTargetNativeMethod);
+        }
+
+        /// <summary>
+        /// Gets a value indicating whether GC transition should be suppressed on the given p/invoke.
+        /// </summary>
+        public static bool IsSuppressGCTransition(this MethodDesc method)
+        {
+            Debug.Assert(method.IsPInvoke);
+
+            if (method is Internal.IL.Stubs.PInvokeTargetNativeMethod rawPinvoke)
+                method = rawPinvoke.Target;
+
+            return method.HasCustomAttribute("System.Runtime.InteropServices", "SuppressGCTransitionAttribute");
+        }
+
+        /// <summary>
+        /// Return true when the method is marked as non-versionable. Non-versionable methods
+        /// may be freely inlined into ReadyToRun images even when they don't reside in the
+        /// same version bubble as the module being compiled.
+        /// </summary>
+        /// <param name="method">Method to check</param>
+        /// <returns>True when the method is marked as non-versionable, false otherwise.</returns>
+        public static bool IsNonVersionable(this MethodDesc method)
+        {
+            return method.HasCustomAttribute("System.Runtime.Versioning", "NonVersionableAttribute");
         }
     }
 }

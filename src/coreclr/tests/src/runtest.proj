@@ -8,7 +8,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <DisabledTestDir Include="bin" />
     <DisabledTestDir Include="Common" />
+    <DisabledTestDir Include="Tests" />
+    <DisabledTestDir Include="TestWrappers" />
     <_SkipTestDir Include="@(DisabledTestDir)" />
   </ItemGroup>
 
@@ -62,10 +65,17 @@
 
     <Message Text="Found $(TestCount) built tests"/>
 
-    <Error Condition="'$(CLRTestPriorityToBuild)' == '0' and '$(TestCount)' &lt;= 2000" Text="Unexpected test count. Expected &gt; 2000, found $(TestCount).'" />
-    <Error Condition="'$(CLRTestPriorityToBuild)' == '0' and '$(TestCount)' &gt;= 3000" Text="Unexpected test count. Expected &lt; 3000, found $(TestCount).'" />
-    <Error Condition="'$(CLRTestPriorityToBuild)' == '1' and '$(TestCount)' &lt;= 9000" Text="Unexpected test count. Expected &gt; 9000, found $(TestCount).'" />
-    <Error Condition="'$(CLRTestPriorityToBuild)' != '0' and '$(CLRTestPriorityToBuild)' != '1'" Text="Unknown priority $(CLRTestPriorityToBuild)" />
+    <Error Condition="'$(CLRTestNeedTargetToBuild)' != '' and '$(CLRTestNeedTargetToBuild)' != 'targetGeneric' and '$(CLRTestNeedTargetToBuild)' != 'targetSpecific'" Text="Unknown CLRTestNeedTargetToBuild $(CLRTestNeedTargetToBuild)" />
+
+    <ItemGroup Condition="'$(CLRTestNeedTargetToBuild)' != 'targetSpecific'">
+      <Error Condition="'$(CLRTestPriorityToBuild)' == '0' and '$(TestCount)' &lt;= 2000" Text="Unexpected test count. Expected &gt; 2000, found $(TestCount).'" />
+      <Error Condition="'$(CLRTestPriorityToBuild)' == '0' and '$(TestCount)' &gt;= 3000" Text="Unexpected test count. Expected &lt; 3000, found $(TestCount).'" />
+      <Error Condition="'$(CLRTestPriorityToBuild)' == '1' and '$(TestCount)' &lt;= 9000" Text="Unexpected test count. Expected &gt; 9000, found $(TestCount).'" />
+      <Error Condition="'$(CLRTestPriorityToBuild)' != '0' and '$(CLRTestPriorityToBuild)' != '1'" Text="Unknown priority $(CLRTestPriorityToBuild)" />
+    </ItemGroup>
+    <ItemGroup Condition="'$(CLRTestNeedTargetToBuild)' == 'targetSpecific'">
+      <Error Condition="'$(TestCount)' &lt;= 100" Text="Unexpected test count. Expected &lt; 100, found $(TestCount).'" />
+    </ItemGroup>
   </Target>
 
   <Import Project="$(__Exclude)" Condition="'$(__Exclude)' != '' AND '$(XunitTestBinBase)' != ''" />
@@ -90,7 +100,7 @@ $(_XunitEpilog)
         <![CDATA[
 <Project>
 
-  <Import Project="$(ProjectDir)dir.sdkbuild.props" />
+  <Import Project="$(TestProjectDir)dir.sdkbuild.props" />
 
   <PropertyGroup>
     <OutputPath>$(XUnitTestBinBase)\$(CategoryWithSlash)</OutputPath>
@@ -104,7 +114,7 @@ $(_XunitEpilog)
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="$(SourceDir)Common\Coreclr.TestWrapper\Coreclr.TestWrapper.csproj" />
+    <ProjectReference Include="$(TestSourceDir)Common\Coreclr.TestWrapper\Coreclr.TestWrapper.csproj" />
   </ItemGroup>
 
   <ItemGroup>
@@ -281,7 +291,7 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
 
                 if (infraEx != null)
                 {
-                    Assert.True(false, "Test Infrastructure Failure: " + infraEx.Message)%3B
+                    Assert.True(false, "Test Infrastructure Failure: " + infraEx.ToString())%3B
                 }
                 else
                 {
@@ -294,7 +304,7 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
                     catch (Exception ex)
                     {
                         testOutput.Add("Unable to read error file: " + errorFile)%3B
-                        testOutput.Add(ex.Message)%3B
+                        testOutput.Add(ex.ToString())%3B
                     }
 
                     testOutput.Add(string.Empty)%3B
@@ -309,7 +319,7 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
                     catch(Exception ex)
                     {
                         testOutput.Add("Unable to read output file: " + outputFile)%3B
-                        testOutput.Add(ex.Message)%3B
+                        testOutput.Add(ex.ToString())%3B
                     }
 
                     testOutput.Add("To run the test:")%3B
@@ -344,13 +354,13 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
   </Target>
 
   <Target Name="CreateAllWrappers" DependsOnTargets="GetListOfTestCmds;FindCmdDirectories">
-    <MSBuild Projects="$(MSBuildProjectFile)" Targets="CreateXunitWrapper;BuildXunitWrapper" Properties="_CMDDIR=%(TestDirectories.Identity)" />
+    <MSBuild Projects="$(MSBuildProjectFile)" Targets="CreateXunitWrapper;BuildXunitWrapper" Properties="_CMDDIR=%(TestDirectories.Identity);TestSrcDir=$(XunitTestBinBase)" />
   </Target>
 
   <Target Name="GetListOfTestCmds">
     <ItemGroup>
-      <AllRunnableTestPaths Include="$(XunitTestBinBase)\**\*.cmd" Condition="'$(BuildOS)' == 'Windows_NT'" />
-      <AllRunnableTestPaths Include="$(XunitTestBinBase)\**\*.sh" Condition="'$(BuildOS)' != 'Windows_NT'" />
+      <AllRunnableTestPaths Include="$(XunitTestBinBase)\**\*.cmd" Condition="'$(TargetOS)' == 'Windows_NT'" />
+      <AllRunnableTestPaths Include="$(XunitTestBinBase)\**\*.sh" Condition="'$(TargetOS)' != 'Windows_NT'" />
     </ItemGroup>
   </Target>
 
@@ -361,16 +371,6 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
     <MSBuild Projects="$(MSBuildProjectFile)"
              Targets="CopyDependencyToCoreRoot"
              Properties="Language=C#;TargetRid=$(TargetRid);RuntimeIdentifier=$(TargetRid)" />
-  </Target>
-
-  <!--
-       Targets and properties for creating the testhost directory used to run corefx tests.
-   -->
-
-  <Target Name="CreateTestHost">
-    <MSBuild Projects="$(MSBuildThisFileDirectory)Common\CoreFX\CoreFX.csproj"
-             Targets="SetupTestingHost"
-             Properties="OutputPath=$(NETCoreAppTestSharedFrameworkPath)" />
   </Target>
 
   <Target Name="Build">
@@ -390,10 +390,6 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
     <MSBuild Projects="$(MSBuildProjectFile)"
              Targets="CreateTestOverlay"
              Condition=" '$(GenerateRuntimeLayout)'=='true' "/>
-
-    <MSBuild Projects="$(MSBuildProjectFile)"
-             Targets="CreateTestHost"
-             Condition=" '$(GenerateTestHost)'=='true' "/>
 
     <MSBuild Projects="$(MSBuildProjectFile)" Targets="RunTests"
              Condition=" '$(RunTests)'=='true' "/>

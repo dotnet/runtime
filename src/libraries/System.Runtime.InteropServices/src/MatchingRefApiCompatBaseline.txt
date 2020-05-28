@@ -6,6 +6,6 @@ TypesMustExist : Type 'System.Runtime.InteropServices.IDispatchImplType' does no
 TypesMustExist : Type 'System.Runtime.InteropServices.RegistrationClassContext' does not exist in the reference but it does exist in the implementation.
 TypesMustExist : Type 'System.Runtime.InteropServices.RegistrationConnectionType' does not exist in the reference but it does exist in the implementation.
 TypesMustExist : Type 'System.Runtime.InteropServices.SetWin32ContextInIDispatchAttribute' does not exist in the reference but it does exist in the implementation.
-MembersMustExist : Member 'System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute..ctor()' does not exist in the reference but it does exist in the implementation.
+MembersMustExist : Member 'public void System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute..ctor()' does not exist in the reference but it does exist in the implementation.
 CannotRemoveAttribute : Attribute 'System.CLSCompliantAttribute' exists on 'System.Runtime.InteropServices.ComTypes.IDataObject' in the implementation but not the reference.
 Total Issues: 9

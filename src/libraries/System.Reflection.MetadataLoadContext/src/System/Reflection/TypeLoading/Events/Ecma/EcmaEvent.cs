@@ -37,7 +37,7 @@ namespace System.Reflection.TypeLoading.Ecma
 
         public sealed override int MetadataToken => _handle.GetToken();
 
-        public sealed override bool Equals(object obj)
+        public sealed override bool Equals(object? obj)
         {
             if (!(obj is EcmaEvent other))
                 return false;
@@ -80,7 +80,7 @@ namespace System.Reflection.TypeLoading.Ecma
 
         public sealed override string ToString()
         {
-            string disposedString = Loader.GetDisposedString();
+            string? disposedString = Loader.GetDisposedString();
             if (disposedString != null)
                 return disposedString;
 
@@ -92,9 +92,9 @@ namespace System.Reflection.TypeLoading.Ecma
             return sb.ToString();
         }
 
-        protected sealed override RoMethod ComputeEventAddMethod() => EventDefinition.GetAccessors().Adder.ToMethodOrNull(GetRoDeclaringType(), ReflectedType);
-        protected sealed override RoMethod ComputeEventRemoveMethod() => EventDefinition.GetAccessors().Remover.ToMethodOrNull(GetRoDeclaringType(), ReflectedType);
-        protected sealed override RoMethod ComputeEventRaiseMethod() => EventDefinition.GetAccessors().Raiser.ToMethodOrNull(GetRoDeclaringType(), ReflectedType);
+        protected sealed override RoMethod? ComputeEventAddMethod() => EventDefinition.GetAccessors().Adder.ToMethodOrNull(GetRoDeclaringType(), ReflectedType);
+        protected sealed override RoMethod? ComputeEventRemoveMethod() => EventDefinition.GetAccessors().Remover.ToMethodOrNull(GetRoDeclaringType(), ReflectedType);
+        protected sealed override RoMethod? ComputeEventRaiseMethod() => EventDefinition.GetAccessors().Raiser.ToMethodOrNull(GetRoDeclaringType(), ReflectedType);
 
         private MetadataReader Reader => _module.Reader;
         private MetadataLoadContext Loader => GetRoModule().Loader;

@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>$(NetCoreAppCurrent);$(NetFrameworkCurrent)</TargetFrameworks>
+    <EnableDefaultItems>true</EnableDefaultItems>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="$(LibrariesProjectRoot)Microsoft.Extensions.Configuration\tests\ConfigurationProviderTestBase.cs"
+             Link="Common\ConfigurationProviderTestBase.cs" />
+    <Compile Include="$(LibrariesProjectRoot)Microsoft.Extensions.Configuration\tests\Common\ConfigurationProviderExtensions.cs"
+             Link="Common\ConfigurationProviderExtensions.cs" />
+    <Compile Include="$(LibrariesProjectRoot)Microsoft.Extensions.Configuration\tests\Common\TestStreamHelpers.cs"
+             Link="Common\TestStreamHelpers.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ReferenceFromRuntime Include="Microsoft.Extensions.Configuration.EnvironmentVariables" />
+  </ItemGroup>
+  
+</Project>

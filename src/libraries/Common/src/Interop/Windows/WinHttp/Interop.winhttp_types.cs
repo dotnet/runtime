@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -148,9 +149,11 @@ internal partial class Interop
 
         public const uint WINHTTP_OPTION_ASSURED_NON_BLOCKING_CALLBACKS = 111;
 
+        public const uint WINHTTP_OPTION_ENABLE_HTTP2_PLUS_CLIENT_CERT = 161;
         public const uint WINHTTP_OPTION_ENABLE_HTTP_PROTOCOL = 133;
         public const uint WINHTTP_OPTION_HTTP_PROTOCOL_USED = 134;
         public const uint WINHTTP_PROTOCOL_FLAG_HTTP2 = 0x1;
+        public const uint WINHTTP_HTTP2_PLUS_CLIENT_CERT_FLAG = 0x1;
 
         public const uint WINHTTP_OPTION_UPGRADE_TO_WEB_SOCKET = 114;
         public const uint WINHTTP_OPTION_WEB_SOCKET_CLOSE_TIMEOUT = 115;
@@ -239,7 +242,7 @@ internal partial class Interop
             public uint Flags;
             public uint AutoDetectFlags;
             [MarshalAs(UnmanagedType.LPWStr)]
-            public string AutoConfigUrl;
+            public string? AutoConfigUrl;
             public IntPtr Reserved1;
             public uint Reserved2;
             [MarshalAs(UnmanagedType.Bool)]

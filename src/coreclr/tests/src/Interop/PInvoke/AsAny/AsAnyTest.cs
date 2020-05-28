@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -339,6 +339,12 @@ class AsAnyTests
 
     private static void RunBestFitMappingTests()
     {
+        if (System.Globalization.CultureInfo.CurrentCulture.Name != "en-US")
+        {
+            Console.WriteLine($"Non-US English platforms are not supported.\nPassing {nameof(RunBestFitMappingTests)} without running.");
+            return;
+        }
+
         TestAnsiStringBestFitMapping();
         TestAnsiStringBuilder();
         TestAnsiStringArrayBestFitMapping();

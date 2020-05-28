@@ -35,7 +35,7 @@ namespace System.Security.AccessControl
     internal sealed class Privilege
     {
         [ThreadStatic]
-        private static TlsContents t_tlsSlotData;
+        private static TlsContents? t_tlsSlotData;
         private static readonly Dictionary<Luid, string> privileges = new Dictionary<Luid, string>();
         private static readonly Dictionary<string, Luid> luids = new Dictionary<string, Luid>();
         private static readonly ReaderWriterLockSlim privilegeLock = new ReaderWriterLockSlim(LockRecursionPolicy.SupportsRecursion);
@@ -45,7 +45,7 @@ namespace System.Security.AccessControl
         private bool stateWasChanged = false;
         private Luid luid;
         private readonly Thread currentThread = Thread.CurrentThread;
-        private TlsContents tlsContents = null;
+        private TlsContents? tlsContents = null;
 
         public const string CreateToken = "SeCreateTokenPrivilege";
         public const string AssignPrimaryToken = "SeAssignPrimaryTokenPrivilege";
@@ -163,7 +163,7 @@ namespace System.Security.AccessControl
         {
             private bool disposed = false;
             private int referenceCount = 1;
-            private SafeTokenHandle threadHandle = new SafeTokenHandle(IntPtr.Zero);
+            private SafeTokenHandle? threadHandle = new SafeTokenHandle(IntPtr.Zero);
             private readonly bool isImpersonating = false;
 
             private static volatile SafeTokenHandle processHandle = new SafeTokenHandle(IntPtr.Zero);
@@ -210,7 +210,7 @@ namespace System.Security.AccessControl
                         // the process token by impersonating self.
                         //
 
-                        SafeTokenHandle threadHandleBefore = this.threadHandle;
+                        SafeTokenHandle? threadHandleBefore = this.threadHandle;
                         error = FCall.OpenThreadToken(
                                       TokenAccessLevels.Query | TokenAccessLevels.AdjustPrivileges,
                                       WinSecurityContext.Process,
@@ -323,7 +323,7 @@ namespace System.Security.AccessControl
                     if (this.threadHandle != null)
                     {
                         this.threadHandle.Dispose();
-                        this.threadHandle = null;
+                        this.threadHandle = null!;
                     }
                 }
 
@@ -366,7 +366,9 @@ namespace System.Security.AccessControl
             public SafeTokenHandle ThreadHandle
             {
                 get
-                { return this.threadHandle; }
+                {
+                    return this.threadHandle!;
+                }
             }
 
             public bool IsImpersonating
@@ -585,7 +587,7 @@ namespace System.Security.AccessControl
                     //
 
                     if (this.stateWasChanged &&
-                        (this.tlsContents.ReferenceCountValue > 1 ||
+                        (this.tlsContents!.ReferenceCountValue > 1 ||
                           !this.tlsContents.IsImpersonating))
                     {
                         Interop.Advapi32.TOKEN_PRIVILEGE newState;

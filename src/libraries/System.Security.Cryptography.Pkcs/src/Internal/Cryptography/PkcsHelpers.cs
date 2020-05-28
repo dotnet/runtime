@@ -15,13 +15,12 @@ using System.Security.Cryptography.Asn1.Pkcs7;
 using System.Security.Cryptography.Pkcs;
 using System.Security.Cryptography.X509Certificates;
 using X509IssuerSerial = System.Security.Cryptography.Xml.X509IssuerSerial;
+using System.Diagnostics.CodeAnalysis;
 
 namespace Internal.Cryptography
 {
     internal static partial class PkcsHelpers
     {
-        private static readonly byte[] s_pSpecifiedDefaultParameters = { 0x04, 0x00 };
-
 #if !NETCOREAPP && !NETSTANDARD2_1
         // Compatibility API.
         internal static void AppendData(this IncrementalHash hasher, ReadOnlySpan<byte> data)
@@ -36,7 +35,7 @@ namespace Internal.Cryptography
             return GetDigestAlgorithm(oid.Value);
         }
 
-        internal static HashAlgorithmName GetDigestAlgorithm(string oidValue, bool forVerification = false)
+        internal static HashAlgorithmName GetDigestAlgorithm(string? oidValue, bool forVerification = false)
         {
             switch (oidValue)
             {
@@ -120,7 +119,7 @@ namespace Internal.Cryptography
 
         public static AttributeAsn[] NormalizeAttributeSet(
             AttributeAsn[] setItems,
-            Action<byte[]> encodedValueProcessor = null)
+            Action<byte[]>? encodedValueProcessor = null)
         {
             byte[] normalizedValue;
 
@@ -139,13 +138,13 @@ namespace Internal.Cryptography
                 }
             }
 
-            AsnReader reader = new AsnReader(normalizedValue, AsnEncodingRules.DER);
-            AsnReader setReader = reader.ReadSetOf();
+            AsnValueReader reader = new AsnValueReader(normalizedValue, AsnEncodingRules.DER);
+            AsnValueReader setReader = reader.ReadSetOf();
             AttributeAsn[] decodedSet = new AttributeAsn[setItems.Length];
             int i = 0;
             while (setReader.HasData)
             {
-                AttributeAsn.Decode(setReader, out AttributeAsn item);
+                AttributeAsn.Decode(ref setReader, normalizedValue, out AttributeAsn item);
                 decodedSet[i] = item;
                 i++;
             }
@@ -204,7 +203,7 @@ namespace Internal.Cryptography
         public static string OctetStringToUnicode(this byte[] octets)
         {
             if (octets.Length < 2)
-                return string.Empty;   // Desktop compat: 0-length byte array maps to string.empty. 1-length byte array gets passed to Marshal.PtrToStringUni() with who knows what outcome.
+                return string.Empty;   // .NET Framework compat: 0-length byte array maps to string.empty. 1-length byte array gets passed to Marshal.PtrToStringUni() with who knows what outcome.
 
             string s = Encoding.Unicode.GetString(octets, 0, octets.Length - 2);
             return s;
@@ -225,9 +224,9 @@ namespace Internal.Cryptography
         }
 
         /// <summary>
-        /// Desktop compat: We do not complain about multiple matches. Just take the first one and ignore the rest.
+        /// .NET Framework compat: We do not complain about multiple matches. Just take the first one and ignore the rest.
         /// </summary>
-        public static X509Certificate2 TryFindMatchingCertificate(this X509Certificate2Collection certs, SubjectIdentifier recipientIdentifier)
+        public static X509Certificate2? TryFindMatchingCertificate(this X509Certificate2Collection certs, SubjectIdentifier recipientIdentifier)
         {
             //
             // Note: SubjectIdentifier has no public constructor so the only one that can construct this type is this assembly.
@@ -239,7 +238,7 @@ namespace Internal.Cryptography
             {
                 case SubjectIdentifierType.IssuerAndSerialNumber:
                     {
-                        X509IssuerSerial issuerSerial = (X509IssuerSerial)(recipientIdentifier.Value);
+                        X509IssuerSerial issuerSerial = (X509IssuerSerial)(recipientIdentifier.Value!);
                         byte[] serialNumber = issuerSerial.SerialNumber.ToSerialBytes();
                         string issuer = issuerSerial.IssuerName;
                         foreach (X509Certificate2 candidate in certs)
@@ -253,7 +252,7 @@ namespace Internal.Cryptography
 
                 case SubjectIdentifierType.SubjectKeyIdentifier:
                     {
-                        string skiString = (string)(recipientIdentifier.Value);
+                        string skiString = (string)(recipientIdentifier.Value!);
                         byte[] ski = skiString.ToSkiBytes();
                         foreach (X509Certificate2 cert in certs)
                         {
@@ -325,21 +324,9 @@ namespace Internal.Cryptography
         }
 
 #if NETCOREAPP || NETSTANDARD2_1
-        private static unsafe string ToUpperHexString(ReadOnlySpan<byte> ba)
+        private static string ToUpperHexString(ReadOnlySpan<byte> ba)
         {
-            fixed (byte* baPtr = ba)
-            {
-                return string.Create(ba.Length * 2, (Ptr: new IntPtr(baPtr), ba.Length), (span, args) =>
-                {
-                    const string HexValues = "0123456789ABCDEF";
-                    int p = 0;
-                    foreach (byte b in new ReadOnlySpan<byte>((byte*)args.Ptr, args.Length))
-                    {
-                        span[p++] = HexValues[b >> 4];
-                        span[p++] = HexValues[b & 0xF];
-                    }
-                });
-            }
+            return HexConverter.ToString(ba, HexConverter.Casing.Upper);
         }
 #else
         private static string ToUpperHexString(ReadOnlySpan<byte> ba)
@@ -492,7 +479,7 @@ namespace Internal.Cryptography
             Span<byte> tmp = stackalloc byte[ArbitraryStackLimit];
             // Use stackalloc 0 so data can later hold a slice of tmp.
             ReadOnlySpan<byte> data = stackalloc byte[0];
-            byte[] poolBytes = null;
+            byte[]? poolBytes = null;
 
             try
             {
@@ -543,8 +530,6 @@ namespace Internal.Cryptography
             }
         }
 
-        private static readonly byte[] s_invalidEmptyOid = { 0x06, 0x00 };
-
         public static byte[] EncodeUtcTime(DateTime utcTime)
         {
             const int maxLegalYear = 2049;
@@ -584,16 +569,16 @@ namespace Internal.Cryptography
             return value.UtcDateTime;
         }
 
-        public static string DecodeOid(byte[] encodedOid)
+        public static string DecodeOid(ReadOnlySpan<byte> encodedOid)
         {
-            // Windows compat.
-            if (s_invalidEmptyOid.AsSpan().SequenceEqual(encodedOid))
+            // Windows compat for a zero length OID.
+            if (encodedOid.Length == 2 && encodedOid[0] == 0x06 && encodedOid[1] == 0x00)
             {
                 return string.Empty;
             }
 
             // Read using BER because the CMS specification says the encoding is BER.
-            AsnReader reader = new AsnReader(encodedOid, AsnEncodingRules.BER);
+            AsnValueReader reader = new AsnValueReader(encodedOid, AsnEncodingRules.BER);
             string value = reader.ReadObjectIdentifierAsString();
             reader.ThrowIfNotEmpty();
             return value;
@@ -601,8 +586,8 @@ namespace Internal.Cryptography
 
         public static bool TryGetRsaOaepEncryptionPadding(
             ReadOnlyMemory<byte>? parameters,
-            out RSAEncryptionPadding rsaEncryptionPadding,
-            out Exception exception)
+            [NotNullWhen(true)] out RSAEncryptionPadding? rsaEncryptionPadding,
+            [NotNullWhen(false)] out Exception? exception)
         {
             exception = null;
             rsaEncryptionPadding = null;
@@ -634,8 +619,10 @@ namespace Internal.Cryptography
                     return false;
                 }
 
+                ReadOnlySpan<byte> pSpecifiedDefaultParameters = new byte[] { 0x04, 0x00 };
+
                 if (oaepParameters.PSourceFunc.Parameters != null &&
-                    !oaepParameters.PSourceFunc.Parameters.Value.Span.SequenceEqual(s_pSpecifiedDefaultParameters))
+                    !oaepParameters.PSourceFunc.Parameters.Value.Span.SequenceEqual(pSpecifiedDefaultParameters))
                 {
                     exception = new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
                     return false;

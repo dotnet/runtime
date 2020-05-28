@@ -22,7 +22,7 @@ namespace System.Linq.Expressions
     [DebuggerTypeProxy(typeof(TryExpressionProxy))]
     public sealed class TryExpression : Expression
     {
-        internal TryExpression(Type type, Expression body, Expression @finally, Expression fault, ReadOnlyCollection<CatchBlock> handlers)
+        internal TryExpression(Type type, Expression body, Expression? @finally, Expression? fault, ReadOnlyCollection<CatchBlock> handlers)
         {
             Type = type;
             Body = body;
@@ -56,12 +56,12 @@ namespace System.Linq.Expressions
         /// <summary>
         /// Gets the <see cref="Expression"/> representing the finally block.
         /// </summary>
-        public Expression Finally { get; }
+        public Expression? Finally { get; }
 
         /// <summary>
         /// Gets the <see cref="Expression"/> representing the fault block.
         /// </summary>
-        public Expression Fault { get; }
+        public Expression? Fault { get; }
 
         /// <summary>
         /// Dispatches to the specific visit method for this node type.
@@ -81,11 +81,11 @@ namespace System.Linq.Expressions
         /// <param name="finally">The <see cref="Finally"/> property of the result.</param>
         /// <param name="fault">The <see cref="Fault"/> property of the result.</param>
         /// <returns>This expression if no children changed, or an expression with the updated children.</returns>
-        public TryExpression Update(Expression body, IEnumerable<CatchBlock> handlers, Expression @finally, Expression fault)
+        public TryExpression Update(Expression body, IEnumerable<CatchBlock>? handlers, Expression? @finally, Expression? fault)
         {
             if (body == Body & @finally == Finally & fault == Fault)
             {
-                if (ExpressionUtils.SameElements(ref handlers, Handlers))
+                if (ExpressionUtils.SameElements(ref handlers!, Handlers))
                 {
                     return this;
                 }
@@ -103,7 +103,7 @@ namespace System.Linq.Expressions
         /// <param name="body">The body of the try block.</param>
         /// <param name="fault">The body of the fault block.</param>
         /// <returns>The created <see cref="TryExpression"/>.</returns>
-        public static TryExpression TryFault(Expression body, Expression fault)
+        public static TryExpression TryFault(Expression body, Expression? fault)
         {
             return MakeTry(null, body, null, fault, handlers: null);
         }
@@ -114,7 +114,7 @@ namespace System.Linq.Expressions
         /// <param name="body">The body of the try block.</param>
         /// <param name="finally">The body of the finally block.</param>
         /// <returns>The created <see cref="TryExpression"/>.</returns>
-        public static TryExpression TryFinally(Expression body, Expression @finally)
+        public static TryExpression TryFinally(Expression body, Expression? @finally)
         {
             return MakeTry(null, body, @finally, fault: null, handlers: null);
         }
@@ -125,7 +125,7 @@ namespace System.Linq.Expressions
         /// <param name="body">The body of the try block.</param>
         /// <param name="handlers">The array of zero or more <see cref="CatchBlock"/>s representing the catch statements to be associated with the try block.</param>
         /// <returns>The created <see cref="TryExpression"/>.</returns>
-        public static TryExpression TryCatch(Expression body, params CatchBlock[] handlers)
+        public static TryExpression TryCatch(Expression body, params CatchBlock[]? handlers)
         {
             return MakeTry(null, body, null, null, handlers);
         }
@@ -137,7 +137,7 @@ namespace System.Linq.Expressions
         /// <param name="finally">The body of the finally block.</param>
         /// <param name="handlers">The array of zero or more <see cref="CatchBlock"/>s representing the catch statements to be associated with the try block.</param>
         /// <returns>The created <see cref="TryExpression"/>.</returns>
-        public static TryExpression TryCatchFinally(Expression body, Expression @finally, params CatchBlock[] handlers)
+        public static TryExpression TryCatchFinally(Expression body, Expression? @finally, params CatchBlock[]? handlers)
         {
             return MakeTry(null, body, @finally, null, handlers);
         }
@@ -151,7 +151,7 @@ namespace System.Linq.Expressions
         /// <param name="fault">The body of the t block. Pass null if the try block has no fault block associated with it.</param>
         /// <param name="handlers">A collection of <see cref="CatchBlock"/>s representing the catch statements to be associated with the try block.</param>
         /// <returns>The created <see cref="TryExpression"/>.</returns>
-        public static TryExpression MakeTry(Type type, Expression body, Expression @finally, Expression fault, IEnumerable<CatchBlock> handlers)
+        public static TryExpression MakeTry(Type? type, Expression body, Expression? @finally, Expression? fault, IEnumerable<CatchBlock>? handlers)
         {
             ExpressionUtils.RequiresCanRead(body, nameof(body));
 
@@ -180,7 +180,7 @@ namespace System.Linq.Expressions
         }
 
         //Validate that the body of the try expression must have the same type as the body of every try block.
-        private static void ValidateTryAndCatchHaveSameType(Type type, Expression tryBody, ReadOnlyCollection<CatchBlock> handlers)
+        private static void ValidateTryAndCatchHaveSameType(Type? type, Expression tryBody, ReadOnlyCollection<CatchBlock> handlers)
         {
             Debug.Assert(tryBody != null);
             // Type unification ... all parts must be reference assignable to "type"

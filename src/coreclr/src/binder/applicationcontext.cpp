@@ -76,6 +76,7 @@ namespace BINDER_SPACE
         m_pFailureCache = NULL;
         m_contextCS = NULL;
         m_pTrustedPlatformAssemblyMap = nullptr;
+        m_binderID = 0;
     }
 
     ApplicationContext::~ApplicationContext()
@@ -94,7 +95,7 @@ namespace BINDER_SPACE
         }
     }
 
-    HRESULT ApplicationContext::Init()
+    HRESULT ApplicationContext::Init(UINT_PTR binderID)
     {
         HRESULT hr = S_OK;
 
@@ -122,6 +123,7 @@ namespace BINDER_SPACE
             m_pFailureCache = pFailureCache;
         }
 
+        m_binderID = binderID;
     Exit:
         return hr;
     }

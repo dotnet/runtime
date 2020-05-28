@@ -41,7 +41,7 @@ void TreeLifeUpdater<ForCodeGen>::UpdateLifeVar(GenTree* tree)
     LclVarDsc*   varDsc = compiler->lvaTable + lclNum;
 
 #ifdef DEBUG
-#if !defined(_TARGET_AMD64_)
+#if !defined(TARGET_AMD64)
     // There are no addr nodes on ARM and we are experimenting with encountering vars in 'random' order.
     // Struct fields are not traversed in a consistent order, so ignore them when
     // verifying that we see the var nodes in execution order
@@ -59,7 +59,7 @@ void TreeLifeUpdater<ForCodeGen>::UpdateLifeVar(GenTree* tree)
             // dereferenced, so we can't say that this is not a use or def.
         }
     }
-#endif // !_TARGET_AMD64_
+#endif // !TARGET_AMD64
 #endif // DEBUG
 
     compiler->compCurLifeTree = tree;
@@ -74,9 +74,27 @@ void TreeLifeUpdater<ForCodeGen>::UpdateLifeVar(GenTree* tree)
     }
 
     // if it's a partial definition then variable "x" must have had a previous, original, site to be born.
-    bool isBorn  = ((tree->gtFlags & GTF_VAR_DEF) != 0 && (tree->gtFlags & GTF_VAR_USEASG) == 0);
-    bool isDying = ((tree->gtFlags & GTF_VAR_DEATH) != 0);
-    bool spill   = ((tree->gtFlags & GTF_SPILL) != 0);
+    bool isBorn;
+    bool isDying;
+    bool spill;
+    bool isMultiRegLocal = lclVarTree->IsMultiRegLclVar();
+    if (isMultiRegLocal)
+    {
+        assert((tree->gtFlags & GTF_VAR_USEASG) == 0);
+        isBorn = ((tree->gtFlags & GTF_VAR_DEF) != 0);
+        // Note that for multireg locals we can have definitions for which some of those are last uses.
+        // We don't want to add those to the varDeltaSet because otherwise they will be added as newly
+        // live.
+        isDying = !isBorn && tree->AsLclVar()->HasLastUse();
+        // GTF_SPILL will be set if any registers need to be spilled.
+        spill = ((tree->gtFlags & GTF_SPILL) != 0);
+    }
+    else
+    {
+        isBorn  = ((lclVarTree->gtFlags & GTF_VAR_DEF) != 0 && (lclVarTree->gtFlags & GTF_VAR_USEASG) == 0);
+        isDying = ((lclVarTree->gtFlags & GTF_VAR_DEATH) != 0);
+        spill   = ((lclVarTree->gtFlags & GTF_SPILL) != 0);
+    }
 
     // Since all tracked vars are register candidates, but not all are in registers at all times,
     // we maintain two separate sets of variables - the total set of variables that are either
@@ -96,15 +114,21 @@ void TreeLifeUpdater<ForCodeGen>::UpdateLifeVar(GenTree* tree)
                 {
                     compiler->codeGen->genUpdateVarReg(varDsc, tree);
                 }
-                if (varDsc->lvIsInReg() && tree->GetRegNum() != REG_NA)
+                bool isInReg    = varDsc->lvIsInReg() && tree->GetRegNum() != REG_NA;
+                bool isInMemory = !isInReg || varDsc->lvLiveInOutOfHndlr;
+                if (isInReg)
                 {
                     compiler->codeGen->genUpdateRegLife(varDsc, isBorn, isDying DEBUGARG(tree));
                 }
-                else
+                if (isInMemory)
                 {
                     VarSetOps::AddElemD(compiler, stackVarDeltaSet, varDsc->lvVarIndex);
                 }
             }
+        }
+        else if (ForCodeGen && lclVarTree->IsMultiRegLclVar())
+        {
+            assert(!"MultiRegLclVars not yet supported");
         }
         else if (varDsc->lvPromoted)
         {
@@ -124,13 +148,17 @@ void TreeLifeUpdater<ForCodeGen>::UpdateLifeVar(GenTree* tree)
                 }
             }
 
-            for (unsigned i = varDsc->lvFieldLclStart; i < varDsc->lvFieldLclStart + varDsc->lvFieldCnt; ++i)
+            unsigned firstFieldVarNum = varDsc->lvFieldLclStart;
+            for (unsigned i = 0; i < varDsc->lvFieldCnt; ++i)
             {
-                LclVarDsc* fldVarDsc = &(compiler->lvaTable[i]);
+                LclVarDsc* fldVarDsc = compiler->lvaGetDesc(firstFieldVarNum + i);
                 noway_assert(fldVarDsc->lvIsStructField);
                 if (fldVarDsc->lvTracked)
                 {
                     unsigned fldVarIndex = fldVarDsc->lvVarIndex;
+                    // We should never see enregistered fields in a struct local unless
+                    // IsMultiRegLclVar() returns true, in which case we've handled this above.
+                    assert(!fldVarDsc->lvIsInReg());
                     noway_assert(fldVarIndex < compiler->lvaTrackedCount);
                     if (!hasDeadTrackedFieldVars)
                     {
@@ -139,34 +167,12 @@ void TreeLifeUpdater<ForCodeGen>::UpdateLifeVar(GenTree* tree)
                         {
                             // We repeat this call here and below to avoid the VarSetOps::IsMember
                             // test in this, the common case, where we have no deadTrackedFieldVars.
-                            if (fldVarDsc->lvIsInReg())
-                            {
-                                if (isBorn)
-                                {
-                                    compiler->codeGen->genUpdateVarReg(fldVarDsc, tree);
-                                }
-                                compiler->codeGen->genUpdateRegLife(fldVarDsc, isBorn, isDying DEBUGARG(tree));
-                            }
-                            else
-                            {
-                                VarSetOps::AddElemD(compiler, stackVarDeltaSet, fldVarIndex);
-                            }
+                            VarSetOps::AddElemD(compiler, stackVarDeltaSet, fldVarIndex);
                         }
                     }
                     else if (ForCodeGen && VarSetOps::IsMember(compiler, varDeltaSet, fldVarIndex))
                     {
-                        if (compiler->lvaTable[i].lvIsInReg())
-                        {
-                            if (isBorn)
-                            {
-                                compiler->codeGen->genUpdateVarReg(fldVarDsc, tree);
-                            }
-                            compiler->codeGen->genUpdateRegLife(fldVarDsc, isBorn, isDying DEBUGARG(tree));
-                        }
-                        else
-                        {
-                            VarSetOps::AddElemD(compiler, stackVarDeltaSet, fldVarIndex);
-                        }
+                        VarSetOps::AddElemD(compiler, stackVarDeltaSet, fldVarIndex);
                     }
                 }
             }

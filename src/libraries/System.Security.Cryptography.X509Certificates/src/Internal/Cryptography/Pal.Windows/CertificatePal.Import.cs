@@ -27,7 +27,7 @@ namespace Internal.Cryptography.Pal
             return FromBlobOrFile(null, fileName, password, keyStorageFlags);
         }
 
-        private static ICertificatePal FromBlobOrFile(byte[] rawData, string fileName, SafePasswordHandle password, X509KeyStorageFlags keyStorageFlags)
+        private static ICertificatePal FromBlobOrFile(byte[]? rawData, string? fileName, SafePasswordHandle password, X509KeyStorageFlags keyStorageFlags)
         {
             Debug.Assert(rawData != null || fileName != null);
             Debug.Assert(password != null);
@@ -35,14 +35,14 @@ namespace Internal.Cryptography.Pal
             bool loadFromFile = (fileName != null);
 
             PfxCertStoreFlags pfxCertStoreFlags = MapKeyStorageFlags(keyStorageFlags);
-            bool persistKeySet = (0 != (keyStorageFlags & X509KeyStorageFlags.PersistKeySet));
+            bool deleteKeyContainer = false;
 
             CertEncodingType msgAndCertEncodingType;
             ContentType contentType;
             FormatType formatType;
-            SafeCertStoreHandle hCertStore = null;
-            SafeCryptMsgHandle hCryptMsg = null;
-            SafeCertContextHandle pCertContext = null;
+            SafeCertStoreHandle? hCertStore = null;
+            SafeCryptMsgHandle? hCryptMsg = null;
+            SafeCertContextHandle? pCertContext = null;
 
             try
             {
@@ -52,7 +52,7 @@ namespace Internal.Cryptography.Pal
                     {
                         fixed (char* pFileName = fileName)
                         {
-                            CRYPTOAPI_BLOB certBlob = new CRYPTOAPI_BLOB(loadFromFile ? 0 : rawData.Length, pRawData);
+                            CRYPTOAPI_BLOB certBlob = new CRYPTOAPI_BLOB(loadFromFile ? 0 : rawData!.Length, pRawData);
 
                             CertQueryObjectType objectType = loadFromFile ? CertQueryObjectType.CERT_QUERY_OBJECT_FILE : CertQueryObjectType.CERT_QUERY_OBJECT_BLOB;
                             void* pvObject = loadFromFile ? (void*)pFileName : (void*)&certBlob;
@@ -85,11 +85,18 @@ namespace Internal.Cryptography.Pal
                     else if (contentType == ContentType.CERT_QUERY_CONTENT_PFX)
                     {
                         if (loadFromFile)
-                            rawData = File.ReadAllBytes(fileName);
-                        pCertContext = FilterPFXStore(rawData, password, pfxCertStoreFlags);
+                            rawData = File.ReadAllBytes(fileName!);
+                        pCertContext = FilterPFXStore(rawData!, password, pfxCertStoreFlags);
+
+                        // If PersistKeySet is set we don't delete the key, so that it persists.
+                        // If EphemeralKeySet is set we don't delete the key, because there's no file, so it's a wasteful call.
+                        const X509KeyStorageFlags DeleteUnless =
+                            X509KeyStorageFlags.PersistKeySet | X509KeyStorageFlags.EphemeralKeySet;
+
+                        deleteKeyContainer = ((keyStorageFlags & DeleteUnless) == 0);
                     }
 
-                    CertificatePal pal = new CertificatePal(pCertContext, deleteKeyContainer: !persistKeySet);
+                    CertificatePal pal = new CertificatePal(pCertContext, deleteKeyContainer);
                     pCertContext = null;
                     return pal;
                 }
@@ -133,7 +140,7 @@ namespace Internal.Cryptography.Pal
                 certInfo.SerialNumber.cbData = pCmsgSignerInfo->SerialNumber.cbData;
                 certInfo.SerialNumber.pbData = pCmsgSignerInfo->SerialNumber.pbData;
 
-                SafeCertContextHandle pCertContext = null;
+                SafeCertContextHandle? pCertContext = null;
                 if (!Interop.crypt32.CertFindCertificateInStore(hCertStore, CertFindType.CERT_FIND_SUBJECT_CERT, &certInfo, ref pCertContext))
                     throw Marshal.GetHRForLastWin32Error().ToCryptographicException();
                 return pCertContext;
@@ -159,7 +166,7 @@ namespace Internal.Cryptography.Pal
                 // Find the first cert with private key. If none, then simply take the very first cert. Along the way, delete the keycontainers
                 // of any cert we don't accept.
                 SafeCertContextHandle pCertContext = SafeCertContextHandle.InvalidHandle;
-                SafeCertContextHandle pEnumContext = null;
+                SafeCertContextHandle? pEnumContext = null;
                 while (Interop.crypt32.CertEnumCertificatesInStore(hStore, ref pEnumContext))
                 {
                     if (pEnumContext.ContainsPrivateKey)
@@ -177,7 +184,7 @@ namespace Internal.Cryptography.Pal
                         }
                         else
                         {
-                            // Found our first cert that has a private key. Set him up as our chosen one but keep iterating
+                            // Found our first cert that has a private key. Set it up as our chosen one but keep iterating
                             // as we need to free up the keys of any remaining certs.
                             pCertContext.Dispose();
                             pCertContext = pEnumContext.Duplicate();
@@ -229,14 +236,10 @@ namespace Internal.Cryptography.Pal
             if ((keyStorageFlags & X509KeyStorageFlags.EphemeralKeySet) == X509KeyStorageFlags.EphemeralKeySet)
                 pfxCertStoreFlags |= PfxCertStoreFlags.PKCS12_NO_PERSIST_KEY | PfxCertStoreFlags.PKCS12_ALWAYS_CNG_KSP;
 
-            // In the full .NET Framework loading a PFX then adding the key to the Windows Certificate Store would
+            // In .NET Framework loading a PFX then adding the key to the Windows Certificate Store would
             // enable a native application compiled against CAPI to find that private key and interoperate with it.
             //
-            // For CoreFX this behavior is being retained.
-            //
-            // For .NET Native (UWP) the API used to delete the private key (if it wasn't added to a store) is not
-            // allowed to be called if the key is stored in CAPI.  So for UWP force the key to be stored in the
-            // CNG Key Storage Provider, then deleting the key with CngKey.Delete will clean up the file on disk, too.
+            // For .NET Core this behavior is being retained.
 
             return pfxCertStoreFlags;
         }

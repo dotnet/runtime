@@ -40,7 +40,7 @@ namespace System.Drawing.Printing
     /// </summary>
     public class PrintEventArgs : System.ComponentModel.CancelEventArgs
     {
-        private GraphicsPrinter graphics_context;
+        private GraphicsPrinter? graphics_context;
         private PrintAction action;
 
         public PrintEventArgs()
@@ -57,7 +57,7 @@ namespace System.Drawing.Printing
             get { return action; }
         }
 
-        internal GraphicsPrinter GraphicsContext
+        internal GraphicsPrinter? GraphicsContext
         {
             get { return graphics_context; }
             set { graphics_context = value; }

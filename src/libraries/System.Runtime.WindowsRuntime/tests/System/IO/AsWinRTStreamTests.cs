@@ -12,6 +12,7 @@ using Xunit;
 namespace System.IO
 {
     [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsWinUISupported))]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/34578", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
     public class AsWinRTStreamTests
     {
         [Fact]
@@ -65,7 +66,7 @@ namespace System.IO
         [Fact]
         public static void AsInputStream_RoundtripUnwrap()
         {
-            // NetFx Stream -> IInputStream -> NetFx Stream -> roundtrip reference equality is preserved
+            // .NET Framework Stream -> IInputStream -> .NET Framework Stream -> roundtrip reference equality is preserved
             Stream managedStream = TestStreamProvider.CreateReadOnlyStream();
             using (IInputStream ins = managedStream.AsInputStream())
             {
@@ -76,7 +77,7 @@ namespace System.IO
         [Fact]
         public static void AsOutputStream_RoundtripUnwrap()
         {
-            // NetFx Stream -> IOutputStream -> NetFx Stream -> roundtrip reference equality is preserved
+            // .NET Framework Stream -> IOutputStream -> .NET Framework Stream -> roundtrip reference equality is preserved
             Stream managedStream = TestStreamProvider.CreateWriteOnlyStream();
             using (IOutputStream outs = managedStream.AsOutputStream())
             {

@@ -72,6 +72,7 @@ namespace Tests.Integration
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/mono/mono/issues/16417", TestRuntimes.Mono)]
         public void Import_PrivateOnClass_ShouldSetImport()
         {
             var container = ContainerFactory.CreateWithAttributedCatalog(typeof(BaseWithNonPublicImportAndExport));
@@ -82,6 +83,7 @@ namespace Tests.Integration
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/mono/mono/issues/16417", TestRuntimes.Mono)]
         public void Import_PrivateOnBase_ShouldSetImport()
         {
             var container = ContainerFactory.CreateWithAttributedCatalog(typeof(DerivedBaseWithNonPublicImportAndExport));
@@ -120,6 +122,7 @@ namespace Tests.Integration
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/mono/mono/issues/16417", TestRuntimes.Mono)]
         public void Import_InheritImportFromInterface_ShouldExposeImport()
         {
             var container = ContainerFactory.CreateWithAttributedCatalog(
@@ -168,6 +171,7 @@ namespace Tests.Integration
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/mono/mono/issues/16417", TestRuntimes.Mono)]
         public void Export_BaseAndDerivedShouldAmountInTwoExports()
         {
             var container = ContainerFactory.CreateWithAttributedCatalog(
@@ -303,6 +307,7 @@ namespace Tests.Integration
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/mono/mono/issues/16417", TestRuntimes.Mono)]
         public void Export_Plugin1()
         {
             var container = ContainerFactory.CreateWithAttributedCatalog(
@@ -327,6 +332,7 @@ namespace Tests.Integration
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/mono/mono/issues/16417", TestRuntimes.Mono)]
         public void Export_Plugin2()
         {
             var container = ContainerFactory.CreateWithAttributedCatalog(
@@ -354,6 +360,7 @@ namespace Tests.Integration
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/mono/mono/issues/16417", TestRuntimes.Mono)]
         public void Export_Plugin3()
         {
             var container = ContainerFactory.CreateWithAttributedCatalog(
@@ -386,6 +393,7 @@ namespace Tests.Integration
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/mono/mono/issues/16417", TestRuntimes.Mono)]
         public void Export_Plugin4()
         {
             var container = ContainerFactory.CreateWithAttributedCatalog(
@@ -406,6 +414,7 @@ namespace Tests.Integration
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/mono/mono/issues/16417", TestRuntimes.Mono)]
         public void Export_MyPlugin()
         {
             var container = ContainerFactory.CreateWithAttributedCatalog(
@@ -441,6 +450,7 @@ namespace Tests.Integration
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/mono/mono/issues/16417", TestRuntimes.Mono)]
         public void TestInterfaces()
         {
             var container = ContainerFactory.CreateWithAttributedCatalog(
@@ -499,6 +509,7 @@ namespace Tests.Integration
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/mono/mono/issues/16417", TestRuntimes.Mono)]
         public void Import_VirtualPropertyOverrideWithSameContract_ShouldSucceed()
         {
             var container = ContainerFactory.Create();
@@ -530,6 +541,7 @@ namespace Tests.Integration
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/mono/mono/issues/16417", TestRuntimes.Mono)]
         public void Import_VirtualPropertyOverrideWithDifferentContract_ShouldSucceed()
         {
             var container = ContainerFactory.Create();
@@ -657,6 +669,7 @@ namespace Tests.Integration
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/mono/mono/issues/16417", TestRuntimes.Mono)]
         public void DiscoverAddinsWithCombinedCustomExportAndMetadataAttribute()
         {
             var container = ContainerFactory.CreateWithAttributedCatalog(typeof(Addin1), typeof(Addin2), typeof(Addin3));
@@ -715,6 +728,7 @@ namespace Tests.Integration
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/mono/mono/issues/16417", TestRuntimes.Mono)]
         public void Test_CustomInheritedExportAttribute_OnInterface()
         {
             var container = ContainerFactory.CreateWithAttributedCatalog(typeof(UsesCustomInheritedExportOnInterface));
@@ -737,6 +751,7 @@ namespace Tests.Integration
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/mono/mono/issues/16417", TestRuntimes.Mono)]
         public void Test_CustomInheritedExportAttribute_OnBaseClass()
         {
             var container = ContainerFactory.CreateWithAttributedCatalog(typeof(DerivedFromBaseWithCustomInheritedExport));
@@ -820,7 +835,7 @@ namespace Tests.Integration
         public class FooWithInterfaceWithMultipleFoos : IFoo3 { }
 
         [Fact]
-        [ActiveIssue(25498)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/24240")]
         public void InheritedExport_InterfaceHiearchy()
         {
             var container = ContainerFactory.CreateWithAttributedCatalog(typeof(FooWithInterfaceWithMultipleFoos));

@@ -12,7 +12,7 @@ namespace System.Diagnostics
     public static class Debugger
     {
         // Break causes a breakpoint to be signalled to an attached debugger.  If no debugger
-        // is attached, the user is asked if he wants to attach a debugger. If yes, then the
+        // is attached, the user is asked if they want to attach a debugger. If yes, then the
         // debugger is launched.
         [MethodImpl(MethodImplOptions.NoInlining)]
         public static void Break() => BreakInternal();

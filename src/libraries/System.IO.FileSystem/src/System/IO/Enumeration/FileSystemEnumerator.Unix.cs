@@ -20,18 +20,18 @@ namespace System.IO.Enumeration
 
         private readonly object _lock = new object();
 
-        private string _currentPath;
+        private string? _currentPath;
         private IntPtr _directoryHandle;
         private bool _lastEntryFound;
-        private Queue<string> _pending;
+        private Queue<string>? _pending;
 
         private Interop.Sys.DirectoryEntry _entry;
-        private TResult _current;
+        private TResult _current = default!;
 
         // Used for creating full paths
-        private char[] _pathBuffer;
+        private char[]? _pathBuffer;
         // Used to get the raw entry data
-        private byte[] _entryBuffer;
+        private byte[]? _entryBuffer;
 
         private void Init()
         {

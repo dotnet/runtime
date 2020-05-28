@@ -93,6 +93,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/2389", TestRuntimes.Mono)]
         [MemberData(nameof(NonInterfaceTypes_TestData))]
         public void AddInterfaceImplementation_TypeNotInterface_ThrowsTypeLoadExceptionOnCreation(Type interfaceType)
         {
@@ -114,6 +115,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/2389", TestRuntimes.Mono)]
         public void AddInterfaceImplementation_TypeDoesntImplementInterface_ThrowsTypeLoadExceptionOnCreation()
         {
             TypeBuilder type = Helpers.DynamicType(TypeAttributes.Public);

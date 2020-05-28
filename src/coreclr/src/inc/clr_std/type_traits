@@ -187,6 +187,70 @@ namespace std
     };
 
     //-----------------------------------------------------------------------------------------
+    // TEMPLATE CLASS make_unsigned
+    template<typename Type1>
+    struct make_unsigned
+    {
+    };
+
+    template<>
+    struct make_unsigned<int>
+    {
+        typedef unsigned int type;
+    };
+
+#ifndef TARGET_UNIX
+
+    template<>
+    struct make_unsigned<long>
+    {
+        typedef unsigned long type;
+    };
+
+#endif // !TARGET_UNIX
+
+    template<>
+    struct make_unsigned<__int64>
+    {
+        typedef unsigned __int64 type;
+    };
+
+    template<>
+    struct make_unsigned<size_t>
+    {
+        typedef size_t type;
+    };
+
+    //-----------------------------------------------------------------------------------------
+    // TEMPLATE CLASS make_signed
+    template<typename Type1>
+    struct make_signed
+    {
+    };
+
+    template<>
+    struct make_signed<unsigned int>
+    {
+        typedef signed int type;
+    };
+
+#ifndef TARGET_UNIX
+
+    template<>
+    struct make_signed<unsigned long>
+    {
+        typedef signed long type;
+    };
+
+#endif // !TARGET_UNIX
+
+    template<>
+    struct make_signed<unsigned __int64>
+    {
+        typedef signed __int64 type;
+    };
+
+    //-----------------------------------------------------------------------------------------
     // TEMPLATE CLASS is_lvalue_reference
     template<class _Ty>
     struct is_lvalue_reference
@@ -295,7 +359,7 @@ namespace std
 
 // On Unix 'long' is a 64-bit type (same as __int64) and the following two definitions
 // conflict with _Is_integral<unsigned __int64> and _Is_integral<signed __int64>.
-#ifndef PLATFORM_UNIX
+#ifndef TARGET_UNIX
     template<>
     struct _Is_integral<unsigned long>
         : true_type
@@ -307,7 +371,7 @@ namespace std
         : true_type
     {    // determine whether _Ty is integral
     };
-#endif /* PLATFORM_UNIX */
+#endif /* TARGET_UNIX */
 
  #if _HAS_CHAR16_T_LANGUAGE_SUPPORT
     template<>
@@ -363,7 +427,7 @@ namespace std
 
 // In PAL, we define long as int and so this becomes int double,
 // which is a nonsense
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
     template<>
     struct _Is_floating_point<long double>
         : true_type

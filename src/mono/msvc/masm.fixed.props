@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup
+    Condition="'$(MASMBeforeTargets)' == '' and '$(MASMAfterTargets)' == '' and '$(ConfigurationType)' != 'Makefile'">
+    <MASMBeforeTargets>Midl</MASMBeforeTargets>
+    <MASMAfterTargets>CustomBuild</MASMAfterTargets>
+  </PropertyGroup>
+  <ItemDefinitionGroup>
+    <MASM>
+      <NoLogo>true</NoLogo>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <ObjectFileName>$(IntDir)%(FileName).obj</ObjectFileName>
+      <PreserveIdentifierCase>0</PreserveIdentifierCase>
+      <WarningLevel>3</WarningLevel>
+      <PackAlignmentBoundary>0</PackAlignmentBoundary>
+      <CallingConvention>0</CallingConvention>
+      <ErrorReporting>0</ErrorReporting>
+      <CommandLineTemplate Condition="'$(Platform)' == 'Win32'">"ml.exe" /c [AllOptions] [AdditionalOptions] /Ta[Inputs]</CommandLineTemplate>
+      <CommandLineTemplate Condition="'$(Platform)' == 'X64'">"ml64.exe" /c [AllOptions] [AdditionalOptions] /Ta[Inputs]</CommandLineTemplate>
+      <CommandLineTemplate Condition="'$(Platform)' != 'Win32' and '$(Platform)' != 'X64'">echo MASM not supported on this platform</CommandLineTemplate>
+      <ExecutionDescription>Assembling %(Identity)...</ExecutionDescription>
+    </MASM>
+  </ItemDefinitionGroup>
+</Project>

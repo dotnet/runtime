@@ -7,6 +7,7 @@
 
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using Internal.Runtime.CompilerServices;
 
 namespace System
 {
@@ -14,10 +15,9 @@ namespace System
     [System.Runtime.Versioning.NonVersionable] // This only applies to field layout
     public ref struct TypedReference
     {
-        private IntPtr Value;
-        private IntPtr Type;
+        private readonly ByReference<byte> _value;
+        private readonly IntPtr _type;
 
-        [CLSCompliant(false)]
         public static TypedReference MakeTypedReference(object target, FieldInfo[] flds)
         {
             if (target == null)
@@ -70,7 +70,7 @@ namespace System
 
         public override int GetHashCode()
         {
-            if (Type == IntPtr.Zero)
+            if (_type == IntPtr.Zero)
                 return 0;
             else
                 return __reftype(this).GetHashCode();
@@ -89,7 +89,7 @@ namespace System
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern unsafe object InternalToObject(void* value);
 
-        internal bool IsNull => Value == IntPtr.Zero && Type == IntPtr.Zero;
+        internal bool IsNull => Unsafe.IsNullRef(ref _value.Value) && _type == IntPtr.Zero;
 
         public static Type GetTargetType(TypedReference value)
         {

@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <Configurations>netcoreapp-Debug;netcoreapp-Release</Configurations>
+    <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
     <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>
@@ -11,6 +11,5 @@
     <ProjectReference Include="..\..\System.Collections.Concurrent\ref\System.Collections.Concurrent.csproj" />
     <ProjectReference Include="..\..\System.Linq\ref\System.Linq.csproj" />
     <ProjectReference Include="..\..\System.Collections\ref\System.Collections.csproj" />
-    <ProjectReference Include="..\..\System.Threading.Tasks\ref\System.Threading.Tasks.csproj" />
   </ItemGroup>
 </Project>

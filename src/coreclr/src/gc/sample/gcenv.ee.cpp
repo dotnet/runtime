@@ -96,11 +96,7 @@ uint32_t CLREventStatic::Wait(uint32_t dwMilliseconds, bool bAlertable)
     return result;
 }
 
-#ifndef __GNUC__
-__declspec(thread) Thread * pCurrentThread;
-#else // !__GNUC__
 thread_local Thread * pCurrentThread;
-#endif // !__GNUC__
 
 Thread * GetThread()
 {
@@ -250,7 +246,7 @@ void GCToEEInterface::DiagWalkSurvivors(void* gcContext, bool fCompacting)
 {
 }
 
-void GCToEEInterface::DiagWalkLOHSurvivors(void* gcContext)
+void GCToEEInterface::DiagWalkUOHSurvivors(void* gcContext, int gen)
 {
 }
 
@@ -279,17 +275,17 @@ bool GCToEEInterface::EagerFinalized(Object* obj)
     return false;
 }
 
-bool GCToEEInterface::GetBooleanConfigValue(const char* key, bool* value)
+bool GCToEEInterface::GetBooleanConfigValue(const char* privateKey, const char* publicKey, bool* value)
 {
     return false;
 }
 
-bool GCToEEInterface::GetIntConfigValue(const char* key, int64_t* value)
+bool GCToEEInterface::GetIntConfigValue(const char* privateKey, const char* publicKey, int64_t* value)
 {
     return false;
 }
 
-bool GCToEEInterface::GetStringConfigValue(const char* key, const char** value)
+bool GCToEEInterface::GetStringConfigValue(const char* privateKey, const char* publicKey, const char** value)
 {
     return false;
 }

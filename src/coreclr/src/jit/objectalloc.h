@@ -45,7 +45,7 @@ public:
     void EnableObjectStackAllocation();
 
 protected:
-    virtual void DoPhase() override;
+    virtual PhaseStatus DoPhase() override;
 
 private:
     bool CanAllocateLclVarOnStack(unsigned int lclNum, CORINFO_CLASS_HANDLE clsHnd);
@@ -76,15 +76,12 @@ private:
 //===============================================================================
 
 inline ObjectAllocator::ObjectAllocator(Compiler* comp)
-    : Phase(comp, "Allocate Objects", PHASE_ALLOCATE_OBJECTS)
+    : Phase(comp, PHASE_ALLOCATE_OBJECTS)
     , m_IsObjectStackAllocationEnabled(false)
     , m_AnalysisDone(false)
     , m_bitVecTraits(comp->lvaCount, comp)
     , m_HeapLocalToStackLocalMap(comp->getAllocator())
 {
-    // Disable checks since this phase runs before fgComputePreds phase.
-    // Checks are not expected to pass before fgComputePreds.
-    doChecks                          = false;
     m_EscapingPointers                = BitVecOps::UninitVal();
     m_PossiblyStackPointingPointers   = BitVecOps::UninitVal();
     m_DefinitelyStackPointingPointers = BitVecOps::UninitVal();

@@ -2,8 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 // ------------------------------------------------------------------------------
-// Changes to this file must follow the http://aka.ms/api-review process.
+// Changes to this file must follow the https://aka.ms/api-review process.
 // ------------------------------------------------------------------------------
+
+using System.Diagnostics.CodeAnalysis;
 
 namespace Microsoft.VisualBasic
 {
@@ -27,17 +29,17 @@ namespace Microsoft.VisualBasic
     {
         public Collection() { }
         public int Count { get { throw null; } }
-        public object this[int Index] { get { throw null; } }
+        public object? this[int Index] { get { throw null; } }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Advanced)]
-        public object this[object Index] { get { throw null; } }
-        public object this[string Key] { get { throw null; } }
+        public object? this[object Index] { get { throw null; } }
+        public object? this[string Key] { get { throw null; } }
         int System.Collections.ICollection.Count { get { throw null; } }
         bool System.Collections.ICollection.IsSynchronized { get { throw null; } }
         object System.Collections.ICollection.SyncRoot { get { throw null; } }
         bool System.Collections.IList.IsFixedSize { get { throw null; } }
         bool System.Collections.IList.IsReadOnly { get { throw null; } }
-        object System.Collections.IList.this[int index] { get { throw null; } set { } }
-        public void Add(object Item, string Key = null, object Before = null, object After = null) { }
+        object? System.Collections.IList.this[int index] { get { throw null; } set { } }
+        public void Add(object? Item, string? Key = null, object? Before = null, object? After = null) { }
         public void Clear() { }
         public bool Contains(string Key) { throw null; }
         public System.Collections.IEnumerator GetEnumerator() { throw null; }
@@ -45,24 +47,24 @@ namespace Microsoft.VisualBasic
         public void Remove(string Key) { }
         void System.Collections.ICollection.CopyTo(System.Array array, int index) { }
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() { throw null; }
-        int System.Collections.IList.Add(object value) { throw null; }
+        int System.Collections.IList.Add(object? value) { throw null; }
         void System.Collections.IList.Clear() { }
-        bool System.Collections.IList.Contains(object value) { throw null; }
-        int System.Collections.IList.IndexOf(object value) { throw null; }
-        void System.Collections.IList.Insert(int index, object value) { }
-        void System.Collections.IList.Remove(object value) { }
+        bool System.Collections.IList.Contains(object? value) { throw null; }
+        int System.Collections.IList.IndexOf(object? value) { throw null; }
+        void System.Collections.IList.Insert(int index, object? value) { }
+        void System.Collections.IList.Remove(object? value) { }
         void System.Collections.IList.RemoveAt(int index) { }
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.Class, Inherited=false, AllowMultiple=false)]
     public sealed partial class ComClassAttribute : System.Attribute
     {
         public ComClassAttribute() { }
-        public ComClassAttribute(string _ClassID) { }
-        public ComClassAttribute(string _ClassID, string _InterfaceID) { }
-        public ComClassAttribute(string _ClassID, string _InterfaceID, string _EventId) { }
-        public string ClassID { get { throw null; } }
-        public string EventID { get { throw null; } }
-        public string InterfaceID { get { throw null; } }
+        public ComClassAttribute(string? _ClassID) { }
+        public ComClassAttribute(string? _ClassID, string? _InterfaceID) { }
+        public ComClassAttribute(string? _ClassID, string? _InterfaceID, string? _EventId) { }
+        public string? ClassID { get { throw null; } }
+        public string? EventID { get { throw null; } }
+        public string? InterfaceID { get { throw null; } }
         public bool InterfaceShadows { get { throw null; } set { } }
     }
     public enum CompareMethod
@@ -137,7 +139,7 @@ namespace Microsoft.VisualBasic
         public const Microsoft.VisualBasic.AppWinStyle vbNormalNoFocus = Microsoft.VisualBasic.AppWinStyle.NormalNoFocus;
         public const Microsoft.VisualBasic.VariantType vbNull = Microsoft.VisualBasic.VariantType.Null;
         public const string vbNullChar = "\0";
-        public const string vbNullString = null;
+        public const string? vbNullString = null;
         public const Microsoft.VisualBasic.VariantType vbObject = Microsoft.VisualBasic.VariantType.Object;
         public const int vbObjectError = -2147221504;
         public const Microsoft.VisualBasic.MsgBoxResult vbOK = Microsoft.VisualBasic.MsgBoxResult.Ok;
@@ -196,8 +198,8 @@ namespace Microsoft.VisualBasic
     public sealed partial class Conversion
     {
         internal Conversion() { }
-        public static object CTypeDynamic(object Expression, System.Type TargetType) { throw null; }
-        public static TargetType CTypeDynamic<TargetType>(object Expression) { throw null; }
+        public static object CTypeDynamic(object? Expression, System.Type TargetType) { throw null; }
+        public static TargetType CTypeDynamic<TargetType>(object? Expression) { throw null; }
         public static string ErrorToString() { throw null; }
         public static string ErrorToString(int ErrorNumber) { throw null; }
         public static decimal Fix(decimal Number) { throw null; }
@@ -242,8 +244,8 @@ namespace Microsoft.VisualBasic
         public static string Oct(ulong Number) { throw null; }
         public static string Str(object Number) { throw null; }
         public static int Val(char Expression) { throw null; }
-        public static double Val(object Expression) { throw null; }
-        public static double Val(string InputStr) { throw null; }
+        public static double Val(object? Expression) { throw null; }
+        public static double Val(string? InputStr) { throw null; }
     }
     [Microsoft.VisualBasic.CompilerServices.StandardModuleAttribute]
     public sealed partial class DateAndTime
@@ -256,11 +258,11 @@ namespace Microsoft.VisualBasic
         public static string TimeString { get { throw null; } set { } }
         public static System.DateTime Today { get { throw null; } set { } }
         public static System.DateTime DateAdd(Microsoft.VisualBasic.DateInterval Interval, double Number, System.DateTime DateValue) { throw null; }
-        public static System.DateTime DateAdd(string Interval, double Number, object DateValue) { throw null; }
+        public static System.DateTime DateAdd(string Interval, double Number, object? DateValue) { throw null; }
         public static long DateDiff(Microsoft.VisualBasic.DateInterval Interval, System.DateTime Date1, System.DateTime Date2, Microsoft.VisualBasic.FirstDayOfWeek DayOfWeek = Microsoft.VisualBasic.FirstDayOfWeek.Sunday, Microsoft.VisualBasic.FirstWeekOfYear WeekOfYear = Microsoft.VisualBasic.FirstWeekOfYear.Jan1) { throw null; }
-        public static long DateDiff(string Interval, object Date1, object Date2, Microsoft.VisualBasic.FirstDayOfWeek DayOfWeek = Microsoft.VisualBasic.FirstDayOfWeek.Sunday, Microsoft.VisualBasic.FirstWeekOfYear WeekOfYear = Microsoft.VisualBasic.FirstWeekOfYear.Jan1) { throw null; }
+        public static long DateDiff(string Interval, object? Date1, object? Date2, Microsoft.VisualBasic.FirstDayOfWeek DayOfWeek = Microsoft.VisualBasic.FirstDayOfWeek.Sunday, Microsoft.VisualBasic.FirstWeekOfYear WeekOfYear = Microsoft.VisualBasic.FirstWeekOfYear.Jan1) { throw null; }
         public static int DatePart(Microsoft.VisualBasic.DateInterval Interval, System.DateTime DateValue, Microsoft.VisualBasic.FirstDayOfWeek FirstDayOfWeekValue = Microsoft.VisualBasic.FirstDayOfWeek.Sunday, Microsoft.VisualBasic.FirstWeekOfYear FirstWeekOfYearValue = Microsoft.VisualBasic.FirstWeekOfYear.Jan1) { throw null; }
-        public static int DatePart(string Interval, object DateValue, Microsoft.VisualBasic.FirstDayOfWeek DayOfWeek = Microsoft.VisualBasic.FirstDayOfWeek.Sunday, Microsoft.VisualBasic.FirstWeekOfYear WeekOfYear = Microsoft.VisualBasic.FirstWeekOfYear.Jan1) { throw null; }
+        public static int DatePart(string Interval, object? DateValue, Microsoft.VisualBasic.FirstDayOfWeek DayOfWeek = Microsoft.VisualBasic.FirstDayOfWeek.Sunday, Microsoft.VisualBasic.FirstWeekOfYear WeekOfYear = Microsoft.VisualBasic.FirstWeekOfYear.Jan1) { throw null; }
         public static System.DateTime DateSerial(int Year, int Month, int Day) { throw null; }
         public static System.DateTime DateValue(string StringDate) { throw null; }
         public static int Day(System.DateTime DateValue) { throw null; }
@@ -312,8 +314,8 @@ namespace Microsoft.VisualBasic
         public int Number { get { throw null; } set { } }
         public string Source { get { throw null; } set { } }
         public void Clear() { }
-        public System.Exception GetException() { throw null; }
-        public void Raise(int Number, object Source = null, object Description = null, object HelpFile = null, object HelpContext = null) { }
+        public System.Exception? GetException() { throw null; }
+        public void Raise(int Number, object? Source = null, object? Description = null, object? HelpFile = null, object? HelpContext = null) { }
     }
     [System.FlagsAttribute]
     public enum FileAttribute
@@ -332,7 +334,7 @@ namespace Microsoft.VisualBasic
         internal FileSystem() { }
         public static void ChDir(string Path) { }
         public static void ChDrive(char Drive) { }
-        public static void ChDrive(string Drive) { }
+        public static void ChDrive(string? Drive) { }
         public static string CurDir() { throw null; }
         public static string CurDir(char Drive) { throw null; }
         public static string Dir() { throw null; }
@@ -463,21 +465,21 @@ namespace Microsoft.VisualBasic
         internal Information() { }
         public static int Erl() { throw null; }
         public static Microsoft.VisualBasic.ErrObject Err() { throw null; }
-        public static bool IsArray(object VarName) { throw null; }
-        public static bool IsDate(object Expression) { throw null; }
-        public static bool IsDBNull(object Expression) { throw null; }
-        public static bool IsError(object Expression) { throw null; }
-        public static bool IsNothing(object Expression) { throw null; }
-        public static bool IsNumeric(object Expression) { throw null; }
-        public static bool IsReference(object Expression) { throw null; }
+        public static bool IsArray(object? VarName) { throw null; }
+        public static bool IsDate(object? Expression) { throw null; }
+        public static bool IsDBNull(object? Expression) { throw null; }
+        public static bool IsError(object? Expression) { throw null; }
+        public static bool IsNothing(object? Expression) { throw null; }
+        public static bool IsNumeric(object? Expression) { throw null; }
+        public static bool IsReference(object? Expression) { throw null; }
         public static int LBound(System.Array Array, int Rank = 1) { throw null; }
         public static int QBColor(int Color) { throw null; }
         public static int RGB(int Red, int Green, int Blue) { throw null; }
-        public static string SystemTypeName(string VbName) { throw null; }
-        public static string TypeName(object VarName) { throw null; }
+        public static string? SystemTypeName(string? VbName) { throw null; }
+        public static string TypeName(object? VarName) { throw null; }
         public static int UBound(System.Array Array, int Rank = 1) { throw null; }
-        public static Microsoft.VisualBasic.VariantType VarType(object VarName) { throw null; }
-        public static string VbTypeName(string UrtName) { throw null; }
+        public static Microsoft.VisualBasic.VariantType VarType(object? VarName) { throw null; }
+        public static string? VbTypeName(string? UrtName) { throw null; }
     }
     [Microsoft.VisualBasic.CompilerServices.StandardModuleAttribute]
     public sealed partial class Interaction
@@ -486,23 +488,23 @@ namespace Microsoft.VisualBasic
         public static void AppActivate(int ProcessId) { }
         public static void AppActivate(string Title) { }
         public static void Beep() { }
-        public static object CallByName(object ObjectRef, string ProcName, Microsoft.VisualBasic.CallType UseCallType, params object[] Args) { throw null; }
-        public static object Choose(double Index, params object[] Choice) { throw null; }
+        public static object? CallByName(object? ObjectRef, string ProcName, Microsoft.VisualBasic.CallType UseCallType, params object?[] Args) { throw null; }
+        public static object? Choose(double Index, params object?[] Choice) { throw null; }
         public static string Command() { throw null; }
-        public static object CreateObject(string ProgId, string ServerName = "") { throw null; }
-        public static void DeleteSetting(string AppName, string Section = null, string Key = null) { }
-        public static string Environ(string Expression) { throw null; }
+        public static object CreateObject(string ProgId, string? ServerName = "") { throw null; }
+        public static void DeleteSetting(string AppName, string? Section = null, string? Key = null) { }
+        public static string Environ(string? Expression) { throw null; }
         public static string Environ(int Expression) { throw null; }
-        public static string[,] GetAllSettings(string AppName, string Section) { throw null; }
-        public static object GetObject(string PathName = null, string Class = null) { throw null; }
-        public static string GetSetting(string AppName, string Section, string Key, string Default = "") { throw null; }
-        public static object IIf(bool Expression, object TruePart, object FalsePart) { throw null; }
+        public static string[,]? GetAllSettings(string AppName, string Section) { throw null; }
+        public static object? GetObject(string? PathName = null, string? Class = null) { throw null; }
+        public static string? GetSetting(string AppName, string Section, string Key, string? Default = "") { throw null; }
+        public static object? IIf(bool Expression, object? TruePart, object? FalsePart) { throw null; }
         public static string InputBox(string Prompt, string Title = "", string DefaultResponse = "", int XPos = -1, int YPos = -1) { throw null; }
-        public static MsgBoxResult MsgBox(object Prompt, MsgBoxStyle Buttons = MsgBoxStyle.ApplicationModal, object Title = null) { throw null; }
+        public static MsgBoxResult MsgBox(object Prompt, MsgBoxStyle Buttons = MsgBoxStyle.ApplicationModal, object? Title = null) { throw null; }
         public static string Partition(long Number, long Start, long Stop, long Interval) { throw null; }
         public static void SaveSetting(string AppName, string Section, string Key, string Setting) { }
         public static int Shell(string PathName, AppWinStyle Style = AppWinStyle.MinimizedFocus, bool Wait = false, int Timeout = -1) { throw null; }
-        public static object Switch(params object[] VarExpr) { throw null; }
+        public static object? Switch(params object?[]? VarExpr) { throw null; }
     }
     public enum MsgBoxResult
     {
@@ -585,22 +587,23 @@ namespace Microsoft.VisualBasic
         public static int AscW(string String) { throw null; }
         public static char Chr(int CharCode) { throw null; }
         public static char ChrW(int CharCode) { throw null; }
-        public static string[] Filter(object[] Source, string Match, bool Include = true, [Microsoft.VisualBasic.CompilerServices.OptionCompareAttribute] Microsoft.VisualBasic.CompareMethod Compare = Microsoft.VisualBasic.CompareMethod.Binary) { throw null; }
-        public static string[] Filter(string[] Source, string Match, bool Include = true, [Microsoft.VisualBasic.CompilerServices.OptionCompareAttribute] Microsoft.VisualBasic.CompareMethod Compare = Microsoft.VisualBasic.CompareMethod.Binary) { throw null; }
-        public static string Format(object Expression, string Style = "") { throw null; }
-        public static string FormatCurrency(object Expression, int NumDigitsAfterDecimal = -1, Microsoft.VisualBasic.TriState IncludeLeadingDigit = Microsoft.VisualBasic.TriState.UseDefault, Microsoft.VisualBasic.TriState UseParensForNegativeNumbers = Microsoft.VisualBasic.TriState.UseDefault, Microsoft.VisualBasic.TriState GroupDigits = Microsoft.VisualBasic.TriState.UseDefault) { throw null; }
+        public static string[]? Filter(object?[] Source, string? Match, bool Include = true, [Microsoft.VisualBasic.CompilerServices.OptionCompareAttribute] Microsoft.VisualBasic.CompareMethod Compare = Microsoft.VisualBasic.CompareMethod.Binary) { throw null; }
+        public static string[]? Filter(string?[] Source, string? Match, bool Include = true, [Microsoft.VisualBasic.CompilerServices.OptionCompareAttribute] Microsoft.VisualBasic.CompareMethod Compare = Microsoft.VisualBasic.CompareMethod.Binary) { throw null; }
+        public static string Format(object? Expression, string? Style = "") { throw null; }
+        public static string FormatCurrency(object? Expression, int NumDigitsAfterDecimal = -1, Microsoft.VisualBasic.TriState IncludeLeadingDigit = Microsoft.VisualBasic.TriState.UseDefault, Microsoft.VisualBasic.TriState UseParensForNegativeNumbers = Microsoft.VisualBasic.TriState.UseDefault, Microsoft.VisualBasic.TriState GroupDigits = Microsoft.VisualBasic.TriState.UseDefault) { throw null; }
         public static string FormatDateTime(System.DateTime Expression, Microsoft.VisualBasic.DateFormat NamedFormat = Microsoft.VisualBasic.DateFormat.GeneralDate) { throw null; }
-        public static string FormatNumber(object Expression, int NumDigitsAfterDecimal = -1, Microsoft.VisualBasic.TriState IncludeLeadingDigit = Microsoft.VisualBasic.TriState.UseDefault, Microsoft.VisualBasic.TriState UseParensForNegativeNumbers = Microsoft.VisualBasic.TriState.UseDefault, Microsoft.VisualBasic.TriState GroupDigits = Microsoft.VisualBasic.TriState.UseDefault) { throw null; }
-        public static string FormatPercent(object Expression, int NumDigitsAfterDecimal = -1, Microsoft.VisualBasic.TriState IncludeLeadingDigit = Microsoft.VisualBasic.TriState.UseDefault, Microsoft.VisualBasic.TriState UseParensForNegativeNumbers = Microsoft.VisualBasic.TriState.UseDefault, Microsoft.VisualBasic.TriState GroupDigits = Microsoft.VisualBasic.TriState.UseDefault) { throw null; }
+        public static string FormatNumber(object? Expression, int NumDigitsAfterDecimal = -1, Microsoft.VisualBasic.TriState IncludeLeadingDigit = Microsoft.VisualBasic.TriState.UseDefault, Microsoft.VisualBasic.TriState UseParensForNegativeNumbers = Microsoft.VisualBasic.TriState.UseDefault, Microsoft.VisualBasic.TriState GroupDigits = Microsoft.VisualBasic.TriState.UseDefault) { throw null; }
+        public static string FormatPercent(object? Expression, int NumDigitsAfterDecimal = -1, Microsoft.VisualBasic.TriState IncludeLeadingDigit = Microsoft.VisualBasic.TriState.UseDefault, Microsoft.VisualBasic.TriState UseParensForNegativeNumbers = Microsoft.VisualBasic.TriState.UseDefault, Microsoft.VisualBasic.TriState GroupDigits = Microsoft.VisualBasic.TriState.UseDefault) { throw null; }
         public static char GetChar(string str, int Index) { throw null; }
-        public static int InStr(int StartPos, string String1, string String2, [Microsoft.VisualBasic.CompilerServices.OptionCompareAttribute] Microsoft.VisualBasic.CompareMethod Compare = Microsoft.VisualBasic.CompareMethod.Binary) { throw null; }
-        public static int InStr(string String1, string String2, [Microsoft.VisualBasic.CompilerServices.OptionCompareAttribute] Microsoft.VisualBasic.CompareMethod Compare = Microsoft.VisualBasic.CompareMethod.Binary) { throw null; }
-        public static int InStrRev(string StringCheck, string StringMatch, int Start = -1, [Microsoft.VisualBasic.CompilerServices.OptionCompareAttribute] Microsoft.VisualBasic.CompareMethod Compare = Microsoft.VisualBasic.CompareMethod.Binary) { throw null; }
-        public static string Join(object[] SourceArray, string Delimiter = " ") { throw null; }
-        public static string Join(string[] SourceArray, string Delimiter = " ") { throw null; }
+        public static int InStr(int StartPos, string? String1, string? String2, [Microsoft.VisualBasic.CompilerServices.OptionCompareAttribute] Microsoft.VisualBasic.CompareMethod Compare = Microsoft.VisualBasic.CompareMethod.Binary) { throw null; }
+        public static int InStr(string? String1, string? String2, [Microsoft.VisualBasic.CompilerServices.OptionCompareAttribute] Microsoft.VisualBasic.CompareMethod Compare = Microsoft.VisualBasic.CompareMethod.Binary) { throw null; }
+        public static int InStrRev(string? StringCheck, string? StringMatch, int Start = -1, [Microsoft.VisualBasic.CompilerServices.OptionCompareAttribute] Microsoft.VisualBasic.CompareMethod Compare = Microsoft.VisualBasic.CompareMethod.Binary) { throw null; }
+        public static string? Join(object?[] SourceArray, string? Delimiter = " ") { throw null; }
+        public static string? Join(string?[] SourceArray, string? Delimiter = " ") { throw null; }
         public static char LCase(char Value) { throw null; }
-        public static string LCase(string Value) { throw null; }
-        public static string Left(string str, int Length) { throw null; }
+        [return: System.Diagnostics.CodeAnalysis.NotNullIfNotNull("Value")]
+        public static string? LCase(string? Value) { throw null; }
+        public static string Left(string? str, int Length) { throw null; }
         public static int Len(bool Expression) { throw null; }
         public static int Len(byte Expression) { throw null; }
         public static int Len(char Expression) { throw null; }
@@ -610,36 +613,36 @@ namespace Microsoft.VisualBasic
         public static int Len(short Expression) { throw null; }
         public static int Len(int Expression) { throw null; }
         public static int Len(long Expression) { throw null; }
-        public static int Len(object Expression) { throw null; }
+        public static int Len(object? Expression) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static int Len(sbyte Expression) { throw null; }
         public static int Len(float Expression) { throw null; }
-        public static int Len(string Expression) { throw null; }
+        public static int Len(string? Expression) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static int Len(ushort Expression) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static int Len(uint Expression) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static int Len(ulong Expression) { throw null; }
-        public static string LSet(string Source, int Length) { throw null; }
-        public static string LTrim(string str) { throw null; }
-        public static string Mid(string str, int Start) { throw null; }
-        public static string Mid(string str, int Start, int Length) { throw null; }
-        public static string Replace(string Expression, string Find, string Replacement, int Start = 1, int Count = -1, [Microsoft.VisualBasic.CompilerServices.OptionCompareAttribute] Microsoft.VisualBasic.CompareMethod Compare = Microsoft.VisualBasic.CompareMethod.Binary) { throw null; }
-        public static string Right(string str, int Length) { throw null; }
-        public static string RSet(string Source, int Length) { throw null; }
-        public static string RTrim(string str) { throw null; }
+        public static string LSet(string? Source, int Length) { throw null; }
+        public static string LTrim(string? str) { throw null; }
+        public static string? Mid(string? str, int Start) { throw null; }
+        public static string Mid(string? str, int Start, int Length) { throw null; }
+        public static string? Replace(string? Expression, string? Find, string? Replacement, int Start = 1, int Count = -1, [Microsoft.VisualBasic.CompilerServices.OptionCompareAttribute] Microsoft.VisualBasic.CompareMethod Compare = Microsoft.VisualBasic.CompareMethod.Binary) { throw null; }
+        public static string Right(string? str, int Length) { throw null; }
+        public static string RSet(string? Source, int Length) { throw null; }
+        public static string RTrim(string? str) { throw null; }
         public static string Space(int Number) { throw null; }
-        public static string[] Split(string Expression, string Delimiter = " ", int Limit = -1, [Microsoft.VisualBasic.CompilerServices.OptionCompareAttribute] Microsoft.VisualBasic.CompareMethod Compare = Microsoft.VisualBasic.CompareMethod.Binary) { throw null; }
-        public static int StrComp(string String1, string String2, Microsoft.VisualBasic.CompareMethod Compare = Microsoft.VisualBasic.CompareMethod.Binary) { throw null; }
-        public static string StrConv(string str, Microsoft.VisualBasic.VbStrConv Conversion, int LocaleID = 0) { throw null; }
+        public static string[] Split(string? Expression, string? Delimiter = " ", int Limit = -1, [Microsoft.VisualBasic.CompilerServices.OptionCompareAttribute] Microsoft.VisualBasic.CompareMethod Compare = Microsoft.VisualBasic.CompareMethod.Binary) { throw null; }
+        public static int StrComp(string? String1, string? String2, Microsoft.VisualBasic.CompareMethod Compare = Microsoft.VisualBasic.CompareMethod.Binary) { throw null; }
+        public static string? StrConv(string? str, Microsoft.VisualBasic.VbStrConv Conversion, int LocaleID = 0) { throw null; }
         public static string StrDup(int Number, char Character) { throw null; }
         public static object StrDup(int Number, object Character) { throw null; }
         public static string StrDup(int Number, string Character) { throw null; }
-        public static string StrReverse(string Expression) { throw null; }
-        public static string Trim(string str) { throw null; }
+        public static string StrReverse(string? Expression) { throw null; }
+        public static string Trim(string? str) { throw null; }
         public static char UCase(char Value) { throw null; }
-        public static string UCase(string Value) { throw null; }
+        public static string UCase(string? Value) { throw null; }
     }
     [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
     public partial struct TabInfo
@@ -720,117 +723,119 @@ namespace Microsoft.VisualBasic.CompilerServices
     public sealed partial class BooleanType
     {
         internal BooleanType() { }
-        public static bool FromObject(object Value) { throw null; }
-        public static bool FromString(string Value) { throw null; }
+        public static bool FromObject(object? Value) { throw null; }
+        public static bool FromString(string? Value) { throw null; }
     }
     [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
     public sealed partial class ByteType
     {
         internal ByteType() { }
-        public static byte FromObject(object Value) { throw null; }
-        public static byte FromString(string Value) { throw null; }
+        public static byte FromObject(object? Value) { throw null; }
+        public static byte FromString(string? Value) { throw null; }
     }
     [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
     public sealed partial class CharArrayType
     {
         internal CharArrayType() { }
-        public static char[] FromObject(object Value) { throw null; }
-        public static char[] FromString(string Value) { throw null; }
+        public static char[] FromObject(object? Value) { throw null; }
+        public static char[] FromString(string? Value) { throw null; }
     }
     [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
     public sealed partial class CharType
     {
         internal CharType() { }
-        public static char FromObject(object Value) { throw null; }
-        public static char FromString(string Value) { throw null; }
+        public static char FromObject(object? Value) { throw null; }
+        public static char FromString(string? Value) { throw null; }
     }
     [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
     public sealed partial class Conversions
     {
         internal Conversions() { }
-        public static object ChangeType(object Expression, System.Type TargetType) { throw null; }
+        public static object? ChangeType(object? Expression, System.Type TargetType) { throw null; }
         [System.ObsoleteAttribute("do not use this method", true)]
         public static object FallbackUserDefinedConversion(object Expression, System.Type TargetType) { throw null; }
         public static string FromCharAndCount(char Value, int Count) { throw null; }
         public static string FromCharArray(char[] Value) { throw null; }
         public static string FromCharArraySubset(char[] Value, int StartIndex, int Length) { throw null; }
-        public static bool ToBoolean(object Value) { throw null; }
-        public static bool ToBoolean(string Value) { throw null; }
-        public static byte ToByte(object Value) { throw null; }
-        public static byte ToByte(string Value) { throw null; }
-        public static char ToChar(object Value) { throw null; }
-        public static char ToChar(string Value) { throw null; }
-        public static char[] ToCharArrayRankOne(object Value) { throw null; }
-        public static char[] ToCharArrayRankOne(string Value) { throw null; }
-        public static System.DateTime ToDate(object Value) { throw null; }
-        public static System.DateTime ToDate(string Value) { throw null; }
+        public static bool ToBoolean(object? Value) { throw null; }
+        public static bool ToBoolean(string? Value) { throw null; }
+        public static byte ToByte(object? Value) { throw null; }
+        public static byte ToByte(string? Value) { throw null; }
+        public static char ToChar(object? Value) { throw null; }
+        public static char ToChar(string? Value) { throw null; }
+        public static char[] ToCharArrayRankOne(object? Value) { throw null; }
+        public static char[] ToCharArrayRankOne(string? Value) { throw null; }
+        public static System.DateTime ToDate(object? Value) { throw null; }
+        public static System.DateTime ToDate(string? Value) { throw null; }
         public static decimal ToDecimal(bool Value) { throw null; }
-        public static decimal ToDecimal(object Value) { throw null; }
-        public static decimal ToDecimal(string Value) { throw null; }
-        public static double ToDouble(object Value) { throw null; }
-        public static double ToDouble(string Value) { throw null; }
-        public static T ToGenericParameter<T>(object Value) { throw null; }
-        public static int ToInteger(object Value) { throw null; }
-        public static int ToInteger(string Value) { throw null; }
-        public static long ToLong(object Value) { throw null; }
-        public static long ToLong(string Value) { throw null; }
+        public static decimal ToDecimal(object? Value) { throw null; }
+        public static decimal ToDecimal(string? Value) { throw null; }
+        public static double ToDouble(object? Value) { throw null; }
+        public static double ToDouble(string? Value) { throw null; }
+        [return: System.Diagnostics.CodeAnalysis.MaybeNull]
+        [return: System.Diagnostics.CodeAnalysis.NotNullIfNotNull("Value")]
+        public static T ToGenericParameter<T>(object? Value) { throw null; }
+        public static int ToInteger(object? Value) { throw null; }
+        public static int ToInteger(string? Value) { throw null; }
+        public static long ToLong(object? Value) { throw null; }
+        public static long ToLong(string? Value) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static sbyte ToSByte(object Value) { throw null; }
+        public static sbyte ToSByte(object? Value) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static sbyte ToSByte(string Value) { throw null; }
-        public static short ToShort(object Value) { throw null; }
-        public static short ToShort(string Value) { throw null; }
-        public static float ToSingle(object Value) { throw null; }
-        public static float ToSingle(string Value) { throw null; }
+        public static sbyte ToSByte(string? Value) { throw null; }
+        public static short ToShort(object? Value) { throw null; }
+        public static short ToShort(string? Value) { throw null; }
+        public static float ToSingle(object? Value) { throw null; }
+        public static float ToSingle(string? Value) { throw null; }
         public static string ToString(bool Value) { throw null; }
         public static string ToString(byte Value) { throw null; }
         public static string ToString(char Value) { throw null; }
         public static string ToString(System.DateTime Value) { throw null; }
         public static string ToString(decimal Value) { throw null; }
-        public static string ToString(decimal Value, System.Globalization.NumberFormatInfo NumberFormat) { throw null; }
+        public static string ToString(decimal Value, System.Globalization.NumberFormatInfo? NumberFormat) { throw null; }
         public static string ToString(double Value) { throw null; }
-        public static string ToString(double Value, System.Globalization.NumberFormatInfo NumberFormat) { throw null; }
+        public static string ToString(double Value, System.Globalization.NumberFormatInfo? NumberFormat) { throw null; }
         public static string ToString(short Value) { throw null; }
         public static string ToString(int Value) { throw null; }
         public static string ToString(long Value) { throw null; }
-        public static string ToString(object Value) { throw null; }
+        public static string? ToString(object? Value) { throw null; }
         public static string ToString(float Value) { throw null; }
-        public static string ToString(float Value, System.Globalization.NumberFormatInfo NumberFormat) { throw null; }
+        public static string ToString(float Value, System.Globalization.NumberFormatInfo? NumberFormat) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static string ToString(uint Value) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static string ToString(ulong Value) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static uint ToUInteger(object Value) { throw null; }
+        public static uint ToUInteger(object? Value) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static uint ToUInteger(string Value) { throw null; }
+        public static uint ToUInteger(string? Value) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static ulong ToULong(object Value) { throw null; }
+        public static ulong ToULong(object? Value) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static ulong ToULong(string Value) { throw null; }
+        public static ulong ToULong(string? Value) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static ushort ToUShort(object Value) { throw null; }
+        public static ushort ToUShort(object? Value) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static ushort ToUShort(string Value) { throw null; }
+        public static ushort ToUShort(string? Value) { throw null; }
     }
     [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
     public sealed partial class DateType
     {
         internal DateType() { }
-        public static System.DateTime FromObject(object Value) { throw null; }
-        public static System.DateTime FromString(string Value) { throw null; }
-        public static System.DateTime FromString(string Value, System.Globalization.CultureInfo culture) { throw null; }
+        public static System.DateTime FromObject(object? Value) { throw null; }
+        public static System.DateTime FromString(string? Value) { throw null; }
+        public static System.DateTime FromString(string? Value, System.Globalization.CultureInfo? culture) { throw null; }
     }
     [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
     public sealed partial class DecimalType
     {
         internal DecimalType() { }
         public static decimal FromBoolean(bool Value) { throw null; }
-        public static decimal FromObject(object Value) { throw null; }
-        public static decimal FromObject(object Value, System.Globalization.NumberFormatInfo NumberFormat) { throw null; }
-        public static decimal FromString(string Value) { throw null; }
-        public static decimal FromString(string Value, System.Globalization.NumberFormatInfo NumberFormat) { throw null; }
-        public static decimal Parse(string Value, System.Globalization.NumberFormatInfo NumberFormat) { throw null; }
+        public static decimal FromObject(object? Value) { throw null; }
+        public static decimal FromObject(object? Value, System.Globalization.NumberFormatInfo? NumberFormat) { throw null; }
+        public static decimal FromString(string? Value) { throw null; }
+        public static decimal FromString(string? Value, System.Globalization.NumberFormatInfo? NumberFormat) { throw null; }
+        public static decimal Parse(string Value, System.Globalization.NumberFormatInfo? NumberFormat) { throw null; }
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.Class, AllowMultiple=false, Inherited=false)]
     [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
@@ -842,12 +847,12 @@ namespace Microsoft.VisualBasic.CompilerServices
     public sealed partial class DoubleType
     {
         internal DoubleType() { }
-        public static double FromObject(object Value) { throw null; }
-        public static double FromObject(object Value, System.Globalization.NumberFormatInfo NumberFormat) { throw null; }
-        public static double FromString(string Value) { throw null; }
-        public static double FromString(string Value, System.Globalization.NumberFormatInfo NumberFormat) { throw null; }
+        public static double FromObject(object? Value) { throw null; }
+        public static double FromObject(object? Value, System.Globalization.NumberFormatInfo? NumberFormat) { throw null; }
+        public static double FromString(string? Value) { throw null; }
+        public static double FromString(string? Value, System.Globalization.NumberFormatInfo? NumberFormat) { throw null; }
         public static double Parse(string Value) { throw null; }
-        public static double Parse(string Value, System.Globalization.NumberFormatInfo NumberFormat) { throw null; }
+        public static double Parse(string Value, System.Globalization.NumberFormatInfo? NumberFormat) { throw null; }
     }
     [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
     public sealed partial class IncompleteInitialization : System.Exception
@@ -858,8 +863,8 @@ namespace Microsoft.VisualBasic.CompilerServices
     public sealed partial class IntegerType
     {
         internal IntegerType() { }
-        public static int FromObject(object Value) { throw null; }
-        public static int FromString(string Value) { throw null; }
+        public static int FromObject(object? Value) { throw null; }
+        public static int FromString(string? Value) { throw null; }
     }
     [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
     public sealed partial class LateBinding
@@ -867,39 +872,39 @@ namespace Microsoft.VisualBasic.CompilerServices
         internal LateBinding() { }
         [System.Diagnostics.DebuggerHiddenAttribute]
         [System.Diagnostics.DebuggerStepThroughAttribute]
-        public static void LateCall(object o, System.Type objType, string name, object[] args, string[] paramnames, bool[] CopyBack) { }
+        public static void LateCall(object? o, System.Type? objType, string name, object?[]? args, string?[]? paramnames, bool[]? CopyBack) { }
         [System.Diagnostics.DebuggerHiddenAttribute]
         [System.Diagnostics.DebuggerStepThroughAttribute]
-        public static object LateGet(object o, System.Type objType, string name, object[] args, string[] paramnames, bool[] CopyBack) { throw null; }
+        public static object? LateGet(object? o, System.Type? objType, string name, object?[]? args, string?[]? paramnames, bool[]? CopyBack) { throw null; }
         [System.Diagnostics.DebuggerHiddenAttribute]
         [System.Diagnostics.DebuggerStepThroughAttribute]
-        public static object LateIndexGet(object o, object[] args, string[] paramnames) { throw null; }
+        public static object? LateIndexGet(object o, object?[]? args, string?[]? paramnames) { throw null; }
         [System.Diagnostics.DebuggerHiddenAttribute]
         [System.Diagnostics.DebuggerStepThroughAttribute]
-        public static void LateIndexSet(object o, object[] args, string[] paramnames) { }
+        public static void LateIndexSet(object o, object?[] args, string?[]? paramnames) { }
         [System.Diagnostics.DebuggerHiddenAttribute]
         [System.Diagnostics.DebuggerStepThroughAttribute]
-        public static void LateIndexSetComplex(object o, object[] args, string[] paramnames, bool OptimisticSet, bool RValueBase) { }
+        public static void LateIndexSetComplex(object o, object?[] args, string?[]? paramnames, bool OptimisticSet, bool RValueBase) { }
         [System.Diagnostics.DebuggerHiddenAttribute]
         [System.Diagnostics.DebuggerStepThroughAttribute]
-        public static void LateSet(object o, System.Type objType, string name, object[] args, string[] paramnames) { }
+        public static void LateSet(object? o, System.Type? objType, string name, object?[]? args, string?[]? paramnames) { }
         [System.Diagnostics.DebuggerHiddenAttribute]
         [System.Diagnostics.DebuggerStepThroughAttribute]
-        public static void LateSetComplex(object o, System.Type objType, string name, object[] args, string[] paramnames, bool OptimisticSet, bool RValueBase) { }
+        public static void LateSetComplex(object? o, System.Type? objType, string name, object?[]? args, string?[]? paramnames, bool OptimisticSet, bool RValueBase) { }
     }
     [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
     public sealed partial class LikeOperator
     {
         internal LikeOperator() { }
-        public static object LikeObject(object Source, object Pattern, Microsoft.VisualBasic.CompareMethod CompareOption) { throw null; }
-        public static bool LikeString(string Source, string Pattern, Microsoft.VisualBasic.CompareMethod CompareOption) { throw null; }
+        public static object LikeObject(object? Source, object? Pattern, Microsoft.VisualBasic.CompareMethod CompareOption) { throw null; }
+        public static bool LikeString(string? Source, string? Pattern, Microsoft.VisualBasic.CompareMethod CompareOption) { throw null; }
     }
     [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
     public sealed partial class LongType
     {
         internal LongType() { }
-        public static long FromObject(object Value) { throw null; }
-        public static long FromString(string Value) { throw null; }
+        public static long FromObject(object? Value) { throw null; }
+        public static long FromString(string? Value) { throw null; }
     }
     [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
     public sealed partial class NewLateBinding
@@ -907,10 +912,10 @@ namespace Microsoft.VisualBasic.CompilerServices
         internal NewLateBinding() { }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         [System.ObsoleteAttribute("do not use this method", true)]
-        public static object FallbackCall(object Instance, string MemberName, object[] Arguments, string[] ArgumentNames, bool IgnoreReturn) { throw null; }
+        public static object? FallbackCall(object Instance, string MemberName, object[] Arguments, string[] ArgumentNames, bool IgnoreReturn) { throw null; }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         [System.ObsoleteAttribute("do not use this method", true)]
-        public static object FallbackGet(object Instance, string MemberName, object[] Arguments, string[] ArgumentNames) { throw null; }
+        public static object? FallbackGet(object Instance, string MemberName, object[] Arguments, string[] ArgumentNames) { throw null; }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         [System.ObsoleteAttribute("do not use this method", true)]
         public static void FallbackIndexSet(object Instance, object[] Arguments, string[] ArgumentNames) { }
@@ -919,34 +924,34 @@ namespace Microsoft.VisualBasic.CompilerServices
         public static void FallbackIndexSetComplex(object Instance, object[] Arguments, string[] ArgumentNames, bool OptimisticSet, bool RValueBase) { }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         [System.ObsoleteAttribute("do not use this method", true)]
-        public static object FallbackInvokeDefault1(object Instance, object[] Arguments, string[] ArgumentNames, bool ReportErrors) { throw null; }
+        public static object? FallbackInvokeDefault1(object Instance, object[] Arguments, string[] ArgumentNames, bool ReportErrors) { throw null; }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         [System.ObsoleteAttribute("do not use this method", true)]
-        public static object FallbackInvokeDefault2(object Instance, object[] Arguments, string[] ArgumentNames, bool ReportErrors) { throw null; }
+        public static object? FallbackInvokeDefault2(object Instance, object[] Arguments, string[] ArgumentNames, bool ReportErrors) { throw null; }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         [System.ObsoleteAttribute("do not use this method", true)]
         public static void FallbackSet(object Instance, string MemberName, object[] Arguments) { }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         [System.ObsoleteAttribute("do not use this method", true)]
         public static void FallbackSetComplex(object Instance, string MemberName, object[] Arguments, bool OptimisticSet, bool RValueBase) { }
-        public static object LateCall(object Instance, System.Type Type, string MemberName, object[] Arguments, string[] ArgumentNames, System.Type[] TypeArguments, bool[] CopyBack, bool IgnoreReturn) { throw null; }
+        public static object? LateCall(object? Instance, System.Type? Type, string MemberName, object?[]? Arguments, string?[]? ArgumentNames, System.Type?[]? TypeArguments, bool[]? CopyBack, bool IgnoreReturn) { throw null; }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
-        public static object LateCallInvokeDefault(object Instance, object[] Arguments, string[] ArgumentNames, bool ReportErrors) { throw null; }
-        public static object LateGet(object Instance, System.Type Type, string MemberName, object[] Arguments, string[] ArgumentNames, System.Type[] TypeArguments, bool[] CopyBack) { throw null; }
+        public static object? LateCallInvokeDefault(object? Instance, object?[]? Arguments, string?[]? ArgumentNames, bool ReportErrors) { throw null; }
+        public static object? LateGet(object? Instance, System.Type? Type, string MemberName, object?[]? Arguments, string?[]? ArgumentNames, System.Type?[]? TypeArguments, bool[]? CopyBack) { throw null; }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
-        public static object LateGetInvokeDefault(object Instance, object[] Arguments, string[] ArgumentNames, bool ReportErrors) { throw null; }
-        public static object LateIndexGet(object Instance, object[] Arguments, string[] ArgumentNames) { throw null; }
-        public static void LateIndexSet(object Instance, object[] Arguments, string[] ArgumentNames) { }
-        public static void LateIndexSetComplex(object Instance, object[] Arguments, string[] ArgumentNames, bool OptimisticSet, bool RValueBase) { }
-        public static void LateSet(object Instance, System.Type Type, string MemberName, object[] Arguments, string[] ArgumentNames, System.Type[] TypeArguments) { }
-        public static void LateSet(object Instance, System.Type Type, string MemberName, object[] Arguments, string[] ArgumentNames, System.Type[] TypeArguments, bool OptimisticSet, bool RValueBase, Microsoft.VisualBasic.CallType CallType) { }
-        public static void LateSetComplex(object Instance, System.Type Type, string MemberName, object[] Arguments, string[] ArgumentNames, System.Type[] TypeArguments, bool OptimisticSet, bool RValueBase) { }
+        public static object? LateGetInvokeDefault(object Instance, object?[]? Arguments, string?[]? ArgumentNames, bool ReportErrors) { throw null; }
+        public static object? LateIndexGet(object Instance, object?[]? Arguments, string?[]? ArgumentNames) { throw null; }
+        public static void LateIndexSet(object Instance, object?[]? Arguments, string?[]? ArgumentNames) { }
+        public static void LateIndexSetComplex(object Instance, object?[]? Arguments, string?[]? ArgumentNames, bool OptimisticSet, bool RValueBase) { }
+        public static void LateSet(object? Instance, System.Type? Type, string MemberName, object?[]? Arguments, string?[]? ArgumentNames, System.Type[]? TypeArguments) { }
+        public static void LateSet(object? Instance, System.Type? Type, string MemberName, object?[]? Arguments, string?[]? ArgumentNames, System.Type[]? TypeArguments, bool OptimisticSet, bool RValueBase, Microsoft.VisualBasic.CallType CallType) { }
+        public static void LateSetComplex(object? Instance, System.Type? Type, string MemberName, object?[]? Arguments, string?[]? ArgumentNames, System.Type[]? TypeArguments, bool OptimisticSet, bool RValueBase) { }
     }
     [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
     public sealed partial class ObjectFlowControl
     {
         internal ObjectFlowControl() { }
-        public static void CheckForSyncLockOnValueType(object Expression) { }
+        public static void CheckForSyncLockOnValueType(object? Expression) { }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         public sealed partial class ForLoopControl
         {
@@ -962,62 +967,62 @@ namespace Microsoft.VisualBasic.CompilerServices
     public sealed partial class ObjectType
     {
         public ObjectType() { }
-        public static object AddObj(object o1, object o2) { throw null; }
-        public static object BitAndObj(object obj1, object obj2) { throw null; }
-        public static object BitOrObj(object obj1, object obj2) { throw null; }
-        public static object BitXorObj(object obj1, object obj2) { throw null; }
-        public static object DivObj(object o1, object o2) { throw null; }
-        public static object GetObjectValuePrimitive(object o) { throw null; }
-        public static object IDivObj(object o1, object o2) { throw null; }
-        public static bool LikeObj(object vLeft, object vRight, Microsoft.VisualBasic.CompareMethod CompareOption) { throw null; }
-        public static object ModObj(object o1, object o2) { throw null; }
-        public static object MulObj(object o1, object o2) { throw null; }
-        public static object NegObj(object obj) { throw null; }
-        public static object NotObj(object obj) { throw null; }
-        public static int ObjTst(object o1, object o2, bool TextCompare) { throw null; }
-        public static object PlusObj(object obj) { throw null; }
-        public static object PowObj(object obj1, object obj2) { throw null; }
-        public static object ShiftLeftObj(object o1, int amount) { throw null; }
-        public static object ShiftRightObj(object o1, int amount) { throw null; }
-        public static object StrCatObj(object vLeft, object vRight) { throw null; }
-        public static object SubObj(object o1, object o2) { throw null; }
-        public static object XorObj(object obj1, object obj2) { throw null; }
+        public static object AddObj(object? o1, object? o2) { throw null; }
+        public static object BitAndObj(object? obj1, object? obj2) { throw null; }
+        public static object BitOrObj(object? obj1, object? obj2) { throw null; }
+        public static object BitXorObj(object? obj1, object? obj2) { throw null; }
+        public static object DivObj(object? o1, object? o2) { throw null; }
+        public static object GetObjectValuePrimitive(object? o) { throw null; }
+        public static object IDivObj(object? o1, object? o2) { throw null; }
+        public static bool LikeObj(object? vLeft, object? vRight, Microsoft.VisualBasic.CompareMethod CompareOption) { throw null; }
+        public static object ModObj(object? o1, object?o2) { throw null; }
+        public static object MulObj(object? o1, object? o2) { throw null; }
+        public static object NegObj(object? obj) { throw null; }
+        public static object NotObj(object? obj) { throw null; }
+        public static int ObjTst(object? o1, object? o2, bool TextCompare) { throw null; }
+        public static object PlusObj(object? obj) { throw null; }
+        public static object PowObj(object? obj1, object? obj2) { throw null; }
+        public static object ShiftLeftObj(object? o1, int amount) { throw null; }
+        public static object ShiftRightObj(object? o1, int amount) { throw null; }
+        public static object StrCatObj(object? vLeft, object? vRight) { throw null; }
+        public static object SubObj(object? o1, object? o2) { throw null; }
+        public static object XorObj(object? obj1, object? obj2) { throw null; }
     }
     [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
     public sealed partial class Operators
     {
         internal Operators() { }
-        public static object AddObject(object Left, object Right) { throw null; }
-        public static object AndObject(object Left, object Right) { throw null; }
-        public static object CompareObjectEqual(object Left, object Right, bool TextCompare) { throw null; }
-        public static object CompareObjectGreater(object Left, object Right, bool TextCompare) { throw null; }
-        public static object CompareObjectGreaterEqual(object Left, object Right, bool TextCompare) { throw null; }
-        public static object CompareObjectLess(object Left, object Right, bool TextCompare) { throw null; }
-        public static object CompareObjectLessEqual(object Left, object Right, bool TextCompare) { throw null; }
-        public static object CompareObjectNotEqual(object Left, object Right, bool TextCompare) { throw null; }
-        public static int CompareString(string Left, string Right, bool TextCompare) { throw null; }
-        public static object ConcatenateObject(object Left, object Right) { throw null; }
-        public static bool ConditionalCompareObjectEqual(object Left, object Right, bool TextCompare) { throw null; }
-        public static bool ConditionalCompareObjectGreater(object Left, object Right, bool TextCompare) { throw null; }
-        public static bool ConditionalCompareObjectGreaterEqual(object Left, object Right, bool TextCompare) { throw null; }
-        public static bool ConditionalCompareObjectLess(object Left, object Right, bool TextCompare) { throw null; }
-        public static bool ConditionalCompareObjectLessEqual(object Left, object Right, bool TextCompare) { throw null; }
-        public static bool ConditionalCompareObjectNotEqual(object Left, object Right, bool TextCompare) { throw null; }
-        public static object DivideObject(object Left, object Right) { throw null; }
-        public static object ExponentObject(object Left, object Right) { throw null; }
+        public static object? AddObject(object? Left, object? Right) { throw null; }
+        public static object? AndObject(object? Left, object? Right) { throw null; }
+        public static object? CompareObjectEqual(object? Left, object? Right, bool TextCompare) { throw null; }
+        public static object? CompareObjectGreater(object? Left, object? Right, bool TextCompare) { throw null; }
+        public static object? CompareObjectGreaterEqual(object? Left, object? Right, bool TextCompare) { throw null; }
+        public static object? CompareObjectLess(object? Left, object? Right, bool TextCompare) { throw null; }
+        public static object? CompareObjectLessEqual(object? Left, object? Right, bool TextCompare) { throw null; }
+        public static object? CompareObjectNotEqual(object? Left, object? Right, bool TextCompare) { throw null; }
+        public static int CompareString(string? Left, string? Right, bool TextCompare) { throw null; }
+        public static object? ConcatenateObject(object? Left, object? Right) { throw null; }
+        public static bool ConditionalCompareObjectEqual(object? Left, object? Right, bool TextCompare) { throw null; }
+        public static bool ConditionalCompareObjectGreater(object? Left, object? Right, bool TextCompare) { throw null; }
+        public static bool ConditionalCompareObjectGreaterEqual(object? Left, object? Right, bool TextCompare) { throw null; }
+        public static bool ConditionalCompareObjectLess(object? Left, object? Right, bool TextCompare) { throw null; }
+        public static bool ConditionalCompareObjectLessEqual(object? Left, object? Right, bool TextCompare) { throw null; }
+        public static bool ConditionalCompareObjectNotEqual(object? Left, object? Right, bool TextCompare) { throw null; }
+        public static object? DivideObject(object? Left, object? Right) { throw null; }
+        public static object? ExponentObject(object? Left, object? Right) { throw null; }
         [System.ObsoleteAttribute("do not use this method", true)]
-        public static object FallbackInvokeUserDefinedOperator(object vbOp, object[] arguments) { throw null; }
-        public static object IntDivideObject(object Left, object Right) { throw null; }
-        public static object LeftShiftObject(object Operand, object Amount) { throw null; }
-        public static object ModObject(object Left, object Right) { throw null; }
-        public static object MultiplyObject(object Left, object Right) { throw null; }
-        public static object NegateObject(object Operand) { throw null; }
-        public static object NotObject(object Operand) { throw null; }
-        public static object OrObject(object Left, object Right) { throw null; }
-        public static object PlusObject(object Operand) { throw null; }
-        public static object RightShiftObject(object Operand, object Amount) { throw null; }
-        public static object SubtractObject(object Left, object Right) { throw null; }
-        public static object XorObject(object Left, object Right) { throw null; }
+        public static object? FallbackInvokeUserDefinedOperator(object? vbOp, object?[]? arguments) { throw null; }
+        public static object? IntDivideObject(object? Left, object? Right) { throw null; }
+        public static object? LeftShiftObject(object? Operand, object? Amount) { throw null; }
+        public static object? ModObject(object? Left, object? Right) { throw null; }
+        public static object? MultiplyObject(object? Left, object? Right) { throw null; }
+        public static object? NegateObject(object? Operand) { throw null; }
+        public static object? NotObject(object? Operand) { throw null; }
+        public static object? OrObject(object? Left, object? Right) { throw null; }
+        public static object? PlusObject(object? Operand) { throw null; }
+        public static object? RightShiftObject(object? Operand, object? Amount) { throw null; }
+        public static object? SubtractObject(object? Left, object? Right) { throw null; }
+        public static object? XorObject(object? Left, object? Right) { throw null; }
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.Parameter, Inherited=false, AllowMultiple=false)]
     [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
@@ -1038,24 +1043,24 @@ namespace Microsoft.VisualBasic.CompilerServices
         public static void ClearProjectError() { }
         public static System.Exception CreateProjectError(int hr) { throw null; }
         public static void EndApp() { }
-        public static void SetProjectError(System.Exception ex) { }
-        public static void SetProjectError(System.Exception ex, int lErl) { }
+        public static void SetProjectError(System.Exception? ex) { }
+        public static void SetProjectError(System.Exception? ex, int lErl) { }
     }
     [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
     public sealed partial class ShortType
     {
         internal ShortType() { }
-        public static short FromObject(object Value) { throw null; }
-        public static short FromString(string Value) { throw null; }
+        public static short FromObject(object? Value) { throw null; }
+        public static short FromString(string? Value) { throw null; }
     }
     [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
     public sealed partial class SingleType
     {
         internal SingleType() { }
-        public static float FromObject(object Value) { throw null; }
-        public static float FromObject(object Value, System.Globalization.NumberFormatInfo NumberFormat) { throw null; }
-        public static float FromString(string Value) { throw null; }
-        public static float FromString(string Value, System.Globalization.NumberFormatInfo NumberFormat) { throw null; }
+        public static float FromObject(object? Value) { throw null; }
+        public static float FromObject(object? Value, System.Globalization.NumberFormatInfo? NumberFormat) { throw null; }
+        public static float FromString(string? Value) { throw null; }
+        public static float FromString(string? Value, System.Globalization.NumberFormatInfo? NumberFormat) { throw null; }
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.Class, Inherited=false, AllowMultiple=false)]
     [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
@@ -1078,36 +1083,38 @@ namespace Microsoft.VisualBasic.CompilerServices
         public static string FromChar(char Value) { throw null; }
         public static string FromDate(System.DateTime Value) { throw null; }
         public static string FromDecimal(decimal Value) { throw null; }
-        public static string FromDecimal(decimal Value, System.Globalization.NumberFormatInfo NumberFormat) { throw null; }
+        public static string FromDecimal(decimal Value, System.Globalization.NumberFormatInfo? NumberFormat) { throw null; }
         public static string FromDouble(double Value) { throw null; }
-        public static string FromDouble(double Value, System.Globalization.NumberFormatInfo NumberFormat) { throw null; }
+        public static string FromDouble(double Value, System.Globalization.NumberFormatInfo? NumberFormat) { throw null; }
         public static string FromInteger(int Value) { throw null; }
         public static string FromLong(long Value) { throw null; }
-        public static string FromObject(object Value) { throw null; }
+        [return: System.Diagnostics.CodeAnalysis.NotNullIfNotNull("Value")]
+        public static string? FromObject(object? Value) { throw null; }
         public static string FromShort(short Value) { throw null; }
         public static string FromSingle(float Value) { throw null; }
-        public static string FromSingle(float Value, System.Globalization.NumberFormatInfo NumberFormat) { throw null; }
-        public static void MidStmtStr(ref string sDest, int StartPosition, int MaxInsertLength, string sInsert) { }
-        public static int StrCmp(string sLeft, string sRight, bool TextCompare) { throw null; }
-        public static bool StrLike(string Source, string Pattern, Microsoft.VisualBasic.CompareMethod CompareOption) { throw null; }
-        public static bool StrLikeBinary(string Source, string Pattern) { throw null; }
-        public static bool StrLikeText(string Source, string Pattern) { throw null; }
+        public static string FromSingle(float Value, System.Globalization.NumberFormatInfo? NumberFormat) { throw null; }
+        public static void MidStmtStr(ref string? sDest, int StartPosition, int MaxInsertLength, string sInsert) { }
+        public static int StrCmp(string? sLeft, string? sRight, bool TextCompare) { throw null; }
+        public static bool StrLike(string? Source, string? Pattern, Microsoft.VisualBasic.CompareMethod CompareOption) { throw null; }
+        public static bool StrLikeBinary(string? Source, string? Pattern) { throw null; }
+        public static bool StrLikeText(string? Source, string? Pattern) { throw null; }
     }
     [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
     public sealed partial class Utils
     {
         internal Utils() { }
         public static System.Array CopyArray(System.Array arySrc, System.Array aryDest) { throw null; }
+        public static string GetResourceString(string ResourceKey, params string?[] Args) { throw null; }
     }
     [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
     public sealed partial class Versioned
     {
         internal Versioned() { }
-        public static object CallByName(object Instance, string MethodName, Microsoft.VisualBasic.CallType UseCallType, params object[] Arguments) { throw null; }
-        public static bool IsNumeric(object Expression) { throw null; }
-        public static string SystemTypeName(string VbName) { throw null; }
-        public static string TypeName(object Expression) { throw null; }
-        public static string VbTypeName(string SystemName) { throw null; }
+        public static object? CallByName(object? Instance, string MethodName, Microsoft.VisualBasic.CallType UseCallType, params object?[]? Arguments) { throw null; }
+        public static bool IsNumeric(object? Expression) { throw null; }
+        public static string? SystemTypeName(string? VbName) { throw null; }
+        public static string TypeName(object? Expression) { throw null; }
+        public static string? VbTypeName(string? SystemName) { throw null; }
     }
 }
 namespace Microsoft.VisualBasic.FileIO
@@ -1127,7 +1134,7 @@ namespace Microsoft.VisualBasic.FileIO
         public FileSystem() { }
         public static string CurrentDirectory { get { throw null; } set { } }
         public static System.Collections.ObjectModel.ReadOnlyCollection<System.IO.DriveInfo> Drives { get { throw null; } }
-        public static string CombinePath(string baseDirectory, string relativePath) { throw null; }
+        public static string CombinePath(string baseDirectory, string? relativePath) { throw null; }
         public static void CopyDirectory(string sourceDirectoryName, string destinationDirectoryName) { }
         public static void CopyDirectory(string sourceDirectoryName, string destinationDirectoryName, Microsoft.VisualBasic.FileIO.UIOption showUI) { }
         public static void CopyDirectory(string sourceDirectoryName, string destinationDirectoryName, Microsoft.VisualBasic.FileIO.UIOption showUI, Microsoft.VisualBasic.FileIO.UICancelOption onUserCancel) { }
@@ -1186,10 +1193,10 @@ namespace Microsoft.VisualBasic.FileIO
         public MalformedLineException() { }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Advanced)]
         protected MalformedLineException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
-        public MalformedLineException(string message) { }
-        public MalformedLineException(string message, System.Exception innerException) { }
-        public MalformedLineException(string message, long lineNumber) { }
-        public MalformedLineException(string message, long lineNumber, System.Exception innerException) { }
+        public MalformedLineException(string? message) { }
+        public MalformedLineException(string? message, System.Exception? innerException) { }
+        public MalformedLineException(string? message, long lineNumber) { }
+        public MalformedLineException(string? message, long lineNumber, System.Exception? innerException) { }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Always)]
         public long LineNumber { get { throw null; } set { } }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Advanced)]
@@ -1229,12 +1236,12 @@ namespace Microsoft.VisualBasic.FileIO
         public TextFieldParser(string path) { }
         public TextFieldParser(string path, System.Text.Encoding defaultEncoding) { }
         public TextFieldParser(string path, System.Text.Encoding defaultEncoding, bool detectEncoding) { }
-        public string[] CommentTokens { get { throw null; } set { } }
-        public string[] Delimiters { get { throw null; } set { } }
+        public string[]? CommentTokens { get { throw null; } set { } }
+        public string[]? Delimiters { get { throw null; } set { } }
         public bool EndOfData { get { throw null; } }
         public string ErrorLine { get { throw null; } }
         public long ErrorLineNumber { get { throw null; } }
-        public int[] FieldWidths { get { throw null; } set { } }
+        public int[]? FieldWidths { get { throw null; } set { } }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Advanced)]
         public bool HasFieldsEnclosedInQuotes { get { throw null; } set { } }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Advanced)]
@@ -1245,14 +1252,14 @@ namespace Microsoft.VisualBasic.FileIO
         public void Close() { }
         protected virtual void Dispose(bool disposing) { }
         ~TextFieldParser() { }
-        public string PeekChars(int numberOfChars) { throw null; }
-        public string[] ReadFields() { throw null; }
+        public string? PeekChars(int numberOfChars) { throw null; }
+        public string[]? ReadFields() { throw null; }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Advanced)]
-        public string ReadLine() { throw null; }
+        public string? ReadLine() { throw null; }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Advanced)]
-        public string ReadToEnd() { throw null; }
-        public void SetDelimiters(params string[] delimiters) { }
-        public void SetFieldWidths(params int[] fieldWidths) { }
+        public string? ReadToEnd() { throw null; }
+        public void SetDelimiters(params string[]? delimiters) { }
+        public void SetFieldWidths(params int[]? fieldWidths) { }
         void System.IDisposable.Dispose() { }
     }
     public enum UICancelOption

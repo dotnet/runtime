@@ -17,14 +17,14 @@ namespace System.Security.Cryptography.Pkcs
         private PfxAsn _decoded;
         private ReadOnlyMemory<byte> _authSafeContents;
 
-        public ReadOnlyCollection<Pkcs12SafeContents> AuthenticatedSafe { get; private set; }
+        public ReadOnlyCollection<Pkcs12SafeContents> AuthenticatedSafe { get; private set; } = null!; // Initialized using object initializer
         public Pkcs12IntegrityMode IntegrityMode { get; private set; }
 
         private Pkcs12Info()
         {
         }
 
-        public bool VerifyMac(string password)
+        public bool VerifyMac(string? password)
         {
             // This extension-method call allows null.
             return VerifyMac(password.AsSpan());
@@ -101,13 +101,13 @@ namespace System.Security.Cryptography.Pkcs
             }
 
             List<ContentInfoAsn> authSafeData = new List<ContentInfoAsn>();
-            AsnReader authSafeReader = new AsnReader(authSafeBytes, AsnEncodingRules.BER);
-            AsnReader sequenceReader = authSafeReader.ReadSequence();
+            AsnValueReader authSafeReader = new AsnValueReader(authSafeBytes.Span, AsnEncodingRules.BER);
+            AsnValueReader sequenceReader = authSafeReader.ReadSequence();
 
             authSafeReader.ThrowIfNotEmpty();
             while (sequenceReader.HasData)
             {
-                ContentInfoAsn.Decode(sequenceReader, out ContentInfoAsn contentInfo);
+                ContentInfoAsn.Decode(ref sequenceReader, authSafeBytes, out ContentInfoAsn contentInfo);
                 authSafeData.Add(contentInfo);
             }
 

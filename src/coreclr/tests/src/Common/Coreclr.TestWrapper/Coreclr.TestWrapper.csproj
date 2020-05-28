@@ -2,9 +2,9 @@
 
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <ProjectAssetsFile>$(SourceDir)Common\Coreclr.TestWrapper\obj\project.assets.json</ProjectAssetsFile>
-    <NuGetTargetMoniker>.NETCoreApp,Version=v3.0</NuGetTargetMoniker>
-    <NuGetTargetMonikerShort>netcoreapp3.0</NuGetTargetMonikerShort>
+    <ProjectAssetsFile>$(TestSourceDir)Common\Coreclr.TestWrapper\obj\project.assets.json</ProjectAssetsFile>
+    <NuGetTargetMoniker>$(NetCoreAppCurrentTargetFrameworkMoniker)</NuGetTargetMoniker>
+    <NuGetTargetMonikerShort>$(NetCoreAppCurrent)</NuGetTargetMonikerShort>
   </PropertyGroup>
 
   <ItemGroup>

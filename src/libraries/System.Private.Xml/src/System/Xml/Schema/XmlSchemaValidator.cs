@@ -139,7 +139,7 @@ namespace System.Xml.Schema
         private static readonly XmlSchemaDatatype s_dtStringArray = s_dtCDATA.DeriveByList(null);
 
         //Error message constants
-        private const string Quote = "'";
+        private const char Quote = '\'';
 
         //Empty arrays
         private static readonly XmlSchemaParticle[] s_emptyParticleArray = Array.Empty<XmlSchemaParticle>();
@@ -735,6 +735,7 @@ namespace System.Xml.Schema
             {
                 throw new ArgumentNullException(nameof(defaultAttributes));
             }
+
             CheckStateTransition(ValidatorState.Attribute, "GetUnspecifiedDefaultAttributes");
             GetUnspecifiedDefaultAttributes(defaultAttributes, false);
         }
@@ -1066,6 +1067,7 @@ namespace System.Xml.Schema
                                 continue;
                             }
                         }
+
                         XmlSchemaDatatype datatype = attdef.Datatype;
                         if (createNodeData)
                         {
@@ -1090,6 +1092,7 @@ namespace System.Xml.Schema
                             {
                                 attrValidInfo.typedAttributeValue = attdef.DefaultValueTyped;
                             }
+
                             attSchemaInfo.IsDefault = true;
                             attSchemaInfo.Validity = XmlSchemaValidity.Valid;
                             attSchemaInfo.SchemaType = attdef.SchemaType;
@@ -1103,6 +1106,7 @@ namespace System.Xml.Schema
                         {
                             defaultAttributes.Add(attdef.SchemaAttribute);
                         }
+
                         CheckTokenizedTypes(datatype, attdef.DefaultValueTyped, true);
                         if (HasIdentityConstraints)
                         {
@@ -1111,7 +1115,6 @@ namespace System.Xml.Schema
                     }
                 }
             }
-            return;
         }
 
         internal XmlSchemaSet SchemaSet
@@ -2656,7 +2659,7 @@ namespace System.Xml.Schema
             builder.Append(expected[0].ToString());
             for (int i = 1; i < expected.Count; ++i)
             {
-                builder.Append(" ");
+                builder.Append(' ');
                 builder.Append(expected[i].ToString());
             }
             builder.Append(Quote);

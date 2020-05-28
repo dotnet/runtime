@@ -97,9 +97,9 @@ public:
     static FCDECL2(void,            MarshalToManagedVaListInternal, va_list va, VARARGS* pArgIterator);
     static FCDECL0(void*,           GetStubContext);
     static FCDECL2(void,            LogPinnedArgument, MethodDesc *localDesc, Object *nativeArg);
-#ifdef _TARGET_64BIT_
+#ifdef TARGET_64BIT
     static FCDECL0(void*,           GetStubContextAddr);
-#endif // _TARGET_64BIT_
+#endif // TARGET_64BIT
     static FCDECL1(DWORD,           CalcVaListSize, VARARGS *varargs);
     static FCDECL3(void,            ValidateObject, Object *pObjUNSAFE, MethodDesc *pMD, Object *pThisUNSAFE);
     static FCDECL3(void,            ValidateByref, void *pByref, MethodDesc *pMD, Object *pThisUNSAFE);
@@ -128,6 +128,8 @@ public:
 #ifdef FEATURE_MULTICASTSTUB_AS_IL
     static FCDECL2(void,            MulticastDebuggerTraceHelper, Object*, INT32);
 #endif
+
+    static FCDECL0(void*,           NextCallReturnAddress);
 };
 
 #endif  // __STUBHELPERS_h__

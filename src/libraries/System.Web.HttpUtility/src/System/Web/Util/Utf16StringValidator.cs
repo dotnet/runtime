@@ -33,39 +33,41 @@ namespace System.Web.Util
             }
 
             // slow case: surrogates exist, so we need to validate them
-            char[] chars = input.ToCharArray();
-            for (int i = idxOfFirstSurrogate; i < chars.Length; i++)
+            return string.Create(input.Length, (input, idxOfFirstSurrogate), (chars, state) =>
             {
-                char thisChar = chars[i];
-
-                // If this character is a low surrogate, then it was not preceded by
-                // a high surrogate, so we'll replace it.
-                if (char.IsLowSurrogate(thisChar))
+                state.input.AsSpan().CopyTo(chars);
+                for (int i = state.idxOfFirstSurrogate; i < chars.Length; i++)
                 {
-                    chars[i] = UnicodeReplacementChar;
-                    continue;
-                }
+                    char thisChar = chars[i];
 
-                if (char.IsHighSurrogate(thisChar))
-                {
-                    // If this character is a high surrogate and it is followed by a
-                    // low surrogate, allow both to remain.
-                    if (i + 1 < chars.Length && char.IsLowSurrogate(chars[i + 1]))
+                    // If this character is a low surrogate, then it was not preceded by
+                    // a high surrogate, so we'll replace it.
+                    if (char.IsLowSurrogate(thisChar))
                     {
-                        i++; // skip the low surrogate also
+                        chars[i] = UnicodeReplacementChar;
                         continue;
                     }
 
-                    // If this character is a high surrogate and it is not followed
-                    // by a low surrogate, replace it.
-                    chars[i] = UnicodeReplacementChar;
-                    continue;
-                }
+                    if (char.IsHighSurrogate(thisChar))
+                    {
+                        // If this character is a high surrogate and it is followed by a
+                        // low surrogate, allow both to remain.
+                        if (i + 1 < chars.Length && char.IsLowSurrogate(chars[i + 1]))
+                        {
+                            i++; // skip the low surrogate also
+                            continue;
+                        }
 
-                // Otherwise, this is a non-surrogate character and just move to the
-                // next character.
-            }
-            return new string(chars);
+                        // If this character is a high surrogate and it is not followed
+                        // by a low surrogate, replace it.
+                        chars[i] = UnicodeReplacementChar;
+                        continue;
+                    }
+
+                    // Otherwise, this is a non-surrogate character and just move to the
+                    // next character.
+                }
+            });
         }
     }
 }

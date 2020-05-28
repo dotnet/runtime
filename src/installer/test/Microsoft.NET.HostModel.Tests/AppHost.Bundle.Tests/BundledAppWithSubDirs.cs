@@ -2,13 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using BundleTests.Helpers;
+using Microsoft.DotNet.Cli.Build.Framework;
+using Microsoft.NET.HostModel.Bundle;
+using Microsoft.DotNet.CoreSetup.Test;
 using System;
 using Xunit;
-using Microsoft.DotNet.Cli.Build.Framework;
-using BundleTests.Helpers;
-using Microsoft.DotNet.CoreSetup.Test;
-using System.Xml.Linq;
-using System.IO;
 
 namespace AppHost.Bundle.Tests
 {
@@ -33,11 +32,14 @@ namespace AppHost.Bundle.Tests
                 .HaveStdOutContaining("Wow! We now say hello to the big world and you.");
         }
 
-        [Fact]
-        public void Bundled_Framework_dependent_App_Run_Succeeds()
+        [InlineData(BundleOptions.None)]
+        [InlineData(BundleOptions.BundleNativeBinaries)]
+        [InlineData(BundleOptions.BundleAllContent)]
+        [Theory]
+        public void Bundled_Framework_dependent_App_Run_Succeeds(BundleOptions options)
         {
             var fixture = sharedTestState.TestFrameworkDependentFixture.Copy();
-            var singleFile = BundleHelper.BundleApp(fixture);
+            var singleFile = BundleHelper.BundleApp(fixture, options);
 
             // Run the bundled app (extract files)
             RunTheApp(singleFile);
@@ -46,11 +48,14 @@ namespace AppHost.Bundle.Tests
             RunTheApp(singleFile);
         }
 
-        [Fact]
-        public void Bundled_Self_Contained_App_Run_Succeeds()
+        [InlineData(BundleOptions.None)]
+        [InlineData(BundleOptions.BundleNativeBinaries)]
+        [InlineData(BundleOptions.BundleAllContent)]
+        [Theory]
+        public void Bundled_Self_Contained_App_Run_Succeeds(BundleOptions options)
         {
             var fixture = sharedTestState.TestSelfContainedFixture.Copy();
-            var singleFile = BundleHelper.BundleApp(fixture);
+            var singleFile = BundleHelper.BundleApp(fixture, options);
 
             // Run the bundled app (extract files)
             RunTheApp(singleFile);
@@ -59,11 +64,14 @@ namespace AppHost.Bundle.Tests
             RunTheApp(singleFile);
         }
 
-        [Fact]
-        public void Bundled_With_Empty_File_Succeeds()
+        [InlineData(BundleOptions.None)]
+        [InlineData(BundleOptions.BundleNativeBinaries)]
+        [InlineData(BundleOptions.BundleAllContent)]
+        [Theory]
+        public void Bundled_With_Empty_File_Succeeds(BundleOptions options)
         {
             var fixture = sharedTestState.TestAppWithEmptyFileFixture.Copy();
-            var singleFile = BundleHelper.BundleApp(fixture);
+            var singleFile = BundleHelper.BundleApp(fixture, options);
 
             // Run the app
             RunTheApp(singleFile);
@@ -81,26 +89,22 @@ namespace AppHost.Bundle.Tests
                 RepoDirectories = new RepoDirectoriesProvider();
 
                 TestFrameworkDependentFixture = new TestProjectFixture("AppWithSubDirs", RepoDirectories);
+                BundleHelper.AddLongNameContentToAppWithSubDirs(TestFrameworkDependentFixture);
                 TestFrameworkDependentFixture
                     .EnsureRestoredForRid(TestFrameworkDependentFixture.CurrentRid, RepoDirectories.CorehostPackages)
                     .PublishProject(runtime: TestFrameworkDependentFixture.CurrentRid,
                                     outputDirectory: BundleHelper.GetPublishPath(TestFrameworkDependentFixture));
 
                 TestSelfContainedFixture = new TestProjectFixture("AppWithSubDirs", RepoDirectories);
+                BundleHelper.AddLongNameContentToAppWithSubDirs(TestSelfContainedFixture);
                 TestSelfContainedFixture
                     .EnsureRestoredForRid(TestSelfContainedFixture.CurrentRid, RepoDirectories.CorehostPackages)
                     .PublishProject(runtime: TestSelfContainedFixture.CurrentRid,
                                     outputDirectory: BundleHelper.GetPublishPath(TestSelfContainedFixture));
 
                 TestAppWithEmptyFileFixture = new TestProjectFixture("AppWithSubDirs", RepoDirectories);
-                XDocument projectDoc = XDocument.Load(TestAppWithEmptyFileFixture.TestProject.ProjectFile);
-                projectDoc.Root.Add(
-                    new XElement("ItemGroup",
-                        new XElement("Content",
-                            new XAttribute("Include", "empty.txt"),
-                            new XElement("CopyToOutputDirectory", "PreserveNewest"))));
-                projectDoc.Save(TestAppWithEmptyFileFixture.TestProject.ProjectFile);
-                File.WriteAllBytes(Path.Combine(TestAppWithEmptyFileFixture.TestProject.Location, "empty.txt"), new byte[0]);
+                BundleHelper.AddLongNameContentToAppWithSubDirs(TestAppWithEmptyFileFixture);
+                BundleHelper.AddEmptyContentToApp(TestAppWithEmptyFileFixture);
                 TestAppWithEmptyFileFixture
                     .EnsureRestoredForRid(TestAppWithEmptyFileFixture.CurrentRid, RepoDirectories.CorehostPackages)
                     .PublishProject(runtime: TestAppWithEmptyFileFixture.CurrentRid,
@@ -111,6 +115,7 @@ namespace AppHost.Bundle.Tests
             {
                 TestFrameworkDependentFixture.Dispose();
                 TestSelfContainedFixture.Dispose();
+                TestAppWithEmptyFileFixture.Dispose();
             }
         }
     }

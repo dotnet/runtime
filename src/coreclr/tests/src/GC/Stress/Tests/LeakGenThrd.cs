@@ -19,25 +19,25 @@ namespace LGen
         internal int Cv_iCounter = 0;
         internal int Cv_iRep;
 
-        public static int Main(System.String[] Args)
+        public static int Main(string[] args)
         {
             int iRep = 2;
             int iObj = 15; //the number of MB memory will be allocted in MakeLeak()
 
-            switch (Args.Length)
+            switch (args.Length)
             {
                 case 1:
-                    if (!Int32.TryParse(Args[0], out iRep))
+                    if (!Int32.TryParse(args[0], out iRep))
                     {
                         iRep = 2;
                     }
                     break;
                 case 2:
-                    if (!Int32.TryParse(Args[0], out iRep))
+                    if (!Int32.TryParse(args[0], out iRep))
                     {
                         iRep = 2;
                     }
-                    if (!Int32.TryParse(Args[1], out iObj))
+                    if (!Int32.TryParse(args[1], out iObj))
                     {
                         iObj = 15;
                     }

@@ -23,16 +23,16 @@ namespace System.ComponentModel.Composition.Hosting
     public partial class DirectoryCatalog : ComposablePartCatalog, INotifyComposablePartCatalogChanged, ICompositionElement
     {
         private readonly Lock _thisLock = new Lock();
-        private readonly ICompositionElement _definitionOrigin = null;
-        private ComposablePartCatalogCollection _catalogCollection;
-        private Dictionary<string, AssemblyCatalog> _assemblyCatalogs;
+        private readonly ICompositionElement? _definitionOrigin = null;
+        private ComposablePartCatalogCollection _catalogCollection = null!; // Always initialized with Initialize()
+        private Dictionary<string, AssemblyCatalog> _assemblyCatalogs = null!;
         private volatile bool _isDisposed = false;
-        private string _path;
-        private string _fullPath;
-        private string _searchPattern;
-        private ReadOnlyCollection<string> _loadedFiles;
+        private string _path = null!;
+        private string _fullPath = null!;
+        private string _searchPattern = null!;
+        private ReadOnlyCollection<string> _loadedFiles = null!;
 
-        private readonly ReflectionContext _reflectionContext = null;
+        private readonly ReflectionContext? _reflectionContext = null;
 
         /// <summary>
         ///     Creates a catalog of <see cref="ComposablePartDefinition"/>s based on all the *.dll files
@@ -434,12 +434,12 @@ namespace System.ComponentModel.Composition.Hosting
         /// <summary>
         /// Notify when the contents of the Catalog has changed.
         /// </summary>
-        public event EventHandler<ComposablePartCatalogChangeEventArgs> Changed;
+        public event EventHandler<ComposablePartCatalogChangeEventArgs>? Changed;
 
         /// <summary>
         /// Notify when the contents of the Catalog has changing.
         /// </summary>
-        public event EventHandler<ComposablePartCatalogChangeEventArgs> Changing;
+        public event EventHandler<ComposablePartCatalogChangeEventArgs>? Changing;
 
         /// <summary>
         /// Releases unmanaged and - optionally - managed resources
@@ -454,7 +454,7 @@ namespace System.ComponentModel.Composition.Hosting
                     if (!_isDisposed)
                     {
                         bool disposeLock = false;
-                        ComposablePartCatalogCollection catalogs = null;
+                        ComposablePartCatalogCollection? catalogs = null;
 
                         try
                         {
@@ -464,8 +464,8 @@ namespace System.ComponentModel.Composition.Hosting
                                 {
                                     disposeLock = true;
                                     catalogs = _catalogCollection;
-                                    _catalogCollection = null;
-                                    _assemblyCatalogs = null;
+                                    _catalogCollection = null!;
+                                    _assemblyCatalogs = null!;
                                     _isDisposed = true;
                                 }
                             }
@@ -532,7 +532,7 @@ namespace System.ComponentModel.Composition.Hosting
         /// </param>
         protected virtual void OnChanged(ComposablePartCatalogChangeEventArgs e)
         {
-            EventHandler<ComposablePartCatalogChangeEventArgs> changedEvent = Changed;
+            EventHandler<ComposablePartCatalogChangeEventArgs>? changedEvent = Changed;
             if (changedEvent != null)
             {
                 changedEvent(this, e);
@@ -547,7 +547,7 @@ namespace System.ComponentModel.Composition.Hosting
         /// </param>
         protected virtual void OnChanging(ComposablePartCatalogChangeEventArgs e)
         {
-            EventHandler<ComposablePartCatalogChangeEventArgs> changingEvent = Changing;
+            EventHandler<ComposablePartCatalogChangeEventArgs>? changingEvent = Changing;
             if (changingEvent != null)
             {
                 changingEvent(this, e);
@@ -662,9 +662,9 @@ namespace System.ComponentModel.Composition.Hosting
             return GetDisplayName();
         }
 
-        private AssemblyCatalog CreateAssemblyCatalogGuarded(string assemblyFilePath)
+        private AssemblyCatalog? CreateAssemblyCatalogGuarded(string assemblyFilePath)
         {
-            Exception exception = null;
+            Exception? exception = null;
 
             try
             {
@@ -704,7 +704,7 @@ namespace System.ComponentModel.Composition.Hosting
             IEnumerable<string> filesToAdd = afterFiles.Except(beforeFiles);
             foreach (string file in filesToAdd)
             {
-                AssemblyCatalog catalog = CreateAssemblyCatalogGuarded(file);
+                AssemblyCatalog? catalog = CreateAssemblyCatalogGuarded(file);
 
                 if (catalog != null)
                 {
@@ -717,8 +717,7 @@ namespace System.ComponentModel.Composition.Hosting
             {
                 foreach (string file in filesToRemove)
                 {
-                    AssemblyCatalog catalog;
-                    if (_assemblyCatalogs.TryGetValue(file, out catalog))
+                    if (_assemblyCatalogs.TryGetValue(file, out AssemblyCatalog? catalog))
                     {
                         catalogsToRemove.Add(new Tuple<string, AssemblyCatalog>(file, catalog));
                     }
@@ -758,8 +757,7 @@ namespace System.ComponentModel.Composition.Hosting
 
             foreach (string file in _loadedFiles)
             {
-                AssemblyCatalog assemblyCatalog = null;
-                assemblyCatalog = CreateAssemblyCatalogGuarded(file);
+                AssemblyCatalog? assemblyCatalog = CreateAssemblyCatalogGuarded(file);
 
                 if (assemblyCatalog != null)
                 {
@@ -784,7 +782,6 @@ namespace System.ComponentModel.Composition.Hosting
         /// <value>
         ///     A <see cref="string"/> containing a human-readable display name of the <see cref="DirectoryCatalog"/>.
         /// </value>
-        [SuppressMessage("Microsoft.Design", "CA1033:InterfaceMethodsShouldBeCallableByChildTypes")]
         string ICompositionElement.DisplayName
         {
             get { return GetDisplayName(); }
@@ -796,8 +793,7 @@ namespace System.ComponentModel.Composition.Hosting
         /// <value>
         ///     This property always returns <see langword="null"/>.
         /// </value>
-        [SuppressMessage("Microsoft.Design", "CA1033:InterfaceMethodsShouldBeCallableByChildTypes")]
-        ICompositionElement ICompositionElement.Origin
+        ICompositionElement? ICompositionElement.Origin
         {
             get { return null; }
         }

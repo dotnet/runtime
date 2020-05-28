@@ -12,11 +12,11 @@
 #define _FN_TABLE_ACCESS_H
 
 
-#if !defined(_TARGET_X86_)
+#if !defined(TARGET_X86)
 
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
 #define DEBUGSUPPORT_STUBS_HAVE_UNWIND_INFO
-#endif // !FEATURE_PAL
+#endif // !TARGET_UNIX
 
 #ifndef USE_INDIRECT_CODEHEADER
 #define USE_INDIRECT_CODEHEADER
@@ -106,11 +106,11 @@ struct FakeStub
 #ifdef _DEBUG
     UINT32  m_signature;
 #else
-#ifdef BIT64
+#ifdef HOST_64BIT
     //README ALIGNEMENT: in retail mode UINT m_numCodeBytes does not align to 16byte for the code
     //                   after the Stub struct. This is to pad properly
     UINT    m_pad_code_bytes;
-#endif // BIT64
+#endif // HOST_64BIT
 #endif // _DEBUG
 };
 
@@ -143,10 +143,10 @@ class CheckDuplicatedStructLayouts
     CHECK_OFFSET(HeapList, mapBase);
     CHECK_OFFSET(HeapList, pHdrMap);
 
-#if !defined(_TARGET_X86_)
+#if !defined(TARGET_X86)
     CHECK_OFFSET(RealCodeHeader,    nUnwindInfos);
     CHECK_OFFSET(RealCodeHeader,    unwindInfos);
-#endif  // !_TARGET_X86_
+#endif  // !TARGET_X86
 
 #ifdef DEBUGSUPPORT_STUBS_HAVE_UNWIND_INFO
     CHECK_OFFSET(StubUnwindInfoHeader, pNext);

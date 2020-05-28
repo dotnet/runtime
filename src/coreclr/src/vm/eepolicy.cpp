@@ -21,423 +21,12 @@
 
 #include "typestring.h"
 
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
 #include "dwreport.h"
-#endif // !FEATURE_PAL
+#endif // !TARGET_UNIX
 
 #include "eventtrace.h"
 #undef ExitProcess
-
-BYTE g_EEPolicyInstance[sizeof(EEPolicy)];
-
-void InitEEPolicy()
-{
-    WRAPPER_NO_CONTRACT;
-    new (g_EEPolicyInstance) EEPolicy();
-}
-
-EEPolicy::EEPolicy ()
-{
-    CONTRACTL
-    {
-        GC_NOTRIGGER;
-        NOTHROW;
-    }
-    CONTRACTL_END;
-
-    int n;
-    for (n = 0; n < MaxClrOperation; n++) {
-        m_Timeout[n] = INFINITE;
-        m_ActionOnTimeout[n] = eNoAction;
-        m_DefaultAction[n] = eNoAction;
-    }
-    m_Timeout[OPR_ProcessExit] = 40000;
-    m_ActionOnTimeout[OPR_ProcessExit] = eRudeExitProcess;
-    m_ActionOnTimeout[OPR_ThreadAbort] = eAbortThread;
-    m_ActionOnTimeout[OPR_ThreadRudeAbortInNonCriticalRegion] = eRudeAbortThread;
-    m_ActionOnTimeout[OPR_ThreadRudeAbortInCriticalRegion] = eRudeAbortThread;
-
-    m_DefaultAction[OPR_ThreadAbort] = eAbortThread;
-    m_DefaultAction[OPR_ThreadRudeAbortInNonCriticalRegion] = eRudeAbortThread;
-    m_DefaultAction[OPR_ThreadRudeAbortInCriticalRegion] = eRudeAbortThread;
-    m_DefaultAction[OPR_AppDomainUnload] = eUnloadAppDomain;
-    m_DefaultAction[OPR_AppDomainRudeUnload] = eRudeUnloadAppDomain;
-    m_DefaultAction[OPR_ProcessExit] = eExitProcess;
-    m_DefaultAction[OPR_FinalizerRun] = eNoAction;
-
-    for (n = 0; n < MaxClrFailure; n++) {
-        m_ActionOnFailure[n] = eNoAction;
-    }
-    m_ActionOnFailure[FAIL_CriticalResource] = eThrowException;
-    m_ActionOnFailure[FAIL_NonCriticalResource] = eThrowException;
-    m_ActionOnFailure[FAIL_OrphanedLock] = eNoAction;
-    m_ActionOnFailure[FAIL_FatalRuntime] = eRudeExitProcess;
-    // For CoreCLR, initialize the default action for AV processing to all
-    // all kind of code to catch AV exception. If the host wants, they can
-    // specify a different action for this.
-    m_ActionOnFailure[FAIL_AccessViolation] = eNoAction;
-    m_ActionOnFailure[FAIL_StackOverflow] = eRudeExitProcess;
-    m_ActionOnFailure[FAIL_CodeContract] = eThrowException;
-    m_unhandledExceptionPolicy = eRuntimeDeterminedPolicy;
-}
-
-BOOL EEPolicy::IsValidActionForOperation(EClrOperation operation, EPolicyAction action)
-{
-    CONTRACTL
-    {
-        GC_NOTRIGGER;
-        NOTHROW;
-    }
-    CONTRACTL_END;
-
-    switch (operation) {
-    case OPR_ThreadAbort:
-        return action >= eAbortThread &&
-            action < MaxPolicyAction;
-    case OPR_ThreadRudeAbortInNonCriticalRegion:
-    case OPR_ThreadRudeAbortInCriticalRegion:
-        return action >= eRudeAbortThread && action != eUnloadAppDomain &&
-            action < MaxPolicyAction;
-    case OPR_AppDomainUnload:
-        return action >= eUnloadAppDomain &&
-            action < MaxPolicyAction;
-    case OPR_AppDomainRudeUnload:
-        return action >= eRudeUnloadAppDomain &&
-            action < MaxPolicyAction;
-    case OPR_ProcessExit:
-        return action >= eExitProcess &&
-            action < MaxPolicyAction;
-    case OPR_FinalizerRun:
-        return action == eNoAction ||
-            (action >= eAbortThread &&
-             action < MaxPolicyAction);
-    default:
-        _ASSERT (!"Do not know valid action for this operation");
-        break;
-    }
-    return FALSE;
-}
-
-BOOL EEPolicy::IsValidActionForTimeout(EClrOperation operation, EPolicyAction action)
-{
-    CONTRACTL
-    {
-        GC_NOTRIGGER;
-        NOTHROW;
-    }
-    CONTRACTL_END;
-
-    switch (operation) {
-    case OPR_ThreadAbort:
-        return action > eAbortThread &&
-            action < MaxPolicyAction;
-    case OPR_ThreadRudeAbortInNonCriticalRegion:
-    case OPR_ThreadRudeAbortInCriticalRegion:
-        return action > eRudeUnloadAppDomain &&
-            action < MaxPolicyAction;
-    case OPR_AppDomainUnload:
-        return action > eUnloadAppDomain &&
-            action < MaxPolicyAction;
-    case OPR_AppDomainRudeUnload:
-        return action > eRudeUnloadAppDomain &&
-            action < MaxPolicyAction;
-    case OPR_ProcessExit:
-        return action > eExitProcess &&
-            action < MaxPolicyAction;
-    case OPR_FinalizerRun:
-        return action == eNoAction ||
-            (action >= eAbortThread &&
-             action < MaxPolicyAction);
-    default:
-        _ASSERT (!"Do not know valid action for this operation");
-        break;
-    }
-    return FALSE;
-}
-
-BOOL EEPolicy::IsValidActionForFailure(EClrFailure failure, EPolicyAction action)
-{
-    CONTRACTL
-    {
-        GC_NOTRIGGER;
-        NOTHROW;
-    }
-    CONTRACTL_END;
-
-    switch (failure) {
-    case FAIL_NonCriticalResource:
-        return action >= eThrowException &&
-            action < MaxPolicyAction;
-    case FAIL_CriticalResource:
-        return action >= eThrowException &&
-            action < MaxPolicyAction;
-    case FAIL_FatalRuntime:
-        return action >= eRudeExitProcess &&
-            action < MaxPolicyAction;
-    case FAIL_OrphanedLock:
-        return action >= eUnloadAppDomain &&
-            action < MaxPolicyAction;
-    case FAIL_AccessViolation:
-        // Allowed actions on failure are:
-        //
-        // eNoAction or eRudeExitProcess.
-        return ((action == eNoAction) || (action == eRudeExitProcess));
-    case FAIL_StackOverflow:
-        return action >= eRudeUnloadAppDomain &&
-            action < MaxPolicyAction;
-    case FAIL_CodeContract:
-        return action >= eThrowException &&
-            action <= eExitProcess;
-    default:
-        _ASSERTE (!"Do not know valid action for this failure");
-        break;
-    }
-
-    return FALSE;
-}
-
-HRESULT EEPolicy::SetTimeout(EClrOperation operation, DWORD timeout)
-{
-    CONTRACTL
-    {
-        MODE_ANY;
-        GC_NOTRIGGER;
-        NOTHROW;
-    }
-    CONTRACTL_END;
-
-    if (static_cast<UINT>(operation) < MaxClrOperation)
-    {
-    m_Timeout[operation] = timeout;
-    if (operation == OPR_FinalizerRun &&
-        g_fEEStarted)
-    {
-        FastInterlockOr((DWORD*)&g_FinalizerWaiterStatus, FWS_WaitInterrupt);
-        FinalizerThread::SignalFinalizationDone(FALSE);
-    }
-    return S_OK;
-}
-    else
-    {
-        return E_INVALIDARG;
-    }
-}
-
-HRESULT EEPolicy::SetActionOnTimeout(EClrOperation operation, EPolicyAction action)
-{
-    CONTRACTL
-    {
-        GC_NOTRIGGER;
-        NOTHROW;
-    }
-    CONTRACTL_END;
-
-    if (static_cast<UINT>(operation) < MaxClrOperation &&
-        IsValidActionForTimeout(operation, action))
-    {
-        m_ActionOnTimeout[operation] = action;
-        return S_OK;
-    }
-    else
-    {
-        return E_INVALIDARG;
-    }
-}
-
-EPolicyAction EEPolicy::GetFinalAction(EPolicyAction action, Thread *pThread)
-{
-    LIMITED_METHOD_CONTRACT;
-    _ASSERTE(static_cast<UINT>(action) < MaxPolicyAction);
-
-    if (action < eAbortThread || action > eFastExitProcess)
-    {
-        return action;
-    }
-
-    while(TRUE)
-    {
-        // Look at default action.  If the default action is more severe,
-        // use the default action instead.
-        EPolicyAction defaultAction = action;
-        switch (action)
-        {
-            case eAbortThread:
-            defaultAction = m_DefaultAction[OPR_ThreadAbort];
-                break;
-            case eRudeAbortThread:
-                if (pThread && !pThread->HasLockInCurrentDomain())
-                {
-                defaultAction = m_DefaultAction[OPR_ThreadRudeAbortInNonCriticalRegion];
-                }
-                else
-                {
-                defaultAction = m_DefaultAction[OPR_ThreadRudeAbortInCriticalRegion];
-                }
-                break;
-            case eUnloadAppDomain:
-            defaultAction = m_DefaultAction[OPR_AppDomainUnload];
-                break;
-            case eRudeUnloadAppDomain:
-            defaultAction = m_DefaultAction[OPR_AppDomainRudeUnload];
-                break;
-            case eExitProcess:
-            case eFastExitProcess:
-            defaultAction = m_DefaultAction[OPR_ProcessExit];
-            if (defaultAction < action)
-                {
-                defaultAction = action;
-                }
-                break;
-            default:
-                break;
-            }
-        _ASSERTE(static_cast<UINT>(defaultAction) < MaxPolicyAction);
-
-        if (defaultAction == action)
-            {
-            return action;
-            }
-
-        _ASSERTE(defaultAction > action);
-        action = defaultAction;
-    }
-}
-
-// Allow setting timeout and action in one call.
-// If we decide to have atomical operation on Policy, we can use lock here
-// while SetTimeout and SetActionOnTimeout can not.
-HRESULT EEPolicy::SetTimeoutAndAction(EClrOperation operation, DWORD timeout, EPolicyAction action)
-{
-    CONTRACTL
-    {
-        GC_NOTRIGGER;
-        NOTHROW;
-    }
-    CONTRACTL_END;
-
-    if (static_cast<UINT>(operation) < MaxClrOperation &&
-        IsValidActionForTimeout(operation, action))
-    {
-        m_ActionOnTimeout[operation] = action;
-        m_Timeout[operation] = timeout;
-        if (operation == OPR_FinalizerRun &&
-            g_fEEStarted)
-        {
-            FastInterlockOr((DWORD*)&g_FinalizerWaiterStatus, FWS_WaitInterrupt);
-            FinalizerThread::SignalFinalizationDone(FALSE);
-        }
-        return S_OK;
-    }
-    else
-    {
-        return E_INVALIDARG;
-    }
-}
-
-HRESULT EEPolicy::SetDefaultAction(EClrOperation operation, EPolicyAction action)
-{
-    CONTRACTL
-    {
-        GC_NOTRIGGER;
-        NOTHROW;
-    }
-    CONTRACTL_END;
-
-    if (static_cast<UINT>(operation) < MaxClrOperation &&
-        IsValidActionForOperation(operation, action))
-    {
-        m_DefaultAction[operation] = action;
-        return S_OK;
-    }
-    else
-    {
-        return E_INVALIDARG;
-    }
-}
-
-HRESULT EEPolicy::SetActionOnFailure(EClrFailure failure, EPolicyAction action)
-{
-    CONTRACTL
-    {
-        GC_NOTRIGGER;
-        NOTHROW;
-    }
-    CONTRACTL_END;
-
-    if (static_cast<UINT>(failure) < MaxClrFailure &&
-        IsValidActionForFailure(failure, action))
-    {
-        m_ActionOnFailure[failure] = action;
-        return S_OK;
-    }
-    else
-    {
-        return E_INVALIDARG;
-    }
-}
-
-EPolicyAction EEPolicy::GetActionOnFailureNoHostNotification(EClrFailure failure)
-{
-    CONTRACTL
-    {
-        MODE_ANY;
-        GC_NOTRIGGER;
-        NOTHROW;
-    }CONTRACTL_END;
-
-    _ASSERTE (failure < MaxClrFailure);
-    if (failure == FAIL_StackOverflow)
-    {
-        return m_ActionOnFailure[failure];
-    }
-
-    return GetFinalAction(m_ActionOnFailure[failure], GetThread());
-}
-
-EPolicyAction EEPolicy::GetActionOnFailure(EClrFailure failure)
-{
-    CONTRACTL
-    {
-        MODE_ANY;
-        GC_NOTRIGGER;
-        NOTHROW;
-    }CONTRACTL_END;
-
-    _ASSERTE(static_cast<UINT>(failure) < MaxClrFailure);
-    if (failure == FAIL_StackOverflow)
-    {
-        return m_ActionOnFailure[failure];
-    }
-
-    EPolicyAction finalAction = GetActionOnFailureNoHostNotification(failure);
-    return finalAction;
-}
-
-
-void EEPolicy::NotifyHostOnTimeout(EClrOperation operation, EPolicyAction action)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_NOTRIGGER;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-}
-
-
-void EEPolicy::NotifyHostOnDefaultAction(EClrOperation operation, EPolicyAction action)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-}
 
 void SafeExitProcess(UINT exitCode, BOOL fAbort = FALSE, ShutdownCompleteAction sca = SCA_ExitProcessWhenShutdownComplete)
 {
@@ -505,37 +94,15 @@ void SafeExitProcess(UINT exitCode, BOOL fAbort = FALSE, ShutdownCompleteAction 
         // Watson code
         CONTRACT_VIOLATION(ThrowsViolation);
 
-#ifdef FEATURE_PAL
         if (fAbort)
         {
-            TerminateProcess(GetCurrentProcess(), exitCode);
+            CrashDumpAndTerminateProcess(exitCode);
         }
-#endif
-
-        EEPolicy::ExitProcessViaShim(exitCode);
+        else
+        {
+            ExitProcess(exitCode);
+        }
     }
-}
-
-// This is a helper to exit the process after coordinating with the shim. It is used by
-// SafeExitProcess above, as well as from CorHost2::ExitProcess when we know that we must
-// exit the process without doing further work to shutdown this runtime. This first attempts
-// to call back to the Shim to shutdown any other runtimes within the process.
-//
-// IMPORTANT NOTE: exercise extreme caution when adding new calls to this method. It is highly
-// likely that you want to call SafeExitProcess, or EEPolicy::HandleExitProcess instead of this.
-// This function only exists to factor some common code out of the methods mentioned above.
-
-//static
-void EEPolicy::ExitProcessViaShim(UINT exitCode)
-{
-    LIMITED_METHOD_CONTRACT;
-
-    // We must call back to the Shim in order to exit the process, as this may be just one
-    // runtime in a process with many. We need to give the other runtimes a chance to exit
-    // cleanly. If we can't make the call, or if the call fails for some reason, then we
-    // simply exit the process here, which is rude to the others, but the best we can do.
-
-    ExitProcess(exitCode);
 }
 
 //---------------------------------------------------------------------------------------
@@ -552,140 +119,16 @@ DWORD g_fFastExitProcess = 0;
 
 extern void STDMETHODCALLTYPE EEShutDown(BOOL fIsDllUnloading);
 
-static void HandleExitProcessHelper(EPolicyAction action, UINT exitCode, ShutdownCompleteAction sca)
-{
-    WRAPPER_NO_CONTRACT;
-
-    switch (action) {
-    case eFastExitProcess:
-        g_fFastExitProcess = 1;
-    case eExitProcess:
-        if (g_fEEStarted)
-        {
-            EEShutDown(FALSE);
-        }
-        if (exitCode == 0)
-        {
-            exitCode = GetLatchedExitCode();
-        }
-        SafeExitProcess(exitCode, FALSE, sca);
-        break;
-    case eRudeExitProcess:
-        g_fFastExitProcess = 2;
-        SafeExitProcess(exitCode, TRUE, sca);
-        break;
-    default:
-        _ASSERTE (!"Invalid policy");
-        break;
-    }
-}
-
-
-EPolicyAction EEPolicy::DetermineResourceConstraintAction(Thread *pThread)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    EPolicyAction action;
-    if (pThread->HasLockInCurrentDomain()) {
-        action = GetEEPolicy()->GetActionOnFailure(FAIL_CriticalResource);
-    }
-    else
-        action = GetEEPolicy()->GetActionOnFailure(FAIL_NonCriticalResource);
-
-    AppDomain *pDomain = GetAppDomain();
-    // If it is default domain, we can not unload the appdomain
-    if (pDomain == SystemDomain::System()->DefaultDomain() &&
-        (action == eUnloadAppDomain || action == eRudeUnloadAppDomain))
-    {
-        action = eThrowException;
-    }
-    return action;
-}
-
-void EEPolicy::PerformResourceConstraintAction(Thread *pThread, EPolicyAction action, UINT exitCode, BOOL haveStack)
-    {
-    WRAPPER_NO_CONTRACT;
-
-    _ASSERTE(GetAppDomain() != NULL);
-
-    switch (action) {
-    case eThrowException:
-        // Caller is going to rethrow.
-        return;
-        break;
-    case eAbortThread:
-        pThread->UserAbort(Thread::TAR_Thread, TA_Safe, GetEEPolicy()->GetTimeout(OPR_ThreadAbort), Thread::UAC_Normal);
-        break;
-    case eRudeAbortThread:
-        pThread->UserAbort(Thread::TAR_Thread, TA_Rude, GetEEPolicy()->GetTimeout(OPR_ThreadAbort), Thread::UAC_Normal);
-        break;
-    case eExitProcess:
-    case eFastExitProcess:
-    case eRudeExitProcess:
-        HandleExitProcessFromEscalation(action, exitCode);
-        break;
-    default:
-        _ASSERTE (!"Invalid policy");
-        break;
-    }
-}
-
-void EEPolicy::HandleOutOfMemory()
-{
-    WRAPPER_NO_CONTRACT;
-
-    _ASSERTE (g_pOutOfMemoryExceptionClass);
-
-    Thread *pThread = GetThread();
-    _ASSERTE (pThread);
-
-    EPolicyAction action = DetermineResourceConstraintAction(pThread);
-
-    // Check if we are executing in the context of a Constrained Execution Region.
-    if (action != eThrowException && Thread::IsExecutingWithinCer())
-    {
-        // Hitting OOM in a CER region should throw the OOM without regard to the escalation policy
-        // since the CER author has declared they are hardened against such failures. That's
-        // the whole point of CERs, to denote regions where code knows exactly how to deal with
-        // failures in an attempt to minimize the need for rollback or recycling.
-        return;
-    }
-
-    PerformResourceConstraintAction(pThread, action, HOST_E_EXITPROCESS_OUTOFMEMORY, TRUE);
-}
-
 //---------------------------------------------------------------------------------------
 //
 // EEPolicy::HandleStackOverflow - Handle stack overflow according to policy
-//
-// Arguments:
-//    detector:
-//    pLimitFrame: the limit of search for frames in order to decide if in SO tolerant
 //
 // Return Value:
 //    None.
 //
 // How is stack overflow handled?
-// If stack overflows in non-hosted case, we terminate the process.
-// For hosted case with escalation policy
-// 1. If stack overflows in managed code, or in VM before switching to SO intolerant region, and the GC mode is Cooperative
-//    the domain is rudely unloaded, or the process is terminated if the current domain is default domain.
-//    a. This action is done through BEGIN_SO_TOLERANT_CODE if there is one.
-//    b. If there is not this macro on the stack, we mark the domain being unload requested, and when the thread
-//       dies or is recycled, we finish the AD unload.
-// 2. If stack overflows in SO tolerant region, but the GC mode is Preemptive, the process is killed in vector handler, or our
-//    managed exception handler (COMPlusFrameHandler or ProcessCLRException).
-// 3. If stack overflows in SO intolerant region, the process is killed as soon as the exception is seen by our vector handler, or
-//    our managed exception handler.
-//
-// The process is terminated if there is StackOverflow as all clr code is considered SO Intolerant.
-void EEPolicy::HandleStackOverflow(StackOverflowDetector detector, void * pLimitFrame)
+// If stack overflows, we terminate the process.
+void EEPolicy::HandleStackOverflow()
 {
     WRAPPER_NO_CONTRACT;
 
@@ -700,7 +143,7 @@ void EEPolicy::HandleStackOverflow(StackOverflowDetector detector, void * pLimit
     }
 
     EXCEPTION_POINTERS exceptionInfo;
-    GetCurrentExceptionPointers(&exceptionInfo);
+    GetCurrentExceptionPointers(&exceptionInfo DEBUG_ARG(!pThread->IsExecutingOnAltStack()));
 
     _ASSERTE(exceptionInfo.ExceptionRecord);
 
@@ -734,38 +177,126 @@ void EEPolicy::HandleExitProcess(ShutdownCompleteAction sca)
 
     STRESS_LOG0(LF_EH, LL_INFO100, "In EEPolicy::HandleExitProcess\n");
 
-    EPolicyAction action = GetEEPolicy()->GetDefaultAction(OPR_ProcessExit, NULL);
-    GetEEPolicy()->NotifyHostOnDefaultAction(OPR_ProcessExit,action);
-    HandleExitProcessHelper(action, 0, sca);
-}
-
-StackWalkAction LogCallstackForLogCallback(
-    CrawlFrame       *pCF,      //
-    VOID*             pData     // Caller's private data
-)
-{
-    CONTRACTL
+    if (g_fEEStarted)
     {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
+        EEShutDown(FALSE);
     }
-    CONTRACTL_END;
-
-    SmallStackSString *pWordAt = ((SmallStackSString*)pData);
-
-    MethodDesc *pMD = pCF->GetFunction();
-    _ASSERTE(pMD != NULL);
-
-    StackSString str;
-    str = *pWordAt;
-
-    TypeString::AppendMethodInternal(str, pMD, TypeString::FormatNamespace|TypeString::FormatFullInst|TypeString::FormatSignature);
-    PrintToStdErrW(str.GetUnicode());
-    PrintToStdErrA("\n");
-
-    return SWA_CONTINUE;
+    SafeExitProcess(GetLatchedExitCode(), FALSE, sca);
 }
+
+
+//---------------------------------------------------------------------------------------
+// This class is responsible for displaying a stack trace. It uses a condensed way for
+// stack overflow stack traces where there are possibly many repeated frames.
+// It displays a count and a repeated sequence of frames at the top of the stack in 
+// such a case, instead of displaying possibly thousands of lines with the same 
+// method.
+//---------------------------------------------------------------------------------------
+class CallStackLogger
+{
+    // MethodDescs of the stack frames, the TOS is at index 0
+    CDynArray<MethodDesc*> m_frames;
+
+    // Index of a stack frame where a possible repetition of frames starts
+    int m_commonStartIndex = -1;
+    // Length of the largest found repeated sequence of frames
+    int m_largestCommonStartLength = 0;
+    // Number of repetitions of the largest repeated sequence of frames
+    int m_largestCommonStartRepeat = 0;
+
+    StackWalkAction LogCallstackForLogCallbackWorker(CrawlFrame *pCF)
+    {
+        WRAPPER_NO_CONTRACT;
+
+        MethodDesc *pMD = pCF->GetFunction();
+
+        if (m_commonStartIndex != -1)
+        {
+            // Some common frames were already found
+
+            if (m_frames[m_frames.Count() - m_commonStartIndex] != pMD)
+            {
+                // The frame being added is not part of the repeated sequence
+                if (m_frames.Count() / m_commonStartIndex >= 2)
+                {
+                    // A sequence repeated at least twice was found. It is the largest one that was found so far
+                    m_largestCommonStartLength = m_commonStartIndex;
+                    m_largestCommonStartRepeat = m_frames.Count() / m_commonStartIndex;
+                }
+
+                m_commonStartIndex = -1;
+            }
+        }
+
+        if (m_commonStartIndex == -1)
+        {
+            if ((m_frames.Count() != 0) && (pMD == m_frames[0]))
+            {
+                // We have found a frame with the same MethodDesc as the frame at the top of the stack,
+                // possibly a new repeated sequence is starting.
+                m_commonStartIndex = m_frames.Count();
+            }
+        }
+
+        MethodDesc** itemPtr = m_frames.Append();
+        if (itemPtr == nullptr)
+        {
+            // Memory allocation failure
+            return SWA_ABORT;
+        }
+
+        *itemPtr = pMD;
+
+        return SWA_CONTINUE;
+    }
+
+    void PrintFrame(int index, const WCHAR* pWordAt)
+    {
+        WRAPPER_NO_CONTRACT;
+
+        SString str(pWordAt);
+
+        MethodDesc* pMD = m_frames[index];
+        TypeString::AppendMethodInternal(str, pMD, TypeString::FormatNamespace|TypeString::FormatFullInst|TypeString::FormatSignature);
+        PrintToStdErrW(str.GetUnicode());
+        PrintToStdErrA("\n");
+    }
+
+public:
+
+    // Callback called by the stack walker for each frame on the stack
+    static StackWalkAction LogCallstackForLogCallback(CrawlFrame *pCF, VOID* pData)
+    {
+        WRAPPER_NO_CONTRACT;
+
+        CallStackLogger* logger = (CallStackLogger*)pData;
+        return logger->LogCallstackForLogCallbackWorker(pCF);
+    }
+
+    void PrintStackTrace(const WCHAR* pWordAt)
+    {
+        WRAPPER_NO_CONTRACT;
+
+        if (m_largestCommonStartLength != 0)
+        {
+            SmallStackSString repeatStr;
+            repeatStr.AppendPrintf("Repeat %d times:\n", m_largestCommonStartRepeat);
+
+            PrintToStdErrW(repeatStr.GetUnicode());
+            PrintToStdErrA("--------------------------------\n");
+            for (int i = 0; i < m_largestCommonStartLength; i++)
+            {
+                PrintFrame(i, pWordAt);
+            }
+            PrintToStdErrA("--------------------------------\n");
+        }
+
+        for (int i = m_largestCommonStartLength * m_largestCommonStartRepeat; i < m_frames.Count(); i++)
+        {
+            PrintFrame(i, pWordAt);
+        }    
+    }
+};
 
 //---------------------------------------------------------------------------------------
 //
@@ -777,10 +308,9 @@ StackWalkAction LogCallstackForLogCallback(
 // Return Value:
 //    None
 //
-inline void LogCallstackForLogWorker()
+inline void LogCallstackForLogWorker(Thread* pThread)
 {
-    Thread* pThread = GetThread();
-    _ASSERTE (pThread);
+    WRAPPER_NO_CONTRACT;
 
     SmallStackSString WordAt;
 
@@ -794,7 +324,12 @@ inline void LogCallstackForLogWorker()
     }
     WordAt += W(" ");
 
-    pThread->StackWalkFrames(&LogCallstackForLogCallback, &WordAt, QUICKUNWIND | FUNCTIONSONLY);
+    CallStackLogger logger;
+
+    pThread->StackWalkFrames(&CallStackLogger::LogCallstackForLogCallback, &logger, QUICKUNWIND | FUNCTIONSONLY | ALLOW_ASYNC_STACK_WALK);
+
+    logger.PrintStackTrace(WordAt.GetUnicode());
+
 }
 
 //---------------------------------------------------------------------------------------
@@ -848,7 +383,7 @@ void LogInfoForFatalError(UINT exitCode, LPCWSTR pszMessage, LPCWSTR errorSource
 
         if (pThread && errorSource == NULL)
         {
-            LogCallstackForLogWorker();
+            LogCallstackForLogWorker(GetThread());
 
             if (argExceptionString != NULL) {
                 PrintToStdErrW(argExceptionString);
@@ -888,7 +423,7 @@ void EEPolicy::LogFatalError(UINT exitCode, UINT_PTR address, LPCWSTR pszMessage
                         GetClrInstanceId());
     }
 
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
     // Write an event log entry. We do allocate some resources here (spread between the stack and maybe the heap for longer
     // messages), so it's possible for the event write to fail. If needs be we can use a more elaborate scheme here in the future
     // (maybe trying multiple approaches and backing off on failure, falling back on a limited size static buffer as a last
@@ -934,13 +469,13 @@ void EEPolicy::LogFatalError(UINT exitCode, UINT_PTR address, LPCWSTR pszMessage
                 addressString.Printf(W("%p"), pExceptionInfo? (UINT_PTR)pExceptionInfo->ExceptionRecord->ExceptionAddress : address);
 
                 // We should always have the reference to the runtime's instance
-                _ASSERTE(g_pMSCorEE != NULL);
+                _ASSERTE(g_hThisInst != NULL);
 
                 // Setup the string to contain the runtime's base address. Thus, when customers report FEEE with just
                 // the event log entry containing this string, we can use the absolute and base addresses to determine
                 // where the fault happened inside the runtime.
                 SmallStackSString runtimeBaseAddressString;
-                runtimeBaseAddressString.Printf(W("%p"), g_pMSCorEE);
+                runtimeBaseAddressString.Printf(W("%p"), g_hThisInst);
 
                 SmallStackSString exitCodeString;
                 exitCodeString.Printf(W("%x"), exitCode);
@@ -958,7 +493,7 @@ void EEPolicy::LogFatalError(UINT exitCode, UINT_PTR address, LPCWSTR pszMessage
     {
     }
     EX_END_CATCH(SwallowAllExceptions)
-#endif // !FEATURE_PAL
+#endif // !TARGET_UNIX
 
 #ifdef _DEBUG
     // If we're native-only (Win32) debugging this process, we'd love to break now.
@@ -1046,6 +581,13 @@ void DisplayStackOverflowException()
     PrintToStdErrA("Stack overflow.\n");
 }
 
+DWORD LogStackOverflowStackTraceThread(void* arg)
+{
+    LogCallstackForLogWorker((Thread*)arg);
+
+    return 0;
+}
+
 void DECLSPEC_NORETURN EEPolicy::HandleFatalStackOverflow(EXCEPTION_POINTERS *pExceptionInfo, BOOL fSkipDebugger)
 {
     // This is fatal error.  We do not care about SO mode any more.
@@ -1056,7 +598,43 @@ void DECLSPEC_NORETURN EEPolicy::HandleFatalStackOverflow(EXCEPTION_POINTERS *pE
 
     STRESS_LOG0(LF_EH, LL_INFO100, "In EEPolicy::HandleFatalStackOverflow\n");
 
-    DisplayStackOverflowException();
+    FrameWithCookie<FaultingExceptionFrame> fef;
+#if defined(FEATURE_EH_FUNCLETS)
+    *((&fef)->GetGSCookiePtr()) = GetProcessGSCookie();
+#endif // FEATURE_EH_FUNCLETS
+    if (pExceptionInfo && pExceptionInfo->ContextRecord)
+    {
+        GCX_COOP();
+        AdjustContextForJITHelpers(pExceptionInfo->ExceptionRecord, pExceptionInfo->ContextRecord);
+        fef.InitAndLink(pExceptionInfo->ContextRecord);
+    }
+
+    static volatile LONG g_stackOverflowCallStackLogged = 0;
+
+    // Dump stack trace only for the first thread failing with stack overflow to prevent mixing
+    // multiple stack traces together.
+    if (InterlockedCompareExchange(&g_stackOverflowCallStackLogged, 1, 0) == 0)
+    {
+        DisplayStackOverflowException();
+
+        HandleHolder stackDumpThreadHandle = Thread::CreateUtilityThread(Thread::StackSize_Small, LogStackOverflowStackTraceThread, GetThread(), W(".NET Stack overflow trace logger"));
+        if (stackDumpThreadHandle != INVALID_HANDLE_VALUE)
+        {
+            // Wait for the stack trace logging completion
+            DWORD res = WaitForSingleObject(stackDumpThreadHandle, INFINITE);
+            _ASSERTE(res == WAIT_OBJECT_0);
+        }
+
+        g_stackOverflowCallStackLogged = 2;
+    }
+    else
+    {
+        // Wait for the thread that is logging the stack trace to complete
+        while (g_stackOverflowCallStackLogged != 2)
+        {
+            Sleep(50);
+        }
+    }
 
     if(ETW_EVENT_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PRIVATE_PROVIDER_DOTNET_Context, FailFast))
     {
@@ -1097,17 +675,8 @@ void DECLSPEC_NORETURN EEPolicy::HandleFatalStackOverflow(EXCEPTION_POINTERS *pE
                 fTreatAsNativeUnhandledException = TRUE;
             }
         }
-        FrameWithCookie<FaultingExceptionFrame> fef;
-#if defined(FEATURE_EH_FUNCLETS)
-        *((&fef)->GetGSCookiePtr()) = GetProcessGSCookie();
-#endif // FEATURE_EH_FUNCLETS
-        if (pExceptionInfo && pExceptionInfo->ContextRecord)
-        {
-            GCX_COOP();
-            fef.InitAndLink(pExceptionInfo->ContextRecord);
-        }
 
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
         if (IsWatsonEnabled() && (g_pDebugInterface != NULL))
         {
             _ASSERTE(pExceptionInfo != NULL);
@@ -1117,17 +686,17 @@ void DECLSPEC_NORETURN EEPolicy::HandleFatalStackOverflow(EXCEPTION_POINTERS *pE
             param.pExceptionRecord = pExceptionInfo->ExceptionRecord;
             g_pDebugInterface->RequestFavor(ResetWatsonBucketsFavorWorker, reinterpret_cast<void *>(&param));
         }
-#endif // !FEATURE_PAL
+#endif // !TARGET_UNIX
 
         WatsonLastChance(pThread, pExceptionInfo,
             (fTreatAsNativeUnhandledException == FALSE)? TypeOfReportedError::UnhandledException: TypeOfReportedError::NativeThreadUnhandledException);
     }
 
-    TerminateProcess(GetCurrentProcess(), COR_E_STACKOVERFLOW);
+    CrashDumpAndTerminateProcess(COR_E_STACKOVERFLOW);
     UNREACHABLE();
 }
 
-#if defined(_TARGET_X86_) && defined(PLATFORM_WINDOWS)
+#if defined(TARGET_X86) && defined(TARGET_WINDOWS)
 // This noinline method is required to ensure that RtlCaptureContext captures
 // the context of HandleFatalError. On x86 RtlCaptureContext will not capture
 // the current method's context
@@ -1141,7 +710,7 @@ int NOINLINE WrapperClrCaptureContext(CONTEXT* context)
     return 0;
 }
 #pragma optimize("", on)
-#endif // defined(_TARGET_X86_) && defined(PLATFORM_WINDOWS)
+#endif // defined(TARGET_X86) && defined(TARGET_WINDOWS)
 
 // This method must return a value to avoid getting non-actionable dumps on x86.
 // If this method were a DECLSPEC_NORETURN then dumps would not provide the necessary
@@ -1164,10 +733,10 @@ int NOINLINE EEPolicy::HandleFatalError(UINT exitCode, UINT_PTR address, LPCWSTR
         ZeroMemory(&context, sizeof(context));
 
         context.ContextFlags = CONTEXT_CONTROL;
-#if defined(_TARGET_X86_) && defined(PLATFORM_WINDOWS)
+#if defined(TARGET_X86) && defined(TARGET_WINDOWS)
         // Add a frame to ensure that the context captured is this method and not the caller
         WrapperClrCaptureContext(&context);
-#else // defined(_TARGET_X86_) && defined(PLATFORM_WINDOWS)
+#else // defined(TARGET_X86) && defined(TARGET_WINDOWS)
         ClrCaptureContext(&context);
 #endif
 
@@ -1206,70 +775,10 @@ int NOINLINE EEPolicy::HandleFatalError(UINT exitCode, UINT_PTR address, LPCWSTR
         g_fFastExitProcess = 2;
 
         STRESS_LOG0(LF_CORDB,LL_INFO100, "D::HFE: About to call LogFatalError\n");
-        switch (GetEEPolicy()->GetActionOnFailure(FAIL_FatalRuntime))
-        {
-        case eRudeExitProcess:
-            LogFatalError(exitCode, address, pszMessage, pExceptionInfo, errorSource, argExceptionString);
-	        SafeExitProcess(exitCode, TRUE);
-            break;
-        default:
-            _ASSERTE(!"Invalid action for FAIL_FatalRuntime");
-            break;
-        }
+        LogFatalError(exitCode, address, pszMessage, pExceptionInfo, errorSource, argExceptionString);
+        SafeExitProcess(exitCode, TRUE);
     }
 
     UNREACHABLE();
     return -1;
 }
-
-void EEPolicy::HandleExitProcessFromEscalation(EPolicyAction action, UINT exitCode)
-{
-    WRAPPER_NO_CONTRACT;
-    CONTRACT_VIOLATION(GCViolation);
-
-    _ASSERTE (action >= eExitProcess);
-    // If policy for ExitProcess is not default action, i.e. ExitProcess, we will use it.
-    // Otherwise overwrite it with passing arg action;
-    EPolicyAction todo = GetEEPolicy()->GetDefaultAction(OPR_ProcessExit, NULL);
-    if (todo == eExitProcess)
-    {
-        todo = action;
-    }
-    GetEEPolicy()->NotifyHostOnDefaultAction(OPR_ProcessExit,todo);
-
-    HandleExitProcessHelper(todo, exitCode, SCA_ExitProcessWhenShutdownComplete);
-}
-
-void EEPolicy::HandleCodeContractFailure(LPCWSTR pMessage, LPCWSTR pCondition, LPCWSTR pInnerExceptionAsString)
-{
-    WRAPPER_NO_CONTRACT;
-
-    EEPolicy* pPolicy = GetEEPolicy();
-    // GetActionOnFailure will notify the host for us.
-    EPolicyAction action = pPolicy->GetActionOnFailure(FAIL_CodeContract);
-    Thread* pThread = GetThread();
-
-    switch(action) {
-    case eThrowException:
-        // Let managed code throw a ContractException (it's easier to pass the right parameters to the constructor).
-        break;
-    case eAbortThread:
-        pThread->UserAbort(Thread::TAR_Thread, TA_Safe, GetEEPolicy()->GetTimeout(OPR_ThreadAbort), Thread::UAC_Normal);
-        break;
-    case eRudeAbortThread:
-        pThread->UserAbort(Thread::TAR_Thread, TA_Rude, GetEEPolicy()->GetTimeout(OPR_ThreadAbort), Thread::UAC_Normal);
-        break;
-    case eExitProcess:  // Merged w/ default case
-    default:
-        _ASSERTE(action == eExitProcess);
-        // Since we have no exception object, make sure
-        // UE tracker is clean so that RetrieveManagedBucketParameters
-        // does not take any bucket details.
-#ifndef FEATURE_PAL
-        pThread->GetExceptionState()->GetUEWatsonBucketTracker()->ClearWatsonBucketDetails();
-#endif // !FEATURE_PAL
-        pPolicy->HandleFatalError(COR_E_CODECONTRACTFAILED, NULL, pMessage);
-        break;
-    }
-}
-

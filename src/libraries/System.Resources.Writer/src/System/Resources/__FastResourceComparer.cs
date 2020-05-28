@@ -6,6 +6,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Resources
 {
@@ -33,16 +34,14 @@ namespace System.Resources
             return (int)hash;
         }
 
-        public int Compare(string a, string b)
+        public int Compare(string? a, string? b)
         {
             return string.CompareOrdinal(a, b);
         }
 
-        public bool Equals(string a, string b)
+        public bool Equals(string? a, string? b)
         {
             return string.Equals(a, b);
         }
-
-
     }
 }

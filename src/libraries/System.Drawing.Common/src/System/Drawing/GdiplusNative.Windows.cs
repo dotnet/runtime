@@ -240,7 +240,7 @@ namespace System.Drawing
             internal static extern int GdipGetImageBounds(HandleRef image, out RectangleF gprectf, out GraphicsUnit unit);
 
             [DllImport(LibraryName, ExactSpelling = true)]
-            internal static extern int GdipGetImageThumbnail(HandleRef image, int thumbWidth, int thumbHeight, out IntPtr thumbImage, Image.GetThumbnailImageAbort callback, IntPtr callbackdata);
+            internal static extern int GdipGetImageThumbnail(HandleRef image, int thumbWidth, int thumbHeight, out IntPtr thumbImage, Image.GetThumbnailImageAbort? callback, IntPtr callbackdata);
 
             [DllImport(LibraryName, ExactSpelling = true)]
             internal static extern int GdipGetImagePalette(HandleRef image, IntPtr palette, int size);
@@ -363,13 +363,13 @@ namespace System.Drawing
             internal static extern int GdipCreateMetafileFromStream(Interop.Ole32.IStream stream, out IntPtr metafile);
 
             [DllImport(LibraryName, ExactSpelling = true, CharSet = CharSet.Unicode)]
-            internal static extern int GdipRecordMetafileStream(Interop.Ole32.IStream stream, IntPtr referenceHdc, EmfType emfType, ref RectangleF frameRect, MetafileFrameUnit frameUnit, string description, out IntPtr metafile);
+            internal static extern int GdipRecordMetafileStream(Interop.Ole32.IStream stream, IntPtr referenceHdc, EmfType emfType, ref RectangleF frameRect, MetafileFrameUnit frameUnit, string? description, out IntPtr metafile);
 
             [DllImport(LibraryName, ExactSpelling = true, CharSet = CharSet.Unicode)]
-            internal static extern int GdipRecordMetafileStream(Interop.Ole32.IStream stream, IntPtr referenceHdc, EmfType emfType, IntPtr pframeRect, MetafileFrameUnit frameUnit, string description, out IntPtr metafile);
+            internal static extern int GdipRecordMetafileStream(Interop.Ole32.IStream stream, IntPtr referenceHdc, EmfType emfType, IntPtr pframeRect, MetafileFrameUnit frameUnit, string? description, out IntPtr metafile);
 
             [DllImport(LibraryName, ExactSpelling = true, CharSet = CharSet.Unicode)]
-            internal static extern int GdipRecordMetafileStreamI(Interop.Ole32.IStream stream, IntPtr referenceHdc, EmfType emfType, ref Rectangle frameRect, MetafileFrameUnit frameUnit, string description, out IntPtr metafile);
+            internal static extern int GdipRecordMetafileStreamI(Interop.Ole32.IStream stream, IntPtr referenceHdc, EmfType emfType, ref Rectangle frameRect, MetafileFrameUnit frameUnit, string? description, out IntPtr metafile);
 
             [DllImport(LibraryName, ExactSpelling = true)]
             internal static extern int GdipComment(HandleRef graphics, int sizeData, byte[] data);

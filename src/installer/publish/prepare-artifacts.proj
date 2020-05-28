@@ -1,5 +1,23 @@
-<Project>
+<Project DefaultTargets="Build">
   <Import Project="Sdk.props" Sdk="Microsoft.NET.Sdk" />
+
+  <UsingTask TaskName="GenerateChecksums" AssemblyFile="$(InstallerTasksAssemblyPath)" />
+
+  <PropertyGroup>
+    <SuppressFinalPackageVersion>true</SuppressFinalPackageVersion>
+  </PropertyGroup>
+
+  <Target Name="CreateChecksums">
+    <ItemGroup>
+      <ArtifactsForGeneratingChecksums
+        Include="@(UploadToBlobStorageFile)"
+        DestinationPath="%(FullPath)$(ChecksumExtension)" />
+
+      <GeneratedChecksumFile Include="@(ArtifactsForGeneratingChecksums -> '%(DestinationPath)')" />
+    </ItemGroup>
+
+    <GenerateChecksums Items="@(ArtifactsForGeneratingChecksums)" />
+  </Target>
 
   <Target Name="SignPackages"
           Condition="'$(SkipSigning)' != 'true' and '$(SignType)' != 'public'">
@@ -8,24 +26,6 @@
       Projects="$(SigningToolsDir)\SignFinalPackages.proj"
       Targets="Build"
       Properties="DownloadDirectory=$(DownloadDirectory)" />
-  </Target>
-
-  <Target Name="UploadPreparedArtifactsToPipeline"
-          DependsOnTargets="
-            FindDownloadedArtifacts;
-            SignPackages">
-    <PropertyGroup>
-      <PreparedFileUploadDir>$(ArtifactsObjDir)PreparedFileUpload\</PreparedFileUploadDir>
-    </PropertyGroup>
-
-    <Copy SourceFiles="@(UploadToBlobStorageFile)" DestinationFolder="$(PreparedFileUploadDir)">
-      <Output TaskParameter="CopiedFiles" ItemName="CopiedUploadToBlobStorageFile" />
-    </Copy>
-
-    <Message Importance="High" Text="Uploading PreparedArtifacts to pipeline" />
-    <Message
-      Text="##vso[artifact.upload containerfolder=PreparedArtifacts;artifactname=PreparedArtifacts]%(CopiedUploadToBlobStorageFile.Identity)"
-      Importance="High" />
   </Target>
 
   <Target Name="PreparePublishToAzureBlobFeed">
@@ -96,9 +96,13 @@
 
       <ItemsToPush
         Include="@(UploadToBlobStorageFile)"
-        Exclude="@(NupkgToPublishFile);@(SymbolNupkgToPublishFile)" />
-      <ItemsToPush>
-        <RelativeBlobPath>assets/core-setup/$(InstallersRelativePath)%(Filename)%(Extension)</RelativeBlobPath>
+        Exclude="@(NupkgToPublishFile);@(SymbolNupkgToPublishFile)">
+        <RelativeBlobPath>$(InstallersRelativePath)%(Filename)%(Extension)</RelativeBlobPath>
+      </ItemsToPush>
+
+      <ItemsToPush Include="@(GeneratedChecksumFile)">
+        <RelativeBlobPath>$(InstallersRelativePath)%(Filename)%(Extension)</RelativeBlobPath>
+        <Category>Checksum</Category>
       </ItemsToPush>
     </ItemGroup>
 
@@ -132,7 +136,9 @@
   -->
   <Target Name="Build"
           DependsOnTargets="
-            UploadPreparedArtifactsToPipeline;
+            FindDownloadedArtifacts;
+            SignPackages;
+            CreateChecksums;
             PreparePublishToAzureBlobFeed;
             PreparePublishFilesToAzureBlobFeed">
     <Message Importance="High" Text="Complete!" />

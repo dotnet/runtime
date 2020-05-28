@@ -10,9 +10,9 @@ namespace System.Security.Cryptography
 {
     internal sealed partial class ECCngKey
     {
-        private SafeNCryptKeyHandle _keyHandle;
+        private SafeNCryptKeyHandle? _keyHandle;
         private int _lastKeySize;
-        private string _lastAlgorithm;
+        private string? _lastAlgorithm;
         private bool _disposed;
         private readonly string _algorithmGroup;
         private readonly string _disposedName;
@@ -29,12 +29,12 @@ namespace System.Security.Cryptography
 
         internal int KeySize { get; private set; }
 
-        internal string GetCurveName(int callerKeySizeProperty, out string oidValue)
+        internal string? GetCurveName(int callerKeySizeProperty, out string? oidValue)
         {
             // Ensure key\handle is created
             using (SafeNCryptKeyHandle keyHandle = GetDuplicatedKeyHandle(callerKeySizeProperty))
             {
-                string algorithm = _lastAlgorithm;
+                string? algorithm = _lastAlgorithm;
 
                 if (ECCng.IsECNamedCurve(algorithm))
                 {
@@ -54,7 +54,7 @@ namespace System.Security.Cryptography
             if (ECCng.IsECNamedCurve(_lastAlgorithm))
             {
                 // Curve was previously created, so use that
-                return new DuplicateSafeNCryptKeyHandle(_keyHandle);
+                return new DuplicateSafeNCryptKeyHandle(_keyHandle!);
             }
             else
             {
@@ -98,7 +98,7 @@ namespace System.Security.Cryptography
                     KeySize = callerKeySizeProperty;
                 }
 
-                return new DuplicateSafeNCryptKeyHandle(_keyHandle);
+                return new DuplicateSafeNCryptKeyHandle(_keyHandle!);
             }
         }
 
@@ -112,7 +112,7 @@ namespace System.Security.Cryptography
                 DisposeKey();
             }
 
-            string algorithm = null;
+            string algorithm;
             int keySize = 0;
 
             if (curve.IsNamed)
@@ -216,7 +216,7 @@ namespace System.Security.Cryptography
             _lastKeySize = 0;
         }
 
-        internal void SetHandle(SafeNCryptKeyHandle keyHandle, string algorithmName)
+        internal void SetHandle(SafeNCryptKeyHandle keyHandle, string? algorithmName)
         {
             ThrowIfDisposed();
 

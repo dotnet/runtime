@@ -14,7 +14,7 @@ namespace System.ComponentModel
     internal sealed class ExtendedPropertyDescriptor : PropertyDescriptor
     {
         private readonly ReflectPropertyDescriptor _extenderInfo;       // the extender property
-        private readonly IExtenderProvider _provider;           // the guy providing it
+        private readonly IExtenderProvider _provider;           // the object providing it
 
         /// <summary>
         /// Creates a new extended property info. Callers can then treat this as

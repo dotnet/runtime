@@ -13,7 +13,7 @@
 // This test is similar to GitHub_21061_StackOverflowInFunctionProlog. The main difference is that StackOverflow is thrown from a funclet prolog.
 //
 
-.assembly extern System.Private.CoreLib
+.assembly extern System.Runtime
 {
 }
 
@@ -34,7 +34,7 @@
 #>
 
 .class private explicit ansi sealed beforefieldinit GitHub_21061.<#= structName #>
-  extends [System.Private.CoreLib]System.ValueType
+  extends [System.Runtime]System.ValueType
 {
   .field [0] private int32 _0
   .field [<#= structSizeInBytes #>] private int32 <#= structName #>
@@ -59,7 +59,7 @@
 
       leave      _Return
     }
-    catch [System.Private.CoreLib]System.DivideByZeroException
+    catch [System.Runtime]System.DivideByZeroException
     {
       pop
 
@@ -92,7 +92,7 @@
 #>
 
 .class private auto ansi beforefieldinit GitHub_21061.Program
-       extends [System.Private.CoreLib]System.Object
+       extends [System.Runtime]System.Object
 {
   .method public hidebysig static void  Keep(int32 i) cil managed noinlining
   {

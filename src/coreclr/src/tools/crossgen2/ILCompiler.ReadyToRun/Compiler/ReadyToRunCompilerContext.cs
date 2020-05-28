@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -8,7 +8,6 @@ using System.Collections.Generic;
 using Internal.TypeSystem;
 
 using Debug = System.Diagnostics.Debug;
-using VectorIntrinsicFieldLayoutAlgorithm = ILCompiler.VectorFieldLayoutAlgorithm;
 
 namespace ILCompiler
 {
@@ -25,8 +24,8 @@ namespace ILCompiler
     {
         private ReadyToRunMetadataFieldLayoutAlgorithm _r2rFieldLayoutAlgorithm;
         private SystemObjectFieldLayoutAlgorithm _systemObjectFieldLayoutAlgorithm;
+        private VectorOfTFieldLayoutAlgorithm _vectorOfTFieldLayoutAlgorithm;
         private VectorFieldLayoutAlgorithm _vectorFieldLayoutAlgorithm;
-        VectorIntrinsicFieldLayoutAlgorithm _vectorIntrinsicFieldLayoutAlgorithm;
 
         public ReadyToRunCompilerContext(TargetDetails details, SharedGenericsMode genericsMode)
             : base(details, genericsMode)
@@ -34,7 +33,15 @@ namespace ILCompiler
             _r2rFieldLayoutAlgorithm = new ReadyToRunMetadataFieldLayoutAlgorithm();
             _systemObjectFieldLayoutAlgorithm = new SystemObjectFieldLayoutAlgorithm(_r2rFieldLayoutAlgorithm);
             _vectorFieldLayoutAlgorithm = new VectorFieldLayoutAlgorithm(_r2rFieldLayoutAlgorithm);
-            _vectorIntrinsicFieldLayoutAlgorithm = new VectorIntrinsicFieldLayoutAlgorithm(_r2rFieldLayoutAlgorithm);
+
+            string matchingVectorType = "Unknown";
+            if (details.MaximumSimdVectorLength == SimdVectorLength.Vector128Bit)
+                matchingVectorType = "Vector128`1";
+            else if (details.MaximumSimdVectorLength == SimdVectorLength.Vector256Bit)
+                matchingVectorType = "Vector256`1";
+
+            _vectorOfTFieldLayoutAlgorithm = new VectorOfTFieldLayoutAlgorithm(_r2rFieldLayoutAlgorithm, _vectorFieldLayoutAlgorithm, matchingVectorType);
+
         }
 
         public override FieldLayoutAlgorithm GetLayoutAlgorithmForType(DefType type)
@@ -45,13 +52,13 @@ namespace ILCompiler
                 throw new NotImplementedException();
             else if (type.IsRuntimeDeterminedType)
                 throw new NotImplementedException();
-            else if (VectorIntrinsicFieldLayoutAlgorithm.IsVectorOfTType(type))
+            else if (VectorOfTFieldLayoutAlgorithm.IsVectorOfTType(type))
+            {
+                return _vectorOfTFieldLayoutAlgorithm;
+            }
+            else if (VectorFieldLayoutAlgorithm.IsVectorType(type))
             {
                 return _vectorFieldLayoutAlgorithm;
-            }
-            else if (VectorIntrinsicFieldLayoutAlgorithm.IsVectorType(type))
-            {
-                return _vectorIntrinsicFieldLayoutAlgorithm;
             }
             else
             {
@@ -60,7 +67,7 @@ namespace ILCompiler
             }
         }
 
-        public void SetCompilationGroup(CompilationModuleGroup compilationModuleGroup)
+        public void SetCompilationGroup(ReadyToRunCompilationModuleGroupBase compilationModuleGroup)
         {
             _r2rFieldLayoutAlgorithm.SetCompilationGroup(compilationModuleGroup);
         }
@@ -98,27 +105,44 @@ namespace ILCompiler
         {
             return BaseTypeRuntimeInterfacesAlgorithm.Instance;
         }
+    }
 
-        private class VectorFieldLayoutAlgorithm : FieldLayoutAlgorithm
+    internal class VectorOfTFieldLayoutAlgorithm : FieldLayoutAlgorithm
+    {
+        private FieldLayoutAlgorithm _fallbackAlgorithm;
+        private FieldLayoutAlgorithm _vectorFallbackAlgorithm;
+        private string _similarVectorName;
+        private DefType _similarVectorOpenType;
+
+        public VectorOfTFieldLayoutAlgorithm(FieldLayoutAlgorithm fallbackAlgorithm, FieldLayoutAlgorithm vectorFallbackAlgorithm, string similarVector)
         {
-            private FieldLayoutAlgorithm _fallbackAlgorithm;
+            _fallbackAlgorithm = fallbackAlgorithm;
+            _vectorFallbackAlgorithm = vectorFallbackAlgorithm;
+            _similarVectorName = similarVector;
+        }
 
-            public VectorFieldLayoutAlgorithm(FieldLayoutAlgorithm fallbackAlgorithm)
+        private DefType GetSimilarVector(DefType vectorOfTType)
+        {
+            if (_similarVectorOpenType == null)
             {
-                _fallbackAlgorithm = fallbackAlgorithm;
+                if (_similarVectorName == "Unknown")
+                    return null;
+
+                _similarVectorOpenType = ((MetadataType)vectorOfTType.GetTypeDefinition()).Module.GetType("System.Runtime.Intrinsics", _similarVectorName);
             }
 
-            public override bool ComputeContainsGCPointers(DefType type)
-            {
-                return _fallbackAlgorithm.ComputeContainsGCPointers(type);
-            }
+            return ((MetadataType)_similarVectorOpenType).MakeInstantiatedType(vectorOfTType.Instantiation);
+        }
 
-            public override DefType ComputeHomogeneousFloatAggregateElementType(DefType type)
-            {
-                return _fallbackAlgorithm.ComputeHomogeneousFloatAggregateElementType(type);
-            }
+        public override bool ComputeContainsGCPointers(DefType type)
+        {
+            return false;
+        }
 
-            public override ComputedInstanceFieldLayout ComputeInstanceLayout(DefType type, InstanceLayoutKind layoutKind)
+        public override ComputedInstanceFieldLayout ComputeInstanceLayout(DefType type, InstanceLayoutKind layoutKind)
+        {
+            DefType similarSpecifiedVector = GetSimilarVector(type);
+            if (similarSpecifiedVector == null)
             {
                 List<FieldAndOffset> fieldsAndOffsets = new List<FieldAndOffset>();
                 foreach (FieldDesc field in type.GetFields())
@@ -138,16 +162,55 @@ namespace ILCompiler
                 };
                 return instanceLayout;
             }
-
-            public override ComputedStaticFieldLayout ComputeStaticFieldLayout(DefType type, StaticLayoutKind layoutKind)
+            else
             {
-                return _fallbackAlgorithm.ComputeStaticFieldLayout(type, layoutKind);
-            }
+                ComputedInstanceFieldLayout layoutFromMetadata = _fallbackAlgorithm.ComputeInstanceLayout(type, layoutKind);
+                ComputedInstanceFieldLayout layoutFromSimilarIntrinsicVector = _vectorFallbackAlgorithm.ComputeInstanceLayout(similarSpecifiedVector, layoutKind);
 
-            public override ValueTypeShapeCharacteristics ComputeValueTypeShapeCharacteristics(DefType type)
-            {
-                return _fallbackAlgorithm.ComputeValueTypeShapeCharacteristics(type);
+                // TODO, enable this code when we switch Vector<T> to follow the same calling convention as its matching similar intrinsic vector
+#if MATCHING_HARDWARE_VECTOR
+                return new ComputedInstanceFieldLayout
+                {
+                    ByteCountUnaligned = layoutFromSimilarIntrinsicVector.ByteCountUnaligned,
+                    ByteCountAlignment = layoutFromSimilarIntrinsicVector.ByteCountAlignment,
+                    FieldAlignment = layoutFromSimilarIntrinsicVector.FieldAlignment,
+                    FieldSize = layoutFromSimilarIntrinsicVector.FieldSize,
+                    Offsets = layoutFromMetadata.Offsets,
+                };
+#else
+                return new ComputedInstanceFieldLayout
+                {
+                    ByteCountUnaligned = layoutFromSimilarIntrinsicVector.ByteCountUnaligned,
+                    ByteCountAlignment = layoutFromMetadata.ByteCountAlignment,
+                    FieldAlignment = layoutFromMetadata.FieldAlignment,
+                    FieldSize = layoutFromSimilarIntrinsicVector.FieldSize,
+                    Offsets = layoutFromMetadata.Offsets,
+                };
+#endif
             }
+        }
+
+        public override ComputedStaticFieldLayout ComputeStaticFieldLayout(DefType type, StaticLayoutKind layoutKind)
+        {
+            return _fallbackAlgorithm.ComputeStaticFieldLayout(type, layoutKind);
+        }
+
+        public override ValueTypeShapeCharacteristics ComputeValueTypeShapeCharacteristics(DefType type)
+        {
+            if (type.Context.Target.Architecture == TargetArchitecture.ARM64)
+            {
+                return type.InstanceFieldSize.AsInt switch
+                {
+                    16 => ValueTypeShapeCharacteristics.Vector128Aggregate,
+                    _ => ValueTypeShapeCharacteristics.None
+                };
+            }
+            return ValueTypeShapeCharacteristics.None;
+        }
+
+        public static bool IsVectorOfTType(DefType type)
+        {
+            return type.IsIntrinsic && type.Namespace == "System.Numerics" && type.Name == "Vector`1";
         }
     }
 }

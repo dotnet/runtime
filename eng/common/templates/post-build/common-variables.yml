@@ -4,28 +4,28 @@ variables:
   - group: DotNet-DotNetCli-Storage
   - group: DotNet-MSRC-Storage
   - group: Publish-Build-Assets
-
+    
   # .NET Core 3.1 Dev
   - name: PublicDevRelease_31_Channel_Id
     value: 128
 
-  # .NET Core 5 Dev
-  - name: NetCore_5_Dev_Channel_Id
+  # .NET 5 Dev
+  - name: Net_5_Dev_Channel_Id
     value: 131
 
-  # .NET Tools - Validation
-  - name: NetCore_Tools_Validation_Channel_Id
+  # .NET Eng - Validation
+  - name: Net_Eng_Validation_Channel_Id
     value: 9
 
-  # .NET Tools - Latest
-  - name: NetCore_Tools_Latest_Channel_Id
+  # .NET Eng - Latest
+  - name: Net_Eng_Latest_Channel_Id
     value: 2
 
-  # .NET 3 Tools - Validation
-  - name: NETCore_3_Tools_Validation_Channel_Id
+  # .NET 3 Eng - Validation
+  - name: NET_3_Eng_Validation_Channel_Id
     value: 390
 
-  # .NET 3 Tools - Latest
+  # .NET 3 Eng
   - name: NetCore_3_Tools_Channel_Id
     value: 344
 
@@ -49,6 +49,10 @@ variables:
   - name: NetCore_31_Blazor_Features_Channel_Id
     value: 531
 
+  # .NET Core Experimental
+  - name: NetCore_Experimental_Channel_Id
+    value: 562
+
   # Whether the build is internal or not
   - name: IsInternalBuild
     value: ${{ and(ne(variables['System.TeamProject'], 'public'), contains(variables['Build.SourceBranch'], 'internal')) }}
@@ -59,7 +63,7 @@ variables:
   - name: MaestroApiAccessToken
     value: $(MaestroAccessToken)
   - name: MaestroApiVersion
-    value: "2019-01-16"
+    value: "2020-02-20"
 
   - name: SourceLinkCLIVersion
     value: 3.0.0
@@ -86,3 +90,10 @@ variables:
     value: https://dotnetclimsrc.blob.core.windows.net/dotnet/index.json
   - name: InternalInstallersBlobFeedKey
     value: $(dotnetclimsrc-access-key)
+
+  # Skip component governance and codesign validation for SDL. These jobs
+  # create no content.
+  - name: skipComponentGovernanceDetection
+    value: true
+  - name: runCodesignValidationInjection
+    value: false

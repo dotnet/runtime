@@ -11,8 +11,8 @@ namespace System.Security.Cryptography.Pkcs
     public abstract class Pkcs12SafeBag
     {
         private readonly string _bagIdValue;
-        private Oid _bagOid;
-        private CryptographicAttributeObjectCollection _attributes;
+        private Oid? _bagOid;
+        private CryptographicAttributeObjectCollection? _attributes;
 
         public ReadOnlyMemory<byte> EncodedBagValue { get; }
 

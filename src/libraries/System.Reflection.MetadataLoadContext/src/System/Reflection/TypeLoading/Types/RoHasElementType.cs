@@ -35,10 +35,10 @@ namespace System.Reflection.TypeLoading
         internal sealed override RoModule GetRoModule() => _elementType.GetRoModule();
 
         protected sealed override string ComputeName() => _elementType.Name + Suffix;
-        protected sealed override string ComputeNamespace() => _elementType.Namespace;
-        protected sealed override string ComputeFullName()
+        protected sealed override string? ComputeNamespace() => _elementType.Namespace;
+        protected sealed override string? ComputeFullName()
         {
-            string fullName = _elementType.FullName;
+            string? fullName = _elementType.FullName;
             return fullName == null ? null : fullName + Suffix;
         }
 
@@ -47,11 +47,11 @@ namespace System.Reflection.TypeLoading
         public sealed override string ToString() => _elementType.ToString() + Suffix;
 
         public sealed override MethodBase DeclaringMethod => throw new InvalidOperationException(SR.Arg_NotGenericParameter);
-        protected sealed override RoType ComputeDeclaringType() => null;
+        protected sealed override RoType? ComputeDeclaringType() => null;
 
         public sealed override IEnumerable<CustomAttributeData> CustomAttributes => Array.Empty<CustomAttributeData>();
         internal sealed override bool IsCustomAttributeDefined(ReadOnlySpan<byte> ns, ReadOnlySpan<byte> name) => false;
-        internal sealed override CustomAttributeData TryFindCustomAttribute(ReadOnlySpan<byte> ns, ReadOnlySpan<byte> name) => null;
+        internal sealed override CustomAttributeData? TryFindCustomAttribute(ReadOnlySpan<byte> ns, ReadOnlySpan<byte> name) => null;
 
         public sealed override int MetadataToken => 0x02000000; // nil TypeDef token
 
@@ -68,15 +68,15 @@ namespace System.Reflection.TypeLoading
         public sealed override Type[] GetGenericParameterConstraints() => throw new InvalidOperationException(SR.Arg_NotGenericParameter);
 
         public sealed override Guid GUID => Guid.Empty;
-        public sealed override StructLayoutAttribute StructLayoutAttribute => null;
+        public sealed override StructLayoutAttribute? StructLayoutAttribute => null;
         protected internal sealed override RoType ComputeEnumUnderlyingType() => throw new ArgumentException(SR.Arg_MustBeEnum);
 
         protected abstract string Suffix { get; }
 
         // Low level support for the BindingFlag-driven enumerator apis.
-        internal sealed override IEnumerable<EventInfo> GetEventsCore(NameFilter filter, Type reflectedType) => Array.Empty<EventInfo>();
-        internal sealed override IEnumerable<FieldInfo> GetFieldsCore(NameFilter filter, Type reflectedType) => Array.Empty<FieldInfo>();
-        internal sealed override IEnumerable<PropertyInfo> GetPropertiesCore(NameFilter filter, Type reflectedType) => Array.Empty<PropertyInfo>();
-        internal sealed override IEnumerable<RoType> GetNestedTypesCore(NameFilter filter) => Array.Empty<RoType>();
+        internal sealed override IEnumerable<EventInfo> GetEventsCore(NameFilter? filter, Type reflectedType) => Array.Empty<EventInfo>();
+        internal sealed override IEnumerable<FieldInfo> GetFieldsCore(NameFilter? filter, Type reflectedType) => Array.Empty<FieldInfo>();
+        internal sealed override IEnumerable<PropertyInfo> GetPropertiesCore(NameFilter? filter, Type reflectedType) => Array.Empty<PropertyInfo>();
+        internal sealed override IEnumerable<RoType> GetNestedTypesCore(NameFilter? filter) => Array.Empty<RoType>();
     }
 }

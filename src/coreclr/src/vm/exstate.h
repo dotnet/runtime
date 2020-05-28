@@ -55,7 +55,6 @@ class ThreadExceptionState
 public:
 
     void FreeAllStackTraces();
-    void ClearThrowablesForUnload(IGCHandleStore* handleStore);
 
 #ifdef _DEBUG
     typedef enum
@@ -102,9 +101,6 @@ public:
 #ifdef DACCESS_COMPILE
     void EnumChainMemoryRegions(CLRDataEnumMemoryFlags flags);
 #endif // DACCESS_COMPILE
-
-    // After unwinding from an SO, there may be stale exception state.
-    void ClearExceptionStateAfterSO(void* pStackFrameSP);
 
     enum ThreadExceptionFlag
     {
@@ -166,60 +162,10 @@ public:
     }
 #endif
 
-#ifdef FEATURE_CORRUPTING_EXCEPTIONS
-private:
-    CorruptionSeverity      m_LastActiveExceptionCorruptionSeverity;
-    BOOL                    m_fCanReflectionTargetHandleException;
-
-public:
-    // Returns the corruption severity of the last active exception
-    inline CorruptionSeverity GetLastActiveExceptionCorruptionSeverity()
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        return (CorruptionSeverity)GET_CORRUPTION_SEVERITY(m_LastActiveExceptionCorruptionSeverity);
-    }
-
-    // Set the corruption severity of the last active exception
-    inline void SetLastActiveExceptionCorruptionSeverity(CorruptionSeverity severityToSet)
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        m_LastActiveExceptionCorruptionSeverity = severityToSet;
-    }
-
-    // Returns a bool indicating if the last active exception's corruption severity should
-    // be used when exception is reraised (e.g. Reflection Invocation, AD transition, etc)
-    inline BOOL ShouldLastActiveExceptionCorruptionSeverityBeReused()
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        return CAN_REUSE_CORRUPTION_SEVERITY(m_LastActiveExceptionCorruptionSeverity);
-    }
-
-    // Returns a BOOL to indicate if reflection target can handle CSE or not.
-    // This is used in DispatchInfo::CanIDispatchTargetHandleException.
-    inline BOOL CanReflectionTargetHandleException()
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        return m_fCanReflectionTargetHandleException;
-    }
-
-    // Sets a BOOL indicate if the Reflection invocation target can handle exception or not.
-    // Used in ReflectionInvocation.cpp.
-    inline void SetCanReflectionTargetHandleException(BOOL fCanReflectionTargetHandleException)
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        m_fCanReflectionTargetHandleException = fCanReflectionTargetHandleException;
-    }
-#endif // FEATURE_CORRUPTING_EXCEPTIONS
-
 private:
     ThreadExceptionFlag      m_flag;
 
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
 private:
     EHWatsonBucketTracker    m_UEWatsonBucketTracker;
 public:
@@ -228,7 +174,7 @@ public:
         LIMITED_METHOD_CONTRACT;
         return PTR_EHWatsonBucketTracker(PTR_HOST_MEMBER_TADDR(ThreadExceptionState, this, m_UEWatsonBucketTracker));
     }
-#endif // !FEATURE_PAL
+#endif // !TARGET_UNIX
 
 private:
 
@@ -269,7 +215,7 @@ private:
                                    EXCEPTION_REGISTRATION_RECORD* pEstablisherFrame,
                                    DWORD exceptionCode);
 
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
     friend LPVOID COMPlusEndCatchWorker(Thread * pThread);
 #endif
 
@@ -277,10 +223,10 @@ private:
 
     friend StackWalkAction COMPlusUnwindCallback(CrawlFrame *pCf, ThrowCallbackType *pData);
 
-#if defined(_TARGET_X86_)
+#if defined(TARGET_X86)
     friend void ResumeAtJitEH(CrawlFrame* pCf, BYTE* startPC, EE_ILEXCEPTION_CLAUSE *EHClausePtr,
                                    DWORD nestingLevel, Thread *pThread, BOOL unwindStack);
-#endif // _TARGET_X86_
+#endif // TARGET_X86
 
     friend _EXCEPTION_HANDLER_DECL(COMPlusNestedExceptionHandler);
 
@@ -319,7 +265,7 @@ private:
 
 extern BOOL IsWatsonEnabled();
 
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
 // This preprocessor definition is used to capture watson buckets
 // at AppDomain transition boundary in END_DOMAIN_TRANSITION macro.
 //
@@ -359,8 +305,8 @@ extern BOOL IsWatsonEnabled();
                 SetupWatsonBucketsForNonPreallocatedExceptions(throwable);                                                                  \
             }                                                                                                                               \
         }
-#else // !FEATURE_PAL
+#else // !TARGET_UNIX
 #define CAPTURE_BUCKETS_AT_TRANSITION(pThread, oThrowable)
-#endif // FEATURE_PAL
+#endif // TARGET_UNIX
 
 #endif // __ExState_h__

@@ -66,6 +66,7 @@ class MethodDescBackpatchInfoTracker
 {
 private:
     static CrstStatic s_lock;
+    static bool s_isLocked;
 
     class BackpatchInfoTrackerHashTraits : public NoRemoveDefaultCrossLoaderAllocatorHashTraits<MethodDesc *, UINT_PTR>
     {
@@ -79,7 +80,11 @@ private:
 
 #ifndef DACCESS_COMPILE
 public:
-    static void StaticInitialize();
+    static void StaticInitialize()
+    {
+        WRAPPER_NO_CONTRACT;
+        s_lock.Init(CrstMethodDescBackpatchInfoTracker);
+    }
 #endif
 
     void Initialize(LoaderAllocator *pLoaderAllocator)
@@ -90,24 +95,65 @@ public:
 
 #ifdef _DEBUG
 public:
-    static bool IsLockedByCurrentThread();
+    static bool IsLockOwnedByCurrentThread();
+#endif
+
+#ifndef DACCESS_COMPILE
+public:
+    static bool IsLockOwnedByAnyThread()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return VolatileLoadWithoutBarrier(&s_isLocked);
+    }
+
+    static void PollForDebuggerSuspension();
 #endif
 
 public:
-    class ConditionalLockHolder : CrstHolderWithState
+    class ConditionalLockHolder : private CrstHolderWithState
     {
+    private:
+        bool m_isLocked;
+
     public:
         ConditionalLockHolder(bool acquireLock = true)
             : CrstHolderWithState(
 #ifndef DACCESS_COMPILE
-                acquireLock ? &MethodDescBackpatchInfoTracker::s_lock : nullptr
+                acquireLock ? &s_lock : nullptr
 #else
                 nullptr
 #endif
-                )
+                ),
+            m_isLocked(false)
         {
-            LIMITED_METHOD_CONTRACT;
+            WRAPPER_NO_CONTRACT;
+
+        #ifndef DACCESS_COMPILE
+            if (acquireLock)
+            {
+                _ASSERTE(IsLockOwnedByCurrentThread());
+                _ASSERTE(!s_isLocked);
+                m_isLocked = true;
+                s_isLocked = true;
+            }
+        #endif
         }
+
+        ~ConditionalLockHolder()
+        {
+            WRAPPER_NO_CONTRACT;
+
+        #ifndef DACCESS_COMPILE
+            if (m_isLocked)
+            {
+                _ASSERTE(IsLockOwnedByCurrentThread());
+                _ASSERTE(s_isLocked);
+                s_isLocked = false;
+            }
+        #endif
+        }
+
+        DISABLE_COPY(ConditionalLockHolder);
     };
 
 public:
@@ -116,19 +162,11 @@ public:
         LIMITED_METHOD_CONTRACT;
     }
 
-#ifdef _DEBUG
-public:
-    static bool MayHaveEntryPointSlotsToBackpatch(PTR_MethodDesc methodDesc);
-#endif
-
 #ifndef DACCESS_COMPILE
 public:
     void Backpatch_Locked(MethodDesc *pMethodDesc, PCODE entryPoint);
     void AddSlotAndPatch_Locked(MethodDesc *pMethodDesc, LoaderAllocator *pLoaderAllocatorOfSlot, TADDR slot, EntryPointSlots::SlotType slotType, PCODE currentEntryPoint);
-public:
 #endif
-
-    friend class ConditionalLockHolder;
 
     DISABLE_COPY(MethodDescBackpatchInfoTracker);
 };

@@ -693,7 +693,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
                 if (!typeArg.IsReferenceType || !((TypeParameterType)typeParams[i]).Covariant)
                 {
-                    // This guy is inaccessible, and we are not going to be able to vary him, so we need to fail.
+                    // This is inaccessible, and we are not going to be able to vary it, so we need to fail.
                     return false;
                 }
 

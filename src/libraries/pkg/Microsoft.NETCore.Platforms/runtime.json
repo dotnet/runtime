@@ -33,6 +33,17 @@
         "alpine.3.10-x64"
       ]
     },
+    "alpine.3.12": {
+      "#import": [
+        "alpine.3.11"
+      ]
+    },
+    "alpine.3.12-x64": {
+      "#import": [
+        "alpine.3.12",
+        "alpine.3.11-x64"
+      ]
+    },
     "alpine.3.6": {
       "#import": [
         "alpine"
@@ -94,6 +105,18 @@
         "linux-arm64"
       ]
     },
+    "android-x64": {
+      "#import": [
+        "android",
+        "linux-x64"
+      ]
+    },
+    "android-x86": {
+      "#import": [
+        "android",
+        "linux-x86"
+      ]
+    },
     "android.21": {
       "#import": [
         "android"
@@ -109,6 +132,250 @@
       "#import": [
         "android.21",
         "android-arm64"
+      ]
+    },
+    "android.21-x64": {
+      "#import": [
+        "android.21",
+        "android-x64"
+      ]
+    },
+    "android.21-x86": {
+      "#import": [
+        "android.21",
+        "android-x86"
+      ]
+    },
+    "android.22": {
+      "#import": [
+        "android.21"
+      ]
+    },
+    "android.22-arm": {
+      "#import": [
+        "android.22",
+        "android.21-arm"
+      ]
+    },
+    "android.22-arm64": {
+      "#import": [
+        "android.22",
+        "android.21-arm64"
+      ]
+    },
+    "android.22-x64": {
+      "#import": [
+        "android.22",
+        "android.21-x64"
+      ]
+    },
+    "android.22-x86": {
+      "#import": [
+        "android.22",
+        "android.21-x86"
+      ]
+    },
+    "android.23": {
+      "#import": [
+        "android.22"
+      ]
+    },
+    "android.23-arm": {
+      "#import": [
+        "android.23",
+        "android.22-arm"
+      ]
+    },
+    "android.23-arm64": {
+      "#import": [
+        "android.23",
+        "android.22-arm64"
+      ]
+    },
+    "android.23-x64": {
+      "#import": [
+        "android.23",
+        "android.22-x64"
+      ]
+    },
+    "android.23-x86": {
+      "#import": [
+        "android.23",
+        "android.22-x86"
+      ]
+    },
+    "android.24": {
+      "#import": [
+        "android.23"
+      ]
+    },
+    "android.24-arm": {
+      "#import": [
+        "android.24",
+        "android.23-arm"
+      ]
+    },
+    "android.24-arm64": {
+      "#import": [
+        "android.24",
+        "android.23-arm64"
+      ]
+    },
+    "android.24-x64": {
+      "#import": [
+        "android.24",
+        "android.23-x64"
+      ]
+    },
+    "android.24-x86": {
+      "#import": [
+        "android.24",
+        "android.23-x86"
+      ]
+    },
+    "android.25": {
+      "#import": [
+        "android.24"
+      ]
+    },
+    "android.25-arm": {
+      "#import": [
+        "android.25",
+        "android.24-arm"
+      ]
+    },
+    "android.25-arm64": {
+      "#import": [
+        "android.25",
+        "android.24-arm64"
+      ]
+    },
+    "android.25-x64": {
+      "#import": [
+        "android.25",
+        "android.24-x64"
+      ]
+    },
+    "android.25-x86": {
+      "#import": [
+        "android.25",
+        "android.24-x86"
+      ]
+    },
+    "android.26": {
+      "#import": [
+        "android.25"
+      ]
+    },
+    "android.26-arm": {
+      "#import": [
+        "android.26",
+        "android.25-arm"
+      ]
+    },
+    "android.26-arm64": {
+      "#import": [
+        "android.26",
+        "android.25-arm64"
+      ]
+    },
+    "android.26-x64": {
+      "#import": [
+        "android.26",
+        "android.25-x64"
+      ]
+    },
+    "android.26-x86": {
+      "#import": [
+        "android.26",
+        "android.25-x86"
+      ]
+    },
+    "android.27": {
+      "#import": [
+        "android.26"
+      ]
+    },
+    "android.27-arm": {
+      "#import": [
+        "android.27",
+        "android.26-arm"
+      ]
+    },
+    "android.27-arm64": {
+      "#import": [
+        "android.27",
+        "android.26-arm64"
+      ]
+    },
+    "android.27-x64": {
+      "#import": [
+        "android.27",
+        "android.26-x64"
+      ]
+    },
+    "android.27-x86": {
+      "#import": [
+        "android.27",
+        "android.26-x86"
+      ]
+    },
+    "android.28": {
+      "#import": [
+        "android.27"
+      ]
+    },
+    "android.28-arm": {
+      "#import": [
+        "android.28",
+        "android.27-arm"
+      ]
+    },
+    "android.28-arm64": {
+      "#import": [
+        "android.28",
+        "android.27-arm64"
+      ]
+    },
+    "android.28-x64": {
+      "#import": [
+        "android.28",
+        "android.27-x64"
+      ]
+    },
+    "android.28-x86": {
+      "#import": [
+        "android.28",
+        "android.27-x86"
+      ]
+    },
+    "android.29": {
+      "#import": [
+        "android.28"
+      ]
+    },
+    "android.29-arm": {
+      "#import": [
+        "android.29",
+        "android.28-arm"
+      ]
+    },
+    "android.29-arm64": {
+      "#import": [
+        "android.29",
+        "android.28-arm64"
+      ]
+    },
+    "android.29-x64": {
+      "#import": [
+        "android.29",
+        "android.28-x64"
+      ]
+    },
+    "android.29-x86": {
+      "#import": [
+        "android.29",
+        "android.28-x86"
       ]
     },
     "any": {
@@ -135,9 +402,25 @@
     "base": {
       "#import": []
     },
+    "browser": {
+      "#import": [
+        "any"
+      ]
+    },
+    "browser-wasm": {
+      "#import": [
+        "browser"
+      ]
+    },
     "centos": {
       "#import": [
         "rhel"
+      ]
+    },
+    "centos-arm64": {
+      "#import": [
+        "centos",
+        "rhel-arm64"
       ]
     },
     "centos-x64": {
@@ -165,11 +448,38 @@
         "rhel.8"
       ]
     },
+    "centos.8-arm64": {
+      "#import": [
+        "centos.8",
+        "centos-arm64",
+        "rhel.8-arm64"
+      ]
+    },
     "centos.8-x64": {
       "#import": [
         "centos.8",
         "centos-x64",
         "rhel.8-x64"
+      ]
+    },
+    "centos.9": {
+      "#import": [
+        "centos",
+        "rhel.9"
+      ]
+    },
+    "centos.9-arm64": {
+      "#import": [
+        "centos.9",
+        "centos-arm64",
+        "rhel.9-arm64"
+      ]
+    },
+    "centos.9-x64": {
+      "#import": [
+        "centos.9",
+        "centos-x64",
+        "rhel.9-x64"
       ]
     },
     "debian": {
@@ -499,6 +809,40 @@
         "fedora-x64"
       ]
     },
+    "fedora.33": {
+      "#import": [
+        "fedora"
+      ]
+    },
+    "fedora.33-arm64": {
+      "#import": [
+        "fedora.33",
+        "fedora-arm64"
+      ]
+    },
+    "fedora.33-x64": {
+      "#import": [
+        "fedora.33",
+        "fedora-x64"
+      ]
+    },
+    "fedora.34": {
+      "#import": [
+        "fedora"
+      ]
+    },
+    "fedora.34-arm64": {
+      "#import": [
+        "fedora.34",
+        "fedora-arm64"
+      ]
+    },
+    "fedora.34-x64": {
+      "#import": [
+        "fedora.34",
+        "fedora-x64"
+      ]
+    },
     "freebsd": {
       "#import": [
         "unix"
@@ -552,6 +896,173 @@
       "#import": [
         "gentoo",
         "linux-x64"
+      ]
+    },
+    "ios": {
+      "#import": [
+        "unix"
+      ]
+    },
+    "ios-arm": {
+      "#import": [
+        "ios",
+        "unix-arm"
+      ]
+    },
+    "ios-arm64": {
+      "#import": [
+        "ios",
+        "unix-arm64"
+      ]
+    },
+    "ios-x64": {
+      "#import": [
+        "ios",
+        "unix-x64"
+      ]
+    },
+    "ios-x86": {
+      "#import": [
+        "ios",
+        "unix-x86"
+      ]
+    },
+    "ios.10": {
+      "#import": [
+        "ios.9"
+      ]
+    },
+    "ios.10-arm": {
+      "#import": [
+        "ios.10",
+        "ios.9-arm"
+      ]
+    },
+    "ios.10-arm64": {
+      "#import": [
+        "ios.10",
+        "ios.9-arm64"
+      ]
+    },
+    "ios.10-x64": {
+      "#import": [
+        "ios.10",
+        "ios.9-x64"
+      ]
+    },
+    "ios.10-x86": {
+      "#import": [
+        "ios.10",
+        "ios.9-x86"
+      ]
+    },
+    "ios.11": {
+      "#import": [
+        "ios.10"
+      ]
+    },
+    "ios.11-arm64": {
+      "#import": [
+        "ios.11",
+        "ios.10-arm64"
+      ]
+    },
+    "ios.11-x64": {
+      "#import": [
+        "ios.11",
+        "ios.10-x64"
+      ]
+    },
+    "ios.12": {
+      "#import": [
+        "ios.11"
+      ]
+    },
+    "ios.12-arm64": {
+      "#import": [
+        "ios.12",
+        "ios.11-arm64"
+      ]
+    },
+    "ios.12-x64": {
+      "#import": [
+        "ios.12",
+        "ios.11-x64"
+      ]
+    },
+    "ios.13": {
+      "#import": [
+        "ios.12"
+      ]
+    },
+    "ios.13-arm64": {
+      "#import": [
+        "ios.13",
+        "ios.12-arm64"
+      ]
+    },
+    "ios.13-x64": {
+      "#import": [
+        "ios.13",
+        "ios.12-x64"
+      ]
+    },
+    "ios.8": {
+      "#import": [
+        "ios"
+      ]
+    },
+    "ios.8-arm": {
+      "#import": [
+        "ios.8",
+        "ios-arm"
+      ]
+    },
+    "ios.8-arm64": {
+      "#import": [
+        "ios.8",
+        "ios-arm64"
+      ]
+    },
+    "ios.8-x64": {
+      "#import": [
+        "ios.8",
+        "ios-x64"
+      ]
+    },
+    "ios.8-x86": {
+      "#import": [
+        "ios.8",
+        "ios-x86"
+      ]
+    },
+    "ios.9": {
+      "#import": [
+        "ios.8"
+      ]
+    },
+    "ios.9-arm": {
+      "#import": [
+        "ios.9",
+        "ios.8-arm"
+      ]
+    },
+    "ios.9-arm64": {
+      "#import": [
+        "ios.9",
+        "ios.8-arm64"
+      ]
+    },
+    "ios.9-x64": {
+      "#import": [
+        "ios.9",
+        "ios.8-x64"
+      ]
+    },
+    "ios.9-x86": {
+      "#import": [
+        "ios.9",
+        "ios.8-x86"
       ]
     },
     "linux": {
@@ -1207,6 +1718,23 @@
         "rhel.8.0-x64"
       ]
     },
+    "rhel.9": {
+      "#import": [
+        "rhel"
+      ]
+    },
+    "rhel.9-arm64": {
+      "#import": [
+        "rhel.9",
+        "rhel-arm64"
+      ]
+    },
+    "rhel.9-x64": {
+      "#import": [
+        "rhel.9",
+        "rhel-x64"
+      ]
+    },
     "sles": {
       "#import": [
         "linux"
@@ -1344,6 +1872,125 @@
       "#import": [
         "tizen.5.0.0",
         "tizen.4.0.0-x86"
+      ]
+    },
+    "tizen.5.5.0": {
+      "#import": [
+        "tizen.5.0.0"
+      ]
+    },
+    "tizen.5.5.0-armel": {
+      "#import": [
+        "tizen.5.5.0",
+        "tizen.5.0.0-armel"
+      ]
+    },
+    "tizen.5.5.0-x86": {
+      "#import": [
+        "tizen.5.5.0",
+        "tizen.5.0.0-x86"
+      ]
+    },
+    "tizen.6.0.0": {
+      "#import": [
+        "tizen.5.5.0"
+      ]
+    },
+    "tizen.6.0.0-armel": {
+      "#import": [
+        "tizen.6.0.0",
+        "tizen.5.5.0-armel"
+      ]
+    },
+    "tizen.6.0.0-x86": {
+      "#import": [
+        "tizen.6.0.0",
+        "tizen.5.5.0-x86"
+      ]
+    },
+    "tvos": {
+      "#import": [
+        "unix"
+      ]
+    },
+    "tvos-arm64": {
+      "#import": [
+        "tvos",
+        "unix-arm64"
+      ]
+    },
+    "tvos-x64": {
+      "#import": [
+        "tvos",
+        "unix-x64"
+      ]
+    },
+    "tvos.10": {
+      "#import": [
+        "tvos"
+      ]
+    },
+    "tvos.10-arm64": {
+      "#import": [
+        "tvos.10",
+        "tvos-arm64"
+      ]
+    },
+    "tvos.10-x64": {
+      "#import": [
+        "tvos.10",
+        "tvos-x64"
+      ]
+    },
+    "tvos.11": {
+      "#import": [
+        "tvos.10"
+      ]
+    },
+    "tvos.11-arm64": {
+      "#import": [
+        "tvos.11",
+        "tvos.10-arm64"
+      ]
+    },
+    "tvos.11-x64": {
+      "#import": [
+        "tvos.11",
+        "tvos.10-x64"
+      ]
+    },
+    "tvos.12": {
+      "#import": [
+        "tvos.11"
+      ]
+    },
+    "tvos.12-arm64": {
+      "#import": [
+        "tvos.12",
+        "tvos.11-arm64"
+      ]
+    },
+    "tvos.12-x64": {
+      "#import": [
+        "tvos.12",
+        "tvos.11-x64"
+      ]
+    },
+    "tvos.13": {
+      "#import": [
+        "tvos.12"
+      ]
+    },
+    "tvos.13-arm64": {
+      "#import": [
+        "tvos.13",
+        "tvos.12-arm64"
+      ]
+    },
+    "tvos.13-x64": {
+      "#import": [
+        "tvos.13",
+        "tvos.12-x64"
       ]
     },
     "ubuntu": {
@@ -1696,6 +2343,122 @@
     "ubuntu.19.10-x86": {
       "#import": [
         "ubuntu.19.10",
+        "ubuntu-x86"
+      ]
+    },
+    "ubuntu.20.04": {
+      "#import": [
+        "ubuntu"
+      ]
+    },
+    "ubuntu.20.04-arm": {
+      "#import": [
+        "ubuntu.20.04",
+        "ubuntu-arm"
+      ]
+    },
+    "ubuntu.20.04-arm64": {
+      "#import": [
+        "ubuntu.20.04",
+        "ubuntu-arm64"
+      ]
+    },
+    "ubuntu.20.04-x64": {
+      "#import": [
+        "ubuntu.20.04",
+        "ubuntu-x64"
+      ]
+    },
+    "ubuntu.20.04-x86": {
+      "#import": [
+        "ubuntu.20.04",
+        "ubuntu-x86"
+      ]
+    },
+    "ubuntu.20.10": {
+      "#import": [
+        "ubuntu"
+      ]
+    },
+    "ubuntu.20.10-arm": {
+      "#import": [
+        "ubuntu.20.10",
+        "ubuntu-arm"
+      ]
+    },
+    "ubuntu.20.10-arm64": {
+      "#import": [
+        "ubuntu.20.10",
+        "ubuntu-arm64"
+      ]
+    },
+    "ubuntu.20.10-x64": {
+      "#import": [
+        "ubuntu.20.10",
+        "ubuntu-x64"
+      ]
+    },
+    "ubuntu.20.10-x86": {
+      "#import": [
+        "ubuntu.20.10",
+        "ubuntu-x86"
+      ]
+    },
+    "ubuntu.21.04": {
+      "#import": [
+        "ubuntu"
+      ]
+    },
+    "ubuntu.21.04-arm": {
+      "#import": [
+        "ubuntu.21.04",
+        "ubuntu-arm"
+      ]
+    },
+    "ubuntu.21.04-arm64": {
+      "#import": [
+        "ubuntu.21.04",
+        "ubuntu-arm64"
+      ]
+    },
+    "ubuntu.21.04-x64": {
+      "#import": [
+        "ubuntu.21.04",
+        "ubuntu-x64"
+      ]
+    },
+    "ubuntu.21.04-x86": {
+      "#import": [
+        "ubuntu.21.04",
+        "ubuntu-x86"
+      ]
+    },
+    "ubuntu.21.10": {
+      "#import": [
+        "ubuntu"
+      ]
+    },
+    "ubuntu.21.10-arm": {
+      "#import": [
+        "ubuntu.21.10",
+        "ubuntu-arm"
+      ]
+    },
+    "ubuntu.21.10-arm64": {
+      "#import": [
+        "ubuntu.21.10",
+        "ubuntu-arm64"
+      ]
+    },
+    "ubuntu.21.10-x64": {
+      "#import": [
+        "ubuntu.21.10",
+        "ubuntu-x64"
+      ]
+    },
+    "ubuntu.21.10-x86": {
+      "#import": [
+        "ubuntu.21.10",
         "ubuntu-x86"
       ]
     },

@@ -31,7 +31,7 @@ namespace System.Diagnostics
 
         internal void RemoveAt(int index) => InnerList.RemoveAt(index);
 
-        public ProcessModule this[int index] => (ProcessModule)InnerList[index];
+        public ProcessModule this[int index] => (ProcessModule)InnerList[index]!;
 
         public int IndexOf(ProcessModule module) => InnerList.IndexOf(module);
 

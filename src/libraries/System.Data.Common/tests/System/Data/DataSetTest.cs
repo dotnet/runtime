@@ -666,7 +666,7 @@ namespace System.Data.Tests
         }
 
         [Fact]
-        [ActiveIssue(39229)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/30154")]
         public void SerializeDataSet3()
         {
             string xml = @"<?xml version=""1.0"" encoding=""utf-16""?><DataSet><xs:schema id=""Example"" xmlns="""" xmlns:xs=""http://www.w3.org/2001/XMLSchema"" xmlns:msdata=""urn:schemas-microsoft-com:xml-msdata""><xs:element name=""Example"" msdata:IsDataSet=""true""><xs:complexType><xs:choice maxOccurs=""unbounded"" minOccurs=""0""><xs:element name=""Packages""><xs:complexType><xs:attribute name=""ID"" type=""xs:int"" use=""required"" /><xs:attribute name=""ShipDate"" type=""xs:dateTime"" /><xs:attribute name=""Message"" type=""xs:string"" /><xs:attribute name=""Handlers"" type=""xs:int"" /></xs:complexType></xs:element></xs:choice></xs:complexType></xs:element></xs:schema><diffgr:diffgram xmlns:msdata=""urn:schemas-microsoft-com:xml-msdata"" xmlns:diffgr=""urn:schemas-microsoft-com:xml-diffgram-v1""><Example><Packages diffgr:id=""Packages1"" msdata:rowOrder=""0"" ID=""0"" ShipDate=""2004-10-11T17:46:18.6962302-05:00"" Message=""Received with no breakage!"" Handlers=""3"" /><Packages diffgr:id=""Packages2"" msdata:rowOrder=""1"" ID=""1"" /></Example></diffgr:diffgram></DataSet>";
@@ -1710,7 +1710,7 @@ namespace System.Data.Tests
 
         #region DataSet.GetChanges Tests
         [Fact]
-        [ActiveIssue(39171)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/30129")]
         public void GetChanges_Relations_DifferentRowStatesTest()
         {
             DataSet ds = new DataSet("ds");

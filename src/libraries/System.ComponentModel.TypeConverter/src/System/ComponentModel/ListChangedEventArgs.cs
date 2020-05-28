@@ -5,9 +5,6 @@
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 
-[assembly: SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly", Scope = "member", Target = "System.ComponentModel.ListChangedEventArgs..ctor(System.ComponentModel.ListChangedType,System.Int32,System.ComponentModel.PropertyDescriptor)")]
-[assembly: SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly", Scope = "member", Target = "System.ComponentModel.ListChangedEventArgs..ctor(System.ComponentModel.ListChangedType,System.ComponentModel.PropertyDescriptor)")]
-
 namespace System.ComponentModel
 {
     public class ListChangedEventArgs : EventArgs

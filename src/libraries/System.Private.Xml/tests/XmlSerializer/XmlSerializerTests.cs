@@ -1671,22 +1671,6 @@ string.Format(@"<?xml version=""1.0"" encoding=""utf-8""?>
         Assert.Equal(value, actual);
     }
 
-    [ActiveIssue(28321)]
-    [Fact]
-    public static void SerializeWithDefaultValueSetToNaNTest()
-    {
-        var value = new DefaultValuesSetToNaN();
-        value.DoubleField = double.NaN;
-        value.SingleField = float.NaN;
-        value.FloatProp = float.NaN;
-        value.DoubleProp = double.NaN;
-
-        bool result=SerializeWithDefaultValue(value,
-@"<?xml version=""1.0""?>
-<DefaultValuesSetToNaN xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:xsd=""http://www.w3.org/2001/XMLSchema"" />");
-        Assert.True(result);
-    }
-
     [Fact]
     public static void SerializeWithDefaultValueSetToPositiveInfinityTest()
     {

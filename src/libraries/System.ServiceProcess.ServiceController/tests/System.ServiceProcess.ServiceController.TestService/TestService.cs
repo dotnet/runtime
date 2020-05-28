@@ -43,6 +43,10 @@ namespace System.ServiceProcess.Tests
         protected override void OnCustomCommand(int command)
         {
             base.OnCustomCommand(command);
+
+            if (Environment.UserInteractive) // see ServiceBaseTests.TestOnExecuteCustomCommand()
+                command++;
+
             WriteStreamAsync(PipeMessageByteCode.OnCustomCommand, command).Wait();
         }
 

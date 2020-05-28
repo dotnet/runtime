@@ -1,218 +1,181 @@
 // Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
-//
-// MailAddressTest.cs - NUnit Test Cases for System.Net.MailAddress.MailAddress
-//
-// Authors:
-//   John Luke (john.luke@gmail.com)
-//
-// (C) 2005 John Luke
-//
 
+using System.Collections.Generic;
 using Xunit;
 
 namespace System.Net.Mail.Tests
 {
     public class MailAddressTest
     {
-        MailAddress address;
-
-        public MailAddressTest()
+        public static IEnumerable<object[]> GetValid_Address()
         {
-            address = new MailAddress("foo@example.com", "Mr. Foo Bar");
+            // inputAddress, address, displayName, host, toString(), user
+            yield return new object[] { " foo@example.com ", "foo@example.com", string.Empty, "example.com", "foo@example.com", "foo" };
+            yield return new object[] { "Mr. Foo Bar <foo@example.com>", "foo@example.com", "Mr. Foo Bar", "example.com", "\"Mr. Foo Bar\" <foo@example.com>", "foo" };
+            yield return new object[] { "FooBar <foo@example.com>", "foo@example.com", "FooBar", "example.com", "\"FooBar\" <foo@example.com>", "foo" };
+            yield return new object[] { "\"FooBar\"foo@example.com   ", "foo@example.com", "FooBar", "example.com", "\"FooBar\" <foo@example.com>", "foo" };
+            yield return new object[] { "\"   FooBar   \"< foo@example.com >", "foo@example.com", "   FooBar   ", "example.com", "\"   FooBar   \" <foo@example.com>", "foo" };
+            yield return new object[] { "<foo@example.com>", "foo@example.com", string.Empty, "example.com", "foo@example.com", "foo" };
+            yield return new object[] { "    <  foo@example.com  >", "foo@example.com", string.Empty, "example.com", "foo@example.com", "foo" };
         }
 
-        [Fact]
-        public void TestConstructorOverload1()
+        [Theory]
+        [MemberData(nameof(GetValid_Address))]
+        public void TestConstructor_Address(string inputAddress, string address, string displayName, string host, string toString, string user)
         {
-            address = new MailAddress(" foo@example.com ");
-            Assert.Equal("foo@example.com", address.Address);
-            Assert.Equal(string.Empty, address.DisplayName);
-            Assert.Equal("example.com", address.Host);
-            Assert.Equal("foo@example.com", address.ToString());
-            Assert.Equal("foo", address.User);
-
-            address = new MailAddress("Mr. Foo Bar <foo@example.com>");
-            Assert.Equal("foo@example.com", address.Address);
-            Assert.Equal("Mr. Foo Bar", address.DisplayName);
-            Assert.Equal("example.com", address.Host);
-            Assert.Equal("\"Mr. Foo Bar\" <foo@example.com>", address.ToString());
-            Assert.Equal("foo", address.User);
-
-            address = new MailAddress("FooBar <foo@example.com>");
-            Assert.Equal("foo@example.com", address.Address);
-            Assert.Equal("FooBar", address.DisplayName);
-            Assert.Equal("example.com", address.Host);
-            Assert.Equal("\"FooBar\" <foo@example.com>", address.ToString());
-            Assert.Equal("foo", address.User);
-
-            address = new MailAddress("\"FooBar\"foo@example.com   ");
-            Assert.Equal("foo@example.com", address.Address);
-            Assert.Equal("FooBar", address.DisplayName);
-            Assert.Equal("example.com", address.Host);
-            Assert.Equal("\"FooBar\" <foo@example.com>", address.ToString());
-            Assert.Equal("foo", address.User);
-
-            address = new MailAddress("\"   FooBar   \"< foo@example.com >");
-            Assert.Equal("foo@example.com", address.Address);
-            Assert.Equal("   FooBar   ", address.DisplayName);
-            Assert.Equal("example.com", address.Host);
-            Assert.Equal("\"   FooBar   \" <foo@example.com>", address.ToString());
-            Assert.Equal("foo", address.User);
-
-            address = new MailAddress("<foo@example.com>");
-            Assert.Equal("foo@example.com", address.Address);
-            Assert.Equal(string.Empty, address.DisplayName);
-            Assert.Equal("example.com", address.Host);
-            Assert.Equal("foo@example.com", address.ToString());
-            Assert.Equal("foo", address.User);
-
-            address = new MailAddress("    <  foo@example.com  >");
-            Assert.Equal("foo@example.com", address.Address);
-            Assert.Equal(string.Empty, address.DisplayName);
-            Assert.Equal("example.com", address.Host);
-            Assert.Equal("foo@example.com", address.ToString());
-            Assert.Equal("foo", address.User);
+            MailAddress addressInstance = new MailAddress(inputAddress);
+            Assert.Equal(address, addressInstance.Address);
+            Assert.Equal(displayName, addressInstance.DisplayName);
+            Assert.Equal(host, addressInstance.Host);
+            Assert.Equal(toString, addressInstance.ToString());
+            Assert.Equal(user, addressInstance.User);
         }
 
         [Fact]
         public void TestConstructorWithNullString()
         {
             Assert.Throws<ArgumentNullException>(() => new MailAddress(null));
+            Assert.Throws<ArgumentNullException>(() => _ = MailAddress.TryCreate(null, out MailAddress _));
         }
 
         [Fact]
         public void TestConstructorWithEmptyString()
         {
             AssertExtensions.Throws<ArgumentException>("address", () => new MailAddress(""));
+            AssertExtensions.Throws<ArgumentException>("address", () => _ = MailAddress.TryCreate("", out MailAddress _));
         }
 
-        [Fact]
-        public void TestInvalidAddressInConstructor()
+        public static IEnumerable<object[]> GetInvalid_Address()
         {
-            Assert.Throws<FormatException>(() => new MailAddress("Mr. Foo Bar"));
-            Assert.Throws<FormatException>(() => new MailAddress("foo@b@ar"));
-            Assert.Throws<FormatException>(() => new MailAddress("Mr. Foo Bar <foo@exa<mple.com"));
-            Assert.Throws<FormatException>(() => new MailAddress("Mr. Foo Bar <foo@example.com"));
-            Assert.Throws<FormatException>(() => new MailAddress("Mr. \"F@@ Bar\" <foo@example.com> Whatever@You@Want"));
-            Assert.Throws<FormatException>(() => new MailAddress("Mr. F@@ Bar <foo@example.com> What\"ever@You@Want"));
-            Assert.Throws<FormatException>(() => new MailAddress("\"MrFo@Bar\""));
-            Assert.Throws<FormatException>(() => new MailAddress("\"MrFo@Bar\"<>"));
-            Assert.Throws<FormatException>(() => new MailAddress(" "));
-            Assert.Throws<FormatException>(() => new MailAddress("forbar"));
-            Assert.Throws<FormatException>(() => new MailAddress("<foo@example.com> WhatEver", " Mr. Foo Bar "));
-            Assert.Throws<FormatException>(() => new MailAddress("Mr. Far Bar <foo@example.com> Whatever", "BarFoo"));
+            yield return new object[] { "Mr. Foo Bar" };
+            yield return new object[] { "foo@b@ar" };
+            yield return new object[] { "Mr. Foo Bar <foo@exa<mple.com" };
+            yield return new object[] { "Mr. Foo Bar <foo@example.com" };
+            yield return new object[] { "Mr. \"F@@ Bar\" <foo@example.com> Whatever@You@Want" };
+            yield return new object[] { "Mr. F@@ Bar <foo@example.com> What\"ever@You@Want" };
+            yield return new object[] { "\"MrFo@Bar\"" };
+            yield return new object[] { "\"MrFo@Bar\"<>" };
+            yield return new object[] { " " };
+            yield return new object[] { "forbar" };
         }
 
-        [Fact]
-        public void TestConstructorOverload2()
+        [Theory]
+        [MemberData(nameof(GetInvalid_Address))]
+        public void TestInvalidAddressInConstructo_Address(string invalidAddress)
         {
-            address = new MailAddress(" foo@example.com ", null);
-            Assert.Equal("foo@example.com", address.Address);
-            Assert.Equal(string.Empty, address.DisplayName);
-            Assert.Equal("example.com", address.Host);
-            Assert.Equal("foo@example.com", address.ToString());
-            Assert.Equal("foo", address.User);
-
-            address = new MailAddress("Mr. Far Bar <foo@example.com>", "BarFoo");
-            Assert.Equal("foo@example.com", address.Address);
-            Assert.Equal("BarFoo", address.DisplayName);
-            Assert.Equal("example.com", address.Host);
-            Assert.Equal("\"BarFoo\" <foo@example.com>", address.ToString());
-            Assert.Equal("foo", address.User);
-
-            address = new MailAddress("Mr. Far Bar <foo@example.com>  ", string.Empty);
-            Assert.Equal("foo@example.com", address.Address);
-            Assert.Equal("Mr. Far Bar", address.DisplayName);
-            Assert.Equal("example.com", address.Host);
-            Assert.Equal("\"Mr. Far Bar\" <foo@example.com>", address.ToString());
-            Assert.Equal("foo", address.User);
-
-            address = new MailAddress("Mr. Far Bar <foo@example.com>", null);
-            Assert.Equal("foo@example.com", address.Address);
-            Assert.Equal("Mr. Far Bar", address.DisplayName);
-            Assert.Equal("example.com", address.Host);
-            Assert.Equal("\"Mr. Far Bar\" <foo@example.com>", address.ToString());
-            Assert.Equal("foo", address.User);
-
-            address = new MailAddress("Mr. Far Bar <foo@example.com>   ", " ");
-            Assert.Equal("foo@example.com", address.Address);
-            Assert.Equal(" ", address.DisplayName);
-            Assert.Equal("example.com", address.Host);
-            Assert.Equal("\" \" <foo@example.com>", address.ToString());
-            Assert.Equal("foo", address.User);
+            Assert.Throws<FormatException>(() => new MailAddress(invalidAddress));
         }
 
-        [Fact]
-        public void DisplayName_Precedence()
+        public static IEnumerable<object[]> GetInvalid_AddressDisplayName()
         {
-            var ma = new MailAddress("Hola <foo@bar.com>");
-            Assert.Equal("Hola", ma.DisplayName);
-            ma = new MailAddress("Hola <foo@bar.com>", "Adios");
-            Assert.Equal("Adios", ma.DisplayName);
-            ma = new MailAddress("Hola <foo@bar.com>", "");
-            Assert.Equal("Hola", ma.DisplayName);
-            ma = new MailAddress("<foo@bar.com>", "");
-            Assert.Equal("", ma.DisplayName);
+            yield return new object[] { "<foo@example.com> WhatEver", " Mr. Foo Bar " };
+            yield return new object[] { "Mr. Far Bar <foo@example.com> Whatever", "BarFoo" };
+        }
+
+        [Theory]
+        [MemberData(nameof(GetInvalid_AddressDisplayName))]
+        public void TestInvalidAddressInConstructor_AddressDisplayName(string invalidAddress, string displayName)
+        {
+            Assert.Throws<FormatException>(() => new MailAddress(invalidAddress, displayName));
+        }
+
+        public static IEnumerable<object[]> GetValid_AddressDisplayName()
+        {
+            // inputAddress, inputDisplayName, address, displayName, host, toString(), user
+            yield return new object[] { " foo@example.com ", null, "foo@example.com", string.Empty, "example.com", "foo@example.com", "foo" };
+            yield return new object[] { "Mr. Far Bar <foo@example.com>", "BarFoo", "foo@example.com", "BarFoo", "example.com", "\"BarFoo\" <foo@example.com>", "foo" };
+            yield return new object[] { "Mr. Far Bar <foo@example.com>  ", string.Empty, "foo@example.com", "Mr. Far Bar", "example.com", "\"Mr. Far Bar\" <foo@example.com>", "foo" };
+            yield return new object[] { "Mr. Far Bar <foo@example.com>", null, "foo@example.com", "Mr. Far Bar", "example.com", "\"Mr. Far Bar\" <foo@example.com>", "foo" };
+            yield return new object[] { "Mr. Far Bar <foo@example.com>   ", " ", "foo@example.com", " ", "example.com", "\" \" <foo@example.com>", "foo" };
+        }
+
+        [Theory]
+        [MemberData(nameof(GetValid_AddressDisplayName))]
+        public void TestConstructor_AddressDisplayName(string inputAddress, string inputDisplayName, string address, string displayName, string host, string toString, string user)
+        {
+            MailAddress addressInstance = new MailAddress(inputAddress, inputDisplayName);
+            Assert.Equal(address, addressInstance.Address);
+            Assert.Equal(displayName, addressInstance.DisplayName);
+            Assert.Equal(host, addressInstance.Host);
+            Assert.Equal(toString, addressInstance.ToString());
+            Assert.Equal(user, addressInstance.User);
+        }
+
+        public static IEnumerable<object[]> GetAddress_DisplayNamePrecedence()
+        {
+            // inputAddress, displayName
+            yield return new object[] { "Hola <foo@bar.com>", "Hola" };
+        }
+
+        [Theory]
+        [MemberData(nameof(GetAddress_DisplayNamePrecedence))]
+        public void DisplayName_Precedence(string inputAddress, string displayName)
+        {
+            var ma = new MailAddress(inputAddress);
+            Assert.Equal(displayName, ma.DisplayName);
+        }
+
+        public static IEnumerable<object[]> GetAddressDisplayName_DisplayNamePrecedence()
+        {
+            // inputAddress, inputDisplayName, displayName
+            yield return new object[] { "Hola <foo@bar.com>", "Adios", "Adios" };
+            yield return new object[] { "Hola <foo@bar.com>", "", "Hola" };
+            yield return new object[] { "<foo@bar.com>", "", "" };
+        }
+
+        [Theory]
+        [MemberData(nameof(GetAddressDisplayName_DisplayNamePrecedence))]
+        public void AddressDisplayName_Precedence(string inputAddress, string inputDisplayName, string displayName)
+        {
+            var ma = new MailAddress(inputAddress, inputDisplayName);
+            Assert.Equal(displayName, ma.DisplayName);
         }
 
         [Fact]
         public void Address_QuoteFirst()
         {
             new MailAddress("\"Hola\" <foo@bar.com>");
+            Assert.True(MailAddress.TryCreate("\"Hola\" <foo@bar.com>", out MailAddress _));
         }
 
         [Fact]
         public void Address_QuoteNotFirst()
         {
             Assert.Throws<FormatException>(() => new MailAddress("H\"ola\" <foo@bar.com>"));
+            Assert.False(MailAddress.TryCreate("H\"ola\" <foo@bar.com>", out MailAddress _));
         }
 
         [Fact]
         public void Address_NoClosingQuote()
         {
             Assert.Throws<FormatException>(() => new MailAddress("\"Hola <foo@bar.com>"));
+            Assert.False(MailAddress.TryCreate("\"Hola <foo@bar.com>", out MailAddress _));
         }
 
         [Fact]
         public void Address_NoUser()
         {
             Assert.Throws<FormatException>(() => new MailAddress("Hola <@bar.com>"));
+            Assert.False(MailAddress.TryCreate("Hola <@bar.com>", out MailAddress _));
         }
 
         [Fact]
         public void Address_NoUserNoHost()
         {
             Assert.Throws<FormatException>(() => new MailAddress("Hola <@>"));
+            Assert.False(MailAddress.TryCreate("Hola <@>", out MailAddress _));
         }
 
         [Fact]
-        public void Address()
+        public void MailAddress_AllMembers()
         {
+            MailAddress address = new MailAddress("foo@example.com", "Mr. Foo Bar");
             Assert.Equal("foo@example.com", address.Address);
-        }
-
-        [Fact]
-        public void DisplayName()
-        {
             Assert.Equal("Mr. Foo Bar", address.DisplayName);
-        }
-
-        [Fact]
-        public void Host()
-        {
             Assert.Equal("example.com", address.Host);
-        }
-
-        [Fact]
-        public void User()
-        {
             Assert.Equal("foo", address.User);
-        }
-
-        [Fact]
-        public void ToStringTest()
-        {
             Assert.Equal("\"Mr. Foo Bar\" <foo@example.com>", address.ToString());
         }
 
@@ -230,6 +193,60 @@ namespace System.Net.Mail.Tests
             var n = new MailAddress("Mr. Bar <a@example.com>");
             var n2 = new MailAddress("MR. BAR <a@EXAMPLE.com>");
             Assert.Equal(n, n2);
+        }
+
+        [Theory]
+        [MemberData(nameof(GetInvalid_Address))]
+        public void TryCreate_Invalid_Address(string address)
+        {
+            Assert.False(MailAddress.TryCreate(address, out MailAddress _));
+        }
+
+        [Theory]
+        [MemberData(nameof(GetInvalid_AddressDisplayName))]
+        public void TryCreate_Invalid_AddressAndDisplayName(string address, string displayName)
+        {
+            Assert.False(MailAddress.TryCreate(address, displayName, out MailAddress _));
+        }
+
+        [Theory]
+        [MemberData(nameof(GetValid_Address))]
+        public void TryCreate_Valid_Address(string inputAddress, string address, string displayName, string host, string toString, string user)
+        {
+            Assert.True(MailAddress.TryCreate(inputAddress, out MailAddress addressInstance));
+            Assert.Equal(address, addressInstance.Address);
+            Assert.Equal(displayName, addressInstance.DisplayName);
+            Assert.Equal(host, addressInstance.Host);
+            Assert.Equal(toString, addressInstance.ToString());
+            Assert.Equal(user, addressInstance.User);
+        }
+
+        [Theory]
+        [MemberData(nameof(GetValid_AddressDisplayName))]
+        public void TryCreate_Valid_AddressDisplayName(string inputAddress, string inputDisplayName, string address, string displayName, string host, string toString, string user)
+        {
+            Assert.True(MailAddress.TryCreate(inputAddress, inputDisplayName, out MailAddress addressInstance));
+            Assert.Equal(address, addressInstance.Address);
+            Assert.Equal(displayName, addressInstance.DisplayName);
+            Assert.Equal(host, addressInstance.Host);
+            Assert.Equal(toString, addressInstance.ToString());
+            Assert.Equal(user, addressInstance.User);
+        }
+
+        [Theory]
+        [MemberData(nameof(GetAddress_DisplayNamePrecedence))]
+        public void TryCreate_DisplayName_Precedence(string inputAddress, string displayName)
+        {
+            Assert.True(MailAddress.TryCreate(inputAddress, out MailAddress addressInstance));
+            Assert.Equal(displayName, addressInstance.DisplayName);
+        }
+
+        [Theory]
+        [MemberData(nameof(GetAddressDisplayName_DisplayNamePrecedence))]
+        public void TryCreate_AddressDisplayName_Precedence(string inputAddress, string inputDisplayName, string displayName)
+        {
+            Assert.True(MailAddress.TryCreate(inputAddress, inputDisplayName, out MailAddress addressInstance));
+            Assert.Equal(displayName, addressInstance.DisplayName);
         }
     }
 }

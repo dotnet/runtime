@@ -30,7 +30,7 @@ HRESULT Assembler::InitMetaData()
 
     if(bClock) bClock->cMDInitBegin = GetTickCount();
 
-    hr = metaDataGetDispenser(CLSID_CorMetaDataDispenser,
+    hr = MetaDataGetDispenser(CLSID_CorMetaDataDispenser,
         IID_IMetaDataDispenserEx, (void **)&m_pDisp);
     if (FAILED(hr))
         goto exit;
@@ -1265,7 +1265,7 @@ HRESULT Assembler::CreatePEFile(__in __nullterminated WCHAR *pwzOutputFilename)
 
     if(m_wzResourceFile)
     {
-#ifdef FEATURE_PAL
+#ifdef TARGET_UNIX
         report->msg("Warning: The Win32 resource file '%S' is ignored and not emitted on xPlatform.\n", m_wzResourceFile);
 #else
         if (FAILED(hr=m_pCeeFileGen->SetResourceFileName(m_pCeeFile, m_wzResourceFile)))

@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -38,10 +38,10 @@ namespace ILCompiler.DependencyAnalysis
         {
             sb.Append("SignaturePointer_");
             Target.AppendMangledName(nameMangler, sb);
-            if (_import.CallSite != null)
+            if (_import.CallingMethod != null)
             {
                 sb.Append(" @ ");
-                sb.Append(_import.CallSite);
+                sb.Append(nameMangler.GetMangledMethodName(_import.CallingMethod));
             }
         }
 

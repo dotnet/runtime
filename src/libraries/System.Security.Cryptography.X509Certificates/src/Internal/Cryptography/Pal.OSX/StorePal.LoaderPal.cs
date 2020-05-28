@@ -16,9 +16,9 @@ namespace Internal.Cryptography.Pal
         private sealed class AppleCertLoader : ILoaderPal
         {
             private readonly SafeCFArrayHandle _collectionHandle;
-            private readonly SafeTemporaryKeychainHandle _tmpKeychain;
+            private readonly SafeTemporaryKeychainHandle? _tmpKeychain;
 
-            public AppleCertLoader(SafeCFArrayHandle collectionHandle, SafeTemporaryKeychainHandle tmpKeychain)
+            public AppleCertLoader(SafeCFArrayHandle collectionHandle, SafeTemporaryKeychainHandle? tmpKeychain)
             {
                 _collectionHandle = collectionHandle;
                 _tmpKeychain = tmpKeychain;
@@ -46,7 +46,7 @@ namespace Internal.Cryptography.Pal
 
                     if (handle != IntPtr.Zero)
                     {
-                        ICertificatePal certPal = CertificatePal.FromHandle(handle, throwOnFail: false);
+                        ICertificatePal? certPal = CertificatePal.FromHandle(handle, throwOnFail: false);
 
                         if (certPal != null)
                         {
@@ -87,7 +87,7 @@ namespace Internal.Cryptography.Pal
                 // Only dispose the keychain if it's a temporary handle.
                 (_keychain as SafeTemporaryKeychainHandle)?.Dispose();
 
-                SafePasswordHandle password = Interlocked.Exchange(ref _password, null);
+                SafePasswordHandle? password = Interlocked.Exchange(ref _password, null!);
                 password?.DangerousRelease();
             }
 
@@ -95,8 +95,8 @@ namespace Internal.Cryptography.Pal
             {
                 foreach (UnixPkcs12Reader.CertAndKey certAndKey in _pkcs12.EnumerateAll())
                 {
-                    AppleCertificatePal pal = (AppleCertificatePal)certAndKey.Cert;
-                    SafeSecKeyRefHandle safeSecKeyRefHandle =
+                    AppleCertificatePal pal = (AppleCertificatePal)certAndKey.Cert!;
+                    SafeSecKeyRefHandle? safeSecKeyRefHandle =
                         ApplePkcs12Reader.GetPrivateKey(certAndKey.Key);
 
                     using (safeSecKeyRefHandle)

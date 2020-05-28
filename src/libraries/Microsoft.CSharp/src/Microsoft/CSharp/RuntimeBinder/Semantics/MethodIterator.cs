@@ -75,7 +75,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                         return false;
                     }
 
-                    // If this guy's not callable, no good.
+                    // If this symbol's not callable, no good.
                     if (!ExpressionBinder.IsMethPropCallable(CurrentSymbol, (_flags & EXPRFLAG.EXF_USERCALLABLE) != 0))
                     {
                         return false;

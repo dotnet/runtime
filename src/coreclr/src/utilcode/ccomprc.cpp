@@ -5,129 +5,21 @@
 #include "stdafx.h"                     // Standard header.
 #include <utilcode.h>                   // Utility helpers.
 #include <corerror.h>
-#include "ndpversion.h"
 
 #include "../dlls/mscorrc/resource.h"
-#ifdef FEATURE_PAL
+#ifdef HOST_UNIX
 #include "resourcestring.h"
-#define NATIVE_STRING_RESOURCE_NAME mscorrc_debug
+#define NATIVE_STRING_RESOURCE_NAME mscorrc
 __attribute__((visibility("default"))) DECLARE_NATIVE_STRING_RESOURCE_TABLE(NATIVE_STRING_RESOURCE_NAME);
 #endif
 #include "sstring.h"
 #include "stringarraylist.h"
+#include "corpriv.h"
 
 #include <stdlib.h>
 
-#ifdef USE_FORMATMESSAGE_WRAPPER
-// we implement the wrapper for FormatMessageW.
-// Need access to the original
-#undef WszFormatMessage
-#define WszFormatMessage ::FormatMessageW
-#endif
-
-#define MAX_VERSION_STRING 30
-
 // External prototypes.
 extern HINSTANCE GetModuleInst();
-
-#ifndef FEATURE_PAL
-
-//*****************************************************************************
-// Get the MUI ID, on downlevel platforms where MUI is not supported it
-// returns the default system ID.
-
-typedef LANGID (WINAPI *PFNGETUSERDEFAULTUILANGUAGE)(void);  // kernel32!GetUserDefaultUILanguage
-
-int GetMUILanguageID(LocaleIDValue* pResult)
-{
-    CONTRACTL
-    {
-        GC_NOTRIGGER;
-        NOTHROW;
-#ifdef      MODE_PREEMPTIVE
-        MODE_PREEMPTIVE;
-#endif
-    }
-    CONTRACTL_END;
-
-    _ASSERTE(sizeof(LocaleID)/sizeof(WCHAR) >=LOCALE_NAME_MAX_LENGTH);
-    return ::GetSystemDefaultLocaleName(*pResult, LOCALE_NAME_MAX_LENGTH);
-}
-
-static void BuildMUIDirectory(int langid, __out SString* pResult)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_NOTRIGGER;
-        PRECONDITION(CheckPointer(pResult));
-    }
-    CONTRACTL_END;
-
-    pResult->Printf(W("MUI\\%04x\\"), langid);
-}
-
-void GetMUILanguageName(__out SString* pResult)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_NOTRIGGER;
-        PRECONDITION(CheckPointer(pResult));
-    }
-    CONTRACTL_END;
-
-    LocaleIDValue langid;
-    GetMUILanguageID(&langid);
-
-    int lcid = ::LocaleNameToLCID(langid,0);
-    return BuildMUIDirectory(lcid, pResult);
-}
-
-void GetMUIParentLanguageName(SString* pResult)
-{
-    WRAPPER_NO_CONTRACT;
-    int langid = 1033;
-
-    BuildMUIDirectory(langid, pResult);
-}
-#ifndef DACCESS_COMPILE
-HRESULT GetMUILanguageNames(__inout StringArrayList* pCultureNames)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        PRECONDITION(CheckPointer(pCultureNames));
-    }
-    CONTRACTL_END;
-
-    HRESULT hr=S_OK;
-    EX_TRY
-    {
-        SString result;
-        GetMUILanguageName(&result);
-
-        if(!result.IsEmpty())
-        {
-            pCultureNames->Append(result);
-        }
-
-        GetMUIParentLanguageName(&result);
-
-        _ASSERTE(!result.IsEmpty());
-        pCultureNames->Append(result);
-        pCultureNames->Append(SString::Empty());
-    }
-    EX_CATCH_HRESULT(hr)
-    return hr;
-
-}
-#endif // DACCESS_COMPILE
-
-#endif // !FEATURE_PAL
-
-BOOL CCompRC::s_bIsMscoree = FALSE;
 
 //*****************************************************************************
 // Do the mapping from an langId to an hinstance node
@@ -220,15 +112,9 @@ HRESULT CCompRC::AddMapNode(LocaleID langId, HRESOURCEDLL hInst, BOOL fMissing)
 //*****************************************************************************
 // Initialize
 //*****************************************************************************
-LPCWSTR CCompRC::m_pDefaultResource = W("mscorrc.debug.dll");
-LPCWSTR CCompRC::m_pFallbackResource= W("mscorrc.dll");
+LPCWSTR CCompRC::m_pDefaultResource = W("mscorrc.dll");
 
-#ifdef FEATURE_PAL
-LPCSTR CCompRC::m_pDefaultResourceDomain = "mscorrc.debug";
-LPCSTR CCompRC::m_pFallbackResourceDomain = "mscorrc";
-#endif // FEATURE_PAL
-
-HRESULT CCompRC::Init(LPCWSTR pResourceFile, BOOL bUseFallback)
+HRESULT CCompRC::Init(LPCWSTR pResourceFile)
 {
     CONTRACTL
     {
@@ -244,8 +130,6 @@ HRESULT CCompRC::Init(LPCWSTR pResourceFile, BOOL bUseFallback)
     // Make sure to NEVER null out the function callbacks in the Init
     // function. They get set for the "Default CCompRC" during EEStartup
     // and we want to make sure we don't wipe them out.
-
-    m_bUseFallback = bUseFallback;
 
     if (m_pResourceFile == NULL)
     {
@@ -273,33 +157,6 @@ HRESULT CCompRC::Init(LPCWSTR pResourceFile, BOOL bUseFallback)
     {
         return E_OUTOFMEMORY;
     }
-
-#ifdef FEATURE_PAL
-
-    if (m_pResourceFile == m_pDefaultResource)
-    {
-        m_pResourceDomain = m_pDefaultResourceDomain;
-    }
-    else if (m_pResourceFile == m_pFallbackResource)
-    {
-        m_pResourceDomain = m_pFallbackResourceDomain;
-    }
-    else
-    {
-        _ASSERTE(!"Unsupported resource file");
-    }
-
-#ifndef CROSSGEN_COMPILE
-    // PAL_BindResources requires that libcoreclr.so has been loaded,
-    // and thus can'be be called by crossgen.
-    if (!PAL_BindResources(m_pResourceDomain))
-    {
-        // The function can fail only due to OOM
-        return E_OUTOFMEMORY;
-    }
-#endif
-
-#endif // FEATURE_PAL
 
     if (m_csMap == NULL)
     {
@@ -428,7 +285,7 @@ CCompRC* CCompRC::GetDefaultResourceDll()
     if (m_dwDefaultInitialized)
         return &m_DefaultResourceDll;
 
-    if(FAILED(m_DefaultResourceDll.Init(NULL, TRUE)))
+    if(FAILED(m_DefaultResourceDll.Init(NULL)))
     {
         return NULL;
     }
@@ -436,35 +293,6 @@ CCompRC* CCompRC::GetDefaultResourceDll()
 
     return &m_DefaultResourceDll;
 }
-
-LONG    CCompRC::m_dwFallbackInitialized = 0;
-CCompRC CCompRC::m_FallbackResourceDll;
-
-CCompRC* CCompRC::GetFallbackResourceDll()
-{
-    CONTRACTL
-    {
-        GC_NOTRIGGER;
-        NOTHROW;
-#ifdef      MODE_PREEMPTIVE
-        MODE_PREEMPTIVE;
-#endif
-    }
-    CONTRACTL_END;
-
-    if (m_dwFallbackInitialized)
-        return &m_FallbackResourceDll;
-
-    if(FAILED(m_FallbackResourceDll.Init(m_pFallbackResource, FALSE)))
-    {
-        return NULL;
-    }
-    m_dwFallbackInitialized = 1;
-
-    return &m_FallbackResourceDll;
-}
-
-
 
 //*****************************************************************************
 //*****************************************************************************
@@ -669,7 +497,7 @@ HRESULT CCompRC::LoadString(ResourceCategory eCategory, LocaleID langId, UINT iR
     }
     CONTRACTL_END;
 
-#ifndef FEATURE_PAL
+#ifdef HOST_WINDOWS
     HRESULT         hr;
     HRESOURCEDLL    hInst = 0; //instance of cultured resource dll
     int length;
@@ -696,152 +524,22 @@ HRESULT CCompRC::LoadString(ResourceCategory eCategory, LocaleID langId, UINT iR
             hr=HRESULT_FROM_GetLastError();
     }
 
-
-    // Failed to load string
-    if ( hr != E_OUTOFMEMORY && ShouldUseFallback())
-    {
-        CCompRC* pFallback=CCompRC::GetFallbackResourceDll();
-        if (pFallback)
-        {
-            //should not fall back to itself
-            _ASSERTE(pFallback != this);
-
-            // check existence in the fallback Dll
-
-            hr = pFallback->LoadString(Optional, langId, iResourceID,szBuffer, iMax, pcwchUsed);
-
-            if(SUCCEEDED(hr))
-                return hr;
-        }
-        switch (eCategory)
-        {
-            case Optional:
-                hr = E_FAIL;
-                break;
-            case  DesktopCLR:
-                hr = E_FAIL;
-                break;
-            case Debugging:
-            case Error:
-                // get stub message
-                {
-
-                   if (pFallback)
-                   {
-
-                        StackSString ssErrorFormat;
-                        if (eCategory == Error)
-                        {
-                            hr=ssErrorFormat.LoadResourceAndReturnHR(pFallback,  CCompRC::Required, IDS_EE_LINK_FOR_ERROR_MESSAGES);
-                        }
-                        else
-                        {
-                            _ASSERTE(eCategory == Debugging);
-                            hr=ssErrorFormat.LoadResourceAndReturnHR(pFallback,  CCompRC::Required, IDS_EE_LINK_FOR_DEBUGGING_MESSAGES);
-                        }
-
-                        if (SUCCEEDED(hr))
-                        {
-                            StackSString sFormattedMessage;
-                            int iErrorCode = HR_FOR_URT_MSG(iResourceID);
-
-                            hr = S_OK;
-
-                            DWORD_PTR args[] = {(DWORD_PTR)VER_FILEVERSION_STR_L, iResourceID, iErrorCode};
-
-                            length = WszFormatMessage(FORMAT_MESSAGE_FROM_STRING | FORMAT_MESSAGE_ARGUMENT_ARRAY ,
-                                                        (LPCWSTR)ssErrorFormat, 0, 0,
-                                                        szBuffer,iMax,(va_list*)args);
-
-                            if (length == 0 && GetLastError() == ERROR_INSUFFICIENT_BUFFER)
-                            {
-                                // The buffer wasn't big enough for the message. Tell the caller this.
-                                //
-                                // Clear the buffer, just in case.
-                                if (szBuffer && iMax)
-                                    *szBuffer = W('\0');
-
-                                length = iMax;
-                                hr=HRESULT_FROM_GetLastError();
-                            }
-
-                            if(length > 0)
-                            {
-                                if(pcwchUsed)
-                                {
-                                    *pcwchUsed = length;
-                                }
-                                return hr;
-                            }
-
-                            // Format mesage failed
-                            hr=HRESULT_FROM_GetLastError();
-
-                        }
-                    }
-                    else // if (pFallback)
-                    {
-                        _ASSERTE(FAILED(hr));
-                    }
-                }
-                // if we got here then we couldn't get the fallback message
-                // the fallback message is required so just falling through into "Required"
-
-            case Required:
-
-                if ( hr != E_OUTOFMEMORY)
-                {
-                    // Shouldn't be any reason for this condition but the case where
-                    // the resource dll is missing, code used the wrong ID or developer didn't
-                    // update the resource DLL.
-                    _ASSERTE(!"Missing mscorrc.dll or mscorrc.debug.dll?");
-                    hr = HRESULT_FROM_GetLastError();
-                }
-                break;
-            default:
-                {
-                    _ASSERTE(!"Invalid eCategory");
-                }
-        }
-    }
-
     // Return an empty string to save the people with a bad error handling
     if (szBuffer && iMax)
         *szBuffer = W('\0');
 
     return hr;
-#else // !FEATURE_PAL
+#else // HOST_WINDOWS
     return LoadNativeStringResource(NATIVE_STRING_RESOURCE_TABLE(NATIVE_STRING_RESOURCE_NAME), iResourceID,
       szBuffer, iMax, pcwchUsed);
-#endif // !FEATURE_PAL
+#endif // HOST_WINDOWS
 }
 
 #ifndef DACCESS_COMPILE
-HRESULT CCompRC::LoadMUILibrary(HRESOURCEDLL * pHInst)
-{
-    WRAPPER_NO_CONTRACT;
-    _ASSERTE(pHInst != NULL);
-    LocaleID langId;
-    LocaleIDValue langIdValue;
-    // Must resolve current thread's langId to a dll.
-    if(m_fpGetThreadUICultureId) {
-        int ret = (*m_fpGetThreadUICultureId)(&langIdValue);
-
-        // Callback can't return 0, since that indicates empty.
-        // To indicate empty, callback should return UICULTUREID_DONTCARE
-        _ASSERTE(ret != 0);
-        langId=langIdValue;
-    }
-    else
-        langId = UICULTUREID_DONTCARE;
-
-    HRESULT hr = GetLibrary(langId, pHInst);
-    return hr;
-}
 
 HRESULT CCompRC::LoadResourceFile(HRESOURCEDLL * pHInst, LPCWSTR lpFileName)
 {
-#ifndef FEATURE_PAL
+#ifdef HOST_WINDOWS
     DWORD dwLoadLibraryFlags;
     if(m_pResourceFile == m_pDefaultResource)
         dwLoadLibraryFlags = LOAD_LIBRARY_AS_DATAFILE;
@@ -851,9 +549,9 @@ HRESULT CCompRC::LoadResourceFile(HRESOURCEDLL * pHInst, LPCWSTR lpFileName)
     if ((*pHInst = WszLoadLibraryEx(lpFileName, NULL, dwLoadLibraryFlags)) == NULL) {
         return HRESULT_FROM_GetLastError();
     }
-#else // !FEATURE_PAL
+#else // HOST_WINDOWS
     PORTABILITY_ASSERT("UNIXTODO: Implement resource loading - use peimagedecoder?");
-#endif // !FEATURE_PAL
+#endif // HOST_WINDOWS
     return S_OK;
 }
 
@@ -974,19 +672,21 @@ HRESULT CCompRC::LoadLibraryThrows(HRESOURCEDLL * pHInst)
     // The resources are embeded into the .exe itself for crossgen
     *pHInst = GetModuleInst();
 #else
+
+#ifdef SELF_NO_HOST
+    _ASSERTE(!"CCompRC::LoadLibraryThrows not implemented for SELF_NO_HOST");
+    hr = E_NOTIMPL;
+#else
     PathString       rcPath;      // Path to resource DLL.
 
     // Try first in the same directory as this dll.
 
-    VALIDATECORECLRCALLBACKS();
-
-
-    hr = g_CoreClrCallbacks.m_pfnGetCORSystemDirectory(rcPath);
+    hr = GetCORSystemDirectoryInternaL(rcPath);
     if (FAILED(hr))
         return hr;
 
     hr = LoadLibraryHelper(pHInst, rcPath);
-
+#endif
 
 #endif // CROSSGEN_COMPILE
 
@@ -1014,37 +714,3 @@ HRESULT CCompRC::LoadLibrary(HRESOURCEDLL * pHInst)
     return hr;
 }
 #endif // DACCESS_COMPILE
-
-
-
-#ifdef USE_FORMATMESSAGE_WRAPPER
-DWORD
-PALAPI
-CCompRC::FormatMessage(
-           IN DWORD dwFlags,
-           IN LPCVOID lpSource,
-           IN DWORD dwMessageId,
-           IN DWORD dwLanguageId,
-           OUT LPWSTR lpBuffer,
-           IN DWORD nSize,
-           IN va_list *Arguments)
-{
-    STATIC_CONTRACT_NOTHROW;
-    StackSString str;
-    if (dwFlags & FORMAT_MESSAGE_FROM_SYSTEM)
-    {
-        dwFlags&=~FORMAT_MESSAGE_FROM_SYSTEM;
-        dwFlags|=FORMAT_MESSAGE_FROM_STRING;
-        str.LoadResourceAndReturnHR(NULL,CCompRC::Error,dwMessageId);
-        lpSource=str.GetUnicode();
-    }
-    return WszFormatMessage(dwFlags,
-                            lpSource,
-                            dwMessageId,
-                            dwLanguageId,
-                            lpBuffer,
-                            nSize,
-                            Arguments);
-}
-#endif // USE_FORMATMESSAGE_WRAPPER
-

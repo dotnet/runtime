@@ -33,7 +33,7 @@ namespace Internal.Cryptography.Pal
             // If maybeOid is interpreted to be a FriendlyName, return the OID.
             if (!StringComparer.OrdinalIgnoreCase.Equals(oid.Value, maybeOid))
             {
-                return oid.Value;
+                return oid.Value!;
             }
 
             FindPal.ValidateOidValue(maybeOid);
@@ -130,7 +130,7 @@ namespace Internal.Cryptography.Pal
             FindCore(
                 cert =>
                 {
-                    X509Extension ext = FindExtension(cert, Oids.EnrollCertTypeExtension);
+                    X509Extension? ext = FindExtension(cert, Oids.EnrollCertTypeExtension);
 
                     if (ext != null)
                     {
@@ -166,7 +166,7 @@ namespace Internal.Cryptography.Pal
             FindCore(
                 cert =>
                 {
-                    X509Extension ext = FindExtension(cert, Oids.EnhancedKeyUsage);
+                    X509Extension? ext = FindExtension(cert, Oids.EnhancedKeyUsage);
 
                     if (ext == null)
                     {
@@ -195,7 +195,7 @@ namespace Internal.Cryptography.Pal
             FindCore(
                 cert =>
                 {
-                    X509Extension ext = FindExtension(cert, Oids.CertPolicies);
+                    X509Extension? ext = FindExtension(cert, Oids.CertPolicies);
 
                     if (ext == null)
                     {
@@ -203,7 +203,7 @@ namespace Internal.Cryptography.Pal
                         return false;
                     }
 
-                    ISet<string> policyOids = CertificatePolicyChain.ReadCertPolicyExtension(ext);
+                    ISet<string> policyOids = CertificatePolicyChain.ReadCertPolicyExtension(ext.RawData);
                     return policyOids.Contains(oidValue);
                 });
         }
@@ -218,7 +218,7 @@ namespace Internal.Cryptography.Pal
             FindCore(
                 cert =>
                 {
-                    X509Extension ext = FindExtension(cert, Oids.KeyUsage);
+                    X509Extension? ext = FindExtension(cert, Oids.KeyUsage);
 
                     if (ext == null)
                     {
@@ -240,7 +240,7 @@ namespace Internal.Cryptography.Pal
             FindCore(
                 cert =>
                 {
-                    X509Extension ext = FindExtension(cert, Oids.SubjectKeyIdentifier);
+                    X509Extension? ext = FindExtension(cert, Oids.SubjectKeyIdentifier);
                     byte[] certKeyId;
 
                     if (ext != null)
@@ -280,7 +280,7 @@ namespace Internal.Cryptography.Pal
         {
         }
 
-        private static X509Extension FindExtension(X509Certificate2 cert, string extensionOid)
+        private static X509Extension? FindExtension(X509Certificate2 cert, string extensionOid)
         {
             if (cert.Extensions == null || cert.Extensions.Count == 0)
             {

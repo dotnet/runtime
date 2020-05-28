@@ -39,13 +39,13 @@ namespace System.ComponentModel.Tests
             yield return new object[] { attribute, new CategoryAttribute("category2"), false };
             yield return new object[] { attribute, new CategoryAttribute(string.Empty), false };
             // .NET Framework throws a NullReferenceException.
-            if (!PlatformDetection.IsFullFramework)
+            if (!PlatformDetection.IsNetFramework)
             {
                 yield return new object[] { attribute, new CategoryAttribute(null), false };
             }
 
             // .NET Framework throws a NullReferenceException.
-            if (!PlatformDetection.IsFullFramework)
+            if (!PlatformDetection.IsNetFramework)
             {
                 yield return new object[] { new CategoryAttribute(null), new CategoryAttribute(null), true };
                 yield return new object[] { new CategoryAttribute(null), new CategoryAttribute("category"), false };

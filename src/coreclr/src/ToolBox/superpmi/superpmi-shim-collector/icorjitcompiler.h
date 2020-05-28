@@ -7,7 +7,6 @@
 #define _ICorJitCompiler
 
 #include "runtimedetails.h"
-#include "ieememorymanager.h"
 
 class interceptor_ICJC : public ICorJitCompiler
 {
@@ -19,7 +18,5 @@ public:
     ICorJitCompiler* original_ICorJitCompiler;
     HANDLE           hFile;
 };
-
-extern interceptor_IEEMM* current_IEEMM; // we want this to live beyond the scope of a single compileMethodCall
 
 #endif

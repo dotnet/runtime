@@ -6,7 +6,7 @@ using System.Runtime.CompilerServices;
 // It required GCStress=0xc and GcStressOnDirectCalls=1 to hit issues. The issues were with saving GC pointers in the return registers.
 // The GC infra has to correctly mark registers with pointers as alive and must not report registers without pointers.
 
-#if BIT32
+#if TARGET_32BIT
 using nint = System.Int32;
 #else
 using nint = System.Int64;

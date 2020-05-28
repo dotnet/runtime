@@ -51,6 +51,9 @@ namespace System.Security.Cryptography.Csp.Tests
                 // DecryptValue and EncryptValue throw PNSE in base class, so they don't need to be checked.
                 "DecryptValue",
                 "EncryptValue",
+                // PEM Import/Export defers to Import methods.
+                "ImportFromPem",
+                "ImportFromEncryptedPem",
                 // Key Import/Export defers to ImportParameters/ExportParameters (covered by *KeyFileTests)
                 "ImportRSAPrivateKey",
                 "ImportRSAPublicKey",
@@ -68,6 +71,13 @@ namespace System.Security.Cryptography.Csp.Tests
                 "TryExportSubjectPublicKeyInfo",
                 "TryExportPkcs8PrivateKey",
                 "TryExportEncryptedPkcs8PrivateKey",
+                // DSASignatureFormat methods defer to older methods.
+                "CreateSignatureCore",
+                "SignDataCore",
+                "TryCreateSignatureCore",
+                "TrySignDataCore",
+                "VerifyDataCore",
+                "VerifySignatureCore",
             };
 
             IEnumerable<MethodInfo> baseMethods = shimType.

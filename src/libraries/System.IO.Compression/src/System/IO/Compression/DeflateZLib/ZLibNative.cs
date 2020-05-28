@@ -84,7 +84,7 @@ namespace System.IO.Compression
         /// The strategy parameter only affects the compression ratio but not the correctness of the compressed output even if it is not set
         /// appropriately. <code>Fixed</code> prevents the use of dynamic Huffman codes, allowing for a simpler decoder for special applications.</p>
         ///
-        /// <p><strong>For NetFx use:</strong></p>
+        /// <p><strong>For .NET Framework use:</strong></p>
         /// <p>We have investigated compression scenarios for a bunch of different frequently occurring compression data and found that in all
         /// cases we investigated so far, <code>DefaultStrategy</code> provided best results</p>
         /// <p>See also: How to choose a compression level (in comments to <code>CompressionLevel</code>.</p>

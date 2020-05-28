@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 // ------------------------------------------------------------------------------
-// Changes to this file must follow the http://aka.ms/api-review process.
+// Changes to this file must follow the https://aka.ms/api-review process.
 // ------------------------------------------------------------------------------
 
 namespace System.Reflection.Metadata
@@ -49,7 +49,7 @@ namespace System.Runtime.Loader
         protected virtual System.IntPtr LoadUnmanagedDll(string unmanagedDllName) { throw null; }
         protected System.IntPtr LoadUnmanagedDllFromPath(string unmanagedDllPath) { throw null; }
         public void SetProfileOptimizationRoot(string directoryPath) { }
-        public void StartProfileOptimization(string profile) { }
+        public void StartProfileOptimization(string? profile) { }
         public override string ToString() { throw null; }
         public void Unload() { }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]

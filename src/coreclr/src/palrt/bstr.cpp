@@ -80,11 +80,11 @@ STDAPI_(BSTR) SysAllocStringLen(const OLECHAR *psz, UINT len)
     if (FAILED(CbSysStringSize(len, FALSE, &cbTotal)))
         return NULL;
 
-    bstr = (OLECHAR *)HeapAlloc(GetProcessHeap(), 0, cbTotal);
+    bstr = (OLECHAR *)PAL_malloc(cbTotal);
 
     if(bstr != NULL){
 
-#if defined(BIT64)
+#if defined(HOST_64BIT)
       // NOTE: There are some apps which peek back 4 bytes to look at the size of the BSTR. So, in case of 64-bit code,
       // we need to ensure that the BSTR length can be found by looking one DWORD before the BSTR pointer.
       *(DWORD_PTR *)bstr = (DWORD_PTR) 0;
@@ -133,10 +133,10 @@ SysAllocStringByteLen(const char FAR* psz, unsigned int len)
     if (FAILED(CbSysStringSize(len, TRUE, &cbTotal)))
         return FALSE;
 
-    bstr = (OLECHAR *)HeapAlloc(GetProcessHeap(), 0, cbTotal);
+    bstr = (OLECHAR *)PAL_malloc(cbTotal);
 
     if (bstr != NULL) {
-#if defined(BIT64)
+#if defined(HOST_64BIT)
       *(DWORD FAR*)((char *)bstr + sizeof (DWORD)) = (DWORD)len;
 #else
       *(DWORD FAR*)bstr = (DWORD)len;
@@ -172,7 +172,7 @@ STDAPI_(void) SysFreeString(BSTR bstr)
 {
     if(bstr == NULL)
       return;
-    HeapFree(GetProcessHeap(), 0, (BYTE *)bstr-sizeof(DWORD_PTR));
+    free((BYTE *)bstr-sizeof(DWORD_PTR));
 }
 
 /***

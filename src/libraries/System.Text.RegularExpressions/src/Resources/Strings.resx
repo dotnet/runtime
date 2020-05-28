@@ -183,9 +183,6 @@
   <data name="UnexpectedOpcode" xml:space="preserve">
     <value>Unexpected opcode in regular expression generation: {0}.</value>
   </data>
-  <data name="UnimplementedState" xml:space="preserve">
-    <value>Unimplemented state.</value>
-  </data>
   <data name="UnknownProperty" xml:space="preserve">
     <value>Unknown property '{0}'.</value>
   </data>

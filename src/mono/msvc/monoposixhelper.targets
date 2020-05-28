@@ -1,0 +1,50 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="$(MonoSourceLocation)\mono\zlib\adler32.c" />
+    <ClCompile Include="$(MonoSourceLocation)\mono\zlib\compress.c" />
+    <ClCompile Include="$(MonoSourceLocation)\mono\zlib\crc32.c" />
+    <ClCompile Include="$(MonoSourceLocation)\mono\zlib\deflate.c" />
+    <ClCompile Include="$(MonoSourceLocation)\support\errno.c" />
+    <ClCompile Include="$(MonoSourceLocation)\support\fcntl.c" />
+    <ClCompile Include="$(MonoSourceLocation)\mono\zlib\infback.c" />
+    <ClCompile Include="$(MonoSourceLocation)\mono\zlib\inffast.c" />
+    <ClCompile Include="$(MonoSourceLocation)\mono\zlib\inflate.c" />
+    <ClCompile Include="$(MonoSourceLocation)\mono\zlib\inftrees.c" />
+    <ClCompile Include="$(MonoSourceLocation)\support\map.c" />
+    <ClCompile Include="$(MonoSourceLocation)\support\minizip\ioapi.c" />
+    <ClCompile Include="$(MonoSourceLocation)\support\minizip\unzip.c" />
+    <ClCompile Include="$(MonoSourceLocation)\support\minizip\zip.c" />
+    <ClCompile Include="$(MonoSourceLocation)\support\signal.c" />
+    <ClCompile Include="$(MonoSourceLocation)\support\stdio.c" />
+    <ClCompile Include="$(MonoSourceLocation)\support\stdlib.c" />
+    <ClCompile Include="$(MonoSourceLocation)\support\string.c" />
+    <ClCompile Include="$(MonoSourceLocation)\support\sys-stat.c" />
+    <ClCompile Include="$(MonoSourceLocation)\mono\zlib\trees.c" />
+    <ClCompile Include="$(MonoSourceLocation)\mono\zlib\uncompr.c" />
+    <ClCompile Include="$(MonoSourceLocation)\support\zlib-helper.c" />
+    <ClCompile Include="$(MonoSourceLocation)\mono\zlib\zutil.c" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="$(MonoSourceLocation)\mono\zlib\inffast.h" />
+    <ClInclude Include="$(MonoSourceLocation)\mono\zlib\crc32.h" />
+    <ClInclude Include="$(MonoSourceLocation)\mono\zlib\deflate.h" />
+    <ClInclude Include="$(MonoSourceLocation)\mono\zlib\gzguts.h" />
+    <ClInclude Include="$(MonoSourceLocation)\mono\zlib\inffixed.h" />
+    <ClInclude Include="$(MonoSourceLocation)\mono\zlib\inflate.h" />
+    <ClInclude Include="$(MonoSourceLocation)\mono\zlib\inftrees.h" />
+    <ClInclude Include="$(MonoSourceLocation)\support\map.h" />
+    <ClInclude Include="$(MonoSourceLocation)\support\minizip\crypt.h" />
+    <ClInclude Include="$(MonoSourceLocation)\support\minizip\ioapi.h" />
+    <ClInclude Include="$(MonoSourceLocation)\support\minizip\unzip.h" />
+    <ClInclude Include="$(MonoSourceLocation)\support\minizip\zip.h" />
+    <ClInclude Include="$(MonoSourceLocation)\mono\zlib\mph.h" />
+    <ClInclude Include="$(MonoSourceLocation)\mono\zlib\trees.h" />
+    <ClInclude Include="$(MonoSourceLocation)\mono\zlib\zconf.h" />
+    <ClInclude Include="$(MonoSourceLocation)\mono\zlib\zlib.h" />
+    <ClInclude Include="$(MonoSourceLocation)\mono\zlib\zutil.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="monoposixhelper.def" />
+  </ItemGroup>
+</Project>

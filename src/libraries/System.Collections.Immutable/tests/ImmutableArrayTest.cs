@@ -838,7 +838,7 @@ namespace System.Collections.Immutable.Tests
 
         [Theory]
         [MemberData(nameof(EqualsData))]
-        public void Equals(ImmutableArray<int> first, ImmutableArray<int> second, bool expected)
+        public void EqualsTest(ImmutableArray<int> first, ImmutableArray<int> second, bool expected)
         {
             Assert.Equal(expected, first == second);
             Assert.NotEqual(expected, first != second);
@@ -944,7 +944,7 @@ namespace System.Collections.Immutable.Tests
         [Theory]
         [MemberData(nameof(Int32EnumerableData))]
         [MemberData(nameof(SpecialInt32ImmutableArrayData))]
-        public void GetHashCode(IEnumerable<int> source)
+        public void GetHashCodeTest(IEnumerable<int> source)
         {
             var array = source.ToImmutableArray();
 
@@ -1631,7 +1631,7 @@ namespace System.Collections.Immutable.Tests
             // ImmutableArray<T>.CopyTo defers to Array.Copy for argument validation, so
             // the parameter names here come from Array.Copy.
 
-            AssertExtensions.Throws<ArgumentNullException>("destinationArray", "dest", () => array.CopyTo(null));
+            AssertExtensions.Throws<ArgumentNullException>("destinationArray", () => array.CopyTo(null));
             AssertExtensions.Throws<ArgumentNullException>("destinationArray", "dest", () => array.CopyTo(null, 0));
             AssertExtensions.Throws<ArgumentNullException>("destinationArray", "dest", () => array.CopyTo(0, null, 0, 0));
             AssertExtensions.Throws<ArgumentNullException>("destinationArray", "dest", () => array.CopyTo(-1, null, -1, -1)); // The destination should be validated first.
@@ -1978,7 +1978,7 @@ namespace System.Collections.Immutable.Tests
         [Fact]
         public void IStructuralEquatableEqualsNullComparerInvalid()
         {
-            // This was not fixed for compatability reasons. See https://github.com/dotnet/corefx/issues/13410
+            // This was not fixed for compatability reasons. See https://github.com/dotnet/runtime/issues/19265
             Assert.Throws<NullReferenceException>(() => ((IStructuralEquatable)ImmutableArray.Create(1, 2, 3)).Equals(ImmutableArray.Create(1, 2, 3), comparer: null));
             Assert.Throws<NullReferenceException>(() => ((IStructuralEquatable)s_emptyDefault).Equals(other: null, comparer: null));
         }
@@ -2105,7 +2105,7 @@ namespace System.Collections.Immutable.Tests
 
         public static IEnumerable<object[]> IStructuralComparableCompareToNullComparerNullReferenceInvalidData()
         {
-            // This was not fixed for compatability reasons. See https://github.com/dotnet/corefx/issues/13410
+            // This was not fixed for compatability reasons. See https://github.com/dotnet/runtime/issues/19265
             yield return new object[] { new[] { 1, 2, 3 }, new[] { 1, 2, 3 } };
             yield return new object[] { new[] { 1, 2, 3 }, ImmutableArray.Create(1, 2, 3) };
             // Cache this into a local so the comparands are reference-equal.
@@ -2252,7 +2252,7 @@ namespace System.Collections.Immutable.Tests
 
         [Theory]
         [MemberData(nameof(Int32EnumerableData))]
-        public void DebuggerAttributesValid(IEnumerable<int> source)
+        public void DebuggerAttributesValid_AdditionalCases(IEnumerable<int> source)
         {
             DebuggerAttributes.ValidateDebuggerDisplayReferences(source.ToImmutableArray());
         }
@@ -2320,7 +2320,7 @@ namespace System.Collections.Immutable.Tests
             // The reason is since they are contiguous in memory, they call Array.Copy
             // if the source is an array as an optimization, which throws if the types
             // of the arrays do not exactly match up.
-            // More info here: https://github.com/dotnet/corefx/issues/2241
+            // More info here: https://github.com/dotnet/runtime/issues/14794
 
             if (!(source is T[]) || source.GetType() == typeof(T[]))
             {

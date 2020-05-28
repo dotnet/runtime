@@ -4,7 +4,6 @@
 
 using System.Collections.Generic;
 using System.ComponentModel;
-using System.Linq;
 
 namespace System.Diagnostics
 {
@@ -23,9 +22,9 @@ namespace System.Diagnostics
                 if (IsSelfOrDescendantOf(GetCurrentProcess()))
                     throw new InvalidOperationException(SR.KillEntireProcessTree_DisallowedBecauseTreeContainsCallingProcess);
 
-                IEnumerable<Exception> result = KillTree();
+                List<Exception>? result = KillTree();
 
-                if (result.Any())
+                if (result != null && result.Count != 0)
                     throw new AggregateException(SR.KillEntireProcessTree_TerminationIncomplete, result);
             }
         }
@@ -40,7 +39,7 @@ namespace System.Diagnostics
             try
             {
                 var descendantProcesses = new Queue<Process>();
-                Process current = this;
+                Process? current = this;
 
                 do
                 {
@@ -67,7 +66,7 @@ namespace System.Diagnostics
         /// <summary>
         /// Returns all immediate child processes.
         /// </summary>
-        private IReadOnlyList<Process> GetChildProcesses(Process[] processes = null)
+        private IReadOnlyList<Process> GetChildProcesses(Process[]? processes = null)
         {
             bool internallyInitializedProcesses = processes == null;
             processes = processes ?? GetProcesses();

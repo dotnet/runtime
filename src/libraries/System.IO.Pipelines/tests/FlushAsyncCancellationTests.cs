@@ -354,7 +354,7 @@ namespace System.IO.Pipelines.Tests
     {
         public static PipeWriter WriteEmpty(this PipeWriter writer, int count)
         {
-            writer.GetSpan(count).Slice(0, count).Fill(0);
+            writer.GetSpan(count).Slice(0, count).Clear();
             writer.Advance(count);
             return writer;
         }

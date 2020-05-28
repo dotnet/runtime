@@ -6,11 +6,13 @@ using System.Net.Http;
 using System.Net.Sockets;
 using System.Security.Authentication.ExtendedProtection;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
 
 namespace System.Net.Tests
 {
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/2391", TestRuntimes.Mono)]
     [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))] // httpsys component missing in Nano.
     public class HttpListenerTests
     {
@@ -154,6 +156,20 @@ namespace System.Net.Tests
 
                 Assert.Throws<InvalidOperationException>(() => listener.EndGetContext(beginGetContextResult));
             }
+        }
+
+        [Fact]
+        [OuterLoop]
+        public async Task GetContext_StopIsCalled_GetContextUnblocked()
+        {
+            using var listenerFactory = new HttpListenerFactory();
+            var listener = listenerFactory.GetListener();
+            listener.Start();
+            var listenerTask = Task.Run(() => Assert.Throws<HttpListenerException>(() => listener.GetContext()));
+            await Task.Delay(1000).TimeoutAfter(10000); // Wait for listenerTask to call GetContext.
+            listener.Stop();
+            listener.Close();
+            await listenerTask.TimeoutAfter(10000);
         }
     }
 }

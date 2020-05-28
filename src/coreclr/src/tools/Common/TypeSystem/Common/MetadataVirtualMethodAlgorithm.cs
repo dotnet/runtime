@@ -419,7 +419,7 @@ namespace Internal.TypeSystem
             foreach (MethodDesc memberMethod in unificationGroup)
             {
                 MethodDesc nameSigMatchMemberMethod = FindMatchingVirtualMethodOnTypeByNameAndSigWithSlotCheck(memberMethod, currentType, reverseMethodSearch: true);
-                if (nameSigMatchMemberMethod != null)
+                if (nameSigMatchMemberMethod != null && nameSigMatchMemberMethod != memberMethod)
                 {
                     if (separatedMethods == null)
                         separatedMethods = new MethodDescHashtable();

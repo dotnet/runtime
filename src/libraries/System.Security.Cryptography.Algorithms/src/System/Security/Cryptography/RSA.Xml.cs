@@ -13,7 +13,7 @@ namespace System.Security.Cryptography
             string name,
             int sizeHint = -1)
         {
-            byte[] ret = XmlKeyHelper.ReadCryptoBinary(ref state, name, sizeHint);
+            byte[]? ret = XmlKeyHelper.ReadCryptoBinary(ref state, name, sizeHint);
 
             if (ret == null)
             {
@@ -36,12 +36,12 @@ namespace System.Security.Cryptography
 
             // .NET Framework doesn't report any element other than Modulus/Exponent as required,
             // it just lets import fail if they're imbalanced.
-            byte[] p = XmlKeyHelper.ReadCryptoBinary(ref state, nameof(RSAParameters.P), halfN);
-            byte[] q = XmlKeyHelper.ReadCryptoBinary(ref state, nameof(RSAParameters.Q), halfN);
-            byte[] dp = XmlKeyHelper.ReadCryptoBinary(ref state, nameof(RSAParameters.DP), halfN);
-            byte[] dq = XmlKeyHelper.ReadCryptoBinary(ref state, nameof(RSAParameters.DQ), halfN);
-            byte[] qInv = XmlKeyHelper.ReadCryptoBinary(ref state, nameof(RSAParameters.InverseQ), halfN);
-            byte[] d = XmlKeyHelper.ReadCryptoBinary(ref state, nameof(RSAParameters.D), n.Length);
+            byte[]? p = XmlKeyHelper.ReadCryptoBinary(ref state, nameof(RSAParameters.P), halfN);
+            byte[]? q = XmlKeyHelper.ReadCryptoBinary(ref state, nameof(RSAParameters.Q), halfN);
+            byte[]? dp = XmlKeyHelper.ReadCryptoBinary(ref state, nameof(RSAParameters.DP), halfN);
+            byte[]? dq = XmlKeyHelper.ReadCryptoBinary(ref state, nameof(RSAParameters.DQ), halfN);
+            byte[]? qInv = XmlKeyHelper.ReadCryptoBinary(ref state, nameof(RSAParameters.InverseQ), halfN);
+            byte[]? d = XmlKeyHelper.ReadCryptoBinary(ref state, nameof(RSAParameters.D), n.Length);
 
             RSAParameters keyParameters = new RSAParameters
             {

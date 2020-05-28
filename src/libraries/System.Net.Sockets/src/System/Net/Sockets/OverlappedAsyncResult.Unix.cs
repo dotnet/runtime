@@ -19,7 +19,7 @@ namespace System.Net.Sockets
             return _socketAddressSize;
         }
 
-        public void CompletionCallback(int numBytes, byte[] socketAddress, int socketAddressSize, SocketFlags receivedFlags, SocketError errorCode)
+        public void CompletionCallback(int numBytes, byte[]? socketAddress, int socketAddressSize, SocketFlags receivedFlags, SocketError errorCode)
         {
             if (_socketAddress != null)
             {

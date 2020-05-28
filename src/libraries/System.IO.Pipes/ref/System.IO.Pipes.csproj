@@ -1,15 +1,13 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <Configurations>netcoreapp-Debug;netcoreapp-Release</Configurations>
+    <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
+    <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System.IO.Pipes.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\System.IO\ref\System.IO.csproj" />
-    <ProjectReference Include="..\..\System.Runtime.Handles\ref\System.Runtime.Handles.csproj" />
     <ProjectReference Include="..\..\System.Runtime\ref\System.Runtime.csproj" />
     <ProjectReference Include="..\..\System.Security.Principal\ref\System.Security.Principal.csproj" />
-    <ProjectReference Include="..\..\System.Threading.Tasks\ref\System.Threading.Tasks.csproj" />
   </ItemGroup>
 </Project>

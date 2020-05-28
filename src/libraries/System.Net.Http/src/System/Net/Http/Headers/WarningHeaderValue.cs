@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.IO;
 using System.Text;
@@ -12,8 +13,8 @@ namespace System.Net.Http.Headers
     public class WarningHeaderValue : ICloneable
     {
         private int _code;
-        private string _agent;
-        private string _text;
+        private string _agent = null!;
+        private string _text = null!;
         private DateTimeOffset? _date;
 
         public int Code
@@ -95,9 +96,9 @@ namespace System.Net.Http.Headers
             return StringBuilderCache.GetStringAndRelease(sb);
         }
 
-        public override bool Equals(object obj)
+        public override bool Equals(object? obj)
         {
-            WarningHeaderValue other = obj as WarningHeaderValue;
+            WarningHeaderValue? other = obj as WarningHeaderValue;
 
             if (other == null)
             {
@@ -136,27 +137,26 @@ namespace System.Net.Http.Headers
             return result;
         }
 
-        public static WarningHeaderValue Parse(string input)
+        public static WarningHeaderValue Parse(string? input)
         {
             int index = 0;
             return (WarningHeaderValue)GenericHeaderParser.SingleValueWarningParser.ParseValue(input, null, ref index);
         }
 
-        public static bool TryParse(string input, out WarningHeaderValue parsedValue)
+        public static bool TryParse([NotNullWhen(true)] string? input, [NotNullWhen(true)] out WarningHeaderValue? parsedValue)
         {
             int index = 0;
-            object output;
             parsedValue = null;
 
-            if (GenericHeaderParser.SingleValueWarningParser.TryParseValue(input, null, ref index, out output))
+            if (GenericHeaderParser.SingleValueWarningParser.TryParseValue(input, null, ref index, out object? output))
             {
-                parsedValue = (WarningHeaderValue)output;
+                parsedValue = (WarningHeaderValue)output!;
                 return true;
             }
             return false;
         }
 
-        internal static int GetWarningLength(string input, int startIndex, out object parsedValue)
+        internal static int GetWarningLength(string? input, int startIndex, out object? parsedValue)
         {
             Debug.Assert(startIndex >= 0);
 
@@ -177,8 +177,7 @@ namespace System.Net.Http.Headers
             }
 
             // Read <agent> in '<code> <agent> <text> ["<date>"]'
-            string agent;
-            if (!TryReadAgent(input, current, ref current, out agent))
+            if (!TryReadAgent(input, current, ref current, out string? agent))
             {
                 return 0;
             }
@@ -210,11 +209,9 @@ namespace System.Net.Http.Headers
             return current - startIndex;
         }
 
-        private static bool TryReadAgent(string input, int startIndex, ref int current, out string agent)
+        private static bool TryReadAgent(string input, int startIndex, ref int current, [NotNullWhen(true)] out string? agent)
         {
-            agent = null;
-
-            int agentLength = HttpRuleParser.GetHostLength(input, startIndex, true, out agent);
+            int agentLength = HttpRuleParser.GetHostLength(input, startIndex, true, out agent!);
 
             if (agentLength == 0)
             {
@@ -301,7 +298,7 @@ namespace System.Net.Http.Headers
                 }
 
                 DateTimeOffset temp;
-                if (!HttpDateParser.TryStringToDate(input.AsSpan(dateStartIndex, current - dateStartIndex), out temp))
+                if (!HttpDateParser.TryParse(input.AsSpan(dateStartIndex, current - dateStartIndex), out temp))
                 {
                     return false;
                 }
@@ -337,8 +334,7 @@ namespace System.Net.Http.Headers
 
             // 'receivedBy' can either be a host or a token. Since a token is a valid host, we only verify if the value
             // is a valid host.
-            string host = null;
-            if (HttpRuleParser.GetHostLength(agent, 0, true, out host) != agent.Length)
+             if (HttpRuleParser.GetHostLength(agent, 0, true, out string? host) != agent.Length)
             {
                 throw new FormatException(SR.Format(System.Globalization.CultureInfo.InvariantCulture, SR.net_http_headers_invalid_value, agent));
             }

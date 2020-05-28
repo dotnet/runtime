@@ -1,7 +1,7 @@
-if(WIN32)
+if(CLR_CMAKE_HOST_WIN32)
   #use static crt
   add_definitions(-MT)
-endif(WIN32)
+endif(CLR_CMAKE_HOST_WIN32)
 
 set( ILDBSYMLIB_SOURCES
   symread.cpp

@@ -19,16 +19,16 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #include "lsra.h"
 #include "sideeffects.h"
 
-class Lowering : public Phase
+class Lowering final : public Phase
 {
 public:
     inline Lowering(Compiler* compiler, LinearScanInterface* lsra)
-        : Phase(compiler, "Lowering", PHASE_LOWERING), vtableCallTemp(BAD_VAR_NUM)
+        : Phase(compiler, PHASE_LOWERING), vtableCallTemp(BAD_VAR_NUM)
     {
         m_lsra = (LinearScan*)lsra;
         assert(m_lsra);
     }
-    virtual void DoPhase() override;
+    virtual PhaseStatus DoPhase() override;
 
     // This variant of LowerRange is called from outside of the main Lowering pass,
     // so it creates its own instance of Lowering to do so.
@@ -83,23 +83,24 @@ private:
     void ContainCheckReturnTrap(GenTreeOp* node);
     void ContainCheckArrOffset(GenTreeArrOffs* node);
     void ContainCheckLclHeap(GenTreeOp* node);
-    void ContainCheckRet(GenTreeOp* node);
+    void ContainCheckRet(GenTreeUnOp* ret);
     void ContainCheckJTrue(GenTreeOp* node);
 
+    void ContainCheckBitCast(GenTree* node);
     void ContainCheckCallOperands(GenTreeCall* call);
     void ContainCheckIndir(GenTreeIndir* indirNode);
     void ContainCheckStoreIndir(GenTreeIndir* indirNode);
     void ContainCheckMul(GenTreeOp* node);
     void ContainCheckShiftRotate(GenTreeOp* node);
-    void ContainCheckStoreLoc(GenTreeLclVarCommon* storeLoc);
+    void ContainCheckStoreLoc(GenTreeLclVarCommon* storeLoc) const;
     void ContainCheckCast(GenTreeCast* node);
     void ContainCheckCompare(GenTreeOp* node);
     void ContainCheckBinary(GenTreeOp* node);
     void ContainCheckBoundsChk(GenTreeBoundsChk* node);
-#ifdef _TARGET_XARCH_
+#ifdef TARGET_XARCH
     void ContainCheckFloatBinary(GenTreeOp* node);
     void ContainCheckIntrinsic(GenTreeOp* node);
-#endif // _TARGET_XARCH_
+#endif // TARGET_XARCH
 #ifdef FEATURE_SIMD
     void ContainCheckSIMD(GenTreeSIMD* simdNode);
 #endif // FEATURE_SIMD
@@ -118,13 +119,11 @@ private:
     void LowerBlock(BasicBlock* block);
     GenTree* LowerNode(GenTree* node);
 
-    void CheckVSQuirkStackPaddingNeeded(GenTreeCall* call);
-
     // ------------------------------
     // Call Lowering
     // ------------------------------
     void LowerCall(GenTree* call);
-#ifndef _TARGET_64BIT_
+#ifndef TARGET_64BIT
     GenTree* DecomposeLongCompare(GenTree* cmp);
 #endif
     GenTree* OptimizeConstCompare(GenTree* cmp);
@@ -132,12 +131,20 @@ private:
     GenTree* LowerJTrue(GenTreeOp* jtrue);
     GenTreeCC* LowerNodeCC(GenTree* node, GenCondition condition);
     void LowerJmpMethod(GenTree* jmp);
-    void LowerRet(GenTree* ret);
+    void LowerRet(GenTreeUnOp* ret);
+    void LowerStoreLocCommon(GenTreeLclVarCommon* lclVar);
+    void LowerRetStruct(GenTreeUnOp* ret);
+    void LowerRetStructLclVar(GenTreeUnOp* ret);
+    void LowerCallStruct(GenTreeCall* call);
+    void LowerStoreCallStruct(GenTreeBlk* store);
+#if !defined(WINDOWS_AMD64_ABI)
+    GenTreeLclVar* SpillStructCallResult(GenTreeCall* call) const;
+#endif // WINDOWS_AMD64_ABI
     GenTree* LowerDelegateInvoke(GenTreeCall* call);
     GenTree* LowerIndirectNonvirtCall(GenTreeCall* call);
     GenTree* LowerDirectCall(GenTreeCall* call);
     GenTree* LowerNonvirtPinvokeCall(GenTreeCall* call);
-    GenTree* LowerTailCallViaHelper(GenTreeCall* callNode, GenTree* callTarget);
+    GenTree* LowerTailCallViaJitHelper(GenTreeCall* callNode, GenTree* callTarget);
     void LowerFastTailCall(GenTreeCall* callNode);
     void RehomeArgForFastTailCall(unsigned int lclNum,
                                   GenTree*     insertTempBefore,
@@ -150,7 +157,7 @@ private:
     void ReplaceArgWithPutArgOrBitcast(GenTree** ppChild, GenTree* newNode);
     GenTree* NewPutArg(GenTreeCall* call, GenTree* arg, fgArgTabEntry* info, var_types type);
     void LowerArg(GenTreeCall* call, GenTree** ppTree);
-#ifdef _TARGET_ARMARCH_
+#ifdef TARGET_ARMARCH
     GenTree* LowerFloatArg(GenTree** pArg, fgArgTabEntry* info);
     GenTree* LowerFloatArgReg(GenTree* arg, regNumber regNum);
 #endif
@@ -221,7 +228,7 @@ private:
     // return true if this call target is within range of a pc-rel call on the machine
     bool IsCallTargetInRange(void* addr);
 
-#if defined(_TARGET_XARCH_)
+#if defined(TARGET_XARCH)
     GenTree* PreferredRegOptionalOperand(GenTree* tree);
 
     // ------------------------------------------------------------------
@@ -273,11 +280,11 @@ private:
             regOptionalOperand->SetRegOptional();
         }
     }
-#endif // defined(_TARGET_XARCH_)
+#endif // defined(TARGET_XARCH)
 
     // Per tree node member functions
     void LowerStoreIndir(GenTreeIndir* node);
-    void LowerAdd(GenTreeOp* node);
+    GenTree* LowerAdd(GenTreeOp* node);
     bool LowerUnsignedDivOrMod(GenTreeOp* divMod);
     GenTree* LowerConstIntDivOrMod(GenTree* node);
     GenTree* LowerSignedDivOrMod(GenTree* node);
@@ -311,8 +318,176 @@ private:
 #ifdef FEATURE_HW_INTRINSICS
     void LowerHWIntrinsic(GenTreeHWIntrinsic* node);
     void LowerHWIntrinsicCC(GenTreeHWIntrinsic* node, NamedIntrinsic newIntrinsicId, GenCondition condition);
+    void LowerHWIntrinsicCmpOp(GenTreeHWIntrinsic* node, genTreeOps cmpOp);
+    void LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node);
     void LowerFusedMultiplyAdd(GenTreeHWIntrinsic* node);
+
+#ifdef TARGET_ARM64
+    bool IsValidConstForMovImm(GenTreeHWIntrinsic* node);
+#endif // TARGET_ARM64
+
+    union VectorConstant {
+        int8_t   i8[32];
+        uint8_t  u8[32];
+        int16_t  i16[16];
+        uint16_t u16[16];
+        int32_t  i32[8];
+        uint32_t u32[8];
+        int64_t  i64[4];
+        uint64_t u64[4];
+        float    f32[8];
+        double   f64[4];
+    };
+
+    //----------------------------------------------------------------------------------------------
+    // ProcessArgForHWIntrinsicCreate: Processes an argument for the Lowering::LowerHWIntrinsicCreate method
+    //
+    //  Arguments:
+    //     arg      - The argument to process
+    //     argIdx   - The index of the argument being processed
+    //     vecCns   - The vector constant being constructed
+    //     baseType - The base type of the vector constant
+    //
+    //  Returns:
+    //     true if arg was a constant; otherwise, false
+    static bool HandleArgForHWIntrinsicCreate(GenTree* arg, int argIdx, VectorConstant& vecCns, var_types baseType)
+    {
+        switch (baseType)
+        {
+            case TYP_BYTE:
+            case TYP_UBYTE:
+            {
+                if (arg->IsCnsIntOrI())
+                {
+                    vecCns.i8[argIdx] = static_cast<int8_t>(arg->AsIntCon()->gtIconVal);
+                    return true;
+                }
+                else
+                {
+                    // We expect the VectorConstant to have been already zeroed
+                    assert(vecCns.i8[argIdx] == 0);
+                }
+                break;
+            }
+
+            case TYP_SHORT:
+            case TYP_USHORT:
+            {
+                if (arg->IsCnsIntOrI())
+                {
+                    vecCns.i16[argIdx] = static_cast<int16_t>(arg->AsIntCon()->gtIconVal);
+                    return true;
+                }
+                else
+                {
+                    // We expect the VectorConstant to have been already zeroed
+                    assert(vecCns.i16[argIdx] == 0);
+                }
+                break;
+            }
+
+            case TYP_INT:
+            case TYP_UINT:
+            {
+                if (arg->IsCnsIntOrI())
+                {
+                    vecCns.i32[argIdx] = static_cast<int32_t>(arg->AsIntCon()->gtIconVal);
+                    return true;
+                }
+                else
+                {
+                    // We expect the VectorConstant to have been already zeroed
+                    assert(vecCns.i32[argIdx] == 0);
+                }
+                break;
+            }
+
+            case TYP_LONG:
+            case TYP_ULONG:
+            {
+                if (arg->OperIs(GT_CNS_LNG))
+                {
+                    vecCns.i64[argIdx] = static_cast<int64_t>(arg->AsLngCon()->gtLconVal);
+                    return true;
+                }
+                else
+                {
+                    // We expect the VectorConstant to have been already zeroed
+                    assert(vecCns.i64[argIdx] == 0);
+                }
+                break;
+            }
+
+            case TYP_FLOAT:
+            {
+                if (arg->IsCnsFltOrDbl())
+                {
+                    vecCns.f32[argIdx] = static_cast<float>(arg->AsDblCon()->gtDconVal);
+                    return true;
+                }
+                else
+                {
+                    // We expect the VectorConstant to have been already zeroed
+                    // We check against the i32, rather than f32, to account for -0.0
+                    assert(vecCns.i32[argIdx] == 0);
+                }
+                break;
+            }
+
+            case TYP_DOUBLE:
+            {
+                if (arg->IsCnsFltOrDbl())
+                {
+                    vecCns.f64[argIdx] = static_cast<double>(arg->AsDblCon()->gtDconVal);
+                    return true;
+                }
+                else
+                {
+                    // We expect the VectorConstant to have been already zeroed
+                    // We check against the i64, rather than f64, to account for -0.0
+                    assert(vecCns.i64[argIdx] == 0);
+                }
+                break;
+            }
+
+            default:
+            {
+                unreached();
+            }
+        }
+
+        return false;
+    }
 #endif // FEATURE_HW_INTRINSICS
+
+    //----------------------------------------------------------------------------------------------
+    // TryRemoveCastIfPresent: Removes op it is a cast operation and the size of its input is at
+    //                         least the size of expectedType
+    //
+    //  Arguments:
+    //     expectedType - The expected type of the cast operation input if it is to be removed
+    //     op           - The tree to remove if it is a cast op whose input is at least the size of expectedType
+    //
+    //  Returns:
+    //     op if it was not a cast node or if its input is not at least the size of expected type;
+    //     Otherwise, it returns the underlying operation that was being casted
+    GenTree* TryRemoveCastIfPresent(var_types expectedType, GenTree* op)
+    {
+        if (!op->OperIs(GT_CAST))
+        {
+            return op;
+        }
+
+        GenTree* castOp = op->AsCast()->CastOp();
+
+        if (genTypeSize(castOp->gtType) >= genTypeSize(expectedType))
+        {
+            BlockRange().Remove(op);
+            return castOp;
+        }
+
+        return op;
+    }
 
     // Utility functions
 public:
@@ -321,7 +496,7 @@ public:
     // return true if 'childNode' is an immediate that can be contained
     //  by the 'parentNode' (i.e. folded into an instruction)
     //  for example small enough and non-relocatable
-    bool IsContainableImmed(GenTree* parentNode, GenTree* childNode);
+    bool IsContainableImmed(GenTree* parentNode, GenTree* childNode) const;
 
     // Return true if 'node' is a containable memory op.
     bool IsContainableMemoryOp(GenTree* node)
@@ -340,7 +515,7 @@ private:
     bool AreSourcesPossiblyModifiedLocals(GenTree* addr, GenTree* base, GenTree* index);
 
     // Makes 'childNode' contained in the 'parentNode'
-    void MakeSrcContained(GenTree* parentNode, GenTree* childNode);
+    void MakeSrcContained(GenTree* parentNode, GenTree* childNode) const;
 
     // Checks and makes 'childNode' contained in the 'parentNode'
     bool CheckImmedAndMakeContained(GenTree* parentNode, GenTree* childNode);

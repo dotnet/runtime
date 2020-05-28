@@ -5,6 +5,7 @@
 using Internal.Cryptography;
 using Internal.NativeCrypto;
 using System.IO;
+using System.Diagnostics;
 
 namespace System.Security.Cryptography
 {
@@ -135,7 +136,7 @@ namespace System.Security.Cryptography
             _impl.ImportEncryptedPkcs8PrivateKey(password, source, out bytesRead);
         }
 
-        public override string KeyExchangeAlgorithm => _impl.KeyExchangeAlgorithm;
+        public override string? KeyExchangeAlgorithm => _impl.KeyExchangeAlgorithm;
 
         public override int KeySize
         {

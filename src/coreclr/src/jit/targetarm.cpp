@@ -9,11 +9,11 @@
 #pragma hdrstop
 #endif
 
-#if defined(_TARGET_ARM_)
+#if defined(TARGET_ARM)
 
 #include "target.h"
 
 const char*            Target::g_tgtCPUName  = "arm";
 const Target::ArgOrder Target::g_tgtArgOrder = ARG_ORDER_R2L;
 
-#endif // _TARGET_ARM_
+#endif // TARGET_ARM

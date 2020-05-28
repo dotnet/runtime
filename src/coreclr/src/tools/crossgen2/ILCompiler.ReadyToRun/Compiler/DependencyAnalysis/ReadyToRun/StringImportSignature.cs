@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -11,24 +11,24 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
     {
         private readonly ModuleToken _token;
 
-        private readonly SignatureContext _signatureContext;
-
-        public StringImportSignature(ModuleToken token, SignatureContext signatureContext)
+        public StringImportSignature(ModuleToken token)
         {
             _token = token;
-            _signatureContext = signatureContext;
         }
 
         public override int ClassCode => 324832559;
 
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly = false)
         {
-            ReadyToRunCodegenNodeFactory r2rFactory = (ReadyToRunCodegenNodeFactory)factory;
             ObjectDataSignatureBuilder dataBuilder = new ObjectDataSignatureBuilder();
-            dataBuilder.AddSymbol(this);
 
-            dataBuilder.EmitFixup(r2rFactory, ReadyToRunFixupKind.StringHandle, _token.Module, _signatureContext);
-            dataBuilder.EmitUInt(_token.TokenRid);
+            if (!relocsOnly)
+            {
+                dataBuilder.AddSymbol(this);
+
+                dataBuilder.EmitFixup(factory, ReadyToRunFixupKind.StringHandle, _token.Module, factory.SignatureContext);
+                dataBuilder.EmitUInt(_token.TokenRid);
+            }
 
             return dataBuilder.ToObjectData();
         }
@@ -42,10 +42,6 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         public override int CompareToImpl(ISortableNode other, CompilerComparer comparer)
         {
             StringImportSignature otherNode = (StringImportSignature)other;
-            int result = _signatureContext.CompareTo(otherNode._signatureContext, comparer);
-            if (result != 0)
-                return result;
-
             return _token.CompareTo(otherNode._token);
         }
     }

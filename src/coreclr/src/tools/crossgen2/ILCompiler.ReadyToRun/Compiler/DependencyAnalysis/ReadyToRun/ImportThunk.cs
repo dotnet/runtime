@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -29,7 +29,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         private readonly Kind _thunkKind;
 
-        public ImportThunk(ReadyToRunHelper helperId, ReadyToRunCodegenNodeFactory factory, Import instanceCell, bool useVirtualCall)
+        public ImportThunk(ReadyToRunHelper helperId, NodeFactory factory, Import instanceCell, bool useVirtualCall)
         {
             _helperCell = factory.GetReadyToRunHelperCell(helperId);
             _instanceCell = instanceCell;
@@ -74,7 +74,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         public override int CompareToImpl(ISortableNode other, CompilerComparer comparer)
         {
             ImportThunk otherNode = (ImportThunk)other;
-            int result = _thunkKind.CompareTo(otherNode._thunkKind);
+            int result = ((int)_thunkKind).CompareTo((int)otherNode._thunkKind);
             if (result != 0)
                 return result;
 

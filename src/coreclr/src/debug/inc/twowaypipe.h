@@ -8,7 +8,7 @@
 
 #include "processdescriptor.h"
 
-#ifdef FEATURE_PAL
+#ifdef HOST_UNIX
 #define INVALID_PIPE -1
 #else
 #define INVALID_PIPE INVALID_HANDLE_VALUE
@@ -83,7 +83,7 @@ private:
 
     State m_state;
 
-#ifdef FEATURE_PAL
+#ifdef HOST_UNIX
 
     int m_inboundPipe, m_outboundPipe;      // two one sided pipes used for communication
     char m_inPipeName[MAX_DEBUGGER_TRANSPORT_PIPE_NAME_LENGTH];   // filename of the inbound pipe
@@ -99,7 +99,7 @@ private:
     HANDLE CreateOneWayPipe(DWORD id, bool inbound);
 
     HANDLE m_inboundPipe, m_outboundPipe; //two one sided pipes used for communication
-#endif //FEATURE_PAL
+#endif //HOST_UNIX
 };
 
 #endif //TwoWayPipe_H

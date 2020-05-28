@@ -16,9 +16,9 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #pragma hdrstop
 #endif
 
-#if defined(_TARGET_ARM64_)
+#if defined(TARGET_ARM64)
 
-#if defined(_TARGET_UNIX_)
+#if defined(TARGET_UNIX)
 short Compiler::mapRegNumToDwarfReg(regNumber reg)
 {
     short dwarfReg = DWARF_REG_ILLEGAL;
@@ -27,7 +27,7 @@ short Compiler::mapRegNumToDwarfReg(regNumber reg)
 
     return dwarfReg;
 }
-#endif // _TARGET_ARM_
+#endif // TARGET_ARM
 
 void Compiler::unwindPush(regNumber reg)
 {
@@ -810,4 +810,4 @@ void DumpUnwindInfo(Compiler*         comp,
 
 #endif // DEBUG
 
-#endif // _TARGET_ARM64_
+#endif // TARGET_ARM64

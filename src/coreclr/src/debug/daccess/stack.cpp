@@ -343,7 +343,7 @@ ClrDataStackWalk::GetFrame(
         RawGetFrameType(&simpleType, &detailedType);
         dataFrame =
             new (nothrow) ClrDataFrame(m_dac, simpleType, detailedType,
-                                       m_frameIter.m_crawl.GetAppDomain(),
+                                       AppDomain::GetCurrentDomain(),
                                        m_frameIter.m_crawl.GetFunction());
         if (!dataFrame)
         {

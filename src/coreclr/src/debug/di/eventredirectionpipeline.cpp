@@ -126,7 +126,7 @@ HRESULT EventRedirectionPipeline::AttachDebuggerToTarget(LPCWSTR szOptions, DWOR
 
         fRemap = true;
     }EX_CATCH {}
-    EX_END_CATCH(RethrowTerminalExceptions);
+    EX_END_CATCH(SwallowAllExceptions)
 
     if (!fRemap)
     {

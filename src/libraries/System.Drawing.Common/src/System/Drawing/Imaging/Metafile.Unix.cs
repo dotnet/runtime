@@ -54,7 +54,7 @@ namespace System.Drawing.Imaging
 
             // With libgdiplus we use a custom API for this, because there's no easy way
             // to get the Stream down to libgdiplus. So, we wrap the stream with a set of delegates.
-            GdiPlusStreamHelper sh = new GdiPlusStreamHelper(stream, false);
+            GdiPlusStreamHelper sh = new GdiPlusStreamHelper(stream, seekToOrigin: false);
             int status = Gdip.GdipCreateMetafileFromDelegate_linux(sh.GetHeaderDelegate, sh.GetBytesDelegate,
                 sh.PutBytesDelegate, sh.SeekDelegate, sh.CloseDelegate, sh.SizeDelegate, out nativeImage);
 
@@ -70,23 +70,23 @@ namespace System.Drawing.Imaging
             Gdip.CheckStatus(status);
         }
 
-        public Metafile(IntPtr referenceHdc, EmfType emfType, string description) :
+        public Metafile(IntPtr referenceHdc, EmfType emfType, string? description) :
             this(referenceHdc, default(RectangleF), MetafileFrameUnit.GdiCompatible, emfType, description)
         {
         }
 
-        public Metafile(Stream stream, IntPtr referenceHdc, EmfType type, string description) :
+        public Metafile(Stream stream, IntPtr referenceHdc, EmfType type, string? description) :
             this(stream, referenceHdc, default(RectangleF), MetafileFrameUnit.GdiCompatible, type, description)
         {
         }
 
-        public Metafile(string fileName, IntPtr referenceHdc, EmfType type, string description) :
+        public Metafile(string fileName, IntPtr referenceHdc, EmfType type, string? description) :
             this(fileName, referenceHdc, default(RectangleF), MetafileFrameUnit.GdiCompatible, type, description)
         {
         }
 
         public Metafile(IntPtr referenceHdc, Rectangle frameRect, MetafileFrameUnit frameUnit, EmfType type,
-            string desc)
+            string? desc)
         {
             int status = Gdip.GdipRecordMetafileI(referenceHdc, type, ref frameRect, frameUnit,
                 desc, out nativeImage);
@@ -94,14 +94,14 @@ namespace System.Drawing.Imaging
         }
 
         public Metafile(Stream stream, IntPtr referenceHdc, Rectangle frameRect, MetafileFrameUnit frameUnit,
-            EmfType type, string description)
+            EmfType type, string? description)
         {
             if (stream == null)
                 throw new NullReferenceException(nameof(stream));
 
             // With libgdiplus we use a custom API for this, because there's no easy way
             // to get the Stream down to libgdiplus. So, we wrap the stream with a set of delegates.
-            GdiPlusStreamHelper sh = new GdiPlusStreamHelper(stream, false);
+            GdiPlusStreamHelper sh = new GdiPlusStreamHelper(stream, seekToOrigin: false);
             int status = Gdip.GdipRecordMetafileFromDelegateI_linux(sh.GetHeaderDelegate, sh.GetBytesDelegate,
                 sh.PutBytesDelegate, sh.SeekDelegate, sh.CloseDelegate, sh.SizeDelegate, referenceHdc,
                 type, ref frameRect, frameUnit, description, out nativeImage);
@@ -113,14 +113,14 @@ namespace System.Drawing.Imaging
         }
 
         public Metafile(Stream stream, IntPtr referenceHdc, RectangleF frameRect, MetafileFrameUnit frameUnit,
-            EmfType type, string description)
+            EmfType type, string? description)
         {
             if (stream == null)
                 throw new NullReferenceException(nameof(stream));
 
             // With libgdiplus we use a custom API for this, because there's no easy way
             // to get the Stream down to libgdiplus. So, we wrap the stream with a set of delegates.
-            GdiPlusStreamHelper sh = new GdiPlusStreamHelper(stream, false);
+            GdiPlusStreamHelper sh = new GdiPlusStreamHelper(stream, seekToOrigin: false);
             int status = Gdip.GdipRecordMetafileFromDelegate_linux(sh.GetHeaderDelegate, sh.GetBytesDelegate,
                 sh.PutBytesDelegate, sh.SeekDelegate, sh.CloseDelegate, sh.SizeDelegate, referenceHdc,
                 type, ref frameRect, frameUnit, description, out nativeImage);
@@ -132,9 +132,9 @@ namespace System.Drawing.Imaging
         }
 
         public Metafile(string fileName, IntPtr referenceHdc, Rectangle frameRect, MetafileFrameUnit frameUnit,
-            EmfType type, string description)
+            EmfType type, string? description)
         {
-            // Called in order to emulate exception behavior from netfx related to invalid file paths.
+            // Called in order to emulate exception behavior from .NET Framework related to invalid file paths.
             Path.GetFullPath(fileName);
 
             int status = Gdip.GdipRecordMetafileFileNameI(fileName, referenceHdc, type, ref frameRect,
@@ -189,7 +189,7 @@ namespace System.Drawing.Imaging
             {
                 // With libgdiplus we use a custom API for this, because there's no easy way
                 // to get the Stream down to libgdiplus. So, we wrap the stream with a set of delegates.
-                GdiPlusStreamHelper sh = new GdiPlusStreamHelper(stream, false);
+                GdiPlusStreamHelper sh = new GdiPlusStreamHelper(stream, seekToOrigin: false);
                 int status = Gdip.GdipGetMetafileHeaderFromDelegate_linux(sh.GetHeaderDelegate,
                     sh.GetBytesDelegate, sh.PutBytesDelegate, sh.SeekDelegate, sh.CloseDelegate,
                     sh.SizeDelegate, header);
@@ -208,7 +208,7 @@ namespace System.Drawing.Imaging
 
         public static MetafileHeader GetMetafileHeader(string fileName)
         {
-            // Called in order to emulate exception behavior from netfx related to invalid file paths.
+            // Called in order to emulate exception behavior from .NET Framework related to invalid file paths.
             Path.GetFullPath(fileName);
 
             IntPtr header = Marshal.AllocHGlobal(Marshal.SizeOf(typeof(MetafileHeader)));

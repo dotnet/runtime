@@ -232,11 +232,10 @@ namespace System.Reflection
             out UnmanagedType arraySubType, out int sizeParamIndex, out int sizeConst, out string? marshalType, out string? marshalCookie,
             out int iidParamIndex)
         {
-            int _unmanagedType, _safeArraySubType, _arraySubType;
 
             _GetMarshalAs(nativeType.Signature, (int)nativeType.Length,
-                out _unmanagedType, out _safeArraySubType, out safeArrayUserDefinedSubType,
-                out _arraySubType, out sizeParamIndex, out sizeConst, out marshalType, out marshalCookie,
+                out int _unmanagedType, out int _safeArraySubType, out safeArrayUserDefinedSubType,
+                out int _arraySubType, out sizeParamIndex, out sizeConst, out marshalType, out marshalCookie,
                 out iidParamIndex);
             unmanagedType = (UnmanagedType)_unmanagedType;
             safeArraySubType = (VarEnum)_safeArraySubType;
@@ -302,8 +301,7 @@ namespace System.Reflection
         private static extern string? _GetDefaultValue(IntPtr scope, int mdToken, out long value, out int length, out int corElementType);
         public string? GetDefaultValue(int mdToken, out long value, out int length, out CorElementType corElementType)
         {
-            int _corElementType;
-            string? stringVal = _GetDefaultValue(m_metadataImport2, mdToken, out value, out length, out _corElementType);
+            string? stringVal = _GetDefaultValue(m_metadataImport2, mdToken, out value, out length, out int _corElementType);
             corElementType = (CorElementType)_corElementType;
             return stringVal;
         }
@@ -313,8 +311,7 @@ namespace System.Reflection
         public unsafe string? GetUserString(int mdToken)
         {
             void* name;
-            int length;
-            _GetUserString(m_metadataImport2, mdToken, &name, out length);
+            _GetUserString(m_metadataImport2, mdToken, &name, out int length);
 
             return name != null ?
                 new string((char*)name, 0, length) :
@@ -345,9 +342,8 @@ namespace System.Reflection
         private static extern unsafe void _GetEventProps(IntPtr scope, int mdToken, void** name, out int eventAttributes);
         public unsafe void GetEventProps(int mdToken, out void* name, out EventAttributes eventAttributes)
         {
-            int _eventAttributes;
             void* _name;
-            _GetEventProps(m_metadataImport2, mdToken, &_name, out _eventAttributes);
+            _GetEventProps(m_metadataImport2, mdToken, &_name, out int _eventAttributes);
             name = _name;
             eventAttributes = (EventAttributes)_eventAttributes;
         }
@@ -356,8 +352,7 @@ namespace System.Reflection
         private static extern void _GetFieldDefProps(IntPtr scope, int mdToken, out int fieldAttributes);
         public void GetFieldDefProps(int mdToken, out FieldAttributes fieldAttributes)
         {
-            int _fieldAttributes;
-            _GetFieldDefProps(m_metadataImport2, mdToken, out _fieldAttributes);
+            _GetFieldDefProps(m_metadataImport2, mdToken, out int _fieldAttributes);
             fieldAttributes = (FieldAttributes)_fieldAttributes;
         }
 
@@ -366,9 +361,8 @@ namespace System.Reflection
             int mdToken, void** name, out int propertyAttributes, out ConstArray signature);
         public unsafe void GetPropertyProps(int mdToken, out void* name, out PropertyAttributes propertyAttributes, out ConstArray signature)
         {
-            int _propertyAttributes;
             void* _name;
-            _GetPropertyProps(m_metadataImport2, mdToken, &_name, out _propertyAttributes, out signature);
+            _GetPropertyProps(m_metadataImport2, mdToken, &_name, out int _propertyAttributes, out signature);
             name = _name;
             propertyAttributes = (PropertyAttributes)_propertyAttributes;
         }
@@ -378,8 +372,7 @@ namespace System.Reflection
             int mdToken, out int tkParent);
         public int GetParentToken(int tkToken)
         {
-            int tkParent;
-            _GetParentToken(m_metadataImport2, tkToken, out tkParent);
+            _GetParentToken(m_metadataImport2, tkToken, out int tkParent);
             return tkParent;
         }
 
@@ -388,9 +381,8 @@ namespace System.Reflection
             int parameterToken, out int sequence, out int attributes);
         public void GetParamDefProps(int parameterToken, out int sequence, out ParameterAttributes attributes)
         {
-            int _attributes;
 
-            _GetParamDefProps(m_metadataImport2, parameterToken, out sequence, out _attributes);
+            _GetParamDefProps(m_metadataImport2, parameterToken, out sequence, out int _attributes);
 
             attributes = (ParameterAttributes)_attributes;
         }
@@ -404,8 +396,7 @@ namespace System.Reflection
             int genericParameter,
             out GenericParameterAttributes attributes)
         {
-            int _attributes;
-            _GetGenericParamProps(m_metadataImport2, genericParameter, out _attributes);
+            _GetGenericParamProps(m_metadataImport2, genericParameter, out int _attributes);
             attributes = (GenericParameterAttributes)_attributes;
         }
 
@@ -462,8 +453,7 @@ namespace System.Reflection
 
         public ConstArray GetMemberRefProps(int memberTokenRef)
         {
-            ConstArray signature;
-            _GetMemberRefProps(m_metadataImport2, memberTokenRef, out signature);
+            _GetMemberRefProps(m_metadataImport2, memberTokenRef, out ConstArray signature);
 
             return signature;
         }
@@ -546,9 +536,8 @@ namespace System.Reflection
             out string importName,
             out string importDll)
         {
-            int _attributes;
             void* _importName, _importDll;
-            _GetPInvokeMap(m_metadataImport2, token, out _attributes, &_importName, &_importDll);
+            _GetPInvokeMap(m_metadataImport2, token, out int _attributes, &_importName, &_importDll);
             importName = new MdUtf8String(_importName).ToString();
             importDll = new MdUtf8String(_importDll).ToString();
 

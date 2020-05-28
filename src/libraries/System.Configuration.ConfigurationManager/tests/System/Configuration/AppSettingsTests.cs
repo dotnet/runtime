@@ -62,7 +62,7 @@ namespace System.ConfigurationTests
         }
 
         [Fact]
-        [ActiveIssue("dotnet/corefx #19336", TargetFrameworkMonikers.NetFramework)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/21510", TargetFrameworkMonikers.NetFramework)]
         public void AddToAppSettings_Save()
         {
             using (var temp = new TempConfig(TestData.EmptyConfig))

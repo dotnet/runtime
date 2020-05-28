@@ -122,9 +122,8 @@ namespace NetClient
                 dispatchTesting.TriggerException(IDispatchTesting_Exception.Disp, errorCode);
                 Assert.Fail("DISP exception not thrown properly");
             }
-            catch (TargetInvocationException tie)
+            catch (COMException e)
             {
-                var e = (COMException)tie.InnerException;
                 Assert.AreEqual(GetErrorCodeFromHResult(e.HResult), errorCode);
                 Assert.AreEqual(e.Message, resultString);
             }
@@ -135,9 +134,8 @@ namespace NetClient
                 dispatchTesting.TriggerException(IDispatchTesting_Exception.HResult, errorCode);
                 Assert.Fail("HRESULT exception not thrown properly");
             }
-            catch (TargetInvocationException tie)
+            catch (COMException e)
             {
-                var e = (COMException)tie.InnerException;
                 Assert.AreEqual(GetErrorCodeFromHResult(e.HResult), errorCode);
                 // Failing HRESULT exceptions contain CLR generated messages
             }

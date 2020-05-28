@@ -136,8 +136,7 @@ namespace System.Data.Common.Tests
             public static DbProviderFactory Instance = new TestDbProviderFactory();
         }
 
-        [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.Mono, "GC has different behavior on Mono")]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsPreciseGcSupported))]
         public void CanBeFinalized()
         {
             FinalizingConnection.CreateAndRelease();
@@ -147,6 +146,7 @@ namespace System.Data.Common.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/mono/mono/issues/15180", TestRuntimes.Mono)]
         public void ProviderFactoryTest()
         {
             DbProviderFactoryConnection con = new DbProviderFactoryConnection();

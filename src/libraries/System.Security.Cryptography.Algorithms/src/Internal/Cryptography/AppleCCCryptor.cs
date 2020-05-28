@@ -11,14 +11,14 @@ namespace Internal.Cryptography
     internal sealed class AppleCCCryptor : BasicSymmetricCipher
     {
         private readonly bool _encrypting;
-        private SafeAppleCryptorHandle _cryptor;
+        private SafeAppleCryptorHandle _cryptor = null!;
 
         public AppleCCCryptor(
             Interop.AppleCrypto.PAL_SymmetricAlgorithm algorithm,
             CipherMode cipherMode,
             int blockSizeInBytes,
             byte[] key,
-            byte[] iv,
+            byte[]? iv,
             bool encrypting)
             : base(cipherMode.GetCipherIv(iv), blockSizeInBytes)
         {
@@ -32,7 +32,7 @@ namespace Internal.Cryptography
             if (disposing)
             {
                 _cryptor?.Dispose();
-                _cryptor = null;
+                _cryptor = null!;
             }
 
             base.Dispose(disposing);
@@ -149,7 +149,7 @@ namespace Internal.Cryptography
             int ret;
             int ccStatus;
 
-            byte[] iv = IV;
+            byte[]? iv = IV;
 
             fixed (byte* pbKey = key)
             fixed (byte* pbIv = iv)
@@ -190,7 +190,7 @@ namespace Internal.Cryptography
             int ret;
             int ccStatus;
 
-            byte[] iv = IV;
+            byte[]? iv = IV;
 
             fixed (byte* pbIv = iv)
             {

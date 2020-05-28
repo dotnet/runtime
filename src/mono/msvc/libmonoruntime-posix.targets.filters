@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="posix_sources">
+    <ClCompile Include="$(MonoSourceLocation)\mono\metadata\console-unix.c">
+      <Filter>Source Files$(MonoRuntimeFilterSubFolder)\posix</Filter>
+    </ClCompile>
+    <ClCompile Include="$(MonoSourceLocation)\mono\metadata\w32mutex-unix.c">
+      <Filter>Source Files$(MonoRuntimeFilterSubFolder)\posix</Filter>
+    </ClCompile>
+    <ClCompile Include="$(MonoSourceLocation)\mono\metadata\w32semaphore-unix.c">
+      <Filter>Source Files$(MonoRuntimeFilterSubFolder)\posix</Filter>
+    </ClCompile>
+    <ClCompile Include="$(MonoSourceLocation)\mono\metadata\w32event-unix.c">
+      <Filter>Source Files$(MonoRuntimeFilterSubFolder)\posix</Filter>
+    </ClCompile>
+    <ClCompile Include="$(MonoSourceLocation)\mono\metadata\w32process-unix.c">
+      <Filter>Source Files$(MonoRuntimeFilterSubFolder)\posix</Filter>
+    </ClCompile>
+    <ClInclude Include="$(MonoSourceLocation)\mono\metadata\w32process-unix-internals.h">
+      <Filter>Header Files$(MonoRuntimeFilterSubFolder)\posix</Filter>
+    </ClInclude>
+    <ClCompile Include="$(MonoSourceLocation)\mono\metadata\w32process-unix-osx.c">
+      <Filter>Source Files$(MonoRuntimeFilterSubFolder)\posix</Filter>
+    </ClCompile>
+    <ClCompile Include="$(MonoSourceLocation)\mono\metadata\w32process-unix-bsd.c">
+      <Filter>Source Files$(MonoRuntimeFilterSubFolder)\posix</Filter>
+    </ClCompile>
+    <ClCompile Include="$(MonoSourceLocation)\mono\metadata\w32process-unix-haiku.c">
+      <Filter>Source Files$(MonoRuntimeFilterSubFolder)\posix</Filter>
+    </ClCompile>
+    <ClCompile Include="$(MonoSourceLocation)\mono\metadata\w32process-unix-default.c">
+      <Filter>Source Files$(MonoRuntimeFilterSubFolder)\posix</Filter>
+    </ClCompile>
+    <ClCompile Include="$(MonoSourceLocation)\mono\metadata\w32socket-unix.c">
+      <Filter>Source Files$(MonoRuntimeFilterSubFolder)\posix</Filter>
+    </ClCompile>
+    <ClCompile Include="$(MonoSourceLocation)\mono\metadata\w32file-unix.c">
+      <Filter>Source Files$(MonoRuntimeFilterSubFolder)\posix</Filter>
+    </ClCompile>
+    <ClCompile Include="$(MonoSourceLocation)\mono\metadata\w32file-unix-glob.c">
+      <Filter>Source Files$(MonoRuntimeFilterSubFolder)\posix</Filter>
+    </ClCompile>
+    <ClInclude Include="$(MonoSourceLocation)\mono\metadata\w32file-unix-glob.h">
+      <Filter>Header Files$(MonoRuntimeFilterSubFolder)\posix</Filter>
+    </ClInclude>
+    <ClCompile Include="$(MonoSourceLocation)\mono\metadata\w32error-unix.c">
+      <Filter>Source Files$(MonoRuntimeFilterSubFolder)\posix</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="Header Files$(MonoRuntimeFilterSubFolder)\posix">
+      <UniqueIdentifier>{A7AC4663-8099-40E7-8527-BB3E157E4724}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files$(MonoRuntimeFilterSubFolder)\posix">
+      <UniqueIdentifier>{C3BF4A1D-8504-4891-9682-8DA7F355F8A3}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>

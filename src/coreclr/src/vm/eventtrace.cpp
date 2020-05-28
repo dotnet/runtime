@@ -31,6 +31,7 @@
 #include "ex.h"
 #include "dbginterface.h"
 #include "finalizerthread.h"
+#include "clrversion.h"
 
 #define Win32EventWrite EventWrite
 
@@ -39,18 +40,11 @@
 #include "runtimecallablewrapper.h"
 #endif
 
-// Flags used to store some runtime information for Event Tracing
-BOOL g_fEEOtherStartup=FALSE;
-BOOL g_fEEComActivatedStartup=FALSE;
-GUID g_EEComObjectGuid=GUID_NULL;
-
-BOOL g_fEEHostedStartup = FALSE;
-
 #endif // FEATURE_REDHAWK
 
 #include "eventtracepriv.h"
 
-#ifndef FEATURE_PAL
+#ifndef HOST_UNIX
 DOTNET_TRACE_CONTEXT MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_DOTNET_Context = { &MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_Context, MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_EVENTPIPE_Context };
 DOTNET_TRACE_CONTEXT MICROSOFT_WINDOWS_DOTNETRUNTIME_PRIVATE_PROVIDER_DOTNET_Context = { &MICROSOFT_WINDOWS_DOTNETRUNTIME_PRIVATE_PROVIDER_Context, MICROSOFT_WINDOWS_DOTNETRUNTIME_PRIVATE_PROVIDER_EVENTPIPE_Context };
 DOTNET_TRACE_CONTEXT MICROSOFT_WINDOWS_DOTNETRUNTIME_RUNDOWN_PROVIDER_DOTNET_Context = { &MICROSOFT_WINDOWS_DOTNETRUNTIME_RUNDOWN_PROVIDER_Context, MICROSOFT_WINDOWS_DOTNETRUNTIME_RUNDOWN_PROVIDER_EVENTPIPE_Context };
@@ -60,7 +54,7 @@ DOTNET_TRACE_CONTEXT MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_DOTNET_Context = {
 DOTNET_TRACE_CONTEXT MICROSOFT_WINDOWS_DOTNETRUNTIME_PRIVATE_PROVIDER_DOTNET_Context = { MICROSOFT_WINDOWS_DOTNETRUNTIME_PRIVATE_PROVIDER_EVENTPIPE_Context, &MICROSOFT_WINDOWS_DOTNETRUNTIME_PRIVATE_PROVIDER_LTTNG_Context };
 DOTNET_TRACE_CONTEXT MICROSOFT_WINDOWS_DOTNETRUNTIME_RUNDOWN_PROVIDER_DOTNET_Context = { MICROSOFT_WINDOWS_DOTNETRUNTIME_RUNDOWN_PROVIDER_EVENTPIPE_Context, &MICROSOFT_WINDOWS_DOTNETRUNTIME_RUNDOWN_PROVIDER_LTTNG_Context };
 DOTNET_TRACE_CONTEXT MICROSOFT_WINDOWS_DOTNETRUNTIME_STRESS_PROVIDER_DOTNET_Context = { MICROSOFT_WINDOWS_DOTNETRUNTIME_STRESS_PROVIDER_EVENTPIPE_Context, &MICROSOFT_WINDOWS_DOTNETRUNTIME_STRESS_PROVIDER_LTTNG_Context };
-#endif // FEATURE_PAL
+#endif // HOST_UNIX
 
 #ifdef FEATURE_REDHAWK
 volatile LONGLONG ETW::GCLog::s_l64LastClientSequenceNumber = 0;
@@ -228,7 +222,7 @@ BOOL IsRundownNgenKeywordEnabledAndNotSuppressed()
 /*******************************************************/
 /* Fast assembly function to get the topmost EBP frame */
 /*******************************************************/
-#if defined(_TARGET_X86_)
+#if defined(TARGET_X86)
 extern "C"
 {
     CallStackFrame* GetEbp()
@@ -241,12 +235,12 @@ extern "C"
         return frame;
     }
 }
-#endif //_TARGET_X86_
+#endif //TARGET_X86
 
 /*************************************/
 /* Function to append a frame to an existing stack */
 /*************************************/
-#if  !defined(FEATURE_PAL)
+#if  !defined(HOST_UNIX)
 void ETW::SamplingLog::Append(SIZE_T currentFrame)
 {
     LIMITED_METHOD_CONTRACT;
@@ -319,14 +313,14 @@ ETW::SamplingLog::EtwStackWalkStatus ETW::SamplingLog::SaveCurrentStack(int skip
         return ETW::SamplingLog::UnInitialized;
     }
 #ifndef DACCESS_COMPILE
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
     if (RtlVirtualUnwind_Unsafe == NULL)
     {
         // We haven't even set up the RtlVirtualUnwind function pointer yet,
         // so it's too early to try stack walking.
         return ETW::SamplingLog::UnInitialized;
     }
-#endif // _TARGET_AMD64_
+#endif // TARGET_AMD64
     Thread *pThread = GetThread();
     if (pThread == NULL)
     {
@@ -343,7 +337,7 @@ ETW::SamplingLog::EtwStackWalkStatus ETW::SamplingLog::SaveCurrentStack(int skip
     pThread->MarkEtwStackWalkInProgress();
     EX_TRY
     {
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
         CallStackFrame *currentEBP = GetEbp();
         CallStackFrame *lastEBP = NULL;
 
@@ -416,7 +410,7 @@ ETW::SamplingLog::EtwStackWalkStatus ETW::SamplingLog::SaveCurrentStack(int skip
 
             PrevSP = CurrentSP;
         }
-#endif //_TARGET_X86_
+#endif //TARGET_X86
     } EX_CATCH { } EX_END_CATCH(SwallowAllExceptions);
     pThread->MarkEtwStackWalkCompleted();
 #endif //!DACCESS_COMPILE
@@ -424,7 +418,7 @@ ETW::SamplingLog::EtwStackWalkStatus ETW::SamplingLog::SaveCurrentStack(int skip
     return ETW::SamplingLog::Completed;
 }
 
-#endif // !defined(FEATURE_PAL)
+#endif // !defined(HOST_UNIX)
 #endif // !FEATURE_REDHAWK
 
 /****************************************************************************/
@@ -980,7 +974,7 @@ HRESULT ETW::GCLog::ForceGCForDiagnostics()
 #ifndef FEATURE_REDHAWK
     }
     EX_CATCH { }
-    EX_END_CATCH(RethrowCorruptingExceptions);
+    EX_END_CATCH(RethrowTerminalExceptions);
 #endif // FEATURE_REDHAWK
 
     return hr;
@@ -1137,7 +1131,7 @@ void BulkComLogger::FlushRcw()
 
     unsigned short instance = GetClrInstanceId();
 
-#if !defined(FEATURE_PAL)
+#if !defined(HOST_UNIX)
     EVENT_DATA_DESCRIPTOR eventData[3];
     EventDataDescCreate(&eventData[0], &m_currRcw, sizeof(const unsigned int));
     EventDataDescCreate(&eventData[1], &instance, sizeof(const unsigned short));
@@ -1146,7 +1140,7 @@ void BulkComLogger::FlushRcw()
     ULONG result = EventWrite(Microsoft_Windows_DotNETRuntimeHandle, &GCBulkRCW, _countof(eventData), eventData);
 #else
     ULONG result = FireEtXplatGCBulkRCW(m_currRcw, instance, sizeof(EventRCWEntry) * m_currRcw, m_etwRcwData);
-#endif // !defined(FEATURE_PAL)
+#endif // !defined(HOST_UNIX)
     result |= EventPipeWriteEventGCBulkRCW(m_currRcw, instance, sizeof(EventRCWEntry) * m_currRcw, m_etwRcwData);
 
     _ASSERTE(result == ERROR_SUCCESS);
@@ -1227,7 +1221,7 @@ void BulkComLogger::FlushCcw()
 
     unsigned short instance = GetClrInstanceId();
 
-#if !defined(FEATURE_PAL)
+#if !defined(HOST_UNIX)
     EVENT_DATA_DESCRIPTOR eventData[3];
     EventDataDescCreate(&eventData[0], &m_currCcw, sizeof(const unsigned int));
     EventDataDescCreate(&eventData[1], &instance, sizeof(const unsigned short));
@@ -1236,7 +1230,7 @@ void BulkComLogger::FlushCcw()
     ULONG result = EventWrite(Microsoft_Windows_DotNETRuntimeHandle, &GCBulkRootCCW, _countof(eventData), eventData);
 #else
     ULONG result = FireEtXplatGCBulkRootCCW(m_currCcw, instance, sizeof(EventCCWEntry) * m_currCcw, m_etwCcwData);
-#endif //!defined(FEATURE_PAL)
+#endif //!defined(HOST_UNIX)
     result |= EventPipeWriteEventGCBulkRootCCW(m_currCcw, instance, sizeof(EventCCWEntry) * m_currCcw, m_etwCcwData);
 
     _ASSERTE(result == ERROR_SUCCESS);
@@ -1431,7 +1425,7 @@ void BulkStaticsLogger::FireBulkStaticsEvent()
     unsigned short instance = GetClrInstanceId();
     unsigned __int64 appDomain = (unsigned __int64)m_domain;
 
-#if !defined(FEATURE_PAL)
+#if !defined(HOST_UNIX)
     EVENT_DATA_DESCRIPTOR eventData[4];
     EventDataDescCreate(&eventData[0], &m_count, sizeof(const unsigned int)  );
     EventDataDescCreate(&eventData[1], &appDomain, sizeof(unsigned __int64)  );
@@ -1441,7 +1435,7 @@ void BulkStaticsLogger::FireBulkStaticsEvent()
     ULONG result = EventWrite(Microsoft_Windows_DotNETRuntimeHandle, &GCBulkRootStaticVar, _countof(eventData), eventData);
 #else
     ULONG result = FireEtXplatGCBulkRootStaticVar(m_count, appDomain, instance, m_used, m_buffer);
-#endif //!defined(FEATURE_PAL)
+#endif //!defined(HOST_UNIX)
     result |= EventPipeWriteEventGCBulkRootStaticVar(m_count, appDomain, instance, m_used, m_buffer);
 
     _ASSERTE(result == ERROR_SUCCESS);
@@ -1743,12 +1737,6 @@ int BulkTypeEventLogger::LogSingleType(TypeHandle th)
 
     _ASSERTE(m_nBulkTypeValueCount < (int)_countof(m_rgBulkTypeValues));
 
-    if (!th.IsTypeDesc() && th.GetMethodTable()->IsArray())
-    {
-        _ASSERTE(!"BulkTypeEventLogger::LogSingleType called with MethodTable array");
-        return -1;
-    }
-
     BulkTypeValue * pVal = &m_rgBulkTypeValues[m_nBulkTypeValueCount];
 
     // Clear out pVal before filling it out (array elements can get reused if there
@@ -1764,7 +1752,7 @@ int BulkTypeEventLogger::LogSingleType(TypeHandle th)
     {
         fSucceeded = FALSE;
     }
-    EX_END_CATCH(RethrowCorruptingExceptions);
+    EX_END_CATCH(RethrowTerminalExceptions);
     if (!fSucceeded)
         return -1;
 
@@ -1781,7 +1769,7 @@ int BulkTypeEventLogger::LogSingleType(TypeHandle th)
         if (pVal->fixedSizedData.CorElementType == ELEMENT_TYPE_ARRAY)
         {
             // Multidimensional arrays set the rank bits, SzArrays do not set the rank bits
-            unsigned rank = th.AsArray()->GetRank();
+            unsigned rank = th.GetRank();
             if (rank < kEtwTypeFlagsArrayRankMax)
             {
                 // Only ranks less than kEtwTypeFlagsArrayRankMax are supported. 
@@ -1796,14 +1784,14 @@ int BulkTypeEventLogger::LogSingleType(TypeHandle th)
         fSucceeded = FALSE;
         EX_TRY
         {
-            pVal->rgTypeParameters.Append((ULONGLONG) th.AsArray()->GetArrayElementTypeHandle().AsTAddr());
+            pVal->rgTypeParameters.Append((ULONGLONG) th.GetArrayElementTypeHandle().AsTAddr());
             fSucceeded = TRUE;
         }
         EX_CATCH
         {
             fSucceeded = FALSE;
         }
-        EX_END_CATCH(RethrowCorruptingExceptions);
+        EX_END_CATCH(RethrowTerminalExceptions);
         if (!fSucceeded)
             return -1;
     }
@@ -1823,7 +1811,7 @@ int BulkTypeEventLogger::LogSingleType(TypeHandle th)
             {
                 fSucceeded = FALSE;
             }
-            EX_END_CATCH(RethrowCorruptingExceptions);
+            EX_END_CATCH(RethrowTerminalExceptions);
             if (!fSucceeded)
                 return -1;
         }
@@ -1862,7 +1850,7 @@ int BulkTypeEventLogger::LogSingleType(TypeHandle th)
             {
                 fSucceeded = FALSE;
             }
-            EX_END_CATCH(RethrowCorruptingExceptions);
+            EX_END_CATCH(RethrowTerminalExceptions);
             if (!fSucceeded)
                 return -1;
         }
@@ -1900,7 +1888,7 @@ int BulkTypeEventLogger::LogSingleType(TypeHandle th)
         // won't have a name in it.
         pVal->sName.Clear();
     }
-    EX_END_CATCH(RethrowCorruptingExceptions);
+    EX_END_CATCH(RethrowTerminalExceptions);
 
     // Now that we know the full size of this type's data, see if it fits in our
     // batch or whether we need to flush
@@ -1998,7 +1986,7 @@ void BulkTypeEventLogger::LogTypeAndParameters(ULONGLONG thAsAddr, ETW::TypeSyst
     {
         fSucceeded = FALSE;
     }
-    EX_END_CATCH(RethrowCorruptingExceptions);
+    EX_END_CATCH(RethrowTerminalExceptions);
     if (!fSucceeded)
         return;
 
@@ -2563,7 +2551,7 @@ VOID ETW::GCLog::SendFinalizeObjectEvent(MethodTable * pMT, Object * pObj)
         EX_CATCH
         {
         }
-        EX_END_CATCH(RethrowCorruptingExceptions);
+        EX_END_CATCH(RethrowTerminalExceptions);
     }
 }
 
@@ -2989,7 +2977,7 @@ BOOL ETW::TypeSystemLog::AddOrReplaceTypeLoggingInfo(ETW::LoggedTypesFromModule 
     {
         fSucceeded = FALSE;
     }
-    EX_END_CATCH(RethrowCorruptingExceptions);
+    EX_END_CATCH(RethrowTerminalExceptions);
 
     return fSucceeded;
 }
@@ -3173,7 +3161,7 @@ CrstBase * ETW::TypeSystemLog::GetHashCrst()
 //---------------------------------------------------------------------------------------
 //
 // Outermost level of ETW-type-logging.  Clients outside eventtrace.cpp call this to log
-// a TypeHandle and (recursively) its type parameters when present.  This guy then calls
+// a TypeHandle and (recursively) its type parameters when present.  This method then calls
 // into the appropriate BulkTypeEventLogger to do the batching and logging
 //
 // Arguments:
@@ -3396,7 +3384,7 @@ ETW::TypeLoggingInfo ETW::TypeSystemLog::LookupOrCreateTypeLoggingInfo(TypeHandl
         {
             fSucceeded = FALSE;
         }
-        EX_END_CATCH(RethrowCorruptingExceptions);
+        EX_END_CATCH(RethrowTerminalExceptions);
         if (!fSucceeded)
         {
             *pfCreatedNew = FALSE;
@@ -3434,7 +3422,7 @@ ETW::TypeLoggingInfo ETW::TypeSystemLog::LookupOrCreateTypeLoggingInfo(TypeHandl
     {
         fSucceeded = FALSE;
     }
-    EX_END_CATCH(RethrowCorruptingExceptions);
+    EX_END_CATCH(RethrowTerminalExceptions);
     if (!fSucceeded)
     {
         *pfCreatedNew = FALSE;
@@ -3530,7 +3518,7 @@ BOOL ETW::TypeSystemLog::AddTypeToGlobalCacheIfNotExists(TypeHandle th, BOOL * p
             {
                 fSucceeded = FALSE;
             }
-            EX_END_CATCH(RethrowCorruptingExceptions);
+            EX_END_CATCH(RethrowTerminalExceptions);
             if (!fSucceeded)
             {
                 *pfCreatedNew = FALSE;
@@ -3562,7 +3550,7 @@ BOOL ETW::TypeSystemLog::AddTypeToGlobalCacheIfNotExists(TypeHandle th, BOOL * p
         {
             fSucceeded = FALSE;
         }
-        EX_END_CATCH(RethrowCorruptingExceptions);
+        EX_END_CATCH(RethrowTerminalExceptions);
         if (!fSucceeded)
         {
             *pfCreatedNew = FALSE;
@@ -4182,7 +4170,7 @@ void InitializeEventTracing()
     if (FAILED(hr))
         return;
 
-#if !defined(FEATURE_PAL)
+#if !defined(HOST_UNIX)
     // Register CLR providers with the OS
     if (g_pEtwTracer == NULL)
     {
@@ -4198,9 +4186,9 @@ void InitializeEventTracing()
     // providers can do so now
     ETW::TypeSystemLog::PostRegistrationInit();
 
-#if defined(FEATURE_PAL) && defined (FEATURE_PERFTRACING)
+#if defined(HOST_UNIX) && defined (FEATURE_PERFTRACING)
     XplatEventLogger::InitializeLogger();
-#endif // FEATURE_PAL && FEATURE_PERFTRACING
+#endif // HOST_UNIX && FEATURE_PERFTRACING
 }
 
 // Plumbing to funnel event pipe callbacks and ETW callbacks together into a single common
@@ -4213,12 +4201,12 @@ void InitializeEventTracing()
 // a suitable token, this implementation has a different callback for every EventPipe provider
 // that ultimately funnels them all into a common handler.
 
-#if defined(FEATURE_PAL)
+#if defined(HOST_UNIX)
 // CLR_GCHEAPCOLLECT_KEYWORD is defined by the generated ETW manifest on Windows.
 // On non-Windows, we need to make sure that this is defined.  Given that we can't change
 // the value due to compatibility, we specify it here rather than generating defines based on the manifest.
 #define CLR_GCHEAPCOLLECT_KEYWORD 0x800000
-#endif // defined(FEATURE_PAL)
+#endif // defined(HOST_UNIX)
 
 // CallbackProviderIndex provides a quick identification of which provider triggered the
 // ETW callback.
@@ -4244,16 +4232,13 @@ VOID EtwCallbackCommon(
     LIMITED_METHOD_CONTRACT;
 
     bool bIsPublicTraceHandle = ProviderIndex == DotNETRuntime;
-#if !defined(FEATURE_PAL)
+#if !defined(HOST_UNIX)
     static_assert(GCEventLevel_Fatal == TRACE_LEVEL_FATAL, "GCEventLevel_Fatal value mismatch");
     static_assert(GCEventLevel_Error == TRACE_LEVEL_ERROR, "GCEventLevel_Error value mismatch");
     static_assert(GCEventLevel_Warning == TRACE_LEVEL_WARNING, "GCEventLevel_Warning mismatch");
     static_assert(GCEventLevel_Information == TRACE_LEVEL_INFORMATION, "GCEventLevel_Information mismatch");
     static_assert(GCEventLevel_Verbose == TRACE_LEVEL_VERBOSE, "GCEventLevel_Verbose mismatch");
-#endif // !defined(FEATURE_PAL)
-    GCEventKeyword keywords = static_cast<GCEventKeyword>(MatchAnyKeyword);
-    GCEventLevel level = static_cast<GCEventLevel>(Level);
-    GCHeapUtilities::RecordEventStateChange(bIsPublicTraceHandle, keywords, level);
+#endif // !defined(HOST_UNIX)
 
     DOTNET_TRACE_CONTEXT * ctxToUpdate;
     switch(ProviderIndex)
@@ -4282,6 +4267,30 @@ VOID EtwCallbackCommon(
     {
         ctxToUpdate->EventPipeProvider.Level = Level;
         ctxToUpdate->EventPipeProvider.EnabledKeywordsBitmask = MatchAnyKeyword;
+        ctxToUpdate->EventPipeProvider.IsEnabled = ControlCode;
+
+        // For EventPipe, ControlCode can only be either 0 or 1.
+        _ASSERTE(ControlCode == 0 || ControlCode == 1);
+    }
+
+    if (
+#if !defined(HOST_UNIX)
+        (ControlCode == EVENT_CONTROL_CODE_ENABLE_PROVIDER || ControlCode == EVENT_CONTROL_CODE_DISABLE_PROVIDER) &&
+#endif
+        (ProviderIndex == DotNETRuntime || ProviderIndex == DotNETRuntimePrivate))
+    {
+#if !defined(HOST_UNIX)
+        // On Windows, consolidate level and keywords across event pipe and ETW contexts -
+        // ETW may still want to see events that event pipe doesn't care about and vice versa
+        GCEventKeyword keywords = static_cast<GCEventKeyword>(ctxToUpdate->EventPipeProvider.EnabledKeywordsBitmask |
+                                                              ctxToUpdate->EtwProvider->MatchAnyKeyword);
+        GCEventLevel level = static_cast<GCEventLevel>(max(ctxToUpdate->EventPipeProvider.Level,
+                                                           ctxToUpdate->EtwProvider->Level));
+#else
+        GCEventKeyword keywords = static_cast<GCEventKeyword>(ctxToUpdate->EventPipeProvider.EnabledKeywordsBitmask);
+        GCEventLevel level = static_cast<GCEventLevel>(ctxToUpdate->EventPipeProvider.Level);
+#endif
+        GCHeapUtilities::RecordEventStateChange(bIsPublicTraceHandle, keywords, level);
     }
 
     // Special check for the runtime provider's GCHeapCollectKeyword.  Profilers
@@ -4292,7 +4301,7 @@ VOID EtwCallbackCommon(
         // Profilers may (optionally) specify extra data in the filter parameter
         // to log with the GCStart event.
         LONGLONG l64ClientSequenceNumber = 0;
-#if !defined(FEATURE_PAL)
+#if !defined(HOST_UNIX)
         PEVENT_FILTER_DESCRIPTOR FilterData = (PEVENT_FILTER_DESCRIPTOR)pFilterData;
         if ((FilterData != NULL) &&
            (FilterData->Type == 1) &&
@@ -4300,7 +4309,7 @@ VOID EtwCallbackCommon(
         {
             l64ClientSequenceNumber = *(LONGLONG *) (FilterData->Ptr);
         }
-#endif // !defined(FEATURE_PAL)
+#endif // !defined(HOST_UNIX)
         ETW::GCLog::ForceGC(l64ClientSequenceNumber);
     }
     // TypeSystemLog needs a notification when certain keywords are modified, so
@@ -4370,7 +4379,7 @@ VOID EventPipeEtwCallbackDotNETRuntimePrivate(
 }
 
 
-#if !defined(FEATURE_PAL)
+#if !defined(HOST_UNIX)
 HRESULT ETW::CEtwTracer::Register()
 {
     WRAPPER_NO_CONTRACT;
@@ -4501,10 +4510,6 @@ extern "C"
 
         BOOLEAN bIsRundownTraceHandle = (context->RegistrationHandle==Microsoft_Windows_DotNETRuntimeRundownHandle);
 
-        GCEventKeyword keywords = static_cast<GCEventKeyword>(MatchAnyKeyword);
-        GCEventLevel level = static_cast<GCEventLevel>(Level);
-        GCHeapUtilities::RecordEventStateChange(!!bIsPublicTraceHandle, keywords, level);
-
         // EventPipeEtwCallback contains some GC eventing functionality shared between EventPipe and ETW.
         // Eventually, we'll want to merge these two codepaths whenever we can.
         CallbackProviderIndex providerIndex = DotNETRuntime;
@@ -4546,7 +4551,7 @@ extern "C"
                 }
             }
 
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
             // We only do this on amd64  (NOT ARM, because ARM uses frame based stack crawling)
             // If we have turned on the JIT keyword to the INFORMATION setting (needed to get JIT names) then
             // we assume that we also want good stack traces so we need to publish unwind information so
@@ -4586,7 +4591,7 @@ extern "C"
 }
 #endif // FEATURE_REDHAWK
 
-#endif // FEATURE_PAL
+#endif // HOST_UNIX
 #ifndef FEATURE_REDHAWK
 
 /****************************************************************************/
@@ -4640,7 +4645,6 @@ VOID ETW::ExceptionLog::ExceptionThrown(CrawlFrame  *pCf, BOOL bIsReThrownExcept
         pExInfo = pExState->GetCurrentExceptionTracker();
         _ASSERTE(pExInfo != NULL);
         bIsNestedException = (pExInfo->GetPreviousExceptionTracker() != NULL);
-        bIsCSE = (pExInfo->GetCorruptionSeverity() == ProcessCorrupting);
         bIsCLSCompliant = IsException((gc.exceptionObj)->GetMethodTable()) &&
                           ((gc.exceptionObj)->GetMethodTable() != MscorlibBinder::GetException(kRuntimeWrappedException));
 
@@ -4655,16 +4659,15 @@ VOID ETW::ExceptionLog::ExceptionThrown(CrawlFrame  *pCf, BOOL bIsReThrownExcept
         exceptionFlags = ((bHasInnerException ? ETW::ExceptionLog::ExceptionStructs::HasInnerException : 0) |
                           (bIsNestedException ? ETW::ExceptionLog::ExceptionStructs::IsNestedException : 0) |
                           (bIsReThrownException ? ETW::ExceptionLog::ExceptionStructs::IsReThrownException : 0) |
-                          (bIsCSE ? ETW::ExceptionLog::ExceptionStructs::IsCSE : 0) |
                           (bIsCLSCompliant ? ETW::ExceptionLog::ExceptionStructs::IsCLSCompliant : 0));
 
         if (pCf->IsFrameless())
         {
-#ifndef BIT64
+#ifndef HOST_64BIT
             exceptionEIP = (PVOID)pCf->GetRegisterSet()->ControlPC;
 #else
             exceptionEIP = (PVOID)GetIP(pCf->GetRegisterSet()->pContext);
-#endif //!BIT64
+#endif //!HOST_64BIT
         }
         else
         {
@@ -4945,48 +4948,23 @@ VOID ETW::InfoLog::RuntimeInformation(INT32 type)
             UINT8 startupMode = 0;
             UINT startupFlags = 0;
             PathString dllPath;
-            UINT8 Sku = 0;
-            _ASSERTE(CLRHosted() || g_fEEHostedStartup || // CLR started through one of the Hosting API CLRHosted() returns true if CLR started through the V2 Interface while
-                                                          // g_fEEHostedStartup is true if CLR is hosted through the V1 API.
-                     g_fEEComActivatedStartup ||          //CLR started as a COM object
-                     g_fEEOtherStartup  );                //In case none of the 4 above mentioned cases are true for example ngen, ildasm then we asssume its a "other" startup
+            UINT8 Sku = ETW::InfoLog::InfoStructs::CoreCLR;
 
-            Sku = ETW::InfoLog::InfoStructs::CoreCLR;
+            //version info for coreclr.dll
+            USHORT vmMajorVersion = RuntimeFileMajorVersion;
+            USHORT vmMinorVersion = RuntimeFileMinorVersion;
+            USHORT vmBuildVersion = RuntimeFileBuildVersion;
+            USHORT vmRevisionVersion = RuntimeFileRevisionVersion;
 
-            //version info for clr.dll
-            USHORT vmMajorVersion = CLR_MAJOR_VERSION;
-            USHORT vmMinorVersion = CLR_MINOR_VERSION;
-            USHORT vmBuildVersion = CLR_BUILD_VERSION;
-            USHORT vmQfeVersion = CLR_BUILD_VERSION_QFE;
+            //version info for System.Private.CoreLib.dll
+            USHORT bclMajorVersion = RuntimeProductMajorVersion;
+            USHORT bclMinorVersion = RuntimeProductMinorVersion;
+            USHORT bclBuildVersion = RuntimeProductPatchVersion;
+            USHORT bclRevisionVersion = 0;
 
-            //version info for mscorlib.dll
-            USHORT bclMajorVersion = VER_ASSEMBLYMAJORVERSION;
-            USHORT bclMinorVersion = VER_ASSEMBLYMINORVERSION;
-            USHORT bclBuildVersion = VER_ASSEMBLYBUILD;
-            USHORT bclQfeVersion = VER_ASSEMBLYBUILD_QFE;
-
-            LPCGUID comGUID=&g_EEComObjectGuid;
+            LPCGUID comGUID=&IID_NULL;
 
             PCWSTR lpwszCommandLine = W("");
-
-
-
-            // Determine the startupmode
-            if (CLRHosted() || g_fEEHostedStartup)
-            {
-                //Hosted CLR
-                startupMode = ETW::InfoLog::InfoStructs::HostedCLR;
-            }
-            else if(g_fEEComActivatedStartup)
-            {
-                //com activated
-                startupMode = ETW::InfoLog::InfoStructs::COMActivated;
-            }
-            else if(g_fEEOtherStartup)
-            {
-                //startup type is other
-                startupMode = ETW::InfoLog::InfoStructs::Other;
-            }
 
 
             // if WszGetModuleFileName fails, we return an empty string
@@ -5002,11 +4980,11 @@ VOID ETW::InfoLog::RuntimeInformation(INT32 type)
                                                   bclMajorVersion,
                                                   bclMinorVersion,
                                                   bclBuildVersion,
-                                                  bclQfeVersion,
+                                                  bclRevisionVersion,
                                                   vmMajorVersion,
                                                   vmMinorVersion,
                                                   vmBuildVersion,
-                                                  vmQfeVersion,
+                                                  vmRevisionVersion,
                                                   startupFlags,
                                                   startupMode,
                                                   lpwszCommandLine,
@@ -5020,11 +4998,11 @@ VOID ETW::InfoLog::RuntimeInformation(INT32 type)
                                                 bclMajorVersion,
                                                 bclMinorVersion,
                                                 bclBuildVersion,
-                                                bclQfeVersion,
+                                                bclRevisionVersion,
                                                 vmMajorVersion,
                                                 vmMinorVersion,
                                                 vmBuildVersion,
-                                                vmQfeVersion,
+                                                vmRevisionVersion,
                                                 startupFlags,
                                                 startupMode,
                                                 lpwszCommandLine,
@@ -5047,7 +5025,7 @@ VOID ETW::InfoLog::RuntimeInformation(INT32 type)
 
 VOID ETW::CodeSymbolLog::EmitCodeSymbols(Module* pModule)
 {
-#if  !defined(FEATURE_PAL) //UNIXTODO: Enable EmitCodeSymbols
+#if  !defined(HOST_UNIX) //UNIXTODO: Enable EmitCodeSymbols
     CONTRACTL {
         NOTHROW;
         GC_NOTRIGGER;
@@ -5104,7 +5082,7 @@ VOID ETW::CodeSymbolLog::EmitCodeSymbols(Module* pModule)
             }
         }
     } EX_CATCH{} EX_END_CATCH(SwallowAllExceptions);
-#endif//  !defined(FEATURE_PAL)
+#endif//  !defined(HOST_UNIX)
 }
 
 /* Returns the length of an in-memory symbol stream
@@ -5713,7 +5691,7 @@ VOID ETW::EnumerationLog::ProcessShutdown()
 
 /****************************************************************************/
 /****************************************************************************/
-/* Begining of helper functions */
+/* beginning of helper functions */
 /****************************************************************************/
 /****************************************************************************/
 
@@ -6096,14 +6074,14 @@ static void GetCodeViewInfo(Module * pModule, CV_INFO_PDB70 * pCvInfoIL, CV_INFO
 
     if (pdbInfoLast.m_pPdb70 != NULL)
     {
-        // The last guy is the IL (managed) PDB info
+        // The last item is the IL (managed) PDB info
         _ASSERTE(pdbInfoLast.m_cbPdb70 <= sizeof(*pCvInfoIL));      // Guaranteed by checks above
         memcpy(pCvInfoIL, pdbInfoLast.m_pPdb70, pdbInfoLast.m_cbPdb70);
     }
 
     if (pdbInfoNextToLast.m_pPdb70 != NULL)
     {
-        // The next-to-last guy is the NGEN (native) PDB info
+        // The next-to-last item is the NGEN (native) PDB info
         _ASSERTE(pdbInfoNextToLast.m_cbPdb70 <= sizeof(*pCvInfoNative));      // Guaranteed by checks above
         memcpy(pCvInfoNative, pdbInfoNextToLast.m_pPdb70, pdbInfoNextToLast.m_cbPdb70);
     }
@@ -6170,8 +6148,6 @@ VOID ETW::LoaderLog::SendModuleEvent(Module *pModule, DWORD dwEventOptions, BOOL
 
     if(bFireDomainModuleEvents)
     {
-        if(pModule->GetDomain()->IsSharedDomain()) // for shared domains, we do not fire domainmodule event
-            return;
         ullAppDomainId = (ULONGLONG)pModule->GetDomainAssembly()->GetAppDomain();
     }
 
@@ -6305,7 +6281,7 @@ VOID ETW::MethodLog::SendMethodDetailsEvent(MethodDesc *pMethodDesc)
             {
                 fSucceeded = FALSE;
             }
-            EX_END_CATCH(RethrowCorruptingExceptions);
+            EX_END_CATCH(RethrowTerminalExceptions);
             if (!fSucceeded)
                 goto done;      
 
@@ -7011,9 +6987,8 @@ VOID ETW::MethodLog::SendEventsForJitMethodsHelper(LoaderAllocator *pLoaderAlloc
 #ifdef FEATURE_CODE_VERSIONING
         if (fGetCodeIds && pMD->IsVersionable())
         {
-            CodeVersionManager *pCodeVersionManager = pMD->GetCodeVersionManager();
-            _ASSERTE(pCodeVersionManager->LockOwnedByCurrentThread());
-            nativeCodeVersion = pCodeVersionManager->GetNativeCodeVersion(pMD, codeStart);
+            _ASSERTE(CodeVersionManager::IsLockOwnedByCurrentThread());
+            nativeCodeVersion = pMD->GetCodeVersionManager()->GetNativeCodeVersion(pMD, codeStart);
             if (nativeCodeVersion.IsNull())
             {
                 // The code version manager hasn't been updated with the jitted code
@@ -7150,7 +7125,7 @@ VOID ETW::MethodLog::SendEventsForJitMethods(BaseDomain *pDomainFilter, LoaderAl
 #ifdef FEATURE_CODE_VERSIONING
         if (pDomainFilter)
         {
-            CodeVersionManager::TableLockHolder lkRejitMgrModule(pDomainFilter->GetCodeVersionManager());
+            CodeVersionManager::LockHolder codeVersioningLockHolder;
             SendEventsForJitMethodsHelper(
                 pLoaderAllocatorFilter,
                 dwEventOptions,
@@ -7641,7 +7616,12 @@ bool EventPipeHelper::IsEnabled(DOTNET_TRACE_CONTEXT Context, UCHAR Level, ULONG
     }
     CONTRACTL_END
 
-    if (Level <= Context.EventPipeProvider.Level || Context.EventPipeProvider.Level == 0)
+    if (!Context.EventPipeProvider.IsEnabled)
+    {
+        return false;
+    }
+
+    if (Level <= Context.EventPipeProvider.Level)
     {
         return (Keyword == (ULONGLONG)0) || (Keyword & Context.EventPipeProvider.EnabledKeywordsBitmask) != 0;
     }
@@ -7650,10 +7630,10 @@ bool EventPipeHelper::IsEnabled(DOTNET_TRACE_CONTEXT Context, UCHAR Level, ULONG
 }
 #endif // FEATURE_PERFTRACING
 
-#if defined(FEATURE_PAL)  && defined(FEATURE_PERFTRACING)
+#if defined(HOST_UNIX)  && defined(FEATURE_PERFTRACING)
 // This is a wrapper method for LTTng. See https://github.com/dotnet/coreclr/pull/27273 for details.
 extern "C" bool XplatEventLoggerIsEnabled()
 {
     return XplatEventLogger::IsEventLoggingEnabled();
 }
-#endif // FEATURE_PAL && FEATURE_PERFTRACING
+#endif // HOST_UNIX && FEATURE_PERFTRACING

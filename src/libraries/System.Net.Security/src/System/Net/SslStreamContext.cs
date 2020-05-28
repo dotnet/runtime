@@ -8,23 +8,17 @@ using System.Security.Authentication.ExtendedProtection;
 
 namespace System.Net
 {
-    internal class SslStreamContext : TransportContext
+    internal sealed class SslStreamContext : TransportContext
     {
+        private readonly SslStream _sslStream;
+
         internal SslStreamContext(SslStream sslStream)
         {
-            if (sslStream == null)
-            {
-                NetEventSource.Fail(this, "Not expecting a null sslStream!");
-            }
-
-            _sslStream = sslStream;
+            Debug.Assert(sslStream != null);
+            _sslStream = sslStream!;
         }
 
-        public override ChannelBinding GetChannelBinding(ChannelBindingKind kind)
-        {
-            return _sslStream.GetChannelBinding(kind);
-        }
-
-        private readonly SslStream _sslStream;
+        public override ChannelBinding? GetChannelBinding(ChannelBindingKind kind) =>
+            _sslStream.GetChannelBinding(kind);
     }
 }

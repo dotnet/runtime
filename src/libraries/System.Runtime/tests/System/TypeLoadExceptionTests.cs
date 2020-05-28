@@ -15,7 +15,7 @@ namespace System.Tests
         public static void Ctor_Empty()
         {
             var exception = new TypeLoadException();
-            ExceptionUtility.ValidateExceptionProperties(exception, hResult: COR_E_TYPELOAD, validateMessage: false);
+            ExceptionHelpers.ValidateExceptionProperties(exception, hResult: COR_E_TYPELOAD, validateMessage: false);
             Assert.Equal("", exception.TypeName);
         }
 
@@ -24,7 +24,7 @@ namespace System.Tests
         {
             string message = "type failed to load";
             var exception = new TypeLoadException(message);
-            ExceptionUtility.ValidateExceptionProperties(exception, hResult: COR_E_TYPELOAD, message: message);
+            ExceptionHelpers.ValidateExceptionProperties(exception, hResult: COR_E_TYPELOAD, message: message);
             Assert.Equal("", exception.TypeName);
         }
 
@@ -34,7 +34,7 @@ namespace System.Tests
             string message = "type failed to load";
             var innerException = new Exception("Inner exception");
             var exception = new TypeLoadException(message, innerException);
-            ExceptionUtility.ValidateExceptionProperties(exception, hResult: COR_E_TYPELOAD, innerException: innerException, message: message);
+            ExceptionHelpers.ValidateExceptionProperties(exception, hResult: COR_E_TYPELOAD, innerException: innerException, message: message);
             Assert.Equal("", exception.TypeName);
         }
     }

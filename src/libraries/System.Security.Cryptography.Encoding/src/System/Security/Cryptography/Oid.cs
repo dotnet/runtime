@@ -16,7 +16,7 @@ namespace System.Security.Cryptography
         public Oid(string oid)
         {
             // If we were passed the friendly name, retrieve the value String.
-            string oidValue = OidLookup.ToOid(oid, OidGroup.All, fallBackToAllGroups: false);
+            string? oidValue = OidLookup.ToOid(oid, OidGroup.All, fallBackToAllGroups: false);
             if (oidValue == null)
             {
                 oidValue = oid;
@@ -26,7 +26,7 @@ namespace System.Security.Cryptography
             _group = OidGroup.All;
         }
 
-        public Oid(string value, string friendlyName)
+        public Oid(string? value, string? friendlyName)
         {
             _value = value;
             _friendlyName = friendlyName;
@@ -48,7 +48,7 @@ namespace System.Security.Cryptography
                 throw new ArgumentNullException(nameof(friendlyName));
             }
 
-            string oidValue = OidLookup.ToOid(friendlyName, group, fallBackToAllGroups: false);
+            string? oidValue = OidLookup.ToOid(friendlyName, group, fallBackToAllGroups: false);
             if (oidValue == null)
                 throw new CryptographicException(SR.Cryptography_Oid_InvalidName);
 
@@ -60,20 +60,20 @@ namespace System.Security.Cryptography
             if (oidValue == null)
                 throw new ArgumentNullException(nameof(oidValue));
 
-            string friendlyName = OidLookup.ToFriendlyName(oidValue, group, fallBackToAllGroups: false);
+            string? friendlyName = OidLookup.ToFriendlyName(oidValue, group, fallBackToAllGroups: false);
             if (friendlyName == null)
                 throw new CryptographicException(SR.Cryptography_Oid_InvalidValue);
 
             return new Oid(oidValue, friendlyName, group);
         }
 
-        public string Value
+        public string? Value
         {
             get { return _value; }
             set { _value = value; }
         }
 
-        public string FriendlyName
+        public string? FriendlyName
         {
             get
             {
@@ -91,7 +91,7 @@ namespace System.Security.Cryptography
                 if (_friendlyName != null)
                 {
                     // If FindOidInfo fails, we return a null String
-                    string oidValue = OidLookup.ToOid(_friendlyName, _group, fallBackToAllGroups: true);
+                    string? oidValue = OidLookup.ToOid(_friendlyName, _group, fallBackToAllGroups: true);
                     if (oidValue != null)
                     {
                         _value = oidValue;
@@ -110,8 +110,8 @@ namespace System.Security.Cryptography
             _group = group;
         }
 
-        private string _value = null;
-        private string _friendlyName = null;
+        private string? _value = null;
+        private string? _friendlyName = null;
         private readonly OidGroup _group = OidGroup.All;
     }
 }

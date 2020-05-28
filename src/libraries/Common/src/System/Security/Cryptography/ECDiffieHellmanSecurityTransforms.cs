@@ -126,8 +126,8 @@ namespace System.Security.Cryptography
             public override byte[] DeriveKeyFromHash(
                 ECDiffieHellmanPublicKey otherPartyPublicKey,
                 HashAlgorithmName hashAlgorithm,
-                byte[] secretPrepend,
-                byte[] secretAppend)
+                byte[]? secretPrepend,
+                byte[]? secretAppend)
             {
                 if (otherPartyPublicKey == null)
                     throw new ArgumentNullException(nameof(otherPartyPublicKey));
@@ -147,9 +147,9 @@ namespace System.Security.Cryptography
             public override byte[] DeriveKeyFromHmac(
                 ECDiffieHellmanPublicKey otherPartyPublicKey,
                 HashAlgorithmName hashAlgorithm,
-                byte[] hmacKey,
-                byte[] secretPrepend,
-                byte[] secretAppend)
+                byte[]? hmacKey,
+                byte[]? secretPrepend,
+                byte[]? secretAppend)
             {
                 if (otherPartyPublicKey == null)
                     throw new ArgumentNullException(nameof(otherPartyPublicKey));
@@ -186,7 +186,7 @@ namespace System.Security.Cryptography
                     (pubKey, hasher) => DeriveSecretAgreement(pubKey, hasher));
             }
 
-            private byte[] DeriveSecretAgreement(ECDiffieHellmanPublicKey otherPartyPublicKey, IncrementalHash hasher)
+            private byte[]? DeriveSecretAgreement(ECDiffieHellmanPublicKey otherPartyPublicKey, IncrementalHash? hasher)
             {
                 if (!(otherPartyPublicKey is ECDiffieHellmanSecurityTransformsPublicKey secTransPubKey))
                 {
@@ -205,7 +205,7 @@ namespace System.Security.Cryptography
                             nameof(otherPartyPublicKey));
                     }
 
-                    SafeSecKeyRefHandle thisPrivate = GetKeys().PrivateKey;
+                    SafeSecKeyRefHandle? thisPrivate = GetKeys().PrivateKey;
 
                     if (thisPrivate == null)
                     {
@@ -216,7 +216,7 @@ namespace System.Security.Cryptography
                     // 66 bytes ((521 + 7) / 8), the Span path will always succeed.
                     Span<byte> secretSpan = stackalloc byte[66];
 
-                    byte[] secret = Interop.AppleCrypto.EcdhKeyAgree(
+                    byte[]? secret = Interop.AppleCrypto.EcdhKeyAgree(
                         thisPrivate,
                         otherPublic,
                         secretSpan,

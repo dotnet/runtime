@@ -57,7 +57,7 @@ namespace System.ComponentModel.Composition
     // }
     internal static class MetadataViewGenerator
     {
-        public delegate object MetadataViewFactory(IDictionary<string, object> metadata);
+        public delegate object MetadataViewFactory(IDictionary<string, object?> metadata);
 
         public const string MetadataViewType        = "MetadataViewType";
         public const string MetadataItemKey         = "MetadataItemKey";
@@ -69,12 +69,12 @@ namespace System.ComponentModel.Composition
         private static readonly Lock _lock = new Lock();
         private static readonly Dictionary<Type, MetadataViewFactory> _metadataViewFactories = new Dictionary<Type, MetadataViewFactory>();
         private static readonly AssemblyName ProxyAssemblyName = new AssemblyName(string.Format(CultureInfo.InvariantCulture, "MetadataViewProxies_{0}", Guid.NewGuid()));
-        private static ModuleBuilder transparentProxyModuleBuilder;
+        private static ModuleBuilder? transparentProxyModuleBuilder;
 
         private static readonly Type[] CtorArgumentTypes = new Type[] { typeof(IDictionary<string, object>) };
-        private static readonly MethodInfo _mdvDictionaryTryGet = CtorArgumentTypes[0].GetMethod("TryGetValue");
-        private static readonly MethodInfo ObjectGetType = typeof(object).GetMethod("GetType", Type.EmptyTypes);
-        private static readonly ConstructorInfo ObjectCtor = typeof(object).GetConstructor(Type.EmptyTypes);
+        private static readonly MethodInfo _mdvDictionaryTryGet = CtorArgumentTypes[0].GetMethod("TryGetValue")!;
+        private static readonly MethodInfo ObjectGetType = typeof(object).GetMethod("GetType", Type.EmptyTypes)!;
+        private static readonly ConstructorInfo ObjectCtor = typeof(object).GetConstructor(Type.EmptyTypes)!;
 
         // Must be called with _lock held
         private static ModuleBuilder GetProxyModuleBuilder(bool requiresCritical)
@@ -101,7 +101,7 @@ namespace System.ComponentModel.Composition
                 throw new Exception(SR.Diagnostic_InternalExceptionMessage);
             }
 
-            MetadataViewFactory metadataViewFactory;
+            MetadataViewFactory? metadataViewFactory;
             bool foundMetadataViewFactory;
 
             using (new ReadLock(_lock))
@@ -113,14 +113,14 @@ namespace System.ComponentModel.Composition
             if (!foundMetadataViewFactory)
             {
                 // Try again under a write lock if still none generate the proxy
-                Type generatedProxyType = GenerateInterfaceViewProxyType(viewType);
+                Type? generatedProxyType = GenerateInterfaceViewProxyType(viewType);
                 if (generatedProxyType == null)
                 {
                     throw new Exception(SR.Diagnostic_InternalExceptionMessage);
                 }
 
                 MetadataViewFactory generatedMetadataViewFactory = (MetadataViewFactory)Delegate.CreateDelegate(
-                    typeof(MetadataViewFactory), generatedProxyType.GetMethod(MetadataViewGenerator.MetadataViewFactoryName, BindingFlags.Public | BindingFlags.Static));
+                    typeof(MetadataViewFactory), generatedProxyType.GetMethod(MetadataViewGenerator.MetadataViewFactoryName, BindingFlags.Public | BindingFlags.Static)!);
                 if (generatedMetadataViewFactory == null)
                 {
                     throw new Exception(SR.Diagnostic_InternalExceptionMessage);
@@ -135,10 +135,10 @@ namespace System.ComponentModel.Composition
                     }
                 }
             }
-            return metadataViewFactory;
+            return metadataViewFactory!;
         }
 
-        public static TMetadataView CreateMetadataView<TMetadataView>(MetadataViewFactory metadataViewFactory, IDictionary<string, object> metadata)
+        public static TMetadataView CreateMetadataView<TMetadataView>(MetadataViewFactory metadataViewFactory, IDictionary<string, object?> metadata)
         {
             if (metadataViewFactory == null)
             {
@@ -184,10 +184,10 @@ namespace System.ComponentModel.Composition
         }
 
         // This must be called with _readerWriterLock held for Write
-        private static Type GenerateInterfaceViewProxyType(Type viewType)
+        private static Type? GenerateInterfaceViewProxyType(Type viewType)
         {
             // View type is an interface let's cook an implementation
-            Type proxyType;
+            Type? proxyType;
             TypeBuilder proxyTypeBuilder;
             Type[] interfaces = { viewType };
             bool requiresCritical = false;
@@ -221,8 +221,8 @@ namespace System.ComponentModel.Composition
                 string propertyName = propertyInfo.Name;
 
                 Type[] propertyTypeArguments = new Type[] { propertyInfo.PropertyType };
-                Type[] optionalModifiers = null;
-                Type[] requiredModifiers = null;
+                Type[]? optionalModifiers = null;
+                Type[]? requiredModifiers = null;
 
                 // PropertyInfo does not support GetOptionalCustomModifiers and GetRequiredCustomModifiers on Silverlight
                 optionalModifiers = propertyInfo.GetOptionalCustomModifiers();
@@ -329,7 +329,7 @@ namespace System.ComponentModel.Composition
                         optionalModifiers,
                         Type.EmptyTypes, null, null);
 
-                    proxyTypeBuilder.DefineMethodOverride(getMethodBuilder, propertyInfo.GetGetMethod());
+                    proxyTypeBuilder.DefineMethodOverride(getMethodBuilder, propertyInfo.GetGetMethod()!);
                     ILGenerator getMethodIL = getMethodBuilder.GetILGenerator();
                     getMethodIL.Emit(OpCodes.Ldarg_0);
                     getMethodIL.Emit(OpCodes.Ldfld, proxyFieldBuilder);

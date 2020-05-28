@@ -24,8 +24,8 @@ namespace System.Reflection.TypeLoading.Ecma
             if (internalManifestResourceInfo.ResourceLocation == ResourceLocation.ContainedInAnotherAssembly)
             {
                 // Must get resource info from other assembly, and OR in the contained in another assembly information
-                ManifestResourceInfo underlyingManifestResourceInfo = internalManifestResourceInfo.ReferencedAssembly.GetManifestResourceInfo(resourceName);
-                internalManifestResourceInfo.FileName = underlyingManifestResourceInfo.FileName;
+                ManifestResourceInfo underlyingManifestResourceInfo = internalManifestResourceInfo.ReferencedAssembly.GetManifestResourceInfo(resourceName)!;
+                internalManifestResourceInfo.FileName = underlyingManifestResourceInfo.FileName ?? string.Empty;
                 internalManifestResourceInfo.ResourceLocation = underlyingManifestResourceInfo.ResourceLocation | ResourceLocation.ContainedInAnotherAssembly;
                 if (underlyingManifestResourceInfo.ReferencedAssembly != null)
                     internalManifestResourceInfo.ReferencedAssembly = underlyingManifestResourceInfo.ReferencedAssembly;
@@ -52,7 +52,7 @@ namespace System.Reflection.TypeLoading.Ecma
             return resourceNames;
         }
 
-        public sealed override Stream GetManifestResourceStream(string name)
+        public sealed override Stream? GetManifestResourceStream(string name)
         {
             if (name == null)
                 throw new ArgumentNullException(nameof(name));

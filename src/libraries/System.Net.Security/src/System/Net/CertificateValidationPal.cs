@@ -12,16 +12,15 @@ namespace System.Net
     {
         private static readonly object s_syncObject = new object();
 
-        private static volatile X509Store s_myCertStoreEx;
-        private static volatile X509Store s_myMachineCertStoreEx;
+        private static volatile X509Store? s_myCertStoreEx;
+        private static volatile X509Store? s_myMachineCertStoreEx;
 
         static partial void CheckSupportsStore(StoreLocation storeLocation, ref bool hasSupport);
 
-        internal static X509Store EnsureStoreOpened(bool isMachineStore)
+        internal static X509Store? EnsureStoreOpened(bool isMachineStore)
         {
-            X509Store store = isMachineStore ? s_myMachineCertStoreEx : s_myCertStoreEx;
+            X509Store? store = isMachineStore ? s_myMachineCertStoreEx : s_myCertStoreEx;
 
-            // TODO #3862 Investigate if this can be switched to either the static or Lazy<T> patterns.
             if (store == null)
             {
                 StoreLocation storeLocation = isMachineStore ? StoreLocation.LocalMachine : StoreLocation.CurrentUser;

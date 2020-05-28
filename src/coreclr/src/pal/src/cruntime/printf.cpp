@@ -323,7 +323,7 @@ static BOOL Internal_ScanfExtractFormatA(LPCSTR *Fmt, LPSTR Out, int iOutSize, L
         }
     }
 
-#ifdef BIT64
+#ifdef HOST_64BIT
     if (**Fmt == 'p')
     {
         *Prefix = SCANF_PREFIX_LONGLONG;
@@ -346,7 +346,7 @@ static BOOL Internal_ScanfExtractFormatA(LPCSTR *Fmt, LPSTR Out, int iOutSize, L
     else if (**Fmt == 'l' || **Fmt == 'w')
     {
         ++(*Fmt);
-#ifdef BIT64
+#ifdef HOST_64BIT
         // Only want to change the prefix on 64 bit when inputing characters.
         if (**Fmt == 'c' || **Fmt == 's')
 #endif
@@ -639,7 +639,7 @@ static BOOL Internal_ScanfExtractFormatW(LPCWSTR *Fmt, LPSTR Out, int iOutSize, 
         }
     }
 
-#ifdef BIT64
+#ifdef HOST_64BIT
     if (**Fmt == 'p')
     {
         *Prefix = SCANF_PREFIX_LONGLONG;
@@ -662,7 +662,7 @@ static BOOL Internal_ScanfExtractFormatW(LPCWSTR *Fmt, LPSTR Out, int iOutSize, 
     else if (**Fmt == 'l' || **Fmt == 'w')
     {
         ++(*Fmt);
-#ifdef BIT64
+#ifdef HOST_64BIT
         // Only want to change the prefix on 64 bit when inputing characters.
         if (**Fmt == 'C' || **Fmt == 'S')
 #endif

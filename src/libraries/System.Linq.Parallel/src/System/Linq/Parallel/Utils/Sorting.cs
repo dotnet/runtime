@@ -244,7 +244,7 @@ namespace System.Linq.Parallel
                     do
                     {
                         if ((i++ & CancellationState.POLL_INTERVAL) == 0)
-                            CancellationState.ThrowIfCanceled(cancelToken);
+                            cancelToken.ThrowIfCancellationRequested();
 
                         // Accumulate the keys and values so that we can sort them in a moment.
                         keys.Add(currentKey);
@@ -440,7 +440,7 @@ namespace System.Linq.Parallel
                         while (i < m)
                         {
                             if ((i & CancellationState.POLL_INTERVAL) == 0)
-                                CancellationState.ThrowIfCanceled(cancelToken);
+                                cancelToken.ThrowIfCancellationRequested();
 
                             if (j0 < leftCount && (j1 >= rightCount ||
                                                    _keyComparer.Compare(myKeysArr[myIndices[j0]],
@@ -517,7 +517,7 @@ namespace System.Linq.Parallel
                         while (i >= m)
                         {
                             if ((i & CancellationState.POLL_INTERVAL) == 0)
-                                CancellationState.ThrowIfCanceled(cancelToken);
+                                cancelToken.ThrowIfCancellationRequested();
 
                             if (j0 >= 0 && (j1 < 0 ||
                                             _keyComparer.Compare(leftKeys[leftIndices![j0]],
@@ -595,7 +595,7 @@ namespace System.Linq.Parallel
             // only test for intervals that are wider than so many items, else this test is
             // relatively expensive compared to the work being performed.
             if (right - left > CancellationState.POLL_INTERVAL)
-                CancellationState.ThrowIfCanceled(cancelToken);
+                cancelToken.ThrowIfCancellationRequested();
 
             do
             {

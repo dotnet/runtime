@@ -153,7 +153,7 @@ namespace System.Text.Encodings.Web
             buffer += numberOfHexCharacters;
             do
             {
-                *buffer = HexUtil.Int32LsbToHexDigit(unicodeScalar & 0xF);
+                *buffer = HexConverter.ToCharUpper(unicodeScalar);
                 unicodeScalar >>= nibbleSize;
                 buffer--;
             }

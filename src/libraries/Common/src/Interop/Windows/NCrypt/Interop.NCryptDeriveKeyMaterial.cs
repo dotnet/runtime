@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
@@ -21,7 +22,7 @@ internal static partial class Interop
             SafeNCryptSecretHandle hSharedSecret,
             string pwszKDF,
             [In] ref NCryptBufferDesc pParameterList,
-            [Out, MarshalAs(UnmanagedType.LPArray)] byte[] pbDerivedKey,
+            [Out, MarshalAs(UnmanagedType.LPArray)] byte[]? pbDerivedKey,
             int cbDerivedKey,
             [Out] out int pcbResult,
             SecretAgreementFlags dwFlags);
@@ -34,9 +35,9 @@ internal static partial class Interop
             SafeNCryptSecretHandle secretAgreement,
             string kdf,
             string hashAlgorithm,
-            byte[] hmacKey,
-            byte[] secretPrepend,
-            byte[] secretAppend,
+            byte[]? hmacKey,
+            byte[]? secretPrepend,
+            byte[]? secretAppend,
             SecretAgreementFlags flags)
         {
             // First marshal the hash algoritm
@@ -68,7 +69,7 @@ internal static partial class Interop
                         if (pHmacKey != null)
                         {
                             NCryptBuffer hmacKeyBuffer = default;
-                            hmacKeyBuffer.cbBuffer = hmacKey.Length;
+                            hmacKeyBuffer.cbBuffer = hmacKey!.Length;
                             hmacKeyBuffer.BufferType = BufferType.KdfHmacKey;
                             hmacKeyBuffer.pvBuffer = new IntPtr(pHmacKey);
 
@@ -79,7 +80,7 @@ internal static partial class Interop
                         if (pSecretPrepend != null)
                         {
                             NCryptBuffer secretPrependBuffer = default;
-                            secretPrependBuffer.cbBuffer = secretPrepend.Length;
+                            secretPrependBuffer.cbBuffer = secretPrepend!.Length;
                             secretPrependBuffer.BufferType = BufferType.KdfSecretPrepend;
                             secretPrependBuffer.pvBuffer = new IntPtr(pSecretPrepend);
 
@@ -90,7 +91,7 @@ internal static partial class Interop
                         if (pSecretAppend != null)
                         {
                             NCryptBuffer secretAppendBuffer = default;
-                            secretAppendBuffer.cbBuffer = secretAppend.Length;
+                            secretAppendBuffer.cbBuffer = secretAppend!.Length;
                             secretAppendBuffer.BufferType = BufferType.KdfSecretAppend;
                             secretAppendBuffer.pvBuffer = new IntPtr(pSecretAppend);
 
@@ -175,8 +176,8 @@ internal static partial class Interop
         internal static byte[] DeriveKeyMaterialHash(
             SafeNCryptSecretHandle secretAgreement,
             string hashAlgorithm,
-            byte[] secretPrepend,
-            byte[] secretAppend,
+            byte[]? secretPrepend,
+            byte[]? secretAppend,
             SecretAgreementFlags flags)
         {
             return DeriveKeyMaterial(
@@ -195,9 +196,9 @@ internal static partial class Interop
         internal static byte[] DeriveKeyMaterialHmac(
             SafeNCryptSecretHandle secretAgreement,
             string hashAlgorithm,
-            byte[] hmacKey,
-            byte[] secretPrepend,
-            byte[] secretAppend,
+            byte[]? hmacKey,
+            byte[]? secretPrepend,
+            byte[]? secretAppend,
             SecretAgreementFlags flags)
         {
             return DeriveKeyMaterial(

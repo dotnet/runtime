@@ -13,7 +13,7 @@
 enum RuntimeExceptionKind {
 #define DEFINE_EXCEPTION(ns, reKind, bHRformessage, ...) k##reKind,
 #define DEFINE_EXCEPTION_HR_WINRT_ONLY(ns, reKind, ...)
-#define DEFINE_EXCEPTION_IN_OTHER_FX_ASSEMBLY(ns, reKind, assemblySimpleName, publicKeyToken, bHRformessage, ...) DEFINE_EXCEPTION(ns, reKind, bHRformessage, __VA_ARGS__)
+#define DEFINE_EXCEPTION_IN_OTHER_FX_ASSEMBLY(ns, reKind, assemblySimpleName, bHRformessage, ...) DEFINE_EXCEPTION(ns, reKind, bHRformessage, __VA_ARGS__)
 #include "rexcep.h"
 kLastException
 };

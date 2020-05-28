@@ -1,13 +1,11 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <AssemblyName>System.Resources.Reader</AssemblyName>
     <RootNamespace>System.Resources</RootNamespace>
     <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
-    <Configurations>netcoreapp-Debug;netcoreapp-Release</Configurations>
+    <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="System.Resources.ResourceManager" />
     <Reference Include="System.Runtime" />
   </ItemGroup>
 </Project>

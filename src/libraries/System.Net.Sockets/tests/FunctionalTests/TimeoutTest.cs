@@ -44,7 +44,7 @@ namespace System.Net.Sockets.Tests
         // but also not so large that it takes too long to run.
         private const int Timeout = 2000;
 
-        [OuterLoop] // TODO: Issue #11345
+        [OuterLoop]
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
@@ -83,7 +83,7 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [OuterLoop] // TODO: Issue #11345
+        [OuterLoop]
         [Theory]
         [InlineData(true)]
         [InlineData(false)]

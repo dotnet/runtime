@@ -23,7 +23,6 @@ namespace System.Drawing
             return destinationType == typeof(InstanceDescriptor) || base.CanConvertTo(context, destinationType);
         }
 
-        [SuppressMessage("Microsoft.Performance", "CA1808:AvoidCallsThatBoxValueTypes")]
         public override object ConvertFrom(ITypeDescriptorContext context, CultureInfo culture, object value)
         {
             if (value is string strValue)
@@ -103,8 +102,6 @@ namespace System.Drawing
             return base.ConvertTo(context, culture, value, destinationType);
         }
 
-        [SuppressMessage("Microsoft.Performance", "CA1808:AvoidCallsThatBoxValueTypes")]
-        [SuppressMessage("Microsoft.Security", "CA2102:CatchNonClsCompliantExceptionsInGeneralHandlers")]
         public override object CreateInstance(ITypeDescriptorContext context, IDictionary propertyValues)
         {
             if (propertyValues == null)

@@ -11,7 +11,7 @@ namespace System.IO.Tests
 {
     public class Directory_Delete_str : FileSystemTest
     {
-        static bool IsBindMountSupported => RuntimeInformation.IsOSPlatform(OSPlatform.Linux) && !PlatformDetection.IsInContainer && !PlatformDetection.IsRedHatFamily6;
+        static bool IsBindMountSupported => RuntimeInformation.IsOSPlatform(OSPlatform.Linux) && !PlatformDetection.IsInContainer;
 
         #region Utilities
 
@@ -254,7 +254,6 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        [ActiveIssue(24242)]
         [PlatformSpecific(TestPlatforms.Windows)]
         [OuterLoop("This test is very slow.")]
         public void RecursiveDelete_DeepNesting()

@@ -33,7 +33,7 @@ namespace System.Reflection.TypeLoading
                 return true;
             }
 
-            public override bool Equals(object obj) => obj is Key other && Equals(other);
+            public override bool Equals(object? obj) => obj is Key other && Equals(other);
             public override int GetHashCode() => ElementType.GetHashCode() ^ Rank.GetHashCode();
         }
     }

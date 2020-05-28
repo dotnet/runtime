@@ -30,7 +30,7 @@ namespace System.ServiceProcess.Tests
 
         private void AssertExpectedProperties(ServiceController testServiceController)
         {
-            var comparer = PlatformDetection.IsFullFramework ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal; // Full framework upper cases the name
+            var comparer = PlatformDetection.IsNetFramework ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal; // .NET Framework upper cases the name
             Assert.Equal(_testService.TestServiceName, testServiceController.ServiceName, comparer);
             Assert.Equal(_testService.TestServiceDisplayName, testServiceController.DisplayName);
             Assert.Equal(_testService.TestMachineName, testServiceController.MachineName);
@@ -42,7 +42,7 @@ namespace System.ServiceProcess.Tests
 
         // [Fact]
         // To cleanup lingering Test Services uncomment the Fact attribute, make it public and run the following command
-        //   msbuild /t:rebuildandtest /p:XunitMethodName=System.ServiceProcess.Tests.ServiceBaseTests.Cleanup /p:OuterLoop=true
+        // dotnet build /t:test /p:XunitMethodName=System.ServiceProcess.Tests.ServiceBaseTests.Cleanup /p:OuterLoop=true
         // Remember to comment out the Fact again before running tests otherwise it will cleanup tests running in parallel
         // and cause them to fail.
         private void Cleanup()
@@ -93,10 +93,9 @@ namespace System.ServiceProcess.Tests
             controller.Start(new string[] { "StartWithArguments", "a", "b", "c" });
             _testService.Client = null;
             _testService.Client.Connect();
+            Assert.Equal((int)(PipeMessageByteCode.Connected), _testService.GetByte());
 
-            // There is no definite order between start and connected when tests are running on multiple threads.
-            // In this case we dont care much about the order, so we are just checking whether the appropiate bytes have been sent.
-            Assert.Equal((int)(PipeMessageByteCode.Connected | PipeMessageByteCode.Start), _testService.GetByte() | _testService.GetByte());
+            Assert.Equal((int)(PipeMessageByteCode.Start), _testService.GetByte());           
             controller.WaitForStatus(ServiceControllerStatus.Running);
 
             controller.Stop();
@@ -142,7 +141,16 @@ namespace System.ServiceProcess.Tests
             ServiceController controller = ConnectToServer();
 
             controller.ExecuteCommand(128);
-            Assert.Equal(128, _testService.GetByte());
+            // Response from test service:
+            //  128 => Environment.UserInteractive == false
+            //  129 => Environment.UserInteractive == true
+            //
+            // On Windows Nano and other SKU that do not expose Window Stations, Environment.UserInteractive
+            // will always return true, even within a service process.
+            // Otherwise, we expect it to be false.
+            // (This is the only place we verify Environment.UserInteractive can return false)
+            byte expected = PlatformDetection.HasWindowsShell ? (byte)128 : (byte)129;
+            Assert.Equal(expected, _testService.GetByte());
 
             controller.Stop();
             Assert.Equal((int)PipeMessageByteCode.Stop, _testService.GetByte());
@@ -166,9 +174,8 @@ namespace System.ServiceProcess.Tests
         public void LogWritten()
         {
             string serviceName = Guid.NewGuid().ToString();
-            // The default username for installing the service is NT AUTHORITY\\LocalService which does not have access to EventLog.
             // If the username is null, then the service is created under LocalSystem Account which have access to EventLog.
-            var testService = new TestServiceProvider(serviceName, userName: null);
+            var testService = new TestServiceProvider(serviceName);
             Assert.True(EventLog.SourceExists(serviceName));
             testService.DeleteTestServices();
         }
@@ -183,7 +190,7 @@ namespace System.ServiceProcess.Tests
         }
 
         [ConditionalFact(nameof(IsProcessElevated))]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Full Framework receives the Connected Byte Code after the Exception Thrown Byte Code")]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, ".NET Framework receives the Connected Byte Code after the Exception Thrown Byte Code")]
         public void PropagateExceptionFromOnStart()
         {
             string serviceName = nameof(PropagateExceptionFromOnStart) + Guid.NewGuid().ToString();

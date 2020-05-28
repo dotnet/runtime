@@ -16,7 +16,6 @@ namespace System.Xml.Linq
     /// <remarks>
     /// An XML attribute is a name/value pair associated with an XML element.
     /// </remarks>
-    [SuppressMessage("Microsoft.Naming", "CA1711:IdentifiersShouldNotHaveIncorrectSuffix", Justification = "Reviewed.")]
     [System.ComponentModel.TypeDescriptionProvider("MS.Internal.Xml.Linq.ComponentModel.XTypeDescriptionProvider`1[[System.Xml.Linq.XAttribute, System.Xml.Linq, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089]],System.ComponentModel.TypeConverter")]
     public class XAttribute : XObject
     {

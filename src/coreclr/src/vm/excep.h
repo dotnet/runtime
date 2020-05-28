@@ -22,43 +22,21 @@ class Thread;
 #include <excepcpu.h>
 #include "interoputil.h"
 
-#if defined(_TARGET_ARM_) || defined(_TARGET_X86_)
-#define VSD_STUB_CAN_THROW_AV
-#endif // _TARGET_ARM_ || _TARGET_X86_
-
 BOOL IsExceptionFromManagedCode(const EXCEPTION_RECORD * pExceptionRecord);
-#ifdef VSD_STUB_CAN_THROW_AV
 BOOL IsIPinVirtualStub(PCODE f_IP);
-#endif // VSD_STUB_CAN_THROW_AV
 bool IsIPInMarkedJitHelper(UINT_PTR uControlPc);
 
-#if defined(FEATURE_HIJACK) && (!defined(_TARGET_X86_) || defined(FEATURE_PAL))
+BOOL IsProcessCorruptedStateException(DWORD dwExceptionCode, OBJECTREF throwable);
+
+BOOL AdjustContextForJITHelpers(EXCEPTION_RECORD *pExceptionRecord, CONTEXT *pContext);
+
+#if defined(FEATURE_HIJACK) && (!defined(TARGET_X86) || defined(TARGET_UNIX))
 
 // General purpose functions for use on an IP in jitted code.
 bool IsIPInProlog(EECodeInfo *pCodeInfo);
 bool IsIPInEpilog(PTR_CONTEXT pContextToCheck, EECodeInfo *pCodeInfo, BOOL *pSafeToInjectThreadAbort);
 
-#endif // FEATURE_HIJACK && (!_TARGET_X86_ || FEATURE_PAL)
-
-//******************************************************************************
-//
-//  SwallowUnhandledExceptions
-//
-//   Consult the EE policy and the app config to determine if the runtime should "swallow" unhandled exceptions.
-//   Swallow if: the EEPolicy->UnhandledExceptionPolicy is "eHostDeterminedPolicy"
-//           or: the app config value LegacyUnhandledExceptionPolicy() is set.
-//
-//  Parameters:
-//    none
-//
-//  Return value:
-//    true - the runtime should "swallow" unhandled exceptions
-//
-inline bool SwallowUnhandledExceptions()
-{
-    return (eHostDeterminedPolicy == GetEEPolicy()->GetUnhandledExceptionPolicy()) ||
-           g_pConfig->LegacyUnhandledExceptionPolicy();
-}
+#endif // FEATURE_HIJACK && (!TARGET_X86 || TARGET_UNIX)
 
 // Enums
 // return values of LookForHandler
@@ -94,8 +72,6 @@ struct ThrowCallbackType
     void * pPrevExceptionRecord;
 #endif
 
-    // Is the current exception a longjmp?
-    CORRUPTING_EXCEPTIONS_ONLY(BOOL     m_fIsLongJump;)
     void Init()
     {
         LIMITED_METHOD_CONTRACT;
@@ -116,8 +92,6 @@ struct ThrowCallbackType
         pCurrentExceptionRecord = 0;
         pPrevExceptionRecord = 0;
 #endif
-        // By default, the current exception is not a longjmp
-        CORRUPTING_EXCEPTIONS_ONLY(m_fIsLongJump = FALSE;)
     }
 };
 
@@ -175,7 +149,7 @@ BOOL IsCOMPlusExceptionHandlerInstalled();
 BOOL InstallUnhandledExceptionFilter();
 void UninstallUnhandledExceptionFilter();
 
-#if !defined(FEATURE_PAL)
+#if !defined(TARGET_UNIX)
 // Section naming is a strategy by itself. Ideally, we could have named the UEF section
 // ".text$zzz" (lowercase after $ is important). What the linker does is look for the sections
 // that has the same name before '$' sign. It combines them together but sorted in an alphabetical
@@ -184,7 +158,7 @@ void UninstallUnhandledExceptionFilter();
 // within a section, no matter where it was located - and for this case, we need the UEF code
 // at the right location to ensure that we can check the memory protection of its following
 // section so that shouldnt affect UEF's memory protection. For details, read the comment in
-// "CExecutionEngine::ClrVirtualProtect".
+// ClrVirtualProtect.
 //
 // Keeping UEF in its own section helps prevent code movement as BBT does not reorder
 // sections. As per my understanding of the linker, ".text" section always comes first,
@@ -192,9 +166,9 @@ void UninstallUnhandledExceptionFilter();
 // The order of user defined executable sections is typically defined by the linker
 // in terms of which section it sees first. So, if there is another custom executable
 // section that comes after UEF section, it can affect the UEF section and we will
-// assert about it in "CExecutionEngine::ClrVirtualProtect".
+// assert about it in ClrVirtualProtect.
 #define CLR_UEF_SECTION_NAME ".CLR_UEF"
-#endif //!defined(FEATURE_PAL)
+#endif //!defined(TARGET_UNIX)
 LONG __stdcall COMUnhandledExceptionFilter(EXCEPTION_POINTERS *pExceptionInfo);
 
 
@@ -221,12 +195,20 @@ enum UnhandledExceptionLocation
                             FatalExecutionEngineException
 };
 
+#ifdef HOST_WINDOWS
+void InitializeCrashDump();
+bool GenerateCrashDump(LPCWSTR dumpName, int dumpType, bool diag);
+void CreateCrashDumpIfEnabled();
+#endif
+
+// Generates crash dumps if enabled for both Windows and Linux
+void CrashDumpAndTerminateProcess(UINT exitCode);
+
 struct ThreadBaseExceptionFilterParam
 {
     UnhandledExceptionLocation location;
 };
 
-LONG ThreadBaseExceptionFilter(PEXCEPTION_POINTERS pExceptionInfo, PVOID pvParam);
 LONG ThreadBaseExceptionSwallowingFilter(PEXCEPTION_POINTERS pExceptionInfo, PVOID pvParam);
 LONG ThreadBaseExceptionAppDomainFilter(PEXCEPTION_POINTERS pExceptionInfo, PVOID pvParam);
 
@@ -267,11 +249,7 @@ VOID DECLSPEC_NORETURN RealCOMPlusThrowNonLocalized(RuntimeExceptionKind reKind,
 // Throw an object.
 //==========================================================================
 
-VOID DECLSPEC_NORETURN RealCOMPlusThrow(OBJECTREF throwable
-#ifdef FEATURE_CORRUPTING_EXCEPTIONS
-                                        , CorruptionSeverity severity = NotCorrupting
-#endif // FEATURE_CORRUPTING_EXCEPTIONS
-                                        );
+VOID DECLSPEC_NORETURN RealCOMPlusThrow(OBJECTREF throwable);
 
 //==========================================================================
 // Throw an undecorated runtime exception.
@@ -538,9 +516,9 @@ EXCEPTION_HANDLER_DECL(COMPlusFrameHandlerRevCom);
 // Pop off any SEH handlers we have registered below pTargetSP
 VOID __cdecl PopSEHRecords(LPVOID pTargetSP);
 
-#if defined(_TARGET_X86_) && defined(DEBUGGING_SUPPORTED)
+#if defined(TARGET_X86) && defined(DEBUGGING_SUPPORTED)
 VOID UnwindExceptionTrackerAndResumeInInterceptionFrame(ExInfo* pExInfo, EHContext* context);
-#endif // _TARGET_X86_ && DEBUGGING_SUPPORTED
+#endif // TARGET_X86 && DEBUGGING_SUPPORTED
 
 BOOL PopNestedExceptionRecords(LPVOID pTargetSP, BOOL bCheckForUnknownHandlers = FALSE);
 VOID PopNestedExceptionRecords(LPVOID pTargetSP, T_CONTEXT *pCtx, void *pSEH);
@@ -556,14 +534,14 @@ VOID SetCurrentSEHRecord(EXCEPTION_REGISTRATION_RECORD *pSEH);
 #define STACK_OVERWRITE_BARRIER_VALUE 0xabcdefab
 
 #ifdef _DEBUG
-#if defined(_TARGET_X86_)
+#if defined(TARGET_X86)
 struct FrameHandlerExRecordWithBarrier {
     DWORD m_StackOverwriteBarrier[STACK_OVERWRITE_BARRIER_SIZE];
     FrameHandlerExRecord m_ExRecord;
 };
 
 void VerifyValidTransitionFromManagedCode(Thread *pThread, CrawlFrame *pCF);
-#endif // defined(_TARGET_X86_)
+#endif // defined(TARGET_X86)
 #endif // _DEBUG
 #endif // !defined(FEATURE_EH_FUNCLETS)
 
@@ -738,10 +716,10 @@ bool IsInterceptableException(Thread *pThread);
 // perform simple checking to see if the current exception is intercepted
 bool CheckThreadExceptionStateForInterception();
 
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
 // Currently, only Windows supports ClrUnwindEx (used inside ClrDebuggerDoUnwindAndIntercept)
 #define DEBUGGER_EXCEPTION_INTERCEPTION_SUPPORTED
-#endif // !FEATURE_PAL
+#endif // !TARGET_UNIX
 
 #ifdef DEBUGGER_EXCEPTION_INTERCEPTION_SUPPORTED
 // Intercept the current exception and start an unwind.  This function may never return.
@@ -754,9 +732,9 @@ LONG NotifyDebuggerLastChance(Thread *pThread,
                               BOOL jitAttachRequested);
 #endif // DEBUGGING_SUPPORTED
 
-#if defined(_TARGET_X86_)
+#if defined(TARGET_X86)
 void CPFH_AdjustContextForThreadSuspensionRace(T_CONTEXT *pContext, Thread *pThread);
-#endif // _TARGET_X86_
+#endif // TARGET_X86
 
 DWORD GetGcMarkerExceptionCode(LPVOID ip);
 bool IsGcMarker(T_CONTEXT *pContext, EXCEPTION_RECORD *pExceptionRecord);
@@ -785,9 +763,9 @@ bool DebugIsEECxxException(EXCEPTION_RECORD* pExceptionRecord);
 inline void CopyOSContext(T_CONTEXT* pDest, T_CONTEXT* pSrc)
 {
     SIZE_T cbReadOnlyPost = 0;
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
     cbReadOnlyPost = sizeof(CONTEXT) - FIELD_OFFSET(CONTEXT, FltSave); // older OSes don't have the vector reg fields
-#endif // _TARGET_AMD64_
+#endif // TARGET_AMD64
 
     memcpyNoGCRefs(pDest, pSrc, sizeof(T_CONTEXT) - cbReadOnlyPost);
 }
@@ -796,7 +774,7 @@ void SaveCurrentExceptionInfo(PEXCEPTION_RECORD pRecord, PT_CONTEXT pContext);
 
 #ifdef _DEBUG
 void SetReversePInvokeEscapingUnhandledExceptionStatus(BOOL fIsUnwinding,
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
                                                        EXCEPTION_REGISTRATION_RECORD * pEstablisherFrame
 #elif defined(FEATURE_EH_FUNCLETS)
                                                        ULONG64 pEstablisherFrame
@@ -815,44 +793,6 @@ LONG AppDomainTransitionExceptionFilter(
 LONG ReflectionInvocationExceptionFilter(
     EXCEPTION_POINTERS *pExceptionInfo, // the pExceptionInfo passed to a filter function.
     PVOID               pParam);
-
-#ifdef FEATURE_CORRUPTING_EXCEPTIONS
-// -----------------------------------------------------------------------
-// Support for Corrupted State Exceptions
-// -----------------------------------------------------------------------
-#ifndef HANDLE_PROCESS_CORRUPTED_STATE_EXCEPTION_ATTRIBUTE
-#define HANDLE_PROCESS_CORRUPTED_STATE_EXCEPTION_ATTRIBUTE "System.Runtime.ExceptionServices.HandleProcessCorruptedStateExceptionsAttribute"
-#endif // HANDLE_PROCESS_CORRUPTED_STATE_EXCEPTION_ATTRIBUTE
-
-#ifndef HIGHEST_MAJOR_VERSION_OF_PREV4_RUNTIME
-#define HIGHEST_MAJOR_VERSION_OF_PREV4_RUNTIME 2
-#endif // HIGHEST_MAJOR_VERSION_OF_PREV4_RUNTIME
-
-// This helper class contains static method to support working with Corrupted State Exceptions,
-// including checking if a method can handle it or not, copy state across throwables, etc.
-class CEHelper
-{
-    BOOL static IsMethodInPreV4Assembly(PTR_MethodDesc pMethodDesc);
-    BOOL static CanMethodHandleCE(PTR_MethodDesc pMethodDesc, CorruptionSeverity severity, BOOL fCalculateSecurityInfo = TRUE);
-
-public:
-    BOOL static CanMethodHandleException(CorruptionSeverity severity, PTR_MethodDesc pMethodDesc, BOOL fCalculateSecurityInfo = TRUE);
-    BOOL static CanIDispatchTargetHandleException();
-    BOOL static IsProcessCorruptedStateException(DWORD dwExceptionCode, BOOL fCheckForSO = TRUE);
-    BOOL static IsProcessCorruptedStateException(OBJECTREF oThrowable);
-    BOOL static IsLastActiveExceptionCorrupting(BOOL fMarkForReuseIfCorrupting = FALSE);
-    BOOL static ShouldTreatActiveExceptionAsNonCorrupting();
-    void static MarkLastActiveExceptionCorruptionSeverityForReraiseReuse();
-    void static SetupCorruptionSeverityForActiveException(BOOL fIsRethrownException, BOOL fIsNestedException, BOOL fShouldTreatExceptionAsNonCorrupting = FALSE);
-#ifdef FEATURE_EH_FUNCLETS
-    typedef DPTR(class ExceptionTracker) PTR_ExceptionTracker;
-    void static SetupCorruptionSeverityForActiveExceptionInUnwindPass(Thread *pCurThread, PTR_ExceptionTracker pEHTracker, BOOL fIsFirstPass,
-                                                                     DWORD dwExceptionCode);
-#endif // FEATURE_EH_FUNCLETS
-    void static ResetLastActiveCorruptionSeverityPostCatchHandler(Thread *pThread);
-};
-
-#endif // FEATURE_CORRUPTING_EXCEPTIONS
 
 #ifndef DACCESS_COMPILE
 // exception filter invoked for unhandled exceptions on the entry point thread (thread 0)
@@ -876,36 +816,17 @@ private:
         OBJECTREF *pOutEventArgs, OBJECTREF *pThrowable);
 
     void static DeliverNotificationInternal(ExceptionNotificationHandlerType notificationType,
-        OBJECTREF *pThrowable
-#ifdef FEATURE_CORRUPTING_EXCEPTIONS
-        , CorruptionSeverity severity
-#endif // FEATURE_CORRUPTING_EXCEPTIONS
-        );
-
-    void static InvokeNotificationDelegate(ExceptionNotificationHandlerType notificationType, OBJECTREF *pDelegate, OBJECTREF *pEventArgs,
-        OBJECTREF *pAppDomain
-#ifdef FEATURE_CORRUPTING_EXCEPTIONS
-        , CorruptionSeverity severity
-#endif // FEATURE_CORRUPTING_EXCEPTIONS
-        );
+        OBJECTREF *pThrowable);
 
 public:
+    void static DeliverExceptionNotification(ExceptionNotificationHandlerType notificationType, OBJECTREF *pDelegate, OBJECTREF *pEventArgs,
+        OBJECTREF *pAppDomain);
+
     BOOL static CanDeliverNotificationToCurrentAppDomain(ExceptionNotificationHandlerType notificationType);
 
-    void static DeliverNotification(ExceptionNotificationHandlerType notificationType,
-        OBJECTREF *pThrowable
-#ifdef FEATURE_CORRUPTING_EXCEPTIONS
-        , CorruptionSeverity severity
-#endif // FEATURE_CORRUPTING_EXCEPTIONS
-        );
-
-#ifdef FEATURE_CORRUPTING_EXCEPTIONS
-    BOOL static CanDelegateBeInvokedForException(OBJECTREF *pDelegate, CorruptionSeverity severity);
-#endif // FEATURE_CORRUPTING_EXCEPTIONS
+    void static DeliverNotification(ExceptionNotificationHandlerType notificationType, OBJECTREF *pThrowable);
 
 public:
-    void static DeliverExceptionNotification(ExceptionNotificationHandlerType notificationType, OBJECTREF *pDelegate,
-        OBJECTREF *pAppDomain, OBJECTREF *pEventArgs);
     void static DeliverFirstChanceNotification();
 };
 

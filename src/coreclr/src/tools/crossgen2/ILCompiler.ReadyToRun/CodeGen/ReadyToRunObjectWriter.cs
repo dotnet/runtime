@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Reflection.PortableExecutable;
 
 using ILCompiler.DependencyAnalysis.ReadyToRun;
@@ -14,6 +15,8 @@ using ILCompiler.PEWriter;
 using ObjectData = ILCompiler.DependencyAnalysis.ObjectNode.ObjectData;
 
 using Internal.TypeSystem;
+using Internal.TypeSystem.Ecma;
+using System.Security.Cryptography;
 
 namespace ILCompiler.DependencyAnalysis
 {
@@ -22,11 +25,34 @@ namespace ILCompiler.DependencyAnalysis
     /// </summary>
     internal class ReadyToRunObjectWriter
     {
-        // Nodefactory for which ObjectWriter is instantiated for.
-        private readonly ReadyToRunCodegenNodeFactory _nodeFactory;
+        /// <summary>
+        /// Nodefactory for which ObjectWriter is instantiated for. 
+        /// </summary>
+        private readonly NodeFactory _nodeFactory;
+
+        /// <summary>
+        /// Output executable path.
+        /// </summary>
         private readonly string _objectFilePath;
+
+        /// <summary>
+        /// Set to non-null when rewriting MSIL assemblies during composite R2R build;
+        /// we basically publish the input assemblies into the composite build output folder
+        /// using the same ReadyToRunObjectWriter as we're using for emitting the "actual"
+        /// R2R executable, just in this special mode in which we emit a minimal R2R header
+        /// with forwarding information pointing at the composite module with native code.
+        /// </summary>
+        private readonly EcmaModule _componentModule;
+
+        /// <summary>
+        /// Nodes to emit into the output executable as collected by the dependency analysis.
+        /// </summary>
         private readonly IEnumerable<DependencyNode> _nodes;
-        private readonly PEReader _inputPeReader;
+
+        /// <summary>
+        /// Set to non-null when the executable generator should output a map file.
+        /// </summary>
+        private readonly MapFileBuilder _mapFileBuilder;
 
 #if DEBUG
         private struct NodeInfo
@@ -46,35 +72,64 @@ namespace ILCompiler.DependencyAnalysis
         Dictionary<string, NodeInfo> _previouslyWrittenNodeNames = new Dictionary<string, NodeInfo>();
 #endif
 
-        public ReadyToRunObjectWriter(PEReader inputPeReader, string objectFilePath, IEnumerable<DependencyNode> nodes, ReadyToRunCodegenNodeFactory factory)
+        public ReadyToRunObjectWriter(string objectFilePath, EcmaModule componentModule, IEnumerable<DependencyNode> nodes, NodeFactory factory, bool generateMapFile)
         {
             _objectFilePath = objectFilePath;
+            _componentModule = componentModule;
             _nodes = nodes;
             _nodeFactory = factory;
-            _inputPeReader = inputPeReader;
+
+            if (generateMapFile)
+            {
+                _mapFileBuilder = new MapFileBuilder();
+            }
         }
 
         public void EmitPortableExecutable()
         {
             bool succeeded = false;
 
-            FileStream mapFileStream = null;
-            TextWriter mapFile = null;
-
             try
             {
-                string mapFileName = Path.ChangeExtension(_objectFilePath, ".map");
-                mapFileStream = new FileStream(mapFileName, FileMode.Create, FileAccess.Write);
-                mapFile = new StreamWriter(mapFileStream);
-
                 Stopwatch stopwatch = new Stopwatch();
                 stopwatch.Start();
-                mapFile.WriteLine($@"R2R object emission started: {DateTime.Now}");
 
+                PEHeaderBuilder headerBuilder;
+                int timeDateStamp;
+                ISymbolNode r2rHeaderExportSymbol;
+
+                if (_nodeFactory.CompilationModuleGroup.IsCompositeBuildMode && _componentModule == null)
+                {
+                    headerBuilder = PEHeaderProvider.Create(
+                        imageCharacteristics: Characteristics.ExecutableImage | Characteristics.Dll,
+                        dllCharacteristics: default(DllCharacteristics),
+                        Subsystem.Unknown,
+                        _nodeFactory.Target);
+                    // TODO: generate a non-zero timestamp: https://github.com/dotnet/runtime/issues/32507
+                    timeDateStamp = 0;
+                    r2rHeaderExportSymbol = _nodeFactory.Header;
+                }
+                else
+                {
+                    PEReader inputPeReader = (_componentModule != null ? _componentModule.PEReader : _nodeFactory.CompilationModuleGroup.CompilationModuleSet.First().PEReader);
+                    headerBuilder = PEHeaderProvider.Copy(inputPeReader.PEHeaders, _nodeFactory.Target);
+                    timeDateStamp = inputPeReader.PEHeaders.CoffHeader.TimeDateStamp;
+                    r2rHeaderExportSymbol = null;
+                }
+
+                Func<RuntimeFunctionsTableNode> getRuntimeFunctionsTable = null;
+                if (_componentModule == null)
+                {
+                    getRuntimeFunctionsTable = GetRuntimeFunctionsTable;
+                }
                 R2RPEBuilder r2rPeBuilder = new R2RPEBuilder(
                     _nodeFactory.Target,
-                    _inputPeReader,
-                    GetRuntimeFunctionsTable);
+                    headerBuilder,
+                    r2rHeaderExportSymbol,
+                    Path.GetFileName(_objectFilePath),
+                    getRuntimeFunctionsTable);
+
+                NativeDebugDirectoryEntryNode nativeDebugDirectoryEntryNode = null;
 
                 int nodeIndex = -1;
                 foreach (var depNode in _nodes)
@@ -92,9 +147,16 @@ namespace ILCompiler.DependencyAnalysis
 
                     ObjectData nodeContents = node.GetData(_nodeFactory);
 
+                    if (node is NativeDebugDirectoryEntryNode nddeNode)
+                    {
+                        // There should be only one NativeDebugDirectoryEntry.
+                        Debug.Assert(nativeDebugDirectoryEntryNode == null);
+                        nativeDebugDirectoryEntryNode = nddeNode;
+                    }
+
                     string name = null;
 
-                    if (mapFile != null)
+                    if (_mapFileBuilder != null)
                     {
                         name = depNode.GetType().ToString();
                         int firstGeneric = name.IndexOf('[');
@@ -109,10 +171,11 @@ namespace ILCompiler.DependencyAnalysis
                         }
                     }
 
-                    EmitObjectData(r2rPeBuilder, nodeContents, nodeIndex, name, node.Section, mapFile);
+                    EmitObjectData(r2rPeBuilder, nodeContents, nodeIndex, name, node.Section, _mapFileBuilder);
                 }
 
                 r2rPeBuilder.SetCorHeader(_nodeFactory.CopiedCorHeaderNode, _nodeFactory.CopiedCorHeaderNode.Size);
+                r2rPeBuilder.SetDebugDirectory(_nodeFactory.DebugDirectoryNode, _nodeFactory.DebugDirectoryNode.Size);
 
                 if (_nodeFactory.Win32ResourcesNode != null)
                 {
@@ -122,25 +185,38 @@ namespace ILCompiler.DependencyAnalysis
 
                 using (var peStream = File.Create(_objectFilePath))
                 {
-                    r2rPeBuilder.Write(peStream);
+                    r2rPeBuilder.Write(peStream, timeDateStamp);
+
+                    if (_mapFileBuilder != null)
+                    {
+                        _mapFileBuilder.SetFileSize(peStream.Length);
+                    }
+
+                    // Compute MD5 hash of the output image and store that in the native DebugDirectory entry
+                    using (var md5Hash = MD5.Create())
+                    {
+                        peStream.Seek(0, SeekOrigin.Begin);
+                        byte[] hash = md5Hash.ComputeHash(peStream);
+                        byte[] rsdsEntry = nativeDebugDirectoryEntryNode.GenerateRSDSEntryData(hash);
+
+                        int offsetToUpdate = r2rPeBuilder.GetSymbolFilePosition(nativeDebugDirectoryEntryNode);
+                        peStream.Seek(offsetToUpdate, SeekOrigin.Begin);
+                        peStream.Write(rsdsEntry);
+                    }
                 }
 
-                mapFile.WriteLine($@"R2R object emission finished: {DateTime.Now}, {stopwatch.ElapsedMilliseconds} msecs");
-                mapFile.Flush();
-                mapFileStream.Flush();
+                if (_mapFileBuilder != null)
+                {
+                    r2rPeBuilder.AddSections(_mapFileBuilder);
+
+                    string mapFileName = Path.ChangeExtension(_objectFilePath, ".map");
+                    _mapFileBuilder.Save(mapFileName);
+                }
 
                 succeeded = true;
             }
             finally
             {
-                if (mapFile != null)
-                {
-                    mapFile.Dispose();
-                }
-                if (mapFileStream != null)
-                {
-                    mapFileStream.Dispose();
-                }
                 if (!succeeded)
                 {
                     // If there was an exception while generating the OBJ file, make sure we don't leave the unfinished
@@ -172,7 +248,7 @@ namespace ILCompiler.DependencyAnalysis
         /// <param name="name">Textual representation of the ObjecData blob in the map file</param>
         /// <param name="section">Section to emit the blob into</param>
         /// <param name="mapFile">Map file output stream</param>
-        private void EmitObjectData(R2RPEBuilder r2rPeBuilder, ObjectData data, int nodeIndex, string name, ObjectNodeSection section, TextWriter mapFile)
+        private void EmitObjectData(R2RPEBuilder r2rPeBuilder, ObjectData data, int nodeIndex, string name, ObjectNodeSection section, MapFileBuilder mapFileBuilder)
         {
 #if DEBUG
             for (int symbolIndex = 0; symbolIndex < data.DefinedSymbols.Length; symbolIndex++)
@@ -191,13 +267,13 @@ namespace ILCompiler.DependencyAnalysis
             }
 #endif
 
-            r2rPeBuilder.AddObjectData(data, section, name, mapFile);
+            r2rPeBuilder.AddObjectData(data, section, name, mapFileBuilder);
         }
 
-        public static void EmitObject(PEReader inputPeReader, string objectFilePath, IEnumerable<DependencyNode> nodes, ReadyToRunCodegenNodeFactory factory)
+        public static void EmitObject(string objectFilePath, EcmaModule componentModule, IEnumerable<DependencyNode> nodes, NodeFactory factory, bool generateMapFile)
         {
             Console.WriteLine($@"Emitting R2R PE file: {objectFilePath}");
-            ReadyToRunObjectWriter objectWriter = new ReadyToRunObjectWriter(inputPeReader, objectFilePath, nodes, factory);
+            ReadyToRunObjectWriter objectWriter = new ReadyToRunObjectWriter(objectFilePath, componentModule, nodes, factory, generateMapFile);
             objectWriter.EmitPortableExecutable();
         }
     }

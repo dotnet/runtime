@@ -55,6 +55,7 @@ namespace System.Runtime.Serialization.Formatters.Tests
         }
 
         [Theory]
+        [ActiveIssue("https://github.com/mono/mono/issues/15113", TestRuntimes.Mono)]
         [MemberData(nameof(GetUninitializedObject_NotSupportedType_TestData))]
         public void GetUninitializedObject_NotSupportedType_ThrowsArgumentException(Type type)
         {
@@ -84,6 +85,7 @@ namespace System.Runtime.Serialization.Formatters.Tests
         }
 
         [Theory]
+        [ActiveIssue("https://github.com/mono/mono/issues/15111", TestRuntimes.Mono)]
         [MemberData(nameof(GetUninitializedObject_OpenGenericClass_TestData))]
         public void GetUninitializedObject_OpenGenericClass_ThrowsMemberAccessException(Type type)
         {
@@ -141,7 +143,7 @@ namespace System.Runtime.Serialization.Formatters.Tests
 
         [Theory]
         [MemberData(nameof(GetUninitializedObject_ByRefLikeType_TestData))]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "full .NET Framework has bug that allows allocating instances of byref-like types.")]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, ".NET Framework has bug that allows allocating instances of byref-like types.")]
         public void GetUninitializedObject_ByRefLikeType_NonNetfx_ThrowsNotSupportedException(Type type)
         {
             Assert.Throws<NotSupportedException>(() => FormatterServices.GetUninitializedObject(type));
@@ -150,6 +152,7 @@ namespace System.Runtime.Serialization.Formatters.Tests
 
         [Fact]
         [SkipOnTargetFramework(~TargetFrameworkMonikers.Netcoreapp, "The coreclr doesn't support GetUninitializedObject for shared generic instances")]
+        [SkipOnMonoAttribute("System.__Canon doesn't exist on Mono")]
         public void GetUninitializedObject_SharedGenericInstance_NetCore_ThrowsNotSupportedException()
         {
             Type canonType = Type.GetType("System.__Canon");
@@ -172,7 +175,7 @@ namespace System.Runtime.Serialization.Formatters.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "The full .NET Framework doesn't support GetUninitializedObject for subclasses of ContextBoundObject")]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "The .NET Framework doesn't support GetUninitializedObject for subclasses of ContextBoundObject")]
         public void GetUninitializedObject_ContextBoundObjectSubclass_NetCore_InitializesValue()
         {
             Assert.Equal(0, ((ContextBoundSubclass)FormatterServices.GetUninitializedObject(typeof(ContextBoundSubclass))).Value);
@@ -234,6 +237,7 @@ namespace System.Runtime.Serialization.Formatters.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/mono/mono/issues/15114", TestRuntimes.Mono)]
         public void GetUninitializedObject_StaticConstructorThrows_ThrowsTypeInitializationException()
         {
             TypeInitializationException ex = Assert.Throws<TypeInitializationException>(() => FormatterServices.GetUninitializedObject(typeof(StaticConstructorThrows)));
@@ -314,18 +318,6 @@ namespace System.Runtime.Serialization.Formatters.Tests
         {
             AssertExtensions.Throws<ArgumentNullException>("assem", () => FormatterServices.GetTypeFromAssembly(null, "name"));
             Assert.Null(FormatterServices.GetTypeFromAssembly(GetType().Assembly, Guid.NewGuid().ToString("N"))); // non-existing type doesn't throw
-        }
-    }
-}
-
-namespace System.Runtime.CompilerServices
-{
-    // Local definition of IsByRefLikeAttribute while the real one becomes available in corefx
-    [AttributeUsage(AttributeTargets.Struct)]
-    public sealed class IsByRefLikeAttribute : Attribute
-    {
-        public IsByRefLikeAttribute()
-        {
         }
     }
 }

@@ -88,7 +88,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         // The return type for this function is actually an INotifyCollectionChangedEventArgs*
         // but we need to make sure we don't accidentally project our native object back to managed
         // when marshalling it to native (which happens when correctly typing the return type as an INotifyCollectionChangedEventArgs).
-        IntPtr CreateInstanceWithAllParameters(int action, IList newItems, IList oldItems, int newIndex, int oldIndex, object outer, ref object inner);
+        IntPtr CreateInstanceWithAllParameters(int action, IList? newItems, IList? oldItems, int newIndex, int oldIndex, object? outer, ref object? inner);
     }
 
     // Local definition of Windows.UI.Xaml.Data.INotifyCollectionChangedEventArgsFactory
@@ -100,14 +100,14 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         // The return type for this function is actually an IPropertyChangedEventArgs*
         // but we need to make sure we don't accidentally project our native object back to managed
         // when marshalling it to native (which happens when correctly typing the return type as an IPropertyChangedEventArgs).
-        IntPtr CreateInstance(string name, object outer, ref object inner);
+        IntPtr CreateInstance(string? name, object? outer, ref object? inner);
     }
 
     internal static class NotifyCollectionChangedEventArgsMarshaler
     {
         private const string WinRTNotifyCollectionChangedEventArgsName = "Windows.UI.Xaml.Interop.NotifyCollectionChangedEventArgs";
 
-        private static INotifyCollectionChangedEventArgsFactory s_EventArgsFactory;
+        private static INotifyCollectionChangedEventArgsFactory? s_EventArgsFactory;
 
         // Extracts properties from a managed NotifyCollectionChangedEventArgs and passes them to
         // a VM-implemented helper that creates a WinRT NotifyCollectionChangedEventArgs instance.
@@ -119,7 +119,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
 
             if (s_EventArgsFactory == null)
             {
-                object factory = null;
+                object? factory = null;
                 Guid guid = typeof(INotifyCollectionChangedEventArgsFactory).GUID;
                 int hr = Interop.mincore.RoGetActivationFactory(WinRTNotifyCollectionChangedEventArgsName, ref guid, out factory);
                 if (hr < 0)
@@ -128,14 +128,14 @@ namespace System.Runtime.InteropServices.WindowsRuntime
                 s_EventArgsFactory = (INotifyCollectionChangedEventArgsFactory)factory;
             }
 
-            object inner = null;
+            object? inner = null;
             return s_EventArgsFactory.CreateInstanceWithAllParameters((int)managedArgs.Action, managedArgs.NewItems, managedArgs.OldItems, managedArgs.NewStartingIndex, managedArgs.OldStartingIndex, null, ref inner);
         }
 
         // Extracts properties from a WinRT NotifyCollectionChangedEventArgs and creates a new
         // managed NotifyCollectionChangedEventArgs instance.
         // This method is called from IL stubs and needs to have its token stabilized.
-        internal static NotifyCollectionChangedEventArgs ConvertToManaged(IntPtr nativeArgsIP)
+        internal static NotifyCollectionChangedEventArgs? ConvertToManaged(IntPtr nativeArgsIP)
         {
             if (nativeArgsIP == IntPtr.Zero)
                 return null;
@@ -168,7 +168,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
     {
         private const string WinRTPropertyChangedEventArgsName = "Windows.UI.Xaml.Data.PropertyChangedEventArgs";
 
-        private static IPropertyChangedEventArgsFactory s_pPCEventArgsFactory;
+        private static IPropertyChangedEventArgsFactory? s_pPCEventArgsFactory;
 
         // Extracts PropertyName from a managed PropertyChangedEventArgs and passes them to
         // a VM-implemented helper that creates a WinRT PropertyChangedEventArgs instance.
@@ -180,7 +180,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
 
             if (s_pPCEventArgsFactory == null)
             {
-                object factory = null;
+                object? factory = null;
                 Guid guid = typeof(IPropertyChangedEventArgsFactory).GUID;
                 int hr = Interop.mincore.RoGetActivationFactory(WinRTPropertyChangedEventArgsName, ref guid, out factory);
                 if (hr < 0)
@@ -189,14 +189,14 @@ namespace System.Runtime.InteropServices.WindowsRuntime
                 s_pPCEventArgsFactory = (IPropertyChangedEventArgsFactory)factory;
             }
 
-            object inner = null;
+            object? inner = null;
             return s_pPCEventArgsFactory.CreateInstance(managedArgs.PropertyName, null, ref inner);
         }
 
         // Extracts properties from a WinRT PropertyChangedEventArgs and creates a new
         // managed PropertyChangedEventArgs instance.
         // This method is called from IL stubs and needs to have its token stabilized.
-        internal static PropertyChangedEventArgs ConvertToManaged(IntPtr nativeArgsIP)
+        internal static PropertyChangedEventArgs? ConvertToManaged(IntPtr nativeArgsIP)
         {
             if (nativeArgsIP == IntPtr.Zero)
                 return null;
@@ -282,7 +282,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
             INotifyCollectionChanged _this = Unsafe.As<INotifyCollectionChanged>(this);
             EventRegistrationTokenTable<NotifyCollectionChangedEventHandler> table = s_weakTable.GetOrCreateValue(_this);
 
-            if (table.RemoveEventHandler(token, out NotifyCollectionChangedEventHandler handler))
+            if (table.RemoveEventHandler(token, out NotifyCollectionChangedEventHandler? handler))
             {
                 _this.CollectionChanged -= handler;
             }
@@ -363,7 +363,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
             INotifyPropertyChanged _this = Unsafe.As<INotifyPropertyChanged>(this);
             EventRegistrationTokenTable<PropertyChangedEventHandler> table = s_weakTable.GetOrCreateValue(_this);
 
-            if (table.RemoveEventHandler(token, out PropertyChangedEventHandler handler))
+            if (table.RemoveEventHandler(token, out PropertyChangedEventHandler? handler))
             {
                 _this.PropertyChanged -= handler;
             }
@@ -470,7 +470,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
             ICommand _this = Unsafe.As<ICommand>(this);
             EventRegistrationTokenTable<EventHandler> table = s_weakTable.GetOrCreateValue(_this);
 
-            if (table.RemoveEventHandler(token, out EventHandler handler))
+            if (table.RemoveEventHandler(token, out EventHandler? handler))
             {
                 _this.CanExecuteChanged -= handler;
             }
@@ -496,16 +496,16 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         {
             // Check whether it is a round-tripping case i.e. the sender is of the type eventArgs,
             // If so we use it else we pass EventArgs.Empty
-            return (object sender, object e) =>
+            return (object? sender, object e) =>
                 {
-                    EventArgs eventArgs = e as EventArgs;
+                    EventArgs? eventArgs = e as EventArgs;
                     handler(sender, (eventArgs == null ? System.EventArgs.Empty : eventArgs));
                 };
         }
 
         internal static EventHandler CreateWrapperHandler(EventHandler<object> handler)
         {
-            return (object sender, EventArgs e) => handler(sender, e);
+            return (object? sender, EventArgs e) => handler(sender, e);
         }
 
         internal static EventHandler<object> GetValueFromEquivalentKey(

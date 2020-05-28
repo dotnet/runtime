@@ -9,7 +9,7 @@
 ** Purpose: InterlockedIncrement() function
 **
 **	The test case spawns MAX_THREADS Threads, and each thread call InterlockedDecrement Function to decrement a 
-**	global counter REPEAT_COUNT Times. The Test case sets the global counter to Zero at the begining of the test.  
+**	global counter REPEAT_COUNT Times. The Test case sets the global counter to Zero at the beginning of the test.  
 **	The test cases passes if at the end the test the value of the global counter is  MAX_THREADS * REPEAT_COUNT.
 **
 **

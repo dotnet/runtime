@@ -670,7 +670,7 @@ void CallDescrWorkerReflectionWrapper(CallDescrData * pCallDescrData, Frame * pF
     PAL_ENDTRY
 } // CallDescrWorkerReflectionWrapper
 
-OBJECTREF InvokeArrayConstructor(ArrayTypeDesc* arrayDesc, MethodDesc* pMeth, PTRARRAYREF* objs, int argCnt)
+OBJECTREF InvokeArrayConstructor(TypeHandle th, MethodDesc* pMeth, PTRARRAYREF* objs, int argCnt)
 {
     CONTRACTL {
         THROWS;
@@ -679,15 +679,9 @@ OBJECTREF InvokeArrayConstructor(ArrayTypeDesc* arrayDesc, MethodDesc* pMeth, PT
     }
     CONTRACTL_END;
 
-    DWORD i;
-
-    // If we're trying to create an array of pointers or function pointers,
-    // check that the caller has skip verification permission.
-    CorElementType et = arrayDesc->GetArrayElementTypeHandle().GetVerifierCorElementType();
-
     // Validate the argCnt an the Rank. Also allow nested SZARRAY's.
-    _ASSERTE(argCnt == (int) arrayDesc->GetRank() || argCnt == (int) arrayDesc->GetRank() * 2 ||
-             arrayDesc->GetInternalCorElementType() == ELEMENT_TYPE_SZARRAY);
+    _ASSERTE(argCnt == (int) th.GetRank() || argCnt == (int) th.GetRank() * 2 ||
+             th.GetInternalCorElementType() == ELEMENT_TYPE_SZARRAY);
 
     // Validate all of the parameters.  These all typed as integers
     int allocSize = 0;
@@ -697,7 +691,7 @@ OBJECTREF InvokeArrayConstructor(ArrayTypeDesc* arrayDesc, MethodDesc* pMeth, PT
     INT32* indexes = (INT32*) _alloca((size_t)allocSize);
     ZeroMemory(indexes, allocSize);
 
-    for (i=0; i<(DWORD)argCnt; i++)
+    for (DWORD i=0; i<(DWORD)argCnt; i++)
     {
         if (!(*objs)->m_Array[i])
             COMPlusThrowArgumentException(W("parameters"), W("Arg_NullIndex"));
@@ -711,7 +705,7 @@ OBJECTREF InvokeArrayConstructor(ArrayTypeDesc* arrayDesc, MethodDesc* pMeth, PT
         memcpy(&indexes[i],(*objs)->m_Array[i]->UnBox(),pMT->GetNumInstanceFieldBytes());
     }
 
-    return AllocateArrayEx(TypeHandle(arrayDesc), indexes, argCnt);
+    return AllocateArrayEx(th, indexes, argCnt);
 }
 
 static BOOL IsActivationNeededForMethodInvoke(MethodDesc * pMD)
@@ -850,7 +844,7 @@ void DECLSPEC_NORETURN ThrowInvokeMethodException(MethodDesc * pMethod, OBJECTRE
 
     GCPROTECT_BEGIN(targetException);
 
-#if defined(_DEBUG) && !defined(FEATURE_PAL)
+#if defined(_DEBUG) && !defined(TARGET_UNIX)
     if (IsWatsonEnabled())
     {
         if (!CLRException::IsPreallocatedExceptionObject(targetException))
@@ -886,20 +880,11 @@ void DECLSPEC_NORETURN ThrowInvokeMethodException(MethodDesc * pMethod, OBJECTRE
             }
         }
     }
-#endif // _DEBUG && !FEATURE_PAL
-
-#ifdef FEATURE_CORRUPTING_EXCEPTIONS
-    // Get the corruption severity of the exception that came in through reflection invocation.
-    CorruptionSeverity severity = GetThread()->GetExceptionState()->GetLastActiveExceptionCorruptionSeverity();
-
-    // Since we are dealing with an exception, set the flag indicating if the target of Reflection can handle exception or not.
-    // This flag is used in CEHelper::CanIDispatchTargetHandleException.
-    GetThread()->GetExceptionState()->SetCanReflectionTargetHandleException(CEHelper::CanMethodHandleException(severity, pMethod));
-#endif // FEATURE_CORRUPTING_EXCEPTIONS
+#endif // _DEBUG && !TARGET_UNIX
 
     OBJECTREF except = InvokeUtil::CreateTargetExcept(&targetException);
 
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
     if (IsWatsonEnabled())
     {
         struct
@@ -942,7 +927,7 @@ void DECLSPEC_NORETURN ThrowInvokeMethodException(MethodDesc * pMethod, OBJECTRE
         except = gcTIE.oExcept;
         GCPROTECT_END();
     }
-#endif // !FEATURE_PAL
+#endif // !TARGET_UNIX
 
     // Since the original exception is inner of target invocation exception,
     // when TIE is seen to be raised for the first time, we will end up
@@ -950,11 +935,7 @@ void DECLSPEC_NORETURN ThrowInvokeMethodException(MethodDesc * pMethod, OBJECTRE
 
     // Since VM is throwing the exception, we set it to use the same corruption severity
     // that the original exception came in with from reflection invocation.
-    COMPlusThrow(except
-#ifdef FEATURE_CORRUPTING_EXCEPTIONS
-        , severity
-#endif // FEATURE_CORRUPTING_EXCEPTIONS
-        );
+    COMPlusThrow(except);
 
     GCPROTECT_END();
 }
@@ -994,9 +975,6 @@ FCIMPL5(Object*, RuntimeMethodHandle::InvokeMethod,
     }
 #endif
 
-    // Skip the activation optimization for remoting because of remoting proxy is not always activated.
-    // It would be nice to clean this up and get remoting to always activate methodtable behind the proxy.
-    BOOL fForceActivationForRemoting = FALSE;
     BOOL fCtorOfVariableSizedObject = FALSE;
 
     if (fConstructor)
@@ -1005,7 +983,7 @@ FCIMPL5(Object*, RuntimeMethodHandle::InvokeMethod,
         // handle this specially.  String objects allocate themselves
         // so they are a special case.
         if (ownerType.IsArray()) {
-            gc.retVal = InvokeArrayConstructor(ownerType.AsArray(),
+            gc.retVal = InvokeArrayConstructor(ownerType,
                                                pMeth,
                                                &gc.args,
                                                gc.pSig->NumFixedArgs());
@@ -1020,14 +998,11 @@ FCIMPL5(Object*, RuntimeMethodHandle::InvokeMethod,
                 gc.retVal = pMT->Allocate();
         }
     }
-    else
-    {
-    }
 
     {
     ArgIteratorForMethodInvoke argit(&gc.pSig);
 
-    if (argit.IsActivationNeeded() || fForceActivationForRemoting)
+    if (argit.IsActivationNeeded())
         pMeth->EnsureActive();
     CONSISTENCY_CHECK(pMeth->CheckActivated());
 
@@ -1266,12 +1241,6 @@ FCIMPL5(Object*, RuntimeMethodHandle::InvokeMethod,
     ENDFORBIDGC();
     }
 
-#ifdef FEATURE_CORRUPTING_EXCEPTIONS
-    // By default, set the flag in TES indicating the reflection target can handle CSE.
-    // This flag is used in CEHelper::CanIDispatchTargetHandleException.
-    pThread->GetExceptionState()->SetCanReflectionTargetHandleException(TRUE);
-#endif // FEATURE_CORRUPTING_EXCEPTIONS
-
     if (pValueClasses != NULL)
     {
         pProtectValueClassFrame = new (_alloca (sizeof (FrameWithCookie<ProtectValueClassFrame>)))
@@ -1322,11 +1291,7 @@ FCIMPL5(Object*, RuntimeMethodHandle::InvokeMethod,
     if (fConstructor)
     {
         // We have a special case for Strings...The object is returned...
-        if (ownerType == TypeHandle(g_pStringClass)
-#ifdef FEATURE_UTF8STRING
-            || ownerType == TypeHandle(g_pUtf8StringClass)
-#endif // FEATURE_UTF8STRING
-            ) {
+        if (fCtorOfVariableSizedObject) {
             PVOID pReturnValue = &callDescrData.returnValue;
             gc.retVal = *(OBJECTREF *)pReturnValue;
         }
@@ -1529,31 +1494,6 @@ FCIMPL4(Object*, RuntimeFieldHandle::GetValueDirect, ReflectFieldObject *pFieldU
     _ASSERTE(gc.refDeclaringType == NULL || !gc.refDeclaringType->GetType().IsTypeDesc());
     MethodTable *pEnclosingMT = (gc.refDeclaringType != NULL ? gc.refDeclaringType->GetType() : TypeHandle()).AsMethodTable();
 
-    // Verify the callee/caller access
-    if (!pField->IsPublic() || (pEnclosingMT != NULL && !pEnclosingMT->IsExternallyVisible()))
-    {
-
-        bool targetRemoted = false;
-
-
-        RefSecContext sCtx(InvokeUtil::GetInvocationAccessCheckType(targetRemoted));
-
-        MethodTable* pInstanceMT = NULL;
-        if (!pField->IsStatic())
-        {
-            if (!targetType.IsTypeDesc())
-                pInstanceMT = targetType.AsMethodTable();
-        }
-
-        //TODO: missing check that the field is consistent
-
-        // Perform the normal access check (caller vs field).
-        InvokeUtil::CanAccessField(&sCtx,
-                                   pEnclosingMT,
-                                   pInstanceMT,
-                                   pField);
-    }
-
     CLR_BOOL domainInitialized = FALSE;
     if (pField->IsStatic() || !targetType.IsValueType()) {
         refRet = DirectObjectFieldGet(pField, fieldType, TypeHandle(pEnclosingMT), pTarget, &domainInitialized);
@@ -1701,31 +1641,6 @@ FCIMPL5(void, RuntimeFieldHandle::SetValueDirect, ReflectFieldObject *pFieldUNSA
                 ssFieldName.GetUnicode(),
                 GetFullyQualifiedNameForClassW(pEnclosingMT));
         }
-
-        // Verify the callee/caller access
-        if (!pField->IsPublic() || (pEnclosingMT != NULL && !pEnclosingMT->IsExternallyVisible()))
-        {
-            // security and consistency checks
-
-            bool targetRemoted = false;
-
-            RefSecContext sCtx(InvokeUtil::GetInvocationAccessCheckType(targetRemoted));
-
-            MethodTable* pInstanceMT = NULL;
-            if (!pField->IsStatic()) {
-                if (!targetType.IsTypeDesc())
-                    pInstanceMT = targetType.AsMethodTable();
-            }
-
-            //TODO: missing check that the field is consistent
-
-            // Perform the normal access check (caller vs field).
-            InvokeUtil::CanAccessField(&sCtx,
-                                       pEnclosingMT,
-                                       pInstanceMT,
-                                       pField);
-        }
-
     }
 
     CLR_BOOL domainInitialized = FALSE;
@@ -1895,10 +1810,6 @@ FCIMPL1(void, ReflectionInvocation::RunClassConstructor, ReflectClassBaseObject 
     if (!pMT->IsClassInited())
     {
         HELPER_METHOD_FRAME_BEGIN_1(refType);
-
-        // We perform the access check only on CoreCLR for backward compatibility.
-        RefSecContext sCtx(InvokeUtil::GetInvocationAccessCheckType());
-        InvokeUtil::CanAccessClass(&sCtx, pMT);
 
         pMT->CheckRestore();
         pMT->EnsureInstanceActive();
@@ -2364,7 +2275,7 @@ FCIMPL2(void, ReflectionInvocation::GetGUID, ReflectClassBaseObject* refThisUNSA
         COMPlusThrow(kNullReferenceException);
 
     TypeHandle type = refThis->GetType();
-    if (type.IsTypeDesc()) {
+    if (type.IsTypeDesc() || type.IsArray()) {
         memset(result,0,sizeof(GUID));
         goto lExit;
     }
@@ -2418,10 +2329,10 @@ FCIMPL1(Object*, ReflectionSerialization::GetUninitializedObject, ReflectClassBa
     TypeHandle type = objType->GetType();
 
     // Don't allow arrays, pointers, byrefs or function pointers.
-    if (type.IsTypeDesc())
+    if (type.IsTypeDesc() || type.IsArray())
         COMPlusThrow(kArgumentException, W("Argument_InvalidValue"));
 
-    MethodTable *pMT = type.GetMethodTable();
+    MethodTable *pMT = type.AsMethodTable();
     PREFIX_ASSUME(pMT != NULL);
 
     //We don't allow unitialized Strings or Utf8Strings.
@@ -2485,9 +2396,8 @@ FCIMPL1(Object *, ReflectionEnum::InternalGetEnumUnderlyingType, ReflectClassBas
 
     VALIDATEOBJECT(target);
     TypeHandle th = target->GetType();
-    if (!th.IsEnum())
-        FCThrowArgument(NULL, NULL);
-
+    _ASSERTE(th.IsEnum());
+    
     OBJECTREF result = NULL;
 
     HELPER_METHOD_FRAME_BEGIN_RET_0();

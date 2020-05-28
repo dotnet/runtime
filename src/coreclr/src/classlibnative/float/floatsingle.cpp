@@ -13,7 +13,7 @@
 // define _isnan() and _copysign(). We will redirect the macros to these other functions if
 // the macro is not defined for the platform. This has the side effect of a possible implicit
 // upcasting for arguments passed in and an explicit downcasting for the _copysign() call.
-#if (defined(_TARGET_X86_) || defined(_TARGET_ARM_) || defined(_TARGET_ARM64_)) && !defined(FEATURE_PAL)
+#if (defined(TARGET_X86) || defined(TARGET_ARM) || defined(TARGET_ARM64)) && !defined(TARGET_UNIX)
 
 #if !defined(_copysignf)
 #define _copysignf   (float)_copysign
@@ -122,7 +122,7 @@ FCIMPL1_V(float, COMSingle::Cbrt, float x)
     return (float)cbrtf(x);
 FCIMPLEND
 
-#if defined(_MSC_VER) && defined(_TARGET_AMD64_)
+#if defined(_MSC_VER) && defined(TARGET_AMD64)
 // The /fp:fast form of `ceilf` for AMD64 does not correctly handle: `-1.0 < value <= -0.0`
 // https://github.com/dotnet/coreclr/issues/19739
 #pragma float_control(push)
@@ -138,7 +138,7 @@ FCIMPL1_V(float, COMSingle::Ceil, float x)
     return (float)ceilf(x);
 FCIMPLEND
 
-#if defined(_MSC_VER) && defined(_TARGET_AMD64_)
+#if defined(_MSC_VER) && defined(TARGET_AMD64)
 #pragma float_control(pop)
 #endif
 

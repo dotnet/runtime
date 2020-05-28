@@ -16,9 +16,9 @@ namespace System.ComponentModel.Composition
     {
         private readonly CompositionErrorId _id;
         private readonly string _description;
-        private readonly Exception _exception;
+        private readonly Exception? _exception;
 
-        private readonly ICompositionElement _element;
+        private readonly ICompositionElement? _element;
 
         /// <summary>
         ///     Initializes a new instance of the <see cref="CompositionError"/> class
@@ -29,8 +29,8 @@ namespace System.ComponentModel.Composition
         ///     <see cref="CompositionError"/>; or <see langword="null"/> to set the
         ///     <see cref="Description"/> property to an empty string ("").
         /// </param>
-        public CompositionError(string message)
-            : this(CompositionErrorId.Unknown, message, (ICompositionElement)null, (Exception)null)
+        public CompositionError(string? message)
+            : this(CompositionErrorId.Unknown, message, (ICompositionElement?)null, (Exception?)null)
         {
         }
 
@@ -50,8 +50,8 @@ namespace System.ComponentModel.Composition
         ///     <see cref="CompositionError"/>; or <see langword="null"/> to set the
         ///     <see cref="Description"/> property to an empty string ("").
         /// </param>
-        public CompositionError(string message, ICompositionElement element)
-            : this(CompositionErrorId.Unknown, message, element, (Exception)null)
+        public CompositionError(string? message, ICompositionElement? element)
+            : this(CompositionErrorId.Unknown, message, element, (Exception?)null)
         {
         }
 
@@ -70,8 +70,8 @@ namespace System.ComponentModel.Composition
         ///     <see cref="CompositionError"/>; or <see langword="null"/> to set
         ///     the <see cref="CompositionError.Exception"/> property to <see langword="null"/>.
         /// </param>
-        public CompositionError(string message, Exception exception)
-            : this(CompositionErrorId.Unknown, message, (ICompositionElement)null, exception)
+        public CompositionError(string? message, Exception? exception)
+            : this(CompositionErrorId.Unknown, message, (ICompositionElement?)null, exception)
         {
         }
 
@@ -96,12 +96,12 @@ namespace System.ComponentModel.Composition
         ///     <see cref="CompositionError"/>; or <see langword="null"/> to set
         ///     the <see cref="CompositionError.Exception"/> property to <see langword="null"/>.
         /// </param>
-        public CompositionError(string message, ICompositionElement element, Exception exception)
+        public CompositionError(string? message, ICompositionElement? element, Exception? exception)
             : this(CompositionErrorId.Unknown, message, element, exception)
         {
         }
 
-        internal CompositionError(CompositionErrorId id, string description, ICompositionElement element, Exception exception)
+        internal CompositionError(CompositionErrorId id, string? description, ICompositionElement? element, Exception? exception)
         {
             _id = id;
             _description = description ?? string.Empty;
@@ -116,7 +116,7 @@ namespace System.ComponentModel.Composition
         ///     The <see cref="ICompositionElement"/> that is the cause of the
         ///     <see cref="CompositionError"/>. The default is <see langword="null"/>.
         /// </value>
-        public ICompositionElement Element
+        public ICompositionElement? Element
         {
             get { return _element; }
         }
@@ -140,7 +140,7 @@ namespace System.ComponentModel.Composition
         ///     The <see cref="Exception"/> that is the underlying cause of the
         ///     <see cref="CompositionError"/>. The default is <see langword="null"/>.
         /// </value>
-        public Exception Exception
+        public Exception? Exception
         {
             get { return _exception; }
         }
@@ -150,7 +150,7 @@ namespace System.ComponentModel.Composition
             get { return _id; }
         }
 
-        internal Exception InnerException
+        internal Exception? InnerException
         {
             get { return Exception; }
         }
@@ -166,17 +166,17 @@ namespace System.ComponentModel.Composition
             return Description;
         }
 
-        internal static CompositionError Create(CompositionErrorId id, string format, params object[] parameters)
+        internal static CompositionError Create(CompositionErrorId id, string format, params object?[] parameters)
         {
-            return Create(id, (ICompositionElement)null, (Exception)null, format, parameters);
+            return Create(id, (ICompositionElement?)null, (Exception?)null, format, parameters);
         }
 
-        internal static CompositionError Create(CompositionErrorId id, ICompositionElement element, string format, params object[] parameters)
+        internal static CompositionError Create(CompositionErrorId id, ICompositionElement element, string format, params object?[] parameters)
         {
-            return Create(id, element, (Exception)null, format, parameters);
+            return Create(id, element, (Exception?)null, format, parameters);
         }
 
-        internal static CompositionError Create(CompositionErrorId id, ICompositionElement element, Exception exception, string format, params object[] parameters)
+        internal static CompositionError Create(CompositionErrorId id, ICompositionElement? element, Exception? exception, string format, params object?[] parameters)
         {
             return new CompositionError(id, string.Format(CultureInfo.CurrentCulture, format, parameters), element, exception);
         }

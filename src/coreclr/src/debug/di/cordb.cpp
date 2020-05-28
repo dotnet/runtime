@@ -20,7 +20,7 @@
 #include "dbgtransportmanager.h"
 #endif // FEATURE_DBGIPC_TRANSPORT_DI
 
-#if defined(PLATFORM_UNIX) || defined(__ANDROID__)
+#if defined(TARGET_UNIX) || defined(__ANDROID__)
 // Local (in-process) debugging is not supported for UNIX and Android.
 #define SUPPORT_LOCAL_DEBUGGING 0
 #else
@@ -28,7 +28,7 @@
 #endif
 
 //********** Globals. *********************************************************
-#ifndef FEATURE_PAL
+#ifndef HOST_UNIX
 HINSTANCE       g_hInst;                // Instance handle to this piece of code.
 #endif
 
@@ -201,7 +201,7 @@ BOOL WINAPI DbgDllMain(HINSTANCE hInstance, DWORD dwReason, LPVOID lpReserved)
 
         case DLL_PROCESS_ATTACH:
         {
-#ifndef FEATURE_PAL
+#ifndef HOST_UNIX
             g_hInst = hInstance;
 #else
             int err = PAL_InitializeDLL();
@@ -246,7 +246,7 @@ BOOL WINAPI DbgDllMain(HINSTANCE hInstance, DWORD dwReason, LPVOID lpReserved)
         case DLL_THREAD_DETACH:
         {
 #ifdef STRESS_LOG
-            StressLog::ThreadDetach((ThreadStressLog*) ClrFlsGetValue(TlsIdx_StressLog));
+            StressLog::ThreadDetach();
 #endif
 
 #ifdef RSCONTRACTS
@@ -442,7 +442,7 @@ HRESULT STDMETHODCALLTYPE CClassFactory::LockServer(
 //*****************************************************************************
 // This helper provides access to the instance handle of the loaded image.
 //*****************************************************************************
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
 HINSTANCE GetModuleInst()
 {
     return g_hInst;
@@ -473,47 +473,13 @@ STDAPI GetRequestedRuntimeInfo(LPCWSTR pExe,
     return E_NOTIMPL;
 }
 
-//-----------------------------------------------------------------------------
-// Replacement for legacy shim API GetCORRequiredVersion(...) used in linked libraries.
-// Used in code:TiggerStorage::GetDefaultVersion#CallTo_CLRRuntimeHostInternal_GetImageVersionString.
-//
-// Notes:
-//   Mscordbi does not statically link to mscoree.dll.
-//   This is used in EnC for IMetadataEmit2::GetSaveSize to computer size of header.
-//   see code:TiggerStorage::GetDefaultVersion.
-//
-//   Implemented by returning the version we're built for.  Mscordbi.dll has a tight coupling with
-//   the CLR version, so this will match exactly the build version we're debugging.
-//   One potential caveat is that the build version doesn't necessarily match the install string
-//   (eg. we may install as "v4.0.x86chk" but that's not captured in the build version).  But this should
-//   be internal scenarios only, and shouldn't actually matter here.  If it did, we could instead get
-//   the last components of the directory name the current mscordbi.dll is located in.
-//
-HRESULT
-CLRRuntimeHostInternal_GetImageVersionString(
-    __out_ecount_part(*pcchBuffer, *pcchBuffer) LPWSTR wszBuffer,
-    DWORD *pcchBuffer)
-{
-    // Construct the cannoncial version string we're built as - eg. "v4.0.1234"
-    const WCHAR k_wszBuiltFor[] = W("v") VER_PRODUCTVERSION_NO_QFE_STR_L;
-
-    // Copy our buffer in
-    HRESULT hr = HRESULT_FROM_WIN32(wcscpy_s(wszBuffer, *pcchBuffer, k_wszBuiltFor));
-
-    // Hand out length regardless of success - like GetCORRequiredVersion
-    *pcchBuffer = _countof(k_wszBuiltFor);
-
-    return hr;
-} // CLRRuntimeHostInternal_GetImageVersionString
-
-
-#ifdef _TARGET_ARM_
+#ifdef TARGET_ARM
 BOOL
 DbiGetThreadContext(HANDLE hThread,
     DT_CONTEXT *lpContext)
 {
     // if we aren't local debugging this isn't going to work
-#if !defined(_ARM_) || defined(FEATURE_DBGIPC_TRANSPORT_DI) || !SUPPORT_LOCAL_DEBUGGING
+#if !defined(HOST_ARM) || defined(FEATURE_DBGIPC_TRANSPORT_DI) || !SUPPORT_LOCAL_DEBUGGING
     _ASSERTE(!"Can't use local GetThreadContext remotely, this needed to go to datatarget");
     return FALSE;
 #else
@@ -552,7 +518,7 @@ BOOL
 DbiSetThreadContext(HANDLE hThread,
     const DT_CONTEXT *lpContext)
 {
-#if !defined(_ARM_) || defined(FEATURE_DBGIPC_TRANSPORT_DI) || !SUPPORT_LOCAL_DEBUGGING
+#if !defined(HOST_ARM) || defined(FEATURE_DBGIPC_TRANSPORT_DI) || !SUPPORT_LOCAL_DEBUGGING
     _ASSERTE(!"Can't use local GetThreadContext remotely, this needed to go to datatarget");
     return FALSE;
 #else

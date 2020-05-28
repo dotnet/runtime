@@ -60,7 +60,7 @@ namespace System.Drawing.Internal
         private IntPtr _hDC;
         private readonly DeviceContextType _dcType;
 
-        public event EventHandler Disposing;
+        public event EventHandler? Disposing;
 
         private bool _disposed;
 
@@ -78,7 +78,7 @@ namespace System.Drawing.Internal
         private IntPtr _hCurrentBmp;
         private IntPtr _hCurrentFont;
 
-        private Stack _contextStack;
+        private Stack? _contextStack;
 
 #if GDI_FINALIZATION_WATCH
         private string AllocationSite = DbgUtil.StackTrace;
@@ -171,7 +171,7 @@ namespace System.Drawing.Internal
         /// <summary>
         /// CreateDC creates a DeviceContext object wrapping an hdc created with the Win32 CreateDC function.
         /// </summary>
-        public static DeviceContext CreateDC(string driverName, string deviceName, string fileName, IntPtr devMode)
+        public static DeviceContext CreateDC(string driverName, string deviceName, string? fileName, IntPtr devMode)
         {
             // Note: All input params can be null but not at the same time.  See MSDN for information.
             IntPtr hdc = Interop.Gdi32.CreateDCW(driverName, deviceName, fileName, devMode);
@@ -181,7 +181,7 @@ namespace System.Drawing.Internal
         /// <summary>
         /// CreateIC creates a DeviceContext object wrapping an hdc created with the Win32 CreateIC function.
         /// </summary>
-        public static DeviceContext CreateIC(string driverName, string deviceName, string fileName, IntPtr devMode)
+        public static DeviceContext CreateIC(string driverName, string deviceName, string? fileName, IntPtr devMode)
         {
             // Note: All input params can be null but not at the same time.  See MSDN for information.
 
@@ -330,7 +330,7 @@ namespace System.Drawing.Internal
 
             if (_contextStack != null)
             {
-                GraphicsState g = (GraphicsState)_contextStack.Pop();
+                GraphicsState g = (GraphicsState)_contextStack.Pop()!;
 
                 _hCurrentBmp = g.hBitmap;
                 _hCurrentBrush = g.hBrush;
@@ -437,9 +437,9 @@ namespace System.Drawing.Internal
 
         /// <summary>
         /// </summary>
-        public override bool Equals(object obj)
+        public override bool Equals(object? obj)
         {
-            DeviceContext other = obj as DeviceContext;
+            DeviceContext? other = obj as DeviceContext;
 
             if (other == this)
             {

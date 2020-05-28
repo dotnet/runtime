@@ -7,6 +7,7 @@ using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
+using System.Reflection;
 using System.Threading.Tasks;
 using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
@@ -84,9 +85,9 @@ namespace System.Diagnostics.Tests
                     Assert.Equal("world", anotherActivity.GetBaggageItem("hello"));
                     Assert.Equal(4, anotherActivity.Baggage.Count());
                     Assert.Equal(new KeyValuePair<string, string>("hello", "world"), anotherActivity.Baggage.First());
-                    Assert.Equal(new KeyValuePair<string, string>(Key + 2, Value + 2), anotherActivity.Baggage.Skip(1).First());
+                    Assert.Equal(new KeyValuePair<string, string>(Key + 0, Value + 0), anotherActivity.Baggage.Skip(1).First());
                     Assert.Equal(new KeyValuePair<string, string>(Key + 1, Value + 1), anotherActivity.Baggage.Skip(2).First());
-                    Assert.Equal(new KeyValuePair<string, string>(Key + 0, Value + 0), anotherActivity.Baggage.Skip(3).First());
+                    Assert.Equal(new KeyValuePair<string, string>(Key + 2, Value + 2), anotherActivity.Baggage.Skip(3).First());
                 }
                 finally
                 {
@@ -115,8 +116,8 @@ namespace System.Diagnostics.Tests
                 Assert.Equal(activity, activity.AddTag(Key + i, Value + i));
                 List<KeyValuePair<string, string>> tags = activity.Tags.ToList();
                 Assert.Equal(i + 1, tags.Count);
-                Assert.Equal(tags[tags.Count - i - 1].Key, Key + i);
-                Assert.Equal(tags[tags.Count - i - 1].Value, Value + i);
+                Assert.Equal(tags[i].Key, Key + i);
+                Assert.Equal(tags[i].Value, Value + i);
             }
         }
 
@@ -263,33 +264,41 @@ namespace System.Diagnostics.Tests
             //start 2 children in different execution contexts
             Task.Run(() => child1.Start()).Wait();
             Task.Run(() => child2.Start()).Wait();
-#if DEBUG
-            Assert.Equal($"|{parent.RootId}.{child1.OperationName}-1.", child1.Id);
-            Assert.Equal($"|{parent.RootId}.{child2.OperationName}-2.", child2.Id);
-#else
-            Assert.Equal($"|{parent.RootId}.1.", child1.Id);
-            Assert.Equal($"|{parent.RootId}.2.", child2.Id);
-#endif
+
+            // In Debug builds of System.Diagnostics.DiagnosticSource, the child operation Id will be constructed as follows
+            // "|parent.RootId.<child.OperationName.Replace(., -)>-childCount.".
+            // This is for debugging purposes to know which operation the child Id is comming from.
+            //
+            // In Release builds of System.Diagnostics.DiagnosticSource, it will not contain the operation name to keep it simple and it will be as
+            // "|parent.RootId.childCount.".
+
+            string child1DebugString = $"|{parent.RootId}.{child1.OperationName}-1.";
+            string child2DebugString = $"|{parent.RootId}.{child2.OperationName}-2.";
+            string child1ReleaseString = $"|{parent.RootId}.1.";
+            string child2ReleaseString = $"|{parent.RootId}.2.";
+
+            AssertExtensions.AtLeastOneEquals(child1DebugString, child1ReleaseString, child1.Id);
+            AssertExtensions.AtLeastOneEquals(child2DebugString, child2ReleaseString, child2.Id);
+
             Assert.Equal(parent.RootId, child1.RootId);
             Assert.Equal(parent.RootId, child2.RootId);
             child1.Stop();
             child2.Stop();
             var child3 = new Activity("child3");
             child3.Start();
-#if DEBUG
-            Assert.Equal($"|{parent.RootId}.{child3.OperationName}-3.", child3.Id);
-#else
-            Assert.Equal($"|{parent.RootId}.3.", child3.Id);
-#endif
+
+            string child3DebugString = $"|{parent.RootId}.{child3.OperationName}-3.";
+            string child3ReleaseString = $"|{parent.RootId}.3.";
+
+            AssertExtensions.AtLeastOneEquals(child3DebugString, child3ReleaseString, child3.Id);
 
             var grandChild = new Activity("grandChild");
             grandChild.Start();
-#if DEBUG
-            Assert.Equal($"{child3.Id}{grandChild.OperationName}-1.", grandChild.Id);
-#else
-            Assert.Equal($"{child3.Id}1.", grandChild.Id);
-#endif
 
+            child3DebugString = $"{child3.Id}{grandChild.OperationName}-1.";
+            child3ReleaseString = $"{child3.Id}1.";
+
+            AssertExtensions.AtLeastOneEquals(child3DebugString, child3ReleaseString, grandChild.Id);
         }
 
         /// <summary>
@@ -548,6 +557,40 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
+        public void IdFormat_W3CValidVersions()
+        {
+            Activity activity0 = new Activity("activity0");
+            Activity activity1 = new Activity("activity1");
+            Activity activity2 = new Activity("activity2");
+            activity0.SetParentId("01-0123456789abcdef0123456789abcdef-0123456789abcdef-00");
+            activity0.Start();
+            activity1.SetParentId("cc-1123456789abcdef0123456789abcdef-1123456789abcdef-00");
+            activity1.Start();
+            activity2.SetParentId("fe-2123456789abcdef0123456789abcdef-2123456789abcdef-00");
+            activity2.Start();
+
+            Assert.Equal(ActivityIdFormat.W3C, activity0.IdFormat);
+            Assert.Equal(ActivityIdFormat.W3C, activity1.IdFormat);
+            Assert.Equal(ActivityIdFormat.W3C, activity2.IdFormat);
+            Assert.Equal("0123456789abcdef0123456789abcdef", activity0.TraceId.ToHexString());
+            Assert.Equal("1123456789abcdef0123456789abcdef", activity1.TraceId.ToHexString());
+            Assert.Equal("2123456789abcdef0123456789abcdef", activity2.TraceId.ToHexString());
+            Assert.Equal("0123456789abcdef", activity0.ParentSpanId.ToHexString());
+            Assert.Equal("1123456789abcdef", activity1.ParentSpanId.ToHexString());
+            Assert.Equal("2123456789abcdef", activity2.ParentSpanId.ToHexString());
+        }
+
+        [Fact]
+        public void IdFormat_W3CInvalidVersionFF()
+        {
+            Activity activity = new Activity("activity");
+            activity.SetParentId("ff-0123456789abcdef0123456789abcdef-0123456789abcdef-00");
+            activity.Start();
+
+            Assert.Equal(ActivityIdFormat.Hierarchical, activity.IdFormat);
+        }
+
+        [Fact]
         public void IdFormat_W3CWhenTraceIdAndSpanIdProvided()
         {
             Activity activity = new Activity("activity3");
@@ -682,7 +725,46 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
-        public void IdFormat_W3CForcedOveeridesParentActivityIdFormat()
+        public void Version_W3CNonHexCharsNotSupportedAndDoesNotThrow()
+        {
+            Activity activity = new Activity("activity");
+            activity.SetParentId("0.-0123456789abcdef0123456789abcdef-0123456789abcdef-00");
+            activity.Start();
+
+            Assert.Equal(ActivityIdFormat.Hierarchical, activity.IdFormat);
+        }
+
+        [Fact]
+        public void Version_W3CNonHexCharsNotSupportedAndDoesNotThrow_ForceW3C()
+        {
+            Activity activity = new Activity("activity");
+            activity.SetIdFormat(ActivityIdFormat.W3C);
+            activity.SetParentId("0.-0123456789abcdef0123456789abcdef-0123456789abcdef-00");
+            activity.Start();
+
+            Assert.Equal(ActivityIdFormat.W3C, activity.IdFormat);
+            Assert.NotEqual("0123456789abcdef0123456789abcdef", activity.TraceId.ToHexString());
+            Assert.Equal(default, activity.ParentSpanId);
+            Assert.True(IdIsW3CFormat(activity.Id));
+        }
+
+        [Fact]
+        public void Options_W3CNonHexCharsNotSupportedAndDoesNotThrow()
+        {
+            Activity activity = new Activity("activity");
+            activity.SetParentId("00-0123456789abcdef0123456789abcdef-0123456789abcdef-.1");
+            activity.Start();
+
+            Assert.Equal(ActivityIdFormat.W3C, activity.IdFormat);
+            Assert.True(IdIsW3CFormat(activity.Id));
+
+            Assert.Equal("0123456789abcdef0123456789abcdef", activity.TraceId.ToHexString());
+            Assert.Equal("0123456789abcdef", activity.ParentSpanId.ToHexString());
+            Assert.Equal(ActivityTraceFlags.None, activity.ActivityTraceFlags);
+        }
+
+        [Fact]
+        public void IdFormat_W3CForcedOverridesParentActivityIdFormat()
         {
             RemoteExecutor.Invoke(() =>
             {
@@ -1005,7 +1087,7 @@ namespace System.Diagnostics.Tests
             // Let's check that duration is 1sec - 2 * maximum DateTime.UtcNow error or bigger.
             // As both start and stop timestamps may have error.
             // There is another test (ActivityDateTimeTests.StartStopReturnsPreciseDuration)
-            // that checks duration precision on netfx.
+            // that checks duration precision on .NET Framework.
             Assert.InRange(activity.Duration.TotalMilliseconds, 1000 - 2 * MaxClockErrorMSec, double.MaxValue);
         }
 
@@ -1109,7 +1191,7 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
-        [OuterLoop] // Slighly flaky - https://github.com/dotnet/corefx/issues/23072
+        [OuterLoop("https://github.com/dotnet/runtime/issues/23104")]
         public void DiagnosticSourceStartStop()
         {
             using (DiagnosticListener listener = new DiagnosticListener("Testing"))
@@ -1264,6 +1346,88 @@ namespace System.Diagnostics.Tests
 
             Activity.Current = stopped;
             Assert.Same(started, Activity.Current);
+        }
+
+        [Fact]
+        public void TestDispose()
+        {
+            Activity current = Activity.Current;
+            using (Activity activity = new Activity("Mine").Start())
+            {
+                Assert.Same(activity, Activity.Current);
+                Assert.Same(current, activity.Parent);
+            }
+
+            Assert.Same(current, Activity.Current);
+        }
+
+        [Fact]
+        public void TestCustomProperties()
+        {
+            Activity activity = new Activity("Custom");
+            activity.SetCustomProperty("P1", "Prop1");
+            activity.SetCustomProperty("P2", "Prop2");
+            activity.SetCustomProperty("P3", null);
+
+            Assert.Equal("Prop1", activity.GetCustomProperty("P1"));
+            Assert.Equal("Prop2", activity.GetCustomProperty("P2"));
+            Assert.Null(activity.GetCustomProperty("P3"));
+            Assert.Null(activity.GetCustomProperty("P4"));
+
+            activity.SetCustomProperty("P1", "Prop5");
+            Assert.Equal("Prop5", activity.GetCustomProperty("P1"));
+
+        }
+
+        [Fact]
+        public void TestKind()
+        {
+            Activity activity = new Activity("Kind");
+            Assert.Equal(ActivityKind.Internal, activity.Kind);
+        }
+
+        [Fact]
+        public void TestDisplayName()
+        {
+            Activity activity = new Activity("Op1");
+            Assert.Equal("Op1", activity.OperationName);
+            Assert.Equal("Op1", activity.DisplayName);
+
+            activity.DisplayName = "Op2";
+            Assert.Equal("Op1", activity.OperationName);
+            Assert.Equal("Op2", activity.DisplayName);
+        }
+
+        [Fact]
+        public void TestEvent()
+        {
+            Activity activity = new Activity("EventTest");
+            Assert.Equal(0, activity.Events.Count());
+
+            DateTimeOffset ts1 = DateTimeOffset.UtcNow;
+            DateTimeOffset ts2 = ts1.AddMinutes(1);
+
+            Assert.True(object.ReferenceEquals(activity, activity.AddEvent(new ActivityEvent("Event1", ts1))));
+            Assert.True(object.ReferenceEquals(activity, activity.AddEvent(new ActivityEvent("Event2", ts2))));
+
+            Assert.Equal(2, activity.Events.Count());
+            Assert.Equal("Event1", activity.Events.ElementAt(0).Name);
+            Assert.Equal(ts1, activity.Events.ElementAt(0).Timestamp);
+            Assert.Equal(0, activity.Events.ElementAt(0).Attributes.Count());
+
+            Assert.Equal("Event2", activity.Events.ElementAt(1).Name);
+            Assert.Equal(ts2, activity.Events.ElementAt(1).Timestamp);
+            Assert.Equal(0, activity.Events.ElementAt(1).Attributes.Count());
+        }
+
+        [Fact]
+        public void TestIsAllDataRequested()
+        {
+            // Activity constructor allways set IsAllDataRequested to true for compatability.
+            Activity a1 = new Activity("a1");
+            Assert.True(a1.IsAllDataRequested);
+            Assert.True(object.ReferenceEquals(a1, a1.AddTag("k1", "v1")));
+            Assert.Equal(1, a1.Tags.Count());
         }
 
         public void Dispose()

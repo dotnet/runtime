@@ -100,7 +100,7 @@ namespace System.Runtime.Serialization.Formatters.Tests
             verify("WriteUInt32", (uint)42);
             verify("WriteUInt64", (ulong)42);
             verify("WriteValueType", new KeyValuePair<int, int>(1, 2));
-            // verify("WriteTimeSpan", TimeSpan.FromSeconds(42)); // Fails on both desktop and core, getting routed as a normal ValueType:
+            // verify("WriteTimeSpan", TimeSpan.FromSeconds(42)); // Fails on both .NET Framework and core, getting routed as a normal ValueType:
             verify("WriteValueType", TimeSpan.FromSeconds(42));
             verify("WriteObjectRef", new ObjectWithIntStringUShortUIntULongAndCustomObjectFields());
             verify("WriteObjectRef", null);

@@ -31,7 +31,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
                 Return CInt(DoubleType.Parse(Value))
 
             Catch e As FormatException
-                Throw New InvalidCastException(GetResourceString(SR.InvalidCast_FromStringTo, Left(Value, 32), "Integer"), e)
+                Throw New InvalidCastException(SR.Format(SR.InvalidCast_FromStringTo, Left(Value, 32), "Integer"), e)
             End Try
 
         End Function
@@ -114,7 +114,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
                     ' Fall through to error
             End Select
 ThrowInvalidCast:
-            Throw New InvalidCastException(GetResourceString(SR.InvalidCast_FromTo, VBFriendlyName(Value), "Integer"))
+            Throw New InvalidCastException(SR.Format(SR.InvalidCast_FromTo, VBFriendlyName(Value), "Integer"))
         End Function
 
         Private Shared Function DecimalToInteger(ByVal ValueInterface As IConvertible) As Integer

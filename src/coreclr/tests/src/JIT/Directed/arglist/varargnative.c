@@ -22,11 +22,11 @@
 #define __int16     short int
 #define __int8      char        // assumes char is signed
 
-#ifdef BIT64
+#ifdef HOST_64BIT
 #define __int64     long
-#else // BIT64
+#else // HOST_64BIT
 #define __int64     long long
-#endif // BIT64
+#endif // HOST_64BIT
 
 #endif // !_MSC_VER
 

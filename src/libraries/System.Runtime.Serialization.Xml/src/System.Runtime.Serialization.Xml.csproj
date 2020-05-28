@@ -2,7 +2,7 @@
   <PropertyGroup>
     <AssemblyName>System.Runtime.Serialization.Xml</AssemblyName>
     <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
-    <Configurations>netcoreapp-Debug;netcoreapp-Release</Configurations>
+    <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\System.Private.DataContractSerialization\src\System.Private.DataContractSerialization.csproj" />

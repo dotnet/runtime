@@ -159,7 +159,7 @@ namespace System.DirectoryServices.ActiveDirectory
                             try
                             {
                                 dcDnsHostName = Marshal.PtrToStringUni(dcDnsHostNamePtr);
-                                string key = dcDnsHostName.ToLower(CultureInfo.InvariantCulture);
+                                string key = dcDnsHostName.ToLowerInvariant();
 
                                 if (!domainControllers.Contains(key))
                                 {
@@ -254,7 +254,7 @@ namespace System.DirectoryServices.ActiveDirectory
                             DnsRecord dnsRecord = new DnsRecord();
                             Marshal.PtrToStructure(currentDnsRecord, dnsRecord);
                             string targetName = dnsRecord.data.targetName;
-                            string key = targetName.ToLower(CultureInfo.InvariantCulture);
+                            string key = targetName.ToLowerInvariant();
 
                             if (!domainControllers.Contains(key))
                             {

@@ -6,10 +6,10 @@
        and old-style projects should go in dir.common.props. -->
 
   <PropertyGroup>
-    <TargetFramework>netcoreapp3.0</TargetFramework>
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
     <EnableDefaultItems>false</EnableDefaultItems>
-    <Platform>$(BuildArch)</Platform>
+    <Platform>AnyCPU</Platform>
 
     <!-- [ARCADE REMOVE] This line should be removed we use the Arcade Sdk. -->
     <DeterministicSourcePaths>false</DeterministicSourcePaths>

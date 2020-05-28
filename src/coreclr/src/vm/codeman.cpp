@@ -26,17 +26,16 @@
 
 #include "rtlfunctions.h"
 
-#include "jitperf.h"
 #include "shimload.h"
 #include "debuginfostore.h"
 #include "strsafe.h"
 
 #include "configuration.h"
 
-#ifdef BIT64
+#ifdef HOST_64BIT
 #define CHECK_DUPLICATED_STRUCT_LAYOUTS
 #include "../debug/daccess/fntableaccess.h"
-#endif // BIT64
+#endif // HOST_64BIT
 
 #ifdef FEATURE_PERFMAP
 #include "perfmap.h"
@@ -82,7 +81,7 @@ unsigned   ExecutionManager::m_LCG_JumpStubBlockFullCount;
 
 #endif // DACCESS_COMPILE
 
-#if defined(_TARGET_AMD64_) && !defined(DACCESS_COMPILE) // We don't do this on ARM just amd64
+#if defined(TARGET_AMD64) && !defined(DACCESS_COMPILE) // We don't do this on ARM just amd64
 
 // Support for new style unwind information (to allow OS to stack crawl JIT compiled code).
 
@@ -122,7 +121,7 @@ bool InitUnwindFtns()
         NOTHROW;
     } CONTRACTL_END;
 
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
     if (!RtlUnwindFtnsInited)
     {
         HINSTANCE hNtdll = WszGetModuleHandle(W("ntdll.dll"));
@@ -154,9 +153,9 @@ bool InitUnwindFtns()
         RtlUnwindFtnsInited = true;
     }
     return (pRtlAddGrowableFunctionTable != NULL);
-#else // !FEATURE_PAL
+#else // !TARGET_UNIX
     return false;
-#endif // !FEATURE_PAL
+#endif // !TARGET_UNIX
 }
 
 /****************************************************************************/
@@ -537,7 +536,7 @@ extern CrstStatic g_StubUnwindInfoHeapSegmentsCrst;
     } EX_END_CATCH(SwallowAllExceptions);
 }
 
-#endif // defined(_TARGET_AMD64_) && !defined(DACCESS_COMPILE)
+#endif // defined(TARGET_AMD64) && !defined(DACCESS_COMPILE)
 
 /*-----------------------------------------------------------------------------
  This is a listing of which methods uses which synchronization mechanism
@@ -817,7 +816,7 @@ ExecutionManager::DeleteRangeHelper
 
 //-----------------------------------------------------------------------------
 
-#if defined(_TARGET_ARM_) || defined(_TARGET_ARM64_)
+#if defined(TARGET_ARM) || defined(TARGET_ARM64)
 #define EXCEPTION_DATA_SUPPORTS_FUNCTION_FRAGMENTS
 #endif
 
@@ -837,7 +836,7 @@ BOOL IsFunctionFragment(TADDR baseAddress, PTR_RUNTIME_FUNCTION pFunctionEntry)
     _ASSERTE((pFunctionEntry->UnwindData & 3) == 0);   // The unwind data must be an RVA; we don't support packed unwind format
     DWORD unwindHeader = *(PTR_DWORD)(baseAddress + pFunctionEntry->UnwindData);
     _ASSERTE((0 == ((unwindHeader >> 18) & 3)) || !"unknown unwind data format, version != 0");
-#if defined(_TARGET_ARM_)
+#if defined(TARGET_ARM)
 
     // On ARM, It's assumed that the prolog is always at the beginning of the function and cannot be split.
     // Given that, there are 4 possible ways to fragment a function:
@@ -852,7 +851,7 @@ BOOL IsFunctionFragment(TADDR baseAddress, PTR_RUNTIME_FUNCTION pFunctionEntry)
     _ASSERTE((pFunctionEntry->BeginAddress & THUMB_CODE) == THUMB_CODE);   // Sanity check: it's a thumb address
     DWORD Fbit = (unwindHeader >> 22) & 0x1;    // F "fragment" bit
     return (Fbit == 1);
-#elif defined(_TARGET_ARM64_)
+#elif defined(TARGET_ARM64)
 
     // ARM64 is a little bit more flexible, in the sense that it supports partial prologs. However only one of the
     // prolog regions are allowed to alter SP and that's the Host Record. Partial prologs are used in ShrinkWrapping
@@ -995,7 +994,7 @@ PTR_VOID GetUnwindDataBlob(TADDR moduleBase, PTR_RUNTIME_FUNCTION pRuntimeFuncti
 {
     LIMITED_METHOD_CONTRACT;
 
-#if defined(_TARGET_AMD64_)
+#if defined(TARGET_AMD64)
     PTR_UNWIND_INFO pUnwindInfo(dac_cast<PTR_UNWIND_INFO>(moduleBase + RUNTIME_FUNCTION__GetUnwindInfoAddress(pRuntimeFunction)));
 
     *pSize = ALIGN_UP(offsetof(UNWIND_INFO, UnwindCode) +
@@ -1005,14 +1004,14 @@ PTR_VOID GetUnwindDataBlob(TADDR moduleBase, PTR_RUNTIME_FUNCTION pRuntimeFuncti
 
     return pUnwindInfo;
 
-#elif defined(_TARGET_X86_)
+#elif defined(TARGET_X86)
     PTR_UNWIND_INFO pUnwindInfo(dac_cast<PTR_UNWIND_INFO>(moduleBase + RUNTIME_FUNCTION__GetUnwindInfoAddress(pRuntimeFunction)));
 
     *pSize = sizeof(UNWIND_INFO);
 
     return pUnwindInfo;
 
-#elif defined(_TARGET_ARM_)
+#elif defined(TARGET_ARM)
 
     // if this function uses packed unwind data then at least one of the two least significant bits
     // will be non-zero.  if this is the case then there will be no xdata record to enumerate.
@@ -1049,7 +1048,7 @@ PTR_VOID GetUnwindDataBlob(TADDR moduleBase, PTR_RUNTIME_FUNCTION pRuntimeFuncti
     *pSize = size;
     return xdata;
 
-#elif defined(_TARGET_ARM64_)
+#elif defined(TARGET_ARM64)
 	// if this function uses packed unwind data then at least one of the two least significant bits
 	// will be non-zero.  if this is the case then there will be no xdata record to enumerate.
 	_ASSERTE((pRuntimeFunction->UnwindData & 0x3) == 0);
@@ -1099,7 +1098,7 @@ TADDR IJitManager::GetFuncletStartAddress(EECodeInfo * pCodeInfo)
 {
     PTR_RUNTIME_FUNCTION pFunctionEntry = pCodeInfo->GetFunctionEntry();
 
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
     _ASSERTE((pFunctionEntry->UnwindData & RUNTIME_FUNCTION_INDIRECT) == 0);
 #endif
 
@@ -1215,10 +1214,10 @@ EEJitManager::EEJitManager()
     m_pCodeHeap = NULL;
     m_jit = NULL;
     m_JITCompiler      = NULL;
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
     m_pEmergencyJumpStubReserveList = NULL;
 #endif
-#if defined(_TARGET_X86_) || defined(_TARGET_AMD64_)
+#if defined(TARGET_X86) || defined(TARGET_AMD64)
     m_JITCompilerOther = NULL;
 #endif
 
@@ -1231,13 +1230,13 @@ EEJitManager::EEJitManager()
     m_cleanupList = NULL;
 }
 
-#if defined(_TARGET_X86_) || defined(_TARGET_AMD64_)
+#if defined(TARGET_X86) || defined(TARGET_AMD64)
 
 bool DoesOSSupportAVX()
 {
     LIMITED_METHOD_CONTRACT;
 
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
     // On Windows we have an api(GetEnabledXStateFeatures) to check if AVX is supported
     typedef DWORD64 (WINAPI *PGETENABLEDXSTATEFEATURES)();
     PGETENABLEDXSTATEFEATURES pfnGetEnabledXStateFeatures = NULL;
@@ -1258,12 +1257,12 @@ bool DoesOSSupportAVX()
     {
         return FALSE;
     }
-#endif // !FEATURE_PAL
+#endif // !TARGET_UNIX
 
     return TRUE;
 }
 
-#endif // defined(_TARGET_X86_) || defined(_TARGET_AMD64_)
+#endif // defined(TARGET_X86) || defined(TARGET_AMD64)
 
 void EEJitManager::SetCpuInfo()
 {
@@ -1276,7 +1275,7 @@ void EEJitManager::SetCpuInfo()
 
     CORJIT_FLAGS CPUCompileFlags;
 
-#if defined(_TARGET_X86_)
+#if defined(TARGET_X86)
     // NOTE: if you're adding any flags here, you probably should also be doing it
     // for ngen (zapper.cpp)
     CORINFO_CPU cpuInfo;
@@ -1297,14 +1296,11 @@ void EEJitManager::SetCpuInfo()
         CPUCompileFlags.Set(CORJIT_FLAGS::CORJIT_FLAG_USE_CMOV);
         CPUCompileFlags.Set(CORJIT_FLAGS::CORJIT_FLAG_USE_FCOMI);
     }
+#endif // TARGET_X86
 
-    if (CPU_X86_USE_SSE2(cpuInfo.dwFeatures))
-    {
-        CPUCompileFlags.Set(CORJIT_FLAGS::CORJIT_FLAG_USE_SSE2);
-    }
-#endif // _TARGET_X86_
+#if defined(TARGET_X86) || defined(TARGET_AMD64)
+     CPUCompileFlags.Set(InstructionSet_X86Base);
 
-#if defined(_TARGET_X86_) || defined(_TARGET_AMD64_)
     // NOTE: The below checks are based on the information reported by
     //   Intel® 64 and IA-32 Architectures Software Developer’s Manual. Volume 2
     //   and
@@ -1373,46 +1369,48 @@ void EEJitManager::SetCpuInfo()
 
         if ((buffer[15] & 0x06) == 0x06)                                    // SSE & SSE2
         {
+            CPUCompileFlags.Set(InstructionSet_SSE);
+            CPUCompileFlags.Set(InstructionSet_SSE2);
             if ((buffer[11] & 0x02) != 0)                                   // AESNI
             {
-                CPUCompileFlags.Set(CORJIT_FLAGS::CORJIT_FLAG_USE_AES);
+                CPUCompileFlags.Set(InstructionSet_AES);
             }
 
             if ((buffer[8] & 0x02) != 0)                                    // PCLMULQDQ
             {
-                CPUCompileFlags.Set(CORJIT_FLAGS::CORJIT_FLAG_USE_PCLMULQDQ);
+                CPUCompileFlags.Set(InstructionSet_PCLMULQDQ);
             }
 
             if ((buffer[8] & 0x01) != 0)                                    // SSE3
             {
-                CPUCompileFlags.Set(CORJIT_FLAGS::CORJIT_FLAG_USE_SSE3);
+                CPUCompileFlags.Set(InstructionSet_SSE3);
 
                 if ((buffer[9] & 0x02) != 0)                                // SSSE3
                 {
-                    CPUCompileFlags.Set(CORJIT_FLAGS::CORJIT_FLAG_USE_SSSE3);
+                    CPUCompileFlags.Set(InstructionSet_SSSE3);
 
                     if ((buffer[10] & 0x08) != 0)                           // SSE4.1
                     {
-                        CPUCompileFlags.Set(CORJIT_FLAGS::CORJIT_FLAG_USE_SSE41);
+                        CPUCompileFlags.Set(InstructionSet_SSE41);
 
                         if ((buffer[10] & 0x10) != 0)                       // SSE4.2
                         {
-                            CPUCompileFlags.Set(CORJIT_FLAGS::CORJIT_FLAG_USE_SSE42);
+                            CPUCompileFlags.Set(InstructionSet_SSE42);
 
                             if ((buffer[10] & 0x80) != 0)                   // POPCNT
                             {
-                                CPUCompileFlags.Set(CORJIT_FLAGS::CORJIT_FLAG_USE_POPCNT);
+                                CPUCompileFlags.Set(InstructionSet_POPCNT);
                             }
 
                             if ((buffer[11] & 0x18) == 0x18)                // AVX & OSXSAVE
                             {
                                 if(DoesOSSupportAVX() && (xmmYmmStateSupport() == 1))
                                 {
-                                    CPUCompileFlags.Set(CORJIT_FLAGS::CORJIT_FLAG_USE_AVX);
+                                    CPUCompileFlags.Set(InstructionSet_AVX);
 
                                     if ((buffer[9] & 0x10) != 0)            // FMA
                                     {
-                                        CPUCompileFlags.Set(CORJIT_FLAGS::CORJIT_FLAG_USE_FMA);
+                                        CPUCompileFlags.Set(InstructionSet_FMA);
                                     }
 
                                     if (maxCpuId >= 0x07)
@@ -1421,7 +1419,7 @@ void EEJitManager::SetCpuInfo()
 
                                         if ((buffer[4] & 0x20) != 0)        // AVX2
                                         {
-                                            CPUCompileFlags.Set(CORJIT_FLAGS::CORJIT_FLAG_USE_AVX2);
+                                            CPUCompileFlags.Set(InstructionSet_AVX2);
                                         }
                                     }
                                 }
@@ -1440,7 +1438,7 @@ void EEJitManager::SetCpuInfo()
 
             if (CLRConfig::GetConfigValue(CLRConfig::INTERNAL_SIMD16ByteOnly) != 0)
             {
-                CPUCompileFlags.Clear(CORJIT_FLAGS::CORJIT_FLAG_USE_AVX2);
+                CPUCompileFlags.Clear(InstructionSet_AVX2);
             }
         }
 
@@ -1450,12 +1448,12 @@ void EEJitManager::SetCpuInfo()
 
             if ((buffer[4] & 0x08) != 0)            // BMI1
             {
-                CPUCompileFlags.Set(CORJIT_FLAGS::CORJIT_FLAG_USE_BMI1);
+                CPUCompileFlags.Set(InstructionSet_BMI1);
             }
 
             if ((buffer[5] & 0x01) != 0)            // BMI2
             {
-                CPUCompileFlags.Set(CORJIT_FLAGS::CORJIT_FLAG_USE_BMI2);
+                CPUCompileFlags.Set(InstructionSet_BMI2);
             }
         }
     }
@@ -1472,37 +1470,40 @@ void EEJitManager::SetCpuInfo()
 
         if ((buffer[8] & 0x20) != 0)            // LZCNT
         {
-            CPUCompileFlags.Set(CORJIT_FLAGS::CORJIT_FLAG_USE_LZCNT);
+            CPUCompileFlags.Set(InstructionSet_LZCNT);
         }
     }
-#endif // defined(_TARGET_X86_) || defined(_TARGET_AMD64_)
+#endif // defined(TARGET_X86) || defined(TARGET_AMD64)
 
-#if defined(_TARGET_ARM64_)
+#if defined(TARGET_ARM64)
     static ConfigDWORD fFeatureSIMD;
     if (fFeatureSIMD.val(CLRConfig::EXTERNAL_FeatureSIMD) != 0)
     {
         CPUCompileFlags.Set(CORJIT_FLAGS::CORJIT_FLAG_FEATURE_SIMD);
     }
-#if defined(FEATURE_PAL)
+#if defined(TARGET_UNIX)
     PAL_GetJitCpuCapabilityFlags(&CPUCompileFlags);
-#elif defined(BIT64)
+#elif defined(HOST_64BIT)
     // FP and SIMD support are enabled by default
-    CPUCompileFlags.Set(CORJIT_FLAGS::CORJIT_FLAG_HAS_ARM64_ADVSIMD);
-    CPUCompileFlags.Set(CORJIT_FLAGS::CORJIT_FLAG_HAS_ARM64_FP);
+    CPUCompileFlags.Set(InstructionSet_ArmBase);
+    CPUCompileFlags.Set(InstructionSet_AdvSimd);
     // PF_ARM_V8_CRYPTO_INSTRUCTIONS_AVAILABLE (30)
     if (IsProcessorFeaturePresent(PF_ARM_V8_CRYPTO_INSTRUCTIONS_AVAILABLE))
     {
-        CPUCompileFlags.Set(CORJIT_FLAGS::CORJIT_FLAG_HAS_ARM64_AES);
-        CPUCompileFlags.Set(CORJIT_FLAGS::CORJIT_FLAG_HAS_ARM64_SHA1);
-        CPUCompileFlags.Set(CORJIT_FLAGS::CORJIT_FLAG_HAS_ARM64_SHA256);
+        CPUCompileFlags.Set(InstructionSet_Aes);
+        CPUCompileFlags.Set(InstructionSet_Sha1);
+        CPUCompileFlags.Set(InstructionSet_Sha256);
     }
     // PF_ARM_V8_CRC32_INSTRUCTIONS_AVAILABLE (31)
     if (IsProcessorFeaturePresent(PF_ARM_V8_CRC32_INSTRUCTIONS_AVAILABLE))
     {
-        CPUCompileFlags.Set(CORJIT_FLAGS::CORJIT_FLAG_HAS_ARM64_CRC32);
+        CPUCompileFlags.Set(InstructionSet_Crc32);
     }
-#endif // BIT64
-#endif // _TARGET_ARM64_
+#endif // HOST_64BIT
+#endif // TARGET_ARM64
+
+    CPUCompileFlags.Set64BitInstructionSetVariants();
+    CPUCompileFlags.EnsureValidInstructionSetSupport();
 
     m_CPUCompileFlags = CPUCompileFlags;
 }
@@ -1542,14 +1543,6 @@ struct JIT_LOAD_DATA
 // Here's the global data for JIT load and initialization state.
 JIT_LOAD_DATA g_JitLoadData;
 
-#if !defined(FEATURE_MERGE_JIT_AND_ENGINE)
-
-// Global that holds the path to custom JIT location
-LPCWSTR g_CLRJITPath = nullptr;
-
-#endif // !defined(FEATURE_MERGE_JIT_AND_ENGINE)
-
-
 // LoadAndInitializeJIT: load the JIT dll into the process, and initialize it (call the UtilCode initialization function,
 // check the JIT-EE interface GUID, etc.)
 //
@@ -1588,21 +1581,6 @@ static void LoadAndInitializeJIT(LPCWSTR pwzJitName, OUT HINSTANCE* phJit, OUT I
     extern HINSTANCE g_hThisInst;
     bool havePath = false;
 
-#if !defined(FEATURE_MERGE_JIT_AND_ENGINE)
-    if (g_CLRJITPath != nullptr)
-    {
-        // If we have been asked to load a specific JIT binary, load from that path.
-        // The main JIT load will use exactly that name because pwzJitName will have
-        // been computed as the last component of g_CLRJITPath by ExecutionManager::GetJitName().
-        // Non-primary JIT names (such as compatjit or altjit) will be loaded from the
-        // same directory.
-        // (Ideally, g_CLRJITPath would just be the JIT path without the filename component,
-        // but that's not how the JIT_PATH variable was originally defined.)
-        CoreClrFolderHolder.Set(g_CLRJITPath);
-        havePath = true;
-    }
-    else
-#endif // !defined(FEATURE_MERGE_JIT_AND_ENGINE)
     if (WszGetModuleFileName(g_hThisInst, CoreClrFolderHolder))
     {
         // Load JIT from next to CoreCLR binary
@@ -1744,7 +1722,7 @@ BOOL EEJitManager::LoadJIT()
 #else // !FEATURE_MERGE_JIT_AND_ENGINE
 
     m_JITCompiler = NULL;
-#if defined(_TARGET_X86_) || defined(_TARGET_AMD64_)
+#if defined(TARGET_X86) || defined(TARGET_AMD64)
     m_JITCompilerOther = NULL;
 #endif
 
@@ -1953,9 +1931,8 @@ void CodeFragmentHeap::RealBackoutMem(void *pMem
 
 //**************************************************************************
 
-LoaderCodeHeap::LoaderCodeHeap(size_t * pPrivatePCLBytes)
-    : m_LoaderHeap(pPrivatePCLBytes,
-                   0,                       // RangeList *pRangeList
+LoaderCodeHeap::LoaderCodeHeap()
+    : m_LoaderHeap(NULL,                    // RangeList *pRangeList
                    TRUE),                   // BOOL fMakeExecutable
     m_cbMinNextPad(0)
 {
@@ -1985,7 +1962,7 @@ void ThrowOutOfMemoryWithinRange()
     EX_THROW(EEMessageException, (kOutOfMemoryException, IDS_EE_OUT_OF_MEMORY_WITHIN_RANGE));
 }
 
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
 BYTE * EEJitManager::AllocateFromEmergencyJumpStubReserve(const BYTE * loAddr, const BYTE * hiAddr, SIZE_T * pReserveSize)
 {
     CONTRACTL {
@@ -2099,13 +2076,13 @@ VOID EEJitManager::EnsureJumpStubReserve(BYTE * pImageBase, SIZE_T imageSize, SI
         m_pEmergencyJumpStubReserveList = pNewReserve.Extract();
     }
 }
-#endif // _TARGET_AMD64_
+#endif // TARGET_AMD64
 
 static size_t GetDefaultReserveForJumpStubs(size_t codeHeapSize)
 {
     LIMITED_METHOD_CONTRACT;
 
-#if defined(_TARGET_AMD64_) || defined(_TARGET_ARM64_)
+#if defined(TARGET_AMD64) || defined(TARGET_ARM64)
     //
     // Keep a small default reserve at the end of the codeheap for jump stubs. It should reduce
     // chance that we won't be able allocate jump stub because of lack of suitable address space.
@@ -2133,7 +2110,6 @@ HeapList* LoaderCodeHeap::CreateCodeHeap(CodeHeapRequestInfo *pInfo, LoaderHeap 
         POSTCONDITION((RETVAL != NULL) || !pInfo->getThrowOnOutOfMemoryWithinRange());
     } CONTRACT_END;
 
-    size_t * pPrivatePCLBytes   = NULL;
     size_t   reserveSize        = pInfo->getReserveSize();
     size_t   initialRequestSize = pInfo->getRequestSize();
     const BYTE *   loAddr       = pInfo->m_loAddr;
@@ -2146,16 +2122,12 @@ HeapList* LoaderCodeHeap::CreateCodeHeap(CodeHeapRequestInfo *pInfo, LoaderHeap 
         EEPOLICY_HANDLE_FATAL_ERROR(COR_E_EXECUTIONENGINE);
     }
 
-#ifdef ENABLE_PERF_COUNTERS
-    pPrivatePCLBytes   = &(GetPerfCounters().m_Loading.cbLoaderHeapSize);
-#endif
-
     LOG((LF_JIT, LL_INFO100,
          "Request new LoaderCodeHeap::CreateCodeHeap(%08x, %08x, for loader allocator" FMT_ADDR "in" FMT_ADDR ".." FMT_ADDR ")\n",
          (DWORD) reserveSize, (DWORD) initialRequestSize, DBG_ADDR(pInfo->m_pAllocator), DBG_ADDR(loAddr), DBG_ADDR(hiAddr)
                                 ));
 
-    NewHolder<LoaderCodeHeap> pCodeHeap(new LoaderCodeHeap(pPrivatePCLBytes));
+    NewHolder<LoaderCodeHeap> pCodeHeap(new LoaderCodeHeap());
 
     BYTE * pBaseAddr = NULL;
     DWORD dwSizeAcquiredFromInitialBlock = 0;
@@ -2183,14 +2155,14 @@ HeapList* LoaderCodeHeap::CreateCodeHeap(CodeHeapRequestInfo *pInfo, LoaderHeap 
                 // Conserve emergency jump stub reserve until when it is really needed
                 if (!pInfo->getThrowOnOutOfMemoryWithinRange())
                     RETURN NULL;
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
                 pBaseAddr = ExecutionManager::GetEEJitManager()->AllocateFromEmergencyJumpStubReserve(loAddr, hiAddr, &reserveSize);
                 if (!pBaseAddr)
                     ThrowOutOfMemoryWithinRange();
                 fAllocatedFromEmergencyJumpStubReserve = true;
 #else
                 ThrowOutOfMemoryWithinRange();
-#endif // _TARGET_AMD64_
+#endif // TARGET_AMD64
             }
         }
         else
@@ -2230,9 +2202,9 @@ HeapList* LoaderCodeHeap::CreateCodeHeap(CodeHeapRequestInfo *pInfo, LoaderHeap 
          DBG_ADDR(pHp->startAddress), DBG_ADDR(pHp->startAddress+pHp->maxCodeHeapSize)
          ));
 
-#ifdef _TARGET_64BIT_
+#ifdef TARGET_64BIT
     emitJump((LPBYTE)pHp->CLRPersonalityRoutine, (void *)ProcessCLRException);
-#endif // _TARGET_64BIT_
+#endif // TARGET_64BIT
 
     pCodeHeap.SuppressRelease();
     RETURN pHp;
@@ -2270,14 +2242,14 @@ void CodeHeapRequestInfo::Init()
 
     if (m_pAllocator == NULL)
         m_pAllocator = m_pMD->GetLoaderAllocator();
-    m_isDynamicDomain = (m_pMD != NULL) ? m_pMD->IsLCGMethod() : false;
-    m_isCollectible = m_pAllocator->IsCollectible() ? true : false;
+    m_isDynamicDomain = (m_pMD != NULL) && m_pMD->IsLCGMethod();
+    m_isCollectible = m_pAllocator->IsCollectible();
     m_throwOnOutOfMemoryWithinRange = true;
 }
 
 #ifdef FEATURE_EH_FUNCLETS
 
-#ifdef BIT64
+#ifdef HOST_64BIT
 extern "C" PT_RUNTIME_FUNCTION GetRuntimeFunctionCallback(IN ULONG64   ControlPc,
                                                         IN PVOID     Context)
 #else
@@ -2331,7 +2303,7 @@ HeapList* EEJitManager::NewCodeHeap(CodeHeapRequestInfo *pInfo, DomainCodeHeapLi
     size_t initialRequestSize = pInfo->getRequestSize();
     size_t minReserveSize = VIRTUAL_ALLOC_RESERVE_GRANULARITY; //     ( 64 KB)
 
-#ifdef BIT64
+#ifdef HOST_64BIT
     if (pInfo->m_hiAddr == 0)
     {
         if (pADHeapList->m_CodeHeapList.Count() > CODE_HEAP_SIZE_INCREASE_THRESHOLD)
@@ -2557,12 +2529,16 @@ CodeHeader* EEJitManager::allocCode(MethodDesc* pMD, size_t blockSize, size_t re
 
     unsigned alignment = CODE_SIZE_ALIGN;
 
-    if ((flag & CORJIT_ALLOCMEM_FLG_16BYTE_ALIGN) != 0)
+    if ((flag & CORJIT_ALLOCMEM_FLG_32BYTE_ALIGN) != 0)
+    {
+        alignment = max(alignment, 32);
+    }
+    else if ((flag & CORJIT_ALLOCMEM_FLG_16BYTE_ALIGN) != 0)
     {
         alignment = max(alignment, 16);
     }
 
-#if defined(_TARGET_X86_)
+#if defined(TARGET_X86)
     // when not optimizing for code size, 8-byte align the method entry point, so that
     // the JIT can in turn 8-byte align the loop entry headers.
     else if ((g_pConfig->GenOptimizeType() != OPT_SIZE))
@@ -2617,8 +2593,6 @@ CodeHeader* EEJitManager::allocCode(MethodDesc* pMD, size_t blockSize, size_t re
         }
 
         _ASSERTE(IS_ALIGNED(pCode, alignment));
-
-        JIT_PERF_UPDATE_X86_CODE_SIZE(totalSize);
 
         // Initialize the CodeHeader *BEFORE* we publish this code range via the nibble
         // map so that we don't have to harden readers against uninitialized data.
@@ -2844,7 +2818,6 @@ BYTE* EEJitManager::allocGCInfo(CodeHeader* pCodeHeader, DWORD blockSize, size_t
         pCodeHeader->SetGCInfo((BYTE*) (void*)GetJitMetaHeap(pMD)->AllocMem(S_SIZE_T(blockSize)));
     }
     _ASSERTE(pCodeHeader->GetGCInfo()); // AllocMem throws if there's not enough memory
-    JIT_PERF_UPDATE_X86_CODE_SIZE(blockSize);
 
     * pAllocationSize = blockSize;  // Store the allocation size so we can backout later.
 
@@ -2872,8 +2845,6 @@ void* EEJitManager::allocEHInfoRaw(CodeHeader* pCodeHeader, DWORD blockSize, siz
         mem = (void*)GetJitMetaHeap(pMD)->AllocMem(S_SIZE_T(blockSize));
     }
     _ASSERTE(mem);   // AllocMem throws if there's not enough memory
-
-    JIT_PERF_UPDATE_X86_CODE_SIZE(blockSize);
 
     * pAllocationSize = blockSize; // Store the allocation size so we can backout later.
 
@@ -2947,8 +2918,6 @@ JumpStubBlockHeader *  EEJitManager::allocJumpStubBlock(MethodDesc* pMD, DWORD n
         pBlock = (JumpStubBlockHeader *)mem;
 
         _ASSERTE(IS_ALIGNED(pBlock, CODE_SIZE_ALIGN));
-
-        JIT_PERF_UPDATE_X86_CODE_SIZE(blockSize);
     }
 
     pBlock->m_next            = NULL;
@@ -2977,7 +2946,7 @@ void * EEJitManager::allocCodeFragmentBlock(size_t blockSize, unsigned alignment
     HeapList *pCodeHeap = NULL;
     CodeHeapRequestInfo    requestInfo(NULL, pLoaderAllocator, NULL, NULL);
 
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
     // CodeFragments are pretty much always Precodes that may need to be patched with jump stubs at some point in future
     // We will assume the worst case that every FixupPrecode will need to be patched and reserve the jump stubs accordingly
     requestInfo.setReserveForJumpStubs((blockSize / 8) * JUMP_ALLOCATE_SIZE);
@@ -3185,10 +3154,10 @@ void EEJitManager::RemoveJitData (CodeHeader * pCHdr, size_t GCinfo_len, size_t 
                 pResolver->m_recordCodePointer = NULL;
         }
 
-#if defined(_TARGET_AMD64_)
+#if defined(TARGET_AMD64)
         // Remove the unwind information (if applicable)
         UnwindInfoTable::UnpublishUnwindInfoForMethod((TADDR)codeStart);
-#endif // defined(_TARGET_AMD64_)
+#endif // defined(TARGET_AMD64)
 
         HostCodeHeap* pHeap = HostCodeHeap::GetCodeHeap((TADDR)codeStart);
         FreeCodeMemory(pHeap, codeStart);
@@ -3591,12 +3560,20 @@ BOOL EEJitManager::GetBoundariesAndVars(
     if (pDebugInfo == NULL)
         return FALSE;
 
+#ifdef FEATURE_ON_STACK_REPLACEMENT
+    BOOL hasFlagByte = TRUE;
+#else
+    BOOL hasFlagByte = FALSE;
+#endif
+
     // Uncompress. This allocates memory and may throw.
     CompressDebugInfo::RestoreBoundariesAndVars(
         fpNew, pNewData, // allocators
         pDebugInfo,      // input
-        pcMap, ppMap,
-        pcVars, ppVars); // output
+        pcMap, ppMap,    // output
+        pcVars, ppVars,  // output
+        hasFlagByte
+    );
 
     return TRUE;
 }
@@ -3618,9 +3595,15 @@ void CodeHeader::EnumMemoryRegions(CLRDataEnumMemoryFlags flags, IJitManager* pJ
     this->pRealCodeHeader.EnumMem();
 #endif // USE_INDIRECT_CODEHEADER
 
+#ifdef FEATURE_ON_STACK_REPLACEMENT
+    BOOL hasFlagByte = TRUE;
+#else
+    BOOL hasFlagByte = FALSE;
+#endif
+
     if (this->GetDebugInfo() != NULL)
     {
-        CompressDebugInfo::EnumMemoryRegions(flags, this->GetDebugInfo());
+        CompressDebugInfo::EnumMemoryRegions(flags, this->GetDebugInfo(), hasFlagByte);
     }
 }
 
@@ -3888,7 +3871,7 @@ PTR_RUNTIME_FUNCTION EEJitManager::LazyGetFunctionEntry(EECodeInfo * pCodeInfo)
         if (RUNTIME_FUNCTION__BeginAddress(pFunctionEntry) <= address && address < RUNTIME_FUNCTION__EndAddress(pFunctionEntry, baseAddress))
         {
 
-#if defined(EXCEPTION_DATA_SUPPORTS_FUNCTION_FRAGMENTS) && defined(_TARGET_ARM64_)
+#if defined(EXCEPTION_DATA_SUPPORTS_FUNCTION_FRAGMENTS) && defined(TARGET_ARM64)
             // If we might have fragmented unwind, and we're on ARM64, make sure
             // to returning the root record, as the trailing records don't have
             // prolog unwind codes.
@@ -4377,34 +4360,6 @@ BOOL ExecutionManager::IsReadyToRunCode(PCODE currentPC)
     return FALSE;
 }
 
-#ifndef DACCESS_COMPILE
-
-//**************************************************************************
-// Clear the caches for all JITs loaded.
-//
-void ExecutionManager::ClearCaches( void )
-{
-    CONTRACTL {
-        NOTHROW;
-        GC_NOTRIGGER;
-    } CONTRACTL_END;
-
-    GetEEJitManager()->ClearCache();
-}
-
-//**************************************************************************
-// Check if caches for any JITs loaded need to be cleaned
-//
-BOOL ExecutionManager::IsCacheCleanupRequired( void )
-{
-    CONTRACTL {
-        NOTHROW;
-        GC_NOTRIGGER;
-    } CONTRACTL_END;
-
-    return GetEEJitManager()->IsCacheCleanupRequired();
-}
-
 #ifndef FEATURE_MERGE_JIT_AND_ENGINE
 /*********************************************************************/
 // This static method returns the name of the jit dll
@@ -4413,33 +4368,9 @@ LPCWSTR ExecutionManager::GetJitName()
 {
     STANDARD_VM_CONTRACT;
 
-    LPCWSTR  pwzJitName = NULL;
-
-#if !defined(CROSSGEN_COMPILE)
-    if (g_CLRJITPath != nullptr)
-    {
-        const WCHAR* p = wcsrchr(g_CLRJITPath, DIRECTORY_SEPARATOR_CHAR_W);
-        if (p != nullptr)
-        {
-            pwzJitName = p + 1; // Return just the filename, not the directory name
-        }
-        else
-        {
-            pwzJitName = g_CLRJITPath;
-        }
-    }
-#endif // !defined(CROSSGEN_COMPILE)
-
-    if (NULL == pwzJitName)
-    {
-        pwzJitName = MAKEDLLNAME_W(W("clrjit"));
-    }
-
-    return pwzJitName;
+    return MAKEDLLNAME_W(W("clrjit"));
 }
 #endif // !FEATURE_MERGE_JIT_AND_ENGINE
-
-#endif // #ifndef DACCESS_COMPILE
 
 RangeSection* ExecutionManager::GetRangeSection(TADDR addr)
 {
@@ -4721,9 +4652,9 @@ void ExecutionManager::AddRangeHelper(TADDR          pStartRange,
     pnewrange->flags       = flags;
     pnewrange->pLastUsed   = NULL;
     pnewrange->pHeapListOrZapModule = pHeapListOrZapModule;
-#if defined(_TARGET_AMD64_)
+#if defined(TARGET_AMD64)
     pnewrange->pUnwindInfoTable = NULL;
-#endif // defined(_TARGET_AMD64_)
+#endif // defined(TARGET_AMD64)
     {
         CrstHolder ch(&m_RangeCrst); // Acquire the Crst before linking in a new RangeList
 
@@ -4834,10 +4765,10 @@ void ExecutionManager::DeleteRange(TADDR pStartRange)
     //
     if (pCurr != NULL)
     {
-#if defined(_TARGET_AMD64_)
+#if defined(TARGET_AMD64)
         if (pCurr->pUnwindInfoTable != 0)
             delete pCurr->pUnwindInfoTable;
-#endif // defined(_TARGET_AMD64_)
+#endif // defined(TARGET_AMD64)
         delete pCurr;
     }
 }
@@ -5137,7 +5068,7 @@ PCODE ExecutionManager::getNextJumpStub(MethodDesc* pMD, PCODE target,
 
         numJumpStubs = 4;
 
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
         // Note this these values are not requirements, instead we are
         // just confirming the values that are mentioned in the comments.
         _ASSERTE(BACK_TO_BACK_JUMP_ALLOCATE_SIZE == 12);
@@ -5176,7 +5107,7 @@ DONE:
 
     _ASSERTE((curBlock->m_used < curBlock->m_allocated));
 
-#ifdef _TARGET_ARM64_
+#ifdef TARGET_ARM64
     // 8-byte alignment is required on ARM64
     _ASSERTE(((UINT_PTR)jumpStub & 7) == 0);
 #endif
@@ -5237,7 +5168,7 @@ DONE:
 
             if ((m_LCG_JumpStubLookup > 0) && ((m_normal_JumpStubBlockFullCount % 5) == 1))
             {
-                // Every 5 occurance of the above we also
+                // Every 5 occurrence of the above we also
                 // Log "LCG JumpStubBlock status" along with the four counter values
                 STRESS_LOG4(LF_JIT, LL_INFO1000, "LCG JumpStubBlock status - (%u, %u, %u, %u)\n",
                             m_LCG_JumpStubLookup, m_LCG_JumpStubUnique,
@@ -5260,7 +5191,7 @@ static void GetFuncletStartOffsetsHelper(PCODE pCodeStart, SIZE_T size, SIZE_T o
     // Entries are sorted and terminated by sentinel value (DWORD)-1
     for (; RUNTIME_FUNCTION__BeginAddress(pFunctionEntry) < endAddress; pFunctionEntry++)
     {
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
         _ASSERTE((pFunctionEntry->UnwindData & RUNTIME_FUNCTION_INDIRECT) == 0);
 #endif
 
@@ -5557,8 +5488,9 @@ BOOL NativeImageJitManager::GetBoundariesAndVars(
     CompressDebugInfo::RestoreBoundariesAndVars(
         fpNew, pNewData, // allocators
         pDebugInfo,      // input
-        pcMap, ppMap,
-        pcVars, ppVars); // output
+        pcMap, ppMap,    // output
+        pcVars, ppVars,  // output
+        FALSE);          // no patchpoint info
 
     return TRUE;
 }
@@ -5701,12 +5633,12 @@ BOOL NativeImageJitManager::JitCodeToMethodInfo(RangeSection * pRangeSection,
 
 #ifdef FEATURE_EH_FUNCLETS
             PTR_RUNTIME_FUNCTION RawColdFunctionEntry = ColdFunctionTable + RawColdMethodIndex;
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
             if ((RawColdFunctionEntry->UnwindData & RUNTIME_FUNCTION_INDIRECT) != 0)
             {
                 RawColdFunctionEntry = PTR_RUNTIME_FUNCTION(ImageBase + (RawColdFunctionEntry->UnwindData & ~RUNTIME_FUNCTION_INDIRECT));
             }
-#endif // _TARGET_AMD64_
+#endif // TARGET_AMD64
             pCodeInfo->m_pFunctionEntry = RawColdFunctionEntry;
 #endif
         }
@@ -5810,7 +5742,7 @@ TADDR NativeImageJitManager::GetFuncletStartAddress(EECodeInfo * pCodeInfo)
 {
     LIMITED_METHOD_DAC_CONTRACT;
 
-#if defined(_TARGET_ARM_) || defined(_TARGET_ARM64_)
+#if defined(TARGET_ARM) || defined(TARGET_ARM64)
     NGenLayoutInfo * pLayoutInfo = JitTokenToZapModule(pCodeInfo->GetMethodToken())->GetNGenLayoutInfo();
 
     if (pLayoutInfo->m_CodeSections[2].IsInRange(pCodeInfo->GetCodeAddress()))
@@ -5853,7 +5785,7 @@ DWORD NativeImageJitManager::GetFuncletStartOffsets(const METHODTOKEN& MethodTok
 
     // There are no funclets in cold section on ARM yet
     // @ARMTODO: support hot/cold splitting in functions with EH
-#if !defined(_TARGET_ARM_) && !defined(_TARGET_ARM64_)
+#if !defined(TARGET_ARM) && !defined(TARGET_ARM64)
     if (regionInfo.coldSize != NULL)
     {
         NGenLayoutInfo * pLayoutInfo = JitTokenToZapModule(MethodToken)->GetNGenLayoutInfo();
@@ -5868,7 +5800,7 @@ DWORD NativeImageJitManager::GetFuncletStartOffsets(const METHODTOKEN& MethodTok
 
         _ASSERTE(regionInfo.coldStartAddress == moduleBase + RUNTIME_FUNCTION__BeginAddress(pFunctionEntry));
 
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
         // Skip cold part of the method body
         if ((pFunctionEntry->UnwindData & RUNTIME_FUNCTION_INDIRECT) != 0)
             pFunctionEntry++;
@@ -5878,7 +5810,7 @@ DWORD NativeImageJitManager::GetFuncletStartOffsets(const METHODTOKEN& MethodTok
             pFunctionEntry, moduleBase,
             &nFunclets, pStartFuncletOffsets, dwLength);
     }
-#endif // !_TARGET_ARM_ && !_TARGET_ARM64
+#endif // !TARGET_ARM && !_TARGET_ARM64
 
     return nFunclets;
 }
@@ -6194,7 +6126,7 @@ int NativeUnwindInfoLookupTable::LookupUnwindInfoForMethod(DWORD RelativePc,
     } CONTRACTL_END;
 
 
-#ifdef _TARGET_ARM_
+#ifdef TARGET_ARM
     RelativePc |= THUMB_CODE;
 #endif
 
@@ -6531,7 +6463,7 @@ UINT32 ReadyToRunJitManager::JitTokenToGCInfoVersion(const METHODTOKEN& MethodTo
         SUPPORTS_DAC;
     } CONTRACTL_END;
 
-    READYTORUN_HEADER * header = JitTokenToReadyToRunInfo(MethodToken)->GetImage()->GetReadyToRunHeader();
+    READYTORUN_HEADER * header = JitTokenToReadyToRunInfo(MethodToken)->GetReadyToRunHeader();
 
     return GCInfoToken::ReadyToRunVersionToGcInfoVersion(header->MajorVersion);
 }
@@ -6601,7 +6533,7 @@ unsigned ReadyToRunJitManager::InitializeEHEnumeration(const METHODTOKEN& Method
 
     ReadyToRunInfo * pReadyToRunInfo = JitTokenToReadyToRunInfo(MethodToken);
 
-    IMAGE_DATA_DIRECTORY * pExceptionInfoDir = pReadyToRunInfo->FindSection(READYTORUN_SECTION_EXCEPTION_INFO);
+    IMAGE_DATA_DIRECTORY * pExceptionInfoDir = pReadyToRunInfo->FindSection(ReadyToRunSectionType::ExceptionInfo);
     if (pExceptionInfoDir == NULL)
         return 0;
 
@@ -6668,7 +6600,7 @@ StubCodeBlockKind ReadyToRunJitManager::GetStubCodeBlockKind(RangeSection * pRan
 
     ReadyToRunInfo * pReadyToRunInfo = dac_cast<PTR_Module>(pRangeSection->pHeapListOrZapModule)->GetReadyToRunInfo();
 
-    IMAGE_DATA_DIRECTORY * pDelayLoadMethodCallThunksDir = pReadyToRunInfo->FindSection(READYTORUN_SECTION_DELAYLOAD_METHODCALL_THUNKS);
+    IMAGE_DATA_DIRECTORY * pDelayLoadMethodCallThunksDir = pReadyToRunInfo->FindSection(ReadyToRunSectionType::DelayLoadMethodCallThunks);
     if (pDelayLoadMethodCallThunksDir != NULL)
     {
         if (pDelayLoadMethodCallThunksDir->VirtualAddress <= rva
@@ -6771,8 +6703,9 @@ BOOL ReadyToRunJitManager::GetBoundariesAndVars(
     CompressDebugInfo::RestoreBoundariesAndVars(
         fpNew, pNewData, // allocators
         pDebugInfo,      // input
-        pcMap, ppMap,
-        pcVars, ppVars); // output
+        pcMap, ppMap,    // output
+        pcVars, ppVars,  // output
+        FALSE);          // no patchpoint info
 
     return TRUE;
 }
@@ -6796,7 +6729,7 @@ void ReadyToRunJitManager::EnumMemoryRegionsForMethodDebugInfo(CLRDataEnumMemory
     if (pDebugInfo == NULL)
         return;
 
-    CompressDebugInfo::EnumMemoryRegions(flags, pDebugInfo);
+    CompressDebugInfo::EnumMemoryRegions(flags, pDebugInfo, FALSE);
 }
 #endif
 

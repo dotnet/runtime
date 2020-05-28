@@ -6,10 +6,6 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace System.Net.WebSockets
 {
-    [SuppressMessage("Microsoft.Design",
-        "CA1008:EnumsShouldHaveZeroValue",
-        Justification = "This enum is reflecting the IETF's WebSocket specification. " +
-                        "'0' is a disallowed value for the close status code")]
     public enum WebSocketCloseStatus
     {
         NormalClosure = 1000,

@@ -14,11 +14,11 @@ namespace System.Reflection.TypeLoading
     internal sealed class AssemblyNameData
     {
         public AssemblyNameFlags Flags;
-        public string Name;
-        public Version Version;
-        public string CultureName;
-        public byte[] PublicKey;
-        public byte[] PublicKeyToken;
+        public string? Name;
+        public Version? Version;
+        public string? CultureName;
+        public byte[]? PublicKey;
+        public byte[]? PublicKeyToken;
         public AssemblyContentType ContentType;
         public AssemblyHashAlgorithm HashAlgorithm;
         public ProcessorArchitecture ProcessorArchitecture;

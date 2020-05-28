@@ -80,17 +80,21 @@ void CommandLine::DumpHelp(const char* program)
     printf("     Check the integrity of each methodContext\n");
     printf("     e.g. -integ a.mc\n");
     printf("\n");
-    printf(" -merge outputfile pattern\n");
+    printf(" -merge outputfile pattern [-dedup [-thin]]\n");
     printf("     Merge all the input files matching the pattern.\n");
+    printf("     With -dedup, skip duplicates when copying (like using -removeDup). With -thin, also strip CompileResults.\n");
     printf("     e.g. -merge a.mch *.mc\n");
     printf("     e.g. -merge a.mch c:\\foo\\bar\\*.mc\n");
     printf("     e.g. -merge a.mch relpath\\*.mc\n");
     printf("     e.g. -merge a.mch .\n");
     printf("     e.g. -merge a.mch onedir\n");
+    printf("     e.g. -merge a.mch *.mc -dedup -thin\n");
     printf("\n");
-    printf(" -merge outputfile pattern -recursive\n");
+    printf(" -merge outputfile pattern -recursive [-dedup [-thin]]\n");
     printf("     Merge all the input files matching the pattern, in the specified and all child directories.\n");
+    printf("     With -dedup, skip duplicates when copying (like using -removeDup). With -thin, also strip CompileResults.\n");
     printf("     e.g. -merge a.mch *.mc -recursive\n");
+    printf("     e.g. -merge a.mch *.mc -recursive -dedup -thin\n");
     printf("\n");
     printf(" -removeDup inputfile outputfile\n");
     printf("     Copy methodContexts from inputfile to outputfile, skipping duplicates.\n");
@@ -152,12 +156,12 @@ bool CommandLine::Parse(int argc, char* argv[], /* OUT */ Options* o)
     for (int i = 1; i < argc; i++)
     {
         bool isASwitch = (argv[i][0] == '-');
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
         if (argv[i][0] == '/') // Also accept "/" on Windows
         {
             isASwitch = true;
         }
-#endif // !FEATURE_PAL
+#endif // !TARGET_UNIX
 
         // Process a switch
         if (isASwitch)
@@ -245,6 +249,11 @@ bool CommandLine::Parse(int argc, char* argv[], /* OUT */ Options* o)
             {
                 tempLen      = strlen(argv[i]);
                 o->recursive = true;
+            }
+            else if ((_strnicmp(&argv[i][1], "dedup", argLen) == 0))
+            {
+                tempLen  = strlen(argv[i]);
+                o->dedup = true;
             }
             else if ((_strnicmp(&argv[i][1], "toc", argLen) == 0))
             {
@@ -385,6 +394,38 @@ bool CommandLine::Parse(int argc, char* argv[], /* OUT */ Options* o)
         if (!o->actionMerge)
         {
             LogError("CommandLine::Parse() '-recursive' requires -merge.");
+            DumpHelp(argv[0]);
+            return false;
+        }
+    }
+
+    if (o->dedup)
+    {
+        if (!o->actionMerge)
+        {
+            LogError("CommandLine::Parse() '-dedup' requires -merge.");
+            DumpHelp(argv[0]);
+            return false;
+        }
+    }
+
+    if (o->stripCR)
+    {
+        if (o->actionMerge)
+        {
+            if (!o->dedup)
+            {
+                LogError("CommandLine::Parse() '-thin' in '-merge' requires -dedup.");
+                DumpHelp(argv[0]);
+                return false;
+            }
+        }
+        else if (o->actionRemoveDup || o->actionStrip || o->actionFracture || o->actionCopy)
+        {
+        }
+        else
+        {
+            LogError("CommandLine::Parse() '-thin' requires -merge, -removeDup, -strip, -fracture, or -copy.");
             DumpHelp(argv[0]);
             return false;
         }

@@ -8,12 +8,12 @@ namespace System.Security.Cryptography
     {
         protected AsymmetricKeyExchangeFormatter() { }
 
-        public abstract string Parameters { get; }
+        public abstract string? Parameters { get; }
 
         public abstract void SetKey(AsymmetricAlgorithm key);
         public abstract byte[] CreateKeyExchange(byte[] data);
 
-        // For desktop compat, keep this even though symAlgType is not used.
-        public abstract byte[] CreateKeyExchange(byte[] data, Type symAlgType);
+        // For .NET Framework compat, keep this even though symAlgType is not used.
+        public abstract byte[] CreateKeyExchange(byte[] data, Type? symAlgType);
     }
 }

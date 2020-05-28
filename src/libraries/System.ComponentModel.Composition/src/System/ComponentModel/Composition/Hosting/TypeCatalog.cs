@@ -26,8 +26,8 @@ namespace System.ComponentModel.Composition.Hosting
     public class TypeCatalog : ComposablePartCatalog, ICompositionElement
     {
         private readonly object _thisLock = new object();
-        private Type[] _types = null;
-        private volatile List<ComposablePartDefinition> _parts;
+        private Type[]? _types = null;
+        private volatile List<ComposablePartDefinition>? _parts;
         private volatile bool _isDisposed = false;
         private readonly ICompositionElement _definitionOrigin;
         private readonly Lazy<IDictionary<string, List<ComposablePartDefinition>>> _contractPartIndex;
@@ -230,7 +230,6 @@ namespace System.ComponentModel.Composition.Hosting
         /// <value>
         ///     A <see cref="string"/> containing a human-readable display name of the <see cref="TypeCatalog"/>.
         /// </value>
-        [SuppressMessage("Microsoft.Design", "CA1033:InterfaceMethodsShouldBeCallableByChildTypes")]
         string ICompositionElement.DisplayName
         {
             get { return GetDisplayName(); }
@@ -242,8 +241,7 @@ namespace System.ComponentModel.Composition.Hosting
         /// <value>
         ///     This property always returns <see langword="null"/>.
         /// </value>
-        [SuppressMessage("Microsoft.Design", "CA1033:InterfaceMethodsShouldBeCallableByChildTypes")]
-        ICompositionElement ICompositionElement.Origin
+        ICompositionElement? ICompositionElement.Origin
         {
             get { return null; }
         }
@@ -284,7 +282,7 @@ namespace System.ComponentModel.Composition.Hosting
             }
         }
 
-        internal override IEnumerable<ComposablePartDefinition> GetCandidateParts(ImportDefinition definition)
+        internal override IEnumerable<ComposablePartDefinition>? GetCandidateParts(ImportDefinition definition)
         {
             if (definition == null)
             {
@@ -297,23 +295,22 @@ namespace System.ComponentModel.Composition.Hosting
                 return PartsInternal;
             }
 
-            string genericContractName = definition.Metadata.GetValue<string>(CompositionConstants.GenericContractMetadataName);
+            string? genericContractName = definition.Metadata.GetValue<string>(CompositionConstants.GenericContractMetadataName);
 
-            List<ComposablePartDefinition> nonGenericMatches = GetCandidateParts(contractName);
-            List<ComposablePartDefinition> genericMatches = GetCandidateParts(genericContractName);
+            List<ComposablePartDefinition>? nonGenericMatches = GetCandidateParts(contractName);
+            List<ComposablePartDefinition>? genericMatches = GetCandidateParts(genericContractName);
 
             return nonGenericMatches.ConcatAllowingNull(genericMatches);
         }
 
-        private List<ComposablePartDefinition> GetCandidateParts(string contractName)
+        private List<ComposablePartDefinition>? GetCandidateParts(string? contractName)
         {
             if (contractName == null)
             {
                 return null;
             }
 
-            List<ComposablePartDefinition> contractCandidateParts = null;
-            _contractPartIndex.Value.TryGetValue(contractName, out contractCandidateParts);
+            _contractPartIndex.Value.TryGetValue(contractName, out List<ComposablePartDefinition>? contractCandidateParts);
             return contractCandidateParts;
         }
 
@@ -325,7 +322,7 @@ namespace System.ComponentModel.Composition.Hosting
             {
                 foreach (string contractName in part.ExportDefinitions.Select(export => export.ContractName).Distinct())
                 {
-                    List<ComposablePartDefinition> contractParts = null;
+                    List<ComposablePartDefinition>? contractParts = null;
                     if (!index.TryGetValue(contractName, out contractParts))
                     {
                         contractParts = new List<ComposablePartDefinition>();
@@ -381,7 +378,7 @@ namespace System.ComponentModel.Composition.Hosting
                 if (builder.Length > 0)
                 {
                     builder.Append(CultureInfo.CurrentCulture.TextInfo.ListSeparator);
-                    builder.Append(" ");
+                    builder.Append(' ');
                 }
 
                 builder.Append(definition.GetPartType().GetDisplayName());

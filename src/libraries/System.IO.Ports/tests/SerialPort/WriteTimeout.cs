@@ -73,7 +73,7 @@ namespace System.IO.Ports.Tests
             VerifyInfiniteTimeout(Write_byte_int_int, true);
         }
 
-        [ActiveIssue(15961)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/20149")]
         [ConditionalFact(nameof(HasOneSerialPort), nameof(HasHardwareFlowControl))]
         public void WriteTimeout_Infinite_Write_char_int_int()
         {

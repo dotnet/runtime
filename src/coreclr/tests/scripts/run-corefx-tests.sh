@@ -8,15 +8,15 @@ usage()
     echo "Input sources:"
     echo "    --runtime <location>              Location of root of the binaries directory"
     echo "                                      containing the FreeBSD, Linux, NetBSD or OSX runtime"
-    echo "                                      default: <repo_root>/bin/testhost/netcoreapp-<OS>-<ConfigurationGroup>-<Arch>"
+    echo "                                      default: <repo_root>/bin/testhost/netcoreapp-<OS>-<Configuration>-<Arch>"
     echo "    --corefx-tests <location>         Location of the root binaries location containing"
     echo "                                      the tests to run"
     echo "                                      default: <repo_root>/bin"
     echo
     echo "Flavor/OS/Architecture options:"
-    echo "    --configurationGroup <config>     ConfigurationGroup to run (Debug/Release)"
+    echo "    --configuration <config>     Configuration to run (Debug/Release)"
     echo "                                      default: Debug"
-    echo "    --os <os>                         OS to run (FreeBSD, Linux, NetBSD or OSX)"
+    echo "    --os <os>                         OS to run (FreeBSD, Linux, NetBSD, OSX, SunOS)"
     echo "                                      default: detect current OS"
     echo "    --arch <Architecture>             Architecture to run (x64, arm, armel, x86, arm64)"
     echo "                                      default: detect current architecture"
@@ -37,8 +37,8 @@ usage()
     echo "Runtime Code Coverage options:"
     echo "    --coreclr-coverage                Optional argument to get coreclr code coverage reports"
     echo "    --coreclr-objs <location>         Location of root of the object directory"
-    echo "                                      containing the FreeBSD, Linux, NetBSD or OSX coreclr build"
-    echo "                                      default: <repo_root>/bin/obj/<OS>.x64.<ConfigurationGroup"
+    echo "                                      containing the FreeBSD, Linux, NetBSD, OSX or SunOS coreclr build"
+    echo "                                      default: <repo_root>/bin/obj/<OS>.x64.<Configuration"
     echo "    --coreclr-src <location>          Location of root of the directory"
     echo "                                      containing the coreclr source files"
     echo
@@ -60,8 +60,8 @@ trap handle_ctrl_c INT
 ProjectRoot="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
 # Location parameters
-# OS/ConfigurationGroup defaults
-ConfigurationGroup="Debug"
+# OS/Configuration defaults
+Configuration="Debug"
 
 OSName=$(uname -s)
 case $OSName in
@@ -79,6 +79,10 @@ case $OSName in
 
     NetBSD)
         OS=NetBSD
+        ;;
+
+    SunOS)
+        OS=SunOS
         ;;
 
     *)
@@ -221,7 +225,7 @@ function start_test {
         fi
     fi
 
-    dirName="$1/netcoreapp-$OS-$ConfigurationGroup-$__Arch"
+    dirName="$1/netcoreapp-$OS-$Configuration-$__Arch"
     if [ ! -d "$dirName" ]; then
         echo "===== Nothing to test in $testProject"
         return
@@ -342,7 +346,7 @@ run_test()
 
 coreclr_code_coverage()
 {
-    if [ ! "$OS" == "FreeBSD" ] && [ ! "$OS" == "Linux" ] && [ ! "$OS" == "NetBSD" ] && [ ! "$OS" == "OSX" ] ; then
+    if [ "$OS" != "FreeBSD" ] && [ "$OS" != "Linux" ] && [ "$OS" != "NetBSD" ] && [ "$OS" != "OSX" ]  && [ "$OS" != "SunOS" ] ; then
         echo "error: Code Coverage not supported on $OS"
         exit 1
     fi
@@ -415,8 +419,8 @@ do
             TestSelection=$2
             ;;
 
-        --configurationGroup)
-            ConfigurationGroup=$2
+        --configuration)
+            Configuration=$2
             ;;
 
         --os)
@@ -485,7 +489,7 @@ done
 
 if [ "$Runtime" == "" ]
 then
-    Runtime="$ProjectRoot/bin/testhost/netcoreapp-$OS-$ConfigurationGroup-$__Arch"
+    Runtime="$ProjectRoot/bin/testhost/netcoreapp-$OS-$Configuration-$__Arch"
 fi
 
 if [ "$CoreFxTests" == "" ]
@@ -495,15 +499,15 @@ fi
 
 # Check parameters up front for valid values:
 
-if [ ! "$ConfigurationGroup" == "Debug" ] && [ ! "$ConfigurationGroup" == "Release" ]
+if [ ! "$Configuration" == "Debug" ] && [ ! "$Configuration" == "Release" ]
 then
-    echo "error: ConfigurationGroup should be Debug or Release"
+    echo "error: Configuration should be Debug or Release"
     exit 1
 fi
 
-if [ ! "$OS" == "FreeBSD" ] && [ ! "$OS" == "Linux" ] && [ ! "$OS" == "NetBSD" ] && [ ! "$OS" == "OSX" ]
+if [ "$OS" != "FreeBSD" ] && [ "$OS" != "Linux" ] && [ "$OS" != "NetBSD" ] && [ "$OS" != "OSX" ] && [ "$OS" != "SunOS" ]
 then
-    echo "error: OS should be FreeBSD, Linux, NetBSD or OSX"
+    echo "error: OS should be FreeBSD, Linux, NetBSD, OSX or SunOS"
     exit 1
 fi
 
@@ -523,7 +527,7 @@ fi
 
 ensure_binaries_are_present
 
-# Walk the directory tree rooted at src bin/tests/$OS.AnyCPU.$ConfigurationGroup/
+# Walk the directory tree rooted at src bin/tests/$OS.AnyCPU.$Configuration/
 
 numberOfProcesses=0
 

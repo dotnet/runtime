@@ -1125,31 +1125,6 @@ TypeHandle SigPointer::GetTypeHandleThrowing(
             break;
         }
 
-        case ELEMENT_TYPE_NATIVE_ARRAY_TEMPLATE_ZAPSIG:
-        {
-#ifndef DACCESS_COMPILE
-            TypeHandle baseType = psig.GetTypeHandleThrowing(pModule,
-                                                             pTypeContext,
-                                                             fLoadTypes,
-                                                             level,
-                                                             dropGenericArgumentLevel,
-                                                             pSubst,
-                                                             pZapSigContext);
-            if (baseType.IsNull())
-            {
-                thRet = baseType;
-            }
-            else
-            {
-                thRet = baseType.GetMethodTable();
-            }
-#else
-            DacNotImpl();
-            thRet = TypeHandle();
-#endif
-            break;
-        }
-
         case ELEMENT_TYPE_NATIVE_VALUETYPE_ZAPSIG:
         {
 #ifndef DACCESS_COMPILE
@@ -1381,7 +1356,7 @@ TypeHandle SigPointer::GetTypeHandleThrowing(
                             if (tmpEType == ELEMENT_TYPE_CLASS)
                                 typeHnd = TypeHandle(g_pCanonMethodTableClass);
                         }
-                        else if ((elemType == (CorElementType) ELEMENT_TYPE_CANON_ZAPSIG) ||
+                        else if ((elemType == (CorElementType)ELEMENT_TYPE_CANON_ZAPSIG) ||
                                  (CorTypeInfo::GetGCType_NoThrow(elemType) == TYPE_GC_REF))
                         {
                             typeHnd = TypeHandle(g_pCanonMethodTableClass);
@@ -1413,6 +1388,11 @@ TypeHandle SigPointer::GetTypeHandleThrowing(
                         // Indicate failure by setting thisinst to NULL
                         thisinst = NULL;
                         break;
+                    }
+
+                    if (dropGenericArgumentLevel && level == CLASS_LOAD_APPROXPARENTS)
+                    {
+                        typeHnd = ClassLoader::CanonicalizeGenericArg(typeHnd);
                     }
                 }
                 thisinst[i] = typeHnd;

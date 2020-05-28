@@ -16,6 +16,7 @@ namespace System.Net.WebSockets.Client.Tests
     {
         public ConnectTest(ITestOutputHelper output) : base(output) { }
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/1895")]
         [OuterLoop("Uses external servers")]
         [ConditionalTheory(nameof(WebSocketsSupported)), MemberData(nameof(UnavailableWebSocketServers))]
         public async Task ConnectAsync_NotWebSocketServer_ThrowsWebSocketExceptionWithMessage(Uri server, string exceptionMessage, WebSocketError errorCode)
@@ -87,6 +88,7 @@ namespace System.Net.WebSockets.Client.Tests
         }
 
         [ConditionalFact(nameof(WebSocketsSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34690", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         public async Task ConnectAsync_AddHostHeader_Success()
         {
             string expectedHost = null;
@@ -205,6 +207,7 @@ namespace System.Net.WebSockets.Client.Tests
         }
 
         [ConditionalFact(nameof(WebSocketsSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34690", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         public async Task ConnectAsync_NonStandardRequestHeaders_HeadersAddedWithoutValidation()
         {
             await LoopbackServer.CreateClientAndServerAsync(async uri =>
@@ -254,6 +257,7 @@ namespace System.Net.WebSockets.Client.Tests
         }
 
         [ConditionalFact(nameof(WebSocketsSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34690", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         public async Task ConnectAsync_CancellationRequestedAfterConnect_ThrowsOperationCanceledException()
         {
             var releaseServer = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);

@@ -8,7 +8,7 @@ using Xunit;
 
 namespace System.Security.Cryptography.Tests
 {
-    public abstract class ECKeyFileTests<T> where T : AsymmetricAlgorithm
+    public abstract partial class ECKeyFileTests<T> where T : AsymmetricAlgorithm
     {
         protected abstract T CreateKey();
         protected abstract byte[] ExportECPrivateKey(T key);
@@ -16,6 +16,7 @@ namespace System.Security.Cryptography.Tests
         protected abstract void ImportECPrivateKey(T key, ReadOnlySpan<byte> source, out int bytesRead);
         protected abstract void ImportParameters(T key, ECParameters ecParameters);
         protected abstract ECParameters ExportParameters(T key, bool includePrivate);
+        protected abstract void Exercise(T key);
 
         public static bool SupportsBrainpool { get; } = IsCurveSupported(ECCurve.NamedCurves.brainpoolP160r1.Oid);
         public static bool SupportsSect163k1 { get; } = IsCurveSupported(EccTestData.Sect163k1Key1.Curve.Oid);
@@ -387,7 +388,7 @@ f+ESRyxDnBgKz6H2RKeenyrwVhxF98SyJzAdP637vR3QmDNAWWAgoUhg",
                 new PbeParameters(
                     PbeEncryptionAlgorithm.Aes256Cbc,
                     HashAlgorithmName.SHA256,
-                    7), 
+                    7),
                 EccTestData.Sect163k1Key1,
                 SupportsSect163k1);
         }
@@ -446,7 +447,7 @@ z2NFvWcpK0Fh9fCVGuXV9sjJ5qE=",
                 new PbeParameters(
                     PbeEncryptionAlgorithm.Aes128Cbc,
                     HashAlgorithmName.SHA256,
-                    12), 
+                    12),
                 EccTestData.Sect163k1Key1Explicit,
                 SupportsSect163k1);
         }

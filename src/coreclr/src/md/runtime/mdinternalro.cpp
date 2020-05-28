@@ -2773,8 +2773,6 @@ HRESULT MDInternalRO::GetAssemblyProps(
         pMetaData->usBuildNumber = m_LiteWeightStgdb.m_MiniMd.getBuildNumberOfAssembly(pRecord);
         pMetaData->usRevisionNumber = m_LiteWeightStgdb.m_MiniMd.getRevisionNumberOfAssembly(pRecord);
         IfFailRet(m_LiteWeightStgdb.m_MiniMd.getLocaleOfAssembly(pRecord, &pMetaData->szLocale));
-        pMetaData->ulProcessor = 0;
-        pMetaData->ulOS = 0;
     }
     if (pdwAssemblyFlags)
     {
@@ -2826,8 +2824,6 @@ HRESULT MDInternalRO::GetAssemblyRefProps(
         pMetaData->usBuildNumber = m_LiteWeightStgdb.m_MiniMd.getBuildNumberOfAssemblyRef(pRecord);
         pMetaData->usRevisionNumber = m_LiteWeightStgdb.m_MiniMd.getRevisionNumberOfAssemblyRef(pRecord);
         IfFailRet(m_LiteWeightStgdb.m_MiniMd.getLocaleOfAssemblyRef(pRecord, &pMetaData->szLocale));
-        pMetaData->ulProcessor = 0;
-        pMetaData->ulOS = 0;
     }
     if (ppbHashValue != NULL)
     {

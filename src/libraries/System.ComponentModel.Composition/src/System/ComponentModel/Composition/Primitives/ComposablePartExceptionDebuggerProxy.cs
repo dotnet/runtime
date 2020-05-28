@@ -17,12 +17,12 @@ namespace System.ComponentModel.Composition.Primitives
             _exception = exception;
         }
 
-        public ICompositionElement Element
+        public ICompositionElement? Element
         {
             get { return _exception.Element; }
         }
 
-        public Exception InnerException
+        public Exception? InnerException
         {
             get { return _exception.InnerException; }
         }

@@ -581,7 +581,7 @@ namespace System.Xml.Schema
 
             while (true)
             {
-                bb.Append("(");
+                bb.Append('(');
                 if (this_.LeftChild is SequenceNode)
                 {
                     nodeStack.Push(this_);
@@ -593,7 +593,7 @@ namespace System.Xml.Schema
             ProcessRight:
                 bb.Append(", ");
                 this_.RightChild.Dump(bb, symbols, positions);
-                bb.Append(")");
+                bb.Append(')');
                 if (nodeStack.Count == 0)
                     break;
 
@@ -664,7 +664,7 @@ namespace System.Xml.Schema
 
             while (true)
             {
-                bb.Append("(");
+                bb.Append('(');
                 if (this_.LeftChild is ChoiceNode)
                 {
                     nodeStack.Push(this_);
@@ -676,7 +676,7 @@ namespace System.Xml.Schema
             ProcessRight:
                 bb.Append(" | ");
                 this_.RightChild.Dump(bb, symbols, positions);
-                bb.Append(")");
+                bb.Append(')');
                 if (nodeStack.Count == 0)
                     break;
 
@@ -707,7 +707,7 @@ namespace System.Xml.Schema
         public override void Dump(StringBuilder bb, SymbolsDictionary symbols, Positions positions)
         {
             LeftChild.Dump(bb, symbols, positions);
-            bb.Append("+");
+            bb.Append('+');
         }
 #endif
     }
@@ -728,7 +728,7 @@ namespace System.Xml.Schema
         public override void Dump(StringBuilder bb, SymbolsDictionary symbols, Positions positions)
         {
             LeftChild.Dump(bb, symbols, positions);
-            bb.Append("?");
+            bb.Append('?');
         }
 #endif
     }
@@ -753,7 +753,7 @@ namespace System.Xml.Schema
         public override void Dump(StringBuilder bb, SymbolsDictionary symbols, Positions positions)
         {
             LeftChild.Dump(bb, symbols, positions);
-            bb.Append("*");
+            bb.Append('*');
         }
 #endif
     }

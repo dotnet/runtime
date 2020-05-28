@@ -1,0 +1,15 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="eglib.targets.filters" />
+  <ItemGroup>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{d16b81e3-5093-424e-a5d4-e7dd8da49dce}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{b9df2a0f-4f98-4451-a22e-c731a46eff24}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Resource Files">
+      <UniqueIdentifier>{38a39ff1-842b-431b-b54b-24094e8283eb}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>

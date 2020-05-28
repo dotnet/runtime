@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Diagnostics;
 using System.Reflection;
 using System.Reflection.TypeLoading;
 using CultureInfo = System.Globalization.CultureInfo;
@@ -11,7 +12,7 @@ namespace System
     internal sealed partial class DefaultBinder : Binder
     {
         private readonly MetadataLoadContext _loader;
-        private readonly Type _objectType;
+        private readonly Type? _objectType;
 
         internal DefaultBinder(MetadataLoadContext loader)
         {
@@ -35,16 +36,16 @@ namespace System
         // The most specific match will be selected.
         //
         public sealed override MethodBase BindToMethod(
-            BindingFlags bindingAttr, MethodBase[] match, ref object[] args,
-            ParameterModifier[] modifiers, CultureInfo cultureInfo, string[] names, out object state) => throw new InvalidOperationException(SR.Arg_InvalidOperation_Reflection);
+            BindingFlags bindingAttr, MethodBase[] match, ref object?[] args,
+            ParameterModifier[]? modifiers, CultureInfo? cultureInfo, string[]? names, out object state) => throw new InvalidOperationException(SR.Arg_InvalidOperation_Reflection);
 
         // Given a set of fields that match the base criteria, select a field.
         // if value is null then we have no way to select a field
-        public sealed override FieldInfo BindToField(BindingFlags bindingAttr, FieldInfo[] match, object value, CultureInfo cultureInfo) => throw new InvalidOperationException(SR.Arg_InvalidOperation_Reflection);
+        public sealed override FieldInfo BindToField(BindingFlags bindingAttr, FieldInfo[] match, object value, CultureInfo? cultureInfo) => throw new InvalidOperationException(SR.Arg_InvalidOperation_Reflection);
 
         // Given a set of methods that match the base criteria, select a method based upon an array of types.
         // This method should return null if no method matches the criteria.
-        public sealed override MethodBase SelectMethod(BindingFlags bindingAttr, MethodBase[] match, Type[] types, ParameterModifier[] modifiers)
+        public sealed override MethodBase? SelectMethod(BindingFlags bindingAttr, MethodBase[] match, Type[] types, ParameterModifier[]? modifiers)
         {
             int i;
             int j;
@@ -80,7 +81,7 @@ namespace System
                     if (pCls == _objectType)
                         continue;
 
-                    Type type = types[j];
+                    Type? type = types[j];
                     if (type.IsSignatureType())
                     {
                         if (!(candidates[i] is MethodInfo methodInfo))
@@ -143,8 +144,8 @@ namespace System
         }
 
         // Given a set of properties that match the base criteria, select one.
-        public sealed override PropertyInfo SelectProperty(BindingFlags bindingAttr, PropertyInfo[] match, Type returnType,
-                    Type[] indexes, ParameterModifier[] modifiers)
+        public sealed override PropertyInfo? SelectProperty(BindingFlags bindingAttr, PropertyInfo[] match, Type? returnType,
+                    Type[]? indexes, ParameterModifier[]? modifiers)
         {
             // Allow a null indexes array. But if it is not null, every element must be non-null as well.
             if (indexes != null)
@@ -230,6 +231,7 @@ namespace System
                 paramOrder[i] = i;
             for (i = 1; i < curIdx; i++)
             {
+                Debug.Assert(returnType != null);
                 int newMin = FindMostSpecificType(candidates[currentMin].PropertyType, candidates[i].PropertyType, returnType);
                 if (newMin == 0 && indexes != null)
                     newMin = FindMostSpecific(
@@ -262,13 +264,13 @@ namespace System
 
         // The default binder doesn't support any change type functionality.
         // This is because the default is built into the low level invoke code.
-        public override object ChangeType(object value, Type type, CultureInfo cultureInfo) => throw new InvalidOperationException(SR.Arg_InvalidOperation_Reflection);
+        public override object ChangeType(object value, Type type, CultureInfo? cultureInfo) => throw new InvalidOperationException(SR.Arg_InvalidOperation_Reflection);
 
-        public sealed override void ReorderArgumentArray(ref object[] args, object state) => throw new InvalidOperationException(SR.Arg_InvalidOperation_Reflection);
+        public sealed override void ReorderArgumentArray(ref object?[] args, object state) => throw new InvalidOperationException(SR.Arg_InvalidOperation_Reflection);
 
         // Return any exact bindings that may exist. (This method is not defined on the
         // Binder and is used by RuntimeType.)
-        public static MethodBase ExactBinding(MethodBase[] match, Type[] types, ParameterModifier[] modifiers)
+        public static MethodBase? ExactBinding(MethodBase[] match, Type[] types, ParameterModifier[]? modifiers)
         {
             if (match == null)
                 throw new ArgumentNullException(nameof(match));
@@ -311,12 +313,12 @@ namespace System
 
         // Return any exact bindings that may exist. (This method is not defined on the
         //  Binder and is used by RuntimeType.)
-        public static PropertyInfo ExactPropertyBinding(PropertyInfo[] match, Type returnType, Type[] types, ParameterModifier[] modifiers)
+        public static PropertyInfo? ExactPropertyBinding(PropertyInfo[] match, Type? returnType, Type[]? types, ParameterModifier[]? modifiers)
         {
             if (match == null)
                 throw new ArgumentNullException(nameof(match));
 
-            PropertyInfo bestMatch = null;
+            PropertyInfo? bestMatch = null;
             int typesLength = (types != null) ? types.Length : 0;
             for (int i = 0; i < match.Length; i++)
             {
@@ -327,7 +329,7 @@ namespace System
                     Type pCls = par[j].ParameterType;
 
                     // If the classes  exactly match continue
-                    if (pCls != types[j])
+                    if (pCls != types![j])
                         break;
                 }
                 if (j < typesLength)
@@ -343,9 +345,9 @@ namespace System
             return bestMatch;
         }
 
-        private static int FindMostSpecific(ParameterInfo[] p1, int[] paramOrder1, Type paramArrayType1,
-                                            ParameterInfo[] p2, int[] paramOrder2, Type paramArrayType2,
-                                            Type[] types, object[] args)
+        private static int FindMostSpecific(ParameterInfo[] p1, int[] paramOrder1, Type? paramArrayType1,
+                                            ParameterInfo[] p2, int[] paramOrder2, Type? paramArrayType2,
+                                            Type[] types, object[]? args)
         {
             // A method using params is always less specific than one not using params
             if (paramArrayType1 != null && paramArrayType2 == null) return 2;
@@ -450,22 +452,22 @@ namespace System
             {
                 if (c1.IsByRef && c2.IsByRef)
                 {
-                    c1 = c1.GetElementType();
-                    c2 = c2.GetElementType();
+                    c1 = c1.GetElementType()!;
+                    c2 = c2.GetElementType()!;
                 }
                 else if (c1.IsByRef)
                 {
                     if (c1.GetElementType() == c2)
                         return 2;
 
-                    c1 = c1.GetElementType();
+                    c1 = c1.GetElementType()!;
                 }
                 else
                 {
                     if (c2.GetElementType() == c1)
                         return 1;
 
-                    c2 = c2.GetElementType();
+                    c2 = c2.GetElementType()!;
                 }
             }
 
@@ -494,9 +496,9 @@ namespace System
             }
         }
 
-        private static int FindMostSpecificMethod(MethodBase m1, int[] paramOrder1, Type paramArrayType1,
-                                                  MethodBase m2, int[] paramOrder2, Type paramArrayType2,
-                                                  Type[] types, object[] args)
+        private static int FindMostSpecificMethod(MethodBase m1, int[] paramOrder1, Type? paramArrayType1,
+                                                  MethodBase m2, int[] paramOrder2, Type? paramArrayType2,
+                                                  Type[] types, object[]? args)
         {
             // Find the most specific method based on the parameters.
             int res = FindMostSpecific(m1.GetParametersNoCopy(), paramOrder1, paramArrayType1,
@@ -510,8 +512,8 @@ namespace System
             if (CompareMethodSig(m1, m2))
             {
                 // Determine the depth of the declaring types for both methods.
-                int hierarchyDepth1 = GetHierarchyDepth(m1.DeclaringType);
-                int hierarchyDepth2 = GetHierarchyDepth(m2.DeclaringType);
+                int hierarchyDepth1 = GetHierarchyDepth(m1.DeclaringType!);
+                int hierarchyDepth2 = GetHierarchyDepth(m2.DeclaringType!);
 
                 // The most derived method is the most specific one.
                 if (hierarchyDepth1 == hierarchyDepth2)
@@ -537,8 +539,8 @@ namespace System
             // Check to see if the fields have the same name.
             if (cur1.Name == cur2.Name)
             {
-                int hierarchyDepth1 = GetHierarchyDepth(cur1.DeclaringType);
-                int hierarchyDepth2 = GetHierarchyDepth(cur2.DeclaringType);
+                int hierarchyDepth1 = GetHierarchyDepth(cur1.DeclaringType!);
+                int hierarchyDepth2 = GetHierarchyDepth(cur2.DeclaringType!);
 
                 if (hierarchyDepth1 == hierarchyDepth2)
                 {
@@ -576,7 +578,7 @@ namespace System
         {
             int depth = 0;
 
-            Type currentType = t;
+            Type? currentType = t;
             do
             {
                 depth++;
@@ -586,16 +588,16 @@ namespace System
             return depth;
         }
 
-        internal static MethodBase FindMostDerivedNewSlotMeth(MethodBase[] match, int cMatches)
+        internal static MethodBase? FindMostDerivedNewSlotMeth(MethodBase[] match, int cMatches)
         {
             int deepestHierarchy = 0;
-            MethodBase methWithDeepestHierarchy = null;
+            MethodBase? methWithDeepestHierarchy = null;
 
             for (int i = 0; i < cMatches; i++)
             {
                 // Calculate the depth of the hierarchy of the declaring type of the
                 // current method.
-                int currentHierarchyDepth = GetHierarchyDepth(match[i].DeclaringType);
+                int currentHierarchyDepth = GetHierarchyDepth(match[i].DeclaringType!);
 
                 // The two methods have the same name, signature, and hierarchy depth.
                 // This can only happen if at least one is vararg or generic.

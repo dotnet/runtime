@@ -177,7 +177,7 @@ ADVANCE_METHOD:
 #ifndef DACCESS_COMPILE
     _ASSERTE_MSG(
         *pDomainAssemblyHolder == dbg_m_pDomainAssembly,
-        "Caller probably modified the assembly holder, which he shouldn't - see method comment.");
+        "Caller probably modified the assembly holder, which they shouldn't - see method comment.");
 #endif //DACCESS_COMPILE
 
     return TRUE;

@@ -30,7 +30,7 @@ namespace System.Reflection.TypeLoading.Ecma
         internal sealed override RoModule GetRoModule() => _module;
         internal EcmaModule GetEcmaModule() => _module;
 
-        protected sealed override RoType ComputeDeclaringType()
+        protected sealed override RoType? ComputeDeclaringType()
         {
             if (!TypeDefinition.IsNested)
                 return null;
@@ -40,9 +40,9 @@ namespace System.Reflection.TypeLoading.Ecma
 
         protected sealed override string ComputeName() => TypeDefinition.Name.GetString(Reader).EscapeTypeNameIdentifier();
 
-        protected sealed override string ComputeNamespace()
+        protected sealed override string? ComputeNamespace()
         {
-            Type declaringType = DeclaringType;
+            Type? declaringType = DeclaringType;
             if (declaringType != null)
                 return declaringType.Namespace;
             return TypeDefinition.Namespace.GetStringOrNull(Reader)?.EscapeTypeNameIdentifier();
@@ -50,7 +50,7 @@ namespace System.Reflection.TypeLoading.Ecma
 
         protected sealed override TypeAttributes ComputeAttributeFlags() => TypeDefinition.Attributes;
 
-        internal sealed override RoType SpecializeBaseType(RoType[] instantiation)
+        internal sealed override RoType? SpecializeBaseType(RoType[] instantiation)
         {
             EntityHandle baseTypeHandle = TypeDefinition.BaseType;
             if (baseTypeHandle.IsNil)
@@ -73,7 +73,7 @@ namespace System.Reflection.TypeLoading.Ecma
         protected sealed override IEnumerable<CustomAttributeData> GetTrueCustomAttributes() => TypeDefinition.GetCustomAttributes().ToTrueCustomAttributes(GetEcmaModule());
 
         internal sealed override bool IsCustomAttributeDefined(ReadOnlySpan<byte> ns, ReadOnlySpan<byte> name) => TypeDefinition.GetCustomAttributes().IsCustomAttributeDefined(ns, name, GetEcmaModule());
-        internal sealed override CustomAttributeData TryFindCustomAttribute(ReadOnlySpan<byte> ns, ReadOnlySpan<byte> name) => TypeDefinition.GetCustomAttributes().TryFindCustomAttribute(ns, name, GetEcmaModule());
+        internal sealed override CustomAttributeData? TryFindCustomAttribute(ReadOnlySpan<byte> ns, ReadOnlySpan<byte> name) => TypeDefinition.GetCustomAttributes().TryFindCustomAttribute(ns, name, GetEcmaModule());
 
         public sealed override int MetadataToken => _handle.GetToken();
 
@@ -96,7 +96,7 @@ namespace System.Reflection.TypeLoading.Ecma
             }
             return genericParameters;
         }
-        private volatile RoType[] _lazyGenericParameters;
+        private volatile RoType[]? _lazyGenericParameters;
 
         protected internal sealed override RoType ComputeEnumUnderlyingType()
         {
@@ -109,7 +109,7 @@ namespace System.Reflection.TypeLoading.Ecma
 
             MetadataReader reader = Reader;
             TypeContext typeContext = Instantiation.ToTypeContext();
-            RoType underlyingType = null;
+            RoType? underlyingType = null;
             foreach (FieldDefinitionHandle handle in TypeDefinition.GetFields())
             {
                 FieldDefinition fd = handle.GetFieldDefinition(reader);

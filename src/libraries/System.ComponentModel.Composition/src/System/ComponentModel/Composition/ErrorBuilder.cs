@@ -49,7 +49,7 @@ namespace System.ComponentModel.Composition
                 CompositionErrorId.ImportEngine_ImportCardinalityMismatch,
                 exception.Message,
                 definition.ToElement(),
-                (Exception)null);
+                (Exception?)null);
         }
 
         public static CompositionError CreatePartCannotActivate(ComposablePart part, Exception innerException)

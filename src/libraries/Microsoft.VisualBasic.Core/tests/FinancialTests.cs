@@ -14,7 +14,7 @@ namespace Microsoft.VisualBasic.Tests
 
         // The accuracy to which we can validate some numeric test cases depends on the platform.
         private static readonly int s_precision = IsArmOrArm64OrAlpine ? 12 :
-            PlatformDetection.IsFullFramework ? 14 : 15;
+            PlatformDetection.IsNetFramework ? 14 : 15;
 
         [Theory]
         [InlineData(0, 1.0, 1.0, 1.0, 1.0, 0, 0)]

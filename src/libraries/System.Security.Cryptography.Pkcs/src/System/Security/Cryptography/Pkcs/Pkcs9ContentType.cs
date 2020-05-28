@@ -4,7 +4,7 @@
 
 using System;
 using System.Diagnostics;
-
+using System.Diagnostics.CodeAnalysis;
 using Internal.Cryptography;
 
 namespace System.Security.Cryptography.Pkcs
@@ -42,7 +42,8 @@ namespace System.Security.Cryptography.Pkcs
         // Private methods.
         //
 
-        private static Oid Decode(byte[] rawData)
+        [return: NotNullIfNotNull("rawData")]
+        private static Oid? Decode(byte[]? rawData)
         {
             if (rawData == null)
                 return null;
@@ -51,6 +52,6 @@ namespace System.Security.Cryptography.Pkcs
             return new Oid(contentTypeValue);
         }
 
-        private volatile Oid _lazyContentType = null;
+        private volatile Oid? _lazyContentType = null;
     }
 }

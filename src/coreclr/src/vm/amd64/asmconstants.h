@@ -8,9 +8,9 @@
 // Allow multiple inclusion.
 
 
-#ifndef _TARGET_AMD64_
+#ifndef TARGET_AMD64
 #error this file should only be used on an AMD64 platform
-#endif // _TARGET_AMD64_
+#endif // TARGET_AMD64
 
 #include "../../inc/switches.h"
 
@@ -98,21 +98,6 @@ ASMCONSTANTS_C_ASSERT(SIZEOF__ComPrestubMethodFrame
 #define               SIZEOF__ComMethodFrame                        0x20
 ASMCONSTANTS_C_ASSERT(SIZEOF__ComMethodFrame
                     == sizeof(ComMethodFrame));
-#endif // FEATURE_COMINTEROP
-
-#define               OFFSETOF__UMEntryThunk__m_pUMThunkMarshInfo   0x18
-ASMCONSTANTS_C_ASSERT(OFFSETOF__UMEntryThunk__m_pUMThunkMarshInfo
-                    == offsetof(UMEntryThunk, m_pUMThunkMarshInfo));
-
-#define               OFFSETOF__UMThunkMarshInfo__m_pILStub         0x00
-ASMCONSTANTS_C_ASSERT(OFFSETOF__UMThunkMarshInfo__m_pILStub
-                    == offsetof(UMThunkMarshInfo, m_pILStub));
-
-#define               OFFSETOF__UMThunkMarshInfo__m_cbActualArgSize 0x08
-ASMCONSTANTS_C_ASSERT(OFFSETOF__UMThunkMarshInfo__m_cbActualArgSize
-                    == offsetof(UMThunkMarshInfo, m_cbActualArgSize));
-
-#ifdef FEATURE_COMINTEROP
 
 #define               OFFSETOF__ComPlusCallMethodDesc__m_pComPlusCallInfo        DBG_FRE(0x30, 0x08)
 ASMCONSTANTS_C_ASSERT(OFFSETOF__ComPlusCallMethodDesc__m_pComPlusCallInfo
@@ -139,17 +124,6 @@ ASMCONSTANTS_C_ASSERT(OFFSETOF__Thread__m_pFrame
 #define Thread_m_pFrame OFFSETOF__Thread__m_pFrame
 
 #ifndef CROSSGEN_COMPILE
-#define               OFFSETOF__Thread__m_State                     0x8
-ASMCONSTANTS_C_ASSERT(OFFSETOF__Thread__m_State
-                    == offsetof(Thread, m_State));
-
-#define               OFFSETOF__Thread__m_dwLockCount               0x20
-ASMCONSTANTS_C_ASSERT(OFFSETOF__Thread__m_dwLockCount
-                    == offsetof(Thread, m_dwLockCount));
-
-#define               OFFSETOF__Thread__m_ThreadId                  0x24
-ASMCONSTANTS_C_ASSERT(OFFSETOF__Thread__m_ThreadId
-                    == offsetof(Thread, m_ThreadId));
 
 #define               OFFSET__Thread__m_alloc_context__alloc_ptr 0x58
 ASMCONSTANTS_C_ASSERT(OFFSET__Thread__m_alloc_context__alloc_ptr == offsetof(Thread, m_alloc_context) + offsetof(gc_alloc_context, alloc_ptr));
@@ -496,7 +470,7 @@ ASMCONSTANTS_C_ASSERT(MethodDescClassification__mdcClassification == mdcClassifi
 #define MethodDescClassification__mcInstantiated 0x5
 ASMCONSTANTS_C_ASSERT(MethodDescClassification__mcInstantiated == mcInstantiated);
 
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
 #define OFFSET__TEB__ThreadLocalStoragePointer 0x58
 ASMCONSTANTS_C_ASSERT(OFFSET__TEB__ThreadLocalStoragePointer == offsetof(TEB, ThreadLocalStoragePointer));
 #endif
@@ -507,8 +481,6 @@ ASMCONSTANTS_C_ASSERT(OFFSET__TEB__ThreadLocalStoragePointer == offsetof(TEB, Th
 #define REDIRECTSTUB_RBP_OFFSET_CONTEXT     0x20
 
 #define THROWSTUB_ESTABLISHER_OFFSET_FaultingExceptionFrame 0x30
-
-#define UMTHUNKSTUB_HOST_NOTIFY_FLAG_RBPOFFSET (0x40)   // xmm save size
 
 #define Thread__ObjectRefFlush  ?ObjectRefFlush@Thread@@SAXPEAV1@@Z
 
@@ -531,10 +503,6 @@ ASMCONSTANTS_RUNTIME_ASSERT(STRING_BASE_SIZE == StringObject::GetBaseSize());
 #define               OFFSETOF__StringObject__m_StringLength 0x8
 ASMCONSTANTS_C_ASSERT(OFFSETOF__StringObject__m_StringLength
                     == offsetof(StringObject, m_StringLength));
-
-#define               OFFSETOF__ArrayTypeDesc__m_Arg 0x10
-ASMCONSTANTS_C_ASSERT(OFFSETOF__ArrayTypeDesc__m_Arg
-                    == offsetof(ArrayTypeDesc, m_Arg));
 
 // For JIT_PInvokeBegin and JIT_PInvokeEnd helpers
 #define               OFFSETOF__InlinedCallFrame__m_Datum 0x10

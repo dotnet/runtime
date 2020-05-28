@@ -15,7 +15,6 @@
 #include "reflectclasswriter.h"
 #include "corerror.h"
 #include "iceefilegen.h"
-#include "strongname.h"
 #include "ceefilegenwriter.h"
 #include "typekey.h"
 

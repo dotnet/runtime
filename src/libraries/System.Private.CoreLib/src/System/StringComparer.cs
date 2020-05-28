@@ -181,7 +181,7 @@ namespace System
             {
                 throw new ArgumentNullException(nameof(obj));
             }
-            return _compareInfo.GetHashCodeOfString(obj, _options);
+            return _compareInfo.GetHashCode(obj, _options);
         }
 
         // Equals method for the comparer itself.

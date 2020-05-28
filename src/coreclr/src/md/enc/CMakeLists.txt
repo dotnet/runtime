@@ -13,6 +13,7 @@ set(MDRUNTIMERW_SOURCES
 set(MDRUNTIMERW_HEADERS
   ../../inc/corhdr.h
   ../../inc/metadata.h
+  ../../inc/mdfileformat.h
   ../../inc/pedecoder.h
   ../../inc/pedecoder.inl
   ../../inc/posterror.h
@@ -22,7 +23,6 @@ set(MDRUNTIMERW_HEADERS
   ../compiler/regmeta.h
   ../hotdata/hotdataformat.h
   ../inc/liteweightstgdb.h
-  ../inc/mdfileformat.h
   ../inc/mdinternalrw.h
   ../inc/mdlog.h
   ../inc/metadatahash.h
@@ -37,9 +37,9 @@ set(MDRUNTIMERW_HEADERS
   ../runtime/mdinternalro.h
 )
 
-if (WIN32)
+if (CLR_CMAKE_TARGET_WIN32)
   list(APPEND MDRUNTIMERW_SOURCES ${MDRUNTIMERW_HEADERS})
-endif(WIN32)
+endif(CLR_CMAKE_TARGET_WIN32)
 
 convert_to_absolute_path(MDRUNTIMERW_HEADERS ${MDRUNTIMERW_HEADERS})
 convert_to_absolute_path(MDRUNTIMERW_SOURCES ${MDRUNTIMERW_SOURCES})

@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.Security.Cryptography;
 using System.Text;
 
@@ -12,11 +11,11 @@ namespace Internal.Cryptography
 {
     internal sealed class OpenSslAsnFormatter : AsnFormatter
     {
-        protected override string FormatNative(Oid oid, byte[] rawData, bool multiLine)
+        protected override string? FormatNative(Oid? oid, byte[] rawData, bool multiLine)
         {
             if (oid == null || string.IsNullOrEmpty(oid.Value))
             {
-                return EncodeHexString(rawData, true);
+                return EncodeSpaceSeparatedHexString(rawData);
             }
 
             // The established behavior for this method is to return the native answer, if possible,

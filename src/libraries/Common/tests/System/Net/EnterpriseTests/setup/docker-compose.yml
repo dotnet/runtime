@@ -1,0 +1,59 @@
+version: "3.7"
+
+services:
+  kdc:
+    build:
+      context: ./
+      dockerfile: ./kdc/Dockerfile
+    image: kdc:latest
+    container_name: kdc
+    hostname: kdc
+    domainname: linux.contoso.com
+    dns_search: linux.contoso.com
+    volumes:
+      - shared-volume:/SHARED
+    networks:
+      - network1
+
+  apacheweb:
+    build:
+      context: ./
+      dockerfile: ./apacheweb/Dockerfile
+    image: apacheweb:latest
+    container_name: apacheweb
+    hostname: apacheweb
+    domainname: linux.contoso.com
+    dns_search: linux.contoso.com
+    volumes:
+      - shared-volume:/SHARED
+    networks:
+      network1:
+        aliases:
+          - apache.linux.contoso.com
+    depends_on:
+      - kdc
+
+  linuxclient:
+    build:
+      context: ./
+      dockerfile: ./linuxclient/Dockerfile
+    image: linuxclient:latest
+    container_name: linuxclient
+    hostname: linuxclient
+    domainname: linux.contoso.com
+    dns_search: linux.contoso.com
+    volumes:
+      - shared-volume:/SHARED
+      - ${DOTNET_RUNTIME_REPO_ROOT}:/repo
+    networks:
+      - network1
+    depends_on:
+      - apacheweb
+      - kdc
+
+networks:
+  network1:
+    name: linux.contoso.com
+
+volumes:
+  shared-volume:

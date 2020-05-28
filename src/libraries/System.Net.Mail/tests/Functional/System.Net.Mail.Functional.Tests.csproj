@@ -1,11 +1,12 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
-    <Configurations>netcoreapp-Debug;netcoreapp-Release</Configurations>
+    <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="AlternateViewCollectionTest.cs" />
     <Compile Include="AlternateViewTest.cs" />
+    <Compile Include="AssemblyInfo.cs" />
     <Compile Include="AttachmentCollectionTest.cs" />
     <Compile Include="AttachmentTest.cs" />
     <Compile Include="ContentDispositionTest.cs" />
@@ -20,16 +21,13 @@
     <Compile Include="MailMessageTest.cs" />
     <Compile Include="SmtpClientTest.cs" />
     <Compile Include="SmtpExceptionTest.cs" />
-    <Compile Include="SmtpServer.cs" />
-    <Compile Include="$(CommonTestPath)System\Diagnostics\Tracing\TestEventListener.cs">
-      <Link>Common\System\Diagnostics\Tracing\TestEventListener.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonTestPath)System\IO\TempFile.cs">
-      <Link>Common\System\IO\TempFile.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonTestPath)System\Threading\Tasks\TaskTimeoutExtensions.cs">
-      <Link>Common\System\Threading\Tasks\TaskTimeoutExtensions.cs</Link>
-    </Compile>
+    <Compile Include="LoopbackSmtpServer.cs" />
+    <Compile Include="$(CommonTestPath)System\Diagnostics\Tracing\TestEventListener.cs"
+             Link="Common\System\Diagnostics\Tracing\TestEventListener.cs" />
+    <Compile Include="$(CommonTestPath)System\IO\TempFile.cs"
+             Link="Common\System\IO\TempFile.cs" />
+    <Compile Include="$(CommonTestPath)System\Threading\Tasks\TaskTimeoutExtensions.cs"
+             Link="Common\System\Threading\Tasks\TaskTimeoutExtensions.cs" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="System.Net.NetworkInformation" />

@@ -9,7 +9,7 @@ namespace System.Xml.Tests
 {
     public class LoadTests
     {
-        // Issue reported on https://github.com/dotnet/corefx/issues/1899
+        // Issue reported on https://github.com/dotnet/runtime/issues/14654
         [Fact]
         public void LoadDocumentFromFile()
         {

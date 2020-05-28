@@ -4,6 +4,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
 using CultureInfo = System.Globalization.CultureInfo;
@@ -12,7 +13,7 @@ namespace System.Reflection.Emit
 {
     public sealed class TypeBuilder : TypeInfo
     {
-        public override bool IsAssignableFrom(TypeInfo? typeInfo)
+        public override bool IsAssignableFrom([NotNullWhen(true)] TypeInfo? typeInfo)
         {
             if (typeInfo == null) return false;
             return IsAssignableFrom(typeInfo.AsType());
@@ -395,15 +396,15 @@ namespace System.Reflection.Emit
         #region Private Data Members
         private List<CustAttr>? m_ca;
         private TypeToken m_tdType;
-        private readonly ModuleBuilder m_module = null!;
+        private readonly ModuleBuilder m_module;
         private readonly string? m_strName;
         private readonly string? m_strNameSpace;
         private string? m_strFullQualName;
         private Type? m_typeParent;
-        private List<Type> m_typeInterfaces = null!;
+        private List<Type>? m_typeInterfaces;
         private readonly TypeAttributes m_iAttr;
         private GenericParameterAttributes m_genParamAttributes;
-        internal List<MethodBuilder> m_listMethods = null!;
+        internal List<MethodBuilder>? m_listMethods;
         internal int m_lastTokenizedMethod;
         private int m_constructorCount;
         private readonly int m_iTypeSize;
@@ -429,7 +430,7 @@ namespace System.Reflection.Emit
         {
             m_tdType = new TypeToken((int)MetadataTokenType.TypeDef);
             m_isHiddenGlobalType = true;
-            m_module = (ModuleBuilder)module;
+            m_module = module;
             m_listMethods = new List<MethodBuilder>();
             // No token has been created so let's initialize it to -1
             // The first time we call MethodBuilder.GetToken this will incremented.
@@ -437,8 +438,13 @@ namespace System.Reflection.Emit
         }
 
         // ctor for generic method parameter
-        internal TypeBuilder(string szName, int genParamPos, MethodBuilder declMeth) : this(szName, genParamPos)
+        internal TypeBuilder(string szName, int genParamPos, MethodBuilder declMeth)
         {
+            m_strName = szName;
+            m_genParamPos = genParamPos;
+            m_bIsGenParam = true;
+            m_typeInterfaces = new List<Type>();
+
             Debug.Assert(declMeth != null);
             m_declMeth = declMeth;
             m_DeclaringType = m_declMeth.GetTypeBuilder();
@@ -446,20 +452,16 @@ namespace System.Reflection.Emit
         }
 
         // ctor for generic type parameter
-        private TypeBuilder(string szName, int genParamPos, TypeBuilder declType) : this(szName, genParamPos)
-        {
-            Debug.Assert(declType != null);
-            m_DeclaringType = declType;
-            m_module = declType.GetModuleBuilder();
-        }
-
-        // only for delegating to by other ctors
-        private TypeBuilder(string szName, int genParamPos)
+        private TypeBuilder(string szName, int genParamPos, TypeBuilder declType)
         {
             m_strName = szName;
             m_genParamPos = genParamPos;
             m_bIsGenParam = true;
             m_typeInterfaces = new List<Type>();
+
+            Debug.Assert(declType != null);
+            m_DeclaringType = declType;
+            m_module = declType.GetModuleBuilder();
         }
 
         internal TypeBuilder(
@@ -720,6 +722,8 @@ namespace System.Reflection.Emit
 
         public override Module Module => GetModuleBuilder();
 
+        public override bool IsByRefLike => false;
+
         internal int MetadataTokenInternal => m_tdType.Token;
 
         #endregion
@@ -915,7 +919,7 @@ namespace System.Reflection.Emit
             return m_bakedRuntimeType.GetMembers(bindingAttr);
         }
 
-        public override bool IsAssignableFrom(Type? c)
+        public override bool IsAssignableFrom([NotNullWhen(true)] Type? c)
         {
             if (IsTypeEqual(c, this))
                 return true;
@@ -1141,7 +1145,7 @@ namespace System.Reflection.Emit
                 throw new ArgumentNullException(nameof(names));
 
             if (names.Length == 0)
-                throw new ArgumentException();
+                throw new ArgumentException(SR.Arg_EmptyArray, nameof(names));
 
             for (int i = 0; i < names.Length; i++)
                 if (names[i] == null)
@@ -1292,7 +1296,7 @@ namespace System.Reflection.Emit
                 }
             }
 
-            m_listMethods.Add(method);
+            m_listMethods!.Add(method);
 
             return method;
         }
@@ -1378,7 +1382,7 @@ namespace System.Reflection.Emit
                 // and our equals check won't work.
                 _ = method.GetMethodSignature().InternalGetSignature(out _);
 
-                if (m_listMethods.Contains(method))
+                if (m_listMethods!.Contains(method))
                 {
                     throw new ArgumentException(SR.Argument_MethodRedefined);
                 }
@@ -1773,8 +1777,7 @@ namespace System.Reflection.Emit
                 parameterTypes, parameterTypeRequiredCustomModifiers, parameterTypeOptionalCustomModifiers);
 
             // get the signature in byte form
-            int sigLength;
-            sigBytes = sigHelper.InternalGetSignature(out sigLength);
+            sigBytes = sigHelper.InternalGetSignature(out int sigLength);
 
             ModuleBuilder module = m_module;
 
@@ -1952,7 +1955,7 @@ namespace System.Reflection.Emit
                 }
             }
 
-            int size = m_listMethods.Count;
+            int size = m_listMethods!.Count;
 
             for (int i = 0; i < size; i++)
             {
@@ -2030,12 +2033,12 @@ namespace System.Reflection.Emit
             m_hasBeenCreated = true;
 
             // Terminate the process.
-            RuntimeType cls = null!;
+            RuntimeType? cls = null;
             TermCreateClass(new QCallModule(ref module), m_tdType.Token, ObjectHandleOnStack.Create(ref cls));
 
             if (!m_isHiddenGlobalType)
             {
-                m_bakedRuntimeType = cls;
+                m_bakedRuntimeType = cls!;
 
                 // if this type is a nested type, we need to invalidate the cached nested runtime type on the nesting type
                 if (m_DeclaringType != null && m_DeclaringType.m_bakedRuntimeType != null)
@@ -2103,7 +2106,7 @@ namespace System.Reflection.Emit
             ModuleBuilder module = m_module;
             AddInterfaceImpl(new QCallModule(ref module), m_tdType.Token, tkInterface.Token);
 
-            m_typeInterfaces.Add(interfaceType);
+            m_typeInterfaces!.Add(interfaceType);
         }
 
         public TypeToken TypeToken

@@ -104,7 +104,7 @@ namespace System.Linq.Expressions.Interpreter
         public override int Run(InterpretedFrame frame)
         {
             int index = ConvertHelper.ToInt32NoNull(frame.Pop());
-            Array array = (Array)frame.Pop();
+            Array array = (Array)frame.Pop()!;
             frame.Push(array.GetValue(index));
             return 1;
         }
@@ -121,9 +121,9 @@ namespace System.Linq.Expressions.Interpreter
 
         public override int Run(InterpretedFrame frame)
         {
-            object value = frame.Pop();
+            object? value = frame.Pop();
             int index = ConvertHelper.ToInt32NoNull(frame.Pop());
-            Array array = (Array)frame.Pop();
+            Array array = (Array)frame.Pop()!;
             array.SetValue(value, index);
             return 1;
         }
@@ -141,7 +141,7 @@ namespace System.Linq.Expressions.Interpreter
 
         public override int Run(InterpretedFrame frame)
         {
-            object obj = frame.Pop();
+            object obj = frame.Pop()!;
             frame.Push(((Array)obj).Length);
             return 1;
         }
@@ -149,11 +149,11 @@ namespace System.Linq.Expressions.Interpreter
 
     internal static class ConvertHelper
     {
-        public static int ToInt32NoNull(object val)
+        public static int ToInt32NoNull(object? val)
         {
             // If the value is null, unbox and cast to throw an InvalidOperationException
-            // that the desktop throws.
-            return (val == null) ? (int)(int?)val : Convert.ToInt32(val);
+            // that .NET Framework throws.
+            return (val == null) ? (int)(int?)val! : Convert.ToInt32(val);
         }
     }
 }

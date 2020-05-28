@@ -133,12 +133,12 @@ static void PlatformSleep()
     // Wait until it's time to sample again.
     const uint32_t PeriodInNanoSeconds = 100000000; // 100 msec.
 
-#ifdef FEATURE_PAL
+#ifdef TARGET_UNIX
     PAL_nanosleep(PeriodInNanoSeconds);
-#else  //FEATURE_PAL
+#else  //TARGET_UNIX
     const uint32_t NUM_NANOSECONDS_IN_1_MS = 1000000;
     ClrSleepEx(PeriodInNanoSeconds / NUM_NANOSECONDS_IN_1_MS, FALSE);
-#endif //FEATURE_PAL
+#endif //TARGET_UNIX
 }
 
 DWORD WINAPI EventPipeSession::ThreadProc(void *args)

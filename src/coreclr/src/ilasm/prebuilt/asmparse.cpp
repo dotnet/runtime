@@ -1999,9 +1999,9 @@ yynewstate:
 				**  we were supposed to get is the one when j > 0. for example,
 				**  for(+) {;} error recovery with yyerrflag always set, stops
 				**  after inserting one ; before the +. at the point of the +,
-				**  we're pretty sure the guy wants a 'for' loop. without
+				**  we're pretty sure the caller wants a 'for' loop. without
 				**  setting the flag, when we're almost absolutely sure, we'll
-				**  give him one, since the only thing we can shift on this
+				**  give them one, since the only thing we can shift on this
 				**  error is after finding an expression followed by a +
 				*/
 					yyerrflag++;

@@ -45,10 +45,36 @@ namespace BINDER_SPACE
 
         inline void Reset();
 
+        struct AttemptResult
+        {
+            HRESULT HResult;
+            ReleaseHolder<Assembly> Assembly;
+            bool Attempted = false;
+
+            void Set(const AttemptResult *result);
+
+            void Reset()
+            {
+                Assembly = nullptr;
+                Attempted = false;
+            }
+        };
+
+        // Set attempt result for binding to existing context entry
+        void SetAttemptResult(HRESULT hr, ContextEntry *pContextEntry);
+
+        // Set attempt result for binding to platform assemblies
+        void SetAttemptResult(HRESULT hr, Assembly *pAssembly);
+
+        const AttemptResult* GetAttempt(bool foundInContext) const;
+
     protected:
         DWORD m_dwResultFlags;
         AssemblyName *m_pAssemblyName;
         ReleaseHolder<IUnknown> m_pIUnknownAssembly;
+
+        AttemptResult m_inContextAttempt;
+        AttemptResult m_applicationAssembliesAttempt;
     };
 };
 

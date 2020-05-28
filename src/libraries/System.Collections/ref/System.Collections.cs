@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 // ------------------------------------------------------------------------------
-// Changes to this file must follow the http://aka.ms/api-review process.
+// Changes to this file must follow the https://aka.ms/api-review process.
 // ------------------------------------------------------------------------------
 
 namespace System.Collections
@@ -45,11 +45,10 @@ namespace System.Collections.Generic
     public static partial class CollectionExtensions
     {
         [return: System.Diagnostics.CodeAnalysis.MaybeNullAttribute]
-        public static TValue GetValueOrDefault<TKey, TValue>(this System.Collections.Generic.IReadOnlyDictionary<TKey, TValue> dictionary, TKey key) where TKey : notnull { throw null; }
-        [return: System.Diagnostics.CodeAnalysis.MaybeNullAttribute]
-        public static TValue GetValueOrDefault<TKey, TValue>(this System.Collections.Generic.IReadOnlyDictionary<TKey, TValue> dictionary, TKey key, [System.Diagnostics.CodeAnalysis.AllowNullAttribute] TValue defaultValue) where TKey : notnull { throw null; }
-        public static bool Remove<TKey, TValue>(this System.Collections.Generic.IDictionary<TKey, TValue> dictionary, TKey key, [System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false)] out TValue value) where TKey : notnull { throw null; }
-        public static bool TryAdd<TKey, TValue>(this System.Collections.Generic.IDictionary<TKey, TValue> dictionary, TKey key, TValue value) where TKey : notnull { throw null; }
+        public static TValue GetValueOrDefault<TKey, TValue>(this System.Collections.Generic.IReadOnlyDictionary<TKey, TValue> dictionary, TKey key) { throw null; }
+        public static TValue GetValueOrDefault<TKey, TValue>(this System.Collections.Generic.IReadOnlyDictionary<TKey, TValue> dictionary, TKey key, TValue defaultValue) { throw null; }
+        public static bool Remove<TKey, TValue>(this System.Collections.Generic.IDictionary<TKey, TValue> dictionary, TKey key, [System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false)] out TValue value) { throw null; }
+        public static bool TryAdd<TKey, TValue>(this System.Collections.Generic.IDictionary<TKey, TValue> dictionary, TKey key, TValue value) { throw null; }
     }
     public abstract partial class Comparer<T> : System.Collections.Generic.IComparer<T>, System.Collections.IComparer
     {
@@ -57,7 +56,7 @@ namespace System.Collections.Generic
         public static System.Collections.Generic.Comparer<T> Default { get { throw null; } }
         public abstract int Compare([System.Diagnostics.CodeAnalysis.AllowNullAttribute] T x, [System.Diagnostics.CodeAnalysis.AllowNullAttribute] T y);
         public static System.Collections.Generic.Comparer<T> Create(System.Comparison<T> comparison) { throw null; }
-        int System.Collections.IComparer.Compare(object x, object y) { throw null; }
+        int System.Collections.IComparer.Compare(object? x, object? y) { throw null; }
     }
     public partial class Dictionary<TKey, TValue> : System.Collections.Generic.ICollection<System.Collections.Generic.KeyValuePair<TKey, TValue>>, System.Collections.Generic.IDictionary<TKey, TValue>, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<TKey, TValue>>, System.Collections.Generic.IReadOnlyCollection<System.Collections.Generic.KeyValuePair<TKey, TValue>>, System.Collections.Generic.IReadOnlyDictionary<TKey, TValue>, System.Collections.ICollection, System.Collections.IDictionary, System.Collections.IEnumerable, System.Runtime.Serialization.IDeserializationCallback, System.Runtime.Serialization.ISerializable where TKey : notnull
     {
@@ -103,7 +102,7 @@ namespace System.Collections.Generic
         bool System.Collections.Generic.ICollection<System.Collections.Generic.KeyValuePair<TKey, TValue>>.Remove(System.Collections.Generic.KeyValuePair<TKey, TValue> keyValuePair) { throw null; }
         System.Collections.Generic.IEnumerator<System.Collections.Generic.KeyValuePair<TKey, TValue>> System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<TKey, TValue>>.GetEnumerator() { throw null; }
         void System.Collections.ICollection.CopyTo(System.Array array, int index) { }
-        void System.Collections.IDictionary.Add(object key, object value) { }
+        void System.Collections.IDictionary.Add(object key, object? value) { }
         bool System.Collections.IDictionary.Contains(object key) { throw null; }
         System.Collections.IDictionaryEnumerator System.Collections.IDictionary.GetEnumerator() { throw null; }
         void System.Collections.IDictionary.Remove(object key) { }
@@ -188,10 +187,10 @@ namespace System.Collections.Generic
         public static System.Collections.Generic.EqualityComparer<T> Default { get { throw null; } }
         public abstract bool Equals([System.Diagnostics.CodeAnalysis.AllowNullAttribute] T x, [System.Diagnostics.CodeAnalysis.AllowNullAttribute] T y);
         public abstract int GetHashCode([System.Diagnostics.CodeAnalysis.DisallowNullAttribute] T obj);
-        bool System.Collections.IEqualityComparer.Equals(object x, object y) { throw null; }
+        bool System.Collections.IEqualityComparer.Equals(object? x, object? y) { throw null; }
         int System.Collections.IEqualityComparer.GetHashCode(object obj) { throw null; }
     }
-    public partial class HashSet<T> : System.Collections.Generic.ICollection<T>, System.Collections.Generic.IEnumerable<T>, System.Collections.Generic.IReadOnlyCollection<T>, System.Collections.Generic.ISet<T>, System.Collections.IEnumerable, System.Runtime.Serialization.IDeserializationCallback, System.Runtime.Serialization.ISerializable
+    public partial class HashSet<T> : System.Collections.Generic.ICollection<T>, System.Collections.Generic.IEnumerable<T>, System.Collections.Generic.IReadOnlyCollection<T>, System.Collections.Generic.ISet<T>, System.Collections.Generic.IReadOnlySet<T>, System.Collections.IEnumerable, System.Runtime.Serialization.IDeserializationCallback, System.Runtime.Serialization.ISerializable
     {
         public HashSet() { }
         public HashSet(System.Collections.Generic.IEnumerable<T> collection) { }
@@ -296,7 +295,7 @@ namespace System.Collections.Generic
             public void Dispose() { }
             public bool MoveNext() { throw null; }
             void System.Collections.IEnumerator.Reset() { }
-            void System.Runtime.Serialization.IDeserializationCallback.OnDeserialization(object sender) { }
+            void System.Runtime.Serialization.IDeserializationCallback.OnDeserialization(object? sender) { }
             void System.Runtime.Serialization.ISerializable.GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         }
     }
@@ -362,11 +361,11 @@ namespace System.Collections.Generic
         System.Collections.Generic.IEnumerator<T> System.Collections.Generic.IEnumerable<T>.GetEnumerator() { throw null; }
         void System.Collections.ICollection.CopyTo(System.Array array, int arrayIndex) { }
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() { throw null; }
-        int System.Collections.IList.Add(object item) { throw null; }
-        bool System.Collections.IList.Contains(object item) { throw null; }
-        int System.Collections.IList.IndexOf(object item) { throw null; }
-        void System.Collections.IList.Insert(int index, object item) { }
-        void System.Collections.IList.Remove(object item) { }
+        int System.Collections.IList.Add(object? item) { throw null; }
+        bool System.Collections.IList.Contains(object? item) { throw null; }
+        int System.Collections.IList.IndexOf(object? item) { throw null; }
+        void System.Collections.IList.Insert(int index, object? item) { }
+        void System.Collections.IList.Remove(object? item) { }
         public T[] ToArray() { throw null; }
         public void TrimExcess() { }
         public bool TrueForAll(System.Predicate<T> match) { throw null; }
@@ -416,6 +415,13 @@ namespace System.Collections.Generic
             void System.Collections.IEnumerator.Reset() { }
         }
     }
+    public sealed class ReferenceEqualityComparer : System.Collections.Generic.IEqualityComparer<object?>, System.Collections.IEqualityComparer
+    {
+        private ReferenceEqualityComparer() { }
+        public static System.Collections.Generic.ReferenceEqualityComparer Instance { get { throw null; } }
+        public new bool Equals(object? x, object? y) { throw null; }
+        public int GetHashCode(object? obj) { throw null; }
+    }
     public partial class SortedDictionary<TKey, TValue> : System.Collections.Generic.ICollection<System.Collections.Generic.KeyValuePair<TKey, TValue>>, System.Collections.Generic.IDictionary<TKey, TValue>, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<TKey, TValue>>, System.Collections.Generic.IReadOnlyCollection<System.Collections.Generic.KeyValuePair<TKey, TValue>>, System.Collections.Generic.IReadOnlyDictionary<TKey, TValue>, System.Collections.ICollection, System.Collections.IDictionary, System.Collections.IEnumerable where TKey : notnull
     {
         public SortedDictionary() { }
@@ -451,7 +457,7 @@ namespace System.Collections.Generic
         bool System.Collections.Generic.ICollection<System.Collections.Generic.KeyValuePair<TKey, TValue>>.Remove(System.Collections.Generic.KeyValuePair<TKey, TValue> keyValuePair) { throw null; }
         System.Collections.Generic.IEnumerator<System.Collections.Generic.KeyValuePair<TKey, TValue>> System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<TKey, TValue>>.GetEnumerator() { throw null; }
         void System.Collections.ICollection.CopyTo(System.Array array, int index) { }
-        void System.Collections.IDictionary.Add(object key, object value) { }
+        void System.Collections.IDictionary.Add(object key, object? value) { }
         bool System.Collections.IDictionary.Contains(object key) { throw null; }
         System.Collections.IDictionaryEnumerator System.Collections.IDictionary.GetEnumerator() { throw null; }
         void System.Collections.IDictionary.Remove(object key) { }
@@ -566,7 +572,7 @@ namespace System.Collections.Generic
         bool System.Collections.Generic.ICollection<System.Collections.Generic.KeyValuePair<TKey, TValue>>.Remove(System.Collections.Generic.KeyValuePair<TKey, TValue> keyValuePair) { throw null; }
         System.Collections.Generic.IEnumerator<System.Collections.Generic.KeyValuePair<TKey, TValue>> System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<TKey, TValue>>.GetEnumerator() { throw null; }
         void System.Collections.ICollection.CopyTo(System.Array array, int arrayIndex) { }
-        void System.Collections.IDictionary.Add(object key, object value) { }
+        void System.Collections.IDictionary.Add(object key, object? value) { }
         bool System.Collections.IDictionary.Contains(object key) { throw null; }
         System.Collections.IDictionaryEnumerator System.Collections.IDictionary.GetEnumerator() { throw null; }
         void System.Collections.IDictionary.Remove(object key) { }
@@ -574,7 +580,7 @@ namespace System.Collections.Generic
         public void TrimExcess() { }
         public bool TryGetValue(TKey key, [System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false)] out TValue value) { throw null; }
     }
-    public partial class SortedSet<T> : System.Collections.Generic.ICollection<T>, System.Collections.Generic.IEnumerable<T>, System.Collections.Generic.IReadOnlyCollection<T>, System.Collections.Generic.ISet<T>, System.Collections.ICollection, System.Collections.IEnumerable, System.Runtime.Serialization.IDeserializationCallback, System.Runtime.Serialization.ISerializable
+    public partial class SortedSet<T> : System.Collections.Generic.ICollection<T>, System.Collections.Generic.IEnumerable<T>, System.Collections.Generic.IReadOnlyCollection<T>, System.Collections.Generic.ISet<T>, System.Collections.Generic.IReadOnlySet<T>, System.Collections.ICollection, System.Collections.IEnumerable, System.Runtime.Serialization.IDeserializationCallback, System.Runtime.Serialization.ISerializable
     {
         public SortedSet() { }
         public SortedSet(System.Collections.Generic.IComparer<T>? comparer) { }
@@ -618,7 +624,7 @@ namespace System.Collections.Generic
         System.Collections.Generic.IEnumerator<T> System.Collections.Generic.IEnumerable<T>.GetEnumerator() { throw null; }
         void System.Collections.ICollection.CopyTo(System.Array array, int index) { }
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() { throw null; }
-        void System.Runtime.Serialization.IDeserializationCallback.OnDeserialization(object sender) { }
+        void System.Runtime.Serialization.IDeserializationCallback.OnDeserialization(object? sender) { }
         void System.Runtime.Serialization.ISerializable.GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public bool TryGetValue(T equalValue, [System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false)] out T actualValue) { throw null; }
         public void UnionWith(System.Collections.Generic.IEnumerable<T> other) { }
@@ -631,7 +637,7 @@ namespace System.Collections.Generic
             public void Dispose() { }
             public bool MoveNext() { throw null; }
             void System.Collections.IEnumerator.Reset() { }
-            void System.Runtime.Serialization.IDeserializationCallback.OnDeserialization(object sender) { }
+            void System.Runtime.Serialization.IDeserializationCallback.OnDeserialization(object? sender) { }
             void System.Runtime.Serialization.ISerializable.GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         }
     }

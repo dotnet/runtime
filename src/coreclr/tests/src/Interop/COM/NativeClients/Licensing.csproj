@@ -1,5 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
+    <OutputType>Exe</OutputType>
     <IgnoreCoreCLRTestLibraryDependency>true</IgnoreCoreCLRTestLibraryDependency>
     <CLRTestScriptLocalCoreShim>true</CLRTestScriptLocalCoreShim>
     <RequiresMockHostPolicy>true</RequiresMockHostPolicy>
@@ -14,7 +15,13 @@
   <ItemGroup>
     <ProjectReference Include="Licensing/CMakeLists.txt" />
     <ProjectReference Include="../NetServer/NetServer.csproj" />
-    <ProjectReference Include="$(SourceDir)Common/CoreCLRTestLibrary/CoreCLRTestLibrary.csproj" />
+    <ProjectReference Include="$(TestSourceDir)Common/CoreCLRTestLibrary/CoreCLRTestLibrary.csproj" />
   </ItemGroup>
-  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), Interop.settings.targets))\Interop.settings.targets" />
+  <PropertyGroup>
+    <CLRTestNeedTarget>1</CLRTestNeedTarget>
+  </PropertyGroup>
+  <ItemGroup>
+    <TraitTags Include="OsSpecific" />
+  </ItemGroup>
+  <Import Project="$([MSBuild]::GetPathOfFileAbove(Interop.settings.targets))" />
 </Project>

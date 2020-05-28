@@ -47,12 +47,12 @@ namespace System.Net.Mail
             _offset += count;
         }
 
-        internal void Append(string value)
+        internal void Append(string? value)
         {
             Append(value, false);
         }
 
-        internal void Append(string value, bool allowUnicode)
+        internal void Append(string? value, bool allowUnicode)
         {
             if (string.IsNullOrEmpty(value))
             {

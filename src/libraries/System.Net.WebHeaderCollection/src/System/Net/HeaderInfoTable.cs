@@ -67,7 +67,7 @@ namespace System.Net
             // Current cookie doesn't contain any attributes.
             if (!singleValue.Contains(';')) return false;
 
-            string lastElement = singleValue.Split(';').Last();
+            string lastElement = singleValue.Split(';')[^1];
             bool noComma = !lastElement.Contains(',');
 
             string lastAttribute = lastElement.Split('=')[0].Trim();

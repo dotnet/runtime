@@ -2,10 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Reflection;
-using System.Diagnostics;
 using System.Collections;
 using System.ComponentModel.Design;
+using System.Diagnostics;
+using System.Reflection;
+using System.Threading;
 
 namespace System.ComponentModel
 {
@@ -87,17 +88,26 @@ namespace System.ComponentModel
         {
             if (s_providers == null)
             {
-                s_providers = new Hashtable();
+                Interlocked.CompareExchange(ref s_providers, new Hashtable(), null);
             }
-            s_providers[type] = provider;
+
+            lock (s_providers)
+            {
+                s_providers[type] = provider;
+            }
 
             if (provider != null)
             {
                 if (s_providerInstances == null)
                 {
-                    s_providerInstances = new Hashtable();
+                    Interlocked.CompareExchange(ref s_providerInstances, new Hashtable(), null);
                 }
-                s_providerInstances[provider.GetType()] = provider;
+
+                Type providerType = provider.GetType();
+                lock (s_providerInstances)
+                {
+                    s_providerInstances[providerType] = provider;
+                }
             }
         }
 

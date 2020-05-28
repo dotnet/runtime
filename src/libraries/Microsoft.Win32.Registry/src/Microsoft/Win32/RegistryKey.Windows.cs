@@ -9,7 +9,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Security;
-using System.Security.AccessControl;
 
 /*
   Note on transaction support:
@@ -85,11 +84,9 @@ namespace Microsoft.Win32
 
         private unsafe RegistryKey CreateSubKeyInternalCore(string subkey, RegistryKeyPermissionCheck permissionCheck, RegistryOptions registryOptions)
         {
-            Interop.Kernel32.SECURITY_ATTRIBUTES secAttrs = default(Interop.Kernel32.SECURITY_ATTRIBUTES);
-            int disposition = 0;
+            Interop.Kernel32.SECURITY_ATTRIBUTES secAttrs = default;
 
             // By default, the new key will be writable.
-            SafeRegistryHandle result = null;
             int ret = Interop.Advapi32.RegCreateKeyEx(_hkey,
                 subkey,
                 0,
@@ -97,8 +94,8 @@ namespace Microsoft.Win32
                 (int)registryOptions /* specifies if the key is volatile */,
                 GetRegistryKeyAccess(permissionCheck != RegistryKeyPermissionCheck.ReadSubTree) | (int)_regView,
                 ref secAttrs,
-                out result,
-                out disposition);
+                out SafeRegistryHandle result,
+                out int _);
 
             if (ret == 0 && !result.IsInvalid)
             {
@@ -220,8 +217,7 @@ namespace Microsoft.Win32
             }
 
             // connect to the specified remote registry
-            SafeRegistryHandle foreignHKey = null;
-            int ret = Interop.Advapi32.RegConnectRegistry(machineName, new SafeRegistryHandle(new IntPtr((int)hKey), false), out foreignHKey);
+            int ret = Interop.Advapi32.RegConnectRegistry(machineName, new SafeRegistryHandle(new IntPtr((int)hKey), false), out SafeRegistryHandle foreignHKey);
 
             if (ret == Interop.Errors.ERROR_DLL_INIT_FAILED)
             {
@@ -246,10 +242,9 @@ namespace Microsoft.Win32
             return key;
         }
 
-        private RegistryKey InternalOpenSubKeyCore(string name, RegistryKeyPermissionCheck permissionCheck, int rights)
+        private RegistryKey? InternalOpenSubKeyCore(string name, RegistryKeyPermissionCheck permissionCheck, int rights)
         {
-            SafeRegistryHandle result = null;
-            int ret = Interop.Advapi32.RegOpenKeyEx(_hkey, name, 0, (rights | (int)_regView), out result);
+            int ret = Interop.Advapi32.RegOpenKeyEx(_hkey, name, 0, (rights | (int)_regView), out SafeRegistryHandle result);
             if (ret == 0 && !result.IsInvalid)
             {
                 RegistryKey key = new RegistryKey(result, (permissionCheck == RegistryKeyPermissionCheck.ReadWriteSubTree), false, _remoteKey, false, _regView);
@@ -269,10 +264,9 @@ namespace Microsoft.Win32
             return null;
         }
 
-        private RegistryKey InternalOpenSubKeyCore(string name, bool writable)
+        private RegistryKey? InternalOpenSubKeyCore(string name, bool writable)
         {
-            SafeRegistryHandle result = null;
-            int ret = Interop.Advapi32.RegOpenKeyEx(_hkey, name, 0, (GetRegistryKeyAccess(writable) | (int)_regView), out result);
+            int ret = Interop.Advapi32.RegOpenKeyEx(_hkey, name, 0, (GetRegistryKeyAccess(writable) | (int)_regView), out SafeRegistryHandle result);
             if (ret == 0 && !result.IsInvalid)
             {
                 RegistryKey key = new RegistryKey(result, writable, false, _remoteKey, false, _regView);
@@ -292,10 +286,9 @@ namespace Microsoft.Win32
             return null;
         }
 
-        internal RegistryKey InternalOpenSubKeyWithoutSecurityChecksCore(string name, bool writable)
+        internal RegistryKey? InternalOpenSubKeyWithoutSecurityChecksCore(string name, bool writable)
         {
-            SafeRegistryHandle result = null;
-            int ret = Interop.Advapi32.RegOpenKeyEx(_hkey, name, 0, (GetRegistryKeyAccess(writable) | (int)_regView), out result);
+            int ret = Interop.Advapi32.RegOpenKeyEx(_hkey, name, 0, (GetRegistryKeyAccess(writable) | (int)_regView), out SafeRegistryHandle result);
             if (ret == 0 && !result.IsInvalid)
             {
                 RegistryKey key = new RegistryKey(result, writable, false, _remoteKey, false, _regView);
@@ -340,12 +333,11 @@ namespace Microsoft.Win32
                 }
 
                 // open the base key so that RegistryKey.Handle will return a valid handle
-                SafeRegistryHandle result;
                 ret = Interop.Advapi32.RegOpenKeyEx(baseKey,
                     null,
                     0,
                     GetRegistryKeyAccess(IsWritable()) | (int)_regView,
-                    out result);
+                    out SafeRegistryHandle result);
 
                 if (ret == 0 && !result.IsInvalid)
                 {
@@ -463,7 +455,7 @@ namespace Microsoft.Win32
             // add up quickly- we'll try to keep the memory pressure low and grow the buffer
             // only if needed.
 
-            char[] name = ArrayPool<char>.Shared.Rent(100);
+            char[]? name = ArrayPool<char>.Shared.Rent(100);
 
             try
             {
@@ -528,13 +520,13 @@ namespace Microsoft.Win32
             return names.ToArray();
         }
 
-        private object InternalGetValueCore(string name, object defaultValue, bool doNotExpand)
+        private object? InternalGetValueCore(string? name, object? defaultValue, bool doNotExpand)
         {
-            object data = defaultValue;
+            object? data = defaultValue;
             int type = 0;
             int datasize = 0;
 
-            int ret = Interop.Advapi32.RegQueryValueEx(_hkey, name, null, ref type, (byte[])null, ref datasize);
+            int ret = Interop.Advapi32.RegQueryValueEx(_hkey, name, null, ref type, (byte[]?)null, ref datasize);
 
             if (ret != 0)
             {
@@ -734,7 +726,7 @@ namespace Microsoft.Win32
                                 nextNull++;
                             }
 
-                            string toAdd = null;
+                            string? toAdd = null;
                             if (nextNull < len)
                             {
                                 Debug.Assert(blob[nextNull] == (char)0, "blob[nextNull] should be 0");
@@ -780,11 +772,11 @@ namespace Microsoft.Win32
             return data;
         }
 
-        private RegistryValueKind GetValueKindCore(string name)
+        private RegistryValueKind GetValueKindCore(string? name)
         {
             int type = 0;
             int datasize = 0;
-            int ret = Interop.Advapi32.RegQueryValueEx(_hkey, name, null, ref type, (byte[])null, ref datasize);
+            int ret = Interop.Advapi32.RegQueryValueEx(_hkey, name, null, ref type, (byte[]?)null, ref datasize);
             if (ret != 0)
             {
                 Win32Error(ret, null);
@@ -796,7 +788,7 @@ namespace Microsoft.Win32
                 (RegistryValueKind)type;
         }
 
-        private unsafe void SetValueCore(string name, object value, RegistryValueKind valueKind)
+        private unsafe void SetValueCore(string? name, object value, RegistryValueKind valueKind)
         {
             int ret = 0;
             try
@@ -806,7 +798,7 @@ namespace Microsoft.Win32
                     case RegistryValueKind.ExpandString:
                     case RegistryValueKind.String:
                         {
-                            string data = value.ToString();
+                            string data = value.ToString()!;
                             ret = Interop.Advapi32.RegSetValueEx(_hkey,
                                 name,
                                 0,
@@ -921,7 +913,7 @@ namespace Microsoft.Win32
         /// error, and depending on the error, insert a string into the message
         /// gotten from the ResourceManager.
         /// </summary>
-        private void Win32Error(int errorCode, string str)
+        private void Win32Error(int errorCode, string? str)
         {
             switch (errorCode)
             {
@@ -944,7 +936,7 @@ namespace Microsoft.Win32
                     if (!IsPerfDataKey())
                     {
                         _hkey.SetHandleAsInvalid();
-                        _hkey = null;
+                        _hkey = null!;
                     }
                     goto default;
 
@@ -956,7 +948,7 @@ namespace Microsoft.Win32
             }
         }
 
-        private static void Win32ErrorStatic(int errorCode, string str) =>
+        private static void Win32ErrorStatic(int errorCode, string? str) =>
             throw errorCode switch
             {
                 Interop.Errors.ERROR_ACCESS_DENIED => str != null ?

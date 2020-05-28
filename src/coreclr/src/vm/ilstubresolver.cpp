@@ -88,7 +88,10 @@ LPCUTF8 ILStubResolver::GetStubMethodName()
         case UnboxingILStub:         return "IL_STUB_UnboxingStub";
         case InstantiatingStub:      return "IL_STUB_InstantiatingStub";
 #endif
-        case WrapperDelegateStub:     return "IL_STUB_WrapperDelegate_Invoke";
+        case WrapperDelegateStub:    return "IL_STUB_WrapperDelegate_Invoke";
+        case TailCallStoreArgsStub:  return "IL_STUB_StoreTailCallArgs";
+        case TailCallCallTargetStub: return "IL_STUB_CallTailCallTarget";
+        case TailCallDispatcherStub: return "IL_STUB_DispatchTailCalls";
         default:
             UNREACHABLE_MSG("Unknown stub type");
     }
@@ -140,6 +143,13 @@ BOOL ILStubResolver::IsValidStringRef(mdToken metaTok)
     return FALSE;
 }
 
+int ILStubResolver::GetStringLiteralLength(mdToken metaTok)
+{
+    STANDARD_VM_CONTRACT;
+    _ASSERTE(FALSE);
+    return -1;
+}
+
 void ILStubResolver::ResolveToken(mdToken token, TypeHandle * pTH, MethodDesc ** ppMD, FieldDesc ** ppFD)
 {
     STANDARD_VM_CONTRACT;
@@ -188,9 +198,11 @@ ILStubResolver::ResolveSignature(
     mdToken token)
 {
     STANDARD_VM_CONTRACT;
-    CONSISTENCY_CHECK_MSG(token == TOKEN_ILSTUB_TARGET_SIG, "IL stubs do not support any other signature tokens!");
 
-    return m_pCompileTimeState->m_StubTargetMethodSig;
+    if (token == TOKEN_ILSTUB_TARGET_SIG)
+        return m_pCompileTimeState->m_StubTargetMethodSig;
+
+    return m_pCompileTimeState->m_tokenLookupMap.LookupSig(token);
 }
 
 //---------------------------------------------------------------------------------------
@@ -229,14 +241,10 @@ void ILStubResolver::GetEHInfo(unsigned EHnumber, CORINFO_EH_CLAUSE* clause)
     clause->FilterOffset = ehInfo->GetFilterOffset();
 }
 
-bool ILStubResolver::IsNativeToCLRInteropStub()
+ILStubResolver::ILStubType ILStubResolver::GetStubType()
 {
-    return (m_type == NativeToCLRInteropStub);
-}
-
-bool ILStubResolver::IsCLRToNativeInteropStub()
-{
-    return (m_type == CLRToNativeInteropStub);
+    LIMITED_METHOD_CONTRACT;
+    return m_type;
 }
 
 void ILStubResolver::SetStubType(ILStubType stubType)

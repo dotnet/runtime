@@ -30,15 +30,6 @@ namespace System.ComponentModel.Composition.Hosting
         }
 
         [Fact]
-        [ActiveIssue(812029)]
-        public void Constructor1_ShouldSetPartsPropertyToEmpty()
-        {
-            var catalog = new AggregateCatalog();
-
-            Assert.Empty(catalog.Parts);
-        }
-
-        [Fact]
         public void Constructor3_NullAsCatalogsArgument_ShouldSetCatalogsPropertyToEmpty()
         {
             var catalog = new AggregateCatalog((IEnumerable<ComposablePartCatalog>)null);
@@ -55,25 +46,7 @@ namespace System.ComponentModel.Composition.Hosting
         }
 
         [Fact]
-        [ActiveIssue(812029)]
-        public void Constructor3_NullAsCatalogsArgument_ShouldSetPartsPropertyToEmpty()
-        {
-            var catalog = new AggregateCatalog((IEnumerable<ComposablePartCatalog>)null);
-
-            Assert.Empty(catalog.Parts);
-        }
-
-        [Fact]
-        [ActiveIssue(812029)]
-        public void Constructor3_EmptyIEnumerableAsCatalogsArgument_ShouldSetPartsPropertyToEmpty()
-        {
-            var catalog = new AggregateCatalog(Enumerable.Empty<ComposablePartCatalog>());
-
-            Assert.Empty(catalog.Parts);
-        }
-
-        [Fact]
-        [ActiveIssue(25498)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/24240")]
         public void Constructor3_ArrayWithNullAsCatalogsArgument_ShouldThrowArgument()
         {
             var catalogs = new ComposablePartCatalog[] { null };
@@ -122,7 +95,7 @@ namespace System.ComponentModel.Composition.Hosting
         }
 
         [Fact]
-        [ActiveIssue(25498)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/24240")]
         public void GetExports_NullAsConstraintArgument_ShouldThrowArgumentNull()
         {
             var catalog = CreateAggregateCatalog();
@@ -393,84 +366,6 @@ namespace System.ComponentModel.Composition.Hosting
             });
         }
 
-        [Fact]
-        [ActiveIssue(514749)]
-        public void MutableMultithreadedEnumerations()
-        {
-            var catalog = new AggregateCatalog();
-
-            ThreadStart func = delegate ()
-            {
-                var typePart = new TypeCatalog(typeof(SharedPartStuff));
-                var typePart1 = new TypeCatalog(typeof(SharedPartStuff));
-                var typePart2 = new TypeCatalog(typeof(SharedPartStuff));
-                var typePart3 = new TypeCatalog(typeof(SharedPartStuff));
-                var typePart4 = new TypeCatalog(typeof(SharedPartStuff));
-                var typePart5 = new TypeCatalog(typeof(SharedPartStuff));
-
-                for (int i = 0; i < 100; i++)
-                {
-                    catalog.Catalogs.Add(typePart);
-                    catalog.Catalogs.Add(typePart1);
-                    catalog.Catalogs.Add(typePart2);
-                    catalog.Catalogs.Add(typePart3);
-                    catalog.Catalogs.Add(typePart4);
-                    catalog.Catalogs.Add(typePart5);
-
-                    Assert.True(catalog.Catalogs.Count >= 6);
-
-                    for (int k = 0; k < 5; k++)
-                    {
-                        int j;
-                        // Ensure that iterating the returned queryable is okay even though there are many threads mutationg it
-                        // We are really just looking to ensure that ollection changed exceptions are not thrown
-                        j = 0;
-                        var iq = catalog.Parts.GetEnumerator();
-                        while (iq.MoveNext())
-                        {
-                            ++j;
-                        }
-
-                        Assert.True(j >= 6);
-
-                        // Ensure that iterating the returned enumerator is okay even though there are many threads mutationg it
-                        // We are really just looking to ensure that collection changed exceptions are not thrown
-                        j = 0;
-                        var ie = catalog.Catalogs.GetEnumerator();
-                        while (ie.MoveNext())
-                        {
-                            ++j;
-                        }
-                        Assert.True(j >= 6);
-                    }
-
-                    catalog.Catalogs.Remove(typePart);
-                    catalog.Catalogs.Remove(typePart1);
-                    catalog.Catalogs.Remove(typePart2);
-                    catalog.Catalogs.Remove(typePart3);
-                    catalog.Catalogs.Remove(typePart4);
-                    catalog.Catalogs.Remove(typePart5);
-                }
-            };
-
-            Thread[] threads = new Thread[100];
-            for (int i = 0; i < threads.Length; i++)
-            {
-                threads[i] = new Thread(func);
-            }
-
-            for (int i = 0; i < threads.Length; i++)
-            {
-                threads[i].Start();
-            }
-            for (int i = 0; i < threads.Length; i++)
-            {
-                threads[i].Join();
-            }
-
-            Assert.True(catalog.Catalogs.Count == 0);
-        }
-
         private static void CreateMainAndOtherChildren(
                     out AggregateCatalog[] mainChildren,
                     out AggregateCatalog[] otherChildren,
@@ -495,185 +390,6 @@ namespace System.ComponentModel.Composition.Hosting
             {
                 otherChildren[i] = new AggregateCatalog(componentCatalogs);
             }
-        }
-
-        [Fact]
-        [ActiveIssue(812029)]
-        public void AggregatingCatalogAddAndRemoveChildren()
-        {
-            int changedCount = 0;
-            int typesChanged = 0;
-            EventHandler<ComposablePartCatalogChangeEventArgs> onChanged = delegate (object sender, ComposablePartCatalogChangeEventArgs e)
-            {
-                ++changedCount;
-                typesChanged += e.AddedDefinitions.Concat(e.RemovedDefinitions).Count();
-            };
-
-            // Create our child catalogs
-            AggregateCatalog[] mainChildren;
-            AggregateCatalog[] otherChildren;
-            TypeCatalog[] componentCatalogs;
-
-            CreateMainAndOtherChildren(out mainChildren, out otherChildren, out componentCatalogs);
-
-            var parent = new AggregateCatalog(mainChildren);
-            parent.Changed += onChanged;
-
-            for (int i = 0; i < otherChildren.Length; i++)
-            {
-                parent.Catalogs.Add(otherChildren[i]);
-            }
-
-            Assert.Equal(otherChildren.Length, changedCount);
-            Assert.Equal(otherChildren.Length * 3, typesChanged);
-
-            changedCount = 0;
-            typesChanged = 0;
-
-            parent.Catalogs.Remove(otherChildren[0]);
-            parent.Catalogs.Remove(otherChildren[1]);
-
-            Assert.Equal(2, changedCount);
-            Assert.Equal(2 * 3, typesChanged);
-
-            changedCount = 0;
-            typesChanged = 0;
-
-            parent.Catalogs.Add(otherChildren[0]);
-            parent.Catalogs.Add(otherChildren[1]);
-
-            Assert.Equal(2, changedCount);
-            Assert.Equal(2 * 3, typesChanged);
-
-            changedCount = 0;
-            typesChanged = 0;
-
-            parent.Catalogs.Clear();
-            Assert.Equal(1, changedCount);
-            Assert.Equal((mainChildren.Length + otherChildren.Length) * 3, typesChanged);
-
-            changedCount = 0;
-            typesChanged = 0;
-
-            // These have already been removed and so I should be able remove components from them without recieving notifications
-            otherChildren[0].Catalogs.Remove(componentCatalogs[0]);
-            otherChildren[1].Catalogs.Remove(componentCatalogs[1]);
-            Assert.Equal(0, changedCount);
-            Assert.Equal(0, typesChanged);
-
-            // These have already been Cleared and so I should be able remove components from them without recieving notifications
-            otherChildren[3].Catalogs.Remove(componentCatalogs[0]);
-            otherChildren[4].Catalogs.Remove(componentCatalogs[1]);
-            Assert.Equal(0, changedCount);
-        }
-
-        [Fact]
-        [ActiveIssue(812029)]
-        public void AggregatingCatalogAddAndRemoveNestedChildren()
-        {
-            int changedCount = 0;
-            int typesChanged = 0;
-
-            EventHandler<ComposablePartCatalogChangeEventArgs> onChanged = delegate (object sender, ComposablePartCatalogChangeEventArgs e)
-            {
-                ++changedCount;
-                typesChanged += e.AddedDefinitions.Concat(e.RemovedDefinitions).Count();
-            };
-
-            // Create our child catalogs
-            AggregateCatalog[] mainChildren;
-            AggregateCatalog[] otherChildren;
-            TypeCatalog[] componentCatalogs;
-            CreateMainAndOtherChildren(out mainChildren, out otherChildren, out componentCatalogs);
-
-            var parent = new AggregateCatalog(mainChildren);
-            parent.Changed += onChanged;
-
-            for (int i = 0; i < otherChildren.Length; i++)
-            {
-                parent.Catalogs.Add(otherChildren[i]);
-            }
-
-            Assert.Equal(otherChildren.Length, changedCount);
-            Assert.Equal(otherChildren.Length * 3, typesChanged);
-
-            changedCount = 0;
-            typesChanged = 0;
-
-            otherChildren[0].Catalogs.Remove(componentCatalogs[0]);
-            otherChildren[1].Catalogs.Remove(componentCatalogs[1]);
-
-            Assert.Equal(2, changedCount);
-            Assert.Equal(2, typesChanged);
-
-            changedCount = 0;
-            typesChanged = 0;
-
-            otherChildren[0].Catalogs.Add(componentCatalogs[0]);
-            otherChildren[1].Catalogs.Add(componentCatalogs[1]);
-
-            Assert.Equal(2, changedCount);
-            Assert.Equal(2, typesChanged);
-
-            changedCount = 0;
-            typesChanged = 0;
-            otherChildren[1].Catalogs.Clear();
-            Assert.Equal(1, changedCount);
-            Assert.Equal(componentCatalogs.Length, typesChanged);
-        }
-
-        [Fact]
-        [ActiveIssue(812029)]
-        public void AggregatingDisposedAndNotifications()
-        {
-            int changedCount = 0;
-            int typesChanged = 0;
-
-            EventHandler<ComposablePartCatalogChangeEventArgs> onChanged = delegate (object sender, ComposablePartCatalogChangeEventArgs e)
-            {
-                ++changedCount;
-                typesChanged += e.AddedDefinitions.Concat(e.RemovedDefinitions).Count();
-            };
-
-            // Create our child catalogs
-            AggregateCatalog[] mainChildren;
-            AggregateCatalog[] otherChildren;
-            TypeCatalog[] componentCatalogs;
-            CreateMainAndOtherChildren(out mainChildren, out otherChildren, out componentCatalogs);
-
-            var parent = new AggregateCatalog(mainChildren);
-            parent.Changed += onChanged;
-
-            for (int i = 0; i < otherChildren.Length; i++)
-            {
-                parent.Catalogs.Add(otherChildren[i]);
-            }
-
-            Assert.Equal(otherChildren.Length, changedCount);
-            Assert.Equal(otherChildren.Length * 3, typesChanged);
-
-            changedCount = 0;
-            typesChanged = 0;
-
-            parent.Dispose();
-
-            Assert.Equal(0, changedCount);
-            Assert.Equal(0, typesChanged);
-
-            //Ensure that the children are also disposed
-            ExceptionAssert.ThrowsDisposed(otherChildren[0], () =>
-            {
-                otherChildren[0].Catalogs.Remove(componentCatalogs[0]);
-            });
-
-            //Ensure that the children are also disposed
-            ExceptionAssert.ThrowsDisposed(otherChildren[4], () =>
-            {
-                otherChildren[4].Catalogs.Remove(componentCatalogs[0]);
-            });
-
-            Assert.Equal(0, changedCount);
-            Assert.Equal(0, typesChanged);
         }
 
         [Fact]
@@ -748,44 +464,6 @@ namespace System.ComponentModel.Composition.Hosting
         private AggregateCatalog CreateAggregateCatalog()
         {
             return new AggregateCatalog();
-        }
-
-        [Fact]
-        [ActiveIssue(812029)]
-        public void CatalogEvents_AggregateAddRemove()
-        {
-            var catalog = new AggregateCatalog();
-            AggregateTests(catalog, catalog);
-        }
-
-        [Fact]
-        [ActiveIssue(812029)]
-        public void CatalogEvents_DeepAggregateAddRemove()
-        {
-            var deepCatalog = new AggregateCatalog();
-            var midCatalog = new AggregateCatalog(new ComposablePartCatalog[] { deepCatalog });
-            var topCatalog = new AggregateCatalog(new ComposablePartCatalog[] { midCatalog });
-            AggregateTests(topCatalog, deepCatalog);
-        }
-
-        private void AggregateTests(AggregateCatalog watchedCatalog, AggregateCatalog modifiedCatalog)
-        {
-            var fooCatalog = new TypeCatalog(new Type[] { typeof(FooExporter) });
-            var barCatalog = new TypeCatalog(new Type[] { typeof(BarExporter) });
-            var bothCatalog = new TypeCatalog(new Type[] { typeof(FooExporter), typeof(BarExporter) });
-
-            var catalogListener = new CatalogListener(watchedCatalog, modifiedCatalog);
-
-            catalogListener.VerifyAdd(fooCatalog, typeof(FooExporter));
-            catalogListener.VerifyAdd(barCatalog, typeof(BarExporter));
-            catalogListener.VerifyRemove(fooCatalog, typeof(FooExporter));
-            catalogListener.VerifyRemove(barCatalog, typeof(BarExporter));
-
-            catalogListener.VerifyAdd(bothCatalog, typeof(FooExporter), typeof(BarExporter));
-            catalogListener.VerifyClear(typeof(FooExporter), typeof(BarExporter));
-
-            catalogListener.VerifyAdd(bothCatalog, typeof(FooExporter), typeof(BarExporter));
-            catalogListener.VerifyRemove(bothCatalog, typeof(FooExporter), typeof(BarExporter));
         }
 
         public interface IFoo { }

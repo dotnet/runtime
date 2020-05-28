@@ -7,9 +7,11 @@ using System.Collections;
 using System.Text.RegularExpressions;
 using RegexTestNamespace;
 using Xunit;
-using System.Collections.Generic;
 
-namespace System.Text.RegularExpressionsTests
+// NOTE: Be very thoughtful when editing this test file.  It's decompiled from an assembly generated
+// by CompileToAssembly on .NET Framework, and is used to help validate compatibility with such assemblies.
+
+namespace System.Text.RegularExpressions.Tests
 {
     public class PrecompiledRegexScenarioTest
     {

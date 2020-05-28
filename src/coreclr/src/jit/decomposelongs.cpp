@@ -26,7 +26,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX*/
 #pragma hdrstop
 #endif
 
-#ifndef _TARGET_64BIT_ // DecomposeLongs is only used on 32-bit platforms
+#ifndef TARGET_64BIT // DecomposeLongs is only used on 32-bit platforms
 
 #include "decomposelongs.h"
 
@@ -361,12 +361,12 @@ GenTree* DecomposeLongs::DecomposeLclVar(LIR::Use& use)
     else
     {
         loResult->SetOper(GT_LCL_FLD);
-        loResult->AsLclFld()->gtLclOffs  = 0;
-        loResult->AsLclFld()->gtFieldSeq = FieldSeqStore::NotAField();
+        loResult->AsLclFld()->SetLclOffs(0);
+        loResult->AsLclFld()->SetFieldSeq(FieldSeqStore::NotAField());
 
         hiResult->SetOper(GT_LCL_FLD);
-        hiResult->AsLclFld()->gtLclOffs  = 4;
-        hiResult->AsLclFld()->gtFieldSeq = FieldSeqStore::NotAField();
+        hiResult->AsLclFld()->SetLclOffs(4);
+        hiResult->AsLclFld()->SetFieldSeq(FieldSeqStore::NotAField());
     }
 
     return FinalizeDecomposition(use, loResult, hiResult, hiResult);
@@ -390,7 +390,7 @@ GenTree* DecomposeLongs::DecomposeLclFld(LIR::Use& use)
     GenTreeLclFld* loResult = tree->AsLclFld();
     loResult->gtType        = TYP_INT;
 
-    GenTree* hiResult = m_compiler->gtNewLclFldNode(loResult->GetLclNum(), TYP_INT, loResult->gtLclOffs + 4);
+    GenTree* hiResult = m_compiler->gtNewLclFldNode(loResult->GetLclNum(), TYP_INT, loResult->GetLclOffs() + 4);
     Range().InsertAfter(loResult, hiResult);
 
     return FinalizeDecomposition(use, loResult, hiResult, hiResult);
@@ -510,7 +510,7 @@ GenTree* DecomposeLongs::DecomposeStoreLclFld(LIR::Use& use)
     loStore->gtFlags |= GTF_VAR_USEASG;
 
     // Create the store for the upper half of the GT_LONG and insert it after the low store.
-    GenTreeLclFld* hiStore = m_compiler->gtNewLclFldNode(loStore->GetLclNum(), TYP_INT, loStore->gtLclOffs + 4);
+    GenTreeLclFld* hiStore = m_compiler->gtNewLclFldNode(loStore->GetLclNum(), TYP_INT, loStore->GetLclOffs() + 4);
     hiStore->SetOper(GT_STORE_LCL_FLD);
     hiStore->gtOp1 = value->gtOp2;
     hiStore->gtFlags |= (GTF_VAR_DEF | GTF_VAR_USEASG);
@@ -924,7 +924,7 @@ GenTree* DecomposeLongs::DecomposeNeg(LIR::Use& use)
 
     GenTree* zero = m_compiler->gtNewZeroConNode(TYP_INT);
 
-#if defined(_TARGET_X86_)
+#if defined(TARGET_X86)
 
     GenTree* hiAdjust = m_compiler->gtNewOperNode(GT_ADD_HI, TYP_INT, hiOp1, zero);
     GenTree* hiResult = m_compiler->gtNewOperNode(GT_NEG, TYP_INT, hiAdjust);
@@ -933,7 +933,7 @@ GenTree* DecomposeLongs::DecomposeNeg(LIR::Use& use)
     loResult->gtFlags |= GTF_SET_FLAGS;
     hiAdjust->gtFlags |= GTF_USE_FLAGS;
 
-#elif defined(_TARGET_ARM_)
+#elif defined(TARGET_ARM)
 
     // We tend to use "movs" to load zero to a register, and that sets the flags, so put the
     // zero before the loResult, which is setting the flags needed by GT_SUB_HI.
@@ -1362,7 +1362,7 @@ GenTree* DecomposeLongs::DecomposeShift(LIR::Use& use)
 
         GenTreeCall::Use* argList = m_compiler->gtNewCallArgs(loOp1, hiOp1, shiftByOp);
 
-        GenTree* call = m_compiler->gtNewHelperCallNode(helper, TYP_LONG, argList);
+        GenTreeCall* call = m_compiler->gtNewHelperCallNode(helper, TYP_LONG, argList);
         call->gtFlags |= shift->gtFlags & GTF_ALL_EFFECT;
 
         if (shift->IsUnusedValue())
@@ -1370,11 +1370,7 @@ GenTree* DecomposeLongs::DecomposeShift(LIR::Use& use)
             call->SetUnusedValue();
         }
 
-        GenTreeCall*    callNode    = call->AsCall();
-        ReturnTypeDesc* retTypeDesc = callNode->GetReturnTypeDesc();
-        retTypeDesc->InitializeLongReturnType(m_compiler);
-
-        call = m_compiler->fgMorphArgs(callNode);
+        call = m_compiler->fgMorphArgs(call);
         Range().InsertAfter(shift, LIR::SeqTree(m_compiler, call));
 
         Range().Remove(shift);
@@ -1960,4 +1956,4 @@ genTreeOps DecomposeLongs::GetLoOper(genTreeOps oper)
     }
 }
 
-#endif // !_TARGET_64BIT_
+#endif // !TARGET_64BIT

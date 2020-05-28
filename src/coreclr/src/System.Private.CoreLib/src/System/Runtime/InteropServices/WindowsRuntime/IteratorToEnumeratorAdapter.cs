@@ -39,11 +39,10 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         // Exception/array/delegate via co-variance.
         internal IEnumerator<T> GetEnumerator_Variance_Stub<T>() where T : class
         {
-            bool fUseString;
             Delegate target = System.StubHelpers.StubHelpers.GetTargetForAmbiguousVariantCall(
                 this,
                 typeof(IEnumerable<T>).TypeHandle.Value,
-                out fUseString);
+                out bool fUseString);
 
             if (target != null)
             {

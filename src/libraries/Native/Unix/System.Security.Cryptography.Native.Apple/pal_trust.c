@@ -5,6 +5,7 @@
 #include "pal_trust.h"
 #include "pal_utilities.h"
 
+#if !defined(TARGET_IOS) && !defined(TARGET_TVOS)
 static bool CheckTrustMatch(SecCertificateRef cert,
                             SecTrustSettingsDomain domain,
                             SecTrustSettingsResult result,
@@ -245,3 +246,4 @@ int32_t AppleCryptoNative_StoreEnumerateMachineDisallowed(CFArrayRef* pCertsOut,
 
     return ret;
 }
+#endif

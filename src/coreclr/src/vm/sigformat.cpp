@@ -504,13 +504,12 @@ void SigFormat::AddType(TypeHandle th)
     case ELEMENT_TYPE_SZARRAY:      // Single Dim, Zero
     case ELEMENT_TYPE_ARRAY:        // General Array
         {
-            ArrayTypeDesc* aTD = th.AsArray();
-            AddType(aTD->GetArrayElementTypeHandle());
+            AddType(th.GetArrayElementTypeHandle());
 
             if (type == ELEMENT_TYPE_ARRAY)
             {
                 AddString("[");
-                int len = aTD->GetRank();
+                int len = th.GetRank();
 
                 for (int j=0;j<len-1;j++)
 
@@ -638,7 +637,7 @@ const char* FormatSig(MethodDesc * pMD, LoaderHeap * pHeap, AllocMemTracker * pa
 }
 
 /*******************************************************************/
-const char* FormatSig(MethodDesc* pMD, AppDomain *pDomain, AllocMemTracker *pamTracker)
+const char* FormatSig(MethodDesc* pMD, AllocMemTracker *pamTracker)
 {
     CONTRACTL
     {
@@ -647,7 +646,7 @@ const char* FormatSig(MethodDesc* pMD, AppDomain *pDomain, AllocMemTracker *pamT
     }
     CONTRACTL_END;
 
-    return FormatSig(pMD,pDomain->GetLowFrequencyHeap(),pamTracker);
+    return FormatSig(pMD,GetAppDomain()->GetLowFrequencyHeap(),pamTracker);
 }
 #endif
 #endif

@@ -48,13 +48,13 @@ class ZapperStats;
 #undef SAFERELEASE
 #define SAFERELEASE(p) if ((p) != NULL) { IUnknown * _ = (p); (p) = NULL; _->Release();  };
 
-#if defined(_TARGET_X86_) || defined(_TARGET_AMD64_)
+#if defined(TARGET_X86) || defined(TARGET_AMD64)
 #define DEFAULT_CODE_BUFFER_INIT 0xcc // breakpoint
 #else
 #define DEFAULT_CODE_BUFFER_INIT 0
 #endif
 
-#ifdef _TARGET_64BIT_
+#ifdef TARGET_64BIT
 // Optimize for speed
 #define DEFAULT_CODE_ALIGN  16
 #else
@@ -62,9 +62,9 @@ class ZapperStats;
 #define DEFAULT_CODE_ALIGN  4
 #endif
 
-#ifdef _TARGET_ARM_
+#ifdef TARGET_ARM
 #define MINIMUM_CODE_ALIGN 2
-#elif _TARGET_ARM64_
+#elif TARGET_ARM64
 #define MINIMUM_CODE_ALIGN 4
 #else
 #define MINIMUM_CODE_ALIGN 1
@@ -120,7 +120,7 @@ enum ZapImportSectionType
     ZapImportSectionType_Handle,        // Unspecified handle
     ZapImportSectionType_TypeHandle,    // Type and method handles have to have their own section so we can restore them correctly
     ZapImportSectionType_MethodHandle,
-#ifdef _TARGET_ARM_
+#ifdef TARGET_ARM
     ZapImportSectionType_PCode,         // Code pointers have to be in a own section on ARM because of they are tagged differently
 #endif
     ZapImportSectionType_StringHandle,  // String handles require special handling for interning

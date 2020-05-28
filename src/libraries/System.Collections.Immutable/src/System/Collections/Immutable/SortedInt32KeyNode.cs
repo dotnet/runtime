@@ -4,7 +4,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Diagnostics.Contracts;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 
 namespace System.Collections.Immutable
@@ -35,7 +35,8 @@ namespace System.Collections.Immutable
         /// <summary>
         /// The value associated with this node.
         /// </summary>
-        private readonly TValue _value;
+        [MaybeNull]
+        private readonly TValue _value = default!;
 
         /// <summary>
         /// A value indicating whether this node has been frozen (made immutable).
@@ -54,12 +55,12 @@ namespace System.Collections.Immutable
         /// <summary>
         /// The left tree.
         /// </summary>
-        private SortedInt32KeyNode<TValue> _left;
+        private SortedInt32KeyNode<TValue>? _left;
 
         /// <summary>
         /// The right tree.
         /// </summary>
-        private SortedInt32KeyNode<TValue> _right;
+        private SortedInt32KeyNode<TValue>? _right;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="SortedInt32KeyNode{TValue}"/> class that is pre-frozen.
@@ -108,22 +109,22 @@ namespace System.Collections.Immutable
         /// <summary>
         /// Gets the left branch of this node.
         /// </summary>
-        public SortedInt32KeyNode<TValue> Left { get { return _left; } }
+        public SortedInt32KeyNode<TValue>? Left { get { return _left; } }
 
         /// <summary>
         /// Gets the right branch of this node.
         /// </summary>
-        public SortedInt32KeyNode<TValue> Right { get { return _right; } }
+        public SortedInt32KeyNode<TValue>? Right { get { return _right; } }
 
         /// <summary>
         /// Gets the left branch of this node.
         /// </summary>
-        IBinaryTree IBinaryTree.Left { get { return _left; } }
+        IBinaryTree? IBinaryTree.Left { get { return _left; } }
 
         /// <summary>
         /// Gets the right branch of this node.
         /// </summary>
-        IBinaryTree IBinaryTree.Right { get { return _right; } }
+        IBinaryTree? IBinaryTree.Right { get { return _right; } }
 
         /// <summary>
         /// Gets the number of elements contained by this node and below.
@@ -138,7 +139,7 @@ namespace System.Collections.Immutable
         /// </summary>
         public KeyValuePair<int, TValue> Value
         {
-            get { return new KeyValuePair<int, TValue>(_key, _value); }
+            get { return new KeyValuePair<int, TValue>(_key, _value!); }
         }
 
         /// <summary>
@@ -197,7 +198,7 @@ namespace System.Collections.Immutable
         /// </summary>
         /// <param name="key">The key.</param>
         /// <returns>The value.</returns>
-        [Pure]
+        [return: MaybeNull]
         internal TValue GetValueOrDefault(int key)
         {
             SortedInt32KeyNode<TValue> node = this;
@@ -205,21 +206,21 @@ namespace System.Collections.Immutable
             {
                 if (node.IsEmpty)
                 {
-                    return default(TValue);
+                    return default(TValue)!;
                 }
 
                 if (key == node._key)
                 {
-                    return node._value;
+                    return node._value!;
                 }
 
                 if (key > node._key)
                 {
-                    node = node._right;
+                    node = node._right!;
                 }
                 else
                 {
-                    node = node._left;
+                    node = node._left!;
                 }
             }
         }
@@ -230,31 +231,30 @@ namespace System.Collections.Immutable
         /// <param name="key">The key.</param>
         /// <param name="value">The value.</param>
         /// <returns>True if the key was found.</returns>
-        [Pure]
-        internal bool TryGetValue(int key, out TValue value)
+        internal bool TryGetValue(int key, [MaybeNullWhen(false)] out TValue value)
         {
             SortedInt32KeyNode<TValue> node = this;
             while (true)
             {
                 if (node.IsEmpty)
                 {
-                    value = default(TValue);
+                    value = default(TValue)!;
                     return false;
                 }
 
                 if (key == node._key)
                 {
-                    value = node._value;
+                    value = node._value!;
                     return true;
                 }
 
                 if (key > node._key)
                 {
-                    node = node._right;
+                    node = node._right!;
                 }
                 else
                 {
-                    node = node._left;
+                    node = node._left!;
                 }
             }
         }
@@ -262,15 +262,15 @@ namespace System.Collections.Immutable
         /// <summary>
         /// Freezes this node and all descendant nodes so that any mutations require a new instance of the nodes.
         /// </summary>
-        internal void Freeze(Action<KeyValuePair<int, TValue>> freezeAction = null)
+        internal void Freeze(Action<KeyValuePair<int, TValue>>? freezeAction = null)
         {
             // If this node is frozen, all its descendants must already be frozen.
             if (!_frozen)
             {
-                freezeAction?.Invoke(new KeyValuePair<int, TValue>(_key, _value));
+                freezeAction?.Invoke(new KeyValuePair<int, TValue>(_key, _value!));
 
-                _left.Freeze(freezeAction);
-                _right.Freeze(freezeAction);
+                _left!.Freeze(freezeAction);
+                _right!.Freeze(freezeAction);
                 _frozen = true;
             }
         }
@@ -285,13 +285,13 @@ namespace System.Collections.Immutable
             Requires.NotNull(tree, nameof(tree));
             Debug.Assert(!tree.IsEmpty);
 
-            if (tree._right.IsEmpty)
+            if (tree._right!.IsEmpty)
             {
                 return tree;
             }
 
             var right = tree._right;
-            return right.Mutate(left: tree.Mutate(right: right._left));
+            return right.Mutate(left: tree.Mutate(right: right._left!));
         }
 
         /// <summary>
@@ -304,13 +304,13 @@ namespace System.Collections.Immutable
             Requires.NotNull(tree, nameof(tree));
             Debug.Assert(!tree.IsEmpty);
 
-            if (tree._left.IsEmpty)
+            if (tree._left!.IsEmpty)
             {
                 return tree;
             }
 
             var left = tree._left;
-            return left.Mutate(right: tree.Mutate(left: left._right));
+            return left.Mutate(right: tree.Mutate(left: left._right!));
         }
 
         /// <summary>
@@ -323,7 +323,7 @@ namespace System.Collections.Immutable
             Requires.NotNull(tree, nameof(tree));
             Debug.Assert(!tree.IsEmpty);
 
-            if (tree._right.IsEmpty)
+            if (tree._right!.IsEmpty)
             {
                 return tree;
             }
@@ -342,7 +342,7 @@ namespace System.Collections.Immutable
             Requires.NotNull(tree, nameof(tree));
             Debug.Assert(!tree.IsEmpty);
 
-            if (tree._left.IsEmpty)
+            if (tree._left!.IsEmpty)
             {
                 return tree;
             }
@@ -356,13 +356,12 @@ namespace System.Collections.Immutable
         /// </summary>
         /// <param name="tree">The tree.</param>
         /// <returns>0 if the tree is in balance, a positive integer if the right side is heavy, or a negative integer if the left side is heavy.</returns>
-        [Pure]
         private static int Balance(SortedInt32KeyNode<TValue> tree)
         {
             Requires.NotNull(tree, nameof(tree));
             Debug.Assert(!tree.IsEmpty);
 
-            return tree._right._height - tree._left._height;
+            return tree._right!._height - tree._left!._height;
         }
 
         /// <summary>
@@ -372,7 +371,6 @@ namespace System.Collections.Immutable
         /// <returns>
         /// <c>true</c> if [is right heavy] [the specified tree]; otherwise, <c>false</c>.
         /// </returns>
-        [Pure]
         private static bool IsRightHeavy(SortedInt32KeyNode<TValue> tree)
         {
             Requires.NotNull(tree, nameof(tree));
@@ -383,7 +381,6 @@ namespace System.Collections.Immutable
         /// <summary>
         /// Determines whether the specified tree is left heavy.
         /// </summary>
-        [Pure]
         private static bool IsLeftHeavy(SortedInt32KeyNode<TValue> tree)
         {
             Requires.NotNull(tree, nameof(tree));
@@ -396,7 +393,6 @@ namespace System.Collections.Immutable
         /// </summary>
         /// <param name="tree">The tree.</param>
         /// <returns>A balanced tree.</returns>
-        [Pure]
         private static SortedInt32KeyNode<TValue> MakeBalanced(SortedInt32KeyNode<TValue> tree)
         {
             Requires.NotNull(tree, nameof(tree));
@@ -404,12 +400,12 @@ namespace System.Collections.Immutable
 
             if (IsRightHeavy(tree))
             {
-                return Balance(tree._right) < 0 ? DoubleLeft(tree) : RotateLeft(tree);
+                return Balance(tree._right!) < 0 ? DoubleLeft(tree) : RotateLeft(tree);
             }
 
             if (IsLeftHeavy(tree))
             {
-                return Balance(tree._left) > 0 ? DoubleRight(tree) : RotateRight(tree);
+                return Balance(tree._left!) > 0 ? DoubleRight(tree) : RotateRight(tree);
             }
 
             return tree;
@@ -441,7 +437,7 @@ namespace System.Collections.Immutable
                 SortedInt32KeyNode<TValue> result = this;
                 if (key > _key)
                 {
-                    var newRight = _right.SetOrAdd(key, value, valueComparer, overwriteExistingValue, out replacedExistingValue, out mutated);
+                    var newRight = _right!.SetOrAdd(key, value, valueComparer, overwriteExistingValue, out replacedExistingValue, out mutated);
                     if (mutated)
                     {
                         result = this.Mutate(right: newRight);
@@ -449,7 +445,7 @@ namespace System.Collections.Immutable
                 }
                 else if (key < _key)
                 {
-                    var newLeft = _left.SetOrAdd(key, value, valueComparer, overwriteExistingValue, out replacedExistingValue, out mutated);
+                    var newLeft = _left!.SetOrAdd(key, value, valueComparer, overwriteExistingValue, out replacedExistingValue, out mutated);
                     if (mutated)
                     {
                         result = this.Mutate(left: newLeft);
@@ -457,7 +453,7 @@ namespace System.Collections.Immutable
                 }
                 else
                 {
-                    if (valueComparer.Equals(_value, value))
+                    if (valueComparer.Equals(_value!, value))
                     {
                         mutated = false;
                         return this;
@@ -466,7 +462,7 @@ namespace System.Collections.Immutable
                     {
                         mutated = true;
                         replacedExistingValue = true;
-                        result = new SortedInt32KeyNode<TValue>(key, value, _left, _right);
+                        result = new SortedInt32KeyNode<TValue>(key, value, _left!, _right!);
                     }
                     else
                     {
@@ -493,6 +489,7 @@ namespace System.Collections.Immutable
             }
             else
             {
+                Debug.Assert(_right != null && _left != null);
                 SortedInt32KeyNode<TValue> result = this;
                 if (key == _key)
                 {
@@ -519,7 +516,7 @@ namespace System.Collections.Immutable
                         // We have two children. Remove the next-highest node and replace
                         // this node with it.
                         var successor = _right;
-                        while (!successor._left.IsEmpty)
+                        while (!successor._left!.IsEmpty)
                         {
                             successor = successor._left;
                         }
@@ -558,11 +555,12 @@ namespace System.Collections.Immutable
         /// <param name="left">The left branch of the mutated node.</param>
         /// <param name="right">The right branch of the mutated node.</param>
         /// <returns>The mutated (or created) node.</returns>
-        private SortedInt32KeyNode<TValue> Mutate(SortedInt32KeyNode<TValue> left = null, SortedInt32KeyNode<TValue> right = null)
+        private SortedInt32KeyNode<TValue> Mutate(SortedInt32KeyNode<TValue>? left = null, SortedInt32KeyNode<TValue>? right = null)
         {
+            Debug.Assert(_right != null && _left != null);
             if (_frozen)
             {
-                return new SortedInt32KeyNode<TValue>(_key, _value, left ?? _left, right ?? _right);
+                return new SortedInt32KeyNode<TValue>(_key, _value!, left ?? _left, right ?? _right);
             }
             else
             {

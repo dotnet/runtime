@@ -7,7 +7,7 @@
 #define PAGE_MASK (~(PAGE_SIZE-1))
 #endif
 
-#ifdef BIT64
+#ifdef HOST_64BIT
 #define PRIA "016"
 #else
 #define PRIA "08"

@@ -51,7 +51,7 @@
 
            Specifically did NOT supply automatic coersions to
            and from short types so that the programmer is aware of
-           when code was being injected on his behalf.  The upshot of this
+           when code was being injected on their behalf.  The upshot of this
            is that you have to use the  BitVector() toUnsigned() to convert
 */
 

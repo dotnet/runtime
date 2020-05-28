@@ -1,8 +1,8 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -241,7 +241,7 @@ namespace PartialCompactionTest
                     if (OAr[j] != null)
                     {
                         int pos = Rand.Next(0, weakList.Count);
-                        if (weakList[pos] != null && weakList[pos].IsAllocated)
+                        if (weakList[pos].IsAllocated)
                         {
                             OAr[j] = weakList[pos].Target;
                         }
@@ -360,7 +360,7 @@ namespace PartialCompactionTest
         {
             for (int k = weakList.Count - 1; k >= 0; k--)
             {
-                if (weakList[k] == null || !(weakList[k].IsAllocated))
+                if (!weakList[k].IsAllocated)
                 {
                     weakList.RemoveAt(k);
                 }
@@ -442,7 +442,7 @@ namespace PartialCompactionTest
             while (!found)
             {
                 pos = Rand.Next(0, weakList.Count);
-                if (weakList[pos] == null || !weakList[pos].IsAllocated)
+                if (!weakList[pos].IsAllocated)
                     continue;
                 if (weakList[pos].Target != null)
                 {
@@ -460,7 +460,7 @@ namespace PartialCompactionTest
             while (!found)
             {
                 pos = Rand.Next(0, weakList.Count);
-                if (weakList[pos] == null || !weakList[pos].IsAllocated)
+                if (!weakList[pos].IsAllocated)
                     continue;
                 if (weakList[pos].Target != null)
                 {
@@ -498,7 +498,7 @@ namespace PartialCompactionTest
             found = false;
             for (int i = 0; i < weakList.Count; i++)
             {
-                if (weakList[i] == null || !weakList[i].IsAllocated)
+                if (!weakList[i].IsAllocated)
                 {
                     weakList[i] = GCHandle.Alloc(o, GCHandleType.Weak);
                     found = true;

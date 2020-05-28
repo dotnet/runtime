@@ -23,6 +23,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/syscall.h>
+#include <sys/uio.h>
 #include <time.h>
 #include <unistd.h>
 #include <linux/limits.h>
@@ -38,13 +39,13 @@ namespace
         JIT_DUMP_MAGIC = 0x4A695444,
         JIT_DUMP_VERSION = 1,
 
-#if defined(_X86_)
+#if defined(HOST_X86)
         ELF_MACHINE = EM_386,
-#elif defined(_ARM_)
+#elif defined(HOST_ARM)
         ELF_MACHINE = EM_ARM,
-#elif defined(_AMD64_)
+#elif defined(HOST_AMD64)
         ELF_MACHINE = EM_X86_64,
-#elif defined(_ARM64_)
+#elif defined(HOST_ARM64)
         ELF_MACHINE = EM_AARCH64,
 #else
 #error ELF_MACHINE unsupported for target
@@ -135,11 +136,11 @@ struct PerfJitDumpState
         codeIndex(0)
     {}
 
-    bool enabled;
+    volatile bool enabled;
     int fd;
     void *mmapAddr;
     pthread_mutex_t mutex;
-    uint64_t codeIndex;
+    volatile uint64_t codeIndex;
 
     int FatalError(bool locked)
     {
@@ -232,11 +233,23 @@ exit:
 
             JitCodeLoadRecord record;
 
+            size_t bytesRemaining = sizeof(JitCodeLoadRecord) + symbolLen + 1 + codeSize;
+
+            record.header.timestamp = GetTimeStampNS();
             record.vma = (uint64_t) pCode;
             record.code_addr = (uint64_t) pCode;
             record.code_size = codeSize;
-            record.code_index = ++codeIndex;
-            record.header.total_size = sizeof(JitCodeLoadRecord) + symbolLen + 1 + codeSize;
+            record.header.total_size = bytesRemaining;
+
+            iovec items[] = {
+                // ToDo insert debugInfo and unwindInfo record items immediately before the JitCodeLoadRecord.
+                { &record, sizeof(JitCodeLoadRecord) },
+                { (void *)symbol, symbolLen + 1 },
+                { pCode, codeSize },
+            };
+            size_t itemsCount = sizeof(items) / sizeof(items[0]);
+
+            size_t itemsWritten = 0;
 
             result = pthread_mutex_lock(&mutex);
 
@@ -246,36 +259,56 @@ exit:
             if (!enabled)
                 goto exit;
 
-            // ToDo write debugInfo and unwindInfo immediately before the JitCodeLoadRecord (while lock is held).
+            // Increment codeIndex while locked
+            record.code_index = ++codeIndex;
 
-            record.header.timestamp = GetTimeStampNS();
+            do
+            {
+                result = writev(fd, items + itemsWritten, itemsCount - itemsWritten);
 
-            result = write(fd, &record, sizeof(JitCodeLoadRecord));
+                if ((size_t)result == bytesRemaining)
+                    break;
 
-            if (result == -1)
-                return FatalError(true);
+                if (result == -1)
+                {
+                    if (errno == EINTR)
+                        continue;
 
-            result = write(fd, symbol, symbolLen + 1);
+                    return FatalError(true);
+                }
 
-            if (result == -1)
-                return FatalError(true);
+                // Detect unexpected failure cases.
+                _ASSERTE(bytesRemaining > (size_t)result);
+                _ASSERTE(result > 0);
 
-            result = write(fd, pCode, codeSize);
+                // Handle partial write case
 
-            if (result == -1)
-                return FatalError(true);
+                bytesRemaining -= result;
 
-            result = fsync(fd);
+                do
+                {
+                    if ((size_t)result < items[itemsWritten].iov_len)
+                    {
+                        items[itemsWritten].iov_len -= result;
+                        items[itemsWritten].iov_base = (void*)((size_t) items[itemsWritten].iov_base + result);
+                        break;
+                    }
+                    else
+                    {
+                        result -= items[itemsWritten].iov_len;
+                        itemsWritten++;
 
-            if (result == -1)
-                return FatalError(true);
+                        // Detect unexpected failure case.
+                        _ASSERTE(itemsWritten < itemsCount);
+                    }
+                } while (result > 0);
+            } while (true);
 
 exit:
             result = pthread_mutex_unlock(&mutex);
 
             if (result != 0)
                 return FatalError(false);
-
         }
         return 0;
     }

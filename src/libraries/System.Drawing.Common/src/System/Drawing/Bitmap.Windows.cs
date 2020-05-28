@@ -12,7 +12,7 @@ namespace System.Drawing
     {
         public Bitmap(Type type, string resource)
         {
-            Stream stream = type.Module.Assembly.GetManifestResourceStream(type, resource);
+            Stream? stream = type.Module.Assembly.GetManifestResourceStream(type, resource);
             if (stream == null)
             {
                 throw new ArgumentException(SR.Format(SR.ResourceNotFound, type, resource));

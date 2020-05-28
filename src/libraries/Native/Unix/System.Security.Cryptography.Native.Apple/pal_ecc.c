@@ -4,6 +4,7 @@
 
 #include "pal_ecc.h"
 
+#if !defined(TARGET_IOS) && !defined(TARGET_TVOS)
 int32_t AppleCryptoNative_EccGenerateKey(
     int32_t keySizeBits, SecKeychainRef tempKeychain, SecKeyRef* pPublicKey, SecKeyRef* pPrivateKey, int32_t* pOSStatus)
 {
@@ -51,6 +52,7 @@ int32_t AppleCryptoNative_EccGenerateKey(
     *pOSStatus = status;
     return status == noErr;
 }
+#endif
 
 uint64_t AppleCryptoNative_EccGetKeySizeInBits(SecKeyRef publicKey)
 {

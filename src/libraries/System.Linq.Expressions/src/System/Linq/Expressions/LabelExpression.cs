@@ -15,7 +15,7 @@ namespace System.Linq.Expressions
     [DebuggerTypeProxy(typeof(LabelExpressionProxy))]
     public sealed class LabelExpression : Expression
     {
-        internal LabelExpression(LabelTarget label, Expression defaultValue)
+        internal LabelExpression(LabelTarget label, Expression? defaultValue)
         {
             Target = label;
             DefaultValue = defaultValue;
@@ -42,7 +42,7 @@ namespace System.Linq.Expressions
         /// The value of the <see cref="LabelExpression"/> when the label is reached through
         /// normal control flow (e.g. is not jumped to).
         /// </summary>
-        public Expression DefaultValue { get; }
+        public Expression? DefaultValue { get; }
 
         /// <summary>
         /// Dispatches to the specific visit method for this node type.
@@ -60,7 +60,7 @@ namespace System.Linq.Expressions
         /// <param name="target">The <see cref="Target"/> property of the result.</param>
         /// <param name="defaultValue">The <see cref="DefaultValue"/> property of the result.</param>
         /// <returns>This expression if no children changed, or an expression with the updated children.</returns>
-        public LabelExpression Update(LabelTarget target, Expression defaultValue)
+        public LabelExpression Update(LabelTarget target, Expression? defaultValue)
         {
             if (target == Target && defaultValue == DefaultValue)
             {
@@ -88,7 +88,7 @@ namespace System.Linq.Expressions
         /// <param name="target">The <see cref="LabelTarget"/> which this <see cref="LabelExpression"/> will be associated with.</param>
         /// <param name="defaultValue">The value of this <see cref="LabelExpression"/> when the label is reached through normal control flow.</param>
         /// <returns>A <see cref="LabelExpression"/> with the given default value.</returns>
-        public static LabelExpression Label(LabelTarget target, Expression defaultValue)
+        public static LabelExpression Label(LabelTarget target, Expression? defaultValue)
         {
             ValidateGoto(target, ref defaultValue, nameof(target), nameof(defaultValue), type: null);
             return new LabelExpression(target, defaultValue);

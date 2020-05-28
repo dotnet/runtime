@@ -31,7 +31,7 @@ namespace System.Diagnostics
             var processes = new List<ProcessInfo>(procIds.Length);
             foreach (int pid in procIds)
             {
-                ProcessInfo pi = CreateProcessInfo(pid, reusableReader);
+                ProcessInfo? pi = CreateProcessInfo(pid, reusableReader);
                 if (pi != null)
                 {
                     processes.Add(pi);
@@ -82,7 +82,7 @@ namespace System.Diagnostics
             }
 
             // Move the main executable module to be the first in the list if it's not already
-            string exePath = Process.GetExePath(processId);
+            string? exePath = Process.GetExePath(processId);
             for (int i = 0; i < modules.Count; i++)
             {
                 ProcessModule module = modules[i];
@@ -108,7 +108,7 @@ namespace System.Diagnostics
         /// <summary>
         /// Creates a ProcessInfo from the specified process ID.
         /// </summary>
-        internal static ProcessInfo CreateProcessInfo(int pid, ReusableTextReader reusableReader = null)
+        internal static ProcessInfo? CreateProcessInfo(int pid, ReusableTextReader? reusableReader = null)
         {
             reusableReader ??= new ReusableTextReader();
             if (Interop.procfs.TryReadStatFile(pid, out Interop.procfs.ParsedStat stat, reusableReader))
@@ -122,7 +122,7 @@ namespace System.Diagnostics
         /// <summary>
         /// Creates a ProcessInfo from the data parsed from a /proc/pid/stat file and the associated tasks directory.
         /// </summary>
-        internal static ProcessInfo CreateProcessInfo(ref Interop.procfs.ParsedStat procFsStat, ref Interop.procfs.ParsedStatus procFsStatus, ReusableTextReader reusableReader, string processName = null)
+        internal static ProcessInfo CreateProcessInfo(ref Interop.procfs.ParsedStat procFsStat, ref Interop.procfs.ParsedStatus procFsStatus, ReusableTextReader reusableReader, string? processName = null)
         {
             int pid = procFsStat.pid;
 

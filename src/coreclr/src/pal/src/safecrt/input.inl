@@ -115,6 +115,9 @@ static int __cdecl _whiteout(int *, miniFILE *);
 
 #endif  /* CPRFLAG */
 
+#undef _ISDIGIT
+#undef _ISXDIGIT
+
 #ifndef _UNICODE
 #define _ISDIGIT(chr)   isdigit((unsigned char)chr)
 #define _ISXDIGIT(chr)  isxdigit((unsigned char)chr)
@@ -510,11 +513,11 @@ DEFAULT_LABEL:
                     va_copy(arglistsave, arglist);
 
                     /* Get the next argument - size of the array in characters */
-#ifdef BIT64
+#ifdef HOST_64BIT
                     original_array_width = array_width = (size_t)(va_arg(arglist, unsigned int));
-#else  /* BIT64 */
+#else  /* HOST_64BIT */
                     original_array_width = array_width = va_arg(arglist, size_t);
-#endif  /* BIT64 */
+#endif  /* HOST_64BIT */
 
                     if(array_width < 1) {
                         if (widechar > 0)
@@ -862,11 +865,11 @@ x_incwidth:
                     case _T('p') :
                         /* force %hp to be treated as %p */
                         longone = 1;
-#ifdef BIT64
+#ifdef HOST_64BIT
                         /* force %p to be 64 bit in WIN64 */
                         ++integer64;
                         num64 = 0;
-#endif  /* BIT64 */
+#endif  /* HOST_64BIT */
                     case _T('o') :
                     case _T('u') :
                     case _T('d') :

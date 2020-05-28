@@ -13,19 +13,19 @@ namespace System.Security.Cryptography.Asn1.Pkcs12
     [StructLayout(LayoutKind.Sequential)]
     internal partial struct MacData
     {
-        private static readonly byte[] s_defaultIterationCount = { 0x02, 0x01, 0x01 };
-  
+        private static ReadOnlySpan<byte> DefaultIterationCount => new byte[] { 0x02, 0x01, 0x01 };
+
         internal System.Security.Cryptography.Asn1.DigestInfoAsn Mac;
         internal ReadOnlyMemory<byte> MacSalt;
         internal int IterationCount;
-      
+
 #if DEBUG
         static MacData()
         {
             MacData decoded = default;
-            AsnReader reader;
+            AsnValueReader reader;
 
-            reader = new AsnReader(s_defaultIterationCount, AsnEncodingRules.DER);
+            reader = new AsnValueReader(DefaultIterationCount, AsnEncodingRules.DER);
 
             if (!reader.TryReadInt32(out decoded.IterationCount))
             {
@@ -35,19 +35,19 @@ namespace System.Security.Cryptography.Asn1.Pkcs12
             reader.ThrowIfNotEmpty();
         }
 #endif
- 
+
         internal void Encode(AsnWriter writer)
         {
             Encode(writer, Asn1Tag.Sequence);
         }
-    
+
         internal void Encode(AsnWriter writer, Asn1Tag tag)
         {
             writer.PushSequence(tag);
-            
+
             Mac.Encode(writer);
             writer.WriteOctetString(MacSalt.Span);
-        
+
             // DEFAULT value handler for IterationCount.
             {
                 using (AsnWriter tmp = new AsnWriter(AsnEncodingRules.DER))
@@ -55,9 +55,9 @@ namespace System.Security.Cryptography.Asn1.Pkcs12
                     tmp.WriteInteger(IterationCount);
                     ReadOnlySpan<byte> encoded = tmp.EncodeAsSpan();
 
-                    if (!encoded.SequenceEqual(s_defaultIterationCount))
+                    if (!encoded.SequenceEqual(DefaultIterationCount))
                     {
-                        writer.WriteEncodedValue(encoded.ToArray());
+                        writer.WriteEncodedValue(encoded);
                     }
                 }
             }
@@ -69,38 +69,35 @@ namespace System.Security.Cryptography.Asn1.Pkcs12
         {
             return Decode(Asn1Tag.Sequence, encoded, ruleSet);
         }
-        
+
         internal static MacData Decode(Asn1Tag expectedTag, ReadOnlyMemory<byte> encoded, AsnEncodingRules ruleSet)
         {
-            AsnReader reader = new AsnReader(encoded, ruleSet);
-            
-            Decode(reader, expectedTag, out MacData decoded);
+            AsnValueReader reader = new AsnValueReader(encoded.Span, ruleSet);
+
+            Decode(ref reader, expectedTag, encoded, out MacData decoded);
             reader.ThrowIfNotEmpty();
             return decoded;
         }
 
-        internal static void Decode(AsnReader reader, out MacData decoded)
+        internal static void Decode(ref AsnValueReader reader, ReadOnlyMemory<byte> rebind, out MacData decoded)
         {
-            if (reader == null)
-                throw new ArgumentNullException(nameof(reader));
-
-            Decode(reader, Asn1Tag.Sequence, out decoded);
+            Decode(ref reader, Asn1Tag.Sequence, rebind, out decoded);
         }
 
-        internal static void Decode(AsnReader reader, Asn1Tag expectedTag, out MacData decoded)
+        internal static void Decode(ref AsnValueReader reader, Asn1Tag expectedTag, ReadOnlyMemory<byte> rebind, out MacData decoded)
         {
-            if (reader == null)
-                throw new ArgumentNullException(nameof(reader));
-
             decoded = default;
-            AsnReader sequenceReader = reader.ReadSequence(expectedTag);
-            AsnReader defaultReader;
-            
-            System.Security.Cryptography.Asn1.DigestInfoAsn.Decode(sequenceReader, out decoded.Mac);
+            AsnValueReader sequenceReader = reader.ReadSequence(expectedTag);
+            AsnValueReader defaultReader;
+            ReadOnlySpan<byte> rebindSpan = rebind.Span;
+            int offset;
+            ReadOnlySpan<byte> tmpSpan;
 
-            if (sequenceReader.TryReadPrimitiveOctetStringBytes(out ReadOnlyMemory<byte> tmpMacSalt))
+            System.Security.Cryptography.Asn1.DigestInfoAsn.Decode(ref sequenceReader, rebind, out decoded.Mac);
+
+            if (sequenceReader.TryReadPrimitiveOctetStringBytes(out tmpSpan))
             {
-                decoded.MacSalt = tmpMacSalt;
+                decoded.MacSalt = rebindSpan.Overlaps(tmpSpan, out offset) ? rebind.Slice(offset, tmpSpan.Length) : tmpSpan.ToArray();
             }
             else
             {
@@ -119,7 +116,7 @@ namespace System.Security.Cryptography.Asn1.Pkcs12
             }
             else
             {
-                defaultReader = new AsnReader(s_defaultIterationCount, AsnEncodingRules.DER);
+                defaultReader = new AsnValueReader(DefaultIterationCount, AsnEncodingRules.DER);
 
                 if (!defaultReader.TryReadInt32(out decoded.IterationCount))
                 {

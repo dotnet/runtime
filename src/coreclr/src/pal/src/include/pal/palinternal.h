@@ -164,8 +164,6 @@ function_name() to call the system's implementation
 
 /* C runtime functions needed to be renamed to avoid duplicate definition
    of those functions when including standard C header files */
-#define div DUMMY_div
-#define div_t DUMMY_div_t
 #if !defined(_DEBUG)
 #define memcpy DUMMY_memcpy
 #endif //!defined(_DEBUG)
@@ -341,7 +339,7 @@ function_name() to call the system's implementation
 #undef va_arg
 #endif
 
-#if !defined(_MSC_VER) && defined(BIT64)
+#if !defined(_MSC_VER) && defined(HOST_64BIT)
 #undef _BitScanForward64
 #undef _BitScanReverse64
 #endif
@@ -355,9 +353,6 @@ function_name() to call the system's implementation
    types could be mapped to the C runtime and socket implementation of the
    native OS */
 #undef exit
-#undef atexit
-#undef div
-#undef div_t
 #undef memcpy
 #undef memcmp
 #undef memset
@@ -537,10 +532,10 @@ function_name() to call the system's implementation
 #undef towupper
 #undef wvsnprintf
 
-#ifdef _AMD64_
+#ifdef HOST_AMD64
 #undef _mm_getcsr
 #undef _mm_setcsr
-#endif // _AMD64_
+#endif // HOST_AMD64
 
 #undef min
 #undef max

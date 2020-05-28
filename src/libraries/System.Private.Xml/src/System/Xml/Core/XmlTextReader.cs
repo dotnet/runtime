@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System;
 using System.IO;
 using System.Text;
@@ -149,7 +150,7 @@ namespace System.Xml
             get { return _impl.Depth; }
         }
 
-        public override string BaseURI
+        public override string? BaseURI
         {
             get { return _impl.BaseURI; }
         }
@@ -183,12 +184,12 @@ namespace System.Xml
 
         public override int AttributeCount { get { return _impl.AttributeCount; } }
 
-        public override string GetAttribute(string name)
+        public override string? GetAttribute(string name)
         {
             return _impl.GetAttribute(name);
         }
 
-        public override string GetAttribute(string localName, string namespaceURI)
+        public override string? GetAttribute(string localName, string? namespaceURI)
         {
             return _impl.GetAttribute(localName, namespaceURI);
         }
@@ -263,9 +264,9 @@ namespace System.Xml
             get { return _impl.NameTable; }
         }
 
-        public override string LookupNamespace(string prefix)
+        public override string? LookupNamespace(string prefix)
         {
-            string ns = _impl.LookupNamespace(prefix);
+            string? ns = _impl.LookupNamespace(prefix);
             if (ns != null && ns.Length == 0)
             {
                 ns = null;
@@ -342,12 +343,12 @@ namespace System.Xml
             return _impl.GetNamespacesInScope(scope);
         }
 
-        string IXmlNamespaceResolver.LookupNamespace(string prefix)
+        string? IXmlNamespaceResolver.LookupNamespace(string prefix)
         {
             return _impl.LookupNamespace(prefix);
         }
 
-        string IXmlNamespaceResolver.LookupPrefix(string namespaceName)
+        string? IXmlNamespaceResolver.LookupPrefix(string namespaceName)
         {
             return _impl.LookupPrefix(namespaceName);
         }
@@ -377,7 +378,7 @@ namespace System.Xml
             set { _impl.Normalization = value; }
         }
 
-        public Encoding Encoding
+        public Encoding? Encoding
         {
             get { return _impl.Encoding; }
         }
@@ -444,7 +445,7 @@ namespace System.Xml
             get { return _impl; }
         }
 
-        internal override XmlNamespaceManager NamespaceManager
+        internal override XmlNamespaceManager? NamespaceManager
         {
             get { return _impl.NamespaceManager; }
         }
@@ -455,7 +456,7 @@ namespace System.Xml
             set { _impl.XmlValidatingReaderCompatibilityMode = value; }
         }
 
-        internal override IDtdInfo DtdInfo
+        internal override IDtdInfo? DtdInfo
         {
             get { return _impl.DtdInfo; }
         }

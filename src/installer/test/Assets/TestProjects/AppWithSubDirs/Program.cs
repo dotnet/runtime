@@ -1,6 +1,9 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
+
 using System;
 using System.IO;
-using System.Reflection;
 
 namespace AppWithSubDirs
 {
@@ -8,10 +11,7 @@ namespace AppWithSubDirs
     {
         public static void Main(string[] args)
         {
-            string baseDir =
-                Path.Combine(
-                    Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location),
-                    "Sentence");
+            string baseDir = Path.Combine(AppContext.BaseDirectory, "Sentence");
 
             string Part(string dir="", string subdir="", string subsubdir="")
             {
@@ -30,6 +30,7 @@ namespace AppWithSubDirs
                 Part("Noun") +
                 Part("Conjunction") +
                 Part("Noun", "Pronoun", "Another") + 
+                // The following part with a really long name is generated while running the test.
                 Part("This is a really, really, really, really, really, really, really, really, really, really, really, really, really, really long file name for punctuation");
                       
             // This should print "Wow! We now say hello to the big world and you."

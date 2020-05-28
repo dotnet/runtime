@@ -15,14 +15,209 @@
     "CommonTypes": []
   },
   {
-    "Name": "Microsoft.CSharp",
-    "Description": "Provides support for compilation and code generation, including dynamic, using the C# language.",
+    "Name": "Microsoft.Extensions.Caching.Abstractions",
+    "Description": "Caching abstractions for in-memory cache and distributed cache.",
     "CommonTypes": [
-      "Microsoft.CSharp.RuntimeBinder.Binder",
-      "Microsoft.CSharp.RuntimeBinder.RuntimeBinderException",
-      "Microsoft.CSharp.RuntimeBinder.CSharpArgumentInfo",
-      "Microsoft.CSharp.RuntimeBinder.CSharpArgumentInfoFlags",
-      "Microsoft.CSharp.RuntimeBinder.CSharpBinderFlags"
+      "Microsoft.Extensions.Caching.Distributed.IDistributedCache",
+      "Microsoft.Extensions.Caching.Memory.IMemoryCache"
+    ]
+  },
+  {
+    "Name": "Microsoft.Extensions.Caching.Memory",
+    "Description": "In-memory cache implementation of Microsoft.Extensions.Caching.Memory.IMemoryCache.",
+    "CommonTypes": []
+  },
+  {
+    "Name": "Microsoft.Extensions.Configuration",
+    "Description": "Implementation of key-value pair based configuration for Microsoft.Extensions.Configuration. Includes the memory configuration provider.",
+    "CommonTypes": []
+  },
+  {
+    "Name": "Microsoft.Extensions.Configuration.Abstractions",
+    "Description": "Abstractions of key-value pair based configuration.",
+    "CommonTypes": [
+      "Microsoft.Extensions.Configuration.IConfiguration",
+      "Microsoft.Extensions.Configuration.IConfigurationBuilder",
+      "Microsoft.Extensions.Configuration.IConfigurationProvider",
+      "Microsoft.Extensions.Configuration.IConfigurationRoot",
+      "Microsoft.Extensions.Configuration.IConfigurationSection"
+    ]
+  },
+  {
+    "Name": "Microsoft.Extensions.Configuration.Binder",
+    "Description": "Functionality to bind an object to data in configuration providers for Microsoft.Extensions.Configuration.",
+    "CommonTypes": []
+  },
+  {
+    "Name": "Microsoft.Extensions.Configuration.CommandLine",
+    "Description": "Command line configuration provider implementation for Microsoft.Extensions.Configuration.",
+    "CommonTypes": []
+  },
+  {
+    "Name": "Microsoft.Extensions.Configuration.EnvironmentVariables",
+    "Description": "Environment variables configuration provider implementation for Microsoft.Extensions.Configuration.",
+    "CommonTypes": []
+  },
+  {
+    "Name": "Microsoft.Extensions.Configuration.FileExtensions",
+    "Description": "Extension methods for configuring file-based configuration providers for Microsoft.Extensions.Configuration.",
+    "CommonTypes": []
+  },
+  {
+    "Name": "Microsoft.Extensions.Configuration.Ini",
+    "Description": "INI configuration provider implementation for Microsoft.Extensions.Configuration.",
+    "CommonTypes": []
+  },
+  {
+    "Name": "Microsoft.Extensions.Configuration.Json",
+    "Description": "JSON configuration provider implementation for Microsoft.Extensions.Configuration.",
+    "CommonTypes": []
+  },
+  {
+    "Name": "Microsoft.Extensions.Configuration.UserSecrets",
+    "Description": "User secrets configuration provider implementation for Microsoft.Extensions.Configuration.",
+    "CommonTypes": []
+  },
+  {
+    "Name": "Microsoft.Extensions.Configuration.Xml",
+    "Description": "XML configuration provider implementation for Microsoft.Extensions.Configuration.",
+    "CommonTypes": []
+  },
+  {
+    "Name": "Microsoft.Extensions.DependencyInjection",
+    "Description": "Default implementation of dependency injection for Microsoft.Extensions.DependencyInjection.",
+    "CommonTypes": []
+  },
+  {
+    "Name": "Microsoft.Extensions.DependencyModel",
+    "Description": "Abstractions for reading `.deps` files.",
+    "CommonTypes": [
+        "Microsoft.Extensions.DependencyModel.DependencyContext"
+    ]
+  },
+  {
+    "Name": "Microsoft.Extensions.DependencyInjection.Abstractions",
+    "Description": "Abstractions for dependency injection.",
+    "CommonTypes": [
+      "Microsoft.Extensions.DependencyInjection.IServiceCollection"
+    ]
+  },
+  {
+    "Name": "Microsoft.Extensions.FileProviders.Abstractions",
+    "Description": "Abstractions of files and directories.",
+    "CommonTypes": [
+      "Microsoft.Extensions.FileProviders.IDirectoryContents",
+      "Microsoft.Extensions.FileProviders.IFileInfo",
+      "Microsoft.Extensions.FileProviders.IFileProvider"
+    ]
+  },
+  {
+    "Name": "Microsoft.Extensions.FileProviders.Composite",
+    "Description": "Composite file and directory providers for Microsoft.Extensions.FileProviders.",
+    "CommonTypes": []
+  },
+  {
+    "Name": "Microsoft.Extensions.FileProviders.Physical",
+    "Description": "File provider for physical files for Microsoft.Extensions.FileProviders.",
+    "CommonTypes": []
+  },
+  {
+    "Name": "Microsoft.Extensions.FileSystemGlobbing",
+    "Description": "File system globbing to find files matching a specified pattern.",
+    "CommonTypes": []
+  },
+  {
+    "Name": "Microsoft.Extensions.Hosting",
+    "Description": "Hosting and startup infrastructures for applications.",
+    "CommonTypes": []
+  },
+  {
+    "Name": "Microsoft.Extensions.Hosting.Abstractions",
+    "Description": "Hosting and startup abstractions for applications.",
+    "CommonTypes": []
+  },
+  {
+    "Name": "Microsoft.Extensions.Http",
+    "Description": "The HttpClient factory is a pattern for configuring and retrieving named HttpClients in a composable way. The HttpClient factory provides extensibility to plug in DelegatingHandlers that address cross-cutting concerns such as service location, load balancing, and reliability. The default HttpClient factory provides built-in diagnostics and logging and manages the lifetimes of connections in a performant way.",
+    "CommonTypes": [
+      "System.Net.Http.IHttpClientFactory"
+    ]
+  },
+  {
+    "Name": "Microsoft.Extensions.Logging",
+    "Description": "Logging infrastructure default implementation for Microsoft.Extensions.Logging.",
+    "CommonTypes": []
+  },
+  {
+    "Name": "Microsoft.Extensions.Logging.Abstractions",
+    "Description": "Logging abstractions for Microsoft.Extensions.Logging.",
+    "CommonTypes": [
+      "Microsoft.Extensions.Logging.ILogger",
+      "Microsoft.Extensions.Logging.ILoggerFactory",
+      "Microsoft.Extensions.Logging.ILogger&lt;TCategoryName&gt;",
+      "Microsoft.Extensions.Logging.LogLevel",
+      "Microsoft.Extensions.Logging.Logger&lt;T&gt;",
+      "Microsoft.Extensions.Logging.LoggerMessage",
+      "Microsoft.Extensions.Logging.Abstractions.NullLogger"
+    ]
+  },
+  {
+    "Name": "Microsoft.Extensions.Logging.Configuration",
+    "Description": "Configuration support for Microsoft.Extensions.Logging.",
+    "CommonTypes": []
+  },
+  {
+    "Name": "Microsoft.Extensions.Logging.Console",
+    "Description": "Console logger provider implementation for Microsoft.Extensions.Logging.",
+    "CommonTypes": []
+  },
+  {
+    "Name": "Microsoft.Extensions.Logging.Debug",
+    "Description": "Debug output logger provider implementation for Microsoft.Extensions.Logging. This logger logs messages to a debugger monitor by writing messages with System.Diagnostics.Debug.WriteLine().",
+    "CommonTypes": []
+  },
+  {
+    "Name": "Microsoft.Extensions.Logging.EventLog",
+    "Description": "Windows Event Log logger provider implementation for Microsoft.Extensions.Logging.",
+    "CommonTypes": []
+  },
+  {
+    "Name": "Microsoft.Extensions.Logging.EventSource",
+    "Description": "EventSource/EventListener logger provider implementation for Microsoft.Extensions.Logging.",
+    "CommonTypes": []
+  },
+  {
+    "Name": "Microsoft.Extensions.Logging.TraceSource",
+    "Description": "TraceSource logger provider implementation for Microsoft.Extensions.Logging. This logger logs messages to a trace listener by writing messages with System.Diagnostics.TraceSource.TraceEvent().",
+    "CommonTypes": []
+  },
+  {
+    "Name": "Microsoft.Extensions.Options",
+    "Description": "Provides a strongly typed way of specifying and accessing settings using dependency injection.",
+    "CommonTypes": []
+  },
+  {
+    "Name": "Microsoft.Extensions.Options.ConfigurationExtensions",
+    "Description": "Provides additional configuration specific functionality related to Options.",
+    "CommonTypes": []
+  },
+  {
+    "Name": "Microsoft.Extensions.Options.DataAnnotations",
+    "Description": "Provides additional DataAnnotations specific functionality related to Options.",
+    "CommonTypes": []
+  },
+  {
+    "Name": "Microsoft.Extensions.Internal.Transport",
+    "Description": "Internal transport package to provide aspnetcore with the assemblies that make up the Microsoft.ASPNetCore.App shared framework.",
+    "CommonTypes": []
+  },
+  {
+    "Name": "Microsoft.Extensions.Primitives",
+    "Description": "Primitives shared by framework extensions. Commonly used types include:",
+    "CommonTypes": [
+      "Microsoft.Extensions.Primitives.IChangeToken",
+      "Microsoft.Extensions.Primitives.StringValues",
+      "Microsoft.Extensions.Primitives.StringSegment"
     ]
   },
   {
@@ -66,11 +261,6 @@
     "CommonTypes": []
   },
   {
-    "Name": "Microsoft.NETCore.Platforms.Future",
-    "Description": "Provides runtime information required to resolve target framework, platform, and runtime specific implementations of .NETCore packages.  This package represents future platforms not yet supported in .NETCore stable release and is subject to change.",
-    "CommonTypes": []
-  },
-  {
     "Name": "Microsoft.NETCore.Portable.Compatibility",
     "Description": "Enables compatibility with portable libraries targeting previous .NET releases like .NET Framework 4.0 and Silverlight.\nThis package supports retargeting references to classic reference assemblies (mscorlib.dll, system.dll, etc) to new contract assemblies (System.Runtime.dll, System.IO, etc).  It does this in a pay-for-play way to prevent consuming assemblies from having to reference all of the contracts that happen to overlap with mscorlib.  As such, when using this package you may encounter errors like\n\terror CS0012: The type 'WebRequest' is defined in an assembly that is not referenced. You must add a reference to assembly 'System.Net.Requests, Version=0.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a'.\nTo resolve these errors install the package with the same name as the missing assembly.",
     "CommonTypes": []
@@ -87,12 +277,7 @@
   },
   {
     "Name": "Microsoft.NETCore.Runtime",
-    "Description": "The .NET Core runtime.",
-    "CommonTypes": []
-  },
-  {
-    "Name": "Microsoft.NETCore.Runtime.CoreCLR",
-    "Description": "The .NET Core runtime, called CoreCLR, and the base library, called mscorlib. It includes the garbage collector, JIT compiler, base .NET data types and many low-level classes.",
+    "Description": "The .NET runtime.",
     "CommonTypes": []
   },
   {
@@ -141,11 +326,6 @@
     "CommonTypes": []
   },
   {
-    "Name": "Microsoft.Private.CoreFx.NETCoreApp",
-    "Description": "Package used to represent the portions of NETCoreApp that come from CoreFx.",
-    "CommonTypes": []
-  },
-  {
     "Name": "Microsoft.Private.CoreFx.OOB",
     "Description": "Package used to represent out-of-band packages that are not included in NetCoreApp.",
     "CommonTypes": []
@@ -153,11 +333,6 @@
   {
     "Name": "Microsoft.TargetingPack.NETFramework.v4.6",
     "Description": "Contains the .NET Framework v4.6 targeting pack.",
-    "CommonTypes": []
-  },
-  {
-    "Name": "Microsoft.TargetingPack.Private.CoreCLR",
-    "Description": "Contains a private targeting pack which contains only the CoreCLR mscorlib reference assembly. Used for producing platform specific libraries such as facades.",
     "CommonTypes": []
   },
   {
@@ -170,7 +345,7 @@
   },
   {
     "Name": "Microsoft.XmlSerializer.Generator",
-    "Description": "Like the Xml Serializer Generator (sgen.exe) on desktop, Microsoft.XmlSerializer.Generator NuGet package is the solution for .NET Core and .NET Standard Libraries. It creates an Xml serialization assembly for types contained in an assembly in order to improve the startup performance of Xml serialization when serializing or de-serializing objects of those types using XmlSerializer.",
+    "Description": "Creates an Xml serialization assembly for types contained in an assembly in order to improve the startup performance of Xml serialization when serializing or de-serializing objects of those types using XmlSerializer.",
     "CommonTypes": []
   },
   {
@@ -721,7 +896,7 @@
   },
   {
     "Name": "System.Drawing.Primitives",
-    "Description": "Provides basic drawing primitive structures, that exposes the corresponding System.Drawing.dll types in .NET Core.",
+    "Description": "Provides basic drawing primitive structures.",
     "CommonTypes": [
       "System.Drawing.Color",
       "System.Drawing.Point",
@@ -974,16 +1149,6 @@
     ]
   },
   {
-    "Name": "System.Json",
-    "Description": "Provides standards-based support for the serialization of JavaScript Object Notation (JSON).",
-    "CommonTypes": [
-      "System.Json.JsonArray",
-      "System.Json.JsonObject",
-      "System.Json.JsonPrimitive",
-      "System.Json.JsonValue"
-    ]
-  },
-  {
     "Name": "System.Linq",
     "Description": "Provides classes and interfaces that supports queries that use Language-Integrated Query (LINQ).",
     "CommonTypes": [
@@ -1069,6 +1234,15 @@
     "Description": "Provides a simple, programmatically controlled HTTP protocol listener.",
     "CommonTypes": [
       "System.Net.HttpListener"
+    ]
+  },
+  {
+    "Name": "System.Net.Http.Json",
+    "Description": "Provides extension methods for System.Net.Http.HttpClient and System.Net.Http.HttpContent that perform automatic serialization and deserialization using System.Text.Json.",
+    "CommonTypes": [
+      "System.Net.Http.Json.HttpClientJsonExtensions",
+      "System.Net.Http.Json.HttpContentJsonExtensions",
+      "System.Net.Http.Json.JsonContent"
     ]
   },
   {
@@ -1405,7 +1579,7 @@
       "System.Resources.SatelliteContractVersionAttribute",
       "System.Resources.MissingManifestResourceException"
     ]
-  }, 
+  },
   {
     "Name": "System.Resources.Extensions",
     "Description": "Provides classes which read and write resources in a format that supports non-primitive objects.",

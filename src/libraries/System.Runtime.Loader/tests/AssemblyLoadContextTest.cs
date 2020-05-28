@@ -108,7 +108,7 @@ namespace System.Runtime.Loader.Tests
         [Fact]
         public static void LoadFromAssemblyName_ValidTrustedPlatformAssembly()
         {
-            var asmName = typeof(ISet<>).Assembly.GetName();
+            var asmName = typeof(System.Linq.Enumerable).Assembly.GetName();
             asmName.CodeBase = null;
             var loadContext = new CustomTPALoadContext();
 
@@ -137,7 +137,7 @@ namespace System.Runtime.Loader.Tests
         [Fact]
         public static void GetLoadContextTest_ValidTrustedPlatformAssembly()
         {
-            var asm = typeof(ISet<>).GetTypeInfo().Assembly;
+            var asm = typeof(System.Linq.Enumerable).GetTypeInfo().Assembly;
             var context = AssemblyLoadContext.GetLoadContext(asm);
 
             Assert.NotNull(context);
@@ -184,6 +184,7 @@ namespace System.Runtime.Loader.Tests
         }
 
         [Theory]
+        [ActiveIssue("https://github.com/mono/mono/issues/15142", TestRuntimes.Mono)]
         [InlineData("AssemblyLoadContextCollectible", true)]
         [InlineData("AssemblyLoadContextNonCollectible", false)]
         public static void PublicConstructor_Theory(string name, bool isCollectible)

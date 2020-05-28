@@ -1,4 +1,3 @@
-cmake_minimum_required(VERSION 2.6)
 project(FromNativePaths_lib)
 
 set(CMAKE_SHARED_LIBRARY_PREFIX "")

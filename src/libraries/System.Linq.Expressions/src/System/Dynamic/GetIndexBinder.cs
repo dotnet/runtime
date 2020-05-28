@@ -68,6 +68,6 @@ namespace System.Dynamic
         /// <param name="indexes">The arguments of the dynamic get index operation.</param>
         /// <param name="errorSuggestion">The binding result to use if binding fails, or null.</param>
         /// <returns>The <see cref="DynamicMetaObject"/> representing the result of the binding.</returns>
-        public abstract DynamicMetaObject FallbackGetIndex(DynamicMetaObject target, DynamicMetaObject[] indexes, DynamicMetaObject errorSuggestion);
+        public abstract DynamicMetaObject FallbackGetIndex(DynamicMetaObject target, DynamicMetaObject[] indexes, DynamicMetaObject? errorSuggestion);
     }
 }

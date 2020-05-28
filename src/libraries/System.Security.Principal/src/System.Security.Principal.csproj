@@ -1,17 +1,10 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AssemblyName>System.Security.Principal</AssemblyName>
-    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
-    <Nullable>enable</Nullable>
-    <Configurations>netcoreapp-Unix-Debug;netcoreapp-Unix-Release;netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release</Configurations>
+    <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)-Unix</TargetFrameworks>
   </PropertyGroup>
-  <!-- Default configurations to help VS understand the options -->
   <ItemGroup>
-    <Compile Include="System\Security\Principal\TokenImpersonationLevel.cs" />
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\..\System.Runtime\src\System.Runtime.csproj" />
     <ReferenceFromRuntime Include="System.Private.CoreLib" />
   </ItemGroup>
 </Project>

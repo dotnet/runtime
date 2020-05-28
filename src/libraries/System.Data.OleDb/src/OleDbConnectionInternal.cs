@@ -357,7 +357,7 @@ namespace System.Data.OleDb
         internal object GetDataSourcePropertyValue(Guid propertySet, int propertyID)
         {
             OleDbHResult hr;
-            tagDBPROP[] dbprops;
+            ItagDBPROP[] dbprops;
             using (IDBPropertiesWrapper idbProperties = IDBProperties())
             {
                 using (PropertyIDSet propidset = new PropertyIDSet(propertySet, propertyID))

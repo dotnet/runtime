@@ -58,7 +58,7 @@ class CastCache
         // version has the following structure:
         // [ distance:3bit |  versionNum:29bit ]
         //
-        // distance is how many iterations is the entry from it ideal position.
+        // distance is how many iterations the entry is from it ideal position.
         // we use that for preemption.
         //
         // versionNum is a monotonicaly increasing numerical tag.
@@ -199,7 +199,12 @@ private:
 // We pick 8 as the probe limit (hoping for 4 probes on average), but the number can be refined further.
     static const DWORD BUCKET_SIZE = 8;
 
-    static OBJECTHANDLE   s_cache;
+    // current cache table
+    static BASEARRAYREF*  s_pTableRef;
+
+    // sentinel table that never contains elements and used for flushing the old table when we cannot allocate a new one.
+    static OBJECTHANDLE s_sentinelTable;
+
     static DWORD          s_lastFlushSize;
 
     FORCEINLINE static TypeHandle::CastResult TryGetFromCache(TADDR source, TADDR target)
@@ -236,7 +241,7 @@ private:
         TrySet(source, target, result);
     }
 
-    FORCEINLINE static bool TryGrow(BASEARRAYREF table)
+    FORCEINLINE static bool TryGrow(DWORD* tableData)
     {
         CONTRACTL
         {
@@ -246,7 +251,7 @@ private:
         }
         CONTRACTL_END;
 
-        DWORD newSize = CacheElementCount(table) * 2;
+        DWORD newSize = CacheElementCount(tableData) * 2;
         if (newSize <= MAXIMUM_CACHE_SIZE)
         {
             return MaybeReplaceCacheWithLarger(newSize);
@@ -255,60 +260,61 @@ private:
         return false;
     }
 
-    FORCEINLINE static DWORD KeyToBucket(BASEARRAYREF table, TADDR source, TADDR target)
+    FORCEINLINE static DWORD KeyToBucket(DWORD* tableData, TADDR source, TADDR target)
     {
         // upper bits of addresses do not vary much, so to reduce loss due to cancelling out,
         // we do `rotl(source, <half-size>) ^ target` for mixing inputs.
         // then we use fibonacci hashing to reduce the value to desired size.
 
-#if BIT64
-        TADDR hash = (((ULONGLONG)source << 32) | ((ULONGLONG)source >> 32)) ^ target;
-        return (DWORD)((hash * 11400714819323198485llu) >> HashShift(table));
+        int hashShift = HashShift(tableData);
+#if HOST_64BIT
+        UINT64 hash = (((UINT64)source << 32) | ((UINT64)source >> 32)) ^ (UINT64)target;
+        return (DWORD)((hash * 11400714819323198485llu) >> hashShift);
 #else
-        TADDR hash = _rotl(source, 16) ^ target;
-        return (DWORD)((hash * 2654435769ul) >> HashShift(table));
+        UINT32 hash = (((UINT32)source << 16) | ((UINT32)source >> 16)) ^ (UINT32)target;
+        return (DWORD)((hash * 2654435769ul) >> hashShift);
 #endif
     }
 
-    FORCEINLINE static byte* AuxData(BASEARRAYREF table)
+    FORCEINLINE static DWORD* TableData(BASEARRAYREF table)
     {
         LIMITED_METHOD_CONTRACT;
 
         // element 0 is used for embedded aux data
-        return (byte*)OBJECTREFToObject(table) + ARRAYBASE_SIZE;
+        return (DWORD*)((BYTE*)OBJECTREFToObject(table) + ARRAYBASE_SIZE);
     }
 
-    FORCEINLINE static CastCacheEntry* Elements(BASEARRAYREF table)
+    FORCEINLINE static CastCacheEntry* Elements(DWORD* tableData)
     {
         LIMITED_METHOD_CONTRACT;
         // element 0 is used for embedded aux data, skip it
-        return (CastCacheEntry*)AuxData(table) + 1;
+        return (CastCacheEntry*)tableData + 1;
+    }
+
+    FORCEINLINE static DWORD& HashShift(DWORD* tableData)
+    {
+        LIMITED_METHOD_CONTRACT;
+        return *tableData;
     }
 
     // TableMask is "size - 1"
     // we need that more often that we need size
-    FORCEINLINE static DWORD& TableMask(BASEARRAYREF table)
+    FORCEINLINE static DWORD& TableMask(DWORD* tableData)
     {
         LIMITED_METHOD_CONTRACT;
-        return *(DWORD*)AuxData(table);
+        return *(tableData + 1);
     }
 
-    FORCEINLINE static BYTE& HashShift(BASEARRAYREF table)
+    FORCEINLINE static DWORD& VictimCounter(DWORD* tableData)
     {
         LIMITED_METHOD_CONTRACT;
-        return *((BYTE*)AuxData(table) + sizeof(DWORD));
+        return *(tableData + 2);
     }
 
-    FORCEINLINE static BYTE& VictimCounter(BASEARRAYREF table)
+    FORCEINLINE static DWORD CacheElementCount(DWORD* tableData)
     {
         LIMITED_METHOD_CONTRACT;
-        return *((BYTE*)AuxData(table) + sizeof(DWORD) + 1);
-    }
-
-    FORCEINLINE static DWORD CacheElementCount(BASEARRAYREF table)
-    {
-        LIMITED_METHOD_CONTRACT;
-        return TableMask(table) + 1;
+        return TableMask(tableData) + 1;
     }
 
     static BASEARRAYREF CreateCastCache(DWORD size);

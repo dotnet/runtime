@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#include "pal_err.h"
 #include "pal_types.h"
 #include "pal_utilities.h"
 #include "pal_safecrt.h"
@@ -1159,24 +1160,6 @@ static void LockingCallback(int mode, int n, const char* file, int line)
 #pragma clang diagnostic pop
 }
 
-#ifdef __APPLE__
-/*
-Function:
-GetCurrentThreadId
-
-Called back by OpenSSL to get the current thread id.
-
-This is necessary because OSX uses an earlier version of
-OpenSSL, which requires setting the CRYPTO_set_id_callback.
-*/
-static unsigned long GetCurrentThreadId()
-{
-    uint64_t tid;
-    pthread_threadid_np(pthread_self(), &tid);
-    return tid;
-}
-#endif // __APPLE__
-
 /*
 Function:
 EnsureOpenSslInitialized
@@ -1239,11 +1222,6 @@ static int32_t EnsureOpenSsl10Initialized()
     // Initialize the callback
     CRYPTO_set_locking_callback(LockingCallback);
 
-#ifdef __APPLE__
-    // OSX uses an earlier version of OpenSSL which requires setting the CRYPTO_set_id_callback
-    CRYPTO_set_id_callback(GetCurrentThreadId);
-#endif
-
     // Initialize the random number generator seed
     randPollResult = RAND_poll();
     if (randPollResult < 1)
@@ -1286,6 +1264,23 @@ done:
     #define OPENSSL_INIT_NO_ATEXIT 0x00080000L
 #endif
 
+pthread_mutex_t g_err_mutex = PTHREAD_MUTEX_INITIALIZER;
+int volatile g_err_unloaded = 0;
+
+static void HandleShutdown()
+{
+    // Generally, a mutex to set a boolean is overkill, but this lock
+    // ensures that there are no callers already inside the string table
+    // when the unload (possibly) executes.
+    int result = pthread_mutex_lock(&g_err_mutex);
+    assert(!result && "Acquiring the error string table mutex failed.");
+
+    g_err_unloaded = 1;
+
+    result = pthread_mutex_unlock(&g_err_mutex);
+    assert(!result && "Releasing the error string table mutex failed.");
+}
+
 static int32_t EnsureOpenSsl11Initialized()
 {
     // In OpenSSL 1.0 we call OPENSSL_add_all_algorithms_conf() and ERR_load_crypto_strings(),
@@ -1302,6 +1297,10 @@ static int32_t EnsureOpenSsl11Initialized()
             OPENSSL_INIT_LOAD_SSL_STRINGS,
         NULL);
 
+    // As a fallback for when the NO_ATEXIT isn't respected, register a later
+    // atexit handler, so we will indicate that we're in the shutdown state
+    // and stop asking problematic questions from other threads.
+    atexit(HandleShutdown);
     return 0;
 }
 

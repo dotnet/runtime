@@ -7,6 +7,7 @@
 #include "assemblybinder.hpp"
 #include "coreclrbindercommon.h"
 #include "clrprivbindercoreclr.h"
+#include "bundle.h"
 
 using namespace BINDER_SPACE;
 
@@ -32,7 +33,9 @@ HRESULT CCoreCLRBinderHelper::DefaultBinderSetupContext(DWORD dwAppDomainId,CLRP
             SAFE_NEW(pBinder, CLRPrivBinderCoreCLR);
 
             BINDER_SPACE::ApplicationContext *pApplicationContext = pBinder->GetAppContext();
-            hr = pApplicationContext->Init();
+            UINT_PTR binderId;
+            pBinder->GetBinderID(&binderId);
+            hr = pApplicationContext->Init(binderId);
             if(SUCCEEDED(hr))
             {
                 pApplicationContext->SetAppDomainId(dwAppDomainId);

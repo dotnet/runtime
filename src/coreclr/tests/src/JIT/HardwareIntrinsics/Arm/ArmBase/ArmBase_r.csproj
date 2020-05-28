@@ -10,6 +10,8 @@
   <ItemGroup>
     <Compile Include="LeadingZeroCount.Int32.cs" />
     <Compile Include="LeadingZeroCount.UInt32.cs" />
+    <Compile Include="ReverseElementBits.Int32.cs" />
+    <Compile Include="ReverseElementBits.UInt32.cs" />
     <Compile Include="Program.ArmBase.cs" />
     <Compile Include="..\Shared\Helpers.cs" />
     <Compile Include="..\Shared\Program.cs" />

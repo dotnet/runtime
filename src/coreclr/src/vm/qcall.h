@@ -118,11 +118,11 @@
 // }
 
 
-#ifdef PLATFORM_UNIX
+#ifdef TARGET_UNIX
 #define QCALLTYPE __cdecl
-#else // PLATFORM_UNIX
+#else // TARGET_UNIX
 #define QCALLTYPE __stdcall
-#endif // !PLATFORM_UNIX
+#endif // !TARGET_UNIX
 
 #define BEGIN_QCALL                      \
     INSTALL_MANAGED_EXCEPTION_DISPATCHER \
@@ -137,7 +137,13 @@
     GC_TRIGGERS;                \
     MODE_PREEMPTIVE;            \
 
+#define QCALL_CHECK_NO_GC_TRANSITION    \
+    THROWS;                             \
+    GC_TRIGGERS;                        \
+    MODE_COOPERATIVE;                   \
+
 #define QCALL_CONTRACT CONTRACTL { QCALL_CHECK; } CONTRACTL_END;
+#define QCALL_CONTRACT_NO_GC_TRANSITION CONTRACTL { QCALL_CHECK_NO_GC_TRANSITION; } CONTRACTL_END;
 
 //
 // Scope class for QCall helper methods and types
@@ -196,6 +202,12 @@ public:
     struct ObjectHandleOnStack
     {
         Object ** m_ppObject;
+
+        OBJECTREF Get()
+        {
+            LIMITED_METHOD_CONTRACT;
+            return ObjectToOBJECTREF(*m_ppObject);
+        }
 
 #ifndef DACCESS_COMPILE
         //

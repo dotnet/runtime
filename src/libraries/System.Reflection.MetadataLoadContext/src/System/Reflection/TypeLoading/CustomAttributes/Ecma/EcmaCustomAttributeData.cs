@@ -14,8 +14,8 @@ namespace System.Reflection.TypeLoading.Ecma
         private readonly CustomAttributeHandle _handle;
         private readonly EcmaModule _module;
 
-        private volatile IList<CustomAttributeTypedArgument<RoType>> _lazyFixedArguments;
-        private volatile IList<CustomAttributeNamedArgument<RoType>> _lazyNamedArguments;
+        private volatile IList<CustomAttributeTypedArgument<RoType>>? _lazyFixedArguments;
+        private volatile IList<CustomAttributeNamedArgument<RoType>>? _lazyNamedArguments;
 
         internal EcmaCustomAttributeData(CustomAttributeHandle handle, EcmaModule module)
         {
@@ -31,7 +31,7 @@ namespace System.Reflection.TypeLoading.Ecma
                 if (_lazyFixedArguments == null)
                     LoadArguments();
 
-                return _lazyFixedArguments.ToApiForm();
+                return _lazyFixedArguments!.ToApiForm();
             }
         }
 
@@ -42,7 +42,7 @@ namespace System.Reflection.TypeLoading.Ecma
                 if (_lazyNamedArguments == null)
                     LoadArguments();
 
-                return _lazyNamedArguments.ToApiForm(AttributeType);
+                return _lazyNamedArguments!.ToApiForm(AttributeType);
             }
         }
 
@@ -75,7 +75,7 @@ namespace System.Reflection.TypeLoading.Ecma
                     Type[] parameterTypes = sig.ParameterTypes.ToArray();
                     Type declaringType = mr.Parent.ResolveTypeDefRefOrSpec(_module, typeContext);
                     const BindingFlags bf = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.ExactBinding;
-                    ConstructorInfo ci = declaringType.GetConstructor(bf, null, parameterTypes, null);
+                    ConstructorInfo? ci = declaringType.GetConstructor(bf, null, parameterTypes, null);
                     if (ci == null)
                         throw new MissingMethodException(SR.Format(SR.MissingCustomAttributeConstructor, declaringType));
                     return ci;

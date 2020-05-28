@@ -27,6 +27,7 @@ public:
         const MethodContext::Agnostic_CORINFO_RUNTIME_LOOKUP& lookup);
     static std::string DumpAgnostic_CORINFO_LOOKUP(const MethodContext::Agnostic_CORINFO_LOOKUP& lookup);
     static std::string DumpAgnostic_CORINFO_SIG_INFO(const MethodContext::Agnostic_CORINFO_SIG_INFO& sigInfo);
+    static std::string DumpCorInfoFlag(CorInfoFlag flags);
 
 private:
     static const int MAX_BUFFER_SIZE = 1000;

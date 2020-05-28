@@ -8,7 +8,7 @@
     <DebugType>Full</DebugType>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Condition="'$(BuildArch)' == 'x86'" Include="sizeof64.il" />
-    <Compile Condition="'$(BuildArch)' != 'x86'" Include="64sizeof64.il" />
+    <Compile Condition="'$(TargetArchitecture)' == 'x86'" Include="sizeof64.il" />
+    <Compile Condition="'$(TargetArchitecture)' != 'x86'" Include="64sizeof64.il" />
   </ItemGroup>
 </Project>

@@ -13,6 +13,7 @@ namespace Tests.Integration
     public class ConstructorInjectionTests
     {
         [Fact]
+        [ActiveIssue("https://github.com/mono/mono/issues/16417", TestRuntimes.Mono)]
         public void SimpleConstructorInjection()
         {
             var container = ContainerFactory.Create();
@@ -47,7 +48,7 @@ namespace Tests.Integration
         }
 
         [Fact]
-        [ActiveIssue(25498, TestPlatforms.AnyUnix)] // Actual:   typeof(System.Reflection.ReflectionTypeLoadException): Unable to load one or more of the requested types. Retrieve the LoaderExceptions property for more information.
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/24240", TestPlatforms.AnyUnix)] // Actual:   typeof(System.Reflection.ReflectionTypeLoadException): Unable to load one or more of the requested types. Retrieve the LoaderExceptions property for more information.
         public void OptionalConstructorArgument()
         {
             var container = GetContainerWithCatalog();
@@ -72,7 +73,7 @@ namespace Tests.Integration
         }
 
         [Fact]
-        [ActiveIssue(25498, TestPlatforms.AnyUnix)] // Actual:   typeof(System.Reflection.ReflectionTypeLoadException): Unable to load one or more of the requested types. Retrieve the LoaderExceptions property for more information.
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/24240", TestPlatforms.AnyUnix)] // Actual:   typeof(System.Reflection.ReflectionTypeLoadException): Unable to load one or more of the requested types. Retrieve the LoaderExceptions property for more information.
         public void RebindingShouldNotHappenForConstructorArguments()
         {
             var container = GetContainerWithCatalog();
@@ -124,7 +125,7 @@ namespace Tests.Integration
         }
 
         [Fact]
-        [ActiveIssue(25498, TestPlatforms.AnyUnix)] // Actual:   typeof(System.Reflection.ReflectionTypeLoadException): Unable to load one or more of the requested types. Retrieve the LoaderExceptions property for more information.
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/24240", TestPlatforms.AnyUnix)] // Actual:   typeof(System.Reflection.ReflectionTypeLoadException): Unable to load one or more of the requested types. Retrieve the LoaderExceptions property for more information.
         public void MissingConstructorArgsWithTypeFromCatalogMissingArg()
         {
             var container = GetContainerWithCatalog();
@@ -139,7 +140,7 @@ namespace Tests.Integration
         }
 
         [Fact]
-        [ActiveIssue(25498, TestPlatforms.AnyUnix)] // Actual:   typeof(System.Reflection.ReflectionTypeLoadException): Unable to load one or more of the requested types. Retrieve the LoaderExceptions property for more information.
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/24240", TestPlatforms.AnyUnix)] // Actual:   typeof(System.Reflection.ReflectionTypeLoadException): Unable to load one or more of the requested types. Retrieve the LoaderExceptions property for more information.
         public void MissingConstructorArgsWithWithTypeFromCatalogWithArg()
         {
             var container = GetContainerWithCatalog();
@@ -177,6 +178,7 @@ namespace Tests.Integration
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/mono/mono/issues/16417", TestRuntimes.Mono)]
         public void ImportMany_ConstructorParameter_OnNonAssiganbleType_ShouldThrowCompositionException()
         {
             var container = ContainerFactory.CreateWithAttributedCatalog(typeof(InvalidImportManyCI));

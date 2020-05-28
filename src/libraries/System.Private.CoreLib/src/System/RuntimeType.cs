@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 
@@ -74,7 +75,7 @@ namespace System
         public override MemberInfo[] GetDefaultMembers()
         {
             // See if we have cached the default member name
-            MemberInfo[] members = null!;
+            MemberInfo[]? members = null;
 
             string? defaultMemberName = GetDefaultMemberName();
             if (defaultMemberName != null)
@@ -236,6 +237,9 @@ namespace System
             if (value == null)
                 throw new ArgumentNullException(nameof(value));
 
+            if (!IsEnum)
+                throw new ArgumentException(SR.Arg_MustBeEnum, "enumType");
+
             // Check if both of them are of the same type
             RuntimeType valueType = (RuntimeType)value.GetType();
 
@@ -293,9 +297,9 @@ namespace System
 
         protected override bool IsCOMObjectImpl() => RuntimeTypeHandle.IsComObject(this, false);
 
-        public override bool IsInstanceOfType(object? o) => RuntimeTypeHandle.IsInstanceOfType(this, o);
+        public override bool IsInstanceOfType([NotNullWhen(true)] object? o) => RuntimeTypeHandle.IsInstanceOfType(this, o);
 
-        public override bool IsAssignableFrom(TypeInfo? typeInfo)
+        public override bool IsAssignableFrom([NotNullWhen(true)] TypeInfo? typeInfo)
         {
             if (typeInfo == null)
                 return false;
@@ -303,7 +307,7 @@ namespace System
             return IsAssignableFrom(typeInfo.AsType());
         }
 
-        public override bool IsAssignableFrom(Type? c)
+        public override bool IsAssignableFrom([NotNullWhen(true)] Type? c)
         {
             if (c is null)
                 return false;

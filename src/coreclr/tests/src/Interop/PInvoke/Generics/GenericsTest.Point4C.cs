@@ -12,22 +12,13 @@ unsafe partial class GenericsNative
     public static extern Point4<char> GetPoint4C(char e00, char e01, char e02, char e03);
 
     [DllImport(nameof(GenericsNative))]
-    public static extern void GetPoint4COut(char e00, char e01, char e02, char e03, Point4<char>* value);
-
-    [DllImport(nameof(GenericsNative))]
     public static extern void GetPoint4COut(char e00, char e01, char e02, char e03, out Point4<char> value);
-
-    [DllImport(nameof(GenericsNative))]
-    public static extern Point4<char>* GetPoint4CPtr(char e00, char e01, char e02, char e03);
 
     [DllImport(nameof(GenericsNative), EntryPoint = "GetPoint4CPtr")]
     public static extern ref readonly Point4<char> GetPoint4CRef(char e00, char e01, char e02, char e03);
 
     [DllImport(nameof(GenericsNative))]
     public static extern Point4<char> AddPoint4C(Point4<char> lhs, Point4<char> rhs);
-
-    [DllImport(nameof(GenericsNative))]
-    public static extern Point4<char> AddPoint4Cs(Point4<char>* pValues, int count);
 
     [DllImport(nameof(GenericsNative))]
     public static extern Point4<char> AddPoint4Cs([MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 1)] Point4<char>[] pValues, int count);
@@ -42,14 +33,7 @@ unsafe partial class GenericsTest
     {
         Assert.Throws<MarshalDirectiveException>(() => GenericsNative.GetPoint4C('1', '2', '3', '4'));
 
-        Assert.Throws<MarshalDirectiveException>(() => {
-            GenericsNative.Point4<char> value2;
-            GenericsNative.GetPoint4COut('1', '2', '3', '4', &value2);
-        });
-
         Assert.Throws<MarshalDirectiveException>(() => GenericsNative.GetPoint4COut('1', '2', '3', '4', out GenericsNative.Point4<char> value3));
-
-        Assert.Throws<MarshalDirectiveException>(() => GenericsNative.GetPoint4CPtr('1', '2', '3', '4'));
 
         Assert.Throws<MarshalDirectiveException>(() => GenericsNative.GetPoint4CRef('1', '2', '3', '4'));
 
@@ -62,13 +46,6 @@ unsafe partial class GenericsTest
             default,
             default
         };
-
-        Assert.Throws<MarshalDirectiveException>(() => {
-            fixed (GenericsNative.Point4<char>* pValues = &values[0])
-            {
-                GenericsNative.AddPoint4Cs(pValues, values.Length);
-            }
-        });
 
         Assert.Throws<MarshalDirectiveException>(() => GenericsNative.AddPoint4Cs(values, values.Length));
 

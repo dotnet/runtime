@@ -333,7 +333,6 @@ namespace System.Runtime.Caching
             }
         }
 
-        [SuppressMessage("Microsoft.Performance", "CA1811:AvoidUncalledPrivateCode", Justification = "Grandfathered suppression from original caching code checkin")]
         internal void UpdateConfig(NameValueCollection config)
         {
             int pollingInterval = ConfigUtil.GetIntValueFromTimeSpan(config, ConfigUtil.PollingInterval, _configPollingInterval);

@@ -11,6 +11,7 @@ using Xunit;
 
 namespace Tests.Integration
 {
+    [ActiveIssue("https://github.com/mono/mono/issues/16417", TestRuntimes.Mono)]
     public class RecompositionTests
     {
         public class Class_OptIn_AllowRecompositionImports
@@ -414,48 +415,6 @@ namespace Tests.Integration
         }
 
         [Fact]
-        [ActiveIssue(733533)]
-        public void RemoveCatalogWithNonSharedPartWithRequiredImport()
-        {
-            var typeCatalog = new TypeCatalog(typeof(NonSharedImporter), typeof(SimpleImport));
-            var aggCatalog = new AggregateCatalog();
-            var container = new CompositionContainer(aggCatalog);
-
-            aggCatalog.Catalogs.Add(typeCatalog);
-            aggCatalog.Catalogs.Add(new TypeCatalog(typeof(RootImportRecomposable)));
-
-            var rootExport = container.GetExport<RootImportRecomposable>();
-            var root = rootExport.Value;
-
-            Assert.Equal(42, root.Importer.Import.Property);
-
-            aggCatalog.Catalogs.Remove(typeCatalog);
-
-            Assert.Null(root.Importer);
-        }
-
-        [Fact]
-        [ActiveIssue(734123)]
-        public void GetExportResultShouldBePromise()
-        {
-            var typeCatalog = new TypeCatalog(typeof(RootImporter), typeof(SimpleImport));
-            var aggCatalog = new AggregateCatalog();
-            var container = new CompositionContainer(aggCatalog);
-
-            aggCatalog.Catalogs.Add(typeCatalog);
-
-            var root = container.GetExport<RootImporter>();
-
-            Assert.Throws<ChangeRejectedException>(() =>
-                aggCatalog.Catalogs.Remove(typeCatalog)
-            );
-
-            var value = root.Value;
-            Assert.Equal(42, value.Import.Property);
-        }
-
-        [Fact]
-        // [WorkItem(789269)]
         public void TestRemovingAndReAddingMultipleDefinitionsFromCatalog()
         {
             var fixedParts = new TypeCatalog(typeof(RootMultipleImporter), typeof(ExportedService));
@@ -508,39 +467,11 @@ namespace Tests.Integration
         [Export]
         public class ExportedService
         {
-
-        }
-
-        [Fact]
-        [ActiveIssue(762215)]
-        public void TestPartCreatorResurrection()
-        {
-            var container = new CompositionContainer(new TypeCatalog(typeof(NonDisposableImportsDisposable), typeof(PartImporter<NonDisposableImportsDisposable>)));
-            var exports = container.GetExports<PartImporter<NonDisposableImportsDisposable>>();
-            Assert.Equal(0, exports.Count());
-            container.ComposeParts(new DisposablePart());
-            exports = container.GetExports<PartImporter<NonDisposableImportsDisposable>>();
-            Assert.Equal(1, exports.Count());
-        }
-
-        [Export]
-        public class PartImporter<PartType>
-        {
-            [Import]
-            public PartType Creator { get; set; }
-        }
-
-        [Export]
-        public class NonDisposableImportsDisposable
-        {
-            [Import]
-            public DisposablePart Part { get; set; }
         }
 
         [Export]
         public class Part
         {
-
         }
 
         [Export]

@@ -143,7 +143,7 @@ namespace System.IO
         private static Interop.Sys.OpenFlags PreOpenConfigurationFromOptions(FileMode mode, FileAccess access, FileShare share, FileOptions options)
         {
             // Translate FileMode.  Most of the values map cleanly to one or more options for open.
-            Interop.Sys.OpenFlags flags = default(Interop.Sys.OpenFlags);
+            Interop.Sys.OpenFlags flags = default;
             switch (mode)
             {
                 default:
@@ -574,7 +574,7 @@ namespace System.IO
                 try
                 {
                     Memory<byte> memory = thisRef._asyncState.Memory;
-                    thisRef._asyncState.Memory = default(Memory<byte>);
+                    thisRef._asyncState.Memory = default;
                     return thisRef.ReadSpan(memory.Span);
                 }
                 finally { thisRef._asyncState.Release(); }
@@ -733,7 +733,7 @@ namespace System.IO
                 try
                 {
                     ReadOnlyMemory<byte> readOnlyMemory = thisRef._asyncState.ReadOnlyMemory;
-                    thisRef._asyncState.ReadOnlyMemory = default(ReadOnlyMemory<byte>);
+                    thisRef._asyncState.ReadOnlyMemory = default;
                     thisRef.WriteSpan(readOnlyMemory.Span);
                 }
                 finally { thisRef._asyncState.Release(); }

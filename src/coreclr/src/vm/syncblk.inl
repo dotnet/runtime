@@ -480,7 +480,6 @@ FORCEINLINE bool AwareLock::TryEnterHelper(Thread* pCurThread)
     {
         m_HoldingThread = pCurThread;
         m_Recursion = 1;
-        pCurThread->IncLockCount();
         return true;
     }
 
@@ -526,7 +525,6 @@ FORCEINLINE AwareLock::EnterHelperResult AwareLock::TryEnterBeforeSpinLoopHelper
         // Lock was acquired and the spinner was not registered
         m_HoldingThread = pCurThread;
         m_Recursion = 1;
-        pCurThread->IncLockCount();
         return EnterHelperResult_Entered;
     }
 
@@ -558,7 +556,6 @@ FORCEINLINE AwareLock::EnterHelperResult AwareLock::TryEnterInsideSpinLoopHelper
     // Lock was acquired and spinner was unregistered
     m_HoldingThread = pCurThread;
     m_Recursion = 1;
-    pCurThread->IncLockCount();
     return EnterHelperResult_Entered;
 }
 
@@ -581,7 +578,6 @@ FORCEINLINE bool AwareLock::TryEnterAfterSpinLoopHelper(Thread *pCurThread)
     // Spinner was unregistered and the lock was acquired
     m_HoldingThread = pCurThread;
     m_Recursion = 1;
-    pCurThread->IncLockCount();
     return true;
 }
 
@@ -609,7 +605,6 @@ FORCEINLINE AwareLock::EnterHelperResult ObjHeader::EnterObjMonitorHelper(Thread
         LONG newValue = oldValue | tid;
         if (InterlockedCompareExchangeAcquire((LONG*)&m_SyncBlockValue, newValue, oldValue) == oldValue)
         {
-            pCurThread->IncLockCount();
             return AwareLock::EnterHelperResult_Entered;
         }
 
@@ -691,7 +686,6 @@ FORCEINLINE AwareLock::LeaveHelperAction AwareLock::LeaveHelper(Thread* pCurThre
 
     if (--m_Recursion == 0)
     {
-        m_HoldingThread->DecLockCount();
         m_HoldingThread = NULL;
 
         // Clear lock bit and determine whether we must signal a waiter to wake
@@ -734,7 +728,6 @@ FORCEINLINE AwareLock::LeaveHelperAction ObjHeader::LeaveObjMonitorHelper(Thread
             {
                 return AwareLock::LeaveHelperAction_Yield;
             }
-            pCurThread->DecLockCount();
         }
         else
         {

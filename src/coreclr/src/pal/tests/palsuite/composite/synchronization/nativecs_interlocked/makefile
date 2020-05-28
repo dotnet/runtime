@@ -31,10 +31,10 @@ else
     ifeq ($(OSNAME),HP-UX)
       COMP=g++
       INTERLOCK_OBJ=hpitinterlock.o
-      COPT=-DHPUX -O2 -mlp64 -finline -fPIC -DPIC -DBIT64 -DBIT64 -DLP64COMPATIBLE \
-       -D_POSIX_C_SOURCE=199506L -D_HPUX_ -D_XOPEN_SOURCE_EXTENDED -DBIT64 \
-       -DBIGENDIAN -DBIT64 $(DEBUGOPT)  -xc++ 
-      LOPT=-O2 -mlp64 -DBIT64 -DBIT64 -lgcc -lpthread /usr/lib/hpux64/libunwind.so
+      COPT=-DHPUX -O2 -mlp64 -finline -fPIC -DPIC -DHOST_64BIT -DHOST_64BIT -DLP64COMPATIBLE \
+       -D_POSIX_C_SOURCE=199506L -D_HPUX_ -D_XOPEN_SOURCE_EXTENDED -DHOST_64BIT \
+       -DBIGENDIAN -DHOST_64BIT $(DEBUGOPT)  -xc++ 
+      LOPT=-O2 -mlp64 -DHOST_64BIT -DHOST_64BIT -lgcc -lpthread /usr/lib/hpux64/libunwind.so
     endif
   endif
 endif

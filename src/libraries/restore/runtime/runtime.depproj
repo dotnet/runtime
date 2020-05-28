@@ -1,55 +1,59 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <RuntimeIdentifier>$(PackageRID)</RuntimeIdentifier>
-    <!-- We're using ToolRuntimeRID as a placeholder for the real corelib/runtime components until we have an actual set of runtime bits to consume for webassembly. -->
-    <RuntimeIdentifier Condition="'$(RuntimeOS)' == 'webassembly'">$(ToolRuntimeRID)</RuntimeIdentifier>
     <NoWarn>$(NoWarn);NU1603;NU1605</NoWarn>
-    <SwapNativeForIL Condition="'$(SwapNativeForIL)' == '' and ('$(ConfigurationGroup)' == 'Debug' or '$(Coverage)' == 'true')">true</SwapNativeForIL>
+    <SwapNativeForIL Condition="'$(SwapNativeForIL)' == '' and ('$(Configuration)' == 'Debug' or '$(Coverage)' == 'true') and '$(RuntimeFlavor)' != 'Mono'">true</SwapNativeForIL>
+    <BinPlaceForTargetVertical>false</BinPlaceForTargetVertical>
+    <TargetFrameworks>netcoreapp3.0-Windows_NT;netcoreapp3.0-Unix;$(netcoreappCurrent)-Windows_NT;$(netcoreappCurrent)-Unix</TargetFrameworks>
   </PropertyGroup>
 
   <ItemGroup Condition="'$(DotNetBuildFromSource)' != 'true'">
     <PackageReference Include="Microsoft.DiaSymReader.Native" Version="1.7.0" />
   </ItemGroup>
 
-  <PropertyGroup Condition="'$(TargetFramework)' == 'netcoreapp3.0'">
-    <!-- Non-shipping packages do not produce stable versions. -->
-    <MicrosoftNETCoreRuntimeCoreCLRVersion>3.0.0-rc2.19462.14</MicrosoftNETCoreRuntimeCoreCLRVersion>
-    <MicrosoftPrivateCorefxNETCoreAppVersion>4.6.0-rc2.19462.14</MicrosoftPrivateCorefxNETCoreAppVersion>
-  </PropertyGroup>
-
-  <ItemGroup>
-    <PackageReference Include="Microsoft.NETCore.Platforms" Version="$(MicrosoftNETCorePlatformsVersion)" />
-    <PackageReference Include="transport.Microsoft.NETCore.Runtime.CoreCLR" Version="$(MicrosoftNETCoreRuntimeCoreCLRVersion)" />
-    <PackageReference Include="Microsoft.NETCore.TestHost" Version="$(MicrosoftNETCoreRuntimeCoreCLRVersion)" />
+  <ItemGroup Condition="'$(TargetsMobile)' != 'true'">
     <PackageReference Include="Microsoft.NETCore.DotNetHost" Version="$(MicrosoftNETCoreDotNetHostVersion)" />
     <PackageReference Include="Microsoft.NETCore.DotNetHostPolicy" Version="$(MicrosoftNETCoreDotNetHostPolicyVersion)" />
     <!-- We do not need apphost.exe and the 3.0 SDK will actually remove it.
          Exclude here so that when building with the 2.x SDK we don't place it in the test shared framework.
          This can be removed once we have a new SDK -->
     <FileToExclude Include="apphost" />
+
+    <!-- System.Data.SqlClient is not live-built anymore -->
+    <PackageReference Include="System.Data.SqlClient" Version="$(SystemDataSqlClientVersion)" />
+    <!-- Exclude live-built dependencies -->
+    <FileToExclude Include="Microsoft.Win32.Registry" />
+    <FileToExclude Include="System.Security.AccessControl" />
+    <FileToExclude Include="System.Security.Principal.Windows" />
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Condition="'$(TargetFramework)' == 'netcoreapp3.0'" Include="Microsoft.Private.Corefx.NETCoreApp" Version="$(MicrosoftPrivateCorefxNETCoreAppVersion)" />
+    <PackageReference Condition="'$(TargetFramework)' == 'netcoreapp3.0'" Include="Microsoft.Private.Corefx.NETCoreApp" Version="4.6.0-rc2.19462.14" />
   </ItemGroup>
 
   <!-- Setup the testing shared framework host -->
   <Target Name="SetupTestingHost"
           Condition="'$(BinPlaceTestSharedFramework)' == 'true'"
+          DependsOnTargets="OverrideRuntimeMono"
           AfterTargets="AfterResolveReferences">
     <PropertyGroup>
-      <GlobalJsonContent>$([System.IO.File]::ReadAllText('$(RepoRoot)global.json'))</GlobalJsonContent>
-      <DotNetVersion>$([System.Text.RegularExpressions.Regex]::Match($(GlobalJsonContent), '(%3F&lt;="dotnet": ").*(%3F=")'))</DotNetVersion>
-
       <HostFxrFileName Condition="'$(TargetsWindows)' == 'true'">hostfxr</HostFxrFileName>
       <HostFxrFileName Condition="'$(TargetsWindows)' != 'true'">libhostfxr</HostFxrFileName>
-      
+      <HostPolicyFileName Condition="'$(TargetsWindows)' == 'true'">hostpolicy</HostPolicyFileName>
+      <HostPolicyFileName Condition="'$(TargetsWindows)' != 'true'">libhostpolicy</HostPolicyFileName>
+
       <UseHardlink>true</UseHardlink>
       <!-- workaround core-setup problem for hardlinking dotnet executable to testhost: core-setup #4742 -->
       <UseHardlink Condition="'$(_runtimeOSFamily)' == 'FreeBSD'">false</UseHardlink>
     </PropertyGroup>
 
-    <ItemGroup>
+    <ItemGroup Condition="'$(RuntimeFlavor)' == 'Mono'">
+      <HostFxFile Include="@(StoreTestHostFiles)" Condition="'%(StoreTestHostFiles.Filename)' == '$(HostFxrFileName)'" />
+      <HostPolicyFile Include="@(StoreTestHostFiles)" Condition="'%(StoreTestHostFiles.Filename)' == '$(HostPolicyFileName)'" />
+      <DotnetExe Include="@(StoreTestHostFiles)" Condition="'%(StoreTestHostFiles.Filename)' == 'dotnet'" />
+    </ItemGroup>
+
+    <ItemGroup Condition="'$(RuntimeFlavor)' != 'Mono'">
       <HostFxFile Include="@(ReferenceCopyLocalPaths)" Condition="'%(ReferenceCopyLocalPaths.Filename)' == '$(HostFxrFileName)'" />
       <DotnetExe Include="@(ReferenceCopyLocalPaths)" Condition="'%(ReferenceCopyLocalPaths.Filename)' == 'dotnet'" />
     </ItemGroup>
@@ -64,50 +68,64 @@
           SkipUnchangedFiles="true"
           UseHardlinksIfPossible="$(UseHardlink)" />
 
-    <Exec Command="chmod +x $(TestHostRootPath)%(DotnetExe.Filename)%(DotnetExe.Extension)" Condition="'$(OS)' != 'Windows_NT'"/>
+    <Copy Condition="'$(RuntimeFlavor)' == 'Mono'"
+          SourceFiles="@(HostPolicyFile)"
+          DestinationFolder="$(TestHostRootPath)shared\Microsoft.NETCore.App\$(ProductVersion)"
+          SkipUnchangedFiles="true"
+          UseHardlinksIfPossible="$(UseHardlink)" />
+
+    <Exec Command="chmod +x $(TestHostRootPath)%(DotnetExe.Filename)%(DotnetExe.Extension)" Condition="'$(TargetOS)' != 'Windows_NT' and '$(OS)' != 'Windows_NT'"/>
   </Target>
 
-  <Target Name="OverrideRuntime"
-          Condition="'$(CoreCLROverridePath)' != ''"
-          AfterTargets="AfterResolveReferences;FilterNugetPackages">
-    <Error Condition="!Exists('$(CoreCLROverridePath)')" Text="The path provided to CoreCLROverridePath ($(CoreCLROverridePath)) does not exist." />
-    <PropertyGroup>
-      <CoreCLRPDBOverridePath Condition="'$(CoreCLRPDBOverridePath)' == '' and Exists('$(CoreCLROverridePath)/PDB')">$(CoreCLROverridePath)/PDB</CoreCLRPDBOverridePath>
-    </PropertyGroup>
+  <Target Name="SetupRuntimePackNative"
+          Condition="'$(RuntimeFlavor)' == 'Mono'"
+          AfterTargets="AfterResolveReferences">
     <ItemGroup>
-      <CoreCLRFiles Include="$(CoreCLROverridePath)/*.*" />
-      <CoreCLRFiles Condition="'$(CoreCLRPDBOverridePath)' != ''" Include="$(CoreCLRPDBOverridePath)/*.pdb;$(CoreCLRPDBOverridePath)/*.dbg" />
-
-      <ReferenceCopyLocalPaths Remove="@(ReferenceCopyLocalPaths)" Condition="'@(CoreCLRFiles->'%(FileName)%(Extension)')' == '%(FileName)%(Extension)'" />
-      <ReferenceCopyLocalPaths Include="@(CoreCLRFiles)" />
+      <NativeBinPlaceItem Include="@(RuntimeFiles)" />
+      <NativeBinPlaceItem Include="@(MonoCrossFiles)">
+        <DestinationSubDirectory>cross/</DestinationSubDirectory>
+      </NativeBinPlaceItem>
+      <NativeBinPlaceItem Include="@(MonoIncludeFiles)">
+        <DestinationSubDirectory>include/%(RecursiveDir)</DestinationSubDirectory>
+      </NativeBinPlaceItem>
     </ItemGroup>
-
-    <Error Condition="'@(CoreCLRFiles)' == ''" Text="The path provided to CoreCLROverridePath ($(CoreCLROverridePath)) does not contain any files." />
-  </Target>
-
-  <Target Name="GetCoreLibPackagePath" Condition="'$(CoreCLROverridePath)' == ''" DependsOnTargets="ResolveAssemblyReferences">
-    <ItemGroup>
-      <_CoreLibFile Include="@(ReferenceCopyLocalPaths)" Condition="'%(FileName)' == 'System.Private.CoreLib'" />
+    <ItemGroup Condition="'$(TargetsMobile)' != 'true'">
+      <TestHostBinPlaceItem Include="@(RuntimeFiles)" />
     </ItemGroup>
-    <PropertyGroup>
-      <_CoreLibFilePath>%(_CoreLibFile.FullPath)</_CoreLibFilePath>
-      <_CoreLibPackagePath>$(_CoreLibFilePath.SubString(0, $(_CoreLibFilePath.IndexOf('runtimes'))))</_CoreLibPackagePath>
-    </PropertyGroup>
-    <Error Condition="'$(_CoreLibPackagePath)' == '' or !Exists('$(_CoreLibPackagePath)')" 
-           Text="Could not locate the CoreClr package." />
   </Target>
 
-  <Target Name="GetCoreCLRILFiles" DependsOnTargets="GetCoreLibPackagePath">
+  <Target Name="OverrideRuntimeCoreCLR"
+          DependsOnTargets="ResolveRuntimeFilesFromLocalBuild"
+          AfterTargets="AfterResolveReferences;FilterNugetPackages"
+          Condition="'$(RuntimeFlavor)' != 'Mono'">
     <ItemGroup>
-      <CoreCLRILFiles Condition="'$(CoreCLROverridePath)' == ''" Include="$(_CoreLibPackagePath)/**/il/*.*" />
-      <CoreCLRILFiles Condition="'$(CoreCLROverridePath)' != ''" Include="$(CoreCLROverridePath)/IL/*.*" />
+      <!-- CoreRun is not used for testing anymore, but we still use it for benchmarking and profiling -->
+      <RuntimeFiles Include="$(CoreCLRArtifactsPath)/corerun*" />
+      <RuntimeFiles Include="$(CoreCLRArtifactsPath)/PDB/corerun*" />
+      <ReferenceCopyLocalPaths Include="@(RuntimeFiles)" />
+    </ItemGroup>
+  </Target>
+
+  <Target Name="OverrideRuntimeMono"
+          DependsOnTargets="ResolveRuntimeFilesFromLocalBuild"
+          AfterTargets="AfterResolveReferences;FilterNugetPackages"
+          Condition="'$(RuntimeFlavor)' == 'Mono'">
+    <ItemGroup>
+      <StoreTestHostFiles Include="@(ReferenceCopyLocalPaths)" />
+      <ReferenceCopyLocalPaths Remove="@(ReferenceCopyLocalPaths)" />
+    </ItemGroup>
+  </Target>
+
+  <Target Name="GetCoreCLRILFiles" DependsOnTargets="ResolveRuntimeFilesFromLocalBuild">
+    <ItemGroup>
+      <CoreCLRILFiles Include="$(CoreCLRArtifactsPath)/IL/*.*" />
     </ItemGroup>
     <Error Condition="'@(CoreCLRILFiles)' == ''" Text="Could not locate CoreCLR IL files." />
   </Target>
 
   <Target Name="SwapNativeForIL"
           AfterTargets="AfterResolveReferences"
-          DependsOnTargets="GetCoreCLRILFiles;OverrideRuntime"
+          DependsOnTargets="GetCoreCLRILFiles;OverrideRuntimeCoreCLR"
           Condition="'$(SwapNativeForIL)' == 'true'">
       <ItemGroup>
         <ReferenceCopyLocalPaths Remove="@(ReferenceCopyLocalPaths)" Condition="'@(CoreCLRILFiles->'%(FileName)%(Extension)')' == '%(FileName)%(Extension)'" />
@@ -115,5 +133,14 @@
         <ReferenceCopyLocalPaths Include="@(CoreCLRILFiles)" />
       </ItemGroup>
   </Target>
-  
+
+  <!-- Strip away placeholder tfms and TargetFrameworkSuffix. -->
+  <Target Name="StripTargetFrameworkSuffixFromTargetFrameworks"
+          Condition="'$(TargetFrameworks)' != ''"
+          BeforeTargets="_GetRestoreTargetFrameworksOutput;_GetRestoreTargetFrameworksAsItems">
+    <PropertyGroup>
+      <TargetFrameworks Condition="'$(TargetFrameworks)' != ''">$([System.Text.RegularExpressions.Regex]::Replace('$(TargetFrameworks)', '_[^;]+;?', ''))</TargetFrameworks>
+      <TargetFrameworks Condition="'$(TargetFrameworks)' != ''">$([System.Text.RegularExpressions.Regex]::Replace('$(TargetFrameworks)', '-[^;]+', ''))</TargetFrameworks>
+    </PropertyGroup>
+  </Target>
 </Project>

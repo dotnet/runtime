@@ -66,6 +66,49 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
         }
 
         /// <summary>
+        /// Use a mock version of HostFxr.
+        /// </summary>
+        /// <param name="version">Version to add</param>
+        /// <remarks>
+        /// Currently, the only mock version of HostFxr that we have is mockhostfxr_2_2.
+        /// </remarks>
+        public DotNetBuilder AddMockHostFxr(Version version)
+        {
+            string hostfxrPath = Path.Combine(_path, "host", "fxr", version.ToString());
+            Directory.CreateDirectory(hostfxrPath);
+            bool hasCustomErrorWriter = version.Major >= 3;
+
+            string mockHostFxrFileName = RuntimeInformationExtensions.GetSharedLibraryFileNameForCurrentPlatform(hasCustomErrorWriter ? "mockhostfxr" : "mockhostfxr_2_2");
+            File.Copy(
+                Path.Combine(_repoDirectories.Artifacts, "corehost_test", mockHostFxrFileName),
+                Path.Combine(hostfxrPath, RuntimeInformationExtensions.GetSharedLibraryFileNameForCurrentPlatform("hostfxr")),
+                true);
+
+            return this;
+        }
+
+        /// <summary>
+        /// Removes the specified HostFxr version. If no version is set, it'll delete all versions found.
+        /// </summary>
+        /// <param name="version">Version to remove</param>
+        public DotNetBuilder RemoveHostFxr(Version version = null)
+        {
+            if (version != null)
+            {
+                new DirectoryInfo(Path.Combine(_path, "host", "fxr", version.ToString())).Delete(recursive: true);
+            }
+            else
+            {
+                foreach (var dir in new DirectoryInfo(Path.Combine(_path, "host", "fxr")).GetDirectories())
+                {
+                    dir.Delete(recursive: true);
+                }
+            }
+
+            return this;
+        }
+
+        /// <summary>
         /// Add a mock of the Microsoft.NETCore.App framework with the specified version
         /// </summary>
         /// <param name="version">Version to add</param>

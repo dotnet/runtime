@@ -14,8 +14,6 @@ namespace System.Linq.Expressions.Compiler
         /// <param name="node">Expression to rewrite.</param>
         /// <param name="stack">State of the stack before the expression is emitted.</param>
         /// <returns>Rewritten expression.</returns>
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Maintainability", "CA1505:AvoidUnmaintainableCode")]
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Maintainability", "CA1502:AvoidExcessiveComplexity")]
         private Result RewriteExpression(Expression node, Stack stack)
         {
             if (node == null)

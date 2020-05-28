@@ -9,7 +9,6 @@ using System.Threading.Tasks;
 using System.Runtime.Serialization.Formatters.Binary;
 
 using Xunit;
-using Xunit.Abstractions;
 using System.Runtime.Serialization;
 
 namespace System.Net.Tests
@@ -79,8 +78,6 @@ namespace System.Net.Tests
                 HttpWebResponse httpResponse = (HttpWebResponse)response;
                 httpResponse.Close();
 
-                // TODO: Issue #18851. Investigate .NET Core to see if it can
-                // match .NET Framework.
                 Assert.Throws<ObjectDisposedException>(() =>
                 {
                     httpResponse.GetResponseStream();

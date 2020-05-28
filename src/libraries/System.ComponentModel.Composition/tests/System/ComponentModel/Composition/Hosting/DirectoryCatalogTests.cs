@@ -91,7 +91,7 @@ namespace System.ComponentModel.Composition
         }
 
         [Fact]
-        [ActiveIssue(25498, TestPlatforms.AnyUnix)] // System.IO.DirectoryNotFoundException : Could not find a part of the path '/HOME/HELIXBOT/DOTNETBUILD/WORK/E77C2FB6-5244-4437-8E27-6DD709101152/WORK/D9EBA0EA-A511-4F42-AC8B-AC8054AAF606/UNZIP/'.
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/24240", TestPlatforms.AnyUnix)] // System.IO.DirectoryNotFoundException : Could not find a part of the path '/HOME/HELIXBOT/DOTNETBUILD/WORK/E77C2FB6-5244-4437-8E27-6DD709101152/WORK/D9EBA0EA-A511-4F42-AC8B-AC8054AAF606/UNZIP/'.
         public void ICompositionElementDisplayName_ShouldIncludeCatalogTypeNameAndDirectoryPath()
         {
             var paths = GetPathExpectations();
@@ -107,7 +107,7 @@ namespace System.ComponentModel.Composition
         }
 
         [Fact]
-        [ActiveIssue(25498, TestPlatforms.AnyUnix)] // System.IO.DirectoryNotFoundException : Could not find a part of the path '/HOME/HELIXBOT/DOTNETBUILD/WORK/E77C2FB6-5244-4437-8E27-6DD709101152/WORK/D9EBA0EA-A511-4F42-AC8B-AC8054AAF606/UNZIP/'.
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/24240", TestPlatforms.AnyUnix)] // System.IO.DirectoryNotFoundException : Could not find a part of the path '/HOME/HELIXBOT/DOTNETBUILD/WORK/E77C2FB6-5244-4437-8E27-6DD709101152/WORK/D9EBA0EA-A511-4F42-AC8B-AC8054AAF606/UNZIP/'.
         public void ICompositionElementDisplayName_ShouldIncludeDerivedCatalogTypeNameAndAssemblyFullName()
         {
             var paths = GetPathExpectations();
@@ -123,7 +123,7 @@ namespace System.ComponentModel.Composition
         }
 
         [Fact]
-        [ActiveIssue(25498, TestPlatforms.AnyUnix)] // System.IO.DirectoryNotFoundException : Could not find a part of the path '/HOME/HELIXBOT/DOTNETBUILD/WORK/E77C2FB6-5244-4437-8E27-6DD709101152/WORK/D9EBA0EA-A511-4F42-AC8B-AC8054AAF606/UNZIP/'.
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/24240", TestPlatforms.AnyUnix)] // System.IO.DirectoryNotFoundException : Could not find a part of the path '/HOME/HELIXBOT/DOTNETBUILD/WORK/E77C2FB6-5244-4437-8E27-6DD709101152/WORK/D9EBA0EA-A511-4F42-AC8B-AC8054AAF606/UNZIP/'.
         public void ToString_ShouldReturnICompositionElementDisplayName()
         {
             var paths = GetPathExpectations();
@@ -243,7 +243,7 @@ namespace System.ComponentModel.Composition
         }
 
         [Fact]
-        [ActiveIssue(25498)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/24240")]
         public void AddAssembly1_TooLongPathNameArgument_ShouldThrowPathTooLongException()
         {
             Assert.Throws<PathTooLongException>(() =>
@@ -253,7 +253,7 @@ namespace System.ComponentModel.Composition
         }
 
         [Fact]
-        [ActiveIssue(25498)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/24240")]
         public void Parts()
         {
                 var catalog = new DirectoryCatalog(TemporaryFileCopier.GetTemporaryDirectory());
@@ -262,7 +262,7 @@ namespace System.ComponentModel.Composition
         }
 
         [Fact]
-        [ActiveIssue(25498)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/24240")]
         public void Parts_ShouldSetDefinitionOriginToCatalogItself()
         {
                 var catalog = new DirectoryCatalog(TemporaryFileCopier.GetTemporaryDirectory());
@@ -275,7 +275,7 @@ namespace System.ComponentModel.Composition
         }
 
         [Fact]
-        [ActiveIssue(25498)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/24240")]
         public void Path_ValidPath_ShouldBeFine()
         {
                 var expectations = new ExpectationCollection<string, string>();
@@ -294,7 +294,7 @@ namespace System.ComponentModel.Composition
         }
 
         [Fact]
-        [ActiveIssue(25498)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/24240")]
         public void FullPath_ValidPath_ShouldBeFine()
         {
                 var expectations = new ExpectationCollection<string, string>();
@@ -375,7 +375,7 @@ namespace System.ComponentModel.Composition
         }
 
         [Fact]
-        [ActiveIssue(25498)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/24240")]
         public void Constructor_PassExistingFileName_ShouldThrow()
         {
                 using (File.CreateText(Path.Combine(TemporaryFileCopier.GetTemporaryDirectory(), "Test.txt"))) { }
@@ -391,7 +391,7 @@ namespace System.ComponentModel.Composition
         }
 
         [Fact]
-        [ActiveIssue(25498)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/24240")]
         public void Refresh_AssemblyAdded_ShouldFireOnChanged()
         {
                 bool changedFired = false;
@@ -421,7 +421,7 @@ namespace System.ComponentModel.Composition
         }
 
         [Fact]
-        [ActiveIssue(25498)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/24240")]
         public void Refresh_AssemblyRemoved_ShouldFireOnChanged()
         {
                 string file = Path.Combine(TemporaryFileCopier.GetTemporaryDirectory(), "Test.dll");
@@ -453,7 +453,7 @@ namespace System.ComponentModel.Composition
         }
 
         [Fact]
-        [ActiveIssue(25498)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/24240")]
         public void Refresh_DirectoryRemoved_ShouldThrowDirectoryNotFound()
         {
             DirectoryCatalog cat;
@@ -494,7 +494,7 @@ namespace System.ComponentModel.Composition
         }
 
         [Fact]
-        [ActiveIssue(25498)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/24240")]
         public void AddAndRemoveDirectory()
         {
                 var cat = new AggregateCatalog();

@@ -2,11 +2,11 @@ Implementation of Hardware Intrinsics in CoreCLR
 ================================================
 This document describes the implementation of hardware intrinsics in CoreCLR.
 For information about how the intrinsic APIs are designed, proposed and approved,
-see https://github.com/dotnet/designs/blob/master/accepted/platform-intrinsics.md.
+see https://github.com/dotnet/designs/blob/master/accepted/2018/platform-intrinsics.md.
 
 In discussing the hardware intrinsics, we refer to the target platform, such as X86 or Arm64, as the "platform" and each set of extensions that are implemented as a unit (e.g. AVX2 on X64 or Simd on Arm64) as an "ISA".
 
-There is a design document for the Arm64 intrinsics: https://github.com/dotnet/coreclr/blob/master/Documentation/design-docs/arm64-intrinsics.md. It should be updated to reflect current (and ongoing) progress.
+There is a design document for the Arm64 intrinsics: https://github.com/dotnet/runtime/blob/master/docs/design/features/arm64-intrinsics.md. It should be updated to reflect current (and ongoing) progress.
 
 ## Overview
 
@@ -53,7 +53,7 @@ The JIT depends on the VM and configuration settings to determine what target pl
 
 ### Importation
 
-Hardware intrinsics are built on RyuJIT's `NamedIntrinsic` mechanism to identify method calls that should be recognized as intrinsics (see https://github.com/dotnet/coreclr/blob/master/src/jit/namedintrinsiclist.h). In the incoming IL, intrinsic invocations are just method calls, so the JIT must distinguish intrinsic calls from ordinary call-sites and map them to its IR representation: the `GenTreeHWIntrinsic` node.
+Hardware intrinsics are built on RyuJIT's `NamedIntrinsic` mechanism to identify method calls that should be recognized as intrinsics (see https://github.com/dotnet/runtime/blob/master/src/coreclr/src/jit/namedintrinsiclist.h). In the incoming IL, intrinsic invocations are just method calls, so the JIT must distinguish intrinsic calls from ordinary call-sites and map them to its IR representation: the `GenTreeHWIntrinsic` node.
 
 The [Intrinsic] attribute was added to eliminate the need to check each call-site. It [Intrinsic] attribute has a different meaning on each attribute target:
 
@@ -88,7 +88,7 @@ The hardware intrinsics nodes are generally imported as `GenTreeHWIntrinsic` nod
 
 ### Lowering
 
-As described here: https://github.com/dotnet/coreclr/blob/master/Documentation/botr/ryujit-overview.md#lowering, Lowering is responsible for transforming the IR in such a way that the control flow, and any register requirements, are fully exposed. This includes determining what instructions can be "contained" in another, such as immediates or addressing modes. For the hardware intrinsics, these are done in the target-specific methods `Lowering::LowerHWIntrinsic()` and `Lowering::ContainCheckHWIntrinsic()`.
+As described [here](../coreclr/jit/ryujit-overview.md#lowering), Lowering is responsible for transforming the IR in such a way that the control flow, and any register requirements, are fully exposed. This includes determining what instructions can be "contained" in another, such as immediates or addressing modes. For the hardware intrinsics, these are done in the target-specific methods `Lowering::LowerHWIntrinsic()` and `Lowering::ContainCheckHWIntrinsic()`.
 
 The main consideration here is whether there are child nodes that are folded into the generated instruction. These may be:
 * An immediate operand

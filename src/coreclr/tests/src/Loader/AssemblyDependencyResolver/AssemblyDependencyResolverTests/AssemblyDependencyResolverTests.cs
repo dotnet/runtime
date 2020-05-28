@@ -182,7 +182,7 @@ namespace AssemblyDependencyResolverTests
             }
         }
 
-        public void TestMutipleResourcesWithSameBasePath()
+        public void TestMultipleResourcesWithSameBasePath()
         {
             string enResourcePath = CreateMockAssembly($"en{Path.DirectorySeparatorChar}TestComponent.resources.dll");
             string csResourcePath = CreateMockAssembly($"cs{Path.DirectorySeparatorChar}TestComponent.resources.dll");
@@ -204,7 +204,7 @@ namespace AssemblyDependencyResolverTests
             }
         }
 
-        public void TestMutipleResourcesWithDifferentBasePath()
+        public void TestMultipleResourcesWithDifferentBasePath()
         {
             string enResourcePath = CreateMockAssembly($"en{Path.DirectorySeparatorChar}TestComponent.resources.dll");
             string frResourcePath = CreateMockAssembly($"SubComponent{Path.DirectorySeparatorChar}fr{Path.DirectorySeparatorChar}TestComponent.resources.dll");

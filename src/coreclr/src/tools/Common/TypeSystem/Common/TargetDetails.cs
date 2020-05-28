@@ -31,6 +31,7 @@ namespace Internal.TypeSystem
         OSX,
         FreeBSD,
         NetBSD,
+        SunOS,
         WebAssembly,
     }
 
@@ -305,14 +306,26 @@ namespace Internal.TypeSystem
         }
 
         /// <summary>
-        /// Maximum number of elements in a HFA type.
+        /// Returns True if compiling for OSX
         /// </summary>
-        public int MaximumHfaElementCount
+        public bool IsOSX
         {
             get
             {
-                // There is a hard limit of 4 elements on an HFA type, see
-                // http://blogs.msdn.com/b/vcblog/archive/2013/07/12/introducing-vector-calling-convention.aspx
+                return OperatingSystem == TargetOS.OSX;
+            }
+        }
+
+        /// <summary>
+        /// Maximum number of elements in a homogeneous aggregate type.
+        /// </summary>
+        public int MaxHomogeneousAggregateElementCount
+        {
+            get
+            {
+                // There is a hard limit of 4 elements on an HFA/HVA type, see
+                // https://devblogs.microsoft.com/cppblog/introducing-vector-calling-convention/
+                // and Procedure Call Standard for the Arm 64-bit Architecture.
                 Debug.Assert(Architecture == TargetArchitecture.ARM ||
                     Architecture == TargetArchitecture.ARM64 ||
                     Architecture == TargetArchitecture.X64 ||

@@ -9,14 +9,14 @@ namespace System.Reflection.TypeLoading
     /// </summary>
     internal abstract partial class RoType
     {
-        public sealed override Type GetInterface(string name, bool ignoreCase)
+        public sealed override Type? GetInterface(string name, bool ignoreCase)
         {
             if (name == null)
                 throw new ArgumentNullException(nameof(name));
 
             name.SplitTypeName(out string ns, out string simpleName);
 
-            Type match = null;
+            Type? match = null;
             foreach (Type ifc in ImplementedInterfaces)
             {
                 string ifcSimpleName = ifc.Name;
@@ -26,7 +26,7 @@ namespace System.Reflection.TypeLoading
                 if (!simpleNameMatches)
                     continue;
 
-                // This check exists for desktop compat:
+                // This check exists for .NET Framework compat:
                 //   (1) caller can optionally omit namespace part of name in pattern- we'll still match.
                 //   (2) ignoreCase:true does not apply to the namespace portion.
                 if (ns.Length != 0 && !ns.Equals(ifc.Namespace))

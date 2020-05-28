@@ -4,17 +4,9 @@
 
 using System.Buffers;
 using System.Diagnostics;
-using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
-
-#pragma warning disable SA1121 // explicitly using type aliases instead of built-in types
-#if BIT64
-using nuint = System.UInt64;
-#else
-using nuint = System.UInt32;
-#endif
 
 namespace System.IO
 {
@@ -128,7 +120,6 @@ namespace System.IO
             unsafe
             {
                 byte* pointer = null;
-                RuntimeHelpers.PrepareConstrainedRegions();
                 try
                 {
                     buffer.AcquirePointer(ref pointer);
@@ -260,7 +251,6 @@ namespace System.IO
                 {
                     byte* pointer = null;
 
-                    RuntimeHelpers.PrepareConstrainedRegions();
                     try
                     {
                         _buffer.AcquirePointer(ref pointer);
@@ -294,9 +284,6 @@ namespace System.IO
             _isOpen = false;
             unsafe { _mem = null; }
 
-            // Stream allocates WaitHandles for async calls. So for correctness
-            // call base.Dispose(disposing) for better perf, avoiding waiting
-            // for the finalizers to run on those types.
             base.Dispose(disposing);
         }
 
@@ -421,7 +408,7 @@ namespace System.IO
                     throw new IOException(SR.IO_SeekBeforeBegin);
                 long newPosition = (long)value - (long)_mem;
                 if (newPosition < 0)
-                    throw new ArgumentOutOfRangeException("offset", SR.ArgumentOutOfRange_UnmanagedMemStreamLength);
+                    throw new ArgumentOutOfRangeException(nameof(value), SR.ArgumentOutOfRange_UnmanagedMemStreamLength);
 
                 Interlocked.Exchange(ref _position, newPosition);
             }
@@ -493,7 +480,6 @@ namespace System.IO
                     {
                         byte* pointer = null;
 
-                        RuntimeHelpers.PrepareConstrainedRegions();
                         try
                         {
                             _buffer.AcquirePointer(ref pointer);
@@ -609,7 +595,6 @@ namespace System.IO
                 unsafe
                 {
                     byte* pointer = null;
-                    RuntimeHelpers.PrepareConstrainedRegions();
                     try
                     {
                         _buffer.AcquirePointer(ref pointer);
@@ -789,7 +774,6 @@ namespace System.IO
                     }
 
                     byte* pointer = null;
-                    RuntimeHelpers.PrepareConstrainedRegions();
                     try
                     {
                         _buffer.AcquirePointer(ref pointer);
@@ -923,7 +907,6 @@ namespace System.IO
                 unsafe
                 {
                     byte* pointer = null;
-                    RuntimeHelpers.PrepareConstrainedRegions();
                     try
                     {
                         _buffer.AcquirePointer(ref pointer);

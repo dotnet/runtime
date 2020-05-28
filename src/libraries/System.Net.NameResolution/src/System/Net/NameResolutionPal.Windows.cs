@@ -56,7 +56,7 @@ namespace System.Net
             }
         }
 
-        public static unsafe SocketError TryGetAddrInfo(string name, bool justAddresses, out string hostName, out string[] aliases, out IPAddress[] addresses, out int nativeErrorCode)
+        public static unsafe SocketError TryGetAddrInfo(string name, bool justAddresses, out string? hostName, out string[] aliases, out IPAddress[] addresses, out int nativeErrorCode)
         {
             aliases = Array.Empty<string>();
 
@@ -91,7 +91,7 @@ namespace System.Net
             }
         }
 
-        public static unsafe string TryGetNameInfo(IPAddress addr, out SocketError errorCode, out int nativeErrorCode)
+        public static unsafe string? TryGetNameInfo(IPAddress addr, out SocketError errorCode, out int nativeErrorCode)
         {
             SocketAddress address = new IPEndPoint(addr, 0).Serialize();
             Span<byte> addressBuffer = address.Size <= 64 ? stackalloc byte[64] : new byte[address.Size];
@@ -191,7 +191,7 @@ namespace System.Net
 
                 if (errorCode == SocketError.Success)
                 {
-                    IPAddress[] addresses = ParseAddressInfoEx(context->Result, state.JustAddresses, out string hostName);
+                    IPAddress[] addresses = ParseAddressInfoEx(context->Result, state.JustAddresses, out string? hostName);
                     state.SetResult(state.JustAddresses ? (object)
                         addresses :
                         new IPHostEntry
@@ -212,7 +212,7 @@ namespace System.Net
             }
         }
 
-        private static unsafe IPAddress[] ParseAddressInfo(Interop.Winsock.AddressInfo* addressInfoPtr, bool justAddresses, out string hostName)
+        private static unsafe IPAddress[] ParseAddressInfo(Interop.Winsock.AddressInfo* addressInfoPtr, bool justAddresses, out string? hostName)
         {
             Debug.Assert(addressInfoPtr != null);
 
@@ -241,7 +241,7 @@ namespace System.Net
             // Store them into the array.
             var addresses = new IPAddress[addressCount];
             addressCount = 0;
-            string canonicalName = justAddresses ? "NONNULLSENTINEL" : null;
+            string? canonicalName = justAddresses ? "NONNULLSENTINEL" : null;
             for (Interop.Winsock.AddressInfo* result = addressInfoPtr; result != null; result = result->ai_next)
             {
                 if (canonicalName == null && result->ai_canonname != null)
@@ -272,7 +272,7 @@ namespace System.Net
             return addresses;
         }
 
-        private static unsafe IPAddress[] ParseAddressInfoEx(Interop.Winsock.AddressInfoEx* addressInfoExPtr, bool justAddresses, out string hostName)
+        private static unsafe IPAddress[] ParseAddressInfoEx(Interop.Winsock.AddressInfoEx* addressInfoExPtr, bool justAddresses, out string? hostName)
         {
             Debug.Assert(addressInfoExPtr != null);
 
@@ -301,7 +301,7 @@ namespace System.Net
             // Then store them into an array.
             var addresses = new IPAddress[addressCount];
             addressCount = 0;
-            string canonicalName = justAddresses ? "NONNULLSENTINEL" : null;
+            string? canonicalName = justAddresses ? "NONNULLSENTINEL" : null;
             for (Interop.Winsock.AddressInfoEx* result = addressInfoExPtr; result != null; result = result->ai_next)
             {
                 if (canonicalName == null && result->ai_canonname != IntPtr.Zero)
@@ -350,7 +350,7 @@ namespace System.Net
         {
             private AsyncTaskMethodBuilder<IPHostEntry> IPHostEntryBuilder;
             private AsyncTaskMethodBuilder<IPAddress[]> IPAddressArrayBuilder;
-            private object _result;
+            private object? _result;
 
             public GetAddrInfoExState(string hostName, bool justAddresses)
             {
@@ -396,7 +396,7 @@ namespace System.Net
                     }
                     else
                     {
-                        IPAddressArrayBuilder.SetResult((IPAddress[])_result);
+                        IPAddressArrayBuilder.SetResult((IPAddress[])_result!);
                     }
                 }
                 else
@@ -407,7 +407,7 @@ namespace System.Net
                     }
                     else
                     {
-                        IPHostEntryBuilder.SetResult((IPHostEntry)_result);
+                        IPHostEntryBuilder.SetResult((IPHostEntry)_result!);
                     }
                 }
             }
@@ -417,7 +417,7 @@ namespace System.Net
             public static GetAddrInfoExState FromHandleAndFree(IntPtr handle)
             {
                 GCHandle gcHandle = GCHandle.FromIntPtr(handle);
-                var state = (GetAddrInfoExState)gcHandle.Target;
+                var state = (GetAddrInfoExState)gcHandle.Target!;
                 gcHandle.Free();
                 return state;
             }

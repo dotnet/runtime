@@ -21,7 +21,7 @@ WCHAR* GetCOMPlusVariable(const WCHAR* key, JitInstance& jitInstance)
     size_t   keyLen       = wcslen(key);
     size_t   keyBufferLen = keyLen + PrefixLen + 1;
     WCHAR* keyBuffer =
-        reinterpret_cast<WCHAR*>(jitInstance.allocateArray(static_cast<ULONG>(sizeof(WCHAR) * keyBufferLen)));
+        reinterpret_cast<WCHAR*>(jitInstance.allocateArray(sizeof(WCHAR) * keyBufferLen));
     wcscpy_s(keyBuffer, keyBufferLen, Prefix);
     wcscpy_s(&keyBuffer[PrefixLen], keyLen + 1, key);
 
@@ -53,12 +53,12 @@ JitHost::JitHost(JitInstance& jitInstance) : jitInstance(jitInstance)
 
 void* JitHost::allocateMemory(size_t size)
 {
-    return InitIEEMemoryManager(&jitInstance)->ClrVirtualAlloc(nullptr, size, 0, 0);
+    return jitInstance.allocateLongLivedArray(size);
 }
 
 void JitHost::freeMemory(void* block)
 {
-    InitIEEMemoryManager(&jitInstance)->ClrVirtualFree(block, 0, 0);
+    jitInstance.freeLongLivedArray((void*)block);
 }
 
 bool JitHost::convertStringValueToInt(const WCHAR* key, const WCHAR* stringValue, int& result)
@@ -171,7 +171,7 @@ const WCHAR* JitHost::getStringConfigValue(const WCHAR* key)
     {
         // Now we need to dup it, so you can call freeStringConfigValue() on what we return.
         size_t   resultLenInChars = wcslen(result) + 1;
-        WCHAR* dupResult = (WCHAR*)jitInstance.allocateLongLivedArray((ULONG)(sizeof(WCHAR) * resultLenInChars));
+        WCHAR* dupResult = (WCHAR*)jitInstance.allocateLongLivedArray(sizeof(WCHAR) * resultLenInChars);
         wcscpy_s(dupResult, resultLenInChars, result);
         result = dupResult;
     }

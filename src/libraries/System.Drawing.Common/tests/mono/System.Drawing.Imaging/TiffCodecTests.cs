@@ -4,7 +4,7 @@
 // TIFF Codec class testing unit
 //
 // Authors:
-//  Jordi Mas i Hernàndez (jordi@ximian.com)
+//  Jordi Mas i Hern?ndez (jordi@ximian.com)
 //  Sebastien Pouliot  <sebastien@ximian.com>
 //
 // Copyright (C) 2006, 2007 Novell, Inc (http://www.novell.com)
@@ -65,7 +65,7 @@ namespace MonoTests.System.Drawing.Imaging
 
         /* Checks bitmap features on a known 32bbp bitmap */
         [ConditionalFact(Helpers.IsDrawingSupported)]
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         public void Bitmap32bitsPixelFormat()
         {
             string sInFile = Helpers.GetTestBitmapPath("almogaver32bits.tif");
@@ -122,7 +122,7 @@ namespace MonoTests.System.Drawing.Imaging
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsDrawingSupported), nameof(PlatformDetection.IsNotArm64Process))] // [ActiveIssue(35744)]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsDrawingSupported), nameof(PlatformDetection.IsNotArm64Process))] // [ActiveIssue("https://github.com/dotnet/runtime/issues/28859")]
         public void Bitmap32bitsData()
         {
             string sInFile = Helpers.GetTestBitmapPath("almogaver32bits.tif");

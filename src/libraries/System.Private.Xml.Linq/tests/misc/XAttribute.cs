@@ -15,7 +15,7 @@ namespace System.Xml.Linq.Tests
         [Fact]
         public void FormattedDate()
         {
-            // Ensure we are compatible with the full framework
+            // Ensure we are compatible with the .NET Framework
             Assert.Equal("CreatedTime=\"2018-01-01T12:13:14Z\"", new XAttribute("CreatedTime", new DateTime(2018, 1, 1, 12, 13, 14, DateTimeKind.Utc)).ToString());
         }
     }

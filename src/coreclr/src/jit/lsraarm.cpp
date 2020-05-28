@@ -20,7 +20,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #pragma hdrstop
 #endif
 
-#ifdef _TARGET_ARM_
+#ifdef TARGET_ARM
 
 #include "jit.h"
 #include "sideeffects.h"
@@ -219,7 +219,6 @@ int LinearScan::BuildNode(GenTree* tree)
     switch (tree->OperGet())
     {
         case GT_LCL_VAR:
-        case GT_LCL_FLD:
         {
             // We handle tracked variables differently from non-tracked ones.  If it is tracked,
             // we will simply add a use of the tracked variable at its parent/consumer.
@@ -230,11 +229,34 @@ int LinearScan::BuildNode(GenTree* tree)
             // is processed, unless this is marked "isLocalDefUse" because it is a stack-based argument
             // to a call or an orphaned dead node.
             //
-            LclVarDsc* const varDsc = &compiler->lvaTable[tree->AsLclVarCommon()->GetLclNum()];
-            if (isCandidateVar(varDsc))
+            bool isCandidate = compiler->lvaGetDesc(tree->AsLclVar())->lvLRACandidate;
+            if (tree->IsRegOptional() && !isCandidate)
+            {
+                tree->ClearRegOptional();
+                tree->SetContained();
+                return 0;
+            }
+            if (isCandidate)
             {
                 return 0;
             }
+        }
+            __fallthrough;
+
+        case GT_LCL_FLD:
+        {
+            GenTreeLclVarCommon* const lclVar = tree->AsLclVarCommon();
+            if (lclVar->OperIs(GT_LCL_FLD) && lclVar->AsLclFld()->IsOffsetMisaligned())
+            {
+                buildInternalIntRegisterDefForNode(lclVar); // to generate address.
+                buildInternalIntRegisterDefForNode(lclVar); // to move float into an int reg.
+                if (lclVar->TypeIs(TYP_DOUBLE))
+                {
+                    buildInternalIntRegisterDefForNode(lclVar); // to move the second half into an int reg.
+                }
+                buildInternalRegisterUses();
+            }
+
             srcCount = 0;
             BuildDef(tree);
         }
@@ -717,7 +739,7 @@ int LinearScan::BuildNode(GenTree* tree)
 
         case GT_COPY:
             srcCount = 1;
-#ifdef _TARGET_ARM_
+#ifdef TARGET_ARM
             // This case currently only occurs for double types that are passed as TYP_LONG;
             // actual long types would have been decomposed by now.
             if (tree->TypeGet() == TYP_LONG)
@@ -749,7 +771,6 @@ int LinearScan::BuildNode(GenTree* tree)
 
         case GT_BITCAST:
         {
-            srcCount = 1;
             assert(dstCount == 1);
             regNumber argReg  = tree->GetRegNum();
             regMaskTP argMask = genRegMask(argReg);
@@ -763,8 +784,15 @@ int LinearScan::BuildNode(GenTree* tree)
                 argMask |= genRegMask(REG_NEXT(argReg));
                 dstCount = 2;
             }
-
-            BuildUse(tree->gtGetOp1());
+            if (!tree->gtGetOp1()->isContained())
+            {
+                BuildUse(tree->gtGetOp1());
+                srcCount = 1;
+            }
+            else
+            {
+                srcCount = 0;
+            }
             BuildDefs(tree, dstCount, argMask);
         }
         break;
@@ -810,4 +838,4 @@ int LinearScan::BuildNode(GenTree* tree)
     return srcCount;
 }
 
-#endif // _TARGET_ARM_
+#endif // TARGET_ARM

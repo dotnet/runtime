@@ -276,7 +276,7 @@ namespace System.DirectoryServices.Protocols
                     throw new ArgumentNullException(nameof(attributeName));
                 }
 
-                object objectName = attributeName.ToLower(CultureInfo.InvariantCulture);
+                object objectName = attributeName.ToLowerInvariant();
                 return (DirectoryAttribute)InnerHashtable[objectName];
             }
         }
@@ -287,7 +287,7 @@ namespace System.DirectoryServices.Protocols
 
         internal void Add(string name, DirectoryAttribute value)
         {
-            Dictionary.Add(name.ToLower(CultureInfo.InvariantCulture), value);
+            Dictionary.Add(name.ToLowerInvariant(), value);
         }
 
         public bool Contains(string attributeName)
@@ -297,7 +297,7 @@ namespace System.DirectoryServices.Protocols
                 throw new ArgumentNullException(nameof(attributeName));
             }
 
-            object objectName = attributeName.ToLower(CultureInfo.InvariantCulture);
+            object objectName = attributeName.ToLowerInvariant();
             return Dictionary.Contains(objectName);
         }
 

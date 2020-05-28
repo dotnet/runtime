@@ -10,6 +10,7 @@ using System.Threading.Tasks;
 using System.Threading;
 using Windows.Foundation;
 using Windows.Storage.Streams;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.IO
 {
@@ -93,10 +94,10 @@ namespace System.IO
 
         #region Instance variables
 
-        private byte[] _oneByteBuffer = null;
+        private byte[]? _oneByteBuffer = null;
         private bool _leaveUnderlyingStreamOpen = true;
 
-        private object _winRtStream;
+        private object? _winRtStream;
         private readonly bool _canRead;
         private readonly bool _canWrite;
         private readonly bool _canSeek;
@@ -119,9 +120,9 @@ namespace System.IO
         }
 
 
-        public TWinRtStream GetWindowsRuntimeStream<TWinRtStream>() where TWinRtStream : class
+        public TWinRtStream? GetWindowsRuntimeStream<TWinRtStream>() where TWinRtStream : class
         {
-            object wrtStr = _winRtStream;
+            object? wrtStr = _winRtStream;
 
             if (wrtStr == null)
                 return null;
@@ -138,26 +139,16 @@ namespace System.IO
         {
             get
             {
-                byte[] obb = _oneByteBuffer;
+                byte[]? obb = _oneByteBuffer;
                 if (obb == null)  // benign race for multiple init
                     _oneByteBuffer = obb = new byte[1];
                 return obb;
             }
         }
 
-
-#if DEBUG
-        private static void AssertValidStream(object winRtStream)
+        private TWinRtStream? EnsureNotDisposed<TWinRtStream>() where TWinRtStream : class
         {
-            Debug.Assert(winRtStream != null,
-                            "This to-NetFx Stream adapter must not be disposed and the underlying WinRT stream must be of compatible type for this operation");
-        }
-#endif  // DEBUG
-
-
-        private TWinRtStream EnsureNotDisposed<TWinRtStream>() where TWinRtStream : class
-        {
-            object wrtStr = _winRtStream;
+            object? wrtStr = _winRtStream;
 
             if (wrtStr == null)
                 throw new ObjectDisposedException(SR.ObjectDisposed_CannotPerformOperation);
@@ -196,7 +187,7 @@ namespace System.IO
             // WinRT streams should implement IDisposable (IClosable in WinRT), but let's be defensive:
             if (disposing && _winRtStream != null && !_leaveUnderlyingStreamOpen)
             {
-                IDisposable disposableWinRtStream = _winRtStream as IDisposable;  // benign race on winRtStream
+                IDisposable? disposableWinRtStream = _winRtStream as IDisposable;  // benign race on winRtStream
                 if (disposableWinRtStream != null)
                     disposableWinRtStream.Dispose();
             }
@@ -238,14 +229,12 @@ namespace System.IO
         {
             get
             {
-                IRandomAccessStream wrtStr = EnsureNotDisposed<IRandomAccessStream>();
+                IRandomAccessStream? wrtStr = EnsureNotDisposed<IRandomAccessStream>();
 
                 if (!_canSeek)
                     throw new NotSupportedException(SR.NotSupported_CannotUseLength_StreamNotSeekable);
 
-#if DEBUG
-                AssertValidStream(wrtStr);
-#endif  // DEBUG
+                Debug.Assert(wrtStr != null);
 
                 ulong size = wrtStr.Size;
 
@@ -262,14 +251,12 @@ namespace System.IO
         {
             get
             {
-                IRandomAccessStream wrtStr = EnsureNotDisposed<IRandomAccessStream>();
+                IRandomAccessStream? wrtStr = EnsureNotDisposed<IRandomAccessStream>();
 
                 if (!_canSeek)
                     throw new NotSupportedException(SR.NotSupported_CannotUsePosition_StreamNotSeekable);
 
-#if DEBUG
-                AssertValidStream(wrtStr);
-#endif  // DEBUG
+                Debug.Assert(wrtStr != null);
 
                 ulong pos = wrtStr.Position;
 
@@ -285,14 +272,12 @@ namespace System.IO
                 if (value < 0)
                     throw new ArgumentOutOfRangeException(nameof(Position), SR.ArgumentOutOfRange_IO_CannotSeekToNegativePosition);
 
-                IRandomAccessStream wrtStr = EnsureNotDisposed<IRandomAccessStream>();
+                IRandomAccessStream? wrtStr = EnsureNotDisposed<IRandomAccessStream>();
 
                 if (!_canSeek)
                     throw new NotSupportedException(SR.NotSupported_CannotUsePosition_StreamNotSeekable);
 
-#if DEBUG
-                AssertValidStream(wrtStr);
-#endif  // DEBUG
+                Debug.Assert(wrtStr != null);
 
                 wrtStr.Seek(unchecked((ulong)value));
             }
@@ -301,14 +286,12 @@ namespace System.IO
 
         public override long Seek(long offset, SeekOrigin origin)
         {
-            IRandomAccessStream wrtStr = EnsureNotDisposed<IRandomAccessStream>();
+            IRandomAccessStream? wrtStr = EnsureNotDisposed<IRandomAccessStream>();
 
             if (!_canSeek)
                 throw new NotSupportedException(SR.NotSupported_CannotSeekInStream);
 
-#if DEBUG
-            AssertValidStream(wrtStr);
-#endif  // DEBUG
+            Debug.Assert(wrtStr != null);
 
             switch (origin)
             {
@@ -387,16 +370,14 @@ namespace System.IO
             if (value < 0)
                 throw new ArgumentOutOfRangeException(nameof(value), SR.ArgumentOutOfRange_CannotResizeStreamToNegative);
 
-            IRandomAccessStream wrtStr = EnsureNotDisposed<IRandomAccessStream>();
+            IRandomAccessStream? wrtStr = EnsureNotDisposed<IRandomAccessStream>();
 
             if (!_canSeek)
                 throw new NotSupportedException(SR.NotSupported_CannotSeekInStream);
 
             EnsureCanWrite();
 
-#if DEBUG
-            AssertValidStream(wrtStr);
-#endif  // DEBUG
+            Debug.Assert(wrtStr != null);
 
             wrtStr.Size = unchecked((ulong)value);
 
@@ -411,7 +392,7 @@ namespace System.IO
 
         #region Reading
 
-        private IAsyncResult BeginRead(byte[] buffer, int offset, int count, AsyncCallback callback, object state, bool usedByBlockingWrapper)
+        private IAsyncResult BeginRead(byte[] buffer, int offset, int count, AsyncCallback? callback, object? state, bool usedByBlockingWrapper)
         {
             // This method is somewhat tricky: We could consider just calling ReadAsync (recall that Task implements IAsyncResult).
             // It would be OK for cases where BeginRead is invoked directly by the public user.
@@ -448,12 +429,10 @@ namespace System.IO
             if (buffer.Length - offset < count)
                 throw new ArgumentException(SR.Argument_InsufficientSpaceInTargetBuffer);
 
-            IInputStream wrtStr = EnsureNotDisposed<IInputStream>();
+            IInputStream? wrtStr = EnsureNotDisposed<IInputStream>();
             EnsureCanRead();
 
-#if DEBUG
-            AssertValidStream(wrtStr);
-#endif  // DEBUG
+            Debug.Assert(wrtStr != null);
 
             IBuffer userBuffer = buffer.AsBuffer(offset, count);
             IAsyncOperationWithProgress<IBuffer, uint> asyncReadOperation = wrtStr.ReadAsync(userBuffer,
@@ -480,7 +459,7 @@ namespace System.IO
             EnsureNotDisposed();
             EnsureCanRead();
 
-            StreamOperationAsyncResult streamAsyncResult = asyncResult as StreamOperationAsyncResult;
+            StreamOperationAsyncResult? streamAsyncResult = asyncResult as StreamOperationAsyncResult;
             if (streamAsyncResult == null)
                 throw new ArgumentException(SR.Argument_UnexpectedAsyncResult, nameof(asyncResult));
 
@@ -570,12 +549,12 @@ namespace System.IO
         #region Writing
 
 
-        public override IAsyncResult BeginWrite(byte[] buffer, int offset, int count, AsyncCallback callback, object state)
+        public override IAsyncResult BeginWrite(byte[] buffer, int offset, int count, AsyncCallback? callback, object? state)
         {
             return BeginWrite(buffer, offset, count, callback, state, usedByBlockingWrapper: false);
         }
 
-        private IAsyncResult BeginWrite(byte[] buffer, int offset, int count, AsyncCallback callback, object state, bool usedByBlockingWrapper)
+        private IAsyncResult BeginWrite(byte[] buffer, int offset, int count, AsyncCallback? callback, object? state, bool usedByBlockingWrapper)
         {
             // See the large comment in BeginRead about why we are not using this.WriteAsync,
             // and instead using a custom implementation of IAsyncResult.
@@ -592,12 +571,10 @@ namespace System.IO
             if (buffer.Length - offset < count)
                 throw new ArgumentException(SR.Argument_InsufficientArrayElementsAfterOffset);
 
-            IOutputStream wrtStr = EnsureNotDisposed<IOutputStream>();
+            IOutputStream? wrtStr = EnsureNotDisposed<IOutputStream>();
             EnsureCanWrite();
 
-#if DEBUG
-            AssertValidStream(wrtStr);
-#endif  // DEBUG
+            Debug.Assert(wrtStr != null);
 
             IBuffer asyncWriteBuffer = buffer.AsBuffer(offset, count);
 
@@ -623,7 +600,7 @@ namespace System.IO
             EnsureNotDisposed();
             EnsureCanWrite();
 
-            StreamOperationAsyncResult streamAsyncResult = asyncResult as StreamOperationAsyncResult;
+            StreamOperationAsyncResult? streamAsyncResult = asyncResult as StreamOperationAsyncResult;
             if (streamAsyncResult == null)
                 throw new ArgumentException(SR.Argument_UnexpectedAsyncResult, nameof(asyncResult));
 
@@ -666,12 +643,10 @@ namespace System.IO
             if (buffer.Length - offset < count)
                 throw new ArgumentException(SR.Argument_InsufficientArrayElementsAfterOffset);
 
-            IOutputStream wrtStr = EnsureNotDisposed<IOutputStream>();
+            IOutputStream? wrtStr = EnsureNotDisposed<IOutputStream>();
             EnsureCanWrite();
 
-#if DEBUG
-            AssertValidStream(wrtStr);
-#endif  // DEBUG
+            Debug.Assert(wrtStr != null);
 
             // If already cancelled, bail early:
             cancellationToken.ThrowIfCancellationRequested();
@@ -717,15 +692,13 @@ namespace System.IO
             // See the large comment in BeginRead about why we are not using this.FlushAsync,
             // and instead using a custom implementation of IAsyncResult.
 
-            IOutputStream wrtStr = EnsureNotDisposed<IOutputStream>();
+            IOutputStream? wrtStr = EnsureNotDisposed<IOutputStream>();
 
             // Calling Flush in a non-writable stream is a no-op, not an error:
             if (!_canWrite)
                 return;
 
-#if DEBUG
-            AssertValidStream(wrtStr);
-#endif  // DEBUG
+            Debug.Assert(wrtStr != null);
 
             IAsyncOperation<bool> asyncFlushOperation = wrtStr.FlushAsync();
             StreamFlushAsyncResult asyncResult = new StreamFlushAsyncResult(asyncFlushOperation, processCompletedOperationInCallback: false);
@@ -755,15 +728,13 @@ namespace System.IO
 
         public override Task FlushAsync(CancellationToken cancellationToken)
         {
-            IOutputStream wrtStr = EnsureNotDisposed<IOutputStream>();
+            IOutputStream? wrtStr = EnsureNotDisposed<IOutputStream>();
 
             // Calling Flush in a non-writable stream is a no-op, not an error:
             if (!_canWrite)
                 return Task.CompletedTask;
 
-#if DEBUG
-            AssertValidStream(wrtStr);
-#endif  // DEBUG
+            Debug.Assert(wrtStr != null);
 
             cancellationToken.ThrowIfCancellationRequested();
 
@@ -787,11 +758,9 @@ namespace System.IO
             Debug.Assert(buffer.Length - offset >= count);
             Debug.Assert(_canRead);
 
-            IInputStream wrtStr = EnsureNotDisposed<IInputStream>();
+            IInputStream? wrtStr = EnsureNotDisposed<IInputStream>();
 
-#if DEBUG
-            AssertValidStream(wrtStr);
-#endif  // DEBUG
+            Debug.Assert(wrtStr != null);
 
             try
             {

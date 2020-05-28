@@ -185,7 +185,7 @@ namespace System.Security.Cryptography
             {
                 // Although we don't have any resources to dispose at this level,
                 // we need to continue to throw ObjectDisposedExceptions from CalculateHash
-                // for compatibility with the desktop framework.
+                // for compatibility with the .NET Framework.
                 _disposed = true;
             }
             return;

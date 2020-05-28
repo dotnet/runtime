@@ -23,7 +23,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 // Needed for unreached()
 #include "error.h"
 
-#ifdef _TARGET_64BIT_
+#ifdef TARGET_64BIT
 #define BitScanForwardPtr BitScanForward64
 #else
 #define BitScanForwardPtr BitScanForward
@@ -106,16 +106,6 @@ inline const char* dspBool(bool b)
     return (b) ? "true" : "false";
 }
 
-#ifdef FEATURE_CORECLR
-#ifdef _CRT_ABS_DEFINED
-// we don't have the full standard library
-inline int64_t abs(int64_t t)
-{
-    return t > 0 ? t : -t;
-}
-#endif
-#endif // FEATURE_CORECLR
-
 template <typename T>
 int signum(T val)
 {
@@ -164,8 +154,8 @@ public:
         DEFAULT_CAPACITY = 50
     };
 
-    // Does the range include this method's hash?
-    bool Contains(class ICorJitInfo* info, CORINFO_METHOD_HANDLE method);
+    // Does the range include this hash?
+    bool Contains(unsigned hash);
 
     // Ensure the range string has been parsed.
     void EnsureInit(const WCHAR* rangeStr, unsigned capacity = DEFAULT_CAPACITY)
@@ -185,10 +175,13 @@ public:
     {
         return m_badChar != 0;
     }
+
     size_t BadCharIndex() const
     {
         return m_badChar - 1;
     }
+
+    void Dump();
 
 private:
     struct Range
@@ -749,11 +742,11 @@ private:
 namespace MagicDivide
 {
 uint32_t GetUnsigned32Magic(uint32_t d, bool* add /*out*/, int* shift /*out*/);
-#ifdef _TARGET_64BIT_
+#ifdef TARGET_64BIT
 uint64_t GetUnsigned64Magic(uint64_t d, bool* add /*out*/, int* shift /*out*/);
 #endif
 int32_t GetSigned32Magic(int32_t d, int* shift /*out*/);
-#ifdef _TARGET_64BIT_
+#ifdef TARGET_64BIT
 int64_t GetSigned64Magic(int64_t d, int* shift /*out*/);
 #endif
 }

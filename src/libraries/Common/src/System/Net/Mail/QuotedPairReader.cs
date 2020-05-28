@@ -31,14 +31,15 @@ namespace System.Net.Mail
         // - The number of consecutive quoted chars, including multiple preceding quoted backslashes
         //   e.g. (a\\\b) given index=4 returns 4, as 'b' is quoted, and so are the previous backslashes
         //
-        // Throws a FormatException if the an escaped Unicode character is found but was not permitted.
-        internal static int CountQuotedChars(string data, int index, bool permitUnicodeEscaping)
+        // Throws a FormatException or false is returned if the an escaped Unicode character is found but was not permitted.
+        internal static bool TryCountQuotedChars(string data, int index, bool permitUnicodeEscaping, out int outIndex, bool throwExceptionIfFail)
         {
             Debug.Assert(0 <= index && index < data.Length, "Index out of range: " + index + ", " + data.Length);
 
             if (index <= 0 || data[index - 1] != MailBnfHelper.Backslash)
             {
-                return 0;
+                outIndex = 0;
+                return true;
             }
 
             // Count the preceding backslashes
@@ -47,17 +48,27 @@ namespace System.Net.Mail
             // For an even number of backslashes, the original character was NOT escaped/quoted
             if (backslashCount % 2 == 0)
             {
-                return 0; // No quoted pair to skip
+                outIndex = 0; // No quoted pair to skip
+                return true;
             }
             else
             {
                 if (!permitUnicodeEscaping && data[index] > MailBnfHelper.Ascii7bitMaxValue)
                 {
-                    // Cannot accept quoted Unicode
-                    throw new FormatException(SR.Format(SR.MailHeaderFieldInvalidCharacter, data[index]));
+                    if (throwExceptionIfFail)
+                    {
+                        // Cannot accept quoted Unicode
+                        throw new FormatException(SR.Format(SR.MailHeaderFieldInvalidCharacter, data[index]));
+                    }
+                    else
+                    {
+                        outIndex = default;
+                        return false;
+                    }
                 }
                 // Skip the quoted char, and the odd number of backslashes preceding it
-                return backslashCount + 1;
+                outIndex = backslashCount + 1;
+                return true;
             }
         }
 

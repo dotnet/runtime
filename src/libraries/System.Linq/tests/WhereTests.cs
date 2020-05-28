@@ -819,7 +819,7 @@ namespace System.Linq.Tests
             int[] source = new[] { 1, 2, 3, 4, 5 };
             IEnumerator<int> enumerator = source.Where(value => true).GetEnumerator();
 
-            // The full .NET Framework throws a NotImplementedException.
+            // The .NET Framework throws a NotImplementedException.
             // See https://github.com/dotnet/corefx/pull/2959.
             Assert.Throws<NotSupportedException>(() => enumerator.Reset());
         }
@@ -998,7 +998,7 @@ namespace System.Linq.Tests
             Assert.Equal(source.Skip(source.Length - 1), source.Where((e, i) => i == source.Length - 1));
         }
 
-        [Fact(Skip = "Valid test but too intensive to enable even in OuterLoop")]
+        [ConditionalFact(typeof(TestEnvironment), nameof(TestEnvironment.IsStressModeEnabled))]
         public void IndexOverflows()
         {
             var infiniteWhere = new FastInfiniteEnumerator<int>().Where((e, i) => true);

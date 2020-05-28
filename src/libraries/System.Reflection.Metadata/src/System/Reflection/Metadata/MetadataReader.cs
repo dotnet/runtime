@@ -23,10 +23,10 @@ namespace System.Reflection.Metadata
         internal readonly int WinMDMscorlibRef;
 
         // Keeps the underlying memory alive.
-        private readonly object _memoryOwnerObj;
+        private readonly object? _memoryOwnerObj;
 
         private readonly MetadataReaderOptions _options;
-        private Dictionary<TypeDefinitionHandle, ImmutableArray<TypeDefinitionHandle>> _lazyNestedTypesMap;
+        private Dictionary<TypeDefinitionHandle, ImmutableArray<TypeDefinitionHandle>>? _lazyNestedTypesMap;
 
         #region Constructors
 
@@ -67,12 +67,12 @@ namespace System.Reflection.Metadata
         /// <exception cref="ArgumentException">The encoding of <paramref name="utf8Decoder"/> is not <see cref="UTF8Encoding"/>.</exception>
         /// <exception cref="PlatformNotSupportedException">The current platform is big-endian.</exception>
         /// <exception cref="BadImageFormatException">Bad metadata header.</exception>
-        public unsafe MetadataReader(byte* metadata, int length, MetadataReaderOptions options, MetadataStringDecoder utf8Decoder)
+        public unsafe MetadataReader(byte* metadata, int length, MetadataReaderOptions options, MetadataStringDecoder? utf8Decoder)
             : this(metadata, length, options, utf8Decoder, memoryOwner: null)
         {
         }
 
-        internal unsafe MetadataReader(byte* metadata, int length, MetadataReaderOptions options, MetadataStringDecoder utf8Decoder, object memoryOwner)
+        internal unsafe MetadataReader(byte* metadata, int length, MetadataReaderOptions options, MetadataStringDecoder? utf8Decoder, object? memoryOwner)
         {
             // Do not throw here when length is 0. We'll throw BadImageFormatException later on, so that the caller doesn't need to
             // worry about the image (stream) being empty and can handle all image errors by catching BadImageFormatException.
@@ -110,7 +110,7 @@ namespace System.Reflection.Metadata
             // storage header and stream headers:
             InitializeStreamReaders(Block, streamHeaders, out _metadataStreamKind, out var metadataTableStream, out var pdbStream);
 
-            int[] externalTableRowCountsOpt;
+            int[]? externalTableRowCountsOpt;
             if (pdbStream.Length > 0)
             {
                 int pdbStreamOffset = (int)(pdbStream.Pointer - metadata);
@@ -155,7 +155,7 @@ namespace System.Reflection.Metadata
         private readonly string _versionString;
         private readonly MetadataKind _metadataKind;
         private readonly MetadataStreamKind _metadataStreamKind;
-        private readonly DebugMetadataHeader _debugMetadataHeader;
+        private readonly DebugMetadataHeader? _debugMetadataHeader;
 
         internal StringHeap StringHeap;
         internal BlobHeap BlobHeap;
@@ -375,7 +375,7 @@ namespace System.Reflection.Metadata
         /// <summary>
         /// A row count for each possible table. May be indexed by <see cref="TableIndex"/>.
         /// </summary>
-        internal int[] TableRowCounts;
+        internal int[] TableRowCounts = null!;
 
         internal ModuleTableReader ModuleTable;
         internal TypeRefTableReader TypeRefTable;
@@ -528,7 +528,7 @@ namespace System.Reflection.Metadata
             var reader = new BlobReader(pdbStreamBlock);
 
             const int PdbIdSize = 20;
-            byte[] pdbId = reader.ReadBytes(PdbIdSize);
+            byte[]? pdbId = reader.ReadBytes(PdbIdSize);
 
             // ECMA-335 15.4.1.2:
             // The entry point to an application shall be static.
@@ -569,12 +569,12 @@ namespace System.Reflection.Metadata
             return (rowCounts[(int)index] < MetadataStreamConstants.LargeTableRowCount && !IsMinimalDelta) ? SmallIndexSize : LargeIndexSize;
         }
 
-        private void InitializeTableReaders(MemoryBlock metadataTablesMemoryBlock, HeapSizes heapSizes, int[] rowCounts, int[] externalRowCountsOpt)
+        private void InitializeTableReaders(MemoryBlock metadataTablesMemoryBlock, HeapSizes heapSizes, int[] rowCounts, int[]? externalRowCountsOpt)
         {
             // Size of reference tags in each table.
             this.TableRowCounts = rowCounts;
 
-            // TODO (https://github.com/dotnet/corefx/issues/2061):
+            // TODO (https://github.com/dotnet/runtime/issues/14721):
             // Shouldn't XxxPtr table be always the same size or smaller than the corresponding Xxx table?
 
             // Compute ref sizes for tables that can have pointer tables
@@ -1009,7 +1009,7 @@ namespace System.Reflection.Metadata
         /// <summary>
         /// Information decoded from #Pdb stream, or null if the stream is not present.
         /// </summary>
-        public DebugMetadataHeader DebugMetadataHeader => _debugMetadataHeader;
+        public DebugMetadataHeader? DebugMetadataHeader => _debugMetadataHeader;
 
         /// <summary>
         /// The kind of the metadata (plain ECMA335, WinMD, etc.).
@@ -1085,7 +1085,7 @@ namespace System.Reflection.Metadata
         public ImmutableArray<byte> GetBlobContent(BlobHandle handle)
         {
             // TODO: We can skip a copy for virtual blobs.
-            byte[] bytes = GetBlobBytes(handle);
+            byte[]? bytes = GetBlobBytes(handle);
             return ImmutableByteArrayInterop.DangerousCreateFromUnderlyingArray(ref bytes);
         }
 
@@ -1423,7 +1423,7 @@ namespace System.Reflection.Metadata
             var groupedNestedTypes = new Dictionary<TypeDefinitionHandle, ImmutableArray<TypeDefinitionHandle>.Builder>();
 
             int numberOfNestedTypes = NestedClassTable.NumberOfRows;
-            ImmutableArray<TypeDefinitionHandle>.Builder builder = null;
+            ImmutableArray<TypeDefinitionHandle>.Builder? builder = null;
             TypeDefinitionHandle previousEnclosingClass = default(TypeDefinitionHandle);
 
             for (int i = 1; i <= numberOfNestedTypes; i++)
@@ -1467,6 +1467,7 @@ namespace System.Reflection.Metadata
             if (_lazyNestedTypesMap == null)
             {
                 InitializeNestedTypesMap();
+                Debug.Assert(_lazyNestedTypesMap != null);
             }
 
             ImmutableArray<TypeDefinitionHandle> nestedTypes;

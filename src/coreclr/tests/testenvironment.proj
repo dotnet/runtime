@@ -40,7 +40,15 @@
       COMPlus_JitStressRegs;
       COMPlus_TailcallStress;
       COMPlus_ReadyToRun;
-      COMPlus_ZapDisable
+      COMPlus_ZapDisable;
+      COMPlus_TC_OnStackReplacement;
+      COMPlus_TC_QuickJitForLoops;
+      COMPlus_TC_OnStackReplacement_InitialCounter;
+      COMPlus_OSR_HitLimit;
+      COMPlus_TieredPGO;
+      COMPlus_JitEnableGuardedDevirtualization;
+      COMPlus_EnableEHWriteThru;
+      COMPlus_JitObjectStackAllocation
     </COMPlusVariables>
   </PropertyGroup>
   <ItemGroup>
@@ -126,6 +134,12 @@
     <TestEnvironment Include="gcstress0xc_jitstress1" GCStress="0xC" JitStress="1" />
     <TestEnvironment Include="gcstress0xc_jitstress2" GCStress="0xC" JitStress="2" />
     <TestEnvironment Include="gcstress0xc_jitminopts_heapverify1" GCStress="0xC" JITMinOpts="1" HeapVerify="1" />
+    <TestEnvironment Include="jitosr" TC_OnStackReplacement="1" TC_QuickJitForLoops="1" TieredCompilation="1" />
+    <TestEnvironment Include="jitosr_stress" TC_OnStackReplacement="1" TC_QuickJitForLoops="1" TC_OnStackReplacement_InitialCounter="1" OSR_HitLimit="1" TieredCompilation="1" />
+    <TestEnvironment Include="jitpgo" TieredPGO="1" TieredCompilation="1" />
+    <TestEnvironment Include="jitguardeddevirtualization" JitEnableGuardedDevirtualization="1" TieredCompilation="0" />
+    <TestEnvironment Include="jitehwritethru" EnableEhWriteThru="1" TieredCompilation="0" />
+    <TestEnvironment Include="jitobjectstackallocation" JitObjectStackAllocation="1" TieredCompilation="0" />
   </ItemGroup>
 
   <!-- We use target batching on the COMPlusVariable items to iterate over the all COMPlus_* environment variables
@@ -162,11 +176,13 @@
   <Target Name="CreateTestEnvFile" DependsOnTargets="OutputCOMPlusVariables">
     <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
       <_TestEnvFileLine Include="@(_COMPlusVariable->'set %(Identity)=%(Value)')"  />
+      <_TestEnvFileLine Include="set MONO_ENV_OPTIONS=--interpreter" Condition="'$(Scenario)' == 'interpreter'" />
     </ItemGroup>
 
     <ItemGroup Condition="'$(TargetsWindows)' != 'true'">
       <_TestEnvFileLine Include="#!/usr/bin/env bash" />
       <_TestEnvFileLine Include="@(_COMPlusVariable->'export %(Identity)=%(Value)')"  />
+      <_TestEnvFileLine Include="export MONO_ENV_OPTIONS=--interpreter" Condition="'$(Scenario)' == 'interpreter'" />
     </ItemGroup>
 
     <WriteLinesToFile File="$(TestEnvFileName)" Lines="@(_TestEnvFileLine)" Overwrite="true" />

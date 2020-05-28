@@ -38,16 +38,16 @@ void ZapReadyToRunHeader::Save(ZapWriter * pZapWriter)
     readyToRunHeader.MinorVersion = READYTORUN_MINOR_VERSION;
 
     if (pImage->m_ModuleDecoder.IsPlatformNeutral())
-        readyToRunHeader.Flags |= READYTORUN_FLAG_PLATFORM_NEUTRAL_SOURCE;
+        readyToRunHeader.CoreHeader.Flags |= READYTORUN_FLAG_PLATFORM_NEUTRAL_SOURCE;
 
     // If all types loaded succesfully, set a flag to skip type loading sanity checks at runtime
     if (pImage->GetCompileInfo()->AreAllClassesFullyLoaded(pImage->GetModuleHandle()))
-        readyToRunHeader.Flags |= READYTORUN_FLAG_SKIP_TYPE_VALIDATION;
+        readyToRunHeader.CoreHeader.Flags |= READYTORUN_FLAG_SKIP_TYPE_VALIDATION;
 
     if (pImage->GetZapperOptions()->m_fPartialNGen)
-        readyToRunHeader.Flags |= READYTORUN_FLAG_PARTIAL;
+        readyToRunHeader.CoreHeader.Flags |= READYTORUN_FLAG_PARTIAL;
 
-    readyToRunHeader.NumberOfSections = m_Sections.GetCount();
+    readyToRunHeader.CoreHeader.NumberOfSections = m_Sections.GetCount();
 
     pZapWriter->Write(&readyToRunHeader, sizeof(readyToRunHeader));
 
@@ -317,15 +317,15 @@ void ZapImage::OutputEntrypointsTableForReadyToRun()
     m_pCodeMethodDescsSection->Place(pHashtableBlob);
 
     ZapReadyToRunHeader * pReadyToRunHeader = GetReadyToRunHeader();
-    pReadyToRunHeader->RegisterSection(READYTORUN_SECTION_METHODDEF_ENTRYPOINTS, pArrayBlob);
-    pReadyToRunHeader->RegisterSection(READYTORUN_SECTION_INSTANCE_METHOD_ENTRYPOINTS, pHashtableBlob);
-    pReadyToRunHeader->RegisterSection(READYTORUN_SECTION_RUNTIME_FUNCTIONS, m_pRuntimeFunctionSection);
+    pReadyToRunHeader->RegisterSection(ReadyToRunSectionType::MethodDefEntryPoints, pArrayBlob);
+    pReadyToRunHeader->RegisterSection(ReadyToRunSectionType::InstanceMethodEntryPoints, pHashtableBlob);
+    pReadyToRunHeader->RegisterSection(ReadyToRunSectionType::RuntimeFunctions, m_pRuntimeFunctionSection);
 
     if (m_pLazyMethodCallHelperSection->GetNodeCount() != 0)
-        pReadyToRunHeader->RegisterSection(READYTORUN_SECTION_DELAYLOAD_METHODCALL_THUNKS, m_pLazyMethodCallHelperSection);
+        pReadyToRunHeader->RegisterSection(ReadyToRunSectionType::DelayLoadMethodCallThunks, m_pLazyMethodCallHelperSection);
 
     if (m_pExceptionInfoLookupTable->GetSize() != 0)
-        pReadyToRunHeader->RegisterSection(READYTORUN_SECTION_EXCEPTION_INFO, m_pExceptionInfoLookupTable);
+        pReadyToRunHeader->RegisterSection(ReadyToRunSectionType::ExceptionInfo, m_pExceptionInfoLookupTable);
 
     EndRegion(CORINFO_REGION_COLD);
 }
@@ -417,7 +417,7 @@ void ZapImage::OutputDebugInfoForReadyToRun()
     ZapNode * pBlob = ZapBlob::NewBlob(this, &blob[0], blob.size());
     m_pDebugSection->Place(pBlob);
 
-    GetReadyToRunHeader()->RegisterSection(READYTORUN_SECTION_DEBUG_INFO, pBlob);
+    GetReadyToRunHeader()->RegisterSection(ReadyToRunSectionType::DebugInfo, pBlob);
 }
 
 void ZapImage::OutputInliningTableForReadyToRun()
@@ -426,14 +426,14 @@ void ZapImage::OutputInliningTableForReadyToRun()
     m_pPreloader->GetSerializedInlineTrackingMap(&serializedInlineTrackingBuffer);
     ZapNode * pBlob = ZapBlob::NewAlignedBlob(this, (PVOID)(const BYTE*) serializedInlineTrackingBuffer, serializedInlineTrackingBuffer.GetSize(), 4);
     m_pDebugSection->Place(pBlob);
-    GetReadyToRunHeader()->RegisterSection(READYTORUN_SECTION_INLINING_INFO, pBlob);
+    GetReadyToRunHeader()->RegisterSection(ReadyToRunSectionType::InliningInfo, pBlob);
 }
 
 void ZapImage::OutputProfileDataForReadyToRun()
 {
     if (m_pInstrumentSection != nullptr)
     {
-        GetReadyToRunHeader()->RegisterSection(READYTORUN_SECTION_PROFILEDATA_INFO, m_pInstrumentSection);
+        GetReadyToRunHeader()->RegisterSection(ReadyToRunSectionType::ProfileDataInfo, m_pInstrumentSection);
     }
 }
 
@@ -441,7 +441,7 @@ void ZapImage::OutputManifestMetadataForReadyToRun()
 {
     if (m_pMetaDataSection != nullptr)
     {
-        GetReadyToRunHeader()->RegisterSection(READYTORUN_SECTION_MANIFEST_METADATA, m_pMetaDataSection);
+        GetReadyToRunHeader()->RegisterSection(ReadyToRunSectionType::ManifestMetadata, m_pMetaDataSection);
     }
 }
 
@@ -491,7 +491,7 @@ void ZapImage::OutputTypesTableForReadyToRun(IMDInternalImport * pMDImport)
     _ASSERTE(m_pAvailableTypesSection);
     m_pAvailableTypesSection->Place(pBlob);
 
-    GetReadyToRunHeader()->RegisterSection(READYTORUN_SECTION_AVAILABLE_TYPES, pBlob);
+    GetReadyToRunHeader()->RegisterSection(ReadyToRunSectionType::AvailableTypes, pBlob);
 }
 
 template<class Tlambda>
@@ -754,7 +754,7 @@ void ZapImage::OutputAttributePresenceFilter(IMDInternalImport * pMDImport)
 
         _ASSERTE(m_pAttributePresenceSection);
         m_pAttributePresenceSection->Place(pBlob);
-        GetReadyToRunHeader()->RegisterSection(READYTORUN_SECTION_ATTRIBUTEPRESENCE, pBlob);
+        GetReadyToRunHeader()->RegisterSection(ReadyToRunSectionType::AttributePresence, pBlob);
     }
 }
 
@@ -841,6 +841,8 @@ static_assert_no_msg((int)READYTORUN_FIXUP_DeclaringTypeHandle       == (int)ENC
 
 static_assert_no_msg((int)READYTORUN_FIXUP_IndirectPInvokeTarget     == (int)ENCODE_INDIRECT_PINVOKE_TARGET);
 static_assert_no_msg((int)READYTORUN_FIXUP_PInvokeTarget             == (int)ENCODE_PINVOKE_TARGET);
+
+static_assert_no_msg((int)READYTORUN_FIXUP_Check_InstructionSetSupport== (int)ENCODE_CHECK_INSTRUCTION_SET_SUPPORT);
 
 //
 // READYTORUN_EXCEPTION

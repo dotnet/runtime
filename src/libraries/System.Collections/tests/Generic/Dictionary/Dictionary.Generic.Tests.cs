@@ -16,7 +16,7 @@ namespace System.Collections.Tests
     {
         protected override ModifyOperation ModifyEnumeratorThrows => ModifyOperation.Add | ModifyOperation.Insert;
 
-        protected override ModifyOperation ModifyEnumeratorAllowed => ModifyOperation.Remove | ModifyOperation.Clear;
+        protected override ModifyOperation ModifyEnumeratorAllowed => ModifyOperation.Overwrite | ModifyOperation.Remove | ModifyOperation.Clear;
 
         #region IDictionary<TKey, TValue Helper Methods
 

@@ -587,7 +587,7 @@ extern "C" PCODE ComPreStubWorker(ComPrestubMethodFrame *pPFrame, UINT64 *pError
 
             UINT_PTR* ppofs = (UINT_PTR*)  (((BYTE*)pCMD) - COMMETHOD_CALL_PRESTUB_SIZE + COMMETHOD_CALL_PRESTUB_ADDRESS_OFFSET);
 
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
             *ppofs = ((UINT_PTR)pStub - (size_t)pCMD);
 #else
             *ppofs = ((UINT_PTR)pStub);
@@ -617,7 +617,7 @@ extern "C" PCODE ComPreStubWorker(ComPrestubMethodFrame *pPFrame, UINT64 *pError
     else
         _ASSERTE(pCMD->IsNativeVoidRetVal());
 
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
     // Number of bytes to pop is upper half of the return value on x86
     *(((INT32 *)pErrorReturn) + 1) = pCMD->GetNumStackBytes();
 #endif
@@ -2221,7 +2221,7 @@ ComCallWrapper* ComCallWrapper::CopyFromTemplate(ComCallWrapperTemplate* pTempla
     // alloc wrapper, aligned to cache line
     NewCCWHolder pStartWrapper(pWrapperCache);
     pStartWrapper = (ComCallWrapper*)pWrapperCache->GetCacheLineAllocator()->
-#ifdef BIT64
+#ifdef HOST_64BIT
                                     GetCacheLine64();
     _ASSERTE(sizeof(ComCallWrapper) <= 64);
 #else
@@ -2262,7 +2262,7 @@ ComCallWrapper* ComCallWrapper::CopyFromTemplate(ComCallWrapperTemplate* pTempla
         {
             // alloc wrapper, aligned 32 bytes
             ComCallWrapper* pNewWrapper = (ComCallWrapper*)pWrapperCache->GetCacheLineAllocator()->
-#ifdef BIT64
+#ifdef HOST_64BIT
                                           GetCacheLine64();
             _ASSERTE(sizeof(ComCallWrapper) <= 64);
 #else
@@ -2541,18 +2541,18 @@ void ComCallWrapper::FreeWrapper(ComCallWrapperCache *pWrapperCache)
         while (pWrap2 != NULL)
         {
             ComCallWrapper* pTempWrap = GetNext(pWrap2);
-    #ifdef BIT64
+    #ifdef HOST_64BIT
             pWrapperCache->GetCacheLineAllocator()->FreeCacheLine64(pWrap2);
-    #else //BIT64
+    #else //HOST_64BIT
             pWrapperCache->GetCacheLineAllocator()->FreeCacheLine32(pWrap2);
-    #endif //BIT64
+    #endif //HOST_64BIT
             pWrap2 = pTempWrap;
         }
-    #ifdef BIT64
+    #ifdef HOST_64BIT
         pWrapperCache->GetCacheLineAllocator()->FreeCacheLine64(this);
-    #else //BIT64
+    #else //HOST_64BIT
         pWrapperCache->GetCacheLineAllocator()->FreeCacheLine32(this);
-    #endif //BIT64
+    #endif //HOST_64BIT
     }
 
     // release ccw mgr
@@ -2598,7 +2598,7 @@ ComCallWrapper* ComCallWrapper::CreateWrapper(OBJECTREF* ppObj, ComCallWrapperTe
     // The object is potentially agile so if allocate out of the current domain and then hand out to
     // multiple domains we might never release the wrapper for that object and hence never unload the CCWC.
     ComCallWrapperCache *pWrapperCache = NULL;
-    TypeHandle thClass = pServer->GetTrueTypeHandle();
+    TypeHandle thClass = pServer->GetTypeHandle();
 
     pWrapperCache = thClass.GetMethodTable()->GetLoaderAllocator()->GetComCallWrapperCache();
 
@@ -3199,8 +3199,8 @@ static IUnknown * GetComIPFromCCW_HandleExtendsCOMObject(
         MethodTable * pMT = pWrap->GetMethodTableOfObjectRef();
 
         // Check if this index is actually an interface implemented by us
-        // if it belongs to the base COM guy then we can hand over the call
-        // to him
+        // if it belongs to the base COM object then we can hand over the call
+        // to it
         if (pMT->IsWinRTObjectType())
         {
             bDelegateToBase = pTemplate->GetComMTForIndex(intfIndex)->IsWinRTTrivialAggregate();
@@ -3235,7 +3235,7 @@ static IUnknown * GetComIPFromCCW_HandleExtendsCOMObject(
 
     if (bDelegateToBase)
     {
-        // This is an interface of the base COM guy so delegate the call to him
+        // This is an interface of the base COM object so delegate the call to it
         SyncBlock* pBlock = pWrap->GetSyncBlock();
         _ASSERTE(pBlock);
 
@@ -3561,7 +3561,7 @@ IUnknown* ComCallWrapper::GetComIPFromCCW(ComCallWrapper *pWrap, REFIID riid, Me
         }
     }
 
-    // COM plus objects that extend from COM guys are special
+    // COM plus objects that extend from COM objects are special
     // If we're being asked for just an IInspectable, we don't need to do this (we may be in the process
     // of activating our aggregated object so can't use the RCW yet) - this is analagous to how IUnkown is handled
     // specially with GetBasicIP at the top of this function.
@@ -3678,8 +3678,7 @@ IDispatch* ComCallWrapper::GetIDispatchIP()
             CorIfaceAttr ifaceType = hndDefItfClass.GetMethodTable()->GetComInterfaceType();
             if (IsDispatchBasedItf(ifaceType))
             {
-                RETURN (IDispatch*)GetComIPFromCCW(this, GUID_NULL, hndDefItfClass.GetMethodTable(),
-                    GetComIPFromCCW::SuppressSecurityCheck);
+                RETURN (IDispatch*)GetComIPFromCCW(this, GUID_NULL, hndDefItfClass.GetMethodTable());
             }
             else
             {
@@ -4976,7 +4975,7 @@ ComCallWrapperTemplate::CCWInterfaceMapIterator::CCWInterfaceMapIterator(TypeHan
     if (WinRTSupported() && thClass.IsArray() && !pMT->IsMultiDimArray())
     {
         // We treat arrays as if they implemented IIterable<T>, IVector<T>, and IVectorView<T> (WinRT only)
-        TypeHandle thGenArg = thClass.AsArray()->GetArrayElementTypeHandle();
+        TypeHandle thGenArg = thClass.GetArrayElementTypeHandle();
         Instantiation inst(&thGenArg, 1);
 
         BinderClassID id = (fIterateRedirectedInterfaces ? CLASS__IITERABLE : CLASS__IENUMERABLEGENERIC);

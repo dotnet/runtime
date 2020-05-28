@@ -13,7 +13,7 @@ namespace System.Net.Sockets.Tests
     {
         public Accept(ITestOutputHelper output) : base(output) { }
 
-        [OuterLoop] // TODO: Issue #11345
+        [OuterLoop]
         [Theory]
         [MemberData(nameof(Loopbacks))]
         public async Task Accept_Success(IPAddress listenAt)
@@ -38,7 +38,7 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [OuterLoop] // TODO: Issue #11345
+        [OuterLoop]
         [Theory]
         [InlineData(2)]
         [InlineData(5)]
@@ -88,7 +88,7 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [OuterLoop] // TODO: Issue #11345
+        [OuterLoop]
         [Theory]
         [InlineData(2)]
         [InlineData(5)]
@@ -142,9 +142,9 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [OuterLoop] // TODO: Issue #11345
+        [OuterLoop]
         [Fact]
-        [ActiveIssue(17209, TestPlatforms.AnyUnix)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/1483", TestPlatforms.AnyUnix)]
         public async Task Accept_WithTargetSocket_Success()
         {
             if (!SupportsAcceptIntoExistingSocket)
@@ -166,8 +166,8 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [ActiveIssue(17209, TestPlatforms.AnyUnix)]
-        [OuterLoop] // TODO: Issue #11345
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/1483", TestPlatforms.AnyUnix)]
+        [OuterLoop]
         [Theory]
         [InlineData(false)]
         [InlineData(true)]
@@ -219,9 +219,9 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [OuterLoop] // TODO: Issue #11345
+        [OuterLoop]
         [Fact]
-        [ActiveIssue(17209, TestPlatforms.AnyUnix)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/1483", TestPlatforms.AnyUnix)]
         public void Accept_WithAlreadyBoundTargetSocket_Fails()
         {
             if (!SupportsAcceptIntoExistingSocket)
@@ -240,9 +240,9 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [OuterLoop] // TODO: Issue #11345
+        [OuterLoop]
         [Fact]
-        [ActiveIssue(17209, TestPlatforms.AnyUnix)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/1483", TestPlatforms.AnyUnix)]
         public async Task Accept_WithInUseTargetSocket_Fails()
         {
             if (!SupportsAcceptIntoExistingSocket)

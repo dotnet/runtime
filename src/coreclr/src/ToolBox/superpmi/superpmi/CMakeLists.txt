@@ -7,21 +7,18 @@ add_definitions(-DFEATURE_NO_HOST)
 add_definitions(-DSELF_NO_HOST)
 add_definitions(-DUSE_COREDISTOOLS)
 
-if(WIN32)
+if(CLR_CMAKE_HOST_WIN32)
   #use static crt
   add_definitions(-MT)
-endif(WIN32)
+endif(CLR_CMAKE_HOST_WIN32)
 
 include_directories(.)
 include_directories(../superpmi-shared)
 
 set(SUPERPMI_SOURCES
     commandline.cpp
-    coreclrcallbacks.cpp
     cycletimer.cpp
     icorjitinfo.cpp
-    ieememorymanager.cpp
-    iexecutionengine.cpp
     jitdebugger.cpp
     jitinstance.cpp
     methodstatsemitter.cpp
@@ -32,6 +29,7 @@ set(SUPERPMI_SOURCES
     ../superpmi-shared/callutils.cpp
     ../superpmi-shared/compileresult.cpp
     ../superpmi-shared/errorhandling.cpp
+    ../superpmi-shared/hash.cpp
     ../superpmi-shared/logging.cpp
     ../superpmi-shared/mclist.cpp
     ../superpmi-shared/methodcontext.cpp
@@ -49,10 +47,10 @@ _add_executable(superpmi
 
 target_precompile_header(TARGET superpmi HEADER standardpch.h)
 
-if(CLR_CMAKE_PLATFORM_UNIX)
+if(CLR_CMAKE_HOST_UNIX)
     target_link_libraries(superpmi
         utilcodestaticnohost
-        mscorrc_debug
+        mscorrc
         coreclrpal
         palrt
     )
@@ -65,6 +63,6 @@ else()
     )
 
     _install (FILES ${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>/superpmi.pdb DESTINATION PDB)
-endif(CLR_CMAKE_PLATFORM_UNIX)
+endif(CLR_CMAKE_HOST_UNIX)
 
 _install (TARGETS superpmi DESTINATION .)

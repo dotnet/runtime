@@ -118,7 +118,7 @@ void Compiler::unwindGetFuncLocations(FuncInfoDsc*             func,
 
 #endif // FEATURE_EH_FUNCLETS
 
-#if defined(_TARGET_UNIX_)
+#if defined(TARGET_UNIX)
 
 void Compiler::createCfiCode(FuncInfoDsc* func, UNATIVE_OFFSET codeOffset, UCHAR cfiOpcode, short dwarfReg, INT offset)
 {
@@ -142,14 +142,14 @@ void Compiler::unwindPushPopCFI(regNumber reg)
                               // since it is pushed as a frame register.
                               | RBM_FPBASE
 #endif
-#if defined(_TARGET_ARM_)
+#if defined(TARGET_ARM)
                               | RBM_R11 | RBM_LR | RBM_PC
 #endif
         ;
 
     if (relOffsetMask & genRegMask(reg))
     {
-#ifndef _TARGET_ARM_
+#ifndef TARGET_ARM
         createCfiCode(func, cbProlog, CFI_ADJUST_CFA_OFFSET, DWARF_REG_ILLEGAL, REGSIZE_BYTES);
 #endif
         createCfiCode(func, cbProlog, CFI_REL_OFFSET, mapRegNumToDwarfReg(reg));
@@ -377,7 +377,7 @@ void Compiler::DumpCfiInfo(bool                  isHotCode,
 }
 #endif // DEBUG
 
-#endif // _TARGET_UNIX_
+#endif // TARGET_UNIX
 
 //------------------------------------------------------------------------
 // Compiler::unwindGetCurrentOffset: Calculate the current byte offset of the
@@ -399,7 +399,7 @@ UNATIVE_OFFSET Compiler::unwindGetCurrentOffset(FuncInfoDsc* func)
     }
     else
     {
-#if defined(_TARGET_AMD64_) || (defined(_TARGET_UNIX_) && (defined(_TARGET_ARMARCH_) || defined(_TARGET_X86_)))
+#if defined(TARGET_AMD64) || (defined(TARGET_UNIX) && (defined(TARGET_ARMARCH) || defined(TARGET_X86)))
         assert(func->startLoc != nullptr);
         offset = func->startLoc->GetFuncletPrologOffset(GetEmitter());
 #else
@@ -410,24 +410,24 @@ UNATIVE_OFFSET Compiler::unwindGetCurrentOffset(FuncInfoDsc* func)
     return offset;
 }
 
-#if defined(_TARGET_AMD64_)
+#if defined(TARGET_AMD64)
 
 // See unwindAmd64.cpp
 
-#elif defined(_TARGET_ARM64_)
+#elif defined(TARGET_ARM64)
 
 // See unwindArm64.cpp
 
-#elif defined(_TARGET_ARM_)
+#elif defined(TARGET_ARM)
 
 // See unwindArm.cpp
 
-#elif defined(_TARGET_X86_)
+#elif defined(TARGET_X86)
 
 // See unwindX86.cpp
 
-#else // _TARGET_*
+#else // TARGET*
 
 #error Unsupported or unset target architecture
 
-#endif // _TARGET_*
+#endif // TARGET*

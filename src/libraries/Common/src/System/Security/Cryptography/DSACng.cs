@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using Internal.Cryptography;
 using System.Diagnostics;
 using System.IO;
@@ -45,7 +46,7 @@ namespace System.Security.Cryptography
             }
 
             public override string SignatureAlgorithm => "DSA";
-            public override string KeyExchangeAlgorithm => null;
+            public override string? KeyExchangeAlgorithm => null;
 
             // Need to override since base methods throw a "override me" exception: makes SignData/VerifyData function.
             protected override byte[] HashData(byte[] data, int offset, int count, HashAlgorithmName hashAlgorithm) =>

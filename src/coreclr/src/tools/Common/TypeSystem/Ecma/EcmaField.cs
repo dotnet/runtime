@@ -8,8 +8,6 @@ using System.Reflection;
 using System.Reflection.Metadata;
 using System.Runtime.CompilerServices;
 
-using Internal.TypeSystem;
-
 namespace Internal.TypeSystem.Ecma
 {
     public sealed partial class EcmaField : FieldDesc, EcmaModule.IEntityHandleObject
@@ -278,6 +276,15 @@ namespace Internal.TypeSystem.Ecma
     public static class EcmaFieldExtensions
     {
         /// <summary>
+        /// Returns the RVA associated with an RVA mapped field from the PE module.
+        /// </summary>
+        public static int GetFieldRvaValue(this EcmaField field)
+        {
+            Debug.Assert(field.HasRva);
+            return field.MetadataReader.GetFieldDefinition(field.Handle).GetRelativeVirtualAddress();
+        }
+
+        /// <summary>
         /// Retrieves the data associated with an RVA mapped field from the PE module.
         /// </summary>
         public static byte[] GetFieldRvaData(this EcmaField field)
@@ -291,7 +298,7 @@ namespace Internal.TypeSystem.Ecma
                 throw new BadImageFormatException();
 
             byte[] result = new byte[size];
-            memBlock.CopyTo(0, result, 0, result.Length);
+            memBlock.CopyTo(0, result, 0, size);
 
             return result;
         }

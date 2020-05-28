@@ -5,6 +5,7 @@
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Dynamic.Utils;
 using System.Linq.Expressions;
 using System.Linq.Expressions.Compiler;
@@ -22,7 +23,8 @@ namespace System.Runtime.CompilerServices
         /// <param name="locals">The actual hoisted local values.</param>
         /// <returns>The quoted expression.</returns>
         [Obsolete("do not use this method", true), EditorBrowsable(EditorBrowsableState.Never)]
-        public static Expression Quote(Expression expression, object hoistedLocals, object[] locals)
+        [return: NotNullIfNotNull("expression")]
+        public static Expression? Quote(Expression? expression, object hoistedLocals, object[] locals)
         {
             Debug.Assert(hoistedLocals != null && locals != null);
             var quoter = new ExpressionQuoter((HoistedLocals)hoistedLocals, locals);
@@ -95,7 +97,7 @@ namespace System.Runtime.CompilerServices
                 {
                     _shadowedVars.Push(new HashSet<ParameterExpression>(node.Variables));
                 }
-                Expression[] b = ExpressionVisitorUtils.VisitBlockExpressions(this, node);
+                Expression[]? b = ExpressionVisitorUtils.VisitBlockExpressions(this, node);
                 if (node.Variables.Count > 0)
                 {
                     _shadowedVars.Pop();
@@ -114,7 +116,7 @@ namespace System.Runtime.CompilerServices
                     _shadowedVars.Push(new HashSet<ParameterExpression> { node.Variable });
                 }
                 Expression b = Visit(node.Body);
-                Expression f = Visit(node.Filter);
+                Expression? f = Visit(node.Filter);
                 if (node.Variable != null)
                 {
                     _shadowedVars.Pop();
@@ -134,7 +136,7 @@ namespace System.Runtime.CompilerServices
                 var indexes = new int[count];
                 for (int i = 0; i < indexes.Length; i++)
                 {
-                    IStrongBox box = GetBox(node.Variables[i]);
+                    IStrongBox? box = GetBox(node.Variables[i]);
                     if (box == null)
                     {
                         indexes[i] = vars.Count;
@@ -171,7 +173,7 @@ namespace System.Runtime.CompilerServices
 
             protected internal override Expression VisitParameter(ParameterExpression node)
             {
-                IStrongBox box = GetBox(node);
+                IStrongBox? box = GetBox(node);
                 if (box == null)
                 {
                     return node;
@@ -179,7 +181,7 @@ namespace System.Runtime.CompilerServices
                 return Expression.Field(Expression.Constant(box), "Value");
             }
 
-            private IStrongBox GetBox(ParameterExpression variable)
+            private IStrongBox? GetBox(ParameterExpression variable)
             {
                 // Skip variables that are shadowed by a nested scope/lambda
                 foreach (HashSet<ParameterExpression> hidden in _shadowedVars)
@@ -190,7 +192,7 @@ namespace System.Runtime.CompilerServices
                     }
                 }
 
-                HoistedLocals scope = _scope;
+                HoistedLocals? scope = _scope;
                 object[] locals = _locals;
                 while (true)
                 {

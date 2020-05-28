@@ -98,7 +98,7 @@
 
 /* _W64 */
 #if !defined(_W64)
-#if !defined(__midl) && (defined(_X86_) || defined(_M_IX86)) && _MSC_VER >= 1300
+#if !defined(__midl) && (defined(HOST_X86) || defined(_M_IX86)) && _MSC_VER >= 1300
 #define _W64 __w64
 #else
 #define _W64
@@ -107,7 +107,7 @@
 
 /* uintptr_t */
 #if !defined(_UINTPTR_T_DEFINED)
-#if defined(BIT64)
+#if defined(HOST_64BIT)
 typedef unsigned __int64    uintptr_t;
 #else
 typedef _W64 unsigned int   uintptr_t;

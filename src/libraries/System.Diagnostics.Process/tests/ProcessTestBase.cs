@@ -33,6 +33,7 @@ namespace System.Diagnostics.Tests
                 {
                     p.Kill();
                     Assert.True(p.WaitForExit(WaitInMS));
+                    p.WaitForExit(); // wait for event handlers to complete
                 }
                 catch (InvalidOperationException) { } // in case it was never started
             }
@@ -52,6 +53,18 @@ namespace System.Diagnostics.Tests
         {
             Process p = null;
             using (RemoteInvokeHandle handle = RemoteExecutor.Invoke(method ?? (() => RemoteExecutor.SuccessExitCode), new RemoteInvokeOptions { Start = false }))
+            {
+                p = handle.Process;
+                handle.Process = null;
+            }
+            AddProcessForDispose(p);
+            return p;
+        }
+
+        protected Process CreateProcess(Func<Task<int>> method)
+        {
+            Process p = null;
+            using (RemoteInvokeHandle handle = RemoteExecutor.Invoke(method, new RemoteInvokeOptions { Start = false }))
             {
                 p = handle.Process;
                 handle.Process = null;
@@ -92,6 +105,7 @@ namespace System.Diagnostics.Tests
             Thread.Sleep(200);
             p.Kill();
             Assert.True(p.WaitForExit(WaitInMS));
+            p.WaitForExit(); // wait for event handlers to complete
         }
 
         /// <summary>

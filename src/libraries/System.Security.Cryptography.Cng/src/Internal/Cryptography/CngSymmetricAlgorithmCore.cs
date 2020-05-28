@@ -110,12 +110,12 @@ namespace Internal.Cryptography
             return CreateCryptoTransform(encrypting: false);
         }
 
-        public ICryptoTransform CreateEncryptor(byte[] rgbKey, byte[] rgbIV)
+        public ICryptoTransform CreateEncryptor(byte[] rgbKey, byte[]? rgbIV)
         {
             return CreateCryptoTransform(rgbKey, rgbIV, encrypting: true);
         }
 
-        public ICryptoTransform CreateDecryptor(byte[] rgbKey, byte[] rgbIV)
+        public ICryptoTransform CreateDecryptor(byte[] rgbKey, byte[]? rgbIV)
         {
             return CreateCryptoTransform(rgbKey, rgbIV, encrypting: false);
         }
@@ -130,7 +130,7 @@ namespace Internal.Cryptography
             return CreatePersistedCryptoTransformCore(ProduceCngKey, _outer.IV, encrypting);
         }
 
-        private ICryptoTransform CreateCryptoTransform(byte[] rgbKey, byte[] rgbIV, bool encrypting)
+        private ICryptoTransform CreateCryptoTransform(byte[] rgbKey, byte[]? rgbIV, bool encrypting)
         {
             if (rgbKey == null)
                 throw new ArgumentNullException(nameof(rgbKey));
@@ -149,14 +149,14 @@ namespace Internal.Cryptography
 
             // CloneByteArray is null-preserving. So even when GetCipherIv returns null the iv variable
             // is correct, and detached from the input parameter.
-            byte[] iv = _outer.Mode.GetCipherIv(rgbIV).CloneByteArray();
+            byte[]? iv = _outer.Mode.GetCipherIv(rgbIV).CloneByteArray();
 
             key = _outer.PreprocessKey(key);
 
             return CreateEphemeralCryptoTransformCore(key, iv, encrypting);
         }
 
-        private ICryptoTransform CreateEphemeralCryptoTransformCore(byte[] key, byte[] iv, bool encrypting)
+        private ICryptoTransform CreateEphemeralCryptoTransformCore(byte[] key, byte[]? iv, bool encrypting)
         {
             int blockSizeInBytes = _outer.BlockSize.BitSizeToByteSize();
             SafeAlgorithmHandle algorithmModeHandle = _outer.GetEphemeralModeHandle();
@@ -186,7 +186,7 @@ namespace Internal.Cryptography
         {
             Debug.Assert(!KeyInPlainText);
 
-            return CngKey.Open(_keyName, _provider, _optionOptions);
+            return CngKey.Open(_keyName!, _provider!, _optionOptions);
         }
 
         private bool KeyInPlainText
@@ -197,8 +197,8 @@ namespace Internal.Cryptography
         private readonly ICngSymmetricAlgorithm _outer;
 
         // If using a stored CNG key, these fields provide the CngKey.Open() parameters. If using a plaintext key, _keyName is set to null.
-        private string _keyName;
-        private readonly CngProvider _provider;
+        private string? _keyName;
+        private readonly CngProvider? _provider;
         private readonly CngKeyOpenOptions _optionOptions;
 
         private const int BitsPerByte = 8;

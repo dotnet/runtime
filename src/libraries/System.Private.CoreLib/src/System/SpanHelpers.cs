@@ -6,13 +6,6 @@ using System.Diagnostics;
 
 using Internal.Runtime.CompilerServices;
 
-#pragma warning disable SA1121 // explicitly using type aliases instead of built-in types
-#if BIT64
-using nuint = System.UInt64;
-#else
-using nuint = System.UInt32;
-#endif
-
 namespace System
 {
     internal static partial class SpanHelpers
@@ -22,7 +15,7 @@ namespace System
             if (byteLength == 0)
                 return;
 
-#if AMD64 || ARM64
+#if TARGET_AMD64 || TARGET_ARM64
             // The exact matrix on when ZeroMemory is faster than InitBlockUnaligned is very complex. The factors to consider include
             // type of hardware and memory aligment. This threshold was chosen as a good balance accross different configurations.
             if (byteLength > 768)
@@ -66,7 +59,7 @@ namespace System
                     Unsafe.Add<byte>(ref b, 6) = 0;
                     return;
                 case 8:
-#if BIT64
+#if TARGET_64BIT
                     Unsafe.As<byte, long>(ref b) = 0;
 #else
                     Unsafe.As<byte, int>(ref b) = 0;
@@ -74,7 +67,7 @@ namespace System
 #endif
                     return;
                 case 9:
-#if BIT64
+#if TARGET_64BIT
                     Unsafe.As<byte, long>(ref b) = 0;
 #else
                     Unsafe.As<byte, int>(ref b) = 0;
@@ -83,7 +76,7 @@ namespace System
                     Unsafe.Add<byte>(ref b, 8) = 0;
                     return;
                 case 10:
-#if BIT64
+#if TARGET_64BIT
                     Unsafe.As<byte, long>(ref b) = 0;
 #else
                     Unsafe.As<byte, int>(ref b) = 0;
@@ -92,7 +85,7 @@ namespace System
                     Unsafe.As<byte, short>(ref Unsafe.Add<byte>(ref b, 8)) = 0;
                     return;
                 case 11:
-#if BIT64
+#if TARGET_64BIT
                     Unsafe.As<byte, long>(ref b) = 0;
 #else
                     Unsafe.As<byte, int>(ref b) = 0;
@@ -102,7 +95,7 @@ namespace System
                     Unsafe.Add<byte>(ref b, 10) = 0;
                     return;
                 case 12:
-#if BIT64
+#if TARGET_64BIT
                     Unsafe.As<byte, long>(ref b) = 0;
 #else
                     Unsafe.As<byte, int>(ref b) = 0;
@@ -111,7 +104,7 @@ namespace System
                     Unsafe.As<byte, int>(ref Unsafe.Add<byte>(ref b, 8)) = 0;
                     return;
                 case 13:
-#if BIT64
+#if TARGET_64BIT
                     Unsafe.As<byte, long>(ref b) = 0;
 #else
                     Unsafe.As<byte, int>(ref b) = 0;
@@ -121,7 +114,7 @@ namespace System
                     Unsafe.Add<byte>(ref b, 12) = 0;
                     return;
                 case 14:
-#if BIT64
+#if TARGET_64BIT
                     Unsafe.As<byte, long>(ref b) = 0;
 #else
                     Unsafe.As<byte, int>(ref b) = 0;
@@ -131,7 +124,7 @@ namespace System
                     Unsafe.As<byte, short>(ref Unsafe.Add<byte>(ref b, 12)) = 0;
                     return;
                 case 15:
-#if BIT64
+#if TARGET_64BIT
                     Unsafe.As<byte, long>(ref b) = 0;
 #else
                     Unsafe.As<byte, int>(ref b) = 0;
@@ -142,7 +135,7 @@ namespace System
                     Unsafe.Add<byte>(ref b, 14) = 0;
                     return;
                 case 16:
-#if BIT64
+#if TARGET_64BIT
                     Unsafe.As<byte, long>(ref b) = 0;
                     Unsafe.As<byte, long>(ref Unsafe.Add<byte>(ref b, 8)) = 0;
 #else
@@ -153,7 +146,7 @@ namespace System
 #endif
                     return;
                 case 17:
-#if BIT64
+#if TARGET_64BIT
                     Unsafe.As<byte, long>(ref b) = 0;
                     Unsafe.As<byte, long>(ref Unsafe.Add<byte>(ref b, 8)) = 0;
 #else
@@ -165,7 +158,7 @@ namespace System
                     Unsafe.Add<byte>(ref b, 16) = 0;
                     return;
                 case 18:
-#if BIT64
+#if TARGET_64BIT
                     Unsafe.As<byte, long>(ref b) = 0;
                     Unsafe.As<byte, long>(ref Unsafe.Add<byte>(ref b, 8)) = 0;
 #else
@@ -177,7 +170,7 @@ namespace System
                     Unsafe.As<byte, short>(ref Unsafe.Add<byte>(ref b, 16)) = 0;
                     return;
                 case 19:
-#if BIT64
+#if TARGET_64BIT
                     Unsafe.As<byte, long>(ref b) = 0;
                     Unsafe.As<byte, long>(ref Unsafe.Add<byte>(ref b, 8)) = 0;
 #else
@@ -190,7 +183,7 @@ namespace System
                     Unsafe.Add<byte>(ref b, 18) = 0;
                     return;
                 case 20:
-#if BIT64
+#if TARGET_64BIT
                     Unsafe.As<byte, long>(ref b) = 0;
                     Unsafe.As<byte, long>(ref Unsafe.Add<byte>(ref b, 8)) = 0;
 #else
@@ -202,7 +195,7 @@ namespace System
                     Unsafe.As<byte, int>(ref Unsafe.Add<byte>(ref b, 16)) = 0;
                     return;
                 case 21:
-#if BIT64
+#if TARGET_64BIT
                     Unsafe.As<byte, long>(ref b) = 0;
                     Unsafe.As<byte, long>(ref Unsafe.Add<byte>(ref b, 8)) = 0;
 #else
@@ -215,7 +208,7 @@ namespace System
                     Unsafe.Add<byte>(ref b, 20) = 0;
                     return;
                 case 22:
-#if BIT64
+#if TARGET_64BIT
                     Unsafe.As<byte, long>(ref b) = 0;
                     Unsafe.As<byte, long>(ref Unsafe.Add<byte>(ref b, 8)) = 0;
 #else
@@ -287,7 +280,7 @@ namespace System
                 // So the only cost is a bit of code size, which is made up for by the fact that
                 // we save on writes to b.
 
-#if BIT64
+#if TARGET_64BIT
                 Unsafe.As<byte, long>(ref Unsafe.AddByteOffset<byte>(ref b, i)) = 0;
                 Unsafe.As<byte, long>(ref Unsafe.AddByteOffset<byte>(ref b, i + 8)) = 0;
 #else
@@ -306,7 +299,7 @@ namespace System
 
             if ((byteLength & 8) != 0)
             {
-#if BIT64
+#if TARGET_64BIT
                 Unsafe.As<byte, long>(ref Unsafe.AddByteOffset<byte>(ref b, i)) = 0;
 #else
                 Unsafe.As<byte, int>(ref Unsafe.AddByteOffset<byte>(ref b, i)) = 0;
@@ -348,14 +341,14 @@ namespace System
 
             for (; pointerSizeLength >= 8; pointerSizeLength -= 8)
             {
-                Unsafe.Add(ref Unsafe.Add(ref ip, (IntPtr)pointerSizeLength), -1) = default;
-                Unsafe.Add(ref Unsafe.Add(ref ip, (IntPtr)pointerSizeLength), -2) = default;
-                Unsafe.Add(ref Unsafe.Add(ref ip, (IntPtr)pointerSizeLength), -3) = default;
-                Unsafe.Add(ref Unsafe.Add(ref ip, (IntPtr)pointerSizeLength), -4) = default;
-                Unsafe.Add(ref Unsafe.Add(ref ip, (IntPtr)pointerSizeLength), -5) = default;
-                Unsafe.Add(ref Unsafe.Add(ref ip, (IntPtr)pointerSizeLength), -6) = default;
-                Unsafe.Add(ref Unsafe.Add(ref ip, (IntPtr)pointerSizeLength), -7) = default;
-                Unsafe.Add(ref Unsafe.Add(ref ip, (IntPtr)pointerSizeLength), -8) = default;
+                Unsafe.Add(ref Unsafe.Add(ref ip, (nint)pointerSizeLength), -1) = default;
+                Unsafe.Add(ref Unsafe.Add(ref ip, (nint)pointerSizeLength), -2) = default;
+                Unsafe.Add(ref Unsafe.Add(ref ip, (nint)pointerSizeLength), -3) = default;
+                Unsafe.Add(ref Unsafe.Add(ref ip, (nint)pointerSizeLength), -4) = default;
+                Unsafe.Add(ref Unsafe.Add(ref ip, (nint)pointerSizeLength), -5) = default;
+                Unsafe.Add(ref Unsafe.Add(ref ip, (nint)pointerSizeLength), -6) = default;
+                Unsafe.Add(ref Unsafe.Add(ref ip, (nint)pointerSizeLength), -7) = default;
+                Unsafe.Add(ref Unsafe.Add(ref ip, (nint)pointerSizeLength), -8) = default;
             }
 
             Debug.Assert(pointerSizeLength <= 7);
@@ -396,15 +389,15 @@ namespace System
             // Write first four and last three.
             Unsafe.Add(ref ip, 2) = default;
             Unsafe.Add(ref ip, 3) = default;
-            Unsafe.Add(ref Unsafe.Add(ref ip, (IntPtr)pointerSizeLength), -3) = default;
-            Unsafe.Add(ref Unsafe.Add(ref ip, (IntPtr)pointerSizeLength), -2) = default;
+            Unsafe.Add(ref Unsafe.Add(ref ip, (nint)pointerSizeLength), -3) = default;
+            Unsafe.Add(ref Unsafe.Add(ref ip, (nint)pointerSizeLength), -2) = default;
 
         Write2To3:
             Debug.Assert(pointerSizeLength >= 2);
 
             // Write first two and last one.
             Unsafe.Add(ref ip, 1) = default;
-            Unsafe.Add(ref Unsafe.Add(ref ip, (IntPtr)pointerSizeLength), -1) = default;
+            Unsafe.Add(ref Unsafe.Add(ref ip, (nint)pointerSizeLength), -1) = default;
 
         Write1:
             Debug.Assert(pointerSizeLength >= 1);

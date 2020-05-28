@@ -5,7 +5,7 @@
     WriterType = RawTextWriterType.Encoded;
     ClassName = "XmlEncodedRawTextWriter";
     ClassNameIndent = "XmlEncodedRawTextWriterIndent";
-    BufferName = "bufChars";
+    BufferName = "_bufChars";
     BufferType = "char";
     EncodeCharBody = @"/* Surrogate character */
 if (XmlCharType.IsSurrogate(ch))

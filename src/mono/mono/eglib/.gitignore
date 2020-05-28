@@ -1,0 +1,11 @@
+/Makefile
+/Makefile.in
+/.libs
+/.deps
+/*.lo
+/*.la
+/*.o
+/semantic.cache
+/.project
+/.cproject
+/eglib-config.h

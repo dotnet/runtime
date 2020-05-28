@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Security;
@@ -63,7 +64,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
 
         // This object handles IMarshal calls for us:
         [ThreadStatic]
-        private static IMarshal t_winRtMarshalProxy = null;
+        private static IMarshal? t_winRtMarshalProxy = null;
 
         private static void EnsureHasMarshalProxy()
         {
@@ -79,7 +80,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
                 if (hr != __HResults.S_OK)
                 {
                     Exception ex = new Exception(string.Format("{0} ({1}!RoGetBufferMarshaler)", SR.WinRtCOM_Error, WinTypesDLL));
-                    ex.SetErrorCode(hr);
+                    ex.HResult = hr;
                     throw ex;
                 }
 
@@ -99,7 +100,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
 
         #region Fields
 
-        private readonly byte[] _data = null;
+        private readonly byte[] _data;
         private readonly int _dataStartOffs = 0;
         private int _usefulDataLength = 0;
         private readonly int _maxDataCapacity = 0;
@@ -148,9 +149,9 @@ namespace System.Runtime.InteropServices.WindowsRuntime
 
         #region Helpers
 
-        internal void GetUnderlyingData(out byte[] underlyingDataArray, out int underlyingDataArrayStartOffset)
+        internal void GetUnderlyingData([NotNull] out byte[]? underlyingDataArray, out int underlyingDataArrayStartOffset)
         {
-            underlyingDataArray = _data;
+            underlyingDataArray = _data!;
             underlyingDataArrayStartOffset = _dataStartOffs;
         }
 
@@ -226,7 +227,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
                 if (value > ((IBuffer)this).Capacity)
                 {
                     ArgumentOutOfRangeException ex = new ArgumentOutOfRangeException(nameof(value), SR.Argument_BufferLengthExceedsCapacity);
-                    ex.SetErrorCode(__HResults.E_BOUNDS);
+                    ex.HResult = __HResults.E_BOUNDS;
                     throw ex;
                 }
 
@@ -262,42 +263,42 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         void IMarshal.DisconnectObject(uint dwReserved)
         {
             EnsureHasMarshalProxy();
-            t_winRtMarshalProxy.DisconnectObject(dwReserved);
+            t_winRtMarshalProxy!.DisconnectObject(dwReserved);
         }
 
 
         void IMarshal.GetMarshalSizeMax(ref Guid riid, IntPtr pv, uint dwDestContext, IntPtr pvDestContext, uint mshlflags, out uint pSize)
         {
             EnsureHasMarshalProxy();
-            t_winRtMarshalProxy.GetMarshalSizeMax(ref riid, pv, dwDestContext, pvDestContext, mshlflags, out pSize);
+            t_winRtMarshalProxy!.GetMarshalSizeMax(ref riid, pv, dwDestContext, pvDestContext, mshlflags, out pSize);
         }
 
 
         void IMarshal.GetUnmarshalClass(ref Guid riid, IntPtr pv, uint dwDestContext, IntPtr pvDestContext, uint mshlFlags, out Guid pCid)
         {
             EnsureHasMarshalProxy();
-            t_winRtMarshalProxy.GetUnmarshalClass(ref riid, pv, dwDestContext, pvDestContext, mshlFlags, out pCid);
+            t_winRtMarshalProxy!.GetUnmarshalClass(ref riid, pv, dwDestContext, pvDestContext, mshlFlags, out pCid);
         }
 
 
         void IMarshal.MarshalInterface(IntPtr pStm, ref Guid riid, IntPtr pv, uint dwDestContext, IntPtr pvDestContext, uint mshlflags)
         {
             EnsureHasMarshalProxy();
-            t_winRtMarshalProxy.MarshalInterface(pStm, ref riid, pv, dwDestContext, pvDestContext, mshlflags);
+            t_winRtMarshalProxy!.MarshalInterface(pStm, ref riid, pv, dwDestContext, pvDestContext, mshlflags);
         }
 
 
         void IMarshal.ReleaseMarshalData(IntPtr pStm)
         {
             EnsureHasMarshalProxy();
-            t_winRtMarshalProxy.ReleaseMarshalData(pStm);
+            t_winRtMarshalProxy!.ReleaseMarshalData(pStm);
         }
 
 
         void IMarshal.UnmarshalInterface(IntPtr pStm, ref Guid riid, out IntPtr ppv)
         {
             EnsureHasMarshalProxy();
-            t_winRtMarshalProxy.UnmarshalInterface(pStm, ref riid, out ppv);
+            t_winRtMarshalProxy!.UnmarshalInterface(pStm, ref riid, out ppv);
         }
         #endregion Implementation of IMarshal
 

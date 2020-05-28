@@ -23,8 +23,7 @@ class Object;
 class Assembly;
 class LoaderAllocator;
 
-class CLRPrivBinderAssemblyLoadContext :
-    public IUnknownCommon<ICLRPrivBinder, IID_ICLRPrivBinder>
+class CLRPrivBinderAssemblyLoadContext : public AssemblyLoadContext
 {
 public:
 
@@ -34,9 +33,6 @@ public:
     STDMETHOD(BindAssemblyByName)(
             /* [in] */ IAssemblyName *pIAssemblyName,
             /* [retval][out] */ ICLRPrivAssembly **ppAssembly);
-
-    STDMETHOD(GetBinderID)(
-            /* [retval][out] */ UINT_PTR *pBinderId);
 
     STDMETHOD(GetLoaderAllocator)(
         /* [retval][out] */ LPVOID *pLoaderAllocator);
@@ -82,7 +78,13 @@ private:
 
     CLRPrivBinderCoreCLR *m_pTPABinder;
 
+    // A long weak GC handle to the managed AssemblyLoadContext
     INT_PTR m_ptrManagedAssemblyLoadContext;
+    // A strong GC handle to the managed AssemblyLoadContext. This handle is set when the unload of the AssemblyLoadContext is initiated
+    // to keep the managed AssemblyLoadContext alive until the unload is finished.
+    // We still keep the weak handle pointing to the same managed AssemblyLoadContext so that native code can use the handle above 
+    // to refer to it during the whole lifetime of the AssemblyLoadContext.
+    INT_PTR m_ptrManagedStrongAssemblyLoadContext;
 
     LoaderAllocator* m_pAssemblyLoaderAllocator;
     void* m_loaderAllocatorHandle;

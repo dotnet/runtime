@@ -3,7 +3,6 @@
     <OutputType>Exe</OutputType>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <GCStressIncompatible>true</GCStressIncompatible>
-    <DefineConstants>$(DefineConstants);STATIC;PROJECTK_BUILD</DefineConstants>
     <CLRTestExecutionArguments>-t 1 -tp 0 -dz 17 -sdz 8517 -dc 10000 -sdc 5000 -lt 5 -dp 0.8 -dw 0.8</CLRTestExecutionArguments>
     <IsGCSimulatorTest>true</IsGCSimulatorTest>
     <CLRTestKind>BuildAndRun</CLRTestKind>

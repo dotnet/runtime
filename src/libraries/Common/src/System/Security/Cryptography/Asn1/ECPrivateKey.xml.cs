@@ -17,16 +17,16 @@ namespace System.Security.Cryptography.Asn1
         internal ReadOnlyMemory<byte> PrivateKey;
         internal System.Security.Cryptography.Asn1.ECDomainParameters? Parameters;
         internal ReadOnlyMemory<byte>? PublicKey;
-      
+
         internal void Encode(AsnWriter writer)
         {
             Encode(writer, Asn1Tag.Sequence);
         }
-    
+
         internal void Encode(AsnWriter writer, Asn1Tag tag)
         {
             writer.PushSequence(tag);
-            
+
             writer.WriteInteger(Version);
             writer.WriteOctetString(PrivateKey.Span);
 
@@ -52,33 +52,30 @@ namespace System.Security.Cryptography.Asn1
         {
             return Decode(Asn1Tag.Sequence, encoded, ruleSet);
         }
-        
+
         internal static ECPrivateKey Decode(Asn1Tag expectedTag, ReadOnlyMemory<byte> encoded, AsnEncodingRules ruleSet)
         {
-            AsnReader reader = new AsnReader(encoded, ruleSet);
-            
-            Decode(reader, expectedTag, out ECPrivateKey decoded);
+            AsnValueReader reader = new AsnValueReader(encoded.Span, ruleSet);
+
+            Decode(ref reader, expectedTag, encoded, out ECPrivateKey decoded);
             reader.ThrowIfNotEmpty();
             return decoded;
         }
 
-        internal static void Decode(AsnReader reader, out ECPrivateKey decoded)
+        internal static void Decode(ref AsnValueReader reader, ReadOnlyMemory<byte> rebind, out ECPrivateKey decoded)
         {
-            if (reader == null)
-                throw new ArgumentNullException(nameof(reader));
-
-            Decode(reader, Asn1Tag.Sequence, out decoded);
+            Decode(ref reader, Asn1Tag.Sequence, rebind, out decoded);
         }
 
-        internal static void Decode(AsnReader reader, Asn1Tag expectedTag, out ECPrivateKey decoded)
+        internal static void Decode(ref AsnValueReader reader, Asn1Tag expectedTag, ReadOnlyMemory<byte> rebind, out ECPrivateKey decoded)
         {
-            if (reader == null)
-                throw new ArgumentNullException(nameof(reader));
-
             decoded = default;
-            AsnReader sequenceReader = reader.ReadSequence(expectedTag);
-            AsnReader explicitReader;
-            
+            AsnValueReader sequenceReader = reader.ReadSequence(expectedTag);
+            AsnValueReader explicitReader;
+            ReadOnlySpan<byte> rebindSpan = rebind.Span;
+            int offset;
+            ReadOnlySpan<byte> tmpSpan;
+
 
             if (!sequenceReader.TryReadUInt8(out decoded.Version))
             {
@@ -86,9 +83,9 @@ namespace System.Security.Cryptography.Asn1
             }
 
 
-            if (sequenceReader.TryReadPrimitiveOctetStringBytes(out ReadOnlyMemory<byte> tmpPrivateKey))
+            if (sequenceReader.TryReadPrimitiveOctetStringBytes(out tmpSpan))
             {
-                decoded.PrivateKey = tmpPrivateKey;
+                decoded.PrivateKey = rebindSpan.Overlaps(tmpSpan, out offset) ? rebind.Slice(offset, tmpSpan.Length) : tmpSpan.ToArray();
             }
             else
             {
@@ -100,7 +97,7 @@ namespace System.Security.Cryptography.Asn1
             {
                 explicitReader = sequenceReader.ReadSequence(new Asn1Tag(TagClass.ContextSpecific, 0));
                 System.Security.Cryptography.Asn1.ECDomainParameters tmpParameters;
-                System.Security.Cryptography.Asn1.ECDomainParameters.Decode(explicitReader, out tmpParameters);
+                System.Security.Cryptography.Asn1.ECDomainParameters.Decode(ref explicitReader, rebind, out tmpParameters);
                 decoded.Parameters = tmpParameters;
 
                 explicitReader.ThrowIfNotEmpty();
@@ -111,9 +108,9 @@ namespace System.Security.Cryptography.Asn1
             {
                 explicitReader = sequenceReader.ReadSequence(new Asn1Tag(TagClass.ContextSpecific, 1));
 
-                if (explicitReader.TryReadPrimitiveBitStringValue(out _, out ReadOnlyMemory<byte> tmpPublicKey))
+                if (explicitReader.TryReadPrimitiveBitStringValue(out _, out tmpSpan))
                 {
-                    decoded.PublicKey = tmpPublicKey;
+                    decoded.PublicKey = rebindSpan.Overlaps(tmpSpan, out offset) ? rebind.Slice(offset, tmpSpan.Length) : tmpSpan.ToArray();
                 }
                 else
                 {

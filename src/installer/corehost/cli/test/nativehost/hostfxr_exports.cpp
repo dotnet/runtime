@@ -27,11 +27,16 @@ hostfxr_exports::hostfxr_exports(const pal::string_t &hostfxr_path)
 
     main_startupinfo = (hostfxr_main_startupinfo_fn)pal::get_symbol(_dll, "hostfxr_main_startupinfo");
 
+    set_error_writer = (hostfxr_set_error_writer_fn)pal::get_symbol(_dll, "hostfxr_set_error_writer");
+
+    get_native_search_directories = (hostfxr_get_native_search_directories_fn)pal::get_symbol(_dll, "hostfxr_get_native_search_directories");
+
     if (init_command_line == nullptr || run_app == nullptr
         || init_config == nullptr || get_delegate == nullptr
         || get_prop_value == nullptr || set_prop_value == nullptr
         || get_properties == nullptr || close == nullptr
-        || main_startupinfo == nullptr)
+        || main_startupinfo == nullptr || set_error_writer == nullptr
+        || get_native_search_directories == nullptr)
     {
         std::cout << "Failed to get hostfxr entry points" << std::endl;
         throw StatusCode::CoreHostEntryPointFailure;

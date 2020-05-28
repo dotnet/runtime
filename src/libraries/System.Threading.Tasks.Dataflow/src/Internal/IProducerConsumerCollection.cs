@@ -11,6 +11,7 @@
 //
 // =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
+#nullable disable // copy used only for netstandard1.0 build
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;

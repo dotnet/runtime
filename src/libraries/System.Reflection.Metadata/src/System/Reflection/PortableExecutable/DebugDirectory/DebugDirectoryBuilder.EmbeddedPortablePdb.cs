@@ -55,7 +55,7 @@ namespace System.Reflection.PortableExecutable
                 foreach (var blob in debugMetadata.GetBlobs())
                 {
                     var segment = blob.GetBytes();
-                    deflate.Write(segment.Array, segment.Offset, segment.Count);
+                    deflate.Write(segment.Array!, segment.Offset, segment.Count);
                 }
             }
 

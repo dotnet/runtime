@@ -67,15 +67,26 @@ namespace System.StubHelpers
                 // + 1 for the null character from the user.  + 1 for the null character we put in.
                 nb = checked((strManaged.Length + 1) * Marshal.SystemMaxDBCSCharSize + 1);
 
+                bool didAlloc = false;
+
                 // Use the pre-allocated buffer (allocated by localloc IL instruction) if not NULL,
                 // otherwise fallback to AllocCoTaskMem
                 if (pbNativeBuffer == null)
                 {
                     pbNativeBuffer = (byte*)Marshal.AllocCoTaskMem(nb);
+                    didAlloc = true;
                 }
 
-                nb = Marshal.StringToAnsiString(strManaged, pbNativeBuffer, nb,
-                    bestFit: 0 != (flags & 0xFF), throwOnUnmappableChar: 0 != (flags >> 8));
+                try
+                {
+                    nb = Marshal.StringToAnsiString(strManaged, pbNativeBuffer, nb,
+                        bestFit: 0 != (flags & 0xFF), throwOnUnmappableChar: 0 != (flags >> 8));
+                }
+                catch (Exception) when (didAlloc)
+                {
+                    Marshal.FreeCoTaskMem((IntPtr)pbNativeBuffer);
+                    throw;
+                }
             }
             else
             {
@@ -149,7 +160,7 @@ namespace System.StubHelpers
 
             fixed (char* pwzChar = strManaged)
             {
-#if PLATFORM_WINDOWS
+#if TARGET_WINDOWS
                 cbWritten = Interop.Kernel32.WideCharToMultiByte(
                     Interop.Kernel32.CP_ACP,
                     bestFit ? 0 : Interop.Kernel32.WC_NO_BEST_FIT_CHARS,
@@ -301,8 +312,7 @@ namespace System.StubHelpers
             }
             else
             {
-                byte trailByte;
-                bool hasTrailByte = strManaged.TryGetTrailByte(out trailByte);
+                bool hasTrailByte = strManaged.TryGetTrailByte(out byte trailByte);
 
                 uint lengthInBytes = (uint)strManaged.Length * 2;
 
@@ -441,8 +451,7 @@ namespace System.StubHelpers
             }
             else
             {
-                int nbytesused;
-                byte[] bytes = AnsiCharMarshaler.DoAnsiConversion(strManaged, fBestFit, fThrowOnUnmappableChar, out nbytesused);
+                byte[] bytes = AnsiCharMarshaler.DoAnsiConversion(strManaged, fBestFit, fThrowOnUnmappableChar, out int nbytesused);
 
                 Debug.Assert(nbytesused < nbytes, "Insufficient buffer allocated in VBByValStrMarshaler.ConvertToNative");
                 fixed (byte* pBytes = &bytes[0])
@@ -692,7 +701,7 @@ namespace System.StubHelpers
         internal static extern IntPtr ConvertToNative(object objSrc, IntPtr itfMT, IntPtr classMT, int flags);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern object ConvertToManaged(IntPtr pUnk, IntPtr itfMT, IntPtr classMT, int flags);
+        internal static extern object ConvertToManaged(IntPtr ppUnk, IntPtr itfMT, IntPtr classMT, int flags);
 
         [DllImport(RuntimeHelpers.QCall)]
         internal static extern void ClearNative(IntPtr pUnk);
@@ -1422,8 +1431,7 @@ namespace System.StubHelpers
                     throw new ArgumentException(SR.Format(SR.Argument_WinRTSystemRuntimeType, managedType.GetType()));
                 }
 
-                bool isPrimitive;
-                string winrtTypeName = WinRTTypeNameConverter.ConvertToWinRTTypeName(managedType, out isPrimitive);
+                string winrtTypeName = WinRTTypeNameConverter.ConvertToWinRTTypeName(managedType, out bool isPrimitive);
                 if (winrtTypeName != null)
                 {
                     // Must be a WinRT type, either in a WinMD or a Primitive
@@ -1470,8 +1478,7 @@ namespace System.StubHelpers
             }
             else
             {
-                bool isPrimitive;
-                managedType = WinRTTypeNameConverter.GetTypeFromWinRTTypeName(typeName, out isPrimitive);
+                managedType = WinRTTypeNameConverter.GetTypeFromWinRTTypeName(typeName, out bool isPrimitive);
 
                 // TypeSource must match
                 if (isPrimitive != (pNativeType->typeKind == TypeKind.Primitive))
@@ -1565,7 +1572,7 @@ namespace System.StubHelpers
         // but on ARM it will allow us to correctly determine the layout of native argument lists containing
         // VARIANTs). Note that the field names here don't matter: none of the code refers to these fields,
         // the structure just exists to provide size information to the IL marshaler.
-#if BIT64
+#if TARGET_64BIT
         private IntPtr data1;
         private IntPtr data2;
 #else
@@ -1853,13 +1860,14 @@ namespace System.StubHelpers
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern void ValidateByref(IntPtr byref, IntPtr pMD, object pThis); // the byref is pinned so we can safely "cast" it to IntPtr
 
+        [Intrinsic]
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern IntPtr GetStubContext();
 
-#if BIT64
+#if TARGET_64BIT
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern IntPtr GetStubContextAddr();
-#endif // BIT64
+#endif // TARGET_64BIT
 
 #if FEATURE_ARRAYSTUB_AS_IL
         [MethodImpl(MethodImplOptions.InternalCall)]
@@ -1870,5 +1878,8 @@ namespace System.StubHelpers
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern void MulticastDebuggerTraceHelper(object o, int count);
 #endif
+
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        internal static extern IntPtr NextCallReturnAddress();
     }  // class StubHelpers
 }

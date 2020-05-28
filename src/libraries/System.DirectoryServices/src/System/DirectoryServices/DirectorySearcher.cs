@@ -195,11 +195,7 @@ namespace System.DirectoryServices
         /// <devdoc>
         /// Gets or sets the Lightweight Directory Access Protocol (LDAP) filter string format.
         /// </devdoc>
-        [
-            DefaultValue(defaultFilter),
-            // CoreFXPort - Remove design support
-            // TypeConverter("System.Diagnostics.Design.StringValueConverter, " + AssemblyRef.SystemDesign)
-        ]
+        [DefaultValue(defaultFilter)]
         public string Filter
         {
             get => _filter;
@@ -408,11 +404,7 @@ namespace System.DirectoryServices
         /// Gets or sets an attribute name to indicate that an attribute-scoped query search should be
         /// performed.
         /// </devdoc>
-        [
-            DefaultValue(""),
-            // CoreFXPort - Remove design support
-            // TypeConverter("System.Diagnostics.Design.StringValueConverter, " + AssemblyRef.SystemDesign)
-        ]
+        [DefaultValue("")]
         public string AttributeScopeQuery
         {
             get => _attributeScopeQuery;

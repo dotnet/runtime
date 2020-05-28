@@ -19,7 +19,6 @@
 #include "winwrap.h"                    // Header for macros and functions.
 #include "utilcode.h"
 #include "holder.h"
-#include "ndpversion.h"
 #include "pedecoder.h"
 
 
@@ -183,7 +182,7 @@ WszCreateProcess(
     return fResult;
 }
 
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
 
 
 #include "psapi.h"
@@ -292,11 +291,11 @@ HRESULT SetThreadName(HANDLE hThread, PCWSTR lpThreadDescription)
     return g_pfnSetThreadDescription(hThread, lpThreadDescription);
 }
 
-#else //!FEATURE_PAL
+#else //!TARGET_UNIX
 
 HRESULT SetThreadName(HANDLE hThread, PCWSTR lpThreadDescription)
 {
     return SetThreadDescription(hThread, lpThreadDescription);
 }
 
-#endif //!FEATURE_PAL
+#endif //!TARGET_UNIX

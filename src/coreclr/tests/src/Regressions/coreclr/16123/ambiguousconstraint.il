@@ -5,7 +5,7 @@
 .assembly extern System.Runtime { }
 
 // TODO: use the contract once this is exposed from contracts
-.assembly extern System.Private.CoreLib { }
+.assembly extern System.Runtime { }
 
 .assembly ambiguousconstraint { }
 
@@ -54,7 +54,7 @@
       callvirt instance void IFoo::Frob()
       leave.s Fail
     }
-    catch [System.Private.CoreLib]System.Runtime.AmbiguousImplementationException
+    catch [System.Runtime]System.Runtime.AmbiguousImplementationException
     {
       pop
       leave.s Success

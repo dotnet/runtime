@@ -373,19 +373,13 @@ void ClassLayout::InitializeGCPtrs(Compiler* compiler)
         // so it should be safe to fit this into a 30 bits bit field.
         assert(gcPtrCount < (1 << 30));
 
-        // We assume that we cannot have a struct with GC pointers that is not a multiple
-        // of the register size.
-        // The EE currently does not allow this, but it could change.
-        // Let's assert it just to be safe.
-        noway_assert((gcPtrCount == 0) || (roundUp(m_size, REGSIZE_BYTES) == m_size));
-
         m_gcPtrCount = gcPtrCount;
     }
 
     INDEBUG(m_gcPtrsInitialized = true;)
 }
 
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
 ClassLayout* ClassLayout::GetPPPQuirkLayout(CompAllocator alloc)
 {
     assert(m_gcPtrsInitialized);
@@ -415,4 +409,4 @@ ClassLayout* ClassLayout::GetPPPQuirkLayout(CompAllocator alloc)
 
     return m_pppQuirkLayout;
 }
-#endif // _TARGET_AMD64_
+#endif // TARGET_AMD64

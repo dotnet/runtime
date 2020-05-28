@@ -23,7 +23,7 @@ namespace System.DirectoryServices
         {
             get
             {
-                object objectName = name.ToLower(CultureInfo.InvariantCulture);
+                object objectName = name.ToLowerInvariant();
                 if (Contains((string)objectName))
                 {
                     return (ResultPropertyValueCollection)InnerHashtable[objectName];
@@ -41,12 +41,12 @@ namespace System.DirectoryServices
 
         internal void Add(string name, ResultPropertyValueCollection value)
         {
-            Dictionary.Add(name.ToLower(CultureInfo.InvariantCulture), value);
+            Dictionary.Add(name.ToLowerInvariant(), value);
         }
 
         public bool Contains(string propertyName)
         {
-            object objectName = propertyName.ToLower(CultureInfo.InvariantCulture);
+            object objectName = propertyName.ToLowerInvariant();
             return Dictionary.Contains(objectName);
         }
 

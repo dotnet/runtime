@@ -1,4 +1,5 @@
-﻿<root>
+﻿<?xml version="1.0" encoding="utf-8"?>
+<root>
   <!-- 
     Microsoft ResX Schema 
     
@@ -286,5 +287,8 @@
   </data>
   <data name="UnauthorizedAccess_ClientIsNotCurrentUser" xml:space="preserve">
     <value>Client connection (user id {0}) was refused because it was not owned by the current user (id {1}).</value>
+  </data>
+  <data name="NotSupported_PipeSecurityIsCurrentUserOnly" xml:space="preserve">
+    <value>'pipeSecurity' must be null when 'options' contains 'PipeOptions.CurrentUserOnly'. </value>
   </data>
 </root>

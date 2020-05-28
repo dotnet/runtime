@@ -24,7 +24,7 @@ namespace Internal.Cryptography.Pal
             return FromBlobOrFile(null, fileName, password, keyStorageFlags);
         }
 
-        private static StorePal FromBlobOrFile(byte[] rawData, string fileName, SafePasswordHandle password, X509KeyStorageFlags keyStorageFlags)
+        private static StorePal FromBlobOrFile(byte[]? rawData, string? fileName, SafePasswordHandle password, X509KeyStorageFlags keyStorageFlags)
         {
             Debug.Assert(password != null);
 
@@ -36,7 +36,7 @@ namespace Internal.Cryptography.Pal
                 {
                     fixed (char* pFileName = fileName)
                     {
-                        CRYPTOAPI_BLOB blob = new CRYPTOAPI_BLOB(fromFile ? 0 : rawData.Length, pRawData);
+                        CRYPTOAPI_BLOB blob = new CRYPTOAPI_BLOB(fromFile ? 0 : rawData!.Length, pRawData);
                         bool persistKeySet = (0 != (keyStorageFlags & X509KeyStorageFlags.PersistKeySet));
                         PfxCertStoreFlags certStoreFlags = MapKeyStorageFlags(keyStorageFlags);
 
@@ -67,11 +67,11 @@ namespace Internal.Cryptography.Pal
 
                             if (fromFile)
                             {
-                                rawData = File.ReadAllBytes(fileName);
+                                rawData = File.ReadAllBytes(fileName!);
                             }
                             fixed (byte* pRawData2 = rawData)
                             {
-                                CRYPTOAPI_BLOB blob2 = new CRYPTOAPI_BLOB(rawData.Length, pRawData2);
+                                CRYPTOAPI_BLOB blob2 = new CRYPTOAPI_BLOB(rawData!.Length, pRawData2);
                                 certStore = Interop.crypt32.PFXImportCertStore(ref blob2, password, certStoreFlags);
                                 if (certStore == null || certStore.IsInvalid)
                                     throw Marshal.GetLastWin32Error().ToCryptographicException();
@@ -84,7 +84,7 @@ namespace Internal.Cryptography.Pal
                                 // the certificates in the collection and set our custom CERT_CLR_DELETE_KEY_PROP_ID property
                                 // so the key container will be deleted when the cert contexts will go away.
                                 //
-                                SafeCertContextHandle pCertContext = null;
+                                SafeCertContextHandle? pCertContext = null;
                                 while (Interop.crypt32.CertEnumCertificatesInStore(certStore, ref pCertContext))
                                 {
                                     CRYPTOAPI_BLOB nullBlob = new CRYPTOAPI_BLOB(0, null);
@@ -142,7 +142,7 @@ namespace Internal.Cryptography.Pal
 
             for (int i = 0; i < certificates.Count; i++)
             {
-                SafeCertContextHandle certContext = ((CertificatePal)certificates[i].Pal).CertContext;
+                SafeCertContextHandle certContext = ((CertificatePal)certificates[i].Pal!).CertContext;
                 if (!Interop.crypt32.CertAddCertificateLinkToStore(certStore, certContext, CertStoreAddDisposition.CERT_STORE_ADD_ALWAYS, IntPtr.Zero))
                     throw Marshal.GetLastWin32Error().ToCryptographicException();
             }

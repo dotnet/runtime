@@ -17,7 +17,7 @@ namespace System.Security.Cryptography
 
             internal string GetAlgorithmGroup()
             {
-                return Key.AlgorithmGroup.AlgorithmGroup;
+                return Key.AlgorithmGroup!.AlgorithmGroup;
             }
 
             internal void FreeKey()

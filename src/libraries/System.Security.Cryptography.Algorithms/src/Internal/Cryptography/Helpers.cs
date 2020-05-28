@@ -17,7 +17,7 @@ namespace Internal.Cryptography
             return cipherMode != CipherMode.ECB;
         }
 
-        public static byte[] GetCipherIv(this CipherMode cipherMode, byte[] iv)
+        public static byte[]? GetCipherIv(this CipherMode cipherMode, byte[]? iv)
         {
             if (cipherMode.UsesIv())
             {
@@ -37,21 +37,6 @@ namespace Internal.Cryptography
             byte[] buffer = new byte[count];
             RandomNumberGenerator.Fill(buffer);
             return buffer;
-        }
-
-        // encodes the integer i into a 4-byte array, in big endian.
-        public static void WriteInt(uint i, byte[] arr, int offset)
-        {
-            unchecked
-            {
-                Debug.Assert(arr != null);
-                Debug.Assert(arr.Length >= offset + sizeof(uint));
-
-                arr[offset] = (byte)(i >> 24);
-                arr[offset + 1] = (byte)(i >> 16);
-                arr[offset + 2] = (byte)(i >> 8);
-                arr[offset + 3] = (byte)i;
-            }
         }
 
         public static byte[] FixupKeyParity(this byte[] key)

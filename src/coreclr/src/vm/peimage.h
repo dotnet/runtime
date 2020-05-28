@@ -19,6 +19,7 @@
 #include "peimagelayout.h"
 #include "sstring.h"
 #include "holder.h"
+#include <bundle.h>
 
 class SimpleRWLock;
 // --------------------------------------------------------------------------------
@@ -96,13 +97,14 @@ public:
     static PTR_PEImage LoadFlat(
         const void *flat,
         COUNT_T size);
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
     static PTR_PEImage LoadImage(
         HMODULE hMod);
-#endif // !FEATURE_PAL
+#endif // !TARGET_UNIX
     static PTR_PEImage OpenImage(
         LPCWSTR pPath,
-        MDInternalImportFlags flags = MDInternalImport_Default);
+        MDInternalImportFlags flags = MDInternalImport_Default,
+        BundleFileLocation bundleFileLocation = BundleFileLocation::Invalid());
 
 
     // clones the image with new flags (this is pretty much about cached / noncached difference)
@@ -146,8 +148,13 @@ public:
 
     // Accessors
     const SString &GetPath();
+    const SString& GetPathToLoad();
     BOOL IsFile();
+    BOOL IsInBundle() const;
     HANDLE GetFileHandle();
+    INT64 GetOffset() const;
+    INT64 GetSize() const;
+
     void SetFileHandle(HANDLE hFile);
     HRESULT TryOpenFile();
 
@@ -176,9 +183,9 @@ public:
     static CHECK CheckStartup();
     PTR_CVOID GetMetadata(COUNT_T *pSize = NULL);
 
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
     static void GetPathFromDll(HINSTANCE hMod, SString &result);
-#endif // !FEATURE_PAL
+#endif // !TARGET_UNIX
     static BOOL PathEquals(const SString &p1, const SString &p2);
     BOOL IsTrustedNativeImage(){LIMITED_METHOD_CONTRACT; return m_bIsTrustedNativeImage;};
     void SetIsTrustedNativeImage(){LIMITED_METHOD_CONTRACT; m_bIsTrustedNativeImage=TRUE;};
@@ -193,6 +200,7 @@ public:
     BOOL HasCorHeader();
     BOOL HasReadyToRunHeader();
     BOOL IsReferenceAssembly();
+    BOOL IsComponentAssembly();
 #ifdef FEATURE_PREJIT
     BOOL IsNativeILILOnly();
     BOOL IsNativeILDll();
@@ -236,7 +244,7 @@ private:
     // Private routines
     // ------------------------------------------------------------
 
-    void  Init(LPCWSTR pPath);
+    void  Init(LPCWSTR pPath, BundleFileLocation bundleFileLocation);
     void  Init(IStream* pStream, UINT64 uStreamAsmId,
                DWORD dwModuleId, BOOL resourceFile);
 
@@ -271,6 +279,10 @@ private:
 
     SString     m_path;
     LONG        m_refCount;
+
+    BundleFileLocation m_bundleFileLocation; // If this image is located within a single-file bundle, 
+                                             // the location within the bundle. If m_bundleFileLocation is vaild, 
+                                             // it takes precedence over m_path for loading.
 
     // This variable will have the data of module name.
     // It is only used by DAC to remap fusion loaded modules back to

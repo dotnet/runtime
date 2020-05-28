@@ -75,7 +75,7 @@ namespace System.Linq.Expressions.Compiler
             }
             if (closure)
             {
-                _scope.EmitGet(_scope.NearestHoistedLocals.SelfVariable);
+                _scope.EmitGet(_scope.NearestHoistedLocals!.SelfVariable);
             }
             else
             {
@@ -93,7 +93,7 @@ namespace System.Linq.Expressions.Compiler
         private void EmitDelegateConstruction(LambdaCompiler inner)
         {
             Type delegateType = inner._lambda.Type;
-            DynamicMethod dynamicMethod = inner._method as DynamicMethod;
+            DynamicMethod? dynamicMethod = inner._method as DynamicMethod;
 #if FEATURE_COMPILE_TO_METHODBUILDER
             if (dynamicMethod != null)
 #else
@@ -205,7 +205,7 @@ namespace System.Linq.Expressions.Compiler
         /// <param name="flags">
         /// The enum to specify if the lambda is compiled with the tail call optimization.
         /// </param>
-        private void EmitLambdaBody(CompilerScope parent, bool inlined, CompilationFlags flags)
+        private void EmitLambdaBody(CompilerScope? parent, bool inlined, CompilationFlags flags)
         {
             _scope.Enter(this, parent);
 

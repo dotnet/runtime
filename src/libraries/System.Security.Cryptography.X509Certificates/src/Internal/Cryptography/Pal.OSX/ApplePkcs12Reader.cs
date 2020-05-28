@@ -75,7 +75,7 @@ namespace Internal.Cryptography.Pal
             return key;
         }
 
-        internal static SafeSecKeyRefHandle GetPrivateKey(AsymmetricAlgorithm key)
+        internal static SafeSecKeyRefHandle? GetPrivateKey(AsymmetricAlgorithm? key)
         {
             if (key == null)
             {

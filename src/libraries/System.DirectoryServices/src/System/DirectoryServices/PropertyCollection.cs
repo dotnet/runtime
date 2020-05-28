@@ -34,7 +34,7 @@ namespace System.DirectoryServices
                 if (propertyName == null)
                     throw new ArgumentNullException(nameof(propertyName));
 
-                string name = propertyName.ToLower(CultureInfo.InvariantCulture);
+                string name = propertyName.ToLowerInvariant();
                 if (valueTable.Contains(name))
                     return (PropertyValueCollection)valueTable[name];
                 else
@@ -110,7 +110,7 @@ namespace System.DirectoryServices
             DirectoryEntry entryToUse = _entry.CloneBrowsable();
             entryToUse.FillCache("");
 
-            UnsafeNativeMethods.IAdsPropertyList propList = (UnsafeNativeMethods.IAdsPropertyList)entryToUse.AdsObject;
+            _ = (UnsafeNativeMethods.IAdsPropertyList)entryToUse.AdsObject;
 
             entryToUse.propertiesAlreadyEnumerated = true;
             return new PropertyEnumerator(_entry, entryToUse);

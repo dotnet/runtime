@@ -585,7 +585,9 @@ namespace System.Drawing
 
                 if (value != _color)
                 {
+#if FEATURE_SYSTEM_EVENTS
                     Color oldColor = _color;
+#endif
                     _color = value;
                     InternalSetColor(value);
 
@@ -608,7 +610,7 @@ namespace System.Drawing
         {
             get
             {
-                Brush brush = null;
+                Brush? brush = null;
 
                 switch (PenType)
                 {
@@ -636,7 +638,7 @@ namespace System.Drawing
                         break;
                 }
 
-                return brush;
+                return brush!;
             }
             set
             {

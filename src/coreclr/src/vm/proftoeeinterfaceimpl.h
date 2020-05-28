@@ -141,7 +141,7 @@ typedef struct _PROFILER_STACK_WALK_DATA PROFILER_STACK_WALK_DATA;
 // from the profiler implementation.  The profiler will call back on the v-table
 // to get at EE internals as required.
 
-class ProfToEEInterfaceImpl : public ICorProfilerInfo11
+class ProfToEEInterfaceImpl : public ICorProfilerInfo12
 {
 public:
 
@@ -642,6 +642,33 @@ public:
 
     // end ICorProfilerInfo11
 
+    // begin ICorProfilerInfo12
+
+    COM_METHOD EventPipeCreateProvider(
+        const WCHAR *szName,
+        EVENTPIPE_PROVIDER *pProviderHandle);
+
+    COM_METHOD EventPipeDefineEvent(
+        EVENTPIPE_PROVIDER provHandle,
+        const WCHAR *szName, 
+        UINT32 eventID,
+        UINT64 keywords,
+        UINT32 eventVersion,
+        UINT32 level,
+        BOOL needStack,
+        UINT32 cParamDescs,
+        COR_PRF_EVENTPIPE_PARAM_DESC pParamDescs[],
+        EVENTPIPE_EVENT *pEventHandle);
+
+    COM_METHOD EventPipeWriteEvent(
+        EVENTPIPE_EVENT eventHandle,
+        COR_PRF_EVENT_DATA data[],
+        UINT32 cData,
+        LPCGUID pActivityId,
+        LPCGUID pRelatedActivityId);
+
+    // end ICorProfilerInfo12
+    
 protected:
 
     // Internal Helper Functions
@@ -675,9 +702,9 @@ protected:
 
     HRESULT SetupThreadForReJIT();
 
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
     HRESULT ProfilerEbpWalker(Thread * pThreadToSnapshot, LPCONTEXT pctxSeed, StackSnapshotCallback * callback, void * clientData);
-#endif //_TARGET_X86_
+#endif //TARGET_X86
 };
 
 #endif // PROFILING_SUPPORTED

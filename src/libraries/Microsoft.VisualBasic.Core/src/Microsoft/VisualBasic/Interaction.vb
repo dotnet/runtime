@@ -81,7 +81,7 @@ Namespace Microsoft.VisualBasic
 
             'Validate index - Note that unlike the fx, this is a legacy VB function and the index is 1 based.
             If Expression <= 0 OrElse Expression > 255 Then
-                Throw New ArgumentException(GetResourceString(SR.Argument_Range1toFF1, "Expression"))
+                Throw New ArgumentException(SR.Format(SR.Argument_Range1toFF1, "Expression"))
             End If
 
             If m_SortedEnvList Is Nothing Then
@@ -108,7 +108,7 @@ Namespace Microsoft.VisualBasic
             Expression = Trim(Expression)
 
             If Expression.Length = 0 Then
-                Throw New ArgumentException(GetResourceString(SR.Argument_InvalidValue1, "Expression"))
+                Throw New ArgumentException(SR.Format(SR.Argument_InvalidValue1, "Expression"))
             End If
 
             Return Environment.GetEnvironmentVariable(Expression)
@@ -119,7 +119,7 @@ Namespace Microsoft.VisualBasic
         '============================================================================
 
         Public Sub Beep()
-#If PLATFORM_WINDOWS Then
+#If TARGET_WINDOWS Then
             UnsafeNativeMethods.MessageBeep(0)
 #Else
             Throw New PlatformNotSupportedException()
@@ -151,7 +151,7 @@ Namespace Microsoft.VisualBasic
             Dim FixedIndex As Integer = CInt(Fix(Index) - 1) 'ParamArray is 0 based, but Choose assumes 1 based 
 
             If Choice.Rank <> 1 Then
-                Throw New ArgumentException(GetResourceString(SR.Argument_RankEQOne1, "Choice"))
+                Throw New ArgumentException(SR.Format(SR.Argument_RankEQOne1, "Choice"))
             ElseIf FixedIndex < 0 OrElse FixedIndex > Choice.GetUpperBound(0) Then
                 Return Nothing
             End If
@@ -188,15 +188,15 @@ Namespace Microsoft.VisualBasic
 
             'Validate arguments
             If Start < 0 Then
-                Throw New ArgumentException(GetResourceString(SR.Argument_InvalidValue1, "Start"))
+                Throw New ArgumentException(SR.Format(SR.Argument_InvalidValue1, "Start"))
             End If
 
             If [Stop] <= Start Then
-                Throw New ArgumentException(GetResourceString(SR.Argument_InvalidValue1, "Stop"))
+                Throw New ArgumentException(SR.Format(SR.Argument_InvalidValue1, "Stop"))
             End If
 
             If Interval < 1 Then
-                Throw New ArgumentException(GetResourceString(SR.Argument_InvalidValue1, "Interval"))
+                Throw New ArgumentException(SR.Format(SR.Argument_InvalidValue1, "Interval"))
             End If
 
             'Check for before-first and after-last ranges
@@ -297,7 +297,7 @@ Namespace Microsoft.VisualBasic
 
             'Ensure we have an even number of arguments (0 based)
             If (Elements Mod 2) <> 0 Then
-                Throw New ArgumentException(GetResourceString(SR.Argument_InvalidValue1, "VarExpr"))
+                Throw New ArgumentException(SR.Format(SR.Argument_InvalidValue1, "VarExpr"))
             End If
 
             Do While Elements > 0
@@ -332,7 +332,7 @@ Namespace Microsoft.VisualBasic
                 Else
                     AppSectionKey = UserKey.OpenSubKey(AppSection, True)
                     If AppSectionKey Is Nothing Then
-                        Throw New ArgumentException(GetResourceString(SR.Argument_InvalidValue1, "Section"))
+                        Throw New ArgumentException(SR.Format(SR.Argument_InvalidValue1, "Section"))
                     End If
 
                     AppSectionKey.DeleteValue(Key)
@@ -442,7 +442,7 @@ Namespace Microsoft.VisualBasic
             ElseIf TypeOf o Is String Then ' - odd that this is required to be a string when it isn't in GetAllSettings() above...
                 Return DirectCast(o, String)
             Else
-                Throw New ArgumentException(GetResourceString(SR.Argument_InvalidValue))
+                Throw New ArgumentException(SR.Argument_InvalidValue)
             End If
         End Function
 
@@ -460,7 +460,7 @@ Namespace Microsoft.VisualBasic
 
             If rk Is Nothing Then
                 'Subkey could not be created
-                Throw New ArgumentException(GetResourceString(SR.Interaction_ResKeyNotCreated1, sIniSect))
+                Throw New ArgumentException(SR.Format(SR.Interaction_ResKeyNotCreated1, sIniSect))
             End If
 
             Try
@@ -489,7 +489,7 @@ Namespace Microsoft.VisualBasic
 
         Private Sub CheckPathComponent(ByVal s As String)
             If (s Is Nothing) OrElse (s.Length = 0) Then
-                Throw New ArgumentException(GetResourceString(SR.Argument_PathNullOrEmpty))
+                Throw New ArgumentException(SR.Argument_PathNullOrEmpty)
             End If
         End Sub
 
@@ -595,7 +595,7 @@ Namespace Microsoft.VisualBasic
                     Return Nothing
 
                 Case Else
-                    Throw New ArgumentException(GetResourceString(SR.Argument_InvalidValue1, "CallType"))
+                    Throw New ArgumentException(SR.Format(SR.Argument_InvalidValue1, "CallType"))
             End Select
         End Function
 

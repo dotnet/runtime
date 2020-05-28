@@ -11,10 +11,8 @@ namespace System.Text.RegularExpressions
     {
         private readonly ICollection<T> _collection;
 
-        public CollectionDebuggerProxy(ICollection<T> collection)
-        {
+        public CollectionDebuggerProxy(ICollection<T> collection) =>
             _collection = collection ?? throw new ArgumentNullException(nameof(collection));
-        }
 
         [DebuggerBrowsable(DebuggerBrowsableState.RootHidden)]
         public T[] Items

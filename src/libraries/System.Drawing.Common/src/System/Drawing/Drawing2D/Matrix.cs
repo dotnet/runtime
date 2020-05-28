@@ -263,10 +263,9 @@ namespace System.Drawing.Drawing2D
                 return isIdentity != 0;
             }
         }
-        public override bool Equals(object obj)
+        public override bool Equals(object? obj)
         {
-            Matrix matrix2 = obj as Matrix;
-            if (matrix2 == null)
+            if (!(obj is Matrix matrix2))
                 return false;
 
             Gdip.CheckStatus(Gdip.GdipIsMatrixEqual(

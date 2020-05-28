@@ -71,7 +71,7 @@ namespace Internal.Cryptography.Pal
                 throw new CryptographicException(SR.Cryptography_X509_StoreReadOnly);
             }
 
-            public SafeHandle SafeHandle => null;
+            public SafeHandle? SafeHandle => null;
 
             internal static AppleTrustStore OpenStore(StoreName storeName, StoreLocation location, OpenFlags openFlags)
             {

@@ -16,11 +16,11 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #pragma hdrstop
 #endif
 
-#ifndef _TARGET_X86_
+#ifndef TARGET_X86
 #error "This should be included only for x86"
-#endif // _TARGET_X86_
+#endif // TARGET_X86
 
-#if defined(_TARGET_UNIX_)
+#if defined(TARGET_UNIX)
 short Compiler::mapRegNumToDwarfReg(regNumber reg)
 {
     short dwarfReg = DWARF_REG_ILLEGAL;
@@ -29,7 +29,7 @@ short Compiler::mapRegNumToDwarfReg(regNumber reg)
 
     return dwarfReg;
 }
-#endif // _TARGET_UNIX_
+#endif // TARGET_UNIX
 
 void Compiler::unwindBegProlog()
 {

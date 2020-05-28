@@ -93,14 +93,14 @@
 //       file:threads.h#SuspendingTheRuntime and file:../../Documentation/botr/threading.md
 //   * Garbage collection - file:gc.cpp#Overview and file:../../Documentation/botr/garbage-collection.md
 //   * code:AppDomain - The managed version of a process.
-//   * Calling Into the runtime (FCALLs QCalls) file:../../Documentation/botr/mscorlib.md
+//   * Calling Into the runtime (FCALLs QCalls) file:../../Documentation/botr/corelib.md
 //   * Exceptions - file:../../Documentation/botr/exceptions.md. The most important routine to start
 //       with is code:COMPlusFrameHandler which is the routine that we hook up to get called when an unmanaged
 //       exception happens.
 //   * Assembly Loading file:../../Documentation/botr/type-loader.md
 //   * Profiling file:../../Documentation/botr/profiling.md and file:../../Documentation/botr/profilability.md
 //   * FCALLS QCALLS (calling into the runtime from managed code)
-//       file:../../Documentation/botr/mscorlib.md
+//       file:../../Documentation/botr/corelib.md
 //   * Event Tracing for Windows
 //     * file:../inc/eventtrace.h#EventTracing -
 //     * This is the main file dealing with event tracing in CLR
@@ -149,8 +149,6 @@
 #include "binder.h"
 #include "olevariant.h"
 #include "comcallablewrapper.h"
-#include "apithreadstress.h"
-#include "perflog.h"
 #include "../dlls/mscorrc/resource.h"
 #include "util.hpp"
 #include "shimload.h"
@@ -166,11 +164,11 @@
 #include "threadsuspend.h"
 #include "disassembler.h"
 #include "jithost.h"
-#include "castcache.h"
+#include "pgo.h"
 
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
 #include "dwreport.h"
-#endif // !FEATURE_PAL
+#endif // !TARGET_UNIX
 
 #include "stringarraylist.h"
 #include "stubhelpers.h"
@@ -188,7 +186,7 @@
 #include "runtimecallablewrapper.h"
 #include "notifyexternals.h"
 #include "mngstdinterfaces.h"
-#include "rcwwalker.h"
+#include "interoplibinterface.h"
 #endif // FEATURE_COMINTEROP
 
 #ifdef FEATURE_COMINTEROP_APARTMENT_SUPPORT
@@ -199,10 +197,6 @@
 #include "proftoeeinterfaceimpl.h"
 #include "profilinghelper.h"
 #endif // PROFILING_SUPPORTED
-
-#ifdef FEATURE_COMINTEROP
-#include "synchronizationcontextnative.h"       // For SynchronizationContextNative::Cleanup
-#endif
 
 #ifdef FEATURE_INTERPRETER
 #include "interpreter.h"
@@ -218,10 +212,10 @@
 #include "diagnosticserver.h"
 #include "eventpipe.h"
 
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
 // Included for referencing __security_cookie
 #include "process.h"
-#endif // !FEATURE_PAL
+#endif // !TARGET_UNIX
 
 #ifdef FEATURE_GDBJIT
 #include "gdbjit.h"
@@ -233,7 +227,7 @@ static int GetThreadUICultureId(__out LocaleIDValue* pLocale);  // TODO: This sh
 static HRESULT GetThreadUICultureNames(__inout StringArrayList* pCultureNames);
 #endif // !CROSSGEN_COMPILE
 
-HRESULT EEStartup(COINITIEE fFlags);
+HRESULT EEStartup();
 
 
 #ifndef CROSSGEN_COMPILE
@@ -257,12 +251,6 @@ HRESULT g_EEStartupStatus = S_OK;
 // checking this flag.
 Volatile<BOOL> g_fEEStarted = FALSE;
 
-// Flag indicating if the EE was started up by COM.
-extern BOOL g_fEEComActivatedStartup;
-
-// flag indicating that EE was not started up by IJW, Hosted, COM or my managed exe.
-extern BOOL g_fEEOtherStartup;
-
 // The OS thread ID of the thread currently performing EE startup, or 0 if there is no such thread.
 DWORD   g_dwStartupThreadId = 0;
 
@@ -271,22 +259,12 @@ static CLREvent * g_pEEShutDownEvent;
 
 static DangerousNonHostedSpinLock g_EEStartupLock;
 
-HRESULT InitializeEE(COINITIEE flags)
-{
-    WRAPPER_NO_CONTRACT;
-#ifdef FEATURE_EVENT_TRACE
-    if(!g_fEEComActivatedStartup)
-        g_fEEOtherStartup = TRUE;
-#endif // FEATURE_EVENT_TRACE
-    return EnsureEEStarted(flags);
-}
-
 // ---------------------------------------------------------------------------
 // %%Function: EnsureEEStarted()
 //
 // Description: Ensure the CLR is started.
 // ---------------------------------------------------------------------------
-HRESULT EnsureEEStarted(COINITIEE flags)
+HRESULT EnsureEEStarted()
 {
     CONTRACTL
     {
@@ -320,7 +298,7 @@ HRESULT EnsureEEStarted(COINITIEE flags)
         AppX::SetIsAppXProcess(!!(startupFlags & STARTUP_APPX_APP_MODEL));
 #endif
 
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
         // The sooner we do this, the sooner we avoid probing registry entries.
         // (Perf Optimization for VSWhidbey:113373.)
         REGUTIL::InitOptionalConfigCache();
@@ -340,7 +318,7 @@ HRESULT EnsureEEStarted(COINITIEE flags)
             {
                 g_dwStartupThreadId = GetCurrentThreadId();
 
-                EEStartup(flags);
+                EEStartup();
                 bStarted=g_fEEStarted;
                 hr = g_EEStartupStatus;
 
@@ -400,7 +378,7 @@ HRESULT EnsureEEStarted(COINITIEE flags)
 
 #ifndef CROSSGEN_COMPILE
 
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
 // This is our Ctrl-C, Ctrl-Break, etc. handler.
 static BOOL WINAPI DbgCtrlCHandler(DWORD dwCtrlType)
 {
@@ -511,12 +489,12 @@ void InitGSCookie()
 
     volatile GSCookie * pGSCookiePtr = GetProcessGSCookiePtr();
 
-#ifdef FEATURE_PAL
+#ifdef TARGET_UNIX
     // On Unix, the GS cookie is stored in a read only data segment
     DWORD newProtection = PAGE_READWRITE;
-#else // FEATURE_PAL
+#else // TARGET_UNIX
     DWORD newProtection = PAGE_EXECUTE_READWRITE;
-#endif // !FEATURE_PAL
+#endif // !TARGET_UNIX
 
     DWORD oldProtection;
     if(!ClrVirtualProtect((LPVOID)pGSCookiePtr, sizeof(GSCookie), newProtection, &oldProtection))
@@ -524,12 +502,12 @@ void InitGSCookie()
         ThrowLastError();
     }
 
-#ifdef FEATURE_PAL
+#ifdef TARGET_UNIX
     // PAL layer is unable to extract old protection for regions that were not allocated using VirtualAlloc
     oldProtection = PAGE_READONLY;
-#endif // FEATURE_PAL
+#endif // TARGET_UNIX
 
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
     // The GSCookie cannot be in a writeable page
     assert(((oldProtection & (PAGE_READWRITE|PAGE_WRITECOPY|PAGE_EXECUTE_READWRITE|
                               PAGE_EXECUTE_WRITECOPY|PAGE_WRITECOMBINE)) == 0));
@@ -539,10 +517,10 @@ void InitGSCookie()
     pf = NULL;
 
     GSCookie val = (GSCookie)(__security_cookie ^ GetTickCount());
-#else // !FEATURE_PAL
+#else // !TARGET_UNIX
     // REVIEW: Need something better for PAL...
     GSCookie val = (GSCookie)GetTickCount();
-#endif // !FEATURE_PAL
+#endif // !TARGET_UNIX
 
 #ifdef _DEBUG
     // In _DEBUG, always use the same value to make it easier to search for the cookie
@@ -581,10 +559,6 @@ BOOL IsGarbageCollectorFullyInitialized()
 // ---------------------------------------------------------------------------
 // %%Function: EEStartupHelper
 //
-// Parameters:
-//  fFlags                  - Initialization flags for the engine.  See the
-//                              EEStartupFlags enumerator for valid values.
-//
 // Returns:
 //  S_OK                    - On success
 //
@@ -611,7 +585,7 @@ do { \
 
 
 #ifndef CROSSGEN_COMPILE
-#ifdef FEATURE_PAL
+#ifdef TARGET_UNIX
 void EESocketCleanupHelper()
 {
     CONTRACTL
@@ -631,10 +605,10 @@ void EESocketCleanupHelper()
     DiagnosticServer::Shutdown();
 #endif // FEATURE_PERFTRACING
 }
-#endif // FEATURE_PAL
+#endif // TARGET_UNIX
 #endif // CROSSGEN_COMPILE
 
-void EEStartupHelper(COINITIEE fFlags)
+void EEStartupHelper()
 {
     CONTRACTL
     {
@@ -658,7 +632,7 @@ void EEStartupHelper(COINITIEE fFlags)
 
 #ifndef CROSSGEN_COMPILE
 
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
         ::SetConsoleCtrlHandler(DbgCtrlCHandler, TRUE/*add*/);
 #endif
 
@@ -671,19 +645,28 @@ void EEStartupHelper(COINITIEE fFlags)
         IfFailGo(EEConfig::Setup());
 
 #ifndef CROSSGEN_COMPILE
+
+#ifdef HOST_WINDOWS
+        InitializeCrashDump();
+#endif // HOST_WINDOWS
+
         // Initialize Numa and CPU group information
         // Need to do this as early as possible. Used by creating object handle
         // table inside Ref_Initialization() before GC is initialized.
         NumaNodeInfo::InitNumaNodeInfo();
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
         CPUGroupInfo::EnsureInitialized();
-#endif // !FEATURE_PAL
+#endif // !TARGET_UNIX
 
         // Initialize global configuration settings based on startup flags
         // This needs to be done before the EE has started
         InitializeStartupFlags();
 
         MethodDescBackpatchInfoTracker::StaticInitialize();
+        CodeVersionManager::StaticInitialize();
+        TieredCompilationManager::StaticInitialize();
+        CallCountingManager::StaticInitialize();
+        OnStackReplacementManager::StaticInitialize();
 
         InitThreadManager();
         STRESS_LOG0(LF_STARTUP, LL_ALWAYS, "Returned successfully from InitThreadManager");
@@ -694,9 +677,9 @@ void EEStartupHelper(COINITIEE fFlags)
 
 #endif // FEATURE_PERFTRACING
 
-#ifdef FEATURE_PAL
+#ifdef TARGET_UNIX
         PAL_SetShutdownCallback(EESocketCleanupHelper);
-#endif // FEATURE_PAL
+#endif // TARGET_UNIX
 
 #ifdef FEATURE_GDBJIT
         // Initialize gdbjit
@@ -733,20 +716,20 @@ void EEStartupHelper(COINITIEE fFlags)
         InitializeLogging();
 #endif
 
-#ifdef ENABLE_PERF_LOG
-        PerfLog::PerfLogInitialize();
-#endif //ENABLE_PERF_LOG
-
 #ifdef FEATURE_PERFMAP
         PerfMap::Initialize();
+#endif
+
+#ifdef FEATURE_PGO
+        PgoManager::Initialize();
 #endif
 
         STRESS_LOG0(LF_STARTUP, LL_ALWAYS, "===================EEStartup Starting===================");
 
 #ifndef CROSSGEN_COMPILE
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
         IfFailGoLog(EnsureRtlFunctions());
-#endif // !FEATURE_PAL
+#endif // !TARGET_UNIX
         InitEventStore();
 #endif
 
@@ -798,7 +781,7 @@ void EEStartupHelper(COINITIEE fFlags)
 
         // Cross-process named objects are not supported in PAL
         // (see CorUnix::InternalCreateEvent - src/pal/src/synchobj/event.cpp.272)
-#if !defined(FEATURE_PAL)
+#if !defined(TARGET_UNIX)
         // Initialize the sweeper thread.
         if (g_pConfig->GetZapBBInstr() != NULL)
         {
@@ -812,7 +795,7 @@ void EEStartupHelper(COINITIEE fFlags)
             _ASSERTE(hBBSweepThread);
             g_BBSweep.SetBBSweepThreadHandle(hBBSweepThread);
         }
-#endif // FEATURE_PAL
+#endif // TARGET_UNIX
 
 #ifdef FEATURE_INTERPRETER
         Interpreter::Initialize();
@@ -820,16 +803,16 @@ void EEStartupHelper(COINITIEE fFlags)
 
         StubManager::InitializeStubManagers();
 
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
         {
             // Record mscorwks geometry
-            PEDecoder pe(g_pMSCorEE);
+            PEDecoder pe(g_hThisInst);
 
             g_runtimeLoadedBaseAddress = (SIZE_T)pe.GetBase();
             g_runtimeVirtualSize = (SIZE_T)pe.GetVirtualSize();
             InitCodeAllocHint(g_runtimeLoadedBaseAddress, g_runtimeVirtualSize, GetRandomInt(64));
         }
-#endif // !FEATURE_PAL
+#endif // !TARGET_UNIX
 
 #endif // CROSSGEN_COMPILE
 
@@ -847,9 +830,7 @@ void EEStartupHelper(COINITIEE fFlags)
 #ifndef CROSSGEN_COMPILE
 
         InitializeGarbageCollector();
-
-        // Initialize remoting
-
+        
         if (!GCHandleUtilities::GetGCHandleManager()->Initialize())
         {
             IfFailGo(E_OUTOFMEMORY);
@@ -859,8 +840,6 @@ void EEStartupHelper(COINITIEE fFlags)
         g_pEEShutDownEvent->CreateManualEvent(FALSE);
 
         VirtualCallStubManager::InitStatic();
-
-        GCInterface::m_MemoryPressureLock.Init(CrstGCMemoryPressure);
 
 #endif // CROSSGEN_COMPILE
 
@@ -882,12 +861,12 @@ void EEStartupHelper(COINITIEE fFlags)
 
 #ifndef CROSSGEN_COMPILE
 
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
         if (!RegisterOutOfProcessWatsonCallbacks())
         {
             IfFailGo(E_FAIL);
         }
-#endif // !FEATURE_PAL
+#endif // !TARGET_UNIX
 
 #ifdef DEBUGGING_SUPPORTED
         if(!NingenEnabled())
@@ -954,15 +933,19 @@ void EEStartupHelper(COINITIEE fFlags)
         hr = g_pGCHeap->Initialize();
         IfFailGo(hr);
 
+#ifdef FEATURE_EVENT_TRACE
+        // Finish setting up rest of EventPipe - specifically enable SampleProfiler if it was requested at startup.
+        // SampleProfiler needs to cooperate with the GC which hasn't fully finished setting up in the first part of the
+        // EventPipe initialization, so this is done after the GC has been fully initialized.
+        EventPipe::FinishInitialize();
+#endif
+
         // This isn't done as part of InitializeGarbageCollector() above because thread
         // creation requires AppDomains to have been set up.
         FinalizerThread::FinalizerThreadCreate();
 
         // Now we really have fully initialized the garbage collector
         SetGarbageCollectorFullyInitialized();
-
-        // This will allocate a handle, so do this after GC is initialized.
-        CastCache::Initialize();
 
 #ifdef DEBUGGING_SUPPORTED
         // Make a call to publish the DefaultDomain for the debugger
@@ -972,6 +955,10 @@ void EEStartupHelper(COINITIEE fFlags)
         LOG((LF_CORDB | LF_SYNC | LF_STARTUP, LL_INFO1000, "EEStartup: adding default domain 0x%x\n",
              SystemDomain::System()->DefaultDomain()));
         SystemDomain::System()->PublishAppDomainAndInformDebugger(SystemDomain::System()->DefaultDomain());
+#endif
+
+#ifdef HAVE_GCCOVER
+        MethodDesc::Init();
 #endif
 
 #endif // CROSSGEN_COMPILE
@@ -993,9 +980,6 @@ void EEStartupHelper(COINITIEE fFlags)
 
         SystemDomain::System()->DefaultDomain()->SetupSharedStatics();
 
-#ifdef _DEBUG
-        APIThreadStress::SetThreadStressCount(g_pConfig->GetAPIThreadStressCount());
-#endif
 #ifdef FEATURE_STACK_SAMPLING
         StackSampler::Init();
 #endif
@@ -1053,10 +1037,6 @@ void EEStartupHelper(COINITIEE fFlags)
         g_Mscorlib.CheckExtended();
 
 #endif // _DEBUG
-
-#ifdef HAVE_GCCOVER
-        MethodDesc::Init();
-#endif
 
 #endif // !CROSSGEN_COMPILE
 
@@ -1135,24 +1115,24 @@ LONG FilterStartupException(PEXCEPTION_POINTERS p, PVOID pv)
 // see code:EEStartup#TableOfContents for more on the runtime in general.
 // see code:#EEShutdown for a analagous routine run during shutdown.
 //
-HRESULT EEStartup(COINITIEE fFlags)
+HRESULT EEStartup()
 {
     // Cannot use normal contracts here because of the PAL_TRY.
     STATIC_CONTRACT_NOTHROW;
 
     _ASSERTE(!g_fEEStarted && !g_fEEInit && SUCCEEDED (g_EEStartupStatus));
 
-    PAL_TRY(COINITIEE *, pfFlags, &fFlags)
+    PAL_TRY(PVOID, p, NULL)
     {
 #ifndef CROSSGEN_COMPILE
         InitializeClrNotifications();
-#ifdef FEATURE_PAL
+#ifdef TARGET_UNIX
         InitializeJITNotificationTable();
         DacGlobals::Initialize();
 #endif
 #endif // CROSSGEN_COMPILE
 
-        EEStartupHelper(*pfFlags);
+        EEStartupHelper();
     }
     PAL_EXCEPT_FILTER (FilterStartupException)
     {
@@ -1166,41 +1146,6 @@ HRESULT EEStartup(COINITIEE fFlags)
 
 
 #ifndef CROSSGEN_COMPILE
-
-#ifdef FEATURE_COMINTEROP
-
-void InnerCoEEShutDownCOM()
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-    } CONTRACTL_END;
-
-    static LONG AlreadyDone = -1;
-
-    if (g_fEEStarted != TRUE)
-        return;
-
-    if (FastInterlockIncrement(&AlreadyDone) != 0)
-        return;
-
-    g_fShutDownCOM = true;
-
-    // Release IJupiterGCMgr *
-    RCWWalker::OnEEShutdown();
-
-    // Release all of the RCWs in all contexts in all caches.
-    ReleaseRCWsInCaches(NULL);
-
-#ifdef FEATURE_APPX
-    // Cleanup cached factory pointer in SynchronizationContextNative
-    SynchronizationContextNative::Cleanup();
-#endif
-}
-
-#endif // FEATURE_COMINTEROP
 
 // ---------------------------------------------------------------------------
 // %%Function: ForceEEShutdown()
@@ -1217,70 +1162,6 @@ void ForceEEShutdown(ShutdownCompleteAction sca)
 
     STRESS_LOG0(LF_STARTUP, INFO3, "EEShutdown invoked from ForceEEShutdown");
     EEPolicy::HandleExitProcess(sca);
-}
-
-static bool WaitForEndOfShutdown_OneIteration()
-{
-    CONTRACTL{
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_PREEMPTIVE;
-    } CONTRACTL_END;
-
-    // We are shutting down.  GC triggers does not have any effect now.
-    CONTRACT_VIOLATION(GCViolation);
-
-    // If someone calls EEShutDown while holding OS loader lock, the thread we created for shutdown
-    // won't start running.  This is a deadlock we can not fix.  Instead, we timeout and continue the
-    // current thread.
-    DWORD timeout = GetEEPolicy()->GetTimeout(OPR_ProcessExit);
-    timeout *= 2;
-    ULONGLONG endTime = CLRGetTickCount64() + timeout;
-    bool done = false;
-
-    EX_TRY
-    {
-        ULONGLONG curTime = CLRGetTickCount64();
-        if (curTime > endTime)
-        {
-            done = true;
-        }
-        else
-        {
-#ifdef PROFILING_SUPPORTED
-            if (CORProfilerPresent())
-            {
-                // A profiler is loaded, so just wait without timeout. This allows
-                // profilers to complete potentially lengthy post processing, without the
-                // CLR killing them off first. The Office team's server memory profiler,
-                // for example, does a lot of post-processing that can exceed the 80
-                // second imit we normally impose here. The risk of waiting without
-                // timeout is that, if there really is a deadlock, shutdown will hang.
-                // Since that will only happen if a profiler is loaded, that is a
-                // reasonable compromise
-                timeout = INFINITE;
-            }
-            else
-#endif //PROFILING_SUPPORTED
-            {
-                timeout = static_cast<DWORD>(endTime - curTime);
-            }
-            DWORD status = g_pEEShutDownEvent->Wait(timeout,TRUE);
-            if (status == WAIT_OBJECT_0 || status == WAIT_TIMEOUT)
-            {
-                done = true;
-            }
-            else
-            {
-                done = false;
-            }
-        }
-    }
-    EX_CATCH
-    {
-    }
-    EX_END_CATCH(SwallowAllExceptions);
-    return done;
 }
 
 void WaitForEndOfShutdown()
@@ -1303,7 +1184,7 @@ void WaitForEndOfShutdown()
         pThread->SetThreadStateNC(Thread::TSNC_BlockedForShutdown);
     }
 
-    while (!WaitForEndOfShutdown_OneIteration());
+    for (;;) g_pEEShutDownEvent->Wait(INFINITE, TRUE);
 }
 
 // ---------------------------------------------------------------------------
@@ -1351,11 +1232,6 @@ void STDMETHODCALLTYPE EEShutDownHelper(BOOL fIsDllUnloading)
         _ASSERTE(fIsDllUnloading);
         return;
     }
-
-#ifdef _DEBUG
-    // stop API thread stress
-    APIThreadStress::SetThreadStressCount(0);
-#endif
 
     STRESS_LOG1(LF_STARTUP, LL_INFO10, "EEShutDown entered unloading = %d", fIsDllUnloading);
 
@@ -1440,6 +1316,10 @@ void STDMETHODCALLTYPE EEShutDownHelper(BOOL fIsDllUnloading)
 #ifdef FEATURE_PERFMAP
         // Flush and close the perf map file.
         PerfMap::Destroy();
+#endif
+
+#ifdef FEATURE_PGO
+        PgoManager::Shutdown();
 #endif
 
         {
@@ -1609,10 +1489,6 @@ part2:
                 //@TODO: find the right place for this
                 VirtualCallStubManager::UninitStatic();
 
-#ifdef ENABLE_PERF_LOG
-                PerfLog::PerfLogDone();
-#endif //ENABLE_PERF_LOG
-
                 // Unregister our vectored exception and continue handlers from the OS.
                 // This will ensure that if any other DLL unload (after ours) has an exception,
                 // we wont attempt to process that exception (which could lead to various
@@ -1635,15 +1511,6 @@ part2:
                     _ASSERTE(!"EE Shutting down after an assert");
 #endif
 
-
-#ifdef LOGGING
-                extern unsigned FcallTimeHist[11];
-#endif
-                LOG((LF_STUBS, LL_INFO10, "FcallHist %3d %3d %3d %3d %3d %3d %3d %3d %3d %3d %3d\n",
-                    FcallTimeHist[0], FcallTimeHist[1], FcallTimeHist[2], FcallTimeHist[3],
-                    FcallTimeHist[4], FcallTimeHist[5], FcallTimeHist[6], FcallTimeHist[7],
-                    FcallTimeHist[8], FcallTimeHist[9], FcallTimeHist[10]));
-
                 WriteJitHelperCountToSTRESSLOG();
 
                 STRESS_LOG0(LF_STARTUP, LL_INFO10, "EEShutdown shutting down logging");
@@ -1656,6 +1523,7 @@ part2:
 #ifdef LOGGING
                 ShutdownLogging();
 #endif
+                GCHeapUtilities::GetGCHeap()->Shutdown();
             }
         }
 
@@ -1933,12 +1801,10 @@ BOOL STDMETHODCALLTYPE EEDllMain( // TRUE on success, FALSE on error.
         HINSTANCE hInst;
         DWORD dwReason;
         LPVOID lpReserved;
-        void **pTlsData;
     } param;
     param.hInst = hInst;
     param.dwReason = dwReason;
     param.lpReserved = lpReserved;
-    param.pTlsData = NULL;
 
     // Can't use PAL_TRY/EX_TRY here as they access the ClrDebugState which gets blown away as part of the
     // PROCESS_DETACH path. Must use special PAL_TRY_FOR_DLLMAIN, passing the reason were in the DllMain.
@@ -1953,17 +1819,11 @@ BOOL STDMETHODCALLTYPE EEDllMain( // TRUE on success, FALSE on error.
                 // life of the DLL.
                 GetSystemInfo(&g_SystemInfo);
 
-                // Remember module instance
-                g_pMSCorEE = pParam->hInst;
-
-
                 // Set callbacks so that LoadStringRC knows which language our
                 // threads are in so that it can return the proper localized string.
             // TODO: This shouldn't rely on the LCID (id), but only the name
                 SetResourceCultureCallbacks(GetThreadUICultureNames,
                                             GetThreadUICultureId);
-
-                InitEEPolicy();
 
                 break;
             }
@@ -2000,17 +1860,6 @@ BOOL STDMETHODCALLTYPE EEDllMain( // TRUE on success, FALSE on error.
                 // Don't destroy threads here if we're in shutdown (shutdown will
                 // clean up for us instead).
 
-                // Store the TLS data; we'll need it later and we might NULL the slot in DetachThread.
-                // This would be problematic because we can't depend on the FLS still existing.
-                pParam->pTlsData = CExecutionEngine::CheckThreadStateNoCreate(0
-#ifdef _DEBUG
-                 // When we get here, OS has destroyed FLS, so FlsGetValue returns NULL now.
-                 // We have validation code in CExecutionEngine::CheckThreadStateNoCreate to ensure that
-                 // our TLS and FLS data are consistent, but since FLS has been destroyed, we need
-                 // to silent the check there.  The extra arg for check build is for this purpose.
-                                                                                         , TRUE
-#endif
-                                                                                         );
                 Thread* thread = GetThread();
                 if (thread)
                 {
@@ -2044,7 +1893,7 @@ BOOL STDMETHODCALLTYPE EEDllMain( // TRUE on success, FALSE on error.
 
     if (dwReason == DLL_THREAD_DETACH || dwReason == DLL_PROCESS_DETACH)
     {
-        CExecutionEngine::ThreadDetaching(param.pTlsData);
+        ThreadDetaching();
     }
     return TRUE;
 }
@@ -2257,15 +2106,15 @@ static HRESULT GetThreadUICultureNames(__inout StringArrayList* pCultureNames)
             SIZE_T cchParentCultureName=LOCALE_NAME_MAX_LENGTH;
             sCulture.Set(id);
 
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
             if (!::GetLocaleInfoEx((LPCWSTR)sCulture, LOCALE_SPARENT, sParentCulture.OpenUnicodeBuffer(static_cast<COUNT_T>(cchParentCultureName)),static_cast<int>(cchParentCultureName)))
             {
                 hr = HRESULT_FROM_GetLastError();
             }
             sParentCulture.CloseBuffer();
-#else // !FEATURE_PAL
+#else // !TARGET_UNIX
             sParentCulture = sCulture;
-#endif // !FEATURE_PAL
+#endif // !TARGET_UNIX
         }
         // (LPCWSTR) to restrict the size to null terminated size
         pCultureNames->AppendIfNotThere((LPCWSTR)sCulture);
@@ -2372,18 +2221,18 @@ static int GetThreadUICultureId(__out LocaleIDValue* pLocale)
 #endif
     if (Result == 0)
     {
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
         // This thread isn't set up to use a non-default culture. Let's grab the default
         // one and return that.
 
         Result = ::GetUserDefaultLocaleName(*pLocale, LOCALE_NAME_MAX_LENGTH);
 
         _ASSERTE(Result != 0);
-#else // !FEATURE_PAL
+#else // !TARGET_UNIX
         static const WCHAR enUS[] = W("en-US");
         memcpy(*pLocale, enUS, sizeof(enUS));
         Result = sizeof(enUS);
-#endif // !FEATURE_PAL
+#endif // !TARGET_UNIX
     }
     return Result;
 }

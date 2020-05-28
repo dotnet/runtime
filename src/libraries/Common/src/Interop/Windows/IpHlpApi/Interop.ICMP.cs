@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System;
 using System.Net.NetworkInformation;
 using System.Runtime.InteropServices;
@@ -13,8 +14,6 @@ internal static partial class Interop
     {
         internal const int IP_STATUS_BASE = 11000;
 
-        // TODO: #3562 - Replace names with the ones from the Windows SDK.
-
         [StructLayout(LayoutKind.Sequential)]
         internal struct IPOptions
         {
@@ -24,7 +23,7 @@ internal static partial class Interop
             internal byte optionsSize;
             internal IntPtr optionsData;
 
-            internal IPOptions(PingOptions options)
+            internal IPOptions(PingOptions? options)
             {
                 ttl = 128;
                 tos = 0;

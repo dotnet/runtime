@@ -15,7 +15,7 @@
 
 #include "dasmenum.hpp"
 #include "dis.h"
-#include <ndpversion.h>
+#include <clrversion.h>
 #include "resource.h"
 
 #include "new.hpp"
@@ -97,7 +97,7 @@ FILE* OpenOutput(__in __nullterminated const char* szFileName);
 
 void PrintLogo()
 {
-    printf("Microsoft (R) .NET Framework IL Disassembler.  Version " VER_FILEVERSION_STR);
+    printf("Microsoft (R) .NET IL Disassembler.  Version " CLR_PRODUCT_VERSION);
     printf("\n%S\n\n", VER_LEGALCOPYRIGHT_LOGO_STR_L);
 }
 
@@ -160,7 +160,7 @@ int ProcessOneArg(__in __nullterminated char* szArg, __out char** ppszObjFileNam
     if(strlen(szArg) == 0) return 0;
     if ((strcmp(szArg, "/?") == 0) || (strcmp(szArg, "-?") == 0)) return 1;
 
-#ifdef FEATURE_PAL
+#ifdef TARGET_UNIX
     if(szArg[0] == '-')
 #else
     if((szArg[0] == '/') || (szArg[0] == '-'))
@@ -510,7 +510,7 @@ int ParseCmdLineA(__in __nullterminated char* szCmdLine, __out char** ppszObjFil
 
 int __cdecl main(int nCmdShow, char* lpCmdLine[])
 {
-#if defined(FEATURE_PAL)
+#if defined(TARGET_UNIX)
     if (0 != PAL_Initialize(nCmdShow, lpCmdLine))
     {
         printError(g_pFile, "Error: Fail to PAL_Initialize\n");
@@ -519,8 +519,10 @@ int __cdecl main(int nCmdShow, char* lpCmdLine[])
     g_pszExeFile = lpCmdLine[0];
 #endif
 
+#ifdef HOST_WINDOWS
     // SWI has requested that the exact form of the function call below be used. For details see http://swi/SWI%20Docs/Detecting%20Heap%20Corruption.doc
     (void)HeapSetInformation(NULL, HeapEnableTerminationOnCorruption, NULL, 0);
+#endif
 
 #ifdef _DEBUG
     DisableThrowCheck();
@@ -549,7 +551,7 @@ int __cdecl main(int nCmdShow, char* lpCmdLine[])
     hConsoleOut = GetStdHandle(STD_OUTPUT_HANDLE);
     hConsoleErr = GetStdHandle(STD_ERROR_HANDLE);
 
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
     // Dev11 #5320 - pull the localized resource loader up so if ParseCmdLineW need resources, they're already loaded
     g_hResources = WszGetModuleHandle(NULL);
 #endif

@@ -460,7 +460,7 @@ BSTR CoreClrBStrAlloc(LPCWSTR psz, size_t len)
 
     if(bstr != NULL){
 
-#if defined(BIT64)
+#if defined(HOST_64BIT)
       // NOTE: There are some apps which peek back 4 bytes to look at the size of the BSTR. So, in case of 64-bit code,
       // we need to ensure that the BSTR length can be found by looking one DWORD before the BSTR pointer. 
       *(DWORD_PTR *)bstr = (DWORD_PTR) 0;
@@ -494,7 +494,7 @@ BSTR CoreClrBStrAlloc(LPCSTR psz, size_t len)
     bstr = (BSTR)CoreClrAlloc(cbTotal);
 
     if (bstr != NULL) {
-#if defined(BIT64)
+#if defined(HOST_64BIT)
       *(DWORD *)((char *)bstr + sizeof (DWORD)) = (DWORD)len;
 #else
       *(DWORD *)bstr = (DWORD)len;

@@ -110,7 +110,7 @@ namespace Microsoft.CSharp.RuntimeBinder
         {
 #if ENABLECOMBINDER
             DynamicMetaObject com;
-            if (!BinderHelper.IsWindowsRuntimeObject(target) && ComBinder.TryConvert(this, target, out com))
+            if (!BinderHelper.IsWindowsRuntimeObject(target) && ComInterop.ComBinder.TryBindSetIndex(this, target, indexes, value, out com))
             {
                 return com;
             }

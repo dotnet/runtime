@@ -4,10 +4,8 @@
   </PropertyGroup>
   <PropertyGroup>
     <DebugType>None</DebugType>
-    <NoLogo>True</NoLogo>
     <NoStandardLib>True</NoStandardLib>
     <Noconfig>True</Noconfig>
-    <DefineConstants>$(DefineConstants);CORECLR</DefineConstants>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="gettypetypeofmatrix.cs" />

@@ -18,9 +18,9 @@ namespace System.Threading
 
         private const int ThreadPoolThreadTimeoutMs = 20 * 1000; // If you change this make sure to change the timeout times in the tests.
 
-#if BIT64
+#if TARGET_64BIT
         private const short MaxPossibleThreadCount = short.MaxValue;
-#elif BIT32
+#elif TARGET_32BIT
         private const short MaxPossibleThreadCount = 1023;
 #else
         #error Unknown platform
@@ -40,7 +40,7 @@ namespace System.Threading
         [StructLayout(LayoutKind.Explicit, Size = CacheLineSize * 5)]
         private struct CacheLineSeparated
         {
-#if ARM64
+#if TARGET_ARM64
             private const int CacheLineSize = 128;
 #else
             private const int CacheLineSize = 64;
@@ -62,7 +62,7 @@ namespace System.Threading
         private readonly ThreadInt64PersistentCounter _completionCounter = new ThreadInt64PersistentCounter();
         private int _threadAdjustmentIntervalMs;
 
-        private LowLevelLock _hillClimbingThreadAdjustmentLock = new LowLevelLock();
+        private readonly LowLevelLock _hillClimbingThreadAdjustmentLock = new LowLevelLock();
 
         private volatile int _numRequestedWorkers = 0;
 
@@ -232,13 +232,13 @@ namespace System.Threading
 
             double elapsedSeconds = (double)(endTime - startTime) / freq;
 
-            if(elapsedSeconds * 1000 >= _threadAdjustmentIntervalMs / 2)
+            if (elapsedSeconds * 1000 >= _threadAdjustmentIntervalMs / 2)
             {
                 ThreadCounts currentCounts = ThreadCounts.VolatileReadCounts(ref _separated.counts);
                 int newMax;
                 (newMax, _threadAdjustmentIntervalMs) = HillClimbing.ThreadPoolHillClimber.Update(currentCounts.numThreadsGoal, elapsedSeconds, numCompletions);
 
-                while(newMax != currentCounts.numThreadsGoal)
+                while (newMax != currentCounts.numThreadsGoal)
                 {
                     ThreadCounts newCounts = currentCounts;
                     newCounts.numThreadsGoal = (short)newMax;
@@ -260,7 +260,7 @@ namespace System.Threading
                     }
                     else
                     {
-                        if(oldCounts.numThreadsGoal > currentCounts.numThreadsGoal && oldCounts.numThreadsGoal >= newMax)
+                        if (oldCounts.numThreadsGoal > currentCounts.numThreadsGoal && oldCounts.numThreadsGoal >= newMax)
                         {
                             // someone (probably the gate thread) increased the thread count more than
                             // we are about to do.  Don't interfere.
@@ -283,7 +283,7 @@ namespace System.Threading
             int priorTime = Volatile.Read(ref _separated.priorCompletedWorkRequestsTime);
             int requiredInterval = _separated.nextCompletedWorkRequestsTime - priorTime;
             int elapsedInterval = Environment.TickCount - priorTime;
-            if(elapsedInterval >= requiredInterval)
+            if (elapsedInterval >= requiredInterval)
             {
                 // Avoid trying to adjust the thread count goal if there are already more threads than the thread count goal.
                 // In that situation, hill climbing must have previously decided to decrease the thread count goal, so let's

@@ -8,20 +8,6 @@ using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.Versioning;
 
-#pragma warning disable SA1121 // explicitly using type aliases instead of built-in types
-#if BIT64
-using nuint = System.UInt64;
-#else
-using nuint = System.UInt32;
-#endif
-#if !CORECLR
-#if BIT64
-using nint = System.Int64;
-#else
-using nint = System.Int32;
-#endif
-#endif
-
 //
 // The implementations of most the methods in this file are provided as intrinsics.
 // In CoreCLR, the body of the functions are replaced by the EE with unsafe code. See see getILIntrinsicImplementationForUnsafe for details.
@@ -32,7 +18,7 @@ namespace Internal.Runtime.CompilerServices
 {
     //
     // Subsetted clone of System.Runtime.CompilerServices.Unsafe for internal runtime use.
-    // Keep in sync with https://github.com/dotnet/corefx/tree/master/src/System.Runtime.CompilerServices.Unsafe.
+    // Keep in sync with https://github.com/dotnet/runtime/tree/master/src/libraries/System.Runtime.CompilerServices.Unsafe.
     //
 
     /// <summary>
@@ -151,7 +137,7 @@ namespace Internal.Runtime.CompilerServices
         }
 
         /// <summary>
-        /// Adds an element offset to the given reference.
+        /// Adds an byte offset to the given reference.
         /// </summary>
         [Intrinsic]
         [NonVersionable]
@@ -295,7 +281,7 @@ namespace Internal.Runtime.CompilerServices
         }
 
         /// <summary>
-        /// Adds an element offset to the given reference.
+        /// Adds an byte offset to the given reference.
         /// </summary>
         [Intrinsic]
         [NonVersionable]

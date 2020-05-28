@@ -123,7 +123,7 @@ namespace System.Security.Cryptography.EcDsa.OpenSsl.Tests
 
             using (ECDsaOpenSsl e = new ECDsaOpenSsl(ecKey))
             {
-                // Make sure ECDsaOpenSsl did his own ref-count bump.
+                // Make sure ECDsaOpenSsl did its own ref-count bump.
                 Interop.Crypto.EcKeyDestroy(ecKey);
 
                 int keySize = e.KeySize;

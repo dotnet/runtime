@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using Internal.NativeCrypto;
 
 namespace System.Security.Cryptography
@@ -33,21 +34,46 @@ namespace System.Security.Cryptography
                 ThrowIfDisposed();
 
                 ECCurve curve = parameters.Curve;
-                bool includePrivateParameters = (parameters.D != null);
+                bool includePrivateParameters = parameters.D != null;
+                bool hasPublicParameters = parameters.Q.X != null && parameters.Q.Y != null;
 
                 if (curve.IsPrime)
                 {
-                    byte[] ecExplicitBlob = ECCng.GetPrimeCurveBlob(ref parameters, ecdh: false);
-                    ImportFullKeyBlob(ecExplicitBlob, includePrivateParameters);
+                    if (!hasPublicParameters && includePrivateParameters)
+                    {
+                        byte[] zero = new byte[parameters.D!.Length];
+                        ECParameters ecParamsCopy = parameters;
+                        ecParamsCopy.Q.X = zero;
+                        ecParamsCopy.Q.Y = zero;
+                        byte[] ecExplicitBlob = ECCng.GetPrimeCurveBlob(ref ecParamsCopy, ecdh: false);
+                        ImportFullKeyBlob(ecExplicitBlob, includePrivateParameters: true);
+                    }
+                    else
+                    {
+                        byte[] ecExplicitBlob = ECCng.GetPrimeCurveBlob(ref parameters, ecdh: false);
+                        ImportFullKeyBlob(ecExplicitBlob, includePrivateParameters);
+                    }
                 }
                 else if (curve.IsNamed)
                 {
                     // FriendlyName is required; an attempt was already made to default it in ECCurve
                     if (string.IsNullOrEmpty(curve.Oid.FriendlyName))
-                        throw new PlatformNotSupportedException(SR.Format(SR.Cryptography_InvalidCurveOid, curve.Oid.Value.ToString()));
+                        throw new PlatformNotSupportedException(SR.Format(SR.Cryptography_InvalidCurveOid, curve.Oid.Value!.ToString()));
 
-                    byte[] ecNamedCurveBlob = ECCng.GetNamedCurveBlob(ref parameters, ecdh: false);
-                    ImportKeyBlob(ecNamedCurveBlob, curve.Oid.FriendlyName, includePrivateParameters);
+                    if (!hasPublicParameters && includePrivateParameters)
+                    {
+                        byte[] zero = new byte[parameters.D!.Length];
+                        ECParameters ecParamsCopy = parameters;
+                        ecParamsCopy.Q.X = zero;
+                        ecParamsCopy.Q.Y = zero;
+                        byte[] ecNamedCurveBlob = ECCng.GetNamedCurveBlob(ref ecParamsCopy, ecdh: false);
+                        ImportKeyBlob(ecNamedCurveBlob, curve.Oid.FriendlyName, includePrivateParameters: true);
+                    }
+                    else
+                    {
+                        byte[] ecNamedCurveBlob = ECCng.GetNamedCurveBlob(ref parameters, ecdh: false);
+                        ImportKeyBlob(ecNamedCurveBlob, curve.Oid.FriendlyName, includePrivateParameters);
+                    }
                 }
                 else
                 {
@@ -85,7 +111,7 @@ namespace System.Security.Cryptography
             {
                 ECParameters ecparams = default;
 
-                string curveName = GetCurveName(out string oidValue);
+                string? curveName = GetCurveName(out string? oidValue);
 
                 if (string.IsNullOrEmpty(curveName))
                 {

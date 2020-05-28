@@ -13,7 +13,6 @@ namespace System.Net.NetworkInformation.Tests
         private readonly NetworkAvailabilityChangedEventHandler _availabilityHandler = delegate { };
 
         [Fact]
-        [ActiveIssue(33530, TestPlatforms.FreeBSD)]
         public void NetworkAvailabilityChanged_AddRemove_Success()
         {
             NetworkChange.NetworkAvailabilityChanged += _availabilityHandler;
@@ -21,14 +20,12 @@ namespace System.Net.NetworkInformation.Tests
         }
 
         [Fact]
-        [ActiveIssue(33530, TestPlatforms.FreeBSD)]
         public void NetworkAvailabilityChanged_JustRemove_Success()
         {
             NetworkChange.NetworkAvailabilityChanged -= _availabilityHandler;
         }
 
         [Fact]
-        [ActiveIssue(33530, TestPlatforms.FreeBSD)]
         public void NetworkAddressChanged_Add_DoesNotBlock()
         {
             // Register without unregistering.
@@ -42,7 +39,6 @@ namespace System.Net.NetworkInformation.Tests
         }
 
         [Fact]
-        [ActiveIssue(33530, TestPlatforms.FreeBSD)]
         public void NetworkAddressChanged_AddAndRemove_NetworkAvailabilityChanged_JustRemove_Success()
         {
             NetworkChange.NetworkAddressChanged += _addressHandler;
@@ -55,7 +51,6 @@ namespace System.Net.NetworkInformation.Tests
         [InlineData(false, true)]
         [InlineData(true, false)]
         [InlineData(true, true)]
-        [ActiveIssue(33530, TestPlatforms.FreeBSD)]
         public void NetworkAvailabilityChanged_NetworkAddressChanged_AddAndRemove_Success(bool addAddressFirst, bool removeAddressFirst)
         {
             if (addAddressFirst)

@@ -33,12 +33,12 @@ namespace System.Net.Security
             // Try to detect if a property gets added that we're not copying correctly.
             foreach (PropertyInfo pi in options.GetType().GetProperties(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly))
             {
-                object origValue = pi.GetValue(options);
-                object cloneValue = pi.GetValue(clone);
+                object? origValue = pi.GetValue(options);
+                object? cloneValue = pi.GetValue(clone);
 
                 if (origValue is IEnumerable origEnumerable)
                 {
-                    IEnumerable cloneEnumerable = cloneValue as IEnumerable;
+                    IEnumerable? cloneEnumerable = cloneValue as IEnumerable;
                     Debug.Assert(cloneEnumerable != null, $"{pi.Name}. Expected enumerable cloned value.");
 
                     IEnumerator e1 = origEnumerable.GetEnumerator();

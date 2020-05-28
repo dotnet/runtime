@@ -18,7 +18,7 @@ WARNING:   When setting properties based on their current state (for example:
 -->
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
 
-  <!-- This is here because of this bug: http://blogs.msdn.com/b/msbuild/archive/2006/01/03/508629.aspx-->
+  <!-- This is here because of this bug: https://docs.microsoft.com/en-us/archive/blogs/msbuild/well-known-limitation-dynamic-items-and-properties-not-emitted-until-target-execution-completes -->
   <Target Name="FetchExternalPropertiesForXpalt">
     <!--Call GetExecuteShFullPath to get ToRunProject cmd file Path  -->
     <MSBuild Projects="$(CLRTestProjectToRun)" 
@@ -292,7 +292,7 @@ CLRTestExpectedExitCode=0
 
     <PropertyGroup>
       <BashEnvironmentVariables>
-        @(CLRTestBashEnvironmentVariable -> '%(Identity)', '%0d%0a')
+@(CLRTestBashEnvironmentVariable -> '%(Identity)', '%0a')
       </BashEnvironmentVariables>
     </PropertyGroup>
      

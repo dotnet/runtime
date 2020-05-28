@@ -62,7 +62,7 @@ namespace System.Reflection.Emit.Tests
         public void DefineGenericParameters_EmptyNames_ThrowsArgumentException()
         {
             TypeBuilder type = Helpers.DynamicType(TypeAttributes.Public);
-            AssertExtensions.Throws<ArgumentException>(null, () => type.DefineGenericParameters(new string[0]));
+            AssertExtensions.Throws<ArgumentException>("names", () => type.DefineGenericParameters(new string[0]));
         }
 
         [Fact]
@@ -73,6 +73,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/2389", TestRuntimes.Mono)]
         public void DefineGenericParameters_AlreadyDefinedGenericParameters_ThrowsInvalidOperationException()
         {
             TypeBuilder type = Helpers.DynamicType(TypeAttributes.Public);

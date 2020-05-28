@@ -65,14 +65,14 @@ namespace System.Reflection.Metadata
             get { return _exceptionRegions; }
         }
 
-        public byte[] GetILBytes()
+        public byte[]? GetILBytes()
         {
             return _il.ToArray();
         }
 
         public ImmutableArray<byte> GetILContent()
         {
-            byte[] bytes = GetILBytes();
+            byte[]? bytes = GetILBytes();
             return ImmutableByteArrayInterop.DangerousCreateFromUnderlyingArray(ref bytes);
         }
 

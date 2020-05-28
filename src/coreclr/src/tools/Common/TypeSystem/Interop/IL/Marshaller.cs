@@ -50,6 +50,7 @@ namespace Internal.TypeSystem.Interop
         LayoutClassPtr,
         AsAnyA,
         AsAnyW,
+        ComInterface,
         Invalid
     }
     public enum MarshalDirection
@@ -384,7 +385,7 @@ namespace Internal.TypeSystem.Interop
 
         public bool IsMarshallingRequired()
         {
-            return Out || IsMarshallingRequired(MarshallerKind);
+            return Out || IsManagedByRef || IsMarshallingRequired(MarshallerKind);
         }
         #endregion
 
@@ -597,9 +598,14 @@ namespace Internal.TypeSystem.Interop
         protected void LoadNativeArg(ILCodeStream stream)
         {
             if (IsNativeByRef)
+            {
                 _nativeHome.LoadAddr(stream);
+                stream.Emit(ILOpcode.conv_i);
+            }
             else
+            {
                 _nativeHome.LoadValue(stream);
+            }
         }
 
         protected void LoadNativeAddr(ILCodeStream stream)
@@ -904,7 +910,7 @@ namespace Internal.TypeSystem.Interop
 
         protected override void EmitMarshalArgumentNativeToManaged()
         {
-            if (Out)
+            if (Out && !IsNativeByRef)
             {
                 base.EmitMarshalArgumentNativeToManaged();
             }
@@ -1322,7 +1328,8 @@ namespace Internal.TypeSystem.Interop
             ILEmitter emitter = _ilCodeStreams.Emitter;
             ILCodeLabel lNullArray = emitter.NewCodeLabel();
 
-            MethodDesc getRawSzArrayDataMethod = InteropTypes.GetRuntimeHelpers(Context).GetKnownMethod("GetRawSzArrayData", null);
+            MethodDesc getArrayDataReferenceGenericMethod = InteropTypes.GetMemoryMarshal(Context).GetKnownMethod("GetArrayDataReference", null);
+            MethodDesc getArrayDataReferenceMethod = getArrayDataReferenceGenericMethod.MakeInstantiatedMethod(ManagedElementType);
 
             // Check for null array
             LoadManagedValue(codeStream);
@@ -1334,7 +1341,7 @@ namespace Internal.TypeSystem.Interop
 
                 LoadNativeValue(codeStream);
                 LoadManagedValue(codeStream);
-                codeStream.Emit(ILOpcode.call, emitter.NewToken(getRawSzArrayDataMethod));
+                codeStream.Emit(ILOpcode.call, emitter.NewToken(getArrayDataReferenceMethod));
                 EmitElementCount(codeStream, MarshalDirection.Forward);
                 codeStream.Emit(ILOpcode.sizeof_, emitter.NewToken(ManagedElementType));
                 codeStream.Emit(ILOpcode.mul_ovf);
@@ -1352,7 +1359,7 @@ namespace Internal.TypeSystem.Interop
                 codeStream.Emit(ILOpcode.brfalse, lNullArray);
 
                 LoadManagedValue(codeStream);
-                codeStream.Emit(ILOpcode.call, emitter.NewToken(getRawSzArrayDataMethod));
+                codeStream.Emit(ILOpcode.call, emitter.NewToken(getArrayDataReferenceMethod));
                 codeStream.EmitStLoc(vPinnedFirstElement);
 
                 // Fall through. If array didn't have elements, vPinnedFirstElement is zeroinit.
@@ -1434,7 +1441,7 @@ namespace Internal.TypeSystem.Interop
                                 Context.GetHelperEntryPoint("InteropHelpers", "CoTaskMemFree")));
         }
 
-        protected override void AllocAndTransformManagedToNative(ILCodeStream codeStream)
+        protected override void TransformManagedToNative(ILCodeStream codeStream)
         {
             ILEmitter emitter = _ilCodeStreams.Emitter;
 
@@ -1529,7 +1536,7 @@ namespace Internal.TypeSystem.Interop
                                 Context.GetHelperEntryPoint("InteropHelpers", "CoTaskMemFree")));
         }
 
-        protected override void AllocAndTransformManagedToNative(ILCodeStream codeStream)
+        protected override void TransformManagedToNative(ILCodeStream codeStream)
         {
             ILEmitter emitter = _ilCodeStreams.Emitter;
 
@@ -1616,7 +1623,7 @@ namespace Internal.TypeSystem.Interop
                                 Context.GetHelperEntryPoint("InteropHelpers", "CoTaskMemFree")));
         }
 
-        protected override void AllocAndTransformManagedToNative(ILCodeStream codeStream)
+        protected override void TransformManagedToNative(ILCodeStream codeStream)
         {
             ILEmitter emitter = _ilCodeStreams.Emitter;
 

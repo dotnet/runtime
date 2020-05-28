@@ -45,7 +45,7 @@ namespace System.Security.Cryptography
                 using (ECDiffieHellmanCng otherPartyCng = (ECDiffieHellmanCng)Create(otherPartyParameters))
                 using (SafeNCryptKeyHandle otherPartyHandle = otherPartyCng.GetDuplicatedKeyHandle())
                 {
-                    string importedKeyAlgorithmGroup =
+                    string? importedKeyAlgorithmGroup =
                         CngKeyLite.GetPropertyAsString(
                             otherPartyHandle,
                             CngKeyLite.KeyPropertyName.AlgorithmGroup,

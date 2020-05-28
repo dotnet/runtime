@@ -12,9 +12,9 @@
          This RID value doesn't really matter, since the assets we are copying are not RID specific, so defaulting to Windows here
     -->
     <OutputPath>$(TargetingPackPath)</OutputPath>
-    <TargetFramework>netcoreapp3.0</TargetFramework>
-    <NuGetTargetMoniker>.NETCoreApp,Version=v3.0</NuGetTargetMoniker>
-    <NuGetTargetMonikerShort>netcoreapp3.0</NuGetTargetMonikerShort>
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+    <NuGetTargetMoniker>$(NetCoreAppCurrentTargetFrameworkMoniker)</NuGetTargetMoniker>
+    <NuGetTargetMonikerShort>$(NetCoreAppCurrent)</NuGetTargetMonikerShort>
     <RuntimeIdentifiers>win7-x86;win7-x64</RuntimeIdentifiers>
     <XUnitRunnerTargetFramework>netcoreapp2.1</XUnitRunnerTargetFramework>
     <CLRTestKind>SharedLibrary</CLRTestKind>
@@ -62,6 +62,7 @@
     <PackageToInclude Include="xunit.performance.metrics"/>
     <PackageToInclude Include="Microsoft.Diagnostics.Tracing.TraceEvent"/>
     <PackageToInclude Include="Newtonsoft.Json"/>
+    <PackageToInclude Include="Newtonsoft.Json.Bson"/>
     <PackageToInclude Include="Microsoft.CodeAnalysis.Analyzers"/>
     <PackageToInclude Include="Microsoft.CodeAnalysis.Common"/>
     <PackageToInclude Include="Microsoft.CodeAnalysis.Compilers"/>
@@ -77,6 +78,7 @@
     <PackageReference Include="xunit.performance.metrics" Version="$(XunitPerformanceApiPackageVersion)" />
     <PackageReference Include="Microsoft.Diagnostics.Tracing.TraceEvent" Version="$(MicrosoftDiagnosticsTracingTraceEventPackageVersion)" />
     <PackageReference Include="Newtonsoft.Json" Version="12.0.1" />
+    <PackageReference Include="Newtonsoft.Json.Bson" Version="1.0.2" />
     <PackageReference Include="xunit" Version="$(XUnitVersion)" />
     <PackageReference Include="$(MicrosoftDotNetXUnitConsoleRunnerPackage)" Version="$(MicrosoftDotNetXUnitConsoleRunnerVersion)" GeneratePathProperty="True" />
     <PackageReference Include="xunit.runner.utility" Version="$(XUnitVersion)" />

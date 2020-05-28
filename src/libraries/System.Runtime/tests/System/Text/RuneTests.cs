@@ -4,7 +4,7 @@
 
 using System.Buffers;
 using System.Globalization;
-using System.Text.Unicode.Tests;
+using System.Text.Unicode;
 using Xunit;
 using Xunit.Sdk;
 
@@ -12,7 +12,7 @@ namespace System.Text.Tests
 {
     public static partial class RuneTests
     {
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsWindows8xOrLater))] // the localization tables used by our test data only exist on Win8+
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsWindows8xOrLater), nameof(PlatformDetection.IsNlsGlobalization))] // the localization tables used by our test data only exist on Win8+
         [PlatformSpecific(TestPlatforms.Windows)]
         [InlineData('0', '0', '0', "en-US")]
         [InlineData('a', 'A', 'a', "en-US")]
@@ -38,7 +38,7 @@ namespace System.Text.Tests
         }
 
         // Invariant ToUpper / ToLower doesn't modify Turkish I or majuscule Eszett
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsWindows8xOrLater))] // the localization tables used by our test data only exist on Win8+
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsWindows8xOrLater), nameof(PlatformDetection.IsNlsGlobalization))] // the localization tables used by our test data only exist on Win8+
         [PlatformSpecific(TestPlatforms.Windows)]
         [InlineData('0', '0', '0')]
         [InlineData('a', 'A', 'a')]
@@ -139,7 +139,7 @@ namespace System.Text.Tests
 
         [Theory]
         [MemberData(nameof(SurrogatePairTestData_InvalidOnly))]
-        public static void Ctor_SurrogatePair_Valid(char highSurrogate, char lowSurrogate)
+        public static void Ctor_SurrogatePair_Invalid(char highSurrogate, char lowSurrogate)
         {
             string expectedParamName = !char.IsHighSurrogate(highSurrogate) ? nameof(highSurrogate) : nameof(lowSurrogate);
             Assert.Throws<ArgumentOutOfRangeException>(expectedParamName, () => new Rune(highSurrogate, lowSurrogate));
@@ -350,11 +350,11 @@ namespace System.Text.Tests
 
             foreach (Rune rune in AllRunes())
             {
-                if (UnicodeData.GetUnicodeCategory((uint)rune.Value) != Rune.GetUnicodeCategory(rune))
+                if (UnicodeData.GetUnicodeCategory(rune.Value) != Rune.GetUnicodeCategory(rune))
                 {
                     // We'll build up the exception message ourselves so the dev knows what code point failed.
                     throw new AssertActualExpectedException(
-                        expected: UnicodeData.GetUnicodeCategory((uint)rune.Value),
+                        expected: UnicodeData.GetUnicodeCategory(rune.Value),
                         actual: Rune.GetUnicodeCategory(rune),
                         userMessage: FormattableString.Invariant($@"Rune.GetUnicodeCategory(U+{rune.Value:X4}) returned wrong value."));
                 }
@@ -455,7 +455,7 @@ namespace System.Text.Tests
 
             foreach (Rune rune in AllRunes())
             {
-                Assert.Equal(UnicodeData.IsWhiteSpace((uint)rune.Value), Rune.IsWhiteSpace(rune));
+                Assert.Equal(UnicodeData.IsWhiteSpace(rune.Value), Rune.IsWhiteSpace(rune));
             }
         }
 

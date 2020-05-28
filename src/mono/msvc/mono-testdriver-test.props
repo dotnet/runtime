@@ -1,0 +1,37 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup Label="UserMacros">
+    <MONO_TESTDRIVER_TEST_DIR>$(MONO_DIR)/mono/tests</MONO_TESTDRIVER_TEST_DIR>
+    <MONO_PATH>$(MONO_PATH);$(MONO_TESTDRIVER_TEST_DIR)</MONO_PATH>
+    <MONO_CONFIG_PATH>$(MONO_EXECUTABLE_DIR)\tests-config.xml</MONO_CONFIG_PATH>
+    <MONO_CONFIG_ARG>--config "$(MONO_CONFIG_PATH)"</MONO_CONFIG_ARG>
+    <MONO_TESTDRIVER_RUN_TARGET>winx64structs.exe</MONO_TESTDRIVER_RUN_TARGET>
+    <MONO_TESTDRIVER_RUN_ADDITIONAL_ARGS>
+    </MONO_TESTDRIVER_RUN_ADDITIONAL_ARGS>
+    <MONO_TESTDRIVER_RUN_ARGS>--handlers=atexit-waitkeypress $(MONO_CONFIG_ARG) "$(MONO_TESTDRIVER_RUN_TARGET)" $(MONO_TESTDRIVER_RUN_ADDITIONAL_ARGS)</MONO_TESTDRIVER_RUN_ARGS>
+  </PropertyGroup>
+  <ItemGroup>
+    <BuildMacro Include="MONO_TESTDRIVER_TEST_DIR">
+      <Value>$(MONO_TESTDRIVER_TEST_DIR)</Value>
+    </BuildMacro>
+    <BuildMacro Include="MONO_PATH">
+      <Value>$(MONO_PATH)</Value>
+    </BuildMacro>
+    <BuildMacro Include="MONO_CONFIG_PATH">
+      <Value>$(MONO_CONFIG_PATH)</Value>
+    </BuildMacro>
+    <BuildMacro Include="MONO_CONFIG_ARG">
+      <Value>$(MONO_CONFIG_ARG)</Value>
+    </BuildMacro>
+    <BuildMacro Include="MONO_TESTDRIVER_RUN_TARGET">
+      <Value>$(MONO_TESTDRIVER_RUN_TARGET)</Value>
+    </BuildMacro>
+    <BuildMacro Include="MONO_TESTDRIVER_RUN_ADDITIONAL_ARGS">
+      <Value>$(MONO_TESTDRIVER_RUN_ADDITIONAL_ARGS)</Value>
+    </BuildMacro>
+    <BuildMacro Include="MONO_TESTDRIVER_RUN_ARGS">
+      <Value>$(MONO_TESTDRIVER_RUN_ARGS)</Value>
+    </BuildMacro>
+  </ItemGroup>
+  <ItemDefinitionGroup />
+</Project>

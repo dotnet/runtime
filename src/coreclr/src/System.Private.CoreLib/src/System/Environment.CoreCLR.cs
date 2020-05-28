@@ -16,6 +16,7 @@ namespace System
 
         // Terminates this process with the given exit code.
         [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
+        [DoesNotReturn]
         private static extern void _Exit(int exitCode);
 
         [DoesNotReturn]

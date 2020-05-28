@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 // ------------------------------------------------------------------------------
-// Changes to this file must follow the http://aka.ms/api-review process.
+// Changes to this file must follow the https://aka.ms/api-review process.
 // ------------------------------------------------------------------------------
 
 namespace Microsoft.Win32
@@ -58,23 +58,23 @@ namespace Microsoft.Win32
     public sealed partial class SystemEvents
     {
         internal SystemEvents() { }
-        public static event System.EventHandler DisplaySettingsChanged { add { } remove { } }
-        public static event System.EventHandler DisplaySettingsChanging { add { } remove { } }
-        public static event System.EventHandler EventsThreadShutdown { add { } remove { } }
-        public static event System.EventHandler InstalledFontsChanged { add { } remove { } }
+        public static event System.EventHandler? DisplaySettingsChanged { add { } remove { } }
+        public static event System.EventHandler? DisplaySettingsChanging { add { } remove { } }
+        public static event System.EventHandler? EventsThreadShutdown { add { } remove { } }
+        public static event System.EventHandler? InstalledFontsChanged { add { } remove { } }
         [System.ComponentModel.BrowsableAttribute(false)]
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         [System.ObsoleteAttribute("This event has been deprecated. https://go.microsoft.com/fwlink/?linkid=14202")]
-        public static event System.EventHandler LowMemory { add { } remove { } }
-        public static event System.EventHandler PaletteChanged { add { } remove { } }
-        public static event Microsoft.Win32.PowerModeChangedEventHandler PowerModeChanged { add { } remove { } }
-        public static event Microsoft.Win32.SessionEndedEventHandler SessionEnded { add { } remove { } }
-        public static event Microsoft.Win32.SessionEndingEventHandler SessionEnding { add { } remove { } }
-        public static event Microsoft.Win32.SessionSwitchEventHandler SessionSwitch { add { } remove { } }
-        public static event System.EventHandler TimeChanged { add { } remove { } }
-        public static event Microsoft.Win32.TimerElapsedEventHandler TimerElapsed { add { } remove { } }
-        public static event Microsoft.Win32.UserPreferenceChangedEventHandler UserPreferenceChanged { add { } remove { } }
-        public static event Microsoft.Win32.UserPreferenceChangingEventHandler UserPreferenceChanging { add { } remove { } }
+        public static event System.EventHandler? LowMemory { add { } remove { } }
+        public static event System.EventHandler? PaletteChanged { add { } remove { } }
+        public static event Microsoft.Win32.PowerModeChangedEventHandler? PowerModeChanged { add { } remove { } }
+        public static event Microsoft.Win32.SessionEndedEventHandler? SessionEnded { add { } remove { } }
+        public static event Microsoft.Win32.SessionEndingEventHandler? SessionEnding { add { } remove { } }
+        public static event Microsoft.Win32.SessionSwitchEventHandler? SessionSwitch { add { } remove { } }
+        public static event System.EventHandler? TimeChanged { add { } remove { } }
+        public static event Microsoft.Win32.TimerElapsedEventHandler? TimerElapsed { add { } remove { } }
+        public static event Microsoft.Win32.UserPreferenceChangedEventHandler? UserPreferenceChanged { add { } remove { } }
+        public static event Microsoft.Win32.UserPreferenceChangingEventHandler? UserPreferenceChanging { add { } remove { } }
         public static System.IntPtr CreateTimer(int interval) { throw null; }
         public static void InvokeOnEventsThread(System.Delegate method) { }
         public static void KillTimer(System.IntPtr timerId) { }

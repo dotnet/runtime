@@ -8,8 +8,8 @@ namespace System.Security.Cryptography
 {
     public class RSAPKCS1SignatureFormatter : AsymmetricSignatureFormatter
     {
-        private RSA _rsaKey;
-        private string _algName;
+        private RSA? _rsaKey;
+        private string? _algName;
 
         public RSAPKCS1SignatureFormatter() { }
 
@@ -39,7 +39,7 @@ namespace System.Security.Cryptography
             }
             else
             {
-                // For desktop compat, exception is deferred until VerifySignature
+                // For .NET Framework compat, exception is deferred until VerifySignature
                 _algName = null;
             }
         }

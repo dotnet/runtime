@@ -19,19 +19,16 @@ namespace System.Composition.Hosting.Core
         /// <summary>
         /// Constant value provided so that subclasses can avoid creating additional duplicate values.
         /// </summary>
-        [SuppressMessage("Microsoft.Security", "CA2104:DoNotDeclareReadOnlyMutableReferenceTypes")]
         protected static readonly IEnumerable<ExportDescriptorPromise> NoExportDescriptors = Enumerable.Empty<ExportDescriptorPromise>();
 
         /// <summary>
         /// Constant value provided so that subclasses can avoid creating additional duplicate values.
         /// </summary>
-        [SuppressMessage("Microsoft.Security", "CA2104:DoNotDeclareReadOnlyMutableReferenceTypes")]
         protected static readonly IDictionary<string, object> NoMetadata = new ReadOnlyDictionary<string, object>(new Dictionary<string, object>());
 
         /// <summary>
         /// Constant value provided so that subclasses can avoid creating additional duplicate values.
         /// </summary>
-        [SuppressMessage("Microsoft.Security", "CA2104:DoNotDeclareReadOnlyMutableReferenceTypes")]
         protected static readonly Func<IEnumerable<CompositionDependency>> NoDependencies = () => Enumerable.Empty<CompositionDependency>();
 
         /// <summary>

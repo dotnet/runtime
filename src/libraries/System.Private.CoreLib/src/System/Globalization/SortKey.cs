@@ -9,9 +9,9 @@ namespace System.Globalization
     /// <summary>
     /// This class implements a set of methods for retrieving
     /// </summary>
-    public partial class SortKey
+    public sealed partial class SortKey
     {
-        private readonly string _localeName;
+        private readonly CompareInfo _compareInfo;
         private readonly CompareOptions _options;
         private readonly string _string;
         private readonly byte[] _keyData;
@@ -20,10 +20,10 @@ namespace System.Globalization
         /// The following constructor is designed to be called from CompareInfo to get the
         /// the sort key of specific string for synthetic culture
         /// </summary>
-        internal SortKey(string localeName, string str, CompareOptions options, byte[] keyData)
+        internal SortKey(CompareInfo compareInfo, string str, CompareOptions options, byte[] keyData)
         {
             _keyData = keyData;
-            _localeName = localeName;
+            _compareInfo = compareInfo;
             _options = options;
             _string = str;
         }
@@ -32,13 +32,13 @@ namespace System.Globalization
         /// Returns the original string used to create the current instance
         /// of SortKey.
         /// </summary>
-        public virtual string OriginalString => _string;
+        public string OriginalString => _string;
 
         /// <summary>
         /// Returns a byte array representing the current instance of the
         /// sort key.
         /// </summary>
-        public virtual byte[] KeyData => (byte[])_keyData.Clone();
+        public byte[] KeyData => (byte[])_keyData.Clone();
 
         /// <summary>
         /// Compares the two sort keys.  Returns 0 if the two sort keys are
@@ -62,49 +62,25 @@ namespace System.Globalization
             Debug.Assert(key1Data != null, "key1Data != null");
             Debug.Assert(key2Data != null, "key2Data != null");
 
-            if (key1Data.Length == 0)
-            {
-                if (key2Data.Length == 0)
-                {
-                    return 0;
-                }
+            // SortKey comparisons are done as an ordinal comparison by the raw sort key bytes.
 
-                return -1;
-            }
-            if (key2Data.Length == 0)
-            {
-                return 1;
-            }
-
-            int compLen = (key1Data.Length < key2Data.Length) ? key1Data.Length : key2Data.Length;
-            for (int i = 0; i < compLen; i++)
-            {
-                if (key1Data[i] > key2Data[i])
-                {
-                    return 1;
-                }
-                if (key1Data[i] < key2Data[i])
-                {
-                    return -1;
-                }
-            }
-
-            return 0;
+            return new ReadOnlySpan<byte>(key1Data).SequenceCompareTo(key2Data);
         }
 
         public override bool Equals(object? value)
         {
-            return value is SortKey otherSortKey && Compare(this, otherSortKey) == 0;
+            return value is SortKey other
+                && new ReadOnlySpan<byte>(_keyData).SequenceEqual(other._keyData);
         }
 
         public override int GetHashCode()
         {
-            return CompareInfo.GetCompareInfo(_localeName).GetHashCodeOfString(_string, _options);
+            return _compareInfo.GetHashCode(_string, _options);
         }
 
         public override string ToString()
         {
-            return "SortKey - " + _localeName + ", " + _options + ", " + _string;
+            return "SortKey - " + _compareInfo.Name + ", " + _options + ", " + _string;
         }
     }
 }

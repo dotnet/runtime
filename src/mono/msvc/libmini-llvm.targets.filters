@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="llvm_sources">
+    <ClCompile Include="$(MonoSourceLocation)\mono\mini\mini-llvm.c">
+      <Filter>Source Files$(MonoMiniFilterSubFolder)\llvm</Filter>
+    </ClCompile>
+    <ClCompile Include="$(MonoSourceLocation)\mono\mini\llvm-runtime.cpp">
+      <Filter>Source Files$(MonoMiniFilterSubFolder)\llvm</Filter>
+    </ClCompile>
+    <ClCompile Include="$(MonoSourceLocation)\mono\mini\mini-llvm-cpp.cpp">
+      <Filter>Source Files$(MonoMiniFilterSubFolder)\llvm</Filter>
+    </ClCompile>
+    <ClCompile Include="$(MonoSourceLocation)\mono\mini\llvm-jit.cpp">
+      <Filter>Source Files$(MonoMiniFilterSubFolder)\llvm</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="Source Files$(MonoMiniFilterSubFolder)\llvm">
+      <UniqueIdentifier>{6FF52301-18F4-41A3-AF3B-6D129E50D8AB}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>

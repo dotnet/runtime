@@ -10,23 +10,23 @@ namespace System.Net.Sockets
     // AcceptOverlappedAsyncResult - used to take care of storage for async Socket BeginAccept call.
     internal sealed partial class AcceptOverlappedAsyncResult : BaseOverlappedAsyncResult
     {
-        private Socket _acceptSocket;
+        private Socket? _acceptSocket;
         private int _addressBufferLength;
 
         // This method will be called by us when the IO completes synchronously and
         // by the ThreadPool when the IO completes asynchronously. (only called on WinNT)
-        internal override object PostCompletion(int numBytes)
+        internal override object? PostCompletion(int numBytes)
         {
             SocketError errorCode = (SocketError)ErrorCode;
 
-            Internals.SocketAddress remoteSocketAddress = null;
+            Internals.SocketAddress? remoteSocketAddress = null;
             if (errorCode == SocketError.Success)
             {
                 _numBytes = numBytes;
                 if (NetEventSource.IsEnabled) LogBuffer(numBytes);
 
                 // get the endpoint
-                remoteSocketAddress = IPEndPointExtensions.Serialize(_listenSocket._rightEndPoint);
+                remoteSocketAddress = IPEndPointExtensions.Serialize(_listenSocket._rightEndPoint!);
 
                 IntPtr localAddr;
                 int localAddrLength;
@@ -40,6 +40,7 @@ namespace System.Net.Sockets
                     safeHandle.DangerousAddRef(ref refAdded);
                     IntPtr handle = safeHandle.DangerousGetHandle();
 
+                    Debug.Assert(_buffer != null);
                     _listenSocket.GetAcceptExSockaddrs(
                         Marshal.UnsafeAddrOfPinnedArrayElement(_buffer, 0),
                         _buffer.Length - (_addressBufferLength * 2),
@@ -53,7 +54,7 @@ namespace System.Net.Sockets
                     Marshal.Copy(remoteAddr, remoteSocketAddress.Buffer, 0, remoteSocketAddress.Size);
 
                     errorCode = Interop.Winsock.setsockopt(
-                        _acceptSocket.SafeHandle,
+                        _acceptSocket!.SafeHandle,
                         SocketOptionLevel.Socket,
                         SocketOptionName.UpdateAcceptContext,
                         ref handle,
@@ -86,7 +87,7 @@ namespace System.Net.Sockets
                 return null;
             }
 
-            return _listenSocket.UpdateAcceptSocket(_acceptSocket, _listenSocket._rightEndPoint.Create(remoteSocketAddress));
+            return _listenSocket.UpdateAcceptSocket(_acceptSocket!, _listenSocket._rightEndPoint!.Create(remoteSocketAddress!));
         }
 
         // SetUnmanagedStructures
@@ -111,6 +112,7 @@ namespace System.Net.Sockets
             // condition where tracing is disabled between a calling check and here, in which case the assert
             // may fire erroneously.
             Debug.Assert(NetEventSource.IsEnabled);
+            Debug.Assert(_buffer != null);
 
             if (size > -1)
             {

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using Internal.Cryptography;
 using Microsoft.Win32.SafeHandles;
 using System.Diagnostics;
@@ -34,11 +35,11 @@ namespace System.Security.Cryptography
                 //     byte[cbKey]          D
 
                 int blobSize = sizeof(BCRYPT_ECCKEY_BLOB) +
-                    parameters.Q.X.Length +
-                    parameters.Q.Y.Length;
+                    parameters.Q.X!.Length +
+                    parameters.Q.Y!.Length;
                 if (includePrivateParameters)
                 {
-                    blobSize += parameters.D.Length;
+                    blobSize += parameters.D!.Length;
                 }
 
                 blob = new byte[blobSize];
@@ -57,7 +58,7 @@ namespace System.Security.Cryptography
                     Interop.BCrypt.Emit(blob, ref offset, parameters.Q.Y);
                     if (includePrivateParameters)
                     {
-                        Interop.BCrypt.Emit(blob, ref offset, parameters.D);
+                        Interop.BCrypt.Emit(blob, ref offset, parameters.D!);
                     }
 
                     // We better have computed the right allocation size above!
@@ -92,20 +93,20 @@ namespace System.Security.Cryptography
                 //     byte[cbSubgroupOrder]        D
 
                 int blobSize = sizeof(BCRYPT_ECCFULLKEY_BLOB) +
-                    curve.Prime.Length +
-                    curve.A.Length +
-                    curve.B.Length +
-                    curve.G.X.Length +
-                    curve.G.Y.Length +
-                    curve.Order.Length +
-                    curve.Cofactor.Length +
+                    curve.Prime!.Length +
+                    curve.A!.Length +
+                    curve.B!.Length +
+                    curve.G.X!.Length +
+                    curve.G.Y!.Length +
+                    curve.Order!.Length +
+                    curve.Cofactor!.Length +
                     (curve.Seed == null ? 0 : curve.Seed.Length) +
-                    parameters.Q.X.Length +
-                    parameters.Q.Y.Length;
+                    parameters.Q.X!.Length +
+                    parameters.Q.Y!.Length;
 
                 if (includePrivateParameters)
                 {
-                    blobSize += parameters.D.Length;
+                    blobSize += parameters.D!.Length;
                 }
 
                 blob = new byte[blobSize];
@@ -141,7 +142,7 @@ namespace System.Security.Cryptography
                     Interop.BCrypt.Emit(blob, ref offset, parameters.Q.Y);
                     if (includePrivateParameters)
                     {
-                        Interop.BCrypt.Emit(blob, ref offset, parameters.D);
+                        Interop.BCrypt.Emit(blob, ref offset, parameters.D!);
                     }
 
                     // We better have computed the right allocation size above!
@@ -278,13 +279,13 @@ namespace System.Security.Cryptography
                 //     byte[cbSeed]                 Seed
 
                 int blobSize = sizeof(BCRYPT_ECC_PARAMETER_HEADER) +
-                    curve.Prime.Length +
-                    curve.A.Length +
-                    curve.B.Length +
-                    curve.G.X.Length +
-                    curve.G.Y.Length +
-                    curve.Order.Length +
-                    curve.Cofactor.Length +
+                    curve.Prime!.Length +
+                    curve.A!.Length +
+                    curve.B!.Length +
+                    curve.G.X!.Length +
+                    curve.G.Y!.Length +
+                    curve.Order!.Length +
+                    curve.Cofactor!.Length +
                     (curve.Seed == null ? 0 : curve.Seed.Length);
 
                 byte[] blob = new byte[blobSize];
@@ -386,7 +387,7 @@ namespace System.Security.Cryptography
         /// to the pre-Win10 magic numbers to support import on pre-Win10 environments
         /// that don't have the named curve functionality.
         /// </summary>
-        private static KeyBlobMagicNumber EcdsaCurveNameToMagicNumber(string name, bool includePrivateParameters) =>
+        private static KeyBlobMagicNumber EcdsaCurveNameToMagicNumber(string? name, bool includePrivateParameters) =>
             EcdsaCurveNameToAlgorithm(name) switch
             {
                 AlgorithmName.ECDsaP256 => includePrivateParameters ?
@@ -411,7 +412,7 @@ namespace System.Security.Cryptography
         /// to the pre-Win10 magic numbers to support import on pre-Win10 environments
         /// that don't have the named curve functionality.
         /// </summary>
-        private static KeyBlobMagicNumber EcdhCurveNameToMagicNumber(string name, bool includePrivateParameters) =>
+        private static KeyBlobMagicNumber EcdhCurveNameToMagicNumber(string? name, bool includePrivateParameters) =>
             EcdhCurveNameToAlgorithm(name) switch
             {
                 AlgorithmName.ECDHP256 => includePrivateParameters ?
@@ -520,7 +521,7 @@ namespace System.Security.Cryptography
         /// Map a curve name to algorithm. This enables curves that worked pre-Win10
         /// to work with newer APIs for import and export.
         /// </summary>
-        internal static string EcdsaCurveNameToAlgorithm(string algorithm)
+        internal static string EcdsaCurveNameToAlgorithm(string? algorithm)
         {
             switch (algorithm)
             {
@@ -545,7 +546,7 @@ namespace System.Security.Cryptography
         /// Map a curve name to algorithm. This enables curves that worked pre-Win10
         /// to work with newer APIs for import and export.
         /// </summary>
-        internal static string EcdhCurveNameToAlgorithm(string algorithm)
+        internal static string EcdhCurveNameToAlgorithm(string? algorithm)
         {
             switch (algorithm)
             {

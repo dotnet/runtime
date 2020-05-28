@@ -4,7 +4,7 @@
 
 #include <string.h>
 
-#ifdef PLATFORM_UNIX
+#ifdef TARGET_UNIX
 typedef char16_t WCHAR;
 #else
 typedef wchar_t WCHAR;

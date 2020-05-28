@@ -135,7 +135,7 @@ namespace System.Tests
 
             // Note: Only the Convert.ToSByte(String, IFormatProvider) overload throws an ArgumentNullException.
             // This is inconsistent with the other numeric conversions, but fixing this behavior is not worth making
-            // a breaking change which will affect the desktop CLR.
+            // a breaking change.
             Assert.Throws<ArgumentNullException>(() => Convert.ToSByte((string)null, TestFormatProvider.s_instance));
         }
 

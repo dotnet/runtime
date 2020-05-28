@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System;
 using System.Diagnostics;
 using System.Security.Cryptography;
@@ -77,7 +78,7 @@ namespace Internal.Cryptography
             // Otherwise the decryption buffer is just the input data.
             //
 
-            byte[] ciphertext = null;
+            byte[]? ciphertext = null;
 
             if (_heldoverCipher == null)
             {
@@ -123,7 +124,7 @@ namespace Internal.Cryptography
         {
             if (disposing)
             {
-                byte[] heldoverCipher = _heldoverCipher;
+                byte[]? heldoverCipher = _heldoverCipher;
                 _heldoverCipher = null;
                 if (heldoverCipher != null)
                 {
@@ -248,6 +249,6 @@ namespace Internal.Cryptography
         // whether this is the final block that needs depadding. This block is held (in encrypted form) in _heldoverCipher. The next call to TransformBlock
         // or TransformFinalBlock must include the decryption of _heldoverCipher in the results.
         //
-        private byte[] _heldoverCipher;
+        private byte[]? _heldoverCipher;
     }
 }

@@ -2,26 +2,14 @@
   <PropertyGroup>
     <AssemblyName>System.Runtime</AssemblyName>
     <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
-    <Configurations>netcoreapp-Unix-Debug;netcoreapp-Unix-Release;netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release</Configurations>
-    <Nullable>enable</Nullable>
+    <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)-Unix</TargetFrameworks>
   </PropertyGroup>
   <ItemGroup>
     <!-- Compiler throws error if you try to use System.Void and instructs you to use void keyword instead. So we have manually added a typeforward for this type. -->  
     <GenFacadesOmitType Include="System.Void" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="System\Action.cs" />
-    <Compile Include="System\Collections\Generic\ISet.cs" />
-    <Compile Include="System\Function.cs" />
-    <Compile Include="System\IO\FileAttributes.cs" />
-    <Compile Include="System\IO\HandleInheritability.cs" />
-    <Compile Include="System\LazyOfTTMetadata.cs" />
-    <Compile Include="System\Reflection\RuntimeReflectionExtensions.cs" />
-    <Compile Include="System\Runtime\CompilerServices\EnumeratorCancellationAttribute.cs" />
-    <Compile Include="System\Runtime\ConstrainedExecution\PrePrepareMethodAttribute.cs" />
-    <Compile Include="System\Runtime\NgenServicingAttributes.cs" />
-    <Compile Include="System\System.Runtime.Typeforwards.cs" />
-    <Compile Include="System\Threading\WaitHandleExtensions.cs" />
+    <Compile Include="System.Runtime.Typeforwards.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\System.Private.Uri\src\System.Private.Uri.csproj" />

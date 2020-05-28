@@ -45,7 +45,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
             get { return ReflectionItemType.Type; }
         }
 
-        public override object GetValue(object instance)
+        public override object? GetValue(object? instance)
         {
             return instance;
         }

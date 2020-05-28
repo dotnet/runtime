@@ -2,15 +2,16 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 namespace System.IO.IsolatedStorage
 {
     internal static partial class Helper
     {
         private const string IsolatedStorageDirectoryName = "IsolatedStorage";
 
-        private static string s_machineRootDirectory;
-        private static string s_roamingUserRootDirectory;
-        private static string s_userRootDirectory;
+        private static string? s_machineRootDirectory;
+        private static string? s_roamingUserRootDirectory;
+        private static string? s_userRootDirectory;
 
         /// <summary>
         /// The full root directory is the relevant special folder from Environment.GetFolderPath() plus "IsolatedStorage"

@@ -1441,7 +1441,7 @@ namespace System.Xml
                         }
                     }
                 }
-                //didn't find it, try the next element anccester.
+                //didn't find it, try the next element ancestor.
                 do
                 {
                     node = node.ParentNode;
@@ -1452,8 +1452,8 @@ namespace System.Xml
             return false;
         }
 
-        //the function will find the next namespace node on the given bound element starting with the given column or attribte
-        // wether to use column or attribute depends on if the bound element is folicated or not.
+        //the function will find the next namespace node on the given bound element starting with the given column or attribute
+        // whether to use column or attribute depends on if the bound element is foliated or not.
         private bool MoveToNextNamespace(XmlBoundElement be, DataColumn col, XmlAttribute curAttr)
         {
             if (be != null)
@@ -1523,7 +1523,7 @@ namespace System.Xml
                 //didn't find it
                 if (namespaceScope == XPathNamespaceScope.Local)
                     goto labelNoNS;
-                //try the next element anccestor.
+                //try the next element ancestor.
                 do
                 {
                     node = node.ParentNode;
@@ -1590,7 +1590,7 @@ namespace System.Xml
                 //didn't find it in this loop
                 if (namespaceScope == XPathNamespaceScope.Local)
                     return false;
-                //try its ancesstor
+                //try its ancestor
                 do
                 {
                     node = node.ParentNode;

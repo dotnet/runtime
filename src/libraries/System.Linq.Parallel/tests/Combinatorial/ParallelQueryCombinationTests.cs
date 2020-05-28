@@ -11,7 +11,7 @@ namespace System.Linq.Parallel.Tests
     [ConditionalClass(typeof(ParallelQueryCombinationTests), nameof(RunSlowTests))]
     public static partial class ParallelQueryCombinationTests
     {
-        // on ARM platforms many available cores makes this unbearably slow: #36494
+        // On ARM platforms, many available cores make this unbearably slow: https://github.com/dotnet/runtime/issues/29123
         public static bool RunSlowTests => PlatformDetection.IsNotArmNorArm64Process || Environment.ProcessorCount <= 8;
 
         [Theory]

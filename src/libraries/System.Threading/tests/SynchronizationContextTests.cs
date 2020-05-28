@@ -10,7 +10,6 @@ namespace System.Threading.Tests
     public static class SynchronizationContextTests
     {
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.Mono, "SynchronizationContext.Wait(IntPtr[], bool, int) is not implemented on Mono")]
         public static void WaitTest()
         {
             var tsc = new TestSynchronizationContext();
@@ -37,14 +36,13 @@ namespace System.Threading.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.Mono)]
         public static void WaitTest_ChangedInDotNetCore()
         {
             Assert.Throws<ArgumentNullException>(() => TestSynchronizationContext.WaitHelper(null, false, 0));
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.Mono, "https://bugzilla.xamarin.com/show_bug.cgi?id=60568")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/31977", TestRuntimes.Mono)]
         public static void WaitNotificationTest()
         {
             ThreadTestHelpers.RunTestInBackgroundThread(() =>

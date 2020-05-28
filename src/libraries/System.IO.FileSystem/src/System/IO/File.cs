@@ -23,7 +23,7 @@ namespace System.IO
     public static class File
     {
         private const int MaxByteArrayLength = 0x7FFFFFC7;
-        private static Encoding s_UTF8NoBOM;
+        private static Encoding? s_UTF8NoBOM;
 
         internal const int DefaultBufferSize = 4096;
 
@@ -114,7 +114,7 @@ namespace System.IO
         // given by the specified path exists; otherwise, the result is
         // false.  Note that if path describes a directory,
         // Exists will return true.
-        public static bool Exists(string path)
+        public static bool Exists(string? path)
         {
             try
             {
@@ -297,7 +297,7 @@ namespace System.IO
                 return sr.ReadToEnd();
         }
 
-        public static void WriteAllText(string path, string contents)
+        public static void WriteAllText(string path, string? contents)
         {
             if (path == null)
                 throw new ArgumentNullException(nameof(path));
@@ -310,7 +310,7 @@ namespace System.IO
             }
         }
 
-        public static void WriteAllText(string path, string contents, Encoding encoding)
+        public static void WriteAllText(string path, string? contents, Encoding encoding)
         {
             if (path == null)
                 throw new ArgumentNullException(nameof(path));
@@ -362,7 +362,7 @@ namespace System.IO
 #if !MS_IO_REDIST
         private static byte[] ReadAllBytesUnknownLength(FileStream fs)
         {
-            byte[] rentedArray = null;
+            byte[]? rentedArray = null;
             Span<byte> buffer = stackalloc byte[512];
             try
             {
@@ -456,7 +456,7 @@ namespace System.IO
             Debug.Assert(encoding != null);
             Debug.Assert(path.Length != 0);
 
-            string line;
+            string? line;
             List<string> lines = new List<string>();
 
             using (StreamReader sr = new StreamReader(path, encoding))
@@ -538,7 +538,7 @@ namespace System.IO
             }
         }
 
-        public static void AppendAllText(string path, string contents)
+        public static void AppendAllText(string path, string? contents)
         {
             if (path == null)
                 throw new ArgumentNullException(nameof(path));
@@ -551,7 +551,7 @@ namespace System.IO
             }
         }
 
-        public static void AppendAllText(string path, string contents, Encoding encoding)
+        public static void AppendAllText(string path, string? contents, Encoding encoding)
         {
             if (path == null)
                 throw new ArgumentNullException(nameof(path));
@@ -592,12 +592,12 @@ namespace System.IO
             InternalWriteAllLines(new StreamWriter(path, true, encoding), contents);
         }
 
-        public static void Replace(string sourceFileName, string destinationFileName, string destinationBackupFileName)
+        public static void Replace(string sourceFileName, string destinationFileName, string? destinationBackupFileName)
         {
             Replace(sourceFileName, destinationFileName, destinationBackupFileName, ignoreMetadataErrors: false);
         }
 
-        public static void Replace(string sourceFileName, string destinationFileName, string destinationBackupFileName, bool ignoreMetadataErrors)
+        public static void Replace(string sourceFileName, string destinationFileName, string? destinationBackupFileName, bool ignoreMetadataErrors)
         {
             if (sourceFileName == null)
                 throw new ArgumentNullException(nameof(sourceFileName));
@@ -701,7 +701,7 @@ namespace System.IO
             Debug.Assert(!string.IsNullOrEmpty(path));
             Debug.Assert(encoding != null);
 
-            char[] buffer = null;
+            char[]? buffer = null;
             StreamReader sr = AsyncStreamReader(path, encoding);
             try
             {
@@ -733,10 +733,10 @@ namespace System.IO
             }
         }
 
-        public static Task WriteAllTextAsync(string path, string contents, CancellationToken cancellationToken = default(CancellationToken))
+        public static Task WriteAllTextAsync(string path, string? contents, CancellationToken cancellationToken = default(CancellationToken))
             => WriteAllTextAsync(path, contents, UTF8NoBOM, cancellationToken);
 
-        public static Task WriteAllTextAsync(string path, string contents, Encoding encoding, CancellationToken cancellationToken = default(CancellationToken))
+        public static Task WriteAllTextAsync(string path, string? contents, Encoding encoding, CancellationToken cancellationToken = default(CancellationToken))
         {
             if (path == null)
                 throw new ArgumentNullException(nameof(path));
@@ -919,7 +919,7 @@ namespace System.IO
             using (StreamReader sr = AsyncStreamReader(path, encoding))
             {
                 cancellationToken.ThrowIfCancellationRequested();
-                string line;
+                string? line;
                 List<string> lines = new List<string>();
                 while ((line = await sr.ReadLineAsync().ConfigureAwait(false)) != null)
                 {
@@ -960,8 +960,6 @@ namespace System.IO
                 foreach (string line in contents)
                 {
                     cancellationToken.ThrowIfCancellationRequested();
-                    // Note that this working depends on the fix to #14563, and cannot be ported without
-                    // either also porting that fix, or explicitly checking for line being null.
                     await writer.WriteLineAsync(line).ConfigureAwait(false);
                 }
 
@@ -972,7 +970,7 @@ namespace System.IO
 
         private static async Task InternalWriteAllTextAsync(StreamWriter sw, string contents, CancellationToken cancellationToken)
         {
-            char[] buffer = null;
+            char[]? buffer = null;
             try
             {
                 buffer = ArrayPool<char>.Shared.Rent(DefaultBufferSize);
@@ -1003,10 +1001,10 @@ namespace System.IO
             }
         }
 
-        public static Task AppendAllTextAsync(string path, string contents, CancellationToken cancellationToken = default(CancellationToken))
+        public static Task AppendAllTextAsync(string path, string? contents, CancellationToken cancellationToken = default(CancellationToken))
             => AppendAllTextAsync(path, contents, UTF8NoBOM, cancellationToken);
 
-        public static Task AppendAllTextAsync(string path, string contents, Encoding encoding, CancellationToken cancellationToken = default(CancellationToken))
+        public static Task AppendAllTextAsync(string path, string? contents, Encoding encoding, CancellationToken cancellationToken = default(CancellationToken))
         {
             if (path == null)
                 throw new ArgumentNullException(nameof(path));

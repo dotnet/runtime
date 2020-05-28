@@ -236,6 +236,9 @@ public:
     static
     PVOID QCALLTYPE GetGCHandle(QCall::TypeHandle pTypeHandle, INT32 handleType);
 
+    static
+    void QCALLTYPE FreeGCHandle(QCall::TypeHandle pTypeHandle, OBJECTHANDLE objHandle);
+
     static FCDECL1(INT32, GetCorElementType, PTR_ReflectClassBaseObject pType);
     static FCDECL1(ReflectClassBaseObject*, GetElementType, ReflectClassBaseObject* pType);
 
@@ -258,6 +261,9 @@ public:
 
     static
     FCDECL1(IMDInternalImport*, GetMetadataImport, ReflectClassBaseObject * pModuleUNSAFE);
+
+    static
+    PVOID QCALLTYPE AllocateTypeAssociatedMemory(QCall::TypeHandle type, UINT32 size);
 };
 
 class RuntimeMethodHandle {
@@ -355,9 +361,6 @@ public:
     static
     void QCALLTYPE Destroy(MethodDesc * pMethod);
 
-    static
-    void QCALLTYPE GetCallerType(QCall::StackCrawlMarkHandle pStackMark, QCall::ObjectHandleOnStack retType);
-
     static FCDECL2(RuntimeMethodBody*, GetMethodBody, ReflectMethodObject *pMethodUNSAFE, PTR_ReflectClassBaseObject pDeclaringType);
 
     static FCDECL1(FC_BOOL_RET, IsConstructor, MethodDesc *pMethod);
@@ -448,7 +451,6 @@ public:
         ReflectClassBaseObject *pDeclaringType);
     static FCDECL3(Object *, GetCustomModifiers, SignatureNative* pSig, INT32 parameter, CLR_BOOL fRequired);
     static FCDECL2(FC_BOOL_RET, CompareSig, SignatureNative* pLhs, SignatureNative* pRhs);
-    static FCDECL4(FC_BOOL_RET, CompareSigForAppCompat, SignatureNative* pLhs, ReflectClassBaseObject * pTypeLhs, SignatureNative* pRhs, ReflectClassBaseObject * pTypeRhs);
 
 
     BOOL HasThis() { LIMITED_METHOD_CONTRACT; return (m_managedCallingConvention & CALLCONV_HasThis); }

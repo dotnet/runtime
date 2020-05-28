@@ -18,10 +18,9 @@ IID_IStream
 IID_ICLRDataTarget
 IID_ICorDebugDataTarget4
 IID_ICLRDataEnumMemoryRegionsCallback
-nativeStringResourceTable_mscorrc_debug
+nativeStringResourceTable_mscorrc
 
 ; All the # exports are prefixed with DAC_
-#PAL_BindResources
 #PAL_CatchHardwareExceptionHolderEnter
 #PAL_CatchHardwareExceptionHolderExit
 #PAL_bsearch
@@ -33,7 +32,6 @@ nativeStringResourceTable_mscorrc_debug
 #PAL_GetLogicalCpuCountFromOS
 #PAL_GetNumaProcessorNode
 #PAL_GetPALDirectoryW
-#PAL_GetResourceString
 #PAL_get_stdout
 #PAL_get_stderr
 #PAL_GetCurrentThread
@@ -83,7 +81,6 @@ nativeStringResourceTable_mscorrc_debug
 #sscanf_s
 
 #CopyFileW
-#CreateDirectoryW
 #CreateFileMappingA
 #CreateFileMappingW
 #CreateFileA
@@ -122,12 +119,9 @@ nativeStringResourceTable_mscorrc_debug
 #GetFileSize
 #GetFullPathNameW
 #GetLastError
-#GetLongPathNameW
 #GetModuleFileNameW
 #GetNumaHighestNodeNumber
 #GetProcAddress
-#GetProcessHeap
-#GetShortPathNameW
 #GetStdHandle
 #GetSystemInfo
 #GetSystemTime
@@ -135,9 +129,6 @@ nativeStringResourceTable_mscorrc_debug
 #GetTempFileNameW
 #GetTempPathA
 #GetTempPathW
-#HeapAlloc
-#HeapFree
-#HeapSetInformation
 #InitializeCriticalSection
 #IsDBCSLeadByte
 #LeaveCriticalSection
@@ -161,12 +152,10 @@ nativeStringResourceTable_mscorrc_debug
 #ReadFile
 #ReleaseMutex
 #ReleaseSemaphore
-#RemoveDirectoryW
 #ResetEvent
 #ResumeThread
 #SearchPathW
 #SetEvent
-#SetFileAttributesW
 #SetFilePointer
 #SetLastError
 #SetErrorMode

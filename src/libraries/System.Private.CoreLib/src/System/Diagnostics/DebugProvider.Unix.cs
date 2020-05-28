@@ -2,8 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using Microsoft.Win32.SafeHandles;
-
 namespace System.Diagnostics
 {
     public partial class DebugProvider
@@ -56,7 +54,7 @@ namespace System.Diagnostics
             }
             else
             {
-                Interop.Sys.SysLog(Interop.Sys.SysLogPriority.LOG_USER | Interop.Sys.SysLogPriority.LOG_DEBUG, "%s", message);
+                Interop.Sys.SysLog(Interop.Sys.SysLogPriority.LOG_DEBUG, "%s", message);
             }
         }
 
@@ -89,7 +87,7 @@ namespace System.Diagnostics
                     int totalBytesWritten = 0;
                     while (bufCount > 0)
                     {
-                        int bytesWritten = Interop.Sys.Write(2 /* stderr */, buf + totalBytesWritten, bufCount);
+                        int bytesWritten = Interop.Sys.Write((IntPtr)2 /* stderr */, buf + totalBytesWritten, bufCount);
                         if (bytesWritten < 0)
                         {
                             // On error, simply stop writing the debug output.  This could commonly happen if stderr

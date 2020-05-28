@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System.Diagnostics;
 using Microsoft.Win32.SafeHandles;
 
@@ -12,7 +13,7 @@ namespace System.Security.Cryptography
     /// </summary>
     internal sealed class SafeHashHandle : SafeHandleZeroOrMinusOneIsInvalid
     {
-        private SafeProvHandle _parent;
+        private SafeProvHandle? _parent;
 
         private SafeHashHandle() : base(true)
         {
@@ -54,7 +55,7 @@ namespace System.Security.Cryptography
             bool successfullyFreed = Interop.Advapi32.CryptDestroyHash(handle);
             Debug.Assert(successfullyFreed);
 
-            SafeProvHandle parent = _parent;
+            SafeProvHandle? parent = _parent;
             _parent = null;
             parent?.DangerousRelease();
 

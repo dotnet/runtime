@@ -125,6 +125,7 @@ namespace Microsoft.CSharp
                         break;
                     case '\u2028':
                     case '\u2029':
+                    case '\u0085':
                         AppendEscapedChar(b, value[i]);
                         break;
 
@@ -2256,8 +2257,6 @@ namespace Microsoft.CSharp
             for (int i = 0; i < typeParameters.Count; i++)
             {
                 // generating something like: "where KeyType: IComparable, IEnumerable"
-
-                Output.WriteLine();
                 Indent++;
 
                 bool first = true;
@@ -2267,6 +2266,7 @@ namespace Microsoft.CSharp
                     {
                         if (first)
                         {
+                            Output.WriteLine();
                             Output.Write("where ");
                             Output.Write(typeParameters[i].Name);
                             Output.Write(" : ");
@@ -2284,6 +2284,7 @@ namespace Microsoft.CSharp
                 {
                     if (first)
                     {
+                        Output.WriteLine();
                         Output.Write("where ");
                         Output.Write(typeParameters[i].Name);
                         Output.Write(" : new()");
@@ -2702,7 +2703,7 @@ namespace Microsoft.CSharp
                     return "void";
                 }
 
-                string lowerCaseString = s.ToLower(CultureInfo.InvariantCulture).Trim();
+                string lowerCaseString = s.ToLowerInvariant().Trim();
 
                 switch (lowerCaseString)
                 {

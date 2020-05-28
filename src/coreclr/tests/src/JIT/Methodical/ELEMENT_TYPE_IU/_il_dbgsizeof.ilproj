@@ -7,10 +7,16 @@
     <DebugType>Full</DebugType>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Condition="'$(BuildArch)' ==   'x64'" Include="sizeof-ia64.il" />
-    <Compile Condition="'$(BuildArch)' == 'arm64'" Include="sizeof-ia64.il" />
-    <Compile Condition="'$(BuildArch)' ==   'x86'" Include="sizeof-i386.il" />
-    <Compile Condition="'$(BuildArch)' ==   'arm'" Include="sizeof-i386.il" />
-    <Compile Condition="'$(BuildArch)' ==   'armel'" Include="sizeof-i386.il" />
+    <Compile Condition="'$(TargetArchitecture)' ==   'x64'" Include="sizeof-ia64.il" />
+    <Compile Condition="'$(TargetArchitecture)' == 'arm64'" Include="sizeof-ia64.il" />
+    <Compile Condition="'$(TargetArchitecture)' ==   'x86'" Include="sizeof-i386.il" />
+    <Compile Condition="'$(TargetArchitecture)' ==   'arm'" Include="sizeof-i386.il" />
+    <Compile Condition="'$(TargetArchitecture)' ==   'armel'" Include="sizeof-i386.il" />
+  </ItemGroup>
+  <PropertyGroup>
+    <CLRTestNeedTarget>1</CLRTestNeedTarget>
+  </PropertyGroup>
+  <ItemGroup>
+    <TraitTags Include="BitSpecific" />
   </ItemGroup>
 </Project>

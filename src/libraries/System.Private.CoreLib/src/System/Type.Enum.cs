@@ -23,7 +23,7 @@ namespace System
                 throw new ArgumentNullException(nameof(value));
 
             if (!IsEnum)
-                throw new ArgumentException(SR.Arg_MustBeEnum, "enumType");
+                throw new ArgumentException(SR.Arg_MustBeEnum, nameof(value));
 
             // Check if both of them are of the same type
             Type valueType = value.GetType();
@@ -70,7 +70,7 @@ namespace System
                 throw new ArgumentNullException(nameof(value));
 
             if (!IsEnum)
-                throw new ArgumentException(SR.Arg_MustBeEnum, "enumType");
+                throw new ArgumentException(SR.Arg_MustBeEnum, nameof(value));
 
             Type valueType = value.GetType();
 
@@ -94,9 +94,7 @@ namespace System
             if (!IsEnum)
                 throw new ArgumentException(SR.Arg_MustBeEnum, "enumType");
 
-            string[] names;
-            Array values;
-            GetEnumData(out names, out values);
+            GetEnumData(out string[] names, out Array values);
             return names;
         }
 

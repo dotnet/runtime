@@ -83,8 +83,8 @@ void Rationalizer::RewriteSIMDIndir(LIR::Use& use)
         else
         {
             addr->SetOper(GT_LCL_FLD);
-            addr->AsLclFld()->gtLclOffs  = 0;
-            addr->AsLclFld()->gtFieldSeq = FieldSeqStore::NotAField();
+            addr->AsLclFld()->SetLclOffs(0);
+            addr->AsLclFld()->SetFieldSeq(FieldSeqStore::NotAField());
 
             if (((addr->gtFlags & GTF_VAR_DEF) != 0) && (genTypeSize(simdType) < genTypeSize(lclType)))
             {
@@ -291,11 +291,11 @@ static void RewriteAssignmentIntoStoreLclCore(GenTreeOp* assignment,
 
     if (locationOp == GT_LCL_FLD)
     {
-        store->AsLclFld()->gtLclOffs  = var->AsLclFld()->gtLclOffs;
-        store->AsLclFld()->gtFieldSeq = var->AsLclFld()->gtFieldSeq;
+        store->AsLclFld()->SetLclOffs(var->AsLclFld()->GetLclOffs());
+        store->AsLclFld()->SetFieldSeq(var->AsLclFld()->GetFieldSeq());
     }
 
-    copyFlags(store, var, GTF_LIVENESS_MASK);
+    copyFlags(store, var, (GTF_LIVENESS_MASK | GTF_VAR_MULTIREG));
     store->gtFlags &= ~GTF_REVERSE_OPS;
 
     store->gtType = var->TypeGet();
@@ -353,48 +353,6 @@ void Rationalizer::RewriteAssignment(LIR::Use& use)
             }
         }
 #endif // FEATURE_SIMD
-        if ((location->TypeGet() == TYP_STRUCT) && !assignment->IsPhiDefn() && !value->IsMultiRegCall())
-        {
-            if ((location->OperGet() == GT_LCL_VAR))
-            {
-                // We need to construct a block node for the location.
-                // Modify lcl to be the address form.
-                location->SetOper(addrForm(locationOp));
-                LclVarDsc* varDsc     = &(comp->lvaTable[location->AsLclVarCommon()->GetLclNum()]);
-                location->gtType      = TYP_BYREF;
-                GenTreeBlk*  storeBlk = nullptr;
-                unsigned int size     = varDsc->lvExactSize;
-
-                if (varDsc->HasGCPtr())
-                {
-                    CORINFO_CLASS_HANDLE structHnd = varDsc->lvVerTypeInfo.GetClassHandle();
-                    GenTreeObj*          objNode   = comp->gtNewObjNode(structHnd, location);
-                    objNode->ChangeOper(GT_STORE_OBJ);
-                    objNode->SetData(value);
-                    storeBlk = objNode;
-                }
-                else
-                {
-                    storeBlk = new (comp, GT_STORE_BLK)
-                        GenTreeBlk(GT_STORE_BLK, TYP_STRUCT, location, value, comp->typGetBlkLayout(size));
-                }
-                storeBlk->gtFlags |= GTF_ASG;
-                storeBlk->gtFlags |= ((location->gtFlags | value->gtFlags) & GTF_ALL_EFFECT);
-
-                GenTree* insertionPoint = location->gtNext;
-                BlockRange().InsertBefore(insertionPoint, storeBlk);
-                use.ReplaceWith(comp, storeBlk);
-                BlockRange().Remove(assignment);
-                JITDUMP("After transforming local struct assignment into a block op:\n");
-                DISPTREERANGE(BlockRange(), use.Def());
-                JITDUMP("\n");
-                return;
-            }
-            else
-            {
-                assert(location->OperIsBlk());
-            }
-        }
     }
 
     switch (locationOp)
@@ -709,7 +667,7 @@ Compiler::fgWalkResult Rationalizer::RewriteNode(GenTree** useEdge, Compiler::Ge
             BlockRange().Remove(node);
             break;
 
-#if defined(_TARGET_XARCH_) || defined(_TARGET_ARM_)
+#if defined(TARGET_XARCH) || defined(TARGET_ARM)
         case GT_CLS_VAR:
         {
             // Class vars that are the target of an assignment will get rewritten into
@@ -732,7 +690,7 @@ Compiler::fgWalkResult Rationalizer::RewriteNode(GenTree** useEdge, Compiler::Ge
             }
         }
         break;
-#endif // _TARGET_XARCH_
+#endif // TARGET_XARCH
 
         case GT_INTRINSIC:
             // Non-target intrinsics should have already been rewritten back into user calls.
@@ -810,6 +768,40 @@ Compiler::fgWalkResult Rationalizer::RewriteNode(GenTree** useEdge, Compiler::Ge
         break;
 #endif // FEATURE_SIMD
 
+#ifdef FEATURE_HW_INTRINSICS
+        case GT_HWINTRINSIC:
+        {
+            GenTreeHWIntrinsic* hwIntrinsicNode = node->AsHWIntrinsic();
+
+            if (!hwIntrinsicNode->isSIMD())
+            {
+                break;
+            }
+
+            noway_assert(comp->supportSIMDTypes());
+
+            // TODO-1stClassStructs: This should be handled more generally for enregistered or promoted
+            // structs that are passed or returned in a different register type than their enregistered
+            // type(s).
+            if ((hwIntrinsicNode->gtType == TYP_I_IMPL) && (hwIntrinsicNode->gtSIMDSize == TARGET_POINTER_SIZE))
+            {
+#ifdef TARGET_ARM64
+                // Special case for GetElement/ToScalar because they take Vector64<T> and return T
+                // and T can be long or ulong.
+                if (!(hwIntrinsicNode->gtHWIntrinsicId == NI_Vector64_GetElement ||
+                      hwIntrinsicNode->gtHWIntrinsicId == NI_Vector64_ToScalar))
+#endif
+                {
+                    // This happens when it is consumed by a GT_RET_EXPR.
+                    // It can only be a Vector2f or Vector2i.
+                    assert(genTypeSize(hwIntrinsicNode->gtSIMDBaseType) == 4);
+                    hwIntrinsicNode->gtType = TYP_SIMD8;
+                }
+            }
+            break;
+        }
+#endif // FEATURE_HW_INTRINSICS
+
         default:
             // These nodes should not be present in HIR.
             assert(!node->OperIs(GT_CMP, GT_SETCC, GT_JCC, GT_JCMP, GT_LOCKADD));
@@ -859,7 +851,13 @@ Compiler::fgWalkResult Rationalizer::RewriteNode(GenTree** useEdge, Compiler::Ge
     return Compiler::WALK_CONTINUE;
 }
 
-void Rationalizer::DoPhase()
+//------------------------------------------------------------------------
+// DoPhase: Run the rationalize over the method IR.
+//
+// Returns:
+//    PhaseStatus indicating, what, if anything, was modified
+//
+PhaseStatus Rationalizer::DoPhase()
 {
     class RationalizeVisitor final : public GenTreeVisitor<RationalizeVisitor>
     {
@@ -953,4 +951,6 @@ void Rationalizer::DoPhase()
     }
 
     comp->compRationalIRForm = true;
+
+    return PhaseStatus::MODIFIED_EVERYTHING;
 }

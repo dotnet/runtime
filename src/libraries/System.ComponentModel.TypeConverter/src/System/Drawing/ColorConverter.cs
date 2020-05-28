@@ -36,7 +36,6 @@ namespace System.Drawing
             return destinationType == typeof(InstanceDescriptor) || base.CanConvertTo(context, destinationType);
         }
 
-        [SuppressMessage("Microsoft.Performance", "CA1808:AvoidCallsThatBoxValueTypes")]
         public override object ConvertFrom(ITypeDescriptorContext context, CultureInfo culture, object value)
         {
             if (value is string strValue)

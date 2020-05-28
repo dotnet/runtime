@@ -31,7 +31,7 @@ namespace Internal.Cryptography.Pal
         /// <summary>
         /// Does not throw on api error. Returns default(bool?) and sets "exception" instead.
         /// </summary>
-        public bool? Verify(X509VerificationFlags flags, out Exception exception)
+        public bool? Verify(X509VerificationFlags flags, out Exception? exception)
         {
             exception = null;
 
@@ -70,7 +70,7 @@ namespace Internal.Cryptography.Pal
 
                         X509Certificate2 certificate = new X509Certificate2((IntPtr)(pChainElement->pCertContext));
                         X509ChainStatus[] chainElementStatus = GetChainStatusInformation(pChainElement->TrustStatus.dwErrorStatus);
-                        string information = Marshal.PtrToStringUni(pChainElement->pwszExtendedErrorInfo);
+                        string information = Marshal.PtrToStringUni(pChainElement->pwszExtendedErrorInfo)!;
 
                         X509ChainElement chainElement = new X509ChainElement(certificate, chainElementStatus, information);
                         chainElements[i] = chainElement;
@@ -112,8 +112,8 @@ namespace Internal.Cryptography.Pal
 
         public void Dispose()
         {
-            SafeX509ChainHandle chain = _chain;
-            _chain = null;
+            SafeX509ChainHandle? chain = _chain;
+            _chain = null!;
             if (chain != null)
                 chain.Dispose();
         }

@@ -11,7 +11,7 @@ namespace System.Net
 {
     internal sealed class Base64Stream : DelegatedStream, IEncodableStream
     {
-        private static readonly byte[] s_base64DecodeMap = new byte[]
+        private static ReadOnlySpan<byte> Base64DecodeMap => new byte[] // rely on C# compiler optimization to eliminate allocation
         {
             //0   1   2    3    4    5    6    7    8    9    A    B     C    D    E    F
             255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,  255, 255, 255, 255, // 0
@@ -32,7 +32,7 @@ namespace System.Net
             255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,  255, 255, 255, 255, // F
         };
 
-        private static readonly byte[] s_base64EncodeMap = new byte[]
+        private static ReadOnlySpan<byte> Base64EncodeMap => new byte[]
         {
              65,  66,  67,  68,   69, 70,  71,  72,  73,  74,  75,  76,  77,  78,   79,  80,
              81,  82,  83,  84,   85, 86,  87,  88,  89,  90,  97,  98,  99, 100,  101, 102,
@@ -43,7 +43,7 @@ namespace System.Net
 
         private readonly int _lineLength;
         private readonly Base64WriteStateInfo _writeState;
-        private ReadStateInfo _readState;
+        private ReadStateInfo? _readState;
 
         //the number of bytes needed to encode three bytes (see algorithm description in Encode method below)
         private const int SizeOfBase64EncodedChar = 4;
@@ -74,7 +74,7 @@ namespace System.Net
             }
         }
 
-        public override IAsyncResult BeginRead(byte[] buffer, int offset, int count, AsyncCallback callback, object state)
+        public override IAsyncResult BeginRead(byte[] buffer, int offset, int count, AsyncCallback? callback, object? state)
         {
             if (buffer == null)
             {
@@ -94,7 +94,7 @@ namespace System.Net
             return result;
         }
 
-        public override IAsyncResult BeginWrite(byte[] buffer, int offset, int count, AsyncCallback callback, object state)
+        public override IAsyncResult BeginWrite(byte[] buffer, int offset, int count, AsyncCallback? callback, object? state)
         {
             if (buffer == null)
             {
@@ -122,10 +122,10 @@ namespace System.Net
                 switch (WriteState.Padding)
                 {
                     case 1:
-                        WriteState.Append(s_base64EncodeMap[WriteState.LastBits], s_base64EncodeMap[64]);
+                        WriteState.Append(Base64EncodeMap[WriteState.LastBits], Base64EncodeMap[64]);
                         break;
                     case 2:
-                        WriteState.Append(s_base64EncodeMap[WriteState.LastBits], s_base64EncodeMap[64], s_base64EncodeMap[64]);
+                        WriteState.Append(Base64EncodeMap[WriteState.LastBits], Base64EncodeMap[64], Base64EncodeMap[64]);
                         break;
                 }
                 WriteState.Padding = 0;
@@ -153,7 +153,7 @@ namespace System.Net
                         continue;
                     }
 
-                    byte s = s_base64DecodeMap[*source];
+                    byte s = Base64DecodeMap[*source];
 
                     if (s == InvalidBase64Value)
                     {
@@ -204,7 +204,7 @@ namespace System.Net
             switch (WriteState.Padding)
             {
                 case 2:
-                    WriteState.Append(s_base64EncodeMap[WriteState.LastBits | ((buffer[cur] & 0xf0) >> 4)]);
+                    WriteState.Append(Base64EncodeMap[WriteState.LastBits | ((buffer[cur] & 0xf0) >> 4)]);
                     if (count == 1)
                     {
                         WriteState.LastBits = (byte)((buffer[cur] & 0x0f) << 2);
@@ -212,15 +212,15 @@ namespace System.Net
                         cur++;
                         return cur - offset;
                     }
-                    WriteState.Append(s_base64EncodeMap[((buffer[cur] & 0x0f) << 2) | ((buffer[cur + 1] & 0xc0) >> 6)]);
-                    WriteState.Append(s_base64EncodeMap[(buffer[cur + 1] & 0x3f)]);
+                    WriteState.Append(Base64EncodeMap[((buffer[cur] & 0x0f) << 2) | ((buffer[cur + 1] & 0xc0) >> 6)]);
+                    WriteState.Append(Base64EncodeMap[(buffer[cur + 1] & 0x3f)]);
                     cur += 2;
                     count -= 2;
                     WriteState.Padding = 0;
                     break;
                 case 1:
-                    WriteState.Append(s_base64EncodeMap[WriteState.LastBits | ((buffer[cur] & 0xc0) >> 6)]);
-                    WriteState.Append(s_base64EncodeMap[(buffer[cur] & 0x3f)]);
+                    WriteState.Append(Base64EncodeMap[WriteState.LastBits | ((buffer[cur] & 0xc0) >> 6)]);
+                    WriteState.Append(Base64EncodeMap[(buffer[cur] & 0x3f)]);
                     cur++;
                     count--;
                     WriteState.Padding = 0;
@@ -242,10 +242,10 @@ namespace System.Net
                 //this means that three bytes of data will be encoded as four base64 characters.  It also means that to encode
                 //a character, we must have three bytes to encode so if the number of bytes is not divisible by three, we
                 //must pad the buffer (this happens below)
-                WriteState.Append(s_base64EncodeMap[(buffer[cur] & 0xfc) >> 2]);
-                WriteState.Append(s_base64EncodeMap[((buffer[cur] & 0x03) << 4) | ((buffer[cur + 1] & 0xf0) >> 4)]);
-                WriteState.Append(s_base64EncodeMap[((buffer[cur + 1] & 0x0f) << 2) | ((buffer[cur + 2] & 0xc0) >> 6)]);
-                WriteState.Append(s_base64EncodeMap[(buffer[cur + 2] & 0x3f)]);
+                WriteState.Append(Base64EncodeMap[(buffer[cur] & 0xfc) >> 2]);
+                WriteState.Append(Base64EncodeMap[((buffer[cur] & 0x03) << 4) | ((buffer[cur + 1] & 0xf0) >> 4)]);
+                WriteState.Append(Base64EncodeMap[((buffer[cur + 1] & 0x0f) << 2) | ((buffer[cur + 2] & 0xc0) >> 6)]);
+                WriteState.Append(Base64EncodeMap[(buffer[cur + 2] & 0x3f)]);
             }
 
             cur = calcLength; //Where we left off before
@@ -261,12 +261,12 @@ namespace System.Net
             switch (count % 3)
             {
                 case 2: //One character padding needed
-                    WriteState.Append(s_base64EncodeMap[(buffer[cur] & 0xFC) >> 2]);
-                    WriteState.Append(s_base64EncodeMap[((buffer[cur] & 0x03) << 4) | ((buffer[cur + 1] & 0xf0) >> 4)]);
+                    WriteState.Append(Base64EncodeMap[(buffer[cur] & 0xFC) >> 2]);
+                    WriteState.Append(Base64EncodeMap[((buffer[cur] & 0x03) << 4) | ((buffer[cur + 1] & 0xf0) >> 4)]);
                     if (dontDeferFinalBytes)
                     {
-                        WriteState.Append(s_base64EncodeMap[((buffer[cur + 1] & 0x0f) << 2)]);
-                        WriteState.Append(s_base64EncodeMap[64]);
+                        WriteState.Append(Base64EncodeMap[((buffer[cur + 1] & 0x0f) << 2)]);
+                        WriteState.Append(Base64EncodeMap[64]);
                         WriteState.Padding = 0;
                     }
                     else
@@ -278,12 +278,12 @@ namespace System.Net
                     break;
 
                 case 1: // Two character padding needed
-                    WriteState.Append(s_base64EncodeMap[(buffer[cur] & 0xFC) >> 2]);
+                    WriteState.Append(Base64EncodeMap[(buffer[cur] & 0xFC) >> 2]);
                     if (dontDeferFinalBytes)
                     {
-                        WriteState.Append(s_base64EncodeMap[(byte)((buffer[cur] & 0x03) << 4)]);
-                        WriteState.Append(s_base64EncodeMap[64]);
-                        WriteState.Append(s_base64EncodeMap[64]);
+                        WriteState.Append(Base64EncodeMap[(byte)((buffer[cur] & 0x03) << 4)]);
+                        WriteState.Append(Base64EncodeMap[64]);
+                        WriteState.Append(Base64EncodeMap[64]);
                         WriteState.Padding = 0;
                     }
                     else
@@ -416,7 +416,7 @@ namespace System.Net
 
             private static readonly AsyncCallback s_onRead = OnRead;
 
-            internal ReadAsyncResult(Base64Stream parent, byte[] buffer, int offset, int count, AsyncCallback callback, object state) : base(null, state, callback)
+            internal ReadAsyncResult(Base64Stream parent, byte[] buffer, int offset, int count, AsyncCallback? callback, object? state) : base(null, state, callback)
             {
                 _parent = parent;
                 _buffer = buffer;
@@ -465,7 +465,7 @@ namespace System.Net
             {
                 if (!result.CompletedSynchronously)
                 {
-                    ReadAsyncResult thisPtr = (ReadAsyncResult)result.AsyncState;
+                    ReadAsyncResult thisPtr = (ReadAsyncResult)result.AsyncState!;
                     try
                     {
                         if (!thisPtr.CompleteRead(result))
@@ -502,7 +502,7 @@ namespace System.Net
             private readonly int _count;
             private int _written;
 
-            internal WriteAsyncResult(Base64Stream parent, byte[] buffer, int offset, int count, AsyncCallback callback, object state) : base(null, state, callback)
+            internal WriteAsyncResult(Base64Stream parent, byte[] buffer, int offset, int count, AsyncCallback? callback, object? state) : base(null, state, callback)
             {
                 _parent = parent;
                 _buffer = buffer;
@@ -544,7 +544,7 @@ namespace System.Net
             {
                 if (!result.CompletedSynchronously)
                 {
-                    WriteAsyncResult thisPtr = (WriteAsyncResult)result.AsyncState;
+                    WriteAsyncResult thisPtr = (WriteAsyncResult)result.AsyncState!;
                     try
                     {
                         thisPtr.CompleteWrite(result);

@@ -167,7 +167,7 @@ namespace System.Data.Common
         [Conditional("DEBUG")]
         static partial void DebugTraceKeyValuePair(string keyname, string keyvalue, Dictionary<string, string> synonyms)
         {
-            Debug.Assert(keyname == keyname.ToLower(CultureInfo.InvariantCulture), "missing ToLower");
+            Debug.Assert(keyname == keyname.ToLowerInvariant(), "missing ToLower");
 
             string realkeyname = ((null != synonyms) ? (string)synonyms[keyname] : keyname);
             if ((KEY.Password != realkeyname) && (SYNONYM.Pwd != realkeyname))

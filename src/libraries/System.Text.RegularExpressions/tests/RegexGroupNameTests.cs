@@ -6,8 +6,9 @@ using Xunit;
 using System;
 using System.Text.RegularExpressions;
 using System.Collections;
+using System.Diagnostics;
 
-namespace System.Text.RegularExpressionsTests
+namespace System.Text.RegularExpressions.Tests
 {
     /// <summary>
     /// Tests the Name property on the Group class.
@@ -17,6 +18,8 @@ namespace System.Text.RegularExpressionsTests
         [Fact]
         public static void NameTests()
         {
+            //Debugger.Launch();
+
             string pattern = @"\b(?<FirstWord>\w+)\s?((\w+)\s)*(?<LastWord>\w+)?(?<Punctuation>\p{Po})";
             string input = "The cow jumped over the moon.";
             Regex regex = new Regex(pattern);

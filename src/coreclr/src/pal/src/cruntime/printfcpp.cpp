@@ -280,7 +280,7 @@ BOOL Internal_ExtractFormatA(CPalThread *pthrCurrent, LPCSTR *Fmt, LPSTR Out, LP
         }
     }
 
-#ifdef BIT64
+#ifdef HOST_64BIT
     if (**Fmt == 'p')
     {
         *Prefix = PFF_PREFIX_LONGLONG;
@@ -303,7 +303,7 @@ BOOL Internal_ExtractFormatA(CPalThread *pthrCurrent, LPCSTR *Fmt, LPSTR Out, LP
         else
         {
             ++(*Fmt);
-    #ifdef BIT64
+    #ifdef HOST_64BIT
             /* convert to 'll' so that Unix snprintf can handle it */
             *Prefix = PFF_PREFIX_LONGLONG;
     #endif
@@ -319,7 +319,7 @@ BOOL Internal_ExtractFormatA(CPalThread *pthrCurrent, LPCSTR *Fmt, LPSTR Out, LP
     else if (**Fmt == 'l' || **Fmt == 'w')
     {
         ++(*Fmt);
-#ifdef BIT64
+#ifdef HOST_64BIT
         // Only want to change the prefix on 64 bit when printing characters.
         if (**Fmt == 'c' || **Fmt == 's')
 #endif
@@ -584,7 +584,7 @@ BOOL Internal_ExtractFormatW(CPalThread *pthrCurrent, LPCWSTR *Fmt, LPSTR Out, L
         }
     }
 
-#ifdef BIT64
+#ifdef HOST_64BIT
     if (**Fmt == 'p')
     {
         *Prefix = PFF_PREFIX_LONGLONG;
@@ -607,7 +607,7 @@ BOOL Internal_ExtractFormatW(CPalThread *pthrCurrent, LPCWSTR *Fmt, LPSTR Out, L
         else
         {
             ++(*Fmt);
-    #ifdef BIT64
+    #ifdef HOST_64BIT
             /* convert to 'll' so that Unix snprintf can handle it */
             *Prefix = PFF_PREFIX_LONGLONG;
     #endif
@@ -622,7 +622,7 @@ BOOL Internal_ExtractFormatW(CPalThread *pthrCurrent, LPCWSTR *Fmt, LPSTR Out, L
     else if (**Fmt == 'l' || **Fmt == 'w')
     {
         ++(*Fmt);
- #ifdef BIT64
+ #ifdef HOST_64BIT
         // Only want to change the prefix on 64 bit when printing characters.
         if (**Fmt == 'C' || **Fmt == 'S')
 #endif

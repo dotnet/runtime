@@ -9,7 +9,7 @@
 #include "ilasmpch.h"
 
 #include "asmparse.h"
-#include "ndpversion.h"
+#include "clrversion.h"
 #include "shimload.h"
 
 #include "strsafe.h"
@@ -30,7 +30,7 @@ static DWORD    g_dwSubsystem=(DWORD)-1,g_dwComImageFlags=(DWORD)-1,g_dwFileAlig
 static ULONGLONG   g_stBaseAddress=0;
 static size_t   g_stSizeOfStackReserve=0;
 extern unsigned int g_uConsoleCP;
-#ifdef FEATURE_PAL
+#ifdef TARGET_UNIX
 char * g_pszExeFile;
 #endif
 
@@ -120,9 +120,11 @@ extern "C" int _cdecl wmain(int argc, __in WCHAR **argv)
     bool bClock = false;
     Clockwork   cw;
 
+#ifdef HOST_WINDOWS
     // SWI has requested that the exact form of the function call below be used. For details
     // see http://swi/SWI%20Docs/Detecting%20Heap%20Corruption.doc
     (void)HeapSetInformation(NULL, HeapEnableTerminationOnCorruption, NULL, 0);
+#endif
 
     memset(pwzInputFiles,0,1024*sizeof(WCHAR*));
     memset(pwzDeltaFiles,0,1024*sizeof(WCHAR*));
@@ -147,7 +149,7 @@ extern "C" int _cdecl wmain(int argc, __in WCHAR **argv)
 #pragma warning(pop)
 #endif
     {
-        printf("\nMicrosoft (R) .NET Framework IL Assembler version " VER_FILEVERSION_STR);
+        printf("\nMicrosoft (R) .NET IL Assembler version " CLR_PRODUCT_VERSION);
         printf("\n%S\n\n", VER_LEGALCOPYRIGHT_LOGO_STR_L);
         goto PrintUsageAndExit;
 
@@ -216,7 +218,7 @@ extern "C" int _cdecl wmain(int argc, __in WCHAR **argv)
             //-------------------------------------------------
             for (i = 1; i < argc; i++)
             {
-#ifdef FEATURE_PAL
+#ifdef TARGET_UNIX
                 if(argv[i][0] == L'-')
 #else
                 if((argv[i][0] == L'/') || (argv[i][0] == L'-'))
@@ -641,7 +643,7 @@ extern "C" int _cdecl wmain(int argc, __in WCHAR **argv)
                 //======================================================================
                 if(bLogo)
                 {
-                    printf("\nMicrosoft (R) .NET Framework IL Assembler.  Version " VER_FILEVERSION_STR);
+                    printf("\nMicrosoft (R) .NET IL Assembler.  Version " CLR_PRODUCT_VERSION);
                     printf("\n%S", VER_LEGALCOPYRIGHT_LOGO_STR_L);
                 }
 
@@ -691,7 +693,7 @@ extern "C" int _cdecl wmain(int argc, __in WCHAR **argv)
                         }
                         else
                         {
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
                             DWORD dwBinType;
                             if(GetBinaryTypeA(szInputFilename,&dwBinType))
                             {
@@ -778,7 +780,7 @@ extern "C" int _cdecl wmain(int argc, __in WCHAR **argv)
                                         }
                                         else
                                         {
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
                                             DWORD dwBinType;
                                             if(GetBinaryTypeA(szInputFilename,&dwBinType))
                                             {
@@ -906,7 +908,7 @@ extern "C" int _cdecl wmain(int argc, __in WCHAR **argv)
 #endif
 
 
-#ifdef FEATURE_PAL
+#ifdef TARGET_UNIX
 int main(int argc, char* str[])
 {
     g_pszExeFile = str[0];
@@ -939,5 +941,5 @@ int main(int argc, char* str[])
 
     return ret;
 }
-#endif // FEATURE_PAL
+#endif // TARGET_UNIX
 

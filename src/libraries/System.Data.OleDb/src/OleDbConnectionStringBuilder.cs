@@ -470,10 +470,10 @@ namespace System.Data.OleDb
                                             for (int i = 0; i < count; ++i)
                                             {
                                                 Guid propertyset;
-                                                tagDBPROP[] props = propset.GetPropertySet(i, out propertyset);
+                                                ItagDBPROP[] props = propset.GetPropertySet(i, out propertyset);
 
                                                 // attach the default property value to the property info
-                                                foreach (tagDBPROP prop in props)
+                                                foreach (ItagDBPROP prop in props)
                                                 {
                                                     foreach (KeyValuePair<string, OleDbPropertyInfo> entry in hash)
                                                     {
@@ -566,7 +566,7 @@ namespace System.Data.OleDb
                         if (DBSOURCETYPE_DATASOURCE_TDP == sourceType || DBSOURCETYPE_DATASOURCE_MDP == sourceType)
                         {
                             string progid = (string)row[column2];
-                            if (!OleDbConnectionString.IsMSDASQL(progid.ToLower(CultureInfo.InvariantCulture)))
+                            if (!OleDbConnectionString.IsMSDASQL(progid.ToLowerInvariant()))
                             {
                                 if (0 > providerNames.IndexOf(progid))
                                 {

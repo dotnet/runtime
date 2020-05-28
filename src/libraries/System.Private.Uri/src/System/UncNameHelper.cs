@@ -2,27 +2,15 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Globalization;
-
 namespace System
 {
     // The class designed as to keep minimal the working set of Uri class.
     // The idea is to stay with static helper methods and strings
-    internal class UncNameHelper
+    internal static class UncNameHelper
     {
-        // fields
+        public const int MaximumInternetNameLength = 256;
 
-        internal const int MaximumInternetNameLength = 256;
-
-        private UncNameHelper()
-        {
-        }
-
-
-        // properties
-
-        // methods
-        internal static string ParseCanonicalName(string str, int start, int end, ref bool loopback)
+        public static string ParseCanonicalName(string str, int start, int end, ref bool loopback)
         {
             return DomainNameHelper.ParseCanonicalName(str, start, end, ref loopback);
         }
@@ -49,9 +37,9 @@ namespace System
         //
         // Assumption is the caller will check on the resulting name length
         // Remarks:  MUST NOT be used unless all input indexes are verified and trusted.
-        internal static unsafe bool IsValid(char* name, ushort start, ref int returnedEnd, bool notImplicitFile)
+        public static unsafe bool IsValid(char* name, int start, ref int returnedEnd, bool notImplicitFile)
         {
-            ushort end = (ushort)returnedEnd;
+            int end = returnedEnd;
 
             if (start == end)
                 return false;
@@ -59,7 +47,7 @@ namespace System
             // First segment could consist of only '_' or '-' but it cannot be all digits or empty
             //
             bool validShortName = false;
-            ushort i = start;
+            int i = start;
             for (; i < end; ++i)
             {
                 if (name[i] == '/' || name[i] == '\\' || (notImplicitFile && (name[i] == ':' || name[i] == '?' || name[i] == '#')))

@@ -3,7 +3,7 @@
     <OutputType>Exe</OutputType>
     <TargetExt>.dll</TargetExt>
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
-    <Configurations>netcoreapp-Debug;netcoreapp-Release</Configurations>
+    <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Assembly1.cs" />

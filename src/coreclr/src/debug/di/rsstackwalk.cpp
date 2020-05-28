@@ -617,9 +617,9 @@ HRESULT CordbStackWalk::GetFrameWorker(ICorDebugFrame ** ppFrame)
         _ASSERTE(fSuccess);
 
         m_fIsOneFrameAhead = true;
-#if defined(DBG_TARGET_X86)
+#if defined(TARGET_X86)
         frameData.fp = pDAC->GetFramePointer(m_pSFIHandle);
-#endif // DBG_TARGET_X86
+#endif // TARGET_X86
 
         // currentFuncData contains general information about the method.
         // It has no information about any particular jitted instance of the method.
@@ -741,8 +741,8 @@ HRESULT CordbStackWalk::GetFrameWorker(ICorDebugFrame ** ppFrame)
             _ASSERTE(pCode != NULL);
 
             // We populate the code for ReJit eagerly to make sure we still have it if the profiler removes the
-            // instrumentation later. Of course the only way it will still be accessible to our caller is if he
-            // saves a pointer to the ILCode.
+            // instrumentation later. Of course the only way it will still be accessible to our caller is if they
+            // save a pointer to the ILCode.
             // I'm not sure if ignoring rejit for mini-dumps is the right call long term, but we aren't doing
             // anything special to collect the memory at dump time so we better be prepared to not fetch it here.
             // We'll attempt to treat it as not being instrumented, though I suspect the abstraction is leaky.
@@ -797,9 +797,9 @@ HRESULT CordbStackWalk::GetFrameWorker(ICorDebugFrame ** ppFrame)
         _ASSERTE(fSuccess);
 
         m_fIsOneFrameAhead = true;
-#if defined(DBG_TARGET_X86)
+#if defined(TARGET_X86)
         frameData.fp = pDAC->GetFramePointer(m_pSFIHandle);
-#endif // DBG_TARGET_X86
+#endif // TARGET_X86
 
         // Lookup the appdomain that the thread was in when it was executing code for this frame. We pass this
         // to the frame when we create it so we can properly resolve locals in that frame later.

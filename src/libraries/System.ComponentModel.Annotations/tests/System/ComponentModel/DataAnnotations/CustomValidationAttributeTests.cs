@@ -75,7 +75,7 @@ namespace System.ComponentModel.DataAnnotations.Tests
 
         [Theory]
         [InlineData(typeof(CustomValidator), nameof(CustomValidator.ValidationMethodDerivedReturnTypeReturnsSomeError))]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Full .NET Frameworks had a restriction, that prevented to use custom ValidationResult. .NET Core allows to return class derived from ValidatioResult")]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, ".NET Framework had a restriction, that prevented to use custom ValidationResult. .NET Core allows to return class derived from ValidatioResult")]
         public static void Ctor_Type_String_IgnoreNetFramework(Type validatorType, string method)
         {
             Ctor_Type_String(validatorType, method);
@@ -110,9 +110,9 @@ namespace System.ComponentModel.DataAnnotations.Tests
         {
             CustomValidationAttribute attribute = GetAttribute(method);
 
-            // The full .NET Framework has a bug where CustomValidationAttribute doesn't
-            // validate the context. See https://github.com/dotnet/corefx/issues/18360.
-            if (PlatformDetection.IsFullFramework)
+            // The .NET Framework has a bug where CustomValidationAttribute doesn't
+            // validate the context. See https://github.com/dotnet/runtime/issues/21100.
+            if (PlatformDetection.IsNetFramework)
             {
                 Assert.False(attribute.RequiresValidationContext);
             }
@@ -139,7 +139,7 @@ namespace System.ComponentModel.DataAnnotations.Tests
         }
 
         [Theory]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, ".NET Core fixes a bug where CustomValidationAttribute doesn't validate the context. See https://github.com/dotnet/corefx/issues/18360")]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, ".NET Core fixes a bug where CustomValidationAttribute doesn't validate the context. See https://github.com/dotnet/runtime/issues/21100")]
         [MemberData(nameof(BadlyFormed_TestData))]
         public static void RequiresValidationContext_BadlyFormed_NetCore_ThrowsInvalidOperationException(Type validatorType, string method)
         {
@@ -148,7 +148,7 @@ namespace System.ComponentModel.DataAnnotations.Tests
         }
 
         [Theory]
-        [SkipOnTargetFramework(~TargetFrameworkMonikers.NetFramework, "The full .NET Framework has a bug where CustomValidationAttribute doesn't validate the context. See https://github.com/dotnet/corefx/issues/18360")]
+        [SkipOnTargetFramework(~TargetFrameworkMonikers.NetFramework, "The .NET Framework has a bug where CustomValidationAttribute doesn't validate the context. See https://github.com/dotnet/runtime/issues/21100")]
         [MemberData(nameof(BadlyFormed_TestData))]
         public static void RequiresValidationContext_BadlyFormed_NetFx_DoesNotThrow(Type validatorType, string method)
         {
@@ -187,7 +187,7 @@ namespace System.ComponentModel.DataAnnotations.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Full .NET Frameworks had a restriction, that prevented to use custom ValidationResult. .NET Core allows to return class derived from ValidatioResult")]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, ".NET Framework had a restriction, that prevented to use custom ValidationResult. .NET Core allows to return class derived from ValidatioResult")]
         public static void GetValidationResult_MethodReturnDerivedValidationResult_ReturnsExpected()
         {
             CustomValidationAttribute attribute = GetAttribute(nameof(CustomValidator.ValidationMethodDerivedReturnTypeReturnsSomeError));

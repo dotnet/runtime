@@ -44,6 +44,10 @@ namespace System.Drawing.Imaging
         /// Two Rationals. The first Rational specifies the lower end and the second specifies the higher end.
         /// All values are inclusive at both ends
         /// </summary>
-        ValueTypeRationalRange = 8
+        ValueTypeRationalRange = 8,
+        /// <summary>
+        /// The parameter is a pointer to a block of custom metadata.
+        /// </summary>
+        ValueTypePointer = 9,
     }
 }

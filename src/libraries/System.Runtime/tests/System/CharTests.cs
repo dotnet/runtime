@@ -5,7 +5,7 @@
 using System.Collections.Generic;
 using System.Globalization;
 using System.Text;
-using System.Text.Unicode.Tests;
+using System.Text.Unicode;
 using Xunit;
 using Xunit.Sdk;
 
@@ -155,7 +155,7 @@ namespace System.Tests
         [InlineData('a', (int)'a', false)]
         [InlineData('a', "a", false)]
         [InlineData('a', null, false)]
-        public static void Equals(char c, object obj, bool expected)
+        public static void EqualsTest(char c, object obj, bool expected)
         {
             if (obj is char)
             {
@@ -826,7 +826,7 @@ namespace System.Tests
         [Theory]
         [InlineData('a', "a")]
         [InlineData('\uabcd', "\uabcd")]
-        public static void ToString(char c, string expected)
+        public static void ToStringTest(char c, string expected)
         {
             Assert.Equal(expected, c.ToString());
             Assert.Equal(expected, char.ToString(c));
@@ -1116,7 +1116,7 @@ namespace System.Tests
             // This tests calls char.GetUnicodeCategory for every possible input, ensuring that
             // the runtime agrees with the data in the core Unicode files.
 
-            for (uint i = 0; i <= char.MaxValue; i++)
+            for (int i = 0; i <= char.MaxValue; i++)
             {
                 UnicodeCategory expected;
 
@@ -1250,7 +1250,7 @@ namespace System.Tests
             // This tests calls char.IsWhiteSpace for every possible input, ensuring that
             // the runtime agrees with the data in the core Unicode files.
 
-            for (uint i = 0; i <= char.MaxValue; i++)
+            for (int i = 0; i <= char.MaxValue; i++)
             {
                 if (UnicodeData.IsWhiteSpace(i) != char.IsWhiteSpace((char)i))
                 {

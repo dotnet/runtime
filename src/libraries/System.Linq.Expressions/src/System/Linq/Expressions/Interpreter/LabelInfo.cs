@@ -4,6 +4,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Linq.Expressions.Interpreter
 {
@@ -14,16 +15,16 @@ namespace System.Linq.Expressions.Interpreter
     internal sealed class LabelInfo
     {
         // The tree node representing this label
-        private readonly LabelTarget _node;
+        private readonly LabelTarget? _node;
 
         // The BranchLabel label, will be mutated if Node is redefined
-        private BranchLabel _label;
+        private BranchLabel? _label;
 
         // The blocks where this label is defined. If it has more than one item,
         // the blocks can't be jumped to except from a child block
         // If there's only 1 block (the common case) it's stored here, if there's multiple blocks it's stored
         // as a HashSet<LabelScopeInfo>
-        private object _definitions;
+        private object? _definitions;
 
         // Blocks that jump to this block
         private readonly List<LabelScopeInfo> _references = new List<LabelScopeInfo>();
@@ -33,7 +34,7 @@ namespace System.Linq.Expressions.Interpreter
         // LabelTarget can only be defined in one place
         private bool _acrossBlockJump;
 
-        internal LabelInfo(LabelTarget node)
+        internal LabelInfo(LabelTarget? node)
         {
             _node = node;
         }
@@ -41,7 +42,7 @@ namespace System.Linq.Expressions.Interpreter
         internal BranchLabel GetLabel(LightCompiler compiler)
         {
             EnsureLabel(compiler);
-            return _label;
+            return _label!;
         }
 
         internal void Reference(LabelScopeInfo block)
@@ -58,16 +59,16 @@ namespace System.Linq.Expressions.Interpreter
             // Prevent the label from being shadowed, which enforces cleaner
             // trees. Also we depend on this for simplicity (keeping only one
             // active IL Label per LabelInfo)
-            for (LabelScopeInfo j = block; j != null; j = j.Parent)
+            for (LabelScopeInfo? j = block; j != null; j = j.Parent)
             {
-                if (j.ContainsTarget(_node))
+                if (j.ContainsTarget(_node!))
                 {
-                    throw Error.LabelTargetAlreadyDefined(_node.Name);
+                    throw Error.LabelTargetAlreadyDefined(_node!.Name);
                 }
             }
 
             AddDefinition(block);
-            block.AddLabelInfo(_node, this);
+            block.AddLabelInfo(_node!, this);
 
             // Once defined, validate all jumps
             if (HasDefinitions && !HasMultipleDefinitions)
@@ -83,7 +84,7 @@ namespace System.Linq.Expressions.Interpreter
                 // now invalid
                 if (_acrossBlockJump)
                 {
-                    throw Error.AmbiguousJump(_node.Name);
+                    throw Error.AmbiguousJump(_node!.Name);
                 }
                 // For local jumps, we need a new IL label
                 // This is okay because:
@@ -96,7 +97,7 @@ namespace System.Linq.Expressions.Interpreter
         private void ValidateJump(LabelScopeInfo reference)
         {
             // look for a simple jump out
-            for (LabelScopeInfo j = reference; j != null; j = j.Parent)
+            for (LabelScopeInfo? j = reference; j != null; j = j.Parent)
             {
                 if (DefinedIn(j))
                 {
@@ -117,17 +118,17 @@ namespace System.Linq.Expressions.Interpreter
 
             if (HasMultipleDefinitions)
             {
-                throw Error.AmbiguousJump(_node.Name);
+                throw Error.AmbiguousJump(_node!.Name);
             }
 
             // We didn't find an outward jump. Look for a jump across blocks
             LabelScopeInfo def = FirstDefinition();
-            LabelScopeInfo common = CommonNode(def, reference, b => b.Parent);
+            LabelScopeInfo? common = CommonNode(def, reference, b => b.Parent!);
 
             // Validate that we aren't jumping across a finally
-            for (LabelScopeInfo j = reference; j != common; j = j.Parent)
+            for (LabelScopeInfo? j = reference; j != common; j = j.Parent)
             {
-                if (j.Kind == LabelScopeKind.Finally)
+                if (j!.Kind == LabelScopeKind.Finally)
                 {
                     throw Error.ControlCannotLeaveFinally();
                 }
@@ -138,9 +139,9 @@ namespace System.Linq.Expressions.Interpreter
             }
 
             // Validate that we aren't jumping into a catch or an expression
-            for (LabelScopeInfo j = def; j != common; j = j.Parent)
+            for (LabelScopeInfo? j = def; j != common; j = j.Parent)
             {
-                if (!j.CanJumpInto)
+                if (!j!.CanJumpInto)
                 {
                     if (j.Kind == LabelScopeKind.Expression)
                     {
@@ -159,7 +160,7 @@ namespace System.Linq.Expressions.Interpreter
             // Make sure that if this label was jumped to, it is also defined
             if (_references.Count > 0 && !HasDefinitions)
             {
-                throw Error.LabelTargetUndefined(_node.Name);
+                throw Error.LabelTargetUndefined(_node!.Name);
             }
         }
 
@@ -178,8 +179,7 @@ namespace System.Linq.Expressions.Interpreter
                 return true;
             }
 
-            HashSet<LabelScopeInfo> definitions = _definitions as HashSet<LabelScopeInfo>;
-            if (definitions != null)
+            if (_definitions is HashSet<LabelScopeInfo> definitions)
             {
                 return definitions.Contains(scope);
             }
@@ -190,12 +190,11 @@ namespace System.Linq.Expressions.Interpreter
 
         private LabelScopeInfo FirstDefinition()
         {
-            LabelScopeInfo scope = _definitions as LabelScopeInfo;
-            if (scope != null)
+            if (_definitions is LabelScopeInfo scope)
             {
                 return scope;
             }
-            foreach (var x in (HashSet<LabelScopeInfo>)_definitions)
+            foreach (var x in (HashSet<LabelScopeInfo>)_definitions!)
             {
                 return x;
             }
@@ -210,7 +209,7 @@ namespace System.Linq.Expressions.Interpreter
             }
             else
             {
-                HashSet<LabelScopeInfo> set = _definitions as HashSet<LabelScopeInfo>;
+                HashSet<LabelScopeInfo>? set = _definitions as HashSet<LabelScopeInfo>;
                 if (set == null)
                 {
                     _definitions = set = new HashSet<LabelScopeInfo>() { (LabelScopeInfo)_definitions };
@@ -221,7 +220,7 @@ namespace System.Linq.Expressions.Interpreter
 
         private bool HasMultipleDefinitions => _definitions is HashSet<LabelScopeInfo>;
 
-        internal static T CommonNode<T>(T first, T second, Func<T, T> parent) where T : class
+        internal static T? CommonNode<T>(T first, T second, Func<T, T> parent) where T : class
         {
             EqualityComparer<T> cmp = EqualityComparer<T>.Default;
             if (cmp.Equals(first, second))
@@ -279,11 +278,11 @@ namespace System.Linq.Expressions.Interpreter
     //
     internal sealed class LabelScopeInfo
     {
-        private HybridReferenceDictionary<LabelTarget, LabelInfo> _labels; // lazily allocated, we typically use this only once every 6th-7th block
+        private HybridReferenceDictionary<LabelTarget, LabelInfo>? _labels; // lazily allocated, we typically use this only once every 6th-7th block
         internal readonly LabelScopeKind Kind;
-        internal readonly LabelScopeInfo Parent;
+        internal readonly LabelScopeInfo? Parent;
 
-        internal LabelScopeInfo(LabelScopeInfo parent, LabelScopeKind kind)
+        internal LabelScopeInfo(LabelScopeInfo? parent, LabelScopeKind kind)
         {
             Parent = parent;
             Kind = kind;
@@ -318,7 +317,7 @@ namespace System.Linq.Expressions.Interpreter
             return _labels.ContainsKey(target);
         }
 
-        internal bool TryGetLabelInfo(LabelTarget target, out LabelInfo info)
+        internal bool TryGetLabelInfo(LabelTarget target, [NotNullWhen(true)] out LabelInfo? info)
         {
             if (_labels == null)
             {
