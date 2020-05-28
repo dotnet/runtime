@@ -51,6 +51,13 @@ If you are working on core parts of mono libraries you will probably need to bui
 ./build.sh --arch wasm --os Browser --configuration release --subset Mono
 ```
 
+To build just SPC without mono you can use the Mono.CoreLib subset.
+
+```bash
+./build.sh --arch wasm --os Browser --configuration release --subset Mono.CoreLib
+```
+
+
 Building the managed libraries as well:
 
 ```bash
