@@ -2,16 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 
 namespace System
 {
     internal static class ThrowHelper
     {
-        [DoesNotReturn]
-        internal static void ThrowKeyNotFoundException(object key) => throw new KeyNotFoundException(SR.Format(SR.Arg_KeyNotFoundWithKey, key.ToString()));
-
         [DoesNotReturn]
         internal static void ThrowKeyNullException() => ThrowArgumentNullException("key");
 

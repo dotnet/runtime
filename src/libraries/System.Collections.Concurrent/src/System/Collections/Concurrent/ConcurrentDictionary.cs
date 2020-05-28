@@ -348,7 +348,7 @@ namespace System.Collections.Concurrent
         private bool TryRemoveInternal(TKey key, [MaybeNullWhen(false)] out TValue value, bool matchValue, [AllowNull] TValue oldValue)
         {
             IEqualityComparer<TKey>? comparer = _comparer;
-            uint hashcode = (uint)(comparer is null ? key.GetHashCode() : comparer.GetHashCode(key));
+            int hashcode = comparer is null ? key.GetHashCode() : comparer.GetHashCode(key);
             while (true)
             {
                 Tables tables = _tables;
@@ -429,7 +429,7 @@ namespace System.Collections.Concurrent
             IEqualityComparer<TKey>? comparer = _comparer;
             if (comparer is null)
             {
-                uint hashcode = (uint)key.GetHashCode();
+                int hashcode = key.GetHashCode();
                 if (typeof(TKey).IsValueType)
                 {
                     for (Node? n = Volatile.Read(ref tables.GetBucket(hashcode)); n != null; n = n._next)
@@ -455,7 +455,7 @@ namespace System.Collections.Concurrent
             }
             else
             {
-                uint hashcode = (uint)comparer.GetHashCode(key);
+                int hashcode = comparer.GetHashCode(key);
                 for (Node? n = Volatile.Read(ref tables.GetBucket(hashcode)); n != null; n = n._next)
                 {
                     if (hashcode == n._hashcode && comparer.Equals(n._key, key))
@@ -470,9 +470,9 @@ namespace System.Collections.Concurrent
             return false;
         }
 
-        private bool TryGetValueInternal(TKey key, uint hashcode, [MaybeNullWhen(false)] out TValue value)
+        private bool TryGetValueInternal(TKey key, int hashcode, [MaybeNullWhen(false)] out TValue value)
         {
-            Debug.Assert((uint)(_comparer is null ? key.GetHashCode() : _comparer.GetHashCode(key)) == hashcode);
+            Debug.Assert((_comparer is null ? key.GetHashCode() : _comparer.GetHashCode(key)) == hashcode);
 
             // We must capture the volatile _tables field into a local variable: it is set to a new table on each table resize.
             // The Volatile.Read on the array element then ensures that we have a copy of the reference to tables._buckets[bucketNo]:
@@ -562,19 +562,17 @@ namespace System.Collections.Concurrent
         /// replaced with <paramref name="newValue"/>; otherwise, false.
         /// </returns>
         /// <exception cref="ArgumentNullException"><paramref name="key"/> is a null reference.</exception>
-        private bool TryUpdateInternal(TKey key, uint? nullableHashcode, TValue newValue, TValue comparisonValue)
+        private bool TryUpdateInternal(TKey key, int? nullableHashcode, TValue newValue, TValue comparisonValue)
         {
             IEqualityComparer<TKey>? comparer = _comparer;
 
             Debug.Assert(
                 nullableHashcode is null ||
-                (comparer is null && key.GetHashCode() == nullableHashcode) ||
-                (comparer != null && comparer.GetHashCode(key) == nullableHashcode));
+                (comparer is null ? key.GetHashCode() : comparer.GetHashCode(key)) == nullableHashcode);
 
-            uint hashcode =
-                nullableHashcode.HasValue ? nullableHashcode.GetValueOrDefault() :
-                comparer is null ? (uint)key.GetHashCode() :
-                (uint)comparer.GetHashCode(key);
+            int hashcode =
+                nullableHashcode ??
+                (comparer is null ? key.GetHashCode() : comparer.GetHashCode(key));
 
             EqualityComparer<TValue> valueComparer = EqualityComparer<TValue>.Default;
 
@@ -820,7 +818,7 @@ namespace System.Collections.Concurrent
         /// If key exists, we always return false; and if updateIfExists == true we force update with value;
         /// If key doesn't exist, we always add value and return true;
         /// </summary>
-        private bool TryAddInternal(TKey key, uint? nullableHashcode, TValue value, bool updateIfExists, bool acquireLock, out TValue resultingValue)
+        private bool TryAddInternal(TKey key, int? nullableHashcode, TValue value, bool updateIfExists, bool acquireLock, out TValue resultingValue)
         {
             IEqualityComparer<TKey>? comparer = _comparer;
 
@@ -829,10 +827,9 @@ namespace System.Collections.Concurrent
                 (comparer is null && key.GetHashCode() == nullableHashcode) ||
                 (comparer != null && comparer.GetHashCode(key) == nullableHashcode));
 
-            uint hashcode =
-                nullableHashcode.HasValue ? nullableHashcode.GetValueOrDefault() :
-                comparer is null ? (uint)key.GetHashCode() :
-                (uint)comparer.GetHashCode(key);
+            int hashcode =
+                nullableHashcode ??
+                (comparer is null ? key.GetHashCode() : comparer.GetHashCode(key));
 
             while (true)
             {
@@ -957,7 +954,7 @@ namespace System.Collections.Concurrent
             {
                 if (!TryGetValue(key, out TValue value))
                 {
-                    ThrowHelper.ThrowKeyNotFoundException(key);
+                    ThrowKeyNotFoundException(key);
                 }
                 return value;
             }
@@ -971,6 +968,12 @@ namespace System.Collections.Concurrent
                 TryAddInternal(key, null, value, updateIfExists: true, acquireLock: true, out _);
             }
         }
+
+        /// <summary>Throws a KeyNotFoundException.</summary>
+        /// <remarks>Separate from ThrowHelper to avoid boxing at call site while reusing this generic instantiation.</remarks>
+        [DoesNotReturn]
+        private static void ThrowKeyNotFoundException(TKey key) =>
+            throw new KeyNotFoundException(SR.Format(SR.Arg_KeyNotFoundWithKey, key.ToString()));
 
         /// <summary>
         /// Gets the number of key/value pairs contained in the <see
@@ -1057,7 +1060,7 @@ namespace System.Collections.Concurrent
             }
 
             IEqualityComparer<TKey>? comparer = _comparer;
-            uint hashcode = (uint)(comparer is null ? key.GetHashCode() : comparer.GetHashCode(key));
+            int hashcode = comparer is null ? key.GetHashCode() : comparer.GetHashCode(key);
 
             if (!TryGetValueInternal(key, hashcode, out TValue resultingValue))
             {
@@ -1096,7 +1099,7 @@ namespace System.Collections.Concurrent
             }
 
             IEqualityComparer<TKey>? comparer = _comparer;
-            uint hashcode = (uint)(comparer is null ? key.GetHashCode() : comparer.GetHashCode(key));
+            int hashcode = comparer is null ? key.GetHashCode() : comparer.GetHashCode(key);
 
             if (!TryGetValueInternal(key, hashcode, out TValue resultingValue))
             {
@@ -1126,7 +1129,7 @@ namespace System.Collections.Concurrent
             }
 
             IEqualityComparer<TKey>? comparer = _comparer;
-            uint hashcode = (uint)(comparer is null ? key.GetHashCode() : comparer.GetHashCode(key));
+            int hashcode = comparer is null ? key.GetHashCode() : comparer.GetHashCode(key);
 
             if (!TryGetValueInternal(key, hashcode, out TValue resultingValue))
             {
@@ -1175,7 +1178,7 @@ namespace System.Collections.Concurrent
             }
 
             IEqualityComparer<TKey>? comparer = _comparer;
-            uint hashcode = (uint)(comparer is null ? key.GetHashCode() : comparer.GetHashCode(key));
+            int hashcode = comparer is null ? key.GetHashCode() : comparer.GetHashCode(key);
 
             while (true)
             {
@@ -1236,7 +1239,7 @@ namespace System.Collections.Concurrent
             }
 
             IEqualityComparer<TKey>? comparer = _comparer;
-            uint hashcode = (uint)(comparer is null ? key.GetHashCode() : comparer.GetHashCode(key));
+            int hashcode = comparer is null ? key.GetHashCode() : comparer.GetHashCode(key);
 
             while (true)
             {
@@ -1290,7 +1293,7 @@ namespace System.Collections.Concurrent
             }
 
             IEqualityComparer<TKey>? comparer = _comparer;
-            uint hashcode = (uint)(comparer is null ? key.GetHashCode() : comparer.GetHashCode(key));
+            int hashcode = comparer is null ? key.GetHashCode() : comparer.GetHashCode(key);
 
             while (true)
             {
@@ -2082,9 +2085,9 @@ namespace System.Collections.Concurrent
             internal readonly TKey _key;
             internal TValue _value;
             internal volatile Node? _next;
-            internal readonly uint _hashcode;
+            internal readonly int _hashcode;
 
-            internal Node(TKey key, TValue value, uint hashcode, Node? next)
+            internal Node(TKey key, TValue value, int hashcode, Node? next)
             {
                 _key = key;
                 _value = value;
@@ -2122,36 +2125,35 @@ namespace System.Collections.Concurrent
 
             /// <summary>Computes a ref to the bucket for a particular key.</summary>
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            internal ref Node? GetBucket(uint hashcode)
+            internal ref Node? GetBucket(int hashcode)
             {
                 Node?[] buckets = _buckets;
                 if (IntPtr.Size == 8)
                 {
-                    return ref buckets[HashHelpers.FastMod(hashcode, (uint)buckets.Length, _fastModBucketsMultiplier)];
+                    return ref buckets[HashHelpers.FastMod((uint)hashcode, (uint)buckets.Length, _fastModBucketsMultiplier)];
                 }
                 else
                 {
-                    return ref buckets[hashcode % (uint)buckets.Length];
+                    return ref buckets[(uint)hashcode % (uint)buckets.Length];
                 }
             }
 
             /// <summary>Computes the bucket and lock number for a particular key.</summary>
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            internal ref Node? GetBucketAndLock(uint hashcode, out uint lockNo)
+            internal ref Node? GetBucketAndLock(int hashcode, out uint lockNo)
             {
                 Node?[] buckets = _buckets;
+                uint bucketNo;
                 if (IntPtr.Size == 8)
                 {
-                    uint bucketNo = HashHelpers.FastMod(hashcode, (uint)buckets.Length, _fastModBucketsMultiplier);
-                    lockNo = bucketNo % (uint)_locks.Length;
-                    return ref buckets[bucketNo];
+                    bucketNo = HashHelpers.FastMod((uint)hashcode, (uint)buckets.Length, _fastModBucketsMultiplier);
                 }
                 else
                 {
-                    uint bucketNo = hashcode % (uint)_buckets.Length;
-                    lockNo = bucketNo % (uint)_locks.Length;
-                    return ref buckets[bucketNo];
+                    bucketNo = (uint)hashcode % (uint)buckets.Length;
                 }
+                lockNo = bucketNo % (uint)_locks.Length; // doesn't use FastMod, as it would require maintaining a different multiplier
+                return ref buckets[bucketNo];
             }
         }
 
