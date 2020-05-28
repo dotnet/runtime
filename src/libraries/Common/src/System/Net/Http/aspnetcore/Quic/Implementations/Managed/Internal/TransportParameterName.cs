@@ -20,5 +20,8 @@ namespace System.Net.Quic.Implementations.Managed.Internal
         DisableActiveMigration = 0x0c,
         PreferredAddress = 0x0d,
         ActiveConnectionIdLimit = 0x0e,
+
+        // has to be last
+        NParams
     }
 }

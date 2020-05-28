@@ -163,17 +163,24 @@ namespace System.Net.Quic.Implementations.Managed.Internal
         {
             parameters = new TransportParameters();
 
-            // TODO-RZ: handle duplicate transport parameters (TRANSPORT_PARAMETER_ERROR)
+            // maintain field of present transport parameters
+            Span<bool> presentParameters = stackalloc bool[(int)TransportParameterName.NParams];
 
             while (reader.BytesLeft > 0)
             {
                 if (!reader.TryReadTransportParameterName(out TransportParameterName name) ||
                     !isServer && IsServerOnlyParameter(name) ||
-                    !reader.TryReadLengthPrefixedSpan(out var data))
+                    !reader.TryReadLengthPrefixedSpan(out var data) ||
+                    // we do not really care about duplicate unknown parameters
+                    (int) name < presentParameters.Length && presentParameters[(int) name])
                 {
                     // encoding failure
                     goto Error;
                 }
+
+                // mark presence of parameter
+                if ((int)name < presentParameters.Length)
+                    presentParameters[(int)name] = true;
 
                 long varIntValue;
                 switch (name)
