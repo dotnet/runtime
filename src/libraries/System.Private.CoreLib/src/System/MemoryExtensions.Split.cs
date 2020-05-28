@@ -15,48 +15,4 @@ namespace System
         public static SpanSplitEnumerator<char> Split(this ReadOnlySpan<char> span, string separator)
             => new SpanSplitEnumerator<char>(span, separator);
     }
-
-    public ref struct SpanSplitEnumerator<T> where T : IEquatable<T>
-    {
-        private readonly ReadOnlySpan<T> _buffer;
-        private readonly ReadOnlySpan<T> _separatorSequence;
-        private readonly T _separator;
-        private readonly bool _isSequence;
-        private readonly int _separatorLength;
-        private int _offset;
-        private int _index;
-
-        public SpanSplitEnumerator<T> GetEnumerator() => this;
-        public readonly Range Current => new Range(_offset, _offset + _index - _separatorLength);
-
-        internal SpanSplitEnumerator(ReadOnlySpan<T> buffer, ReadOnlySpan<T> separator)
-        {
-            _sequence = span;
-            _separators = separators;
-            _separator = default!;
-            _isSequence = true;
-            (_index, _offset) = (0, 0);
-            _separatorLength = _separators.Length;
-        }
-
-        internal SpanSplitEnumerator(ReadOnlySpan<T> buffer, T separator)
-        {
-            _sequence = span;
-            _separator = separator;
-            _separators = default;
-            _isSequence = false;
-            (_index, _offset) = (0, 0);
-            _separatorLength = 1;
-        }
-
-        public bool MoveNext()
-        {
-            if ((_offset += _index) > _sequence.Length) { return false; }
-            var slice = _sequence.Slice(_offset);
-
-            var nextIdx = _isSequence ? slice.IndexOf(_separators) : slice.IndexOf(_separator);
-            _index = (nextIdx != -1 ? nextIdx : slice.Length) + _separatorLength;
-            return true;
-        }
-    }
 }
