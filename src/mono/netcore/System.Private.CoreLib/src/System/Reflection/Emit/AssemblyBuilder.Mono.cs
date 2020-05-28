@@ -553,36 +553,7 @@ namespace System.Reflection.Emit
         [System.Security.DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod
         public override Assembly GetSatelliteAssembly(CultureInfo culture, Version? version)
         {
-            return InternalGetSatelliteAssembly(culture, version)!;
-        }
-
-        private Assembly? InternalGetSatelliteAssembly(CultureInfo culture, Version? version)
-        {
-            AssemblyName aname = GetName();
-
-            var an = new AssemblyName();
-            if (version == null)
-                an.Version = aname.Version;
-            else
-                an.Version = version;
-
-            an.CultureInfo = culture;
-            an.Name = aname.Name + ".resources";
-
-            Assembly? res = null;
-            try
-            {
-                res = Load(an);
-            }
-            catch
-            {
-            }
-
-            if (res == this)
-                res = null;
-            if (res == null)
-                throw new FileNotFoundException(string.Format(culture, SR.IO_FileNotFound_FileName, an.Name));
-            return res;
+            return RuntimeAssembly.InternalGetSatelliteAssembly(this, culture, version, true)!;
         }
 
         public override Module ManifestModule
