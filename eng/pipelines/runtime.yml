@@ -140,6 +140,7 @@ jobs:
     - Linux_x64
     - Linux_arm
     - Linux_arm64
+    - Linux_musl_arm64
     - Linux_musl_x64
     - Windows_NT_x86
     - Windows_NT_x64
@@ -903,6 +904,8 @@ jobs:
     buildConfig: Release
     platforms:
     # - Windows_NT_arm return this when https://github.com/dotnet/runtime/issues/1097 is fixed.
+    - Linux_arm
+    - Linux_musl_arm64
     - Windows_NT_x86
     helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
     helixQueueGroup: libraries
@@ -924,6 +927,7 @@ jobs:
     - Windows_NT_x64
     - Linux_x64
     - Linux_musl_x64
+    - Linux_arm64
     helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
     helixQueueGroup: libraries
     jobParameters:
