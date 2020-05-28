@@ -39,7 +39,7 @@ namespace System.IO.Pipelines
         }
 
         /// <summary>
-        /// Cancel the pending <see cref="FlushAsync"/> operation. If there is none, cancels next <see cref="FlushAsync"/> operation, without completing the <see cref="PipeWriter"/>.
+        /// Cancel the pending <see cref="FlushAsync(CancellationToken)"/> operation. If there is none, cancels next <see cref="FlushAsync(CancellationToken)"/> operation, without completing the <see cref="PipeWriter"/>.
         /// </summary>
         public abstract void CancelPendingFlush();
 
@@ -56,6 +56,14 @@ namespace System.IO.Pipelines
         /// Makes bytes written available to <see cref="PipeReader"/> and runs <see cref="PipeReader.ReadAsync"/> continuation.
         /// </summary>
         public abstract ValueTask<FlushResult> FlushAsync(CancellationToken cancellationToken = default);
+
+        /// <summary>
+        /// Makes bytes written available to <see cref="PipeReader"/> and runs <see cref="PipeReader.ReadAsync"/> continuation.
+        /// </summary>
+        /// <param name="isMoreData"><see cref="bool"/> indicating that more data is to be written imminently.</param>
+        /// <param name="cancellationToken">The token to monitor for cancellation requests. The default value is <see cref="CancellationToken.None"/>.</param>
+        public virtual ValueTask<FlushResult> FlushAsync(bool isMoreData, CancellationToken cancellationToken = default)
+            => FlushAsync(cancellationToken);
 
         /// <inheritdoc />
         public abstract void Advance(int bytes);

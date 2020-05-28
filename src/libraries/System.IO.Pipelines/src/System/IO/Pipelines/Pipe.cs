@@ -328,9 +328,13 @@ namespace System.IO.Pipelines
             }
         }
 
-        internal bool CommitUnsynchronized()
+        internal bool CommitUnsynchronized(bool isMoreData)
         {
-            _operationState.EndWrite();
+            // If there is more data, don't end the Write
+            if (!isMoreData)
+            {
+                _operationState.EndWrite();
+            }
 
             if (_unflushedBytes == 0)
             {
@@ -385,13 +389,13 @@ namespace System.IO.Pipelines
             _writingHeadMemory = _writingHeadMemory.Slice(bytesWritten);
         }
 
-        internal ValueTask<FlushResult> FlushAsync(CancellationToken cancellationToken)
+        internal ValueTask<FlushResult> FlushAsync(bool isMoreData, CancellationToken cancellationToken)
         {
             CompletionData completionData;
             ValueTask<FlushResult> result;
             lock (_sync)
             {
-                PrepareFlush(out completionData, out result, cancellationToken);
+                PrepareFlush(isMoreData, out completionData, out result, cancellationToken);
             }
 
             TrySchedule(_readerScheduler, completionData);
@@ -399,9 +403,9 @@ namespace System.IO.Pipelines
             return result;
         }
 
-        private void PrepareFlush(out CompletionData completionData, out ValueTask<FlushResult> result, CancellationToken cancellationToken)
+        private void PrepareFlush(bool isMoreData, out CompletionData completionData, out ValueTask<FlushResult> result, CancellationToken cancellationToken)
         {
-            var wasEmpty = CommitUnsynchronized();
+            var wasEmpty = CommitUnsynchronized(isMoreData);
 
             // AttachToken before completing reader awaiter in case cancellationToken is already completed
             _writerAwaitable.BeginOperation(cancellationToken, s_signalWriterAwaitable, this);
@@ -445,7 +449,7 @@ namespace System.IO.Pipelines
             lock (_sync)
             {
                 // Commit any pending buffers
-                CommitUnsynchronized();
+                CommitUnsynchronized(isMoreData: false);
 
                 completionCallbacks = _writerCompletion.TryComplete(exception);
                 _readerAwaitable.Complete(out completionData);
@@ -1052,7 +1056,7 @@ namespace System.IO.Pipelines
                     WriteMultiSegment(source.Span);
                 }
 
-                PrepareFlush(out completionData, out result, cancellationToken);
+                PrepareFlush(isMoreData: false, out completionData, out result, cancellationToken);
             }
 
             TrySchedule(_readerScheduler, completionData);

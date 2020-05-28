@@ -2,10 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Threading;
+
 namespace System.IO.Pipelines
 {
     /// <summary>
-    /// Result returned by <see cref="PipeWriter.FlushAsync"/> call
+    /// Result returned by <see cref="PipeWriter.FlushAsync(CancellationToken)"/> call
     /// </summary>
     public struct FlushResult
     {
@@ -30,7 +32,7 @@ namespace System.IO.Pipelines
         }
 
         /// <summary>
-        /// True if the current <see cref="PipeWriter.FlushAsync"/> operation was canceled, otherwise false.
+        /// True if the current <see cref="PipeWriter.FlushAsync(CancellationToken)"/> operation was canceled, otherwise false.
         /// </summary>
         public bool IsCanceled => (_resultFlags & ResultFlags.Canceled) != 0;
 

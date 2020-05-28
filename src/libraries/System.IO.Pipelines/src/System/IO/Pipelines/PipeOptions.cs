@@ -69,12 +69,12 @@ namespace System.IO.Pipelines
         public bool UseSynchronizationContext { get; }
 
         /// <summary>
-        /// Gets amount of bytes in <see cref="Pipe"/> when <see cref="PipeWriter.FlushAsync"/> starts blocking
+        /// Gets amount of bytes in <see cref="Pipe"/> when <see cref="PipeWriter.FlushAsync(CancellationToken)"/> starts blocking
         /// </summary>
         public long PauseWriterThreshold { get; }
 
         /// <summary>
-        /// Gets amount of bytes in <see cref="Pipe"/> when <see cref="PipeWriter.FlushAsync"/> stops blocking
+        /// Gets amount of bytes in <see cref="Pipe"/> when <see cref="PipeWriter.FlushAsync(CancellationToken)"/> stops blocking
         /// </summary>
         public long ResumeWriterThreshold { get; }
 
