@@ -8,7 +8,6 @@ An installation of the emsdk needs to be installed.  Follow the installation gui
 
 On Linux and MacOSX:
 
-For Linux and MacOSX:
 ```bash
 export EMSDK_PATH=PATH_TO_SDK_INSTALL/emsdk
 ```
@@ -17,7 +16,7 @@ export EMSDK_PATH=PATH_TO_SDK_INSTALL/emsdk
 
 At this time no other build configurations are necessary to start building for webassembly.  The CoreLib for webassembly build configurations will be built by default using the webassembly configuration shown below. 
 
-This document explains how to work on libraries. In order to work on library projects or run library tests it is necessary to have built the runtime to give the libraries something to run on. IIf you haven't already done so, please read [this document](../../README.md#Configurations) to understand configurations.
+This document explains how to work on libraries. In order to work on library projects or run library tests it is necessary to have built the runtime to give the libraries something to run on. If you haven't already done so, please read [this document](../../README.md#Configurations) to understand configurations.
 
 
 For Linux and MacOSX:
@@ -60,7 +59,8 @@ Building the managed libraries as well:
 
 ## Building individual libraries
 
-One can individual projects as well by specifying the build configuration
+Individual projects and libraries can be build by specifying the build configuration.
+
 Building individual libraries
 **Examples**
 
@@ -76,11 +76,11 @@ Building individual libraries
  ./build.sh --arch wasm --os Browser --configuration release --projects src/libraries/System.Net.Http/src/System.Net.Http.csproj
 ```
 
-More information and examples can be found in the [libraries](./README.md) document.
+More information and examples can be found in the [libraries](./README.md#building-individual-libraries) document.
 
 ## Building the webassembly runtime files
 
-The webassembly implementation are built and made available in the assembly bin.  If you are working on the code base and need to compile just the module then the following will allow one to do that.
+The webassembly implementation files are built and made available in the assembly bin.  If you are working on the code base and need to compile just these modules then the following will allow one to do that.
 
 For Linux and MacOSX:
 ```bash
