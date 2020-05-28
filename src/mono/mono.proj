@@ -55,7 +55,7 @@
 
     <!-- Debug specific options -->
     <ItemGroup Condition="'$(Configuration)' == 'Debug'">
-      <_MonoConfigureParams Include="--enable-checked-build=private_types" />
+      <_MonoConfigureParams Include="--enable-checked-build=private_types,gc" />
 
       <_MonoCFLAGS Include="-O0" />
       <_MonoCFLAGS Include="-ggdb3" />
