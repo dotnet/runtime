@@ -74,7 +74,8 @@ if (CLR_CMAKE_TARGET_WIN32)
     handletable.inl
     handletablepriv.h
     objecthandle.h
-    softwarewritewatch.h)
+    softwarewritewatch.h
+    vxsort.h)
 endif(CLR_CMAKE_TARGET_WIN32)
 
 if(CLR_CMAKE_HOST_WIN32)

@@ -19,7 +19,15 @@
 
 #include "gcpriv.h"
 
+#ifdef HOST_64BIT
+#define USE_VXSORT
+#else
 #define USE_INTROSORT
+#endif
+
+#ifdef USE_VXSORT
+#include "vxsort.h"
+#endif
 
 // We just needed a simple random number generator for testing.
 class gc_rand
@@ -2060,6 +2068,42 @@ uint8_t* tree_search (uint8_t* tree, uint8_t* old_address);
 
 #ifdef USE_INTROSORT
 #define _sort introsort::sort
+#elif defined(USE_VXSORT)
+#define _sort vxsort
+namespace std
+{
+    template <class _Ty>
+    class numeric_limits
+    {
+    public:
+        static _Ty Max()
+        {
+            return _Ty();
+        }
+    };
+
+    template <>
+    class numeric_limits<int64_t>
+    {
+    public:
+        static int64_t Max()
+        {
+            return LLONG_MAX;
+        }
+    };
+}
+void vxsort(uint8_t** low, uint8_t** high, unsigned int depth)
+{
+//    auto sorter = gcsort::vxsort<int64_t>();
+    auto sorter = gcsort::vxsort<int64_t, 8>();
+    sorter.sort((int64_t*)low, (int64_t*)high);
+#ifdef _DEBUG
+    for (uint8_t** p = low; p < high; p++)
+    {
+        assert(p[0] <= p[1]);
+    }
+#endif
+}
 #else //USE_INTROSORT
 #define _sort qsort1
 void qsort1(uint8_t** low, uint8_t** high, unsigned int depth);
