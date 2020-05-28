@@ -173,7 +173,7 @@ namespace System.Text.Json.Serialization.Tests
             }
         }
 
-        private static string GetPayloadWithWhiteSpace(string json) => json.Replace("  ", new string(' ', 2));
+        private static string GetPayloadWithWhiteSpace(string json) => json.Replace("  ", new string(' ', 8));
 
         private const int NumElements = 15;
 
