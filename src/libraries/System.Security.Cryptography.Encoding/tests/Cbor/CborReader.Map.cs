@@ -5,16 +5,37 @@
 #nullable enable
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
-using System.Threading;
 
 namespace System.Formats.Cbor
 {
     public partial class CborReader
     {
         private KeyEncodingComparer? _keyEncodingComparer;
-        private Stack<HashSet<(int Offset, int Length)>>? _pooledKeyEncodingRangeSets;
+        private Stack<HashSet<(int Offset, int Length)>>? _pooledKeyEncodingRangeAllocations;
 
+        /// <summary>
+        ///   Reads the next data item as the start of a map (major type 5).
+        /// </summary>
+        /// <returns>
+        ///   The number of key-value pairs in a definite-length map, or <see langword="null" /> if the map is indefinite-length.
+        /// </returns>
+        /// <exception cref="InvalidOperationException">
+        ///   the next data item does not have the correct major type.
+        /// </exception>
+        /// <exception cref="FormatException">
+        ///   the next value has an invalid CBOR encoding. -or-
+        ///   there was an unexpected end of CBOR encoding data. -or-
+        ///   the next value uses a CBOR encoding that is not valid under the current conformance level.
+        /// </exception>
+        /// <remarks>
+        ///   Map contents are consumed as if they were arrays twice the length of the map's declared size.
+        ///   For instance, a map of size <c>1</c> containing a key of type int with a value of type string
+        ///   must be consumed by successive calls to <see cref="ReadInt32"/> and <see cref="ReadTextString"/>.
+        ///   It is up to the caller to keep track of whether the next value is a key or a value.
+        ///
+        ///   Fundamentally, this is a technical restriction stemming from the fact that CBOR allows keys of arbitrary type,
+        ///   for instance a map can contain keys that are maps themselves.
+        /// </remarks>
         public int? ReadStartMap()
         {
             int? length;
@@ -24,7 +45,7 @@ namespace System.Formats.Cbor
             {
                 if (_isConformanceLevelCheckEnabled && CborConformanceLevelHelpers.RequiresDefiniteLengthItems(ConformanceLevel))
                 {
-                    throw new FormatException("Indefinite-length items not supported under the current conformance level.");
+                    throw new FormatException(SR.Format(SR.Cbor_ConformanceLevel_RequiresDefiniteLengthItems, ConformanceLevel));
                 }
 
                 AdvanceBuffer(1);
@@ -33,37 +54,46 @@ namespace System.Formats.Cbor
             }
             else
             {
-                ulong mapSize = ReadUnsignedInteger(_buffer.Span, header, out int additionalBytes);
+                ReadOnlySpan<byte> buffer = GetRemainingBytes();
 
-                if (mapSize > int.MaxValue || 2 * mapSize > (ulong)_buffer.Length)
+                int mapSize = DecodeDefiniteLength(header, buffer, out int bytesRead);
+
+                if (2 * (ulong)mapSize > (ulong)(buffer.Length - bytesRead))
                 {
-                    throw new FormatException("Insufficient buffer size for declared definite length in CBOR data item.");
+                    throw new FormatException(SR.Cbor_Reader_DefiniteLengthExceedsBufferSize);
                 }
 
-                AdvanceBuffer(1 + additionalBytes);
-                PushDataItem(CborMajorType.Map, 2 * (int)mapSize);
+                AdvanceBuffer(bytesRead);
+                PushDataItem(CborMajorType.Map, 2 * mapSize);
                 length = (int)mapSize;
             }
 
-            _currentKeyOffset = _bytesRead;
-            _currentItemIsKey = true;
+            _currentKeyOffset = _offset;
             return length;
         }
 
+
+        /// <summary>
+        ///   Reads the end of a map (major type 5).
+        /// </summary>
+        /// <exception cref="InvalidOperationException">
+        ///   the current context is not a map. -or-
+        ///   the reader is not at the end of the map
+        /// </exception>
+        /// <exception cref="FormatException">
+        ///   the next value has an invalid CBOR encoding. -or-
+        ///   there was an unexpected end of CBOR encoding data. -or-
+        ///   the next value uses a CBOR encoding that is not valid under the current conformance level.
+        /// </exception>
         public void ReadEndMap()
         {
-            if (_remainingDataItems == null)
+            if (_definiteLength is null)
             {
-                CborInitialByte value = PeekInitialByte();
+                ValidateNextByteIsBreakByte();
 
-                if (value.InitialByte != CborInitialByte.IndefiniteLengthBreakByte)
+                if (_itemsWritten % 2 != 0)
                 {
-                    throw new InvalidOperationException("Not at end of indefinite-length map.");
-                }
-
-                if (!_currentItemIsKey)
-                {
-                    throw new FormatException("CBOR map key is missing a value.");
+                    throw new FormatException(SR.Cbor_Reader_InvalidCbor_KeyMissingValue);
                 }
 
                 PopDataItem(expectedType: CborMajorType.Map);
@@ -81,11 +111,12 @@ namespace System.Formats.Cbor
         // Map decoding conformance
         //
 
+        // conformance book-keeping after a key data item has been read
         private void HandleMapKeyRead()
         {
-            Debug.Assert(_currentKeyOffset != null && _currentItemIsKey);
+            Debug.Assert(_currentKeyOffset != null && _itemsWritten % 2 == 0);
 
-            (int Offset, int Length) currentKeyRange = (_currentKeyOffset.Value, _bytesRead - _currentKeyOffset.Value);
+            (int Offset, int Length) currentKeyRange = (_currentKeyOffset.Value, _offset - _currentKeyOffset.Value);
 
             if (_isConformanceLevelCheckEnabled)
             {
@@ -95,59 +126,58 @@ namespace System.Formats.Cbor
                 }
                 else if (CborConformanceLevelHelpers.RequiresUniqueKeys(ConformanceLevel))
                 {
+                    // NB uniquess is validated separately in conformance levels requiring sorted keys
                     ValidateKeyUniqueness(currentKeyRange);
                 }
             }
-
-            _currentItemIsKey = false;
         }
 
+        // conformance book-keeping after a value data item has been read
         private void HandleMapValueRead()
         {
-            Debug.Assert(_currentKeyOffset != null && !_currentItemIsKey);
+            Debug.Assert(_currentKeyOffset != null && _itemsWritten % 2 != 0);
 
-            _currentKeyOffset = _bytesRead;
-            _currentItemIsKey = true;
+            _currentKeyOffset = _offset;
         }
 
-        private void ValidateSortedKeyEncoding((int Offset, int Length) currentKeyRange)
+        private void ValidateSortedKeyEncoding((int Offset, int Length) currentKeyEncodingRange)
         {
             Debug.Assert(_currentKeyOffset != null);
 
-            if (_previousKeyRange != null)
+            if (_previousKeyEncodingRange != null)
             {
-                (int Offset, int Length) previousKeyRange = _previousKeyRange.Value;
+                (int Offset, int Length) previousKeyEncodingRange = _previousKeyEncodingRange.Value;
 
-                ReadOnlySpan<byte> originalBuffer = _originalBuffer.Span;
-                ReadOnlySpan<byte> previousKeyEncoding = originalBuffer.Slice(previousKeyRange.Offset, previousKeyRange.Length);
-                ReadOnlySpan<byte> currentKeyEncoding = originalBuffer.Slice(currentKeyRange.Offset, currentKeyRange.Length);
+                ReadOnlySpan<byte> buffer = _data.Span;
+                ReadOnlySpan<byte> previousKeyEncoding = buffer.Slice(previousKeyEncodingRange.Offset, previousKeyEncodingRange.Length);
+                ReadOnlySpan<byte> currentKeyEncoding = buffer.Slice(currentKeyEncodingRange.Offset, currentKeyEncodingRange.Length);
 
                 int cmp = CborConformanceLevelHelpers.CompareKeyEncodings(previousKeyEncoding, currentKeyEncoding, ConformanceLevel);
                 if (cmp > 0)
                 {
-                    ResetBuffer(currentKeyRange.Offset);
-                    throw new FormatException("CBOR map keys are not in sorted encoding order.");
+                    ResetBuffer(currentKeyEncodingRange.Offset);
+                    throw new FormatException(SR.Format(SR.Cbor_ConformanceLevel_KeysNotInSortedOrder, ConformanceLevel));
                 }
                 else if (cmp == 0 && CborConformanceLevelHelpers.RequiresUniqueKeys(ConformanceLevel))
                 {
-                    ResetBuffer(currentKeyRange.Offset);
-                    throw new FormatException("CBOR map contains duplicate keys.");
+                    ResetBuffer(currentKeyEncodingRange.Offset);
+                    throw new FormatException(SR.Format(SR.Cbor_ConformanceLevel_ContainsDuplicateKeys, ConformanceLevel));
                 }
             }
 
-            _previousKeyRange = currentKeyRange;
+            _previousKeyEncodingRange = currentKeyEncodingRange;
         }
 
-        private void ValidateKeyUniqueness((int Offset, int Length) currentKeyRange)
+        private void ValidateKeyUniqueness((int Offset, int Length) currentKeyEncodingRange)
         {
             Debug.Assert(_currentKeyOffset != null);
 
-            HashSet<(int Offset, int Length)> previousKeys = GetKeyEncodingRanges();
+            HashSet<(int Offset, int Length)> keyEncodingRanges = GetKeyEncodingRanges();
 
-            if (!previousKeys.Add(currentKeyRange))
+            if (!keyEncodingRanges.Add(currentKeyEncodingRange))
             {
-                ResetBuffer(currentKeyRange.Offset);
-                throw new FormatException("CBOR map contains duplicate keys.");
+                ResetBuffer(currentKeyEncodingRange.Offset);
+                throw new FormatException(SR.Format(SR.Cbor_ConformanceLevel_ContainsDuplicateKeys, ConformanceLevel));
             }
         }
 
@@ -158,8 +188,8 @@ namespace System.Formats.Cbor
                 return _keyEncodingRanges;
             }
 
-            if (_pooledKeyEncodingRangeSets != null &&
-                _pooledKeyEncodingRangeSets.TryPop(out HashSet<(int Offset, int Length)>? result))
+            if (_pooledKeyEncodingRangeAllocations != null &&
+                _pooledKeyEncodingRangeAllocations.TryPop(out HashSet<(int Offset, int Length)>? result))
             {
                 result.Clear();
                 return _keyEncodingRanges = result;
@@ -169,16 +199,16 @@ namespace System.Formats.Cbor
             return _keyEncodingRanges = new HashSet<(int Offset, int Length)>(_keyEncodingComparer);
         }
 
-        private void ReturnKeyEncodingRangeAllocation()
+        private void ReturnKeyEncodingRangeAllocation(HashSet<(int Offset, int Length)>? allocation)
         {
-            if (_keyEncodingRanges != null)
+            if (allocation != null)
             {
-                _pooledKeyEncodingRangeSets ??= new Stack<HashSet<(int Offset, int Length)>>();
-                _pooledKeyEncodingRangeSets.Push(_keyEncodingRanges);
-                _keyEncodingRanges = null;
+                _pooledKeyEncodingRangeAllocations ??= new Stack<HashSet<(int Offset, int Length)>>();
+                _pooledKeyEncodingRangeAllocations.Push(allocation);
             }
         }
 
+        // Comparing buffer slices up to their binary content
         private class KeyEncodingComparer : IEqualityComparer<(int Offset, int Length)>
         {
             private readonly CborReader _reader;
@@ -190,7 +220,7 @@ namespace System.Formats.Cbor
 
             private ReadOnlySpan<byte> GetKeyEncoding((int Offset, int Length) range)
             {
-                return _reader._originalBuffer.Span.Slice(range.Offset, range.Length);
+                return _reader._data.Span.Slice(range.Offset, range.Length);
             }
 
             public int GetHashCode((int Offset, int Length) value)

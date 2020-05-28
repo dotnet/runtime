@@ -4202,6 +4202,16 @@ struct GenTreeCall final : public GenTree
         return (gtFlags & GTF_CALL_INLINE_CANDIDATE) != 0;
     }
 
+    bool IsR2ROrVirtualStubRelativeIndir()
+    {
+#if defined(FEATURE_READYTORUN_COMPILER) && defined(TARGET_ARMARCH)
+        bool isVirtualStub = (gtFlags & GTF_CALL_VIRT_KIND_MASK) == GTF_CALL_VIRT_STUB;
+        return ((IsR2RRelativeIndir()) || (isVirtualStub && (IsVirtualStubRelativeIndir())));
+#else
+        return false;
+#endif // FEATURE_READYTORUN_COMPILER && TARGET_ARMARCH
+    }
+
     bool HasNonStandardAddedArgs(Compiler* compiler) const;
     int GetNonStandardAddedArgCount(Compiler* compiler) const;
 

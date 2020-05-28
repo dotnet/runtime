@@ -21,8 +21,8 @@ namespace System.Text.Json.Serialization.Tests
         public static async Task HandleCollectionsAsync()
         {
             await RunTest<string>();
-            await RunTest<ClassWithString>();
-            await RunTest<ImmutableStructWithString>();
+            await RunTest<ClassWithKVP>();
+            await RunTest<ImmutableStructWithStrings>();
         }
 
         private static async Task RunTest<TElement>()
@@ -127,6 +127,11 @@ namespace System.Text.Json.Serialization.Tests
             {
                 return ImmutableDictionary.CreateRange(GetDict_TypedElements<TElement>(stringLength));
             }
+            else if (type == typeof(KeyValuePair<TElement, TElement>))
+            {
+                TElement item = GetCollectionElement<TElement>(stringLength);
+                return new KeyValuePair<TElement, TElement>(item, item);
+            }
             else if (
                 typeof(IDictionary<string, TElement>).IsAssignableFrom(type) ||
                 typeof(IReadOnlyDictionary<string, TElement>).IsAssignableFrom(type) ||
@@ -168,7 +173,7 @@ namespace System.Text.Json.Serialization.Tests
             }
         }
 
-        private static string GetPayloadWithWhiteSpace(string json) => json.Replace(" ", new string(' ', 4));
+        private static string GetPayloadWithWhiteSpace(string json) => json.Replace("  ", new string(' ', 8));
 
         private const int NumElements = 15;
 
@@ -237,21 +242,22 @@ namespace System.Text.Json.Serialization.Tests
             char randomChar = (char)rand.Next('a', 'z');
 
             string value = new string(randomChar, stringLength);
+            var kvp = new KeyValuePair<string, SimpleStruct>(value, new SimpleStruct {
+                One = 1,
+                Two = 2
+            });
 
             if (type == typeof(string))
             {
                 return (TElement)(object)value;
             }
-            else if (type == typeof(ClassWithString))
+            else if (type == typeof(ClassWithKVP))
             {
-                return (TElement)(object)new ClassWithString
-                {
-                    MyFirstString = value
-                };
+                return (TElement)(object)new ClassWithKVP { MyKvp = kvp };
             }
             else
             {
-                return (TElement)(object)new ImmutableStructWithString(value, value);
+                return (TElement)(object)new ImmutableStructWithStrings(value, value);
             }
 
             throw new NotImplementedException();
@@ -284,6 +290,10 @@ namespace System.Text.Json.Serialization.Tests
             {
                 yield return type;
             }
+            foreach (Type type in ObjectNotationTypes<TElement>())
+            {
+                yield return type;
+            }
             // Stack types
             foreach (Type type in StackTypes<TElement>())
             {
@@ -312,6 +322,11 @@ namespace System.Text.Json.Serialization.Tests
             yield return typeof(Queue<TElement>); // QueueOfTConverter
         }
 
+        private static IEnumerable<Type> ObjectNotationTypes<TElement>()
+        {
+            yield return typeof(KeyValuePair<TElement, TElement>); // KeyValuePairConverter
+        }
+
         private static IEnumerable<Type> DictionaryTypes<TElement>()
         {
             yield return typeof(Dictionary<string, TElement>); // DictionaryOfStringTValueConverter
@@ -337,18 +352,19 @@ namespace System.Text.Json.Serialization.Tests
             typeof(GenericIReadOnlyDictionaryWrapper<string, TElement>)
         };
 
-        private class ClassWithString
+        private class ClassWithKVP
         {
-            public string MyFirstString { get; set; }
+            public KeyValuePair<string, SimpleStruct> MyKvp { get; set; }
         }
 
-        private struct ImmutableStructWithString
+        private struct ImmutableStructWithStrings
         {
             public string MyFirstString { get; }
             public string MySecondString { get; }
 
             [JsonConstructor]
-            public ImmutableStructWithString(string myFirstString, string mySecondString)
+            public ImmutableStructWithStrings(
+                string myFirstString, string mySecondString)
             {
                 MyFirstString = myFirstString;
                 MySecondString = mySecondString;
@@ -390,6 +406,11 @@ namespace System.Text.Json.Serialization.Tests
             foreach (Type type in DictionaryTypes<int>())
             {
                 Assert.Equal("{}", JsonSerializer.Serialize(GetEmptyCollection<int>(type)));
+            }
+
+            foreach (Type type in ObjectNotationTypes<int>())
+            {
+                Assert.Equal(@"{""Key"":0,""Value"":0}", JsonSerializer.Serialize(GetEmptyCollection<int>(type)));
             }
         }
     }

@@ -453,6 +453,7 @@ jobs:
           - jitguardeddevirtualization
           - jitehwritethru
           - jitobjectstackallocation
+          - jitpgo
 
     # Publish Logs
     - task: PublishPipelineArtifact@1

@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Diagnostics.CodeAnalysis;
-using System.Reflection;
 using System.Runtime.InteropServices;
 
 namespace System.Globalization
@@ -16,9 +15,6 @@ namespace System.Globalization
         private static bool TryGetAppLocalIcuSwitchValue([NotNullWhen(true)] out string? value) =>
             TryGetStringValue("System.Globalization.AppLocalIcu", "DOTNET_SYSTEM_GLOBALIZATION_APPLOCALICU", out value);
 
-        // GetSwitchValue calls CLRConfig first to detect if the switch is defined in the config file.
-        // if the switch is defined we just use the value of this switch. otherwise, we'll try to get the switch
-        // value from the environment variable if it is defined.
         private static bool GetSwitchValue(string switchName, string envVariable)
         {
             if (!AppContext.TryGetSwitch(switchName, out bool ret))
@@ -50,8 +46,8 @@ namespace System.Globalization
 
         private static void LoadAppLocalIcu(string icuSuffixAndVersion, bool suffixWithSeparator = false)
         {
+            ReadOnlySpan<char> version;
             ReadOnlySpan<char> icuSuffix = default;
-            ReadOnlySpan<char> version = default;
 
             // Custom built ICU can have a suffix on the name, i.e: libicuucmyapp.so.67.1
             // So users would set the runtime switch as: myapp:67.1

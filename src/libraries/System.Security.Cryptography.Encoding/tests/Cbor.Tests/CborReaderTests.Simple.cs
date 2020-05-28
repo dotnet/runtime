@@ -149,6 +149,34 @@ namespace System.Formats.Cbor.Tests
         }
 
         [Theory]
+        [InlineData((CborSimpleValue)0, "f800")]
+        [InlineData((CborSimpleValue)23, "f817")]
+        [InlineData((CborSimpleValue)24, "f818")]
+        [InlineData((CborSimpleValue)31, "f81f")]
+        public static void ReadSimpleValue_UnsupportedRanges_LaxConformance_ShouldSucceed(CborSimpleValue expectedResult, string hexEncoding)
+        {
+            byte[] encoding = hexEncoding.HexToByteArray();
+            var reader = new CborReader(encoding, CborConformanceLevel.Lax);
+            CborSimpleValue actualResult = reader.ReadSimpleValue();
+            Assert.Equal(expectedResult, actualResult);
+            Assert.Equal(CborReaderState.Finished, reader.PeekState());
+        }
+
+        [Theory]
+        [InlineData(CborConformanceLevel.Strict, "f800")]
+        [InlineData(CborConformanceLevel.Strict, "f801")]
+        [InlineData(CborConformanceLevel.Strict, "f818")]
+        [InlineData(CborConformanceLevel.Strict, "f81f")]
+        [InlineData(CborConformanceLevel.Canonical, "f801")]
+        [InlineData(CborConformanceLevel.Ctap2Canonical, "f800")]
+        public static void ReadSimpleValue_UnsupportedRanges_UnsupportedConformance_ShouldThrowFormatException(CborConformanceLevel conformanceLevel, string hexEncoding)
+        {
+            byte[] encoding = hexEncoding.HexToByteArray();
+            var reader = new CborReader(encoding, conformanceLevel);
+            Assert.Throws<FormatException>(() => reader.ReadSimpleValue());
+        }
+
+        [Theory]
         [InlineData("01")] // integer
         [InlineData("40")] // empty text string
         [InlineData("60")] // empty byte string
@@ -161,7 +189,7 @@ namespace System.Formats.Cbor.Tests
             var reader = new CborReader(encoding);
 
             Assert.Throws<InvalidOperationException>(() => reader.ReadSimpleValue());
-            Assert.Equal(encoding.Length, reader.BytesRemaining);
+            Assert.Equal(0, reader.BytesRead);
         }
 
         [Theory]
@@ -179,7 +207,7 @@ namespace System.Formats.Cbor.Tests
             byte[] encoding = hexEncoding.HexToByteArray();
             var reader = new CborReader(encoding);
             Assert.Throws<InvalidOperationException>(() => reader.ReadBoolean());
-            Assert.Equal(encoding.Length, reader.BytesRemaining);
+            Assert.Equal(0, reader.BytesRead);
         }
 
         [Theory]
@@ -197,7 +225,7 @@ namespace System.Formats.Cbor.Tests
             byte[] encoding = hexEncoding.HexToByteArray();
             var reader = new CborReader(encoding);
             Assert.Throws<InvalidOperationException>(() => reader.ReadNull());
-            Assert.Equal(encoding.Length, reader.BytesRemaining);
+            Assert.Equal(0, reader.BytesRead);
         }
 
         [Theory]
@@ -214,7 +242,7 @@ namespace System.Formats.Cbor.Tests
             byte[] encoding = hexEncoding.HexToByteArray();
             var reader = new CborReader(encoding);
             Assert.Throws<InvalidOperationException>(() => reader.ReadSingle());
-            Assert.Equal(encoding.Length, reader.BytesRemaining);
+            Assert.Equal(0, reader.BytesRead);
         }
 
         [Theory]
@@ -231,7 +259,7 @@ namespace System.Formats.Cbor.Tests
             byte[] encoding = hexEncoding.HexToByteArray();
             var reader = new CborReader(encoding);
             Assert.Throws<InvalidOperationException>(() => reader.ReadDouble());
-            Assert.Equal(encoding.Length, reader.BytesRemaining);
+            Assert.Equal(0, reader.BytesRead);
         }
     }
 }
