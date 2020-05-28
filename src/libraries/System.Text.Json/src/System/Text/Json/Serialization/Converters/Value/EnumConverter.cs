@@ -70,7 +70,7 @@ namespace System.Text.Json.Serialization.Converters
         {
             JsonTokenType token = reader.TokenType;
 
-            if (token == JsonTokenType.String)
+            if (token == JsonTokenType.String || token == JsonTokenType.Null)
             {
                 if (!_converterOptions.HasFlag(EnumConverterOptions.AllowStrings))
                 {
@@ -93,9 +93,6 @@ namespace System.Text.Json.Serialization.Converters
                     }
                     return value;
                 }
-            }
-            if (_converterOptions.HasFlag(EnumConverterOptions.AllowStrings) && token == JsonTokenType.Null && _stringToEnumCache != null && _stringToEnumCache.TryGetValue(ValueTuple.Create<string?>(null), out T value)) {
-                return value;
             }
 
             if (token != JsonTokenType.Number || !_converterOptions.HasFlag(EnumConverterOptions.AllowNumbers))
