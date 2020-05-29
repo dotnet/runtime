@@ -116,7 +116,7 @@
     <!-- Docs -->
     <MicrosoftPrivateIntellisenseVersion>3.1.0-preview-20200129.1</MicrosoftPrivateIntellisenseVersion>
     <!-- ILLink -->
-    <MicrosoftNETILLinkTasksVersion>5.0.0-preview.3.20278.2</MicrosoftNETILLinkTasksVersion>
+    <MicrosoftNETILLinkTasksVersion>5.0.0-preview.3.20279.1</MicrosoftNETILLinkTasksVersion>
     <!-- Mono LLVM -->
     <runtimelinuxx64MicrosoftNETCoreRuntimeMonoLLVMSdkVersion>9.0.1-alpha.1.20268.2</runtimelinuxx64MicrosoftNETCoreRuntimeMonoLLVMSdkVersion>
     <runtimelinuxx64MicrosoftNETCoreRuntimeMonoLLVMToolsVersion>9.0.1-alpha.1.20268.2</runtimelinuxx64MicrosoftNETCoreRuntimeMonoLLVMToolsVersion>
