@@ -10205,9 +10205,10 @@ void Compiler::gtDispRegVal(GenTree* tree)
             break;
     }
 
+#if FEATURE_MULTIREG_RET
     if (tree->IsMultiRegCall())
     {
-        // 0th reg is GettRegNum(), which is already printed above.
+        // 0th reg is GetRegNum(), which is already printed above.
         // Print the remaining regs of a multi-reg call node.
         const GenTreeCall* call     = tree->AsCall();
         const unsigned     regCount = call->GetReturnTypeDesc()->TryGetReturnRegCount();
@@ -10216,28 +10217,37 @@ void Compiler::gtDispRegVal(GenTree* tree)
             printf(",%s", compRegVarName(call->GetRegNumByIdx(i)));
         }
     }
-    else if (tree->IsCopyOrReloadOfMultiRegCall())
+    else if (tree->IsCopyOrReload())
     {
+        GenTree*                   op1          = tree->gtGetOp1();
         const GenTreeCopyOrReload* copyOrReload = tree->AsCopyOrReload();
-        const GenTreeCall*         call         = tree->gtGetOp1()->AsCall();
-        const unsigned             regCount     = call->GetReturnTypeDesc()->TryGetReturnRegCount();
-        for (unsigned i = 1; i < regCount; ++i)
+        unsigned                   regCount     = 0;
+        if (op1->OperIs(GT_CALL))
         {
-            printf(",%s", compRegVarName(copyOrReload->GetRegNumByIdx(i)));
-        }
-    }
-
-#if FEATURE_MULTIREG_RET
-    if (tree->IsCopyOrReload())
-    {
-        for (int i = 1; i < MAX_RET_REG_COUNT; i++)
-        {
-            regNumber reg = (regNumber)tree->AsCopyOrReload()->GetRegNumByIdx(i);
-            if (reg == REG_NA)
+            if (op1->IsMultiRegCall())
             {
-                break;
+                regCount = op1->AsCall()->GetReturnTypeDesc()->TryGetReturnRegCount();
+                // If it hasn't yet been initialized, we'd still like to see the registers printed.
+                if (regCount == 0)
+                {
+                    regCount = MAX_RET_REG_COUNT;
+                }
             }
-            printf(",%s", compRegVarName(reg));
+        }
+        else if (op1->IsMultiRegLclVar())
+        {
+            regCount = op1->AsLclVar()->GetFieldCount(this);
+        }
+        else if (op1->IsMultiRegNode())
+        {
+            regCount = op1->GetMultiRegCount();
+        }
+        // We will only have valid regs for positions that require copy or reload.
+        // But we'd like to keep track of where they are so we print all positions.
+        for (unsigned i = 1; i < regCount; i++)
+        {
+            regNumber reg = tree->AsCopyOrReload()->GetRegNumByIdx(i);
+            printf(",%s", (reg == REG_NA) ? ",NA" : compRegVarName(reg));
         }
     }
 #endif

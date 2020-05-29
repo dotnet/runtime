@@ -328,6 +328,7 @@ namespace System.ComponentModel.EventBasedAsync.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/37136", typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoInterpreter))]
         public void TestFinalization()
         {
             // BackgroundWorker has a finalizer that exists purely for backwards compatibility

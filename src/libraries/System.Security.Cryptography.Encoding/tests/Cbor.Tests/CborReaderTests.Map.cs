@@ -80,7 +80,7 @@ namespace System.Formats.Cbor.Tests
         }
 
         [Theory]
-        [InlineData(CborConformanceLevel.Rfc7049Canonical, "bfff")]
+        [InlineData(CborConformanceLevel.Canonical, "bfff")]
         [InlineData(CborConformanceLevel.Ctap2Canonical, "bfff")]
         public static void ReadMap_IndefiniteLength_UnSupportedConformanceLevel_ShouldThrowFormatException(CborConformanceLevel level, string hexEncoding)
         {
@@ -110,10 +110,10 @@ namespace System.Formats.Cbor.Tests
         }
 
         [Theory]
-        [InlineData(CborConformanceLevel.Rfc7049Canonical, "b800")]
-        [InlineData(CborConformanceLevel.Rfc7049Canonical, "b90000")]
-        [InlineData(CborConformanceLevel.Rfc7049Canonical, "ba00000000")]
-        [InlineData(CborConformanceLevel.Rfc7049Canonical, "bb0000000000000000")]
+        [InlineData(CborConformanceLevel.Canonical, "b800")]
+        [InlineData(CborConformanceLevel.Canonical, "b90000")]
+        [InlineData(CborConformanceLevel.Canonical, "ba00000000")]
+        [InlineData(CborConformanceLevel.Canonical, "bb0000000000000000")]
         [InlineData(CborConformanceLevel.Ctap2Canonical, "b800")]
         [InlineData(CborConformanceLevel.Ctap2Canonical, "b90000")]
         [InlineData(CborConformanceLevel.Ctap2Canonical, "ba00000000")]
@@ -129,22 +129,22 @@ namespace System.Formats.Cbor.Tests
         [Theory]
         [InlineData(CborConformanceLevel.Lax, new object[] { Map, 3, 3, 2, 2, 1, 1 }, "a3030302020101")]
         [InlineData(CborConformanceLevel.Strict, new object[] { Map, 3, 3, 2, 2, 1, 1 }, "a3030302020101")]
-        [InlineData(CborConformanceLevel.Rfc7049Canonical, new object[] { Map, 1, 1, 2, 2, 3, 3 }, "a3010102020303")]
+        [InlineData(CborConformanceLevel.Canonical, new object[] { Map, 1, 1, 2, 2, 3, 3 }, "a3010102020303")]
         [InlineData(CborConformanceLevel.Ctap2Canonical, new object[] { Map, 1, 1, 2, 2, 3, 3 }, "a3010102020303")]
         // indefinite length string payload
         [InlineData(CborConformanceLevel.Lax, new object[] { Map, "b", 0, 2, 0, "a", 0, new object[] { "c", "" }, 0, 1, 0 }, "a5616200020061610082616360000100")]
         [InlineData(CborConformanceLevel.Strict, new object[] { Map, "b", 0, 2, 0, "a", 0, new object[] { "c", "" }, 0, 1, 0 }, "a5616200020061610082616360000100")]
-        [InlineData(CborConformanceLevel.Rfc7049Canonical, new object[] { Map, 1, 0, 2, 0, "a", 0, "b", 0, new object[] { "c", "" }, 0 }, "a5010002006161006162008261636000")]
+        [InlineData(CborConformanceLevel.Canonical, new object[] { Map, 1, 0, 2, 0, "a", 0, "b", 0, new object[] { "c", "" }, 0 }, "a5010002006161006162008261636000")]
         [InlineData(CborConformanceLevel.Ctap2Canonical, new object[] { Map, 1, 0, 2, 0, "a", 0, "b", 0, new object[] { "c", "" }, 0 }, "a5010002006161006162008261636000")]
         // CBOR sorting rules do not match canonical string sorting
         [InlineData(CborConformanceLevel.Lax, new object[] { Map, "aa", 0, "z", 0 }, "a262616100617a00")]
         [InlineData(CborConformanceLevel.Strict, new object[] { Map, "aa", 0, "z", 0 }, "a262616100617a00")]
-        [InlineData(CborConformanceLevel.Rfc7049Canonical, new object[] { Map, "z", 0, "aa", 0 }, "a2617a0062616100")]
+        [InlineData(CborConformanceLevel.Canonical, new object[] { Map, "z", 0, "aa", 0 }, "a2617a0062616100")]
         [InlineData(CborConformanceLevel.Ctap2Canonical, new object[] { Map, "z", 0, "aa", 0 }, "a2617a0062616100")]
         // Test case distinguishing between RFC7049 and CTAP2 sorting rules
         [InlineData(CborConformanceLevel.Lax, new object[] { Map, "", 0, 255, 0 }, "a2600018ff00")]
         [InlineData(CborConformanceLevel.Strict, new object[] { Map, "", 0, 255, 0 }, "a2600018ff00")]
-        [InlineData(CborConformanceLevel.Rfc7049Canonical, new object[] { Map, "", 0, 255, 0 }, "a2600018ff00")]
+        [InlineData(CborConformanceLevel.Canonical, new object[] { Map, "", 0, 255, 0 }, "a2600018ff00")]
         [InlineData(CborConformanceLevel.Ctap2Canonical, new object[] { Map, 255, 0, "", 0 }, "a218ff006000")]
         public static void ReadMap_SimpleValues_ShouldAcceptKeysSortedAccordingToConformanceLevel(CborConformanceLevel level, object expectedValue, string hexEncoding)
         {
@@ -156,7 +156,7 @@ namespace System.Formats.Cbor.Tests
         [Theory]
         [InlineData(CborConformanceLevel.Lax, new object[] { Map, -1, 0, new object[] { Map, 3, 3, 2, 2, 1, 1 }, 0, "a", 0, 256, 0, new object[] { Map, 2, 2, 1, 1 }, 0 }, "a52000a30303020201010061610019010000a20202010100")]
         [InlineData(CborConformanceLevel.Strict, new object[] { Map, -1, 0, new object[] { Map, 3, 3, 2, 2, 1, 1 }, 0, "a", 0, 256, 0, new object[] { Map, 2, 2, 1, 1 }, 0 }, "a52000a30303020201010061610019010000a20202010100")]
-        [InlineData(CborConformanceLevel.Rfc7049Canonical, new object[] { Map, -1, 0, "a", 0, 256, 0, new object[] { Map, 1, 1, 2, 2 }, 0, new object[] { Map, 1, 1, 2, 2, 3, 3 }, 0 }, "a5200061610019010000a20101020200a301010202030300")]
+        [InlineData(CborConformanceLevel.Canonical, new object[] { Map, -1, 0, "a", 0, 256, 0, new object[] { Map, 1, 1, 2, 2 }, 0, new object[] { Map, 1, 1, 2, 2, 3, 3 }, 0 }, "a5200061610019010000a20101020200a301010202030300")]
         [InlineData(CborConformanceLevel.Ctap2Canonical, new object[] { Map, 256, 0, -1, 0, "a", 0, new object[] { Map, 1, 1, 2, 2 }, 0, new object[] { Map, 1, 1, 2, 2, 3, 3 }, 0 }, "a5190100002000616100a20101020200a301010202030300")]
         public static void ReadMap_NestedValues_ShouldAcceptKeysSortedAccordingToConformanceLevel(CborConformanceLevel level, object expectedValue, string hexEncoding)
         {
@@ -177,13 +177,13 @@ namespace System.Formats.Cbor.Tests
 
         [Theory]
         [InlineData(CborConformanceLevel.Strict, 42, "a2182a01182a02")]
-        [InlineData(CborConformanceLevel.Rfc7049Canonical, 42, "a2182a01182a02")]
+        [InlineData(CborConformanceLevel.Canonical, 42, "a2182a01182a02")]
         [InlineData(CborConformanceLevel.Ctap2Canonical, 42, "a2182a01182a02")]
         [InlineData(CborConformanceLevel.Strict, "foobar", "a266666f6f6261720166666f6f62617202")]
-        [InlineData(CborConformanceLevel.Rfc7049Canonical, "foobar", "a266666f6f6261720166666f6f62617202")]
+        [InlineData(CborConformanceLevel.Canonical, "foobar", "a266666f6f6261720166666f6f62617202")]
         [InlineData(CborConformanceLevel.Ctap2Canonical, "foobar", "a266666f6f6261720166666f6f62617202")]
         [InlineData(CborConformanceLevel.Strict, new object[] { new object[] { "x", "y" } }, "a28182617861790181826178617902")]
-        [InlineData(CborConformanceLevel.Rfc7049Canonical, new object[] { new object[] { "x", "y" } }, "a28182617861790181826178617902")]
+        [InlineData(CborConformanceLevel.Canonical, new object[] { new object[] { "x", "y" } }, "a28182617861790181826178617902")]
         [InlineData(CborConformanceLevel.Ctap2Canonical, new object[] { new object[] { "x", "y" } }, "a28182617861790181826178617902")]
         public static void ReadMap_DuplicateKeys_StrictConformance_ShouldThrowFormatException(CborConformanceLevel level, object dupeKey, string hexEncoding)
         {
@@ -193,14 +193,12 @@ namespace System.Formats.Cbor.Tests
             reader.ReadInt32();
 
             int bytesRead = reader.BytesRead;
-            int bytesRemaining = reader.BytesRemaining;
             CborReaderState state = reader.PeekState();
 
             Assert.Throws<FormatException>(() => Helpers.VerifyValue(reader, dupeKey));
 
             // ensure reader state is preserved
             Assert.Equal(bytesRead, reader.BytesRead);
-            Assert.Equal(bytesRemaining, reader.BytesRemaining);
             Assert.Equal(state, reader.PeekState());
         }
 
@@ -223,9 +221,9 @@ namespace System.Formats.Cbor.Tests
         }
 
         [Theory]
-        [InlineData(CborConformanceLevel.Rfc7049Canonical, new object[] { 1, 2, 3, 0 }, "a40101020203030000")]
+        [InlineData(CborConformanceLevel.Canonical, new object[] { 1, 2, 3, 0 }, "a40101020203030000")]
         [InlineData(CborConformanceLevel.Ctap2Canonical, new object[] { 1, 2, 3, 0 }, "a40101020203030000")]
-        [InlineData(CborConformanceLevel.Rfc7049Canonical, new object[] { 1, "", 25, "a", 2 }, "a5010060001819006161000200")]
+        [InlineData(CborConformanceLevel.Canonical, new object[] { 1, "", 25, "a", 2 }, "a5010060001819006161000200")]
         [InlineData(CborConformanceLevel.Ctap2Canonical, new object[] { 1, 25, "", "a", 2 }, "a5010018190060006161000200")]
         public static void ReadMap_UnsortedKeys_ConformanceRequiringSortedKeys_ShouldThrowFormatException(CborConformanceLevel level, object[] keySequence, string hexEncoding)
         {
@@ -238,7 +236,6 @@ namespace System.Formats.Cbor.Tests
             }
 
             int bytesRead = reader.BytesRead;
-            int bytesRemaining = reader.BytesRemaining;
             CborReaderState state = reader.PeekState();
 
             // the final element violates sorting invariant
@@ -246,7 +243,6 @@ namespace System.Formats.Cbor.Tests
 
             // ensure reader state is preserved
             Assert.Equal(bytesRead, reader.BytesRead);
-            Assert.Equal(bytesRemaining, reader.BytesRemaining);
             Assert.Equal(state, reader.PeekState());
         }
 
@@ -268,9 +264,9 @@ namespace System.Formats.Cbor.Tests
                 reader.ReadInt64(); // value
             }
 
-            int bytesRemaining = reader.BytesRemaining;
+            int bytesRead = reader.BytesRead;
             Assert.Throws<InvalidOperationException>(() => reader.ReadInt64());
-            Assert.Equal(bytesRemaining, reader.BytesRemaining);
+            Assert.Equal(bytesRead, reader.BytesRead);
         }
 
         [Theory]
@@ -296,9 +292,9 @@ namespace System.Formats.Cbor.Tests
                 reader.ReadEndMap();
             }
 
-            int bytesRemaining = reader.BytesRemaining;
+            int bytesRead = reader.BytesRead;
             Assert.Throws<InvalidOperationException>(() => reader.ReadInt64());
-            Assert.Equal(bytesRemaining, reader.BytesRemaining);
+            Assert.Equal(bytesRead, reader.BytesRead);
         }
 
         [Theory]
@@ -318,9 +314,9 @@ namespace System.Formats.Cbor.Tests
                 reader.ReadInt64(); // value
             }
 
-            int bytesRemaining = reader.BytesRemaining;
+            int bytesRead = reader.BytesRead;
             Assert.Throws<InvalidOperationException>(() => reader.ReadEndMap());
-            Assert.Equal(bytesRemaining, reader.BytesRemaining);
+            Assert.Equal(bytesRead, reader.BytesRead);
         }
 
         [Theory]
@@ -345,9 +341,9 @@ namespace System.Formats.Cbor.Tests
                 reader.ReadEndMap();
             }
 
-            int bytesRemaining = reader.BytesRemaining;
+            int bytesRead = reader.BytesRead;
             Assert.Throws<InvalidOperationException>(() => reader.ReadEndMap());
-            Assert.Equal(bytesRemaining, reader.BytesRemaining);
+            Assert.Equal(bytesRead, reader.BytesRead);
         }
 
         [Theory]
@@ -363,9 +359,9 @@ namespace System.Formats.Cbor.Tests
                 reader.ReadStartArray();
             }
 
-            int bytesRemaining = reader.BytesRemaining;
+            int bytesRead = reader.BytesRead;
             Assert.Throws<InvalidOperationException>(() => reader.ReadEndMap());
-            Assert.Equal(bytesRemaining, reader.BytesRemaining);
+            Assert.Equal(bytesRead, reader.BytesRead);
         }
 
         [Theory]
@@ -385,9 +381,9 @@ namespace System.Formats.Cbor.Tests
                 reader.ReadInt64(); // value
             }
 
-            int bytesRemaining = reader.BytesRemaining;
+            int bytesRead = reader.BytesRead;
             Assert.Throws<FormatException>(() => reader.ReadInt64());
-            Assert.Equal(bytesRemaining, reader.BytesRemaining);
+            Assert.Equal(bytesRead, reader.BytesRead);
         }
 
         [Theory]
@@ -421,12 +417,12 @@ namespace System.Formats.Cbor.Tests
                 reader.ReadInt64();
             }
 
-            int bytesRemaining = reader.BytesRemaining;
+            int bytesRead = reader.BytesRead;
 
             Assert.Equal(CborReaderState.UnsignedInteger, reader.PeekState());
             Assert.Throws<InvalidOperationException>(() => reader.ReadEndMap());
 
-            Assert.Equal(bytesRemaining, reader.BytesRemaining);
+            Assert.Equal(bytesRead, reader.BytesRead);
         }
 
         [Theory]
@@ -443,12 +439,12 @@ namespace System.Formats.Cbor.Tests
                 reader.ReadInt64();
             }
 
-            int bytesRemaining = reader.BytesRemaining;
+            int bytesRead = reader.BytesRead;
 
             Assert.Equal(CborReaderState.FormatError, reader.PeekState()); // don't want this to fail
             Assert.Throws<FormatException>(() => reader.ReadEndMap());
 
-            Assert.Equal(bytesRemaining, reader.BytesRemaining);
+            Assert.Equal(bytesRead, reader.BytesRead);
         }
 
         [Theory]
@@ -472,9 +468,9 @@ namespace System.Formats.Cbor.Tests
                 reader.ReadEndArray();
             }
 
-            int bytesRemaining = reader.BytesRemaining;
+            int bytesRead = reader.BytesRead;
             Assert.Throws<FormatException>(() => reader.ReadInt64());
-            Assert.Equal(bytesRemaining, reader.BytesRemaining);
+            Assert.Equal(bytesRead, reader.BytesRead);
         }
 
         [Fact]
@@ -483,9 +479,9 @@ namespace System.Formats.Cbor.Tests
             byte[] encoding = Array.Empty<byte>();
             var reader = new CborReader(encoding);
 
-            int bytesRemaining = reader.BytesRemaining;
+            int bytesRead = reader.BytesRead;
             Assert.Throws<FormatException>(() => reader.ReadStartMap());
-            Assert.Equal(bytesRemaining, reader.BytesRemaining);
+            Assert.Equal(bytesRead, reader.BytesRead);
         }
 
         [Theory]
@@ -503,7 +499,7 @@ namespace System.Formats.Cbor.Tests
             var reader = new CborReader(encoding);
 
             Assert.Throws<InvalidOperationException>(() => reader.ReadStartMap());
-            Assert.Equal(encoding.Length, reader.BytesRemaining);
+            Assert.Equal(0, reader.BytesRead);
         }
 
         [Theory]
@@ -522,7 +518,7 @@ namespace System.Formats.Cbor.Tests
             var reader = new CborReader(encoding);
 
             Assert.Throws<FormatException>(() => reader.ReadStartMap());
-            Assert.Equal(encoding.Length, reader.BytesRemaining);
+            Assert.Equal(0, reader.BytesRead);
         }
 
         [Theory]
@@ -536,7 +532,7 @@ namespace System.Formats.Cbor.Tests
             var reader = new CborReader(encoding);
 
             Assert.Throws<FormatException>(() => reader.ReadStartMap());
-            Assert.Equal(encoding.Length, reader.BytesRemaining);
+            Assert.Equal(0, reader.BytesRead);
         }
     }
 }

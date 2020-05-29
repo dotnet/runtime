@@ -317,6 +317,8 @@ namespace System.Threading
 
     public static partial class ThreadPool
     {
+        internal const bool EnableWorkerTracking = false;
+
         internal static void InitializeForThreadPoolThread() { }
 
         public static bool SetMaxThreads(int workerThreads, int completionPortThreads)

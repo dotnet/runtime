@@ -62,7 +62,7 @@ Minimum RAM required to build is 1GB. The build is known to fail on 512 MB VMs (
 Toolchain Setup
 ---------------
 
-Building the repo requires CMake 3.14.2 or newer on Linux. Add Kitware's APT feed to your configuration for a newer version of CMake. See their instructions at <https://apt.kitware.com/>. Also, add LLVM/s APT feed to your configuration for a newer version of CMake. See their instructions as <http://apt.llvm.org/>.
+Building the repo requires CMake 3.14.2 or newer on Linux. Add Kitware's APT feed to your configuration for a newer version of CMake. See their instructions at <https://apt.kitware.com/>. You may need to add LLVM's APT feed to your configuration to obtain the required version of clang/LLVM. See their instructions at <https://apt.llvm.org/>.
 
 Install the following packages for the toolchain:
 
