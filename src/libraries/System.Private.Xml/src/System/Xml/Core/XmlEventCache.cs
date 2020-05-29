@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Text;
@@ -15,8 +16,8 @@ namespace System.Xml
     /// </summary>
     internal sealed class XmlEventCache : XmlRawWriter
     {
-        private List<XmlEvent[]> _pages;     // All event pages
-        private XmlEvent[] _pageCurr;        // Page that is currently being built
+        private List<XmlEvent[]>? _pages;     // All event pages
+        private XmlEvent[]? _pageCurr;        // Page that is currently being built
         private int _pageSize;               // Number of events in pageCurr
         private readonly bool _hasRootNode;           // True if the cached document has a root node, false if it's a fragment
         private StringConcat _singleText;    // If document consists of a single text node, cache it here rather than creating pages
@@ -100,7 +101,7 @@ namespace System.Xml
             int idxPage, idxEvent;
             byte[] bytes;
             char[] chars;
-            XmlRawWriter rawWriter;
+            XmlRawWriter? rawWriter;
 
             // Special-case single text node at the top-level
             if (_singleText.Count != 0)
@@ -112,7 +113,7 @@ namespace System.Xml
             rawWriter = writer as XmlRawWriter;
 
             // Loop over set of pages
-            for (idxPage = 0; idxPage < _pages.Count; idxPage++)
+            for (idxPage = 0; idxPage < _pages!.Count; idxPage++)
             {
                 page = _pages[idxPage];
 
@@ -127,15 +128,15 @@ namespace System.Xml
                             return;
 
                         case XmlEventType.DocType:
-                            writer.WriteDocType(page[idxEvent].String1, page[idxEvent].String2, page[idxEvent].String3, (string)page[idxEvent].Object);
+                            writer.WriteDocType(page[idxEvent].String1!, page[idxEvent].String2, page[idxEvent].String3, (string?)page[idxEvent].Object);
                             break;
 
                         case XmlEventType.StartElem:
-                            writer.WriteStartElement(page[idxEvent].String1, page[idxEvent].String2, page[idxEvent].String3);
+                            writer.WriteStartElement(page[idxEvent].String1, page[idxEvent].String2!, page[idxEvent].String3);
                             break;
 
                         case XmlEventType.StartAttr:
-                            writer.WriteStartAttribute(page[idxEvent].String1, page[idxEvent].String2, page[idxEvent].String3);
+                            writer.WriteStartAttribute(page[idxEvent].String1, page[idxEvent].String2!, page[idxEvent].String3);
                             break;
 
                         case XmlEventType.EndAttr:
@@ -147,15 +148,15 @@ namespace System.Xml
                             break;
 
                         case XmlEventType.Comment:
-                            writer.WriteComment(page[idxEvent].String1);
+                            writer.WriteComment(page[idxEvent].String1!);
                             break;
 
                         case XmlEventType.PI:
-                            writer.WriteProcessingInstruction(page[idxEvent].String1, page[idxEvent].String2);
+                            writer.WriteProcessingInstruction(page[idxEvent].String1!, page[idxEvent].String2!);
                             break;
 
                         case XmlEventType.Whitespace:
-                            writer.WriteWhitespace(page[idxEvent].String1);
+                            writer.WriteWhitespace(page[idxEvent].String1!);
                             break;
 
                         case XmlEventType.String:
@@ -163,40 +164,40 @@ namespace System.Xml
                             break;
 
                         case XmlEventType.Raw:
-                            writer.WriteRaw(page[idxEvent].String1);
+                            writer.WriteRaw(page[idxEvent].String1!);
                             break;
 
                         case XmlEventType.EntRef:
-                            writer.WriteEntityRef(page[idxEvent].String1);
+                            writer.WriteEntityRef(page[idxEvent].String1!);
                             break;
 
                         case XmlEventType.CharEnt:
-                            writer.WriteCharEntity((char)page[idxEvent].Object);
+                            writer.WriteCharEntity((char)page[idxEvent].Object!);
                             break;
 
                         case XmlEventType.SurrCharEnt:
-                            chars = (char[])page[idxEvent].Object;
+                            chars = (char[])page[idxEvent].Object!;
                             writer.WriteSurrogateCharEntity(chars[0], chars[1]);
                             break;
 
                         case XmlEventType.Base64:
-                            bytes = (byte[])page[idxEvent].Object;
+                            bytes = (byte[])page[idxEvent].Object!;
                             writer.WriteBase64(bytes, 0, bytes.Length);
                             break;
 
                         case XmlEventType.BinHex:
-                            bytes = (byte[])page[idxEvent].Object;
+                            bytes = (byte[])page[idxEvent].Object!;
                             writer.WriteBinHex(bytes, 0, bytes.Length);
                             break;
 
                         case XmlEventType.XmlDecl1:
                             if (rawWriter != null)
-                                rawWriter.WriteXmlDeclaration((XmlStandalone)page[idxEvent].Object);
+                                rawWriter.WriteXmlDeclaration((XmlStandalone)page[idxEvent].Object!);
                             break;
 
                         case XmlEventType.XmlDecl2:
                             if (rawWriter != null)
-                                rawWriter.WriteXmlDeclaration(page[idxEvent].String1);
+                                rawWriter.WriteXmlDeclaration(page[idxEvent].String1!);
                             break;
 
                         case XmlEventType.StartContent:
@@ -206,23 +207,23 @@ namespace System.Xml
 
                         case XmlEventType.EndElem:
                             if (rawWriter != null)
-                                rawWriter.WriteEndElement(page[idxEvent].String1, page[idxEvent].String2, page[idxEvent].String3);
+                                rawWriter.WriteEndElement(page[idxEvent].String1!, page[idxEvent].String2!, page[idxEvent].String3!);
                             else
                                 writer.WriteEndElement();
                             break;
 
                         case XmlEventType.FullEndElem:
                             if (rawWriter != null)
-                                rawWriter.WriteFullEndElement(page[idxEvent].String1, page[idxEvent].String2, page[idxEvent].String3);
+                                rawWriter.WriteFullEndElement(page[idxEvent].String1!, page[idxEvent].String2!, page[idxEvent].String3!);
                             else
                                 writer.WriteFullEndElement();
                             break;
 
                         case XmlEventType.Nmsp:
                             if (rawWriter != null)
-                                rawWriter.WriteNamespaceDeclaration(page[idxEvent].String1, page[idxEvent].String2);
+                                rawWriter.WriteNamespaceDeclaration(page[idxEvent].String1!, page[idxEvent].String2!);
                             else
-                                writer.WriteAttributeString("xmlns", page[idxEvent].String1, XmlReservedNs.NsXmlNs, page[idxEvent].String2);
+                                writer.WriteAttributeString("xmlns", page[idxEvent].String1!, XmlReservedNs.NsXmlNs, page[idxEvent].String2!);
                             break;
 
                         case XmlEventType.EndBase64:
@@ -270,7 +271,7 @@ namespace System.Xml
 
             // Loop over set of pages
             inAttr = false;
-            for (idxPage = 0; idxPage < _pages.Count; idxPage++)
+            for (idxPage = 0; idxPage < _pages!.Count; idxPage++)
             {
                 page = _pages[idxPage];
 
@@ -315,22 +316,22 @@ namespace System.Xml
         // XmlWriter interface
         //-----------------------------------------------
 
-        public override XmlWriterSettings Settings
+        public override XmlWriterSettings? Settings
         {
             get { return null; }
         }
 
-        public override void WriteDocType(string name, string pubid, string sysid, string subset)
+        public override void WriteDocType(string name, string? pubid, string? sysid, string? subset)
         {
             AddEvent(XmlEventType.DocType, name, pubid, sysid, subset);
         }
 
-        public override void WriteStartElement(string prefix, string localName, string ns)
+        public override void WriteStartElement(string? prefix, string localName, string? ns)
         {
             AddEvent(XmlEventType.StartElem, prefix, localName, ns);
         }
 
-        public override void WriteStartAttribute(string prefix, string localName, string ns)
+        public override void WriteStartAttribute(string? prefix, string localName, string? ns)
         {
             AddEvent(XmlEventType.StartAttr, prefix, localName, ns);
         }
@@ -340,7 +341,7 @@ namespace System.Xml
             AddEvent(XmlEventType.EndAttr);
         }
 
-        public override void WriteCData(string text)
+        public override void WriteCData(string? text)
         {
             AddEvent(XmlEventType.CData, text);
         }
@@ -360,7 +361,7 @@ namespace System.Xml
             AddEvent(XmlEventType.Whitespace, ws);
         }
 
-        public override void WriteString(string text)
+        public override void WriteString(string? text)
         {
             // Special-case single text node at the top level
             if (_pages == null)
@@ -429,12 +430,12 @@ namespace System.Xml
         /// All other WriteValue methods are implemented by XmlWriter to delegate to WriteValue(object) or WriteValue(string), so
         /// only these two methods need to be implemented.
         /// </summary>
-        public override void WriteValue(object value)
+        public override void WriteValue(object? value)
         {
             WriteString(XmlUntypedConverter.Untyped.ToString(value, this.resolver));
         }
 
-        public override void WriteValue(string value)
+        public override void WriteValue(string? value)
         {
             WriteString(value);
         }
@@ -502,37 +503,37 @@ namespace System.Xml
         private void AddEvent(XmlEventType eventType)
         {
             int idx = NewEvent();
-            _pageCurr[idx].InitEvent(eventType);
+            _pageCurr![idx].InitEvent(eventType);
         }
 
-        private void AddEvent(XmlEventType eventType, string s1)
+        private void AddEvent(XmlEventType eventType, string? s1)
         {
             int idx = NewEvent();
-            _pageCurr[idx].InitEvent(eventType, s1);
+            _pageCurr![idx].InitEvent(eventType, s1);
         }
 
-        private void AddEvent(XmlEventType eventType, string s1, string s2)
+        private void AddEvent(XmlEventType eventType, string? s1, string? s2)
         {
             int idx = NewEvent();
-            _pageCurr[idx].InitEvent(eventType, s1, s2);
+            _pageCurr![idx].InitEvent(eventType, s1, s2);
         }
 
-        private void AddEvent(XmlEventType eventType, string s1, string s2, string s3)
+        private void AddEvent(XmlEventType eventType, string? s1, string? s2, string? s3)
         {
             int idx = NewEvent();
-            _pageCurr[idx].InitEvent(eventType, s1, s2, s3);
+            _pageCurr![idx].InitEvent(eventType, s1, s2, s3);
         }
 
-        private void AddEvent(XmlEventType eventType, string s1, string s2, string s3, object o)
+        private void AddEvent(XmlEventType eventType, string? s1, string? s2, string? s3, object? o)
         {
             int idx = NewEvent();
-            _pageCurr[idx].InitEvent(eventType, s1, s2, s3, o);
+            _pageCurr![idx].InitEvent(eventType, s1, s2, s3, o);
         }
 
-        private void AddEvent(XmlEventType eventType, object o)
+        private void AddEvent(XmlEventType eventType, object? o)
         {
             int idx = NewEvent();
-            _pageCurr[idx].InitEvent(eventType, o);
+            _pageCurr![idx].InitEvent(eventType, o);
         }
 
         private int NewEvent()
@@ -551,7 +552,7 @@ namespace System.Xml
                     _singleText.Clear();
                 }
             }
-            else if (_pageSize >= _pageCurr.Length)
+            else if (_pageSize >= _pageCurr!.Length)
             {
                 // Create new page
                 _pageCurr = new XmlEvent[_pageSize * 2];
@@ -588,30 +589,30 @@ namespace System.Xml
         private struct XmlEvent
         {
             private XmlEventType _eventType;
-            private string _s1;
-            private string _s2;
-            private string _s3;
-            private object _o;
+            private string? _s1;
+            private string? _s2;
+            private string? _s3;
+            private object? _o;
 
             public void InitEvent(XmlEventType eventType)
             {
                 _eventType = eventType;
             }
 
-            public void InitEvent(XmlEventType eventType, string s1)
+            public void InitEvent(XmlEventType eventType, string? s1)
             {
                 _eventType = eventType;
                 _s1 = s1;
             }
 
-            public void InitEvent(XmlEventType eventType, string s1, string s2)
+            public void InitEvent(XmlEventType eventType, string? s1, string? s2)
             {
                 _eventType = eventType;
                 _s1 = s1;
                 _s2 = s2;
             }
 
-            public void InitEvent(XmlEventType eventType, string s1, string s2, string s3)
+            public void InitEvent(XmlEventType eventType, string? s1, string? s2, string? s3)
             {
                 _eventType = eventType;
                 _s1 = s1;
@@ -619,7 +620,7 @@ namespace System.Xml
                 _s3 = s3;
             }
 
-            public void InitEvent(XmlEventType eventType, string s1, string s2, string s3, object o)
+            public void InitEvent(XmlEventType eventType, string? s1, string? s2, string? s3, object? o)
             {
                 _eventType = eventType;
                 _s1 = s1;
@@ -628,7 +629,7 @@ namespace System.Xml
                 _o = o;
             }
 
-            public void InitEvent(XmlEventType eventType, object o)
+            public void InitEvent(XmlEventType eventType, object? o)
             {
                 _eventType = eventType;
                 _o = o;
@@ -639,22 +640,22 @@ namespace System.Xml
                 get { return _eventType; }
             }
 
-            public string String1
+            public string? String1
             {
                 get { return _s1; }
             }
 
-            public string String2
+            public string? String2
             {
                 get { return _s2; }
             }
 
-            public string String3
+            public string? String3
             {
                 get { return _s3; }
             }
 
-            public object Object
+            public object? Object
             {
                 get { return _o; }
             }

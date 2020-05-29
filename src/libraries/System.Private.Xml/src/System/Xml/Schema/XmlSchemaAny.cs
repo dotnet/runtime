@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 namespace System.Xml.Schema
 {
     using System.ComponentModel;
@@ -10,12 +11,12 @@ namespace System.Xml.Schema
 
     public class XmlSchemaAny : XmlSchemaParticle
     {
-        private string _ns;
+        private string? _ns;
         private XmlSchemaContentProcessing _processContents = XmlSchemaContentProcessing.None;
-        private NamespaceList _namespaceList;
+        private NamespaceList? _namespaceList;
 
         [XmlAttribute("namespace")]
-        public string Namespace
+        public string? Namespace
         {
             get { return _ns; }
             set { _ns = value; }
@@ -29,7 +30,7 @@ namespace System.Xml.Schema
         }
 
         [XmlIgnore]
-        internal NamespaceList NamespaceList
+        internal NamespaceList? NamespaceList
         {
             get { return _namespaceList; }
         }
@@ -57,7 +58,7 @@ namespace System.Xml.Schema
         {
             get
             {
-                switch (_namespaceList.Type)
+                switch (_namespaceList!.Type)
                 {
                     case NamespaceList.ListType.Any:
                         return "##any:*";
@@ -68,7 +69,7 @@ namespace System.Xml.Schema
                     case NamespaceList.ListType.Set:
                         StringBuilder sb = new StringBuilder();
                         int i = 1;
-                        foreach (string wildcardNS in _namespaceList.Enumerate)
+                        foreach (string? wildcardNS in _namespaceList.Enumerate)
                         {
                             sb.Append(wildcardNS + ":*");
                             if (i < _namespaceList.Enumerate.Count)
@@ -111,7 +112,7 @@ namespace System.Xml.Schema
 
         internal bool Allows(XmlQualifiedName qname)
         {
-            return _namespaceList.Allows(qname.Namespace);
+            return _namespaceList!.Allows(qname.Namespace);
         }
     }
 }
