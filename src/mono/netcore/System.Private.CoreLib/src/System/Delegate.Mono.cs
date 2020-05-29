@@ -422,10 +422,7 @@ namespace System
 
         protected virtual object? DynamicInvokeImpl(object?[]? args)
         {
-            if (Method is null)
-            {
-                    throw new NullReferenceException ("method_info is null");
-            }
+            MethodInfo _method = Method ?? throw new NullReferenceException ("method_info is null");
 
             object? target = _target;
 
@@ -450,7 +447,7 @@ namespace System
                 }
             }
 
-            if (Method!.IsStatic)
+            if (_method.IsStatic)
             {
                 //
                 // The delegate is bound to _target
@@ -481,7 +478,7 @@ namespace System
                 }
             }
 
-            return Method.Invoke(target, args);
+            return _method.Invoke(target, args);
         }
 
         public override bool Equals(object? obj)
