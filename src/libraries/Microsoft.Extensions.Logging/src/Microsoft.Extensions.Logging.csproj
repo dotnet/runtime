@@ -34,4 +34,8 @@
     <Reference Include="Microsoft.Bcl.AsyncInterfaces" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Reference Include="System.Diagnostics.DiagnosticSource" />
+  </ItemGroup>
+
 </Project>
