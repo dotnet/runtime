@@ -40,7 +40,7 @@ struct alignment_hint {
 
         alignment_hint realign_right() {
             alignment_hint copy = *this;
-            copy.left_align = REALIGN;
+            copy.right_align = REALIGN;
             return copy;
         }
 
