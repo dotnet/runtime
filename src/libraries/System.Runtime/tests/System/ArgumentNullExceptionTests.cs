@@ -14,7 +14,7 @@ namespace System.Tests
         public static void Ctor_Empty()
         {
             var exception = new ArgumentNullException();
-            ExceptionUtility.ValidateExceptionProperties(exception, hResult: E_POINTER, validateMessage: false);
+            ExceptionHelpers.ValidateExceptionProperties(exception, hResult: E_POINTER, validateMessage: false);
             Assert.Null(exception.ParamName);
         }
 
@@ -23,7 +23,7 @@ namespace System.Tests
         {
             string argumentName = "theNullArgument";
             var exception = new ArgumentNullException(argumentName);
-            ExceptionUtility.ValidateExceptionProperties(exception, hResult: E_POINTER, validateMessage: false);
+            ExceptionHelpers.ValidateExceptionProperties(exception, hResult: E_POINTER, validateMessage: false);
             Assert.Contains(argumentName, exception.Message);
         }
 
@@ -33,7 +33,7 @@ namespace System.Tests
             string message = "the argument is null";
             var innerException = new Exception("Inner exception");
             var exception = new ArgumentNullException(message, innerException);
-            ExceptionUtility.ValidateExceptionProperties(exception, hResult: E_POINTER, innerException: innerException, message: message);
+            ExceptionHelpers.ValidateExceptionProperties(exception, hResult: E_POINTER, innerException: innerException, message: message);
             Assert.Null(exception.ParamName);
         }
 
@@ -43,7 +43,7 @@ namespace System.Tests
             string message = "the argument is null";
             string argumentName = "theNullArgument";
             var exception = new ArgumentNullException(argumentName, message);
-            ExceptionUtility.ValidateExceptionProperties(exception, hResult: E_POINTER, validateMessage: false);
+            ExceptionHelpers.ValidateExceptionProperties(exception, hResult: E_POINTER, validateMessage: false);
             Assert.Equal(argumentName, exception.ParamName);
             Assert.Contains(message, exception.Message);
             Assert.Contains(argumentName, exception.Message);

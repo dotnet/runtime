@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // See the LICENSE file in the project root for more information.
 //
-// AttachmentCollectionTest.cs - NUnit Test Cases for System.Net.MailAddress.AttachmentCollection
+// AttachmentCollectionTest.cs - Unit Test Cases for System.Net.MailAddress.AttachmentCollection
 //
 // Authors:
 //   John Luke (john.luke@gmail.com)

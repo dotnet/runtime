@@ -964,7 +964,7 @@ namespace System.IO.Packaging
                 ThrowIfXmlAttributeMissing(attributeName, attributeValue, tagName, reader);
 
                 //Checking for empty attribute
-                if (attributeValue == string.Empty)
+                if (attributeValue.Length == 0)
                     throw new XmlException(SR.Format(SR.RequiredAttributeEmpty, tagName, attributeName), null, ((IXmlLineInfo)reader).LineNumber, ((IXmlLineInfo)reader).LinePosition);
             }
 

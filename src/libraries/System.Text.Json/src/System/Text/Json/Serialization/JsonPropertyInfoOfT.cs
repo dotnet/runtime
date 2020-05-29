@@ -4,6 +4,7 @@
 
 using System.Diagnostics;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Text.Json.Serialization;
 
 namespace System.Text.Json
@@ -15,6 +16,8 @@ namespace System.Text.Json
     /// or a type's converter, if the current instance is a <see cref="JsonClassInfo.PropertyInfoForClassInfo"/>.
     internal sealed class JsonPropertyInfo<T> : JsonPropertyInfo
     {
+        private static readonly T s_defaultValue = default!;
+
         public Func<object, T>? Get { get; private set; }
         public Action<object, T>? Set { get; private set; }
 
@@ -98,13 +101,41 @@ namespace System.Text.Json
 
             bool success;
             T value = Get!(obj);
+
             if (value == null)
             {
-                if (!IgnoreNullValues)
-                {
-                    writer.WriteNull(EscapedName.Value);
-                }
+                Debug.Assert(s_defaultValue == null && Converter.CanBeNull);
 
+                success = true;
+                if (!IgnoreDefaultValuesOnWrite)
+                {
+                    if (!Converter.HandleNull)
+                    {
+                        writer.WriteNull(EscapedName.Value);
+                    }
+                    else
+                    {
+                        // No object, collection, or re-entrancy converter handles null.
+                        Debug.Assert(Converter.ClassType == ClassType.Value);
+
+                        if (state.Current.PropertyState < StackFramePropertyState.Name)
+                        {
+                            state.Current.PropertyState = StackFramePropertyState.Name;
+                            writer.WritePropertyName(EscapedName.Value);
+                        }
+
+                        int originalDepth = writer.CurrentDepth;
+                        Converter.Write(writer, value, Options);
+                        if (originalDepth != writer.CurrentDepth)
+                        {
+                            ThrowHelper.ThrowJsonException_SerializationConverterWrite(Converter);
+                        }
+                    }
+                }
+            }
+            else if (IgnoreDefaultValuesOnWrite && Converter._defaultComparer.Equals(s_defaultValue, value))
+            {
+                Debug.Assert(s_defaultValue != null && !Converter.CanBeNull);
                 success = true;
             }
             else
@@ -141,10 +172,18 @@ namespace System.Text.Json
         public override bool ReadJsonAndSetMember(object obj, ref ReadStack state, ref Utf8JsonReader reader)
         {
             bool success;
+
             bool isNullToken = reader.TokenType == JsonTokenType.Null;
-            if (isNullToken && !Converter.HandleNullValue && !state.IsContinuation)
+            if (isNullToken && !Converter.HandleNull && !state.IsContinuation)
             {
-                if (!IgnoreNullValues)
+                if (!Converter.CanBeNull)
+                {
+                    ThrowHelper.ThrowJsonException_DeserializeUnableToConvertValue(Converter.TypeToConvert);
+                }
+
+                Debug.Assert(s_defaultValue == null);
+
+                if (!IgnoreDefaultValuesOnRead)
                 {
                     T value = default;
                     Set!(obj, value!);
@@ -152,29 +191,27 @@ namespace System.Text.Json
 
                 success = true;
             }
-            else
+            else if (Converter.CanUseDirectReadOrWrite)
             {
-                // Get the value from the converter and set the property.
-                if (Converter.CanUseDirectReadOrWrite)
+                if (!(isNullToken && IgnoreDefaultValuesOnRead && Converter.CanBeNull))
                 {
                     // Optimize for internal converters by avoiding the extra call to TryRead.
                     T fastvalue = Converter.Read(ref reader, RuntimePropertyType!, Options);
-                    if (!IgnoreNullValues || (!isNullToken && fastvalue != null))
-                    {
-                        Set!(obj, fastvalue);
-                    }
-
-                    return true;
+                    Set!(obj, fastvalue!);
                 }
-                else
+
+                success = true;
+            }
+            else
+            {
+                success = true;
+
+                if (!(isNullToken && IgnoreDefaultValuesOnRead && Converter.CanBeNull))
                 {
                     success = Converter.TryRead(ref reader, RuntimePropertyType!, Options, ref state, out T value);
                     if (success)
                     {
-                        if (!IgnoreNullValues || (!isNullToken && value != null))
-                        {
-                            Set!(obj, value);
-                        }
+                        Set!(obj, value!);
                     }
                 }
             }
@@ -186,8 +223,13 @@ namespace System.Text.Json
         {
             bool success;
             bool isNullToken = reader.TokenType == JsonTokenType.Null;
-            if (isNullToken && !Converter.HandleNullValue && !state.IsContinuation)
+            if (isNullToken && !Converter.HandleNull && !state.IsContinuation)
             {
+                if (!Converter.CanBeNull)
+                {
+                    ThrowHelper.ThrowJsonException_DeserializeUnableToConvertValue(Converter.TypeToConvert);
+                }
+
                 value = default(T)!;
                 success = true;
             }
@@ -197,7 +239,7 @@ namespace System.Text.Json
                 if (Converter.CanUseDirectReadOrWrite)
                 {
                     value = Converter.Read(ref reader, RuntimePropertyType!, Options);
-                    return true;
+                    success = true;
                 }
                 else
                 {
@@ -209,15 +251,11 @@ namespace System.Text.Json
             return success;
         }
 
-        public override void SetValueAsObject(object obj, object? value)
+        public override void SetExtensionDictionaryAsObject(object obj, object? extensionDict)
         {
             Debug.Assert(HasSetter);
-            T typedValue = (T)value!;
-
-            if (typedValue != null || !IgnoreNullValues)
-            {
-                Set!(obj, typedValue);
-            }
+            T typedValue = (T)extensionDict!;
+            Set!(obj, typedValue);
         }
     }
 }

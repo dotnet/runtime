@@ -11,8 +11,6 @@ namespace System.Diagnostics
 {
     public sealed partial class FileVersionInfo
     {
-        private static readonly char[] s_versionSeparators = new char[] { '.' };
-
         private FileVersionInfo(string fileName)
         {
             _fileName = fileName;
@@ -204,7 +202,7 @@ namespace System.Diagnostics
 
             if (versionString != null)
             {
-                string[] parts = versionString.Split(s_versionSeparators);
+                string[] parts = versionString.Split('.');
                 if (parts.Length <= 4 && parts.Length > 0)
                 {
                     major = ParseUInt16UntilNonDigit(parts[0], out bool endedEarly);

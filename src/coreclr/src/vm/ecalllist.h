@@ -909,6 +909,8 @@ FCFuncStart(gRuntimeHelpers)
     FCFuncElement("AllocTailCallArgBuffer", TailCallHelp::AllocTailCallArgBuffer)
     FCFuncElement("FreeTailCallArgBuffer", TailCallHelp::FreeTailCallArgBuffer)
     FCFuncElement("GetTailCallInfo", TailCallHelp::GetTailCallInfo)
+    FCFuncElement("GetILBytesJitted", GetJittedBytes)
+    FCFuncElement("GetMethodsJittedCount", GetJittedMethodsCount)
 FCFuncEnd()
 
 FCFuncStart(gContextSynchronizationFuncs)
@@ -986,6 +988,7 @@ FCFuncStart(gComWrappersFuncs)
     QCFuncElement("TryGetOrCreateComInterfaceForObjectInternal", ComWrappersNative::TryGetOrCreateComInterfaceForObject)
     QCFuncElement("TryGetOrCreateObjectForComInstanceInternal", ComWrappersNative::TryGetOrCreateObjectForComInstance)
     QCFuncElement("SetGlobalInstanceRegisteredForMarshalling", GlobalComWrappersForMarshalling::SetGlobalInstanceRegisteredForMarshalling)
+    QCFuncElement("SetGlobalInstanceRegisteredForTrackerSupport", GlobalComWrappersForTrackerSupport::SetGlobalInstanceRegisteredForTrackerSupport)
 FCFuncEnd()
 #endif // FEATURE_COMWRAPPERS
 

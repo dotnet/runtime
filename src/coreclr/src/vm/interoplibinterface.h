@@ -37,6 +37,9 @@ public: // Lifetime management for COM Wrappers
 
 public: // COM activation
     static void MarkWrapperAsComActivated(_In_ IUnknown* wrapperMaybe);
+
+public: // Unwrapping support
+    static IUnknown* GetIdentityForObject(_In_ OBJECTREF* objectPROTECTED, _In_ REFIID riid);
 };
 
 class GlobalComWrappersForMarshalling
@@ -55,6 +58,25 @@ public: // Functions operating on a registered global instance for marshalling
     static bool TryGetOrCreateObjectForComInstance(
         _In_ IUnknown* externalComObject,
         _In_ INT32 objFromComIPFlags,
+        _Out_ OBJECTREF* objRef);
+};
+
+
+class GlobalComWrappersForTrackerSupport
+{
+public:
+    // Native QCall for the ComWrappers managed type to indicate a global instance
+    // is registered for tracker support. This should be set if the private static member
+    // representing the global instance for tracker support on ComWrappers is non-null.
+    static void QCALLTYPE SetGlobalInstanceRegisteredForTrackerSupport();
+
+public: // Functions operating on a registered global instance for tracker support
+    static bool TryGetOrCreateComInterfaceForObject(
+        _In_ OBJECTREF instance,
+        _Outptr_ void** wrapperRaw);
+
+    static bool TryGetOrCreateObjectForComInstance(
+        _In_ IUnknown* externalComObject,
         _Out_ OBJECTREF* objRef);
 };
 

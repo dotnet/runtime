@@ -3,10 +3,13 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <DefaultLanguage>en-US</DefaultLanguage>
     <CLSCompliant>false</CLSCompliant>
-    <PackageTargetFramework Condition="'$(TargetFramework)' == 'netstandard1.1'">netstandard1.1;portable-net45+win8</PackageTargetFramework>
     <TargetFrameworks>$(NetCoreAppCurrent);netstandard1.1;netstandard2.0</TargetFrameworks>
     <ExcludeCurrentNetCoreAppFromPackage>true</ExcludeCurrentNetCoreAppFromPackage>
     <Nullable>enable</Nullable>
+  </PropertyGroup>
+    <!-- DesignTimeBuild requires all the TargetFramework Derived Properties to not be present in the first property group. -->
+  <PropertyGroup>
+    <PackageTargetFramework Condition="'$(TargetFramework)' == 'netstandard1.1'">netstandard1.1;portable-net45+win8</PackageTargetFramework>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(CommonPath)Interop\Windows\Interop.Libraries.cs"
@@ -261,6 +264,6 @@
     <Reference Include="System.Text.Encoding.Extensions" />
     <Reference Include="System.Threading" />
     <Reference Include="System.IO.MemoryMappedFiles" Condition="'$(TargetFramework)' != 'netstandard1.1'" />
-    <Reference Include="System.Buffers" Condition="$(TargetFramework.StartsWith('$(NetCoreAppCurrent)'))" />
+    <Reference Include="System.Buffers" Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'" />
   </ItemGroup>
 </Project>

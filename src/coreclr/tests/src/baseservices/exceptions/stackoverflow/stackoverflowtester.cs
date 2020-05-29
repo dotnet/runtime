@@ -77,6 +77,12 @@ namespace TestStackOverflow
                     return false;
                 }
 
+                if (!lines.Exists(elem => elem.EndsWith("TestStackOverflow.Program.Test(Boolean)")))
+                {
+                    Console.WriteLine("Missing \"Test\" method frame");
+                    return false;
+                }
+
                 if (!lines.Exists(elem => elem.EndsWith("at TestStackOverflow.Program.InfiniteRecursionA()")))
                 {
                     Console.WriteLine("Missing \"InfiniteRecursionA\" method frame");
@@ -112,9 +118,9 @@ namespace TestStackOverflow
                     return false;
                 }
 
-                if (!lines.Exists(elem => elem.EndsWith("TestStackOverflow.Program.MainThreadTest(Boolean)")))
+                if (!lines.Exists(elem => elem.EndsWith("TestStackOverflow.Program.Test(Boolean)")))
                 {
-                    Console.WriteLine("Missing \"MainThreadTest\" method frame");
+                    Console.WriteLine("Missing \"Test\" method frame");
                     return false;
                 }
 
@@ -147,9 +153,9 @@ namespace TestStackOverflow
             List<string> lines;
             if (TestStackOverflow("stackoverflow", "smallframe secondary", out lines))
             {
-                if (!lines[lines.Count - 1].EndsWith("at System.Threading.ThreadHelper.ThreadStart()"))
+                if (!lines.Exists(elem => elem.EndsWith("at TestStackOverflow.Program.Test(Boolean)")))
                 {
-                    Console.WriteLine("Missing \"System.Threading.ThreadHelper.ThreadStart\" method frame at the last line");
+                    Console.WriteLine("Missing \"TestStackOverflow.Program.Test\" method frame");
                     return false;
                 }
 
@@ -182,9 +188,9 @@ namespace TestStackOverflow
             List<string> lines;
             if (TestStackOverflow("stackoverflow", "largeframe secondary", out lines))
             {
-                if (!lines[lines.Count - 1].EndsWith("at System.Threading.ThreadHelper.ThreadStart()"))
+                if (!lines.Exists(elem => elem.EndsWith("at TestStackOverflow.Program.Test(Boolean)")))
                 {
-                    Console.WriteLine("Missing \"System.Threading.ThreadHelper.ThreadStart\" method frame at the last line");
+                    Console.WriteLine("Missing \"TestStackOverflow.Program.Test\" method frame");
                     return false;
                 }
 

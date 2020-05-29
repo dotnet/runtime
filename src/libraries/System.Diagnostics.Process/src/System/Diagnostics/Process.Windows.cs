@@ -536,7 +536,7 @@ namespace System.Diagnostics
                         environmentBlock = GetEnvironmentVariablesBlock(startInfo._environmentVariables!);
                     }
                     string workingDirectory = startInfo.WorkingDirectory;
-                    if (workingDirectory == string.Empty)
+                    if (workingDirectory.Length == 0)
                         workingDirectory = Directory.GetCurrentDirectory();
 
                     bool retVal;

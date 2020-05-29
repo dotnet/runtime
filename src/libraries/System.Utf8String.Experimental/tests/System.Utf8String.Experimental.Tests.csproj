@@ -42,7 +42,7 @@
     <Compile Include="System\Utf8ExtensionsTests.netcoreapp.cs" />
     <Compile Include="System\Utf8StringTests.Ctor.netcoreapp.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(IsPrerelease)' != 'false' and $(TargetFramework.StartsWith('net4'))">
+  <ItemGroup Condition="'$(IsPrerelease)' != 'false' and '$(TargetFramework)' == '$(NetFrameworkCurrent)'">
     <Compile Include="System\MemoryTests.netfx.cs" />
   </ItemGroup>
 </Project>

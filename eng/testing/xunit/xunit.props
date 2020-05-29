@@ -31,6 +31,4 @@
           CopyToOutputDirectory="PreserveNewest"
           Visible="false" />
   </ItemGroup>
-
-  <Import Project="$(MSBuildThisFileDirectory)xunit.console.props" />
 </Project>

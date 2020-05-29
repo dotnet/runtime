@@ -5,6 +5,14 @@
 #ifndef __JSON_PARSER_H__
 #define __JSON_PARSER_H__
 
+#ifdef __sun
+// This optimization relies on zeros in higher 16-bits, whereas SunOS has 1s. More details at
+// https://github.com/Tencent/rapidjson/issues/1596.
+// The impact here was that runtimeOptions key available in hwapp.runtimeconfig.json was not
+// located by RapidJson's FindMember() API from runtime_config_t::ensure_parsed().
+#define RAPIDJSON_48BITPOINTER_OPTIMIZATION 0
+#endif
+
 #include "pal.h"
 #include "rapidjson/document.h"
 #include "rapidjson/fwd.h"

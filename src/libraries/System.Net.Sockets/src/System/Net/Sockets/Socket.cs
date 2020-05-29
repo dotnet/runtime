@@ -188,36 +188,45 @@ namespace System.Net.Sockets
                 {
                     try
                     {
-                        // Local and Remote EP may be different sizes for something like UDS.
+                        // Local and remote end points may be different sizes for protocols like Unix Domain Sockets.
                         bufferLength = buffer.Length;
-                        if (SocketPal.GetPeerName(handle, buffer, ref bufferLength) != SocketError.Success)
+                        switch (SocketPal.GetPeerName(handle, buffer, ref bufferLength))
                         {
-                            return;
-                        }
+                            case SocketError.Success:
+                                switch (_addressFamily)
+                                {
+                                    case AddressFamily.InterNetwork:
+                                        _remoteEndPoint = new IPEndPoint(
+                                            new IPAddress((long)SocketAddressPal.GetIPv4Address(buffer.Slice(0, bufferLength)) & 0x0FFFFFFFF),
+                                            SocketAddressPal.GetPort(buffer));
+                                        break;
 
-                        switch (_addressFamily)
-                        {
-                            case AddressFamily.InterNetwork:
-                            _remoteEndPoint = new IPEndPoint(
-                                new IPAddress((long)SocketAddressPal.GetIPv4Address(buffer.Slice(0, bufferLength)) & 0x0FFFFFFFF),
-                                SocketAddressPal.GetPort(buffer));
-                            break;
+                                    case AddressFamily.InterNetworkV6:
+                                        Span<byte> address = stackalloc byte[IPAddressParserStatics.IPv6AddressBytes];
+                                        SocketAddressPal.GetIPv6Address(buffer.Slice(0, bufferLength), address, out uint scope);
+                                        _remoteEndPoint = new IPEndPoint(
+                                            new IPAddress(address, scope),
+                                            SocketAddressPal.GetPort(buffer));
+                                        break;
 
-                            case AddressFamily.InterNetworkV6:
-                                Span<byte> address = stackalloc byte[IPAddressParserStatics.IPv6AddressBytes];
-                                SocketAddressPal.GetIPv6Address(buffer.Slice(0, bufferLength), address, out uint scope);
-                                _remoteEndPoint = new IPEndPoint(
-                                    new IPAddress(address, scope),
-                                    SocketAddressPal.GetPort(buffer));
+                                    case AddressFamily.Unix:
+                                        socketAddress = new Internals.SocketAddress(_addressFamily, buffer.Slice(0, bufferLength));
+                                        _remoteEndPoint = new UnixDomainSocketEndPoint(IPEndPointExtensions.GetNetSocketAddress(socketAddress));
+                                        break;
+                                }
+
+                                _isConnected = true;
                                 break;
 
-                            case AddressFamily.Unix:
-                                socketAddress = new Internals.SocketAddress(_addressFamily, buffer.Slice(0, bufferLength));
-                                _remoteEndPoint = new UnixDomainSocketEndPoint(IPEndPointExtensions.GetNetSocketAddress(socketAddress));
+                            case SocketError.InvalidArgument:
+                                // On some OSes (e.g. macOS), EINVAL means the socket has been shut down.
+                                // This can happen if, for example, socketpair was used and the parent
+                                // process closed its copy of the child's socket.  Since we don't know
+                                // whether we're actually connected or not, err on the side of saying
+                                // we're connected.
+                                _isConnected = true;
                                 break;
                         }
-
-                        _isConnected = true;
                     }
                     catch { }
                 }
@@ -1595,7 +1604,7 @@ namespace System.Net.Sockets
             if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"SRC:{LocalEndPoint} DST:{RemoteEndPoint}");
 
             int bytesTransferred;
-            errorCode = SocketPal.Receive(_handle, buffers, ref socketFlags, out bytesTransferred);
+            errorCode = SocketPal.Receive(_handle, buffers, socketFlags, out bytesTransferred);
 
 #if TRACE_VERBOSE
             if (NetEventSource.IsEnabled)
@@ -1908,7 +1917,7 @@ namespace System.Net.Sockets
                 }
                 if (lingerOption.LingerTime < 0 || lingerOption.LingerTime > (int)ushort.MaxValue)
                 {
-                    throw new ArgumentException(SR.Format(SR.ArgumentOutOfRange_Bounds_Lower_Upper, 0, (int)ushort.MaxValue), "optionValue.LingerTime");
+                    throw new ArgumentException(SR.Format(SR.ArgumentOutOfRange_Bounds_Lower_Upper_Named, 0, (int)ushort.MaxValue, "optionValue.LingerTime"), nameof(optionValue));
                 }
                 SetLingerOption(lingerOption);
             }
@@ -3816,7 +3825,7 @@ namespace System.Net.Sockets
             }
             if (e.HasMultipleBuffers)
             {
-                throw new ArgumentException(SR.net_multibuffernotsupported, "BufferList");
+                throw new ArgumentException(SR.net_multibuffernotsupported, nameof(e));
             }
             if (_rightEndPoint == null)
             {
@@ -3979,11 +3988,11 @@ namespace System.Net.Sockets
             }
             if (e.HasMultipleBuffers)
             {
-                throw new ArgumentException(SR.net_multibuffernotsupported, "BufferList");
+                throw new ArgumentException(SR.net_multibuffernotsupported, nameof(e));
             }
             if (e.RemoteEndPoint == null)
             {
-                throw new ArgumentNullException("remoteEP");
+                throw new ArgumentException(SR.Format(SR.InvalidNullArgument, "e.RemoteEndPoint"), nameof(e));
             }
 
             EndPoint endPointSnapshot = e.RemoteEndPoint;
@@ -4116,11 +4125,11 @@ namespace System.Net.Sockets
             }
             if (e.RemoteEndPoint == null)
             {
-                throw new ArgumentNullException(nameof(e.RemoteEndPoint));
+                throw new ArgumentException(SR.Format(SR.InvalidNullArgument, "e.RemoteEndPoint"), nameof(e));
             }
             if (!CanTryAddressFamily(e.RemoteEndPoint.AddressFamily))
             {
-                throw new ArgumentException(SR.Format(SR.net_InvalidEndPointAddressFamily, e.RemoteEndPoint.AddressFamily, _addressFamily), "RemoteEndPoint");
+                throw new ArgumentException(SR.Format(SR.net_InvalidEndPointAddressFamily, e.RemoteEndPoint.AddressFamily, _addressFamily), nameof(e));
             }
 
             SocketPal.CheckDualModeReceiveSupport(this);
@@ -4166,11 +4175,11 @@ namespace System.Net.Sockets
             }
             if (e.RemoteEndPoint == null)
             {
-                throw new ArgumentNullException(nameof(e.RemoteEndPoint));
+                throw new ArgumentException(SR.Format(SR.InvalidNullArgument, "e.RemoteEndPoint"), nameof(e));
             }
             if (!CanTryAddressFamily(e.RemoteEndPoint.AddressFamily))
             {
-                throw new ArgumentException(SR.Format(SR.net_InvalidEndPointAddressFamily, e.RemoteEndPoint.AddressFamily, _addressFamily), "RemoteEndPoint");
+                throw new ArgumentException(SR.Format(SR.net_InvalidEndPointAddressFamily, e.RemoteEndPoint.AddressFamily, _addressFamily), nameof(e));
             }
 
             SocketPal.CheckDualModeReceiveSupport(this);
@@ -4250,7 +4259,7 @@ namespace System.Net.Sockets
             }
             if (e.SendPacketsElements == null)
             {
-                throw new ArgumentNullException("e.SendPacketsElements");
+                throw new ArgumentException(SR.Format(SR.InvalidNullArgument, "e.SendPacketsElements"), nameof(e));
             }
             if (!Connected)
             {
@@ -4288,7 +4297,7 @@ namespace System.Net.Sockets
             }
             if (e.RemoteEndPoint == null)
             {
-                throw new ArgumentNullException(nameof(RemoteEndPoint));
+                throw new ArgumentException(SR.Format(SR.InvalidNullArgument, "e.RemoteEndPoint"), nameof(e));
             }
 
             // Prepare SocketAddress

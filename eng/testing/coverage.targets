@@ -4,7 +4,7 @@
       We need to filter the data to only the assembly being tested. Otherwise we will gather tons of data about other assemblies.
       If the code being tested is part of the runtime itself, it requires special treatment.
     -->
-    <PropertyGroup Condition="'$(AssemblyBeingTested)' == ''">
+    <PropertyGroup Condition="'$(AssemblyBeingTested)' == '' and '$(CreateIntermediateRunSettingsFile)' != 'true'">
       <_ProjectDirectoryUnderSourceDir>$(MSBuildProjectDirectory.SubString($(LibrariesProjectRoot.Length)))</_ProjectDirectoryUnderSourceDir>
       <AssemblyBeingTested>$(_ProjectDirectoryUnderSourceDir.SubString(0, $(_ProjectDirectoryUnderSourceDir.IndexOfAny("\\/"))))</AssemblyBeingTested>
     </PropertyGroup>
@@ -73,5 +73,17 @@
     </PropertyGroup>
 
     <Exec Command="$(CoverageReportCommand)" />
+  </Target>
+
+  
+  <!--
+    Clean the test results directory to guarantee that a report is generated from the
+    newest coverage results file.
+    Tracking issue https://github.com/microsoft/vstest/issues/2378.
+  -->
+  <Target Name="ClearTestResults"
+          BeforeTargets="VSTest"
+          Condition="'$(Coverage)' == 'true'">
+    <RemoveDir Directories="$(OutDir)TestResults" />
   </Target>
 </Project>

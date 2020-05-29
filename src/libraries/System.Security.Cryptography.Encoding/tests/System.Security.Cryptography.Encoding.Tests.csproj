@@ -76,5 +76,6 @@
     <Compile Include="Cbor.Tests\CborWriterTests.Integer.cs" />
     <Compile Include="Cbor.Tests\CborWriterTests.String.cs" />
     <Compile Include="Cbor.Tests\CborRoundtripTests.cs" />
+    <Compile Include="Cbor.Tests\CoseKeyHelpers.cs" />
   </ItemGroup>
 </Project>

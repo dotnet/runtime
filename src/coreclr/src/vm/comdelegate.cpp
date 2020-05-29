@@ -3282,44 +3282,7 @@ static void InvokeUnhandledSwallowing(OBJECTREF *pDelegate,
 
     EX_TRY
     {
-#if defined(FEATURE_CORRUPTING_EXCEPTIONS)
-        BOOL fCanMethodHandleException = g_pConfig->LegacyCorruptedStateExceptionsPolicy();
-        if (!fCanMethodHandleException)
-        {
-            // CSE policy has not been overridden - proceed with our checks.
-            //
-            // Notifications for CSE are only delivered if the delegate target follows CSE rules.
-            // So, get the corruption severity of the active exception that has gone unhandled.
-            //
-            // By Default, assume that the active exception is not corrupting.
-            CorruptionSeverity severity = NotCorrupting;
-            Thread *pCurThread = GetThread();
-            _ASSERTE(pCurThread != NULL);
-            ThreadExceptionState *pExState = pCurThread->GetExceptionState();
-            if (pExState->IsExceptionInProgress())
-            {
-                // If an exception is active, it implies we have a tracker for it.
-                // Hence, get the corruption severity from the active exception tracker.
-                severity = pExState->GetCurrentExceptionTracker()->GetCorruptionSeverity();
-                _ASSERTE(severity > NotSet);
-            }
-
-            // Notifications are delivered based upon corruption severity of the exception
-            fCanMethodHandleException = ExceptionNotifications::CanDelegateBeInvokedForException(pDelegate, severity);
-            if (!fCanMethodHandleException)
-            {
-                LOG((LF_EH, LL_INFO100, "InvokeUnhandledSwallowing: ADUEN Delegate cannot be invoked for corruption severity %d\n",
-                    severity));
-            }
-        }
-
-        if (fCanMethodHandleException)
-#endif // defined(FEATURE_CORRUPTING_EXCEPTIONS)
-        {
-            // We've already exercised the prestub on this delegate's COMDelegate::GetMethodDesc,
-            // as part of wiring up a reliable event sink. Deliver the notification.
-            ExceptionNotifications::DeliverExceptionNotification(UnhandledExceptionHandler, pDelegate, pDomain, pEventArgs);
-        }
+        ExceptionNotifications::DeliverExceptionNotification(UnhandledExceptionHandler, pDelegate, pDomain, pEventArgs);
     }
     EX_CATCH
     {

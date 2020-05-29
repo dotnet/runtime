@@ -4500,17 +4500,6 @@ void Thread::SyncManagedExceptionState(bool fIsDebuggerThread)
         // Syncup the LastThrownObject on the managed thread
         SafeUpdateLastThrownObject();
     }
-
-#ifdef FEATURE_CORRUPTING_EXCEPTIONS
-    // Since the catch clause has successfully executed and we are exiting it, reset the corruption severity
-    // in the ThreadExceptionState for the last active exception. This will ensure that when the next exception
-    // gets thrown/raised, EH tracker wont pick up an invalid value.
-    if (!fIsDebuggerThread)
-    {
-        CEHelper::ResetLastActiveCorruptionSeverityPostCatchHandler(this);
-    }
-#endif // FEATURE_CORRUPTING_EXCEPTIONS
-
 }
 
 void Thread::SetLastThrownObjectHandle(OBJECTHANDLE h)

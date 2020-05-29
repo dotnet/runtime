@@ -258,10 +258,11 @@ struct HWIntrinsicInfo
 
     static const HWIntrinsicInfo& lookup(NamedIntrinsic id);
 
-    static NamedIntrinsic lookupId(Compiler*   comp,
-                                   const char* className,
-                                   const char* methodName,
-                                   const char* enclosingClassName);
+    static NamedIntrinsic lookupId(Compiler*         comp,
+                                   CORINFO_SIG_INFO* sig,
+                                   const char*       className,
+                                   const char*       methodName,
+                                   const char*       enclosingClassName);
     static CORINFO_InstructionSet lookupIsa(const char* className, const char* enclosingClassName);
 
     static unsigned lookupSimdSize(Compiler* comp, NamedIntrinsic id, CORINFO_SIG_INFO* sig);
@@ -271,7 +272,8 @@ struct HWIntrinsicInfo
 #if defined(TARGET_XARCH)
     static int lookupImmUpperBound(NamedIntrinsic intrinsic);
 #elif defined(TARGET_ARM64)
-    static int lookupImmUpperBound(NamedIntrinsic intrinsic, int simdSize, var_types baseType);
+    static void lookupImmBounds(
+        NamedIntrinsic intrinsic, int simdSize, var_types baseType, int* lowerBound, int* upperBound);
 #else
 #error Unsupported platform
 #endif

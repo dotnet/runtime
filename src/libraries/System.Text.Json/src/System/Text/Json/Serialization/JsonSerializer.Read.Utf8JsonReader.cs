@@ -14,6 +14,7 @@ namespace System.Text.Json
         /// <summary>
         /// Internal version that allows re-entry with preserving ReadStack so that JsonPath works correctly.
         /// </summary>
+        [return: MaybeNull]
         internal static TValue Deserialize<TValue>(ref Utf8JsonReader reader, JsonSerializerOptions options, ref ReadStack state, string? propertyName = null)
         {
             if (options == null)
@@ -162,6 +163,7 @@ namespace System.Text.Json
             }
         }
 
+        [return: MaybeNull]
         private static TValue ReadValueCore<TValue>(JsonSerializerOptions options, ref Utf8JsonReader reader, ref ReadStack state)
         {
             JsonReaderState readerState = reader.CurrentState;

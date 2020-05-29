@@ -302,7 +302,7 @@ namespace ILCompiler
             EcmaModule inputModule = NodeFactory.TypeSystemContext.GetModuleFromPath(inputFile);
 
             CopiedCorHeaderNode copiedCorHeader = new CopiedCorHeaderNode(inputModule);
-            DebugDirectoryNode debugDirectory = new DebugDirectoryNode(inputModule);
+            DebugDirectoryNode debugDirectory = new DebugDirectoryNode(inputModule, outputFile);
             NodeFactory componentFactory = new NodeFactory(
                 _nodeFactory.TypeSystemContext,
                 _nodeFactory.CompilationModuleGroup,

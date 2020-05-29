@@ -1,21 +1,21 @@
 {
   "sdk": {
-    "version": "5.0.100-preview.5.20228.8",
+    "version": "5.0.100-preview.5.20251.2",
     "allowPrerelease": true,
     "rollForward": "major"
   },
   "tools": {
-    "dotnet": "5.0.100-preview.5.20228.8"
+    "dotnet": "5.0.100-preview.5.20251.2"
   },
   "native-tools": {
     "cmake": "3.14.2",
     "python3": "3.7.1"
   },
   "msbuild-sdks": {
-    "Microsoft.DotNet.Build.Tasks.TargetFramework.Sdk": "5.0.0-beta.20255.6",
-    "Microsoft.DotNet.Arcade.Sdk": "5.0.0-beta.20255.6",
-    "Microsoft.DotNet.Build.Tasks.SharedFramework.Sdk": "5.0.0-beta.20255.6",
-    "Microsoft.DotNet.Helix.Sdk": "5.0.0-beta.20255.6",
+    "Microsoft.DotNet.Build.Tasks.TargetFramework.Sdk": "5.0.0-beta.20261.9",
+    "Microsoft.DotNet.Arcade.Sdk": "5.0.0-beta.20261.9",
+    "Microsoft.DotNet.Build.Tasks.SharedFramework.Sdk": "5.0.0-beta.20261.9",
+    "Microsoft.DotNet.Helix.Sdk": "5.0.0-beta.20261.9",
     "FIX-85B6-MERGE-9C38-CONFLICT": "1.0.0",
     "Microsoft.NET.Sdk.IL": "5.0.0-preview.4.20202.18",
     "Microsoft.Build.NoTargets": "1.0.53",

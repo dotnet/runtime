@@ -25,9 +25,6 @@
 
 interface IAssemblyName;
 
-// PE images loaded through the runtime.
-typedef struct _dummyCOR { BYTE b; } *HCORMODULE;
-
 class UTSemReadWrite;
 
 // Helper function to get a pointer to the Dispenser interface.
@@ -69,11 +66,6 @@ STDAPI GetAssemblyMDInternalImport(     // Return code.
     LPCWSTR     szFileName,             // [IN] The scope to open.
     REFIID      riid,                   // [IN] The interface desired.
     IUnknown    **ppIUnk);              // [OUT] Return interface on success.
-
-HRESULT GetAssemblyMDInternalImportFromImage(
-    HCORMODULE hImage,                         //[IN] pointer to module handle to get the metadata from.
-    REFIID riid,                               //[IN] The interface desired.
-    IUnknown **ppIUnk);                        //[OUT] Return Interface on success.
 
 STDAPI GetAssemblyMDInternalImportByStream( // Return code.
     IStream     *pIStream,              // [IN] The IStream for the file
@@ -302,60 +294,6 @@ typedef enum CorOpenFlagsInternal
 
 #define COR_MODULE_CLASS    "<Module>"
 #define COR_WMODULE_CLASS   W("<Module>")
-
-STDAPI RuntimeOpenImage(LPCWSTR pszFileName, HCORMODULE* hHandle);
-STDAPI RuntimeOpenImageInternal(LPCWSTR pszFileName, HCORMODULE* hHandle,
-                                DWORD *pdwLength, MDInternalImportFlags flags, HANDLE hFile = INVALID_HANDLE_VALUE);
-STDAPI RuntimeOpenImageByStream(IStream* pIStream, UINT64 AssemblyId, DWORD dwModuleId,
-                                HCORMODULE* hHandle, DWORD *pdwLength, MDInternalImportFlags flags);
-
-void   RuntimeAddRefHandle(HCORMODULE hHandle);
-STDAPI RuntimeReleaseHandle(HCORMODULE hHandle);
-STDAPI RuntimeGetImageBase(HCORMODULE hHandle, LPVOID* base, BOOL bMapped, COUNT_T* dwSize);
-STDAPI RuntimeGetImageKind(HCORMODULE hHandle, DWORD* pdwKind, DWORD* pdwMachine);
-STDAPI RuntimeOSHandle(HCORMODULE hHandle, HMODULE* hModule);
-STDAPI RuntimeGetAssemblyStrongNameHashForModule(HCORMODULE       hModule,
-                                                 IMetaDataImport *pMDimport,
-                                                 BYTE            *pbSNHash,
-                                                 DWORD           *pcbSNHash);
-STDAPI RuntimeGetMDInternalImport(HCORMODULE hHandle,
-                                  MDInternalImportFlags flags,
-                                  IMDInternalImport** ppMDImport);
-
-FORCEINLINE
-void ReleaseHCorModule(HCORMODULE hModule)
-{
-    HRESULT hr = RuntimeReleaseHandle(hModule);
-    _ASSERTE(SUCCEEDED(hr));
-}
-
-typedef Wrapper<HCORMODULE, DoNothing<HCORMODULE>, ReleaseHCorModule, (UINT_PTR) NULL> HCORMODULEHolder;
-
-
-// ===========================================================================
-// ISNAssemblySignature (similar to IAssemblySignature in V1)
-//
-// This is a private interface that allows querying of the strong name
-// signature.
-// This can be used for (strong-named) assemblies added to the GAC as
-// a unique identifier.
-//
-
-// {848845BC-0C4A-42e3-8915-DC850112443D}
-EXTERN_GUID(IID_ISNAssemblySignature, 0x848845BC, 0x0C4A, 0x42e3, 0x89, 0x15, 0xDC, 0x85, 0x01, 0x12, 0x44, 0x3D);
-
-#undef  INTERFACE
-#define INTERFACE ISNAssemblySignature
-DECLARE_INTERFACE_(ISNAssemblySignature, IUnknown)
-{
-    // Returns the strong-name signature if the assembly is strong-name-signed
-    // Returns the MVID if the assembly is delay-signed.
-    // Fails if the assembly is not signed at all.
-    STDMETHOD(GetSNAssemblySignature) (
-        BYTE  *pbSig,    // [IN, OUT] Buffer to write signature
-        DWORD *pcbSig    // [IN, OUT] Size of buffer, bytes written
-    ) PURE;
-};
 
 //-------------------------------------
 //--- ICeeGenInternal

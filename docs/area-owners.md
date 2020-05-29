@@ -4,8 +4,8 @@ Below table shows the combined area owners on this repository:
 |-------------|------------------|------------------|
 | area-AssemblyLoader-coreclr | @jeffschwMSFT @vitek-karas | |
 | area-CodeGen-coreclr | @BruceForstall @dotnet/jit-contrib | |
-| area-CrossGen/NGEN-coreclr | @fadimounir | |
-| area-crossgen2-coreclr | @nattress @MichalStrehovsky @trylek @fadimounir | |
+| area-CrossGen/NGEN-coreclr | @nattress | |
+| area-crossgen2-coreclr | @nattress @trylek @dotnet/crossgen-contrib | |
 | area-DependencyModel | @eerhardt | Microsoft.Extensions.DependencyModel |
 | area-Diagnostics-coreclr | @tommcdon | |
 | area-ExceptionHandling-coreclr | @janvorli | |
@@ -30,9 +30,9 @@ Below table shows the combined area owners on this repository:
 | area-TieredCompilation-coreclr | @kouvel | |
 | area-Tizen | @alpencolt @gbalykov | |
 | area-Tracing-coreclr | @sywhang @josalem | |
-| area-TypeSystem-coreclr | @davidwrighton @MichalStrehovsky @fadimounir | |
+| area-TypeSystem-coreclr | @davidwrighton @MichalStrehovsky @janvorli @mangod9 | |
 | area-UWP | @nattress | UWP-specific issues including Microsoft.NETCore.UniversalWindowsPlatform and Microsoft.Net.UWPCoreRuntimeSdk |
-| area-VM-coreclr | @jeffschwMSFT | |
+| area-VM-coreclr | @mangod9 | |
 | area-AssemblyLoader-mono | @CoffeeFlux | |
 | area-Codegen-meta-mono | @vargaz | |
 | area-Codegen-JIT-mono | @SamMonoRT | |

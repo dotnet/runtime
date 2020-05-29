@@ -1144,7 +1144,9 @@ namespace System.Text
             return this;
         }
 
+#pragma warning disable CA1830 // Prefer strongly-typed Append and Insert method overloads on StringBuilder. No need to fix for the builder itself
         public StringBuilder Append(bool value) => Append(value.ToString());
+#pragma warning restore CA1830
 
         public StringBuilder Append(char value)
         {

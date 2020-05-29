@@ -81,6 +81,7 @@ if(CLR_CMAKE_TARGET_WIN32)
     add_subdirectory(COM/NativeClients/Dispatch)
     add_subdirectory(COM/NativeClients/Events)
     add_subdirectory(COM/ComWrappers/MockReferenceTrackerRuntime)
+    add_subdirectory(COM/ComWrappers/WeakReference)
     add_subdirectory(WinRT/NativeComponent)
 
     # IJW isn't supported on ARM64

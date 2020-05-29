@@ -116,6 +116,34 @@ bool GetEntrypointExecutableAbsolutePath(std::string& entrypointExecutable)
     {
         result = false;
     }
+#elif defined(__sun)
+    const char *path;
+    if ((path = getexecname()) == NULL)
+    {
+        result = false;
+    }
+    else if (*path != '/')
+    {
+        char *cwd;
+        if ((cwd = getcwd(NULL, PATH_MAX)) == NULL)
+        {
+            result = false;
+        }
+        else
+        {
+            entrypointExecutable
+                .assign(cwd)
+                .append("/")
+                .append(path);
+            result = true;
+            free(cwd);
+        }
+    }
+    else
+    {
+        entrypointExecutable.assign(path);
+        result = true;
+    }
 #else
 
 #if HAVE_GETAUXVAL && defined(AT_EXECFN)

@@ -111,7 +111,7 @@ namespace System.IO
                     try
                     {
                         // Read asynchronously:
-                        bytesRead = await stream.ReadAsync(data!, offset + bytesCompleted, bytesRequested - bytesCompleted, cancelToken)
+                        bytesRead = await stream.ReadAsync(data!.AsMemory(offset + bytesCompleted, bytesRequested - bytesCompleted), cancelToken)
                                                 .ConfigureAwait(continueOnCapturedContext: false);
 
                         // We will continue here on a different thread when read async completed:
@@ -181,7 +181,7 @@ namespace System.IO
 
                     int bytesToWrite = (int)buffer.Length;
 
-                    await stream.WriteAsync(data, offset, bytesToWrite, cancelToken).ConfigureAwait(continueOnCapturedContext: false);
+                    await stream.WriteAsync(data.AsMemory(offset, bytesToWrite), cancelToken).ConfigureAwait(continueOnCapturedContext: false);
 
                     if (progressListener != null)
                         progressListener.Report((uint)bytesToWrite);

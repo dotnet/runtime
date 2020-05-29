@@ -110,12 +110,26 @@ namespace R2RTest
             referenceAssemblies.Add(Path.Combine(options.CoreRootDirectory.FullName, "mscorlib.dll"));
             referenceAssemblies.Add(Path.Combine(options.CoreRootDirectory.FullName, "netstandard.dll"));
 
+            //
+            // binFiles is now all the assemblies that we want to compile (either individually or as composite)
+            // referenceAssemblies is all managed assemblies that are referenceable
+            //
+
+            // Remove all bin files except serp.dll so they're just referenced (eventually we'll be able to compile all these in a single composite)
+            foreach (string item in new HashSet<string>(File.ReadAllLines(whiteListFilePath)))
+            {
+                if (item == "Serp.dll")
+                    continue;
+
+                binFiles.Remove(Path.Combine(binDir, item));
+            }
+
             List<ProcessInfo> fileCompilations = new List<ProcessInfo>();
             if (options.Composite)
             {
                 string serpDll = Path.Combine(binDir, "Serp.dll");
                 var runner = new CpaotRunner(options, referenceAssemblies);
-                var compilationProcess = new ProcessInfo(new CompilationProcessConstructor(runner, Path.ChangeExtension(serpDll, ".ni.dll"), referenceAssemblies));
+                var compilationProcess = new ProcessInfo(new CompilationProcessConstructor(runner, Path.ChangeExtension(serpDll, ".ni.dll"), binFiles));
                 fileCompilations.Add(compilationProcess);
             }
             else

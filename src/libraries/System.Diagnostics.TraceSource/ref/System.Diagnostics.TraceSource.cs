@@ -263,10 +263,10 @@ namespace System.Diagnostics
         public void Remove(string name) { }
         public void RemoveAt(int index) { }
         void System.Collections.ICollection.CopyTo(System.Array array, int index) { }
-        int System.Collections.IList.Add(object value) { throw null; }
+        int System.Collections.IList.Add(object? value) { throw null; }
         bool System.Collections.IList.Contains(object? value) { throw null; }
         int System.Collections.IList.IndexOf(object? value) { throw null; }
-        void System.Collections.IList.Insert(int index, object value) { }
+        void System.Collections.IList.Insert(int index, object? value) { }
         void System.Collections.IList.Remove(object? value) { }
     }
     [System.FlagsAttribute]

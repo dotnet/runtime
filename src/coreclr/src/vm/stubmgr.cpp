@@ -1844,6 +1844,12 @@ BOOL ILStubManager::TraceManager(Thread *thread,
         trace->InitForUnmanaged(target);
     }
 #endif // FEATURE_COMINTEROP
+    else if (pStubMD->IsStructMarshalStub())
+    {
+        // There's no "target" for struct marshalling stubs
+        // so we have nowhere to tell the debugger to move the breakpoint.
+        return FALSE;
+    }
     else
     {
         // This is either direct forward P/Invoke or a CLR-to-COM call, the argument is MD

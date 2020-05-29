@@ -5,11 +5,10 @@
   </PropertyGroup>
   <!-- DesignTimeBuild requires all the TargetFramework Derived Properties to not be present in the first property group. -->
   <PropertyGroup>
-    <DefineConstants Condition="!$(TargetFramework.Contains('net4'))">$(DefineConstants);BUILDING_INBOX_LIBRARY</DefineConstants> 
+    <DefineConstants Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'">$(DefineConstants);BUILDING_INBOX_LIBRARY</DefineConstants> 
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="$(CommonTestPath)System\IO\WrappedMemoryStream.cs"
-             Link="CommonTest\System\IO\WrappedMemoryStream.cs" />
+    <Compile Include="$(CommonTestPath)System\IO\WrappedMemoryStream.cs" Link="CommonTest\System\IO\WrappedMemoryStream.cs" />
     <Compile Include="BitStackTests.cs" />
     <Compile Include="BufferFactory.cs" />
     <Compile Include="BufferSegment.cs" />
@@ -45,6 +44,7 @@
     <Compile Include="Serialization\CollectionTests\CollectionTests.Generic.Read.cs" />
     <Compile Include="Serialization\CollectionTests\CollectionTests.Generic.Write.cs" />
     <Compile Include="Serialization\CollectionTests\CollectionTests.Immutable.Read.cs" />
+    <Compile Include="Serialization\CollectionTests\CollectionTests.KeyValuePair.cs" />
     <Compile Include="Serialization\CollectionTests\CollectionTests.NonGeneric.Read.cs" />
     <Compile Include="Serialization\CollectionTests\CollectionTests.NonGeneric.Write.cs" />
     <Compile Include="Serialization\CollectionTests\CollectionTests.ObjectModel.Read.cs" />
@@ -70,6 +70,7 @@
     <Compile Include="Serialization\CustomConverterTests\CustomConverterTests.DictionaryKeyValueConverter.cs" />
     <Compile Include="Serialization\CustomConverterTests\CustomConverterTests.Enum.cs" />
     <Compile Include="Serialization\CustomConverterTests\CustomConverterTests.Exceptions.cs" />
+    <Compile Include="Serialization\CustomConverterTests\CustomConverterTests.HandleNull.cs" />
     <Compile Include="Serialization\CustomConverterTests\CustomConverterTests.Int32.cs" />
     <Compile Include="Serialization\CustomConverterTests\CustomConverterTests.List.cs" />
     <Compile Include="Serialization\CustomConverterTests\CustomConverterTests.NullValueType.cs" />
@@ -136,12 +137,10 @@
     <Compile Include="Utf8JsonWriterTests.cs" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="..\src\System\Text\Json\BitStack.cs"
-             Link="BitStack.cs" />
+    <Compile Include="..\src\System\Text\Json\BitStack.cs" Link="BitStack.cs" />
   </ItemGroup>
-  <ItemGroup Condition="$(TargetFramework.StartsWith('net4'))">
-    <Compile Include="$(CommonPath)System\Buffers\ArrayBufferWriter.cs"
-             Link="CommonTest\System\Buffers\ArrayBufferWriter.cs" />
+  <ItemGroup Condition="'$(TargetFramework)' == '$(NetFrameworkCurrent)'">
+    <Compile Include="$(CommonPath)System\Buffers\ArrayBufferWriter.cs" Link="CommonTest\System\Buffers\ArrayBufferWriter.cs" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Newtonsoft.Json" Version="$(NewtonsoftJsonVersion)" />

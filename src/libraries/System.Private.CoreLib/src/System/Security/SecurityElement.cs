@@ -10,7 +10,7 @@ namespace System.Security
 {
     public sealed class SecurityElement
     {
-        internal string _tag = null!;
+        internal string _tag;
         internal string? _text;
         private ArrayList? _children;
         internal ArrayList? _attributes;
@@ -33,10 +33,6 @@ namespace System.Security
         };
 
         //-------------------------- Constructors ---------------------------
-
-        internal SecurityElement()
-        {
-        }
 
         public SecurityElement(string tag)
         {

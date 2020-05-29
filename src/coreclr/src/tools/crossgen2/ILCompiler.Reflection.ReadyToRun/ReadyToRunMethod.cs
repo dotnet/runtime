@@ -208,11 +208,6 @@ namespace ILCompiler.Reflection.ReadyToRun
         public MetadataReader MetadataReader { get; private set; }
 
         /// <summary>
-        /// An unique index for the method
-        /// </summary>
-        public int Index { get; set; }
-
-        /// <summary>
         /// The name of the method
         /// </summary>
         public string Name { get; set; }
@@ -288,7 +283,6 @@ namespace ILCompiler.Reflection.ReadyToRun
         /// </summary>
         public ReadyToRunMethod(
             ReadyToRunReader readyToRunReader,
-            int index,
             MetadataReader metadataReader,
             EntityHandle methodHandle,
             int entryPointId,
@@ -299,7 +293,6 @@ namespace ILCompiler.Reflection.ReadyToRun
         {
             _readyToRunReader = readyToRunReader;
             _fixupOffset = fixupOffset;
-            Index = index;
             MethodHandle = methodHandle;
             EntryPointRuntimeFunctionId = entryPointId;
 

@@ -8,6 +8,7 @@ namespace System.Globalization
 {
     internal partial class GlobalizationMode
     {
+        internal static bool Invariant { get; } = GetGlobalizationInvariantMode();
         internal static bool UseNls => false;
 
         private static bool GetGlobalizationInvariantMode()

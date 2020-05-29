@@ -89,11 +89,6 @@ namespace System.Linq
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.predicate);
             }
 
-            if (source is OrderedEnumerable<TSource> ordered)
-            {
-                return ordered.TryGetFirst(predicate, out found);
-            }
-
             foreach (TSource element in source)
             {
                 if (predicate(element))

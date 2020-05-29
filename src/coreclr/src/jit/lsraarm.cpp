@@ -219,7 +219,6 @@ int LinearScan::BuildNode(GenTree* tree)
     switch (tree->OperGet())
     {
         case GT_LCL_VAR:
-        case GT_LCL_FLD:
         {
             // We handle tracked variables differently from non-tracked ones.  If it is tracked,
             // we will simply add a use of the tracked variable at its parent/consumer.
@@ -230,13 +229,23 @@ int LinearScan::BuildNode(GenTree* tree)
             // is processed, unless this is marked "isLocalDefUse" because it is a stack-based argument
             // to a call or an orphaned dead node.
             //
-            GenTreeLclVarCommon* const lclVar = tree->AsLclVarCommon();
-            LclVarDsc* const           varDsc = compiler->lvaGetDesc(lclVar);
-            if (isCandidateVar(varDsc))
+            bool isCandidate = compiler->lvaGetDesc(tree->AsLclVar())->lvLRACandidate;
+            if (tree->IsRegOptional() && !isCandidate)
+            {
+                tree->ClearRegOptional();
+                tree->SetContained();
+                return 0;
+            }
+            if (isCandidate)
             {
                 return 0;
             }
+        }
+            __fallthrough;
 
+        case GT_LCL_FLD:
+        {
+            GenTreeLclVarCommon* const lclVar = tree->AsLclVarCommon();
             if (lclVar->OperIs(GT_LCL_FLD) && lclVar->AsLclFld()->IsOffsetMisaligned())
             {
                 buildInternalIntRegisterDefForNode(lclVar); // to generate address.

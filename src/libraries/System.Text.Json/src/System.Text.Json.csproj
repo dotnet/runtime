@@ -15,7 +15,7 @@
     <!-- For the inbox library (that is shipping with the product), this should always be true. -->
     <!-- BUILDING_INBOX_LIBRARY is only false when building the netstandard compatible NuGet package. -->
     <DefineConstants Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)' or '$(TargetFramework)' == 'netcoreapp3.0'">$(DefineConstants);BUILDING_INBOX_LIBRARY</DefineConstants>
-    <NoWarn Condition="$(TargetFramework.StartsWith('netstandard')) or $(TargetFramework.StartsWith('net4'))">$(NoWarn);nullable</NoWarn>   
+    <NoWarn Condition="'$(TargetFramework)' == 'netstandard2.0' or $(TargetFramework.StartsWith('net4'))">$(NoWarn);nullable</NoWarn>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(CommonPath)System\Runtime\CompilerServices\PreserveDependencyAttribute.cs"
@@ -156,6 +156,7 @@
     <Compile Include="System\Text\Json\Serialization\JsonSerializer.Write.Stream.cs" />
     <Compile Include="System\Text\Json\Serialization\JsonSerializer.Write.String.cs" />
     <Compile Include="System\Text\Json\Serialization\JsonSerializer.Write.Utf8JsonWriter.cs" />
+    <Compile Include="System\Text\Json\Serialization\JsonSerializerDefaults.cs" />
     <Compile Include="System\Text\Json\Serialization\JsonSerializerOptions.Converters.cs" />
     <Compile Include="System\Text\Json\Serialization\JsonSerializerOptions.cs" />
     <Compile Include="System\Text\Json\Serialization\JsonStringEnumConverter.cs" />
@@ -211,7 +212,7 @@
     <Compile Include="System\Text\Json\Writer\Utf8JsonWriter.WriteValues.String.cs" />
     <Compile Include="System\Text\Json\Writer\Utf8JsonWriter.WriteValues.UnsignedNumber.cs" />
   </ItemGroup>
-  <ItemGroup Condition="$(TargetFramework.StartsWith('netstandard')) or $(TargetFramework.StartsWith('net4'))">
+  <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0' or $(TargetFramework.StartsWith('net4'))">
     <Compile Include="System\Collections\Generic\StackExtensions.netstandard.cs" />
     <!-- Common or Common-branched source files -->
     <Compile Include="$(CommonPath)System\Buffers\ArrayBufferWriter.cs"
@@ -223,7 +224,7 @@
     <Reference Include="System.Numerics.Vectors" />
     <Reference Include="Microsoft.Bcl.AsyncInterfaces" />
   </ItemGroup>
-  <ItemGroup Condition="$(TargetFramework.StartsWith('netstandard')) or $(TargetFramework.StartsWith('net4')) or '$(TargetFramework)' == 'netcoreapp3.0'">
+  <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0' or $(TargetFramework.StartsWith('net4')) or '$(TargetFramework)' == 'netcoreapp3.0'">
     <Compile Include="$(CommonPath)System\Collections\Generic\ReferenceEqualityComparer.cs"
              Link="Common\System\Collections\Generic\ReferenceEqualityComparer.cs" />
   </ItemGroup>

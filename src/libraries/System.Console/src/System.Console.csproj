@@ -194,6 +194,8 @@
              Link="Common\Interop\Unix\Interop.OpenFlags.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Poll.cs"
              Link="Common\Interop\Unix\Interop.Poll.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\Interop.Poll.Structs.cs"
+             Link="Common\Interop\Unix\Interop.Poll.Structs.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.GetEUid.cs"
              Link="Common\Interop\Unix\Interop.GetEUid.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.GetPwUid.cs"

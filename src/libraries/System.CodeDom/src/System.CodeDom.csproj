@@ -9,7 +9,7 @@
   <PropertyGroup>
     <IsPartialFacadeAssembly Condition="$(TargetFramework.StartsWith('net4'))">true</IsPartialFacadeAssembly>
   </PropertyGroup>
-  <ItemGroup Condition="$(TargetFramework.StartsWith('netstandard'))">
+  <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
     <Compile Include="Microsoft\CSharp\CSharpCodeGenerator.cs" />
     <Compile Include="Microsoft\CSharp\CSharpCodeGenerator.PlatformNotSupported.cs" />
     <Compile Include="Microsoft\CSharp\CSharpCodeProvider.cs" />

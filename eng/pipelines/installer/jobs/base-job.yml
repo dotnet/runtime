@@ -13,6 +13,7 @@ parameters:
   variables: []
   name: ''
   displayName: ''
+  runtimeVariant: ''
   pool: ''
 
   packageDistroList:
@@ -38,8 +39,8 @@ parameters:
   platforms: []
 
 jobs:
-- job: ${{ format('installer_{0}_{1}_{2}', parameters.runtimeFlavor, coalesce(parameters.name, parameters.platform), parameters.buildConfig) }}
-  displayName: ${{ format('Installer Build and Test {0} {1} {2}', parameters.runtimeFlavor, coalesce(parameters.name, parameters.platform), parameters.buildConfig) }}
+- job: ${{ format('installer_{0}_{1}_{2}_{3}', parameters.runtimeFlavor, parameters.runtimeVariant, coalesce(parameters.name, parameters.platform), parameters.buildConfig) }}
+  displayName: ${{ format('Installer Build and Test {0} {1} {2} {3}', parameters.runtimeFlavor, parameters.runtimeVariant, coalesce(parameters.name, parameters.platform), parameters.buildConfig) }}
 
   condition: and(succeeded(), ${{ parameters.condition }})
   pool: ${{ parameters.pool }}
@@ -79,6 +80,14 @@ jobs:
   - name: SignType
     value: test
 
+  - ${{ if eq(parameters.runtimeVariant, 'llvmjit') }}:
+    - name: llvmParameter
+      value: /p:MonoEnableLLVM=true
+
+  - ${{ if eq(parameters.runtimeVariant, 'llvmaot') }}:
+    - name: llvmParameter
+      value: /p:MonoEnableLLVM=true /p:MonoBundleLLVMOptimizer=true
+
   # Set up non-PR build from internal project
   - ${{ if eq(parameters.isOfficialBuild, true) }}:
     - name: SignType
@@ -105,6 +114,7 @@ jobs:
         /p:PortableBuild=true
         /p:SkipTests=$(SkipTests)
         /p:RuntimeFlavor=${{ parameters.runtimeFlavor }}
+        $(llvmParameter)
         $(OfficialBuildArg)
     - name: MsbuildSigningArguments
       value: >-
@@ -129,6 +139,7 @@ jobs:
         /p:PortableBuild=true
         /p:SkipTests=$(SkipTests)
         /p:RuntimeFlavor=${{ parameters.runtimeFlavor }}
+        $(llvmParameter)
 
     - name: BaseJobBuildCommand
       value: >-
@@ -145,6 +156,7 @@ jobs:
       value: >-
         /p:PortableBuild=true
         /p:SkipTests=$(SkipTests)
+        $(llvmParameter)
 
     - name: BaseJobBuildCommand
       value: >-
@@ -195,6 +207,7 @@ jobs:
         /p:TargetArchitecture=${{ parameters.archType }}
         /p:RuntimeFlavor=${{ parameters.runtimeFlavor }}
         $(OfficialBuildArg)
+        $(llvmParameter)
 
     - name: _PortableBuild
       value: ${{ eq(parameters.osSubgroup, '') }}
@@ -292,7 +305,7 @@ jobs:
         /p:RuntimeArtifactsPath=$(buildCommandSourcesDirectory)$(RuntimeDownloadPath)
         /p:RuntimeConfiguration=${{ parameters.liveRuntimeBuildConfig }}
     - name: RuntimeArtifactName
-      value: $(runtimeFlavorName)Product_$(liveRuntimeLegName)
+      value: $(runtimeFlavorName)Product_${{ parameters.runtimeVariant }}_$(liveRuntimeLegName)
 
   - ${{ if ne(parameters.liveLibrariesBuildConfig, '') }}:
     - name: liveLibrariesLegName
@@ -331,8 +344,9 @@ jobs:
   - checkout
   - ${{ parameters.dependsOn }}
   - ${{ if ne(parameters.liveRuntimeBuildConfig, '') }}:
-    - ${{ format('{0}_product_build_{1}{2}_{3}_{4}',
+    - ${{ format('{0}_{1}_product_build_{2}{3}_{4}_{5}',
         parameters.runtimeFlavor,
+        parameters.runtimeVariant,
         parameters.osGroup,
         parameters.osSubgroup,
         parameters.archType,
@@ -347,7 +361,7 @@ jobs:
     - libraries_build_allconfigurations_Windows_NT_x64_Release
   - ${{ if eq(parameters.buildFullPlatformManifest, true) }}:
     - ${{ each platform in parameters.platforms }}:
-      - ${{ parameters.runtimeFlavor }}_product_build_${{ platform }}_${{ parameters.liveRuntimeBuildConfig }}
+      - ${{ parameters.runtimeFlavor }}_${{ parameters.runtimeVariant }}_product_build_${{ platform }}_${{ parameters.liveRuntimeBuildConfig }}
       - libraries_build_${{ platform }}_${{ parameters.liveLibrariesBuildConfig }}
 
   steps:
@@ -443,7 +457,7 @@ jobs:
         cleanUnpackFolder: false
 
   - ${{ if in(parameters.osGroup, 'OSX', 'iOS', 'tvOS') }}:
-    - script: sh $(Build.SourcesDirectory)/eng/install-native-dependencies.sh ${{ parameters.osGroup }}
+    - script: $(Build.SourcesDirectory)/eng/install-native-dependencies.sh ${{ parameters.osGroup }}
       displayName: Install Build Dependencies
 
     - script: |
@@ -522,6 +536,7 @@ jobs:
     parameters:
       name: ${{ coalesce(parameters.name, parameters.platform) }}
       runtimeFlavor: ${{ parameters.runtimeFlavor }}
+      runtimeVariant: ${{ parameters.runtimeVariant }}
       skipTests: $(SkipTests)
       isOfficialBuild: ${{ eq(parameters.isOfficialBuild, true) }}
 

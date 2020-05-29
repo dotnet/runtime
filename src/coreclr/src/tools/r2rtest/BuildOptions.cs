@@ -30,6 +30,7 @@ namespace R2RTest
         public bool Release { get; set; }
         public bool LargeBubble { get; set; }
         public bool Composite { get; set; }
+        public bool PartialComposite { get; set; }
         public int Crossgen2Parallelism { get; set; }
         public int CompilationTimeoutMinutes { get; set; }
         public int ExecutionTimeoutMinutes { get; set; }

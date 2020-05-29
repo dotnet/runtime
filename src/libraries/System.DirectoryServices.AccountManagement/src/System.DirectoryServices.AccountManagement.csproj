@@ -1,6 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <AssemblyName>System.DirectoryServices.AccountManagement</AssemblyName>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <DefineConstants>$(DefineConstants);FLAVOR_WHIDBEY;PAPI_AD;PAPI_REGSAM;USE_CTX_CACHE</DefineConstants>
     <NoWarn>$(NoWarn);8073;CA1810</NoWarn>
@@ -10,9 +9,9 @@
   </PropertyGroup>
   <!-- DesignTimeBuild requires all the TargetFramework Derived Properties to not be present in the first property group. -->
   <PropertyGroup>
-    <GeneratePlatformNotSupportedAssemblyMessage Condition="$(TargetFramework.StartsWith('netstandard'))">SR.DirectoryServicesAccountManagement_PlatformNotSupported</GeneratePlatformNotSupportedAssemblyMessage>
+    <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetFramework)' == 'netstandard2.0'">SR.DirectoryServicesAccountManagement_PlatformNotSupported</GeneratePlatformNotSupportedAssemblyMessage>
   </PropertyGroup>
-  <ItemGroup Condition="!$(TargetFramework.StartsWith('netstandard'))">
+  <ItemGroup Condition="'$(TargetFramework)' != 'netstandard2.0'">
     <Compile Include="System\DirectoryServices\AccountManagement\ExternDll.cs" />
     <Compile Include="System\DirectoryServices\AccountManagement\interopt.cs" />
     <Compile Include="System\DirectoryServices\AccountManagement\PrincipalSearcher.cs" />
@@ -100,7 +99,7 @@
     <Reference Include="System.Security.AccessControl" />
     <Reference Include="System.Security.Principal.Windows" />
   </ItemGroup>
-  <ItemGroup Condition="!$(TargetFramework.StartsWith('netstandard'))">
+  <ItemGroup Condition="'$(TargetFramework)' != 'netstandard2.0'">
     <Reference Include="Microsoft.Win32.Primitives" />
     <Reference Include="System.Collections" />
     <Reference Include="System.Collections.NonGeneric" />

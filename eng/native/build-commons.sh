@@ -56,7 +56,7 @@ check_prereqs()
     local cmake_version="$(cmake --version | awk '/^cmake.* version [0-9]+\.[0-9]+\.[0-9]+$/ {print $3}')"
 
     if [[ "$(version "$cmake_version")" -lt "$(version 3.14.2)" ]]; then
-        echo "Please install CMake 3.14.2 or newer from http://www.cmake.org/download/ or https://apt.kitware.com and ensure it is on your path."; exit 1;
+        echo "Please install CMake 3.14.2 or newer from https://cmake.org/download/ or https://apt.kitware.com and ensure it is on your path."; exit 1;
     fi
 
     if [[ "$__HostOS" == "OSX" ]]; then
@@ -409,7 +409,7 @@ done
 # Get the number of processors available to the scheduler
 # Other techniques such as `nproc` only get the number of
 # processors available to a single process.
-platform=$(uname)
+platform="$(uname)"
 if [[ "$platform" == "FreeBSD" ]]; then
   __NumProc=$(sysctl hw.ncpu | awk '{ print $2+1 }')
 elif [[ "$platform" == "NetBSD" || "$platform" == "SunOS" ]]; then

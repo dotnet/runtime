@@ -97,6 +97,46 @@ When building an individual project the `BuildTargetFramework` and `TargetOS` wi
 - .NET Framework latest -> `$(NetFrameworkCurrent)-Windows_NT`
 
 # Library project guidelines
+
+## TargetFramework conditions
+`TargetFramework` conditions should be avoided in the first PropertyGroup as that causes DesignTimeBuild issues: https://github.com/dotnet/project-system/issues/6143
+
+1. Use an equality check if the TargetFramework isn't overloaded with the OS portion.
+Example:
+```
+<PropertyGroup>
+  <TargetFrameworks>netstandard2.0;netstandard2.1</TargetFrameworks>
+</PropertyGroup>
+<ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">...</ItemGroup>
+```
+2. Use a StartsWith when you want to test for multiple .NETStandard or .NETFramework versions.
+Example:
+```
+<PropertyGroup>
+  <TargetFrameworks>netstandard2.0;netstandard2.1</TargetFrameworks>
+</PropertyGroup>
+<ItemGroup Condition="$(TargetFramework.StartsWith('netstandard'))>...</ItemGroup>
+```
+3. Use a StartsWith if the TargetFramework is overloaded with the OS portion.
+Example:
+```
+<PropertyGroup>
+  <TargetFrameworks>netstandard2.0-Windows_NT;netstandard2.0-Unix</TargetFrameworks>
+</PropertyGroup>
+<ItemGroup Condition="$(TargetFramework.StartsWith('netstandard2.0'))>...</ItemGroup>
+```
+4. Use negations if that makes the conditions easier.
+Example:
+```
+<PropertyGroup>
+  <TargetFrameworks>netstandard2.0;net461;net472;net5.0</TargetFrameworks>
+</PropertyGroup>
+<ItemGroup Condition="!$(TargetFramework.StartsWith('net4'))>...</ItemGroup>
+<ItemGroup Condition="'$(TargetFramework)' != 'netstandard2.0'">...</ItemGroup>
+```
+
+## Directory layout
+
 Library projects should use the following directory layout.
 
 ```

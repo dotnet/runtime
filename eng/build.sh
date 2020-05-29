@@ -18,7 +18,7 @@ usage()
 {
   echo "Common settings:"
   echo "  --subset                   Build a subset, print available subsets with -subset help (short: -s)"
-  echo "  --os                       Build operating system: Windows_NT, Linux, FreeBSD, OSX, tvOS, iOS, Android or Browser"
+  echo "  --os                       Build operating system: Windows_NT, Linux, FreeBSD, OSX, tvOS, iOS, Android, Browser, NetBSD or SunOS"
   echo "  --arch                     Build platform: x86, x64, arm, armel, arm64 or wasm"
   echo "  --configuration            Build configuration: Debug, Release or [CoreCLR]Checked (short: -c)"
   echo "  --runtimeConfiguration     Runtime build configuration: Debug, Release or [CoreCLR]Checked (short: -rc)"
@@ -107,34 +107,58 @@ while [[ $# > 0 ]]; do
       usage
       exit 0
       ;;
+
      -subset|-s)
-      if [ -z ${2+x} ]; then 
+      if [ -z ${2+x} ]; then
         arguments="$arguments /p:Subset=help"
         shift 1
-      else 
+      else
         arguments="$arguments /p:Subset=$2"
         shift 2
       fi
       ;;
+
      -arch)
-      if [ -z ${2+x} ]; then 
+      if [ -z ${2+x} ]; then
         echo "No architecture supplied. See help (--help) for supported architectures." 1>&2
         exit 1
       fi
-      arch=$2
+      passedArch="$(echo "$2" | awk '{print tolower($0)}')"
+      case "$passedArch" in
+        x64|x86|arm|armel|arm64|wasm)
+          arch=$passedArch
+          ;;
+        *)
+          echo "Unsupported target architecture '$2'."
+          echo "The allowed values are x86, x64, arm, armel, arm64, and wasm."
+          exit 1
+          ;;
+      esac
       shift 2
       ;;
+
      -configuration|-c)
-     if [ -z ${2+x} ]; then 
+      if [ -z ${2+x} ]; then 
         echo "No configuration supplied. See help (--help) for supported configurations." 1>&2
         exit 1
       fi
-      val="$(tr '[:lower:]' '[:upper:]' <<< ${2:0:1})${2:1}"
+      passedConfig="$(echo "$2" | awk '{print tolower($0)}')"
+      case "$passedConfig" in
+        debug|release|checked)
+          val="$(tr '[:lower:]' '[:upper:]' <<< ${passedConfig:0:1})${passedConfig:1}"
+          ;;
+        *)
+          echo "Unsupported target configuration '$2'."
+          echo "The allowed values are Debug, Release, and Checked."
+          exit 1
+          ;;
+      esac
       arguments="$arguments -configuration $val"
       shift 2
       ;;
+
      -framework|-f)
-      if [ -z ${2+x} ]; then 
+      if [ -z ${2+x} ]; then
         echo "No framework supplied. See help (--help) for supported frameworks." 1>&2
         exit 1
       fi
@@ -142,73 +166,131 @@ while [[ $# > 0 ]]; do
       arguments="$arguments /p:BuildTargetFramework=$val"
       shift 2
       ;;
+
      -os)
-      if [ -z ${2+x} ]; then 
+      if [ -z ${2+x} ]; then
         echo "No target operating system supplied. See help (--help) for supported target operating systems." 1>&2
         exit 1
       fi
-      os=$2
-      arguments="$arguments /p:TargetOS=$2"
+      passedOS="$(echo "$2" | awk '{print tolower($0)}')"
+      case "$passedOS" in
+        windows_nt)
+          os="Windows_NT" ;;
+        linux)
+          os="Linux" ;;
+        freebsd)
+          os="FreeBSD" ;;
+        osx)
+          os="OSX" ;;
+        tvos)
+          os="tvOS" ;;
+        ios)
+          os="iOS" ;;
+        android)
+          os="Android" ;;
+        browser)
+          os="Browser" ;;
+        sunos)
+          os="SunOS" ;;
+        *)
+          echo "Unsupported target OS '$2'."
+          echo "The allowed values are Windows_NT, Linux, FreeBSD, OSX, tvOS, iOS, Android, Browser, and SunOS."
+          exit 1
+          ;;
+      esac
+      arguments="$arguments /p:TargetOS=$os"
       shift 2
       ;;
+
      -allconfigurations)
       arguments="$arguments /p:BuildAllConfigurations=true"
       shift 1
       ;;
+
      -testscope)
-      if [ -z ${2+x} ]; then 
+      if [ -z ${2+x} ]; then
         echo "No test scope supplied. See help (--help) for supported test scope values." 1>&2
         exit 1
       fi
       arguments="$arguments /p:TestScope=$2"
       shift 2
       ;;
+
      -testnobuild)
       arguments="$arguments /p:TestNoBuild=true"
       shift 1
       ;;
+
      -coverage)
       arguments="$arguments /p:Coverage=true"
       shift 1
       ;;
+
      -runtimeconfiguration|-rc)
-      if [ -z ${2+x} ]; then 
+      if [ -z ${2+x} ]; then
         echo "No runtime configuration supplied. See help (--help) for supported runtime configurations." 1>&2
         exit 1
       fi
-      val="$(tr '[:lower:]' '[:upper:]' <<< ${2:0:1})${2:1}"
+      passedRuntimeConf="$(echo "$2" | awk '{print tolower($0)}')"
+      case "$passedRuntimeConf" in
+        debug|release|checked)
+          val="$(tr '[:lower:]' '[:upper:]' <<< ${passedRuntimeConf:0:1})${passedRuntimeConf:1}"
+          ;;
+        *)
+          echo "Unsupported runtime configuration '$2'."
+          echo "The allowed values are Debug, Release, and Checked."
+          exit 1
+          ;;
+      esac
       arguments="$arguments /p:RuntimeConfiguration=$val"
       shift 2
       ;;
+
      -librariesconfiguration|-lc)
-      if [ -z ${2+x} ]; then 
+      if [ -z ${2+x} ]; then
         echo "No libraries configuration supplied. See help (--help) for supported libraries configurations." 1>&2
         exit 1
       fi
-      arguments="$arguments /p:LibrariesConfiguration=$2"
+      passedLibConf="$(echo "$2" | awk '{print tolower($0)}')"
+      case "$passedLibConf" in
+        debug|release)
+          val="$(tr '[:lower:]' '[:upper:]' <<< ${passedLibConf:0:1})${passedLibConf:1}"
+          ;;
+        *)
+          echo "Unsupported libraries configuration '$2'."
+          echo "The allowed values are Debug and Release."
+          exit 1
+          ;;
+      esac
+      arguments="$arguments /p:LibrariesConfiguration=$val"
       shift 2
       ;;
+
      -cross)
       crossBuild=1
       arguments="$arguments /p:CrossBuild=True"
       shift 1
       ;;
+
      -clang*)
       arguments="$arguments /p:Compiler=$opt"
       shift 1
       ;;
+
      -cmakeargs)
-      if [ -z ${2+x} ]; then 
+      if [ -z ${2+x} ]; then
         echo "No cmake args supplied." 1>&2
         exit 1
       fi
       cmakeargs="${cmakeargs} ${opt} $2"
       shift 2
       ;;
+
      -gcc*)
       arguments="$arguments /p:Compiler=$opt"
       shift 1
       ;;
+
       *)
       extraargs="$extraargs $1"
       shift 1

@@ -3,12 +3,14 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Text.Json.Serialization;
 
 namespace System.Text.Json
 {
     public static partial class JsonSerializer
     {
+        [return: MaybeNull]
         private static TValue ReadCore<TValue>(ref Utf8JsonReader reader, Type returnType, JsonSerializerOptions options)
         {
             ReadStack state = default;
@@ -17,6 +19,7 @@ namespace System.Text.Json
             return ReadCore<TValue>(jsonConverter, ref reader, options, ref state);
         }
 
+        [return: MaybeNull]
         private static TValue ReadCore<TValue>(JsonConverter jsonConverter, ref Utf8JsonReader reader, JsonSerializerOptions options, ref ReadStack state)
         {
             if (jsonConverter is JsonConverter<TValue> converter)

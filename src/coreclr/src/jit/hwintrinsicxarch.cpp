@@ -469,22 +469,26 @@ GenTree* Compiler::impNonConstFallback(NamedIntrinsic intrinsic, var_types simdT
 //    intrinsic  -- id of the intrinsic function.
 //    clsHnd     -- class handle containing the intrinsic function.
 //    method     -- method handle of the intrinsic function.
-//    sig        -- signature of the intrinsic call
-//
+//    sig        -- signature of the intrinsic call.
+//    baseType   -- generic argument of the intrinsic.
+//    retType    -- return type of the intrinsic.
 // Return Value:
 //    the expanded intrinsic.
 //
 GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                                        CORINFO_CLASS_HANDLE  clsHnd,
                                        CORINFO_METHOD_HANDLE method,
-                                       CORINFO_SIG_INFO*     sig)
+                                       CORINFO_SIG_INFO*     sig,
+                                       var_types             baseType,
+                                       var_types             retType,
+                                       unsigned              simdSize)
 {
     // other intrinsics need special importation
     switch (HWIntrinsicInfo::lookupIsa(intrinsic))
     {
         case InstructionSet_Vector128:
         case InstructionSet_Vector256:
-            return impBaseIntrinsic(intrinsic, clsHnd, method, sig);
+            return impBaseIntrinsic(intrinsic, clsHnd, method, sig, baseType, retType, simdSize);
         case InstructionSet_SSE:
             return impSSEIntrinsic(intrinsic, method, sig);
         case InstructionSet_SSE2:
@@ -509,56 +513,25 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 // Arguments:
 //    intrinsic  -- id of the intrinsic function.
 //    method     -- method handle of the intrinsic function.
-//    sig        -- signature of the intrinsic call
-//
+//    sig        -- signature of the intrinsic call.
+//    baseType   -- generic argument of the intrinsic.
+//    retType    -- return type of the intrinsic.
 // Return Value:
 //    the expanded intrinsic.
 //
 GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
                                     CORINFO_CLASS_HANDLE  clsHnd,
                                     CORINFO_METHOD_HANDLE method,
-                                    CORINFO_SIG_INFO*     sig)
+                                    CORINFO_SIG_INFO*     sig,
+                                    var_types             baseType,
+                                    var_types             retType,
+                                    unsigned              simdSize)
 {
     GenTree* retNode = nullptr;
     GenTree* op1     = nullptr;
+    GenTree* op2     = nullptr;
 
     if (!featureSIMD)
-    {
-        return nullptr;
-    }
-
-    unsigned  simdSize = 0;
-    var_types baseType = TYP_UNKNOWN;
-    var_types retType  = JITtype2varType(sig->retType);
-
-    assert(!sig->hasThis());
-
-    if (HWIntrinsicInfo::BaseTypeFromFirstArg(intrinsic))
-    {
-        baseType = getBaseTypeAndSizeOfSIMDType(info.compCompHnd->getArgClass(sig, sig->args), &simdSize);
-
-        if (retType == TYP_STRUCT)
-        {
-            unsigned  retSimdSize = 0;
-            var_types retBasetype = getBaseTypeAndSizeOfSIMDType(sig->retTypeClass, &retSimdSize);
-            if (!varTypeIsArithmetic(retBasetype))
-            {
-                return nullptr;
-            }
-            retType = getSIMDTypeForSize(retSimdSize);
-        }
-    }
-    else if (retType == TYP_STRUCT)
-    {
-        baseType = getBaseTypeAndSizeOfSIMDType(sig->retTypeClass, &simdSize);
-        retType  = getSIMDTypeForSize(simdSize);
-    }
-    else
-    {
-        baseType = getBaseTypeAndSizeOfSIMDType(clsHnd, &simdSize);
-    }
-
-    if (!varTypeIsArithmetic(baseType))
     {
         return nullptr;
     }
@@ -617,7 +590,7 @@ GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
             if (getSIMDVectorRegisterByteLength() == YMM_REGSIZE_BYTES)
             {
                 // Vector<T> is TYP_SIMD32, so we should treat this as a call to Vector128.ToVector256
-                return impBaseIntrinsic(NI_Vector128_ToVector256, clsHnd, method, sig);
+                return impBaseIntrinsic(NI_Vector128_ToVector256, clsHnd, method, sig, baseType, retType, simdSize);
             }
 
             assert(getSIMDVectorRegisterByteLength() == XMM_REGSIZE_BYTES);
@@ -658,6 +631,11 @@ GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
         case NI_Vector128_AsVector128:
         {
             assert(sig->numArgs == 1);
+            assert(HWIntrinsicInfo::BaseTypeFromFirstArg(intrinsic));
+
+            var_types baseTypeOfIntrinsic =
+                getBaseTypeAndSizeOfSIMDType(info.compCompHnd->getArgClass(sig, sig->args), &simdSize);
+            assert(baseType == baseTypeOfIntrinsic);
 
             switch (getSIMDTypeForSize(simdSize))
             {
@@ -685,7 +663,7 @@ GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
                 case TYP_SIMD32:
                 {
                     // Vector<T> is TYP_SIMD32, so we should treat this as a call to Vector256.GetLower
-                    return impBaseIntrinsic(NI_Vector256_GetLower, clsHnd, method, sig);
+                    return impBaseIntrinsic(NI_Vector256_GetLower, clsHnd, method, sig, baseType, retType, simdSize);
                 }
 
                 default:
@@ -724,12 +702,12 @@ GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
 
                 if (intrinsic == NI_Vector256_AsVector)
                 {
-                    return impBaseIntrinsic(NI_Vector256_GetLower, clsHnd, method, sig);
+                    return impBaseIntrinsic(NI_Vector256_GetLower, clsHnd, method, sig, baseType, retType, simdSize);
                 }
                 else
                 {
                     assert(intrinsic == NI_Vector256_AsVector256);
-                    return impBaseIntrinsic(NI_Vector128_ToVector256, clsHnd, method, sig);
+                    return impBaseIntrinsic(NI_Vector128_ToVector256, clsHnd, method, sig, baseType, retType, simdSize);
                 }
             }
 
@@ -744,6 +722,70 @@ GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
             GenTreeIntCon* countNode = gtNewIconNode(getSIMDVectorLength(simdSize, baseType), TYP_INT);
             countNode->gtFlags |= GTF_ICON_SIMD_COUNT;
             retNode = countNode;
+            break;
+        }
+
+        case NI_Vector128_Create:
+        case NI_Vector256_Create:
+        {
+#if defined(TARGET_X86)
+            if (varTypeIsLong(baseType))
+            {
+                // TODO-XARCH-CQ: It may be beneficial to emit the movq
+                // instruction, which takes a 64-bit memory address and
+                // works on 32-bit x86 systems.
+                break;
+            }
+#endif // TARGET_X86
+
+            // We shouldn't handle this as an intrinsic if the
+            // respective ISAs have been disabled by the user.
+
+            if (intrinsic == NI_Vector256_Create)
+            {
+                if (!compExactlyDependsOn(InstructionSet_AVX))
+                {
+                    break;
+                }
+            }
+            else if (baseType == TYP_FLOAT)
+            {
+                if (!compExactlyDependsOn(InstructionSet_SSE))
+                {
+                    break;
+                }
+            }
+            else if (!compExactlyDependsOn(InstructionSet_SSE2))
+            {
+                break;
+            }
+
+            if (sig->numArgs == 1)
+            {
+                op1     = impPopStack().val;
+                retNode = gtNewSimdHWIntrinsicNode(retType, op1, intrinsic, baseType, simdSize);
+            }
+            else if (sig->numArgs == 2)
+            {
+                op2     = impPopStack().val;
+                op1     = impPopStack().val;
+                retNode = gtNewSimdHWIntrinsicNode(retType, op1, op2, intrinsic, baseType, simdSize);
+            }
+            else
+            {
+                assert(sig->numArgs >= 3);
+
+                GenTreeArgList* tmp = nullptr;
+
+                for (unsigned i = 0; i < sig->numArgs; i++)
+                {
+                    tmp        = gtNewArgList(impPopStack().val);
+                    tmp->gtOp2 = op1;
+                    op1        = tmp;
+                }
+
+                retNode = gtNewSimdHWIntrinsicNode(retType, op1, intrinsic, baseType, simdSize);
+            }
             break;
         }
 

@@ -121,11 +121,7 @@ typedef struct {
 PEXCEPTION_REGISTRATION_RECORD GetCurrentSEHRecord();
 BOOL IsUnmanagedToManagedSEHHandler(EXCEPTION_REGISTRATION_RECORD*);
 
-VOID DECLSPEC_NORETURN RealCOMPlusThrow(OBJECTREF throwable, BOOL rethrow
-#ifdef FEATURE_CORRUPTING_EXCEPTIONS
-                                        , CorruptionSeverity severity = NotCorrupting
-#endif // FEATURE_CORRUPTING_EXCEPTIONS
-                                        );
+VOID DECLSPEC_NORETURN RealCOMPlusThrow(OBJECTREF throwable, BOOL rethrow);
 
 //-------------------------------------------------------------------------------
 // Basically, this asks whether the exception is a managed exception thrown by
@@ -2711,85 +2707,6 @@ LONG RaiseExceptionFilter(EXCEPTION_POINTERS* ep, LPVOID pv)
     return EXCEPTION_CONTINUE_SEARCH;
 }
 
-//==========================================================================
-// Throw an object.
-//==========================================================================
-VOID DECLSPEC_NORETURN RaiseTheException(OBJECTREF throwable, BOOL rethrow
-#ifdef FEATURE_CORRUPTING_EXCEPTIONS
-                                         , CorruptionSeverity severity
-#endif // FEATURE_CORRUPTING_EXCEPTIONS
-                                         )
-{
-    STATIC_CONTRACT_THROWS;
-    STATIC_CONTRACT_GC_TRIGGERS;
-    STATIC_CONTRACT_MODE_COOPERATIVE;
-
-    LOG((LF_EH, LL_INFO100, "RealCOMPlusThrow throwing %s\n",
-        throwable->GetMethodTable()->GetDebugClassName()));
-
-    if (throwable == NULL)
-    {
-        _ASSERTE(!"RealCOMPlusThrow(OBJECTREF) called with NULL argument. Somebody forgot to post an exception!");
-        EEPOLICY_HANDLE_FATAL_ERROR(COR_E_EXECUTIONENGINE);
-    }
-
-    _ASSERTE(throwable != CLRException::GetPreallocatedStackOverflowException());
-
-#ifdef FEATURE_CORRUPTING_EXCEPTIONS
-    if (!g_pConfig->LegacyCorruptedStateExceptionsPolicy())
-    {
-        // This is Scenario 3 described in clrex.h around the definition of SET_CE_RETHROW_FLAG_FOR_EX_CATCH macro.
-        //
-        // We are here because the VM is attempting to throw a managed exception. It is posssible this exception
-        // may not be seen by CLR's exception handler for managed code (e.g. there maybe an EX_CATCH up the stack
-        // that will swallow or rethrow this exception). In the following scenario:
-        //
-        // [VM1 - RethrowCSE] -> [VM2 - RethrowCSE] -> [VM3 - RethrowCSE] -> <managed code>
-        //
-        // When managed code throws a CSE (e.g. TargetInvocationException flagged as CSE), [VM3] will rethrow it and we will
-        // enter EX_CATCH in VM2 which is supposed to rethrow it as well. Two things can happen:
-        //
-        // 1) The implementation of EX_CATCH in VM2 throws a new managed exception *before* rethrow policy is applied and control
-        //     will reach EX_CATCH in VM1, OR
-        //
-        // 2) EX_CATCH in VM2 swallows the exception, comes out of the catch block and later throws a new managed exception that
-        //    will be caught by EX_CATCH in VM1.
-        //
-        // In either of the cases, rethrow in VM1 should be on the basis of the new managed exception's corruption severity.
-        //
-        // To support this scenario, we set corruption severity of the managed exception VM is throwing. If its a rethrow,
-        // it implies we are rethrowing the last exception that was seen by CLR's managed code exception handler. In such a case,
-        // we will copy over the corruption severity of that exception.
-
-        // If throwable indicates corrupted state, forcibly set the severity.
-        if (CEHelper::IsProcessCorruptedStateException(throwable))
-        {
-            severity = ProcessCorrupting;
-        }
-
-        // No one should have passed us an invalid severity.
-        _ASSERTE(severity > NotSet);
-
-        if (severity == NotSet)
-        {
-            severity = NotCorrupting;
-        }
-
-        // Update the corruption severity of the exception being thrown by the VM.
-        GetThread()->GetExceptionState()->SetLastActiveExceptionCorruptionSeverity(severity);
-
-        // Exception's corruption severity should be reused in reraise if this exception leaks out from the VM
-        // into managed code
-        CEHelper::MarkLastActiveExceptionCorruptionSeverityForReraiseReuse();
-
-        LOG((LF_EH, LL_INFO100, "RaiseTheException - Set VM thrown managed exception severity to %d.\n", severity));
-    }
-
-#endif // FEATURE_CORRUPTING_EXCEPTIONS
-
-    RaiseTheExceptionInternalOnly(throwable,rethrow);
-}
-
 HRESULT GetHRFromThrowable(OBJECTREF throwable)
 {
     STATIC_CONTRACT_THROWS;
@@ -2965,11 +2882,8 @@ VOID DECLSPEC_NORETURN RaiseTheExceptionInternalOnly(OBJECTREF throwable, BOOL r
 
 
 // INSTALL_COMPLUS_EXCEPTION_HANDLER has a filter, so must put the call in a separate fcn
-static VOID DECLSPEC_NORETURN RealCOMPlusThrowWorker(OBJECTREF throwable, BOOL rethrow
-#ifdef FEATURE_CORRUPTING_EXCEPTIONS
-                                                     , CorruptionSeverity severity
-#endif // FEATURE_CORRUPTING_EXCEPTIONS
-) {
+static VOID DECLSPEC_NORETURN RealCOMPlusThrowWorker(OBJECTREF throwable, BOOL rethrow)
+{
     STATIC_CONTRACT_THROWS;
     STATIC_CONTRACT_GC_TRIGGERS;
     STATIC_CONTRACT_MODE_ANY;
@@ -2982,23 +2896,24 @@ static VOID DECLSPEC_NORETURN RealCOMPlusThrowWorker(OBJECTREF throwable, BOOL r
 
     // TODO: Do we need to install COMPlusFrameHandler here?
     INSTALL_COMPLUS_EXCEPTION_HANDLER();
-    RaiseTheException(throwable, rethrow
-#ifdef FEATURE_CORRUPTING_EXCEPTIONS
-        , severity
-#endif // FEATURE_CORRUPTING_EXCEPTIONS
-        );
+    if (throwable == NULL)
+    {
+        _ASSERTE(!"RealCOMPlusThrow(OBJECTREF) called with NULL argument. Somebody forgot to post an exception!");
+        EEPOLICY_HANDLE_FATAL_ERROR(COR_E_EXECUTIONENGINE);
+    }
+    RaiseTheExceptionInternalOnly(throwable, rethrow);
     UNINSTALL_COMPLUS_EXCEPTION_HANDLER();
 }
 
-
-VOID DECLSPEC_NORETURN RealCOMPlusThrow(OBJECTREF throwable, BOOL rethrow
-#ifdef FEATURE_CORRUPTING_EXCEPTIONS
-                                        , CorruptionSeverity severity
-#endif // FEATURE_CORRUPTING_EXCEPTIONS
-) {
+VOID DECLSPEC_NORETURN RealCOMPlusThrow(OBJECTREF throwable, BOOL rethrow)
+{
     STATIC_CONTRACT_THROWS;
     STATIC_CONTRACT_GC_TRIGGERS;
     STATIC_CONTRACT_MODE_ANY;
+
+    LOG((LF_EH, LL_INFO100, "RealCOMPlusThrow throwing %s\n",
+        throwable->GetMethodTable()->GetDebugClassName()));
+
     GCPROTECT_BEGIN(throwable);
 
     _ASSERTE(IsException(throwable->GetMethodTable()));
@@ -3019,20 +2934,12 @@ VOID DECLSPEC_NORETURN RealCOMPlusThrow(OBJECTREF throwable, BOOL rethrow
         ExceptionPreserveStackTrace(throwable);
     }
 
-    RealCOMPlusThrowWorker(throwable, rethrow
-#ifdef FEATURE_CORRUPTING_EXCEPTIONS
-        , severity
-#endif // FEATURE_CORRUPTING_EXCEPTIONS
-        );
+    RealCOMPlusThrowWorker(throwable, rethrow);
 
     GCPROTECT_END();
 }
 
-VOID DECLSPEC_NORETURN RealCOMPlusThrow(OBJECTREF throwable
-#ifdef FEATURE_CORRUPTING_EXCEPTIONS
-                                        , CorruptionSeverity severity
-#endif // FEATURE_CORRUPTING_EXCEPTIONS
-                                        )
+VOID DECLSPEC_NORETURN RealCOMPlusThrow(OBJECTREF throwable)
 {
     CONTRACTL
     {
@@ -3042,11 +2949,7 @@ VOID DECLSPEC_NORETURN RealCOMPlusThrow(OBJECTREF throwable
     }
     CONTRACTL_END;
 
-    RealCOMPlusThrow(throwable, FALSE
-#ifdef FEATURE_CORRUPTING_EXCEPTIONS
-        , severity
-#endif // FEATURE_CORRUPTING_EXCEPTIONS
-        );
+    RealCOMPlusThrow(throwable, FALSE);
 }
 
 // this function finds the managed callback to get a resource
@@ -3709,14 +3612,6 @@ BOOL IsUncatchable(OBJECTREF *pThrowable)
 
         if (OBJECTREFToObject(*pThrowable)->GetMethodTable() == g_pExecutionEngineExceptionClass)
             return TRUE;
-
-#ifdef FEATURE_CORRUPTING_EXCEPTIONS
-        // Corrupting exceptions are also uncatchable
-        if (CEHelper::IsProcessCorruptedStateException(*pThrowable))
-        {
-            return TRUE;
-        }
-#endif //FEATURE_CORRUPTING_EXCEPTIONS
     }
 
     return FALSE;
@@ -8552,35 +8447,6 @@ LONG ReflectionInvocationExceptionFilter(
     }
 #endif // !TARGET_UNIX
 
-    // If the application has opted into triggering a failfast when a CorruptedStateException enters the Reflection system,
-    // then do the needful.
-    if (CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_FailFastOnCorruptedStateException) == 1)
-    {
-         // Get the thread and the managed exception object - they must exist at this point
-        Thread *pCurThread = GetThread();
-        _ASSERTE(pCurThread != NULL);
-
-        // Get the thread exception state
-        ThreadExceptionState * pCurTES = pCurThread->GetExceptionState();
-        _ASSERTE(pCurTES != NULL);
-
-        // Get the exception tracker for the current exception
-#ifdef FEATURE_EH_FUNCLETS
-        PTR_ExceptionTracker pEHTracker = pCurTES->GetCurrentExceptionTracker();
-#elif TARGET_X86
-        PTR_ExInfo pEHTracker = pCurTES->GetCurrentExceptionTracker();
-#else // !(HOST_64BIT || TARGET_X86)
-#error Unsupported platform
-#endif // HOST_64BIT
-
-#ifdef FEATURE_CORRUPTING_EXCEPTIONS
-        if (pEHTracker->GetCorruptionSeverity() == ProcessCorrupting)
-        {
-            EEPolicy::HandleFatalError(COR_E_FAILFAST, reinterpret_cast<UINT_PTR>(pExceptionInfo->ExceptionRecord->ExceptionAddress), NULL, pExceptionInfo);
-        }
-#endif // FEATURE_CORRUPTING_EXCEPTIONS
-    }
-
     return ret;
 } // LONG ReflectionInvocationExceptionFilter()
 
@@ -9050,7 +8916,7 @@ BOOL SetupWatsonBucketsForEscapingPreallocatedExceptions()
 
     CONTRACTL
     {
-        GC_NOTRIGGER;
+        GC_TRIGGERS;
         MODE_ANY;
         NOTHROW;
         PRECONDITION(GetThread() != NULL);
@@ -9470,7 +9336,7 @@ PTR_EHWatsonBucketTracker GetWatsonBucketTrackerForPreallocatedException(OBJECTR
 #ifndef DACCESS_COMPILE
     CONTRACTL
     {
-        GC_NOTRIGGER;
+        GC_TRIGGERS;
         MODE_COOPERATIVE;
         NOTHROW;
         PRECONDITION(GetThread() != NULL);
@@ -11011,7 +10877,7 @@ void EHWatsonBucketTracker::CaptureUnhandledInfoForWatson(TypeOfReportedError to
     CONTRACTL
     {
         NOTHROW;
-        GC_NOTRIGGER;
+        GC_TRIGGERS;
         MODE_ANY;
         PRECONDITION(IsWatsonEnabled());
     }
@@ -11095,780 +10961,42 @@ PTR_ExInfo GetEHTrackerForException(OBJECTREF oThrowable, PTR_ExInfo pStartingEH
     return fFoundTracker ? pEHTracker : NULL;
 }
 
-#ifdef FEATURE_CORRUPTING_EXCEPTIONS
-// -----------------------------------------------------------------------
-// Support for CorruptedState Exceptions
-// -----------------------------------------------------------------------
-
 // Given an exception code, this method returns a BOOL to indicate if the
 // code belongs to a corrupting exception or not.
 /* static */
-BOOL CEHelper::IsProcessCorruptedStateException(DWORD dwExceptionCode, BOOL fCheckForSO /*= TRUE*/)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    if (g_pConfig->LegacyCorruptedStateExceptionsPolicy())
-    {
-        return FALSE;
-    }
-
-    // Call into the utilcode helper function to check if this
-    // is a CE or not.
-    return (::IsProcessCorruptedStateException(dwExceptionCode, fCheckForSO));
-}
-
-// This is used in the VM folder version of "SET_CE_RETHROW_FLAG_FOR_EX_CATCH" (in clrex.h)
-// to check if the managed exception caught by EX_END_CATCH is CSE or not.
-//
-// If you are using it from rethrow boundaries (e.g. SET_CE_RETHROW_FLAG_FOR_EX_CATCH
-// macro that is used to automatically rethrow corrupting exceptions), then you may
-// want to set the "fMarkForReuseIfCorrupting" to TRUE to enable propagation of the
-// corruption severity when the reraised exception is seen by managed code again.
-/* static */
-BOOL CEHelper::IsLastActiveExceptionCorrupting(BOOL fMarkForReuseIfCorrupting /* = FALSE */)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-        PRECONDITION(GetThread() != NULL);
-    }
-    CONTRACTL_END;
-
-    if (g_pConfig->LegacyCorruptedStateExceptionsPolicy())
-    {
-        return FALSE;
-    }
-
-    BOOL fIsCorrupting = FALSE;
-    ThreadExceptionState *pCurTES = GetThread()->GetExceptionState();
-
-    // Check the corruption severity
-    CorruptionSeverity severity = pCurTES->GetLastActiveExceptionCorruptionSeverity();
-    fIsCorrupting = (severity == ProcessCorrupting);
-    if (fIsCorrupting && fMarkForReuseIfCorrupting)
-    {
-        // Mark the corruption severity for reuse
-        CEHelper::MarkLastActiveExceptionCorruptionSeverityForReraiseReuse();
-    }
-
-    LOG((LF_EH, LL_INFO100, "CEHelper::IsLastActiveExceptionCorrupting - Using corruption severity from TES.\n"));
-
-    return fIsCorrupting;
-}
-
-// Given a MethodDesc, this method will return a BOOL to indicate if
-// the containing assembly was built for PreV4 runtime or not.
-/* static */
-BOOL CEHelper::IsMethodInPreV4Assembly(PTR_MethodDesc pMethodDesc)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-        PRECONDITION(pMethodDesc != NULL);
-    }
-    CONTRACTL_END;
-
-    // By default, assume that the containing assembly was not
-    // built for PreV4 runtimes.
-    BOOL fBuiltForPreV4Runtime = FALSE;
-
-    if (g_pConfig->LegacyCorruptedStateExceptionsPolicy())
-    {
-        return TRUE;
-    }
-
-    LPCSTR pszVersion = NULL;
-
-    // Retrieve the manifest metadata reference since that contains
-    // the "built-for" runtime details
-    IMDInternalImport *pImport = pMethodDesc->GetAssembly()->GetManifestImport();
-    if (pImport && SUCCEEDED(pImport->GetVersionString(&pszVersion)))
-    {
-        if (pszVersion != NULL)
-        {
-            // If version begins with "v1.*" or "v2.*", it was built for preV4 runtime
-            if ((pszVersion[0] == 'v' || pszVersion[0] == 'V') &&
-                IS_DIGIT(pszVersion[1]) &&
-                (pszVersion[2] == '.') )
-            {
-                // Looks like a version.  Is it lesser than v4.0 major version where we start using new behavior?
-                fBuiltForPreV4Runtime = ((DIGIT_TO_INT(pszVersion[1]) != 0) &&
-                                        (DIGIT_TO_INT(pszVersion[1]) <= HIGHEST_MAJOR_VERSION_OF_PREV4_RUNTIME));
-            }
-        }
-    }
-
-    return fBuiltForPreV4Runtime;
-}
-
-// Given a MethodDesc and CorruptionSeverity, this method will return a
-// BOOL indicating if the method can handle those kinds of CEs or not.
-/* static */
-BOOL CEHelper::CanMethodHandleCE(PTR_MethodDesc pMethodDesc, CorruptionSeverity severity)
-{
-    BOOL fCanMethodHandleSeverity = FALSE;
-
-#ifndef DACCESS_COMPILE
-    CONTRACTL
-    {
-        GC_NOTRIGGER;
-        THROWS;
-        MODE_ANY;
-        PRECONDITION(pMethodDesc != NULL);
-    }
-    CONTRACTL_END;
-
-
-    if (g_pConfig->LegacyCorruptedStateExceptionsPolicy())
-    {
-        return TRUE;
-    }
-
-    // Since the method is Security Critical, now check if it is
-    // attributed to handle the CE or not.
-    IMDInternalImport *pImport = pMethodDesc->GetMDImport();
-    if (pImport != NULL)
-    {
-        mdMethodDef methodDef = pMethodDesc->GetMemberDef();
-        switch(severity)
-        {
-            case ProcessCorrupting:
-                    fCanMethodHandleSeverity = (S_OK == pImport->GetCustomAttributeByName(
-                                                methodDef,
-                                                HANDLE_PROCESS_CORRUPTED_STATE_EXCEPTION_ATTRIBUTE,
-                                                NULL,
-                                                NULL));
-                break;
-            default:
-                _ASSERTE(!"Unknown Exception Corruption Severity!");
-                break;
-        }
-    }
-#endif // !DACCESS_COMPILE
-
-    return fCanMethodHandleSeverity;
-}
-
-// Given a MethodDesc, this method will return a BOOL to indicate if the method should be examined for exception
-// handlers for the specified exception.
-//
-// This method accounts for both corrupting and non-corrupting exceptions.
-/* static */
-BOOL CEHelper::CanMethodHandleException(CorruptionSeverity severity, PTR_MethodDesc pMethodDesc)
-{
-    CONTRACTL
-    {
-        GC_NOTRIGGER;
-        THROWS;
-        MODE_ANY;
-        PRECONDITION(pMethodDesc != NULL);
-    }
-    CONTRACTL_END;
-
-    // By default, assume that the runtime shouldn't look for exception handlers
-    // in the method pointed by the MethodDesc
-    BOOL fLookForExceptionHandlersInMethod = FALSE;
-
-    if (g_pConfig->LegacyCorruptedStateExceptionsPolicy())
-    {
-        return TRUE;
-    }
-
-    // If we have been asked to use the last active corruption severity (e.g. in cases of Reflection
-    // or COM interop), then retrieve it.
-    if (severity == UseLast)
-    {
-        LOG((LF_EH, LL_INFO100, "CEHelper::CanMethodHandleException - Using LastActiveExceptionCorruptionSeverity.\n"));
-        severity = GetThread()->GetExceptionState()->GetLastActiveExceptionCorruptionSeverity();
-    }
-
-    LOG((LF_EH, LL_INFO100, "CEHelper::CanMethodHandleException - Processing CorruptionSeverity: %d.\n", severity));
-
-    if (severity > NotCorrupting)
-    {
-        // If the method lies in an assembly built for pre-V4 runtime, allow the runtime
-        // to look for exception handler for the CE.
-        BOOL fIsMethodInPreV4Assembly = FALSE;
-        fIsMethodInPreV4Assembly = CEHelper::IsMethodInPreV4Assembly(pMethodDesc);
-
-        if (!fIsMethodInPreV4Assembly)
-        {
-            // Method lies in an assembly built for V4 or later runtime.
-            LOG((LF_EH, LL_INFO100, "CEHelper::CanMethodHandleException - Method is in an assembly built for V4 or later runtime.\n"));
-
-            // Depending upon the corruption severity of the exception, see if the
-            // method supports handling that.
-            LOG((LF_EH, LL_INFO100, "CEHelper::CanMethodHandleException - Exception is corrupting.\n"));
-
-            // Check if the method can handle the severity specified in the exception object.
-            fLookForExceptionHandlersInMethod = CEHelper::CanMethodHandleCE(pMethodDesc, severity);
-        }
-        else
-        {
-            // Method is in a Pre-V4 assembly - allow it to be examined for processing the CE
-            fLookForExceptionHandlersInMethod = TRUE;
-        }
-    }
-    else
-    {
-        // Non-corrupting exceptions can continue to be delivered
-        fLookForExceptionHandlersInMethod = TRUE;
-    }
-
-    return fLookForExceptionHandlersInMethod;
-}
-
-// Given a managed exception object, this method will return a BOOL
-// indicating if it corresponds to a ProcessCorruptedState exception
-// or not.
-/* static */
-BOOL CEHelper::IsProcessCorruptedStateException(OBJECTREF oThrowable)
+BOOL IsProcessCorruptedStateException(DWORD dwExceptionCode, OBJECTREF throwable)
 {
     CONTRACTL
     {
         NOTHROW;
         GC_NOTRIGGER;
         MODE_COOPERATIVE;
-        PRECONDITION(oThrowable != NULL);
     }
     CONTRACTL_END;
 
-    if (g_pConfig->LegacyCorruptedStateExceptionsPolicy())
+    switch (dwExceptionCode)
     {
+    case STATUS_ACCESS_VIOLATION:
+        if (throwable != NULL && MscorlibBinder::IsException(throwable->GetMethodTable(), kNullReferenceException))
+            return FALSE;
+        break;
+    case STATUS_STACK_OVERFLOW:
+    case EXCEPTION_ILLEGAL_INSTRUCTION:
+    case EXCEPTION_IN_PAGE_ERROR:
+    case EXCEPTION_INVALID_DISPOSITION:
+    case EXCEPTION_NONCONTINUABLE_EXCEPTION:
+    case EXCEPTION_PRIV_INSTRUCTION:
+    case STATUS_UNWIND_CONSOLIDATE:
+        break;
+    default:
         return FALSE;
     }
 
-#ifndef DACCESS_COMPILE
-    // If the throwable represents preallocated SO, then indicate it as a CSE
-    if (CLRException::GetPreallocatedStackOverflowException() == oThrowable)
-    {
-        return TRUE;
-    }
-#endif // !DACCESS_COMPILE
+    if (CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_legacyCorruptedStateExceptionsPolicy))
+        return FALSE;
 
-    // Check if we have an exception tracker for this exception
-    // and if so, if it represents corrupting exception or not.
-    // Get the exception tracker for the current exception
-#ifdef FEATURE_EH_FUNCLETS
-    PTR_ExceptionTracker pEHTracker = GetEHTrackerForException(oThrowable, NULL);
-#elif TARGET_X86
-    PTR_ExInfo pEHTracker = GetEHTrackerForException(oThrowable, NULL);
-#else
-#error Unsupported platform
-#endif
-
-    if (pEHTracker != NULL)
-    {
-        // Found the tracker for exception object - check if its CSE or not.
-        return (pEHTracker->GetCorruptionSeverity() == ProcessCorrupting);
-    }
-
-    return FALSE;
+    return TRUE;
 }
-
-#ifdef FEATURE_EH_FUNCLETS
-void CEHelper::SetupCorruptionSeverityForActiveExceptionInUnwindPass(Thread *pCurThread, PTR_ExceptionTracker pEHTracker, BOOL fIsFirstPass,
-                                    DWORD dwExceptionCode)
-{
-#ifndef DACCESS_COMPILE
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-        PRECONDITION(!fIsFirstPass); // This method should only be called during an unwind
-        PRECONDITION(pCurThread != NULL);
-    }
-    CONTRACTL_END;
-
-    // <WIN64>
-    //
-    // Typically, exception tracker is created for an exception when the OS is in the first pass.
-    // However, it may be created during the 2nd pass under specific cases. Managed C++ provides
-    // such a scenario. In the following, stack grows left to right:
-    //
-    // CallDescrWorker -> ILStub1 -> <Native Main> -> UMThunkStub -> IL_Stub2 -> <Managed Main>
-    //
-    // If a CSE exception goes unhandled from managed main, it will reach the OS. The [CRT in?] OS triggers
-    // unwind that results in invoking the personality routine of UMThunkStub, called UMThunkStubUnwindFrameChainHandler,
-    // that releases all exception trackers below it. Thus, the tracker for the CSE, which went unhandled, is also
-    // released. This detail is 64bit specific and the crux of this issue.
-    //
-    // Now, it is expected that by the time we are in the unwind pass, the corruption severity would have already been setup in the
-    // exception tracker and thread exception state (TES) as part of the first pass, and thus, are identical.
-    //
-    // However, for the scenario above, when the unwind continues and reaches ILStub1, its personality routine (which is ProcessCLRException)
-    // is invoked. It attempts to get the exception tracker corresponding to the exception. Since none exists, it creates a brand new one,
-    // which has the exception corruption severity as NotSet.
-    //
-    // During the stack walk, we know (from TES) that the active exception was a CSE, and thus, ILStub1 cannot handle the exception. Prior
-    // to bailing out, we assert that our data structures are intact by comparing the exception severity in TES with the one in the current
-    // exception tracker. Since the tracker was recreated, it had the severity as NotSet and this does not match the severity in TES.
-    // Thus, the assert fires. [This check is performed in ProcessManagedCallFrame.]
-    //
-    // To address such a case, if we have created a new exception tracker in the unwind (2nd) pass, then set its
-    // exception corruption severity to what the TES holds currently. This will maintain the same semantic as the case
-    // where new tracker is not created (for e.g. the exception was caught in Managed main).
-    //
-    // The exception is the scenario of code that uses longjmp to jump to a different context. Longjmp results in a raise
-    // of a new exception with the longjmp exception code (0x80000026) but with ExceptionFlags set indicating unwind. When this is
-    // seen by ProcessCLRException (64bit personality routine), it will create a new tracker in the 2nd pass.
-    //
-    // Longjmp outside an exceptional path does not interest us, but the one in the exceptional
-    // path would only happen when a method attributed to handle CSE invokes it. Thus, if the longjmp happened during the 2nd pass of a CSE,
-    // we want it to proceed (and thus, jump) as expected and not apply the CSE severity to the tracker - this is equivalent to
-    // a catch block that handles a CSE and then does a "throw new Exception();". The new exception raised is
-    // non-CSE in nature as well.
-    //
-    // http://www.nynaeve.net/?p=105 has a brief description of how exception-safe setjmp/longjmp works.
-    //
-    // </WIN64>
-    if (pEHTracker->GetCorruptionSeverity() == NotSet)
-    {
-        // Get the thread exception state
-        ThreadExceptionState *pCurTES = pCurThread->GetExceptionState();
-
-        // Set the tracker to have the same corruption severity as the last active severity unless we are dealing
-        // with LONGJMP
-        if (dwExceptionCode == STATUS_LONGJUMP)
-        {
-            pCurTES->SetLastActiveExceptionCorruptionSeverity(NotCorrupting);
-        }
-
-        pEHTracker->SetCorruptionSeverity(pCurTES->GetLastActiveExceptionCorruptionSeverity());
-        LOG((LF_EH, LL_INFO100, "CEHelper::SetupCorruptionSeverityForActiveExceptionInUnwindPass - Setup the corruption severity in the second pass.\n"));
-    }
-#endif // !DACCESS_COMPILE
-}
-#endif // FEATURE_EH_FUNCLETS
-
-// This method is invoked from the personality routine for managed code and is used to setup the
-// corruption severity for the active exception on the thread exception state and the
-// exception tracker corresponding to the exception.
-/* static */
-void CEHelper::SetupCorruptionSeverityForActiveException(BOOL fIsRethrownException, BOOL fIsNestedException, BOOL fShouldTreatExceptionAsNonCorrupting /* = FALSE */)
-{
-#ifndef DACCESS_COMPILE
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_COOPERATIVE;
-    }
-    CONTRACTL_END;
-
-    // Get the thread and the managed exception object - they must exist at this point
-    Thread *pCurThread = GetThread();
-    _ASSERTE(pCurThread != NULL);
-
-    OBJECTREF oThrowable = pCurThread->GetThrowable();
-    _ASSERTE(oThrowable != NULL);
-
-    // Get the thread exception state
-    ThreadExceptionState * pCurTES = pCurThread->GetExceptionState();
-    _ASSERTE(pCurTES != NULL);
-
-    // Get the exception tracker for the current exception
-#ifdef FEATURE_EH_FUNCLETS
-    PTR_ExceptionTracker pEHTracker = pCurTES->GetCurrentExceptionTracker();
-#elif TARGET_X86
-    PTR_ExInfo pEHTracker = pCurTES->GetCurrentExceptionTracker();
-#else // !(HOST_64BIT || TARGET_X86)
-#error Unsupported platform
-#endif // HOST_64BIT
-
-    _ASSERTE(pEHTracker != NULL);
-
-    // Get the current exception code from the tracker.
-    PEXCEPTION_RECORD pEHRecord = pCurTES->GetExceptionRecord();
-    _ASSERTE(pEHRecord != NULL);
-    DWORD dwActiveExceptionCode = pEHRecord->ExceptionCode;
-
-    if (pEHTracker->GetCorruptionSeverity() != NotSet)
-    {
-        // Since the exception tracker already has the corruption severity set,
-        // we dont have much to do. Just confirm that our assumptions are correct.
-        _ASSERTE(pEHTracker->GetCorruptionSeverity() == pCurTES->GetLastActiveExceptionCorruptionSeverity());
-
-        LOG((LF_EH, LL_INFO100, "CEHelper::SetupCorruptionSeverityForActiveException - Current tracker already has the corruption severity set.\n"));
-        return;
-    }
-
-    // If the exception in question is to be treated as non-corrupting,
-    // then flag it and exit.
-    if (fShouldTreatExceptionAsNonCorrupting || g_pConfig->LegacyCorruptedStateExceptionsPolicy())
-    {
-        pEHTracker->SetCorruptionSeverity(NotCorrupting);
-        LOG((LF_EH, LL_INFO100, "CEHelper::SetupCorruptionSeverityForActiveException - Exception treated as non-corrupting.\n"));
-        goto done;
-    }
-
-    if (!fIsRethrownException && !fIsNestedException)
-    {
-        // There should be no previously active exception for this case
-        _ASSERTE(pEHTracker->GetPreviousExceptionTracker() == NULL);
-
-        CorruptionSeverity severityTES = NotSet;
-
-        if (pCurTES->ShouldLastActiveExceptionCorruptionSeverityBeReused())
-        {
-            // Get the corruption severity from the ThreadExceptionState (TES) for the last active exception
-            severityTES = pCurTES->GetLastActiveExceptionCorruptionSeverity();
-
-            // Incase of scenarios like AD transition or Reflection invocation,
-            // TES would hold corruption severity of the last active exception. To propagate it
-            // to the current exception, we will apply it to current tracker and only if the applied
-            // severity is "NotSet", will we proceed to check the current exception for corruption
-            // severity.
-            pEHTracker->SetCorruptionSeverity(severityTES);
-        }
-
-        // Reset TES Corruption Severity
-        pCurTES->SetLastActiveExceptionCorruptionSeverity(NotSet);
-
-        if (severityTES == NotSet)
-        {
-            // Since the last active exception's severity was "NotSet", we will look up the
-            // exception code and the exception object to see if the exception should be marked
-            // corrupting.
-            //
-            // Since this exception was neither rethrown nor is nested, it implies that we are
-            // outside an active exception. Thus, even if it contains inner exceptions, we wont have
-            // corruption severity for them since that information is tracked in EH tracker and
-            // we wont have an EH tracker for the inner most exception.
-
-            if (CEHelper::IsProcessCorruptedStateException(dwActiveExceptionCode) ||
-                CEHelper::IsProcessCorruptedStateException(oThrowable))
-            {
-                pEHTracker->SetCorruptionSeverity(ProcessCorrupting);
-                LOG((LF_EH, LL_INFO100, "CEHelper::SetupCorruptionSeverityForActiveException - Marked non-rethrow/non-nested exception as ProcessCorrupting.\n"));
-            }
-            else
-            {
-                pEHTracker->SetCorruptionSeverity(NotCorrupting);
-                LOG((LF_EH, LL_INFO100, "CEHelper::SetupCorruptionSeverityForActiveException - Marked non-rethrow/non-nested exception as NotCorrupting.\n"));
-            }
-        }
-        else
-        {
-            LOG((LF_EH, LL_INFO100, "CEHelper::SetupCorruptionSeverityForActiveException - Copied the corruption severity to tracker from ThreadExceptionState for non-rethrow/non-nested exception.\n"));
-        }
-    }
-    else
-    {
-        // Its either a rethrow or nested exception
-
-#ifdef FEATURE_EH_FUNCLETS
-    PTR_ExceptionTracker pOrigEHTracker = NULL;
-#elif TARGET_X86
-    PTR_ExInfo pOrigEHTracker = NULL;
-#else
-#error Unsupported platform
-#endif
-
-        BOOL fDoWeHaveCorruptionSeverity = FALSE;
-
-        if (fIsRethrownException)
-        {
-            // Rethrown exceptions are nested by nature (of our implementation). The
-            // original EHTracker will exist for the exception - infact, it will be
-            // the tracker previous to the current one. We will simply copy
-            // its severity to the current EH tracker representing the rethrow.
-            pOrigEHTracker = pEHTracker->GetPreviousExceptionTracker();
-            _ASSERTE(pOrigEHTracker != NULL);
-
-            // Ideally, we would like have the assert below enabled. But, as may happen under OOM
-            // stress, this can be false. Here's how it will happen:
-            //
-            // An exception is thrown, which is later caught and rethrown in the catch block. Rethrow
-            // results in calling IL_Rethrow that will call RaiseTheExceptionInternalOnly to actually
-            // raise the exception. Prior to the raise, we update the last thrown object on the thread
-            // by calling Thread::SafeSetLastThrownObject which, internally, could have an OOM, resulting
-            // in "changing" the throwable used to raise the exception to be preallocated OOM object.
-            //
-            // When the rethrow happens and CLR's exception handler for managed code sees the exception,
-            // the exception tracker created for the rethrown exception will contain the reference to
-            // the last thrown object, which will be the preallocated OOM object.
-            //
-            // Thus, though, we came here because of a rethrow, and logically, the throwable should remain
-            // the same, it neednt be. Simply put, rethrow can result in working with a completely different
-            // exception object than what was originally thrown.
-            //
-            // Hence, the assert cannot be enabled.
-            //
-            // Thus, we will use the EH tracker corresponding to the original exception, to get the
-            // rethrown exception's corruption severity, only when the rethrown throwable is the same
-            // as the original throwable. Otherwise, we will pretend that we didnt get the original tracker
-            // and will automatically enter the path below to set the corruption severity based upon the
-            // rethrown throwable.
-
-            // _ASSERTE(pOrigEHTracker->GetThrowable() == oThrowable);
-            if (pOrigEHTracker->GetThrowable() != oThrowable)
-            {
-                pOrigEHTracker = NULL;
-                LOG((LF_EH, LL_INFO100, "CEHelper::SetupCorruptionSeverityForActiveException - Rethrown throwable does not match the original throwable. Corruption severity will be set based upon rethrown throwable.\n"));
-            }
-        }
-        else
-        {
-            // Get the corruption severity from the ThreadExceptionState (TES) for the last active exception
-            CorruptionSeverity severityTES = NotSet;
-
-            if (pCurTES->ShouldLastActiveExceptionCorruptionSeverityBeReused())
-            {
-                severityTES = pCurTES->GetLastActiveExceptionCorruptionSeverity();
-
-                // Incase of scenarios like AD transition or Reflection invocation,
-                // TES would hold corruption severity of the last active exception. To propagate it
-                // to the current exception, we will apply it to current tracker and only if the applied
-                // severity is "NotSet", will we proceed to check the current exception for corruption
-                // severity.
-                pEHTracker->SetCorruptionSeverity(severityTES);
-            }
-
-            // Reset TES Corruption Severity
-            pCurTES->SetLastActiveExceptionCorruptionSeverity(NotSet);
-
-            // If the last exception didnt have any corruption severity, proceed to look for it.
-            if (severityTES == NotSet)
-            {
-                // This is a nested exception - check if it has an inner exception(s). If it does,
-                // find the EH tracker corresponding to the innermost exception and we will copy the
-                // corruption severity from the original tracker to the current one.
-                OBJECTREF oInnermostThrowable = ((EXCEPTIONREF)oThrowable)->GetBaseException();
-                if (oInnermostThrowable != NULL)
-                {
-                    // Find the tracker corresponding to the inner most exception, starting from
-                    // the tracker previous to the current one. An EH tracker may not be found if
-                    // the code did the following inside a catch clause:
-                    //
-                    // Exception ex = new Exception("inner exception");
-                    // throw new Exception("message", ex);
-                    //
-                    // Or, an exception like AV happened in the catch clause.
-                    pOrigEHTracker = GetEHTrackerForException(oInnermostThrowable, pEHTracker->GetPreviousExceptionTracker());
-                }
-            }
-            else
-            {
-                // We have the corruption severity from the TES. Set the flag indicating so.
-                fDoWeHaveCorruptionSeverity = TRUE;
-                LOG((LF_EH, LL_INFO100, "CEHelper::SetupCorruptionSeverityForActiveException - Copied the corruption severity to tracker from ThreadExceptionState for nested exception.\n"));
-            }
-        }
-
-        if (!fDoWeHaveCorruptionSeverity)
-        {
-            if (pOrigEHTracker != NULL)
-            {
-                // Copy the severity from the original EH tracker to the current one
-                CorruptionSeverity origCorruptionSeverity = pOrigEHTracker->GetCorruptionSeverity();
-                _ASSERTE(origCorruptionSeverity != NotSet);
-                pEHTracker->SetCorruptionSeverity(origCorruptionSeverity);
-
-                LOG((LF_EH, LL_INFO100, "CEHelper::SetupCorruptionSeverityForActiveException - Copied the corruption severity (%d) from the original EH tracker for rethrown exception.\n", origCorruptionSeverity));
-            }
-            else
-            {
-                if (CEHelper::IsProcessCorruptedStateException(dwActiveExceptionCode) ||
-                    CEHelper::IsProcessCorruptedStateException(oThrowable))
-                {
-                    pEHTracker->SetCorruptionSeverity(ProcessCorrupting);
-                    LOG((LF_EH, LL_INFO100, "CEHelper::SetupCorruptionSeverityForActiveException - Marked nested exception as ProcessCorrupting.\n"));
-                }
-                else
-                {
-                    pEHTracker->SetCorruptionSeverity(NotCorrupting);
-                    LOG((LF_EH, LL_INFO100, "CEHelper::SetupCorruptionSeverityForActiveException - Marked nested exception as NotCorrupting.\n"));
-                }
-            }
-        }
-    }
-
-done:
-    // Save the current exception's corruption severity in the ThreadExceptionState (TES)
-    // for cases when we catch the managed exception in the runtime using EX_CATCH.
-    // At such a time, all exception trackers get released (due to unwind triggered
-    // by EX_END_CATCH) and yet we need the corruption severity information for
-    // scenarios like AD Transition, Reflection invocation, etc.
-    CorruptionSeverity currentSeverity = pEHTracker->GetCorruptionSeverity();
-
-    // We should be having a valid corruption severity at this point
-    _ASSERTE(currentSeverity != NotSet);
-
-    // Save it in the TES
-    pCurTES->SetLastActiveExceptionCorruptionSeverity(currentSeverity);
-    LOG((LF_EH, LL_INFO100, "CEHelper::SetupCorruptionSeverityForActiveException - Copied the corruption severity (%d) to ThreadExceptionState.\n", currentSeverity));
-
-#endif // !DACCESS_COMPILE
-}
-
-// CE can be caught in the VM and later reraised again. Examples of such scenarios
-// include AD transition, COM interop, Reflection invocation, to name a few.
-// In such cases, we want to mark the corruption severity for reuse upon reraise,
-// implying that when the VM does a reraise of such an exception, we should use
-// the original corruption severity for the new raised exception, instead of creating
-// a new one for it.
-/* static */
-void CEHelper::MarkLastActiveExceptionCorruptionSeverityForReraiseReuse()
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-        PRECONDITION(GetThread() != NULL);
-    }
-    CONTRACTL_END;
-
-    // If the last active exception's corruption severity is anything but
-    // "NotSet", mark it for ReraiseReuse
-    ThreadExceptionState *pCurTES = GetThread()->GetExceptionState();
-    _ASSERTE(pCurTES != NULL);
-
-    CorruptionSeverity severityTES = pCurTES->GetLastActiveExceptionCorruptionSeverity();
-    if (severityTES != NotSet)
-    {
-        pCurTES->SetLastActiveExceptionCorruptionSeverity((CorruptionSeverity)(severityTES | ReuseForReraise));
-    }
-}
-
-// This method will return a BOOL to indicate if the current exception is to be treated as
-// non-corrupting. Currently, this returns true for NullReferenceException only.
-/* static */
-BOOL CEHelper::ShouldTreatActiveExceptionAsNonCorrupting()
-{
-    BOOL fShouldTreatAsNonCorrupting = FALSE;
-
-#ifndef DACCESS_COMPILE
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE;
-        PRECONDITION(GetThread() != NULL);
-    }
-    CONTRACTL_END;
-
-    if (g_pConfig->LegacyCorruptedStateExceptionsPolicy())
-    {
-        return TRUE;
-    }
-
-    DWORD dwActiveExceptionCode = GetThread()->GetExceptionState()->GetExceptionRecord()->ExceptionCode;
-    if (dwActiveExceptionCode == STATUS_ACCESS_VIOLATION)
-    {
-        // NullReference has the same exception code as AV
-        OBJECTREF oThrowable = NULL;
-        GCPROTECT_BEGIN(oThrowable);
-
-        // Get the throwable and check if it represents null reference exception
-        oThrowable = GetThread()->GetThrowable();
-        _ASSERTE(oThrowable != NULL);
-        if (MscorlibBinder::GetException(kNullReferenceException) == oThrowable->GetMethodTable())
-        {
-            fShouldTreatAsNonCorrupting = TRUE;
-        }
-        GCPROTECT_END();
-    }
-#endif // !DACCESS_COMPILE
-
-    return fShouldTreatAsNonCorrupting;
-}
-
-// If we were working in a nested exception scenario, reset the corruption severity to the last
-// exception we were processing, based upon its EH tracker.
-//
-// If none was present, reset it to NotSet.
-//
-// Note: This method must be called once the exception trackers have been adjusted post catch-block execution.
-/* static */
-void CEHelper::ResetLastActiveCorruptionSeverityPostCatchHandler(Thread *pThread)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-        PRECONDITION(pThread != NULL);
-    }
-    CONTRACTL_END;
-
-    ThreadExceptionState *pCurTES = pThread->GetExceptionState();
-
-    // By this time, we would have set the correct exception tracker for the active exception domain,
-    // if applicable. An example is throwing and catching an exception within a catch block. We will update
-    // the LastActiveCorruptionSeverity based upon the active exception domain. If we are not in one, we will
-    // set it to "NotSet".
-#ifdef FEATURE_EH_FUNCLETS
-    PTR_ExceptionTracker pEHTracker = pCurTES->GetCurrentExceptionTracker();
-#elif TARGET_X86
-    PTR_ExInfo pEHTracker = pCurTES->GetCurrentExceptionTracker();
-#else
-#error Unsupported platform
-#endif
-
-    if (pEHTracker)
-    {
-        pCurTES->SetLastActiveExceptionCorruptionSeverity(pEHTracker->GetCorruptionSeverity());
-    }
-    else
-    {
-        pCurTES->SetLastActiveExceptionCorruptionSeverity(NotSet);
-    }
-
-    LOG((LF_EH, LL_INFO100, "CEHelper::ResetLastActiveCorruptionSeverityPostCatchHandler - Reset LastActiveException corruption severity to %d.\n",
-        pCurTES->GetLastActiveExceptionCorruptionSeverity()));
-}
-
-// This method will return a BOOL indicating if the target of IDispatch can handle the specified exception or not.
-/* static */
-BOOL CEHelper::CanIDispatchTargetHandleException()
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-        PRECONDITION(GetThread() != NULL);
-    }
-    CONTRACTL_END;
-
-    // By default, assume that the target of IDispatch cannot handle the exception.
-    BOOL fCanMethodHandleException = FALSE;
-
-    if (g_pConfig->LegacyCorruptedStateExceptionsPolicy())
-    {
-        return TRUE;
-    }
-
-    // IDispatch implementation in COM interop works by invoking the actual target via reflection.
-    // Thus, a COM client could use the V4 runtime to invoke a V2 method. In such a case, a CSE
-    // could come unhandled at the actual target invoked via reflection.
-    //
-    // Reflection invocation would have set a flag for us, indicating if the actual target was
-    // enabled to handle the CE or not. If it is, then we should allow the COM client to get the
-    // hresult from the call and not let the exception continue up the stack.
-    ThreadExceptionState *pCurTES = GetThread()->GetExceptionState();
-    fCanMethodHandleException = pCurTES->CanReflectionTargetHandleException();
-
-    // Reset the flag so that subsequent invocations work as expected.
-    pCurTES->SetCanReflectionTargetHandleException(FALSE);
-
-    return fCanMethodHandleException;
-}
-
-#endif // FEATURE_CORRUPTING_EXCEPTIONS
 
 #ifndef DACCESS_COMPILE
 // This method will deliver the actual exception notification. Its assumed that the caller has done the necessary checks, including
@@ -11964,7 +11092,7 @@ void ExceptionNotifications::GetEventArgsForNotification(ExceptionNotificationHa
         *pOutEventArgs = NULL;
         LOG((LF_EH, LL_INFO100, "ExceptionNotifications::GetEventArgsForNotification: Setting event args to NULL due to an exception.\n"));
     }
-    EX_END_CATCH(RethrowCorruptingExceptions); // Dont swallow any CSE that may come in from the .ctor.
+    EX_END_CATCH(RethrowTerminalExceptions);
 }
 
 // This SEH filter will be invoked when an exception escapes out of the exception notification
@@ -11973,89 +11101,6 @@ static LONG ExceptionNotificationFilter(PEXCEPTION_POINTERS pExceptionInfo, LPVO
 {
     EEPOLICY_HANDLE_FATAL_ERROR(COR_E_EXECUTIONENGINE);
     return -1;
-}
-
-#ifdef FEATURE_CORRUPTING_EXCEPTIONS
-// This method will return a BOOL indicating if the delegate should be invoked for the exception
-// of the specified corruption severity.
-BOOL ExceptionNotifications::CanDelegateBeInvokedForException(OBJECTREF *pDelegate, CorruptionSeverity severity)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE;
-        PRECONDITION(pDelegate  != NULL && IsProtectedByGCFrame(pDelegate) && (*pDelegate != NULL));
-        PRECONDITION(severity > NotSet);
-    }
-    CONTRACTL_END;
-
-    // Notifications for CSE are only delivered if the delegate target follows CSE rules.
-    BOOL fCanMethodHandleException = g_pConfig->LegacyCorruptedStateExceptionsPolicy() ? TRUE:(severity == NotCorrupting);
-    if (!fCanMethodHandleException)
-    {
-        EX_TRY
-        {
-            // Get the MethodDesc of the delegate to be invoked
-            MethodDesc *pMDDelegate = COMDelegate::GetMethodDesc(*pDelegate);
-            _ASSERTE(pMDDelegate != NULL);
-
-            // Check the callback target and see if it is following CSE rules or not.
-            fCanMethodHandleException = CEHelper::CanMethodHandleException(severity, pMDDelegate);
-        }
-        EX_CATCH
-        {
-            // Incase of any exceptions, pretend we cannot handle the exception
-            fCanMethodHandleException = FALSE;
-            LOG((LF_EH, LL_INFO100, "ExceptionNotifications::CanDelegateBeInvokedForException: Exception while trying to determine if exception notification can be invoked or not.\n"));
-        }
-        EX_END_CATCH(RethrowCorruptingExceptions); // Dont swallow any CSEs.
-    }
-
-    return fCanMethodHandleException;
-}
-#endif // FEATURE_CORRUPTING_EXCEPTIONS
-
-// This method will make the actual delegate invocation for the exception notification to be delivered. If an
-// exception escapes out of the notification, our filter in ExceptionNotifications::DeliverNotification will
-// address it.
-void ExceptionNotifications::InvokeNotificationDelegate(ExceptionNotificationHandlerType notificationType, OBJECTREF *pDelegate, OBJECTREF *pEventArgs,
-                                                        OBJECTREF *pAppDomain
-#ifdef FEATURE_CORRUPTING_EXCEPTIONS
-                                                        , CorruptionSeverity severity
-#endif // FEATURE_CORRUPTING_EXCEPTIONS
-                                                        )
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE;
-        PRECONDITION(pDelegate  != NULL && IsProtectedByGCFrame(pDelegate) && (*pDelegate != NULL));
-        PRECONDITION(pEventArgs != NULL && IsProtectedByGCFrame(pEventArgs));
-        PRECONDITION(pAppDomain != NULL && IsProtectedByGCFrame(pAppDomain));
-#ifdef FEATURE_CORRUPTING_EXCEPTIONS
-        PRECONDITION(severity > NotSet);
-#endif // FEATURE_CORRUPTING_EXCEPTIONS
-        // Unhandled Exception Notification is delivered via Unhandled Exception Processing
-        // mechanism.
-        PRECONDITION(notificationType != UnhandledExceptionHandler);
-    }
-    CONTRACTL_END;
-
-#ifdef FEATURE_CORRUPTING_EXCEPTIONS
-    // Notifications are delivered based upon corruption severity of the exception
-    if (!ExceptionNotifications::CanDelegateBeInvokedForException(pDelegate, severity))
-    {
-        LOG((LF_EH, LL_INFO100, "ExceptionNotifications::InvokeNotificationDelegate: Delegate cannot be invoked for corruption severity %d\n",
-        severity));
-        return;
-    }
-#endif // FEATURE_CORRUPTING_EXCEPTIONS
-
-    // We've already exercised the prestub on this delegate's COMDelegate::GetMethodDesc,
-    // as part of wiring up a reliable event sink in the BCL. Deliver the notification.
-    ExceptionNotifications::DeliverExceptionNotification(notificationType, pDelegate, pAppDomain, pEventArgs);
 }
 
 // This method returns a BOOL to indicate if the AppDomain is ready to receive exception notifications or not.
@@ -12087,11 +11132,7 @@ BOOL ExceptionNotifications::CanDeliverNotificationToCurrentAppDomain(ExceptionN
 // so that if an exception escapes out of the notification callback, we will trigger failfast from
 // our filter.
 void ExceptionNotifications::DeliverNotification(ExceptionNotificationHandlerType notificationType,
-                                                 OBJECTREF *pThrowable
-#ifdef FEATURE_CORRUPTING_EXCEPTIONS
-        , CorruptionSeverity severity
-#endif // FEATURE_CORRUPTING_EXCEPTIONS
-        )
+                                                 OBJECTREF *pThrowable)
 {
     STATIC_CONTRACT_GC_TRIGGERS;
     STATIC_CONTRACT_NOTHROW; // NOTHROW because incase of an exception, we will FailFast.
@@ -12101,26 +11142,16 @@ void ExceptionNotifications::DeliverNotification(ExceptionNotificationHandlerTyp
     {
         ExceptionNotificationHandlerType notificationType;
         OBJECTREF *pThrowable;
-#ifdef FEATURE_CORRUPTING_EXCEPTIONS
-        CorruptionSeverity severity;
-#endif // FEATURE_CORRUPTING_EXCEPTIONS
     } args;
 
     args.notificationType = notificationType;
     args.pThrowable = pThrowable;
-#ifdef FEATURE_CORRUPTING_EXCEPTIONS
-    args.severity = severity;
-#endif // FEATURE_CORRUPTING_EXCEPTIONS
 
     PAL_TRY(TryArgs *, pArgs, &args)
     {
         // Make the call to the actual method that will invoke the callbacks
         ExceptionNotifications::DeliverNotificationInternal(pArgs->notificationType,
-            pArgs->pThrowable
-#ifdef FEATURE_CORRUPTING_EXCEPTIONS
-            , pArgs->severity
-#endif // FEATURE_CORRUPTING_EXCEPTIONS
-            );
+            pArgs->pThrowable);
     }
     PAL_EXCEPT_FILTER(ExceptionNotificationFilter)
     {
@@ -12134,11 +11165,7 @@ void ExceptionNotifications::DeliverNotification(ExceptionNotificationHandlerTyp
 
 // This method will deliver the exception notification to the current AppDomain.
 void ExceptionNotifications::DeliverNotificationInternal(ExceptionNotificationHandlerType notificationType,
-                                                 OBJECTREF *pThrowable
-#ifdef FEATURE_CORRUPTING_EXCEPTIONS
-        , CorruptionSeverity severity
-#endif // FEATURE_CORRUPTING_EXCEPTIONS
-        )
+                                                 OBJECTREF *pThrowable)
 {
     CONTRACTL
     {
@@ -12151,9 +11178,6 @@ void ExceptionNotifications::DeliverNotificationInternal(ExceptionNotificationHa
         PRECONDITION(notificationType != UnhandledExceptionHandler);
         PRECONDITION((pThrowable != NULL) && (*pThrowable != NULL));
         PRECONDITION(ExceptionNotifications::CanDeliverNotificationToCurrentAppDomain(notificationType));
-#ifdef FEATURE_CORRUPTING_EXCEPTIONS
-        PRECONDITION(severity > NotSet); // Exception corruption severity must be valid at this point.
-#endif // FEATURE_CORRUPTING_EXCEPTIONS
     }
     CONTRACTL_END;
 
@@ -12220,12 +11244,7 @@ void ExceptionNotifications::DeliverNotificationInternal(ExceptionNotificationHa
         gc.arrDelegates = (PTRARRAYREF) ((DELEGATEREF)(gc.oNotificationDelegate))->GetInvocationList();
         if (gc.arrDelegates == NULL || !gc.arrDelegates->GetMethodTable()->IsArray())
         {
-            ExceptionNotifications::InvokeNotificationDelegate(notificationType, &gc.oNotificationDelegate, &gc.oEventArgs,
-                &gc.oCurAppDomain
-#ifdef FEATURE_CORRUPTING_EXCEPTIONS
-                , severity
-#endif // FEATURE_CORRUPTING_EXCEPTIONS
-                );
+            ExceptionNotifications::DeliverExceptionNotification(notificationType, &gc.oNotificationDelegate, &gc.oCurAppDomain, &gc.oEventArgs);
         }
         else
         {
@@ -12237,12 +11256,7 @@ void ExceptionNotifications::DeliverNotificationInternal(ExceptionNotificationHa
             for (UINT_PTR i=0; i<cnt; i++)
             {
                 gc.oInnerDelegate = gc.arrDelegates->m_Array[i];
-                ExceptionNotifications::InvokeNotificationDelegate(notificationType, &gc.oInnerDelegate, &gc.oEventArgs,
-                    &gc.oCurAppDomain
-#ifdef FEATURE_CORRUPTING_EXCEPTIONS
-                    , severity
-#endif // FEATURE_CORRUPTING_EXCEPTIONS
-                    );
+                ExceptionNotifications::DeliverExceptionNotification(notificationType, &gc.oInnerDelegate, &gc.oCurAppDomain, &gc.oEventArgs);
             }
         }
     }
@@ -12282,11 +11296,7 @@ void ExceptionNotifications::DeliverFirstChanceNotification()
             oThrowable = pCurTES->GetThrowable();
             _ASSERTE(oThrowable != NULL);
 
-            ExceptionNotifications::DeliverNotification(FirstChanceExceptionHandler, &oThrowable
-#ifdef FEATURE_CORRUPTING_EXCEPTIONS
-             , pCurTES->GetCurrentExceptionTracker()->GetCorruptionSeverity()
-#endif // FEATURE_CORRUPTING_EXCEPTIONS
-             );
+            ExceptionNotifications::DeliverNotification(FirstChanceExceptionHandler, &oThrowable);
             GCPROTECT_END();
 
         }

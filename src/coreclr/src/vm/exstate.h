@@ -162,56 +162,6 @@ public:
     }
 #endif
 
-#ifdef FEATURE_CORRUPTING_EXCEPTIONS
-private:
-    CorruptionSeverity      m_LastActiveExceptionCorruptionSeverity;
-    BOOL                    m_fCanReflectionTargetHandleException;
-
-public:
-    // Returns the corruption severity of the last active exception
-    inline CorruptionSeverity GetLastActiveExceptionCorruptionSeverity()
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        return (CorruptionSeverity)GET_CORRUPTION_SEVERITY(m_LastActiveExceptionCorruptionSeverity);
-    }
-
-    // Set the corruption severity of the last active exception
-    inline void SetLastActiveExceptionCorruptionSeverity(CorruptionSeverity severityToSet)
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        m_LastActiveExceptionCorruptionSeverity = severityToSet;
-    }
-
-    // Returns a bool indicating if the last active exception's corruption severity should
-    // be used when exception is reraised (e.g. Reflection Invocation, AD transition, etc)
-    inline BOOL ShouldLastActiveExceptionCorruptionSeverityBeReused()
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        return CAN_REUSE_CORRUPTION_SEVERITY(m_LastActiveExceptionCorruptionSeverity);
-    }
-
-    // Returns a BOOL to indicate if reflection target can handle CSE or not.
-    // This is used in DispatchInfo::CanIDispatchTargetHandleException.
-    inline BOOL CanReflectionTargetHandleException()
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        return m_fCanReflectionTargetHandleException;
-    }
-
-    // Sets a BOOL indicate if the Reflection invocation target can handle exception or not.
-    // Used in ReflectionInvocation.cpp.
-    inline void SetCanReflectionTargetHandleException(BOOL fCanReflectionTargetHandleException)
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        m_fCanReflectionTargetHandleException = fCanReflectionTargetHandleException;
-    }
-#endif // FEATURE_CORRUPTING_EXCEPTIONS
-
 private:
     ThreadExceptionFlag      m_flag;
 

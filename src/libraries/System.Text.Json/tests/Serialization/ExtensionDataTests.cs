@@ -56,7 +56,7 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        public static void ExtensionPropertyIgnoredWhenNull()
+        public static void ExtensionPropertyIgnoredWhenWritingDefault()
         {
             string expected = @"{}";
             string actual = JsonSerializer.Serialize(new ClassWithExtensionPropertyAsObject());
@@ -64,7 +64,7 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        public static void MultipleExtensionPropertyIgnoredWhenNull()
+        public static void MultipleExtensionPropertyIgnoredWhenWritingDefault()
         {
             var obj = new ClassWithMultipleDictionaries();
             string actual = JsonSerializer.Serialize(obj);
@@ -97,6 +97,18 @@ namespace System.Text.Json.Serialization.Tests
             };
             actual = JsonSerializer.Serialize(obj);
             Assert.Equal("{\"ActualDictionary\":{},\"test\":\"value\"}", actual);
+        }
+
+        [Fact]
+        public static void ExtensionPropertyInvalidJsonFail()
+        {
+            const string BadJson = @"{""Good"":""OK"",""Bad"":!}";
+
+            JsonException jsonException = Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<ClassWithExtensionPropertyAsObject>(BadJson));
+            Assert.Contains("Path: $.Bad | LineNumber: 0 | BytePositionInLine: 19.", jsonException.ToString());
+            Assert.NotNull(jsonException.InnerException);
+            Assert.IsAssignableFrom<JsonException>(jsonException.InnerException);
+            Assert.Contains("!", jsonException.InnerException.ToString());
         }
 
         [Fact]

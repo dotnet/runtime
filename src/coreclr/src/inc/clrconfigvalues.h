@@ -253,7 +253,6 @@ CONFIG_DWORD_INFO(INTERNAL_SuppressLockViolationsOnReentryFromOS, W("SuppressLoc
 CONFIG_DWORD_INFO_DIRECT_ACCESS(INTERNAL_AssertOnFailFast, W("AssertOnFailFast"), "")
 RETAIL_CONFIG_DWORD_INFO_EX(UNSUPPORTED_legacyCorruptedStateExceptionsPolicy, W("legacyCorruptedStateExceptionsPolicy"), 0, "Enabled Pre-V4 CSE behavior", CLRConfig::EEConfig_default)
 CONFIG_DWORD_INFO_EX(INTERNAL_SuppressLostExceptionTypeAssert, W("SuppressLostExceptionTypeAssert"), 0, "", CLRConfig::EEConfig_default)
-RETAIL_CONFIG_DWORD_INFO_EX(UNSUPPORTED_FailFastOnCorruptedStateException, W("FailFastOnCorruptedStateException"), 0, "Failfast if a CSE is encountered", CLRConfig::EEConfig_default)
 RETAIL_CONFIG_DWORD_INFO_EX(INTERNAL_UseEntryPointFilter, W("UseEntryPointFilter"), 0, "", CLRConfig::EEConfig_default)
 RETAIL_CONFIG_DWORD_INFO_EX(INTERNAL_Corhost_Swallow_Uncaught_Exceptions, W("Corhost_Swallow_Uncaught_Exceptions"), 0, "", CLRConfig::EEConfig_default)
 
@@ -621,6 +620,16 @@ CONFIG_DWORD_INFO(INTERNAL_OSR_HighId, W("OSR_HighId"), 10000000, "High end of e
 #endif
 
 ///
+/// Profile Guided Opts
+///
+#ifdef FEATURE_PGO
+RETAIL_CONFIG_STRING_INFO_EX(INTERNAL_PGODataPath, W("PGODataPath"), "Read/Write PGO data from/to the indicated file.", CLRConfig::EEConfig_default)
+RETAIL_CONFIG_DWORD_INFO(INTERNAL_ReadPGOData, W("ReadPGOData"), 0, "Read PGO data")
+RETAIL_CONFIG_DWORD_INFO(INTERNAL_WritePGOData, W("WritePGOData"), 0, "Write PGO data")
+RETAIL_CONFIG_DWORD_INFO(INTERNAL_TieredPGO, W("TieredPGO"), 0, "Instrument Tier0 code and make counts available to Tier1")
+#endif
+
+///
 /// Entry point slot backpatch
 ///
 #ifndef CROSSGEN_COMPILE
@@ -706,7 +715,7 @@ RETAIL_CONFIG_DWORD_INFO(INTERNAL_EventPipeProcNumbers, W("EventPipeProcNumbers"
 //
 // Diagnostics Server
 //
-RETAIL_CONFIG_STRING_INFO_EX(EXTERNAL_DOTNET_DiagnosticsServerAddress, W("DOTNET_DiagnosticsServerAddress"), "The full path including filename for the OS transport (NamedPipe on Windows; Unix Domain Socket on Linux) to be used by the Diagnostics Server", CLRConfig::DontPrependCOMPlus_);
+RETAIL_CONFIG_STRING_INFO_EX(EXTERNAL_DOTNET_DiagnosticsMonitorAddress, W("DOTNET_DiagnosticsMonitorAddress"), "NamedPipe path without '\\\\.\\pipe\\' on Windows; Full path of Unix Domain Socket on Linux/Unix.  Used for Diagnostics Monitoring Agents.", CLRConfig::DontPrependCOMPlus_);
 
 //
 // LTTng

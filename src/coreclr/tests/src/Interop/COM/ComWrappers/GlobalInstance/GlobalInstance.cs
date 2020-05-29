@@ -48,9 +48,9 @@ namespace ComWrappersTests.GlobalInstance
 
             [DllImport(nameof(MockReferenceTrackerRuntime))]
             extern public static int UpdateTestObjectAsInterface(
-                [MarshalAs(UnmanagedType.Interface)] Test testObj,
+                [MarshalAs(UnmanagedType.Interface)] ITest testObj,
                 int i,
-                [Out, MarshalAs(UnmanagedType.Interface)] out Test ret);
+                [Out, MarshalAs(UnmanagedType.Interface)] out ITest ret);
         }
 
         private const string ManagedServerTypeName = "ConsumeNETServerTesting";
@@ -298,6 +298,11 @@ namespace ComWrappersTests.GlobalInstance
                 IntPtr dispatchWrapper = Marshal.GetIDispatchForObject(dispatchObj);
                 Assert.AreNotEqual(IntPtr.Zero, dispatchWrapper);
                 Assert.AreEqual(dispatchObj, registeredWrapper.LastComputeVtablesObject, "Registered ComWrappers instance should have been called");
+
+                Console.WriteLine($" -- Validate Marshal.GetIDispatchForObject != Marshal.GetIUnknownForObject...");
+                IntPtr unknownWrapper = Marshal.GetIUnknownForObject(dispatchObj);
+                Assert.AreNotEqual(IntPtr.Zero, unknownWrapper);
+                Assert.AreNotEqual(unknownWrapper, dispatchWrapper);
             }
 
             Console.WriteLine($" -- Validate Marshal.GetObjectForIUnknown...");
@@ -326,33 +331,33 @@ namespace ComWrappersTests.GlobalInstance
             GlobalComWrappers.Instance.ReturnInvalid = !validateUseRegistered;
 
             Console.WriteLine($" -- Validate MarshalAs IUnknown...");
-            ValidateInterfaceMarshaler<object>(MarshalInterface.UpdateTestObjectAsIUnknown, validateUseRegistered);
+            ValidateInterfaceMarshaler<object>(MarshalInterface.UpdateTestObjectAsIUnknown, shouldSucceed: validateUseRegistered);
             object obj = MarshalInterface.CreateTrackerObjectAsIUnknown();
             Assert.AreEqual(validateUseRegistered, obj is FakeWrapper, $"Should{(validateUseRegistered ? string.Empty : "not")} have returned {nameof(FakeWrapper)} instance");
 
             if (validateUseRegistered)
             {
                 Console.WriteLine($" -- Validate MarshalAs IDispatch...");
-                ValidateInterfaceMarshaler<object>(MarshalInterface.UpdateTestObjectAsIDispatch, validateUseRegistered, new TestEx(IID_IDISPATCH));
+                ValidateInterfaceMarshaler<object>(MarshalInterface.UpdateTestObjectAsIDispatch, shouldSucceed: true, new TestEx(IID_IDISPATCH));
 
                 Console.WriteLine($" -- Validate MarshalAs IInspectable...");
-                ValidateInterfaceMarshaler<object>(MarshalInterface.UpdateTestObjectAsIInspectable, validateUseRegistered, new TestEx(IID_IINSPECTABLE));
+                ValidateInterfaceMarshaler<object>(MarshalInterface.UpdateTestObjectAsIInspectable, shouldSucceed: true, new TestEx(IID_IINSPECTABLE));
             }
 
             Console.WriteLine($" -- Validate MarshalAs Interface...");
-            ValidateInterfaceMarshaler<Test>(MarshalInterface.UpdateTestObjectAsInterface, validateUseRegistered);
+            ValidateInterfaceMarshaler<ITest>(MarshalInterface.UpdateTestObjectAsInterface, shouldSucceed: true);
 
             if (validateUseRegistered)
             {
                 Assert.Throws<InvalidCastException>(() => MarshalInterface.CreateTrackerObjectWrongType());
 
                 FakeWrapper wrapper = MarshalInterface.CreateTrackerObjectAsInterface();
-                Assert.IsNotNull(obj, $"Should have returned {nameof(FakeWrapper)} instance");
+                Assert.IsNotNull(wrapper, $"Should have returned {nameof(FakeWrapper)} instance");
             }
         }
 
         private delegate int UpdateTestObject<T>(T testObj, int i, out T ret) where T : class;
-        private static void ValidateInterfaceMarshaler<T>(UpdateTestObject<T> func, bool validateUseRegistered, Test testObj = null) where T : class
+        private static void ValidateInterfaceMarshaler<T>(UpdateTestObject<T> func, bool shouldSucceed, Test testObj = null) where T : class
         {
             const int E_NOINTERFACE = unchecked((int)0x80004002);
             int value = 10;
@@ -363,7 +368,7 @@ namespace ComWrappersTests.GlobalInstance
             T retObj;
             int hr = func(testObj as T, value, out retObj);
             Assert.AreEqual(testObj, GlobalComWrappers.Instance.LastComputeVtablesObject, "Registered ComWrappers instance should have been called");
-            if (validateUseRegistered)
+            if (shouldSucceed)
             {
                 Assert.IsTrue(retObj is Test);
                 Assert.AreEqual(value, testObj.GetValue());

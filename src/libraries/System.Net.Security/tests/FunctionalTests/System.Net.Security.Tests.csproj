@@ -9,6 +9,7 @@
     <Compile Include="AssemblyInfo.cs" />
     <Compile Include="NotifyReadVirtualNetworkStream.cs" />
     <Compile Include="DummyTcpServer.cs" />
+    <Compile Include="SslStreamExtensions.cs" />
     <Compile Include="TestConfiguration.cs" />
     <Compile Include="TestHelper.cs" />
     <!-- SslStream Tests -->
@@ -66,6 +67,8 @@
              Link="ProductionCode\Common\System\Threading\Tasks\TaskToApm.cs" />
     <Compile Include="..\..\src\System\Net\Security\SniHelper.cs"
              Link="src\SniHelper.cs" />
+    <Compile Include="..\..\src\System\Net\Security\TlsFrameHelper.cs"
+             Link="src\TlsFrameHelper.cs" />
     <Compile Include="SniHelperTest.cs" />
     <Compile Include="SslAuthenticationOptionsTest.cs" />
     <Compile Include="SslStreamAlertsTest.cs" />

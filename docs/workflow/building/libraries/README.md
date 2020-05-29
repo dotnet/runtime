@@ -205,6 +205,6 @@ If you are working on Windows, and use Visual Studio, you can open individual li
 
 ## Running tests
 
-For more details about running tests inside Visual Studio, [go here](../../testing/libraries/testing.md#running-tests-from-visual-studio )
+For more details about running tests inside Visual Studio, [go here](../../testing/visualstudio.md).
 
 For more about running tests, read the [running tests](../../testing/libraries/testing.md) document.

@@ -917,6 +917,13 @@ namespace System.Text.Json.Serialization.Tests
         }
     }
 
+    public class NullArgTester_Mutable
+    {
+        public Point_3D_Struct Point3DStruct { get; set; }
+        public ImmutableArray<int> ImmutableArray { get; set; }
+        public int Int { get; set; }
+    }
+
     public class ClassWithConstructor_SimpleAndComplexParameters : ITestClassWithParameterizedCtor
     {
         public byte MyByte { get; }

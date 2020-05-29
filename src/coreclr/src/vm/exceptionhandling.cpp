@@ -1006,23 +1006,13 @@ ProcessCLRException(IN     PEXCEPTION_RECORD   pExceptionRecord
                                                 !(dwExceptionFlags & EXCEPTION_UNWINDING),
                                                 &STState);
 
-#ifdef FEATURE_CORRUPTING_EXCEPTIONS
-        // Only setup the Corruption Severity in the first pass
         if (!(dwExceptionFlags & EXCEPTION_UNWINDING))
         {
             // Switch to COOP mode
             GCX_COOP();
 
-            if (pTracker && pTracker->GetThrowable() != NULL)
-            {
-                // Setup the state in current exception tracker indicating the corruption severity
-                // of the active exception.
-                CEHelper::SetupCorruptionSeverityForActiveException((STState == ExceptionTracker::STS_FirstRethrowFrame), (pTracker->GetPreviousExceptionTracker() != NULL),
-                                                                    CEHelper::ShouldTreatActiveExceptionAsNonCorrupting());
-            }
-
             // Failfast if exception indicates corrupted process state
-            if (pTracker->GetCorruptionSeverity() == ProcessCorrupting)
+            if (IsProcessCorruptedStateException(pExceptionRecord->ExceptionCode, pTracker->GetThrowable()))
             {
                 OBJECTREF oThrowable = NULL;
                 SString message;
@@ -1045,7 +1035,6 @@ ProcessCLRException(IN     PEXCEPTION_RECORD   pExceptionRecord
                 EEPOLICY_HANDLE_FATAL_ERROR_WITH_MESSAGE(pExceptionRecord->ExceptionCode, (LPCWSTR)message);
             }
         }
-#endif // FEATURE_CORRUPTING_EXCEPTIONS
 
 #ifndef TARGET_UNIX // Watson is on Windows only
         // Setup bucketing details for nested exceptions (rethrow and non-rethrow) only if we are in the first pass
@@ -2446,25 +2435,6 @@ CLRUnwindStatus ExceptionTracker::ProcessManagedCallFrame(
     if (fIsILStub && !fIsFunclet)    // only make this callback on the main method body of IL stubs
         pUserMDForILStub = GetUserMethodForILStub(pThread, sf.SP, pMD, &pILStubFrame);
 
-#ifdef FEATURE_CORRUPTING_EXCEPTIONS
-    BOOL fCanMethodHandleException = TRUE;
-    CorruptionSeverity currentSeverity = NotCorrupting;
-    {
-        // Switch to COOP mode since we are going to request throwable
-        GCX_COOP();
-
-        // We must defer to the MethodDesc of the user method instead of the IL stub
-        // itself because the user can specify the policy on a per-method basis and
-        // that won't be reflected via the IL stub's MethodDesc.
-        MethodDesc * pMDWithCEAttribute = (pUserMDForILStub != NULL) ? pUserMDForILStub : pMD;
-
-        // Check if the exception can be delivered to the method? It will check if the exception
-        // is a CE or not. If it is, it will check if the method can process it or not.
-        currentSeverity = pThread->GetExceptionState()->GetCurrentExceptionTracker()->GetCorruptionSeverity();
-        fCanMethodHandleException = CEHelper::CanMethodHandleException(currentSeverity, pMDWithCEAttribute);
-    }
-#endif // FEATURE_CORRUPTING_EXCEPTIONS
-
     // Doing rude abort.  Skip all non-constrained execution region code.
     // When rude abort is initiated, we cannot intercept any exceptions.
     if (pThread->IsRudeAbortInitiated())
@@ -2673,27 +2643,7 @@ CLRUnwindStatus ExceptionTracker::ProcessManagedCallFrame(
             const METHODTOKEN& MethToken = pcfThisFrame->GetMethodToken();
 
             EH_CLAUSE_ENUMERATOR EnumState;
-            unsigned             EHCount;
-
-#ifdef FEATURE_CORRUPTING_EXCEPTIONS
-            // The method cannot handle the exception (e.g. cannot handle the CE), then simply bail out
-            // without examining the EH clauses in it.
-            if (!fCanMethodHandleException)
-            {
-                LOG((LF_EH, LL_INFO100, "ProcessManagedCallFrame - CEHelper decided not to look for exception handlers in the method(MD:%p).\n", pMD));
-
-                // Set the flag to skip this frame since the CE cannot be delivered
-                _ASSERTE(currentSeverity == ProcessCorrupting);
-
-                // Force EHClause count to be zero
-                EHCount = 0;
-            }
-            else
-#endif // FEATURE_CORRUPTING_EXCEPTIONS
-            {
-                EHCount = pJitMan->InitializeEHEnumeration(MethToken, &EnumState);
-            }
-
+            unsigned EHCount = pJitMan->InitializeEHEnumeration(MethToken, &EnumState);
 
             if (!fIsFirstPass)
             {
@@ -3961,20 +3911,6 @@ ExceptionTracker* ExceptionTracker::GetOrCreateTracker(
                 }
             }
         }
-
-#ifdef FEATURE_CORRUPTING_EXCEPTIONS
-        if (fCreateNewTracker)
-        {
-            // Exception tracker should be in the 2nd pass right now
-            _ASSERTE(!pTracker->IsInFirstPass());
-
-            // The corruption severity of a newly created tracker is NotSet
-            _ASSERTE(pTracker->GetCorruptionSeverity() == NotSet);
-
-            // See comment in CEHelper::SetupCorruptionSeverityForActiveExceptionInUnwindPass for details
-            CEHelper::SetupCorruptionSeverityForActiveExceptionInUnwindPass(pThread, pTracker, FALSE, pExceptionRecord->ExceptionCode);
-        }
-#endif // FEATURE_CORRUPTING_EXCEPTIONS
     }
 
     _ASSERTE(pTracker->m_pLimitFrame >= pThread->GetFrame());
@@ -4776,20 +4712,6 @@ VOID DECLSPEC_NORETURN DispatchManagedException(PAL_SEHException& ex, bool isHar
 
         ThreadExceptionState * pCurTES = pCurThread->GetExceptionState();
         _ASSERTE(pCurTES != NULL);
-
-#ifdef FEATURE_CORRUPTING_EXCEPTIONS
-        ExceptionTracker* pEHTracker = pCurTES->GetCurrentExceptionTracker();
-        if (pEHTracker == NULL)
-        {
-            CorruptionSeverity severity = NotCorrupting;
-            if (CEHelper::IsProcessCorruptedStateException(ex.GetExceptionRecord()->ExceptionCode))
-            {
-                severity = ProcessCorrupting;
-            }
-
-            pCurTES->SetLastActiveExceptionCorruptionSeverity(severity);
-        }
-#endif // FEATURE_CORRUPTING_EXCEPTIONS
     }
 
     throw std::move(ex);

@@ -49,7 +49,7 @@ namespace System.IO.Packaging
 
             string partName = GetStringForPartUriFromAnyUri(resolvedUri);
 
-            if (partName == string.Empty)
+            if (partName.Length == 0)
                 throw new ArgumentException(SR.PartUriIsEmpty);
 
             ThrowIfPartNameEndsWithSlash(partName);
@@ -399,7 +399,7 @@ namespace System.IO.Packaging
 
             //We need to make sure that the URI passed to us is not just "/"
             //"/" is a valid relative uri, but is not a valid partname
-            if (partName == string.Empty)
+            if (partName.Length == 0)
                 return new ArgumentException(SR.PartUriIsEmpty);
 
             if (partName[0] != ForwardSlashChar)
@@ -804,7 +804,7 @@ namespace System.IO.Packaging
                 // String.Split, will always return an empty string as the
                 // first member in the array as the string starts with a "/"
 
-                Debug.Assert(segments.Length > 0 && segments[0] == string.Empty);
+                Debug.Assert(segments.Length > 0 && segments[0].Length == 0);
 
                 //If the extension was not equal to .rels, we would have exited early.
                 Debug.Assert(string.CompareOrdinal((Path.GetExtension(segments[segments.Length - 1])), RelationshipPartUpperCaseExtension) == 0);

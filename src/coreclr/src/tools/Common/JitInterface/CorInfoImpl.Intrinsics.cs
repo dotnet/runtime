@@ -164,7 +164,7 @@ namespace Internal.JitInterface
             table.Add(CorInfoIntrinsics.CORINFO_INTRINSIC_GetRawHandle, "AllocatorOf", "System", "Activator");
 
             // If this assert fails, make sure to add the new intrinsics to the table above and update the expected count below.
-            Debug.Assert((int)CorInfoIntrinsics.CORINFO_INTRINSIC_Count == 55, "Please update intrinsic hash table");
+            Debug.Assert((int)CorInfoIntrinsics.CORINFO_INTRINSIC_Count == 56, "Please update intrinsic hash table");
 
             return table;
         }

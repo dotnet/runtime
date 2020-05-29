@@ -2984,6 +2984,16 @@ namespace System.Text.Json.Tests
 
             using (var jsonUtf8 = new Utf8JsonWriter(output, options))
             {
+                Assert.Throws<ArgumentException>(() => jsonUtf8.WriteBase64String(value.AsSpan(0, 166_666_667), value.AsSpan(0, 1)));
+            }
+
+            using (var jsonUtf8 = new Utf8JsonWriter(output, options))
+            {
+                Assert.Throws<ArgumentException>(() => jsonUtf8.WriteBase64String(Encoding.UTF8.GetString(value).ToCharArray().AsSpan(0, 166_666_667), value.AsSpan(0, 1)));
+            }
+
+            using (var jsonUtf8 = new Utf8JsonWriter(output, options))
+            {
                 Assert.Throws<ArgumentException>(() => jsonUtf8.WriteBase64StringValue(value));
             }
 

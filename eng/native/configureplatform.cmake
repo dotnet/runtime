@@ -88,6 +88,8 @@ if(CLR_CMAKE_HOST_OS STREQUAL iOS)
     set(CLR_CMAKE_HOST_IOS 1)
     if(CMAKE_OSX_ARCHITECTURES MATCHES "x86_64")
         set(CLR_CMAKE_HOST_UNIX_AMD64 1)
+    elseif(CMAKE_OSX_ARCHITECTURES MATCHES "i386")
+        set(CLR_CMAKE_HOST_UNIX_X86 1)
     elseif(CMAKE_OSX_ARCHITECTURES MATCHES "armv7")
         set(CLR_CMAKE_HOST_UNIX_ARM 1)
     elseif(CMAKE_OSX_ARCHITECTURES MATCHES "arm64")
@@ -168,6 +170,7 @@ endif(CLR_CMAKE_HOST_OS STREQUAL Windows)
 if(CLR_CMAKE_HOST_OS STREQUAL Emscripten)
     #set(CLR_CMAKE_HOST_UNIX 1) # TODO: this should be reenabled but it activates a bunch of additional compiler flags in configurecompiler.cmake
     set(CLR_CMAKE_HOST_UNIX_WASM 1)
+    set(CLR_CMAKE_HOST_BROWSER 1)
 endif(CLR_CMAKE_HOST_OS STREQUAL Emscripten)
 
 #--------------------------------------------
@@ -315,7 +318,7 @@ endif(CLR_CMAKE_TARGET_OS STREQUAL SunOS)
 if(CLR_CMAKE_TARGET_OS STREQUAL Emscripten)
     set(CLR_CMAKE_TARGET_UNIX 1)
     set(CLR_CMAKE_TARGET_LINUX 1)
-    set(CLR_CMAKE_TARGET_EMSCRIPTEN 1)
+    set(CLR_CMAKE_TARGET_BROWSER 1)
 endif(CLR_CMAKE_TARGET_OS STREQUAL Emscripten)
 
 if(CLR_CMAKE_TARGET_UNIX)
@@ -357,7 +360,7 @@ else()
     endif()
 endif()
 
-if(NOT CLR_CMAKE_TARGET_EMSCRIPTEN)
+if(NOT CLR_CMAKE_TARGET_BROWSER)
     # Skip check_pie_supported call on Android as ld from llvm toolchain with NDK API level 21
     # complains about missing linker flag `-no-pie` (while level 28's ld does support this flag,
     # but since we know that PIE is supported, we can safely skip this redundant check).

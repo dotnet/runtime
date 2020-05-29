@@ -396,8 +396,8 @@
   <data name="SerializationConverterWrite" xml:space="preserve">
     <value>The converter '{0}' wrote too much or not enough.</value>
   </data>
-  <data name="SerializerDictionaryKeyNull" xml:space="preserve">
-    <value>The dictionary key policy '{0}' cannot return a null key.</value>
+  <data name="NamingPolicyReturnNull" xml:space="preserve">
+    <value>The naming policy '{0}' cannot return null.</value>
   </data>
   <data name="SerializationDuplicateAttribute" xml:space="preserve">
     <value>The attribute '{0}' cannot exist more than once on '{1}'.</value>
@@ -520,5 +520,11 @@
   </data>
   <data name="CannotPopulateCollection" xml:space="preserve">
     <value>The collection type '{0}' is abstract, an interface, or is read only, and could not be instantiated and populated.</value>
+  </data>
+  <data name="DefaultIgnoreConditionAlreadySpecified" xml:space="preserve">
+    <value>'IgnoreNullValues' and 'DefaultIgnoreCondition' cannot both be set to non-default values.</value>
+  </data>
+  <data name="DefaultIgnoreConditionInvalid" xml:space="preserve">
+    <value>The value cannot be 'JsonIgnoreCondition.Always'.</value>
   </data>
 </root>

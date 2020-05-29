@@ -470,9 +470,9 @@ namespace System.Diagnostics
                     string currentCategoryName = _categoryName;
                     string currentMachineName = _machineName;
 
-                    if (currentCategoryName == string.Empty)
+                    if (currentCategoryName.Length == 0)
                         throw new InvalidOperationException(SR.CategoryNameMissing);
-                    if (_counterName == string.Empty)
+                    if (_counterName.Length == 0)
                         throw new InvalidOperationException(SR.CounterNameMissing);
 
                     if (ReadOnly)
