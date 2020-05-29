@@ -365,7 +365,7 @@ int mono_interp_traceopt = 0;
 
 #endif
 
-#if defined(__GNUC__) && !defined(TARGET_WASM) && !COUNT_OPS && !DEBUG_INTERP
+#if defined(__GNUC__) && !defined(TARGET_WASM) && !COUNT_OPS && !DEBUG_INTERP && !ENABLE_CHECKED_BUILD
 #define USE_COMPUTED_GOTO 1
 #endif
 
@@ -3423,8 +3423,11 @@ main_loop:
 	 */
 	while (1) {
 		MintOpcode opcode;
-		/* g_assert (sp >= frame->stack); */
-		/* g_assert(vt_sp - vtalloc <= frame->imethod->vt_stack_size); */
+#ifdef ENABLE_CHECKED_BUILD
+		g_assert (sp >= frame->stack);
+		g_assert (vt_sp >= sp);
+		g_assert (locals >= vt_sp);
+#endif
 		DUMP_INSTR();
 		MINT_IN_SWITCH (*ip) {
 		MINT_IN_CASE(MINT_INITLOCALS)
