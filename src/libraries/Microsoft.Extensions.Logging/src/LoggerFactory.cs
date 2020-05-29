@@ -69,6 +69,14 @@ namespace Microsoft.Extensions.Logging
         {
             _factoryOptions = options == null || options.Value == null ? new LoggerFactoryOptions() : options.Value;
 
+            const ActivityTrackingOptions ActivityTrackingOptionsMask = ~(ActivityTrackingOptions.SpanId | ActivityTrackingOptions.TraceId | ActivityTrackingOptions.ParentId |
+                                                                          ActivityTrackingOptions.TraceFlags | ActivityTrackingOptions.TraceState);
+
+            if ((_factoryOptions.ActivityTrackingOptions & ActivityTrackingOptionsMask) != 0)
+            {
+                throw new ArgumentException(SR.Format(SR.InvalidActivityTrackingOptions, _factoryOptions.ActivityTrackingOptions), nameof(options));
+            }
+
             foreach (var provider in providers)
             {
                 AddProviderRegistration(provider, dispose: false);

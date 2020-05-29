@@ -18,7 +18,7 @@ namespace Microsoft.Extensions.Logging
     internal class LoggerFactoryScopeProvider : IExternalScopeProvider
     {
         private readonly AsyncLocal<Scope> _currentScope = new AsyncLocal<Scope>();
-        private ActivityTrackingOptions _activityTrackingOption;
+        private readonly ActivityTrackingOptions _activityTrackingOption;
 
         public LoggerFactoryScopeProvider(ActivityTrackingOptions activityTrackingOption) => _activityTrackingOption = activityTrackingOption;
 

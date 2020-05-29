@@ -199,6 +199,14 @@ namespace Microsoft.Extensions.Logging.Test
         }
 
         [Fact]
+        public void TestInvalidActivityTrackingOptions()
+        {
+            Assert.Throws<ArgumentException>(() =>
+                LoggerFactory.Create(builder => { builder.Configure(o => o.ActivityTrackingOptions = (ActivityTrackingOptions) 0xFF00);})
+            );
+        }
+
+        [Fact]
         public void CallsSetScopeProvider_OnSupportedProviders()
         {
             var loggerProvider = new ExternalScopeLoggerProvider();
