@@ -50,9 +50,24 @@ namespace System.Net.Http
                         socket.Connect(new DnsEndPoint(host, port));
                     }
                 }
-                catch
+                catch (Exception ex)
                 {
                     socket.Dispose();
+
+                    if (CancellationHelper.ShouldWrapInOperationCanceledException(ex, cancellationToken))
+                    {
+                        // Cancellation was requested, so assume that the failure is due to
+                        // the cancellation request. This is a bit unorthodox, as usually we'd
+                        // prioritize a non-OperationCanceledException over a cancellation
+                        // request to avoid losing potentially pertinent information.  But given
+                        // the cancellation design where we tear down the underlying stream upon
+                        // a cancellation request, which can then result in a myriad of different
+                        // exceptions (argument exceptions, object disposed exceptions, socket exceptions,
+                        // etc.), as a middle ground we treat it as cancellation, but still propagate the
+                        // original information as the inner exception, for diagnostic purposes.
+                        throw CancellationHelper.CreateOperationCanceledException(ex, cancellationToken);
+                    }
+
                     throw;
                 }
 
