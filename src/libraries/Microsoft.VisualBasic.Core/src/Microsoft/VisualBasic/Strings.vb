@@ -1572,7 +1572,7 @@ RedimAndExit:
                 sTmp = sb.ToString()
                 sb.Append(";(")
                 sb.Append(sTmp)
-                sb.Append(")")
+                sb.Append(")"c)
             End If
 
             Return sb.ToString()

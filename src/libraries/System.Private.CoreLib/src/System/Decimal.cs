@@ -4,6 +4,7 @@
 
 using System.Buffers.Binary;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -480,7 +481,7 @@ namespace System
             return Number.ParseDecimal(s, style, NumberFormatInfo.GetInstance(provider));
         }
 
-        public static bool TryParse(string? s, out decimal result)
+        public static bool TryParse([NotNullWhen(true)] string? s, out decimal result)
         {
             if (s == null)
             {
@@ -496,7 +497,7 @@ namespace System
             return Number.TryParseDecimal(s, NumberStyles.Number, NumberFormatInfo.CurrentInfo, out result) == Number.ParsingStatus.OK;
         }
 
-        public static bool TryParse(string? s, NumberStyles style, IFormatProvider? provider, out decimal result)
+        public static bool TryParse([NotNullWhen(true)] string? s, NumberStyles style, IFormatProvider? provider, out decimal result)
         {
             NumberFormatInfo.ValidateParseStyleFloatingPoint(style);
 

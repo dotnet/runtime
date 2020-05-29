@@ -2,8 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Buffers;
 using System.Collections.Generic;
 using System.Reflection;
+using System.Text;
 using Xunit;
 
 namespace System.Globalization.Tests
@@ -95,15 +97,16 @@ namespace System.Globalization.Tests
             yield return new object[] { "tr-TR"  , 0x041f };
         }
 
-        // On Windows, hiragana characters sort after katakana.
+        // On NLS, hiragana characters sort after katakana.
         // On ICU, it is the opposite
-        private static int s_expectedHiraganaToKatakanaCompare = PlatformDetection.IsWindows ? 1 : -1;
+        private static int s_expectedHiraganaToKatakanaCompare = PlatformDetection.IsNlsGlobalization ? 1 : -1;
 
-        // On Windows, all halfwidth characters sort before fullwidth characters.
+        // On NLS, all halfwidth characters sort before fullwidth characters.
         // On ICU, half and fullwidth characters that aren't in the "Halfwidth and fullwidth forms" block U+FF00-U+FFEF
         // sort before the corresponding characters that are in the block U+FF00-U+FFEF
-        private static int s_expectedHalfToFullFormsComparison = PlatformDetection.IsWindows ? -1 : 1;
+        private static int s_expectedHalfToFullFormsComparison = PlatformDetection.IsNlsGlobalization ? -1 : 1;
 
+        private static CompareInfo s_hungarianCompare = new CultureInfo("hu-HU").CompareInfo;
         private static CompareInfo s_invariantCompare = CultureInfo.InvariantCulture.CompareInfo;
         private static CompareInfo s_turkishCompare = new CultureInfo("tr-TR").CompareInfo;
 
@@ -373,6 +376,33 @@ namespace System.Globalization.Tests
 
             Assert.Equal(string1, sk1.OriginalString);
             Assert.Equal(string2, sk2.OriginalString);
+
+            // Now try the span-based versions - use BoundedMemory to detect buffer overruns
+
+            RunSpanSortKeyTest(compareInfo, string1, options, sk1.KeyData);
+            RunSpanSortKeyTest(compareInfo, string2, options, sk2.KeyData);
+
+            unsafe static void RunSpanSortKeyTest(CompareInfo compareInfo, ReadOnlySpan<char> source, CompareOptions options, byte[] expectedSortKey)
+            {
+                using BoundedMemory<char> sourceBoundedMemory = BoundedMemory.AllocateFromExistingData(source);
+                sourceBoundedMemory.MakeReadonly();
+
+                Assert.Equal(expectedSortKey.Length, compareInfo.GetSortKeyLength(sourceBoundedMemory.Span, options));
+
+                using BoundedMemory<byte> sortKeyBoundedMemory = BoundedMemory.Allocate<byte>(expectedSortKey.Length);
+
+                // First try with a destination which is too small - should result in an error
+
+                Assert.Throws<ArgumentException>("destination", () => compareInfo.GetSortKey(sourceBoundedMemory.Span, sortKeyBoundedMemory.Span.Slice(1), options));
+
+                // Next, try with a destination which is perfectly sized - should succeed
+
+                Span<byte> sortKeyBoundedSpan = sortKeyBoundedMemory.Span;
+                sortKeyBoundedSpan.Clear();
+
+                Assert.Equal(expectedSortKey.Length, compareInfo.GetSortKey(sourceBoundedMemory.Span, sortKeyBoundedSpan, options));
+                Assert.Equal(expectedSortKey, sortKeyBoundedSpan[0..expectedSortKey.Length].ToArray());
+            }
         }
 
         [Fact]
@@ -435,6 +465,12 @@ namespace System.Globalization.Tests
         {
             string source = sourceObj as string ?? new string((char[])sourceObj);
             Assert.Equal(expected, CompareInfo.IsSortable(source));
+
+            // Now test the span version - use BoundedMemory to detect buffer overruns
+
+            using BoundedMemory<char> sourceBoundedMemory = BoundedMemory.AllocateFromExistingData<char>(source);
+            sourceBoundedMemory.MakeReadonly();
+            Assert.Equal(expected, CompareInfo.IsSortable(sourceBoundedMemory.Span));
 
             // If the string as a whole is sortable, then all chars which aren't standalone
             // surrogate halves must also be sortable.

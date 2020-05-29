@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AssemblyName>Microsoft.CSharp</AssemblyName>
     <RootNamespace>Microsoft.CSharp</RootNamespace>
@@ -160,23 +160,18 @@
     <Compile Include="Microsoft\CSharp\RuntimeBinder\Syntax\PredefinedType.cs" />
     <Compile Include="Microsoft\CSharp\RuntimeBinder\Syntax\TokenFacts.cs" />
     <Compile Include="Microsoft\CSharp\RuntimeBinder\Syntax\TokenKind.cs" />
-    <Compile Include="$(CoreLibSharedDir)System\Numerics\Hashing\HashHelpers.cs">
-      <Link>Common\System\Collections\HashHelpers.cs</Link>
-    </Compile>
+    <Compile Include="$(CoreLibSharedDir)System\Numerics\Hashing\HashHelpers.cs"
+             Link="Common\System\Collections\HashHelpers.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(EnableComBinder)'=='true'">
-    <Compile Include="$(CommonPath)Interop\Windows\Interop.Libraries.cs">
-      <Link>Common\Interop\Windows\Interop.Libraries.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)Interop\Windows\OleAut32\Interop.VariantClear.cs">
-      <Link>Common\Interop\Windows\OleAut32\Interop.VariantClear.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)System\Runtime\InteropServices\ComEventsSink.cs">
-      <Link>Common\System\Runtime\InteropServices\ComEventsSink.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)System\Runtime\InteropServices\ComEventsMethod.cs">
-      <Link>Common\System\Runtime\InteropServices\ComEventsMethod.cs</Link>
-    </Compile>
+    <Compile Include="$(CommonPath)Interop\Windows\Interop.Libraries.cs"
+             Link="Common\Interop\Windows\Interop.Libraries.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\OleAut32\Interop.VariantClear.cs"
+             Link="Common\Interop\Windows\OleAut32\Interop.VariantClear.cs" />
+    <Compile Include="$(CommonPath)System\Runtime\InteropServices\ComEventsSink.cs"
+             Link="Common\System\Runtime\InteropServices\ComEventsSink.cs" />
+    <Compile Include="$(CommonPath)System\Runtime\InteropServices\ComEventsMethod.cs"
+             Link="Common\System\Runtime\InteropServices\ComEventsMethod.cs" />
     <Compile Include="$(CommonPath)System\Runtime\InteropServices\IDispatch.cs">
         <Link>Common\System\Runtime\InteropServices\IDispatch.cs</Link>
     </Compile>

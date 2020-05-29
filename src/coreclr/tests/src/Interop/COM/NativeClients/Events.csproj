@@ -1,0 +1,27 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <IgnoreCoreCLRTestLibraryDependency>true</IgnoreCoreCLRTestLibraryDependency>
+    <CLRTestScriptLocalCoreShim>true</CLRTestScriptLocalCoreShim>
+    <RequiresMockHostPolicy>true</RequiresMockHostPolicy>
+    <IlrtTestKind>BuildOnly</IlrtTestKind>
+    <TestUnsupportedOutsideWindows>true</TestUnsupportedOutsideWindows>
+    <DisableProjectBuild Condition="'$(TargetsUnix)' == 'true'">true</DisableProjectBuild>
+    <DefineConstants>BLOCK_WINDOWS_NANO</DefineConstants>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="$(InteropCommonDir)ExeLauncherProgram.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="Events/CMakeLists.txt" />
+    <ProjectReference Include="../NetServer/NetServer.csproj" />
+    <ProjectReference Include="$(TestSourceDir)Common/CoreCLRTestLibrary/CoreCLRTestLibrary.csproj" />
+  </ItemGroup>
+  <PropertyGroup>
+    <CLRTestNeedTarget>1</CLRTestNeedTarget>
+  </PropertyGroup>
+  <ItemGroup>
+    <TraitTags Include="OsSpecific" />
+  </ItemGroup>
+  <Import Project="$([MSBuild]::GetPathOfFileAbove(Interop.settings.targets))" />
+</Project>

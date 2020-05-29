@@ -107,7 +107,7 @@ namespace ILCompiler.DependencyAnalysis
                     _codegenNodeFactory.MethodSignature(ReadyToRunFixupKind.VirtualEntry,
                         cellKey.Method,
                         cellKey.IsUnboxingStub, isInstantiatingStub: false),
-                    cellKey.CallSite);
+                    cellKey.CallingMethod);
             });
 
             _delegateCtors = new NodeCache<TypeAndMethod, ISymbolNode>(ctorKey =>
@@ -123,6 +123,14 @@ namespace ILCompiler.DependencyAnalysis
                     _codegenNodeFactory.HelperImports,
                     ReadyToRunHelper.DelayLoad_Helper_ObjObj,
                     new DelegateCtorSignature(ctorKey.Type, targetMethodNode, ctorKey.Method.Token));
+            });
+
+            _checkTypeLayoutCache = new NodeCache<TypeDesc, ISymbolNode>(key =>
+            {
+                return new PrecodeHelperImport(
+                    _codegenNodeFactory,
+                    _codegenNodeFactory.TypeSignature(ReadyToRunFixupKind.Check_TypeLayout, key)
+                );
             });
 
             _genericLookupHelpers = new NodeCache<GenericLookupKey, ISymbolNode>(key =>
@@ -415,9 +423,9 @@ namespace ILCompiler.DependencyAnalysis
 
         private NodeCache<MethodAndCallSite, ISymbolNode> _interfaceDispatchCells = new NodeCache<MethodAndCallSite, ISymbolNode>();
 
-        public ISymbolNode InterfaceDispatchCell(MethodWithToken method, bool isUnboxingStub, string callSite)
+        public ISymbolNode InterfaceDispatchCell(MethodWithToken method, bool isUnboxingStub, MethodDesc callingMethod)
         {
-            MethodAndCallSite cellKey = new MethodAndCallSite(method, isUnboxingStub, callSite);
+            MethodAndCallSite cellKey = new MethodAndCallSite(method, isUnboxingStub, callingMethod);
             return _interfaceDispatchCells.GetOrAdd(cellKey);
         }
 
@@ -434,22 +442,29 @@ namespace ILCompiler.DependencyAnalysis
             return _delegateCtors.GetOrAdd(ctorKey);
         }
 
+        private NodeCache<TypeDesc, ISymbolNode> _checkTypeLayoutCache;
+
+        public ISymbolNode CheckTypeLayout(TypeDesc type)
+        {
+            return _checkTypeLayoutCache.GetOrAdd(type);
+        }
+
         struct MethodAndCallSite : IEquatable<MethodAndCallSite>
         {
             public readonly MethodWithToken Method;
             public readonly bool IsUnboxingStub;
-            public readonly string CallSite;
+            public readonly MethodDesc CallingMethod;
 
-            public MethodAndCallSite(MethodWithToken method, bool isUnboxingStub, string callSite)
+            public MethodAndCallSite(MethodWithToken method, bool isUnboxingStub, MethodDesc callingMethod)
             {
-                CallSite = callSite;
                 IsUnboxingStub = isUnboxingStub;
                 Method = method;
+                CallingMethod = callingMethod;
             }
 
             public bool Equals(MethodAndCallSite other)
             {
-                return CallSite == other.CallSite && Method.Equals(other.Method) && IsUnboxingStub == other.IsUnboxingStub;
+                return Method.Equals(other.Method) && IsUnboxingStub == other.IsUnboxingStub && CallingMethod == other.CallingMethod;
             }
 
             public override bool Equals(object obj)
@@ -459,7 +474,7 @@ namespace ILCompiler.DependencyAnalysis
 
             public override int GetHashCode()
             {
-                return (CallSite != null ? CallSite.GetHashCode() : 0)
+                return (CallingMethod != null ? unchecked(199 * CallingMethod.GetHashCode()) : 0)
                     ^ unchecked(31 * Method.GetHashCode())
                     ^ (IsUnboxingStub ? -0x80000000 : 0);
             }

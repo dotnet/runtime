@@ -1223,11 +1223,11 @@ BOOL CEEPreloader::CanEmbedFunctionEntryPoint(
 
     MethodDesc * pMethod = GetMethod(methodHandle);
 
-    // Methods with native callable attribute are special , since
-    // they are used as LDFTN targets.Native Callable methods
+    // Methods with UnmanagedCallersOnlyAttribute are special, since
+    // they are used as LDFTN targets. UnmanagedCallersOnly methods
     // uses the same code path as reverse pinvoke and embedding them
     // in an ngen image require saving the reverse pinvoke stubs.
-    if (pMethod->HasNativeCallableAttribute())
+    if (pMethod->HasUnmanagedCallersOnlyAttribute())
         return FALSE;
 
     return TRUE;
@@ -1272,12 +1272,12 @@ BOOL CEEPreloader::DoesMethodNeedRestoringBeforePrestubIsRun(
     return FALSE;
 }
 
-BOOL CEECompileInfo::IsNativeCallableMethod(CORINFO_METHOD_HANDLE handle)
+BOOL CEECompileInfo::IsUnmanagedCallersOnlyMethod(CORINFO_METHOD_HANDLE handle)
 {
     WRAPPER_NO_CONTRACT;
 
     MethodDesc * pMethod = GetMethod(handle);
-    return pMethod->HasNativeCallableAttribute();
+    return pMethod->HasUnmanagedCallersOnlyAttribute();
 }
 
 BOOL CEEPreloader::CanSkipDependencyActivation(CORINFO_METHOD_HANDLE   context,

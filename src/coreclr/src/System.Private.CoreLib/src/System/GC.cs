@@ -135,7 +135,7 @@ namespace System
 
             if ((4 == IntPtr.Size) && (bytesAllocated > int.MaxValue))
             {
-                throw new ArgumentOutOfRangeException("pressure",
+                throw new ArgumentOutOfRangeException(nameof(bytesAllocated),
                     SR.ArgumentOutOfRange_MustBeNonNegInt32);
             }
 
@@ -353,7 +353,7 @@ namespace System
         }
 
         [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
-        private static extern IntPtr _RegisterFrozenSegment(IntPtr sectionAddress, IntPtr sectionSize);
+        private static extern IntPtr _RegisterFrozenSegment(IntPtr sectionAddress, nint sectionSize);
 
         [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
         private static extern void _UnregisterFrozenSegment(IntPtr segmentHandle);

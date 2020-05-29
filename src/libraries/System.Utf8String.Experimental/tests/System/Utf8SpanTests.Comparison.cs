@@ -47,8 +47,8 @@ namespace System.Text.Tests
             AssertEqualOrdinal(Utf8Span.Empty, u8(""));
         }
 
-        [Theory]
         [PlatformSpecific(TestPlatforms.Windows)]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNlsGlobalization))]
         [InlineData(null, null, StringComparison.OrdinalIgnoreCase, null, true)]
         [InlineData("encyclopaedia", "encyclopædia", StringComparison.OrdinalIgnoreCase, null, false)]
         [InlineData("encyclopaedia", "encyclopædia", StringComparison.InvariantCulture, null, true)]

@@ -8,11 +8,7 @@ namespace System.Threading
 {
     public static partial class ThreadPool
     {
-        private static void EnsureInitialized()
-        {
-            ThreadPoolGlobals.threadPoolInitialized = true;
-            ThreadPoolGlobals.enableWorkerTracking = false;
-        }
+        private static bool GetEnableWorkerTracking() => false;
 
         internal static void ReportThreadStatus(bool isWorking)
         {

@@ -35,6 +35,7 @@ namespace Internal.ReadyToRunConstants
         Sha1=19,
         Sha256=20,
         Atomics=21,
+        X86Base=22,
 
     }
 }

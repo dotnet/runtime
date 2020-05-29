@@ -943,6 +943,16 @@ if test x$with_core = xonly; then
 fi
 AM_CONDITIONAL(ENABLE_NETCORE, test x$with_core = xonly)
 
+if test x$with_core = xonly; then
+	if test -f $srcdir/mono/eventpipe/ep.h; then
+		enable_perftracing=yes
+	fi
+	if test x$enable_perftracing = xyes; then
+		AC_DEFINE(ENABLE_PERFTRACING,1,[Enables support for eventpipe library])
+	fi
+fi
+AM_CONDITIONAL(ENABLE_PERFTRACING, test x$enable_perftracing = xyes)
+
 #
 # A sanity check to catch cases where the package was unpacked
 # with an ancient tar program (Solaris)
@@ -3921,6 +3931,8 @@ else
 	AC_CHECK_LIB(advapi32, main, LIBS="$LIBS -ladvapi32", AC_ERROR(bad mingw install?))
 	AC_CHECK_LIB(version, main, LIBS="$LIBS -lversion", AC_ERROR(bad mingw install?))
 
+	AC_CHECK_TYPES([struct sockaddr_in6], [AC_DEFINE(HAVE_STRUCT_SOCKADDR_IN6)], , [#include <ws2tcpip.h>])
+
 	dnl *********************************
 	dnl *** Check for struct ip_mreqn ***
 	dnl *********************************
@@ -6765,6 +6777,18 @@ if test x"$GCC" = xyes; then
 	CFLAGS="$CFLAGS -Werror-implicit-function-declaration"
 	# jay has a lot of implicit declarations
 	JAY_CFLAGS="-Wno-implicit-function-declaration"
+
+	ORIG_CFLAGS=$CFLAGS
+	CFLAGS="$CFLAGS -Wsometimes-uninitialized -Werror"
+	AC_MSG_CHECKING(for -Wsometimes-uninitialized option to gcc)
+	AC_TRY_COMPILE([],[
+	], [
+		AC_MSG_RESULT(yes)
+		CFLAGS="$ORIG_CFLAGS -Werror=sometimes-uninitialized"
+	], [
+		AC_MSG_RESULT(no)
+		CFLAGS=$ORIG_CFLAGS
+	])
 fi
 
 # zlib/configure checks if this program compiles and if so
@@ -6782,6 +6806,46 @@ AC_COMPILE_IFELSE(
 	], [
 		AC_MSG_RESULT(no)
 	])
+
+# for icu shim
+ICU_SHIM_PATH=.
+if test x$with_core = xonly; then
+	if test x$cross_compiling = xno; then
+		AC_CHECK_FILE($srcdir/../libraries/Native/Unix/System.Globalization.Native/pal_icushim.h, [have_shim_globalization=yes], [have_shim_globalization=no])
+	fi
+	if test x$have_shim_globalization = xyes || test x$cross_compiling = xyes; then
+		ICU_SHIM_PATH=../../../libraries/Native/Unix/System.Globalization.Native
+		if test x$target_osx = xyes; then
+			ORIG_CPPFLAGS=$CPPFLAGS
+			# adding icu path to pkg_config_path
+			PKG_CONFIG_PATH=$PKG_CONFIG_PATH:/usr/local/lib/pkgconfig:/usr/local/opt/icu4c/lib/pkgconfig
+			export PKG_CONFIG_PATH
+			CPPFLAGS="`pkg-config --cflags-only-I icu-uc`"
+			AC_CHECK_LIB(icucore, ucol_open, LIBS=$LIBS,
+				[AC_MSG_ERROR([Cannot find libicucore, skipping build for System.Globalization.Native. .NET globalization is not expected to function.])])
+			AC_CHECK_HEADER(unicode/utypes.h, [have_sys_icu=yes], [have_sys_icu=no])
+			if test x$have_sys_icu = xyes; then
+				ICU_CFLAGS="$CPPFLAGS -DOSX_ICU_LIBRARY_PATH=AS_ESCAPE(\"/usr/lib/libicucore.dylib\", '\"') -DTARGET_UNIX -DU_DISABLE_RENAMING -Wno-reserved-id-macro -Wno-documentation -Wno-documentation-unknown-command -Wno-switch-enum -Wno-covered-switch-default -Wno-covered-switch-default -Wno-extra-semi-stmt -Wno-unknown-warning-option -Wno-deprecated-declarations"
+			fi
+			CPPFLAGS=$ORIG_CPPFLAGS
+		elif test x$platform_android = xyes; then 
+			ICU_CFLAGS="-DHAVE_UDAT_STANDALONE_SHORTER_WEEKDAYS -DHAVE_SET_MAX_VARIABLE -DTARGET_UNIX -DTARGET_ANDROID -Wno-reserved-id-macro -Wno-documentation -Wno-documentation-unknown-command -Wno-switch-enum -Wno-covered-switch-default -Wno-covered-switch-default -Wno-extra-semi-stmt -Wno-unknown-warning-option"
+			have_sys_icu=yes 
+		elif test x$host_linux = xyes; then
+			AC_CHECK_LIB(icuuc, main, LIBS=$LIBS,
+				[AC_MSG_ERROR([Cannot find libicuuc, try installing libicu-dev (or the appropriate package for your platform).])])
+			AC_CHECK_LIB(icui18n, main, LIBS=$LIBS,
+				[AC_MSG_ERROR([Cannot find libicui18n, try installing libicu-dev (or the appropriate package for your platform).])])
+			AC_CHECK_HEADER(unicode/utypes.h, [have_sys_icu=yes], [have_sys_icu=no])
+			if test x$have_sys_icu = xyes; then
+				ICU_CFLAGS="-DTARGET_UNIX -Wno-reserved-id-macro -Wno-documentation -Wno-documentation-unknown-command -Wno-switch-enum -Wno-covered-switch-default -Wno-covered-switch-default -Wno-extra-semi-stmt -Wno-unknown-warning-option"
+			fi
+		fi
+		AC_SUBST(ICU_CFLAGS)
+	fi
+fi
+AC_SUBST(ICU_SHIM_PATH)
+AM_CONDITIONAL(HAVE_SYS_ICU, test x$have_sys_icu = xyes)
 
 AC_SUBST(CFLAGS)
 AC_SUBST(CPPFLAGS)

@@ -5,9 +5,7 @@
     shared framework on those platforms.
   -->
   <PropertyGroup>
-    <ExcludeHostAssets Condition="'$(TargetOS)' == 'iOS'">true</ExcludeHostAssets>
-    <ExcludeHostAssets Condition="'$(TargetOS)' == 'tvOS'">true</ExcludeHostAssets>
-    <ExcludeHostAssets Condition="'$(TargetOS)' == 'Android'">true</ExcludeHostAssets>
+    <ExcludeHostAssets Condition="'$(RuntimeFlavor)' == 'Mono'">true</ExcludeHostAssets>
   </PropertyGroup>
   <!--
     Include HostPolicy and HostResolver based on legacy packages. This can be collapsed once the
@@ -15,5 +13,4 @@
   -->
   <Import Condition="'$(ExcludeHostAssets)' != 'true'" Project="..\..\Microsoft.NETCore.DotNetHostPolicy\Microsoft.NETCore.DotNetHostPolicy.props" />
   <Import Condition="'$(ExcludeHostAssets)' != 'true'" Project="..\..\Microsoft.NETCore.DotNetHostResolver\Microsoft.NETCore.DotNetHostResolver.props" />
-
 </Project>

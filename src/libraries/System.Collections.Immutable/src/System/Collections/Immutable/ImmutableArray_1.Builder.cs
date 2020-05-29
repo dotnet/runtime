@@ -4,7 +4,6 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Diagnostics.Contracts;
 
 namespace System.Collections.Immutable
 {
@@ -473,7 +472,6 @@ namespace System.Collections.Immutable
             /// <returns>
             /// The index of <paramref name="item"/> if found in the list; otherwise, -1.
             /// </returns>
-            [Pure]
             public int IndexOf(T item)
             {
                 return this.IndexOf(item, 0, _count, EqualityComparer<T>.Default);
@@ -485,7 +483,6 @@ namespace System.Collections.Immutable
             /// <param name="item">The item to search for.</param>
             /// <param name="startIndex">The index at which to begin the search.</param>
             /// <returns>The 0-based index into the array where the item was found; or -1 if it could not be found.</returns>
-            [Pure]
             public int IndexOf(T item, int startIndex)
             {
                 return this.IndexOf(item, startIndex, this.Count - startIndex, EqualityComparer<T>.Default);
@@ -498,7 +495,6 @@ namespace System.Collections.Immutable
             /// <param name="startIndex">The index at which to begin the search.</param>
             /// <param name="count">The number of elements to search.</param>
             /// <returns>The 0-based index into the array where the item was found; or -1 if it could not be found.</returns>
-            [Pure]
             public int IndexOf(T item, int startIndex, int count)
             {
                 return this.IndexOf(item, startIndex, count, EqualityComparer<T>.Default);
@@ -515,7 +511,6 @@ namespace System.Collections.Immutable
             /// If <c>null</c>, <see cref="EqualityComparer{T}.Default"/> is used.
             /// </param>
             /// <returns>The 0-based index into the array where the item was found; or -1 if it could not be found.</returns>
-            [Pure]
             public int IndexOf(T item, int startIndex, int count, IEqualityComparer<T>? equalityComparer)
             {
                 if (count == 0 && startIndex == 0)
@@ -550,7 +545,6 @@ namespace System.Collections.Immutable
             /// </summary>
             /// <param name="item">The item to search for.</param>
             /// <returns>The 0-based index into the array where the item was found; or -1 if it could not be found.</returns>
-            [Pure]
             public int LastIndexOf(T item)
             {
                 if (this.Count == 0)
@@ -567,7 +561,6 @@ namespace System.Collections.Immutable
             /// <param name="item">The item to search for.</param>
             /// <param name="startIndex">The index at which to begin the search.</param>
             /// <returns>The 0-based index into the array where the item was found; or -1 if it could not be found.</returns>
-            [Pure]
             public int LastIndexOf(T item, int startIndex)
             {
                 if (this.Count == 0 && startIndex == 0)
@@ -587,7 +580,6 @@ namespace System.Collections.Immutable
             /// <param name="startIndex">The index at which to begin the search.</param>
             /// <param name="count">The number of elements to search.</param>
             /// <returns>The 0-based index into the array where the item was found; or -1 if it could not be found.</returns>
-            [Pure]
             public int LastIndexOf(T item, int startIndex, int count)
             {
                 return this.LastIndexOf(item, startIndex, count, EqualityComparer<T>.Default);
@@ -601,7 +593,6 @@ namespace System.Collections.Immutable
             /// <param name="count">The number of elements to search.</param>
             /// <param name="equalityComparer">The equality comparer to use in the search.</param>
             /// <returns>The 0-based index into the array where the item was found; or -1 if it could not be found.</returns>
-            [Pure]
             public int LastIndexOf(T item, int startIndex, int count, IEqualityComparer<T>? equalityComparer)
             {
                 if (count == 0 && startIndex == 0)
@@ -672,7 +663,6 @@ namespace System.Collections.Immutable
             /// The <see cref="Comparison{T}"/> to use when comparing elements.
             /// </param>
             /// <exception cref="ArgumentNullException"><paramref name="comparison"/> is null.</exception>
-            [Pure]
             public void Sort(Comparison<T> comparison)
             {
                 Requires.NotNull(comparison, nameof(comparison));

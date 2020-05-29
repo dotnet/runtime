@@ -30,8 +30,6 @@
 #include "memoryrange.h"
 #include "../md/hotdata/hotheap.h"
 
-#include "../md/debug_metadata.h"
-
 //*****************************************************************************
 // NOTE:
 // One limitation with the pools, we have no way to removing strings from

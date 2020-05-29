@@ -38,9 +38,10 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
             foreach (MethodDesc method in Type.GetAllMethods())
             {
-                if (!method.IsGenericMethodDefinition && context.CompilationModuleGroup.VersionsWithMethodBody(method))
+                if (!method.IsGenericMethodDefinition &&
+                    context.CompilationModuleGroup.ContainsMethodBody(method, false))
                 {
-                    dependencies.Add(context.MethodEntrypoint(method), $"Method on type {Type.ToString()}");
+                    dependencies.Add(context.CompiledMethodNode(method), $"Method on type {Type.ToString()}");
                 }
             }
 

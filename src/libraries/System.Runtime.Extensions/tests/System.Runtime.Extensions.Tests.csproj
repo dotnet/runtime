@@ -73,27 +73,22 @@
     <Compile Include="System\Runtime\ProfileOptimization.cs" />
     <Compile Include="System\Runtime\CompilerServices\SwitchExpressionExceptionTests.cs" />
 
-    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.GetNodeName.cs" Condition="'$(TargetsUnix)' == 'true'">
-      <Link>Common\Interop\Unix\System.Native\Interop.GetNodeName.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)Interop\Unix\Interop.Libraries.cs">
-      <Link>Common\Interop\Unix\Interop.Libraries.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonTestPath)System\IO\PathFeatures.cs">
-      <Link>Common\System\IO\PathFeatures.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonTestPath)System\ShouldNotBeInvokedException.cs">
-      <Link>Common\System\ShouldNotBeInvokedException.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonTestPath)System\Security\Cryptography\ByteUtils.cs">
-      <Link>Common\System\Security\Cryptography\ByteUtils.cs</Link>
-    </Compile>
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.GetNodeName.cs" Condition="'$(TargetsUnix)' == 'true'"
+             Link="Common\Interop\Unix\System.Native\Interop.GetNodeName.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\Interop.Libraries.cs"
+             Link="Common\Interop\Unix\Interop.Libraries.cs" />
+    <Compile Include="$(CommonTestPath)System\IO\PathFeatures.cs"
+             Link="Common\System\IO\PathFeatures.cs" />
+    <Compile Include="$(CommonTestPath)System\ShouldNotBeInvokedException.cs"
+             Link="Common\System\ShouldNotBeInvokedException.cs" />
+    <Compile Include="$(CommonTestPath)System\Security\Cryptography\ByteUtils.cs"
+             Link="Common\System\Security\Cryptography\ByteUtils.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="AssemblyResolveTestApp\AssemblyResolveTestApp.csproj" />
     <ProjectReference Include="TestAppOutsideOfTPA\TestAppOutsideOfTPA.csproj" />
     <ProjectReference Include="VoidMainWithExitCodeApp\VoidMainWithExitCodeApp.csproj" />
     <ProjectReference Include="TestApp\TestApp.csproj" />
-    <ProjectReference Include="TargetFrameworkNameTestApp\TargetFrameworkNameTestApp.csproj" Condition="'$(TargetsNetCoreApp)' == 'true'" />
+    <ProjectReference Include="TargetFrameworkNameTestApp\TargetFrameworkNameTestApp.csproj" />
   </ItemGroup>
 </Project>

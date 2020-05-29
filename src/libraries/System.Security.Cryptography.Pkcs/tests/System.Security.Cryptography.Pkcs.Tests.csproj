@@ -4,9 +4,8 @@
     <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent);$(NetFrameworkCurrent)-Windows_NT</TargetFrameworks>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="$(CommonTestPath)System\Security\Cryptography\ByteUtils.cs">
-      <Link>CommonTest\System\Security\Cryptography\ByteUtils.cs</Link>
-    </Compile>
+    <Compile Include="$(CommonTestPath)System\Security\Cryptography\ByteUtils.cs"
+             Link="CommonTest\System\Security\Cryptography\ByteUtils.cs" />
     <Compile Include="Certificates.cs" />
     <Compile Include="CertLoader.cs" />
     <Compile Include="CertLoader.Settings.cs" />
@@ -32,10 +31,11 @@
     <Compile Include="SignedCms\SignedDocuments.cs" />
     <Compile Include="SignedCms\SignerInfoTests.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsNetCoreApp)' == 'true'">
+  <ItemGroup Condition="$(TargetFramework.StartsWith('$(NetCoreAppCurrent)'))">
     <Compile Include="AlgorithmIdentifierTest.cs" />
     <Compile Include="EnvelopedCms\DecryptTestsRsaPaddingModeTests.cs" />
     <Compile Include="EnvelopedCms\DecryptTestsUsingExplicitPrivateKey.cs" />
+    <Compile Include="EnvelopedCms\KeyTransRecipientInfoRsaOaepCertTests.cs" />
     <Compile Include="EnvelopedCms\KeyTransRecipientInfoRsaPaddingModeTests.cs" />
     <Compile Include="EnvelopedCms\SubjectIdentifierTests.cs" />
     <Compile Include="Pkcs12\CertBagTests.cs" />
@@ -62,10 +62,7 @@
     <Compile Include="Pkcs8PrivateKeyInfoTests.cs" />
     <Compile Include="PrivateKeyHelpers.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsNetCoreApp)' == 'true' or '$(TargetsNetFx)' == 'true'">
-    <Compile Include="EnvelopedCms\KeyTransRecipientInfoRsaOaepCertTests.cs" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(TargetsWindows)' == 'true' and '$(TargetsNetCoreApp)' == 'true'">
+  <ItemGroup Condition="'$(TargetsWindows)' == 'true' and $(TargetFramework.StartsWith('$(NetCoreAppCurrent)'))">
     <Compile Include="EnvelopedCms\DecryptTests.KeyPersistence.cs" />
   </ItemGroup>
 </Project>

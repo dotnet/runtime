@@ -7,6 +7,7 @@
 #include "pal_compiler.h"
 #include "pal_types.h"
 #include "pal_errno.h"
+#include <pal_networking_common.h>
 
 /**
  * These error values are different on every platform so make a
@@ -59,6 +60,7 @@ typedef enum
  */
 typedef enum
 {
+    AddressFamily_AF_UNKNOWN = -1, // System.Net.AddressFamily.Unknown
     AddressFamily_AF_UNSPEC = 0,   // System.Net.AddressFamily.Unspecified
     AddressFamily_AF_UNIX = 1,     // System.Net.AddressFamily.Unix
     AddressFamily_AF_INET = 2,     // System.Net.AddressFamily.InterNetwork
@@ -74,6 +76,7 @@ typedef enum
  */
 typedef enum
 {
+    SocketType_UNKNOWN = -1,       // System.Net.SocketType.Unknown
     SocketType_SOCK_STREAM = 1,    // System.Net.SocketType.Stream
     SocketType_SOCK_DGRAM = 2,     // System.Net.SocketType.Dgram
     SocketType_SOCK_RAW = 3,       // System.Net.SocketType.Raw
@@ -88,6 +91,7 @@ typedef enum
  */
 typedef enum
 {
+    ProtocolType_PT_UNKNOWN = -1,    // System.Net.ProtocolType.Unknown
     ProtocolType_PT_UNSPECIFIED = 0, // System.Net.ProtocolType.Unspecified
     ProtocolType_PT_ICMP = 1,        // System.Net.ProtocolType.Icmp
     ProtocolType_PT_TCP = 6,         // System.Net.ProtocolType.Tcp
@@ -107,18 +111,6 @@ typedef enum
     MulticastOption_MULTICAST_DROP = 1, // IP{,V6}_DROP_MEMBERSHIP
     MulticastOption_MULTICAST_IF = 2    // IP_MULTICAST_IF
 } MulticastOption;
-
-/*
- * Socket shutdown modes.
- *
- * NOTE: these values are taken from System.Net.SocketShutdown.
- */
-typedef enum
-{
-    SocketShutdown_SHUT_READ = 0,  // SHUT_RD
-    SocketShutdown_SHUT_WRITE = 1, // SHUT_WR
-    SocketShutdown_SHUT_BOTH = 2,  // SHUT_RDWR
-} SockerShutdown;
 
 /*
  * Socket option levels.
@@ -368,7 +360,11 @@ PALEXPORT int32_t SystemNative_SetReceiveTimeout(intptr_t socket, int32_t millis
 
 PALEXPORT int32_t SystemNative_SetSendTimeout(intptr_t socket, int32_t millisecondsTimeout);
 
+PALEXPORT int32_t SystemNative_Receive(intptr_t socket, void* buffer, int32_t bufferLen, int32_t flags, int32_t* received);
+
 PALEXPORT int32_t SystemNative_ReceiveMessage(intptr_t socket, MessageHeader* messageHeader, int32_t flags, int64_t* received);
+
+PALEXPORT int32_t SystemNative_Send(intptr_t socket, void* buffer, int32_t bufferLen, int32_t flags, int32_t* sent);
 
 PALEXPORT int32_t SystemNative_SendMessage(intptr_t socket, MessageHeader* messageHeader, int32_t flags, int64_t* sent);
 
@@ -402,6 +398,8 @@ PALEXPORT int32_t SystemNative_SetRawSockOpt(
 
 PALEXPORT int32_t SystemNative_Socket(int32_t addressFamily, int32_t socketType, int32_t protocolType, intptr_t* createdSocket);
 
+PALEXPORT int32_t SystemNative_GetSocketType(intptr_t socket, int32_t* addressFamily, int32_t* socketType, int32_t* protocolType, int32_t* isListening);
+
 PALEXPORT int32_t SystemNative_GetAtOutOfBandMark(intptr_t socket, int32_t* available);
 
 PALEXPORT int32_t SystemNative_GetBytesAvailable(intptr_t socket, int32_t* available);
@@ -424,6 +422,8 @@ PALEXPORT int32_t SystemNative_PlatformSupportsDualModeIPv4PacketInfo(void);
 PALEXPORT char* SystemNative_GetPeerUserName(intptr_t socket);
 
 PALEXPORT void SystemNative_GetDomainSocketSizes(int32_t* pathOffset, int32_t* pathSize, int32_t* addressSize);
+
+PALEXPORT int32_t SystemNative_GetMaximumAddressSize(void);
 
 PALEXPORT int32_t SystemNative_SendFile(intptr_t out_fd, intptr_t in_fd, int64_t offset, int64_t count, int64_t* sent);
 

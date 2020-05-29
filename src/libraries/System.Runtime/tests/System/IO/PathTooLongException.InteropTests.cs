@@ -15,7 +15,7 @@ namespace System.IO.Tests
         {
             int hr = HResults.COR_E_PATHTOOLONG;
             PathTooLongException exception = Assert.IsAssignableFrom<PathTooLongException>(Marshal.GetExceptionForHR(hr, new IntPtr(-1)));
-            ExceptionUtility.ValidateExceptionProperties(exception, hResult: hr, validateMessage: false);
+            ExceptionHelpers.ValidateExceptionProperties(exception, hResult: hr, validateMessage: false);
         }
     }
 }

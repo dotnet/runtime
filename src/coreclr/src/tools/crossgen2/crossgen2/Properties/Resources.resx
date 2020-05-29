@@ -138,6 +138,9 @@
   <data name="InputBubbleOption" xml:space="preserve">
     <value>True when the entire input forms a version bubble (default = per-assembly bubble)</value>
   </data>
+  <data name="CompileNoMethodsOption" xml:space="preserve">
+    <value>True to skip compiling methods into the R2R image (default = false)</value>
+  </data>
   <data name="CompositeBuildMode" xml:space="preserve">
     <value>Emit a composite R2R image comprising a number of input assemblies</value>
   </data>

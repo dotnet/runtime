@@ -63,13 +63,7 @@ handle_enum:
 	}
 }
 
-#if TARGET_SIZEOF_VOID_P == 4
-#define FIDX(x) ((x) * 2)
-#else
 #define FIDX(x) (x)
-#endif
-
-
 
 typedef union {
 	gint64 l;

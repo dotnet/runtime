@@ -19,9 +19,9 @@ namespace System.Net.Security.Tests
     {
         private readonly ITestOutputHelper _log;
 
-        public ClientAsyncAuthenticateTest()
+        public ClientAsyncAuthenticateTest(ITestOutputHelper output)
         {
-            _log = TestLogging.GetInstance();
+            _log = output;
         }
 
         [Fact]
@@ -44,11 +44,7 @@ namespace System.Net.Security.Tests
         public async Task ClientAsyncAuthenticate_ServerNoEncryption_NoConnect()
         {
             // Don't use Tls13 since we are trying to use NullEncryption
-            Type expectedExceptionType = TestConfiguration.SupportsHandshakeAlerts && TestConfiguration.SupportsNullEncryption ?
-                typeof(AuthenticationException) :
-                typeof(IOException);
-
-            await Assert.ThrowsAsync(expectedExceptionType,
+            await Assert.ThrowsAsync<AuthenticationException>(
                 () => ClientAsyncSslHelper(
                     EncryptionPolicy.NoEncryption,
                     SslProtocolSupport.DefaultSslProtocols,  SslProtocols.Tls | SslProtocols.Tls11 |  SslProtocols.Tls12 ));
@@ -67,7 +63,7 @@ namespace System.Net.Security.Tests
         {
             // Test Ssl2 against itself.  This is a standalone test as even on versions where Windows supports Ssl2,
             // it appears to have rules around not using it when other protocols are mentioned.
-            if (!PlatformDetection.IsWindows10Version1607OrGreater)
+            if (PlatformDetection.SupportsSsl2)
             {
 #pragma warning disable 0618
                 await ClientAsyncSslHelper(SslProtocols.Ssl2, SslProtocols.Ssl2);
@@ -120,12 +116,12 @@ namespace System.Net.Security.Tests
             yield return new object[] { SslProtocols.Ssl2, SslProtocols.Tls12, typeof(Exception) };
             yield return new object[] { SslProtocols.Ssl3, SslProtocols.Tls12, typeof(Exception) };
 #pragma warning restore 0618
-            yield return new object[] { SslProtocols.Tls, SslProtocols.Tls11, TestConfiguration.SupportsVersionAlerts ? typeof(AuthenticationException) : typeof(IOException) };
-            yield return new object[] { SslProtocols.Tls, SslProtocols.Tls12, TestConfiguration.SupportsVersionAlerts ? typeof(AuthenticationException) : typeof(IOException) };
+            yield return new object[] { SslProtocols.Tls, SslProtocols.Tls11, typeof(AuthenticationException) };
+            yield return new object[] { SslProtocols.Tls, SslProtocols.Tls12, typeof(AuthenticationException) };
             yield return new object[] { SslProtocols.Tls11, SslProtocols.Tls, typeof(AuthenticationException) };
             yield return new object[] { SslProtocols.Tls12, SslProtocols.Tls, typeof(AuthenticationException) };
             yield return new object[] { SslProtocols.Tls12, SslProtocols.Tls11, typeof(AuthenticationException) };
-            yield return new object[] { SslProtocols.Tls11, SslProtocols.Tls12, TestConfiguration.SupportsVersionAlerts ? typeof(AuthenticationException) : typeof(IOException) };
+            yield return new object[] { SslProtocols.Tls11, SslProtocols.Tls12, typeof(AuthenticationException) };
         }
 
         #region Helpers

@@ -4,30 +4,22 @@
   </PropertyGroup>
   <ItemGroup>
     <!-- Common Collections tests -->
-    <Compile Include="$(CommonTestPath)System\Collections\CollectionAsserts.cs">
-      <Link>Common\System\Collections\CollectionAsserts.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonTestPath)System\Collections\ICollection.NonGeneric.Tests.cs">
-      <Link>Common\System\Collections\ICollection.NonGeneric.Tests.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonTestPath)System\Collections\IDictionary.NonGeneric.Tests.cs">
-      <Link>Common\System\Collections\IDictionary.NonGeneric.Tests.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonTestPath)System\Collections\IEnumerable.NonGeneric.Tests.cs">
-      <Link>Common\System\Collections\IEnumerable.NonGeneric.Tests.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonTestPath)System\Collections\TestBase.NonGeneric.cs">
-      <Link>Common\System\Collections\TestBase.NonGeneric.Tests.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonTestPath)System\Collections\TestingTypes.cs">
-      <Link>Common\System\Collections\TestingTypes.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonTestPath)System\Diagnostics\DebuggerAttributes.cs">
-      <Link>Common\System\Diagnostics\DebuggerAttributes.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonTestPath)System\Runtime\Serialization\Formatters\BinaryFormatterHelpers.cs">
-      <Link>Common\System\Runtime\Serialization\Formatters\BinaryFormatterHelpers.cs</Link>
-    </Compile>
+    <Compile Include="$(CommonTestPath)System\Collections\CollectionAsserts.cs"
+             Link="Common\System\Collections\CollectionAsserts.cs" />
+    <Compile Include="$(CommonTestPath)System\Collections\ICollection.NonGeneric.Tests.cs"
+             Link="Common\System\Collections\ICollection.NonGeneric.Tests.cs" />
+    <Compile Include="$(CommonTestPath)System\Collections\IDictionary.NonGeneric.Tests.cs"
+             Link="Common\System\Collections\IDictionary.NonGeneric.Tests.cs" />
+    <Compile Include="$(CommonTestPath)System\Collections\IEnumerable.NonGeneric.Tests.cs"
+             Link="Common\System\Collections\IEnumerable.NonGeneric.Tests.cs" />
+    <Compile Include="$(CommonTestPath)System\Collections\TestBase.NonGeneric.cs"
+             Link="Common\System\Collections\TestBase.NonGeneric.Tests.cs" />
+    <Compile Include="$(CommonTestPath)System\Collections\TestingTypes.cs"
+             Link="Common\System\Collections\TestingTypes.cs" />
+    <Compile Include="$(CommonTestPath)System\Diagnostics\DebuggerAttributes.cs"
+             Link="Common\System\Diagnostics\DebuggerAttributes.cs" />
+    <Compile Include="$(CommonTestPath)System\Runtime\Serialization\Formatters\BinaryFormatterHelpers.cs"
+             Link="Common\System\Runtime\Serialization\Formatters\BinaryFormatterHelpers.cs" />
     <Compile Include="BitVector32Tests.cs" />
     <Compile Include="Helpers.cs" />
     <Compile Include="HybridDictionary\HybridDictionary.AddTests.cs" />
@@ -81,9 +73,8 @@
     <Compile Include="StringDictionary\StringDictionary.SyncRootTests.cs" />
     <Compile Include="StringDictionary\StringDictionary.ValuesTests.cs" />
     <Compile Include="StringDictionary\StringDictionaryClearTests.cs" />
-    <Compile Include="$(CommonTestPath)System\Collections\IEnumerable.NonGeneric.Serialization.Tests.cs">
-      <Link>Common\System\Collections\IEnumerable.NonGeneric.Serialization.Tests.cs</Link>
-    </Compile>
+    <Compile Include="$(CommonTestPath)System\Collections\IEnumerable.NonGeneric.Serialization.Tests.cs"
+             Link="Common\System\Collections\IEnumerable.NonGeneric.Serialization.Tests.cs" />
     <Compile Include="NameObjectCollectionBase\NameObjectCollectionBase.ConstructorTests.cs" />
   </ItemGroup>
 </Project>

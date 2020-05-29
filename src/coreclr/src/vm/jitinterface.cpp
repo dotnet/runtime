@@ -66,6 +66,12 @@
 #include "perfmap.h"
 #endif
 
+#ifdef FEATURE_PGO
+#include "pgo.h"
+#endif
+
+#include "tailcallhelp.h"
+
 // The Stack Overflow probe takes place in the COOPERATIVE_TRANSITION_BEGIN() macro
 //
 
@@ -96,6 +102,27 @@ GARY_IMPL(VMHELPDEF, hlpFuncTable, CORINFO_HELP_COUNT);
 GARY_IMPL(VMHELPDEF, hlpDynamicFuncTable, DYNAMIC_CORINFO_HELP_COUNT);
 
 #else // DACCESS_COMPILE
+
+uint64_t g_cbILJitted = 0;
+uint32_t g_cMethodsJitted = 0;
+
+#ifndef CROSSGEN_COMPILE
+FCIMPL0(INT64, GetJittedBytes)
+{
+    FCALL_CONTRACT;
+
+    return g_cbILJitted;
+}
+FCIMPLEND
+
+FCIMPL0(INT32, GetJittedMethodsCount)
+{
+    FCALL_CONTRACT;
+
+    return g_cMethodsJitted;
+}
+FCIMPLEND
+#endif
 
 /*********************************************************************/
 
@@ -2203,12 +2230,22 @@ unsigned CEEInfo::getClassGClayout (CORINFO_CLASS_HANDLE clsHnd, BYTE* gcPtrs)
         MODE_PREEMPTIVE;
     } CONTRACTL_END;
 
-    unsigned result = 0;
+    unsigned result;
 
     JIT_TO_EE_TRANSITION();
 
     TypeHandle VMClsHnd(clsHnd);
+    result = getClassGClayoutStatic(VMClsHnd, gcPtrs);
 
+    EE_TO_JIT_TRANSITION();
+
+    return result;
+}
+
+
+unsigned CEEInfo::getClassGClayoutStatic(TypeHandle VMClsHnd, BYTE* gcPtrs)
+{
+    unsigned result = 0;
     MethodTable* pMT = VMClsHnd.GetMethodTable();
 
     if (VMClsHnd.IsNativeValueType())
@@ -2265,8 +2302,6 @@ unsigned CEEInfo::getClassGClayout (CORINFO_CLASS_HANDLE clsHnd, BYTE* gcPtrs)
             }
         }
     }
-
-    EE_TO_JIT_TRANSITION();
 
     return result;
 }
@@ -5083,22 +5118,6 @@ void CEEInfo::getCallInfo(
     if (pMD->IsStatic() && (flags & CORINFO_CALLINFO_CALLVIRT))
     {
         EX_THROW(EEMessageException, (kMissingMethodException, IDS_EE_MISSING_METHOD, W("?")));
-    }
-
-    // If this call is for a LDFTN and the target method has the NativeCallableAttribute,
-    // then validate it adheres to the limitations.
-    if ((flags & CORINFO_CALLINFO_LDFTN) && pMD->HasNativeCallableAttribute())
-    {
-        if (!pMD->IsStatic())
-            EX_THROW(EEResourceException, (kInvalidProgramException, W("InvalidProgram_NonStaticMethod")));
-
-        // No generic methods
-        if (pMD->HasClassOrMethodInstantiation())
-            EX_THROW(EEResourceException, (kInvalidProgramException, W("InvalidProgram_GenericMethod")));
-
-        // Arguments
-        if (NDirect::MarshalingRequired(pMD, pMD->GetSig(), pMD->GetModule()))
-            EX_THROW(EEResourceException, (kInvalidProgramException, W("InvalidProgram_NonBlittableTypes")));
     }
 
     TypeHandle exactType = TypeHandle(pResolvedToken->hClass);
@@ -9213,9 +9232,9 @@ void CEEInfo::getFunctionFixedEntryPoint(CORINFO_METHOD_HANDLE   ftn,
     // Deferring X86 support until a need is observed or
     // time permits investigation into all the potential issues.
     // https://github.com/dotnet/runtime/issues/33582
-    if (pMD->HasNativeCallableAttribute())
+    if (pMD->HasUnmanagedCallersOnlyAttribute())
     {
-        pResult->addr = (void*)COMDelegate::ConvertToCallback(pMD);
+        pResult->addr = (void*)COMDelegate::ConvertToUnmanagedCallback(pMD);
     }
     else
     {
@@ -11792,8 +11811,6 @@ HRESULT CEEJitInfo::allocMethodBlockCounts (
 
     JIT_TO_EE_TRANSITION();
 
-#ifdef FEATURE_PREJIT
-
     // We need to know the code size. Typically we can get the code size
     // from m_ILHeader. For dynamic methods, m_ILHeader will be NULL, so
     // for that case we need to use DynamicResolver to get the code size.
@@ -11811,11 +11828,16 @@ HRESULT CEEJitInfo::allocMethodBlockCounts (
         codeSize = m_ILHeader->GetCodeSize();
     }
 
+#ifdef FEATURE_PREJIT
     *pBlockCounts = m_pMethodBeingCompiled->GetLoaderModule()->AllocateMethodBlockCounts(m_pMethodBeingCompiled->GetMemberDef(), count, codeSize);
     hr = (*pBlockCounts != nullptr) ? S_OK : E_OUTOFMEMORY;
 #else // FEATURE_PREJIT
+#ifdef FEATURE_PGO
+    hr = PgoManager::allocMethodBlockCounts(m_pMethodBeingCompiled, count, pBlockCounts, codeSize);
+#else
     _ASSERTE(!"allocMethodBlockCounts not implemented on CEEJitInfo!");
     hr = E_NOTIMPL;
+#endif // !FEATURE_PGO
 #endif // !FEATURE_PREJIT
 
     EE_TO_JIT_TRANSITION();
@@ -11832,9 +11854,55 @@ HRESULT CEEJitInfo::getMethodBlockCounts (
     UINT32 *                      pNumRuns
     )
 {
-    LIMITED_METHOD_CONTRACT;
+    CONTRACTL {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_PREEMPTIVE;
+    } CONTRACTL_END;
+
+    HRESULT hr = E_FAIL;
+    *pCount = 0;
+    *pBlockCounts = NULL;
+    *pNumRuns = 0;
+
+    JIT_TO_EE_TRANSITION();
+
+#ifdef FEATURE_PGO
+
+    // For now, only return the info for the method being jitted.
+    // Will need to fix this to gain access to pgo data for inlinees.
+    MethodDesc* pMD = (MethodDesc*)ftnHnd;
+
+    if (pMD == m_pMethodBeingCompiled)
+    {
+        unsigned codeSize = 0;
+        if (pMD->IsDynamicMethod())
+        {
+            unsigned stackSize, ehSize;
+            CorInfoOptions options;
+            DynamicResolver * pResolver = m_pMethodBeingCompiled->AsDynamicMethodDesc()->GetResolver();
+            pResolver->GetCodeInfo(&codeSize, &stackSize, &options, &ehSize);
+        }
+        else
+        {
+            codeSize = m_ILHeader->GetCodeSize();
+        }
+
+        hr = PgoManager::getMethodBlockCounts(pMD, codeSize, pCount, pBlockCounts, pNumRuns);
+    }
+    else
+    {
+        hr = E_NOTIMPL;
+    }
+
+#else
     _ASSERTE(!"getMethodBlockCounts not implemented on CEEJitInfo!");
-    return E_NOTIMPL;
+    hr = E_NOTIMPL;
+#endif
+
+    EE_TO_JIT_TRANSITION();
+    
+    return hr;
 }
 
 void CEEJitInfo::allocMem (
@@ -12429,8 +12497,17 @@ CorJitResult CallCompileMethodWithSEHWrapper(EEJitManager *jitMgr,
     }
 
 #if !defined(TARGET_X86)
-    if (ftn->HasNativeCallableAttribute())
+    if (ftn->HasUnmanagedCallersOnlyAttribute())
+    {
+        // If the stub was generated by the runtime, don't validate
+        // it for UnmanagedCallersOnlyAttribute usage. There are cases
+        // where the validation doesn't handle all of the cases we can
+        // permit during stub generation (e.g. Vector2 returns).
+        if (!ftn->IsILStub())
+            COMDelegate::ThrowIfInvalidUnmanagedCallersOnlyUsage(ftn);
+
         flags.Set(CORJIT_FLAGS::CORJIT_FLAG_REVERSE_PINVOKE);
+    }
 #endif // !TARGET_X86
 
     return flags;
@@ -12548,6 +12625,30 @@ CORJIT_FLAGS GetCompileFlags(MethodDesc * ftn, CORJIT_FLAGS flags, CORINFO_METHO
         flags.Clear(CORJIT_FLAGS::CORJIT_FLAG_DEBUG_INFO);
     }
 
+#ifdef FEATURE_PGO
+
+    if (CLRConfig::GetConfigValue(CLRConfig::INTERNAL_WritePGOData) > 0)
+    {
+        flags.Set(CORJIT_FLAGS::CORJIT_FLAG_BBINSTR);
+    }
+    else if ((CLRConfig::GetConfigValue(CLRConfig::INTERNAL_TieredPGO) > 0)
+        && flags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_TIER0))
+    {
+        flags.Set(CORJIT_FLAGS::CORJIT_FLAG_BBINSTR);
+    }
+
+    if (CLRConfig::GetConfigValue(CLRConfig::INTERNAL_ReadPGOData) > 0)
+    {
+        flags.Set(CORJIT_FLAGS::CORJIT_FLAG_BBOPT);
+    }
+    else if ((CLRConfig::GetConfigValue(CLRConfig::INTERNAL_TieredPGO) > 0)
+        && flags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_TIER1))
+    {
+        flags.Set(CORJIT_FLAGS::CORJIT_FLAG_BBOPT);
+    }
+    
+#endif
+
     return flags;
 }
 
@@ -12582,10 +12683,6 @@ void ThrowExceptionForJit(HRESULT res)
  }
 
 // ********************************************************************
-#ifdef _DEBUG
-LONG g_JitCount = 0;
-#endif
-
 //#define PERF_TRACK_METHOD_JITTIMES
 #ifdef TARGET_AMD64
 BOOL g_fAllowRel32 = TRUE;
@@ -12962,7 +13059,6 @@ PCODE UnsafeJitFunction(PrepareCodeConfig* config,
     }
 
 #ifdef _DEBUG
-    FastInterlockIncrement(&g_JitCount);
     static BOOL fHeartbeat = -1;
 
     if (fHeartbeat == -1)
@@ -12971,6 +13067,9 @@ PCODE UnsafeJitFunction(PrepareCodeConfig* config,
     if (fHeartbeat)
         printf(".");
 #endif // _DEBUG
+
+    FastInterlockExchangeAddLong((LONG64*)&g_cbILJitted, methodInfo.ILCodeSize);
+    FastInterlockIncrement((LONG*)&g_cMethodsJitted);
 
     COOPERATIVE_TRANSITION_END();
     return ret;
@@ -13726,8 +13825,66 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
     return TRUE;
 }
 
-void* CEEInfo::getTailCallCopyArgsThunk(CORINFO_SIG_INFO       *pSig,
-                                        CorInfoHelperTailCallSpecialHandling flags)
+bool CEEInfo::getTailCallHelpersInternal(CORINFO_RESOLVED_TOKEN* callToken,
+                                         CORINFO_SIG_INFO* sig,
+                                         CORINFO_GET_TAILCALL_HELPERS_FLAGS flags,
+                                         CORINFO_TAILCALL_HELPERS* pResult)
+{
+    MethodDesc* pTargetMD = NULL;
+
+    if (callToken != NULL)
+    {
+        pTargetMD = (MethodDesc*)callToken->hMethod;
+        _ASSERTE(pTargetMD != NULL);
+
+        if (pTargetMD->IsWrapperStub())
+        {
+            pTargetMD = pTargetMD->GetWrappedMethodDesc();
+        }
+
+        // We currently do not handle generating the proper call to managed
+        // varargs methods.
+        if (pTargetMD->IsVarArg())
+        {
+            return false;
+        }
+    }
+
+    SigTypeContext typeCtx;
+    GetTypeContext(&sig->sigInst, &typeCtx);
+
+    MetaSig msig(sig->pSig, sig->cbSig, GetModule(sig->scope), &typeCtx);
+
+    bool isCallvirt = (flags & CORINFO_TAILCALL_IS_CALLVIRT) != 0;
+    bool isThisArgByRef = (flags & CORINFO_TAILCALL_THIS_ARG_IS_BYREF) != 0;
+
+    MethodDesc* pStoreArgsMD;
+    MethodDesc* pCallTargetMD;
+    bool needsTarget;
+
+    TailCallHelp::CreateTailCallHelperStubs(
+        m_pMethodBeingCompiled, pTargetMD,
+        msig, isCallvirt, isThisArgByRef,
+        &pStoreArgsMD, &needsTarget,
+        &pCallTargetMD);
+
+    unsigned outFlags = 0;
+    if (needsTarget)
+    {
+        outFlags |= CORINFO_TAILCALL_STORE_TARGET;
+    }
+
+    pResult->flags = (CORINFO_TAILCALL_HELPERS_FLAGS)outFlags;
+    pResult->hStoreArgs = (CORINFO_METHOD_HANDLE)pStoreArgsMD;
+    pResult->hCallTarget = (CORINFO_METHOD_HANDLE)pCallTargetMD;
+    pResult->hDispatcher = (CORINFO_METHOD_HANDLE)TailCallHelp::GetOrCreateTailCallDispatcherMD();
+    return true;
+}
+
+bool CEEInfo::getTailCallHelpers(CORINFO_RESOLVED_TOKEN* callToken,
+                                 CORINFO_SIG_INFO* sig,
+                                 CORINFO_GET_TAILCALL_HELPERS_FLAGS flags,
+                                 CORINFO_TAILCALL_HELPERS* pResult)
 {
     CONTRACTL {
         THROWS;
@@ -13735,21 +13892,15 @@ void* CEEInfo::getTailCallCopyArgsThunk(CORINFO_SIG_INFO       *pSig,
         MODE_PREEMPTIVE;
     } CONTRACTL_END;
 
-    void * ftn = NULL;
-
-#if (defined(TARGET_AMD64) || defined(TARGET_ARM)) && !defined(TARGET_UNIX)
+    bool success = false;
 
     JIT_TO_EE_TRANSITION();
 
-    Stub* pStub = CPUSTUBLINKER::CreateTailCallCopyArgsThunk(pSig, m_pMethodBeingCompiled, flags);
-
-    ftn = (void*)pStub->GetEntryPoint();
+    success = getTailCallHelpersInternal(callToken, sig, flags, pResult);
 
     EE_TO_JIT_TRANSITION();
 
-#endif // (TARGET_AMD64 || TARGET_ARM) && !TARGET_UNIX
-
-    return ftn;
+    return success;
 }
 
 bool CEEInfo::convertPInvokeCalliToCall(CORINFO_RESOLVED_TOKEN * pResolvedToken, bool fMustConvert)

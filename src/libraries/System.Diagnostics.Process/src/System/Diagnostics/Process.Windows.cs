@@ -536,7 +536,7 @@ namespace System.Diagnostics
                         environmentBlock = GetEnvironmentVariablesBlock(startInfo._environmentVariables!);
                     }
                     string workingDirectory = startInfo.WorkingDirectory;
-                    if (workingDirectory == string.Empty)
+                    if (workingDirectory.Length == 0)
                         workingDirectory = Directory.GetCurrentDirectory();
 
                     bool retVal;
@@ -680,14 +680,14 @@ namespace System.Diagnostics
             bool fileNameIsQuoted = (fileName.StartsWith('\"') && fileName.EndsWith('\"'));
             if (!fileNameIsQuoted)
             {
-                commandLine.Append("\"");
+                commandLine.Append('"');
             }
 
             commandLine.Append(fileName);
 
             if (!fileNameIsQuoted)
             {
-                commandLine.Append("\"");
+                commandLine.Append('"');
             }
 
             if (!string.IsNullOrEmpty(arguments))

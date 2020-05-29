@@ -17,9 +17,9 @@ namespace System.Net.Security.Tests
     {
         private readonly ITestOutputHelper _log;
 
-        public ServerAllowNoEncryptionTest()
+        public ServerAllowNoEncryptionTest(ITestOutputHelper output)
         {
-            _log = TestLogging.GetInstance();
+            _log = output;
         }
 
         // The following method is invoked by the RemoteCertificateValidationDelegate.

@@ -73,7 +73,8 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             MetadataReader metadataReader = _sourceModule.MetadataReader;
             var tableIndex = TableIndex.FieldRva;
             int rowCount = metadataReader.GetTableRowCount(tableIndex);
-
+            bool compressedFieldRef = 6 == metadataReader.GetTableRowSize(TableIndex.FieldRva);
+            
             for (int i = 1; i <= rowCount; i++)
             {
                 Debug.Assert(builder.CountBytes == reader.Offset);
@@ -81,13 +82,28 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 // Rva
                 reader.ReadInt32();
 
-                short fieldToken = reader.ReadInt16();
+                int fieldToken;
+                if (compressedFieldRef)
+                {
+                    fieldToken = reader.ReadInt16();
+                }
+                else
+                {
+                    fieldToken = reader.ReadInt32();
+                }
                 EntityHandle fieldHandle = MetadataTokens.EntityHandle(TableIndex.Field, fieldToken);
                 EcmaField fieldDesc = (EcmaField)_sourceModule.GetField(fieldHandle);
                 Debug.Assert(fieldDesc.HasRva);
 
                 builder.EmitReloc(factory.CopiedFieldRva(fieldDesc), RelocType.IMAGE_REL_BASED_ADDR32NB);
-                builder.EmitShort(fieldToken);
+                if (compressedFieldRef)
+                {
+                    builder.EmitUShort((ushort)fieldToken);
+                }
+                else
+                {
+                    builder.EmitUInt((uint)fieldToken);
+                }
             }
         }
 

@@ -4,9 +4,8 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="ContainerConfigurationTests.cs" />
-    <Compile Include="$(CommonTestPath)System\Diagnostics\DebuggerAttributes.cs">
-      <Link>Common\System\Diagnostics\DebuggerAttributes.cs</Link>
-    </Compile>
+    <Compile Include="$(CommonTestPath)System\Diagnostics\DebuggerAttributes.cs"
+             Link="Common\System\Diagnostics\DebuggerAttributes.cs" />
     <Compile Include="ReflectionTests.cs" />
   </ItemGroup>
 </Project>

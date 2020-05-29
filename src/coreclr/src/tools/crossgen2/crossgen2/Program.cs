@@ -400,6 +400,16 @@ namespace ILCompiler
                             singleMethod);
                         compilationRoots.Add(new SingleMethodRootProvider(singleMethod));
                     }
+                    else if (_commandLineOptions.CompileNoMethods)
+                    {
+                        compilationGroup = new NoMethodsCompilationModuleGroup(
+                            typeSystemContext,
+                            _commandLineOptions.Composite,
+                            _commandLineOptions.InputBubble,
+                            inputModules,
+                            versionBubbleModules,
+                            _commandLineOptions.CompileBubbleGenerics);
+                    }
                     else
                     {
                         // Single assembly compilation.
@@ -428,9 +438,9 @@ namespace ILCompiler
                     else
                         compilationGroup.ApplyProfilerGuidedCompilationRestriction(null);
 
-                    if (singleMethod == null)
+                    if ((singleMethod == null) && !_commandLineOptions.CompileNoMethods)
                     {
-                        // For non-single-method compilations add compilation roots.
+                        // For normal compilations add compilation roots.
                         foreach (var module in rootingModules)
                         {
                             compilationRoots.Add(new ReadyToRunRootProvider(
@@ -466,6 +476,7 @@ namespace ILCompiler
                         .UseParallelism(_commandLineOptions.Parallelism)
                         .UseJitPath(_commandLineOptions.JitPath)
                         .UseInstructionSetSupport(instructionSetSupport)
+                        .GenerateOutputFile(_commandLineOptions.OutputFilePath.FullName)
                         .UseILProvider(ilProvider)
                         .UseBackendOptions(_commandLineOptions.CodegenOptions)
                         .UseLogger(logger)

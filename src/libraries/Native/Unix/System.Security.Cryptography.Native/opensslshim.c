@@ -97,6 +97,23 @@ static bool OpenLibrary()
         DlOpen(MAKELIB("10"));
     }
 
+    // FreeBSD uses a different suffix numbering convention.
+    // Current supported FreeBSD releases should use the order .11 -> .111 -> .8
+    if (libssl == NULL)
+    {
+        DlOpen(MAKELIB("11"));
+    }
+
+    if (libssl == NULL)
+    {
+        DlOpen(MAKELIB("111"));
+    }
+
+    if (libssl == NULL)
+    {
+        DlOpen(MAKELIB("8"));
+    }
+
     return libssl != NULL;
 }
 

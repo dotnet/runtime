@@ -189,13 +189,6 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
             coreClrProperty.Parent.Add(newCoreClrProperty);
             coreClrProperty.Remove();
 
-            // Change the clrjit.dll asset to specify only "clrjit.dll" as the relative path (no directories).
-            string clrJitLibraryName = RuntimeInformationExtensions.GetSharedLibraryFileNameForCurrentPlatform("clrjit");
-            JProperty clrJitProperty = netCoreAppNativeAssets.First(p => p.Name.Contains(clrJitLibraryName));
-            JProperty newClrJitProperty = new JProperty(clrJitProperty.Name.Substring(clrJitProperty.Name.LastIndexOf('/') + 1), clrJitProperty.Value);
-            clrJitProperty.Parent.Add(newClrJitProperty);
-            clrJitProperty.Remove();
-
             File.WriteAllText(sharedFxDepsJsonPath, root.ToString());
 
             dotnet.Exec(appDll)
@@ -205,8 +198,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 .CaptureStdErr()
                 .Execute()
                 .Should().Pass()
-                .And.HaveStdErrContaining($"CoreCLR path = '{Path.Combine(sharedFxPath, coreClrLibraryName)}'")
-                .And.HaveStdErrContaining($"The resolved JIT path is '{Path.Combine(sharedFxPath, clrJitLibraryName)}'");
+                .And.HaveStdErrContaining($"CoreCLR path = '{Path.Combine(sharedFxPath, coreClrLibraryName)}'");
         }
     }
 }

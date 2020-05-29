@@ -7,11 +7,17 @@
 
 #include <stddef.h>
 
-#if defined(_WIN32)
+#ifdef _WIN32
     #ifdef NETHOST_EXPORT
         #define NETHOST_API __declspec(dllexport)
     #else
-        #define NETHOST_API __declspec(dllimport)
+        // Consuming the nethost as a static library
+        // Shouldn't export attempt to dllimport.
+        #ifdef NETHOST_USE_AS_STATIC
+            #define NETHOST_API 
+        #else
+            #define NETHOST_API __declspec(dllimport)
+        #endif
     #endif
 
     #define NETHOST_CALLTYPE __stdcall

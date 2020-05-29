@@ -447,7 +447,7 @@ namespace System.Net.Test.Common
                 int readLength = await _stream.ReadAsync(tempBuffer, 0, size).ConfigureAwait(false);
                 if (readLength > 0)
                 {
-                    tempBuffer.AsSpan(readLength).CopyTo(buffer.Span.Slice(offset, size));
+                    tempBuffer.AsSpan(0, readLength).CopyTo(buffer.Span.Slice(offset, size));
                 }
 
                 return readLength;

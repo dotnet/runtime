@@ -344,7 +344,7 @@ BEGIN
     IDS_EE_WINRT_NOT_FACTORY_FOR_TYPE           "Windows Runtime factory '%1' is not a factory for Windows Runtime type '%2'."
     IDS_EE_WINRT_INVALID_FACTORY_FOR_TYPE       "Windows Runtime type '%1' has a invalid Windows Runtime factory"
     IDS_EE_CANNOTCAST_NOMARSHAL                 "The Windows Runtime Object can only be used in the threading context where it was created, because it implements INoMarshal or has MarshalingBehaviorAttribute(MarshalingType.None) set."
-    IDS_EE_WINRT_WEAKREF_BAD_TYPE               "The object resolved by a native IWeakReference has an incompatible type for its managed WeakReference instance.\r\nExpected WeakReference target type: '%1'\r\nNative IWeakReference returned type: '%2'"
+    IDS_EE_NATIVE_COM_WEAKREF_BAD_TYPE          "The object resolved by a native IWeakReference has an incompatible type for its managed WeakReference instance.\r\nExpected WeakReference target type: '%1'\r\nNative IWeakReference returned type: '%2'"
 #endif // FEATURE_COMINTEROP
 
     IDS_EE_INTEROP_CODE_SIZE_COMMENT        "Code size"

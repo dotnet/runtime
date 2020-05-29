@@ -1762,7 +1762,6 @@ namespace System.DirectoryServices.AccountManagement
             }
 
             Debug.Assert(g.UnderlyingObject != null && g.UnderlyingObject is DirectoryEntry);
-            UnsafeNativeMethods.IADsGroup adsGroup = (UnsafeNativeMethods.IADsGroup)((DirectoryEntry)g.UnderlyingObject).NativeObject;
             IEnumerable cachedMembersEnum = null; //This variables stores a reference to the direct members enumerator of the group.
 
             // Only real principals can be directly a member of the group, since only real principals
@@ -2232,44 +2231,6 @@ namespace System.DirectoryServices.AccountManagement
         {
             GlobalDebug.WriteLineIf(GlobalDebug.Info, "ADStoreCtx", "LoadDirectoryEntryAttributes, path={0}", de.Path);
 
-            string[] ldapAttributesUsed = new string[]
-            {
-                "accountExpires",
-                "badPasswordTime",
-                "badPwdCount",
-                "displayName",
-                "distinguishedName",
-                "description",
-                "employeeID",
-                "givenName",
-                "groupType",
-                "homeDirectory",
-                "homeDrive",
-                "lastLogon",
-                "lastLogonTimestamp",
-                "lockoutTime",
-                "logonHours",
-                "mail",
-                "member",
-                "memberOf",
-                "middleName",
-                "msDS-User-Account-Control-Computed",
-                "ntSecurityDescriptor",
-                "objectClass",
-                "objectGuid",
-                "objectSid",
-                "primaryGroupID",
-                "pwdLastSet",
-                "samAccountName",
-                "scriptPath",
-                "servicePrincipalName",
-                "sn",
-                "telephoneNumber",
-                "userAccountControl",
-                "userCertificate",
-                "userPrincipalName",
-                "userWorkstations"
-            };
             try
             {
                 //            de.RefreshCache(ldapAttributesUsed);

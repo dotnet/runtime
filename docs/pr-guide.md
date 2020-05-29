@@ -52,7 +52,7 @@ Validation may fail for several reasons:
     * Add a comment `/azp run runtime`
     * Or, click on "re-run all checks" in the GitHub Checks tab
     * Or, simply close and reopen the PR.
-* If you have established that it is an unrelated failure, please ensure we have an active issue for it. See the [unrelated failure](#unrelated-failure) section below.
+* If you have established that it is an unrelated failure, please ensure we have an active issue for it. See the [unrelated failure](#what-to-do-if-you-determine-the-failure-is-unrelated) section below.
 * Whoever merges the PR should be satisfied that the failure is unrelated, is not introduced by the change, and that we are appropriately tracking it.
 
 ### Option 3: The state of the master branch HEAD is bad.

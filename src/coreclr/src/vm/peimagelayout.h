@@ -54,6 +54,7 @@ public:
     static PEImageLayout* LoadFromFlat(PEImageLayout* pflatimage);
     static PEImageLayout* Load(PEImage* pOwner, BOOL bNTSafeLoad, BOOL bThrowOnError = TRUE);
     static PEImageLayout* LoadFlat(PEImage* pOwner);
+    static PEImageLayout* LoadConverted(PEImage* pOwner);
     static PEImageLayout* LoadNative(LPCWSTR fullPath);
     static PEImageLayout* Map(PEImage* pOwner);
 #endif

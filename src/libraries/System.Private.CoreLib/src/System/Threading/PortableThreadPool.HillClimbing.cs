@@ -185,8 +185,11 @@ namespace System.Threading
                 // Add the current thread count and throughput sample to our history
                 //
                 double throughput = numCompletions / sampleDurationSeconds;
-
-                PortableThreadPoolEventSource.Log.WorkerThreadAdjustmentSample(throughput);
+                PortableThreadPoolEventSource log = PortableThreadPoolEventSource.Log;
+                if (log.IsEnabled())
+                {
+                    log.WorkerThreadAdjustmentSample(throughput);
+                }
 
                 int sampleIndex = (int)(_totalSamples % _samplesToMeasure);
                 _samples[sampleIndex] = throughput;
@@ -356,8 +359,11 @@ namespace System.Threading
                 // Record these numbers for posterity
                 //
 
-                PortableThreadPoolEventSource.Log.WorkerThreadAdjustmentStats(sampleDurationSeconds, throughput, threadWaveComponent.Real, throughputWaveComponent.Real,
+                if (log.IsEnabled())
+                {
+                    log.WorkerThreadAdjustmentStats(sampleDurationSeconds, throughput, threadWaveComponent.Real, throughputWaveComponent.Real,
                     throughputErrorEstimate, _averageThroughputNoise, ratio.Real, confidence, _currentControlSetting, (ushort)newThreadWaveMagnitude);
+                }
 
 
                 //
@@ -414,7 +420,11 @@ namespace System.Threading
 
                 _logSize++;
 
-                PortableThreadPoolEventSource.Log.WorkerThreadAdjustmentAdjustment(throughput, newThreadCount, (int)stateOrTransition);
+                PortableThreadPoolEventSource log = PortableThreadPoolEventSource.Log;
+                if (log.IsEnabled())
+                {
+                    log.WorkerThreadAdjustmentAdjustment(throughput, newThreadCount, (int)stateOrTransition);
+                }
             }
 
             public void ForceChange(int newThreadCount, StateOrTransition state)

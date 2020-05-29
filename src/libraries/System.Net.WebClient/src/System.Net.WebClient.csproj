@@ -6,24 +6,18 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System\Net\WebClient.cs" />
-    <Compile Include="$(CommonPath)System\IO\DelegatingStream.cs">
-      <Link>Common\System\IO\DelegatingStream.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)System\IO\ChunkedMemoryStream.cs">
-      <Link>Common\System\IO\ChunkedMemoryStream.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)System\Threading\Tasks\BeginEndAwaitableAdapter.cs">
-      <Link>Common\System\Threading\Tasks\BeginEndAwaitableAdapter.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)System\Threading\Tasks\RendezvousAwaitable.cs">
-      <Link>Common\System\Threading\Tasks\RendezvousAwaitable.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)System\Net\HttpKnownHeaderNames.cs">
-      <Link>Common\System\Net\HttpKnownHeaderNames.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)System\HexConverter.cs">
-      <Link>Common\System\HexConverter.cs</Link>
-    </Compile>
+    <Compile Include="$(CommonPath)System\IO\DelegatingStream.cs"
+             Link="Common\System\IO\DelegatingStream.cs" />
+    <Compile Include="$(CommonPath)System\IO\ChunkedMemoryStream.cs"
+             Link="Common\System\IO\ChunkedMemoryStream.cs" />
+    <Compile Include="$(CommonPath)System\Threading\Tasks\BeginEndAwaitableAdapter.cs"
+             Link="Common\System\Threading\Tasks\BeginEndAwaitableAdapter.cs" />
+    <Compile Include="$(CommonPath)System\Threading\Tasks\RendezvousAwaitable.cs"
+             Link="Common\System\Threading\Tasks\RendezvousAwaitable.cs" />
+    <Compile Include="$(CommonPath)System\Net\HttpKnownHeaderNames.cs"
+             Link="Common\System\Net\HttpKnownHeaderNames.cs" />
+    <Compile Include="$(CommonPath)System\HexConverter.cs"
+             Link="Common\System\HexConverter.cs" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="System.Collections.Specialized" />

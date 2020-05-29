@@ -1,9 +1,9 @@
-﻿<Project>
+<Project>
 
   <Import Project="Sdk.props" Sdk="Microsoft.NET.Sdk" />
 
   <PropertyGroup>
-    <TargetFramework>$(NETCoreAppFramework)</TargetFramework>
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <OutputType>Exe</OutputType>
     <RuntimeFrameworkVersion>$(MNAVersion)</RuntimeFrameworkVersion>
   </PropertyGroup>

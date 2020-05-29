@@ -2,6 +2,7 @@
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
     <ArchitectureSpecificNativeFile Include="$(DotNetHostBinDir)/apphost.exe" />
+    <ArchitectureSpecificNativeFile Include="$(DotNetHostBinDir)/singlefilehost.exe" />
     <ArchitectureSpecificNativeFile Include="$(DotNetHostBinDir)/comhost.dll" />
     <ArchitectureSpecificNativeFile Include="$(DotNetHostBinDir)/ijwhost.dll" />
     <ArchitectureSpecificNativeFile Include="$(DotNetHostBinDir)/ijwhost.lib" />

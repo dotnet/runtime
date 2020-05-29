@@ -299,6 +299,14 @@ DECL_OFFSET(CallContext, stack)
 #endif
 
 #if defined(TARGET_X86)
+DECL_OFFSET(CallContext, eax)
+DECL_OFFSET(CallContext, edx)
+DECL_OFFSET(CallContext, fret)
+DECL_OFFSET(CallContext, stack_size)
+DECL_OFFSET(CallContext, stack)
+#endif
+
+#if defined(TARGET_X86)
 DECL_OFFSET(GSharedVtCallInfo, stack_usage)
 DECL_OFFSET(GSharedVtCallInfo, vret_slot)
 DECL_OFFSET(GSharedVtCallInfo, vret_arg_slot)

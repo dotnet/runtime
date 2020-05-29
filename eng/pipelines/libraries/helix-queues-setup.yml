@@ -7,6 +7,7 @@ parameters:
   container: ''
   pool: ''
   platform: ''
+  runtimeFlavorDisplayName: ''
   jobParameters: {}
 
 jobs:
@@ -18,6 +19,7 @@ jobs:
     archType: ${{ parameters.archType }}
     container: ${{ parameters.container }}
     pool: ${{ parameters.pool }}
+    runtimeFlavorDisplayName: ${{ parameters.runtimeFlavorDisplayName }}
     helixQueues:
 
     # Linux arm
@@ -56,8 +58,8 @@ jobs:
         - Ubuntu.1804.Amd64.Open
         - SLES.12.Amd64.Open
         - SLES.15.Amd64.Open
-        - (Fedora.29.Amd64.Open)ubuntu.1604.amd64.open@mcr.microsoft.com/dotnet-buildtools/prereqs:fedora-29-helix-a12566d-20191210224553
         - (Fedora.30.Amd64.Open)ubuntu.1604.amd64.open@mcr.microsoft.com/dotnet-buildtools/prereqs:fedora-30-helix-4f8cef7-20200121150022
+        - (Fedora.32.Amd64.Open)ubuntu.1604.amd64.open@mcr.microsoft.com/dotnet-buildtools/prereqs:fedora-32-helix-20200512010618-efb9f14
         - (Ubuntu.1910.Amd64.Open)ubuntu.1604.amd64.open@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-19.10-helix-amd64-cfcfd50-20191030180623
         - (Debian.10.Amd64.Open)ubuntu.1604.amd64.open@mcr.microsoft.com/dotnet-buildtools/prereqs:debian-10-helix-amd64-bfcd90a-20200121150006
       - ${{ if eq(parameters.jobParameters.isFullMatrix, false) }}:
@@ -67,7 +69,7 @@ jobs:
         - Ubuntu.1604.Amd64.Open
         - Ubuntu.1804.Amd64.Open
         - SLES.15.Amd64.Open
-        - (Fedora.29.Amd64.Open)ubuntu.1604.amd64.open@mcr.microsoft.com/dotnet-buildtools/prereqs:fedora-29-helix-a12566d-20191210224553
+        - (Fedora.30.Amd64.Open)ubuntu.1604.amd64.open@mcr.microsoft.com/dotnet-buildtools/prereqs:fedora-30-helix-4f8cef7-20200121150022
 
     # OSX x64
     - ${{ if eq(parameters.platform, 'OSX_x64') }}:
@@ -86,14 +88,16 @@ jobs:
       # netcoreapp
       - ${{ if notIn(parameters.jobParameters.framework, 'allConfigurations', 'net472') }}:
         - ${{ if eq(parameters.jobParameters.isFullMatrix, true) }}:
-          - Windows.7.Amd64.Open
+          # Bring back once: https://github.com/dotnet/runtime/issues/35689 is fixed
+          # - Windows.7.Amd64.Open
           - Windows.81.Amd64.Open
           - Windows.10.Amd64.ServerRS5.Open
           - Windows.10.Amd64.Server19H1.Open
           - ${{ if ne(parameters.jobParameters.runtimeFlavor, 'mono') }}:
             - (Windows.Nano.1809.Amd64.Open)windows.10.amd64.serverrs5.open@mcr.microsoft.com/dotnet-buildtools/prereqs:nanoserver-1809-helix-amd64-08e8e40-20200107182504
         - ${{ if eq(parameters.jobParameters.isFullMatrix, false) }}:
-          - Windows.7.Amd64.Open
+          # Bring back once: https://github.com/dotnet/runtime/issues/35689 is fixed
+          # - Windows.7.Amd64.Open
           - Windows.81.Amd64.Open
           - Windows.10.Amd64.Server19H1.ES.Open
           - ${{ if ne(parameters.jobParameters.runtimeFlavor, 'mono') }}:
@@ -112,22 +116,30 @@ jobs:
       # netcoreapp
       - ${{ if notIn(parameters.jobParameters.framework, 'allConfigurations', 'net472') }}:
         - ${{ if eq(parameters.jobParameters.isFullMatrix, true) }}:
-          # TODO: Reopen when https://github.com/dotnet/runtime/issues/32231 is fixed
-          #- Windows.7.Amd64.Open
-          #- Windows.81.Amd64.Open
+          - Windows.7.Amd64.Open
+          # Bring back once: https://github.com/dotnet/runtime/issues/35689 is fixed
+          # - Windows.81.Amd64.Open
           - Windows.10.Amd64.ServerRS5.Open
           - Windows.10.Amd64.Server19H1.Open
         - ${{ if eq(parameters.jobParameters.isFullMatrix, false) }}:
           - ${{ if eq(parameters.jobParameters.buildConfig, 'Release') }}:
-            # TODO: Reopen when https://github.com/dotnet/runtime/issues/32231 is fixed
-            #- Windows.7.Amd64.Open
-            #- Windows.81.Amd64.Open
             - Windows.10.Amd64.Server19H1.ES.Open
           - ${{ if eq(parameters.jobParameters.buildConfig, 'Debug') }}:
+            - Windows.7.Amd64.Open
+            # Bring back once: https://github.com/dotnet/runtime/issues/35689 is fixed
+            # - Windows.81.Amd64.Open
             - Windows.10.Amd64.Server19H1.Open
 
       # NET472
       - ${{ if eq(parameters.jobParameters.framework, 'net472') }}:
         - Windows.10.Amd64.Client19H1.Open
+
+    # Windows_NT arm
+    - ${{ if eq(parameters.platform, 'Windows_NT_arm') }}:
+      - Windows.10.Arm64v8.Open
+
+    # Windows_NT arm64
+    - ${{ if eq(parameters.platform, 'Windows_NT_arm64') }}:
+      - Windows.10.Arm64.Open
 
     ${{ insert }}: ${{ parameters.jobParameters }}

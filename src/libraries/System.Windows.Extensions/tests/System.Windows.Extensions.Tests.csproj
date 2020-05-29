@@ -8,9 +8,8 @@
     <Compile Include="XamlAccessLevelTests.cs" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="$(CommonTestPath)System\Drawing\Helpers.cs">
-      <Link>Common\System\Drawing\Helpers.cs</Link>
-    </Compile>
+    <Compile Include="$(CommonTestPath)System\Drawing\Helpers.cs"
+             Link="Common\System\Drawing\Helpers.cs" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="System\Drawing\FontConverterTests.cs" />

@@ -78,11 +78,11 @@ namespace Internal.TypeSystem
             }
         }
 
-        public override bool IsNativeCallable
+        public override bool IsUnmanagedCallersOnly
         {
             get
             {
-                return _wrappedMethod.IsNativeCallable;
+                return _wrappedMethod.IsUnmanagedCallersOnly;
             }
         }
 

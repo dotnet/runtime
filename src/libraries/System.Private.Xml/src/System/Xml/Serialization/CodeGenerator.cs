@@ -870,42 +870,7 @@ namespace System.Xml.Serialization
 
         internal void Ldc(int intVar)
         {
-            switch (intVar)
-            {
-                case -1:
-                    _ilGen.Emit(OpCodes.Ldc_I4_M1);
-                    break;
-                case 0:
-                    _ilGen.Emit(OpCodes.Ldc_I4_0);
-                    break;
-                case 1:
-                    _ilGen.Emit(OpCodes.Ldc_I4_1);
-                    break;
-                case 2:
-                    _ilGen.Emit(OpCodes.Ldc_I4_2);
-                    break;
-                case 3:
-                    _ilGen.Emit(OpCodes.Ldc_I4_3);
-                    break;
-                case 4:
-                    _ilGen.Emit(OpCodes.Ldc_I4_4);
-                    break;
-                case 5:
-                    _ilGen.Emit(OpCodes.Ldc_I4_5);
-                    break;
-                case 6:
-                    _ilGen.Emit(OpCodes.Ldc_I4_6);
-                    break;
-                case 7:
-                    _ilGen.Emit(OpCodes.Ldc_I4_7);
-                    break;
-                case 8:
-                    _ilGen.Emit(OpCodes.Ldc_I4_8);
-                    break;
-                default:
-                    _ilGen.Emit(OpCodes.Ldc_I4, intVar);
-                    break;
-            }
+            _ilGen.Emit(OpCodes.Ldc_I4, intVar);
         }
 
         internal void Ldc(long l)
@@ -1000,27 +965,7 @@ namespace System.Xml.Serialization
 
         internal void Ldarg(int slot)
         {
-            switch (slot)
-            {
-                case 0:
-                    _ilGen.Emit(OpCodes.Ldarg_0);
-                    break;
-                case 1:
-                    _ilGen.Emit(OpCodes.Ldarg_1);
-                    break;
-                case 2:
-                    _ilGen.Emit(OpCodes.Ldarg_2);
-                    break;
-                case 3:
-                    _ilGen.Emit(OpCodes.Ldarg_3);
-                    break;
-                default:
-                    if (slot <= 255)
-                        _ilGen.Emit(OpCodes.Ldarg_S, slot);
-                    else
-                        _ilGen.Emit(OpCodes.Ldarg, slot);
-                    break;
-            }
+            _ilGen.Emit(OpCodes.Ldarg, slot);
         }
 
         internal void Ldarga(ArgBuilder argBuilder)
@@ -1030,10 +975,7 @@ namespace System.Xml.Serialization
 
         internal void Ldarga(int slot)
         {
-            if (slot <= 255)
-                _ilGen.Emit(OpCodes.Ldarga_S, slot);
-            else
-                _ilGen.Emit(OpCodes.Ldarga, slot);
+            _ilGen.Emit(OpCodes.Ldarga, slot);
         }
 
         internal void Ldlen()

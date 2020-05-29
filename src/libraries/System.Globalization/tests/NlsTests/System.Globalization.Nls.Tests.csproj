@@ -1,0 +1,240 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <TestRuntime>true</TestRuntime>
+    <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
+    <!-- This test project is Windows only as it forces the use of NLS as the Globlaization platform -->
+    <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT</TargetFrameworks>
+    <UnicodeUcdVersion>13.0</UnicodeUcdVersion>
+  </PropertyGroup>
+  <ItemGroup>
+    <!-- Include tests from System.Globalization.Tests -->
+    <Compile Include="NlsSwitchTests.cs" />
+    <Compile Include="..\CompareInfo\CompareInfoTests.cs"
+             Link="CompareInfo\CompareInfoTests.cs" />
+    <Compile Include="..\CompareInfo\CompareInfoTests.IndexOf.cs"
+             Link="CompareInfo\CompareInfoTests.IndexOf.cs" />
+    <Compile Include="..\CompareInfo\CompareInfoTests.IsPrefix.cs"
+             Link="CompareInfo\CompareInfoTests.IsPrefix.cs" />
+    <Compile Include="..\CompareInfo\CompareInfoTests.Compare.cs"
+             Link="CompareInfo\CompareInfoTests.Compare.cs" />
+    <Compile Include="..\CompareInfo\CompareInfoTests.IsSuffix.cs"
+             Link="CompareInfo\CompareInfoTests.IsSuffix.cs" />
+    <Compile Include="..\CompareInfo\CompareInfoTests.LastIndexOf.cs"
+             Link="CompareInfo\CompareInfoTests.LastIndexOf.cs" />
+    <Compile Include="..\NumberFormatInfo\NumberFormatInfoCurrentInfo.cs"
+             Link="NumberFormatInfo\NumberFormatInfoCurrentInfo.cs" />
+    <Compile Include="..\NumberFormatInfo\NumberFormatInfoValidateParseStyle.cs"
+             Link="NumberFormatInfo\NumberFormatInfoValidateParseStyle.cs" />
+    <Compile Include="..\NumberFormatInfo\NumberFormatInfoData.cs"
+             Link="NumberFormatInfo\NumberFormatInfoData.cs" />
+    <Compile Include="..\NumberFormatInfo\NumberFormatInfoCurrencySymbol.cs"
+             Link="NumberFormatInfo\NumberFormatInfoCurrencySymbol.cs" />
+    <Compile Include="..\NumberFormatInfo\NumberFormatInfoNaNSymbol.cs"
+             Link="NumberFormatInfo\NumberFormatInfoNaNSymbol.cs" />
+    <Compile Include="..\NumberFormatInfo\NumberFormatInfoPercentGroupSeparator.cs"
+             Link="NumberFormatInfo\NumberFormatInfoPercentGroupSeparator.cs" />
+    <Compile Include="..\NumberFormatInfo\NumberFormatInfoPercentDecimalSeparator.cs"
+             Link="NumberFormatInfo\NumberFormatInfoPercentDecimalSeparator.cs" />
+    <Compile Include="..\NumberFormatInfo\NumberFormatInfoPercentDecimalDigits.cs"
+             Link="NumberFormatInfo\NumberFormatInfoPercentDecimalDigits.cs" />
+    <Compile Include="..\NumberFormatInfo\NumberFormatInfoPerMilleSymbol.cs"
+             Link="NumberFormatInfo\NumberFormatInfoPerMilleSymbol.cs" />
+    <Compile Include="..\NumberFormatInfo\NumberFormatInfoPercentSymbol.cs"
+             Link="NumberFormatInfo\NumberFormatInfoPercentSymbol.cs" />
+    <Compile Include="..\NumberFormatInfo\NumberFormatInfoPositiveSign.cs"
+             Link="NumberFormatInfo\NumberFormatInfoPositiveSign.cs" />
+    <Compile Include="..\NumberFormatInfo\NumberFormatInfoPositiveInfinitySymbol.cs"
+             Link="NumberFormatInfo\NumberFormatInfoPositiveInfinitySymbol.cs" />
+    <Compile Include="..\NumberFormatInfo\NumberFormatInfoNegativeSign.cs"
+             Link="NumberFormatInfo\NumberFormatInfoNegativeSign.cs" />
+    <Compile Include="..\NumberFormatInfo\NumberFormatInfoNegativeInfinitySymbol.cs"
+             Link="NumberFormatInfo\NumberFormatInfoNegativeInfinitySymbol.cs" />
+    <Compile Include="..\NumberFormatInfo\NumberFormatInfoNumberGroupSeparator.cs"
+             Link="NumberFormatInfo\NumberFormatInfoNumberGroupSeparator.cs" />
+    <Compile Include="..\NumberFormatInfo\NumberFormatInfoNumberDecimalSeparator.cs"
+             Link="NumberFormatInfo\NumberFormatInfoNumberDecimalSeparator.cs" />
+    <Compile Include="..\NumberFormatInfo\NumberFormatInfoNumberDecimalDigits.cs"
+             Link="NumberFormatInfo\NumberFormatInfoNumberDecimalDigits.cs" />
+    <Compile Include="..\NumberFormatInfo\NumberFormatInfoNumberGroupSizes.cs"
+             Link="NumberFormatInfo\NumberFormatInfoNumberGroupSizes.cs" />
+    <Compile Include="..\NumberFormatInfo\NumberFormatInfoNumberNegativePattern.cs"
+             Link="NumberFormatInfo\NumberFormatInfoNumberNegativePattern.cs" />
+    <Compile Include="..\NumberFormatInfo\NumberFormatInfoPercentNegativePattern.cs"
+             Link="NumberFormatInfo\NumberFormatInfoPercentNegativePattern.cs" />
+    <Compile Include="..\NumberFormatInfo\NumberFormatInfoPercentGroupSizes.cs"
+             Link="NumberFormatInfo\NumberFormatInfoPercentGroupSizes.cs" />
+    <Compile Include="..\NumberFormatInfo\NumberFormatInfoPercentPositivePattern.cs"
+             Link="NumberFormatInfo\NumberFormatInfoPercentPositivePattern.cs" />
+    <Compile Include="..\CultureInfo\CultureInfoAll.cs"
+             Link="CultureInfo\CultureInfoAll.cs" />
+    <Compile Include="..\CultureInfo\CultureInfoAsync.cs"
+             Link="CultureInfo\CultureInfoAsync.cs" />
+    <Compile Include="..\CultureInfo\CultureInfoCalendar.cs"
+             Link="CultureInfo\CultureInfoCalendar.cs" />
+    <Compile Include="..\CultureInfo\CultureInfoClone.cs"
+             Link="CultureInfo\CultureInfoClone.cs" />
+    <Compile Include="..\CultureInfo\CultureInfoCompareInfo.cs"
+             Link="CultureInfo\CultureInfoCompareInfo.cs" />
+    <Compile Include="..\CultureInfo\CultureInfoCtor.cs"
+             Link="CultureInfo\CultureInfoCtor.cs" />
+    <Compile Include="..\CultureInfo\CultureInfoDateTimeFormat.cs"
+             Link="CultureInfo\CultureInfoDateTimeFormat.cs" />
+    <Compile Include="..\CultureInfo\CultureInfoEnglishName.cs"
+             Link="CultureInfo\CultureInfoEnglishName.cs" />
+    <Compile Include="..\CultureInfo\CultureInfoEquals.cs"
+             Link="CultureInfo\CultureInfoEquals.cs" />
+    <Compile Include="..\CultureInfo\CultureInfoGetFormat.cs"
+             Link="CultureInfo\CultureInfoGetFormat.cs" />
+    <Compile Include="..\CultureInfo\CultureInfoGetHashCode.cs"
+             Link="CultureInfo\CultureInfoGetHashCode.cs" />
+    <Compile Include="..\CultureInfo\CultureInfoIsNeutralCulture.cs"
+             Link="CultureInfo\CultureInfoIsNeutralCulture.cs" />
+    <Compile Include="..\CultureInfo\CultureInfoNativeName.cs"
+             Link="CultureInfo\CultureInfoNativeName.cs" />
+    <Compile Include="..\CultureInfo\CultureInfoNumberFormat.cs"
+             Link="CultureInfo\CultureInfoNumberFormat.cs" />
+    <Compile Include="..\CultureInfo\CultureInfoParent.cs"
+             Link="CultureInfo\CultureInfoParent.cs" />
+    <Compile Include="..\CultureInfo\CultureInfoReadOnly.cs"
+             Link="CultureInfo\CultureInfoReadOnly.cs" />
+    <Compile Include="..\CultureInfo\CultureInfoTwoLetterISOLanguageName.cs"
+             Link="CultureInfo\CultureInfoTwoLetterISOLanguageName.cs" />
+    <Compile Include="..\CultureInfo\CultureInfoCurrentCulture.cs"
+             Link="CultureInfo\CultureInfoCurrentCulture.cs" />
+    <Compile Include="..\CultureInfo\GetCultureInfo.cs"
+             Link="CultureInfo\GetCultureInfo.cs" />
+    <Compile Include="..\DateTimeFormatInfo\DateTimeFormatInfoAbbreviatedDayNames.cs"
+             Link="DateTimeFormatInfo\DateTimeFormatInfoAbbreviatedDayNames.cs" />
+    <Compile Include="..\DateTimeFormatInfo\DateTimeFormatInfoAbbreviatedMonthGenitiveNames.cs"
+             Link="DateTimeFormatInfo\DateTimeFormatInfoAbbreviatedMonthGenitiveNames.cs" />
+    <Compile Include="..\DateTimeFormatInfo\DateTimeFormatInfoAbbreviatedMonthNames.cs"
+             Link="DateTimeFormatInfo\DateTimeFormatInfoAbbreviatedMonthNames.cs" />
+    <Compile Include="..\DateTimeFormatInfo\DateTimeFormatInfoAMDesignator.cs"
+             Link="DateTimeFormatInfo\DateTimeFormatInfoAMDesignator.cs" />
+    <Compile Include="..\DateTimeFormatInfo\DateTimeFormatInfoCalendar.cs"
+             Link="DateTimeFormatInfo\DateTimeFormatInfoCalendar.cs" />
+    <Compile Include="..\DateTimeFormatInfo\DateTimeFormatInfoCalendarWeekRule.cs"
+             Link="DateTimeFormatInfo\DateTimeFormatInfoCalendarWeekRule.cs" />
+    <Compile Include="..\DateTimeFormatInfo\DateTimeFormatInfoClone.cs"
+             Link="DateTimeFormatInfo\DateTimeFormatInfoClone.cs" />
+    <Compile Include="..\DateTimeFormatInfo\DateTimeFormatInfoData.cs"
+             Link="DateTimeFormatInfo\DateTimeFormatInfoData.cs" />
+    <Compile Include="..\DateTimeFormatInfo\DateTimeFormatInfoDayNames.cs"
+             Link="DateTimeFormatInfo\DateTimeFormatInfoDayNames.cs" />
+    <Compile Include="..\DateTimeFormatInfo\DateTimeFormatInfoFirstDayOfWeek.cs"
+             Link="DateTimeFormatInfo\DateTimeFormatInfoFirstDayOfWeek.cs" />
+    <Compile Include="..\DateTimeFormatInfo\DateTimeFormatInfoFullDateTimePattern.cs"
+             Link="DateTimeFormatInfo\DateTimeFormatInfoFullDateTimePattern.cs" />
+    <Compile Include="..\DateTimeFormatInfo\DateTimeFormatInfoGetAbbreviatedDayName.cs"
+             Link="DateTimeFormatInfo\DateTimeFormatInfoGetAbbreviatedDayName.cs" />
+    <Compile Include="..\DateTimeFormatInfo\DateTimeFormatInfoGetAbbreviatedEraName.cs"
+             Link="DateTimeFormatInfo\DateTimeFormatInfoGetAbbreviatedEraName.cs" />
+    <Compile Include="..\DateTimeFormatInfo\DateTimeFormatInfoGetAbbreviatedMonthName.cs"
+             Link="DateTimeFormatInfo\DateTimeFormatInfoGetAbbreviatedMonthName.cs" />
+    <Compile Include="..\DateTimeFormatInfo\DateTimeFormatInfoGetDayName.cs"
+             Link="DateTimeFormatInfo\DateTimeFormatInfoGetDayName.cs" />
+    <Compile Include="..\DateTimeFormatInfo\DateTimeFormatInfoGetEra.cs"
+             Link="DateTimeFormatInfo\DateTimeFormatInfoGetEra.cs" />
+    <Compile Include="..\DateTimeFormatInfo\DateTimeFormatInfoGetEraName.cs"
+             Link="DateTimeFormatInfo\DateTimeFormatInfoGetEraName.cs" />
+    <Compile Include="..\DateTimeFormatInfo\DateTimeFormatInfoGetFormat.cs"
+             Link="DateTimeFormatInfo\DateTimeFormatInfoGetFormat.cs" />
+    <Compile Include="..\DateTimeFormatInfo\DateTimeFormatInfoGetInstance.cs"
+             Link="DateTimeFormatInfo\DateTimeFormatInfoGetInstance.cs" />
+    <Compile Include="..\DateTimeFormatInfo\DateTimeFormatInfoGetMonthName.cs"
+             Link="DateTimeFormatInfo\DateTimeFormatInfoGetMonthName.cs" />
+    <Compile Include="..\DateTimeFormatInfo\DateTimeFormatInfoLongDatePattern.cs"
+             Link="DateTimeFormatInfo\DateTimeFormatInfoLongDatePattern.cs" />
+    <Compile Include="..\DateTimeFormatInfo\DateTimeFormatInfoLongTimePattern.cs"
+             Link="DateTimeFormatInfo\DateTimeFormatInfoLongTimePattern.cs" />
+    <Compile Include="..\DateTimeFormatInfo\DateTimeFormatInfoMonthDayPattern.cs"
+             Link="DateTimeFormatInfo\DateTimeFormatInfoMonthDayPattern.cs" />
+    <Compile Include="..\DateTimeFormatInfo\DateTimeFormatInfoMonthGenitiveNames.cs"
+             Link="DateTimeFormatInfo\DateTimeFormatInfoMonthGenitiveNames.cs" />
+    <Compile Include="..\DateTimeFormatInfo\DateTimeFormatInfoMonthNames.cs"
+             Link="DateTimeFormatInfo\DateTimeFormatInfoMonthNames.cs" />
+    <Compile Include="..\DateTimeFormatInfo\DateTimeFormatInfoPMDesignator.cs"
+             Link="DateTimeFormatInfo\DateTimeFormatInfoPMDesignator.cs" />
+    <Compile Include="..\DateTimeFormatInfo\DateTimeFormatInfoReadOnly.cs"
+             Link="DateTimeFormatInfo\DateTimeFormatInfoReadOnly.cs" />
+    <Compile Include="..\DateTimeFormatInfo\DateTimeFormatInfoRFC1123Pattern.cs"
+             Link="DateTimeFormatInfo\DateTimeFormatInfoRFC1123Pattern.cs" />
+    <Compile Include="..\DateTimeFormatInfo\DateTimeFormatInfoShortDatePattern.cs"
+             Link="DateTimeFormatInfo\DateTimeFormatInfoShortDatePattern.cs" />
+    <Compile Include="..\DateTimeFormatInfo\DateTimeFormatInfoShortestDayNames.cs"
+             Link="DateTimeFormatInfo\DateTimeFormatInfoShortestDayNames.cs" />
+    <Compile Include="..\DateTimeFormatInfo\DateTimeFormatInfoShortTimePattern.cs"
+             Link="DateTimeFormatInfo\DateTimeFormatInfoShortTimePattern.cs" />
+    <Compile Include="..\DateTimeFormatInfo\DateTimeFormatInfoSortableDateTimePattern.cs"
+             Link="DateTimeFormatInfo\DateTimeFormatInfoSortableDateTimePattern.cs" />
+    <Compile Include="..\DateTimeFormatInfo\DateTimeFormatInfoTests.cs"
+             Link="DateTimeFormatInfo\DateTimeFormatInfoTests.cs" />
+    <Compile Include="..\DateTimeFormatInfo\DateTimeFormatInfoUniversalSortableDateTimePattern.cs"
+             Link="DateTimeFormatInfo\DateTimeFormatInfoUniversalSortableDateTimePattern.cs" />
+    <Compile Include="..\DateTimeFormatInfo\DateTimeFormatInfoYearMonthPattern.cs"
+             Link="DateTimeFormatInfo\DateTimeFormatInfoYearMonthPattern.cs" />
+    <Compile Include="..\NumberFormatInfo\NumberFormatInfoClone.cs"
+             Link="NumberFormatInfo\NumberFormatInfoClone.cs" />
+    <Compile Include="..\NumberFormatInfo\NumberFormatInfoCurrencyDecimalDigits.cs"
+             Link="NumberFormatInfo\NumberFormatInfoCurrencyDecimalDigits.cs" />
+    <Compile Include="..\NumberFormatInfo\NumberFormatInfoCurrencyDecimalSeparator.cs"
+             Link="NumberFormatInfo\NumberFormatInfoCurrencyDecimalSeparator.cs" />
+    <Compile Include="..\NumberFormatInfo\NumberFormatInfoCurrencyGroupSeparator.cs"
+             Link="NumberFormatInfo\NumberFormatInfoCurrencyGroupSeparator.cs" />
+    <Compile Include="..\NumberFormatInfo\NumberFormatInfoCurrencyGroupSizes.cs"
+             Link="NumberFormatInfo\NumberFormatInfoCurrencyGroupSizes.cs" />
+    <Compile Include="..\NumberFormatInfo\NumberFormatInfoCurrencyNegativePattern.cs"
+             Link="NumberFormatInfo\NumberFormatInfoCurrencyNegativePattern.cs" />
+    <Compile Include="..\NumberFormatInfo\NumberFormatInfoCurrencyPositivePattern.cs"
+             Link="NumberFormatInfo\NumberFormatInfoCurrencyPositivePattern.cs" />
+    <Compile Include="..\NumberFormatInfo\NumberFormatInfoGetFormat.cs"
+             Link="NumberFormatInfo\NumberFormatInfoGetFormat.cs" />
+    <Compile Include="..\NumberFormatInfo\NumberFormatInfoGetInstance.cs"
+             Link="NumberFormatInfo\NumberFormatInfoGetInstance.cs" />
+    <Compile Include="..\NumberFormatInfo\NumberFormatInfoReadOnly.cs"
+             Link="NumberFormatInfo\NumberFormatInfoReadOnly.cs" />
+    <Compile Include="..\NumberFormatInfo\NumberFormatInfoTests.cs"
+             Link="NumberFormatInfo\NumberFormatInfoTests.cs" />
+    <Compile Include="..\System\Globalization\CharUnicodeInfoTestData.cs"
+             Link="System\Globalization\CharUnicodeInfoTestData.cs" />
+    <Compile Include="..\System\Globalization\CharUnicodeInfoTests.cs"
+             Link="System\Globalization\CharUnicodeInfoTests.cs" />
+    <Compile Include="..\System\Globalization\CharUnicodeInfoTests.Generated.cs"
+             Link="System\Globalization\CharUnicodeInfoTests.Generated.cs" />
+    <Compile Include="..\System\Globalization\CultureNotFoundExceptionTests.cs"
+             Link="System\Globalization\CultureNotFoundExceptionTests.cs" />
+    <Compile Include="..\System\Globalization\GraphemeBreakTest.cs"
+             Link="System\Globalization\GraphemeBreakTest.cs" />
+    <Compile Include="..\System\Globalization\RegionInfoTests.cs"
+             Link="System\Globalization\RegionInfoTests.cs" />
+    <Compile Include="..\System\Globalization\StringInfoTests.cs"
+             Link="System\Globalization\StringInfoTests.cs" />
+    <Compile Include="..\System\Globalization\SortVersionTests.cs"
+             Link="System\Globalization\SortVersionTests.cs" />
+    <Compile Include="..\System\Globalization\TextInfoTests.cs"
+             Link="System\Globalization\TextInfoTests.cs" />
+    <Compile Include="..\System\Globalization\TextElementEnumeratorTests.cs"
+             Link="System\Globalization\TextElementEnumeratorTests.cs" />
+    <Compile Include="..\System\Globalization\UnicodeCategoryTests.cs"
+             Link="System\Globalization\UnicodeCategoryTests.cs" />
+    <!-- Helpers -->
+    <Compile Include="$(CommonTestPath)System\RandomDataGenerator.cs"
+             Link="Common\System\RandomDataGenerator.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="System.Private.Runtime.UnicodeData" Version="$(SystemPrivateRuntimeUnicodeDataVersion)" ExcludeAssets="contentFiles" GeneratePathProperty="true" />
+    <EmbeddedResource Include="$(PkgSystem_Private_Runtime_UnicodeData)\contentFiles\any\any\$(UnicodeUcdVersion).0\ucd\UnicodeData.txt">
+      <Link>CharUnicodeInfo\UnicodeData.$(UnicodeUcdVersion).txt</Link>
+      <LogicalName>UnicodeData.txt</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="$(PkgSystem_Private_Runtime_UnicodeData)\contentFiles\any\any\$(UnicodeUcdVersion).0\ucd\auxiliary\GraphemeBreakTest.txt">
+      <Link>CharUnicodeInfo\GraphemeBreakTest-$(UnicodeUcdVersion).0.txt</Link>
+      <LogicalName>GraphemeBreakTest.txt</LogicalName>
+    </EmbeddedResource>
+    <None Include="runtimeconfig.template.json" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(CommonTestPath)TestUtilities.Unicode\TestUtilities.Unicode.csproj" />
+  </ItemGroup>
+</Project>

@@ -5,15 +5,7 @@
 #include "sigparser.h"
 #include "sigbuilder.h"
 #include "inc/adapter.h"
-
-//#CLRRuntimeHostInternal_GetImageVersionString
-// External implementation of call to code:ICLRRuntimeHostInternal::GetImageVersionString.
-// Implemented in clr.dll and mscordbi.dll.
-HRESULT
-CLRRuntimeHostInternal_GetImageVersionString(
-  __out_ecount(*pcchBuffer)
-    LPWSTR  wszBuffer,
-    DWORD * pcchBuffer);
+#include "clrversion.h"
 
 //----------------------------------------------------------------------------------------------------
 // The name prefixes used by WinMD to hide/unhide WinRT and CLR versions of RuntimeClasses.
@@ -131,11 +123,7 @@ HRESULT CheckIfWinMDAdapterNeeded(IMDCommon *pRawMDCommon)
     {
         pNewAdapter->m_scenario = kWinMDNormal;
 #ifndef DACCESS_COMPILE
-        WCHAR wszCorVersion[_MAX_PATH];
-        DWORD cchWszCorVersion = _countof(wszCorVersion);
-        IfFailGo(CLRRuntimeHostInternal_GetImageVersionString (wszCorVersion, &cchWszCorVersion));
-        MAKE_UTF8PTR_FROMWIDE_NOTHROW(szCorVersion, wszCorVersion);
-        IfNullGo(szCorVersion);
+        LPCSTR szCorVersion = CLR_METADATA_VERSION;
         size_t nch = strlen(szCorVersion) + 1;
         pNewAdapter->m_pRedirectedVersionString = new (nothrow) char[nch];
         IfNullGo(pNewAdapter->m_pRedirectedVersionString);
@@ -1175,10 +1163,10 @@ void WinMDAdapter::GetExtraAssemblyRefProps(FrameworkAssemblyIndex index,
     {
         ::memset(pContext, 0, sizeof(AssemblyMetaDataInternal));
 
-        pContext->usMajorVersion = VER_ASSEMBLYMAJORVERSION;
-        pContext->usMinorVersion = VER_ASSEMBLYMINORVERSION;
-        pContext->usBuildNumber = VER_ASSEMBLYBUILD;
-        pContext->usRevisionNumber = VER_ASSEMBLYBUILD_QFE;
+        pContext->usMajorVersion = 4;
+        pContext->usMinorVersion = 0;
+        pContext->usBuildNumber = 0;
+        pContext->usRevisionNumber = 0;
 
         pContext->szLocale = "";
     }

@@ -24,7 +24,7 @@
     <BundleInstallerExeArtifact Include="$(ArtifactsPackagesDir)**/*.exe" />
 
     <!-- apphost and comhost template files are not signed, by design. -->
-    <FileSignInfo Include="apphost.exe;comhost.dll" CertificateName="None" />
+    <FileSignInfo Include="apphost.exe;singlefilehost.exe;comhost.dll" CertificateName="None" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(CrossTargetComponentFolder)' != ''">
@@ -71,7 +71,6 @@
     <ItemsToSign Include="$(BaseOutputRootPath)corehost/**/nethost.dll" />
 
     <!-- Sign managed libraries in installer subset. -->
-    <ItemsToSign Include="$(ArtifactsBinDir)Microsoft.DotNet.PlatformAbstractions/**/*.dll" />
     <ItemsToSign Include="$(ArtifactsBinDir)Microsoft.NET.HostModel/**/*.dll" />
   </ItemGroup>
 

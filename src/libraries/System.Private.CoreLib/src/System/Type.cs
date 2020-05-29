@@ -267,7 +267,7 @@ namespace System
             for (int i = 0; i < cls.Length; i++)
             {
                 if (args[i] == null)
-                    throw new ArgumentNullException();
+                    throw new ArgumentException(SR.ArgumentNull_ArrayValue, nameof(args));
                 cls[i] = args[i].GetType();
             }
             return cls;

@@ -18,9 +18,8 @@
     <Compile Include="System\DirectoryServices\ActiveDirectory\DirectoryContextTests.cs" />
     <Compile Include="System\DirectoryServices\ActiveDirectory\ForestTests.cs" />
     <Compile Include="System\DirectoryServices\ActiveDirectory\ActiveDirectoryTests.cs" />
-    <Compile Include="$(CommonTestPath)System\DirectoryServices\LdapConfiguration.cs">
-      <Link>Common\DirectoryServices\LdapConfiguration.cs</Link>
-    </Compile>
+    <Compile Include="$(CommonTestPath)System\DirectoryServices\LdapConfiguration.cs"
+             Link="Common\DirectoryServices\LdapConfiguration.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="LDAP.Configuration.xml">

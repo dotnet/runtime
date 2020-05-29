@@ -13,11 +13,13 @@ namespace System.Runtime.InteropServices
         X64 = 1,
         Arm = 2,
         Arm64 = 3,
+        Wasm = 4,
     }
     public readonly partial struct OSPlatform : System.IEquatable<System.Runtime.InteropServices.OSPlatform>
     {
         private readonly object _dummy;
         private readonly int _dummyPrimitive;
+        public static System.Runtime.InteropServices.OSPlatform Browser { get { throw null; } }
         public static System.Runtime.InteropServices.OSPlatform FreeBSD { get { throw null; } }
         public static System.Runtime.InteropServices.OSPlatform Linux { get { throw null; } }
         public static System.Runtime.InteropServices.OSPlatform OSX { get { throw null; } }

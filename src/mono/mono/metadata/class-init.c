@@ -33,7 +33,6 @@
 #undef REALLY_INCLUDE_CLASS_DEF
 #endif
 
-
 gboolean mono_print_vtable = FALSE;
 gboolean mono_align_small_structs = FALSE;
 #ifdef ENABLE_NETCORE
@@ -3800,8 +3799,6 @@ mono_class_layout_fields (MonoClass *klass, int base_instance_size, int packing_
 		}
 		break;
 	case TYPE_ATTRIBUTE_EXPLICIT_LAYOUT: {
-		guint8 *ref_bitmap;
-
 		real_size = 0;
 		for (i = 0; i < top; i++) {
 			gint32 align;
@@ -3846,40 +3843,35 @@ mono_class_layout_fields (MonoClass *klass, int base_instance_size, int packing_
 			real_size = MAX (real_size, size + field_offsets [i]);
 		}
 
-		if (klass->has_references) {
-			ref_bitmap = g_new0 (guint8, real_size / TARGET_SIZEOF_VOID_P);
-
-			/* Check for overlapping reference and non-reference fields */
-			for (i = 0; i < top; i++) {
-				MonoType *ftype;
-
+		/* check for incorrectly aligned or overlapped by a non-object field */
+#ifdef ENABLE_NETCORE	
+		guint8 *layout_check;	
+		if (has_references) {
+			layout_check = g_new0 (guint8, real_size);
+			for (i = 0; i < top && !mono_class_has_failure (klass); i++) {
 				field = &klass->fields [i];
-
+				if (!field)
+					continue;
 				if (mono_field_is_deleted (field))
 					continue;
 				if (field->type->attrs & FIELD_ATTRIBUTE_STATIC)
 					continue;
-				ftype = mono_type_get_underlying_type (field->type);
-				if (MONO_TYPE_IS_REFERENCE (ftype))
-					ref_bitmap [field_offsets [i] / TARGET_SIZEOF_VOID_P] = 1;
-			}
-			for (i = 0; i < top; i++) {
-				field = &klass->fields [i];
-
-				if (mono_field_is_deleted (field))
-					continue;
-				if (field->type->attrs & FIELD_ATTRIBUTE_STATIC)
-					continue;
-
-				// FIXME: Too much code does this
-#if 0
-				if (!MONO_TYPE_IS_REFERENCE (field->type) && ref_bitmap [field_offsets [i] / TARGET_SIZEOF_VOID_P]) {
-					mono_class_set_type_load_failure (klass, "Could not load type '%s' because it contains an object field at offset %d that is incorrectly aligned or overlapped by a non-object field.", klass->name, field_offsets [i]);
+				int align = 0;
+				int size = mono_type_size (field->type, &align);
+				MonoType *ftype = mono_type_get_underlying_type (field->type);
+				ftype = mono_type_get_basic_type_from_generic (ftype);
+				guint8 type =  type_has_references (klass, ftype) ? 1 : 2;				
+				for (int j = 0; j < size; j++) {
+					if (layout_check [field_offsets [i] + j] != 0 && layout_check [field_offsets [i] + j] != type) {
+						mono_class_set_type_load_failure (klass, "Could not load type '%s' because it contains an object field at offset %d that is incorrectly aligned or overlapped by a non-object field.", klass->name, field->offset);
+						break;
+					}
+					layout_check [field_offsets [i] + j] = type;
 				}
-#endif
 			}
-			g_free (ref_bitmap);
+			g_free (layout_check);
 		}
+#endif
 
 		instance_size = MAX (real_size, instance_size);
 		if (!((layout == TYPE_ATTRIBUTE_EXPLICIT_LAYOUT) && explicit_size)) {
@@ -4237,6 +4229,48 @@ generic_array_methods (MonoClass *klass)
 	return generic_array_method_num;
 }
 
+static int array_get_method_count (MonoClass *klass)
+{
+	MonoType *klass_byval_arg = m_class_get_byval_arg (klass);
+	if (klass_byval_arg->type == MONO_TYPE_ARRAY)
+		/* Regular array */
+		/* ctor([int32]*rank) */
+		/* ctor([int32]*rank*2) */
+		/* Get */
+		/* Set */
+		/* Address */
+		return 5;
+	else if (klass_byval_arg->type == MONO_TYPE_SZARRAY && klass->rank == 1 && klass->element_class->rank)
+		/* Jagged arrays are typed as MONO_TYPE_SZARRAY but have an extra ctor in .net which creates an array of arrays */
+		/* ctor([int32]) */
+		/* ctor([int32], [int32]) */
+		/* Get */
+		/* Set */
+		/* Address */
+		return 5;
+	else
+		/* Vectors don't have additional constructor since a zero lower bound is assumed */
+		/* ctor([int32]*rank) */
+		/* Get */
+		/* Set */
+		/* Address */
+		return 4;
+}
+
+static gboolean array_supports_additional_ctor_method (MonoClass *klass)
+{
+	MonoType *klass_byval_arg = m_class_get_byval_arg (klass);
+	if (klass_byval_arg->type == MONO_TYPE_ARRAY)
+		/* Regular array */
+		return TRUE;
+	else if (klass_byval_arg->type == MONO_TYPE_SZARRAY && klass->rank == 1 && klass->element_class->rank)
+		/* Jagged array */
+		return TRUE;
+	else
+		/* Vector */
+		return FALSE;
+}
+
 /*
  * Global pool of interface IDs, represented as a bitset.
  * LOCKING: Protected by the classes lock.
@@ -4522,7 +4556,7 @@ mono_class_init_internal (MonoClass *klass)
 	}
 
 	if (klass->rank) {
-		array_method_count = 3 + (klass->rank > 1? 2: 1);
+		array_method_count = array_get_method_count (klass);
 
 		if (klass->interface_count) {
 			int count_generic = generic_array_methods (klass);
@@ -4951,17 +4985,11 @@ mono_class_setup_methods (MonoClass *klass)
 		MonoMethodSignature *sig;
 		int count_generic = 0, first_generic = 0;
 		int method_num = 0;
-		gboolean jagged_ctor = FALSE;
 
-		count = 3 + (klass->rank > 1? 2: 1);
+		count = array_get_method_count (klass);
 
 		mono_class_setup_interfaces (klass, error);
 		g_assert (is_ok (error)); /*FIXME can this fail for array types?*/
-
-		if (klass->rank == 1 && klass->element_class->rank) {
-			jagged_ctor = TRUE;
-			count ++;
-		}
 
 		if (klass->interface_count) {
 			count_generic = generic_array_methods (klass);
@@ -4980,7 +5008,8 @@ mono_class_setup_methods (MonoClass *klass)
 
 		amethod = create_array_method (klass, ".ctor", sig);
 		methods [method_num++] = amethod;
-		if (klass->rank > 1) {
+
+		if (array_supports_additional_ctor_method (klass)) {
 			sig = mono_metadata_signature_alloc (klass->image, klass->rank * 2);
 			sig->ret = mono_get_void_type ();
 			sig->pinvoke = TRUE;
@@ -4988,18 +5017,6 @@ mono_class_setup_methods (MonoClass *klass)
 			for (i = 0; i < klass->rank * 2; ++i)
 				sig->params [i] = mono_get_int32_type ();
 
-			amethod = create_array_method (klass, ".ctor", sig);
-			methods [method_num++] = amethod;
-		}
-
-		if (jagged_ctor) {
-			/* Jagged arrays have an extra ctor in .net which creates an array of arrays */
-			sig = mono_metadata_signature_alloc (klass->image, klass->rank + 1);
-			sig->ret = mono_get_void_type ();
-			sig->pinvoke = TRUE;
-			sig->hasthis = TRUE;
-			for (i = 0; i < klass->rank + 1; ++i)
-				sig->params [i] = mono_get_int32_type ();
 			amethod = create_array_method (klass, ".ctor", sig);
 			methods [method_num++] = amethod;
 		}

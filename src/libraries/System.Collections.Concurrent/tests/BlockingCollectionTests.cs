@@ -967,6 +967,22 @@ namespace System.Collections.Concurrent.Tests
         }
 
         [Fact]
+        public static void Test_WithNullEntries()
+        {
+            BlockingCollection<string> collection = new BlockingCollection<string>()
+            {
+                "hello",
+                null,
+                "goodbye"
+            };
+
+            Assert.Equal("hello", collection.Take());
+            Assert.Null(collection.Take());
+            Assert.Equal("goodbye", collection.Take());
+            Assert.False(collection.TryTake(out _));
+        }
+
+        [Fact]
         public static void Test_LargeSize()
         {
             Assert.Equal(0, BlockingCollection<int>.TryAddToAny(ConstructBlockingCollectionArray<int>(63), 1));

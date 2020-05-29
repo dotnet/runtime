@@ -8,15 +8,12 @@
     <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)-Unix</TargetFrameworks>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="$(CommonPath)System\Text\StringBuilderCache.cs">
-      <Link>Common\System\StringBuilderCache.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)System\Marvin.cs">
-      <Link>Common\System\Marvin.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)System\HexConverter.cs">
-      <Link>Common\System\HexConverter.cs</Link>
-    </Compile>
+    <Compile Include="$(CommonPath)System\Text\StringBuilderCache.cs"
+             Link="Common\System\StringBuilderCache.cs" />
+    <Compile Include="$(CommonPath)System\Marvin.cs"
+             Link="Common\System\Marvin.cs" />
+    <Compile Include="$(CommonPath)System\HexConverter.cs"
+             Link="Common\System\HexConverter.cs" />
     <Compile Include="System\Xml\BinaryXml\XmlBinaryReader.cs" />
     <Compile Include="System\Xml\BinaryXml\BinXmlToken.cs" />
     <Compile Include="System\Xml\BinaryXml\SqlUtils.cs" />
@@ -794,9 +791,8 @@
     <Compile Include="System\Xml\Xsl\Xslt\XsltLoader.cs" />
     <Compile Include="System\Xml\Xsl\Xslt\XsltQilFactory.cs" />
     <Compile Include="System\Xml\Xsl\Xslt\XslVisitor.cs" />
-    <Compile Include="$(CoreLibSharedDir)System\LocalAppContextSwitches.Common.cs">
-      <Link>System\LocalAppContextSwitches.Common.cs</Link>
-    </Compile>
+    <Compile Include="$(CoreLibSharedDir)System\LocalAppContextSwitches.Common.cs"
+             Link="System\LocalAppContextSwitches.Common.cs" />
     <Compile Include="System\Xml\Core\LocalAppContextSwitches.cs" />
     <Compile Include="$(CommonPath)System\CSharpHelpers.cs" />
   </ItemGroup>

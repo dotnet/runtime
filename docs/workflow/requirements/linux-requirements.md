@@ -86,9 +86,14 @@ Install the following packages for the toolchain:
 - libssl-dev
 - libkrb5-dev
 - libnuma-dev (optional, enables numa support)
+- zlib1g-dev
 
-A single line to install all packages above:
+The following dependencies are needed if Mono Runtime is enabled (default behavior):
 
-    ~$ sudo apt-get install cmake llvm-9 clang-9 autoconf automake libtool build-essential python curl git lldb-6.0 liblldb-6.0-dev libunwind8 libunwind8-dev gettext libicu-dev liblttng-ust-dev libssl-dev libnuma-dev libkrb5-dev
+- autoconf
+- automake
+- libtool 
+
+    ~$ sudo apt-get install cmake llvm-9 clang-9 autoconf automake libtool build-essential python curl git lldb-6.0 liblldb-6.0-dev libunwind8 libunwind8-dev gettext libicu-dev liblttng-ust-dev libssl-dev libnuma-dev libkrb5-dev zlib1g-dev autoconf automake libtool
 
 You now have all the required components.

@@ -112,7 +112,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 }
 
                 List<EcmaMethod> sortedInliners = new List<EcmaMethod>(inlineeWithInliners.Value);
-                sortedInliners.Sort((a, b) =>
+                sortedInliners.MergeSort((a, b) =>
                 {
                     if (a == b)
                         return 0;

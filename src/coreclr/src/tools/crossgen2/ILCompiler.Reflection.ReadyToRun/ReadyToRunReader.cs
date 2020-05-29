@@ -31,6 +31,7 @@ namespace ILCompiler.Reflection.ReadyToRun
         FreeBSD = 0xADC4,
         Linux = 0x7B79,
         NetBSD = 0x1993,
+        SunOS = 0x1992,
         Windows = 0,
         Unknown = -1
     }
@@ -72,6 +73,7 @@ namespace ILCompiler.Reflection.ReadyToRun
         private OperatingSystem _operatingSystem;
         private Machine _machine;
         private Architecture _architecture;
+        private int _pointerSize;
         private bool _composite;
         private ulong _imageBase;
         private int _readyToRunHeaderRVA;
@@ -96,6 +98,7 @@ namespace ILCompiler.Reflection.ReadyToRun
         // ImportSections
         private List<ReadyToRunImportSection> _importSections;
         private Dictionary<int, string> _importCellNames;
+        private Dictionary<int, ReadyToRunSignature> _importSignatures;
 
         // AvailableType
         private Dictionary<ReadyToRunSection, List<string>> _availableTypes;
@@ -171,6 +174,18 @@ namespace ILCompiler.Reflection.ReadyToRun
             {
                 EnsureHeader();
                 return _architecture;
+            }
+        }
+
+        /// <summary>
+        /// Size of a pointer on the architecture
+        /// </summary>
+        public int TargetPointerSize
+        {
+            get
+            {
+                EnsureHeader();
+                return _pointerSize;
             }
         }
 
@@ -295,6 +310,19 @@ namespace ILCompiler.Reflection.ReadyToRun
 
         }
 
+        /// <summary>
+        /// Map from import cell addresses to their symbolic names.
+        /// </summary>
+        public IReadOnlyDictionary<int, ReadyToRunSignature> ImportSignatures
+        {
+            get
+            {
+                EnsureImportSections();
+                return _importSignatures;
+            }
+
+        }
+
         internal Dictionary<int, DebugInfo> RuntimeFunctionToDebugInfo
         {
             get
@@ -383,14 +411,20 @@ namespace ILCompiler.Reflection.ReadyToRun
             {
                 if ((PEReader.PEHeaders.CorHeader.Flags & CorFlags.ILLibrary) == 0)
                 {
-                    throw new BadImageFormatException("The file is not a ReadyToRun image");
+                    if (!TryLocateNativeReadyToRunHeader())
+                        throw new BadImageFormatException("The file is not a ReadyToRun image");
+
+                    Debug.Assert(Composite);
+                }
+                else
+                {
+                    _assemblyCache.Add(metadata);
+
+                    DirectoryEntry r2rHeaderDirectory = PEReader.PEHeaders.CorHeader.ManagedNativeHeaderDirectory;
+                    _readyToRunHeaderRVA = r2rHeaderDirectory.RelativeVirtualAddress;
+                    Debug.Assert(!Composite);
                 }
 
-                _assemblyCache.Add(metadata);
-
-                DirectoryEntry r2rHeaderDirectory = PEReader.PEHeaders.CorHeader.ManagedNativeHeaderDirectory;
-                _readyToRunHeaderRVA = r2rHeaderDirectory.RelativeVirtualAddress;
-                Debug.Assert(!Composite);
             }
             else if (!TryLocateNativeReadyToRunHeader())
             {
@@ -476,20 +510,24 @@ namespace ILCompiler.Reflection.ReadyToRun
             {
                 case Machine.I386:
                     _architecture = Architecture.X86;
+                    _pointerSize = 4;
                     break;
 
                 case Machine.Amd64:
                     _architecture = Architecture.X64;
+                    _pointerSize = 8;
                     break;
 
                 case Machine.Arm:
                 case Machine.Thumb:
                 case Machine.ArmThumb2:
                     _architecture = Architecture.Arm;
+                    _pointerSize = 4;
                     break;
 
                 case Machine.Arm64:
                     _architecture = Architecture.Arm64;
+                    _pointerSize = 8;
                     break;
 
                 default:
@@ -670,7 +708,7 @@ namespace ILCompiler.Reflection.ReadyToRun
                     int runtimeFunctionId;
                     int? fixupOffset;
                     GetRuntimeFunctionIndexFromOffset(offset, out runtimeFunctionId, out fixupOffset);
-                    ReadyToRunMethod method = new ReadyToRunMethod(this, _methods.Count, metadataReader, methodHandle, runtimeFunctionId, owningType: null, constrainedType: null, instanceArgs: null, fixupOffset: fixupOffset);
+                    ReadyToRunMethod method = new ReadyToRunMethod(this, metadataReader, methodHandle, runtimeFunctionId, owningType: null, constrainedType: null, instanceArgs: null, fixupOffset: fixupOffset);
 
                     if (method.EntryPointRuntimeFunctionId < 0 || method.EntryPointRuntimeFunctionId >= isEntryPoint.Length)
                     {
@@ -712,7 +750,7 @@ namespace ILCompiler.Reflection.ReadyToRun
                 if ((methodFlags & (uint)ReadyToRunMethodSigFlags.READYTORUN_METHOD_SIG_OwnerType) != 0)
                 {
                     mdReader = decoder.GetMetadataReaderFromModuleOverride() ?? mdReader;
-                    if (_composite)
+                    if ((_composite) && mdReader == null)
                     {
                         // The only types that don't have module overrides on them in composite images are primitive types within the system module
                         mdReader = GetSystemModuleMetadataReader();
@@ -755,7 +793,6 @@ namespace ILCompiler.Reflection.ReadyToRun
                 GetRuntimeFunctionIndexFromOffset((int)decoder.Offset, out runtimeFunctionId, out fixupOffset);
                 ReadyToRunMethod method = new ReadyToRunMethod(
                     this,
-                    _methods.Count,
                     mdReader,
                     methodHandle,
                     runtimeFunctionId,
@@ -928,6 +965,7 @@ namespace ILCompiler.Reflection.ReadyToRun
             }
             _importSections = new List<ReadyToRunImportSection>();
             _importCellNames = new Dictionary<int, string>();
+            _importSignatures = new Dictionary<int, ReadyToRunSignature>();
             if (!ReadyToRunHeader.Sections.TryGetValue(ReadyToRunSectionType.ImportSections, out ReadyToRunSection importSectionsSection))
             {
                 return;
@@ -980,9 +1018,11 @@ namespace ILCompiler.Reflection.ReadyToRun
                     long section = NativeReader.ReadInt64(Image, ref sectionOffset);
                     uint sigRva = NativeReader.ReadUInt32(Image, ref signatureOffset);
                     int sigOffset = GetOffset((int)sigRva);
-                    string cellName = MetadataNameFormatter.FormatSignature(_assemblyResolver, this, sigOffset);
+                    ReadyToRunSignature signature;
+                    string cellName = MetadataNameFormatter.FormatSignature(_assemblyResolver, this, sigOffset, out signature);
                     entries.Add(new ReadyToRunImportSection.ImportSectionEntry(entries.Count, entryOffset, entryOffset + rva, section, sigRva, cellName));
                     _importCellNames.Add(rva + entrySize * i, cellName);
+                    _importSignatures.Add(rva + entrySize * i, signature);
                 }
 
                 int auxDataRVA = NativeReader.ReadInt32(Image, ref offset);

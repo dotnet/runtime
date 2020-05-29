@@ -82,7 +82,7 @@ if [ -z "$libInstallDir" ]; then
     exit_with_error 1
 fi
 
-if [ "$__BuildArch" == "arm64" ] || [ "$__BuildArch" == "arm" ]; then
+if [ "$__BuildArch" = "arm64" ] || [ "$__BuildArch" = "arm" ]; then
     echo "No runtime dependencies for arm32/arm64"
     exit $EXIT_CODE_SUCCESS
 fi
@@ -189,7 +189,7 @@ fi
 packageDir=$(<"${CoreDisToolsPackagePathOutputFile}")
 
 # Get library path
-libPath=`find $packageDir | grep $rid | grep -m 1 libcoredistools`
+libPath="$(find "$packageDir" -path "*$rid*libcoredistools*" -print | head -n 1)"
 echo "libPath to be used: ${libPath}"
 
 if [ ! -e $libPath ] || [ -z "$libPath" ]; then

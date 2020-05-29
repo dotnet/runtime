@@ -263,7 +263,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 .Execute()
                 .Should().Pass()
                 .And.HaveStdOutContaining("Hello World")
-                .And.HaveStdOutContaining($"Framework Version:{sharedTestState.RepoDirectories.MicrosoftNETCoreAppVersion}");
+                .And.HaveStdOutContaining(sharedTestState.RepoDirectories.MicrosoftNETCoreAppVersion);
 
 
             // Verify running from within the working directory
@@ -276,7 +276,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 .Execute()
                 .Should().Pass()
                 .And.HaveStdOutContaining("Hello World")
-                .And.HaveStdOutContaining($"Framework Version:{sharedTestState.RepoDirectories.MicrosoftNETCoreAppVersion}");
+                .And.HaveStdOutContaining(sharedTestState.RepoDirectories.MicrosoftNETCoreAppVersion);
         }
 
         [Theory]
@@ -315,7 +315,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                     .Execute()
                     .Should().Pass()
                     .And.HaveStdOutContaining("Hello World")
-                    .And.HaveStdOutContaining($"Framework Version:{sharedTestState.RepoDirectories.MicrosoftNETCoreAppVersion}");
+                    .And.HaveStdOutContaining(sharedTestState.RepoDirectories.MicrosoftNETCoreAppVersion);
 
                 // Verify running from within the working directory
                 Command.Create(appExe)
@@ -329,7 +329,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                     .Execute()
                     .Should().Pass()
                     .And.HaveStdOutContaining("Hello World")
-                    .And.HaveStdOutContaining($"Framework Version:{sharedTestState.RepoDirectories.MicrosoftNETCoreAppVersion}");
+                    .And.HaveStdOutContaining(sharedTestState.RepoDirectories.MicrosoftNETCoreAppVersion);
             }
         }
 
