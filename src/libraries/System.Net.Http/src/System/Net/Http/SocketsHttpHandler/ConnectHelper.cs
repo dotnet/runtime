@@ -50,11 +50,11 @@ namespace System.Net.Http
                         socket.Connect(new DnsEndPoint(host, port));
                     }
                 }
-                catch (Exception ex)
+                catch (Exception e)
                 {
                     socket.Dispose();
 
-                    if (CancellationHelper.ShouldWrapInOperationCanceledException(ex, cancellationToken))
+                    if (CancellationHelper.ShouldWrapInOperationCanceledException(e, cancellationToken))
                     {
                         // Cancellation was requested, so assume that the failure is due to
                         // the cancellation request. This is a bit unorthodox, as usually we'd
@@ -65,7 +65,7 @@ namespace System.Net.Http
                         // exceptions (argument exceptions, object disposed exceptions, socket exceptions,
                         // etc.), as a middle ground we treat it as cancellation, but still propagate the
                         // original information as the inner exception, for diagnostic purposes.
-                        throw CancellationHelper.CreateOperationCanceledException(ex, cancellationToken);
+                        throw CancellationHelper.CreateOperationCanceledException(e, cancellationToken);
                     }
 
                     throw;
@@ -193,12 +193,29 @@ namespace System.Net.Http
                 }
                 else
                 {
-                    sslStream.AuthenticateAsClient(sslOptions);
+                    using (cancellationToken.UnsafeRegister(s => ((Stream)s!).Dispose(), stream))
+                    {
+                        sslStream.AuthenticateAsClient(sslOptions);
+                    }
                 }
             }
             catch (Exception e)
             {
                 sslStream.Dispose();
+
+                if (CancellationHelper.ShouldWrapInOperationCanceledException(e, cancellationToken))
+                {
+                    // Cancellation was requested, so assume that the failure is due to
+                    // the cancellation request. This is a bit unorthodox, as usually we'd
+                    // prioritize a non-OperationCanceledException over a cancellation
+                    // request to avoid losing potentially pertinent information.  But given
+                    // the cancellation design where we tear down the underlying stream upon
+                    // a cancellation request, which can then result in a myriad of different
+                    // exceptions (argument exceptions, object disposed exceptions, socket exceptions,
+                    // etc.), as a middle ground we treat it as cancellation, but still propagate the
+                    // original information as the inner exception, for diagnostic purposes.
+                    throw CancellationHelper.CreateOperationCanceledException(e, cancellationToken);
+                }
 
                 if (e is OperationCanceledException)
                 {
