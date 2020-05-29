@@ -14217,15 +14217,17 @@ TADDR EECodeInfo::GetSavedMethodCode()
     } CONTRACTL_END;
 #ifndef HOST_64BIT
 #if defined(HAVE_GCCOVER)
-    _ASSERTE (!m_pMD->m_GcCover || GCStress<cfg_instr>::IsEnabled());
+
+    PTR_GCCoverageInfo gcCover = GetNativeCodeVersion().GetGCCoverageInfo();
+    _ASSERTE (!gcCover || GCStress<cfg_instr>::IsEnabled());
     if (GCStress<cfg_instr>::IsEnabled()
-        && m_pMD->m_GcCover)
+        && gcCover)
     {
-        _ASSERTE(m_pMD->m_GcCover->savedCode);
+        _ASSERTE(gcCover->savedCode);
 
         // Make sure we return the TADDR of savedCode here.  The byte array is not marshaled automatically.
         // The caller is responsible for any necessary marshaling.
-        return PTR_TO_MEMBER_TADDR(GCCoverageInfo, m_pMD->m_GcCover, savedCode);
+        return PTR_TO_MEMBER_TADDR(GCCoverageInfo, gcCover, savedCode);
     }
 #endif //defined(HAVE_GCCOVER)
 #endif

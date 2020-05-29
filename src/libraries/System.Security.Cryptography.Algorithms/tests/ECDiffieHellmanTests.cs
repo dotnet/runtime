@@ -50,6 +50,14 @@ namespace System.Security.Cryptography.EcDiffieHellman.Tests
         }
 
         [Fact]
+        public void Create_InvalidECCurveFriendlyName_ThrowsPlatformNotSupportedException()
+        {
+            ECCurve curve = ECCurve.CreateFromFriendlyName("bad potato");
+            PlatformNotSupportedException pnse = Assert.Throws<PlatformNotSupportedException>(() => ECDiffieHellman.Create(curve));
+            Assert.Contains("'bad potato'", pnse.Message);
+        }
+
+        [Fact]
         public static void Equivalence_Hash()
         {
             using (ECDiffieHellman ecdh = ECDiffieHellmanFactory.Create())
