@@ -73,16 +73,14 @@ namespace System.Runtime.InteropServices
 {
     public abstract unsafe class SafeBuffer : SafeHandleZeroOrMinusOneIsInvalid
     {
-        // Steal UIntPtr.MaxValue as our uninitialized value.
-        private static readonly UIntPtr Uninitialized = (UIntPtr.Size == 4) ?
-            ((UIntPtr)uint.MaxValue) : ((UIntPtr)ulong.MaxValue);
-
-        private UIntPtr _numBytes;
+        private nuint _numBytes;
 
         protected SafeBuffer(bool ownsHandle) : base(ownsHandle)
         {
             _numBytes = Uninitialized;
         }
+
+        private static nuint Uninitialized => nuint.MaxValue;
 
         /// <summary>
         /// Specifies the size of the region of memory, in bytes.  Must be
@@ -98,7 +96,7 @@ namespace System.Runtime.InteropServices
             if (numBytes >= (ulong)Uninitialized)
                 throw new ArgumentOutOfRangeException(nameof(numBytes), SR.ArgumentOutOfRange_UIntPtrMax);
 
-            _numBytes = (UIntPtr)numBytes;
+            _numBytes = (nuint)numBytes;
         }
 
         /// <summary>
@@ -338,7 +336,7 @@ namespace System.Runtime.InteropServices
                 if (_numBytes == Uninitialized)
                     throw NotInitialized();
 
-                return (ulong)_numBytes;
+                return _numBytes;
             }
         }
 
@@ -347,9 +345,9 @@ namespace System.Runtime.InteropServices
 
         private void SpaceCheck(byte* ptr, ulong sizeInBytes)
         {
-            if ((ulong)_numBytes < sizeInBytes)
+            if (_numBytes < sizeInBytes)
                 NotEnoughRoom();
-            if ((ulong)(ptr - (byte*)handle) > ((ulong)_numBytes) - sizeInBytes)
+            if ((ulong)(ptr - (byte*)handle) > (_numBytes - sizeInBytes))
                 NotEnoughRoom();
         }
 
