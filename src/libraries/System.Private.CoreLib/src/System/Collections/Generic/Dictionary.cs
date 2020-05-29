@@ -600,12 +600,12 @@ namespace System.Collections.Generic
                 }
             }
 
-            bool updateFreeList = false;
             int index;
             if (_freeCount > 0)
             {
                 index = _freeList;
-                updateFreeList = true;
+                Debug.Assert((StartOfFreeList - entries[_freeList].next) >= -1, "shouldn't overflow because `next` cannot underflow");
+                _freeList = StartOfFreeList - entries[_freeList].next;
                 _freeCount--;
             }
             else
@@ -622,13 +622,6 @@ namespace System.Collections.Generic
             }
 
             ref Entry entry = ref entries![index];
-
-            if (updateFreeList)
-            {
-                Debug.Assert((StartOfFreeList - entries[_freeList].next) >= -1, "shouldn't overflow because `next` cannot underflow");
-                _freeList = StartOfFreeList - entries[_freeList].next;
-            }
-
             entry.hashCode = hashCode;
             entry.next = bucket - 1; // Value in _buckets is 1-based
             entry.key = key;
