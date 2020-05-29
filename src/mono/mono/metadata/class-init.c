@@ -787,9 +787,9 @@ class_has_isbyreflike_attribute (MonoClass *klass)
 
 
 static gboolean G_GNUC_UNUSED
-method_has_require_methodimpl_to_remain_in_effect_attribute (MonoMethod *method)
+method_has_preserve_base_overrides_attribute (MonoMethod *method)
 {
-	return method_has_wellknown_attribute (method, "System.Runtime.CompilerServices", "RequireMethodImplToRemainInEffectAttribute", TRUE);
+	return method_has_wellknown_attribute (method, "System.Runtime.CompilerServices", "PreserveBaseOverridesAttribute", TRUE);
 }
 
 static gboolean
