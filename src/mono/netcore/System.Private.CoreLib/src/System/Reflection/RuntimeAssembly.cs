@@ -363,13 +363,13 @@ namespace System.Reflection
             if (culture == null)
                 throw new ArgumentNullException(nameof(culture));
 
-            return InternalGetSatelliteAssembly(culture, version, true)!;
+            return InternalGetSatelliteAssembly(this, culture, version, true)!;
         }
 
         [System.Security.DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod
-        internal Assembly? InternalGetSatelliteAssembly(CultureInfo culture, Version? version, bool throwOnFileNotFound)
+        internal static Assembly? InternalGetSatelliteAssembly(Assembly assembly, CultureInfo culture, Version? version, bool throwOnFileNotFound)
         {
-            AssemblyName aname = GetName();
+            AssemblyName aname = assembly.GetName();
 
             var an = new AssemblyName();
             if (version == null)
@@ -390,7 +390,7 @@ namespace System.Reflection
             {
             }
 
-            if (res == this)
+            if (res == assembly)
                 res = null;
             if (res == null && throwOnFileNotFound)
                 throw new FileNotFoundException(string.Format(culture, SR.IO_FileNotFound_FileName, an.Name));

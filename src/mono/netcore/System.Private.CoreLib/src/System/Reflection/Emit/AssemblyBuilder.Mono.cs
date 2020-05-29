@@ -535,22 +535,14 @@ namespace System.Reflection.Emit
         [System.Security.DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod
         public override Assembly GetSatelliteAssembly(CultureInfo culture)
         {
-            throw new NotImplementedException();
-#if FALSE
-			StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
-			return GetSatelliteAssembly (culture, null, true, ref stackMark);
-#endif
+            return GetSatelliteAssembly(culture, null);
         }
 
         //FIXME MS has issues loading satelite assemblies from SRE
         [System.Security.DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod
         public override Assembly GetSatelliteAssembly(CultureInfo culture, Version? version)
         {
-            throw new NotImplementedException();
-#if FALSE
-			StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
-			return GetSatelliteAssembly (culture, version, true, ref stackMark);
-#endif
+            return RuntimeAssembly.InternalGetSatelliteAssembly(this, culture, version, true)!;
         }
 
         public override Module ManifestModule
