@@ -137,7 +137,7 @@ namespace System.Diagnostics
                     var getRequestedDataUsingContext = listener.GetRequestedDataUsingContext;
                     if (getRequestedDataUsingContext != null)
                     {
-                        ActivityCreationOptions<ActivityContext> aco = new ActivityCreationOptions<ActivityContext>(this, name, context, kind, tags, links);
+                        ActivityCreationOptions<ActivityContext> aco = new ActivityCreationOptions<ActivityContext>(this, name, context == default && Activity.Current != null ? Activity.Current.Context : context, kind, tags, links);
                         ActivityDataRequest dr = getRequestedDataUsingContext(ref aco);
                         if (dr > dateRequest)
                         {
