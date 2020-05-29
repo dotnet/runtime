@@ -8,7 +8,6 @@
     <DisableProjectBuild Condition="'$(TargetsWindows)' != 'true'">true</DisableProjectBuild>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
-  <Import Project="$([MSBuild]::GetPathOfFileAbove(Interop.settings.targets))" />
   <ItemGroup>
     <Compile Include="WeakReferenceTest.cs" />
   </ItemGroup>
