@@ -1111,7 +1111,7 @@ namespace Mono.Linker.Dataflow
 							message += " " + requiresUnreferencedCode.Url;
 						}
 
-						_context.LogMessage (MessageContainer.CreateWarningMessage (message, 2026, origin: MessageOrigin.TryGetOrigin (callingMethodBody.Method, operation.Offset)));
+						_context.LogMessage (MessageContainer.CreateWarningMessage (_context, message, 2026, origin: MessageOrigin.TryGetOrigin (callingMethodBody.Method, operation.Offset)));
 					}
 
 					// To get good reporting of errors we need to track the origin of the value for all method calls

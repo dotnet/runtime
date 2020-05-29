@@ -7,7 +7,13 @@ namespace Mono.Linker.Tests.TestCasesRunner
 {
 	public class TestReflectionPatternRecorder : IReflectionPatternRecorder
 	{
-		public Action<MessageContainer> LogMessage { get; set; }
+		public LinkContext Context { private get; set; }
+
+		public Action<MessageContainer> LogMessage {
+			get {
+				return Context.LogMessage;
+			}
+		}
 
 		public struct ReflectionAccessPattern
 		{
@@ -31,8 +37,9 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
 		public void UnrecognizedReflectionAccessPattern (MethodDefinition sourceMethod, Instruction reflectionMethodCall, IMetadataTokenProvider accessedItem, string message)
 		{
-			LogMessage (MessageContainer.CreateWarningMessage (message, 2006, "Unrecognized reflection pattern",
-				reflectionMethodCall != null ? MessageOrigin.TryGetOrigin (sourceMethod, reflectionMethodCall.Offset) : null));
+			LogMessage (MessageContainer.CreateWarningMessage (Context, message, 2006,
+				reflectionMethodCall != null ? MessageOrigin.TryGetOrigin (sourceMethod, reflectionMethodCall.Offset) : new MessageOrigin (sourceMethod),
+				"Unrecognized reflection pattern"));
 			UnrecognizedPatterns.Add (new ReflectionAccessPattern {
 				SourceMethod = sourceMethod,
 				ReflectionMethodCall = reflectionMethodCall,

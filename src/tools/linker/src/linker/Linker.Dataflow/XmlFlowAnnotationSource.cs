@@ -46,7 +46,8 @@ namespace Mono.Linker.Dataflow
 						firstAppearance = false;
 						parameterAnnotation = Annotation;
 					} else if (ParamName == paramName && !firstAppearance) {
-						_context.LogMessage (MessageContainer.CreateWarningMessage ($"There are duplicate parameter names for '{paramName}' inside '{method.Name}' in '{_xmlDocumentLocation}'", 2024));
+						_context.LogMessage (MessageContainer.CreateWarningMessage (_context,
+							$"There are duplicate parameter names for '{paramName}' inside '{method.Name}' in '{_xmlDocumentLocation}'", 2024, _xmlDocumentLocation));
 					}
 				}
 			}
@@ -78,9 +79,10 @@ namespace Mono.Linker.Dataflow
 		static DynamicallyAccessedMemberTypes GetMemberTypesForDynamicallyAccessedMemberAttribute (ArrayBuilder<Attribute> attributes, LinkContext _context, string _xmlDocumentLocation)
 		{
 			foreach (var attribute in attributes.ToArray ()) {
-				if (attribute.attributeName == "System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembers" && attribute.arguments.Count == 1) {
+				if (attribute.attributeName == "System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembers") {
 					if (attribute.arguments.Count == 0) {
-						_context.LogMessage (MessageContainer.CreateWarningMessage ($"DynamicallyAccessedMembers attribute was specified but no argument was proportioned", 2020));
+						_context.LogMessage (MessageContainer.CreateWarningMessage (_context, $"DynamicallyAccessedMembers attribute was specified but no argument was proportioned",
+							2020, _xmlDocumentLocation));
 					} else if (attribute.arguments.Count == 1) {
 						DynamicallyAccessedMemberTypes result;
 						foreach (var argument in attribute.arguments.ToArray ()) {
@@ -89,11 +91,13 @@ namespace Mono.Linker.Dataflow
 							if (Enum.TryParse (argument, false, out result)) {
 								return result;
 							} else {
-								_context.LogMessage (MessageContainer.CreateWarningMessage ($"Could not parse argument '{argument}' specified in '{_xmlDocumentLocation}' as a DynamicallyAccessedMemberTypes", 2021));
+								_context.LogMessage (MessageContainer.CreateWarningMessage (_context,
+									$"Could not parse argument '{argument}' specified in '{_xmlDocumentLocation}' as a DynamicallyAccessedMemberTypes", 2021, _xmlDocumentLocation));
 							}
 						}
 					} else {
-						_context.LogMessage (MessageContainer.CreateWarningMessage ($"DynamicallyAccessedMembers attribute was specified but there is more than one argument", 2022));
+						_context.LogMessage (MessageContainer.CreateWarningMessage (_context,
+							$"DynamicallyAccessedMembers attribute was specified but there is more than one argument", 2022, _xmlDocumentLocation));
 					}
 				}
 			}
@@ -127,7 +131,8 @@ namespace Mono.Linker.Dataflow
 				AssemblyDefinition assembly = GetAssembly (context, GetAssemblyName (iterator.Current));
 
 				if (assembly == null) {
-					_context.LogMessage (MessageContainer.CreateWarningMessage ($"Could not resolve assembly {GetAssemblyName (iterator.Current).Name} specified in {_xmlDocumentLocation}", 2007));
+					_context.LogMessage (MessageContainer.CreateWarningMessage (_context,
+						$"Could not resolve assembly {GetAssemblyName (iterator.Current).Name} specified in {_xmlDocumentLocation}", 2007, _xmlDocumentLocation));
 					continue;
 				}
 				ProcessTypes (assembly, iterator.Current.SelectChildren ("type", string.Empty));
@@ -186,7 +191,7 @@ namespace Mono.Linker.Dataflow
 				}
 
 				if (type == null) {
-					_context.LogMessage (MessageContainer.CreateWarningMessage ($"Could not resolve type '{fullname}' specified in {_xmlDocumentLocation}", 2008));
+					_context.LogMessage (MessageContainer.CreateWarningMessage (_context, $"Could not resolve type '{fullname}' specified in {_xmlDocumentLocation}", 2008, _xmlDocumentLocation));
 					continue;
 				}
 
@@ -316,7 +321,8 @@ namespace Mono.Linker.Dataflow
 		{
 			FieldDefinition field = GetField (type, signature);
 			if (field == null) {
-				_context.LogMessage (MessageContainer.CreateWarningMessage ($"Could not find field '{signature}' in type '{type.FullName}' specified in { _xmlDocumentLocation}", 2016));
+				_context.LogMessage (MessageContainer.CreateWarningMessage (_context,
+					$"Could not find field '{signature}' in type '{type.FullName}' specified in { _xmlDocumentLocation}", 2016, _xmlDocumentLocation));
 				return;
 			}
 			ArrayBuilder<Attribute> attributes = ProcessAttributes (iterator);
@@ -356,7 +362,8 @@ namespace Mono.Linker.Dataflow
 		{
 			MethodDefinition method = GetMethod (type, signature);
 			if (method == null) {
-				_context.LogMessage (MessageContainer.CreateWarningMessage ($"Could not find method '{signature}' in type '{type.FullName}' specified in '{_xmlDocumentLocation}'", 2009));
+				_context.LogMessage (MessageContainer.CreateWarningMessage (_context,
+					$"Could not find method '{signature}' in type '{type.FullName}' specified in '{_xmlDocumentLocation}'", 2009, _xmlDocumentLocation));
 				return;
 			}
 			ProcessMethodChildren (type, method, iterator);
@@ -388,7 +395,8 @@ namespace Mono.Linker.Dataflow
 						returnAnnotation = returnparamAnnotation;
 				}
 			} else {
-				_context.LogMessage (MessageContainer.CreateWarningMessage ($"There is more than one return parameter specified for '{method.Name}' in '{_xmlDocumentLocation}'", 2023));
+				_context.LogMessage (MessageContainer.CreateWarningMessage (_context,
+					$"There is more than one return parameter specified for '{method.Name}' in '{_xmlDocumentLocation}'", 2023, _xmlDocumentLocation));
 			}
 			if (returnAnnotation != 0 || parameterAnnotation.Count > 0)
 				_methods[method] = new AnnotatedMethod (returnAnnotation, parameterAnnotation.ToArray ());

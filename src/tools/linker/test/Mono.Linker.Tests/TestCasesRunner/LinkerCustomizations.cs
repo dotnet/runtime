@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Reflection;
 
 namespace Mono.Linker.Tests.TestCasesRunner
 {
@@ -18,7 +19,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 		{
 			CustomizeContext?.Invoke (context);
 			if (ReflectionPatternRecorder != null)
-				ReflectionPatternRecorder.LogMessage = context.LogMessage;
+				ReflectionPatternRecorder.Context = context;
 		}
 	}
 }

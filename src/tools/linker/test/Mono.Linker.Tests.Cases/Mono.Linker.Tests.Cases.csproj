@@ -128,6 +128,7 @@
     <Folder Include="Reflection\Dependencies\" />
     <Folder Include="BCLFeatures\" />
     <Folder Include="BCLFeatures\ETW\" />
+    <Folder Include="WarningSuppression\Dependencies\" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="LinkXml\CanPreserveExcludedFeatureCom.xml" />

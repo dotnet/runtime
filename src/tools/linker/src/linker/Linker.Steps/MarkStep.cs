@@ -608,7 +608,8 @@ namespace Mono.Linker.Steps
 			if (args.Count >= 3 && args[2].Value is string assemblyName) {
 				assembly = _context.GetLoadedAssembly (assemblyName);
 				if (assembly == null) {
-					_context.LogMessage (MessageContainer.CreateWarningMessage ($"Could not resolve '{assemblyName}' assembly dependency specified in a `PreserveDependency` attribute that targets method '{context.FullName}'", 2003));
+					_context.LogMessage (MessageContainer.CreateWarningMessage (_context,
+						$"Could not resolve '{assemblyName}' assembly dependency specified in a `PreserveDependency` attribute that targets method '{context.FullName}'", 2003, context.Resolve ()));
 					return;
 				}
 			} else {
@@ -620,7 +621,8 @@ namespace Mono.Linker.Steps
 				td = (assembly ?? context.Module.Assembly).FindType (typeName);
 
 				if (td == null) {
-					_context.LogMessage (MessageContainer.CreateWarningMessage ($"Could not resolve '{typeName}' type dependency specified in a `PreserveDependency` attribute that targets method '{context.FullName}'", 2004));
+					_context.LogMessage (MessageContainer.CreateWarningMessage (_context,
+						$"Could not resolve '{typeName}' type dependency specified in a `PreserveDependency` attribute that targets method '{context.FullName}'", 2004, context.Resolve ()));
 					return;
 				}
 			} else {
@@ -653,7 +655,8 @@ namespace Mono.Linker.Steps
 			if (MarkDependencyField (td, member, new DependencyInfo (DependencyKind.PreservedDependency, ca)))
 				return;
 
-			_context.LogMessage (MessageContainer.CreateWarningMessage ($"Could not resolve dependency member '{member}' declared in type '{td.FullName}' specified in a `PreserveDependency` attribute that targets method '{context.FullName}'", 2005));
+			_context.LogMessage (MessageContainer.CreateWarningMessage (_context,
+				$"Could not resolve dependency member '{member}' declared in type '{td.FullName}' specified in a `PreserveDependency` attribute that targets method '{context.FullName}'", 2005, td));
 		}
 
 		bool MarkDependencyMethod (TypeDefinition type, string name, string[] signature, in DependencyInfo reason)
@@ -1442,6 +1445,8 @@ namespace Mono.Linker.Steps
 					l.Parameters.Count == 1 && l.Parameters[0].ParameterType.IsTypeOf ("System", "Type"),
 					provider);
 				return true;
+			} else if (dt.Name == "UnconditionalSuppressMessageAttribute" && dt.Namespace == "System.Diagnostics.CodeAnalysis") {
+				_context.Suppressions.AddLocalSuppression (ca, provider);
 			}
 
 			return false;
@@ -1961,11 +1966,11 @@ namespace Mono.Linker.Steps
 				break;
 			case TypePreserve.Fields:
 				if (!MarkFields (type, true, new DependencyInfo (DependencyKind.TypePreserve, type), true))
-					_context.LogMessage (MessageContainer.CreateWarningMessage ($"Type {type.FullName} has no fields to preserve", 2001));
+					_context.LogMessage (MessageContainer.CreateWarningMessage (_context, $"Type {type.FullName} has no fields to preserve", 2001, type));
 				break;
 			case TypePreserve.Methods:
 				if (!MarkMethods (type, new DependencyInfo (DependencyKind.TypePreserve, type)))
-					_context.LogMessage (MessageContainer.CreateWarningMessage ($"Type {type.FullName} has no methods to preserve", 2002));
+					_context.LogMessage (MessageContainer.CreateWarningMessage (_context, $"Type {type.FullName} has no methods to preserve", 2002, type));
 				break;
 			}
 		}
