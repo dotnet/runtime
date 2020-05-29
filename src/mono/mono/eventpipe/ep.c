@@ -144,10 +144,11 @@ enable_lock_held (
 
 	EventPipeSession *session = NULL;
 	EventPipeSessionID session_id = 0;
+	uint32_t session_index = 0;
 
 	ep_raise_error_if_nok (ep_volatile_load_eventpipe_state () == EP_STATE_INITIALIZED);
 
-	const uint32_t session_index = generate_session_index_lock_held ();
+	session_index = generate_session_index_lock_held ();
 	ep_raise_error_if_nok (session_index < EP_MAX_NUMBER_OF_SESSIONS);
 
 	session = ep_session_alloc (
@@ -649,8 +650,7 @@ ep_start_streaming (EventPipeSessionID session_id)
 
 	EP_CONFIG_LOCK_ENTER
 		ep_raise_error_if_nok_holding_lock (is_session_id_in_collection_lock_held (session_id) == true);
-		EventPipeSession *const session = (EventPipeSession *)session_id;
-		ep_session_start_streaming_lock_held (session);
+		ep_session_start_streaming_lock_held ((EventPipeSession *)session_id);
 	EP_CONFIG_LOCK_EXIT
 
 ep_on_exit:
