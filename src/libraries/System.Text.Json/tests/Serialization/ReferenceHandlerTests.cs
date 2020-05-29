@@ -659,6 +659,43 @@ namespace System.Text.Json.Serialization.Tests
                 _people[id] = person;
             }
         }
+
+        [Fact]
+        public static void TestBadReferenceResolver()
+        {
+            var options = new JsonSerializerOptions { ReferenceHandler = new ReferenceHandler<BadReferenceResolver>() };
+
+            PersonReference angela = new PersonReference { Name = "Angela" };
+            PersonReference bob = new PersonReference { Name = "Bob" };
+
+            angela.Spouse = bob;
+            bob.Spouse = angela;
+
+            // Nothing is preserved, hence MaxDepth will be reached.
+            Assert.Throws<JsonException>(() => JsonSerializer.Serialize(angela, options));
+        }
+
+        class BadReferenceResolver : ReferenceResolver
+        {
+            private int _count;
+            public override void AddReference(string referenceId, object value)
+            {
+                throw new NotImplementedException();
+            }
+
+            public override string GetReference(object value, out bool alreadyExists)
+            {
+                alreadyExists = false;
+                _count++;
+
+                return _count.ToString();
+            }
+
+            public override object ResolveReference(string referenceId)
+            {
+                throw new NotImplementedException();
+            }
+        }
         #endregion
     }
 }
