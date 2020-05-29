@@ -17,6 +17,7 @@ parameters:
   variables: {}
   name: ''
   displayName: ''
+  testDisplayName: ''
   testScope: ''
   pool: ''
 
@@ -93,7 +94,10 @@ jobs:
           - ${{ if or(ne(parameters.runtimeFlavor, 'coreclr'), ne(parameters.testScope, '')) }}:
             - _runtimeArtifactName: '$(runtimeFlavorName)Product_${{ parameters.runtimeVariant}}_${{ parameters.osGroup }}${{ parameters.osSubgroup }}_${{ parameters.archType }}_${{ parameters.liveRuntimeBuildConfig }}'
             - _runtimeArtifactsPathArg: ' /p:RuntimeArtifactsPath=$(_runtimeDownloadPath)'
-          - _testRunNamePrefixSuffix: $(runtimeFlavorName)_${{ parameters.liveRuntimeBuildConfig }}
+          - ${{ if eq(parameters.testDisplayName, '') }}:
+            - _testRunNamePrefixSuffix: $(runtimeFlavorName)_${{ parameters.liveRuntimeBuildConfig }}
+          - ${{ if ne(parameters.testDisplayName, '') }}:
+            - _testRunNamePrefixSuffix: ${{ parameters.testDisplayName }}
 
         # Windows variables
         - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:

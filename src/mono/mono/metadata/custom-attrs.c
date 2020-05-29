@@ -709,6 +709,10 @@ mono_custom_attrs_from_builders_handle (MonoImage *alloc_img, MonoImage *image, 
 		MONO_HANDLE_ARRAY_GETREF (cattr, cattrs, i);
 		if (!custom_attr_visible (image, cattr, ctor_handle, &ctor_method))
 			continue;
+
+		if (image_is_dynamic (image))
+			mono_reflection_resolution_scope_from_image ((MonoDynamicImage *)image->assembly->image, m_class_get_image (ctor_method->klass));
+
 		MONO_HANDLE_GET (cattr_data, cattr, data);
 		unsigned char *saved = (unsigned char *)mono_image_alloc (image, mono_array_handle_length (cattr_data));
 		MonoGCHandle gchandle = NULL;

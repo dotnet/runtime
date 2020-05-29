@@ -493,6 +493,7 @@ End
 Crst CodeVersioning
     AcquiredBefore LoaderHeap SingleUseLock DeadlockDetection JumpStubCache DebuggerController FuncPtrStubs
     AcquiredAfter ReJITGlobalRequest ThreadStore GlobalStrLiteralMap SystemDomain DebuggerMutex MethodDescBackpatchInfoTracker
+                ReadyToRunEntryPointToMethodDescMap ClassInit AppDomainCache TypeIDMap FusionAppCtx
 End
 
 // Used to synchronize all global requests (which may span multiple AppDomains) which add

@@ -149,7 +149,6 @@
     <Compile Include="$(BclSourcesRoot)\System\Environment.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Exception.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\GC.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Globalization\GlobalizationMode.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Internal.cs" />
     <Compile Include="$(BclSourcesRoot)\System\IO\FileLoadException.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\IO\FileNotFoundException.CoreCLR.cs" />
@@ -359,7 +358,6 @@
   <ItemGroup Condition="'$(TargetsUnix)' == 'true'">
     <Compile Include="$(BclSourcesRoot)\Interop\Unix\Interop.Libraries.cs" />
     <Compile Include="$(BclSourcesRoot)\System\DateTime.Unix.CoreCLR.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Globalization\GlobalizationMode.Unix.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Threading\ClrThreadPoolBoundHandle.Unix.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
@@ -369,7 +367,6 @@
       <Link>Common\Interop\Windows\OleAut32\Interop.VariantClear.cs</Link>
     </Compile>
     <Compile Include="$(BclSourcesRoot)\System\ApplicationModel.Windows.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Globalization\GlobalizationMode.Windows.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Threading\ClrThreadPoolBoundHandle.Windows.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(FeatureAppX)' == 'true'">
