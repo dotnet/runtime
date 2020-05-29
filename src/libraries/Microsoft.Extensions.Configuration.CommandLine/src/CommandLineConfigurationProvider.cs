@@ -148,14 +148,12 @@ namespace Microsoft.Extensions.Configuration.CommandLine
                         nameof(switchMappings));
                 }
 
-                if (switchMappingsCopy.ContainsKey(mapping.Key))
+                if (!switchMappingsCopy.TryAdd(mapping.Key, mapping.Value))
                 {
                     throw new ArgumentException(
                         SR.Format(SR.Error_DuplicatedKeyInSwitchMappings, mapping.Key),
                         nameof(switchMappings));
                 }
-
-                switchMappingsCopy.Add(mapping.Key, mapping.Value);
             }
 
             return switchMappingsCopy;
