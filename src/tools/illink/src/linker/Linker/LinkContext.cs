@@ -163,6 +163,8 @@ namespace Mono.Linker
 
 		public KnownMembers MarkedKnownMembers { get; private set; }
 
+		public UnconditionalSuppressMessageAttributeState Suppressions { get; set; }
+
 		public Tracer Tracer { get; private set; }
 
 		public IReflectionPatternRecorder ReflectionPatternRecorder { get; set; }
@@ -210,6 +212,7 @@ namespace Mono.Linker
 			StripDescriptors = true;
 			StripSubstitutions = true;
 			PInvokes = new List<PInvokeInfo> ();
+			Suppressions = new UnconditionalSuppressMessageAttributeState (this);
 
 			// See https://github.com/mono/linker/issues/612
 			const CodeOptimizations defaultOptimizations =
@@ -465,8 +468,16 @@ namespace Mono.Linker
 
 		public void LogMessage (MessageContainer message)
 		{
-			if (LogMessages)
+			if (LogMessages && message != MessageContainer.Empty)
 				Logger?.LogMessage (message);
+		}
+
+		public bool IsWarningSuppressed (int warningCode, MessageOrigin origin)
+		{
+			if (Suppressions == null)
+				return false;
+
+			return Suppressions.IsSuppressed (warningCode, origin, out _);
 		}
 	}
 

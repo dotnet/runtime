@@ -137,6 +137,11 @@ namespace Mono.Linker.Tests.TestCases
 			return NUnitCasesBySuiteName ("UnreachableBody");
 		}
 
+		public static IEnumerable<TestCaseData> WarningSuppressionTests ()
+		{
+			return NUnitCasesBySuiteName ("WarningSuppression");
+		}
+
 		public static IEnumerable<TestCaseData> CodegenAnnotationTests ()
 		{
 			return NUnitCasesBySuiteName ("CodegenAnnotation");
