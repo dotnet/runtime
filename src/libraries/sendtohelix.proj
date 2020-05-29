@@ -60,8 +60,7 @@
   <PropertyGroup Condition="'$(HelixCommand)' == ''">
     <HelixPreCommands Condition="'$(MonoEnvOptions)' != '' and '$(OSGroup)' == 'Windows_NT'">set MONO_ENV_OPTIONS='$(MonoEnvOptions)'</HelixPreCommands>
     <HelixPreCommands Condition="'$(MonoEnvOptions)' != '' and '$(OSGroup)' != 'Windows_NT'">export MONO_ENV_OPTIONS='$(MonoEnvOptions)'</HelixPreCommands>
-    <HelixPreCommands Condition="'$(OSGroup)' != 'Windows_NT'">export MONO_CHECK_MODE=gc</HelixPreCommands>
-
+    
     <!--
       For windows we need to use call, since the command is going to be called from a bat script created by Helix
       and we exit /b at the end of RunTests.cmd, Helix runs some other commands after ours within the bat script,
