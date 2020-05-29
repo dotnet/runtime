@@ -109,37 +109,31 @@ namespace System.Globalization
         internal const string CJKMinuteSuff = "\u5206";
         internal const string CJKSecondSuff = "\u79d2";
 
-        // The collection fo date words & postfix.
+        // The collection for date words & postfix.
         internal List<string> m_dateWords = new List<string>();
         // Hashtable for the known words.
-        private static volatile HashSet<string>? s_knownWords;
+        private static readonly HashSet<string> s_knownWords = new HashSet<string>(16)
+        {
+            // Skip these special symbols.
+            "/",
+            "-",
+            ".",
 
-        private static HashSet<string> KnownWords =>
-            s_knownWords ??=
-            new HashSet<string>(16)
-            {
-                // Add known words into the hash table.
-
-                // Skip these special symbols.
-                "/",
-                "-",
-                ".",
-
-                // Skip known CJK suffixes.
-                CJKYearSuff,
-                CJKMonthSuff,
-                CJKDaySuff,
-                KoreanYearSuff,
-                KoreanMonthSuff,
-                KoreanDaySuff,
-                KoreanHourSuff,
-                KoreanMinuteSuff,
-                KoreanSecondSuff,
-                CJKHourSuff,
-                ChineseHourSuff,
-                CJKMinuteSuff,
-                CJKSecondSuff,
-            };
+            // Skip known CJK suffixes.
+            CJKYearSuff,
+            CJKMonthSuff,
+            CJKDaySuff,
+            KoreanYearSuff,
+            KoreanMonthSuff,
+            KoreanDaySuff,
+            KoreanHourSuff,
+            KoreanMinuteSuff,
+            KoreanSecondSuff,
+            CJKHourSuff,
+            ChineseHourSuff,
+            CJKMinuteSuff,
+            CJKSecondSuff,
+        };
 
         ////////////////////////////////////////////////////////////////////////////
         //
@@ -212,7 +206,7 @@ namespace System.Globalization
                     return;
                 }
 
-                if (!KnownWords.Contains(str))
+                if (!s_knownWords.Contains(str))
                 {
                     m_dateWords ??= new List<string>();
 

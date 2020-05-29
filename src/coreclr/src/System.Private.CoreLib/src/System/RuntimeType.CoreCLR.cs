@@ -1003,7 +1003,7 @@ namespace System
 
                             Type[] temp = constraint.GetInterfaces();
                             for (int j = 0; j < temp.Length; j++)
-                                al.Add((temp[j] as RuntimeType)!);
+                                al.Add((RuntimeType)temp[j]);
                         }
 
                         // Populate list, without duplicates
