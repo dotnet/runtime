@@ -270,8 +270,8 @@ void DiagnosticServer::PauseForDiagnosticsMonitor()
     CLRConfigStringHolder pDotnetDiagnosticsMonitorAddress = CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_DOTNET_DiagnosticsMonitorAddress);
     if (pDotnetDiagnosticsMonitorAddress != nullptr)
     {
-        DWORD dwDotnetDiagnosticsMonitorStopOnStart = CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_DOTNET_DiagnosticsMonitorStopOnStart);
-        if (dwDotnetDiagnosticsMonitorStopOnStart != 0)
+        DWORD dwDotnetDiagnosticsMonitorPauseOnStart = CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_DOTNET_DiagnosticsMonitorPauseOnStart);
+        if (dwDotnetDiagnosticsMonitorPauseOnStart != 0)
         {
             _ASSERTE(s_ResumeRuntimeStartupEvent != nullptr && s_ResumeRuntimeStartupEvent->IsValid());
             const DWORD dwFiveSecondWait = s_ResumeRuntimeStartupEvent->Wait(5000, false);

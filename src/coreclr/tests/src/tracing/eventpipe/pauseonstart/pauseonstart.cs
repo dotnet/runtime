@@ -16,9 +16,9 @@ using System.IO;
 using Microsoft.Diagnostics.Tracing;
 using Microsoft.Diagnostics.Tracing.Parsers;
 
-namespace Tracing.Tests.StopOnStartValidation
+namespace Tracing.Tests.PauseOnStartValidation
 {
-    public class StopOnStartValidation
+    public class PauseOnStartValidation
     {
         public static async Task<bool> TEST_RuntimeResumesExecutionWithCommand()
         {
@@ -174,7 +174,7 @@ namespace Tracing.Tests.StopOnStartValidation
             }
 
             bool fSuccess = true;
-            IEnumerable<MethodInfo> tests = typeof(StopOnStartValidation).GetMethods().Where(mi => mi.Name.StartsWith("TEST_"));
+            IEnumerable<MethodInfo> tests = typeof(PauseOnStartValidation).GetMethods().Where(mi => mi.Name.StartsWith("TEST_"));
             foreach (var test in tests)
             {
                 Logger.logger.Log($"::== Running test: {test.Name}");
