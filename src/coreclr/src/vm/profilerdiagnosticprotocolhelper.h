@@ -13,14 +13,6 @@
 
 class IpcStream;
 
-// The Diagnostic command set is 0x01
-enum class ProfilerCommandId : uint8_t
-{
-    // reserved      = 0x00,
-    AttachProfiler = 0x01,
-    // future
-};
-
 struct AttachProfilerCommandPayload
 {
     NewArrayHolder<BYTE> incomingBuffer;

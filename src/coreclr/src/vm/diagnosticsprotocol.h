@@ -82,6 +82,32 @@ namespace DiagnosticsIpc
         Error         = 0xFF,
     };
 
+    // The event pipe command set is 0x02
+    // see diagnosticsipc.h and diagnosticserver.h for more details
+    enum class EventPipeCommandId : uint8_t
+    {
+        StopTracing     = 0x01,
+        CollectTracing  = 0x02,
+        CollectTracing2 = 0x03,
+        // future
+    };
+
+    // The Diagnostic command set is 0x01
+    enum class DumpCommandId : uint8_t
+    {
+        // reserved      = 0x00,
+        GenerateCoreDump = 0x01,
+        // future
+    };
+
+    // The Diagnostic command set is 0x01
+    enum class ProfilerCommandId : uint8_t
+    {
+        // reserved      = 0x00,
+        AttachProfiler = 0x01,
+        // future
+    };
+
     struct MagicVersion
     {
         uint8_t Magic[14];

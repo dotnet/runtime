@@ -27,7 +27,15 @@ public:
     // allowing a Diagnostics Monitor to attach perform tasks before
     // Startup is completed
     NOINLINE static void PauseForDiagnosticsMonitor();
+
+    // Sets CLREvent to resume startup in EEStartupHelper (see: ceemain.cpp:686 for pausing point)
+    // This is a no-op if not configured to pause or runtime has already resumed
     static void ResumeRuntimeStartup();
+
+    // Check whether a specified commandset/commandid pair is enabled yet
+    // Most commands besides EventPipe session creation and dumping memory can't take place
+    // until g_fEEStartup is true.  Rely on this method to determine if command should execute
+    static bool IsCommandEnabled(uint8_t commandSet, uint8_t commandId);
 
 private:
     static Volatile<bool> s_shuttingDown;

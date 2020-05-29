@@ -14,17 +14,6 @@
 
 class IpcStream;
 
-// The event pipe command set is 0x02
-// see diagnosticsipc.h and diagnosticserver.h for more details
-enum class EventPipeCommandId : uint8_t
-{
-    StopTracing     = 0x01,
-    CollectTracing  = 0x02,
-    CollectTracing2 = 0x03,
-    // future
-};
-
-
 // Command = 0x0203
 struct EventPipeCollectTracing2CommandPayload
 {

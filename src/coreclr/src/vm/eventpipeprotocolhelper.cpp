@@ -119,15 +119,15 @@ void EventPipeProtocolHelper::HandleIpcMessage(DiagnosticsIpc::IpcMessage& messa
     }
     CONTRACTL_END;
 
-    switch ((EventPipeCommandId)message.GetHeader().CommandId)
+    switch ((DiagnosticsIpc::EventPipeCommandId)message.GetHeader().CommandId)
     {
-    case EventPipeCommandId::CollectTracing:
+    case DiagnosticsIpc::EventPipeCommandId::CollectTracing:
         EventPipeProtocolHelper::CollectTracing(message, pStream);
         break;
-    case EventPipeCommandId::CollectTracing2:
+    case DiagnosticsIpc::EventPipeCommandId::CollectTracing2:
         EventPipeProtocolHelper::CollectTracing2(message, pStream);
         break;
-    case EventPipeCommandId::StopTracing:
+    case DiagnosticsIpc::EventPipeCommandId::StopTracing:
         EventPipeProtocolHelper::StopTracing(message, pStream);
         break;
 

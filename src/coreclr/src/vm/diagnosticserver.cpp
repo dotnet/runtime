@@ -70,6 +70,14 @@ DWORD WINAPI DiagnosticServer::DiagnosticsServerThread(LPVOID)
                 continue;
             }
 
+            // check to see if command is enabled yet.
+            if (!IsCommandEnabled(message.GetHeader().CommandSet, message.GetHeader().CommandId))
+            {
+                DiagnosticsIpc::IpcMessage::SendErrorMessage(pStream, E_FAIL);
+                delete pStream;
+                continue;
+            }
+
             switch ((DiagnosticsIpc::DiagnosticServerCommandSet)message.GetHeader().CommandSet)
             {
             case DiagnosticsIpc::DiagnosticServerCommandSet::Server:
@@ -282,6 +290,37 @@ void DiagnosticServer::ResumeRuntimeStartup()
     LIMITED_METHOD_CONTRACT;
     if (s_ResumeRuntimeStartupEvent != nullptr && s_ResumeRuntimeStartupEvent->IsValid())
         s_ResumeRuntimeStartupEvent->Set();
+}
+
+bool DiagnosticServer::IsCommandEnabled(uint8_t commandSet, uint8_t commandId)
+{
+    LIMITED_METHOD_CONTRACT;
+
+    if (g_fEEStarted)
+        return true;
+
+    bool isEnabled = false;
+    switch ((DiagnosticsIpc::DiagnosticServerCommandSet)commandSet)
+    {
+        case DiagnosticsIpc::DiagnosticServerCommandSet::EventPipe:
+            if ((DiagnosticsIpc::EventPipeCommandId)commandId == DiagnosticsIpc::EventPipeCommandId::CollectTracing ||
+                (DiagnosticsIpc::EventPipeCommandId)commandId == DiagnosticsIpc::EventPipeCommandId::CollectTracing2)
+                isEnabled = true;
+            break;
+        case DiagnosticsIpc::DiagnosticServerCommandSet::Dump:
+            if ((DiagnosticsIpc::DumpCommandId)commandId == DiagnosticsIpc::DumpCommandId::GenerateCoreDump)
+                isEnabled = true;
+            break;
+        case DiagnosticsIpc::DiagnosticServerCommandSet::Server:
+            if ((DiagnosticsIpc::DiagnosticServerCommandId)commandId == DiagnosticsIpc::DiagnosticServerCommandId::ResumeRuntime)
+                isEnabled = true;
+            break;
+        case DiagnosticsIpc::DiagnosticServerCommandSet::Profiler:
+        default:
+            break;
+    }
+
+    return isEnabled;
 }
 
 void DiagnosticServerProtocolHelper::HandleIpcMessage(DiagnosticsIpc::IpcMessage& message, IpcStream* pStream)

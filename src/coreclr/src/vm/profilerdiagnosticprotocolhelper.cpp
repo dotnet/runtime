@@ -23,9 +23,9 @@ void ProfilerDiagnosticProtocolHelper::HandleIpcMessage(DiagnosticsIpc::IpcMessa
     }
     CONTRACTL_END;
 
-    switch ((ProfilerCommandId)message.GetHeader().CommandId)
+    switch ((DiagnosticsIpc::ProfilerCommandId)message.GetHeader().CommandId)
     {
-    case ProfilerCommandId::AttachProfiler:
+    case DiagnosticsIpc::ProfilerCommandId::AttachProfiler:
         ProfilerDiagnosticProtocolHelper::AttachProfiler(message, pStream);
         break;
 
