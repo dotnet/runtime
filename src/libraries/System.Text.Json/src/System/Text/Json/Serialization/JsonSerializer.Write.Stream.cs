@@ -26,7 +26,11 @@ namespace System.Text.Json
         /// There is no compatible <see cref="System.Text.Json.Serialization.JsonConverter"/>
         /// for <typeparamref name="TValue"/> or its serializable members.
         /// </exception>
-        public static Task SerializeAsync<TValue>(Stream utf8Json, TValue value, JsonSerializerOptions? options = null, CancellationToken cancellationToken = default)
+        public static Task SerializeAsync<TValue>(
+            Stream utf8Json,
+            TValue value,
+            JsonSerializerOptions? options = null,
+            CancellationToken cancellationToken = default)
         {
             if (utf8Json == null)
                 throw new ArgumentNullException(nameof(utf8Json));
@@ -53,7 +57,12 @@ namespace System.Text.Json
         /// There is no compatible <see cref="System.Text.Json.Serialization.JsonConverter"/>
         /// for <paramref name="inputType"/>  or its serializable members.
         /// </exception>
-        public static Task SerializeAsync(Stream utf8Json, object? value, Type inputType, JsonSerializerOptions? options = null, CancellationToken cancellationToken = default)
+        public static Task SerializeAsync(
+            Stream utf8Json,
+            object? value,
+            Type inputType,
+            JsonSerializerOptions? options = null,
+            CancellationToken cancellationToken = default)
         {
             if (utf8Json == null)
             {
@@ -73,8 +82,20 @@ namespace System.Text.Json
             return WriteAsyncCore<object>(utf8Json, value!, inputType, options, cancellationToken);
         }
 
-        private static async Task WriteAsyncCore<TValue>(Stream utf8Json, TValue value, Type inputType, JsonSerializerOptions? options, CancellationToken cancellationToken)
+        private static async Task WriteAsyncCore<TValue>(
+            Stream utf8Json,
+            TValue value,
+            Type inputType,
+            JsonSerializerOptions? options,
+            CancellationToken cancellationToken)
         {
+            // We flush the Stream when the buffer is >=90% of capacity.
+            // With the default buffer size of 16K, if a single JSON value is >=1.6K it is possible for
+            // the buffer to max out before it can be flushed, causing the buffer to expand.
+            // So this threshold is a compromise between buffer utilization and minimizing cases where the
+            // buffer is maxed out (and expanded) before it can be flushed.
+            const float FlushThreshold = .9f;
+
             if (options == null)
             {
                 options = JsonSerializerOptions.s_defaultOptions;
@@ -100,9 +121,7 @@ namespace System.Text.Json
 
                 do
                 {
-                    // todo: determine best value here
-                    // https://github.com/dotnet/runtime/issues/32356
-                    state.FlushThreshold = (int)(bufferWriter.Capacity * .9);
+                    state.FlushThreshold = (int)(bufferWriter.Capacity * FlushThreshold);
 
                     isFinalBlock = WriteCore(converterBase, writer, value, options, ref state);
 
@@ -111,8 +130,6 @@ namespace System.Text.Json
                     bufferWriter.Clear();
                 } while (!isFinalBlock);
             }
-
-            // todo: verify that we do want to call FlushAsync here (or above). It seems like leaving it to the caller would be best.
         }
     }
 }
