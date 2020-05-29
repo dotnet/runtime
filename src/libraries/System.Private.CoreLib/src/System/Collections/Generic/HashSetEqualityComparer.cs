@@ -4,24 +4,15 @@
 
 namespace System.Collections.Generic
 {
-    /// <summary>
-    /// Equality comparer for hashsets of hashsets
-    /// </summary>
-    /// <typeparam name="T"></typeparam>
+    /// <summary>Equality comparer for hashsets of hashsets</summary>
     internal sealed class HashSetEqualityComparer<T> : IEqualityComparer<HashSet<T>?>
     {
         private readonly IEqualityComparer<T> _comparer;
 
-        public HashSetEqualityComparer()
-        {
-            _comparer = EqualityComparer<T>.Default;
-        }
+        public HashSetEqualityComparer() => _comparer = EqualityComparer<T>.Default;
 
-        // using m_comparer to keep equals properties in tact; don't want to choose one of the comparers
-        public bool Equals(HashSet<T>? x, HashSet<T>? y)
-        {
-            return HashSet<T>.HashSetEquals(x, y, _comparer);
-        }
+        // using _comparer to keep equals properties intact; don't want to choose one of the comparers
+        public bool Equals(HashSet<T>? x, HashSet<T>? y) => HashSet<T>.HashSetEquals(x, y, _comparer);
 
         public int GetHashCode(HashSet<T>? obj)
         {
@@ -32,10 +23,12 @@ namespace System.Collections.Generic
                 {
                     if (t != null)
                     {
-                        hashCode ^= (_comparer.GetHashCode(t) & 0x7FFFFFFF);
+                        hashCode ^= _comparer.GetHashCode(t) & 0x7FFFFFFF;
                     }
                 }
-            } // else returns hashcode of 0 for null hashsets
+            }
+
+            // else returns hashcode of 0 for null hashsets
             return hashCode;
         }
 
@@ -43,16 +36,9 @@ namespace System.Collections.Generic
         public override bool Equals(object? obj)
         {
             HashSetEqualityComparer<T>? comparer = obj as HashSetEqualityComparer<T>;
-            if (comparer == null)
-            {
-                return false;
-            }
-            return (_comparer == comparer._comparer);
+            return comparer != null && _comparer == comparer._comparer;
         }
 
-        public override int GetHashCode()
-        {
-            return _comparer.GetHashCode();
-        }
+        public override int GetHashCode() => _comparer.GetHashCode();
     }
 }
