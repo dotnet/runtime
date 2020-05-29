@@ -8242,6 +8242,25 @@ void gc_heap::sort_mark_list()
 
 //    unsigned long start = GetCycleCount32();
 
+    // compute total mark list size and total ephemeral size
+    size_t total_mark_list_size = 0;
+    size_t total_ephemeral_size = 0;
+    for (int i = 0; i < n_heaps; i++)
+    {
+        gc_heap* hp = g_heaps[i];
+        size_t ephemeral_size = heap_segment_allocated (hp->ephemeral_heap_segment) - hp->gc_low;
+        total_ephemeral_size += ephemeral_size;
+        total_mark_list_size += (hp->mark_list_index - hp->mark_list);
+    }
+
+    // give up if this is not an ephemeral GC or the mark list size is unreasonably large
+    if (settings.condemned_generation > 1 || total_mark_list_size > total_ephemeral_size/256)
+    {
+        mark_list_index = mark_list_end + 1;
+        //            printf("sort_mark_list: overflow on heap %d\n", i);
+        return;
+    }
+
     dprintf (3, ("Sorting mark lists"));
     if (mark_list_index > mark_list)
         _sort (mark_list, mark_list_index - 1, 0);
