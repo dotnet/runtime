@@ -3258,7 +3258,7 @@ int LinearScan::BuildMultiRegStoreLoc(GenTreeLclVar* storeLoc)
         LclVarDsc* fieldVarDsc = compiler->lvaGetDesc(varDsc->lvFieldLclStart + i);
         assert(isCandidateVar(fieldVarDsc));
         BuildStoreLocDef(storeLoc, fieldVarDsc, nullptr, i);
-        if (isMultiRegSrc && dstCount < (dstCount - 1))
+        if (isMultiRegSrc && (i < (dstCount - 1)))
         {
             currentLoc += 2;
         }

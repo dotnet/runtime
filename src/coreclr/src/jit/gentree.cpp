@@ -10212,10 +10212,12 @@ void Compiler::gtDispRegVal(GenTree* tree)
     }
 
 #if FEATURE_MULTIREG_RET
-    if (tree->IsMultiRegCall())
+    if (tree->OperIs(GT_CALL))
     {
         // 0th reg is GetRegNum(), which is already printed above.
         // Print the remaining regs of a multi-reg call node.
+        // Note that, prior to the initialization of the ReturnTypeDesc we won't print
+        // any additional registers.
         const GenTreeCall* call     = tree->AsCall();
         const unsigned     regCount = call->GetReturnTypeDesc()->TryGetReturnRegCount();
         for (unsigned i = 1; i < regCount; ++i)
@@ -10230,14 +10232,11 @@ void Compiler::gtDispRegVal(GenTree* tree)
         unsigned                   regCount     = 0;
         if (op1->OperIs(GT_CALL))
         {
-            if (op1->IsMultiRegCall())
+            regCount = op1->AsCall()->GetReturnTypeDesc()->TryGetReturnRegCount();
+            // If it hasn't yet been initialized, we'd still like to see the registers printed.
+            if (regCount == 0)
             {
-                regCount = op1->AsCall()->GetReturnTypeDesc()->TryGetReturnRegCount();
-                // If it hasn't yet been initialized, we'd still like to see the registers printed.
-                if (regCount == 0)
-                {
-                    regCount = MAX_RET_REG_COUNT;
-                }
+                regCount = MAX_RET_REG_COUNT;
             }
         }
         else if (op1->IsMultiRegLclVar())
@@ -10850,8 +10849,8 @@ void Compiler::gtDispLeaf(GenTree* tree, IndentStack* indentStack)
                             fieldVarDsc->PrintVarReg();
                         }
 
-                        if (fieldVarDsc->lvTracked && fgLocalVarLivenessDone && // Includes local variable liveness
-                            ((tree->gtFlags & GTF_VAR_DEATH) != 0))
+                        if (fieldVarDsc->lvTracked && fgLocalVarLivenessDone &&
+                            tree->AsLclVar()->IsLastUse(i - varDsc->lvFieldLclStart))
                         {
                             printf(" (last use)");
                         }

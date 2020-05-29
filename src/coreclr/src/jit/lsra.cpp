@@ -2187,14 +2187,14 @@ void LinearScan::checkLastUses(BasicBlock* block)
                 {
                     // NOTE: this is a bit of a hack. When extending lifetimes, the "last use" bit will be clear.
                     // This bit, however, would normally be used during resolveLocalRef to set the value of
-                    // GTF_VAR_DEATH on the node for a ref position. If this bit is not set correctly even when
+                    // LastUse on the node for a ref position. If this bit is not set correctly even when
                     // extending lifetimes, the code generator will assert as it expects to have accurate last
-                    // use information. To avoid these asserts, set the GTF_VAR_DEATH bit here.
+                    // use information. To avoid these asserts, set the LastUse bit here.
                     // Note also that extendLifetimes() is an LSRA stress mode, so it will only be true for
                     // Checked or Debug builds, for which this method will be executed.
                     if (tree != nullptr)
                     {
-                        tree->gtFlags |= GTF_VAR_DEATH;
+                        tree->AsLclVar()->SetLastUse(currentRefPosition->multiRegIdx);
                     }
                 }
                 else if (!currentRefPosition->lastUse)
@@ -2213,7 +2213,7 @@ void LinearScan::checkLastUses(BasicBlock* block)
             else if (extendLifetimes() && tree != nullptr)
             {
                 // NOTE: see the comment above re: the extendLifetimes hack.
-                tree->gtFlags &= ~GTF_VAR_DEATH;
+                tree->AsLclVar()->ClearLastUse(currentRefPosition->multiRegIdx);
             }
 
             if (currentRefPosition->refType == RefTypeDef || currentRefPosition->refType == RefTypeDummyDef)
@@ -4460,7 +4460,8 @@ void LinearScan::unassignPhysReg(RegRecord* regRec, RefPosition* spillRefPositio
         // it would be messy and undesirably cause the "bleeding" of LSRA stress modes outside
         // of LSRA.
         if (extendLifetimes() && assignedInterval->isLocalVar && RefTypeIsUse(spillRefPosition->refType) &&
-            spillRefPosition->treeNode != nullptr && (spillRefPosition->treeNode->gtFlags & GTF_VAR_DEATH) != 0)
+            spillRefPosition->treeNode != nullptr &&
+            spillRefPosition->treeNode->AsLclVar()->IsLastUse(spillRefPosition->multiRegIdx))
         {
             dumpLsraAllocationEvent(LSRA_EVENT_SPILL_EXTENDED_LIFETIME, assignedInterval);
             assignedInterval->isActive = false;
@@ -6405,7 +6406,7 @@ void LinearScan::resolveLocalRef(BasicBlock* block, GenTreeLclVar* treeNode, Ref
     interval->recentRefPosition = currentRefPosition;
     LclVarDsc* varDsc           = interval->getLocalVar(compiler);
 
-    // NOTE: we set the GTF_VAR_DEATH flag here unless we are extending lifetimes, in which case we write
+    // NOTE: we set the LastUse flag here unless we are extending lifetimes, in which case we write
     // this bit in checkLastUses. This is a bit of a hack, but is necessary because codegen requires
     // accurate last use info that is not reflected in the lastUse bit on ref positions when we are extending
     // lifetimes. See also the comments in checkLastUses.
@@ -9306,12 +9307,15 @@ void RefPosition::dump()
     {
         this->getInterval()->tinyDump();
     }
-
     if (this->treeNode)
     {
-        printf("%s ", treeNode->OpName(treeNode->OperGet()));
+        printf("%s", treeNode->OpName(treeNode->OperGet()));
+        if (this->treeNode->IsMultiRegNode())
+        {
+            printf("[%d]", this->multiRegIdx);
+        }
     }
-    printf(FMT_BB " ", this->bbNum);
+    printf(" " FMT_BB " ", this->bbNum);
 
     printf("regmask=");
     dumpRegMask(registerAssignment);
