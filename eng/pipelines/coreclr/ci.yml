@@ -33,25 +33,6 @@ jobs:
 - template: /eng/pipelines/common/checkout-job.yml
 
 #
-# Debug builds
-#
-- template: /eng/pipelines/common/platform-matrix.yml
-  parameters:
-    jobTemplate: /eng/pipelines/coreclr/templates/build-job.yml
-    buildConfig: debug
-    platforms:
-    - Linux_arm
-    - Linux_arm64
-    - Linux_musl_arm64
-    - Linux_musl_x64
-    - Linux_x64
-    - OSX_x64
-    - Windows_NT_arm
-    - Windows_NT_arm64
-    jobParameters:
-      testGroup: outerloop
-
-#
 # Checked builds
 #
 - template: /eng/pipelines/common/platform-matrix.yml
@@ -71,10 +52,7 @@ jobs:
     buildConfig: release
     platforms:
     - Linux_arm
-    - Linux_musl_arm64
     - Linux_x64
-    - OSX_x64
-    - Windows_NT_x86
     jobParameters:
       testGroup: outerloop
 
@@ -91,39 +69,6 @@ jobs:
       liveRuntimeBuildConfig: checked
 
 #
-# Checked test builds
-#
-- template: /eng/pipelines/common/platform-matrix.yml
-  parameters:
-    jobTemplate: /eng/pipelines/common/templates/runtimes/build-test-job.yml
-    buildConfig: checked
-    platforms:
-    - Linux_arm
-    - Linux_arm64
-    - OSX_x64
-    - Windows_NT_arm
-    - Windows_NT_arm64
-    - Windows_NT_x64
-    - Windows_NT_x86
-    testGroup: outerloop
-    jobParameters:
-      liveLibrariesBuildConfig: Release
-
-#
-# Checked JIT test runs
-#
-- template: /eng/pipelines/common/platform-matrix.yml
-  parameters:
-    jobTemplate: /eng/pipelines/common/templates/runtimes/run-test-job.yml
-    buildConfig: checked
-    platformGroup: all
-    helixQueueGroup: ci
-    helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
-    jobParameters:
-      testGroup: outerloop
-      liveLibrariesBuildConfig: Release
-
-#
 # Checked R2R test runs
 #
 - template: /eng/pipelines/common/platform-matrix.yml
@@ -132,13 +77,6 @@ jobs:
     buildConfig: checked
     platforms:
     - Linux_arm64
-    - Linux_musl_x64
-    - Linux_musl_arm64
-    - Linux_x64
-    - OSX_x64
-    - Windows_NT_x64
-    - Windows_NT_x86
-    - Windows_NT_arm
     - Windows_NT_arm64
     helixQueueGroup: ci
     helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
@@ -149,6 +87,25 @@ jobs:
       liveLibrariesBuildConfig: Release
 
 #
+# Checked Crossgen2 R2R test runs
+#
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
+    jobTemplate: /eng/pipelines/common/templates/runtimes/run-test-job.yml
+    buildConfig: checked
+    platforms:
+    - Linux_arm64
+    - Windows_NT_arm64
+    helixQueueGroup: ci
+    helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
+    jobParameters:
+      testGroup: outerloop
+      readyToRun: true
+      crossgen2: true
+      displayNameArgs: R2R_CG2
+      liveLibrariesBuildConfig: Release
+
+#
 # Crossgen-comparison jobs
 #
 - template: /eng/pipelines/common/platform-matrix.yml
@@ -156,18 +113,6 @@ jobs:
     jobTemplate: /eng/pipelines/coreclr/templates/crossgen-comparison-job.yml
     buildConfig: release
     platforms:
-    # Currently failing globally, should be uncommented once the tracking bug gets fixed:
-    # https://github.com/dotnet/runtime/issues/1282
-    # - Linux_arm
+    - Linux_arm
     helixQueueGroup: ci
     helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
-
-#
-# Formatting
-#
-- template: /eng/pipelines/common/platform-matrix.yml
-  parameters:
-    jobTemplate: /eng/pipelines/coreclr/templates/format-job.yml
-    platforms:
-    - Linux_x64
-    - Windows_NT_x64
