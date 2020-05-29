@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.CommandLine;
+using System.CommandLine.Invocation;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -12,6 +13,7 @@ using System.Reflection.Metadata;
 using System.Reflection.PortableExecutable;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Threading.Tasks;
 using Internal.CommandLine;
 using Internal.TypeSystem.Ecma;
 using static System.Console;
@@ -20,106 +22,104 @@ namespace ILVerify
 {
     class Program : ResolverBase
     {
-        private bool _help;
-        private bool _verbose;
-        private bool _printStatistics;
-        private bool _includeMetadataTokensInErrorMessages;
-
-        private AssemblyName _systemModule = new AssemblyName("mscorlib");
+        private Options _options;
         private Dictionary<string, string> _inputFilePaths = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase); // map of simple name to file path
         private Dictionary<string, string> _referenceFilePaths = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase); // map of simple name to file path
-        private IReadOnlyList<Regex> _includePatterns = Array.Empty<Regex>();
-        private IReadOnlyList<Regex> _excludePatterns = Array.Empty<Regex>();
-        private IReadOnlyList<Regex> _ignoreErrorPatterns = Array.Empty<Regex>();
+        private IReadOnlyList<Regex> _includePatterns;
+        private IReadOnlyList<Regex> _excludePatterns;
+        private IReadOnlyList<Regex> _ignoreErrorPatterns;
 
         private Verifier _verifier;
-
-        private Program()
-        {
-        }
-
-        private void Help(string helpText)
-        {
-            WriteLine("ILVerify version " + typeof(Program).GetTypeInfo().Assembly.GetName().Version.ToString());
-            WriteLine();
-            WriteLine(helpText);
-        }
 
         public static IReadOnlyList<Regex> StringPatternsToRegexList(IReadOnlyList<string> patterns)
         {
             List<Regex> patternList = new List<Regex>();
-            foreach (var pattern in patterns)
-                patternList.Add(new Regex(pattern, RegexOptions.Compiled));
+            if (patterns != null)
+            {
+                foreach (var pattern in patterns)
+                    patternList.Add(new Regex(pattern, RegexOptions.Compiled));
+            }
             return patternList;
         }
 
-        private ArgumentSyntax ParseCommandLine(string[] args)
+        public class Options
         {
-            IReadOnlyList<string> inputFiles = Array.Empty<string>();
-            IReadOnlyList<string> referenceFiles = Array.Empty<string>();
-            IReadOnlyList<string> includePatterns = Array.Empty<string>();
-            IReadOnlyList<string> excludePatterns = Array.Empty<string>();
-            IReadOnlyList<string> ignoreErrorPatterns = Array.Empty<string>();
-            string includeFile = string.Empty;
-            string excludeFile = string.Empty;
-            string ignoreErrorFile = string.Empty;
+            public string[] InputFilePath { get; set; }
+            public string[] Reference { get; set; }
+            public string SystemModule { get; set; }
+            public string[] Include { get; set; }
+            public FileInfo IncludeFile { get; set; }
+            public string[] Exclude { get; set; }
+            public FileInfo ExcludeFile { get; set; }
+            public string[] IgnoreError { get; set; }
+            public FileInfo IgnoreErrorFile { get; set; }
+            public bool Statistics { get; set; }
+            public bool Verbose { get; set; }
+            public bool Tokens { get; set; }
+        }
 
-            AssemblyName name = typeof(Program).GetTypeInfo().Assembly.GetName();
-            ArgumentSyntax argSyntax = ArgumentSyntax.Parse(args, syntax =>
+        public static RootCommand RootCommand()
+        {
+            RootCommand command = new RootCommand();
+            command.AddArgument(new Argument<string[]>("input-file-path", "Input file(s)") { Arity = new ArgumentArity(1, Int32.MaxValue) });
+            command.AddOption(new Option<string[]>(new[] { "--reference", "-r" }, "Reference metadata from the specified assembly"));
+            command.AddOption(new Option<string>(new[] { "--system-module", "-s" }, "System module name (default: mscorlib)"));
+            command.AddOption(new Option<string[]>(new[] { "--include", "-i" }, "Use only methods/types/namespaces, which match the given regular expression(s)"));
+            command.AddOption(new Option<FileInfo>(new[] { "--include-file" }, "Same as --include, but the regular expression(s) are declared line by line in the specified file.").ExistingOnly());
+            command.AddOption(new Option<string[]>(new[] { "--exclude", "-e" }, "Skip methods/types/namespaces, which match the given regular expression(s)"));
+            command.AddOption(new Option<FileInfo>(new[] { "--exclude-file" }, "Same as --exclude, but the regular expression(s) are declared line by line in the specified file.").ExistingOnly());
+            command.AddOption(new Option<string[]>(new[] { "--ignore-error", "-g" }, "Ignore errors, which match the given regular expression(s)"));
+            command.AddOption(new Option<FileInfo>(new[] { "--ignore-error-file" }, "Same as --ignore-error, but the regular expression(s) are declared line by line in the specified file.").ExistingOnly());
+            command.AddOption(new Option<bool>(new[] { "--statistics" }, "Print verification statistics"));
+            command.AddOption(new Option<bool>(new[] { "--verbose", "-v" }, "Verbose output"));
+            command.AddOption(new Option<bool>(new[] { "--tokens", "-t" }, "Include metadata tokens in error messages"));
+            return command;
+        }
+
+        private Program(Options options)
+        {
+            _options = options;
+
+            if (options.InputFilePath != null)
             {
-                syntax.ApplicationName = name.Name.ToString();
+                foreach (var input in options.InputFilePath)
+                    Helpers.AppendExpandedPaths(_inputFilePaths, input, true);
+            }
 
-                // HandleHelp writes to error, fails fast with crash dialog and lacks custom formatting.
-                syntax.HandleHelp = false;
-                syntax.HandleErrors = true;
-
-                syntax.DefineOption("h|help", ref _help, "Display this usage message");
-                syntax.DefineOption("s|system-module", ref _systemModule, s => new AssemblyName(s), "System module name (default: mscorlib)");
-                syntax.DefineOptionList("r|reference", ref referenceFiles, "Reference metadata from the specified assembly");
-                syntax.DefineOptionList("i|include", ref includePatterns, "Use only methods/types/namespaces, which match the given regular expression(s)");
-                syntax.DefineOption("include-file", ref includeFile, "Same as --include, but the regular expression(s) are declared line by line in the specified file.");
-                syntax.DefineOptionList("e|exclude", ref excludePatterns, "Skip methods/types/namespaces, which match the given regular expression(s)");
-                syntax.DefineOption("exclude-file", ref excludeFile, "Same as --exclude, but the regular expression(s) are declared line by line in the specified file.");
-                syntax.DefineOptionList("g|ignore-error", ref ignoreErrorPatterns, "Ignore errors, which match the given regular expression(s)");
-                syntax.DefineOption("ignore-error-file", ref ignoreErrorFile, "Same as --ignore-error, but the regular expression(s) are declared line by line in the specified file.");
-                syntax.DefineOption("statistics", ref _printStatistics, "Print verification statistics");
-                syntax.DefineOption("v|verbose", ref _verbose, "Verbose output");
-                syntax.DefineOption("t|tokens", ref _includeMetadataTokensInErrorMessages, "Include metadata tokens in error messages");
-
-                syntax.DefineParameterList("in", ref inputFiles, "Input file(s)");
-            });
-
-            foreach (var input in inputFiles)
-                Helpers.AppendExpandedPaths(_inputFilePaths, input, true);
-
-            foreach (var reference in referenceFiles)
-                Helpers.AppendExpandedPaths(_referenceFilePaths, reference, false);
-
-            if (!string.IsNullOrEmpty(includeFile))
+            if (options.Reference != null)
             {
-                if (includePatterns.Count > 0)
+                foreach (var reference in options.Reference)
+                    Helpers.AppendExpandedPaths(_referenceFilePaths, reference, false);
+            }
+
+            string[] includePatterns = options.Include;
+            if (options.IncludeFile != null)
+            {
+                if (options.Include.Length != 0)
                     WriteLine("[Warning] --include-file takes precedence over --include");
-                includePatterns = File.ReadAllLines(includeFile);
+                includePatterns = File.ReadAllLines(options.IncludeFile.FullName);
             }
             _includePatterns = StringPatternsToRegexList(includePatterns);
 
-            if (!string.IsNullOrEmpty(excludeFile))
+            string[] excludePatterns = options.Exclude;
+            if (options.ExcludeFile != null)
             {
-                if (excludePatterns.Count > 0)
+                if (options.Exclude.Length != 0)
                     WriteLine("[Warning] --exclude-file takes precedence over --exclude");
-                excludePatterns = File.ReadAllLines(excludeFile);
+                excludePatterns = File.ReadAllLines(options.ExcludeFile.FullName);
             }
             _excludePatterns = StringPatternsToRegexList(excludePatterns);
 
-            if (!string.IsNullOrEmpty(ignoreErrorFile))
+            string[] ignoreErrorPatterns = options.IgnoreError;
+            if (options.IgnoreErrorFile != null)
             {
-                if (ignoreErrorPatterns.Count > 0)
+                if (options.IgnoreError.Length != 0)
                     WriteLine("[Warning] --ignore-error-file takes precedence over --ignore-error");
-                ignoreErrorPatterns = File.ReadAllLines(ignoreErrorFile);
+                ignoreErrorPatterns = File.ReadAllLines(options.IgnoreErrorFile.FullName);
             }
             _ignoreErrorPatterns = StringPatternsToRegexList(ignoreErrorPatterns);
 
-            if (_verbose)
+            if (options.Verbose)
             {
                 WriteLine();
                 foreach (var path in _inputFilePaths)
@@ -141,24 +141,12 @@ namespace ILVerify
                 foreach (var pattern in _ignoreErrorPatterns)
                     WriteLine($"Using ignore error pattern '{pattern}'");
             }
-
-            return argSyntax;
         }
 
-        private int Run(string[] args)
+        private int Run()
         {
-            ArgumentSyntax syntax = ParseCommandLine(args);
-            if (_help)
-            {
-                Help(syntax.GetHelpText());
-                return 1;
-            }
-
-            if (_inputFilePaths.Count == 0)
-                throw new CommandLineException("No input files specified");
-
             _verifier = new Verifier(this, GetVerifierOptions());
-            _verifier.SetSystemModuleName(_systemModule);
+            _verifier.SetSystemModuleName(new AssemblyName(_options.SystemModule ?? "mscorlib"));
 
             int numErrors = 0;
 
@@ -179,7 +167,7 @@ namespace ILVerify
 
         private VerifierOptions GetVerifierOptions()
         {
-            return new VerifierOptions { IncludeMetadataTokensInErrorMessages = _includeMetadataTokensInErrorMessages };
+            return new VerifierOptions { IncludeMetadataTokensInErrorMessages = _options.Tokens };
         }
 
         private void PrintVerifyMethodsResult(VerificationResult result, EcmaModule module, string pathOrModuleName)
@@ -301,7 +289,7 @@ namespace ILVerify
             else
                 WriteLine("All Classes and Methods in " + path + " Verified.");
 
-            if (_printStatistics)
+            if (_options.Statistics)
             {
                 WriteLine($"Types found: {typeCounter}");
                 WriteLine($"Types verified: {verifiedTypeCounter}");
@@ -326,7 +314,7 @@ namespace ILVerify
                 var methodName = GetQualifiedMethodName(metadataReader, methodHandle);
 
                 bool verifying = ShouldVerifyMemberName(methodName);
-                if (_verbose)
+                if (_options.Verbose)
                 {
                     Write(verifying ? "Verifying " : "Skipping ");
                     WriteLine(methodName);
@@ -339,7 +327,7 @@ namespace ILVerify
                     {
                         if (ShouldIgnoreVerificationResult(result))
                         {
-                            if (_verbose)
+                            if (_options.Verbose)
                             {
                                 Write("Ignoring ");
                                 PrintVerifyMethodsResult(result, module, path);
@@ -368,7 +356,7 @@ namespace ILVerify
                 // get fully qualified type name
                 var className = GetQualifiedClassName(metadataReader, typeHandle);
                 bool verifying = ShouldVerifyMemberName(className);
-                if (_verbose)
+                if (_options.Verbose)
                 {
                     Write(verifying ? "Verifying " : "Skipping ");
                     WriteLine(className);
@@ -380,7 +368,7 @@ namespace ILVerify
                     {
                         if (ShouldIgnoreVerificationResult(result))
                         {
-                            if (_verbose)
+                            if (_options.Verbose)
                             {
                                 Write("Ignoring ");
                                 Console.WriteLine(result.Message, result.Args);
@@ -486,17 +474,29 @@ namespace ILVerify
             return null;
         }
 
-        private static int Main(string[] args)
+        private static int Run(Options options)
         {
             try
             {
-                return new Program().Run(args);
+                return new Program(options).Run();
+            }
+            catch (CommandLineException e)
+            {
+                Console.WriteLine("Error: " + e.Message);
+                return 1;
             }
             catch (Exception e)
             {
-                Console.Error.WriteLine("Error: " + e.Message);
-                return 3;
+                Console.WriteLine("Error: " + e.ToString());
+                return 1;
             }
+        }
+
+        private static async Task<int> Main(string[] args)
+        {
+            var command = RootCommand();
+            command.Handler = CommandHandler.Create<Options>(Run);
+            return await command.InvokeAsync(args);
         }
     }
 }

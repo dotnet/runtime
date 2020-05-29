@@ -33,5 +33,10 @@
         "Name": "Microsoft.ILVerification",
         "Description": "IL verification library.",
         "CommonTypes": [ ]
+    },
+    {
+        "Name": "dotnet-ilverify",
+        "Description": "ILVerify tool.",
+        "CommonTypes": [ ]
     }
 ]
