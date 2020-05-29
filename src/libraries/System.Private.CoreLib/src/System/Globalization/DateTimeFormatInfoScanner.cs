@@ -112,33 +112,33 @@ namespace System.Globalization
         // The collection fo date words & postfix.
         internal List<string> m_dateWords = new List<string>();
         // Hashtable for the known words.
-        private static volatile Dictionary<string, string>? s_knownWords;
+        private static volatile HashSet<string>? s_knownWords;
 
-        private static Dictionary<string, string> KnownWords =>
+        private static HashSet<string> KnownWords =>
             s_knownWords ??=
-            new Dictionary<string, string>(16)
+            new HashSet<string>(16)
             {
                 // Add known words into the hash table.
 
                 // Skip these special symbols.
-                { "/", string.Empty },
-                { "-", string.Empty },
-                { ".", string.Empty },
+                "/",
+                "-",
+                ".",
 
                 // Skip known CJK suffixes.
-                { CJKYearSuff, string.Empty },
-                { CJKMonthSuff, string.Empty },
-                { CJKDaySuff, string.Empty },
-                { KoreanYearSuff, string.Empty },
-                { KoreanMonthSuff, string.Empty },
-                { KoreanDaySuff, string.Empty },
-                { KoreanHourSuff, string.Empty },
-                { KoreanMinuteSuff, string.Empty },
-                { KoreanSecondSuff, string.Empty },
-                { CJKHourSuff, string.Empty },
-                { ChineseHourSuff, string.Empty },
-                { CJKMinuteSuff, string.Empty },
-                { CJKSecondSuff, string.Empty }
+                CJKYearSuff,
+                CJKMonthSuff,
+                CJKDaySuff,
+                KoreanYearSuff,
+                KoreanMonthSuff,
+                KoreanDaySuff,
+                KoreanHourSuff,
+                KoreanMinuteSuff,
+                KoreanSecondSuff,
+                CJKHourSuff,
+                ChineseHourSuff,
+                CJKMinuteSuff,
+                CJKSecondSuff,
             };
 
         ////////////////////////////////////////////////////////////////////////////
@@ -212,7 +212,7 @@ namespace System.Globalization
                     return;
                 }
 
-                if (!KnownWords.TryGetValue(str, out _))
+                if (!KnownWords.Contains(str))
                 {
                     m_dateWords ??= new List<string>();
 
