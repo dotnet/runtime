@@ -40,7 +40,7 @@ namespace System.Text.Json.Serialization.Converters
             ref ReadStack state,
             [MaybeNullWhen(false)] out TCollection value)
         {
-            if (!state.SupportContinuation && !state.ShouldReadPreservedReferences)
+            if (!state.SupportContinuation && options.ReferenceHandler == null)
             {
                 // Fast path that avoids maintaining state variables and dealing with preserved references.
 
@@ -95,7 +95,7 @@ namespace System.Text.Json.Serialization.Converters
                     {
                         state.Current.ObjectState = StackFrameObjectState.PropertyValue;
                     }
-                    else if (state.ShouldReadPreservedReferences)
+                    else if (options.ReferenceHandler != null)
                     {
                         if (reader.TokenType != JsonTokenType.StartObject)
                         {
@@ -111,7 +111,7 @@ namespace System.Text.Json.Serialization.Converters
                 }
 
                 // Handle the metadata properties.
-                if (state.ShouldReadPreservedReferences && state.Current.ObjectState < StackFrameObjectState.PropertyValue)
+                if (options.ReferenceHandler != null && state.Current.ObjectState < StackFrameObjectState.PropertyValue)
                 {
                     if (JsonSerializer.ResolveMetadata(this, ref reader, ref state))
                     {
@@ -135,6 +135,9 @@ namespace System.Text.Json.Serialization.Converters
                     if (state.Current.MetadataId != null)
                     {
                         value = (TCollection)state.Current.ReturnValue!;
+
+                        // TODO: https://github.com/dotnet/runtime/issues/37168
+                        //Separate logic for IEnumerable to call AddReference when the reader is at `$id`, in order to avoid remembering the last metadata.
 
                         // Remember the prior metadata and temporarily use '$id' to write it in the path in case AddReference throws
                         // in this case, the last property seen will be '$values' when we reach this point.
@@ -253,7 +256,7 @@ namespace System.Text.Json.Serialization.Converters
                 {
                     state.Current.ProcessedStartToken = true;
 
-                    if (!state.ShouldWritePreservedReferences)
+                    if (options.ReferenceHandler == null)
                     {
                         writer.WriteStartArray();
                     }

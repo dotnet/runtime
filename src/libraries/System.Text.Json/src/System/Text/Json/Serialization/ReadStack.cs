@@ -50,11 +50,6 @@ namespace System.Text.Json
         public ReferenceResolver ReferenceResolver;
 
         /// <summary>
-        /// Try to read preserve references semantics.
-        /// </summary>
-        public bool ShouldReadPreservedReferences;
-
-        /// <summary>
         /// Whether we need to read ahead in the inner read loop.
         /// </summary>
         public bool SupportContinuation;
@@ -92,7 +87,6 @@ namespace System.Text.Json
             if (options.ReferenceHandler != null)
             {
                 ReferenceResolver = options.ReferenceHandler.CreateResolver(writing: false);
-                ShouldReadPreservedReferences = true;
             }
 
             SupportContinuation = supportContinuation;

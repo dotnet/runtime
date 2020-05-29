@@ -16,7 +16,7 @@ namespace System.Text.Json.Serialization.Converters
         {
             object obj;
 
-            if (!state.SupportContinuation && !state.ShouldReadPreservedReferences)
+            if (!state.SupportContinuation && options.ReferenceHandler == null)
             {
                 // Fast path that avoids maintaining state variables and dealing with preserved references.
 
@@ -75,7 +75,7 @@ namespace System.Text.Json.Serialization.Converters
                 // Handle the metadata properties.
                 if (state.Current.ObjectState < StackFrameObjectState.PropertyValue)
                 {
-                    if (state.ShouldReadPreservedReferences)
+                    if (options.ReferenceHandler != null)
                     {
                         if (JsonSerializer.ResolveMetadata(this, ref reader, ref state))
                         {
@@ -238,7 +238,7 @@ namespace System.Text.Json.Serialization.Converters
             {
                 writer.WriteStartObject();
 
-                if (state.ShouldWritePreservedReferences)
+                if (options.ReferenceHandler != null)
                 {
                     if (JsonSerializer.WriteReferenceForObject(this, objectValue, ref state, writer) == MetadataPropertyName.Ref)
                     {
@@ -293,7 +293,7 @@ namespace System.Text.Json.Serialization.Converters
                 {
                     writer.WriteStartObject();
 
-                    if (state.ShouldWritePreservedReferences)
+                    if (options.ReferenceHandler != null)
                     {
                         if (JsonSerializer.WriteReferenceForObject(this, objectValue, ref state, writer) == MetadataPropertyName.Ref)
                         {

@@ -69,7 +69,7 @@ namespace System.Text.Json.Serialization.Converters
             ref ReadStack state,
             [MaybeNullWhen(false)] out TCollection value)
         {
-            if (!state.SupportContinuation && !state.ShouldReadPreservedReferences)
+            if (!state.SupportContinuation && options.ReferenceHandler == null)
             {
                 // Fast path that avoids maintaining state variables and dealing with preserved references.
 
@@ -146,7 +146,7 @@ namespace System.Text.Json.Serialization.Converters
                 }
 
                 // Handle the metadata properties.
-                if (state.ShouldReadPreservedReferences && state.Current.ObjectState < StackFrameObjectState.PropertyValue)
+                if (options.ReferenceHandler != null && state.Current.ObjectState < StackFrameObjectState.PropertyValue)
                 {
                     if (JsonSerializer.ResolveMetadata(this, ref reader, ref state))
                     {
@@ -212,7 +212,7 @@ namespace System.Text.Json.Serialization.Converters
                         state.Current.PropertyState = StackFramePropertyState.Name;
 
                         // Verify property doesn't contain metadata.
-                        if (state.ShouldReadPreservedReferences)
+                        if (options.ReferenceHandler != null)
                         {
                             ReadOnlySpan<byte> propertyName = reader.GetSpan();
                             if (propertyName.Length > 0 && propertyName[0] == '$')
@@ -273,7 +273,7 @@ namespace System.Text.Json.Serialization.Converters
                 state.Current.ProcessedStartToken = true;
                 writer.WriteStartObject();
 
-                if (state.ShouldWritePreservedReferences)
+                if (options.ReferenceHandler != null)
                 {
                     if (JsonSerializer.WriteReferenceForObject(this, dictionary, ref state, writer) == MetadataPropertyName.Ref)
                     {

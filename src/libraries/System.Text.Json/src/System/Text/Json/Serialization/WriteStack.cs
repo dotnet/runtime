@@ -38,11 +38,6 @@ namespace System.Text.Json
         public ReferenceResolver ReferenceResolver;
 
         /// <summary>
-        /// Preserve object references when serializing.
-        /// </summary>
-        public bool ShouldWritePreservedReferences;
-
-        /// <summary>
         /// Internal flag to let us know that we need to read ahead in the inner read loop.
         /// </summary>
         public bool SupportContinuation;
@@ -85,7 +80,6 @@ namespace System.Text.Json
             if (options.ReferenceHandler != null)
             {
                 ReferenceResolver = options.ReferenceHandler.CreateResolver(writing: true);
-                ShouldWritePreservedReferences = true;
             }
 
             SupportContinuation = supportContinuation;

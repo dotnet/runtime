@@ -479,7 +479,7 @@ namespace System.Text.Json.Serialization
         internal JsonConverter() { }
         public abstract bool CanConvert(System.Type typeToConvert);
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Class | System.AttributeTargets.Enum | System.AttributeTargets.Property | System.AttributeTargets.Struct, AllowMultiple = false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Class | System.AttributeTargets.Enum | System.AttributeTargets.Property | System.AttributeTargets.Struct, AllowMultiple=false)]
     public partial class JsonConverterAttribute : System.Text.Json.Serialization.JsonAttribute
     {
         protected JsonConverterAttribute() { }
@@ -506,12 +506,12 @@ namespace System.Text.Json.Serialization
     {
         public JsonConstructorAttribute() { }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Property, AllowMultiple = false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Property, AllowMultiple=false)]
     public sealed partial class JsonExtensionDataAttribute : System.Text.Json.Serialization.JsonAttribute
     {
         public JsonExtensionDataAttribute() { }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Property, AllowMultiple = false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Property, AllowMultiple=false)]
     public sealed partial class JsonIgnoreAttribute : System.Text.Json.Serialization.JsonAttribute
     {
         public JsonIgnoreAttribute() { }
@@ -522,7 +522,7 @@ namespace System.Text.Json.Serialization
     {
         public JsonIncludeAttribute() { }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Property, AllowMultiple = false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Property, AllowMultiple=false)]
     public sealed partial class JsonPropertyNameAttribute : System.Text.Json.Serialization.JsonAttribute
     {
         public JsonPropertyNameAttribute(string name) { }
