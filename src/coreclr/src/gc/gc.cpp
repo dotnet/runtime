@@ -10074,7 +10074,7 @@ gc_heap::init_semi_shared()
 
 #ifdef MARK_LIST
 #ifdef MULTIPLE_HEAPS
-    mark_list_size = min (150*1024, max (8192, soh_segment_size/(2*10*32)));
+    mark_list_size = min (1024*1024, max (8192, soh_segment_size/(2*10*32)));
     g_mark_list = make_mark_list (mark_list_size*n_heaps);
 
     min_balance_threshold = alloc_quantum_balance_units * CLR_SIZE * 2;
