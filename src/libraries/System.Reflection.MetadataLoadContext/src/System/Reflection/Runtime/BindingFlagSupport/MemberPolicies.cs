@@ -150,7 +150,7 @@ namespace System.Reflection.Runtime.BindingFlagSupport
                 return GenericMethodAwareAreParameterTypesEqual(t1.GetElementType()!, t2.GetElementType()!);
             }
 
-            if (t1.IsConstructedGenericType)
+            if (t1.IsConstructedGenericType && t2.IsConstructedGenericType)
             {
                 // We can use regular old Equals() rather than recursing into GenericMethodAwareAreParameterTypesEqual() since the
                 // generic type definition will always be a plain old named type and won't embed any generic method parameters.
