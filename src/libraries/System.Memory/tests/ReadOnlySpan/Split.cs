@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System;
+using System.Linq;
 using Xunit;
 
 namespace System.SpanTests
@@ -17,6 +19,14 @@ namespace System.SpanTests
             var enumerator = value.Split(',');
             Assert.True(enumerator.MoveNext());
             Assert.Equal(expected, value[enumerator.Current].ToString());
+        }
+
+        [Fact]
+        public static void DefaultSpanSplitEnumeratorBehavior()
+        {
+            Assert.Equal(new SpanSplitEnumerator<string>().Current, new Range(0, 0));
+            Assert.True(new SpanSplitEnumerator<string>().MoveNext());
+            new SpanSplitEnumerator<string>().GetEnumerator();
         }
 
         [Theory]
@@ -48,6 +58,9 @@ namespace System.SpanTests
         [InlineData("Foo Bar Baz ", ' ', new[] { "Foo", "Bar", "Baz", "" })]
         [InlineData(" Foo Bar Baz ", ' ', new[] { "", "Foo", "Bar", "Baz", "" })]
         [InlineData(" Foo  Bar Baz ", ' ', new[] { "", "Foo", "", "Bar", "Baz", "" })]
+        [InlineData("Foo Baz Bar", default(char), new[] { "Foo Baz Bar" })]
+        [InlineData("Foo Baz \x0000 Bar", default(char), new[] { "Foo Baz ", " Bar" })]
+        [InlineData("Foo Baz \x0000 Bar\x0000", default(char), new[] { "Foo Baz ", " Bar", "" })]
         public static void SpanSplitCharSeparator(string valueParam, char separator, string[] expectedParam)
         {
             char[][] expected = expectedParam.Select(x => x.ToCharArray()).ToArray();
