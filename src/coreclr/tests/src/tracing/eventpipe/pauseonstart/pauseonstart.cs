@@ -78,7 +78,7 @@ namespace Tracing.Tests.PauseOnStartValidation
                     IpcMessage response = IpcClient.SendMessage(stream, message);
                     Logger.logger.Log($"received: {response.ToString()}");
 
-                    await Task.Delay(TimeSpan.FromSeconds(1));
+                    await Task.Delay(TimeSpan.FromSeconds(2));
                     Logger.logger.Log("Stopping EventPipeSession over standard connection");
                     EventPipeClient.StopTracing(pid, sessionId);
                     await readerTask;
@@ -93,7 +93,6 @@ namespace Tracing.Tests.PauseOnStartValidation
             var parser = new ClrPrivateTraceEventParser(source);
             bool isStartupEventPresent= false;
             parser.StartupEEStartupStart += (eventData) => isStartupEventPresent = true;
-            // source.Dynamic.All += (eventData) => Console.WriteLine($"{eventData.ProviderName} - {eventData.EventName}");
             source.Process();
 
             Logger.logger.Log($"isStartupEventPresent: {isStartupEventPresent}");
@@ -144,7 +143,6 @@ namespace Tracing.Tests.PauseOnStartValidation
                 process.StartInfo.UseShellExecute = false;
                 process.StartInfo.CreateNoWindow = true;
                 process.StartInfo.Environment.Add("DOTNET_DiagnosticsMonitorAddress", serverName);
-                process.StartInfo.Environment.Add("DOTNET_DiagnosticsMonitorPauseOnStart", "0");
                 process.StartInfo.FileName = Process.GetCurrentProcess().MainModule.FileName;
                 process.StartInfo.Arguments = new Uri(Assembly.GetExecutingAssembly().CodeBase).LocalPath + " 0";
                 process.StartInfo.RedirectStandardOutput = true;
@@ -152,12 +150,12 @@ namespace Tracing.Tests.PauseOnStartValidation
                 process.StartInfo.RedirectStandardError = true;
 
                 Logger.logger.Log($"running sub-process: {process.StartInfo.FileName} {process.StartInfo.Arguments}");
-
+                DateTime startTime = DateTime.Now;
                 process.OutputDataReceived += new DataReceivedEventHandler((s,e) =>
                 {
                     if (!string.IsNullOrEmpty(e.Data))
                     {
-                        stdoutSb.Append($"\n\t{(DateTime.Now - process.StartTime).TotalSeconds,5:f1}s: {e.Data}");
+                        stdoutSb.Append($"\n\t{(DateTime.Now - startTime).TotalSeconds,5:f1}s: {e.Data}");
                     }
                 });
 
@@ -165,11 +163,13 @@ namespace Tracing.Tests.PauseOnStartValidation
                 {
                     if (!string.IsNullOrEmpty(e.Data))
                     {
-                        stderrSb.Append($"\n\t{(DateTime.Now - process.StartTime).TotalSeconds,5:f1}s: {e.Data}");
+                        stderrSb.Append($"\n\t{(DateTime.Now - startTime).TotalSeconds,5:f1}s: {e.Data}");
                     }
                 });
 
                 bool fSuccess = process.Start();
+                if (!fSuccess)
+                    throw new Exception("Failed to start subprocess");
                 StreamWriter subprocesssStdIn = process.StandardInput;
                 process.BeginOutputReadLine();
                 process.BeginErrorReadLine();
