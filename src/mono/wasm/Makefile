@@ -11,10 +11,11 @@ EMSDK_PATH?=emsdk
 CONFIG?=Release
 BINDIR?=$(TOP)/artifacts/bin
 OBJDIR?=$(TOP)/artifacts/obj
-PINVOKE_TABLE?=$(TOP)/artifacts/obj/mono/Browser.wasm.$(CONFIG)/wasm/pinvoke-table.h
+PINVOKE_TABLE?=$(OBJDIR)/wasm/pinvoke-table.h
 MONO_BIN_DIR?=$(BINDIR)/mono/Browser.wasm.$(CONFIG)
 SYS_NATIVE_DIR?=$(OBJDIR)/native/net5.0-Browser-$(CONFIG)-wasm/System.Native
 BUILDS_BIN_DIR?=$(BINDIR)/native/net5.0-Browser-$(CONFIG)-wasm/wasm/runtimes
+BUILDS_SRC_DIR?=$(BINDIR)/native/net5.0-Browser-$(CONFIG)-wasm/wasm/src
 
 all: build-native
 
@@ -77,7 +78,7 @@ $(BUILDS_BIN_DIR)/$(1)/dotnet.js: $(BUILDS_OBJ_DIR)/$(1)/driver.o $(BUILDS_OBJ_D
 	$(EMCC) $(EMCC_FLAGS) $(3) --js-library runtime/library_mono.js --js-library runtime/binding_support.js --js-library runtime/dotnet_support.js $(BUILDS_OBJ_DIR)/$(1)/driver.o $(BUILDS_OBJ_DIR)/$(1)/corebindings.o $(4) -o $(BUILDS_BIN_DIR)/$(1)/dotnet.js
 
 $(BUILDS_OBJ_DIR)/$(1)/pinvoke-table.h: $(PINVOKE_TABLE) | $(BUILDS_OBJ_DIR)/$(1)/
-	if cmp -s $(PINVOKE_TABLE) $$@ ; then : ; else cp $(PINVOKE_TABLE) $$@ ; fi
+	cp $(PINVOKE_TABLE) $$@
 
 $(BUILDS_OBJ_DIR)/$(1)/driver.o: runtime/driver.c runtime/corebindings.c $(BUILDS_OBJ_DIR)/$(1)/pinvoke-table.h $(5) | $(BUILDS_OBJ_DIR)/$(1)/ emsdk_env.sh
 	$(EMCC) $(EMCC_FLAGS) $(3) -Oz -DCORE_BINDINGS -I$(BUILDS_OBJ_DIR)/$(1) -I$(MONO_INCLUDE_DIR) runtime/driver.c -c -o $$@
@@ -90,6 +91,28 @@ build-native: $(BUILDS_BIN_DIR)/$(1)/dotnet.js
 build-interp-$(1): $(BUILDS_BIN_DIR)/$(1)/dotnet.js
 
 endef
+
+# Needed by AOT
+
+SRC_FILES=\
+	runtime/driver.c \
+	runtime/corebindings.c \
+	runtime/binding_support.js \
+	runtime/dotnet_support.js \
+	runtime/library_mono.js
+
+DST_FILES=$(patsubst runtime/%,$(BUILDS_SRC_DIR)/%, $(SRC_FILES))
+
+$(BUILDS_SRC_DIR):
+	mkdir -p $@
+
+$(BUILDS_SRC_DIR)/pinvoke-table.h: $(PINVOKE_TABLE) | $(BUILDS_SRC_DIR)
+	if cmp -s $^ $@ ; then : ; else cp $^ $@ ; fi
+
+$(BUILDS_SRC_DIR)/%: runtime/% | $(BUILDS_SRC_DIR)
+	if cmp -s $^ $@ ; then : ; else cp $^ $@ ; fi
+
+build-native: $(DST_FILES) $(BUILDS_SRC_DIR)/pinvoke-table.h
 
 $(eval $(call InterpBuildTemplate,debug,,$(EMCC_DEBUG_FLAGS),$(MONO_LIBS)))
 $(eval $(call InterpBuildTemplate,release,,$(EMCC_RELEASE_FLAGS),$(MONO_LIBS)))
