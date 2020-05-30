@@ -161,7 +161,7 @@ namespace System
     }
     public ref struct SpanSplitEnumerator<T> where T : System.IEquatable<T>
     {
-        public System.MemoryExtensions.SpanSplitEnumerator<T> GetEnumerator() { throw null; }
+        public System.SpanSplitEnumerator<T> GetEnumerator() { throw null; }
         public readonly System.Range Current { get { throw null; } }
         public bool MoveNext() { throw null; }
     }
