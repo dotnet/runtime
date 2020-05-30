@@ -17,7 +17,7 @@ namespace System.Collections.Generic
     [TypeForwardedFrom("System.Core, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public class HashSet<T> : ICollection<T>, ISet<T>, IReadOnlyCollection<T>, IReadOnlySet<T>, ISerializable, IDeserializationCallback
     {
-        // This uses the same array-based implementation as <see cref="Dictionary{TKey, TValue}"/>.
+        // This uses the same array-based implementation as Dictionary<TKey, TValue>.
 
         // Constants for serialization
         private const string CapacityName = "Capacity"; // Do not rename (binary serialization)
@@ -165,8 +165,9 @@ namespace System.Collections.Generic
                         AddIfNotPresent(entry.Value, out _);
                     }
                 }
-                return;
             }
+
+            Debug.Assert(Count == source.Count);
         }
 
         #endregion
@@ -215,7 +216,7 @@ namespace System.Collections.Generic
                     if (typeof(T).IsValueType)
                     {
                         // ValueType: Devirtualize with EqualityComparer<TValue>.Default intrinsic
-                        int i = GetBucketValue(hashCode) - 1; // Value in _buckets is 1-based
+                        int i = GetBucketRef(hashCode) - 1; // Value in _buckets is 1-based
                         while (i >= 0)
                         {
                             ref Entry entry = ref entries[i];
@@ -238,7 +239,7 @@ namespace System.Collections.Generic
                         // Object type: Shared Generic, EqualityComparer<TValue>.Default won't devirtualize (https://github.com/dotnet/runtime/issues/10050),
                         // so cache in a local rather than get EqualityComparer per loop iteration.
                         EqualityComparer<T> defaultComparer = EqualityComparer<T>.Default;
-                        int i = GetBucketValue(hashCode) - 1; // Value in _buckets is 1-based
+                        int i = GetBucketRef(hashCode) - 1; // Value in _buckets is 1-based
                         while (i >= 0)
                         {
                             ref Entry entry = ref entries[i];
@@ -260,7 +261,7 @@ namespace System.Collections.Generic
                 else
                 {
                     int hashCode = item != null ? comparer.GetHashCode(item) : 0;
-                    int i = GetBucketValue(hashCode) - 1; // Value in _buckets is 1-based
+                    int i = GetBucketRef(hashCode) - 1; // Value in _buckets is 1-based
                     while (i >= 0)
                     {
                         ref Entry entry = ref entries[i];
@@ -283,19 +284,7 @@ namespace System.Collections.Generic
             return -1;
         }
 
-        /// <summary>Gets the index in the bucket corresponding to the specified hashcode.</summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private int GetBucketValue(int hashCode)
-        {
-            int[] buckets = _buckets!;
-#if TARGET_64BIT
-            return buckets[HashHelpers.FastMod((uint)hashCode, (uint)buckets.Length, _fastModMultiplier)];
-#else
-            return buckets[(uint)hashCode % (uint)buckets.Length];
-#endif
-        }
-
-        /// <summary>Gets the index in the bucket corresponding to the specified hashcode.</summary>
+        /// <summary>Gets a reference to the specified hashcode's bucket, containing an index into <see cref="_entries"/>.</summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private ref int GetBucketRef(int hashCode)
         {
