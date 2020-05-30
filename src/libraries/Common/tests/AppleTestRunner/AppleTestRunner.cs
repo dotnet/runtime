@@ -12,8 +12,8 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
-using Microsoft.DotNet.XHarness.Tests.Runners;
-using Microsoft.DotNet.XHarness.Tests.Runners.Core;
+using Microsoft.DotNet.XHarness.TestRunners.Common;
+using Microsoft.DotNet.XHarness.TestRunners.Xunit;
 
 public class SimpleTestRunner : iOSApplicationEntryPoint, IDevice
 {
@@ -127,8 +127,6 @@ public class SimpleTestRunner : iOSApplicationEntryPoint, IDevice
     protected override int? MaxParallelThreads => _maxParallelThreads;
 
     protected override IDevice Device => this;
-
-    protected override TestRunnerType TestRunner => TestRunnerType.Xunit;
 
     protected override string? IgnoreFilesDirectory => null;
 
