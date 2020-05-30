@@ -749,7 +749,7 @@ ep_rt_file_open_write (const ep_char8_t *path)
 	ep_char16_t *path_utf16 = ep_rt_utf8_to_utf16_string (path, -1);
 	ep_return_null_if_nok (path_utf16 != NULL);
 
-	gpointer file_handle = ep_rt_mono_w32file_create (path_utf16, GENERIC_WRITE, FILE_SHARE_READ, CREATE_ALWAYS, FileAttributes_Normal);
+	gpointer file_handle = ep_rt_mono_w32file_create ((gunichar2 *)path_utf16, GENERIC_WRITE, FILE_SHARE_READ, CREATE_ALWAYS, FileAttributes_Normal);
 	ep_rt_utf16_string_free (path_utf16);
 
 	return file_handle;
