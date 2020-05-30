@@ -168,6 +168,11 @@ namespace BinderTracingTests
         public BindOperation[] WaitAndGetEventsForAssembly(AssemblyName assemblyName)
         {
             const int waitIntervalInMs = 50;
+            int waitTimeoutInMs = Environment.GetEnvironmentVariable("COMPlus_GCStress") == null
+                ? 30 * 1000
+                : int.MaxValue;
+
+            int timeWaitedInMs = 0;
             while (true)
             {
                 lock (eventsLock)
@@ -180,6 +185,24 @@ namespace BinderTracingTests
                 }
 
                 Thread.Sleep(waitIntervalInMs);
+                timeWaitedInMs += waitIntervalInMs;
+
+                if (timeWaitedInMs > waitTimeoutInMs)
+                {
+                    var msg = new System.Text.StringBuilder($"Timed out waiting for bind events for {assemblyName}");
+                    msg.AppendLine("Received events:");
+                    lock (eventsLock)
+                    {
+                        foreach (BindOperation op in bindOperations.Values)
+                        {
+                            msg.AppendLine($"{op.AssemblyName}");
+                            msg.AppendLine($"  Completed: {op.Completed}");
+                            msg.AppendLine($"  Nested: {op.Nested}");
+                        }
+                    }
+
+                    throw new TimeoutException(msg.ToString());
+                }
             }
         }
 
