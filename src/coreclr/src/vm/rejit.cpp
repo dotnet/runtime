@@ -1282,7 +1282,7 @@ HRESULT ReJitManager::GetReJITIDs(PTR_MethodDesc pMD, ULONG cReJitIds, ULONG * p
         CAN_TAKE_LOCK;
         GC_NOTRIGGER;
         PRECONDITION(CheckPointer(pMD));
-        PRECONDITION(pcReJitIds != NULL || cReJitIds == 0);
+        PRECONDITION(pcReJitIds != NULL);
         PRECONDITION((cReJitIds == 0) == (reJitIds == NULL));
     }
     CONTRACTL_END;
