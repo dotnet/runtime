@@ -100,6 +100,145 @@ namespace Tracing.Tests.PauseOnStartValidation
             return isStartupEventPresent;
         }
 
+        public static async Task<bool> TEST_MultipleSessionsCanBeStartedWhilepaused()
+        {
+            string serverName = ReverseServer.MakeServerAddress();
+            Logger.logger.Log($"Server name is '{serverName}'");
+            var server = new ReverseServer(serverName);
+            using var memoryStream1 = new MemoryStream();
+            using var memoryStream2 = new MemoryStream();
+            using var memoryStream3 = new MemoryStream();
+            Task subprocessTask = RunSubprocess(
+                serverName: serverName,
+                duringExecution: async (pid) =>
+                {
+                    Stream stream = await server.AcceptAsync();
+                    IpcAdvertise advertise = IpcAdvertise.Parse(stream);
+                    Logger.logger.Log(advertise.ToString());
+
+                    var config = new SessionConfiguration(
+                        circularBufferSizeMB: 1000,
+                        format: EventPipeSerializationFormat.NetTrace,
+                        providers: new List<Provider> { 
+                            new Provider("Microsoft-Windows-DotNETRuntimePrivate", 0x80000000, EventLevel.Verbose)
+                        });
+
+                    Logger.logger.Log("Starting EventPipeSession over standard connection");
+                    using Stream eventStream1 = EventPipeClient.CollectTracing(pid, config, out var sessionId1);
+                    Logger.logger.Log($"Started EventPipeSession over standard connection with session id: 0x{sessionId1:x}");
+                    Task readerTask1 = eventStream1.CopyToAsync(memoryStream1);
+
+                    Logger.logger.Log("Starting EventPipeSession over standard connection");
+                    using Stream eventStream2 = EventPipeClient.CollectTracing(pid, config, out var sessionId2);
+                    Logger.logger.Log($"Started EventPipeSession over standard connection with session id: 0x{sessionId2:x}");
+                    Task readerTask2 = eventStream2.CopyToAsync(memoryStream2);
+
+                    Logger.logger.Log("Starting EventPipeSession over standard connection");
+                    using Stream eventStream3 = EventPipeClient.CollectTracing(pid, config, out var sessionId3);
+                    Logger.logger.Log($"Started EventPipeSession over standard connection with session id: 0x{sessionId3:x}");
+                    Task readerTask3 = eventStream3.CopyToAsync(memoryStream3);
+
+                    
+                    Logger.logger.Log($"Send ResumeRuntime Diagnostics IPC Command");
+                    // send ResumeRuntime command (0xFF=ServerCommandSet, 0x01=ResumeRuntime commandid)
+                    var message = new IpcMessage(0xFF,0x01);
+                    Logger.logger.Log($"Sent: {message.ToString()}");
+                    IpcMessage response = IpcClient.SendMessage(stream, message);
+                    Logger.logger.Log($"received: {response.ToString()}");
+
+                    await Task.Delay(TimeSpan.FromSeconds(2));
+                    Logger.logger.Log("Stopping EventPipeSession over standard connection");
+                    EventPipeClient.StopTracing(pid, sessionId1);
+                    EventPipeClient.StopTracing(pid, sessionId2);
+                    EventPipeClient.StopTracing(pid, sessionId3);
+                    await readerTask1;
+                    await readerTask2;
+                    await readerTask3;
+                    Logger.logger.Log("Stopped EventPipeSession over standard connection");
+                }
+            );
+
+            await WaitTillTimeout(subprocessTask, TimeSpan.FromMinutes(1));
+
+            int nStartupEventsSeen = 0;
+
+            memoryStream1.Seek(0, SeekOrigin.Begin);
+            using (var source = new EventPipeEventSource(memoryStream1))
+            {
+                var parser = new ClrPrivateTraceEventParser(source);
+                parser.StartupEEStartupStart += (eventData) => nStartupEventsSeen++;
+                source.Process();
+            }
+
+            memoryStream2.Seek(0, SeekOrigin.Begin);
+            using (var source = new EventPipeEventSource(memoryStream2))
+            {
+                var parser = new ClrPrivateTraceEventParser(source);
+                parser.StartupEEStartupStart += (eventData) => nStartupEventsSeen++;
+                source.Process();
+            }
+
+            memoryStream3.Seek(0, SeekOrigin.Begin);
+            using (var source = new EventPipeEventSource(memoryStream3))
+            {
+                var parser = new ClrPrivateTraceEventParser(source);
+                parser.StartupEEStartupStart += (eventData) => nStartupEventsSeen++;
+                source.Process();
+            }
+
+            Logger.logger.Log($"nStartupEventsSeen: {nStartupEventsSeen}");
+
+            return nStartupEventsSeen == 3;
+        }
+
+        public static async Task<bool> TEST_DisabledCommandsError()
+        {
+            string serverName = ReverseServer.MakeServerAddress();
+            Logger.logger.Log($"Server name is '{serverName}'");
+            var server = new ReverseServer(serverName);
+            using var memoryStream1 = new MemoryStream();
+            using var memoryStream2 = new MemoryStream();
+            using var memoryStream3 = new MemoryStream();
+            Task subprocessTask = RunSubprocess(
+                serverName: serverName,
+                duringExecution: async (pid) =>
+                {
+                    Stream stream = await server.AcceptAsync();
+                    IpcAdvertise advertise = IpcAdvertise.Parse(stream);
+                    Logger.logger.Log(advertise.ToString());
+
+                    Logger.logger.Log($"Send profiler attach Diagnostics IPC Command");
+                    // send profiler attach command (0x03=ProfilerCommandId, 0x01=attach commandid)
+                    var message = new IpcMessage(0x03,0x01);
+                    Logger.logger.Log($"Sent: {message.ToString()}");
+                    IpcMessage response = IpcClient.SendMessage(stream, message);
+                    Logger.logger.Log($"received: {response.ToString()}");
+                    if (response.Header.CommandSet != 0xFF && response.Header.CommandId != 0xFF)
+                        throw new Exception("Command did not fail!");
+
+                    Logger.logger.Log($"Send eventpipe stop Diagnostics IPC Command");
+                    // send eventpipe stop command (0x02=EventPipe, 0x01=stop commandid)
+                    message = new IpcMessage(0x02,0x01);
+                    Logger.logger.Log($"Sent: {message.ToString()}");
+                    response = IpcClient.SendMessage(stream, message);
+                    Logger.logger.Log($"received: {response.ToString()}");
+                    if (response.Header.CommandSet != 0xFF && response.Header.CommandId != 0xFF)
+                        throw new Exception("Command did not fail!");
+
+                    Logger.logger.Log($"Send ResumeRuntime Diagnostics IPC Command");
+                    // send ResumeRuntime command (0xFF=ServerCommandSet, 0x01=ResumeRuntime commandid)
+                    message = new IpcMessage(0xFF,0x01);
+                    Logger.logger.Log($"Sent: {message.ToString()}");
+                    response = IpcClient.SendMessage(stream, message);
+                    Logger.logger.Log($"received: {response.ToString()}");
+                }
+            );
+
+            await WaitTillTimeout(subprocessTask, TimeSpan.FromMinutes(1));
+
+            return true;
+        }
+
         private static async Task<T> WaitTillTimeout<T>(Task<T> task, TimeSpan timeout)
         {
             using var cts = new CancellationTokenSource();
