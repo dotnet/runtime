@@ -7,38 +7,72 @@ namespace System.Collections.Generic
     /// <summary>Equality comparer for hashsets of hashsets</summary>
     internal sealed class HashSetEqualityComparer<T> : IEqualityComparer<HashSet<T>?>
     {
-        private readonly IEqualityComparer<T> _comparer;
+        public bool Equals(HashSet<T>? x, HashSet<T>? y)
+        {
+            // If they're the exact same instance, they're equal.
+            if (ReferenceEquals(x, y))
+            {
+                return true;
+            }
 
-        public HashSetEqualityComparer() => _comparer = EqualityComparer<T>.Default;
+            // They're not both null, so if either is null, they're not equal.
+            if (x == null || y == null)
+            {
+                return false;
+            }
 
-        // using _comparer to keep equals properties intact; don't want to choose one of the comparers
-        public bool Equals(HashSet<T>? x, HashSet<T>? y) => HashSet<T>.HashSetEquals(x, y, _comparer);
+            EqualityComparer<T> defaultComparer = EqualityComparer<T>.Default;
+
+            // If both sets use the same comparer, they're equal if they're the same
+            // size and one is a "subset" of the other.
+            if (HashSet<T>.EqualityComparersAreEqual(x, y))
+            {
+                return x.Count == y.Count && y.IsSubsetOfHashSetWithSameComparer(x);
+            }
+
+            // Otherwise, do an O(N^2) match.
+            foreach (T yi in y)
+            {
+                bool found = false;
+                foreach (T xi in x)
+                {
+                    if (defaultComparer.Equals(yi, xi))
+                    {
+                        found = true;
+                        break;
+                    }
+                }
+
+                if (!found)
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
 
         public int GetHashCode(HashSet<T>? obj)
         {
-            int hashCode = 0;
+            int hashCode = 0; // default to 0 for null/empty set
+
             if (obj != null)
             {
                 foreach (T t in obj)
                 {
                     if (t != null)
                     {
-                        hashCode ^= _comparer.GetHashCode(t) & 0x7FFFFFFF;
+                        hashCode ^= t.GetHashCode(); // same hashcode as as default comparer
                     }
                 }
             }
 
-            // else returns hashcode of 0 for null hashsets
             return hashCode;
         }
 
         // Equals method for the comparer itself.
-        public override bool Equals(object? obj)
-        {
-            HashSetEqualityComparer<T>? comparer = obj as HashSetEqualityComparer<T>;
-            return comparer != null && _comparer == comparer._comparer;
-        }
+        public override bool Equals(object? obj) => obj is HashSetEqualityComparer<T>;
 
-        public override int GetHashCode() => _comparer.GetHashCode();
+        public override int GetHashCode() => EqualityComparer<T>.Default.GetHashCode();
     }
 }

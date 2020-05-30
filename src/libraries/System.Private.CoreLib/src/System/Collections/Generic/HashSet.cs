@@ -79,7 +79,7 @@ namespace System.Collections.Generic
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.collection);
             }
 
-            if (collection is HashSet<T> otherAsHashSet && AreEqualityComparersEqual(this, otherAsHashSet))
+            if (collection is HashSet<T> otherAsHashSet && EqualityComparersAreEqual(this, otherAsHashSet))
             {
                 ConstructFrom(otherAsHashSet);
             }
@@ -528,7 +528,7 @@ namespace System.Collections.Generic
 
                 // Faster if other is a hashset using same equality comparer; so check
                 // that other is a hashset using the same equality comparer.
-                if (other is HashSet<T> otherAsSet && AreEqualityComparersEqual(this, otherAsSet))
+                if (other is HashSet<T> otherAsSet && EqualityComparersAreEqual(this, otherAsSet))
                 {
                     IntersectWithHashSetWithSameComparer(otherAsSet);
                     return;
@@ -595,7 +595,7 @@ namespace System.Collections.Generic
             // will fail. So first check if other is a hashset using the same equality comparer;
             // symmetric except is a lot faster and avoids bit array allocations if we can assume
             // uniqueness.
-            if (other is HashSet<T> otherAsSet && AreEqualityComparersEqual(this, otherAsSet))
+            if (other is HashSet<T> otherAsSet && EqualityComparersAreEqual(this, otherAsSet))
             {
                 SymmetricExceptWithUniqueHashSet(otherAsSet);
             }
@@ -624,7 +624,7 @@ namespace System.Collections.Generic
 
             // Faster if other has unique elements according to this equality comparer; so check
             // that other is a hashset using the same equality comparer.
-            if (other is HashSet<T> otherAsSet && AreEqualityComparersEqual(this, otherAsSet))
+            if (other is HashSet<T> otherAsSet && EqualityComparersAreEqual(this, otherAsSet))
             {
                 // if this has more elements then it can't be a subset
                 if (Count > otherAsSet.Count)
@@ -672,7 +672,7 @@ namespace System.Collections.Generic
                 }
 
                 // Faster if other is a hashset (and we're using same equality comparer).
-                if (other is HashSet<T> otherAsSet && AreEqualityComparersEqual(this, otherAsSet))
+                if (other is HashSet<T> otherAsSet && EqualityComparersAreEqual(this, otherAsSet))
                 {
                     if (Count >= otherAsSet.Count)
                     {
@@ -716,7 +716,7 @@ namespace System.Collections.Generic
 
                 // Try to compare based on counts alone if other is a hashset with same equality comparer.
                 if (other is HashSet<T> otherAsSet &&
-                    AreEqualityComparersEqual(this, otherAsSet) &&
+                    EqualityComparersAreEqual(this, otherAsSet) &&
                     otherAsSet.Count > Count)
                 {
                     return false;
@@ -752,7 +752,7 @@ namespace System.Collections.Generic
                 }
 
                 // Faster if other is a hashset with the same equality comparer
-                if (other is HashSet<T> otherAsSet && AreEqualityComparersEqual(this, otherAsSet))
+                if (other is HashSet<T> otherAsSet && EqualityComparersAreEqual(this, otherAsSet))
                 {
                     if (otherAsSet.Count >= Count)
                     {
@@ -818,7 +818,7 @@ namespace System.Collections.Generic
             }
 
             // Faster if other is a hashset and we're using same equality comparer.
-            if (other is HashSet<T> otherAsSet && AreEqualityComparersEqual(this, otherAsSet))
+            if (other is HashSet<T> otherAsSet && EqualityComparersAreEqual(this, otherAsSet))
             {
                 // Attempt to return early: since both contain unique elements, if they have
                 // different counts, then they can't be equal.
@@ -1234,7 +1234,7 @@ namespace System.Collections.Generic
         ///
         /// If callers are concerned about whether this is a proper subset, they take care of that.
         /// </summary>
-        private bool IsSubsetOfHashSetWithSameComparer(HashSet<T> other)
+        internal bool IsSubsetOfHashSetWithSameComparer(HashSet<T> other)
         {
             foreach (T item in this)
             {
@@ -1473,76 +1473,11 @@ namespace System.Collections.Generic
         }
 
         /// <summary>
-        /// Internal method used for HashSetEqualityComparer. Compares set1 and set2 according
-        /// to specified comparer.
-        /// </summary>
-        /// <remarks>
-        /// Because items are hashed according to a specific equality comparer, we have to resort
-        /// to n^2 search if they're using different equality comparers.
-        /// </remarks>
-        internal static bool HashSetEquals(HashSet<T>? set1, HashSet<T>? set2, IEqualityComparer<T> comparer)
-        {
-            // handle null cases first
-            if (set1 == null)
-            {
-                return set2 == null;
-            }
-            else if (set2 == null)
-            {
-                // set1 != null
-                return false;
-            }
-
-            // All comparers are the same; this is faster.
-            if (AreEqualityComparersEqual(set1, set2))
-            {
-                if (set1.Count != set2.Count)
-                {
-                    return false;
-                }
-
-                // Suffices to check subset
-                foreach (T item in set2)
-                {
-                    if (!set1.Contains(item))
-                    {
-                        return false;
-                    }
-                }
-
-                return true;
-            }
-            else
-            {
-                // n^2 search because items are hashed according to their respective ECs
-                foreach (T set2Item in set2)
-                {
-                    bool found = false;
-                    foreach (T set1Item in set1)
-                    {
-                        if (comparer.Equals(set2Item, set1Item))
-                        {
-                            found = true;
-                            break;
-                        }
-                    }
-
-                    if (!found)
-                    {
-                        return false;
-                    }
-                }
-
-                return true;
-            }
-        }
-
-        /// <summary>
         /// Checks if equality comparers are equal. This is used for algorithms that can
         /// speed up if it knows the other item has unique elements. I.e. if they're using
         /// different equality comparers, then uniqueness assumption between sets break.
         /// </summary>
-        private static bool AreEqualityComparersEqual(HashSet<T> set1, HashSet<T> set2) => set1.Comparer.Equals(set2.Comparer);
+        internal static bool EqualityComparersAreEqual(HashSet<T> set1, HashSet<T> set2) => set1.Comparer.Equals(set2.Comparer);
 
 #endregion
 
