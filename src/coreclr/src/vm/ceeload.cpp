@@ -3089,28 +3089,6 @@ void Module::FreeClassTables()
                 if (!th.IsRestored())
                     continue;
 
-#ifdef FEATURE_COMINTEROP
-                // Some MethodTables/TypeDescs have COM interop goo attached to them which must be released
-                if (!th.IsTypeDesc())
-                {
-                    MethodTable *pMT = th.AsMethodTable();
-                    if (pMT->HasCCWTemplate() && (!pMT->IsZapped() || pMT->GetZapModule() == this))
-                    {
-                        // code:MethodTable::GetComCallWrapperTemplate() may go through canonical methodtable indirection cell.
-                        // The module load could be aborted before completing code:FILE_LOAD_EAGER_FIXUPS phase that's responsible
-                        // for resolving pre-restored indirection cells, so we have to check for it here explicitly.
-                        if (CORCOMPILE_IS_POINTER_TAGGED(pMT->GetCanonicalMethodTableFixup()))
-                            continue;
-
-                        ComCallWrapperTemplate *pTemplate = pMT->GetComCallWrapperTemplate();
-                        if (pTemplate != NULL)
-                        {
-                            pTemplate->Release();
-                        }
-                    }
-                }
-#endif // FEATURE_COMINTEROP
-
                 // We need to call destruct on instances of EEClass whose "canonical" dependent lives in this table
                 // There is nothing interesting to destruct on array EEClass
                 if (!th.IsTypeDesc())

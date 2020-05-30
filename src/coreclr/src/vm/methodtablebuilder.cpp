@@ -9725,8 +9725,6 @@ MethodTable * MethodTableBuilder::AllocateNewMT(Module *pLoaderModule,
     // Add space for optional members here. Same as GetOptionalMembersSize()
     cbTotalSize += MethodTable::GetOptionalMembersAllocationSize(dwMultipurposeSlotsMask,
                                                       fHasGenericsStaticsInfo,
-                                                      FALSE, // no GuidInfo needed for canonical instantiations
-                                                      FALSE, // no CCW template needed for canonical instantiations
                                                       fNeedsRCWPerTypeData,
                                                       RidFromToken(GetCl()) >= METHODTABLE_TOKEN_OVERFLOW);
 

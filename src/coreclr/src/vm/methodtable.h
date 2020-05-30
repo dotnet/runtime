@@ -2766,10 +2766,6 @@ public:
     //
 
 #ifdef FEATURE_COMINTEROP
-    void SetHasGuidInfo();
-    BOOL HasGuidInfo();
-    void SetHasCCWTemplate();
-    BOOL HasCCWTemplate();
     void SetHasRCWPerTypeData();
     BOOL HasRCWPerTypeData();
 #endif // FEATURE_COMINTEROP
@@ -2983,10 +2979,6 @@ public:
     //-------------------------------------------------------------------
     // The GUID Info
     // Used by COM interop to get GUIDs (IIDs and CLSIDs)
-
-    // Get/store cached GUID information
-    PTR_GuidInfo GetGuidInfo();
-    void SetGuidInfo(GuidInfo* pGuidInfo);
 
     // Get and cache the GUID for this interface/class
     HRESULT GetGuidNoThrow(GUID *pGuid, BOOL bGenerateIfNotFound, BOOL bClassic = TRUE);
@@ -3616,9 +3608,7 @@ private:
 
         enum_flag_HasFinalizer                = 0x00100000, // instances require finalization
 
-#ifdef FEATURE_COMINTEROP
-        enum_flag_IfInterfaceThenHasGuidInfo    = 0x00200000, // Does the type has optional GuidInfo
-#endif // FEATURE_COMINTEROP
+        // enum_flag_unused                   = 0x00200000,
 
         enum_flag_ICastable                   = 0x00400000, // class implements ICastable interface
 
@@ -3682,7 +3672,7 @@ private:
         enum_flag_RequiresDispatchTokenFat  = 0x0200,
 
         enum_flag_HasCctor                  = 0x0400,
-        enum_flag_HasCCWTemplate            = 0x0800, // Has an extra field pointing to a CCW template
+        // enum_flag_unused                 = 0x0800,
 
 #ifdef FEATURE_64BIT_ALIGNMENT
         enum_flag_RequiresAlign8            = 0x1000, // Type requires 8-byte alignment (only set on platforms that require this and don't get it implicitly)
@@ -3899,9 +3889,7 @@ private:
 
 #ifdef FEATURE_COMINTEROP
 #define METHODTABLE_COMINTEROP_OPTIONAL_MEMBERS() \
-    METHODTABLE_OPTIONAL_MEMBER(GuidInfo,               PTR_GuidInfo,                   GetGuidInfoPtr              ) \
-    METHODTABLE_OPTIONAL_MEMBER(RCWPerTypeData,         RCWPerTypeData *,               GetRCWPerTypeDataPtr        ) \
-    METHODTABLE_OPTIONAL_MEMBER(CCWTemplate,            ComCallWrapperTemplate *,       GetCCWTemplatePtr           )
+    METHODTABLE_OPTIONAL_MEMBER(RCWPerTypeData,         RCWPerTypeData *,               GetRCWPerTypeDataPtr        )
 #else
 #define METHODTABLE_COMINTEROP_OPTIONAL_MEMBERS()
 #endif
@@ -3953,8 +3941,6 @@ private:
     inline static DWORD GetOptionalMembersAllocationSize(
                                                   DWORD dwMultipurposeSlotsMask,
                                                   BOOL needsGenericsStaticsInfo,
-                                                  BOOL needsGuidInfo,
-                                                  BOOL needsCCWTemplate,
                                                   BOOL needsRCWPerTypeData,
                                                   BOOL needsTokenOverflow);
     inline DWORD GetOptionalMembersSize();
