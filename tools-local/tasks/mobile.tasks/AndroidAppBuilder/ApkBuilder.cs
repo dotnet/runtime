@@ -123,7 +123,7 @@ public class ApkBuilder
         string cmake = "cmake";
         string zip = "zip";
 
-        Utils.RunProcess(zip, workingDir: Path.Combine(OutputDir, "assets-tozip"), args: "-r ../assets/assets.zip .");
+        Utils.RunProcess(zip, workingDir: Path.Combine(OutputDir, "assets-tozip"), args: "-q -r ../assets/assets.zip .");
         Directory.Delete(Path.Combine(OutputDir, "assets-tozip"), true);
         
         if (!File.Exists(androidJar))
@@ -218,6 +218,8 @@ public class ApkBuilder
 
         string alignedApk = Path.Combine(OutputDir, "bin", $"{ProjectName}.apk");
         Utils.RunProcess(zipalign, $"-v 4 {apkFile} {alignedApk}", workingDir: OutputDir);
+        // we don't need the unaligned one any more
+        File.Delete(apkFile);
 
         // 5. Generate key
         

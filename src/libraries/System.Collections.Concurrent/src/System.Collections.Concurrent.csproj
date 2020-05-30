@@ -7,6 +7,7 @@
     <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)-Unix</TargetFrameworks>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="System\ThrowHelper.cs" />
     <Compile Include="System\Collections\Concurrent\BlockingCollection.cs" />
     <Compile Include="System\Collections\Concurrent\CDSCollectionETWBCLProvider.cs" />
     <Compile Include="System\Collections\Concurrent\ConcurrentBag.cs" />
@@ -15,6 +16,8 @@
     <Compile Include="System\Collections\Concurrent\OrderablePartitioner.cs" />
     <Compile Include="System\Collections\Concurrent\Partitioner.cs" />
     <Compile Include="System\Collections\Concurrent\PartitionerStatic.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Collections\HashHelpers.cs"
+             Link="System\Collections\HashHelpers.cs" />
     <Compile Include="$(CoreLibSharedDir)System\Collections\Concurrent\IProducerConsumerCollectionDebugView.cs"
              Link="System\Collections\Concurrent\IProducerConsumerCollectionDebugView.cs" />
   </ItemGroup>

@@ -2612,7 +2612,7 @@ protected:
         nomdDelegateStub             = 0x0040,
         nomdStructMarshalStub        = 0x0080,
         nomdUnbreakable              = 0x0100,
-        nomdDelegateCOMStub          = 0x0200,  // CLR->COM or COM->CLR call via a delegate (WinRT specific)
+        //unused                     = 0x0200,
         nomdSignatureNeedsRestore    = 0x0400,
         nomdStubNeedsCOMStarted      = 0x0800,  // EnsureComStarted must be called before executing the method
         nomdMulticastStub            = 0x1000,
@@ -2718,7 +2718,6 @@ public:
     bool IsCOMToCLRStub()    { LIMITED_METHOD_CONTRACT; _ASSERTE(IsILStub()); return ((0 == (m_dwExtendedFlags & mdStatic)) &&  IsReverseStub()); }
     bool IsPInvokeStub()     { LIMITED_METHOD_CONTRACT; _ASSERTE(IsILStub()); return ((0 != (m_dwExtendedFlags & mdStatic)) && !IsReverseStub() && !IsCALLIStub() && !IsStructMarshalStub()); }
     bool IsUnbreakable()     { LIMITED_METHOD_CONTRACT; _ASSERTE(IsILStub()); return (0 != (m_dwExtendedFlags & nomdUnbreakable));  }
-    bool IsDelegateCOMStub() { LIMITED_METHOD_CONTRACT; _ASSERTE(IsILStub()); return (0 != (m_dwExtendedFlags & nomdDelegateCOMStub));  }
     bool IsSignatureNeedsRestore() { LIMITED_METHOD_CONTRACT; _ASSERTE(IsILStub()); return (0 != (m_dwExtendedFlags & nomdSignatureNeedsRestore)); }
     bool IsStubNeedsCOMStarted()   { LIMITED_METHOD_CONTRACT; _ASSERTE(IsILStub()); return (0 != (m_dwExtendedFlags & nomdStubNeedsCOMStarted)); }
     bool IsStructMarshalStub()   { LIMITED_METHOD_CONTRACT; _ASSERTE(IsILStub()); return (0 != (m_dwExtendedFlags & nomdStructMarshalStub)); }
@@ -2746,7 +2745,7 @@ public:
     bool HasMDContextArg()
     {
         LIMITED_METHOD_CONTRACT;
-        return ((IsCLRToCOMStub() && !IsDelegateCOMStub()) || IsPInvokeStub());
+        return IsCLRToCOMStub() || IsPInvokeStub();
     }
 
     void Restore();

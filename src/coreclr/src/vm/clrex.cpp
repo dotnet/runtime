@@ -16,7 +16,6 @@
 #include "typestring.h"
 #include "sigformat.h"
 #include "eeconfig.h"
-#include "frameworkexceptionloader.h"
 
 #ifdef FEATURE_EH_FUNCLETS
 #include "exceptionhandling.h"
@@ -978,38 +977,6 @@ void CLRException::HandlerState::SucceedCatch()
 // Array that is used to retrieve the right exception for a given HRESULT.
 //------------------------------------------------------------------------
 
-#ifdef FEATURE_COMINTEROP
-
-struct WinRtHR_to_ExceptionKind_Map
-{
-    RuntimeExceptionKind reKind;
-    int cHRs;
-    const HRESULT *aHRs;
-};
-
-enum WinRtOnly_ExceptionKind {
-#define DEFINE_EXCEPTION_HR_WINRT_ONLY(ns, reKind, ...) kWinRtEx##reKind,
-#define DEFINE_EXCEPTION(ns, reKind, bHRformessage, ...)
-#define DEFINE_EXCEPTION_IN_OTHER_FX_ASSEMBLY(ns, reKind, assemblySimpleName, bHRformessage, ...)
-#include "rexcep.h"
-kWinRtExLastException
-};
-
-#define DEFINE_EXCEPTION_HR_WINRT_ONLY(ns, reKind, ...) static const HRESULT s_##reKind##WinRtOnlyHRs[] = { __VA_ARGS__ };
-#define DEFINE_EXCEPTION(ns, reKind, bHRformessage, ...)
-#define DEFINE_EXCEPTION_IN_OTHER_FX_ASSEMBLY(ns, reKind, assemblySimpleName, bHRformessage, ...)
-#include "rexcep.h"
-
-static const
-WinRtHR_to_ExceptionKind_Map gWinRtHR_to_ExceptionKind_Maps[] = {
-#define DEFINE_EXCEPTION_HR_WINRT_ONLY(ns, reKind, ...) { k##reKind, sizeof(s_##reKind##WinRtOnlyHRs) / sizeof(HRESULT), s_##reKind##WinRtOnlyHRs },
-#define DEFINE_EXCEPTION(ns, reKind, bHRformessage, ...)
-#define DEFINE_EXCEPTION_IN_OTHER_FX_ASSEMBLY(ns, reKind, assemblySimpleName, bHRformessage, ...)
-#include "rexcep.h"
-};
-
-#endif  // FEATURE_COMINTEROP
-
 struct ExceptionHRInfo
 {
     int cHRs;
@@ -1017,15 +984,11 @@ struct ExceptionHRInfo
 };
 
 #define DEFINE_EXCEPTION(ns, reKind, bHRformessage, ...) static const HRESULT s_##reKind##HRs[] = { __VA_ARGS__ };
-#define DEFINE_EXCEPTION_HR_WINRT_ONLY(ns, reKind, ...)
-#define DEFINE_EXCEPTION_IN_OTHER_FX_ASSEMBLY(ns, reKind, assemblySimpleName, bHRformessage, ...) DEFINE_EXCEPTION(ns, reKind, bHRformessage, __VA_ARGS__)
 #include "rexcep.h"
 
 static const
 ExceptionHRInfo gExceptionHRInfos[] = {
 #define DEFINE_EXCEPTION(ns, reKind, bHRformessage, ...) {sizeof(s_##reKind##HRs) / sizeof(HRESULT), s_##reKind##HRs},
-#define DEFINE_EXCEPTION_HR_WINRT_ONLY(ns, reKind, ...)
-#define DEFINE_EXCEPTION_IN_OTHER_FX_ASSEMBLY(ns, reKind, assemblySimpleName, bHRformessage, ...) DEFINE_EXCEPTION(ns, reKind, bHRformessage, __VA_ARGS__)
 #include "rexcep.h"
 };
 
@@ -1034,8 +997,6 @@ static const
 bool gShouldDisplayHR[] =
 {
 #define DEFINE_EXCEPTION(ns, reKind, bHRformessage, ...) bHRformessage,
-#define DEFINE_EXCEPTION_HR_WINRT_ONLY(ns, reKind, ...)
-#define DEFINE_EXCEPTION_IN_OTHER_FX_ASSEMBLY(ns, reKind, assemblySimpleName, bHRformessage, ...) DEFINE_EXCEPTION(ns, reKind, bHRformessage, __VA_ARGS__)
 #include "rexcep.h"
 };
 
@@ -1111,18 +1072,8 @@ void EEException::GetMessage(SString &result)
         return;
 
     // Otherwise, report the class's generic message
-    LPCUTF8 pszExceptionName = NULL;
-    if (m_kind <= kLastExceptionInMscorlib)
-    {
-        pszExceptionName = MscorlibBinder::GetExceptionName(m_kind);
-        result.SetUTF8(pszExceptionName);
-    }
-#ifndef CROSSGEN_COMPILE
-    else
-    {
-        FrameworkExceptionLoader::GetExceptionName(m_kind, result);
-    }
-#endif // CROSSGEN_COMPILE
+    LPCUTF8 pszExceptionName = MscorlibBinder::GetExceptionName(m_kind);
+    result.SetUTF8(pszExceptionName);
 }
 
 OBJECTREF EEException::CreateThrowable()
@@ -1142,13 +1093,7 @@ OBJECTREF EEException::CreateThrowable()
     _ASSERTE(g_pPreallocatedOutOfMemoryException != NULL);
     static int allocCount = 0;
 
-    MethodTable *pMT = NULL;
-    if (m_kind <= kLastExceptionInMscorlib)
-        pMT = MscorlibBinder::GetException(m_kind);
-    else
-    {
-        pMT = FrameworkExceptionLoader::GetException(m_kind);
-    }
+    MethodTable *pMT = MscorlibBinder::GetException(m_kind);
 
     ThreadPreventAsyncHolder preventAsyncHolder(m_kind == kThreadAbortException);
 
@@ -1185,29 +1130,9 @@ OBJECTREF EEException::CreateThrowable()
 #endif
 }
 
-RuntimeExceptionKind EEException::GetKindFromHR(HRESULT hr, bool fIsWinRtMode /*= false*/)
+RuntimeExceptionKind EEException::GetKindFromHR(HRESULT hr)
 {
     LIMITED_METHOD_CONTRACT;
-
-    #ifdef FEATURE_COMINTEROP
-    // If we are in WinRT mode, try to get a WinRT specific mapping first:
-    if (fIsWinRtMode)
-    {
-        for (int i = 0; i < kWinRtExLastException; i++)
-        {
-            for (int j = 0; j < gWinRtHR_to_ExceptionKind_Maps[i].cHRs; j++)
-            {
-                if (gWinRtHR_to_ExceptionKind_Maps[i].aHRs[j] == hr)
-                {
-                    return gWinRtHR_to_ExceptionKind_Maps[i].reKind;
-                }
-            }
-        }
-    }
-    #endif  // FEATURE_COMINTEROP
-
-    // Is not in WinRT mode OR did not find a WinRT specific mapping. Check normal mappings:
-
     for (int i = 0; i < kLastException; i++)
     {
         for (int j = 0; j < gExceptionHRInfos[i].cHRs; j++)
@@ -1217,7 +1142,7 @@ RuntimeExceptionKind EEException::GetKindFromHR(HRESULT hr, bool fIsWinRtMode /*
         }
     }
 
-    return (fIsWinRtMode ? kException : kCOMException);
+    return kCOMException;
 
 } // RuntimeExceptionKind EEException::GetKindFromHR()
 
@@ -1793,8 +1718,7 @@ RuntimeExceptionKind EEFileLoadException::GetFileLoadKind(HRESULT hr)
             (hr == HRESULT_FROM_WIN32(ERROR_FILE_CORRUPT)) ||
             (hr == (HRESULT) IDS_CLASSLOAD_32BITCLRLOADING64BITASSEMBLY) ||
             (hr == COR_E_LOADING_REFERENCE_ASSEMBLY) ||
-            (hr == META_E_BAD_SIGNATURE) ||
-            (hr == COR_E_LOADING_WINMD_REFERENCE_ASSEMBLY))
+            (hr == META_E_BAD_SIGNATURE))
             return kBadImageFormatException;
         else
         {
@@ -1899,12 +1823,6 @@ void DECLSPEC_NORETURN EEFileLoadException::Throw(AssemblySpec  *pSpec, HRESULT 
         COMPlusThrow(kThreadAbortException);
     if (hr == E_OUTOFMEMORY)
         COMPlusThrowOM();
-#ifdef FEATURE_COMINTEROP
-    if ((hr == RO_E_METADATA_NAME_NOT_FOUND) || (hr == CLR_E_BIND_TYPE_NOT_FOUND))
-    {   // These error codes behave like FileNotFound, but are exposed as TypeLoadException
-        EX_THROW_WITH_INNER(EETypeLoadException, (pSpec->GetWinRtTypeNamespace(), pSpec->GetWinRtTypeClassName(), nullptr, nullptr, IDS_EE_WINRT_LOADFAILURE), pInnerException);
-    }
-#endif //FEATURE_COMINTEROP
 
     StackSString name;
     pSpec->GetFileOrDisplayName(0, name);
@@ -2050,14 +1968,6 @@ EECOMException::EECOMException(EXCEPINFO *pExcepInfo)
     m_ED.dwHelpContext = pExcepInfo->dwHelpContext;
     m_ED.guid = GUID_NULL;
 
-#ifdef FEATURE_COMINTEROP
-    m_ED.bstrReference = NULL;
-    m_ED.bstrRestrictedError = NULL;
-    m_ED.bstrCapabilitySid = NULL;
-    m_ED.pRestrictedErrorInfo = NULL;
-    m_ED.bHasLanguageRestrictedErrorInfo = FALSE;
-#endif
-
     // Zero the EXCEPINFO.
     memset(pExcepInfo, NULL, sizeof(EXCEPINFO));
 }
@@ -2075,12 +1985,9 @@ EECOMException::EECOMException(ExceptionData *pData)
 
 EECOMException::EECOMException(
     HRESULT hr,
-    IErrorInfo *pErrInfo,
-    bool fUseCOMException,  // use System.Runtime.InteropServices.COMException as the default exception type (means as much as !IsWinRT)
-    IRestrictedErrorInfo* pRestrictedErrInfo,
-    BOOL bHasLanguageRestrictedErrInfo
+    IErrorInfo *pErrInfo
     COMMA_INDEBUG(BOOL bCheckInProcCCWTearOff))
-  : EEException(GetKindFromHR(hr, !fUseCOMException))
+  : EEException(GetKindFromHR(hr))
 {
     WRAPPER_NO_CONTRACT;
 
@@ -2088,7 +1995,6 @@ EECOMException::EECOMException(
     // Must use another path for managed IErrorInfos...
     //  note that this doesn't cover out-of-proc managed IErrorInfos.
     _ASSERTE(!bCheckInProcCCWTearOff || !IsInProcCCWTearOff(pErrInfo));
-    _ASSERTE(pRestrictedErrInfo == NULL || !bCheckInProcCCWTearOff || !IsInProcCCWTearOff(pRestrictedErrInfo));
 #endif  // FEATURE_COMINTEROP
 
     m_ED.hr = hr;
@@ -2098,15 +2004,7 @@ EECOMException::EECOMException(
     m_ED.dwHelpContext = NULL;
     m_ED.guid = GUID_NULL;
 
-#ifdef FEATURE_COMINTEROP
-    m_ED.bstrReference = NULL;
-    m_ED.bstrRestrictedError = NULL;
-    m_ED.bstrCapabilitySid = NULL;
-    m_ED.pRestrictedErrorInfo = NULL;
-    m_ED.bHasLanguageRestrictedErrorInfo = bHasLanguageRestrictedErrInfo;
-#endif
-
-    FillExceptionData(&m_ED, pErrInfo, pRestrictedErrInfo);
+    FillExceptionData(&m_ED, pErrInfo);
 }
 
 BOOL EECOMException::GetThrowableMessage(SString &result)
@@ -2119,42 +2017,10 @@ BOOL EECOMException::GetThrowableMessage(SString &result)
     }
     CONTRACTL_END;
 
-#ifdef FEATURE_COMINTEROP
-    if (m_ED.bstrDescription != NULL || m_ED.bstrRestrictedError != NULL)
-    {
-        // For cross language WinRT exceptions, general information will be available in the bstrDescription,
-        // which is populated from IErrorInfo::GetDescription and more specific information will be available
-        // in the bstrRestrictedError which comes from the IRestrictedErrorInfo.  If both are available, we
-        // need to concatinate them to produce the final exception message.
-
-        result.Clear();
-
-        // If we have a restricted description, start our message with that
-        if (m_ED.bstrDescription != NULL)
-        {
-            SString generalInformation(m_ED.bstrDescription, SysStringLen(m_ED.bstrDescription));
-            result.Append(generalInformation);
-
-            // If we're also going to have a specific error message, append a newline to separate the two
-            if (m_ED.bstrRestrictedError != NULL)
-            {
-                result.Append(W("\r\n"));
-            }
-        }
-
-        // If we have additional error information, attach it to the end of the string
-        if (m_ED.bstrRestrictedError != NULL)
-        {
-            SString restrictedDescription(m_ED.bstrRestrictedError, SysStringLen(m_ED.bstrRestrictedError));
-            result.Append(restrictedDescription);
-        }
-    }
-#else // !FEATURE_COMINTEROP
     if (m_ED.bstrDescription != NULL)
     {
         result.Set(m_ED.bstrDescription, SysStringLen(m_ED.bstrDescription));
     }
-#endif // FEATURE_COMINTEROP
     else
     {
         GenerateTopLevelHRExceptionMessage(GetHR(), result);
@@ -2226,80 +2092,6 @@ OBJECTREF EECOMException::CreateThrowable()
         sourceStr = StringObject::GetEmptyString();
     }
     ((EXCEPTIONREF)throwable)->SetSource(sourceStr);
-
-#ifdef FEATURE_COMINTEROP
-    //
-    // Support for WinRT interface IRestrictedErrorInfo
-    //
-    if (m_ED.pRestrictedErrorInfo)
-    {
-
-        struct _gc {
-            STRINGREF RestrictedErrorRef;
-            STRINGREF ReferenceRef;
-            STRINGREF RestrictedCapabilitySidRef;
-            OBJECTREF RestrictedErrorInfoObjRef;
-        } gc;
-        ZeroMemory(&gc, sizeof(gc));
-
-        GCPROTECT_BEGIN(gc);
-
-        EX_TRY
-        {
-            gc.RestrictedErrorRef = StringObject::NewString(
-                m_ED.bstrRestrictedError,
-                SysStringLen(m_ED.bstrRestrictedError)
-                );
-            gc.ReferenceRef = StringObject::NewString(
-                m_ED.bstrReference,
-                SysStringLen(m_ED.bstrReference)
-                );
-
-            gc.RestrictedCapabilitySidRef = StringObject::NewString(
-                m_ED.bstrCapabilitySid,
-                SysStringLen(m_ED.bstrCapabilitySid)
-                );
-
-            // Convert IRestrictedErrorInfo into a managed object - don't care whether it is a RCW/CCW
-            GetObjectRefFromComIP(
-                &gc.RestrictedErrorInfoObjRef,
-                m_ED.pRestrictedErrorInfo,      // IUnknown *
-                NULL,                           // ClassMT
-                NULL,                           // ItfMT
-                ObjFromComIP::CLASS_IS_HINT | ObjFromComIP::IGNORE_WINRT_AND_SKIP_UNBOXING
-                );
-
-            //
-            // Call Exception.AddExceptionDataForRestrictedErrorInfo and put error information
-            // from IRestrictedErrorInfo on Exception.Data
-            //
-            MethodDescCallSite addExceptionDataForRestrictedErrorInfo(
-                METHOD__EXCEPTION__ADD_EXCEPTION_DATA_FOR_RESTRICTED_ERROR_INFO,
-                &throwable
-                );
-
-            ARG_SLOT Args[] =
-            {
-                ObjToArgSlot(throwable),
-                ObjToArgSlot(gc.RestrictedErrorRef),
-                ObjToArgSlot(gc.ReferenceRef),
-                ObjToArgSlot(gc.RestrictedCapabilitySidRef),
-                ObjToArgSlot(gc.RestrictedErrorInfoObjRef),
-                BoolToArgSlot(m_ED.bHasLanguageRestrictedErrorInfo)
-            };
-
-            addExceptionDataForRestrictedErrorInfo.Call(Args);
-
-        }
-        EX_CATCH
-        {
-            // IDictionary.Add may throw. Ignore all non terminal exceptions
-        }
-        EX_END_CATCH(RethrowTerminalExceptions)
-
-        GCPROTECT_END();
-    }
-#endif // FEATURE_COMINTEROP
 
     GCPROTECT_END();
 
@@ -2594,8 +2386,6 @@ ArrayReference<const HRESULT> GetHRESULTsForExceptionKind(RuntimeExceptionKind k
             case k##reKind:                                         \
                 return ArrayReference<const HRESULT>(s_##reKind##HRs);    \
                 break;
-        #define DEFINE_EXCEPTION_HR_WINRT_ONLY(ns, reKind, ...)
-        #define DEFINE_EXCEPTION_IN_OTHER_FX_ASSEMBLY(ns, reKind, assemblySimpleName, bHRformessage, ...) DEFINE_EXCEPTION(ns, reKind, bHRformessage, __VA_ARGS__)
         #include "rexcep.h"
 
         default:

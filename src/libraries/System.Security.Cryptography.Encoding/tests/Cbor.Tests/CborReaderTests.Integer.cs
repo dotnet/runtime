@@ -179,11 +179,11 @@ namespace System.Formats.Cbor.Tests
         }
 
         [Theory]
-        [InlineData(CborConformanceLevel.Rfc7049Canonical, "1817")]
-        [InlineData(CborConformanceLevel.Rfc7049Canonical, "1900ff")]
-        [InlineData(CborConformanceLevel.Rfc7049Canonical, "1a0000ffff")]
-        [InlineData(CborConformanceLevel.Rfc7049Canonical, "1b00000000ffffffff")]
-        [InlineData(CborConformanceLevel.Rfc7049Canonical, "1b0000000000000001")]
+        [InlineData(CborConformanceLevel.Canonical, "1817")]
+        [InlineData(CborConformanceLevel.Canonical, "1900ff")]
+        [InlineData(CborConformanceLevel.Canonical, "1a0000ffff")]
+        [InlineData(CborConformanceLevel.Canonical, "1b00000000ffffffff")]
+        [InlineData(CborConformanceLevel.Canonical, "1b0000000000000001")]
         [InlineData(CborConformanceLevel.Ctap2Canonical, "1817")]
         [InlineData(CborConformanceLevel.Ctap2Canonical, "1900ff")]
         [InlineData(CborConformanceLevel.Ctap2Canonical, "1a0000ffff")]
@@ -218,11 +218,11 @@ namespace System.Formats.Cbor.Tests
         }
 
         [Theory]
-        [InlineData(CborConformanceLevel.Rfc7049Canonical, "3817")]
-        [InlineData(CborConformanceLevel.Rfc7049Canonical, "3900ff")]
-        [InlineData(CborConformanceLevel.Rfc7049Canonical, "3a0000ffff")]
-        [InlineData(CborConformanceLevel.Rfc7049Canonical, "3b00000000ffffffff")]
-        [InlineData(CborConformanceLevel.Rfc7049Canonical, "3b0000000000000001")]
+        [InlineData(CborConformanceLevel.Canonical, "3817")]
+        [InlineData(CborConformanceLevel.Canonical, "3900ff")]
+        [InlineData(CborConformanceLevel.Canonical, "3a0000ffff")]
+        [InlineData(CborConformanceLevel.Canonical, "3b00000000ffffffff")]
+        [InlineData(CborConformanceLevel.Canonical, "3b0000000000000001")]
         [InlineData(CborConformanceLevel.Ctap2Canonical, "3817")]
         [InlineData(CborConformanceLevel.Ctap2Canonical, "3900ff")]
         [InlineData(CborConformanceLevel.Ctap2Canonical, "3a0000ffff")]
@@ -247,7 +247,7 @@ namespace System.Formats.Cbor.Tests
             var reader = new CborReader(encoding);
 
             Assert.Throws<OverflowException>(() => reader.ReadInt64());
-            Assert.Equal(encoding.Length, reader.BytesRemaining);
+            Assert.Equal(0, reader.BytesRead);
         }
 
         [Theory]
@@ -262,7 +262,7 @@ namespace System.Formats.Cbor.Tests
             var reader = new CborReader(encoding);
 
             Assert.Throws<OverflowException>(() => reader.ReadInt32());
-            Assert.Equal(encoding.Length, reader.BytesRemaining);
+            Assert.Equal(0, reader.BytesRead);
         }
 
         [Theory]
@@ -274,7 +274,7 @@ namespace System.Formats.Cbor.Tests
             var reader = new CborReader(encoding);
 
             Assert.Throws<OverflowException>(() => reader.ReadUInt32());
-            Assert.Equal(encoding.Length, reader.BytesRemaining);
+            Assert.Equal(0, reader.BytesRead);
         }
 
         [Theory]
@@ -286,7 +286,7 @@ namespace System.Formats.Cbor.Tests
             byte[] encoding = hexEncoding.HexToByteArray();
             var reader = new CborReader(encoding);
             Assert.Throws<OverflowException>(() => reader.ReadUInt64());
-            Assert.Equal(encoding.Length, reader.BytesRemaining);
+            Assert.Equal(0, reader.BytesRead);
         }
 
         [Theory]
@@ -302,10 +302,9 @@ namespace System.Formats.Cbor.Tests
             byte[] encoding = hexEncoding.HexToByteArray();
             var reader = new CborReader(encoding);
 
-            InvalidOperationException exn = Assert.Throws<InvalidOperationException>(() => reader.ReadInt64());
-            Assert.Equal("Data item major type mismatch.", exn.Message);
+            Assert.Throws<InvalidOperationException>(() => reader.ReadInt64());
 
-            Assert.Equal(encoding.Length, reader.BytesRemaining);
+            Assert.Equal(0, reader.BytesRead);
         }
 
         [Theory]
@@ -321,10 +320,9 @@ namespace System.Formats.Cbor.Tests
             byte[] encoding = hexEncoding.HexToByteArray();
             var reader = new CborReader(encoding);
 
-            InvalidOperationException exn = Assert.Throws<InvalidOperationException>(() => reader.ReadInt32());
-            Assert.Equal("Data item major type mismatch.", exn.Message);
+            Assert.Throws<InvalidOperationException>(() => reader.ReadInt32());
 
-            Assert.Equal(encoding.Length, reader.BytesRemaining);
+            Assert.Equal(0, reader.BytesRead);
         }
 
         [Theory]
@@ -340,10 +338,9 @@ namespace System.Formats.Cbor.Tests
             byte[] encoding = hexEncoding.HexToByteArray();
             var reader = new CborReader(encoding);
 
-            InvalidOperationException exn = Assert.Throws<InvalidOperationException>(() => reader.ReadUInt32());
-            Assert.Equal("Data item major type mismatch.", exn.Message);
+            Assert.Throws<InvalidOperationException>(() => reader.ReadUInt32());
 
-            Assert.Equal(encoding.Length, reader.BytesRemaining);
+            Assert.Equal(0, reader.BytesRead);
         }
 
         [Theory]
@@ -359,10 +356,9 @@ namespace System.Formats.Cbor.Tests
             byte[] encoding = hexEncoding.HexToByteArray();
             var reader = new CborReader(encoding);
 
-            InvalidOperationException exn = Assert.Throws<InvalidOperationException>(() => reader.ReadUInt64());
-            Assert.Equal("Data item major type mismatch.", exn.Message);
+            Assert.Throws<InvalidOperationException>(() => reader.ReadUInt64());
 
-            Assert.Equal(encoding.Length, reader.BytesRemaining);
+            Assert.Equal(0, reader.BytesRead);
         }
 
         [Theory]
@@ -380,10 +376,9 @@ namespace System.Formats.Cbor.Tests
             byte[] encoding = hexEncoding.HexToByteArray();
             var reader = new CborReader(encoding);
 
-            InvalidOperationException exn = Assert.Throws<InvalidOperationException>(() => reader.ReadCborNegativeIntegerEncoding());
-            Assert.Equal("Data item major type mismatch.", exn.Message);
+            Assert.Throws<InvalidOperationException>(() => reader.ReadCborNegativeIntegerEncoding());
 
-            Assert.Equal(encoding.Length, reader.BytesRemaining);
+            Assert.Equal(0, reader.BytesRead);
         }
 
         [Theory]
@@ -409,7 +404,7 @@ namespace System.Formats.Cbor.Tests
             var reader = new CborReader(encoding);
             Assert.Throws<FormatException>(() => reader.ReadInt64());
 
-            Assert.Equal(encoding.Length, reader.BytesRemaining);
+            Assert.Equal(0, reader.BytesRead);
         }
 
         [Theory]
@@ -428,7 +423,7 @@ namespace System.Formats.Cbor.Tests
             var reader = new CborReader(encoding);
 
             Assert.Throws<FormatException>(() => reader.ReadCborNegativeIntegerEncoding());
-            Assert.Equal(encoding.Length, reader.BytesRemaining);
+            Assert.Equal(0, reader.BytesRead);
         }
 
         [Theory]
@@ -440,7 +435,7 @@ namespace System.Formats.Cbor.Tests
             var reader = new CborReader(encoding);
 
             Assert.Throws<FormatException>(() => reader.ReadInt64());
-            Assert.Equal(encoding.Length, reader.BytesRemaining);
+            Assert.Equal(0, reader.BytesRead);
         }
 
         [Fact]
@@ -450,7 +445,7 @@ namespace System.Formats.Cbor.Tests
             var reader = new CborReader(encoding);
 
             Assert.Throws<FormatException>(() => reader.ReadUInt64());
-            Assert.Equal(encoding.Length, reader.BytesRemaining);
+            Assert.Equal(0, reader.BytesRead);
         }
 
         [Fact]
@@ -460,7 +455,7 @@ namespace System.Formats.Cbor.Tests
             var reader = new CborReader(encoding);
 
             Assert.Throws<FormatException>(() => reader.ReadCborNegativeIntegerEncoding());
-            Assert.Equal(encoding.Length, reader.BytesRemaining);
+            Assert.Equal(0, reader.BytesRead);
         }
     }
 }

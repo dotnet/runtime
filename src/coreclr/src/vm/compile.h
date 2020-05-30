@@ -206,13 +206,6 @@ class CEECompileInfo : public ICorCompileInfo
                                BOOL                     fExplicitBindToNativeImage,
                                CORINFO_ASSEMBLY_HANDLE *pHandle);
 
-
-#ifdef FEATURE_COMINTEROP
-    HRESULT LoadTypeRefWinRT(IMDInternalImport       *pAssemblyImport,
-                                     mdTypeRef               ref,
-                                     CORINFO_ASSEMBLY_HANDLE *pHandle);
-#endif
-
     BOOL IsInCurrentVersionBubble(CORINFO_MODULE_HANDLE hModule);
 
     HRESULT LoadAssemblyModule(CORINFO_ASSEMBLY_HANDLE assembly,
@@ -839,10 +832,6 @@ class CompilationDomain : public AppDomain,
     HRESULT SetContextInfo(LPCWSTR exePath, BOOL isExe) DAC_EMPTY_RET(E_FAIL);
     HRESULT GetDependencies(CORCOMPILE_DEPENDENCY **ppDependencies,
                             DWORD *cDependencies) DAC_EMPTY_RET(E_FAIL);
-
-#ifdef CROSSGEN_COMPILE
-    HRESULT SetPlatformWinmdPaths(LPCWSTR pwzPlatformWinmdPaths) DAC_EMPTY_RET(E_FAIL);
-#endif
 
     void SetDependencyEmitter(IMetaDataAssemblyEmit *pEmitter);
 };

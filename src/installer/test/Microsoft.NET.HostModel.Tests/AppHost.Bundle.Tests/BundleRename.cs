@@ -7,6 +7,7 @@ using System.IO;
 using Xunit;
 using Microsoft.DotNet.Cli.Build.Framework;
 using Microsoft.DotNet.CoreSetup.Test;
+using Microsoft.NET.HostModel.Bundle;
 using BundleTests.Helpers;
 using System.Threading;
 
@@ -22,28 +23,17 @@ namespace AppHost.Bundle.Tests
         }
 
         [Theory]
-        [InlineData(true)]  // Test renaming the single-exe during the initial run, when contents are extracted
-        [InlineData(false)] // Test renaming the single-exe during subsequent runs, when contents are reused
-        private void Bundle_can_be_renamed_while_running(bool renameFirstRun)
+        [InlineData(true)]  // Test renaming the single-exe when contents are extracted
+        [InlineData(false)] // Test renaming the single-exe when contents are not extracted 
+        private void Bundle_can_be_renamed_while_running(bool testExtraction)
         {
             var fixture = sharedTestState.TestFixture.Copy();
-            string singleFile = BundleHelper.BundleApp(fixture);
+            BundleOptions options = testExtraction ? BundleOptions.BundleAllContent : BundleOptions.None;
+            string singleFile = BundleHelper.BundleApp(fixture, options);
             string outputDir = Path.GetDirectoryName(singleFile);
             string renameFile = Path.Combine(outputDir, Path.GetRandomFileName());
             string waitFile = Path.Combine(outputDir, "wait");
             string resumeFile = Path.Combine(outputDir, "resume");
-
-            if (!renameFirstRun)
-            {
-                Command.Create(singleFile)
-                    .CaptureStdErr()
-                    .CaptureStdOut()
-                    .Execute()
-                    .Should()
-                    .Pass()
-                    .And
-                    .HaveStdOutContaining("Hello World!");
-            }
 
             // Once the App starts running, it creates the waitFile, and waits until resumeFile file is created.
             var singleExe = Command.Create(singleFile, waitFile, resumeFile)
@@ -51,9 +41,12 @@ namespace AppHost.Bundle.Tests
                 .CaptureStdOut()
                 .Start();
 
-            while (!File.Exists(waitFile) && !singleExe.Process.HasExited)
+            const int twoMitutes = 120000 /*milliseconds*/;
+            int waitTime = 0;
+            while (!File.Exists(waitFile) && !singleExe.Process.HasExited && waitTime < twoMitutes)
             {
                 Thread.Sleep(100);
+                waitTime += 100;
             }
 
             Assert.True(File.Exists(waitFile));
@@ -61,7 +54,7 @@ namespace AppHost.Bundle.Tests
             File.Move(singleFile, renameFile);
             File.Create(resumeFile).Close();
 
-            var result = singleExe.WaitForExit(fExpectedToFail: false);
+            var result = singleExe.WaitForExit(fExpectedToFail: false, twoMitutes);
 
             result
                 .Should()

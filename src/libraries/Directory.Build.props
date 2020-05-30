@@ -330,6 +330,11 @@
     <EnableCoverageSupport Condition="'$(ContinuousIntegrationBuild)' != 'true'">true</EnableCoverageSupport>
   </PropertyGroup>
 
+  <!-- To enable the interpreter for mono, we need to pass an env switch -->
+  <PropertyGroup>
+    <MonoEnvOptions Condition="'$(MonoEnvOptions)' == '' and '$(MonoEnableInterpreter)' == 'true'">--interpreter</MonoEnvOptions>
+  </PropertyGroup>
+
   <Import Project="$(RepositoryEngineeringDir)testing\tests.props" Condition="'$(EnableTestSupport)' == 'true'" />
 
   <!-- Use msbuild path functions as that property is used in bash scripts. -->

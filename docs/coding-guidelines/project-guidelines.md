@@ -169,8 +169,8 @@ The output for the src product build will be a flat runtime folder into the foll
 
 `bin\runtime\$(BuildSettings)`
 
-Note: The `BuildSettings` is a global property and not the project setting because we need all projects to output to the same runtime directory no matter which compatible target framework we select and build the project with. 
-```<BuildSettings>$(BuildTargetFramework)-$(TargetOS)-(Configuration)-(TargetArchitecture)</BuildSettings>``` 
+Note: The `BuildSettings` is a global property and not the project setting because we need all projects to output to the same runtime directory no matter which compatible target framework we select and build the project with.
+```<BuildSettings>$(BuildTargetFramework)-$(TargetOS)-(Configuration)-(TargetArchitecture)</BuildSettings>```
 
 ## pkg
 In the pkg directory for the library there should be only **one** `.pkgproj` for the primary package for the library. If the library has platform-specific implementations those should be split into platform specific projects in a subfolder for each platform. (see [Package projects](./package-projects.md))
@@ -216,7 +216,6 @@ Each source file should use the following guidelines
  - Where `<feature>` is the name of something that causes a fork in code that isn't a single configuration. Examples:
   - `.CoreCLR.cs` - implementation specific to CoreCLR runtime
   - `.Win32.cs` - implementation based on [Win32](https://en.wikipedia.org/wiki/Windows_API)
-  - `.WinRT.cs` - implementation based on [WinRT](https://en.wikipedia.org/wiki/Windows_Runtime)
 
 ## Define naming convention
 

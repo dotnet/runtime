@@ -33,6 +33,17 @@
         "alpine.3.10-x64"
       ]
     },
+    "alpine.3.12": {
+      "#import": [
+        "alpine.3.11"
+      ]
+    },
+    "alpine.3.12-x64": {
+      "#import": [
+        "alpine.3.12",
+        "alpine.3.11-x64"
+      ]
+    },
     "alpine.3.6": {
       "#import": [
         "alpine"
@@ -2332,6 +2343,122 @@
     "ubuntu.19.10-x86": {
       "#import": [
         "ubuntu.19.10",
+        "ubuntu-x86"
+      ]
+    },
+    "ubuntu.20.04": {
+      "#import": [
+        "ubuntu"
+      ]
+    },
+    "ubuntu.20.04-arm": {
+      "#import": [
+        "ubuntu.20.04",
+        "ubuntu-arm"
+      ]
+    },
+    "ubuntu.20.04-arm64": {
+      "#import": [
+        "ubuntu.20.04",
+        "ubuntu-arm64"
+      ]
+    },
+    "ubuntu.20.04-x64": {
+      "#import": [
+        "ubuntu.20.04",
+        "ubuntu-x64"
+      ]
+    },
+    "ubuntu.20.04-x86": {
+      "#import": [
+        "ubuntu.20.04",
+        "ubuntu-x86"
+      ]
+    },
+    "ubuntu.20.10": {
+      "#import": [
+        "ubuntu"
+      ]
+    },
+    "ubuntu.20.10-arm": {
+      "#import": [
+        "ubuntu.20.10",
+        "ubuntu-arm"
+      ]
+    },
+    "ubuntu.20.10-arm64": {
+      "#import": [
+        "ubuntu.20.10",
+        "ubuntu-arm64"
+      ]
+    },
+    "ubuntu.20.10-x64": {
+      "#import": [
+        "ubuntu.20.10",
+        "ubuntu-x64"
+      ]
+    },
+    "ubuntu.20.10-x86": {
+      "#import": [
+        "ubuntu.20.10",
+        "ubuntu-x86"
+      ]
+    },
+    "ubuntu.21.04": {
+      "#import": [
+        "ubuntu"
+      ]
+    },
+    "ubuntu.21.04-arm": {
+      "#import": [
+        "ubuntu.21.04",
+        "ubuntu-arm"
+      ]
+    },
+    "ubuntu.21.04-arm64": {
+      "#import": [
+        "ubuntu.21.04",
+        "ubuntu-arm64"
+      ]
+    },
+    "ubuntu.21.04-x64": {
+      "#import": [
+        "ubuntu.21.04",
+        "ubuntu-x64"
+      ]
+    },
+    "ubuntu.21.04-x86": {
+      "#import": [
+        "ubuntu.21.04",
+        "ubuntu-x86"
+      ]
+    },
+    "ubuntu.21.10": {
+      "#import": [
+        "ubuntu"
+      ]
+    },
+    "ubuntu.21.10-arm": {
+      "#import": [
+        "ubuntu.21.10",
+        "ubuntu-arm"
+      ]
+    },
+    "ubuntu.21.10-arm64": {
+      "#import": [
+        "ubuntu.21.10",
+        "ubuntu-arm64"
+      ]
+    },
+    "ubuntu.21.10-x64": {
+      "#import": [
+        "ubuntu.21.10",
+        "ubuntu-x64"
+      ]
+    },
+    "ubuntu.21.10-x86": {
+      "#import": [
+        "ubuntu.21.10",
         "ubuntu-x86"
       ]
     },

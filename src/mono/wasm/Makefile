@@ -1,6 +1,9 @@
 TOP=$(realpath $(CURDIR)/../../..)
 -include Make.config
 
+DOTNET=$(TOP)/dotnet.sh
+JSVU=$(HOME)/.jsvu
+
 #
 # These variables are set by wasm.targets
 #
@@ -10,7 +13,8 @@ BINDIR?=$(TOP)/artifacts/bin
 OBJDIR?=$(TOP)/artifacts/obj
 PINVOKE_TABLE?=$(TOP)/artifacts/obj/mono/Browser.wasm.$(CONFIG)/wasm/pinvoke-table.h
 MONO_BIN_DIR?=$(BINDIR)/mono/Browser.wasm.$(CONFIG)
-SYS_NATIVE_DIR?=$(BINDIR)/native/net5.0-Browser-$(CONFIG)-wasm/
+SYS_NATIVE_DIR?=$(OBJDIR)/native/net5.0-Browser-$(CONFIG)-wasm/System.Native
+BUILDS_BIN_DIR?=$(BINDIR)/native/net5.0-Browser-$(CONFIG)-wasm/wasm/runtimes
 
 all: build-native
 
@@ -44,7 +48,6 @@ emsdk_env.sh: | provision-wasm
 
 MONO_OBJ_DIR=$(OBJDIR)/mono/Browser.wasm.$(CONFIG)
 MONO_INCLUDE_DIR=$(MONO_BIN_DIR)/include/mono-2.0
-BUILDS_BIN_DIR=$(SYS_NATIVE_DIR)/wasm/runtimes
 BUILDS_OBJ_DIR=$(MONO_OBJ_DIR)/wasm/runtimes
 MONO_LIBS = \
 	$(MONO_BIN_DIR)/{libmono-ee-interp.a,libmonosgen-2.0.a,libmono-ilgen.a,libmono-icall-table.a} \
@@ -92,7 +95,7 @@ $(eval $(call InterpBuildTemplate,debug,,$(EMCC_DEBUG_FLAGS),$(MONO_LIBS)))
 $(eval $(call InterpBuildTemplate,release,,$(EMCC_RELEASE_FLAGS),$(MONO_LIBS)))
 
 build:
-	EMSDK_PATH=$(PWD)/wasm/emsdk ../../../.dotnet/dotnet build /p:TargetArchitecture=wasm /p:TargetOS=Browser /p:Configuration=$(CONFIG)
+	EMSDK_PATH=$(PWD)/src/mono/wasm/emsdk $(DOTNET) build /p:TargetArchitecture=wasm /p:TargetOS=Browser /p:Configuration=$(CONFIG) $(TOP)/src/libraries/src.proj /t:NativeBinPlace
 
 clean-emsdk:
 	$(RM) -rf $(EMSDK_LOCAL_PATH)
@@ -100,3 +103,18 @@ clean-emsdk:
 clean:
 	$(RM) -rf $(BUILDS_BIN_DIR) $(BUILDS_OBJ_DIR)
 	$(RM) emsdk_env.sh
+
+# Helper targets
+.PHONY: runtime
+
+runtime:
+	EMSDK_PATH=$(TOP)/src/mono/wasm/emsdk $(TOP)/build.sh --subset mono --arch wasm --os Browser -c $(CONFIG)
+
+test-runner:
+	$(DOTNET) build $(TOP)/src/libraries/Common/tests/WasmTestRunner /p:Configuration=$(CONFIG)
+
+app-builder:
+	$(DOTNET) build $(TOP)/tools-local/tasks/mobile.tasks/WasmAppBuilder
+
+run-tests-%:
+	PATH="$(JSVU):$(PATH)" $(DOTNET) build $(TOP)/src/libraries/$*/tests/ /t:Test /p:TargetOS=Browser /p:TargetArchitecture=wasm /p:Configuration=Release
