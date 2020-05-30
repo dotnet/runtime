@@ -31,97 +31,110 @@ public class WasmAppBuilder : Task
     public ITaskItem[]? ExtraAssemblies { get; set; }
     public ITaskItem[]? ExtraFiles { get; set; }
 
-    Dictionary<string, Assembly>? Assemblies;
-    Resolver? Resolver;
+    Dictionary<string, Assembly>? _assemblies;
+    Resolver? _resolver;
 
-    public override bool Execute () {
-        if (!File.Exists (MainAssembly))
-            throw new ArgumentException ($"File MainAssembly='{MainAssembly}' doesn't exist.");
-        if (!File.Exists (MainJS))
-            throw new ArgumentException ($"File MainJS='{MainJS}' doesn't exist.");
+    public override bool Execute ()
+    {
+        if (!File.Exists(MainAssembly))
+            throw new ArgumentException($"File MainAssembly='{MainAssembly}' doesn't exist.");
+        if (!File.Exists(MainJS))
+            throw new ArgumentException($"File MainJS='{MainJS}' doesn't exist.");
 
-        var paths = new List<string> ();
-        Assemblies = new Dictionary<string, Assembly> ();
+        var paths = new List<string>();
+        _assemblies = new Dictionary<string, Assembly>();
 
         // Collect and load assemblies used by the app
-        foreach (var v in AssemblySearchPaths!) {
+        foreach (var v in AssemblySearchPaths!)
+        {
             var dir = v.ItemSpec;
-            if (!Directory.Exists (dir))
-                throw new ArgumentException ($"Directory '{dir}' doesn't exist or not a directory.");
-            paths.Add (dir);
+            if (!Directory.Exists(dir))
+                throw new ArgumentException($"Directory '{dir}' doesn't exist or not a directory.");
+            paths.Add(dir);
         }
-        Resolver = new Resolver (paths);
-        var mlc = new MetadataLoadContext (Resolver, "System.Private.CoreLib");
+        _resolver = new Resolver(paths);
+        var mlc = new MetadataLoadContext(_resolver, "System.Private.CoreLib");
 
         var mainAssembly = mlc.LoadFromAssemblyPath (MainAssembly);
-        Add (mlc, mainAssembly);
+        Add(mlc, mainAssembly);
 
-        if (ExtraAssemblies != null) {
-            foreach (var item in ExtraAssemblies) {
-                var refAssembly = mlc.LoadFromAssemblyPath (item.ItemSpec);
-                Add (mlc, refAssembly);
+        if (ExtraAssemblies != null)
+        {
+            foreach (var item in ExtraAssemblies)
+            {
+                var refAssembly = mlc.LoadFromAssemblyPath(item.ItemSpec);
+                Add(mlc, refAssembly);
             }
         }
 
         // Create app
-        Directory.CreateDirectory (AppDir!);
-        Directory.CreateDirectory (Path.Join (AppDir, "managed"));
-        foreach (var assembly in Assemblies!.Values)
-            File.Copy (assembly.Location, Path.Join (AppDir, "managed", Path.GetFileName (assembly.Location)), true);
-        foreach (var f in new string [] { "dotnet.wasm", "dotnet.js" })
-            File.Copy (Path.Join (RuntimePackDir, "native", "wasm", "runtimes", "release", f), Path.Join (AppDir, f), true);
-        File.Copy (MainJS!, Path.Join (AppDir, "runtime.js"),  true);
+        Directory.CreateDirectory(AppDir!);
+        Directory.CreateDirectory(Path.Join(AppDir, "managed"));
+        foreach (var assembly in _assemblies!.Values)
+            File.Copy(assembly.Location, Path.Join(AppDir, "managed", Path.GetFileName(assembly.Location)), true);
+        foreach (var f in new string[] { "dotnet.wasm", "dotnet.js" })
+            File.Copy(Path.Join (RuntimePackDir, "native", "wasm", "runtimes", "release", f), Path.Join(AppDir, f), true);
+        File.Copy(MainJS!, Path.Join(AppDir, "runtime.js"),  true);
 
-        if (ExtraFiles != null) {
+        if (ExtraFiles != null)
+        {
             foreach (var item in ExtraFiles)
-                File.Copy (item.ItemSpec, Path.Join (AppDir, Path.GetFileName (item.ItemSpec)),  true);
+                File.Copy(item.ItemSpec, Path.Join(AppDir, Path.GetFileName(item.ItemSpec)),  true);
         }
 
-        using (var sw = File.CreateText (Path.Join (AppDir, "mono-config.js"))) {
-            sw.WriteLine ("config = {");
-            sw.WriteLine ("\tvfs_prefix: \"managed\",");
-            sw.WriteLine ("\tdeploy_prefix: \"managed\",");
-            sw.WriteLine ("\tenable_debugging: 0,");
-            sw.WriteLine ("\tfile_list: [");
-            foreach (var assembly in Assemblies.Values) {
-                sw.Write ("\"" + Path.GetFileName (assembly.Location) + "\"");
-                sw.Write (", ");
+        using (var sw = File.CreateText(Path.Join(AppDir, "mono-config.js")))
+        {
+            sw.WriteLine("config = {");
+            sw.WriteLine("\tvfs_prefix: \"managed\",");
+            sw.WriteLine("\tdeploy_prefix: \"managed\",");
+            sw.WriteLine("\tenable_debugging: 0,");
+            sw.WriteLine("\tfile_list: [");
+            foreach (var assembly in _assemblies.Values)
+            {
+                sw.Write("\"" + Path.GetFileName(assembly.Location) + "\"");
+                sw.Write(", ");
             }
             sw.WriteLine ("],");
             sw.WriteLine ("}");
         }
 
-        using (var sw = File.CreateText (Path.Join (AppDir, "run-v8.sh"))) {
-            sw.WriteLine ("v8 --expose_wasm runtime.js -- --enable-gc --run " + Path.GetFileName (MainAssembly) + " $*");
+        using (var sw = File.CreateText(Path.Join(AppDir, "run-v8.sh")))
+        {
+            sw.WriteLine("v8 --expose_wasm runtime.js -- --enable-gc --run " + Path.GetFileName(MainAssembly) + " $*");
         }
 
         return true;
     }
 
-    void Add (MetadataLoadContext mlc, Assembly assembly) {
-        Assemblies! [assembly.GetName ().Name!] = assembly;
-        foreach (var aname in assembly.GetReferencedAssemblies ()) {
-            var refAssembly = mlc.LoadFromAssemblyName (aname);
-            Add (mlc, refAssembly);
+    private void Add(MetadataLoadContext mlc, Assembly assembly)
+    {
+        _assemblies![assembly.GetName().Name!] = assembly;
+        foreach (var aname in assembly.GetReferencedAssemblies())
+        {
+            var refAssembly = mlc.LoadFromAssemblyName(aname);
+            Add(mlc, refAssembly);
         }
     }
 }
 
 class Resolver : MetadataAssemblyResolver
 {
-    List<String> SearchPaths;
+    List<String> _searchPaths;
 
-    public Resolver (List<string> searchPaths) {
-        this.SearchPaths = searchPaths;
+    public Resolver(List<string> searchPaths)
+    {
+        _searchPaths = searchPaths;
     }
 
-    public override Assembly? Resolve (MetadataLoadContext context, AssemblyName assemblyName) {
+    public override Assembly? Resolve(MetadataLoadContext context, AssemblyName assemblyName)
+    {
         var name = assemblyName.Name;
-        foreach (var dir in SearchPaths) {
-            var path = Path.Combine (dir, name + ".dll");
-            if (File.Exists (path)) {
-                Console.WriteLine (path);
-                return context.LoadFromAssemblyPath (path);
+        foreach (var dir in _searchPaths)
+        {
+            var path = Path.Combine(dir, name + ".dll");
+            if (File.Exists(path))
+            {
+                return context.LoadFromAssemblyPath(path);
             }
         }
         return null;
