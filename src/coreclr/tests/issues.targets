@@ -597,12 +597,6 @@
         <ExcludeList Include="$(XunitTestBinBase)/JIT/opt/Tailcall/TailcallVerifyWithPrefix/*">
             <Issue>Condition17::Test1 checks that we tail call via helper when security cookie is needed; on arm64 we fast tail call in this case.</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Stress/ABI/tailcalls_d/*">
-            <Issue>https://github.com/dotnet/runtime/issues/31729</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Stress/ABI/tailcalls_do/*">
-            <Issue>https://github.com/dotnet/runtime/issues/31729</Issue>
-        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/GC/Regressions/dev10bugs/536168/536168/*">
             <Issue>extremely memory/time intensive test</Issue>
         </ExcludeList>
