@@ -224,7 +224,7 @@ namespace System.Runtime.InteropServices
             uint sizeofT = SizeOf<T>();
             uint alignedSizeofT = AlignedSizeOf<T>();
             byte* ptr = (byte*)handle + byteOffset;
-            SpaceCheck(ptr, checked((ulong)(alignedSizeofT * count)));
+            SpaceCheck(ptr, checked((nuint)(alignedSizeofT * count)));
 
             bool mustCallRelease = false;
             try
@@ -300,7 +300,7 @@ namespace System.Runtime.InteropServices
             uint sizeofT = SizeOf<T>();
             uint alignedSizeofT = AlignedSizeOf<T>();
             byte* ptr = (byte*)handle + byteOffset;
-            SpaceCheck(ptr, checked((ulong)(alignedSizeofT * count)));
+            SpaceCheck(ptr, checked((nuint)(alignedSizeofT * count)));
 
             bool mustCallRelease = false;
             try
@@ -343,7 +343,7 @@ namespace System.Runtime.InteropServices
         /* No indexer.  The perf would be misleadingly bad.  People should use
          * AcquirePointer and ReleasePointer instead.  */
 
-        private void SpaceCheck(byte* ptr, ulong sizeInBytes)
+        private void SpaceCheck(byte* ptr, nuint sizeInBytes)
         {
             if (_numBytes < sizeInBytes)
                 NotEnoughRoom();
