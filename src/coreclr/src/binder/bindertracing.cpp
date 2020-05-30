@@ -115,11 +115,7 @@ namespace
     void GetAssemblyLoadContextNameFromBinderID(UINT_PTR binderID, AppDomain *domain, /*out*/ SString &alcName)
     {
         ICLRPrivBinder *binder = reinterpret_cast<ICLRPrivBinder *>(binderID);
-#ifdef FEATURE_COMINTEROP
-        if (AreSameBinderInstance(binder, domain->GetTPABinderContext()) || AreSameBinderInstance(binder, domain->GetWinRtBinder()))
-#else
         if (AreSameBinderInstance(binder, domain->GetTPABinderContext()))
-#endif // FEATURE_COMINTEROP
         {
             alcName.Set(W("Default"));
         }

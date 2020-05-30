@@ -113,30 +113,6 @@ namespace System
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern Type GetTypeFromHandle(RuntimeTypeHandle handle);
 
-#if FEATURE_COMINTEROP
-        internal bool IsWindowsRuntimeObject
-        {
-            get { return IsWindowsRuntimeObjectImpl(); }
-        }
-
-        internal bool IsExportedToWindowsRuntime
-        {
-            get { return IsExportedToWindowsRuntimeImpl(); }
-        }
-
-        // Protected routine to determine if this class represents a Windows Runtime object
-        internal virtual bool IsWindowsRuntimeObjectImpl()
-        {
-            throw new NotImplementedException();
-        }
-
-        // Determines if this type is exported to WinRT (i.e. is an activatable class in a managed .winmd)
-        internal virtual bool IsExportedToWindowsRuntimeImpl()
-        {
-            throw new NotImplementedException();
-        }
-#endif // FEATURE_COMINTEROP
-
         [Intrinsic]
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern bool operator ==(Type? left, Type? right);

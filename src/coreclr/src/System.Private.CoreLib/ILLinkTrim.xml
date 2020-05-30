@@ -62,12 +62,9 @@
     <!-- Accessed via native code. -->
     <type fullname="System.Runtime.InteropServices.ComTypes.IEnumerable" />
     <type fullname="System.Runtime.InteropServices.CustomMarshalers.*" />
-    <!-- Accessed by the WinRT Host -->
-    <type fullname="Internal.Runtime.InteropServices.WindowsRuntime.ActivationFactoryLoader" />
     <!-- Workaround for https://github.com/mono/linker/issues/378 -->
     <type fullname="System.Runtime.InteropServices.IDispatch" />
     <type fullname="Internal.Runtime.InteropServices.IClassFactory2" />
-    <type fullname="Windows.Foundation.Diagnostics.TracingStatusChangedEventArgs" />
     <type fullname="System.Threading.ThreadPoolBoundHandle">
         <!-- Workaround to keep .interfaceimpl even though this type
              is not instantiated on unix:

@@ -14,7 +14,6 @@
     <Compile Include="$(MSBuildThisFileDirectory)Internal\IO\File.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Internal\Padding.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Internal\Runtime\CompilerServices\Unsafe.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)Internal\Threading\Tasks\AsyncCausalitySupport.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Microsoft\Win32\SafeHandles\CriticalHandleMinusOneIsInvalid.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Microsoft\Win32\SafeHandles\CriticalHandleZeroOrMinusOneIsInvalid.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Microsoft\Win32\SafeHandles\SafeHandleMinusOneIsInvalid.cs" />
@@ -1570,13 +1569,6 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\Marshal.NoCom.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\ComEventsHelpers.NoCom.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(FeatureCominterop)' == 'true'">
-    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\WindowsRuntime\EventRegistrationToken.cs" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
-    <Compile Include="$(MSBuildThisFileDirectory)\System\Runtime\InteropServices\WindowsRuntime\Attributes.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)\System\Runtime\InteropServices\WindowsRuntime\IActivationFactory.cs" />
-  </ItemGroup>
   <!-- CoreCLR uses PAL layer that emulates Windows API on Unix. This is bridge for that PAL layer. See issue dotnet/runtime/#31721. -->
   <ItemGroup Condition="'$(TargetsWindows)' == 'true' or '$(FeatureCoreCLR)'=='true'">
     <Compile Include="$(MSBuildThisFileDirectory)Microsoft\Win32\SafeHandles\SafeWaitHandle.Windows.cs" />
@@ -1629,11 +1621,6 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\Mutex.Windows.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\Semaphore.Windows.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\EventWaitHandle.Windows.cs" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(FeatureAppX)' == 'true'">
-    <Compile Include="$(MSBuildThisFileDirectory)Internal\Resources\PRIExceptionInfo.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)Internal\Resources\WindowsRuntimeResourceManagerBase.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\Resources\ResourceManager.Uap.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsUnix)' == 'true'">
     <Compile Include="$(CommonPath)Interop\Unix\Interop.Errors.cs">

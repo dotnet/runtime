@@ -3753,45 +3753,7 @@ void DacDbiInterfaceImpl::GetCachedWinRTTypesForIIDs(
 					DacDbiArrayList<GUID> & iids,
     				OUT DacDbiArrayList<DebuggerIPCE_ExpandedTypeData> * pTypes)
 {
-#ifdef FEATURE_COMINTEROP
-
-    DD_ENTER_MAY_THROW;
-
-    AppDomain * pAppDomain = vmAppDomain.GetDacPtr();
-
-    {
-        pTypes->Alloc(iids.Count());
-
-        for (unsigned int i = 0; i < iids.Count(); ++i)
-        {
-            // There is the possiblity that we'll get this far with a dump and not fail, but still
-            // not be able to get full info for a particular param.
-            EX_TRY_ALLOW_DATATARGET_MISSING_MEMORY_WITH_HANDLER
-            {
-                PTR_MethodTable pMT = pAppDomain->LookupTypeByGuid(iids[i]);
-
-                // Fill in the struct using the current TypeHandle
-                VMPTR_TypeHandle vmTypeHandle = VMPTR_TypeHandle::NullPtr();
-                TypeHandle th = TypeHandle::FromTAddr(dac_cast<TADDR>(pMT));
-                vmTypeHandle.SetDacTargetPtr(th.AsTAddr());
-                TypeHandleToExpandedTypeInfo(NoValueTypeBoxing,
-                                             vmAppDomain,
-                                             vmTypeHandle,
-                                             &((*pTypes)[i]));
-            }
-            EX_CATCH_ALLOW_DATATARGET_MISSING_MEMORY_WITH_HANDLER
-            {
-                // On failure for a particular type, default it to NULL.
-                (*pTypes)[i].elementType = ELEMENT_TYPE_END;
-            }
-            EX_END_CATCH_ALLOW_DATATARGET_MISSING_MEMORY_WITH_HANDLER
-        }
-    }
-#else // FEATURE_COMINTEROP
-    {
-        pTypes->Alloc(0);
-    }
-#endif // FEATURE_COMINTEROP
+    pTypes->Alloc(0);
 }
 
 void DacDbiInterfaceImpl::GetCachedWinRTTypes(
@@ -3799,52 +3761,7 @@ void DacDbiInterfaceImpl::GetCachedWinRTTypes(
                     OUT DacDbiArrayList<GUID> * pGuids,
                     OUT DacDbiArrayList<DebuggerIPCE_ExpandedTypeData> * pTypes)
 {
-#ifdef FEATURE_COMINTEROP
-
-    DD_ENTER_MAY_THROW;
-
-    AppDomain * pAppDomain = vmAppDomain.GetDacPtr();
-
-    InlineSArray<PTR_MethodTable, 32> rgMT;
-    InlineSArray<GUID, 32> rgGuid;
-
-    {
-        pAppDomain->GetCachedWinRTTypes(&rgMT, &rgGuid, 0, NULL);
-
-        pTypes->Alloc(rgMT.GetCount());
-        pGuids->Alloc(rgGuid.GetCount());
-
-        for (COUNT_T i = 0; i < rgMT.GetCount(); ++i)
-        {
-            // There is the possiblity that we'll get this far with a dump and not fail, but still
-            // not be able to get full info for a particular param.
-            EX_TRY_ALLOW_DATATARGET_MISSING_MEMORY_WITH_HANDLER
-            {
-                // Fill in the struct using the current TypeHandle
-                VMPTR_TypeHandle vmTypeHandle = VMPTR_TypeHandle::NullPtr();
-                TypeHandle th = TypeHandle::FromTAddr(dac_cast<TADDR>(rgMT[i]));
-                vmTypeHandle.SetDacTargetPtr(th.AsTAddr());
-                TypeHandleToExpandedTypeInfo(NoValueTypeBoxing,
-                                             vmAppDomain,
-                                             vmTypeHandle,
-                                             &((*pTypes)[i]));
-            }
-            EX_CATCH_ALLOW_DATATARGET_MISSING_MEMORY_WITH_HANDLER
-            {
-                // On failure for a particular type, default it to NULL.
-                (*pTypes)[i].elementType = ELEMENT_TYPE_END;
-            }
-            EX_END_CATCH_ALLOW_DATATARGET_MISSING_MEMORY_WITH_HANDLER
-            (*pGuids)[i] = rgGuid[i];
-
-        }
-
-    }
-#else // FEATURE_COMINTEROP
-    {
-        pTypes->Alloc(0);
-    }
-#endif // FEATURE_COMINTEROP
+    pTypes->Alloc(0);
 }
 
 //-----------------------------------------------------------------------------
@@ -5862,13 +5779,6 @@ HRESULT DacDbiInterfaceImpl::IsWinRTModule(VMPTR_Module vmModule, BOOL& isWinRT)
 
     HRESULT hr = S_OK;
     isWinRT = FALSE;
-
-    EX_TRY
-    {
-        Module* pModule = vmModule.GetDacPtr();
-        isWinRT = pModule->GetFile()->GetAssembly()->IsWindowsRuntime();
-    }
-    EX_CATCH_HRESULT(hr);
 
     return hr;
 }

@@ -412,26 +412,6 @@ void QCALLTYPE AssemblyNative::GetLocation(QCall::AssemblyHandle pAssembly, QCal
     END_QCALL;
 }
 
-
-#ifdef FEATURE_COMINTEROP_WINRT_MANAGED_ACTIVATION
-void QCALLTYPE AssemblyNative::LoadTypeForWinRTTypeNameInContext(INT_PTR ptrAssemblyLoadContext, LPCWSTR pwzTypeName, QCall::ObjectHandleOnStack retType)
-{
-    QCALL_CONTRACT;
-
-    BEGIN_QCALL;
-
-    TypeHandle loadedType = WinRTTypeNameConverter::LoadManagedTypeForWinRTTypeName(pwzTypeName, (ICLRPrivBinder*)ptrAssemblyLoadContext, /* pbIsPrimitive */ nullptr);
-
-    if (!loadedType.IsNull())
-    {
-         GCX_COOP();
-         retType.Set(loadedType.GetManagedClassObject());
-    }
-
-    END_QCALL;
-}
-#endif
-
 void QCALLTYPE AssemblyNative::GetType(QCall::AssemblyHandle pAssembly,
                                        LPCWSTR wszName,
                                        BOOL bThrowOnError,
@@ -469,7 +449,7 @@ void QCALLTYPE AssemblyNative::GetType(QCall::AssemblyHandle pAssembly,
     }
 
     // Load the class from this assembly (fail if it is in a different one).
-    retTypeHandle = TypeName::GetTypeManaged(wszName, pAssembly, bThrowOnError, bIgnoreCase, prohibitAsmQualifiedName, pAssembly->GetAssembly(), FALSE, (OBJECTREF*)keepAlive.m_ppObject, pPrivHostBinder);
+    retTypeHandle = TypeName::GetTypeManaged(wszName, pAssembly, bThrowOnError, bIgnoreCase, prohibitAsmQualifiedName, pAssembly->GetAssembly(), (OBJECTREF*)keepAlive.m_ppObject, pPrivHostBinder);
 
     if (!retTypeHandle.IsNull())
     {

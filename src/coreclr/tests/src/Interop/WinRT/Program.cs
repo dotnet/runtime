@@ -2,23 +2,26 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-namespace NetClient
+using System;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices.WindowsRuntime;
+using TestLibrary;
+
+namespace WinRT
 {
-    using System;
+    [WindowsRuntimeImport]
+    interface I {}
 
     class Program
     {
-        static int Main(string[] args)
-        {
-            if (!TestLibrary.Utilities.IsWinRTSupported || !TestLibrary.Utilities.IsWindows10Version1809OrGreater)
-            {
-                Console.WriteLine("XAML Islands are unsupported on this platform.");
-                return 100;
-            }
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static bool ObjectIsI(object o) => o is I;
 
+        public static int Main(string[] args)
+        {
             try
             {
-                BindingTests.RunTest();
+                Assert.Throws<TypeLoadException>(() => ObjectIsI(new object()));
             }
             catch (System.Exception ex)
             {
@@ -29,3 +32,4 @@ namespace NetClient
         }
     }
 }
+

@@ -1513,9 +1513,7 @@ void PEFile::GetEmbeddedResource(DWORD dwOffset, DWORD *cbResource, PBYTE *pbInM
 PEAssembly *
 PEFile::LoadAssembly(
     mdAssemblyRef       kAssemblyRef,
-    IMDInternalImport * pImport,                // = NULL
-    LPCUTF8             szWinRtTypeNamespace,   // = NULL
-    LPCUTF8             szWinRtTypeClassName)   // = NULL
+    IMDInternalImport * pImport)
 {
     CONTRACT(PEAssembly *)
     {
@@ -1541,8 +1539,6 @@ PEFile::LoadAssembly(
     AssemblySpec spec;
 
     spec.InitializeSpec(kAssemblyRef, pImport, GetAppDomain()->FindAssembly(GetAssembly()));
-    if (szWinRtTypeClassName != NULL)
-        spec.SetWindowsRuntimeType(szWinRtTypeNamespace, szWinRtTypeClassName);
 
     RETURN GetAppDomain()->BindAssemblySpec(&spec, TRUE);
 }
@@ -2481,14 +2477,6 @@ AssemblyLoadContext* PEFile::GetAssemblyLoadContext()
         IfFailThrow(pBindingContext->GetBinderID(&assemblyBinderID));
 
         pOpaqueBinder = reinterpret_cast<ICLRPrivBinder*>(assemblyBinderID);
-
-#ifdef FEATURE_COMINTEROP
-        // Treat WinRT assemblies (bound using the WinRT binder) as if they were loaded into the TPA ALC
-        if (AreSameBinderInstance(AppDomain::GetCurrentDomain()->GetWinRtBinder(), pOpaqueBinder))
-        {
-            pOpaqueBinder = NULL;
-        }
-#endif
     }
 
     return (pOpaqueBinder != NULL) ? (AssemblyLoadContext*)pOpaqueBinder : AppDomain::GetCurrentDomain()->GetTPABinderContext();

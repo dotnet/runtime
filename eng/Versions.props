@@ -90,7 +90,6 @@
     <optimizationlinuxx64IBCCoreCLRVersion>99.99.99-master-20200228.3</optimizationlinuxx64IBCCoreCLRVersion>
     <optimizationPGOCoreCLRVersion>99.99.99-master-20200228.3</optimizationPGOCoreCLRVersion>
     <!-- Not auto-updated. -->
-    <MicrosoftTargetingPackPrivateWinRTVersion>1.0.5</MicrosoftTargetingPackPrivateWinRTVersion>
     <MicrosoftDiaSymReaderNativeVersion>1.7.0</MicrosoftDiaSymReaderNativeVersion>
     <SystemCommandLineVersion>2.0.0-beta1.20253.1</SystemCommandLineVersion>
     <!--
@@ -139,7 +138,6 @@
     <MicrosoftDotNetBuildTasksFeedPackage>Microsoft.DotNet.Build.Tasks.Feed</MicrosoftDotNetBuildTasksFeedPackage>
     <MicrosoftNETCoreTargetsPackage>Microsoft.NETCore.Targets</MicrosoftNETCoreTargetsPackage>
     <MicrosoftNETCoreRuntimeCoreCLRPackage>Microsoft.NETCore.Runtime.CoreCLR</MicrosoftNETCoreRuntimeCoreCLRPackage>
-    <MicrosoftTargetingPackPrivateWinRTPackage>Microsoft.TargetingPack.Private.WinRT</MicrosoftTargetingPackPrivateWinRTPackage>
   </PropertyGroup>
   <!-- Override isolated build dependency versions with versions from Repo API. -->
   <Import Project="$(DotNetPackageVersionPropsPath)" Condition="'$(DotNetPackageVersionPropsPath)' != ''" />

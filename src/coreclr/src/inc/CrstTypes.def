@@ -133,9 +133,6 @@ Crst ClrNotification
     Unordered
 End
 
-Crst CrstCLRPrivBinderLocalWinMDPath
-End
-
 Crst CLRPrivBinderMaps
 End
 
@@ -667,10 +664,6 @@ End
 
 Crst MulticoreJitManager
     AcquiredBefore MulticoreJitHash ThreadStore
-End
-
-Crst WinRTFactoryCache
-    AcquiredBefore HandleTable
 End
 
 Crst SqmManager

@@ -237,15 +237,6 @@ BEGIN
     IDS_EE_BADMARSHALFIELD_DECIMAL          "Invalid managed/unmanaged type combination (Decimal fields must be paired with Struct or Currency)."
     IDS_EE_BADMARSHAL_STRINGARRAY           "Invalid managed/unmanaged type combination (String[] must be paired with an ArraySubType of LPStr, LPWStr, BStr, or LPTStr)."
     IDS_EE_BADMARSHAL_DECIMALARRAY          "Invalid managed/unmanaged type combination (Decimal[] must be paired with an ArraySubType of Struct or Currency)."
-    IDS_EE_BADMARSHAL_WINRT_MARSHAL_AS      "Invalid managed/unmanaged type combination (Windows Runtime parameters and fields must not have a MarshalAs attribute set)."
-    IDS_EE_BADMARSHAL_WINRT_MISSING_GUID    "Invalid managed/unmanaged type combination (Windows Runtime interfaces, classes and delegates must have a Guid or a default interface)."
-    IDS_EE_BADMARSHAL_WINRT_COPYCTOR        "Windows Runtime marshaler does not support types with copy constructor."
-    IDS_EE_BADMARSHAL_WINRT_DELEGATE        "Invalid managed/unmanaged type combination (Delegates must be Windows Runtime delegates)."
-    IDS_EE_BADMARSHAL_DEFAULTIFACE_NOT_WINRT_IFACE "The default interface must refer to a Windows Runtime interface with a GUID."
-    IDS_EE_BADMARSHAL_DEFAULTIFACE_NOT_SUBTYPE "The default interface must refer to an interface that is implemented by the type."
-    IDS_EE_BADMARSHAL_DATETIMEOFFSET        "Invalid managed/unmanaged type combination (the DateTimeOffset structure must be paired with Struct)."
-    IDS_EE_INVALIDARG_WINRT_INVALIDURI      "The given System.Uri cannot be converted into a Windows.Foundation.Uri. Please see http://go.microsoft.com/fwlink/?LinkID=215849 for details."
-    IDS_EE_BADMARSHAL_WINRT_ILLEGAL_TYPE    "Windows Runtime marshaler does not support the type."
 #else // FEATURE_COMINTEROP
     IDS_EE_BADMARSHAL_BOOLEAN               "Invalid managed/unmanaged type combination (booleans must be paired with I1, U1, or Bool)."
     IDS_EE_BADMARSHAL_I4                    "Invalid managed/unmanaged type combination (Int32/UInt32 must be paired with I4 or U4)."
@@ -317,10 +308,6 @@ BEGIN
     IDS_EE_BADMARSHALFIELD_NOSTRINGBUILDER  "Struct or class fields cannot be of type StringBuilder. The same effect can usually be achieved by using a String field and preinitializing it to a string with length matching the length of the appropriate buffer."
     IDS_EE_BADMARSHALFIELD_ZEROLENGTHFIXEDSTRING "The length for ByValTStr strings cannot be zero."
 
-#ifdef FEATURE_COMINTEROP
-    IDS_EE_BADMARSHALARRAY_NULL_HSTRING     "Null strings may not be marshaled in Windows Runtime arrays. Null string was encountered at index %1."
-#endif // FEATURE_COMINTEROP
-
 // For ManagedToNativeComInteropStubAttribute
 #ifdef FEATURE_COMINTEROP
     IDS_EE_INTEROP_STUB_CA_MUST_BE_WITHIN_SAME_ASSEMBLY "The stub class '%1' specified in ManagedToNativeComInteropStubAttribute and interface '%2' must be from the same assembly."
@@ -331,20 +318,7 @@ BEGIN
 #endif // FEATURE_COMINTEROP
 
 #ifdef FEATURE_COMINTEROP
-    IDS_EE_STRUCTLAYOUT_WINRT                   "Windows Runtime value types must have sequential layout."
-    IDS_EE_PRESERVESIG_WINRT                    "The PreserveSigAttribute may not be used on Windows Runtime methods."
-    IDS_EE_DELEGATEPINVOKE_WINRT                "Windows Runtime delegates may not be used for PInvoke interop."
-    IDS_EE_WINRT_IENUMERABLE_BAD_CALL           "There is not enough information to call IEnumerable.GetEnumerator on a Windows Runtime object, please cast the object to IEnumerable<T> first."
-    IDS_EE_WINRT_IENUMERABLE_BAD_CAST           "There is not enough information to cast a Windows Runtime object to IEnumerable, please cast the object to IEnumerable<T> first."
-    IDS_EE_WINRT_INTERFACE_WITHOUT_GUID    		"Windows Runtime interface '%1' in assembly '%2' must have a valid GUID."
-    IDS_EE_WINRT_IID_ILLEGALTYPE                "Unable to compute GUID for type '%1' because the instantiation contains types that are not supported by Windows Runtime."
-    IDS_EE_WINRT_IID_NODEFAULTINTERFACE         "Unable to compute GUID because type '%1' does not have a default Windows Runtime interface."
-    IDS_EE_WINRT_ATTRIBUTES_NOT_INVOKABLE       "Cannot construct type '%1'.  Windows Runtime attribute types are not constructable."
-    IDS_EE_WINRT_TYPE_NOT_REGISTERED            "Requested Windows Runtime type '%1' is not registered."
-    IDS_EE_WINRT_NOT_FACTORY_FOR_TYPE           "Windows Runtime factory '%1' is not a factory for Windows Runtime type '%2'."
-    IDS_EE_WINRT_INVALID_FACTORY_FOR_TYPE       "Windows Runtime type '%1' has a invalid Windows Runtime factory"
-    IDS_EE_CANNOTCAST_NOMARSHAL                 "The Windows Runtime Object can only be used in the threading context where it was created, because it implements INoMarshal or has MarshalingBehaviorAttribute(MarshalingType.None) set."
-    IDS_EE_NATIVE_COM_WEAKREF_BAD_TYPE          "The object resolved by a native IWeakReference has an incompatible type for its managed WeakReference instance.\r\nExpected WeakReference target type: '%1'\r\nNative IWeakReference returned type: '%2'"
+    IDS_EE_NATIVE_COM_WEAKREF_BAD_TYPE               "The object resolved by a native IWeakReference has an incompatible type for its managed WeakReference instance.\r\nExpected WeakReference target type: '%1'\r\nNative IWeakReference returned type: '%2'"
 #endif // FEATURE_COMINTEROP
 
     IDS_EE_INTEROP_CODE_SIZE_COMMENT        "Code size"
@@ -360,6 +334,10 @@ BEGIN
     IDS_CLASSLOAD_ENUM_EXTRA_GENERIC_TYPE_PARAM "Enumerated types cannot have any generic type parameters, beyond any inherited from their enclosing type (for nested enums)."
 	IDS_CLASSLOAD_GENERICTYPE_RECURSIVE     "Could not load type '%1' from assembly '%2' because it has recursive generic definition."
     IDS_CLASSLOAD_TOOMANYGENERICARGS        "Could not load type '%1' from assembly '%2'. Internal limitation: Too many generic arguments."
+
+#if FEATURE_COMINTEROP
+    IDS_EE_CANNOTCAST_NOMARSHAL                 "The Windows Runtime Object can only be used in the threading context where it was created, because it implements INoMarshal or has MarshalingBehaviorAttribute(MarshalingType.None) set."
+#endif
 
     IDS_CLASSLOAD_GENERAL                   "Could not load type '%1' from assembly '%2'."
     IDS_CLASSLOAD_TYPESPEC                  "Could not load TypeSpec from assembly '%2'."
@@ -470,9 +448,6 @@ BEGIN
     IDS_EE_SIZECONTROLBADTYPE               "Array size control parameter type not supported."
     IDS_EE_SAFEARRAYSZARRAYMISMATCH         "SafeArray cannot be marshaled to this array type because it has either nonzero lower bounds or more than one dimension."
 
-    IDS_EE_WINRT_LOADFAILURE                "Could not find Windows Runtime type '%1'."
-    IDS_EE_WINRT_THIRDPARTY_NOTSUPPORTED    "Types from custom Windows Runtime components are not supported in desktop applications."
-
     IDS_EE_ASSEMBLY_GETTYPE_CANNONT_HAVE_ASSEMBLY_SPEC "Type names passed to Assembly.GetType() must not specify an assembly."
     IDS_EE_CANNOT_HAVE_ASSEMBLY_SPEC        "Unexpected assembly-qualifier in a typename."
     IDS_EE_NEEDS_ASSEMBLY_SPEC              "Typename needs an assembly qualifier."
@@ -500,6 +475,7 @@ BEGIN
     IDS_EE_MISSING_METHOD                   "Method not found: '%1'."
 
     IDS_EE_NO_IDISPATCH                     "This object cannot be marshaled as an IDispatch."
+    IDS_EE_NO_IINSPECTABLE                  "Marshalling as IInspectable is not supported in the .NET runtime."
     IDS_EE_NO_BACKING_CLASS_FACTORY         "An instance of the __ComObject type cannot be created unless the type has been obtained using GetTypeFromProgID or GetTypeFromCLSID."
 
     IDS_EE_SIGTOOCOMPLEX                    "Internal limitation: method signature is too complex or too large."
@@ -743,11 +719,6 @@ BEGIN
         BFA_TYPEDBYREFCANNOTHAVEBYREF           "An ELEMENT_TYPE_TYPEDBYREF cannot have a ELEMENT_TYPE_BYREF modifier."
         BFA_REFERENCE_ASSEMBLY                  "Cannot load a reference assembly for execution."
         BFA_IJW_IN_COLLECTIBLE_ALC              "Cannot load a mixed assembly into a collectible AssemblyLoadContext."
-
-#ifdef FEATURE_COMINTEROP
-        BFA_WINRT_INVALID_NAMESPACE_FOR_TYPE    "Windows Runtime type '%1' has invalid namespace that does not begin with the file name in assembly '%2'."
-#endif
-
 END
 
 
