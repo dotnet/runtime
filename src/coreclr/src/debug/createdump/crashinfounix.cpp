@@ -346,7 +346,7 @@ CrashInfo::ReadProcessMemory(void* address, void* buffer, size_t size, size_t* r
     assert(m_fd != -1);
     *read = pread64(m_fd, buffer, size, (off64_t)address);
 #endif
-    if (*read == -1)
+    if (*read == (size_t)-1)
     {
         return false;
     }

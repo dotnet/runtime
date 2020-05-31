@@ -232,7 +232,7 @@ DumpWriter::WriteDump()
         }
     }
 
-    TRACE("Writing %" PRIu " memory regions to core file\n", phnum - 1);
+    TRACE("Writing %" PRIu64 " memory regions to core file\n", phnum - 1);
 
     // Read from target process and write memory regions to core
     uint64_t total = 0;
