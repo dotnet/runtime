@@ -70,10 +70,6 @@ public class PInvokeTableGenerator : Task
     private void EmitPInvokeTable(StreamWriter w, Dictionary<string, string> modules, List<PInvoke> pinvokes)
     {
         w.WriteLine("// GENERATED FILE, DO NOT MODIFY");
-        w.WriteLine("typedef struct {");
-        w.WriteLine("const char *name;");
-        w.WriteLine("void *func;");
-        w.WriteLine("} PinvokeImport;");
         w.WriteLine();
 
         foreach (var pinvoke in pinvokes)

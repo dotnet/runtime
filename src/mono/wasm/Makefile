@@ -11,7 +11,7 @@ EMSDK_PATH?=emsdk
 CONFIG?=Release
 BINDIR?=$(TOP)/artifacts/bin
 OBJDIR?=$(TOP)/artifacts/obj
-PINVOKE_TABLE?=$(TOP)/artifacts/obj/mono/Browser.wasm.$(CONFIG)/wasm/pinvoke-table.h
+PINVOKE_TABLE?=$(TOP)/artifacts/obj/wasm/pinvoke-table.h
 MONO_BIN_DIR?=$(BINDIR)/mono/Browser.wasm.$(CONFIG)
 SYS_NATIVE_DIR?=$(OBJDIR)/native/net5.0-Browser-$(CONFIG)-wasm/System.Native
 BUILDS_BIN_DIR?=$(BINDIR)/native/net5.0-Browser-$(CONFIG)-wasm/wasm/runtimes
@@ -24,7 +24,7 @@ all: build-native
 #  If EMSDK_PATH is not set by the caller, download and setup a local emsdk install.
 #
 
-EMSCRIPTEN_VERSION=1.39.11
+EMSCRIPTEN_VERSION=1.39.16
 EMSDK_LOCAL_PATH=emsdk
 EMCC=source $(CURDIR)/emsdk_env.sh && emcc
 
@@ -73,14 +73,17 @@ $(BUILDS_BIN_DIR)/$(1)/:
 $(BUILDS_OBJ_DIR)/$(1)/:
 	mkdir -p $$@
 
-$(BUILDS_BIN_DIR)/$(1)/dotnet.js: $(BUILDS_OBJ_DIR)/$(1)/driver.o $(BUILDS_OBJ_DIR)/$(1)/corebindings.o runtime/library_mono.js runtime/binding_support.js runtime/dotnet_support.js $(5) | $(BUILDS_BIN_DIR)/$(1)/ emsdk_env.sh
-	$(EMCC) $(EMCC_FLAGS) $(3) --js-library runtime/library_mono.js --js-library runtime/binding_support.js --js-library runtime/dotnet_support.js $(BUILDS_OBJ_DIR)/$(1)/driver.o $(BUILDS_OBJ_DIR)/$(1)/corebindings.o $(4) -o $(BUILDS_BIN_DIR)/$(1)/dotnet.js
+$(BUILDS_BIN_DIR)/$(1)/dotnet.js: $(BUILDS_OBJ_DIR)/$(1)/driver.o $(BUILDS_OBJ_DIR)/$(1)/pinvoke.o $(BUILDS_OBJ_DIR)/$(1)/corebindings.o runtime/library_mono.js runtime/binding_support.js runtime/dotnet_support.js $(5) | $(BUILDS_BIN_DIR)/$(1)/ emsdk_env.sh
+	$(EMCC) $(EMCC_FLAGS) $(3) --js-library runtime/library_mono.js --js-library runtime/binding_support.js --js-library runtime/dotnet_support.js $(BUILDS_OBJ_DIR)/$(1)/driver.o $(BUILDS_OBJ_DIR)/$(1)/pinvoke.o $(BUILDS_OBJ_DIR)/$(1)/corebindings.o $(4) -o $(BUILDS_BIN_DIR)/$(1)/dotnet.js
 
 $(BUILDS_OBJ_DIR)/$(1)/pinvoke-table.h: $(PINVOKE_TABLE) | $(BUILDS_OBJ_DIR)/$(1)/
 	if cmp -s $(PINVOKE_TABLE) $$@ ; then : ; else cp $(PINVOKE_TABLE) $$@ ; fi
 
-$(BUILDS_OBJ_DIR)/$(1)/driver.o: runtime/driver.c runtime/corebindings.c $(BUILDS_OBJ_DIR)/$(1)/pinvoke-table.h $(5) | $(BUILDS_OBJ_DIR)/$(1)/ emsdk_env.sh
+$(BUILDS_OBJ_DIR)/$(1)/driver.o: runtime/driver.c runtime/corebindings.c $(5) | $(BUILDS_OBJ_DIR)/$(1)/ emsdk_env.sh
 	$(EMCC) $(EMCC_FLAGS) $(3) -Oz -DCORE_BINDINGS -I$(BUILDS_OBJ_DIR)/$(1) -I$(MONO_INCLUDE_DIR) runtime/driver.c -c -o $$@
+
+$(BUILDS_OBJ_DIR)/$(1)/pinvoke.o: runtime/pinvoke.c runtime/pinvoke.h $(BUILDS_OBJ_DIR)/$(1)/pinvoke-table.h $(5) | $(BUILDS_OBJ_DIR)/$(1)/ emsdk_env.sh
+	$(EMCC) $(EMCC_FLAGS) $(3) -Oz -DGEN_PINVOKE=1 -I$(BUILDS_OBJ_DIR)/$(1) -I$(MONO_INCLUDE_DIR) runtime/pinvoke.c -c -o $$@
 
 $(BUILDS_OBJ_DIR)/$(1)/corebindings.o: runtime/corebindings.c | $(BUILDS_OBJ_DIR)/$(1)/ emsdk_env.sh
 	$(EMCC) $(3) -Oz -I$(MONO_INCLUDE_DIR) runtime/corebindings.c -c -o $$@
