@@ -7,44 +7,24 @@
 // This is for the PAL_VirtualUnwindOutOfProc read memory adapter.
 CrashInfo* g_crashInfo;
 
-CrashInfo::CrashInfo(pid_t pid, ICLRDataTarget* dataTarget, bool sos) :
+CrashInfo::CrashInfo(pid_t pid) :
     m_ref(1),
     m_pid(pid),
     m_ppid(-1),
-    m_name(nullptr),
-    m_sos(sos),
-    m_dataTarget(dataTarget)
+    m_dataTarget(nullptr)
 {
     g_crashInfo = this;
-    dataTarget->AddRef();
     m_auxvValues.fill(0);
 }
 
 CrashInfo::~CrashInfo()
 {
-    if (m_name != nullptr)
-    {
-        free(m_name);
-    }
     // Clean up the threads
     for (ThreadInfo* thread : m_threads)
     {
         delete thread;
     }
     m_threads.clear();
-
-    // Module and other mappings have a file name to clean up.
-    for (const MemoryRegion& region : m_moduleMappings)
-    {
-        const_cast<MemoryRegion&>(region).Cleanup();
-    }
-    m_moduleMappings.clear();
-    for (const MemoryRegion& region : m_otherMappings)
-    {
-        const_cast<MemoryRegion&>(region).Cleanup();
-    }
-    m_otherMappings.clear();
-    m_dataTarget->Release();
 }
 
 STDMETHODIMP
@@ -156,7 +136,7 @@ CrashInfo::GatherCrashInfo(MINIDUMP_TYPE minidumpType)
     // Get the info about the threads (registers, etc.)
     for (ThreadInfo* thread : m_threads)
     {
-        if (!thread->Initialize(m_sos ? m_dataTarget : nullptr))
+        if (!thread->Initialize())
         {
             return false;
         }
@@ -177,6 +157,7 @@ CrashInfo::GatherCrashInfo(MINIDUMP_TYPE minidumpType)
         return false;
     }
 
+    TRACE("Module addresses:\n");
     for (const MemoryRegion& region : m_moduleAddresses)
     {
         region.Trace();
@@ -599,17 +580,17 @@ CrashInfo::EnumerateManagedModules(IXCLRDataProcess* pClrDataProcess)
                 {
                     // If the module file name isn't empty
                     if (wszUnicodeName[0] != 0) {
-                        char* pszName = (char*)malloc(MAX_LONGPATH + 1);
+                        ArrayHolder<char> pszName = new (std::nothrow) char[MAX_LONGPATH + 1];
                         if (pszName == nullptr) {
                             fprintf(stderr, "Allocating module name FAILED\n");
                             result = false;
                             break;
                         }
-                        sprintf_s(pszName, MAX_LONGPATH, "%S", (WCHAR*)wszUnicodeName);
-                        TRACE(" %s\n", pszName);
+                        sprintf_s(pszName.GetPtr(), MAX_LONGPATH, "%S", (WCHAR*)wszUnicodeName);
+                        TRACE(" %s\n", pszName.GetPtr());
 
                         // Change the module mapping name
-                        ReplaceModuleMapping(moduleData.LoadedPEAddress, pszName);
+                        ReplaceModuleMapping(moduleData.LoadedPEAddress, moduleData.LoadedPESize, std::string(pszName.GetPtr()));
                     }
                 }
                 else {
@@ -641,7 +622,7 @@ CrashInfo::UnwindAllThreads(IXCLRDataProcess* pClrDataProcess)
     // For each native and managed thread
     for (ThreadInfo* thread : m_threads)
     {
-        if (!thread->UnwindThread(*this, pClrDataProcess)) {
+        if (!thread->UnwindThread(pClrDataProcess)) {
             return false;
         }
     }
@@ -652,29 +633,34 @@ CrashInfo::UnwindAllThreads(IXCLRDataProcess* pClrDataProcess)
 // Replace an existing module mapping with one with a different name.
 //
 void
-CrashInfo::ReplaceModuleMapping(CLRDATA_ADDRESS baseAddress, const char* pszName)
+CrashInfo::ReplaceModuleMapping(CLRDATA_ADDRESS baseAddress, ULONG64 size, const std::string& pszName)
 {
-    // Add or change the module mapping for this PE image. The managed assembly images are
-    // already in the module mappings list but in .NET 2.0 they have the name "/dev/zero".
-    MemoryRegion region(PF_R | PF_W | PF_X, (ULONG_PTR)baseAddress, (ULONG_PTR)(baseAddress + PAGE_SIZE), 0, pszName);
-    const auto& found = m_moduleMappings.find(region);
+    uint64_t start = (uint64_t)baseAddress;
+    uint64_t end = ((baseAddress + size) + (PAGE_SIZE - 1)) & PAGE_MASK;
+
+    // Add or change the module mapping for this PE image. The managed assembly images may already
+    // be in the module mappings list but they may not have the full assembly name (like in .NET 2.0
+    // they have the name "/dev/zero"). On MacOS, the managed assembly modules have not been added.
+    MemoryRegion search(0, start, start + PAGE_SIZE);
+    const auto& found = m_moduleMappings.find(search);
     if (found == m_moduleMappings.end())
     {
-        m_moduleMappings.insert(region);
+        // On MacOS the assemblies are always added.
+        MemoryRegion newRegion(GetMemoryRegionFlags(start), start, end, 0, pszName);
+        m_moduleMappings.insert(newRegion);
 
         if (g_diagnostics) {
             TRACE("MODULE: ADD ");
-            region.Trace();
+            newRegion.Trace();
         }
     }
-    else
+    else if (found->FileName().compare(pszName) != 0)
     {
         // Create the new memory region with the managed assembly name.
         MemoryRegion newRegion(*found, pszName);
 
         // Remove and cleanup the old one
         m_moduleMappings.erase(found);
-        const_cast<MemoryRegion&>(*found).Cleanup();
 
         // Add the new memory region
         m_moduleMappings.insert(newRegion);
@@ -687,7 +673,7 @@ CrashInfo::ReplaceModuleMapping(CLRDATA_ADDRESS baseAddress, const char* pszName
 }
 
 //
-// Returns the module base address for the IP or 0.
+// Returns the module base address for the IP or 0. Used by the thread unwind code.
 //
 uint64_t CrashInfo::GetBaseAddress(uint64_t ip)
 {

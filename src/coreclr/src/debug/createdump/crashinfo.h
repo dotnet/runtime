@@ -5,19 +5,19 @@
 #include "../dbgutil/elfreader.h"
 
 // typedef for our parsing of the auxv variables in /proc/pid/auxv.
-#if defined(__i386) || defined(__ARM_EABI__)
-typedef Elf32_auxv_t elf_aux_entry;
-#define PRIx PRIx32
-#define PRIu PRIu32
-#define PRId PRId32
-#define PRIA "08"
-#define PRIxA PRIA PRIx
-#elif defined(__x86_64__) || defined(__aarch64__)
+#if TARGET_64BIT
 typedef Elf64_auxv_t elf_aux_entry;
 #define PRIx PRIx64
 #define PRIu PRIu64
 #define PRId PRId64
 #define PRIA "016"
+#define PRIxA PRIA PRIx
+#else
+typedef Elf32_auxv_t elf_aux_entry;
+#define PRIx PRIx32
+#define PRIu PRIu32
+#define PRId PRId32
+#define PRIA "08"
 #define PRIxA PRIA PRIx
 #endif
 
@@ -33,8 +33,7 @@ private:
     pid_t m_pid;                                    // pid
     pid_t m_ppid;                                   // parent pid
     pid_t m_tgid;                                   // process group
-    char* m_name;                                   // exe name
-    bool m_sos;                                     // if true, running under sos
+    std::string m_name;                             // exe name
     std::string m_coreclrPath;                      // the path of the coreclr module or empty if none
     ICLRDataTarget* m_dataTarget;                   // read process memory, etc.
     std::array<elf_aux_val_t, AT_MAX> m_auxvValues; // auxv values
@@ -46,7 +45,7 @@ private:
     std::set<MemoryRegion> m_moduleAddresses;       // memory region to module base address
 
 public:
-    CrashInfo(pid_t pid, ICLRDataTarget* dataTarget, bool sos);
+    CrashInfo(pid_t pid);
     virtual ~CrashInfo();
     bool EnumerateAndSuspendThreads();
     bool GatherCrashInfo(MINIDUMP_TYPE minidumpType);
@@ -60,7 +59,7 @@ public:
     inline pid_t Pid() const { return m_pid; }
     inline pid_t Ppid() const { return m_ppid; }
     inline pid_t Tgid() const { return m_tgid; }
-    inline const char* Name() const { return m_name; }
+    inline const std::string& Name() const { return m_name; }
     inline ICLRDataTarget* DataTarget() const { return m_dataTarget; }
 
     inline const std::vector<ThreadInfo*> Threads() const { return m_threads; }
@@ -87,7 +86,7 @@ private:
     bool EnumerateMemoryRegionsWithDAC(MINIDUMP_TYPE minidumpType);
     bool EnumerateManagedModules(IXCLRDataProcess* pClrDataProcess);
     bool UnwindAllThreads(IXCLRDataProcess* pClrDataProcess);
-    void ReplaceModuleMapping(CLRDATA_ADDRESS baseAddress, const char* pszName);
+    void ReplaceModuleMapping(CLRDATA_ADDRESS baseAddress, ULONG64 size, const std::string& pszName);
     void InsertMemoryBackedRegion(const MemoryRegion& region);
     void InsertMemoryRegion(const MemoryRegion& region);
     uint32_t GetMemoryRegionFlags(uint64_t start);

@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#pragma once
+
 #define ___in       _SAL1_Source_(__in, (), _In_)
 #define ___out      _SAL1_Source_(__out, (), _Out_)
 
@@ -16,8 +18,10 @@ extern bool g_diagnostics;
         if (g_diagnostics) { \
             printf(args); \
         }
+#define TRACE_VERBOSE(args...)
 #else
 #define TRACE(args, ...)
+#define TRACE_VERBOSE(args, ...)
 #endif
 
 #ifdef HOST_UNIX
