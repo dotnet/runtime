@@ -30,7 +30,8 @@ public class SimpleAndroidTestRunner : AndroidApplicationEntryPoint, IDevice
         }
         int exitCode = 0;
         s_MainTestName = Path.GetFileNameWithoutExtension(s_testLibs[0]);
-        var simpleTestRunner = new SimpleAndroidTestRunner(true);
+        string? verbose = Environment.GetEnvironmentVariable("XUNIT_VERBOSE")?.ToLower();
+        var simpleTestRunner = new SimpleAndroidTestRunner(verbose == "true" || verbose == "1");
         simpleTestRunner.TestsCompleted += (e, result) => 
         {
             if (result.FailedTests > 0)
