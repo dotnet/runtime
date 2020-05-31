@@ -293,9 +293,6 @@
   <PropertyGroup>
     <EnableDefaultItems>false</EnableDefaultItems>
 
-    <!-- Workaround for https://github.com/microsoft/msbuild/issues/4474 -->
-    <GenerateResourceUsePreserializedResources>false</GenerateResourceUsePreserializedResources>
-
     <!-- Clear the init locals flag on all src projects, except those in VB, where we can't use spans. -->
     <ILLinkClearInitLocals Condition="'$(IsSourceProject)' == 'true' and '$(Language)' != 'VB'">true</ILLinkClearInitLocals>
   </PropertyGroup>
