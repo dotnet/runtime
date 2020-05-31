@@ -3,7 +3,7 @@ Build CoreCLR on Linux
 
 This guide will walk you through building CoreCLR on Linux.
 
-First, set up your environment to build using the instructions [here](linux-requirements.md).
+First, set up your environment to build using the instructions [here](../../requirements/linux-requirements.md).
 
 Choose one of the following options for building.
 

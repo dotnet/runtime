@@ -3,7 +3,8 @@ Requirements to build dotnet/runtime on Linux
 
 This guide will walk you through the requirements to build dotnet/runtime on Linux. Before building there is environment setup that needs to happen to pull in all the dependencies required by the build. There are two suggested ways to go about doing this. First you are able to use the Docker environments provided by https://github.com/dotnet/dotnet-buildtools-prereqs-docker, or you can set up the environment yourself. The documentation will go over both ways of building. Using Docker allows you to leverage our existing images which already have an environment set up.
 
-Instructions for doing the build are [here](linux-instructions.md).
+General instructions for building are [here](../README.md).
+Instructions for building CoreCLR for Linux are [here](../building/coreclr/linux-instructions.md).
 
 
 Docker
@@ -11,7 +12,7 @@ Docker
 
 Install Docker; see https://docs.docker.com/install/.
 
-All the required build tools are included in the Docker image, so no additional setup is required.
+All the required build tools are included in the Docker images used to do the build, so no additional setup is required.
 
 
 Environment
