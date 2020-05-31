@@ -246,6 +246,9 @@ namespace System.Diagnostics.Tests
 
                 Assert.Null(source.StartActivity("a1"));
 
+                Assert.Equal(0, activityStartCount);
+                Assert.Equal(0, activityStopCount);
+
                 listeners[1] = new ActivityListener
                 {
                     ActivityStarted = (activity) => { activityStartCount++; Assert.NotNull(activity); },
@@ -260,7 +263,13 @@ namespace System.Diagnostics.Tests
                 {
                     Assert.False(a2.IsAllDataRequested);
                     Assert.True((a2.ActivityTraceFlags & ActivityTraceFlags.Recorded) == 0);
+                    
+                    Assert.Equal(2, activityStartCount);
+                    Assert.Equal(0, activityStopCount);
                 }
+
+                Assert.Equal(activityStartCount, activityStopCount);
+                Assert.Equal(2, activityStopCount);
 
                 listeners[2] = new ActivityListener
                 {
@@ -276,7 +285,13 @@ namespace System.Diagnostics.Tests
                 {
                     Assert.True(a3.IsAllDataRequested);
                     Assert.True((a3.ActivityTraceFlags & ActivityTraceFlags.Recorded) == 0);
+                    
+                    Assert.Equal(5, activityStartCount);
+                    Assert.Equal(2, activityStopCount);
                 }
+
+                Assert.Equal(activityStartCount, activityStopCount);
+                Assert.Equal(5, activityStopCount);
 
                 listeners[3] = new ActivityListener
                 {
@@ -293,8 +308,8 @@ namespace System.Diagnostics.Tests
                     Assert.True(a4.IsAllDataRequested);
                     Assert.True((a4.ActivityTraceFlags & ActivityTraceFlags.Recorded) != 0, $"a4.ActivityTraceFlags failed: {a4.ActivityTraceFlags}");
 
-                    Assert.Equal(4, activityStartCount);
-                    Assert.Equal(0, activityStopCount);
+                    Assert.Equal(9, activityStartCount);
+                    Assert.Equal(5, activityStopCount);
                 }
 
                 foreach (IDisposable listener in listeners)
@@ -303,7 +318,7 @@ namespace System.Diagnostics.Tests
                 }
 
                 Assert.Equal(activityStartCount, activityStopCount);
-                Assert.Equal(4, activityStopCount);
+                Assert.Equal(9, activityStopCount);
                 Assert.Null(source.StartActivity("a5"));
             }).Dispose();
         }
