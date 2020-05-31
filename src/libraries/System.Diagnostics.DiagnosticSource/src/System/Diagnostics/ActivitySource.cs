@@ -110,7 +110,7 @@ namespace System.Diagnostics
 
             Activity? activity = null;
 
-            ActivityDataRequest dateRequest = ActivityDataRequest.None;
+            ActivityDataRequest dataRequest = ActivityDataRequest.None;
 
             if (parentId != null)
             {
@@ -120,13 +120,13 @@ namespace System.Diagnostics
                     {
                         ActivityCreationOptions<string> aco = new ActivityCreationOptions<string>(this, name, parentId, kind, tags, links);
                         ActivityDataRequest dr = getRequestedDataUsingParentId(ref aco);
-                        if (dr > dateRequest)
+                        if (dr > dataRequest)
                         {
-                            dateRequest = dr;
+                            dataRequest = dr;
                         }
 
                         // Stop the enumeration if we get the max value RecordingAndSampling.
-                        return dateRequest != ActivityDataRequest.AllDataAndRecorded;
+                        return dataRequest != ActivityDataRequest.AllDataAndRecorded;
                     }
                     return true;
                 });
@@ -139,21 +139,21 @@ namespace System.Diagnostics
                     {
                         ActivityCreationOptions<ActivityContext> aco = new ActivityCreationOptions<ActivityContext>(this, name, context, kind, tags, links);
                         ActivityDataRequest dr = getRequestedDataUsingContext(ref aco);
-                        if (dr > dateRequest)
+                        if (dr > dataRequest)
                         {
-                            dateRequest = dr;
+                            dataRequest = dr;
                         }
 
                         // Stop the enumeration if we get the max value RecordingAndSampling.
-                        return dateRequest != ActivityDataRequest.AllDataAndRecorded;
+                        return dataRequest != ActivityDataRequest.AllDataAndRecorded;
                     }
                     return true;
                 });
             }
 
-            if (dateRequest != ActivityDataRequest.None)
+            if (dataRequest != ActivityDataRequest.None)
             {
-                activity = Activity.CreateAndStart(this, name, kind, parentId, context, tags, links, startTime, dateRequest);
+                activity = Activity.CreateAndStart(this, name, kind, parentId, context, tags, links, startTime, dataRequest);
                 listeners.EnumWithAction(listener => {
                     var activityStarted = listener.ActivityStarted;
                     if (activityStarted != null)
@@ -238,9 +238,7 @@ namespace System.Diagnostics
             SynchronizedList<ActivityListener>? listeners = _listeners;
             if (listeners != null &&  listeners.Count > 0)
             {
-                listeners.EnumWithAction(listener => {
-                    listeners.EnumWithAction(listener => listener.ActivityStopped?.Invoke(activity));
-                });
+                listeners.EnumWithAction(listener => listener.ActivityStopped?.Invoke(activity));
             }
         }
     }
