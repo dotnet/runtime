@@ -24,6 +24,7 @@ extern bool g_diagnostics;
 #define TRACE_VERBOSE(args, ...)
 #endif
 
+
 #ifdef HOST_UNIX
 #include "config.h"
 #endif
@@ -57,14 +58,21 @@ typedef int T_CONTEXT;
 #include <sys/ptrace.h>
 #include <sys/user.h>
 #include <sys/wait.h>
+#ifndef __APPLE__
 #include <sys/procfs.h>
+#include <asm/ptrace.h>
+#endif
 #ifdef HAVE_PROCESS_VM_READV
 #include <sys/uio.h>
 #endif
 #include <dirent.h>
 #include <fcntl.h>
+#ifdef __APPLE__
+#include <ELF.h>
+#else
 #include <elf.h>
 #include <link.h>
+#endif
 #define __STDC_FORMAT_MACROS
 #include <inttypes.h>
 #else
@@ -76,6 +84,9 @@ typedef int T_CONTEXT;
 #include <array>
 #include <string>
 #ifdef HOST_UNIX
+#ifdef __APPLE__
+#include "mac.h"
+#endif
 #include "datatarget.h"
 #include "threadinfo.h"
 #include "memoryregion.h"

@@ -2,7 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#ifdef __APPLE__
+#include "../dbgutil/machoreader.h"
+#else
 #include "../dbgutil/elfreader.h"
+#endif
 
 // typedef for our parsing of the auxv variables in /proc/pid/auxv.
 #if TARGET_64BIT
@@ -26,7 +30,12 @@ typedef __typeof__(((elf_aux_entry*) 0)->a_un.a_val) elf_aux_val_t;
 // All interesting auvx entry types are AT_SYSINFO_EHDR and below
 #define AT_MAX (AT_SYSINFO_EHDR + 1)
 
-class CrashInfo : public ElfReader, public ICLRDataEnumMemoryRegionsCallback
+class CrashInfo : public ICLRDataEnumMemoryRegionsCallback,
+#ifdef __APPLE__
+    public MachOReader
+#else
+    public ElfReader
+#endif
 {
 private:
     LONG m_ref;                                     // reference count
@@ -34,9 +43,20 @@ private:
     pid_t m_ppid;                                   // parent pid
     pid_t m_tgid;                                   // process group
     std::string m_name;                             // exe name
+#ifdef __APPLE__
+    vm_map_t m_task;                                // the mach task for the process
+#else
+#ifndef HAVE_PROCESS_VM_READV
+    int m_fd;                                       // /proc/<pid>/mem handle
+#endif
+#endif
     std::string m_coreclrPath;                      // the path of the coreclr module or empty if none
     ICLRDataTarget* m_dataTarget;                   // read process memory, etc.
+#ifdef __APPLE__
+    std::set<MemoryRegion> m_allMemoryRegions;      // all memory regions on MacOS
+#else
     std::array<elf_aux_val_t, AT_MAX> m_auxvValues; // auxv values
+#endif
     std::vector<elf_aux_entry> m_auxvEntries;       // full auxv entries
     std::vector<ThreadInfo*> m_threads;             // threads found and suspended
     std::set<MemoryRegion> m_moduleMappings;        // module memory mappings
@@ -47,18 +67,24 @@ private:
 public:
     CrashInfo(pid_t pid);
     virtual ~CrashInfo();
+
+    bool Initialize(ICLRDataTarget* dataTarget);
+    void Uninitialize();
+
     bool EnumerateAndSuspendThreads();
     bool GatherCrashInfo(MINIDUMP_TYPE minidumpType);
-    void ResumeThreads();
-    bool ReadMemory(void* address, void* buffer, size_t size);
+    bool ReadMemory(void* address, void* buffer, size_t size);                          // read memory and add to dump
+    bool ReadProcessMemory(void* address, void* buffer, size_t size, size_t* read);     // read raw memory
     uint64_t GetBaseAddress(uint64_t ip);
     void InsertMemoryRegion(uint64_t address, size_t size);
-    static bool GetStatus(pid_t pid, pid_t* ppid, pid_t* tgid, char** name);
     static const MemoryRegion* SearchMemoryRegions(const std::set<MemoryRegion>& regions, const MemoryRegion& search);
 
     inline pid_t Pid() const { return m_pid; }
     inline pid_t Ppid() const { return m_ppid; }
     inline pid_t Tgid() const { return m_tgid; }
+#ifdef __APPLE__
+    inline vm_map_t Task() const { return m_task; }
+#endif
     inline const std::string& Name() const { return m_name; }
     inline ICLRDataTarget* DataTarget() const { return m_dataTarget; }
 
@@ -78,11 +104,18 @@ public:
     virtual HRESULT STDMETHODCALLTYPE EnumMemoryRegion(/* [in] */ CLRDATA_ADDRESS address, /* [in] */ ULONG32 size);
 
 private:
+#ifdef __APPLE__
+    bool EnumerateMemoryRegions();
+    bool TryFindDyLinker(mach_vm_address_t address, mach_vm_size_t size, bool* found);
+    void VisitModule(MachOModule& module);
+    void VisitSegment(MachOModule& module, const segment_command_64& segment);
+#else
     bool GetAuxvEntries();
     bool GetDSOInfo();
     void VisitModule(uint64_t baseAddress, std::string& moduleName);
     void VisitProgramHeader(uint64_t loadbias, uint64_t baseAddress, ElfW(Phdr)* phdr);
     bool EnumerateModuleMappings();
+#endif 
     bool EnumerateMemoryRegionsWithDAC(MINIDUMP_TYPE minidumpType);
     bool EnumerateManagedModules(IXCLRDataProcess* pClrDataProcess);
     bool UnwindAllThreads(IXCLRDataProcess* pClrDataProcess);
