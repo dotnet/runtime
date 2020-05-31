@@ -4,6 +4,10 @@
 
 namespace System
 {
+    /// <summary>
+    /// <see cref="System.SpanSplitEnumerator"/> allows for enumeration of each element within a <see cref="System.ReadOnlySpan{T}"/>
+    /// that has been split using a provided separator.
+    /// </summary>
     public ref struct SpanSplitEnumerator<T> where T : IEquatable<T>
     {
         private readonly ReadOnlySpan<T> _buffer;
@@ -14,7 +18,16 @@ namespace System
         private int _offset;
         private int _index;
 
+        /// <summary>
+        /// Returns an enumerator that allows for iteration over the split span.
+        /// </summary>
+        /// <returns>Returns a <see cref="System.SpanSplitEnumerator"/> that can be used to iterate over the split span.</returns>
         public SpanSplitEnumerator<T> GetEnumerator() => this;
+
+        /// <summary>
+        /// Returns the current element of the enumeration.
+        /// </summary>
+        /// <returns>Returns a <see cref="System.Range"/> struct that defines the bounds of the current element withing the source span.</returns>
         public readonly Range Current => new Range(_offset, _offset + _index - _separatorLength);
 
         internal SpanSplitEnumerator(ReadOnlySpan<T> buffer, ReadOnlySpan<T> separator)
@@ -37,6 +50,10 @@ namespace System
             _separatorLength = 1;
         }
 
+        /// <summary>
+        /// Advances the enumerator to the next element of the split span.
+        /// </summary>
+        /// <returns>Returns a bool indicating whether an element is available.</returns>
         public bool MoveNext()
         {
             _offset += _index;
