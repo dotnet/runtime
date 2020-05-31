@@ -238,9 +238,7 @@ namespace System.Diagnostics
             SynchronizedList<ActivityListener>? listeners = _listeners;
             if (listeners != null &&  listeners.Count > 0)
             {
-                listeners.EnumWithAction(listener => {
-                    listeners.EnumWithAction(listener => listener.ActivityStopped?.Invoke(activity));
-                });
+                listeners.EnumWithAction(listener => listener.ActivityStopped?.Invoke(activity));
             }
         }
     }
