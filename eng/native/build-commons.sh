@@ -59,6 +59,7 @@ check_prereqs()
     if [[ "$(version "$cmakeInstalledVersion")" -lt "$(version "$cmakeRequiredMinimumVersion")" ]]; then
         echo "Found cmake v$cmakeInstalledVersion in PATH. Please install v$cmakeRequiredMinimumVersion or newer from https://www.cmake.org/download/."
         exit 1;
+    fi
 
     if [[ "$__HostOS" == "OSX" ]]; then
         # Check presence of pkg-config on the path
