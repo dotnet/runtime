@@ -8136,6 +8136,22 @@ MethodDesc *MethodTable::MethodDataObject::GetImplMethodDesc(UINT32 slotNumber)
 }
 
 //==========================================================================================
+void MethodTable::MethodDataObject::UpdateImplMethodDesc(MethodDesc* pMD, UINT32 slotNumber)
+{
+    WRAPPER_NO_CONTRACT;
+    _ASSERTE(slotNumber < GetNumVirtuals());
+    _ASSERTE(pMD->IsMethodImpl());
+
+    MethodDataObjectEntry* pEntry = GetEntry(slotNumber);
+
+    // Fill the entries one level of inheritance at a time,
+    // stopping when we have filled the MD we are looking for.
+    while (!pEntry->GetImplMethodDesc() && PopulateNextLevel());
+
+    pEntry->SetImplMethodDesc(pMD);
+}
+
+//==========================================================================================
 void MethodTable::MethodDataObject::InvalidateCachedVirtualSlot(UINT32 slotNumber)
 {
     WRAPPER_NO_CONTRACT;

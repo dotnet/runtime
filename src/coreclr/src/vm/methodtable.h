@@ -3098,6 +3098,8 @@ public:
         virtual UINT32 GetNumVirtuals() = 0;
         virtual UINT32 GetNumMethods() = 0;
 
+        virtual void UpdateImplMethodDesc(MethodDesc* pMD, UINT32 slotNumber) = 0;
+
       protected:
         static const UINT32 INVALID_SLOT_NUMBER = UINT32_MAX;
 
@@ -3201,6 +3203,8 @@ protected:
             { LIMITED_METHOD_CONTRACT; return m_pDeclMT->GetNumVirtuals(); }
         virtual UINT32 GetNumMethods()
             { LIMITED_METHOD_CONTRACT; return m_pDeclMT->GetCanonicalMethodTable()->GetNumMethods(); }
+
+        virtual void UpdateImplMethodDesc(MethodDesc* pMD, UINT32 slotNumber);
 
       protected:
         void Init(MethodData *pParentData);
@@ -3308,6 +3312,10 @@ protected:
             { LIMITED_METHOD_CONTRACT; return m_pDeclMT->GetNumVirtuals(); }
         virtual UINT32 GetNumMethods()
             { LIMITED_METHOD_CONTRACT; return m_pDeclMT->GetNumMethods(); }
+
+        virtual void UpdateImplMethodDesc(MethodDesc* pMD, UINT32 slotNumber)
+            { LIMITED_METHOD_CONTRACT; } 
+
     };  // class MethodDataInterface
 
     //--------------------------------------------------------------------------------------
@@ -3346,6 +3354,9 @@ protected:
             { WRAPPER_NO_CONTRACT; return m_pDecl->GetNumVirtuals(); }
         virtual UINT32 GetNumMethods()
             { WRAPPER_NO_CONTRACT; return m_pDecl->GetNumVirtuals(); }
+
+        virtual void UpdateImplMethodDesc(MethodDesc* pMD, UINT32 slotNumber)
+            { LIMITED_METHOD_CONTRACT; } 
 
       protected:
         UINT32 MapToImplSlotNumber(UINT32 slotNumber);

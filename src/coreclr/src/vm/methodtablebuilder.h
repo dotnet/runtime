@@ -809,7 +809,8 @@ private:
         static bool
         SignaturesEquivalent(
             const MethodSignature & sig1,
-            const MethodSignature & sig2);
+            const MethodSignature & sig2,
+            BOOL allowCovariantReturn);
 
         //-----------------------------------------------------------------------------------------
         // Returns true if the metadata signatures (PCCOR_SIGNATURE) are exactly equal. (No type equivalence permitted)
@@ -1990,6 +1991,7 @@ private:
             // This is to detect situations where a methodimpl does not match any method on any equivalent interface.
             bool    fThrowIfUnmatchedDuringInexactMethodImplProcessing;
             UINT32  interfaceEquivalenceSet;// Equivalence set in the interface map to examine
+            bool    fRequiresCovariantReturnTypeChecking;
             static int __cdecl Compare(const void *elem1, const void *elem2);
             static BOOL Equal(const MethodImplTokenPair *elem1, const MethodImplTokenPair *elem2);
         };
@@ -2561,6 +2563,9 @@ private:
         mdToken* pDeclaration, // Method definition for Member
         BOOL fSameClass);      // Does the declaration need to be in this class
 
+    BOOL
+    IsEligibleForCovariantReturns(mdToken methodDeclToken);
+
     // --------------------------------------------------------------------------------------------
     // Enumerates the method impl token pairs and resolves the impl tokens to mdtMethodDef
     // tokens, since we currently have the limitation that all impls are in the current class.
@@ -2738,6 +2743,7 @@ private:
     MethodImplCompareSignatures(
         bmtMethodHandle     hDecl,
         bmtMethodHandle     hImpl,
+        BOOL                allowCovariantReturn,
         DWORD               dwConstraintErrorCode);
 
     // --------------------------------------------------------------------------------------------
