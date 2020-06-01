@@ -12,7 +12,7 @@ If a language wishes for the override to be semantically visible such that users
 
 For virtual method slot MethodImpl overrides, each slot shall be checked for compatible signature on type load. (Implementation note: This behavior can be triggered only if the type has a covariant return type override in its hierarchy, so as to make this pay for play.)
 
-A new `RequireMethodImplToRemainInEffectAttribute` shall be added. The presence of this attribute is to require the type loader to ensure that the MethodImpl records specified on the method have not lost their slot unifying behavior due to other actions. This is used to allow the C# language to require that overrides have the consistent behaviors expected. The expectation is that C# would place this attribute on covariant override methods in classes.
+A new `PreserveBaseOverridesAttribute` shall be added. The presence of this attribute is to require the type loader to ensure that the MethodImpl records specified on the method have not lost their slot unifying behavior due to other actions. This is used to allow the C# language to require that overrides have the consistent behaviors expected. The expectation is that C# would place this attribute on covariant override methods in classes.
 
 ## Implementation Notes
 
@@ -31,7 +31,7 @@ Once a method is flagged for return type checking, every time the vtable slot co
 
 ### VTable Slot Unification
 
-If a MethodImpl has the `RequireMethodImplToRemainInEffectAttribute` attribute, it needs to propagate all applicable vtable slots on the type. This is to ensure that if we use the signature of one of the base type methods to call the overriding method, we still execute the overriding method.
+If a MethodImpl has the `PreserveBaseOverridesAttribute` attribute, it needs to propagate all applicable vtable slots on the type. This is to ensure that if we use the signature of one of the base type methods to call the overriding method, we still execute the overriding method.
 
 Consider this case:
 ``` C#
@@ -39,11 +39,11 @@ Consider this case:
          RetType VirtualFunction() { }
      }
      class B : A {
-         [RequireMethodImplToRemainInEffect]
+         [PreserveBaseOverrides]
          DerivedRetType VirtualFunction() { .override A.VirtualFuncion }
      }
      class C : B {
-         [RequireMethodImplToRemainInEffect]
+         [PreserveBaseOverrides]
          MoreDerivedRetType VirtualFunction() { .override A.VirtualFunction }
      }
 ```

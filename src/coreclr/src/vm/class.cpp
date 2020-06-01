@@ -981,14 +981,14 @@ void ClassLoader::LoadExactParents(MethodTable *pMT)
 /*static*/
 bool ClassLoader::IsCompatibleWith(TypeHandle hType1, TypeHandle hType2)
 {
-    // Structs can be casted to the interfaces they implement, but they are not compatible according to ECMA I.8.7.1
+    // Structs can be cast to the interfaces they implement, but they are not compatible according to ECMA I.8.7.1
     bool isCastFromValueTypeToReferenceType = hType2.IsValueType() && !hType1.IsValueType();
     if (isCastFromValueTypeToReferenceType)
     {
         return false;
     }
 
-    // Nullable<T> can be casted to T, but this is not compatible according to ECMA I.8.7.1
+    // Nullable<T> can be cast to T, but this is not compatible according to ECMA I.8.7.1
     bool isCastFromNullableOfTtoT = hType1.GetMethodTable()->IsNullable() && hType2.IsEquivalentTo(hType1.GetMethodTable()->GetInstantiation()[0]);
     if (isCastFromNullableOfTtoT)
     {
@@ -1019,7 +1019,7 @@ void ClassLoader::ValidateMethodsWithCovariantReturnTypes(MethodTable* pMT)
     // ECMA I.8.7.1, which is what the CanCastTo() API checks.
     //
     // The second step is to propagate an overriding MethodImpl to all applicable vtable slots if the MethodImpl
-    // has the RequireMethodImplToRemainInEffect attribute. This is to ensure that if we use the signature of one of
+    // has the PreserveBaseOverrides attribute. This is to ensure that if we use the signature of one of
     // the base type methods to call the overriding method, we still execute the overriding method.
     //
     // Consider this case:
@@ -1028,7 +1028,7 @@ void ClassLoader::ValidateMethodsWithCovariantReturnTypes(MethodTable* pMT)
     //          RetType VirtualFunction() { }
     //      }
     //      class B : A {
-    //          [RequireMethodImplToRemainInEffect]
+    //          [PreserveBaseOverrides]
     //          DerivedRetType VirtualFunction() { .override A.VirtualFuncion }
     //      }
     //      class C : B {
@@ -1142,7 +1142,7 @@ void ClassLoader::ValidateMethodsWithCovariantReturnTypes(MethodTable* pMT)
             {
                 BYTE* pVal = NULL;
                 ULONG cbVal = 0;
-                if (pCurrentMD->GetCustomAttribute(WellKnownAttribute::RequireMethodImplToRemainInEffectAttribute, (const void**)&pVal, &cbVal) == S_OK)
+                if (pCurrentMD->GetCustomAttribute(WellKnownAttribute::PreserveBaseOverridesAttribute, (const void**)&pVal, &cbVal) == S_OK)
                     foundAttribute = true;
             }
 

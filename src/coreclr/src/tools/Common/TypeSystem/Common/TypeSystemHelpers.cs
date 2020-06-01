@@ -416,10 +416,10 @@ namespace Internal.TypeSystem
         /// Check if MethodImpl requires slot unification.
         /// </summary>
         /// <param name="method">Method to check</param>
-        /// <returns>True when the method is marked with the RequireMethodImplToRemainInEffect custom attribute, false otherwise.</returns>
+        /// <returns>True when the method is marked with the PreserveBaseOverrides custom attribute, false otherwise.</returns>
         public static bool RequiresSlotUnification(this MethodDesc method)
         {
-            if (method.HasCustomAttribute("System.Runtime.CompilerServices", "RequireMethodImplToRemainInEffectAttribute"))
+            if (method.HasCustomAttribute("System.Runtime.CompilerServices", "PreserveBaseOverridesAttribute"))
             {
 #if DEBUG
                 // We shouldn't be calling this for non-MethodImpls, so verify that the method being checked is really a MethodImpl

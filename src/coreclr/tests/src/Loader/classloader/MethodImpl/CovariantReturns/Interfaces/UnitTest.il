@@ -160,7 +160,7 @@
 
   .method public hidebysig newslot virtual instance class INonGenThroughGen2<object,int32,string> NonGenThroughGenFunc(string& res)
   {
-    .custom instance void [System.Runtime]System.Runtime.CompilerServices.RequireMethodImplToRemainInEffectAttribute::.ctor() = (01 00 00 00)
+    .custom instance void [System.Runtime]System.Runtime.CompilerServices.PreserveBaseOverridesAttribute::.ctor() = (01 00 00 00)
     .override method instance class IB class GenBaseType<!V,!U>::NonGenThroughGenFunc(string& res)
     ldarg.1
     ldstr "INonGenThroughGen2<object,int32,string> GenMiddleType.NonGenThroughGenFunc()"
@@ -171,7 +171,7 @@
 
   .method public hidebysig newslot virtual instance class IGenToNonGen1<!V, class IDictionary<string,object>> GenToNonGen(string& res)
   {
-    .custom instance void [System.Runtime]System.Runtime.CompilerServices.RequireMethodImplToRemainInEffectAttribute::.ctor() = (01 00 00 00)
+    .custom instance void [System.Runtime]System.Runtime.CompilerServices.PreserveBaseOverridesAttribute::.ctor() = (01 00 00 00)
     .override method instance class IB class GenBaseType<!V,!U>::GenToNonGen(string& res)
     ldarg.1
     ldstr "IGenToNonGen1<!V, class IDictionary<string,object>> GenMiddleType.GenToNonGen()"
@@ -182,7 +182,7 @@
 
   .method public hidebysig newslot virtual instance class INonGenericDerived1<int32,object> MyGenFunc(string& res)
   {
-    .custom instance void [System.Runtime]System.Runtime.CompilerServices.RequireMethodImplToRemainInEffectAttribute::.ctor() = (01 00 00 00)
+    .custom instance void [System.Runtime]System.Runtime.CompilerServices.PreserveBaseOverridesAttribute::.ctor() = (01 00 00 00)
     .override method instance class IGenRetType<int32,object> class GenBaseType<!V,!U>::MyGenFunc(string& res)
     ldarg.1
     ldstr "INonGenericDerived1<int32,object> GenMiddleType.MyGenFunc()"
@@ -193,7 +193,7 @@
 
   .method public hidebysig newslot virtual instance class IGenDerive1<!V, class IDictionary<string,!U>> MyGenFunc(string& res)
   {
-    .custom instance void [System.Runtime]System.Runtime.CompilerServices.RequireMethodImplToRemainInEffectAttribute::.ctor() = (01 00 00 00)
+    .custom instance void [System.Runtime]System.Runtime.CompilerServices.PreserveBaseOverridesAttribute::.ctor() = (01 00 00 00)
     .override method instance class IGenRetType<!0, class IDictionary<string,!1>> class GenBaseType<!V,!U>::MyGenFunc(string& res)
     ldarg.1
     ldstr "IGenDerive1<!U, class IDictionary<string,!V>> GenMiddleType.MyGenFunc()"
@@ -255,7 +255,7 @@
   
   .method public hidebysig newslot virtual instance class IGenRetType<!U,!V> MyFunc(string& res)
   {
-    .custom instance void [System.Runtime]System.Runtime.CompilerServices.RequireMethodImplToRemainInEffectAttribute::.ctor() = (01 00 00 00)
+    .custom instance void [System.Runtime]System.Runtime.CompilerServices.PreserveBaseOverridesAttribute::.ctor() = (01 00 00 00)
     .override method instance object class GenBaseType<!U,!V>::MyFunc(string& res)
     ldarg.1
     ldstr "IGenRetType<!U,!V> TestType.MyFunc()"
@@ -266,7 +266,7 @@
   
   .method public hidebysig newslot virtual instance class IC MyFunc(string& res)
   {
-    .custom instance void [System.Runtime]System.Runtime.CompilerServices.RequireMethodImplToRemainInEffectAttribute::.ctor() = (01 00 00 00)
+    .custom instance void [System.Runtime]System.Runtime.CompilerServices.PreserveBaseOverridesAttribute::.ctor() = (01 00 00 00)
     .override method instance class IB class GenBaseType<!U,!V>::MyFunc(string& res)
     ldarg.1
     ldstr "IC TestType.MyFunc()"
@@ -277,7 +277,7 @@
 
   .method public hidebysig newslot virtual instance class ICovariant<class CC> MyFuncCovariant(string& res)
   {
-    .custom instance void [System.Runtime]System.Runtime.CompilerServices.RequireMethodImplToRemainInEffectAttribute::.ctor() = (01 00 00 00)
+    .custom instance void [System.Runtime]System.Runtime.CompilerServices.PreserveBaseOverridesAttribute::.ctor() = (01 00 00 00)
     .override method instance class ICovariant<class CB> class GenBaseType<!U,!V>::MyFuncCovariant(string& res)
     ldarg.1
     ldstr "ICovariant<CC> TestType.MyFuncCovariant()"
@@ -288,7 +288,7 @@
 
   .method public hidebysig newslot virtual instance class IContravariant<class CA> MyFuncContravariant(string& res)
   {
-    .custom instance void [System.Runtime]System.Runtime.CompilerServices.RequireMethodImplToRemainInEffectAttribute::.ctor() = (01 00 00 00)
+    .custom instance void [System.Runtime]System.Runtime.CompilerServices.PreserveBaseOverridesAttribute::.ctor() = (01 00 00 00)
     .override method instance class IContravariant<class CB> class GenBaseType<!U,!V>::MyFuncContravariant(string& res)
     ldarg.1
     ldstr "IContravariant<CA> TestType.MyFuncContravariant()"
@@ -428,7 +428,7 @@
 
   .method public hidebysig newslot virtual instance class IVariant<class Derived> MultiLevelGenericVariantFunc(string&)
   {
-    .custom instance void [System.Runtime]System.Runtime.CompilerServices.RequireMethodImplToRemainInEffectAttribute::.ctor() = (01 00 00 00)
+    .custom instance void [System.Runtime]System.Runtime.CompilerServices.PreserveBaseOverridesAttribute::.ctor() = (01 00 00 00)
     .override method instance class IVariant<class Base<class Derived>> class GenBaseType<!U,!V>::MultiLevelGenericVariantFunc(string&)
     ldarg.1
     ldstr "class IVariant<class Derived> GenMoreDerived.MultiLevelGenericVariantFunc()"
@@ -480,7 +480,7 @@
 
   .method public hidebysig newslot virtual instance class IVariant<class Derived2> MultiLevelGenericVariantFunc(string&)
   {
-    .custom instance void [System.Runtime]System.Runtime.CompilerServices.RequireMethodImplToRemainInEffectAttribute::.ctor() = (01 00 00 00)
+    .custom instance void [System.Runtime]System.Runtime.CompilerServices.PreserveBaseOverridesAttribute::.ctor() = (01 00 00 00)
     .override method instance class IVariant<class Base<class Derived>> class GenBaseType<!Q,!W>::MultiLevelGenericVariantFunc(string&)
     ldnull
     ret

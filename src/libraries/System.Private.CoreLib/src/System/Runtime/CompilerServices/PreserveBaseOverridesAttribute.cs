@@ -4,8 +4,8 @@
 
 namespace System.Runtime.CompilerServices
 {
-    [AttributeUsageAttribute(AttributeTargets.Method, Inherited = false, AllowMultiple = false)]
-    public sealed class RequireMethodImplToRemainInEffectAttribute : Attribute
+    [AttributeUsage(AttributeTargets.Method, AllowMultiple = false, Inherited = false)]
+    public sealed class PreserveBaseOverridesAttribute : Attribute
     {
     }
 }
