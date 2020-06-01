@@ -1522,7 +1522,8 @@ ves_pinvoke_method (
 
 	g_assert (!frame.imethod);
 
-	/* When there's a calli in a pinvoke wrapper, we're in GC Safe mode.
+	/*
+	 * When there's a calli in a pinvoke wrapper, we're in GC Safe mode.
 	 * When we're called for some other calli, we may be in GC Unsafe mode.
 	 *
 	 * On any code path where we call anything other than the entry_func,
