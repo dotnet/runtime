@@ -18502,20 +18502,17 @@ bool GenTree::isContainableHWIntrinsic() const
             return false;
         }
     }
-#else
+#endif // TARGET_XARCH
+#ifdef TARGET_ARM64
     switch (AsHWIntrinsic()->gtHWIntrinsicId)
     {
         case NI_Vector64_GetElement:
         case NI_Vector128_GetElement:
-        {
             return true;
-        }
         default:
-        {
             return false;
-        }
     }
-#endif // TARGET_XARCH
+#endif // TARGET_ARM64
 }
 
 bool GenTree::isRMWHWIntrinsic(Compiler* comp)

@@ -646,7 +646,8 @@ static bool isSupportedBaseType(NamedIntrinsic intrinsic, var_types baseType)
            (intrinsic == NI_Vector256_get_Zero) || (intrinsic == NI_Vector256_GetElement) ||
            (intrinsic == NI_Vector256_WithElement) || (intrinsic == NI_Vector256_GetLower) ||
            (intrinsic == NI_Vector256_ToScalar));
-#else
+#endif // TARGET_XARCH
+#ifdef TARGET_ARM64
     assert((intrinsic == NI_Vector64_AsByte) || (intrinsic == NI_Vector64_AsDouble) ||
            (intrinsic == NI_Vector64_AsInt16) || (intrinsic == NI_Vector64_AsInt32) ||
            (intrinsic == NI_Vector64_AsInt64) || (intrinsic == NI_Vector64_AsSByte) ||
@@ -664,7 +665,7 @@ static bool isSupportedBaseType(NamedIntrinsic intrinsic, var_types baseType)
            (intrinsic == NI_Vector128_get_AllBitsSet) || (intrinsic == NI_Vector128_get_Count) ||
            (intrinsic == NI_Vector128_get_Zero) || (intrinsic == NI_Vector128_GetElement) ||
            (intrinsic == NI_Vector128_GetLower) || (intrinsic == NI_Vector128_ToScalar));
-#endif
+#endif // TARGET_ARM64
     return false;
 }
 
