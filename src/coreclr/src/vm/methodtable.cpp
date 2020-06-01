@@ -51,7 +51,6 @@
 #include "comcallablewrapper.h"
 #include "clrtocomcall.h"
 #include "runtimecallablewrapper.h"
-#include "winrttypenameconverter.h"
 #endif // FEATURE_COMINTEROP
 
 #include "typeequivalencehash.hpp"
@@ -3949,31 +3948,22 @@ void MethodTable::Save(DataImage *image, DWORD profilingFlags)
     if (HasGuidInfo())
     {
         // Make sure our GUID is computed
-
-        // Generic WinRT types can have their GUID computed only if the instantiation is WinRT-legal
-        if (IsLegalNonArrayWinRTType())
+        GUID dummy;
+        if (SUCCEEDED(GetGuidNoThrow(&dummy, TRUE, FALSE)))
         {
-            GUID dummy;
-            if (SUCCEEDED(GetGuidNoThrow(&dummy, TRUE, FALSE)))
-            {
-                GuidInfo* pGuidInfo = GetGuidInfo();
-                _ASSERTE(pGuidInfo != NULL);
+            GuidInfo* pGuidInfo = GetGuidInfo();
+            _ASSERTE(pGuidInfo != NULL);
 
-                image->StoreStructure(pGuidInfo,
-                                      sizeof(GuidInfo),
-                                      DataImage::ITEM_GUID_INFO);
+            image->StoreStructure(pGuidInfo,
+                                    sizeof(GuidInfo),
+                                    DataImage::ITEM_GUID_INFO);
 
-                Module *pModule = GetModule();
-                if (pModule->CanCacheWinRTTypeByGuid(this))
-                {
-                    pModule->CacheWinRTTypeByGuid(this, pGuidInfo);
-                }
-            }
-            else
-            {
-                GuidInfo** ppGuidInfo = GetGuidInfoPtr();
-                *ppGuidInfo = NULL;
-            }
+            Module *pModule = GetModule();
+        }
+        else
+        {
+            GuidInfo** ppGuidInfo = GetGuidInfoPtr();
+            *ppGuidInfo = NULL;
         }
     }
 #endif // FEATURE_COMINTEROP
@@ -5659,20 +5649,6 @@ void MethodTable::DoFullyLoad(Generics::RecursionGraph * const pVisited,  const 
     {
         case CLASS_DEPENDENCIES_LOADED:
             SetIsDependenciesLoaded();
-
-#if defined(FEATURE_COMINTEROP) && !defined(DACCESS_COMPILE)
-            if (WinRTSupported() && g_fEEStarted)
-            {
-                _ASSERTE(GetAppDomain() != NULL);
-
-                AppDomain* pAppDomain = GetAppDomain();
-                if (pAppDomain->CanCacheWinRTTypeByGuid(this))
-                {
-                    pAppDomain->CacheWinRTTypeByGuid(this);
-                }
-            }
-#endif // FEATURE_COMINTEROP && !DACCESS_COMPILE
-
             break;
 
         case CLASS_LOADED:
@@ -5902,27 +5878,9 @@ MethodTable* MethodTable::GetComPlusParentMethodTable()
 
     if (pParent && pParent->IsComImport())
     {
-        if (pParent->IsProjectedFromWinRT())
-        {
-            // skip all Com Import classes
-            do
-            {
-                pParent = pParent->GetParentMethodTable();
-                _ASSERTE(pParent != NULL);
-            }while(pParent->IsComImport());
-
-            // Now we have either System.__ComObject or WindowsRuntime.RuntimeClass
-            if (pParent != g_pBaseCOMObject)
-            {
-                return pParent;
-            }
-        }
-        else
-        {
-            // Skip the single ComImport class we expect
-            _ASSERTE(pParent->GetParentMethodTable() != NULL);
-            pParent = pParent->GetParentMethodTable();
-        }
+        // Skip the single ComImport class we expect
+        _ASSERTE(pParent->GetParentMethodTable() != NULL);
+        pParent = pParent->GetParentMethodTable();
         _ASSERTE(!pParent->IsComImport());
 
         // Skip over System.__ComObject, expect System.MarshalByRefObject
@@ -5933,39 +5891,6 @@ MethodTable* MethodTable::GetComPlusParentMethodTable()
     }
 
     return pParent;
-}
-
-BOOL MethodTable::IsWinRTObjectType()
-{
-    LIMITED_METHOD_CONTRACT;
-
-    // Try to determine if this object represents a WindowsRuntime object - i.e. is either
-    // ProjectedFromWinRT or derived from a class that is
-
-    if (!IsComObjectType())
-        return FALSE;
-
-    // Ideally we'd compute this once in BuildMethodTable and track it with another
-    // flag, but we're now out of bits on m_dwFlags, and this is used very rarely
-    // so for now we'll just recompute it when necessary.
-    MethodTable* pMT = this;
-    do
-    {
-        if (pMT->IsProjectedFromWinRT())
-        {
-            // Found a WinRT COM object
-            return TRUE;
-        }
-        if (pMT->IsComImport())
-        {
-            // Found a class that is actually imported from COM but not WinRT
-            // this is definitely a non-WinRT COM object
-            return FALSE;
-        }
-        pMT = pMT->GetParentMethodTable();
-    }while(pMT != NULL);
-
-    return FALSE;
 }
 
 #endif // FEATURE_COMINTEROP
@@ -6207,173 +6132,6 @@ void MethodTable::SetInternalCorElementType (CorElementType _NormType)
 }
 
 #endif // !DACCESS_COMPILE
-
-#ifdef FEATURE_COMINTEROP
-#ifndef DACCESS_COMPILE
-
-#ifndef CROSSGEN_COMPILE
-BOOL MethodTable::IsLegalWinRTType(OBJECTREF *poref)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE;
-        PRECONDITION(IsProtectedByGCFrame(poref));
-        PRECONDITION(CheckPointer(poref));
-        PRECONDITION((*poref) != NULL);
-    }
-    CONTRACTL_END
-
-    if (IsArray())
-    {
-        BASEARRAYREF arrayRef = (BASEARRAYREF)(*poref);
-
-        // WinRT array must be one-dimensional array with 0 lower-bound
-        if (arrayRef->GetRank() == 1 && arrayRef->GetLowerBoundsPtr()[0] == 0)
-        {
-            MethodTable *pElementMT = ((BASEARRAYREF)(*poref))->GetArrayElementTypeHandle().GetMethodTable();
-
-            // Element must be a legal WinRT type and not an array
-            if (!pElementMT->IsArray() && pElementMT->IsLegalNonArrayWinRTType())
-                return TRUE;
-        }
-
-        return FALSE;
-    }
-    else
-    {
-        // Non-Array version of IsLegalNonArrayWinRTType
-        return IsLegalNonArrayWinRTType();
-    }
-}
-#endif //#ifndef CROSSGEN_COMPILE
-
-BOOL MethodTable::IsLegalNonArrayWinRTType()
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-        PRECONDITION(!IsArray()); // arrays are handled in the callers
-    }
-    CONTRACTL_END
-
-    if (WinRTTypeNameConverter::IsWinRTPrimitiveType(this))
-        return TRUE;
-
-    // Attributes are not legal
-    MethodTable *pParentMT = GetParentMethodTable();
-    if (pParentMT == MscorlibBinder::GetExistingClass(CLASS__ATTRIBUTE))
-    {
-        return FALSE;
-    }
-
-    bool fIsRedirected = false;
-    if (!IsProjectedFromWinRT() && !IsExportedToWinRT())
-    {
-        // If the type is not primitive and not coming from .winmd, it can still be legal if
-        // it's one of the redirected types (e.g. IEnumerable<T>).
-        if (!WinRTTypeNameConverter::IsRedirectedType(this))
-            return FALSE;
-
-        fIsRedirected = true;
-    }
-
-    if (IsValueType())
-    {
-        if (!fIsRedirected)
-        {
-            // check fields
-            ApproxFieldDescIterator fieldIterator(this, ApproxFieldDescIterator::INSTANCE_FIELDS);
-            for (FieldDesc *pFD = fieldIterator.Next(); pFD != NULL; pFD = fieldIterator.Next())
-            {
-                TypeHandle thField = pFD->GetFieldTypeHandleThrowing(CLASS_LOAD_EXACTPARENTS);
-
-                if (thField.IsTypeDesc())
-                    return FALSE;
-
-                MethodTable *pFieldMT = thField.GetMethodTable();
-
-                // the only allowed reference types are System.String and types projected from WinRT value types
-                if (!pFieldMT->IsValueType() && !pFieldMT->IsString())
-                {
-                    WinMDAdapter::RedirectedTypeIndex index;
-                    if (!WinRTTypeNameConverter::ResolveRedirectedType(pFieldMT, &index))
-                        return FALSE;
-
-                    WinMDAdapter::WinMDTypeKind typeKind;
-                    WinMDAdapter::GetRedirectedTypeInfo(index, NULL, NULL, NULL, NULL, NULL, &typeKind);
-                    if (typeKind != WinMDAdapter::WinMDTypeKind_Struct && typeKind != WinMDAdapter::WinMDTypeKind_Enum)
-                        return FALSE;
-                }
-
-                if (!pFieldMT->IsLegalNonArrayWinRTType())
-                    return FALSE;
-            }
-        }
-    }
-
-    if (IsInterface() || IsDelegate() || (IsValueType() && fIsRedirected))
-    {
-        // interfaces, delegates, and redirected structures can be generic - check the instantiation
-        if (HasInstantiation())
-        {
-            Instantiation inst = GetInstantiation();
-            for (DWORD i = 0; i < inst.GetNumArgs(); i++)
-            {
-                // arrays are not allowed as generic arguments
-                if (inst[i].IsArray())
-                    return FALSE;
-
-                if (inst[i].IsTypeDesc())
-                    return FALSE;
-
-                if (!inst[i].AsMethodTable()->IsLegalNonArrayWinRTType())
-                    return FALSE;
-            }
-        }
-    }
-    else
-    {
-        // generic structures and runtime clases are not supported
-        if (HasInstantiation())
-            return FALSE;
-    }
-
-    return TRUE;
-}
-
-//==========================================================================================
-// Returns the default WinRT interface if this is a WinRT class, NULL otherwise.
-MethodTable *MethodTable::GetDefaultWinRTInterface()
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-    }
-    CONTRACTL_END
-
-    if (!IsProjectedFromWinRT() && !IsExportedToWinRT())
-        return NULL;
-
-    if (IsInterface())
-        return NULL;
-
-    // System.Runtime.InteropServices.WindowsRuntime.RuntimeClass is weird
-    // It is ProjectedFromWinRT but isn't really a WinRT class
-    if (this == g_pBaseRuntimeClass)
-        return NULL;
-
-    WinRTClassFactory *pFactory = ::GetComClassFactory(this)->AsWinRTClassFactory();
-    return pFactory->GetDefaultInterface();
-}
-
-#endif // !DACCESS_COMPILE
-#endif // FEATURE_COMINTEROP
 
 #ifdef FEATURE_TYPEEQUIVALENCE
 #ifndef DACCESS_COMPILE
@@ -7452,13 +7210,6 @@ HRESULT MethodTable::GetGuidNoThrow(GUID *pGuid, BOOL bGenerateIfNotFound, BOOL 
 // If metadata does not specify GUID for the type, GUID_NULL is returned (if bGenerateIfNotFound
 // is FALSE) or a GUID is auto-generated on the fly from the name and members of the type
 // (bGenerateIfNotFound is TRUE).
-//
-// Redirected WinRT types may have two GUIDs, the "classic" one which matches the return value
-// of Type.Guid, and the new one which is the GUID of the WinRT type to which it is redirected.
-// The bClassic parameter controls which one is returned from this method. Note that the parameter
-// is ignored for genuine WinRT types, i.e. types loaded from .winmd files, those always return
-// the new GUID.
-//
 void MethodTable::GetGuid(GUID *pGuid, BOOL bGenerateIfNotFound, BOOL bClassic /*=TRUE*/)
 {
     CONTRACTL {
@@ -7489,14 +7240,13 @@ void MethodTable::GetGuid(GUID *pGuid, BOOL bGenerateIfNotFound, BOOL bClassic /
     _ASSERTE(pGuid != NULL);
     _ASSERTE(!this->IsArray());
 
-    // Use the per-EEClass GuidInfo if we are asked for the "classic" non-WinRT GUID of non-WinRT type
-    GuidInfo *pInfo = ((bClassic && !IsProjectedFromWinRT()) ? GetClass()->GetGuidInfo() : GetGuidInfo());
+    GuidInfo *pInfo = GetClass()->GetGuidInfo();
 
     // First check to see if we have already cached the guid for this type.
     // We currently only cache guids on interfaces and WinRT delegates.
     // In classic mode, though, ensure we don't retrieve the GuidInfo for redirected interfaces
-    if ((IsInterface() || IsWinRTDelegate()) && pInfo != NULL
-        && (!bClassic || !SupportsGenericInterop(TypeHandle::Interop_NativeToManaged, modeRedirected)))
+    if ((IsInterface()) && pInfo != NULL
+        && (!bClassic))
     {
         if (pInfo->m_bGeneratedFromName)
         {
@@ -7514,26 +7264,6 @@ void MethodTable::GetGuid(GUID *pGuid, BOOL bGenerateIfNotFound, BOOL bClassic /
         return;
     }
 
-#ifdef FEATURE_COMINTEROP
-    if ((SupportsGenericInterop(TypeHandle::Interop_NativeToManaged, modeProjected))
-        || (!bClassic
-             && SupportsGenericInterop(TypeHandle::Interop_NativeToManaged, modeRedirected)
-             && IsLegalNonArrayWinRTType()))
-    {
-        // Closed generic WinRT interfaces/delegates have their GUID computed
-        // based on the "PIID" in metadata and the instantiation.
-        // Note that we explicitly do this computation for redirected mscorlib
-        // interfaces only if !bClassic, so typeof(Enumerable<T>).GUID
-        // for example still returns the same result as pre-v4.5 runtimes.
-        // ComputeGuidForGenericType() may throw for generics nested beyond 64 levels.
-        WinRTGuidGenerator::ComputeGuidForGenericType(this, pGuid);
-
-        // This GUID is per-instantiation so make sure that the cache
-        // where we are going to keep it is per-instantiation as well.
-        _ASSERTE(IsCanonicalMethodTable() || HasGuidInfo());
-    }
-    else
-#endif // FEATURE_COMINTEROP
     if (GetClass()->HasNoGuid())
     {
         *pGuid = GUID_NULL;
@@ -7618,20 +7348,14 @@ void MethodTable::GetGuid(GUID *pGuid, BOOL bGenerateIfNotFound, BOOL bClassic /
     // Cache the guid in the type, if not already cached.
     // We currently only do this for interfaces.
     // Also, in classic mode do NOT cache GUID for redirected interfaces.
-    if ((IsInterface() || IsWinRTDelegate()) && (pInfo == NULL) && (*pGuid != GUID_NULL)
-#ifdef FEATURE_COMINTEROP
-        && !(bClassic
-             && SupportsGenericInterop(TypeHandle::Interop_NativeToManaged, modeRedirected)
-             && IsLegalNonArrayWinRTType())
-#endif // FEATURE_COMINTEROP
-        )
+    if ((IsInterface()) && (pInfo == NULL) && (*pGuid != GUID_NULL))
     {
         AllocMemTracker amTracker;
         BOOL bStoreGuidInfoOnEEClass = false;
         PTR_LoaderAllocator pLoaderAllocator;
 
 #if FEATURE_COMINTEROP
-        if ((bClassic && !IsProjectedFromWinRT()) || !HasGuidInfo())
+        if ((bClassic) || !HasGuidInfo())
         {
             bStoreGuidInfoOnEEClass = true;
         }
@@ -7666,7 +7390,7 @@ void MethodTable::GetGuid(GUID *pGuid, BOOL bGenerateIfNotFound, BOOL bClassic /
         pInfo->m_bGeneratedFromName = bGenerated;
 
         // Set in in the interface method table.
-        if (bClassic && !IsProjectedFromWinRT())
+        if (bClassic)
         {
             // Set the per-EEClass GuidInfo if we are asked for the "classic" non-WinRT GUID.
             // The MethodTable may be NGENed and read-only - and there's no point in saving
@@ -9863,83 +9587,6 @@ EEClassNativeLayoutInfo const* MethodTable::EnsureNativeLayoutInfoInitialized()
     return nullptr;
 #endif
 }
-
-#ifdef FEATURE_COMINTEROP
-//==========================================================================================
-BOOL MethodTable::IsWinRTRedirectedDelegate()
-{
-    LIMITED_METHOD_DAC_CONTRACT;
-
-    if (!IsDelegate())
-    {
-        return FALSE;
-    }
-
-    return !!WinRTDelegateRedirector::ResolveRedirectedDelegate(this, nullptr);
-}
-
-//==========================================================================================
-BOOL MethodTable::IsWinRTRedirectedInterface(TypeHandle::InteropKind interopKind)
-{
-    LIMITED_METHOD_CONTRACT;
-
-    if (!IsInterface())
-        return FALSE;
-
-    if (!HasRCWPerTypeData())
-    {
-        // All redirected interfaces have per-type RCW data
-        return FALSE;
-    }
-
-#ifdef DACCESS_COMPILE
-    RCWPerTypeData *pData = NULL;
-#else // DACCESS_COMPILE
-    // We want to keep this function LIMITED_METHOD_CONTRACT so we call GetRCWPerTypeData with
-    // the non-throwing flag. pData can be NULL if it could not be allocated.
-    RCWPerTypeData *pData = GetRCWPerTypeData(false);
-#endif // DACCESS_COMPILE
-
-    DWORD dwFlags = (pData != NULL ? pData->m_dwFlags : 0);
-    if ((dwFlags & RCWPerTypeData::InterfaceFlagsInited) == 0)
-    {
-        dwFlags = RCWPerTypeData::InterfaceFlagsInited;
-
-        if (WinRTInterfaceRedirector::ResolveRedirectedInterface(this, NULL))
-        {
-            dwFlags |= RCWPerTypeData::IsRedirectedInterface;
-        }
-        else if (HasSameTypeDefAs(MscorlibBinder::GetExistingClass(CLASS__ICOLLECTIONGENERIC)) ||
-                 HasSameTypeDefAs(MscorlibBinder::GetExistingClass(CLASS__IREADONLYCOLLECTIONGENERIC)) ||
-                 this == MscorlibBinder::GetExistingClass(CLASS__ICOLLECTION))
-        {
-            dwFlags |= RCWPerTypeData::IsICollectionGeneric;
-        }
-
-        if (pData != NULL)
-        {
-            FastInterlockOr(&pData->m_dwFlags, dwFlags);
-        }
-    }
-
-    if ((dwFlags & RCWPerTypeData::IsRedirectedInterface) != 0)
-        return TRUE;
-
-    if (interopKind == TypeHandle::Interop_ManagedToNative)
-    {
-        // ICollection<T> is redirected in the managed->WinRT direction (i.e. we have stubs
-        // that implement ICollection<T> methods in terms of IVector/IMap), but it is not
-        // treated specially in the WinRT->managed direction (we don't build a WinRT vtable
-        // for a class that only implements ICollection<T>).  IReadOnlyCollection<T> is
-        // treated similarly.
-        if ((dwFlags & RCWPerTypeData::IsICollectionGeneric) != 0)
-            return TRUE;
-    }
-
-    return FALSE;
-}
-
-#endif // FEATURE_COMINTEROP
 
 #ifdef FEATURE_READYTORUN_COMPILER
 

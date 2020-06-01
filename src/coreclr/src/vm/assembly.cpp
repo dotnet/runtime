@@ -118,8 +118,6 @@ Assembly::Assembly(BaseDomain *pDomain, PEAssembly* pFile, DebuggerAssemblyContr
     m_isDisabledPrivateReflection(0),
 #ifdef FEATURE_COMINTEROP
     m_pITypeLib(NULL),
-    m_winMDStatus(WinMDStatus_Unknown),
-    m_pManifestWinMDImport(NULL),
 #endif // FEATURE_COMINTEROP
     m_debuggerFlags(debuggerFlags),
     m_fTerminated(FALSE)
@@ -254,11 +252,6 @@ Assembly::~Assembly()
     }
 
 #ifdef FEATURE_COMINTEROP
-    if (m_pManifestWinMDImport)
-    {
-        m_pManifestWinMDImport->Release();
-    }
-
     if (m_pITypeLib != nullptr && m_pITypeLib != Assembly::InvalidTypeLib)
     {
         m_pITypeLib->Release();
@@ -1042,47 +1035,22 @@ Module * Assembly::FindModuleByTypeRef(
 
         case mdtAssemblyRef:
         {
+            if(IsAfContentType_WindowsRuntime(pModule->GetAssemblyRefFlags(tkType)))
+            {
+                ThrowHR(COR_E_PLATFORMNOTSUPPORTED);
+            }
+
             // Do this first because it has a strong contract
             Assembly * pAssembly = NULL;
 
-#if defined(FEATURE_COMINTEROP) || !defined(DACCESS_COMPILE)
-            LPCUTF8 szNamespace = NULL;
-            LPCUTF8 szClassName = NULL;
-#endif
-
-#ifdef FEATURE_COMINTEROP
-            if (pModule->HasBindableIdentity(tkType))
-#endif// FEATURE_COMINTEROP
+            if (loadFlag == Loader::SafeLookup)
             {
-                if (loadFlag == Loader::SafeLookup)
-                {
-                    pAssembly = pModule->LookupAssemblyRef(tkType);
-                }
-                else
-                {
-                    pAssembly = pModule->GetAssemblyIfLoaded(tkType);
-                }
+                pAssembly = pModule->LookupAssemblyRef(tkType);
             }
-#ifdef FEATURE_COMINTEROP
             else
             {
-                _ASSERTE(IsAfContentType_WindowsRuntime(pModule->GetAssemblyRefFlags(tkType)));
-
-                if (FAILED(pImport->GetNameOfTypeRef(
-                    tkTopLevelEncloserTypeRef,
-                    &szNamespace,
-                    &szClassName)))
-                {
-                    THROW_BAD_FORMAT(BFA_BAD_TYPEREF_TOKEN, pModule);
-                }
-
-                pAssembly = pModule->GetAssemblyIfLoaded(
-                        tkType,
-                        szNamespace,
-                        szClassName,
-                        NULL);  // pMDImportOverride
+                pAssembly = pModule->GetAssemblyIfLoaded(tkType);
             }
-#endif // FEATURE_COMINTEROP
 
             if (pAssembly != NULL)
             {
@@ -1098,10 +1066,7 @@ Module * Assembly::FindModuleByTypeRef(
             }
 
 
-            DomainAssembly * pDomainAssembly = pModule->LoadAssembly(
-                    tkType,
-                    szNamespace,
-                    szClassName);
+            DomainAssembly * pDomainAssembly = pModule->LoadAssembly(tkType);
 
 
             if (pDomainAssembly == NULL)
@@ -2195,75 +2160,6 @@ void DECLSPEC_NORETURN Assembly::ThrowBadImageException(LPCUTF8 pszNameSpace,
 
     COMPlusThrowHR(COR_E_BADIMAGEFORMAT, resIDWhy, fullName, displayName);
 }
-
-
-#ifdef FEATURE_COMINTEROP
-Assembly::WinMDStatus Assembly::GetWinMDStatus()
-{
-    LIMITED_METHOD_CONTRACT;
-
-    if (m_winMDStatus == WinMDStatus_Unknown)
-    {
-        IWinMDImport *pWinMDImport = GetManifestWinMDImport();
-        if (pWinMDImport != NULL)
-        {
-            BOOL bIsWinMDExp;
-            VERIFY(SUCCEEDED(pWinMDImport->IsScenarioWinMDExp(&bIsWinMDExp)));
-
-            if (bIsWinMDExp)
-            {
-                // this is a managed backed WinMD
-                m_winMDStatus = WinMDStatus_IsManagedWinMD;
-            }
-            else
-            {
-                // this is a pure WinMD
-                m_winMDStatus = WinMDStatus_IsPureWinMD;
-            }
-        }
-        else
-        {
-            // this is not a WinMD at all
-            m_winMDStatus = WinMDStatus_IsNotWinMD;
-        }
-    }
-
-    return m_winMDStatus;
-}
-
-bool Assembly::IsWinMD()
-{
-    LIMITED_METHOD_CONTRACT;
-    return GetWinMDStatus() != WinMDStatus_IsNotWinMD;
-}
-
-bool Assembly::IsManagedWinMD()
-{
-    LIMITED_METHOD_CONTRACT;
-    return GetWinMDStatus() == WinMDStatus_IsManagedWinMD;
-}
-
-IWinMDImport *Assembly::GetManifestWinMDImport()
-{
-    LIMITED_METHOD_CONTRACT;
-
-    if (m_pManifestWinMDImport == NULL)
-    {
-        ReleaseHolder<IWinMDImport> pWinMDImport;
-        if (SUCCEEDED(m_pManifest->GetMDImport()->QueryInterface(IID_IWinMDImport, (void **)&pWinMDImport)))
-        {
-            if (InterlockedCompareExchangeT<IWinMDImport *>(&m_pManifestWinMDImport, pWinMDImport, NULL) == NULL)
-            {
-                pWinMDImport.SuppressRelease();
-            }
-        }
-    }
-
-    return m_pManifestWinMDImport;
-}
-
-#endif // FEATURE_COMINTEROP
-
 
 #endif // #ifndef DACCESS_COMPILE
 

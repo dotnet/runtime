@@ -29,7 +29,7 @@
       AppDir="$(AppDir)"
       RuntimePackDir="$(RuntimePackDir)"
       MainAssembly="bin\WasmSample.dll"
-      MainJS="runtime.js"
+      MainJS="$(MonoProjectRoot)\wasm\runtime-test.js"
       AssemblySearchPaths="@(AssemblySearchPaths)"/>
     <Exec Command="chmod a+x $(AppDir)/run-v8.sh" />
   </Target>

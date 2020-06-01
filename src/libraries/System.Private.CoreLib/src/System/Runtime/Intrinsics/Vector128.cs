@@ -1554,6 +1554,7 @@ namespace System.Runtime.Intrinsics
         /// <param name="vector">The vector to get the lower 64-bits from.</param>
         /// <returns>The value of the lower 64-bits as a new <see cref="Vector64{T}" />.</returns>
         /// <exception cref="NotSupportedException">The type of <paramref name="vector" /> (<typeparamref name="T" />) is not supported.</exception>
+        [Intrinsic]
         public static Vector64<T> GetLower<T>(this Vector128<T> vector)
             where T : struct
         {

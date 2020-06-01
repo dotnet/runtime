@@ -575,8 +575,7 @@ void Module::Initialize(AllocMemTracker *pamTracker, LPCWSTR szName)
 
         if (IsSystem() ||
             (strcmp(m_pSimpleName, "System") == 0) ||
-            (strcmp(m_pSimpleName, "System.Core") == 0) ||
-            (strcmp(m_pSimpleName, "Windows.Foundation") == 0))
+            (strcmp(m_pSimpleName, "System.Core") == 0))
         {
             FastInterlockOr(&m_dwPersistedFlags, LOW_LEVEL_SYSTEM_ASSEMBLY_BY_NAME);
         }
@@ -650,14 +649,6 @@ void Module::Initialize(AllocMemTracker *pamTracker, LPCWSTR szName)
                 m_pMemberRefToDescHashTable = MemberRefToDescHashTable::Create(this, pImport->GetCountWithTokenKind(mdtMemberRef)+1, pamTracker);
             }
         }
-
-#if defined(FEATURE_COMINTEROP) && defined(FEATURE_PREJIT)
-        if (IsCompilationProcess() && m_pGuidToTypeHash == NULL)
-        {
-            // only allocate this during NGEN-ing
-            m_pGuidToTypeHash = GuidToMethodTableHashTable::Create(this, GUID_TO_TYPE_HASH_BUCKETS, pamTracker);
-        }
-#endif // FEATURE_COMINTEROP
     }
 
     // this will be initialized a bit later.
@@ -904,103 +895,6 @@ void GuidToMethodTableHashTable::FixupEntry(DataImage *pImage, GuidToMethodTable
 }
 
 #endif // FEATURE_NATIVE_IMAGE_GENERATION && !DACCESS_COMPILE
-
-
-#ifdef FEATURE_PREJIT
-
-#ifndef DACCESS_COMPILE
-BOOL Module::CanCacheWinRTTypeByGuid(MethodTable *pMT)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_NOTRIGGER;
-        MODE_ANY;
-        PRECONDITION(IsCompilationProcess());
-    }
-    CONTRACTL_END;
-
-    // Don't cache WinRT types in collectible modules.
-    if (IsCollectible())
-    {
-        return FALSE;
-    }
-
-    // Don't cache mscorlib-internal declarations of WinRT types.
-    if (IsSystem() && pMT->IsProjectedFromWinRT())
-        return FALSE;
-
-    // Don't cache redirected WinRT types.
-    if (WinRTTypeNameConverter::IsRedirectedWinRTSourceType(pMT))
-        return FALSE;
-
-#ifdef FEATURE_NATIVE_IMAGE_GENERATION
-    // Don't cache in a module that's not the NGen target, since the result
-    // won't be saved, and since the such a module might be read-only.
-    if (GetAppDomain()->ToCompilationDomain()->GetTargetModule() != this)
-        return FALSE;
-#endif
-
-    return TRUE;
-}
-
-void Module::CacheWinRTTypeByGuid(PTR_MethodTable pMT, PTR_GuidInfo pgi /*= NULL*/)
-{
-    CONTRACTL
-    {
-        STANDARD_VM_CHECK;
-        PRECONDITION(CheckPointer(pMT));
-        PRECONDITION(pMT->IsLegalNonArrayWinRTType());
-        PRECONDITION(pgi != NULL || pMT->GetGuidInfo() != NULL);
-        PRECONDITION(IsCompilationProcess());
-    }
-    CONTRACTL_END;
-
-    if (pgi == NULL)
-    {
-        pgi = pMT->GetGuidInfo();
-    }
-
-    AllocMemTracker amt;
-    m_pGuidToTypeHash->InsertValue(&pgi->m_Guid, pMT, TRUE, &amt);
-    amt.SuppressRelease();
-}
-
-#endif // !DACCESS_COMPILE
-
-PTR_MethodTable Module::LookupTypeByGuid(const GUID & guid)
-{
-    WRAPPER_NO_CONTRACT;
-    // Triton ni images do not have this hash.
-    if (m_pGuidToTypeHash != NULL)
-        return m_pGuidToTypeHash->GetValue(&guid, NULL);
-    else
-        return NULL;
-}
-
-void Module::GetCachedWinRTTypes(SArray<PTR_MethodTable> * pTypes, SArray<GUID> * pGuids)
-{
-    CONTRACTL
-    {
-        STANDARD_VM_CHECK;
-        SUPPORTS_DAC;
-    }
-    CONTRACTL_END;
-
-    // Triton ni images do not have this hash.
-    if (m_pGuidToTypeHash != NULL)
-    {
-        GuidToMethodTableHashTable::Iterator it(m_pGuidToTypeHash);
-        GuidToMethodTableEntry *pEntry;
-        while (m_pGuidToTypeHash->FindNext(&it, &pEntry))
-        {
-            pTypes->Append(pEntry->m_pMT);
-            pGuids->Append(*pEntry->m_Guid);
-        }
-    }
-}
-
-#endif // FEATURE_PREJIT
 
 #endif // FEATURE_COMINTEROP
 
@@ -1613,11 +1507,6 @@ static bool IsLikelyDependencyOf(Module * pModule, Module * pOtherModule)
     // reference between these low level system assemblies and the app assemblies. The prefererred zap module for instantiations of generic
     // collections from these low level system assemblies (like LinkedList<AppType>) should be module of AppType. It would be module of the generic
     // collection without this check.
-    //
-    // Similar problem exists for Windows.Foundation.winmd. There is a cycle between Windows.Foundation.winmd and Windows.Storage.winmd. This cycle
-    // would cause prefererred zap module for instantiations of foundation types (like IAsyncOperation<StorageFolder>) to be Windows.Foundation.winmd.
-    // It is a bad choice. It should be Windows.Storage.winmd instead. We explicitly push Windows.Foundation to lower level by treating it as
-    // low level system assembly to avoid this problem.
     //
     if (pModule->IsLowLevelSystemAssemblyByName())
     {
@@ -3300,36 +3189,6 @@ void Module::StartUnload()
 }
 #endif // CROSSGEN_COMPILE
 
-//---------------------------------------------------------------------------------------
-//
-// Simple wrapper around calling IsAfContentType_WindowsRuntime() against the flags
-// returned from the PEAssembly's GetFlagsNoTrigger()
-//
-// Return Value:
-//     nonzero iff we successfully determined pModule is a WinMD. FALSE if pModule is not
-//     a WinMD, or we fail trying to find out.
-//
-BOOL Module::IsWindowsRuntimeModule()
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        CAN_TAKE_LOCK;     // Accesses metadata directly, which takes locks
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    BOOL fRet = FALSE;
-
-    DWORD dwFlags;
-
-    if (FAILED(GetAssembly()->GetManifestFile()->GetFlagsNoTrigger(&dwFlags)))
-        return FALSE;
-
-    return IsAfContentType_WindowsRuntime(dwFlags);
-}
-
 BOOL Module::IsInCurrentVersionBubble()
 {
     LIMITED_METHOD_CONTRACT;
@@ -3345,11 +3204,6 @@ BOOL Module::IsInCurrentVersionBubble()
 
     if (IsReadyToRunCompilation())
         return IsLargeVersionBubbleEnabled();
-
-#ifdef FEATURE_COMINTEROP
-    if (g_fNGenWinMDResilient)
-        return !GetAssembly()->IsWinMD();
-#endif
 
     return TRUE;
 #else // FEATURE_NATIVE_IMAGE_GENERATION
@@ -3428,8 +3282,7 @@ BOOL Module::IsInSameVersionBubble(Module *target)
 
 //---------------------------------------------------------------------------------------
 //
-// WinMD-aware helper to grab a readable public metadata interface. Any place that thinks
-// it wants to use Module::GetRWImporter + QI now should use this wrapper instead.
+// Wrapper for Module::GetRWImporter + QI when writing is not needed.
 //
 // Arguments:
 //      * dwOpenFlags - Combo from CorOpenFlags. Better not contain ofWrite!
@@ -3446,15 +3299,12 @@ HRESULT Module::GetReadablePublicMetaDataInterface(DWORD dwOpenFlags, REFIID rii
     {
         NOTHROW;
         GC_NOTRIGGER;
-        CAN_TAKE_LOCK;     // IsWindowsRuntimeModule accesses metadata directly, which takes locks
+        CAN_TAKE_LOCK;
         MODE_ANY;
     }
     CONTRACTL_END;
 
     _ASSERTE((dwOpenFlags & ofWrite) == 0);
-
-    // Temporary place to store public, AddRef'd interface pointers
-    ReleaseHolder<IUnknown> pIUnkPublic;
 
     // Temporary place to store the IUnknown from which we'll do the final QI to get the
     // requested public interface.  Any assignment to pIUnk assumes pIUnk does not need
@@ -3470,51 +3320,6 @@ HRESULT Module::GetReadablePublicMetaDataInterface(DWORD dwOpenFlags, REFIID rii
         pIUnk = GetRWImporter();
     }
     EX_CATCH_HRESULT_NO_ERRORINFO(hr);
-
-    if (FAILED(hr) && IsWindowsRuntimeModule())
-    {
-        // WinMD modules don't like creating RW importers.   They also (currently)
-        // have no plumbing to get to their public metadata interfaces from the
-        // Module.  So we actually have to start from scratch at the dispenser.
-
-        // To start with, get a dispenser, and get the metadata memory blob we've
-        // already loaded.  If either of these fail, just return the error HRESULT
-        // from the above GetRWImporter() call.
-
-        // We'll get an addref'd IMetaDataDispenser, so use a holder to release it
-        ReleaseHolder<IMetaDataDispenser> pDispenser;
-        if (FAILED(InternalCreateMetaDataDispenser(IID_IMetaDataDispenser, &pDispenser)))
-        {
-            _ASSERTE(FAILED(hr));
-            return hr;
-        }
-
-        COUNT_T cbMetadata = 0;
-        PTR_CVOID pvMetadata = GetAssembly()->GetManifestFile()->GetLoadedMetadata(&cbMetadata);
-        if ((pvMetadata == NULL) || (cbMetadata == 0))
-        {
-            _ASSERTE(FAILED(hr));
-            return hr;
-        }
-
-        // Now that the pieces are ready, we can use the riid specified by the
-        // profiler in this call to the dispenser to get the requested interface. If
-        // this fails, then this is the interesting HRESULT for the caller to see.
-        //
-        // We'll get an AddRef'd public interface, so use a holder to release it
-        hr = pDispenser->OpenScopeOnMemory(
-            pvMetadata,
-            cbMetadata,
-            (dwOpenFlags | ofReadOnly),         // Force ofReadOnly on behalf of the profiler
-            riid,
-            &pIUnkPublic);
-        if (FAILED(hr))
-            return hr;
-
-        // Set pIUnk so we can do the final QI from it below as we do in the other
-        // cases.
-        pIUnk = pIUnkPublic;
-    }
 
     // Get the requested interface
     if (SUCCEEDED(hr) && (ppvInterface != NULL))
@@ -3718,9 +3523,6 @@ ISymUnmanagedReader *Module::GetISymUnmanagedReader(void)
             // Call Fusion to ensure that any PDB's are shadow copied before
             // trying to get a symbol reader. This has to be done once per
             // Assembly.
-            // for this to work with winmds we cannot simply call GetRWImporter() as winmds are RO
-            // and thus don't implement the RW interface. so we call this wrapper function which knows
-            // how to get a IMetaDataImport interface regardless of the underlying module type.
             ReleaseHolder<IUnknown> pUnk = NULL;
             hr = GetReadablePublicMetaDataInterface(ofReadOnly, IID_IMetaDataImport, &pUnk);
             if (SUCCEEDED(hr))
@@ -4618,7 +4420,7 @@ Assembly * Module::GetAssemblyIfLoadedFromNativeAssemblyRefWithRefDefMismatch(md
         {
             // Find out if THIS reference is satisfied
             // Specify fDoNotUtilizeExtraChecks to prevent recursion
-            Assembly *pAssemblyCandidate = this->GetAssemblyIfLoaded(foundAssemblyDef, NULL, NULL, pImportFoundNativeImage, TRUE /*fDoNotUtilizeExtraChecks*/);
+            Assembly *pAssemblyCandidate = this->GetAssemblyIfLoaded(foundAssemblyDef, pImportFoundNativeImage, TRUE /*fDoNotUtilizeExtraChecks*/);
 
             // This extended check is designed only to find assemblies loaded via an AssemblySpecBindingCache based binder. Verify that's what we found.
             if(pAssemblyCandidate != NULL)
@@ -4643,12 +4445,9 @@ Assembly * Module::GetAssemblyIfLoadedFromNativeAssemblyRefWithRefDefMismatch(md
 }
 #endif // !defined(DACCESS_COMPILE) && defined(FEATURE_PREJIT)
 
-// Fills ppContainingWinRtAppDomain only if WinRT type name is passed and if the assembly is found (return value != NULL).
 Assembly *
 Module::GetAssemblyIfLoaded(
     mdAssemblyRef       kAssemblyRef,
-    LPCSTR              szWinRtNamespace,   // = NULL
-    LPCSTR              szWinRtClassName,   // = NULL
     IMDInternalImport * pMDImportOverride,  // = NULL
     BOOL                fDoNotUtilizeExtraChecks, // = FALSE
     ICLRPrivBinder      *pBindingContextForLoadedAssembly // = NULL
@@ -4667,8 +4466,7 @@ Module::GetAssemblyIfLoaded(
     CONTRACT_END;
 
     Assembly * pAssembly = NULL;
-    BOOL fCanUseRidMap = ((pMDImportOverride == NULL) &&
-                          (szWinRtNamespace == NULL));
+    BOOL fCanUseRidMap = pMDImportOverride == NULL;
 
 #ifdef _DEBUG
     fCanUseRidMap = fCanUseRidMap && (CLRConfig::GetConfigValue(CLRConfig::INTERNAL_GetAssemblyIfLoadedIgnoreRidMap) == 0);
@@ -4681,7 +4479,6 @@ Module::GetAssemblyIfLoaded(
 
     // Don't do a lookup if an override IMDInternalImport is provided, since the lookup is for the
     // standard IMDInternalImport and might result in an incorrect result.
-    // WinRT references also do not update RID map, so don't try to look it up
     if (fCanUseRidMap)
     {
         pAssembly = LookupAssemblyRef(kAssemblyRef);
@@ -4716,32 +4513,6 @@ Module::GetAssemblyIfLoaded(
             {
                 continue;
             }
-
-#ifdef FEATURE_COMINTEROP
-            if (szWinRtNamespace != NULL)
-            {
-                _ASSERTE(szWinRtClassName != NULL);
-
-                CLRPrivBinderWinRT * pWinRtBinder = pAppDomainExamine->GetWinRtBinder();
-                if (pWinRtBinder != nullptr)
-                {
-                    ENABLE_FORBID_GC_LOADER_USE_IN_THIS_SCOPE();
-                    pAssembly = pWinRtBinder->FindAssemblyForTypeIfLoaded(
-                        dac_cast<PTR_AppDomain>(pAppDomainExamine),
-                        szWinRtNamespace,
-                        szWinRtClassName);
-                }
-
-                // Never store WinMD AssemblyRefs into the rid map.
-                if (pAssembly != NULL)
-                {
-                    break;
-                }
-
-                // Never attemt to search the assembly spec binding cache for this form of WinRT assembly reference.
-                continue;
-            }
-#endif // FEATURE_COMINTEROP
 
 #ifndef DACCESS_COMPILE
             {
@@ -4802,8 +4573,6 @@ Module::GetAssemblyIfLoaded(
         // This restricts the scenario to a somewhat restricted case.
 
         BOOL eligibleForAdditionalChecks = TRUE;
-        if (szWinRtNamespace != NULL)
-            eligibleForAdditionalChecks = FALSE; // WinRT binds do not support this scan
 
         AssemblySpec specSearchAssemblyRef;
 
@@ -4820,10 +4589,6 @@ Module::GetAssemblyIfLoaded(
                 eligibleForAdditionalChecks = FALSE; // If an assemblySpec can't be constructed then we're not going to succeed
                                                      // This should not ever happen, due to the above checks, but this logic
                                                      // is intended to be defensive against unexpected behavior.
-            }
-            else if (specSearchAssemblyRef.IsContentType_WindowsRuntime())
-            {
-                eligibleForAdditionalChecks = FALSE; // WinRT binds do not support this scan
             }
         }
 
@@ -4967,14 +4732,7 @@ Module::GetAssemblyRefFlags(
 } // Module::GetAssemblyRefFlags
 
 #ifndef DACCESS_COMPILE
-
-// Arguments:
-//   szWinRtTypeNamespace ... Namespace of WinRT type.
-//   szWinRtTypeClassName ... Name of WinRT type, NULL for non-WinRT (classic) types.
-DomainAssembly * Module::LoadAssembly(
-    mdAssemblyRef kAssemblyRef,
-    LPCUTF8       szWinRtTypeNamespace,
-    LPCUTF8       szWinRtTypeClassName)
+DomainAssembly * Module::LoadAssembly(mdAssemblyRef kAssemblyRef)
 {
     CONTRACT(DomainAssembly *)
     {
@@ -4984,7 +4742,6 @@ DomainAssembly * Module::LoadAssembly(
         if (FORBIDGC_LOADER_USE_ENABLED()) FORBID_FAULT; else { INJECT_FAULT(COMPlusThrowOM();); }
         MODE_ANY;
         POSTCONDITION(CheckPointer(RETVAL, NULL_NOT_OK));
-        //POSTCONDITION((CheckPointer(GetAssemblyIfLoaded(kAssemblyRef, szWinRtTypeNamespace, szWinRtTypeClassName)), NULL_NOT_OK));
     }
     CONTRACT_END;
 
@@ -4998,22 +4755,16 @@ DomainAssembly * Module::LoadAssembly(
     Assembly * pAssembly = LookupAssemblyRef(kAssemblyRef);
     if (pAssembly != NULL)
     {
-        _ASSERTE(HasBindableIdentity(kAssemblyRef));
-
         pDomainAssembly = pAssembly->GetDomainAssembly();
         ::GetAppDomain()->LoadDomainFile(pDomainAssembly, FILE_LOADED);
 
         RETURN pDomainAssembly;
     }
 
-    bool fHasBindableIdentity = HasBindableIdentity(kAssemblyRef);
-
     {
         PEAssemblyHolder pFile = GetDomainAssembly()->GetFile()->LoadAssembly(
                 kAssemblyRef,
-                NULL,
-                szWinRtTypeNamespace,
-                szWinRtTypeClassName);
+                NULL);
         AssemblySpec spec;
         spec.InitializeSpec(kAssemblyRef, GetMDImport(), GetDomainAssembly());
         // Set the binding context in the AssemblySpec if one is available. This can happen if the LoadAssembly ended up
@@ -5024,28 +4775,19 @@ DomainAssembly * Module::LoadAssembly(
         {
             spec.SetBindingContext(pBindingContext);
         }
-        if (szWinRtTypeClassName != NULL)
-        {
-            spec.SetWindowsRuntimeType(szWinRtTypeNamespace, szWinRtTypeClassName);
-        }
         pDomainAssembly = GetAppDomain()->LoadDomainAssembly(&spec, pFile, FILE_LOADED);
     }
 
     if (pDomainAssembly != NULL)
     {
         _ASSERTE(
-            !fHasBindableIdentity ||                        // GetAssemblyIfLoaded will not find non-bindable assemblies
             pDomainAssembly->IsSystem() ||                  // GetAssemblyIfLoaded will not find mscorlib (see AppDomain::FindCachedFile)
             !pDomainAssembly->IsLoaded() ||                 // GetAssemblyIfLoaded will not find not-yet-loaded assemblies
-            GetAssemblyIfLoaded(kAssemblyRef, NULL, NULL, NULL, FALSE, pDomainAssembly->GetFile()->GetHostAssembly()) != NULL);     // GetAssemblyIfLoaded should find all remaining cases
+            GetAssemblyIfLoaded(kAssemblyRef, NULL, FALSE, pDomainAssembly->GetFile()->GetHostAssembly()) != NULL);     // GetAssemblyIfLoaded should find all remaining cases
 
-        // Note: We cannot cache WinRT AssemblyRef, because it is meaningless without the TypeRef context
         if (pDomainAssembly->GetCurrentAssembly() != NULL)
         {
-            if (fHasBindableIdentity)
-            {
-                StoreAssemblyRef(kAssemblyRef, pDomainAssembly->GetCurrentAssembly());
-            }
+            StoreAssemblyRef(kAssemblyRef, pDomainAssembly->GetCurrentAssembly());
         }
     }
 
@@ -7428,85 +7170,6 @@ MethodDesc* Module::LoadIBCMethodHelper(DataImage *image, CORBBTPROF_BLOB_PARAM_
     RETURN pMethod;
 } // Module::LoadIBCMethodHelper
 
-#ifdef FEATURE_COMINTEROP
-//---------------------------------------------------------------------------------------
-//
-// This function is a workaround for missing IBC data in WinRT assemblies and
-// not-yet-implemented sharing of IL_STUB(__Canon arg) IL stubs for all interfaces.
-//
-static void ExpandWindowsRuntimeType(TypeHandle t, DataImage *image)
-{
-    CONTRACTL
-    {
-        STANDARD_VM_CHECK;
-        PRECONDITION(!t.IsNull());
-    }
-    CONTRACTL_END
-
-    if (t.IsTypeDesc())
-        return;
-
-    // This array contains our poor man's IBC data - instantiations that are known to
-    // be used by other assemblies.
-    static const struct
-    {
-        LPCUTF8         m_szTypeName;
-        BinderClassID   m_GenericBinderClassID;
-    }
-    rgForcedInstantiations[] = {
-        { "Windows.UI.Xaml.Data.IGroupInfo", CLASS__IENUMERABLEGENERIC },
-        { "Windows.UI.Xaml.UIElement",       CLASS__ILISTGENERIC       },
-        { "Windows.UI.Xaml.Visibility",      CLASS__CLRIREFERENCEIMPL  },
-        { "Windows.UI.Xaml.VerticalAlignment", CLASS__CLRIREFERENCEIMPL },
-        { "Windows.UI.Xaml.HorizontalAlignment", CLASS__CLRIREFERENCEIMPL },
-        // The following instantiations are used by Microsoft.PlayerFramework - http://playerframework.codeplex.com/
-        { "Windows.UI.Xaml.Media.AudioCategory", CLASS__CLRIREFERENCEIMPL },
-        { "Windows.UI.Xaml.Media.AudioDeviceType", CLASS__CLRIREFERENCEIMPL },
-        { "Windows.UI.Xaml.Media.MediaElementState", CLASS__CLRIREFERENCEIMPL },
-        { "Windows.UI.Xaml.Media.Stereo3DVideoRenderMode", CLASS__CLRIREFERENCEIMPL },
-        { "Windows.UI.Xaml.Media.Stereo3DVideoPackingMode", CLASS__CLRIREFERENCEIMPL },
-    };
-
-    DefineFullyQualifiedNameForClass();
-    LPCUTF8 szTypeName = GetFullyQualifiedNameForClass(t.AsMethodTable());
-
-    for (SIZE_T i = 0; i < COUNTOF(rgForcedInstantiations); i++)
-    {
-        if (strcmp(szTypeName, rgForcedInstantiations[i].m_szTypeName) == 0)
-        {
-            EX_TRY
-            {
-                TypeHandle thGenericType = TypeHandle(MscorlibBinder::GetClass(rgForcedInstantiations[i].m_GenericBinderClassID));
-
-                Instantiation inst(&t, 1);
-                thGenericType.Instantiate(inst);
-            }
-            EX_CATCH
-            {
-                image->GetPreloader()->Error(t.GetCl(), GET_EXCEPTION());
-            }
-            EX_END_CATCH(SwallowAllExceptions)
-        }
-    }
-
-    if (strcmp(szTypeName, "Windows.Foundation.Collections.IObservableVector`1") == 0)
-    {
-        EX_TRY
-        {
-            TypeHandle thArg = TypeHandle(g_pObjectClass);
-
-            Instantiation inst(&thArg, 1);
-            t.Instantiate(inst);
-        }
-        EX_CATCH
-        {
-            image->GetPreloader()->Error(t.GetCl(), GET_EXCEPTION());
-        }
-        EX_END_CATCH(SwallowAllExceptions)
-    }
-}
-#endif // FEATURE_COMINTEROP
-
 //---------------------------------------------------------------------------------------
 //
 void Module::ExpandAll(DataImage *image)
@@ -7540,33 +7203,6 @@ void Module::ExpandAll(DataImage *image)
 
         while (pInternalImport->EnumNext(&hEnum, &tk))
         {
-#ifdef FEATURE_COMINTEROP
-            // Skip the non-managed WinRT types since they're only used by Javascript and C++
-            //
-            // With WinRT files, we want to exclude certain types that cause us problems:
-            // * Attribute types defined in Windows.Foundation.  The constructor's methodimpl flags
-            //   specify it is an internal runtime function and gets set as an FCALL when we parse
-            //   the type
-            //
-            if (IsAfContentType_WindowsRuntime(assemblyFlags))
-            {
-                mdToken tkExtends;
-                pInternalImport->GetTypeDefProps(tk, NULL, &tkExtends);
-
-                if (TypeFromToken(tkExtends) == mdtTypeRef)
-                {
-                    LPCSTR szNameSpace = NULL;
-                    LPCSTR szName = NULL;
-                    pInternalImport->GetNameOfTypeRef(tkExtends, &szNameSpace, &szName);
-
-                    if (!strcmp(szNameSpace, "System") && !_stricmp((szName), "Attribute"))
-                    {
-                        continue;
-                    }
-                }
-            }
-#endif // FEATURE_COMINTEROP
-
             TypeHandle t = LoadTypeDefOrRefHelper(image, this, tk);
 
             if (t.IsNull()) // Skip this type
@@ -7639,13 +7275,6 @@ void Module::ExpandAll(DataImage *image)
                     m_GenericTypeDefToCanonMethodTableMap.AddElement(this, RidFromToken(pCanonMT->GetCl()), pCanonMT);
                 }
             }
-
-#ifdef FEATURE_COMINTEROP
-            if (IsAfContentType_WindowsRuntime(assemblyFlags))
-            {
-                ExpandWindowsRuntimeType(t, image);
-            }
-#endif // FEATURE_COMINTEROP
         }
     }
 
@@ -7661,39 +7290,10 @@ void Module::ExpandAll(DataImage *image)
         {
             mdToken tkResolutionScope = mdTokenNil;
             pInternalImport->GetResolutionScopeOfTypeRef(tk, &tkResolutionScope);
-
-#ifdef FEATURE_COMINTEROP
-            // WinRT first party files are authored with TypeRefs pointing to TypeDefs in the same module.
-            // This causes us to load types we do not want to NGen such as custom attributes. We will not
-            // expand any module local TypeRefs for WinMDs to prevent this.
-            if(TypeFromToken(tkResolutionScope)==mdtModule && IsAfContentType_WindowsRuntime(assemblyFlags))
-                continue;
-#endif // FEATURE_COMINTEROP
             TypeHandle t = LoadTypeDefOrRefHelper(image, this, tk);
 
             if (t.IsNull()) // Skip this type
                 continue;
-
-#ifdef FEATURE_COMINTEROP
-            if (!g_fNGenWinMDResilient && TypeFromToken(tkResolutionScope) == mdtAssemblyRef)
-            {
-                DWORD dwAssemblyRefFlags;
-                IfFailThrow(pInternalImport->GetAssemblyRefProps(tkResolutionScope, NULL, NULL, NULL, NULL, NULL, NULL, &dwAssemblyRefFlags));
-
-                if (IsAfContentType_WindowsRuntime(dwAssemblyRefFlags))
-                {
-                    Assembly *pAssembly = t.GetAssembly();
-                    PEAssembly *pPEAssembly = pAssembly->GetManifestFile();
-                    AssemblySpec refSpec;
-                    refSpec.InitializeSpec(tkResolutionScope, pInternalImport);
-                    LPCSTR psznamespace;
-                    LPCSTR pszname;
-                    pInternalImport->GetNameOfTypeRef(tk, &psznamespace, &pszname);
-                    refSpec.SetWindowsRuntimeType(psznamespace, pszname);
-                    GetAppDomain()->ToCompilationDomain()->AddDependency(&refSpec,pPEAssembly);
-                }
-            }
-#endif // FEATURE_COMINTEROP
         }
     }
 
@@ -7824,40 +7424,6 @@ void Module::ExpandAll(DataImage *image)
         {
             mdTypeRef parent;
             IfFailThrow(pInternalImport->GetParentOfMemberRef(tk, &parent));
-
-#ifdef FEATURE_COMINTEROP
-            if (IsAfContentType_WindowsRuntime(assemblyFlags) && TypeFromToken(parent) == mdtTypeRef)
-            {
-                mdToken tkResolutionScope = mdTokenNil;
-                pInternalImport->GetResolutionScopeOfTypeRef(parent, &tkResolutionScope);
-                // WinRT first party files are authored with TypeRefs pointing to TypeDefs in the same module.
-                // This causes us to load types we do not want to NGen such as custom attributes. We will not
-                // expand any module local TypeRefs for WinMDs to prevent this.
-                if(TypeFromToken(tkResolutionScope)==mdtModule)
-                    continue;
-
-                LPCSTR szNameSpace = NULL;
-                LPCSTR szName = NULL;
-                if (SUCCEEDED(pInternalImport->GetNameOfTypeRef(parent, &szNameSpace, &szName)))
-                {
-                    if (WinMDAdapter::ConvertWellKnownTypeNameFromClrToWinRT(&szNameSpace, &szName))
-                    {
-                        //
-                        // This is a MemberRef from a redirected WinRT type
-                        // We should skip it as managed view will never see this MemberRef anyway
-                        // Not skipping this will result MissingMethodExceptions as members in redirected
-                        // types doesn't exactly match their redirected CLR type counter part
-                        //
-                        // Typically we only need to do this for interfaces as we should never see MemberRef
-                        // from non-interfaces, but here to keep things simple I'm skipping every memberref that
-                        // belongs to redirected WinRT type
-                        //
-                        continue;
-                    }
-                }
-
-            }
-#endif // FEATURE_COMINTEROP
 
             // If the MethodRef has a TypeSpec as a parent (i.e. refers to a method on an array type
             // or on a generic class), then it could in turn refer to type variables of
@@ -8628,14 +8194,6 @@ void Module::Save(DataImage *image)
     {
         m_pStubMethodHashTable->Save(image, profileData);
     }
-
-#ifdef FEATURE_COMINTEROP
-    // the type saving operations above had the side effect of populating m_pGuidToTypeHash
-    if (m_pGuidToTypeHash != NULL)
-    {
-        m_pGuidToTypeHash->Save(image, profileData);
-    }
-#endif // FEATURE_COMINTEROP
 
     // Compute and save the property name set
     PrecomputeMatchingProperties(image);
@@ -9437,13 +8995,6 @@ void Module::Fixup(DataImage *image)
         image->FixupPointerField(this, offsetof(Module, m_pStubMethodHashTable));
         m_pStubMethodHashTable->Fixup(image);
     }
-
-#ifdef FEATURE_COMINTEROP
-    if (m_pGuidToTypeHash) {
-        image->FixupPointerField(this, offsetof(Module, m_pGuidToTypeHash));
-        m_pGuidToTypeHash->Fixup(image);
-    }
-#endif // FEATURE_COMINTEROP
 
     image->EndRegion(CORINFO_REGION_COLD);
 

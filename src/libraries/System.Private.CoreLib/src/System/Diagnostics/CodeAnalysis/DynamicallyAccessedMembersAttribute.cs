@@ -16,10 +16,15 @@ namespace System.Diagnostics.CodeAnalysis
     ///
     /// When this attribute is applied to a location of type <see cref="string"/>, the assumption is
     /// that the string represents a fully qualified type name.
+    ///
+    /// If the attribute is applied to a method it's treated as a special case and it implies
+    /// the attribute should be applied to the "this" parameter of the method. As such the attribute
+    /// should only be used on instance methods of types assignable to System.Type (or string, but no methods
+    /// will use it there).
     /// </remarks>
     [AttributeUsage(
         AttributeTargets.Field | AttributeTargets.ReturnValue | AttributeTargets.GenericParameter |
-        AttributeTargets.Parameter | AttributeTargets.Property,
+        AttributeTargets.Parameter | AttributeTargets.Property | AttributeTargets.Method,
         Inherited = false)]
     public sealed class DynamicallyAccessedMembersAttribute : Attribute
     {

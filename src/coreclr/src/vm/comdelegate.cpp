@@ -342,7 +342,7 @@ BOOL GenerateShuffleArrayPortable(MethodDesc* pMethodSrc, MethodDesc *pMethodDst
 
     unsigned int argSlots = NUM_ARGUMENT_REGISTERS
 #ifdef NUM_FLOAT_ARGUMENT_REGISTERS
-                    + NUM_FLOAT_ARGUMENT_REGISTERS 
+                    + NUM_FLOAT_ARGUMENT_REGISTERS
 #endif
                     + sArgPlacerSrc.SizeOfArgStack() / sizeof(size_t);
 
@@ -430,10 +430,10 @@ BOOL GenerateShuffleArrayPortable(MethodDesc* pMethodSrc, MethodDesc *pMethodDst
             pGraphNodes[i].isSource = false;
         }
 
-        // Build the directed graph representing register and stack slot shuffling. 
+        // Build the directed graph representing register and stack slot shuffling.
         // The links are directed from destination to source.
         // During the build also set isSource flag for nodes that are sources of data.
-        // The ones that don't have the isSource flag set are beginnings of non-cyclic 
+        // The ones that don't have the isSource flag set are beginnings of non-cyclic
         // segments of the graph.
         for (unsigned int i = 0; i < pShuffleEntryArray->GetCount(); i++)
         {
@@ -448,7 +448,7 @@ BOOL GenerateShuffleArrayPortable(MethodDesc* pMethodSrc, MethodDesc *pMethodDst
             // Unmark the node to indicate that it was not processed yet
             pGraphNodes[srcIndex].isMarked = false;
             // The node contains a register / stack slot that is a source from which we move data to a destination one
-            pGraphNodes[srcIndex].isSource = true; 
+            pGraphNodes[srcIndex].isSource = true;
             pGraphNodes[srcIndex].ofs = entry.srcofs;
 
             // Unmark the node to indicate that it was not processed yet
@@ -1392,85 +1392,6 @@ OBJECTREF COMDelegate::ConvertToDelegate(LPVOID pCallback, MethodTable* pMT)
     return delObj;
 }
 
-#ifdef FEATURE_COMINTEROP
-// Marshals a WinRT delegate interface pointer to a managed Delegate
-//static
-OBJECTREF COMDelegate::ConvertWinRTInterfaceToDelegate(IUnknown *pIdentity, MethodTable* pMT)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE;
-        PRECONDITION(CheckPointer(pIdentity));
-        PRECONDITION(CheckPointer(pMT));
-    }
-    CONTRACTL_END;
-
-    MethodDesc*         pMD         = FindDelegateInvokeMethod(pMT);
-
-    if (pMD->IsSharedByGenericInstantiations())
-    {
-        // we need an exact MD to represent the call
-        pMD = InstantiatedMethodDesc::FindOrCreateExactClassMethod(pMT, pMD);
-    }
-    else
-    {
-        // set up ComPlusCallInfo
-        PopulateComPlusCallInfo(pMT);
-    }
-
-    ComPlusCallInfo *pComInfo = ComPlusCallInfo::FromMethodDesc(pMD);
-    PCODE pMarshalStub = (pComInfo == NULL ? NULL : pComInfo->m_pILStub);
-
-    if (pMarshalStub == NULL)
-    {
-        GCX_PREEMP();
-
-        DWORD dwStubFlags = NDIRECTSTUB_FL_COM | NDIRECTSTUB_FL_WINRT | NDIRECTSTUB_FL_WINRTDELEGATE;
-
-        pMarshalStub = GetStubForInteropMethod(pMD, dwStubFlags);
-
-        // At this point we must have a non-NULL ComPlusCallInfo
-        pComInfo = ComPlusCallInfo::FromMethodDesc(pMD);
-        _ASSERTE(pComInfo != NULL);
-
-        // Save this new stub on the ComPlusCallInfo
-        InterlockedCompareExchangeT<PCODE>(&pComInfo->m_pILStub, pMarshalStub, NULL);
-
-        pMarshalStub = pComInfo->m_pILStub;
-    }
-
-    _ASSERTE(pMarshalStub != NULL);
-
-    //////////////////////////////////////////////////////////////////////////////////////////////////////////
-    // Wire up the stub to the new delegate instance.
-    //
-
-    LOG((LF_INTEROP, LL_INFO10000, "Created delegate for WinRT interface: pUnk: %p\n", pIdentity));
-
-    // Create the new delegate
-    DELEGATEREF delObj = (DELEGATEREF) pMT->Allocate();
-
-    {
-        // delObj is not protected
-        GCX_NOTRIGGER();
-
-        // Wire up the unmanaged call stub to the delegate.
-        delObj->SetTarget(delObj);              // We are the "this" object
-
-        // We save the entry point in the delegate's method pointer and the identity pUnk in the aux pointer.
-        delObj->SetMethodPtr(pMarshalStub);
-        delObj->SetMethodPtrAux((PCODE)pIdentity);
-
-        // Also, mark this delegate as an unmanaged function pointer wrapper.
-        delObj->SetInvocationCount(DELEGATE_MARKER_UNMANAGEDFPTR);
-    }
-
-    return delObj;
-}
-#endif // FEATURE_COMINTEROP
-
 void COMDelegate::ValidateDelegatePInvoke(MethodDesc* pMD)
 {
     CONTRACTL
@@ -1519,16 +1440,7 @@ MethodDesc* COMDelegate::GetILStubMethodDesc(EEImplMethodDesc* pDelegateMD, DWOR
 
     MethodTable *pMT = pDelegateMD->GetMethodTable();
 
-#ifdef FEATURE_COMINTEROP
-    if (pMT->IsWinRTDelegate())
-    {
-        dwStubFlags |= NDIRECTSTUB_FL_COM | NDIRECTSTUB_FL_WINRT | NDIRECTSTUB_FL_WINRTDELEGATE;
-    }
-    else
-#endif // FEATURE_COMINTEROP
-    {
-        dwStubFlags |= NDIRECTSTUB_FL_DELEGATE;
-    }
+    dwStubFlags |= NDIRECTSTUB_FL_DELEGATE;
 
     PInvokeStaticSigInfo sigInfo(pDelegateMD);
     return NDirect::CreateCLRToNativeILStub(&sigInfo, dwStubFlags, pDelegateMD);
@@ -2989,8 +2901,7 @@ MethodDesc* COMDelegate::GetDelegateCtor(TypeHandle delegateType, MethodDesc *pT
 
 #ifdef FEATURE_COMINTEROP
     // We'll always force classic COM types to go down the slow path for security checks.
-    if ((pMT->IsComObjectType() && !pMT->IsWinRTObjectType()) ||
-        (pMT->IsComImport() && !pMT->IsProjectedFromWinRT()))
+    if (pMT->IsComObjectType() || pMT->IsComImport())
     {
         return NULL;
     }

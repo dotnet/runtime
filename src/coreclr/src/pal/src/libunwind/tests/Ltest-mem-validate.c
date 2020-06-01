@@ -35,8 +35,6 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.  */
 
 #include <sys/resource.h>
 #include <sys/mman.h>
-#include <sys/types.h>
-#include <sys/wait.h>
 
 #define panic(args...)				\
 	{ fprintf (stderr, args); exit (-1); }

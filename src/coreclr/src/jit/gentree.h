@@ -1650,8 +1650,6 @@ public:
 
     inline bool IsBoxedValue();
 
-    inline bool IsSIMDEqualityOrInequality() const;
-
     static bool OperIsList(genTreeOps gtOper)
     {
         return gtOper == GT_LIST;
@@ -4202,6 +4200,16 @@ struct GenTreeCall final : public GenTree
     bool IsInlineCandidate() const
     {
         return (gtFlags & GTF_CALL_INLINE_CANDIDATE) != 0;
+    }
+
+    bool IsR2ROrVirtualStubRelativeIndir()
+    {
+#if defined(FEATURE_READYTORUN_COMPILER) && defined(TARGET_ARMARCH)
+        bool isVirtualStub = (gtFlags & GTF_CALL_VIRT_KIND_MASK) == GTF_CALL_VIRT_STUB;
+        return ((IsR2RRelativeIndir()) || (isVirtualStub && (IsVirtualStubRelativeIndir())));
+#else
+        return false;
+#endif // FEATURE_READYTORUN_COMPILER && TARGET_ARMARCH
     }
 
     bool HasNonStandardAddedArgs(Compiler* compiler) const;
@@ -6799,7 +6807,50 @@ inline bool GenTree::IsIntegralConstVector(ssize_t constVal)
         assert(gtGetOp2IfPresent() == nullptr);
         return true;
     }
-#endif
+#endif // FEATURE_SIMD
+
+#ifdef FEATURE_HW_INTRINSICS
+    if (gtOper == GT_HWINTRINSIC)
+    {
+        GenTreeHWIntrinsic* node = AsHWIntrinsic();
+
+        if (!varTypeIsIntegral(node->gtSIMDBaseType))
+        {
+            // Can't be an integral constant
+            return false;
+        }
+
+        GenTree* op1 = gtGetOp1();
+        GenTree* op2 = gtGetOp2();
+
+        NamedIntrinsic intrinsicId = node->gtHWIntrinsicId;
+
+        if (op1 == nullptr)
+        {
+            assert(op2 == nullptr);
+
+            if (constVal == 0)
+            {
+#if defined(TARGET_XARCH)
+                return (intrinsicId == NI_Vector128_get_Zero) || (intrinsicId == NI_Vector256_get_Zero);
+#elif defined(TARGET_ARM64)
+                return (intrinsicId == NI_Vector64_get_Zero) || (intrinsicId == NI_Vector128_get_Zero);
+#endif // !TARGET_XARCH && !TARGET_ARM64
+            }
+        }
+        else if ((op2 == nullptr) && !op1->OperIsList())
+        {
+            if (op1->IsIntegralConst(constVal))
+            {
+#if defined(TARGET_XARCH)
+                return (intrinsicId == NI_Vector128_Create) || (intrinsicId == NI_Vector256_Create);
+#elif defined(TARGET_ARM64)
+                return (intrinsicId == NI_Vector64_Create) || (intrinsicId == NI_Vector128_Create);
+#endif // !TARGET_XARCH && !TARGET_ARM64
+            }
+        }
+    }
+#endif // FEATURE_HW_INTRINSICS
 
     return false;
 }
@@ -6827,19 +6878,6 @@ inline bool GenTree::IsBoxedValue()
 {
     assert(gtOper != GT_BOX || AsBox()->BoxOp() != nullptr);
     return (gtOper == GT_BOX) && (gtFlags & GTF_BOX_VALUE);
-}
-
-inline bool GenTree::IsSIMDEqualityOrInequality() const
-{
-#ifdef FEATURE_SIMD
-    if (gtOper == GT_SIMD)
-    {
-        SIMDIntrinsicID id = AsSIMD()->gtSIMDIntrinsicID;
-        return (id == SIMDIntrinsicOpEquality) || (id == SIMDIntrinsicOpInEquality);
-    }
-#endif
-
-    return false;
 }
 
 inline GenTree* GenTree::MoveNext()

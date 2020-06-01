@@ -8,9 +8,6 @@
 
 #include "metadata.h"
 #include "interoputil.h"
-#ifdef FEATURE_COMINTEROP
-#include "windowsstring.h"
-#endif
 
 class MDEnumHolder
 {
@@ -116,40 +113,6 @@ using SafeComHolder = SpecializedWrapper<_TYPE, SafeComRelease<_TYPE>>;
 // use SafeComHolder otherwise.
 template<typename _TYPE>
 using SafeComHolderPreemp = SpecializedWrapper<_TYPE, SafeComReleasePreemp<_TYPE>>;
-
-
-
-#ifdef FEATURE_COMINTEROP
-#ifdef CROSSGEN_COMPILE
-    namespace clr
-    {
-        namespace winrt
-        {
-            template <typename ItfT> inline
-            HRESULT GetActivationFactory(
-                __in WinRtStringRef const & wzActivatableClassId,
-                __deref_out ItfT** ppItf)
-            {
-                LIMITED_METHOD_CONTRACT;
-                return GetActivationFactory(wzActivatableClassId, ppItf);
-            }
-
-            template <typename ItfT> inline
-            HRESULT GetActivationFactory(
-                __in WinRtStringRef const & wzActivatableClassId,
-                __out typename SafeComHolderPreemp<ItfT>* pItf)
-            {
-                STATIC_CONTRACT_WRAPPER;
-
-                if (pItf == nullptr)
-                    return E_INVALIDARG;
-
-                return GetActivationFactory(wzActivatableClassId, (ItfT**)&(*pItf));
-            }
-        }
-    }
-#endif //CROSSGEN_COMPILE
-#endif //FEATURE_COMINTEROP
 
 //-----------------------------------------------------------------------------
 // NewPreempHolder : New'ed memory holder, deletes in preemp mode.

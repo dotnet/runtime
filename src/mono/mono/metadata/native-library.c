@@ -565,12 +565,16 @@ netcore_resolve_with_dll_import_resolver (MonoAssemblyLoadContext *alc, MonoAsse
 
 	HANDLE_FUNCTION_ENTER ();
 
-	MonoStringHandle scope_handle = mono_string_new_handle (domain, scope, error);
-	goto_if_nok (error, leave);
-	MonoReflectionAssemblyHandle assembly_handle = mono_assembly_get_object_handle (domain, assembly, error);
+	MonoStringHandle scope_handle;
+	scope_handle = mono_string_new_handle (domain, scope, error);
 	goto_if_nok (error, leave);
 
-	gboolean has_search_flags = flags != 0 ? TRUE : FALSE;
+	MonoReflectionAssemblyHandle assembly_handle;
+	assembly_handle = mono_assembly_get_object_handle (domain, assembly, error);
+	goto_if_nok (error, leave);
+
+	gboolean has_search_flags;
+	has_search_flags = flags != 0 ? TRUE : FALSE;
 	gpointer args [5];
 	args [0] = MONO_HANDLE_RAW (scope_handle);
 	args [1] = MONO_HANDLE_RAW (assembly_handle);
@@ -625,10 +629,12 @@ netcore_resolve_with_load (MonoAssemblyLoadContext *alc, const char *scope, Mono
 
 	HANDLE_FUNCTION_ENTER ();
 
-	MonoStringHandle scope_handle = mono_string_new_handle (mono_alc_domain (alc), scope, error);
+	MonoStringHandle scope_handle;
+	scope_handle = mono_string_new_handle (mono_alc_domain (alc), scope, error);
 	goto_if_nok (error, leave);
 
-	gpointer gchandle = GUINT_TO_POINTER (alc->gchandle);
+	gpointer gchandle;
+	gchandle = GUINT_TO_POINTER (alc->gchandle);
 	gpointer args [3];
 	args [0] = MONO_HANDLE_RAW (scope_handle);
 	args [1] = &gchandle;
@@ -682,12 +688,16 @@ netcore_resolve_with_resolving_event (MonoAssemblyLoadContext *alc, MonoAssembly
 
 	HANDLE_FUNCTION_ENTER ();
 
-	MonoStringHandle scope_handle = mono_string_new_handle (domain, scope, error);
-	goto_if_nok (error, leave);
-	MonoReflectionAssemblyHandle assembly_handle = mono_assembly_get_object_handle (domain, assembly, error);
+	MonoStringHandle scope_handle;
+	scope_handle = mono_string_new_handle (domain, scope, error);
 	goto_if_nok (error, leave);
 
-	gpointer gchandle = GUINT_TO_POINTER (alc->gchandle);
+	MonoReflectionAssemblyHandle assembly_handle;
+	assembly_handle = mono_assembly_get_object_handle (domain, assembly, error);
+	goto_if_nok (error, leave);
+
+	gpointer gchandle;
+	gchandle = GUINT_TO_POINTER (alc->gchandle);
 	gpointer args [4];
 	args [0] = MONO_HANDLE_RAW (scope_handle);
 	args [1] = MONO_HANDLE_RAW (assembly_handle);
@@ -1268,15 +1278,7 @@ retry_with_libcoreclr:
 #if defined(ENABLE_NETCORE) && !defined(HOST_WIN32)
 		if (strcmp (new_scope, "__Internal") == 0) {
 			g_free ((char *)new_scope);
-#if defined(TARGET_OSX)
-			new_scope = g_strdup ("libcoreclr.dylib");
-#else			
-#if defined(TARGET_ANDROID)
-			new_scope = g_strdup ("libmonosgen-2.0.so");
-#else
-			new_scope = g_strdup ("libcoreclr.so");
-#endif
-#endif			
+			new_scope = g_strdup (MONO_LOADER_LIBRARY_NAME);
 			goto retry_with_libcoreclr;
 		}
 #endif		

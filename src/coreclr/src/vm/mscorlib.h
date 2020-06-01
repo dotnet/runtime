@@ -192,13 +192,14 @@ DEFINE_FIELD_U(m_ObjectToDataMap,      ComObject,              m_ObjectToDataMap
 DEFINE_CLASS(COM_OBJECT,            System,                 __ComObject)
 DEFINE_METHOD(COM_OBJECT,           RELEASE_ALL_DATA,       ReleaseAllData,             IM_RetVoid)
 DEFINE_METHOD(COM_OBJECT,           GET_EVENT_PROVIDER,     GetEventProvider,           IM_Class_RetObj)
+#ifdef FOR_ILLINK
+DEFINE_METHOD(COM_OBJECT,           CTOR,                   .ctor,                      IM_RetVoid)
+#endif
 
 DEFINE_CLASS(LICENSE_INTEROP_PROXY,  InternalInteropServices, LicenseInteropProxy)
 DEFINE_METHOD(LICENSE_INTEROP_PROXY, CREATE,                  Create,                  SM_RetObj)
 DEFINE_METHOD(LICENSE_INTEROP_PROXY, GETCURRENTCONTEXTINFO,   GetCurrentContextInfo,   IM_RuntimeTypeHandle_RefBool_RefIntPtr_RetVoid)
 DEFINE_METHOD(LICENSE_INTEROP_PROXY, SAVEKEYINCURRENTCONTEXT, SaveKeyInCurrentContext, IM_IntPtr_RetVoid)
-
-DEFINE_CLASS(RUNTIME_CLASS,                  WinRT,         RuntimeClass)
 
 #endif // FEATURE_COMINTEROP
 
@@ -358,10 +359,6 @@ DEFINE_PROPERTY(EXCEPTION,          MESSAGE,                Message,            
 DEFINE_PROPERTY(EXCEPTION,          SOURCE,                 Source,                     Str)
 DEFINE_PROPERTY(EXCEPTION,          HELP_LINK,              HelpLink,                   Str)
 DEFINE_METHOD(EXCEPTION,            INTERNAL_PRESERVE_STACK_TRACE, InternalPreserveStackTrace, IM_RetVoid)
-#ifdef FEATURE_COMINTEROP
-DEFINE_METHOD(EXCEPTION,            ADD_EXCEPTION_DATA_FOR_RESTRICTED_ERROR_INFO, AddExceptionDataForRestrictedErrorInfo, IM_Str_Str_Str_Obj_Bool_RetVoid)
-DEFINE_METHOD(EXCEPTION,            TRY_GET_RESTRICTED_LANGUAGE_ERROR_OBJECT,     TryGetRestrictedLanguageErrorObject, IM_RefObject_RetBool)
-#endif // FEATURE_COMINTEROP
 
 
 DEFINE_CLASS(SYSTEM_EXCEPTION,      System,                 SystemException)
@@ -408,29 +405,6 @@ DEFINE_CLASS(FIELD_INFO,            Reflection,             FieldInfo)
 DEFINE_CLASS(GUID,                  System,                 Guid)
 
 #ifdef FEATURE_COMINTEROP
-DEFINE_CLASS(HSTRING_HEADER_MANAGED, WinRT,                 HSTRING_HEADER)
-
-DEFINE_CLASS(ICUSTOMPROPERTY,                 WinRT,                    ICustomProperty)
-DEFINE_CLASS(ICUSTOMPROPERTYPROVIDERIMPL,     WinRT,                    ICustomPropertyProviderImpl)
-DEFINE_METHOD(ICUSTOMPROPERTYPROVIDERIMPL,    CREATE_PROPERTY,          CreateProperty,           SM_Obj_Str_RetICustomProperty)
-DEFINE_METHOD(ICUSTOMPROPERTYPROVIDERIMPL,    CREATE_INDEXED_PROPERTY,  CreateIndexedProperty,    SM_Obj_Str_PtrTypeName_RetICustomProperty)
-DEFINE_METHOD(ICUSTOMPROPERTYPROVIDERIMPL,    GET_TYPE,                 GetType,                  SM_Obj_PtrTypeName_RetVoid)
-DEFINE_CLASS(ICUSTOMPROPERTYPROVIDERPROXY,    WinRT,                    ICustomPropertyProviderProxy`2)
-DEFINE_METHOD(ICUSTOMPROPERTYPROVIDERPROXY,   CREATE_INSTANCE,          CreateInstance,           SM_Obj_RetObj)
-
-DEFINE_CLASS(FACTORYFORIREFERENCE,   WinRT,                 IReferenceFactory)
-DEFINE_METHOD(FACTORYFORIREFERENCE,  CREATE_IREFERENCE,     CreateIReference,           SM_Obj_RetObj)
-DEFINE_CLASS(CLRIREFERENCEIMPL,      WinRT,                 CLRIReferenceImpl`1)
-DEFINE_METHOD(CLRIREFERENCEIMPL,     UNBOXHELPER,           UnboxHelper,                SM_Obj_RetObj)
-DEFINE_CLASS(CLRIREFERENCEARRAYIMPL, WinRT,                 CLRIReferenceArrayImpl`1)
-DEFINE_METHOD(CLRIREFERENCEARRAYIMPL,UNBOXHELPER,           UnboxHelper,                SM_Obj_RetObj)
-DEFINE_CLASS(IREFERENCE,             WinRT,                 IReference`1)
-DEFINE_CLASS(CLRIKEYVALUEPAIRIMPL,   WinRT,                 CLRIKeyValuePairImpl`2)
-DEFINE_METHOD(CLRIKEYVALUEPAIRIMPL,  BOXHELPER,             BoxHelper,                  SM_Obj_RetObj)
-DEFINE_METHOD(CLRIKEYVALUEPAIRIMPL,  UNBOXHELPER,           UnboxHelper,                SM_Obj_RetObj)
-
-DEFINE_CLASS(WINDOWS_FOUNDATION_EVENTHANDLER,   WinRT,                 WindowsFoundationEventHandler`1)
-
 DEFINE_CLASS(VARIANT,               System,                 Variant)
 DEFINE_METHOD(VARIANT,              CONVERT_OBJECT_TO_VARIANT,MarshalHelperConvertObjectToVariant,SM_Obj_RefVariant_RetVoid)
 DEFINE_METHOD(VARIANT,              CAST_VARIANT,           MarshalHelperCastVariant,   SM_Obj_Int_RefVariant_RetVoid)
@@ -976,11 +950,6 @@ DEFINE_METHOD(ASSEMBLYLOADCONTEXT,  START_ASSEMBLY_LOAD,        StartAssemblyLoa
 DEFINE_METHOD(ASSEMBLYLOADCONTEXT,  STOP_ASSEMBLY_LOAD,         StopAssemblyLoad,           SM_RefGuid_RetVoid)
 DEFINE_METHOD(ASSEMBLYLOADCONTEXT,  INITIALIZE_DEFAULT_CONTEXT, InitializeDefaultContext,   SM_RetVoid)
 
-#ifdef FEATURE_COMINTEROP
-DEFINE_CLASS(WINDOWSRUNTIMEMETATADA, WinRT, WindowsRuntimeMetadata)
-DEFINE_METHOD(WINDOWSRUNTIMEMETATADA,  ON_DESIGNER_NAMESPACE_RESOLVE, OnDesignerNamespaceResolve, SM_Str_RetArrStr)
-#endif //FEATURE_COMINTEROP
-
 DEFINE_CLASS(VALUE_TYPE,            System,                 ValueType)
 DEFINE_METHOD(VALUE_TYPE,           GET_HASH_CODE,          GetHashCode,            IM_RetInt)
 DEFINE_METHOD(VALUE_TYPE,           EQUALS,                 Equals,                 IM_Obj_RetBool)
@@ -1004,20 +973,6 @@ DEFINE_CLASS(BUFFER,                System,                 Buffer)
 DEFINE_METHOD(BUFFER,               MEMCPY_PTRBYTE_ARRBYTE, Memcpy,                 SM_PtrByte_Int_ArrByte_Int_Int_RetVoid)
 DEFINE_METHOD(BUFFER,               MEMCPY,                 Memcpy,                 SM_PtrByte_PtrByte_Int_RetVoid)
 
-#ifdef FEATURE_COMINTEROP
-DEFINE_CLASS(WINDOWSRUNTIMEMARSHAL, WinRT,  WindowsRuntimeMarshal)
-DEFINE_METHOD(WINDOWSRUNTIMEMARSHAL, GET_HR_FOR_EXCEPTION, GetHRForException, SM_Exception_RetInt)
-DEFINE_METHOD(WINDOWSRUNTIMEMARSHAL, INITIALIZE_WRAPPER, InitializeWrapper, SM_Obj_RefIntPtr_RetVoid)
-#ifdef FEATURE_COMINTEROP_WINRT_MANAGED_ACTIVATION
-DEFINE_METHOD(WINDOWSRUNTIMEMARSHAL, GET_ACTIVATION_FACTORY_FOR_TYPE, GetActivationFactoryForType, SM_Type_RetIntPtr)
-#endif // FEATURE_COMINTEROP_WINRT_MANAGED_ACTIVATION
-
-DEFINE_CLASS(IACTIVATIONFACTORY,    WinRT,  IActivationFactory)
-DEFINE_METHOD(IACTIVATIONFACTORY,   ACTIVATE_INSTANCE, ActivateInstance, IM_RetObj)
-DEFINE_CLASS(ISTRINGABLEHELPER,     WinRT,  IStringableHelper)
-DEFINE_METHOD(ISTRINGABLEHELPER,    TO_STRING, ToString, SM_Obj_RetStr)
-#endif // FEATURE_COMINTEROP
-
 DEFINE_CLASS(STUBHELPERS,           StubHelpers,            StubHelpers)
 DEFINE_METHOD(STUBHELPERS,          IS_QCALL,               IsQCall,                    SM_IntPtr_RetBool)
 DEFINE_METHOD(STUBHELPERS,          INIT_DECLARING_TYPE,    InitDeclaringType,          SM_IntPtr_RetVoid)
@@ -1025,16 +980,7 @@ DEFINE_METHOD(STUBHELPERS,          GET_NDIRECT_TARGET,     GetNDirectTarget,   
 DEFINE_METHOD(STUBHELPERS,          GET_DELEGATE_TARGET,    GetDelegateTarget,          SM_Delegate_RefIntPtr_RetIntPtr)
 #ifdef FEATURE_COMINTEROP
 DEFINE_METHOD(STUBHELPERS,          GET_COM_HR_EXCEPTION_OBJECT,              GetCOMHRExceptionObject,            SM_Int_IntPtr_Obj_RetException)
-DEFINE_METHOD(STUBHELPERS,          GET_COM_HR_EXCEPTION_OBJECT_WINRT,        GetCOMHRExceptionObject_WinRT,      SM_Int_IntPtr_Obj_RetException)
 DEFINE_METHOD(STUBHELPERS,          GET_COM_IP_FROM_RCW,                      GetCOMIPFromRCW,                    SM_Obj_IntPtr_RefIntPtr_RefBool_RetIntPtr)
-DEFINE_METHOD(STUBHELPERS,          GET_COM_IP_FROM_RCW_WINRT,                GetCOMIPFromRCW_WinRT,              SM_Obj_IntPtr_RefIntPtr_RetIntPtr)
-DEFINE_METHOD(STUBHELPERS,          GET_COM_IP_FROM_RCW_WINRT_SHARED_GENERIC, GetCOMIPFromRCW_WinRTSharedGeneric, SM_Obj_IntPtr_RefIntPtr_RetIntPtr)
-DEFINE_METHOD(STUBHELPERS,          GET_COM_IP_FROM_RCW_WINRT_DELEGATE,       GetCOMIPFromRCW_WinRTDelegate,      SM_Obj_IntPtr_RefIntPtr_RetIntPtr)
-DEFINE_METHOD(STUBHELPERS,          SHOULD_CALL_WINRT_INTERFACE,              ShouldCallWinRTInterface,           SM_Obj_IntPtr_RetBool)
-DEFINE_METHOD(STUBHELPERS,          GET_WINRT_FACTORY_OBJECT,                 GetWinRTFactoryObject,              SM_IntPtr_RetObj)
-DEFINE_METHOD(STUBHELPERS,          GET_DELEGATE_INVOKE_METHOD,               GetDelegateInvokeMethod,            SM_Delegate_RetIntPtr)
-DEFINE_METHOD(STUBHELPERS,          GET_WINRT_FACTORY_RETURN_VALUE,           GetWinRTFactoryReturnValue,         SM_Obj_IntPtr_RetIntPtr)
-DEFINE_METHOD(STUBHELPERS,          GET_OUTER_INSPECTABLE,                    GetOuterInspectable,                SM_Obj_IntPtr_RetIntPtr)
 #endif // FEATURE_COMINTEROP
 DEFINE_METHOD(STUBHELPERS,          SET_LAST_ERROR,         SetLastError,               SM_RetVoid)
 DEFINE_METHOD(STUBHELPERS,          CLEAR_LAST_ERROR,       ClearLastError,             SM_RetVoid)
@@ -1081,15 +1027,6 @@ DEFINE_METHOD(STUBHELPERS,          MULTICAST_DEBUGGER_TRACE_HELPER,    Multicas
 
 DEFINE_CLASS(CLEANUP_WORK_LIST_ELEMENT,     StubHelpers,            CleanupWorkListElement)
 
-#ifdef FEATURE_COMINTEROP
-DEFINE_CLASS(DATETIMENATIVE,   StubHelpers,        DateTimeNative)
-DEFINE_CLASS(TYPENAMENATIVE,   StubHelpers,        TypeNameNative)
-
-DEFINE_CLASS_U(StubHelpers,     TypeNameNative,             TypeNameNative)
-DEFINE_FIELD_U(typeName,        TypeNameNative,             typeName)
-DEFINE_FIELD_U(typeKind,        TypeNameNative,             typeKind)
-#endif
-
 DEFINE_CLASS(ANSICHARMARSHALER,     StubHelpers,            AnsiCharMarshaler)
 DEFINE_METHOD(ANSICHARMARSHALER,    CONVERT_TO_NATIVE,      ConvertToNative,            SM_Char_Bool_Bool_RetByte)
 DEFINE_METHOD(ANSICHARMARSHALER,    CONVERT_TO_MANAGED,     ConvertToManaged,           SM_Byte_RetChar)
@@ -1121,16 +1058,6 @@ DEFINE_METHOD(OBJECTMARSHALER,      CONVERT_TO_NATIVE,      ConvertToNative,    
 DEFINE_METHOD(OBJECTMARSHALER,      CONVERT_TO_MANAGED,     ConvertToManaged,           SM_IntPtr_RetObj)
 DEFINE_METHOD(OBJECTMARSHALER,      CLEAR_NATIVE,           ClearNative,                SM_IntPtr_RetVoid)
 
-DEFINE_CLASS(HSTRINGMARSHALER,      StubHelpers,            HStringMarshaler)
-DEFINE_METHOD(HSTRINGMARSHALER,     CONVERT_TO_NATIVE_REFERENCE,    ConvertToNativeReference,   SM_Str_PtrHStringHeader_RetIntPtr)
-DEFINE_METHOD(HSTRINGMARSHALER,     CONVERT_TO_NATIVE,              ConvertToNative,            SM_Str_RetIntPtr)
-DEFINE_METHOD(HSTRINGMARSHALER,     CONVERT_TO_MANAGED,             ConvertToManaged,           SM_IntPtr_RetStr)
-DEFINE_METHOD(HSTRINGMARSHALER,     CLEAR_NATIVE,                   ClearNative,                SM_IntPtr_RetVoid)
-
-DEFINE_CLASS(URIMARSHALER,          StubHelpers,                UriMarshaler)
-DEFINE_METHOD(URIMARSHALER,         GET_RAWURI_FROM_NATIVE,     GetRawUriFromNative,        SM_IntPtr_RetStr)
-DEFINE_METHOD(URIMARSHALER,         CREATE_NATIVE_URI_INSTANCE, CreateNativeUriInstance,    SM_Str_RetIntPtr)
-
 DEFINE_CLASS(INTERFACEMARSHALER,    StubHelpers,            InterfaceMarshaler)
 DEFINE_METHOD(INTERFACEMARSHALER,   CONVERT_TO_NATIVE,      ConvertToNative,            SM_Obj_IntPtr_IntPtr_Int_RetIntPtr)
 DEFINE_METHOD(INTERFACEMARSHALER,   CONVERT_TO_MANAGED,     ConvertToManaged,           SM_IntPtr_IntPtr_IntPtr_Int_RetObj)
@@ -1144,52 +1071,6 @@ DEFINE_METHOD(MNGD_SAFE_ARRAY_MARSHALER, CONVERT_CONTENTS_TO_NATIVE,  ConvertCon
 DEFINE_METHOD(MNGD_SAFE_ARRAY_MARSHALER, CONVERT_SPACE_TO_MANAGED,    ConvertSpaceToManaged,      SM_IntPtr_RefObj_IntPtr_RetVoid)
 DEFINE_METHOD(MNGD_SAFE_ARRAY_MARSHALER, CONVERT_CONTENTS_TO_MANAGED, ConvertContentsToManaged,   SM_IntPtr_RefObj_IntPtr_RetVoid)
 DEFINE_METHOD(MNGD_SAFE_ARRAY_MARSHALER, CLEAR_NATIVE,                ClearNative,                SM_IntPtr_RefObj_IntPtr_RetVoid)
-
-DEFINE_CLASS(MNGD_HIDDEN_LENGTH_ARRAY_MARSHALER, StubHelpers,         MngdHiddenLengthArrayMarshaler)
-DEFINE_METHOD(MNGD_HIDDEN_LENGTH_ARRAY_MARSHALER, CREATE_MARSHALER,                 CreateMarshaler,            SM_IntPtr_IntPtr_IntPtr_UShrt_IntPtr_RetVoid)
-DEFINE_METHOD(MNGD_HIDDEN_LENGTH_ARRAY_MARSHALER, CONVERT_SPACE_TO_MANAGED,         ConvertSpaceToManaged,      SM_IntPtr_RefObj_IntPtr_Int_RetVoid)
-DEFINE_METHOD(MNGD_HIDDEN_LENGTH_ARRAY_MARSHALER, CONVERT_CONTENTS_TO_MANAGED,      ConvertContentsToManaged,   SM_IntPtr_RefObj_IntPtr_RetVoid)
-DEFINE_METHOD(MNGD_HIDDEN_LENGTH_ARRAY_MARSHALER, CONVERT_SPACE_TO_NATIVE,          ConvertSpaceToNative,       SM_IntPtr_RefObj_IntPtr_RetVoid)
-DEFINE_METHOD(MNGD_HIDDEN_LENGTH_ARRAY_MARSHALER, CONVERT_CONTENTS_TO_NATIVE,       ConvertContentsToNative,    SM_IntPtr_RefObj_IntPtr_RetVoid)
-DEFINE_METHOD(MNGD_HIDDEN_LENGTH_ARRAY_MARSHALER, CLEAR_NATIVE_CONTENTS,            ClearNativeContents,        SM_IntPtr_IntPtr_Int_RetVoid)
-DEFINE_METHOD(MNGD_HIDDEN_LENGTH_ARRAY_MARSHALER, CLEAR_NATIVE_CONTENTS_TYPE,       ClearNativeContents_Type,   NoSig)
-
-DEFINE_METHOD(MNGD_HIDDEN_LENGTH_ARRAY_MARSHALER, CONVERT_CONTENTS_TO_MANAGED_DATETIME,     ConvertContentsToManaged_DateTime,     NoSig)
-DEFINE_METHOD(MNGD_HIDDEN_LENGTH_ARRAY_MARSHALER, CONVERT_CONTENTS_TO_MANAGED_TYPE,         ConvertContentsToManaged_Type,         NoSig)
-DEFINE_METHOD(MNGD_HIDDEN_LENGTH_ARRAY_MARSHALER, CONVERT_CONTENTS_TO_MANAGED_EXCEPTION,    ConvertContentsToManaged_Exception,    NoSig)
-DEFINE_METHOD(MNGD_HIDDEN_LENGTH_ARRAY_MARSHALER, CONVERT_CONTENTS_TO_MANAGED_NULLABLE,     ConvertContentsToManaged_Nullable,     NoSig)
-DEFINE_METHOD(MNGD_HIDDEN_LENGTH_ARRAY_MARSHALER, CONVERT_CONTENTS_TO_MANAGED_KEYVALUEPAIR, ConvertContentsToManaged_KeyValuePair, NoSig)
-
-DEFINE_METHOD(MNGD_HIDDEN_LENGTH_ARRAY_MARSHALER, CONVERT_CONTENTS_TO_NATIVE_DATETIME,     ConvertContentsToNative_DateTime,     NoSig)
-DEFINE_METHOD(MNGD_HIDDEN_LENGTH_ARRAY_MARSHALER, CONVERT_CONTENTS_TO_NATIVE_TYPE,         ConvertContentsToNative_Type,         NoSig)
-DEFINE_METHOD(MNGD_HIDDEN_LENGTH_ARRAY_MARSHALER, CONVERT_CONTENTS_TO_NATIVE_EXCEPTION,    ConvertContentsToNative_Exception,    NoSig)
-DEFINE_METHOD(MNGD_HIDDEN_LENGTH_ARRAY_MARSHALER, CONVERT_CONTENTS_TO_NATIVE_NULLABLE,     ConvertContentsToNative_Nullable,     NoSig)
-DEFINE_METHOD(MNGD_HIDDEN_LENGTH_ARRAY_MARSHALER, CONVERT_CONTENTS_TO_NATIVE_KEYVALUEPAIR, ConvertContentsToNative_KeyValuePair, NoSig)
-
-DEFINE_CLASS(DATETIMEOFFSETMARSHALER,     StubHelpers,           DateTimeOffsetMarshaler)
-DEFINE_METHOD(DATETIMEOFFSETMARSHALER,    CONVERT_TO_NATIVE,     ConvertToNative,     SM_RefDateTimeOffset_RefDateTimeNative_RetVoid)
-DEFINE_METHOD(DATETIMEOFFSETMARSHALER,    CONVERT_TO_MANAGED,    ConvertToManaged,    SM_RefDateTimeOffset_RefDateTimeNative_RetVoid)
-
-DEFINE_CLASS(NULLABLEMARSHALER,           StubHelpers,           NullableMarshaler)
-DEFINE_METHOD(NULLABLEMARSHALER,          CONVERT_TO_NATIVE,     ConvertToNative,     NoSig)
-DEFINE_METHOD(NULLABLEMARSHALER,          CONVERT_TO_MANAGED,    ConvertToManaged,    NoSig)
-DEFINE_METHOD(NULLABLEMARSHALER,          CONVERT_TO_MANAGED_RET_VOID,    ConvertToManagedRetVoid,    NoSig)
-
-DEFINE_CLASS(SYSTEMTYPEMARSHALER,   StubHelpers,        SystemTypeMarshaler)
-
-DEFINE_METHOD(SYSTEMTYPEMARSHALER,  CONVERT_TO_NATIVE,  ConvertToNative,    SM_Type_PtrTypeName_RetVoid)
-DEFINE_METHOD(SYSTEMTYPEMARSHALER,  CONVERT_TO_MANAGED, ConvertToManaged,   SM_PtrTypeName_RefType_RetVoid)
-DEFINE_METHOD(SYSTEMTYPEMARSHALER,  CLEAR_NATIVE,       ClearNative,        SM_PtrTypeName_RetVoid)
-
-DEFINE_CLASS(KEYVALUEPAIRMARSHALER,  StubHelpers,            KeyValuePairMarshaler)
-DEFINE_METHOD(KEYVALUEPAIRMARSHALER, CONVERT_TO_NATIVE,      ConvertToNative,     NoSig)
-DEFINE_METHOD(KEYVALUEPAIRMARSHALER, CONVERT_TO_MANAGED,     ConvertToManaged,    NoSig)
-DEFINE_METHOD(KEYVALUEPAIRMARSHALER, CONVERT_TO_MANAGED_BOX, ConvertToManagedBox, NoSig)
-
-DEFINE_CLASS(HRESULTEXCEPTIONMARSHALER,   StubHelpers,           HResultExceptionMarshaler)
-DEFINE_METHOD(HRESULTEXCEPTIONMARSHALER,  CONVERT_TO_NATIVE,     ConvertToNative,     SM_Exception_RetInt)
-DEFINE_METHOD(HRESULTEXCEPTIONMARSHALER,  CONVERT_TO_MANAGED,    ConvertToManaged,    SM_Int_RetException)
-
 #endif // FEATURE_COMINTEROP
 
 DEFINE_CLASS(DATEMARSHALER,         StubHelpers,            DateMarshaler)
@@ -1238,161 +1119,6 @@ DEFINE_METHOD(HANDLE_MARSHALER,          THROW_CRITICALHANDLE_FIELD_CHANGED, Thr
 
 DEFINE_CLASS(NATIVEVARIANT,         StubHelpers,            NativeVariant)
 DEFINE_CLASS(NATIVEDECIMAL,         StubHelpers,            NativeDecimal)
-
-#ifdef FEATURE_COMINTEROP
-DEFINE_CLASS(IITERABLE,              WinRT,                 IIterable`1)
-DEFINE_CLASS(IVECTOR,                WinRT,                 IVector`1)
-DEFINE_CLASS(IMAP,                   WinRT,                 IMap`2)
-DEFINE_CLASS(IKEYVALUEPAIR,          WinRT,                 IKeyValuePair`2)
-DEFINE_CLASS(IVECTORVIEW,            WinRT,                 IVectorView`1)
-DEFINE_CLASS(IMAPVIEW,               WinRT,                 IMapView`2)
-DEFINE_CLASS(IITERATOR,              WinRT,                 IIterator`1)
-DEFINE_CLASS(IPROPERTYVALUE,         WinRT,                 IPropertyValue)
-DEFINE_CLASS(IBINDABLEITERABLE,      WinRT,                 IBindableIterable)
-DEFINE_CLASS(IBINDABLEITERATOR,      WinRT,                 IBindableIterator)
-DEFINE_CLASS(IBINDABLEVECTOR,        WinRT,                 IBindableVector)
-DEFINE_CLASS(ICLOSABLE,             WinRT,                  IClosable)
-
-DEFINE_CLASS(GET_ENUMERATOR_DELEGATE,        WinRT,                            GetEnumerator_Delegate`1)
-DEFINE_CLASS(ITERABLE_TO_ENUMERABLE_ADAPTER, WinRT,                            IterableToEnumerableAdapter)
-DEFINE_METHOD(ITERABLE_TO_ENUMERABLE_ADAPTER, GET_ENUMERATOR_STUB,             GetEnumerator_Stub, NoSig)
-DEFINE_METHOD(ITERABLE_TO_ENUMERABLE_ADAPTER, GET_ENUMERATOR_VARIANCE_STUB,    GetEnumerator_Variance_Stub, NoSig)
-
-DEFINE_CLASS(VECTOR_TO_LIST_ADAPTER,        WinRT,                   VectorToListAdapter)
-DEFINE_METHOD(VECTOR_TO_LIST_ADAPTER,       INDEXER_GET,             Indexer_Get, NoSig)
-DEFINE_METHOD(VECTOR_TO_LIST_ADAPTER,       INDEXER_SET,             Indexer_Set, NoSig)
-DEFINE_METHOD(VECTOR_TO_LIST_ADAPTER,       INDEX_OF,                IndexOf, NoSig)
-DEFINE_METHOD(VECTOR_TO_LIST_ADAPTER,       INSERT,                  Insert, NoSig)
-DEFINE_METHOD(VECTOR_TO_LIST_ADAPTER,       REMOVE_AT,               RemoveAt, NoSig)
-
-DEFINE_CLASS(MAP_TO_DICTIONARY_ADAPTER,     WinRT,                   MapToDictionaryAdapter)
-DEFINE_METHOD(MAP_TO_DICTIONARY_ADAPTER,    INDEXER_GET,             Indexer_Get, NoSig)
-DEFINE_METHOD(MAP_TO_DICTIONARY_ADAPTER,    INDEXER_SET,             Indexer_Set, NoSig)
-DEFINE_METHOD(MAP_TO_DICTIONARY_ADAPTER,    KEYS,                    Keys, NoSig)
-DEFINE_METHOD(MAP_TO_DICTIONARY_ADAPTER,    VALUES,                  Values, NoSig)
-DEFINE_METHOD(MAP_TO_DICTIONARY_ADAPTER,    CONTAINS_KEY,            ContainsKey, NoSig)
-DEFINE_METHOD(MAP_TO_DICTIONARY_ADAPTER,    ADD,                     Add, NoSig)
-DEFINE_METHOD(MAP_TO_DICTIONARY_ADAPTER,    REMOVE,                  Remove, NoSig)
-DEFINE_METHOD(MAP_TO_DICTIONARY_ADAPTER,    TRY_GET_VALUE,           TryGetValue, NoSig)
-
-DEFINE_CLASS(VECTOR_TO_COLLECTION_ADAPTER,  WinRT,                   VectorToCollectionAdapter)
-DEFINE_METHOD(VECTOR_TO_COLLECTION_ADAPTER, COUNT,                   Count, NoSig)
-DEFINE_METHOD(VECTOR_TO_COLLECTION_ADAPTER, IS_READ_ONLY,            IsReadOnly, NoSig)
-DEFINE_METHOD(VECTOR_TO_COLLECTION_ADAPTER, ADD,                     Add, NoSig)
-DEFINE_METHOD(VECTOR_TO_COLLECTION_ADAPTER, CLEAR,                   Clear, NoSig)
-DEFINE_METHOD(VECTOR_TO_COLLECTION_ADAPTER, CONTAINS,                Contains, NoSig)
-DEFINE_METHOD(VECTOR_TO_COLLECTION_ADAPTER, COPY_TO,                 CopyTo, NoSig)
-DEFINE_METHOD(VECTOR_TO_COLLECTION_ADAPTER, REMOVE,                  Remove, NoSig)
-
-DEFINE_CLASS(MAP_TO_COLLECTION_ADAPTER,     WinRT,                   MapToCollectionAdapter)
-DEFINE_METHOD(MAP_TO_COLLECTION_ADAPTER,    COUNT,                   Count, NoSig)
-DEFINE_METHOD(MAP_TO_COLLECTION_ADAPTER,    IS_READ_ONLY,            IsReadOnly, NoSig)
-DEFINE_METHOD(MAP_TO_COLLECTION_ADAPTER,    ADD,                     Add, NoSig)
-DEFINE_METHOD(MAP_TO_COLLECTION_ADAPTER,    CLEAR,                   Clear, NoSig)
-DEFINE_METHOD(MAP_TO_COLLECTION_ADAPTER,    CONTAINS,                Contains, NoSig)
-DEFINE_METHOD(MAP_TO_COLLECTION_ADAPTER,    COPY_TO,                 CopyTo, NoSig)
-DEFINE_METHOD(MAP_TO_COLLECTION_ADAPTER,    REMOVE,                  Remove, NoSig)
-
-DEFINE_CLASS(BINDABLEITERABLE_TO_ENUMERABLE_ADAPTER, WinRT,          BindableIterableToEnumerableAdapter)
-DEFINE_METHOD(BINDABLEITERABLE_TO_ENUMERABLE_ADAPTER, GET_ENUMERATOR_STUB, GetEnumerator_Stub, NoSig)
-
-DEFINE_CLASS(BINDABLEVECTOR_TO_LIST_ADAPTER,       WinRT,            BindableVectorToListAdapter)
-DEFINE_METHOD(BINDABLEVECTOR_TO_LIST_ADAPTER,      INDEXER_GET,      Indexer_Get, NoSig)
-DEFINE_METHOD(BINDABLEVECTOR_TO_LIST_ADAPTER,      INDEXER_SET,      Indexer_Set, NoSig)
-DEFINE_METHOD(BINDABLEVECTOR_TO_LIST_ADAPTER,      ADD,              Add, NoSig)
-DEFINE_METHOD(BINDABLEVECTOR_TO_LIST_ADAPTER,      CONTAINS,         Contains, NoSig)
-DEFINE_METHOD(BINDABLEVECTOR_TO_LIST_ADAPTER,      CLEAR,            Clear, NoSig)
-DEFINE_METHOD(BINDABLEVECTOR_TO_LIST_ADAPTER,      IS_READ_ONLY,     IsReadOnly, NoSig)
-DEFINE_METHOD(BINDABLEVECTOR_TO_LIST_ADAPTER,      IS_FIXED_SIZE,    IsFixedSize, NoSig)
-DEFINE_METHOD(BINDABLEVECTOR_TO_LIST_ADAPTER,      INDEX_OF,         IndexOf, NoSig)
-DEFINE_METHOD(BINDABLEVECTOR_TO_LIST_ADAPTER,      INSERT,           Insert, NoSig)
-DEFINE_METHOD(BINDABLEVECTOR_TO_LIST_ADAPTER,      REMOVE,           Remove, NoSig)
-DEFINE_METHOD(BINDABLEVECTOR_TO_LIST_ADAPTER,      REMOVE_AT,        RemoveAt, NoSig)
-
-DEFINE_CLASS(BINDABLEVECTOR_TO_COLLECTION_ADAPTER,  WinRT,           BindableVectorToCollectionAdapter)
-DEFINE_METHOD(BINDABLEVECTOR_TO_COLLECTION_ADAPTER, COPY_TO,         CopyTo, NoSig)
-DEFINE_METHOD(BINDABLEVECTOR_TO_COLLECTION_ADAPTER, COUNT,           Count, NoSig)
-DEFINE_METHOD(BINDABLEVECTOR_TO_COLLECTION_ADAPTER, SYNC_ROOT,       SyncRoot, NoSig)
-DEFINE_METHOD(BINDABLEVECTOR_TO_COLLECTION_ADAPTER, IS_SYNCHRONIZED, IsSynchronized, NoSig)
-
-DEFINE_CLASS(ENUMERABLE_TO_ITERABLE_ADAPTER, WinRT,                  EnumerableToIterableAdapter)
-DEFINE_METHOD(ENUMERABLE_TO_ITERABLE_ADAPTER, FIRST_STUB,            First_Stub, NoSig)
-
-DEFINE_CLASS(LIST_TO_VECTOR_ADAPTER,       WinRT,                    ListToVectorAdapter)
-DEFINE_METHOD(LIST_TO_VECTOR_ADAPTER,      GET_AT,                   GetAt, NoSig)
-DEFINE_METHOD(LIST_TO_VECTOR_ADAPTER,      SIZE,                     Size, NoSig)
-DEFINE_METHOD(LIST_TO_VECTOR_ADAPTER,      GET_VIEW,                 GetView, NoSig)
-DEFINE_METHOD(LIST_TO_VECTOR_ADAPTER,      INDEX_OF,                 IndexOf, NoSig)
-DEFINE_METHOD(LIST_TO_VECTOR_ADAPTER,      SET_AT,                   SetAt, NoSig)
-DEFINE_METHOD(LIST_TO_VECTOR_ADAPTER,      INSERT_AT,                InsertAt, NoSig)
-DEFINE_METHOD(LIST_TO_VECTOR_ADAPTER,      REMOVE_AT,                RemoveAt, NoSig)
-DEFINE_METHOD(LIST_TO_VECTOR_ADAPTER,      APPEND,                   Append, NoSig)
-DEFINE_METHOD(LIST_TO_VECTOR_ADAPTER,      REMOVE_AT_END,            RemoveAtEnd, NoSig)
-DEFINE_METHOD(LIST_TO_VECTOR_ADAPTER,      CLEAR,                    Clear, NoSig)
-DEFINE_METHOD(LIST_TO_VECTOR_ADAPTER,      GET_MANY,                 GetMany, NoSig)
-DEFINE_METHOD(LIST_TO_VECTOR_ADAPTER,      REPLACE_ALL,              ReplaceAll, NoSig)
-
-DEFINE_CLASS(DICTIONARY_TO_MAP_ADAPTER,    WinRT,                    DictionaryToMapAdapter)
-DEFINE_METHOD(DICTIONARY_TO_MAP_ADAPTER,   LOOKUP,                   Lookup, NoSig)
-DEFINE_METHOD(DICTIONARY_TO_MAP_ADAPTER,   SIZE,                     Size, NoSig)
-DEFINE_METHOD(DICTIONARY_TO_MAP_ADAPTER,   HAS_KEY,                  HasKey, NoSig)
-DEFINE_METHOD(DICTIONARY_TO_MAP_ADAPTER,   GET_VIEW,                 GetView, NoSig)
-DEFINE_METHOD(DICTIONARY_TO_MAP_ADAPTER,   INSERT,                   Insert, NoSig)
-DEFINE_METHOD(DICTIONARY_TO_MAP_ADAPTER,   REMOVE,                   Remove, NoSig)
-DEFINE_METHOD(DICTIONARY_TO_MAP_ADAPTER,   CLEAR,                    Clear, NoSig)
-
-DEFINE_CLASS(IVECTORVIEW_TO_IREADONLYCOLLECTION_ADAPTER,  WinRT,     VectorViewToReadOnlyCollectionAdapter)
-DEFINE_METHOD(IVECTORVIEW_TO_IREADONLYCOLLECTION_ADAPTER, COUNT,     Count, NoSig)
-
-DEFINE_CLASS(IMAPVIEW_TO_IREADONLYCOLLECTION_ADAPTER,  WinRT,        MapViewToReadOnlyCollectionAdapter)
-DEFINE_METHOD(IMAPVIEW_TO_IREADONLYCOLLECTION_ADAPTER, COUNT,        Count, NoSig)
-
-DEFINE_CLASS(IREADONLYLIST_TO_IVECTORVIEW_ADAPTER,     WinRT,        IReadOnlyListToIVectorViewAdapter)
-DEFINE_METHOD(IREADONLYLIST_TO_IVECTORVIEW_ADAPTER,    GETAT,        GetAt, NoSig)
-DEFINE_METHOD(IREADONLYLIST_TO_IVECTORVIEW_ADAPTER,    GETMANY,      GetMany, NoSig)
-DEFINE_METHOD(IREADONLYLIST_TO_IVECTORVIEW_ADAPTER,    INDEXOF,      IndexOf, NoSig)
-DEFINE_METHOD(IREADONLYLIST_TO_IVECTORVIEW_ADAPTER,    SIZE,         Size, NoSig)
-
-DEFINE_CLASS(INDEXER_GET_DELEGATE,                     WinRT,        Indexer_Get_Delegate`1)
-DEFINE_CLASS(IVECTORVIEW_TO_IREADONLYLIST_ADAPTER,     WinRT,        IVectorViewToIReadOnlyListAdapter)
-DEFINE_METHOD(IVECTORVIEW_TO_IREADONLYLIST_ADAPTER,    INDEXER_GET,  Indexer_Get, NoSig)
-DEFINE_METHOD(IVECTORVIEW_TO_IREADONLYLIST_ADAPTER,    INDEXER_GET_VARIANCE, Indexer_Get_Variance, NoSig)
-
-DEFINE_CLASS(IREADONLYDICTIONARY_TO_IMAPVIEW_ADAPTER,  WinRT,        IReadOnlyDictionaryToIMapViewAdapter)
-DEFINE_METHOD(IREADONLYDICTIONARY_TO_IMAPVIEW_ADAPTER, HASKEY,       HasKey, NoSig)
-DEFINE_METHOD(IREADONLYDICTIONARY_TO_IMAPVIEW_ADAPTER, LOOKUP,       Lookup, NoSig)
-DEFINE_METHOD(IREADONLYDICTIONARY_TO_IMAPVIEW_ADAPTER, SIZE,         Size, NoSig)
-DEFINE_METHOD(IREADONLYDICTIONARY_TO_IMAPVIEW_ADAPTER, SPLIT,        Split, NoSig)
-
-DEFINE_CLASS(IMAPVIEW_TO_IREADONLYDICTIONARY_ADAPTER,  WinRT,        IMapViewToIReadOnlyDictionaryAdapter)
-DEFINE_METHOD(IMAPVIEW_TO_IREADONLYDICTIONARY_ADAPTER, CONTAINSKEY,  ContainsKey, NoSig)
-DEFINE_METHOD(IMAPVIEW_TO_IREADONLYDICTIONARY_ADAPTER, INDEXER_GET,  Indexer_Get, NoSig)
-DEFINE_METHOD(IMAPVIEW_TO_IREADONLYDICTIONARY_ADAPTER, TRYGETVALUE,  TryGetValue, NoSig)
-DEFINE_METHOD(IMAPVIEW_TO_IREADONLYDICTIONARY_ADAPTER, KEYS,         Keys, NoSig)
-DEFINE_METHOD(IMAPVIEW_TO_IREADONLYDICTIONARY_ADAPTER, VALUES,       Values, NoSig)
-
-DEFINE_CLASS(ENUMERABLE_TO_BINDABLEITERABLE_ADAPTER,   WinRT,        EnumerableToBindableIterableAdapter)
-DEFINE_METHOD(ENUMERABLE_TO_BINDABLEITERABLE_ADAPTER,  FIRST_STUB,   First_Stub, NoSig)
-
-DEFINE_CLASS(LIST_TO_BINDABLEVECTOR_ADAPTER,       WinRT,            ListToBindableVectorAdapter)
-DEFINE_METHOD(LIST_TO_BINDABLEVECTOR_ADAPTER,      GET_AT,           GetAt, NoSig)
-DEFINE_METHOD(LIST_TO_BINDABLEVECTOR_ADAPTER,      SIZE,             Size, NoSig)
-DEFINE_METHOD(LIST_TO_BINDABLEVECTOR_ADAPTER,      GET_VIEW,         GetView, NoSig)
-DEFINE_METHOD(LIST_TO_BINDABLEVECTOR_ADAPTER,      INDEX_OF,         IndexOf, NoSig)
-DEFINE_METHOD(LIST_TO_BINDABLEVECTOR_ADAPTER,      SET_AT,           SetAt, NoSig)
-DEFINE_METHOD(LIST_TO_BINDABLEVECTOR_ADAPTER,      INSERT_AT,        InsertAt, NoSig)
-DEFINE_METHOD(LIST_TO_BINDABLEVECTOR_ADAPTER,      REMOVE_AT,        RemoveAt, NoSig)
-DEFINE_METHOD(LIST_TO_BINDABLEVECTOR_ADAPTER,      APPEND,           Append, NoSig)
-DEFINE_METHOD(LIST_TO_BINDABLEVECTOR_ADAPTER,      REMOVE_AT_END,    RemoveAtEnd, NoSig)
-DEFINE_METHOD(LIST_TO_BINDABLEVECTOR_ADAPTER,      CLEAR,            Clear, NoSig)
-
-DEFINE_CLASS(IDISPOSABLE_TO_ICLOSABLE_ADAPTER,     WinRT,            IDisposableToIClosableAdapter)
-DEFINE_METHOD(IDISPOSABLE_TO_ICLOSABLE_ADAPTER,    CLOSE,            Close, NoSig)
-
-DEFINE_CLASS(ICLOSABLE_TO_IDISPOSABLE_ADAPTER,     WinRT,            IClosableToIDisposableAdapter)
-DEFINE_METHOD(ICLOSABLE_TO_IDISPOSABLE_ADAPTER,    DISPOSE,          Dispose, NoSig)
-
-#endif // FEATURE_COMINTEROP
 
 DEFINE_CLASS(SZARRAYHELPER,         System,                        SZArrayHelper)
 // Note: The order of methods here has to match order they are implemented on the interfaces in
@@ -1444,16 +1170,6 @@ DEFINE_CLASS_U(CodeContracts,       ContractException,          ContractExceptio
 DEFINE_FIELD_U(_kind,               ContractExceptionObject,    _Kind)
 DEFINE_FIELD_U(_userMessage,        ContractExceptionObject,    _UserMessage)
 DEFINE_FIELD_U(_condition,          ContractExceptionObject,    _Condition)
-
-#ifdef FEATURE_COMINTEROP
-DEFINE_CLASS(CAUSALITY_TRACE_LEVEL, WindowsFoundationDiag,   CausalityTraceLevel)
-DEFINE_CLASS(ASYNC_TRACING_EVENT_ARGS,       WindowsFoundationDiag,         TracingStatusChangedEventArgs)
-DEFINE_PROPERTY(ASYNC_TRACING_EVENT_ARGS, ENABLED, Enabled, Bool)
-DEFINE_PROPERTY(ASYNC_TRACING_EVENT_ARGS, TRACELEVEL, TraceLevel, CausalityTraceLevel)
-DEFINE_CLASS(IASYNC_TRACING_EVENT_ARGS,      WindowsFoundationDiag,         ITracingStatusChangedEventArgs)
-DEFINE_PROPERTY(IASYNC_TRACING_EVENT_ARGS, ENABLED, Enabled, Bool)
-DEFINE_PROPERTY(IASYNC_TRACING_EVENT_ARGS, TRACELEVEL, TraceLevel, CausalityTraceLevel)
-#endif // FEATURE_COMINTEROP
 
 DEFINE_CLASS(MODULEBASE,        Reflection,         Module)
 

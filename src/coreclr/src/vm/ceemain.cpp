@@ -164,6 +164,7 @@
 #include "threadsuspend.h"
 #include "disassembler.h"
 #include "jithost.h"
+#include "pgo.h"
 
 #ifndef TARGET_UNIX
 #include "dwreport.h"
@@ -719,6 +720,10 @@ void EEStartupHelper()
         PerfMap::Initialize();
 #endif
 
+#ifdef FEATURE_PGO
+        PgoManager::Initialize();
+#endif
+
         STRESS_LOG0(LF_STARTUP, LL_ALWAYS, "===================EEStartup Starting===================");
 
 #ifndef CROSSGEN_COMPILE
@@ -835,8 +840,6 @@ void EEStartupHelper()
         g_pEEShutDownEvent->CreateManualEvent(FALSE);
 
         VirtualCallStubManager::InitStatic();
-
-        GCInterface::m_MemoryPressureLock.Init(CrstGCMemoryPressure);
 
 #endif // CROSSGEN_COMPILE
 
@@ -1313,6 +1316,10 @@ void STDMETHODCALLTYPE EEShutDownHelper(BOOL fIsDllUnloading)
 #ifdef FEATURE_PERFMAP
         // Flush and close the perf map file.
         PerfMap::Destroy();
+#endif
+
+#ifdef FEATURE_PGO
+        PgoManager::Shutdown();
 #endif
 
         {

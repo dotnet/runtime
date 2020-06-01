@@ -5,9 +5,6 @@
 using System.Text;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
-#if FEATURE_COMINTEROP
-using System.Runtime.InteropServices.WindowsRuntime;
-#endif // FEATURE_COMINTEROP
 using System.Runtime.CompilerServices;
 using System.Diagnostics;
 using Internal.Runtime.CompilerServices;
@@ -542,102 +539,7 @@ namespace System.StubHelpers
             native[numChars] = '\0';
         }
     }  // class WSTRBufferMarshaler
-
 #if FEATURE_COMINTEROP
-
-    [StructLayout(LayoutKind.Sequential)]
-    internal struct DateTimeNative
-    {
-        public long UniversalTime;
-    }
-
-    internal static class DateTimeOffsetMarshaler
-    {
-        // Numer of ticks counted between 0001-01-01, 00:00:00 and 1601-01-01, 00:00:00.
-        // You can get this through:  (new DateTimeOffset(1601, 1, 1, 0, 0, 1, TimeSpan.Zero)).Ticks;
-        private const long ManagedUtcTicksAtNativeZero = 504911232000000000;
-
-        internal static void ConvertToNative(ref DateTimeOffset managedDTO, out DateTimeNative dateTime)
-        {
-            long managedUtcTicks = managedDTO.UtcTicks;
-            dateTime.UniversalTime = managedUtcTicks - ManagedUtcTicksAtNativeZero;
-        }
-
-        internal static void ConvertToManaged(out DateTimeOffset managedLocalDTO, ref DateTimeNative nativeTicks)
-        {
-            long managedUtcTicks = ManagedUtcTicksAtNativeZero + nativeTicks.UniversalTime;
-            DateTimeOffset managedUtcDTO = new DateTimeOffset(managedUtcTicks, TimeSpan.Zero);
-
-            // Some Utc times cannot be represented in local time in certain timezones. E.g. 0001-01-01 12:00:00 AM cannot
-            // be represented in any timezones with a negative offset from Utc. We throw an ArgumentException in that case.
-            managedLocalDTO = managedUtcDTO.ToLocalTime(true);
-        }
-    }  // class DateTimeOffsetMarshaler
-
-#endif  // FEATURE_COMINTEROP
-
-#if FEATURE_COMINTEROP
-    internal static class HStringMarshaler
-    {
-        // Slow-path, which requires making a copy of the managed string into the resulting HSTRING
-        internal static unsafe IntPtr ConvertToNative(string managed)
-        {
-            if (!Environment.IsWinRTSupported)
-                throw new PlatformNotSupportedException(SR.PlatformNotSupported_WinRT);
-            if (managed == null)
-                throw new ArgumentNullException(); // We don't have enough information to get the argument name
-
-            IntPtr hstring;
-            int hrCreate = System.Runtime.InteropServices.WindowsRuntime.UnsafeNativeMethods.WindowsCreateString(managed, managed.Length, &hstring);
-            Marshal.ThrowExceptionForHR(hrCreate, new IntPtr(-1));
-            return hstring;
-        }
-
-        // Fast-path, which creates a reference over a pinned managed string.  This may only be used if the
-        // pinned string and HSTRING_HEADER will outlive the HSTRING produced (for instance, as an in parameter).
-        //
-        // Note that the managed string input to this method MUST be pinned, and stay pinned for the lifetime of
-        // the returned HSTRING object.  If the string is not pinned, or becomes unpinned before the HSTRING's
-        // lifetime ends, the HSTRING instance will be corrupted.
-        internal static unsafe IntPtr ConvertToNativeReference(string managed,
-                                                               [Out] HSTRING_HEADER* hstringHeader)
-        {
-            if (!Environment.IsWinRTSupported)
-                throw new PlatformNotSupportedException(SR.PlatformNotSupported_WinRT);
-            if (managed == null)
-                throw new ArgumentNullException();  // We don't have enough information to get the argument name
-
-            // The string must also be pinned by the caller to ConvertToNativeReference, which also owns
-            // the HSTRING_HEADER.
-            fixed (char* pManaged = managed)
-            {
-                IntPtr hstring;
-                int hrCreate = System.Runtime.InteropServices.WindowsRuntime.UnsafeNativeMethods.WindowsCreateStringReference(pManaged, managed.Length, hstringHeader, &hstring);
-                Marshal.ThrowExceptionForHR(hrCreate, new IntPtr(-1));
-                return hstring;
-            }
-        }
-
-        internal static string ConvertToManaged(IntPtr hstring)
-        {
-            if (!Environment.IsWinRTSupported)
-            {
-                throw new PlatformNotSupportedException(SR.PlatformNotSupported_WinRT);
-            }
-
-            return WindowsRuntimeMarshal.HStringToString(hstring);
-        }
-
-        internal static void ClearNative(IntPtr hstring)
-        {
-            Debug.Assert(Environment.IsWinRTSupported);
-
-            if (hstring != IntPtr.Zero)
-            {
-                System.Runtime.InteropServices.WindowsRuntime.UnsafeNativeMethods.WindowsDeleteString(hstring);
-            }
-        }
-    }  // class HStringMarshaler
 
     internal static class ObjectMarshaler
     {
@@ -705,30 +607,7 @@ namespace System.StubHelpers
 
         [DllImport(RuntimeHelpers.QCall)]
         internal static extern void ClearNative(IntPtr pUnk);
-
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern object ConvertToManagedWithoutUnboxing(IntPtr pNative);
     }  // class InterfaceMarshaler
-#endif // FEATURE_COMINTEROP
-
-#if FEATURE_COMINTEROP
-    internal static class UriMarshaler
-    {
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern string GetRawUriFromNative(IntPtr pUri);
-
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern unsafe IntPtr CreateNativeUriInstanceHelper(char* rawUri, int strLen);
-
-        internal static unsafe IntPtr CreateNativeUriInstance(string rawUri)
-        {
-            fixed (char* pManaged = rawUri)
-            {
-                return CreateNativeUriInstanceHelper(pManaged, rawUri.Length);
-            }
-        }
-    }  // class InterfaceMarshaler
-
 #endif // FEATURE_COMINTEROP
 
     internal static class MngdNativeArrayMarshaler
@@ -812,165 +691,6 @@ namespace System.StubHelpers
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern void ClearNative(IntPtr pMarshalState, ref object pManagedHome, IntPtr pNativeHome);
     }  // class MngdSafeArrayMarshaler
-
-    internal static class MngdHiddenLengthArrayMarshaler
-    {
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern void CreateMarshaler(IntPtr pMarshalState, IntPtr pMT, IntPtr cbElementSize, ushort vt, IntPtr pManagedMarshaler);
-
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern void ConvertSpaceToNative(IntPtr pMarshalState, ref object pManagedHome, IntPtr pNativeHome);
-
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern void ConvertContentsToNative(IntPtr pMarshalState, ref object pManagedHome, IntPtr pNativeHome);
-
-        internal static unsafe void ConvertContentsToNative_DateTime(ref DateTimeOffset[]? managedArray, IntPtr pNativeHome)
-        {
-            if (managedArray != null)
-            {
-                DateTimeNative* nativeBuffer = *(DateTimeNative**)pNativeHome;
-                for (int i = 0; i < managedArray.Length; i++)
-                {
-                    DateTimeOffsetMarshaler.ConvertToNative(ref managedArray[i], out nativeBuffer[i]);
-                }
-            }
-        }
-
-        internal static unsafe void ConvertContentsToNative_Type(ref System.Type[]? managedArray, IntPtr pNativeHome)
-        {
-            if (managedArray != null)
-            {
-                TypeNameNative* nativeBuffer = *(TypeNameNative**)pNativeHome;
-                for (int i = 0; i < managedArray.Length; i++)
-                {
-                    SystemTypeMarshaler.ConvertToNative(managedArray[i], &nativeBuffer[i]);
-                }
-            }
-        }
-
-        internal static unsafe void ConvertContentsToNative_Exception(ref Exception[]? managedArray, IntPtr pNativeHome)
-        {
-            if (managedArray != null)
-            {
-                int* nativeBuffer = *(int**)pNativeHome;
-                for (int i = 0; i < managedArray.Length; i++)
-                {
-                    nativeBuffer[i] = HResultExceptionMarshaler.ConvertToNative(managedArray[i]);
-                }
-            }
-        }
-
-        internal static unsafe void ConvertContentsToNative_Nullable<T>(ref T?[]? managedArray, IntPtr pNativeHome)
-            where T : struct
-        {
-            if (managedArray != null)
-            {
-                IntPtr* nativeBuffer = *(IntPtr**)pNativeHome;
-                for (int i = 0; i < managedArray.Length; i++)
-                {
-                    nativeBuffer[i] = NullableMarshaler.ConvertToNative<T>(ref managedArray[i]);
-                }
-            }
-        }
-
-        internal static unsafe void ConvertContentsToNative_KeyValuePair<K, V>(ref KeyValuePair<K, V>[]? managedArray, IntPtr pNativeHome)
-        {
-            if (managedArray != null)
-            {
-                IntPtr* nativeBuffer = *(IntPtr**)pNativeHome;
-                for (int i = 0; i < managedArray.Length; i++)
-                {
-                    nativeBuffer[i] = KeyValuePairMarshaler.ConvertToNative<K, V>(ref managedArray[i]);
-                }
-            }
-        }
-
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern void ConvertSpaceToManaged(IntPtr pMarshalState, ref object pManagedHome, IntPtr pNativeHome, int elementCount);
-
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern void ConvertContentsToManaged(IntPtr pMarshalState, ref object pManagedHome, IntPtr pNativeHome);
-
-        internal static unsafe void ConvertContentsToManaged_DateTime(ref DateTimeOffset[]? managedArray, IntPtr pNativeHome)
-        {
-            if (managedArray != null)
-            {
-                DateTimeNative* nativeBuffer = *(DateTimeNative**)pNativeHome;
-                for (int i = 0; i < managedArray.Length; i++)
-                {
-                    DateTimeOffsetMarshaler.ConvertToManaged(out managedArray[i], ref nativeBuffer[i]);
-                }
-            }
-        }
-
-        internal static unsafe void ConvertContentsToManaged_Type(ref System.Type?[]? managedArray, IntPtr pNativeHome)
-        {
-            if (managedArray != null)
-            {
-                TypeNameNative* nativeBuffer = *(TypeNameNative**)pNativeHome;
-                for (int i = 0; i < managedArray.Length; i++)
-                {
-                    SystemTypeMarshaler.ConvertToManaged(&nativeBuffer[i], ref managedArray[i]);
-                }
-            }
-        }
-
-        internal static unsafe void ConvertContentsToManaged_Exception(ref Exception?[]? managedArray, IntPtr pNativeHome)
-        {
-            if (managedArray != null)
-            {
-                int* nativeBuffer = *(int**)pNativeHome;
-                for (int i = 0; i < managedArray.Length; i++)
-                {
-                    managedArray[i] = HResultExceptionMarshaler.ConvertToManaged(nativeBuffer[i]);
-                }
-            }
-        }
-
-        internal static unsafe void ConvertContentsToManaged_Nullable<T>(ref T?[]? managedArray, IntPtr pNativeHome)
-            where T : struct
-        {
-            if (managedArray != null)
-            {
-                IntPtr* nativeBuffer = *(IntPtr**)pNativeHome;
-                for (int i = 0; i < managedArray.Length; i++)
-                {
-                    managedArray[i] = NullableMarshaler.ConvertToManaged<T>(nativeBuffer[i]);
-                }
-            }
-        }
-
-        internal static unsafe void ConvertContentsToManaged_KeyValuePair<K, V>(ref KeyValuePair<K, V>[]? managedArray, IntPtr pNativeHome)
-        {
-            if (managedArray != null)
-            {
-                IntPtr* nativeBuffer = *(IntPtr**)pNativeHome;
-                for (int i = 0; i < managedArray.Length; i++)
-                {
-                    managedArray[i] = KeyValuePairMarshaler.ConvertToManaged<K, V>(nativeBuffer[i]);
-                }
-            }
-        }
-
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern void ClearNativeContents(IntPtr pMarshalState, IntPtr pNativeHome, int cElements);
-
-        internal static unsafe void ClearNativeContents_Type(IntPtr pNativeHome, int cElements)
-        {
-            Debug.Assert(Environment.IsWinRTSupported);
-
-            TypeNameNative* pNativeTypeArray = *(TypeNameNative**)pNativeHome;
-            if (pNativeTypeArray != null)
-            {
-                for (int i = 0; i < cElements; ++i)
-                {
-                    SystemTypeMarshaler.ClearNative(pNativeTypeArray);
-                    pNativeTypeArray++;
-                }
-            }
-        }
-    }  // class MngdHiddenLengthArrayMarshaler
-
 #endif // FEATURE_COMINTEROP
 
     internal static class MngdRefCustomMarshaler
@@ -1354,210 +1074,6 @@ namespace System.StubHelpers
         }
     }  // struct AsAnyMarshaler
 
-#if FEATURE_COMINTEROP
-    internal static class NullableMarshaler
-    {
-        internal static IntPtr ConvertToNative<T>(ref T? pManaged) where T : struct
-        {
-            if (pManaged.HasValue)
-            {
-                object impl = IReferenceFactory.CreateIReference(pManaged);
-                return Marshal.GetComInterfaceForObject(impl, typeof(IReference<T>));
-            }
-            else
-            {
-                return IntPtr.Zero;
-            }
-        }
-
-        internal static void ConvertToManagedRetVoid<T>(IntPtr pNative, ref T? retObj) where T : struct
-        {
-            retObj = ConvertToManaged<T>(pNative);
-        }
-
-        internal static T? ConvertToManaged<T>(IntPtr pNative) where T : struct
-        {
-            if (pNative != IntPtr.Zero)
-            {
-                object wrapper = InterfaceMarshaler.ConvertToManagedWithoutUnboxing(pNative);
-                return (T?)CLRIReferenceImpl<T>.UnboxHelper(wrapper);
-            }
-            else
-            {
-                return default;
-            }
-        }
-    }  // class NullableMarshaler
-
-    // Corresponds to Windows.UI.Xaml.Interop.TypeName
-    [StructLayout(LayoutKind.Sequential)]
-    internal struct TypeNameNative
-    {
-        internal IntPtr typeName;           // HSTRING
-        internal TypeKind typeKind;           // TypeKind enum
-    }
-
-    // Corresponds to Windows.UI.Xaml.TypeSource
-    internal enum TypeKind
-    {
-        Primitive,
-        Metadata,
-        Projection
-    }
-
-    internal static class WinRTTypeNameConverter
-    {
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern string ConvertToWinRTTypeName(System.Type managedType, out bool isPrimitive);
-
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern System.Type GetTypeFromWinRTTypeName(string typeName, out bool isPrimitive);
-    }
-
-    internal static class SystemTypeMarshaler
-    {
-        internal static unsafe void ConvertToNative(System.Type managedType, TypeNameNative* pNativeType)
-        {
-            if (!Environment.IsWinRTSupported)
-            {
-                throw new PlatformNotSupportedException(SR.PlatformNotSupported_WinRT);
-            }
-
-            string typeName;
-            if (managedType != null)
-            {
-                if (managedType.GetType() != typeof(System.RuntimeType))
-                {   // The type should be exactly System.RuntimeType (and not its child System.ReflectionOnlyType, or other System.Type children)
-                    throw new ArgumentException(SR.Format(SR.Argument_WinRTSystemRuntimeType, managedType.GetType()));
-                }
-
-                string winrtTypeName = WinRTTypeNameConverter.ConvertToWinRTTypeName(managedType, out bool isPrimitive);
-                if (winrtTypeName != null)
-                {
-                    // Must be a WinRT type, either in a WinMD or a Primitive
-                    typeName = winrtTypeName;
-                    if (isPrimitive)
-                        pNativeType->typeKind = TypeKind.Primitive;
-                    else
-                        pNativeType->typeKind = TypeKind.Metadata;
-                }
-                else
-                {
-                    // Custom .NET type
-                    typeName = managedType.AssemblyQualifiedName!;
-                    pNativeType->typeKind = TypeKind.Projection;
-                }
-            }
-            else
-            {   // Marshal null as empty string + Projection
-                typeName = "";
-                pNativeType->typeKind = TypeKind.Projection;
-            }
-
-            int hrCreate = System.Runtime.InteropServices.WindowsRuntime.UnsafeNativeMethods.WindowsCreateString(typeName, typeName.Length, &pNativeType->typeName);
-            Marshal.ThrowExceptionForHR(hrCreate, new IntPtr(-1));
-        }
-
-        internal static unsafe void ConvertToManaged(TypeNameNative* pNativeType, ref System.Type? managedType)
-        {
-            if (!Environment.IsWinRTSupported)
-            {
-                throw new PlatformNotSupportedException(SR.PlatformNotSupported_WinRT);
-            }
-
-            string typeName = WindowsRuntimeMarshal.HStringToString(pNativeType->typeName);
-            if (string.IsNullOrEmpty(typeName))
-            {
-                managedType = null;
-                return;
-            }
-
-            if (pNativeType->typeKind == TypeKind.Projection)
-            {
-                managedType = Type.GetType(typeName, /* throwOnError = */ true);
-            }
-            else
-            {
-                managedType = WinRTTypeNameConverter.GetTypeFromWinRTTypeName(typeName, out bool isPrimitive);
-
-                // TypeSource must match
-                if (isPrimitive != (pNativeType->typeKind == TypeKind.Primitive))
-                    throw new ArgumentException(SR.Argument_Unexpected_TypeSource);
-            }
-        }
-
-        internal static unsafe void ClearNative(TypeNameNative* pNativeType)
-        {
-            Debug.Assert(Environment.IsWinRTSupported);
-
-            if (pNativeType->typeName != IntPtr.Zero)
-            {
-                System.Runtime.InteropServices.WindowsRuntime.UnsafeNativeMethods.WindowsDeleteString(pNativeType->typeName);
-            }
-        }
-    }  // class SystemTypeMarshaler
-
-    // For converting WinRT's Windows.Foundation.HResult into System.Exception and vice versa.
-    internal static class HResultExceptionMarshaler
-    {
-        internal static int ConvertToNative(Exception ex)
-        {
-            if (!Environment.IsWinRTSupported)
-            {
-                throw new PlatformNotSupportedException(SR.PlatformNotSupported_WinRT);
-            }
-
-            if (ex == null)
-                return 0;  // S_OK;
-
-            return ex.HResult;
-        }
-
-        internal static Exception? ConvertToManaged(int hr)
-        {
-            if (!Environment.IsWinRTSupported)
-            {
-                throw new PlatformNotSupportedException(SR.PlatformNotSupported_WinRT);
-            }
-
-            Exception? e = null;
-            if (hr < 0)
-            {
-                e = StubHelpers.InternalGetCOMHRExceptionObject(hr, IntPtr.Zero, null, /* fForWinRT */ true);
-            }
-
-            // S_OK should be marshaled as null.  WinRT API's should not return S_FALSE by convention.
-            // We've chosen to treat S_FALSE as success and return null.
-            Debug.Assert(e != null || hr == 0 || hr == 1, "Unexpected HRESULT - it is a success HRESULT (without the high bit set) other than S_OK & S_FALSE.");
-            return e;
-        }
-    }  // class HResultExceptionMarshaler
-
-    internal static class KeyValuePairMarshaler
-    {
-        internal static IntPtr ConvertToNative<K, V>([In] ref KeyValuePair<K, V> pair)
-        {
-            IKeyValuePair<K, V> impl = new CLRIKeyValuePairImpl<K, V>(ref pair);
-            return Marshal.GetComInterfaceForObject(impl, typeof(IKeyValuePair<K, V>));
-        }
-
-        internal static KeyValuePair<K, V> ConvertToManaged<K, V>(IntPtr pInsp)
-        {
-            object obj = InterfaceMarshaler.ConvertToManagedWithoutUnboxing(pInsp);
-
-            IKeyValuePair<K, V> pair = (IKeyValuePair<K, V>)obj;
-            return new KeyValuePair<K, V>(pair.Key, pair.Value);
-        }
-
-        // Called from COMInterfaceMarshaler
-        internal static object ConvertToManagedBox<K, V>(IntPtr pInsp)
-        {
-            return (object)ConvertToManaged<K, V>(pInsp);
-        }
-    }  // class KeyValuePairMarshaler
-
-#endif // FEATURE_COMINTEROP
-
     [StructLayout(LayoutKind.Sequential)]
     internal struct NativeVariant
     {
@@ -1726,20 +1242,13 @@ namespace System.StubHelpers
 #if FEATURE_COMINTEROP
         internal static Exception GetCOMHRExceptionObject(int hr, IntPtr pCPCMD, object pThis)
         {
-            Exception ex = InternalGetCOMHRExceptionObject(hr, pCPCMD, pThis, false);
-            ex.InternalPreserveStackTrace();
-            return ex;
-        }
-
-        internal static Exception GetCOMHRExceptionObject_WinRT(int hr, IntPtr pCPCMD, object pThis)
-        {
-            Exception ex = InternalGetCOMHRExceptionObject(hr, pCPCMD, pThis, true);
+            Exception ex = InternalGetCOMHRExceptionObject(hr, pCPCMD, pThis);
             ex.InternalPreserveStackTrace();
             return ex;
         }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern Exception InternalGetCOMHRExceptionObject(int hr, IntPtr pCPCMD, object? pThis, bool fForWinRT);
+        internal static extern Exception InternalGetCOMHRExceptionObject(int hr, IntPtr pCPCMD, object? pThis);
 
 #endif // FEATURE_COMINTEROP
 
@@ -1776,34 +1285,6 @@ namespace System.StubHelpers
 #if FEATURE_COMINTEROP
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern IntPtr GetCOMIPFromRCW(object objSrc, IntPtr pCPCMD, out IntPtr ppTarget, out bool pfNeedsRelease);
-
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern IntPtr GetCOMIPFromRCW_WinRT(object objSrc, IntPtr pCPCMD, out IntPtr ppTarget);
-
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern IntPtr GetCOMIPFromRCW_WinRTSharedGeneric(object objSrc, IntPtr pCPCMD, out IntPtr ppTarget);
-
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern IntPtr GetCOMIPFromRCW_WinRTDelegate(object objSrc, IntPtr pCPCMD, out IntPtr ppTarget);
-
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern bool ShouldCallWinRTInterface(object objSrc, IntPtr pCPCMD);
-
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern Delegate GetTargetForAmbiguousVariantCall(object objSrc, IntPtr pMT, out bool fUseString);
-
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern IntPtr GetDelegateInvokeMethod(Delegate pThis);
-
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern object GetWinRTFactoryObject(IntPtr pCPCMD);
-
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern IntPtr GetWinRTFactoryReturnValue(object pThis, IntPtr pCtorEntry);
-
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern IntPtr GetOuterInspectable(object pThis, IntPtr pCtorMD);
-
 #endif // FEATURE_COMINTEROP
 
         //-------------------------------------------------------

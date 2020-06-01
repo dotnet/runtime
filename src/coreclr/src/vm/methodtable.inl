@@ -322,26 +322,6 @@ inline DWORD MethodTable::GetAttrClass()
 }
 
 //==========================================================================================
-inline BOOL MethodTable::SupportsGenericInterop(TypeHandle::InteropKind interopKind,
-                        MethodTable::Mode mode /*= modeAll*/)
-{
-    LIMITED_METHOD_CONTRACT;
-
-#ifdef FEATURE_COMINTEROP
-    return ((IsInterface() || IsDelegate()) &&    // interface or delegate
-            HasInstantiation() &&                 // generic
-            !IsSharedByGenericInstantiations() && // unshared
-            !ContainsGenericVariables() &&        // closed over concrete types
-            // defined in .winmd or one of the redirected mscorlib interfaces
-            ((((mode & modeProjected) != 0) && IsProjectedFromWinRT()) ||
-             (((mode & modeRedirected) != 0) && (IsWinRTRedirectedInterface(interopKind) || IsWinRTRedirectedDelegate()))));
-#else // FEATURE_COMINTEROP
-    return FALSE;
-#endif // FEATURE_COMINTEROP
-}
-
-
-//==========================================================================================
 inline BOOL MethodTable::IsNotTightlyPacked()
 {
     WRAPPER_NO_CONTRACT;
@@ -446,14 +426,7 @@ inline BOOL MethodTable::GetGuidForWinRT(GUID *pGuid)
         SUPPORTS_DAC;
     } CONTRACTL_END;
 
-    BOOL bRes = FALSE;
-    if ((IsProjectedFromWinRT() && !HasInstantiation()) ||
-        (SupportsGenericInterop(TypeHandle::Interop_NativeToManaged) && IsLegalNonArrayWinRTType()))
-    {
-        bRes = SUCCEEDED(GetGuidNoThrow(pGuid, TRUE, FALSE));
-    }
-
-    return bRes;
+    return FALSE;
 }
 
 #endif // FEATURE_COMINTEROP
@@ -1046,55 +1019,6 @@ inline BOOL MethodTable::SetComClassFactory(ClassFactoryBase *pFactory)
 #endif // FEATURE_COMINTEROP_UNMANAGED_ACTIVATION
 #endif // FEATURE_COMINTEROP
 #endif // DACCESS_COMPILE
-
-#ifdef FEATURE_COMINTEROP
-//==========================================================================================
-inline BOOL MethodTable::IsProjectedFromWinRT()
-{
-    LIMITED_METHOD_DAC_CONTRACT;
-    _ASSERTE(GetClass());
-    return GetClass()->IsProjectedFromWinRT();
-}
-
-//==========================================================================================
-inline BOOL MethodTable::IsExportedToWinRT()
-{
-    LIMITED_METHOD_DAC_CONTRACT;
-    _ASSERTE(GetClass());
-    return GetClass()->IsExportedToWinRT();
-}
-
-//==========================================================================================
-inline BOOL MethodTable::IsWinRTDelegate()
-{
-    LIMITED_METHOD_DAC_CONTRACT;
-    return (IsProjectedFromWinRT() && IsDelegate()) || IsWinRTRedirectedDelegate();
-}
-
-#else // FEATURE_COMINTEROP
-
-//==========================================================================================
-inline BOOL MethodTable::IsProjectedFromWinRT()
-{
-    LIMITED_METHOD_DAC_CONTRACT;
-    return FALSE;
-}
-
-//==========================================================================================
-inline BOOL MethodTable::IsExportedToWinRT()
-{
-    LIMITED_METHOD_DAC_CONTRACT;
-    return FALSE;
-}
-
-//==========================================================================================
-inline BOOL MethodTable::IsWinRTDelegate()
-{
-    LIMITED_METHOD_DAC_CONTRACT;
-    return FALSE;
-}
-
-#endif // FEATURE_COMINTEROP
 
 //==========================================================================================
 inline PTR_MethodTable MethodTable::GetCanonicalMethodTable()

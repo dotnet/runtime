@@ -3,7 +3,6 @@
     <!-- Set helix build to build number if available -->
     <HelixBuild Condition="'$(HelixBuild)' == ''">$(BUILD_BUILDNUMBER)</HelixBuild>
     <HelixBuild Condition="'$(HelixBuild)' == ''">default</HelixBuild>
-
     <!-- For arm/arm64 we set a 30 min timeout temporarily until we split up slow test assemblies. -->
     <TimeoutInSeconds Condition="'$(TargetArchitecture)' == 'arm64' or '$(TargetArchitecture)' == 'arm'">1800</TimeoutInSeconds>
     <TimeoutInSeconds Condition="'$(TimeoutInSeconds)' == ''">900</TimeoutInSeconds>
@@ -59,6 +58,9 @@
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(HelixCommand)' == ''">
+    <HelixPreCommands Condition="'$(MonoEnvOptions)' != '' and '$(OSGroup)' == 'Windows_NT'">set MONO_ENV_OPTIONS='$(MonoEnvOptions)'</HelixPreCommands>
+    <HelixPreCommands Condition="'$(MonoEnvOptions)' != '' and '$(OSGroup)' != 'Windows_NT'">export MONO_ENV_OPTIONS='$(MonoEnvOptions)'</HelixPreCommands>
+    
     <!--
       For windows we need to use call, since the command is going to be called from a bat script created by Helix
       and we exit /b at the end of RunTests.cmd, Helix runs some other commands after ours within the bat script,

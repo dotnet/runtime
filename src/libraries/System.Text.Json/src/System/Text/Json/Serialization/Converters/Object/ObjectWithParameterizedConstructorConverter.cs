@@ -135,6 +135,8 @@ namespace System.Text.Json.Serialization.Converters
                 state.Current.JsonClassInfo.UpdateSortedParameterCache(ref state.Current);
             }
 
+            EndRead(ref state);
+
             value = (T)obj;
 
             return true;
@@ -440,11 +442,12 @@ namespace System.Text.Json.Serialization.Converters
             InitializeConstructorArgumentCaches(ref state, options);
         }
 
+        protected virtual void EndRead(ref ReadStack state) { }
+
         /// <summary>
         /// Lookup the constructor parameter given its name in the reader.
         /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private bool TryLookupConstructorParameter(
+        protected virtual bool TryLookupConstructorParameter(
             ref ReadStack state,
             ref Utf8JsonReader reader,
             JsonSerializerOptions options,

@@ -3917,7 +3917,7 @@ DWORD ProfToEEInterfaceImpl::GetModuleFlags(Module * pModule)
     {
         NOTHROW;
         GC_NOTRIGGER;
-        CAN_TAKE_LOCK;     // IsWindowsRuntimeModule accesses metadata directly, which takes locks
+        CANNOT_TAKE_LOCK;
         MODE_ANY;
     }
     CONTRACTL_END;
@@ -3981,11 +3981,6 @@ DWORD ProfToEEInterfaceImpl::GetModuleFlags(Module * pModule)
     if (pModule->IsResource())
     {
         dwRet |= COR_PRF_MODULE_RESOURCE;
-    }
-
-    if (pModule->IsWindowsRuntimeModule())
-    {
-        dwRet |= COR_PRF_MODULE_WINDOWS_RUNTIME;
     }
 
     return dwRet;
@@ -4639,8 +4634,7 @@ HRESULT ProfToEEInterfaceImpl::ForceGC()
 
 #ifdef FEATURE_EVENT_TRACE
     // This helper, used by ETW and profAPI ensures a managed thread gets created for
-    // this thread before forcing the GC (to work around Jupiter issues where it's
-    // expected this thread is already managed before starting the GC).
+    // this thread before forcing the GC.
     HRESULT hr = ETW::GCLog::ForceGCForDiagnostics();
 #else // !FEATURE_EVENT_TRACE
     HRESULT hr = E_FAIL;
@@ -8827,15 +8821,15 @@ HRESULT ProfToEEInterfaceImpl::GetReJITIDs(
         // The rejit tables use a lock
         CAN_TAKE_LOCK;
 
-
         PRECONDITION(CheckPointer(pcReJitIds, NULL_OK));
         PRECONDITION(CheckPointer(reJitIds, NULL_OK));
+        PRECONDITION((cReJitIds == 0) == (reJitIds == NULL));
 
     }
     CONTRACTL_END;
 
     PROFILER_TO_CLR_ENTRYPOINT_SYNC_EX(
-        kP2EEAllowableAfterAttach,
+        kP2EEAllowableAfterAttach | kP2EETriggers,
         (LF_CORPROF,
         LL_INFO1000,
         "**PROF: GetReJITIDs 0x%p.\n",
@@ -8846,7 +8840,7 @@ HRESULT ProfToEEInterfaceImpl::GetReJITIDs(
         return E_INVALIDARG;
     }
 
-    if ((cReJitIds == 0) || (pcReJitIds == NULL) || (reJitIds == NULL))
+    if ((pcReJitIds == NULL) || ((cReJitIds != 0) && (reJitIds == NULL)))
     {
         return E_INVALIDARG;
     }

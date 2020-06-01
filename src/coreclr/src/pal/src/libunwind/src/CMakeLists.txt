@@ -14,6 +14,8 @@ add_definitions(-DPACKAGE_STRING="")
 add_definitions(-DPACKAGE_BUGREPORT="")
 
 add_definitions(-D_GNU_SOURCE)
+# Ensure that the remote and local unwind code can reside in the same binary without name clashing
+add_definitions("-Ddwarf_search_unwind_table_int=UNW_OBJ(dwarf_search_unwind_table_int)")
 
 # Disable warning due to incorrect format specifier in debugging printf via the Debug macro
 add_compile_options(-Wno-format -Wno-format-security)
@@ -23,8 +25,6 @@ if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
 else()
   add_compile_options(-Wno-unused-value)
   add_compile_options(-Wno-unused-result)
-  add_compile_options(-Wno-implicit-function-declaration)
-  add_compile_options(-Wno-incompatible-pointer-types)
 endif()
 
 if(CLR_CMAKE_HOST_ARCH_ARM)
@@ -50,10 +50,6 @@ elseif(CLR_CMAKE_HOST_ARCH_ARM64)
     if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
         # Disable warning due to labs function called on unsigned argument
         add_compile_options(-Wno-absolute-value)
-    endif()
-    # Issue https://github.com/libunwind/libunwind/issues/176
-    if (CLR_CMAKE_HOST_ALPINE_LINUX)
-      add_definitions("-D__sigset_t=sigset_t")
     endif()
     # We compile code with -std=c99 and the asm keyword is not recognized as it is a gnu extension
     add_definitions(-Dasm=__asm__)
@@ -119,14 +115,6 @@ SET(libunwind_la_SOURCES_os_freebsd_local
 # Nothing
 )
 
-SET(libunwind_la_SOURCES_os_solaris
-    os-solaris.c
-)
-
-SET(libunwind_la_SOURCES_os_solaris_local
-# Nothing
-)
-
 if(CLR_CMAKE_HOST_LINUX)
     SET(libunwind_la_SOURCES_os                 ${libunwind_la_SOURCES_os_linux})
     SET(libunwind_la_SOURCES_os_local           ${libunwind_la_SOURCES_os_linux_local})
@@ -149,11 +137,6 @@ elseif(CLR_CMAKE_HOST_FREEBSD)
     SET(libunwind_la_SOURCES_arm_os             arm/Gos-freebsd.c)
     SET(libunwind_la_SOURCES_arm_os_local       arm/Los-freebsd.c)
     list(APPEND libunwind_coredump_la_SOURCES   coredump/_UCD_access_reg_freebsd.c)
-elseif(CLR_CMAKE_HOST_SUNOS)
-    SET(libunwind_la_SOURCES_os                 ${libunwind_la_SOURCES_os_solaris})
-    SET(libunwind_la_SOURCES_os_local           ${libunwind_la_SOURCES_os_solaris_local})
-    SET(libunwind_la_SOURCES_x86_64_os          x86_64/Gos-solaris.c)
-    SET(libunwind_la_SOURCES_x86_64_os_local    x86_64/Los-solaris.c)
 endif()
 
 # List of arch-independent files needed by both local-only and generic

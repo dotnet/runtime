@@ -53,10 +53,12 @@ check_prereqs()
 
     function version { echo "$@" | awk -F. '{ printf("%d%02d%02d\n", $1,$2,$3); }'; }
 
-    local cmake_version="$(cmake --version | awk '/^cmake.* version [0-9]+\.[0-9]+\.[0-9]+$/ {print $3}')"
+    local cmakeRequiredMinimumVersion="3.14.5"
+    local cmakeInstalledVersion="$(cmake --version | awk '/^cmake.* version [0-9]+\.[0-9]+\.[0-9]+$/ {print $3}')"
 
-    if [[ "$(version "$cmake_version")" -lt "$(version 3.14.2)" ]]; then
-        echo "Please install CMake 3.14.2 or newer from https://cmake.org/download/ or https://apt.kitware.com and ensure it is on your path."; exit 1;
+    if [[ "$(version "$cmakeInstalledVersion")" -lt "$(version "$cmakeRequiredMinimumVersion")" ]]; then
+        echo "Found cmake v$cmakeInstalledVersion in PATH. Please install v$cmakeRequiredMinimumVersion or newer from https://www.cmake.org/download/."
+        exit 1;
     fi
 
     if [[ "$__HostOS" == "OSX" ]]; then

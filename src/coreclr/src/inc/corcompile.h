@@ -1387,13 +1387,6 @@ class ICorCompilationDomain
             CORCOMPILE_DEPENDENCY   **ppDependencies,
             DWORD                   *cDependencies
             ) = 0;
-
-
-#ifdef CROSSGEN_COMPILE
-    virtual HRESULT SetPlatformWinmdPaths(
-            LPCWSTR                 pwzPlatformWinmdPaths
-            ) = 0;
-#endif
 };
 
 /*********************************************************************************
@@ -1455,19 +1448,6 @@ class ICorCompileInfo
             BOOL                     fExplicitBindToNativeImage,
             CORINFO_ASSEMBLY_HANDLE *pHandle
             ) = 0;
-
-
-#ifdef FEATURE_COMINTEROP
-    // Loads a WinRT typeref into the EE and returns
-    // a handle to it.  We have to load all typerefs
-    // during dependency computation since assemblyrefs
-    // are meaningless to WinRT.
-    virtual HRESULT LoadTypeRefWinRT(
-            IMDInternalImport       *pAssemblyImport,
-            mdTypeRef               ref,
-            CORINFO_ASSEMBLY_HANDLE *pHandle
-            ) = 0;
-#endif
 
     virtual BOOL IsInCurrentVersionBubble(CORINFO_MODULE_HANDLE hModule) = 0;
 
@@ -1775,8 +1755,6 @@ extern "C" unsigned __stdcall PartialNGenStressPercentage();
 extern "C" HRESULT __stdcall CreatePdb(CORINFO_ASSEMBLY_HANDLE hAssembly, BSTR pNativeImagePath, BSTR pPdbPath, BOOL pdbLines, BSTR pManagedPdbSearchPath, LPCWSTR pDiasymreaderPath);
 
 extern bool g_fNGenMissingDependenciesOk;
-
-extern bool g_fNGenWinMDResilient;
 
 #ifdef FEATURE_READYTORUN_COMPILER
 extern bool g_fReadyToRunCompilation;

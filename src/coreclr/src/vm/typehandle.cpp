@@ -245,7 +245,7 @@ TypeHandle TypeHandle::GetTypeParam() const
 
     if (IsTypeDesc())
         return AsTypeDesc()->GetTypeParam();
-    
+
     return TypeHandle();
 }
 
@@ -286,7 +286,7 @@ TypeHandle TypeHandle::MakeArray(int rank) const
 TypeHandle TypeHandle::MakeNativeValueType() const
 {
     STATIC_CONTRACT_WRAPPER;
-    
+
     return ClassLoader::LoadNativeValueTypeThrowing(*this);
 }
 
@@ -522,20 +522,6 @@ TypeHandle TypeHandle::GetDefItfForComClassItf() const
     WRAPPER_NO_CONTRACT;
     PREFIX_ASSUME(GetMethodTable() != NULL);
     return GetMethodTable()->GetDefItfForComClassItf();
-}
-
-BOOL TypeHandle::IsProjectedFromWinRT() const
-{
-    LIMITED_METHOD_CONTRACT;
-    PREFIX_ASSUME(GetMethodTable() != NULL);
-    return GetMethodTable()->IsProjectedFromWinRT();
-}
-
-BOOL TypeHandle::IsExportedToWinRT() const
-{
-    LIMITED_METHOD_CONTRACT;
-    PREFIX_ASSUME(GetMethodTable() != NULL);
-    return GetMethodTable()->IsExportedToWinRT();
 }
 
 ComCallWrapperTemplate *TypeHandle::GetComCallWrapperTemplate() const

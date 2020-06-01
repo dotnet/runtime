@@ -246,12 +246,8 @@ namespace System.Runtime.InteropServices
     }
     public enum ComInterfaceType
     {
-        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
-        [System.ObsoleteAttribute("Support for IDispatch may be unavailable in future releases.")]
         InterfaceIsDual = 0,
         InterfaceIsIUnknown = 1,
-        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
-        [System.ObsoleteAttribute("Support for IDispatch may be unavailable in future releases.")]
         InterfaceIsIDispatch = 2,
         InterfaceIsIInspectable = 3,
     }

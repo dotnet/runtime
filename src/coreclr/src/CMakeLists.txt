@@ -1,5 +1,4 @@
 include_directories("inc")
-include_directories("inc/winrt")
 include_directories("debug/inc")
 include_directories("debug/inc/${ARCH_SOURCES_DIR}")
 include_directories("debug/inc/dump")
