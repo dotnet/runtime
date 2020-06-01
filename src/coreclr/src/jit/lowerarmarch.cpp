@@ -1466,10 +1466,10 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                 }
                 else if (intrin.op3->OperIs(GT_HWINTRINSIC))
                 {
-                    const HWIntrinsic hwIntrin(intrin.op3->AsHWIntrinsic());
+                    const HWIntrinsic data(intrin.op3->AsHWIntrinsic());
 
-                    if (((hwIntrin.id == NI_Vector64_GetElement) || (hwIntrin.id == NI_Vector128_GetElement)) &&
-                        (hwIntrin.op2->isContained()))
+                    if (((data.id == NI_Vector64_GetElement) || (data.id == NI_Vector128_GetElement)) &&
+                        (data.op2->isContained()))
                     {
                         // Combine Insert/GetElement
                         MakeSrcContained(node, intrin.op3);
