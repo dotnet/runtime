@@ -33,10 +33,10 @@ enum ComCallFlags
     enum_HasMarshalError            = 0x0400,   // The signature is not marshalable and m_StackBytes is a guess
     enum_IsDelegateInvoke           = 0x0800,   // The method is an 'Invoke' on a delegate
     // unused                       = 0x1000,
-    enum_IsWinRTCall                = 0x2000,   // The method is declared on a WinRT interface/delegate
-    enum_IsWinRTCtor                = 0x4000,   // The method is a WinRT constructor
-    enum_IsWinRTStatic              = 0x8000,   // The method is a WinRT static
-    enum_IsWinRTRedirected          = 0x10000,  // The method is declared on a redirected WinRT interface
+    // unused                       = 0x2000,
+    // unused                       = 0x4000,
+    // unused                       = 0x8000,
+    // unused                       = 0x10000
 };
 
 
@@ -107,7 +107,7 @@ class ComCallMethodDesc
 
 public:
     // init method
-    void InitMethod(MethodDesc *pMD, MethodDesc *pInterfaceMD, BOOL fRedirectedInterface = FALSE);
+    void InitMethod(MethodDesc *pMD, MethodDesc *pInterfaceMD);
 
     // init field
     void InitField(FieldDesc* pField, BOOL isGetter);
@@ -201,30 +201,6 @@ public:
     {
         LIMITED_METHOD_CONTRACT;
         return m_flags & enum_IsDelegateInvoke;
-    }
-
-    BOOL IsWinRTCall()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return m_flags & enum_IsWinRTCall;
-    }
-
-    BOOL IsWinRTCtor()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return m_flags & enum_IsWinRTCtor;
-    }
-
-    BOOL IsWinRTStatic()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return m_flags & enum_IsWinRTStatic;
-    }
-
-    BOOL IsWinRTRedirectedMethod()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return m_flags & enum_IsWinRTRedirected;
     }
 
     BOOL IsNativeInfoInitialized()

@@ -20,11 +20,6 @@ do {if ((EXPR) == 0) {ThrowOutOfMemory();} } while (0)
 #define GET_VERSION_USHORT_FROM_INT(x) ((x < 0) || (x > (INT)((USHORT)-1))) ? 0 : static_cast<USHORT>(x)
 
 #ifdef FEATURE_COMINTEROP
-#include "winrttypenameconverter.h"
-#include "roparameterizediid.h"
-#include "../md/winmd/inc/adapter.h"
-#include <windows.foundation.h>
-
 // The format string to use to format unknown members to be passed to
 // invoke member
 #define DISPID_NAME_FORMAT_STRING                       W("[DISPID=%i]")
@@ -64,18 +59,6 @@ class InteropSyncBlockInfo;
 
 #endif //FEATURE_COMINTEROP
 
-#if FEATURE_COMINTEROP
-#include <restrictederrorInfo.h>
-#endif
-#ifndef __IRestrictedErrorInfo_INTERFACE_DEFINED__
-DEFINE_GUID(IID_IRestrictedErrorInfo, 0x82BA7092,0x4C88,0x427D,0xA7,0xBC,0x16,0xDD,0x93,0xFE,0xB6,0x7E);
-MIDL_INTERFACE("82BA7092-4C88-427D-A7BC-16DD93FEB67E")
-IRestrictedErrorInfo : public IUnknown
-{
-public:
-};
-#endif // !__IRestrictedErrorInfo_INTERFACE_DEFINED__
-
 class FieldDesc;
 struct ExceptionData;
 
@@ -83,15 +66,10 @@ struct ExceptionData;
  // setup error info for exception object
 //
 #ifdef FEATURE_COMINTEROP
-HRESULT SetupErrorInfo(OBJECTREF pThrownObject, ComCallMethodDesc *pCMD);
-HRESULT SafeGetRestrictedErrorInfo(IRestrictedErrorInfo **ppIErrInfo);
 BOOL IsManagedObject(IUnknown *pErrInfo);
-IErrorInfo *GetCorrepondingErrorInfo_WinRT(HRESULT hr, IRestrictedErrorInfo *pResErrInfo, BOOL* bHasLangRestrictedErrInfo);
-HRESULT GetRestrictedErrorDetails(IRestrictedErrorInfo *pRestrictedErrorInfo, BSTR *perrorDescription, BSTR *pErrorRestrictedDescription, HRESULT *hr, BSTR *pErrorCapabilitySid);
-
 #endif // FEATURE_COMINTEROP
 
-HRESULT SetupErrorInfo(OBJECTREF pThrownObject, BOOL bIsWinRTScenario = FALSE);
+HRESULT SetupErrorInfo(OBJECTREF pThrownObject);
 
 //--------------------------------------------------------------------------------
  // Release helper, enables and disables GC during call-outs
@@ -132,8 +110,7 @@ CorClassIfaceAttr ReadClassInterfaceTypeCustomAttribute(TypeHandle type);
 //-------------------------------------------------------------------
 void FillExceptionData(
     _Inout_ ExceptionData* pedata,
-    _In_ IErrorInfo* pErrInfo,
-    _In_opt_ IRestrictedErrorInfo* pRestrictedErrorInfo);
+    _In_ IErrorInfo* pErrInfo);
 
 //---------------------------------------------------------------------------
 // If pImport has the DefaultDllImportSearchPathsAttribute,
@@ -207,7 +184,7 @@ void MinorCleanupSyncBlockComData(InteropSyncBlockInfo* pInteropInfo);
 
 // Helper to release all of the RCWs in the specified context, across all caches.
 // If context is null, release all RCWs, otherwise release RCWs created in the
-// given context, including Jupiter RCWs
+// given context.
 void ReleaseRCWsInCaches(LPVOID pCtxCookie);
 
 // A wrapper that catches all exceptions - used in the OnThreadTerminate case.
@@ -387,7 +364,7 @@ void GetComClassFromProgID(STRINGREF srefProgID, STRINGREF srefServer, OBJECTREF
 void GetComClassFromCLSID(REFCLSID clsid, STRINGREF srefServer, OBJECTREF* pRef);
 
 //-------------------------------------------------------------
-// check if a ComClassFactory/WinRTClassFactory has been setup for this class
+// check if a ComClassFactory has been setup for this class
 // if not set one up
 ClassFactoryBase *GetComClassFactory(MethodTable* pClassMT);
 #endif // FEATURE_COMINTEROP_UNMANAGED_ACTIVATION
@@ -441,48 +418,12 @@ HRESULT GetCLSIDFromProgID(__in_z WCHAR *strProgId, GUID *pGuid);
 // out the class from there
 MethodTable* GetClassFromIProvideClassInfo(IUnknown* pUnk);
 
-//--------------------------------------------------------------------------------
-// Try to load a WinRT type.
-TypeHandle LoadWinRTType(SString* ssTypeName, BOOL bThrowIfNotFound, ICLRPrivBinder* loadBinder = nullptr);
-
-//--------------------------------------------------------------------------------
-// Try to get the class from IInspectable.
-TypeHandle GetClassFromIInspectable(IUnknown* pUnk, bool *pfSupportsIInspectable, bool *pfSupportsIReference, bool *pfSupportsIReferenceArray);
-
-//--------------------------------------------------------------------------------
-// Build a WinRT URI for a given raw URI
-ABI::Windows::Foundation::IUriRuntimeClass *CreateWinRTUri(LPCWSTR wszUri, INT32 cchUri);
-
-// Generates GUIDs for parameterized WinRT types.
-class WinRTGuidGenerator
-{
-    class MetaDataLocator : public IRoMetaDataLocator
-    {
-        // IRoMetaDataLocator implementation:
-        STDMETHOD(Locate)(PCWSTR nameElement, IRoSimpleMetaDataBuilder &metaDataDestination) const;
-
-        // helper methods:
-        static HRESULT LocateTypeWithDefaultInterface(MethodTable *pMT, LPCWSTR pszName, IRoSimpleMetaDataBuilder &metaDataDestination);
-        static HRESULT LocateStructure(MethodTable *pMT, LPCWSTR pszName, IRoSimpleMetaDataBuilder &metaDataDestination);
-        static HRESULT LocateRedirectedType(MethodTable *pMT, IRoSimpleMetaDataBuilder &metaDataDestination);
-    };
-
-    static void PopulateNames(MethodTable *pMT, SArray<BYTE> &namesBuf, PCWSTR* &pszNames, COUNT_T &cNames);
-    static void PopulateNamesAppendNamePointers(MethodTable *pMT, SArray<BYTE> &namesBuf, PCWSTR* &pszNames, COUNT_T cNames);
-    static void PopulateNamesAppendTypeName(MethodTable *pMT, SArray<BYTE> &namesBuf, COUNT_T &cNames);
-public:
-    //--------------------------------------------------------------------------
-    // pGuid is filled with the constructed IID by the function.
-    static void ComputeGuidForGenericType(MethodTable *pMT, GUID *pGuid);
-};  // class WinRTGuidGenerator
-
 IUnknown* MarshalObjectToInterface(OBJECTREF* ppObject, MethodTable* pItfMT, MethodTable* pClassMT, DWORD dwFlags);
 void UnmarshalObjectFromInterface(OBJECTREF *ppObjectDest, IUnknown **ppUnkSrc, MethodTable *pItfMT, MethodTable *pClassMT, DWORD dwFlags);
 
 #define DEFINE_ASM_QUAL_TYPE_NAME(varname, typename, asmname)          static const char varname##[] = { typename##", "##asmname## };
 
 class ICOMInterfaceMarshalerCallback;
-void GetNativeWinRTFactoryObject(MethodTable *pMT, Thread *pThread, MethodTable *pFactoryIntfMT, BOOL bNeedUniqueRCW, ICOMInterfaceMarshalerCallback *pCallback, OBJECTREF *prefFactory);
 
 #else // FEATURE_COMINTEROP
 inline HRESULT EnsureComStartedNoThrow()

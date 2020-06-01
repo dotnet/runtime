@@ -434,7 +434,7 @@ ep_sequence_point_block_init (
 	EP_ASSERT (sequence_point_block != NULL);
 	ep_return_null_if_nok (sequence_point != NULL);
 
-	ep_raise_error_if_nok (ep_event_block_base_init (
+	ep_return_null_if_nok (ep_event_block_base_init (
 		&sequence_point_block->event_block_base,
 		&sequence_point_block_vtable,
 		sequence_point_get_block_size (sequence_point),
@@ -465,12 +465,7 @@ ep_sequence_point_block_init (
 		sequence_point_block->event_block_base.block.write_pointer += sizeof (sequence_number);
 	}
 
-ep_on_exit:
 	return sequence_point_block;
-
-ep_on_error:
-	sequence_point_block = NULL;
-	ep_exit_error_handler ();
 }
 
 void

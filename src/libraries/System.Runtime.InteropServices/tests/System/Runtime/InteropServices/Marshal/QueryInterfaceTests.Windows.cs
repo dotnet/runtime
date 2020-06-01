@@ -10,6 +10,8 @@ namespace System.Runtime.InteropServices.Tests
 {
     public partial class QueryInterfaceTests
     {
+        public const string IID_IINSPECTABLE = "AF86E2E0-B12D-4c6a-9C5A-D7AA65101E90";
+
         public static IEnumerable<object[]> QueryInterface_ValidComObjectInterface_TestData()
         {
             yield return new object[] { new ComImportObject(), IID_IUNKNOWN };
@@ -21,8 +23,6 @@ namespace System.Runtime.InteropServices.Tests
             yield return new object[] { new IUnknownComObject(), IID_IDISPATCH };
             yield return new object[] { new IDispatchComObject(), IID_IUNKNOWN };
             yield return new object[] { new IDispatchComObject(), IID_IDISPATCH };
-            yield return new object[] { new IInspectableComObject(), IID_IUNKNOWN };
-            yield return new object[] { new IInspectableComObject(), IID_IDISPATCH };
 
             yield return new object[] { new NonDualComObject(), IID_IUNKNOWN };
             yield return new object[] { new NonDualComObject(), IID_IDISPATCH };

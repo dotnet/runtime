@@ -5628,7 +5628,7 @@ namespace System.Diagnostics.CodeAnalysis
         public string? AssemblyName { get { throw null; } }
         public string? Condition { get { throw null; } set { } }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Field | System.AttributeTargets.GenericParameter | System.AttributeTargets.Parameter | System.AttributeTargets.Property | System.AttributeTargets.ReturnValue, Inherited = false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Field | System.AttributeTargets.GenericParameter | System.AttributeTargets.Method | System.AttributeTargets.Parameter | System.AttributeTargets.Property | System.AttributeTargets.ReturnValue, Inherited = false)]
     public sealed class DynamicallyAccessedMembersAttribute : System.Attribute
     {
         public DynamicallyAccessedMembersAttribute(DynamicallyAccessedMemberTypes memberTypes) { }

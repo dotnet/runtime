@@ -11,6 +11,7 @@ using System.Collections.Generic;
 using System.Reflection;
 using Microsoft.Diagnostics.Tools.RuntimeClient;
 using Tracing.Tests.Common;
+using System.Text;
 using System.Threading;
 using System.IO;
 using Microsoft.Diagnostics.Tracing;
@@ -45,25 +46,68 @@ namespace Tracing.Tests.ReverseValidation
                 if (beforeExecution != null)
                     await beforeExecution();
 
+                var stdoutSb = new StringBuilder();
+                var stderrSb = new StringBuilder();
+
                 process.StartInfo.UseShellExecute = false;
                 process.StartInfo.CreateNoWindow = true;
                 process.StartInfo.Environment.Add("DOTNET_DiagnosticsMonitorAddress", serverName);
                 process.StartInfo.FileName = Process.GetCurrentProcess().MainModule.FileName;
                 process.StartInfo.Arguments = new Uri(Assembly.GetExecutingAssembly().CodeBase).LocalPath + " 0";
+                process.StartInfo.RedirectStandardOutput = true;
+                process.StartInfo.RedirectStandardInput = true;
+                process.StartInfo.RedirectStandardError = true;
+
                 Logger.logger.Log($"running sub-process: {process.StartInfo.FileName} {process.StartInfo.Arguments}");
+
+                process.OutputDataReceived += new DataReceivedEventHandler((s,e) =>
+                {
+                    if (!string.IsNullOrEmpty(e.Data))
+                    {
+                        stdoutSb.Append($"\n\t{(DateTime.Now - process.StartTime).TotalSeconds,5:f1}s: {e.Data}");
+                    }
+                });
+
+                process.ErrorDataReceived += new DataReceivedEventHandler((s,e) =>
+                {
+                    if (!string.IsNullOrEmpty(e.Data))
+                    {
+                        stderrSb.Append($"\n\t{(DateTime.Now - process.StartTime).TotalSeconds,5:f1}s: {e.Data}");
+                    }
+                });
+
                 bool fSuccess = process.Start();
+                StreamWriter subprocesssStdIn = process.StandardInput;
+                process.BeginOutputReadLine();
+                process.BeginErrorReadLine();
                 Logger.logger.Log($"subprocess started: {fSuccess}");
                 Logger.logger.Log($"subprocess PID: {process.Id}");
 
                 while (!EventPipeClient.ListAvailablePorts().Contains(process.Id))
+                {
+                    Logger.logger.Log($"Standard Diagnostics Server connection not created yet -> try again in 100 ms");
                     await Task.Delay(100);
+                }
+
                 try
                 {
                     if (duringExecution != null)
                         await duringExecution(process.Id);
+                    Logger.logger.Log($"Sending 'exit' to subprocess stdin");
+                    subprocesssStdIn.WriteLine("exit");
+                    subprocesssStdIn.Close();
+                    if (!process.WaitForExit(5000))
+                    {
+                        Logger.logger.Log("Subprocess didn't exit in 5 seconds!");
+                        throw new TimeoutException("Subprocess didn't exit in 5 seconds");
+                    }
+                    Logger.logger.Log($"SubProcess exited - Exit code: {process.ExitCode}");
+                    Logger.logger.Log($"Subprocess stdout: {stdoutSb.ToString()}");
+                    Logger.logger.Log($"Subprocess stderr: {stderrSb.ToString()}");
                 }
-                finally
+                catch (Exception e)
                 {
+                    Logger.logger.Log($"Calling process.Kill()");
                     process.Kill();
                 }
 
@@ -309,8 +353,10 @@ namespace Tracing.Tests.ReverseValidation
         {
             if (args.Length >= 1)
             {
-                await Task.Delay(TimeSpan.FromMinutes(10)); // will be killed in test
-                return 1;
+                Console.Out.WriteLine("Subprocess started!  Waiting for input...");
+                var input = Console.In.ReadLine(); // will block until data is sent across stdin
+                Console.Out.WriteLine($"Received '{input}'.  Exiting...");
+                return 0;
             }
 
             bool fSuccess = true;

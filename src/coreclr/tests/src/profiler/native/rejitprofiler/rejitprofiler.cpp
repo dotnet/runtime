@@ -296,6 +296,22 @@ HRESULT STDMETHODCALLTYPE ReJITProfiler::GetReJITParameters(ModuleID moduleId, m
 
 HRESULT STDMETHODCALLTYPE ReJITProfiler::ReJITCompilationFinished(FunctionID functionId, ReJITID rejitId, HRESULT hrStatus, BOOL fIsSafeToBlock)
 {
+    ULONG rejitIDsCount;
+    HRESULT hr = pCorProfilerInfo->GetReJITIDs(functionId, 0, &rejitIDsCount, NULL);
+    if (FAILED(hr))
+    {
+        printf("GetReJITIDs failed with hr=0x%x\n", hr);
+        _failures++;
+        return hr;
+    }
+
+    if (rejitIDsCount == 0)
+    {
+        printf("GetReJITIDs returned 0 for a method with a known ReJIT.\n");
+        _failures++;
+        return S_OK;
+    }
+
     return S_OK;
 }
 

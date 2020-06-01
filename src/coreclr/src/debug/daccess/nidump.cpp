@@ -887,8 +887,6 @@ NativeImageDumper::DumpNativeImage()
                                                           NULL, &dwAssemblyFlags));
         if ((afContentType_WindowsRuntime & dwAssemblyFlags) == afContentType_WindowsRuntime)
         {
-            // The WinMD adapter doesn't implement the IID_IMetaDataTables interface so we can't dump
-            // the raw metadata.
             DisplayWriteElementString ("Metadata", "Not supported by WinRT", COR_INFO);
         }
         else
@@ -3869,15 +3867,6 @@ void NativeImageDumper::DumpModule( PTR_Module module )
                            false );
     }
 
-#ifdef FEATURE_COMINTEROP
-    TraverseGuidToMethodTableHash( module->m_pGuidToTypeHash,
-                            "m_pGuidToTypeHash",
-                            offsetof(Module, m_pGuidToTypeHash),
-                            fieldsize(Module, m_pGuidToTypeHash),
-                            true);
-
-#endif // FEATURE_COMINTEROP
-
     _ASSERTE(module->m_pProfilingBlobTable == NULL);
 
     DisplayWriteFieldFlag( m_nativeImageProfiling,
@@ -5708,8 +5697,6 @@ static NativeImageDumper::EnumMnemonics s_VMFlags[] =
         VMF_ENTRY(SPARSE_FOR_COMINTEROP),
         VMF_ENTRY(HASCOCLASSATTRIB),
         VMF_ENTRY(COMEVENTITFMASK),
-        VMF_ENTRY(PROJECTED_FROM_WINRT),
-        VMF_ENTRY(EXPORTED_TO_WINRT),
 #endif // FEATURE_COMINTEROP
 
         VMF_ENTRY(NOT_TIGHTLY_PACKED),
@@ -7983,7 +7970,7 @@ void NativeImageDumper::DumpMethodDesc( PTR_MethodDesc md, PTR_Module module )
             {
                 PTR_DictionaryLayout layout(wrapped->IsSharedByGenericMethodInstantiations()
                                             ? dac_cast<TADDR>(wrapped->GetDictLayoutRaw()) : NULL );
-                dictSize = DictionaryLayout::GetDictionarySizeFromLayout(imd->GetNumGenericMethodArgs(), 
+                dictSize = DictionaryLayout::GetDictionarySizeFromLayout(imd->GetNumGenericMethodArgs(),
                                                                           layout);
             }
         }

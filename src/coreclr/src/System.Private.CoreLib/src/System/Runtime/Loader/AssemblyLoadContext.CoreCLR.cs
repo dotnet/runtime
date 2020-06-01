@@ -131,26 +131,6 @@ namespace System.Runtime.Loader
         }
 
         [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
-        private static extern void LoadTypeForWinRTTypeNameInContextInternal(IntPtr ptrNativeAssemblyLoadContext, string typeName, ObjectHandleOnStack loadedType);
-
-        internal Type LoadTypeForWinRTTypeNameInContext(string typeName)
-        {
-            if (typeName is null)
-            {
-                throw new ArgumentNullException(nameof(typeName));
-            }
-
-            lock (_unloadLock)
-            {
-                VerifyIsAlive();
-
-                Type? type = null;
-                LoadTypeForWinRTTypeNameInContextInternal(_nativeAssemblyLoadContext, typeName, ObjectHandleOnStack.Create(ref type));
-                return type!;
-            }
-        }
-
-        [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
         private static extern IntPtr GetLoadContextForAssembly(QCallAssembly assembly);
 
         // Returns the load context in which the specified assembly has been loaded

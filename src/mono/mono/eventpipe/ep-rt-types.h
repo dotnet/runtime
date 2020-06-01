@@ -1,6 +1,10 @@
 #ifndef __EVENTPIPE_RT_TYPES_H__
 #define __EVENTPIPE_RT_TYPES_H__
 
+#include <config.h>
+
+#ifdef ENABLE_PERFTRACING
+
 #define EP_ASSERT(expr) ep_rt_redefine
 #define EP_LIKELY(expr) ep_rt_redefine
 #define EP_UNLIKELY(expr) ep_rt_redefine
@@ -19,4 +23,5 @@
 
 #include "ep-rt-types-mono.h"
 
+#endif /* ENABLE_PERFTRACING */
 #endif /* __EVENTPIPE_RT_TYPES_H__ */

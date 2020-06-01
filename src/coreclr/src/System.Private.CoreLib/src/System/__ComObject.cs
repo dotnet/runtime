@@ -4,7 +4,6 @@
 
 using System.Collections;
 using System.Runtime.InteropServices;
-using System.Runtime.InteropServices.WindowsRuntime;
 using System.Reflection;
 
 namespace System
@@ -22,27 +21,6 @@ namespace System
         /// </summary>
         protected __ComObject()
         {
-        }
-
-        /// <summary>
-        /// Overrides ToString() to make sure we call to IStringable if the COM
-        /// object implements it in the case of weakly typed RCWs
-        /// </summary>
-        public override string ToString()
-        {
-            // Only do the IStringable cast when running under AppX for better compat
-            // Otherwise we could do a IStringable cast in classic apps which could introduce
-            // a thread transition which would lead to deadlock.
-            if (ApplicationModel.IsUap)
-            {
-                // Check whether the type implements IStringable.
-                if (this is IStringable stringableType)
-                {
-                    return stringableType.ToString();
-                }
-            }
-
-            return base.ToString()!;
         }
 
         /// <summary>
