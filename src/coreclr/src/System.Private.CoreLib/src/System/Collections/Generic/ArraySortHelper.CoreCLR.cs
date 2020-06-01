@@ -20,6 +20,7 @@ namespace System.Collections.Generic
 
         public static IArraySortHelper<T> Default => s_defaultArraySortHelper;
 
+        [PreserveDependency(".ctor", "System.Collections.Generic.GenericArraySortHelper`1", "System.Private.CoreLib")]
         private static IArraySortHelper<T> CreateArraySortHelper()
         {
             IArraySortHelper<T> defaultArraySortHelper;
@@ -54,6 +55,7 @@ namespace System.Collections.Generic
 
         public static IArraySortHelper<TKey, TValue> Default => s_defaultArraySortHelper;
 
+        [PreserveDependency(".ctor", "System.Collections.Generic.GenericArraySortHelper`2", "System.Private.CoreLib")]
         private static IArraySortHelper<TKey, TValue> CreateArraySortHelper()
         {
             IArraySortHelper<TKey, TValue> defaultArraySortHelper;
