@@ -216,7 +216,7 @@ ep_provider_config_init (
 	EventPipeProviderConfiguration *provider_config,
 	const ep_char8_t *provider_name,
 	uint64_t keywords,
-	uint32_t logging_level,
+	EventPipeEventLevel logging_level,
 	const ep_char8_t *filter_data)
 {
 	EP_ASSERT (provider_config != NULL);

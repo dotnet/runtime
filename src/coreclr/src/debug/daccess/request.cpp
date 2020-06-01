@@ -3904,12 +3904,8 @@ HRESULT ClrDataAccess::GetRCWData(CLRDATA_ADDRESS addr, struct DacpRCWData *rcwD
     rcwData->creatorThread   = TO_CDADDR(pRCW->m_pCreatorThread);
     rcwData->ctxCookie       = TO_CDADDR(pRCW->GetWrapperCtxCookie());
     rcwData->refCount        = pRCW->m_cbRefCount;
-
-    rcwData->isJupiterObject = pRCW->IsJupiterObject();
-    rcwData->supportsIInspectable = pRCW->SupportsIInspectable();
     rcwData->isAggregated = pRCW->IsURTAggregated();
     rcwData->isContained = pRCW->IsURTContained();
-    rcwData->jupiterObject = TO_CDADDR(pRCW->GetJupiterObject());
     rcwData->isFreeThreaded = pRCW->IsFreeThreaded();
     rcwData->isDisconnected = pRCW->IsDisconnected();
 
@@ -4155,9 +4151,6 @@ HRESULT ClrDataAccess::GetCCWData(CLRDATA_ADDRESS ccw, struct DacpCCWData *ccwDa
     ccwData->isNeutered    = pSimpleCCW->IsNeutered();
     ccwData->ccwAddress    = TO_CDADDR(dac_cast<TADDR>(pCCW));
 
-    ccwData->jupiterRefCount = pSimpleCCW->GetJupiterRefCount();
-    ccwData->isPegged = pSimpleCCW->IsPegged();
-    ccwData->isGlobalPegged = RCWWalker::IsGlobalPeggingOn();
     ccwData->hasStrongRef = pCCW->IsWrapperActive();
     ccwData->handle = pCCW->GetObjectHandle();
     ccwData->isExtendsCOMObject = pCCW->GetSimpleWrapper()->IsExtendsCOMObject();

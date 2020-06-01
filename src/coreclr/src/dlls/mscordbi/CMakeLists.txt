@@ -83,13 +83,9 @@ set(COREDBI_LIBRARIES
 )
 
 if(CLR_CMAKE_HOST_WIN32)
-    if(CLR_CMAKE_TARGET_WIN32)
-        set(COREDBI_TARGET_WIN32_LIBRARIES mdwinmd_dbi)
-    endif(CLR_CMAKE_TARGET_WIN32)
 
     list(APPEND COREDBI_LIBRARIES
         mdhotdata-staticcrt
-        ${COREDBI_TARGET_WIN32_LIBRARIES}
         kernel32.lib
         advapi32.lib
         ole32.lib

@@ -283,9 +283,7 @@ public:
                         W("*.ni.dll"),		// Probe for .ni.dll first so that it's preferred if ni and il coexist in the same dir
                         W("*.dll"),
                         W("*.ni.exe"),
-                        W("*.exe"),
-                        W("*.ni.winmd"),
-                        W("*.winmd")
+                        W("*.exe")
                         };
 
             // Add files from %CORE_LIBRARIES% if specified
@@ -524,7 +522,6 @@ HRESULT InitializeHost(
     const SString& appPath,
     const SString& appNiPath,
     const SString& nativeDllSearchDirs,
-    const SString& appLocalWinmetadata,
     void **hostHandle,
     unsigned int *domainId)
 {
@@ -533,7 +530,6 @@ HRESULT InitializeHost(
     StackScratchBuffer appPathUTF8;
     StackScratchBuffer appNiPathUTF8;
     StackScratchBuffer nativeDllSearchDirsUTF8;
-    StackScratchBuffer appLocalWinmetadataUTF8;
 
     STARTUP_FLAGS flags = CreateStartupFlags();
 
@@ -562,7 +558,6 @@ HRESULT InitializeHost(
         "APP_PATHS",
         "APP_NI_PATHS",
         "NATIVE_DLL_SEARCH_DIRECTORIES",
-        "APP_LOCAL_WINMETADATA",
         "System.GC.Server",
         "System.GC.Concurrent"
     };
@@ -576,8 +571,6 @@ HRESULT InitializeHost(
         appNiPath.GetUTF8(appNiPathUTF8),
         // NATIVE_DLL_SEARCH_DIRECTORIES
         nativeDllSearchDirs.GetUTF8(nativeDllSearchDirsUTF8),
-        // APP_LOCAL_WINMETADATA
-        appLocalWinmetadata.GetUTF8(appLocalWinmetadataUTF8),
         // System.GC.Server
         flags & STARTUP_SERVER_GC ? "true" : "false",
         // System.GC.Concurrent
@@ -690,7 +683,6 @@ bool TryRun(const int argc, const wchar_t* argv[], Logger &log, const bool verbo
     StackSString appPath;
     StackSString appNiPath;
     StackSString managedAssemblyFullName;
-    StackSString appLocalWinmetadata;
 
     wchar_t* filePart = NULL;
 
@@ -718,16 +710,6 @@ bool TryRun(const int argc, const wchar_t* argv[], Logger &log, const bool verbo
 
     log << W("Loading: ") << managedAssemblyFullName.GetUnicode() << Logger::endl;
 
-    appLocalWinmetadata.Set(appPath);
-    appLocalWinmetadata.Append(W("\\WinMetadata"));
-
-    DWORD dwAttrib = WszGetFileAttributes(appLocalWinmetadata);
-    bool appLocalWinMDexists = dwAttrib != INVALID_FILE_ATTRIBUTES && (dwAttrib & FILE_ATTRIBUTE_DIRECTORY);
-
-    if (!appLocalWinMDexists)
-    {
-        appLocalWinmetadata.Clear();
-    }
     appNiPath.Set(appPath);
     appNiPath.Append(W("NI"));
     appNiPath.Append(W(";"));
@@ -764,7 +746,7 @@ bool TryRun(const int argc, const wchar_t* argv[], Logger &log, const bool verbo
     void* hostHandle = nullptr;
     DWORD domainId = 0;
 
-    hr = InitializeHost(log, hostEnvironment, appPath, appNiPath, nativeDllSearchDirs, appLocalWinmetadata, &hostHandle, (unsigned int*)&domainId);
+    hr = InitializeHost(log, hostEnvironment, appPath, appNiPath, nativeDllSearchDirs, &hostHandle, (unsigned int*)&domainId);
     if (FAILED(hr))
     {
         exitCode = hr;

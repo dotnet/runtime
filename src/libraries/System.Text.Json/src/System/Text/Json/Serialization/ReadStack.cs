@@ -297,15 +297,17 @@ namespace System.Text.Json
                 byte[]? utf8PropertyName = frame.JsonPropertyName;
                 if (utf8PropertyName == null)
                 {
-                    // Attempt to get the JSON property name from the JsonPropertyInfo or JsonParameterInfo.
-                    utf8PropertyName = frame.JsonPropertyInfo?.NameAsUtf8Bytes ??
-                        frame.CtorArgumentState?.JsonParameterInfo?.NameAsUtf8Bytes;
-
-                    if (utf8PropertyName == null)
+                    if (frame.JsonPropertyNameAsString != null)
                     {
                         // Attempt to get the JSON property name set manually for dictionary
-                        // keys and serializer re-entry cases where a property is specified.
+                        // keys and KeyValuePair property names.
                         propertyName = frame.JsonPropertyNameAsString;
+                    }
+                    else
+                    {
+                        // Attempt to get the JSON property name from the JsonPropertyInfo or JsonParameterInfo.
+                        utf8PropertyName = frame.JsonPropertyInfo?.NameAsUtf8Bytes ??
+                            frame.CtorArgumentState?.JsonParameterInfo?.NameAsUtf8Bytes;
                     }
                 }
 

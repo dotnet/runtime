@@ -7,6 +7,8 @@ parameters:
   isOfficialBuild: false
   liveRuntimeBuildConfig: ''
   runtimeFlavor: 'coreclr'
+  runtimeDisplayName: 'coreclr'
+  interpreter: ''
   timeoutInMinutes: 150
   pool: ''
   runtimeVariant: ''
@@ -35,11 +37,13 @@ jobs:
       pool: ${{ parameters.pool }}
       testScope: ${{ parameters.testScope }}
       ${{ if ne(parameters.liveRuntimeBuildConfig, '') }}:
-        displayName: ${{ format('Test Run {0} {1}', parameters.liveRuntimeBuildConfig, parameters.runtimeFlavor) }}
-        name: ${{ format('test_run_{0}_{1}', parameters.liveRuntimeBuildConfig, parameters.runtimeFlavor) }}
+        displayName: ${{ format('Test Run {0} {1}', parameters.liveRuntimeBuildConfig, parameters.runtimeDisplayName) }}
+        name: ${{ format('test_run_{0}_{1}', parameters.liveRuntimeBuildConfig, parameters.runtimeDisplayName) }}
       ${{ if eq(parameters.liveRuntimeBuildConfig, '') }}:
         displayName: 'Test Run'
         name: test_run
+      ${{ if eq(parameters.interpreter, 'true') }}:
+        testDisplayName: ${{ parameters.runtimeFlavor }}_interpreter_${{ parameters.liveRuntimeBuildConfig }}
 
       dependsOn:
       - ${{ if notIn(parameters.framework, 'allConfigurations', 'net472') }}:
@@ -91,6 +95,7 @@ jobs:
             msbuildScript: $(_msbuildCommand)
             framework: ${{ parameters.framework }}
             testScope: ${{ parameters.testScope }}
+            interpreter: ${{ parameters.interpreter }}
             creator: dotnet-bot
             helixToken: ''
             testRunNamePrefixSuffix: $(_testRunNamePrefixSuffix)

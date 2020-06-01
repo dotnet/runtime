@@ -68,7 +68,6 @@
 #include "comcache.h"
 #include "threads.h"
 #include "comcache.h"
-#include "jupiterobject.h"
 
 class Object;
 class ComCallWrapper;
@@ -77,18 +76,6 @@ class Thread;
 #define GC_PRESSURE_PROCESS_LOCAL 3456
 #define GC_PRESSURE_MACHINE_LOCAL 4004
 #define GC_PRESSURE_REMOTE 4824
-
-#ifdef HOST_64BIT
-#define GC_PRESSURE_WINRT_BASE    1000
-#define GC_PRESSURE_WINRT_LOW     12000
-#define GC_PRESSURE_WINRT_MEDIUM  120000
-#define GC_PRESSURE_WINRT_HIGH    1200000
-#else // HOST_64BIT
-#define GC_PRESSURE_WINRT_BASE    750
-#define GC_PRESSURE_WINRT_LOW     8000
-#define GC_PRESSURE_WINRT_MEDIUM  80000
-#define GC_PRESSURE_WINRT_HIGH    800000
-#endif // HOST_64BIT
 
 enum {INTERFACE_ENTRY_CACHE_SIZE = 8};
 
@@ -280,11 +267,11 @@ struct RCW
     enum CreationFlags
     {
         CF_None                 = 0x00,
-        CF_SupportsIInspectable = 0x01, // the underlying object supports IInspectable
+        // unused               = 0x01,
         CF_QueryForIdentity     = 0x02, // Need to QI for the real identity IUnknown during creating RCW
-        CF_IsWeakReference      = 0x04, // mark the RCW as "weak"
+        // unused               = 0x04,
         CF_NeedUniqueObject     = 0x08, // always create a new RCW/object even if we have one cached already
-        CF_DontResolveClass     = 0x10, // don't attempt to create a strongly typed RCW
+        // unused               = 0x10,
         CF_DetectDCOMProxy      = 0x20, // attempt to determine if the RCW is for a DCOM proxy
     };
 
@@ -479,96 +466,25 @@ struct RCW
 
 #endif // #ifndef DACCESS_COMPILE
 
-    enum InterfaceRedirectionKind
-    {
-        InterfaceRedirection_None,
-        InterfaceRedirection_IEnumerable,                 // IEnumerable`1 - based interface
-        InterfaceRedirection_IEnumerable_RetryOnFailure,  // IEnumerable`1 - based interface, retry on QI failure
-        InterfaceRedirection_UnresolvedIEnumerable,       // unknown IEnumerable`1 instantiation
-        InterfaceRedirection_Other,                       // other interface
-        InterfaceRedirection_Other_RetryOnFailure,        // non-generic redirected interface
-    };
-
-    // Returns a redirected collection interface corresponding to a given ICollection<T>, IReadOnlyCollection<T>, or NULL.
-    static MethodTable *ResolveICollectionInterface(MethodTable *pItfMT, BOOL fPreferIDictionary, BOOL *pfChosenIDictionary);
-
-    // Returns an interface with variance corresponding to pMT or NULL if pMT does not support variance.
-    static MethodTable *GetVariantMethodTable(MethodTable *pMT);
-    static MethodTable *ComputeVariantMethodTable(MethodTable *pMT);
-
-    // Determines the interface that should be QI'ed for when the RCW is cast to pItfMT.
-    // Returns the kind of interface redirection that has been performed.
-    InterfaceRedirectionKind GetInterfaceForQI(MethodTable *pItfMT, MethodTable **pNewItfMT);
-    static InterfaceRedirectionKind GetInterfacesForQI(MethodTable *pItfMT, MethodTable **ppNewItfMT1, MethodTable **ppNewItfMT2);
-    static InterfaceRedirectionKind ComputeInterfacesForQI(MethodTable *pItfMT, MethodTable **ppNewItfMT1, MethodTable **ppNewItfMT2);
-
     // Performs QI for the given interface, optionally instantiating it with the given generic args.
     HRESULT CallQueryInterface(MethodTable *pMT, Instantiation inst, IID *piid, IUnknown **ppUnk);
-
-    // Performs QI for interfaces that are castable to pMT using co-/contra-variance.
-    HRESULT CallQueryInterfaceUsingVariance(MethodTable *pMT, IUnknown **ppUnk);
-
-    // Returns the GetEnumerator method of the first IEnumerable<T> this RCW was successfully
-    // cast to, or NULL if no such cast has ever succeeded.
-    MethodDesc *GetGetEnumeratorMethod();
-
-    // Sets the first "known" GetEnumerator method if not set already.
-    void SetGetEnumeratorMethod(MethodTable *pMT);
-
-    // Retrieve cached GetEnumerator method or compute the right one for a specific type
-    static MethodDesc *GetOrComputeGetEnumeratorMethodForType(MethodTable *pMT);
-
-    // Compute the first GetEnumerator for a specific type
-    static MethodDesc *ComputeGetEnumeratorMethodForType(MethodTable *pMT);
-
-    // Get the GetEnumerator method for IEnumerable<T> or IIterable<T>
-    static MethodDesc *ComputeGetEnumeratorMethodForTypeInternal(MethodTable *pMT);
-
-    // Notifies the RCW of an interface that is known to be supported by the COM object.
-    void SetSupportedInterface(MethodTable *pItfMT, Instantiation originalInst);
 
     //-----------------------------------------------------------------
     // Retrieve correct COM IP for the current apartment.
     // use the cache /update the cache
     IUnknown* GetComIPForMethodTableFromCache(MethodTable * pMT);
 
-    // helpers to get to IUnknown, IDispatch, and IInspectable interfaces
+    // helpers to get to IUnknown, IDispatch interfaces
     // Returns an addref'd pointer - caller must Release
     IUnknown*  GetWellKnownInterface(REFIID riid);
 
     IUnknown*  GetIUnknown();
     IUnknown*  GetIUnknown_NoAddRef();
     IDispatch* GetIDispatch();
-    IInspectable* GetIInspectable();
 
     ULONG GetRefCount()
     {
         return m_cbRefCount;
-    }
-
-    IJupiterObject *GetJupiterObjectNoCheck()
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        _ASSERTE(IsJupiterObject());
-
-        // We saved IJupiterObject * on the first slot
-        _ASSERTE((IUnknown *)m_aInterfaceEntries[0].m_pUnknown != NULL);
-        _ASSERTE((MethodTable *)m_aInterfaceEntries[0].m_pMT == NULL);
-
-        return (IJupiterObject *)m_aInterfaceEntries[0].m_pUnknown.Load();
-    }
-
-    IJupiterObject *GetJupiterObject()
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        if (IsJupiterObject())
-        {
-            return GetJupiterObjectNoCheck();
-        }
-
-        return NULL;
     }
 
     void GetCachedInterfaceTypes(BOOL bIInspectableOnly,
@@ -576,20 +492,6 @@ struct RCW
     {
         LIMITED_METHOD_DAC_CONTRACT;
 
-        CachedInterfaceEntryIterator it = IterateCachedInterfacePointers();
-        while (it.Next())
-        {
-            PTR_MethodTable pMT = dac_cast<PTR_MethodTable>((TADDR)(it.GetEntry()->m_pMT.Load()));
-            if (pMT != NULL &&
-                (!bIInspectableOnly || pMT->IsProjectedFromWinRT() || pMT->SupportsGenericInterop(TypeHandle::Interop_NativeToManaged)))
-            {
-                // Don't return mscorlib-internal declarations of WinRT types.
-                if (!(pMT->GetModule()->IsSystem() && pMT->IsProjectedFromWinRT()))
-                {
-                    rgItfTables->Append(pMT);
-                }
-            }
-        }
     }
 
     void GetCachedInterfacePointers(BOOL bIInspectableOnly,
@@ -602,7 +504,7 @@ struct RCW
         {
             PTR_MethodTable pMT = dac_cast<PTR_MethodTable>((TADDR)(it.GetEntry()->m_pMT.Load()));
             if (pMT != NULL &&
-                (!bIInspectableOnly || pMT->IsProjectedFromWinRT() || pMT->SupportsGenericInterop(TypeHandle::Interop_NativeToManaged)))
+                (!bIInspectableOnly))
             {
                 TADDR taUnk = (TADDR)(it.GetEntry()->m_pUnknown.Load());
                 if (taUnk != NULL)
@@ -611,24 +513,6 @@ struct RCW
                 }
             }
         }
-    }
-
-    // Save IJupiterObject * on the first slot
-    // Only call this in Initialize code
-    void SetJupiterObject(IJupiterObject *pJupiterObject)
-    {
-
-        LIMITED_METHOD_CONTRACT;
-
-        m_Flags.m_fIsJupiterObject = 1;
-
-        //
-        // Save pJupiterObject* on the first SLOT
-        // Only AddRef if not aggregated
-        //
-        _ASSERTE(m_aInterfaceEntries[0].IsFree());
-
-        m_aInterfaceEntries[0].Init(NULL, pJupiterObject);
     }
 
     LPVOID     GetVTablePtr() { LIMITED_METHOD_CONTRACT; return m_vtablePtr; }
@@ -674,12 +558,6 @@ struct RCW
         return m_Flags.m_fURTContained == 1;
     }
 
-    BOOL SupportsIInspectable()
-    {
-        LIMITED_METHOD_DAC_CONTRACT;
-        return m_Flags.m_fSupportsIInspectable == 1;
-    }
-
     //
     // This COM object aggregates FTM?
     //
@@ -706,13 +584,6 @@ struct RCW
     {
         LIMITED_METHOD_DAC_CONTRACT;
         return (m_Flags.m_MarshalingType == MarshalingType_Inhibit) ;
-    }
-
-    BOOL IsJupiterObject()
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        return m_Flags.m_fIsJupiterObject == 1;
     }
 
     // Returns TRUE if this RCW has been detached. Detached RCWs are fully functional but have been found
@@ -794,107 +665,6 @@ struct RCW
     // interop mechanisms.
     bool SupportsMngStdInterface(MethodTable *pItfMT);
 
-    //---------------------------------------------------------------------
-    // Determines whether a call through the given interface should use new
-    // WinRT interop (as opposed to classic COM). pItfMT should be a non-generic
-    // redirected interface such as IEnumerable whose interop behavior is
-    // ambiguous. This is a NoGC variant, if it returns TypeHandle::MaybeCast,
-    // SupportsWinRTInteropInterface should be called.
-    TypeHandle::CastResult SupportsWinRTInteropInterfaceNoGC(MethodTable *pItfMT);
-
-    //---------------------------------------------------------------------
-    // This is a GC-triggering variant of code:SupportsWinRTInteropInterfaceNoGC.
-    bool SupportsWinRTInteropInterface(MethodTable *pItfMT);
-
-    //---------------------------------------------------------------------
-    // True if the object supports legacy (not WinRT) IEnumerable marshaling.
-    bool SupportsLegacyEnumerableInterface()
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        _ASSERTE(SupportsWinRTInteropInterfaceNoGC(MscorlibBinder::GetExistingClass(CLASS__IENUMERABLE)) == TypeHandle::CannotCast);
-        return m_Flags.m_RedirectionBehavior_IEnumerable_LegacySupported;
-    }
-
-    enum RedirectionBehavior
-    {
-        RedirectionBehaviorComputed = 1, // the second bit is valid
-        RedirectionBehaviorEnabled  = 2  // if RedirectionBehaviorComputed is set, true means the interface is redirected on this RCW
-    };
-
-    enum InterfaceVarianceBehavior
-    {
-        IEnumerableSupported                            = 1,  // IEnumerable<T> is supported on this RCW
-        IEnumerableSupportedViaStringInstantiation      = 2,  // the object failed QI for IEnumerable<T> but succeeded QI for IEnumerable<string>
-
-        IReadOnlyListSupported                          = 4,  // IReadOnlyList<T> is supported on this RCW
-        IReadOnlyListSupportedViaStringInstantiation    = 8,  // the object failed QI for IReadOnlyList<T> but succeeded QI for IReadOnlyList<string>
-    };
-
-    // Returns a delegate object that points to the right GetEnumerator/Indexer_Get stub that should be used when calling these methods via
-    // IEnumerable<object>/IReadOnlyList<object> or NULL in which case the BOOL argument are relevant:
-    // *pfUseString == true means that the caller should use IEnumerable<string>/IReadOnlyList<string>
-    // *pfUseT == true means that the caller should handle the call as normal, i.e. invoking the stub instantiated over T.
-    OBJECTREF GetTargetForAmbiguousVariantCall(BOOL fIsEnumerable, WinRTInterfaceRedirector::WinRTLegalStructureBaseType baseType, BOOL *pfUseString, BOOL *pfUseT)
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        if (m_pAuxiliaryData != NULL)
-        {
-            if (baseType == WinRTInterfaceRedirector::BaseType_Object)
-            {
-                if (fIsEnumerable)
-                {
-                    if (VARIANCE_STUB_TARGET_IS_HANDLE(m_pAuxiliaryData->m_ohObjectVariantCallTarget_IEnumerable))
-                        return ObjectFromHandle(m_pAuxiliaryData->m_ohObjectVariantCallTarget_IEnumerable);
-
-                    if (m_pAuxiliaryData->m_ohObjectVariantCallTarget_IEnumerable == VARIANCE_STUB_TARGET_USE_STRING)
-                        *pfUseString = TRUE;
-                    else if (m_pAuxiliaryData->m_ohObjectVariantCallTarget_IEnumerable == VARIANCE_STUB_TARGET_USE_T)
-                        *pfUseT = TRUE;
-                }
-                else
-                {
-                    if (VARIANCE_STUB_TARGET_IS_HANDLE(m_pAuxiliaryData->m_ohObjectVariantCallTarget_IReadOnlyList))
-                        return ObjectFromHandle(m_pAuxiliaryData->m_ohObjectVariantCallTarget_IReadOnlyList);
-
-                    if (m_pAuxiliaryData->m_ohObjectVariantCallTarget_IReadOnlyList == VARIANCE_STUB_TARGET_USE_STRING)
-                        *pfUseString = TRUE;
-                    else if (m_pAuxiliaryData->m_ohObjectVariantCallTarget_IReadOnlyList == VARIANCE_STUB_TARGET_USE_T)
-                        *pfUseT = TRUE;
-                }
-            }
-            else
-            {
-                InterfaceVarianceBehavior varianceBehavior = (baseType == WinRTInterfaceRedirector::BaseType_IEnumerable) ?
-                    (InterfaceVarianceBehavior)m_pAuxiliaryData->m_AuxFlags.m_InterfaceVarianceBehavior_OfIEnumerable :
-                    (InterfaceVarianceBehavior)m_pAuxiliaryData->m_AuxFlags.m_InterfaceVarianceBehavior_OfIEnumerableOfChar;
-
-                if (fIsEnumerable)
-                {
-                    if ((varianceBehavior & IEnumerableSupported) != 0)
-                    {
-                        if ((varianceBehavior & IEnumerableSupportedViaStringInstantiation) != 0)
-                            *pfUseString = TRUE;
-                        else
-                            *pfUseT = TRUE;
-                    }
-                }
-                else
-                {
-                    if ((varianceBehavior & IReadOnlyListSupported) != 0)
-                    {
-                        if ((varianceBehavior & IReadOnlyListSupportedViaStringInstantiation) != 0)
-                            *pfUseString = TRUE;
-                        else
-                            *pfUseT = TRUE;
-                    }
-                }
-            }
-        }
-        return NULL;
-    }
-
 #ifdef _DEBUG
     // Does not throw if m_UnkEntry.m_pUnknown is no longer valid, debug only.
     IUnknown *GetRawIUnknown_NoAddRef_NoThrow()
@@ -953,10 +723,6 @@ struct RCW
 
 private:
     //---------------------------------------------------------------------
-    // Computes the result of code:SupportsWinRTInteropInterface.
-    RedirectionBehavior ComputeRedirectionBehavior(MethodTable *pItfMT, bool *pfLegacySupported);
-
-    //---------------------------------------------------------------------
     // Callback called to release the interfaces in the auxiliary cache.
     static HRESULT __stdcall ReleaseAuxInterfacesCallBack(LPVOID pData);
 
@@ -1005,22 +771,9 @@ public:
             DWORD       m_fURTAggregated:1;        // this RCW represents a COM object aggregated by a managed object
             DWORD       m_fURTContained:1;         // this RCW represents a COM object contained by a managed object
             DWORD       m_fAllowEagerSTACleanup:1; // this RCW can be cleaned up eagerly (as opposed to via CleanupUnusedObjectsInCurrentContext)
-            DWORD       m_fSupportsIInspectable:1; // the underlying COM object is known to support IInspectable
-            DWORD       m_fIsJupiterObject:1;      // this RCW represents a COM object from Jupiter
 
             static_assert((1 << 3) >= GCPressureSize_COUNT, "m_GCPressure needs a bigger data type");
             DWORD       m_GCPressure:3;            // index into s_rGCPressureTable
-
-            // RedirectionBehavior of non-generic redirected interfaces:
-            DWORD       m_RedirectionBehavior_IEnumerable:2;
-            DWORD       m_RedirectionBehavior_IEnumerable_LegacySupported:1; // one extra bit for IEnumerable
-
-            DWORD       m_RedirectionBehavior_ICollection:2;
-            DWORD       m_RedirectionBehavior_IList:2;
-            DWORD       m_RedirectionBehavior_INotifyCollectionChanged:2;
-            DWORD       m_RedirectionBehavior_INotifyPropertyChanged:2;
-            DWORD       m_RedirectionBehavior_ICommand:2;
-            DWORD       m_RedirectionBehavior_IDisposable:2;
 
             // Reserve 2 bits for marshaling behavior
             DWORD       m_MarshalingType:2;        // MarshalingBehavior of the COM object.
@@ -1111,32 +864,18 @@ inline RCW::CreationFlags operator|=(RCW::CreationFlags & lhs, RCW::CreationFlag
 // can absorb the cost of one stack slot and one instruction to improve debuggability.
 #define RCW_VTABLEPTR(pRCW) Volatile<LPVOID> __vtablePtr = (pRCW)->m_vtablePtr
 
-
-// 01 REQUIRE_IINSPECTABLE            01 ITF_MARSHAL_INSP_ITF         01 CF_SupportsIInspectable
-// 02 SUPPRESS_ADDREF                 02 ITF_MARSHAL_SUPPRESS_ADDREF  02 CF_SuppressAddRef
-//                                                                    04 CF_IsWeakReference
 // 04 CLASS_IS_HINT                   04 ITF_MARSHAL_CLASS_IS_HINT
 // 08 UNIQUE_OBJECT                                                   08 CF_NeedUniqueObject
 //                                    08 ITF_MARSHAL_DISP_ITF
-// 10 IGNORE_WINRT_AND_SKIP_UNBOXING                                  10 CF_DontResolveClass
 //                                    10 ITF_MARSHAL_USE_BASIC_ITF
-//                                    20 ITF_MARSHAL_WINRT_SCENARIO
 inline RCW::CreationFlags RCW::CreationFlagsFromObjForComIPFlags(ObjFromComIP::flags dwFlags)
 {
     LIMITED_METHOD_CONTRACT;
 
     static_assert_no_msg(CF_NeedUniqueObject     == ObjFromComIP::UNIQUE_OBJECT);
-    static_assert_no_msg(CF_SupportsIInspectable == ObjFromComIP::REQUIRE_IINSPECTABLE);
-    static_assert_no_msg(CF_DontResolveClass     == ObjFromComIP::IGNORE_WINRT_AND_SKIP_UNBOXING);
 
     RCW::CreationFlags result = (RCW::CreationFlags)(dwFlags &
-                                        (ObjFromComIP::UNIQUE_OBJECT
-                                       | ObjFromComIP::IGNORE_WINRT_AND_SKIP_UNBOXING));
-    if ((dwFlags & (ObjFromComIP::REQUIRE_IINSPECTABLE|ObjFromComIP::CLASS_IS_HINT))
-        == (ObjFromComIP::REQUIRE_IINSPECTABLE|ObjFromComIP::CLASS_IS_HINT))
-    {
-        result |= CF_SupportsIInspectable;
-    }
+                                        (ObjFromComIP::UNIQUE_OBJECT));
     return result;
 }
 
@@ -1149,28 +888,18 @@ struct RCWPerTypeData
     // Corresponding type with variance or NULL if the type does not exhibit variant behavior.
     MethodTable *m_pVariantMT;
 
-    // Types that should be used for QI. m_pMTForQI1 is tried first; if it fails and m_pMTForQI2
-    // is not NULL, QI for m_pMTForQI2 is performed. We need two types to supports ambiguous casts
-    // to ICollection<KeyValuePair<K, V>>.
-    MethodTable *m_pMTForQI1;
-    MethodTable *m_pMTForQI2;
-
     // The corresponding IEnumerator<T>::GetEnumerator instantiation or NULL if the type does not
     // act like IEnumerable.
     MethodDesc *m_pGetEnumeratorMethod;
 
-    // The kind of redirection performed by QI'ing for m_pMTForQI1.
-    RCW::InterfaceRedirectionKind m_RedirectionKind;
-
     enum
     {
         VariantTypeInited       = 0x01,     // m_pVariantMT is set
-        RedirectionInfoInited   = 0x02,     // m_pMTForQI1, m_pMTForQI2, and m_RedirectionKind are set
+        //unused                = 0x02,
         GetEnumeratorInited     = 0x04,     // m_pGetEnumeratorMethod is set
-        InterfaceFlagsInited    = 0x08,     // IsRedirectedInterface and IsICollectionGeneric are set
-
-        IsRedirectedInterface   = 0x10,     // the type is a redirected interface
-        IsICollectionGeneric    = 0x20,     // the type is ICollection`1
+        // unused               = 0x08,
+        // unused               = 0x10,
+        // unused               = 0x20,
     };
     DWORD m_dwFlags;
 };
@@ -1178,8 +907,6 @@ struct RCWPerTypeData
 #ifdef FEATURE_COMINTEROP_UNMANAGED_ACTIVATION
 
 class ComClassFactory;
-class WinRTClassFactory;
-class WinRTManagedClassFactory;
 
 class ClassFactoryBase
 {
@@ -1191,24 +918,8 @@ public:
     ComClassFactory *AsComClassFactory()
     {
         LIMITED_METHOD_CONTRACT;
-        _ASSERTE(m_pClassMT == NULL || (!m_pClassMT->IsProjectedFromWinRT() && !m_pClassMT->IsExportedToWinRT()));
         return (ComClassFactory *)this;
     }
-
-    WinRTClassFactory *AsWinRTClassFactory()
-    {
-        LIMITED_METHOD_CONTRACT;
-        _ASSERTE(m_pClassMT->IsProjectedFromWinRT() || m_pClassMT->IsExportedToWinRT());
-        return (WinRTClassFactory *)this;
-    }
-
-    WinRTManagedClassFactory *AsWinRTManagedClassFactory()
-    {
-        LIMITED_METHOD_CONTRACT;
-        _ASSERTE(m_pClassMT->IsExportedToWinRT());
-        return (WinRTManagedClassFactory *)this;
-    }
-
 protected:
     ClassFactoryBase(MethodTable *pClassMT = NULL)
         : m_pClassMT(pClassMT)
@@ -1306,20 +1017,6 @@ private:
     BOOL            m_bManagedVersion;
 };
 
-//
-// WinRT override information for ToString/GetHashCode/Equals
-//
-struct WinRTOverrideInfo
-{
-    MethodDesc *m_pToStringMD;
-    MethodDesc *m_pGetHashCodeMD;
-    MethodDesc *m_pEqualsMD;
-
-    WinRTOverrideInfo(EEClass *pClass);
-    static WinRTOverrideInfo *GetOrCreateWinRTOverrideInfo(MethodTable *pMT);
-    MethodDesc* GetIStringableToStringMD(MethodTable *pMT);
-};
-
 //--------------------------------------------------------------
 // Special ComClassFactory for AppX scenarios only
 // Call CoCreateInstanceFromApp to ensure compatibility
@@ -1365,144 +1062,7 @@ public :
             RETURN new ComClassFactory(rclsid);
     }
 };
-//-------------------------------------------------------------------------
-// Encapsulates data needed to instantiate WinRT runtime classes.
-class WinRTClassFactory : public ClassFactoryBase
-{
-public:
-    WinRTClassFactory(MethodTable *pClassMT)
-        : ClassFactoryBase(pClassMT)
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        m_hClassName         = NULL;
-        m_pDefaultItfMT      = NULL;
-        m_pWinRTOverrideInfo = NULL;
-        m_GCPressure         = RCW::GCPressureSize_WinRT_Base;
-    }
-
-    //-------------------------------------------------------------
-    // Initialize this instance by parsing factory-related attributes.
-    void Init();
-
-    //-------------------------------------------------------------
-    // Returns a factory method that matches the given signature.
-    MethodDesc *FindFactoryMethod(PCCOR_SIGNATURE pSig, DWORD cSig, Module *pModule);
-
-    //-------------------------------------------------------------
-    // Returns a static interface method that matches the given signature.
-    MethodDesc *FindStaticMethod(LPCUTF8 pszName, PCCOR_SIGNATURE pSig, DWORD cSig, Module *pModule);
-
-    //-------------------------------------------------------------
-    // Function to clean up
-    void Cleanup();
-
-    // If true, the class can be activated only using the composition pattern
-    BOOL IsComposition()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return !m_pClassMT->IsSealed();
-    }
-
-    MethodTable *GetClass()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return m_pClassMT;
-    }
-
-    HSTRING GetClassName()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return m_hClassName;
-    }
-
-    SArray<MethodTable *> *GetFactoryInterfaces()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return &m_factoryInterfaces;
-    }
-
-    SArray<MethodTable *> *GetStaticInterfaces()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return &m_staticInterfaces;
-    }
-
-    MethodTable *GetDefaultInterface()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return  m_pDefaultItfMT;
-    }
-
-    RCW::GCPressureSize GetGCPressure()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return m_GCPressure;
-    }
-
-    FORCEINLINE WinRTOverrideInfo *GetWinRTOverrideInfo ()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return m_pWinRTOverrideInfo;
-    }
-
-    BOOL SetWinRTOverrideInfo (WinRTOverrideInfo *pWinRTOverrideInfo)
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        return (InterlockedCompareExchangeT(&m_pWinRTOverrideInfo, pWinRTOverrideInfo, NULL) == NULL);
-    }
-
-protected:
-    MethodTable *GetTypeFromAttribute(IMDInternalImport *pImport, mdCustomAttribute tkAttribute);
-
-    HSTRING m_hClassName;
-
-    InlineSArray<MethodTable *, 1> m_factoryInterfaces;
-    InlineSArray<MethodTable *, 1> m_staticInterfaces;
-
-    MethodTable *m_pDefaultItfMT;                           // Default interface of the class
-
-    WinRTOverrideInfo *m_pWinRTOverrideInfo;                // ToString/GetHashCode/GetValue override information
-
-    RCW::GCPressureSize m_GCPressure;                       // GC pressure size associated with instances of this class
-};
 #endif // FEATURE_COMINTEROP_UNMANAGED_ACTIVATION
-
-//-------------------------------------------------------------------------
-// Encapsulates data needed to instantiate WinRT runtime classes implemented
-// in managed code.
-class WinRTManagedClassFactory : public WinRTClassFactory
-{
-public:
-    WinRTManagedClassFactory(MethodTable *pClassMT)
-        : WinRTClassFactory(pClassMT)
-    {
-        m_pCCWTemplate = NULL;
-        LIMITED_METHOD_CONTRACT;
-    }
-
-    //-------------------------------------------------------------
-    // Function to clean up
-    void Cleanup();
-
-    ComCallWrapperTemplate *GetComCallWrapperTemplate()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return m_pCCWTemplate;
-    }
-
-    BOOL SetComCallWrapperTemplate(ComCallWrapperTemplate *pTemplate)
-    {
-        LIMITED_METHOD_CONTRACT;
-        return (InterlockedCompareExchangeT(&m_pCCWTemplate, pTemplate, NULL) == NULL);
-    }
-
-    ComCallWrapperTemplate *GetOrCreateComCallWrapperTemplate(MethodTable *pFactoryMT);
-
-protected:
-    ComCallWrapperTemplate *m_pCCWTemplate; // CCW template for the factory object
-};
 
 FORCEINLINE void NewRCWHolderRelease(RCW* p)
 {

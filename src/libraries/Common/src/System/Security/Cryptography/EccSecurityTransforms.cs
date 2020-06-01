@@ -60,7 +60,7 @@ namespace System.Security.Cryptography
                     break;
                 default:
                     throw new PlatformNotSupportedException(
-                        SR.Format(SR.Cryptography_CurveNotSupported, curve.Oid.Value));
+                        SR.Format(SR.Cryptography_CurveNotSupported, curve.Oid.Value ?? curve.Oid.FriendlyName));
             }
 
             GenerateKey(keySize);
