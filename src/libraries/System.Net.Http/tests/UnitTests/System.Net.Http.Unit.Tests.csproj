@@ -74,6 +74,8 @@
              Link="ProductionCode\System\Net\Http\HttpBaseStream.cs" />
     <Compile Include="..\..\src\System\Net\Http\ByteArrayContent.cs"
              Link="ProductionCode\System\Net\Http\ByteArrayContent.cs" />
+    <Compile Include="..\..\src\System\Net\Http\CancellationHelper.cs"
+             Link="ProductionCode\System\Net\Http\CancellationHelper.cs" />
     <Compile Include="..\..\src\System\Net\Http\ClientCertificateOption.cs"
              Link="ProductionCode\System\Net\Http\ClientCertificateOption.cs" />
     <Compile Include="..\..\src\System\Net\Http\DelegatingHandler.cs"
@@ -222,8 +224,6 @@
              Link="ProductionCode\System\Net\Http\StreamToStreamCopy.cs" />
     <Compile Include="..\..\src\System\Net\Http\StringContent.cs"
              Link="ProductionCode\System\Net\Http\StringContent.cs" />
-    <Compile Include="..\..\src\System\Net\Http\SocketsHttpHandler\CancellationHelper.cs"
-             Link="ProductionCode\System\Net\Http\SocketsHttpHandler\CancellationHelper.cs" />
     <Compile Include="..\..\src\System\Net\Http\SocketsHttpHandler\HttpEnvironmentProxy.cs"
              Link="ProductionCode\System\Net\Http\SocketsHttpHandler\HttpEnvironmentProxy.cs" />
     <Compile Include="..\..\src\System\Net\Http\SocketsHttpHandler\HttpEnvironmentProxy.Unix.cs" Condition=" '$(TargetsUnix)' == 'true' and '$(TargetFramework)' == '$(NetCoreAppCurrent)'"
