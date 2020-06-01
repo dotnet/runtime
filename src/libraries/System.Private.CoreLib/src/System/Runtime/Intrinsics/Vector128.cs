@@ -940,7 +940,7 @@ namespace System.Runtime.Intrinsics
         {
             if (AdvSimd.IsSupported)
             {
-                return lower.ToVector128().WithUpper(upper);
+                return lower.ToVector128Unsafe().WithUpper(upper);
             }
 
             return SoftwareFallback(lower, upper);
@@ -966,7 +966,7 @@ namespace System.Runtime.Intrinsics
         {
             if (AdvSimd.IsSupported)
             {
-                return lower.ToVector128().WithUpper(upper);
+                return lower.ToVector128Unsafe().WithUpper(upper);
             }
 
             return SoftwareFallback(lower, upper);
@@ -992,7 +992,7 @@ namespace System.Runtime.Intrinsics
         {
             if (AdvSimd.IsSupported)
             {
-                return lower.ToVector128().WithUpper(upper);
+                return lower.ToVector128Unsafe().WithUpper(upper);
             }
 
             return SoftwareFallback(lower, upper);
@@ -1019,7 +1019,7 @@ namespace System.Runtime.Intrinsics
         {
             if (AdvSimd.IsSupported)
             {
-                return lower.ToVector128().WithUpper(upper);
+                return lower.ToVector128Unsafe().WithUpper(upper);
             }
 
             return SoftwareFallback(lower, upper);
@@ -1045,7 +1045,7 @@ namespace System.Runtime.Intrinsics
         {
             if (AdvSimd.IsSupported)
             {
-                return lower.ToVector128().WithUpper(upper);
+                return lower.ToVector128Unsafe().WithUpper(upper);
             }
 
             return SoftwareFallback(lower, upper);
@@ -1072,7 +1072,7 @@ namespace System.Runtime.Intrinsics
         {
             if (AdvSimd.IsSupported)
             {
-                return lower.ToVector128().WithUpper(upper);
+                return lower.ToVector128Unsafe().WithUpper(upper);
             }
 
             return SoftwareFallback(lower, upper);
@@ -1098,7 +1098,7 @@ namespace System.Runtime.Intrinsics
         {
             if (AdvSimd.IsSupported)
             {
-                return lower.ToVector128().WithUpper(upper);
+                return lower.ToVector128Unsafe().WithUpper(upper);
             }
 
             return SoftwareFallback(lower, upper);
@@ -1125,7 +1125,7 @@ namespace System.Runtime.Intrinsics
         {
             if (AdvSimd.IsSupported)
             {
-                return lower.ToVector128().WithUpper(upper);
+                return lower.ToVector128Unsafe().WithUpper(upper);
             }
 
             return SoftwareFallback(lower, upper);
@@ -1153,7 +1153,7 @@ namespace System.Runtime.Intrinsics
         {
             if (AdvSimd.IsSupported)
             {
-                return lower.ToVector128().WithUpper(upper);
+                return lower.ToVector128Unsafe().WithUpper(upper);
             }
 
             return SoftwareFallback(lower, upper);
@@ -1180,7 +1180,7 @@ namespace System.Runtime.Intrinsics
         {
             if (AdvSimd.IsSupported)
             {
-                return lower.ToVector128().WithUpper(upper);
+                return lower.ToVector128Unsafe().WithUpper(upper);
             }
 
             return SoftwareFallback(lower, upper);
