@@ -82,7 +82,8 @@
     <PropertyGroup>
       <RunTestsCommand>"$(RunScriptOutputPath)" --runtime-path "$(TestHostRootPath.TrimEnd('\/'))"</RunTestsCommand>
       <RunTestsCommand Condition="'$(TestRspFile)' != '' and '$(RuntimeFlavor)' != 'Mono'">$(RunTestsCommand) --rsp-file "$(TestRspFile)"</RunTestsCommand>
-      <RunTestsCommand Condition="'$(TargetsMobile)' == 'true'">"$(RunScriptOutputPath)" $(AssemblyName) $(TargetArchitecture)</RunTestsCommand>
+      <RunTestsCommand Condition="'$(TargetsiOS)' == 'true'">sudo launchctl asuser `id -u` sh "$(RunScriptOutputPath)" $(AssemblyName) $(TargetArchitecture)</RunTestsCommand>
+      <RunTestsCommand Condition="'$(TargetsAndroid)' == 'true'">"$(RunScriptOutputPath)" $(AssemblyName) $(TargetArchitecture)</RunTestsCommand>
     </PropertyGroup>
 
     <!-- Invoke the run script with the test host as the runtime path. -->
