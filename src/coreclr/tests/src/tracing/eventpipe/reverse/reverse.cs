@@ -60,11 +60,13 @@ namespace Tracing.Tests.ReverseValidation
 
                 Logger.logger.Log($"running sub-process: {process.StartInfo.FileName} {process.StartInfo.Arguments}");
 
+                DateTime subprocessStartTime = DateTime.Now;
+
                 process.OutputDataReceived += new DataReceivedEventHandler((s,e) =>
                 {
                     if (!string.IsNullOrEmpty(e.Data))
                     {
-                        stdoutSb.Append($"\n\t{(DateTime.Now - process.StartTime).TotalSeconds,5:f1}s: {e.Data}");
+                        stdoutSb.Append($"\n\t{(DateTime.Now - subprocessStartTime).TotalSeconds,5:f1}s: {e.Data}");
                     }
                 });
 
@@ -72,7 +74,7 @@ namespace Tracing.Tests.ReverseValidation
                 {
                     if (!string.IsNullOrEmpty(e.Data))
                     {
-                        stderrSb.Append($"\n\t{(DateTime.Now - process.StartTime).TotalSeconds,5:f1}s: {e.Data}");
+                        stderrSb.Append($"\n\t{(DateTime.Now - subprocessStartTime).TotalSeconds,5:f1}s: {e.Data}");
                     }
                 });
 
