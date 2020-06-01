@@ -3518,7 +3518,9 @@ namespace System
             }
 
             // Unix: Unix path?
-            if (!IsWindowsSystem && idx < length && uriString[idx] == '/')
+            // A path starting with 2 / or \ (including mixed) is treated as UNC and will be matched below
+            if (!IsWindowsSystem && idx < length && uriString[idx] == '/' &&
+                (idx + 1 == length || (uriString[idx + 1] != '/' && uriString[idx + 1] != '\\')))
             {
                 flags |= (Flags.UnixPath | Flags.ImplicitFile | Flags.AuthorityFound);
                 syntax = UriParser.UnixFileUri;
