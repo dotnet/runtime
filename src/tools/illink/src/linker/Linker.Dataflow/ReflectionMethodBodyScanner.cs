@@ -110,7 +110,7 @@ namespace Mono.Linker.Dataflow
 
 			ValueNode valueNode = GetValueNodeForCustomAttributeArgument (value);
 			if (valueNode != null) {
-				var reflectionContext = new ReflectionPatternContext (_context, field.DeclaringType.Methods[0], value.Value as IMemberDefinition);
+				var reflectionContext = new ReflectionPatternContext (_context, field.DeclaringType.Methods[0], field);
 				reflectionContext.AnalyzingPattern ();
 				RequireDynamicallyAccessedMembers (ref reflectionContext, annotation, valueNode, field);
 			}
@@ -706,7 +706,7 @@ namespace Mono.Linker.Dataflow
 									// Intentionally ignore - it's not wrong for code to call Type.GetType on non-existing name, the code might expect null/exception back.
 									reflectionContext.RecordHandledPattern ();
 								} else {
-									var methodCalling = reflectionContext.SourceMethod;
+									var methodCalling = callingMethodBody.Method;
 									reflectionContext.RecordRecognizedPattern (foundType, () => _markStep.MarkType (foundType, new DependencyInfo (DependencyKind.AccessedViaReflection, methodCalling)));
 									methodReturnValue = MergePointValue.MergeValues (methodReturnValue, new SystemTypeValue (foundType));
 								}
@@ -720,7 +720,7 @@ namespace Mono.Linker.Dataflow
 									SourceContext = calledMethod.Parameters[0]
 								});
 							} else {
-								reflectionContext.RecordUnrecognizedPattern ($"Reflection call '{calledMethod.FullName}' inside '{reflectionContext.SourceMethod}' was detected with unknown value for the type name.");
+								reflectionContext.RecordUnrecognizedPattern ($"Reflection call '{calledMethod.FullName}' inside '{reflectionContext.Source}' was detected with unknown value for the type name.");
 							}
 						}
 
@@ -1012,7 +1012,7 @@ namespace Mono.Linker.Dataflow
 						}
 
 						// Not yet supported in any combination
-						reflectionContext.RecordUnrecognizedPattern ($"Activator call '{reflectionContext.MemberWithRequirements}' inside '{reflectionContext.SourceMethod.FullName}' is not recognized, the type to instantiate may be missing the necessary constructor.");
+						reflectionContext.RecordUnrecognizedPattern ($"Activator call '{reflectionContext.MemberWithRequirements}' inside '{reflectionContext.Source}' is not recognized, the type to instantiate may be missing the necessary constructor.");
 					}
 					break;
 
@@ -1054,7 +1054,7 @@ namespace Mono.Linker.Dataflow
 					// TODO: This could be supported for "this" only calls
 					//
 					reflectionContext.AnalyzingPattern ();
-					reflectionContext.RecordUnrecognizedPattern ($"Activator call '{reflectionContext.MemberWithRequirements}' inside '{reflectionContext.SourceMethod.FullName}' is not yet supported");
+					reflectionContext.RecordUnrecognizedPattern ($"Activator call '{reflectionContext.MemberWithRequirements}' inside '{reflectionContext.Source}' is not yet supported");
 					break;
 
 				//
@@ -1066,7 +1066,7 @@ namespace Mono.Linker.Dataflow
 						reflectionContext.AnalyzingPattern ();
 						foreach (var typeHandleValue in methodParams[0].UniqueValues ()) {
 							if (typeHandleValue is RuntimeTypeHandleValue runtimeTypeHandleValue) {
-								_markStep.MarkStaticConstructor (runtimeTypeHandleValue.TypeRepresented, new DependencyInfo (DependencyKind.AccessedViaReflection, reflectionContext.SourceMethod));
+								_markStep.MarkStaticConstructor (runtimeTypeHandleValue.TypeRepresented, new DependencyInfo (DependencyKind.AccessedViaReflection, reflectionContext.Source));
 								reflectionContext.RecordHandledPattern ();
 							} else if (typeHandleValue == NullValue.Instance)
 								reflectionContext.RecordHandledPattern ();
@@ -1177,24 +1177,24 @@ namespace Mono.Linker.Dataflow
 						if (typeNameValue is KnownStringValue typeNameStringValue) {
 							var resolvedAssembly = _context.GetLoadedAssembly (assemblyNameStringValue.Contents);
 							if (resolvedAssembly == null) {
-								reflectionContext.RecordUnrecognizedPattern ($"Activator call '{reflectionContext.MemberWithRequirements}' inside '{reflectionContext.SourceMethod.FullName}' references assembly '{assemblyNameStringValue.Contents}' which could not be found");
+								reflectionContext.RecordUnrecognizedPattern ($"Activator call '{reflectionContext.MemberWithRequirements}' inside '{reflectionContext.Source}' references assembly '{assemblyNameStringValue.Contents}' which could not be found");
 								continue;
 							}
 
 							var resolvedType = resolvedAssembly.FindType (typeNameStringValue.Contents);
 							if (resolvedType == null) {
-								reflectionContext.RecordUnrecognizedPattern ($"Activator call '{reflectionContext.MemberWithRequirements}' inside '{reflectionContext.SourceMethod.FullName}' references type '{typeNameStringValue}' in assembly '{resolvedAssembly.FullName}' which could not be found");
+								reflectionContext.RecordUnrecognizedPattern ($"Activator call '{reflectionContext.MemberWithRequirements}' inside '{reflectionContext.Source}' references type '{typeNameStringValue}' in assembly '{resolvedAssembly.FullName}' which could not be found");
 								continue;
 							}
 
 							MarkConstructorsOnType (ref reflectionContext, resolvedType,
 								parameterlessConstructor ? m => m.Parameters.Count == 0 : (Func<MethodDefinition, bool>) null, bindingFlags);
 						} else {
-							reflectionContext.RecordUnrecognizedPattern ($"Activator call '{reflectionContext.MemberWithRequirements}' inside '{reflectionContext.SourceMethod.FullName}' has unrecognized value for the 'typeName' parameter.");
+							reflectionContext.RecordUnrecognizedPattern ($"Activator call '{reflectionContext.MemberWithRequirements}' inside '{reflectionContext.Source}' has unrecognized value for the 'typeName' parameter.");
 						}
 					}
 				} else {
-					reflectionContext.RecordUnrecognizedPattern ($"Activator call '{reflectionContext.MemberWithRequirements}' inside '{reflectionContext.SourceMethod.FullName}' has unrecognized value for the 'assemblyName' parameter.");
+					reflectionContext.RecordUnrecognizedPattern ($"Activator call '{reflectionContext.MemberWithRequirements}' inside '{reflectionContext.Source}' has unrecognized value for the 'assemblyName' parameter.");
 				}
 			}
 		}
@@ -1238,8 +1238,8 @@ namespace Mono.Linker.Dataflow
 		void MarkTypeForDynamicallyAccessedMembers (ref ReflectionPatternContext reflectionContext, TypeDefinition typeDefinition, DynamicallyAccessedMemberTypes requiredMemberKinds)
 		{
 			if (requiredMemberKinds == DynamicallyAccessedMemberTypes.All) {
-				var sourceMethod = reflectionContext.SourceMethod;
-				reflectionContext.RecordRecognizedPattern (typeDefinition, () => _markStep.MarkEntireType (typeDefinition, includeBaseTypes: true, new DependencyInfo (DependencyKind.AccessedViaReflection, sourceMethod)));
+				var source = reflectionContext.Source;
+				reflectionContext.RecordRecognizedPattern (typeDefinition, () => _markStep.MarkEntireType (typeDefinition, includeBaseTypes: true, new DependencyInfo (DependencyKind.AccessedViaReflection, source)));
 				return;
 			}
 
@@ -1304,8 +1304,8 @@ namespace Mono.Linker.Dataflow
 				if ((bindingFlags & (BindingFlags.Public | BindingFlags.NonPublic)) == BindingFlags.NonPublic && method.IsPublic)
 					continue;
 
-				var methodCalling = reflectionContext.SourceMethod;
-				reflectionContext.RecordRecognizedPattern (method, () => _markStep.MarkIndirectlyCalledMethod (method, new DependencyInfo (DependencyKind.AccessedViaReflection, methodCalling)));
+				var source = reflectionContext.Source;
+				reflectionContext.RecordRecognizedPattern (method, () => _markStep.MarkIndirectlyCalledMethod (method, new DependencyInfo (DependencyKind.AccessedViaReflection, source)));
 			}
 		}
 
@@ -1341,8 +1341,8 @@ namespace Mono.Linker.Dataflow
 					if ((bindingFlags & (BindingFlags.Public | BindingFlags.NonPublic)) == BindingFlags.NonPublic && method.IsPublic)
 						continue;
 
-					var methodCalling = reflectionContext.SourceMethod;
-					reflectionContext.RecordRecognizedPattern (method, () => _markStep.MarkIndirectlyCalledMethod (method, new DependencyInfo (DependencyKind.AccessedViaReflection, methodCalling)));
+					var source = reflectionContext.Source;
+					reflectionContext.RecordRecognizedPattern (method, () => _markStep.MarkIndirectlyCalledMethod (method, new DependencyInfo (DependencyKind.AccessedViaReflection, source)));
 				}
 
 				type = type.BaseType?.Resolve ();
@@ -1378,8 +1378,8 @@ namespace Mono.Linker.Dataflow
 					if ((bindingFlags & (BindingFlags.Public | BindingFlags.NonPublic)) == BindingFlags.NonPublic && field.IsPublic)
 						continue;
 
-					var methodCalling = reflectionContext.SourceMethod;
-					reflectionContext.RecordRecognizedPattern (field, () => _markStep.MarkField (field, new DependencyInfo (DependencyKind.AccessedViaReflection, methodCalling)));
+					var source = reflectionContext.Source;
+					reflectionContext.RecordRecognizedPattern (field, () => _markStep.MarkField (field, new DependencyInfo (DependencyKind.AccessedViaReflection, source)));
 				}
 
 				type = type.BaseType?.Resolve ();
@@ -1407,8 +1407,8 @@ namespace Mono.Linker.Dataflow
 
 				result.Add (nestedType);
 
-				var methodCalling = reflectionContext.SourceMethod;
-				reflectionContext.RecordRecognizedPattern (nestedType, () => _markStep.MarkType (nestedType, new DependencyInfo (DependencyKind.AccessedViaReflection, methodCalling)));
+				var source = reflectionContext.Source;
+				reflectionContext.RecordRecognizedPattern (nestedType, () => _markStep.MarkType (nestedType, new DependencyInfo (DependencyKind.AccessedViaReflection, source)));
 			}
 
 			return result.ToArray ();
@@ -1451,16 +1451,16 @@ namespace Mono.Linker.Dataflow
 						if ((property.SetMethod != null) && property.SetMethod.IsPublic) continue;
 					}
 
-					var methodCalling = reflectionContext.SourceMethod;
+					var source = reflectionContext.Source;
 					reflectionContext.RecordRecognizedPattern (property, () => {
 						// Marking the property itself actually doesn't keep it (it only marks its attributes and records the dependency), we have to mark the methods on it
-						_markStep.MarkProperty (property, new DependencyInfo (DependencyKind.AccessedViaReflection, methodCalling));
+						_markStep.MarkProperty (property, new DependencyInfo (DependencyKind.AccessedViaReflection, source));
 						// TODO - this is sort of questionable - when somebody asks for a property they probably want to call either get or set
 						// but linker tracks those separately, and so accessing the getter/setter will raise a warning as it's potentially trimmed.
 						// So including them here doesn't actually remove the warning even if the code is written correctly.
-						_markStep.MarkMethodIfNotNull (property.GetMethod, new DependencyInfo (DependencyKind.AccessedViaReflection, methodCalling));
-						_markStep.MarkMethodIfNotNull (property.SetMethod, new DependencyInfo (DependencyKind.AccessedViaReflection, methodCalling));
-						_markStep.MarkMethodsIf (property.OtherMethods, m => true, new DependencyInfo (DependencyKind.AccessedViaReflection, methodCalling));
+						_markStep.MarkMethodIfNotNull (property.GetMethod, new DependencyInfo (DependencyKind.AccessedViaReflection, source));
+						_markStep.MarkMethodIfNotNull (property.SetMethod, new DependencyInfo (DependencyKind.AccessedViaReflection, source));
+						_markStep.MarkMethodsIf (property.OtherMethods, m => true, new DependencyInfo (DependencyKind.AccessedViaReflection, source));
 					});
 				}
 
@@ -1506,11 +1506,11 @@ namespace Mono.Linker.Dataflow
 						if ((@event.RemoveMethod != null) && @event.RemoveMethod.IsPublic) continue;
 					}
 
-					var methodCalling = reflectionContext.SourceMethod;
+					var source = reflectionContext.Source;
 					reflectionContext.RecordRecognizedPattern (@event, () => {
 						// MarkEvent actually marks the add/remove/invoke methods as well, so no need to mark those explicitly
-						_markStep.MarkEvent (@event, new DependencyInfo (DependencyKind.AccessedViaReflection, methodCalling));
-						_markStep.MarkMethodsIf (@event.OtherMethods, m => true, new DependencyInfo (DependencyKind.AccessedViaReflection, methodCalling));
+						_markStep.MarkEvent (@event, new DependencyInfo (DependencyKind.AccessedViaReflection, source));
+						_markStep.MarkMethodsIf (@event.OtherMethods, m => true, new DependencyInfo (DependencyKind.AccessedViaReflection, source));
 					});
 				}
 

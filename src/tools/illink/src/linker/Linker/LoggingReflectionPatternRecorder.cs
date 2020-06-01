@@ -37,16 +37,29 @@ namespace Mono.Linker
 			_context = context;
 		}
 
-		public void RecognizedReflectionAccessPattern (MethodDefinition sourceMethod, Instruction reflectionMethodCall, IMetadataTokenProvider accessedItem)
+		public void RecognizedReflectionAccessPattern (IMemberDefinition source, Instruction sourceInstruction, IMetadataTokenProvider accessedItem)
 		{
 			// Do nothing - there's no logging for successfully recognized patterns
 		}
 
-		public void UnrecognizedReflectionAccessPattern (MethodDefinition sourceMethod, Instruction reflectionMethodCall, IMetadataTokenProvider accessedItem, string message)
+		public void UnrecognizedReflectionAccessPattern (IMemberDefinition source, Instruction sourceInstruction, IMetadataTokenProvider accessedItem, string message)
 		{
-			var origin = reflectionMethodCall != null ? MessageOrigin.TryGetOrigin (sourceMethod, reflectionMethodCall.Offset) : new MessageOrigin (sourceMethod);
-			var locationInfo = origin == null ? (sourceMethod.DeclaringType.FullName + "::" + GetSignature (sourceMethod) + ": ") : string.Empty;
-			_context.LogMessage (MessageContainer.CreateWarningMessage (_context, locationInfo + message, 2006, origin, "Unrecognized reflection pattern"));
+			MessageOrigin origin;
+			string location = string.Empty;
+			var method = source as MethodDefinition;
+			if (sourceInstruction != null && method != null)
+				origin = MessageOrigin.TryGetOrigin (method, sourceInstruction.Offset);
+			else
+				origin = new MessageOrigin (source);
+
+			if (origin.FileName == null) {
+				if (method != null)
+					location = method.DeclaringType.FullName + "::" + GetSignature (method) + ": ";
+				else
+					location = source.DeclaringType?.FullName + "::" + source.Name;
+			}
+
+			_context.LogMessage (MessageContainer.CreateWarningMessage (_context, location + message, 2006, origin, "Unrecognized reflection pattern"));
 		}
 
 		static string GetSignature (MethodDefinition method)
