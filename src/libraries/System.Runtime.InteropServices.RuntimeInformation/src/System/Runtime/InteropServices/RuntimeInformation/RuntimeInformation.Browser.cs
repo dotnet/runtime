@@ -8,7 +8,7 @@ namespace System.Runtime.InteropServices
     {
         public static bool IsOSPlatform(OSPlatform osPlatform) => osPlatform.Equals(OSPlatform.Browser);
 
-        public static string OSDescription => "web";
+        public static string OSDescription => "Browser";
 
         public static Architecture OSArchitecture => Architecture.Wasm;
 
