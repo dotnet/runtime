@@ -2,7 +2,7 @@
   <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.props, $(MSBuildThisFileDirectory)..))" />
 
   <PropertyGroup>
-    <TestDir>$(InstallerProjectRoot)test\</TestDir>
+    <TestDir>$(InstallerProjectRoot)tests\</TestDir>
     <TestAssetsDir>$(TestDir)Assets\</TestAssetsDir>
     <TestStabilizedLegacyPackagesDir>$(ArtifactsObjDir)TestStabilizedPackages\</TestStabilizedLegacyPackagesDir>
     <TestRestorePackagesPath>$(ArtifactsObjDir)TestPackageCache\</TestRestorePackagesPath>
