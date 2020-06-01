@@ -90,10 +90,11 @@ namespace System.Text.Json
             CancellationToken cancellationToken)
         {
             // We flush the Stream when the buffer is >=90% of capacity.
-            // With the default buffer size of 16K, if a single JSON value is >=1.6K it is possible for
-            // the buffer to max out before it can be flushed, causing the buffer to expand.
-            // So this threshold is a compromise between buffer utilization and minimizing cases where the
-            // buffer is maxed out (and expanded) before it can be flushed.
+            // This threshold is a compromise between buffer utilization and minimizing cases where the buffer
+            // needs to be expanded\doubled because it is not large enough to write the current property or element.
+            // We check for flush after each object property and array element is written to the buffer.
+            // Once the buffer is expanded to contain the largest single element\property, a 90% thresold
+            // means the buffer may be expanded a maximum of 4 times: 1-(1\(2^4))==.9375.
             const float FlushThreshold = .9f;
 
             if (options == null)
