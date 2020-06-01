@@ -5041,6 +5041,23 @@ leave:
 }
 
 void
+mono_first_chance_exception_internal (MonoObject *exc_raw)
+{
+	ERROR_DECL (error);
+
+	HANDLE_FUNCTION_ENTER ();
+
+	MONO_HANDLE_DCL (MonoObject, exc);
+
+	mono_first_chance_exception_checked (exc, error);
+
+	if (!is_ok (error))
+		g_warning ("Invoking the FirstChanceException event failed: %s", mono_error_get_message (error));
+
+	HANDLE_FUNCTION_RETURN ();
+}
+
+void
 mono_first_chance_exception_checked (MonoObjectHandle exc, MonoError *error)
 {
 	MonoClass *klass = mono_handle_class (exc);

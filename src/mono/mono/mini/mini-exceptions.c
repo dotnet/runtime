@@ -2694,11 +2694,7 @@ mono_handle_exception_internal (MonoContext *ctx, MonoObject *obj, gboolean resu
 		jit_tls->orig_ex_ctx_set = FALSE;
 
 #ifdef ENABLE_NETCORE
-		mono_first_chance_exception_checked (MONO_HANDLE_NEW (MonoObject, obj), error);
-		if (!is_ok (error)) {
-			g_warning ("Invokeing the FirstChanceException event failed: %s", mono_error_get_message (error));
-			mono_error_cleanup (error);
-		}
+		mono_first_chance_exception_internal (obj);
 #endif
 
 		StackFrameInfo catch_frame;

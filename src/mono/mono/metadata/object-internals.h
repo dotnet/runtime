@@ -1923,6 +1923,9 @@ mono_unhandled_exception_checked (MonoObjectHandle exc, MonoError *error);
 #ifdef ENABLE_NETCORE
 void
 mono_first_chance_exception_checked (MonoObjectHandle exc, MonoError *error);
+
+void
+mono_first_chance_exception_internal (MonoObject *exc_raw);
 #endif
 
 MonoVTable *
