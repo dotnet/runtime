@@ -13,7 +13,6 @@
     <WasmPInvokeAssemblies Include="$(MonoArtifactsPath)\System.Private.CoreLib.dll"/>
     <WasmPInvokeAssemblies Include="$(ArtifactsBinDir)\System.Runtime\$(NetCoreAppCurrent)-Unix-$(Configuration)\System.Runtime.dll"/>
     <WasmPInvokeAssemblies Include="$(ArtifactsBinDir)\System.Console\$(NetCoreAppCurrent)-Browser-$(Configuration)\System.Console.dll"/>
-    <WasmPInvokeAssemblies Include="$(ArtifactsBinDir)\System.Runtime.InteropServices.RuntimeInformation\$(NetCoreAppCurrent)-Unix-$(Configuration)\System.Runtime.InteropServices.RuntimeInformation.dll"/>
     <WasmPInvokeAssemblies Include="$(ArtifactsBinDir)\System.IO.FileSystem\$(NetCoreAppCurrent)-Unix-$(Configuration)\System.IO.FileSystem.dll"/>
     <WasmPInvokeAssemblies Include="$(ArtifactsBinDir)\System.IO.FileSystem.DriveInfo\$(NetCoreAppCurrent)-Unix-$(Configuration)\System.IO.FileSystem.DriveInfo.dll"/>
   </ItemGroup>
