@@ -32,15 +32,19 @@ while true; do
     fi
 done
 
-XHARNESS_OUT="$EXECUTION_DIR/xharness-output"
+XHARNESS_OUT="$HELIX_WORKITEM_ROOT"
 
 if [ -x "$(command -v xharness)" ]
 then
+    echo 'Xharness command is in $PATH'
+    export XHARNESS_DISABLE_COLORED_OUTPUT=true
+    export XHARNESS_LOG_WITH_TIMESTAMPS=true
     xharness ios test \
         --targets="$TARGET" \
         --app="$APP_BUNDLE" \
         --output-directory=$XHARNESS_OUT
 else
+    echo 'Xharness command is NOT in $PATH'
     dotnet xharness ios test \
         --targets="$TARGET" \
         --app="$APP_BUNDLE" \
