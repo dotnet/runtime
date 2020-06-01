@@ -32,7 +32,7 @@ while true; do
     fi
 done
 
-XHARNESS_OUT="$HELIX_WORKITEM_ROOT"
+export XHARNESS_OUT="$EXECUTION_DIR/xharness-output"
 
 if [ -x "$(command -v xharness)" ]
 then
@@ -43,6 +43,8 @@ then
         --targets="$TARGET" \
         --app="$APP_BUNDLE" \
         --output-directory=$XHARNESS_OUT
+    echo "Output files:"
+    ls -lh $XHARNESS_OUT
 else
     echo 'Xharness command is NOT in $PATH'
     dotnet xharness ios test \
