@@ -99,6 +99,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			if (ValidatesReflectionAccessPatterns (_testCaseTypeDefinition)) {
 				customizations.ReflectionPatternRecorder = new TestReflectionPatternRecorder ();
 				customizations.CustomizeContext += context => {
+					customizations.ReflectionPatternRecorder.PreviousRecorder = context.ReflectionPatternRecorder;
 					context.ReflectionPatternRecorder = customizations.ReflectionPatternRecorder;
 					context.LogMessages = true;
 				};

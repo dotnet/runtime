@@ -18,8 +18,6 @@ namespace Mono.Linker.Tests.TestCasesRunner
 		public void CustomizeLinkContext (LinkContext context)
 		{
 			CustomizeContext?.Invoke (context);
-			if (ReflectionPatternRecorder != null)
-				ReflectionPatternRecorder.Context = context;
 		}
 	}
 }
