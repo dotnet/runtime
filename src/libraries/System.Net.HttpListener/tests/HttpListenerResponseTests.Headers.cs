@@ -436,7 +436,7 @@ namespace System.Net.Tests
         {
             using (HttpListenerResponse response = await GetResponse())
             {
-                AssertExtensions.Throws<ArgumentException>("name", () => response.StatusDescription = statusDescription);
+                AssertExtensions.Throws<ArgumentException>("value", () => response.StatusDescription = statusDescription);
                 Assert.Equal("OK", response.StatusDescription);
             }
         }

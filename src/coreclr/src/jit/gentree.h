@@ -745,7 +745,7 @@ public:
 
 #define GTF_UNSIGNED    0x00008000 // With GT_CAST:   the source operand is an unsigned type
                                    // With operators: the specified node is an unsigned operator
-                                   // 
+                                   //
 #define GTF_LATE_ARG    0x00010000 // The specified node is evaluated to a temp in the arg list, and this temp is added to gtCallLateArgs.
 #define GTF_SPILL       0x00020000 // Needs to be spilled here
 
@@ -775,14 +775,14 @@ public:
 // Note that a node marked GTF_VAR_MULTIREG can only be a pure definition of all the fields, or a pure use of all the fields,
 // so we don't need the equivalent of GTF_VAR_USEASG.
 
-#define GTF_VAR_MULTIREG_DEATH0 0x20000000 // GT_LCL_VAR -- The last-use bit for a lclVar (the first register if it is multireg).
+#define GTF_VAR_MULTIREG_DEATH0 0x04000000 // GT_LCL_VAR -- The last-use bit for a lclVar (the first register if it is multireg).
 #define GTF_VAR_DEATH           GTF_VAR_MULTIREG_DEATH0
-#define GTF_VAR_MULTIREG_DEATH1 0x10000000 // GT_LCL_VAR -- The last-use bit for the second register of a multireg lclVar.
-#define GTF_VAR_MULTIREG_DEATH2 0x08000000 // GT_LCL_VAR -- The last-use bit for the third register of a multireg lclVar.
-#define GTF_VAR_MULTIREG_DEATH3 0x04000000 // GT_LCL_VAR -- The last-use bit for the fourth register of a multireg lclVar.
+#define GTF_VAR_MULTIREG_DEATH1 0x08000000 // GT_LCL_VAR -- The last-use bit for the second register of a multireg lclVar.
+#define GTF_VAR_MULTIREG_DEATH2 0x10000000 // GT_LCL_VAR -- The last-use bit for the third register of a multireg lclVar.
+#define GTF_VAR_MULTIREG_DEATH3 0x20000000 // GT_LCL_VAR -- The last-use bit for the fourth register of a multireg lclVar.
 #define GTF_VAR_DEATH_MASK (GTF_VAR_MULTIREG_DEATH0|GTF_VAR_MULTIREG_DEATH1 | GTF_VAR_MULTIREG_DEATH2 | GTF_VAR_MULTIREG_DEATH3)
-                                       // This is the amount we have to shift, plus the regIndex, to get the last use bit we want.
-#define MULTIREG_LAST_USE_SHIFT 17
+// This is the amount we have to shift, plus the regIndex, to get the last use bit we want.
+#define MULTIREG_LAST_USE_SHIFT 26
 #define GTF_VAR_MULTIREG        0x02000000 // This is a struct or (on 32-bit platforms) long variable that is used or defined
                                        // to/from a multireg source or destination (e.g. a call arg or return, or an op
                                        // that returns its result in multiple registers such as a long multiply).
@@ -813,6 +813,8 @@ public:
 #define GTF_CALL_NULLCHECK          0x08000000 // GT_CALL -- must check instance pointer for null
 #define GTF_CALL_POP_ARGS           0x04000000 // GT_CALL -- caller pop arguments?
 #define GTF_CALL_HOISTABLE          0x02000000 // GT_CALL -- call is hoistable
+
+#define GTF_MEMORYBARRIER_LOAD      0x40000000 // GT_MEMORYBARRIER -- Load barrier
 
 #define GTF_NOP_DEATH               0x40000000 // GT_NOP -- operand dies here
 
@@ -912,6 +914,9 @@ public:
 
 #define GTF_SIMD12_OP               0x80000000 // GT_SIMD -- Indicates that the operands need to be handled as SIMD12
                                                //            even if they have been retyped as SIMD16.
+
+#define GTF_SIMDASHW_OP             0x80000000 // GT_HWINTRINSIC -- Indicates that the structHandle should be gotten from gtGetStructHandleForSIMD
+                                               //                   rarther than from gtGetStructHandleForHWSIMD.
 
 //---------------------------------------------------------------------
 //
@@ -1641,10 +1646,9 @@ public:
     inline bool IsFPZero();
     inline bool IsIntegralConst(ssize_t constVal);
     inline bool IsIntegralConstVector(ssize_t constVal);
+    inline bool IsSIMDZero();
 
     inline bool IsBoxedValue();
-
-    inline bool IsSIMDEqualityOrInequality() const;
 
     static bool OperIsList(genTreeOps gtOper)
     {
@@ -1726,6 +1730,9 @@ public:
 
     // Returns the type of the regIndex'th register defined by a multi-reg node.
     var_types GetRegTypeByIndex(int regIndex);
+
+    // Returns the GTF flag equivalent for the regIndex'th register of a multi-reg node.
+    unsigned int GetRegSpillFlagByIdx(int regIndex) const;
 
     // Returns true if it is a GT_COPY or GT_RELOAD node
     inline bool IsCopyOrReload() const;
@@ -3227,6 +3234,7 @@ private:
     unsigned int GetLastUseBit(int regIndex)
     {
         assert(regIndex < 4);
+        static_assert_no_msg((1 << MULTIREG_LAST_USE_SHIFT) == GTF_VAR_MULTIREG_DEATH0);
         return (1 << (MULTIREG_LAST_USE_SHIFT + regIndex));
     }
 
@@ -3245,6 +3253,7 @@ public:
     void SetMultiReg()
     {
         gtFlags |= GTF_VAR_MULTIREG;
+        ClearOtherRegFlags();
     }
 
     regNumber GetRegNumByIdx(int regIndex)
@@ -3595,8 +3604,8 @@ public:
     void InitializeStructReturnType(Compiler* comp, CORINFO_CLASS_HANDLE retClsHnd);
 
     // Initialize the Return Type Descriptor for a method that returns a TYP_LONG
-    // Only needed for X86
-    void InitializeLongReturnType(Compiler* comp);
+    // Only needed for X86 and arm32.
+    void InitializeLongReturnType();
 
     // Reset type descriptor to defaults
     void Reset()
@@ -3675,6 +3684,7 @@ public:
         }
         else
         {
+            assert(m_inited);
             return ((m_regType[0] != TYP_UNKNOWN) && (m_regType[1] != TYP_UNKNOWN));
         }
     }
@@ -3690,7 +3700,7 @@ public:
     //    var_type of the return register specified by its index.
     //    asserts if the index does not have a valid register return type.
 
-    var_types GetReturnRegType(unsigned index)
+    var_types GetReturnRegType(unsigned index) const
     {
         var_types result = m_regType[index];
         assert(result != TYP_UNKNOWN);
@@ -3706,10 +3716,10 @@ public:
     }
 
     // Get ith ABI return register
-    regNumber GetABIReturnReg(unsigned idx);
+    regNumber GetABIReturnReg(unsigned idx) const;
 
     // Get reg mask of ABI return registers
-    regMaskTP GetABIReturnRegs();
+    regMaskTP GetABIReturnRegs() const;
 };
 
 class TailCallSiteInfo
@@ -3913,7 +3923,6 @@ struct GenTreeCall final : public GenTree
 #if FEATURE_MULTIREG_RET
 
     // State required to support multi-reg returning call nodes.
-    // For now it is enabled only for x64 unix.
     //
     // TODO-AllArch: enable for all call nodes to unify single-reg and multi-reg returns.
     ReturnTypeDesc gtReturnTypeDesc;
@@ -3935,17 +3944,34 @@ struct GenTreeCall final : public GenTree
     // Returns
     //    Type descriptor of the value returned by call
     //
-    // Note:
-    //    Right now implemented only for x64 unix and yet to be
-    //    implemented for other multi-reg target arch (Arm64/Arm32/x86).
-    //
     // TODO-AllArch: enable for all call nodes to unify single-reg and multi-reg returns.
-    ReturnTypeDesc* GetReturnTypeDesc()
+    const ReturnTypeDesc* GetReturnTypeDesc() const
     {
 #if FEATURE_MULTIREG_RET
         return &gtReturnTypeDesc;
 #else
         return nullptr;
+#endif
+    }
+
+    void InitializeLongReturnType()
+    {
+#if FEATURE_MULTIREG_RET
+        gtReturnTypeDesc.InitializeLongReturnType();
+#endif
+    }
+
+    void InitializeStructReturnType(Compiler* comp, CORINFO_CLASS_HANDLE retClsHnd)
+    {
+#if FEATURE_MULTIREG_RET
+        gtReturnTypeDesc.InitializeStructReturnType(comp, retClsHnd);
+#endif
+    }
+
+    void ResetReturnType()
+    {
+#if FEATURE_MULTIREG_RET
+        gtReturnTypeDesc.Reset();
 #endif
     }
 
@@ -4176,6 +4202,16 @@ struct GenTreeCall final : public GenTree
         return (gtFlags & GTF_CALL_INLINE_CANDIDATE) != 0;
     }
 
+    bool IsR2ROrVirtualStubRelativeIndir()
+    {
+#if defined(FEATURE_READYTORUN_COMPILER) && defined(TARGET_ARMARCH)
+        bool isVirtualStub = (gtFlags & GTF_CALL_VIRT_KIND_MASK) == GTF_CALL_VIRT_STUB;
+        return ((IsR2RRelativeIndir()) || (isVirtualStub && (IsVirtualStubRelativeIndir())));
+#else
+        return false;
+#endif // FEATURE_READYTORUN_COMPILER && TARGET_ARMARCH
+    }
+
     bool HasNonStandardAddedArgs(Compiler* compiler) const;
     int GetNonStandardAddedArgCount(Compiler* compiler) const;
 
@@ -4215,18 +4251,29 @@ struct GenTreeCall final : public GenTree
     //
     bool HasMultiRegRetVal() const
     {
-#if defined(TARGET_X86)
-        return varTypeIsLong(gtType);
-#elif FEATURE_MULTIREG_RET && defined(TARGET_ARM)
-        return varTypeIsLong(gtType) || (varTypeIsStruct(gtType) && !HasRetBufArg());
+#ifdef FEATURE_MULTIREG_RET
+#if defined(TARGET_X86) || defined(TARGET_ARM)
+        if (varTypeIsLong(gtType))
+        {
+            return true;
+        }
 #elif defined(FEATURE_HFA) && defined(TARGET_ARM64)
         // SIMD types are returned in vector regs on ARM64.
-        return (gtType == TYP_STRUCT) && !HasRetBufArg();
-#elif FEATURE_MULTIREG_RET
-        return varTypeIsStruct(gtType) && !HasRetBufArg();
-#else
+        if (varTypeIsSIMD(gtType))
+        {
+            return false;
+        }
+#endif // FEATURE_HFA && TARGET_ARM64
+
+        if (!varTypeIsStruct(gtType) || HasRetBufArg())
+        {
+            return false;
+        }
+        // Now it is a struct that is returned in registers.
+        return GetReturnTypeDesc()->IsMultiRegRetType();
+#else  // !FEATURE_MULTIREG_RET
         return false;
-#endif
+#endif // !FEATURE_MULTIREG_RET
     }
 
     // Returns true if VM has flagged this method as CORINFO_FLG_PINVOKE.
@@ -6760,6 +6807,68 @@ inline bool GenTree::IsIntegralConstVector(ssize_t constVal)
         assert(gtGetOp2IfPresent() == nullptr);
         return true;
     }
+#endif // FEATURE_SIMD
+
+#ifdef FEATURE_HW_INTRINSICS
+    if (gtOper == GT_HWINTRINSIC)
+    {
+        GenTreeHWIntrinsic* node = AsHWIntrinsic();
+
+        if (!varTypeIsIntegral(node->gtSIMDBaseType))
+        {
+            // Can't be an integral constant
+            return false;
+        }
+
+        GenTree* op1 = gtGetOp1();
+        GenTree* op2 = gtGetOp2();
+
+        NamedIntrinsic intrinsicId = node->gtHWIntrinsicId;
+
+        if (op1 == nullptr)
+        {
+            assert(op2 == nullptr);
+
+            if (constVal == 0)
+            {
+#if defined(TARGET_XARCH)
+                return (intrinsicId == NI_Vector128_get_Zero) || (intrinsicId == NI_Vector256_get_Zero);
+#elif defined(TARGET_ARM64)
+                return (intrinsicId == NI_Vector64_get_Zero) || (intrinsicId == NI_Vector128_get_Zero);
+#endif // !TARGET_XARCH && !TARGET_ARM64
+            }
+        }
+        else if ((op2 == nullptr) && !op1->OperIsList())
+        {
+            if (op1->IsIntegralConst(constVal))
+            {
+#if defined(TARGET_XARCH)
+                return (intrinsicId == NI_Vector128_Create) || (intrinsicId == NI_Vector256_Create);
+#elif defined(TARGET_ARM64)
+                return (intrinsicId == NI_Vector64_Create) || (intrinsicId == NI_Vector128_Create);
+#endif // !TARGET_XARCH && !TARGET_ARM64
+            }
+        }
+    }
+#endif // FEATURE_HW_INTRINSICS
+
+    return false;
+}
+
+//-------------------------------------------------------------------
+// IsSIMDZero: returns true if this this is a SIMD vector
+// with all its elements equal to zero.
+//
+// Returns:
+//     True if this represents an integral const SIMD vector.
+//
+inline bool GenTree::IsSIMDZero()
+{
+#ifdef FEATURE_SIMD
+    if ((gtOper == GT_SIMD) && (AsSIMD()->gtSIMDIntrinsicID == SIMDIntrinsicInit))
+    {
+        return (gtGetOp1()->IsIntegralConst(0) || gtGetOp1()->IsFPZero());
+    }
 #endif
 
     return false;
@@ -6769,19 +6878,6 @@ inline bool GenTree::IsBoxedValue()
 {
     assert(gtOper != GT_BOX || AsBox()->BoxOp() != nullptr);
     return (gtOper == GT_BOX) && (gtFlags & GTF_BOX_VALUE);
-}
-
-inline bool GenTree::IsSIMDEqualityOrInequality() const
-{
-#ifdef FEATURE_SIMD
-    if (gtOper == GT_SIMD)
-    {
-        SIMDIntrinsicID id = AsSIMD()->gtSIMDIntrinsicID;
-        return (id == SIMDIntrinsicOpEquality) || (id == SIMDIntrinsicOpInEquality);
-    }
-#endif
-
-    return false;
 }
 
 inline GenTree* GenTree::MoveNext()
@@ -7247,6 +7343,61 @@ inline var_types GenTree::GetRegTypeByIndex(int regIndex)
     }
 
     assert(!"Invalid node type for GetRegTypeByIndex");
+    return TYP_UNDEF;
+}
+
+//-----------------------------------------------------------------------------------
+// GetRegSpillFlagByIdx: Get a specific register's spill flags, based on regIndex,
+//                       for this multi-reg node.
+//
+// Arguments:
+//     regIndex - which register's spill flags to return
+//
+// Return Value:
+//     The spill flags (GTF_SPILL GTF_SPILLED) for this register.
+//
+// Notes:
+//     This must be a multireg node and 'regIndex' must be a valid index for this node.
+//     This method returns the GTF "equivalent" flags based on the packed flags on the multireg node.
+//
+inline unsigned int GenTree::GetRegSpillFlagByIdx(int regIndex) const
+{
+#if FEATURE_MULTIREG_RET
+    if (IsMultiRegCall())
+    {
+        return AsCall()->AsCall()->GetRegSpillFlagByIdx(regIndex);
+    }
+
+#if FEATURE_ARG_SPLIT
+    if (OperIsPutArgSplit())
+    {
+        return AsPutArgSplit()->GetRegSpillFlagByIdx(regIndex);
+    }
+#endif
+#if !defined(TARGET_64BIT)
+    if (OperIsMultiRegOp())
+    {
+        return AsMultiRegOp()->GetRegSpillFlagByIdx(regIndex);
+    }
+#endif
+
+#endif // FEATURE_MULTIREG_RET
+
+#if defined(TARGET_XARCH) && defined(FEATURE_HW_INTRINSICS)
+    if (OperIs(GT_HWINTRINSIC))
+    {
+        // At this time, the only multi-reg HW intrinsics all return the type of their
+        // arguments. If this changes, we will need a way to record or determine this.
+        assert(TypeGet() == TYP_STRUCT);
+        return gtGetOp1()->TypeGet();
+    }
+#endif
+    if (OperIs(GT_LCL_VAR, GT_STORE_LCL_VAR))
+    {
+        return AsLclVar()->GetRegSpillFlagByIdx(regIndex);
+    }
+
+    assert(!"Invalid node type for GetRegSpillFlagByIdx");
     return TYP_UNDEF;
 }
 

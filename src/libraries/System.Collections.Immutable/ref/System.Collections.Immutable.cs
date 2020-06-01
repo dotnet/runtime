@@ -702,7 +702,7 @@ namespace System.Collections.Immutable
             System.Collections.Generic.IEnumerator<T> System.Collections.Generic.IEnumerable<T>.GetEnumerator() { throw null; }
             void System.Collections.ICollection.CopyTo(System.Array array, int arrayIndex) { }
             System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() { throw null; }
-            int System.Collections.IList.Add(object value) { throw null; }
+            int System.Collections.IList.Add(object? value) { throw null; }
             void System.Collections.IList.Clear() { }
             bool System.Collections.IList.Contains(object? value) { throw null; }
             int System.Collections.IList.IndexOf(object? value) { throw null; }
@@ -819,7 +819,7 @@ namespace System.Collections.Immutable
         bool System.Collections.Generic.IDictionary<TKey,TValue>.Remove(TKey key) { throw null; }
         System.Collections.Generic.IEnumerator<System.Collections.Generic.KeyValuePair<TKey, TValue>> System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<TKey,TValue>>.GetEnumerator() { throw null; }
         void System.Collections.ICollection.CopyTo(System.Array array, int index) { }
-        void System.Collections.IDictionary.Add(object key, object value) { }
+        void System.Collections.IDictionary.Add(object key, object? value) { }
         void System.Collections.IDictionary.Clear() { }
         bool System.Collections.IDictionary.Contains(object key) { throw null; }
         System.Collections.IDictionaryEnumerator System.Collections.IDictionary.GetEnumerator() { throw null; }

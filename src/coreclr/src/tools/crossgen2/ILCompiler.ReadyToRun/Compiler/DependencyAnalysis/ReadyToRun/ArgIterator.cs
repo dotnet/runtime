@@ -85,10 +85,11 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             }
             return _type.RequiresAlign8();
         }
-        public bool IsHFA()
+
+        public bool IsHomogeneousAggregate()
         {
-            if (_type.Context.Target.Architecture != TargetArchitecture.ARM &&
-                _type.Context.Target.Architecture != TargetArchitecture.ARM64)
+            TargetArchitecture targetArch = _type.Context.Target.Architecture;
+            if ((targetArch != TargetArchitecture.ARM) && (targetArch != TargetArchitecture.ARM64))
             {
                 return false;
             }
@@ -96,29 +97,21 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             {
                 return false;
             }
-            return _type is DefType defType && defType.IsHfa;
+            return _type is DefType defType && defType.IsHomogeneousAggregate;
         }
 
-        public CorElementType GetHFAType()
+        public int GetHomogeneousAggregateElementSize()
         {
-            Debug.Assert(IsHFA());
+            Debug.Assert(IsHomogeneousAggregate());
             switch (_type.Context.Target.Architecture)
             {
                 case TargetArchitecture.ARM:
-                    if (RequiresAlign8())
-                    {
-                        return CorElementType.ELEMENT_TYPE_R8;
-                    }
-                    break;
+                    return RequiresAlign8() ? 8 : 4;
 
                 case TargetArchitecture.ARM64:
-                    if (_type is DefType defType && defType.InstanceFieldAlignment.Equals(new LayoutInt(_type.Context.Target.PointerSize)))
-                    {
-                        return CorElementType.ELEMENT_TYPE_R8;
-                    }
-                    break;
+                    return ((DefType)_type).GetHomogeneousAggregateElementSize();
             }
-            return CorElementType.ELEMENT_TYPE_R4;
+            throw new InvalidOperationException();
         }
 
         public CorElementType GetCorElementType()
@@ -235,7 +228,6 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         public int m_idxGenReg;    // First general register used (or -1)
         public short m_cGenReg;      // Count of general registers used (or 0)
 
-        public bool m_isSinglePrecision; // ARM64 - For determining if HFA is single or double precision
         public bool m_fRequires64BitAlignment;  // ARM - True if the argument should always be aligned (in registers or on the stack
 
         public int m_idxStack;     // First stack slot used (or -1)
@@ -251,7 +243,6 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             m_idxStack = -1;
             m_cStack = 0;
 
-            m_isSinglePrecision = false;
             m_fRequires64BitAlignment = false;
         }
     };
@@ -286,8 +277,8 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             frame[_offset + delta] = interior ? CORCOMPILE_GCREFMAP_TOKENS.GCREFMAP_INTERIOR : CORCOMPILE_GCREFMAP_TOKENS.GCREFMAP_REF;
         }
 
-        // Returns true if the ArgDestination represents an HFA struct
-        bool IsHFA()
+        // Returns true if the ArgDestination represents a homogeneous aggregate struct
+        bool IsHomogeneousAggregate()
         {
             return _argLocDescForStructInRegs.HasValue;
         }
@@ -615,18 +606,17 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             {
                 switch (_transitionBlock.Architecture)
                 {
-
                     case TargetArchitecture.X64:
                         return _transitionBlock.IsArgPassedByRef(_argSize);
                     case TargetArchitecture.ARM64:
                         if (_argType == CorElementType.ELEMENT_TYPE_VALUETYPE)
                         {
                             Debug.Assert(!_argTypeHandle.IsNull());
-                            return ((_argSize > _transitionBlock.EnregisteredParamTypeMaxSize) && (!_argTypeHandle.IsHFA() || IsVarArg));
+                            return ((_argSize > _transitionBlock.EnregisteredParamTypeMaxSize) && (!_argTypeHandle.IsHomogeneousAggregate() || IsVarArg));
                         }
                         return false;
                     default:
-                        throw new NotImplementedException(_transitionBlock.Architecture.ToString());
+                        throw new NotImplementedException();
                 }
             }
             else
@@ -830,7 +820,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                         break;
 
                     default:
-                        throw new NotImplementedException(_transitionBlock.Architecture.ToString());
+                        throw new NotImplementedException();
                 }
 
                 _argNum = (_skipFirstArg ? 1 : 0);
@@ -848,21 +838,6 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             _argNum++;
 
             int argSize = TypeHandle.GetElemSize(argType, _argTypeHandle);
-
-            bool processingFloatsAsDoublesFromTransitionBlock = false;
-            if (_transitionBlock.IsARM64)
-            {
-                // NOT DESKTOP BEHAVIOR: The S and D registers overlap, and the UniversalTransitionThunk copies D registers to the transition blocks. We'll need
-                // to work with the D registers here as well.
-                if (argType == CorElementType.ELEMENT_TYPE_VALUETYPE && _argTypeHandle.IsHFA() && _argTypeHandle.GetHFAType() == CorElementType.ELEMENT_TYPE_R4)
-                {
-                    if ((argSize / sizeof(float)) + _arm64IdxFPReg <= 8)
-                    {
-                        argSize *= 2;
-                        processingFloatsAsDoublesFromTransitionBlock = true;
-                    }
-                }
-            }
 
             _argType = argType;
             _argSize = argSize;
@@ -1069,7 +1044,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
                                     // Handle HFAs: packed structures of 1-4 floats or doubles that are passed in FP argument
                                     // registers if possible.
-                                    if (_argTypeHandle.IsHFA())
+                                    if (_argTypeHandle.IsHomogeneousAggregate())
                                         fFloatingPoint = true;
 
                                     break;
@@ -1215,19 +1190,26 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
                             case CorElementType.ELEMENT_TYPE_VALUETYPE:
                                 {
-                                    // Handle HFAs: packed structures of 2-4 floats or doubles that are passed in FP argument
-                                    // registers if possible.
-                                    if (_argTypeHandle.IsHFA())
+                                    // Handle HAs: packed structures of 1-4 floats, doubles, or short vectors
+                                    // that are passed in FP argument registers if possible.
+                                    if (_argTypeHandle.IsHomogeneousAggregate())
                                     {
-                                        CorElementType type = _argTypeHandle.GetHFAType();
-                                        if (processingFloatsAsDoublesFromTransitionBlock)
-                                            cFPRegs = argSize / sizeof(double);
-                                        else
-                                            cFPRegs = (type == CorElementType.ELEMENT_TYPE_R4) ? (argSize / sizeof(float)) : (argSize / sizeof(double));
+                                        _argLocDescForStructInRegs = new ArgLocDesc();
+                                        _argLocDescForStructInRegs.m_idxFloatReg = _arm64IdxFPReg;
+
+                                        int haElementSize = _argTypeHandle.GetHomogeneousAggregateElementSize();
+                                        cFPRegs = argSize / haElementSize;
+                                        _argLocDescForStructInRegs.m_cFloatReg = cFPRegs;
+
+                                        // Check if we have enough registers available for the HA passing
+                                        if (cFPRegs + _arm64IdxFPReg <= 8)
+                                        {
+                                            _hasArgLocDescForStructInRegs = true;
+                                        }
                                     }
                                     else
                                     {
-                                        // Composite greater than 16bytes should be passed by reference
+                                        // Composite greater than 16 bytes should be passed by reference
                                         if (argSize > _transitionBlock.EnregisteredParamTypeMaxSize)
                                         {
                                             argSize = _transitionBlock.PointerSize;
@@ -1248,7 +1230,8 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                         {
                             if (cFPRegs + _arm64IdxFPReg <= 8)
                             {
-                                int argOfsInner = _transitionBlock.OffsetOfFloatArgumentRegisters + _arm64IdxFPReg * 8;
+                                // Each floating point register in the argument area is 16 bytes.
+                                int argOfsInner = _transitionBlock.OffsetOfFloatArgumentRegisters + _arm64IdxFPReg * 16;
                                 _arm64IdxFPReg += cFPRegs;
                                 return argOfsInner;
                             }
@@ -1259,14 +1242,33 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                         }
                         else
                         {
+                            // Only x0-x7 are valid argument registers (x8 is always the return buffer)
                             if (_arm64IdxGenReg + cArgSlots <= 8)
                             {
+                                // The entirety of the arg fits in the register slots.
                                 int argOfsInner = _transitionBlock.OffsetOfArgumentRegisters + _arm64IdxGenReg * 8;
                                 _arm64IdxGenReg += cArgSlots;
                                 return argOfsInner;
                             }
+                            else if (_context.Target.IsWindows && IsVarArg && (_arm64IdxGenReg < 8))
+                            {
+                                // Address the Windows ARM64 varargs case where an arg is split between regs and stack.
+                                // This can happen in the varargs case because the first 64 bytes of the stack are loaded
+                                // into x0-x7, and any remaining stack arguments are placed normally.
+                                int argOfsInner = _transitionBlock.OffsetOfArgumentRegisters + _arm64IdxGenReg * 8;
+
+                                // Increase m_idxStack to account for the space used for the remainder of the arg after
+                                // register slots are filled.
+                                _arm64IdxStack += (_arm64IdxGenReg + cArgSlots - 8);
+
+                                // We used up the remaining reg slots.
+                                _arm64IdxGenReg = 8;
+
+                                return argOfsInner;
+                            }
                             else
                             {
+                                // Don't use reg slots for this. It will be passed purely on the stack arg space.
                                 _arm64IdxGenReg = 8;
                             }
                         }
@@ -1277,7 +1279,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                     }
 
                 default:
-                    throw new NotImplementedException(_transitionBlock.Architecture.ToString());
+                    throw new NotImplementedException();
             }
         }
 
@@ -1513,17 +1515,13 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
                         if (_transitionBlock.IsFloatArgumentRegisterOffset(argOffset))
                         {
-                            // Dividing by 8 as size of each register in FloatArgumentRegisters is 8 bytes.
-                            pLoc.m_idxFloatReg = (argOffset - _transitionBlock.OffsetOfFloatArgumentRegisters) / 8;
+                            // Dividing by 16 as size of each register in FloatArgumentRegisters is 16 bytes.
+                            pLoc.m_idxFloatReg = (argOffset - _transitionBlock.OffsetOfFloatArgumentRegisters) / 16;
 
-                            if (!_argTypeHandle.IsNull() && _argTypeHandle.IsHFA())
+                            if (!_argTypeHandle.IsNull() && _argTypeHandle.IsHomogeneousAggregate())
                             {
-                                CorElementType type = _argTypeHandle.GetHFAType();
-                                bool isFloatType = (type == CorElementType.ELEMENT_TYPE_R4);
-
-                                // DESKTOP BEHAVIOR pLoc->m_cFloatReg = isFloatType ? GetArgSize() / sizeof(float) : GetArgSize() / sizeof(double);
-                                pLoc.m_cFloatReg = GetArgSize() / sizeof(double);
-                                pLoc.m_isSinglePrecision = isFloatType;
+                                int haElementSize = _argTypeHandle.GetHomogeneousAggregateElementSize();
+                                pLoc.m_cFloatReg = GetArgSize() / haElementSize;
                             }
                             else
                             {
@@ -1605,7 +1603,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                     return null;
 
                 default:
-                    throw new NotImplementedException(_transitionBlock.Architecture.ToString());
+                    throw new NotImplementedException();
             }
         }
 

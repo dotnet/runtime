@@ -255,6 +255,11 @@ namespace System.Xml.Tests
             {
                 return Task.CompletedTask;
             }
+
+            public override Task WriteAsync(ReadOnlyMemory<char> buffer, CancellationToken cancellationToken = default)
+            {
+                return Task.CompletedTask;
+            }
         }
 
         internal class AsyncOnlyStream : MemoryStream
@@ -277,6 +282,11 @@ namespace System.Xml.Tests
             public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
             {
                 return Task.CompletedTask;
+            }
+
+            public override ValueTask WriteAsync(ReadOnlyMemory<byte> source, CancellationToken cancellationToken = default)
+            {
+                return default;
             }
         }
     }

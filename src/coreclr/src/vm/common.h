@@ -285,6 +285,7 @@ namespace Loader
 #include "log.h"
 #include "loaderheap.h"
 #include "fixuppointer.h"
+#include "stgpool.h"
 
 // src/vm
 #include "gcenv.interlocked.h"
@@ -346,10 +347,6 @@ namespace Loader
 #include "codeman.h"
 #include "threads.h"
 #include "clrex.inl"
-#ifdef FEATURE_COMINTEROP
-    #include "windowsruntime.h"
-    #include "windowsstring.h"
-#endif
 #include "loaderallocator.hpp"
 #include "appdomain.hpp"
 #include "appdomain.inl"
@@ -423,10 +420,6 @@ extern DummyGlobalContract ___contract;
 #include "syncblk.inl"
 #include "threads.inl"
 #include "eehash.inl"
-#ifdef FEATURE_COMINTEROP
-#include "WinRTRedirector.h"
-#include "winrtredirector.inl"
-#endif // FEATURE_COMINTEROP
 #include "eventtrace.inl"
 
 #if defined(COMMON_TURNED_FPO_ON)

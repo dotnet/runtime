@@ -438,7 +438,7 @@ namespace
         if (startup_info.dotnet_root.empty())
         {
             pal::string_t mod_path;
-            if (!pal::get_own_module_path(&mod_path))
+            if (!pal::get_method_module_path(&mod_path, (void*)&hostfxr_set_error_writer))
                 return StatusCode::CoreHostCurHostFindFailure;
 
             startup_info.dotnet_root = get_dotnet_root_from_fxr_path(mod_path);

@@ -228,13 +228,16 @@ namespace System.Diagnostics.Tests
         {
             RemoteExecutor.Invoke(() => {
 
+                int activityStartCount = 0;
+                int activityStopCount = 0;
+
                 ActivitySource source = new ActivitySource("MultipleListenerSource");
                 ActivityListener [] listeners = new ActivityListener[4];
 
                 listeners[0] = new ActivityListener
                 {
-                    ActivityStarted = activity => Assert.NotNull(activity),
-                    ActivityStopped = activity => Assert.NotNull(activity),
+                    ActivityStarted = (activity) => { activityStartCount++; Assert.NotNull(activity); },
+                    ActivityStopped = (activity) => { activityStopCount++; Assert.NotNull(activity); },
                     ShouldListenTo = (activitySource) => true,
                     GetRequestedDataUsingParentId = (ref ActivityCreationOptions<string> activityOptions) => ActivityDataRequest.None,
                     GetRequestedDataUsingContext = (ref ActivityCreationOptions<ActivityContext> activityOptions) => ActivityDataRequest.None
@@ -243,10 +246,13 @@ namespace System.Diagnostics.Tests
 
                 Assert.Null(source.StartActivity("a1"));
 
+                Assert.Equal(0, activityStartCount);
+                Assert.Equal(0, activityStopCount);
+
                 listeners[1] = new ActivityListener
                 {
-                    ActivityStarted = activity => Assert.NotNull(activity),
-                    ActivityStopped = activity => Assert.NotNull(activity),
+                    ActivityStarted = (activity) => { activityStartCount++; Assert.NotNull(activity); },
+                    ActivityStopped = (activity) => { activityStopCount++; Assert.NotNull(activity); },
                     ShouldListenTo = (activitySource) => true,
                     GetRequestedDataUsingParentId = (ref ActivityCreationOptions<string> activityOptions) => ActivityDataRequest.PropagationData,
                     GetRequestedDataUsingContext = (ref ActivityCreationOptions<ActivityContext> activityOptions) => ActivityDataRequest.PropagationData
@@ -257,12 +263,18 @@ namespace System.Diagnostics.Tests
                 {
                     Assert.False(a2.IsAllDataRequested);
                     Assert.True((a2.ActivityTraceFlags & ActivityTraceFlags.Recorded) == 0);
+                    
+                    Assert.Equal(2, activityStartCount);
+                    Assert.Equal(0, activityStopCount);
                 }
+
+                Assert.Equal(activityStartCount, activityStopCount);
+                Assert.Equal(2, activityStopCount);
 
                 listeners[2] = new ActivityListener
                 {
-                    ActivityStarted = activity => Assert.NotNull(activity),
-                    ActivityStopped = activity => Assert.NotNull(activity),
+                    ActivityStarted = (activity) => { activityStartCount++; Assert.NotNull(activity); },
+                    ActivityStopped = (activity) => { activityStopCount++; Assert.NotNull(activity); },
                     ShouldListenTo = (activitySource) => true,
                     GetRequestedDataUsingParentId = (ref ActivityCreationOptions<string> activityOptions) => ActivityDataRequest.AllData,
                     GetRequestedDataUsingContext = (ref ActivityCreationOptions<ActivityContext> activityOptions) => ActivityDataRequest.AllData
@@ -273,12 +285,18 @@ namespace System.Diagnostics.Tests
                 {
                     Assert.True(a3.IsAllDataRequested);
                     Assert.True((a3.ActivityTraceFlags & ActivityTraceFlags.Recorded) == 0);
+                    
+                    Assert.Equal(5, activityStartCount);
+                    Assert.Equal(2, activityStopCount);
                 }
+
+                Assert.Equal(activityStartCount, activityStopCount);
+                Assert.Equal(5, activityStopCount);
 
                 listeners[3] = new ActivityListener
                 {
-                    ActivityStarted = activity => Assert.NotNull(activity),
-                    ActivityStopped = activity => Assert.NotNull(activity),
+                    ActivityStarted = (activity) => { activityStartCount++; Assert.NotNull(activity); },
+                    ActivityStopped = (activity) => { activityStopCount++; Assert.NotNull(activity); },
                     ShouldListenTo = (activitySource) => true,
                     GetRequestedDataUsingParentId = (ref ActivityCreationOptions<string> activityOptions) => ActivityDataRequest.AllDataAndRecorded,
                     GetRequestedDataUsingContext = (ref ActivityCreationOptions<ActivityContext> activityOptions) => ActivityDataRequest.AllDataAndRecorded
@@ -289,6 +307,9 @@ namespace System.Diagnostics.Tests
                 {
                     Assert.True(a4.IsAllDataRequested);
                     Assert.True((a4.ActivityTraceFlags & ActivityTraceFlags.Recorded) != 0, $"a4.ActivityTraceFlags failed: {a4.ActivityTraceFlags}");
+
+                    Assert.Equal(9, activityStartCount);
+                    Assert.Equal(5, activityStopCount);
                 }
 
                 foreach (IDisposable listener in listeners)
@@ -296,6 +317,8 @@ namespace System.Diagnostics.Tests
                     listener.Dispose();
                 }
 
+                Assert.Equal(activityStartCount, activityStopCount);
+                Assert.Equal(9, activityStopCount);
                 Assert.Null(source.StartActivity("a5"));
             }).Dispose();
         }

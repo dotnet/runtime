@@ -48,6 +48,7 @@
 
 #ifdef FEATURE_COMINTEROP_APARTMENT_SUPPORT
 #include "olecontexthelpers.h"
+#include "roapi.h"
 #endif // FEATURE_COMINTEROP_APARTMENT_SUPPORT
 
 #ifdef FEATURE_PERFTRACING
@@ -4500,17 +4501,6 @@ void Thread::SyncManagedExceptionState(bool fIsDebuggerThread)
         // Syncup the LastThrownObject on the managed thread
         SafeUpdateLastThrownObject();
     }
-
-#ifdef FEATURE_CORRUPTING_EXCEPTIONS
-    // Since the catch clause has successfully executed and we are exiting it, reset the corruption severity
-    // in the ThreadExceptionState for the last active exception. This will ensure that when the next exception
-    // gets thrown/raised, EH tracker wont pick up an invalid value.
-    if (!fIsDebuggerThread)
-    {
-        CEHelper::ResetLastActiveCorruptionSeverityPostCatchHandler(this);
-    }
-#endif // FEATURE_CORRUPTING_EXCEPTIONS
-
 }
 
 void Thread::SetLastThrownObjectHandle(OBJECTHANDLE h)
@@ -5077,8 +5067,6 @@ Thread::ApartmentState Thread::SetApartment(ApartmentState state, BOOL fFireMDAO
         _ASSERTE(!"Unexpected HRESULT returned from CoInitializeEx!");
     }
 
-#ifdef FEATURE_COMINTEROP
-
     // If WinRT is supported on this OS, also initialize it at the same time.  Since WinRT sits on top of COM
     // we need to make sure that it is initialized in the same threading mode as we just started COM itself
     // with (or that we detected COM had already been started with).
@@ -5123,7 +5111,6 @@ Thread::ApartmentState Thread::SetApartment(ApartmentState state, BOOL fFireMDAO
     // Since we've just called CoInitialize, COM has effectively been started up.
     // To ensure the CLR is aware of this, we need to call EnsureComStarted.
     EnsureComStarted(FALSE);
-#endif // FEATURE_COMINTEROP
 
     return GetApartment();
 }

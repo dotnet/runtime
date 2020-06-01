@@ -484,6 +484,7 @@ namespace System.Net.Sockets.Tests
         }
 
         [ConditionalFact(nameof(IsSubWindows10))]
+        [PlatformSpecific(TestPlatforms.Windows)]
         public void Socket_CreateUnixDomainSocket_Throws_OnWindows()
         {
             AssertExtensions.Throws<ArgumentNullException>("path", () => new UnixDomainSocketEndPoint(null));

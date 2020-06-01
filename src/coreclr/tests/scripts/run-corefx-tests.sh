@@ -16,7 +16,7 @@ usage()
     echo "Flavor/OS/Architecture options:"
     echo "    --configuration <config>     Configuration to run (Debug/Release)"
     echo "                                      default: Debug"
-    echo "    --os <os>                         OS to run (FreeBSD, Linux, NetBSD or OSX)"
+    echo "    --os <os>                         OS to run (FreeBSD, Linux, NetBSD, OSX, SunOS)"
     echo "                                      default: detect current OS"
     echo "    --arch <Architecture>             Architecture to run (x64, arm, armel, x86, arm64)"
     echo "                                      default: detect current architecture"
@@ -37,7 +37,7 @@ usage()
     echo "Runtime Code Coverage options:"
     echo "    --coreclr-coverage                Optional argument to get coreclr code coverage reports"
     echo "    --coreclr-objs <location>         Location of root of the object directory"
-    echo "                                      containing the FreeBSD, Linux, NetBSD or OSX coreclr build"
+    echo "                                      containing the FreeBSD, Linux, NetBSD, OSX or SunOS coreclr build"
     echo "                                      default: <repo_root>/bin/obj/<OS>.x64.<Configuration"
     echo "    --coreclr-src <location>          Location of root of the directory"
     echo "                                      containing the coreclr source files"
@@ -79,6 +79,10 @@ case $OSName in
 
     NetBSD)
         OS=NetBSD
+        ;;
+
+    SunOS)
+        OS=SunOS
         ;;
 
     *)
@@ -342,7 +346,7 @@ run_test()
 
 coreclr_code_coverage()
 {
-    if [ ! "$OS" == "FreeBSD" ] && [ ! "$OS" == "Linux" ] && [ ! "$OS" == "NetBSD" ] && [ ! "$OS" == "OSX" ] ; then
+    if [ "$OS" != "FreeBSD" ] && [ "$OS" != "Linux" ] && [ "$OS" != "NetBSD" ] && [ "$OS" != "OSX" ]  && [ "$OS" != "SunOS" ] ; then
         echo "error: Code Coverage not supported on $OS"
         exit 1
     fi
@@ -501,9 +505,9 @@ then
     exit 1
 fi
 
-if [ ! "$OS" == "FreeBSD" ] && [ ! "$OS" == "Linux" ] && [ ! "$OS" == "NetBSD" ] && [ ! "$OS" == "OSX" ]
+if [ "$OS" != "FreeBSD" ] && [ "$OS" != "Linux" ] && [ "$OS" != "NetBSD" ] && [ "$OS" != "OSX" ] && [ "$OS" != "SunOS" ]
 then
-    echo "error: OS should be FreeBSD, Linux, NetBSD or OSX"
+    echo "error: OS should be FreeBSD, Linux, NetBSD, OSX or SunOS"
     exit 1
 fi
 

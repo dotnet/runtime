@@ -9,7 +9,7 @@
   <ItemGroup>
     <Compile Include="System.ServiceProcess.ServiceController.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsNetFx)' == 'true'">
+  <ItemGroup Condition="$(TargetFramework.StartsWith('net4'))">
     <Reference Include="mscorlib" />
     <Reference Include="System" />
     <Reference Include="System.ServiceProcess" />

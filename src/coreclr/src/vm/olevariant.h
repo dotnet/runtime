@@ -18,7 +18,6 @@
 // the COM interop marshaler.
 #define VTHACK_INSPECTABLE     247
 #define VTHACK_HSTRING         248
-#define VTHACK_REDIRECTEDTYPE  249
 #define VTHACK_CBOOL           250
 #define VTHACK_NONBLITTABLERECORD 251
 #define VTHACK_BLITTABLERECORD 252

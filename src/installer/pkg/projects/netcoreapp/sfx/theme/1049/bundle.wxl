@@ -59,7 +59,7 @@
   <String Id="FilesInUseOkButton">О&amp;К</String>
   <String Id="FilesInUseCancelButton">&amp;Отмена</String>
   <String Id="WelcomeHeaderMessage">Среда выполнения .NET</String>
-  <String Id="WelcomeDescription">.NET — это платформа разработки, которую можно использовать для создания приложений командной строки, микрослужб и современных веб-сайтов. Это кроссплатформенная система с открытым исходным кодом, которая поддерживается корпорацией Майкрософт. Надеемся, что она вам понравится!</String>
+  <String Id="WelcomeDescription">Среда выполнения .NET используется для запуска приложений .NET на компьютерах с Windows. Среда .NET является открытой, кроссплатформенной и поддерживается Майкрософт. Надеемся, вам понравится!</String>
   <String Id="LearnMoreTitle">Дополнительные сведения о .NET</String>
   <String Id="SuccessInstallLocation">Следующее было установлено в [DOTNETHOME]</String>
   <String Id="SuccessInstallProductName"> - [BUNDLEMONIKER] </String>
@@ -69,6 +69,6 @@
   <String Id="TutorialLink">&lt;A HREF="https://aka.ms/dotnet-tutorials"&gt;Руководства&lt;/A&gt;</String>
   <String Id="TelemetryLink">&lt;A HREF="https://aka.ms/dotnet-cli-telemetry"&gt;Телеметрия .NET&lt;/A&gt;</String>
   <String Id="PrivacyStatementLink">&lt;A HREF="https://aka.ms/dev-privacy"&gt;Заявление о конфиденциальности&lt;/A&gt;</String>
-  <String Id="EulaLink">&lt;A HREF="https://go.microsoft.com/fwlink/?LinkId=329770"&gt;Лицензионное соглашение для библиотеки .NET&lt;/A&gt;</String>
-  
+  <String Id="EulaLink">&lt;A HREF="https://aka.ms/dotnet-license-windows"&gt;Сведения о лицензировании .NET&lt;/A&gt;</String>
+  <String Id="LicenseAssent">Нажимая кнопку "Установить", вы принимаете следующие условия.</String>
 </WixLocalization>

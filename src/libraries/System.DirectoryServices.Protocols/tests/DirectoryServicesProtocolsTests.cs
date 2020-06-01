@@ -2,17 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Runtime.InteropServices;
-using System.Collections.Generic;
-using System.Collections;
+using System.DirectoryServices.Tests;
 using System.Globalization;
 using System.Net;
 using Xunit;
-using System.Threading;
-using System.DirectoryServices.Tests;
-using System.DirectoryServices.Protocols;
 
-namespace System.DirectoryServicesProtocols.Tests
+namespace System.DirectoryServices.Protocols.Tests
 {
     public partial class DirectoryServicesProtocolsTests
     {

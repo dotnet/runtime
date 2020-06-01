@@ -493,7 +493,8 @@ namespace System.Net.Http.Functional.Tests
         {
             if (LoopbackServerFactory.Version >= HttpVersion20.Value)
             {
-                throw new SkipTestException("Host header is not supported on HTTP/2 and later.");
+                // Host header is not supported on HTTP/2 and later.
+                return;
             }
 
             var options = new LoopbackServer.Options { Address = address, UseSsl= useSsl };
@@ -930,7 +931,8 @@ namespace System.Net.Http.Functional.Tests
         {
             if (LoopbackServerFactory.Version >= HttpVersion20.Value)
             {
-                throw new SkipTestException("Folding is not supported on HTTP/2 and later.");
+                // Folding is not supported on HTTP/2 and later.
+                return;
             }
 
             // Using examples from https://en.wikipedia.org/wiki/List_of_HTTP_header_fields#Response_fields
@@ -1062,8 +1064,10 @@ namespace System.Net.Http.Functional.Tests
         {
             if (LoopbackServerFactory.Version >= HttpVersion20.Value)
             {
-                throw new SkipTestException("Chunking is not supported on HTTP/2 and later.");
+                // Chunking is not supported on HTTP/2 and later.
+                return;
             }
+
             await LoopbackServer.CreateServerAsync(async (server, url) =>
             {
                 using (HttpClient client = CreateHttpClient())
@@ -1292,7 +1296,8 @@ namespace System.Net.Http.Functional.Tests
 #endif
             if (LoopbackServerFactory.Version >= HttpVersion20.Value && chunked == true)
             {
-                throw new SkipTestException("Chunking is not supported on HTTP/2 and later.");
+                // Chunking is not supported on HTTP/2 and later.
+                return;
             }
 
             await LoopbackServerFactory.CreateClientAndServerAsync(async uri =>
@@ -2166,7 +2171,8 @@ namespace System.Net.Http.Functional.Tests
 
             if (LoopbackServerFactory.Version >= HttpVersion20.Value)
             {
-                throw new SkipTestException("Upgrade is not supported on HTTP/2 and later");
+                // Upgrade is not supported on HTTP/2 and later
+                return;
             }
 
             var clientFinished = new TaskCompletionSource<bool>();

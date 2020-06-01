@@ -120,20 +120,8 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
             for (uint pos = 0; pos < nStackSlots; pos++)
             {
-                int ofs;
-
-                if (_target.Architecture == TargetArchitecture.X86)
-                {
-                    ofs = (int)(pos < _transitionBlock.NumArgumentRegisters ?
-                        _transitionBlock.OffsetOfArgumentRegisters + _transitionBlock.SizeOfArgumentRegisters - (pos + 1) * _target.PointerSize :
-                        _transitionBlock.OffsetOfArgs + (pos - _transitionBlock.NumArgumentRegisters) * _target.PointerSize);
-                }
-                else
-                {
-                    ofs = (int)(_transitionBlock.OffsetOfFirstGCRefMapSlot + pos * _target.PointerSize);
-                }
-
-                CORCOMPILE_GCREFMAP_TOKENS token = fakeStack[ofs];
+                int offset = _transitionBlock.OffsetFromGCRefMapPos(checked((int)pos));
+                CORCOMPILE_GCREFMAP_TOKENS token = fakeStack[offset];
 
                 if (token != CORCOMPILE_GCREFMAP_TOKENS.GCREFMAP_SKIP)
                 {

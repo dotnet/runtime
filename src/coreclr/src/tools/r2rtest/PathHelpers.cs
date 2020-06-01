@@ -288,4 +288,6 @@ static class PathExtensions
             return false;
         }
     }
+
+    public static StringComparer OSPathCaseComparer => RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal;
 }

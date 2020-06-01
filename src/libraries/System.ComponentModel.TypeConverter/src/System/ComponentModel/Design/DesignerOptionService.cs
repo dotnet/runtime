@@ -14,7 +14,6 @@ namespace System.ComponentModel.Design
     public abstract class DesignerOptionService : IDesignerOptionService
     {
         private DesignerOptionCollection _options;
-        private static readonly char[] s_slash = { '\\' };
 
         /// <summary>
         /// Returns the options collection for this service. There is
@@ -48,7 +47,7 @@ namespace System.ComponentModel.Design
 
             if (name.Length == 0)
             {
-                throw new ArgumentException(SR.Format(SR.InvalidArgumentValue, name.Length.ToString(), "0"), "name.Length");
+                throw new ArgumentException(SR.Format(SR.InvalidArgumentValue, "name.Length"), nameof(name));
             }
 
             return new DesignerOptionCollection(this, parent, name, value);
@@ -70,7 +69,7 @@ namespace System.ComponentModel.Design
                 throw new ArgumentNullException(nameof(valueName));
             }
 
-            string[] optionNames = pageName.Split(s_slash);
+            string[] optionNames = pageName.Split('\\');
 
             DesignerOptionCollection options = Options;
             foreach (string optionName in optionNames)

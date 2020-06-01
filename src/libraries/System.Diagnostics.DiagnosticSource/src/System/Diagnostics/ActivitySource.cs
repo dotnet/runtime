@@ -9,11 +9,9 @@ namespace System.Diagnostics
 {
     public sealed class ActivitySource : IDisposable
     {
-        private static SynchronizedList<ActivitySource> s_activeSources = new SynchronizedList<ActivitySource>();
-        private static SynchronizedList<ActivityListener> s_allListeners = new SynchronizedList<ActivityListener>();
+        private static readonly SynchronizedList<ActivitySource> s_activeSources = new SynchronizedList<ActivitySource>();
+        private static readonly SynchronizedList<ActivityListener> s_allListeners = new SynchronizedList<ActivityListener>();
         private SynchronizedList<ActivityListener>? _listeners;
-
-        private ActivitySource() { throw new InvalidOperationException(); }
 
         /// <summary>
         /// Construct an ActivitySource object with the input name
@@ -112,7 +110,7 @@ namespace System.Diagnostics
 
             Activity? activity = null;
 
-            ActivityDataRequest dateRequest = ActivityDataRequest.None;
+            ActivityDataRequest dataRequest = ActivityDataRequest.None;
 
             if (parentId != null)
             {
@@ -122,13 +120,13 @@ namespace System.Diagnostics
                     {
                         ActivityCreationOptions<string> aco = new ActivityCreationOptions<string>(this, name, parentId, kind, tags, links);
                         ActivityDataRequest dr = getRequestedDataUsingParentId(ref aco);
-                        if (dr > dateRequest)
+                        if (dr > dataRequest)
                         {
-                            dateRequest = dr;
+                            dataRequest = dr;
                         }
 
                         // Stop the enumeration if we get the max value RecordingAndSampling.
-                        return dateRequest != ActivityDataRequest.AllDataAndRecorded;
+                        return dataRequest != ActivityDataRequest.AllDataAndRecorded;
                     }
                     return true;
                 });
@@ -141,21 +139,21 @@ namespace System.Diagnostics
                     {
                         ActivityCreationOptions<ActivityContext> aco = new ActivityCreationOptions<ActivityContext>(this, name, context, kind, tags, links);
                         ActivityDataRequest dr = getRequestedDataUsingContext(ref aco);
-                        if (dr > dateRequest)
+                        if (dr > dataRequest)
                         {
-                            dateRequest = dr;
+                            dataRequest = dr;
                         }
 
                         // Stop the enumeration if we get the max value RecordingAndSampling.
-                        return dateRequest != ActivityDataRequest.AllDataAndRecorded;
+                        return dataRequest != ActivityDataRequest.AllDataAndRecorded;
                     }
                     return true;
                 });
             }
 
-            if (dateRequest != ActivityDataRequest.None)
+            if (dataRequest != ActivityDataRequest.None)
             {
-                activity = Activity.CreateAndStart(this, name, kind, parentId, context, tags, links, startTime, dateRequest);
+                activity = Activity.CreateAndStart(this, name, kind, parentId, context, tags, links, startTime, dataRequest);
                 listeners.EnumWithAction(listener => {
                     var activityStarted = listener.ActivityStarted;
                     if (activityStarted != null)
@@ -240,9 +238,7 @@ namespace System.Diagnostics
             SynchronizedList<ActivityListener>? listeners = _listeners;
             if (listeners != null &&  listeners.Count > 0)
             {
-                listeners.EnumWithAction(listener => {
-                    listeners.EnumWithAction(listener => listener.ActivityStopped?.Invoke(activity));
-                });
+                listeners.EnumWithAction(listener => listener.ActivityStopped?.Invoke(activity));
             }
         }
     }
@@ -250,10 +246,10 @@ namespace System.Diagnostics
     // SynchronizedList<T> is a helper collection which ensure thread safety on the collection
     // and allow enumerating the collection items and execute some action on the enumerated item and can detect any change in the collection
     // during the enumeration which force restarting the enumeration again.
-    // Causion: We can have the action executed on the same item more than once which is ok in our scenarios.
+    // Caution: We can have the action executed on the same item more than once which is ok in our scenarios.
     internal class SynchronizedList<T>
     {
-        private List<T> _list;
+        private readonly List<T> _list;
         private uint _version;
 
         public SynchronizedList() => _list = new List<T>();

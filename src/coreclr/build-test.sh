@@ -180,8 +180,8 @@ precompile_coreroot_fx()
 
     local totalPrecompiled=0
     local failedToPrecompile=0
-    local compositeCommandLine="$overlayDir/corerun"
-    compositeCommandLine+=" ${__BinDir}/crossgen2/crossgen2.dll"
+    local compositeCommandLine="${__DotNetCli}"
+    compositeCommandLine+=" $__BinDir/crossgen2/crossgen2.dll"
     compositeCommandLine+=" --composite"
     compositeCommandLine+=" -O"
     compositeCommandLine+=" --out:$outputDir/framework-r2r.dll"
@@ -206,7 +206,7 @@ precompile_coreroot_fx()
         fi
 
         if [[ "$__DoCrossgen2" != 0 ]]; then
-            commandLine="$overlayDir/corerun $overlayDir/crossgen2/crossgen2.dll $crossgen2References -O --inputbubble --out $outputDir/$(basename $filename) $filename"
+            commandLine="${__DotNetCli} $overlayDir/crossgen2/crossgen2.dll $crossgen2References -O --inputbubble --out $outputDir/$(basename $filename) $filename"
         fi
 
         echo Precompiling "$filename"

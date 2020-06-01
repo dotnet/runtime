@@ -47,7 +47,7 @@ namespace System.Text.Json.Serialization.Converters
 
                 if (key == null)
                 {
-                    ThrowHelper.ThrowInvalidOperationException_SerializerDictionaryKeyNull(options.DictionaryKeyPolicy.GetType());
+                    ThrowHelper.ThrowInvalidOperationException_NamingPolicyReturnNull(options.DictionaryKeyPolicy);
                 }
             }
 
@@ -104,7 +104,7 @@ namespace System.Text.Json.Serialization.Converters
                         // Read the value and add.
                         reader.ReadWithVerify();
                         TValue element = elementConverter.Read(ref reader, typeof(TValue), options);
-                        Add(element, options, ref state);
+                        Add(element!, options, ref state);
                     }
                 }
                 else
@@ -129,7 +129,7 @@ namespace System.Text.Json.Serialization.Converters
 
                         // Get the value from the converter and add it.
                         elementConverter.TryRead(ref reader, typeof(TValue), options, ref state, out TValue element);
-                        Add(element, options, ref state);
+                        Add(element!, options, ref state);
                     }
                 }
             }
@@ -247,7 +247,7 @@ namespace System.Text.Json.Serialization.Converters
                             return false;
                         }
 
-                        Add(element, options, ref state);
+                        Add(element!, options, ref state);
                         state.Current.EndElement();
                     }
                 }

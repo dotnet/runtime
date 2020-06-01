@@ -6,6 +6,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Reflection;
 using System.Runtime.InteropServices;
 
@@ -48,7 +49,7 @@ namespace Internal.Runtime.InteropServices
         /// <param name="reserved">Extensibility parameter (currently unused)</param>
         /// <param name="functionHandle">Pointer where to store the function pointer result</param>
         [UnmanagedCallersOnly]
-        public static int LoadAssemblyAndGetFunctionPointer(IntPtr assemblyPathNative,
+        public static unsafe int LoadAssemblyAndGetFunctionPointer(IntPtr assemblyPathNative,
                                                             IntPtr typeNameNative,
                                                             IntPtr methodNameNative,
                                                             IntPtr delegateTypeNative,
@@ -57,18 +58,36 @@ namespace Internal.Runtime.InteropServices
         {
             try
             {
+                // Load the assembly and create a resolver callback for types.
                 string assemblyPath = MarshalToString(assemblyPathNative, nameof(assemblyPathNative));
+                IsolatedComponentLoadContext alc = GetIsolatedComponentLoadContext(assemblyPath);
+                Func<AssemblyName, Assembly> resolver = name => alc.LoadFromAssemblyName(name);
+
+                // Get the requested type.
                 string typeName = MarshalToString(typeNameNative, nameof(typeNameNative));
+                Type type = Type.GetType(typeName, resolver, null, throwOnError: true)!;
+
+                // Get the method name on the type.
                 string methodName = MarshalToString(methodNameNative, nameof(methodNameNative));
 
-                string delegateType;
+                // Determine the signature of the type. There are 3 possibilities:
+                //  * No delegate type was supplied - use the default (i.e. ComponentEntryPoint).
+                //  * A sentinel value was supplied - the function is marked UnmanagedCallersOnly. This means
+                //      a function pointer can be returned without creating a delegate.
+                //  * A delegate type was supplied - Load the type and create a delegate for that method.
+                Type? delegateType;
                 if (delegateTypeNative == IntPtr.Zero)
                 {
-                    delegateType = typeof(ComponentEntryPoint).AssemblyQualifiedName!;
+                    delegateType = typeof(ComponentEntryPoint);
+                }
+                else if (delegateTypeNative == (IntPtr)(-1))
+                {
+                    delegateType = null;
                 }
                 else
                 {
-                    delegateType = MarshalToString(delegateTypeNative, nameof(delegateTypeNative));
+                    string delegateTypeName = MarshalToString(delegateTypeNative, nameof(delegateTypeNative));
+                    delegateType = Type.GetType(delegateTypeName, resolver, null, throwOnError: true)!;
                 }
 
                 if (reserved != IntPtr.Zero)
@@ -81,17 +100,35 @@ namespace Internal.Runtime.InteropServices
                     throw new ArgumentNullException(nameof(functionHandle));
                 }
 
-                Delegate d = CreateDelegate(assemblyPath, typeName, methodName, delegateType);
-
-                IntPtr functionPtr = Marshal.GetFunctionPointerForDelegate(d);
-
-                lock (s_delegates)
+                IntPtr functionPtr;
+                if (delegateType == null)
                 {
-                    // Keep a reference to the delegate to prevent it from being garbage collected
-                    s_delegates[functionPtr] = d;
+                    // Match search semantics of the CreateDelegate() function below.
+                    BindingFlags bindingFlags = BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic;
+                    MethodInfo? methodInfo = type.GetMethod(methodName, bindingFlags);
+                    if (methodInfo == null)
+                        throw new MissingMethodException(typeName, methodName);
+
+                    // Verify the function is properly marked.
+                    if (null == methodInfo.GetCustomAttribute<UnmanagedCallersOnlyAttribute>())
+                        throw new InvalidOperationException(SR.InvalidOperation_FunctionMissingUnmanagedCallersOnly);
+
+                    functionPtr = methodInfo.MethodHandle.GetFunctionPointer();
+                }
+                else
+                {
+                    Delegate d = Delegate.CreateDelegate(delegateType, type, methodName)!;
+
+                    functionPtr = Marshal.GetFunctionPointerForDelegate(d);
+
+                    lock (s_delegates)
+                    {
+                        // Keep a reference to the delegate to prevent it from being garbage collected
+                        s_delegates[functionPtr] = d;
+                    }
                 }
 
-                Marshal.WriteIntPtr(functionHandle, functionPtr);
+                *(IntPtr*)functionHandle = functionPtr;
             }
             catch (Exception e)
             {
@@ -99,23 +136,6 @@ namespace Internal.Runtime.InteropServices
             }
 
             return 0;
-        }
-
-        private static Delegate CreateDelegate(string assemblyPath, string typeName, string methodName, string delegateTypeName)
-        {
-            // Throws
-            IsolatedComponentLoadContext alc = GetIsolatedComponentLoadContext(assemblyPath);
-
-            Func<AssemblyName, Assembly> resolver = name => alc.LoadFromAssemblyName(name);
-
-            // Throws
-            Type type = Type.GetType(typeName, resolver, null, throwOnError: true)!;
-
-            // Throws
-            Type delegateType = Type.GetType(delegateTypeName, resolver, null, throwOnError: true)!;
-
-            // Throws
-            return Delegate.CreateDelegate(delegateType, type, methodName)!;
         }
 
         private static IsolatedComponentLoadContext GetIsolatedComponentLoadContext(string assemblyPath)

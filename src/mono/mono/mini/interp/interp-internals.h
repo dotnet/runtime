@@ -151,6 +151,7 @@ struct InterpMethod {
 	gpointer jit_wrapper;
 	gpointer jit_addr;
 	MonoMethodSignature *jit_sig;
+	gint32 jit_vt_res_size;
 	gpointer jit_entry;
 	gpointer llvmonly_unbox_entry;
 	MonoType *rtype;
@@ -181,7 +182,11 @@ typedef struct _StackFragment StackFragment;
 struct _StackFragment {
 	guint8 *pos, *end;
 	struct _StackFragment *next;
-	double data [1];
+#if SIZEOF_VOID_P == 4
+	/* Align data field to MINT_VT_ALIGNMENT */
+	gint32 pad;
+#endif
+	double data [MONO_ZERO_LEN_ARRAY];
 };
 
 typedef struct {
@@ -200,8 +205,6 @@ typedef struct {
 	unsigned char *vt_sp;
 	const unsigned short  *ip;
 	GSList *finally_ips;
-	FrameClauseArgs *clause_args;
-	gboolean is_void : 1;
 } InterpState;
 
 struct InterpFrame {

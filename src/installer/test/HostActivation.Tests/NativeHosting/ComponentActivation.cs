@@ -57,9 +57,11 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
         }
 
         [Theory]
-        [InlineData(1)]
-        [InlineData(10)]
-        public void CallDelegate_MultipleEntryPoints(int callCount)
+        [InlineData(1, false)]
+        [InlineData(1, true)]
+        [InlineData(10, false)]
+        [InlineData(10, true)]
+        public void CallDelegate_MultipleEntryPoints(int callCount, bool callUnmanaged)
         {
             var componentProject = sharedState.ComponentWithNoDependenciesFixture.TestProject;
             string[] baseArgs =
@@ -68,12 +70,14 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
                 sharedState.HostFxrPath,
                 componentProject.RuntimeConfigJson,
             };
+
+            string comp1Name = callUnmanaged ? sharedState.UnmanagedComponentEntryPoint1 : sharedState.ComponentEntryPoint1;
             string[] componentInfo =
             {
-                // ComponentEntryPoint1
+                // [Unmanaged]ComponentEntryPoint1
                 componentProject.AppDll,
                 sharedState.ComponentTypeName,
-                sharedState.ComponentEntryPoint1,
+                comp1Name,
                 // ComponentEntryPoint2
                 componentProject.AppDll,
                 sharedState.ComponentTypeName,
@@ -95,7 +99,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
             for (int i = 1; i <= callCount; ++i)
             {
                 result.Should()
-                    .ExecuteComponentEntryPoint(sharedState.ComponentEntryPoint1, i * 2 - 1, i)
+                    .ExecuteComponentEntryPoint(comp1Name, i * 2 - 1, i)
                     .And.ExecuteComponentEntryPoint(sharedState.ComponentEntryPoint2, i * 2, i);
             }
         }
@@ -175,6 +179,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
             public string ComponentTypeName { get; }
             public string ComponentEntryPoint1 => "ComponentEntryPoint1";
             public string ComponentEntryPoint2 => "ComponentEntryPoint2";
+            public string UnmanagedComponentEntryPoint1 => "UnmanagedComponentEntryPoint1";
 
             public SharedTestState()
             {

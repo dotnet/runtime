@@ -11,6 +11,7 @@
   <ItemGroup>
     <Compile Include="System\AdminHelpers.cs" />
     <Compile Include="System\AssertExtensions.cs" />
+    <Compile Include="System\IO\StreamExtensions.cs" />
     <Compile Include="System\RetryHelper.cs" />
     <Compile Include="System\Buffers\BoundedMemory.cs" />
     <Compile Include="System\Buffers\BoundedMemory.Creation.cs" />
@@ -62,6 +63,5 @@
     <PackageReference Include="Microsoft.DotNet.XUnitExtensions" Version="$(MicrosoftDotNetXUnitExtensionsVersion)" />
     <PackageReference Include="xunit.core" Version="$(XUnitVersion)" ExcludeAssets="build" />
     <PackageReference Include="xunit.assert" Version="$(XUnitVersion)" />
-    <PackageReference Include="Microsoft.DotNet.PlatformAbstractions" Version="$(MicrosoftDotNetPlatformAbstractionsVersion)" />
   </ItemGroup>
 </Project>

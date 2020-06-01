@@ -45,7 +45,7 @@
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.WideCharToMultiByte.cs"
              Link="Common\Interop\Windows\Kernel32\Interop.WideCharToMultiByte.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsNetStandard)' == 'true' and '$(TargetsWindows)' != 'true' ">
+  <ItemGroup Condition="$(TargetFramework.StartsWith('netstandard')) and '$(TargetsWindows)' != 'true' ">
     <Compile Include="System\Text\CodePagesEncodingProvider.Default.cs" />
   </ItemGroup>
   <ItemGroup>

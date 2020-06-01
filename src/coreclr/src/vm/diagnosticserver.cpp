@@ -224,7 +224,7 @@ bool DiagnosticServer::Shutdown()
                     szMessage);                                           // data2
             };
 
-            IpcStreamFactory::CloseConnections();
+            IpcStreamFactory::Shutdown(ErrorCallback);
         }
         fSuccess = true;
     }

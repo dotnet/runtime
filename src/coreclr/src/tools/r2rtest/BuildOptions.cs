@@ -30,6 +30,7 @@ namespace R2RTest
         public bool Release { get; set; }
         public bool LargeBubble { get; set; }
         public bool Composite { get; set; }
+        public bool PartialComposite { get; set; }
         public int Crossgen2Parallelism { get; set; }
         public int CompilationTimeoutMinutes { get; set; }
         public int ExecutionTimeoutMinutes { get; set; }
@@ -39,6 +40,7 @@ namespace R2RTest
         public FileInfo CrossgenResponseFile { get; set; }
         public DirectoryInfo[] RewriteOldPath { get; set; }
         public DirectoryInfo[] RewriteNewPath { get; set; }
+        public DirectoryInfo AspNetPath { get; set; }
         public bool MeasurePerf { get; set; }
         public string InputFileSearchString { get; set; }
         public string ConfigurationSuffix => (Release ? "-ret.out" : "-chk.out");

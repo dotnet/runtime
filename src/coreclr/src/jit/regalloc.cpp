@@ -175,6 +175,7 @@ regNumber Compiler::raUpdateRegStateForArg(RegState* regState, LclVarDsc* argDsc
         }
         else
         {
+            assert(!regState->rsIsFloat);
             unsigned cSlots = argDsc->lvSize() / TARGET_POINTER_SIZE;
             for (unsigned i = 1; i < cSlots; i++)
             {
@@ -183,7 +184,6 @@ regNumber Compiler::raUpdateRegStateForArg(RegState* regState, LclVarDsc* argDsc
                 {
                     break;
                 }
-                assert(regState->rsIsFloat == false);
                 regState->rsCalleeRegArgMaskLiveIn |= genRegMask(nextArgReg);
             }
         }

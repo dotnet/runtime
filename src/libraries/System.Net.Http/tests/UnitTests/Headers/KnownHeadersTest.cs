@@ -48,6 +48,9 @@ namespace System.Net.Http.Tests
         [InlineData("Expect-CT")]
         [InlineData("Expires")]
         [InlineData("From")]
+        [InlineData("grpc-encoding")]
+        [InlineData("grpc-message")]
+        [InlineData("grpc-status")]
         [InlineData("Host")]
         [InlineData("If-Match")]
         [InlineData("If-Modified-Since")]
@@ -134,6 +137,114 @@ namespace System.Net.Http.Tests
                 Assert.Null(KnownHeaders.TryGetKnownHeader(casedName));
                 Assert.Null(KnownHeaders.TryGetKnownHeader(casedName.Select(c => (byte)c).ToArray()));
             }
+        }
+
+        [Theory]
+        [InlineData("Access-Control-Allow-Credentials", "true")]
+        [InlineData("Access-Control-Allow-Headers", "*")]
+        [InlineData("Access-Control-Allow-Methods", "*")]
+        [InlineData("Access-Control-Allow-Origin", "*")]
+        [InlineData("Access-Control-Allow-Origin", "null")]
+        [InlineData("Access-Control-Expose-Headers", "*")]
+        [InlineData("Cache-Control", "must-revalidate")]
+        [InlineData("Cache-Control", "no-cache")]
+        [InlineData("Cache-Control", "no-store")]
+        [InlineData("Cache-Control", "no-transform")]
+        [InlineData("Cache-Control", "private")]
+        [InlineData("Cache-Control", "proxy-revalidate")]
+        [InlineData("Cache-Control", "public")]
+        [InlineData("Connection", "close")]
+        [InlineData("Content-Disposition", "attachment")]
+        [InlineData("Content-Disposition", "inline")]
+        [InlineData("Content-Encoding", "gzip")]
+        [InlineData("Content-Encoding", "deflate")]
+        [InlineData("Content-Encoding", "br")]
+        [InlineData("Content-Encoding", "compress")]
+        [InlineData("Content-Encoding", "identity")]
+        [InlineData("Content-Type", "text/xml")]
+        [InlineData("Content-Type", "text/css")]
+        [InlineData("Content-Type", "text/csv")]
+        [InlineData("Content-Type", "image/gif")]
+        [InlineData("Content-Type", "image/png")]
+        [InlineData("Content-Type", "text/html")]
+        [InlineData("Content-Type", "text/plain")]
+        [InlineData("Content-Type", "image/jpeg")]
+        [InlineData("Content-Type", "application/pdf")]
+        [InlineData("Content-Type", "application/xml")]
+        [InlineData("Content-Type", "application/zip")]
+        [InlineData("Content-Type", "application/grpc")]
+        [InlineData("Content-Type", "application/json")]
+        [InlineData("Content-Type", "multipart/form-data")]
+        [InlineData("Content-Type", "application/javascript")]
+        [InlineData("Content-Type", "application/octet-stream")]
+        [InlineData("Content-Type", "text/html; charset=utf-8")]
+        [InlineData("Content-Type", "text/plain; charset=utf-8")]
+        [InlineData("Content-Type", "application/json; charset=utf-8")]
+        [InlineData("Content-Type", "application/x-www-form-urlencoded")]
+        [InlineData("Expect", "100-continue")]
+        [InlineData("grpc-encoding", "identity")]
+        [InlineData("grpc-encoding", "gzip")]
+        [InlineData("grpc-encoding", "deflate")]
+        [InlineData("grpc-status", "0")]
+        [InlineData("Pragma", "no-cache")]
+        [InlineData("Referrer-Policy", "strict-origin-when-cross-origin")]
+        [InlineData("Referrer-Policy", "origin-when-cross-origin")]
+        [InlineData("Referrer-Policy", "strict-origin")]
+        [InlineData("Referrer-Policy", "origin")]
+        [InlineData("Referrer-Policy", "same-origin")]
+        [InlineData("Referrer-Policy", "no-referrer-when-downgrade")]
+        [InlineData("Referrer-Policy", "no-referrer")]
+        [InlineData("Referrer-Policy", "unsafe-url")]
+        [InlineData("TE", "trailers")]
+        [InlineData("TE", "compress")]
+        [InlineData("TE", "deflate")]
+        [InlineData("TE", "gzip")]
+        [InlineData("Transfer-Encoding", "chunked")]
+        [InlineData("Transfer-Encoding", "compress")]
+        [InlineData("Transfer-Encoding", "deflate")]
+        [InlineData("Transfer-Encoding", "gzip")]
+        [InlineData("Transfer-Encoding", "identity")]
+        [InlineData("Upgrade-Insecure-Requests", "1")]
+        [InlineData("Vary", "*")]
+        [InlineData("X-Content-Type-Options", "nosniff")]
+        [InlineData("X-Frame-Options", "DENY")]
+        [InlineData("X-Frame-Options", "SAMEORIGIN")]
+        [InlineData("X-XSS-Protection", "0")]
+        [InlineData("X-XSS-Protection", "1")]
+        [InlineData("X-XSS-Protection", "1; mode=block")]
+        public void GetKnownHeaderValue_Known_Found(string name, string value)
+        {
+            foreach (string casedValue in new[] { value, value.ToUpperInvariant(), value.ToLowerInvariant() })
+            {
+                Validate(KnownHeaders.TryGetKnownHeader(name), casedValue);
+            }
+
+            static void Validate(KnownHeader knownHeader, string value)
+            {
+                Assert.NotNull(knownHeader);
+
+                string v1 = knownHeader.Descriptor.GetHeaderValue(value.Select(c => (byte)c).ToArray());
+                Assert.NotNull(v1);
+                Assert.Equal(value, v1, StringComparer.OrdinalIgnoreCase);
+
+                string v2 = knownHeader.Descriptor.GetHeaderValue(value.Select(c => (byte)c).ToArray());
+                Assert.Same(v1, v2);
+            }
+        }
+
+        [Theory]
+        [InlineData("Content-Type", "application/jsot")]
+        [InlineData("Content-Type", "application/jsons")]
+        public void GetKnownHeaderValue_Unknown_NotFound(string name, string value)
+        {
+            KnownHeader knownHeader = KnownHeaders.TryGetKnownHeader(name);
+            Assert.NotNull(knownHeader);
+
+            string v1 = knownHeader.Descriptor.GetHeaderValue(value.Select(c => (byte)c).ToArray());
+            string v2 = knownHeader.Descriptor.GetHeaderValue(value.Select(c => (byte)c).ToArray());
+            Assert.Equal(value, v1);
+            Assert.Equal(value, v2);
+            Assert.NotSame(v1, v2);
         }
     }
 }

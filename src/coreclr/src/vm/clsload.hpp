@@ -494,7 +494,6 @@ class ClassLoader
     friend class Assembly;
     friend class Module;
     friend class InstantiatedMethodDesc;
-    friend class CLRPrivTypeCacheWinRT;
 
     // the following two classes are friends because they will call LoadTypeHandleForTypeKey by token directly
     friend class COMDynamicWrite;
@@ -760,9 +759,7 @@ private:
 
     VOID AddAvailableClassHaveLock(Module *          pModule,
                                    mdTypeDef         classdef,
-                                   AllocMemTracker * pamTracker,
-                                   LPCSTR            szWinRtNamespacePrefix,
-                                   DWORD             cchWinRtNamespacePrefix);
+                                   AllocMemTracker * pamTracker);
 
     VOID AddExportedTypeDontHaveLock(Module *pManifestModule,
                                      mdExportedType cl,

@@ -1323,7 +1323,6 @@ private:
 #ifdef FEATURE_COMINTEROP
         bool fIsMngStandardItf;                 // Set to true if the interface is a manages standard interface.
         bool fComEventItfType;                  // Set to true if the class is a special COM event interface.
-        bool fIsRedirectedInterface;            // Set to true if the class is an interface redirected for WinRT
         bool fNeedsRCWPerTypeData;              // Set to true if the class needs optional RCW data attached to the MethodTable
 #endif // FEATURE_COMINTEROP
 #ifdef FEATURE_TYPEEQUIVALENCE

@@ -47,31 +47,24 @@ namespace System.Net.Security
 
         protected override void Dispose(bool disposing)
         {
-#if DEBUG
-            using (DebugThreadTracking.SetThreadKind(ThreadKinds.User))
+            try
             {
-#endif
-                try
+                if (disposing)
                 {
-                    if (disposing)
+                    if (_leaveStreamOpen)
                     {
-                        if (_leaveStreamOpen)
-                        {
-                            _innerStream.Flush();
-                        }
-                        else
-                        {
-                            _innerStream.Dispose();
-                        }
+                        _innerStream.Flush();
+                    }
+                    else
+                    {
+                        _innerStream.Dispose();
                     }
                 }
-                finally
-                {
-                    base.Dispose(disposing);
-                }
-#if DEBUG
             }
-#endif
+            finally
+            {
+                base.Dispose(disposing);
+            }
         }
 
         public override ValueTask DisposeAsync()

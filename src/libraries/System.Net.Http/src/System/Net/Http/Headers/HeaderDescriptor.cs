@@ -138,7 +138,15 @@ namespace System.Net.Http.Headers
                     }
                 }
 
-                if (_knownHeader == KnownHeaders.Location)
+                if (_knownHeader == KnownHeaders.ContentType)
+                {
+                    string? contentType = GetKnownContentType(headerValue);
+                    if (contentType != null)
+                    {
+                        return contentType;
+                    }
+                }
+                else if (_knownHeader == KnownHeaders.Location)
                 {
                     // Normally Location should be in ISO-8859-1 but occasionally some servers respond with UTF-8.
                     if (TryDecodeUtf8(headerValue, out string? decoded))
@@ -149,6 +157,90 @@ namespace System.Net.Http.Headers
             }
 
             return HttpRuleParser.DefaultHttpEncoding.GetString(headerValue);
+        }
+
+        internal static string? GetKnownContentType(ReadOnlySpan<byte> contentTypeValue)
+        {
+            string? candidate = null;
+            switch (contentTypeValue.Length)
+            {
+                case 8:
+                    switch (contentTypeValue[7] | 0x20)
+                    {
+                        case 'l': candidate = "text/xml"; break; // text/xm[l]
+                        case 's': candidate = "text/css"; break; // text/cs[s]
+                        case 'v': candidate = "text/csv"; break; // text/cs[v]
+                    }
+                    break;
+
+                case 9:
+                    switch (contentTypeValue[6] | 0x20)
+                    {
+                        case 'g': candidate = "image/gif"; break; // image/[g]if
+                        case 'p': candidate = "image/png"; break; // image/[p]ng
+                        case 't': candidate = "text/html"; break; // text/h[t]ml
+                    }
+                    break;
+
+                case 10:
+                    switch (contentTypeValue[0] | 0x20)
+                    {
+                        case 't': candidate = "text/plain"; break; // [t]ext/plain
+                        case 'i': candidate = "image/jpeg"; break; // [i]mage/jpeg
+                    }
+                    break;
+
+                case 15:
+                    switch (contentTypeValue[12] | 0x20)
+                    {
+                        case 'p': candidate = "application/pdf"; break; // application/[p]df
+                        case 'x': candidate = "application/xml"; break; // application/[x]ml
+                        case 'z': candidate = "application/zip"; break; // application/[z]ip
+                    }
+                    break;
+
+                case 16:
+                    switch (contentTypeValue[12] | 0x20)
+                    {
+                        case 'g': candidate = "application/grpc"; break; // application/[g]rpc
+                        case 'j': candidate = "application/json"; break; // application/[j]son
+                    }
+                    break;
+
+                case 19:
+                    candidate = "multipart/form-data"; // multipart/form-data
+                    break;
+
+                case 22:
+                    candidate = "application/javascript"; // application/javascript
+                    break;
+
+                case 24:
+                    switch (contentTypeValue[0] | 0x20)
+                    {
+                        case 'a': candidate = "application/octet-stream"; break; // application/octet-stream
+                        case 't': candidate = "text/html; charset=utf-8"; break; // text/html; charset=utf-8
+                    }
+                    break;
+
+                case 25:
+                    candidate = "text/plain; charset=utf-8"; // text/plain; charset=utf-8
+                    break;
+
+                case 31:
+                    candidate = "application/json; charset=utf-8"; // application/json; charset=utf-8
+                    break;
+
+                case 33:
+                    candidate = "application/x-www-form-urlencoded"; // application/x-www-form-urlencoded
+                    break;
+            }
+
+            Debug.Assert(candidate is null || candidate.Length == contentTypeValue.Length);
+
+            return candidate != null && ByteArrayHelpers.EqualsOrdinalAsciiIgnoreCase(candidate, contentTypeValue) ?
+                candidate :
+                null;
         }
 
         private static bool TryDecodeUtf8(ReadOnlySpan<byte> input, [NotNullWhen(true)] out string? decoded)

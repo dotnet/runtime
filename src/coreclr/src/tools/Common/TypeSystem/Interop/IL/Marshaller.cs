@@ -50,6 +50,7 @@ namespace Internal.TypeSystem.Interop
         LayoutClassPtr,
         AsAnyA,
         AsAnyW,
+        ComInterface,
         Invalid
     }
     public enum MarshalDirection
@@ -909,7 +910,7 @@ namespace Internal.TypeSystem.Interop
 
         protected override void EmitMarshalArgumentNativeToManaged()
         {
-            if (Out)
+            if (Out && !IsNativeByRef)
             {
                 base.EmitMarshalArgumentNativeToManaged();
             }

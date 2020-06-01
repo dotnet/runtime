@@ -21,6 +21,8 @@
 #include "dbginterface.h"
 #include "stubgen.h"
 #include "appdomain.inl"
+#include "callingconvention.h"
+#include "customattribute.h"
 
 #ifndef CROSSGEN_COMPILE
 
@@ -612,6 +614,43 @@ VOID UMEntryThunk::CompileUMThunkWorker(UMThunkStubInfo *pInfo,
     pcpusl->X86EmitNearJump(pEnableRejoin);
 }
 
+VOID UMThunkMarshInfo::SetUpForUnmanagedCallersOnly()
+{
+    STANDARD_VM_CONTRACT;
+
+    MethodDesc* pMD = GetMethod();
+    _ASSERTE(pMD != NULL && pMD->HasUnmanagedCallersOnlyAttribute());
+
+    // Validate UnmanagedCallersOnlyAttribute usage
+    COMDelegate::ThrowIfInvalidUnmanagedCallersOnlyUsage(pMD);
+
+    BYTE* pData = NULL;
+    LONG cData = 0;
+    CorPinvokeMap callConv = (CorPinvokeMap)0;
+
+    HRESULT hr = pMD->GetCustomAttribute(WellKnownAttribute::UnmanagedCallersOnly, (const VOID **)(&pData), (ULONG *)&cData);
+    IfFailThrow(hr);
+
+    _ASSERTE(cData > 0);
+
+    CustomAttributeParser ca(pData, cData);
+    // UnmanagedCallersOnly has two optional named arguments CallingConvention and EntryPoint.
+    CaNamedArg namedArgs[2];
+    CaTypeCtor caType(SERIALIZATION_TYPE_STRING);
+    // First, the void constructor.
+    IfFailThrow(ParseKnownCaArgs(ca, NULL, 0));
+
+    // Now the optional named properties
+    namedArgs[0].InitI4FieldEnum("CallingConvention", "System.Runtime.InteropServices.CallingConvention", (ULONG)callConv);
+    namedArgs[1].Init("EntryPoint", SERIALIZATION_TYPE_STRING, caType);
+    IfFailThrow(ParseKnownCaNamedArgs(ca, namedArgs, lengthof(namedArgs)));
+
+    callConv = (CorPinvokeMap)(namedArgs[0].val.u4 << 8);
+    // Let UMThunkMarshalInfo choose the default if calling convension not definied.
+    if (namedArgs[0].val.type.tag != SERIALIZATION_TYPE_UNDEFINED)
+        m_callConv = (UINT16)callConv;
+}
+
 // Compiles an unmanaged to managed thunk for the given signature.
 Stub *UMThunkMarshInfo::CompileNExportThunk(LoaderHeap *pLoaderHeap, PInvokeStaticSigInfo* pSigInfo, MetaSig *pMetaSig, BOOL fNoStub)
 {
@@ -721,7 +760,9 @@ Stub *UMThunkMarshInfo::CompileNExportThunk(LoaderHeap *pLoaderHeap, PInvokeStat
 
     m_cbActualArgSize = cbActualArgSize;
 
-    m_callConv = static_cast<UINT16>(pSigInfo->GetCallConv());
+    // This could have been set in the UnmanagedCallersOnly scenario.
+    if (m_callConv == UINT16_MAX)
+        m_callConv = static_cast<UINT16>(pSigInfo->GetCallConv());
 
     UMThunkStubInfo stubInfo;
     memset(&stubInfo, 0, sizeof(stubInfo));
@@ -1117,6 +1158,7 @@ VOID UMThunkMarshInfo::LoadTimeInit(Signature sig, Module * pModule, MethodDesc 
     m_sig = sig;
 
 #if defined(TARGET_X86) && !defined(FEATURE_STUBS_AS_IL)
+    m_callConv = UINT16_MAX;
     INDEBUG(m_cbRetPop = 0xcccc;)
 #endif
 }
@@ -1141,6 +1183,14 @@ VOID UMThunkMarshInfo::RunTimeInit()
     MethodDesc* pStubMD = NULL;
 
     MethodDesc * pMD = GetMethod();
+
+#if defined(TARGET_X86) && !defined(FEATURE_STUBS_AS_IL)
+    if (pMD != NULL
+        && pMD->HasUnmanagedCallersOnlyAttribute())
+    {
+        SetUpForUnmanagedCallersOnly();
+    }
+#endif // TARGET_X86 && !FEATURE_STUBS_AS_IL
 
     // Lookup NGened stub - currently we only support ngening of reverse delegate invoke interop stubs
     if (pMD != NULL && pMD->IsEEImpl())

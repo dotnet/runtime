@@ -139,11 +139,6 @@ namespace ILCompiler
             return false;
         }
 
-        public override DefType ComputeHomogeneousFloatAggregateElementType(DefType type)
-        {
-            return _fallbackAlgorithm.ComputeHomogeneousFloatAggregateElementType(type);
-        }
-
         public override ComputedInstanceFieldLayout ComputeInstanceLayout(DefType type, InstanceLayoutKind layoutKind)
         {
             DefType similarSpecifiedVector = GetSimilarVector(type);
@@ -202,7 +197,15 @@ namespace ILCompiler
 
         public override ValueTypeShapeCharacteristics ComputeValueTypeShapeCharacteristics(DefType type)
         {
-            return _fallbackAlgorithm.ComputeValueTypeShapeCharacteristics(type);
+            if (type.Context.Target.Architecture == TargetArchitecture.ARM64)
+            {
+                return type.InstanceFieldSize.AsInt switch
+                {
+                    16 => ValueTypeShapeCharacteristics.Vector128Aggregate,
+                    _ => ValueTypeShapeCharacteristics.None
+                };
+            }
+            return ValueTypeShapeCharacteristics.None;
         }
 
         public static bool IsVectorOfTType(DefType type)

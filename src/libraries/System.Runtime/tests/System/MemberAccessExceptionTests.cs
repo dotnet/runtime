@@ -14,7 +14,7 @@ namespace System.Tests
         public static void Ctor_Empty()
         {
             var exception = new MemberAccessException();
-            ExceptionUtility.ValidateExceptionProperties(exception, hResult: COR_E_MEMBERACCESS, validateMessage: false);
+            ExceptionHelpers.ValidateExceptionProperties(exception, hResult: COR_E_MEMBERACCESS, validateMessage: false);
         }
 
         [Fact]
@@ -22,7 +22,7 @@ namespace System.Tests
         {
             string message = "you cannot access this member";
             var exception = new MemberAccessException(message);
-            ExceptionUtility.ValidateExceptionProperties(exception, hResult: COR_E_MEMBERACCESS, message: message);
+            ExceptionHelpers.ValidateExceptionProperties(exception, hResult: COR_E_MEMBERACCESS, message: message);
         }
 
         [Fact]
@@ -31,7 +31,7 @@ namespace System.Tests
             string message = "you cannot access this member";
             var innerException = new Exception("Inner exception");
             var exception = new MemberAccessException(message, innerException);
-            ExceptionUtility.ValidateExceptionProperties(exception, hResult: COR_E_MEMBERACCESS, innerException: innerException, message: message);
+            ExceptionHelpers.ValidateExceptionProperties(exception, hResult: COR_E_MEMBERACCESS, innerException: innerException, message: message);
         }
     }
 }

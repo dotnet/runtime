@@ -496,6 +496,7 @@ mono_arch_unwind_frame (MonoDomain *domain, MonoJitTlsData *jit_tls,
 			 StackFrameInfo *frame)
 {
 	gpointer ip = (gpointer) MONO_CONTEXT_GET_IP (ctx);
+	guint8 *epilog = NULL;
 
 	memset (frame, 0, sizeof (StackFrameInfo));
 	frame->ji = ji;
@@ -518,10 +519,13 @@ mono_arch_unwind_frame (MonoDomain *domain, MonoJitTlsData *jit_tls,
 
 		address = (char *)ip - (char *)ji->code_start;
 
+		if (ji->has_arch_eh_info)
+			epilog = (guint8*)ji->code_start + ji->code_size - mono_jinfo_get_epilog_size (ji);
+
 		memcpy(&regs, &ctx->uc_mcontext.gregs, sizeof(regs));
 		gboolean success = mono_unwind_frame (unwind_info, unwind_info_len, ji->code_start,
 						   (guint8 *) ji->code_start + ji->code_size,
-						   ip, NULL, regs, 16, save_locations,
+						   ip, epilog ? &epilog : NULL, regs, 16, save_locations,
 						   MONO_MAX_IREGS, &cfa);
 
 		if (!success)
@@ -593,7 +597,6 @@ mono_arch_handle_altstack_exception (void *sigctx, MONO_SIG_HANDLER_INFO_TYPE *s
 	MonoException *exc = NULL;
 	MonoJitTlsData *jit_tls = NULL;
 	gboolean nullref = TRUE;
-	gint32 frame_size;
 	uintptr_t sp;
 
 	jit_tls = mono_tls_get_jit_tls();
@@ -760,6 +763,25 @@ mono_arch_get_restore_context (MonoTrampInfo **info, gboolean aot)
 		*info = NULL;
 
 	return setcontext;
+}
+
+/*========================= End of Function ========================*/
+
+/**
+ * 
+ * @brief Setup CTX so execution resumes at FUNC
+ *
+ * @param[in] Context to be resumed
+ * @param[in] Location to be resumed at
+ *
+ * Set the IP of the passed context to the address so that on resumption
+ * we jump to this location
+ */
+
+void
+mono_arch_setup_resume_sighandler_ctx (MonoContext *ctx, gpointer func)
+{
+	MONO_CONTEXT_SET_IP (ctx, func);
 }
 
 /*========================= End of Function ========================*/

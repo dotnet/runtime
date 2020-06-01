@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 
@@ -22,6 +23,8 @@ namespace System.Text.Json.Serialization.Converters
         [PreserveDependency(".ctor()", "System.Text.Json.Serialization.Converters.KeyValuePairConverter`2")]
         public override JsonConverter CreateConverter(Type type, JsonSerializerOptions options)
         {
+            Debug.Assert(CanConvert(type));
+
             Type keyType = type.GetGenericArguments()[0];
             Type valueType = type.GetGenericArguments()[1];
 
@@ -31,6 +34,8 @@ namespace System.Text.Json.Serialization.Converters
                 binder: null,
                 args: null,
                 culture: null)!;
+
+            converter.Initialize(options);
 
             return converter;
         }

@@ -10,7 +10,7 @@
   <ItemGroup>
     <Compile Include="System.Security.Cryptography.ProtectedData.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsNetFx)' == 'true'">
+  <ItemGroup Condition="$(TargetFramework.StartsWith('net4'))">
     <Reference Include="mscorlib" />
     <Reference Include="System.Security" />
   </ItemGroup>

@@ -844,10 +844,6 @@ namespace System.Globalization
             return true;
         }
 
-        private bool InitCultureDataCore() => GlobalizationMode.UseNls ?
-                                                NlsInitCultureData() :
-                                                IcuInitCultureData();
-
         /// We'd rather people use the named version since this doesn't allow custom locales
         internal static CultureData GetCultureData(int culture, bool bUseUserOverride)
         {
@@ -1920,13 +1916,7 @@ namespace System.Globalization
 
         internal bool IsInvariantCulture => string.IsNullOrEmpty(Name);
 
-        internal bool IsWin32Installed => GlobalizationMode.UseNls;
-
         internal bool IsReplacementCulture => GlobalizationMode.UseNls ? NlsIsReplacementCulture : false;
-
-        internal static unsafe CultureData GetCurrentRegionData() => GlobalizationMode.UseNls ?
-                                                                        NlsGetCurrentRegionData() :
-                                                                        CultureInfo.CurrentCulture._cultureData;
 
         /// <summary>
         /// Get an instance of our default calendar

@@ -98,8 +98,6 @@ STDAPI ConvertRO2RW(
     // Avoid confusion.
     *ppIUnk = 0;
 
-    IfFailGo(VerifyNotWinMD(pRO, "ConvertRO2RW() not supported on .winmd files."));
-
     // If the interface is already RW, done, just return.
     if (pRO->QueryInterface(IID_IMDInternalImportENC, (void**)&pRW) == S_OK)
     {
@@ -225,8 +223,6 @@ STDAPI GetMDPublicInterfaceFromInternal(
 
     _ASSERTE(pIUnkInternal && ppIUnkPublic);
     *ppIUnkPublic = 0;
-
-    IfFailGo(VerifyNotWinMD((IUnknown*)pIUnkInternal, "GetMDPublicInterfaceFromInternal() not supported on .winmd files."));
 
     IfFailGo(ConvertRO2RW((IUnknown*)pIUnkInternal, IID_IMDInternalImport, (void **)&pInternalImport));
 
