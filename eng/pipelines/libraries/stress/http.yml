@@ -53,7 +53,7 @@ jobs:
   timeoutInMinutes: 120
   pool:
     name: NetCorePublic-Pool
-    queue: BuildPool.Windows.10.Amd64.VS2019.Open
+    queue: BuildPool.Server.Amd64.VS2019.Open
 
   steps:
   - checkout: self
