@@ -240,7 +240,7 @@ namespace System.Net.Http
         {
             return DiagnosticsHandler.IsEnabled() ?
                 _diagnosticsHandler.Send(request, cancellationToken) :
-                _socketsHttpHandler.Send(request, cancellationToken);
+                _underlyingHandler.Send(request, cancellationToken);
         }
 
         protected internal override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request,
