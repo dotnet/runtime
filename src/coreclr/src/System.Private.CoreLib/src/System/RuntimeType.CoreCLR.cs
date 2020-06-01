@@ -989,7 +989,7 @@ namespace System
                     }
                     else
                     {
-                        List<RuntimeType?> al = new List<RuntimeType?>();
+                        var al = new HashSet<RuntimeType>();
 
                         // Get all constraints
                         Type[] constraints = declaringType.GetGenericParameterConstraints();
@@ -1003,31 +1003,16 @@ namespace System
 
                             Type[] temp = constraint.GetInterfaces();
                             for (int j = 0; j < temp.Length; j++)
-                                al.Add(temp[j] as RuntimeType);
+                                al.Add((RuntimeType)temp[j]);
                         }
 
-                        // Remove duplicates
-                        Dictionary<RuntimeType, RuntimeType> ht = new Dictionary<RuntimeType, RuntimeType>();
-                        for (int i = 0; i < al.Count; i++)
+                        // Populate list, without duplicates
+                        foreach (RuntimeType rt in al)
                         {
-                            RuntimeType constraint = al[i]!;
-                            if (!ht.ContainsKey(constraint))
-                                ht[constraint] = constraint;
-                        }
-
-                        RuntimeType[] interfaces = new RuntimeType[ht.Values.Count];
-                        ht.Values.CopyTo(interfaces, 0);
-
-                        // Populate link-list
-                        for (int i = 0; i < interfaces.Length; i++)
-                        {
-                            if (filter.RequiresStringComparison())
+                            if (!filter.RequiresStringComparison() || filter.Match(RuntimeTypeHandle.GetUtf8Name(rt)))
                             {
-                                if (!filter.Match(RuntimeTypeHandle.GetUtf8Name(interfaces[i])))
-                                    continue;
+                                list.Add(rt);
                             }
-
-                            list.Add(interfaces[i]);
                         }
                     }
 
