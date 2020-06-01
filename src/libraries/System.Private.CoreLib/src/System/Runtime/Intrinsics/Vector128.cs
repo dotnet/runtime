@@ -935,6 +935,7 @@ namespace System.Runtime.Intrinsics
         /// <param name="lower">The value that the lower 64-bits will be initialized to.</param>
         /// <param name="upper">The value that the upper 64-bits will be initialized to.</param>
         /// <returns>A new <see cref="Vector128{Byte}" /> initialized from <paramref name="lower" /> and <paramref name="upper" />.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static unsafe Vector128<byte> Create(Vector64<byte> lower, Vector64<byte> upper)
         {
             if (AdvSimd.IsSupported)
@@ -960,6 +961,7 @@ namespace System.Runtime.Intrinsics
         /// <param name="lower">The value that the lower 64-bits will be initialized to.</param>
         /// <param name="upper">The value that the upper 64-bits will be initialized to.</param>
         /// <returns>A new <see cref="Vector128{Double}" /> initialized from <paramref name="lower" /> and <paramref name="upper" />.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static unsafe Vector128<double> Create(Vector64<double> lower, Vector64<double> upper)
         {
             if (AdvSimd.IsSupported)
@@ -985,6 +987,7 @@ namespace System.Runtime.Intrinsics
         /// <param name="lower">The value that the lower 64-bits will be initialized to.</param>
         /// <param name="upper">The value that the upper 64-bits will be initialized to.</param>
         /// <returns>A new <see cref="Vector128{Int16}" /> initialized from <paramref name="lower" /> and <paramref name="upper" />.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static unsafe Vector128<short> Create(Vector64<short> lower, Vector64<short> upper)
         {
             if (AdvSimd.IsSupported)
@@ -1011,6 +1014,7 @@ namespace System.Runtime.Intrinsics
         /// <param name="upper">The value that the upper 64-bits will be initialized to.</param>
         /// <remarks>On x86, this method corresponds to __m128i _mm_setr_epi64</remarks>
         /// <returns>A new <see cref="Vector128{Int32}" /> initialized from <paramref name="lower" /> and <paramref name="upper" />.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static unsafe Vector128<int> Create(Vector64<int> lower, Vector64<int> upper)
         {
             if (AdvSimd.IsSupported)
@@ -1036,6 +1040,7 @@ namespace System.Runtime.Intrinsics
         /// <param name="lower">The value that the lower 64-bits will be initialized to.</param>
         /// <param name="upper">The value that the upper 64-bits will be initialized to.</param>
         /// <returns>A new <see cref="Vector128{Int64}" /> initialized from <paramref name="lower" /> and <paramref name="upper" />.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static unsafe Vector128<long> Create(Vector64<long> lower, Vector64<long> upper)
         {
             if (AdvSimd.IsSupported)
@@ -1062,6 +1067,7 @@ namespace System.Runtime.Intrinsics
         /// <param name="upper">The value that the upper 64-bits will be initialized to.</param>
         /// <returns>A new <see cref="Vector128{SByte}" /> initialized from <paramref name="lower" /> and <paramref name="upper" />.</returns>
         [CLSCompliant(false)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static unsafe Vector128<sbyte> Create(Vector64<sbyte> lower, Vector64<sbyte> upper)
         {
             if (AdvSimd.IsSupported)
@@ -1087,6 +1093,7 @@ namespace System.Runtime.Intrinsics
         /// <param name="lower">The value that the lower 64-bits will be initialized to.</param>
         /// <param name="upper">The value that the upper 64-bits will be initialized to.</param>
         /// <returns>A new <see cref="Vector128{Single}" /> initialized from <paramref name="lower" /> and <paramref name="upper" />.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static unsafe Vector128<float> Create(Vector64<float> lower, Vector64<float> upper)
         {
             if (AdvSimd.IsSupported)
@@ -1113,6 +1120,7 @@ namespace System.Runtime.Intrinsics
         /// <param name="upper">The value that the upper 64-bits will be initialized to.</param>
         /// <returns>A new <see cref="Vector128{UInt16}" /> initialized from <paramref name="lower" /> and <paramref name="upper" />.</returns>
         [CLSCompliant(false)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static unsafe Vector128<ushort> Create(Vector64<ushort> lower, Vector64<ushort> upper)
         {
             if (AdvSimd.IsSupported)
@@ -1140,6 +1148,7 @@ namespace System.Runtime.Intrinsics
         /// <remarks>On x86, this method corresponds to __m128i _mm_setr_epi64</remarks>
         /// <returns>A new <see cref="Vector128{UInt32}" /> initialized from <paramref name="lower" /> and <paramref name="upper" />.</returns>
         [CLSCompliant(false)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static unsafe Vector128<uint> Create(Vector64<uint> lower, Vector64<uint> upper)
         {
             if (AdvSimd.IsSupported)
@@ -1166,6 +1175,7 @@ namespace System.Runtime.Intrinsics
         /// <param name="upper">The value that the upper 64-bits will be initialized to.</param>
         /// <returns>A new <see cref="Vector128{UInt64}" /> initialized from <paramref name="lower" /> and <paramref name="upper" />.</returns>
         [CLSCompliant(false)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static unsafe Vector128<ulong> Create(Vector64<ulong> lower, Vector64<ulong> upper)
         {
             if (AdvSimd.IsSupported)
@@ -1668,6 +1678,7 @@ namespace System.Runtime.Intrinsics
         /// <param name="value">The value of the lower 64-bits as a <see cref="Vector64{T}" />.</param>
         /// <returns>A new <see cref="Vector128{T}" /> with the lower 64-bits set to <paramref name="value" /> and the upper 64-bits set to the same value as that in <paramref name="vector" />.</returns>
         /// <exception cref="NotSupportedException">The type of <paramref name="vector" /> (<typeparamref name="T" />) is not supported.</exception>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector128<T> WithLower<T>(this Vector128<T> vector, Vector64<T> value)
             where T : struct
         {
@@ -1711,6 +1722,7 @@ namespace System.Runtime.Intrinsics
         /// <param name="value">The value of the upper 64-bits as a <see cref="Vector64{T}" />.</param>
         /// <returns>A new <see cref="Vector128{T}" /> with the upper 64-bits set to <paramref name="value" /> and the lower 64-bits set to the same value as that in <paramref name="vector" />.</returns>
         /// <exception cref="NotSupportedException">The type of <paramref name="vector" /> (<typeparamref name="T" />) is not supported.</exception>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector128<T> WithUpper<T>(this Vector128<T> vector, Vector64<T> value)
             where T : struct
         {
