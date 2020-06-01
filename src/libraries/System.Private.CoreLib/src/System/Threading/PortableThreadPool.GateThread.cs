@@ -57,8 +57,19 @@ namespace System.Threading
                             {
                                 hillClimbingThreadAdjustmentLock.Acquire();
                                 ThreadCounts counts = threadPoolInstance._separated.counts.VolatileRead();
-                                // don't add a thread if we're at max or if we are already in the process of adding threads
-                                while (counts.NumExistingThreads < threadPoolInstance._maxThreads && counts.NumExistingThreads >= counts.NumThreadsGoal)
+
+                                // Don't add a thread if we're at max or if we are already in the process of adding threads.
+                                // This logic is slightly different from the native implementation in CoreCLR because there are
+                                // no retired threads. In the native implementation, when hill climbing reduces the thread count
+                                // goal, threads that are stopped from processing work are switched to "retired" state, and they
+                                // don't count towards the equivalent existing thread count. In this implementation, the
+                                // existing thread count includes any worker thread that has not yet exited, including those
+                                // stopped from working by hill climbing, so here the number of threads processing work, instead
+                                // of the number of existing threads, is compared with the goal. There may be alternative
+                                // solutions, for now this is only to maintain consistency in behavior.
+                                while (
+                                    counts.NumExistingThreads < threadPoolInstance._maxThreads &&
+                                    counts.NumProcessingWork >= counts.NumThreadsGoal)
                                 {
                                     if (debuggerBreakOnWorkStarvation)
                                     {
@@ -66,8 +77,9 @@ namespace System.Threading
                                     }
 
                                     ThreadCounts newCounts = counts;
-                                    short newNumThreadsGoal = (short)(newCounts.NumExistingThreads + 1);
+                                    short newNumThreadsGoal = (short)(counts.NumThreadsGoal + 1);
                                     newCounts.NumThreadsGoal = newNumThreadsGoal;
+
                                     ThreadCounts oldCounts = threadPoolInstance._separated.counts.InterlockedCompareExchange(newCounts, counts);
                                     if (oldCounts == counts)
                                     {
