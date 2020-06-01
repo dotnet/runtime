@@ -11,8 +11,7 @@ namespace System.IO.MemoryMappedFiles
 {
     public partial class MemoryMappedFile
     {
-
-        // This will verify file access and return file size.
+        // This will verify file access.
         private static void VerifyMemoryMappedFileAccess(MemoryMappedFileAccess access, long capacity, FileStream fileStream)
         {
             if (access == MemoryMappedFileAccess.Read && capacity > fileStream.Length)

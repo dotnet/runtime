@@ -8,17 +8,14 @@ namespace System.IO.MemoryMappedFiles
 {
     public partial class MemoryMappedFile
     {
-
         // This will verify file access and return file size. fileSize will return -1 for special devices.
         private static void VerifyMemoryMappedFileAccess(MemoryMappedFileAccess access, long capacity, FileStream? fileStream, out long fileSize)
         {
-            bool isRegularFile = true;
             fileSize = -1;
 
             if (fileStream != null)
             {
-
-                Interop.Sys.FileStatus status = default;
+                Interop.Sys.FileStatus status;
 
                 int result = Interop.Sys.FStat(fileStream.SafeFileHandle, out status);
                 if (result != 0)
@@ -27,7 +24,7 @@ namespace System.IO.MemoryMappedFiles
                     throw Interop.GetExceptionForIoErrno(errorInfo);
                 }
 
-                isRegularFile = (status.Mode & Interop.Sys.FileTypes.S_IFCHR) == 0;
+                bool isRegularFile = (status.Mode & Interop.Sys.FileTypes.S_IFCHR) == 0;
 
                 if (isRegularFile)
                 {
