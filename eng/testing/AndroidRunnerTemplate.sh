@@ -23,7 +23,7 @@ then
         --package-name="net.dot.$TEST_NAME" \
         --app=$APK -o=$HELIX_WORKITEM_UPLOAD_ROOT -v
     
-    cp $HELIX_WORKITEM_UPLOAD_ROOT/*.xml ./
+    cp $HELIX_WORKITEM_UPLOAD_ROOT/testResults.xml ./test-results.xml
 else
     dotnet xharness android test -i="net.dot.MonoRunner" \
         --package-name="net.dot.$TEST_NAME" \
