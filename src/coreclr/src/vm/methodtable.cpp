@@ -4360,10 +4360,6 @@ BOOL MethodTable::IsWriteable()
     // (see code:MethodTable::AddDynamicInterface)
     if (HasDynamicInterfaceMap())
         return TRUE;
-
-    // RCW per-type data is created lazily at run-time.
-    if (HasRCWPerTypeData())
-        return TRUE;
 #endif
 
     return FALSE;
@@ -4558,16 +4554,6 @@ void MethodTable::Fixup(DataImage *image)
     _ASSERTE(GetWriteableData());
     image->FixupPlainOrRelativePointerField(this, &MethodTable::m_pWriteableData);
     m_pWriteableData.GetValue()->Fixup(image, this, needsRestore);
-
-#ifdef FEATURE_COMINTEROP
-    if (HasRCWPerTypeData())
-    {
-        // it would be nice to save these but the impact on mscorlib.ni size is prohibitive
-        RCWPerTypeData **ppData = GetRCWPerTypeDataPtr();
-        image->ZeroPointerField(this, (BYTE *)ppData - (BYTE *)this);
-    }
-#endif // FEATURE_COMINTEROP
-
 
     //
     // Fix flags
@@ -8627,82 +8613,6 @@ MethodDesc * MethodTable::IntroducedMethodIterator::GetNext(MethodDesc * pMD)
 
     return pMD;
 }
-
-#if defined(FEATURE_COMINTEROP) && !defined(DACCESS_COMPILE)
-
-//==========================================================================================
-RCWPerTypeData *MethodTable::CreateRCWPerTypeData(bool bThrowOnOOM)
-{
-    CONTRACTL
-    {
-        if (bThrowOnOOM) THROWS; else NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-        PRECONDITION(HasRCWPerTypeData());
-    }
-    CONTRACTL_END;
-
-    AllocMemTracker amTracker;
-
-    RCWPerTypeData *pData;
-    if (bThrowOnOOM)
-    {
-        TaggedMemAllocPtr ptr = GetLoaderAllocator()->GetLowFrequencyHeap()->AllocMem(S_SIZE_T(sizeof(RCWPerTypeData)));
-        pData = (RCWPerTypeData *)amTracker.Track(ptr);
-    }
-    else
-    {
-        TaggedMemAllocPtr ptr = GetLoaderAllocator()->GetLowFrequencyHeap()->AllocMem_NoThrow(S_SIZE_T(sizeof(RCWPerTypeData)));
-        pData = (RCWPerTypeData *)amTracker.Track_NoThrow(ptr);
-        if (pData == NULL)
-        {
-            return NULL;
-        }
-    }
-
-    // memory is zero-inited which means that nothing has been computed yet
-    _ASSERTE(pData->m_dwFlags == 0);
-
-    RCWPerTypeData **pDataPtr = GetRCWPerTypeDataPtr();
-
-    if (InterlockedCompareExchangeT(pDataPtr, pData, NULL) == NULL)
-    {
-        amTracker.SuppressRelease();
-    }
-    else
-    {
-        // another thread already published the pointer
-        pData = *pDataPtr;
-    }
-
-    return pData;
-}
-
-//==========================================================================================
-RCWPerTypeData *MethodTable::GetRCWPerTypeData(bool bThrowOnOOM /*= true*/)
-{
-    CONTRACTL
-    {
-        if (bThrowOnOOM) THROWS; else NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    if (!HasRCWPerTypeData())
-        return NULL;
-
-    RCWPerTypeData *pData = *GetRCWPerTypeDataPtr();
-    if (pData == NULL)
-    {
-        // creation is factored out into a separate routine to avoid paying the EH cost here
-        pData = CreateRCWPerTypeData(bThrowOnOOM);
-    }
-
-    return pData;
-}
-
-#endif // FEATURE_COMINTEROP && !DACCESS_COMPILE
 
 //==========================================================================================
 CHECK MethodTable::CheckActivated()

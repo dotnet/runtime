@@ -5509,9 +5509,6 @@ NativeImageDumper::EnumMnemonics s_MTFlagsHigh[] =
     MTFLAG_ENTRY(HasIndirectParent),
     MTFLAG_ENTRY(ContainsPointers),
     MTFLAG_ENTRY(HasTypeEquivalence),
-#if defined(FEATURE_COMINTEROP)
-    MTFLAG_ENTRY(HasRCWPerTypeData),
-#endif
     MTFLAG_ENTRY(HasCriticalFinalizer),
     MTFLAG_ENTRY(Collectible),
     MTFLAG_ENTRY(ContainsGenericVariables),

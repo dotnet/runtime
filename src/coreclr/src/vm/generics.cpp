@@ -214,10 +214,8 @@ ClassLoader::CreateTypeHandleForNonCanonicalGenericInstantiation(
 
 #ifdef FEATURE_COMINTEROP
     BOOL fHasDynamicInterfaceMap = pOldMT->HasDynamicInterfaceMap();
-    BOOL fHasRCWPerTypeData = pOldMT->HasRCWPerTypeData();
 #else // FEATURE_COMINTEROP
     BOOL fHasDynamicInterfaceMap = FALSE;
-    BOOL fHasRCWPerTypeData = FALSE;
 #endif // FEATURE_COMINTEROP
 
     // Collectible types have some special restrictions
@@ -259,7 +257,6 @@ ClassLoader::CreateTypeHandleForNonCanonicalGenericInstantiation(
     // We need space for the optional members.
     DWORD cbOptional = MethodTable::GetOptionalMembersAllocationSize(dwMultipurposeSlotsMask,
                                                       fHasGenericsStaticsInfo,
-                                                      fHasRCWPerTypeData,
                                                       pOldMT->HasTokenOverflow());
 
     // We need space for the PerInstInfo, i.e. the generic dictionary pointers...
@@ -580,7 +577,6 @@ ClassLoader::CreateTypeHandleForNonCanonicalGenericInstantiation(
     _ASSERTE(!fHasGenericsStaticsInfo == !pMT->HasGenericsStaticsInfo());
 #ifdef FEATURE_COMINTEROP
     _ASSERTE(!fHasDynamicInterfaceMap == !pMT->HasDynamicInterfaceMap());
-    _ASSERTE(!fHasRCWPerTypeData == !pMT->HasRCWPerTypeData());
 #endif
 
     LOG((LF_CLASSLOADER, LL_INFO1000, "GENERICS: Replicated methodtable to create type %s\n", pMT->GetDebugClassName()));

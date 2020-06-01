@@ -363,20 +363,6 @@ inline BOOL MethodTable::HasExplicitGuid()
 }
 
 //==========================================================================================
-inline void MethodTable::SetHasRCWPerTypeData()
-{
-    LIMITED_METHOD_CONTRACT;
-    SetFlag(enum_flag_HasRCWPerTypeData);
-}
-
-//==========================================================================================
-inline BOOL MethodTable::HasRCWPerTypeData()
-{
-    LIMITED_METHOD_DAC_CONTRACT;
-    return GetFlag(enum_flag_HasRCWPerTypeData);
-}
-
-//==========================================================================================
 // Get the GUID used for WinRT interop
 //   * if the type is not a WinRT type or a redirected interfae return FALSE
 inline BOOL MethodTable::GetGuidForWinRT(GUID *pGuid)
@@ -1230,7 +1216,6 @@ FORCEINLINE DWORD MethodTable::GetOffsetOfOptionalMember(OptionalMemberId id)
 //==========================================================================================
 inline DWORD MethodTable::GetOptionalMembersAllocationSize(DWORD dwMultipurposeSlotsMask,
                                                            BOOL needsGenericsStaticsInfo,
-                                                           BOOL needsRCWPerTypeData,
                                                            BOOL needsTokenOverflow)
 {
     LIMITED_METHOD_CONTRACT;
@@ -1239,8 +1224,6 @@ inline DWORD MethodTable::GetOptionalMembersAllocationSize(DWORD dwMultipurposeS
 
     if (needsGenericsStaticsInfo)
         size += sizeof(GenericsStaticsInfo);
-    if (needsRCWPerTypeData)
-        size += sizeof(UINT_PTR);
     if (dwMultipurposeSlotsMask & enum_flag_HasInterfaceMap)
         size += sizeof(UINT_PTR);
     if (needsTokenOverflow)
