@@ -1881,13 +1881,6 @@ namespace System.Threading.Tasks
 #if CORERT
             RuntimeExceptionHelpers.ReportUnhandledException(edi.SourceException);
 #else
-
-#if FEATURE_COMINTEROP
-            // If we have the new error reporting APIs, report this error.
-            if (System.Runtime.InteropServices.WindowsRuntime.WindowsRuntimeMarshal.ReportUnhandledError(edi.SourceException))
-                return;
-#endif
-
             // Propagate the exception(s) on the ThreadPool
             ThreadPool.QueueUserWorkItem(state => ((ExceptionDispatchInfo)state!).Throw(), edi);
 

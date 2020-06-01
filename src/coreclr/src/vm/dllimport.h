@@ -147,14 +147,14 @@ enum NDirectStubFlags
 #ifdef FEATURE_COMINTEROP
     NDIRECTSTUB_FL_FIELDGETTER              = 0x00002000, // COM->CLR field getter
     NDIRECTSTUB_FL_FIELDSETTER              = 0x00004000, // COM->CLR field setter
-    NDIRECTSTUB_FL_WINRT                    = 0x00008000,
-    NDIRECTSTUB_FL_WINRTDELEGATE            = 0x00010000,
-    NDIRECTSTUB_FL_WINRTSHAREDGENERIC       = 0x00020000, // stub for methods on shared generic interfaces (only used in the forward direction)
-    NDIRECTSTUB_FL_WINRTCTOR                = 0x00080000,
-    NDIRECTSTUB_FL_WINRTCOMPOSITION         = 0x00100000, // set along with WINRTCTOR
-    NDIRECTSTUB_FL_WINRTSTATIC              = 0x00200000,
+    // unused                               = 0x00008000,
+    // unused                               = 0x00010000,
+    // unused                               = 0x00020000,
+    // unused                               = 0x00080000,
+    // unused                               = 0x00100000,
+    // unused                               = 0x00200000,
     // unused                               = 0x00400000,
-    NDIRECTSTUB_FL_WINRTHASREDIRECTION      = 0x00800000, // the stub may tail-call to a static stub in mscorlib, not shareable
+    // unused                               = 0x00800000,
 #endif // FEATURE_COMINTEROP
 
     // internal flags -- these won't ever show up in an NDirectStubHashBlob
@@ -231,27 +231,14 @@ inline bool SF_IsTailCallCallTargetStub (DWORD dwStubFlags) { LIMITED_METHOD_CON
 inline bool SF_IsTailCallDispatcherStub (DWORD dwStubFlags) { LIMITED_METHOD_CONTRACT; return (dwStubFlags == ILSTUB_TAILCALL_DISPATCH); }
 
 inline bool SF_IsCOMStub               (DWORD dwStubFlags) { LIMITED_METHOD_CONTRACT; return COM_ONLY(dwStubFlags < NDIRECTSTUB_FL_INVALID && 0 != (dwStubFlags & NDIRECTSTUB_FL_COM)); }
-inline bool SF_IsWinRTStub             (DWORD dwStubFlags) { LIMITED_METHOD_CONTRACT; return COM_ONLY(dwStubFlags < NDIRECTSTUB_FL_INVALID && 0 != (dwStubFlags & NDIRECTSTUB_FL_WINRT)); }
 inline bool SF_IsCOMLateBoundStub      (DWORD dwStubFlags) { LIMITED_METHOD_CONTRACT; return COM_ONLY(dwStubFlags < NDIRECTSTUB_FL_INVALID && 0 != (dwStubFlags & NDIRECTSTUB_FL_COMLATEBOUND)); }
 inline bool SF_IsCOMEventCallStub      (DWORD dwStubFlags) { LIMITED_METHOD_CONTRACT; return COM_ONLY(dwStubFlags < NDIRECTSTUB_FL_INVALID && 0 != (dwStubFlags & NDIRECTSTUB_FL_COMEVENTCALL)); }
 inline bool SF_IsFieldGetterStub       (DWORD dwStubFlags) { LIMITED_METHOD_CONTRACT; return COM_ONLY(dwStubFlags < NDIRECTSTUB_FL_INVALID && 0 != (dwStubFlags & NDIRECTSTUB_FL_FIELDGETTER)); }
 inline bool SF_IsFieldSetterStub       (DWORD dwStubFlags) { LIMITED_METHOD_CONTRACT; return COM_ONLY(dwStubFlags < NDIRECTSTUB_FL_INVALID && 0 != (dwStubFlags & NDIRECTSTUB_FL_FIELDSETTER)); }
-inline bool SF_IsWinRTDelegateStub     (DWORD dwStubFlags) { LIMITED_METHOD_CONTRACT; return COM_ONLY(dwStubFlags < NDIRECTSTUB_FL_INVALID && 0 != (dwStubFlags & NDIRECTSTUB_FL_WINRTDELEGATE)); }
-inline bool SF_IsWinRTCtorStub         (DWORD dwStubFlags) { LIMITED_METHOD_CONTRACT; return COM_ONLY(dwStubFlags < NDIRECTSTUB_FL_INVALID && 0 != (dwStubFlags & NDIRECTSTUB_FL_WINRTCTOR)); }
-inline bool SF_IsWinRTCompositionStub  (DWORD dwStubFlags) { LIMITED_METHOD_CONTRACT; return COM_ONLY(dwStubFlags < NDIRECTSTUB_FL_INVALID && 0 != (dwStubFlags & NDIRECTSTUB_FL_WINRTCOMPOSITION)); }
-inline bool SF_IsWinRTStaticStub       (DWORD dwStubFlags) { LIMITED_METHOD_CONTRACT; return COM_ONLY(dwStubFlags < NDIRECTSTUB_FL_INVALID && 0 != (dwStubFlags & NDIRECTSTUB_FL_WINRTSTATIC)); }
-inline bool SF_IsWinRTSharedGenericStub(DWORD dwStubFlags) { LIMITED_METHOD_CONTRACT; return COM_ONLY(dwStubFlags < NDIRECTSTUB_FL_INVALID && 0 != (dwStubFlags & NDIRECTSTUB_FL_WINRTSHAREDGENERIC)); }
-inline bool SF_IsWinRTHasRedirection   (DWORD dwStubFlags) { LIMITED_METHOD_CONTRACT; return COM_ONLY(dwStubFlags < NDIRECTSTUB_FL_INVALID && 0 != (dwStubFlags & NDIRECTSTUB_FL_WINRTHASREDIRECTION)); }
 
 inline bool SF_IsSharedStub(DWORD dwStubFlags)
 {
     WRAPPER_NO_CONTRACT;
-
-    if (SF_IsWinRTHasRedirection(dwStubFlags))
-    {
-        // tail-call to a target-specific mscorlib routine is burned into the stub
-        return false;
-    }
 
     if (SF_IsTailCallStoreArgsStub(dwStubFlags) || SF_IsTailCallCallTargetStub(dwStubFlags) ||
         SF_IsTailCallDispatcherStub(dwStubFlags))

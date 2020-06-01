@@ -327,8 +327,8 @@ namespace System.Text.Json.Serialization.Tests
                 PropertyNamingPolicy = new LeadingUnderscorePolicy() // Key -> _Key, Value -> _Value
             };
 
-            // Although policy won't produce this JSON string, the serializer parses the properties
-            // as "Key" and "Value" are special cased to accomodate content serialized with previous
+            // Although the policy won't produce these strings, the serializer successfully parses the properties.
+            // "Key" and "Value" are special cased to accomodate content serialized with previous
             // versions of the serializer (.NET Core 3.x/System.Text.Json 4.7.x).
             string json = @"{""Key"":""Hello, World!"",""Value"":1}";
             KeyValuePair<string, int> kvp = JsonSerializer.Deserialize<KeyValuePair<string, int>>(json, options);
@@ -339,7 +339,7 @@ namespace System.Text.Json.Serialization.Tests
             json = @"{""key"":""Hello, World!"",""value"":1}";
             Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<KeyValuePair<string, int>>(json, options));
 
-            // "Key" and "Value" matching is case sensitive, even when case sensitivity is on.
+            // "Key" and "Value" matching is case sensitive, even when case insensitivity is on.
             // Case sensitivity only applies to the result of converting the CLR property names
             // (Key -> _Key, Value -> _Value) with the naming policy.
             options = new JsonSerializerOptions
@@ -387,9 +387,9 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Theory]
-        [InlineData(typeof(KeyNameNullPolicy))]
-        [InlineData(typeof(ValueNameNullPolicy))]
-        public static void InvalidPropertyNameFail(Type policyType)
+        [InlineData(typeof(KeyNameNullPolicy), "Key")]
+        [InlineData(typeof(ValueNameNullPolicy), "Value")]
+        public static void InvalidPropertyNameFail(Type policyType, string offendingProperty)
         {
             var options = new JsonSerializerOptions
             {
@@ -398,7 +398,7 @@ namespace System.Text.Json.Serialization.Tests
 
             InvalidOperationException ex = Assert.Throws<InvalidOperationException>(() => JsonSerializer.Deserialize<KeyValuePair<string, string>>("", options));
             string exAsStr = ex.ToString();
-            Assert.Contains(policyType.ToString(), exAsStr);
+            Assert.Contains(offendingProperty, exAsStr);
 
             Assert.Throws<InvalidOperationException>(() => JsonSerializer.Serialize(new KeyValuePair<string, string>("", ""), options));
         }
@@ -424,15 +424,56 @@ namespace System.Text.Json.Serialization.Tests
         [InlineData("{0")]
         [InlineData(@"{""Random"":")]
         [InlineData(@"{""Value"":1}")]
+        [InlineData(@"{null:1}")]
         [InlineData(@"{""Value"":1,2")]
         [InlineData(@"{""Value"":1,""Random"":")]
         [InlineData(@"{""Key"":1,""Key"":1}")]
+        [InlineData(@"{null:1,""Key"":1}")]
         [InlineData(@"{""Key"":1,""Key"":2}")]
         [InlineData(@"{""Value"":1,""Value"":1}")]
+        [InlineData(@"{""Value"":1,null:1}")]
         [InlineData(@"{""Value"":1,""Value"":2}")]
         public static void InvalidJsonFail(string json)
         {
             Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<KeyValuePair<int, int>>(json));
+        }
+
+        [Theory]
+        [InlineData(@"{""Key"":""1"",""Value"":2}", "$.Key")]
+        [InlineData(@"{""Key"":1,""Value"":""2""}", "$.Value")]
+        [InlineData(@"{""key"":1,""Value"":2}", "$.key")]
+        [InlineData(@"{""Key"":1,""value"":2}", "$.value")]
+        [InlineData(@"{""Extra"":3,""Key"":1,""Value"":2}", "$.Extra")]
+        [InlineData(@"{""Key"":1,""Extra"":3,""Value"":2}", "$.Extra")]
+        [InlineData(@"{""Key"":1,""Value"":2,""Extra"":3}", "$.Extra")]
+        public static void JsonPathIsAccurate(string json, string expectedPath)
+        {
+            JsonException ex = Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<KeyValuePair<int, int>>(json));
+            Assert.Contains(expectedPath, ex.ToString());
+
+            var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+            ex = Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<KeyValuePair<int, int>>(json));
+            Assert.Contains(expectedPath, ex.ToString());
+        }
+
+        [Theory]
+        [InlineData(@"{""kEy"":""1"",""vAlUe"":2}", "$.kEy")]
+        [InlineData(@"{""kEy"":1,""vAlUe"":""2""}", "$.vAlUe")]
+        public static void JsonPathIsAccurate_CaseInsensitive(string json, string expectedPath)
+        {
+            var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+            JsonException ex = Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<KeyValuePair<int, int>>(json, options));
+            Assert.Contains(expectedPath, ex.ToString());
+        }
+
+        [Theory]
+        [InlineData(@"{""_Key"":""1"",""_Value"":2}", "$._Key")]
+        [InlineData(@"{""_Key"":1,""_Value"":""2""}", "$._Value")]
+        public static void JsonPathIsAccurate_PropertyNamingPolicy(string json, string expectedPath)
+        {
+            var options = new JsonSerializerOptions { PropertyNamingPolicy = new LeadingUnderscorePolicy() };
+            JsonException ex = Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<KeyValuePair<int, int>>(json, options));
+            Assert.Contains(expectedPath, ex.ToString());
         }
     }
 }

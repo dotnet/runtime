@@ -411,5 +411,37 @@ namespace Internal.TypeSystem
                     return false;
             }
         }
+
+        /// <summary>
+        /// Check if MethodImpl requires slot unification.
+        /// </summary>
+        /// <param name="method">Method to check</param>
+        /// <returns>True when the method is marked with the PreserveBaseOverrides custom attribute, false otherwise.</returns>
+        public static bool RequiresSlotUnification(this MethodDesc method)
+        {
+            if (method.HasCustomAttribute("System.Runtime.CompilerServices", "PreserveBaseOverridesAttribute"))
+            {
+#if DEBUG
+                // We shouldn't be calling this for non-MethodImpls, so verify that the method being checked is really a MethodImpl
+                MetadataType mdType = method.OwningType as MetadataType;
+                if (mdType != null)
+                {
+                    bool isMethodImpl = false;
+                    foreach (MethodImplRecord methodImplRecord in mdType.VirtualMethodImplsForType)
+                    {
+                        if (method == methodImplRecord.Body)
+                        {
+                            isMethodImpl = true;
+                            break;
+                        }
+                    }
+                    Debug.Assert(isMethodImpl);
+                }
+#endif
+                return true;
+            }
+
+            return false;
+        }
     }
 }
