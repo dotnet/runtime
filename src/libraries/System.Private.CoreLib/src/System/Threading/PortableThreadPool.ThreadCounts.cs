@@ -12,11 +12,12 @@ namespace System.Threading
         /// </summary>
         private struct ThreadCounts
         {
+            // SOS's ThreadPool command depends on this layout
             private const byte NumProcessingWorkShift = 0;
             private const byte NumExistingThreadsShift = 16;
             private const byte NumThreadsGoalShift = 32;
 
-            private ulong _data;
+            private ulong _data; // SOS's ThreadPool command depends on this name
 
             private ThreadCounts(ulong data) => _data = data;
 

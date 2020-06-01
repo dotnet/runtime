@@ -33,11 +33,12 @@ namespace System.Threading
         private static object? t_completionCountObject;
 
 #pragma warning disable IDE1006 // Naming Styles
-        // The singleton must be initialized after the static variables above, as the constructor may be dependent on them
+        // The singleton must be initialized after the static variables above, as the constructor may be dependent on them.
+        // SOS's ThreadPool command depends on this name.
         public static readonly PortableThreadPool ThreadPoolInstance = new PortableThreadPool();
 #pragma warning restore IDE1006 // Naming Styles
 
-        private int _cpuUtilization = 0;
+        private int _cpuUtilization = 0; // SOS's ThreadPool command depends on this name
         private short _minThreads;
         private short _maxThreads;
         private readonly LowLevelLock _maxMinThreadLock = new LowLevelLock();
@@ -46,7 +47,7 @@ namespace System.Threading
         private struct CacheLineSeparated
         {
             [FieldOffset(Internal.PaddingHelpers.CACHE_LINE_SIZE * 1)]
-            public ThreadCounts counts;
+            public ThreadCounts counts; // SOS's ThreadPool command depends on this name
             [FieldOffset(Internal.PaddingHelpers.CACHE_LINE_SIZE * 2)]
             public int lastDequeueTime;
             [FieldOffset(Internal.PaddingHelpers.CACHE_LINE_SIZE * 3)]
@@ -61,7 +62,7 @@ namespace System.Threading
             public int gateThreadRunningState;
         }
 
-        private CacheLineSeparated _separated;
+        private CacheLineSeparated _separated; // SOS's ThreadPool command depends on this name
         private long _currentSampleStartTime;
         private readonly ThreadInt64PersistentCounter _completionCounter = new ThreadInt64PersistentCounter();
         private int _threadAdjustmentIntervalMs;

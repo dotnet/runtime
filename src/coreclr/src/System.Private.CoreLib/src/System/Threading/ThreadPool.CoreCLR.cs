@@ -165,7 +165,9 @@ namespace System.Threading
 
     public static partial class ThreadPool
     {
+        // SOS's ThreadPool command depends on this name
         internal static readonly bool UsePortableThreadPool = InitializeConfigAndDetermineUsePortableThreadPool();
+
         internal static bool SupportsTimeSensitiveWorkItems => UsePortableThreadPool;
 
         // This needs to be initialized after UsePortableThreadPool above, as it may depend on UsePortableThreadPool and the

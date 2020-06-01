@@ -12,13 +12,14 @@ namespace System.Threading
         /// </summary>
         private partial class HillClimbing
         {
-            private static readonly Lazy<HillClimbing> s_threadPoolHillClimber = new Lazy<HillClimbing>(CreateHillClimber, true);
-            public static HillClimbing ThreadPoolHillClimber => s_threadPoolHillClimber.Value;
-
+            private const int LogCapacity = 200;
             private const int DefaultSampleIntervalMsLow = 10;
             private const int DefaultSampleIntervalMsHigh = 200;
 
             public static readonly bool IsDisabled = AppContextConfigHelper.GetBooleanConfig("System.Threading.ThreadPool.HillClimbing.Disable", false);
+
+            // SOS's ThreadPool command depends on this name
+            public static readonly HillClimbing ThreadPoolHillClimber = CreateHillClimber();
 
             private static HillClimbing CreateHillClimber()
             {
@@ -38,8 +39,8 @@ namespace System.Threading
                     maxSampleError: AppContextConfigHelper.GetInt32Config("System.Threading.ThreadPool.HillClimbing.MaxSampleErrorPercent", 15, false) / 100.0
                 );
             }
-            private const int LogCapacity = 200;
 
+            // SOS's ThreadPool command depends on the enum values
             public enum StateOrTransition
             {
                 Warmup,
@@ -52,13 +53,14 @@ namespace System.Threading
                 ThreadTimedOut,
             }
 
+            // SOS's ThreadPool command depends on the names of all fields
             private struct LogEntry
             {
                 public int tickCount;
                 public StateOrTransition stateOrTransition;
                 public int newControlSetting;
                 public int lastHistoryCount;
-                public double lastHistoryMean;
+                public float lastHistoryMean;
             }
 
             private readonly int _wavePeriod;
@@ -89,9 +91,9 @@ namespace System.Threading
 
             private readonly Random _randomIntervalGenerator = new Random();
 
-            private readonly LogEntry[] _log = new LogEntry[LogCapacity];
-            private int _logStart;
-            private int _logSize;
+            private readonly LogEntry[] _log = new LogEntry[LogCapacity]; // SOS's ThreadPool command depends on this name
+            private int _logStart; // SOS's ThreadPool command depends on this name
+            private int _logSize; // SOS's ThreadPool command depends on this name
 
             public HillClimbing(int wavePeriod, int maxWaveMagnitude, double waveMagnitudeMultiplier, int waveHistorySize, double targetThroughputRatio,
                 double targetSignalToNoiseRatio, double maxChangePerSecond, double maxChangePerSample, int sampleIntervalMsLow, int sampleIntervalMsHigh,
@@ -417,8 +419,8 @@ namespace System.Threading
                 entry.tickCount = Environment.TickCount;
                 entry.stateOrTransition = stateOrTransition;
                 entry.newControlSetting = newThreadCount;
-                entry.lastHistoryCount = ((int)Math.Min(_totalSamples, _samplesToMeasure) / _wavePeriod) * _wavePeriod;
-                entry.lastHistoryMean = throughput;
+                entry.lastHistoryCount = (int)(Math.Min(_totalSamples, _samplesToMeasure) / _wavePeriod) * _wavePeriod;
+                entry.lastHistoryMean = (float)throughput;
 
                 _logSize++;
 
