@@ -466,7 +466,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         case NI_Vector64_WithElement:
         case NI_Vector128_WithElement:
         {
-            assert(sig->numArgs == 3);
+            assert(numArgs == 3);
             GenTree* indexOp = impStackTop(1).val;
             if (!indexOp->OperIsConst())
             {
@@ -518,6 +518,21 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                     return nullptr;
             }
 
+            break;
+        }
+
+        case NI_Vector128_GetUpper:
+        {
+            // Converts to equivalent managed code:
+            //   AdvSimd.ExtractVector128(vector, Vector128<T>.Zero, 8 / sizeof(T)).GetLower();
+            assert(numArgs == 1);
+            op1           = impPopStack().val;
+            GenTree* zero  = gtNewSimdHWIntrinsicNode(retType, NI_Vector128_get_Zero, baseType, simdSize);
+            ssize_t index = 8 / genTypeSize(baseType);
+
+            retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, zero, gtNewIconNode(index), NI_AdvSimd_ExtractVector128,
+                                               baseType, simdSize);
+            retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD8, retNode, NI_Vector128_GetLower, baseType, 8);
             break;
         }
 
