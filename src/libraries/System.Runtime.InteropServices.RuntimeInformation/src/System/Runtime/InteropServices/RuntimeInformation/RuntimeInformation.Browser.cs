@@ -12,6 +12,6 @@ namespace System.Runtime.InteropServices
 
         public static Architecture OSArchitecture => Architecture.Wasm;
 
-        public static Architecture ProcessArchitecture => throw new PlatformNotSupportedException();
+        public static Architecture ProcessArchitecture => Architecture.Wasm;
     }
 }
