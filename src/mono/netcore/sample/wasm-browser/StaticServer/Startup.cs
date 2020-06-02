@@ -34,7 +34,6 @@ namespace SampleStaticWasm
             if (env.IsDevelopment())
             {
                 app.UseDeveloperExceptionPage();
-                app.UseBrowserLink();
             }
 
             app.UseDefaultFiles(new DefaultFilesOptions
