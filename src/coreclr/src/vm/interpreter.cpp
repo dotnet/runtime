@@ -9016,6 +9016,10 @@ void Interpreter::DoCallWork(bool virtualCall, void* thisArg, CORINFO_RESOLVED_T
             m_curStackHt++; didIntrinsic = true;
             break;
 #endif // INTERP_ILSTUBS
+        case CORINFO_INTRINSIC_GetIsSupported:
+            DoGetIsSupported();
+            didIntrinsic = true;
+            break;
         default:
 #if INTERP_TRACING
             InterlockedIncrement(&s_totalInterpCallsToIntrinsicsUnhandled);
@@ -10614,6 +10618,20 @@ void Interpreter::DoSIMDHwAccelerated()
 #endif // INTERP_TRACING
 
     LdIcon(1);
+}
+
+
+void Interpreter::DoGetIsSupported()
+{
+    CONTRACTL{
+        THROWS;
+        GC_TRIGGERS;
+        MODE_COOPERATIVE;
+    } CONTRACTL_END;
+
+    OpStackSet<BOOL>(m_curStackHt, false);
+    OpStackTypeSet(m_curStackHt, InterpreterType(CORINFO_TYPE_INT));
+    m_curStackHt++;
 }
 
 void Interpreter::RecordConstrainedCall()

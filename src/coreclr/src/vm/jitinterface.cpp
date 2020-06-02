@@ -8722,6 +8722,8 @@ CorInfoIntrinsics CEEInfo::getIntrinsicID(CORINFO_METHOD_HANDLE methodHnd,
 
     MethodDesc* method = GetMethod(methodHnd);
 
+    LPCUTF8 methodName = method->GetName();
+
     if (method->IsArray())
     {
         ArrayMethodDesc * arrMethod = (ArrayMethodDesc *)method;
@@ -8735,6 +8737,9 @@ CorInfoIntrinsics CEEInfo::getIntrinsicID(CORINFO_METHOD_HANDLE methodHnd,
     else
     {
         MethodTable * pMT = method->GetMethodTable();
+
+        LPCUTF8 moduleName = pMT->GetModule()->GetSimpleName();
+
         if (pMT->GetModule()->IsSystem() && pMT->IsByRefLike())
         {
             if (pMT->HasSameTypeDefAs(g_pByReferenceClass))
@@ -8768,6 +8773,12 @@ CorInfoIntrinsics CEEInfo::getIntrinsicID(CORINFO_METHOD_HANDLE methodHnd,
                     result = CORINFO_INTRINSIC_ReadOnlySpan_GetItem;
                 }
             }
+        }
+        else if (strcmp(pMT->GetModule()->GetSimpleName(), "System.Private.CoreLib") == 0 &&
+            strcmp(method->GetName(), "get_IsSupported") == 0)
+        {
+            // the get_Intrinsics method for hardware intrinsics
+            result = CORINFO_INTRINSIC_GetIsSupported;
         }
     }
 

@@ -471,6 +471,7 @@ namespace Internal.JitInterface
         CORINFO_INTRINSIC_Span_GetItem,
         CORINFO_INTRINSIC_ReadOnlySpan_GetItem,
         CORINFO_INTRINSIC_GetRawHandle,
+        CORINFO_INTRINSIC_GetIsSupported,
 
         CORINFO_INTRINSIC_Count,
         CORINFO_INTRINSIC_Illegal = -1,         // Not a true intrinsic,

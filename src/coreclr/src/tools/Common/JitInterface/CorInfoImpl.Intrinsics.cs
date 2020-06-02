@@ -162,9 +162,31 @@ namespace Internal.JitInterface
             table.Add(CorInfoIntrinsics.CORINFO_INTRINSIC_GetRawHandle, "EETypePtrOf", "System", "EETypePtr");
             table.Add(CorInfoIntrinsics.CORINFO_INTRINSIC_GetRawHandle, "DefaultConstructorOf", "System", "Activator");
             table.Add(CorInfoIntrinsics.CORINFO_INTRINSIC_GetRawHandle, "AllocatorOf", "System", "Activator");
+            table.Add(CorInfoIntrinsics.CORINFO_INTRINSIC_GetIsSupported, "get_IsSupported", "System.Runtime.Intrinsics.X86", "Aes");
+            table.Add(CorInfoIntrinsics.CORINFO_INTRINSIC_GetIsSupported, "get_IsSupported", "System.Runtime.Intrinsics.X86", "Avx");
+            table.Add(CorInfoIntrinsics.CORINFO_INTRINSIC_GetIsSupported, "get_IsSupported", "System.Runtime.Intrinsics.X86", "Avx2");
+            table.Add(CorInfoIntrinsics.CORINFO_INTRINSIC_GetIsSupported, "get_IsSupported", "System.Runtime.Intrinsics.X86", "Bmi1");
+            table.Add(CorInfoIntrinsics.CORINFO_INTRINSIC_GetIsSupported, "get_IsSupported", "System.Runtime.Intrinsics.X86", "Bmi2");
+            table.Add(CorInfoIntrinsics.CORINFO_INTRINSIC_GetIsSupported, "get_IsSupported", "System.Runtime.Intrinsics.X86", "Fma");
+            table.Add(CorInfoIntrinsics.CORINFO_INTRINSIC_GetIsSupported, "get_IsSupported", "System.Runtime.Intrinsics.X86", "Lzcnt");
+            table.Add(CorInfoIntrinsics.CORINFO_INTRINSIC_GetIsSupported, "get_IsSupported", "System.Runtime.Intrinsics.X86", "Pclmulqdq");
+            table.Add(CorInfoIntrinsics.CORINFO_INTRINSIC_GetIsSupported, "get_IsSupported", "System.Runtime.Intrinsics.X86", "Popcnt");
+            table.Add(CorInfoIntrinsics.CORINFO_INTRINSIC_GetIsSupported, "get_IsSupported", "System.Runtime.Intrinsics.X86", "Sse");
+            table.Add(CorInfoIntrinsics.CORINFO_INTRINSIC_GetIsSupported, "get_IsSupported", "System.Runtime.Intrinsics.X86", "Sse2");
+            table.Add(CorInfoIntrinsics.CORINFO_INTRINSIC_GetIsSupported, "get_IsSupported", "System.Runtime.Intrinsics.X86", "Sse3");
+            table.Add(CorInfoIntrinsics.CORINFO_INTRINSIC_GetIsSupported, "get_IsSupported", "System.Runtime.Intrinsics.X86", "Sse41");
+            table.Add(CorInfoIntrinsics.CORINFO_INTRINSIC_GetIsSupported, "get_IsSupported", "System.Runtime.Intrinsics.X86", "Sse42");
+            table.Add(CorInfoIntrinsics.CORINFO_INTRINSIC_GetIsSupported, "get_IsSupported", "System.Runtime.Intrinsics.X86", "Ssse3");
+            table.Add(CorInfoIntrinsics.CORINFO_INTRINSIC_GetIsSupported, "get_IsSupported", "System.Runtime.Intrinsics.X86", "X86Base");
+            table.Add(CorInfoIntrinsics.CORINFO_INTRINSIC_GetIsSupported, "get_IsSupported", "System.Runtime.Intrinsics.Arm", "AdvSimd");
+            table.Add(CorInfoIntrinsics.CORINFO_INTRINSIC_GetIsSupported, "get_IsSupported", "System.Runtime.Intrinsics.Arm", "Aes");
+            table.Add(CorInfoIntrinsics.CORINFO_INTRINSIC_GetIsSupported, "get_IsSupported", "System.Runtime.Intrinsics.Arm", "ArmBase");
+            table.Add(CorInfoIntrinsics.CORINFO_INTRINSIC_GetIsSupported, "get_IsSupported", "System.Runtime.Intrinsics.Arm", "Crc32");
+            table.Add(CorInfoIntrinsics.CORINFO_INTRINSIC_GetIsSupported, "get_IsSupported", "System.Runtime.Intrinsics.Arm", "Sha1");
+            table.Add(CorInfoIntrinsics.CORINFO_INTRINSIC_GetIsSupported, "get_IsSupported", "System.Runtime.Intrinsics.Arm", "Sha256");
 
             // If this assert fails, make sure to add the new intrinsics to the table above and update the expected count below.
-            Debug.Assert((int)CorInfoIntrinsics.CORINFO_INTRINSIC_Count == 56, "Please update intrinsic hash table");
+            Debug.Assert((int)CorInfoIntrinsics.CORINFO_INTRINSIC_Count == 57, "Please update intrinsic hash table");
 
             return table;
         }
