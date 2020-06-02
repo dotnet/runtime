@@ -467,13 +467,13 @@ namespace System.Text.Json.Serialization.Tests
 
             // Perform serialization with options, after which it will be locked.
             JsonSerializer.Serialize("1", options);
-            Assert.Throws<InvalidOperationException>(() => options.ReferenceHandling = ReferenceHandling.Preserve);
+            Assert.Throws<InvalidOperationException>(() => options.ReferenceHandler = ReferenceHandler.Preserve);
 
             var newOptions = new JsonSerializerOptions(options);
             VerifyOptionsEqual(options, newOptions);
 
             // No exception is thrown on mutating the new options instance because it is "unlocked".
-            newOptions.ReferenceHandling = ReferenceHandling.Preserve;
+            newOptions.ReferenceHandler = ReferenceHandler.Preserve;
         }
 
         [Fact]
@@ -582,9 +582,9 @@ namespace System.Text.Json.Serialization.Tests
                     options.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
                     options.DictionaryKeyPolicy = new SimpleSnakeCasePolicy();
                 }
-                else if (propertyType == typeof(ReferenceHandling))
+                else if (propertyType == typeof(ReferenceHandler))
                 {
-                    options.ReferenceHandling = ReferenceHandling.Preserve;
+                    options.ReferenceHandler = ReferenceHandler.Preserve;
                 }
                 else if (propertyType.IsValueType)
                 {

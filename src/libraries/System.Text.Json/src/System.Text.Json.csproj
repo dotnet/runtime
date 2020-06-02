@@ -123,7 +123,6 @@
     <Compile Include="System\Text\Json\Serialization\Converters\Value\UInt32Converter.cs" />
     <Compile Include="System\Text\Json\Serialization\Converters\Value\UInt64Converter.cs" />
     <Compile Include="System\Text\Json\Serialization\Converters\Value\UriConverter.cs" />
-    <Compile Include="System\Text\Json\Serialization\DefaultReferenceResolver.cs" />
     <Compile Include="System\Text\Json\Serialization\JsonCamelCaseNamingPolicy.cs" />
     <Compile Include="System\Text\Json\Serialization\JsonClassInfo.cs" />
     <Compile Include="System\Text\Json\Serialization\JsonClassInfo.Cache.cs" />
@@ -162,10 +161,14 @@
     <Compile Include="System\Text\Json\Serialization\MetadataPropertyName.cs" />
     <Compile Include="System\Text\Json\Serialization\ParameterRef.cs" />
     <Compile Include="System\Text\Json\Serialization\PooledByteBufferWriter.cs" />
+    <Compile Include="System\Text\Json\Serialization\PreserveReferenceHandler.cs" />
+    <Compile Include="System\Text\Json\Serialization\PreserveReferenceResolver.cs" />
     <Compile Include="System\Text\Json\Serialization\PropertyRef.cs" />
     <Compile Include="System\Text\Json\Serialization\ReadStack.cs" />
     <Compile Include="System\Text\Json\Serialization\ReadStackFrame.cs" />
-    <Compile Include="System\Text\Json\Serialization\ReferenceHandling.cs" />
+    <Compile Include="System\Text\Json\Serialization\ReferenceHandler.cs" />
+    <Compile Include="System\Text\Json\Serialization\ReferenceHandlerOfT.cs" />
+    <Compile Include="System\Text\Json\Serialization\ReferenceResolver.cs" />
     <Compile Include="System\Text\Json\Serialization\ReflectionEmitMemberAccessor.cs" />
     <Compile Include="System\Text\Json\Serialization\ReflectionMemberAccessor.cs" />
     <Compile Include="System\Text\Json\Serialization\StackFrameObjectState.cs" />
