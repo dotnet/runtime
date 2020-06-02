@@ -24,7 +24,7 @@ namespace Microsoft.Extensions.Caching.Memory
         private readonly ConcurrentDictionary<object, CacheEntry> _entries;
         private long _cacheSize = 0;
         private bool _disposed;
-        private ILogger _logger;
+        private readonly ILogger _logger;
 
         // We store the delegates locally to prevent allocations
         // every time a new CacheEntry is created.
