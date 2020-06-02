@@ -86,7 +86,8 @@ if ($RunFromPerformanceRepo) {
     robocopy $SourceDirectory $PerformanceDirectory /E /XD $PayloadDirectory $SourceDirectory\artifacts $SourceDirectory\.git
 }
 else {
-    git clone --branch master --depth 1 --quiet https://github.com/dotnet/performance $PerformanceDirectory
+    #Write-Host "Downloading perf repo from https://github.com/ooooolivia/performance"
+    git clone --branch crossgen2-parser-update --depth 1 --quiet https://github.com/ooooolivia/performance $PerformanceDirectory
 }
 
 if($MonoDotnet -ne "")
