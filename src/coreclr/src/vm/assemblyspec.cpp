@@ -26,7 +26,6 @@
 
 #ifdef FEATURE_COMINTEROP
 #include "clrprivbinderutil.h"
-#include "winrthelpers.h"
 #endif
 
 #include "../binder/inc/bindertracing.h"
@@ -208,22 +207,6 @@ HRESULT AssemblySpec::InitializeSpecInternal(mdToken kAssemblyToken,
     {
         IfFailThrow(BaseAssemblySpec::Init(kAssemblyToken,pImport));
 
-        if (IsContentType_WindowsRuntime())
-        {
-            if (!fAllowAllocation)
-            {   // We don't support this because we must be able to allocate in order to
-                // extract embedded type names for the native image scenario. Currently,
-                // the only caller of this method with fAllowAllocation == FALSE is
-                // Module::GetAssemblyIfLoaded, and since this method will only check the
-                // assembly spec cache, and since we can't cache WinRT assemblies, this
-                // limitation should have no negative impact.
-                IfFailThrow(E_FAIL);
-            }
-
-            // Extract embedded content, if present (currently used for embedded WinRT type names).
-            ParseEncodedName();
-        }
-
         // For static binds, we cannot reference a weakly named assembly from a strong named one.
         // (Note that this constraint doesn't apply to dynamic binds which is why this check is
         // not farther down the stack.)
@@ -258,21 +241,6 @@ void AssemblySpec::InitializeSpec(PEAssembly * pFile)
     IfFailThrow(pImport->GetAssemblyFromScope(&a));
 
     InitializeSpec(a, pImport, NULL);
-
-#ifdef FEATURE_COMINTEROP
-    if (IsContentType_WindowsRuntime())
-    {
-        LPCSTR  szNamespace;
-        LPCSTR  szTypeName;
-        SString ssFakeNameSpaceAllocationBuffer;
-        IfFailThrow(::GetFirstWinRTTypeDef(pImport, &szNamespace, &szTypeName, pFile->GetPath(), &ssFakeNameSpaceAllocationBuffer));
-
-        SetWindowsRuntimeType(szNamespace, szTypeName);
-
-        // pFile is not guaranteed to stay around (it might be unloaded with the AppDomain), we have to copy the type name
-        CloneFields(WINRT_TYPE_NAME_OWNED);
-    }
-#endif //FEATURE_COMINTEROP
 
     // Set the binding context for the AssemblySpec
     ICLRPrivBinder* pCurrentBinder = GetBindingContext();
@@ -430,9 +398,6 @@ HRESULT AssemblySpec::InitializeSpec(StackingAllocator* alloc, ASSEMBLYNAMEREF* 
     }
 
     CloneFieldsToStackingAllocator(alloc);
-
-    // Extract embedded WinRT name, if present.
-    ParseEncodedName();
 
     return S_OK;
 }
@@ -780,32 +745,6 @@ ICLRPrivBinder* AssemblySpec::GetBindingContextFromParentAssembly(AppDomain *pDo
         }
     }
 
-#if defined(FEATURE_COMINTEROP)
-    if (!IsContentType_WindowsRuntime() && (pParentAssemblyBinder != NULL))
-    {
-        CLRPrivBinderWinRT *pWinRTBinder = pDomain->GetWinRtBinder();
-        if (AreSameBinderInstance(pWinRTBinder, pParentAssemblyBinder))
-        {
-            // We could be here when a non-WinRT assembly load is triggerred by a winmd (e.g. System.Runtime being loaded due to
-            // types being referenced from Windows.Foundation.Winmd).
-            //
-            // If the AssemblySpec does not correspond to WinRT type but our parent assembly binder is a WinRT binder,
-            // then such an assembly will not be found by the binder.
-            // In such a case, the parent binder should be the fallback binder for the WinRT assembly if one exists.
-            ICLRPrivBinder* pParentWinRTBinder = pParentAssemblyBinder;
-            pParentAssemblyBinder = NULL;
-            ReleaseHolder<ICLRPrivAssemblyID_WinRT> assembly;
-            if (SUCCEEDED(pParentWinRTBinder->QueryInterface<ICLRPrivAssemblyID_WinRT>(&assembly)))
-            {
-                pParentAssemblyBinder = dac_cast<PTR_CLRPrivAssemblyWinRT>(assembly.GetValue())->GetFallbackBinder();
-
-                // The fallback binder should not be a WinRT binder.
-                _ASSERTE(!AreSameBinderInstance(pWinRTBinder, pParentAssemblyBinder));
-            }
-        }
-    }
-#endif // defined(FEATURE_COMINTEROP)
-
     if (!pParentAssemblyBinder)
     {
         // We can be here when loading assemblies via the host (e.g. ICLRRuntimeHost2::ExecuteAssembly) or dealing with assemblies
@@ -944,7 +883,7 @@ HRESULT AssemblySpec::EmitToken(
     EX_TRY
     {
         SmallStackSString ssName;
-        fMustBeBindable ? GetEncodedName(ssName) : GetName(ssName);
+        GetName(ssName);
 
         ASSEMBLYMETADATA AMD;
 
@@ -1009,94 +948,6 @@ HRESULT AssemblySpec::EmitToken(
 // Constructs an AssemblySpec for the given IAssemblyName. Recognizes IAssemblyName objects
 // that were built from WinRT AssemblySpec objects, extracts the encoded type name, and sets
 // the type namespace and class name properties appropriately.
-
-void AssemblySpec::ParseEncodedName()
-{
-    CONTRACTL {
-        THROWS;
-        GC_NOTRIGGER;
-        MODE_ANY;
-    } CONTRACTL_END
-
-#ifdef FEATURE_COMINTEROP
-    if (IsContentType_WindowsRuntime())
-    {
-        StackSString ssEncodedName(SString::Utf8, m_pAssemblyName);
-        ssEncodedName.Normalize();
-
-        SString::Iterator itBang = ssEncodedName.Begin();
-        if (ssEncodedName.Find(itBang, SL(W("!"))))
-        {
-            StackSString ssAssemblyName(ssEncodedName, ssEncodedName.Begin(), itBang - ssEncodedName.Begin());
-            StackSString ssTypeName(ssEncodedName, ++itBang, ssEncodedName.End() - itBang);
-            SetName(ssAssemblyName);
-            SetWindowsRuntimeType(ssTypeName);
-        }
-    }
-#endif
-}
-
-void AssemblySpec::SetWindowsRuntimeType(
-    LPCUTF8 szNamespace,
-    LPCUTF8 szClassName)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_NOTRIGGER;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-#ifdef FEATURE_COMINTEROP
-    // Release already allocated string
-    if (m_ownedFlags & WINRT_TYPE_NAME_OWNED)
-    {
-        if (m_szWinRtTypeNamespace != nullptr)
-            delete [] m_szWinRtTypeNamespace;
-        if (m_szWinRtTypeClassName != nullptr)
-            delete [] m_szWinRtTypeClassName;
-    }
-    m_szWinRtTypeNamespace = szNamespace;
-    m_szWinRtTypeClassName = szClassName;
-
-    m_ownedFlags &= ~WINRT_TYPE_NAME_OWNED;
-#else
-    // Classic (non-phone) CoreCLR does not support WinRT interop; this should never be called with a non-empty type name
-    _ASSERTE((szNamespace == NULL) && (szClassName == NULL));
-#endif
-}
-
-void AssemblySpec::SetWindowsRuntimeType(
-    SString const & _ssTypeName)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_NOTRIGGER;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    // Release already allocated string
-    if (m_ownedFlags & WINRT_TYPE_NAME_OWNED)
-    {
-        if (m_szWinRtTypeNamespace != nullptr)
-            delete[] m_szWinRtTypeNamespace;
-        if (m_szWinRtTypeClassName != nullptr)
-            delete[] m_szWinRtTypeClassName;
-        m_ownedFlags &= ~WINRT_TYPE_NAME_OWNED;
-    }
-
-    SString ssTypeName;
-    _ssTypeName.ConvertToUTF8(ssTypeName);
-
-    LPUTF8 szTypeName = (LPUTF8)ssTypeName.GetUTF8NoConvert();
-    ns::SplitInline(szTypeName, m_szWinRtTypeNamespace, m_szWinRtTypeClassName);
-    m_ownedFlags &= ~WINRT_TYPE_NAME_OWNED;
-    // Make a copy of the type name strings
-    CloneFields(WINRT_TYPE_NAME_OWNED);
-}
-
 
 AssemblySpecBindingCache::AssemblySpecBindingCache()
 {

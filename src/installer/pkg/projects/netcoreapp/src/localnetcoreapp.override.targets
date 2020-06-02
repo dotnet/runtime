@@ -5,7 +5,6 @@
   <Target Name="GetCorePackagePaths"
           DependsOnTargets="ResolveReferences">
     <PropertyGroup>
-      <_winmdPackageDir>$(NuGetPackageRoot)$(MicrosoftTargetingPackPrivateWinRTPackage.ToLowerInvariant())/$(MicrosoftTargetingPackPrivateWinRTVersion)/</_winmdPackageDir>
       <_diaSymReaderPackageDir>$(NuGetPackageRoot)microsoft.diasymreader.native/$(MicrosoftDiaSymReaderNativeVersion)/</_diaSymReaderPackageDir>
     </PropertyGroup>
 
@@ -24,21 +23,12 @@
     <PropertyGroup>
       <_crossDir Condition="'$(_crossHostArch)' != ''">/$(_crossHostArch)_$(TargetArchitecture)</_crossDir>
     </PropertyGroup>
-
-    <ItemGroup>
-      <_requiredProperty Include="_winmdPackageDir" />
-    </ItemGroup>
-
-    <Message Text="%(_requiredProperty.Identity): $(%(_requiredProperty.Identity))" />
-    <Error Condition="'$(%(_requiredProperty.Identity))' == ''" Text="Required property %(_requiredProperty.Identity) was not set." />
-    <Error Condition="!Exists('$(%(_requiredProperty.Identity))')" Text="Required property %(_requiredProperty.Identity) with value '$(%(_requiredProperty.Identity))' does not exist." />
   </Target>
 
   <Target Name="GetCrossgenToolPaths"
           DependsOnTargets="GetCorePackagePaths">
     <ItemGroup>
       <!-- Find crossgen tool assets in package cache to allow ExcludeAssets=All. -->
-      <_windowsWinMD Include="$(_winmdPackageDir)**/Windows.winmd" />
       <_diaSymReaderAssembly Include="$(_diaSymReaderPackageDir)**\Microsoft.DiaSymReader.Native.*.dll" />
     </ItemGroup>
 
@@ -56,10 +46,6 @@
       <_jitPath>$([MSBuild]::NormalizePath('$(CoreCLRArtifactsPath)', '$(CoreCLRCrossTargetComponentDirName)', 'sharedFramework', '$(LibraryFilePrefix)clrjit$(LibraryFileExtension)'))</_jitPath>
     </PropertyGroup>
 
-    <PropertyGroup Condition="'@(_windowsWinMD)' != ''">
-      <_windowsWinMDDirectory>%(_windowsWinMD.RootDir)%(_windowsWinMD.Directory)</_windowsWinMDDirectory>
-    </PropertyGroup>
-
     <PropertyGroup Condition="'@(_diaSymReaderAssembly)' != ''">
       <_diaSymReaderToolDir>%(_diaSymReaderAssembly.RootDir)%(_diaSymReaderAssembly.Directory)</_diaSymReaderToolDir>
     </PropertyGroup>
@@ -71,10 +57,6 @@
     <PropertyGroup Condition="'$(DotNetBuildFromSource)' == 'true'">
       <_diaSymReaderToolDir>$(IntermediateOutputPath)</_diaSymReaderToolDir>
     </PropertyGroup>
-
-    <Message Text="%(_requiredProperty.Identity): $(%(_requiredProperty.Identity))" />
-    <Error Condition="'$(%(_requiredProperty.Identity))' == ''" Text="Required property %(_requiredProperty.Identity) was not set." />
-    <Error Condition="!Exists('$(%(_requiredProperty.Identity))')" Text="Required property %(_requiredProperty.Identity) with value '$(%(_requiredProperty.Identity))' does not exist." />
 
     <ItemGroup>
       <!--

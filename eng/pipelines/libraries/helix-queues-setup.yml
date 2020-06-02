@@ -50,26 +50,30 @@ jobs:
 
     # Linux x64
     - ${{ if eq(parameters.platform, 'Linux_x64') }}:
-      - ${{ if eq(parameters.jobParameters.isFullMatrix, true) }}:
-        - Centos.7.Amd64.Open
-        - RedHat.7.Amd64.Open
+      - ${{ if eq(parameters.jobParameters.interpreter, '') }}:
+        - ${{ if eq(parameters.jobParameters.isFullMatrix, true) }}:
+          - Centos.7.Amd64.Open
+          - RedHat.7.Amd64.Open
+          - Debian.9.Amd64.Open
+          - Ubuntu.1604.Amd64.Open
+          - Ubuntu.1804.Amd64.Open
+          - SLES.12.Amd64.Open
+          - SLES.15.Amd64.Open
+          - (Fedora.30.Amd64.Open)ubuntu.1604.amd64.open@mcr.microsoft.com/dotnet-buildtools/prereqs:fedora-30-helix-4f8cef7-20200121150022
+          - (Fedora.32.Amd64.Open)ubuntu.1604.amd64.open@mcr.microsoft.com/dotnet-buildtools/prereqs:fedora-32-helix-20200512010618-efb9f14
+          - (Ubuntu.1910.Amd64.Open)ubuntu.1604.amd64.open@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-19.10-helix-amd64-cfcfd50-20191030180623
+          - (Debian.10.Amd64.Open)ubuntu.1604.amd64.open@mcr.microsoft.com/dotnet-buildtools/prereqs:debian-10-helix-amd64-bfcd90a-20200121150006
+        - ${{ if eq(parameters.jobParameters.isFullMatrix, false) }}:
+          - Centos.7.Amd64.Open
+          - RedHat.7.Amd64.Open
+          - Debian.9.Amd64.Open
+          - Ubuntu.1604.Amd64.Open
+          - Ubuntu.1804.Amd64.Open
+          - SLES.15.Amd64.Open
+          - (Fedora.30.Amd64.Open)ubuntu.1604.amd64.open@mcr.microsoft.com/dotnet-buildtools/prereqs:fedora-30-helix-4f8cef7-20200121150022
+      - ${{ if eq(parameters.jobParameters.interpreter, 'true') }}:
+        # Limiting interp runs as we don't need as much coverage.
         - Debian.9.Amd64.Open
-        - Ubuntu.1604.Amd64.Open
-        - Ubuntu.1804.Amd64.Open
-        - SLES.12.Amd64.Open
-        - SLES.15.Amd64.Open
-        - (Fedora.30.Amd64.Open)ubuntu.1604.amd64.open@mcr.microsoft.com/dotnet-buildtools/prereqs:fedora-30-helix-4f8cef7-20200121150022
-        - (Fedora.32.Amd64.Open)ubuntu.1604.amd64.open@mcr.microsoft.com/dotnet-buildtools/prereqs:fedora-32-helix-20200512010618-efb9f14
-        - (Ubuntu.1910.Amd64.Open)ubuntu.1604.amd64.open@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-19.10-helix-amd64-cfcfd50-20191030180623
-        - (Debian.10.Amd64.Open)ubuntu.1604.amd64.open@mcr.microsoft.com/dotnet-buildtools/prereqs:debian-10-helix-amd64-bfcd90a-20200121150006
-      - ${{ if eq(parameters.jobParameters.isFullMatrix, false) }}:
-        - Centos.7.Amd64.Open
-        - RedHat.7.Amd64.Open
-        - Debian.9.Amd64.Open
-        - Ubuntu.1604.Amd64.Open
-        - Ubuntu.1804.Amd64.Open
-        - SLES.15.Amd64.Open
-        - (Fedora.30.Amd64.Open)ubuntu.1604.amd64.open@mcr.microsoft.com/dotnet-buildtools/prereqs:fedora-30-helix-4f8cef7-20200121150022
 
     # OSX x64
     - ${{ if eq(parameters.platform, 'OSX_x64') }}:

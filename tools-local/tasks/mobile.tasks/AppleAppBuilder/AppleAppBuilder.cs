@@ -163,7 +163,7 @@ public class AppleAppBuilderTask : Task
         if (GenerateXcodeProject)
         {
             XcodeProjectPath = Xcode.GenerateXCode(ProjectName, MainLibraryFileName, assemblerFiles,
-                AppDir, binDir, MonoRuntimeHeaders, !isDevice, UseConsoleUITemplate, UseAotForSimulator, NativeMainSource);
+                AppDir, binDir, MonoRuntimeHeaders, !isDevice, UseConsoleUITemplate, UseAotForSimulator, Optimized, NativeMainSource);
 
             if (BuildAppBundle)
             {
