@@ -162,19 +162,9 @@ namespace Mono.Linker.Steps
 		{
 			_context = context;
 
-			IFlowAnnotationSource annotationSource = new AttributeFlowAnnotationSource ();
-			if (_context.AttributeDefinitions != null && _context.AttributeDefinitions.Count > 0) {
-				annotationSource = new AggregateFlowAnnotationSource (
-					_context.AttributeDefinitions.Select (xmlStringPath => {
-						var xmlAnnotations = new XmlFlowAnnotationSource (_context);
-						xmlAnnotations.ParseXml (xmlStringPath);
-						return xmlAnnotations;
-					})
-					.Append (annotationSource));
-			}
+			CustomAttributeSource annotationSources = new CustomAttributeSource (_context);
 
-			_flowAnnotations = new FlowAnnotations (annotationSource);
-
+			_flowAnnotations = new FlowAnnotations (_context, annotationSources);
 
 			Initialize ();
 			Process ();

@@ -13,7 +13,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 {
 	[SkipKeptItemsValidation]
 	[SetupLinkerAttributeDefinitionsFile ("XmlAnnotations.xml")]
-	[LogContains ("warning IL2021: Could not parse argument 'NonValidArgument' specified in", true)]
+	[LogContains ("XmlAnnotations.xml: warning IL2031: Attribute type 'System.DoesNotExistattribute' could not be found")]
+	[LogContains ("XmlAnnotations.xml: warning IL2021: Could not parse argument 'NonValidArgument' specified in *", true)]
 	class XmlAnnotations
 	{
 		public static void Main ()
@@ -38,6 +39,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
 		[UnrecognizedReflectionAccessPattern (typeof (XmlAnnotations), nameof (RequirePublicConstructors), new Type[] { typeof (Type) })]
 		[UnrecognizedReflectionAccessPattern (typeof (XmlAnnotations), nameof (RequireNonPublicConstructors), new Type[] { typeof (Type) })]
+		[RecognizedReflectionAccessPattern]
 		private void ReadFromInstanceField ()
 		{
 			RequireDefaultConstructor (_typeWithDefaultConstructor);
@@ -46,6 +48,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		}
 
 		[UnrecognizedReflectionAccessPattern (typeof (XmlAnnotations), nameof (RequirePublicConstructors), new Type[] { typeof (Type) })]
+		[RecognizedReflectionAccessPattern]
 		private void TwoAnnotatedParameters (
 			Type type,
 			Type type2)

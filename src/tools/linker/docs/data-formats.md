@@ -229,7 +229,7 @@ are applied.
 ```xml
 <linker>
   <assembly fullname="Assembly">
-    <attribute fullname="CustomAttributeName">
+    <attribute fullname="CustomAttributeName" assembly="AssemblyName">
       <argument>Argument</argument>
     </attribute>
   </assembly>
@@ -244,7 +244,7 @@ This allows to add a custom attribute to a class, interface, delegate, struct or
 <linker>
   <assembly fullname="Assembly">
     <type fullname="Assembly.A">
-      <attribute fullname="CustomAttributeName">
+      <attribute fullname="CustomAttributeName" assembly="AssemblyName">
         <argument>Argument</argument>
       </attribute>
     </type>
@@ -259,7 +259,7 @@ This allows to add a custom attribute to a class, interface, delegate, struct or
   <assembly fullname="Assembly">
     <type fullname="Assembly.A">
       <field name="MyTypeField">
-        <attribute fullname="System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembers">
+        <attribute fullname="System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute" assembly="System.Runtime">
           <argument>DefaultConstructor</argument>
         </attribute>
       </field>
@@ -275,7 +275,7 @@ This allows to add a custom attribute to a class, interface, delegate, struct or
   <assembly fullname="Assembly">
     <type fullname="Assembly.A">
       <property name="MyTypeProperty">
-        <attribute fullname="System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembers">
+        <attribute fullname="System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute" assembly="System.Runtime">
           <argument>DefaultConstructor</argument>
         </attribute>
       </property>
@@ -291,7 +291,7 @@ This allows to add a custom attribute to a class, interface, delegate, struct or
   <assembly fullname="Assembly">
     <type fullname="Assembly.A">
       <event name="MyTypeEvent">
-        <attribute fullname="System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembers">
+        <attribute fullname="CustomAttribute" assembly="AssemblyName">
           <argument>DefaultConstructor</argument>
         </attribute>
       </event>
@@ -308,21 +308,21 @@ This allows to add a custom attribute to a class, interface, delegate, struct or
     <type fullname="Assembly.A">
       <method signature="System.Void Method1(System.Type)">
         <parameter name="typeParameter">
-          <attribute fullname="System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembers">
+          <attribute fullname="System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute" assembly="System.Runtime">
             <argument>DefaultConstructor</argument>
           </attribute>
         </parameter>
       </method>
       <method signature="System.Type Method2()">
         <return>
-          <attribute fullname="System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembers">
+          <attribute fullname="System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute" assembly="System.Runtime">
             <argument>PublicConstructors</argument>
           </attribute>
         </return>
       </method>
       <method signature="Method3&lt;T&gt;(T)">
         <parameter name="genericParameter">
-          <attribute fullname="System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembers">
+          <attribute fullname="System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute" assembly="System.Runtime">
             <argument>DefaultConstructor</argument>
           </attribute>
         </parameter>
@@ -340,17 +340,17 @@ This allows to add a custom attribute to a class, interface, delegate, struct or
     <type fullname="Assembly.A">
       <method signature="System.Void Method1(System.Type, System.Type, System.Type)">
         <parameter name="typeParameter1">
-          <attribute fullname="System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembers">
+          <attribute fullname="System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute" assembly="System.Runtime">
             <argument>DefaultConstructor</argument>
           </attribute>
         </parameter>
         <parameter name="typeParameter2">
-          <attribute fullname="System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembers">
+          <attribute fullname="System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute" assembly="System.Runtime">
             <argument>DefaultConstructor</argument>
           </attribute>
         </parameter>
         <parameter name="typeParameter3">
-          <attribute fullname="System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembers">
+          <attribute fullname="System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute" assembly="System.Runtime">
             <argument>PublicConstructors</argument>
           </attribute>
         </parameter>
@@ -368,11 +368,25 @@ This allows to add a custom attribute to a class, interface, delegate, struct or
     <type fullname="Assembly.A">
       <type name="NestedType">
         <property name="MyTypeField">
-          <attribute fullname="System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembers">
+          <attribute fullname="System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute" assembly="System.Runtime">
             <argument>DefaultConstructor</argument>
           </attribute>
         </property>
       </type>
+    </type>
+  </assembly>
+</linker>
+```
+
+### Custom attribute on type in all assemblies
+
+```xml
+<linker>
+  <assembly fullname="*">
+    <type fullname="Namespace.SpecialAttribute">
+      <attribute fullname="System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute" assembly="System.Runtime">
+        <argument>DefaultConstructor</argument>
+      </attribute>
     </type>
   </assembly>
 </linker>
@@ -391,7 +405,7 @@ attributes are applied.
     <type fullname="Assembly.A" feature="EnableOptionalFeature" featurevalue="false">
       <method signature="System.String TestMethod()">
         <return>
-          <attribute fullname="System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembers">
+          <attribute fullname="System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute" assembly="System.Runtime">
             <argument>PublicConstructors</argument>
           </attribute>
         </return>
@@ -403,6 +417,9 @@ attributes are applied.
 
 ### Custom attributes elements
 
+The attribute element requires 'fullname' attribute without it linker will generate a warning and skip
+the attribute. Optionally you can use the 'assembly' attribute to point to certain assembly to look
+for the attribute, if not specified the linker will look the attribute in any loaded assembly.
 Inside an attribute element in the xml you can define argument, field and property elements. 
 An attribute could have several arguments, several fields or several properties. When writing 
 custom attribute with multiple arguments you need to write the xml elements in an order dependent 
@@ -411,7 +428,7 @@ second xml argument element correspond to the second custom attribute argument a
 For fields and properties, you need to include the name since they are not order dependent.
 
 ```xml
-<attribute fullname="SomeCustomAttribute">
+<attribute fullname="SomeCustomAttribute" assembly="AssemblyName">
   <argument>Argument1</argument>
   <argument>Argument2</argument>
   <argument>Argument3</argument>
