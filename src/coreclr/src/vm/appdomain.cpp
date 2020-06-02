@@ -6077,27 +6077,27 @@ PTR_DomainAssembly AppDomain::FindAssembly(PTR_ICLRPrivAssembly pHostAssembly)
 }
 
 #ifndef DACCESS_COMPILE
-// Return native image for a given base address, NULL when not found.
-PTR_NativeImage AppDomain::GetNativeImage(PTR_VOID imageBase)
+// Return native image for a given composite image file name, NULL when not found.
+PTR_NativeImage AppDomain::GetNativeImage(LPCUTF8 simpleFileName)
 {
     CrstHolder ch(&m_nativeImageLoadCrst);
     PTR_NativeImage pExistingImage;
-    if (m_nativeImageMap.Lookup(imageBase, &pExistingImage))
+    if (m_nativeImageMap.Lookup(simpleFileName, &pExistingImage))
     {
         return pExistingImage;
     }
     return nullptr;
 }
 
-PTR_NativeImage AppDomain::SetNativeImage(PTR_VOID imageBase, PTR_NativeImage pNativeImage)
+PTR_NativeImage AppDomain::SetNativeImage(LPCUTF8 simpleFileName, PTR_NativeImage pNativeImage)
 {
     CrstHolder ch(&m_nativeImageLoadCrst);
     PTR_NativeImage pExistingImage;
-    if (m_nativeImageMap.Lookup(imageBase, &pExistingImage))
+    if (m_nativeImageMap.Lookup(simpleFileName, &pExistingImage))
     {
         return pExistingImage;
     }
-    m_nativeImageMap.Add(imageBase, pNativeImage);
+    m_nativeImageMap.Add(simpleFileName, pNativeImage);
     return nullptr;
 }
 #endif//DACCESS_COMPILE

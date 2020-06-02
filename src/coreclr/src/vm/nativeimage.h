@@ -38,6 +38,25 @@ public:
     static count_t Hash(LPCUTF8 a);
 };
 
+typedef DPTR(class NativeImage) PTR_NativeImage;
+
+class NativeImageIndexTraits : public NoRemoveSHashTraits<MapSHashTraits<LPCUTF8, PTR_NativeImage>>
+{
+public:
+    // Similar to BaseAssemblySpec::CompareStrings, we're using temporary SStrings that throw
+    // for case-insensitive UTF8 assembly name comparisons.
+    static const bool s_NoThrow = false;
+
+    static LPCUTF8 GetKey(const KeyValuePair<LPCUTF8, PTR_NativeImage>& e) { return e.Key(); }
+    static BOOL Equals(LPCUTF8 a, LPCUTF8 b);
+    static count_t Hash(LPCUTF8 a);
+
+    static KeyValuePair<LPCUTF8, PTR_NativeImage> Null() { LIMITED_METHOD_CONTRACT; return KeyValuePair<LPCUTF8, PTR_NativeImage>(nullptr, PTR_NativeImage(nullptr)); }
+    static KeyValuePair<LPCUTF8, PTR_NativeImage> Deleted() { LIMITED_METHOD_CONTRACT; return KeyValuePair<LPCUTF8, PTR_NativeImage>(nullptr, PTR_NativeImage(nullptr)); }
+    static bool IsNull(const KeyValuePair<LPCUTF8, PTR_NativeImage>& e) { LIMITED_METHOD_CONTRACT; return e.Key() == nullptr; }
+    static bool IsDeleted(const KeyValuePair<LPCUTF8, PTR_NativeImage>& e) { return e.Key() == nullptr; }
+};
+
 class AssemblyLoadContext;
 class ReadyToRunInfo;
 class PEFile;
@@ -83,7 +102,7 @@ public:
     ~NativeImage();
 
     static NativeImage *Open(
-        LPCWSTR fullPath,
+        Module *componentModule,
         LPCUTF8 nativeImageFileName,
         AssemblyLoadContext *pAssemblyLoadContext,
         LoaderAllocator *pLoaderAllocator);

@@ -285,7 +285,7 @@ namespace ILCompiler
             _fileLayoutOptimizer = new ReadyToRunFileLayoutOptimizer(methodLayoutAlgorithm, fileLayoutAlgorithm, profileData, _nodeFactory);
         }
 
-
+        private readonly static string s_folderUpPrefix = ".." + Path.DirectorySeparatorChar;
 
         public override void Compile(string outputFile)
         {
@@ -303,15 +303,20 @@ namespace ILCompiler
                 if (moduleGroup.IsCompositeBuildMode)
                 {
                     // In composite mode with standalone MSIL we rewrite all input MSIL assemblies to the
-                    // output folder, adding a format R2R header to them with forwarding information to
+                    // output folder, adding a formal R2R header to them with forwarding information to
                     // the composite executable.
                     string outputDirectory = Path.GetDirectoryName(outputFile);
+                    string ownerExecutableName = Path.GetFileName(outputFile);
                     foreach (string inputFile in _inputFiles)
                     {
                         string relativeMsilPath = Path.GetRelativePath(_compositeRootPath, inputFile);
+                        if (relativeMsilPath.StartsWith(s_folderUpPrefix))
+                        {
+                            // Input file not in the composite root, emit to root output folder
+                            relativeMsilPath = Path.GetFileName(inputFile);
+                        }
                         string standaloneMsilOutputFile = Path.Combine(outputDirectory, relativeMsilPath);
-                        string ownerExecutableRelativePath = Path.GetRelativePath(Path.GetDirectoryName(standaloneMsilOutputFile), outputFile);
-                        RewriteComponentFile(inputFile: inputFile, outputFile: standaloneMsilOutputFile, ownerExecutableName: ownerExecutableRelativePath);
+                        RewriteComponentFile(inputFile: inputFile, outputFile: standaloneMsilOutputFile, ownerExecutableName: ownerExecutableName);
                     }
                 }
             }
