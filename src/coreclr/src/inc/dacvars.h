@@ -191,7 +191,6 @@ DEFINE_DACVAR(ULONG, UNKNOWN_POINTER_TYPE, dac__g_TypedReferenceMT, ::g_TypedRef
 
 #ifdef FEATURE_COMINTEROP
 DEFINE_DACVAR(ULONG, UNKNOWN_POINTER_TYPE, dac__g_pBaseCOMObject, ::g_pBaseCOMObject)
-DEFINE_DACVAR(ULONG, UNKNOWN_POINTER_TYPE, dac__g_pBaseRuntimeClass, ::g_pBaseRuntimeClass)
 #endif
 
 #ifdef FEATURE_ICASTABLE
@@ -222,7 +221,6 @@ DEFINE_DACVAR(ULONG, SIZE_T, dac__gFCallMethods, ::gFCallMethods)
 DEFINE_DACVAR(ULONG, PTR_SyncTableEntry, dac__g_pSyncTable, ::g_pSyncTable)
 #ifdef FEATURE_COMINTEROP
 DEFINE_DACVAR(ULONG, UNKNOWN_POINTER_TYPE, dac__g_pRCWCleanupList, ::g_pRCWCleanupList)
-DEFINE_DACVAR(ULONG, BOOL, RCWWalker__s_bIsGlobalPeggingOn, RCWWalker::s_bIsGlobalPeggingOn)
 #endif // FEATURE_COMINTEROP
 
 #ifndef TARGET_UNIX

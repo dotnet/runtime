@@ -42,5 +42,11 @@ namespace System.Runtime.InteropServices.Tests
                 Marshal.Release(ptr);
             }
         }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof (PlatformDetection.IsNotWindowsNanoServer))]
+        public void GetIDispatchForObject_ManagedIInspectableObject_Fail()
+        {
+            Assert.Throws<PlatformNotSupportedException>(() => Marshal.GetIDispatchForObject(new IInspectableManagedObject()));
+        }
     }
 }

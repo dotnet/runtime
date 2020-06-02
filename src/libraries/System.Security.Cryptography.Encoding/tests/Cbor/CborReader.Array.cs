@@ -8,6 +8,20 @@ namespace System.Formats.Cbor
 {
     public partial class CborReader
     {
+        /// <summary>
+        ///   Reads the next data item as the start of an array (major type 4).
+        /// </summary>
+        /// <returns>
+        ///   The length of the definite-length array, or <see langword="null" /> if the array is indefinite-length.
+        /// </returns>
+        /// <exception cref="InvalidOperationException">
+        ///   the next data item does not have the correct major type.
+        /// </exception>
+        /// <exception cref="FormatException">
+        ///   the next value has an invalid CBOR encoding. -or-
+        ///   there was an unexpected end of CBOR encoding data. -or-
+        ///   the next value uses a CBOR encoding that is not valid under the current conformance level.
+        /// </exception>
         public int? ReadStartArray()
         {
             CborInitialByte header = PeekInitialByte(expectedType: CborMajorType.Array);
@@ -16,7 +30,7 @@ namespace System.Formats.Cbor
             {
                 if (_isConformanceLevelCheckEnabled && CborConformanceLevelHelpers.RequiresDefiniteLengthItems(ConformanceLevel))
                 {
-                    throw new FormatException("Indefinite-length items are not supported under the current conformance level.");
+                    throw new FormatException(SR.Format(SR.Cbor_ConformanceLevel_IndefiniteLengthItemsNotSupported, ConformanceLevel));
                 }
 
                 AdvanceBuffer(1);
@@ -25,30 +39,31 @@ namespace System.Formats.Cbor
             }
             else
             {
-                ulong arrayLength = ReadUnsignedInteger(_buffer.Span, header, out int additionalBytes);
+                ReadOnlySpan<byte> buffer = GetRemainingBytes();
+                int arrayLength = DecodeDefiniteLength(header, buffer, out int bytesRead);
 
-                if (arrayLength > (ulong)_buffer.Length)
-                {
-                    throw new FormatException("Insufficient buffer size for declared definite length in CBOR data item.");
-                }
-
-                AdvanceBuffer(1 + additionalBytes);
-                PushDataItem(CborMajorType.Array, (int)arrayLength);
-                return (int)arrayLength;
+                AdvanceBuffer(bytesRead);
+                PushDataItem(CborMajorType.Array, arrayLength);
+                return arrayLength;
             }
         }
 
+        /// <summary>
+        ///   Reads the end of an array (major type 4).
+        /// </summary>
+        /// <exception cref="InvalidOperationException">
+        ///   the current context is not an array. -or-
+        ///   the reader is not at the end of the array.
+        /// </exception>
+        /// <exception cref="FormatException">
+        ///   the next value has an invalid CBOR encoding. -or-
+        ///   there was an unexpected end of CBOR encoding data
+        /// </exception>
         public void ReadEndArray()
         {
-            if (_remainingDataItems == null)
+            if (_definiteLength is null)
             {
-                CborInitialByte value = PeekInitialByte();
-
-                if (value.InitialByte != CborInitialByte.IndefiniteLengthBreakByte)
-                {
-                    throw new InvalidOperationException("Not at end of indefinite-length array.");
-                }
-
+                ValidateNextByteIsBreakByte();
                 PopDataItem(expectedType: CborMajorType.Array);
                 AdvanceDataItemCounters();
                 AdvanceBuffer(1);

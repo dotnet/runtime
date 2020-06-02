@@ -173,11 +173,10 @@ public:
 
 
 // An extension of IMetaModelCommon, exposed by read-only importers only.
-// (The primary user for this is the WinMD import adapter which needs
-// a unified view of RegMeta and MDInternalRO.)
 //
-// These methods were separated from IMetaModelCommon as they are only used by
-// the WinMDAdapter and we don't want the maintainence and code-coverage cost
+// These methods were separated from IMetaModelCommon as
+// Enc-aware versions of these methods haven't been needed
+// and we don't want the maintainence and code-coverage cost
 // of providing Enc-aware versions of these methods.
 class IMetaModelCommonRO : public IMetaModelCommon
 {
@@ -2124,6 +2123,23 @@ public:
 
 };  //class CMiniMdTemplate<Impl>
 
+
+//-----------------------------------------------------------------------------------------------------
+// A common interface unifying RegMeta and MDInternalRO, giving the adapter a common interface to
+// access the raw metadata.
+//-----------------------------------------------------------------------------------------------------
+
+// {4F8EE8A3-24F8-4241-BC75-C8CAEC0255B5}
+EXTERN_GUID(IID_IMDCommon, 0x4f8ee8a3, 0x24f8, 0x4241, 0xbc, 0x75, 0xc8, 0xca, 0xec, 0x2, 0x55, 0xb5);
+
+#undef  INTERFACE
+#define INTERFACE IID_IMDCommon
+DECLARE_INTERFACE_(IMDCommon, IUnknown)
+{
+    STDMETHOD_(IMetaModelCommon*, GetMetaModelCommon)() PURE;
+    STDMETHOD_(IMetaModelCommonRO*, GetMetaModelCommonRO)() PURE;
+    STDMETHOD(GetVersionString)(LPCSTR *pszVersionString) PURE;
+};
 
 
 #undef SETP

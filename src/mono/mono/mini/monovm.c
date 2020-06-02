@@ -117,10 +117,13 @@ mono_core_preload_hook (MonoAssemblyLoadContext *alc, MonoAssemblyName *aname, c
 	g_assert (aname->name);
 	g_assert (!refonly);
 	/* alc might be a user ALC - we get here from alc.LoadFromAssemblyName(), but we should load TPA assemblies into the default alc */
-	MonoAssemblyLoadContext *default_alc = mono_domain_default_alc (mono_alc_domain (alc));
+	MonoAssemblyLoadContext *default_alc;
+	default_alc = mono_domain_default_alc (mono_alc_domain (alc));
 
 	basename = g_strconcat (aname->name, ".dll", (const char*)NULL); /* TODO: make sure CoreCLR never needs to load .exe files */
-	size_t basename_len = strlen (basename);
+
+	size_t basename_len;
+	basename_len = strlen (basename);
 
 	for (int i = 0; i < a->assembly_count; ++i) {
 		if (basename_len == a->basename_lens [i] && !g_strncasecmp (basename, a->basenames [i], a->basename_lens [i])) {

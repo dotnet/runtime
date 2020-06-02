@@ -2178,9 +2178,8 @@ namespace System.Diagnostics.Tracing
                     Keywords = (EventKeywords)unchecked(keywords),
                     Level = level
                 };
-                var msg = new { message = msgString };
-                var tlet = new TraceLoggingEventTypes(EventName, EventTags.None, new Type[] { msg.GetType() });
-                WriteMultiMergeInner(EventName, ref opt, tlet, null, null, msg);
+                var tlet = new TraceLoggingEventTypes(EventName, EventTags.None, new Type[] { typeof(string) });
+                WriteMultiMergeInner(EventName, ref opt, tlet, null, null, msgString);
             }
             else
             {

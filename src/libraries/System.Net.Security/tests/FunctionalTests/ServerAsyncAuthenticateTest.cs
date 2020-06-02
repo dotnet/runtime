@@ -44,7 +44,6 @@ namespace System.Net.Security.Tests
 
         [Theory]
         [MemberData(nameof(ProtocolMismatchData))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/36192", TestPlatforms.AnyUnix)]
         public async Task ServerAsyncAuthenticate_MismatchProtocols_Fails(
             SslProtocols serverProtocol,
             SslProtocols clientProtocol,
@@ -104,83 +103,69 @@ namespace System.Net.Security.Tests
                 "Server: " + serverSslProtocols + "; Client: " + clientSslProtocols +
                 " expectedToFail: " + expectedToFail);
 
-            int timeOut = expectedToFail ? TestConfiguration.FailingTestTimeoutMiliseconds
-                : TestConfiguration.PassingTestTimeoutMilliseconds;
+            (NetworkStream clientStream, NetworkStream serverStream) = TestHelper.GetConnectedTcpStreams();
 
-            IPEndPoint endPoint = new IPEndPoint(IPAddress.Loopback, 0);
-            var server = new TcpListener(endPoint);
-            server.Start();
-
-            using (var clientConnection = new TcpClient())
+            using (SslStream sslServerStream = new SslStream(
+                serverStream,
+                false,
+                AllowEmptyClientCertificate))
+            using (SslStream sslClientStream = new SslStream(
+                clientStream,
+                false,
+                delegate {
+                    // Allow any certificate from the server.
+                    // Note that simply ignoring exceptions from AuthenticateAsClientAsync() is not enough
+                    // because in Mono, certificate validation is performed during the handshake and a failure
+                    // would result in the connection being terminated before the handshake completed, thus
+                    // making the server-side AuthenticateAsServerAsync() fail as well.
+                    return true;
+                }))
             {
-                IPEndPoint serverEndPoint = (IPEndPoint)server.LocalEndpoint;
+                string serverName = _serverCertificate.GetNameInfo(X509NameType.SimpleName, false);
 
-                Task clientConnect = clientConnection.ConnectAsync(serverEndPoint.Address, serverEndPoint.Port);
-                Task<TcpClient> serverAccept = server.AcceptTcpClientAsync();
+                _log.WriteLine("Connected on {0} {1} ({2} {3})", clientStream.Socket.LocalEndPoint, clientStream.Socket.RemoteEndPoint, clientStream.Socket.Handle, serverStream.Socket.Handle);
+                _log.WriteLine("client SslStream#{0} server SslStream#{1}", sslClientStream.GetHashCode(),  sslServerStream.GetHashCode());
 
-                // We expect that the network-level connect will always complete.
-                await Task.WhenAll(new Task[] { clientConnect, serverAccept }).TimeoutAfter(
-                    TestConfiguration.PassingTestTimeoutMilliseconds);
+                _logVerbose.WriteLine("ServerAsyncAuthenticateTest.AuthenticateAsClientAsync start.");
+                Task clientAuthentication = sslClientStream.AuthenticateAsClientAsync(
+                    serverName,
+                    null,
+                    clientSslProtocols,
+                    false);
 
-                using (TcpClient serverConnection = await serverAccept)
-                using (SslStream sslServerStream = new SslStream(
-                    clientConnection.GetStream(),
-                    false,
-                    AllowEmptyClientCertificate))
-                using (SslStream sslClientStream = new SslStream(
-                    serverConnection.GetStream(),
-                    false,
-                    delegate {
-                        // Allow any certificate from the server.
-                        // Note that simply ignoring exceptions from AuthenticateAsClientAsync() is not enough
-                        // because in Mono, certificate validation is performed during the handshake and a failure
-                        // would result in the connection being terminated before the handshake completed, thus
-                        // making the server-side AuthenticateAsServerAsync() fail as well.
-                        return true;
-                    }))
+                _logVerbose.WriteLine("ServerAsyncAuthenticateTest.AuthenticateAsServerAsync start.");
+                Task serverAuthentication = sslServerStream.AuthenticateAsServerAsync(
+                    _serverCertificate,
+                    true,
+                    serverSslProtocols,
+                    false);
+
+                try
                 {
-                    string serverName = _serverCertificate.GetNameInfo(X509NameType.SimpleName, false);
-
-                    _logVerbose.WriteLine("ServerAsyncAuthenticateTest.AuthenticateAsClientAsync start.");
-                    Task clientAuthentication = sslClientStream.AuthenticateAsClientAsync(
-                        serverName,
-                        null,
-                        clientSslProtocols,
-                        false);
-
-                    _logVerbose.WriteLine("ServerAsyncAuthenticateTest.AuthenticateAsServerAsync start.");
-                    Task serverAuthentication = sslServerStream.AuthenticateAsServerAsync(
-                        _serverCertificate,
-                        true,
-                        serverSslProtocols,
-                        false);
-
-                    try
-                    {
-                        await clientAuthentication.TimeoutAfter(timeOut);
-                        _logVerbose.WriteLine("ServerAsyncAuthenticateTest.clientAuthentication complete.");
-                    }
-                    catch (Exception ex)
-                    {
-                        // Ignore client-side errors: we're only interested in server-side behavior.
-                        _log.WriteLine("Client exception: " + ex);
-                    }
-
-                    await serverAuthentication.TimeoutAfter(timeOut);
-                    _logVerbose.WriteLine("ServerAsyncAuthenticateTest.serverAuthentication complete.");
-
-                    _log.WriteLine(
-                        "Server({0}) authenticated with encryption cipher: {1} {2}-bit strength",
-                        serverEndPoint,
-                        sslServerStream.CipherAlgorithm,
-                        sslServerStream.CipherStrength);
-
-                    Assert.True(
-                        sslServerStream.CipherAlgorithm != CipherAlgorithmType.Null,
-                        "Cipher algorithm should not be NULL");
-
-                    Assert.True(sslServerStream.CipherStrength > 0, "Cipher strength should be greater than 0");
+                    await clientAuthentication.TimeoutAfter(TestConfiguration.PassingTestTimeoutMilliseconds);
+                    _logVerbose.WriteLine("ServerAsyncAuthenticateTest.clientAuthentication complete.");
                 }
+                catch (Exception ex)
+                {
+                    // Ignore client-side errors: we're only interested in server-side behavior.
+                    _log.WriteLine("Client exception : " + ex);
+                    clientStream.Socket.Shutdown(SocketShutdown.Send);
+                }
+
+                await serverAuthentication.TimeoutAfter(TestConfiguration.PassingTestTimeoutMilliseconds);
+                _logVerbose.WriteLine("ServerAsyncAuthenticateTest.serverAuthentication complete.");
+
+                _log.WriteLine(
+                    "Server({0}) authenticated with encryption cipher: {1} {2}-bit strength",
+                    serverStream.Socket.LocalEndPoint,
+                    sslServerStream.CipherAlgorithm,
+                    sslServerStream.CipherStrength);
+
+                Assert.True(
+                    sslServerStream.CipherAlgorithm != CipherAlgorithmType.Null,
+                    "Cipher algorithm should not be NULL");
+
+                Assert.True(sslServerStream.CipherStrength > 0, "Cipher strength should be greater than 0");
             }
         }
 

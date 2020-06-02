@@ -8,7 +8,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="ICustomMarshaler.cs" />
-    <Compile Include="..\..\common\XunitBase.cs" />
+    <Compile Include="..\..\..\Common\XunitBase.cs" />
   </ItemGroup>
   <PropertyGroup>
     <CLRTestNeedTarget>1</CLRTestNeedTarget>

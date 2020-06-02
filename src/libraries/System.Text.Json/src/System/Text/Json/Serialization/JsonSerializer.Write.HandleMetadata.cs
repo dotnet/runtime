@@ -20,28 +20,33 @@ namespace System.Text.Json
             ref WriteStack state,
             Utf8JsonWriter writer)
         {
-            MetadataPropertyName metadataToWrite;
+            MetadataPropertyName writtenMetadataName;
 
             // If the jsonConverter supports immutable dictionaries or value types, don't write any metadata
             if (!jsonConverter.CanHaveIdMetadata || jsonConverter.IsValueType)
             {
-                metadataToWrite = MetadataPropertyName.NoMetadata;
-            }
-            else if (state.ReferenceResolver.TryGetOrAddReferenceOnSerialize(currentValue, out string referenceId))
-            {
-                Debug.Assert(referenceId != null);
-                writer.WriteString(s_metadataRef, referenceId);
-                writer.WriteEndObject();
-                metadataToWrite = MetadataPropertyName.Ref;
+                writtenMetadataName = MetadataPropertyName.NoMetadata;
             }
             else
             {
+
+                string referenceId = state.ReferenceResolver.GetReference(currentValue, out bool alreadyExists);
                 Debug.Assert(referenceId != null);
-                writer.WriteString(s_metadataId, referenceId);
-                metadataToWrite = MetadataPropertyName.Id;
+
+                if (alreadyExists)
+                {
+                    writer.WriteString(s_metadataRef, referenceId);
+                    writer.WriteEndObject();
+                    writtenMetadataName = MetadataPropertyName.Ref;
+                }
+                else
+                {
+                    writer.WriteString(s_metadataId, referenceId);
+                    writtenMetadataName = MetadataPropertyName.Id;
+                }
             }
 
-            return metadataToWrite;
+            return writtenMetadataName;
         }
 
         internal static MetadataPropertyName WriteReferenceForCollection(
@@ -50,32 +55,37 @@ namespace System.Text.Json
             ref WriteStack state,
             Utf8JsonWriter writer)
         {
-            MetadataPropertyName metadataToWrite;
+            MetadataPropertyName writtenMetadataName;
 
             // If the jsonConverter supports immutable enumerables or value type collections, don't write any metadata
             if (!jsonConverter.CanHaveIdMetadata || jsonConverter.IsValueType)
             {
                 writer.WriteStartArray();
-                metadataToWrite = MetadataPropertyName.NoMetadata;
-            }
-            else if (state.ReferenceResolver.TryGetOrAddReferenceOnSerialize(currentValue, out string referenceId))
-            {
-                Debug.Assert(referenceId != null);
-                writer.WriteStartObject();
-                writer.WriteString(s_metadataRef, referenceId);
-                writer.WriteEndObject();
-                metadataToWrite = MetadataPropertyName.Ref;
+                writtenMetadataName = MetadataPropertyName.NoMetadata;
             }
             else
             {
-                Debug.Assert(referenceId != null);
-                writer.WriteStartObject();
-                writer.WriteString(s_metadataId, referenceId);
-                writer.WriteStartArray(s_metadataValues);
-                metadataToWrite = MetadataPropertyName.Id;
+                string referenceId = state.ReferenceResolver.GetReference(currentValue, out bool alreadyExists);
+
+                if (alreadyExists)
+                {
+                    Debug.Assert(referenceId != null);
+                    writer.WriteStartObject();
+                    writer.WriteString(s_metadataRef, referenceId);
+                    writer.WriteEndObject();
+                    writtenMetadataName = MetadataPropertyName.Ref;
+                }
+                else
+                {
+                    Debug.Assert(referenceId != null);
+                    writer.WriteStartObject();
+                    writer.WriteString(s_metadataId, referenceId);
+                    writer.WriteStartArray(s_metadataValues);
+                    writtenMetadataName = MetadataPropertyName.Id;
+                }
             }
 
-            return metadataToWrite;
+            return writtenMetadataName;
         }
     }
 }
