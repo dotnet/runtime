@@ -6793,11 +6793,26 @@ call_newobj:
 			int const i32 = READ32 (ip + 2);
 			if (i32 == -1) {
 			} else if (i32) {
+				gpointer dest_vt;
 				sp--;
-				memcpy(frame->retval->data.p, sp->data.p, i32);
+				if (frame->parent) {
+					dest_vt = frame->parent->state.vt_sp;
+					/* Push the valuetype in the parent frame */
+					frame->parent->state.sp [0].data.p = dest_vt;
+					frame->parent->state.sp++;
+					frame->parent->state.vt_sp += ALIGN_TO (i32, MINT_VT_ALIGNMENT);
+				} else {
+					dest_vt = frame->retval->data.p;
+				}
+				memcpy (dest_vt, sp->data.p, i32);
 			} else {
 				sp--;
-				*frame->retval = *sp;
+				if (frame->parent) {
+					frame->parent->state.sp [0] = *sp;
+					frame->parent->state.sp++;
+				} else {
+					*frame->retval = *sp;
+				}
 			}
 
 			if ((flag & TRACING_FLAG) || ((flag & PROFILING_FLAG) && MONO_PROFILER_ENABLED (method_leave) &&
@@ -6806,10 +6821,17 @@ call_newobj:
 				prof_ctx->interp_frame = frame;
 				prof_ctx->method = frame->imethod->method;
 				if (i32 != -1) {
-					if (i32)
-						prof_ctx->return_value = frame->retval->data.p;
-					else
-						prof_ctx->return_value = frame->retval;
+					if (i32) {
+						if (frame->parent)
+							prof_ctx->return_value = frame->parent->state.sp [-1].data.p;
+						else
+							prof_ctx->return_value = frame->retval->data.p;
+					} else {
+						if (frame->parent)
+							prof_ctx->return_value = frame->parent->state.sp - 1;
+						else
+							prof_ctx->return_value = frame->retval;
+					}
 				}
 				if (flag & TRACING_FLAG)
 					mono_trace_leave_method (frame->imethod->method, frame->imethod->jinfo, prof_ctx);
@@ -7553,6 +7575,8 @@ interp_frame_get_res (MonoInterpFrameHandle frame)
 	sig = mono_method_signature_internal (iframe->imethod->method);
 	if (sig->ret->type == MONO_TYPE_VOID)
 		return NULL;
+	else if (iframe->parent)
+		return stackval_to_data_addr (sig->ret, iframe->parent->state.sp - 1);
 	else
 		return stackval_to_data_addr (sig->ret, iframe->retval);
 }
