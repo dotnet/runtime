@@ -601,7 +601,7 @@ pal::string_t pal::get_current_os_rid_platform()
 
     return ridOS;
 }
-#elif defined(__sun)
+#elif defined(TARGET_ILLUMOS)
 pal::string_t pal::get_current_os_rid_platform()
 {
     // Code:
@@ -609,15 +609,13 @@ pal::string_t pal::get_current_os_rid_platform()
     //   if (uname(&u) != -1)
     //       printf("sysname: %s, release: %s, version: %s, machine: %s\n", u.sysname, u.release, u.version, u.machine);
     //
-    // Output Examples:
+    // Output examples:
     //   on OmniOS
     //       sysname: SunOS, release: 5.11, version: omnios-r151018-95eaa7e, machine: i86pc
     //   on OpenIndiana Hipster:
     //       sysname: SunOS, release: 5.11, version: illumos-63878f749f, machine: i86pc
     //   on SmartOS:
     //       sysname: SunOS, release: 5.11, version: joyent_20200408T231825Z, machine: i86pc
-    //   on Solaris 11:
-    //       sysname: SunOS, release: 5.11, version: 11.3, machine: i86pc
 
     pal::string_t ridOS;
     struct utsname utsname_obj;
@@ -640,14 +638,32 @@ pal::string_t pal::get_current_os_rid_platform()
         ridOS.append(_X("smartos."))
              .append(utsname_obj.version, strlen("joyent_"), 4); // e.g. smartos.2020
     }
-    else // solaris
+
+    return ridOS;
+}
+#elif defined(__sun)
+pal::string_t pal::get_current_os_rid_platform()
+{
+    // Code:
+    //   struct utsname u;
+    //   if (uname(&u) != -1)
+    //       printf("sysname: %s, release: %s, version: %s, machine: %s\n", u.sysname, u.release, u.version, u.machine);
+    //
+    // Output example on Solaris 11:
+    //       sysname: SunOS, release: 5.11, version: 11.3, machine: i86pc
+
+    pal::string_t ridOS;
+    struct utsname utsname_obj;
+    if (uname(&utsname_obj) < 0)
     {
-        char *pos = strchr(utsname_obj.version, '.');
-        if (pos)
-        {
-            ridOS.append(_X("solaris."))
-                 .append(utsname_obj.version, pos - utsname_obj.version); // e.g. solaris.11
-        }
+        return ridOS;
+    }
+
+    char *pos = strchr(utsname_obj.version, '.');
+    if (pos)
+    {
+        ridOS.append(_X("solaris."))
+             .append(utsname_obj.version, pos - utsname_obj.version); // e.g. solaris.11
     }
 
     return ridOS;
