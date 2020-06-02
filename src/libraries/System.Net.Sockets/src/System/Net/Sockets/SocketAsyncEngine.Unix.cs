@@ -12,12 +12,6 @@ namespace System.Net.Sockets
 {
     internal sealed unsafe class SocketAsyncEngine : IThreadPoolWorkItem
     {
-        // Socket continuations are dispatched to the ThreadPool from the event thread.
-        // This avoids continuations blocking the event handling.
-        // Setting PreferInlineCompletions allows continuations to run directly on the event thread.
-        // PreferInlineCompletions defaults to false and can be set to true using the DOTNET_SYSTEM_NET_SOCKETS_INLINE_COMPLETIONS envvar.
-        internal static readonly bool InlineSocketCompletionsEnabled = Environment.GetEnvironmentVariable("DOTNET_SYSTEM_NET_SOCKETS_INLINE_COMPLETIONS") == "1";
-
         //
         // Encapsulates a particular SocketAsyncContext object's access to a SocketAsyncEngine.
         //
@@ -81,8 +75,8 @@ namespace System.Net.Sockets
                 return (int)count;
             }
 
-            // // When inlining continuations, we default to ProcessorCount to make sure event threads cannot be a bottleneck.
-            if (InlineSocketCompletionsEnabled)
+            // When inlining continuations, we default to ProcessorCount to make sure event threads cannot be a bottleneck.
+            if (SafeSocketHandle.InlineSocketCompletionsEnabled)
             {
                 return Environment.ProcessorCount;
             }
