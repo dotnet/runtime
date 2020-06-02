@@ -133,11 +133,12 @@ namespace System.Diagnostics
             }
             else
             {
+                ActivityContext initializedContext =  context == default && Activity.Current != null ? Activity.Current.Context : context;
                 listeners.EnumWithFunc(listener => {
                     var getRequestedDataUsingContext = listener.GetRequestedDataUsingContext;
                     if (getRequestedDataUsingContext != null)
                     {
-                        ActivityCreationOptions<ActivityContext> aco = new ActivityCreationOptions<ActivityContext>(this, name, context, kind, tags, links);
+                        ActivityCreationOptions<ActivityContext> aco = new ActivityCreationOptions<ActivityContext>(this, name, initializedContext, kind, tags, links);
                         ActivityDataRequest dr = getRequestedDataUsingContext(ref aco);
                         if (dr > dataRequest)
                         {

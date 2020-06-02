@@ -966,9 +966,13 @@ private:
 
     // Phase CLASS_LOAD_EXACTPARENTS of class loading
     // Load exact parents and interfaces and dependent structures (generics dictionary, vtable fixes)
-    static void LoadExactParents(MethodTable *pMT);
+    static void LoadExactParents(MethodTable* pMT);
 
     static void LoadExactParentAndInterfacesTransitively(MethodTable *pMT);
+
+    static void ValidateMethodsWithCovariantReturnTypes(MethodTable* pMT);
+
+    static bool IsCompatibleWith(TypeHandle hType1, TypeHandle hType2);
 
     // Create a non-canonical instantiation of a generic type based off the canonical instantiation
     // (For example, MethodTable for List<string> is based on the MethodTable for List<__Canon>)

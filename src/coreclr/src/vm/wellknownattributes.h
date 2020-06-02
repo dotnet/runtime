@@ -35,6 +35,7 @@ enum class WellKnownAttribute : DWORD
     UnmanagedFunctionPointer,
     ThreadStatic,
     WinRTMarshalingBehaviorAttribute,
+    PreserveBaseOverridesAttribute,
 
     CountOfWellKnownAttributes
 };
@@ -99,6 +100,8 @@ inline const char *GetWellKnownAttributeName(WellKnownAttribute attribute)
             return "System.ThreadStaticAttribute";
         case WellKnownAttribute::WinRTMarshalingBehaviorAttribute:
             return "Windows.Foundation.Metadata.MarshalingBehaviorAttribute";
+        case WellKnownAttribute::PreserveBaseOverridesAttribute:
+            return "System.Runtime.CompilerServices.PreserveBaseOverridesAttribute";
         case WellKnownAttribute::CountOfWellKnownAttributes:
         default:
             break; // Silence compiler warnings

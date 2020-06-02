@@ -346,30 +346,6 @@ inline BOOL MethodTable::IsAbstract()
 
 #ifdef FEATURE_COMINTEROP
 //==========================================================================================
-inline void MethodTable::SetHasGuidInfo()
-{
-    LIMITED_METHOD_CONTRACT;
-    _ASSERTE(IsInterface() || (HasCCWTemplate() && IsDelegate()));
-
-    // for delegates, having CCW template implies having GUID info
-    if (IsInterface())
-        SetFlag(enum_flag_IfInterfaceThenHasGuidInfo);
-}
-
-//==========================================================================================
-inline BOOL MethodTable::HasGuidInfo()
-{
-    LIMITED_METHOD_DAC_CONTRACT;
-
-    if (IsInterface())
-        return GetFlag(enum_flag_IfInterfaceThenHasGuidInfo);
-
-    // HasCCWTemplate() is intentionally checked first here to avoid hitting
-    // g_pMulticastDelegateClass == NULL inside IsDelegate() during startup
-    return HasCCWTemplate() && IsDelegate();
-}
-
-//==========================================================================================
 // True IFF the type has a GUID explicitly assigned to it (including WinRT generic interfaces
 // where the GUID is computed).
 inline BOOL MethodTable::HasExplicitGuid()
@@ -384,34 +360,6 @@ inline BOOL MethodTable::HasExplicitGuid()
     GUID guid;
     GetGuid(&guid, FALSE);
     return (guid != GUID_NULL);
-}
-
-//==========================================================================================
-inline void MethodTable::SetHasCCWTemplate()
-{
-    LIMITED_METHOD_CONTRACT;
-    SetFlag(enum_flag_HasCCWTemplate);
-}
-
-//==========================================================================================
-inline BOOL MethodTable::HasCCWTemplate()
-{
-    LIMITED_METHOD_DAC_CONTRACT;
-    return GetFlag(enum_flag_HasCCWTemplate);
-}
-
-//==========================================================================================
-inline void MethodTable::SetHasRCWPerTypeData()
-{
-    LIMITED_METHOD_CONTRACT;
-    SetFlag(enum_flag_HasRCWPerTypeData);
-}
-
-//==========================================================================================
-inline BOOL MethodTable::HasRCWPerTypeData()
-{
-    LIMITED_METHOD_DAC_CONTRACT;
-    return GetFlag(enum_flag_HasRCWPerTypeData);
 }
 
 //==========================================================================================
@@ -966,10 +914,6 @@ inline MethodTable::VtableIndirectionSlotIterator MethodTable::IterateVtableIndi
 inline ComCallWrapperTemplate *MethodTable::GetComCallWrapperTemplate()
 {
     LIMITED_METHOD_CONTRACT;
-    if (HasCCWTemplate())
-    {
-        return *GetCCWTemplatePtr();
-    }
     return GetClass()->GetComCallWrapperTemplate();
 }
 
@@ -984,12 +928,6 @@ inline BOOL MethodTable::SetComCallWrapperTemplate(ComCallWrapperTemplate *pTemp
     }
     CONTRACTL_END;
 
-    if (HasCCWTemplate())
-    {
-        TypeHandle th(this);
-        g_IBCLogger.LogTypeMethodTableWriteableAccess(&th);
-        return (InterlockedCompareExchangeT(GetCCWTemplatePtr(), pTemplate, NULL) == NULL);
-    }
     g_IBCLogger.LogEEClassCOWTableAccess(this);
     return GetClass_NoLogging()->SetComCallWrapperTemplate(pTemplate);
 }
@@ -1278,9 +1216,6 @@ FORCEINLINE DWORD MethodTable::GetOffsetOfOptionalMember(OptionalMemberId id)
 //==========================================================================================
 inline DWORD MethodTable::GetOptionalMembersAllocationSize(DWORD dwMultipurposeSlotsMask,
                                                            BOOL needsGenericsStaticsInfo,
-                                                           BOOL needsGuidInfo,
-                                                           BOOL needsCCWTemplate,
-                                                           BOOL needsRCWPerTypeData,
                                                            BOOL needsTokenOverflow)
 {
     LIMITED_METHOD_CONTRACT;
@@ -1289,12 +1224,6 @@ inline DWORD MethodTable::GetOptionalMembersAllocationSize(DWORD dwMultipurposeS
 
     if (needsGenericsStaticsInfo)
         size += sizeof(GenericsStaticsInfo);
-    if (needsGuidInfo)
-        size += sizeof(UINT_PTR);
-    if (needsCCWTemplate)
-        size += sizeof(UINT_PTR);
-    if (needsRCWPerTypeData)
-        size += sizeof(UINT_PTR);
     if (dwMultipurposeSlotsMask & enum_flag_HasInterfaceMap)
         size += sizeof(UINT_PTR);
     if (needsTokenOverflow)

@@ -1405,7 +1405,7 @@ VOID MethodTableBuilder::BuildInteropVTable_PlaceVtableMethods(
                                     bmtType->pModule, NULL,
                                     pInterfaceMethodSig,
                                     cInterfaceMethodSig,
-                                    pInterfaceMD->GetModule(), NULL))
+                                    pInterfaceMD->GetModule(), NULL, FALSE))
                                 {   // Found match, break from loop
                                     break;
                                 }
@@ -2263,7 +2263,8 @@ VOID    MethodTableBuilder::EnumerateMethodImpls()
                                                 pSigBody,
                                                 cbSigBody,
                                                 bmtType->pModule,
-                                                NULL))
+                                                NULL,
+                                                FALSE))
                 {
                     BuildMethodTableThrowException(IDS_CLASSLOAD_MI_BODY_DECL_MISMATCH);
                 }
