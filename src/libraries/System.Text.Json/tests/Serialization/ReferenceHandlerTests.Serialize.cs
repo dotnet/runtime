@@ -9,9 +9,9 @@ using Xunit;
 
 namespace System.Text.Json.Serialization.Tests
 {
-    public static partial class ReferenceHandlingTests
+    public static partial class ReferenceHandlerTests
     {
-        private static readonly JsonSerializerOptions s_serializerOptionsPreserve = new JsonSerializerOptions { ReferenceHandling = ReferenceHandling.Preserve };
+        private static readonly JsonSerializerOptions s_serializerOptionsPreserve = new JsonSerializerOptions { ReferenceHandler = ReferenceHandler.Preserve };
         private static readonly JsonSerializerSettings s_newtonsoftSerializerSettingsPreserve = new JsonSerializerSettings { PreserveReferencesHandling = PreserveReferencesHandling.All, ReferenceLoopHandling = ReferenceLoopHandling.Serialize };
 
         private class Employee
