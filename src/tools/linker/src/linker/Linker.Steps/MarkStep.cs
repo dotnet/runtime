@@ -1521,6 +1521,14 @@ namespace Mono.Linker.Steps
 
 					if (realMatch.EndsWith ("()")) {
 						string methodName = realMatch.Substring (0, realMatch.Length - 2);
+
+						// It's a call to a method on some member.  Handling this scenario robustly would be complicated and a decent bit of work.
+						// 
+						// We could implement support for this at some point, but for now it's important to make sure at least we don't crash trying to find some
+						// method on the current type when it exists on some other type
+						if (methodName.Contains ("."))
+							continue;
+
 						MethodDefinition method = GetMethodWithNoParameters (type, methodName);
 						if (method != null) {
 							MarkMethod (method, new DependencyInfo (DependencyKind.ReferencedBySpecialAttribute, attribute));
