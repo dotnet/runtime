@@ -5098,7 +5098,7 @@ ComCallWrapperTemplate* ComCallWrapperTemplate::CreateTemplate(TypeHandle thClas
 
     GCX_PREEMP();
 
-    if (!thClass.IsTypeDesc() && !thClass.AsMethodTable()->HasCCWTemplate())
+    if (!thClass.IsTypeDesc())
     {
         // Canonicalize the class type because we are going to stick the template pointer to EEClass.
         thClass = thClass.GetCanonicalMethodTable();

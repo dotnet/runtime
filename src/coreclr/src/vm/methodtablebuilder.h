@@ -1324,7 +1324,6 @@ private:
 #ifdef FEATURE_COMINTEROP
         bool fIsMngStandardItf;                 // Set to true if the interface is a manages standard interface.
         bool fComEventItfType;                  // Set to true if the class is a special COM event interface.
-        bool fNeedsRCWPerTypeData;              // Set to true if the class needs optional RCW data attached to the MethodTable
 #endif // FEATURE_COMINTEROP
 #ifdef FEATURE_TYPEEQUIVALENCE
         bool fHasTypeEquivalence;               // Set to true if the class is decorated by TypeIdentifierAttribute, or through some other technique is influenced by type equivalence
@@ -2969,8 +2968,7 @@ private:
                                 LoaderAllocator *pAllocator,
                                 BOOL isIFace,
                                 BOOL fDynamicStatics,
-                                BOOL fHasGenericsStaticsInfo,
-                                BOOL fNeedsRCWPerTypeData
+                                BOOL fHasGenericsStaticsInfo
 #ifdef FEATURE_COMINTEROP
                                 , BOOL bHasDynamicInterfaceMap
 #endif

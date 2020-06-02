@@ -19,6 +19,11 @@ namespace System.Runtime.CompilerServices
 #endif
 
         /// <summary>
+        /// Indicates that this version of runtime supports covariant returns in overrides of methods declared in classes.
+        /// </summary>
+        public const string CovariantReturnsOfClasses = nameof(CovariantReturnsOfClasses);
+
+        /// <summary>
         /// Checks whether a certain feature is supported by the Runtime.
         /// </summary>
         public static bool IsSupported(string feature)

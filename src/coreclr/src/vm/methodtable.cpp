@@ -3944,31 +3944,6 @@ void MethodTable::Save(DataImage *image, DWORD profilingFlags)
 
     GetSavedExtent(&start, &end);
 
-#ifdef FEATURE_COMINTEROP
-    if (HasGuidInfo())
-    {
-        // Make sure our GUID is computed
-        GUID dummy;
-        if (SUCCEEDED(GetGuidNoThrow(&dummy, TRUE, FALSE)))
-        {
-            GuidInfo* pGuidInfo = GetGuidInfo();
-            _ASSERTE(pGuidInfo != NULL);
-
-            image->StoreStructure(pGuidInfo,
-                                    sizeof(GuidInfo),
-                                    DataImage::ITEM_GUID_INFO);
-
-            Module *pModule = GetModule();
-        }
-        else
-        {
-            GuidInfo** ppGuidInfo = GetGuidInfoPtr();
-            *ppGuidInfo = NULL;
-        }
-    }
-#endif // FEATURE_COMINTEROP
-
-
 #ifdef _DEBUG
     if (GetDebugClassName() != NULL && !image->IsStored(GetDebugClassName()))
         image->StoreStructure(debug_m_szClassName, (ULONG)(strlen(GetDebugClassName())+1),
@@ -4385,15 +4360,6 @@ BOOL MethodTable::IsWriteable()
     // (see code:MethodTable::AddDynamicInterface)
     if (HasDynamicInterfaceMap())
         return TRUE;
-
-    // CCW template is created lazily and when that happens, the
-    // pointer is written directly into the method table.
-    if (HasCCWTemplate())
-        return TRUE;
-
-    // RCW per-type data is created lazily at run-time.
-    if (HasRCWPerTypeData())
-        return TRUE;
 #endif
 
     return FALSE;
@@ -4588,35 +4554,6 @@ void MethodTable::Fixup(DataImage *image)
     _ASSERTE(GetWriteableData());
     image->FixupPlainOrRelativePointerField(this, &MethodTable::m_pWriteableData);
     m_pWriteableData.GetValue()->Fixup(image, this, needsRestore);
-
-#ifdef FEATURE_COMINTEROP
-    if (HasGuidInfo())
-    {
-        GuidInfo **ppGuidInfo = GetGuidInfoPtr();
-        if (*ppGuidInfo != NULL)
-        {
-            image->FixupPointerField(this, (BYTE *)ppGuidInfo - (BYTE *)this);
-        }
-        else
-        {
-            image->ZeroPointerField(this, (BYTE *)ppGuidInfo - (BYTE *)this);
-        }
-    }
-
-    if (HasCCWTemplate())
-    {
-        ComCallWrapperTemplate **ppTemplate = GetCCWTemplatePtr();
-        image->ZeroPointerField(this, (BYTE *)ppTemplate - (BYTE *)this);
-    }
-
-    if (HasRCWPerTypeData())
-    {
-        // it would be nice to save these but the impact on mscorlib.ni size is prohibitive
-        RCWPerTypeData **ppData = GetRCWPerTypeDataPtr();
-        image->ZeroPointerField(this, (BYTE *)ppData - (BYTE *)this);
-    }
-#endif // FEATURE_COMINTEROP
-
 
     //
     // Fix flags
@@ -7223,7 +7160,7 @@ void MethodTable::GetGuid(GUID *pGuid, BOOL bGenerateIfNotFound, BOOL bClassic /
 #ifdef DACCESS_COMPILE
 
     _ASSERTE(pGuid != NULL);
-    PTR_GuidInfo pGuidInfo = (bClassic ? GetClass()->GetGuidInfo() : GetGuidInfo());
+    PTR_GuidInfo pGuidInfo = GetClass()->GetGuidInfo();
     if (pGuidInfo != NULL)
        *pGuid = pGuidInfo->m_Guid;
     else
@@ -7351,35 +7288,18 @@ void MethodTable::GetGuid(GUID *pGuid, BOOL bGenerateIfNotFound, BOOL bClassic /
     if ((IsInterface()) && (pInfo == NULL) && (*pGuid != GUID_NULL))
     {
         AllocMemTracker amTracker;
-        BOOL bStoreGuidInfoOnEEClass = false;
-        PTR_LoaderAllocator pLoaderAllocator;
 
-#if FEATURE_COMINTEROP
-        if ((bClassic) || !HasGuidInfo())
-        {
-            bStoreGuidInfoOnEEClass = true;
-        }
-#else
         // We will always store the GuidInfo on the methodTable.
-        bStoreGuidInfoOnEEClass = true;
-#endif
-        if(bStoreGuidInfoOnEEClass)
-        {
-            // Since the GUIDInfo will be stored on the EEClass,
-            // the memory should be allocated on the loaderAllocator of the class.
-            // The definining module and the loaded module could be different in some scenarios.
-            // For example - in case of shared generic instantiations
-            // a shared generic i.e. System.__Canon which would be loaded in shared domain
-            // but the this->GetLoaderAllocator will be the loader allocator for the definining
-            // module which can get unloaded anytime.
-            _ASSERTE(GetClass());
-            _ASSERTE(GetClass()->GetMethodTable());
-            pLoaderAllocator = GetClass()->GetMethodTable()->GetLoaderAllocator();
-        }
-        else
-        {
-            pLoaderAllocator = GetLoaderAllocator();
-        }
+        // Since the GUIDInfo will be stored on the EEClass,
+        // the memory should be allocated on the loaderAllocator of the class.
+        // The definining module and the loaded module could be different in some scenarios.
+        // For example - in case of shared generic instantiations
+        // a shared generic i.e. System.__Canon which would be loaded in shared domain
+        // but the this->GetLoaderAllocator will be the loader allocator for the definining
+        // module which can get unloaded anytime.
+        _ASSERTE(GetClass());
+        _ASSERTE(GetClass()->GetMethodTable());
+        PTR_LoaderAllocator pLoaderAllocator = GetClass()->GetMethodTable()->GetLoaderAllocator();
 
         _ASSERTE(pLoaderAllocator);
 
@@ -7389,24 +7309,10 @@ void MethodTable::GetGuid(GUID *pGuid, BOOL bGenerateIfNotFound, BOOL bClassic /
         pInfo->m_Guid = *pGuid;
         pInfo->m_bGeneratedFromName = bGenerated;
 
-        // Set in in the interface method table.
-        if (bClassic)
-        {
-            // Set the per-EEClass GuidInfo if we are asked for the "classic" non-WinRT GUID.
-            // The MethodTable may be NGENed and read-only - and there's no point in saving
-            // classic GUIDs in non-WinRT MethodTables anyway.
-            _ASSERTE(bStoreGuidInfoOnEEClass);
-            GetClass()->SetGuidInfo(pInfo);
-        }
-        else
-        {
-#if FEATURE_COMINTEROP
-            _ASSERTE(bStoreGuidInfoOnEEClass || HasGuidInfo());
-#else
-            _ASSERTE(bStoreGuidInfoOnEEClass);
-#endif
-            SetGuidInfo(pInfo);
-        }
+        // Set the per-EEClass GuidInfo
+        // The MethodTable may be NGENed and read-only - and there's no point in saving
+        // classic GUIDs in non-WinRT MethodTables anyway.
+        GetClass()->SetGuidInfo(pInfo);
 
         amTracker.SuppressRelease();
     }
@@ -8723,129 +8629,6 @@ MethodDesc * MethodTable::IntroducedMethodIterator::GetNext(MethodDesc * pMD)
 
     return pMD;
 }
-
-//==========================================================================================
-PTR_GuidInfo MethodTable::GetGuidInfo()
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_NOTRIGGER;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-#ifdef FEATURE_COMINTEROP
-    if (HasGuidInfo())
-    {
-        return *GetGuidInfoPtr();
-    }
-#endif // FEATURE_COMINTEROP
-    _ASSERTE(GetClass());
-    return GetClass()->GetGuidInfo();
-}
-
-//==========================================================================================
-void MethodTable::SetGuidInfo(GuidInfo* pGuidInfo)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_NOTRIGGER;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-#ifndef DACCESS_COMPILE
-
-#ifdef FEATURE_COMINTEROP
-    if (HasGuidInfo())
-    {
-        *GetGuidInfoPtr() = pGuidInfo;
-        return;
-    }
-#endif // FEATURE_COMINTEROP
-    _ASSERTE(GetClass());
-    GetClass()->SetGuidInfo (pGuidInfo);
-
-#endif // DACCESS_COMPILE
-}
-
-#if defined(FEATURE_COMINTEROP) && !defined(DACCESS_COMPILE)
-
-//==========================================================================================
-RCWPerTypeData *MethodTable::CreateRCWPerTypeData(bool bThrowOnOOM)
-{
-    CONTRACTL
-    {
-        if (bThrowOnOOM) THROWS; else NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-        PRECONDITION(HasRCWPerTypeData());
-    }
-    CONTRACTL_END;
-
-    AllocMemTracker amTracker;
-
-    RCWPerTypeData *pData;
-    if (bThrowOnOOM)
-    {
-        TaggedMemAllocPtr ptr = GetLoaderAllocator()->GetLowFrequencyHeap()->AllocMem(S_SIZE_T(sizeof(RCWPerTypeData)));
-        pData = (RCWPerTypeData *)amTracker.Track(ptr);
-    }
-    else
-    {
-        TaggedMemAllocPtr ptr = GetLoaderAllocator()->GetLowFrequencyHeap()->AllocMem_NoThrow(S_SIZE_T(sizeof(RCWPerTypeData)));
-        pData = (RCWPerTypeData *)amTracker.Track_NoThrow(ptr);
-        if (pData == NULL)
-        {
-            return NULL;
-        }
-    }
-
-    // memory is zero-inited which means that nothing has been computed yet
-    _ASSERTE(pData->m_dwFlags == 0);
-
-    RCWPerTypeData **pDataPtr = GetRCWPerTypeDataPtr();
-
-    if (InterlockedCompareExchangeT(pDataPtr, pData, NULL) == NULL)
-    {
-        amTracker.SuppressRelease();
-    }
-    else
-    {
-        // another thread already published the pointer
-        pData = *pDataPtr;
-    }
-
-    return pData;
-}
-
-//==========================================================================================
-RCWPerTypeData *MethodTable::GetRCWPerTypeData(bool bThrowOnOOM /*= true*/)
-{
-    CONTRACTL
-    {
-        if (bThrowOnOOM) THROWS; else NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    if (!HasRCWPerTypeData())
-        return NULL;
-
-    RCWPerTypeData *pData = *GetRCWPerTypeDataPtr();
-    if (pData == NULL)
-    {
-        // creation is factored out into a separate routine to avoid paying the EH cost here
-        pData = CreateRCWPerTypeData(bThrowOnOOM);
-    }
-
-    return pData;
-}
-
-#endif // FEATURE_COMINTEROP && !DACCESS_COMPILE
 
 //==========================================================================================
 CHECK MethodTable::CheckActivated()

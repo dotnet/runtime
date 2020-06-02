@@ -1525,8 +1525,18 @@ ves_pinvoke_method (
 
 	g_assert (!frame.imethod);
 
+	/*
+	 * When there's a calli in a pinvoke wrapper, we're in GC Safe mode.
+	 * When we're called for some other calli, we may be in GC Unsafe mode.
+	 *
+	 * On any code path where we call anything other than the entry_func,
+	 * we need to switch back to GC Unsafe before calling the runtime.
+	 */
+	MONO_REQ_GC_NEUTRAL_MODE;
+
 	static MonoPIFunc entry_func = NULL;
 	if (!entry_func) {
+		MONO_ENTER_GC_UNSAFE;
 #ifdef MONO_ARCH_HAS_NO_PROPER_MONOCTX
 		ERROR_DECL (error);
 		entry_func = (MonoPIFunc) mono_jit_compile_method_jit_only (mini_get_interp_lmf_wrapper ("mono_interp_to_native_trampoline", (gpointer) mono_interp_to_native_trampoline), error);
@@ -1535,6 +1545,7 @@ ves_pinvoke_method (
 		entry_func = get_interp_to_native_trampoline ();
 #endif
 		mono_memory_barrier ();
+		MONO_EXIT_GC_UNSAFE;
 	}
 
 #ifdef ENABLE_NETCORE

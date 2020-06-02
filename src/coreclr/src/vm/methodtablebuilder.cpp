@@ -9771,20 +9771,20 @@ void MethodTableBuilder::CheckForSystemTypes()
 // way to allocate a new MT. Don't try calling new / ctor.
 // Called from SetupMethodTable
 // This needs to be kept consistent with MethodTable::GetSavedExtent()
-MethodTable * MethodTableBuilder::AllocateNewMT(Module *pLoaderModule,
-                                         DWORD dwVtableSlots,
-                                         DWORD dwVirtuals,
-                                         DWORD dwGCSize,
-                                         DWORD dwNumInterfaces,
-                                         DWORD dwNumDicts,
-                                         DWORD cbInstAndDict,
-                                         MethodTable *pMTParent,
-                                         ClassLoader *pClassLoader,
-                                         LoaderAllocator *pAllocator,
-                                         BOOL isInterface,
-                                         BOOL fDynamicStatics,
-                                         BOOL fHasGenericsStaticsInfo,
-                                         BOOL fNeedsRCWPerTypeData
+MethodTable * MethodTableBuilder::AllocateNewMT(
+    Module *pLoaderModule,
+    DWORD dwVtableSlots,
+    DWORD dwVirtuals,
+    DWORD dwGCSize,
+    DWORD dwNumInterfaces,
+    DWORD dwNumDicts,
+    DWORD cbInstAndDict,
+    MethodTable *pMTParent,
+    ClassLoader *pClassLoader,
+    LoaderAllocator *pAllocator,
+    BOOL isInterface,
+    BOOL fDynamicStatics,
+    BOOL fHasGenericsStaticsInfo
 #ifdef FEATURE_COMINTEROP
         , BOOL fHasDynamicInterfaceMap
 #endif
@@ -9814,7 +9814,6 @@ MethodTable * MethodTableBuilder::AllocateNewMT(Module *pLoaderModule,
     // vtable
     cbTotalSize += MethodTable::GetNumVtableIndirections(dwVirtuals) * sizeof(MethodTable::VTableIndir_t);
 
-
     DWORD dwMultipurposeSlotsMask = 0;
     if (dwNumInterfaces != 0)
         dwMultipurposeSlotsMask |= MethodTable::enum_flag_HasInterfaceMap;
@@ -9830,9 +9829,6 @@ MethodTable * MethodTableBuilder::AllocateNewMT(Module *pLoaderModule,
     // Add space for optional members here. Same as GetOptionalMembersSize()
     cbTotalSize += MethodTable::GetOptionalMembersAllocationSize(dwMultipurposeSlotsMask,
                                                       fHasGenericsStaticsInfo,
-                                                      FALSE, // no GuidInfo needed for canonical instantiations
-                                                      FALSE, // no CCW template needed for canonical instantiations
-                                                      fNeedsRCWPerTypeData,
                                                       RidFromToken(GetCl()) >= METHODTABLE_TOKEN_OVERFLOW);
 
     // Interface map starts here
@@ -10068,9 +10064,6 @@ MethodTableBuilder::SetupMethodTable2(
     BOOL fHasDynamicInterfaceMap = bmtInterface->dwInterfaceMapSize > 0 &&
                                    bmtProp->fIsComObjectType &&
                                    (GetParentMethodTable() != g_pObjectClass);
-    BOOL fNeedsRCWPerTypeData = bmtProp->fNeedsRCWPerTypeData;
-#else // FEATURE_COMINTEROP
-    BOOL fNeedsRCWPerTypeData = FALSE;
 #endif // FEATURE_COMINTEROP
 
     EEClass *pClass = GetHalfBakedClass();
@@ -10118,7 +10111,6 @@ MethodTableBuilder::SetupMethodTable2(
                                    IsInterface(),
                                    bmtProp->fDynamicStatics,
                                    bmtProp->fGenericsStatics,
-                                   fNeedsRCWPerTypeData,
 #ifdef FEATURE_COMINTEROP
                                    fHasDynamicInterfaceMap,
 #endif
@@ -10134,12 +10126,6 @@ MethodTableBuilder::SetupMethodTable2(
 #ifdef _DEBUG
     pMT->SetDebugClassName(GetDebugClassName());
 #endif
-
-#ifdef FEATURE_COMINTEROP
-    if (fNeedsRCWPerTypeData)
-        pMT->SetHasRCWPerTypeData();
-#endif // FEATURE_COMINTEROP
-
 
     if (IsInterface())
         pMT->SetIsInterface();

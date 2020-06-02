@@ -284,10 +284,6 @@ struct CrossModuleGenericsStaticsInfo
 };  // struct CrossModuleGenericsStaticsInfo
 typedef DPTR(CrossModuleGenericsStaticsInfo) PTR_CrossModuleGenericsStaticsInfo;
 
-#ifdef FEATURE_COMINTEROP
-struct RCWPerTypeData;
-#endif // FEATURE_COMINTEROP
-
 //
 // This struct consolidates the writeable parts of the MethodTable
 // so that we can layout a read-only MethodTable with a pointer
@@ -2762,19 +2758,6 @@ public:
 #endif
 
     //-------------------------------------------------------------------
-    // REMOTEABLE METHOD INFO
-    //
-
-#ifdef FEATURE_COMINTEROP
-    void SetHasGuidInfo();
-    BOOL HasGuidInfo();
-    void SetHasCCWTemplate();
-    BOOL HasCCWTemplate();
-    void SetHasRCWPerTypeData();
-    BOOL HasRCWPerTypeData();
-#endif // FEATURE_COMINTEROP
-
-    //-------------------------------------------------------------------
     // DICTIONARIES FOR GENERIC INSTANTIATIONS
     //
     // The PerInstInfo pointer is a pointer to per-instantiation pointer table,
@@ -2984,10 +2967,6 @@ public:
     // The GUID Info
     // Used by COM interop to get GUIDs (IIDs and CLSIDs)
 
-    // Get/store cached GUID information
-    PTR_GuidInfo GetGuidInfo();
-    void SetGuidInfo(GuidInfo* pGuidInfo);
-
     // Get and cache the GUID for this interface/class
     HRESULT GetGuidNoThrow(GUID *pGuid, BOOL bGenerateIfNotFound, BOOL bClassic = TRUE);
 
@@ -3000,14 +2979,6 @@ public:
     //   * for everything else returns the GetGuid(, TRUE)
     BOOL    GetGuidForWinRT(GUID *pGuid);
 
-private:
-    // Create RCW data associated with this type.
-    RCWPerTypeData *CreateRCWPerTypeData(bool bThrowOnOOM);
-
-public:
-    // Get the RCW data associated with this type or NULL if the type does not need such data or allocation
-    // failed (only if bThrowOnOOM is false).
-    RCWPerTypeData *GetRCWPerTypeData(bool bThrowOnOOM = true);
 #endif // FEATURE_COMINTEROP
 
     // Convenience method - determine if the interface/class has a guid specified (even if not yet cached)
@@ -3627,9 +3598,7 @@ private:
 
         enum_flag_HasFinalizer                = 0x00100000, // instances require finalization
 
-#ifdef FEATURE_COMINTEROP
-        enum_flag_IfInterfaceThenHasGuidInfo    = 0x00200000, // Does the type has optional GuidInfo
-#endif // FEATURE_COMINTEROP
+        // enum_flag_unused                   = 0x00200000,
 
         enum_flag_ICastable                   = 0x00400000, // class implements ICastable interface
 
@@ -3639,9 +3608,7 @@ private:
 
         enum_flag_HasTypeEquivalence          = 0x02000000, // can be equivalent to another type
 
-#ifdef FEATURE_COMINTEROP
-        enum_flag_HasRCWPerTypeData           = 0x04000000, // has optional pointer to RCWPerTypeData
-#endif // FEATURE_COMINTEROP
+        // enum_flag_unused                   = 0x04000000,
 
         enum_flag_HasCriticalFinalizer        = 0x08000000, // finalizer must be run on Appdomain Unload
         enum_flag_Collectible                 = 0x10000000,
@@ -3693,7 +3660,7 @@ private:
         enum_flag_RequiresDispatchTokenFat  = 0x0200,
 
         enum_flag_HasCctor                  = 0x0400,
-        enum_flag_HasCCWTemplate            = 0x0800, // Has an extra field pointing to a CCW template
+        // enum_flag_unused                 = 0x0800,
 
 #ifdef FEATURE_64BIT_ALIGNMENT
         enum_flag_RequiresAlign8            = 0x1000, // Type requires 8-byte alignment (only set on platforms that require this and don't get it implicitly)
@@ -3899,23 +3866,12 @@ private:
     /* Accessing this member efficiently is currently performance critical for static field accesses               */ \
     /* in generic classes, so place it early in the list. */                                                          \
     METHODTABLE_OPTIONAL_MEMBER(GenericsStaticsInfo,    GenericsStaticsInfo,            GetGenericsStaticsInfo      ) \
-    /* Accessed by interop, fairly frequently. */                                                                     \
-    METHODTABLE_COMINTEROP_OPTIONAL_MEMBERS()                                                                         \
     /* Accessed during x-domain transition only, so place it late in the list. */                                     \
     METHODTABLE_REMOTING_OPTIONAL_MEMBERS()                                                                           \
     /* Accessed during certain generic type load operations only, so low priority */                                  \
     METHODTABLE_OPTIONAL_MEMBER(ExtraInterfaceInfo,     TADDR,                          GetExtraInterfaceInfoPtr    ) \
     /* TypeDef token for assemblies with more than 64k types. Never happens in real world. */                         \
     METHODTABLE_OPTIONAL_MEMBER(TokenOverflow,          TADDR,                          GetTokenOverflowPtr         ) \
-
-#ifdef FEATURE_COMINTEROP
-#define METHODTABLE_COMINTEROP_OPTIONAL_MEMBERS() \
-    METHODTABLE_OPTIONAL_MEMBER(GuidInfo,               PTR_GuidInfo,                   GetGuidInfoPtr              ) \
-    METHODTABLE_OPTIONAL_MEMBER(RCWPerTypeData,         RCWPerTypeData *,               GetRCWPerTypeDataPtr        ) \
-    METHODTABLE_OPTIONAL_MEMBER(CCWTemplate,            ComCallWrapperTemplate *,       GetCCWTemplatePtr           )
-#else
-#define METHODTABLE_COMINTEROP_OPTIONAL_MEMBERS()
-#endif
 
 #define METHODTABLE_REMOTING_OPTIONAL_MEMBERS()
 
@@ -3964,9 +3920,6 @@ private:
     inline static DWORD GetOptionalMembersAllocationSize(
                                                   DWORD dwMultipurposeSlotsMask,
                                                   BOOL needsGenericsStaticsInfo,
-                                                  BOOL needsGuidInfo,
-                                                  BOOL needsCCWTemplate,
-                                                  BOOL needsRCWPerTypeData,
                                                   BOOL needsTokenOverflow);
     inline DWORD GetOptionalMembersSize();
 
