@@ -9,9 +9,9 @@ using Xunit;
 
 namespace System.Text.Json.Serialization.Tests
 {
-    public static partial class ReferenceHandlingTests
+    public static partial class ReferenceHandlerTests
     {
-        private static readonly JsonSerializerOptions s_deserializerOptionsPreserve = new JsonSerializerOptions { ReferenceHandling = ReferenceHandling.Preserve };
+        private static readonly JsonSerializerOptions s_deserializerOptionsPreserve = new JsonSerializerOptions { ReferenceHandler = ReferenceHandler.Preserve };
 
         private class EmployeeWithContacts
         {
@@ -636,7 +636,7 @@ namespace System.Text.Json.Serialization.Tests
 
             var options = new JsonSerializerOptions
             {
-                ReferenceHandling = ReferenceHandling.Preserve,
+                ReferenceHandler = ReferenceHandler.Preserve,
                 Converters = { new ListOfEmployeeConverter() }
             };
             Employee angela = JsonSerializer.Deserialize<Employee>(json, options);
@@ -1199,7 +1199,7 @@ namespace System.Text.Json.Serialization.Tests
         [MemberData(nameof(ReadSuccessCases))]
         public static void ReadTestClassesWithExtensionOption(Type classType, byte[] data)
         {
-            var options = new JsonSerializerOptions { ReferenceHandling = ReferenceHandling.Preserve };
+            var options = new JsonSerializerOptions { ReferenceHandler = ReferenceHandler.Preserve };
             object obj = JsonSerializer.Deserialize(data, classType, options);
             Assert.IsAssignableFrom<ITestClass>(obj);
             ((ITestClass)obj).Verify();
@@ -1273,6 +1273,32 @@ namespace System.Text.Json.Serialization.Tests
             JsonException ex = Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<List<Employee>>(json, s_deserializerOptionsPreserve));
 
             Assert.Equal("$[1].$id", ex.Path);
+            Assert.Contains("'1'", ex.Message);
+        }
+
+        class ClassWithTwoListProperties
+        {
+            public List<string> List1 { get; set; }
+            public List<string> List2 { get; set; }
+        }
+
+        [Fact]
+        public static void DuplicatedIdArray()
+        {
+            string json = @"{
+                ""List1"": {
+                        ""$id"": ""1"",
+                        ""$values"": []
+                    },
+                ""List2"": {
+                        ""$id"": ""1"",
+                        ""$values"": []
+                    }
+            }";
+
+            JsonException ex = Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<ClassWithTwoListProperties>(json, s_deserializerOptionsPreserve));
+
+            Assert.Equal("$.List2.$id", ex.Path);
             Assert.Contains("'1'", ex.Message);
         }
 

@@ -3,13 +3,15 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Text.Encodings.Web;
+using System.Text.Json.Tests;
 using Newtonsoft.Json;
 using Xunit;
 
 namespace System.Text.Json.Serialization.Tests
 {
-    public static partial class ReferenceHandlingTests
+    public static partial class ReferenceHandlerTests
     {
 
         [Fact]
@@ -19,12 +21,6 @@ namespace System.Text.Json.Serialization.Tests
             a.Manager = a;
 
             JsonException ex = Assert.Throws<JsonException>(() => JsonSerializer.Serialize(a));
-        }
-
-        [Fact]
-        public static void ThrowWhenPassingNullToReferenceHandling()
-        {
-            Assert.Throws<ArgumentNullException>(() => new JsonSerializerOptions { ReferenceHandling = null });
         }
 
         #region Root Object
@@ -203,7 +199,7 @@ namespace System.Text.Json.Serialization.Tests
             var optionsWithEncoder = new JsonSerializerOptions
             {
                 Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
-                ReferenceHandling = ReferenceHandling.Preserve
+                ReferenceHandler = ReferenceHandler.Preserve
             };
             json = JsonSerializer.Serialize(obj, optionsWithEncoder);
             Assert.StartsWith("{\"$id\":\"1\",", json);
@@ -393,7 +389,7 @@ namespace System.Text.Json.Serialization.Tests
             var optionsWithEncoder = new JsonSerializerOptions
             {
                 Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
-                ReferenceHandling = ReferenceHandling.Preserve
+                ReferenceHandler = ReferenceHandler.Preserve
             };
             json = JsonSerializer.Serialize(obj, optionsWithEncoder);
             Assert.Equal("{\"$id\":\"1\",\"A\u0467\":1}", json);
@@ -534,6 +530,172 @@ namespace System.Text.Json.Serialization.Tests
 
             ListWithGenericCycleWithinDictionary rootCopy = JsonSerializer.Deserialize<ListWithGenericCycleWithinDictionary>(actual, s_serializerOptionsPreserve);
             Assert.Same(rootCopy[0], rootCopy[1]);
+        }
+        #endregion
+
+        #region ReferenceResolver
+        [Fact]
+        public static void CustomReferenceResolver()
+        {
+            string json = @"[
+  {
+    ""$id"": ""0b64ffdf-d155-44ad-9689-58d9adb137f3"",
+    ""Name"": ""John Smith"",
+    ""Spouse"": {
+      ""$id"": ""ae3c399c-058d-431d-91b0-a36c266441b9"",
+      ""Name"": ""Jane Smith"",
+      ""Spouse"": {
+        ""$ref"": ""0b64ffdf-d155-44ad-9689-58d9adb137f3""
+      }
+    }
+  },
+  {
+    ""$ref"": ""ae3c399c-058d-431d-91b0-a36c266441b9""
+  }
+]";
+            var options = new JsonSerializerOptions
+            {
+                WriteIndented = true,
+                ReferenceHandler = new ReferenceHandler<GuidReferenceResolver>()
+            };
+            ImmutableArray<PersonReference> people = JsonSerializer.Deserialize<ImmutableArray<PersonReference>>(json, options);
+
+            Assert.Equal(2, people.Length);
+
+            PersonReference john = people[0];
+            PersonReference jane = people[1];
+
+            Assert.Same(john, jane.Spouse);
+            Assert.Same(jane, john.Spouse);
+
+            Assert.Equal(json, JsonSerializer.Serialize(people, options));
+        }
+
+        [Fact]
+        public static void CustomReferenceResolverPersistent()
+        {
+            var options = new JsonSerializerOptions
+            {
+                WriteIndented = true,
+                ReferenceHandler = new PresistentGuidReferenceHandler
+                {
+                    // Re-use the same resolver instance across all (de)serialiations based on this options instance.
+                    PersistentResolver = new GuidReferenceResolver()
+                }
+            };
+
+            string json =
+@"[
+  {
+    ""$id"": ""0b64ffdf-d155-44ad-9689-58d9adb137f3"",
+    ""Name"": ""John Smith"",
+    ""Spouse"": {
+      ""$id"": ""ae3c399c-058d-431d-91b0-a36c266441b9"",
+      ""Name"": ""Jane Smith"",
+      ""Spouse"": {
+        ""$ref"": ""0b64ffdf-d155-44ad-9689-58d9adb137f3""
+      }
+    }
+  },
+  {
+    ""$ref"": ""ae3c399c-058d-431d-91b0-a36c266441b9""
+  }
+]";
+            ImmutableArray<PersonReference> firstListOfPeople = JsonSerializer.Deserialize<ImmutableArray<PersonReference>>(json, options);
+
+            json =
+@"[
+  {
+    ""$ref"": ""0b64ffdf-d155-44ad-9689-58d9adb137f3""
+  },
+  {
+    ""$ref"": ""ae3c399c-058d-431d-91b0-a36c266441b9""
+  }
+]";
+            ImmutableArray<PersonReference> secondListOfPeople = JsonSerializer.Deserialize<ImmutableArray<PersonReference>>(json, options);
+
+            Assert.Same(firstListOfPeople[0], secondListOfPeople[0]);
+            Assert.Same(firstListOfPeople[1], secondListOfPeople[1]);
+            Assert.Same(firstListOfPeople[0].Spouse, secondListOfPeople[0].Spouse);
+            Assert.Same(firstListOfPeople[1].Spouse, secondListOfPeople[1].Spouse);
+
+            Assert.Equal(json, JsonSerializer.Serialize(secondListOfPeople, options));
+        }
+
+        internal class PresistentGuidReferenceHandler : ReferenceHandler
+        {
+            public ReferenceResolver PersistentResolver { get; set; }
+            public override ReferenceResolver CreateResolver() => PersistentResolver;
+        }
+
+        public class GuidReferenceResolver : ReferenceResolver
+        {
+            private readonly IDictionary<Guid, PersonReference> _people = new Dictionary<Guid, PersonReference>();
+
+            public override object ResolveReference(string referenceId)
+            {
+                Guid id = new Guid(referenceId);
+
+                PersonReference p;
+                _people.TryGetValue(id, out p);
+
+                return p;
+            }
+
+            public override string GetReference(object value, out bool alreadyExists)
+            {
+                PersonReference p = (PersonReference)value;
+
+                alreadyExists = _people.ContainsKey(p.Id);
+                _people[p.Id] = p;
+
+                return p.Id.ToString();
+            }
+
+            public override void AddReference(string reference, object value)
+            {
+                Guid id = new Guid(reference);
+                PersonReference person = (PersonReference)value;
+                person.Id = id;
+                _people[id] = person;
+            }
+        }
+
+        [Fact]
+        public static void TestBadReferenceResolver()
+        {
+            var options = new JsonSerializerOptions { ReferenceHandler = new ReferenceHandler<BadReferenceResolver>() };
+
+            PersonReference angela = new PersonReference { Name = "Angela" };
+            PersonReference bob = new PersonReference { Name = "Bob" };
+
+            angela.Spouse = bob;
+            bob.Spouse = angela;
+
+            // Nothing is preserved, hence MaxDepth will be reached.
+            Assert.Throws<JsonException>(() => JsonSerializer.Serialize(angela, options));
+        }
+
+        class BadReferenceResolver : ReferenceResolver
+        {
+            private int _count;
+            public override void AddReference(string referenceId, object value)
+            {
+                throw new NotImplementedException();
+            }
+
+            public override string GetReference(object value, out bool alreadyExists)
+            {
+                alreadyExists = false;
+                _count++;
+
+                return _count.ToString();
+            }
+
+            public override object ResolveReference(string referenceId)
+            {
+                throw new NotImplementedException();
+            }
         }
         #endregion
     }
