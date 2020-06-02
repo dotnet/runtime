@@ -97,7 +97,12 @@ namespace System.Net.Sockets
         private void RegisterCore(IntPtr socketHandle, SocketAsyncContext context)
         {
             bool added = _handleToContextMap.TryAdd(socketHandle, new SocketAsyncContextWrapper(context));
-            Debug.Assert(added, "Add should always succeed");
+            if (!added)
+            {
+                // Using public SafeSocketHandle(IntPtr) a user can add the same handle
+                // from a different Socket instance.
+                throw new InvalidOperationException("Handle is already used by another Socket.");
+            }
 
             Interop.Error error = Interop.Sys.TryChangeSocketEventRegistration(_port, socketHandle, Interop.Sys.SocketEvents.None,
                 Interop.Sys.SocketEvents.Read | Interop.Sys.SocketEvents.Write, socketHandle);
