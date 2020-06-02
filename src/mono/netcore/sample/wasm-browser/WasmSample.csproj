@@ -37,9 +37,4 @@
   <ItemGroup>
     <Compile Include="Program.cs" />
   </ItemGroup>
-  <ItemGroup>
-    <Reference Include="System.Runtime.InteropServices.JavaScript">
-      <HintPath>$(ArtifactsDir)bin/System.Runtime.InteropServices.JavaScript/net5.0-Browser-Release/System.Runtime.InteropServices.JavaScript.dll</HintPath>
-    </Reference>
-  </ItemGroup>
 </Project>

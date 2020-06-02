@@ -5,7 +5,6 @@
 
 using System;
 using System.Net.Http;
-using System.Runtime.InteropServices.JavaScript;
 
 public class Test
 {
