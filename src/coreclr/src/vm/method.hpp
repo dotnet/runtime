@@ -1829,17 +1829,18 @@ protected:
 
     enum {
         // enum_flag2_HasPrecode implies that enum_flag2_HasStableEntryPoint is set.
-        enum_flag2_HasStableEntryPoint      = 0x01,   // The method entrypoint is stable (either precode or actual code)
-        enum_flag2_HasPrecode               = 0x02,   // Precode has been allocated for this method
+        enum_flag2_HasStableEntryPoint                  = 0x01,   // The method entrypoint is stable (either precode or actual code)
+        enum_flag2_HasPrecode                           = 0x02,   // Precode has been allocated for this method
 
-        enum_flag2_IsUnboxingStub           = 0x04,
-        enum_flag2_HasNativeCodeSlot        = 0x08,   // Has slot for native code
+        enum_flag2_IsUnboxingStub                       = 0x04,
+        enum_flag2_HasNativeCodeSlot                    = 0x08,   // Has slot for native code
 
-        enum_flag2_IsJitIntrinsic           = 0x10,   // Jit may expand method as an intrinsic
+        enum_flag2_IsJitIntrinsic                       = 0x10,   // Jit may expand method as an intrinsic
 
-        enum_flag2_IsEligibleForTieredCompilation = 0x20,
+        enum_flag2_IsEligibleForTieredCompilation       = 0x20,
 
-        // unused                           = 0x40,
+        enum_flag2_RequiresCovariantReturnTypeChecking  = 0x40
+
         // unused                           = 0x80,
     };
     BYTE        m_bFlags2;
@@ -1900,6 +1901,19 @@ public:
     {
         LIMITED_METHOD_CONTRACT;
         m_bFlags2 |= enum_flag2_IsJitIntrinsic;
+    }
+
+    BOOL RequiresCovariantReturnTypeChecking()
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+
+        return (m_bFlags2 & enum_flag2_RequiresCovariantReturnTypeChecking) != 0;
+    }
+
+    void SetRequiresCovariantReturnTypeChecking()
+    {
+        LIMITED_METHOD_CONTRACT;
+        m_bFlags2 |= enum_flag2_RequiresCovariantReturnTypeChecking;
     }
 
     static const SIZE_T s_ClassificationSizeTable[];

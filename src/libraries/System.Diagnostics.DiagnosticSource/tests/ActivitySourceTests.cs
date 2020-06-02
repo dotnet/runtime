@@ -383,6 +383,40 @@ namespace System.Diagnostics.Tests
                 }
             }).Dispose();
         }
+
+        [Fact]
+        public void TestDefaultParentContext()
+        {
+            RemoteExecutor.Invoke(() => {
+                using (ActivitySource aSource = new ActivitySource("ParentContext"))
+                {
+                    using (ActivityListener listener = new ActivityListener
+                    {
+                        ShouldListenTo = (activitySource) => activitySource.Name == "ParentContext",
+                        GetRequestedDataUsingContext = (ref ActivityCreationOptions<ActivityContext> activityOptions) =>
+                        {
+                            Activity c = Activity.Current;
+                            if (c != null)
+                            {
+                                Assert.Equal(c.Context, activityOptions.Parent);
+                            }
+
+                            return ActivityDataRequest.AllData;
+                        }
+                    })
+                    {
+                        ActivitySource.AddActivityListener(listener);
+
+                        using (Activity a = aSource.StartActivity("a", ActivityKind.Server, new ActivityContext(ActivityTraceId.CreateRandom(), ActivitySpanId.CreateRandom(), 0)))
+                        using (Activity b = aSource.StartActivity("b"))
+                        {
+                            Assert.Equal(a.Context, b.Parent.Context);
+                        }
+                    }
+                }
+            }).Dispose();
+        }
+
         public void Dispose() => Activity.Current = null;
     }
 }
