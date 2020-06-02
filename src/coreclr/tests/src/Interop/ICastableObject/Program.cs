@@ -402,17 +402,17 @@ namespace ICastableObjectTests
 
             Console.WriteLine(" -- Validate non-interface");
             castableObj.InvalidImplementation = BadCastableObject.InvalidReturn.Class;
-            ex = Assert.Throws<InvalidProgramException>(() => { var _ = (ITest)castableObj; });
+            ex = Assert.Throws<InvalidOperationException>(() => { var _ = (ITest)castableObj; });
             Console.WriteLine($" ---- {ex.GetType().Name}: {ex.Message}");
 
             Console.WriteLine(" -- Validate missing attribute");
             castableObj.InvalidImplementation = BadCastableObject.InvalidReturn.NoAttribute;
-            ex = Assert.Throws<InvalidProgramException>(() => { var _ = (ITest)castableObj; });
+            ex = Assert.Throws<InvalidOperationException>(() => { var _ = (ITest)castableObj; });
             Console.WriteLine($" ---- {ex.GetType().Name}: {ex.Message}");
 
             Console.WriteLine(" -- Validate requested interface not implemented");
             castableObj.InvalidImplementation = BadCastableObject.InvalidReturn.NotImplemented;
-            ex = Assert.Throws<InvalidProgramException>(() => { var _ = (ITest)castableObj; });
+            ex = Assert.Throws<InvalidOperationException>(() => { var _ = (ITest)castableObj; });
             Console.WriteLine($" ---- {ex.GetType().Name}: {ex.Message}");
 
             Console.WriteLine(" -- Validate no default implementation");

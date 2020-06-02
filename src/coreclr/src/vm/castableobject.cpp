@@ -8,8 +8,17 @@
 
 namespace
 {
-    OBJECTREF CallGetInterfaceImplementation(OBJECTREF *objPROTECTED, TypeHandle interfaceTypeHandle, BOOL throwIfNotFound)
+    OBJECTREF CallGetInterfaceImplementation(OBJECTREF *objPROTECTED, const TypeHandle &interfaceTypeHandle, BOOL throwIfNotFound)
     {
+        CONTRACT(OBJECTREF) {
+            THROWS;
+            GC_TRIGGERS;
+            MODE_COOPERATIVE;
+            PRECONDITION(objPROTECTED != NULL);
+            PRECONDITION(interfaceTypeHandle.IsInterface());
+            POSTCONDITION(!(throwIfNotFound && RETVAL == NULL));
+        } CONTRACT_END;
+
         PREPARE_NONVIRTUAL_CALLSITE(METHOD__ICASTABLEHELPERS__GET_INTERFACE_IMPLEMENTATION);
 
         OBJECTREF managedType = interfaceTypeHandle.GetManagedClassObject(); // GC triggers
@@ -23,11 +32,11 @@ namespace
         CALL_MANAGED_METHOD_RETREF(implTypeRef, OBJECTREF, args);
         INDEBUG(managedType = NULL); // managedType wasn't protected during the call
 
-        return implTypeRef;
+        RETURN implTypeRef;
     }
 }
 
-bool CastableObject::IsInstanceOf(OBJECTREF *objPROTECTED, TypeHandle typeHandle, BOOL throwIfNotFound)
+bool CastableObject::IsInstanceOf(OBJECTREF *objPROTECTED, const TypeHandle &typeHandle, BOOL throwIfNotFound)
 {
     CONTRACT(bool) {
         THROWS;
@@ -41,7 +50,7 @@ bool CastableObject::IsInstanceOf(OBJECTREF *objPROTECTED, TypeHandle typeHandle
     RETURN (implTypeObj != NULL);
 }
 
-OBJECTREF CastableObject::GetInterfaceImplementation(OBJECTREF *objPROTECTED, TypeHandle typeHandle, BOOL throwIfNotFound)
+OBJECTREF CastableObject::GetInterfaceImplementation(OBJECTREF *objPROTECTED, const TypeHandle &typeHandle, BOOL throwIfNotFound)
 {
     CONTRACT(OBJECTREF) {
         THROWS;

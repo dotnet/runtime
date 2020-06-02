@@ -8,9 +8,9 @@
 
 namespace CastableObject
 {
-    bool IsInstanceOf(OBJECTREF *objPROTECTED, TypeHandle interfaceTypeHandle, BOOL throwIfNotFound);
+    bool IsInstanceOf(OBJECTREF *objPROTECTED, const TypeHandle &interfaceTypeHandle, BOOL throwIfNotFound);
 
-    OBJECTREF GetInterfaceImplementation(OBJECTREF *objPROTECTED, TypeHandle interfaceTypeHandle, BOOL throwIfNotFound);
+    OBJECTREF GetInterfaceImplementation(OBJECTREF *objPROTECTED, const TypeHandle &interfaceTypeHandle, BOOL throwIfNotFound);
 }
 
 #endif // _CASTABLEOBJECT_H_

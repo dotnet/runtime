@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Diagnostics.CodeAnalysis;
-using System.Reflection;
 
 namespace System.Runtime.CompilerServices
 {
@@ -31,20 +30,20 @@ namespace System.Runtime.CompilerServices
             if (handle.Equals(default))
             {
                 if (throwIfNotFound)
-                    throw new InvalidCastException(SR.Format(SR.InvalidCast_FromTo, castableObject.GetType().ToString(), interfaceType.ToString()));
+                    throw new InvalidCastException(SR.Format(SR.InvalidCast_FromTo, castableObject.GetType(), interfaceType));
 
                 return null;
             }
 
             RuntimeType implType = handle.GetRuntimeType();
             if (!implType.IsInterface)
-                throw new InvalidProgramException(SR.Format(SR.ICastableObject_NotInterface, implType.ToString()));
+                throw new InvalidOperationException(SR.Format(SR.ICastableObject_NotInterface, implType.ToString()));
 
-            if (implType.GetCustomAttribute<CastableObjectImplementationAttribute>() == null)
-                throw new InvalidProgramException(SR.Format(SR.ICastableObject_MissingImplementationAttribute, implType.ToString(), nameof(CastableObjectImplementationAttribute)));
+            if (!implType.IsDefined(typeof(CastableObjectImplementationAttribute), inherit: false))
+                throw new InvalidOperationException(SR.Format(SR.ICastableObject_MissingImplementationAttribute, implType, nameof(CastableObjectImplementationAttribute)));
 
             if (!implType.ImplementInterface(interfaceType))
-                throw new InvalidProgramException(SR.Format(SR.ICastableObject_DoesNotImplementRequested, implType.ToString(), interfaceType.ToString()));
+                throw new InvalidOperationException(SR.Format(SR.ICastableObject_DoesNotImplementRequested, implType, interfaceType));
 
             return implType;
         }
