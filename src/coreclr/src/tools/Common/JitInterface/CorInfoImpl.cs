@@ -1070,7 +1070,7 @@ namespace Internal.JitInterface
 
 #if READYTORUN
             TypeDesc owningType = methodIL.OwningMethod.GetTypicalMethodDefinition().OwningType;
-            bool recordToken = _compilation.NodeFactory.CompilationModuleGroup.VersionsWithType(owningType) && owningType is EcmaType;
+            bool recordToken = _compilation.CompilationModuleGroup.VersionsWithType(owningType) && owningType is EcmaType;
 #endif
 
             if (result is MethodDesc)
@@ -1349,14 +1349,7 @@ namespace Internal.JitInterface
                     result |= CorInfoFlag.CORINFO_FLG_CONTAINS_GC_PTR;
 
                 if (metadataType.IsBeforeFieldInit)
-                {
-#if READYTORUN
-                    if (_compilation.CompilationModuleGroup.VersionsWithType(metadataType))
-#endif
-                    {
-                        result |= CorInfoFlag.CORINFO_FLG_BEFOREFIELDINIT;
-                    }
-                }
+                    result |= CorInfoFlag.CORINFO_FLG_BEFOREFIELDINIT;
 
                 // Assume overlapping fields for explicit layout.
                 if (metadataType.IsExplicitLayout)
@@ -1367,10 +1360,11 @@ namespace Internal.JitInterface
             }
 
 #if READYTORUN
-            if (!_compilation.NodeFactory.CompilationModuleGroup.VersionsWithType(type))
+            if (!_compilation.CompilationModuleGroup.VersionsWithType(type))
             {
                 // Prevent the JIT from drilling into types outside of the current versioning bubble
                 result |= CorInfoFlag.CORINFO_FLG_DONT_PROMOTE;
+                result &= ~CorInfoFlag.CORINFO_FLG_BEFOREFIELDINIT;
             }
 #endif
 
