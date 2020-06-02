@@ -33,7 +33,7 @@ if ($buildWindowsContainers)
     exit $LASTEXITCODE
   }
 
-  $dockerFile="$dockerPrefix.windows.Dockerfile"
+  $dockerFile="$dockerFilePrefix.windows.Dockerfile"
 
   docker build --tag $imageName `
     --build-arg CONFIGURATION=$configuration `
@@ -44,7 +44,7 @@ if ($buildWindowsContainers)
 else
 {
   # Docker build libraries and copy to dotnet sdk image
-  $dockerFile="$dockerPrefix.linux.Dockerfile"
+  $dockerFile="$dockerFilePrefix.linux.Dockerfile"
 
   docker build --tag $imageName `
       --build-arg CONFIGURATION=$configuration `
