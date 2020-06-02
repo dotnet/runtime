@@ -1301,7 +1301,7 @@ namespace Internal.JitInterface
                     //
                     // Note that it is safe to devirtualize in the following cases, since a servicing event cannot later modify it
                     //  1) Callvirt on a virtual final method of a value type - since value types are sealed types as per ECMA spec
-                    devirt = (constrainedType ?? targetMethod.OwningType).IsValueType || targetMethod.IsInternalCall;
+                    devirt = targetMethod.OwningType.IsValueType || targetMethod.IsInternalCall;
 
                     callVirtCrossingVersionBubble = true;
                 }
