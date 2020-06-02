@@ -43,11 +43,7 @@ namespace System.Net.Sockets
 
         internal bool OwnsHandle { get; }
 
-        // This is a temporary environment variable to control the default value of the PreferInlineCompletions property.
-        // This must be removed when PreferInlineCompletions is removed/made public.
-        private static readonly bool PreferInlineCompletionsDefault = Environment.GetEnvironmentVariable("DOTNET_SYSTEM_NET_SOCKETS_INLINE_COMPLETIONS_DEFAULT") == "1";
-
-        internal bool PreferInlineCompletions { get; set; } = PreferInlineCompletionsDefault;
+        internal bool PreferInlineCompletions { get; set; } = SocketAsyncEngine.InlineSocketCompletionsEnabled;
 
         private bool TryOwnClose()
         {

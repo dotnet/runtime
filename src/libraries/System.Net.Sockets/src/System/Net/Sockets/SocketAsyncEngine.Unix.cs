@@ -14,12 +14,9 @@ namespace System.Net.Sockets
     {
         // Socket continuations are dispatched to the ThreadPool from the event thread.
         // This avoids continuations blocking the event handling.
-        // Setting DOTNET_SYSTEM_NET_SOCKETS_INLINE_COMPLETIONS_ENABLED to '1'
-        // allows continuations to run directly on the event thread by setting
-        // Socket.PreferInlineCompletions to true.
-        // This removes the overhead of context switching to the ThreadPool,
-        // at the risk of potentially blocking the event thread.
-        internal static readonly bool InlineSocketCompletionsEnabled = Environment.GetEnvironmentVariable("DOTNET_SYSTEM_NET_SOCKETS_INLINE_COMPLETIONS_ENABLED") == "1";
+        // Setting PreferInlineCompletions allows continuations to run directly on the event thread.
+        // PreferInlineCompletions defaults to false and can be set to true using the DOTNET_SYSTEM_NET_SOCKETS_INLINE_COMPLETIONS envvar.
+        internal static readonly bool InlineSocketCompletionsEnabled = Environment.GetEnvironmentVariable("DOTNET_SYSTEM_NET_SOCKETS_INLINE_COMPLETIONS") == "1";
 
         //
         // Encapsulates a particular SocketAsyncContext object's access to a SocketAsyncEngine.
@@ -312,7 +309,6 @@ namespace System.Net.Sockets
                 Interop.Sys.SocketEvent* buffer = _buffer;
                 ConcurrentDictionary<IntPtr, SocketAsyncContextWrapper> handleToContextMap = _handleToContextMap;
                 ConcurrentQueue<SocketIOEvent> eventQueue = _eventQueue;
-                bool inlineSocketCompletionsEnabled = InlineSocketCompletionsEnabled;
                 IntPtr shutdownHandle = ShutdownHandle;
                 SocketAsyncContext? context = null;
                 while (!shutdown)
@@ -336,7 +332,7 @@ namespace System.Net.Sockets
                         {
                             Debug.Assert(handle.ToInt64() < MaxHandles.ToInt64(), $"Unexpected values: handle={handle}, MaxHandles={MaxHandles}");
 
-                            if (inlineSocketCompletionsEnabled && context.PreferInlineCompletions)
+                            if (context.PreferInlineCompletions)
                             {
                                 context.HandleEventsInline(socketEvent.Events);
                             }
