@@ -12,7 +12,6 @@ namespace System.Runtime.InteropServices.JavaScript
 
         public Float64Array(int length) : base(length) { }
 
-
         public Float64Array(ArrayBuffer buffer) : base(buffer) { }
 
         public Float64Array(ArrayBuffer buffer, int byteOffset) : base(buffer, byteOffset) { }

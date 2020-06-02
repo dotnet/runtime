@@ -12,7 +12,6 @@ namespace System.Runtime.InteropServices.JavaScript
 
         public Int32Array(int length) : base(length) { }
 
-
         public Int32Array(ArrayBuffer buffer) : base(buffer) { }
 
         public Int32Array(ArrayBuffer buffer, int byteOffset) : base(buffer, byteOffset) { }

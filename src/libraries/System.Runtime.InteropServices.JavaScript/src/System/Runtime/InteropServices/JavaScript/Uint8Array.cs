@@ -17,7 +17,6 @@ namespace System.Runtime.InteropServices.JavaScript
         public Uint8Array(int length) : base(length)
         { }
 
-
         public Uint8Array(ArrayBuffer buffer) : base(buffer)
         { }
 

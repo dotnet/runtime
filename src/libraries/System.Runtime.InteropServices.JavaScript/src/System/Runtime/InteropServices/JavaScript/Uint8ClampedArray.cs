@@ -17,7 +17,6 @@ namespace System.Runtime.InteropServices.JavaScript
         public Uint8ClampedArray(int length) : base(length)
         { }
 
-
         public Uint8ClampedArray(ArrayBuffer buffer) : base(buffer)
         { }
 

@@ -6,7 +6,6 @@ using System;
 
 namespace System.Runtime.InteropServices.JavaScript
 {
-
     /// <summary>
     /// Core objects are the standard built-in objects and functions.
     /// </summary>

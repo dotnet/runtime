@@ -80,11 +80,12 @@ namespace System.Runtime.InteropServices.JavaScript
 
         //private static readonly Dictionary<int, JSObject?> _boundObjects = new Dictionary<int, JSObject?>();
         private static readonly Dictionary<int, WeakReference> _boundObjects = new Dictionary<int, WeakReference>();
+
         // weak_delegate_table is a ConditionalWeakTable with the Delegate and associated JSObject:
         // Key Lifetime:
         //    Once the key dies, the dictionary automatically removes the key/value entry.
         // No need to lock as it is thread safe.
-        private static readonly ConditionalWeakTable<Delegate, JSObject?> weak_delegate_table = new ConditionalWeakTable<Delegate, JSObject?>();
+        private static readonly ConditionalWeakTable<Delegate, JSObject?> _weakDelegateTable = new ConditionalWeakTable<Delegate, JSObject?>();
 
         private static readonly Dictionary<object, JSObject?> _rawToJS = new Dictionary<object, JSObject?>();
 
@@ -265,11 +266,11 @@ namespace System.Runtime.InteropServices.JavaScript
                 if (rawObj.GetType().IsSubclassOf(typeof(Delegate)))
                 {
                     Delegate? dele = rawObj as Delegate;
-                    if (obj == null && dele != null && !weak_delegate_table.TryGetValue(dele, out obj))
+                    if (obj == null && dele != null && !_weakDelegateTable.TryGetValue(dele, out obj))
                     {
                         obj = new JSObject(jsId, true);
                         _boundObjects[jsId] = new WeakReference(obj);
-                        weak_delegate_table.Add(dele, obj);
+                        _weakDelegateTable.Add(dele, obj);
                         obj.WeakRawObject = new WeakReference(dele, false);
                     }
                 }
@@ -294,8 +295,8 @@ namespace System.Runtime.InteropServices.JavaScript
                     Delegate? dele = rawObj as Delegate;
                     if (dele != null)
                     {
-                        lock (weak_delegate_table)
-                            weak_delegate_table.TryGetValue(dele, out obj);
+                        lock (_weakDelegateTable)
+                            _weakDelegateTable.TryGetValue(dele, out obj);
                     }
                 }
                 if (obj is null && !_rawToJS.TryGetValue(rawObj, out obj))
