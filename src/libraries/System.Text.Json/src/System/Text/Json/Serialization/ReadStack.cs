@@ -54,6 +54,11 @@ namespace System.Text.Json
         /// </summary>
         public bool SupportContinuation;
 
+        /// <summary>
+        /// Whether we can read without the need of saving state for stream and preserve references cases.
+        /// </summary>
+        public bool UseFastPath;
+
         private void AddCurrent()
         {
             if (_previous == null)
@@ -84,12 +89,14 @@ namespace System.Text.Json
             // The initial JsonPropertyInfo will be used to obtain the converter.
             Current.JsonPropertyInfo = jsonClassInfo.PropertyInfoForClassInfo;
 
-            if (options.ReferenceHandler != null)
+            bool preserveReferences = options.ReferenceHandler != null;
+            if (preserveReferences)
             {
-                ReferenceResolver = options.ReferenceHandler.CreateResolver(writing: false);
+                ReferenceResolver = options.ReferenceHandler!.CreateResolver(writing: false);
             }
 
             SupportContinuation = supportContinuation;
+            UseFastPath = !supportContinuation && !preserveReferences;
         }
 
         public void Push()

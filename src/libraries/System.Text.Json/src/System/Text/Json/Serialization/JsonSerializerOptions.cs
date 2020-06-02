@@ -27,7 +27,7 @@ namespace System.Text.Json
         private JsonNamingPolicy? _dictionaryKeyPolicy;
         private JsonNamingPolicy? _jsonPropertyNamingPolicy;
         private JsonCommentHandling _readCommentHandling;
-        private ReferenceHandler? _referenceHandler = null;
+        private ReferenceHandler? _referenceHandler;
         private JavaScriptEncoder? _encoder = null;
         private JsonIgnoreCondition _defaultIgnoreCondition;
 

@@ -10,7 +10,7 @@ namespace System.Text.Json
 {
     public static partial class JsonSerializer
     {
-        internal static byte[] s_idPropertyName
+        internal static readonly byte[] s_idPropertyName
             = new byte[] { (byte)'$', (byte)'i', (byte)'d' };
 
         /// <summary>

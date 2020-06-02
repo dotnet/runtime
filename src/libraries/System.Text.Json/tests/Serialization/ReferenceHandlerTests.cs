@@ -579,6 +579,7 @@ namespace System.Text.Json.Serialization.Tests
                 WriteIndented = true,
                 ReferenceHandler = new PresistentGuidReferenceHandler
                 {
+                    // Re-use the same resolver instance across all (de)serialiations based on this options instance.
                     PersistentResolver = new GuidReferenceResolver()
                 }
             };

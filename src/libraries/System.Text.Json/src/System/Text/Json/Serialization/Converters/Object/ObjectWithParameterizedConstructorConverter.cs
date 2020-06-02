@@ -23,7 +23,7 @@ namespace System.Text.Json.Serialization.Converters
         {
             object obj;
 
-            if (!state.SupportContinuation && options.ReferenceHandler == null)
+            if (state.UseFastPath)
             {
                 // Fast path that avoids maintaining state variables.
 
