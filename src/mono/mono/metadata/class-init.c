@@ -3000,6 +3000,36 @@ mono_class_setup_vtable_ginst (MonoClass *klass, GList *in_setup)
 }
 
 /*
+ * vtable_slot_has_preserve_base_overrides_attribute:
+ * 
+ * Needs to walk up the class hierarchy looking for the methods in this slot to
+ * see if any are tagged with PreserveBaseOverrideAtrribute.
+ */
+static gboolean
+vtable_slot_has_preserve_base_overrides_attribute (MonoClass *klass, int slot, MonoClass **out_klass)
+{
+	/* 
+	 * FIXME: it's slow to do this loop every time.  A faster way would be
+	 * to hang a boolean in the image of the parent class if it or any of
+	 * its ancestors have the attribute.
+	 */
+
+	for (; klass; klass = klass->parent) {
+		if (slot >= klass->vtable_size)
+			break;
+		MonoMethod *method = klass->vtable [slot];
+
+		/* FIXME: for abstract classes, do we put abstract methods here? */
+		if (method && method_has_preserve_base_overrides_attribute (method)) {
+			if (out_klass)
+				*out_klass = klass;
+			return TRUE;
+		}
+	}
+	return FALSE;
+}
+
+/*
  * LOCKING: this is supposed to be called with the loader lock held.
  */
 void
@@ -3326,21 +3356,55 @@ mono_class_setup_vtable_general (MonoClass *klass, MonoMethod **overrides, int o
 	/* override non interface methods */
 	for (i = 0; i < onum; i++) {
 		MonoMethod *decl = overrides [i*2];
+		MonoMethod *impl = overrides [i*2 + 1];
 		if (!MONO_CLASS_IS_INTERFACE_INTERNAL (decl->klass)) {
 			g_assert (decl->slot != -1);
-			vtable [decl->slot] = overrides [i*2 + 1];
- 			overrides [i * 2 + 1]->slot = decl->slot;
+			vtable [decl->slot] = impl;
+			/* covariant returns generate an explicit override impl with a newslot flag. respect it. */
+			if (!(impl->flags & METHOD_ATTRIBUTE_NEW_SLOT))
+				impl->slot = decl->slot;
 			if (!override_map)
 				override_map = g_hash_table_new (mono_aligned_addr_hash, NULL);
 			TRACE_INTERFACE_VTABLE (printf ("adding explicit override from %s [%p] to %s [%p]\n", 
 				mono_method_full_name (decl, 1), decl,
-				mono_method_full_name (overrides [i * 2 + 1], 1), overrides [i * 2 + 1]));
-			g_hash_table_insert (override_map, decl, overrides [i * 2 + 1]);
+				mono_method_full_name (impl, 1), impl));
+			g_hash_table_insert (override_map, decl, impl);
+
+			MonoClass *impl_class = impl->klass;
+			if (method_has_preserve_base_overrides_attribute (impl) ||
+			    (klass->parent &&
+			     vtable_slot_has_preserve_base_overrides_attribute (klass->parent, decl->slot, &impl_class))) {
+				if (impl_class == decl->klass) {
+					TRACE_INTERFACE_VTABLE (printf ("preserve base overrides attribute is on slot %d is on the decl method %s; not adding any more overrides\n", decl->slot, mono_method_full_name (decl, 1)));
+					continue;
+				}
+				/* 
+				 * if we see any method that occupies the declared slot between us and the class with
+				 * the attribute, remap it to out impl method.
+				 */
+				TRACE_INTERFACE_VTABLE (printf ("override impl [slot %d] %s or some method in this slot in a parent class has the preserve base overrides attribute.  overridden by %s\n", decl->slot, mono_method_full_name (decl, 1), mono_method_full_name (impl, 1)));
+				g_assert (impl_class != NULL);
+				for (MonoClass *cur_class = klass->parent; cur_class && cur_class != impl_class->parent; cur_class = cur_class->parent) {
+					if (decl->slot >= cur_class->vtable_size)
+						break;
+					MonoMethod *prev_impl = cur_class->vtable[decl->slot];
+					g_hash_table_insert (override_map, prev_impl, impl);
+					TRACE_INTERFACE_VTABLE (do {
+							char *full_name = mono_type_full_name (m_class_get_byval_arg (cur_class));
+							printf ("  slot %d of %s was %s adding override to %s\n", decl->slot, full_name, mono_method_full_name (prev_impl, 1), mono_method_full_name (impl, 1));
+							g_free (full_name);
+						} while (0));
+									
+				}
+
+			}
 
 			if (mono_security_core_clr_enabled ())
-				mono_security_core_clr_check_override (klass, vtable [decl->slot], decl);
+				mono_security_core_clr_check_override (klass, vtable [decl->slot], decl); /* FIXME: covariant return checking */
 		}
 	}
+
+	TRACE_INTERFACE_VTABLE (print_vtable_full (klass, vtable, cur_slot, first_non_interface_slot, "AFTER OVERRIDING NON-INTERFACE METHODS", FALSE));
 
 	/*
 	 * If a method occupies more than one place in the vtable, and it is
@@ -3349,14 +3413,30 @@ mono_class_setup_vtable_general (MonoClass *klass, MonoMethod **overrides, int o
 	if (override_map) {
 		MonoMethod *cm;
 
-		for (i = 0; i < max_vtsize; ++i)
-			if (vtable [i]) {
+		for (i = 0; i < max_vtsize; ++i) {
+			MonoMethod *cur_method = vtable [i];
+			if (cur_method) {
 				TRACE_INTERFACE_VTABLE (printf ("checking slot %d method %s[%p] for overrides\n", i, mono_method_full_name (vtable [i], 1), vtable [i]));
 
-				cm = (MonoMethod *)g_hash_table_lookup (override_map, vtable [i]);
+				cm = (MonoMethod *)g_hash_table_lookup (override_map, cur_method);
 				if (cm)
 					vtable [i] = cm;
+				else
+					continue;
+				/* cur_method is some kind of a declaration and it has an override cm that applies to it. */
+				if (m_class_is_valuetype (klass))
+					continue;
+				if (method_has_preserve_base_overrides_attribute (cur_method) ||
+				    method_has_preserve_base_overrides_attribute (cm) ||
+				    (klass->parent && 
+				     vtable_slot_has_preserve_base_overrides_attribute (klass->parent, i, NULL))) {
+					TRACE_INTERFACE_VTABLE (printf ("slot %d overriding method %s[%p] or some method in this slot in a parent class has the preserve base overrides attribute\n", i, mono_method_full_name (cm, 1), cm));
+					/* TODO: look for other slots with `cur_method` as the override and replace them by `cm`, too.
+					 */
+				}
+
 			}
+		}
 
 		g_hash_table_destroy (override_map);
 		override_map = NULL;
