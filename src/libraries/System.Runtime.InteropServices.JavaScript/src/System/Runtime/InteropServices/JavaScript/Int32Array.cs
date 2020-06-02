@@ -25,7 +25,8 @@ namespace System.Runtime.InteropServices.JavaScript
 
         public Int32Array(SharedArrayBuffer buffer, int byteOffset, int length) : base(buffer, byteOffset, length) { }
 
-        internal Int32Array(IntPtr js_handle) : base(js_handle) { }
+        internal Int32Array(IntPtr jsHandle, bool ownsHandle) : base(jsHandle, ownsHandle)
+        { }
 
         /// <summary>
         /// Defines an implicit conversion of Int32Array class to a int

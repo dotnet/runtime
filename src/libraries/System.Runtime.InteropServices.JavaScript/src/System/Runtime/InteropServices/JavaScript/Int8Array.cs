@@ -34,7 +34,7 @@ namespace System.Runtime.InteropServices.JavaScript
         public Int8Array(SharedArrayBuffer buffer, int byteOffset, int length) : base(buffer, byteOffset, length)
         { }
 
-        internal Int8Array(IntPtr js_handle) : base(js_handle)
+        internal Int8Array(IntPtr jsHandle, bool ownsHandle) : base(jsHandle, ownsHandle)
         { }
 
         /// <summary>

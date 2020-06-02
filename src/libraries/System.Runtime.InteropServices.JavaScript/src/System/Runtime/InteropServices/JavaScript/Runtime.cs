@@ -40,6 +40,13 @@ namespace System.Runtime.InteropServices.JavaScript
 
         public static void FreeObject(object obj)
         {
+            // We no longer need to free on delegates.
+            // Leave this here for now so it does not break code.
+            if (obj.GetType().IsSubclassOf(typeof(Delegate)))
+            {
+                return;
+            }
+
             lock (_rawToJS)
             {
                 if (_rawToJS.TryGetValue(obj, out JSObject? jsobj))
@@ -53,10 +60,10 @@ namespace System.Runtime.InteropServices.JavaScript
                         if (exception != 0)
                             throw new JSException($"Error releasing object on (raw-obj)");
 
-                        jsobj.JSHandle = -1;
+                        jsobj.SetHandleAsInvalid();
                         jsobj.RawObject = null;
                         jsobj.IsDisposed = true;
-                        jsobj.Handle.Free();
+                        jsobj.AnyRefHandle.Free();
                     }
                 }
                 else
@@ -65,30 +72,39 @@ namespace System.Runtime.InteropServices.JavaScript
                 }
             }
         }
+
         public static object GetGlobalObject(string? str = null)
         {
             return Interop.Runtime.GetGlobalObject(str);
         }
 
-        private static readonly Dictionary<int, JSObject?> _boundObjects = new Dictionary<int, JSObject?>();
+        //private static readonly Dictionary<int, JSObject?> _boundObjects = new Dictionary<int, JSObject?>();
+        private static readonly Dictionary<int, WeakReference> _boundObjects = new Dictionary<int, WeakReference>();
+        // weak_delegate_table is a ConditionalWeakTable with the Delegate and associated JSObject:
+        // Key Lifetime:
+        //    Once the key dies, the dictionary automatically removes the key/value entry.
+        // No need to lock as it is thread safe.
+        private static readonly ConditionalWeakTable<Delegate, JSObject?> weak_delegate_table = new ConditionalWeakTable<Delegate, JSObject?>();
+
         private static readonly Dictionary<object, JSObject?> _rawToJS = new Dictionary<object, JSObject?>();
 
-        public static int BindJSObject(int jsId, Type mappedType)
+        public static int BindJSObject(int jsId, bool ownsHandle, Type mappedType)
         {
             lock (_boundObjects)
             {
-                if (!_boundObjects.TryGetValue(jsId, out JSObject? obj))
+                if (!_boundObjects.TryGetValue(jsId, out WeakReference? obj))
                 {
                     if (mappedType != null)
                     {
-                        return BindJSType(jsId, mappedType);
+                        return BindJSType(jsId, ownsHandle, mappedType);
                     }
                     else
                     {
-                        _boundObjects[jsId] = obj = new JSObject((IntPtr)jsId);
+                        _boundObjects[jsId] = obj = new WeakReference(new JSObject((IntPtr)jsId, ownsHandle), true);
                     }
                 }
-                return obj == null ? 0 : (int)(IntPtr)obj.Handle;
+                JSObject? target = obj.Target as JSObject;
+                return target == null ? 0 : (int)(IntPtr)target.AnyRefHandle;
             }
         }
 
@@ -99,32 +115,41 @@ namespace System.Runtime.InteropServices.JavaScript
 
             lock (_boundObjects)
             {
-                if (_boundObjects.TryGetValue(jsId, out JSObject? existingObj))
+                if (_boundObjects.TryGetValue(jsId, out WeakReference? existingObj))
                 {
-                    if (existingObj?.Handle != h && h.IsAllocated)
-                        throw new JSException($"Multiple handles pointing at js_id: {jsId}");
+                    var instance = existingObj?.Target as JSObject;
+                    if (instance?.AnyRefHandle != h && h.IsAllocated)
+                        throw new JSException($"Multiple handles pointing at jsId: {jsId}");
 
-                    obj = existingObj;
+                    obj = instance;
                 }
                 else
                 {
                     obj = h.Target as JSObject;
                 }
-                return obj == null ? 0 : (int)(IntPtr)obj.Handle;
+                if (obj == null)
+                    return 0;
+
+                _boundObjects[jsId] = new WeakReference(obj, true);
+                return (int)(IntPtr)obj.AnyRefHandle;
             }
         }
 
-        public static int BindJSType(int jsId, Type mappedType)
+        public static int BindJSType(int jsId, bool ownsHandle, Type mappedType)
         {
             lock (_boundObjects)
             {
-                if (!_boundObjects.TryGetValue(jsId, out JSObject? obj))
+                if (!_boundObjects.TryGetValue(jsId, out WeakReference? reference))
                 {
                     ConstructorInfo? jsobjectnew = mappedType.GetConstructor(BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.ExactBinding,
-                            null, new Type[] { typeof(IntPtr) }, null);
-                    _boundObjects[jsId] = obj = jsobjectnew == null ? null : (JSObject)jsobjectnew.Invoke(new object[] { (IntPtr)jsId });
+                            null, new Type[] { typeof(IntPtr), typeof(bool) }, null);
+                    JSObject? newJSType = jsobjectnew?.Invoke(new object[] { (IntPtr)jsId, ownsHandle }) as JSObject;
+                    if (newJSType == null)
+                        return -1;
+                    _boundObjects[jsId] = reference = new WeakReference(newJSType, true);
                 }
-                return obj == null ? 0 : (int)(IntPtr)obj.Handle;
+                JSObject? refTarget = reference?.Target as JSObject;
+                return refTarget == null ? 0 : (int)(IntPtr)refTarget.AnyRefHandle;
             }
         }
 
@@ -132,10 +157,11 @@ namespace System.Runtime.InteropServices.JavaScript
         {
             lock (_boundObjects)
             {
-                if (_boundObjects.TryGetValue(jsId, out JSObject? obj))
+                if (_boundObjects.TryGetValue(jsId, out WeakReference? reference))
                 {
                     _boundObjects.Remove(jsId);
-                    return obj == null ? 0 : (int)(IntPtr)obj.Handle;
+                    JSObject? refTarget = reference?.Target as JSObject;
+                    return refTarget == null ? 0 : (int)(IntPtr)refTarget.AnyRefHandle;
                 }
                 return 0;
             }
@@ -145,21 +171,46 @@ namespace System.Runtime.InteropServices.JavaScript
         {
             lock (_boundObjects)
             {
-                if (_boundObjects.TryGetValue(jsId, out JSObject? obj))
+                if (_boundObjects.TryGetValue(jsId, out WeakReference? reference))
                 {
-                    if (_boundObjects[jsId] != null)
+                    object? instance = reference.Target;
+                    if (instance == null)
                     {
                         _boundObjects.Remove(jsId);
                     }
-                    if (obj != null)
+                    else
                     {
-                        obj.JSHandle = -1;
-                        obj.IsDisposed = true;
-                        obj.RawObject = null;
-                        obj.Handle.Free();
+
+                        ((JSObject)instance).RawObject = null;
+                        ((JSObject)instance).WeakRawObject = null;
+                        _boundObjects.Remove(jsId);
+                        if (reference?.Target is JSObject instanceJS)
+                        {
+                            instanceJS.SetHandleAsInvalid();
+                            instanceJS.IsDisposed = true;
+                            instanceJS.RawObject = null;
+                            instanceJS.AnyRefHandle.Free();
+                        }
                     }
                 }
             }
+        }
+        public static bool ReleaseJSObject(JSObject objToRelease)
+        {
+            Interop.Runtime.ReleaseHandle(objToRelease.JSHandle, out int exception);
+            if (exception != 0)
+                throw new JSException($"Error releasing handle on (js-obj js '{objToRelease.JSHandle}' mono '{(IntPtr)objToRelease.AnyRefHandle} raw '{objToRelease.RawObject != null}' weak raw '{objToRelease.WeakRawObject?.Target != null}'   )");
+
+            lock (_boundObjects)
+            {
+                _boundObjects.Remove(objToRelease.JSHandle);
+                objToRelease.SetHandleAsInvalid();
+                objToRelease.IsDisposed = true;
+                objToRelease.RawObject = null;
+                objToRelease.WeakRawObject = null;
+                objToRelease.AnyRefHandle.Free();
+            }
+            return true;
         }
 
         public static void UnBindRawJSObjectAndFree(int gcHandle)
@@ -172,18 +223,16 @@ namespace System.Runtime.InteropServices.JavaScript
                 {
                     _rawToJS.Remove(obj.RawObject);
 
-                    int exception;
-                    Interop.Runtime.ReleaseHandle(obj.JSHandle, out exception);
+                    Interop.Runtime.ReleaseHandle(obj.JSHandle, out int exception);
                     if (exception != 0)
-                        throw new JSException($"Error releasing handle on (js-obj js '{obj.JSHandle}' .NET '{(IntPtr)obj.Handle} raw '{obj.RawObject != null})");
+                        throw new JSException($"Error releasing handle on (js-obj js '{obj.JSHandle}' mono '{(IntPtr)obj.AnyRefHandle} raw '{obj.RawObject != null})");
 
                     // Calling Release Handle above only removes the reference from the JavaScript side but does not
                     // release the bridged JSObject associated with the raw object so we have to do that ourselves.
-                    obj.JSHandle = -1;
+                    obj.SetHandleAsInvalid();
                     obj.IsDisposed = true;
                     obj.RawObject = null;
-
-                    obj.Handle.Free();
+                    obj.AnyRefHandle.Free();
                 }
             }
         }
@@ -213,10 +262,25 @@ namespace System.Runtime.InteropServices.JavaScript
             JSObject? obj = rawObj as JSObject;
             lock (_rawToJS)
             {
-                if (obj == null && !_rawToJS.TryGetValue(rawObj, out obj))
-                    _rawToJS[rawObj] = obj = new JSObject(jsId, rawObj);
-
-                return obj == null ? 0 : (int)(IntPtr)obj.Handle;
+                if (rawObj.GetType().IsSubclassOf(typeof(Delegate)))
+                {
+                    Delegate? dele = rawObj as Delegate;
+                    if (obj == null && dele != null && !weak_delegate_table.TryGetValue(dele, out obj))
+                    {
+                        obj = new JSObject(jsId, true);
+                        _boundObjects[jsId] = new WeakReference(obj);
+                        weak_delegate_table.Add(dele, obj);
+                        obj.WeakRawObject = new WeakReference(dele, false);
+                    }
+                }
+                else
+                {
+                    if (obj == null && !_rawToJS.TryGetValue(rawObj, out obj))
+                    {
+                        _rawToJS[rawObj] = obj = new JSObject(jsId, rawObj);
+                    }
+                }
+                return obj == null ? 0 : (int)(IntPtr)obj.AnyRefHandle;
             }
         }
 
@@ -225,7 +289,16 @@ namespace System.Runtime.InteropServices.JavaScript
             JSObject? obj = rawObj as JSObject;
             lock (_rawToJS)
             {
-                if (obj == null && !_rawToJS.TryGetValue(rawObj, out obj))
+                if (obj is null && rawObj.GetType().IsSubclassOf(typeof(Delegate)))
+                {
+                    Delegate? dele = rawObj as Delegate;
+                    if (dele != null)
+                    {
+                        lock (weak_delegate_table)
+                            weak_delegate_table.TryGetValue(dele, out obj);
+                    }
+                }
+                if (obj is null && !_rawToJS.TryGetValue(rawObj, out obj))
                     return -1;
 
                 return obj?.JSHandle ?? -1;
