@@ -17,7 +17,7 @@
     <SingleFileHostIncludeFilename Include="libSystem.IO.Compression.Native.so" />
     <SingleFileHostIncludeFilename Include="libSystem.Native.so" />
     <SingleFileHostIncludeFilename Include="libSystem.Net.Security.Native.so" />
-    <SingleFileHostIncludeFilename Include="llibSystem.Security.Cryptography.Native.OpenSsl.so" />
+    <SingleFileHostIncludeFilename Include="libSystem.Security.Cryptography.Native.OpenSsl.so" />
     <SingleFileHostIncludeFilename Include="libclrjit.so" />
     <SingleFileHostIncludeFilename Include="libcoreclr.so" />
 
