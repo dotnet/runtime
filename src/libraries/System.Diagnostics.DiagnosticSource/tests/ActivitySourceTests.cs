@@ -43,8 +43,8 @@ namespace System.Diagnostics.Tests
 
                 Activity current = Activity.Current;
 
-                using Activity a1 = aSource.StartActivity("a1");
                 // no listeners, we should get null activity.
+                using Activity a1 = aSource.StartActivity("a1");
                 Assert.Null(a1);
                 Assert.Equal(Activity.Current, current);
             }).Dispose();
