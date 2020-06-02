@@ -13,7 +13,7 @@
 int ist=0;
 #define REPT_STEP   //printf("Step %d\n",++ist);
 
-HRESULT Assembler::InitMetaDataForENC(__in __nullterminated WCHAR* wzOrigFileName)
+HRESULT Assembler::InitMetaDataForENC(__in __nullterminated WCHAR* wzOrigFileName, BOOL generatePdb, PdbFormat pdbFormat)
 {
     HRESULT             hr = E_FAIL;
 
@@ -64,7 +64,7 @@ HRESULT Assembler::InitMetaDataForENC(__in __nullterminated WCHAR* wzOrigFileNam
         goto exit;
 
     //WszSetEnvironmentVariable(L"COMP_ENC_EMIT", wzOrigFileName);
-    if(!Init()) goto exit; // close and re-open CeeFileGen and CeeFile
+    if(!Init(generatePdb, pdbFormat)) goto exit; // close and re-open CeeFileGen and CeeFile
     hr = S_OK;
 
 

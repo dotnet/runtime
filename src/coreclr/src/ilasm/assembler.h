@@ -733,6 +733,12 @@ struct Indx
     }
 };
 
+typedef enum {
+    CLASSIC,        // default - classic PDB format, currently not supported for CoreCLR
+    PORTABLE,
+    // EMBEDDED     // for future use
+} PdbFormat;
+
 class Assembler {
 public:
     Assembler();
@@ -843,7 +849,7 @@ public:
     void    AddToImplList(mdToken);
     void    ClearBoundList(void);
     //--------------------------------------------------------------------------------
-    BOOL Init();
+    BOOL Init(BOOL generatePdb, PdbFormat pdbFormat);
     void ProcessLabel(__in_z __in char *pszName);
     GlobalLabel *FindGlobalLabel(LPCUTF8 pszName);
     GlobalFixup *AddDeferredGlobalFixup(__in __nullterminated char *pszLabel, BYTE* reference);
@@ -1049,6 +1055,8 @@ public:
 	GUID	m_guidLang;
 	GUID	m_guidLangVendor;
 	GUID	m_guidDoc;
+    // Portable PDB support
+    PdbFormat m_pdbFormat;
 
     // Security paraphernalia
 public:
@@ -1224,7 +1232,7 @@ public:
     Clockwork* bClock;
     void SetClock(Clockwork* val) { bClock = val; };
     // ENC paraphernalia
-    HRESULT InitMetaDataForENC(__in __nullterminated WCHAR* wzOrigFileName);
+    HRESULT InitMetaDataForENC(__in __nullterminated WCHAR* wzOrigFileName, BOOL generatePdb, PdbFormat pdbFormat);
     BOOL EmitFieldsMethodsENC(Class* pClass);
     BOOL EmitEventsPropsENC(Class* pClass);
     HRESULT CreateDeltaFiles(__in __nullterminated WCHAR *pwzOutputFilename);

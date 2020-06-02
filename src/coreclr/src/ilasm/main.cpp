@@ -112,7 +112,8 @@ extern "C" int _cdecl wmain(int argc, __in WCHAR **argv)
     int         exitval=1;
     bool        bLogo = TRUE;
     bool        bReportProgress = TRUE;
-    BOOL        bNoDebug = TRUE;
+    BOOL        bGeneratePdb = FALSE;
+    PdbFormat   pdbFormat = CLASSIC;
     WCHAR*      wzIncludePath = NULL;
     int exitcode = 0;
     unsigned    uCodePage;
@@ -164,6 +165,8 @@ extern "C" int _cdecl wmain(int argc, __in WCHAR **argv)
       printf("\n/DLL            Compile to .dll");
       printf("\n/EXE            Compile to .exe (default)");
       printf("\n/PDB            Create the PDB file without enabling debug info tracking");
+      printf("\n/PDBFMT=CLA     Use classic PDB format for PDB file generation (default)");
+      printf("\n/PDBFMT=PORT    Use portable PDB format for PDB file generation");
       printf("\n/APPCONTAINER   Create an AppContainer exe or dll");
       printf("\n/DEBUG          Disable JIT optimization, create PDB file, use sequence points from PDB");
       printf("\n/DEBUG=IMPL     Disable JIT optimization, create PDB file, use implicit sequence points");
@@ -246,11 +249,9 @@ extern "C" int _cdecl wmain(int argc, __in WCHAR **argv)
                     }
                     else if (!_stricmp(szOpt, "DEB"))
                     {
-                      pAsm->m_dwIncludeDebugInfo = 0x101;
-                      // PDB is ignored under 'DEB' option for ilasm on CoreCLR.
-                      // https://github.com/dotnet/coreclr/issues/2982
-                      bNoDebug = FALSE;
+                      bGeneratePdb = TRUE;
 
+                      pAsm->m_dwIncludeDebugInfo = 0x101;
                       WCHAR *pStr = EqualOrColon(argv[i]);
                       if(pStr != NULL)
                       {
@@ -276,9 +277,43 @@ extern "C" int _cdecl wmain(int argc, __in WCHAR **argv)
                     }
                     else if (!_stricmp(szOpt, "PDB"))
                     {
-                      // 'PDB' option is ignored for ilasm on CoreCLR.
-                      // https://github.com/dotnet/coreclr/issues/2982
-                      bNoDebug = FALSE;
+                        bGeneratePdb = TRUE;
+
+                        // check for /PDBFMT= command line option
+                        char szOpt2[3 + 1] = { 0 };
+                        WszWideCharToMultiByte(uCodePage, 0, &argv[i][4], 3, szOpt2, sizeof(szOpt2), NULL, NULL);
+                        if (!_stricmp(szOpt2, "FMT"))
+                        {
+                            WCHAR* pStr = EqualOrColon(argv[i]);
+                            if (pStr != NULL)
+                            {
+                                for (pStr++; *pStr == L' '; pStr++);        //skip the blanks        
+                                if (wcslen(pStr) == 0)
+                                {
+                                    goto InvalidOption;                     //if no suboption
+                                }
+                                else
+                                {
+                                    WCHAR wzSubOpt[4 + 1];
+                                    wcsncpy_s(wzSubOpt, 5, pStr, 4);
+                                    wzSubOpt[4] = 0;
+                                    if (0 == _wcsicmp(wzSubOpt, W("CLA")))
+                                        pdbFormat = CLASSIC;
+                                    else if (0 == _wcsicmp(wzSubOpt, W("PORT")))
+                                        pdbFormat = PORTABLE;
+                                    else
+                                        goto InvalidOption;                 // bad subooption
+                                }
+                            }
+                            else
+                            {
+                                goto InvalidOption;                         // bad subooption
+                            }
+                        }
+                        else if (*szOpt2)
+                        {
+                            goto InvalidOption; // bad subooption
+                        }
                     }
                     else if (!_stricmp(szOpt, "CLO"))
                     {
@@ -600,7 +635,15 @@ extern "C" int _cdecl wmain(int argc, __in WCHAR **argv)
                 delete pAsm;
                 goto ErrorExit;
             }
-            if(!pAsm->Init())
+            if (bGeneratePdb && CLASSIC == pdbFormat)
+            {
+                // Classic PDB format is not supported on CoreCLR
+                // https://github.com/dotnet/coreclr/issues/2982
+
+                printf("WARNING: Classic PDB format is not supported on CoreCLR.\n");
+                printf("Use '/PDBFMT=PORT' option in order to generate portable PDB format. \n");
+            }
+            if (!pAsm->Init(bGeneratePdb, pdbFormat))
             {
                 fprintf(stderr,"Failed to initialize Assembler\n");
                 delete pAsm;
@@ -789,7 +832,7 @@ extern "C" int _cdecl wmain(int argc, __in WCHAR **argv)
                                             }
                                             else
 #endif
-                                            if (SUCCEEDED(pAsm->InitMetaDataForENC(wzNewOutputFilename)))
+                                            if (SUCCEEDED(pAsm->InitMetaDataForENC(wzNewOutputFilename, bGeneratePdb, pdbFormat)))
                                             {
                                                 pAsm->SetSourceFileName(FullFileName(wzInputFilename,uCodePage)); // deletes the argument!
 
@@ -861,7 +904,7 @@ extern "C" int _cdecl wmain(int argc, __in WCHAR **argv)
     WszSetEnvironmentVariable(W("COMP_ENC_OPENSCOPE"), W(""));
     WszSetEnvironmentVariable(W("COMP_ENC_EMIT"), W(""));
 
-    if(exitval || bNoDebug)
+    if (exitval || !bGeneratePdb)
     {
         // PE file was not created, or no debug info required. Kill PDB if any
         WCHAR* pc = wcsrchr(wzOutputFilename,L'.');

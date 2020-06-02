@@ -158,6 +158,8 @@ Assembler::Assembler()
 
     dummyClass = new Class(NULL);
     indexKeywords(&indxKeywords);
+
+    m_pdbFormat = CLASSIC;
 }
 
 
@@ -228,7 +230,7 @@ Assembler::~Assembler()
 }
 
 
-BOOL Assembler::Init()
+BOOL Assembler::Init(BOOL generatePdb, PdbFormat pdbFormat)
 {
     if (m_pCeeFileGen != NULL) {
         if (m_pCeeFile)
@@ -246,6 +248,9 @@ BOOL Assembler::Init()
     if (FAILED(m_pCeeFileGen->GetSectionCreate(m_pCeeFile, ".il", sdReadOnly, &m_pILSection))) return FALSE;
     if (FAILED(m_pCeeFileGen->GetSectionCreate (m_pCeeFile, ".sdata", sdReadWrite, &m_pGlobalDataSection))) return FALSE;
     if (FAILED(m_pCeeFileGen->GetSectionCreate (m_pCeeFile, ".tls", sdReadWrite, &m_pTLSSection))) return FALSE;
+
+    m_fGeneratePDB = generatePdb;
+    m_pdbFormat = pdbFormat;
 
     return TRUE;
 }
