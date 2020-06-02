@@ -426,11 +426,11 @@ namespace System.Net.Sockets
             return error == Interop.Error.SUCCESS;
         }
 
-        // An on-stack cache of SocketAsyncEngine members needed to process epoll events.
-        // The event handling logic is delegated to a non-inlined processing method
-        // to make sure the runtime doesn't retain internal copies of SocketAsyncContext longer than necessary,
-        // so unreferenced Socket instances always get collected by the GC.
+        // The JIT is allowed to arbitrarily extend the lifetime of locals, which may retain SocketAsyncContext references,
+        // indirectly preventing Socket instances to be finalized, despite being no longer referenced by user code.
+        // To avoid this, the event handling logic is delegated to a non-inlined processing method.
         // See discussion: https://github.com/dotnet/runtime/issues/37064
+        // SocketEventHandler holds an on-stack cache of SocketAsyncEngine members needed by the handler method.
         private struct SocketEventHandler
         {
             public bool Shutdown { get; private set; }
