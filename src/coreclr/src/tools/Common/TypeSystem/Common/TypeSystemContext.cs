@@ -778,6 +778,22 @@ namespace Internal.TypeSystem
                 flags |= TypeFlags.HasStaticConstructorComputed;
             }
 
+            // We are looking to compute IsICastableObject and we haven't yet assigned a value
+            if ((mask & TypeFlags.IsICastableObjectComputed) == TypeFlags.IsICastableObjectComputed)
+            {
+                TypeDesc typeDefinition = type.GetTypeDefinition();
+                foreach (DefType interfaceType in typeDefinition.RuntimeInterfaces)
+                {
+                    if (IsICastableObjectInterface(interfaceType))
+                    {
+                        flags |= TypeFlags.IsICastableObject;
+                        break;
+                    }
+                }
+
+                flags |= TypeFlags.IsICastableObjectComputed;
+            }
+
             return flags;
         }
 
@@ -785,5 +801,10 @@ namespace Internal.TypeSystem
         /// Algorithm to control which types are considered to have static constructors
         /// </summary>
         protected internal abstract bool ComputeHasStaticConstructor(TypeDesc type);
+
+        /// <summary>
+        /// Determine if the type implements <code>ICastableObject</code>
+        /// </summary>
+        protected internal abstract bool IsICastableObjectInterface(DefType type);
     }
 }

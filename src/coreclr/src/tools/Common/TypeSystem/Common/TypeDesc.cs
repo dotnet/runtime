@@ -657,5 +657,16 @@ namespace Internal.TypeSystem
                 return (GetTypeFlags(TypeFlags.IsByRefLike | TypeFlags.AttributeCacheComputed) & TypeFlags.IsByRefLike) != 0;
             }
         }
+
+        /// <summary>
+        /// Gets a value indicating whether this type implements <code>ICastableObject</code>
+        /// </summary>
+        public bool IsICastableObject
+        {
+            get
+            {
+                return (GetTypeFlags(TypeFlags.IsICastableObject | TypeFlags.IsICastableObjectComputed) & TypeFlags.IsICastableObject) != 0;
+            }
+        }
     }
 }

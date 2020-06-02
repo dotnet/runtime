@@ -1777,7 +1777,11 @@ namespace Internal.JitInterface
 
             TypeCompareState result = TypeCompareState.May;
 
-            if (toType.IsNullable)
+            if (fromType.IsICastableObject)
+            {
+                result = TypeCompareState.May;
+            }
+            else if (toType.IsNullable)
             {
                 // If casting to Nullable<T>, don't try to optimize
                 result = TypeCompareState.May;

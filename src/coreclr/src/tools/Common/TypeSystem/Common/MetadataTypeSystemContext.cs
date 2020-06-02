@@ -100,5 +100,13 @@ namespace Internal.TypeSystem
             }
             return false;
         }
+
+        protected sealed internal override bool IsICastableObjectInterface(DefType type)
+        {
+            MetadataType t = (MetadataType)type;
+            return t.Module == SystemModule
+                && t.Name == "ICastableObject"
+                && t.Namespace == "System.Runtime.CompilerServices";
+        }
     }
 }
