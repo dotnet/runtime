@@ -13,12 +13,14 @@ namespace Mono.Linker.Dataflow
 
 	class FlowAnnotations
 	{
-		readonly IFlowAnnotationSource _source;
+		readonly LinkContext _context;
+		readonly CustomAttributeSource _source;
 		readonly Dictionary<TypeDefinition, TypeAnnotations> _annotations = new Dictionary<TypeDefinition, TypeAnnotations> ();
 
-		public FlowAnnotations (IFlowAnnotationSource annotationSource)
+		public FlowAnnotations (LinkContext context, CustomAttributeSource annotationSource)
 		{
 			_source = annotationSource;
+			_context = context;
 		}
 
 		public bool RequiresDataFlowAnalysis (MethodDefinition method)
@@ -73,6 +75,29 @@ namespace Mono.Linker.Dataflow
 			return value;
 		}
 
+		static bool IsDynamicallyAccessedMembersAttribute (CustomAttribute attribute)
+		{
+			var attributeType = attribute.AttributeType;
+			return attributeType.Name == "DynamicallyAccessedMembersAttribute" && attributeType.Namespace == "System.Diagnostics.CodeAnalysis";
+		}
+
+		DynamicallyAccessedMemberTypes GetMemberTypesForDynamicallyAccessedMemberAttribute (ICustomAttributeProvider provider, IMemberDefinition locationMember = null)
+		{
+			if (!_source.HasCustomAttributes (provider))
+				return DynamicallyAccessedMemberTypes.None;
+			foreach (var attribute in _source.GetCustomAttributes (provider)) {
+				if (!IsDynamicallyAccessedMembersAttribute (attribute))
+					continue;
+				if (attribute.ConstructorArguments.Count == 1)
+					return (DynamicallyAccessedMemberTypes) (int) attribute.ConstructorArguments[0].Value;
+				else if (attribute.ConstructorArguments.Count == 0)
+					_context.LogMessage (MessageContainer.CreateWarningMessage (_context, $"DynamicallyAccessedMembersAttribute was specified but no argument was proportioned", 2020, locationMember ?? (provider as IMemberDefinition)));
+				else
+					_context.LogMessage (MessageContainer.CreateWarningMessage (_context, $"DynamicallyAccessedMembersAttribute was specified but there is more than one argument", 2022, locationMember ?? (provider as IMemberDefinition)));
+			}
+			return DynamicallyAccessedMemberTypes.None;
+		}
+
 		TypeAnnotations BuildTypeAnnotations (TypeDefinition type)
 		{
 			var annotatedFields = new ArrayBuilder<FieldAnnotation> ();
@@ -83,7 +108,7 @@ namespace Mono.Linker.Dataflow
 					if (!IsTypeInterestingForDataflow (field.FieldType))
 						continue;
 
-					DynamicallyAccessedMemberTypes annotation = _source.GetFieldAnnotation (field);
+					DynamicallyAccessedMemberTypes annotation = GetMemberTypesForDynamicallyAccessedMemberAttribute (field);
 					if (annotation == DynamicallyAccessedMemberTypes.None) {
 						continue;
 					}
@@ -101,11 +126,13 @@ namespace Mono.Linker.Dataflow
 
 					// We convert indices from metadata space to IL space here.
 					// IL space assigns index 0 to the `this` parameter on instance methods.
+
+
 					int offset;
 					if (method.HasImplicitThis ()) {
 						offset = 1;
 						if (IsTypeInterestingForDataflow (method.DeclaringType)) {
-							DynamicallyAccessedMemberTypes ta = _source.GetThisParameterAnnotation (method);
+							DynamicallyAccessedMemberTypes ta = GetMemberTypesForDynamicallyAccessedMemberAttribute (method);
 							if (ta != DynamicallyAccessedMemberTypes.None) {
 								paramAnnotations = new DynamicallyAccessedMemberTypes[method.Parameters.Count + offset];
 								paramAnnotations[0] = ta;
@@ -120,7 +147,7 @@ namespace Mono.Linker.Dataflow
 							continue;
 						}
 
-						DynamicallyAccessedMemberTypes pa = _source.GetParameterAnnotation (method, i);
+						DynamicallyAccessedMemberTypes pa = GetMemberTypesForDynamicallyAccessedMemberAttribute (method.Parameters[i], method);
 						if (pa == DynamicallyAccessedMemberTypes.None) {
 							continue;
 						}
@@ -132,7 +159,7 @@ namespace Mono.Linker.Dataflow
 					}
 
 					DynamicallyAccessedMemberTypes returnAnnotation = IsTypeInterestingForDataflow (method.ReturnType) ?
-						_source.GetReturnParameterAnnotation (method) : DynamicallyAccessedMemberTypes.None;
+						GetMemberTypesForDynamicallyAccessedMemberAttribute (method.MethodReturnType, method) : DynamicallyAccessedMemberTypes.None;
 					if (returnAnnotation != DynamicallyAccessedMemberTypes.None || paramAnnotations != null) {
 						annotatedMethods.Add (new MethodAnnotations (method, paramAnnotations, returnAnnotation));
 					}
@@ -160,7 +187,7 @@ namespace Mono.Linker.Dataflow
 						continue;
 					}
 
-					DynamicallyAccessedMemberTypes annotation = _source.GetPropertyAnnotation (property);
+					DynamicallyAccessedMemberTypes annotation = GetMemberTypesForDynamicallyAccessedMemberAttribute (property);
 					if (annotation == DynamicallyAccessedMemberTypes.None) {
 						continue;
 					}
