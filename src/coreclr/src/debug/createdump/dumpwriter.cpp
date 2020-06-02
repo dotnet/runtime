@@ -5,7 +5,6 @@
 #include "createdump.h"
 
 DumpWriter::DumpWriter(CrashInfo& crashInfo) :
-    m_ref(1),
     m_fd(-1),
     m_crashInfo(crashInfo)
 {
@@ -20,42 +19,6 @@ DumpWriter::~DumpWriter()
         m_fd = -1;
     }
     m_crashInfo.Release();
-}
-
-STDMETHODIMP
-DumpWriter::QueryInterface(
-    ___in REFIID InterfaceId,
-    ___out PVOID* Interface)
-{
-    if (InterfaceId == IID_IUnknown)
-    {
-        *Interface = (IUnknown*)this;
-        AddRef();
-        return S_OK;
-    }
-    else
-    {
-        *Interface = NULL;
-        return E_NOINTERFACE;
-    }
-}
-
-STDMETHODIMP_(ULONG)
-DumpWriter::AddRef()
-{
-    LONG ref = InterlockedIncrement(&m_ref);
-    return ref;
-}
-
-STDMETHODIMP_(ULONG)
-DumpWriter::Release()
-{
-    LONG ref = InterlockedDecrement(&m_ref);
-    if (ref == 0)
-    {
-        delete this;
-    }
-    return ref;
 }
 
 bool

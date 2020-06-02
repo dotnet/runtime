@@ -7,10 +7,8 @@
 bool GetStatus(pid_t pid, pid_t* ppid, pid_t* tgid, std::string* name);
 
 bool
-CrashInfo::Initialize(ICLRDataTarget* dataTarget)
+CrashInfo::Initialize()
 {
-    m_dataTarget = dataTarget;
-
 #ifndef HAVE_PROCESS_VM_READV
     char memPath[128];
     _snprintf_s(memPath, sizeof(memPath), sizeof(memPath), "/proc/%lu/mem", m_pid);
@@ -31,7 +29,7 @@ CrashInfo::Initialize(ICLRDataTarget* dataTarget)
 }
 
 void
-CrashInfo::Uninitialize()
+CrashInfo::CleanupAndResumeProcess()
 {
     // Resume all the threads suspended in EnumerateAndSuspendThreads
     for (ThreadInfo* thread : m_threads)

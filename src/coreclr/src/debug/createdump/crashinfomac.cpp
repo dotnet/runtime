@@ -5,9 +5,8 @@
 #include "createdump.h"
 
 bool
-CrashInfo::Initialize(ICLRDataTarget* dataTarget)
+CrashInfo::Initialize()
 {
-    m_dataTarget = dataTarget;
     m_ppid = 0;
     m_tgid = 0;
 
@@ -23,7 +22,7 @@ CrashInfo::Initialize(ICLRDataTarget* dataTarget)
 }
 
 void
-CrashInfo::Uninitialize()
+CrashInfo::CleanupAndResumeProcess()
 {
     // Resume all the threads suspended in EnumerateAndSuspendThreads
     for (ThreadInfo* thread : m_threads)
@@ -310,6 +309,16 @@ void CrashInfo::VisitSegment(MachOModule& module, const segment_command_64& segm
                 found->Trace();
             }
         }
+    }
+}
+
+void
+CrashInfo::VisitSection(MachOModule& module, const section_64& section)
+{
+    // Add the unwind and eh frame info to the dump
+    if ((strcmp(section.sectname, "__unwind_info") == 0) || (strcmp(section.sectname, "__eh_frame") == 0))
+    {
+        InsertMemoryRegion(section.addr + module.LoadBias(), section.size);
     }
 }
 

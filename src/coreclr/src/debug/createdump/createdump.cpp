@@ -13,12 +13,11 @@ bool
 CreateDump(const char* dumpPath, int pid, MINIDUMP_TYPE minidumpType)
 {
     ReleaseHolder<CrashInfo> crashInfo = new CrashInfo(pid);
-    ReleaseHolder<DumpDataTarget> dataTarget = new DumpDataTarget(*crashInfo);
-    ReleaseHolder<DumpWriter> dumpWriter = new DumpWriter(*crashInfo);
+    DumpWriter dumpWriter(*crashInfo);
     bool result = false;
 
     // Initialize the crash info 
-    if (!crashInfo->Initialize(dataTarget))
+    if (!crashInfo->Initialize())
     {
         goto exit;
     }
@@ -32,16 +31,16 @@ CreateDump(const char* dumpPath, int pid, MINIDUMP_TYPE minidumpType)
     {
         goto exit;
     }
-    if (!dumpWriter->OpenDump(dumpPath))
+    if (!dumpWriter.OpenDump(dumpPath))
     {
         goto exit;
     }
-    if (!dumpWriter->WriteDump())
+    if (!dumpWriter.WriteDump())
     {
         goto exit;
     }
     result = true;
 exit:
-    crashInfo->Uninitialize();
+    crashInfo->CleanupAndResumeProcess();
     return result;
 }

@@ -10,8 +10,7 @@ CrashInfo* g_crashInfo;
 CrashInfo::CrashInfo(pid_t pid) :
     m_ref(1),
     m_pid(pid),
-    m_ppid(-1),
-    m_dataTarget(nullptr)
+    m_ppid(-1)
 {
     g_crashInfo = this;
 #ifndef __APPLE__
@@ -170,6 +169,7 @@ CrashInfo::GatherCrashInfo(MINIDUMP_TYPE minidumpType)
 bool
 CrashInfo::EnumerateMemoryRegionsWithDAC(MINIDUMP_TYPE minidumpType)
 {
+    ReleaseHolder<DumpDataTarget> dataTarget = new DumpDataTarget(*this);
     PFN_CLRDataCreateInstance pfnCLRDataCreateInstance = nullptr;
     ICLRDataEnumMemoryRegions* pClrDataEnumRegions = nullptr;
     IXCLRDataProcess* pClrDataProcess = nullptr;
@@ -199,7 +199,7 @@ CrashInfo::EnumerateMemoryRegionsWithDAC(MINIDUMP_TYPE minidumpType)
         }
         if ((minidumpType & MiniDumpWithFullMemory) == 0)
         {
-            hr = pfnCLRDataCreateInstance(__uuidof(ICLRDataEnumMemoryRegions), m_dataTarget, (void**)&pClrDataEnumRegions);
+            hr = pfnCLRDataCreateInstance(__uuidof(ICLRDataEnumMemoryRegions), dataTarget, (void**)&pClrDataEnumRegions);
             if (FAILED(hr))
             {
                 fprintf(stderr, "CLRDataCreateInstance(ICLRDataEnumMemoryRegions) FAILED %08x\n", hr);
@@ -213,7 +213,7 @@ CrashInfo::EnumerateMemoryRegionsWithDAC(MINIDUMP_TYPE minidumpType)
                 goto exit;
             }
         }
-        hr = pfnCLRDataCreateInstance(__uuidof(IXCLRDataProcess), m_dataTarget, (void**)&pClrDataProcess);
+        hr = pfnCLRDataCreateInstance(__uuidof(IXCLRDataProcess), dataTarget, (void**)&pClrDataProcess);
         if (FAILED(hr))
         {
             fprintf(stderr, "CLRDataCreateInstance(IXCLRDataProcess) FAILED %08x\n", hr);

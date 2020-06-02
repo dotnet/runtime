@@ -51,7 +51,6 @@ private:
 #endif
 #endif
     std::string m_coreclrPath;                      // the path of the coreclr module or empty if none
-    ICLRDataTarget* m_dataTarget;                   // read process memory, etc.
 #ifdef __APPLE__
     std::set<MemoryRegion> m_allMemoryRegions;      // all memory regions on MacOS
 #else
@@ -68,9 +67,8 @@ public:
     CrashInfo(pid_t pid);
     virtual ~CrashInfo();
 
-    bool Initialize(ICLRDataTarget* dataTarget);
-    void Uninitialize();
-
+    bool Initialize();
+    void CleanupAndResumeProcess();
     bool EnumerateAndSuspendThreads();
     bool GatherCrashInfo(MINIDUMP_TYPE minidumpType);
     bool ReadMemory(void* address, void* buffer, size_t size);                          // read memory and add to dump
@@ -86,7 +84,6 @@ public:
     inline vm_map_t Task() const { return m_task; }
 #endif
     inline const std::string& Name() const { return m_name; }
-    inline ICLRDataTarget* DataTarget() const { return m_dataTarget; }
 
     inline const std::vector<ThreadInfo*> Threads() const { return m_threads; }
     inline const std::set<MemoryRegion> ModuleMappings() const { return m_moduleMappings; }
@@ -109,6 +106,7 @@ private:
     bool TryFindDyLinker(mach_vm_address_t address, mach_vm_size_t size, bool* found);
     void VisitModule(MachOModule& module);
     void VisitSegment(MachOModule& module, const segment_command_64& segment);
+    void VisitSection(MachOModule& module, const section_64& section);
 #else
     bool GetAuxvEntries();
     bool GetDSOInfo();
