@@ -36,12 +36,11 @@ namespace System.Net.Http
         /// <summary>
         /// Gets whether the current Browser supports streaming responses
         /// </summary>
-        private static bool StreamingSupported { get; }
-
-        static BrowserHttpHandler()
+        private static bool StreamingSupported { get; } = GetIsStreamingSupported();
+        private static bool GetIsStreamingSupported()
         {
             using (var streamingSupported = new Function("return typeof Response !== 'undefined' && 'body' in Response.prototype && typeof ReadableStream === 'function'"))
-                StreamingSupported = (bool)streamingSupported.Call();
+                return (bool)streamingSupported.Call();
         }
 
         public bool UseCookies
@@ -122,7 +121,8 @@ namespace System.Net.Http
             set => throw new PlatformNotSupportedException();
         }
 
-        public IDictionary<string, object?> Properties => throw new PlatformNotSupportedException();
+        private Dictionary<string, object?>? _properties;
+        public IDictionary<string, object?> Properties => _properties ??= new Dictionary<string, object?>();
 
         protected internal override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {
@@ -367,7 +367,7 @@ namespace System.Net.Http
 
             protected override Task SerializeToStreamAsync(Stream stream, TransportContext? context) =>
                 SerializeToStreamAsync(stream, context, CancellationToken.None);
-            protected sealed override async Task SerializeToStreamAsync(Stream stream, TransportContext? context, CancellationToken cancellationToken)
+            protected override async Task SerializeToStreamAsync(Stream stream, TransportContext? context, CancellationToken cancellationToken)
             {
                 byte[] data = await GetResponseData().ConfigureAwait(continueOnCapturedContext: true);
                 await stream.WriteAsync(data, 0, data.Length, cancellationToken).ConfigureAwait(continueOnCapturedContext: true);
