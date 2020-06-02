@@ -129,7 +129,7 @@ public class ApkBuilder
         if (!File.Exists(androidJar))
             throw new ArgumentException($"API level={BuildApiLevel} is not downloaded in Android SDK");
 
-        // 1. Build libruntime-android.so` via cmake
+        // 1. Build libmonodroid.so` via cmake
 
         string monoRuntimeLib = Path.Combine(sourceDir, "libmonosgen-2.0.a");
         if (!File.Exists(monoRuntimeLib))
@@ -140,15 +140,15 @@ public class ApkBuilder
             .Replace("%NativeLibrariesToLink%", monoRuntimeLib);
         File.WriteAllText(Path.Combine(OutputDir, "CMakeLists.txt"), cmakeLists);
 
-        string runtimeAndroidSrc = Utils.GetEmbeddedResource("runtime-android.c")
+        string monodroidSrc = Utils.GetEmbeddedResource("monodroid.c")
             .Replace("%EntryPointLibName%", Path.GetFileName(entryPointLib)
             .Replace("%RID%", GetRid(abi)));
-        File.WriteAllText(Path.Combine(OutputDir, "runtime-android.c"), runtimeAndroidSrc);
+        File.WriteAllText(Path.Combine(OutputDir, "monodroid.c"), monodroidSrc);
         
         string cmakeGenArgs = $"-DCMAKE_TOOLCHAIN_FILE={androidToolchain} -DANDROID_ABI=\"{abi}\" -DANDROID_STL=none " + 
-            $"-DANDROID_NATIVE_API_LEVEL={MinApiLevel} -B runtime-android";
+            $"-DANDROID_NATIVE_API_LEVEL={MinApiLevel} -B monodroid";
 
-        string cmakeBuildArgs = "--build runtime-android";
+        string cmakeBuildArgs = "--build monodroid";
         
         if (StripDebugSymbols)
         {
@@ -192,7 +192,7 @@ public class ApkBuilder
         Utils.RunProcess(aapt, $"package -f -m -F {apkFile} -A assets -M AndroidManifest.xml -I {androidJar}", workingDir: OutputDir);
         
         var dynamicLibs = new List<string>();
-        dynamicLibs.Add(Path.Combine(OutputDir, "runtime-android", "libruntime-android.so"));
+        dynamicLibs.Add(Path.Combine(OutputDir, "monodroid", "libmonodroid.so"));
         dynamicLibs.AddRange(Directory.GetFiles(sourceDir, "*.so"));
 
         // add all *.so files to lib/%abi%/
@@ -202,7 +202,7 @@ public class ApkBuilder
             string dynamicLibName = Path.GetFileName(dynamicLib);
             if (dynamicLibName == "libmonosgen-2.0.so")
             {
-                // we link mono runtime statically into libruntime-android.so
+                // we link mono runtime statically into libmonodroid.so
                 continue;
             }
 
