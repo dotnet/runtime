@@ -143,7 +143,7 @@ namespace Mono.Linker
 
 				// try to resolve it as a type
 				var typeOrNamespaceName = nameBuilder.ToString ();
-				GetMatchingTypes (module, declaringType: containingType, name: typeOrNamespaceName, results: results);
+				GetMatchingTypes (module, declaringType: containingType, name: typeOrNamespaceName, arity: arity, results: results);
 				Debug.Assert (results.Count <= 1);
 				if (results.Any ()) {
 					// the name resolved to a type
@@ -176,7 +176,7 @@ namespace Mono.Linker
 		public static void GetMatchingMembers (string id, ref int index, ModuleDefinition module, TypeDefinition? containingType, string memberName, int arity, MemberType memberTypes, List<IMemberDefinition> results)
 		{
 			if (memberTypes.HasFlag (MemberType.Type))
-				GetMatchingTypes (module, containingType, memberName, results);
+				GetMatchingTypes (module, containingType, memberName, arity, results);
 
 			if (containingType == null)
 				return;
@@ -473,7 +473,7 @@ namespace Mono.Linker
 			return true;
 		}
 
-		static void GetMatchingTypes (ModuleDefinition module, TypeDefinition? declaringType, string name, List<IMemberDefinition> results)
+		static void GetMatchingTypes (ModuleDefinition module, TypeDefinition? declaringType, string name, int arity, List<IMemberDefinition> results)
 		{
 			Debug.Assert (module != null);
 
@@ -492,6 +492,14 @@ namespace Mono.Linker
 				Debug.Assert (String.IsNullOrEmpty (nestedType.Namespace));
 				if (nestedType.Name != name)
 					continue;
+
+				// Compute arity counting only the newly-introduced generic parameters
+				var declaringArity = declaringType.HasGenericParameters ? declaringType.GenericParameters.Count : 0;
+				int totalArity = nestedType.HasGenericParameters ? nestedType.GenericParameters.Count : 0;
+				var nestedTypeArity = totalArity - declaringArity;
+				if (nestedTypeArity != arity)
+					continue;
+
 				results.Add (nestedType);
 				return;
 			}
