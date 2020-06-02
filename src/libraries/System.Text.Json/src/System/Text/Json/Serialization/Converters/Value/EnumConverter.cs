@@ -21,8 +21,14 @@ namespace System.Text.Json.Serialization.Converters
         private const string ValueSeparator = ", ";
 
         private readonly EnumConverterOptions _converterOptions;
+
         private readonly JsonNamingPolicy? _namingPolicy;
+
         private readonly ConcurrentDictionary<ulong, JsonEncodedText> _nameCache;
+
+        // This is used to prevent flooding the cache due to exponential bitwise combinations of flags.
+        // Since multiple threads can add to the cache, a few more values might be added.
+        private const int NameCacheSizeSoftLimit = 64;
 
         public override bool CanConvert(Type type)
         {
@@ -42,15 +48,19 @@ namespace System.Text.Json.Serialization.Converters
 
             string[] names = Enum.GetNames(TypeToConvert);
             Array values = Enum.GetValues(TypeToConvert);
-            Debug.Assert(names.Length > 0 && names.Length == values.Length);
+            Debug.Assert(names.Length == values.Length);
 
             JavaScriptEncoder? encoder = serializerOptions.Encoder;
 
             for (int i = 0; i < names.Length; i++)
             {
+                if (_nameCache.Count >= NameCacheSizeSoftLimit)
+                {
+                    break;
+                }
+
                 T value = (T)values.GetValue(i)!;
-                // Enum values can be represented as ulong. Note that F# supports char as enum backing types.
-                ulong key = Unsafe.As<T, ulong>(ref value);
+                ulong key = ConvertToUInt64(value);
                 string name = names[i];
 
                 _nameCache.TryAdd(
@@ -155,47 +165,45 @@ namespace System.Text.Json.Serialization.Converters
             return default;
         }
 
-        private static bool IsValidIdentifier(string value)
-        {
-            // Trying to do this check efficiently. When an enum is converted to
-            // string the underlying value is given if it can't find a matching
-            // identifier (or identifiers in the case of flags).
-            //
-            // The underlying value will be given back with a digit (e.g. 0-9) possibly
-            // preceded by a negative sign. Identifiers have to start with a letter
-            // so we'll just pick the first valid one and check for a negative sign
-            // if needed.
-            return (value[0] >= 'A' &&
-                (s_negativeSign == null || !value.StartsWith(s_negativeSign)));
-        }
-
         public override void Write(Utf8JsonWriter writer, T value, JsonSerializerOptions options)
         {
             // If strings are allowed, attempt to write it out as a string value
             if (_converterOptions.HasFlag(EnumConverterOptions.AllowStrings))
             {
-                ulong key = Unsafe.As<T, ulong>(ref value);
+                ulong key = ConvertToUInt64(value);
 
-                if (_nameCache.TryGetValue(key, out JsonEncodedText transformed))
+                if (_nameCache.TryGetValue(key, out JsonEncodedText formatted))
                 {
-                    writer.WriteStringValue(transformed);
+                    writer.WriteStringValue(formatted);
                     return;
                 }
 
                 string original = value.ToString();
                 if (IsValidIdentifier(original))
                 {
+                    // We are dealing with a combination of flag constants since
+                    // all constant values were cached during warm-up.
                     JavaScriptEncoder? encoder = options.Encoder;
 
-                    // We are dealing with flags since all literal values were cached during warm-up.
-                    transformed = _namingPolicy == null
-                        ? JsonEncodedText.Encode(original, encoder)
-                        : FormatEnumValue(original, encoder);
+                    if (_nameCache.Count < NameCacheSizeSoftLimit)
+                    {
+                        formatted = _namingPolicy == null
+                            ? JsonEncodedText.Encode(original, encoder)
+                            : FormatEnumValue(original, encoder);
 
-                    writer.WriteStringValue(transformed);
+                        writer.WriteStringValue(formatted);
 
-                    // Since the value represents a valid identifier, malicious user input is not added to the cache.
-                    _nameCache.TryAdd(key, transformed);
+                        _nameCache.TryAdd(key, formatted);
+                    }
+                    else
+                    {
+                        // We also do not create a JsonEncodedText instance here because passing the string
+                        // directly to the writer is cheaper than creating one and not caching it for reuse.
+                        writer.WriteStringValue(
+                            _namingPolicy == null
+                            ? original
+                            : FormatEnumValueToString(original, encoder));
+                    }
 
                     return;
                 }
@@ -238,11 +246,52 @@ namespace System.Text.Json.Serialization.Converters
             }
         }
 
+        // This method is adapted from Enum.ToUInt64 (an internal method):
+        // https://github.com/dotnet/runtime/blob/bd6cbe3642f51d70839912a6a666e5de747ad581/src/libraries/System.Private.CoreLib/src/System/Enum.cs#L240-L260
+        private static ulong ConvertToUInt64(object value)
+        {
+            Debug.Assert(value is T);
+            ulong result = s_enumTypeCode switch
+            {
+                TypeCode.Int32 => (ulong)(int)value,
+                TypeCode.UInt32 => (uint)value,
+                TypeCode.UInt64 => (ulong)value,
+                TypeCode.Int64 => (ulong)(long)value,
+                TypeCode.SByte => (ulong)(sbyte)value,
+                TypeCode.Byte => (byte)value,
+                TypeCode.Int16 => (ulong)(short)value,
+                TypeCode.UInt16 => (ushort)value,
+                _ => throw new InvalidOperationException(),
+            };
+            return result;
+        }
+
+        private static bool IsValidIdentifier(string value)
+        {
+            // Trying to do this check efficiently. When an enum is converted to
+            // string the underlying value is given if it can't find a matching
+            // identifier (or identifiers in the case of flags).
+            //
+            // The underlying value will be given back with a digit (e.g. 0-9) possibly
+            // preceded by a negative sign. Identifiers have to start with a letter
+            // so we'll just pick the first valid one and check for a negative sign
+            // if needed.
+            return (value[0] >= 'A' &&
+                (s_negativeSign == null || !value.StartsWith(s_negativeSign)));
+        }
+
         private JsonEncodedText FormatEnumValue(string value, JavaScriptEncoder? encoder)
         {
             Debug.Assert(_namingPolicy != null);
-            string converted;
+            string formatted = FormatEnumValueToString(value, encoder);
+            return JsonEncodedText.Encode(formatted, encoder);
+        }
 
+        private string FormatEnumValueToString(string value, JavaScriptEncoder? encoder)
+        {
+            Debug.Assert(_namingPolicy != null);
+
+            string converted;
             if (!value.Contains(ValueSeparator))
             {
                 converted = _namingPolicy.ConvertName(value);
@@ -266,7 +315,7 @@ namespace System.Text.Json.Serialization.Converters
                 converted = string.Join(ValueSeparator, enumValues);
             }
 
-            return JsonEncodedText.Encode(converted, encoder);
+            return converted;
         }
     }
 }
