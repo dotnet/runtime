@@ -656,15 +656,16 @@ static bool isSupportedBaseType(NamedIntrinsic intrinsic, var_types baseType)
            (intrinsic == NI_Vector64_get_AllBitsSet) || (intrinsic == NI_Vector64_get_Count) ||
            (intrinsic == NI_Vector64_get_Zero) || (intrinsic == NI_Vector64_GetElement) ||
            (intrinsic == NI_Vector64_ToScalar) || (intrinsic == NI_Vector64_ToVector128) ||
-           (intrinsic == NI_Vector64_ToVector128Unsafe) || (intrinsic == NI_Vector128_As) ||
-           (intrinsic == NI_Vector128_AsByte) || (intrinsic == NI_Vector128_AsDouble) ||
-           (intrinsic == NI_Vector128_AsInt16) || (intrinsic == NI_Vector128_AsInt32) ||
-           (intrinsic == NI_Vector128_AsInt64) || (intrinsic == NI_Vector128_AsSByte) ||
-           (intrinsic == NI_Vector128_AsSingle) || (intrinsic == NI_Vector128_AsUInt16) ||
-           (intrinsic == NI_Vector128_AsUInt32) || (intrinsic == NI_Vector128_AsUInt64) ||
-           (intrinsic == NI_Vector128_get_AllBitsSet) || (intrinsic == NI_Vector128_get_Count) ||
-           (intrinsic == NI_Vector128_get_Zero) || (intrinsic == NI_Vector128_GetElement) ||
-           (intrinsic == NI_Vector128_GetLower) || (intrinsic == NI_Vector128_ToScalar));
+           (intrinsic == NI_Vector64_ToVector128Unsafe) || (intrinsic == NI_Vector64_WithElement) ||
+           (intrinsic == NI_Vector128_As) || (intrinsic == NI_Vector128_AsByte) ||
+           (intrinsic == NI_Vector128_AsDouble) || (intrinsic == NI_Vector128_AsInt16) ||
+           (intrinsic == NI_Vector128_AsInt32) || (intrinsic == NI_Vector128_AsInt64) ||
+           (intrinsic == NI_Vector128_AsSByte) || (intrinsic == NI_Vector128_AsSingle) ||
+           (intrinsic == NI_Vector128_AsUInt16) || (intrinsic == NI_Vector128_AsUInt32) ||
+           (intrinsic == NI_Vector128_AsUInt64) || (intrinsic == NI_Vector128_get_AllBitsSet) ||
+           (intrinsic == NI_Vector128_get_Count) || (intrinsic == NI_Vector128_get_Zero) ||
+           (intrinsic == NI_Vector128_GetElement) || (intrinsic == NI_Vector128_GetLower) ||
+           (intrinsic == NI_Vector128_ToScalar) || (intrinsic == NI_Vector128_WithElement));
 #endif // TARGET_ARM64
     return false;
 }
