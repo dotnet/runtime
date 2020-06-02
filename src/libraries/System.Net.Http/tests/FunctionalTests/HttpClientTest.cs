@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using Microsoft.DotNet.RemoteExecutor;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Net.Test.Common;
@@ -725,6 +726,82 @@ namespace System.Net.Http.Functional.Tests
             Assert.Throws<ObjectDisposedException>(() => { client.PatchAsync(CreateFakeUri(), new ByteArrayContent(new byte[1])); });
         }
 
+        [Theory]
+        [InlineData(HttpCompletionOption.ResponseContentRead)]
+        [InlineData(HttpCompletionOption.ResponseHeadersRead)]
+        public async Task Send_SingleThread_Succeeds(HttpCompletionOption completionOption)
+        {
+            int currentThreadId = Thread.CurrentThread.ManagedThreadId;
+
+            var client = new HttpClient(new CustomResponseHandler((r, c) => 
+            {
+                Assert.Equal(currentThreadId, Thread.CurrentThread.ManagedThreadId);
+                return Task.FromResult(new HttpResponseMessage()
+                    {
+                        Content = new CustomContent(stream =>
+                        {
+                            Assert.Equal(currentThreadId, Thread.CurrentThread.ManagedThreadId);
+                        })
+                    });
+            }));
+            using (client)
+            {
+                HttpResponseMessage response = client.Send(new HttpRequestMessage(HttpMethod.Get, CreateFakeUri())
+                    {
+                        Content = new CustomContent(stream =>
+                        {
+                            Assert.Equal(currentThreadId, Thread.CurrentThread.ManagedThreadId);
+                        })
+                    }, completionOption);
+                // ToDo: use synchronous ReadAsStream once it's been implemented.
+                if (completionOption == HttpCompletionOption.ResponseContentRead)
+                {
+                    // Should be buffered thus return completed task and execute synchronously.
+                    Stream contentStream = await response.Content.ReadAsStreamAsync();
+                    Assert.Equal(currentThreadId, Thread.CurrentThread.ManagedThreadId);
+                }
+            }
+        }
+
+        [Theory]
+        [InlineData(HttpCompletionOption.ResponseContentRead)]
+        [InlineData(HttpCompletionOption.ResponseHeadersRead)]
+        public async Task Send_SingleThread_Loopback_Succeeds(HttpCompletionOption completionOption)
+        {
+            string content = "Test content";
+
+            await LoopbackServer.CreateClientAndServerAsync(
+                async uri =>
+                {
+                    // To prevent deadlock
+                    await Task.Yield();
+
+                    int currentThreadId = Thread.CurrentThread.ManagedThreadId;
+
+                    using HttpClient httpClient = CreateHttpClient();
+
+                    HttpResponseMessage response = httpClient.Send(new HttpRequestMessage(HttpMethod.Get, uri) {
+                        Content = new CustomContent(stream =>
+                        {
+                            Assert.Equal(currentThreadId, Thread.CurrentThread.ManagedThreadId);
+                            stream.Write(Encoding.UTF8.GetBytes(content));
+                        })
+                    }, completionOption);
+
+                    // ToDo: use synchronous ReadAsStream once it's been implemented.
+                    if (completionOption == HttpCompletionOption.ResponseContentRead)
+                    {
+                        // Should be buffered thus return completed task and execute synchronously.
+                        Stream contentStream = await response.Content.ReadAsStreamAsync();
+                        Assert.Equal(currentThreadId, Thread.CurrentThread.ManagedThreadId);
+                    }
+                },
+                async server =>
+                {
+                    await server.AcceptConnectionSendResponseAndCloseAsync(content: content);
+                });
+        }
+
         [Fact]
         public void DefaultRequestVersion_InitialValueExpected()
         {
@@ -822,13 +899,23 @@ namespace System.Net.Http.Functional.Tests
 
         private sealed class CustomContent : HttpContent
         {
-            private readonly Func<Stream, Task> _func;
+            private readonly Func<Stream, Task> _serializeAsync;
+            private readonly Action<Stream> _serializeSync;
 
-            public CustomContent(Func<Stream, Task> func) { _func = func; }
+            public CustomContent(Func<Stream, Task> serializeAsync) { _serializeAsync = serializeAsync; }
+
+            public CustomContent(Action<Stream> serializeSync) { _serializeSync = serializeSync; }
 
             protected override Task SerializeToStreamAsync(Stream stream, TransportContext context)
             {
-                return _func(stream);
+                Debug.Assert(_serializeAsync != null);
+                return _serializeAsync(stream);
+            }
+
+            protected override void SerializeToStream(Stream stream, TransportContext context, CancellationToken cancellationToken)
+            {
+                Debug.Assert(_serializeSync != null);
+                _serializeSync(stream);
             }
 
             protected override bool TryComputeLength(out long length)
@@ -837,8 +924,6 @@ namespace System.Net.Http.Functional.Tests
                 return false;
             }
         }
-
-
 
         public abstract class HttpClientSendTest : HttpClientHandlerTestBase
         {
