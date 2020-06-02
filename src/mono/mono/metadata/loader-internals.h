@@ -17,7 +17,7 @@
 #if defined(TARGET_OSX)
 #define MONO_LOADER_LIBRARY_NAME "libcoreclr.dylib"
 #elif defined(TARGET_ANDROID)
-#define MONO_LOADER_LIBRARY_NAME "libruntime-android.so"
+#define MONO_LOADER_LIBRARY_NAME "libmonodroid.so"
 #else
 #define MONO_LOADER_LIBRARY_NAME "libcoreclr.so"
 #endif
