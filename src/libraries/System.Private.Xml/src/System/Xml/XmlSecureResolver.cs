@@ -13,7 +13,7 @@ namespace System.Xml
     {
         private readonly XmlResolver _resolver;
 
-        public XmlSecureResolver(XmlResolver resolver, string securityUrl)
+        public XmlSecureResolver(XmlResolver resolver, string? securityUrl)
         {
             _resolver = resolver;
         }

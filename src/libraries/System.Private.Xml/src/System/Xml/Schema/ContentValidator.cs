@@ -533,7 +533,7 @@ namespace System.Xml.Schema
             {
                 SequenceNode this_ = context.this_;
                 context.lastposLeft = new BitSet(lastpos.Count);
-                if (this_.LeftChild! is SequenceNode)
+                if (this_.LeftChild is SequenceNode)
                 {
                     contextStack.Push(context);
                     context = new SequenceConstructPosContext((SequenceNode)this_.LeftChild, context.firstpos, context.lastposLeft);

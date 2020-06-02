@@ -18,7 +18,7 @@ namespace System.Xml.Resolvers
     {
         public override Task<object> GetEntityAsync(Uri absoluteUri,
                                              string? role,
-                                             Type ofObjectToReturn)
+                                             Type? ofObjectToReturn)
         {
             if (absoluteUri == null)
             {

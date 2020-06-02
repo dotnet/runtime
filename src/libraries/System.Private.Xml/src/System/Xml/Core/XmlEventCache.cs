@@ -148,15 +148,15 @@ namespace System.Xml
                             break;
 
                         case XmlEventType.Comment:
-                            writer.WriteComment(page[idxEvent].String1!);
+                            writer.WriteComment(page[idxEvent].String1);
                             break;
 
                         case XmlEventType.PI:
-                            writer.WriteProcessingInstruction(page[idxEvent].String1!, page[idxEvent].String2!);
+                            writer.WriteProcessingInstruction(page[idxEvent].String1!, page[idxEvent].String2);
                             break;
 
                         case XmlEventType.Whitespace:
-                            writer.WriteWhitespace(page[idxEvent].String1!);
+                            writer.WriteWhitespace(page[idxEvent].String1);
                             break;
 
                         case XmlEventType.String:
@@ -223,7 +223,7 @@ namespace System.Xml
                             if (rawWriter != null)
                                 rawWriter.WriteNamespaceDeclaration(page[idxEvent].String1!, page[idxEvent].String2!);
                             else
-                                writer.WriteAttributeString("xmlns", page[idxEvent].String1!, XmlReservedNs.NsXmlNs, page[idxEvent].String2!);
+                                writer.WriteAttributeString("xmlns", page[idxEvent].String1!, XmlReservedNs.NsXmlNs, page[idxEvent].String2);
                             break;
 
                         case XmlEventType.EndBase64:
@@ -346,17 +346,17 @@ namespace System.Xml
             AddEvent(XmlEventType.CData, text);
         }
 
-        public override void WriteComment(string text)
+        public override void WriteComment(string? text)
         {
             AddEvent(XmlEventType.Comment, text);
         }
 
-        public override void WriteProcessingInstruction(string name, string text)
+        public override void WriteProcessingInstruction(string name, string? text)
         {
             AddEvent(XmlEventType.PI, name, text);
         }
 
-        public override void WriteWhitespace(string ws)
+        public override void WriteWhitespace(string? ws)
         {
             AddEvent(XmlEventType.Whitespace, ws);
         }

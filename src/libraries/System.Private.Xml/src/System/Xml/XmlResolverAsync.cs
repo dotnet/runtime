@@ -11,7 +11,7 @@ namespace System.Xml
     {
         public virtual Task<object> GetEntityAsync(Uri absoluteUri,
                                              string? role,
-                                             Type ofObjectToReturn)
+                                             Type? ofObjectToReturn)
         {
             throw new NotImplementedException();
         }

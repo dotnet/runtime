@@ -13,7 +13,7 @@ namespace System.Xml.Schema
         private const int bitSlotShift = 5;
         private const int bitSlotMask = (1 << bitSlotShift) - 1;
 
-        private int _count;
+        private readonly int _count;
         private uint[] _bits;
 
         private BitSet(int count, uint[] bits)

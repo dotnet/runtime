@@ -9,6 +9,7 @@ using System.Xml.Schema;
 using System.Diagnostics;
 using System.Collections;
 using System.Text.RegularExpressions;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Xml
 {
@@ -49,6 +50,7 @@ namespace System.Xml
         ///       DataColumn names, that contain characters that are not permitted in
         ///       XML names to valid names.</para>
         /// </devdoc>
+        [return: NotNullIfNotNull("name")]
         public static string? EncodeName(string? name)
         {
             return EncodeName(name, true/*Name_not_NmToken*/, false/*Local?*/);
@@ -58,6 +60,7 @@ namespace System.Xml
         ///    <para> Verifies the name is valid
         ///       according to production [7] in the XML spec.</para>
         /// </devdoc>
+        [return: NotNullIfNotNull("name")]
         public static string? EncodeNmToken(string? name)
         {
             return EncodeName(name, false/*Name_not_NmToken*/, false/*Local?*/);
@@ -67,6 +70,7 @@ namespace System.Xml
         ///    <para>Converts names, such as DataTable or DataColumn names, that contain
         ///       characters that are not permitted in XML names to valid names.</para>
         /// </devdoc>
+        [return: NotNullIfNotNull("name")]
         public static string? EncodeLocalName(string? name)
         {
             return EncodeName(name, true/*Name_not_NmToken*/, true/*Local?*/);
@@ -76,8 +80,8 @@ namespace System.Xml
         ///    <para>
         ///       Transforms an XML name into an object name (such as DataTable or DataColumn).</para>
         /// </devdoc>
-
-        public static string DecodeName(string name)
+        [return: NotNullIfNotNull("name")]
+        public static string? DecodeName(string? name)
         {
             if (string.IsNullOrEmpty(name))
                 return name;
@@ -186,6 +190,7 @@ namespace System.Xml
             }
         }
 
+        [return: NotNullIfNotNull("name")]
         private static string? EncodeName(string? name, /*Name_not_NmToken*/ bool first, bool local)
         {
             if (string.IsNullOrEmpty(name))
@@ -458,7 +463,8 @@ namespace System.Xml
         ///    <para>
         ///    </para>
         /// </devdoc>
-        public static string? VerifyTOKEN(string token)
+        [return: NotNullIfNotNull("token")]
+        public static string? VerifyTOKEN(string? token)
         {
             if (string.IsNullOrEmpty(token))
             {

@@ -11,7 +11,7 @@ namespace System.Xml.Schema
     public class XmlSchemaComplexContentExtension : XmlSchemaContent
     {
         private XmlSchemaParticle? _particle;
-        private XmlSchemaObjectCollection? _attributes = new XmlSchemaObjectCollection();
+        private XmlSchemaObjectCollection _attributes = new XmlSchemaObjectCollection();
         private XmlSchemaAnyAttribute? _anyAttribute;
         private XmlQualifiedName _baseTypeName = XmlQualifiedName.Empty;
 
@@ -34,11 +34,10 @@ namespace System.Xml.Schema
 
         [XmlElement("attribute", typeof(XmlSchemaAttribute)),
          XmlElement("attributeGroup", typeof(XmlSchemaAttributeGroupRef))]
-        public XmlSchemaObjectCollection? Attributes
+        public XmlSchemaObjectCollection Attributes
         {
             get { return _attributes; }
         }
-
 
         [XmlElement("anyAttribute")]
         public XmlSchemaAnyAttribute? AnyAttribute

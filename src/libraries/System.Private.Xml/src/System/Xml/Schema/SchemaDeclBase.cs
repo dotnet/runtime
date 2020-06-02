@@ -7,6 +7,7 @@ namespace System.Xml.Schema
 {
     using System.Collections.Generic;
     using System.Diagnostics;
+    using System.Diagnostics.CodeAnalysis;
 
     internal abstract class SchemaDeclBase
     {
@@ -33,9 +34,9 @@ namespace System.Xml.Schema
         protected long maxLength; // dt:maxLength
         protected long minLength; // dt:minLength
 
-        protected List<string> values = null!;    // array of values for enumerated and notation types
+        protected List<string>? values;    // array of values for enumerated and notation types
 
-        protected SchemaDeclBase(XmlQualifiedName name, string prefix)
+        protected SchemaDeclBase(XmlQualifiedName name, string? prefix)
         {
             this.name = name;
             this.prefix = prefix;
@@ -53,6 +54,7 @@ namespace System.Xml.Schema
             set { name = value; }
         }
 
+        [AllowNull]
         internal string Prefix
         {
             get { return (prefix == null) ? string.Empty : prefix; }
@@ -104,7 +106,7 @@ namespace System.Xml.Schema
             values.Add(value);
         }
 
-        internal List<string> Values
+        internal List<string>? Values
         {
             get { return values; }
             set { values = value; }
@@ -124,7 +126,7 @@ namespace System.Xml.Schema
 
         internal bool CheckEnumeration(object pVal)
         {
-            return (datatype.TokenizedType != XmlTokenizedType.NOTATION && datatype.TokenizedType != XmlTokenizedType.ENUMERATION) || values.Contains(pVal.ToString()!);
+            return (datatype.TokenizedType != XmlTokenizedType.NOTATION && datatype.TokenizedType != XmlTokenizedType.ENUMERATION) || values!.Contains(pVal.ToString()!);
         }
 
         internal bool CheckValue(object pVal)
