@@ -432,6 +432,22 @@ namespace ILCompiler.PEWriter
             return _nameMangler;
         }
 
+        public void PadOutSection(int sectionIndex, int finalAlignment, int offsetOfSectionIntoAlignmentRequirement)
+        {
+            Section section = _sections[sectionIndex];
+
+            int currentOffset = section.Content.Count + offsetOfSectionIntoAlignmentRequirement;
+            int alignedOffset = (currentOffset + finalAlignment - 1) & -finalAlignment;
+            int padding = alignedOffset - currentOffset;
+            section.Content.WriteBytes(1, padding);
+        }
+
+        public void PadOutSectionWithBytes(int sectionIndex, int bytesToWrite)
+        {
+            Section section = _sections[sectionIndex];
+            section.Content.WriteBytes(1, bytesToWrite);
+        }
+
         /// <summary>
         /// Add an ObjectData block to a given section.
         /// </summary>
@@ -675,6 +691,13 @@ namespace ILCompiler.PEWriter
             }
 
             _relocationDirectoryEntry = new DirectoryEntry(sectionLocation.RelativeVirtualAddress, builder.Count);
+
+            // Pad out reloc section to 2MB
+            int finalAlignment = 2 * 1024 * 1024;
+            int alignedOffset = (builder.Count + finalAlignment - 1) & -finalAlignment;
+            int padding = alignedOffset - builder.Count;
+
+            builder.WriteBytes(1, padding);
 
             return builder;
         }
