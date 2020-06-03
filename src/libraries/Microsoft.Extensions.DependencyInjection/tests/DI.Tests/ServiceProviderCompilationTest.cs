@@ -9,6 +9,7 @@ using Xunit;
 
 namespace Microsoft.Extensions.DependencyInjection.Tests
 {
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/33894", TestRuntimes.Mono)]
     public class ServiceProviderCompilationTest
     {
         [Theory]
