@@ -106,7 +106,7 @@
     <SystemDataSqlClientVersion>4.8.0</SystemDataSqlClientVersion>
     <!-- Testing -->
     <MicrosoftNETTestSdkVersion>16.7.0-preview-20200529-01</MicrosoftNETTestSdkVersion>
-    <MicrosoftDotNetXHarnessTestRunnersXunitVersion>1.0.0-prerelease.20301.2</MicrosoftDotNetXHarnessTestRunnersXunitVersion>
+    <MicrosoftDotNetXHarnessTestRunnersXunitVersion>1.0.0-prerelease.20303.2</MicrosoftDotNetXHarnessTestRunnersXunitVersion>
     <XUnitVersion>2.4.1</XUnitVersion>
     <CoverletCollectorVersion>1.3.0</CoverletCollectorVersion>
     <TraceEventVersion>2.0.5</TraceEventVersion>
