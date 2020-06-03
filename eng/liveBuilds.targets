@@ -188,16 +188,9 @@
         Exclude="@(ExcludeNativeLibrariesRuntimeFiles)" />
       <LibrariesRuntimeFiles Condition="'$(TargetOS)' == 'Browser'"
                              Include="
-        $(LibrariesNativeArtifactsPath)wasm\runtimes\debug\dotnet.js;
-        $(LibrariesNativeArtifactsPath)wasm\runtimes\debug\dotnet.wasm;"
-        IsNative="true"
-        NativeSubDirectory="wasm/runtimes/debug/" />
-      <LibrariesRuntimeFiles Condition="'$(TargetOS)' == 'Browser'"
-                             Include="
-        $(LibrariesNativeArtifactsPath)wasm\runtimes\release\dotnet.js;
-        $(LibrariesNativeArtifactsPath)wasm\runtimes\release\dotnet.wasm"
-        IsNative="true"
-        NativeSubDirectory="wasm/runtimes/release/" />
+        $(LibrariesNativeArtifactsPath)dotnet.js;
+        $(LibrariesNativeArtifactsPath)dotnet.wasm;"
+        IsNative="true" />
     </ItemGroup>
 
     <Error Condition="'@(LibrariesRefAssemblies)' == ''" Text="The 'libs' subset must be built before building this project." />
