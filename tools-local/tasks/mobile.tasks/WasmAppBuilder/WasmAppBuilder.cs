@@ -73,7 +73,7 @@ public class WasmAppBuilder : Task
         foreach (var assembly in _assemblies!.Values)
             File.Copy(assembly.Location, Path.Join(AppDir, "managed", Path.GetFileName(assembly.Location)), true);
         foreach (var f in new string[] { "dotnet.wasm", "dotnet.js" })
-            File.Copy(Path.Join (RuntimePackDir, "native", "wasm", "runtimes", "release", f), Path.Join(AppDir, f), true);
+            File.Copy(Path.Join (RuntimePackDir, "native", f), Path.Join(AppDir, f), true);
         File.Copy(MainJS!, Path.Join(AppDir, "runtime.js"),  true);
 
         if (ExtraFiles != null)
