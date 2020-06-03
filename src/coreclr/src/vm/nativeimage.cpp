@@ -194,7 +194,7 @@ NativeImage *NativeImage::Open(
         LOG((LF_LOADER, LL_ALWAYS, "LOADER: failed to load native image '%s' for component assembly '%S' using search paths: '%S'\n",
             nativeImageFileName,
             path.GetUnicode(),
-            searchPathsConfig != nullptr ? searchPathsConfig : L"<use COMPlus_NativeImageSearchPaths to set>"));
+            searchPathsConfig != nullptr ? searchPathsConfig : W("<use COMPlus_NativeImageSearchPaths to set>")));
         RaiseFailFastException(nullptr, nullptr, 0);
     }
 
