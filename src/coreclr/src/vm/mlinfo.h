@@ -11,10 +11,6 @@
 #include "stubgen.h"
 #include "custommarshalerinfo.h"
 
-#ifdef FEATURE_COMINTEROP
-#include <windows.ui.xaml.h>
-#endif
-
 #ifndef _MLINFO_H_
 #define _MLINFO_H_
 
@@ -55,7 +51,7 @@ enum MarshalFlags
     MARSHAL_FLAG_BYREF              = 0x008,
     MARSHAL_FLAG_HRESULT_SWAP       = 0x010,
     MARSHAL_FLAG_RETVAL             = 0x020,
-    MARSHAL_FLAG_HIDDENLENPARAM     = 0x040,
+    // unused                       = 0x040,
     MARSHAL_FLAG_FIELD              = 0x080,
     MARSHAL_FLAG_IN_MEMBER_FUNCTION = 0x100
 };
@@ -88,7 +84,6 @@ struct OverrideProcArgs
             VARTYPE         m_vt;
 #ifdef FEATURE_COMINTEROP
             SIZE_T          m_cbElementSize;
-            WinMDAdapter::RedirectedTypeIndex m_redirectedTypeIndex;
 #endif // FEATURE_COMINTEROP
         } na;
 
@@ -207,140 +202,6 @@ BOOL IsFixedBuffer(mdFieldDef field, IMDInternalImport* pInternalImport);
 #endif
 
 #ifdef FEATURE_COMINTEROP
-
-class EventArgsMarshalingInfo
-{
-public:
-    // Constructor.
-    EventArgsMarshalingInfo();
-
-    // Destructor.
-    ~EventArgsMarshalingInfo();
-
-    // EventArgsMarshalingInfo's are always allocated on the loader heap so we need to redefine
-    // the new and delete operators to ensure this.
-    void *operator new(size_t size, LoaderHeap *pHeap);
-    void operator delete(void *pMem);
-
-    // Accessors.
-    TypeHandle GetSystemNCCEventArgsType()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return m_hndSystemNCCEventArgsType;
-    }
-
-    TypeHandle GetSystemPCEventArgsType()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return m_hndSystemPCEventArgsType;
-    }
-
-    MethodDesc *GetSystemNCCEventArgsToWinRTNCCEventArgsMD()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return m_pSystemNCCEventArgsToWinRTNCCEventArgsMD;
-    }
-
-    MethodDesc *GetWinRTNCCEventArgsToSystemNCCEventArgsMD()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return m_pWinRTNCCEventArgsToSystemNCCEventArgsMD;
-    }
-
-    MethodDesc *GetSystemPCEventArgsToWinRTPCEventArgsMD()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return m_pSystemPCEventArgsToWinRTPCEventArgsMD;
-    }
-
-    MethodDesc *GetWinRTPCEventArgsToSystemPCEventArgsMD()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return m_pWinRTPCEventArgsToSystemPCEventArgsMD;
-    }
-
-
-private:
-    TypeHandle m_hndSystemNCCEventArgsType;
-    TypeHandle m_hndSystemPCEventArgsType;
-
-    MethodDesc *m_pSystemNCCEventArgsToWinRTNCCEventArgsMD;
-    MethodDesc *m_pWinRTNCCEventArgsToSystemNCCEventArgsMD;
-    MethodDesc *m_pSystemPCEventArgsToWinRTPCEventArgsMD;
-    MethodDesc *m_pWinRTPCEventArgsToSystemPCEventArgsMD;
-};
-
-class UriMarshalingInfo
-{
-public:
-    // Constructor.
-    UriMarshalingInfo();
-
-    // Destructor
-    ~UriMarshalingInfo();
-
-    // UriMarshalingInfo's are always allocated on the loader heap so we need to redefine
-    // the new and delete operators to ensure this.
-    void *operator new(size_t size, LoaderHeap *pHeap);
-    void operator delete(void *pMem);
-
-    // Accessors.
-    TypeHandle GetSystemUriType()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return m_hndSystemUriType;
-    }
-
-    ABI::Windows::Foundation::IUriRuntimeClassFactory* GetUriFactory()
-    {
-        CONTRACTL
-        {
-            THROWS;
-            GC_TRIGGERS;    // For potential COOP->PREEMP->COOP switch
-            MODE_ANY;
-            PRECONDITION(!GetAppDomain()->IsCompilationDomain());
-        }
-        CONTRACTL_END;
-
-        if (m_pUriFactory.Load() == NULL)
-        {
-            GCX_PREEMP();
-
-            SafeComHolderPreemp<ABI::Windows::Foundation::IUriRuntimeClassFactory> pUriFactory;
-
-            // IUriRuntimeClassFactory: 44A9796F-723E-4FDF-A218-033E75B0C084
-            IfFailThrow(clr::winrt::GetActivationFactory(g_WinRTUriClassNameW, (ABI::Windows::Foundation::IUriRuntimeClassFactory **)&pUriFactory));
-            _ASSERTE_MSG(pUriFactory, "Got Null Uri factory!");
-
-            if (InterlockedCompareExchangeT(&m_pUriFactory, (ABI::Windows::Foundation::IUriRuntimeClassFactory *) pUriFactory, NULL) == NULL)
-                pUriFactory.SuppressRelease();
-        }
-
-        return m_pUriFactory;
-    }
-
-    MethodDesc *GetSystemUriCtorMD()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return m_SystemUriCtorMD;
-    }
-
-    MethodDesc *GetSystemUriOriginalStringMD()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return m_SystemUriOriginalStringGetterMD;
-    }
-
-
-private:
-    TypeHandle m_hndSystemUriType;
-
-    MethodDesc* m_SystemUriCtorMD;
-    MethodDesc* m_SystemUriOriginalStringGetterMD;
-
-    VolatilePtr<ABI::Windows::Foundation::IUriRuntimeClassFactory> m_pUriFactory;
-};
-
 class OleColorMarshalingInfo
 {
 public:
@@ -400,8 +261,6 @@ public:
 #ifdef FEATURE_COMINTEROP
     // This method retrieves OLE_COLOR marshaling info.
     OleColorMarshalingInfo *GetOleColorMarshalingInfo();
-    UriMarshalingInfo *GetUriMarshalingInfo();
-    EventArgsMarshalingInfo *GetEventArgsMarshalingInfo();
 
 
 #endif // FEATURE_COMINTEROP
@@ -416,8 +275,6 @@ private:
     CMINFOLIST                          m_pCMInfoList;
 #ifdef FEATURE_COMINTEROP
     OleColorMarshalingInfo*             m_pOleColorInfo;
-    UriMarshalingInfo*                  m_pUriInfo;
-    EventArgsMarshalingInfo*            m_pEventArgsInfo;
 #endif // FEATURE_COMINTEROP
     CrstBase*                           m_lock;
 };
@@ -429,7 +286,7 @@ class MarshalInfo
 public:
     enum MarshalType
     {
-#define DEFINE_MARSHALER_TYPE(mtype, mclass, fWinRTSupported) mtype,
+#define DEFINE_MARSHALER_TYPE(mtype, mclass) mtype,
 #include "mtypes.h"
         MARSHAL_TYPE_UNKNOWN
     };
@@ -439,8 +296,6 @@ public:
         MARSHAL_SCENARIO_NDIRECT,
 #ifdef FEATURE_COMINTEROP
         MARSHAL_SCENARIO_COMINTEROP,
-        MARSHAL_SCENARIO_WINRT,
-        MARSHAL_SCENARIO_WINRT_FIELD,
 #endif // FEATURE_COMINTEROP
         MARSHAL_SCENARIO_FIELD
     };
@@ -582,42 +437,6 @@ public:
         return m_nolowerbounds;
     }
 
-#ifdef FEATURE_COMINTEROP
-    void SetHiddenLengthParamIndex(UINT16 index)
-    {
-        LIMITED_METHOD_CONTRACT;
-        _ASSERTE(m_hiddenLengthParamIndex == (UINT16)-1);
-        m_hiddenLengthParamIndex = index;
-    }
-
-    UINT16 HiddenLengthParamIndex()
-    {
-        LIMITED_METHOD_CONTRACT;
-        _ASSERTE(m_hiddenLengthParamIndex != (UINT16)-1);
-        return m_hiddenLengthParamIndex;
-    }
-
-    DWORD GetHiddenLengthManagedHome()
-    {
-        LIMITED_METHOD_CONTRACT;
-        _ASSERTE(m_dwHiddenLengthManagedHomeLocal != 0xFFFFFFFF);
-        return m_dwHiddenLengthManagedHomeLocal;
-    }
-
-    DWORD GetHiddenLengthNativeHome()
-    {
-        LIMITED_METHOD_CONTRACT;
-        _ASSERTE(m_dwHiddenLengthNativeHomeLocal != 0xFFFFFFFF);
-        return m_dwHiddenLengthNativeHomeLocal;
-    }
-
-    MarshalType GetHiddenLengthParamMarshalType();
-    CorElementType GetHiddenLengthParamElementType();
-    UINT16      GetHiddenLengthParamStackSize();
-
-    void MarshalHiddenLengthArgument(NDirectStubLinker *psl, BOOL managedToNative, BOOL isForReturnArray);
-#endif // FEATURE_COMINTEROP
-
     // used the same logic of tlbexp to check whether the argument of the method is a VarArg
     BOOL IsOleVarArgCandidate()
     {
@@ -650,8 +469,8 @@ public:
     void GetItfMarshalInfo(ItfMarshalInfo* pInfo);
 
     // Helper functions used to map the specified type to its interface marshalling info.
-    static void GetItfMarshalInfo(TypeHandle th, TypeHandle thItf, BOOL fDispItf, BOOL fInspItf, MarshalScenario ms, ItfMarshalInfo *pInfo);
-    static HRESULT TryGetItfMarshalInfo(TypeHandle th, BOOL fDispItf, BOOL fInspItf, ItfMarshalInfo *pInfo);
+    static void GetItfMarshalInfo(TypeHandle th, BOOL fDispItf, MarshalScenario ms, ItfMarshalInfo *pInfo);
+    static HRESULT TryGetItfMarshalInfo(TypeHandle th, BOOL fDispItf, ItfMarshalInfo *pInfo);
 
     VOID MarshalTypeToString(SString& strMarshalType, BOOL fSizeIsSpecified);
     static VOID VarTypeToString(VARTYPE vt, SString& strVarType);
@@ -671,30 +490,16 @@ public:
         return m_paramidx;
     }
 
-#ifdef FEATURE_COMINTEROP
-    BOOL IsWinRTScenario()
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        return m_ms == MarshalInfo::MARSHAL_SCENARIO_WINRT || m_ms == MarshalInfo::MARSHAL_SCENARIO_WINRT_FIELD;
-    }
-#endif // FEATURE_COMINTEROP
-
     BOOL IsFieldScenario()
     {
         LIMITED_METHOD_CONTRACT;
-#ifdef FEATURE_COMINTEROP
-        return m_ms == MarshalInfo::MARSHAL_SCENARIO_FIELD || m_ms == MarshalInfo::MARSHAL_SCENARIO_WINRT_FIELD;
-#else
         return m_ms == MarshalInfo::MARSHAL_SCENARIO_FIELD;
-#endif
     }
 
 private:
 
     UINT16                      GetNativeSize(MarshalType mtype);
     static bool                 IsInOnly(MarshalType mtype);
-    static bool                 IsSupportedForWinRT(MarshalType mtype);
 
     static OVERRIDEPROC         GetArgumentOverrideProc(MarshalType mtype);
     static RETURNOVERRIDEPROC   GetReturnOverrideProc(MarshalType mtype);
@@ -722,21 +527,11 @@ private:
     UINT32          m_additive;       // additive for 'sizeis"
     UINT16          m_countParamIdx;  // index of "sizeis" parameter
 
-#ifdef FEATURE_COMINTEROP
-    // For NATIVE_TYPE_HIDDENLENGTHARRAY
-    UINT16          m_hiddenLengthParamIndex;           // index of the injected hidden length parameter
-    DWORD           m_dwHiddenLengthManagedHomeLocal;   // home local for the managed hidden length parameter
-    DWORD           m_dwHiddenLengthNativeHomeLocal;    // home local for the native hidden length parameter
-
-    MethodTable*    m_pDefaultItfMT;                    // WinRT default interface (if m_pMT is a class)
-#endif // FEATURE_COMINTEROP
-
     UINT16          m_nativeArgSize;
 
     MarshalScenario m_ms;
     BOOL            m_fAnsi;
     BOOL            m_fDispItf;
-    BOOL            m_fInspItf;
 #ifdef FEATURE_COMINTEROP
     BOOL            m_fErrorNativeType;
 #endif // FEATURE_COMINTEROP
@@ -792,7 +587,6 @@ public:
     , m_errorResourceId(0)
     , m_flags(flags)
 #ifdef FEATURE_COMINTEROP
-    , m_redirectedTypeIndex((WinMDAdapter::RedirectedTypeIndex)0)
     , m_cbElementSize(0)
 #endif // FEATURE_COMINTEROP
     {
@@ -804,7 +598,6 @@ public:
 
 #ifdef FEATURE_COMINTEROP
     void InitForSafeArray(MarshalInfo::MarshalScenario ms, TypeHandle elemTypeHnd, VARTYPE elementVT, BOOL isAnsi);
-    void InitForHiddenLengthArray(TypeHandle elemTypeHnd);
 #endif // FEATURE_COMINTEROP
 
     TypeHandle GetElementTypeHandle()
@@ -873,11 +666,6 @@ public:
     }
 
 #ifdef FEATURE_COMINTEROP
-    WinMDAdapter::RedirectedTypeIndex GetRedirectedTypeIndex()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return m_redirectedTypeIndex;
-    }
 
     SIZE_T GetElementSize()
     {
@@ -909,7 +697,6 @@ protected:
     ArrayMarshalInfoFlags m_flags;
 
 #ifdef FEATURE_COMINTEROP
-    WinMDAdapter::RedirectedTypeIndex m_redirectedTypeIndex;
     SIZE_T m_cbElementSize;
 #endif // FEATURE_COMINTEROP
 };

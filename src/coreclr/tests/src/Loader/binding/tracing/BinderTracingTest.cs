@@ -141,7 +141,7 @@ namespace BinderTracingTests
 
         private static bool RunSingleTest(MethodInfo method)
         {
-            Console.WriteLine($"Running {method.Name}...");
+            Console.WriteLine($"[{DateTime.Now:T}] Running {method.Name}...");
             try
             {
                 BinderTestAttribute attribute = method.GetCustomAttribute<BinderTestAttribute>();
@@ -180,7 +180,7 @@ namespace BinderTracingTests
                 RedirectStandardError = true
             };
 
-            Console.WriteLine($"Launching process for {method.Name}...");
+            Console.WriteLine($"[{DateTime.Now:T}] Launching process for {method.Name}...");
             using (Process p = Process.Start(startInfo))
             {
                 p.OutputDataReceived += (_, args) => Console.WriteLine(args.Data);

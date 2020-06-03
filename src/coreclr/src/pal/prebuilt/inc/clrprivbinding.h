@@ -81,13 +81,6 @@ typedef interface ICLRPrivAssemblyInfo ICLRPrivAssemblyInfo;
 #endif 	/* __ICLRPrivAssemblyInfo_FWD_DEFINED__ */
 
 
-#ifndef __ICLRPrivAssemblyID_WinRT_FWD_DEFINED__
-#define __ICLRPrivAssemblyID_WinRT_FWD_DEFINED__
-typedef interface ICLRPrivAssemblyID_WinRT ICLRPrivAssemblyID_WinRT;
-
-#endif 	/* __ICLRPrivAssemblyID_WinRT_FWD_DEFINED__ */
-
-
 /* header files for imported files */
 #include "unknwn.h"
 #include "objidl.h"
@@ -704,76 +697,6 @@ EXTERN_C const IID IID_ICLRPrivAssemblyInfo;
 
 
 #endif 	/* __ICLRPrivAssemblyInfo_INTERFACE_DEFINED__ */
-
-
-#ifndef __ICLRPrivAssemblyID_WinRT_INTERFACE_DEFINED__
-#define __ICLRPrivAssemblyID_WinRT_INTERFACE_DEFINED__
-
-/* interface ICLRPrivAssemblyID_WinRT */
-/* [object][local][version][uuid] */ 
-
-
-EXTERN_C const IID IID_ICLRPrivAssemblyID_WinRT;
-
-#if defined(__cplusplus) && !defined(CINTERFACE)
-    
-    MIDL_INTERFACE("4372D277-9906-4FED-BF53-30C0B4010896")
-    ICLRPrivAssemblyID_WinRT : public IUnknown
-    {
-    public:
-    };
-    
-    
-#else 	/* C style interface */
-
-    typedef struct ICLRPrivAssemblyID_WinRTVtbl
-    {
-        BEGIN_INTERFACE
-        
-        HRESULT ( STDMETHODCALLTYPE *QueryInterface )( 
-            ICLRPrivAssemblyID_WinRT * This,
-            /* [in] */ REFIID riid,
-            /* [annotation][iid_is][out] */ 
-            _COM_Outptr_  void **ppvObject);
-        
-        ULONG ( STDMETHODCALLTYPE *AddRef )( 
-            ICLRPrivAssemblyID_WinRT * This);
-        
-        ULONG ( STDMETHODCALLTYPE *Release )( 
-            ICLRPrivAssemblyID_WinRT * This);
-        
-        END_INTERFACE
-    } ICLRPrivAssemblyID_WinRTVtbl;
-
-    interface ICLRPrivAssemblyID_WinRT
-    {
-        CONST_VTBL struct ICLRPrivAssemblyID_WinRTVtbl *lpVtbl;
-    };
-
-    
-
-#ifdef COBJMACROS
-
-
-#define ICLRPrivAssemblyID_WinRT_QueryInterface(This,riid,ppvObject)	\
-    ( (This)->lpVtbl -> QueryInterface(This,riid,ppvObject) ) 
-
-#define ICLRPrivAssemblyID_WinRT_AddRef(This)	\
-    ( (This)->lpVtbl -> AddRef(This) ) 
-
-#define ICLRPrivAssemblyID_WinRT_Release(This)	\
-    ( (This)->lpVtbl -> Release(This) ) 
-
-
-#endif /* COBJMACROS */
-
-
-#endif 	/* C style interface */
-
-
-
-
-#endif 	/* __ICLRPrivAssemblyID_WinRT_INTERFACE_DEFINED__ */
 
 
 /* Additional Prototypes for ALL interfaces */

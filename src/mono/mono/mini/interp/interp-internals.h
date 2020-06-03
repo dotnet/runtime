@@ -205,7 +205,6 @@ typedef struct {
 	unsigned char *vt_sp;
 	const unsigned short  *ip;
 	GSList *finally_ips;
-	FrameClauseArgs *clause_args;
 } InterpState;
 
 struct InterpFrame {

@@ -914,7 +914,7 @@ VOID ETW::GCLog::FireGcStart(ETW_GC_INFO * pGcInfo)
 // the CLR to perform a GC.  The important work here is to create a managed thread for
 // the current thread BEFORE the GC begins.  On both ETW and profapi threads, there may
 // not yet be a managed thread object.  But some scenarios require a managed thread
-// object be present (notably if we need to call into Jupiter during the GC).
+// object be present..
 //
 // Return Value:
 //      HRESULT indicating success or failure
@@ -941,7 +941,7 @@ HRESULT ETW::GCLog::ForceGCForDiagnostics()
     // Caller should ensure we're past startup.
     _ASSERTE(IsGarbageCollectorFullyInitialized());
 
-    // In immersive apps the GarbageCollect() call below will call into Jupiter,
+    // In immersive apps the GarbageCollect() call below will call into the WinUI reference tracker,
     // which will call back into the runtime to track references. This call
     // chain would cause a Thread object to be created for this thread while code
     // higher on the stack owns the ThreadStoreLock. This will lead to asserts
@@ -960,7 +960,7 @@ HRESULT ETW::GCLog::ForceGCForDiagnostics()
     EX_TRY
     {
         // Need to switch to cooperative mode as the thread will access managed
-        // references (through Jupiter callbacks).
+        // references (through reference tracker callbacks).
         GCX_COOP();
 #endif // FEATURE_REDHAWK
 
@@ -1165,7 +1165,6 @@ void BulkComLogger::WriteCcw(ComCallWrapper *pCcw, Object **handle, Object *obj)
 #ifdef FEATURE_COMINTEROP
     IUnknown *iUnk = NULL;
     int refCount = 0;
-    ULONG jupiterRefCount = 0;
     ULONG flags = 0;
 
     if (pCcw)
@@ -1175,13 +1174,9 @@ void BulkComLogger::WriteCcw(ComCallWrapper *pCcw, Object **handle, Object *obj)
             iUnk = pCcw->GetBasicIP(true);
 
         refCount = pCcw->GetRefCount();
-        jupiterRefCount = pCcw->GetJupiterRefCount();
 
         if (pCcw->IsWrapperActive())
             flags |= EventCCWEntry::Strong;
-
-        if (pCcw->IsPegged())
-            flags |= EventCCWEntry::Pegged;
     }
 
     EventCCWEntry &ccw = m_etwCcwData[m_currCcw++];
@@ -1190,7 +1185,7 @@ void BulkComLogger::WriteCcw(ComCallWrapper *pCcw, Object **handle, Object *obj)
     ccw.TypeID = (ULONGLONG)obj->GetTypeHandle().AsTAddr();
     ccw.IUnk = (ULONGLONG)iUnk;
     ccw.RefCount = refCount;
-    ccw.JupiterRefCount = jupiterRefCount;
+    ccw.JupiterRefCount = 0;
     ccw.Flags = flags;
 
     if (m_currCcw >= kMaxCcwCount)
@@ -1772,8 +1767,8 @@ int BulkTypeEventLogger::LogSingleType(TypeHandle th)
             unsigned rank = th.GetRank();
             if (rank < kEtwTypeFlagsArrayRankMax)
             {
-                // Only ranks less than kEtwTypeFlagsArrayRankMax are supported. 
-                // Fortunately kEtwTypeFlagsArrayRankMax should be greater than the 
+                // Only ranks less than kEtwTypeFlagsArrayRankMax are supported.
+                // Fortunately kEtwTypeFlagsArrayRankMax should be greater than the
                 // number of ranks the type loader will support
                 rank <<= kEtwTypeFlagsArrayRankShift;
                 _ASSERTE((rank & kEtwTypeFlagsArrayRankMask) == rank);
@@ -6247,8 +6242,8 @@ VOID ETW::MethodLog::SendMethodDetailsEvent(MethodDesc *pMethodDesc)
 
     EX_TRY
     {
-        if(ETW_TRACING_CATEGORY_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_DOTNET_Context, 
-                                        TRACE_LEVEL_INFORMATION, 
+        if(ETW_TRACING_CATEGORY_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_DOTNET_Context,
+                                        TRACE_LEVEL_INFORMATION,
                                         CLR_METHODDIAGNOSTIC_KEYWORD))
         {
             if (pMethodDesc->IsDynamicMethod())
@@ -6283,7 +6278,7 @@ VOID ETW::MethodLog::SendMethodDetailsEvent(MethodDesc *pMethodDesc)
             }
             EX_END_CATCH(RethrowTerminalExceptions);
             if (!fSucceeded)
-                goto done;      
+                goto done;
 
             // Log any referenced parameter types
             for (COUNT_T i=0; i < cParams; i++)

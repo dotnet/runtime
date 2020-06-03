@@ -1870,7 +1870,7 @@ void Lowering::LowerFastTailCall(GenTreeCall* call)
 
             unsigned int overwrittenStart = put->getArgOffset();
             unsigned int overwrittenEnd   = overwrittenStart + put->getArgSize();
-#if !(defined(TARGET_WINDOWS) && defined(TARGET_64BIT))
+#if !(defined(TARGET_WINDOWS) && defined(TARGET_AMD64))
             int baseOff = -1; // Stack offset of first arg on stack
 #endif
 
@@ -1883,8 +1883,8 @@ void Lowering::LowerFastTailCall(GenTreeCall* call)
                     continue;
                 }
 
-#if defined(TARGET_WINDOWS) && defined(TARGET_64BIT)
-                // On Win64, the argument position determines the stack slot uniquely, and even the
+#if defined(TARGET_WINDOWS) && defined(TARGET_AMD64)
+                // On Windows x64, the argument position determines the stack slot uniquely, and even the
                 // register args take up space in the stack frame (shadow space).
                 unsigned int argStart = callerArgLclNum * TARGET_POINTER_SIZE;
                 unsigned int argEnd   = argStart + static_cast<unsigned int>(callerArgDsc->lvArgStackSize());

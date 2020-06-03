@@ -55,7 +55,7 @@ namespace System.Text.Json.Serialization
 
         /// <inheritdoc />
         [PreserveDependency(
-            ".ctor(System.Text.Json.Serialization.Converters.EnumConverterOptions, System.Text.Json.JsonNamingPolicy)",
+            ".ctor(System.Text.Json.Serialization.Converters.EnumConverterOptions, System.Text.Json.JsonNamingPolicy, System.Text.Json.JsonSerializerOptions)",
             "System.Text.Json.Serialization.Converters.EnumConverter`1")]
         public override JsonConverter CreateConverter(Type typeToConvert, JsonSerializerOptions options)
         {
@@ -63,7 +63,7 @@ namespace System.Text.Json.Serialization
                 typeof(EnumConverter<>).MakeGenericType(typeToConvert),
                 BindingFlags.Instance | BindingFlags.Public,
                 binder: null,
-                new object?[] { _converterOptions, _namingPolicy },
+                new object?[] { _converterOptions, _namingPolicy, options },
                 culture: null)!;
 
             return converter;

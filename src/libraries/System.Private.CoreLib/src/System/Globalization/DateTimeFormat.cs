@@ -653,8 +653,8 @@ namespace System
                         if (isJapaneseCalendar &&
                             !LocalAppContextSwitches.FormatJapaneseFirstYearAsANumber &&
                             year == 1 &&
-                            ((i + tokenLen < format.Length && format[i + tokenLen] == DateTimeFormatInfoScanner.CJKYearSuff[0]) ||
-                            (i + tokenLen < format.Length - 1 && format[i + tokenLen] == '\'' && format[i + tokenLen + 1] == DateTimeFormatInfoScanner.CJKYearSuff[0])))
+                            ((i + tokenLen < format.Length && format[i + tokenLen] == DateTimeFormatInfoScanner.CJKYearSuff) ||
+                            (i + tokenLen < format.Length - 1 && format[i + tokenLen] == '\'' && format[i + tokenLen + 1] == DateTimeFormatInfoScanner.CJKYearSuff)))
                         {
                             // We are formatting a Japanese date with year equals 1 and the year number is followed by the year sign \u5e74
                             // In Japanese dates, the first year in the era is not formatted as a number 1 instead it is formatted as \u5143 which means

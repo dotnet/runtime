@@ -116,7 +116,7 @@ namespace Microsoft.CSharp.RuntimeBinder
         {
 #if ENABLECOMBINDER
             DynamicMetaObject com;
-            if (!BinderHelper.IsWindowsRuntimeObject(target) && ComInterop.ComBinder.TryBindInvokeMember(this, target, args, out com))
+            if (ComInterop.ComBinder.TryBindInvokeMember(this, target, args, out com))
             {
                 return com;
             }

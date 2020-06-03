@@ -16,10 +16,7 @@ if (CLR_CMAKE_HOST_WIN32)
     add_link_options(/INCREMENTAL:NO)
 
     # Delay load libraries required for WinRT as that is not supported on all platforms
-    add_link_options("/DELAYLOAD:api-ms-win-core-winrt-string-l1-1-0.dll")
     add_link_options("/DELAYLOAD:api-ms-win-core-winrt-l1-1-0.dll")
-    add_link_options("/DELAYLOAD:api-ms-win-core-winrt-roparameterizediid-l1-1-0.dll")
-    add_link_options("/DELAYLOAD:api-ms-win-ro-typeresolution-l1-1-0.dll")
 
     # Delay load version.dll so that we can specify how to search when loading it as it is not part of Windows' known DLLs
     add_link_options("/DELAYLOAD:version.dll")
@@ -122,7 +119,6 @@ if(CLR_CMAKE_TARGET_WIN32)
     list(APPEND CORECLR_LIBRARIES
         ${STATIC_MT_CRT_LIB}
         ${STATIC_MT_VCRT_LIB}
-        mdwinmd_wks
         kernel32.lib
         advapi32.lib
         ole32.lib

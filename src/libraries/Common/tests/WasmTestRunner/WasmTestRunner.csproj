@@ -6,6 +6,6 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="WasmTestRunner.cs" />
-    <PackageReference Include="Microsoft.DotNet.XHarness.Tests.Runners" Version="$(MicrosoftDotNetXHarnessTestsRunnersVersion)" />
+    <PackageReference Include="Microsoft.DotNet.XHarness.TestRunners.Xunit" Version="$(MicrosoftDotNetXHarnessTestRunnersXunitVersion)" />
   </ItemGroup>
 </Project>

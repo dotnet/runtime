@@ -4,6 +4,7 @@
 
 using System;
 using System.Globalization;
+using System.Linq;
 using System.Text;
 using System.Runtime.InteropServices;
 using Server.Contract;
@@ -75,5 +76,16 @@ public class DispatchTesting : Server.Contract.IDispatchTesting
     public int PassThroughLCID()
     {
         return CultureInfo.CurrentCulture.LCID;
+    }
+
+    public System.Collections.IEnumerator ExplicitGetEnumerator()
+    {
+        return Enumerable.Range(0, 10).ToList().GetEnumerator();
+    }
+
+    [DispId(/*DISPID_NEWENUM*/-4)]
+    public System.Collections.IEnumerator GetEnumerator()
+    {
+        return Enumerable.Range(0, 10).ToList().GetEnumerator();
     }
 }

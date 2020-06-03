@@ -1067,130 +1067,13 @@ HRESULT CordbAppDomain::GetCachedWinRTTypesForIIDs(
                         GUID                * iids,
                         ICorDebugTypeEnum * * ppTypesEnum)
 {
-#if !defined(FEATURE_COMINTEROP)
-
     return E_NOTIMPL;
-
-#else
-
-    HRESULT hr = S_OK;
-    PUBLIC_API_ENTRY(this);
-    FAIL_IF_NEUTERED(this);
-    ATT_REQUIRE_STOPPED_MAY_FAIL(GetProcess());
-
-    _ASSERTE(!m_vmAppDomain.IsNull());
-
-
-    EX_TRY
-    {
-        *ppTypesEnum = NULL;
-
-        DacDbiArrayList<DebuggerIPCE_ExpandedTypeData> dacTypes;
-        DacDbiArrayList<GUID> dacGuids;
-
-        IDacDbiInterface* pDAC = GetProcess()->GetDAC();
-
-        dacGuids.Init(iids, cGuids);
-
-        // retrieve type info from LS
-        pDAC->GetCachedWinRTTypesForIIDs(m_vmAppDomain, dacGuids, &dacTypes);
-
-        // synthesize CordbType instances
-        int cItfs = dacTypes.Count();
-        NewArrayHolder<CordbType*> pTypes(NULL);
-
-        if (cItfs > 0)
-        {
-            pTypes = new CordbType*[cItfs];
-            for (int n = 0; n < cItfs; ++n)
-            {
-                hr = CordbType::TypeDataToType(this,
-                                               &(dacTypes[n]),
-                                               &pTypes[n]);
-            }
-        }
-
-        // build a type enumerator
-        CordbTypeEnum* pTypeEnum = CordbTypeEnum::Build(this, GetProcess()->GetContinueNeuterList(), cItfs, pTypes);
-        if ( pTypeEnum == NULL )
-        {
-            IfFailThrow(E_OUTOFMEMORY);
-        }
-
-        (*ppTypesEnum) = static_cast<ICorDebugTypeEnum*> (pTypeEnum);
-        pTypeEnum->ExternalAddRef();
-
-    }
-    EX_CATCH_HRESULT(hr);
-
-    return hr;
-
-#endif // !defined(FEATURE_COMINTEROP)
 }
 
 HRESULT CordbAppDomain::GetCachedWinRTTypes(
                         ICorDebugGuidToTypeEnum * * ppTypesEnum)
 {
-#if !defined(FEATURE_COMINTEROP)
-
     return E_NOTIMPL;
-
-#else
-
-    HRESULT hr = S_OK;
-    PUBLIC_API_ENTRY(this);
-    FAIL_IF_NEUTERED(this);
-    ATT_REQUIRE_STOPPED_MAY_FAIL(GetProcess());
-
-    EX_TRY
-    {
-        *ppTypesEnum = NULL;
-
-        DacDbiArrayList<GUID> guids;
-        DacDbiArrayList<DebuggerIPCE_ExpandedTypeData> types;
-
-        IDacDbiInterface* pDAC = GetProcess()->GetDAC();
-
-        // retrieve type info from LS
-        pDAC->GetCachedWinRTTypes(m_vmAppDomain, &guids, &types);
-
-        _ASSERTE(guids.Count() == types.Count());
-        if (guids.Count() != types.Count())
-            IfFailThrow(E_FAIL);
-
-        int cnt = types.Count();
-
-        RsGuidToTypeMapping* pMap = new RsGuidToTypeMapping[cnt];
-
-        for (int i = 0; i < cnt; ++i)
-        {
-            pMap[i].iid = guids[i];
-            CordbType* pType;
-            hr = CordbType::TypeDataToType(this, &(types[i]), &pType);
-            if (SUCCEEDED(hr))
-            {
-                pMap[i].spType.Assign(pType);
-            }
-            else
-            {
-                // spType stays NULL
-            }
-        }
-
-        CordbGuidToTypeEnumerator * enumerator = new CordbGuidToTypeEnumerator(GetProcess(), &pMap, cnt);
-        _ASSERTE(pMap == NULL);
-        GetProcess()->GetContinueNeuterList()->Add(GetProcess(), enumerator);
-
-        hr = enumerator->QueryInterface(IID_ICorDebugGuidToTypeEnum, reinterpret_cast<void**>(ppTypesEnum));
-        _ASSERTE(SUCCEEDED(hr));
-        IfFailThrow(hr);
-
-    }
-    EX_CATCH_HRESULT(hr);
-
-    return hr;
-
-#endif // !defined(FEATURE_COMINTEROP)
 }
 
 //-----------------------------------------------------------

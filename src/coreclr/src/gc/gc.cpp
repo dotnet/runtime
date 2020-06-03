@@ -12321,7 +12321,14 @@ found_fit:
             assert(gen_number == 0);
             assert(allocated > acontext->alloc_ptr);
 
-            limit -= (allocated - acontext->alloc_ptr);
+            size_t extra = allocated - acontext->alloc_ptr;
+            limit -= extra;
+
+            // Since we are not consuming all the memory we already deducted from the budget,
+            // we should put the extra back.
+            dynamic_data* dd = dynamic_data_of (0);
+            dd_new_allocation (dd) += extra;
+
             // add space for an AC continuity divider
             limit += Align(min_obj_size, align_const);
         }

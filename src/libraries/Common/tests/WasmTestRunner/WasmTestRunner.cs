@@ -3,27 +3,40 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
-using System.Linq;
-using System.Text;
-using System.IO;
 using System.Collections.Generic;
-using System.Reflection;
-using System.Threading;
-using System.Threading.Tasks;
-using System.Runtime.InteropServices;
-using System.Runtime.CompilerServices;
 
-public class WasmTestRunner
+using Microsoft.DotNet.XHarness.TestRunners.Xunit;
+
+public class SimpleWasmTestRunner : WasmApplicationEntryPoint
 {
+    protected override string TestAssembly { get; set; } = "";
+    protected override IEnumerable<string> ExcludedTraits { get; set; } = new List<string>();
+
     public static int Main(string[] args)
     {
-        Console.Write("Args: ");
-        foreach (string arg in args)
-        {
-            Console.Write(arg);
-        }
-        Console.WriteLine(".");
+        var testAssembly = args[0];
+        var excludedTraits = new List<string>();
 
-        return 0;
+        for (int i = 1; i < args.Length; i++)
+        {
+            var option = args[i];
+            switch (option)
+            {
+                case "-notrait":
+                    excludedTraits.Add (args[i + 1]);
+                    i++;
+                    break;
+                default:
+                    throw new ArgumentException($"Invalid argument '{option}'.");
+            }
+        }
+
+        var runner = new SimpleWasmTestRunner()
+        {
+            TestAssembly = testAssembly,
+            ExcludedTraits = excludedTraits
+        };
+
+        return runner.Run();
     }
 }

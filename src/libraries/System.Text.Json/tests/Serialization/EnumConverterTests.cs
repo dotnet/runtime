@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.IO;
+using System.Threading.Tasks;
 using Xunit;
 
 namespace System.Text.Json.Serialization.Tests
@@ -107,6 +108,21 @@ namespace System.Text.Json.Serialization.Tests
             options = new JsonSerializerOptions();
             options.Converters.Add(new JsonStringEnumConverter(allowIntegerValues: false));
             Assert.Throws<JsonException>(() => JsonSerializer.Serialize((FileAttributes)(-1), options));
+
+            // Flag values honor naming policy correctly
+            options = new JsonSerializerOptions();
+            options.Converters.Add(new JsonStringEnumConverter(new SimpleSnakeCasePolicy()));
+
+            json = JsonSerializer.Serialize(
+                FileAttributes.Directory | FileAttributes.Compressed | FileAttributes.IntegrityStream,
+                options);
+            Assert.Equal(@"""directory, compressed, integrity_stream""", json);
+
+            json = JsonSerializer.Serialize(FileAttributes.Compressed & FileAttributes.Device, options);
+            Assert.Equal(@"0", json);
+
+            json = JsonSerializer.Serialize(FileAttributes.Directory & FileAttributes.Compressed | FileAttributes.IntegrityStream, options);
+            Assert.Equal(@"""integrity_stream""", json);
         }
 
         public class FileState
@@ -184,6 +200,91 @@ namespace System.Text.Json.Serialization.Tests
 
             obj = JsonSerializer.Deserialize<MyCustomEnum>("2");
             Assert.Equal(MyCustomEnum.Second, obj);
+        }
+
+        [Fact]
+        public static void EnumWithNoValues()
+        {
+            var options = new JsonSerializerOptions
+            {
+                Converters = { new JsonStringEnumConverter() }
+            };
+
+            Assert.Equal("-1", JsonSerializer.Serialize((EmptyEnum)(-1), options));
+            Assert.Equal("1", JsonSerializer.Serialize((EmptyEnum)(1), options));
+        }
+
+        public enum EmptyEnum { };
+
+        [Fact]
+        public static void MoreThan64EnumValuesToSerialize()
+        {
+            var options = new JsonSerializerOptions
+            {
+                Converters = { new JsonStringEnumConverter() }
+            };
+
+            for (int i = 0; i < 128; i++)
+            {
+                MyEnum value = (MyEnum)i;
+                string asStr = value.ToString();
+                string expected = char.IsLetter(asStr[0]) ? $@"""{asStr}""" : asStr;
+                Assert.Equal(expected, JsonSerializer.Serialize(value, options));
+            }
+        }
+
+        [Fact, OuterLoop]
+        public static void VeryLargeAmountOfEnumsToSerialize()
+        {
+            // Ensure we don't throw OutOfMemoryException.
+            // Multiple threads are used to ensure the approximate size limit
+            // for the name cache(a concurrent dictionary) is honored.
+
+            var options = new JsonSerializerOptions
+            {
+                Converters = { new JsonStringEnumConverter() }
+            };
+
+            const int MaxValue = 33554432; // Value for MyEnum.Z
+            Task[] tasks = new Task[MaxValue];
+
+            for (int i = 0; i < tasks.Length; i++)
+            {
+                tasks[i] = Task.Run(() => JsonSerializer.Serialize((MyEnum)i, options));
+            }
+
+            Task.WaitAll(tasks);
+        }
+
+        [Flags]
+        public enum MyEnum
+        {
+            A = 1 << 0,
+            B = 1 << 1,
+            C = 1 << 2,
+            D = 1 << 3,
+            E = 1 << 4,
+            F = 1 << 5,
+            G = 1 << 6,
+            H = 1 << 7,
+            I = 1 << 8,
+            J = 1 << 9,
+            K = 1 << 10,
+            L = 1 << 11,
+            M = 1 << 12,
+            N = 1 << 13,
+            O = 1 << 14,
+            P = 1 << 15,
+            Q = 1 << 16,
+            R = 1 << 17,
+            S = 1 << 18,
+            T = 1 << 19,
+            U = 1 << 20,
+            V = 1 << 21,
+            W = 1 << 22,
+            X = 1 << 23,
+            Y = 1 << 24,
+            Z = 1 << 25,
         }
     }
 }

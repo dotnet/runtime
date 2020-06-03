@@ -16,7 +16,7 @@
 #include <mono/utils/mono-dl-fallback.h>
 #include <mono/jit/jit.h>
 
-#include "pinvoke-table.h"
+#include "pinvoke.h"
 
 #ifdef CORE_BINDINGS
 void core_initialize_internals ();
@@ -167,10 +167,9 @@ static void *sysglobal_native_handle;
 static void*
 wasm_dl_load (const char *name, int flags, char **err, void *user_data)
 {
-	for (int i = 0; i < sizeof (pinvoke_tables) / sizeof (void*); ++i) {
-		if (!strcmp (name, pinvoke_names [i]))
-			return pinvoke_tables [i];
-	}
+	void* handle = wasm_dl_lookup_pinvoke_table (name);
+	if (handle)
+		return handle;
 
 #ifdef ENABLE_NETCORE
 	if (!strcmp (name, "System.Globalization.Native"))
@@ -182,17 +181,6 @@ wasm_dl_load (const char *name, int flags, char **err, void *user_data)
 #endif
 
 	return NULL;
-}
-
-static mono_bool
-wasm_dl_is_pinvoke_tables (void* handle)
-{
-	for (int i = 0; i < sizeof (pinvoke_tables) / sizeof (void*); ++i) {
-		if (pinvoke_tables [i] == handle) {
-			return 1;
-		}
-	}
-	return 0;
 }
 
 static void*

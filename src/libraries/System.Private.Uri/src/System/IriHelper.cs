@@ -82,7 +82,7 @@ namespace System
                 {
                     if (next + 2 < end)
                     {
-                        ch = UriHelper.EscapedAscii(pInput[next + 1], pInput[next + 2]);
+                        ch = UriHelper.DecodeHexChars(pInput[next + 1], pInput[next + 2]);
 
                         // Do not unescape a reserved char
                         if (ch == Uri.c_DummyChar || ch == '%' || CheckIsReserved(ch, component) || UriHelper.IsNotSafeForUnescape(ch))
@@ -124,7 +124,7 @@ namespace System
                                     break;
 
                                 // already made sure we have 3 characters in str
-                                ch = UriHelper.EscapedAscii(pInput[next + 1], pInput[next + 2]);
+                                ch = UriHelper.DecodeHexChars(pInput[next + 1], pInput[next + 2]);
 
                                 //invalid hex sequence ?
                                 if (ch == Uri.c_DummyChar)

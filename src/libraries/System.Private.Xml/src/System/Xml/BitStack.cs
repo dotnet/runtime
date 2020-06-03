@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System;
 using System.Diagnostics;
 
@@ -12,7 +13,7 @@ namespace System.Xml
     /// </summary>
     internal class BitStack
     {
-        private uint[] _bitStack;
+        private uint[]? _bitStack;
         private int _stackPos;
         private uint _curr;
 
@@ -108,7 +109,7 @@ namespace System.Xml
         private void PopCurr()
         {
             if (_stackPos > 0)
-                _curr = _bitStack[--_stackPos];
+                _curr = _bitStack![--_stackPos];
         }
     }
 }

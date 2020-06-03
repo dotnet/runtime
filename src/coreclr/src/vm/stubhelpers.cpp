@@ -28,7 +28,6 @@
 #include "comcallablewrapper.h"
 #include "clrtocomcall.h"
 #include "cominterfacemarshaler.h"
-#include "winrttypenameconverter.h"
 #endif
 
 #ifdef VERIFY_HEAP
@@ -329,14 +328,6 @@ NOINLINE static IUnknown* GetCOMIPFromRCWHelper(LPVOID pFCall, OBJECTREF pSrc, M
     ComPlusCallInfo *pComInfo = ComPlusCallInfo::FromMethodDesc(pMD);
     pRetUnk = ComObject::GetComIPFromRCWThrowing(&pSrc, pComInfo->m_pInterfaceMT);
 
-    if (pFCall == StubHelpers::GetCOMIPFromRCW_WinRT ||
-        pFCall == StubHelpers::GetCOMIPFromRCW_WinRTSharedGeneric ||
-        pFCall == StubHelpers::GetCOMIPFromRCW_WinRTDelegate)
-    {
-        pRetUnk.Release();
-    }
-
-
     *ppTarget = GetCOMIPFromRCW_GetTarget(pRetUnk, pComInfo);
     _ASSERTE(*ppTarget != NULL);
 
@@ -359,7 +350,7 @@ NOINLINE static IUnknown* GetCOMIPFromRCWHelper(LPVOID pFCall, OBJECTREF pSrc, M
 
 #include <optsmallperfcritical.h>
 
-// This helper can handle any CLR->COM call (classic COM, WinRT, WinRT delegate, WinRT generic), it supports hosting,
+// This helper can handle any CLR->COM call, it supports hosting,
 // and clears FP state on x86 for compatibility with VB6.
 FCIMPL4(IUnknown*, StubHelpers::GetCOMIPFromRCW, Object* pSrcUNSAFE, MethodDesc* pMD, void **ppTarget, CLR_BOOL* pfNeedsRelease)
 {
@@ -396,198 +387,7 @@ FCIMPL4(IUnknown*, StubHelpers::GetCOMIPFromRCW, Object* pSrcUNSAFE, MethodDesc*
 }
 FCIMPLEND
 
-// This helper can handle only non-generic WinRT calls, does not support hosting/interception, and does not clear FP state.
-FCIMPL3(IUnknown*, StubHelpers::GetCOMIPFromRCW_WinRT, Object* pSrcUNSAFE, MethodDesc* pMD, void** ppTarget)
-{
-    CONTRACTL
-    {
-        FCALL_CHECK;
-        PRECONDITION(pMD->IsComPlusCall());
-    }
-    CONTRACTL_END;
-
-    OBJECTREF pSrc = ObjectToOBJECTREF(pSrcUNSAFE);
-
-    ComPlusCallInfo *pComInfo = ((ComPlusCallMethodDesc *)pMD)->m_pComPlusCallInfo;
-    RCW *pRCW = pSrc->PassiveGetSyncBlock()->GetInteropInfoNoCreate()->GetRawRCW();
-    if (pRCW != NULL)
-    {
-        IUnknown *pUnk = GetCOMIPFromRCW_GetIUnknownFromRCWCache_NoInterception(pRCW, pComInfo, ppTarget);
-        if (pUnk != NULL)
-        {
-            return pUnk;
-        }
-    }
-
-    /* if we didn't find the COM interface pointer in the cache we will have to erect an HMF */
-    FC_INNER_RETURN(IUnknown*, GetCOMIPFromRCWHelper(StubHelpers::GetCOMIPFromRCW_WinRT, pSrc, pMD, ppTarget));
-}
-FCIMPLEND
-
-// This helper can handle only generic WinRT calls, does not support hosting, and does not clear FP state.
-FCIMPL3(IUnknown*, StubHelpers::GetCOMIPFromRCW_WinRTSharedGeneric, Object* pSrcUNSAFE, MethodDesc* pMD, void** ppTarget)
-{
-    CONTRACTL
-    {
-        FCALL_CHECK;
-        PRECONDITION(pMD->IsGenericComPlusCall());
-    }
-    CONTRACTL_END;
-
-    OBJECTREF pSrc = ObjectToOBJECTREF(pSrcUNSAFE);
-
-    ComPlusCallInfo *pComInfo = pMD->AsInstantiatedMethodDesc()->IMD_GetComPlusCallInfo();
-    RCW *pRCW = pSrc->PassiveGetSyncBlock()->GetInteropInfoNoCreate()->GetRawRCW();
-    if (pRCW != NULL)
-    {
-        IUnknown *pUnk = GetCOMIPFromRCW_GetIUnknownFromRCWCache_NoInterception(pRCW, pComInfo, ppTarget);
-        if (pUnk != NULL)
-        {
-            return pUnk;
-        }
-    }
-
-    /* if we didn't find the COM interface pointer in the cache we will have to erect an HMF */
-    FC_INNER_RETURN(IUnknown*, GetCOMIPFromRCWHelper(StubHelpers::GetCOMIPFromRCW_WinRTSharedGeneric, pSrc, pMD, ppTarget));
-}
-FCIMPLEND
-
-// This helper can handle only delegate WinRT calls, does not support hosting, and does not clear FP state.
-FCIMPL3(IUnknown*, StubHelpers::GetCOMIPFromRCW_WinRTDelegate, Object* pSrcUNSAFE, MethodDesc* pMD, void** ppTarget)
-{
-    CONTRACTL
-    {
-        FCALL_CHECK;
-        PRECONDITION(pMD->IsEEImpl());
-    }
-    CONTRACTL_END;
-
-    OBJECTREF pSrc = ObjectToOBJECTREF(pSrcUNSAFE);
-
-    ComPlusCallInfo *pComInfo = ((DelegateEEClass *)pMD->GetClass())->m_pComPlusCallInfo;
-    RCW *pRCW = pSrc->PassiveGetSyncBlock()->GetInteropInfoNoCreate()->GetRawRCW();
-    if (pRCW != NULL)
-    {
-        IUnknown *pUnk = GetCOMIPFromRCW_GetIUnknownFromRCWCache_NoInterception(pRCW, pComInfo, ppTarget);
-        if (pUnk != NULL)
-        {
-            return pUnk;
-        }
-    }
-
-    /* if we didn't find the COM interface pointer in the cache we will have to erect an HMF */
-    FC_INNER_RETURN(IUnknown*, GetCOMIPFromRCWHelper(StubHelpers::GetCOMIPFromRCW_WinRTDelegate, pSrc, pMD, ppTarget));
-}
-FCIMPLEND
-
 #include <optdefault.h>
-
-
-NOINLINE static FC_BOOL_RET ShouldCallWinRTInterfaceHelper(RCW *pRCW, MethodTable *pItfMT)
-{
-    FC_INNER_PROLOG(StubHelpers::ShouldCallWinRTInterface);
-
-    bool result = false;
-
-    HELPER_METHOD_FRAME_BEGIN_RET_ATTRIB(Frame::FRAME_ATTR_EXACT_DEPTH|Frame::FRAME_ATTR_CAPTURE_DEPTH_2);
-
-    // call the GC-triggering version
-    result = pRCW->SupportsWinRTInteropInterface(pItfMT);
-
-    HELPER_METHOD_FRAME_END();
-    FC_INNER_EPILOG();
-
-    FC_RETURN_BOOL(result);
-}
-
-FCIMPL2(FC_BOOL_RET, StubHelpers::ShouldCallWinRTInterface, Object *pSrcUNSAFE, MethodDesc *pMD)
-{
-    FCALL_CONTRACT;
-
-    OBJECTREF pSrc = ObjectToOBJECTREF(pSrcUNSAFE);
-
-    ComPlusCallInfo *pComInfo = ComPlusCallInfo::FromMethodDesc(pMD);
-    RCW *pRCW = pSrc->PassiveGetSyncBlock()->GetInteropInfoNoCreate()->GetRawRCW();
-    if (pRCW == NULL)
-    {
-        // Pretend that we are not redirected WinRT type
-        // We'll throw InvalidComObjectException later in GetComIPFromRCW
-        return false;
-    }
-
-    TypeHandle::CastResult result = pRCW->SupportsWinRTInteropInterfaceNoGC(pComInfo->m_pInterfaceMT);
-    switch (result)
-    {
-        case TypeHandle::CanCast:    FC_RETURN_BOOL(true);
-        case TypeHandle::CannotCast: FC_RETURN_BOOL(false);
-    }
-
-    FC_INNER_RETURN(FC_BOOL_RET, ShouldCallWinRTInterfaceHelper(pRCW, pComInfo->m_pInterfaceMT));
-}
-FCIMPLEND
-
-NOINLINE static DelegateObject *GetTargetForAmbiguousVariantCallHelper(RCW *pRCW, MethodTable *pMT, BOOL fIsEnumerable, CLR_BOOL *pfUseString)
-{
-    FC_INNER_PROLOG(StubHelpers::GetTargetForAmbiguousVariantCall);
-
-    DelegateObject *pRetVal = NULL;
-
-    HELPER_METHOD_FRAME_BEGIN_RET_ATTRIB(Frame::FRAME_ATTR_EXACT_DEPTH|Frame::FRAME_ATTR_CAPTURE_DEPTH_2);
-
-    // Note that if the call succeeds, it will set the right OBJECTHANDLE/flags on the RCW so we won't have to do this
-    // next time. If the call fails, we don't care because it is an error and an exception will be thrown later.
-    SafeComHolder<IUnknown> pUnk = pRCW->GetComIPFromRCW(pMT);
-
-    WinRTInterfaceRedirector::WinRTLegalStructureBaseType baseType = WinRTInterfaceRedirector::GetStructureBaseType(pMT->GetInstantiation());
-
-    BOOL fUseString = FALSE;
-    BOOL fUseT = FALSE;
-    pRetVal = (DelegateObject *)OBJECTREFToObject(pRCW->GetTargetForAmbiguousVariantCall(fIsEnumerable, baseType, &fUseString, &fUseT));
-
-    *pfUseString = !!fUseString;
-
-    HELPER_METHOD_FRAME_END();
-    FC_INNER_EPILOG();
-
-    return pRetVal;
-}
-
-// Performs a run-time check to see how an ambiguous variant call on an RCW should be handled. Returns a delegate which should
-// be called, or sets *pfUseString to true which means that the caller should use the <string> instantiation. If NULL is returned
-// and *pfUseString is false, the caller should attempt to handle the call as usual.
-FCIMPL3(DelegateObject*, StubHelpers::GetTargetForAmbiguousVariantCall, Object *pSrcUNSAFE, MethodTable *pMT, CLR_BOOL *pfUseString)
-{
-    FCALL_CONTRACT;
-
-    OBJECTREF pSrc = ObjectToOBJECTREF(pSrcUNSAFE);
-
-    RCW *pRCW = pSrc->PassiveGetSyncBlock()->GetInteropInfoNoCreate()->GetRawRCW();
-    if (pRCW == NULL)
-    {
-        // ignore this - the call we'll attempt to make later will throw the right exception
-        *pfUseString = false;
-        return NULL;
-    }
-
-    BOOL fIsEnumerable = pMT->HasSameTypeDefAs(MscorlibBinder::GetExistingClass(CLASS__IENUMERABLEGENERIC));
-    _ASSERTE(fIsEnumerable || pMT->HasSameTypeDefAs(MscorlibBinder::GetExistingClass(CLASS__IREADONLYLISTGENERIC)));
-
-    WinRTInterfaceRedirector::WinRTLegalStructureBaseType baseType = WinRTInterfaceRedirector::GetStructureBaseType(pMT->GetInstantiation());
-
-    BOOL fUseString = FALSE;
-    BOOL fUseT = FALSE;
-    DelegateObject *pRetVal = (DelegateObject *)OBJECTREFToObject(pRCW->GetTargetForAmbiguousVariantCall(fIsEnumerable, baseType, &fUseString, &fUseT));
-
-    if (pRetVal != NULL || fUseT || fUseString)
-    {
-        *pfUseString = !!fUseString;
-        return pRetVal;
-    }
-
-    // we haven't seen QI for the interface yet, trigger it now
-    FC_INNER_RETURN(DelegateObject*, GetTargetForAmbiguousVariantCallHelper(pRCW, pMT, fIsEnumerable, pfUseString));
-}
-FCIMPLEND
 
 FCIMPL2(void, StubHelpers::ObjectMarshaler__ConvertToNative, Object* pSrcUNSAFE, VARIANT* pDest)
 {
@@ -696,245 +496,6 @@ void QCALLTYPE StubHelpers::InterfaceMarshaler__ClearNative(IUnknown * pUnk)
     END_QCALL;
 }
 #include <optdefault.h>
-
-
-
-
-FCIMPL1(StringObject*, StubHelpers::UriMarshaler__GetRawUriFromNative, ABI::Windows::Foundation::IUriRuntimeClass* pIUriRC)
-{
-    FCALL_CONTRACT;
-
-    if (NULL == pIUriRC)
-    {
-        return NULL;
-    }
-
-    STRINGREF strRef = NULL;
-    UINT32 cchRawUri = 0;
-    LPCWSTR pwszRawUri = NULL;
-
-    HELPER_METHOD_FRAME_BEGIN_RET_1(strRef);
-
-    WinRtString hsRawUriName;
-
-    {
-        GCX_PREEMP();
-
-        // Get the RawUri string from the WinRT URI object
-        IfFailThrow(pIUriRC->get_RawUri(hsRawUriName.Address()));
-
-        pwszRawUri = hsRawUriName.GetRawBuffer(&cchRawUri);
-    }
-
-    strRef = StringObject::NewString(pwszRawUri, cchRawUri);
-
-    HELPER_METHOD_FRAME_END();
-
-    return STRINGREFToObject(strRef);
-}
-FCIMPLEND
-
-FCIMPL2(IUnknown*, StubHelpers::UriMarshaler__CreateNativeUriInstance, WCHAR* pRawUri, UINT strLen)
-{
-    CONTRACTL {
-        FCALL_CHECK;
-        PRECONDITION(CheckPointer(pRawUri));
-    }
-    CONTRACTL_END;
-
-    ABI::Windows::Foundation::IUriRuntimeClass* pIUriRC = NULL;
-
-    HELPER_METHOD_FRAME_BEGIN_RET_0();
-
-    GCX_PREEMP();
-    pIUriRC = CreateWinRTUri(pRawUri, strLen);
-
-    HELPER_METHOD_FRAME_END();
-
-    return pIUriRC;
-}
-FCIMPLEND
-
-// A helper to convert an IP to object using special flags.
-FCIMPL1(Object *, StubHelpers::InterfaceMarshaler__ConvertToManagedWithoutUnboxing, IUnknown *pNative)
-{
-    FCALL_CONTRACT;
-
-    OBJECTREF oref = NULL;
-
-    HELPER_METHOD_FRAME_BEGIN_RET_1(oref);
-
-    //
-    // Get a wrapper for pNative
-    // Note that we need to skip WinRT unboxing at this point because
-    // 1. We never know whether GetObjectRefFromComIP went through unboxing path.
-    // For example, user could just pass a IUnknown * to T and we'll happily convert that to T
-    // 2. If for some reason we end up getting something that does not implement IReference<T>,
-    // we'll get a nice message later when we do the cast in CLRIReferenceImpl.UnboxHelper
-    //
-    GetObjectRefFromComIP(
-        &oref,
-        pNative,                                        // pUnk
-        g_pBaseCOMObject,                               // Use __ComObject
-        NULL,                                           // pItfMT
-        ObjFromComIP::CLASS_IS_HINT |                   // No cast check - we'll do cast later
-        ObjFromComIP::UNIQUE_OBJECT |                   // Do not cache the object - To ensure that the unboxing code is called on this object always
-                                                        // and the object is not retrieved from the cache as an __ComObject.
-                                                        // Don't call GetRuntimeClassName - I just want a RCW of __ComObject
-        ObjFromComIP::IGNORE_WINRT_AND_SKIP_UNBOXING    // Skip unboxing
-        );
-
-    HELPER_METHOD_FRAME_END();
-
-    return OBJECTREFToObject(oref);
-}
-FCIMPLEND
-
-FCIMPL2(StringObject *, StubHelpers::WinRTTypeNameConverter__ConvertToWinRTTypeName,
-    ReflectClassBaseObject *pTypeUNSAFE, CLR_BOOL *pbIsWinRTPrimitive)
-{
-    CONTRACTL
-    {
-        FCALL_CHECK;
-        PRECONDITION(CheckPointer(pTypeUNSAFE));
-        PRECONDITION(CheckPointer(pbIsWinRTPrimitive));
-    }
-    CONTRACTL_END;
-
-    REFLECTCLASSBASEREF refClass = (REFLECTCLASSBASEREF) pTypeUNSAFE;
-    STRINGREF refString= NULL;
-    HELPER_METHOD_FRAME_BEGIN_RET_2(refClass, refString);
-
-    SString strWinRTTypeName;
-    bool bIsPrimitive;
-    if (WinRTTypeNameConverter::AppendWinRTTypeNameForManagedType(
-        refClass->GetType(),    // thManagedType
-        strWinRTTypeName,       // strWinRTTypeName to append
-        FALSE,                  // for type conversion, not for GetRuntimeClassName
-        &bIsPrimitive
-        ))
-    {
-        *pbIsWinRTPrimitive = bIsPrimitive;
-        refString = AllocateString(strWinRTTypeName);
-    }
-    else
-    {
-        *pbIsWinRTPrimitive = FALSE;
-        refString = NULL;
-    }
-
-    HELPER_METHOD_FRAME_END();
-
-    return STRINGREFToObject(refString);
-}
-FCIMPLEND
-
-FCIMPL2(ReflectClassBaseObject *, StubHelpers::WinRTTypeNameConverter__GetTypeFromWinRTTypeName, StringObject *pWinRTTypeNameUNSAFE, CLR_BOOL *pbIsPrimitive)
-{
-    CONTRACTL
-    {
-        FCALL_CHECK;
-        PRECONDITION(CheckPointer(pWinRTTypeNameUNSAFE));
-    }
-    CONTRACTL_END;
-
-    OBJECTREF refClass = NULL;
-    STRINGREF refString = ObjectToSTRINGREF(pWinRTTypeNameUNSAFE);
-    HELPER_METHOD_FRAME_BEGIN_RET_2(refClass, refString);
-
-    bool isPrimitive;
-    TypeHandle th = WinRTTypeNameConverter::LoadManagedTypeForWinRTTypeName(refString->GetBuffer(), /* pLoadBinder */ nullptr, &isPrimitive);
-    *pbIsPrimitive = isPrimitive;
-
-    refClass = th.GetManagedClassObject();
-
-    HELPER_METHOD_FRAME_END();
-
-    return (ReflectClassBaseObject *)OBJECTREFToObject(refClass);
-}
-FCIMPLEND
-
-FCIMPL1(MethodDesc*, StubHelpers::GetDelegateInvokeMethod, DelegateObject *pThisUNSAFE)
-{
-    FCALL_CONTRACT;
-
-    MethodDesc *pMD = NULL;
-
-    OBJECTREF pThis = ObjectToOBJECTREF(pThisUNSAFE);
-    HELPER_METHOD_FRAME_BEGIN_RET_1(pThis);
-
-    MethodTable *pDelMT = pThis->GetMethodTable();
-
-    pMD = COMDelegate::FindDelegateInvokeMethod(pDelMT);
-    if (pMD->IsSharedByGenericInstantiations())
-    {
-        // we need the exact MethodDesc
-        pMD = InstantiatedMethodDesc::FindOrCreateExactClassMethod(pDelMT, pMD);
-    }
-
-    HELPER_METHOD_FRAME_END();
-
-    _ASSERTE(pMD);
-    return pMD;
-}
-FCIMPLEND
-
-// Called from COM-to-CLR factory method stubs to get the return value (the delegating interface pointer
-// corresponding to the default WinRT interface of the class which we are constructing).
-FCIMPL2(IInspectable *, StubHelpers::GetWinRTFactoryReturnValue, Object *pThisUNSAFE, PCODE pCtorEntry)
-{
-    FCALL_CONTRACT;
-
-    IInspectable *pInsp = NULL;
-
-    OBJECTREF pThis = ObjectToOBJECTREF(pThisUNSAFE);
-    HELPER_METHOD_FRAME_BEGIN_RET_1(pThis);
-
-    // COM-to-CLR stubs use the target method entry point as their stub context
-    MethodDesc *pCtorMD = Entry2MethodDesc(pCtorEntry, NULL);
-    MethodTable *pClassMT = pCtorMD->GetMethodTable();
-
-    // make sure that we talk to the right CCW
-    ComCallWrapperTemplate *pTemplate = ComCallWrapperTemplate::GetTemplate(TypeHandle(pClassMT));
-    CCWHolder pWrap = ComCallWrapper::InlineGetWrapper(&pThis, pTemplate);
-
-    MethodTable *pDefaultItf = pClassMT->GetDefaultWinRTInterface();
-    const IID &riid = (pDefaultItf == NULL ? IID_IInspectable : IID_NULL);
-
-    pInsp = static_cast<IInspectable *>(ComCallWrapper::GetComIPFromCCW(pWrap, riid, pDefaultItf,
-        GetComIPFromCCW::CheckVisibility));
-
-    HELPER_METHOD_FRAME_END();
-
-    return pInsp;
-}
-FCIMPLEND
-
-// Called from CLR-to-COM factory method stubs to get the outer IInspectable to pass
-// to the underlying factory object.
-FCIMPL2(IInspectable *, StubHelpers::GetOuterInspectable, Object *pThisUNSAFE, MethodDesc *pCtorMD)
-{
-    FCALL_CONTRACT;
-
-    IInspectable *pInsp = NULL;
-
-    OBJECTREF pThis = ObjectToOBJECTREF(pThisUNSAFE);
-
-    if (pThis->GetMethodTable() != pCtorMD->GetMethodTable())
-    {
-        // this is a composition scenario
-        HELPER_METHOD_FRAME_BEGIN_RET_1(pThis);
-
-        // we don't have the "outer" yet, marshal the object
-        pInsp = static_cast<IInspectable *>
-            (MarshalObjectToInterface(&pThis, NULL, NULL, ItfMarshalInfo::ITF_MARSHAL_INSP_ITF | ItfMarshalInfo::ITF_MARSHAL_USE_BASIC_ITF));
-
-        HELPER_METHOD_FRAME_END();
-    }
-
-    return pInsp;
-}
-FCIMPLEND
 
 #endif // FEATURE_COMINTEROP
 
@@ -1120,8 +681,6 @@ public :
     {
         LIMITED_METHOD_CONTRACT;
 
-        _ASSERTE(pRCW->SupportsIInspectable());
-
         // Is this a free threaded RCW or a context-bound RCW created in the same context
         if (pRCW->IsFreeThreaded() ||
             pRCW->GetWrapperCtxCookie() == m_pCtxCookie)
@@ -1178,86 +737,6 @@ private :
     bool   m_bIsFreeThreaded;   // Whether we got back the RCW from a different context
     bool   m_bIsDCOMProxy;      // Is this a proxy to an object in a different process
 };
-
-//
-// Retrieve cached WinRT factory RCW or create a new one, according to the MethodDesc of the .ctor
-//
-FCIMPL1(Object*, StubHelpers::GetWinRTFactoryObject, MethodDesc *pCMD)
-{
-    FCALL_CONTRACT;
-
-    OBJECTREF refFactory = NULL;
-
-    HELPER_METHOD_FRAME_BEGIN_RET_1(refFactory);
-
-    MethodTable *pMTOfTypeToCreate = pCMD->GetMethodTable();
-    AppDomain   *pDomain = GetAppDomain();
-
-    //
-    // Look up cached WinRT factory according to type to create + current context cookie
-    // For each type in AppDomain, we cache only the last WinRT factory object
-    // We don't cache factory per context in order to avoid explosion of objects if there are
-    // multiple STA apartments
-    //
-    // Note that if cached WinRT factory is FTM, we'll get it back regardless of the supplied cookie
-    //
-    LPVOID lpCtxCookie = GetCurrentCtxCookie();
-    refFactory = pDomain->LookupWinRTFactoryObject(pMTOfTypeToCreate, lpCtxCookie);
-    if (refFactory == NULL)
-    {
-        //
-        // Didn't find a cached factory that matches the context
-        // Time to create a new factory and wrap it in a RCW
-        //
-
-        //
-        // Creates a callback to checks for singleton WinRT factory during RCW creation
-        //
-        // If we get back an existing RCW from a different context, this callback
-        // will make the RCW a context-agile (but not free-threaded) RCW. Being context-agile
-        // in this case means RCW will not make any context transition. As long as we are only
-        // calling this RCW from where we got it back (using IInspectable* as identity), we should
-        // be fine (as we are supposed to call that pointer directly anyway)
-        //
-        // See code:COMInterfaceMarshalerCallback for more details
-        //
-        COMInterfaceMarshalerCallback callback(GET_THREAD(), lpCtxCookie);
-
-        //
-        // Get the activation factory instance for this WinRT type and create a RCW for it
-        //
-        GetNativeWinRTFactoryObject(
-            pMTOfTypeToCreate,
-            GET_THREAD(),
-            ComPlusCallInfo::FromMethodDesc(pCMD)->m_pInterfaceMT,  // Factory interface
-            FALSE,      // Don't need a unique RCW
-                        // it is only needed in WindowsRuntimeMarshal.GetActivationFactory API
-            &callback,
-            &refFactory);
-
-        //
-        // If this is free-threaded factory RCW, set lpCtxCookie = NULL, which means
-        // this RCW can be used anywhere
-        // Otherwise, we can only use this RCW from current thread
-        //
-        if (callback.IsFreeThreaded())
-            lpCtxCookie = NULL;
-
-        // Cache the result in the AD-wide cache, unless this is a proxy to a DCOM object.
-        // Out of process WinRT servers can have lifetimes independent of the application,
-        // and the cache may wind up with stale pointers if we save proxies to OOP factories.
-        if (!callback.IsDCOMProxy())
-        {
-            pDomain->CacheWinRTFactoryObject(pMTOfTypeToCreate, &refFactory, lpCtxCookie);
-        }
-    }
-
-    HELPER_METHOD_FRAME_END();
-
-    return OBJECTREFToObject(refFactory);
-}
-FCIMPLEND
-
 
 #endif
 
@@ -1404,7 +883,7 @@ FCIMPL1(Object*, StubHelpers::GetHRExceptionObject, HRESULT hr)
 FCIMPLEND
 
 #ifdef FEATURE_COMINTEROP
-FCIMPL4(Object*, StubHelpers::GetCOMHRExceptionObject, HRESULT hr, MethodDesc *pMD, Object *unsafe_pThis, CLR_BOOL fForWinRT)
+FCIMPL3(Object*, StubHelpers::GetCOMHRExceptionObject, HRESULT hr, MethodDesc *pMD, Object *unsafe_pThis)
 {
     FCALL_CONTRACT;
 
@@ -1417,21 +896,6 @@ FCIMPL4(Object*, StubHelpers::GetCOMHRExceptionObject, HRESULT hr, MethodDesc *p
     {
         IErrorInfo *pErrInfo = NULL;
 
-        IRestrictedErrorInfo *pResErrorInfo = NULL;
-        BOOL bHasNonCLRLanguageErrorObject = FALSE;
-
-        if (fForWinRT)
-        {
-            SafeGetRestrictedErrorInfo(&pResErrorInfo);
-            if (pResErrorInfo != NULL)
-            {
-                // If we have a restricted error Info lets try and find the corresponding errorInfo,
-                // bHasNonCLRLanguageErrorObject can be TRUE|FALSE depending on whether we have an associtated LanguageExceptionObject
-                // and whether it is CLR exceptionObject => bHasNonCLRLanguageErrorObject = FALSE;
-                // or whether it is a non-CLRExceptionObject => bHasNonCLRLanguageErrorObject = TRUE;
-                pErrInfo = GetCorrepondingErrorInfo_WinRT(hr, pResErrorInfo, &bHasNonCLRLanguageErrorObject);
-            }
-        }
         if (pErrInfo == NULL && pMD != NULL)
         {
             // Retrieve the interface method table.
@@ -1444,14 +908,14 @@ FCIMPL4(Object*, StubHelpers::GetCOMHRExceptionObject, HRESULT hr, MethodDesc *p
                 // Check to see if the component supports error information for this interface.
                 IID ItfIID;
                 pItfMT->GetGuid(&ItfIID, TRUE);
-                pErrInfo = GetSupportedErrorInfo(pUnk, ItfIID, !fForWinRT);
+                pErrInfo = GetSupportedErrorInfo(pUnk, ItfIID);
 
                 DWORD cbRef = SafeRelease(pUnk);
                 LogInteropRelease(pUnk, cbRef, "IUnk to QI for ISupportsErrorInfo");
             }
         }
 
-        GetExceptionForHR(hr, pErrInfo, !fForWinRT, &oThrowable, pResErrorInfo, bHasNonCLRLanguageErrorObject);
+        GetExceptionForHR(hr, pErrInfo, &oThrowable);
     }
     HELPER_METHOD_FRAME_END();
 

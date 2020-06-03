@@ -1,12 +1,20 @@
-set -ev
+#!/usr/bin/env bash
 
 EXECUTION_DIR=$(dirname $0)
-TEST_NAME=$1
-TARGET_ARCH=$2
 
-echo "Test: $1 Arch: $2"
+echo "Test: $1"
 
 cd $EXECUTION_DIR
-v8 --expose_wasm runtime.js -- --enable-gc --run WasmTestRunner.dll $TEST_NAME.dll
 
-exit 0
+XHARNESS_OUT="$EXECUTION_DIR/xharness-output"
+
+dotnet xharness wasm test --engine=v8 \
+    --js-file=runtime.js \
+    --output-directory=$XHARNESS_OUT \
+    -- --enable-gc --run WasmTestRunner.dll $*
+
+_exitCode=$?
+
+echo "Xharness artifacts: $XHARNESS_OUT"
+
+exit $_exitCode
