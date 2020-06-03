@@ -19,14 +19,10 @@
 
 #include "gcpriv.h"
 
-#ifdef TARGET_AMD64
+#if defined(TARGET_AMD64) && defined(TARGET_WINDOWS)
 #define USE_VXSORT
 #else
 #define USE_INTROSORT
-#endif
-
-#ifdef USE_VXSORT
-#include "vxsort.h"
 #endif
 
 // We just needed a simple random number generator for testing.
@@ -2088,10 +2084,15 @@ namespace std
     public:
         static int64_t Max()
         {
-            return LLONG_MAX;
+            return 0x7fffffffffffffff;
         }
     };
 }
+
+#ifdef USE_VXSORT
+#include "vxsort.h"
+#endif
+
 void vxsort(uint8_t** low, uint8_t** high, unsigned int depth)
 {
 //    auto sorter = gcsort::vxsort<int64_t, gcsort::AVX2>();
