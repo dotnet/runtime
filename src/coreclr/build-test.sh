@@ -185,6 +185,7 @@ precompile_coreroot_fx()
     compositeCommandLine+=" --composite"
     compositeCommandLine+=" -O"
     compositeCommandLine+=" --out:$outputDir/framework-r2r.dll"
+    compositeCommandLine+=" --targetarch ${__BuildArch}"
     declare -a failedAssemblies
 
     filesToPrecompile=$(find -L "$overlayDir" -maxdepth 1 -iname Microsoft.\*.dll -o -iname System.\*.dll -o -iname netstandard.dll -o -iname mscorlib.dll -type f)
@@ -206,7 +207,7 @@ precompile_coreroot_fx()
         fi
 
         if [[ "$__DoCrossgen2" != 0 ]]; then
-            commandLine="${__DotNetCli} $overlayDir/crossgen2/crossgen2.dll $crossgen2References -O --inputbubble --out $outputDir/$(basename $filename) $filename"
+            commandLine="${__DotNetCli} $overlayDir/crossgen2/crossgen2.dll $crossgen2References -O --inputbubble --out $outputDir/$(basename $filename) $filename --targetarch ${__BuildArch}"
         fi
 
         echo Precompiling "$filename"
