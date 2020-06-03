@@ -33,6 +33,6 @@ namespace System
         /// <param name="separator">The separator string to be used to split the provided span.</param>
         /// <returns>Returns a <see cref="System.SpanSplitEnumerator{T}"/>.</returns>
         public static SpanSplitEnumerator<char> Split(this ReadOnlySpan<char> span, string separator)
-            => new SpanSplitEnumerator<char>(span, separator);
+            => new SpanSplitEnumerator<char>(span, separator ?? string.Empty);
     }
 }
