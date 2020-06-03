@@ -5,10 +5,34 @@
 #include <immintrin.h>
 #include <stdint.h>
 
-#include "bitonic_sort.int64_t.generated.h"
-//#include <algorithm>
-//#include <cstdio>
-//#include <cstring>
+#include "smallsort/bitonic_sort.AVX2.int64_t.generated.h"
+#include "smallsort/bitonic_sort.AVX2.uint64_t.generated.h"
+#include "smallsort/bitonic_sort.AVX2.double.generated.h"
+#include "smallsort/bitonic_sort.AVX2.float.generated.h"
+#include "smallsort/bitonic_sort.AVX2.int32_t.generated.h"
+#include "smallsort/bitonic_sort.AVX2.uint32_t.generated.h"
+
+#if _MSC_VER
+#ifdef _M_X86
+#define ARCH_X86
+#endif
+#ifdef _M_X64
+#define ARCH_X64
+#endif
+#ifdef _M_ARM64
+#define ARCH_ARM
+#endif
+#else
+#ifdef __i386__
+#define ARCH_X86
+#endif
+#ifdef __amd64__
+#define ARCH_X64
+#endif
+#ifdef __arm__
+#define ARCH_ARM
+#endif
+#endif
 
 #ifdef _MSC_VER
 // MSVC
@@ -22,6 +46,14 @@
 #define INLINE __attribute__((always_inline))
 #define NOINLINE __attribute__((noinline))
 #endif
+
+#define i2d _mm256_castsi256_pd
+#define d2i _mm256_castpd_si256
+#define i2s _mm256_castsi256_ps
+#define s2i _mm256_castps_si256
+#define s2d _mm256_castps_pd
+#define d2s _mm256_castpd_ps
+
 
 namespace gcsort {
 using gcsort::smallsort::bitonic;
@@ -53,25 +85,33 @@ struct alignment_hint {
         int right_align : 8;
 };
 
+enum vector_machine {
+  AVX2,
+  AVX512,
+  SVE,
+};
 
-template <typename T>
-//using Tv = __m256;
-struct vxsort_partition_traits {
+template <typename T, vector_machine M>
+struct vxsort_machine_traits {
 public:
-    //typedef T TV __attribute__ ((__vector_size__ (32)));
     typedef __m256 Tv;
 
     static Tv load_vec(Tv* ptr);
     static Tv store_vec(Tv* ptr, Tv v);
-    static __m256i get_perm(int mask);
+    //static __m256i get_perm(int mask);
+    static Tv partition_vector(Tv v, int mask);
     static Tv get_vec_pivot(T pivot);
     static uint32_t get_cmpgt_mask(Tv a, Tv b);
 };
 
+#ifdef ARCH_X64
+
+extern const int8_t perm_table_64[128];
+extern const int8_t perm_table_32[2048];
+
 template <>
-class vxsort_partition_traits<int64_t> {
+class vxsort_machine_traits<int64_t, AVX2> {
 private:
-    const static int8_t perm_table[128];
 public:
     typedef __m256i Tv;
 
@@ -83,25 +123,80 @@ public:
       _mm256_storeu_si256(ptr, v);
     }
 
-    static INLINE __m256i get_perm(int mask) {
+    static INLINE Tv partition_vector(Tv v, int mask) {
         assert(mask >= 0);
         assert(mask <= 15);
-        return _mm256_cvtepu8_epi32(_mm_loadu_si128((__m128i*)(perm_table + mask * 8)));
-        //return _mm256_cvtepu8_epi32(
-        //    _mm_cvtsi64_si128(*((int64_t*)perm_table + mask)));
+        return s2i(_mm256_permutevar8x32_ps(i2s(v), _mm256_cvtepu8_epi32(_mm_loadu_si128((__m128i*)(perm_table_64 + mask * 8)))));
     }
+
     static INLINE  Tv get_vec_pivot(int64_t pivot) {
         return _mm256_set1_epi64x(pivot);
     }
     static INLINE uint32_t get_cmpgt_mask(Tv a, Tv b) {
-        return _mm256_movemask_pd(_mm256_castsi256_pd(_mm256_cmpgt_epi64(a, b)));
+        return _mm256_movemask_pd(i2d(_mm256_cmpgt_epi64(a, b)));
     }
 };
 
 template <>
-class vxsort_partition_traits<int32_t> {
-private:
-    const static int8_t perm_table[2048];
+class vxsort_machine_traits<uint64_t, AVX2> {
+ private:
+ public:
+  typedef __m256i Tv;
+
+  static INLINE Tv load_vec(Tv* p) {
+    return _mm256_lddqu_si256(p);
+  }
+
+  static INLINE void store_vec(Tv* ptr, Tv v) {
+    _mm256_storeu_si256(ptr, v);
+  }
+
+  static INLINE Tv partition_vector(Tv v, int mask) {
+    assert(mask >= 0);
+    assert(mask <= 15);
+    return s2i(_mm256_permutevar8x32_ps(i2s(v), _mm256_cvtepu8_epi32(_mm_loadu_si128((__m128i*)(perm_table_64 + mask * 8)))));
+  }
+  static INLINE  Tv get_vec_pivot(int64_t pivot) {
+    return _mm256_set1_epi64x(pivot);
+  }
+  static INLINE uint32_t get_cmpgt_mask(Tv a, Tv b) {
+    __m256i top_bit = _mm256_set1_epi64x(1LLU << 63);
+    return _mm256_movemask_pd(i2d(_mm256_cmpgt_epi64(_mm256_xor_si256(top_bit, a), _mm256_xor_si256(top_bit, b))));
+  }
+};
+
+template <>
+class vxsort_machine_traits<double, AVX2> {
+ private:
+ public:
+  typedef __m256d Tv;
+
+  static INLINE Tv load_vec(Tv* p) {
+    return _mm256_loadu_pd((double *) p);
+  }
+
+  static INLINE void store_vec(Tv* ptr, Tv v) {
+    _mm256_storeu_pd((double *) ptr, v);
+  }
+
+  static INLINE Tv partition_vector(Tv v, int mask) {
+    assert(mask >= 0);
+    assert(mask <= 15);
+    return s2d(_mm256_permutevar8x32_ps(d2s(v), _mm256_cvtepu8_epi32(_mm_loadu_si128((__m128i*)(perm_table_64 + mask * 8)))));
+  }
+
+  static INLINE  Tv get_vec_pivot(double pivot) {
+    return _mm256_set1_pd(pivot);
+  }
+  static INLINE uint32_t get_cmpgt_mask(Tv a, Tv b) {
+    ///    0x0E: Greater-than (ordered, signaling) \n
+    ///    0x1E: Greater-than (ordered, non-signaling)
+    return _mm256_movemask_pd(_mm256_cmp_pd(a, b, 0x0E));
+  }
+};
+
+template <>
+class vxsort_machine_traits<int32_t, AVX2> {
 public:
     typedef __m256i Tv;
     static INLINE Tv load_vec(Tv* p) {
@@ -112,28 +207,123 @@ public:
       _mm256_storeu_si256(ptr, v);
     }
 
-    static INLINE __m256i get_perm(int mask) {
-        assert(mask >= 0);
-        assert(mask <= 255);
-        return _mm256_cvtepu8_epi32(_mm_loadu_si128((__m128i*)(perm_table + mask * 8)));
+    static INLINE Tv partition_vector(Tv v, int mask) {
+      assert(mask >= 0);
+      assert(mask <= 255);
+      return s2i(_mm256_permutevar8x32_ps(i2s(v), _mm256_cvtepu8_epi32(_mm_loadu_si128((__m128i*)(perm_table_32 + mask * 8)))));
     }
-    static INLINE __m256i get_vec_pivot(int32_t pivot) {
+
+    static INLINE Tv get_vec_pivot(int32_t pivot) {
         return _mm256_set1_epi32(pivot);
     }
-    static INLINE  uint32_t get_cmpgt_mask(__m256i a, __m256i b) {
-        return _mm256_movemask_ps(_mm256_castsi256_ps(_mm256_cmpgt_epi32(a, b)));
+    static INLINE  uint32_t get_cmpgt_mask(Tv a, Tv b) {
+        return _mm256_movemask_ps(i2s(_mm256_cmpgt_epi32(a, b)));
     }
 };
 
+template <>
+class vxsort_machine_traits<uint32_t, AVX2> {
+ public:
+  typedef __m256i Tv;
+  static INLINE Tv load_vec(Tv* p) {
+    return _mm256_lddqu_si256(p);
+  }
 
-template <typename T, int Unroll=1>
+  static INLINE void store_vec(Tv* ptr, Tv v) {
+    _mm256_storeu_si256(ptr, v);
+  }
+
+  static INLINE Tv partition_vector(Tv v, int mask) {
+    assert(mask >= 0);
+    assert(mask <= 255);
+    return s2i(_mm256_permutevar8x32_ps(i2s(v), _mm256_cvtepu8_epi32(_mm_loadu_si128((__m128i*)(perm_table_32 + mask * 8)))));
+  }
+
+  static INLINE Tv get_vec_pivot(uint32_t pivot) {
+    return _mm256_set1_epi32(pivot);
+  }
+  static INLINE  uint32_t get_cmpgt_mask(Tv a, Tv b) {
+    __m256i top_bit = _mm256_set1_epi32(1U << 31);
+    return _mm256_movemask_ps(i2s(_mm256_cmpgt_epi32(_mm256_xor_si256(top_bit, a), _mm256_xor_si256(top_bit, b))));
+  }
+};
+
+template <>
+class vxsort_machine_traits<float, AVX2> {
+ public:
+  typedef __m256 Tv;
+  static INLINE Tv load_vec(Tv* p) {
+    return _mm256_loadu_ps((float *)p);
+  }
+
+  static INLINE void store_vec(Tv* ptr, Tv v) {
+    _mm256_storeu_ps((float *) ptr, v);
+  }
+
+  static INLINE Tv partition_vector(Tv v, int mask) {
+    assert(mask >= 0);
+    assert(mask <= 255);
+    return _mm256_permutevar8x32_ps(v, _mm256_cvtepu8_epi32(_mm_loadu_si128((__m128i*)(perm_table_32 + mask * 8))));
+  }
+
+  static INLINE Tv get_vec_pivot(float pivot) {
+    return _mm256_set1_ps(pivot);
+  }
+
+  static INLINE  uint32_t get_cmpgt_mask(Tv a, Tv b) {
+    ///    0x0E: Greater-than (ordered, signaling) \n
+    ///    0x1E: Greater-than (ordered, non-signaling)
+    return _mm256_movemask_ps(_mm256_cmp_ps(a, b, 0x0E));
+  }
+};
+
+#endif
+#ifdef ARCH_ARM64
+#error "─│─│──╫▓▓▓╫──│─────│─│─│──────╫▓▓╫│──│─│"
+#error "──│─▓███████▓─╫╫╫╫╫╫╫╫╫╫╫╫╫│▓███████╫──"
+#error "───██████████████████████████████████▓─"
+#error "│─████████████│─│─│─│─────▓███████████╫"
+#error "╫█████────│───│─│───│─────│─│─│───╫████▓"
+#error "│████│──│───│───│─│───│───────│─│─│▓███╫"
+#error "─▓███│───────│─▓██───│╫██╫─│─│─│───▓███│"
+#error "──███─│──────╫████▓───█████────────▓███─"
+#error "──╫██──│─│──╫██████│─│██████─│─────▓██─│"
+#error "│─│▓█││─│─││███▓▓██─│─██▓▓███─│─│──▓█─│─"
+#error "────█│─│───███╫▓▓█▓│──█▓▓▓▓██▓─────▓█───"
+#error "│─││█││───▓███╫██▓╫─│─▓▓█▓▓███─────▓█───"
+#error "─│─╫█│─│─│████▓╫▓▓─────█▓╫████▓──│─▓█───"
+#error "│─││█╫│─││███████─│██╫│▓███████─│─│██─│─"
+#error "─│─│█▓╫╫─▓██████╫│─▓█│──▓██████│╫╫│██│─│"
+#error "│─│─██│╫│▓█████╫│───▓───│▓█████╫╫╫╫█▓──"
+#error "─│─│▓█╫││╫████╫│││╫██▓││││▓████│╫─▓█╫│─│"
+#error "│─│─│██│││╫▓▓││╫╫╫╫╫▓╫╫╫╫╫│╫▓▓╫││╫██──│─"
+#error "─│───▓██╫─────││││││─││││││────│▓██│────"
+#error "│─│─│─▓██▓╫╫╫╫╫╫╫╫▓▓▓▓▓╫╫╫╫╫╫╫▓███│────"
+#error "───────╫██████████▓▓▓▓▓██████████│────│"
+#error "│─│─│───▓█████████╫─│─▓█████████│─│─│─│"
+#error "─────────██████████──│█████████╫─│───││"
+#error "│─│─│───│▓█╫███████││▓███████╫█││─│─│─│"
+#error "───────│─██─╫██████▓─███████││█╫───│──│"
+#error "│───│───│██─││█████▓─█████▓─│╫█╫│──────"
+#error "─│─│───│─▓█──│─╫▓██│─▓██▓│─│─▓█│───────"
+#error "│───│─│─│─██────│─│───│─────│██───│─│─│"
+#error "─│─│───│─│▓██╫─│─│─────│─│─▓██││─│───│─│"
+#error "│───────│─│██████████████████▓│─│─│─│─│"
+#error "─│───│─│───│███████▓▓████████│─│───│──│"
+#error "│─│───│─│─│─│██████╫─▓█████▓────│─│─│──"
+#error "─────│─────╫│╫▓████▓─█████▓│╫╫───────│"
+#error "│─│───│───╫─╫╫╫╫███╫╫╫██▓╫│╫╫╫│─│─────"
+#endif
+
+
+template <typename T, vector_machine M, int Unroll=1>
 class vxsort {
     static_assert(Unroll >= 1, "Unroll can be in the range 1..12");
     static_assert(Unroll <= 12, "Unroll can be in the range 1..12");
 
 private:
     //using Tv2 = Tp::Tv;
-    using Tp = vxsort_partition_traits<T>;
+    using Tp = vxsort_machine_traits<T, M>;
     typedef typename Tp::Tv TV;
 
     static const int ELEMENT_ALIGN = sizeof(T) - 1;
@@ -222,7 +412,6 @@ private:
         _startPtr = start;
         _endPtr = end;
     }
-
 
     T* _startPtr = nullptr;
     T* _endPtr = nullptr;
@@ -337,22 +526,19 @@ private:
             // * Calculate pre-alignment on the left
             // * See it would cause us an out-of bounds read
             // * Since we'd like to avoid that, we adjust for post-alignment
-            // * There are no branches since we do branch->arithmetic
-            auto preAlignedLeft = (T*) ((size_t)left & ~ALIGN_MASK);
+            // * No branches since we do branch->arithmetic
+            auto preAlignedLeft = reinterpret_cast<T*>(reinterpret_cast<size_t>(left) & ~ALIGN_MASK);
             auto cannotPreAlignLeft = (preAlignedLeft - _startPtr) >> 63;
             realignHint.left_align = (preAlignedLeft - left) + (N & cannotPreAlignLeft);
             assert(alignment_hint::is_aligned(left + realignHint.left_align));
         }
 
         if (realignHint.right_align == alignment_hint::REALIGN) {
+            // Same as above, but in addition:
             // right is pointing just PAST the last element we intend to partition
-            // (where we also store the pivot) So we calculate alignment based on
-            // right - 1, and YES: I am casting to ulong before doing the -1, this is
-            // intentional since the whole thing is either aligned to 32 bytes or not,
-            // so decrementing the POINTER value by 1 is sufficient for the alignment,
-            // an the JIT sucks at this anyway
-            auto preAlignedRight =
-                    (T*) (((size_t)(right - 1) & ~ALIGN_MASK) + ALIGN);
+            // (it's pointing to where we will store the pivot!) So we calculate alignment based on
+            // right - 1
+            auto preAlignedRight = reinterpret_cast<T*>(((reinterpret_cast<size_t>(right) - 1) & ~ALIGN_MASK) + ALIGN);
             auto cannotPreAlignRight = (_endPtr - preAlignedRight) >> 63;
             realignHint.right_align = (preAlignedRight - right - (N & cannotPreAlignRight));
             assert(alignment_hint::is_aligned(right + realignHint.right_align));
@@ -385,7 +571,7 @@ private:
                                        T*& left,
                                        T*& right) {
         auto mask = Tp::get_cmpgt_mask(dataVec, P);
-        dataVec = _mm256_permutevar8x32_epi32(dataVec, Tp::get_perm(mask));
+        dataVec = Tp::partition_vector(dataVec, mask);
         Tp::store_vec(reinterpret_cast<TV*>(left), dataVec);
         Tp::store_vec(reinterpret_cast<TV*>(right), dataVec);
         auto popCount = -_mm_popcnt_u64(mask);
@@ -394,7 +580,7 @@ private:
     }
 
     template<int InnerUnroll>
-    T* vectorized_partition(T* left, T* right, alignment_hint hint) {
+    T* vectorized_partition(T* const left, T* const right, const alignment_hint hint) {
         assert(right - left >= SMALL_SORT_THRESHOLD_ELEMENTS);
         assert((reinterpret_cast<size_t>(left) & ELEMENT_ALIGN) == 0);
         assert((reinterpret_cast<size_t>(right) & ELEMENT_ALIGN) == 0);
@@ -440,18 +626,15 @@ private:
         *right = std::numeric_limits<T>::Max();
 
         // Broadcast the selected pivot
-        const TV P = Tp::get_vec_pivot(pivot);//_mm256_set1_epi64x(pivot);
+        const TV P = Tp::get_vec_pivot(pivot);
 
         auto readLeft = left;
         auto readRight = right;
-        auto writeLeft = left;
-        auto writeRight = right - N;
 
         auto tmpStartLeft = _temp;
         auto tmpLeft = tmpStartLeft;
         auto tmpStartRight = _temp + PARTITION_TMP_SIZE_IN_ELEMENTS;
         auto tmpRight = tmpStartRight;
-
 
         tmpRight -= N;
 
@@ -475,8 +658,8 @@ private:
         auto ltMask = Tp::get_cmpgt_mask(LT0, P);
         auto rtPopCount = max(_mm_popcnt_u32(rtMask), rightAlign);
         auto ltPopCount = _mm_popcnt_u32(ltMask);
-        RT0 = _mm256_permutevar8x32_epi32(RT0, Tp::get_perm(rtMask));
-        LT0 = _mm256_permutevar8x32_epi32(LT0, Tp::get_perm(ltMask));
+        RT0 = Tp::partition_vector(RT0, rtMask);
+        LT0 = Tp::partition_vector(LT0, ltMask);
         Tp::store_vec((TV*) tmpRight, RT0);
         Tp::store_vec((TV*) tmpLeft, LT0);
 
@@ -510,6 +693,7 @@ private:
                     align_right_scalar_uncommon(readRight, pivot, tmpLeft, tmpRight);
             tmpRight -= N;
         }
+
         assert(((size_t)readLeft & ALIGN_MASK) == 0);
         assert(((size_t)readRight & ALIGN_MASK) == 0);
 
@@ -537,6 +721,9 @@ private:
         readLeftV  += InnerUnroll;
         readRightV -= InnerUnroll*2;
         TV* nextPtr;
+
+        auto writeLeft = left;
+        auto writeRight = right - N;
 
         while (readLeftV < readRightV) {
             if (writeRight - ((T *) readRightV) < (2 * (InnerUnroll * N) - N)) {

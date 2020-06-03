@@ -19,7 +19,7 @@
 
 #include "gcpriv.h"
 
-#ifdef HOST_64BIT
+#ifdef TARGET_AMD64
 #define USE_VXSORT
 #else
 #define USE_INTROSORT
@@ -2094,8 +2094,8 @@ namespace std
 }
 void vxsort(uint8_t** low, uint8_t** high, unsigned int depth)
 {
-//    auto sorter = gcsort::vxsort<int64_t>();
-    auto sorter = gcsort::vxsort<int64_t, 8>();
+//    auto sorter = gcsort::vxsort<int64_t, gcsort::AVX2>();
+    auto sorter = gcsort::vxsort<int64_t, gcsort::AVX2, 8>();
     sorter.sort((int64_t*)low, (int64_t*)high);
 #ifdef _DEBUG
     for (uint8_t** p = low; p < high; p++)

@@ -1,7 +1,9 @@
+#include "vxsort.h"
+#include <stdint.h>
 
 namespace gcsort {
 
-alignas(128) const int8_t vxsort_partition_traits<int64_t>::perm_table[128] = {
+alignas(128) const int8_t perm_table_64[128] = {
         0, 1, 2, 3, 4, 5, 6, 7,  // 0b0000 (0)
         2, 3, 4, 5, 6, 7, 0, 1,  // 0b0001 (1)
         0, 1, 4, 5, 6, 7, 2, 3,  // 0b0010 (2)
@@ -20,7 +22,7 @@ alignas(128) const int8_t vxsort_partition_traits<int64_t>::perm_table[128] = {
         0, 1, 2, 3, 4, 5, 6, 7,  // 0b1111 (15)
 };
 
-alignas(2048) const int8_t vxsort_partition_traits<int32_t>::perm_table[2048] = {
+alignas(2048) const int8_t perm_table_32[2048] = {
     0, 1, 2, 3, 4, 5, 6, 7, // 0b00000000 (0)
     1, 2, 3, 4, 5, 6, 7, 0, // 0b00000001 (1)
     0, 2, 3, 4, 5, 6, 7, 1, // 0b00000010 (2)
@@ -278,5 +280,6 @@ alignas(2048) const int8_t vxsort_partition_traits<int32_t>::perm_table[2048] = 
     0, 1, 2, 3, 4, 5, 6, 7, // 0b11111110 (254)
     0, 1, 2, 3, 4, 5, 6, 7, // 0b11111111 (255)
 };
+
 }
 
