@@ -557,15 +557,11 @@ if defined __DoCrossgen (
 
 if defined __DoCrossgen2 (
     set __CrossgenArg="/p:Crossgen2=true"
-    if "%__BuildArch%" == "x64" (
-        echo %__MsgPrefix%Running crossgen2 on framework assemblies in CORE_ROOT: %CORE_ROOT%
-        call :PrecompileFX
-        if ERRORLEVEL 1 (
-            echo %__ErrMsgPrefix%%__MsgPrefix%Error: crossgen2 precompilation of framework assemblies failed
-            exit /b 1
-        )
-    ) else (
-        echo "%__MsgPrefix%Crossgen2 only supported on x64, for now"
+    echo %__MsgPrefix%Running crossgen2 on framework assemblies in CORE_ROOT: %CORE_ROOT%
+    call :PrecompileFX
+    if ERRORLEVEL 1 (
+        echo %__ErrMsgPrefix%%__MsgPrefix%Error: crossgen2 precompilation of framework assemblies failed
+        exit /b 1
     )
 )
 
