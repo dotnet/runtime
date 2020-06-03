@@ -5408,6 +5408,7 @@ mono_asmctx_get_name (const MonoAssemblyContext *asmctx)
 		"REFONLY",
 		"LOADFROM",
 		"INDIVIDIUAL",
+		"INTERNAL"
 	};
 	g_assert (asmctx->kind >= 0 && asmctx->kind <= MONO_ASMCTX_LAST);
 	return names [asmctx->kind];
