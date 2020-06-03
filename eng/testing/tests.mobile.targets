@@ -119,10 +119,15 @@
     </AppleAppBuilderTask>
 
     <ItemGroup>
-      <XHarnessAppFoldersToTest Include="$(AppBundlePath)">
+      <_appFiles Include="$(AppBundlePath)/../**/*" />
+      <XHarnessAppFoldersToTest Include="$(BundleDir)/bin/$(TestProjectName).app">
         <Targets>ios-simulator-64</Targets>
       </XHarnessAppFoldersToTest>
     </ItemGroup>
+
+    <Copy SourceFiles="@(_appFiles)"
+          DestinationFolder="$(BundleDir)/bin/%(RecursiveDir)" SkipUnchangedFiles="true"/>
+
   </Target>
 
   <!-- Overrides ArchiveTests in tests.targets -->
