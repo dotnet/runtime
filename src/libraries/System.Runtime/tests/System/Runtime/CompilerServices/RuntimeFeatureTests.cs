@@ -51,7 +51,7 @@ namespace System.Runtime.CompilerServices.Tests
         
         [Theory]
         [MemberData(nameof(GetStaticFeatureNames))]
-        public static StaticDataMatchesDynamicProbing(string probedValue)
+        public static void StaticDataMatchesDynamicProbing(string probedValue)
         {
             Assert.True(RuntimeFeature.IsSupported(probedValue));
         }
