@@ -61,18 +61,19 @@ $(CLRTestBatchPreCommands)
     <BashCLRTestPreCommands><![CDATA[
 $(BashCLRTestPreCommands)
 
-    __ResponseFile=$scriptPath/multifolder.rsp
+    __OutputDir=$PWD
+    __ResponseFile=$__OutputDir/multifolder.rsp
     rm $__ResponseFile
     echo --composite>>$__ResponseFile
     echo -r:$CORE_ROOT/System.*.dll>>$__ResponseFile
     echo -r:$CORE_ROOT/Microsoft.*.dll>>$__ResponseFile
     echo -r:$CORE_ROOT/mscorlib.dll>>$__ResponseFile
     echo -r:$CORE_ROOT/netstandard.dll>>$__ResponseFile
-    echo -o:$scriptPath/multifolder-composite.dll>>$__ResponseFile
-    echo --crp:$scriptPath/..>>$__ResponseFile
-    echo $scriptPath/multifolder.dll>>$__ResponseFile
-    echo $scriptPath/../FolderA/FolderA/FolderA.dll>>$__ResponseFile
-    echo $scriptPath/../FolderB/FolderB/FolderB.dll>>$__ResponseFile
+    echo -o:$__OutputDir/multifolder-composite.dll>>$__ResponseFile
+    echo --crp:$__OutputDir/..>>$__ResponseFile
+    echo $__OutputDir/multifolder.dll>>$__ResponseFile
+    echo $__OutputDir/../FolderA/FolderA/FolderA.dll>>$__ResponseFile
+    echo $__OutputDir/../FolderB/FolderB/FolderB.dll>>$__ResponseFile
 
     __Command=$_DebuggerFullPath
     # Tests run locally need __TestDotNetCmd (set by runtest.py) or a compatible 5.0 dotnet runtime in the path
@@ -90,8 +91,8 @@ $(BashCLRTestPreCommands)
     echo Running crossgen2: $__Command
     $__Command
 
-    ExePath=$scriptPath/multifolder/multifolder.dll
-    export COMPlus_NativeImageSearchPaths=$scriptPath
+    ExePath=$__OutputDir/multifolder/multifolder.dll
+    export COMPlus_NativeImageSearchPaths=$__OutputDir
 
 ]]></BashCLRTestPreCommands>
   </PropertyGroup>
