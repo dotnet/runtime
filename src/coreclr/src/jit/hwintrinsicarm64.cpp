@@ -358,6 +358,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
     switch (intrinsic)
     {
+        case NI_Vector64_As:
         case NI_Vector64_AsByte:
         case NI_Vector64_AsDouble:
         case NI_Vector64_AsInt16:
@@ -379,6 +380,9 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         case NI_Vector128_AsUInt16:
         case NI_Vector128_AsUInt32:
         case NI_Vector128_AsUInt64:
+        case NI_Vector128_AsVector:
+        case NI_Vector128_AsVector4:
+        case NI_Vector128_AsVector128:
         {
             assert(!sig->hasThis());
             assert(numArgs == 1);
@@ -449,6 +453,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             retNode = countNode;
             break;
         }
+
         case NI_Vector64_get_Zero:
         case NI_Vector64_get_AllBitsSet:
         case NI_Vector128_get_Zero:
@@ -460,6 +465,80 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             retNode = gtNewSimdHWIntrinsicNode(retType, intrinsic, baseType, simdSize);
             break;
         }
+
+        case NI_Vector64_WithElement:
+        case NI_Vector128_WithElement:
+        {
+            assert(numArgs == 3);
+            GenTree* indexOp = impStackTop(1).val;
+            if (!indexOp->OperIsConst())
+            {
+                // If index is not constant use software fallback.
+                return nullptr;
+            }
+
+            ssize_t imm8  = indexOp->AsIntCon()->IconValue();
+            ssize_t count = simdSize / genTypeSize(baseType);
+
+            if (imm8 >= count || imm8 < 0)
+            {
+                // Using software fallback if index is out of range (throw exeception)
+                return nullptr;
+            }
+
+            GenTree* valueOp = impPopStack().val;
+            impPopStack(); // pop the indexOp that we already have.
+            GenTree* vectorOp = impSIMDPopStack(getSIMDTypeForSize(simdSize));
+
+            switch (baseType)
+            {
+                case TYP_LONG:
+                case TYP_ULONG:
+                case TYP_DOUBLE:
+                    if (simdSize == 16)
+                    {
+                        retNode = gtNewSimdHWIntrinsicNode(retType, vectorOp, gtNewIconNode(imm8), valueOp,
+                                                           NI_AdvSimd_Insert, baseType, simdSize);
+                    }
+                    else
+                    {
+                        retNode = gtNewSimdHWIntrinsicNode(retType, valueOp, NI_Vector64_Create, baseType, simdSize);
+                    }
+                    break;
+
+                case TYP_FLOAT:
+                case TYP_BYTE:
+                case TYP_UBYTE:
+                case TYP_SHORT:
+                case TYP_USHORT:
+                case TYP_INT:
+                case TYP_UINT:
+                    retNode = gtNewSimdHWIntrinsicNode(retType, vectorOp, gtNewIconNode(imm8), valueOp,
+                                                       NI_AdvSimd_Insert, baseType, simdSize);
+                    break;
+
+                default:
+                    return nullptr;
+            }
+
+            break;
+        }
+
+        case NI_Vector128_GetUpper:
+        {
+            // Converts to equivalent managed code:
+            //   AdvSimd.ExtractVector128(vector, Vector128<T>.Zero, 8 / sizeof(T)).GetLower();
+            assert(numArgs == 1);
+            op1            = impPopStack().val;
+            GenTree* zero  = gtNewSimdHWIntrinsicNode(retType, NI_Vector128_get_Zero, baseType, simdSize);
+            ssize_t  index = 8 / genTypeSize(baseType);
+
+            retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, zero, gtNewIconNode(index), NI_AdvSimd_ExtractVector128,
+                                               baseType, simdSize);
+            retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD8, retNode, NI_Vector128_GetLower, baseType, 8);
+            break;
+        }
+
         default:
         {
             return nullptr;
