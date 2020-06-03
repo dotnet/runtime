@@ -9,6 +9,7 @@ parameters:
   variables: {}
   timeoutInMinutes: ''
   pool: ''
+  condition: true
 
 jobs:
 - template: /eng/common/templates/job/job.yml
@@ -19,10 +20,19 @@ jobs:
     pool: ${{ parameters.pool }}
     container: ${{ parameters.container }}
     timeoutInMinutes: ${{ parameters.timeoutInMinutes }}
+    condition: and(succeeded(), ${{ parameters.condition }})
     workspace:
       clean: all
 
-    variables: ${{ parameters.variables }}
+    variables:
+      - name: _osParameter
+        value: -os ${{ parameters.osGroup }}
+      
+      - ${{ if and(eq(parameters.osGroup, 'Linux'), eq(parameters.osSubGroup, '_musl')) }}:
+        - name: _osParameter
+          value: /p:RuntimeOS=linux-musl /p:OutputRid=linux-musl-${{ parameters.archType }}
+
+      - ${{ parameters.variables }}
 
     steps:
     - template: /eng/pipelines/common/clone-checkout-bundle-step.yml
@@ -37,7 +47,7 @@ jobs:
         displayName: Disk Usage before Build
 
     # Build
-    - script: $(Build.SourcesDirectory)$(dir)build$(scriptExt) -ci -arch ${{ parameters.archType }} ${{ parameters.buildArgs }}
+    - script: $(Build.SourcesDirectory)$(dir)build$(scriptExt) -ci -arch ${{ parameters.archType }} $(_osParameter) ${{ parameters.buildArgs }}
       displayName: Build product
 
     - ${{ if in(parameters.osGroup, 'OSX', 'iOS','tvOS') }}: 
@@ -51,6 +61,6 @@ jobs:
       inputs:
         PathtoPublish: '$(Build.SourcesDirectory)/artifacts/log/'
         PublishLocation: Container
-        ArtifactName: $(Agent.Os)_PublishBuildAssets
+        ArtifactName: Logs_Build_${{ parameters.osGroup }}_${{ parameters.osSubGroup }}_${{ parameters.archType }}_${{ parameters.buildConfig }}_${{ parameters.nameSuffix }}
       continueOnError: true
       condition: always()

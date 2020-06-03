@@ -30,6 +30,21 @@ jobs:
       - name: System.DisableZipDownload
         value: true
 
+      - ${{ if eq(parameters.jobParameters.buildConfig, 'checked') }}:
+        - name: buildConfigUpper
+          value: 'Checked'
+
+      - ${{ if eq(parameters.jobParameters.buildConfig, 'debug') }}:
+        - name: buildConfigUpper
+          value: 'Debug'
+
+      - ${{ if eq(parameters.jobParameters.buildConfig, 'release') }}:
+        - name: buildConfigUpper
+          value: 'Release'
+
+      - name: _BuildConfig
+        value: $(buildConfigUpper)
+
       - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
         - name: archiveExtension
           value: '.zip'

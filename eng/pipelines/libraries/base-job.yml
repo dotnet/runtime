@@ -38,7 +38,6 @@ jobs:
       pool: ${{ parameters.pool }}
       variables:
         - _buildScriptFileName: build
-        - _BuildConfig: ${{ parameters.buildConfig }}
 
         - _msbuildCommonParameters: ''
         # rename this variable, due to collision with build-native.proj
