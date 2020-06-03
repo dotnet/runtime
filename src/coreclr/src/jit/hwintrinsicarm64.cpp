@@ -477,7 +477,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                 return nullptr;
             }
 
-            ssize_t imm8 = indexOp->AsIntCon()->IconValue();
+            ssize_t imm8  = indexOp->AsIntCon()->IconValue();
             ssize_t count = simdSize / genTypeSize(baseType);
 
             if (imm8 >= count || imm8 < 0)
@@ -529,9 +529,9 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             // Converts to equivalent managed code:
             //   AdvSimd.ExtractVector128(vector, Vector128<T>.Zero, 8 / sizeof(T)).GetLower();
             assert(numArgs == 1);
-            op1           = impPopStack().val;
+            op1            = impPopStack().val;
             GenTree* zero  = gtNewSimdHWIntrinsicNode(retType, NI_Vector128_get_Zero, baseType, simdSize);
-            ssize_t index = 8 / genTypeSize(baseType);
+            ssize_t  index = 8 / genTypeSize(baseType);
 
             retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, zero, gtNewIconNode(index), NI_AdvSimd_ExtractVector128,
                                                baseType, simdSize);
