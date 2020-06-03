@@ -64,6 +64,20 @@ function Get-Help() {
   Write-Host "Command-line arguments not listed above are passed through to MSBuild."
   Write-Host "The above arguments can be shortened as much as to be unambiguous."
   Write-Host "(Example: -con for configuration, -t for test, etc.)."
+  Write-Host ""
+
+  Write-Host "Here are some quick examples:"
+  Write-Host ""
+  Write-Host "Build CoreCLR on Windows for x64 on release configuration:"
+  Write-Host ".\build.cmd -subset clr -os Windows_NT -arch x64 -configuration Release"
+  Write-Host ""
+  Write-Host "Cross-compile CoreCLR runtime on Windows for ARM64."
+  Write-Host ".\build.cmd -subset clr.runtime -os Windows_NT -arch arm64 -configuration Release"
+  Write-Host ""
+  Write-Host "Build Debug libraries with a Release runtime."
+  Write-Host ".\build.cmd -subset clr+libs -os Windows_NT -arch x64 -runtimeConfiguration Release"
+  Write-Host ""
+  Write-Host "For more information, check out https://github.com/dotnet/runtime/blob/master/docs/workflow/README.md"
 }
 
 if ($help -or (($null -ne $properties) -and ($properties.Contains('/help') -or $properties.Contains('/?')))) {

@@ -62,9 +62,28 @@ usage()
   echo "  --cmakeargs                User-settable additional arguments passed to CMake."
   echo "  --gcc                      Optional argument to build using gcc in PATH (default)"
   echo "  --gccx.y                   Optional argument to build using gcc version x.y"
+  echo ""
 
   echo "Command line arguments starting with '/p:' are passed through to MSBuild."
   echo "Arguments can also be passed in with a single hyphen."
+  echo ""
+
+  echo "Here are some quick examples:"
+  echo ""
+  echo "Build CoreCLR on Linux for x64 on release configuration:"
+  echo "./build.sh --subset clr --os linux --arch x64 --configuration release"
+  echo ""
+  echo "Build Debug libraries with a Release runtime."
+  echo "./build.sh --subset clr+libs --os linux --arch x64 --runtimeConfiguration release"
+  echo ""
+  echo "Cross-compile CoreCLR runtime on Linux for ARM64."
+  echo "./build.sh -subset clr.runtime --os linux --arch arm64 --configuration release --cross"
+  echo ""
+  echo "However, for this last example, you need to already have ROOTFS_DIR set up."
+  echo "Further information on this can be found here:"
+  echo "https://github.com/dotnet/runtime/blob/master/docs/workflow/building/coreclr/linux-instructions.md"
+  echo ""
+  echo "For more general information, check out https://github.com/dotnet/runtime/blob/master/docs/workflow/README.md"
 }
 
 initDistroRid()
