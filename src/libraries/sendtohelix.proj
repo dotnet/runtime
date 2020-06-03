@@ -40,13 +40,6 @@
     <DotNetCliVersion>$([System.Text.RegularExpressions.Regex]::Match($(GlobalJsonContent), '(%3F&lt;="dotnet": ").*(%3F=")'))</DotNetCliVersion>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(TargetsMobile)' == 'true'">
-    <!-- Use helix feature to include dotnet CLI for every workitem and add it to the path -->
-    <IncludeDotNetCli>true</IncludeDotNetCli>
-    <DotNetCliPackageType>sdk</DotNetCliPackageType>
-    <DotNetCliVersion>3.1.201</DotNetCliVersion>
-  </PropertyGroup>
-
   <PropertyGroup Condition="'$(HelixType)' == ''">
     <!-- For PRs we want helixtype to be the same for all frameworks except package testing-->
     <TestScope Condition="'$(TestScope)' == ''">innerloop</TestScope>
@@ -76,13 +69,6 @@
     
     <HelixCommand Condition="'$(TargetOS)' == 'Windows_NT'">call RunTests.cmd --runtime-path %HELIX_CORRELATION_PAYLOAD%</HelixCommand>
     <HelixCommand Condition="'$(TargetOS)' != 'Windows_NT'">$(HelixCommand)./RunTests.sh --runtime-path "$HELIX_CORRELATION_PAYLOAD"</HelixCommand>
-  </PropertyGroup>
-
-  <PropertyGroup Condition="'$(TargetsMobile)' == 'true'">
-    <HelixPreCommands>"$HELIX_CORRELATION_PAYLOAD"/dotnet/dotnet tool install --tool-path "$HELIX_CORRELATION_PAYLOAD"/xharness-cli --version $(MicrosoftDotNetXHarnessTestRunnersXunitVersion) --add-source https://dnceng.pkgs.visualstudio.com/public/_packaging/dotnet-eng/nuget/v3/index.json Microsoft.DotNet.XHarness.CLI;</HelixPreCommands>
-    <HelixPreCommands>$(HelixPreCommands) export DOTNET_ROOT="$HELIX_CORRELATION_PAYLOAD"/dotnet; export PATH="$HELIX_CORRELATION_PAYLOAD"/xharness-cli:$PATH</HelixPreCommands>
-    <HelixCommand Condition="'$(TargetsiOS)' == 'true'">sudo launchctl asuser `id -u` sh $(HelixCommand)./RunTests.sh</HelixCommand>
-    <HelixCommand Condition="'$(TargetsiOS)' != 'true'">$(HelixCommand)./RunTests.sh</HelixCommand>
   </PropertyGroup>
 
   <!--

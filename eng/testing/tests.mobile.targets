@@ -119,14 +119,10 @@
     </AppleAppBuilderTask>
 
     <ItemGroup>
-      <_appFiles Include="$(AppBundlePath)/../**/*" />
+      <XHarnessAppFoldersToTest Include="$(AppBundlePath)">
+        <Targets>ios-simulator-64</Targets>
+      </XHarnessAppFoldersToTest>
     </ItemGroup>
-
-    <Copy SourceFiles="@(_appFiles)"
-          DestinationFolder="$(BundleDir)/bin/%(RecursiveDir)" SkipUnchangedFiles="true"/>
-    <Message Importance="High" Text="Xcode: $(XcodeProjectPath)"/>
-    <Message Importance="High" Text="App: $(AppBundlePath)"/>
-    <!-- This app is now can be consumed by xharness CLI to deploy on a device or simulator -->
   </Target>
 
   <!-- Overrides ArchiveTests in tests.targets -->
