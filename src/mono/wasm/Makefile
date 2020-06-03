@@ -120,4 +120,4 @@ app-builder:
 	$(DOTNET) build $(TOP)/tools-local/tasks/mobile.tasks/WasmAppBuilder
 
 run-tests-%:
-	PATH="$(JSVU):$(PATH)" $(DOTNET) build $(TOP)/src/libraries/$*/tests/ /t:Test /p:TargetOS=Browser /p:TargetArchitecture=wasm /p:Configuration=Release
+	PATH="$(JSVU):$(PATH)" $(DOTNET) build $(TOP)/src/libraries/$*/tests/ /t:Test /p:TargetOS=Browser /p:TargetArchitecture=wasm /p:Configuration=$(CONFIG)
