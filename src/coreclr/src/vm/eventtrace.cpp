@@ -3462,7 +3462,7 @@ BOOL ETW::TypeSystemLog::AddTypeToGlobalCacheIfNotExists(TypeHandle th, BOOL * p
 
     BOOL fSucceeded = FALSE;
 
-    {
+   {
         CrstHolder _crst(GetHashCrst());
 
         // Check if ETW is enabled, and if not, bail here.
@@ -3487,42 +3487,62 @@ BOOL ETW::TypeSystemLog::AddTypeToGlobalCacheIfNotExists(TypeHandle th, BOOL * p
                 return fSucceeded;
             }
         }
+    }
 
-        // Step 1: go from LoaderModule to hash of types.
+    // Step 1: go from LoaderModule to hash of types.
+    Module * pLoaderModule = th.GetLoaderModule();
+    _ASSERTE(pLoaderModule != NULL);
+    LoggedTypesFromModule * pLoggedTypesFromModule = nullptr;
+    {
+        CrstHolder _crst(GetHashCrst());
+        pLoggedTypesFromModule = s_pAllLoggedTypes->allLoggedTypesHash.Lookup(pLoaderModule);
+    }
 
-        Module * pLoaderModule = th.GetLoaderModule();
-        _ASSERTE(pLoaderModule != NULL);
-        LoggedTypesFromModule * pLoggedTypesFromModule = s_pAllLoggedTypes->allLoggedTypesHash.Lookup(pLoaderModule);
+    if (pLoggedTypesFromModule == NULL)
+    {
+        pLoggedTypesFromModule = new (nothrow) LoggedTypesFromModule(pLoaderModule);
         if (pLoggedTypesFromModule == NULL)
         {
-            pLoggedTypesFromModule = new (nothrow) LoggedTypesFromModule(pLoaderModule);
-            if (pLoggedTypesFromModule == NULL)
+            // out of memory.  Bail on ETW stuff
+            *pfCreatedNew = FALSE;
+            return fSucceeded;
+        }
+        {
+            CrstHolder _crst(GetHashCrst());
+            // recheck if the type has been added by another thread since we last checked above
+            LoggedTypesFromModule * recheckLoggedTypesFromModule = s_pAllLoggedTypes->allLoggedTypesHash.Lookup(pLoaderModule);
+            if (recheckLoggedTypesFromModule == NULL)
             {
-                // out of memory.  Bail on ETW stuff
-                *pfCreatedNew = FALSE;
-                return fSucceeded;
+                EX_TRY
+                {
+                    s_pAllLoggedTypes->allLoggedTypesHash.Add(pLoggedTypesFromModule);
+                    fSucceeded = TRUE;
+                }
+                EX_CATCH
+                {
+                    fSucceeded = FALSE;
+                }
+                EX_END_CATCH(RethrowTerminalExceptions);
+            }
+            else
+            {
+                delete pLoggedTypesFromModule;
+                pLoggedTypesFromModule = recheckLoggedTypesFromModule;
             }
 
-            fSucceeded = FALSE;
-            EX_TRY
-            {
-                s_pAllLoggedTypes->allLoggedTypesHash.Add(pLoggedTypesFromModule);
-                fSucceeded = TRUE;
-            }
-            EX_CATCH
-            {
-                fSucceeded = FALSE;
-            }
-            EX_END_CATCH(RethrowTerminalExceptions);
             if (!fSucceeded)
             {
                 *pfCreatedNew = FALSE;
                 return fSucceeded;
             }
         }
+    }
 
-        // Step 2: From hash of types, see if our TypeHandle is there already
-        TypeLoggingInfo typeLoggingInfoPreexisting = pLoggedTypesFromModule->loggedTypesFromModuleHash.Lookup(th);
+    // Step 2: From hash of types, see if our TypeHandle is there already
+    TypeLoggingInfo typeLoggingInfoPreexisting;
+    {
+        CrstHolder _crst(GetHashCrst());
+        typeLoggingInfoPreexisting = pLoggedTypesFromModule->loggedTypesFromModuleHash.Lookup(th);
         if (!typeLoggingInfoPreexisting.th.IsNull())
         {
             // Type is already hashed, so it's already logged, so we don't need to
@@ -3530,12 +3550,22 @@ BOOL ETW::TypeSystemLog::AddTypeToGlobalCacheIfNotExists(TypeHandle th, BOOL * p
             *pfCreatedNew = FALSE;
             return fSucceeded;
         }
+    }
 
-        // We haven't logged this type, so we need to continue with this function to
-        // log it below. Add it to the hash table first so any recursive calls will
-        // see that this type is already being taken care of
-        fSucceeded = FALSE;
-        TypeLoggingInfo typeLoggingInfoNew(th);
+    // We haven't logged this type, so we need to continue with this function to
+    // log it below. Add it to the hash table first so any recursive calls will
+    // see that this type is already being taken care of
+    fSucceeded = FALSE;
+    TypeLoggingInfo typeLoggingInfoNew(th);
+    {
+        CrstHolder _crst(GetHashCrst());
+        // Like above, check if the type has been added from a different thread since we last looked it up.
+        if (pLoggedTypesFromModule->loggedTypesFromModuleHash.Lookup(th).th.IsNull())
+        {
+            *pfCreatedNew = FALSE;
+            return fSucceeded;
+        }
+
         EX_TRY
         {
             pLoggedTypesFromModule->loggedTypesFromModuleHash.Add(typeLoggingInfoNew);
@@ -3555,7 +3585,6 @@ BOOL ETW::TypeSystemLog::AddTypeToGlobalCacheIfNotExists(TypeHandle th, BOOL * p
 
     *pfCreatedNew = TRUE;
     return fSucceeded;
-
 }
 
 //---------------------------------------------------------------------------------------
