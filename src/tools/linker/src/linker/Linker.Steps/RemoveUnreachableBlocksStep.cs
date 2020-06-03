@@ -74,7 +74,7 @@ namespace Mono.Linker.Steps
 						continue;
 					}
 
-					if (method.IsIntrinsic ())
+					if (method.IsIntrinsic () || method.NoInlining)
 						continue;
 
 					if (constExprMethods.ContainsKey (method))
