@@ -17,36 +17,43 @@ scriptroot="$( cd -P "$( dirname "$source" )" && pwd )"
 usage()
 {
   echo "Common settings:"
-  echo "  --subset                   Build a subset, print available subsets with -subset help (short: -s)"
-  echo "  --os                       Build operating system: Windows_NT, Linux, FreeBSD, OSX, tvOS, iOS, Android, Browser, NetBSD or SunOS"
   echo "  --arch                     Build platform: x86, x64, arm, armel, arm64 or wasm"
-  echo "  --configuration            Build configuration: Debug, Release or [CoreCLR]Checked (short: -c)"
-  echo "  --runtimeConfiguration     Runtime build configuration: Debug, Release or [CoreCLR]Checked (short: -rc)"
-  echo "  --librariesConfiguration   Libraries build configuration: Debug or Release (short: -lc)"
-  echo "  --projects <value>         Project or solution file(s) to build"
-  echo "  --verbosity                MSBuild verbosity: q[uiet], m[inimal], n[ormal], d[etailed], and diag[nostic] (short: -v)"
+  echo "                             [Default: Your machine's architecture.]"
   echo "  --binaryLog                Output binary log (short: -bl)"
   echo "  --cross                    Optional argument to signify cross compilation"
+  echo "  --configuration            Build configuration: Debug, Release or [CoreCLR]Checked (short: -c)"
+  echo "                             [Default: Debug]"
   echo "  --help                     Print help and exit (short: -h)"
+  echo "  --librariesConfiguration   Libraries build configuration: Debug or Release (short: -lc)"
+  echo "                             [Default: Debug]"
+  echo "  --os                       Build operating system: Windows_NT, Linux, FreeBSD, OSX, tvOS, iOS, Android, Browser, NetBSD or SunOS"
+  echo "                             [Default: Your machine's OS.]"
+  echo "  --projects <value>         Project or solution file(s) to build"
+  echo "  --runtimeConfiguration     Runtime build configuration: Debug, Release or [CoreCLR]Checked (short: -rc)"
+  echo "                             [Default: Debug]"
+  echo "  --subset                   Build a subset, print available subsets with -subset help (short: -s)"
+  echo "                             [Default: Builds the entire repo.]"
+  echo "  --verbosity                MSBuild verbosity: q[uiet], m[inimal], n[ormal], d[etailed], and diag[nostic] (short: -v)"
+  echo "                             [Default: Minimal]"
   echo ""
 
   echo "Actions (defaults to --restore --build):"
-  echo "  --restore                  Restore dependencies (short: -r)"
   echo "  --build                    Build all source projects (short: -b)"
-  echo "  --rebuild                  Rebuild all source projects"
-  echo "  --test                     Build and run tests (short: -t)"
-  echo "  --pack                     Package build outputs into NuGet packages"
-  echo "  --sign                     Sign build outputs"
-  echo "  --publish                  Publish artifacts (e.g. symbols)"
   echo "  --clean                    Clean the solution"
+  echo "  --pack                     Package build outputs into NuGet packages"
+  echo "  --publish                  Publish artifacts (e.g. symbols)"
+  echo "  --rebuild                  Rebuild all source projects"
+  echo "  --restore                  Restore dependencies (short: -r)"
+  echo "  --sign                     Sign build outputs"
+  echo "  --test                     Build and run tests (short: -t)"
   echo ""
 
   echo "Libraries settings:"
-  echo "  --framework                Build framework: net5.0 or net472 (short: -f)"
-  echo "  --coverage                 Collect code coverage when testing"
-  echo "  --testscope                Test scope, allowed values: innerloop, outerloop, all"
-  echo "  --testnobuild              Skip building tests when invoking -test"
   echo "  --allconfigurations        Build packages for all build configurations"
+  echo "  --coverage                 Collect code coverage when testing"
+  echo "  --framework                Build framework: net5.0 or net472 (short: -f)"
+  echo "  --testnobuild              Skip building tests when invoking -test"
+  echo "  --testscope                Test scope, allowed values: innerloop, outerloop, all"
   echo ""
 
   echo "Native build settings:"
@@ -77,6 +84,12 @@ initDistroRid()
         passedRootfsDir=${ROOTFS_DIR}
     fi
     initDistroRidGlobal ${targetOs} ${buildArch} ${isPortableBuild} ${passedRootfsDir}
+}
+
+showSubsetHelp()
+{
+  argumentsForHelp="-restore -build /p:subset=help /clp:nosummary"
+  "$scriptroot/common/build.sh" $argumentsForHelp
 }
 
 arguments=''
@@ -110,9 +123,16 @@ while [[ $# > 0 ]]; do
 
      -subset|-s)
       if [ -z ${2+x} ]; then
-        arguments="$arguments /p:Subset=help"
-        shift 1
+        showSubsetHelp
+        exit 0
+        # arguments="$arguments /p:Subset=help"
+        # shift 1
       else
+        passedSubset="$(echo "$2" | awk '{print tolower($0)}')"
+        if [ $passedSubset == "help" ]; then
+          showSubsetHelp
+          exit 0
+        fi
         arguments="$arguments /p:Subset=$2"
         shift 2
       fi

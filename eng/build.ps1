@@ -20,43 +20,60 @@ Param(
 
 function Get-Help() {
   Write-Host "Common settings:"
-  Write-Host "  -subset                   Build a subset, print available subsets with -subset help (short: -s)"
-  Write-Host "  -vs                       Open the solution with VS using the locally acquired SDK. Path or solution name (ie -vs Microsoft.CSharp)"
-  Write-Host "  -os                       Build operating system: Windows_NT, Linux, OSX, or Browser"
-  Write-Host "  -arch                     Build platform: x86, x64, arm, arm64, or wasm (short: -a). Pass a comma-separated list to build for multiple architectures."
-  Write-Host "  -configuration            Build configuration: Debug, Release or [CoreCLR]Checked (short: -c). Pass a comma-separated list to build for multiple configurations"
-  Write-Host "  -runtimeConfiguration     Runtime build configuration: Debug, Release or [CoreCLR]Checked (short: -rc)"
-  Write-Host "  -librariesConfiguration   Libraries build configuration: Debug or Release (short: -lc)"
-  Write-Host "  -verbosity                MSBuild verbosity: q[uiet], m[inimal], n[ormal], d[etailed], and diag[nostic] (short: -v)"
+  Write-Host "  -arch                     Build platform: x86, x64, arm, arm64, or wasm (short: -a)."
+  Write-Host "                            Pass a comma-separated list to build for multiple architectures."
+  Write-Host "                            [Default: Your machine's architecture.]"
   Write-Host "  -binaryLog                Output binary log (short: -bl)"
+  Write-Host "  -configuration            Build configuration: Debug, Release or [CoreCLR]Checked (short: -c)."
+  Write-Host "                            Pass a comma-separated list to build for multiple configurations."
+  Write-Host "                            [Default: Debug]"
   Write-Host "  -help                     Print help and exit (short: -h)"
+  Write-Host "  -librariesConfiguration   Libraries build configuration: Debug or Release (short: -lc)"
+  Write-Host "                            [Default: Debug]"
+  Write-Host "  -os                       Build operating system: Windows_NT, Linux, OSX, or Browser"
+  Write-Host "                            [Default: Your machine's OS.]"
+  Write-Host "  -runtimeConfiguration     Runtime build configuration: Debug, Release or [CoreCLR]Checked (short: -rc)"
+  Write-Host "                            [Default: Debug]"
+  Write-Host "  -subset                   Build a subset, print available subsets with -subset help (short: -s)"
+  Write-Host "                            [Default: Builds the entire repo.]"
+  Write-Host "  -verbosity                MSBuild verbosity: q[uiet], m[inimal], n[ormal], d[etailed], and diag[nostic] (short: -v)"
+  Write-Host "                            [Default: Minimal]"
+  Write-Host "  -vs                       Open the solution with VS using the locally acquired SDK. Path or solution name."
+  Write-Host "                            (Example: -vs Microsoft.CSharp)"
   Write-Host ""
 
   Write-Host "Actions (defaults to -restore -build):"
-  Write-Host "  -restore                Restore dependencies"
   Write-Host "  -build                  Build all source projects (short: -b)"
-  Write-Host "  -rebuild                Rebuild all source projects"
-  Write-Host "  -test                   Build and run tests (short: -t)"
-  Write-Host "  -pack                   Package build outputs into NuGet packages"
-  Write-Host "  -sign                   Sign build outputs"
-  Write-Host "  -publish                Publish artifacts (e.g. symbols)"
   Write-Host "  -clean                  Clean the solution"
+  Write-Host "  -pack                   Package build outputs into NuGet packages"
+  Write-Host "  -publish                Publish artifacts (e.g. symbols)"
+  Write-Host "  -rebuild                Rebuild all source projects"
+  Write-Host "  -restore                Restore dependencies"
+  Write-Host "  -sign                   Sign build outputs"
+  Write-Host "  -test                   Build and run tests (short: -t)"
   Write-Host ""
 
   Write-Host "Libraries settings:"
-  Write-Host "  -framework              Build framework: net5.0 or net472 (short: -f)"
-  Write-Host "  -coverage               Collect code coverage when testing"
-  Write-Host "  -testscope              Scope tests, allowed values: innerloop, outerloop, all"
-  Write-Host "  -testnobuild            Skip building tests when invoking -test"
   Write-Host "  -allconfigurations      Build packages for all build configurations"
+  Write-Host "  -coverage               Collect code coverage when testing"
+  Write-Host "  -framework              Build framework: net5.0 or net472 (short: -f)"
+  Write-Host "  -testnobuild            Skip building tests when invoking -test"
+  Write-Host "  -testscope              Scope tests, allowed values: innerloop, outerloop, all"
   Write-Host ""
 
-  Write-Host "Command-line arguments not listed above are passed thru to msbuild."
-  Write-Host "The above arguments can be shortened as much as to be unambiguous (e.g. -con for configuration, -t for test, etc.)."
+  Write-Host "Command-line arguments not listed above are passed through to MSBuild."
+  Write-Host "The above arguments can be shortened as much as to be unambiguous."
+  Write-Host "(Example: -con for configuration, -t for test, etc.)."
 }
 
 if ($help -or (($null -ne $properties) -and ($properties.Contains('/help') -or $properties.Contains('/?')))) {
   Get-Help
+  exit 0
+}
+
+if ($subset -eq 'help') {
+  $argumentsForHelp = "-restore -build /p:subset=help /clp:nosummary"
+  Invoke-Expression "& `"$PSScriptRoot/common/build.ps1`" $argumentsForHelp"
   exit 0
 }
 
