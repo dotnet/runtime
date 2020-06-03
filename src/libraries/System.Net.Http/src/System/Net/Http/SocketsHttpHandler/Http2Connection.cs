@@ -833,7 +833,7 @@ namespace System.Net.Http
 
                 // Invoke the callback with the supplied state and the target write buffer.
                 _outgoingBuffer.EnsureAvailableSpace(writeBytes);
-                lockedAction(state, _outgoingBuffer.AvailableMemory.Slice(0, writeBytes));
+                lockedAction(state, _outgoingBuffer.AvailableMemorySliced(writeBytes));
             }
             finally
             {
