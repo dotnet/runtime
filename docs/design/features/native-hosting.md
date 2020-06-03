@@ -51,7 +51,7 @@ The overall goal of hosting APIs is to enable loading and executing managed code
 To achieve these we will structure the hosting APIs into similar (but not exactly) 4 buckets.
 
 ### Locating hosting layer
-This means providing APIs to find and load the hosting layer. The end result should be that the native host has the right version of `hostfxr` loaded and can call its APIs. The exact solution is dependent on the native host application and its tooling. Ideally we would have a solution which works great for several common environments like C++ apps built in VS, C++ apps on Mac/Linux built with CMake (or similar) and so on.
+This means providing APIs to find and load the hosting layer. The end result should be that the native host has the right version of `hostfxr` loaded and can call its APIs. The exact solution is dependent on the native host application and its tooling. Ideally we would have a solution which works great for several common environments like C/C++ apps built in VS, C/C++ apps on Mac/Linux built with CMake (or similar) and so on.
 
 First step in this direction is the introduction of `nethost` library described below.
 
@@ -73,7 +73,7 @@ First step in this direction is the introduction of these APIs as described belo
 After this step it should be possible for the native host to inspect and potentially modify runtime properties. APIs like `hostfxr_get_runtime_property_value` and similar described below are an example of this.
 
 ### Loading managed code
-This step might be "virtual" in the sense that it's a way to setup the context for the desired functionality. In several scenarios it's not practical to be able to perform this step in separation from the "execute code" step below. The goal of this step is to determine which managed code to load and where it should be loaded, and to setup the correct inputs so that runtime can perform the right dependency resolution.
+This step might be "virtual" in the sense that it's a way to setup the context for the desired functionality. In several scenarios it's not practical to be able to perform this step in separation from the "execute code" step below. The goal of this step is to determine which managed code to load, where it should be loaded into, and to setup the correct inputs so that runtime can perform the right dependency resolution.
 
 The main functionality this step should provide is to determine which assembly load context will be used for loading which code:
 * Load all managed code into the default load context
@@ -364,10 +364,10 @@ Starts the runtime and returns a function pointer to specified functionality of 
 * `host_context_handle` - handle to the initialized host context.
 * `type` - the type of runtime functionality requested
   * `hdt_load_assembly_and_get_function_pointer` - entry point which loads an assembly (with dependencies) and returns function pointer for a specified static method. See below for details (Loading managed components)
-  * `hdt_get_function_pointer` - entry-point which finds a managed method and returns a function pointer to it. See below for details.
   * `hdt_com_activation`, `hdt_com_register`, `hdt_com_unregister` - COM activation entry-points - see [COM activation](https://github.com/dotnet/runtime/tree/master/docs/design/features/COM-activation.md) for more details.
   * `hdt_load_in_memory_assembly` - IJW entry-point - see [IJW activation](https://github.com/dotnet/runtime/tree/master/docs/design/features/IJW-activation.md) for more details.
-  * `hdt_winrt_activation` - removed WinRT activation entry-point. This delegate is not supported for .NET 5 or newer.
+  * `hdt_winrt_activation` **[.NET 3.\* only]** - WinRT activation entry-point - see [WinRT activation](https://github.com/dotnet/runtime/tree/master/docs/design/features/WinRT-activation.md) for more details. The delegate is not supported for .NET 5 and above.
+  * `hdt_get_function_pointer` **[.NET 5 and above]** - entry-point which finds a managed method and returns a function pointer to it. See below for details.
 * `delegate` - when successful, the native function pointer to the requested runtime functionality.
 
 In .NET Core 3.0 the function only works if `hostfxr_initialize_for_runtime_config` was used to initialize the host context.
@@ -399,28 +399,27 @@ Calling this function will load the specified assembly in isolation (into its ow
 * `type_name` - Assembly qualified type name to find
 * `method_name` - Name of the method on the `type_name` to find. The method must be `static` and must match the signature of `delegate_type_name`.
 * `delegate_type_name` - Assembly qualified delegate type name for the method signature, or null. If this is null, the method signature is assumed to be:
-```C#
-public delegate int ComponentEntryPoint(IntPtr args, int sizeBytes);
-```
-This maps to native signature:
-```C
-int component_entry_point_fn(void *arg, int32_t arg_size_in_bytes);
-```
-* `reserved` - parameter reserved for future extensibility, currently unused and must be `0`.
+    ```C#
+    public delegate int ComponentEntryPoint(IntPtr args, int sizeBytes);
+    ```
+    This maps to native signature:
+    ```C
+    int component_entry_point_fn(void *arg, int32_t arg_size_in_bytes);
+    ```
+    **[.NET 5 and above]** The `delegate_type_name` can be also specified as `UNMANAGEDCALLERSONLY_METHOD` (defined as `(const char_t*)-1`) which means that the managed method is marked with `UnmanagedCallersOnlyAttribute`.
+* `reserved` - parameter reserved for future extensibility, currently unused and must be `NULL`.
 * `delegate` - out parameter which receives the native function pointer to the requested managed method.
 
 The helper will always load the assembly into an isolated load context. This is the case regardless if the requested assembly is also available in the default load context or not.
 
-In .NET 5 it is allowed to call this helper on host context which came from `hostfxr_initialize_for_dotnet_command_line` which will make all the application assemblies available in the default load context. In such case it is recommended to only use this helper for loading plugins external to the application. Using the helper to load assembly from the application itself will lead to duplicate copies of assemblies and duplicate types.
-
-In .NET 5 it is also allowed to call this helper on the first host context (by passing `nullptr` for the host context). If the origin of the first host context is unknown it can be the application context as noted above and thus only external plugins should be loaded via the helper to avoid confusion.
+**[.NET 5 and above]** It is allowed to call this helper on a host context which came from `hostfxr_initialize_for_dotnet_command_line` which will make all the application assemblies available in the default load context. In such case it is recommended to only use this helper for loading plugins external to the application. Using the helper to load assembly from the application itself will lead to duplicate copies of assemblies and duplicate types.
 
 It is allowed to call the returned runtime helper many times for different assemblies or different methods from the same assembly. It is not required to get the helper every time. The implementation of the helper will cache loaded assemblies, so requests to load the same assembly twice will load it only once and reuse it from that point onward. Ideally components should not take a dependency on this behavior, which means components should not have global state. Global state in components is typically just cause for problems. For example it may create ordering issues or unintended side effects and so on.
 
 The returned native function pointer to managed method has the lifetime of the process and can be used to call the method many times over. Currently there's no way to unload the managed component or otherwise free the native function pointer. Such support may come in future releases.
 
 
-### Calling managed function
+### Calling managed function **[.NET 5 and above]**
 In .NET 5 the hosting layer adds a new functionality which allows just getting a native function pointer for already available managed method. This is implemented in a runtime helper `hdt_get_function_pointer`. Calling the `hostfxr_get_runtime_delegate(handle, hdt_get_function_pointer, &helper)` returns a function pointer to the runtime helper with this signature:
 ```C
 int get_function_pointer_fn(
@@ -436,22 +435,23 @@ Calling this function will find the specified type in the default load context, 
 * `type_name` - Assembly qualified type name to find
 * `method_name` - Name of the method on the `type_name` to find. The method must be `static` and must match the signature of `delegate_type_name`.
 * `delegate_type_name` - Assembly qualified delegate type name for the method signature, or null. If this is null, the method signature is assumed to be:
-```C#
-public delegate int ComponentEntryPoint(IntPtr args, int sizeBytes);
-```
-This maps to native signature:
-```C
-int component_entry_point_fn(void *arg, int32_t arg_size_in_bytes);
-```
-* `load_context` - eventually this parameter should support specifying which load context should be used to locate the type/method specified in previous parameters. For .NET 5 this parameter must be `nullptr` and the API will only locate the type/method in the default load context.
-* `reserved` - parameter reserved for future extensibility, currently unused and must be `nullptr`.
+    ```C#
+    public delegate int ComponentEntryPoint(IntPtr args, int sizeBytes);
+    ```
+    This maps to native signature:
+    ```C
+    int component_entry_point_fn(void *arg, int32_t arg_size_in_bytes);
+    ```
+    The `delegate_type_name` can be also specified as `UNMANAGEDCALLERSONLY_METHOD` (defined as `(const char_t*)-1`) which means that the managed method is marked with `UnmanagedCallersOnlyAttribute`.
+* `load_context` - eventually this parameter should support specifying which load context should be used to locate the type/method specified in previous parameters. For .NET 5 this parameter must be `NULL` and the API will only locate the type/method in the default load context.
+* `reserved` - parameter reserved for future extensibility, currently unused and must be `NULL`.
 * `delegate` - out parameter which receives the native function pointer to the requested managed method.
 
 The helper will lookup the `type_name` from the default load context (`AssemblyLoadContext.Default`) and then return method on it. If the type lookup requires any assemblies to be loaded, they will be resolved and loaded in the default load context.
 
 Because the helper operates on default load context only it should mostly be used with context initialized via `hostfxr_initialize_for_dotnet_command_line` as in that case the default load context will have the application code available in it. Contexts initialized via `hostfxr_initialize_for_runtime_config` have only the framework assemblies available in the default load context. The `type_name` must resolve within the default load context, so in the case where only framework assemblies are loaded into the default load context it would have to come from one of the framework assemblies only.
 
-It is allowed to call the helper on the first host context (by specifying `nullptr` for the context). If the origin of the first context is unknown, it can be the "component" one which only has framework assemblies in the default load context. Same limitation applies as noted above.
+It is allowed to call the helper on the first host context (by specifying `NULL` for the context). If the origin of the first context is unknown, it can be the "component" one which only has framework assemblies in the default load context. Same limitation applies as noted above.
 
 It is allowed to call the returned runtime helper many times for different types or methods. It is not required to get the helper every time.
 
