@@ -22,9 +22,7 @@ namespace System.Net.Security
                 return null;
             }
 
-            SafeCredentialReference result = new SafeCredentialReference(target);
-
-            return result;
+            return new SafeCredentialReference(target);
         }
         private SafeCredentialReference(SafeFreeCredentials target)
         {

@@ -131,9 +131,9 @@ namespace System.Net.Security
                 return null;
             }
 
-            if (NetEventSource.IsEnabled) NetEventSource.Info(null, $"Found a cached Handle = {cached?.Target}");
+            if (NetEventSource.IsEnabled) NetEventSource.Info(null, $"Found a cached Handle = {cached.Target}");
 
-            return cached?.Target;
+            return cached.Target;
         }
 
         //
@@ -213,13 +213,13 @@ namespace System.Net.Security
                     }
                     else if (NetEventSource.IsEnabled)
                     {
-                        if (NetEventSource.IsEnabled) NetEventSource.Info(null, $"CacheCredential() (locked retry) Found already cached Handle = {cached?.Target}");
+                        if (NetEventSource.IsEnabled) NetEventSource.Info(null, $"CacheCredential() (locked retry) Found already cached Handle = {cached.Target}");
                     }
                 }
             }
             else if (NetEventSource.IsEnabled)
             {
-                if (NetEventSource.IsEnabled) NetEventSource.Info(null, $"CacheCredential() Ignoring incoming handle = {creds} since found already cached Handle = {cached?.Target}");
+                if (NetEventSource.IsEnabled) NetEventSource.Info(null, $"CacheCredential() Ignoring incoming handle = {creds} since found already cached Handle = {cached.Target}");
             }
         }
     }
