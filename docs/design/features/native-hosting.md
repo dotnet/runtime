@@ -40,13 +40,13 @@ As such the document explicitly excludes any hosting based on directly loading `
 ## Longer term vision
 This section describes how we think the hosting APIs should evolve. It is expected that this won't happen in any single release, but each change should fit into this picture and hopefully move us closer to this goal. It is also expected that existing APIs won't change (no breaking changes) and thus it can happen that some of the APIs don't fit nicely into the picture.
 
-The hosting layers and APIs should provide functionality to cover wide range of applications. At the same time it needs to stay in sync with what .NET Core SDK can produce so that the end-to-end experience is available.
+The hosting layers and APIs should provide functionality to cover a wide range of applications. At the same time it needs to stay in sync with what .NET Core SDK can produce so that the end-to-end experience is available.
 
 The overall goal of hosting APIs is to enable loading and executing managed code, this consists of four main steps:
 * **Locate and load hosting layer** - How does a native host find and load the hosting layer libraries.
 * **Locate the managed code and all its dependencies** - Determining where the managed code comes from (application, component, ...), what frameworks it relies on (framework resolution) and what dependencies it needs (`.deps.json` processing)
 * **Load the managed code into the process** - Specify the environment and settings for the runtime, locating or starting the runtime, deciding how to load the managed code into the runtime (which `AssemblyLoadContext` for example) and actually loading the managed code and its dependencies.
-* **Execute the managed code** - Locate the managed entry point (for example assembly entry point `Main`, or a specific method to call, or some other mean to transition control to the managed code) and exposing it into the native code (function pointer, COM interface, direct execution, ...).
+* **Execute the managed code** - Locate the managed entry point (for example assembly entry point `Main`, or a specific method to call, or some other means to transition control to the managed code) and exposing it into the native code (function pointer, COM interface, direct execution, ...).
 
 To achieve these we will structure the hosting APIs into similar (but not exactly) 4 buckets.
 
