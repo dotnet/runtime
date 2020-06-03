@@ -149,10 +149,18 @@ namespace Mono.Linker.Dataflow
 
 		protected override ValueNode GetFieldValue (MethodDefinition method, FieldDefinition field)
 		{
-			DynamicallyAccessedMemberTypes memberKinds = _flowAnnotations.GetFieldAnnotation (field);
-			return new LoadFieldValue (field, memberKinds) {
-				SourceContext = method
-			};
+			switch (field.Name) {
+			case "EmptyTypes" when field.DeclaringType.IsTypeOf ("System", "Type"): {
+					return new ArrayValue (new ConstIntValue (0));
+				}
+
+			default: {
+					DynamicallyAccessedMemberTypes memberKinds = _flowAnnotations.GetFieldAnnotation (field);
+					return new LoadFieldValue (field, memberKinds) {
+						SourceContext = method
+					};
+				}
+			}
 		}
 
 		protected override void HandleStoreField (MethodDefinition method, FieldDefinition field, Instruction operation, ValueNode valueToStore)
@@ -184,6 +192,7 @@ namespace Mono.Linker.Dataflow
 			Type_get_TypeHandle,
 			Object_GetType,
 			TypeDelegator_Ctor,
+			Array_Empty,
 
 			// Anything above this marker will require the method to be run through
 			// the reflection body scanner.
@@ -353,6 +362,9 @@ namespace Mono.Linker.Dataflow
 					&& calledMethod.HasParameterOfType (0, "System", "Type")
 					=> IntrinsicId.TypeDelegator_Ctor,
 
+				"Empty" when calledMethod.IsDeclaredOnType ("System", "Array")
+					=> IntrinsicId.Array_Empty,
+
 				// static System.Activator.CreateInstance (System.Type type)
 				// static System.Activator.CreateInstance (System.Type type, bool nonPublic)
 				// static System.Activator.CreateInstance (System.Type type, params object?[]? args)
@@ -466,6 +478,11 @@ namespace Mono.Linker.Dataflow
 				case IntrinsicId.TypeDelegator_Ctor: {
 						// This is an identity function for analysis purposes
 						methodReturnValue = methodParams[1];
+					}
+					break;
+
+				case IntrinsicId.Array_Empty: {
+						methodReturnValue = new ArrayValue (new ConstIntValue (0));
 					}
 					break;
 
@@ -741,6 +758,14 @@ namespace Mono.Linker.Dataflow
 							if (methodParams[1].AsConstInt () != null)
 								bindingFlags |= (BindingFlags) methodParams[1].AsConstInt ();
 						}
+						int? ctorParameterCount = parameters.Count switch
+						{
+							1 => (methodParams[1] as ArrayValue)?.Size.AsConstInt (),
+							2 => (methodParams[3] as ArrayValue)?.Size.AsConstInt (),
+							5 => (methodParams[4] as ArrayValue)?.Size.AsConstInt (),
+							_ => null,
+						};
+
 						// Go over all types we've seen
 						foreach (var value in methodParams[0].UniqueValues ()) {
 							if (value is SystemTypeValue systemTypeValue) {
@@ -750,6 +775,9 @@ namespace Mono.Linker.Dataflow
 								// Otherwise fall back to the bitfield requirements
 								var requiredMemberKinds = bindingFlags.HasFlag (BindingFlags.Public) ? DynamicallyAccessedMemberTypes.PublicConstructors : DynamicallyAccessedMemberTypes.None;
 								requiredMemberKinds |= bindingFlags.HasFlag (BindingFlags.NonPublic) ? DynamicallyAccessedMemberTypes.NonPublicConstructors : DynamicallyAccessedMemberTypes.None;
+								// We can scope down the public constructors requirement if we know the number of parameters is 0
+								if (requiredMemberKinds == DynamicallyAccessedMemberTypes.PublicConstructors && ctorParameterCount == 0)
+									requiredMemberKinds = DynamicallyAccessedMemberTypes.DefaultConstructor;
 								RequireDynamicallyAccessedMembers (ref reflectionContext, requiredMemberKinds, value, calledMethodDefinition);
 							}
 						}
