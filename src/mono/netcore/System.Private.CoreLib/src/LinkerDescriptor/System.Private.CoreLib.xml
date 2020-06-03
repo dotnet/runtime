@@ -777,14 +777,6 @@
 			<!-- Methods is used by VS Tasks Window. -->
 			<method name="GetActiveTaskFromId" />
 		</type>
-		<type fullname="System.Collections.Generic.GenericArraySortHelper`1">
-			<!-- Instantiated via reflection -->
-			<method name=".ctor" />
-		</type>
-		<type fullname="System.Collections.Generic.GenericArraySortHelper`2">
-			<!-- Instantiated via reflection -->
-			<method name=".ctor" />
-		</type>
 		<!-- Accessed via private reflection by tracing controller. -->
 		<type fullname="System.Diagnostics.Tracing.EventPipe*" />
 		<!-- Accessed via private reflection and by native code. -->
