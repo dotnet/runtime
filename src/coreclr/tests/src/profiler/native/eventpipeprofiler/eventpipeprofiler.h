@@ -21,6 +21,7 @@ public:
     virtual HRESULT STDMETHODCALLTYPE Initialize(IUnknown* pICorProfilerInfoUnk);
     virtual HRESULT STDMETHODCALLTYPE Shutdown();
     virtual HRESULT STDMETHODCALLTYPE JITCompilationStarted(FunctionID functionId, BOOL fIsSafeToBlock);
+    virtual HRESULT STDMETHODCALLTYPE JITCachedFunctionSearchFinished(FunctionID functionId, COR_PRF_JIT_CACHE result);
 
 private:
     std::atomic<int> _failures;
@@ -29,4 +30,6 @@ private:
     EVENTPIPE_EVENT _allTypesEvent;
     EVENTPIPE_EVENT _emptyEvent;
     EVENTPIPE_EVENT _simpleEvent;
+
+    HRESULT FunctionSeen(FunctionID functionId);
 };

@@ -138,19 +138,20 @@ namespace Microsoft.Extensions.Primitives
             {
                 // Take local copy of _values so type checks remain valid even if the StringValues is overwritten in memory
                 var value = _values;
-                if (index == 0 && value is string str)
+                if (value is string str)
                 {
-                    return str;
+                    if (index == 0)
+                    {
+                        return str;
+                    }
                 }
                 else if (value != null)
                 {
                     // Not string, not null, can only be string[]
                     return Unsafe.As<string[]>(value)[index]; // may throw
                 }
-                else
-                {
-                    return OutOfBounds(); // throws
-                }
+
+                return OutOfBounds(); // throws
             }
         }
 

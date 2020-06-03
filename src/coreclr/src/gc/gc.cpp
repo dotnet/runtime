@@ -192,6 +192,25 @@ BOOL is_induced_blocking (gc_reason reason)
             (reason == reason_lowmemory_host_blocking));
 }
 
+gc_oh_num gen_to_oh(int gen)
+{
+    switch (gen)
+    {
+        case soh_gen0: 
+            return gc_oh_num::soh;
+        case soh_gen1:
+            return gc_oh_num::soh;        
+        case soh_gen2:
+            return gc_oh_num::soh;
+        case loh_generation:
+            return gc_oh_num::loh;
+        case poh_generation:
+            return gc_oh_num::poh;
+        default:
+            return gc_oh_num::none;
+    }
+}
+
 #ifndef DACCESS_COMPILE
 int64_t qpf;
 size_t start_time;
@@ -1866,7 +1885,14 @@ const int max_snoop_level = 128;
 #define MH_TH_CARD_BUNDLE  (180*1024*1024)
 #endif //CARD_BUNDLE
 
-#define GC_EPHEMERAL_DECOMMIT_TIMEOUT 5000
+// min size to decommit to make the OS call worthwhile
+#define MIN_DECOMMIT_SIZE  (100*OS_PAGE_SIZE)
+
+// max size to decommit per millisecond
+#define DECOMMIT_SIZE_PER_MILLISECOND (160*1024)
+
+// time in milliseconds between decommit steps
+#define DECOMMIT_TIME_STEP_MILLISECONDS (100)
 
 inline
 size_t align_on_page (size_t add)
@@ -2060,7 +2086,6 @@ void qsort1(uint8_t** low, uint8_t** high, unsigned int depth);
 
 void* virtual_alloc (size_t size);
 void* virtual_alloc (size_t size, bool use_large_pages_p);
-void virtual_free (void* add, size_t size);
 
 /* per heap static initialization */
 #if defined(BACKGROUND_GC) && !defined(MULTIPLE_HEAPS)
@@ -2112,6 +2137,8 @@ int*        gc_heap::g_mark_stack_busy;
 size_t*     gc_heap::g_bpromoted;
 #endif //BACKGROUND_GC
 
+BOOL        gc_heap::gradual_decommit_in_progress_p = FALSE;
+size_t      gc_heap::max_decommit_step_size = 0;
 #else  //MULTIPLE_HEAPS
 
 size_t      gc_heap::g_promoted;
@@ -2138,11 +2165,11 @@ gc_history_global gc_heap::gc_data_global;
 
 size_t      gc_heap::gc_last_ephemeral_decommit_time = 0;
 
-size_t      gc_heap::gc_gen0_desired_high;
-
 CLRCriticalSection gc_heap::check_commit_cs;
 
 size_t      gc_heap::current_total_committed = 0;
+
+size_t      gc_heap::committed_by_oh[total_oh_count] = {0, 0, 0, 0};
 
 size_t      gc_heap::current_total_committed_bookkeeping = 0;
 
@@ -2174,6 +2201,8 @@ uint32_t    gc_heap::high_memory_load_th = 0;
 uint32_t    gc_heap::m_high_memory_load_th;
 
 uint32_t    gc_heap::v_high_memory_load_th;
+
+bool        gc_heap::is_restricted_physical_mem;
 
 uint64_t    gc_heap::total_physical_mem = 0;
 
@@ -3564,9 +3593,6 @@ heap_segment* seg_mapping_table_segment_of (uint8_t* o)
 
 size_t gcard_of ( uint8_t*);
 
-#define memref(i) *(uint8_t**)(i)
-
-//GC Flags
 #define GC_MARKED       (size_t)0x1
 #define slot(i, j) ((uint8_t**)(i))[(j)+1]
 
@@ -3944,7 +3970,7 @@ struct initial_memory_details
 
 initial_memory_details memory_details;
 
-BOOL reserve_initial_memory (size_t normal_size, size_t large_size, size_t pinned_size, int num_heaps, bool use_large_pages_p)
+BOOL gc_heap::reserve_initial_memory (size_t normal_size, size_t large_size, size_t pinned_size, int num_heaps, bool use_large_pages_p)
 {
     BOOL reserve_success = FALSE;
 
@@ -4083,7 +4109,7 @@ BOOL reserve_initial_memory (size_t normal_size, size_t large_size, size_t pinne
     return reserve_success;
 }
 
-void destroy_initial_memory()
+void gc_heap::destroy_initial_memory()
 {
     if (memory_details.initial_memory != NULL)
     {
@@ -4103,7 +4129,7 @@ void destroy_initial_memory()
 
              virtual_free (memory_details.initial_pinned_heap[0].memory_base,
                 memory_details.block_count*memory_details.block_size_pinned);
-       }
+        }
         else
         {
             assert (memory_details.allocation_pattern == initial_memory_details::EACH_BLOCK);
@@ -4130,7 +4156,8 @@ heap_segment* make_initial_segment (int gen, int h_number)
 {
     void* mem = memory_details.get_initial_memory (gen, h_number);
     size_t size = memory_details.get_initial_size (gen);
-    heap_segment* res = gc_heap::make_heap_segment ((uint8_t*)mem, size , h_number);
+    gc_oh_num oh = gen_to_oh (gen);
+    heap_segment* res = gc_heap::make_heap_segment ((uint8_t*)mem, size, oh, h_number);
 
     return res;
 }
@@ -4195,14 +4222,6 @@ void* virtual_alloc (size_t size, bool use_large_pages_p)
                  requested_size, (size_t)prgmem, (size_t)((uint8_t*)prgmem+requested_size)));
 
     return aligned_mem;
-}
-
-void virtual_free (void* add, size_t size)
-{
-    GCToOSInterface::VirtualRelease (add, size);
-    gc_heap::reserved_memory -= size;
-    dprintf (2, ("Virtual Free size %Id: [%Ix, %Ix[",
-                 size, (size_t)add, (size_t)((uint8_t*)add+size)));
 }
 
 static size_t get_valid_segment_size (BOOL large_seg=FALSE)
@@ -4378,7 +4397,7 @@ gc_heap::soh_get_segment_to_expand()
         }
     }
 
-    heap_segment* result = get_segment (size, FALSE);
+    heap_segment* result = get_segment (size, gc_oh_num::soh);
 
     if(result)
     {
@@ -4419,8 +4438,10 @@ gc_heap::soh_get_segment_to_expand()
 
 //returns 0 in case of allocation failure
 heap_segment*
-gc_heap::get_segment (size_t size, BOOL loh_p)
+gc_heap::get_segment (size_t size, gc_oh_num oh)
 {
+    assert(oh != gc_oh_num::none);
+    BOOL uoh_p = (oh == gc_oh_num::loh) || (oh == gc_oh_num::poh);
     if (heap_hard_limit)
         return NULL;
 
@@ -4489,11 +4510,11 @@ gc_heap::get_segment (size_t size, BOOL loh_p)
         void* mem = virtual_alloc (size);
         if (!mem)
         {
-            fgm_result.set_fgm (fgm_reserve_segment, size, loh_p);
+            fgm_result.set_fgm (fgm_reserve_segment, size, uoh_p);
             return 0;
         }
 
-        result = gc_heap::make_heap_segment ((uint8_t*)mem, size, heap_number);
+        result = gc_heap::make_heap_segment ((uint8_t*)mem, size, oh, heap_number);
 
         if (result)
         {
@@ -4517,7 +4538,7 @@ gc_heap::get_segment (size_t size, BOOL loh_p)
                 end = (uint8_t*)g_gc_highest_address;
             }
 
-            if (gc_heap::grow_brick_card_tables (start, end, size, result, __this, loh_p) != 0)
+            if (gc_heap::grow_brick_card_tables (start, end, size, result, __this, uoh_p) != 0)
             {
                 virtual_free (mem, size);
                 return 0;
@@ -4525,7 +4546,7 @@ gc_heap::get_segment (size_t size, BOOL loh_p)
         }
         else
         {
-            fgm_result.set_fgm (fgm_commit_segment_beg, SEGMENT_INITIAL_COMMIT, loh_p);
+            fgm_result.set_fgm (fgm_commit_segment_beg, SEGMENT_INITIAL_COMMIT, uoh_p);
             virtual_free (mem, size);
         }
 
@@ -4549,11 +4570,11 @@ gc_heap::get_segment (size_t size, BOOL loh_p)
     return result;
 }
 
-void release_segment (heap_segment* sg)
+void gc_heap::release_segment (heap_segment* sg)
 {
     ptrdiff_t delta = 0;
     FIRE_EVENT(GCFreeSegment_V1, heap_segment_mem(sg));
-    virtual_free (sg, (uint8_t*)heap_segment_reserved (sg)-(uint8_t*)sg);
+    virtual_free (sg, (uint8_t*)heap_segment_reserved (sg)-(uint8_t*)sg, sg);
 }
 
 heap_segment* gc_heap::get_segment_for_uoh (int gen_number, size_t size
@@ -4565,7 +4586,8 @@ heap_segment* gc_heap::get_segment_for_uoh (int gen_number, size_t size
 #ifndef MULTIPLE_HEAPS
     gc_heap* hp = 0;
 #endif //MULTIPLE_HEAPS
-    heap_segment* res = hp->get_segment (size, TRUE);
+    gc_oh_num oh = gen_to_oh (gen_number);
+    heap_segment* res = hp->get_segment (size, oh);
     if (res != 0)
     {
 #ifdef MULTIPLE_HEAPS
@@ -5398,7 +5420,12 @@ void gc_heap::gc_thread_function ()
 
         if (heap_number == 0)
         {
-            gc_heap::ee_suspend_event.Wait(INFINITE, FALSE);
+            uint32_t wait_result = gc_heap::ee_suspend_event.Wait(gradual_decommit_in_progress_p ? DECOMMIT_TIME_STEP_MILLISECONDS : INFINITE, FALSE);
+            if (wait_result == WAIT_TIMEOUT)
+            {
+                gradual_decommit_in_progress_p = decommit_step ();
+                continue;
+            }
 
             BEGIN_TIMING(suspend_ee_during_log);
             GCToEEInterface::SuspendEE(SUSPEND_FOR_GC);
@@ -5480,6 +5507,12 @@ void gc_heap::gc_thread_function ()
                     hp->set_gc_done();
                 }
             }
+
+            // check if we should do some decommitting
+            if (gradual_decommit_in_progress_p)
+            {
+                gradual_decommit_in_progress_p = decommit_step ();
+            }
         }
         else
         {
@@ -5524,7 +5557,7 @@ bool gc_heap::virtual_alloc_commit_for_heap (void* addr, size_t size, int h_numb
     return GCToOSInterface::VirtualCommit(addr, size);
 }
 
-bool gc_heap::virtual_commit (void* address, size_t size, int h_number, bool* hard_limit_exceeded_p)
+bool gc_heap::virtual_commit (void* address, size_t size, gc_oh_num oh, int h_number, bool* hard_limit_exceeded_p)
 {
 #ifndef HOST_64BIT
     assert (heap_hard_limit == 0);
@@ -5532,9 +5565,9 @@ bool gc_heap::virtual_commit (void* address, size_t size, int h_number, bool* ha
 
     if (heap_hard_limit)
     {
-        bool exceeded_p = false;
-
         check_commit_cs.Enter();
+        committed_by_oh[oh] += size;
+        bool exceeded_p = false;
 
         if ((current_total_committed + size) > heap_hard_limit)
         {
@@ -5573,6 +5606,8 @@ bool gc_heap::virtual_commit (void* address, size_t size, int h_number, bool* ha
     if (!commit_succeeded_p && heap_hard_limit)
     {
         check_commit_cs.Enter();
+        committed_by_oh[oh] -= size;
+        
         dprintf (1, ("commit failed, updating %Id to %Id",
                 current_total_committed, (current_total_committed - size)));
         current_total_committed -= size;
@@ -5581,11 +5616,10 @@ bool gc_heap::virtual_commit (void* address, size_t size, int h_number, bool* ha
 
         check_commit_cs.Leave();
     }
-
     return commit_succeeded_p;
 }
 
-bool gc_heap::virtual_decommit (void* address, size_t size, int h_number)
+bool gc_heap::virtual_decommit (void* address, size_t size, gc_oh_num oh, int h_number)
 {
 #ifndef HOST_64BIT
     assert (heap_hard_limit == 0);
@@ -5596,6 +5630,7 @@ bool gc_heap::virtual_decommit (void* address, size_t size, int h_number)
     if (decommit_succeeded_p && heap_hard_limit)
     {
         check_commit_cs.Enter();
+        committed_by_oh[oh] -= size;
         current_total_committed -= size;
         if (h_number < 0)
             current_total_committed_bookkeeping -= size;
@@ -5603,6 +5638,18 @@ bool gc_heap::virtual_decommit (void* address, size_t size, int h_number)
     }
 
     return decommit_succeeded_p;
+}
+
+void gc_heap::virtual_free (void* add, size_t allocated_size, heap_segment* sg)
+{
+    assert(!heap_hard_limit);
+    bool release_succeeded_p = GCToOSInterface::VirtualRelease (add, allocated_size);
+    if (release_succeeded_p)
+    {
+        reserved_memory -= allocated_size;
+        dprintf (2, ("Virtual Free size %Id: [%Ix, %Ix[",
+                    allocated_size, (size_t)add, (size_t)((uint8_t*)add + allocated_size)));
+    }
 }
 
 class mark
@@ -7208,7 +7255,7 @@ uint32_t* gc_heap::make_card_table (uint8_t* start, uint8_t* end)
     // mark array will be committed separately (per segment).
     size_t commit_size = alloc_size - ms;
 
-    if (!virtual_commit (mem, commit_size))
+    if (!virtual_commit (mem, commit_size, gc_oh_num::none))
     {
         dprintf (1, ("Card table commit failed"));
         GCToOSInterface::VirtualRelease (mem, alloc_size);
@@ -7278,7 +7325,7 @@ int gc_heap::grow_brick_card_tables (uint8_t* start,
                                      size_t size,
                                      heap_segment* new_seg,
                                      gc_heap* hp,
-                                     BOOL loh_p)
+                                     BOOL uoh_p)
 {
     uint8_t* la = g_gc_lowest_address;
     uint8_t* ha = g_gc_highest_address;
@@ -7403,7 +7450,7 @@ int gc_heap::grow_brick_card_tables (uint8_t* start,
 
         if (!mem)
         {
-            set_fgm_result (fgm_grow_table, alloc_size, loh_p);
+            set_fgm_result (fgm_grow_table, alloc_size, uoh_p);
             goto fail;
         }
 
@@ -7414,10 +7461,10 @@ int gc_heap::grow_brick_card_tables (uint8_t* start,
             // mark array will be committed separately (per segment).
             size_t commit_size = alloc_size - ms;
 
-            if (!virtual_commit (mem, commit_size))
+            if (!virtual_commit (mem, commit_size, gc_oh_num::none))
             {
                 dprintf (GC_TABLE_LOG, ("Table commit failed"));
-                set_fgm_result (fgm_commit_table, commit_size, loh_p);
+                set_fgm_result (fgm_commit_table, commit_size, uoh_p);
                 goto fail;
             }
         }
@@ -7484,14 +7531,14 @@ int gc_heap::grow_brick_card_tables (uint8_t* start,
             if (!commit_new_mark_array_global (new_mark_array))
             {
                 dprintf (GC_TABLE_LOG, ("failed to commit portions in the mark array for existing segments"));
-                set_fgm_result (fgm_commit_table, logging_ma_commit_size, loh_p);
+                set_fgm_result (fgm_commit_table, logging_ma_commit_size, uoh_p);
                 goto fail;
             }
 
             if (!commit_mark_array_new_seg (hp, new_seg, translated_ct, saved_g_lowest_address))
             {
                 dprintf (GC_TABLE_LOG, ("failed to commit mark array for the new seg"));
-                set_fgm_result (fgm_commit_table, logging_ma_commit_size, loh_p);
+                set_fgm_result (fgm_commit_table, logging_ma_commit_size, uoh_p);
                 goto fail;
             }
         }
@@ -7608,7 +7655,7 @@ fail:
             if (!commit_mark_array_new_seg (hp, new_seg))
             {
                 dprintf (GC_TABLE_LOG, ("failed to commit mark array for the new seg in range"));
-                set_fgm_result (fgm_commit_table, logging_ma_commit_size, loh_p);
+                set_fgm_result (fgm_commit_table, logging_ma_commit_size, uoh_p);
                 return -1;
             }
         }
@@ -9141,11 +9188,12 @@ int gc_heap::object_gennum_plan (uint8_t* o)
 #pragma optimize("", on)        // Go back to command line default optimizations
 #endif //_MSC_VER && TARGET_X86
 
-heap_segment* gc_heap::make_heap_segment (uint8_t* new_pages, size_t size, int h_number)
+heap_segment* gc_heap::make_heap_segment (uint8_t* new_pages, size_t size, gc_oh_num oh, int h_number)
 {
+    assert(oh != gc_oh_num::none);    
     size_t initial_commit = SEGMENT_INITIAL_COMMIT;
 
-    if (!virtual_commit (new_pages, initial_commit, h_number))
+    if (!virtual_commit (new_pages, initial_commit, oh, h_number))
     {
         return 0;
     }
@@ -9245,22 +9293,40 @@ void gc_heap::decommit_heap_segment_pages (heap_segment* seg,
     uint8_t*  page_start = align_on_page (heap_segment_allocated(seg));
     size_t size = heap_segment_committed (seg) - page_start;
     extra_space = align_on_page (extra_space);
-    if (size >= max ((extra_space + 2*OS_PAGE_SIZE), 100*OS_PAGE_SIZE))
+    if (size >= max ((extra_space + 2*OS_PAGE_SIZE), MIN_DECOMMIT_SIZE))
     {
         page_start += max(extra_space, 32*OS_PAGE_SIZE);
-        size -= max (extra_space, 32*OS_PAGE_SIZE);
+        decommit_heap_segment_pages_worker (seg, page_start);
+    }
+}
 
-        virtual_decommit (page_start, size, heap_number);
-        dprintf (3, ("Decommitting heap segment [%Ix, %Ix[(%d)",
-            (size_t)page_start,
-            (size_t)(page_start + size),
-            size));
-        heap_segment_committed (seg) = page_start;
-        if (heap_segment_used (seg) > heap_segment_committed (seg))
+size_t gc_heap::decommit_heap_segment_pages_worker (heap_segment* seg,
+                                                    uint8_t* new_committed)
+{
+    assert (!use_large_pages_p);
+    uint8_t* page_start = align_on_page (new_committed);
+    size_t size = heap_segment_committed (seg) - page_start;
+    if (size > 0)
+    {
+        bool decommit_succeeded_p = virtual_decommit (page_start, size, heap_segment_oh (seg), heap_number);
+        if (decommit_succeeded_p)
         {
-            heap_segment_used (seg) = heap_segment_committed (seg);
+            dprintf (3, ("Decommitting heap segment [%Ix, %Ix[(%d)",
+                (size_t)page_start,
+                (size_t)(page_start + size),
+                size));
+            heap_segment_committed (seg) = page_start;
+            if (heap_segment_used (seg) > heap_segment_committed (seg))
+            {
+                heap_segment_used (seg) = heap_segment_committed (seg);
+            }
+        }
+        else
+        {
+            dprintf (3, ("Decommitting heap segment failed"));
         }
     }
+    return size;
 }
 
 //decommit all pages except one or 2
@@ -9275,13 +9341,16 @@ void gc_heap::decommit_heap_segment (heap_segment* seg)
 #endif //BACKGROUND_GC
 
     size_t size = heap_segment_committed (seg) - page_start;
-    virtual_decommit (page_start, size, heap_number);
+    bool decommit_succeeded_p = virtual_decommit (page_start, size, heap_segment_oh (seg), heap_number);
 
-    //re-init the segment object
-    heap_segment_committed (seg) = page_start;
-    if (heap_segment_used (seg) > heap_segment_committed (seg))
+    if (decommit_succeeded_p)
     {
-        heap_segment_used (seg) = heap_segment_committed (seg);
+        //re-init the segment object
+        heap_segment_committed (seg) = page_start;
+        if (heap_segment_used (seg) > heap_segment_committed (seg))
+        {
+            heap_segment_used (seg) = heap_segment_committed (seg);
+        }
     }
 }
 
@@ -10028,6 +10097,14 @@ gc_heap::init_semi_shared()
         goto cleanup;
     }
 #endif //MARK_LIST
+
+#ifdef MULTIPLE_HEAPS
+    // gradual decommit: set size to some reasonable value per time interval
+    max_decommit_step_size = ((DECOMMIT_SIZE_PER_MILLISECOND * DECOMMIT_TIME_STEP_MILLISECONDS) / n_heaps);
+
+    // but do at least MIN_DECOMMIT_SIZE per step to make the OS call worthwhile
+    max_decommit_step_size = max (max_decommit_step_size, MIN_DECOMMIT_SIZE);
+#endif //MULTIPLE_HEAPS
 
 #ifdef FEATURE_BASICFREEZE
     seg_table = sorted_table::make_sorted_table();
@@ -10899,7 +10976,7 @@ BOOL gc_heap::grow_heap_segment (heap_segment* seg, uint8_t* high_address, bool*
                 "Growing heap_segment: %Ix high address: %Ix\n",
                 (size_t)seg, (size_t)high_address);
 
-    bool ret = virtual_commit (heap_segment_committed (seg), c_size, heap_number, hard_limit_exceeded_p);
+    bool ret = virtual_commit (heap_segment_committed (seg), c_size, heap_segment_oh (seg), heap_number, hard_limit_exceeded_p);
     if (ret)
     {
         heap_segment_committed (seg) += c_size;
@@ -15023,11 +15100,12 @@ size_t gc_heap::get_total_allocated_since_last_gc()
 // Gets what's allocated on both SOH, LOH, etc that hasn't been collected.
 size_t gc_heap::get_current_allocated()
 {
-    size_t current_alloc = 0;
-    for (int i = max_generation; i < total_generation_count; i++)
+    dynamic_data* dd = dynamic_data_of (0);
+    size_t current_alloc = dd_desired_allocation (dd) - dd_new_allocation (dd);
+    for (int i = uoh_start_generation; i < total_generation_count; i++)
     {
         dynamic_data* dd = dynamic_data_of (i);
-        current_alloc = dd_desired_allocation (dd) - dd_new_allocation (dd);
+        current_alloc += dd_desired_allocation (dd) - dd_new_allocation (dd);
     }
     return current_alloc;
 }
@@ -16291,9 +16369,9 @@ void gc_heap::gc1()
             int limit = settings.condemned_generation;
             if (limit == max_generation)
             {
-                limit = total_generation_count;
+                limit = total_generation_count-1;
             }
-            for (int gen = 0; gen < limit; gen++)
+            for (int gen = 0; gen <= limit; gen++)
             {
                 size_t total_desired = 0;
 
@@ -16973,7 +17051,9 @@ BOOL gc_heap::expand_soh_with_minimal_gc()
         return TRUE;
     }
     else
+    {
         return FALSE;
+    }
 }
 
 // Only to be done on the thread that calls restart in a join for server GC
@@ -17655,22 +17735,21 @@ gc_heap* gc_heap::heap_of_gc (uint8_t* o)
 }
 
 // will find all heap objects (large and small)
-uint8_t* gc_heap::find_object (uint8_t* interior, uint8_t* low)
+//
+// Callers of this method need to guarantee the interior pointer is within the heap range.
+// 
+// If you need it to be stricter, eg if you only want to find an object in ephemeral range, 
+// you should make sure interior is within that range before calling this method.
+uint8_t* gc_heap::find_object (uint8_t* interior)
 {
+    assert (interior != 0);
+
     if (!gen0_bricks_cleared)
     {
 #ifdef MULTIPLE_HEAPS
         assert (!"Should have already been done in server GC");
 #endif //MULTIPLE_HEAPS
-        gen0_bricks_cleared = TRUE;
-        //initialize brick table for gen 0
-        for (size_t b = brick_of (generation_allocation_start (generation_of (0)));
-             b < brick_of (align_on_brick
-                           (heap_segment_allocated (ephemeral_heap_segment)));
-             b++)
-        {
-            set_brick (b, -1);
-        }
+        clear_gen0_bricks();
     }
     //indicate that in the future this needs to be done during allocation
     gen0_must_clear_bricks = FFIND_DECAY;
@@ -17701,7 +17780,7 @@ uint8_t* gc_heap::find_object (uint8_t* interior, uint8_t* low)
                 uint8_t* next_o = o + Align (size (o), align_const);
                 assert (next_o > o);
                 if ((o <= interior) && (interior < next_o))
-                return o;
+                    return o;
                 o = next_o;
             }
             return 0;
@@ -17711,7 +17790,7 @@ uint8_t* gc_heap::find_object (uint8_t* interior, uint8_t* low)
             return 0;
         }
     }
-    else if (interior >= low)
+    else
     {
         heap_segment* seg = find_segment (interior, TRUE);
         if (seg)
@@ -17728,8 +17807,6 @@ uint8_t* gc_heap::find_object (uint8_t* interior, uint8_t* low)
         else
             return 0;
     }
-    else
-        return 0;
 }
 
 #ifdef MULTIPLE_HEAPS
@@ -17848,15 +17925,6 @@ BOOL gc_heap::background_mark (uint8_t* o, uint8_t* low, uint8_t* high)
 }
 
 #endif //BACKGROUND_GC
-
-inline
-uint8_t* gc_heap::next_end (heap_segment* seg, uint8_t* f)
-{
-    if (seg == ephemeral_heap_segment)
-        return  f;
-    else
-        return  heap_segment_allocated (seg);
-}
 
 #define new_start() {if (ppstop <= start) {break;} else {parm = start}}
 #define ignore_start 0
@@ -18725,7 +18793,7 @@ gc_heap::ha_mark_object_simple (uint8_t** po THREAD_NUMBER_DCL)
             !((ref >= current_obj) && (ref < (current_obj + current_obj_size))))
         {
             gc_heap* hp = gc_heap::heap_of (ref);
-            current_obj = hp->find_object (ref, hp->lowest_address);
+            current_obj = hp->find_object (ref);
             current_obj_size = size (current_obj);
 
             internal_root_array[internal_root_array_index] = current_obj;
@@ -18784,7 +18852,6 @@ void gc_heap::mark_object (uint8_t* o THREAD_NUMBER_DCL)
 #ifdef MULTIPLE_HEAPS
     else if (o)
     {
-        //find the heap
         gc_heap* hp = heap_of (o);
         assert (hp);
         if ((o >= hp->gc_low) && (o < hp->gc_high))
@@ -19092,7 +19159,7 @@ void gc_heap::background_promote (Object** ppObject, ScanContext* sc, uint32_t f
 
     if (flags & GC_CALL_INTERIOR)
     {
-        o = hp->find_object (o, hp->background_saved_lowest_address);
+        o = hp->find_object (o);
         if (o == 0)
             return;
     }
@@ -19190,27 +19257,6 @@ gc_heap::scan_background_roots (promote_func* fn, int hn, ScanContext *pSC)
         dprintf(3,("background root %Ix", (size_t)*finger));
         (*fn) ((Object**)finger, pSC, 0);
         finger++;
-    }
-}
-
-inline
-void gc_heap::background_mark_through_object (uint8_t* oo THREAD_NUMBER_DCL)
-{
-    if (contain_pointers (oo))
-    {
-        size_t total_refs = 0;
-        size_t s = size (oo);
-        go_through_object_nostart (method_table(oo), oo, s, po,
-                          {
-                            uint8_t* o = *po;
-                            total_refs++;
-                            background_mark_object (o THREAD_NUMBER_ARG);
-                          }
-            );
-
-        dprintf (3,("Background marking through %Ix went through %Id refs",
-                          (size_t)oo,
-                           total_refs));
     }
 }
 
@@ -19664,7 +19710,7 @@ void gc_heap::get_memory_info (uint32_t* memory_load,
                                uint64_t* available_physical,
                                uint64_t* available_page_file)
 {
-    GCToOSInterface::GetMemoryStatus(memory_load, available_physical, available_page_file);
+    GCToOSInterface::GetMemoryStatus(is_restricted_physical_mem ? total_physical_mem  : 0,  memory_load, available_physical, available_page_file);
 }
 
 void fire_mark_event (int heap_num, int root_type, size_t bytes_marked)
@@ -20476,25 +20522,21 @@ void gc_heap::mark_phase (int condemned_gen_number, BOOL mark_only_p)
 }
 
 inline
-void gc_heap::pin_object (uint8_t* o, uint8_t** ppObject, uint8_t* low, uint8_t* high)
+void gc_heap::pin_object (uint8_t* o, uint8_t** ppObject)
 {
-    dprintf (3, ("Pinning %Ix", (size_t)o));
-    if ((o >= low) && (o < high))
-    {
-        dprintf(3,("^%Ix^", (size_t)o));
-        set_pinned (o);
+    dprintf (3, ("Pinning %Ix->%Ix", (size_t)ppObject, (size_t)o));
+    set_pinned (o);
 
 #ifdef FEATURE_EVENT_TRACE
-        if(EVENT_ENABLED(PinObjectAtGCTime))
-        {
-            fire_etw_pin_object_event(o, ppObject);
-        }
+    if(EVENT_ENABLED(PinObjectAtGCTime))
+    {
+        fire_etw_pin_object_event(o, ppObject);
+    }
 #endif // FEATURE_EVENT_TRACE
 
 #if defined(ENABLE_PERF_COUNTERS) || defined(FEATURE_EVENT_TRACE)
-        num_pinned_objects++;
+    num_pinned_objects++;
 #endif //ENABLE_PERF_COUNTERS || FEATURE_EVENT_TRACE
-    }
 }
 
 #if defined(ENABLE_PERF_COUNTERS) || defined(FEATURE_EVENT_TRACE)
@@ -22224,7 +22266,10 @@ void gc_heap::plan_phase (int condemned_gen_number)
     {
         if (x >= end)
         {
-            assert (x == end);
+            if (!use_mark_list)
+            {
+                assert (x == end);
+            }
             assert (heap_segment_allocated (seg1) == end);
             heap_segment_allocated (seg1) = plug_end;
 
@@ -24531,8 +24576,6 @@ void gc_heap::relocate_survivors (int condemned_gen_number,
 
     size_t  end_brick = brick_of (end_address - 1);
     relocate_args args;
-    args.low = gc_low;
-    args.high = gc_high;
     args.is_shortened = FALSE;
     args.pinned_plug_entry = 0;
     args.last_plug = 0;
@@ -25826,7 +25869,7 @@ BOOL gc_heap::commit_mark_array_by_range (uint8_t* begin, uint8_t* end, uint32_t
                             size));
 #endif //SIMPLE_DPRINTF
 
-    if (virtual_commit (commit_start, size))
+    if (virtual_commit (commit_start, size, gc_oh_num::none))
     {
         // We can only verify the mark array is cleared from begin to end, the first and the last
         // page aren't necessarily all cleared 'cause they could be used by other segments or
@@ -26050,7 +26093,7 @@ void gc_heap::decommit_mark_array_by_seg (heap_segment* seg)
 
         if (decommit_start < decommit_end)
         {
-            if (!virtual_decommit (decommit_start, size))
+            if (!virtual_decommit (decommit_start, size, gc_oh_num::none))
             {
                 dprintf (GC_TABLE_LOG, ("decommit on %Ix for %Id bytes failed",
                                         decommit_start, size));
@@ -27100,7 +27143,7 @@ void gc_heap::background_promote_callback (Object** ppObject, ScanContext* sc,
 
     if (flags & GC_CALL_INTERIOR)
     {
-        o = hp->find_object (o, hp->background_saved_lowest_address);
+        o = hp->find_object (o);
         if (o == 0)
             return;
     }
@@ -31766,55 +31809,132 @@ void gc_heap::trim_youngest_desired_low_memory()
 
 void gc_heap::decommit_ephemeral_segment_pages()
 {
-    if (settings.concurrent)
+    if (settings.concurrent || use_large_pages_p)
     {
         return;
     }
 
-    size_t slack_space = heap_segment_committed (ephemeral_heap_segment) - heap_segment_allocated (ephemeral_heap_segment);
+    dynamic_data* dd0 = dynamic_data_of (0);
 
-    dynamic_data* dd = dynamic_data_of (0);
+    // this is how much we are going to allocate in gen 0
+    ptrdiff_t desired_allocation = dd_desired_allocation (dd0) + loh_size_threshold;
 
-#ifndef MULTIPLE_HEAPS
-    size_t extra_space = (g_low_memory_status ? 0 : (512 * 1024));
-    size_t decommit_timeout = (g_low_memory_status ? 0 : GC_EPHEMERAL_DECOMMIT_TIMEOUT);
-    size_t ephemeral_elapsed = dd_time_clock(dd) - gc_last_ephemeral_decommit_time;
-
-    if (dd_desired_allocation (dd) > gc_gen0_desired_high)
+    // estimate how we are going to need in gen 1 - estimate half the free list space gets used
+    dynamic_data* dd1 = dynamic_data_of (1);
+    ptrdiff_t desired_allocation_1 = dd_new_allocation (dd1) - (generation_free_list_space (generation_of (1)) / 2);
+    if (desired_allocation_1 > 0)
     {
-        gc_gen0_desired_high = dd_desired_allocation (dd) + extra_space;
+        desired_allocation += desired_allocation_1;
     }
 
-    if (ephemeral_elapsed >= decommit_timeout)
-    {
-        slack_space = min (slack_space, gc_gen0_desired_high);
-
-        gc_last_ephemeral_decommit_time = dd_time_clock(dd);
-        gc_gen0_desired_high = 0;
-    }
-#endif //!MULTIPLE_HEAPS
-
-    if (settings.condemned_generation >= (max_generation-1))
-    {
-        size_t new_slack_space =
+    size_t slack_space =
 #ifdef HOST_64BIT
-                    max(min(min(soh_segment_size/32, dd_max_size(dd)), (generation_size (max_generation) / 10)), dd_desired_allocation(dd));
+                max(min(min(soh_segment_size/32, dd_max_size (dd0)), (generation_size (max_generation) / 10)), (size_t)desired_allocation);
 #else
 #ifdef FEATURE_CORECLR
-                    dd_desired_allocation (dd);
+                desired_allocation;
 #else
-                    dd_max_size (dd);
+                dd_max_size (dd0);
 #endif //FEATURE_CORECLR
 #endif // HOST_64BIT
 
-        slack_space = min (slack_space, new_slack_space);
+    uint8_t *decommit_target = heap_segment_allocated (ephemeral_heap_segment) + slack_space;
+    if (decommit_target < heap_segment_decommit_target (ephemeral_heap_segment))
+    {
+        // we used to have a higher target - do exponential smoothing by computing
+        // essentially decommit_target = 1/3*decommit_target + 2/3*previous_decommit_target
+        // computation below is slightly different to avoid overflow
+        ptrdiff_t target_decrease = heap_segment_decommit_target (ephemeral_heap_segment) - decommit_target;
+        decommit_target += target_decrease * 2 / 3;
     }
 
+    heap_segment_decommit_target(ephemeral_heap_segment) = decommit_target;
+
+#ifdef MULTIPLE_HEAPS
+    if (decommit_target < heap_segment_committed (ephemeral_heap_segment))
+    {
+        gradual_decommit_in_progress_p = TRUE;
+    }
+#ifdef _DEBUG
+    // these are only for checking against logic errors
+    ephemeral_heap_segment->saved_committed = heap_segment_committed (ephemeral_heap_segment);
+    ephemeral_heap_segment->saved_desired_allocation = dd_desired_allocation (dd0);
+#endif // _DEBUG
+#endif // MULTIPLE_HEAPS
+
+#ifndef MULTIPLE_HEAPS
+    // we want to limit the amount of decommit we do per time to indirectly
+    // limit the amount of time spent in recommit and page faults
+    size_t ephemeral_elapsed = dd_time_clock (dd0) - gc_last_ephemeral_decommit_time;
+    gc_last_ephemeral_decommit_time = dd_time_clock (dd0);
+
+    // this is the amount we were planning to decommit
+    ptrdiff_t decommit_size = heap_segment_committed (ephemeral_heap_segment) - decommit_target;
+
+    // we do a max of DECOMMIT_SIZE_PER_MILLISECOND per millisecond of elapsed time since the last GC
+    // we limit the elapsed time to 10 seconds to avoid spending too much time decommitting
+    ptrdiff_t max_decommit_size = min (ephemeral_elapsed, (10*1000)) * DECOMMIT_SIZE_PER_MILLISECOND;
+    decommit_size = min (decommit_size, max_decommit_size);
+
+    slack_space = heap_segment_committed (ephemeral_heap_segment) - heap_segment_allocated (ephemeral_heap_segment) - decommit_size;
     decommit_heap_segment_pages (ephemeral_heap_segment, slack_space);
+#endif // !MULTIPLE_HEAPS
 
     gc_history_per_heap* current_gc_data_per_heap = get_gc_data_per_heap();
     current_gc_data_per_heap->extra_gen0_committed = heap_segment_committed (ephemeral_heap_segment) - heap_segment_allocated (ephemeral_heap_segment);
 }
+
+#ifdef MULTIPLE_HEAPS
+// return true if we actually decommitted anything
+bool gc_heap::decommit_step ()
+{
+    // should never get here for large pages because decommit_ephemeral_segment_pages
+    // will not do anything if use_large_pages_p is true
+    assert (!use_large_pages_p);
+
+    size_t decommit_size = 0;
+    for (int i = 0; i < n_heaps; i++)
+    {
+        gc_heap* hp = gc_heap::g_heaps[i];
+        decommit_size += hp->decommit_ephemeral_segment_pages_step ();
+    }
+    return (decommit_size != 0);
+}
+
+// return the decommitted size
+size_t gc_heap::decommit_ephemeral_segment_pages_step ()
+{
+    // we rely on desired allocation not being changed outside of GC
+    assert (ephemeral_heap_segment->saved_desired_allocation == dd_desired_allocation (dynamic_data_of (0)));
+
+    uint8_t* decommit_target = heap_segment_decommit_target (ephemeral_heap_segment);
+    size_t EXTRA_SPACE = 2 * OS_PAGE_SIZE;
+    decommit_target += EXTRA_SPACE;
+    uint8_t* committed = heap_segment_committed (ephemeral_heap_segment);
+    if (decommit_target < committed)
+    {
+        // we rely on other threads not messing with committed if we are about to trim it down
+        assert (ephemeral_heap_segment->saved_committed == heap_segment_committed (ephemeral_heap_segment));
+
+        // how much would we need to decommit to get to decommit_target in one step?
+        size_t full_decommit_size = (committed - decommit_target);
+
+        // don't do more than max_decommit_step_size per step
+        size_t decommit_size = min (max_decommit_step_size, full_decommit_size);
+
+        // figure out where the new committed should be
+        uint8_t* new_committed = (committed - decommit_size);
+        size_t size = decommit_heap_segment_pages_worker (ephemeral_heap_segment, new_committed);
+
+#ifdef _DEBUG
+        ephemeral_heap_segment->saved_committed = committed - size;
+#endif // _DEBUG
+
+        return size;
+    }
+    return 0;
+}
+#endif //MULTIPLE_HEAPS
 
 //This is meant to be called by decide_on_compacting.
 
@@ -33391,11 +33511,6 @@ void gc_heap::sweep_uoh_objects (int gen_num)
 
 void gc_heap::relocate_in_uoh_objects (int gen_num)
 {
-    relocate_args args;
-    args.low = gc_low;
-    args.high = gc_high;
-    args.last_plug = 0;
-
     generation* gen = generation_of (gen_num);
 
     heap_segment* seg = heap_segment_rw (generation_start_segment (gen));
@@ -34969,11 +35084,14 @@ HRESULT GCHeap::Initialize()
     g_num_processors = GCToOSInterface::GetTotalProcessorCount();
     assert(g_num_processors != 0);
 
-    bool is_restricted;
     gc_heap::total_physical_mem = (size_t)GCConfig::GetGCTotalPhysicalMemory();
-    if (!(gc_heap::total_physical_mem))
+    if (gc_heap::total_physical_mem != 0)
     {
-        gc_heap::total_physical_mem = GCToOSInterface::GetPhysicalMemoryLimit (&is_restricted);
+        gc_heap::is_restricted_physical_mem = true;
+    }
+    else
+    {
+        gc_heap::total_physical_mem = GCToOSInterface::GetPhysicalMemoryLimit (&gc_heap::is_restricted_physical_mem);
     }
 
 #ifdef HOST_64BIT
@@ -34992,7 +35110,7 @@ HRESULT GCHeap::Initialize()
     // running in a container, use this limit for the GC heap.
     if (!(gc_heap::heap_hard_limit))
     {
-        if (is_restricted)
+        if (gc_heap::is_restricted_physical_mem)
         {
             uint64_t physical_mem_for_gc = gc_heap::total_physical_mem * (uint64_t)75 / (uint64_t)100;
             gc_heap::heap_hard_limit = (size_t)max ((20 * 1024 * 1024), physical_mem_for_gc);
@@ -35392,9 +35510,6 @@ Object * GCHeap::NextObj (Object * object)
 // returns TRUE if the pointer is in one of the GC heaps.
 bool GCHeap::IsHeapPointer (void* vpObject, bool small_heap_only)
 {
-    // removed STATIC_CONTRACT_CAN_TAKE_LOCK here because find_segment
-    // no longer calls GCEvent::Wait which eventually takes a lock.
-
     uint8_t* object = (uint8_t*) vpObject;
 #ifndef FEATURE_BASICFREEZE
     if (!((object < g_gc_highest_address) && (object >= g_gc_lowest_address)))
@@ -35405,7 +35520,6 @@ bool GCHeap::IsHeapPointer (void* vpObject, bool small_heap_only)
     return !!hs;
 }
 
-// promote an object
 void GCHeap::Promote(Object** ppObject, ScanContext* sc, uint32_t flags)
 {
     THREAD_NUMBER_FROM_CONTEXT;
@@ -35428,19 +35542,19 @@ void GCHeap::Promote(Object** ppObject, ScanContext* sc, uint32_t flags)
 
     gc_heap* hp = gc_heap::heap_of (o);
 
+    if ((o < hp->gc_low) || (o >= hp->gc_high))
+    {
+        return;
+    }
+
     dprintf (3, ("Promote %Ix", (size_t)o));
 
     if (flags & GC_CALL_INTERIOR)
     {
-        if ((o < hp->gc_low) || (o >= hp->gc_high))
+        if ((o = hp->find_object (o)) == 0)
         {
             return;
         }
-        if ( (o = hp->find_object (o, hp->gc_low)) == 0)
-        {
-            return;
-        }
-
     }
 
 #ifdef FEATURE_CONSERVATIVE_GC
@@ -35460,17 +35574,14 @@ void GCHeap::Promote(Object** ppObject, ScanContext* sc, uint32_t flags)
 #endif //_DEBUG
 
     if (flags & GC_CALL_PINNED)
-        hp->pin_object (o, (uint8_t**) ppObject, hp->gc_low, hp->gc_high);
+        hp->pin_object (o, (uint8_t**) ppObject);
 
 #ifdef STRESS_PINNING
     if ((++n_promote % 20) == 1)
-            hp->pin_object (o, (uint8_t**) ppObject, hp->gc_low, hp->gc_high);
+            hp->pin_object (o, (uint8_t**) ppObject);
 #endif //STRESS_PINNING
 
-    if ((o >= hp->gc_low) && (o < hp->gc_high))
-    {
-        hpt->mark_object_simple (&o THREAD_NUMBER_ARG);
-    }
+    hpt->mark_object_simple (&o THREAD_NUMBER_ARG);
 
     STRESS_LOG_ROOT_PROMOTE(ppObject, o, o ? header(o)->GetMethodTable() : NULL);
 }
@@ -35517,7 +35628,7 @@ void GCHeap::Relocate (Object** ppObject, ScanContext* sc,
 
         if (gc_heap::loh_object_p (object))
         {
-            pheader = hp->find_object (object, 0);
+            pheader = hp->find_object (object);
             if (pheader == 0)
             {
                 return;
@@ -35910,7 +36021,7 @@ GCHeap::GetContainingObject (void *pInteriorPtr, bool fCollectedGenOnly)
 
     if (o >= lowest && o < highest)
     {
-        o = hp->find_object (o, lowest);
+        o = hp->find_object (o);
     }
     else
     {
@@ -38151,13 +38262,12 @@ void initGCShadow()
 
 #define INVALIDGCVALUE (void*)((size_t)0xcccccccd)
 
-    // test to see if 'ptr' was only updated via the write barrier.
+// test to see if 'ptr' was only updated via the write barrier.
 inline void testGCShadow(Object** ptr)
 {
     Object** shadow = (Object**) &g_GCShadow[((uint8_t*) ptr - g_gc_lowest_address)];
     if (*ptr != 0 && (uint8_t*) shadow < g_GCShadowEnd && *ptr != *shadow)
     {
-
         // If you get this assertion, someone updated a GC pointer in the heap without
         // using the write barrier.  To find out who, check the value of
         // dd_collection_count (dynamic_data_of (0)). Also
@@ -38180,7 +38290,6 @@ inline void testGCShadow(Object** ptr)
         // TODO: fixed to detect the race. We've only seen this race from VolatileWritePtr,
         // TODO: so elect not to fix jithelp.asm at this time. It should be done if we start hitting
         // TODO: erroneous asserts in here.
-
         if(*shadow!=INVALIDGCVALUE)
         {
 #ifdef FEATURE_BASICFREEZE

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System;
 using System.Xml;
 using System.Diagnostics;
@@ -25,8 +26,14 @@ namespace System.Xml
             internal string namespaceUri;
             internal string value;
 
-            internal NodeData()
+            internal NodeData(XmlNodeType nodeType, string localName, string prefix, string name, string namespaceUri, string value)
             {
+                this.type = nodeType;
+                this.localName = localName;
+                this.prefix = prefix;
+                this.name = name;
+                this.namespaceUri = namespaceUri;
+                this.value = value;
             }
 
             internal void Set(XmlNodeType nodeType, string localName, string prefix, string name, string namespaceUri, string value)
@@ -66,7 +73,7 @@ namespace System.Xml
 
         // namespace management
         private readonly XmlNamespaceManager _nsManager;
-        private NodeData[] _nsAttributes;
+        private NodeData[]? _nsAttributes;
         private int _nsAttrCount;
         private int _curNsAttr = -1;
 
@@ -75,11 +82,11 @@ namespace System.Xml
 
         // incremental reading of added xmlns nodes (ReadValueChunk, ReadContentAsBase64, ReadContentAsBinHex)
         private int _nsIncReadOffset;
-        private IncrementalReadDecoder _binDecoder;
+        private IncrementalReadDecoder? _binDecoder;
 
         // cached nodes
         private bool _useCurNode;
-        private NodeData _curNode;
+        private NodeData _curNode = null!;
         // node used for a text node of ReadAttributeValue or as Initial or EOF node
         private readonly NodeData _tmpNode;
 
@@ -99,8 +106,7 @@ namespace System.Xml
             _xmlns = reader.NameTable.Add("xmlns");
             _xmlnsUri = reader.NameTable.Add(XmlReservedNs.NsXmlNs);
 
-            _tmpNode = new NodeData();
-            _tmpNode.Set(XmlNodeType.None, string.Empty, string.Empty, string.Empty, string.Empty, string.Empty);
+            _tmpNode = new NodeData(XmlNodeType.None, string.Empty, string.Empty, string.Empty, string.Empty, string.Empty);
 
             SetCurrentNode(_tmpNode);
         }
@@ -112,7 +118,7 @@ namespace System.Xml
         {
             get
             {
-                return (_useCurNode) ? _curNode.type : reader.NodeType;
+                return _useCurNode ? _curNode.type : reader.NodeType;
             }
         }
 
@@ -120,7 +126,7 @@ namespace System.Xml
         {
             get
             {
-                return (_useCurNode) ? _curNode.name : reader.Name;
+                return _useCurNode ? _curNode.name : reader.Name;
             }
         }
 
@@ -128,7 +134,7 @@ namespace System.Xml
         {
             get
             {
-                return (_useCurNode) ? _curNode.localName : reader.LocalName;
+                return _useCurNode ? _curNode.localName : reader.LocalName;
             }
         }
 
@@ -136,7 +142,7 @@ namespace System.Xml
         {
             get
             {
-                return (_useCurNode) ? _curNode.namespaceUri : reader.NamespaceURI;
+                return _useCurNode ? _curNode.namespaceUri : reader.NamespaceURI;
             }
         }
 
@@ -144,7 +150,7 @@ namespace System.Xml
         {
             get
             {
-                return (_useCurNode) ? _curNode.prefix : reader.Prefix;
+                return _useCurNode ? _curNode.prefix : reader.Prefix;
             }
         }
 
@@ -152,7 +158,7 @@ namespace System.Xml
         {
             get
             {
-                return (_useCurNode) ? _curNode.value : reader.Value;
+                return _useCurNode ? _curNode.value : reader.Value;
             }
         }
 
@@ -176,7 +182,7 @@ namespace System.Xml
             }
         }
 
-        public override string BaseURI
+        public override string? BaseURI
         {
             get
             {
@@ -238,45 +244,51 @@ namespace System.Xml
             }
         }
 
-        public override string GetAttribute(string name)
+        public override string? GetAttribute(string name)
         {
             if (!InAttributeActiveState)
             {
                 return null;
             }
-            string attr = reader.GetAttribute(name);
+            string? attr = reader.GetAttribute(name);
             if (attr != null)
             {
                 return attr;
             }
+
             for (int i = 0; i < _nsAttrCount; i++)
             {
-                if (name == _nsAttributes[i].name)
+                if (name == _nsAttributes![i].name)
                 {
+                    // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/34644
                     return _nsAttributes[i].value;
                 }
             }
             return null;
         }
 
-        public override string GetAttribute(string name, string namespaceURI)
+        public override string? GetAttribute(string name, string namespaceURI)
         {
             if (!InAttributeActiveState)
             {
                 return null;
             }
-            string attr = reader.GetAttribute(name, namespaceURI);
+
+            string? attr = reader.GetAttribute(name, namespaceURI);
             if (attr != null)
             {
                 return attr;
             }
+
             for (int i = 0; i < _nsAttrCount; i++)
             {
-                if (name == _nsAttributes[i].localName && namespaceURI == _xmlnsUri)
+                if (name == _nsAttributes![i].localName && namespaceURI == _xmlnsUri)
                 {
+                    // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/34644
                     return _nsAttributes[i].value;
                 }
             }
+
             return null;
         }
 
@@ -293,7 +305,7 @@ namespace System.Xml
             }
             else if (i - n < _nsAttrCount)
             {
-                return _nsAttributes[i - n].value;
+                return _nsAttributes![i - n].value;
             }
             else
             {
@@ -313,9 +325,10 @@ namespace System.Xml
                 _useCurNode = false;
                 return true;
             }
+
             for (int i = 0; i < _nsAttrCount; i++)
             {
-                if (name == _nsAttributes[i].name)
+                if (name == _nsAttributes![i].name)
                 {
                     MoveToNsAttribute(i);
                     return true;
@@ -336,9 +349,10 @@ namespace System.Xml
                 _useCurNode = false;
                 return true;
             }
+
             for (int i = 0; i < _nsAttrCount; i++)
             {
-                if (name == _nsAttributes[i].localName && ns == _xmlnsUri)
+                if (name == _nsAttributes![i].localName && ns == _xmlnsUri)
                 {
                     MoveToNsAttribute(i);
                     return true;
@@ -854,6 +868,8 @@ namespace System.Xml
                                 {
                                     return 0;
                                 }
+
+                                Debug.Assert(_binDecoder != null);
                                 _binDecoder.SetNextOutputBuffer(buffer, index, count);
                                 _nsIncReadOffset += _binDecoder.Decode(_curNode.value, _nsIncReadOffset, _curNode.value.Length - _nsIncReadOffset);
                                 return _binDecoder.DecodedCount;
@@ -990,6 +1006,8 @@ namespace System.Xml
                                 {
                                     return 0;
                                 }
+
+                                Debug.Assert(_binDecoder != null);
                                 _binDecoder.SetNextOutputBuffer(buffer, index, count);
                                 _nsIncReadOffset += _binDecoder.Decode(_curNode.value, _nsIncReadOffset, _curNode.value.Length - _nsIncReadOffset);
                                 return _binDecoder.DecodedCount;
@@ -1142,7 +1160,7 @@ namespace System.Xml
             }
         }
 
-        public override string LookupNamespace(string prefix)
+        public override string? LookupNamespace(string prefix)
         {
             return ((IXmlNamespaceResolver)this).LookupNamespace(prefix);
         }
@@ -1165,8 +1183,7 @@ namespace System.Xml
             {
                 if (!_useCurNode)
                 {
-                    IXmlLineInfo lineInfo = reader as IXmlLineInfo;
-                    if (lineInfo != null)
+                    if (reader is IXmlLineInfo lineInfo)
                     {
                         return lineInfo.LineNumber;
                     }
@@ -1181,8 +1198,7 @@ namespace System.Xml
             {
                 if (!_useCurNode)
                 {
-                    IXmlLineInfo lineInfo = reader as IXmlLineInfo;
-                    if (lineInfo != null)
+                    if (reader is IXmlLineInfo lineInfo)
                     {
                         return lineInfo.LinePosition;
                     }
@@ -1208,7 +1224,7 @@ namespace System.Xml
             return _nsManager.GetNamespacesInScope(scope);
         }
 
-        string IXmlNamespaceResolver.LookupNamespace(string prefix)
+        string? IXmlNamespaceResolver.LookupNamespace(string prefix)
         {
             if (!InNamespaceActiveState)
             {
@@ -1217,7 +1233,7 @@ namespace System.Xml
             return _nsManager.LookupNamespace(prefix);
         }
 
-        string IXmlNamespaceResolver.LookupPrefix(string namespaceName)
+        string? IXmlNamespaceResolver.LookupPrefix(string namespaceName)
         {
             if (!InNamespaceActiveState)
             {
@@ -1292,6 +1308,7 @@ namespace System.Xml
             {
                 _nsAttributes = new NodeData[InitialNamespaceAttributeCount];
             }
+
             if (index == _nsAttributes.Length)
             {
                 NodeData[] newNsAttrs = new NodeData[_nsAttributes.Length * 2];
@@ -1299,17 +1316,30 @@ namespace System.Xml
                 _nsAttributes = newNsAttrs;
             }
 
-            if (_nsAttributes[index] == null)
-            {
-                _nsAttributes[index] = new NodeData();
-            }
+            string localName;
+            string attrPrefix;
+            string name;
+
             if (prefix.Length == 0)
             {
-                _nsAttributes[index].Set(XmlNodeType.Attribute, _xmlns, string.Empty, _xmlns, _xmlnsUri, ns);
+                localName = _xmlns;
+                attrPrefix = string.Empty;
+                name = _xmlns;
             }
             else
             {
-                _nsAttributes[index].Set(XmlNodeType.Attribute, prefix, _xmlns, reader.NameTable.Add(string.Concat(_xmlns, ":", prefix)), _xmlnsUri, ns);
+                localName = prefix;
+                attrPrefix = _xmlns;
+                name = reader.NameTable.Add(string.Concat(_xmlns, ":", prefix));
+            }
+
+            if (_nsAttributes[index] == null)
+            {
+                _nsAttributes[index] = new NodeData(XmlNodeType.Attribute, localName, attrPrefix, name, _xmlnsUri, ns);
+            }
+            else
+            {
+                _nsAttributes[index].Set(XmlNodeType.Attribute, localName, attrPrefix, name, _xmlnsUri, ns);
             }
 
             Debug.Assert(_state == State.ClearNsAttributes || _state == State.Interactive || _state == State.PopNamespaceScope);
@@ -1322,13 +1352,13 @@ namespace System.Xml
         {
             for (int i = 0; i < _nsAttrCount; i++)
             {
-                if (Ref.Equal(prefix, _nsAttributes[i].prefix) &&
-                     Ref.Equal(localName, _nsAttributes[i].localName))
+                if (Ref.Equal(prefix, _nsAttributes![i].prefix) &&
+                     Ref.Equal(localName, _nsAttributes![i].localName)) // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/34644
                 {
                     if (i < _nsAttrCount - 1)
                     {
                         // swap
-                        NodeData tmpNodeData = _nsAttributes[i];
+                        NodeData tmpNodeData = _nsAttributes![i]; // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/34644
                         _nsAttributes[i] = _nsAttributes[_nsAttrCount - 1];
                         _nsAttributes[_nsAttrCount - 1] = tmpNodeData;
                     }
@@ -1344,7 +1374,7 @@ namespace System.Xml
             reader.MoveToElement();
             _curNsAttr = index;
             _nsIncReadOffset = 0;
-            SetCurrentNode(_nsAttributes[index]);
+            SetCurrentNode(_nsAttributes![index]);
         }
 
         private bool InitReadElementContentAsBinary(State binaryState)

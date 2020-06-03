@@ -5940,44 +5940,76 @@ const WCHAR* MethodContext::repAppendClassName(CORINFO_CLASS_HANDLE cls,
     return name;
 }
 
-void MethodContext::recGetTailCallCopyArgsThunk(CORINFO_SIG_INFO*                    pSig,
-                                                CorInfoHelperTailCallSpecialHandling flags,
-                                                void*                                result)
+void MethodContext::recGetTailCallHelpers(
+    CORINFO_RESOLVED_TOKEN* callToken,
+    CORINFO_SIG_INFO* sig,
+    CORINFO_GET_TAILCALL_HELPERS_FLAGS flags,
+    CORINFO_TAILCALL_HELPERS* pResult)
 {
-    if (GetTailCallCopyArgsThunk == nullptr)
-        GetTailCallCopyArgsThunk = new LightWeightMap<Agnostic_GetTailCallCopyArgsThunk, DWORDLONG>();
+    if (GetTailCallHelpers == nullptr)
+        GetTailCallHelpers = new LightWeightMap<Agnostic_GetTailCallHelpers, Agnostic_CORINFO_TAILCALL_HELPERS>();
 
-    Agnostic_GetTailCallCopyArgsThunk key;
-    ZeroMemory(&key, sizeof(Agnostic_GetTailCallCopyArgsThunk)); // We use the input structs as a key and use memcmp to
-                                                                 // compare.. so we need to zero out padding too
-    key.Sig   = SpmiRecordsHelper::StoreAgnostic_CORINFO_SIG_INFO(*pSig, GetTailCallCopyArgsThunk);
+    Agnostic_GetTailCallHelpers key;
+    ZeroMemory(&key, sizeof(Agnostic_GetTailCallHelpers));
+
+    key.callToken = SpmiRecordsHelper::StoreAgnostic_CORINFO_RESOLVED_TOKEN(callToken, GetTailCallHelpers);
+    key.sig = SpmiRecordsHelper::StoreAgnostic_CORINFO_SIG_INFO(*sig, GetTailCallHelpers);
     key.flags = (DWORD)flags;
 
-    GetTailCallCopyArgsThunk->Add(key, (DWORDLONG)result);
-    DEBUG_REC(dmpGetTailCallCopyArgsThunk(key, (DWORDLONG)result));
-}
-void MethodContext::dmpGetTailCallCopyArgsThunk(const Agnostic_GetTailCallCopyArgsThunk& key, DWORDLONG value)
-{
-    printf("GetTailCallCopyArgsThunk key sig%s flg-%08X",
-           SpmiDumpHelper::DumpAgnostic_CORINFO_SIG_INFO(key.Sig).c_str(), key.flags);
-    printf(", value res-%016llX", value);
-}
-void* MethodContext::repGetTailCallCopyArgsThunk(CORINFO_SIG_INFO* pSig, CorInfoHelperTailCallSpecialHandling flags)
-{
-    AssertCodeMsg(GetTailCallCopyArgsThunk != nullptr, EXCEPTIONCODE_MC, "Didn't find anything for ...");
+    Agnostic_CORINFO_TAILCALL_HELPERS value;
+    ZeroMemory(&value, sizeof(Agnostic_CORINFO_TAILCALL_HELPERS));
 
-    Agnostic_GetTailCallCopyArgsThunk key;
-    ZeroMemory(&key, sizeof(Agnostic_GetTailCallCopyArgsThunk)); // We use the input structs as a key and use memcmp to
-                                                                 // compare.. so we need to zero out padding too
-    key.Sig   = SpmiRecordsHelper::RestoreAgnostic_CORINFO_SIG_INFO(*pSig, GetTailCallCopyArgsThunk);
+    value.result = pResult != nullptr;
+    if (pResult != nullptr)
+    {
+        value.flags = (DWORD)pResult->flags;
+        value.hStoreArgs = (DWORDLONG)pResult->hStoreArgs;
+        value.hCallTarget = (DWORDLONG)pResult->hCallTarget;
+        value.hDispatcher = (DWORDLONG)pResult->hDispatcher;
+    }
+    GetTailCallHelpers->Add(key, value);
+    DEBUG_REC(dmpGetTailCallHelpers(key, value));
+}
+
+void MethodContext::dmpGetTailCallHelpers(const Agnostic_GetTailCallHelpers& key, const Agnostic_CORINFO_TAILCALL_HELPERS& value)
+{
+    printf("GetTailCallHelpers key callToken-%s sig-%s flg-%08X",
+        SpmiDumpHelper::DumpAgnostic_CORINFO_RESOLVED_TOKEN(key.callToken).c_str(),
+        SpmiDumpHelper::DumpAgnostic_CORINFO_SIG_INFO(key.sig).c_str(),
+        key.flags);
+    printf(", value result-%s flg-%08X hStoreArgs-%016llX hCallTarget-%016llX hDispatcher-%016llX",
+        value.result ? "true" : "false",
+        value.flags,
+        value.hStoreArgs,
+        value.hCallTarget,
+        value.hDispatcher);
+}
+
+bool MethodContext::repGetTailCallHelpers(
+    CORINFO_RESOLVED_TOKEN* callToken,
+    CORINFO_SIG_INFO* sig,
+    CORINFO_GET_TAILCALL_HELPERS_FLAGS flags,
+    CORINFO_TAILCALL_HELPERS* pResult)
+{
+    AssertCodeMsg(GetTailCallHelpers != nullptr, EXCEPTIONCODE_MC, "Didn't find anything for ...");
+
+    Agnostic_GetTailCallHelpers key;
+    ZeroMemory(&key, sizeof(Agnostic_GetTailCallHelpers));
+    key.callToken = SpmiRecordsHelper::RestoreAgnostic_CORINFO_RESOLVED_TOKEN(callToken, GetTailCallHelpers);
+    key.sig = SpmiRecordsHelper::RestoreAgnostic_CORINFO_SIG_INFO(*sig, GetTailCallHelpers);
     key.flags = (DWORD)flags;
 
-    AssertCodeMsg(GetTailCallCopyArgsThunk->GetIndex(key) != -1, EXCEPTIONCODE_MC, "Didn't find %016llX",
-                  (DWORDLONG)key.Sig.retTypeClass);
-    void* result = (void*)GetTailCallCopyArgsThunk->Get(key);
-    cr->recAddressMap((void*)0x424242, (void*)result, 1);
-    DEBUG_REP(dmpGetTailCallCopyArgsThunk(key, (DWORDLONG)result));
-    return result;
+    AssertCodeMsg(GetTailCallHelpers->GetIndex(key) != -1, EXCEPTIONCODE_MC, "Could not find matching tail call helper call");
+    Agnostic_CORINFO_TAILCALL_HELPERS value = GetTailCallHelpers->Get(key);
+    if (!value.result)
+        return false;
+
+    pResult->flags = (CORINFO_TAILCALL_HELPERS_FLAGS)value.flags;
+    pResult->hStoreArgs = (CORINFO_METHOD_HANDLE)value.hStoreArgs;
+    pResult->hCallTarget = (CORINFO_METHOD_HANDLE)value.hCallTarget;
+    pResult->hDispatcher = (CORINFO_METHOD_HANDLE)value.hDispatcher;
+    DEBUG_REP(dmpGetTailCallHelpers(key, value));
+    return true;
 }
 
 void MethodContext::recGetMethodDefFromMethod(CORINFO_METHOD_HANDLE hMethod, mdMethodDef result)

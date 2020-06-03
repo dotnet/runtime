@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System;
 using System.Text;
 using System.Xml.Schema;
@@ -11,11 +12,11 @@ namespace System.Xml
     internal partial interface IDtdParserAdapter
     {
         XmlNameTable NameTable { get; }
-        IXmlNamespaceResolver NamespaceResolver { get; }
+        IXmlNamespaceResolver? NamespaceResolver { get; }
 
-        Uri BaseUri { get; }
+        Uri? BaseUri { get; }
 
-        char[] ParsingBuffer { get; }
+        char[]? ParsingBuffer { get; }
         int ParsingBufferLength { get; }
         int CurrentPosition { get; set; }
         int LineNo { get; }
@@ -35,7 +36,7 @@ namespace System.Xml
 
         bool PushEntity(IDtdEntityInfo entity, out int entityId);
 
-        bool PopEntity(out IDtdEntityInfo oldEntity, out int newEntityId);
+        bool PopEntity(out IDtdEntityInfo? oldEntity, out int newEntityId);
 
         bool PushExternalSubset(string systemId, string publicId);
 
@@ -49,7 +50,7 @@ namespace System.Xml
     internal interface IDtdParserAdapterWithValidation : IDtdParserAdapter
     {
         bool DtdValidation { get; }
-        IValidationEventHandling ValidationEventHandling { get; }
+        IValidationEventHandling? ValidationEventHandling { get; }
     }
 
     internal interface IDtdParserAdapterV1 : IDtdParserAdapterWithValidation

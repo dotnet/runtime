@@ -109,7 +109,7 @@ enum EtwThreadFlags
 #if defined(FEATURE_PERFTRACING)
 #define ETW_INLINE
 #define ETWOnStartup(StartEventName, EndEventName)
-#define ETWFireEvent(EventName)
+#define ETWFireEvent(EventName) FireEtw##EventName(GetClrInstanceId())
 
 #define ETW_TRACING_INITIALIZED(RegHandle) (TRUE)
 #define ETW_EVENT_ENABLED(Context, EventDescriptor) (EventPipeHelper::IsEnabled(Context, EventDescriptor.Level, EventDescriptor.Keyword) || \

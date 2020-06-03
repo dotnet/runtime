@@ -188,9 +188,10 @@ public:
 class SharedMemoryProcessDataBase
 {
 public:
-    virtual void Close(bool isAbruptShutdown, bool releaseSharedData)
-    {
-    }
+    virtual bool CanClose() const = 0;
+    virtual bool HasImplicitRef() const = 0;
+    virtual void SetHasImplicitRef(bool value) = 0;
+    virtual void Close(bool isAbruptShutdown, bool releaseSharedData) = 0;
 
     virtual ~SharedMemoryProcessDataBase()
     {

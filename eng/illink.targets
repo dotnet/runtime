@@ -8,8 +8,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="illink.tasks"
-                      Version="$(ILLinkTasksVersion)"
+    <PackageReference Include="Microsoft.NET.ILLink.Tasks"
+                      Version="$(MicrosoftNETILLinkTasksVersion)"
                       PrivateAssets="all"
                       IsImplicitlyDefined="true"
                       ExcludeAssets="build"
@@ -18,7 +18,7 @@
 
   <!-- Inputs and outputs of ILLinkTrimAssembly -->
   <PropertyGroup>
-    <ILLinkTasksDir>$([MSBuild]::NormalizeDirectory('$(PkgILLink_Tasks)', 'tools'))</ILLinkTasksDir>
+    <ILLinkTasksDir>$([MSBuild]::NormalizeDirectory('$(PkgMicrosoft_NET_ILLink_Tasks)', 'tools'))</ILLinkTasksDir>
     <ILLinkTasksPath Condition="'$(ILLinkTasksPath)' == '' and '$(MSBuildRuntimeType)' == 'core'">$(ILLinkTasksDir)netcoreapp3.0/ILLink.Tasks.dll</ILLinkTasksPath>
     <ILLinkTasksPath Condition="'$(ILLinkTasksPath)' == '' and '$(MSBuildRuntimeType)' != 'core'">$(ILLinkTasksDir)$(NetFrameworkCurrent)/ILLink.Tasks.dll</ILLinkTasksPath>
     <ILLinkTrimAssemblyPath>$(IntermediateOutputPath)$(TargetName)$(TargetExt)</ILLinkTrimAssemblyPath>
@@ -29,6 +29,8 @@
     <ILLinkTrimOutputPath>$(IntermediateOutputPath)</ILLinkTrimOutputPath>
 
     <ILLinkTrimXml Condition="'$(ILLinkTrimXml)' == '' and Exists('$(MSBuildProjectDirectory)/ILLinkTrim.xml')">$(MSBuildProjectDirectory)/ILLinkTrim.xml</ILLinkTrimXml>
+    <!-- ILLinkTrim_LibraryBuild.xml files are only used during building the library, not an app. They shouldn't be embedded into the assembly. -->
+    <ILLinkTrimXmlLibraryBuild Condition="'$(ILLinkTrimXmlLibraryBuild)' == '' and Exists('$(MSBuildProjectDirectory)/ILLinkTrim_LibraryBuild.xml')">$(MSBuildProjectDirectory)/ILLinkTrim_LibraryBuild.xml</ILLinkTrimXmlLibraryBuild>
 
     <!-- if building a PDB, tell illink to rewrite the symbols file -->
     <ILLinkRewritePDBs Condition="'$(ILLinkRewritePDBs)' == '' and '$(DebugSymbols)' != 'false'">true</ILLinkRewritePDBs>
@@ -38,6 +40,10 @@
     <EmbeddedResource Include="$(ILLinkTrimXml)">
       <LogicalName>$(AssemblyName).xml</LogicalName>
     </EmbeddedResource>
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(ILLinkTrimXmlLibraryBuild)' != ''">
+    <None Include="$(ILLinkTrimXmlLibraryBuild)" />
   </ItemGroup>
 
   <!-- Custom binplacing for pre/post-trimming and reports that is useful for analysis 
@@ -87,7 +93,9 @@
       <!-- keep types and members required by Debugger-related attributes -->
       <ILLinkArgs>$(ILLinkArgs) -v true</ILLinkArgs>
       <!-- don't remove the embedded root xml resource since ILLink may run again on the assembly -->
-      <ILLinkArgs>$(ILLinkArgs) --strip-resources false</ILLinkArgs>
+      <ILLinkArgs Condition="'$(ILLinkTrimXml)' != ''">$(ILLinkArgs) --strip-descriptors false</ILLinkArgs>
+      <!-- pass the non-embedded root xml file on the command line -->
+      <ILLinkArgs Condition="'$(ILLinkTrimXmlLibraryBuild)' != ''">$(ILLinkArgs) -x "$(ILLinkTrimXmlLibraryBuild)"</ILLinkArgs>
       <!-- ignore unresolved references -->
       <ILLinkArgs>$(ILLinkArgs) --skip-unresolved true</ILLinkArgs>
       <!-- keep interface implementations -->

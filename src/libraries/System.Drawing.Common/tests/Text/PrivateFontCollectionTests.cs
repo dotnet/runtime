@@ -107,7 +107,7 @@ namespace System.Drawing.Text.Tests
         {
             using (var fontCollection = new PrivateFontCollection())
             {
-                AssertExtensions.Throws<ArgumentNullException>("path", () => fontCollection.AddFontFile(null));
+                AssertExtensions.Throws<ArgumentNullException>("filename", "path", () => fontCollection.AddFontFile(null));
             }
         }
 

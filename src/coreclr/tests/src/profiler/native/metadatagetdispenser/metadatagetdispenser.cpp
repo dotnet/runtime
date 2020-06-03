@@ -8,6 +8,12 @@
 #include <Windows.h>
 #else // WIN32
 #include <dlfcn.h>
+#include <iostream>
+#include <fstream>
+#include <string>
+using std::string;
+using std::ifstream;
+using std::getline;
 #ifdef __APPLE__
 #include <mach-o/dyld.h>
 #endif // __APPLE__
@@ -160,7 +166,6 @@ HRESULT MetaDataGetDispenser::GetDispenser(IMetaDataDispenserEx **disp)
 
 #else // WIN32
 
-#ifdef __APPLE__
 bool EndsWith(const char *lhs, const char *rhs)
 {
     size_t lhsLen = strlen(lhs);
@@ -186,7 +191,9 @@ bool EndsWith(const char *lhs, const char *rhs)
 
     return true;
 }
-const char *GetCoreCLRPath()
+
+#ifdef __APPLE__
+string GetCoreCLRPath()
 {
     const char *coreclrName = "libcoreclr.dylib";
     size_t count = _dyld_image_count();
@@ -201,22 +208,51 @@ const char *GetCoreCLRPath()
 
     return coreclrName;
 }
+
+#else // __APPLE__
+
+string GetLibraryName(string line)
+{
+    // /proc/self/maps contains lines that look like the following:
+    //      7efdd3d22000-7efdd3f09000 r-xp 00000000 08:02 14160554                   /lib/x86_64-linux-gnu/libc-2.27.so
+    // We can parse them by looking for the last space and return everything after that
+    // It assumes that none of the paths have spaces
+    size_t lastSpace = line.find_last_of(' ');
+    if (lastSpace == string::npos || lastSpace >= (line.size() - 1))
+    {
+        return string();
+    }
+
+    return line.substr(lastSpace + 1, string::npos);
+}
+
+string GetCoreCLRPath()
+{
+    string line;
+    ifstream sharedLibs("/proc/self/maps");
+    while (getline(sharedLibs, line))
+    {
+        string lib = GetLibraryName(line);
+        if (EndsWith(lib.c_str(), "libcoreclr.so"))
+        {
+            return lib;
+        }
+    }
+
+    return string();
+}
 #endif // __APPLE__
 
 HRESULT MetaDataGetDispenser::GetDispenser(IMetaDataDispenserEx **disp)
 {
-#ifdef __APPLE__
-    const char *profilerName = GetCoreCLRPath();
-#else // __APPLE__
-    const char *profilerName = "libcoreclr.so";
-#endif // __APPLE__
+    string profilerName = GetCoreCLRPath();
 
-    void *coreclr = dlopen(profilerName, RTLD_LAZY | RTLD_NOLOAD);
+    void *coreclr = dlopen(profilerName.c_str(), RTLD_LAZY | RTLD_NOLOAD);
     if (coreclr == NULL)
     {
         _failures++;
         char *reason = dlerror();
-        printf("Failed to find %s reason=%s\n", profilerName, reason);
+        printf("Failed to find %s reason=%s\n", profilerName.c_str(), reason);
         return E_FAIL;
     }
 

@@ -3851,7 +3851,7 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
 #endif // !TARGET_64BIT
         {
             // If this arg is never on the stack, go to the next one.
-            if (!regArgTab[argNum].stackArg)
+            if (!regArgTab[argNum].stackArg && !regArgTab[argNum].writeThru)
             {
                 continue;
             }
@@ -4596,8 +4596,9 @@ void CodeGen::genCheckUseBlockInit()
         // double-counting the initialization impact of any locals.
         bool counted = false;
 
-        if (varDsc->lvIsParam)
+        if (!varDsc->lvIsInReg() && !varDsc->lvOnFrame)
         {
+            noway_assert(varDsc->lvRefCnt() == 0);
             continue;
         }
 
@@ -4608,49 +4609,22 @@ void CodeGen::genCheckUseBlockInit()
             continue;
         }
 
-        // Likewise, initialization of the GS cookie is handled specially for OSR.
-        // Could do this for non-OSR too.. (likewise for the dummy)
-        if (compiler->opts.IsOSR() && varNum == compiler->lvaGSSecurityCookie)
+        if (compiler->fgVarIsNeverZeroInitializedInProlog(varNum))
         {
             continue;
         }
-
-        if (!varDsc->lvIsInReg() && !varDsc->lvOnFrame)
-        {
-            noway_assert(varDsc->lvRefCnt() == 0);
-            continue;
-        }
-
-        if (varNum == compiler->lvaInlinedPInvokeFrameVar || varNum == compiler->lvaStubArgumentVar)
-        {
-            continue;
-        }
-
-#if FEATURE_FIXED_OUT_ARGS
-        if (varNum == compiler->lvaPInvokeFrameRegSaveVar)
-        {
-            continue;
-        }
-        if (varNum == compiler->lvaOutgoingArgSpaceVar)
-        {
-            continue;
-        }
-#endif
-
-#if defined(FEATURE_EH_FUNCLETS)
-        // There's no need to force 0-initialization of the PSPSym, it will be
-        // initialized with a real value in the prolog
-        if (varNum == compiler->lvaPSPSym)
-        {
-            continue;
-        }
-#endif
 
         if (compiler->lvaIsFieldOfDependentlyPromotedStruct(varDsc))
         {
             // For Compiler::PROMOTION_TYPE_DEPENDENT type of promotion, the whole struct should have been
             // initialized by the parent struct. No need to set the lvMustInit bit in the
             // field locals.
+            continue;
+        }
+
+        if (varDsc->lvHasExplicitInit)
+        {
+            varDsc->lvMustInit = 0;
             continue;
         }
 
@@ -4847,7 +4821,7 @@ void CodeGen::genCheckUseBlockInit()
  */
 
 #if defined(TARGET_ARM64)
-void CodeGen::genPushCalleeSavedRegisters(regNumber initReg, bool* pInitRegZeroed)
+void CodeGen::genPushCalleeSavedRegisters(regNumber initReg, bool* pInitRegModified)
 #else
 void          CodeGen::genPushCalleeSavedRegisters()
 #endif
@@ -5336,7 +5310,8 @@ void          CodeGen::genPushCalleeSavedRegisters()
 
             JITDUMP("    spAdjustment2=%d\n", spAdjustment2);
 
-            genPrologSaveRegPair(REG_FP, REG_LR, alignmentAdjustment2, -spAdjustment2, false, initReg, pInitRegZeroed);
+            genPrologSaveRegPair(REG_FP, REG_LR, alignmentAdjustment2, -spAdjustment2, false, initReg,
+                                 pInitRegModified);
             offset += spAdjustment2;
 
             // Now subtract off the #outsz (or the rest of the #outsz if it was unaligned, and the above "sub"
@@ -5356,13 +5331,13 @@ void          CodeGen::genPushCalleeSavedRegisters()
 
             // We've already established the frame pointer, so no need to report the stack pointer change to unwind
             // info.
-            genStackPointerAdjustment(-spAdjustment3, initReg, pInitRegZeroed, /* reportUnwindData */ false);
+            genStackPointerAdjustment(-spAdjustment3, initReg, pInitRegModified, /* reportUnwindData */ false);
             offset += spAdjustment3;
         }
         else
         {
             genPrologSaveRegPair(REG_FP, REG_LR, compiler->lvaOutgoingArgSpaceSize, -remainingFrameSz, false, initReg,
-                                 pInitRegZeroed);
+                                 pInitRegModified);
             offset += remainingFrameSz;
 
             offsetSpToSavedFp = compiler->lvaOutgoingArgSpaceSize;
@@ -5394,7 +5369,7 @@ void          CodeGen::genPushCalleeSavedRegisters()
         JITDUMP("    remainingFrameSz=%d\n", remainingFrameSz);
 
         // We've already established the frame pointer, so no need to report the stack pointer change to unwind info.
-        genStackPointerAdjustment(-remainingFrameSz, initReg, pInitRegZeroed, /* reportUnwindData */ false);
+        genStackPointerAdjustment(-remainingFrameSz, initReg, pInitRegModified, /* reportUnwindData */ false);
         offset += remainingFrameSz;
     }
     else
@@ -6123,17 +6098,17 @@ void CodeGen::genPopCalleeSavedRegisters(bool jmpEpilog)
 
 #endif // TARGET*
 
-// We need a register with value zero. Zero the initReg, if necessary, and set *pInitRegZeroed if so.
+// We need a register with value zero. Zero the initReg, if necessary, and set *pInitRegModified if so.
 // Return the register to use. On ARM64, we never touch the initReg, and always just return REG_ZR.
-regNumber CodeGen::genGetZeroReg(regNumber initReg, bool* pInitRegZeroed)
+regNumber CodeGen::genGetZeroReg(regNumber initReg, bool* pInitRegModified)
 {
 #ifdef TARGET_ARM64
     return REG_ZR;
 #else  // !TARGET_ARM64
-    if (*pInitRegZeroed == false)
+    if (*pInitRegModified)
     {
         instGen_Set_Reg_To_Zero(EA_PTRSIZE, initReg);
-        *pInitRegZeroed = true;
+        *pInitRegModified = false;
     }
     return initReg;
 #endif // !TARGET_ARM64
@@ -6143,14 +6118,14 @@ regNumber CodeGen::genGetZeroReg(regNumber initReg, bool* pInitRegZeroed)
 // genZeroInitFrame: Zero any untracked pointer locals and/or initialize memory for locspace
 //
 // Arguments:
-//    untrLclHi      - (Untracked locals High-Offset)  The upper bound offset at which the zero init
-//                                                     code will end initializing memory (not inclusive).
-//    untrLclLo      - (Untracked locals Low-Offset)   The lower bound at which the zero init code will
-//                                                     start zero initializing memory.
-//    initReg        - A scratch register (that gets set to zero on some platforms).
-//    pInitRegZeroed - Sets a flag that tells the callee whether or not the initReg register got zeroed.
+//    untrLclHi        - (Untracked locals High-Offset)  The upper bound offset at which the zero init
+//                                                       code will end initializing memory (not inclusive).
+//    untrLclLo        - (Untracked locals Low-Offset)   The lower bound at which the zero init code will
+//                                                       start zero initializing memory.
+//    initReg          - A scratch register (that gets set to zero on some platforms).
+//    pInitRegModified - Sets a flag that tells the callee whether or not the initReg register got zeroed.
 //
-void CodeGen::genZeroInitFrame(int untrLclHi, int untrLclLo, regNumber initReg, bool* pInitRegZeroed)
+void CodeGen::genZeroInitFrame(int untrLclHi, int untrLclLo, regNumber initReg, bool* pInitRegModified)
 {
     assert(compiler->compGeneratingProlog);
 
@@ -6225,8 +6200,8 @@ void CodeGen::genZeroInitFrame(int untrLclHi, int untrLclLo, regNumber initReg, 
 
 #else // !define(TARGET_ARM)
 
-        rAddr           = initReg;
-        *pInitRegZeroed = false;
+        rAddr             = initReg;
+        *pInitRegModified = true;
 
 #endif // !defined(TARGET_ARM)
 
@@ -6267,7 +6242,7 @@ void CodeGen::genZeroInitFrame(int untrLclHi, int untrLclLo, regNumber initReg, 
             // Load immediate into the InitReg register
             instGen_Set_Reg_To_Imm(EA_PTRSIZE, initReg, (ssize_t)untrLclLo);
             GetEmitter()->emitIns_R_R_R(INS_add, EA_PTRSIZE, rAddr, genFramePointerReg(), initReg);
-            *pInitRegZeroed = false;
+            *pInitRegModified = true;
         }
 
         if (useLoop)
@@ -6279,7 +6254,7 @@ void CodeGen::genZeroInitFrame(int untrLclHi, int untrLclLo, regNumber initReg, 
         }
 
 #if defined(TARGET_ARM)
-        rZero1 = genGetZeroReg(initReg, pInitRegZeroed);
+        rZero1 = genGetZeroReg(initReg, pInitRegModified);
         instGen_Set_Reg_To_Zero(EA_PTRSIZE, rZero2);
         target_ssize_t stmImm = (target_ssize_t)(genRegMask(rZero1) | genRegMask(rZero2));
 #endif // TARGET_ARM
@@ -6368,7 +6343,7 @@ void CodeGen::genZeroInitFrame(int untrLclHi, int untrLclLo, regNumber initReg, 
 #endif
         if (blkSize < minSimdSize)
         {
-            zeroReg = genGetZeroReg(initReg, pInitRegZeroed);
+            zeroReg = genGetZeroReg(initReg, pInitRegModified);
 
             int i = 0;
             for (; i + REGSIZE_BYTES <= blkSize; i += REGSIZE_BYTES)
@@ -6430,7 +6405,7 @@ void CodeGen::genZeroInitFrame(int untrLclHi, int untrLclLo, regNumber initReg, 
                 assert(alignmentLoBlkSize < XMM_REGSIZE_BYTES);
                 assert((alignedLclLo - alignmentLoBlkSize) == untrLclLo);
 
-                zeroReg = genGetZeroReg(initReg, pInitRegZeroed);
+                zeroReg = genGetZeroReg(initReg, pInitRegModified);
 
                 int i = 0;
                 for (; i + REGSIZE_BYTES <= alignmentLoBlkSize; i += REGSIZE_BYTES)
@@ -6538,7 +6513,7 @@ void CodeGen::genZeroInitFrame(int untrLclHi, int untrLclLo, regNumber initReg, 
                 emit->emitIns_J(INS_jne, nullptr, -5);
 
                 // initReg will be zero at end of the loop
-                *pInitRegZeroed = true;
+                *pInitRegModified = false;
             }
 
             if (untrLclHi != alignedLclHi)
@@ -6547,7 +6522,7 @@ void CodeGen::genZeroInitFrame(int untrLclHi, int untrLclLo, regNumber initReg, 
                 assert(alignmentHiBlkSize < XMM_REGSIZE_BYTES);
                 assert((alignedLclHi + alignmentHiBlkSize) == untrLclHi);
 
-                zeroReg = genGetZeroReg(initReg, pInitRegZeroed);
+                zeroReg = genGetZeroReg(initReg, pInitRegModified);
 
                 int i = 0;
                 for (; i + REGSIZE_BYTES <= alignmentHiBlkSize; i += REGSIZE_BYTES)
@@ -6614,13 +6589,13 @@ void CodeGen::genZeroInitFrame(int untrLclHi, int untrLclLo, regNumber initReg, 
                     if (layout->IsGCPtr(i))
                     {
                         GetEmitter()->emitIns_S_R(ins_Store(TYP_I_IMPL), EA_PTRSIZE,
-                                                  genGetZeroReg(initReg, pInitRegZeroed), varNum, i * REGSIZE_BYTES);
+                                                  genGetZeroReg(initReg, pInitRegModified), varNum, i * REGSIZE_BYTES);
                     }
                 }
             }
             else
             {
-                regNumber zeroReg = genGetZeroReg(initReg, pInitRegZeroed);
+                regNumber zeroReg = genGetZeroReg(initReg, pInitRegModified);
 
                 // zero out the whole thing rounded up to a single stack slot size
                 unsigned lclSize = roundUp(compiler->lvaLclSize(varNum), (unsigned)sizeof(int));
@@ -6652,7 +6627,7 @@ void CodeGen::genZeroInitFrame(int untrLclHi, int untrLclLo, regNumber initReg, 
 
             // printf("initialize untracked spillTmp [EBP-%04X]\n", stkOffs);
 
-            inst_ST_RV(ins_Store(TYP_I_IMPL), tempThis, 0, genGetZeroReg(initReg, pInitRegZeroed), TYP_I_IMPL);
+            inst_ST_RV(ins_Store(TYP_I_IMPL), tempThis, 0, genGetZeroReg(initReg, pInitRegModified), TYP_I_IMPL);
         }
     }
 
@@ -6787,7 +6762,7 @@ void CodeGen::genZeroInitFrame(int untrLclHi, int untrLclLo, regNumber initReg, 
  *  ICodeManager::GetParamTypeArg().
  */
 
-void CodeGen::genReportGenericContextArg(regNumber initReg, bool* pInitRegZeroed)
+void CodeGen::genReportGenericContextArg(regNumber initReg, bool* pInitRegModified)
 {
     // For OSR the original method has set this up for us.
     if (compiler->opts.IsOSR())
@@ -6852,8 +6827,8 @@ void CodeGen::genReportGenericContextArg(regNumber initReg, bool* pInitRegZeroed
 
         // We will just use the initReg since it is an available register
         // and we are probably done using it anyway...
-        reg             = initReg;
-        *pInitRegZeroed = false;
+        reg               = initReg;
+        *pInitRegModified = true;
 
         // mov reg, [compiler->info.compTypeCtxtArg]
         GetEmitter()->emitIns_R_AR(ins_Load(TYP_I_IMPL), EA_PTRSIZE, reg, genFramePointerReg(), varDsc->lvStkOffs);
@@ -7568,6 +7543,25 @@ void CodeGen::genFnProlog()
 
         bool isInReg    = varDsc->lvIsInReg();
         bool isInMemory = !isInReg || varDsc->lvLiveInOutOfHndlr;
+
+        // Note that 'lvIsInReg()' will only be accurate for variables that are actually live-in to
+        // the first block. This will include all possibly-uninitialized locals, whose liveness
+        // will naturally propagate up to the entry block. However, we also set 'lvMustInit' for
+        // locals that are live-in to a finally block, and those may not be live-in to the first
+        // block. For those, we don't want to initialize the register, as it will not actually be
+        // occupying it on entry.
+        if (isInReg)
+        {
+            if (compiler->lvaEnregEHVars && varDsc->lvLiveInOutOfHndlr)
+            {
+                isInReg = VarSetOps::IsMember(compiler, compiler->fgFirstBB->bbLiveIn, varDsc->lvVarIndex);
+            }
+            else
+            {
+                assert(VarSetOps::IsMember(compiler, compiler->fgFirstBB->bbLiveIn, varDsc->lvVarIndex));
+            }
+        }
+
         if (isInReg)
         {
             regMaskTP regMask = genRegMask(varDsc->GetRegNum());
@@ -7678,9 +7672,9 @@ void CodeGen::genFnProlog()
 
     /* Choose the register to use for zero initialization */
 
-    regNumber initReg       = REG_SCRATCH; // Unless we find a better register below
-    bool      initRegZeroed = false;
-    regMaskTP excludeMask   = intRegState.rsCalleeRegArgMaskLiveIn;
+    regNumber initReg         = REG_SCRATCH; // Unless we find a better register below
+    bool      initRegModified = true;
+    regMaskTP excludeMask     = intRegState.rsCalleeRegArgMaskLiveIn;
     regMaskTP tempMask;
 
     // We should not use the special PINVOKE registers as the initReg
@@ -7813,11 +7807,11 @@ void CodeGen::genFnProlog()
     // been calculated to be one of the callee-saved registers (say, if all the integer argument registers are
     // in use, and perhaps with other conditions being satisfied). This is ok in other cases, after the callee-saved
     // registers have been saved. So instead of letting genAllocLclFrame use initReg as a temporary register,
-    // always use REG_SCRATCH. We don't care if it trashes it, so ignore the initRegZeroed output argument.
-    bool ignoreInitRegZeroed = false;
-    genAllocLclFrame(compiler->compLclFrameSize, REG_SCRATCH, &ignoreInitRegZeroed,
+    // always use REG_SCRATCH. We don't care if it trashes it, so ignore the initRegModified output argument.
+    bool ignoreInitRegModified = true;
+    genAllocLclFrame(compiler->compLclFrameSize, REG_SCRATCH, &ignoreInitRegModified,
                      intRegState.rsCalleeRegArgMaskLiveIn);
-    genPushCalleeSavedRegisters(initReg, &initRegZeroed);
+    genPushCalleeSavedRegisters(initReg, &initRegModified);
 #else  // !TARGET_ARM64
     genPushCalleeSavedRegisters();
 #endif // !TARGET_ARM64
@@ -7861,7 +7855,7 @@ void CodeGen::genFnProlog()
 
     if (maskStackAlloc == RBM_NONE)
     {
-        genAllocLclFrame(compiler->compLclFrameSize, initReg, &initRegZeroed, intRegState.rsCalleeRegArgMaskLiveIn);
+        genAllocLclFrame(compiler->compLclFrameSize, initReg, &initRegModified, intRegState.rsCalleeRegArgMaskLiveIn);
     }
 #endif // !TARGET_ARM64
 
@@ -7924,11 +7918,11 @@ void CodeGen::genFnProlog()
     // Zero out the frame as needed
     //
 
-    genZeroInitFrame(untrLclHi, untrLclLo, initReg, &initRegZeroed);
+    genZeroInitFrame(untrLclHi, untrLclLo, initReg, &initRegModified);
 
 #if defined(FEATURE_EH_FUNCLETS)
 
-    genSetPSPSym(initReg, &initRegZeroed);
+    genSetPSPSym(initReg, &initRegModified);
 
 #else // !FEATURE_EH_FUNCLETS
 
@@ -7941,10 +7935,10 @@ void CodeGen::genFnProlog()
         // Zero out the slot for nesting level 0
         unsigned firstSlotOffs = filterEndOffsetSlotOffs - TARGET_POINTER_SIZE;
 
-        if (!initRegZeroed)
+        if (initRegModified)
         {
             instGen_Set_Reg_To_Zero(EA_PTRSIZE, initReg);
-            initRegZeroed = true;
+            initRegModified = false;
         }
 
         GetEmitter()->emitIns_S_R(ins_Store(TYP_I_IMPL), EA_PTRSIZE, initReg, compiler->lvaShadowSPslotsVar,
@@ -7953,7 +7947,7 @@ void CodeGen::genFnProlog()
 
 #endif // !FEATURE_EH_FUNCLETS
 
-    genReportGenericContextArg(initReg, &initRegZeroed);
+    genReportGenericContextArg(initReg, &initRegModified);
 
 #ifdef JIT32_GCENCODER
     // Initialize the LocalAllocSP slot if there is localloc in the function.
@@ -7965,7 +7959,7 @@ void CodeGen::genFnProlog()
 
     // Set up the GS security cookie
 
-    genSetGSSecurityCookie(initReg, &initRegZeroed);
+    genSetGSSecurityCookie(initReg, &initRegModified);
 
 #ifdef PROFILING_SUPPORTED
 
@@ -7973,7 +7967,7 @@ void CodeGen::genFnProlog()
     // OSR methods aren't called, so don't have enter hooks.
     if (!compiler->opts.IsOSR())
     {
-        genProfilingEnterCallback(initReg, &initRegZeroed);
+        genProfilingEnterCallback(initReg, &initRegModified);
     }
 
 #endif // PROFILING_SUPPORTED
@@ -8035,15 +8029,15 @@ void CodeGen::genFnProlog()
                 }
                 else
                 {
-                    xtraReg       = REG_SCRATCH;
-                    initRegZeroed = false;
+                    xtraReg         = REG_SCRATCH;
+                    initRegModified = true;
                 }
 
                 genFnPrologCalleeRegArgs(xtraReg, &xtraRegClobbered, regState);
 
                 if (xtraRegClobbered)
                 {
-                    initRegZeroed = false;
+                    initRegModified = true;
                 }
             }
         }
@@ -8063,7 +8057,7 @@ void CodeGen::genFnProlog()
             if (regMask & initRegs)
             {
                 // Check if we have already zeroed this register
-                if ((reg == initReg) && initRegZeroed)
+                if ((reg == initReg) && !initRegModified)
                 {
                     continue;
                 }
@@ -8072,7 +8066,7 @@ void CodeGen::genFnProlog()
                     instGen_Set_Reg_To_Zero(EA_PTRSIZE, reg);
                     if (reg == initReg)
                     {
-                        initRegZeroed = true;
+                        initRegModified = false;
                     }
                 }
             }
@@ -8084,17 +8078,17 @@ void CodeGen::genFnProlog()
         // If initReg is not in initRegs then we will use REG_SCRATCH
         if ((genRegMask(initReg) & initRegs) == 0)
         {
-            initReg       = REG_SCRATCH;
-            initRegZeroed = false;
+            initReg         = REG_SCRATCH;
+            initRegModified = true;
         }
 
 #ifdef TARGET_ARM
         // This is needed only for Arm since it can use a zero initialized int register
         // to initialize vfp registers.
-        if (!initRegZeroed)
+        if (initRegModified)
         {
             instGen_Set_Reg_To_Zero(EA_PTRSIZE, initReg);
-            initRegZeroed = true;
+            initRegModified = false;
         }
 #endif // TARGET_ARM
 
@@ -9101,12 +9095,12 @@ void CodeGen::genFuncletProlog(BasicBlock* block)
         maskArgRegsLiveIn = RBM_R0;
     }
 
-    regNumber initReg       = REG_R3; // R3 is never live on entry to a funclet, so it can be trashed
-    bool      initRegZeroed = false;
+    regNumber initReg         = REG_R3; // R3 is never live on entry to a funclet, so it can be trashed
+    bool      initRegModified = true;
 
     if (maskStackAlloc == RBM_NONE)
     {
-        genAllocLclFrame(genFuncletInfo.fiSpDelta, initReg, &initRegZeroed, maskArgRegsLiveIn);
+        genAllocLclFrame(genFuncletInfo.fiSpDelta, initReg, &initRegModified, maskArgRegsLiveIn);
     }
 
     // This is the end of the OS-reported prolog for purposes of unwinding
@@ -9403,10 +9397,10 @@ void CodeGen::genFuncletProlog(BasicBlock* block)
         maskArgRegsLiveIn = RBM_ARG_0 | RBM_ARG_2;
     }
 
-    regNumber initReg       = REG_EBP; // We already saved EBP, so it can be trashed
-    bool      initRegZeroed = false;
+    regNumber initReg         = REG_EBP; // We already saved EBP, so it can be trashed
+    bool      initRegModified = true;
 
-    genAllocLclFrame(genFuncletInfo.fiSpDelta, initReg, &initRegZeroed, maskArgRegsLiveIn);
+    genAllocLclFrame(genFuncletInfo.fiSpDelta, initReg, &initRegModified, maskArgRegsLiveIn);
 
     // Callee saved float registers are copied to stack in their assigned stack slots
     // after allocating space for them as part of funclet frame.
@@ -9745,7 +9739,7 @@ void CodeGen::genCaptureFuncletPrologEpilogInfo()
  *  correctly reported, the PSPSym could be omitted in some cases.)
  ***********************************
  */
-void CodeGen::genSetPSPSym(regNumber initReg, bool* pInitRegZeroed)
+void CodeGen::genSetPSPSym(regNumber initReg, bool* pInitRegModified)
 {
     assert(compiler->compGeneratingProlog);
 
@@ -9791,8 +9785,8 @@ void CodeGen::genSetPSPSym(regNumber initReg, bool* pInitRegZeroed)
 
     // We will just use the initReg since it is an available register
     // and we are probably done using it anyway...
-    regNumber regTmp = initReg;
-    *pInitRegZeroed  = false;
+    regNumber regTmp  = initReg;
+    *pInitRegModified = true;
 
     GetEmitter()->emitIns_R_R_I(INS_add, EA_PTRSIZE, regTmp, regBase, callerSPOffs);
     GetEmitter()->emitIns_S_R(INS_str, EA_PTRSIZE, regTmp, compiler->lvaPSPSym, 0);
@@ -9803,8 +9797,8 @@ void CodeGen::genSetPSPSym(regNumber initReg, bool* pInitRegZeroed)
 
     // We will just use the initReg since it is an available register
     // and we are probably done using it anyway...
-    regNumber regTmp = initReg;
-    *pInitRegZeroed  = false;
+    regNumber regTmp  = initReg;
+    *pInitRegModified = true;
 
     GetEmitter()->emitIns_R_R_Imm(INS_add, EA_PTRSIZE, regTmp, REG_SPBASE, SPtoCallerSPdelta);
     GetEmitter()->emitIns_S_R(INS_str, EA_PTRSIZE, regTmp, compiler->lvaPSPSym, 0);
@@ -11534,7 +11528,7 @@ void CodeGen::genReturn(GenTree* treeNode)
         {
             if (varTypeIsLong(compiler->info.compRetNativeType))
             {
-                retTypeDesc.InitializeLongReturnType(compiler);
+                retTypeDesc.InitializeLongReturnType();
             }
             else // we must have a struct return type
             {
@@ -11605,6 +11599,284 @@ void CodeGen::genReturn(GenTree* treeNode)
 
     genStackPointerCheck(doStackPointerCheck, compiler->lvaReturnSpCheck);
 #endif // defined(DEBUG) && defined(TARGET_XARCH)
+}
+
+//------------------------------------------------------------------------
+// isStructReturn: Returns whether the 'treeNode' is returning a struct.
+//
+// Arguments:
+//    treeNode - The tree node to evaluate whether is a struct return.
+//
+// Return Value:
+//    Returns true if the 'treeNode" is a GT_RETURN node of type struct.
+//    Otherwise returns false.
+//
+bool CodeGen::isStructReturn(GenTree* treeNode)
+{
+    // This method could be called for 'treeNode' of GT_RET_FILT or GT_RETURN.
+    // For the GT_RET_FILT, the return is always a bool or a void, for the end of a finally block.
+    noway_assert(treeNode->OperGet() == GT_RETURN || treeNode->OperGet() == GT_RETFILT);
+    if (treeNode->OperGet() != GT_RETURN)
+    {
+        return false;
+    }
+
+#if defined(TARGET_AMD64) && !defined(UNIX_AMD64_ABI)
+    assert(!varTypeIsStruct(treeNode));
+    return false;
+#elif defined(TARGET_ARM64)
+    return varTypeIsStruct(treeNode) && (compiler->info.compRetNativeType == TYP_STRUCT);
+#else
+    return varTypeIsStruct(treeNode);
+#endif
+}
+
+//------------------------------------------------------------------------
+// genStructReturn: Generates code for returning a struct.
+//
+// Arguments:
+//    treeNode - The GT_RETURN tree node.
+//
+// Return Value:
+//    None
+//
+// Assumption:
+//    op1 of GT_RETURN node is either GT_LCL_VAR or multi-reg GT_CALL
+//
+void CodeGen::genStructReturn(GenTree* treeNode)
+{
+    assert(treeNode->OperGet() == GT_RETURN);
+    GenTree* op1 = treeNode->gtGetOp1();
+    genConsumeRegs(op1);
+    GenTree* actualOp1 = op1;
+    if (op1->IsCopyOrReload())
+    {
+        actualOp1 = op1->gtGetOp1();
+    }
+
+    ReturnTypeDesc retTypeDesc;
+    LclVarDsc*     varDsc = nullptr;
+    if (actualOp1->OperIs(GT_LCL_VAR))
+    {
+        varDsc = compiler->lvaGetDesc(actualOp1->AsLclVar()->GetLclNum());
+        retTypeDesc.InitializeStructReturnType(compiler, varDsc->lvVerTypeInfo.GetClassHandle());
+    }
+    else
+    {
+        assert(actualOp1->OperIs(GT_CALL));
+        retTypeDesc = *(actualOp1->AsCall()->GetReturnTypeDesc());
+    }
+    unsigned regCount = retTypeDesc.GetReturnRegCount();
+    assert(regCount <= MAX_RET_REG_COUNT);
+
+#if FEATURE_MULTIREG_RET
+    if (actualOp1->OperIs(GT_LCL_VAR) && (varTypeIsEnregisterable(op1)))
+    {
+        // Right now the only enregisterable structs supported are SIMD vector types.
+        assert(varTypeIsSIMD(op1));
+#ifdef FEATURE_SIMD
+        genSIMDSplitReturn(op1, &retTypeDesc);
+#endif // FEATURE_SIMD
+    }
+    else if (actualOp1->OperIs(GT_LCL_VAR))
+    {
+        GenTreeLclVar* lclNode = actualOp1->AsLclVar();
+        LclVarDsc*     varDsc  = compiler->lvaGetDesc(lclNode->GetLclNum());
+        assert(varDsc->lvIsMultiRegRet);
+        int offset = 0;
+        for (unsigned i = 0; i < regCount; ++i)
+        {
+            var_types type  = retTypeDesc.GetReturnRegType(i);
+            regNumber toReg = retTypeDesc.GetABIReturnReg(i);
+            GetEmitter()->emitIns_R_S(ins_Load(type), emitTypeSize(type), toReg, lclNode->GetLclNum(), offset);
+            offset += genTypeSize(type);
+        }
+    }
+    else
+    {
+        assert(actualOp1->IsMultiRegCall());
+        for (unsigned i = 0; i < regCount; ++i)
+        {
+            var_types type    = retTypeDesc.GetReturnRegType(i);
+            regNumber toReg   = retTypeDesc.GetABIReturnReg(i);
+            regNumber fromReg = op1->GetRegByIndex(i);
+            if (fromReg == REG_NA)
+            {
+                assert(op1->IsCopyOrReload());
+                fromReg = actualOp1->GetRegByIndex(i);
+            }
+            if (fromReg != toReg)
+            {
+                inst_RV_RV(ins_Copy(type), toReg, fromReg, type);
+            }
+        }
+    }
+#else // !FEATURE_MULTIREG_RET
+    unreached();
+#endif
+}
+
+//------------------------------------------------------------------------
+// genRegCopy: Produce code for a GT_COPY node.
+//
+// Arguments:
+//    tree - the GT_COPY node
+//
+// Notes:
+//    This will copy the register(s) produced by this nodes source, to
+//    the register(s) allocated to this GT_COPY node.
+//    It has some special handling for these casess:
+//    - when the source and target registers are in different register files
+//      (note that this is *not* a conversion).
+//    - when the source is a lclVar whose home location is being moved to a new
+//      register (rather than just being copied for temporary use).
+//
+void CodeGen::genRegCopy(GenTree* treeNode)
+{
+    assert(treeNode->OperGet() == GT_COPY);
+    GenTree* op1 = treeNode->AsOp()->gtOp1;
+
+    if (op1->IsMultiRegNode())
+    {
+        // Register allocation assumes that any reload and copy are done in operand order.
+        // That is, we can have:
+        //    (reg0, reg1) = COPY(V0,V1) where V0 is in reg1 and V1 is in memory
+        // The register allocation model assumes:
+        //     First, V0 is moved to reg0 (v1 can't be in reg0 because it is still live, which would be a conflict).
+        //     Then, V1 is moved to reg1
+        // However, if we call genConsumeRegs on op1, it will do the reload of V1 before we do the copy of V0.
+        // So we need to handle that case first.
+        //
+        // There should never be any circular dependencies, and we will check that here.
+
+        GenTreeCopyOrReload* copyNode = treeNode->AsCopyOrReload();
+        // GenTreeCopyOrReload only reports the highest index that has a valid register.
+        unsigned regCount = copyNode->GetRegCount();
+        assert(regCount <= MAX_MULTIREG_COUNT);
+
+        // First set the source registers as busy if they haven't been spilled.
+        // (Note that this is just for verification that we don't have circular dependencies.)
+        regMaskTP busyRegs = RBM_NONE;
+        for (unsigned i = 0; i < regCount; ++i)
+        {
+            if ((op1->GetRegSpillFlagByIdx(i) & GTF_SPILLED) == 0)
+            {
+                busyRegs |= genRegMask(op1->GetRegByIndex(i));
+            }
+        }
+        // First do any copies - we'll do the reloads after all the copies are complete.
+        for (unsigned i = 0; i < regCount; ++i)
+        {
+            regNumber sourceReg = op1->GetRegByIndex(i);
+            regNumber targetReg = copyNode->GetRegNumByIdx(i);
+            // GenTreeCopyOrReload only reports the highest index that has a valid register.
+            // However there may be lower indices that have no valid register (i.e. the register
+            // on the source is still valid at the consumer).
+            if (targetReg != REG_NA)
+            {
+                // We shouldn't specify a no-op move.
+                regMaskTP targetRegMask = genRegMask(targetReg);
+                assert(sourceReg != targetReg);
+                assert((busyRegs & targetRegMask) == 0);
+                // Clear sourceReg from the busyRegs, and add targetReg.
+                busyRegs &= ~genRegMask(sourceReg);
+                busyRegs |= genRegMask(targetReg);
+                var_types type;
+                if (op1->IsMultiRegLclVar())
+                {
+                    type = op1->AsLclVar()->GetFieldTypeByIndex(compiler, i);
+                }
+                else
+                {
+                    type = op1->GetRegTypeByIndex(i);
+                }
+                inst_RV_RV(ins_Copy(type), targetReg, sourceReg, type);
+            }
+        }
+        // Now we can consume op1, which will perform any necessary reloads.
+        genConsumeReg(op1);
+    }
+    else
+    {
+        var_types targetType = treeNode->TypeGet();
+        regNumber targetReg  = treeNode->GetRegNum();
+        assert(targetReg != REG_NA);
+        assert(targetType != TYP_STRUCT);
+
+        // Check whether this node and the node from which we're copying the value have
+        // different register types. This can happen if (currently iff) we have a SIMD
+        // vector type that fits in an integer register, in which case it is passed as
+        // an argument, or returned from a call, in an integer register and must be
+        // copied if it's in an xmm register.
+
+        bool srcFltReg = (varTypeIsFloating(op1) || varTypeIsSIMD(op1));
+        bool tgtFltReg = (varTypeIsFloating(treeNode) || varTypeIsSIMD(treeNode));
+        if (srcFltReg != tgtFltReg)
+        {
+            instruction ins;
+            regNumber   fpReg;
+            regNumber   intReg;
+            if (tgtFltReg)
+            {
+                ins    = ins_CopyIntToFloat(op1->TypeGet(), treeNode->TypeGet());
+                fpReg  = targetReg;
+                intReg = op1->GetRegNum();
+            }
+            else
+            {
+                ins    = ins_CopyFloatToInt(op1->TypeGet(), treeNode->TypeGet());
+                intReg = targetReg;
+                fpReg  = op1->GetRegNum();
+            }
+            inst_RV_RV(ins, fpReg, intReg, targetType);
+        }
+        else
+        {
+            inst_RV_RV(ins_Copy(targetType), targetReg, genConsumeReg(op1), targetType);
+        }
+
+        if (op1->IsLocal())
+        {
+            // The lclVar will never be a def.
+            // If it is a last use, the lclVar will be killed by genConsumeReg(), as usual, and genProduceReg will
+            // appropriately set the gcInfo for the copied value.
+            // If not, there are two cases we need to handle:
+            // - If this is a TEMPORARY copy (indicated by the GTF_VAR_DEATH flag) the variable
+            //   will remain live in its original register.
+            //   genProduceReg() will appropriately set the gcInfo for the copied value,
+            //   and genConsumeReg will reset it.
+            // - Otherwise, we need to update register info for the lclVar.
+
+            GenTreeLclVarCommon* lcl = op1->AsLclVarCommon();
+            assert((lcl->gtFlags & GTF_VAR_DEF) == 0);
+
+            if ((lcl->gtFlags & GTF_VAR_DEATH) == 0 && (treeNode->gtFlags & GTF_VAR_DEATH) == 0)
+            {
+                LclVarDsc* varDsc = compiler->lvaGetDesc(lcl);
+
+                // If we didn't just spill it (in genConsumeReg, above), then update the register info
+                if (varDsc->GetRegNum() != REG_STK)
+                {
+                    // The old location is dying
+                    genUpdateRegLife(varDsc, /*isBorn*/ false, /*isDying*/ true DEBUGARG(op1));
+
+                    gcInfo.gcMarkRegSetNpt(genRegMask(op1->GetRegNum()));
+
+                    genUpdateVarReg(varDsc, treeNode);
+
+#ifdef USING_VARIABLE_LIVE_RANGE
+                    // Report the home change for this variable
+                    varLiveKeeper->siUpdateVariableLiveRange(varDsc, lcl->GetLclNum());
+#endif // USING_VARIABLE_LIVE_RANGE
+
+                    // The new location is going live
+                    genUpdateRegLife(varDsc, /*isBorn*/ true, /*isDying*/ false DEBUGARG(treeNode));
+                }
+            }
+        }
+    }
+
+    genProduceReg(treeNode);
 }
 
 #if defined(DEBUG) && defined(TARGET_XARCH)

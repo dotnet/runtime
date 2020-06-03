@@ -6,12 +6,10 @@
     <Compile Include="DirectoryObjectSecurityTests.cs" />
     <Compile Include="FileSystemAccessRuleTests.cs" />
     <Compile Include="FileSystemAclExtensionsTests.cs" />
-    <Compile Include="$(CommonTestPath)System\IO\TempFile.cs">
-      <Link>Common\System\IO\TempFile.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonTestPath)System\IO\TempDirectory.cs">
-      <Link>Common\System\IO\TempDirectory.cs</Link>
-    </Compile>
+    <Compile Include="$(CommonTestPath)System\IO\TempFile.cs"
+             Link="Common\System\IO\TempFile.cs" />
+    <Compile Include="$(CommonTestPath)System\IO\TempDirectory.cs"
+             Link="Common\System\IO\TempDirectory.cs" />
     <Compile Include="FileSystemAuditRuleTests.cs" />
     <Compile Include="FileSystemSecurityTests.cs" />
     <Compile Include="Helpers.cs" />

@@ -7,7 +7,7 @@ WARNING:  DO NOT MODIFY this file unless you are knowledgeable about MSBuild and
           created a backup copy.  Incorrect changes to this file will make it
           impossible to load or build your projects from the command-line or the IDE.
 
-Copyright (c) .NET Foundation. All rights reserved. 
+Copyright (c) .NET Foundation. All rights reserved.
 ***********************************************************************************************
 -->
 <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
@@ -24,13 +24,15 @@ Copyright (c) .NET Foundation. All rights reserved.
     <_OSPlatform Condition="$([MSBuild]::IsOSPlatform('linux'))">linux</_OSPlatform>
     <_OSPlatform Condition="$([MSBuild]::IsOSPlatform('osx'))">osx</_OSPlatform>
     <_OSPlatform Condition="$([MSBuild]::IsOSPlatform('freebsd'))">freebsd</_OSPlatform>
+    <_OSPlatform Condition="$([MSBuild]::IsOSPlatform('netbsd'))">netbsd</_OSPlatform>
+    <_OSPlatform Condition="$([MSBuild]::IsOSPlatform('sunos'))">sunos</_OSPlatform>
     <_OSArchitecture>$([System.Runtime.InteropServices.RuntimeInformation]::OSArchitecture)</_OSArchitecture>
 
     <MicrosoftNetCoreIlasmPackageRuntimeId Condition="'$(MicrosoftNetCoreIlasmPackageRuntimeId)' == ''">$(_OSPlatform)-$(_OSArchitecture.ToLower())</MicrosoftNetCoreIlasmPackageRuntimeId>
     <MicrosoftNETCoreILAsmVersion Condition="'$(MicrosoftNETCoreILAsmVersion)' == ''">5.0.0</MicrosoftNETCoreILAsmVersion>
     <MicrosoftNetCoreIlasmPackageName>runtime.$(MicrosoftNetCoreIlasmPackageRuntimeId).microsoft.netcore.ilasm</MicrosoftNetCoreIlasmPackageName>
     <MicrosoftNetCoreIldasmPackageName>runtime.$(MicrosoftNetCoreIlasmPackageRuntimeId).microsoft.netcore.ildasm</MicrosoftNetCoreIldasmPackageName>
-    
+
     <!-- If ILAsmToolPath is specified, it will be used and no packages will be restored
          Otherwise packages will be restored and ilasm and ildasm will be referenced from their packages.  -->
     <_IlasmDir Condition="'$(ILAsmToolPath)' != ''">$([MSBuild]::NormalizeDirectory($(ILAsmToolPath)))</_IlasmDir>
@@ -68,8 +70,8 @@ Copyright (c) .NET Foundation. All rights reserved.
   </Target>
 
   <!-- projects can define an ILResourceReference and we'll decompile it to get native resources -->
-  <Target Name="DisassembleIlasmResourceFile" 
-          BeforeTargets="CoreCompile" 
+  <Target Name="DisassembleIlasmResourceFile"
+          BeforeTargets="CoreCompile"
           Condition="'$(OS)'=='Windows_NT'"
           Inputs="@(ILResourceReference)"
           Outputs="$(IntermediateOutputPath)$(MSBuildProjectName).ref.res.obj">
@@ -122,7 +124,7 @@ Copyright (c) .NET Foundation. All rights reserved.
 
       <_KeyFileArgument Condition="'$(KeyOriginatorFile)' != ''">-KEY="$(KeyOriginatorFile)"</_KeyFileArgument>
 
-      <_IlasmSwitches>-QUIET -NOLOGO</_IlasmSwitches> 
+      <_IlasmSwitches>-QUIET -NOLOGO</_IlasmSwitches>
       <_IlasmSwitches Condition="'$(FoldIdenticalMethods)' == 'True'">$(_IlasmSwitches) -FOLD</_IlasmSwitches>
       <_IlasmSwitches Condition="'$(SizeOfStackReserve)' != ''">$(_IlasmSwitches) -STACK=$(SizeOfStackReserve)</_IlasmSwitches>
       <_IlasmSwitches Condition="'$(DebugType)' == 'Full'">$(_IlasmSwitches) -DEBUG</_IlasmSwitches>

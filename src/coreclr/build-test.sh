@@ -6,9 +6,9 @@ build_test_wrappers()
         echo "${__MsgPrefix}Creating test wrappers..."
 
         if [[ $__Mono -eq 1 ]]; then
-            export RuntimeFlavor="mono"
+            __RuntimeFlavor="mono"
         else
-            export RuntimeFlavor="coreclr"
+            __RuntimeFlavor="coreclr"
         fi
 
         __Exclude="${__ProjectDir}/tests/issues.targets"
@@ -32,7 +32,7 @@ build_test_wrappers()
         __MsbuildErr="/fileloggerparameters2:\"ErrorsOnly;LogFile=${__BuildErr}\""
         __Logging="$__MsbuildLog $__MsbuildWrn $__MsbuildErr /consoleloggerparameters:$buildVerbosity"
 
-        nextCommand="\"${__DotNetCli}\" msbuild \"${__ProjectDir}/tests/src/runtest.proj\" /nodereuse:false /p:BuildWrappers=true /p:TestBuildMode=$__TestBuildMode /p:TargetsWindows=false $__Logging /p:TargetOS=$__TargetOS /p:Configuration=$__BuildType /p:TargetArchitecture=$__BuildArch"
+        nextCommand="\"${__DotNetCli}\" msbuild \"${__ProjectDir}/tests/src/runtest.proj\" /nodereuse:false /p:BuildWrappers=true /p:TestBuildMode=$__TestBuildMode /p:TargetsWindows=false $__Logging /p:TargetOS=$__TargetOS /p:Configuration=$__BuildType /p:TargetArchitecture=$__BuildArch /p:RuntimeFlavor=$__RuntimeFlavor \"/bl:${__RepoRootDir}/artifacts/log/${__BuildType}/build_test_wrappers_${__RuntimeFlavor}.binlog\""
         eval $nextCommand
 
         local exitCode="$?"
@@ -119,13 +119,10 @@ generate_layout()
 
     mkdir -p "$CORE_ROOT"
 
-    build_MSBuild_projects "Tests_Overlay_Managed" "${__ProjectDir}/tests/src/runtest.proj" "Creating test overlay" "/t:CreateTestOverlay"
-
     chmod +x "$__BinDir"/corerun
     chmod +x "$__CrossgenExe"
 
-    # Make sure to copy over the pulled down packages
-    cp -r "$__BinDir"/* "$CORE_ROOT/" > /dev/null
+    build_MSBuild_projects "Tests_Overlay_Managed" "${__ProjectDir}/tests/src/runtest.proj" "Creating test overlay" "/t:CreateTestOverlay"
 
     if [[ "$__TargetOS" != "OSX" ]]; then
         nextCommand="\"$__TestDir/setup-stress-dependencies.sh\" --arch=$__BuildArch --outputDir=$CORE_ROOT"
@@ -183,8 +180,8 @@ precompile_coreroot_fx()
 
     local totalPrecompiled=0
     local failedToPrecompile=0
-    local compositeCommandLine="$overlayDir/corerun"
-    compositeCommandLine+=" $overlayDir/crossgen2/crossgen2.dll"
+    local compositeCommandLine="${__DotNetCli}"
+    compositeCommandLine+=" $__BinDir/crossgen2/crossgen2.dll"
     compositeCommandLine+=" --composite"
     compositeCommandLine+=" -O"
     compositeCommandLine+=" --out:$outputDir/framework-r2r.dll"
@@ -209,7 +206,7 @@ precompile_coreroot_fx()
         fi
 
         if [[ "$__DoCrossgen2" != 0 ]]; then
-            commandLine="$overlayDir/corerun $overlayDir/crossgen2/crossgen2.dll $crossgen2References -O --inputbubble --out $outputDir/$(basename $filename) $filename"
+            commandLine="${__DotNetCli} $overlayDir/crossgen2/crossgen2.dll $crossgen2References -O --inputbubble --out $outputDir/$(basename $filename) $filename"
         fi
 
         echo Precompiling "$filename"

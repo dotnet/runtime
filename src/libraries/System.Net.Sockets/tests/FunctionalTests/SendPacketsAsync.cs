@@ -111,7 +111,7 @@ namespace System.Net.Sockets.Tests
         [InlineData(SocketImplementationType.Async)]
         public void NullList_Throws(SocketImplementationType type)
         {
-            AssertExtensions.Throws<ArgumentNullException>("e.SendPacketsElements", () => SendPackets(type, (SendPacketsElement[])null, SocketError.Success, 0));
+            AssertExtensions.Throws<ArgumentException>("e", () => SendPackets(type, (SendPacketsElement[])null, SocketError.Success, 0));
         }
 
         [OuterLoop]

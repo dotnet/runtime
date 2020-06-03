@@ -688,6 +688,8 @@ namespace System.Tests
 
         [Theory]
         [MemberData(nameof(GetInterfaceMap_TestData))]
+        // Android-only, change to TestPlatforms.Android once arcade dependency is updated
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36653", TestRuntimes.Mono)]
         public void GetInterfaceMap(Type interfaceType, Type classType, Tuple<MethodInfo, MethodInfo>[] expectedMap)
         {
             InterfaceMapping actualMapping = classType.GetInterfaceMap(interfaceType);

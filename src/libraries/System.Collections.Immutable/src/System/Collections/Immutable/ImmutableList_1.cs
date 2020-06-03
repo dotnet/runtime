@@ -5,7 +5,6 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Diagnostics.Contracts;
 using System.Linq;
 
 namespace System.Collections.Immutable
@@ -206,7 +205,6 @@ namespace System.Collections.Immutable
         /// This is an O(1) operation and results in only a single (small) memory allocation.
         /// The mutable collection that is returned is *not* thread-safe.
         /// </remarks>
-        [Pure]
         public Builder ToBuilder()
         {
             // We must not cache the instance created here and return it to various callers.
@@ -218,7 +216,6 @@ namespace System.Collections.Immutable
         /// <summary>
         /// See the <see cref="IImmutableList{T}"/> interface.
         /// </summary>
-        [Pure]
         public ImmutableList<T> Add(T value)
         {
             var result = _root.Add(value);
@@ -228,7 +225,6 @@ namespace System.Collections.Immutable
         /// <summary>
         /// See the <see cref="IImmutableList{T}"/> interface.
         /// </summary>
-        [Pure]
         public ImmutableList<T> AddRange(IEnumerable<T> items)
         {
             Requires.NotNull(items, nameof(items));
@@ -247,7 +243,6 @@ namespace System.Collections.Immutable
         /// <summary>
         /// See the <see cref="IImmutableList{T}"/> interface.
         /// </summary>
-        [Pure]
         public ImmutableList<T> Insert(int index, T item)
         {
             Requires.Range(index >= 0 && index <= this.Count, nameof(index));
@@ -257,7 +252,6 @@ namespace System.Collections.Immutable
         /// <summary>
         /// See the <see cref="IImmutableList{T}"/> interface.
         /// </summary>
-        [Pure]
         public ImmutableList<T> InsertRange(int index, IEnumerable<T> items)
         {
             Requires.Range(index >= 0 && index <= this.Count, nameof(index));
@@ -271,13 +265,11 @@ namespace System.Collections.Immutable
         /// <summary>
         /// See the <see cref="IImmutableList{T}"/> interface.
         /// </summary>
-        [Pure]
         public ImmutableList<T> Remove(T value) => this.Remove(value, EqualityComparer<T>.Default);
 
         /// <summary>
         /// See the <see cref="IImmutableList{T}"/> interface.
         /// </summary>
-        [Pure]
         public ImmutableList<T> Remove(T value, IEqualityComparer<T>? equalityComparer)
         {
             int index = this.IndexOf(value, equalityComparer);
@@ -290,7 +282,6 @@ namespace System.Collections.Immutable
         /// <param name="index">The starting index to begin removal.</param>
         /// <param name="count">The number of elements to remove.</param>
         /// <returns>A new list with the elements removed.</returns>
-        [Pure]
         public ImmutableList<T> RemoveRange(int index, int count)
         {
             Requires.Range(index >= 0 && index <= this.Count, nameof(index));
@@ -313,7 +304,6 @@ namespace System.Collections.Immutable
         /// <returns>
         /// A new list with the elements removed.
         /// </returns>
-        [Pure]
         public ImmutableList<T> RemoveRange(IEnumerable<T> items) => this.RemoveRange(items, EqualityComparer<T>.Default);
 
         /// <summary>
@@ -327,7 +317,6 @@ namespace System.Collections.Immutable
         /// <returns>
         /// A new list with the elements removed.
         /// </returns>
-        [Pure]
         public ImmutableList<T> RemoveRange(IEnumerable<T> items, IEqualityComparer<T>? equalityComparer)
         {
             Requires.NotNull(items, nameof(items));
@@ -356,7 +345,6 @@ namespace System.Collections.Immutable
         /// <summary>
         /// See the <see cref="IImmutableList{T}"/> interface.
         /// </summary>
-        [Pure]
         public ImmutableList<T> RemoveAt(int index)
         {
             Requires.Range(index >= 0 && index < this.Count, nameof(index));
@@ -375,7 +363,6 @@ namespace System.Collections.Immutable
         /// <returns>
         /// The new list.
         /// </returns>
-        [Pure]
         public ImmutableList<T> RemoveAll(Predicate<T> match)
         {
             Requires.NotNull(match, nameof(match));
@@ -386,19 +373,16 @@ namespace System.Collections.Immutable
         /// <summary>
         /// See the <see cref="IImmutableList{T}"/> interface.
         /// </summary>
-        [Pure]
         public ImmutableList<T> SetItem(int index, T value) => this.Wrap(_root.ReplaceAt(index, value));
 
         /// <summary>
         /// See the <see cref="IImmutableList{T}"/> interface.
         /// </summary>
-        [Pure]
         public ImmutableList<T> Replace(T oldValue, T newValue) => this.Replace(oldValue, newValue, EqualityComparer<T>.Default);
 
         /// <summary>
         /// See the <see cref="IImmutableList{T}"/> interface.
         /// </summary>
-        [Pure]
         public ImmutableList<T> Replace(T oldValue, T newValue, IEqualityComparer<T>? equalityComparer)
         {
             int index = this.IndexOf(oldValue, equalityComparer);
@@ -414,7 +398,6 @@ namespace System.Collections.Immutable
         /// Reverses the order of the elements in the entire <see cref="ImmutableList{T}"/>.
         /// </summary>
         /// <returns>The reversed list.</returns>
-        [Pure]
         public ImmutableList<T> Reverse() => this.Wrap(_root.Reverse());
 
         /// <summary>
@@ -423,14 +406,12 @@ namespace System.Collections.Immutable
         /// <param name="index">The zero-based starting index of the range to reverse.</param>
         /// <param name="count">The number of elements in the range to reverse.</param>
         /// <returns>The reversed list.</returns>
-        [Pure]
         public ImmutableList<T> Reverse(int index, int count) => this.Wrap(_root.Reverse(index, count));
 
         /// <summary>
         /// Sorts the elements in the entire <see cref="ImmutableList{T}"/> using
         /// the default comparer.
         /// </summary>
-        [Pure]
         public ImmutableList<T> Sort() => this.Wrap(_root.Sort());
 
         /// <summary>
@@ -442,7 +423,6 @@ namespace System.Collections.Immutable
         /// </param>
         /// <returns>The sorted list.</returns>
         /// <exception cref="ArgumentNullException"><paramref name="comparison"/> is null.</exception>
-        [Pure]
         public ImmutableList<T> Sort(Comparison<T> comparison)
         {
             Requires.NotNull(comparison, nameof(comparison));
@@ -458,7 +438,6 @@ namespace System.Collections.Immutable
         /// elements, or null to use the default comparer <see cref="Comparer{T}.Default"/>.
         /// </param>
         /// <returns>The sorted list.</returns>
-        [Pure]
         public ImmutableList<T> Sort(IComparer<T>? comparer) => this.Wrap(_root.Sort(comparer));
 
         /// <summary>
@@ -476,7 +455,6 @@ namespace System.Collections.Immutable
         /// elements, or null to use the default comparer <see cref="Comparer{T}.Default"/>.
         /// </param>
         /// <returns>The sorted list.</returns>
-        [Pure]
         public ImmutableList<T> Sort(int index, int count, IComparer<T>? comparer)
         {
             Requires.Range(index >= 0, nameof(index));
@@ -765,7 +743,6 @@ namespace System.Collections.Immutable
         /// elements in the <see cref="ImmutableList{T}"/> that starts at <paramref name="index"/> and
         /// contains <paramref name="count"/> number of elements, if found; otherwise, -1.
         /// </returns>
-        [Pure]
         public int IndexOf(T item, int index, int count, IEqualityComparer<T>? equalityComparer) => _root.IndexOf(item, index, count, equalityComparer);
 
         /// <summary>
@@ -788,7 +765,6 @@ namespace System.Collections.Immutable
         /// in the <see cref="ImmutableList{T}"/> that contains <paramref name="count"/> number of elements
         /// and ends at <paramref name="index"/>, if found; otherwise, -1.
         /// </returns>
-        [Pure]
         public int LastIndexOf(T item, int index, int count, IEqualityComparer<T>? equalityComparer) => _root.LastIndexOf(item, index, count, equalityComparer);
 
         /// <summary>
@@ -1123,7 +1099,6 @@ namespace System.Collections.Immutable
         /// </summary>
         /// <param name="root">The root of the collection.</param>
         /// <returns>The immutable sorted set instance.</returns>
-        [Pure]
         private static ImmutableList<T> WrapNode(Node root)
         {
             return root.IsEmpty
@@ -1176,7 +1151,6 @@ namespace System.Collections.Immutable
         /// </summary>
         /// <param name="root">The root node to wrap.</param>
         /// <returns>A wrapping collection type for the new tree.</returns>
-        [Pure]
         private ImmutableList<T> Wrap(Node root)
         {
             if (root != _root)

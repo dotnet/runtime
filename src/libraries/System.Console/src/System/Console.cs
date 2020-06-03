@@ -28,8 +28,8 @@ namespace System
         private static TextWriter? s_out, s_error;
         private static Encoding? s_inputEncoding;
         private static Encoding? s_outputEncoding;
-        private static bool s_isOutTextWriterRedirected = false;
-        private static bool s_isErrorTextWriterRedirected = false;
+        private static bool s_isOutTextWriterRedirected;
+        private static bool s_isErrorTextWriterRedirected;
 
         private static ConsoleCancelEventHandler? s_cancelCallbacks;
         private static ConsolePal.ControlCHandlerRegistrar? s_registrar;

@@ -30,7 +30,7 @@ namespace System.Globalization.Tests
         [Fact]
         public static void IcuShouldNotBeLoaded()
         {
-            Assert.False(PlatformDetection.IsIcuGlobalization);
+            Assert.False(PlatformDetection.IsIcuGlobalization, $"Found ICU: {PlatformDetection.ICUVersion}");
         }
     }
 }

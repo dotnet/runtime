@@ -28,7 +28,7 @@ Below is a list of all the various options we pivot the project builds on:
 ## Individual build properties
 The following are the properties associated with each build pivot
 
-- `$(BuildTargetFramework) -> netstandard2.1 | netcoreapp5.0 | net472`
+- `$(BuildTargetFramework) -> netstandard2.1 | net5.0 | net472`
 - `$(TargetOS) -> Windows | Linux | OSX | FreeBSD | [defaults to running OS when empty]`
 - `$(Configuration) -> Release | [defaults to Debug when empty]`
 - `$(TargetArchitecture) - x86 | x64 | arm | arm64 | [defaults to x64 when empty]`
@@ -82,7 +82,7 @@ When we have a project that has a `netstandard2.0` target framework that means t
 A full or individual project build is centered around BuildTargetFramework, TargetOS, Configuration and TargetArchitecture.
 
 1. `$(BuildTargetFramework), $(TargetOS), $(Configuration), $(TargetArchitecture)` can individually be passed in to change the default values.
-2. If nothing is passed to the build then we will default value of these properties from the environment. Example: `netcoreapp5.0-[TargetOS Running On]-Debug-x64`.
+2. If nothing is passed to the build then we will default value of these properties from the environment. Example: `net5.0-[TargetOS Running On]-Debug-x64`.
 3. While Building an individual project from the VS, we build the project for all latest netcoreapp target frameworks.
 
 We also have `RuntimeOS` which can be passed to customize the specific OS and version needed for native package builds as well as package restoration. If not passed it will default based on the OS you are running on.
@@ -97,6 +97,46 @@ When building an individual project the `BuildTargetFramework` and `TargetOS` wi
 - .NET Framework latest -> `$(NetFrameworkCurrent)-Windows_NT`
 
 # Library project guidelines
+
+## TargetFramework conditions
+`TargetFramework` conditions should be avoided in the first PropertyGroup as that causes DesignTimeBuild issues: https://github.com/dotnet/project-system/issues/6143
+
+1. Use an equality check if the TargetFramework isn't overloaded with the OS portion.
+Example:
+```
+<PropertyGroup>
+  <TargetFrameworks>netstandard2.0;netstandard2.1</TargetFrameworks>
+</PropertyGroup>
+<ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">...</ItemGroup>
+```
+2. Use a StartsWith when you want to test for multiple .NETStandard or .NETFramework versions.
+Example:
+```
+<PropertyGroup>
+  <TargetFrameworks>netstandard2.0;netstandard2.1</TargetFrameworks>
+</PropertyGroup>
+<ItemGroup Condition="$(TargetFramework.StartsWith('netstandard'))>...</ItemGroup>
+```
+3. Use a StartsWith if the TargetFramework is overloaded with the OS portion.
+Example:
+```
+<PropertyGroup>
+  <TargetFrameworks>netstandard2.0-Windows_NT;netstandard2.0-Unix</TargetFrameworks>
+</PropertyGroup>
+<ItemGroup Condition="$(TargetFramework.StartsWith('netstandard2.0'))>...</ItemGroup>
+```
+4. Use negations if that makes the conditions easier.
+Example:
+```
+<PropertyGroup>
+  <TargetFrameworks>netstandard2.0;net461;net472;net5.0</TargetFrameworks>
+</PropertyGroup>
+<ItemGroup Condition="!$(TargetFramework.StartsWith('net4'))>...</ItemGroup>
+<ItemGroup Condition="'$(TargetFramework)' != 'netstandard2.0'">...</ItemGroup>
+```
+
+## Directory layout
+
 Library projects should use the following directory layout.
 
 ```
@@ -121,7 +161,7 @@ The output for the ref project build will be a flat targeting pack folder in the
 ## src
 In the src directory for a library there should be only **one** `.csproj` file that contains any information necessary to build the library in various target frameworks. All supported target frameworks should be listed in the `TargetFrameworks` property.
 
-All libraries should use `<Reference Include="..." />` for all their project references. That will cause them to be resolved against a targeting pack (i.e. `bin\ref\netcoreapp5.0` or `\bin\ref\netstanard2.0`) based on the project target framework. There should not be any direct project references to other libraries. The only exception to that rule right now is for partial facades which directly reference System.Private.CoreLib and thus need to directly reference other partial facades to avoid type conflicts.
+All libraries should use `<Reference Include="..." />` for all their project references. That will cause them to be resolved against a targeting pack (i.e. `bin\ref\net5.0` or `\bin\ref\netstanard2.0`) based on the project target framework. There should not be any direct project references to other libraries. The only exception to that rule right now is for partial facades which directly reference System.Private.CoreLib and thus need to directly reference other partial facades to avoid type conflicts.
 <BR>//**CONSIDER**: just using Reference and use a reference to System.Private.CoreLib as a trigger to turn the other References into a ProjectReference automatically. That will allow us to have consistency where all projects just use Reference.
 
 ### src output

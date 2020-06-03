@@ -8,7 +8,7 @@ using System.Linq;
 using Test.Cryptography;
 using Xunit;
 
-namespace System.Security.Cryptography.Encoding.Tests.Cbor
+namespace System.Formats.Cbor.Tests
 {
     public partial class CborWriterTests
     {
@@ -24,7 +24,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             byte[] input = hexInput.HexToByteArray();
             using var writer = new CborWriter();
             writer.WriteByteString(input);
-            AssertHelper.HexEqual(expectedEncoding, writer.ToArray());
+            AssertHelper.HexEqual(expectedEncoding, writer.GetEncoding());
         }
 
         [Theory]
@@ -32,14 +32,29 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         [InlineData(new string[] { "" }, "5f40ff")]
         [InlineData(new string[] { "ab", "" }, "5f41ab40ff")]
         [InlineData(new string[] { "ab", "bc", "" }, "5f41ab41bc40ff")]
-        public static void WriteByteString_IndefiteLength_SingleValue_HappyPath(string[] hexChunkInputs, string hexExpectedEncoding)
+        public static void WriteByteString_IndefiniteLength_NoPatching_SingleValue_HappyPath(string[] hexChunkInputs, string hexExpectedEncoding)
+        {
+            byte[][] chunkInputs = hexChunkInputs.Select(ch => ch.HexToByteArray()).ToArray();
+            byte[] expectedEncoding = hexExpectedEncoding.HexToByteArray();
+
+            using var writer = new CborWriter(encodeIndefiniteLengths: true);
+            Helpers.WriteChunkedByteString(writer, chunkInputs);
+            AssertHelper.HexEqual(expectedEncoding, writer.GetEncoding());
+        }
+
+        [Theory]
+        [InlineData(new string[] { }, "40")]
+        [InlineData(new string[] { "" }, "40")]
+        [InlineData(new string[] { "ab", "" }, "41ab")]
+        [InlineData(new string[] { "ab", "bc", "" }, "42abbc")]
+        public static void WriteByteString_IndefiniteLength_WithPatching_SingleValue_HappyPath(string[] hexChunkInputs, string hexExpectedEncoding)
         {
             byte[][] chunkInputs = hexChunkInputs.Select(ch => ch.HexToByteArray()).ToArray();
             byte[] expectedEncoding = hexExpectedEncoding.HexToByteArray();
 
             using var writer = new CborWriter();
             Helpers.WriteChunkedByteString(writer, chunkInputs);
-            AssertHelper.HexEqual(expectedEncoding, writer.ToArray());
+            AssertHelper.HexEqual(expectedEncoding, writer.GetEncoding());
         }
 
         [Theory]
@@ -55,7 +70,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             byte[] expectedEncoding = hexExpectedEncoding.HexToByteArray();
             using var writer = new CborWriter();
             writer.WriteTextString(input);
-            AssertHelper.HexEqual(expectedEncoding, writer.ToArray());
+            AssertHelper.HexEqual(expectedEncoding, writer.GetEncoding());
         }
 
         [Theory]
@@ -63,12 +78,25 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         [InlineData(new string[] { "" }, "7f60ff")]
         [InlineData(new string[] { "ab", "" }, "7f62616260ff")]
         [InlineData(new string[] { "ab", "bc", "" }, "7f62616262626360ff")]
-        public static void WriteTextString_IndefiniteLength_SingleValue_HappyPath(string[] chunkInputs, string hexExpectedEncoding)
+        public static void WriteTextString_IndefiniteLength_NoPatching_SingleValue_HappyPath(string[] chunkInputs, string hexExpectedEncoding)
         {
             byte[] expectedEncoding = hexExpectedEncoding.HexToByteArray();
-            using var writer = new CborWriter();
+            using var writer = new CborWriter(encodeIndefiniteLengths: true);
             Helpers.WriteChunkedTextString(writer, chunkInputs);
-            AssertHelper.HexEqual(expectedEncoding, writer.ToArray());
+            AssertHelper.HexEqual(expectedEncoding, writer.GetEncoding());
+        }
+
+        [Theory]
+        [InlineData(new string[] { }, "60")]
+        [InlineData(new string[] { "" }, "60")]
+        [InlineData(new string[] { "ab", "" }, "626162")]
+        [InlineData(new string[] { "ab", "bc", "" }, "6461626263")]
+        public static void WriteTextString_IndefiniteLength_WithPatching_SingleValue_HappyPath(string[] chunkInputs, string hexExpectedEncoding)
+        {
+            byte[] expectedEncoding = hexExpectedEncoding.HexToByteArray();
+            using var writer = new CborWriter(encodeIndefiniteLengths: false);
+            Helpers.WriteChunkedTextString(writer, chunkInputs);
+            AssertHelper.HexEqual(expectedEncoding, writer.GetEncoding());
         }
 
         [Fact]
@@ -85,53 +113,53 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         [Theory]
         [InlineData(nameof(CborWriter.WriteInt64))]
         [InlineData(nameof(CborWriter.WriteByteString))]
-        [InlineData(nameof(CborWriter.WriteStartTextStringIndefiniteLength))]
-        [InlineData(nameof(CborWriter.WriteStartByteStringIndefiniteLength))]
+        [InlineData(nameof(CborWriter.WriteStartTextString))]
+        [InlineData(nameof(CborWriter.WriteStartByteString))]
         [InlineData(nameof(CborWriter.WriteStartArray))]
         [InlineData(nameof(CborWriter.WriteStartMap))]
         public static void WriteTextString_IndefiniteLength_NestedWrites_ShouldThrowInvalidOperationException(string opName)
         {
             using var writer = new CborWriter();
-            writer.WriteStartTextStringIndefiniteLength();
+            writer.WriteStartTextString();
             Assert.Throws<InvalidOperationException>(() => Helpers.ExecOperation(writer, opName));
         }
 
         [Theory]
-        [InlineData(nameof(CborWriter.WriteEndByteStringIndefiniteLength))]
+        [InlineData(nameof(CborWriter.WriteEndByteString))]
         [InlineData(nameof(CborWriter.WriteEndArray))]
         [InlineData(nameof(CborWriter.WriteEndMap))]
         public static void WriteTextString_IndefiniteLength_ImbalancedWrites_ShouldThrowInvalidOperationException(string opName)
         {
             using var writer = new CborWriter();
-            writer.WriteStartTextStringIndefiniteLength();
+            writer.WriteStartTextString();
             Assert.Throws<InvalidOperationException>(() => Helpers.ExecOperation(writer, opName));
         }
 
         [Theory]
         [InlineData(nameof(CborWriter.WriteInt64))]
         [InlineData(nameof(CborWriter.WriteTextString))]
-        [InlineData(nameof(CborWriter.WriteStartTextStringIndefiniteLength))]
-        [InlineData(nameof(CborWriter.WriteStartByteStringIndefiniteLength))]
+        [InlineData(nameof(CborWriter.WriteStartTextString))]
+        [InlineData(nameof(CborWriter.WriteStartByteString))]
         [InlineData(nameof(CborWriter.WriteStartArray))]
         [InlineData(nameof(CborWriter.WriteStartMap))]
-        [InlineData(nameof(CborWriter.WriteEndTextStringIndefiniteLength))]
+        [InlineData(nameof(CborWriter.WriteEndTextString))]
         [InlineData(nameof(CborWriter.WriteEndArray))]
         [InlineData(nameof(CborWriter.WriteEndMap))]
-        public static void WriteByteString_IndefiteLength_NestedWrites_ShouldThrowInvalidOperationException(string opName)
+        public static void WriteByteString_IndefiniteLength_NestedWrites_ShouldThrowInvalidOperationException(string opName)
         {
             using var writer = new CborWriter();
-            writer.WriteStartByteStringIndefiniteLength();
+            writer.WriteStartByteString();
             Assert.Throws<InvalidOperationException>(() => Helpers.ExecOperation(writer, opName));
         }
 
         [Theory]
-        [InlineData(nameof(CborWriter.WriteEndTextStringIndefiniteLength))]
+        [InlineData(nameof(CborWriter.WriteEndTextString))]
         [InlineData(nameof(CborWriter.WriteEndArray))]
         [InlineData(nameof(CborWriter.WriteEndMap))]
-        public static void WriteByteString_IndefiteLength_ImbalancedWrites_ShouldThrowInvalidOperationException(string opName)
+        public static void WriteByteString_IndefiniteLength_ImbalancedWrites_ShouldThrowInvalidOperationException(string opName)
         {
             using var writer = new CborWriter();
-            writer.WriteStartByteStringIndefiniteLength();
+            writer.WriteStartByteString();
             Assert.Throws<InvalidOperationException>(() => Helpers.ExecOperation(writer, opName));
         }
     }

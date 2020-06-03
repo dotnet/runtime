@@ -32,9 +32,7 @@ namespace AppHost.Bundle.Tests
                 .HaveStdOutContaining("Wow! We now say hello to the big world and you.");
         }
 
-        // BundleOptions.BundleNativeBinaries: Test when the payload data files are unbundled, and beside the single-file app.
-        // BundleOptions.BundleAllContent: Test when the payload data files are bundled and extracted to temporary directory. 
-        // Once the runtime can load assemblies from the bundle, BundleOptions.None can be used in place of BundleOptions.BundleNativeBinaries.
+        [InlineData(BundleOptions.None)]
         [InlineData(BundleOptions.BundleNativeBinaries)]
         [InlineData(BundleOptions.BundleAllContent)]
         [Theory]
@@ -50,6 +48,7 @@ namespace AppHost.Bundle.Tests
             RunTheApp(singleFile);
         }
 
+        [InlineData(BundleOptions.None)]
         [InlineData(BundleOptions.BundleNativeBinaries)]
         [InlineData(BundleOptions.BundleAllContent)]
         [Theory]
@@ -65,6 +64,7 @@ namespace AppHost.Bundle.Tests
             RunTheApp(singleFile);
         }
 
+        [InlineData(BundleOptions.None)]
         [InlineData(BundleOptions.BundleNativeBinaries)]
         [InlineData(BundleOptions.BundleAllContent)]
         [Theory]

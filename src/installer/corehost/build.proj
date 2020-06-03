@@ -6,7 +6,7 @@
     package's targets into the build.
   -->
   <PropertyGroup>
-    <TargetFramework>$(NETCoreAppFramework)</TargetFramework>
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
   </PropertyGroup>
 
   <Import Project="Sdk.targets" Sdk="Microsoft.NET.Sdk" />

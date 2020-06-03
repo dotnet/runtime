@@ -1685,10 +1685,10 @@ void DomainAssembly::GetCurrentVersionInfo(CORCOMPILE_VERSION_INFO *pNativeVersi
 
     pNativeVersionInfo->wMachine = IMAGE_FILE_MACHINE_NATIVE_NI;
 
-    pNativeVersionInfo->wVersionMajor = CLR_MAJOR_VERSION;
-    pNativeVersionInfo->wVersionMinor = CLR_MINOR_VERSION;
-    pNativeVersionInfo->wVersionBuildNumber = CLR_BUILD_VERSION;
-    pNativeVersionInfo->wVersionPrivateBuildNumber = CLR_BUILD_VERSION_QFE;
+    pNativeVersionInfo->wVersionMajor = RuntimeFileMajorVersion;
+    pNativeVersionInfo->wVersionMinor = RuntimeFileMinorVersion;
+    pNativeVersionInfo->wVersionBuildNumber = RuntimeFileBuildVersion;
+    pNativeVersionInfo->wVersionPrivateBuildNumber = RuntimeFileRevisionVersion;
 
     GetNGenCpuInfo(&pNativeVersionInfo->cpuInfo);
 

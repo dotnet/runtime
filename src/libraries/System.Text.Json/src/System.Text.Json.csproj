@@ -1,26 +1,27 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <TargetFrameworks>$(NetCoreAppCurrent);netstandard2.0;netcoreapp3.0;net461;$(NetFrameworkCurrent)</TargetFrameworks>
     <ExcludeCurrentNetCoreAppFromPackage>true</ExcludeCurrentNetCoreAppFromPackage>
     <ExcludeCurrentFullFrameworkFromPackage>true</ExcludeCurrentFullFrameworkFromPackage>
-    <!-- For the inbox library (that is shipping with the product), this should always be true. -->
-    <!-- BUILDING_INBOX_LIBRARY is only false when building the netstandard compatible NuGet package. -->
-    <DefineConstants Condition="'$(TargetsNetCoreApp)' == 'true'">$(DefineConstants);BUILDING_INBOX_LIBRARY</DefineConstants>
     <!-- Workaround for overriding the XML comments related warnings that are being supressed repo wide (within arcade): -->
     <!-- https://github.com/dotnet/arcade/blob/ea6addfdc65e5df1b2c036f11614a5f922e36267/src/Microsoft.DotNet.Arcade.Sdk/tools/ProjectDefaults.props#L90 -->
     <!-- For this project, we want warnings if there are public APIs/types without properly formatted XML comments (particularly CS1591). -->
     <NoWarn />
-    <NoWarn Condition="'$(TargetsNetCoreApp)' != 'true'">$(NoWarn);nullable</NoWarn>
     <Nullable>enable</Nullable>
   </PropertyGroup>
+  <!-- DesignTimeBuild requires all the TargetFramework Derived Properties to not be present in the first property group. -->
+  <PropertyGroup>
+    <!-- For the inbox library (that is shipping with the product), this should always be true. -->
+    <!-- BUILDING_INBOX_LIBRARY is only false when building the netstandard compatible NuGet package. -->
+    <DefineConstants Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)' or '$(TargetFramework)' == 'netcoreapp3.0'">$(DefineConstants);BUILDING_INBOX_LIBRARY</DefineConstants>
+    <NoWarn Condition="'$(TargetFramework)' == 'netstandard2.0' or $(TargetFramework.StartsWith('net4'))">$(NoWarn);nullable</NoWarn>
+  </PropertyGroup>
   <ItemGroup>
-    <Compile Include="$(CommonPath)System\Runtime\CompilerServices\PreserveDependencyAttribute.cs">
-      <Link>Common\System\Runtime\CompilerServices\PreserveDependencyAttribute.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)System\HexConverter.cs">
-      <Link>Common\System\HexConverter.cs</Link>
-    </Compile>
+    <Compile Include="$(CommonPath)System\Runtime\CompilerServices\PreserveDependencyAttribute.cs"
+             Link="Common\System\Runtime\CompilerServices\PreserveDependencyAttribute.cs" />
+    <Compile Include="$(CommonPath)System\HexConverter.cs"
+             Link="Common\System\HexConverter.cs" />
     <Compile Include="System\Text\Json\BitStack.cs" />
     <Compile Include="System\Text\Json\Document\JsonDocument.cs" />
     <Compile Include="System\Text\Json\Document\JsonDocument.DbRow.cs" />
@@ -53,8 +54,15 @@
     <Compile Include="System\Text\Json\Reader\Utf8JsonReader.MultiSegment.cs" />
     <Compile Include="System\Text\Json\Reader\Utf8JsonReader.TryGet.cs" />
     <Compile Include="System\Text\Json\Serialization\Arguments.cs" />
-    <Compile Include="System\Text\Json\Serialization\ClassType.cs" />
     <Compile Include="System\Text\Json\Serialization\ArgumentState.cs" />
+    <Compile Include="System\Text\Json\Serialization\Attributes\JsonAttribute.cs" />
+    <Compile Include="System\Text\Json\Serialization\Attributes\JsonConstructorAttribute.cs" />
+    <Compile Include="System\Text\Json\Serialization\Attributes\JsonConverterAttribute.cs" />
+    <Compile Include="System\Text\Json\Serialization\Attributes\JsonExtensionDataAttribute.cs" />
+    <Compile Include="System\Text\Json\Serialization\Attributes\JsonIgnoreAttribute.cs" />
+    <Compile Include="System\Text\Json\Serialization\Attributes\JsonIncludeAttribute.cs" />
+    <Compile Include="System\Text\Json\Serialization\Attributes\JsonPropertyNameAttribute.cs" />
+    <Compile Include="System\Text\Json\Serialization\ClassType.cs" />
     <Compile Include="System\Text\Json\Serialization\ConverterList.cs" />
     <Compile Include="System\Text\Json\Serialization\Converters\Collection\ArrayConverter.cs" />
     <Compile Include="System\Text\Json\Serialization\Converters\Collection\ConcurrentQueueOfTConverter.cs" />
@@ -76,9 +84,12 @@
     <Compile Include="System\Text\Json\Serialization\Converters\Collection\ImmutableEnumerableOfTConverter.cs" />
     <Compile Include="System\Text\Json\Serialization\Converters\Collection\IReadOnlyDictionaryOfStringTValueConverter.cs" />
     <Compile Include="System\Text\Json\Serialization\Converters\Collection\ISetOfTConverter.cs" />
+    <Compile Include="System\Text\Json\Serialization\Converters\Collection\JsonCollectionConverter.cs" />
+    <Compile Include="System\Text\Json\Serialization\Converters\Collection\JsonDictionaryConverter.cs" />
     <Compile Include="System\Text\Json\Serialization\Converters\Collection\ListOfTConverter.cs" />
     <Compile Include="System\Text\Json\Serialization\Converters\Collection\QueueOfTConverter.cs" />
     <Compile Include="System\Text\Json\Serialization\Converters\Collection\StackOfTConverter.cs" />
+    <Compile Include="System\Text\Json\Serialization\Converters\Object\JsonObjectConverter.cs" />
     <Compile Include="System\Text\Json\Serialization\Converters\Object\ObjectConverterFactory.cs" />
     <Compile Include="System\Text\Json\Serialization\Converters\Object\ObjectDefaultConverter.cs" />
     <Compile Include="System\Text\Json\Serialization\Converters\Object\ObjectWithParameterizedConstructorConverter.cs" />
@@ -99,8 +110,8 @@
     <Compile Include="System\Text\Json\Serialization\Converters\Value\Int16Converter.cs" />
     <Compile Include="System\Text\Json\Serialization\Converters\Value\Int32Converter.cs" />
     <Compile Include="System\Text\Json\Serialization\Converters\Value\Int64Converter.cs" />
-    <Compile Include="System\Text\Json\Serialization\Converters\Value\JsonElementConverter.cs" />
     <Compile Include="System\Text\Json\Serialization\Converters\Value\JsonDocumentConverter.cs" />
+    <Compile Include="System\Text\Json\Serialization\Converters\Value\JsonElementConverter.cs" />
     <Compile Include="System\Text\Json\Serialization\Converters\Value\KeyValuePairConverter.cs" />
     <Compile Include="System\Text\Json\Serialization\Converters\Value\KeyValuePairConverterFactory.cs" />
     <Compile Include="System\Text\Json\Serialization\Converters\Value\NullableConverter.cs" />
@@ -115,32 +126,22 @@
     <Compile Include="System\Text\Json\Serialization\Converters\Value\UInt64Converter.cs" />
     <Compile Include="System\Text\Json\Serialization\Converters\Value\UriConverter.cs" />
     <Compile Include="System\Text\Json\Serialization\DefaultReferenceResolver.cs" />
-    <Compile Include="System\Text\Json\Serialization\JsonAttribute.cs" />
     <Compile Include="System\Text\Json\Serialization\JsonCamelCaseNamingPolicy.cs" />
     <Compile Include="System\Text\Json\Serialization\JsonClassInfo.cs" />
     <Compile Include="System\Text\Json\Serialization\JsonClassInfo.Cache.cs" />
-    <Compile Include="System\Text\Json\Serialization\JsonCollectionConverter.cs" />
-    <Compile Include="System\Text\Json\Serialization\JsonConstructorAttribute.cs" />
     <Compile Include="System\Text\Json\Serialization\JsonConverter.cs" />
     <Compile Include="System\Text\Json\Serialization\JsonConverter.ReadAhead.cs" />
-    <Compile Include="System\Text\Json\Serialization\JsonConverterAttribute.cs" />
     <Compile Include="System\Text\Json\Serialization\JsonConverterFactory.cs" />
-    <Compile Include="System\Text\Json\Serialization\JsonConverterOfT.cs" />
     <Compile Include="System\Text\Json\Serialization\JsonConverterOfT.ReadCore.cs" />
     <Compile Include="System\Text\Json\Serialization\JsonConverterOfT.WriteCore.cs" />
+    <Compile Include="System\Text\Json\Serialization\JsonConverterOfT.cs" />
     <Compile Include="System\Text\Json\Serialization\JsonDefaultNamingPolicy.cs" />
-    <Compile Include="System\Text\Json\Serialization\JsonDictionaryConverter.cs" />
-    <Compile Include="System\Text\Json\Serialization\JsonExtensionDataAttribute.cs" />
-    <Compile Include="System\Text\Json\Serialization\JsonIgnoreAttribute.cs" />
     <Compile Include="System\Text\Json\Serialization\JsonIgnoreCondition.cs" />
     <Compile Include="System\Text\Json\Serialization\JsonNamingPolicy.cs" />
-    <Compile Include="System\Text\Json\Serialization\JsonObjectConverter.cs" />
     <Compile Include="System\Text\Json\Serialization\JsonParameterInfo.cs" />
     <Compile Include="System\Text\Json\Serialization\JsonParameterInfoOfT.cs" />
     <Compile Include="System\Text\Json\Serialization\JsonPropertyInfo.cs" />
-    <Compile Include="System\Text\Json\Serialization\JsonPropertyInfoOfTTypeToConvert.cs" />
-    <Compile Include="System\Text\Json\Serialization\JsonPropertyNameAttribute.cs" />
-    <Compile Include="System\Text\Json\Serialization\JsonIncludeAttribute.cs" />
+    <Compile Include="System\Text\Json\Serialization\JsonPropertyInfoOfT.cs" />
     <Compile Include="System\Text\Json\Serialization\JsonResumableConverterOfT.cs" />
     <Compile Include="System\Text\Json\Serialization\JsonSerializer.Read.HandleMetadata.cs" />
     <Compile Include="System\Text\Json\Serialization\JsonSerializer.Read.HandlePropertyName.cs" />
@@ -155,14 +156,15 @@
     <Compile Include="System\Text\Json\Serialization\JsonSerializer.Write.Stream.cs" />
     <Compile Include="System\Text\Json\Serialization\JsonSerializer.Write.String.cs" />
     <Compile Include="System\Text\Json\Serialization\JsonSerializer.Write.Utf8JsonWriter.cs" />
+    <Compile Include="System\Text\Json\Serialization\JsonSerializerDefaults.cs" />
     <Compile Include="System\Text\Json\Serialization\JsonSerializerOptions.Converters.cs" />
     <Compile Include="System\Text\Json\Serialization\JsonSerializerOptions.cs" />
     <Compile Include="System\Text\Json\Serialization\JsonStringEnumConverter.cs" />
     <Compile Include="System\Text\Json\Serialization\JsonValueConverterOfT.cs" />
     <Compile Include="System\Text\Json\Serialization\MemberAccessor.cs" />
     <Compile Include="System\Text\Json\Serialization\MetadataPropertyName.cs" />
-    <Compile Include="System\Text\Json\Serialization\PooledByteBufferWriter.cs" />
     <Compile Include="System\Text\Json\Serialization\ParameterRef.cs" />
+    <Compile Include="System\Text\Json\Serialization\PooledByteBufferWriter.cs" />
     <Compile Include="System\Text\Json\Serialization\PropertyRef.cs" />
     <Compile Include="System\Text\Json\Serialization\ReadStack.cs" />
     <Compile Include="System\Text\Json\Serialization\ReadStackFrame.cs" />
@@ -210,12 +212,11 @@
     <Compile Include="System\Text\Json\Writer\Utf8JsonWriter.WriteValues.String.cs" />
     <Compile Include="System\Text\Json\Writer\Utf8JsonWriter.WriteValues.UnsignedNumber.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsNetStandard)' == 'true' or '$(TargetsNetFx)' == 'true'">
+  <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0' or $(TargetFramework.StartsWith('net4'))">
     <Compile Include="System\Collections\Generic\StackExtensions.netstandard.cs" />
     <!-- Common or Common-branched source files -->
-    <Compile Include="$(CommonPath)System\Buffers\ArrayBufferWriter.cs">
-      <Link>Common\System\Buffers\ArrayBufferWriter.cs</Link>
-    </Compile>
+    <Compile Include="$(CommonPath)System\Buffers\ArrayBufferWriter.cs"
+             Link="Common\System\Buffers\ArrayBufferWriter.cs" />
     <Reference Include="mscorlib" />
     <Reference Include="System" />
     <Reference Include="System.Core" />
@@ -223,12 +224,11 @@
     <Reference Include="System.Numerics.Vectors" />
     <Reference Include="Microsoft.Bcl.AsyncInterfaces" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsNetStandard)' == 'true' or '$(TargetsNetFx)' == 'true' or '$(TargetFramework)' == 'netcoreapp3.0'">
-    <Compile Include="$(CommonPath)System\Collections\Generic\ReferenceEqualityComparer.cs">
-      <Link>Common\System\Collections\Generic\ReferenceEqualityComparer.cs</Link>
-    </Compile>
+  <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0' or $(TargetFramework.StartsWith('net4')) or '$(TargetFramework)' == 'netcoreapp3.0'">
+    <Compile Include="$(CommonPath)System\Collections\Generic\ReferenceEqualityComparer.cs"
+             Link="Common\System\Collections\Generic\ReferenceEqualityComparer.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsNetCoreApp)' == 'true'">
+  <ItemGroup Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)' or '$(TargetFramework)' == 'netcoreapp3.0'">
     <Reference Include="System.Collections" />
     <Reference Include="System.Diagnostics.Debug" />
     <Reference Include="System.Reflection.Primitives" />

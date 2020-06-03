@@ -12,31 +12,31 @@ Shared generics is a runtime+JIT feature aimed at reducing the amount of code th
 Consider the following C# code sample:
 
 ``` c#
-string Func<T>()
+string Method<T>()
 {
     return typeof(List<T>).ToString();
 }
 ```
 
-Without shared generics, the code for instantiations like `Func<object>` or `Func<string>` would look identical except for one single instruction: the one that loads the correct TypeHandle of type `List<T>`:
+Without shared generics, the code for instantiations like `Method<object>` or `Method<string>` would look identical except for one single instruction: the one that loads the correct TypeHandle of type `List<T>`:
 ``` asm
     mov rcx, type handle of List<string> or List<object>
     call ToString()
     ret
 ```
 
-With shared generics, the canonical code will not have any hard-coded versions of the type handle of List<T>, but instead looks up the exact type handle either through a call to a runtime helper API, or by loading it up from the *generic dictionary* of the instantiation of Func<T> that is executing. The code would look more like the following:
+With shared generics, the canonical code will not have any hard-coded versions of the type handle of List<T>, but instead looks up the exact type handle either through a call to a runtime helper API, or by loading it up from the *generic dictionary* of the instantiation of Method<T> that is executing. The code would look more like the following:
 ``` asm
-    mov rcx, generic context                                                // MethodDesc of Func<string> or Func<object>
+    mov rcx, generic context                                                // MethodDesc of Method<string> or Method<object>
     mov rcx, [rcx + offset of InstantiatedMethodDesc::m_pPerInstInfo]       // This is the generic dictionary
     mov rcx, [rcx + dictionary slot containing type handle of List<T>]
     call ToString()
     ret
 ```
 
-The generic context in this example is the InstantiatedMethodDesc of `Func<object>` or `Func<string>`. The generic dictionary is a data structure used by shared generic code to fetch instantiation-specific information. It is basically an array where the entries are instantiation-specific type handles, method handles, field handles, method entry points, etc... The "PerInstInfo" fields on MethodTable and InstantiatedMethodDesc structures point at the generic dictionary structure for a generic type and method respectively.
+The generic context in this example is the InstantiatedMethodDesc of `Method<object>` or `Method<string>`. The generic dictionary is a data structure used by shared generic code to fetch instantiation-specific information. It is basically an array where the entries are instantiation-specific type handles, method handles, field handles, method entry points, etc... The "PerInstInfo" fields on MethodTable and InstantiatedMethodDesc structures point at the generic dictionary structure for a generic type and method respectively.
 
-In this example, the generic dictionary for Func<object> will contain a slot with the type handle for type List<object>, and the generic dictionary for Func<string> will contain a slot with the type handle for type List<string>.
+In this example, the generic dictionary for Method<object> will contain a slot with the type handle for type List<object>, and the generic dictionary for Method<string> will contain a slot with the type handle for type List<string>.
 
 This feature is currently only supported for instantiations over reference types because they all have the same size/properties/layout/etc... For instantiations over primitive types or value types, the runtime will generate separate code bodies for each instantiation.
 
@@ -93,9 +93,9 @@ As described earlier, a generic dictionary is an array of multiple slots contain
 
 The first N slots in an instantiation of N arguments are always going to be the type handles of the instantiation type arguments (this is kind of an optimization as well). The slots that follow contain instantiation-based information.
 
-For instance, here is an example of the contents of the generic dictionary for our `Func<string>` example:
+For instance, here is an example of the contents of the generic dictionary for our `Method<string>` example:
 
-| `Func<string>'s dicionary` |
+| `Method<string>'s dicionary` |
 |--------------------------|
 | slot[0]: TypeHandle(`string`)      |
 | slot[1]: Total dictionary size  |
@@ -116,7 +116,7 @@ When generating shared generic code, the JIT knows which slots to use for the va
 ### Dictionary Layouts
 
 The `DictionaryLayout` structure is what tells the JIT which slot to use when performing a dictionary lookup. This `DictionaryLayout` structure has a couple of important properties:
-- It is shared across all compatible instantiations of a certain type of method. In other words, a dictionary layout is associated with the canonical instantiation of a type or a method. For instance, in our example above, `Func<object>` and `Func<string>` are compatible instantiations, each with their own **separate dictionaries**, however they all share the **same dictionary layout**, which is associated with the canonical instantiation `Func<__Canon>`.
+- It is shared across all compatible instantiations of a certain type of method. In other words, a dictionary layout is associated with the canonical instantiation of a type or a method. For instance, in our example above, `Method<object>` and `Method<string>` are compatible instantiations, each with their own **separate dictionaries**, however they all share the **same dictionary layout**, which is associated with the canonical instantiation `Method<__Canon>`.
 - The dictionaries of generic types or methods have the same number of slots as their dictionary layouts. Note: historically before the introduction of the dynamic dictionary expansion feature, the generic dictionaries could be smaller than their layouts, meaning that for certain lookups, we had to use invoke some runtime helper APIs (slow path).
 
 When a generic type or method is first created, its dictionary layout contains 'unassigned' slots. Assignments happen as part of code generation, whenever the JIT needs to emit a dictionary lookup sequence. This assignment happens during the calls to the `DictionaryLayout::FindToken(...)` APIs. Once a slot has been assigned, it becomes associated with a certain signature, which describes the kind of value that will go in every instantiated dictionary at that slot index.
@@ -160,7 +160,7 @@ The feature is simple in concept: change dictionary layouts from a linked list o
     - For types, the generic dictionary is part of the `MethodTable` structure, which can't be reallocated (already in use by managed code)
     - For methods, the generic dictionary is not part of the `MethodDesc` structure, but can still be in use by some generic code.
     - We can't have multiple MethodTables or MethodDescs for the same type or method anyways, so reallocations are not an option.
-- We can't just resize the generic dictionary for a single instantiation. For instance, in our example above, let's say we wanted to expand the dictionary for `Func<string>`. The resizing of the layout would have an impact on the shared canonical code that the JIT generates for `Func<__Canon>`. If we only resized the dictionary of `Func<string>`, the shared generic code would work for that instantiation only, but when we attempt to use it with another instantiation like `Func<object>`, the jitted instructions would no longer match the size of the dictionary structure, and would cause access violations.
+- We can't just resize the generic dictionary for a single instantiation. For instance, in our example above, let's say we wanted to expand the dictionary for `Method<string>`. The resizing of the layout would have an impact on the shared canonical code that the JIT generates for `Method<__Canon>`. If we only resized the dictionary of `Method<string>`, the shared generic code would work for that instantiation only, but when we attempt to use it with another instantiation like `Method<object>`, the jitted instructions would no longer match the size of the dictionary structure, and would cause access violations.
 - The runtime is multi-threaded, which adds to the complexity.
 
 The current implementation expands the dictionary layout and the actual dictionaries separately to keep things simple:

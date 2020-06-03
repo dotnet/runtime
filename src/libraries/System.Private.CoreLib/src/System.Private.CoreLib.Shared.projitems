@@ -8,6 +8,7 @@
   </PropertyGroup>
   <PropertyGroup>
     <Nullable>enable</Nullable>
+    <IsOSXLike Condition="'$(TargetsOSX)' == 'true' or '$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true'">true</IsOSXLike>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(MSBuildThisFileDirectory)Internal\IO\File.cs" />
@@ -193,7 +194,12 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Decimal.DecCalc.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\DefaultBinder.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Delegate.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Diagnostics\CodeAnalysis\RequiresUnreferencedCodeAttribute.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Diagnostics\CodeAnalysis\DynamicallyAccessedMemberTypes.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Diagnostics\CodeAnalysis\DynamicallyAccessedMembersAttribute.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Diagnostics\CodeAnalysis\DynamicDependencyAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Diagnostics\CodeAnalysis\NullableAttributes.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Diagnostics\CodeAnalysis\UnconditionalSuppressMessageAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Diagnostics\CodeAnalysis\SuppressMessageAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Diagnostics\ConditionalAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Diagnostics\Contracts\ContractException.cs" />
@@ -269,6 +275,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\DigitShapes.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\EastAsianLunisolarCalendar.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\GlobalizationExtensions.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\GlobalizationMode.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\GregorianCalendar.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\GregorianCalendarHelper.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\GregorianCalendarTypes.cs" />
@@ -727,7 +734,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\MarshalAsAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\MarshalDirectiveException.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\MemoryMarshal.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\NativeCallableAttribute.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\UnmanagedCallersOnlyAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\NativeLibrary.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\OptionalAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\OutAttribute.cs" />
@@ -870,6 +877,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Text\StringBuilder.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Text\StringBuilder.Debug.cs" Condition="'$(Configuration)' == 'Debug'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Text\StringRuneEnumerator.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Text\TranscodingStream.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Text\TrimType.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Text\Unicode\GraphemeClusterBreakType.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Text\Unicode\TextSegmentationUtility.cs" />
@@ -1048,6 +1056,9 @@
     </Compile>
     <Compile Include="$(CommonPath)System\HResults.cs">
       <Link>Common\System\HResults.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)System\SR.cs">
+      <Link>Common\System\SR.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)System\Collections\Generic\ReferenceEqualityComparer.cs">
       <Link>Common\System\Collections\Generic\ReferenceEqualityComparer.cs</Link>
@@ -1526,6 +1537,9 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Diagnostics\DebugProvider.Windows.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Diagnostics\Stopwatch.Windows.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Diagnostics\Tracing\RuntimeEventSourceHelper.Windows.cs" Condition="'$(FeaturePerfTracing)' == 'true'" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\CultureData.Windows.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\CultureInfo.Windows.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\GlobalizationMode.Windows.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\HijriCalendar.Win32.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Guid.Windows.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\DriveInfoInternal.Windows.cs" />
@@ -1560,8 +1574,8 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\WindowsRuntime\EventRegistrationToken.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
-      <Compile Include="$(MSBuildThisFileDirectory)\System\Runtime\InteropServices\WindowsRuntime\Attributes.cs" />
-      <Compile Include="$(MSBuildThisFileDirectory)\System\Runtime\InteropServices\WindowsRuntime\IActivationFactory.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)\System\Runtime\InteropServices\WindowsRuntime\Attributes.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)\System\Runtime\InteropServices\WindowsRuntime\IActivationFactory.cs" />
   </ItemGroup>
   <!-- CoreCLR uses PAL layer that emulates Windows API on Unix. This is bridge for that PAL layer. See issue dotnet/runtime/#31721. -->
   <ItemGroup Condition="'$(TargetsWindows)' == 'true' or '$(FeatureCoreCLR)'=='true'">
@@ -1743,12 +1757,17 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Diagnostics\Tracing\RuntimeEventSourceHelper.Unix.cs" Condition="'$(FeaturePerfTracing)' == 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Environment.NoRegistry.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Environment.Unix.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\Environment.Unix.GetFolderPathCore.cs" Condition="'$(TargetsiOS)' != 'true' and '$(TargetstvOS)' != 'true'" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Environment.OSVersion.OSX.cs" Condition="'$(IsOSXLike)' == 'true'" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Environment.OSVersion.Unix.cs" Condition="'$(IsOSXLike)' != 'true'" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Environment.GetFolderPathCore.Unix.cs" Condition="'$(TargetsiOS)' != 'true' and '$(TargetstvOS)' != 'true'" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\CultureData.Unix.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\CultureInfo.Unix.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\GlobalizationMode.Unix.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\HijriCalendar.Unix.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Guid.Unix.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\DriveInfoInternal.Unix.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\IO\FileStream.OSX.cs" Condition="'$(TargetsOSX)' == 'true' or '$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true'" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\IO\FileStream.Linux.cs" Condition="'$(TargetsOSX)' != 'true' and '$(TargetsiOS)' != 'true' and '$(TargetstvOS)' != 'true'" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\IO\FileStream.Lock.OSX.cs" Condition="'$(IsOSXLike)' == 'true'" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\IO\FileStream.Lock.Unix.cs" Condition="'$(IsOSXLike)' != 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\FileStream.Unix.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\Path.Unix.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\PathInternal.Unix.cs" />
@@ -1763,6 +1782,14 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\Thread.Unix.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\TimerQueue.Unix.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\TimeZoneInfo.Unix.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(IsOSXLike)' == 'true'">
+    <Compile Include="$(CommonPath)Interop\OSX\Interop.libobjc.cs">
+      <Link>Common\Interop\OSX\Interop.libobjc.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)Interop\OSX\Interop.Libraries.cs">
+      <Link>Common\Interop\OSX\Interop.Libraries.cs</Link>
+    </Compile>
   </ItemGroup>
   <ItemGroup Condition="'$(FeatureHardwareIntrinsics)' == 'true' and ('$(Platform)' == 'x64' or ('$(Platform)' == 'x86' and '$(TargetsUnix)' != 'true'))">
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\X86\Aes.cs" />
@@ -1780,6 +1807,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\X86\Sse41.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\X86\Sse42.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\X86\Ssse3.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\X86\X86Base.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(FeatureHardwareIntrinsics)' != 'true' or ('$(Platform)' != 'x64' and ('$(Platform)' != 'x86' or ('$(Platform)' == 'x86' and '$(TargetsUnix)' == 'true')))">
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\X86\Aes.PlatformNotSupported.cs" />
@@ -1797,6 +1825,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\X86\Sse41.PlatformNotSupported.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\X86\Sse42.PlatformNotSupported.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\X86\Ssse3.PlatformNotSupported.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\X86\X86Base.PlatformNotSupported.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(FeatureHardwareIntrinsics)' == 'true' and '$(Platform)' == 'arm64'">
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\Arm\AdvSimd.cs" />

@@ -30,6 +30,6 @@ if (CLR_CMAKE_TARGET_WIN32 AND (CLR_CMAKE_TARGET_ARCH_ARM OR CLR_CMAKE_TARGET_AR
     target_link_libraries(winrthost Advapi32.lib Ole32.lib OleAut32.lib)
 endif()
 
-target_link_libraries(winrthost RuntimeObject.lib libhostmisc libhostcommon)
+target_link_libraries(winrthost RuntimeObject.lib libhostcommon)
 
 install_with_stripped_symbols(winrthost TARGETS corehost)

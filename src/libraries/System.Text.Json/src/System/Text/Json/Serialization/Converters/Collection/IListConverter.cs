@@ -4,7 +4,6 @@
 
 using System.Collections;
 using System.Collections.Generic;
-using System.Diagnostics;
 
 namespace System.Text.Json.Serialization.Converters
 {
@@ -15,11 +14,10 @@ namespace System.Text.Json.Serialization.Converters
     {
         protected override void Add(object? value, ref ReadStack state)
         {
-            Debug.Assert(state.Current.ReturnValue is IList);
-            ((IList)state.Current.ReturnValue).Add(value);
+            ((IList)state.Current.ReturnValue!).Add(value);
         }
 
-        protected override void CreateCollection(ref ReadStack state, JsonSerializerOptions options)
+        protected override void CreateCollection(ref Utf8JsonReader reader, ref ReadStack state, JsonSerializerOptions options)
         {
             JsonClassInfo classInfo = state.Current.JsonClassInfo;
 
@@ -27,7 +25,7 @@ namespace System.Text.Json.Serialization.Converters
             {
                 if (!TypeToConvert.IsAssignableFrom(RuntimeType))
                 {
-                    ThrowHelper.ThrowNotSupportedException_DeserializeNoDeserializationConstructor(TypeToConvert);
+                    ThrowHelper.ThrowNotSupportedException_CannotPopulateCollection(TypeToConvert, ref reader, ref state);
                 }
 
                 state.Current.ReturnValue = new List<object?>();
@@ -36,14 +34,14 @@ namespace System.Text.Json.Serialization.Converters
             {
                 if (classInfo.CreateObject == null)
                 {
-                    ThrowHelper.ThrowNotSupportedException_DeserializeNoDeserializationConstructor(TypeToConvert);
+                    ThrowHelper.ThrowNotSupportedException_DeserializeNoConstructor(TypeToConvert, ref reader, ref state);
                 }
 
                 TCollection returnValue = (TCollection)classInfo.CreateObject()!;
 
                 if (returnValue.IsReadOnly)
                 {
-                    ThrowHelper.ThrowNotSupportedException_SerializationNotSupported(TypeToConvert);
+                    ThrowHelper.ThrowNotSupportedException_CannotPopulateCollection(TypeToConvert, ref reader, ref state);
                 }
 
                 state.Current.ReturnValue = returnValue;

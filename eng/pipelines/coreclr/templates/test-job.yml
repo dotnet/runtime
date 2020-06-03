@@ -27,7 +27,7 @@ parameters:
 
 jobs:
 - ${{ if and(ne(parameters.corefxTests, true), eq(parameters.osSubgroup, parameters.managedTestBuildOsSubgroup), eq(parameters.osGroup, parameters.managedTestBuildOsGroup)) }}:
-  - template: /eng/pipelines/coreclr/templates/build-test-job.yml
+  - template: /eng/pipelines/common/templates/runtimes/build-test-job.yml
     parameters:
       buildConfig: ${{ parameters.buildConfig }}
       liveLibrariesBuildConfig: ${{ parameters.liveLibrariesBuildConfig }}
@@ -42,7 +42,7 @@ jobs:
       variables: ${{ parameters.variables }}
       pool: ${{ parameters.pool }}
 
-- template: /eng/pipelines/coreclr/templates/run-test-job.yml
+- template: /eng/pipelines/common/templates/runtimes/run-test-job.yml
   parameters:
     buildConfig: ${{ parameters.buildConfig }}
     liveLibrariesBuildConfig: ${{ parameters.liveLibrariesBuildConfig }}

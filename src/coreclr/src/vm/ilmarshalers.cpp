@@ -2907,7 +2907,7 @@ MarshalerOverrideStatus ILSafeHandleMarshaler::ArgumentOverride(NDirectStubLinke
             }
 
             // Leave the address of the native handle local as the argument to the native method.
-            pslILDispatch->EmitLDLOCA(dwNativeHandleLocal);
+            EmitLoadNativeLocalAddrForByRefDispatch(pslILDispatch, dwNativeHandleLocal);
 
             // On the output side we only backpropagate the native handle into the output SafeHandle and the output SafeHandle
             // to the caller if the native handle actually changed (otherwise we can end up with two SafeHandles wrapping the
@@ -3071,7 +3071,7 @@ ILSafeHandleMarshaler::ReturnOverride(
         pslIL->SetStubTargetArgType(&locDescReturnHandle, false);   // extra arg is a byref IntPtr
 
         // 5) [byref] pass address of local as last arg
-        pslILDispatch->EmitLDLOCA(dwReturnNativeHandleLocal);
+        EmitLoadNativeLocalAddrForByRefDispatch(pslILDispatch, dwReturnNativeHandleLocal);
 
         // We will use cleanup stream to avoid leaking the handle on thread abort.
         psl->EmitSetArgMarshalIndex(pslIL, NDirectStubLinker::CLEANUP_INDEX_RETVAL_UNMARSHAL);
@@ -3253,7 +3253,7 @@ MarshalerOverrideStatus ILCriticalHandleMarshaler::ArgumentOverride(NDirectStubL
             }
 
             // Leave the address of the native handle local as the argument to the native method.
-            pslILDispatch->EmitLDLOCA(dwNativeHandleLocal);
+            EmitLoadNativeLocalAddrForByRefDispatch(pslILDispatch, dwNativeHandleLocal);
 
             if (fin)
             {
@@ -3406,7 +3406,7 @@ ILCriticalHandleMarshaler::ReturnOverride(
         pslIL->SetStubTargetArgType(&locDescReturnHandle, false);   // extra arg is a byref IntPtr
 
         // 5) [byref] pass address of local as last arg
-        pslILDispatch->EmitLDLOCA(dwReturnNativeHandleLocal);
+        EmitLoadNativeLocalAddrForByRefDispatch(pslILDispatch, dwReturnNativeHandleLocal);
 
         // We will use cleanup stream to avoid leaking the handle on thread abort.
         psl->EmitSetArgMarshalIndex(pslIL, NDirectStubLinker::CLEANUP_INDEX_RETVAL_UNMARSHAL);
@@ -3512,7 +3512,7 @@ MarshalerOverrideStatus ILBlittableValueClassWithCopyCtorMarshaler::ArgumentOver
         pslILDispatch->EmitLDLOC(dwNewValueTypeLocal);      // we load the local directly
 #else
         pslIL->SetStubTargetArgType(ELEMENT_TYPE_I);        // native type is a pointer
-        pslILDispatch->EmitLDLOCA(dwNewValueTypeLocal);
+        EmitLoadNativeLocalAddrForByRefDispatch(pslILDispatch, dwNewValueTypeLocal);
 #endif
 
         return OVERRIDDEN;

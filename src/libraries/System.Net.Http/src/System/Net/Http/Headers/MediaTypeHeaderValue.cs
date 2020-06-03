@@ -127,7 +127,7 @@ namespace System.Net.Http.Headers
             return (MediaTypeHeaderValue)MediaTypeHeaderParser.SingleValueParser.ParseValue(input, null, ref index);
         }
 
-        public static bool TryParse(string? input, [NotNullWhen(true)] out MediaTypeHeaderValue? parsedValue)
+        public static bool TryParse([NotNullWhen(true)] string? input, [NotNullWhen(true)] out MediaTypeHeaderValue? parsedValue)
         {
             int index = 0;
             parsedValue = null;

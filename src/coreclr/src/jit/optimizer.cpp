@@ -2669,6 +2669,20 @@ void Compiler::optCopyBlkDest(BasicBlock* from, BasicBlock* to)
     }
 }
 
+// Returns true if 'block' is an entry block for any loop in 'optLoopTable'
+bool Compiler::optIsLoopEntry(BasicBlock* block)
+{
+    for (unsigned char loopInd = 0; loopInd < optLoopCount; loopInd++)
+    {
+        // Traverse the outermost loops as entries into the loop nest; so skip non-outermost.
+        if (optLoopTable[loopInd].lpEntry == block)
+        {
+            return true;
+        }
+    }
+    return false;
+}
+
 // Canonicalize the loop nest rooted at parent loop 'loopInd'.
 // Returns 'true' if the flow graph is modified.
 bool Compiler::optCanonicalizeLoopNest(unsigned char loopInd)
@@ -3785,6 +3799,8 @@ void Compiler::optUnrollLoops()
                             testCopyStmt->SetRootNode(sideEffList);
                         }
                         newBlock->bbJumpKind = BBJ_NONE;
+                        newBlock->bbFlags &=
+                            ~BBF_NEEDS_GCPOLL; // Clear any NEEDS_GCPOLL flag as this block no longer can be a back edge
 
                         // Exit this loop; we've walked all the blocks.
                         break;
@@ -7642,17 +7658,55 @@ void Compiler::optComputeLoopNestSideEffects(unsigned lnum)
 {
     assert(optLoopTable[lnum].lpParent == BasicBlock::NOT_IN_LOOP); // Requires: lnum is outermost.
     BasicBlock* botNext = optLoopTable[lnum].lpBottom->bbNext;
+    JITDUMP("optComputeLoopSideEffects botNext is " FMT_BB ", lnum is %d\n", botNext->bbNum, lnum);
     for (BasicBlock* bbInLoop = optLoopTable[lnum].lpFirst; bbInLoop != botNext; bbInLoop = bbInLoop->bbNext)
     {
-        optComputeLoopSideEffectsOfBlock(bbInLoop);
+        if (!optComputeLoopSideEffectsOfBlock(bbInLoop))
+        {
+            // When optComputeLoopSideEffectsOfBlock returns false, we encountered
+            // a block that was moved into the loop range (by fgReorderBlocks),
+            // but not marked correctly as being inside the loop.
+            // We conservatively mark this loop (and any outer loops)
+            // as having memory havoc side effects.
+            //
+            // Record that all loops containing this block have memory havoc effects.
+            //
+            optRecordLoopNestsMemoryHavoc(lnum, fullMemoryKindSet);
+
+            // All done, no need to keep visiting more blocks
+            break;
+        }
     }
 }
 
-void Compiler::optComputeLoopSideEffectsOfBlock(BasicBlock* blk)
+void Compiler::optRecordLoopNestsMemoryHavoc(unsigned lnum, MemoryKindSet memoryHavoc)
+{
+    // We should start out with 'lnum' set to a valid natural loop index
+    assert(lnum != BasicBlock::NOT_IN_LOOP);
+
+    while (lnum != BasicBlock::NOT_IN_LOOP)
+    {
+        for (MemoryKind memoryKind : allMemoryKinds())
+        {
+            if ((memoryHavoc & memoryKindSet(memoryKind)) != 0)
+            {
+                optLoopTable[lnum].lpLoopHasMemoryHavoc[memoryKind] = true;
+            }
+        }
+
+        // Move lnum to the next outtermost loop that we need to mark
+        lnum = optLoopTable[lnum].lpParent;
+    }
+}
+
+bool Compiler::optComputeLoopSideEffectsOfBlock(BasicBlock* blk)
 {
     unsigned mostNestedLoop = blk->bbNatLoopNum;
-    assert(mostNestedLoop != BasicBlock::NOT_IN_LOOP);
-
+    JITDUMP("optComputeLoopSideEffectsOfBlock " FMT_BB ", mostNestedLoop %d\n", blk->bbNum, mostNestedLoop);
+    if (mostNestedLoop == BasicBlock::NOT_IN_LOOP)
+    {
+        return false;
+    }
     AddVariableLivenessAllContainingLoops(mostNestedLoop, blk);
 
     // MemoryKinds for which an in-loop call or store has arbitrary effects.
@@ -7905,20 +7959,10 @@ void Compiler::optComputeLoopSideEffectsOfBlock(BasicBlock* blk)
 
     if (memoryHavoc != emptyMemoryKindSet)
     {
-        // Record that all loops containing this block have memory havoc effects.
-        unsigned lnum = mostNestedLoop;
-        while (lnum != BasicBlock::NOT_IN_LOOP)
-        {
-            for (MemoryKind memoryKind : allMemoryKinds())
-            {
-                if ((memoryHavoc & memoryKindSet(memoryKind)) != 0)
-                {
-                    optLoopTable[lnum].lpLoopHasMemoryHavoc[memoryKind] = true;
-                }
-            }
-            lnum = optLoopTable[lnum].lpParent;
-        }
+        // Record that all loops containing this block have this kind of memoryHavoc effects.
+        optRecordLoopNestsMemoryHavoc(mostNestedLoop, memoryHavoc);
     }
+    return true;
 }
 
 // Marks the containsCall information to "lnum" and any parent loops.
@@ -9144,4 +9188,148 @@ void Compiler::optOptimizeBools()
 #ifdef DEBUG
     fgDebugCheckBBlist();
 #endif
+}
+
+typedef JitHashTable<unsigned, JitSmallPrimitiveKeyFuncs<unsigned>, unsigned> LclVarRefCounts;
+
+//------------------------------------------------------------------------------------------
+// optRemoveRedundantZeroInits: Remove redundant zero intializations.
+//
+// Notes:
+//    This phase iterates over basic blocks starting with the first basic block until there is no unique
+//    basic block successor or until it detects a loop. It keeps track of local nodes it encounters.
+//    When it gets to an assignment to a local variable or a local field, it checks whether the assignment
+//    is the first reference to the local (or to the parent of the local field), and, if so,
+//    it may do one of two optimizations:
+//      1. If the following conditions are true:
+//            the local is untracked,
+//            the rhs of the assignment is 0,
+//            the local is guaranteed to be fully initialized in the prolog,
+//         then the explicit zero initialization is removed.
+//      2. If the following conditions are true:
+//            the assignment is to a local (and not a field),
+//            the local is not lvLiveInOutOfHndlr or no exceptions can be thrown between the prolog and the assignment,
+//            either the local has no gc pointers or there are no gc-safe points between the prolog and the assignment,
+//         then the local with lvHasExplicitInit which tells the codegen not to insert zero initialization for this
+//         local in the prolog.
+
+void Compiler::optRemoveRedundantZeroInits()
+{
+#ifdef DEBUG
+    if (verbose)
+    {
+        printf("*************** In optRemoveRedundantZeroInits()\n");
+    }
+#endif // DEBUG
+
+    CompAllocator   allocator(getAllocator(CMK_ZeroInit));
+    LclVarRefCounts refCounts(allocator);
+    bool            hasGCSafePoint = false;
+    bool            canThrow       = false;
+
+    assert(fgStmtListThreaded);
+
+    for (BasicBlock* block = fgFirstBB; (block != nullptr) && ((block->bbFlags & BBF_MARKED) == 0);
+         block             = block->GetUniqueSucc())
+    {
+        block->bbFlags |= BBF_MARKED;
+        for (Statement* stmt = block->FirstNonPhiDef(); stmt != nullptr;)
+        {
+            Statement* next = stmt->GetNextStmt();
+            for (GenTree* tree = stmt->GetTreeList(); tree != nullptr; tree = tree->gtNext)
+            {
+                if (((tree->gtFlags & GTF_CALL) != 0) && (!tree->IsCall() || !tree->AsCall()->IsSuppressGCTransition()))
+                {
+                    hasGCSafePoint = true;
+                }
+
+                if ((tree->gtFlags & GTF_EXCEPT) != 0)
+                {
+                    canThrow = true;
+                }
+
+                switch (tree->gtOper)
+                {
+                    case GT_LCL_VAR:
+                    case GT_LCL_FLD:
+                    case GT_LCL_VAR_ADDR:
+                    case GT_LCL_FLD_ADDR:
+                    {
+                        unsigned  lclNum    = tree->AsLclVarCommon()->GetLclNum();
+                        unsigned* pRefCount = refCounts.LookupPointer(lclNum);
+                        if (pRefCount != nullptr)
+                        {
+                            *pRefCount = (*pRefCount) + 1;
+                        }
+                        else
+                        {
+                            refCounts.Set(lclNum, 1);
+                        }
+
+                        break;
+                    }
+                    case GT_ASG:
+                    {
+                        GenTreeOp* treeOp = tree->AsOp();
+                        if (treeOp->gtOp1->OperIs(GT_LCL_VAR, GT_LCL_FLD))
+                        {
+                            unsigned         lclNum    = treeOp->gtOp1->AsLclVarCommon()->GetLclNum();
+                            LclVarDsc* const lclDsc    = lvaGetDesc(lclNum);
+                            unsigned*        pRefCount = refCounts.LookupPointer(lclNum);
+                            assert(pRefCount != nullptr);
+                            if (*pRefCount == 1)
+                            {
+                                // The local hasn't been referenced before this assignment.
+                                bool removedExplicitZeroInit = false;
+                                if (!lclDsc->lvTracked && treeOp->gtOp2->IsIntegralConst(0))
+                                {
+                                    bool bbInALoop  = (block->bbFlags & BBF_BACKWARD_JUMP) != 0;
+                                    bool bbIsReturn = block->bbJumpKind == BBJ_RETURN;
+
+                                    if (!fgVarNeedsExplicitZeroInit(lclNum, bbInALoop, bbIsReturn))
+                                    {
+                                        // We are guaranteed to have a zero initialization in the prolog and
+                                        // the local hasn't been redefined between the prolog and this explicit
+                                        // zero initialization so the assignment can be safely removed.
+                                        if (tree == stmt->GetRootNode())
+                                        {
+                                            fgRemoveStmt(block, stmt);
+                                            removedExplicitZeroInit      = true;
+                                            *pRefCount                   = 0;
+                                            lclDsc->lvSuppressedZeroInit = 1;
+                                        }
+                                    }
+                                }
+
+                                if (!removedExplicitZeroInit && treeOp->gtOp1->OperIs(GT_LCL_VAR) &&
+                                    (!canThrow || !lclDsc->lvLiveInOutOfHndlr))
+                                {
+                                    // If compMethodRequiresPInvokeFrame() returns true, lower may later
+                                    // insert a call to CORINFO_HELP_INIT_PINVOKE_FRAME which is a gc-safe point.
+                                    if (!lclDsc->HasGCPtr() ||
+                                        (!GetInterruptible() && !hasGCSafePoint && !compMethodRequiresPInvokeFrame()))
+                                    {
+                                        // The local hasn't been used and won't be reported to the gc between
+                                        // the prolog and this explicit intialization. Therefore, it doesn't
+                                        // require zero initialization in the prolog.
+                                        lclDsc->lvHasExplicitInit = 1;
+                                    }
+                                }
+                            }
+                        }
+                        break;
+                    }
+                    default:
+                        break;
+                }
+            }
+            stmt = next;
+        }
+    }
+
+    for (BasicBlock* block = fgFirstBB; (block != nullptr) && ((block->bbFlags & BBF_MARKED) != 0);
+         block             = block->GetUniqueSucc())
+    {
+        block->bbFlags &= ~BBF_MARKED;
+    }
 }

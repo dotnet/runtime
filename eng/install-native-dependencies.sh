@@ -1,4 +1,4 @@
-#!/usr/bin/env sh
+#!/usr/bin/env bash
 
 if [ "$1" = "Linux" ]; then
     sudo apt update
@@ -9,37 +9,9 @@ if [ "$1" = "Linux" ]; then
     if [ "$?" != "0" ]; then
         exit 1;
     fi
-elif [ "$1" = "OSX" ]; then
-    brew update
-    brew upgrade
-    if [ "$?" != "0" ]; then
-        exit 1;
-    fi
-    brew install icu4c openssl autoconf automake libtool pkg-config python3
-    if [ "$?" != "0" ]; then
-        exit 1;
-    fi
-    brew link --force icu4c
-    if [ "$?" != "0" ]; then
-        exit 1;
-    fi
-elif [ "$1" = "tvOS" ]; then
-    brew update
-    brew upgrade
-    if [ "$?" != "0" ]; then
-        exit 1;
-    fi
-    brew install openssl autoconf automake libtool pkg-config python3
-    if [ "$?" != "0" ]; then
-        exit 1;
-    fi
-elif [ "$1" = "iOS" ]; then
-    brew update
-    brew upgrade
-    if [ "$?" != "0" ]; then
-        exit 1;
-    fi
-    brew install openssl autoconf automake libtool pkg-config python3
+elif [ "$1" = "OSX" ] || [ "$1" = "tvOS" ] || [ "$1" = "iOS" ]; then
+    engdir=$(dirname "${BASH_SOURCE[0]}")
+    brew bundle --no-lock --file "${engdir}/Brewfile"
     if [ "$?" != "0" ]; then
         exit 1;
     fi

@@ -4,15 +4,13 @@
     <TestRuntime>true</TestRuntime>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="StackFrameExtensionsTests.cs" />
+    <Compile Include="StackFrameTests.cs" />
+    <Compile Include="StackTraceSymbolsTests.cs" />
     <Compile Include="StackTraceTests.cs" />
     <Compile Include="SymDocumentTypeTests.cs" />
     <Compile Include="SymLanguageTypeTests.cs" />
     <Compile Include="SymLanguageVendorTests.cs" />
     <Compile Include="SymbolTokenTests.cs" />
-    <Compile Include="StackFrameTests.cs" />
-    <Compile Include="StackFrameExtensionsTests.cs" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'">
-    <Compile Include="StackTraceSymbolsTests.cs" />
   </ItemGroup>
 </Project>

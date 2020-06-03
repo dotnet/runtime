@@ -4,6 +4,16 @@
 
 namespace System.Runtime.Intrinsics
 {
+    internal static class Vector64
+    {
+        public static Vector64<ulong> Create(ulong value) => throw new PlatformNotSupportedException();
+        public static Vector64<byte> AsByte<T>(this Vector64<T> vector) where T : struct => throw new PlatformNotSupportedException();
+    }
+    internal readonly struct Vector64<T>
+        where T : struct
+    {
+    }
+
     internal static class Vector128
     {
         public static Vector128<short> Create(short value) => throw new PlatformNotSupportedException();
@@ -15,6 +25,7 @@ namespace System.Runtime.Intrinsics
         public static Vector128<uint> AsUInt32<T>(this Vector128<T> vector) where T : struct => throw new PlatformNotSupportedException();
         public static Vector128<ulong> AsUInt64<T>(this Vector128<T> vector) where T : struct => throw new PlatformNotSupportedException();
         public static T GetElement<T>(this Vector128<T> vector, int index) where T : struct => throw new PlatformNotSupportedException();
+        public static T ToScalar<T>(this Vector64<T> vector) where T : struct => throw new PlatformNotSupportedException();
     }
     internal readonly struct Vector128<T>
         where T : struct
@@ -26,6 +37,18 @@ namespace System.Runtime.Intrinsics
 
 namespace System.Runtime.Intrinsics.X86
 {
+    internal static class X86Base
+    {
+        internal static class X64
+        {
+            public const bool IsSupported = false;
+            internal static ulong BitScanForward(ulong value) => throw new PlatformNotSupportedException();
+            internal static ulong BitScanReverse(ulong value) => throw new PlatformNotSupportedException();
+        }
+        public const bool IsSupported = false;
+        internal static uint BitScanForward(uint value) => throw new PlatformNotSupportedException();
+        internal static uint BitScanReverse(uint value) => throw new PlatformNotSupportedException();
+    }
     internal abstract class Bmi1
     {
         public abstract class X64
@@ -117,5 +140,14 @@ namespace System.Runtime.Intrinsics.Arm
         public const bool IsSupported = false;
         public static int LeadingZeroCount(uint value) => throw new PlatformNotSupportedException();
         public static uint ReverseElementBits(uint value) => throw new PlatformNotSupportedException();
+    }
+
+    internal abstract class AdvSimd : ArmBase
+    {
+        public new abstract class Arm64 : ArmBase.Arm64
+        {
+            public static Vector64<byte> AddAcross(Vector64<byte> value) => throw new PlatformNotSupportedException();
+        }
+        public static Vector64<byte> PopCount(Vector64<byte> value) => throw new PlatformNotSupportedException();
     }
 }

@@ -49,6 +49,9 @@ namespace System.Net.Http.Headers
         public static readonly KnownHeader ExpectCT = new KnownHeader("Expect-CT");
         public static readonly KnownHeader Expires = new KnownHeader("Expires", HttpHeaderType.Content | HttpHeaderType.NonTrailing, DateHeaderParser.Parser, null, H2StaticTable.Expires);
         public static readonly KnownHeader From = new KnownHeader("From", HttpHeaderType.Request, GenericHeaderParser.MailAddressParser, null, H2StaticTable.From);
+        public static readonly KnownHeader GrpcEncoding = new KnownHeader("grpc-encoding", HttpHeaderType.Custom, null, new string[] { "identity", "gzip", "deflate" });
+        public static readonly KnownHeader GrpcMessage = new KnownHeader("grpc-message");
+        public static readonly KnownHeader GrpcStatus = new KnownHeader("grpc-status", HttpHeaderType.Custom, null, new string[] { "0" });
         public static readonly KnownHeader Host = new KnownHeader("Host", HttpHeaderType.Request | HttpHeaderType.NonTrailing, GenericHeaderParser.HostParser, null, H2StaticTable.Host);
         public static readonly KnownHeader IfMatch = new KnownHeader("If-Match", HttpHeaderType.Request | HttpHeaderType.NonTrailing, GenericHeaderParser.MultipleValueEntityTagParser, null, H2StaticTable.IfMatch);
         public static readonly KnownHeader IfModifiedSince = new KnownHeader("If-Modified-Since", HttpHeaderType.Request | HttpHeaderType.NonTrailing, DateHeaderParser.Parser, null, H2StaticTable.IfModifiedSince, H3StaticTable.IfModifiedSince);
@@ -70,7 +73,7 @@ namespace System.Net.Http.Headers
         public static readonly KnownHeader PublicKeyPins = new KnownHeader("Public-Key-Pins");
         public static readonly KnownHeader Range = new KnownHeader("Range", HttpHeaderType.Request | HttpHeaderType.NonTrailing, GenericHeaderParser.RangeParser, null, H2StaticTable.Range, H3StaticTable.RangeBytes0ToAll);
         public static readonly KnownHeader Referer = new KnownHeader("Referer", HttpHeaderType.Request, UriHeaderParser.RelativeOrAbsoluteUriParser, null, H2StaticTable.Referer, H3StaticTable.Referer); // NB: The spelling-mistake "Referer" for "Referrer" must be matched.
-        public static readonly KnownHeader ReferrerPolicy = new KnownHeader("Referrer-Policy");
+        public static readonly KnownHeader ReferrerPolicy = new KnownHeader("Referrer-Policy", HttpHeaderType.Custom, null, new string[] { "strict-origin-when-cross-origin", "origin-when-cross-origin", "strict-origin", "origin", "same-origin", "no-referrer-when-downgrade", "no-referrer", "unsafe-url" });
         public static readonly KnownHeader Refresh = new KnownHeader("Refresh", H2StaticTable.Refresh);
         public static readonly KnownHeader RetryAfter = new KnownHeader("Retry-After", HttpHeaderType.Response | HttpHeaderType.NonTrailing, GenericHeaderParser.RetryConditionParser, null, H2StaticTable.RetryAfter);
         public static readonly KnownHeader SecWebSocketAccept = new KnownHeader("Sec-WebSocket-Accept");
@@ -88,22 +91,22 @@ namespace System.Net.Http.Headers
         public static readonly KnownHeader Trailer = new KnownHeader("Trailer", HttpHeaderType.General | HttpHeaderType.NonTrailing, GenericHeaderParser.TokenListParser);
         public static readonly KnownHeader TransferEncoding = new KnownHeader("Transfer-Encoding", HttpHeaderType.General | HttpHeaderType.NonTrailing, TransferCodingHeaderParser.MultipleValueParser, new string[] { "chunked", "compress", "deflate", "gzip", "identity" }, H2StaticTable.TransferEncoding);
         public static readonly KnownHeader Upgrade = new KnownHeader("Upgrade", HttpHeaderType.General, GenericHeaderParser.MultipleValueProductParser);
-        public static readonly KnownHeader UpgradeInsecureRequests = new KnownHeader("Upgrade-Insecure-Requests", http3StaticTableIndex: H3StaticTable.UpgradeInsecureRequests1);
+        public static readonly KnownHeader UpgradeInsecureRequests = new KnownHeader("Upgrade-Insecure-Requests", HttpHeaderType.Custom, null, new string[] { "1" }, http3StaticTableIndex: H3StaticTable.UpgradeInsecureRequests1);
         public static readonly KnownHeader UserAgent = new KnownHeader("User-Agent", HttpHeaderType.Request, ProductInfoHeaderParser.MultipleValueParser, null, H2StaticTable.UserAgent, H3StaticTable.UserAgent);
-        public static readonly KnownHeader Vary = new KnownHeader("Vary", HttpHeaderType.Response | HttpHeaderType.NonTrailing, GenericHeaderParser.TokenListParser, null, H2StaticTable.Vary, H3StaticTable.VaryAcceptEncoding);
+        public static readonly KnownHeader Vary = new KnownHeader("Vary", HttpHeaderType.Response | HttpHeaderType.NonTrailing, GenericHeaderParser.TokenListParser, new string[] { "*" }, H2StaticTable.Vary, H3StaticTable.VaryAcceptEncoding);
         public static readonly KnownHeader Via = new KnownHeader("Via", HttpHeaderType.General, GenericHeaderParser.MultipleValueViaParser, null, H2StaticTable.Via);
         public static readonly KnownHeader WWWAuthenticate = new KnownHeader("WWW-Authenticate", HttpHeaderType.Response | HttpHeaderType.NonTrailing, GenericHeaderParser.MultipleValueAuthenticationParser, null, H2StaticTable.WwwAuthenticate);
         public static readonly KnownHeader Warning = new KnownHeader("Warning", HttpHeaderType.General | HttpHeaderType.NonTrailing, GenericHeaderParser.MultipleValueWarningParser);
         public static readonly KnownHeader XAspNetVersion = new KnownHeader("X-AspNet-Version");
         public static readonly KnownHeader XCache = new KnownHeader("X-Cache");
         public static readonly KnownHeader XContentDuration = new KnownHeader("X-Content-Duration");
-        public static readonly KnownHeader XContentTypeOptions = new KnownHeader("X-Content-Type-Options", http3StaticTableIndex: H3StaticTable.XContentTypeOptionsNoSniff);
-        public static readonly KnownHeader XFrameOptions = new KnownHeader("X-Frame-Options", http3StaticTableIndex: H3StaticTable.XFrameOptionsDeny);
+        public static readonly KnownHeader XContentTypeOptions = new KnownHeader("X-Content-Type-Options", HttpHeaderType.Custom, null, new string[] { "nosniff" }, http3StaticTableIndex: H3StaticTable.XContentTypeOptionsNoSniff);
+        public static readonly KnownHeader XFrameOptions = new KnownHeader("X-Frame-Options", HttpHeaderType.Custom, null, new string[] { "DENY", "SAMEORIGIN" }, http3StaticTableIndex: H3StaticTable.XFrameOptionsDeny);
         public static readonly KnownHeader XMSEdgeRef = new KnownHeader("X-MSEdge-Ref");
         public static readonly KnownHeader XPoweredBy = new KnownHeader("X-Powered-By");
         public static readonly KnownHeader XRequestID = new KnownHeader("X-Request-ID");
         public static readonly KnownHeader XUACompatible = new KnownHeader("X-UA-Compatible");
-        public static readonly KnownHeader XXssProtection = new KnownHeader("X-XSS-Protection");
+        public static readonly KnownHeader XXssProtection = new KnownHeader("X-XSS-Protection", HttpHeaderType.Custom, null, new string[] { "0", "1", "1; mode=block" });
 
         // Helper interface for making GetCandidate generic over strings, utf8, etc
         private interface IHeaderNameAccessor
@@ -250,20 +253,22 @@ namespace System.Net.Http.Headers
                     switch (key[0] | 0x20)
                     {
                         case 'c': return ContentMD5; // [C]ontent-MD5
+                        case 'g': return GrpcStatus; // [g]rpc-status
                         case 'r': return RetryAfter; // [R]etry-After
                         case 's': return SetCookie2; // [S]et-Cookie2
                     }
                     break;
 
                 case 12:
-                    switch (key[2] | 0x20)
+                    switch (key[5] | 0x20)
                     {
-                        case 'c': return AcceptPatch; // Ac[c]ept-Patch
-                        case 'm': return XMSEdgeRef;  // X-[M]SEdge-Ref
-                        case 'n': return ContentType; // Co[n]tent-Type
-                        case 'p': return XPoweredBy;  // X-[P]owered-By
-                        case 'r': return XRequestID;  // X-[R]equest-ID
-                        case 'x': return MaxForwards; // Ma[x]-Forwards
+                        case 'd': return XMSEdgeRef;  // X-MSE[d]ge-Ref
+                        case 'e': return XPoweredBy;  // X-Pow[e]red-By
+                        case 'm': return GrpcMessage; // grpc-[m]essage
+                        case 'n': return ContentType; // Conte[n]t-Type
+                        case 'o': return MaxForwards; // Max-F[o]rwards
+                        case 't': return AcceptPatch; // Accep[t]-Patch
+                        case 'u': return XRequestID;  // X-Req[u]est-ID
                     }
                     break;
 
@@ -272,7 +277,13 @@ namespace System.Net.Http.Headers
                     {
                         case 'd': return LastModified;  // Last-Modifie[d]
                         case 'e': return ContentRange;  // Content-Rang[e]
-                        case 'g': return ServerTiming;  // Server-Timin[g]
+                        case 'g':
+                            switch (key[0] | 0x20)
+                            {
+                                case 's': return ServerTiming;  // [S]erver-Timin[g]
+                                case 'g': return GrpcEncoding;  // [g]rpc-encodin[g]
+                            }
+                            break;
                         case 'h': return IfNoneMatch;   // If-None-Matc[h]
                         case 'l': return CacheControl;  // Cache-Contro[l]
                         case 'n': return Authorization; // Authorizatio[n]

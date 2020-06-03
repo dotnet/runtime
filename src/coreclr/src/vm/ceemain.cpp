@@ -93,14 +93,14 @@
 //       file:threads.h#SuspendingTheRuntime and file:../../Documentation/botr/threading.md
 //   * Garbage collection - file:gc.cpp#Overview and file:../../Documentation/botr/garbage-collection.md
 //   * code:AppDomain - The managed version of a process.
-//   * Calling Into the runtime (FCALLs QCalls) file:../../Documentation/botr/mscorlib.md
+//   * Calling Into the runtime (FCALLs QCalls) file:../../Documentation/botr/corelib.md
 //   * Exceptions - file:../../Documentation/botr/exceptions.md. The most important routine to start
 //       with is code:COMPlusFrameHandler which is the routine that we hook up to get called when an unmanaged
 //       exception happens.
 //   * Assembly Loading file:../../Documentation/botr/type-loader.md
 //   * Profiling file:../../Documentation/botr/profiling.md and file:../../Documentation/botr/profilability.md
 //   * FCALLS QCALLS (calling into the runtime from managed code)
-//       file:../../Documentation/botr/mscorlib.md
+//       file:../../Documentation/botr/corelib.md
 //   * Event Tracing for Windows
 //     * file:../inc/eventtrace.h#EventTracing -
 //     * This is the main file dealing with event tracing in CLR
@@ -164,6 +164,7 @@
 #include "threadsuspend.h"
 #include "disassembler.h"
 #include "jithost.h"
+#include "pgo.h"
 
 #ifndef TARGET_UNIX
 #include "dwreport.h"
@@ -644,6 +645,11 @@ void EEStartupHelper()
         IfFailGo(EEConfig::Setup());
 
 #ifndef CROSSGEN_COMPILE
+
+#ifdef HOST_WINDOWS
+        InitializeCrashDump();
+#endif // HOST_WINDOWS
+
         // Initialize Numa and CPU group information
         // Need to do this as early as possible. Used by creating object handle
         // table inside Ref_Initialization() before GC is initialized.
@@ -712,6 +718,10 @@ void EEStartupHelper()
 
 #ifdef FEATURE_PERFMAP
         PerfMap::Initialize();
+#endif
+
+#ifdef FEATURE_PGO
+        PgoManager::Initialize();
 #endif
 
         STRESS_LOG0(LF_STARTUP, LL_ALWAYS, "===================EEStartup Starting===================");
@@ -830,8 +840,6 @@ void EEStartupHelper()
         g_pEEShutDownEvent->CreateManualEvent(FALSE);
 
         VirtualCallStubManager::InitStatic();
-
-        GCInterface::m_MemoryPressureLock.Init(CrstGCMemoryPressure);
 
 #endif // CROSSGEN_COMPILE
 
@@ -1156,70 +1164,6 @@ void ForceEEShutdown(ShutdownCompleteAction sca)
     EEPolicy::HandleExitProcess(sca);
 }
 
-static bool WaitForEndOfShutdown_OneIteration()
-{
-    CONTRACTL{
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_PREEMPTIVE;
-    } CONTRACTL_END;
-
-    // We are shutting down.  GC triggers does not have any effect now.
-    CONTRACT_VIOLATION(GCViolation);
-
-    // If someone calls EEShutDown while holding OS loader lock, the thread we created for shutdown
-    // won't start running.  This is a deadlock we can not fix.  Instead, we timeout and continue the
-    // current thread.
-    DWORD timeout = GetEEPolicy()->GetTimeout(OPR_ProcessExit);
-    timeout *= 2;
-    ULONGLONG endTime = CLRGetTickCount64() + timeout;
-    bool done = false;
-
-    EX_TRY
-    {
-        ULONGLONG curTime = CLRGetTickCount64();
-        if (curTime > endTime)
-        {
-            done = true;
-        }
-        else
-        {
-#ifdef PROFILING_SUPPORTED
-            if (CORProfilerPresent())
-            {
-                // A profiler is loaded, so just wait without timeout. This allows
-                // profilers to complete potentially lengthy post processing, without the
-                // CLR killing them off first. The Office team's server memory profiler,
-                // for example, does a lot of post-processing that can exceed the 80
-                // second imit we normally impose here. The risk of waiting without
-                // timeout is that, if there really is a deadlock, shutdown will hang.
-                // Since that will only happen if a profiler is loaded, that is a
-                // reasonable compromise
-                timeout = INFINITE;
-            }
-            else
-#endif //PROFILING_SUPPORTED
-            {
-                timeout = static_cast<DWORD>(endTime - curTime);
-            }
-            DWORD status = g_pEEShutDownEvent->Wait(timeout,TRUE);
-            if (status == WAIT_OBJECT_0 || status == WAIT_TIMEOUT)
-            {
-                done = true;
-            }
-            else
-            {
-                done = false;
-            }
-        }
-    }
-    EX_CATCH
-    {
-    }
-    EX_END_CATCH(SwallowAllExceptions);
-    return done;
-}
-
 void WaitForEndOfShutdown()
 {
     CONTRACTL{
@@ -1240,7 +1184,7 @@ void WaitForEndOfShutdown()
         pThread->SetThreadStateNC(Thread::TSNC_BlockedForShutdown);
     }
 
-    while (!WaitForEndOfShutdown_OneIteration());
+    for (;;) g_pEEShutDownEvent->Wait(INFINITE, TRUE);
 }
 
 // ---------------------------------------------------------------------------
@@ -1372,6 +1316,10 @@ void STDMETHODCALLTYPE EEShutDownHelper(BOOL fIsDllUnloading)
 #ifdef FEATURE_PERFMAP
         // Flush and close the perf map file.
         PerfMap::Destroy();
+#endif
+
+#ifdef FEATURE_PGO
+        PgoManager::Shutdown();
 #endif
 
         {
@@ -1876,8 +1824,6 @@ BOOL STDMETHODCALLTYPE EEDllMain( // TRUE on success, FALSE on error.
             // TODO: This shouldn't rely on the LCID (id), but only the name
                 SetResourceCultureCallbacks(GetThreadUICultureNames,
                                             GetThreadUICultureId);
-
-                InitEEPolicy();
 
                 break;
             }

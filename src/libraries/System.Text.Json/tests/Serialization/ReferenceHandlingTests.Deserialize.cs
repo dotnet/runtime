@@ -920,7 +920,6 @@ namespace System.Text.Json.Serialization.Tests
             JsonException ex = Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<Employee>(json, s_deserializerOptionsPreserve));
             Assert.Equal(expectedPath, ex.Path);
         }
-
         #endregion
 
         #region Throw on immutables

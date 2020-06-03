@@ -104,23 +104,9 @@ HRESULT EEConfig::Init()
 #endif
 
     fGCBreakOnOOM = false;
-    iGCgen0size = 0;
-    iGCSegmentSize = 0;
     iGCconcurrent = 0;
-#ifdef _DEBUG
-    iGCLatencyMode = -1;
-#endif //_DEBUG
-    iGCForceCompact = 0;
     iGCHoardVM = 0;
-    iGCLOHCompactionMode = 0;
     iGCLOHThreshold = 0;
-    iGCHeapCount = 0;
-    iGCNoAffinitize = 0;
-    iGCAffinityMask = 0;
-
-#ifdef GCTRIMCOMMIT
-    iGCTrimCommit = 0;
-#endif
 
     m_fFreepZapSet = false;
 
@@ -139,14 +125,6 @@ HRESULT EEConfig::Init()
     fJitAlignLoops = false;
     fJitMinOpts = false;
     fPInvokeRestoreEsp = (DWORD)-1;
-
-    fLegacyNullReferenceExceptionPolicy = false;
-    fLegacyUnhandledExceptionPolicy = false;
-
-#ifdef FEATURE_CORRUPTING_EXCEPTIONS
-    // By default, there is not pre-V4 CSE policy
-    fLegacyCorruptedStateExceptionsPolicy = false;
-#endif // FEATURE_CORRUPTING_EXCEPTIONS
 
     fNgenBindOptimizeNonGac = false;
     fStressLog = false;
@@ -471,7 +449,6 @@ fTrackDynamicMethodDebugInfo = CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_
 
     IfFailRet(CLRConfig::GetConfigValue(CLRConfig::INTERNAL_GcCoverage, (LPWSTR*)&pszGcCoverageOnMethod));
     pszGcCoverageOnMethod = NarrowWideChar((LPWSTR)pszGcCoverageOnMethod);
-    iGCLatencyMode = GetConfigDWORD_DontUse_(CLRConfig::INTERNAL_GCLatencyMode, iGCLatencyMode);
 #endif
 
     bool gcConcurrentWasForced = false;
@@ -562,24 +539,6 @@ fTrackDynamicMethodDebugInfo = CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_
 
 #endif //STRESS_HEAP
 
-#ifdef HOST_64BIT
-    iGCAffinityMask = GetConfigULONGLONG_DontUse_(CLRConfig::EXTERNAL_GCHeapAffinitizeMask, iGCAffinityMask);
-    if (!iGCAffinityMask) iGCAffinityMask =  Configuration::GetKnobULONGLONGValue(W("System.GC.HeapAffinitizeMask"));
-    if (!iGCSegmentSize) iGCSegmentSize =  GetConfigULONGLONG_DontUse_(CLRConfig::UNSUPPORTED_GCSegmentSize, iGCSegmentSize);
-    if (!iGCgen0size) iGCgen0size = GetConfigULONGLONG_DontUse_(CLRConfig::UNSUPPORTED_GCgen0size, iGCgen0size);
-#else
-    iGCAffinityMask = GetConfigDWORD_DontUse_(CLRConfig::EXTERNAL_GCHeapAffinitizeMask, iGCAffinityMask);
-    if (!iGCAffinityMask) iGCAffinityMask = Configuration::GetKnobDWORDValue(W("System.GC.HeapAffinitizeMask"), 0);
-    if (!iGCSegmentSize) iGCSegmentSize =  GetConfigDWORD_DontUse_(CLRConfig::UNSUPPORTED_GCSegmentSize, iGCSegmentSize);
-    if (!iGCgen0size) iGCgen0size = GetConfigDWORD_DontUse_(CLRConfig::UNSUPPORTED_GCgen0size, iGCgen0size);
-#endif //HOST_64BIT
-
-    const ULONGLONG ullHeapHardLimit = Configuration::GetKnobULONGLONGValue(W("System.GC.HeapHardLimit"));
-    iGCHeapHardLimit = FitsIn<size_t, ULONGLONG>(ullHeapHardLimit)
-        ? static_cast<size_t>(ullHeapHardLimit)
-        : ClrSafeInt<size_t>::MaxInt();
-    iGCHeapHardLimitPercent = Configuration::GetKnobDWORDValue(W("System.GC.HeapHardLimitPercent"), 0);
-
     if (g_IGCHoardVM)
         iGCHoardVM = g_IGCHoardVM;
     else
@@ -590,15 +549,6 @@ fTrackDynamicMethodDebugInfo = CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_
         iGCLOHThreshold = Configuration::GetKnobDWORDValue(W("System.GC.LOHThreshold"), CLRConfig::EXTERNAL_GCLOHThreshold);
         iGCLOHThreshold = max (iGCLOHThreshold, LARGE_OBJECT_SIZE);
     }
-
-    if (!iGCLOHCompactionMode) iGCLOHCompactionMode = GetConfigDWORD_DontUse_(CLRConfig::UNSUPPORTED_GCLOHCompact, iGCLOHCompactionMode);
-
-#ifdef GCTRIMCOMMIT
-    if (g_IGCTrimCommit)
-        iGCTrimCommit = g_IGCTrimCommit;
-    else
-        iGCTrimCommit = GetConfigDWORD_DontUse_(CLRConfig::EXTERNAL_gcTrimCommitOnLowMemory, iGCTrimCommit);
-#endif
 
 #ifdef FEATURE_CONSERVATIVE_GC
     iGCConservative =  (CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_gcConservative) != 0);
@@ -637,12 +587,6 @@ fTrackDynamicMethodDebugInfo = CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_
         IfFailRet(hr);
     }
 #endif
-
-    iGCForceCompact     =  GetConfigDWORD_DontUse_(CLRConfig::UNSUPPORTED_gcForceCompact, iGCForceCompact);
-    iGCNoAffinitize = Configuration::GetKnobBooleanValue(W("System.GC.NoAffinitize"),
-                                                         CLRConfig::EXTERNAL_GCNoAffinitize);
-    iGCHeapCount = Configuration::GetKnobDWORDValue(W("System.GC.HeapCount"), CLRConfig::EXTERNAL_GCHeapCount);
-
     fStressLog        =  GetConfigDWORD_DontUse_(CLRConfig::UNSUPPORTED_StressLog, fStressLog) != 0;
     fForceEnc         =  GetConfigDWORD_DontUse_(CLRConfig::UNSUPPORTED_ForceEnc, fForceEnc) != 0;
 

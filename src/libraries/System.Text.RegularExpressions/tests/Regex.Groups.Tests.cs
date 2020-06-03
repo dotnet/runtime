@@ -391,7 +391,6 @@ namespace System.Text.RegularExpressions.Tests
             if (!PlatformDetection.IsNetFramework) // missing fix for https://github.com/dotnet/runtime/issues/24759
             {
                 yield return new object[] { null, @"(cat)(\c[*)(dog)", "asdlkcat\u001bdogiwod", RegexOptions.None, new string[] { "cat\u001bdog", "cat", "\u001b", "dog" } };
-                yield return new object[] { null, @"(cat)(\c[*)(dog)", "asdlkcat\u001Bdogiwod", RegexOptions.None, new string[] { "cat\u001Bdog", "cat", "\u001B", "dog" } };
             }
 
             // Atomic Zero-Width Assertions \A \G ^ \Z \z \b \B

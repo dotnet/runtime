@@ -3,22 +3,51 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
+using System.Text.Encodings.Web;
 
 namespace System.Text.Json.Serialization.Converters
 {
     internal sealed class KeyValuePairConverter<TKey, TValue> : JsonValueConverter<KeyValuePair<TKey, TValue>>
     {
-        private const string KeyName = "Key";
-        private const string ValueName = "Value";
+        private const string KeyNameCLR = "Key";
+        private const string ValueNameCLR = "Value";
 
-        // todo: https://github.com/dotnet/runtime/issues/1197
-        // move these to JsonSerializerOptions and use the proper encoding.
-        private static readonly JsonEncodedText _keyName = JsonEncodedText.Encode(KeyName, encoder: null);
-        private static readonly JsonEncodedText _valueName = JsonEncodedText.Encode(ValueName, encoder: null);
+        // Property name for "Key" and "Value" with Options.PropertyNamingPolicy applied.
+        private string _keyName = null!;
+        private string _valueName = null!;
+
+        // _keyName and _valueName as JsonEncodedText.
+        private JsonEncodedText _keyNameEncoded;
+        private JsonEncodedText _valueNameEncoded;
 
         // todo: https://github.com/dotnet/runtime/issues/32352
         // it is possible to cache the underlying converters since this is an internal converter and
         // an instance is created only once for each JsonSerializerOptions instance.
+
+        internal override void Initialize(JsonSerializerOptions options)
+        {
+            JsonNamingPolicy? namingPolicy = options.PropertyNamingPolicy;
+
+            if (namingPolicy == null)
+            {
+                _keyName = KeyNameCLR;
+                _valueName = ValueNameCLR;
+            }
+            else
+            {
+                _keyName = namingPolicy.ConvertName(KeyNameCLR);
+                _valueName = namingPolicy.ConvertName(ValueNameCLR);
+
+                if (_keyName == null || _valueName == null)
+                {
+                    ThrowHelper.ThrowInvalidOperationException_NamingPolicyReturnNull(namingPolicy);
+                }
+            }
+
+            JavaScriptEncoder? encoder = options.Encoder;
+            _keyNameEncoded = JsonEncodedText.Encode(_keyName, encoder);
+            _valueNameEncoded = JsonEncodedText.Encode(_valueName, encoder);
+        }
 
         internal override bool OnTryRead(
             ref Utf8JsonReader reader,
@@ -44,17 +73,19 @@ namespace System.Text.Json.Serialization.Converters
                 ThrowHelper.ThrowJsonException();
             }
 
+            bool caseInsensitiveMatch = options.PropertyNameCaseInsensitive;
+
             string propertyName = reader.GetString()!;
-            if (propertyName == KeyName)
+            if (FoundKeyProperty(propertyName, caseInsensitiveMatch))
             {
                 reader.ReadWithVerify();
-                k = JsonSerializer.Deserialize<TKey>(ref reader, options, ref state, KeyName);
+                k = JsonSerializer.Deserialize<TKey>(ref reader, options, ref state, _keyName);
                 keySet = true;
             }
-            else if (propertyName == ValueName)
+            else if (FoundValueProperty(propertyName, caseInsensitiveMatch))
             {
                 reader.ReadWithVerify();
-                v = JsonSerializer.Deserialize<TValue>(ref reader, options, ref state, ValueName);
+                v = JsonSerializer.Deserialize<TValue>(ref reader, options, ref state, _valueName);
                 valueSet = true;
             }
             else
@@ -70,24 +101,17 @@ namespace System.Text.Json.Serialization.Converters
             }
 
             propertyName = reader.GetString()!;
-            if (propertyName == KeyName)
+            if (!keySet && FoundKeyProperty(propertyName, caseInsensitiveMatch))
             {
                 reader.ReadWithVerify();
-                k = JsonSerializer.Deserialize<TKey>(ref reader, options, ref state, KeyName);
-                keySet = true;
+                k = JsonSerializer.Deserialize<TKey>(ref reader, options, ref state, _keyName);
             }
-            else if (propertyName == ValueName)
+            else if (!valueSet && FoundValueProperty(propertyName, caseInsensitiveMatch))
             {
                 reader.ReadWithVerify();
-                v = JsonSerializer.Deserialize<TValue>(ref reader, options, ref state, ValueName);
-                valueSet = true;
+                v = JsonSerializer.Deserialize<TValue>(ref reader, options, ref state, _valueName);
             }
             else
-            {
-                ThrowHelper.ThrowJsonException();
-            }
-
-            if (!keySet || !valueSet)
             {
                 ThrowHelper.ThrowJsonException();
             }
@@ -99,7 +123,7 @@ namespace System.Text.Json.Serialization.Converters
                 ThrowHelper.ThrowJsonException();
             }
 
-            value = new KeyValuePair<TKey, TValue>(k, v);
+            value = new KeyValuePair<TKey, TValue>(k!, v!);
             return true;
         }
 
@@ -107,14 +131,28 @@ namespace System.Text.Json.Serialization.Converters
         {
             writer.WriteStartObject();
 
-            writer.WritePropertyName(_keyName);
-            JsonSerializer.Serialize(writer, value.Key, options, ref state, KeyName);
+            writer.WritePropertyName(_keyNameEncoded);
+            JsonSerializer.Serialize(writer, value.Key, options, ref state, _keyName);
 
-            writer.WritePropertyName(_valueName);
-            JsonSerializer.Serialize(writer, value.Value, options, ref state, ValueName);
+            writer.WritePropertyName(_valueNameEncoded);
+            JsonSerializer.Serialize(writer, value.Value, options, ref state, _valueName);
 
             writer.WriteEndObject();
             return true;
+        }
+
+        private bool FoundKeyProperty(string propertyName, bool caseInsensitiveMatch)
+        {
+            return propertyName == _keyName ||
+                (caseInsensitiveMatch && string.Equals(propertyName, _keyName, StringComparison.OrdinalIgnoreCase)) ||
+                propertyName == KeyNameCLR;
+        }
+
+        private bool FoundValueProperty(string propertyName, bool caseInsensitiveMatch)
+        {
+            return propertyName == _valueName ||
+                (caseInsensitiveMatch && string.Equals(propertyName, _valueName, StringComparison.OrdinalIgnoreCase)) ||
+                propertyName == ValueNameCLR;
         }
     }
 }

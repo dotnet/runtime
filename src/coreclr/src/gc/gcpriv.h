@@ -223,6 +223,7 @@ const int policy_expand  = 2;
 #define JOIN_LOG (MIN_CUSTOM_LOG_LEVEL + 6)
 #define SPINLOCK_LOG (MIN_CUSTOM_LOG_LEVEL + 7)
 #define SNOOP_LOG (MIN_CUSTOM_LOG_LEVEL + 8)
+#define COMMIT_ACCOUNTING_LOG (MIN_CUSTOM_LOG_LEVEL + 9)
 
 // NOTE! This is for HEAP_BALANCE_INSTRUMENTATION
 // This particular one is special and needs to be well formatted because we
@@ -397,6 +398,17 @@ enum gc_tuning_point
     tuning_deciding_promote_ephemeral = 4,
     tuning_deciding_short_on_seg = 5
 };
+
+enum gc_oh_num
+{
+    soh = 0,
+    loh = 1,
+    poh = 2,
+    none = 3,
+    total_oh_count = 4
+};
+
+gc_oh_num gen_to_oh (int gen);
 
 #if defined(TRACE_GC) && defined(BACKGROUND_GC)
 static const char * const str_bgc_state[] =
@@ -1138,6 +1150,7 @@ public:
     static
     heap_segment* make_heap_segment (uint8_t* new_pages,
                                      size_t size,
+                                     gc_oh_num oh,
                                      int h_number);
 
     static
@@ -1269,6 +1282,11 @@ public:
 #endif // FEATURE_BASICFREEZE
 
 protected:
+    PER_HEAP_ISOLATED
+    BOOL reserve_initial_memory (size_t normal_size, size_t large_size, size_t pinned_size, int num_heaps, bool use_large_pages_p);
+
+    PER_HEAP_ISOLATED
+    void destroy_initial_memory();
 
     PER_HEAP_ISOLATED
     void walk_heap (walk_fn fn, void* context, int gen_number, BOOL walk_large_object_heap_p);
@@ -1631,7 +1649,9 @@ protected:
     PER_HEAP
     heap_segment* soh_get_segment_to_expand();
     PER_HEAP
-    heap_segment* get_segment (size_t size, BOOL loh_p);
+    heap_segment* get_segment (size_t size, gc_oh_num oh);
+    PER_HEAP_ISOLATED
+    void release_segment (heap_segment* sg);
     PER_HEAP_ISOLATED
     void seg_mapping_table_add_segment (heap_segment* seg, gc_heap* hp);
     PER_HEAP_ISOLATED
@@ -1651,13 +1671,21 @@ protected:
     PER_HEAP
     void decommit_heap_segment_pages (heap_segment* seg, size_t extra_space);
     PER_HEAP
+    size_t decommit_ephemeral_segment_pages_step ();
+    PER_HEAP
+    size_t decommit_heap_segment_pages_worker (heap_segment* seg, uint8_t *new_committed);
+    PER_HEAP_ISOLATED
+    bool decommit_step ();
+    PER_HEAP
     void decommit_heap_segment (heap_segment* seg);
     PER_HEAP_ISOLATED
     bool virtual_alloc_commit_for_heap (void* addr, size_t size, int h_number);
     PER_HEAP_ISOLATED
-    bool virtual_commit (void* address, size_t size, int h_number=-1, bool* hard_limit_exceeded_p=NULL);
+    bool virtual_commit (void* address, size_t size, gc_oh_num oh, int h_number=-1, bool* hard_limit_exceeded_p=NULL);
     PER_HEAP_ISOLATED
-    bool virtual_decommit (void* address, size_t size, int h_number=-1);
+    bool virtual_decommit (void* address, size_t size, gc_oh_num oh, int h_number=-1);
+    PER_HEAP_ISOLATED
+    void virtual_free (void* add, size_t size, heap_segment* sg=NULL);
     PER_HEAP
     void clear_gen0_bricks();
 #ifdef BACKGROUND_GC
@@ -1878,7 +1906,7 @@ protected:
     size_t&  promoted_bytes (int);
 
     PER_HEAP
-    uint8_t* find_object (uint8_t* o, uint8_t* low);
+    uint8_t* find_object (uint8_t* o);
 
     PER_HEAP
     dynamic_data* dynamic_data_of (int gen_number);
@@ -2011,8 +2039,6 @@ protected:
     void background_ephemeral_sweep();
     PER_HEAP
     void background_sweep ();
-    PER_HEAP
-    void background_mark_through_object (uint8_t* oo THREAD_NUMBER_DCL);
     PER_HEAP
     uint8_t* background_seg_end (heap_segment* seg, BOOL concurrent_p);
     PER_HEAP
@@ -2301,8 +2327,6 @@ protected:
 #endif //BACKGROUND_GC
 
     PER_HEAP
-    uint8_t* next_end (heap_segment* seg, uint8_t* f);
-    PER_HEAP
     void mark_through_object (uint8_t* oo, BOOL mark_class_object_p THREAD_NUMBER_DCL);
     PER_HEAP
     BOOL process_mark_overflow (int condemned_gen_number);
@@ -2329,7 +2353,7 @@ protected:
     void mark_phase (int condemned_gen_number, BOOL mark_only_p);
 
     PER_HEAP
-    void pin_object (uint8_t* o, uint8_t** ppObject, uint8_t* low, uint8_t* high);
+    void pin_object (uint8_t* o, uint8_t** ppObject);
 
 #if defined(ENABLE_PERF_COUNTERS) || defined(FEATURE_EVENT_TRACE)
     PER_HEAP_ISOLATED
@@ -2451,8 +2475,6 @@ protected:
 #endif //FEATURE_LOH_COMPACTION
 
     PER_HEAP
-    void decommit_ephemeral_segment_pages (int condemned_gen_number);
-    PER_HEAP
     void fix_generation_bounds (int condemned_gen_number,
                                 generation* consing_gen);
     PER_HEAP
@@ -2487,8 +2509,6 @@ protected:
     struct relocate_args
     {
         uint8_t* last_plug;
-        uint8_t* low;
-        uint8_t* high;
         BOOL is_shortened;
         mark* pinned_plug_entry;
     };
@@ -3261,9 +3281,6 @@ public:
     PER_HEAP_ISOLATED
     size_t gc_last_ephemeral_decommit_time;
 
-    PER_HEAP_ISOLATED
-    size_t gc_gen0_desired_high;
-
     PER_HEAP
     size_t gen0_big_free_spaces;
 
@@ -3294,6 +3311,9 @@ public:
 
     PER_HEAP_ISOLATED
     uint32_t v_high_memory_load_th;
+
+    PER_HEAP_ISOLATED
+    bool is_restricted_physical_mem;
 
     PER_HEAP_ISOLATED
     uint64_t mem_one_percent;
@@ -3368,6 +3388,9 @@ public:
 
     PER_HEAP_ISOLATED
     size_t current_total_committed;
+
+    PER_HEAP_ISOLATED
+    size_t committed_by_oh[total_oh_count];
 
     // This is what GC uses for its own bookkeeping.
     PER_HEAP_ISOLATED
@@ -3788,6 +3811,14 @@ protected:
     PER_HEAP_ISOLATED
     BOOL proceed_with_gc_p;
 
+#ifdef MULTIPLE_HEAPS
+    PER_HEAP_ISOLATED
+    BOOL gradual_decommit_in_progress_p;
+
+    PER_HEAP_ISOLATED
+    size_t max_decommit_step_size;
+#endif //MULTIPLE_HEAPS
+
 #define youngest_generation (generation_of (0))
 #define large_object_generation (generation_of (loh_generation))
 #define pinned_object_generation (generation_of (poh_generation))
@@ -4126,7 +4157,6 @@ public:
 
 #endif //HEAP_ANALYZE
 
-    /* ----------------------- global members ----------------------- */
 public:
 
     PER_HEAP
@@ -4702,7 +4732,12 @@ public:
     uint8_t*        background_allocated;
 #ifdef MULTIPLE_HEAPS
     gc_heap*        heap;
+#ifdef _DEBUG
+    uint8_t*        saved_committed;
+    size_t          saved_desired_allocation;
+#endif // _DEBUG
 #endif //MULTIPLE_HEAPS
+    uint8_t*        decommit_target;
     uint8_t*        plan_allocated;
     uint8_t*        saved_bg_allocated;
 
@@ -4739,6 +4774,11 @@ uint8_t*& heap_segment_committed (heap_segment* inst)
   return inst->committed;
 }
 inline
+uint8_t*& heap_segment_decommit_target (heap_segment* inst)
+{
+    return inst->decommit_target;
+}
+inline
 uint8_t*& heap_segment_used (heap_segment* inst)
 {
   return inst->used;
@@ -4773,6 +4813,22 @@ inline
 BOOL heap_segment_uoh_p (heap_segment * inst)
 {
     return !!(inst->flags & (heap_segment_flags_loh | heap_segment_flags_poh));
+}
+
+inline gc_oh_num heap_segment_oh (heap_segment * inst)
+{
+    if ((inst->flags & heap_segment_flags_loh) != 0)
+    {
+        return gc_oh_num::loh;
+    }
+    else if ((inst->flags & heap_segment_flags_poh) != 0)
+    {
+        return gc_oh_num::poh;
+    }
+    else
+    {
+        return gc_oh_num::soh;
+    }
 }
 
 #ifdef BACKGROUND_GC

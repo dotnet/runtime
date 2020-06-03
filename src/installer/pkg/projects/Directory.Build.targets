@@ -3,8 +3,8 @@
 
   <Import Project="Sdk.targets" Sdk="Microsoft.DotNet.Build.Tasks.SharedFramework.Sdk" />
 
-  <UsingTask TaskName="CreateFrameworkListFile" AssemblyFile="$(DotNetBuildTasksSharedFrameworkTaskFile)"/>
-  <UsingTask TaskName="GenerateFileVersionProps" AssemblyFile="$(DotNetBuildTasksSharedFrameworkTaskFile)"/>
+  <UsingTask TaskName="CreateFrameworkListFile" AssemblyFile="$(DotNetBuildTasksSharedFrameworkTaskFile)" />
+  <UsingTask TaskName="GenerateFileVersionProps" AssemblyFile="$(DotNetBuildTasksSharedFrameworkTaskFile)" />
 
   <PropertyGroup>
     <!--
@@ -12,19 +12,30 @@
       Needs to happen in Directory.Build.targets to allow all the pkgproj's to set Version property first.
     -->
     <StableVersion Condition="'$(IncludePreReleaseLabelInPackageVersion)' != 'true'">$(Version)</StableVersion>
+    <MonoBundleLLVMOptimizer Condition="'$(MonoEnableLLVM)' == 'true'">true</MonoBundleLLVMOptimizer>
   </PropertyGroup>
 
   <!--
-    For mobile targets, we do not need the host, so allow depproj's to opt 
-    out and skip building. 
+    Mono does not need some pkgproj (no host on mobile, no crossgen for desktop), so allow projects to 
+    opt out.
   -->
-  <Target Name="MobileSkipBuildProps" 
-          Condition="'$(SkipBuildOnRuntimePackOnlyOS)' == 'true' and ('$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'tvOS' or '$(TargetOS)' == 'Android')"
+  <Target Name="MonoSkipBuildProps" 
+          Condition="'$(SkipBuildOnRuntimePackOnlyOS)' == 'true' and '$(RuntimeFlavor)' == 'Mono'"
           BeforeTargets="GetSkipBuildProps">
     <PropertyGroup>
       <SkipBuild>true</SkipBuild>
     </PropertyGroup>
   </Target>
+
+  <PropertyGroup Condition="'$(RuntimeFlavor)' == 'Mono' and '$(TargetsMobile)' != 'true'">
+    <RuntimeSpecificFrameworkSuffix>.Mono</RuntimeSpecificFrameworkSuffix>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(MonoEnableLLVM)' == 'true' and '$(RuntimeFlavor)' == 'Mono' and '$(TargetsMobile)' != 'true' and '$(TargetsBrowser)' != 'true'">
+    <RuntimeSpecificFrameworkSuffix>.Mono.LLVM</RuntimeSpecificFrameworkSuffix>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(MonoBundleLLVMOptimizer)' == 'true' and '$(RuntimeFlavor)' == 'Mono' and '$(TargetsMobile)' != 'true' and '$(TargetsBrowser)' != 'true'">
+    <RuntimeSpecificFrameworkSuffix>.Mono.LLVM.AOT</RuntimeSpecificFrameworkSuffix>
+  </PropertyGroup>
 
   <!--
     For any Dependency items with a VersionProp, set it to the property by that name given by the
@@ -108,7 +119,7 @@
   -->
   <Target Name="RemoveDuplicateResolvedNuGetPackageAssets">
     <RemoveDuplicates Inputs="@(ReferenceCopyLocalPaths)">
-      <Output TaskParameter="Filtered" ItemName="FilteredReferenceCopyLocalPaths"/>
+      <Output TaskParameter="Filtered" ItemName="FilteredReferenceCopyLocalPaths" />
     </RemoveDuplicates>
 
     <ItemGroup>
@@ -320,7 +331,8 @@
       FileClassifications="@(FrameworkListFileClass)"
       TargetFile="$(FrameworkListFile)"
       TargetFilePrefixes="ref/;runtimes/"
-      RootAttributes="@(FrameworkListRootAttributes)" />
+      RootAttributes="@(FrameworkListRootAttributes)"
+      SingleFileHostIncludeFilenames="@(SingleFileHostIncludeFilename)" />
 
     <ItemGroup>
       <File Include="$(FrameworkListFile)">
@@ -367,7 +379,7 @@
       <PackageReference
         Include="@(CrossgenToolPackageReference)"
         Exclude="@(PackageReference)"
-        ExcludeAssets="All"/>
+        ExcludeAssets="All" />
     </ItemGroup>
   </Target>
 </Project>

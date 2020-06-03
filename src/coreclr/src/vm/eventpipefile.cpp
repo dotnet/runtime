@@ -201,9 +201,10 @@ void EventPipeFile::WriteEvent(EventPipeEventInstance &instance, ULONGLONG captu
         THROWS;
         GC_NOTRIGGER;
         MODE_ANY;
-        PRECONDITION(m_pSerializer != nullptr);
     }
     CONTRACTL_END;
+
+    if (HasErrors()) return;
 
 #ifdef DEBUG
     _ASSERTE(instance.GetTimeStamp()->QuadPart >= m_lastSortedTimestamp.QuadPart);
@@ -221,14 +222,15 @@ void EventPipeFile::WriteEvent(EventPipeEventInstance &instance, ULONGLONG captu
 
     // Check to see if we've seen this event type before.
     // If not, then write the event metadata to the event stream first.
-    unsigned int metadataId = GetMetadataId(*instance.GetEvent());
+    EventPipeEvent* pEvent = instance.GetEvent();
+    unsigned int metadataId = GetMetadataId(*pEvent);
     if(metadataId == 0)
     {
         metadataId = GenerateMetadataId();
 
         EventPipeEventInstance* pMetadataInstance = EventPipe::BuildEventMetadataEvent(instance, metadataId);
 
-        WriteEventToBlock(*pMetadataInstance, 0); // metadataId=0 breaks recursion and represents the metadata event.
+        WriteEventToBlock(*pMetadataInstance, 0);  // metadataId=0 breaks recursion and represents the metadata event.
 
         SaveMetadataId(*instance.GetEvent(), metadataId);
 
@@ -247,7 +249,6 @@ void EventPipeFile::WriteSequencePoint(EventPipeSequencePoint* pSequencePoint)
         GC_NOTRIGGER;
         MODE_ANY;
         PRECONDITION(pSequencePoint != nullptr);
-        PRECONDITION(m_pSerializer != nullptr);
     }
     CONTRACTL_END;
 
@@ -259,6 +260,9 @@ void EventPipeFile::WriteSequencePoint(EventPipeSequencePoint* pSequencePoint)
 
     Flush(FlushAllBlocks);
     EventPipeSequencePointBlock sequencePointBlock(pSequencePoint);
+
+    if (HasErrors()) return;
+
     m_pSerializer->WriteObject(&sequencePointBlock);
 
     // stack cache resets on sequence points
@@ -278,12 +282,13 @@ void EventPipeFile::Flush(FlushFlags flags)
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
-        PRECONDITION(m_pSerializer != nullptr);
         PRECONDITION(m_pMetadataBlock != nullptr);
         PRECONDITION(m_pStackBlock != nullptr);
         PRECONDITION(m_pBlock != nullptr);
     }
     CONTRACTL_END;
+
+    if (HasErrors()) return;
 
     // we write current blocks to the disk, whether they are full or not
     if ((m_pMetadataBlock->GetBytesWritten() != 0) && ((flags & FlushMetadataBlock) != 0))

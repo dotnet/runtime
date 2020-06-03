@@ -122,7 +122,7 @@ namespace Internal.TypeSystem
         /// Gets a value specifying whether this method is directly callable
         /// by external unmanaged code.
         /// </summary>
-        public virtual bool IsNativeCallable
+        public virtual bool IsUnmanagedCallersOnly
         {
             get
             {
@@ -230,11 +230,11 @@ namespace Internal.TypeSystem
             }
         }
 
-        public override bool IsNativeCallable
+        public override bool IsUnmanagedCallersOnly
         {
             get
             {
-                return _methodDef.IsNativeCallable;
+                return _methodDef.IsUnmanagedCallersOnly;
             }
         }
 
@@ -322,11 +322,11 @@ namespace Internal.TypeSystem
             }
         }
 
-        public override bool IsNativeCallable
+        public override bool IsUnmanagedCallersOnly
         {
             get
             {
-                return _typicalMethodDef.IsNativeCallable;
+                return _typicalMethodDef.IsUnmanagedCallersOnly;
             }
         }
 

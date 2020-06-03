@@ -20,6 +20,7 @@ namespace ILCompiler.PEWriter
         Apple = 0x4644,
         FreeBSD = 0xADC4,
         NetBSD = 0x1993,
+        SunOS = 0x1992,
     }
 
     /// <summary>

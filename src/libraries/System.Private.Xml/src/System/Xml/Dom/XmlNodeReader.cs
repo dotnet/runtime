@@ -919,7 +919,7 @@ namespace System.Xml
             {
                 return _nameTable.Add("xml");
             }
-            if (namespaceName == string.Empty)
+            if (namespaceName.Length == 0)
             {
                 return string.Empty;
             }

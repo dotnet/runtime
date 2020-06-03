@@ -510,7 +510,11 @@ private:
 
     ResolveHolder *GenerateResolveStub(PCODE addrOfResolver,
                                        PCODE addrOfPatcher,
-                                       size_t dispatchToken);
+                                       size_t dispatchToken
+#if defined(TARGET_X86) && !defined(UNIX_X86_ABI)
+                                       , size_t stackArgumentsSize
+#endif
+                                       );
 
     LookupHolder *GenerateLookupStub(PCODE addrOfResolver,
                                      size_t dispatchToken);

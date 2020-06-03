@@ -8,6 +8,7 @@
 //   "%DevEnvDir%\TextTransform.exe" .\Helpers.tt
 
 using System;
+using System.Linq;
 
 namespace JIT.HardwareIntrinsics.Arm
 {
@@ -1433,6 +1434,2194 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static uint AbsoluteDifferenceAdd(uint op1, uint op2, uint op3) => (uint)(op1 + AbsoluteDifference(op2, op3));
 
+        public static ushort AbsoluteDifferenceWidening(sbyte op1, sbyte op2) => op1 < op2 ? (ushort)(op2 - op1) : (ushort)(op1 - op2);
+
+        public static ushort AbsoluteDifferenceWideningUpper(sbyte[] op1, sbyte[] op2, int i) => AbsoluteDifferenceWidening(op1[i + op1.Length / 2], op2[i + op2.Length / 2]);
+
+        public static short AbsoluteDifferenceWideningAndAdd(short op1, sbyte op2, sbyte op3) => (short)(op1 + (short)AbsoluteDifferenceWidening(op2, op3));
+
+        public static short AbsoluteDifferenceWideningUpperAndAdd(short[] op1, sbyte[] op2, sbyte[] op3, int i) => AbsoluteDifferenceWideningAndAdd(op1[i], op2[i + op2.Length / 2], op3[i + op3.Length / 2]);
+
+        public static short AddPairwiseWidening(sbyte[] op1, int i) => AddWidening(op1[2 * i], op1[2 * i + 1]);
+
+        public static short AddPairwiseWideningAndAdd(short[] op1, sbyte[] op2, int i) => (short)(op1[i] + AddWidening(op2[2 * i], op2[2 * i + 1]));
+
+        private static sbyte HighNarrowing(short op1, bool round)
+        {
+            ushort roundConst = 0;
+            if (round)
+            {
+                roundConst = (ushort)1 << (8 * sizeof(sbyte) - 1);
+            }
+            return (sbyte)(((ushort)op1 + roundConst) >> (8 * sizeof(sbyte)));
+        }
+
+        public static sbyte AddHighNarrowing(short op1, short op2) => HighNarrowing((short)(op1 + op2), round: false);
+
+        public static sbyte AddHighNarrowingUpper(sbyte[] op1, short[] op2, short[] op3, int i) => i < op1.Length ? op1[i] : AddHighNarrowing(op2[i - op1.Length], op3[i - op1.Length]);
+
+        public static sbyte AddRoundedHighNarrowing(short op1, short op2) => HighNarrowing((short)(op1 + op2), round: true);
+
+        public static short AddRoundedHighNarrowingUpper(sbyte[] op1, short[] op2, short[] op3, int i) => i < op1.Length ? op1[i] : AddRoundedHighNarrowing(op2[i - op1.Length], op3[i - op1.Length]);
+
+        public static short AddWidening(sbyte op1, sbyte op2) => (short)((short)op1 + (short)op2);
+
+        public static short AddWidening(short op1, sbyte op2) => (short)(op1 + op2);
+
+        public static short AddWideningUpper(sbyte[] op1, sbyte[] op2, int i) => AddWidening(op1[i + op1.Length / 2], op2[i + op2.Length / 2]);
+
+        public static short AddWideningUpper(short[] op1, sbyte[] op2, int i) => AddWidening(op1[i], op2[i + op2.Length / 2]);
+
+        public static sbyte ExtractNarrowing(short op1) => (sbyte)op1;
+ 
+        public static sbyte ExtractNarrowingUpper(sbyte[] op1, short[] op2, int i) => i < op1.Length ? op1[i] : ExtractNarrowing(op2[i - op1.Length]);
+
+        public static sbyte FusedAddHalving(sbyte op1, sbyte op2) => (sbyte)((ushort)((short)op1 + (short)op2) >> 1);
+
+        public static sbyte FusedAddRoundedHalving(sbyte op1, sbyte op2) => (sbyte)((ushort)((short)op1 + (short)op2 + 1) >> 1);
+
+        public static sbyte FusedSubtractHalving(sbyte op1, sbyte op2) => (sbyte)((ushort)((short)op1 - (short)op2) >> 1);
+
+        public static short MultiplyWidening(sbyte op1, sbyte op2) => (short)((short)op1 * (short)op2);
+
+        public static short MultiplyWideningAndAdd(short op1, sbyte op2, sbyte op3) => (short)(op1 + MultiplyWidening(op2, op3));
+
+        public static short MultiplyWideningAndSubtract(short op1, sbyte op2, sbyte op3) => (short)(op1 - MultiplyWidening(op2, op3));
+
+        public static short MultiplyWideningUpper(sbyte[] op1, sbyte[] op2, int i) => MultiplyWidening(op1[i + op1.Length / 2], op2[i + op2.Length / 2]);
+
+        public static short MultiplyWideningUpperAndAdd(short[] op1, sbyte[] op2, sbyte[] op3, int i) => MultiplyWideningAndAdd(op1[i], op2[i + op2.Length / 2], op3[i + op3.Length / 2]);
+
+        public static short MultiplyWideningUpperAndSubtract(short[] op1, sbyte[] op2, sbyte[] op3, int i) => MultiplyWideningAndSubtract(op1[i], op2[i + op2.Length / 2], op3[i + op3.Length / 2]);
+
+        public static sbyte SubtractHighNarrowing(short op1, short op2) => HighNarrowing((short)(op1 - op2), round: false);
+
+        public static short SubtractHighNarrowingUpper(sbyte[] op1, short[] op2, short[] op3, int i) => i < op1.Length ? op1[i] : SubtractHighNarrowing(op2[i - op1.Length], op3[i - op1.Length]);
+
+        public static sbyte SubtractRoundedHighNarrowing(short op1, short op2) => HighNarrowing((short)(op1 - op2), round: true);
+
+        public static short SubtractRoundedHighNarrowingUpper(sbyte[] op1, short[] op2, short[] op3, int i) => i < op1.Length ? op1[i] : SubtractRoundedHighNarrowing(op2[i - op1.Length], op3[i - op1.Length]);
+
+        public static short SubtractWidening(sbyte op1, sbyte op2) => (short)((short)op1 - (short)op2);
+
+        public static short SubtractWidening(short op1, sbyte op2) => (short)(op1 - op2);
+
+        public static short SubtractWideningUpper(sbyte[] op1, sbyte[] op2, int i) => SubtractWidening(op1[i + op1.Length / 2], op2[i + op2.Length / 2]);
+
+        public static short SubtractWideningUpper(short[] op1, sbyte[] op2, int i) => SubtractWidening(op1[i], op2[i + op2.Length / 2]);
+
+        public static short ZeroExtendWidening(sbyte op1) => (short)(ushort)op1;
+
+        public static short ZeroExtendWideningUpper(sbyte[] op1, int i) => ZeroExtendWidening(op1[i + op1.Length / 2]);
+
+        public static uint AbsoluteDifferenceWidening(short op1, short op2) => op1 < op2 ? (uint)(op2 - op1) : (uint)(op1 - op2);
+
+        public static uint AbsoluteDifferenceWideningUpper(short[] op1, short[] op2, int i) => AbsoluteDifferenceWidening(op1[i + op1.Length / 2], op2[i + op2.Length / 2]);
+
+        public static int AbsoluteDifferenceWideningAndAdd(int op1, short op2, short op3) => (int)(op1 + (int)AbsoluteDifferenceWidening(op2, op3));
+
+        public static int AbsoluteDifferenceWideningUpperAndAdd(int[] op1, short[] op2, short[] op3, int i) => AbsoluteDifferenceWideningAndAdd(op1[i], op2[i + op2.Length / 2], op3[i + op3.Length / 2]);
+
+        public static int AddPairwiseWidening(short[] op1, int i) => AddWidening(op1[2 * i], op1[2 * i + 1]);
+
+        public static int AddPairwiseWideningAndAdd(int[] op1, short[] op2, int i) => (int)(op1[i] + AddWidening(op2[2 * i], op2[2 * i + 1]));
+
+        private static short HighNarrowing(int op1, bool round)
+        {
+            uint roundConst = 0;
+            if (round)
+            {
+                roundConst = (uint)1 << (8 * sizeof(short) - 1);
+            }
+            return (short)(((uint)op1 + roundConst) >> (8 * sizeof(short)));
+        }
+
+        public static short AddHighNarrowing(int op1, int op2) => HighNarrowing((int)(op1 + op2), round: false);
+
+        public static short AddHighNarrowingUpper(short[] op1, int[] op2, int[] op3, int i) => i < op1.Length ? op1[i] : AddHighNarrowing(op2[i - op1.Length], op3[i - op1.Length]);
+
+        public static short AddRoundedHighNarrowing(int op1, int op2) => HighNarrowing((int)(op1 + op2), round: true);
+
+        public static int AddRoundedHighNarrowingUpper(short[] op1, int[] op2, int[] op3, int i) => i < op1.Length ? op1[i] : AddRoundedHighNarrowing(op2[i - op1.Length], op3[i - op1.Length]);
+
+        public static int AddWidening(short op1, short op2) => (int)((int)op1 + (int)op2);
+
+        public static int AddWidening(int op1, short op2) => (int)(op1 + op2);
+
+        public static int AddWideningUpper(short[] op1, short[] op2, int i) => AddWidening(op1[i + op1.Length / 2], op2[i + op2.Length / 2]);
+
+        public static int AddWideningUpper(int[] op1, short[] op2, int i) => AddWidening(op1[i], op2[i + op2.Length / 2]);
+
+        public static short ExtractNarrowing(int op1) => (short)op1;
+ 
+        public static short ExtractNarrowingUpper(short[] op1, int[] op2, int i) => i < op1.Length ? op1[i] : ExtractNarrowing(op2[i - op1.Length]);
+
+        public static short FusedAddHalving(short op1, short op2) => (short)((uint)((int)op1 + (int)op2) >> 1);
+
+        public static short FusedAddRoundedHalving(short op1, short op2) => (short)((uint)((int)op1 + (int)op2 + 1) >> 1);
+
+        public static short FusedSubtractHalving(short op1, short op2) => (short)((uint)((int)op1 - (int)op2) >> 1);
+
+        public static int MultiplyWidening(short op1, short op2) => (int)((int)op1 * (int)op2);
+
+        public static int MultiplyWideningAndAdd(int op1, short op2, short op3) => (int)(op1 + MultiplyWidening(op2, op3));
+
+        public static int MultiplyWideningAndSubtract(int op1, short op2, short op3) => (int)(op1 - MultiplyWidening(op2, op3));
+
+        public static int MultiplyWideningUpper(short[] op1, short[] op2, int i) => MultiplyWidening(op1[i + op1.Length / 2], op2[i + op2.Length / 2]);
+
+        public static int MultiplyWideningUpperAndAdd(int[] op1, short[] op2, short[] op3, int i) => MultiplyWideningAndAdd(op1[i], op2[i + op2.Length / 2], op3[i + op3.Length / 2]);
+
+        public static int MultiplyWideningUpperAndSubtract(int[] op1, short[] op2, short[] op3, int i) => MultiplyWideningAndSubtract(op1[i], op2[i + op2.Length / 2], op3[i + op3.Length / 2]);
+
+        public static short SubtractHighNarrowing(int op1, int op2) => HighNarrowing((int)(op1 - op2), round: false);
+
+        public static int SubtractHighNarrowingUpper(short[] op1, int[] op2, int[] op3, int i) => i < op1.Length ? op1[i] : SubtractHighNarrowing(op2[i - op1.Length], op3[i - op1.Length]);
+
+        public static short SubtractRoundedHighNarrowing(int op1, int op2) => HighNarrowing((int)(op1 - op2), round: true);
+
+        public static int SubtractRoundedHighNarrowingUpper(short[] op1, int[] op2, int[] op3, int i) => i < op1.Length ? op1[i] : SubtractRoundedHighNarrowing(op2[i - op1.Length], op3[i - op1.Length]);
+
+        public static int SubtractWidening(short op1, short op2) => (int)((int)op1 - (int)op2);
+
+        public static int SubtractWidening(int op1, short op2) => (int)(op1 - op2);
+
+        public static int SubtractWideningUpper(short[] op1, short[] op2, int i) => SubtractWidening(op1[i + op1.Length / 2], op2[i + op2.Length / 2]);
+
+        public static int SubtractWideningUpper(int[] op1, short[] op2, int i) => SubtractWidening(op1[i], op2[i + op2.Length / 2]);
+
+        public static int ZeroExtendWidening(short op1) => (int)(uint)op1;
+
+        public static int ZeroExtendWideningUpper(short[] op1, int i) => ZeroExtendWidening(op1[i + op1.Length / 2]);
+
+        public static ulong AbsoluteDifferenceWidening(int op1, int op2) => op1 < op2 ? (ulong)(op2 - op1) : (ulong)(op1 - op2);
+
+        public static ulong AbsoluteDifferenceWideningUpper(int[] op1, int[] op2, int i) => AbsoluteDifferenceWidening(op1[i + op1.Length / 2], op2[i + op2.Length / 2]);
+
+        public static long AbsoluteDifferenceWideningAndAdd(long op1, int op2, int op3) => (long)(op1 + (long)AbsoluteDifferenceWidening(op2, op3));
+
+        public static long AbsoluteDifferenceWideningUpperAndAdd(long[] op1, int[] op2, int[] op3, int i) => AbsoluteDifferenceWideningAndAdd(op1[i], op2[i + op2.Length / 2], op3[i + op3.Length / 2]);
+
+        public static long AddPairwiseWidening(int[] op1, int i) => AddWidening(op1[2 * i], op1[2 * i + 1]);
+
+        public static long AddPairwiseWideningAndAdd(long[] op1, int[] op2, int i) => (long)(op1[i] + AddWidening(op2[2 * i], op2[2 * i + 1]));
+
+        private static int HighNarrowing(long op1, bool round)
+        {
+            ulong roundConst = 0;
+            if (round)
+            {
+                roundConst = (ulong)1 << (8 * sizeof(int) - 1);
+            }
+            return (int)(((ulong)op1 + roundConst) >> (8 * sizeof(int)));
+        }
+
+        public static int AddHighNarrowing(long op1, long op2) => HighNarrowing((long)(op1 + op2), round: false);
+
+        public static int AddHighNarrowingUpper(int[] op1, long[] op2, long[] op3, int i) => i < op1.Length ? op1[i] : AddHighNarrowing(op2[i - op1.Length], op3[i - op1.Length]);
+
+        public static int AddRoundedHighNarrowing(long op1, long op2) => HighNarrowing((long)(op1 + op2), round: true);
+
+        public static long AddRoundedHighNarrowingUpper(int[] op1, long[] op2, long[] op3, int i) => i < op1.Length ? op1[i] : AddRoundedHighNarrowing(op2[i - op1.Length], op3[i - op1.Length]);
+
+        public static long AddWidening(int op1, int op2) => (long)((long)op1 + (long)op2);
+
+        public static long AddWidening(long op1, int op2) => (long)(op1 + op2);
+
+        public static long AddWideningUpper(int[] op1, int[] op2, int i) => AddWidening(op1[i + op1.Length / 2], op2[i + op2.Length / 2]);
+
+        public static long AddWideningUpper(long[] op1, int[] op2, int i) => AddWidening(op1[i], op2[i + op2.Length / 2]);
+
+        public static int ExtractNarrowing(long op1) => (int)op1;
+ 
+        public static int ExtractNarrowingUpper(int[] op1, long[] op2, int i) => i < op1.Length ? op1[i] : ExtractNarrowing(op2[i - op1.Length]);
+
+        public static int FusedAddHalving(int op1, int op2) => (int)((ulong)((long)op1 + (long)op2) >> 1);
+
+        public static int FusedAddRoundedHalving(int op1, int op2) => (int)((ulong)((long)op1 + (long)op2 + 1) >> 1);
+
+        public static int FusedSubtractHalving(int op1, int op2) => (int)((ulong)((long)op1 - (long)op2) >> 1);
+
+        public static long MultiplyWidening(int op1, int op2) => (long)((long)op1 * (long)op2);
+
+        public static long MultiplyWideningAndAdd(long op1, int op2, int op3) => (long)(op1 + MultiplyWidening(op2, op3));
+
+        public static long MultiplyWideningAndSubtract(long op1, int op2, int op3) => (long)(op1 - MultiplyWidening(op2, op3));
+
+        public static long MultiplyWideningUpper(int[] op1, int[] op2, int i) => MultiplyWidening(op1[i + op1.Length / 2], op2[i + op2.Length / 2]);
+
+        public static long MultiplyWideningUpperAndAdd(long[] op1, int[] op2, int[] op3, int i) => MultiplyWideningAndAdd(op1[i], op2[i + op2.Length / 2], op3[i + op3.Length / 2]);
+
+        public static long MultiplyWideningUpperAndSubtract(long[] op1, int[] op2, int[] op3, int i) => MultiplyWideningAndSubtract(op1[i], op2[i + op2.Length / 2], op3[i + op3.Length / 2]);
+
+        public static int SubtractHighNarrowing(long op1, long op2) => HighNarrowing((long)(op1 - op2), round: false);
+
+        public static long SubtractHighNarrowingUpper(int[] op1, long[] op2, long[] op3, int i) => i < op1.Length ? op1[i] : SubtractHighNarrowing(op2[i - op1.Length], op3[i - op1.Length]);
+
+        public static int SubtractRoundedHighNarrowing(long op1, long op2) => HighNarrowing((long)(op1 - op2), round: true);
+
+        public static long SubtractRoundedHighNarrowingUpper(int[] op1, long[] op2, long[] op3, int i) => i < op1.Length ? op1[i] : SubtractRoundedHighNarrowing(op2[i - op1.Length], op3[i - op1.Length]);
+
+        public static long SubtractWidening(int op1, int op2) => (long)((long)op1 - (long)op2);
+
+        public static long SubtractWidening(long op1, int op2) => (long)(op1 - op2);
+
+        public static long SubtractWideningUpper(int[] op1, int[] op2, int i) => SubtractWidening(op1[i + op1.Length / 2], op2[i + op2.Length / 2]);
+
+        public static long SubtractWideningUpper(long[] op1, int[] op2, int i) => SubtractWidening(op1[i], op2[i + op2.Length / 2]);
+
+        public static long ZeroExtendWidening(int op1) => (long)(ulong)op1;
+
+        public static long ZeroExtendWideningUpper(int[] op1, int i) => ZeroExtendWidening(op1[i + op1.Length / 2]);
+
+        public static ushort AbsoluteDifferenceWidening(byte op1, byte op2) => op1 < op2 ? (ushort)(op2 - op1) : (ushort)(op1 - op2);
+
+        public static ushort AbsoluteDifferenceWideningUpper(byte[] op1, byte[] op2, int i) => AbsoluteDifferenceWidening(op1[i + op1.Length / 2], op2[i + op2.Length / 2]);
+
+        public static ushort AbsoluteDifferenceWideningAndAdd(ushort op1, byte op2, byte op3) => (ushort)(op1 + (ushort)AbsoluteDifferenceWidening(op2, op3));
+
+        public static ushort AbsoluteDifferenceWideningUpperAndAdd(ushort[] op1, byte[] op2, byte[] op3, int i) => AbsoluteDifferenceWideningAndAdd(op1[i], op2[i + op2.Length / 2], op3[i + op3.Length / 2]);
+
+        public static ushort AddPairwiseWidening(byte[] op1, int i) => AddWidening(op1[2 * i], op1[2 * i + 1]);
+
+        public static ushort AddPairwiseWideningAndAdd(ushort[] op1, byte[] op2, int i) => (ushort)(op1[i] + AddWidening(op2[2 * i], op2[2 * i + 1]));
+
+        private static byte HighNarrowing(ushort op1, bool round)
+        {
+            ushort roundConst = 0;
+            if (round)
+            {
+                roundConst = (ushort)1 << (8 * sizeof(byte) - 1);
+            }
+            return (byte)(((ushort)op1 + roundConst) >> (8 * sizeof(byte)));
+        }
+
+        public static byte AddHighNarrowing(ushort op1, ushort op2) => HighNarrowing((ushort)(op1 + op2), round: false);
+
+        public static byte AddHighNarrowingUpper(byte[] op1, ushort[] op2, ushort[] op3, int i) => i < op1.Length ? op1[i] : AddHighNarrowing(op2[i - op1.Length], op3[i - op1.Length]);
+
+        public static byte AddRoundedHighNarrowing(ushort op1, ushort op2) => HighNarrowing((ushort)(op1 + op2), round: true);
+
+        public static ushort AddRoundedHighNarrowingUpper(byte[] op1, ushort[] op2, ushort[] op3, int i) => i < op1.Length ? op1[i] : AddRoundedHighNarrowing(op2[i - op1.Length], op3[i - op1.Length]);
+
+        public static ushort AddWidening(byte op1, byte op2) => (ushort)((ushort)op1 + (ushort)op2);
+
+        public static ushort AddWidening(ushort op1, byte op2) => (ushort)(op1 + op2);
+
+        public static ushort AddWideningUpper(byte[] op1, byte[] op2, int i) => AddWidening(op1[i + op1.Length / 2], op2[i + op2.Length / 2]);
+
+        public static ushort AddWideningUpper(ushort[] op1, byte[] op2, int i) => AddWidening(op1[i], op2[i + op2.Length / 2]);
+
+        public static byte ExtractNarrowing(ushort op1) => (byte)op1;
+ 
+        public static byte ExtractNarrowingUpper(byte[] op1, ushort[] op2, int i) => i < op1.Length ? op1[i] : ExtractNarrowing(op2[i - op1.Length]);
+
+        public static byte FusedAddHalving(byte op1, byte op2) => (byte)((ushort)((ushort)op1 + (ushort)op2) >> 1);
+
+        public static byte FusedAddRoundedHalving(byte op1, byte op2) => (byte)((ushort)((ushort)op1 + (ushort)op2 + 1) >> 1);
+
+        public static byte FusedSubtractHalving(byte op1, byte op2) => (byte)((ushort)((ushort)op1 - (ushort)op2) >> 1);
+
+        public static ushort MultiplyWidening(byte op1, byte op2) => (ushort)((ushort)op1 * (ushort)op2);
+
+        public static ushort MultiplyWideningAndAdd(ushort op1, byte op2, byte op3) => (ushort)(op1 + MultiplyWidening(op2, op3));
+
+        public static ushort MultiplyWideningAndSubtract(ushort op1, byte op2, byte op3) => (ushort)(op1 - MultiplyWidening(op2, op3));
+
+        public static ushort MultiplyWideningUpper(byte[] op1, byte[] op2, int i) => MultiplyWidening(op1[i + op1.Length / 2], op2[i + op2.Length / 2]);
+
+        public static ushort MultiplyWideningUpperAndAdd(ushort[] op1, byte[] op2, byte[] op3, int i) => MultiplyWideningAndAdd(op1[i], op2[i + op2.Length / 2], op3[i + op3.Length / 2]);
+
+        public static ushort MultiplyWideningUpperAndSubtract(ushort[] op1, byte[] op2, byte[] op3, int i) => MultiplyWideningAndSubtract(op1[i], op2[i + op2.Length / 2], op3[i + op3.Length / 2]);
+
+        public static byte SubtractHighNarrowing(ushort op1, ushort op2) => HighNarrowing((ushort)(op1 - op2), round: false);
+
+        public static ushort SubtractHighNarrowingUpper(byte[] op1, ushort[] op2, ushort[] op3, int i) => i < op1.Length ? op1[i] : SubtractHighNarrowing(op2[i - op1.Length], op3[i - op1.Length]);
+
+        public static byte SubtractRoundedHighNarrowing(ushort op1, ushort op2) => HighNarrowing((ushort)(op1 - op2), round: true);
+
+        public static ushort SubtractRoundedHighNarrowingUpper(byte[] op1, ushort[] op2, ushort[] op3, int i) => i < op1.Length ? op1[i] : SubtractRoundedHighNarrowing(op2[i - op1.Length], op3[i - op1.Length]);
+
+        public static ushort SubtractWidening(byte op1, byte op2) => (ushort)((ushort)op1 - (ushort)op2);
+
+        public static ushort SubtractWidening(ushort op1, byte op2) => (ushort)(op1 - op2);
+
+        public static ushort SubtractWideningUpper(byte[] op1, byte[] op2, int i) => SubtractWidening(op1[i + op1.Length / 2], op2[i + op2.Length / 2]);
+
+        public static ushort SubtractWideningUpper(ushort[] op1, byte[] op2, int i) => SubtractWidening(op1[i], op2[i + op2.Length / 2]);
+
+        public static ushort ZeroExtendWidening(byte op1) => (ushort)(ushort)op1;
+
+        public static ushort ZeroExtendWideningUpper(byte[] op1, int i) => ZeroExtendWidening(op1[i + op1.Length / 2]);
+
+        public static uint AbsoluteDifferenceWidening(ushort op1, ushort op2) => op1 < op2 ? (uint)(op2 - op1) : (uint)(op1 - op2);
+
+        public static uint AbsoluteDifferenceWideningUpper(ushort[] op1, ushort[] op2, int i) => AbsoluteDifferenceWidening(op1[i + op1.Length / 2], op2[i + op2.Length / 2]);
+
+        public static uint AbsoluteDifferenceWideningAndAdd(uint op1, ushort op2, ushort op3) => (uint)(op1 + (uint)AbsoluteDifferenceWidening(op2, op3));
+
+        public static uint AbsoluteDifferenceWideningUpperAndAdd(uint[] op1, ushort[] op2, ushort[] op3, int i) => AbsoluteDifferenceWideningAndAdd(op1[i], op2[i + op2.Length / 2], op3[i + op3.Length / 2]);
+
+        public static uint AddPairwiseWidening(ushort[] op1, int i) => AddWidening(op1[2 * i], op1[2 * i + 1]);
+
+        public static uint AddPairwiseWideningAndAdd(uint[] op1, ushort[] op2, int i) => (uint)(op1[i] + AddWidening(op2[2 * i], op2[2 * i + 1]));
+
+        private static ushort HighNarrowing(uint op1, bool round)
+        {
+            uint roundConst = 0;
+            if (round)
+            {
+                roundConst = (uint)1 << (8 * sizeof(ushort) - 1);
+            }
+            return (ushort)(((uint)op1 + roundConst) >> (8 * sizeof(ushort)));
+        }
+
+        public static ushort AddHighNarrowing(uint op1, uint op2) => HighNarrowing((uint)(op1 + op2), round: false);
+
+        public static ushort AddHighNarrowingUpper(ushort[] op1, uint[] op2, uint[] op3, int i) => i < op1.Length ? op1[i] : AddHighNarrowing(op2[i - op1.Length], op3[i - op1.Length]);
+
+        public static ushort AddRoundedHighNarrowing(uint op1, uint op2) => HighNarrowing((uint)(op1 + op2), round: true);
+
+        public static uint AddRoundedHighNarrowingUpper(ushort[] op1, uint[] op2, uint[] op3, int i) => i < op1.Length ? op1[i] : AddRoundedHighNarrowing(op2[i - op1.Length], op3[i - op1.Length]);
+
+        public static uint AddWidening(ushort op1, ushort op2) => (uint)((uint)op1 + (uint)op2);
+
+        public static uint AddWidening(uint op1, ushort op2) => (uint)(op1 + op2);
+
+        public static uint AddWideningUpper(ushort[] op1, ushort[] op2, int i) => AddWidening(op1[i + op1.Length / 2], op2[i + op2.Length / 2]);
+
+        public static uint AddWideningUpper(uint[] op1, ushort[] op2, int i) => AddWidening(op1[i], op2[i + op2.Length / 2]);
+
+        public static ushort ExtractNarrowing(uint op1) => (ushort)op1;
+ 
+        public static ushort ExtractNarrowingUpper(ushort[] op1, uint[] op2, int i) => i < op1.Length ? op1[i] : ExtractNarrowing(op2[i - op1.Length]);
+
+        public static ushort FusedAddHalving(ushort op1, ushort op2) => (ushort)((uint)((uint)op1 + (uint)op2) >> 1);
+
+        public static ushort FusedAddRoundedHalving(ushort op1, ushort op2) => (ushort)((uint)((uint)op1 + (uint)op2 + 1) >> 1);
+
+        public static ushort FusedSubtractHalving(ushort op1, ushort op2) => (ushort)((uint)((uint)op1 - (uint)op2) >> 1);
+
+        public static uint MultiplyWidening(ushort op1, ushort op2) => (uint)((uint)op1 * (uint)op2);
+
+        public static uint MultiplyWideningAndAdd(uint op1, ushort op2, ushort op3) => (uint)(op1 + MultiplyWidening(op2, op3));
+
+        public static uint MultiplyWideningAndSubtract(uint op1, ushort op2, ushort op3) => (uint)(op1 - MultiplyWidening(op2, op3));
+
+        public static uint MultiplyWideningUpper(ushort[] op1, ushort[] op2, int i) => MultiplyWidening(op1[i + op1.Length / 2], op2[i + op2.Length / 2]);
+
+        public static uint MultiplyWideningUpperAndAdd(uint[] op1, ushort[] op2, ushort[] op3, int i) => MultiplyWideningAndAdd(op1[i], op2[i + op2.Length / 2], op3[i + op3.Length / 2]);
+
+        public static uint MultiplyWideningUpperAndSubtract(uint[] op1, ushort[] op2, ushort[] op3, int i) => MultiplyWideningAndSubtract(op1[i], op2[i + op2.Length / 2], op3[i + op3.Length / 2]);
+
+        public static ushort SubtractHighNarrowing(uint op1, uint op2) => HighNarrowing((uint)(op1 - op2), round: false);
+
+        public static uint SubtractHighNarrowingUpper(ushort[] op1, uint[] op2, uint[] op3, int i) => i < op1.Length ? op1[i] : SubtractHighNarrowing(op2[i - op1.Length], op3[i - op1.Length]);
+
+        public static ushort SubtractRoundedHighNarrowing(uint op1, uint op2) => HighNarrowing((uint)(op1 - op2), round: true);
+
+        public static uint SubtractRoundedHighNarrowingUpper(ushort[] op1, uint[] op2, uint[] op3, int i) => i < op1.Length ? op1[i] : SubtractRoundedHighNarrowing(op2[i - op1.Length], op3[i - op1.Length]);
+
+        public static uint SubtractWidening(ushort op1, ushort op2) => (uint)((uint)op1 - (uint)op2);
+
+        public static uint SubtractWidening(uint op1, ushort op2) => (uint)(op1 - op2);
+
+        public static uint SubtractWideningUpper(ushort[] op1, ushort[] op2, int i) => SubtractWidening(op1[i + op1.Length / 2], op2[i + op2.Length / 2]);
+
+        public static uint SubtractWideningUpper(uint[] op1, ushort[] op2, int i) => SubtractWidening(op1[i], op2[i + op2.Length / 2]);
+
+        public static uint ZeroExtendWidening(ushort op1) => (uint)(uint)op1;
+
+        public static uint ZeroExtendWideningUpper(ushort[] op1, int i) => ZeroExtendWidening(op1[i + op1.Length / 2]);
+
+        public static ulong AbsoluteDifferenceWidening(uint op1, uint op2) => op1 < op2 ? (ulong)(op2 - op1) : (ulong)(op1 - op2);
+
+        public static ulong AbsoluteDifferenceWideningUpper(uint[] op1, uint[] op2, int i) => AbsoluteDifferenceWidening(op1[i + op1.Length / 2], op2[i + op2.Length / 2]);
+
+        public static ulong AbsoluteDifferenceWideningAndAdd(ulong op1, uint op2, uint op3) => (ulong)(op1 + (ulong)AbsoluteDifferenceWidening(op2, op3));
+
+        public static ulong AbsoluteDifferenceWideningUpperAndAdd(ulong[] op1, uint[] op2, uint[] op3, int i) => AbsoluteDifferenceWideningAndAdd(op1[i], op2[i + op2.Length / 2], op3[i + op3.Length / 2]);
+
+        public static ulong AddPairwiseWidening(uint[] op1, int i) => AddWidening(op1[2 * i], op1[2 * i + 1]);
+
+        public static ulong AddPairwiseWideningAndAdd(ulong[] op1, uint[] op2, int i) => (ulong)(op1[i] + AddWidening(op2[2 * i], op2[2 * i + 1]));
+
+        private static uint HighNarrowing(ulong op1, bool round)
+        {
+            ulong roundConst = 0;
+            if (round)
+            {
+                roundConst = (ulong)1 << (8 * sizeof(uint) - 1);
+            }
+            return (uint)(((ulong)op1 + roundConst) >> (8 * sizeof(uint)));
+        }
+
+        public static uint AddHighNarrowing(ulong op1, ulong op2) => HighNarrowing((ulong)(op1 + op2), round: false);
+
+        public static uint AddHighNarrowingUpper(uint[] op1, ulong[] op2, ulong[] op3, int i) => i < op1.Length ? op1[i] : AddHighNarrowing(op2[i - op1.Length], op3[i - op1.Length]);
+
+        public static uint AddRoundedHighNarrowing(ulong op1, ulong op2) => HighNarrowing((ulong)(op1 + op2), round: true);
+
+        public static ulong AddRoundedHighNarrowingUpper(uint[] op1, ulong[] op2, ulong[] op3, int i) => i < op1.Length ? op1[i] : AddRoundedHighNarrowing(op2[i - op1.Length], op3[i - op1.Length]);
+
+        public static ulong AddWidening(uint op1, uint op2) => (ulong)((ulong)op1 + (ulong)op2);
+
+        public static ulong AddWidening(ulong op1, uint op2) => (ulong)(op1 + op2);
+
+        public static ulong AddWideningUpper(uint[] op1, uint[] op2, int i) => AddWidening(op1[i + op1.Length / 2], op2[i + op2.Length / 2]);
+
+        public static ulong AddWideningUpper(ulong[] op1, uint[] op2, int i) => AddWidening(op1[i], op2[i + op2.Length / 2]);
+
+        public static uint ExtractNarrowing(ulong op1) => (uint)op1;
+ 
+        public static uint ExtractNarrowingUpper(uint[] op1, ulong[] op2, int i) => i < op1.Length ? op1[i] : ExtractNarrowing(op2[i - op1.Length]);
+
+        public static uint FusedAddHalving(uint op1, uint op2) => (uint)((ulong)((ulong)op1 + (ulong)op2) >> 1);
+
+        public static uint FusedAddRoundedHalving(uint op1, uint op2) => (uint)((ulong)((ulong)op1 + (ulong)op2 + 1) >> 1);
+
+        public static uint FusedSubtractHalving(uint op1, uint op2) => (uint)((ulong)((ulong)op1 - (ulong)op2) >> 1);
+
+        public static ulong MultiplyWidening(uint op1, uint op2) => (ulong)((ulong)op1 * (ulong)op2);
+
+        public static ulong MultiplyWideningAndAdd(ulong op1, uint op2, uint op3) => (ulong)(op1 + MultiplyWidening(op2, op3));
+
+        public static ulong MultiplyWideningAndSubtract(ulong op1, uint op2, uint op3) => (ulong)(op1 - MultiplyWidening(op2, op3));
+
+        public static ulong MultiplyWideningUpper(uint[] op1, uint[] op2, int i) => MultiplyWidening(op1[i + op1.Length / 2], op2[i + op2.Length / 2]);
+
+        public static ulong MultiplyWideningUpperAndAdd(ulong[] op1, uint[] op2, uint[] op3, int i) => MultiplyWideningAndAdd(op1[i], op2[i + op2.Length / 2], op3[i + op3.Length / 2]);
+
+        public static ulong MultiplyWideningUpperAndSubtract(ulong[] op1, uint[] op2, uint[] op3, int i) => MultiplyWideningAndSubtract(op1[i], op2[i + op2.Length / 2], op3[i + op3.Length / 2]);
+
+        public static uint SubtractHighNarrowing(ulong op1, ulong op2) => HighNarrowing((ulong)(op1 - op2), round: false);
+
+        public static ulong SubtractHighNarrowingUpper(uint[] op1, ulong[] op2, ulong[] op3, int i) => i < op1.Length ? op1[i] : SubtractHighNarrowing(op2[i - op1.Length], op3[i - op1.Length]);
+
+        public static uint SubtractRoundedHighNarrowing(ulong op1, ulong op2) => HighNarrowing((ulong)(op1 - op2), round: true);
+
+        public static ulong SubtractRoundedHighNarrowingUpper(uint[] op1, ulong[] op2, ulong[] op3, int i) => i < op1.Length ? op1[i] : SubtractRoundedHighNarrowing(op2[i - op1.Length], op3[i - op1.Length]);
+
+        public static ulong SubtractWidening(uint op1, uint op2) => (ulong)((ulong)op1 - (ulong)op2);
+
+        public static ulong SubtractWidening(ulong op1, uint op2) => (ulong)(op1 - op2);
+
+        public static ulong SubtractWideningUpper(uint[] op1, uint[] op2, int i) => SubtractWidening(op1[i + op1.Length / 2], op2[i + op2.Length / 2]);
+
+        public static ulong SubtractWideningUpper(ulong[] op1, uint[] op2, int i) => SubtractWidening(op1[i], op2[i + op2.Length / 2]);
+
+        public static ulong ZeroExtendWidening(uint op1) => (ulong)(ulong)op1;
+
+        public static ulong ZeroExtendWideningUpper(uint[] op1, int i) => ZeroExtendWidening(op1[i + op1.Length / 2]);
+
+        private static bool SignedSatQ(short val, out sbyte result)
+        {
+            bool saturated = false;
+
+            if (val > sbyte.MaxValue)
+            {
+                result = sbyte.MaxValue;
+                saturated = true;
+            }
+            else if (val < sbyte.MinValue)
+            {
+                result = sbyte.MinValue;
+                saturated = true;
+            }
+            else
+            {
+                result = (sbyte)val;
+            }
+
+            return saturated;
+        }
+
+        private static bool SignedSatQ(short val, out byte result)
+        {
+            bool saturated = false;
+
+            if (val > byte.MaxValue)
+            {
+                result = byte.MaxValue;
+                saturated = true;
+            }
+            else if (val < 0)
+            {
+                result = 0;
+                saturated = true;
+            }
+            else
+            {
+                result = (byte)val;
+            }
+
+            return saturated;
+        }
+
+        private static bool UnsignedSatQ(short val, out sbyte result)
+        {
+            byte res;
+
+            bool saturated = UnsignedSatQ((ushort)val, out res);
+
+            result = (sbyte)res;
+            return saturated;
+        }
+
+        private static bool UnsignedSatQ(ushort val, out byte result)
+        {
+            bool saturated = false;
+
+            if (val > byte.MaxValue)
+            {
+                result = byte.MaxValue;
+                saturated = true;
+            }
+            else if (val < 0)
+            {
+                result = 0;
+                saturated = true;
+            }
+            else
+            {
+                result = (byte)val;
+            }
+
+            return saturated;
+        }
+
+        public static short ShiftLeftLogicalWidening(sbyte op1, byte op2) => UnsignedShift((short)op1, (short)op2);
+
+        public static ushort ShiftLeftLogicalWidening(byte op1, byte op2) => UnsignedShift((ushort)op1, (short)op2);
+
+        public static short ShiftLeftLogicalWideningUpper(sbyte[] op1, byte op2, int i) => ShiftLeftLogicalWidening(op1[i + op1.Length / 2], op2);
+
+        public static ushort ShiftLeftLogicalWideningUpper(byte[] op1, byte op2, int i) => ShiftLeftLogicalWidening(op1[i + op1.Length / 2], op2);
+
+        public static sbyte ShiftRightArithmeticRoundedNarrowingSaturate(short op1, byte op2)
+        {
+            sbyte result;
+
+            SignedSatQ(SignedShift(op1, (short)(-op2), rounding: true), out result);
+
+            return result;
+        }
+
+        public static byte ShiftRightArithmeticRoundedNarrowingSaturateUnsigned(short op1, byte op2)
+        {
+            byte result;
+
+            SignedSatQ(SignedShift(op1, (short)(-op2), rounding: true), out result);
+
+            return result;
+        }
+
+        public static byte ShiftRightArithmeticRoundedNarrowingSaturateUnsignedUpper(byte[] op1, short[] op2, byte op3, int i) => i < op1.Length ? op1[i] : (byte)ShiftRightArithmeticRoundedNarrowingSaturateUnsigned(op2[i - op1.Length], op3);
+
+        public static sbyte ShiftRightArithmeticRoundedNarrowingSaturateUpper(sbyte[] op1, short[] op2, byte op3, int i) => i < op1.Length ? op1[i] : (sbyte)ShiftRightArithmeticRoundedNarrowingSaturate(op2[i - op1.Length], op3);
+
+        public static sbyte ShiftRightArithmeticNarrowingSaturate(short op1, byte op2)
+        {
+            sbyte result;
+
+            SignedSatQ(SignedShift(op1, (short)(-op2)), out result);
+
+            return result;
+        }
+
+        public static byte ShiftRightArithmeticNarrowingSaturateUnsigned(short op1, byte op2)
+        {
+            byte result;
+
+            SignedSatQ(SignedShift(op1, (short)(-op2)), out result);
+
+            return result;
+        }
+
+        public static byte ShiftRightArithmeticNarrowingSaturateUnsignedUpper(byte[] op1, short[] op2, byte op3, int i) => i < op1.Length ? op1[i] : (byte)ShiftRightArithmeticNarrowingSaturateUnsigned(op2[i - op1.Length], op3);
+
+        public static sbyte ShiftRightArithmeticNarrowingSaturateUpper(sbyte[] op1, short[] op2, byte op3, int i) => i < op1.Length ? op1[i] : (sbyte)ShiftRightArithmeticNarrowingSaturate(op2[i - op1.Length], op3);
+
+        public static sbyte ShiftRightLogicalNarrowing(short op1, byte op2) => (sbyte)UnsignedShift(op1, (short)(-op2));
+
+        public static byte ShiftRightLogicalNarrowing(ushort op1, byte op2) => (byte)UnsignedShift(op1, (short)(-op2));
+
+        public static sbyte ShiftRightLogicalRoundedNarrowing(short op1, byte op2) => (sbyte)UnsignedShift(op1, (short)(-op2), rounding: true);
+
+        public static byte ShiftRightLogicalRoundedNarrowing(ushort op1, byte op2) => (byte)UnsignedShift(op1, (short)(-op2), rounding: true);
+
+        public static sbyte ShiftRightLogicalRoundedNarrowingUpper(sbyte[] op1, short[] op2, byte op3, int i) => i < op1.Length ? op1[i] : (sbyte)ShiftRightLogicalRoundedNarrowing(op2[i - op1.Length], op3);
+
+        public static byte ShiftRightLogicalRoundedNarrowingUpper(byte[] op1, ushort[] op2, byte op3, int i) => i < op1.Length ? op1[i] : (byte)ShiftRightLogicalRoundedNarrowing(op2[i - op1.Length], op3);
+
+        public static sbyte ShiftRightLogicalRoundedNarrowingSaturate(short op1, byte op2)
+        {
+            sbyte result;
+
+            UnsignedSatQ(UnsignedShift(op1, (short)(-op2), rounding: true), out result);
+
+            return result;
+        }
+
+        public static byte ShiftRightLogicalRoundedNarrowingSaturate(ushort op1, byte op2)
+        {
+            byte result;
+
+            UnsignedSatQ(UnsignedShift(op1, (short)(-op2), rounding: true), out result);
+
+            return result;
+        }
+
+        public static sbyte ShiftRightLogicalRoundedNarrowingSaturateUpper(sbyte[] op1, short[] op2, byte op3, int i) => i < op1.Length ? op1[i] : (sbyte)ShiftRightLogicalRoundedNarrowingSaturate(op2[i - op1.Length], op3);
+
+        public static byte ShiftRightLogicalRoundedNarrowingSaturateUpper(byte[] op1, ushort[] op2, byte op3, int i) => i < op1.Length ? op1[i] : (byte)ShiftRightLogicalRoundedNarrowingSaturate(op2[i - op1.Length], op3);
+
+        public static sbyte ShiftRightLogicalNarrowingUpper(sbyte[] op1, short[] op2, byte op3, int i) => i < op1.Length ? op1[i] : (sbyte)ShiftRightLogicalNarrowing(op2[i - op1.Length], op3);
+
+        public static byte ShiftRightLogicalNarrowingUpper(byte[] op1, ushort[] op2, byte op3, int i) => i < op1.Length ? op1[i] : (byte)ShiftRightLogicalNarrowing(op2[i - op1.Length], op3);
+
+        public static sbyte ShiftRightLogicalNarrowingSaturate(short op1, byte op2)
+        {
+            sbyte result;
+
+            UnsignedSatQ(UnsignedShift(op1, (short)(-op2)), out result);
+
+            return result;
+        }
+
+        public static byte ShiftRightLogicalNarrowingSaturate(ushort op1, byte op2)
+        {
+            byte result;
+
+            UnsignedSatQ(UnsignedShift(op1, (short)(-op2)), out result);
+
+            return result;
+        }
+
+        public static sbyte ShiftRightLogicalNarrowingSaturateUpper(sbyte[] op1, short[] op2, byte op3, int i) => i < op1.Length ? op1[i] : (sbyte)ShiftRightLogicalNarrowingSaturate(op2[i - op1.Length], op3);
+
+        public static byte ShiftRightLogicalNarrowingSaturateUpper(byte[] op1, ushort[] op2, byte op3, int i) => i < op1.Length ? op1[i] : (byte)ShiftRightLogicalNarrowingSaturate(op2[i - op1.Length], op3);
+
+        public static short SignExtendWidening(sbyte op1) => op1;
+
+        public static short SignExtendWideningUpper(sbyte[] op1, int i) => SignExtendWidening(op1[i + op1.Length / 2]);
+
+        private static bool SignedSatQ(int val, out short result)
+        {
+            bool saturated = false;
+
+            if (val > short.MaxValue)
+            {
+                result = short.MaxValue;
+                saturated = true;
+            }
+            else if (val < short.MinValue)
+            {
+                result = short.MinValue;
+                saturated = true;
+            }
+            else
+            {
+                result = (short)val;
+            }
+
+            return saturated;
+        }
+
+        private static bool SignedSatQ(int val, out ushort result)
+        {
+            bool saturated = false;
+
+            if (val > ushort.MaxValue)
+            {
+                result = ushort.MaxValue;
+                saturated = true;
+            }
+            else if (val < 0)
+            {
+                result = 0;
+                saturated = true;
+            }
+            else
+            {
+                result = (ushort)val;
+            }
+
+            return saturated;
+        }
+
+        private static bool UnsignedSatQ(int val, out short result)
+        {
+            ushort res;
+
+            bool saturated = UnsignedSatQ((uint)val, out res);
+
+            result = (short)res;
+            return saturated;
+        }
+
+        private static bool UnsignedSatQ(uint val, out ushort result)
+        {
+            bool saturated = false;
+
+            if (val > ushort.MaxValue)
+            {
+                result = ushort.MaxValue;
+                saturated = true;
+            }
+            else if (val < 0)
+            {
+                result = 0;
+                saturated = true;
+            }
+            else
+            {
+                result = (ushort)val;
+            }
+
+            return saturated;
+        }
+
+        public static int ShiftLeftLogicalWidening(short op1, byte op2) => UnsignedShift((int)op1, (int)op2);
+
+        public static uint ShiftLeftLogicalWidening(ushort op1, byte op2) => UnsignedShift((uint)op1, (int)op2);
+
+        public static int ShiftLeftLogicalWideningUpper(short[] op1, byte op2, int i) => ShiftLeftLogicalWidening(op1[i + op1.Length / 2], op2);
+
+        public static uint ShiftLeftLogicalWideningUpper(ushort[] op1, byte op2, int i) => ShiftLeftLogicalWidening(op1[i + op1.Length / 2], op2);
+
+        public static short ShiftRightArithmeticRoundedNarrowingSaturate(int op1, byte op2)
+        {
+            short result;
+
+            SignedSatQ(SignedShift(op1, (int)(-op2), rounding: true), out result);
+
+            return result;
+        }
+
+        public static ushort ShiftRightArithmeticRoundedNarrowingSaturateUnsigned(int op1, byte op2)
+        {
+            ushort result;
+
+            SignedSatQ(SignedShift(op1, (int)(-op2), rounding: true), out result);
+
+            return result;
+        }
+
+        public static ushort ShiftRightArithmeticRoundedNarrowingSaturateUnsignedUpper(ushort[] op1, int[] op2, byte op3, int i) => i < op1.Length ? op1[i] : (ushort)ShiftRightArithmeticRoundedNarrowingSaturateUnsigned(op2[i - op1.Length], op3);
+
+        public static short ShiftRightArithmeticRoundedNarrowingSaturateUpper(short[] op1, int[] op2, byte op3, int i) => i < op1.Length ? op1[i] : (short)ShiftRightArithmeticRoundedNarrowingSaturate(op2[i - op1.Length], op3);
+
+        public static short ShiftRightArithmeticNarrowingSaturate(int op1, byte op2)
+        {
+            short result;
+
+            SignedSatQ(SignedShift(op1, (int)(-op2)), out result);
+
+            return result;
+        }
+
+        public static ushort ShiftRightArithmeticNarrowingSaturateUnsigned(int op1, byte op2)
+        {
+            ushort result;
+
+            SignedSatQ(SignedShift(op1, (int)(-op2)), out result);
+
+            return result;
+        }
+
+        public static ushort ShiftRightArithmeticNarrowingSaturateUnsignedUpper(ushort[] op1, int[] op2, byte op3, int i) => i < op1.Length ? op1[i] : (ushort)ShiftRightArithmeticNarrowingSaturateUnsigned(op2[i - op1.Length], op3);
+
+        public static short ShiftRightArithmeticNarrowingSaturateUpper(short[] op1, int[] op2, byte op3, int i) => i < op1.Length ? op1[i] : (short)ShiftRightArithmeticNarrowingSaturate(op2[i - op1.Length], op3);
+
+        public static short ShiftRightLogicalNarrowing(int op1, byte op2) => (short)UnsignedShift(op1, (int)(-op2));
+
+        public static ushort ShiftRightLogicalNarrowing(uint op1, byte op2) => (ushort)UnsignedShift(op1, (int)(-op2));
+
+        public static short ShiftRightLogicalRoundedNarrowing(int op1, byte op2) => (short)UnsignedShift(op1, (int)(-op2), rounding: true);
+
+        public static ushort ShiftRightLogicalRoundedNarrowing(uint op1, byte op2) => (ushort)UnsignedShift(op1, (int)(-op2), rounding: true);
+
+        public static short ShiftRightLogicalRoundedNarrowingUpper(short[] op1, int[] op2, byte op3, int i) => i < op1.Length ? op1[i] : (short)ShiftRightLogicalRoundedNarrowing(op2[i - op1.Length], op3);
+
+        public static ushort ShiftRightLogicalRoundedNarrowingUpper(ushort[] op1, uint[] op2, byte op3, int i) => i < op1.Length ? op1[i] : (ushort)ShiftRightLogicalRoundedNarrowing(op2[i - op1.Length], op3);
+
+        public static short ShiftRightLogicalRoundedNarrowingSaturate(int op1, byte op2)
+        {
+            short result;
+
+            UnsignedSatQ(UnsignedShift(op1, (int)(-op2), rounding: true), out result);
+
+            return result;
+        }
+
+        public static ushort ShiftRightLogicalRoundedNarrowingSaturate(uint op1, byte op2)
+        {
+            ushort result;
+
+            UnsignedSatQ(UnsignedShift(op1, (int)(-op2), rounding: true), out result);
+
+            return result;
+        }
+
+        public static short ShiftRightLogicalRoundedNarrowingSaturateUpper(short[] op1, int[] op2, byte op3, int i) => i < op1.Length ? op1[i] : (short)ShiftRightLogicalRoundedNarrowingSaturate(op2[i - op1.Length], op3);
+
+        public static ushort ShiftRightLogicalRoundedNarrowingSaturateUpper(ushort[] op1, uint[] op2, byte op3, int i) => i < op1.Length ? op1[i] : (ushort)ShiftRightLogicalRoundedNarrowingSaturate(op2[i - op1.Length], op3);
+
+        public static short ShiftRightLogicalNarrowingUpper(short[] op1, int[] op2, byte op3, int i) => i < op1.Length ? op1[i] : (short)ShiftRightLogicalNarrowing(op2[i - op1.Length], op3);
+
+        public static ushort ShiftRightLogicalNarrowingUpper(ushort[] op1, uint[] op2, byte op3, int i) => i < op1.Length ? op1[i] : (ushort)ShiftRightLogicalNarrowing(op2[i - op1.Length], op3);
+
+        public static short ShiftRightLogicalNarrowingSaturate(int op1, byte op2)
+        {
+            short result;
+
+            UnsignedSatQ(UnsignedShift(op1, (int)(-op2)), out result);
+
+            return result;
+        }
+
+        public static ushort ShiftRightLogicalNarrowingSaturate(uint op1, byte op2)
+        {
+            ushort result;
+
+            UnsignedSatQ(UnsignedShift(op1, (int)(-op2)), out result);
+
+            return result;
+        }
+
+        public static short ShiftRightLogicalNarrowingSaturateUpper(short[] op1, int[] op2, byte op3, int i) => i < op1.Length ? op1[i] : (short)ShiftRightLogicalNarrowingSaturate(op2[i - op1.Length], op3);
+
+        public static ushort ShiftRightLogicalNarrowingSaturateUpper(ushort[] op1, uint[] op2, byte op3, int i) => i < op1.Length ? op1[i] : (ushort)ShiftRightLogicalNarrowingSaturate(op2[i - op1.Length], op3);
+
+        public static int SignExtendWidening(short op1) => op1;
+
+        public static int SignExtendWideningUpper(short[] op1, int i) => SignExtendWidening(op1[i + op1.Length / 2]);
+
+        private static bool SignedSatQ(long val, out int result)
+        {
+            bool saturated = false;
+
+            if (val > int.MaxValue)
+            {
+                result = int.MaxValue;
+                saturated = true;
+            }
+            else if (val < int.MinValue)
+            {
+                result = int.MinValue;
+                saturated = true;
+            }
+            else
+            {
+                result = (int)val;
+            }
+
+            return saturated;
+        }
+
+        private static bool SignedSatQ(long val, out uint result)
+        {
+            bool saturated = false;
+
+            if (val > uint.MaxValue)
+            {
+                result = uint.MaxValue;
+                saturated = true;
+            }
+            else if (val < 0)
+            {
+                result = 0;
+                saturated = true;
+            }
+            else
+            {
+                result = (uint)val;
+            }
+
+            return saturated;
+        }
+
+        private static bool UnsignedSatQ(long val, out int result)
+        {
+            uint res;
+
+            bool saturated = UnsignedSatQ((ulong)val, out res);
+
+            result = (int)res;
+            return saturated;
+        }
+
+        private static bool UnsignedSatQ(ulong val, out uint result)
+        {
+            bool saturated = false;
+
+            if (val > uint.MaxValue)
+            {
+                result = uint.MaxValue;
+                saturated = true;
+            }
+            else if (val < 0)
+            {
+                result = 0;
+                saturated = true;
+            }
+            else
+            {
+                result = (uint)val;
+            }
+
+            return saturated;
+        }
+
+        public static long ShiftLeftLogicalWidening(int op1, byte op2) => UnsignedShift((long)op1, (long)op2);
+
+        public static ulong ShiftLeftLogicalWidening(uint op1, byte op2) => UnsignedShift((ulong)op1, (long)op2);
+
+        public static long ShiftLeftLogicalWideningUpper(int[] op1, byte op2, int i) => ShiftLeftLogicalWidening(op1[i + op1.Length / 2], op2);
+
+        public static ulong ShiftLeftLogicalWideningUpper(uint[] op1, byte op2, int i) => ShiftLeftLogicalWidening(op1[i + op1.Length / 2], op2);
+
+        public static int ShiftRightArithmeticRoundedNarrowingSaturate(long op1, byte op2)
+        {
+            int result;
+
+            SignedSatQ(SignedShift(op1, (long)(-op2), rounding: true), out result);
+
+            return result;
+        }
+
+        public static uint ShiftRightArithmeticRoundedNarrowingSaturateUnsigned(long op1, byte op2)
+        {
+            uint result;
+
+            SignedSatQ(SignedShift(op1, (long)(-op2), rounding: true), out result);
+
+            return result;
+        }
+
+        public static uint ShiftRightArithmeticRoundedNarrowingSaturateUnsignedUpper(uint[] op1, long[] op2, byte op3, int i) => i < op1.Length ? op1[i] : (uint)ShiftRightArithmeticRoundedNarrowingSaturateUnsigned(op2[i - op1.Length], op3);
+
+        public static int ShiftRightArithmeticRoundedNarrowingSaturateUpper(int[] op1, long[] op2, byte op3, int i) => i < op1.Length ? op1[i] : (int)ShiftRightArithmeticRoundedNarrowingSaturate(op2[i - op1.Length], op3);
+
+        public static int ShiftRightArithmeticNarrowingSaturate(long op1, byte op2)
+        {
+            int result;
+
+            SignedSatQ(SignedShift(op1, (long)(-op2)), out result);
+
+            return result;
+        }
+
+        public static uint ShiftRightArithmeticNarrowingSaturateUnsigned(long op1, byte op2)
+        {
+            uint result;
+
+            SignedSatQ(SignedShift(op1, (long)(-op2)), out result);
+
+            return result;
+        }
+
+        public static uint ShiftRightArithmeticNarrowingSaturateUnsignedUpper(uint[] op1, long[] op2, byte op3, int i) => i < op1.Length ? op1[i] : (uint)ShiftRightArithmeticNarrowingSaturateUnsigned(op2[i - op1.Length], op3);
+
+        public static int ShiftRightArithmeticNarrowingSaturateUpper(int[] op1, long[] op2, byte op3, int i) => i < op1.Length ? op1[i] : (int)ShiftRightArithmeticNarrowingSaturate(op2[i - op1.Length], op3);
+
+        public static int ShiftRightLogicalNarrowing(long op1, byte op2) => (int)UnsignedShift(op1, (long)(-op2));
+
+        public static uint ShiftRightLogicalNarrowing(ulong op1, byte op2) => (uint)UnsignedShift(op1, (long)(-op2));
+
+        public static int ShiftRightLogicalRoundedNarrowing(long op1, byte op2) => (int)UnsignedShift(op1, (long)(-op2), rounding: true);
+
+        public static uint ShiftRightLogicalRoundedNarrowing(ulong op1, byte op2) => (uint)UnsignedShift(op1, (long)(-op2), rounding: true);
+
+        public static int ShiftRightLogicalRoundedNarrowingUpper(int[] op1, long[] op2, byte op3, int i) => i < op1.Length ? op1[i] : (int)ShiftRightLogicalRoundedNarrowing(op2[i - op1.Length], op3);
+
+        public static uint ShiftRightLogicalRoundedNarrowingUpper(uint[] op1, ulong[] op2, byte op3, int i) => i < op1.Length ? op1[i] : (uint)ShiftRightLogicalRoundedNarrowing(op2[i - op1.Length], op3);
+
+        public static int ShiftRightLogicalRoundedNarrowingSaturate(long op1, byte op2)
+        {
+            int result;
+
+            UnsignedSatQ(UnsignedShift(op1, (long)(-op2), rounding: true), out result);
+
+            return result;
+        }
+
+        public static uint ShiftRightLogicalRoundedNarrowingSaturate(ulong op1, byte op2)
+        {
+            uint result;
+
+            UnsignedSatQ(UnsignedShift(op1, (long)(-op2), rounding: true), out result);
+
+            return result;
+        }
+
+        public static int ShiftRightLogicalRoundedNarrowingSaturateUpper(int[] op1, long[] op2, byte op3, int i) => i < op1.Length ? op1[i] : (int)ShiftRightLogicalRoundedNarrowingSaturate(op2[i - op1.Length], op3);
+
+        public static uint ShiftRightLogicalRoundedNarrowingSaturateUpper(uint[] op1, ulong[] op2, byte op3, int i) => i < op1.Length ? op1[i] : (uint)ShiftRightLogicalRoundedNarrowingSaturate(op2[i - op1.Length], op3);
+
+        public static int ShiftRightLogicalNarrowingUpper(int[] op1, long[] op2, byte op3, int i) => i < op1.Length ? op1[i] : (int)ShiftRightLogicalNarrowing(op2[i - op1.Length], op3);
+
+        public static uint ShiftRightLogicalNarrowingUpper(uint[] op1, ulong[] op2, byte op3, int i) => i < op1.Length ? op1[i] : (uint)ShiftRightLogicalNarrowing(op2[i - op1.Length], op3);
+
+        public static int ShiftRightLogicalNarrowingSaturate(long op1, byte op2)
+        {
+            int result;
+
+            UnsignedSatQ(UnsignedShift(op1, (long)(-op2)), out result);
+
+            return result;
+        }
+
+        public static uint ShiftRightLogicalNarrowingSaturate(ulong op1, byte op2)
+        {
+            uint result;
+
+            UnsignedSatQ(UnsignedShift(op1, (long)(-op2)), out result);
+
+            return result;
+        }
+
+        public static int ShiftRightLogicalNarrowingSaturateUpper(int[] op1, long[] op2, byte op3, int i) => i < op1.Length ? op1[i] : (int)ShiftRightLogicalNarrowingSaturate(op2[i - op1.Length], op3);
+
+        public static uint ShiftRightLogicalNarrowingSaturateUpper(uint[] op1, ulong[] op2, byte op3, int i) => i < op1.Length ? op1[i] : (uint)ShiftRightLogicalNarrowingSaturate(op2[i - op1.Length], op3);
+
+        public static long SignExtendWidening(int op1) => op1;
+
+        public static long SignExtendWideningUpper(int[] op1, int i) => SignExtendWidening(op1[i + op1.Length / 2]);
+
+        public static sbyte ShiftArithmetic(sbyte op1, sbyte op2) => SignedShift(op1, op2);
+
+        public static sbyte ShiftArithmeticRounded(sbyte op1, sbyte op2) => SignedShift(op1, op2, rounding: true);
+
+        public static sbyte ShiftArithmeticSaturate(sbyte op1, sbyte op2) => SignedShift(op1, op2, saturating: true);
+
+        public static sbyte ShiftArithmeticRoundedSaturate(sbyte op1, sbyte op2) => SignedShift(op1, op2, rounding: true, saturating: true);
+
+        private static sbyte SignedShift(sbyte op1, sbyte op2, bool rounding = false, bool saturating = false)
+        {
+            int shift = (sbyte)(op2 & 0xFF);
+
+            sbyte rndCns = 0;
+
+            if (rounding)
+            {
+                bool ovf;
+
+                (rndCns, ovf) = ShiftOvf((sbyte)1, -shift-1);
+
+                if (ovf)
+                {
+                    return 0;
+                }
+            }
+
+            sbyte result;
+
+            bool addOvf;
+
+            (result, addOvf) = AddOvf(op1, rndCns);
+
+            if (addOvf)
+            {
+                result = (sbyte)ShiftOvf((byte)result, shift).val;
+            }
+            else
+            {
+                bool shiftOvf;
+
+                (result, shiftOvf) = ShiftOvf(result, shift);
+
+                if (saturating)
+                {
+                    if (shiftOvf)
+                    {
+                        result = sbyte.MaxValue;
+                    }
+                }
+            }
+
+            return result;
+        }
+
+        public static sbyte ShiftLeftLogical(sbyte op1, byte op2) => UnsignedShift(op1, (sbyte)op2);
+
+        public static byte ShiftLeftLogical(byte op1, byte op2) => UnsignedShift(op1, (sbyte)op2);
+
+        public static sbyte ShiftLeftLogicalSaturate(sbyte op1, byte op2) => SignedShift(op1, (sbyte)op2, saturating: true);
+
+        public static byte ShiftLeftLogicalSaturate(byte op1, byte op2) => UnsignedShift(op1, (sbyte)op2, saturating: true);
+
+        public static byte ShiftLeftLogicalSaturateUnsigned(sbyte op1, byte op2) => (byte)UnsignedShift(op1, (sbyte)op2, saturating: true);
+
+        public static sbyte ShiftLogical(sbyte op1, sbyte op2) => UnsignedShift(op1, op2);
+
+        public static byte ShiftLogical(byte op1, sbyte op2) => UnsignedShift(op1, op2);
+
+        public static byte ShiftLogicalRounded(byte op1, sbyte op2) => UnsignedShift(op1, op2, rounding: true);
+
+        public static sbyte ShiftLogicalRounded(sbyte op1, sbyte op2) => UnsignedShift(op1, op2, rounding: true);
+
+        public static byte ShiftLogicalRoundedSaturate(byte op1, sbyte op2) => UnsignedShift(op1, op2, rounding: true, saturating: true);
+
+        public static sbyte ShiftLogicalRoundedSaturate(sbyte op1, sbyte op2) => UnsignedShift(op1, op2, rounding: true, saturating: true);
+
+        public static sbyte ShiftLogicalSaturate(sbyte op1, sbyte op2) => UnsignedShift(op1, op2, saturating: true);
+
+        public static byte ShiftLogicalSaturate(byte op1, sbyte op2) => UnsignedShift(op1, op2, saturating: true);
+
+        public static sbyte ShiftRightArithmetic(sbyte op1, byte op2) => SignedShift(op1, (sbyte)(-op2));
+
+        public static sbyte ShiftRightArithmeticAdd(sbyte op1, sbyte op2, byte op3) =>  (sbyte)(op1 + ShiftRightArithmetic(op2, op3));
+
+        public static sbyte ShiftRightArithmeticRounded(sbyte op1, byte op2) => SignedShift(op1, (sbyte)(-op2), rounding: true);
+
+        public static sbyte ShiftRightArithmeticRoundedAdd(sbyte op1, sbyte op2, byte op3) =>  (sbyte)(op1 + ShiftRightArithmeticRounded(op2, op3));
+
+        public static sbyte ShiftRightLogical(sbyte op1, byte op2) => UnsignedShift(op1, (sbyte)(-op2));
+
+        public static byte ShiftRightLogical(byte op1, byte op2) => UnsignedShift(op1, (sbyte)(-op2));
+
+        public static sbyte ShiftRightLogicalAdd(sbyte op1, sbyte op2, byte op3) => (sbyte)(op1 + ShiftRightLogical(op2, op3));
+
+        public static byte ShiftRightLogicalAdd(byte op1, byte op2, byte op3) => (byte)(op1 + ShiftRightLogical(op2, op3));
+
+        public static sbyte ShiftRightLogicalRounded(sbyte op1, byte op2) => UnsignedShift(op1, (sbyte)(-op2), rounding: true);
+
+        public static byte ShiftRightLogicalRounded(byte op1, byte op2) => UnsignedShift(op1, (sbyte)(-op2), rounding: true);
+
+        public static sbyte ShiftRightLogicalRoundedAdd(sbyte op1, sbyte op2, byte op3) => (sbyte)(op1 + ShiftRightLogicalRounded(op2, op3));
+
+        public static byte ShiftRightLogicalRoundedAdd(byte op1, byte op2, byte op3) => (byte)(op1 + ShiftRightLogicalRounded(op2, op3));
+
+        private static byte UnsignedShift(byte op1, sbyte op2, bool rounding = false, bool saturating = false)
+        {
+            int shift = (sbyte)(op2 & 0xFF);
+
+            byte rndCns = 0;
+
+            if (rounding)
+            {
+                bool ovf;
+
+                (rndCns, ovf) = ShiftOvf((byte)1, -shift-1);
+
+                if (ovf)
+                {
+                    return 0;
+                }
+            }
+
+            (byte result, bool addOvf) = AddOvf(op1, rndCns);
+
+            bool shiftOvf;
+
+            (result, shiftOvf) = ShiftOvf(result, shift);
+
+            if (addOvf)
+            {
+                byte shiftedCarry = ShiftOvf((byte)1, 8 * sizeof(byte) + shift).val;
+                result = (byte)(result | shiftedCarry);
+            }
+
+            if (saturating)
+            {
+                if (shiftOvf)
+                {
+                    result = byte.MaxValue;
+                }
+            }
+
+            return result;
+        }
+
+        private static sbyte UnsignedShift(sbyte op1, sbyte op2, bool rounding = false, bool saturating = false) => (sbyte)UnsignedShift((byte)op1, op2, rounding, saturating);
+
+        private static (sbyte val, bool ovf) AddOvf(sbyte op1, sbyte op2)
+        {
+            sbyte result = (sbyte)(op1 + op2);
+
+            bool ovf = false;
+
+            if ((op1 > 0) && (op2 > 0))
+            {
+                ovf = (result < 0);
+            }
+            else if ((op1 < 0) && (op2 < 0))
+            {
+                ovf = (result > 0);
+            }
+
+            return (result, ovf);
+        }
+
+        private static (byte val, bool ovf) AddOvf(byte op1, byte op2)
+        {
+            byte result = (byte)(op1 + op2);
+
+            bool ovf = (result < op1);
+
+            return (result, ovf);
+        }
+
+        private static (sbyte val, bool ovf) SubtractOvf(sbyte op1, sbyte op2)
+        {
+            sbyte result = (sbyte)(op1 - op2);
+
+            bool ovf = false;
+
+            if ((op1 > 0) && (op2 < 0))
+            {
+                ovf = (result < 0);
+            }
+            else if ((op1 < 0) && (op2 > 0))
+            {
+                ovf = (result > 0);
+            }
+
+            return (result, ovf);
+        }
+
+        private static (byte val, bool ovf) SubtractOvf(byte op1, byte op2)
+        {
+            byte result = (byte)(op1 - op2);
+
+            bool ovf = (op1 < op2);
+
+            return (result, ovf);
+        }
+
+        public static sbyte AddSaturate(sbyte op1, sbyte op2)
+        {
+            var (result, ovf) = AddOvf(op1, op2);
+            return ovf ? (result > 0 ? sbyte.MinValue : sbyte.MaxValue) : result;
+        }
+
+        public static byte AddSaturate(byte op1, byte op2)
+        {
+            var (result, ovf) = AddOvf(op1, op2);
+            return ovf ? byte.MaxValue : result;
+        }
+
+        public static sbyte SubtractSaturate(sbyte op1, sbyte op2)
+        {
+            var (result, ovf) = SubtractOvf(op1, op2);
+            return ovf ? (result > 0 ? sbyte.MinValue : sbyte.MaxValue) : result;
+        }
+
+        public static byte SubtractSaturate(byte op1, byte op2)
+        {
+            var (result, ovf) = SubtractOvf(op1, op2);
+            return ovf ? byte.MinValue : result;
+        }
+
+        public static short ShiftArithmetic(short op1, short op2) => SignedShift(op1, op2);
+
+        public static short ShiftArithmeticRounded(short op1, short op2) => SignedShift(op1, op2, rounding: true);
+
+        public static short ShiftArithmeticSaturate(short op1, short op2) => SignedShift(op1, op2, saturating: true);
+
+        public static short ShiftArithmeticRoundedSaturate(short op1, short op2) => SignedShift(op1, op2, rounding: true, saturating: true);
+
+        private static short SignedShift(short op1, short op2, bool rounding = false, bool saturating = false)
+        {
+            int shift = (sbyte)(op2 & 0xFF);
+
+            short rndCns = 0;
+
+            if (rounding)
+            {
+                bool ovf;
+
+                (rndCns, ovf) = ShiftOvf((short)1, -shift-1);
+
+                if (ovf)
+                {
+                    return 0;
+                }
+            }
+
+            short result;
+
+            bool addOvf;
+
+            (result, addOvf) = AddOvf(op1, rndCns);
+
+            if (addOvf)
+            {
+                result = (short)ShiftOvf((ushort)result, shift).val;
+            }
+            else
+            {
+                bool shiftOvf;
+
+                (result, shiftOvf) = ShiftOvf(result, shift);
+
+                if (saturating)
+                {
+                    if (shiftOvf)
+                    {
+                        result = short.MaxValue;
+                    }
+                }
+            }
+
+            return result;
+        }
+
+        public static short ShiftLeftLogical(short op1, byte op2) => UnsignedShift(op1, (short)op2);
+
+        public static ushort ShiftLeftLogical(ushort op1, byte op2) => UnsignedShift(op1, (short)op2);
+
+        public static short ShiftLeftLogicalSaturate(short op1, byte op2) => SignedShift(op1, (short)op2, saturating: true);
+
+        public static ushort ShiftLeftLogicalSaturate(ushort op1, byte op2) => UnsignedShift(op1, (short)op2, saturating: true);
+
+        public static ushort ShiftLeftLogicalSaturateUnsigned(short op1, byte op2) => (ushort)UnsignedShift(op1, (short)op2, saturating: true);
+
+        public static short ShiftLogical(short op1, short op2) => UnsignedShift(op1, op2);
+
+        public static ushort ShiftLogical(ushort op1, short op2) => UnsignedShift(op1, op2);
+
+        public static ushort ShiftLogicalRounded(ushort op1, short op2) => UnsignedShift(op1, op2, rounding: true);
+
+        public static short ShiftLogicalRounded(short op1, short op2) => UnsignedShift(op1, op2, rounding: true);
+
+        public static ushort ShiftLogicalRoundedSaturate(ushort op1, short op2) => UnsignedShift(op1, op2, rounding: true, saturating: true);
+
+        public static short ShiftLogicalRoundedSaturate(short op1, short op2) => UnsignedShift(op1, op2, rounding: true, saturating: true);
+
+        public static short ShiftLogicalSaturate(short op1, short op2) => UnsignedShift(op1, op2, saturating: true);
+
+        public static ushort ShiftLogicalSaturate(ushort op1, short op2) => UnsignedShift(op1, op2, saturating: true);
+
+        public static short ShiftRightArithmetic(short op1, byte op2) => SignedShift(op1, (short)(-op2));
+
+        public static short ShiftRightArithmeticAdd(short op1, short op2, byte op3) =>  (short)(op1 + ShiftRightArithmetic(op2, op3));
+
+        public static short ShiftRightArithmeticRounded(short op1, byte op2) => SignedShift(op1, (short)(-op2), rounding: true);
+
+        public static short ShiftRightArithmeticRoundedAdd(short op1, short op2, byte op3) =>  (short)(op1 + ShiftRightArithmeticRounded(op2, op3));
+
+        public static short ShiftRightLogical(short op1, byte op2) => UnsignedShift(op1, (short)(-op2));
+
+        public static ushort ShiftRightLogical(ushort op1, byte op2) => UnsignedShift(op1, (short)(-op2));
+
+        public static short ShiftRightLogicalAdd(short op1, short op2, byte op3) => (short)(op1 + ShiftRightLogical(op2, op3));
+
+        public static ushort ShiftRightLogicalAdd(ushort op1, ushort op2, byte op3) => (ushort)(op1 + ShiftRightLogical(op2, op3));
+
+        public static short ShiftRightLogicalRounded(short op1, byte op2) => UnsignedShift(op1, (short)(-op2), rounding: true);
+
+        public static ushort ShiftRightLogicalRounded(ushort op1, byte op2) => UnsignedShift(op1, (short)(-op2), rounding: true);
+
+        public static short ShiftRightLogicalRoundedAdd(short op1, short op2, byte op3) => (short)(op1 + ShiftRightLogicalRounded(op2, op3));
+
+        public static ushort ShiftRightLogicalRoundedAdd(ushort op1, ushort op2, byte op3) => (ushort)(op1 + ShiftRightLogicalRounded(op2, op3));
+
+        private static ushort UnsignedShift(ushort op1, short op2, bool rounding = false, bool saturating = false)
+        {
+            int shift = (sbyte)(op2 & 0xFF);
+
+            ushort rndCns = 0;
+
+            if (rounding)
+            {
+                bool ovf;
+
+                (rndCns, ovf) = ShiftOvf((ushort)1, -shift-1);
+
+                if (ovf)
+                {
+                    return 0;
+                }
+            }
+
+            (ushort result, bool addOvf) = AddOvf(op1, rndCns);
+
+            bool shiftOvf;
+
+            (result, shiftOvf) = ShiftOvf(result, shift);
+
+            if (addOvf)
+            {
+                ushort shiftedCarry = ShiftOvf((ushort)1, 8 * sizeof(ushort) + shift).val;
+                result = (ushort)(result | shiftedCarry);
+            }
+
+            if (saturating)
+            {
+                if (shiftOvf)
+                {
+                    result = ushort.MaxValue;
+                }
+            }
+
+            return result;
+        }
+
+        private static short UnsignedShift(short op1, short op2, bool rounding = false, bool saturating = false) => (short)UnsignedShift((ushort)op1, op2, rounding, saturating);
+
+        private static (short val, bool ovf) AddOvf(short op1, short op2)
+        {
+            short result = (short)(op1 + op2);
+
+            bool ovf = false;
+
+            if ((op1 > 0) && (op2 > 0))
+            {
+                ovf = (result < 0);
+            }
+            else if ((op1 < 0) && (op2 < 0))
+            {
+                ovf = (result > 0);
+            }
+
+            return (result, ovf);
+        }
+
+        private static (ushort val, bool ovf) AddOvf(ushort op1, ushort op2)
+        {
+            ushort result = (ushort)(op1 + op2);
+
+            bool ovf = (result < op1);
+
+            return (result, ovf);
+        }
+
+        private static (short val, bool ovf) SubtractOvf(short op1, short op2)
+        {
+            short result = (short)(op1 - op2);
+
+            bool ovf = false;
+
+            if ((op1 > 0) && (op2 < 0))
+            {
+                ovf = (result < 0);
+            }
+            else if ((op1 < 0) && (op2 > 0))
+            {
+                ovf = (result > 0);
+            }
+
+            return (result, ovf);
+        }
+
+        private static (ushort val, bool ovf) SubtractOvf(ushort op1, ushort op2)
+        {
+            ushort result = (ushort)(op1 - op2);
+
+            bool ovf = (op1 < op2);
+
+            return (result, ovf);
+        }
+
+        public static short AddSaturate(short op1, short op2)
+        {
+            var (result, ovf) = AddOvf(op1, op2);
+            return ovf ? (result > 0 ? short.MinValue : short.MaxValue) : result;
+        }
+
+        public static ushort AddSaturate(ushort op1, ushort op2)
+        {
+            var (result, ovf) = AddOvf(op1, op2);
+            return ovf ? ushort.MaxValue : result;
+        }
+
+        public static short SubtractSaturate(short op1, short op2)
+        {
+            var (result, ovf) = SubtractOvf(op1, op2);
+            return ovf ? (result > 0 ? short.MinValue : short.MaxValue) : result;
+        }
+
+        public static ushort SubtractSaturate(ushort op1, ushort op2)
+        {
+            var (result, ovf) = SubtractOvf(op1, op2);
+            return ovf ? ushort.MinValue : result;
+        }
+
+        public static int ShiftArithmetic(int op1, int op2) => SignedShift(op1, op2);
+
+        public static int ShiftArithmeticRounded(int op1, int op2) => SignedShift(op1, op2, rounding: true);
+
+        public static int ShiftArithmeticSaturate(int op1, int op2) => SignedShift(op1, op2, saturating: true);
+
+        public static int ShiftArithmeticRoundedSaturate(int op1, int op2) => SignedShift(op1, op2, rounding: true, saturating: true);
+
+        private static int SignedShift(int op1, int op2, bool rounding = false, bool saturating = false)
+        {
+            int shift = (sbyte)(op2 & 0xFF);
+
+            int rndCns = 0;
+
+            if (rounding)
+            {
+                bool ovf;
+
+                (rndCns, ovf) = ShiftOvf((int)1, -shift-1);
+
+                if (ovf)
+                {
+                    return 0;
+                }
+            }
+
+            int result;
+
+            bool addOvf;
+
+            (result, addOvf) = AddOvf(op1, rndCns);
+
+            if (addOvf)
+            {
+                result = (int)ShiftOvf((uint)result, shift).val;
+            }
+            else
+            {
+                bool shiftOvf;
+
+                (result, shiftOvf) = ShiftOvf(result, shift);
+
+                if (saturating)
+                {
+                    if (shiftOvf)
+                    {
+                        result = int.MaxValue;
+                    }
+                }
+            }
+
+            return result;
+        }
+
+        public static int ShiftLeftLogical(int op1, byte op2) => UnsignedShift(op1, (int)op2);
+
+        public static uint ShiftLeftLogical(uint op1, byte op2) => UnsignedShift(op1, (int)op2);
+
+        public static int ShiftLeftLogicalSaturate(int op1, byte op2) => SignedShift(op1, (int)op2, saturating: true);
+
+        public static uint ShiftLeftLogicalSaturate(uint op1, byte op2) => UnsignedShift(op1, (int)op2, saturating: true);
+
+        public static uint ShiftLeftLogicalSaturateUnsigned(int op1, byte op2) => (uint)UnsignedShift(op1, (int)op2, saturating: true);
+
+        public static int ShiftLogical(int op1, int op2) => UnsignedShift(op1, op2);
+
+        public static uint ShiftLogical(uint op1, int op2) => UnsignedShift(op1, op2);
+
+        public static uint ShiftLogicalRounded(uint op1, int op2) => UnsignedShift(op1, op2, rounding: true);
+
+        public static int ShiftLogicalRounded(int op1, int op2) => UnsignedShift(op1, op2, rounding: true);
+
+        public static uint ShiftLogicalRoundedSaturate(uint op1, int op2) => UnsignedShift(op1, op2, rounding: true, saturating: true);
+
+        public static int ShiftLogicalRoundedSaturate(int op1, int op2) => UnsignedShift(op1, op2, rounding: true, saturating: true);
+
+        public static int ShiftLogicalSaturate(int op1, int op2) => UnsignedShift(op1, op2, saturating: true);
+
+        public static uint ShiftLogicalSaturate(uint op1, int op2) => UnsignedShift(op1, op2, saturating: true);
+
+        public static int ShiftRightArithmetic(int op1, byte op2) => SignedShift(op1, (int)(-op2));
+
+        public static int ShiftRightArithmeticAdd(int op1, int op2, byte op3) =>  (int)(op1 + ShiftRightArithmetic(op2, op3));
+
+        public static int ShiftRightArithmeticRounded(int op1, byte op2) => SignedShift(op1, (int)(-op2), rounding: true);
+
+        public static int ShiftRightArithmeticRoundedAdd(int op1, int op2, byte op3) =>  (int)(op1 + ShiftRightArithmeticRounded(op2, op3));
+
+        public static int ShiftRightLogical(int op1, byte op2) => UnsignedShift(op1, (int)(-op2));
+
+        public static uint ShiftRightLogical(uint op1, byte op2) => UnsignedShift(op1, (int)(-op2));
+
+        public static int ShiftRightLogicalAdd(int op1, int op2, byte op3) => (int)(op1 + ShiftRightLogical(op2, op3));
+
+        public static uint ShiftRightLogicalAdd(uint op1, uint op2, byte op3) => (uint)(op1 + ShiftRightLogical(op2, op3));
+
+        public static int ShiftRightLogicalRounded(int op1, byte op2) => UnsignedShift(op1, (int)(-op2), rounding: true);
+
+        public static uint ShiftRightLogicalRounded(uint op1, byte op2) => UnsignedShift(op1, (int)(-op2), rounding: true);
+
+        public static int ShiftRightLogicalRoundedAdd(int op1, int op2, byte op3) => (int)(op1 + ShiftRightLogicalRounded(op2, op3));
+
+        public static uint ShiftRightLogicalRoundedAdd(uint op1, uint op2, byte op3) => (uint)(op1 + ShiftRightLogicalRounded(op2, op3));
+
+        private static uint UnsignedShift(uint op1, int op2, bool rounding = false, bool saturating = false)
+        {
+            int shift = (sbyte)(op2 & 0xFF);
+
+            uint rndCns = 0;
+
+            if (rounding)
+            {
+                bool ovf;
+
+                (rndCns, ovf) = ShiftOvf((uint)1, -shift-1);
+
+                if (ovf)
+                {
+                    return 0;
+                }
+            }
+
+            (uint result, bool addOvf) = AddOvf(op1, rndCns);
+
+            bool shiftOvf;
+
+            (result, shiftOvf) = ShiftOvf(result, shift);
+
+            if (addOvf)
+            {
+                uint shiftedCarry = ShiftOvf((uint)1, 8 * sizeof(uint) + shift).val;
+                result = (uint)(result | shiftedCarry);
+            }
+
+            if (saturating)
+            {
+                if (shiftOvf)
+                {
+                    result = uint.MaxValue;
+                }
+            }
+
+            return result;
+        }
+
+        private static int UnsignedShift(int op1, int op2, bool rounding = false, bool saturating = false) => (int)UnsignedShift((uint)op1, op2, rounding, saturating);
+
+        private static (int val, bool ovf) AddOvf(int op1, int op2)
+        {
+            int result = (int)(op1 + op2);
+
+            bool ovf = false;
+
+            if ((op1 > 0) && (op2 > 0))
+            {
+                ovf = (result < 0);
+            }
+            else if ((op1 < 0) && (op2 < 0))
+            {
+                ovf = (result > 0);
+            }
+
+            return (result, ovf);
+        }
+
+        private static (uint val, bool ovf) AddOvf(uint op1, uint op2)
+        {
+            uint result = (uint)(op1 + op2);
+
+            bool ovf = (result < op1);
+
+            return (result, ovf);
+        }
+
+        private static (int val, bool ovf) SubtractOvf(int op1, int op2)
+        {
+            int result = (int)(op1 - op2);
+
+            bool ovf = false;
+
+            if ((op1 > 0) && (op2 < 0))
+            {
+                ovf = (result < 0);
+            }
+            else if ((op1 < 0) && (op2 > 0))
+            {
+                ovf = (result > 0);
+            }
+
+            return (result, ovf);
+        }
+
+        private static (uint val, bool ovf) SubtractOvf(uint op1, uint op2)
+        {
+            uint result = (uint)(op1 - op2);
+
+            bool ovf = (op1 < op2);
+
+            return (result, ovf);
+        }
+
+        public static int AddSaturate(int op1, int op2)
+        {
+            var (result, ovf) = AddOvf(op1, op2);
+            return ovf ? (result > 0 ? int.MinValue : int.MaxValue) : result;
+        }
+
+        public static uint AddSaturate(uint op1, uint op2)
+        {
+            var (result, ovf) = AddOvf(op1, op2);
+            return ovf ? uint.MaxValue : result;
+        }
+
+        public static int SubtractSaturate(int op1, int op2)
+        {
+            var (result, ovf) = SubtractOvf(op1, op2);
+            return ovf ? (result > 0 ? int.MinValue : int.MaxValue) : result;
+        }
+
+        public static uint SubtractSaturate(uint op1, uint op2)
+        {
+            var (result, ovf) = SubtractOvf(op1, op2);
+            return ovf ? uint.MinValue : result;
+        }
+
+        public static long ShiftArithmetic(long op1, long op2) => SignedShift(op1, op2);
+
+        public static long ShiftArithmeticRounded(long op1, long op2) => SignedShift(op1, op2, rounding: true);
+
+        public static long ShiftArithmeticSaturate(long op1, long op2) => SignedShift(op1, op2, saturating: true);
+
+        public static long ShiftArithmeticRoundedSaturate(long op1, long op2) => SignedShift(op1, op2, rounding: true, saturating: true);
+
+        private static long SignedShift(long op1, long op2, bool rounding = false, bool saturating = false)
+        {
+            int shift = (sbyte)(op2 & 0xFF);
+
+            long rndCns = 0;
+
+            if (rounding)
+            {
+                bool ovf;
+
+                (rndCns, ovf) = ShiftOvf((long)1, -shift-1);
+
+                if (ovf)
+                {
+                    return 0;
+                }
+            }
+
+            long result;
+
+            bool addOvf;
+
+            (result, addOvf) = AddOvf(op1, rndCns);
+
+            if (addOvf)
+            {
+                result = (long)ShiftOvf((ulong)result, shift).val;
+            }
+            else
+            {
+                bool shiftOvf;
+
+                (result, shiftOvf) = ShiftOvf(result, shift);
+
+                if (saturating)
+                {
+                    if (shiftOvf)
+                    {
+                        result = long.MaxValue;
+                    }
+                }
+            }
+
+            return result;
+        }
+
+        public static long ShiftLeftLogical(long op1, byte op2) => UnsignedShift(op1, (long)op2);
+
+        public static ulong ShiftLeftLogical(ulong op1, byte op2) => UnsignedShift(op1, (long)op2);
+
+        public static long ShiftLeftLogicalSaturate(long op1, byte op2) => SignedShift(op1, (long)op2, saturating: true);
+
+        public static ulong ShiftLeftLogicalSaturate(ulong op1, byte op2) => UnsignedShift(op1, (long)op2, saturating: true);
+
+        public static ulong ShiftLeftLogicalSaturateUnsigned(long op1, byte op2) => (ulong)UnsignedShift(op1, (long)op2, saturating: true);
+
+        public static long ShiftLogical(long op1, long op2) => UnsignedShift(op1, op2);
+
+        public static ulong ShiftLogical(ulong op1, long op2) => UnsignedShift(op1, op2);
+
+        public static ulong ShiftLogicalRounded(ulong op1, long op2) => UnsignedShift(op1, op2, rounding: true);
+
+        public static long ShiftLogicalRounded(long op1, long op2) => UnsignedShift(op1, op2, rounding: true);
+
+        public static ulong ShiftLogicalRoundedSaturate(ulong op1, long op2) => UnsignedShift(op1, op2, rounding: true, saturating: true);
+
+        public static long ShiftLogicalRoundedSaturate(long op1, long op2) => UnsignedShift(op1, op2, rounding: true, saturating: true);
+
+        public static long ShiftLogicalSaturate(long op1, long op2) => UnsignedShift(op1, op2, saturating: true);
+
+        public static ulong ShiftLogicalSaturate(ulong op1, long op2) => UnsignedShift(op1, op2, saturating: true);
+
+        public static long ShiftRightArithmetic(long op1, byte op2) => SignedShift(op1, (long)(-op2));
+
+        public static long ShiftRightArithmeticAdd(long op1, long op2, byte op3) =>  (long)(op1 + ShiftRightArithmetic(op2, op3));
+
+        public static long ShiftRightArithmeticRounded(long op1, byte op2) => SignedShift(op1, (long)(-op2), rounding: true);
+
+        public static long ShiftRightArithmeticRoundedAdd(long op1, long op2, byte op3) =>  (long)(op1 + ShiftRightArithmeticRounded(op2, op3));
+
+        public static long ShiftRightLogical(long op1, byte op2) => UnsignedShift(op1, (long)(-op2));
+
+        public static ulong ShiftRightLogical(ulong op1, byte op2) => UnsignedShift(op1, (long)(-op2));
+
+        public static long ShiftRightLogicalAdd(long op1, long op2, byte op3) => (long)(op1 + ShiftRightLogical(op2, op3));
+
+        public static ulong ShiftRightLogicalAdd(ulong op1, ulong op2, byte op3) => (ulong)(op1 + ShiftRightLogical(op2, op3));
+
+        public static long ShiftRightLogicalRounded(long op1, byte op2) => UnsignedShift(op1, (long)(-op2), rounding: true);
+
+        public static ulong ShiftRightLogicalRounded(ulong op1, byte op2) => UnsignedShift(op1, (long)(-op2), rounding: true);
+
+        public static long ShiftRightLogicalRoundedAdd(long op1, long op2, byte op3) => (long)(op1 + ShiftRightLogicalRounded(op2, op3));
+
+        public static ulong ShiftRightLogicalRoundedAdd(ulong op1, ulong op2, byte op3) => (ulong)(op1 + ShiftRightLogicalRounded(op2, op3));
+
+        private static ulong UnsignedShift(ulong op1, long op2, bool rounding = false, bool saturating = false)
+        {
+            int shift = (sbyte)(op2 & 0xFF);
+
+            ulong rndCns = 0;
+
+            if (rounding)
+            {
+                bool ovf;
+
+                (rndCns, ovf) = ShiftOvf((ulong)1, -shift-1);
+
+                if (ovf)
+                {
+                    return 0;
+                }
+            }
+
+            (ulong result, bool addOvf) = AddOvf(op1, rndCns);
+
+            bool shiftOvf;
+
+            (result, shiftOvf) = ShiftOvf(result, shift);
+
+            if (addOvf)
+            {
+                ulong shiftedCarry = ShiftOvf((ulong)1, 8 * sizeof(ulong) + shift).val;
+                result = (ulong)(result | shiftedCarry);
+            }
+
+            if (saturating)
+            {
+                if (shiftOvf)
+                {
+                    result = ulong.MaxValue;
+                }
+            }
+
+            return result;
+        }
+
+        private static long UnsignedShift(long op1, long op2, bool rounding = false, bool saturating = false) => (long)UnsignedShift((ulong)op1, op2, rounding, saturating);
+
+        private static (long val, bool ovf) AddOvf(long op1, long op2)
+        {
+            long result = (long)(op1 + op2);
+
+            bool ovf = false;
+
+            if ((op1 > 0) && (op2 > 0))
+            {
+                ovf = (result < 0);
+            }
+            else if ((op1 < 0) && (op2 < 0))
+            {
+                ovf = (result > 0);
+            }
+
+            return (result, ovf);
+        }
+
+        private static (ulong val, bool ovf) AddOvf(ulong op1, ulong op2)
+        {
+            ulong result = (ulong)(op1 + op2);
+
+            bool ovf = (result < op1);
+
+            return (result, ovf);
+        }
+
+        private static (long val, bool ovf) SubtractOvf(long op1, long op2)
+        {
+            long result = (long)(op1 - op2);
+
+            bool ovf = false;
+
+            if ((op1 > 0) && (op2 < 0))
+            {
+                ovf = (result < 0);
+            }
+            else if ((op1 < 0) && (op2 > 0))
+            {
+                ovf = (result > 0);
+            }
+
+            return (result, ovf);
+        }
+
+        private static (ulong val, bool ovf) SubtractOvf(ulong op1, ulong op2)
+        {
+            ulong result = (ulong)(op1 - op2);
+
+            bool ovf = (op1 < op2);
+
+            return (result, ovf);
+        }
+
+        public static long AddSaturate(long op1, long op2)
+        {
+            var (result, ovf) = AddOvf(op1, op2);
+            return ovf ? (result > 0 ? long.MinValue : long.MaxValue) : result;
+        }
+
+        public static ulong AddSaturate(ulong op1, ulong op2)
+        {
+            var (result, ovf) = AddOvf(op1, op2);
+            return ovf ? ulong.MaxValue : result;
+        }
+
+        public static long SubtractSaturate(long op1, long op2)
+        {
+            var (result, ovf) = SubtractOvf(op1, op2);
+            return ovf ? (result > 0 ? long.MinValue : long.MaxValue) : result;
+        }
+
+        public static ulong SubtractSaturate(ulong op1, ulong op2)
+        {
+            var (result, ovf) = SubtractOvf(op1, op2);
+            return ovf ? ulong.MinValue : result;
+        }
+
+
+        private static (sbyte val, bool ovf) ShiftOvf(sbyte value, int shift)
+        {
+            sbyte result = value;
+
+            bool ovf = false;
+            sbyte msb = 1;
+            msb = (sbyte)(msb << (8 * sizeof(sbyte) - 1));
+
+            for (int i = 0; i < shift; i++)
+            {
+                ovf = ovf || ((result & msb) != 0);
+                result <<= 1;
+            }
+
+            for (int i = 0; i > shift; i--)
+            {
+                result >>= 1;
+            }
+
+            if ((value > 0) && (result < 0))
+            {
+                ovf = true;
+            }
+
+            return (result, ovf);
+        }
+
+
+
+        private static (byte val, bool ovf) ShiftOvf(byte value, int shift)
+        {
+            byte result = value;
+
+            bool ovf = false;
+            byte msb = 1;
+            msb = (byte)(msb << (8 * sizeof(byte) - 1));
+
+            for (int i = 0; i < shift; i++)
+            {
+                ovf = ovf || ((result & msb) != 0);
+                result <<= 1;
+            }
+
+            for (int i = 0; i > shift; i--)
+            {
+                result >>= 1;
+            }
+
+            if ((value > 0) && (result < 0))
+            {
+                ovf = true;
+            }
+
+            return (result, ovf);
+        }
+
+
+
+        private static (short val, bool ovf) ShiftOvf(short value, int shift)
+        {
+            short result = value;
+
+            bool ovf = false;
+            short msb = 1;
+            msb = (short)(msb << (8 * sizeof(short) - 1));
+
+            for (int i = 0; i < shift; i++)
+            {
+                ovf = ovf || ((result & msb) != 0);
+                result <<= 1;
+            }
+
+            for (int i = 0; i > shift; i--)
+            {
+                result >>= 1;
+            }
+
+            if ((value > 0) && (result < 0))
+            {
+                ovf = true;
+            }
+
+            return (result, ovf);
+        }
+
+
+
+        private static (ushort val, bool ovf) ShiftOvf(ushort value, int shift)
+        {
+            ushort result = value;
+
+            bool ovf = false;
+            ushort msb = 1;
+            msb = (ushort)(msb << (8 * sizeof(ushort) - 1));
+
+            for (int i = 0; i < shift; i++)
+            {
+                ovf = ovf || ((result & msb) != 0);
+                result <<= 1;
+            }
+
+            for (int i = 0; i > shift; i--)
+            {
+                result >>= 1;
+            }
+
+            if ((value > 0) && (result < 0))
+            {
+                ovf = true;
+            }
+
+            return (result, ovf);
+        }
+
+
+
+        private static (int val, bool ovf) ShiftOvf(int value, int shift)
+        {
+            int result = value;
+
+            bool ovf = false;
+            int msb = 1;
+            msb = (int)(msb << (8 * sizeof(int) - 1));
+
+            for (int i = 0; i < shift; i++)
+            {
+                ovf = ovf || ((result & msb) != 0);
+                result <<= 1;
+            }
+
+            for (int i = 0; i > shift; i--)
+            {
+                result >>= 1;
+            }
+
+            if ((value > 0) && (result < 0))
+            {
+                ovf = true;
+            }
+
+            return (result, ovf);
+        }
+
+
+
+        private static (uint val, bool ovf) ShiftOvf(uint value, int shift)
+        {
+            uint result = value;
+
+            bool ovf = false;
+            uint msb = 1;
+            msb = (uint)(msb << (8 * sizeof(uint) - 1));
+
+            for (int i = 0; i < shift; i++)
+            {
+                ovf = ovf || ((result & msb) != 0);
+                result <<= 1;
+            }
+
+            for (int i = 0; i > shift; i--)
+            {
+                result >>= 1;
+            }
+
+            if ((value > 0) && (result < 0))
+            {
+                ovf = true;
+            }
+
+            return (result, ovf);
+        }
+
+
+
+        private static (long val, bool ovf) ShiftOvf(long value, int shift)
+        {
+            long result = value;
+
+            bool ovf = false;
+            long msb = 1;
+            msb = (long)(msb << (8 * sizeof(long) - 1));
+
+            for (int i = 0; i < shift; i++)
+            {
+                ovf = ovf || ((result & msb) != 0);
+                result <<= 1;
+            }
+
+            for (int i = 0; i > shift; i--)
+            {
+                result >>= 1;
+            }
+
+            if ((value > 0) && (result < 0))
+            {
+                ovf = true;
+            }
+
+            return (result, ovf);
+        }
+
+
+
+        private static (ulong val, bool ovf) ShiftOvf(ulong value, int shift)
+        {
+            ulong result = value;
+
+            bool ovf = false;
+            ulong msb = 1;
+            msb = (ulong)(msb << (8 * sizeof(ulong) - 1));
+
+            for (int i = 0; i < shift; i++)
+            {
+                ovf = ovf || ((result & msb) != 0);
+                result <<= 1;
+            }
+
+            for (int i = 0; i > shift; i--)
+            {
+                result >>= 1;
+            }
+
+            if ((value > 0) && (result < 0))
+            {
+                ovf = true;
+            }
+
+            return (result, ovf);
+        }
+
+
         public static float AbsoluteDifference(float op1, float op2) => MathF.Abs(op1 - op2);
 
         public static float FusedMultiplyAdd(float op1, float op2, float op3) => MathF.FusedMultiplyAdd(op2, op3, op1);
@@ -2261,33 +4450,109 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static float MinNumberAcross(float[] op1) => Reduce(MinNumber, op1);
 
-        private static ulong PolynomialMult(sbyte op1, sbyte op2)
+        private struct poly128_t
         {
-            ulong result = 0;
-            ulong extendedOp2 = (ulong)op2;
+            public ulong lo;
+            public ulong hi;
 
-            for (int i = 0; i < 8 * sizeof(sbyte); i++)
+            public static poly128_t operator ^(poly128_t op1, poly128_t op2)
             {
-                if ((op1 & (1 << i)) != 0)
+                op1.lo ^= op2.lo;
+                op1.hi ^= op2.hi;
+
+                return op1;
+            }
+
+            public static poly128_t operator <<(poly128_t val, int shiftAmount)
+            {
+                for (int i = 0; i < shiftAmount; i++)
                 {
-                    result ^= (extendedOp2 << i);
+                    val.hi <<= 1;
+
+                    if ((val.lo & 0x8000000000000000U) != 0)
+                    {
+                       val.hi |= 1;
+                    }
+
+                    val.lo <<= 1;
+                }
+
+                return val;
+            }
+
+            public static implicit operator poly128_t(ulong lo)
+            {
+                poly128_t result = new poly128_t();
+                result.lo = lo;
+                return result;
+            }
+
+            public static explicit operator poly128_t(long lo)
+            {
+                poly128_t result = new poly128_t();
+                result.lo = (ulong)lo;
+                return result;
+            }
+        }
+
+        private static ushort PolynomialMult(byte op1, byte op2)
+        {
+            ushort result = default(ushort);
+            ushort extendedOp2 = (ushort)op2;
+
+            for (int i = 0; i < 8 * sizeof(byte); i++)
+            {
+                if ((op1 & ((byte)1 << i)) != 0)
+                {
+                    result = (ushort)(result ^ (extendedOp2 << i));
                 }
             }
 
             return result;
         }
 
-        public static sbyte PolynomialMultiply(sbyte op1, sbyte op2) => (sbyte)PolynomialMult(op1, op2);
-        private static ulong PolynomialMult(byte op1, byte op2)
+        private static short PolynomialMult(sbyte op1, sbyte op2)
         {
-            ulong result = 0;
-            ulong extendedOp2 = (ulong)op2;
+            short result = default(short);
+            short extendedOp2 = (short)op2;
 
-            for (int i = 0; i < 8 * sizeof(byte); i++)
+            for (int i = 0; i < 8 * sizeof(sbyte); i++)
             {
-                if ((op1 & (1 << i)) != 0)
+                if ((op1 & ((sbyte)1 << i)) != 0)
                 {
-                    result ^= (extendedOp2 << i);
+                    result = (short)(result ^ (extendedOp2 << i));
+                }
+            }
+
+            return result;
+        }
+
+        private static poly128_t PolynomialMult(ulong op1, ulong op2)
+        {
+            poly128_t result = default(poly128_t);
+            poly128_t extendedOp2 = (poly128_t)op2;
+
+            for (int i = 0; i < 8 * sizeof(ulong); i++)
+            {
+                if ((op1 & ((ulong)1 << i)) != 0)
+                {
+                    result = (poly128_t)(result ^ (extendedOp2 << i));
+                }
+            }
+
+            return result;
+        }
+
+        private static poly128_t PolynomialMult(long op1, long op2)
+        {
+            poly128_t result = default(poly128_t);
+            poly128_t extendedOp2 = (poly128_t)op2;
+
+            for (int i = 0; i < 8 * sizeof(long); i++)
+            {
+                if ((op1 & ((long)1 << i)) != 0)
+                {
+                    result = (poly128_t)(result ^ (extendedOp2 << i));
                 }
             }
 
@@ -2295,59 +4560,101 @@ namespace JIT.HardwareIntrinsics.Arm
         }
 
         public static byte PolynomialMultiply(byte op1, byte op2) => (byte)PolynomialMult(op1, op2);
-        public static bool ExtractAndNarrowHigh(int i, sbyte[] left,
-                                                short[] right,
-                                                sbyte[] result)
+
+        public static ushort PolynomialMultiplyWidening(byte op1, byte op2) => PolynomialMult(op1, op2);
+
+        public static ushort PolynomialMultiplyWideningUpper(byte[] op1, byte[] op2, int i) => PolynomialMultiplyWidening(op1[i + op1.Length / 2], op2[i + op2.Length / 2]);
+
+        public static sbyte PolynomialMultiply(sbyte op1, sbyte op2) => (sbyte)PolynomialMult(op1, op2);
+
+        public static short PolynomialMultiplyWidening(sbyte op1, sbyte op2) => PolynomialMult(op1, op2);
+
+        public static short PolynomialMultiplyWideningUpper(sbyte[] op1, sbyte[] op2, int i) => PolynomialMultiplyWidening(op1[i + op1.Length / 2], op2[i + op2.Length / 2]);
+
+        public static ulong PolynomialMultiplyWideningLo64(ulong op1, ulong op2) => PolynomialMult(op1, op2).lo;
+
+        public static long PolynomialMultiplyWideningLo64(long op1, long op2) => (long)PolynomialMult(op1, op2).lo;
+
+        public static ulong PolynomialMultiplyWideningHi64(ulong op1, ulong op2) => PolynomialMult(op1, op2).hi;
+
+        public static long PolynomialMultiplyWideningHi64(long op1, long op2) => (long)PolynomialMult(op1, op2).hi;
+
+        public static sbyte ExtractVector(sbyte[] op1, sbyte[] op2, int op3, int i) => (op3 + i < op1.Length) ? op1[op3 + i] : op2[op3 + i - op1.Length];
+
+        public static sbyte Insert(sbyte[] op1, int op2, sbyte op3, int i) => (op2 != i) ? op1[i] : op3;
+
+        public static byte ExtractVector(byte[] op1, byte[] op2, int op3, int i) => (op3 + i < op1.Length) ? op1[op3 + i] : op2[op3 + i - op1.Length];
+
+        public static byte Insert(byte[] op1, int op2, byte op3, int i) => (op2 != i) ? op1[i] : op3;
+
+        public static short ExtractVector(short[] op1, short[] op2, int op3, int i) => (op3 + i < op1.Length) ? op1[op3 + i] : op2[op3 + i - op1.Length];
+
+        public static short Insert(short[] op1, int op2, short op3, int i) => (op2 != i) ? op1[i] : op3;
+
+        public static ushort ExtractVector(ushort[] op1, ushort[] op2, int op3, int i) => (op3 + i < op1.Length) ? op1[op3 + i] : op2[op3 + i - op1.Length];
+
+        public static ushort Insert(ushort[] op1, int op2, ushort op3, int i) => (op2 != i) ? op1[i] : op3;
+
+        public static int ExtractVector(int[] op1, int[] op2, int op3, int i) => (op3 + i < op1.Length) ? op1[op3 + i] : op2[op3 + i - op1.Length];
+
+        public static int Insert(int[] op1, int op2, int op3, int i) => (op2 != i) ? op1[i] : op3;
+
+        public static uint ExtractVector(uint[] op1, uint[] op2, int op3, int i) => (op3 + i < op1.Length) ? op1[op3 + i] : op2[op3 + i - op1.Length];
+
+        public static uint Insert(uint[] op1, int op2, uint op3, int i) => (op2 != i) ? op1[i] : op3;
+
+        public static long ExtractVector(long[] op1, long[] op2, int op3, int i) => (op3 + i < op1.Length) ? op1[op3 + i] : op2[op3 + i - op1.Length];
+
+        public static long Insert(long[] op1, int op2, long op3, int i) => (op2 != i) ? op1[i] : op3;
+
+        public static ulong ExtractVector(ulong[] op1, ulong[] op2, int op3, int i) => (op3 + i < op1.Length) ? op1[op3 + i] : op2[op3 + i - op1.Length];
+
+        public static ulong Insert(ulong[] op1, int op2, ulong op3, int i) => (op2 != i) ? op1[i] : op3;
+
+        public static float ExtractVector(float[] op1, float[] op2, int op3, int i) => (op3 + i < op1.Length) ? op1[op3 + i] : op2[op3 + i - op1.Length];
+
+        public static float Insert(float[] op1, int op2, float op3, int i) => (op2 != i) ? op1[i] : op3;
+
+        public static double ExtractVector(double[] op1, double[] op2, int op3, int i) => (op3 + i < op1.Length) ? op1[op3 + i] : op2[op3 + i - op1.Length];
+
+        public static double Insert(double[] op1, int op2, double op3, int i) => (op2 != i) ? op1[i] : op3;
+
+        public static sbyte TableVectorExtension(int i, sbyte[] defaultValues, sbyte[] indices, params sbyte[][] table)
         {
-            if (i < left.Length)
-              return left[i] != result[i];
-            else
-              return (sbyte)right[i - left.Length] != result[i];
+            sbyte[] fullTable = table.SelectMany(x => x).ToArray();
+            int index = indices[i];
+
+            if (index < 0 || index >= fullTable.Length)
+              return defaultValues[i];
+
+            return fullTable[index];
         }
-        public static bool ExtractAndNarrowHigh(int i, short[] left,
-                                                int[] right,
-                                                short[] result)
+
+        public static sbyte TableVectorLookup(int i, sbyte[] indices, params sbyte[][] table)
         {
-            if (i < left.Length)
-              return left[i] != result[i];
-            else
-              return (short)right[i - left.Length] != result[i];
+            sbyte[] zeros = new sbyte[indices.Length];
+            Array.Fill<sbyte>(zeros, 0, 0, indices.Length);
+
+            return TableVectorExtension(i, zeros, indices, table);
         }
-        public static bool ExtractAndNarrowHigh(int i, int[] left,
-                                                long[] right,
-                                                int[] result)
+        public static byte TableVectorExtension(int i, byte[] defaultValues, byte[] indices, params byte[][] table)
         {
-            if (i < left.Length)
-              return left[i] != result[i];
-            else
-              return (int)right[i - left.Length] != result[i];
+            byte[] fullTable = table.SelectMany(x => x).ToArray();
+            int index = indices[i];
+
+            if (index < 0 || index >= fullTable.Length)
+              return defaultValues[i];
+
+            return fullTable[index];
         }
-        public static bool ExtractAndNarrowHigh(int i, byte[] left,
-                                                ushort[] right,
-                                                byte[] result)
+
+        public static byte TableVectorLookup(int i, byte[] indices, params byte[][] table)
         {
-            if (i < left.Length)
-              return left[i] != result[i];
-            else
-              return (byte)right[i - left.Length] != result[i];
+            byte[] zeros = new byte[indices.Length];
+            Array.Fill<byte>(zeros, 0, 0, indices.Length);
+
+            return TableVectorExtension(i, zeros, indices, table);
         }
-        public static bool ExtractAndNarrowHigh(int i, ushort[] left,
-                                                uint[] right,
-                                                ushort[] result)
-        {
-            if (i < left.Length)
-              return left[i] != result[i];
-            else
-              return (ushort)right[i - left.Length] != result[i];
-        }
-        public static bool ExtractAndNarrowHigh(int i, uint[] left,
-                                                ulong[] right,
-                                                uint[] result)
-        {
-            if (i < left.Length)
-              return left[i] != result[i];
-            else
-              return (uint)right[i - left.Length] != result[i];
-        }
+
     }
 }

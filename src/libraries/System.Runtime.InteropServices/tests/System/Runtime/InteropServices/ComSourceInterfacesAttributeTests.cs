@@ -6,7 +6,6 @@ using Xunit;
 
 namespace System.Runtime.InteropServices.Tests
 {
-#pragma warning disable 0618 // ComSourceInterfacesAttribute is marked as Obsolete.
     public class ComSourceInterfacesAttributeTests
     {
         [Theory]
@@ -76,5 +75,4 @@ namespace System.Runtime.InteropServices.Tests
             Assert.Throws<NullReferenceException>(() => new ComSourceInterfacesAttribute(typeof(int), typeof(string), typeof(bool), null));
         }
     }
-#pragma warning restore 0618
 }

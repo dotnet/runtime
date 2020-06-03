@@ -64,9 +64,9 @@ public:
     void HandleFatalError(unsigned int exitCode);
     bool EagerFinalized(Object* obj);
     MethodTable* GetFreeObjectMethodTable();
-    bool GetBooleanConfigValue(const char* key, bool* value);
-    bool GetIntConfigValue(const char* key, int64_t* value);
-    bool GetStringConfigValue(const char* key, const char** value);
+    bool GetBooleanConfigValue(const char* privateKey, const char* publicKey, bool* value);
+    bool GetIntConfigValue(const char* privateKey, const char* publicKey, int64_t* value);
+    bool GetStringConfigValue(const char* privateKey, const char* publicKey, const char** value);
     void FreeStringConfigValue(const char* value);
     bool IsGCThread();
     bool WasCurrentThreadCreatedByGC();

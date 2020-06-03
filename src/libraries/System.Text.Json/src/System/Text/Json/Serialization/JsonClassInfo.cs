@@ -20,7 +20,7 @@ namespace System.Text.Json
 
         public ConstructorDelegate? CreateObject { get; private set; }
 
-        public object? CreateObjectWithParameterizedCtor { get; set; }
+        public object? CreateObjectWithArgs { get; set; }
 
         public ClassType ClassType { get; private set; }
 
@@ -96,52 +96,72 @@ namespace System.Text.Json
                 case ClassType.Object:
                     {
                         CreateObject = options.MemberAccessorStrategy.CreateConstructor(type);
+                        Dictionary<string, JsonPropertyInfo> cache = new Dictionary<string, JsonPropertyInfo>(
+                            Options.PropertyNameCaseInsensitive
+                                ? StringComparer.OrdinalIgnoreCase
+                                : StringComparer.Ordinal);
 
-                        PropertyInfo[] properties = type.GetProperties(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+                        HashSet<string>? ignoredProperties = null;
 
-                        Dictionary<string, JsonPropertyInfo> cache = CreatePropertyCache(properties.Length);
-
-                        foreach (PropertyInfo propertyInfo in properties)
+                        // We start from the most derived type and ascend to the base type.
+                        for (Type? currentType = type; currentType != null; currentType = currentType.BaseType)
                         {
-                            // Ignore indexers
-                            if (propertyInfo.GetIndexParameters().Length > 0)
+                            foreach (PropertyInfo propertyInfo in currentType.GetProperties(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.DeclaredOnly))
                             {
-                                continue;
-                            }
-
-                            if (IsNonPublicProperty(propertyInfo))
-                            {
-                                if (JsonPropertyInfo.GetAttribute<JsonIncludeAttribute>(propertyInfo) != null)
+                                // Ignore indexers
+                                if (propertyInfo.GetIndexParameters().Length > 0)
                                 {
-                                    ThrowHelper.ThrowInvalidOperationException_JsonIncludeOnNonPublicInvalid(propertyInfo, Type);
+                                    continue;
                                 }
 
-                                // Non-public properties should not be included for (de)serialization.
-                                continue;
-                            }
-
-                            // For now we only support public getters\setters
-                            if (propertyInfo.GetMethod?.IsPublic == true ||
-                                propertyInfo.SetMethod?.IsPublic == true)
-                            {
-                                JsonPropertyInfo jsonPropertyInfo = AddProperty(propertyInfo, type, options);
-                                Debug.Assert(jsonPropertyInfo != null && jsonPropertyInfo.NameAsString != null);
-
-                                // If the JsonPropertyNameAttribute or naming policy results in collisions, throw an exception.
-                                if (!JsonHelpers.TryAdd(cache, jsonPropertyInfo.NameAsString, jsonPropertyInfo))
+                                // For now we only support public properties (i.e. setter and/or getter is public).
+                                if (propertyInfo.GetMethod?.IsPublic == true ||
+                                    propertyInfo.SetMethod?.IsPublic == true)
                                 {
-                                    JsonPropertyInfo other = cache[jsonPropertyInfo.NameAsString];
+                                    JsonPropertyInfo jsonPropertyInfo = AddProperty(propertyInfo, currentType, options);
+                                    Debug.Assert(jsonPropertyInfo != null && jsonPropertyInfo.NameAsString != null);
 
-                                    if (other.ShouldDeserialize == false && other.ShouldSerialize == false)
+                                    string propertyName = propertyInfo.Name;
+
+                                    // The JsonPropertyNameAttribute or naming policy resulted in a collision.
+                                    if (!JsonHelpers.TryAdd(cache, jsonPropertyInfo.NameAsString, jsonPropertyInfo))
                                     {
-                                        // Overwrite the one just added since it has [JsonIgnore].
-                                        cache[jsonPropertyInfo.NameAsString] = jsonPropertyInfo;
+                                        JsonPropertyInfo other = cache[jsonPropertyInfo.NameAsString];
+
+                                        if (other.IsIgnored)
+                                        {
+                                            // Overwrite previously cached property since it has [JsonIgnore].
+                                            cache[jsonPropertyInfo.NameAsString] = jsonPropertyInfo;
+                                        }
+                                        else if (
+                                            // Does the current property have `JsonIgnoreAttribute`?
+                                            !jsonPropertyInfo.IsIgnored &&
+                                            // Is the current property hidden by the previously cached property
+                                            // (with `new` keyword, or by overriding)?
+                                            other.PropertyInfo!.Name != propertyName &&
+                                            // Was a property with the same CLR name was ignored? That property hid the current property,
+                                            // thus, if it was ignored, the current property should be ignored too.
+                                            ignoredProperties?.Contains(propertyName) != true)
+                                        {
+                                            // We throw if we have two public properties that have the same JSON property name, and neither have been ignored.
+                                            ThrowHelper.ThrowInvalidOperationException_SerializerPropertyNameConflict(Type, jsonPropertyInfo);
+                                        }
+                                        // Ignore the current property.
                                     }
-                                    else if (jsonPropertyInfo.ShouldDeserialize == true || jsonPropertyInfo.ShouldSerialize == true)
+
+                                    if (jsonPropertyInfo.IsIgnored)
                                     {
-                                        ThrowHelper.ThrowInvalidOperationException_SerializerPropertyNameConflict(Type, jsonPropertyInfo);
+                                        (ignoredProperties ??= new HashSet<string>()).Add(propertyName);
                                     }
-                                    // else ignore jsonPropertyInfo since it has [JsonIgnore].
+                                }
+                                else
+                                {
+                                    if (JsonPropertyInfo.GetAttribute<JsonIncludeAttribute>(propertyInfo) != null)
+                                    {
+                                        ThrowHelper.ThrowInvalidOperationException_JsonIncludeOnNonPublicInvalid(propertyInfo, currentType);
+                                    }
+
+                                    // Non-public properties should not be included for (de)serialization.
                                 }
                             }
                         }
@@ -162,15 +182,23 @@ namespace System.Text.Json
                             cacheArray = new JsonPropertyInfo[cache.Count];
                         }
 
-                        // Set fields when finished to avoid concurrency issues.
-                        PropertyCache = cache;
+                        // Copy the dictionary cache to the array cache.
                         cache.Values.CopyTo(cacheArray, 0);
+
+                        // Set the array cache field at this point since it is completely initialized.
+                        // It can now be safely accessed by other threads.
                         PropertyCacheArray = cacheArray;
 
+                        // Allow constructor parameter logic to remove items from the dictionary since the JSON
+                        // property values will be passed to the constructor and do not call a property setter.
                         if (converter.ConstructorIsParameterized)
                         {
-                            InitializeConstructorParameters(converter.ConstructorInfo!);
+                            InitializeConstructorParameters(cache, converter.ConstructorInfo!);
                         }
+
+                        // Set the dictionary cache field at this point since it is completely initialized.
+                        // It can now be safely accessed by other threads.
+                        PropertyCache = cache;
                     }
                     break;
                 case ClassType.Enumerable:
@@ -197,19 +225,10 @@ namespace System.Text.Json
             }
         }
 
-        private static bool IsNonPublicProperty(PropertyInfo propertyInfo)
-        {
-            MethodInfo? getMethod = propertyInfo.GetMethod;
-            MethodInfo? setMethod = propertyInfo.SetMethod;
-            return !((getMethod != null && getMethod.IsPublic) || (setMethod != null && setMethod.IsPublic));
-        }
-
-        private void InitializeConstructorParameters(ConstructorInfo constructorInfo)
+        private void InitializeConstructorParameters(Dictionary<string, JsonPropertyInfo> propertyCache, ConstructorInfo constructorInfo)
         {
             ParameterInfo[] parameters = constructorInfo!.GetParameters();
             Dictionary<string, JsonParameterInfo> parameterCache = CreateParameterCache(parameters.Length, Options);
-
-            Dictionary<string, JsonPropertyInfo> propertyCache = PropertyCache!;
 
             foreach (ParameterInfo parameterInfo in parameters)
             {
@@ -245,7 +264,7 @@ namespace System.Text.Json
 
                         // One object property cannot map to multiple constructor
                         // parameters (ConvertName above can't return multiple strings).
-                        parameterCache.Add(jsonParameterInfo.NameAsString, jsonParameterInfo);
+                        parameterCache.Add(jsonPropertyInfo.NameAsString!, jsonParameterInfo);
 
                         // Remove property from deserialization cache to reduce the number of JsonPropertyInfos considered during JSON matching.
                         propertyCache.Remove(jsonPropertyInfo.NameAsString!);
@@ -352,6 +371,7 @@ namespace System.Text.Json
             JsonSerializerOptions options)
         {
             Debug.Assert(type != null);
+            ValidateType(type, parentClassType, propertyInfo, options);
 
             JsonConverter converter = options.DetermineConverter(parentClassType, type, propertyInfo)!;
 
@@ -395,7 +415,46 @@ namespace System.Text.Json
                 }
             }
 
+            Debug.Assert(!IsInvalidForSerialization(runtimeType));
+
             return converter;
+        }
+
+        private static void ValidateType(Type type, Type? parentClassType, PropertyInfo? propertyInfo, JsonSerializerOptions options)
+        {
+            if (!options.TypeIsCached(type) && IsInvalidForSerialization(type))
+            {
+                ThrowHelper.ThrowInvalidOperationException_CannotSerializeInvalidType(type, parentClassType, propertyInfo);
+            }
+        }
+
+        private static bool IsInvalidForSerialization(Type type)
+        {
+            return type.IsPointer || IsByRefLike(type) || type.ContainsGenericParameters;
+        }
+
+        private static bool IsByRefLike(Type type)
+        {
+#if BUILDING_INBOX_LIBRARY
+            return type.IsByRefLike;
+#else
+            if (!type.IsValueType)
+            {
+                return false;
+            }
+
+            object[] attributes = type.GetCustomAttributes(inherit: false);
+
+            for (int i = 0; i < attributes.Length; i++)
+            {
+                if (attributes[i].GetType().FullName == "System.Runtime.CompilerServices.IsByRefLikeAttribute")
+                {
+                    return true;
+                }
+            }
+
+            return false;
+#endif
         }
     }
 }

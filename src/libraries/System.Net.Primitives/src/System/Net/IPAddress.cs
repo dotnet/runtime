@@ -215,7 +215,7 @@ namespace System.Net
         ///     Converts an IP address string to an <see cref='System.Net.IPAddress'/> instance.
         ///   </para>
         /// </devdoc>
-        public static bool TryParse(string? ipString, [NotNullWhen(true)] out IPAddress? address)
+        public static bool TryParse([NotNullWhen(true)] string? ipString, [NotNullWhen(true)] out IPAddress? address)
         {
             if (ipString == null)
             {

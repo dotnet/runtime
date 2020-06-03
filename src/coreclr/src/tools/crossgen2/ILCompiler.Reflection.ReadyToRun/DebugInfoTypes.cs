@@ -51,11 +51,11 @@ namespace ILCompiler.Reflection.ReadyToRun
         CallInstruction = 0x10
     }
 
-    public enum MappingTypes : int
+    public enum DebugInfoBoundsType : uint
     {
-        NoMapping = -1,
-        Prolog = -2,
-        Epilog = -3,
+        NoMapping = 0xffffffff,
+        Prolog = 0xfffffffe,
+        Epilog = 0xfffffffd,
         MaxMappingValue = Epilog
     }
 

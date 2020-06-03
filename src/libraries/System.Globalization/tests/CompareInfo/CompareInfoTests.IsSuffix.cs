@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Buffers;
 using System.Collections.Generic;
 using Xunit;
 
@@ -63,6 +64,9 @@ namespace System.Globalization.Tests
             yield return new object[] { s_invariantCompare, "o\u0308o", "o", CompareOptions.None, true };
             yield return new object[] { s_invariantCompare, "o\u0308o", "o", CompareOptions.Ordinal, true };
 
+            // Weightless comparisons
+            yield return new object[] { s_invariantCompare, "", "\u200d", CompareOptions.None, true };
+
             // Surrogates
             yield return new object[] { s_invariantCompare, "\uD800\uDC00", "\uD800\uDC00", CompareOptions.None, true };
             yield return new object[] { s_invariantCompare, "\uD800\uDC00", "\uD800\uDC00", CompareOptions.IgnoreCase, true };
@@ -104,6 +108,16 @@ namespace System.Globalization.Tests
                 Assert.Equal(expected, source.EndsWith(value, stringComparison));
                 Assert.Equal(expected, source.AsSpan().EndsWith(value.AsSpan(), stringComparison));
             }
+
+            // Now test the span version - use BoundedMemory to detect buffer overruns
+
+            using BoundedMemory<char> sourceBoundedMemory = BoundedMemory.AllocateFromExistingData<char>(source);
+            sourceBoundedMemory.MakeReadonly();
+
+            using BoundedMemory<char> valueBoundedMemory = BoundedMemory.AllocateFromExistingData<char>(value);
+            valueBoundedMemory.MakeReadonly();
+
+            Assert.Equal(expected, compareInfo.IsSuffix(sourceBoundedMemory.Span, valueBoundedMemory.Span, options));
         }
 
         [Fact]

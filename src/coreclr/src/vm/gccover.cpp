@@ -1403,10 +1403,10 @@ BOOL OnGcCoverageInterrupt(PCONTEXT regs)
     if (!pThread)
     {
         // No thread at the moment so we aren't doing coverage for this function.
-        // This should only occur for methods with the NativeCallableAttribute,
+        // This should only occur for methods with the UnmanagedCallersOnlyAttribute,
         // where the call could be coming from a thread unknown to the CLR and
         // we haven't created a thread yet - see PreStubWorker_Preemptive().
-        _ASSERTE(pMD->HasNativeCallableAttribute());
+        _ASSERTE(pMD->HasUnmanagedCallersOnlyAttribute());
         RemoveGcCoverageInterrupt(instrPtr, savedInstrPtr);
         return TRUE;
     }

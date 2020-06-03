@@ -2,7 +2,7 @@
   "runtimes": {
     "Unix" : {      
     },
-    "WebAssembly" : {
+    "Browser" : {
       "#import": [
         "Linux"
       ]

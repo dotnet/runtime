@@ -5,7 +5,7 @@
        to send test jobs to helix. -->
 
   <Import Sdk="Microsoft.DotNet.Helix.Sdk" Project="Sdk.props" Condition=" '$(UsesHelixSdk)' == 'true' " />
-  <Import Project="Directory.Build.props" Condition=" '$(UsesHelixSdk)' != 'true' "/>
+  <Import Sdk="Microsoft.Build.NoTargets" Project="Sdk.props" Condition=" '$(UsesHelixSdk)' != 'true' " />
 
   <!-- This target runs once and creates several instances of this project (one for each scenario)
        that will run in parallel. -->
@@ -32,10 +32,16 @@
         GcSimulatorTests=$(_GcSimulatorTests);
         RunInUnloadableContext=$(_RunInUnloadableContext);
         TimeoutPerTestCollectionInMinutes=$(_TimeoutPerTestCollectionInMinutes);
-        TimeoutPerTestInMinutes=$(_TimeoutPerTestInMinutes)
+        TimeoutPerTestInMinutes=$(_TimeoutPerTestInMinutes);
+        RuntimeVariant=$(_RuntimeVariant);
+        BundledNETCoreAppPackageVersion=$(BundledNETCoreAppPackageVersion);
+        HelixRuntimeRid=$(HelixRuntimeRid)
       </_PropertiesToPass>
     </PropertyGroup>
 
+    <Message Text="DotNetCliVersion: $(DotNetCliVersion)" Importance="High" />
+    <Message Text="DotNetCliPackageType: $(DotNetCliPackageType)" Importance="High" />
+    <Message Text="HelixRuntimeRid: $(HelixRuntimeRid)" Importance="High" />
     <Error Condition="'$(_Scenarios)' == ''" Text="_Scenarios not set" />
 
     <MSBuild Projects="$(MSBuildProjectFile)" Targets="PrepareCorrelationPayloadDirectory" />
@@ -58,12 +64,25 @@
     <MSBuild Projects="@(_ProjectsToBuild)" Targets="Test" BuildInParallel="$(_BuildInParallel)" StopOnFirstFailure="false" Properties="UsesHelixSdk=true" />
   </Target>
 
+  <!-- Choose a suitable runtime RID for Helix to restore the dotnet cli -->
+  <PropertyGroup Condition="'$(HelixRuntimeRid)' == ''">
+    <HelixRuntimeRid Condition="'$(__TargetOS)' == 'Windows_NT'">win-$(TargetArchitecture)</HelixRuntimeRid>
+    <HelixRuntimeRid Condition="'$(__TargetOS)' == 'OSX'">osx-$(TargetArchitecture)</HelixRuntimeRid>
+    <HelixRuntimeRid Condition="'$(__TargetOS)' == 'Linux'">linux-$(TargetArchitecture)</HelixRuntimeRid>
+    <HelixRuntimeRid Condition="'$(__TargetOS)' == 'Linux_musl'">linux-musl-$(TargetArchitecture)</HelixRuntimeRid>
+  </PropertyGroup>
+
   <PropertyGroup>
     <BinDir>$([MSBuild]::NormalizeDirectory($(TestWorkingDir)))</BinDir>
     <CoreRootDirectory>$(BinDir)Tests\Core_Root\</CoreRootDirectory>
     <PayloadsRootDirectory>$(BinDir)Payloads\</PayloadsRootDirectory>
     <TestEnvFileName Condition=" '$(TargetsWindows)' == 'true' ">SetStressModes_$(Scenario).cmd</TestEnvFileName>
     <TestEnvFileName Condition=" '$(TargetsWindows)' != 'true' ">SetStressModes_$(Scenario).sh</TestEnvFileName>
+
+    <IncludeDotNetCli>true</IncludeDotNetCli>
+    <DotNetCliPackageType>runtime</DotNetCliPackageType>
+    <DotNetCliVersion>$(BundledNETCoreAppPackageVersion)</DotNetCliVersion>
+    <DotNetCliRuntime>$(HelixRuntimeRid)</DotNetCliRuntime>
   </PropertyGroup>
 
   <Import Project="testgrouping.proj" />
@@ -130,8 +149,8 @@
     </ItemGroup>
 
     <Copy SourceFiles="@(_XUnitConsoleRunnerFiles)" DestinationFolder="$(CoreRootDirectory)" />
-    <Copy SourceFiles="$(MSBuildThisFileDirectory)\..\scripts\runincontext.cmd" DestinationFolder="$(CoreRootDirectory)" Condition=" '$(TargetsWindows)' == 'true' and '$(_RunInUnloadableContext)' == 'true'" />
-    <Copy SourceFiles="$(MSBuildThisFileDirectory)/../scripts/runincontext.sh" DestinationFolder="$(CoreRootDirectory)" Condition=" '$(TargetsWindows)' != 'true' and '$(_RunInUnloadableContext)' == 'true'" />
+    <Copy SourceFiles="$(MSBuildThisFileDirectory)scripts\runincontext.cmd" DestinationFolder="$(CoreRootDirectory)" Condition=" '$(TargetsWindows)' == 'true' and '$(_RunInUnloadableContext)' == 'true'" />
+    <Copy SourceFiles="$(MSBuildThisFileDirectory)scripts/runincontext.sh" DestinationFolder="$(CoreRootDirectory)" Condition=" '$(TargetsWindows)' != 'true' and '$(_RunInUnloadableContext)' == 'true'" />
   </Target>
 
   <Target Name="CreateTestEnvFiles">
@@ -175,6 +194,7 @@
     <RunCrossGen2 Condition=" '$(RunCrossGen2)' != 'true' ">false</RunCrossGen2>
     <LongRunningGCTests Condition=" '$(LongRunningGCTests)' != 'true' ">false</LongRunningGCTests>
     <GcSimulatorTests Condition=" '$(GcSimulatorTests)' != 'true' ">false</GcSimulatorTests>
+    <TestRunNamePrefix Condition="'$(RuntimeFlavorDisplayName)' != ''">$(RuntimeFlavorDisplayName) </TestRunNamePrefix> 
     <TestRunNamePrefix Condition=" '$(RunCrossGen)' == 'true' ">R2R </TestRunNamePrefix>
     <TestRunNamePrefix Condition=" '$(RunCrossGen2)' == 'true' ">R2R-CG2 </TestRunNamePrefix>
     <TestRunNamePrefix Condition=" '$(Scenario)' == 'normal' ">$(TestRunNamePrefix)$(TargetOS) $(TargetArchitecture) $(Configuration) @ </TestRunNamePrefix>
@@ -222,7 +242,6 @@
     <HelixPreCommand Include="export __CrashDumpFolder=$HELIX_DUMP_FOLDER" Condition=" '$(TargetOS)' != 'OSX' " />
     <HelixPreCommand Include="export __CrashDumpFolder=/cores" Condition=" '$(TargetOS)' == 'OSX' " /> <!-- Helix doesn't specify the dump folder for OSX 10.14, so we need to manually specify it. Tracked by dotnet/core-eng#7872 -->
     <HelixPreCommand Include="cat $__TestEnv" />
-
     <HelixPreCommand Include="sudo bash -c 'echo $HELIX_DUMP_FOLDER/core.%u.%p > /proc/sys/kernel/core_pattern'" Condition=" '$(TargetOS)' != 'OSX' " />
     <HelixPreCommand Include="ulimit -c unlimited" Condition=" '$(TargetOS)' == 'OSX' " />
   </ItemGroup>
@@ -232,12 +251,10 @@
   </PropertyGroup>
 
   <PropertyGroup Condition=" '$(TargetsWindows)' == 'true' ">
-    <CoreRun>%CORE_ROOT%\CoreRun.exe</CoreRun>
     <XUnitRunnerDll>%CORE_ROOT%\xunit.console.dll</XUnitRunnerDll>
   </PropertyGroup>
 
   <PropertyGroup Condition=" '$(TargetsWindows)' != 'true' ">
-    <CoreRun>$CORE_ROOT/corerun</CoreRun>
     <XUnitRunnerDll>$CORE_ROOT/xunit.console.dll</XUnitRunnerDll>
   </PropertyGroup>
 
@@ -259,12 +276,13 @@
 
     <HelixWorkItem Include="@(Payloads->Metadata('PayloadGroup'))">
       <PayloadDirectory>%(PayloadDirectory)</PayloadDirectory>
-      <Command>$(CoreRun) $(XUnitRunnerDll) %(XUnitWrapperDlls) $(XUnitRunnerArgs)</Command>
-      <Command Condition=" '%(TestGroup)' != '' ">$(CoreRun) $(XUnitRunnerDll) %(XUnitWrapperDlls) $(XUnitRunnerArgs) -trait TestGroup=%(TestGroup)</Command>
+      <Command>dotnet $(XUnitRunnerDll) %(XUnitWrapperDlls) $(XUnitRunnerArgs)</Command>
+      <Command Condition=" '%(TestGroup)' != '' ">dotnet $(XUnitRunnerDll) %(XUnitWrapperDlls) $(XUnitRunnerArgs) -trait TestGroup=%(TestGroup)</Command>
       <Timeout Condition=" '$(TimeoutPerTestCollectionInMinutes)' != '' ">$([System.TimeSpan]::FromMinutes($(TimeoutPerTestCollectionInMinutes)))</Timeout>
     </HelixWorkItem>
   </ItemGroup>
 
   <Import Sdk="Microsoft.DotNet.Helix.Sdk" Project="Sdk.targets" Condition=" '$(UsesHelixSdk)' == 'true' " />
+  <Import Sdk="Microsoft.Build.NoTargets" Project="Sdk.targets" Condition=" '$(UsesHelixSdk)' != 'true' " />
 
 </Project>

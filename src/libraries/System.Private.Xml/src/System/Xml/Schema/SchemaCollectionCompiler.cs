@@ -437,7 +437,7 @@ namespace System.Xml.Schema
             {
                 if (examplar.FinalResolved == XmlSchemaDerivationMethod.All)
                 {
-                    SendValidationEvent(SR.Sch_InvalidExamplar, examplar);
+                    SendValidationEvent(SR.Sch_InvalidExamplar, examplar.Name, examplar);
                 }
 
                 for (int i = 0; i < substitutionGroup.Members.Count; ++i)

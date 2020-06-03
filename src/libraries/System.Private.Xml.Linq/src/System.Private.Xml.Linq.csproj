@@ -6,12 +6,10 @@
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\System.Private.Xml\src\System.Private.Xml.csproj" />
-    <Compile Include="$(CommonPath)System\Collections\Generic\EnumerableHelpers.cs">
-      <Link>Common\System\Collections\Generic\EnumerableHelpers.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)System\Text\StringBuilderCache.cs">
-      <Link>Common\System\Text\StringBuilderCache.cs</Link>
-    </Compile>
+    <Compile Include="$(CommonPath)System\Collections\Generic\EnumerableHelpers.cs"
+             Link="Common\System\Collections\Generic\EnumerableHelpers.cs" />
+    <Compile Include="$(CommonPath)System\Text\StringBuilderCache.cs"
+             Link="Common\System\Text\StringBuilderCache.cs" />
     <Compile Include="System\Xml\Linq\BaseUriAnnotation.cs" />
     <Compile Include="System\Xml\Linq\Extensions.cs" />
     <Compile Include="System\Xml\Linq\LineInfoAnnotation.cs" />

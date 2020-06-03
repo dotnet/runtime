@@ -54,11 +54,5 @@ namespace ILCompiler
         {
             return _fallbackAlgorithm.ComputeValueTypeShapeCharacteristics(type);
         }
-
-        public override DefType ComputeHomogeneousFloatAggregateElementType(DefType type)
-        {
-            return _fallbackAlgorithm.ComputeHomogeneousFloatAggregateElementType(type);
-        }
-
     }
 }

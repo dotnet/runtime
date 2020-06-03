@@ -9217,30 +9217,44 @@ HRESULT ProfToEEInterfaceImpl::GetRuntimeInformation(USHORT * pClrInstanceId,
 
     if (pcchVersionString != NULL)
     {
-        HRESULT hr = GetCORVersionInternal(szVersionString, (DWORD)cchVersionString, (DWORD *)pcchVersionString);
-        if (FAILED(hr))
-            return hr;
+        PCWSTR pczVersionString = CLR_PRODUCT_VERSION_L;
+
+        // Get the module file name
+        ULONG trueLen = (ULONG)(wcslen(pczVersionString) + 1);
+
+        // Return name of module as required.
+        if (szVersionString && cchVersionString > 0)
+        {
+            ULONG copyLen = trueLen;
+
+            if (copyLen >= cchVersionString)
+            {
+                copyLen = cchVersionString - 1;
+            }
+
+            wcsncpy_s(szVersionString, cchVersionString, pczVersionString, copyLen);
+        }
+
+        *pcchVersionString = trueLen;
     }
 
     if (pClrInstanceId != NULL)
         *pClrInstanceId = static_cast<USHORT>(GetClrInstanceId());
 
     if (pRuntimeType != NULL)
-    {
         *pRuntimeType = COR_PRF_CORE_CLR;
-    }
 
     if (pMajorVersion != NULL)
-        *pMajorVersion = CLR_MAJOR_VERSION;
+        *pMajorVersion = RuntimeProductMajorVersion;
 
     if (pMinorVersion != NULL)
-        *pMinorVersion = CLR_MINOR_VERSION;
+        *pMinorVersion = RuntimeProductMinorVersion;
 
     if (pBuildNumber != NULL)
-        *pBuildNumber = CLR_BUILD_VERSION;
+        *pBuildNumber = RuntimeProductPatchVersion;
 
     if (pQFEVersion != NULL)
-        *pQFEVersion = CLR_BUILD_VERSION_QFE;
+        *pQFEVersion = 0;
 
     return S_OK;
 }

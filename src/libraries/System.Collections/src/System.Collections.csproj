@@ -13,12 +13,10 @@
     <Compile Include="System\Collections\BitArray.cs" />
     <Compile Include="System\Collections\Generic\BitHelper.cs" />
     <Compile Include="System\Collections\Generic\CollectionExtensions.cs" />
-    <Compile Include="$(CoreLibSharedDir)System\Collections\Generic\ICollectionDebugView.cs">
-      <Link>Common\System\Collections\Generic\ICollectionDebugView.cs</Link>
-    </Compile>
-    <Compile Include="$(CoreLibSharedDir)System\Collections\Generic\IDictionaryDebugView.cs">
-      <Link>Common\System\Collections\Generic\IDictionaryDebugView.cs</Link>
-    </Compile>
+    <Compile Include="$(CoreLibSharedDir)System\Collections\Generic\ICollectionDebugView.cs"
+             Link="Common\System\Collections\Generic\ICollectionDebugView.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Collections\Generic\IDictionaryDebugView.cs"
+             Link="Common\System\Collections\Generic\IDictionaryDebugView.cs" />
     <Compile Include="System\Collections\Generic\HashSet.cs" />
     <Compile Include="System\Collections\Generic\HashSetEqualityComparer.cs" />
     <Compile Include="System\Collections\Generic\LinkedList.cs" />
@@ -33,12 +31,10 @@
     <Compile Include="System\Collections\Generic\StackDebugView.cs" />
     <Compile Include="System\Collections\StructuralComparisons.cs" />
     <!-- Shared Common -->
-    <Compile Include="$(CoreLibSharedDir)System\Collections\HashHelpers.cs">
-      <Link>Common\System\Collections\HashHelpers.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)System\Collections\Generic\EnumerableHelpers.cs">
-      <Link>Common\System\Collections\Generic\EnumerableHelpers.cs</Link>
-    </Compile>
+    <Compile Include="$(CoreLibSharedDir)System\Collections\HashHelpers.cs"
+             Link="Common\System\Collections\HashHelpers.cs" />
+    <Compile Include="$(CommonPath)System\Collections\Generic\EnumerableHelpers.cs"
+             Link="Common\System\Collections\Generic\EnumerableHelpers.cs" />
   </ItemGroup>
   <ItemGroup>
     <ReferenceFromRuntime Include="System.Private.CoreLib" />

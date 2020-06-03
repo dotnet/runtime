@@ -24,6 +24,8 @@ namespace System
         public static bool IsMonoInterpreter => GetIsRunningOnMonoInterpreter();
         public static bool IsFreeBSD => RuntimeInformation.IsOSPlatform(OSPlatform.Create("FREEBSD"));
         public static bool IsNetBSD => RuntimeInformation.IsOSPlatform(OSPlatform.Create("NETBSD"));
+        public static bool IsiOS => RuntimeInformation.IsOSPlatform(OSPlatform.Create("IOS"));
+        public static bool IstvOS => RuntimeInformation.IsOSPlatform(OSPlatform.Create("TVOS"));
 
         public static bool IsArmProcess => RuntimeInformation.ProcessArchitecture == Architecture.Arm;
         public static bool IsNotArmProcess => !IsArmProcess;
@@ -63,6 +65,7 @@ namespace System
 
         public static bool IsInContainer => GetIsInContainer();
         public static bool SupportsSsl3 => GetSsl3Support();
+        public static bool SupportsSsl2 => IsWindows && !PlatformDetection.IsWindows10Version1607OrGreater;
 
 #if NETCOREAPP
         public static bool IsReflectionEmitSupported = RuntimeFeature.IsDynamicCodeSupported;
@@ -108,11 +111,13 @@ namespace System
         // Windows - Schannel supports alpn from win8.1/2012 R2 and higher.
         // Linux - OpenSsl supports alpn from openssl 1.0.2 and higher.
         // OSX - SecureTransport doesn't expose alpn APIs. TODO https://github.com/dotnet/runtime/issues/27727
+        public static bool IsOpenSslSupported => IsLinux || IsFreeBSD;
+
         public static bool SupportsAlpn => (IsWindows && !IsWindows7) ||
-            ((!IsOSX && !IsWindows) &&
+            (IsOpenSslSupported &&
             (OpenSslVersion.Major >= 1 && (OpenSslVersion.Minor >= 1 || OpenSslVersion.Build >= 2)));
 
-        public static bool SupportsClientAlpn => SupportsAlpn || (IsOSX && PlatformDetection.OSXVersion > new Version(10, 12));
+        public static bool SupportsClientAlpn => SupportsAlpn || IsOSX || IsiOS || IstvOS;
 
         // OpenSSL 1.1.1 and above.
         public static bool SupportsTls13 => GetTls13Support();
@@ -141,7 +146,7 @@ namespace System
             }
             else if (IsOSX)
             {
-                return "OSX Version=" + m_osxProductVersion.Value.ToString();
+                return "OSX Version=" + Environment.OSVersion.Version.ToString();
             }
             else
             {
@@ -260,16 +265,18 @@ namespace System
                 // assume no if key is missing or on error.
                 return false;
             }
-            else if (IsOSX)
+            else if (IsOSX || IsiOS || IstvOS)
             {
                 // [ActiveIssue("https://github.com/dotnet/runtime/issues/1979")]
                 return false;
             }
-            else
+            else if (IsOpenSslSupported)
             {
                 // Covers Linux and FreeBSD
                 return OpenSslVersion >= new Version(1,1,1);
             }
+
+            return false;
         }
 
         private static bool GetIsRunningOnMonoInterpreter()

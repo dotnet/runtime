@@ -212,6 +212,9 @@
   <data name="net_auth_eof" xml:space="preserve">
     <value>Authentication failed because the remote party has closed the transport stream.</value>
   </data>
+  <data name="net_auth_tls_alert" xml:space="preserve">
+    <value>Authentication failed because the remote party sent a TLS alert: '{0}'.</value>
+  </data>
   <data name="net_auth_alert" xml:space="preserve">
     <value>Authentication failed on the remote side (the stream might still be available for additional authentication attempts).</value>
   </data>

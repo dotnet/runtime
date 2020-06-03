@@ -820,10 +820,9 @@ typedef struct {
 	void     (*set_cast_details) (MonoClass *from, MonoClass *to);
 	void     (*debug_log) (int level, MonoString *category, MonoString *message);
 	gboolean (*debug_log_is_enabled) (void);
-	void     (*init_delegate) (MonoDelegateHandle delegate, MonoError *error);
+	void     (*init_delegate) (MonoDelegateHandle delegate, MonoObjectHandle target, gpointer addr, MonoMethod *method, MonoError *error);
 	MonoObject* (*runtime_invoke) (MonoMethod *method, void *obj, void **params, MonoObject **exc, MonoError *error);
 	void*    (*compile_method) (MonoMethod *method, MonoError *error);
-	gpointer (*create_jump_trampoline) (MonoDomain *domain, MonoMethod *method, gboolean add_sync_wrapper, MonoError *error);
 	gpointer (*create_jit_trampoline) (MonoDomain *domain, MonoMethod *method, MonoError *error);
 	/* used to free a dynamic method */
 	void     (*free_method) (MonoDomain *domain, MonoMethod *method);
@@ -881,11 +880,8 @@ mono_method_call_message_new (MonoMethod *method, gpointer *params, MonoMethod *
 void
 mono_method_return_message_restore (MonoMethod *method, gpointer *params, MonoArray *out_args, MonoError *error);
 
-gboolean
-mono_delegate_ctor_with_method (MonoObjectHandle this_obj, MonoObjectHandle target, gpointer addr, MonoMethod *method, MonoError *error);
-
-gboolean
-mono_delegate_ctor	    (MonoObjectHandle this_obj, MonoObjectHandle target, gpointer addr, MonoError *error);
+void
+mono_delegate_ctor	    (MonoObjectHandle this_obj, MonoObjectHandle target, gpointer addr, MonoMethod *method, MonoError *error);
 
 MonoMethod *
 mono_get_delegate_invoke_checked (MonoClass *klass, MonoError *error);
@@ -1646,6 +1642,30 @@ typedef struct {
 	MonoClassField *field;
 	MonoProperty *prop;
 } CattrNamedArg;
+
+#ifdef ENABLE_NETCORE
+// Keep in sync with System.Runtime.Loader.AssemblyLoadContext.InternalState
+typedef enum {
+	ALIVE = 0,
+	UNLOADING = 1
+} MonoManagedAssemblyLoadContextInternalState;
+
+// Keep in sync with System.Runtime.Loader.AssemblyLoadContext
+typedef struct {
+	MonoObject object;
+	MonoObject *unload_lock;
+	MonoEvent *resolving_unmaned_dll;
+	MonoEvent *resolving;
+	MonoEvent *unloading;
+	MonoString *name;
+	gpointer *native_assembly_load_context;
+	gint64 id;
+	gint32 internal_state;
+	MonoBoolean is_collectible;
+} MonoManagedAssemblyLoadContext;
+
+TYPED_HANDLE_DECL (MonoManagedAssemblyLoadContext);
+#endif
 
 /* All MonoInternalThread instances should be pinned, so it's safe to use the raw ptr.  However
  * for uniformity, icall wrapping will make handles anyway.  So this is the method for getting the payload.

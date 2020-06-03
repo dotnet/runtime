@@ -38,23 +38,23 @@
     <Compile Include="System\ServiceModel\Syndication\SyndicationVersionsTests.cs" />
     <Compile Include="System\ServiceModel\Syndication\WorkspaceTests.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsNetCoreApp)' == 'true'">
-    <Compile Include="$(MsBuildThisFileDirectory)netcoreapp\BasicScenarioTests.netcoreapp.cs" />
+  <ItemGroup Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'">
+    <Compile Include="$(MSBuildThisFileDirectory)netcoreapp\BasicScenarioTests.netcoreapp.cs" />
     <Compile Include="System\ServiceModel\Syndication\SyndicationFeedTests.netcoreapp.cs" />
     <Compile Include="System\ServiceModel\Syndication\SyndicationTextInputTests.cs" />
     <Compile Include="System\ServiceModel\Syndication\XmlDateTimeDataTests.cs" />
     <Compile Include="System\ServiceModel\Syndication\XmlUriDataTests.cs" />
   </ItemGroup>
   <ItemGroup>
-    <Content Include="$(MsBuildThisFileDirectory)\TestFeeds\**\*.xml">
+    <Content Include="$(MSBuildThisFileDirectory)\TestFeeds\**\*.xml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
   </ItemGroup>
   <ItemGroup>
-    <None Include="$(MsBuildThisFileDirectory)\TestFeeds\atom_feeds.dat">
+    <None Include="$(MSBuildThisFileDirectory)\TestFeeds\atom_feeds.dat">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Include="$(MsBuildThisFileDirectory)\TestFeeds\rss_feeds.dat">
+    <None Include="$(MSBuildThisFileDirectory)\TestFeeds\rss_feeds.dat">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
   </ItemGroup>

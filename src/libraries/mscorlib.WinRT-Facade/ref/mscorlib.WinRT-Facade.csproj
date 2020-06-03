@@ -11,10 +11,10 @@
   <ItemGroup>
     <Compile Include="TypeForwards.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsNetStandard)' != 'true'">
+  <ItemGroup Condition="!$(TargetFramework.StartsWith('netstandard'))">
     <ProjectReference Include="..\..\System.Runtime\ref\System.Runtime.csproj" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsNetStandard)' == 'true'">
+  <ItemGroup Condition="$(TargetFramework.StartsWith('netstandard'))">
     <Reference Include="System.Runtime" />
   </ItemGroup>
 </Project>

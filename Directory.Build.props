@@ -41,11 +41,22 @@
     <InstallerTasksOutputPath>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'installer.tasks'))</InstallerTasksOutputPath>
     <InstallerTasksAssemblyPath Condition="'$(MSBuildRuntimeType)' == 'Core'">$([MSBuild]::NormalizePath('$(InstallerTasksOutputPath)', 'Debug', 'netstandard2.0', 'installer.tasks.dll'))</InstallerTasksAssemblyPath>
     <InstallerTasksAssemblyPath Condition="'$(MSBuildRuntimeType)' != 'Core'">$([MSBuild]::NormalizePath('$(InstallerTasksOutputPath)', 'Debug', 'net46', 'installer.tasks.dll'))</InstallerTasksAssemblyPath>
-    <HostMachineInfoProps>$(ArtifactsObjDir)HostMachineInfo.props</HostMachineInfoProps>
 
     <DocsDir>$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'docs'))</DocsDir>
     <ManPagesDir>$([MSBuild]::NormalizeDirectory('$(DocsDir)', 'manpages'))</ManPagesDir>
     <CoreLibSharedDir>$([MSBuild]::NormalizeDirectory('$(LibrariesProjectRoot)', 'System.Private.CoreLib', 'src'))</CoreLibSharedDir>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(TargetsMobile)' == 'true'">
+    <AppleAppBuilderDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'AppleAppBuilder', 'Debug', '$(NetCoreAppCurrent)'))</AppleAppBuilderDir>
+    <AndroidAppBuilderDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'AndroidAppBuilder', 'Debug', '$(NetCoreAppCurrent)'))</AndroidAppBuilderDir>
+    <WasmAppBuilderDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'WasmAppBuilder', 'Debug', '$(NetCoreAppCurrent)', 'publish'))</WasmAppBuilderDir>
+    <MonoAOTCompilerDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'MonoAOTCompiler', 'Debug', '$(NetCoreAppCurrent)'))</MonoAOTCompilerDir>
+  
+    <AppleAppBuilderTasksAssemblyPath>$([MSBuild]::NormalizePath('$(AppleAppBuilderDir)', 'AppleAppBuilder.dll'))</AppleAppBuilderTasksAssemblyPath>
+    <AndroidAppBuilderTasksAssemblyPath>$([MSBuild]::NormalizePath('$(AndroidAppBuilderDir)', 'AndroidAppBuilder.dll'))</AndroidAppBuilderTasksAssemblyPath>
+    <WasmAppBuilderTasksAssemblyPath>$([MSBuild]::NormalizePath('$(WasmAppBuilderDir)', 'WasmAppBuilder.dll'))</WasmAppBuilderTasksAssemblyPath>
+    <MonoAOTCompilerTasksAssemblyPath>$([MSBuild]::NormalizePath('$(MonoAOTCompilerDir)', 'MonoAOTCompiler.dll'))</MonoAOTCompilerTasksAssemblyPath>
   </PropertyGroup>
 
   <!-- Packaging properties -->
@@ -76,9 +87,6 @@
   <!-- Language configuration -->
   <PropertyGroup>
     <Deterministic>true</Deterministic>
-
-    <!-- Resource naming bug: https://github.com/microsoft/msbuild/issues/4740 -->
-    <EmbeddedResourceUseDependentUponConvention>false</EmbeddedResourceUseDependentUponConvention>
   </PropertyGroup>
 
   <PropertyGroup>

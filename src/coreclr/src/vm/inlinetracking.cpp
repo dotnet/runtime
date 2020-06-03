@@ -550,7 +550,7 @@ COUNT_T PersistentInlineTrackingMapR2R::GetInliners(PTR_Module inlineeOwnerMod, 
     CONTRACTL_END;
 
     _ASSERTE(inlineeOwnerMod);
-    _ASSERTE(inliners);
+    _ASSERTE(inliners != NULL || inlinersSize == 0);
 
     if (incompleteData)
     {
@@ -692,8 +692,8 @@ COUNT_T PersistentInlineTrackingMapR2R2::GetInliners(PTR_Module inlineeOwnerMod,
                 streamSize--;
                 if (inlinerModule == nullptr && incompleteData)
                 {
-                    // We can't find module for this inlineeModuleZapIndex, it means it hasn't been loaded yet 
-                    // (maybe it never will be), we just report it to the profiler. 
+                    // We can't find module for this inlineeModuleZapIndex, it means it hasn't been loaded yet
+                    // (maybe it never will be), we just report it to the profiler.
                     // Profiler might want to try later when more modules are loaded.
                     *incompleteData = TRUE;
                     continue;

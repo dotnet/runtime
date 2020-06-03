@@ -156,7 +156,6 @@ namespace System.Diagnostics.Eventing.Reader
 
                 try
                 {
-                    pm.CheckReleased();
                     UpdateCacheValueInfoForHit(cacheItem);
                 }
                 catch (EventLogException)

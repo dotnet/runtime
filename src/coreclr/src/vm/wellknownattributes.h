@@ -30,7 +30,7 @@ enum class WellKnownAttribute : DWORD
     IsByRefLike,
     PrimaryInteropAssembly,
     ManagedToNativeComInteropStub,
-    NativeCallable,
+    UnmanagedCallersOnly,
     TypeIdentifier,
     UnmanagedFunctionPointer,
     ThreadStatic,
@@ -89,8 +89,8 @@ inline const char *GetWellKnownAttributeName(WellKnownAttribute attribute)
             return "System.Runtime.InteropServices.PrimaryInteropAssemblyAttribute";
         case WellKnownAttribute::ManagedToNativeComInteropStub:
             return "System.Runtime.InteropServices.ManagedToNativeComInteropStubAttribute";
-        case WellKnownAttribute::NativeCallable:
-            return "System.Runtime.InteropServices.NativeCallableAttribute";
+        case WellKnownAttribute::UnmanagedCallersOnly:
+            return "System.Runtime.InteropServices.UnmanagedCallersOnlyAttribute";
         case WellKnownAttribute::TypeIdentifier:
             return "System.Runtime.InteropServices.TypeIdentifierAttribute";
         case WellKnownAttribute::UnmanagedFunctionPointer:

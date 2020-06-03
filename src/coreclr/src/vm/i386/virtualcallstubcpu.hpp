@@ -258,7 +258,7 @@ is important. */
 struct ResolveStub
 {
     inline PCODE failEntryPoint()           { LIMITED_METHOD_CONTRACT; return (PCODE)&_failEntryPoint[0];    }
-    inline PCODE resolveEntryPoint()        { LIMITED_METHOD_CONTRACT; return (PCODE)&_resolveEntryPoint[0]; }
+    inline PCODE resolveEntryPoint()        { LIMITED_METHOD_CONTRACT; return (PCODE)&_resolveEntryPoint; }
     inline PCODE slowEntryPoint()           { LIMITED_METHOD_CONTRACT; return (PCODE)&_slowEntryPoint[0]; }
 
     inline INT32* pCounter()                { LIMITED_METHOD_CONTRACT; return _pCounter; }
@@ -266,6 +266,10 @@ struct ResolveStub
     inline size_t cacheAddress()            { LIMITED_METHOD_CONTRACT; return _cacheAddress;   }
     inline size_t token()                   { LIMITED_METHOD_CONTRACT; return _token;          }
     inline size_t size()                    { LIMITED_METHOD_CONTRACT; return sizeof(ResolveStub); }
+#ifndef UNIX_X86_ABI
+    inline static size_t offsetOfThisDeref(){ LIMITED_METHOD_CONTRACT; return offsetof(ResolveStub, part1) - offsetof(ResolveStub, _resolveEntryPoint); }
+    inline size_t stackArgumentsSize()      { LIMITED_METHOD_CONTRACT; return _stackArgumentsSize; }
+#endif
 
 private:
     friend struct ResolveHolder;
@@ -283,13 +287,13 @@ private:
     // ResolveStub::_resolveEntryPoint expects:
     //       ecx: object (the "this" pointer)
     //       eax: siteAddrForRegisterIndirect if this is a RegisterIndirect dispatch call
-    BYTE    _resolveEntryPoint[6];  // 50           push    eax             ;save siteAddrForRegisterIndirect - this may be an indirect call
-                                    // 8b 01        mov     eax,[ecx]       ;get the method table from the "this" pointer. This is the place
+    BYTE    _resolveEntryPoint;     // 50           push    eax             ;save siteAddrForRegisterIndirect - this may be an indirect call
+    BYTE    part1 [11];             // 8b 01        mov     eax,[ecx]       ;get the method table from the "this" pointer. This is the place
                                     //                                      ;    where we are going to fault on null this. If you change it,
                                     //                                      ;    change also AdjustContextForVirtualStub in excep.cpp!!!
                                     // 52           push    edx
                                     // 8b d0        mov     edx, eax
-    BYTE    part1 [6];              // c1 e8 0C     shr     eax,12          ;we are adding upper bits into lower bits of mt
+                                    // c1 e8 0C     shr     eax,12          ;we are adding upper bits into lower bits of mt
                                     // 03 c2        add     eax,edx
                                     // 35           xor     eax,
     UINT32  _hashedToken;           // xx xx xx xx              hashedToken ;along with pre-hashed token
@@ -329,6 +333,9 @@ private:
     DISPL _backpatcherDispl;        // xx xx xx xx          backpatcherWorker  == BackPatchWorkerAsmStub
     BYTE  part11 [1];               // eb           jmp
     BYTE toResolveStub;             // xx                   resolveStub, i.e. go back to _resolveEntryPoint
+#ifndef UNIX_X86_ABI
+    size_t _stackArgumentsSize;     // xx xx xx xx
+#endif
 };
 
 /* ResolveHolders are the containers for ResolveStubs,  They provide
@@ -343,7 +350,11 @@ struct ResolveHolder
 
     void  Initialize(PCODE resolveWorkerTarget, PCODE patcherTarget,
                      size_t dispatchToken, UINT32 hashedToken,
-                     void * cacheAddr, INT32 * counterAddr);
+                     void * cacheAddr, INT32 * counterAddr
+#ifndef UNIX_X86_ABI
+                     , size_t stackArgumentsSize
+#endif
+                     );
 
     ResolveStub* stub()      { LIMITED_METHOD_CONTRACT;  return &_stub; }
 
@@ -685,11 +696,16 @@ extern "C" void STDCALL JIT_TailCallReturnFromVSD();
 PCODE StubCallSite::GetCallerAddress()
 {
     LIMITED_METHOD_CONTRACT;
+
+#ifdef UNIX_X86_ABI
+    return m_returnAddr;
+#else // UNIX_X86_ABI
     if (m_returnAddr != (PCODE)JIT_TailCallReturnFromVSD)
         return m_returnAddr;
 
     // Find the tailcallframe in the frame chain and get the actual caller from the first TailCallFrame
     return TailCallFrame::FindTailCallFrame(GetThread()->GetFrame())->GetCallerAddress();
+#endif // UNIX_X86_ABI
 }
 
 #ifdef STUB_LOGGING
@@ -839,21 +855,19 @@ void ResolveHolder::InitializeStatic()
 
     resolveInit.toPatcher              = (offsetof(ResolveStub, patch) - (offsetof(ResolveStub, toPatcher) + 1)) & 0xFF;
 
-    resolveInit._resolveEntryPoint [0] = 0x50;
-    resolveInit._resolveEntryPoint [1] = 0x8b;
-    resolveInit._resolveEntryPoint [2] = 0x01;
-    resolveInit._resolveEntryPoint [3] = 0x52;
-    resolveInit._resolveEntryPoint [4] = 0x8b;
-    resolveInit._resolveEntryPoint [5] = 0xd0;
-    static_assert_no_msg(sizeof(resolveInit._resolveEntryPoint) == 6);
-
-    resolveInit.part1 [0]              = 0xc1;
-    resolveInit.part1 [1]              = 0xe8;
-    resolveInit.part1 [2]              = CALL_STUB_CACHE_NUM_BITS;
-    resolveInit.part1 [3]              = 0x03;
-    resolveInit.part1 [4]              = 0xc2;
-    resolveInit.part1 [5]              = 0x35;
-    static_assert_no_msg(sizeof(resolveInit.part1) == 6);
+    resolveInit._resolveEntryPoint     = 0x50;
+    resolveInit.part1 [0]              = 0x8b;
+    resolveInit.part1 [1]              = 0x01;
+    resolveInit.part1 [2]              = 0x52;
+    resolveInit.part1 [3]              = 0x8b;
+    resolveInit.part1 [4]              = 0xd0;
+    resolveInit.part1 [5]              = 0xc1;
+    resolveInit.part1 [6]              = 0xe8;
+    resolveInit.part1 [7]              = CALL_STUB_CACHE_NUM_BITS;
+    resolveInit.part1 [8]              = 0x03;
+    resolveInit.part1 [9]              = 0xc2;
+    resolveInit.part1 [10]             = 0x35;
+    static_assert_no_msg(sizeof(resolveInit.part1) == 11);
 
     resolveInit._hashedToken           = 0xcccccccc;
     resolveInit.part2 [0]              = 0x25;
@@ -932,7 +946,11 @@ void ResolveHolder::InitializeStatic()
 
 void  ResolveHolder::Initialize(PCODE resolveWorkerTarget, PCODE patcherTarget,
                                 size_t dispatchToken, UINT32 hashedToken,
-                                void * cacheAddr, INT32 * counterAddr)
+                                void * cacheAddr, INT32 * counterAddr
+#ifndef UNIX_X86_ABI
+                                , size_t stackArgumentsSize
+#endif
+                                )
 {
     _stub = resolveInit;
 
@@ -945,6 +963,9 @@ void  ResolveHolder::Initialize(PCODE resolveWorkerTarget, PCODE patcherTarget,
     _stub._tokenPush          = dispatchToken;
     _stub._resolveWorkerDispl = resolveWorkerTarget - ((PCODE) &_stub._resolveWorkerDispl + sizeof(DISPL));
     _stub._backpatcherDispl   = patcherTarget       - ((PCODE) &_stub._backpatcherDispl   + sizeof(DISPL));
+#ifndef UNIX_X86_ABI
+    _stub._stackArgumentsSize = stackArgumentsSize;
+#endif
 }
 
 ResolveHolder* ResolveHolder::FromFailEntry(PCODE failEntry)

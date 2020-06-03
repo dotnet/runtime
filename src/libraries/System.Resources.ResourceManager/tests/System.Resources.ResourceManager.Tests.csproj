@@ -18,9 +18,8 @@
     <Compile Include="SatelliteContractVersionAttributeTests.cs" />
     <Compile Include="MissingSatelliteAssemblyException.cs" />
     <Compile Include="ResourceSetTests.cs" />
-    <Compile Include="$(CommonTestPath)System\Drawing\Helpers.cs">
-      <Link>Common\System\Drawing\Helpers.cs</Link>
-    </Compile>
+    <Compile Include="$(CommonTestPath)System\Drawing\Helpers.cs"
+             Link="Common\System\Drawing\Helpers.cs" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="Resources\TestResx.netstandard17.resources">
@@ -55,7 +54,7 @@
     <None Include="Resources\icon.ico"
           Link="%(Filename)%(Extension)"
           CopyToOutputDirectory="PreserveNewest"
-          Visible="false" />          
+          Visible="false" />
   </ItemGroup>
   <!--
     MSBuild on .NET Core doesn't support non-string resources. See https://github.com/Microsoft/msbuild/issues/2221

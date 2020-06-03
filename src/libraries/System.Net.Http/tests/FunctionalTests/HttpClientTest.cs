@@ -221,7 +221,10 @@ namespace System.Net.Http.Functional.Tests
             {
                 Assert.Same(string.Empty, await client.GetStringAsync(CreateFakeUri()));
                 Assert.Same(Array.Empty<byte>(), await client.GetByteArrayAsync(CreateFakeUri()));
-                Assert.Same(Stream.Null, await client.GetStreamAsync(CreateFakeUri()));
+
+                Stream s = await client.GetStreamAsync(CreateFakeUri());
+                Assert.NotNull(s);
+                Assert.Equal(-1, s.ReadByte());
             }
         }
 
@@ -607,7 +610,7 @@ namespace System.Net.Http.Functional.Tests
         {
             using (var client = new HttpClient(new CustomResponseHandler((r, c) => WhenCanceled<HttpResponseMessage>(c))))
             {
-                client.Timeout = TimeSpan.FromMilliseconds(1);
+                client.Timeout = TimeSpan.FromMilliseconds(10);
                 Task<HttpResponseMessage>[] tasks = Enumerable.Range(0, 3).Select(_ => client.GetAsync(CreateFakeUri(), completionOption)).ToArray();
                 Assert.All(tasks, task => {
                     OperationCanceledException e = Assert.ThrowsAny<OperationCanceledException>(() => task.GetAwaiter().GetResult());

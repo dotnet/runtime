@@ -50,7 +50,7 @@ namespace System.Net.Mime
             {
                 throw new ArgumentNullException(nameof(contentType));
             }
-            if (contentType == string.Empty)
+            if (contentType.Length == 0)
             {
                 throw new ArgumentException(SR.Format(SR.net_emptystringcall, nameof(contentType)), nameof(contentType));
             }
@@ -65,7 +65,7 @@ namespace System.Net.Mime
             get { return Parameters["boundary"]; }
             set
             {
-                if (value == null || value == string.Empty)
+                if (string.IsNullOrEmpty(value))
                 {
                     Parameters.Remove("boundary");
                 }
@@ -81,7 +81,7 @@ namespace System.Net.Mime
             get { return Parameters["charset"]; }
             set
             {
-                if (value == null || value == string.Empty)
+                if (string.IsNullOrEmpty(value))
                 {
                     Parameters.Remove("charset");
                 }
@@ -105,7 +105,7 @@ namespace System.Net.Mime
                     throw new ArgumentNullException(nameof(value));
                 }
 
-                if (value == string.Empty)
+                if (value.Length == 0)
                 {
                     throw new ArgumentException(SR.net_emptystringset, nameof(value));
                 }

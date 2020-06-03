@@ -4572,14 +4572,19 @@ emit_landing_pad (EmitContext *ctx, int group_index, int group_size)
 }
 
 static LLVMValueRef
+create_const_vector (LLVMTypeRef t, const int *vals, int count)
+{
+	g_assert (count <= 16);
+	LLVMValueRef llvm_vals [16];
+	for (int i = 0; i < count; i++)
+		llvm_vals [i] = LLVMConstInt (t, vals [i], FALSE);
+	return LLVMConstVector (llvm_vals, count);
+}
+
+static LLVMValueRef
 create_const_vector_i32 (const int *mask, int count)
 {
-	LLVMValueRef *llvm_mask = g_new (LLVMValueRef, count);
-	for (int i = 0; i < count; i++)
-		llvm_mask [i] = LLVMConstInt (LLVMInt32Type (), mask [i], FALSE);
-	LLVMValueRef vec = LLVMConstVector (llvm_mask, count);
-	g_free (llvm_mask);
-	return vec;
+	return create_const_vector (LLVMInt32Type (), mask, count);
 }
 
 static LLVMValueRef
@@ -8582,10 +8587,23 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 		}
 
 		case OP_SSE41_MUL: {
-			// NOTE: LLVM 7 and later use shifts here
-			// however, pmuldq is still available so I guess it's fine to keep using it
+#if LLVM_API_VERSION < 700
 			LLVMValueRef args [] = { lhs, rhs };
 			values [ins->dreg] = call_intrins (ctx, INTRINS_SSE_PMULDQ, args, dname);
+#else
+			const int shift_vals [] = { 32, 32 };
+			const LLVMValueRef args [] = {
+				convert (ctx, lhs, sse_i8_t),
+				convert (ctx, rhs, sse_i8_t),
+			};
+			LLVMValueRef mul_args [2] = { 0 };
+			LLVMValueRef shift_vec = create_const_vector (LLVMInt64Type (), shift_vals, 2);
+			for (int i = 0; i < 2; ++i) {
+				LLVMValueRef padded = LLVMBuildShl (builder, args [i], shift_vec, "");
+				mul_args[i] = mono_llvm_build_exact_ashr (builder, padded, shift_vec);
+			}
+			values [ins->dreg] = LLVMBuildNSWMul (builder, mul_args [0], mul_args [1], dname);
+#endif
 			break;	
 		}
 

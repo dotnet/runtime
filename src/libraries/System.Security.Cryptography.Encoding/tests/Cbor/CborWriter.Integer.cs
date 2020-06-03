@@ -4,9 +4,9 @@
 
 using System.Buffers.Binary;
 
-namespace System.Security.Cryptography.Encoding.Tests.Cbor
+namespace System.Formats.Cbor
 {
-    internal partial class CborWriter
+    public partial class CborWriter
     {
         // Implements major type 0 encoding per https://tools.ietf.org/html/rfc7049#section-2.1
         public void WriteUInt64(ulong value)
@@ -31,47 +31,75 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             AdvanceDataItemCounters();
         }
 
-        public void WriteTag(CborTag tag)
+        public void WriteInt32(int value) => WriteInt64(value);
+        public void WriteUInt32(uint value) => WriteUInt64(value);
+
+        // Writes a CBOR negative integer encoding according to
+        // https://tools.ietf.org/html/rfc7049#section-2.1
+        public void WriteCborNegativeIntegerEncoding(ulong value)
         {
-            WriteUnsignedInteger(CborMajorType.Tag, (ulong)tag);
-            // NB tag writes do not advance data item counters
-            _isTagContext = true;
+            WriteUnsignedInteger(CborMajorType.NegativeInteger, value);
+            AdvanceDataItemCounters();
         }
 
         // Unsigned integer encoding https://tools.ietf.org/html/rfc7049#section-2.1
         private void WriteUnsignedInteger(CborMajorType type, ulong value)
         {
-            if (value < 24)
+            if (value < (byte)CborAdditionalInfo.Additional8BitData)
             {
                 EnsureWriteCapacity(1);
                 WriteInitialByte(new CborInitialByte(type, (CborAdditionalInfo)value));
             }
             else if (value <= byte.MaxValue)
             {
-                EnsureWriteCapacity(2);
+                EnsureWriteCapacity(1 + sizeof(byte));
                 WriteInitialByte(new CborInitialByte(type, CborAdditionalInfo.Additional8BitData));
                 _buffer[_offset++] = (byte)value;
             }
             else if (value <= ushort.MaxValue)
             {
-                EnsureWriteCapacity(3);
+                EnsureWriteCapacity(1 + sizeof(ushort));
                 WriteInitialByte(new CborInitialByte(type, CborAdditionalInfo.Additional16BitData));
                 BinaryPrimitives.WriteUInt16BigEndian(_buffer.AsSpan(_offset), (ushort)value);
-                _offset += 2;
+                _offset += sizeof(ushort);
             }
             else if (value <= uint.MaxValue)
             {
-                EnsureWriteCapacity(5);
+                EnsureWriteCapacity(1 + sizeof(uint));
                 WriteInitialByte(new CborInitialByte(type, CborAdditionalInfo.Additional32BitData));
                 BinaryPrimitives.WriteUInt32BigEndian(_buffer.AsSpan(_offset), (uint)value);
-                _offset += 4;
+                _offset += sizeof(uint);
             }
             else
             {
-                EnsureWriteCapacity(9);
+                EnsureWriteCapacity(1 + sizeof(ulong));
                 WriteInitialByte(new CborInitialByte(type, CborAdditionalInfo.Additional64BitData));
                 BinaryPrimitives.WriteUInt64BigEndian(_buffer.AsSpan(_offset), value);
-                _offset += 8;
+                _offset += sizeof(ulong);
+            }
+        }
+
+        private int GetIntegerEncodingLength(ulong value)
+        {
+            if (value < (byte)CborAdditionalInfo.Additional8BitData)
+            {
+                return 1;
+            }
+            else if (value <= byte.MaxValue)
+            {
+                return 1 + sizeof(byte);
+            }
+            else if (value <= ushort.MaxValue)
+            {
+                return 1 + sizeof(ushort);
+            }
+            else if (value <= uint.MaxValue)
+            {
+                return 1 + sizeof(uint);
+            }
+            else
+            {
+                return 1 + sizeof(ulong);
             }
         }
     }

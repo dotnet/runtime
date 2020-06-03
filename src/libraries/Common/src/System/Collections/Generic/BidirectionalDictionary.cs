@@ -4,6 +4,7 @@
 
 #nullable enable
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Collections.Generic
 {
@@ -36,12 +37,12 @@ namespace System.Collections.Generic
             _backward.Add(item2, item1);
         }
 
-        public bool TryGetForward(T1 item1, out T2 item2)
+        public bool TryGetForward(T1 item1, [MaybeNullWhen(false)] out T2 item2)
         {
             return _forward.TryGetValue(item1, out item2);
         }
 
-        public bool TryGetBackward(T2 item2, out T1 item1)
+        public bool TryGetBackward(T2 item2, [MaybeNullWhen(false)] out T1 item1)
         {
             return _backward.TryGetValue(item2, out item1);
         }

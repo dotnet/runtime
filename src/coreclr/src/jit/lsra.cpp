@@ -1791,6 +1791,8 @@ void LinearScan::identifyCandidates()
                     VarSetOps::AddElemD(compiler, fpMaybeCandidateVars, varDsc->lvVarIndex);
                 }
             }
+            JITDUMP("  ");
+            DBEXEC(VERBOSE, newInt->dump());
         }
         else
         {
@@ -6282,6 +6284,26 @@ void LinearScan::updatePreviousInterval(RegRecord* reg, Interval* interval, Regi
 #endif
 }
 
+//-----------------------------------------------------------------------------
+// writeLocalReg: Write the register assignment for a GT_LCL_VAR node.
+//
+// Arguments:
+//    lclNode  - The GT_LCL_VAR node
+//    varNum   - The variable number for the register
+//    reg      - The assigned register
+//
+// Return Value:
+//    None
+//
+void LinearScan::writeLocalReg(GenTreeLclVar* lclNode, unsigned varNum, regNumber reg)
+{
+    // We don't yet support multireg locals.
+    assert((lclNode->GetLclNum() == varNum) && !lclNode->IsMultiReg());
+    assert(lclNode->GetLclNum() == varNum);
+    lclNode->SetRegNum(reg);
+}
+
+//-----------------------------------------------------------------------------
 // LinearScan::resolveLocalRef
 // Description:
 //      Update the graph for a local reference.
@@ -6318,7 +6340,7 @@ void LinearScan::updatePreviousInterval(RegRecord* reg, Interval* interval, Regi
 // NICE: Consider tracking whether an Interval is always in the same location (register/stack)
 // in which case it will require no resolution.
 //
-void LinearScan::resolveLocalRef(BasicBlock* block, GenTree* treeNode, RefPosition* currentRefPosition)
+void LinearScan::resolveLocalRef(BasicBlock* block, GenTreeLclVar* treeNode, RefPosition* currentRefPosition)
 {
     assert((block == nullptr) == (treeNode == nullptr));
     assert(enregisterLocalVars);
@@ -6339,11 +6361,11 @@ void LinearScan::resolveLocalRef(BasicBlock* block, GenTree* treeNode, RefPositi
     {
         if (currentRefPosition->lastUse)
         {
-            treeNode->gtFlags |= GTF_VAR_DEATH;
+            treeNode->SetLastUse(currentRefPosition->getMultiRegIdx());
         }
         else
         {
-            treeNode->gtFlags &= ~GTF_VAR_DEATH;
+            treeNode->ClearLastUse(currentRefPosition->getMultiRegIdx());
         }
 
         if ((currentRefPosition->registerAssignment != RBM_NONE) && (interval->physReg == REG_NA) &&
@@ -6354,7 +6376,7 @@ void LinearScan::resolveLocalRef(BasicBlock* block, GenTree* treeNode, RefPositi
             // during resolution. In this case we're better off making it contained.
             assert(inVarToRegMaps[curBBNum][varDsc->lvVarIndex] == REG_STK);
             currentRefPosition->registerAssignment = RBM_NONE;
-            treeNode->SetRegNum(REG_NA);
+            writeLocalReg(treeNode->AsLclVar(), interval->varNum, REG_NA);
         }
     }
 
@@ -6445,9 +6467,11 @@ void LinearScan::resolveLocalRef(BasicBlock* block, GenTree* treeNode, RefPositi
                     //
                     // Note that varDsc->GetRegNum() is already to REG_STK above.
                     interval->physReg = REG_NA;
-                    treeNode->SetRegNum(REG_NA);
+                    writeLocalReg(treeNode->AsLclVar(), interval->varNum, REG_NA);
                     treeNode->gtFlags &= ~GTF_SPILLED;
                     treeNode->SetContained();
+                    // We don't support RegOptional for multi-reg localvars.
+                    assert(!treeNode->IsMultiReg());
                 }
                 else
                 {
@@ -6470,7 +6494,7 @@ void LinearScan::resolveLocalRef(BasicBlock* block, GenTree* treeNode, RefPositi
         interval->physReg = REG_NA;
         if (treeNode != nullptr)
         {
-            treeNode->SetRegNum(REG_NA);
+            writeLocalReg(treeNode->AsLclVar(), interval->varNum, REG_NA);
         }
     }
     else // Not reload and Not pure-def that's spillAfter
@@ -6489,7 +6513,7 @@ void LinearScan::resolveLocalRef(BasicBlock* block, GenTree* treeNode, RefPositi
             // But for copyReg, the homeReg remains unchanged.
 
             assert(treeNode != nullptr);
-            treeNode->SetRegNum(interval->physReg);
+            writeLocalReg(treeNode->AsLclVar(), interval->varNum, interval->physReg);
 
             if (currentRefPosition->copyReg)
             {
@@ -6755,6 +6779,17 @@ void LinearScan::insertUpperVectorSave(GenTree*     tree,
     GenTreeSIMD* simdNode =
         new (compiler, GT_SIMD) GenTreeSIMD(LargeVectorSaveType, saveLcl, nullptr, SIMDIntrinsicUpperSave,
                                             varDsc->lvBaseType, genTypeSize(varDsc->lvType));
+
+    if (simdNode->gtSIMDBaseType == TYP_UNDEF)
+    {
+        // There are a few scenarios where we can get a LCL_VAR which
+        // doesn't know the underlying baseType. In that scenario, we
+        // will just lie and say it is a float. Codegen doesn't actually
+        // care what the type is but this avoids an assert that would
+        // otherwise be fired from the more general checks that happen.
+        simdNode->gtSIMDBaseType = TYP_FLOAT;
+    }
+
     SetLsraAdded(simdNode);
     simdNode->SetRegNum(spillReg);
     if (spillToMem)
@@ -6811,6 +6846,16 @@ void LinearScan::insertUpperVectorRestore(GenTree*     tree,
     GenTreeSIMD* simdNode =
         new (compiler, GT_SIMD) GenTreeSIMD(varDsc->lvType, restoreLcl, nullptr, SIMDIntrinsicUpperRestore,
                                             varDsc->lvBaseType, genTypeSize(varDsc->lvType));
+
+    if (simdNode->gtSIMDBaseType == TYP_UNDEF)
+    {
+        // There are a few scenarios where we can get a LCL_VAR which
+        // doesn't know the underlying baseType. In that scenario, we
+        // will just lie and say it is a float. Codegen doesn't actually
+        // care what the type is but this avoids an assert that would
+        // otherwise be fired from the more general checks that happen.
+        simdNode->gtSIMDBaseType = TYP_FLOAT;
+    }
 
     regNumber restoreReg = upperVectorInterval->physReg;
     SetLsraAdded(simdNode);
@@ -6988,14 +7033,6 @@ void LinearScan::updateMaxSpill(RefPosition* refPosition)
         Interval* interval = refPosition->getInterval();
         if (!interval->isLocalVar)
         {
-            // The tmp allocation logic 'normalizes' types to a small number of
-            // types that need distinct stack locations from each other.
-            // Those types are currently gc refs, byrefs, <= 4 byte non-GC items,
-            // 8-byte non-GC items, and 16-byte or 32-byte SIMD vectors.
-            // LSRA is agnostic to those choices but needs
-            // to know what they are here.
-            var_types typ;
-
             GenTree* treeNode = refPosition->treeNode;
             if (treeNode == nullptr)
             {
@@ -7004,46 +7041,36 @@ void LinearScan::updateMaxSpill(RefPosition* refPosition)
             }
             assert(treeNode != nullptr);
 
-            // In case of multi-reg call nodes, we need to use the type
-            // of the return register given by multiRegIdx of the refposition.
-            if (treeNode->IsMultiRegCall())
+            // The tmp allocation logic 'normalizes' types to a small number of
+            // types that need distinct stack locations from each other.
+            // Those types are currently gc refs, byrefs, <= 4 byte non-GC items,
+            // 8-byte non-GC items, and 16-byte or 32-byte SIMD vectors.
+            // LSRA is agnostic to those choices but needs
+            // to know what they are here.
+            var_types type;
+            if (!treeNode->IsMultiRegNode())
             {
-                ReturnTypeDesc* retTypeDesc = treeNode->AsCall()->GetReturnTypeDesc();
-                typ                         = retTypeDesc->GetReturnRegType(refPosition->getMultiRegIdx());
+                type = getDefType(treeNode);
             }
-#if FEATURE_ARG_SPLIT
-            else if (treeNode->OperIsPutArgSplit())
-            {
-                typ = treeNode->AsPutArgSplit()->GetRegType(refPosition->getMultiRegIdx());
-            }
-#if !defined(TARGET_64BIT)
-            else if (treeNode->OperIsPutArgReg())
-            {
-                // For double arg regs, the type is changed to long since they must be passed via `r0-r3`.
-                // However when they get spilled, they should be treated as separated int registers.
-                var_types typNode = treeNode->TypeGet();
-                typ               = (typNode == TYP_LONG) ? TYP_INT : typNode;
-            }
-#endif // !TARGET_64BIT
-#endif // FEATURE_ARG_SPLIT
             else
             {
-                typ = treeNode->TypeGet();
+                type = treeNode->GetRegTypeByIndex(refPosition->getMultiRegIdx());
             }
-            typ = RegSet::tmpNormalizeType(typ);
+
+            type = RegSet::tmpNormalizeType(type);
 
             if (refPosition->spillAfter && !refPosition->reload)
             {
-                currentSpill[typ]++;
-                if (currentSpill[typ] > maxSpill[typ])
+                currentSpill[type]++;
+                if (currentSpill[type] > maxSpill[type])
                 {
-                    maxSpill[typ] = currentSpill[typ];
+                    maxSpill[type] = currentSpill[type];
                 }
             }
             else if (refPosition->reload)
             {
-                assert(currentSpill[typ] > 0);
-                currentSpill[typ]--;
+                assert(currentSpill[type] > 0);
+                currentSpill[type]--;
             }
             else if (refPosition->RegOptional() && refPosition->assignedReg() == REG_NA)
             {
@@ -7052,10 +7079,10 @@ void LinearScan::updateMaxSpill(RefPosition* refPosition)
                 // memory location.  To properly account max spill for typ we
                 // decrement spill count.
                 assert(RefTypeIsUse(refType));
-                assert(currentSpill[typ] > 0);
-                currentSpill[typ]--;
+                assert(currentSpill[type] > 0);
+                currentSpill[type]--;
             }
-            JITDUMP("  Max spill for %s is %d\n", varTypeName(typ), maxSpill[typ]);
+            JITDUMP("  Max spill for %s is %d\n", varTypeName(type), maxSpill[type]);
         }
     }
 }
@@ -7342,9 +7369,9 @@ void LinearScan::resolveRegisters()
             {
                 writeRegisters(currentRefPosition, treeNode);
 
-                if (treeNode->IsLocal() && currentRefPosition->getInterval()->isLocalVar)
+                if (treeNode->OperIs(GT_LCL_VAR, GT_STORE_LCL_VAR) && currentRefPosition->getInterval()->isLocalVar)
                 {
-                    resolveLocalRef(block, treeNode, currentRefPosition);
+                    resolveLocalRef(block, treeNode->AsLclVar(), currentRefPosition);
                 }
 
                 // Mark spill locations on temps
@@ -7367,7 +7394,7 @@ void LinearScan::resolveRegisters()
                                 treeNode->ResetReuseRegVal();
                             }
 
-                            // In case of multi-reg call node, also set spill flag on the
+                            // In case of multi-reg node, also set spill flag on the
                             // register specified by multi-reg index of current RefPosition.
                             // Note that the spill flag on treeNode indicates that one or
                             // more its allocated registers are in that state.
@@ -9302,7 +9329,7 @@ void Interval::dump()
     }
     if (isStructField)
     {
-        printf(" (struct)");
+        printf(" (field)");
     }
     if (isPromotedStruct)
     {
@@ -9492,7 +9519,7 @@ void LinearScan::lsraGetOperandString(GenTree*          tree,
 void LinearScan::lsraDispNode(GenTree* tree, LsraTupleDumpMode mode, bool hasDest)
 {
     Compiler*      compiler            = JitTls::GetCompiler();
-    const unsigned operandStringLength = 16;
+    const unsigned operandStringLength = 6 * MAX_MULTIREG_COUNT + 1;
     char           operandString[operandStringLength];
     const char*    emptyDestOperand = "               ";
     char           spillChar        = ' ';
@@ -9632,7 +9659,7 @@ void LinearScan::TupleStyleDump(LsraTupleDumpMode mode)
 {
     BasicBlock*    block;
     LsraLocation   currentLoc          = 1; // 0 is the entry
-    const unsigned operandStringLength = 16;
+    const unsigned operandStringLength = 6 * MAX_MULTIREG_COUNT + 1;
     char           operandString[operandStringLength];
 
     // currentRefPosition is not used for LSRA_DUMP_PRE
@@ -10796,6 +10823,7 @@ void LinearScan::verifyFinalAllocation()
                     regRecord->assignedInterval             = interval;
                     if (VERBOSE)
                     {
+                        dumpEmptyRefPosition();
                         printf("Move  %-4s ", getRegName(regRecord->regNum));
                     }
                 }

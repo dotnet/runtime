@@ -1171,6 +1171,7 @@ InlineContext* InlineStrategy::NewRoot()
     InlineContext* rootContext = new (m_Compiler, CMK_Inlining) InlineContext(this);
 
     rootContext->m_ILSize = m_Compiler->info.compILCodeSize;
+    rootContext->m_Code   = m_Compiler->info.compCode;
 
 #if defined(DEBUG) || defined(INLINE_DATA)
 

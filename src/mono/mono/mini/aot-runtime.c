@@ -126,6 +126,7 @@ struct MonoAotModule {
 	guint8 *plt_end;
 	guint8 *blob;
 	gpointer weak_field_indexes;
+	guint8 *method_flags_table;
 	/* Maps method indexes to their code */
 	gpointer *methods;
 	/* Sorted array of method addresses */
@@ -147,6 +148,8 @@ struct MonoAotModule {
 	guint32 *unbox_trampolines_end;
 	guint32 *unbox_trampoline_addresses;
 	guint8 *unwind_info;
+	/* Maps method index -> unbox tramp */
+	gpointer *unbox_tramp_per_method;
 
 	/* Points to the mono EH data created by LLVM */
 	guint8 *mono_eh_frame;
@@ -2377,6 +2380,7 @@ load_aot_module (MonoAssemblyLoadContext *alc, MonoAssembly *assembly, gpointer 
 		amodule->got_info_offsets = (guint32*)amodule->tables [MONO_AOT_TABLE_GOT_INFO_OFFSETS];
 		amodule->llvm_got_info_offsets = (guint32*)amodule->tables [MONO_AOT_TABLE_LLVM_GOT_INFO_OFFSETS];
 		amodule->weak_field_indexes = (guint32*)amodule->tables [MONO_AOT_TABLE_WEAK_FIELD_INDEXES];
+		amodule->method_flags_table = (guint8*)amodule->tables [MONO_AOT_TABLE_METHOD_FLAGS_TABLE];
 	} else {
 		amodule->blob = (guint8*)info->blob;
 		amodule->method_info_offsets = (guint32 *)info->method_info_offsets;
@@ -2388,6 +2392,7 @@ load_aot_module (MonoAssemblyLoadContext *alc, MonoAssembly *assembly, gpointer 
 		amodule->got_info_offsets = (guint32*)info->got_info_offsets;
 		amodule->llvm_got_info_offsets = (guint32*)info->llvm_got_info_offsets;
 		amodule->weak_field_indexes = (guint32*)info->weak_field_indexes;
+		amodule->method_flags_table = (guint8*)info->method_flags_table;
 	}
 	amodule->unbox_trampolines = (guint32 *)info->unbox_trampolines;
 	amodule->unbox_trampolines_end = (guint32 *)info->unbox_trampolines_end;
@@ -4348,7 +4353,7 @@ load_method (MonoDomain *domain, MonoAotModule *amodule, MonoImage *image, MonoM
 	}
 
 	if (mono_llvm_only) {
-		guint8 flags = amodule->info.method_flags_table [method_index];
+		guint8 flags = amodule->method_flags_table [method_index];
 		/* The caller needs to looks this up, but its hard to do without constructing the full MonoJitInfo, so save it here */
 		if (flags & MONO_AOT_METHOD_FLAG_GSHAREDVT_VARIABLE) {
 			mono_aot_lock ();
@@ -4633,7 +4638,7 @@ init_method (MonoAotModule *amodule, gpointer info, guint32 method_index, MonoMe
 	p += 4;
 
 	code = (guint8 *)amodule->methods [method_index];
-	guint8 flags = amodule->info.method_flags_table [method_index];
+	guint8 flags = amodule->method_flags_table [method_index];
 
 	if (flags & MONO_AOT_METHOD_FLAG_HAS_CCTOR)
 		klass_to_run_ctor = decode_klass_ref (amodule, p, &p, error);
@@ -5641,7 +5646,6 @@ read_page_trampoline_uwinfo (MonoTrampInfo *info, int tramp_type, gboolean is_ge
 static unsigned char*
 get_new_trampoline_from_page (int tramp_type)
 {
-	MonoImage *image;
 	TrampolinePage *page;
 	int count;
 	void *tpage;
@@ -6048,6 +6052,16 @@ mono_aot_get_unbox_trampoline (MonoMethod *method, gpointer addr)
 		return mono_aot_get_unbox_arbitrary_trampoline (addr);
 	}
 
+	if (!amodule->unbox_tramp_per_method) {
+		gpointer arr = g_new0 (gpointer, amodule->info.nmethods);
+		mono_memory_barrier ();
+		gpointer old_arr = mono_atomic_cas_ptr ((volatile gpointer*)&amodule->unbox_tramp_per_method, arr, NULL);
+		if (old_arr)
+			g_free (arr);
+	}
+	if (amodule->unbox_tramp_per_method [method_index])
+		return amodule->unbox_tramp_per_method [method_index];
+
 	if (amodule->info.llvm_unbox_tramp_indexes) {
 		int unbox_tramp_idx;
 
@@ -6066,6 +6080,10 @@ mono_aot_get_unbox_trampoline (MonoMethod *method, gpointer addr)
 		g_assert (unbox_tramp_idx < amodule->info.llvm_unbox_tramp_num);
 		code = ((gpointer*)(amodule->info.llvm_unbox_trampolines))[unbox_tramp_idx];
 		g_assert (code);
+
+		mono_memory_barrier ();
+		amodule->unbox_tramp_per_method [method_index] = code;
+
 		return code;
 	}
 
@@ -6073,8 +6091,12 @@ mono_aot_get_unbox_trampoline (MonoMethod *method, gpointer addr)
 		gpointer (*get_tramp) (int) = (gpointer (*)(int))amodule->info.llvm_get_unbox_tramp;
 		code = get_tramp (method_index);
 
-		if (code)
+		if (code) {
+			mono_memory_barrier ();
+			amodule->unbox_tramp_per_method [method_index] = code;
+
 			return code;
+		}
 	}
 
 	ut = amodule->unbox_trampolines;
@@ -6111,8 +6133,13 @@ mono_aot_get_unbox_trampoline (MonoMethod *method, gpointer addr)
 		return FALSE;
 	}
 
+	tinfo->method = method;
 	tinfo->code_size = *(guint32*)symbol_addr;
+	tinfo->unwind_ops = mono_arch_get_cie_program ();
 	mono_aot_tramp_info_register (tinfo, NULL);
+
+	mono_memory_barrier ();
+	amodule->unbox_tramp_per_method [method_index] = code;
 
 	/* The caller expects an ftnptr */
 	return mono_create_ftnptr (mono_domain_get (), code);

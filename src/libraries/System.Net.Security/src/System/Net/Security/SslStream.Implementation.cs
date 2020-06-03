@@ -24,24 +24,18 @@ namespace System.Net.Security
 
         private enum Framing
         {
-            Unknown = 0,
-            BeforeSSL3,
-            SinceSSL3,
-            Unified,
-            Invalid
+            Unknown = 0,    // Initial before any frame is processd.
+            BeforeSSL3,     // SSlv2
+            SinceSSL3,      // SSlv3 & TLS
+            Unified,        // Intermediate on first frame until response is processes.
+            Invalid         // Somthing is wrong.
         }
 
         // This is set on the first packet to figure out the framing style.
         private Framing _framing = Framing.Unknown;
 
-        // SSL3/TLS protocol frames definitions.
-        private enum FrameType : byte
-        {
-            ChangeCipherSpec = 20,
-            Alert = 21,
-            Handshake = 22,
-            AppData = 23
-        }
+        private TlsAlertDescription _lastAlertDescription;
+        private TlsFrameHandshakeInfo _lastFrame;
 
         private readonly object _handshakeLock = new object();
         private volatile TaskCompletionSource<bool>? _handshakeWaiter;
@@ -202,11 +196,11 @@ namespace System.Net.Security
 
             if (isAsync)
             {
-                result = ForceAuthenticationAsync(new AsyncSslIOAdapter(this, cancellationToken), _context!.IsServer, null, isApm);
+                result = ForceAuthenticationAsync(new AsyncReadWriteAdapter(InnerStream, cancellationToken), _context!.IsServer, null, isApm);
             }
             else
             {
-                ForceAuthenticationAsync(new SyncSslIOAdapter(this), _context!.IsServer, null).GetAwaiter().GetResult();
+                ForceAuthenticationAsync(new SyncReadWriteAdapter(InnerStream), _context!.IsServer, null).GetAwaiter().GetResult();
                 result = null;
             }
 
@@ -217,7 +211,7 @@ namespace System.Net.Security
         // This is used to reply on re-handshake when received SEC_I_RENEGOTIATE on Read().
         //
         private async Task ReplyOnReAuthenticationAsync<TIOAdapter>(TIOAdapter adapter, byte[]? buffer)
-            where TIOAdapter : ISslIOAdapter
+            where TIOAdapter : IReadWriteAdapter
         {
             try
             {
@@ -232,7 +226,7 @@ namespace System.Net.Security
 
         // reAuthenticationData is only used on Windows in case of renegotiation.
         private async Task ForceAuthenticationAsync<TIOAdapter>(TIOAdapter adapter, bool receiveFirst, byte[]? reAuthenticationData, bool isApm = false)
-             where TIOAdapter : ISslIOAdapter
+             where TIOAdapter : IReadWriteAdapter
         {
             ProtocolToken message;
             bool handshakeCompleted = false;
@@ -274,7 +268,6 @@ namespace System.Net.Security
                 {
                     // get ready to receive first frame
                     _handshakeBuffer = new ArrayBuffer(InitialHandshakeBufferSize);
-                    _framing = Framing.Unknown;
                 }
 
                 while (!handshakeCompleted)
@@ -288,6 +281,19 @@ namespace System.Net.Security
 
                     if (message.Failed)
                     {
+                        if (_lastFrame.Header.Type == TlsContentType.Handshake && message.Size == 0)
+                        {
+                            // If we failed without OS sending out alert, inject one here to be consistent across platforms.
+                            byte[] alert = TlsFrameHelper.CreateAlertFrame(_lastFrame.Header.Version, TlsAlertDescription.ProtocolVersion);
+                            await adapter.WriteAsync(alert, 0, alert.Length).ConfigureAwait(false);
+                        }
+                        else if (_lastFrame.Header.Type == TlsContentType.Alert && _lastAlertDescription != TlsAlertDescription.CloseNotify &&
+                                 message.Status.ErrorCode == SecurityStatusPalErrorCode.IllegalMessage)
+                        {
+                            // Improve generic message and show details if we failed because of TLS Alert.
+                            throw new AuthenticationException(SR.Format(SR.net_auth_tls_alert, _lastAlertDescription.ToString()), message.GetException());
+                        }
+
                         throw new AuthenticationException(SR.net_auth_SSPI, message.GetException());
                     }
                     else if (message.Status.ErrorCode == SecurityStatusPalErrorCode.OK)
@@ -333,7 +339,7 @@ namespace System.Net.Security
         }
 
         private async ValueTask<ProtocolToken> ReceiveBlobAsync<TIOAdapter>(TIOAdapter adapter)
-                 where TIOAdapter : ISslIOAdapter
+                 where TIOAdapter : IReadWriteAdapter
         {
             int readBytes = await FillHandshakeBufferAsync(adapter, SecureChannel.ReadHeaderSize).ConfigureAwait(false);
             if (readBytes == 0)
@@ -346,17 +352,49 @@ namespace System.Net.Security
                 _framing = DetectFraming(_handshakeBuffer.ActiveReadOnlySpan);
             }
 
-            int frameSize = GetFrameSize(_handshakeBuffer.ActiveReadOnlySpan);
-            if (frameSize < 0)
+            if (_framing != Framing.SinceSSL3)
+            {
+#pragma warning disable 0618
+                _lastFrame.Header.Version = SslProtocols.Ssl2;
+#pragma warning restore 0618
+                _lastFrame.Header.Length = GetFrameSize(_handshakeBuffer.ActiveReadOnlySpan) - TlsFrameHelper.HeaderSize;
+            }
+            else
+            {
+                TlsFrameHelper.TryGetFrameHeader(_handshakeBuffer.ActiveReadOnlySpan, ref _lastFrame.Header);
+            }
+
+            if (_lastFrame.Header.Length < 0)
             {
                 throw new IOException(SR.net_frame_read_size);
             }
 
+            // Header length is content only so we must add header size as well.
+            int frameSize = _lastFrame.Header.Length + TlsFrameHelper.HeaderSize;
             if (_handshakeBuffer.ActiveLength < frameSize)
             {
                 await FillHandshakeBufferAsync(adapter, frameSize).ConfigureAwait(false);
             }
+
             // At this point, we have at least one TLS frame.
+            if (_lastFrame.Header.Type == TlsContentType.Alert)
+            {
+                TlsAlertLevel level = 0;
+                if (TlsFrameHelper.TryGetAlertInfo(_handshakeBuffer.ActiveReadOnlySpan, ref level, ref _lastAlertDescription))
+                {
+                    if (NetEventSource.IsEnabled && _lastAlertDescription != TlsAlertDescription.CloseNotify) NetEventSource.Fail(this, $"Received TLS alert {_lastAlertDescription}");
+                }
+            }
+            else if (_lastFrame.Header.Type == TlsContentType.Handshake)
+            {
+                if (_handshakeBuffer.ActiveReadOnlySpan[TlsFrameHelper.HeaderSize] == (byte)TlsHandshakeType.ClientHello &&
+                    _sslAuthenticationOptions!.ServerCertSelectionDelegate != null)
+                {
+                    // Process SNI from Client Hello message
+                    TlsFrameHelper.TryGetHandshakeInfo(_handshakeBuffer.ActiveReadOnlySpan, ref _lastFrame);
+                    _sslAuthenticationOptions.TargetHost = _lastFrame.TargetName;
+                }
+            }
 
             return ProcessBlob(frameSize);
         }
@@ -371,24 +409,28 @@ namespace System.Net.Security
             // ActiveSpan will exclude the "discarded" data.
             _handshakeBuffer.Discard(frameSize);
 
-            // Often more TLS messages fit into same packet. Get as many complete frames as we can.
-            while (_handshakeBuffer.ActiveLength > SecureChannel.ReadHeaderSize)
+            if (_framing == Framing.SinceSSL3)
             {
-                ReadOnlySpan<byte> remainingData = _handshakeBuffer.ActiveReadOnlySpan;
-                if (remainingData[0] >= (int)FrameType.AppData)
+                // Often more TLS messages fit into same packet. Get as many complete frames as we can.
+                while (_handshakeBuffer.ActiveLength > TlsFrameHelper.HeaderSize)
                 {
-                    break;
-                }
+                    TlsFrameHeader nextHeader = default;
 
-                frameSize = GetFrameSize(remainingData);
-                if (_handshakeBuffer.ActiveLength >= frameSize)
-                {
+                    if (!TlsFrameHelper.TryGetFrameHeader(_handshakeBuffer.ActiveReadOnlySpan, ref nextHeader))
+                    {
+                        break;
+                    }
+
+                    frameSize = nextHeader.Length + TlsFrameHelper.HeaderSize;
+                    if (nextHeader.Type == TlsContentType.AppData || frameSize > _handshakeBuffer.ActiveLength)
+                    {
+                        // We don't have full frame left or we already have app data which needs to be processed by decrypt.
+                        break;
+                    }
+
                     chunkSize += frameSize;
                     _handshakeBuffer.Discard(frameSize);
-                    continue;
                 }
-
-                break;
             }
 
             return _context!.NextMessage(availableData.Slice(0, chunkSize));
@@ -447,7 +489,7 @@ namespace System.Net.Security
         }
 
         private async ValueTask WriteAsyncChunked<TIOAdapter>(TIOAdapter writeAdapter, ReadOnlyMemory<byte> buffer)
-            where TIOAdapter : struct, ISslIOAdapter
+            where TIOAdapter : struct, IReadWriteAdapter
         {
             do
             {
@@ -458,7 +500,7 @@ namespace System.Net.Security
         }
 
         private ValueTask WriteSingleChunk<TIOAdapter>(TIOAdapter writeAdapter, ReadOnlyMemory<byte> buffer)
-            where TIOAdapter : struct, ISslIOAdapter
+            where TIOAdapter : struct, IReadWriteAdapter
         {
             byte[] rentedBuffer = ArrayPool<byte>.Shared.Rent(buffer.Length + FrameOverhead);
             byte[] outBuffer = rentedBuffer;
@@ -604,7 +646,7 @@ namespace System.Net.Security
         }
 
         private async ValueTask<int> ReadAsyncInternal<TIOAdapter>(TIOAdapter adapter, Memory<byte> buffer)
-            where TIOAdapter : ISslIOAdapter
+            where TIOAdapter : IReadWriteAdapter
         {
             if (Interlocked.Exchange(ref _nestedRead, 1) == 1)
             {
@@ -751,7 +793,7 @@ namespace System.Net.Security
         // If we have enough data, it returns synchronously. If not, it will try to read
         // remaining bytes from given stream.
         private ValueTask<int> FillHandshakeBufferAsync<TIOAdapter>(TIOAdapter adapter, int minSize)
-             where TIOAdapter : ISslIOAdapter
+             where TIOAdapter : IReadWriteAdapter
         {
             if (_handshakeBuffer.ActiveLength >= minSize)
             {
@@ -801,7 +843,7 @@ namespace System.Net.Security
         }
 
         private async ValueTask FillBufferAsync<TIOAdapter>(TIOAdapter adapter, int numBytesRequired)
-            where TIOAdapter : ISslIOAdapter
+            where TIOAdapter : IReadWriteAdapter
         {
             Debug.Assert(_internalBufferCount > 0);
             Debug.Assert(_internalBufferCount < numBytesRequired);
@@ -819,7 +861,7 @@ namespace System.Net.Security
         }
 
         private async ValueTask WriteAsyncInternal<TIOAdapter>(TIOAdapter writeAdapter, ReadOnlyMemory<byte> buffer)
-            where TIOAdapter : struct, ISslIOAdapter
+            where TIOAdapter : struct, IReadWriteAdapter
         {
             ThrowIfExceptionalOrNotAuthenticatedOrShutdown();
 
@@ -913,6 +955,7 @@ namespace System.Net.Security
                     Buffer.BlockCopy(saved, 0, buffer, 0, copyCount);
                 }
             }
+
             return buffer;
         }
 
@@ -1003,8 +1046,8 @@ namespace System.Net.Security
             }
 
             // If the first byte is SSL3 HandShake, then check if we have a SSLv3 Type3 client hello.
-            if (bytes[0] == (byte)FrameType.Handshake || bytes[0] == (byte)FrameType.AppData
-                || bytes[0] == (byte)FrameType.Alert)
+            if (bytes[0] == (byte)TlsContentType.Handshake || bytes[0] == (byte)TlsContentType.AppData
+                || bytes[0] == (byte)TlsContentType.Alert)
             {
                 if (bytes.Length < 3)
                 {
