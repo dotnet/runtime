@@ -509,12 +509,13 @@ namespace System.Security.Cryptography.Rsa.Tests
         {
             get
             {
-                yield return new object[] { nameof(HashAlgorithmName.MD5), TestData.RSA1024Params };
-                yield return new object[] { nameof(HashAlgorithmName.MD5), TestData.RSA2048Params };
-                yield return new object[] { nameof(HashAlgorithmName.SHA1), TestData.RSA1024Params };
-                yield return new object[] { nameof(HashAlgorithmName.SHA1), TestData.RSA2048Params };
-                yield return new object[] { nameof(HashAlgorithmName.SHA256), TestData.RSA1024Params };
-                yield return new object[] { nameof(HashAlgorithmName.SHA256), TestData.RSA2048Params };
+                foreach (RSAParameters rsaParameters in new[] { TestData.RSA1024Params, TestData.RSA2048Params })
+                {
+                    yield return new object[] { nameof(HashAlgorithmName.MD5), rsaParameters };
+                    yield return new object[] { nameof(HashAlgorithmName.SHA1), rsaParameters };
+                    yield return new object[] { nameof(HashAlgorithmName.SHA256), rsaParameters };
+                }
+
                 yield return new object[] { nameof(HashAlgorithmName.SHA384), TestData.RSA2048Params };
                 yield return new object[] { nameof(HashAlgorithmName.SHA512), TestData.RSA2048Params };
             }
