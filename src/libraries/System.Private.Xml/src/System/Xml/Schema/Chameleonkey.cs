@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 namespace System.Xml.Schema
 {
     using System.Collections;
@@ -18,7 +19,7 @@ namespace System.Xml.Schema
         // Original schema (used for reference equality only)
         //   stored only when the chameleonLocation is an empty URI in which case the location
         //   is not a good enough identification of the schema
-        internal XmlSchema originalSchema;
+        internal XmlSchema? originalSchema;
         private int _hashCode;
 
         /// <summary>
@@ -50,13 +51,13 @@ namespace System.Xml.Schema
             return _hashCode;
         }
 
-        public override bool Equals(object obj)
+        public override bool Equals(object? obj)
         {
             if (Ref.ReferenceEquals(this, obj))
             {
                 return true;
             }
-            ChameleonKey cKey = obj as ChameleonKey;
+            ChameleonKey? cKey = obj as ChameleonKey;
             if (cKey != null)
             {
                 // We want to compare the target NS and the schema location.

@@ -764,7 +764,7 @@ namespace System.Xml
         }
 
         // Writes out a comment <!--...--> containing the specified text.
-        public override void WriteComment(string text)
+        public override void WriteComment(string? text)
         {
             try
             {
@@ -844,7 +844,7 @@ namespace System.Xml
         }
 
         // Writes out the given whitespace.
-        public override void WriteWhitespace(string ws)
+        public override void WriteWhitespace(string? ws)
         {
             try
             {
