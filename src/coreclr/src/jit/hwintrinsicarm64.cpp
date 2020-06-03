@@ -380,6 +380,9 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         case NI_Vector128_AsUInt16:
         case NI_Vector128_AsUInt32:
         case NI_Vector128_AsUInt64:
+        case NI_Vector128_AsVector:
+        case NI_Vector128_AsVector4:
+        case NI_Vector128_AsVector128:
         {
             assert(!sig->hasThis());
             assert(numArgs == 1);
