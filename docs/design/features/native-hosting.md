@@ -148,8 +148,8 @@ int get_hostfxr_path(
 This API locates the `hostfxr` library and returns its path by populating `result_buffer`.
 
 * `result_buffer` - Buffer that will be populated with the hostfxr path, including a null terminator.
-* `buffer_size` - On input this points to the size of the `result_buffer` in `char_t` units. On output this points to the number of `char_t` units used from the `result_buffer` (including the null terminator). If `result_buffer` is `nullptr` the input value is ignored and only the minimum required size in `char_t` units is set on output.
-* `parameters` - Optional. Additional parameters that modify the behaviour for locating the `hostfxr` library. If `nullptr`, `hostfxr` is located using the environment variable or global registration
+* `buffer_size` - On input this points to the size of the `result_buffer` in `char_t` units. On output this points to the number of `char_t` units used from the `result_buffer` (including the null terminator). If `result_buffer` is `NULL` the input value is ignored and only the minimum required size in `char_t` units is set on output.
+* `parameters` - Optional. Additional parameters that modify the behaviour for locating the `hostfxr` library. If `NULL`, `hostfxr` is located using the environment variable or global registration
   * `size` - Size of the structure. This is used for versioning and should be set to `sizeof(get_hostfxr_parameters)`.
   * `assembly_path` - Optional. Path to the application or to the component's assembly.
     * If specified, `hostfxr` is located as if the `assembly_path` is an application with `apphost`
@@ -283,7 +283,7 @@ These functions allow the native host to inspect and modify runtime properties.
 * If the `host_context_handle` represents the first initialized context in the process, these functions expose all properties from runtime configurations as well as those computed by the hosting layer components. These functions will allow modification of the properties via `hostfxr_set_runtime_property_value`.
 * If the `host_context_handle` represents any other context (so not the first one), these functions expose only properties from runtime configuration. These functions won't allow modification of the properties.
 
-It is possible to access runtime properties of the first initialized context in the process at any time (for reading only), by specifying `nullptr` as the `host_context_handle`.
+It is possible to access runtime properties of the first initialized context in the process at any time (for reading only), by specifying `NULL` as the `host_context_handle`.
 
 ``` C
 int hostfxr_get_runtime_property_value(
@@ -293,8 +293,8 @@ int hostfxr_get_runtime_property_value(
 ```
 
 Returns the value of a runtime property specified by its name.
-* `host_context_handle` - the initialized host context. If set to `nullptr` the function will operate on runtime properties of the first host context in the process.
-* `name` - the name of the runtime property to get. Must not be `nullptr`.
+* `host_context_handle` - the initialized host context. If set to `NULL` the function will operate on runtime properties of the first host context in the process.
+* `name` - the name of the runtime property to get. Must not be `NULL`.
 * `value` - returns a pointer to a buffer with the property value. The buffer is owned by the host context. The caller should make a copy of it if it needs to store it for anything longer than immediate consumption. The lifetime is only guaranteed until any of the below happens:
   * one of the "run" methods is called on the host context
   * the host context is closed via `hostfxr_close`
@@ -313,9 +313,9 @@ int hostfxr_set_runtime_property_value(
 ```
 
 Sets the value of a property.
-* `host_context_handle` - the initialized host context. (Must not be `nullptr`)
-* `name` - the name of the runtime property to set. Must not be `nullptr`.
-* `value` - the value of the property to set. If the property already has a value in the host context, this function will overwrite it. When set to `nullptr` and if the property already has a value then the property is "unset" - removed from the runtime property collection.
+* `host_context_handle` - the initialized host context. (Must not be `NULL`)
+* `name` - the name of the runtime property to set. Must not be `NULL`.
+* `value` - the value of the property to set. If the property already has a value in the host context, this function will overwrite it. When set to `NULL` and if the property already has a value then the property is "unset" - removed from the runtime property collection.
 
 Setting properties is only supported on the first host context in the process. This is really a limitation of the runtime for which the runtime properties are immutable. Once the first host context is initialized and starts a runtime there's no way to change these properties. For now we will not consider the scenario where the host context is initialized but the runtime hasn't started yet, mainly for simplicity of implementation and lack of requirements.
 
@@ -329,8 +329,8 @@ int hostfxr_get_runtime_properties(
 ```
 
 Returns the full set of all runtime properties for the specified host context.
-* `host_context_handle` - the initialized host context. If set to `nullptr` the function will operate on runtime properties of the first host context in the process.
-* `count` - in/out parameter which must not be `nullptr`. On input it specifies the size of the the `keys` and `values` buffers. On output it contains the number of entries used from `keys` and `values` buffers - the number of properties returned. If the size of the buffers is too small, the function returns a specific error code and fill the `count` with the number of available properties. If `keys` or `values` is `nullptr` the function ignores the input value of `count` and just returns the number of properties.
+* `host_context_handle` - the initialized host context. If set to `NULL` the function will operate on runtime properties of the first host context in the process.
+* `count` - in/out parameter which must not be `NULL`. On input it specifies the size of the the `keys` and `values` buffers. On output it contains the number of entries used from `keys` and `values` buffers - the number of properties returned. If the size of the buffers is too small, the function returns a specific error code and fill the `count` with the number of available properties. If `keys` or `values` is `NULL` the function ignores the input value of `count` and just returns the number of properties.
 * `keys` - buffer which acts as an array of pointers to buffers with keys for the runtime properties.
 * `values` - buffer which acts as an array of pointer to buffers with values for the runtime properties.
 
@@ -540,7 +540,7 @@ hostfxr_initialize_for_dotnet_command_line(
     &host_context_handle);
 
 size_t buffer_used = 0;
-if (hostfxr_get_runtime_property(host_context_handle, "TEST_PROPERTY", nullptr, 0, &buffer_used) == HostApiMissingProperty)
+if (hostfxr_get_runtime_property(host_context_handle, "TEST_PROPERTY", NULL, 0, &buffer_used) == HostApiMissingProperty)
 {
     hostfxr_set_runtime_property(host_context_handle, "TEST_PROPERTY", "TRUE");
 }
@@ -561,9 +561,9 @@ using load_assembly_and_get_function_pointer_fn = int (STDMETHODCALLTYPE *)(
     void **delegate);
 
 hostfxr_handle host_context_handle;
-hostfxr_initialize_for_runtime_config(config_path, nullptr, &host_context_handle);
+hostfxr_initialize_for_runtime_config(config_path, NULL, &host_context_handle);
 
-load_assembly_and_get_function_pointer_fn runtime_delegate = nullptr;
+load_assembly_and_get_function_pointer_fn runtime_delegate = NULL;
 hostfxr_get_runtime_delegate(
     host_context_handle,
     hostfxr_delegate_type::load_assembly_and_get_function_pointer,
@@ -571,12 +571,12 @@ hostfxr_get_runtime_delegate(
 
 using managed_entry_point_fn = int (STDMETHODCALLTYPE *)(void *arg, int argSize);
 
-managed_entry_point_fn entry_point = nullptr;
+managed_entry_point_fn entry_point = NULL;
 runtime_delegate(assembly_path,
                  type_name,
                  method_name,
-                 nullptr,
-                 nullptr,
+                 NULL,
+                 NULL,
                  (void **)&entry_point);
 
 ArgStruct arg;
