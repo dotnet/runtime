@@ -2320,7 +2320,7 @@ namespace System.ComponentModel
         public static Type ComObjectType
         {
             [PreserveDependency(".ctor", "System.ComponentModel.TypeDescriptor/TypeDescriptorComObject")]
-            [PreserveDependency(".ctor", "System.ComponentModel.TypeDescriptor/ComNativeDescriptorProxy")] // TODO: https://github.com/mono/linker/issues/801
+            [PreserveDependency(".ctor", "System.ComponentModel.TypeDescriptor/ComNativeDescriptorProxy")]
             get => typeof(TypeDescriptorComObject);
         }
 

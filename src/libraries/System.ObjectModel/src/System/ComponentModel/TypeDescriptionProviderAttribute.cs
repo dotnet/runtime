@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Diagnostics.CodeAnalysis;
+
 namespace System.ComponentModel
 {
     [AttributeUsage(AttributeTargets.Class, Inherited = true)]
@@ -10,7 +12,7 @@ namespace System.ComponentModel
         /// <summary>
         /// Creates a new TypeDescriptionProviderAttribute object.
         /// </summary>
-        public TypeDescriptionProviderAttribute(string typeName)
+        public TypeDescriptionProviderAttribute([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.DefaultConstructor)] string typeName)
         {
             if (typeName == null)
             {
@@ -23,7 +25,7 @@ namespace System.ComponentModel
         /// <summary>
         /// Creates a new TypeDescriptionProviderAttribute object.
         /// </summary>
-        public TypeDescriptionProviderAttribute(Type type)
+        public TypeDescriptionProviderAttribute([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.DefaultConstructor)] Type type)
         {
             if (type == null)
             {
