@@ -46,6 +46,7 @@ then
     xharness ios test \
         --targets="$TARGET" \
         --app="$APP_BUNDLE" \
+        --xcode="/Applications/Xcode114.app" \
         --output-directory=$XHARNESS_OUT
     echo "Output files:"
 else
@@ -53,6 +54,7 @@ else
     dotnet xharness ios test \
         --targets="$TARGET" \
         --app="$APP_BUNDLE" \
+        --xcode="/Applications/Xcode114.app" \
         --output-directory=$XHARNESS_OUT
 fi
 
