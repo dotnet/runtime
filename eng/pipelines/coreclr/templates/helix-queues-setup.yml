@@ -71,7 +71,7 @@ jobs:
         - Ubuntu.1604.Amd64
         - Ubuntu.1804.Amd64
         - Centos.7.Amd64
-        - (Fedora.30.Amd64)Ubuntu.1604.amd64@mcr.microsoft.com/dotnet-buildtools/prereqs:fedora-30-helix-4f8cef7-20200121150022
+        - (Fedora.30.Amd64)Ubuntu.1604.amd64@mcr.microsoft.com/dotnet-buildtools/prereqs:fedora-30-helix-20200512010621-4f8cef7
         - RedHat.7.Amd64
 
     # OSX x64

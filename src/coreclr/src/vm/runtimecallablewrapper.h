@@ -879,31 +879,6 @@ inline RCW::CreationFlags RCW::CreationFlagsFromObjForComIPFlags(ObjFromComIP::f
     return result;
 }
 
-
-// RCW data attached to MethodTable's that represent interesting types. Types without RCWPerTypeData
-// (i.e. those with MethodTable::GetRCWPerTypeData() == NULL) are not interesting and are assumed to
-// use NULL/default values for m_pVariantMT/m_pMTForQI1/m_pMTForQI2/m_pGetEnumeratorMethod.
-struct RCWPerTypeData
-{
-    // Corresponding type with variance or NULL if the type does not exhibit variant behavior.
-    MethodTable *m_pVariantMT;
-
-    // The corresponding IEnumerator<T>::GetEnumerator instantiation or NULL if the type does not
-    // act like IEnumerable.
-    MethodDesc *m_pGetEnumeratorMethod;
-
-    enum
-    {
-        VariantTypeInited       = 0x01,     // m_pVariantMT is set
-        //unused                = 0x02,
-        GetEnumeratorInited     = 0x04,     // m_pGetEnumeratorMethod is set
-        // unused               = 0x08,
-        // unused               = 0x10,
-        // unused               = 0x20,
-    };
-    DWORD m_dwFlags;
-};
-
 #ifdef FEATURE_COMINTEROP_UNMANAGED_ACTIVATION
 
 class ComClassFactory;

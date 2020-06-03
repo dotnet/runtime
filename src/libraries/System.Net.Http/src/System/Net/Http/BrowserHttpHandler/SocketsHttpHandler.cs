@@ -14,123 +14,123 @@ namespace System.Net.Http
     {
         public bool UseCookies
         {
-            get => throw new PlatformNotSupportedException("Property UseCookies is not supported.");
-            set => throw new PlatformNotSupportedException("Property UseCookies is not supported.");
+            get => throw new PlatformNotSupportedException();
+            set => throw new PlatformNotSupportedException();
         }
 
         [AllowNull]
         public CookieContainer CookieContainer
         {
-            get => throw new PlatformNotSupportedException("Property CookieContainer is not supported.");
-            set => throw new PlatformNotSupportedException("Property CookieContainer is not supported.");
+            get => throw new PlatformNotSupportedException();
+            set => throw new PlatformNotSupportedException();
         }
 
         public DecompressionMethods AutomaticDecompression
         {
-            get => throw new PlatformNotSupportedException("Property AutomaticDecompression is not supported.");
-            set => throw new PlatformNotSupportedException("Property AutomaticDecompression is not supported.");
+            get => throw new PlatformNotSupportedException();
+            set => throw new PlatformNotSupportedException();
         }
 
         public bool UseProxy
         {
-            get => throw new PlatformNotSupportedException("Property UseProxy is not supported.");
-            set => throw new PlatformNotSupportedException("Property UseProxy is not supported.");
+            get => throw new PlatformNotSupportedException();
+            set => throw new PlatformNotSupportedException();
         }
 
         public IWebProxy? Proxy
         {
-            get => throw new PlatformNotSupportedException("Property Proxy is not supported.");
-            set => throw new PlatformNotSupportedException("Property Proxy is not supported.");
+            get => throw new PlatformNotSupportedException();
+            set => throw new PlatformNotSupportedException();
         }
 
         public ICredentials? DefaultProxyCredentials
         {
-            get => throw new PlatformNotSupportedException("Property Credentials is not supported.");
-            set => throw new PlatformNotSupportedException("Property Credentials is not supported.");
+            get => throw new PlatformNotSupportedException();
+            set => throw new PlatformNotSupportedException();
         }
 
         public bool PreAuthenticate
         {
-            get => throw new PlatformNotSupportedException("Property PreAuthenticate is not supported.");
-            set => throw new PlatformNotSupportedException("Property PreAuthenticate is not supported.");
+            get => throw new PlatformNotSupportedException();
+            set => throw new PlatformNotSupportedException();
         }
 
         public ICredentials? Credentials
         {
-            get => throw new PlatformNotSupportedException("Property Credentials is not supported.");
-            set => throw new PlatformNotSupportedException("Property Credentials is not supported.");
+            get => throw new PlatformNotSupportedException();
+            set => throw new PlatformNotSupportedException();
         }
 
         public bool AllowAutoRedirect
         {
-            get => throw new PlatformNotSupportedException("Property AllowAutoRedirect is not supported.");
-            set => throw new PlatformNotSupportedException("Property AllowAutoRedirect is not supported.");
+            get => throw new PlatformNotSupportedException();
+            set => throw new PlatformNotSupportedException();
         }
 
         public int MaxAutomaticRedirections
         {
-            get => throw new PlatformNotSupportedException("Property MaxAutomaticRedirections is not supported.");
-            set => throw new PlatformNotSupportedException("Property MaxAutomaticRedirections is not supported.");
+            get => throw new PlatformNotSupportedException();
+            set => throw new PlatformNotSupportedException();
         }
 
         public int MaxConnectionsPerServer
         {
-            get => throw new PlatformNotSupportedException("Property MaxConnectionsPerServer is not supported.");
-            set => throw new PlatformNotSupportedException("Property MaxConnectionsPerServer is not supported.");
+            get => throw new PlatformNotSupportedException();
+            set => throw new PlatformNotSupportedException();
         }
 
         public int MaxResponseDrainSize
         {
-            get => throw new PlatformNotSupportedException("Property MaxResponseDrainSize is not supported.");
-            set => throw new PlatformNotSupportedException("Property MaxResponseDrainSize is not supported.");
+            get => throw new PlatformNotSupportedException();
+            set => throw new PlatformNotSupportedException();
         }
 
         public TimeSpan ResponseDrainTimeout
         {
-            get => throw new PlatformNotSupportedException("Property ResponseDrainTimeout is not supported.");
-            set => throw new PlatformNotSupportedException("Property ResponseDrainTimeout is not supported.");
+            get => throw new PlatformNotSupportedException();
+            set => throw new PlatformNotSupportedException();
         }
 
         public int MaxResponseHeadersLength
         {
-            get => throw new PlatformNotSupportedException("Property MaxResponseHeadersLength is not supported.");
-            set => throw new PlatformNotSupportedException("Property MaxResponseHeadersLength is not supported.");
+            get => throw new PlatformNotSupportedException();
+            set => throw new PlatformNotSupportedException();
         }
 
         [AllowNull]
         public SslClientAuthenticationOptions SslOptions
         {
-            get => throw new PlatformNotSupportedException("Property SslOptions is not supported.");
-            set => throw new PlatformNotSupportedException("Property SslOptions is not supported.");
+            get => throw new PlatformNotSupportedException();
+            set => throw new PlatformNotSupportedException();
         }
 
         public TimeSpan PooledConnectionLifetime
         {
-            get => throw new PlatformNotSupportedException("Property PooledConnectionLifetime is not supported.");
-            set => throw new PlatformNotSupportedException("Property PooledConnectionLifetime is not supported.");
+            get => throw new PlatformNotSupportedException();
+            set => throw new PlatformNotSupportedException();
         }
 
         public TimeSpan PooledConnectionIdleTimeout
         {
-            get => throw new PlatformNotSupportedException("Property PooledConnectionLifetime is not supported.");
-            set => throw new PlatformNotSupportedException("Property PooledConnectionLifetime is not supported.");
+            get => throw new PlatformNotSupportedException();
+            set => throw new PlatformNotSupportedException();
         }
 
         public TimeSpan ConnectTimeout
         {
-            get => throw new PlatformNotSupportedException("Property ConnectTimeout is not supported.");
-            set => throw new PlatformNotSupportedException("Property ConnectTimeout is not supported.");
+            get => throw new PlatformNotSupportedException();
+            set => throw new PlatformNotSupportedException();
         }
 
         public TimeSpan Expect100ContinueTimeout
         {
-            get => throw new PlatformNotSupportedException("Property Expect100ContinueTimeout is not supported.");
-            set => throw new PlatformNotSupportedException("Property Expect100ContinueTimeout is not supported.");
+            get => throw new PlatformNotSupportedException();
+            set => throw new PlatformNotSupportedException();
         }
 
-        public IDictionary<string, object?> Properties => throw new PlatformNotSupportedException("Property Properties is not supported.");
+        public IDictionary<string, object?> Properties => throw new PlatformNotSupportedException();
 
         protected internal override Task<HttpResponseMessage> SendAsync(
-            HttpRequestMessage request, CancellationToken cancellationToken) => throw new PlatformNotSupportedException("Method SendAsync is not supported.");
+            HttpRequestMessage request, CancellationToken cancellationToken) => throw new PlatformNotSupportedException();
     }
 }

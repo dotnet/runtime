@@ -216,15 +216,15 @@ namespace System.Xml
         /// <summary>
         /// SYSTEM identifier (URI) of the entity value - only used for external entities
         /// </summary>
-        string SystemId { get; }
+        string? SystemId { get; }
         /// <summary>
         /// PUBLIC identifier of the entity value - only used for external entities
         /// </summary>
-        string PublicId { get; }
+        string? PublicId { get; }
         /// <summary>
         /// Replacement text of an entity. Valid only for internal entities.
         /// </summary>
-        string Text { get; }
+        string? Text { get; }
         /// <summary>
         /// The line number of the entity value
         /// </summary>
