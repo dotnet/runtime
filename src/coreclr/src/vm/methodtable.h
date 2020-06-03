@@ -3601,7 +3601,7 @@ private:
 
         enum_flag_HasFinalizer                = 0x00100000, // instances require finalization
 
-        enum_flag_IDynamicInterfaceCastable             = 0x00200000, // class implements IDynamicInterfaceCastable interface
+        enum_flag_IDynamicInterfaceCastable   = 0x00200000, // class implements IDynamicInterfaceCastable interface
 
         enum_flag_ICastable                   = 0x00400000, // class implements ICastable interface
 
