@@ -60,6 +60,8 @@ namespace Tracing.Tests.ReverseValidation
 
                 Logger.logger.Log($"running sub-process: {process.StartInfo.FileName} {process.StartInfo.Arguments}");
 
+                // use this DateTime rather than process.StartTime since the async callbacks might
+                // not happen till after the process is no longer around.
                 DateTime subprocessStartTime = DateTime.Now;
 
                 process.OutputDataReceived += new DataReceivedEventHandler((s,e) =>
