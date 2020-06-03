@@ -742,7 +742,7 @@ namespace System.Xml
             try
             {
                 AutoComplete(Token.CData);
-                if (null != text && text.IndexOf("]]>", StringComparison.Ordinal) >= 0)
+                if (null != text && text.Contains("]]>"))
                 {
                     throw new ArgumentException(SR.Xml_InvalidCDataChars);
                 }
@@ -768,7 +768,7 @@ namespace System.Xml
         {
             try
             {
-                if (null != text && (text.IndexOf("--", StringComparison.Ordinal) >= 0 || (text.Length != 0 && text[text.Length - 1] == '-')))
+                if (null != text && (text.Contains("--") || (text.Length != 0 && text[text.Length - 1] == '-')))
                 {
                     throw new ArgumentException(SR.Xml_InvalidCommentChars);
                 }
@@ -792,7 +792,7 @@ namespace System.Xml
         {
             try
             {
-                if (null != text && text.IndexOf("?>", StringComparison.Ordinal) >= 0)
+                if (null != text && text.Contains("?>"))
                 {
                     throw new ArgumentException(SR.Xml_InvalidPiChars);
                 }
