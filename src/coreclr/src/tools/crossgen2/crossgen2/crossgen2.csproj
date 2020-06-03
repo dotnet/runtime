@@ -50,20 +50,14 @@
     <LibraryNameExtension>.dll</LibraryNameExtension>
   </PropertyGroup>
 
-  <PropertyGroup>
-    <NativeArchFolder></NativeArchFolder>
-    <NativeArchFolder Condition="'$(TargetArchitecture)' == 'arm64'">x64\</NativeArchFolder>
-    <NativeArchFolder Condition="'$(TargetArchitecture)' == 'arm'">x86\</NativeArchFolder>
-  </PropertyGroup>
-
   <ItemGroup>
-    <Content Include="$(BinDir)\$(NativeArchFolder)$(LibraryNamePrefix)jitinterface$(LibraryNameExtension)"
+    <Content Include="$(BinDir)\$(LibraryNamePrefix)jitinterface$(LibraryNameExtension)"
       CopyToOutputDirectory="PreserveNewest"
       CopyToPublishDirectory="PreserveNewest"
       Link="%(FileName)%(Extension)"
      />
 
-    <Content Include="$(BinDir)\$(NativeArchFolder)$(LibraryNamePrefix)clrjit$(LibraryNameExtension)"
+    <Content Include="$(BinDir)\$(LibraryNamePrefix)clrjit$(LibraryNameExtension)"
       CopyToOutputDirectory="PreserveNewest"
       CopyToPublishDirectory="PreserveNewest"
       Link="$(LibraryNamePrefix)clrjitilc$(LibraryNameExtension)"
