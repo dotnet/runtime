@@ -83,6 +83,8 @@ Eventually we could also add functionality for example to setup the isolated loa
 
 Note that there are no APIs proposed in this document which would only perform this step for now. All the APIs so far fold this step into the next one and perform both loading and executing of the managed code in one step. We should try to make this step more explicit in the future to allow for greater flexibility.
 
+After this step it is no longer possible to modify runtime properties (inspection is still allowed) since the runtime has been loaded.
+
 ### Execute managed code
 The end result of this step is either execution of the desired managed code, or returning a native callable representation of the managed code.
 
@@ -449,9 +451,7 @@ Calling this function will find the specified type in the default load context, 
 
 The helper will lookup the `type_name` from the default load context (`AssemblyLoadContext.Default`) and then return method on it. If the type lookup requires any assemblies to be loaded, they will be resolved and loaded in the default load context.
 
-Because the helper operates on default load context only it should mostly be used with context initialized via `hostfxr_initialize_for_dotnet_command_line` as in that case the default load context will have the application code available in it. Contexts initialized via `hostfxr_initialize_for_runtime_config` have only the framework assemblies available in the default load context. The `type_name` must resolve within the default load context, so in the case where only framework assemblies are loaded into the default load context it would have to come from one of the framework assemblies only.
-
-It is allowed to call the helper on the first host context (by specifying `NULL` for the context). If the origin of the first context is unknown, it can be the "component" one which only has framework assemblies in the default load context. Same limitation applies as noted above.
+It is allowed to ask for this helper on any valid host context. Because the helper operates on default load context only it should mostly be used with context initialized via `hostfxr_initialize_for_dotnet_command_line` as in that case the default load context will have the application code available in it. Contexts initialized via `hostfxr_initialize_for_runtime_config` have only the framework assemblies available in the default load context. The `type_name` must resolve within the default load context, so in the case where only framework assemblies are loaded into the default load context it would have to come from one of the framework assemblies only.
 
 It is allowed to call the returned runtime helper many times for different types or methods. It is not required to get the helper every time.
 
