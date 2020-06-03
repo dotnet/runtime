@@ -3462,20 +3462,21 @@ BOOL ETW::TypeSystemLog::AddTypeToGlobalCacheIfNotExists(TypeHandle th, BOOL * p
 
     BOOL fSucceeded = FALSE;
 
-    // Check if ETW is enabled, and if not, bail here.
-    // We do this inside of the lock to ensure that we don't immediately
-    // re-allocate the global type hash after it has been cleaned up.
-    if (!ETW_TRACING_CATEGORY_ENABLED(
-       MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_DOTNET_Context,
-        TRACE_LEVEL_INFORMATION,
-        CLR_TYPE_KEYWORD))
-    {
-        *pfCreatedNew = FALSE;
-        return fSucceeded;
-    }
-
-    {
+   {
         CrstHolder _crst(GetHashCrst());
+
+        // Check if ETW is enabled, and if not, bail here.
+        // We do this inside of the lock to ensure that we don't immediately
+        // re-allocate the global type hash after it has been cleaned up.
+        if (!ETW_TRACING_CATEGORY_ENABLED(
+           MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_DOTNET_Context,
+            TRACE_LEVEL_INFORMATION,
+            CLR_TYPE_KEYWORD))
+        {
+            *pfCreatedNew = FALSE;
+            return fSucceeded;
+        }
+
         if (s_pAllLoggedTypes == NULL)
         {
             s_pAllLoggedTypes = new (nothrow) AllLoggedTypes;
