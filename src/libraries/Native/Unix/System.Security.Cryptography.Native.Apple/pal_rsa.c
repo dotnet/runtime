@@ -21,7 +21,7 @@ int32_t AppleCryptoNative_RsaGenerateKey(
     if (keySizeBits < 384 || keySizeBits > 16384)
         return -2;
 
-    CFMutableDictionaryRef attributes = CFDictionaryCreateMutable(NULL, 2, &kCFTypeDictionaryKeyCallBacks, NULL);
+    CFMutableDictionaryRef attributes = CFDictionaryCreateMutable(NULL, 3, &kCFTypeDictionaryKeyCallBacks, NULL);
 
     CFNumberRef cfKeySizeValue = CFNumberCreate(NULL, kCFNumberIntType, &keySizeBits);
     OSStatus status;

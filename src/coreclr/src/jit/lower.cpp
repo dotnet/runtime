@@ -1870,7 +1870,7 @@ void Lowering::LowerFastTailCall(GenTreeCall* call)
 
             unsigned int overwrittenStart = put->getArgOffset();
             unsigned int overwrittenEnd   = overwrittenStart + put->getArgSize();
-#if !(defined(TARGET_WINDOWS) && defined(TARGET_64BIT))
+#if !(defined(TARGET_WINDOWS) && defined(TARGET_AMD64))
             int baseOff = -1; // Stack offset of first arg on stack
 #endif
 
@@ -1883,8 +1883,8 @@ void Lowering::LowerFastTailCall(GenTreeCall* call)
                     continue;
                 }
 
-#if defined(TARGET_WINDOWS) && defined(TARGET_64BIT)
-                // On Win64, the argument position determines the stack slot uniquely, and even the
+#if defined(TARGET_WINDOWS) && defined(TARGET_AMD64)
+                // On Windows x64, the argument position determines the stack slot uniquely, and even the
                 // register args take up space in the stack frame (shadow space).
                 unsigned int argStart = callerArgLclNum * TARGET_POINTER_SIZE;
                 unsigned int argEnd   = argStart + static_cast<unsigned int>(callerArgDsc->lvArgStackSize());
@@ -3489,6 +3489,9 @@ GenTree* Lowering::LowerDirectCall(GenTreeCall* call)
         {
             bool isR2RRelativeIndir = false;
 #if defined(FEATURE_READYTORUN_COMPILER) && defined(TARGET_ARMARCH)
+            // Skip inserting the indirection node to load the address that is already
+            // computed in REG_R2R_INDIRECT_PARAM as a hidden parameter. Instead during the
+            // codegen, just load the call target from REG_R2R_INDIRECT_PARAM.
             isR2RRelativeIndir = call->IsR2RRelativeIndir();
 #endif // FEATURE_READYTORUN_COMPILER && TARGET_ARMARCH
 
@@ -4529,7 +4532,21 @@ GenTree* Lowering::LowerVirtualStubCall(GenTreeCall* call)
         }
         else
         {
-            result = Ind(addr);
+
+            bool shouldOptimizeVirtualStubCall = false;
+#if defined(FEATURE_READYTORUN_COMPILER) && defined(TARGET_ARMARCH)
+            // Skip inserting the indirection node to load the address that is already
+            // computed in REG_R2R_INDIRECT_PARAM as a hidden parameter. Instead during the
+            // codegen, just load the call target from REG_R2R_INDIRECT_PARAM.
+            // However, for tail calls, the call target is always computed in RBM_FASTTAILCALL_TARGET
+            // and so do not optimize virtual stub calls for such cases.
+            shouldOptimizeVirtualStubCall = !call->IsTailCall();
+#endif // FEATURE_READYTORUN_COMPILER && TARGET_ARMARCH
+
+            if (!shouldOptimizeVirtualStubCall)
+            {
+                result = Ind(addr);
+            }
         }
     }
 

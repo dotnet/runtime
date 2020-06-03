@@ -180,7 +180,8 @@ namespace BinderTracing
         AppNativeImagePaths,
         AppPaths,
         PlatformResourceRoots,
-        SatelliteSubdirectory
+        SatelliteSubdirectory,
+        Bundle
     };
 
     void PathProbed(const WCHAR *path, PathSource source, HRESULT hr);

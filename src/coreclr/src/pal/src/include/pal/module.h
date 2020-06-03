@@ -145,12 +145,13 @@ Abstract
 
 Parameters:
     IN hFile    - The file to load
+    IN offset - offset within hFile where the PE "file" is located
 
 Return value:
     A valid base address if successful.
     0 if failure
 --*/
-void * PAL_LOADLoadPEFile(HANDLE hFile);
+void* PAL_LOADLoadPEFile(HANDLE hFile, size_t offset);
 
 /*++
     PAL_LOADUnloadPEFile

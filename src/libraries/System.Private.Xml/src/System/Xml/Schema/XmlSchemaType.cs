@@ -308,7 +308,7 @@ namespace System.Xml.Schema
                         return true;
                     }
 
-                    if ((except & derivedType.DerivedBy) != 0 || !dt.Datatype!.IsDerivedFrom(bt.Datatype))
+                    if ((except & derivedType.DerivedBy) != 0 || !dt.Datatype!.IsDerivedFrom(bt.Datatype!))
                     {
                         return false;
                     }

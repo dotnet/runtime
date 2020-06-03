@@ -2,10 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 namespace System.Xml.Schema
 {
     using System.Collections.Generic;
     using System.Diagnostics;
+    using System.Diagnostics.CodeAnalysis;
 
     internal abstract class SchemaDeclBase
     {
@@ -19,22 +21,22 @@ namespace System.Xml.Schema
         };
 
         protected XmlQualifiedName name = XmlQualifiedName.Empty;
-        protected string prefix;
+        protected string? prefix;
         protected bool isDeclaredInExternal = false;
         protected Use presence;     // the presence, such as fixed, implied, etc
 
-        protected XmlSchemaType schemaType;
-        protected XmlSchemaDatatype datatype;
+        protected XmlSchemaType? schemaType;
+        protected XmlSchemaDatatype datatype = null!;
 
-        protected string defaultValueRaw;       // default value in its original form
-        protected object defaultValueTyped;
+        protected string? defaultValueRaw;       // default value in its original form
+        protected object? defaultValueTyped;
 
         protected long maxLength; // dt:maxLength
         protected long minLength; // dt:minLength
 
-        protected List<string> values;    // array of values for enumerated and notation types
+        protected List<string>? values;    // array of values for enumerated and notation types
 
-        protected SchemaDeclBase(XmlQualifiedName name, string prefix)
+        protected SchemaDeclBase(XmlQualifiedName name, string? prefix)
         {
             this.name = name;
             this.prefix = prefix;
@@ -52,6 +54,7 @@ namespace System.Xml.Schema
             set { name = value; }
         }
 
+        [AllowNull]
         internal string Prefix
         {
             get { return (prefix == null) ? string.Empty : prefix; }
@@ -82,7 +85,7 @@ namespace System.Xml.Schema
             set { minLength = value; }
         }
 
-        internal XmlSchemaType SchemaType
+        internal XmlSchemaType? SchemaType
         {
             get { return schemaType; }
             set { schemaType = value; }
@@ -103,7 +106,7 @@ namespace System.Xml.Schema
             values.Add(value);
         }
 
-        internal List<string> Values
+        internal List<string>? Values
         {
             get { return values; }
             set { values = value; }
@@ -115,7 +118,7 @@ namespace System.Xml.Schema
             set { defaultValueRaw = value; }
         }
 
-        internal object DefaultValueTyped
+        internal object? DefaultValueTyped
         {
             get { return defaultValueTyped; }
             set { defaultValueTyped = value; }
@@ -123,7 +126,7 @@ namespace System.Xml.Schema
 
         internal bool CheckEnumeration(object pVal)
         {
-            return (datatype.TokenizedType != XmlTokenizedType.NOTATION && datatype.TokenizedType != XmlTokenizedType.ENUMERATION) || values.Contains(pVal.ToString());
+            return (datatype.TokenizedType != XmlTokenizedType.NOTATION && datatype.TokenizedType != XmlTokenizedType.ENUMERATION) || values!.Contains(pVal.ToString()!);
         }
 
         internal bool CheckValue(object pVal)

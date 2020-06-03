@@ -477,11 +477,7 @@ namespace
                 "LoadInMemoryAssembly",
                 delegate);
         case coreclr_delegate_type::winrt_activation:
-            return coreclr->create_delegate(
-                "System.Private.CoreLib",
-                "Internal.Runtime.InteropServices.WindowsRuntime.ActivationFactoryLoader",
-                "GetActivationFactory",
-                delegate);
+            return StatusCode::InvalidArgFailure;
         case coreclr_delegate_type::com_register:
             return coreclr->create_delegate(
                 "System.Private.CoreLib",

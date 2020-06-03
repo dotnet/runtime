@@ -293,9 +293,6 @@
   <PropertyGroup>
     <EnableDefaultItems>false</EnableDefaultItems>
 
-    <!-- Workaround for https://github.com/microsoft/msbuild/issues/4474 -->
-    <GenerateResourceUsePreserializedResources>false</GenerateResourceUsePreserializedResources>
-
     <!-- Clear the init locals flag on all src projects, except those in VB, where we can't use spans. -->
     <ILLinkClearInitLocals Condition="'$(IsSourceProject)' == 'true' and '$(Language)' != 'VB'">true</ILLinkClearInitLocals>
   </PropertyGroup>
@@ -328,6 +325,11 @@
     <!-- TODO: Remove these conditions when VSTest is used in CI. -->
     <EnableRunSettingsSupport Condition="'$(ContinuousIntegrationBuild)' != 'true'">true</EnableRunSettingsSupport>
     <EnableCoverageSupport Condition="'$(ContinuousIntegrationBuild)' != 'true'">true</EnableCoverageSupport>
+  </PropertyGroup>
+
+  <!-- To enable the interpreter for mono, we need to pass an env switch -->
+  <PropertyGroup>
+    <MonoEnvOptions Condition="'$(MonoEnvOptions)' == '' and '$(MonoEnableInterpreter)' == 'true'">--interpreter</MonoEnvOptions>
   </PropertyGroup>
 
   <Import Project="$(RepositoryEngineeringDir)testing\tests.props" Condition="'$(EnableTestSupport)' == 'true'" />

@@ -1,6 +1,9 @@
 TOP=$(realpath $(CURDIR)/../../..)
 -include Make.config
 
+DOTNET=$(TOP)/dotnet.sh
+JSVU=$(HOME)/.jsvu
+
 #
 # These variables are set by wasm.targets
 #
@@ -8,9 +11,10 @@ EMSDK_PATH?=emsdk
 CONFIG?=Release
 BINDIR?=$(TOP)/artifacts/bin
 OBJDIR?=$(TOP)/artifacts/obj
-PINVOKE_TABLE?=$(TOP)/artifacts/obj/mono/Browser.wasm.$(CONFIG)/wasm/pinvoke-table.h
+PINVOKE_TABLE?=$(TOP)/artifacts/obj/wasm/pinvoke-table.h
 MONO_BIN_DIR?=$(BINDIR)/mono/Browser.wasm.$(CONFIG)
-SYS_NATIVE_DIR?=$(BINDIR)/native/net5.0-Browser-$(CONFIG)-wasm/
+SYS_NATIVE_DIR?=$(OBJDIR)/native/net5.0-Browser-$(CONFIG)-wasm/System.Native
+BUILDS_BIN_DIR?=$(BINDIR)/native/net5.0-Browser-$(CONFIG)-wasm/wasm/runtimes
 
 all: build-native
 
@@ -20,7 +24,7 @@ all: build-native
 #  If EMSDK_PATH is not set by the caller, download and setup a local emsdk install.
 #
 
-EMSCRIPTEN_VERSION=1.39.11
+EMSCRIPTEN_VERSION=1.39.16
 EMSDK_LOCAL_PATH=emsdk
 EMCC=source $(CURDIR)/emsdk_env.sh && emcc
 
@@ -44,7 +48,6 @@ emsdk_env.sh: | provision-wasm
 
 MONO_OBJ_DIR=$(OBJDIR)/mono/Browser.wasm.$(CONFIG)
 MONO_INCLUDE_DIR=$(MONO_BIN_DIR)/include/mono-2.0
-BUILDS_BIN_DIR=$(SYS_NATIVE_DIR)/wasm/runtimes
 BUILDS_OBJ_DIR=$(MONO_OBJ_DIR)/wasm/runtimes
 MONO_LIBS = \
 	$(MONO_BIN_DIR)/{libmono-ee-interp.a,libmonosgen-2.0.a,libmono-ilgen.a,libmono-icall-table.a} \
@@ -70,14 +73,17 @@ $(BUILDS_BIN_DIR)/$(1)/:
 $(BUILDS_OBJ_DIR)/$(1)/:
 	mkdir -p $$@
 
-$(BUILDS_BIN_DIR)/$(1)/dotnet.js: $(BUILDS_OBJ_DIR)/$(1)/driver.o $(BUILDS_OBJ_DIR)/$(1)/corebindings.o runtime/library_mono.js runtime/binding_support.js runtime/dotnet_support.js $(5) | $(BUILDS_BIN_DIR)/$(1)/ emsdk_env.sh
-	$(EMCC) $(EMCC_FLAGS) $(3) --js-library runtime/library_mono.js --js-library runtime/binding_support.js --js-library runtime/dotnet_support.js $(BUILDS_OBJ_DIR)/$(1)/driver.o $(BUILDS_OBJ_DIR)/$(1)/corebindings.o $(4) -o $(BUILDS_BIN_DIR)/$(1)/dotnet.js
+$(BUILDS_BIN_DIR)/$(1)/dotnet.js: $(BUILDS_OBJ_DIR)/$(1)/driver.o $(BUILDS_OBJ_DIR)/$(1)/pinvoke.o $(BUILDS_OBJ_DIR)/$(1)/corebindings.o runtime/library_mono.js runtime/binding_support.js runtime/dotnet_support.js $(5) | $(BUILDS_BIN_DIR)/$(1)/ emsdk_env.sh
+	$(EMCC) $(EMCC_FLAGS) $(3) --js-library runtime/library_mono.js --js-library runtime/binding_support.js --js-library runtime/dotnet_support.js $(BUILDS_OBJ_DIR)/$(1)/driver.o $(BUILDS_OBJ_DIR)/$(1)/pinvoke.o $(BUILDS_OBJ_DIR)/$(1)/corebindings.o $(4) -o $(BUILDS_BIN_DIR)/$(1)/dotnet.js
 
 $(BUILDS_OBJ_DIR)/$(1)/pinvoke-table.h: $(PINVOKE_TABLE) | $(BUILDS_OBJ_DIR)/$(1)/
 	if cmp -s $(PINVOKE_TABLE) $$@ ; then : ; else cp $(PINVOKE_TABLE) $$@ ; fi
 
-$(BUILDS_OBJ_DIR)/$(1)/driver.o: runtime/driver.c runtime/corebindings.c $(BUILDS_OBJ_DIR)/$(1)/pinvoke-table.h $(5) | $(BUILDS_OBJ_DIR)/$(1)/ emsdk_env.sh
+$(BUILDS_OBJ_DIR)/$(1)/driver.o: runtime/driver.c runtime/corebindings.c $(5) | $(BUILDS_OBJ_DIR)/$(1)/ emsdk_env.sh
 	$(EMCC) $(EMCC_FLAGS) $(3) -Oz -DCORE_BINDINGS -I$(BUILDS_OBJ_DIR)/$(1) -I$(MONO_INCLUDE_DIR) runtime/driver.c -c -o $$@
+
+$(BUILDS_OBJ_DIR)/$(1)/pinvoke.o: runtime/pinvoke.c runtime/pinvoke.h $(BUILDS_OBJ_DIR)/$(1)/pinvoke-table.h $(5) | $(BUILDS_OBJ_DIR)/$(1)/ emsdk_env.sh
+	$(EMCC) $(EMCC_FLAGS) $(3) -Oz -DGEN_PINVOKE=1 -I$(BUILDS_OBJ_DIR)/$(1) -I$(MONO_INCLUDE_DIR) runtime/pinvoke.c -c -o $$@
 
 $(BUILDS_OBJ_DIR)/$(1)/corebindings.o: runtime/corebindings.c | $(BUILDS_OBJ_DIR)/$(1)/ emsdk_env.sh
 	$(EMCC) $(3) -Oz -I$(MONO_INCLUDE_DIR) runtime/corebindings.c -c -o $$@
@@ -92,7 +98,7 @@ $(eval $(call InterpBuildTemplate,debug,,$(EMCC_DEBUG_FLAGS),$(MONO_LIBS)))
 $(eval $(call InterpBuildTemplate,release,,$(EMCC_RELEASE_FLAGS),$(MONO_LIBS)))
 
 build:
-	EMSDK_PATH=$(PWD)/wasm/emsdk ../../../.dotnet/dotnet build /p:TargetArchitecture=wasm /p:TargetOS=Browser /p:Configuration=$(CONFIG)
+	EMSDK_PATH=$(PWD)/src/mono/wasm/emsdk $(DOTNET) build /p:TargetArchitecture=wasm /p:TargetOS=Browser /p:Configuration=$(CONFIG) $(TOP)/src/libraries/src.proj /t:NativeBinPlace
 
 clean-emsdk:
 	$(RM) -rf $(EMSDK_LOCAL_PATH)
@@ -100,3 +106,18 @@ clean-emsdk:
 clean:
 	$(RM) -rf $(BUILDS_BIN_DIR) $(BUILDS_OBJ_DIR)
 	$(RM) emsdk_env.sh
+
+# Helper targets
+.PHONY: runtime
+
+runtime:
+	EMSDK_PATH=$(TOP)/src/mono/wasm/emsdk $(TOP)/build.sh --subset mono --arch wasm --os Browser -c $(CONFIG)
+
+test-runner:
+	$(DOTNET) build $(TOP)/src/libraries/Common/tests/WasmTestRunner /p:Configuration=$(CONFIG)
+
+app-builder:
+	$(DOTNET) build $(TOP)/tools-local/tasks/mobile.tasks/WasmAppBuilder
+
+run-tests-%:
+	PATH="$(JSVU):$(PATH)" $(DOTNET) build $(TOP)/src/libraries/$*/tests/ /t:Test /p:TargetOS=Browser /p:TargetArchitecture=wasm /p:Configuration=Release

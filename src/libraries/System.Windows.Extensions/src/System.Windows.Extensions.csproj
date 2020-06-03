@@ -2,7 +2,7 @@
   <PropertyGroup>
     <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetsWindows)' != 'true'">SR.PlatformNotSupported_System_Windows_Extensions</GeneratePlatformNotSupportedAssemblyMessage>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <TargetFrameworks>netcoreapp3.0-Windows_NT;netcoreapp3.0;$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;netcoreapp3.0-Windows_NT;netcoreapp3.0;$(NetCoreAppCurrent)</TargetFrameworks>
     <ExcludeCurrentNetCoreAppFromPackage>true</ExcludeCurrentNetCoreAppFromPackage>
   </PropertyGroup>
   <ItemGroup Condition="'$(TargetsWindows)' == 'true'">

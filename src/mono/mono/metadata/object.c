@@ -6550,7 +6550,8 @@ ves_icall_System_GC_AllocPinnedArray (MonoReflectionTypeHandle array_type, gint3
 	MonoVTable *vtable = mono_class_vtable_checked (mono_domain_get (), klass, error);
 	goto_if_nok (error, fail);
 
-	MonoArray *arr = mono_array_new_specific_internal (vtable, length, TRUE, error);
+	MonoArray *arr;
+	arr = mono_array_new_specific_internal (vtable, length, TRUE, error);
 	goto_if_nok (error, fail);
 
 	return MONO_HANDLE_NEW (MonoArray, arr);

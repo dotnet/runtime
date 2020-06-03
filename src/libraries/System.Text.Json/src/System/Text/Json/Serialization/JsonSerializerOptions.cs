@@ -27,7 +27,7 @@ namespace System.Text.Json
         private JsonNamingPolicy? _dictionaryKeyPolicy;
         private JsonNamingPolicy? _jsonPropertyNamingPolicy;
         private JsonCommentHandling _readCommentHandling;
-        private ReferenceHandling _referenceHandling = ReferenceHandling.Default;
+        private ReferenceHandler? _referenceHandler;
         private JavaScriptEncoder? _encoder = null;
         private JsonIgnoreCondition _defaultIgnoreCondition;
 
@@ -66,7 +66,7 @@ namespace System.Text.Json
             _dictionaryKeyPolicy = options._dictionaryKeyPolicy;
             _jsonPropertyNamingPolicy = options._jsonPropertyNamingPolicy;
             _readCommentHandling = options._readCommentHandling;
-            _referenceHandling = options._referenceHandling;
+            _referenceHandler = options._referenceHandler;
             _encoder = options._encoder;
             _defaultIgnoreCondition = options._defaultIgnoreCondition;
 
@@ -404,16 +404,15 @@ namespace System.Text.Json
         }
 
         /// <summary>
-        /// Defines how references are treated when reading and writing JSON, this is convenient to deal with circularity.
+        /// Configures how object references are handled when reading and writing JSON.
         /// </summary>
-        public ReferenceHandling ReferenceHandling
+        public ReferenceHandler? ReferenceHandler
         {
-            get => _referenceHandling;
+            get => _referenceHandler;
             set
             {
                 VerifyMutable();
-
-                _referenceHandling = value ?? throw new ArgumentNullException(nameof(value));
+                _referenceHandler = value;
             }
         }
 

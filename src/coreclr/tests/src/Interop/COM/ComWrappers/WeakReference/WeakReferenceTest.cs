@@ -65,6 +65,7 @@ namespace ComWrappersTests
 
             protected override object CreateObject(IntPtr externalComObject, CreateObjectFlags flag)
             {
+                Marshal.AddRef(externalComObject);
                 return new WeakReferencableWrapper(externalComObject);
             }
 
@@ -86,11 +87,6 @@ namespace ComWrappersTests
                 IntPtr objRaw = WeakReferenceNative.CreateWeakReferencableObject();
 
                 var obj = (WeakReferencableWrapper)cw.GetOrCreateObjectForComInstance(objRaw, CreateObjectFlags.None);
-
-                // The returned WeakReferencableWrapper from ComWrappers takes ownership
-                // of the ref returned from CreateWeakReferencableObject.
-                // Call Marshal.AddRef to ensure that objRaw owns a reference.
-                Marshal.AddRef(objRaw);
 
                 return (new WeakReference<WeakReferencableWrapper>(obj), objRaw);
             }

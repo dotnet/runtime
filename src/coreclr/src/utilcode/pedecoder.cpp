@@ -317,9 +317,9 @@ CHECK PEDecoder::CheckNTHeaders() const
         // NOTE: the if condition is becuase of a design issue in the CLR and OS loader's remapping
         // of PE32 headers to PE32+. Because IMAGE_NT_HEADERS64 is bigger than IMAGE_NT_HEADERS32,
         // the remapping will expand this part of the header and push out the following
-        // IMAGE_SECTION_HEADER entries. When IMAGE_DOS_HEADER::e_lfanew is large enough (size is
-        // proportional to the number of tools used to produce the inputs to the C++ linker, and
-        // has become larger when producing some WinMD files) this can push the last section header
+        // IMAGE_SECTION_HEADER entries. When IMAGE_DOS_HEADER::e_lfanew is large enough
+        // (size is proportional to the number of tools used to produce the inputs to the C++ linker)
+        // this can push the last section header
         // beyond the boundary set by IMAGE_NT_HEADERS::OptionalHeader.SizeOfHeaders (e.g., this
         // was recently seen where the unaligned size of the headers was 0x1f8 and SizeOfHeaders was
         // 0x200, and the header remapping resulted in new headers size of 0x208). To compensate
@@ -2344,10 +2344,10 @@ void *PEDecoder::GetExport(LPCSTR exportName) const
     {
         return NULL;
     }
-    
+
     uint8_t *imageBase = (uint8_t *)GetBase();
     const IMAGE_EXPORT_DIRECTORY *pExportDir = (const IMAGE_EXPORT_DIRECTORY *)GetDirectoryData(pExportDirectoryEntry);
-    
+
     uint32_t namePointerCount = VAL32(pExportDir->NumberOfNames);
     uint32_t addressTableRVA = VAL32(pExportDir->AddressOfFunctions);
     uint32_t namePointersRVA = VAL32(pExportDir->AddressOfNames);

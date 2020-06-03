@@ -40,9 +40,7 @@ namespace System.Text.Json.Serialization.Converters
             ref ReadStack state,
             [MaybeNullWhen(false)] out TCollection value)
         {
-            bool shouldReadPreservedReferences = options.ReferenceHandling.ShouldReadPreservedReferences();
-
-            if (!state.SupportContinuation && !shouldReadPreservedReferences)
+            if (state.UseFastPath)
             {
                 // Fast path that avoids maintaining state variables and dealing with preserved references.
 
@@ -91,13 +89,14 @@ namespace System.Text.Json.Serialization.Converters
             {
                 // Slower path that supports continuation and preserved references.
 
+                bool preserveReferences = options.ReferenceHandler != null;
                 if (state.Current.ObjectState == StackFrameObjectState.None)
                 {
                     if (reader.TokenType == JsonTokenType.StartArray)
                     {
                         state.Current.ObjectState = StackFrameObjectState.PropertyValue;
                     }
-                    else if (shouldReadPreservedReferences)
+                    else if (preserveReferences)
                     {
                         if (reader.TokenType != JsonTokenType.StartObject)
                         {
@@ -113,7 +112,7 @@ namespace System.Text.Json.Serialization.Converters
                 }
 
                 // Handle the metadata properties.
-                if (shouldReadPreservedReferences && state.Current.ObjectState < StackFrameObjectState.PropertyValue)
+                if (preserveReferences && state.Current.ObjectState < StackFrameObjectState.PropertyValue)
                 {
                     if (JsonSerializer.ResolveMetadata(this, ref reader, ref state))
                     {
@@ -137,10 +136,17 @@ namespace System.Text.Json.Serialization.Converters
                     if (state.Current.MetadataId != null)
                     {
                         value = (TCollection)state.Current.ReturnValue!;
-                        if (!state.ReferenceResolver.AddReferenceOnDeserialize(state.Current.MetadataId, value))
-                        {
-                            ThrowHelper.ThrowJsonException_MetadataDuplicateIdFound(state.Current.MetadataId, ref state);
-                        }
+
+                        // TODO: https://github.com/dotnet/runtime/issues/37168
+                        //Separate logic for IEnumerable to call AddReference when the reader is at `$id`, in order to avoid remembering the last metadata.
+
+                        // Remember the prior metadata and temporarily use '$id' to write it in the path in case AddReference throws
+                        // in this case, the last property seen will be '$values' when we reach this point.
+                        byte[]? lastMetadataProperty = state.Current.JsonPropertyName;
+                        state.Current.JsonPropertyName = JsonSerializer.s_idPropertyName;
+
+                        state.ReferenceResolver.AddReference(state.Current.MetadataId, value);
+                        state.Current.JsonPropertyName = lastMetadataProperty;
                     }
 
                     state.Current.JsonPropertyInfo = state.Current.JsonClassInfo.ElementClassInfo!.PropertyInfoForClassInfo;
@@ -247,13 +253,11 @@ namespace System.Text.Json.Serialization.Converters
             }
             else
             {
-                bool shouldWritePreservedReferences = options.ReferenceHandling.ShouldWritePreservedReferences();
-
                 if (!state.Current.ProcessedStartToken)
                 {
                     state.Current.ProcessedStartToken = true;
 
-                    if (!shouldWritePreservedReferences)
+                    if (options.ReferenceHandler == null)
                     {
                         writer.WriteStartArray();
                     }
