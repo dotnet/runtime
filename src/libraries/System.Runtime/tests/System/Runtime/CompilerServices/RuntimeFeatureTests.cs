@@ -38,14 +38,14 @@ namespace System.Runtime.CompilerServices.Tests
             Assert.True(RuntimeFeature.IsDynamicCodeCompiled);
         }
         
-        public static IEnumerable<string> GetStaticFeatureNames()
+        public static IEnumerable<object[]> GetStaticFeatureNames()
         {
             foreach (var field in typeof(RuntimeFeature).GetFields(BindingFlags.Public | BindingFlags.Static))
             {
                 if (!field.IsLiteral)
                     continue;
 
-                yield return field.Name;
+                yield return new object[] { field.Name };
             }
         }
         
