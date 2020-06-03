@@ -53,6 +53,16 @@ HRESULT Assembler::InitMetaData()
     if(FAILED(hr = m_pEmitter->QueryInterface(IID_IMetaDataImport2, (void**)&m_pImporter)))
         goto exit;
 
+    // For portable PDB debug info generation create new instance of MD emitter
+    // TODO: it might be better to introduce IID_IMetaDataEmit3 interface to be used by this emitter,
+    //  and also new version of the metadata e.g. CLSID_CLR_v3_MetaData
+    if (m_pdbFormat == PdbFormat::PORTABLE)
+    {
+        hr = m_pDisp->DefinePortablePdbScope(CLSID_CorMetaDataRuntime, 0, IID_IMetaDataEmit2,
+            (IUnknown**)&m_pPdbEmitter);
+        if (FAILED(hr))
+            goto exit;
+    }
 
     //m_Parser = new AsmParse(m_pEmitter);
     m_fInitialisedMetaData = TRUE;

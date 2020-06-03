@@ -277,6 +277,51 @@ ErrExit:
     return hr;
 } // RegMeta::CreateNewMD
 
+//*****************************************************************************
+// Create new stgdb for portable pdb
+//*****************************************************************************
+__checkReturn
+HRESULT
+RegMeta::CreateNewPortablePdbMD()
+{
+    HRESULT hr = NOERROR;
+
+    m_OpenFlags = ofWrite;
+
+    // Allocate our m_pStgdb.
+    _ASSERTE(m_pStgdb == NULL);
+    IfNullGo(m_pStgdb = new (nothrow) CLiteWeightStgdbRW);
+
+    // Initialize the new, empty database.
+
+    // First tell the new database what sort of metadata to create
+    m_pStgdb->m_MiniMd.m_OptionValue.m_MetadataVersion = m_OptionValue.m_MetadataVersion;
+    m_pStgdb->m_MiniMd.m_OptionValue.m_InitialSize = m_OptionValue.m_InitialSize;
+    IfFailGo(hr = m_pStgdb->InitNew());
+
+    // Set up the pdb version
+    // TODO: move the constant to a better location
+    static const char* PDB_VERSION = "PDB v1.0";
+    size_t len = strlen(PDB_VERSION) + 1;
+    m_OptionValue.m_RuntimeVersion = new char[len];
+    strcpy_s(m_OptionValue.m_RuntimeVersion, len, PDB_VERSION);
+
+    IfFailGo(hr = m_pStgdb->m_MiniMd.SetOption(&m_OptionValue));
+
+    if (IsThreadSafetyOn())
+    {
+        m_pSemReadWrite = new (nothrow) UTSemReadWrite();
+        IfNullGo(m_pSemReadWrite);
+        IfFailGo(hr = m_pSemReadWrite->Init());
+        m_fOwnSem = true;
+
+        INDEBUG(m_pStgdb->m_MiniMd.Debug_SetLock(m_pSemReadWrite);)
+    }
+
+ErrExit:
+    return hr;
+} // RegMeta::CreateNewPortablePdbMD
+
 #endif //FEATURE_METADATA_EMIT
 
 //*****************************************************************************

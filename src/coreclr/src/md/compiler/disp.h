@@ -89,6 +89,12 @@ public:
         ULONG    cchName,                   // [IN]  the name buffer's size
         ULONG    *pcName);                  // [OUT] the number of characters returend in the buffer
 
+    STDMETHODIMP DefinePortablePdbScope(    // Return code.
+        REFCLSID    rclsid,                 // [in] What version to create.
+        DWORD       dwCreateFlags,          // [in] Flags on the create.
+        REFIID      riid,                   // [in] The interface desired.
+        IUnknown** ppIUnk);                 // [out] Return interface on success.
+
 #ifdef FEATURE_METADATA_CUSTOM_DATA_SOURCE
     // *** IMetaDataDispenserCustom methods ***
     STDMETHODIMP OpenScopeOnCustomDataSource(  // S_OK or error

@@ -1057,6 +1057,7 @@ public:
 	GUID	m_guidDoc;
     // Portable PDB support
     PdbFormat m_pdbFormat;
+    IMetaDataEmit2* m_pPdbEmitter;
 
     // Security paraphernalia
 public:

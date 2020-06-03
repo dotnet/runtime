@@ -160,6 +160,7 @@ Assembler::Assembler()
     indexKeywords(&indxKeywords);
 
     m_pdbFormat = CLASSIC;
+    m_pPdbEmitter = NULL;
 }
 
 
@@ -221,7 +222,11 @@ Assembler::~Assembler()
         m_pEmitter->Release();
         m_pEmitter = NULL;
     }
-
+    if (m_pPdbEmitter != NULL)
+    {
+        m_pPdbEmitter->Release();
+        m_pPdbEmitter = NULL;
+    }
     if (m_pDisp != NULL)
     {
         m_pDisp->Release();

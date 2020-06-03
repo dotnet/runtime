@@ -1562,6 +1562,8 @@ public:
 
     HRESULT CreateNewMD();
 
+    HRESULT CreateNewPortablePdbMD();
+
     HRESULT OpenExistingMD(
         LPCWSTR     szDatabase,             // Name of database.
         void        *pbData,                // Data to open on top of, 0 default.

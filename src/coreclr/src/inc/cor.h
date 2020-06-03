@@ -1459,6 +1459,11 @@ DECLARE_INTERFACE_(IMetaDataDispenserEx, IMetaDataDispenser)
         ULONG    cchName,                   // [IN]  the name buffer's size
         ULONG    *pcName) PURE;             // [OUT] the number of characters returend in the buffer
 
+    STDMETHOD(DefinePortablePdbScope)(      // Return code.
+        REFCLSID    rclsid,                 // [in] What version to create.
+        DWORD       dwCreateFlags,          // [in] Flags on the create.
+        REFIID      riid,                   // [in] The interface desired.
+        IUnknown * *ppIUnk) PURE;           // [out] Return interface on success.
 };
 
 //*****************************************************************************
