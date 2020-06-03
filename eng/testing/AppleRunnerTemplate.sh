@@ -48,7 +48,6 @@ then
         --app="$APP_BUNDLE" \
         --output-directory=$XHARNESS_OUT
     echo "Output files:"
-    ls -lh $XHARNESS_OUT
 else
     echo 'Xharness command is NOT in $PATH'
     dotnet xharness ios test \
@@ -59,6 +58,6 @@ fi
 
 _exitCode=$?
 
-echo "Xharness artifacts: $XHARNESS_OUT"
+echo "Xharness artifacts: `ls -lh $XHARNESS_OUT`"
 
 exit $_exitCode
