@@ -99,6 +99,8 @@
       <Link>Common\System\Security\Cryptography\Asn1\X509ExtensionAsn.manual.cs</Link>
       <DependentUpon>Common\System\Security\Cryptography\Asn1\X509ExtensionAsn.xml</DependentUpon>
     </Compile>
+    <Compile Include="$(CommonPath)Internal\Cryptography\AsymmetricAlgorithmHelpers.Ansi.cs"
+             Link="Common\Internal\Cryptography\AsymmetricAlgorithmHelpers.Ansi.cs" />
     <Compile Include="$(CommonPath)Internal\Cryptography\AsymmetricAlgorithmHelpers.Der.cs"
              Link="Common\Internal\Cryptography\AsymmetricAlgorithmHelpers.Der.cs" />
     <Compile Include="$(CommonPath)Internal\Cryptography\Helpers.cs"
@@ -410,6 +412,8 @@
              Link="Common\Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.Err.cs" />
     <Compile Include="$(CommonPath)Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.Keychain.cs"
              Link="Common\Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.Keychain.cs" />
+    <Compile Include="$(CommonPath)Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.KeyServices.cs"
+             Link="Common\Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.KeyServices.cs" />
     <Compile Include="$(CommonPath)Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.PAL_HashAlgorithm.cs"
              Link="Common\Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.PAL_HashAlgorithm.cs" />
     <Compile Include="$(CommonPath)Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.RSA.cs"
@@ -679,6 +683,6 @@
     <Reference Include="System.Console" Condition="'$(Configuration)' == 'Debug'" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="@(AsnXml)" /> 
+    <None Include="@(AsnXml)" />
   </ItemGroup>
 </Project>

@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.IO;
+using System.Diagnostics;
 using System.Security.Cryptography.Apple;
 using Internal.Cryptography;
 
@@ -107,7 +108,22 @@ namespace System.Security.Cryptography
                         throw new CryptographicException(SR.Cryptography_CSP_NoPrivateKey);
                     }
 
-                    byte[] derFormatSignature = Interop.AppleCrypto.GenerateSignature(keys.PrivateKey, hash);
+                    byte[] derFormatSignature;
+
+                    if (keys.PrivateDataKey != null)
+                    {
+                        derFormatSignature = Interop.AppleCrypto.KeyServicesCreateSignature(
+                            keys.PrivateDataKey,
+                            hash,
+                            Interop.AppleCrypto.PAL_HashAlgorithm.Unknown,
+                            Interop.AppleCrypto.PAL_SignatureAlgorithm.EC,
+                            digest: true);
+                    }
+                    else
+                    {
+                        derFormatSignature = Interop.AppleCrypto.GenerateSignature(keys.PrivateKey, hash);
+                    }
+
                     byte[] ieeeFormatSignature = AsymmetricAlgorithmHelpers.ConvertDerToIeee1363(
                         derFormatSignature.AsSpan(0, derFormatSignature.Length),
                         KeySize);
@@ -123,7 +139,22 @@ namespace System.Security.Cryptography
                         throw new CryptographicException(SR.Cryptography_CSP_NoPrivateKey);
                     }
 
-                    byte[] derFormatSignature = Interop.AppleCrypto.GenerateSignature(keys.PrivateKey, source);
+                    byte[] derFormatSignature;
+
+                    if (keys.PrivateDataKey != null)
+                    {
+                        derFormatSignature = Interop.AppleCrypto.KeyServicesCreateSignature(
+                            keys.PrivateDataKey,
+                            source,
+                            Interop.AppleCrypto.PAL_HashAlgorithm.Unknown,
+                            Interop.AppleCrypto.PAL_SignatureAlgorithm.EC,
+                            digest: true);
+                    }
+                    else
+                    {
+                        derFormatSignature = Interop.AppleCrypto.GenerateSignature(keys.PrivateKey, source);
+                    }
+
                     byte[] ieeeFormatSignature = AsymmetricAlgorithmHelpers.ConvertDerToIeee1363(
                         derFormatSignature.AsSpan(0, derFormatSignature.Length),
                         KeySize);
@@ -165,10 +196,26 @@ namespace System.Security.Cryptography
                         return false;
                     }
 
-                    return Interop.AppleCrypto.VerifySignature(
-                        GetKeys().PublicKey,
-                        hash,
-                        AsymmetricAlgorithmHelpers.ConvertIeee1363ToDer(signature));
+                    SecKeyPair keys = GetKeys();
+                    byte[] formattedSignature = AsymmetricAlgorithmHelpers.ConvertIeee1363ToDer(signature);
+
+                    if (keys.PublicDataKey != null)
+                    {
+                        return Interop.AppleCrypto.KeyServicesVerifySignature(
+                            keys.PublicDataKey,
+                            hash,
+                            formattedSignature,
+                            Interop.AppleCrypto.PAL_HashAlgorithm.Unknown,
+                            Interop.AppleCrypto.PAL_SignatureAlgorithm.EC,
+                            digest: true);
+                    }
+                    else
+                    {
+                        return Interop.AppleCrypto.VerifySignature(
+                            keys.PublicKey,
+                            hash,
+                            formattedSignature);
+                    }
                 }
 
                 protected override byte[] HashData(byte[] data, int offset, int count, HashAlgorithmName hashAlgorithm) =>

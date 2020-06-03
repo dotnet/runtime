@@ -3,6 +3,8 @@
 // See the LICENSE file in the project root for more information.
 
 #nullable enable
+
+using Internal.Cryptography;
 using System.Buffers;
 using System.Diagnostics;
 using System.Formats.Asn1;
@@ -74,7 +76,16 @@ namespace System.Security.Cryptography
 
             Interop.AppleCrypto.EccGenerateKey(keySizeInBits, out publicKey, out privateKey);
 
-            SecKeyPair newPair = SecKeyPair.PublicPrivatePair(publicKey, privateKey);
+            CreateDataKey(
+                privateKey,
+                keySizeInBits,
+                isPrivate: true,
+                out SafeSecKeyRefHandle publicDataKeyHandle,
+                out SafeSecKeyRefHandle? privateDataKeyHandle);
+            Debug.Assert(privateDataKeyHandle != null);
+
+            SecKeyPair newPair = SecKeyPair.PublicPrivatePair(publicKey, privateKey, publicDataKeyHandle, privateDataKeyHandle);
+
             SetKey(newPair);
             return newPair;
         }
@@ -103,7 +114,7 @@ namespace System.Security.Cryptography
 
         internal int SetKeyAndGetSize(SecKeyPair keyPair)
         {
-            int size = GetKeySize(keyPair);
+            int size = GetKeySize(keyPair.PublicKey);
             SetKey(keyPair);
             return size;
         }
@@ -128,20 +139,14 @@ namespace System.Security.Cryptography
             return key;
         }
 
-        internal ECParameters ExportParameters(bool includePrivateParameters, int keySizeInBits)
+        private static ECParameters ExportParameters(SafeSecKeyRefHandle keyHandle, bool includePrivateParameters, int keySizeInBits)
         {
             // Apple requires all private keys to be exported encrypted, but since we're trying to export
             // as parsed structures we will need to decrypt it for the user.
             const string ExportPassword = "DotnetExportPassphrase";
-            SecKeyPair keys = GetOrGenerateKeys(keySizeInBits);
-
-            if (includePrivateParameters && keys.PrivateKey == null)
-            {
-                throw new CryptographicException(SR.Cryptography_OpenInvalidHandle);
-            }
 
             byte[] keyBlob = Interop.AppleCrypto.SecKeyExport(
-                includePrivateParameters ? keys.PrivateKey : keys.PublicKey,
+                keyHandle,
                 exportPrivate: includePrivateParameters,
                 password: ExportPassword);
 
@@ -151,7 +156,7 @@ namespace System.Security.Cryptography
                 {
                     EccKeyFormatHelper.ReadSubjectPublicKeyInfo(
                         keyBlob,
-                        out int localRead,
+                        out _,
                         out ECParameters key);
                     return key;
                 }
@@ -160,7 +165,7 @@ namespace System.Security.Cryptography
                     EccKeyFormatHelper.ReadEncryptedPkcs8(
                         keyBlob,
                         ExportPassword,
-                        out int localRead,
+                        out _,
                         out ECParameters key);
                     return key;
                 }
@@ -171,6 +176,18 @@ namespace System.Security.Cryptography
             }
         }
 
+        internal ECParameters ExportParameters(bool includePrivateParameters, int keySizeInBits)
+        {
+            SecKeyPair keys = GetOrGenerateKeys(keySizeInBits);
+
+            if (includePrivateParameters && keys.PrivateKey == null)
+            {
+                throw new CryptographicException(SR.Cryptography_OpenInvalidHandle);
+            }
+
+            return ExportParameters(includePrivateParameters ? keys.PrivateKey! : keys.PublicKey, includePrivateParameters, keySizeInBits);
+        }
+
         internal int ImportParameters(ECParameters parameters)
         {
             parameters.Validate();
@@ -179,6 +196,7 @@ namespace System.Security.Cryptography
             bool isPrivateKey = parameters.D != null;
             bool hasPublicParameters = parameters.Q.X != null && parameters.Q.Y != null;
             SecKeyPair newKeys;
+            int keySizeInBits;
 
             if (isPrivateKey)
             {
@@ -211,23 +229,34 @@ namespace System.Security.Cryptography
                     throw;
                 }
 
-                newKeys = SecKeyPair.PublicPrivatePair(publicKey, privateKey);
+                keySizeInBits = GetKeySize(publicKey);
+
+                CreateDataKey(
+                    privateKey,
+                    keySizeInBits,
+                    isPrivate: true,
+                    out SafeSecKeyRefHandle publicDataKeyHandle,
+                    out SafeSecKeyRefHandle? privateDataKeyHandle);
+
+                Debug.Assert(privateDataKeyHandle != null);
+                newKeys = SecKeyPair.PublicPrivatePair(publicKey, privateKey, publicDataKeyHandle, privateDataKeyHandle);
             }
             else
             {
                 SafeSecKeyRefHandle publicKey = ImportKey(parameters);
-                newKeys = SecKeyPair.PublicOnly(publicKey);
+                keySizeInBits = GetKeySize(publicKey);
+                CreateDataKey(publicKey, keySizeInBits, isPrivate: false, out SafeSecKeyRefHandle publicDataKeyHandle, out _);
+                newKeys = SecKeyPair.PublicOnly(publicKey, publicDataKeyHandle);
             }
 
-            int size = GetKeySize(newKeys);
             SetKey(newKeys);
 
-            return size;
+            return keySizeInBits;
         }
 
-        private static int GetKeySize(SecKeyPair newKeys)
+        private static int GetKeySize(SafeSecKeyRefHandle publicKey)
         {
-            long size = Interop.AppleCrypto.EccGetKeySizeInBits(newKeys.PublicKey);
+            long size = Interop.AppleCrypto.EccGetKeySizeInBits(publicKey);
             Debug.Assert(size == 256 || size == 384 || size == 521, $"Unknown keysize ({size})");
             return (int)size;
         }
@@ -286,12 +315,75 @@ namespace System.Security.Cryptography
 
                     SafeSecKeyRefHandle publicKey = Interop.AppleCrypto.ImportEphemeralKey(source.Slice(0, localRead), false);
                     SecKeyPair newKeys = SecKeyPair.PublicOnly(publicKey);
-                    int size = GetKeySize(newKeys);
+                    int size = GetKeySize(newKeys.PublicKey);
                     SetKey(newKeys);
 
                     bytesRead = localRead;
                     return size;
                 }
+            }
+        }
+
+        private static void CreateDataKey(
+            SafeSecKeyRefHandle keyHandle,
+            int keySizeInBits,
+            bool isPrivate,
+            out SafeSecKeyRefHandle publicKeyHandle,
+            out SafeSecKeyRefHandle? privateKeyHandle)
+        {
+            ECParameters ecParameters = ExportParameters(keyHandle, isPrivate, keySizeInBits);
+            int fieldSize = AsymmetricAlgorithmHelpers.BitsToBytes(keySizeInBits);
+
+            Debug.Assert(ecParameters.Q.Y != null && ecParameters.Q.Y.Length == fieldSize);
+            Debug.Assert(ecParameters.Q.X != null && ecParameters.Q.X.Length == fieldSize);
+
+            int keySize = 1 + fieldSize * (isPrivate ? 3 : 2);
+            byte[] dataKeyPool = CryptoPool.Rent(keySize);
+            Span<byte> dataKey = dataKeyPool;
+            Range? privateKey = null;
+            Range publicKey;
+
+            try
+            {
+                (publicKey, privateKey) = AsymmetricAlgorithmHelpers.EncodeToUncompressedAnsiX963Key(
+                    ecParameters.Q.X,
+                    ecParameters.Q.Y,
+                    isPrivate ? ecParameters.D : default,
+                    dataKey);
+
+                publicKeyHandle = Interop.AppleCrypto.CreateDataKey(
+                    dataKey[publicKey],
+                    keySizeInBits,
+                    Interop.AppleCrypto.PAL_KeyAlgorithm.EC,
+                    isPublic: true);
+
+                Debug.Assert(privateKey.HasValue == isPrivate, "privateKey.HasValue == isPrivate");
+
+                if (privateKey.HasValue)
+                {
+                    privateKeyHandle = Interop.AppleCrypto.CreateDataKey(
+                        dataKey[privateKey.Value],
+                        keySizeInBits,
+                        Interop.AppleCrypto.PAL_KeyAlgorithm.EC,
+                        isPublic: false);
+                }
+                else
+                {
+                    privateKeyHandle = null;
+                }
+            }
+            finally
+            {
+                if (privateKey.HasValue)
+                {
+                    CryptographicOperations.ZeroMemory(dataKey[privateKey.Value]);
+                }
+
+                CryptographicOperations.ZeroMemory(ecParameters.D);
+
+                // We manually cleared out the private key bytes above if the
+                // key was private, we don't need to clear the buffer again
+                CryptoPool.Return(dataKeyPool, clearSize: 0);
             }
         }
     }
