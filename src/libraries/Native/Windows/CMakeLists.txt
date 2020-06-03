@@ -114,3 +114,4 @@ endif ()
 add_compile_definitions($<$<CONFIG:RELEASE>:NDEBUG>)
 
 add_subdirectory(clrcompression)
+add_subdirectory(../AnyOs/System.Net.Quic.Native "${CMAKE_CURRENT_BINARY_DIR}/System.Net.Quic.Native")

@@ -306,7 +306,6 @@ namespace System.Net.Quic.Implementations.Managed.Internal
             catch (Exception e)
             {
                 if (NetEventSource.IsEnabled) NetEventSource.Error(this, e);
-                Console.WriteLine(e);
             }
 
             // cleanup everything

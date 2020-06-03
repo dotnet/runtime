@@ -72,7 +72,7 @@ namespace System.Net.Quic.Implementations.Managed
             if (endStream)
             {
                 OutboundBuffer.MarkEndOfData();
-                await OutboundBuffer.FlushChunkAsync(cancellationToken);
+                await OutboundBuffer.FlushChunkAsync(cancellationToken).ConfigureAwait(false);
             }
 
             if (OutboundBuffer.WrittenBytes - buffer.Length < OutboundBuffer.MaxData)

@@ -24,8 +24,8 @@ namespace System.Net.Quic.Implementations.Managed
         private static readonly OpenSslQuicMethods.FlushFlightFunc FlushFlightDelegate = FlushFlightImpl;
         private static readonly OpenSslQuicMethods.SendAlertFunc SendAlertDelegate = SendAlertImpl;
 
-        private static readonly Interop.OpenSslQuic.TlsExtServernameCallback tlsExtServernameCallbackDelegate =
-            TlsExtCallbackImpl;
+        // private static readonly Interop.OpenSslQuic.TlsExtServernameCallback tlsExtServernameCallbackDelegate =
+        //     TlsExtCallbackImpl;
 
         private readonly X509CertificateCollection? _clientCertificateCollection;
         private readonly RemoteCertificateValidationCallback? _remoteCertificateValidationCallback;

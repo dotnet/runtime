@@ -15,11 +15,14 @@ internal static partial class Interop
         internal const string Ssl = QuicNative;
         internal const string Crypto = QuicNative;
 
+        private const string EntryPointPrefix = "QuicNative_";
+
+#if WANT_QUIC_PUBLIC
         [DllImport("libdl.so")]
-        static extern IntPtr dlopen(string filename, int flags);
+        private static extern IntPtr dlopen(string filename, int flags);
 
         [DllImport("kernel32.dll")]
-        static extern IntPtr LoadLibrary(string filename);
+        private static extern IntPtr LoadLibrary(string filename);
 
         static OpenSslQuic()
         {
@@ -46,9 +49,11 @@ internal static partial class Interop
             _globalSslCtx = SslCtxNew(TlsMethod());
         }
 
-        private const string EntryPointPrefix = "QuicNative_";
-
         private static readonly IntPtr _globalSslCtx;
+#else
+        private static readonly IntPtr _globalSslCtx = SslCtxNew(TlsMethod());
+#endif
+
         internal static IntPtr SslCreate()
         {
             return SslNew(_globalSslCtx);
@@ -190,7 +195,7 @@ internal static partial class Interop
         internal static int SslSetCiphersuites(IntPtr ssl, string list)
         {
             var ptr = Marshal.StringToHGlobalAnsi(list);
-            int result = SslSetCiphersuites(ssl, (byte*) ptr.ToPointer());
+            int result = SslSetCiphersuites(ssl, (byte*)ptr.ToPointer());
             Marshal.FreeHGlobal(ptr);
             return result;
         }
@@ -201,7 +206,7 @@ internal static partial class Interop
         internal static int SslSetCipherList(IntPtr ssl, string list)
         {
             var ptr = Marshal.StringToHGlobalAnsi(list);
-            int result = SslSetCipherList(ssl, (byte*) ptr.ToPointer());
+            int result = SslSetCipherList(ssl, (byte*)ptr.ToPointer());
             Marshal.FreeHGlobal(ptr);
             return result;
         }

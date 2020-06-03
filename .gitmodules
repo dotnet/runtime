@@ -1,0 +1,5 @@
+[submodule "src/libraries/Native/AnyOS/System.Net.Quic.Native/openssl"]
+	path = src/libraries/Native/AnyOS/System.Net.Quic.Native/openssl
+	url = https://github.com/akamai/openssl.git
+	branch = OpenSSL_1_1_1g-quic
+	shallow = true
