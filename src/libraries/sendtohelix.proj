@@ -35,7 +35,7 @@
     <IncludeDotNetCli>true</IncludeDotNetCli>
     <DotNetCliPackageType>sdk</DotNetCliPackageType>
     <DotNetCliVersion>3.1.201</DotNetCliVersion>
-    <HelixPreCommands>"$HELIX_CORRELATION_PAYLOAD"/dotnet/dotnet tool install --tool-path "$HELIX_CORRELATION_PAYLOAD"/xharness-cli --version $(MicrosoftDotNetXHarnessTestRunnersXunitVersion) --add-source https://dnceng.pkgs.visualstudio.com/public/_packaging/dotnet-eng/nuget/v3/index.json Microsoft.DotNet.XHarness.CLI;</HelixPreCommands>
+    <HelixPreCommands>"$HELIX_CORRELATION_PAYLOAD"/dotnet/dotnet tool install --tool-path "$HELIX_CORRELATION_PAYLOAD"/dotnet --version $(MicrosoftDotNetXHarnessTestRunnersXunitVersion) --add-source https://dnceng.pkgs.visualstudio.com/public/_packaging/dotnet-eng/nuget/v3/index.json Microsoft.DotNet.XHarness.CLI;</HelixPreCommands>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(BuildAllConfigurations)' == 'true'">
