@@ -168,14 +168,19 @@ namespace ILCompiler.PEWriter
 
             _sectionBuilder = new SectionBuilder(target);
 
-            _textSectionIndex = _sectionBuilder.AddSection(TextSectionName, SectionCharacteristics.ContainsCode | SectionCharacteristics.MemExecute | SectionCharacteristics.MemRead, 512);
-            _dataSectionIndex = _sectionBuilder.AddSection(DataSectionName, SectionCharacteristics.ContainsInitializedData | SectionCharacteristics.MemWrite | SectionCharacteristics.MemRead, 512);
+/*            int hugetlbIndex = _sectionBuilder.AddSection(".hugetlb", SectionCharacteristics.ContainsInitializedData | SectionCharacteristics.MemRead, 0x1000);
+            _sectionBuilder.PadOutSectionWithBytes(hugetlbIndex, 60 * 1024);
+*/
+
+            _textSectionIndex = _sectionBuilder.AddSection(TextSectionName, SectionCharacteristics.ContainsCode | SectionCharacteristics.MemExecute | SectionCharacteristics.MemRead, 0x1000);
+            _dataSectionIndex = _sectionBuilder.AddSection(DataSectionName, SectionCharacteristics.ContainsInitializedData | SectionCharacteristics.MemWrite | SectionCharacteristics.MemRead, 0x1000);
 
             if (r2rHeaderExportSymbol != null)
             {
-                _sectionBuilder.AddSection(R2RPEBuilder.ExportDataSectionName, SectionCharacteristics.ContainsInitializedData | SectionCharacteristics.MemRead, 512);
+                int exportIndex = _sectionBuilder.AddSection(R2RPEBuilder.ExportDataSectionName, SectionCharacteristics.ContainsInitializedData | SectionCharacteristics.MemRead, 0x1000);
                 _sectionBuilder.AddExportSymbol("RTR_HEADER", 1, r2rHeaderExportSymbol);
                 _sectionBuilder.SetDllNameForExportDirectoryTable(outputFileSimpleName);
+//                _sectionBuilder.PadOutSectionWithBytes(exportIndex, 63 * 1024);
             }
 
             if (_sectionBuilder.FindSection(R2RPEBuilder.RelocSectionName) == null)
@@ -264,6 +269,8 @@ namespace ILCompiler.PEWriter
         public void Write(Stream outputStream, int timeDateStamp)
         {
             BlobBuilder outputPeFile = new BlobBuilder();
+            _sectionBuilder.PadOutSection(_textSectionIndex, 2 * 1024 * 1024, 128 * 1024);
+            _sectionBuilder.PadOutSection(_dataSectionIndex, 2 * 1024 * 1024, 0);
             Serialize(outputPeFile);
 
             _sectionBuilder.RelocateOutputFile(outputPeFile, Header.ImageBase, outputStream);
@@ -606,6 +613,7 @@ namespace ILCompiler.PEWriter
             int sectionAlignment = 0x1000;
             if (!target.IsWindows && is64BitTarget)
             {
+                fileAlignment = 0x1000;
                 // On Linux, we must match the bottom 12 bits of section RVA's to their file offsets. For this reason
                 // we need the same alignment for both.
                 sectionAlignment = fileAlignment;
