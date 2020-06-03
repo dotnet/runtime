@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 namespace System.Xml.Schema
 {
     using System;
@@ -18,7 +19,7 @@ namespace System.Xml.Schema
             _node = node;
         }
 
-        public override string LookupNamespace(string prefix)
+        public override string? LookupNamespace(string prefix)
         {
             if (prefix == "xml")
             { //Special case for the XML namespace
@@ -30,7 +31,7 @@ namespace System.Xml.Schema
                 namespaces = current.Namespaces.Namespaces;
                 if (namespaces != null && namespaces.Count > 0)
                 {
-                    string uri;
+                    string? uri;
                     if (namespaces.TryGetValue(prefix, out uri))
                         return uri;
                 }
@@ -38,7 +39,7 @@ namespace System.Xml.Schema
             return prefix.Length == 0 ? string.Empty : null;
         }
 
-        public override string LookupPrefix(string ns)
+        public override string? LookupPrefix(string ns)
         {
             if (ns == XmlReservedNs.NsXml)
             { //Special case for the XML namespace

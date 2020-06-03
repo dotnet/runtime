@@ -61,6 +61,7 @@
     </type>
     <!-- Accessed via native code. -->
     <type fullname="System.Runtime.InteropServices.ComTypes.IEnumerable" />
+    <type fullname="System.Runtime.InteropServices.ComTypes.IEnumerator" />
     <type fullname="System.Runtime.InteropServices.CustomMarshalers.*" />
     <!-- Workaround for https://github.com/mono/linker/issues/378 -->
     <type fullname="System.Runtime.InteropServices.IDispatch" />

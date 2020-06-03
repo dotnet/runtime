@@ -249,6 +249,11 @@ namespace Server.Contract
 
         [LCIDConversion(0)]
         int PassThroughLCID();
+
+        System.Collections.IEnumerator ExplicitGetEnumerator();
+
+        [DispId(/*DISPID_NEWENUM*/-4)]
+        System.Collections.IEnumerator GetEnumerator();
     }
 
     [ComVisible(true)]
