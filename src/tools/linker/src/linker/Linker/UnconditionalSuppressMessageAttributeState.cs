@@ -33,8 +33,7 @@ namespace Mono.Linker
 			}
 
 			if (suppressions.ContainsKey (info.Id))
-				_context.LogMessage (MessageContainer.CreateInfoMessage (
-					$"Element {provider} has more than one unconditional suppression. Note that only the last one is used."));
+				_context.LogMessage ($"Element {provider} has more than one unconditional suppression. Note that only the last one is used.");
 
 			suppressions[info.Id] = info;
 		}

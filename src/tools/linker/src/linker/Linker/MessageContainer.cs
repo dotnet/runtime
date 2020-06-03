@@ -10,7 +10,7 @@ namespace Mono.Linker
 {
 	public readonly struct MessageContainer
 	{
-		internal static readonly MessageContainer Empty = new MessageContainer ();
+		public static readonly MessageContainer Empty = new MessageContainer ();
 
 		/// <summary>
 		/// Optional data with a filename, line and column that triggered the
@@ -71,38 +71,6 @@ namespace Mono.Linker
 				return Empty;
 
 			return new MessageContainer (MessageCategory.Warning, text, code, subcategory, origin);
-		}
-
-		/// <summary>
-		/// Create a warning message.
-		/// </summary>
-		/// <param name="context">Context with the relevant warning suppression info.</param>
-		/// <param name="text">Humanly readable message describing the warning</param>
-		/// <param name="code">Unique warning ID. Please see https://github.com/mono/linker/blob/master/doc/error-codes.md
-		/// for the list of warnings and possibly add a new one</param>
-		/// /// <param name="origin">Filename where the warning is coming from</param>
-		/// <param name="subcategory">Optionally, further categorize this warning</param>
-		/// <returns>New MessageContainer of 'Warning' category</returns>
-		internal static MessageContainer CreateWarningMessage (LinkContext context, string text, int code, string origin, string subcategory = MessageSubCategory.None)
-		{
-			MessageOrigin _origin = new MessageOrigin (origin);
-			return CreateWarningMessage (context, text, code, _origin, subcategory);
-		}
-
-		/// <summary>
-		/// Create a warning message.
-		/// </summary>
-		/// <param name="context">Context with the relevant warning suppression info.</param>
-		/// <param name="text">Humanly readable message describing the warning</param>
-		/// <param name="code">Unique warning ID. Please see https://github.com/mono/linker/blob/master/doc/error-codes.md
-		/// for the list of warnings and possibly add a new one</param>
-		/// /// <param name="origin">Type or member where the warning is coming from</param>
-		/// <param name="subcategory">Optionally, further categorize this warning</param>
-		/// <returns>New MessageContainer of 'Warning' category</returns>
-		internal static MessageContainer CreateWarningMessage (LinkContext context, string text, int code, IMemberDefinition origin, string subcategory = MessageSubCategory.None)
-		{
-			MessageOrigin _origin = new MessageOrigin (origin);
-			return CreateWarningMessage (context, text, code, _origin, subcategory);
 		}
 
 		/// <summary>

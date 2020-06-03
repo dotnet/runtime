@@ -48,12 +48,12 @@ namespace Mono.Linker.Steps
 
 			var value = GetAttribute (nav, "featurevalue");
 			if (string.IsNullOrEmpty (value)) {
-				Context.LogMessage (MessageContainer.CreateErrorMessage ($"Failed to process XML substitution: '{_xmlDocumentLocation}'. Feature {feature} does not specify a 'featurevalue' attribute", 1001));
+				Context.LogError ($"Failed to process XML substitution: '{_xmlDocumentLocation}'. Feature {feature} does not specify a 'featurevalue' attribute", 1001);
 				return false;
 			}
 
 			if (!bool.TryParse (value, out bool bValue)) {
-				Context.LogMessage (MessageContainer.CreateErrorMessage ($"Failed to process XML substitution: '{_xmlDocumentLocation}'. Unsupported non-boolean feature definition {feature}", 1002));
+				Context.LogError ($"Failed to process XML substitution: '{_xmlDocumentLocation}'. Unsupported non-boolean feature definition {feature}", 1002);
 				return false;
 			}
 
@@ -88,8 +88,7 @@ namespace Mono.Linker.Steps
 				AssemblyDefinition assembly = Context.GetLoadedAssembly (name.Name);
 
 				if (assembly == null) {
-					Context.LogMessage (MessageContainer.CreateWarningMessage (Context,
-						$"Could not resolve assembly {GetAssemblyName (iterator.Current).Name} specified in {_xmlDocumentLocation}", 2007, _xmlDocumentLocation));
+					Context.LogWarning ($"Could not resolve assembly {GetAssemblyName (iterator.Current).Name} specified in {_xmlDocumentLocation}", 2007, _xmlDocumentLocation);
 					continue;
 				}
 
@@ -115,7 +114,7 @@ namespace Mono.Linker.Steps
 				TypeDefinition type = assembly.MainModule.GetType (fullname);
 
 				if (type == null) {
-					Context.LogMessage (MessageContainer.CreateWarningMessage (Context, $"Could not resolve type '{fullname}' specified in {_xmlDocumentLocation}", 2008, _xmlDocumentLocation));
+					Context.LogWarning ($"Could not resolve type '{fullname}' specified in {_xmlDocumentLocation}", 2008, _xmlDocumentLocation);
 					continue;
 				}
 
@@ -164,8 +163,7 @@ namespace Mono.Linker.Steps
 
 			MethodDefinition method = FindMethod (type, signature);
 			if (method == null) {
-				Context.LogMessage (MessageContainer.CreateWarningMessage (Context,
-					$"Could not find method '{signature}' in type '{type.FullName}' specified in {_xmlDocumentLocation}", 2009, _xmlDocumentLocation));
+				Context.LogWarning ($"Could not find method '{signature}' in type '{type.FullName}' specified in {_xmlDocumentLocation}", 2009, _xmlDocumentLocation);
 				return;
 			}
 
@@ -178,7 +176,7 @@ namespace Mono.Linker.Steps
 				string value = GetAttribute (iterator.Current, "value");
 				if (value != "") {
 					if (!TryConvertValue (value, method.ReturnType, out object res)) {
-						Context.LogMessage (MessageContainer.CreateWarningMessage (Context, $"Invalid value for '{signature}' stub", 2010, _xmlDocumentLocation));
+						Context.LogWarning ($"Invalid value for '{signature}' stub", 2010, _xmlDocumentLocation);
 						return;
 					}
 
@@ -188,7 +186,7 @@ namespace Mono.Linker.Steps
 				Annotations.SetAction (method, MethodAction.ConvertToStub);
 				return;
 			default:
-				Context.LogMessage (MessageContainer.CreateWarningMessage (Context, $"Unknown body modification '{action}' for '{signature}'", 2011, _xmlDocumentLocation));
+				Context.LogWarning ($"Unknown body modification '{action}' for '{signature}'", 2011, _xmlDocumentLocation);
 				return;
 			}
 		}
@@ -201,22 +199,22 @@ namespace Mono.Linker.Steps
 
 			var field = type.Fields.FirstOrDefault (f => f.Name == name);
 			if (field == null) {
-				Context.LogMessage (MessageContainer.CreateWarningMessage (Context, $"Could not find field '{name}' in type '{type.FullName}' specified in { _xmlDocumentLocation}", 2012, _xmlDocumentLocation));
+				Context.LogWarning ($"Could not find field '{name}' in type '{type.FullName}' specified in { _xmlDocumentLocation}", 2012, _xmlDocumentLocation);
 				return;
 			}
 
 			if (!field.IsStatic || field.IsLiteral) {
-				Context.LogMessage (MessageContainer.CreateWarningMessage (Context, $"Substituted field '{name}' needs to be static field.", 2013, _xmlDocumentLocation));
+				Context.LogWarning ($"Substituted field '{name}' needs to be static field.", 2013, _xmlDocumentLocation);
 				return;
 			}
 
 			string value = GetAttribute (iterator.Current, "value");
 			if (string.IsNullOrEmpty (value)) {
-				Context.LogMessage (MessageContainer.CreateWarningMessage (Context, $"Missing 'value' attribute for field '{field}'.", 2014, _xmlDocumentLocation));
+				Context.LogWarning ($"Missing 'value' attribute for field '{field}'.", 2014, _xmlDocumentLocation);
 				return;
 			}
 			if (!TryConvertValue (value, field.FieldType, out object res)) {
-				Context.LogMessage (MessageContainer.CreateWarningMessage (Context, $"Invalid value for '{field}': '{value}'.", 2015, _xmlDocumentLocation));
+				Context.LogWarning ($"Invalid value for '{field}': '{value}'.", 2015, _xmlDocumentLocation);
 				return;
 			}
 
