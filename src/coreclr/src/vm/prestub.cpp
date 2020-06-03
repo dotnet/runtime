@@ -1908,7 +1908,7 @@ extern "C" PCODE STDCALL PreStubWorker(TransitionBlock* pTransitionBlock, Method
                 pDispatchingMT = curobj->GetMethodTable();
 
 
-                if (pDispatchingMT->IsICastable() || pDispatchingMT->IsICastableObject())
+                if (pDispatchingMT->IsICastable() || pDispatchingMT->IsIDynamicInterfaceCastable())
                 {
                     MethodTable* pMDMT = pMD->GetMethodTable();
                     TypeHandle objectType(pDispatchingMT);

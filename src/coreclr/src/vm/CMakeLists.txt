@@ -304,7 +304,6 @@ set(VM_SOURCES_WKS
     cachelinealloc.cpp
     callhelpers.cpp
     callsiteinspect.cpp
-    castableobject.cpp
     ceemain.cpp
     clrconfignative.cpp
     clrex.cpp
@@ -324,6 +323,7 @@ set(VM_SOURCES_WKS
     autotrace.cpp
     diagnosticserver.cpp
     dllimportcallback.cpp
+    dynamicinterfacecastable.cpp
     eeconfig.cpp
     eecontract.cpp
     eemessagebox.cpp

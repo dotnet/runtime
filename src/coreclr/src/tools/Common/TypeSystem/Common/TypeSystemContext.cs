@@ -778,20 +778,20 @@ namespace Internal.TypeSystem
                 flags |= TypeFlags.HasStaticConstructorComputed;
             }
 
-            // We are looking to compute IsICastableObject and we haven't yet assigned a value
-            if ((mask & TypeFlags.IsICastableObjectComputed) == TypeFlags.IsICastableObjectComputed)
+            // We are looking to compute IsIDynamicInterfaceCastable and we haven't yet assigned a value
+            if ((mask & TypeFlags.IsIDynamicInterfaceCastableComputed) == TypeFlags.IsIDynamicInterfaceCastableComputed)
             {
                 TypeDesc typeDefinition = type.GetTypeDefinition();
                 foreach (DefType interfaceType in typeDefinition.RuntimeInterfaces)
                 {
-                    if (IsICastableObjectInterface(interfaceType))
+                    if (IsIDynamicInterfaceCastableInterface(interfaceType))
                     {
-                        flags |= TypeFlags.IsICastableObject;
+                        flags |= TypeFlags.IsIDynamicInterfaceCastable;
                         break;
                     }
                 }
 
-                flags |= TypeFlags.IsICastableObjectComputed;
+                flags |= TypeFlags.IsIDynamicInterfaceCastableComputed;
             }
 
             return flags;
@@ -803,8 +803,8 @@ namespace Internal.TypeSystem
         protected internal abstract bool ComputeHasStaticConstructor(TypeDesc type);
 
         /// <summary>
-        /// Determine if the type implements <code>ICastableObject</code>
+        /// Determine if the type implements <code>IDynamicInterfaceCastable</code>
         /// </summary>
-        protected internal abstract bool IsICastableObjectInterface(DefType type);
+        protected internal abstract bool IsIDynamicInterfaceCastableInterface(DefType type);
     }
 }

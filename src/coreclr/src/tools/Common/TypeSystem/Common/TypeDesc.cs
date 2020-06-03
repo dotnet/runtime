@@ -659,13 +659,13 @@ namespace Internal.TypeSystem
         }
 
         /// <summary>
-        /// Gets a value indicating whether this type implements <code>ICastableObject</code>
+        /// Gets a value indicating whether this type implements <code>IDynamicInterfaceCastable</code>
         /// </summary>
-        public bool IsICastableObject
+        public bool IsIDynamicInterfaceCastable
         {
             get
             {
-                return (GetTypeFlags(TypeFlags.IsICastableObject | TypeFlags.IsICastableObjectComputed) & TypeFlags.IsICastableObject) != 0;
+                return (GetTypeFlags(TypeFlags.IsIDynamicInterfaceCastable | TypeFlags.IsIDynamicInterfaceCastableComputed) & TypeFlags.IsIDynamicInterfaceCastable) != 0;
             }
         }
     }

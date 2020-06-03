@@ -346,7 +346,7 @@ namespace System.Runtime.CompilerServices
         private const uint enum_flag_NonTrivialInterfaceCast = 0x00080000 // enum_flag_Category_Array
                                                              | 0x40000000 // enum_flag_ComObject
                                                              | 0x00400000 // enum_flag_ICastable;
-                                                             | 0x00200000;// enum_flag_ICastableObject;
+                                                             | 0x00200000;// enum_flag_IDynamicInterfaceCastable;
 
         private const int DebugClassNamePtr = // adjust for debug_m_szClassName
 #if DEBUG

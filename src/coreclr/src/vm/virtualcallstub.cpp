@@ -95,7 +95,7 @@ extern size_t g_dispatch_cache_chain_success_counter;
 #undef DECLARE_DATA
 #include "profilepriv.h"
 #include "contractimpl.h"
-#include "castableobject.h"
+#include "dynamicinterfacecastable.h"
 
 SPTR_IMPL_INIT(VirtualCallStubManagerManager, VirtualCallStubManagerManager, g_pManager, NULL);
 
@@ -1839,7 +1839,7 @@ PCODE VirtualCallStubManager::ResolveWorker(StubCallSite* pCallSite,
 #if defined(_DEBUG)
         if (!objectType->IsComObjectType()
             && !objectType->IsICastable()
-            && !objectType->IsICastableObject())
+            && !objectType->IsIDynamicInterfaceCastable())
         {
             CONSISTENCY_CHECK(!MethodTable::GetMethodDescForSlotAddress(target)->IsGenericMethodDefinition());
         }
@@ -2304,14 +2304,14 @@ VirtualCallStubManager::Resolver(
         return Resolver(pResultMT, token, protectedObj, ppTarget, throwOnConflict);
     }
 #endif // FEATURE_ICASTABLE
-    else if (pMT->IsICastableObject()
+    else if (pMT->IsIDynamicInterfaceCastable()
         && protectedObj != NULL
         && *protectedObj != NULL
         && IsInterfaceToken(token))
     {
         MethodTable *pTokenMT = GetTypeFromToken(token);
 
-        OBJECTREF implTypeRef = CastableObject::GetInterfaceImplementation(protectedObj, TypeHandle(pTokenMT), TRUE);
+        OBJECTREF implTypeRef = DynamicInterfaceCastable::GetInterfaceImplementation(protectedObj, TypeHandle(pTokenMT));
         _ASSERTE(implTypeRef != NULL);
 
         ReflectClassBaseObject *implTypeObj = ((ReflectClassBaseObject *)OBJECTREFToObject(implTypeRef));

@@ -5503,7 +5503,7 @@ NativeImageDumper::EnumMnemonics s_MTFlagsHigh[] =
 
     MTFLAG_ENTRY(HasFinalizer),
     MTFLAG_ENTRY(IfNotInterfaceThenMarshalable),
-    MTFLAG_ENTRY(ICastableObject),
+    MTFLAG_ENTRY(IDynamicInterfaceCastable),
 #if defined(FEATURE_ICASTABLE)
     MTFLAG_ENTRY(ICastable),
 #endif

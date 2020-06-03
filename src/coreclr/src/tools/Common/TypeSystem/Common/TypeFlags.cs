@@ -61,7 +61,7 @@ namespace Internal.TypeSystem
         AttributeCacheComputed = 0x08000,
         IsIntrinsic            = 0x10000,
 
-        IsICastableObject           = 0x20000,
-        IsICastableObjectComputed   = 0x40000,
+        IsIDynamicInterfaceCastable         = 0x20000,
+        IsIDynamicInterfaceCastableComputed = 0x40000,
     }
 }

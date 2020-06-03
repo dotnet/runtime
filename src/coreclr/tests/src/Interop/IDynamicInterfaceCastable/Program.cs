@@ -2,14 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using ICastableObjectTests;
 using System;
 using System.Collections.Generic;
-using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 
 using TestLibrary;
 
-namespace ICastableObjectTests
+namespace IDynamicInterfaceCastableTests
 {
     public enum ImplementationToCall
     {
@@ -39,7 +38,7 @@ namespace ICastableObjectTests
 
     public interface INotImplemented { }
 
-    [CastableObjectImplementation]
+    [DynamicInterfaceCastableImplementation]
     public interface ITestImpl : ITest
     {
         ITest ITest.ReturnThis()
@@ -75,7 +74,7 @@ namespace ICastableObjectTests
             switch (toCall)
             {
                 case ImplementationToCall.Class:
-                    CastableObject impl = (CastableObject)this;
+                    DynamicInterfaceCastable impl = (DynamicInterfaceCastable)this;
                     return impl.ImplementedMethod();
                 case ImplementationToCall.Interface:
                     return GetNumber();
@@ -91,7 +90,7 @@ namespace ICastableObjectTests
 
     public interface IOverrideTest : ITestImpl { }
 
-    [CastableObjectImplementation]
+    [DynamicInterfaceCastableImplementation]
     public interface IOverrideTestImpl : IOverrideTest
     {
         public static int GetNumberReturnValue_Override = 10;
@@ -107,7 +106,7 @@ namespace ICastableObjectTests
         }
     }
 
-    [CastableObjectImplementation]
+    [DynamicInterfaceCastableImplementation]
     public interface ITestGenericImpl<T>: ITestGeneric<T>
     {
         T ITestGeneric<T>.ReturnArg(T t)
@@ -116,7 +115,7 @@ namespace ICastableObjectTests
         }
     }
 
-    [CastableObjectImplementation]
+    [DynamicInterfaceCastableImplementation]
     public interface ITestGenericIntImpl: ITestGeneric<int>
     {
         int ITestGeneric<int>.ReturnArg(int i)
@@ -125,7 +124,7 @@ namespace ICastableObjectTests
         }
     }
 
-    [CastableObjectImplementation]
+    [DynamicInterfaceCastableImplementation]
     public interface IDirectlyImplementedImpl : IDirectlyImplemented
     {
         int IDirectlyImplemented.ImplementedMethod()
@@ -139,31 +138,31 @@ namespace ICastableObjectTests
         int OtherMethod();
     }
 
-    public class CastableObjectException : Exception
+    public class DynamicInterfaceCastableException : Exception
     {
         public static string ErrorFormat = "REQUESTED={0}";
-        public CastableObjectException(RuntimeTypeHandle interfaceType)
+        public DynamicInterfaceCastableException(RuntimeTypeHandle interfaceType)
             : base(string.Format(ErrorFormat, Type.GetTypeFromHandle(interfaceType)))
         { }
     }
 
-    public class CastableObject : ICastableObject, IDirectlyImplemented
+    public class DynamicInterfaceCastable : IDynamicInterfaceCastable, IDirectlyImplemented
     {
         private Dictionary<Type, Type> interfaceToImplMap;
 
-        public CastableObject(Dictionary<Type, Type> interfaceToImplMap)
+        public DynamicInterfaceCastable(Dictionary<Type, Type> interfaceToImplMap)
         {
             this.interfaceToImplMap = interfaceToImplMap;
         }
 
-        public RuntimeTypeHandle GetInterfaceImplementation(RuntimeTypeHandle interfaceType, bool throwIfNotFound)
+        public RuntimeTypeHandle GetInterfaceImplementation(RuntimeTypeHandle interfaceType, bool isinstTest)
         {
             Type implMaybe;
             if (interfaceToImplMap != null && interfaceToImplMap.TryGetValue(Type.GetTypeFromHandle(interfaceType), out implMaybe))
                 return implMaybe.TypeHandle;
 
-            if (throwIfNotFound)
-                throw new CastableObjectException(interfaceType);
+            if (!isinstTest)
+                throw new DynamicInterfaceCastableException(interfaceType);
 
             return default(RuntimeTypeHandle);
         }
@@ -175,7 +174,7 @@ namespace ICastableObjectTests
         }
     }
 
-    public class BadCastableObject : ICastableObject
+    public class BadDynamicInterfaceCastable : IDynamicInterfaceCastable
     {
         public enum InvalidReturn
         {
@@ -191,7 +190,7 @@ namespace ICastableObjectTests
 
         public InvalidReturn InvalidImplementation { get; set; }
 
-        public RuntimeTypeHandle GetInterfaceImplementation(RuntimeTypeHandle interfaceType, bool throwIfNotFound)
+        public RuntimeTypeHandle GetInterfaceImplementation(RuntimeTypeHandle interfaceType, bool isinstTest)
         {
             if (!interfaceType.Equals(typeof(ITest).TypeHandle))
                 return default(RuntimeTypeHandle);
@@ -211,7 +210,7 @@ namespace ICastableObjectTests
                 case InvalidReturn.UseOtherInterface:
                     return typeof(ITestOtherImpl).TypeHandle;
                 case InvalidReturn.ThrowException:
-                    throw new CastableObjectException(interfaceType);
+                    throw new DynamicInterfaceCastableException(interfaceType);
                 case InvalidReturn.DefaultHandle:
                 default:
                     return default(RuntimeTypeHandle);
@@ -224,13 +223,13 @@ namespace ICastableObjectTests
 
         private interface INoAttributeImpl : ITestImpl { }
 
-        [CastableObjectImplementation]
+        [DynamicInterfaceCastableImplementation]
         private interface INotTestImpl { }
 
-        [CastableObjectImplementation]
+        [DynamicInterfaceCastableImplementation]
         private interface ITestNoDefaultImpl : ITest { }
 
-        [CastableObjectImplementation]
+        [DynamicInterfaceCastableImplementation]
         private interface ITestPartialImpl : ITest
         {
             ITest ITest.ReturnThis()
@@ -241,12 +240,12 @@ namespace ICastableObjectTests
             }
         }
 
-        [CastableObjectImplementation]
+        [DynamicInterfaceCastableImplementation]
         private interface ITestOtherImpl : ITestImpl, IOther
         {
             int ITest.GetNumber()
             {
-                return BadCastableObject.UseOther(this);
+                return BadDynamicInterfaceCastable.UseOther(this);
             }
         }
     }
@@ -257,7 +256,7 @@ namespace ICastableObjectTests
         {
             Console.WriteLine($"Running {nameof(ValidateBasicInterface)}");
 
-            object castableObj = new CastableObject(new Dictionary<Type, Type> {
+            object castableObj = new DynamicInterfaceCastable(new Dictionary<Type, Type> {
                 { typeof(ITest), typeof(ITestImpl) }
             });
 
@@ -270,10 +269,10 @@ namespace ICastableObjectTests
 
             Console.WriteLine(" -- Validate method call");
             Assert.AreSame(castableObj, testObj.ReturnThis(), $"{nameof(ITest.ReturnThis)} should return actual object");
-            Assert.AreEqual(typeof(CastableObject), testObj.GetMyType(), $"{nameof(ITest.GetMyType)} should return typeof(CastableObject)");
+            Assert.AreEqual(typeof(DynamicInterfaceCastable), testObj.GetMyType(), $"{nameof(ITest.GetMyType)} should return typeof(DynamicInterfaceCastable)");
 
             Console.WriteLine(" -- Validate method call which calls methods using 'this'");
-            Assert.AreEqual(CastableObject.ImplementedMethodReturnValue, testObj.CallImplemented(ImplementationToCall.Class));
+            Assert.AreEqual(DynamicInterfaceCastable.ImplementedMethodReturnValue, testObj.CallImplemented(ImplementationToCall.Class));
             Assert.AreEqual(ITestImpl.GetNumberReturnValue, testObj.CallImplemented(ImplementationToCall.Interface));
             Assert.AreEqual(ITestImpl.GetNumberPrivateReturnValue, testObj.CallImplemented(ImplementationToCall.InterfacePrivate));
             Assert.AreEqual(ITestImpl.GetNumberStaticReturnValue, testObj.CallImplemented(ImplementationToCall.InterfaceStatic));
@@ -287,7 +286,7 @@ namespace ICastableObjectTests
         {
             Console.WriteLine($"Running {nameof(ValidateGenericInterface)}");
 
-            object castableObj = new CastableObject(new Dictionary<Type, Type> {
+            object castableObj = new DynamicInterfaceCastable(new Dictionary<Type, Type> {
                 { typeof(ITestGeneric<int>), typeof(ITestGenericIntImpl) },
                 { typeof(ITestGeneric<string>), typeof(ITestGenericImpl<string>) },
             });
@@ -307,8 +306,8 @@ namespace ICastableObjectTests
             // ITestGeneric<bool> is not recognized
             Assert.IsFalse(castableObj is ITestGeneric<bool>, $"Should not be castable to {nameof(ITestGeneric<bool>)} via is");
             Assert.IsNull(castableObj as ITestGeneric<bool>, $"Should not be castable to {nameof(ITestGeneric<bool>)} via as");
-            var ex = Assert.Throws<CastableObjectException>(() => { var _ = (ITestGeneric<bool>)castableObj; });
-            Assert.AreEqual(string.Format(CastableObjectException.ErrorFormat, typeof(ITestGeneric<bool>)), ex.Message);
+            var ex = Assert.Throws<DynamicInterfaceCastableException>(() => { var _ = (ITestGeneric<bool>)castableObj; });
+            Assert.AreEqual(string.Format(DynamicInterfaceCastableException.ErrorFormat, typeof(ITestGeneric<bool>)), ex.Message);
 
             int expectedInt = 42;
             string expectedStr = "str";
@@ -328,7 +327,7 @@ namespace ICastableObjectTests
         {
             Console.WriteLine($"Running {nameof(ValidateOverriddenInterface)}");
 
-            object castableObj = new CastableObject(new Dictionary<Type, Type> {
+            object castableObj = new DynamicInterfaceCastable(new Dictionary<Type, Type> {
                 { typeof(ITest), typeof(IOverrideTestImpl) },
                 { typeof(IOverrideTest), typeof(IOverrideTestImpl) },
             });
@@ -345,7 +344,7 @@ namespace ICastableObjectTests
             Assert.AreEqual(IOverrideTestImpl.GetMyTypeReturnValue, testObj.GetMyType(), $"{nameof(IOverrideTest.GetMyType)} should return {IOverrideTestImpl.GetMyTypeReturnValue}");
 
             Console.WriteLine(" -- Validate method call which calls methods using 'this'");
-            Assert.AreEqual(CastableObject.ImplementedMethodReturnValue, testObj.CallImplemented(ImplementationToCall.Class));
+            Assert.AreEqual(DynamicInterfaceCastable.ImplementedMethodReturnValue, testObj.CallImplemented(ImplementationToCall.Class));
             Assert.AreEqual(IOverrideTestImpl.GetNumberReturnValue_Override, testObj.CallImplemented(ImplementationToCall.Interface));
             Assert.AreEqual(ITestImpl.GetNumberPrivateReturnValue, testObj.CallImplemented(ImplementationToCall.InterfacePrivate));
             Assert.AreEqual(ITestImpl.GetNumberStaticReturnValue, testObj.CallImplemented(ImplementationToCall.InterfaceStatic));
@@ -361,21 +360,21 @@ namespace ICastableObjectTests
         {
             Console.WriteLine($"Running {nameof(ValidateNotImplemented)}");
 
-            object castableObj = new CastableObject(new Dictionary<Type, Type> {
+            object castableObj = new DynamicInterfaceCastable(new Dictionary<Type, Type> {
                 { typeof(ITest), typeof(ITestImpl) }
             });
 
             Assert.IsFalse(castableObj is INotImplemented, $"Should not be castable to {nameof(INotImplemented)} via is");
             Assert.IsNull(castableObj as INotImplemented, $"Should not be castable to {nameof(INotImplemented)} via as");
-            var ex = Assert.Throws<CastableObjectException>(() => { var _ = (INotImplemented)castableObj; });
-            Assert.AreEqual(string.Format(CastableObjectException.ErrorFormat, typeof(INotImplemented)), ex.Message);
+            var ex = Assert.Throws<DynamicInterfaceCastableException>(() => { var _ = (INotImplemented)castableObj; });
+            Assert.AreEqual(string.Format(DynamicInterfaceCastableException.ErrorFormat, typeof(INotImplemented)), ex.Message);
         }
 
         private static void ValidateDirectlyImplemented()
         {
             Console.WriteLine($"Running {nameof(ValidateDirectlyImplemented)}");
 
-            object castableObj = new CastableObject(new Dictionary<Type, Type> {
+            object castableObj = new DynamicInterfaceCastable(new Dictionary<Type, Type> {
                 { typeof(ITest), typeof(ITestImpl) },
                 { typeof(IDirectlyImplemented), typeof(IDirectlyImplementedImpl) },
             });
@@ -386,61 +385,61 @@ namespace ICastableObjectTests
             var direct = (IDirectlyImplemented)castableObj;
 
             Console.WriteLine(" -- Validate method call");
-            Assert.AreEqual(CastableObject.ImplementedMethodReturnValue, direct.ImplementedMethod());
+            Assert.AreEqual(DynamicInterfaceCastable.ImplementedMethodReturnValue, direct.ImplementedMethod());
 
             Console.WriteLine(" -- Validate delegate call");
             Func<int> func = new Func<int>(direct.ImplementedMethod);
-            Assert.AreEqual(CastableObject.ImplementedMethodReturnValue, func());
+            Assert.AreEqual(DynamicInterfaceCastable.ImplementedMethodReturnValue, func());
         }
 
         private static void ValidateErrorHandling()
         {
             Console.WriteLine($"Running {nameof(ValidateErrorHandling)}");
 
-            var castableObj = new BadCastableObject();
+            var castableObj = new BadDynamicInterfaceCastable();
             Exception ex;
 
             Console.WriteLine(" -- Validate non-interface");
-            castableObj.InvalidImplementation = BadCastableObject.InvalidReturn.Class;
+            castableObj.InvalidImplementation = BadDynamicInterfaceCastable.InvalidReturn.Class;
             ex = Assert.Throws<InvalidOperationException>(() => { var _ = (ITest)castableObj; });
             Console.WriteLine($" ---- {ex.GetType().Name}: {ex.Message}");
 
             Console.WriteLine(" -- Validate missing attribute");
-            castableObj.InvalidImplementation = BadCastableObject.InvalidReturn.NoAttribute;
+            castableObj.InvalidImplementation = BadDynamicInterfaceCastable.InvalidReturn.NoAttribute;
             ex = Assert.Throws<InvalidOperationException>(() => { var _ = (ITest)castableObj; });
             Console.WriteLine($" ---- {ex.GetType().Name}: {ex.Message}");
 
             Console.WriteLine(" -- Validate requested interface not implemented");
-            castableObj.InvalidImplementation = BadCastableObject.InvalidReturn.NotImplemented;
+            castableObj.InvalidImplementation = BadDynamicInterfaceCastable.InvalidReturn.NotImplemented;
             ex = Assert.Throws<InvalidOperationException>(() => { var _ = (ITest)castableObj; });
             Console.WriteLine($" ---- {ex.GetType().Name}: {ex.Message}");
 
             Console.WriteLine(" -- Validate no default implementation");
-            castableObj.InvalidImplementation = BadCastableObject.InvalidReturn.NoDefaultImplementation;
+            castableObj.InvalidImplementation = BadDynamicInterfaceCastable.InvalidReturn.NoDefaultImplementation;
             var noDefaultImpl = (ITest)castableObj;
             ex = Assert.Throws<EntryPointNotFoundException>(() => noDefaultImpl.ReturnThis());
             Console.WriteLine($" ---- {ex.GetType().Name}: {ex.Message}");
 
             Console.WriteLine(" -- Validate default implementation calling method with no default implementation");
-            castableObj.InvalidImplementation = BadCastableObject.InvalidReturn.CallNotImplemented;
+            castableObj.InvalidImplementation = BadDynamicInterfaceCastable.InvalidReturn.CallNotImplemented;
             var callNotImpl = (ITest)castableObj;
             ex = Assert.Throws<EntryPointNotFoundException>(() => callNotImpl.ReturnThis());
             Console.WriteLine($" ---- {ex.GetType().Name}: {ex.Message}");
 
             Console.WriteLine(" -- Validate default implementation calling method taking different interface");
-            castableObj.InvalidImplementation = BadCastableObject.InvalidReturn.UseOtherInterface;
+            castableObj.InvalidImplementation = BadDynamicInterfaceCastable.InvalidReturn.UseOtherInterface;
             var useOther = (ITest)castableObj;
             ex = Assert.Throws<InvalidCastException>(() => useOther.GetNumber());
             Console.WriteLine($" ---- {ex.GetType().Name}: {ex.Message}");
 
             Console.WriteLine(" -- Validate exception thrown");
-            castableObj.InvalidImplementation = BadCastableObject.InvalidReturn.ThrowException;
-            ex = Assert.Throws<CastableObjectException>(() => { var _ = (ITest)castableObj; });
-            Assert.AreEqual(string.Format(CastableObjectException.ErrorFormat, typeof(ITest)), ex.Message);
+            castableObj.InvalidImplementation = BadDynamicInterfaceCastable.InvalidReturn.ThrowException;
+            ex = Assert.Throws<DynamicInterfaceCastableException>(() => { var _ = (ITest)castableObj; });
+            Assert.AreEqual(string.Format(DynamicInterfaceCastableException.ErrorFormat, typeof(ITest)), ex.Message);
             Console.WriteLine($" ---- {ex.GetType().Name}: {ex.Message}");
 
             Console.WriteLine(" -- Validate return default handle");
-            castableObj.InvalidImplementation = BadCastableObject.InvalidReturn.DefaultHandle;
+            castableObj.InvalidImplementation = BadDynamicInterfaceCastable.InvalidReturn.DefaultHandle;
             ex = Assert.Throws<InvalidCastException>(() => { var _ = (ITest)castableObj; });
             Console.WriteLine($" ---- {ex.GetType().Name}: {ex.Message}");
         }

@@ -1608,7 +1608,7 @@ void SystemDomain::LoadBaseSystemClasses()
     g_pBaseCOMObject = MscorlibBinder::GetClass(CLASS__COM_OBJECT);
 #endif
 
-    g_pICastableObjectInterface = MscorlibBinder::GetClass(CLASS__ICASTABLEOBJECT);
+    g_pIDynamicInterfaceCastableInterface = MscorlibBinder::GetClass(CLASS__IDYNAMICINTERFACECASTABLE);
 
 #ifdef FEATURE_ICASTABLE
     g_pICastableInterface = MscorlibBinder::GetClass(CLASS__ICASTABLE);

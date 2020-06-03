@@ -22,30 +22,5 @@ namespace System.Runtime.CompilerServices
         {
             return castable.GetImplType(new RuntimeTypeHandle(interfaceType)).GetRuntimeType();
         }
-
-        [Diagnostics.StackTraceHidden]
-        internal static RuntimeType? GetInterfaceImplementation(ICastableObject castableObject, RuntimeType interfaceType, bool throwIfNotFound)
-        {
-            RuntimeTypeHandle handle = castableObject.GetInterfaceImplementation(new RuntimeTypeHandle(interfaceType), throwIfNotFound);
-            if (handle.Equals(default))
-            {
-                if (throwIfNotFound)
-                    throw new InvalidCastException(SR.Format(SR.InvalidCast_FromTo, castableObject.GetType(), interfaceType));
-
-                return null;
-            }
-
-            RuntimeType implType = handle.GetRuntimeType();
-            if (!implType.IsInterface)
-                throw new InvalidOperationException(SR.Format(SR.ICastableObject_NotInterface, implType.ToString()));
-
-            if (!implType.IsDefined(typeof(CastableObjectImplementationAttribute), inherit: false))
-                throw new InvalidOperationException(SR.Format(SR.ICastableObject_MissingImplementationAttribute, implType, nameof(CastableObjectImplementationAttribute)));
-
-            if (!implType.ImplementInterface(interfaceType))
-                throw new InvalidOperationException(SR.Format(SR.ICastableObject_DoesNotImplementRequested, implType, interfaceType));
-
-            return implType;
-        }
     }
 }

@@ -1968,9 +1968,9 @@ MethodTableBuilder::BuildMethodTableThrowing(
         }
 #endif // FEATURE_ICASTABLE
 
-        if (g_pICastableObjectInterface != NULL && pMT->CanCastToInterface(g_pICastableObjectInterface))
+        if (g_pIDynamicInterfaceCastableInterface != NULL && pMT->CanCastToInterface(g_pIDynamicInterfaceCastableInterface))
         {
-            pMT->SetICastableObject();
+            pMT->SetIDynamicInterfaceCastable();
         }
     }
 

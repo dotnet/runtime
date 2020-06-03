@@ -61,7 +61,7 @@
 #include "typedesc.h"
 #include "array.h"
 #include "castcache.h"
-#include "castableobject.h"
+#include "dynamicinterfacecastable.h"
 
 #ifdef FEATURE_INTERPRETER
 #include "interpreter.h"
@@ -606,16 +606,16 @@ BOOL MethodTable::IsICastable()
 #endif
 }
 
-void MethodTable::SetICastableObject()
+void MethodTable::SetIDynamicInterfaceCastable()
 {
     LIMITED_METHOD_CONTRACT;
-    SetFlag(enum_flag_ICastableObject);
+    SetFlag(enum_flag_IDynamicInterfaceCastable);
 }
 
-BOOL MethodTable::IsICastableObject()
+BOOL MethodTable::IsIDynamicInterfaceCastable()
 {
     LIMITED_METHOD_DAC_CONTRACT;
-    return GetFlag(enum_flag_ICastableObject);
+    return GetFlag(enum_flag_IDynamicInterfaceCastable);
 }
 
 #endif // !DACCESS_COMPILE
@@ -772,10 +772,10 @@ PTR_MethodTable InterfaceInfo_t::GetApproxMethodTable(Module * pContainingModule
     }
 #endif
 
-    // For ICastableObject, instead of trying to find method implementation in the real object type
+    // For IDynamicInterfaceCastable, instead of trying to find method implementation in the real object type
     // we call GetInterfaceImplementation on the object and call GetMethodDescForInterfaceMethod
     // with whatever type it returns.
-    if (pServerMT->IsICastableObject()
+    if (pServerMT->IsIDynamicInterfaceCastable()
         && !pItfMD->HasMethodInstantiation()
         && !TypeHandle(pServerMT).CanCastTo(ownerType)) // we need to make sure object doesn't implement this interface in a natural way
     {
@@ -783,7 +783,7 @@ PTR_MethodTable InterfaceInfo_t::GetApproxMethodTable(Module * pContainingModule
         OBJECTREF obj = *pServer;
 
         GCPROTECT_BEGIN(obj);
-        OBJECTREF implTypeRef = CastableObject::GetInterfaceImplementation(&obj, ownerType, TRUE);
+        OBJECTREF implTypeRef = DynamicInterfaceCastable::GetInterfaceImplementation(&obj, ownerType);
         _ASSERTE(implTypeRef != NULL);
 
         ReflectClassBaseObject *implTypeObj = ((ReflectClassBaseObject *)OBJECTREFToObject(implTypeRef));
@@ -1706,8 +1706,8 @@ BOOL MethodTable::CanCastTo(MethodTable* pTargetMT, TypeHandlePairList* pVisited
                                 CanCastToClass(pTargetMT, pVisited);
 
     // We only consider type-based conversion rules here.
-    // Therefore a negative result cannot rule out convertibility for ICastable, ICastableObject, and COM objects
-    if (result || !(pTargetMT->IsInterface() && (this->IsComObjectType() || this->IsICastable() || this->IsICastableObject())))
+    // Therefore a negative result cannot rule out convertibility for ICastable, IDynamicInterfaceCastable, and COM objects
+    if (result || !(pTargetMT->IsInterface() && (this->IsComObjectType() || this->IsICastable() || this->IsIDynamicInterfaceCastable())))
     {
         CastCache::TryAddToCache(this, pTargetMT, (BOOL)result);
     }

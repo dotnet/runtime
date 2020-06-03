@@ -1777,7 +1777,7 @@ namespace Internal.JitInterface
 
             TypeCompareState result = TypeCompareState.May;
 
-            if (fromType.IsICastableObject)
+            if (fromType.IsIDynamicInterfaceCastable)
             {
                 result = TypeCompareState.May;
             }

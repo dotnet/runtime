@@ -4,11 +4,11 @@
 
 
 #include "common.h"
-#include "castableobject.h"
+#include "dynamicinterfacecastable.h"
 
 namespace
 {
-    OBJECTREF CallGetInterfaceImplementation(OBJECTREF *objPROTECTED, const TypeHandle &interfaceTypeHandle, BOOL throwIfNotFound)
+    OBJECTREF CallGetInterfaceImplementation(OBJECTREF *objPROTECTED, const TypeHandle &interfaceTypeHandle, BOOL isinstTest)
     {
         CONTRACT(OBJECTREF) {
             THROWS;
@@ -16,17 +16,17 @@ namespace
             MODE_COOPERATIVE;
             PRECONDITION(objPROTECTED != NULL);
             PRECONDITION(interfaceTypeHandle.IsInterface());
-            POSTCONDITION(!(throwIfNotFound && RETVAL == NULL));
+            POSTCONDITION(isinstTest || RETVAL != NULL);
         } CONTRACT_END;
 
-        PREPARE_NONVIRTUAL_CALLSITE(METHOD__ICASTABLEHELPERS__GET_INTERFACE_IMPLEMENTATION);
+        PREPARE_NONVIRTUAL_CALLSITE(METHOD__DYNAMICINTERFACECASTABLEHELPERS__GET_INTERFACE_IMPLEMENTATION);
 
         OBJECTREF managedType = interfaceTypeHandle.GetManagedClassObject(); // GC triggers
 
         DECLARE_ARGHOLDER_ARRAY(args, 3);
         args[ARGNUM_0] = OBJECTREF_TO_ARGHOLDER(*objPROTECTED);
         args[ARGNUM_1] = OBJECTREF_TO_ARGHOLDER(managedType);
-        args[ARGNUM_2] = BOOL_TO_ARGHOLDER(throwIfNotFound);
+        args[ARGNUM_2] = BOOL_TO_ARGHOLDER(isinstTest);
 
         OBJECTREF implTypeRef;
         CALL_MANAGED_METHOD_RETREF(implTypeRef, OBJECTREF, args);
@@ -36,7 +36,7 @@ namespace
     }
 }
 
-bool CastableObject::IsInstanceOf(OBJECTREF *objPROTECTED, const TypeHandle &typeHandle, BOOL throwIfNotFound)
+bool DynamicInterfaceCastable::IsInstanceOf(OBJECTREF *objPROTECTED, const TypeHandle &typeHandle)
 {
     CONTRACT(bool) {
         THROWS;
@@ -46,11 +46,11 @@ bool CastableObject::IsInstanceOf(OBJECTREF *objPROTECTED, const TypeHandle &typ
         PRECONDITION(typeHandle.IsInterface());
     } CONTRACT_END;
 
-    OBJECTREF implTypeObj = CallGetInterfaceImplementation(objPROTECTED, typeHandle, throwIfNotFound);
+    OBJECTREF implTypeObj = CallGetInterfaceImplementation(objPROTECTED, typeHandle, TRUE);
     RETURN (implTypeObj != NULL);
 }
 
-OBJECTREF CastableObject::GetInterfaceImplementation(OBJECTREF *objPROTECTED, const TypeHandle &typeHandle, BOOL throwIfNotFound)
+OBJECTREF DynamicInterfaceCastable::GetInterfaceImplementation(OBJECTREF *objPROTECTED, const TypeHandle &typeHandle)
 {
     CONTRACT(OBJECTREF) {
         THROWS;
@@ -58,7 +58,8 @@ OBJECTREF CastableObject::GetInterfaceImplementation(OBJECTREF *objPROTECTED, co
         MODE_COOPERATIVE;
         PRECONDITION(objPROTECTED != NULL);
         PRECONDITION(typeHandle.IsInterface());
+        POSTCONDITION(RETVAL != NULL);
     } CONTRACT_END;
 
-    RETURN CallGetInterfaceImplementation(objPROTECTED, typeHandle, throwIfNotFound);
+    RETURN CallGetInterfaceImplementation(objPROTECTED, typeHandle, FALSE);
 }

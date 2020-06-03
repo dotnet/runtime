@@ -87,7 +87,7 @@ GPTR_IMPL(MethodTable,      g_TypedReferenceMT);
 GPTR_IMPL(MethodTable,      g_pBaseCOMObject);
 #endif
 
-GPTR_IMPL(MethodTable,      g_pICastableObjectInterface);
+GPTR_IMPL(MethodTable,      g_pIDynamicInterfaceCastableInterface);
 
 #ifdef FEATURE_ICASTABLE
 GPTR_IMPL(MethodTable,      g_pICastableInterface);

@@ -25,7 +25,7 @@
 #include "comdelegate.h"
 #include "corprof.h"
 #include "eeprofinterfaces.h"
-#include "castableobject.h"
+#include "dynamicinterfacecastable.h"
 
 #ifndef TARGET_UNIX
 // Included for referencing __report_gsfailure
@@ -2157,9 +2157,11 @@ BOOL ObjIsInstanceOfCore(Object *pObject, TypeHandle toTypeHnd, BOOL throwCastEx
         }
         else
 #endif // FEATURE_ICASTABLE
-        if (pMT->IsICastableObject())
+        if (pMT->IsIDynamicInterfaceCastable())
         {
-            fCast = CastableObject::IsInstanceOf(&obj, toTypeHnd, throwCastException);
+            fCast = throwCastException
+                ? (DynamicInterfaceCastable::GetInterfaceImplementation(&obj, toTypeHnd) != NULL)
+                : DynamicInterfaceCastable::IsInstanceOf(&obj, toTypeHnd);
         }
     }
 
