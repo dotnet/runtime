@@ -137,7 +137,7 @@ namespace Mono.Linker.Steps
 			CopyConfigFileIfNeeded (assembly, directory);
 
 			var action = Annotations.GetAction (assembly);
-			Context.LogMessage (MessageContainer.CreateInfoMessage ($"Output action: {action,8} assembly: {assembly}"));
+			Context.LogMessage ($"Output action: {action,8} assembly: {assembly}");
 
 			switch (action) {
 			case AssemblyAction.Save:

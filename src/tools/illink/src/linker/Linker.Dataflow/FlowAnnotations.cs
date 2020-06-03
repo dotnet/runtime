@@ -91,9 +91,9 @@ namespace Mono.Linker.Dataflow
 				if (attribute.ConstructorArguments.Count == 1)
 					return (DynamicallyAccessedMemberTypes) (int) attribute.ConstructorArguments[0].Value;
 				else if (attribute.ConstructorArguments.Count == 0)
-					_context.LogMessage (MessageContainer.CreateWarningMessage (_context, $"DynamicallyAccessedMembersAttribute was specified but no argument was proportioned", 2020, locationMember ?? (provider as IMemberDefinition)));
+					_context.LogWarning ($"DynamicallyAccessedMembersAttribute was specified but no argument was proportioned", 2020, locationMember ?? (provider as IMemberDefinition));
 				else
-					_context.LogMessage (MessageContainer.CreateWarningMessage (_context, $"DynamicallyAccessedMembersAttribute was specified but there is more than one argument", 2022, locationMember ?? (provider as IMemberDefinition)));
+					_context.LogWarning ($"DynamicallyAccessedMembersAttribute was specified but there is more than one argument", 2022, locationMember ?? (provider as IMemberDefinition));
 			}
 			return DynamicallyAccessedMemberTypes.None;
 		}

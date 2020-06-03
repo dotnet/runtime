@@ -678,7 +678,7 @@ namespace Mono.Linker
 					context.LogMessage (lex.MessageContainer);
 					Console.Error.WriteLine (ex.ToString ());
 				} else {
-					context.LogMessage (MessageContainer.CreateErrorMessage ($"IL Linker has encountered an unexpected error. Please report the issue at https://github.com/mono/linker/issues \n{ex}", 1012));
+					context.LogError ($"IL Linker has encountered an unexpected error. Please report the issue at https://github.com/mono/linker/issues \n{ex}", 1012);
 				}
 
 				return false;
