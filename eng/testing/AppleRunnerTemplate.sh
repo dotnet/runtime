@@ -48,7 +48,6 @@ then
         --app="$APP_BUNDLE" \
         --xcode="/Applications/Xcode114.app" \
         --output-directory=$XHARNESS_OUT
-    echo "Output files:"
 else
     echo 'Xharness command is NOT in $PATH'
     dotnet xharness ios test \
