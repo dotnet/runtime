@@ -126,7 +126,7 @@ namespace System.Net.Sockets
         // Sentinel handle value to identify events from the "shutdown pipe," used to signal an event loop to stop
         // processing events.
         //
-        private static readonly IntPtr ShutdownHandle = (IntPtr)(-1);
+        private static IntPtr ShutdownHandle => (IntPtr)(-1);
 
         //
         // The next handle value to be allocated for this event port.
@@ -436,9 +436,8 @@ namespace System.Net.Sockets
             public bool Shutdown { get; private set; }
             public Interop.Sys.SocketEvent* Buffer { get; }
 
-            private ConcurrentDictionary<IntPtr, SocketAsyncContextWrapper> _handleToContextMap;
-            private ConcurrentQueue<SocketIOEvent> _eventQueue;
-            private IntPtr _shutdownHandle;
+            private readonly ConcurrentDictionary<IntPtr, SocketAsyncContextWrapper> _handleToContextMap;
+            private readonly ConcurrentQueue<SocketIOEvent> _eventQueue;
 
             public SocketEventHandler(SocketAsyncEngine engine)
             {
@@ -446,7 +445,6 @@ namespace System.Net.Sockets
                 Buffer = engine._buffer;
                 _handleToContextMap = engine._handleToContextMap;
                 _eventQueue = engine._eventQueue;
-                _shutdownHandle = ShutdownHandle;
             }
 
             [MethodImpl(MethodImplOptions.NoInlining)]
@@ -458,9 +456,10 @@ namespace System.Net.Sockets
                 {
                     IntPtr handle = socketEvent.Data;
 
-                    if (_handleToContextMap.TryGetValue(handle, out SocketAsyncContextWrapper contextWrapper) && (context = contextWrapper.Context) != null)
+                    if (_handleToContextMap.TryGetValue(handle, out SocketAsyncContextWrapper contextWrapper))
                     {
                         Debug.Assert(handle.ToInt64() < MaxHandles.ToInt64(), $"Unexpected values: handle={handle}, MaxHandles={MaxHandles}");
+                        context = contextWrapper.Context;
 
                         Interop.Sys.SocketEvents events = context.HandleSyncEventsSpeculatively(socketEvent.Events);
                         if (events != Interop.Sys.SocketEvents.None)
@@ -470,7 +469,7 @@ namespace System.Net.Sockets
                             enqueuedEvent = true;
                         }
                     }
-                    else if (handle == _shutdownHandle)
+                    else if (handle == ShutdownHandle)
                     {
                         Shutdown = true;
                     }
