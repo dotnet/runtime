@@ -145,8 +145,6 @@ while [[ $# > 0 ]]; do
       if [ -z ${2+x} ]; then
         showSubsetHelp
         exit 0
-        # arguments="$arguments /p:Subset=help"
-        # shift 1
       else
         passedSubset="$(echo "$2" | awk '{print tolower($0)}')"
         if [ $passedSubset == "help" ]; then
