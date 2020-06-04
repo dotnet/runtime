@@ -105,7 +105,7 @@
     <!-- System.Data.SqlClient -->
     <SystemDataSqlClientVersion>4.8.0</SystemDataSqlClientVersion>
     <!-- Testing -->
-    <MicrosoftNETTestSdkVersion>16.7.0-preview-20200529-01</MicrosoftNETTestSdkVersion>
+    <MicrosoftNETTestSdkVersion>16.7.0-preview-20200603-01</MicrosoftNETTestSdkVersion>
     <MicrosoftDotNetXHarnessTestRunnersXunitVersion>1.0.0-prerelease.20303.2</MicrosoftDotNetXHarnessTestRunnersXunitVersion>
     <XUnitVersion>2.4.1</XUnitVersion>
     <CoverletCollectorVersion>1.3.0</CoverletCollectorVersion>
@@ -115,7 +115,7 @@
     <!-- Docs -->
     <MicrosoftPrivateIntellisenseVersion>3.1.0-preview-20200129.1</MicrosoftPrivateIntellisenseVersion>
     <!-- ILLink -->
-    <MicrosoftNETILLinkTasksVersion>5.0.0-preview.3.20303.1</MicrosoftNETILLinkTasksVersion>
+    <MicrosoftNETILLinkTasksVersion>5.0.0-preview.3.20304.2</MicrosoftNETILLinkTasksVersion>
     <!-- Mono LLVM -->
     <runtimelinuxx64MicrosoftNETCoreRuntimeMonoLLVMSdkVersion>9.0.1-alpha.1.20301.1</runtimelinuxx64MicrosoftNETCoreRuntimeMonoLLVMSdkVersion>
     <runtimelinuxx64MicrosoftNETCoreRuntimeMonoLLVMToolsVersion>9.0.1-alpha.1.20301.1</runtimelinuxx64MicrosoftNETCoreRuntimeMonoLLVMToolsVersion>
