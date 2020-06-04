@@ -64,7 +64,13 @@ namespace System.Globalization.Tests
 
             if (StatusValue.StartsWith("[", StringComparison.Ordinal) && string.CompareOrdinal(StatusValue, "[]") != 0)
             {
-                string[] statusCodes = StatusValue.Substring(1, StatusValue.Length - 2).Split(',');
+                if (string.CompareOrdinal(StatusValue, Value) == 0)
+                {
+                    Success = false;
+                    return;
+                }
+
+                string[] statusCodes = StatusValue[1..^1].Split(',');
                 for (int i = 0; i < statusCodes.Length; i++)
                 {
                     string statusCode = statusCodes[i].Trim();

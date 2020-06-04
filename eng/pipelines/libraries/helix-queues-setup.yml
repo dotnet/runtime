@@ -37,7 +37,7 @@ jobs:
     # Linux musl x64
     - ${{ if eq(parameters.platform, 'Linux_musl_x64') }}:
       - ${{ if eq(parameters.jobParameters.isFullMatrix, false) }}:
-        - (Alpine.312.Amd64.Open)ubuntu.1604.amd64.open@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.12-helix-20200601195603-e06dc59
+        - (Alpine.312.Amd64.Open)ubuntu.1604.amd64.open@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.12-helix-20200602002622-e06dc59
       - ${{ if eq(parameters.jobParameters.isFullMatrix, true) }}:
         - (Alpine.310.Amd64.Open)ubuntu.1604.amd64.open@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.10-helix-bfcd90a-20200123191054
         - (Alpine.311.Amd64.Open)ubuntu.1604.amd64.open@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.11-helix-bfcd90a-20200123191053
@@ -46,7 +46,7 @@ jobs:
     # Linux musl arm64
     - ${{ if eq(parameters.platform, 'Linux_musl_arm64') }}:
       - ${{ if eq(parameters.jobParameters.isFullMatrix, true) }}:
-        - (Alpine.312.Arm64.Open)ubuntu.1804.armarch.open@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.12-helix-arm64v8-20200601195550-e06dc59
+        - (Alpine.312.Arm64.Open)ubuntu.1804.armarch.open@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.12-helix-arm64v8-20200602002604-25f8a3e
 
     # Linux x64
     - ${{ if eq(parameters.platform, 'Linux_x64') }}:
