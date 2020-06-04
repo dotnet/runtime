@@ -251,7 +251,11 @@ namespace System.IO
                 case '\t':
                     return ConsoleKey.Tab;
 
+                case '\r':
+                    return ConsoleKey.Enter;
+
                 case '\n':
+                    isCtrl = true;
                     return ConsoleKey.Enter;
 
                 case (char)(0x1B):
