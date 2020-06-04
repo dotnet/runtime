@@ -776,39 +776,47 @@ namespace System.Net.Http.Functional.Tests
             await LoopbackServer.CreateClientAndServerAsync(
                 async uri =>
                 {
-                    // To prevent deadlock
-                    await Task.Yield();
-
-                    int currentThreadId = Thread.CurrentThread.ManagedThreadId;
-
-                    using HttpClient httpClient = CreateHttpClient();
-
-                    HttpResponseMessage response = httpClient.Send(new HttpRequestMessage(HttpMethod.Get, uri) {
-                        Content = new CustomContent(stream =>
-                        {
-                            Assert.Equal(currentThreadId, Thread.CurrentThread.ManagedThreadId);
-                            stream.Write(Encoding.UTF8.GetBytes(content));
-                        })
-                    }, completionOption);
-
-                    // ToDo: use synchronous ReadAsStream once it's been implemented.
-                    if (completionOption == HttpCompletionOption.ResponseContentRead)
+                    try
                     {
-                        // Should be buffered thus return completed task and execute synchronously.
-                        Stream contentStream = await response.Content.ReadAsStreamAsync();
-                        Assert.Equal(currentThreadId, Thread.CurrentThread.ManagedThreadId);                        
-                        using (StreamReader sr = new StreamReader(contentStream))
+                        // To prevent deadlock
+                        await Task.Yield();
+
+                        int currentThreadId = Thread.CurrentThread.ManagedThreadId;
+
+                        using HttpClient httpClient = CreateHttpClient();
+
+                        HttpResponseMessage response = httpClient.Send(new HttpRequestMessage(HttpMethod.Get, uri) {
+                            Content = new CustomContent(stream =>
+                            {
+                                Assert.Equal(currentThreadId, Thread.CurrentThread.ManagedThreadId);
+                                stream.Write(Encoding.UTF8.GetBytes(content));
+                            })
+                        }, completionOption);
+
+                        // ToDo: use synchronous ReadAsStream once it's been implemented.
+                        if (completionOption == HttpCompletionOption.ResponseContentRead)
                         {
-                            Assert.Equal(content, sr.ReadToEnd());
+                            // Should be buffered thus return completed task and execute synchronously.
+                            Stream contentStream = await response.Content.ReadAsStreamAsync();
+                            Assert.Equal(currentThreadId, Thread.CurrentThread.ManagedThreadId);                        
+                            using (StreamReader sr = new StreamReader(contentStream))
+                            {
+                                Assert.Equal(content, sr.ReadToEnd());
+                            }
                         }
                     }
-                    mres.Set();
+                    finally
+                    {
+                        mres.Set();
+                    }
                 },
                 async server =>
                 {
                     await server.AcceptConnectionAsync(async connection =>
                     {
                         await connection.ReadRequestHeaderAndSendResponseAsync(content: content);
+
+                        // To keep the connection open until the response is fully read.
                         mres.Wait();
                     });
                 });
@@ -824,6 +832,7 @@ namespace System.Net.Http.Functional.Tests
                 {
                     var sendTask = Task.Run(() => {
                         using HttpClient httpClient = CreateHttpClient();
+
                         HttpResponseMessage response = httpClient.Send(new HttpRequestMessage(HttpMethod.Get, uri) {
                             Content = new CustomContent(new Action<Stream>(stream =>
                             {
@@ -837,19 +846,65 @@ namespace System.Net.Http.Functional.Tests
                     });
 
                     TaskCanceledException ex = await Assert.ThrowsAsync<TaskCanceledException>(() => sendTask);
-                    Assert.Contains("HttpContent.CopyTo(", ex.InnerException.StackTrace);
                     Assert.IsNotType<TimeoutException>(ex.InnerException);
+                    Assert.Contains("HttpContent.CopyTo(", ex.ToString());
                 },
                 async server =>
                 { 
                     await server.AcceptConnectionAsync(async connection =>
                     {
+                        await connection.ReadRequestHeaderAsync();
                         cts.Cancel();
                         try
                         {
-                            await connection.ReadRequestHeaderAndSendResponseAsync();
+                            await connection.ReadRequestBodyAsync();
                         }
                         catch { }
+                    });
+                });
+        }
+
+        [Fact]
+        public async Task Send_TimeoutRequestContent_Throws()
+        {
+            ManualResetEventSlim mres = new ManualResetEventSlim();
+
+            await LoopbackServer.CreateClientAndServerAsync(
+                async uri =>
+                {
+                    try
+                    {
+                        var sendTask = Task.Run(() => {
+                            using HttpClient httpClient = CreateHttpClient();
+                            httpClient.Timeout = TimeSpan.FromSeconds(0.5);
+
+                            HttpResponseMessage response = httpClient.Send(new HttpRequestMessage(HttpMethod.Get, uri) {
+                                Content = new CustomContent(new Action<Stream>(stream =>
+                                {
+                                    while (true)
+                                    {
+                                        stream.Write(new byte[] { 0xff });
+                                        Thread.Sleep(TimeSpan.FromSeconds(0.1));
+                                    }
+                                }))
+                            });
+                        });
+
+                        TaskCanceledException ex = await Assert.ThrowsAsync<TaskCanceledException>(() => sendTask);
+                        Assert.IsType<TimeoutException>(ex.InnerException);
+                        Assert.Contains("HttpContent.CopyTo(", ex.ToString());
+                    }
+                    finally
+                    {
+                        mres.Set();
+                    }
+                },
+                async server =>
+                { 
+                    await server.AcceptConnectionAsync(async connection =>
+                    {
+                        await connection.ReadRequestHeaderAsync();
+                        mres.Wait();
                     });
                 });
         }
@@ -876,8 +931,8 @@ namespace System.Net.Http.Functional.Tests
                     });
 
                     TaskCanceledException ex = await Assert.ThrowsAsync<TaskCanceledException>(() => sendTask);
-                    Assert.Contains("HttpContent.LoadIntoBuffer(", ex.StackTrace);
                     Assert.IsNotType<TimeoutException>(ex.InnerException);
+                    Assert.Contains("HttpContent.LoadIntoBuffer(", ex.ToString());
                 },
                 async server =>
                 {
@@ -889,6 +944,44 @@ namespace System.Net.Http.Functional.Tests
                         });
                         await Task.Delay(TimeSpan.FromSeconds(0.5));
                         cts.Cancel();
+                        await connection.Writer.WriteLineAsync(content);
+                    });
+                }); 
+        }
+
+        [Fact]
+        public async Task Send_TimeoutResponseContent_Throws()
+        {
+            string content = "Test content";
+
+            await LoopbackServer.CreateClientAndServerAsync(
+                async uri =>
+                {
+                    var sendTask = Task.Run(() => {
+                        using HttpClient httpClient = CreateHttpClient();
+                        httpClient.Timeout = TimeSpan.FromSeconds(0.5);
+
+                        HttpResponseMessage response = httpClient.Send(new HttpRequestMessage(HttpMethod.Get, uri) {
+                            Content = new CustomContent(stream =>
+                            {
+                                stream.Write(Encoding.UTF8.GetBytes(content));
+                            })
+                        });
+                    });
+
+                    TaskCanceledException ex = await Assert.ThrowsAsync<TaskCanceledException>(() => sendTask);
+                    Assert.IsType<TimeoutException>(ex.InnerException);
+                    Assert.Contains("HttpContent.LoadIntoBuffer(", ex.ToString());
+                },
+                async server =>
+                {
+                    await server.AcceptConnectionAsync(async connection =>
+                    {
+                        await connection.ReadRequestDataAsync();
+                        await connection.SendResponseAsync(headers: new List<HttpHeaderData>() {
+                            new HttpHeaderData("Content-Length", (content.Length * 2).ToString())
+                        });
+                        await Task.Delay(TimeSpan.FromSeconds(1));
                         await connection.Writer.WriteLineAsync(content);
                     });
                 }); 
