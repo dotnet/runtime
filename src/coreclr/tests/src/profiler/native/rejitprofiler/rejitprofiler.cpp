@@ -122,7 +122,7 @@ HRESULT STDMETHODCALLTYPE ReJITProfiler::JITCompilationStarted(FunctionID functi
     return S_OK;
 }
 
-HRESULT ReJITProfiler::FunctionSeen(FunctionID functionId)
+bool ReJITProfiler::FunctionSeen(FunctionID functionId)
 {
     String functionName = GetFunctionIDName(functionId);
     ModuleID moduleId = GetModuleIDForFunction(functionId);
@@ -134,6 +134,8 @@ HRESULT ReJITProfiler::FunctionSeen(FunctionID functionId)
         _targetFuncId = functionId;
         _targetModuleId = GetModuleIDForFunction(_targetFuncId);
         _targetMethodDef = GetMethodDefForFunction(_targetFuncId);
+
+        return true;
     }
     else if (functionName == ReJITTriggerMethodName && EndsWith(moduleName, TargetModuleName))
     {
@@ -155,12 +157,13 @@ HRESULT ReJITProfiler::FunctionSeen(FunctionID functionId)
         _profInfo10->RequestRevert(1, &_targetModuleId, &_targetMethodDef, nullptr);
     }
 
-    return S_OK;
+    return false;
 }
 
 HRESULT STDMETHODCALLTYPE ReJITProfiler::JITCompilationFinished(FunctionID functionId, HRESULT hrStatus, BOOL fIsSafeToBlock)
 {
-    return FunctionSeen(functionId);
+    FunctionSeen(functionId);
+    return S_OK;
 }
 
 HRESULT STDMETHODCALLTYPE ReJITProfiler::JITInlining(FunctionID callerId, FunctionID calleeId, BOOL* pfShouldInline)
@@ -176,12 +179,13 @@ HRESULT STDMETHODCALLTYPE ReJITProfiler::JITCachedFunctionSearchFinished(Functio
 {
     if (result == COR_PRF_CACHED_FUNCTION_FOUND)
     {
-        HRESULT hr;
-        if(FAILED(hr = FunctionSeen(functionId)))
+        // FunctionSeen will return true if it's a method we're tracking, and false otherwise
+        if(!FunctionSeen(functionId))
         {
-            return hr;
+            return S_OK;
         }
 
+        HRESULT hr;
         // TODO: this only looks in the same module as the function, with version bubbles that may
         // not hold.
         ModuleID modId = GetModuleIDForFunction(functionId);
@@ -360,6 +364,7 @@ FunctionID ReJITProfiler::GetFunctionIDFromToken(ModuleID module, mdMethodDef to
                                                            &functionId)))
     {
         printf("Call to GetFunctionFromToken failed with hr=0x%x\n", hr);
+        _failures++;
         return mdTokenNil;
     }
 
@@ -384,6 +389,13 @@ mdMethodDef ReJITProfiler::GetMethodDefForFunction(FunctionID functionId)
                                             SHORT_LENGTH,
                                             &nTypeArgs,
                                             typeArgs);
+    if (FAILED(hr))
+    {
+        printf("Call to GetFunctionInfo2 failed with hr=0x%x\n", hr);
+        _failures++;
+        return mdTokenNil;
+    }
+
     return token;
 }
 

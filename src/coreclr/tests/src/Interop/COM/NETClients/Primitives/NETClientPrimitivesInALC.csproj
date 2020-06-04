@@ -5,8 +5,7 @@
     <!-- Blocked on ILAsm supporting embedding resources. See https://github.com/dotnet/coreclr/issues/20819 -->
     <IlrtTestKind>BuildOnly</IlrtTestKind>
     <!-- Test unsupported outside of windows -->
-    <TestUnsupportedOutsideWindows>true</TestUnsupportedOutsideWindows>
-    <DisableProjectBuild Condition="'$(TargetsUnix)' == 'true'">true</DisableProjectBuild>
+    <CLRTestTargetUnsupported Condition="'$(TargetsWindows)' != 'true'">true</CLRTestTargetUnsupported>
     <!-- This test would require the runincontext.exe to include App.manifest describing the COM interfaces -->
     <UnloadabilityIncompatible>true</UnloadabilityIncompatible>
   </PropertyGroup>
@@ -16,6 +15,6 @@
   <ItemGroup>
     <ProjectReference Include="../../NativeServer/CMakeLists.txt" />
     <ProjectReference Include="$(TestSourceDir)Common/CoreCLRTestLibrary/CoreCLRTestLibrary.csproj" />
-    <ProjectReference Include="NetClientPrimitives.csproj" />
+    <ProjectReference Include="NETClientPrimitives.csproj" />
   </ItemGroup>
 </Project>

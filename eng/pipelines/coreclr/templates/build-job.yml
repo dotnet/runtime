@@ -149,7 +149,7 @@ jobs:
       displayName: Build managed product components and packages
 
     # Build native test components
-    - script: $(coreClrRepoRootDir)build-test$(scriptExt) skipmanaged $(buildConfig) $(archType) $(crossArg) $(osArg) $(priorityArg) $(compilerArg) skipgeneratelayout
+    - script: $(coreClrRepoRootDir)build-test$(scriptExt) skipstressdependencies skipmanaged skipgeneratelayout $(buildConfig) $(archType) $(crossArg) $(osArg) $(priorityArg) $(compilerArg)
       displayName: Build native test components
 
     # Sign on Windows

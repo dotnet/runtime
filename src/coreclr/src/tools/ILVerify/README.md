@@ -1,23 +1,39 @@
 # ILVerify
 
-### This directory contains the implementation of ILVerify
-
 ## Intention of this project:
+
 The goal is to create a standalone, cross platform, open-source tool that is capable of verifying MSIL code based on [ECMA-335](https://www.ecma-international.org/publications/standards/Ecma-335.htm).
 
 The main users of this tool are people working on software that emits MSIL code. These are typically compiler and profiler writers.
 
+## How to use ILVerify
+
+ILVerify is published as a global tool in the .NET runtime nightly feed. Install it by running:
+
+```
+dotnet new tool-manifest
+dotnet tool install dotnet-ilverify --version 5.0.0-preview* --add-source https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet5/nuget/v3/index.json
+```
+
+Example of use:
+
+```
+C:\test>dotnet ilverify hello.dll -r "c:\Program Files\dotnet\shared\Microsoft.NETCore.App\2.1.12\*.dll"
+All Classes and Methods in C:\test\hello.dll Verified.
+```
+
+Note that `ILVerify` requires all dependencies of assembly that is being verified to be explicitly specified on the command line.
+
 ## Other tools
-Historically on Full Framework IL generators used PEVerify to make sure that they generated correct IL. PEVerify has some major limitations (e.g. it is tied to the Full Framework, it cannot verify mscorlib.dll, etc.), which initiated this project.
+Historically on .NET Framework IL generators used PEVerify to make sure that they generated correct IL. PEVerify has some major limitations (e.g. it is tied to the .NET Framework, it cannot verify mscorlib.dll, etc.), which initiated this project.
 
 ## Main properties of ILVerify:
-- No coupling with CoreLib: ILVerify can point to any assembly and verify it. This also includes the full framework base assemblies (especially mscorlib).
+- No coupling with CoreLib: ILVerify can point to any assembly and verify it. This also includes the .NET Framework base assemblies (especially mscorlib).
 - Cross-platform, Open-Source
 - It should be easy to add new verification rules
 - Fast spin up/tear down.
 
 ## The codebase
-The project targets netcoreapp2.1 and uses the new .csproj based project format. If you want to open and compile it with Visual Studio then you need a version, which supports .NET Core 2.1 tooling. This is supported in Visual Studio 2017 Version 15.8 or later. The other option is to use command (with .NET Core 2.1 tooling).
 The code is split into three projects:
 - ILVerification is the library with the core verification logic,
 - ILVerification.Tests contains the tests for ILVerification,
