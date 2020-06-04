@@ -51,6 +51,7 @@ then
     echo 'Xharness command is in $PATH'
     export XHARNESS_DISABLE_COLORED_OUTPUT=true
     export XHARNESS_LOG_WITH_TIMESTAMPS=true
+    export XHARNESS_OUT="$HELIX_WORKITEM_UPLOAD_ROOT"
     xharness ios test \
         --targets="$TARGET" \
         --app="$APP_BUNDLE" \
