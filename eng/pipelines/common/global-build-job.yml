@@ -10,6 +10,8 @@ parameters:
   timeoutInMinutes: ''
   pool: ''
   condition: true
+  extraStepsTemplate: ''
+  extraStepsParameters: {}
 
 jobs:
 - template: /eng/common/templates/job/job.yml
@@ -64,3 +66,13 @@ jobs:
         ArtifactName: Logs_Build_${{ parameters.osGroup }}_${{ parameters.osSubGroup }}_${{ parameters.archType }}_${{ parameters.buildConfig }}_${{ parameters.nameSuffix }}
       continueOnError: true
       condition: always()
+
+      # If intended to send extra steps after regular build add them here.
+    - ${{ if ne(parameters.extraStepsTemplate, '') }}:
+      - template: ${{ parameters.extraStepsTemplate }}
+        parameters:
+          osGroup: ${{ parameters.osGroup }}
+          osSubgroup: ${{ parameters.osSubgroup }}
+          archType: ${{ parameters.archType }}
+          buildConfig: ${{ parameters.buildConfig }}
+          ${{ insert }}: ${{ parameters.extraStepsParameters }}
