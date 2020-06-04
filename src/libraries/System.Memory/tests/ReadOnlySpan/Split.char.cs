@@ -224,7 +224,7 @@ namespace System.SpanTests
         [InlineData("Foo Bar Baz ", new[] { "Foo", "Bar", "Baz", "" })]
         [InlineData(" Foo Bar Baz ", new[] { "", "Foo", "Bar", "Baz", "" })]
         [InlineData(" Foo  Bar Baz ", new[] { "", "Foo", "", "Bar", "Baz", "" })]
-        public static void SpanSplitDefaultCharSeparator(string valueParam, char separator, string[] expectedParam)
+        public static void SpanSplitDefaultCharSeparator(string valueParam, string[] expectedParam)
         {
             char[][] expected = expectedParam.Select(x => x.ToCharArray()).ToArray();
             AssertEqual(expected, valueParam, valueParam.AsSpan().Split());
@@ -246,7 +246,7 @@ namespace System.SpanTests
             AssertEqual(expected, valueParam, valueParam.AsSpan().Split(separator));
         }
 
-        private static void AssertEqual<T>(T[][] items, ReadOnlySpan<T> orig, SpanSplitEnumerator<T> source,) where T : IEquatable<T>
+        private static void AssertEqual<T>(T[][] items, ReadOnlySpan<T> orig, SpanSplitEnumerator<T> source) where T : IEquatable<T>
         {
             foreach (var item in items)
             {
