@@ -123,6 +123,9 @@ namespace ILCompiler.PEWriter
         /// </summary>
         private int[] _sectionRVAs;
 
+        private int[] _sectionPointerToRawData;
+        List<(int, int)> _paddingToInject = new List<(int, int)>();
+
         /// <summary>
         /// Maximum of virtual and physical size for each section.
         /// </summary>
@@ -180,7 +183,6 @@ namespace ILCompiler.PEWriter
                 int exportIndex = _sectionBuilder.AddSection(R2RPEBuilder.ExportDataSectionName, SectionCharacteristics.ContainsInitializedData | SectionCharacteristics.MemRead, 0x1000);
                 _sectionBuilder.AddExportSymbol("RTR_HEADER", 1, r2rHeaderExportSymbol);
                 _sectionBuilder.SetDllNameForExportDirectoryTable(outputFileSimpleName);
-//                _sectionBuilder.PadOutSectionWithBytes(exportIndex, 63 * 1024);
             }
 
             if (_sectionBuilder.FindSection(R2RPEBuilder.RelocSectionName) == null)
@@ -204,6 +206,7 @@ namespace ILCompiler.PEWriter
 
             _sections = sectionListBuilder.ToImmutableArray();
             _sectionRVAs = new int[_sections.Length];
+            _sectionPointerToRawData = new int[_sections.Length];
             _sectionRawSizes = new int[_sections.Length];
         }
 
@@ -269,11 +272,11 @@ namespace ILCompiler.PEWriter
         public void Write(Stream outputStream, int timeDateStamp)
         {
             BlobBuilder outputPeFile = new BlobBuilder();
-            _sectionBuilder.PadOutSection(_textSectionIndex, 2 * 1024 * 1024, 128 * 1024);
+            _sectionBuilder.PadOutSection(_textSectionIndex, 2 * 1024 * 1024, 0);
             _sectionBuilder.PadOutSection(_dataSectionIndex, 2 * 1024 * 1024, 0);
             Serialize(outputPeFile);
 
-            _sectionBuilder.RelocateOutputFile(outputPeFile, Header.ImageBase, outputStream);
+            _sectionBuilder.RelocateOutputFile(outputPeFile, Header.ImageBase, outputStream, _paddingToInject);
 
             UpdateSectionRVAs(outputStream);
             ApplyMachineOSOverride(outputStream);
@@ -335,6 +338,8 @@ namespace ILCompiler.PEWriter
 
         const int SectionHeaderNameSize = 8;
         const int SectionHeaderRVAOffset = SectionHeaderNameSize + sizeof(int); // skip 8 bytes Name + 4 bytes VirtualSize
+        const int SectionHeaderSizeOfRawData = SectionHeaderRVAOffset + sizeof(int); // SizeOfRawData follows RVA
+        const int SectionHeaderPointerToRawDataOffset = SectionHeaderSizeOfRawData + sizeof(int); // PointerToRawData immediately follows the SizeOfRawData
 
         const int SectionHeaderSize =
             SectionHeaderNameSize +
@@ -373,10 +378,21 @@ namespace ILCompiler.PEWriter
             int sectionCount = _sectionRVAs.Length;
             for (int sectionIndex = 0; sectionIndex < sectionCount; sectionIndex++)
             {
-                outputStream.Seek(sectionHeaderOffset + SectionHeaderSize * sectionIndex + SectionHeaderRVAOffset, SeekOrigin.Begin);
-                byte[] rvaBytes = BitConverter.GetBytes(_sectionRVAs[sectionIndex]);
-                Debug.Assert(rvaBytes.Length == sizeof(int));
-                outputStream.Write(rvaBytes, 0, rvaBytes.Length);
+                // Update RVAs
+                {
+                    outputStream.Seek(sectionHeaderOffset + SectionHeaderSize * sectionIndex + SectionHeaderRVAOffset, SeekOrigin.Begin);
+                    byte[] rvaBytes = BitConverter.GetBytes(_sectionRVAs[sectionIndex]);
+                    Debug.Assert(rvaBytes.Length == sizeof(int));
+                    outputStream.Write(rvaBytes, 0, rvaBytes.Length);
+                }
+
+                // Update pointer to raw data
+                {
+                    outputStream.Seek(sectionHeaderOffset + SectionHeaderSize * sectionIndex + SectionHeaderPointerToRawDataOffset, SeekOrigin.Begin);
+                    byte[] rawDataBytesBytes = BitConverter.GetBytes(_sectionPointerToRawData[sectionIndex]);
+                    Debug.Assert(rawDataBytesBytes.Length == sizeof(int));
+                    outputStream.Write(rawDataBytesBytes, 0, rawDataBytesBytes.Length);
+                }
             }
 
             // Patch SizeOfImage to point past the end of the last section
@@ -485,6 +501,8 @@ namespace ILCompiler.PEWriter
             return _sections;
         }
 
+        private int _sectionOverAlignByPadding = 0x2 * 1024 * 1024;
+
         /// <summary>
         /// Output the section with a given name. For sections existent in the source MSIL PE file
         /// (.text, optionally .rsrc and .reloc), we first copy the content of the input MSIL PE file
@@ -494,6 +512,7 @@ namespace ILCompiler.PEWriter
         /// <param name="name">Section name</param>
         /// <param name="location">RVA and file location where the section will be put</param>
         /// <returns>Blob builder representing the section data</returns>
+        int previouslyInjectedPadding = 0;
         protected override BlobBuilder SerializeSection(string name, SectionLocation location)
         {
             BlobBuilder sectionDataBuilder = null;
@@ -503,6 +522,24 @@ namespace ILCompiler.PEWriter
             while (outputSectionIndex >= 0 && _sections[outputSectionIndex].Name != name)
             {
                 outputSectionIndex--;
+            }
+
+            if (_sectionOverAlignByPadding != 0)
+            {
+                if (outputSectionIndex > 0)
+                {
+                    sectionStartRva = Math.Max(sectionStartRva, _sectionRVAs[outputSectionIndex - 1] + _sectionRawSizes[outputSectionIndex - 1]);
+                }
+
+                int newSectionStartRva = AlignmentHelper.AlignUp(sectionStartRva, _sectionOverAlignByPadding);
+                if (newSectionStartRva > sectionStartRva)
+                {
+                    int padding = newSectionStartRva - sectionStartRva;
+                    _paddingToInject.Add((location.PointerToRawData + previouslyInjectedPadding, newSectionStartRva - sectionStartRva));
+                    previouslyInjectedPadding += padding;
+                }
+                sectionStartRva = newSectionStartRva;
+                location = new SectionLocation(sectionStartRva, sectionStartRva);
             }
 
             if (!_target.IsWindows)
@@ -523,6 +560,7 @@ namespace ILCompiler.PEWriter
             if (outputSectionIndex >= 0)
             {
                 _sectionRVAs[outputSectionIndex] = sectionStartRva;
+                _sectionPointerToRawData[outputSectionIndex] = location.PointerToRawData;
             }
 
             BlobBuilder extraData = _sectionBuilder.SerializeSection(name, location);
@@ -550,6 +588,13 @@ namespace ILCompiler.PEWriter
             {
                 sectionDataBuilder.WriteByte(0);
             }
+            /*
+            if (_sectionOverAlignByPadding != 0)
+            {
+                // Align the end of the section to the padding offset
+                int count = AlignmentHelper.AlignUp(sectionDataBuilder.Count, _sectionOverAlignByPadding);
+                sectionDataBuilder.WriteBytes(0, count - sectionDataBuilder.Count);
+            }*/
 
             if (outputSectionIndex >= 0)
             {
