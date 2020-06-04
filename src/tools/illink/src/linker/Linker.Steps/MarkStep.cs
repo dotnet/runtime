@@ -1435,8 +1435,8 @@ namespace Mono.Linker.Steps
 					l.Parameters.Count == 1 && l.Parameters[0].ParameterType.IsTypeOf ("System", "Type"),
 					provider);
 				return true;
-			} else if (dt.Name == "UnconditionalSuppressMessageAttribute" && dt.Namespace == "System.Diagnostics.CodeAnalysis") {
-				_context.Suppressions.AddLocalSuppression (ca, provider);
+			} else if (UnconditionalSuppressMessageAttributeState.TypeRefHasUnconditionalSuppressions (dt)) {
+				_context.Suppressions.AddSuppression (ca, provider);
 			}
 
 			return false;
