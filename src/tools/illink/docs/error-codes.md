@@ -55,7 +55,6 @@ error and warning codes.
 
 - There was an error processing 'XML document location' xml file. The most likely reason for this is that the descriptor file has syntactical errors.
 
-
 ----
 ## Warning Codes
 

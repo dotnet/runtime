@@ -132,13 +132,6 @@ namespace ILLink.Tasks
 		};
 
 		/// <summary>
-		///   A comma-separated list of assemblies whose methods
-		///   should have initlocals flag cleared if ClearInitLocals is true.
-		///   Maps to '-m ClearInitLocalsAssemblies <list>'
-		/// </summary>
-		public string ClearInitLocalsAssemblies { get; set; }
-
-		/// <summary>
 		///   Custom data key-value pairs to pass to the linker.
 		///   The name of the item is the key, and the required "Value"
 		///   metadata is the value. Maps to '--custom-data key=value'.
@@ -322,8 +315,6 @@ namespace ILLink.Tasks
 
 			if (_clearInitLocals is bool clearInitLocals) {
 				SetOpt (args, "clearinitlocals", clearInitLocals);
-			} else {
-				clearInitLocals = false;
 			}
 
 			if (_unusedInterfaces is bool unusedInterfaces)
@@ -343,10 +334,6 @@ namespace ILLink.Tasks
 						throw new ArgumentException ("custom data requires \"Value\" metadata");
 					args.Append ("--custom-data ").Append (" ").Append (key).Append ("=").AppendLine (Quote (value));
 				}
-			}
-
-			if (clearInitLocals && ClearInitLocalsAssemblies?.Length > 0) {
-				args.AppendFormat ($"--custom-data ClearInitLocalsAssemblies={ClearInitLocalsAssemblies} ");
 			}
 
 			if (FeatureSettings != null) {

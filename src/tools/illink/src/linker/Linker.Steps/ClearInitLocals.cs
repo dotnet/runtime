@@ -6,15 +6,6 @@ namespace Mono.Linker.Steps
 {
 	public class ClearInitLocalsStep : BaseStep
 	{
-		HashSet<string> _assemblies;
-
-		protected override void Process ()
-		{
-			if (Context.TryGetCustomData ("ClearInitLocalsAssemblies", out string parameter)) {
-				_assemblies = new HashSet<string> (parameter.Split (','), StringComparer.OrdinalIgnoreCase);
-			}
-		}
-
 		private static IEnumerable<TypeDefinition> EnumerateTypesAndNestedTypes (IEnumerable<TypeDefinition> types)
 		{
 			// Recursively (depth-first) yield each element in 'types' and all nested types under each element.
@@ -30,12 +21,11 @@ namespace Mono.Linker.Steps
 
 		protected override void ProcessAssembly (AssemblyDefinition assembly)
 		{
-			if (!Context.IsOptimizationEnabled (CodeOptimizations.ClearInitLocals, assembly) &&
-				_assemblies?.Contains (assembly.Name.Name) != true) {
+			if (!Context.IsOptimizationEnabled (CodeOptimizations.ClearInitLocals, assembly))
 				return;
-			}
 
-			bool changed = false;
+			if (Annotations.GetAction (assembly) != AssemblyAction.Link)
+				return;
 
 			foreach (ModuleDefinition module in assembly.Modules) {
 				foreach (TypeDefinition type in EnumerateTypesAndNestedTypes (module.Types)) {
@@ -43,15 +33,11 @@ namespace Mono.Linker.Steps
 						if (method.Body != null) {
 							if (method.Body.InitLocals) {
 								method.Body.InitLocals = false;
-								changed = true;
 							}
 						}
 					}
 				}
 			}
-
-			if (changed && (Annotations.GetAction (assembly) == AssemblyAction.Copy))
-				Annotations.SetAction (assembly, AssemblyAction.Save);
 		}
 	}
 }
