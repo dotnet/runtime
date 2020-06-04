@@ -21,6 +21,7 @@ private:
     EventPipeEvent *m_pProcessInfoEvent;
 
     const static WCHAR* s_pOSInformation;
+    const static WCHAR* s_pArchInformation;
 
 public:
     EventPipeEventSource();
