@@ -95,6 +95,7 @@ WCHAR       *pwzDeltaFiles[1024];
 char        szInputFilename[MAX_FILENAME_LENGTH*3];
 WCHAR       wzInputFilename[MAX_FILENAME_LENGTH];
 WCHAR       wzOutputFilename[MAX_FILENAME_LENGTH];
+WCHAR       wzPdbFilename[MAX_FILENAME_LENGTH];
 
 
 #ifdef _PREFAST_
@@ -134,6 +135,7 @@ extern "C" int _cdecl wmain(int argc, __in WCHAR **argv)
 
     g_uConsoleCP = GetConsoleOutputCP();
     memset(wzOutputFilename,0,sizeof(wzOutputFilename));
+    memset(wzPdbFilename, 0, sizeof(wzPdbFilename));
 
 #ifdef _DEBUG
     DisableThrowCheck();
@@ -668,6 +670,17 @@ extern "C" int _cdecl wmain(int argc, __in WCHAR **argv)
                 while(j);
                 wcscat_s(wzOutputFilename, MAX_FILENAME_LENGTH,(IsDLL ? W(".dll") : (IsOBJ ? W(".obj") : W(".exe"))));
             }
+            if (pAsm->m_fGeneratePDB)
+            {
+                wcscpy_s(wzPdbFilename, MAX_FILENAME_LENGTH, wzOutputFilename);
+                WCHAR* extPos = wcsrchr(wzPdbFilename, L'.');
+                if (extPos != NULL)
+                    *extPos = 0;
+                wcscat_s(wzPdbFilename, MAX_FILENAME_LENGTH, W(".pdb"));
+                char* pszPdbFilename = FullFileName(wzPdbFilename, uCodePage);
+                pAsm->SetPdbFileName(pszPdbFilename);
+                delete[] pszPdbFilename;
+            }
             if(wzIncludePath == NULL)
             {
                 PathString wzIncludePathBuffer;
@@ -787,6 +800,16 @@ extern "C" int _cdecl wmain(int argc, __in WCHAR **argv)
                                 {
                                     exitval = 1;
                                     pParser->msg("Failed to write output file, error code=0x%08X\n",hr);
+                                }
+                                // Generate PDB file
+                                if (pAsm->m_fGeneratePDB)
+                                {
+                                    if (pAsm->m_fReportProgress) pParser->msg("Writing PDB file: %s\n", pAsm->m_szPdbFileName);
+                                    if (FAILED(hr = pAsm->SavePdbFile()))
+                                    {
+                                        exitval = 1;
+                                        pParser->msg("Failed to write PDB file, error code=0x%08X\n", hr);
+                                    }
                                 }
                                 if(bClock) cw.cEnd = GetTickCount();
 #define ENC_ENABLED

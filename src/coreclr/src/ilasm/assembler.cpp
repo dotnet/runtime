@@ -2432,6 +2432,30 @@ void Assembler::SetSourceFileName(BinStr* pbsName)
     }
 }
 
+// Portable PDB paraphernalia
+void Assembler::SetPdbFileName(__in __nullterminated char* szName)
+{
+    if (szName)
+    {
+        if (*szName)
+        {
+            strcpy_s(m_szPdbFileName, MAX_FILENAME_LENGTH * 3 + 1, szName);
+            WszMultiByteToWideChar(g_uCodePage, 0, szName, -1, m_wzPdbFileName, MAX_FILENAME_LENGTH);
+        }
+    }
+}
+
+HRESULT Assembler::SavePdbFile()
+{
+    HRESULT hr = S_OK;
+    if (m_pdbFormat == PORTABLE)
+    {
+        if (FAILED(hr = m_pPortablePdbWritter->GetEmitter()->Save(m_wzPdbFileName, NULL))) goto exit;
+    }
+exit:
+    return hr;
+}
+
 void Assembler::RecordTypeConstraints(GenericParamConstraintList* pGPCList, int numTyPars, TyParDescr* tyPars)
 {
     if (numTyPars > 0)

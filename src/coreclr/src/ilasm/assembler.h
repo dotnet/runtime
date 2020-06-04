@@ -1057,9 +1057,18 @@ public:
 	GUID	m_guidLang;
 	GUID	m_guidLangVendor;
 	GUID	m_guidDoc;
-    // Portable PDB support
-    PdbFormat m_pdbFormat;
+
+    // Portable PDB paraphernalia
+public:
+    PdbFormat           m_pdbFormat;
     PortablePdbWritter* m_pPortablePdbWritter;
+    char                m_szPdbFileName[MAX_FILENAME_LENGTH * 3 + 1];
+    WCHAR               m_wzPdbFileName[MAX_FILENAME_LENGTH];
+
+    // Sets the pdb file name of the assembled file.
+    void SetPdbFileName(__in __nullterminated char* szName);
+    // Saves the pdb file.
+    HRESULT SavePdbFile();
 
     // Security paraphernalia
 public:
