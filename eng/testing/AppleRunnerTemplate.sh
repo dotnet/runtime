@@ -46,7 +46,7 @@ then
     xharness ios test \
         --targets="$TARGET" \
         --app="$APP_BUNDLE" \
-        --xcode="/Applications/Xcode114.app" \
+        --xcode="/Applications/Xcode${xcode_version/./}.app" \
         --output-directory=$XHARNESS_OUT
 else
     echo 'Xharness command is NOT in $PATH'
