@@ -184,6 +184,8 @@ static bool ConfigureTerminal(bool signalForBreak, bool forChild, uint8_t minCha
         termios.c_lflag &= (uint32_t)(~(ECHO | ICANON | IEXTEN));
     }
 
+    termios.c_iflag &= (uint32_t)(~(ICRNL | INLCR | IGNCR));
+
     termios.c_cc[VMIN] = minChars;
     termios.c_cc[VTIME] = decisecondsTimeout;
 
