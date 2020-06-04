@@ -218,6 +218,14 @@ icall_tables_sources = \
 	icall-table.c
 endif
 
+if !ENABLE_NETCORE
+culture_sources = \
+	locales.h	\
+	locales.c	\
+	culture-info.h	\
+	culture-info-tables.h
+endif
+
 if ENABLE_ILGEN
 ilgen_sources = \
 	method-builder-ilgen.c \
@@ -231,6 +239,7 @@ endif
 
 common_sources = \
 	$(platform_sources)	\
+	$(culture_sources)	\
 	appdomain.c	\
 	assembly-load-context.c	\
 	domain.c	\
@@ -254,8 +263,6 @@ common_sources = \
 	coree.c 		\
 	coree.h 		\
 	coree-internals.h \
-	culture-info.h  	\
-	culture-info-tables.h	\
 	debug-helpers.c		\
 	debug-mono-symfile.h	\
 	debug-mono-symfile.c	\
@@ -292,8 +299,6 @@ common_sources = \
 	loaded-images.c		\
 	loaded-images-global.c	\
 	loaded-images-netcore.c	\
-	locales.c		\
-	locales.h		\
 	lock-tracer.c		\
 	lock-tracer.h		\
 	marshal.c		\
