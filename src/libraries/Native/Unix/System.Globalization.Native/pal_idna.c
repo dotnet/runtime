@@ -20,8 +20,7 @@ static const uint32_t UseStd3AsciiRules = 0x2;
 
 static uint32_t GetOptions(uint32_t flags)
 {
-    // Using Nontransitional to Unicode and Check ContextJ to match the current behavior of .NET on Windows
-    uint32_t options = UIDNA_NONTRANSITIONAL_TO_UNICODE | UIDNA_CHECK_CONTEXTJ;
+    uint32_t options = UIDNA_NONTRANSITIONAL_TO_UNICODE | UIDNA_CHECK_CONTEXTJ | UIDNA_NONTRANSITIONAL_TO_ASCII;
 
     if ((flags & AllowUnassigned) == AllowUnassigned)
     {

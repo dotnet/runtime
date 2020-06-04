@@ -36,7 +36,7 @@ namespace System.Globalization.Tests
                 {
                     string actualCodePoints = GetCodePoints(entry.Source);
                     string expectedCodePoints = GetCodePoints(entry.ASCIIResult.Value);
-                    throw new Exception($"Expected IdnMapping.GetAscii(\"{actualCodePoints}\" to return \"{expectedCodePoints}\".");
+                    throw new Exception($"Expected IdnMapping.GetAscii(\"{actualCodePoints}\" to return \"{expectedCodePoints}\". Line Number: {entry.LineNumber}");
                 }
             });
         }
@@ -66,7 +66,7 @@ namespace System.Globalization.Tests
                     {
                         string actualCodePoints = GetCodePoints(entry.Source);
                         string expectedCodePoints = GetCodePoints(entry.UnicodeResult.Value);
-                        throw new Exception($"Expected IdnMapping.GetUnicode(\"{actualCodePoints}\" to return \"{expectedCodePoints}\".");
+                        throw new Exception($"Expected IdnMapping.GetUnicode(\"{actualCodePoints}\" to return \"{expectedCodePoints}\". Line Number: {entry.LineNumber}");
                     }
                 }
             });
@@ -93,7 +93,7 @@ namespace System.Globalization.Tests
                 catch (ThrowsException)
                 {
                     string codePoints = GetCodePoints(entry.Source);
-                    throw new Exception($"Expected IdnMapping.GetAscii(\"{codePoints}\") to throw an ArgumentException.");
+                    throw new Exception($"Expected IdnMapping.GetAscii(\"{codePoints}\") to throw an ArgumentException. Line Number: {entry.LineNumber}");
                 }
             });
         }
@@ -119,7 +119,7 @@ namespace System.Globalization.Tests
                 catch (ThrowsException)
                 {
                     string codePoints = GetCodePoints(entry.Source);
-                    throw new Exception($"Expected IdnMapping.GetUnicode(\"{codePoints}\") to throw an ArgumentException.");
+                    throw new Exception($"Expected IdnMapping.GetUnicode(\"{codePoints}\") to throw an ArgumentException. Line Number: {entry.LineNumber}");
                 }
             });
         }
