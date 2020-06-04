@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections.Generic;
 using System.IO;
 using Test.Cryptography;
 using Test.IO.Streams;
@@ -497,22 +498,27 @@ namespace System.Security.Cryptography.Rsa.Tests
             VerifySignature(signature, TestData.HelloBytes, "SHA256", TestData.RSA2048Params);
         }
 
-        [Fact]
-        public void SignAndVerify_SHA1_1024()
+        [Theory]
+        [MemberData(nameof(RoundTripTheories))]
+        public void SignAndVerify_Roundtrip(string hashAlgorithm, RSAParameters rsaParameters)
         {
-            SignAndVerify(TestData.HelloBytes, "SHA1", TestData.RSA1024Params);
+            SignAndVerify(TestData.HelloBytes, hashAlgorithm, rsaParameters);
         }
 
-        [Fact]
-        public void SignAndVerify_SHA1_2048()
+        public static IEnumerable<object[]> RoundTripTheories
         {
-            SignAndVerify(TestData.HelloBytes, "SHA1", TestData.RSA2048Params);
-        }
+            get
+            {
+                foreach (RSAParameters rsaParameters in new[] { TestData.RSA1024Params, TestData.RSA2048Params })
+                {
+                    yield return new object[] { nameof(HashAlgorithmName.MD5), rsaParameters };
+                    yield return new object[] { nameof(HashAlgorithmName.SHA1), rsaParameters };
+                    yield return new object[] { nameof(HashAlgorithmName.SHA256), rsaParameters };
+                }
 
-        [Fact]
-        public void SignAndVerify_SHA256_1024()
-        {
-            SignAndVerify(TestData.HelloBytes, "SHA256", TestData.RSA1024Params);
+                yield return new object[] { nameof(HashAlgorithmName.SHA384), TestData.RSA2048Params };
+                yield return new object[] { nameof(HashAlgorithmName.SHA512), TestData.RSA2048Params };
+            }
         }
 
         [Fact]

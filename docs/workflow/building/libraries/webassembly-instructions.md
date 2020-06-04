@@ -94,3 +94,41 @@ For Linux and MacOSX:
 ./dotnet.sh build --configuration release /p:TargetArchitecture=wasm /p:TargetOS=Browser src/libraries/src.proj /t:NativeBinPlace 
 ```
 
+## Updating Emscripten version in Docker image
+
+First update emscripten version in the [webassembly Dockerfile](https://github.com/dotnet/dotnet-buildtools-prereqs-docker/blob/master/src/ubuntu/18.04/webassembly/Dockerfile#L19).
+
+```
+ENV EMSCRIPTEN_VERSION=1.39.16
+```
+
+Submit a PR request with the updated version, wait for all checks to pass and for the request to be merged. A [master.json file](https://github.com/dotnet/versions/blob/master/build-info/docker/image-info.dotnet-dotnet-buildtools-prereqs-docker-master.json#L1126) will be updated with the a new docker image.  
+
+```
+{
+  "platforms": [
+    {
+      "dockerfile": "src/ubuntu/18.04/webassembly/Dockerfile",
+      "simpleTags": [
+        "ubuntu-18.04-webassembly-20200529220811-6a6da63"
+      ],
+      "digest": "sha256:1f2d920a70bd8d55bbb329e87c3bd732ef930d64ff288dab4af0aa700c25cfaf",
+      "osType": "Linux",
+      "osVersion": "Ubuntu 18.04",
+      "architecture": "amd64",
+      "created": "2020-05-29T22:16:52.5716294Z",
+      "commitUrl": "https://github.com/dotnet/dotnet-buildtools-prereqs-docker/blob/6a6da637580ec557fd3708f86291f3ead2422697/src/ubuntu/18.04/webassembly/Dockerfile"
+    }
+  ]
+},
+```
+
+Copy the docker image tag and replace it in [platform-matrix.yml](https://github.com/dotnet/runtime/blob/master/eng/pipelines/common/platform-matrix.yml#L172)
+
+```
+container:
+    image: ubuntu-18.04-webassembly-20200409132031-f70ea41
+    registry: mcr
+```
+
+Open a PR request with the new image. 
