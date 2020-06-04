@@ -148,12 +148,12 @@ QUIC_NATIVE_API const void* QuicNative_SSL_get_cipher_list(const void* ssl, int 
     return SSL_get_cipher_list(ssl, priority);
 }
 
-QUIC_NATIVE_API int QuicNative_SSL_set_alpn_protos(void* ssl, const char* protos, int len)
+QUIC_NATIVE_API int QuicNative_SSL_set_alpn_protos(void* ssl, const unsigned char* protos, int len)
 {
     return SSL_set_alpn_protos(ssl, protos, len);
 }
 
-QUIC_NATIVE_API void QuicNative_SSL_get0_alpn_selected(const void* ssl, const unsigned char** data, int* len)
+QUIC_NATIVE_API void QuicNative_SSL_get0_alpn_selected(const void* ssl, const unsigned char** data, unsigned int* len)
 {
     SSL_get0_alpn_selected(ssl, data, len);
 }

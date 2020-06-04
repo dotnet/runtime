@@ -65,7 +65,9 @@ add_library(System.Net.Quic.Native SHARED library.c library.h)
 add_dependencies(System.Net.Quic.Native OpenSSL)
 
 # Allow specification of arguments that should be passed to the linker
-SET_TARGET_PROPERTIES(System.Net.Quic.Native PROPERTIES LINK_FLAGS ${__LinkArgs})
+if (${__LinkArgs})
+    SET_TARGET_PROPERTIES(System.Net.Quic.Native PROPERTIES LINK_FLAGS ${__LinkArgs})
+endif()
 
 # Allow specification of libraries that should be linked against
 # CMake doesn't like space delimiters as input to target_link_libraries
@@ -76,4 +78,7 @@ target_link_libraries(System.Net.Quic.Native
     ${OPENSSL_STATIC_LIBS})
 
 install (TARGETS System.Net.Quic.Native DESTINATION .)
-install (FILES ${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_BUILD_TYPE}/System.Net.Quic.Native.pdb DESTINATION .)
+
+if ("${CMAKE_HOST_SYSTEM_NAME}" STREQUAL "Windows")
+    install (FILES ${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_BUILD_TYPE}/System.Net.Quic.Native.pdb DESTINATION .)
+endif()

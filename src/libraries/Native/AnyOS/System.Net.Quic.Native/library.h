@@ -45,8 +45,8 @@ QUIC_NATIVE_API int16_t QuicNative_SSL_CIPHER_get_protocol_id(const void* cipher
 QUIC_NATIVE_API int QuicNative_SSL_set_ciphersuites(void* ssl, const char* list);
 QUIC_NATIVE_API int QuicNative_SSL_set_cipher_list(void* ssl, const char* list);
 QUIC_NATIVE_API const void* QuicNative_SSL_get_cipher_list(const void* ssl, int priority);
-QUIC_NATIVE_API int QuicNative_SSL_set_alpn_protos(void* ssl, const char* protos, int len);
-QUIC_NATIVE_API void QuicNative_SSL_get0_alpn_selected(const void* ssl, const unsigned char** data, int* len);
+QUIC_NATIVE_API int QuicNative_SSL_set_alpn_protos(void* ssl, const unsigned char* protos, int len);
+QUIC_NATIVE_API void QuicNative_SSL_get0_alpn_selected(const void* ssl, const unsigned char** data, unsigned int* len);
 QUIC_NATIVE_API void* QuicNative_BIO_new_mem_buf(const uint8_t* buf, int len);
 QUIC_NATIVE_API void QuicNative_BIO_free(void* bio);
 QUIC_NATIVE_API void* QuicNative_d2i_PKCS12(void* out, const uint8_t** buf, int len);
