@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
-JAVASCRIPT_ENGINE=$0
-EXECUTION_DIR=$(dirname $1)
+EXECUTION_DIR=$(dirname $0)
+JAVASCRIPT_ENGINE=$1
 
 cd $EXECUTION_DIR
 
