@@ -20,6 +20,79 @@ namespace Internal.TypeSystem
             return thisType.CanCastToInternal(otherType, null);
         }
 
+        /// <summary>
+        /// Get TypeFlags of the reduced type of a type.
+        /// The reduced type concept is described in ECMA 335 chapter I.8.7
+        /// </summary>
+        static TypeFlags GetReducedTypeElementType(TypeDesc type)
+        {
+            TypeFlags elemType = type.GetTypeFlags(TypeFlags.CategoryMask);
+            switch (elemType)
+            {
+                case TypeFlags.Byte:
+                    return TypeFlags.SByte;
+                case TypeFlags.UInt16:
+                    return TypeFlags.Int16;
+                case TypeFlags.UInt32:
+                    return TypeFlags.Int32;
+                case TypeFlags.UInt64:
+                    return TypeFlags.Int64;
+                case TypeFlags.UIntPtr:
+                    return TypeFlags.IntPtr;
+            }
+
+            return elemType;
+        }
+
+        /// <summary>
+        /// Get CorElementType of the verification type of a type.
+        /// The verification type concepts is described in ECMA 335 chapter I.8.7
+        /// </summary>
+        static TypeFlags GetVerificationTypeElementType(TypeDesc type)
+        {
+            TypeFlags reducedTypeElementType = GetReducedTypeElementType(type);
+
+            switch (reducedTypeElementType)
+            {
+                case TypeFlags.Boolean:
+                    return TypeFlags.SByte;
+                case TypeFlags.Char:
+                    return TypeFlags.Int16;
+            }
+
+            return reducedTypeElementType;
+        }
+
+        /// <summary>
+        /// Check if verification types of two types are equal
+        /// </summary>
+        static bool AreVerificationTypesEqual(TypeDesc type1, TypeDesc type2)
+        {
+            if (type1 == type2)
+            {
+                return true;
+            }
+
+            TypeFlags e1 = GetVerificationTypeElementType(type1);
+            TypeFlags e2 = GetVerificationTypeElementType(type2);
+
+            return type1.IsPrimitive && (e1 == e2);
+        }
+
+        /// <summary>
+        /// Check if signatures of two function pointers are compatible
+        /// Note - this is a simplified version of what's described in the ECMA spec and it considers
+        /// pointers to be method-signature-compatible-with only if the signatures are the same.
+        /// </summary>
+        static bool IsMethodSignatureCompatibleWith(TypeDesc fn1Ttype, TypeDesc fn2Type)
+        {
+            return fn1Ttype == fn2Type;
+        }
+
+        /// <summary>
+        /// Checks if two types are compatible according to compatible-with as described in ECMA 335 I.8.7.1
+        /// Most of the checks are performed by the CanCastTo, but some cases are pre-filtered out.
+        /// </summary>
         public static bool IsCompatibleWith(this TypeDesc thisType, TypeDesc otherType)
         {
             // Structs can be cast to the interfaces they implement, but they are not compatible according to ECMA I.8.7.1
@@ -27,6 +100,24 @@ namespace Internal.TypeSystem
             if (isCastFromValueTypeToReferenceType)
             {
                 return false;
+            }
+
+            // Managed pointers are compatible only if they are pointer-element-compatible-with as described in ECMA I.8.7.2
+            if (thisType.IsByRef && otherType.IsByRef)
+            {
+                return AreVerificationTypesEqual(thisType.GetParameterType(), otherType.GetParameterType());
+            }
+
+            // Unmanaged pointers are handled the same way as managed pointers
+            if (thisType.IsPointer && otherType.IsPointer)
+            {
+                return AreVerificationTypesEqual(thisType.GetParameterType(), otherType.GetParameterType());
+            }
+
+            // Function pointers are compatible only if they are method-signature-compatible-with as described in ECMA I.8.7.1
+            if (thisType.IsFunctionPointer && otherType.IsFunctionPointer)
+            {
+                return IsMethodSignatureCompatibleWith(thisType, otherType);
             }
 
             // Nullable<T> can be cast to T, but this is not compatible according to ECMA I.8.7.1
@@ -42,7 +133,7 @@ namespace Internal.TypeSystem
         private static bool IsEquivalentTo(this TypeDesc thisType, TypeDesc otherType)
         {
             // TODO: Once type equivalence is implemented, this implementation needs to be enhanced to honor it.
-            return thisType.Equals(otherType);
+            return thisType == otherType;
         }
 
         private static bool CanCastToInternal(this TypeDesc thisType, TypeDesc otherType, StackOverflowProtect protect)
