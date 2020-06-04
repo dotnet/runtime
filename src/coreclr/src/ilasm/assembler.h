@@ -1069,6 +1069,8 @@ public:
     void SetPdbFileName(__in __nullterminated char* szName);
     // Saves the pdb file.
     HRESULT SavePdbFile();
+    // Checks whether pdb generation is portable
+    BOOL IsPortablePdb();
 
     // Security paraphernalia
 public:
