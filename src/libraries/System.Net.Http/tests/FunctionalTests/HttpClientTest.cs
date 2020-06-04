@@ -837,6 +837,7 @@ namespace System.Net.Http.Functional.Tests
                     });
 
                     TaskCanceledException ex = await Assert.ThrowsAsync<TaskCanceledException>(() => sendTask);
+                    Assert.Contains("HttpContent.CopyTo(", ex.InnerException.StackTrace);
                     Assert.IsNotType<TimeoutException>(ex.InnerException);
                 },
                 async server =>
@@ -875,6 +876,7 @@ namespace System.Net.Http.Functional.Tests
                     });
 
                     TaskCanceledException ex = await Assert.ThrowsAsync<TaskCanceledException>(() => sendTask);
+                    Assert.Contains("HttpContent.LoadIntoBuffer(", ex.StackTrace);
                     Assert.IsNotType<TimeoutException>(ex.InnerException);
                 },
                 async server =>
@@ -882,12 +884,12 @@ namespace System.Net.Http.Functional.Tests
                     await server.AcceptConnectionAsync(async connection =>
                     {
                         await connection.ReadRequestDataAsync();
-                        await connection.SendResponseHeadersAsync(headers: new List<HttpHeaderData>() {
+                        await connection.SendResponseAsync(headers: new List<HttpHeaderData>() {
                             new HttpHeaderData("Content-Length", (content.Length * 2).ToString())
                         });
-                        await connection.Writer.WriteLineAsync(content);
-                        cts.Cancel();
                         await Task.Delay(TimeSpan.FromSeconds(0.5));
+                        cts.Cancel();
+                        await connection.Writer.WriteLineAsync(content);
                     });
                 }); 
         }
