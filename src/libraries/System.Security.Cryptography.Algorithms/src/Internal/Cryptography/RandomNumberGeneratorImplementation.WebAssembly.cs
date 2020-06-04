@@ -9,7 +9,7 @@ namespace System.Security.Cryptography
 {
     internal partial class RandomNumberGeneratorImplementation
     {
-        private static FileStream s_randomStream = new FileStream("/dev/random", FileMode.Open, FileAccess.Read);
+        private static readonly FileStream s_randomStream = new FileStream("/dev/random", FileMode.Open, FileAccess.Read);
 
         private static unsafe void GetBytes(byte* pbBuffer, int count)
         {
