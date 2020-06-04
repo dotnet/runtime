@@ -20,6 +20,8 @@ private:
     const static WCHAR* s_pProcessInfoEventName;
     EventPipeEvent *m_pProcessInfoEvent;
 
+    const static WCHAR* s_pOSInformation;
+
 public:
     EventPipeEventSource();
     ~EventPipeEventSource();

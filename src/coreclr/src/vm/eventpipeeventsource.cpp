@@ -17,6 +17,16 @@
 const WCHAR* EventPipeEventSource::s_pProviderName = W("Microsoft-DotNETCore-EventPipe");
 const WCHAR* EventPipeEventSource::s_pProcessInfoEventName = W("ProcessInfo");
 
+#if defined(HOST_WINDOWS)
+const WCHAR* EventPipeEventSource::s_pOSInformation = W("Windows");
+#elif defined(__APPLE__)
+const WCHAR* EventPipeEventSource::s_pOSInformation = W("OSX");
+#elif defined(__linux__)
+const WCHAR* EventPipeEventSource::s_pOSInformation = W("Linux");
+#elif
+const WCHAR* EventPipeEventSource::s_pOSInformation = W("Unknown");
+#endif
+
 EventPipeEventSource::EventPipeEventSource()
 {
     CONTRACTL
@@ -30,10 +40,12 @@ EventPipeEventSource::EventPipeEventSource()
     m_pProvider = EventPipe::CreateProvider(SL(s_pProviderName), NULL, NULL);
 
     // Generate metadata.
-    const unsigned int numParams = 1;
+    const unsigned int numParams = 2;
     EventPipeParameterDesc params[numParams];
     params[0].Type = EventPipeParameterType::String;
     params[0].Name = W("CommandLine");
+    params[1].Type = EventPipeParameterType::String;
+    params[1].Name = W("OSInformation");
 
     size_t metadataLength = 0;
     BYTE *pMetadata = EventPipeMetadataGenerator::GenerateEventMetadata(
@@ -113,12 +125,15 @@ void EventPipeEventSource::SendProcessInfo(LPCWSTR pCommandLine)
     }
     CONTRACTL_END;
 
-    EventData data[1];
+    EventData data[2];
     data[0].Ptr = (UINT64) pCommandLine;
     data[0].Size = (unsigned int)(wcslen(pCommandLine) + 1) * 2;
     data[0].Reserved = 0;
+    data[1].Ptr = (UINT64)s_pOSInformation;
+    data[1].Size = (unsigned int)(wcslen(s_pOSInformation) + 1) * 2;
+    data[1].Reserved = 0;
 
-    EventPipe::WriteEvent(*m_pProcessInfoEvent, data, 1);
+    EventPipe::WriteEvent(*m_pProcessInfoEvent, data, 2);
 }
 
 #endif // FEATURE_PERFTRACING
