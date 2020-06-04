@@ -35,7 +35,15 @@ while true; do
         sleep 5
     fi
 done
-
+# Restart the simulator to make sure it is tied to the right user session
+xcode_version=11.4
+xcode_path="/Applications/Xcode${xcode_version/./}.app"
+simulator_app="$xcode_path/Contents/Developer/Applications/Simulator.app"
+pid=`ps aux | grep "$simulator_app" | grep -v grep | tr -s ' ' | cut -d ' ' -f 2`
+if [ ! -z "$pid" ]; then
+    sudo kill "$pid"
+fi
+open -a "$simulator_app"
 export XHARNESS_OUT="$EXECUTION_DIR/xharness-output"
 
 if [ -x "$(command -v xharness)" ]
