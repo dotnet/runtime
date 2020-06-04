@@ -54,7 +54,7 @@ check_prereqs()
     function version { echo "$@" | awk -F. '{ printf("%d%02d%02d\n", $1,$2,$3); }'; }
 
     local cmakeRequiredMinimumVersion="3.14.5"
-    local cmakeInstalledVersion="$(cmake --version | awk '/^cmake.* version [0-9]+\.[0-9]+\.[0-9]+$/ {print $3}')"
+    local cmakeInstalledVersion="$(cmake --version 2>&1 | sed '1!d' | sed -e 's/"//g' | awk '{print $3}')"
 
     if [[ "$(version "$cmakeInstalledVersion")" -lt "$(version "$cmakeRequiredMinimumVersion")" ]]; then
         echo "Found cmake v$cmakeInstalledVersion in PATH. Please install v$cmakeRequiredMinimumVersion or newer from https://www.cmake.org/download/."
