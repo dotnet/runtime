@@ -10,6 +10,9 @@ namespace System.Text.Json
 {
     public static partial class JsonSerializer
     {
+        internal static readonly byte[] s_idPropertyName
+            = new byte[] { (byte)'$', (byte)'i', (byte)'d' };
+
         /// <summary>
         /// Returns true if successful, false is the reader ran out of buffer.
         /// Sets state.Current.ReturnValue to the $ref target for MetadataRefProperty cases.
@@ -123,7 +126,7 @@ namespace System.Text.Json
                 string key = reader.GetString()!;
 
                 // todo: https://github.com/dotnet/runtime/issues/32354
-                state.Current.ReturnValue = state.ReferenceResolver.ResolveReferenceOnDeserialize(key);
+                state.Current.ReturnValue = state.ReferenceResolver.ResolveReference(key);
                 state.Current.ObjectState = StackFrameObjectState.ReadAheadRefEndObject;
             }
             else if (state.Current.ObjectState == StackFrameObjectState.ReadIdValue)
@@ -134,9 +137,6 @@ namespace System.Text.Json
                 }
 
                 state.Current.MetadataId = reader.GetString();
-
-                // Clear the MetadataPropertyName since we are done processing Id.
-                state.Current.JsonPropertyName = default;
 
                 if (converter.ClassType == ClassType.Enumerable)
                 {
@@ -184,6 +184,8 @@ namespace System.Text.Json
             {
                 if (reader.TokenType != JsonTokenType.PropertyName)
                 {
+                    // Missing $values, JSON path should point to the property's object.
+                    state.Current.JsonPropertyName = null;
                     ThrowHelper.ThrowJsonException_MetadataPreservedArrayValuesNotFound(converter.TypeToConvert);
                 }
 
