@@ -92,11 +92,14 @@ if [[ "$build_arch" == "wasm" ]]; then
 fi
 
 # Include CMAKE_USER_MAKE_RULES_OVERRIDE as uninitialized since it will hold its value in the CMake cache otherwise can cause issues when branch switching
-$cmake_command \
-  -G "$generator" \
-  "-DCMAKE_BUILD_TYPE=$buildtype" \
+if ! $cmake_command                       \
+  -G "$generator"                         \
+  "-DCMAKE_BUILD_TYPE=$buildtype"         \
   "-DCMAKE_INSTALL_PREFIX=$__CMakeBinDir" \
-  $cmake_extra_defines \
-  $__UnprocessedCMakeArgs \
-  -S "$1" \
-  -B "$3"
+  $cmake_extra_defines                    \
+  $__UnprocessedCMakeArgs                 \
+  -S "$1"                                 \
+  -B "$3"; then
+    echo "CMake configuration failed possibly due to older version of CMake in use. Please install v3.14.5 or newer from https://www.cmake.org/download/."
+    exit 1
+fi

@@ -51,16 +51,6 @@ check_prereqs()
     # Check presence of CMake on the path
     command -v cmake 2>/dev/null || { echo >&2 "Please install cmake before running this script"; exit 1; }
 
-    function version { echo "$@" | awk -F. '{ printf("%d%02d%02d\n", $1,$2,$3); }'; }
-
-    local cmakeRequiredMinimumVersion="3.14.5"
-    local cmakeInstalledVersion="$(cmake --version 2>&1 | sed '1!d' | sed -e 's/"//g' | awk '{print $3}')"
-
-    if [[ "$(version "$cmakeInstalledVersion")" -lt "$(version "$cmakeRequiredMinimumVersion")" ]]; then
-        echo "Found cmake v$cmakeInstalledVersion in PATH. Please install v$cmakeRequiredMinimumVersion or newer from https://www.cmake.org/download/."
-        exit 1;
-    fi
-
     if [[ "$__HostOS" == "OSX" ]]; then
         # Check presence of pkg-config on the path
         command -v pkg-config 2>/dev/null || { echo >&2 "Please install pkg-config before running this script, see https://github.com/dotnet/runtime/blob/master/docs/workflow/requirements/macos-requirements.md"; exit 1; }
