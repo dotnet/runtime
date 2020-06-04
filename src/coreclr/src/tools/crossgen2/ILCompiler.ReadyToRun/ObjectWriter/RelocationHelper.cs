@@ -75,19 +75,28 @@ namespace ILCompiler.PEWriter
         /// </summary>
         private byte[] _relocationBuffer = new byte[LongestRelocationBytes];
 
+        private List<(int, int)> _paddingToInject;
+
         /// <summary>
         /// Relocation helper stores the output stream and initializes the PE blob builder enumerator.
         /// </summary>
         /// <param name="outputStream">Output stream for the relocated PE file</param>
         /// <param name="peFileBuilder">PE file blob builder</param>
-        public RelocationHelper(Stream outputStream, ulong defaultImageBase, BlobBuilder peFileBuilder)
+        public RelocationHelper(Stream outputStream, ulong defaultImageBase, BlobBuilder peFileBuilder, List<(int, int)> paddingToInject)
         {
+            _paddingToInject = paddingToInject;
             _outputStream = outputStream;
             _outputFilePos = 0;
             
             _defaultImageBase = defaultImageBase;
 
+
             _peFileLength = peFileBuilder.Count;
+            foreach (var (offset, size) in paddingToInject)
+            {
+                _peFileLength += size;
+            }
+
             _peFileBlobs = peFileBuilder.GetBlobs();
             FetchNextBlob();
         }
@@ -118,10 +127,20 @@ namespace ILCompiler.PEWriter
         {
             do
             {
+                if ((_paddingToInject.Count > 0) && (_paddingToInject[0].Item1 == _outputFilePos))
+                {
+                    CopyBytesToOutput(_paddingToInject[0].Item2);
+                }
+
                 CopyBytesToOutput(_remainingLength);
             }
             while (TryFetchNextBlob());
-            
+
+            if ((_paddingToInject.Count > 0) && (_paddingToInject[0].Item1 == _outputFilePos))
+            {
+                CopyBytesToOutput(_paddingToInject[0].Item2);
+            }
+
             if (_outputFilePos != _peFileLength)
             {
                 // Input / output PE file length mismatch - internal error in the relocator
@@ -287,12 +306,38 @@ namespace ILCompiler.PEWriter
 
             while (length > 0)
             {
+                int nextPaddingOffset = Int32.MaxValue;
+                if (_paddingToInject.Count > 0)
+                {
+                    nextPaddingOffset = _paddingToInject[0].Item1;
+                }
+                int distanceToNextPadding = nextPaddingOffset - _outputFilePos;
+
+                if (_paddingToInject.Count > 0 && (distanceToNextPadding == 0))
+                {
+                    int paddingSize = _paddingToInject[0].Item2;
+                    _paddingToInject.RemoveAt(0);
+
+                    int paddingToInject = Math.Min(length, paddingSize);
+                    int remainingPadding = paddingSize - paddingToInject;
+                    _outputStream.Write(new byte[paddingToInject], 0, paddingToInject);
+                    _outputFilePos += paddingToInject;
+                    length -= paddingToInject;
+
+                    if (remainingPadding > 0)
+                    {
+                        _paddingToInject.Insert(0, (_outputFilePos, remainingPadding));
+                    }
+
+                    continue;
+                }
+
                 if (_remainingLength == 0)
                 {
                     FetchNextBlob();
                 }
 
-                int part = Math.Min(length, _remainingLength);
+                int part = Math.Min(distanceToNextPadding, Math.Min(length, _remainingLength));
                 _outputStream.Write(_currentBlob, _blobOffset, part);
                 _outputFilePos += part;
                 _blobOffset += part;

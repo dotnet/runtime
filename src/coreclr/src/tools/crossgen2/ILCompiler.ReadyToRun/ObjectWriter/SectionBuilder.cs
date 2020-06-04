@@ -814,7 +814,14 @@ namespace ILCompiler.PEWriter
             int exportDirectorySize = sectionLocation.RelativeVirtualAddress + builder.Count - exportDirectoryTableRVA;
 
             _exportDirectoryEntry = new DirectoryEntry(relativeVirtualAddress: exportDirectoryTableRVA, size: exportDirectorySize);
-            
+
+            // Pad out reloc section to 2MB
+            int finalAlignment = 2 * 1024 * 1024;
+            int alignedOffset = (builder.Count + finalAlignment - 1) & -finalAlignment;
+            int padding = alignedOffset - builder.Count;
+
+            builder.WriteBytes(1, padding);
+
             return builder;
         }
 
@@ -883,9 +890,10 @@ namespace ILCompiler.PEWriter
         public void RelocateOutputFile(
             BlobBuilder peFile,
             ulong defaultImageBase,
-            Stream outputStream)
+            Stream outputStream,
+            List<(int,int)> paddingToInject)
         {
-            RelocationHelper relocationHelper = new RelocationHelper(outputStream, defaultImageBase, peFile);
+            RelocationHelper relocationHelper = new RelocationHelper(outputStream, defaultImageBase, peFile, paddingToInject);
 
             // Traverse relocations in all sections in their RVA order
             foreach (Section section in _sections.OrderBy((sec) => sec.RVAWhenPlaced))
