@@ -61,6 +61,24 @@ def", new string[] { @"abc", @"def" });
 			TestParseResponseFileLines (@"/tmp/test.txt", new string[] { @"/tmp/test.txt" });
 		}
 
+		[Test]
+		public void TestEqualsArguments ()
+		{
+			TestParseResponseFileLines (@"a=b", new string[] { @"a=b" });
+		}
+
+		[Test]
+		public void TestEqualsArgumentsSpaces ()
+		{
+			TestParseResponseFileLines (@"a=""b c""", new string[] { @"a=b c" });
+		}
+
+		[Test]
+		public void TestEqualsKeySpaces ()
+		{
+			TestParseResponseFileLines (@"""a b""=c", new string[] { @"a b=c" });
+		}
+
 		private void TestParseResponseFileLines (string v1, string[] v2)
 		{
 			var result = new Queue<string> ();

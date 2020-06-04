@@ -29,15 +29,13 @@ namespace ILLink.Tasks.Tests
 		public static string[] OptimizationNames {
 			get {
 				var field = typeof (ILLink).GetField ("_optimizationNames", BindingFlags.NonPublic | BindingFlags.Static);
-				var value = (string[]) (field.GetValue (null));
-				return value;
+				return (string[]) field.GetValue (null);
 			}
 		}
 
 		public void SetOptimization (string optimization, bool enabled)
 		{
 			var property = typeof (ILLink).GetProperty (optimization);
-			var setter = property.GetSetMethod ();
 			property.GetSetMethod ().Invoke (this, new object[] { enabled });
 		}
 
@@ -132,6 +130,12 @@ namespace ILLink.Tasks.Tests
 		{
 			var context = base.GetDefaultContext (null);
 			return context.Optimizations.Global;
+		}
+
+		public Dictionary<string, string> GetCustomData ()
+		{
+			var field = typeof (LinkContext).GetField ("_parameters", BindingFlags.NonPublic | BindingFlags.Instance);
+			return (Dictionary<string, string>) field.GetValue (this.context);
 		}
 	}
 

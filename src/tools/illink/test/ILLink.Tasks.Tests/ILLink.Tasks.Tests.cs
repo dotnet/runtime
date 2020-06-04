@@ -306,6 +306,48 @@ namespace ILLink.Tasks.Tests
 			}
 		}
 
+		public static IEnumerable<object[]> CustomDataCases => new List<object[]> {
+			new object [] {
+				new ITaskItem [] {
+					new TaskItem ("DataName", new Dictionary<string, string> { { "Value", "DataValue" } })
+				},
+			},
+			new object [] {
+				new ITaskItem [] {
+					new TaskItem ("DataName", new Dictionary<string, string> { { "Value", "DataValue" } }),
+					new TaskItem ("DataName", new Dictionary<string, string> { { "Value", "DataValue2" } })
+				},
+			},
+			new object [] {
+				new ITaskItem [] {
+					new TaskItem ("DataName1", new Dictionary<string, string> { { "Value", "DataValue1" } }),
+					new TaskItem ("DataName2", new Dictionary<string, string> { { "Value", "DataValue2" } })
+				},
+			},
+			new object [] {
+				new ITaskItem [] {
+					new TaskItem ("DataName", new Dictionary<string, string> { { "Value", "data value with spaces" } })
+				},
+			},
+		};
+
+		[Theory]
+		[MemberData (nameof (CustomDataCases))]
+		public void TestCustomDta (ITaskItem[] customData)
+		{
+			var task = new MockTask () {
+				CustomData = customData
+			};
+			using (var driver = task.CreateDriver ()) {
+				var expectedCustomData = customData.Select (c => new { Key = c.ItemSpec, Value = c.GetMetadata ("Value") })
+					.GroupBy (c => c.Key)
+					.Select (c => c.Last ())
+					.ToDictionary (c => c.Key, c => c.Value);
+				var actualCustomData = driver.GetCustomData ();
+				Assert.Equal (expectedCustomData, actualCustomData);
+			}
+		}
+
 		public static IEnumerable<object[]> FeatureSettingsCases => new List<object[]> {
 			new object [] {
 				new ITaskItem [] {
