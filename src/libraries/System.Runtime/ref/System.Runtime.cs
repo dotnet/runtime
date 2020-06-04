@@ -5639,7 +5639,7 @@ namespace System.Diagnostics.CodeAnalysis
     {
         All = -1,
         None = 0,
-        DefaultConstructor = 1,
+        PublicParameterlessConstructor = 1,
         PublicConstructors = 3,
         NonPublicConstructors = 4,
         PublicMethods = 8,
