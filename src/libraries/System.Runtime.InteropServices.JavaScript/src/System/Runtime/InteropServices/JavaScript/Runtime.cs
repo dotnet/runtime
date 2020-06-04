@@ -411,6 +411,10 @@ namespace System.Runtime.InteropServices.JavaScript
                         {
                             res[c] = 'u';
                         }
+                        else if (t == typeof(SafeHandle))
+                        {
+                            res[c] = 'h';
+                        }
                         else
                         {
                             if (t.IsValueType)
@@ -493,5 +497,94 @@ namespace System.Runtime.InteropServices.JavaScript
         {
             return new Uri(uri);
         }
+
+
+        public static bool SafeHandleAddRef(SafeHandle safeHandle)
+        {
+            bool b = false;
+            //#if DEBUG_HANDLE
+            var _anyref = safeHandle as AnyRef;
+            //#endif
+            try
+            {
+                safeHandle.DangerousAddRef(ref b);
+                //#if DEBUG_HANDLE
+                if (b && _anyref != null)
+                    _anyref.AddRef();
+                //#endif
+
+            }
+            catch
+            {
+                if (b)
+                {
+                    safeHandle.DangerousRelease();
+                    //#if DEBUG_HANDLE
+
+                    if (_anyref != null)
+                        _anyref.Release();
+                    //#endif
+                    b = false;
+                }
+            }
+            //#if DEBUG_HANDLE
+            System.Diagnostics.Debug.WriteLine($"\tSafeHandleAddRef: {safeHandle.DangerousGetHandle()} / RefCount: {((_anyref == null) ? 0 : _anyref.RefCount)}");
+            //#endif
+            return b;
+        }
+
+        public static void SafeHandleRelease(SafeHandle safeHandle)
+        {
+            safeHandle.DangerousRelease();
+            //#if DEBUG_HANDLE
+            var _anyref = safeHandle as AnyRef;
+            if (_anyref != null)
+            {
+                _anyref.Release();
+                System.Diagnostics.Debug.WriteLine($"\tSafeHandleRelease: {safeHandle.DangerousGetHandle()} / RefCount: {_anyref.RefCount}");
+            }
+            //#endif
+        }
+
+        public static void SafeHandleReleaseByHandle(int js_id)
+        {
+#if !DEBUG_HANDLE
+            System.Diagnostics.Debug.WriteLine ($"SafeHandleReleaseByHandle: {js_id}");
+#endif
+            lock (_boundObjects)
+            {
+                if (_boundObjects.TryGetValue(js_id, out WeakReference? reference))
+                {
+                    if (reference.Target != null)
+                    {
+                        SafeHandleRelease((AnyRef)reference.Target);
+                    }
+                    else
+                    {
+                        System.Diagnostics.Debug.WriteLine($"\tSafeHandleReleaseByHandle: did not find active target {js_id} / target: {reference.Target}");
+                    }
+
+                }
+                else
+                {
+                    System.Diagnostics.Debug.WriteLine($"\tSafeHandleReleaseByHandle: did not find reference for {js_id}");
+                }
+            }
+
+        }
+
+        public static IntPtr SafeHandleGetHandle(SafeHandle safeHandle, bool addRef)
+        {
+//#if DEBUG_HANDLE
+            System.Diagnostics.Debug.WriteLine ($"SafeHandleGetHandle: {safeHandle.DangerousGetHandle ()} / addRef {addRef}");
+//#endif
+            if (addRef)
+                if (SafeHandleAddRef(safeHandle))
+                    return safeHandle.DangerousGetHandle();
+                else
+                    return IntPtr.Zero;
+            return safeHandle.DangerousGetHandle();
+        }
+
     }
 }
