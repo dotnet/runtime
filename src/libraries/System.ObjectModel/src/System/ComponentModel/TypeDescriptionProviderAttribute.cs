@@ -12,7 +12,7 @@ namespace System.ComponentModel
         /// <summary>
         /// Creates a new TypeDescriptionProviderAttribute object.
         /// </summary>
-        public TypeDescriptionProviderAttribute([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.DefaultConstructor)] string typeName)
+        public TypeDescriptionProviderAttribute([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] string typeName)
         {
             if (typeName == null)
             {
@@ -25,7 +25,7 @@ namespace System.ComponentModel
         /// <summary>
         /// Creates a new TypeDescriptionProviderAttribute object.
         /// </summary>
-        public TypeDescriptionProviderAttribute([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.DefaultConstructor)] Type type)
+        public TypeDescriptionProviderAttribute([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] Type type)
         {
             if (type == null)
             {
@@ -39,7 +39,7 @@ namespace System.ComponentModel
         /// The TypeName property returns the assembly qualified type name
         /// for the type description provider.
         /// </summary>
-        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.DefaultConstructor)]
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
         public string TypeName { get; }
     }
 }

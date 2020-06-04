@@ -2319,7 +2319,7 @@ namespace System.ComponentModel
         [EditorBrowsable(EditorBrowsableState.Advanced)]
         public static Type ComObjectType
         {
-            [DynamicallyAccessedMembersAttribute(DynamicallyAccessedMemberTypes.DefaultConstructor)]
+            [DynamicallyAccessedMembersAttribute(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
             get => typeof(TypeDescriptorComObject);
         }
 
