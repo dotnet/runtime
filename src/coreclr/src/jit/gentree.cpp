@@ -6263,9 +6263,11 @@ GenTree* Compiler::gtNewInlineCandidateReturnExpr(GenTree* inlineCandidate, var_
 {
     assert(GenTree::s_gtNodeSizes[GT_RET_EXPR] == TREE_NODE_SZ_LARGE);
 
-    GenTree* node = new (this, GT_RET_EXPR) GenTreeRetExpr(type);
+    GenTreeRetExpr* node = new (this, GT_RET_EXPR) GenTreeRetExpr(type);
 
-    node->AsRetExpr()->gtInlineCandidate = inlineCandidate;
+    node->gtInlineCandidate = inlineCandidate;
+
+    node->bbFlags = 0;
 
     if (varTypeIsStruct(inlineCandidate) && !inlineCandidate->OperIsBlkOp())
     {
