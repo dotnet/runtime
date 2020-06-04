@@ -25,7 +25,7 @@ jobs:
     - Linux_arm64
     - OSX_x64
     - Windows_NT_x64
-    - CoreClrTestBuildHost # Either OSX_x64 or Linux_x64
+    - Windows_NT_arm64
     jobParameters:
       testGroup: innerloop
 

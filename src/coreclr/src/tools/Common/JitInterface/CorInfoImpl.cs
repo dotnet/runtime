@@ -58,49 +58,72 @@ namespace Internal.JitInterface
         private IntPtr _unmanagedCallbacks; // array of pointers to JIT-EE interface callbacks
         private Object _keepAlive; // Keeps delegates for the callbacks alive
 
-        private IntPtr _jitLibrary;
+        private delegate IntPtr JitStartupDelegate(IntPtr host);
+        private delegate IntPtr GetJitDelegate();
+
+        private delegate IntPtr GetJitHostDelegate(IntPtr configProvider);
+        private delegate CorJitResult JitCompileMethodDelegate(out IntPtr exception,
+            IntPtr jit, IntPtr thisHandle, IntPtr callbacks,
+            ref CORINFO_METHOD_INFO info, uint flags, out IntPtr nativeEntry, out uint codeSize);
+        private delegate IntPtr AllocExceptionDelegate([MarshalAs(UnmanagedType.LPWStr)]string message, int messageLength);
+        private delegate void FreeExceptionDelegate(IntPtr obj);
+        private delegate char* GetExceptionMessageDelegate(IntPtr obj);
+
+
+        private static object s_jitLibraryLock = new object();
+        private static IntPtr s_jitLibrary;
+        private static TargetOS s_jitLibraryTargetOS;
+        private static TargetArchitecture s_jitLibraryTargetArchitecture;
+        private static IntPtr s_jitHostLibrary;
+
+        private static JitStartupDelegate s_jitStartup;
+        private static GetJitDelegate s_getJit;
+
+        private static GetJitHostDelegate s_getJitHost;
+        private static JitCompileMethodDelegate s_jitCompileMethod;
+        private static AllocExceptionDelegate s_allocException;
+        private static FreeExceptionDelegate s_freeException;
+        private static GetExceptionMessageDelegate s_getExceptionMessage;
 
         private ExceptionDispatchInfo _lastException;
 
-        private delegate IntPtr JitStartupDelegate(IntPtr host);
-        private delegate IntPtr GetJitDelegate();
-        private delegate IntPtr GetJitHostDelegate(IntPtr configProvider);
-
-        private void InitializeJitLibrary(TargetOS targetOS, TargetArchitecture targetArchitecture)
+        private static void InitializeJitLibrary(TargetOS targetOS, TargetArchitecture targetArchitecture)
         {
-            if (_jitLibrary == IntPtr.Zero)
+            if (s_jitLibrary == IntPtr.Zero)
             {
-                string crossgenPath = Path.GetDirectoryName(typeof(CorInfoImpl).Assembly.Location);
-                string jitTargetPath = Path.Combine(crossgenPath, GetHostSpec(), GetTargetSpec(targetOS, targetArchitecture));
-                string jitLibraryName = Path.Combine(jitTargetPath, GetLibraryPrefix() + JitLibrary + GetLibraryExtension());
-                _jitLibrary = NativeLibrary.Load(jitLibraryName);
+                lock (s_jitLibraryLock)
+                {
+                    if (s_jitLibrary == IntPtr.Zero)
+                    {
+                        string crossgenPath = Path.GetDirectoryName(typeof(CorInfoImpl).Assembly.Location);
+                        string jitHostPath = Path.Combine(crossgenPath, GetHostSpec());
+                        string jitHostLibraryName = Path.Combine(jitHostPath, GetLibraryPrefix() + JitSupportLibrary + GetLibraryExtension());
+
+                        s_jitHostLibrary = NativeLibrary.Load(jitHostLibraryName);
+                        s_getJitHost = Marshal.GetDelegateForFunctionPointer<GetJitHostDelegate>(NativeLibrary.GetExport(s_jitHostLibrary, "GetJitHost"));
+                        s_jitCompileMethod = Marshal.GetDelegateForFunctionPointer<JitCompileMethodDelegate>(NativeLibrary.GetExport(s_jitHostLibrary, "JitCompileMethod"));
+                        s_allocException = Marshal.GetDelegateForFunctionPointer<AllocExceptionDelegate>(NativeLibrary.GetExport(s_jitHostLibrary, "AllocException"));
+                        s_freeException = Marshal.GetDelegateForFunctionPointer<FreeExceptionDelegate>(NativeLibrary.GetExport(s_jitHostLibrary, "FreeException"));
+                        s_getExceptionMessage = Marshal.GetDelegateForFunctionPointer<GetExceptionMessageDelegate>(NativeLibrary.GetExport(s_jitHostLibrary, "GetExceptionMessage"));
+
+                        string jitTargetPath = Path.Combine(jitHostPath, GetTargetSpec(targetOS, targetArchitecture));
+                        string jitLibraryName = Path.Combine(jitTargetPath, GetLibraryPrefix() + JitLibrary + GetLibraryExtension());
+
+                        s_jitLibrary = NativeLibrary.Load(jitLibraryName);
+                        s_jitStartup = Marshal.GetDelegateForFunctionPointer<JitStartupDelegate>(NativeLibrary.GetExport(s_jitLibrary, "jitStartup"));
+                        s_getJit = Marshal.GetDelegateForFunctionPointer<GetJitDelegate>(NativeLibrary.GetExport(s_jitLibrary, "getJit"));
+
+                        s_jitLibraryTargetOS = targetOS;
+                        s_jitLibraryTargetArchitecture = targetArchitecture;
+                        s_jitStartup(s_getJitHost(JitConfigProvider.Instance.UnmanagedInstance));
+                    }
+                    // Currently we don't support loading two different versions of clrjit from the same Crossgen2 process
+                    Debug.Assert(targetOS == s_jitLibraryTargetOS);
+                    Debug.Assert(targetArchitecture == s_jitLibraryTargetArchitecture);
+                }
             }
         }
 
-        private IntPtr jitStartup(IntPtr host)
-        {
-            IntPtr jitStartupExport = NativeLibrary.GetExport(_jitLibrary, "jitStartup");
-            JitStartupDelegate jitStartupDelegate = Marshal.GetDelegateForFunctionPointer<JitStartupDelegate>(jitStartupExport);
-            return jitStartupDelegate(host);
-        }
-
-        private IntPtr getJit()
-        {
-            IntPtr getJitExport = NativeLibrary.GetExport(_jitLibrary, "getJit");
-            GetJitDelegate getJitDelegate = Marshal.GetDelegateForFunctionPointer<GetJitDelegate>(getJitExport);
-            return getJitDelegate();
-        }
-
-        private IntPtr GetJitHost(IntPtr configProvider)
-        {
-            string crossgenPath = Path.GetDirectoryName(typeof(CorInfoImpl).Assembly.Location);
-            string jitHostPath = Path.Combine(crossgenPath, GetHostSpec());
-            string jitHostLibraryName = Path.Combine(jitHostPath, GetLibraryPrefix() + JitSupportLibrary + GetLibraryExtension());
-            IntPtr libraryHandle = NativeLibrary.Load(jitHostLibraryName);
-            IntPtr getJitHostExport = NativeLibrary.GetExport(libraryHandle, "GetJitHost");
-            GetJitHostDelegate getJitHostDelegate = Marshal.GetDelegateForFunctionPointer<GetJitHostDelegate>(getJitHostExport);
-            return getJitHostDelegate(configProvider);
-        }
         private static string GetLibraryPrefix()
         {
             return RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "" : "lib";
@@ -192,23 +215,12 @@ namespace Internal.JitInterface
             return _this;
         }
 
-        [DllImport(JitSupportLibrary)]
-        private extern static CorJitResult JitCompileMethod(out IntPtr exception,
-            IntPtr jit, IntPtr thisHandle, IntPtr callbacks,
-            ref CORINFO_METHOD_INFO info, uint flags, out IntPtr nativeEntry, out uint codeSize);
-
-        [DllImport(JitSupportLibrary)]
-        private extern static uint GetMaxIntrinsicSIMDVectorLength(IntPtr jit, CORJIT_FLAGS* flags);
-
-        [DllImport(JitSupportLibrary)]
-        private extern static IntPtr AllocException([MarshalAs(UnmanagedType.LPWStr)]string message, int messageLength);
-
         private IntPtr AllocException(Exception ex)
         {
             _lastException = ExceptionDispatchInfo.Capture(ex);
 
             string exString = ex.ToString();
-            IntPtr nativeException = AllocException(exString, exString.Length);
+            IntPtr nativeException = s_allocException(exString, exString.Length);
             if (_nativeExceptions == null)
             {
                 _nativeExceptions = new List<IntPtr>();
@@ -217,22 +229,14 @@ namespace Internal.JitInterface
             return nativeException;
         }
 
-        [DllImport(JitSupportLibrary)]
-        private extern static void FreeException(IntPtr obj);
-
-        [DllImport(JitSupportLibrary)]
-        private extern static char* GetExceptionMessage(IntPtr obj);
-
         public void Startup(TargetOS targetOS, TargetArchitecture targetArchitecture)
         {
-            InitializeJitLibrary(targetOS, targetArchitecture);
-            jitStartup(GetJitHost(JitConfigProvider.Instance.UnmanagedInstance));
         }
 
         public CorInfoImpl(TargetOS targetOS, TargetArchitecture targetArchitecture)
         {
-            Startup(targetOS, targetArchitecture);
-            _jit = getJit();
+            InitializeJitLibrary(targetOS, targetArchitecture);
+            _jit = s_getJit();
             if (_jit == IntPtr.Zero)
             {
                 throw new IOException("Failed to initialize JIT");
@@ -277,7 +281,7 @@ namespace Internal.JitInterface
             IntPtr exception;
             IntPtr nativeEntry;
             uint codeSize;
-            var result = JitCompileMethod(out exception,
+            var result = s_jitCompileMethod(out exception,
                     _jit, (IntPtr)Unsafe.AsPointer(ref _this), _unmanagedCallbacks,
                     ref methodInfo, (uint)CorJitFlag.CORJIT_FLAG_CALL_GETJITFLAGS, out nativeEntry, out codeSize);
             if (exception != IntPtr.Zero)
@@ -311,7 +315,7 @@ namespace Internal.JitInterface
                 }
 
                 // This is a failure we don't know much about.
-                char* szMessage = GetExceptionMessage(exception);
+                char* szMessage = s_getExceptionMessage(exception);
                 string message = szMessage != null ? new string(szMessage) : "JIT Exception";
                 throw new Exception(message);
             }
@@ -470,7 +474,7 @@ namespace Internal.JitInterface
             if (_nativeExceptions != null)
             {
                 foreach (IntPtr ex in _nativeExceptions)
-                    FreeException(ex);
+                    s_freeException(ex);
                 _nativeExceptions = null;
             }
 
