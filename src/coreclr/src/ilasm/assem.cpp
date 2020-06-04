@@ -160,7 +160,7 @@ Assembler::Assembler()
     indexKeywords(&indxKeywords);
 
     m_pdbFormat = CLASSIC;
-    m_pPdbEmitter = NULL;
+    m_pPortablePdbWritter = NULL;
 }
 
 
@@ -222,10 +222,9 @@ Assembler::~Assembler()
         m_pEmitter->Release();
         m_pEmitter = NULL;
     }
-    if (m_pPdbEmitter != NULL)
+    if (m_pPortablePdbWritter != NULL)
     {
-        m_pPdbEmitter->Release();
-        m_pPdbEmitter = NULL;
+        delete m_pPortablePdbWritter;
     }
     if (m_pDisp != NULL)
     {

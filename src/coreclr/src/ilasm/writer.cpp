@@ -58,10 +58,12 @@ HRESULT Assembler::InitMetaData()
     //  and also new version of the metadata e.g. CLSID_CLR_v3_MetaData
     if (m_pdbFormat == PdbFormat::PORTABLE)
     {
+        m_pPortablePdbWritter = new PortablePdbWritter();
+        IMetaDataEmit2* pPdbEmitter;
         hr = m_pDisp->DefinePortablePdbScope(CLSID_CorMetaDataRuntime, 0, IID_IMetaDataEmit2,
-            (IUnknown**)&m_pPdbEmitter);
-        if (FAILED(hr))
-            goto exit;
+            (IUnknown**)&pPdbEmitter);
+        if (FAILED(hr)) goto exit;
+        if (FAILED(hr = m_pPortablePdbWritter->Init(pPdbEmitter))) goto exit;
     }
 
     //m_Parser = new AsmParse(m_pEmitter);

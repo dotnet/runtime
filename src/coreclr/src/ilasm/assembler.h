@@ -17,6 +17,8 @@
 #include "asmenum.h"
 #include "asmtemplates.h"
 
+#include "portable_pdb.h"
+
 // Disable the "initialization of static local vars is no thread safe" error
 #ifdef _MSC_VER
 #pragma warning(disable : 4640)
@@ -1057,7 +1059,7 @@ public:
 	GUID	m_guidDoc;
     // Portable PDB support
     PdbFormat m_pdbFormat;
-    IMetaDataEmit2* m_pPdbEmitter;
+    PortablePdbWritter* m_pPortablePdbWritter;
 
     // Security paraphernalia
 public:

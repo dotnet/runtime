@@ -18,6 +18,7 @@ set(ILASM_SOURCES
   main.cpp
   assembler.cpp
   prebuilt/asmparse.cpp
+  portable_pdb.cpp
 )
 
 set(ILASM_HEADERS
@@ -32,6 +33,7 @@ set(ILASM_HEADERS
   method.hpp
   nvpair.h
   typar.hpp
+  portable_pdb.h
 )
 
 if(CLR_CMAKE_TARGET_WIN32)
