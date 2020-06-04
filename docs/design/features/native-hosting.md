@@ -13,7 +13,7 @@ Native host which wants to load managed assembly and call into it for some funct
 * **Hosting managed apps**
 Native host which wants to run a managed app in-proc. Basically a different implementation of the existing .NET Core hosts (`dotnet.exe` or `apphost`). The intent is the ability to modify how the runtime starts and how the managed app is executed (and where it starts from).
 * **App using other .NET Core hosting services**
-App (native or .NET Core both) which needs to use some of the other services provided by the .NET Core hosting layer. For example the ability to locate available SDKs and so on.
+App (native or .NET Core both) which needs to use some of the other services provided by the .NET Core hosting components. For example the ability to locate available SDKs and so on.
 
 
 ## Existing support
@@ -26,7 +26,7 @@ Similarly to the C-style ABI the COM-style ABI also requires the native host to 
 There's no inherent interoperability between these APIs and the .NET SDK.
 The COM-style ABI is deprecated and should not be used going forward.
 * **`hostfxr` and `hostpolicy` APIs**
-The hosting layer of .NET Core already exposes some functionality as C-style ABI on either the `hostfxr` or `hostpolicy` libraries. These can execute application, determine available SDKs, determine native dependency locations, resolve component dependencies and so on.
+The hosting components of .NET Core already exposes some functionality as C-style ABI on either the `hostfxr` or `hostpolicy` libraries. These can execute application, determine available SDKs, determine native dependency locations, resolve component dependencies and so on.
 Unlike the above `coreclr` based APIs these don't require the caller to fully specify all startup parameters, instead these APIs understand artifacts produced by .NET SDK making it much easier to consume SDK produced apps/libraries.
 The native host is still required to locate the `hostfxr` or `hostpolicy` libraries. These APIs are also designed for specific narrow scenarios, any usage outside of these bounds is typically not possible.
 
@@ -34,24 +34,24 @@ The native host is still required to locate the `hostfxr` or `hostpolicy` librar
 ## Scope
 This document focuses on hosting which cooperates with the .NET SDK and consumes the artifacts produced by building the managed app/libraries directly. It completely ignores the COM-style ABI as it's hard to use from some programming languages.
 
-As such the document explicitly excludes any hosting based on directly loading `coreclr`. Instead it focuses on using the existing .NET Core hosting layer in new ways. For details on the .NET Core hosting components see [this document](https://github.com/dotnet/runtime/tree/master/docs/design/features/host-components.md).
+As such the document explicitly excludes any hosting based on directly loading `coreclr`. Instead it focuses on using the existing .NET Core hosting components in new ways. For details on the .NET Core hosting components see [this document](https://github.com/dotnet/runtime/tree/master/docs/design/features/host-components.md).
 
 
 ## Longer term vision
-This section describes how we think the hosting APIs should evolve. It is expected that this won't happen in any single release, but each change should fit into this picture and hopefully move us closer to this goal. It is also expected that existing APIs won't change (no breaking changes) and thus it can happen that some of the APIs don't fit nicely into the picture.
+This section describes how we think the hosting components should evolve. It is expected that this won't happen in any single release, but each change should fit into this picture and hopefully move us closer to this goal. It is also expected that existing APIs won't change (no breaking changes) and thus it can happen that some of the APIs don't fit nicely into the picture.
 
-The hosting layers and APIs should provide functionality to cover a wide range of applications. At the same time it needs to stay in sync with what .NET Core SDK can produce so that the end-to-end experience is available.
+The hosting component APIs should provide functionality to cover a wide range of applications. At the same time it needs to stay in sync with what .NET Core SDK can produce so that the end-to-end experience is available.
 
-The overall goal of hosting APIs is to enable loading and executing managed code, this consists of four main steps:
-* **Locate and load hosting layer** - How does a native host find and load the hosting layer libraries.
+The overall goal of hosting components is to enable loading and executing managed code, this consists of four main steps:
+* **Locate and load hosting components** - How does a native host find and load the hosting components libraries.
 * **Locate the managed code and all its dependencies** - Determining where the managed code comes from (application, component, ...), what frameworks it relies on (framework resolution) and what dependencies it needs (`.deps.json` processing)
 * **Load the managed code into the process** - Specify the environment and settings for the runtime, locating or starting the runtime, deciding how to load the managed code into the runtime (which `AssemblyLoadContext` for example) and actually loading the managed code and its dependencies.
-* **Execute the managed code** - Locate the managed entry point (for example assembly entry point `Main`, or a specific method to call, or some other means to transition control to the managed code) and exposing it into the native code (function pointer, COM interface, direct execution, ...).
+* **Accessing and executing managed code** - Locate the managed entry point (for example assembly entry point `Main`, or a specific method to call, or some other means to transition control to the managed code) and exposing it into the native code (function pointer, COM interface, direct execution, ...).
 
-To achieve these we will structure the hosting APIs into similar (but not exactly) 4 buckets.
+To achieve these we will structure the hosting components APIs into similar (but not exactly) 4 buckets.
 
-### Locating hosting layer
-This means providing APIs to find and load the hosting layer. The end result should be that the native host has the right version of `hostfxr` loaded and can call its APIs. The exact solution is dependent on the native host application and its tooling. Ideally we would have a solution which works great for several common environments like C/C++ apps built in VS, C/C++ apps on Mac/Linux built with CMake (or similar) and so on.
+### Locating hosting components
+This means providing APIs to find and load the hosting components. The end result should be that the native host has the right version of `hostfxr` loaded and can call its APIs. The exact solution is dependent on the native host application and its tooling. Ideally we would have a solution which works great for several common environments like C/C++ apps built in VS, C/C++ apps on Mac/Linux built with CMake (or similar) and so on.
 
 First step in this direction is the introduction of `nethost` library described below.
 
@@ -75,7 +75,9 @@ After this step it should be possible for the native host to inspect and potenti
 ### Loading managed code
 This step might be "virtual" in the sense that it's a way to setup the context for the desired functionality. In several scenarios it's not practical to be able to perform this step in separation from the "execute code" step below. The goal of this step is to determine which managed code to load, where it should be loaded into, and to setup the correct inputs so that runtime can perform the right dependency resolution.
 
-The main functionality this step should provide is to determine which assembly load context will be used for loading which code:
+Logically this step finds/loads the runtime and initializes it before it can load any managed code into the process.
+
+The main flexibility this step should provide is to determine which assembly load context will be used for loading which code:
 * Load all managed code into the default load context
 * Load the specified custom managed code into an isolated load context
 
@@ -85,7 +87,7 @@ Note that there are no APIs proposed in this document which would only perform t
 
 After this step it is no longer possible to modify runtime properties (inspection is still allowed) since the runtime has been loaded.
 
-### Execute managed code
+### Accessing and executing managed code
 The end result of this step is either execution of the desired managed code, or returning a native callable representation of the managed code.
 
 The different options should include at least:
@@ -97,13 +99,13 @@ The different options should include at least:
 ### Combinations
 Ideally it should be possible to combine the different types of initialization, loading and executing of managed code in any way the native host desires. In reality not all combinations are possible or practical. Few examples of combinations which we should probably NOT support (note that this may change in the future):
 * running a component as an application - runtime currently makes too many assumptions on what it means to "Run an application"
-* loading application into an isolated load context - for now there are too many limitations in the frameworks around secondary load contexts (several large framework features don't work well in a secondary ALC), so the hosting should prevent this as way to prevent users from getting into a bad situation.
-* loading multiple copies of the runtime into the process - support for side-by-side loading of different .NET Core runtime in a single process is not something we want to implement (at least yet). Hosting should not allow this to make the user experience predictable. This means that full support for loading self-contained components at all times is not supported.
+* loading application into an isolated load context - for now there are too many limitations in the frameworks around secondary load contexts (several large framework features don't work well in a secondary ALC), so the hosting components should prevent this as a way to prevent users from getting into a bad situation.
+* loading multiple copies of the runtime into the process - support for side-by-side loading of different .NET Core runtime in a single process is not something we want to implement (at least yet). Hosting components should not allow this to make the user experience predictable. This means that full support for loading self-contained components at all times is not supported.
 
-Lot of other combinations will not be allowed simply as a result of shipping decisions. There's only so much functionality we can fit into any given release and so many combinations will be explicitly disabled to reduce the work necessary to actually ship this. The document below should describe which combinations are allowed in which release.
+Lot of other combinations will not be allowed simply as a result of shipping decisions. There's only so much functionality we can fit into any given release, so many combinations will be explicitly disabled to reduce the work necessary to actually ship this. The document below should describe which combinations are allowed in which release.
 
 ## High-level proposal
-In .NET Core 3.0 the hosting layer (see [here](https://github.com/dotnet/runtime/tree/master/docs/design/features/host-components.md)) ships with several hosts. These are binaries which act as the entry points to the .NET Core hosting/runtime:
+In .NET Core 3.0 the hosting components (see [here](https://github.com/dotnet/runtime/tree/master/docs/design/features/host-components.md)) ships with several hosts. These are binaries which act as the entry points to the .NET Core hosting components/runtime:
 * The "muxer" (`dotnet.exe`)
 * The `apphost` (`.exe` which is part of the app)
 * The `comhost` (`.dll` which is part of the app and acts as COM server)
@@ -113,9 +115,9 @@ Every one of these hosts serve different scenario and expose different APIs. The
 
 The proposal is to add a new host library `nethost` which can be used by native host to easily locate `hostfxr`. Going forward the library could also include easy-to-use APIs for common scenarios - basically just a simplification of the `hostfxr` API surface.
 
-At the same time add the ability to pass additional runtime properties when starting the runtime through the hosting entry points (starting app, loading component). This can be used by the native host to:
+At the same time add the ability to pass additional runtime properties when starting the runtime through the hosting components APIs (starting app, loading component). This can be used by the native host to:
 * Register startup hook without modifying environment variables (which are inherited by child processes)
-* Introduce new runtime knobs which are only available for native hosts without the need to update the hosting APIs every time.
+* Introduce new runtime knobs which are only available for native hosts without the need to update the hosting components APIs every time.
 
 
 *Technical note: All strings in the proposed APIs are using the `char_t` in this document for simplicity. In real implementation they are of the type `pal::char_t`. In particular:*
@@ -257,7 +259,7 @@ int hostfxr_initialize_for_runtime_config(
 ```
 
 This function would load the specified `.runtimeconfig.json`, resolve all frameworks, resolve all the assets from those frameworks and then prepare runtime initialization where the TPA contains only frameworks. Note that this case does NOT consume any `.deps.json` from the app/component (only processes the framework's `.deps.json`). This entry point is intended for `comhost`/`ijwhost`/`nethost` and similar scenarios.
-* `runtime_config_path` - path to the `.runtimeconfig.json` file to process. Unlike with `hostfxr_initialize_for_dotnet_command_line`, any `.deps.json` from the app/component will not be processed by the hosting layers.
+* `runtime_config_path` - path to the `.runtimeconfig.json` file to process. Unlike with `hostfxr_initialize_for_dotnet_command_line`, any `.deps.json` from the app/component will not be processed by the hosting components during the initialize call.
 * `parameters` - additional parameters - see `hostfxr_initialize_parameters` for details. (Could be made optional potentially)
 * `host_context_handle` - output parameter. On success receives an opaque value which identifies the initialized host context. The handle should be closed by calling `hostfxr_close`.
 
@@ -282,7 +284,7 @@ The specified `.runtimeconfig.json` must be for a framework dependent component.
 
 #### Runtime properties
 These functions allow the native host to inspect and modify runtime properties.
-* If the `host_context_handle` represents the first initialized context in the process, these functions expose all properties from runtime configurations as well as those computed by the hosting layer components. These functions will allow modification of the properties via `hostfxr_set_runtime_property_value`.
+* If the `host_context_handle` represents the first initialized context in the process, these functions expose all properties from runtime configurations as well as those computed by the hosting components. These functions will allow modification of the properties via `hostfxr_set_runtime_property_value`.
 * If the `host_context_handle` represents any other context (so not the first one), these functions expose only properties from runtime configuration. These functions won't allow modification of the properties.
 
 It is possible to access runtime properties of the first initialized context in the process at any time (for reading only), by specifying `NULL` as the `host_context_handle`.
@@ -365,11 +367,11 @@ int hostfxr_get_runtime_delegate(const hostfxr_handle host_context_handle, hostf
 Starts the runtime and returns a function pointer to specified functionality of the runtime.
 * `host_context_handle` - handle to the initialized host context.
 * `type` - the type of runtime functionality requested
-  * `hdt_load_assembly_and_get_function_pointer` - entry point which loads an assembly (with dependencies) and returns function pointer for a specified static method. See below for details (Loading managed components)
+  * `hdt_load_assembly_and_get_function_pointer` - entry point which loads an assembly (with dependencies) and returns function pointer for a specified static method. See below for details (Loading and calling managed components)
   * `hdt_com_activation`, `hdt_com_register`, `hdt_com_unregister` - COM activation entry-points - see [COM activation](https://github.com/dotnet/runtime/tree/master/docs/design/features/COM-activation.md) for more details.
   * `hdt_load_in_memory_assembly` - IJW entry-point - see [IJW activation](https://github.com/dotnet/runtime/tree/master/docs/design/features/IJW-activation.md) for more details.
   * `hdt_winrt_activation` **[.NET 3.\* only]** - WinRT activation entry-point - see [WinRT activation](https://github.com/dotnet/runtime/tree/master/docs/design/features/WinRT-activation.md) for more details. The delegate is not supported for .NET 5 and above.
-  * `hdt_get_function_pointer` **[.NET 5 and above]** - entry-point which finds a managed method and returns a function pointer to it. See below for details.
+  * `hdt_get_function_pointer` **[.NET 5 and above]** - entry-point which finds a managed method and returns a function pointer to it. See below for details (Calling managed function).
 * `delegate` - when successful, the native function pointer to the requested runtime functionality.
 
 In .NET Core 3.0 the function only works if `hostfxr_initialize_for_runtime_config` was used to initialize the host context.
@@ -385,7 +387,7 @@ Closes a host context.
 
 
 ### Loading and calling managed components
-To load managed components from native app directly (not using COM or WinRT) the hosting layer exposes a new runtime helper/delegate `hdt_load_assembly_and_get_function_pointer`. Calling the `hostfxr_get_runtime_delegate(handle, hdt_load_assembly_and_get_function_pointer, &helper)` returns a function pointer to the runtime helper with this signature:
+To load managed components from native app directly (not using COM or WinRT) the hosting components exposes a new runtime helper/delegate `hdt_load_assembly_and_get_function_pointer`. Calling the `hostfxr_get_runtime_delegate(handle, hdt_load_assembly_and_get_function_pointer, &helper)` returns a function pointer to the runtime helper with this signature:
 ```C
 int load_assembly_and_get_function_pointer_fn(
     const char_t *assembly_path,
@@ -422,7 +424,7 @@ The returned native function pointer to managed method has the lifetime of the p
 
 
 ### Calling managed function **[.NET 5 and above]**
-In .NET 5 the hosting layer adds a new functionality which allows just getting a native function pointer for already available managed method. This is implemented in a runtime helper `hdt_get_function_pointer`. Calling the `hostfxr_get_runtime_delegate(handle, hdt_get_function_pointer, &helper)` returns a function pointer to the runtime helper with this signature:
+In .NET 5 the hosting components add a new functionality which allows just getting a native function pointer for already available managed method. This is implemented in a runtime helper `hdt_get_function_pointer`. Calling the `hostfxr_get_runtime_delegate(handle, hdt_get_function_pointer, &helper)` returns a function pointer to the runtime helper with this signature:
 ```C
 int get_function_pointer_fn(
     const char_t *type_name,
@@ -449,13 +451,13 @@ Calling this function will find the specified type in the default load context, 
 * `reserved` - parameter reserved for future extensibility, currently unused and must be `NULL`.
 * `delegate` - out parameter which receives the native function pointer to the requested managed method.
 
-The helper will lookup the `type_name` from the default load context (`AssemblyLoadContext.Default`) and then return method on it. If the type lookup requires any assemblies to be loaded, they will be resolved and loaded in the default load context.
+The helper will lookup the `type_name` from the default load context (`AssemblyLoadContext.Default`) and then return method on it. If the type and method lookup requires assemblies which have not been loaded by the Default ALC yet, this process will resolve them against the Default ALC and load them there (most likely from TPA). This helper will not register any additional assembly resolution logic onto the Default ALC, it will solely rely on the existing functionality of the Default ALC.
 
 It is allowed to ask for this helper on any valid host context. Because the helper operates on default load context only it should mostly be used with context initialized via `hostfxr_initialize_for_dotnet_command_line` as in that case the default load context will have the application code available in it. Contexts initialized via `hostfxr_initialize_for_runtime_config` have only the framework assemblies available in the default load context. The `type_name` must resolve within the default load context, so in the case where only framework assemblies are loaded into the default load context it would have to come from one of the framework assemblies only.
 
 It is allowed to call the returned runtime helper many times for different types or methods. It is not required to get the helper every time.
 
-The returned native function pointer to managed method has the lifetime of the process and can be used to call the method many times over. Currently there's no way to unload the managed component or otherwise free the native function pointer. Such support may come in future releases.
+The returned native function pointer to managed method has the lifetime of the process and can be used to call the method many times over. Currently there's no way to "release" the native function pointer (and the respective managed delegate), this functionality may be added in a future release.
 
 
 ### Multiple host contexts interactions
@@ -494,7 +496,7 @@ Currently we don't plan to ship these files, but it's possible to take them from
 
 ### Support for older versions
 
-Since `hostfxr` and the other components of hosting layers are versioned independently there are several interesting cases of version mismatches:
+Since `hostfxr` and the other hosting components are versioned independently there are several interesting cases of version mismatches:
 
 #### muxer/`apphost` versus `hostfxr`
 For muxer it should almost always match, but `apphost` can be different. That is, it's perfectly valid to use older 2.* `apphost` with a new 3.0 `hostfxr`. The opposite should be rare, but in theory can happen as well. To keep the code simple both muxer and `apphost` will keep using the existing 2.* APIs on `hostfxr` even in situation where both are 3.0 and thus could start using the new APIs.
@@ -590,6 +592,3 @@ hostfxr_close(host_context_handle);
 The exact impact on the `hostfxr`/`hostpolicy` interface needs to be investigated. The assumption is that new APIs will have to be added to `hostpolicy` to implement the proposed functionality.
 
 Part if this investigation will also be compatibility behavior. Currently "any" version of `hostfxr` needs to be able to use "any" version of `hostpolicy`. But the proposed functionality will need both new `hostfxr` and new `hostpolicy` to work. It is likely the proposed APIs will fail if the app resolves to a framework with old `hostpolicy` without the necessary new APIs. Part of the investigation will be if it's feasible to use the new `hostpolicy` APIs to implement existing old `hostfxr` APIs.
-
-# Open issues
-* Maybe add `apphost_get_hostfxr_path` on the existing `apphost` - this is to make it even easier to implement custom hosting for entire managed app as the custom host would not need to carry a `nethost` and would get a 100% compatible behavior by using the same `apphost` as the app itself.
