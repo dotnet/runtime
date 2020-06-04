@@ -15,11 +15,16 @@ namespace System.Security.Cryptography
         {
             Debug.Assert(count > 0);
 
-            var span = new Span<byte>(pbBuffer, count);
-            int res = s_randomStream.Read(span);
-            if (res != count)
+            int pos = 0;
+            while (pos < count)
             {
-                throw new CryptographicException();
+                var span = new Span<byte>(pbBuffer + pos, count - pos);
+                int res = s_randomStream.Read(span);
+                if (res == 0)
+                {
+                    throw new CryptographicException();
+                }
+                pos += res;
             }
         }
     }
