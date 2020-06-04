@@ -23,14 +23,157 @@ namespace System.SpanTests
         [Fact]
         public static void DefaultSpanSplitEnumeratorBehavior()
         {
-            Assert.Equal(new SpanSplitEnumerator<string>().Current, new Range(0, 0));
-            Assert.True(new SpanSplitEnumerator<string>().MoveNext());
-            new SpanSplitEnumerator<string>().GetEnumerator();
+            var charSpanEnumerator = new SpanSplitEnumerator<string>();
+            Assert.Equal(new Range(0, 0), charSpanEnumerator.Current);
+            Assert.False(charSpanEnumerator.MoveNext());
+            // Implicit DoesNotThrow assertion
+            charSpanEnumerator.GetEnumerator();
+            var stringSpanEnumerator = new SpanSplitEnumerator<string>();
+            Assert.Equal(new Range(0, 0), stringSpanEnumerator.Current);
+            Assert.False(stringSpanEnumerator.MoveNext());
+            stringSpanEnumerator.GetEnumerator();
+        }
+
+        [Fact]
+        public static void ValidateArguments_OverloadWithoutSeparator()
+        {
+            ReadOnlySpan<char> buffer = default;
+
+            SpanSplitEnumerator<char>  enumerator = buffer.Split();
+            Assert.True(enumerator.MoveNext());
+            Assert.Equal(new Range(0, 0), enumerator.Current);
+            Assert.False(enumerator.MoveNext());
+
+            buffer = "";
+            enumerator = buffer.Split();
+            Assert.True(enumerator.MoveNext());
+            Assert.Equal(new Range(0, 0), enumerator.Current);
+            Assert.False(enumerator.MoveNext());
+
+            buffer = " ";
+            enumerator = buffer.Split();
+            Assert.True(enumerator.MoveNext());
+            Assert.Equal(new Range(0, 0), enumerator.Current);
+            Assert.True(enumerator.MoveNext());
+            Assert.Equal(new Range(1, 1), enumerator.Current);
+            Assert.False(enumerator.MoveNext());
+        }
+
+        [Fact]
+        public static void ValidateArguments_OverloadWithROSSeparator()
+        {
+            // Default buffer
+            ReadOnlySpan<char> buffer = default;
+
+            SpanSplitEnumerator<char>  enumerator = buffer.Split(default(char));
+            Assert.True(enumerator.MoveNext());
+            Assert.Equal(enumerator.Current, new Range(0, 0));
+            Assert.False(enumerator.MoveNext());
+
+            enumerator = buffer.Split(' ');
+            Assert.True(enumerator.MoveNext());
+            Assert.Equal(enumerator.Current, new Range(0, 0));
+            Assert.False(enumerator.MoveNext());
+
+            // Empty buffer
+            buffer = "";
+
+            enumerator = buffer.Split(default(char));
+            Assert.True(enumerator.MoveNext());
+            Assert.Equal(enumerator.Current, new Range(0, 0));
+            Assert.False(enumerator.MoveNext());
+
+            enumerator = buffer.Split(' ');
+            Assert.True(enumerator.MoveNext());
+            Assert.Equal(enumerator.Current, new Range(0, 0));
+            Assert.False(enumerator.MoveNext());
+
+            // Single whitespace buffer
+            buffer = " ";
+
+            enumerator = buffer.Split(default(char));
+            Assert.True(enumerator.MoveNext());
+            Assert.False(enumerator.MoveNext());
+
+            enumerator = buffer.Split(' ');
+            Assert.Equal(new Range(0, 0), enumerator.Current);
+            Assert.True(enumerator.MoveNext());
+            Assert.Equal(new Range(0, 0), enumerator.Current);
+            Assert.True(enumerator.MoveNext());
+            Assert.Equal(new Range(1, 1), enumerator.Current);
+            Assert.False(enumerator.MoveNext());
+        }
+
+        [Fact]
+        public static void ValidateArguments_OverloadWithStringSeparator()
+        {
+            // Default buffer
+            ReadOnlySpan<char> buffer = default;
+
+            SpanSplitEnumerator<char> enumerator = buffer.Split(null); // null is treated as empty string
+            Assert.True(enumerator.MoveNext());
+            Assert.Equal(enumerator.Current, new Range(0, 0));
+            Assert.False(enumerator.MoveNext());
+
+            enumerator = buffer.Split("");
+            Assert.True(enumerator.MoveNext());
+            Assert.Equal(enumerator.Current, new Range(0, 0));
+            Assert.False(enumerator.MoveNext());
+
+            enumerator = buffer.Split(" ");
+            Assert.True(enumerator.MoveNext());
+            Assert.Equal(enumerator.Current, new Range(0, 0));
+            Assert.False(enumerator.MoveNext());
+
+            // Empty buffer
+            buffer = "";
+
+            enumerator = buffer.Split(null);
+            Assert.True(enumerator.MoveNext());
+            Assert.Equal(enumerator.Current, new Range(0, 0));
+            Assert.False(enumerator.MoveNext());
+
+            enumerator = buffer.Split("");
+            Assert.True(enumerator.MoveNext());
+            Assert.Equal(enumerator.Current, new Range(0, 0));
+            Assert.False(enumerator.MoveNext());
+
+            enumerator = buffer.Split(" ");
+            Assert.True(enumerator.MoveNext());
+            Assert.Equal(enumerator.Current, new Range(0, 0));
+            Assert.False(enumerator.MoveNext());
+
+            // Single whitespace buffer
+            buffer = " ";
+
+            enumerator = buffer.Split(null); // null is treated as empty string
+            Assert.True(enumerator.MoveNext());
+            Assert.Equal(enumerator.Current, new Range(0, 0));
+            Assert.True(enumerator.MoveNext());
+            Assert.Equal(enumerator.Current, new Range(1, 1));
+            Assert.False(enumerator.MoveNext());
+
+            enumerator = buffer.Split("");
+            Assert.True(enumerator.MoveNext());
+            Assert.Equal(enumerator.Current, new Range(0, 0));
+            Assert.True(enumerator.MoveNext());
+            Assert.Equal(enumerator.Current, new Range(1, 1));
+            Assert.False(enumerator.MoveNext());
+
+            enumerator = buffer.Split(" ");
+            Assert.Equal(enumerator.Current, new Range(0, 0));
+            Assert.True(enumerator.MoveNext());
+            Assert.Equal(enumerator.Current, new Range(0, 0));
+            Assert.True(enumerator.MoveNext());
+            Assert.Equal(enumerator.Current, new Range(1, 1));
+            Assert.False(enumerator.MoveNext());
         }
 
         [Theory]
         [InlineData("", ',', new[] { "" })]
+        [InlineData(" ", ' ', new[] { "", "" })]
         [InlineData(",", ',', new[] { "", "" })]
+        [InlineData("     ", ' ', new[] { "", "", "", "", "", "" })]
         [InlineData(",,", ',', new[] { "", "", "" })]
         [InlineData("ab", ',', new[] { "ab" })]
         [InlineData("a,b", ',', new[] { "a", "b" })]
@@ -63,7 +206,26 @@ namespace System.SpanTests
         public static void SpanSplitCharSeparator(string valueParam, char separator, string[] expectedParam)
         {
             char[][] expected = expectedParam.Select(x => x.ToCharArray()).ToArray();
-            AssertEqual(valueParam, valueParam.AsSpan().Split(separator), expected);
+            AssertEqual(expected, valueParam, valueParam.AsSpan().Split(separator));
+        }
+
+        [Theory]
+        [InlineData("", new[] { "" })]
+        [InlineData(" ", new[] { "", "" })]
+        [InlineData("     ", new[] { "", "", "", "", "", "" })]
+        [InlineData("  ", new[] { "", "", "" })]
+        [InlineData("ab", new[] { "ab" })]
+        [InlineData("a b", new[] { "a", "b" })]
+        [InlineData("a ", new[] { "a", "" })]
+        [InlineData(" b", new[] { "", "b" })]
+        [InlineData("Foo Bar Baz", new[] { "Foo", "Bar", "Baz" })]
+        [InlineData("Foo Bar Baz ", new[] { "Foo", "Bar", "Baz", "" })]
+        [InlineData(" Foo Bar Baz ", new[] { "", "Foo", "Bar", "Baz", "" })]
+        [InlineData(" Foo  Bar Baz ", new[] { "", "Foo", "", "Bar", "Baz", "" })]
+        public static void SpanSplitDefaultCharSeparator(string valueParam, char separator, string[] expectedParam)
+        {
+            char[][] expected = expectedParam.Select(x => x.ToCharArray()).ToArray();
+            AssertEqual(expected, valueParam, valueParam.AsSpan().Split());
         }
 
         [Theory]
@@ -74,14 +236,15 @@ namespace System.SpanTests
         [InlineData(", , Foo Bar, Baz", ", ", new[] { "", "", "Foo Bar", "Baz" })]
         [InlineData(", , Foo Bar, Baz, , ", ", ", new[] { "", "", "Foo Bar", "Baz", "", "" })]
         [InlineData(", , , , , ", ", ", new[] { "", "", "", "", "", "" })]
+        [InlineData("     ", " ", new[] { "", "", "", "", "", "" })]
         [InlineData("  Foo, Bar  Baz  ", "  ", new[] { "", "Foo, Bar", "Baz", "" })]
         public static void SpanSplitStringSeparator(string valueParam, string separator, string[] expectedParam)
         {
             char[][] expected = expectedParam.Select(x => x.ToCharArray()).ToArray();
-            AssertEqual(valueParam, valueParam.AsSpan().Split(separator), expected);
+            AssertEqual(expected, valueParam, valueParam.AsSpan().Split(separator));
         }
 
-        private static void AssertEqual<T>(ReadOnlySpan<T> orig, SpanSplitEnumerator<T> source, T[][] items) where T : IEquatable<T>
+        private static void AssertEqual<T>(T[][] items, ReadOnlySpan<T> orig, SpanSplitEnumerator<T> source,) where T : IEquatable<T>
         {
             foreach (var item in items)
             {
