@@ -287,25 +287,6 @@ namespace ILLink.Tasks.Tests
 			}
 		}
 
-		[Theory]
-		[InlineData ("Assembly1,Assembly2,Assembly3")]
-		public void TestClearInitLocalsAssemblies (string assemblyNames)
-		{
-			var task = new MockTask () {
-				ClearInitLocalsAssemblies = assemblyNames,
-				// This task parameter ClearInitLocalsAssemblies currently only is applied if ClearInitLocals is also true,
-				// which turns the optimization on globally. This is redundant behavior that we might want to fix.
-				// For now, at least test the existing behavior.
-				ClearInitLocals = true
-			};
-			using (var driver = task.CreateDriver ()) {
-				var expectedAssemblies = assemblyNames.Split (',');
-				Assert.True (driver.Context.TryGetCustomData ("ClearInitLocalsAssemblies", out var value));
-				var actualAssemblies = value.Split (',');
-				Assert.Equal (expectedAssemblies.OrderBy (a => a), actualAssemblies.OrderBy (a => a));
-			}
-		}
-
 		public static IEnumerable<object[]> CustomDataCases => new List<object[]> {
 			new object [] {
 				new ITaskItem [] {
