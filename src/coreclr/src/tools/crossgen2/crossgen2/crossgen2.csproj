@@ -40,35 +40,60 @@
     </PackageReference>
   </ItemGroup>
 
-  <PropertyGroup Condition="'$(TargetsUnix)' == 'true'">
-    <LibraryNamePrefix>lib</LibraryNamePrefix>
-    <LibraryNameExtension>.so</LibraryNameExtension>
-    <LibraryNameExtension Condition="'$(TargetsOSX)' == 'true'">.dylib</LibraryNameExtension>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(TargetsWindows)' == 'true'">
-    <LibraryNamePrefix></LibraryNamePrefix>
-    <LibraryNameExtension>.dll</LibraryNameExtension>
-  </PropertyGroup>
-
   <PropertyGroup>
-    <NativeArchFolder></NativeArchFolder>
-    <NativeArchFolder Condition="'$(TargetArchitecture)' == 'arm64'">x64\</NativeArchFolder>
-    <NativeArchFolder Condition="'$(TargetArchitecture)' == 'arm'">x86\</NativeArchFolder>
+    <HostOSComponent Condition="$([MSBuild]::IsOsPlatform('WINDOWS'))">win</HostOSComponent>
+    <HostOSComponent Condition="$([MSBuild]::IsOsPlatform('LINUX'))">lnx</HostOSComponent>
+    <HostOSComponent Condition="$([MSBuild]::IsOsPlatform('OSX'))">osx</HostOSComponent>
+    <HostSpec>host-$(HostOSComponent)-$(TargetArchitecture)</HostSpec>
+
+    <CrossHostArch></CrossHostArch>
+    <CrossHostArch Condition="'$(TargetArchitecture)' == 'arm64'">x64</CrossHostArch>
+    <CrossHostSpec Condition="'$(CrossHostArch)' != ''">host-$(HostOSComponent)-$(CrossHostArch)</CrossHostSpec>
+
+    <TargetOSComponent Condition="'$(TargetOS)' == 'Windows_NT'">win</TargetOSComponent>
+    <TargetOSComponent Condition="'$(TargetOS)' == 'Linux'">lnx</TargetOSComponent>
+    <TargetOSComponent Condition="'$(TargetOS)' == 'OSX'">osx</TargetOSComponent>
+    <TargetSpec>target-$(TargetOSComponent)-$(TargetArchitecture)</TargetSpec>
+
+    <LibraryNamePrefix>lib</LibraryNamePrefix>
+    <LibraryNamePrefix Condition="'$(HostOSComponent)' == 'win'"></LibraryNamePrefix>
+    <LibraryNameExtension Condition="'$(HostOSComponent)' == 'win'">.dll</LibraryNameExtension>
+    <LibraryNameExtension Condition="'$(HostOSComponent)' == 'lnx'">.so</LibraryNameExtension>
+    <LibraryNameExtension Condition="'$(HostOSComponent)' == 'osx'">.dylib</LibraryNameExtension>
   </PropertyGroup>
 
   <ItemGroup>
-    <Content Include="$(BinDir)\$(NativeArchFolder)$(LibraryNamePrefix)jitinterface$(LibraryNameExtension)"
+    <Content Include="$(BinDir)\$(LibraryNamePrefix)jitinterface$(LibraryNameExtension)"
       CopyToOutputDirectory="PreserveNewest"
       CopyToPublishDirectory="PreserveNewest"
-      Link="%(FileName)%(Extension)"
+      Link="$(HostSpec)\%(FileName)%(Extension)"
      />
 
     <Content Include="$(BinDir)\$(NativeArchFolder)$(LibraryNamePrefix)clrjit$(LibraryNameExtension)"
       CopyToOutputDirectory="PreserveNewest"
       CopyToPublishDirectory="PreserveNewest"
-      Link="$(LibraryNamePrefix)clrjitilc$(LibraryNameExtension)"
+      Link="$(HostSpec)\$(TargetSpec)\$(LibraryNamePrefix)clrjitilc$(LibraryNameExtension)"
      />
   </ItemGroup>
+
+  <ItemGroup Condition="'$(CrossHostArch)' != ''">
+    <Content Include="$(BinDir)\$(CrossHostArch)\jitinterface$(LibraryNameExtension)"
+      CopyToOutputDirectory="PreserveNewest"
+      CopyToPublishDirectory="PreserveNewest"
+      Link="$(CrossHostSpec)\%(FileName)%(Extension)"
+     />
+
+    <Content Include="$(BinDir)\$(CrossHostArch)\$(LibraryNamePrefix)clrjit$(LibraryNameExtension)"
+      CopyToOutputDirectory="PreserveNewest"
+      CopyToPublishDirectory="PreserveNewest"
+      Link="$(CrossHostSpec)\$(TargetSpec)\$(LibraryNamePrefix)clrjitilc$(LibraryNameExtension)"
+     />
+  </ItemGroup>
+
+  <Target Name="ValidateHostAndTarget" BeforeTargets="Build">
+    <Error Condition="'$(HostOSComponent)' == ''" Text="Hosting OS not identified" />
+    <Error Condition="'$(TargetOSComponent)' == ''" Text="Target OS not identified" />
+  </Target>
 
   <Target Name="GenerateDepsJsonFile" Returns="$(ProjectDepsFilePath)" DependsOnTargets="GenerateBuildDependencyFile" />
 

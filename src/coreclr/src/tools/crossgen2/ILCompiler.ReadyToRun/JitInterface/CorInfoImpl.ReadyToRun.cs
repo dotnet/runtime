@@ -144,7 +144,7 @@ namespace Internal.JitInterface
         private static readonly UnboxingMethodDescFactory s_unboxingThunkFactory = new UnboxingMethodDescFactory();
 
         public CorInfoImpl(ReadyToRunCodegenCompilation compilation)
-            : this()
+            : this(compilation.NodeFactory.Target.OperatingSystem, compilation.NodeFactory.Target.Architecture)
         {
             _compilation = compilation;
         }

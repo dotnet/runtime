@@ -642,6 +642,7 @@ if defined __CompositeBuildMode (
     mkdir !__CompositeOutputDir!
     echo --composite>>!__CompositeResponseFile!
     echo -O>>!__CompositeResponseFile!
+    echo --targetarch:%__BuildArch%>>!__CompositeResponseFile!
     echo --out^:%__CompositeOutputDir%\framework-r2r.dll>>!__CompositeResponseFile!
 )
 

@@ -58,16 +58,129 @@ namespace Internal.JitInterface
         private IntPtr _unmanagedCallbacks; // array of pointers to JIT-EE interface callbacks
         private Object _keepAlive; // Keeps delegates for the callbacks alive
 
+        private IntPtr _jitLibrary;
+
         private ExceptionDispatchInfo _lastException;
 
-        [DllImport(JitLibrary, CallingConvention = CallingConvention.StdCall)] // stdcall in CoreCLR!
-        private extern static IntPtr jitStartup(IntPtr host);
+        private delegate IntPtr JitStartupDelegate(IntPtr host);
+        private delegate IntPtr GetJitDelegate();
+        private delegate IntPtr GetJitHostDelegate(IntPtr configProvider);
 
-        [DllImport(JitLibrary, CallingConvention = CallingConvention.StdCall)]
-        private extern static IntPtr getJit();
+        private void InitializeJitLibrary(TargetOS targetOS, TargetArchitecture targetArchitecture)
+        {
+            if (_jitLibrary == IntPtr.Zero)
+            {
+                string crossgenPath = Path.GetDirectoryName(typeof(CorInfoImpl).Assembly.Location);
+                string jitTargetPath = Path.Combine(crossgenPath, GetHostSpec(), GetTargetSpec(targetOS, targetArchitecture));
+                string jitLibraryName = Path.Combine(jitTargetPath, GetLibraryPrefix() + JitLibrary + GetLibraryExtension());
+                _jitLibrary = NativeLibrary.Load(jitLibraryName);
+            }
+        }
 
-        [DllImport(JitSupportLibrary)]
-        private extern static IntPtr GetJitHost(IntPtr configProvider);
+        private IntPtr jitStartup(IntPtr host)
+        {
+            IntPtr jitStartupExport = NativeLibrary.GetExport(_jitLibrary, "jitStartup");
+            JitStartupDelegate jitStartupDelegate = Marshal.GetDelegateForFunctionPointer<JitStartupDelegate>(jitStartupExport);
+            return jitStartupDelegate(host);
+        }
+
+        private IntPtr getJit()
+        {
+            IntPtr getJitExport = NativeLibrary.GetExport(_jitLibrary, "getJit");
+            GetJitDelegate getJitDelegate = Marshal.GetDelegateForFunctionPointer<GetJitDelegate>(getJitExport);
+            return getJitDelegate();
+        }
+
+        private IntPtr GetJitHost(IntPtr configProvider)
+        {
+            string crossgenPath = Path.GetDirectoryName(typeof(CorInfoImpl).Assembly.Location);
+            string jitHostPath = Path.Combine(crossgenPath, GetHostSpec());
+            string jitHostLibraryName = Path.Combine(jitHostPath, GetLibraryPrefix() + JitSupportLibrary + GetLibraryExtension());
+            IntPtr libraryHandle = NativeLibrary.Load(jitHostLibraryName);
+            IntPtr getJitHostExport = NativeLibrary.GetExport(libraryHandle, "GetJitHost");
+            GetJitHostDelegate getJitHostDelegate = Marshal.GetDelegateForFunctionPointer<GetJitHostDelegate>(getJitHostExport);
+            return getJitHostDelegate(configProvider);
+        }
+        private static string GetLibraryPrefix()
+        {
+            return RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "" : "lib";
+        }
+
+        private static string GetLibraryExtension()
+        {
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                return ".dll";
+            }
+            else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+            {
+                return ".so";
+            }
+            else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+            {
+                return ".dylib";
+            }
+            else
+            {
+                throw new NotImplementedException("GetLibraryExtension");
+            }
+        }
+
+        private static string GetHostSpec()
+        {
+            string hostOsComponent;
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                hostOsComponent = "win";
+            }
+            else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+            {
+                hostOsComponent = "lnx";
+            }
+            else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+            {
+                hostOsComponent = "osx";
+            }
+            else
+            {
+                throw new NotImplementedException("GetJitHost");
+            }
+
+            string hostArchComponent;
+            switch (RuntimeInformation.OSArchitecture)
+            {
+                case Architecture.X64:
+                    hostArchComponent = "x64";
+                    break;
+
+                case Architecture.Arm64:
+                    hostArchComponent = "arm64";
+                    break;
+
+                default:
+                    throw new NotImplementedException(RuntimeInformation.OSArchitecture.ToString());
+            }
+
+            return "host-" + hostOsComponent + '-' + hostArchComponent;
+        }
+
+        private static string GetTargetSpec(TargetOS targetOS, TargetArchitecture targetArchitecture)
+        {
+            string targetOSComponent = targetOS switch
+            {
+                TargetOS.Windows => "win",
+                TargetOS.Linux => "lnx",
+                TargetOS.OSX => "osx",
+                _ => throw new NotImplementedException(targetOS.ToString())
+            };
+            string targetArchComponent = targetArchitecture switch
+            {
+                TargetArchitecture.X64 => "x64",
+                TargetArchitecture.ARM64 => "arm64",
+                _ => throw new NotImplementedException(targetArchitecture.ToString())
+            };
+            return "target-" + targetOSComponent + '-' + targetArchComponent;
+        }
 
         //
         // Per-method initialization and state
@@ -110,13 +223,15 @@ namespace Internal.JitInterface
         [DllImport(JitSupportLibrary)]
         private extern static char* GetExceptionMessage(IntPtr obj);
 
-        public static void Startup()
+        public void Startup(TargetOS targetOS, TargetArchitecture targetArchitecture)
         {
+            InitializeJitLibrary(targetOS, targetArchitecture);
             jitStartup(GetJitHost(JitConfigProvider.Instance.UnmanagedInstance));
         }
 
-        public CorInfoImpl()
+        public CorInfoImpl(TargetOS targetOS, TargetArchitecture targetArchitecture)
         {
+            Startup(targetOS, targetArchitecture);
             _jit = getJit();
             if (_jit == IntPtr.Zero)
             {

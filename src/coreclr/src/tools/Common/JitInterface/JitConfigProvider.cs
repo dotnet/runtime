@@ -54,8 +54,6 @@ namespace Internal.JitInterface
 #else
             Debug.Assert(jitPath == null);
 #endif
-
-            CorInfoImpl.Startup();
         }
 
         public IntPtr UnmanagedInstance
