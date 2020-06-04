@@ -674,9 +674,6 @@ void EEStartupHelper()
 #ifdef FEATURE_PERFTRACING
         // Initialize the event pipe.
         EventPipe::Initialize();
-
-        DiagnosticServer::Initialize();
-
 #endif // FEATURE_PERFTRACING
 
 #ifdef TARGET_UNIX
@@ -684,6 +681,7 @@ void EEStartupHelper()
 #endif // TARGET_UNIX
 
 #ifdef FEATURE_PERFTRACING
+        DiagnosticServer::Initialize();
         DiagnosticServer::PauseForDiagnosticsMonitor();
 #endif // FEATURE_PERFTRACING
 
