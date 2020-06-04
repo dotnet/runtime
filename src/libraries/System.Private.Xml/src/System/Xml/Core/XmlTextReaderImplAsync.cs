@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System;
 using System.IO;
 using System.Text;
@@ -57,7 +58,7 @@ namespace System.Xml
 
         private Task FinishInitAsync()
         {
-            switch (_laterInitParam.initType)
+            switch (_laterInitParam!.initType)
             {
                 case InitInputType.UriString:
                     return FinishInitUriStringAsync();
@@ -75,14 +76,14 @@ namespace System.Xml
 
         private async Task FinishInitUriStringAsync()
         {
-            Stream stream = (Stream)(await _laterInitParam.inputUriResolver.GetEntityAsync(_laterInitParam.inputbaseUri, string.Empty, typeof(Stream)).ConfigureAwait(false));
+            Stream stream = (Stream)(await _laterInitParam!.inputUriResolver!.GetEntityAsync(_laterInitParam.inputbaseUri!, string.Empty, typeof(Stream)).ConfigureAwait(false));
 
             if (stream == null)
             {
                 throw new XmlException(SR.Xml_CannotResolveUrl, _laterInitParam.inputUriStr);
             }
 
-            Encoding enc = null;
+            Encoding? enc = null;
             // get Encoding from XmlParserContext
             if (_laterInitParam.inputContext != null)
             {
@@ -92,6 +93,7 @@ namespace System.Xml
             try
             {
                 // init ParsingState
+                Debug.Assert(_reportedBaseUri != null);
                 await InitStreamInputAsync(_laterInitParam.inputbaseUri, _reportedBaseUri, stream, null, 0, enc).ConfigureAwait(false);
 
                 _reportedEncoding = _ps.encoding;
@@ -113,16 +115,17 @@ namespace System.Xml
 
         private async Task FinishInitStreamAsync()
         {
-            Encoding enc = null;
+            Encoding? enc = null;
 
             // get Encoding from XmlParserContext
-            if (_laterInitParam.inputContext != null)
+            if (_laterInitParam!.inputContext != null)
             {
                 enc = _laterInitParam.inputContext.Encoding;
             }
 
             // init ParsingState
-            await InitStreamInputAsync(_laterInitParam.inputbaseUri, _reportedBaseUri, _laterInitParam.inputStream, _laterInitParam.inputBytes, _laterInitParam.inputByteCount, enc).ConfigureAwait(false);
+            Debug.Assert(_reportedBaseUri != null);
+            await InitStreamInputAsync(_laterInitParam.inputbaseUri, _reportedBaseUri, _laterInitParam!.inputStream!, _laterInitParam.inputBytes, _laterInitParam.inputByteCount, enc).ConfigureAwait(false);
 
             _reportedEncoding = _ps.encoding;
 
@@ -137,7 +140,7 @@ namespace System.Xml
         private async Task FinishInitTextReaderAsync()
         {
             // init ParsingState
-            await InitTextReaderInputAsync(_reportedBaseUri, _laterInitParam.inputTextReader).ConfigureAwait(false);
+            await InitTextReaderInputAsync(_reportedBaseUri!, _laterInitParam!.inputTextReader!).ConfigureAwait(false);
 
             _reportedEncoding = _ps.encoding;
 
@@ -901,7 +904,7 @@ namespace System.Xml
             // Resolve base URI
             if (_ps.baseUri == null && !string.IsNullOrEmpty(_ps.baseUriStr))
             {
-                _ps.baseUri = _xmlResolver.ResolveUri(null, _ps.baseUriStr);
+                _ps.baseUri = _xmlResolver!.ResolveUri(null, _ps.baseUriStr);
             }
             await PushExternalEntityOrSubsetAsync(publicId, systemId, _ps.baseUri, null).ConfigureAwait(false);
 
@@ -922,13 +925,13 @@ namespace System.Xml
             return true;
         }
 
-        private Task InitStreamInputAsync(Uri baseUri, Stream stream, Encoding encoding)
+        private Task InitStreamInputAsync(Uri baseUri, Stream stream, Encoding? encoding)
         {
             Debug.Assert(baseUri != null);
             return InitStreamInputAsync(baseUri, baseUri.ToString(), stream, null, 0, encoding);
         }
 
-        private async Task InitStreamInputAsync(Uri baseUri, string baseUriStr, Stream stream, byte[] bytes, int byteCount, Encoding encoding)
+        private async Task InitStreamInputAsync(Uri? baseUri, string baseUriStr, Stream stream, byte[]? bytes, int byteCount, Encoding? encoding)
         {
             Debug.Assert(_ps.charPos == 0 && _ps.charsUsed == 0 && _ps.textReader == null);
             Debug.Assert(baseUriStr != null);
@@ -1007,7 +1010,7 @@ namespace System.Xml
             return InitTextReaderInputAsync(baseUriStr, null, input);
         }
 
-        private Task InitTextReaderInputAsync(string baseUriStr, Uri baseUri, TextReader input)
+        private Task InitTextReaderInputAsync(string baseUriStr, Uri? baseUri, TextReader input)
         {
             Debug.Assert(_ps.charPos == 0 && _ps.charsUsed == 0 && _ps.stream == null);
             Debug.Assert(baseUriStr != null);
@@ -1066,7 +1069,7 @@ namespace System.Xml
         // Switches the reader's encoding
         private Task SwitchEncodingAsync(Encoding newEncoding)
         {
-            if ((newEncoding.WebName != _ps.encoding.WebName || _ps.decoder is SafeAsciiDecoder) && !_afterResetState)
+            if ((newEncoding.WebName != _ps.encoding!.WebName || _ps.decoder is SafeAsciiDecoder) && !_afterResetState)
             {
                 Debug.Assert(_ps.stream != null);
                 UnDecodeChars();
@@ -1118,7 +1121,7 @@ namespace System.Xml
                     // the byte buffer is full -> allocate a new one
                     if (_ps.bytesUsed - _ps.bytePos < MaxByteSequenceLen)
                     {
-                        if (_ps.bytes.Length - _ps.bytesUsed < MaxByteSequenceLen)
+                        if (_ps.bytes!.Length - _ps.bytesUsed < MaxByteSequenceLen)
                         {
                             byte[] newBytes = new byte[_ps.bytes.Length * 2];
                             BlockCopy(_ps.bytes, 0, newBytes, 0, _ps.bytesUsed);
@@ -1176,7 +1179,7 @@ namespace System.Xml
                         }
                         else
                         {
-                            BlockCopy(_ps.bytes, _ps.bytePos, _ps.bytes, 0, bytesLeft);
+                            BlockCopy(_ps.bytes!, _ps.bytePos, _ps.bytes!, 0, bytesLeft);
                             _ps.bytesUsed = bytesLeft;
                         }
                         _ps.bytePos = 0;
@@ -1190,7 +1193,7 @@ namespace System.Xml
                 if (!_ps.isStreamEof)
                 {
                     // read new bytes
-                    if (_ps.bytePos == _ps.bytesUsed && _ps.bytes.Length - _ps.bytesUsed > 0)
+                    if (_ps.bytePos == _ps.bytesUsed && _ps.bytes!.Length - _ps.bytesUsed > 0)
                     {
                         int read = await _ps.stream.ReadAsync(_ps.bytes.AsMemory(_ps.bytesUsed)).ConfigureAwait(false);
                         if (read == 0)
@@ -1267,7 +1270,7 @@ namespace System.Xml
 
             // parse version, encoding & standalone attributes
             int xmlDeclState = 0;   // <?xml (0) version='1.0' (1) encoding='__' (2) standalone='__' (3) ?>
-            Encoding encoding = null;
+            Encoding? encoding = null;
 
             while (true)
             {
@@ -1307,7 +1310,7 @@ namespace System.Xml
                             if (_afterResetState)
                             {
                                 // check for invalid encoding switches to default encoding
-                                string encodingName = _ps.encoding.WebName;
+                                string encodingName = _ps.encoding!.WebName;
                                 if (encodingName != "utf-8" && encodingName != "utf-16" &&
                                      encodingName != "utf-16BE" && !(_ps.encoding is Ucs4Encoding))
                                 {
@@ -1344,7 +1347,7 @@ namespace System.Xml
                 // read attribute name
                 int nameEndPos = await ParseNameAsync().ConfigureAwait(false);
 
-                NodeData attr = null;
+                NodeData? attr = null;
                 switch (_ps.chars[_ps.charPos])
                 {
                     case 'v':
@@ -1387,7 +1390,7 @@ namespace System.Xml
                 }
                 if (!isTextDecl)
                 {
-                    attr.SetLineInfo(_ps.LineNo, _ps.LinePos);
+                    attr!.SetLineInfo(_ps.LineNo, _ps.LinePos);
                 }
                 sb.Append(_ps.chars, _ps.charPos, nameEndPos - _ps.charPos);
                 _ps.charPos = nameEndPos;
@@ -1418,7 +1421,7 @@ namespace System.Xml
                 _ps.charPos++;
                 if (!isTextDecl)
                 {
-                    attr.quoteChar = quoteChar;
+                    attr!.quoteChar = quoteChar;
                     attr.SetLineInfo2(_ps.LineNo, _ps.LinePos);
                 }
 
@@ -1452,7 +1455,7 @@ namespace System.Xml
 #endif
                                 if (!isTextDecl)
                                 {
-                                    attr.SetValue(_ps.chars, _ps.charPos, pos - _ps.charPos);
+                                    attr!.SetValue(_ps.chars, _ps.charPos, pos - _ps.charPos);
                                 }
                                 xmlDeclState = 1;
                             }
@@ -1467,7 +1470,7 @@ namespace System.Xml
                             encoding = CheckEncoding(encName);
                             if (!isTextDecl)
                             {
-                                attr.SetValue(encName);
+                                attr!.SetValue(encName);
                             }
                             xmlDeclState = 2;
                             break;
@@ -1487,7 +1490,7 @@ namespace System.Xml
                             }
                             if (!isTextDecl)
                             {
-                                attr.SetValue(_ps.chars, _ps.charPos, pos - _ps.charPos);
+                                attr!.SetValue(_ps.chars, _ps.charPos, pos - _ps.charPos);
                             }
                             xmlDeclState = 3;
                             break;
@@ -1533,7 +1536,7 @@ namespace System.Xml
             if (_afterResetState)
             {
                 // check for invalid encoding switches to default encoding
-                string encodingName = _ps.encoding.WebName;
+                string encodingName = _ps.encoding!.WebName;
                 if (encodingName != "utf-8" && encodingName != "utf-16" &&
                     encodingName != "utf-16BE" && !(_ps.encoding is Ucs4Encoding))
                 {
@@ -2048,7 +2051,7 @@ namespace System.Xml
             char[] chars = _ps.chars;
 
             // push namespace context
-            _namespaceManager.PushScope();
+            _namespaceManager!.PushScope();
 
             // init the NodeData class
             if (colonPos == -1 || !_supportNamespaces)
@@ -2409,7 +2412,7 @@ namespace System.Xml
         {
             int pos = _ps.charPos;
             char[] chars = _ps.chars;
-            NodeData attr = null;
+            NodeData? attr = null;
 
             Debug.Assert(_attrCount == 0);
 
@@ -2727,7 +2730,7 @@ namespace System.Xml
             // Needed only for XmlTextReader (reporting of entities)
             int valueChunkStartPos = 0;
             LineInfo valueChunkLineInfo = new LineInfo(_ps.lineNo, _ps.LinePos);
-            NodeData lastChunk = null;
+            NodeData? lastChunk = null;
 
             Debug.Assert(_stringBuilder.Length == 0);
 
@@ -2890,7 +2893,7 @@ namespace System.Xml
                                         NodeData entityChunk = new NodeData();
                                         entityChunk.lineInfo = entityLineInfo;
                                         entityChunk.depth = attr.depth + 1;
-                                        entityChunk.SetNamedNode(XmlNodeType.EntityReference, _ps.entity.Name);
+                                        entityChunk.SetNamedNode(XmlNodeType.EntityReference, _ps.entity!.Name);
                                         AddAttributeChunkToList(attr, entityChunk, ref lastChunk);
 
                                         _fullAttrCleanup = true;
@@ -3060,7 +3063,7 @@ namespace System.Xml
         // Returns true if a node has been parsed and its data set to curNode.
         // Returns false when a whitespace has been parsed and ignored (according to current whitespace handling) or when parsing mode is not Full.
         // Also returns false if there is no text to be parsed.
-        private async Task<bool> _ParseTextAsync(Task<(int, int, int, bool)> parseTask)
+        private async Task<bool> _ParseTextAsync(Task<(int, int, int, bool)>? parseTask)
         {
             int startPos;
             int endPos;
@@ -3930,7 +3933,7 @@ namespace System.Xml
         // return false == unexpanded external entity, stop parsing and return
         private async Task<EntityType> HandleGeneralEntityReferenceAsync(string name, bool isInAttributeValue, bool pushFakeEntityIfNullResolver, int entityStartLinePos)
         {
-            IDtdEntityInfo entity = null;
+            IDtdEntityInfo? entity = null;
 
             if (_dtdInfo == null && _fragmentParserContext != null && _fragmentParserContext.HasDtdInfo && _dtdProcessing == DtdProcessing.Parse)
             {
@@ -4020,7 +4023,7 @@ namespace System.Xml
 
         // Parses processing instruction; if piInDtdStringBuilder != null, the processing instruction is in DTD and
         // it will be saved in the passed string builder (target, whitespace & value).
-        private async Task<bool> ParsePIAsync(StringBuilder piInDtdStringBuilder)
+        private async Task<bool> ParsePIAsync(StringBuilder? piInDtdStringBuilder)
         {
             if (_parsingMode == ParsingMode.Full)
             {
@@ -4928,7 +4931,7 @@ namespace System.Xml
             }
         }
 
-        private async Task<int> EatWhitespacesAsync(StringBuilder sb)
+        private async Task<int> EatWhitespacesAsync(StringBuilder? sb)
         {
             int pos = _ps.charPos;
             int wsCount = 0;
@@ -5035,7 +5038,7 @@ namespace System.Xml
         //      - returns position of the end of the character reference, that is of the character next to the original ';'
         //      - if (expand == true) then ps.charPos is changed to point to the replaced character
 
-        private async Task<(EntityType, int)> ParseNumericCharRefAsync(bool expand, StringBuilder internalSubsetBuilder)
+        private async Task<(EntityType, int)> ParseNumericCharRefAsync(bool expand, StringBuilder? internalSubsetBuilder)
         {
             EntityType entityType;
 
@@ -5070,7 +5073,7 @@ namespace System.Xml
         //      - replaces the last character of the entity reference (';') with the referenced character (if expand == true)
         //      - returns position of the end of the character reference, that is of the character next to the original ';'
         //      - if (expand == true) then ps.charPos is changed to point to the replaced character
-        private async Task<int> ParseNamedCharRefAsync(bool expand, StringBuilder internalSubsetBuilder)
+        private async Task<int> ParseNamedCharRefAsync(bool expand, StringBuilder? internalSubsetBuilder)
         {
             while (true)
             {
@@ -5246,7 +5249,7 @@ namespace System.Xml
 
         // This method resolves and opens an external DTD subset or an external entity based on its SYSTEM or PUBLIC ID.
         // SxS: This method may expose a name if a resource in baseUri (ref) parameter.
-        private async Task PushExternalEntityOrSubsetAsync(string publicId, string systemId, Uri baseUri, string entityName)
+        private async Task PushExternalEntityOrSubsetAsync(string? publicId, string? systemId, Uri? baseUri, string? entityName)
         {
             Uri uri;
 
@@ -5255,7 +5258,7 @@ namespace System.Xml
             {
                 try
                 {
-                    uri = _xmlResolver.ResolveUri(baseUri, publicId);
+                    uri = _xmlResolver!.ResolveUri(baseUri, publicId);
                     if (await OpenAndPushAsync(uri).ConfigureAwait(false))
                     {
                         return;
@@ -5268,7 +5271,7 @@ namespace System.Xml
             }
 
             // Then try SYSTEM Id
-            uri = _xmlResolver.ResolveUri(baseUri, systemId);
+            uri = _xmlResolver!.ResolveUri(baseUri, systemId);
             try
             {
                 if (await OpenAndPushAsync(uri).ConfigureAwait(false))
@@ -5290,7 +5293,7 @@ namespace System.Xml
 
             if (entityName == null)
             {
-                ThrowWithoutLineInfo(SR.Xml_CannotResolveExternalSubset, new string[] { (publicId != null ? publicId : string.Empty), systemId }, null);
+                ThrowWithoutLineInfo(SR.Xml_CannotResolveExternalSubset, new string?[] { (publicId != null ? publicId : string.Empty), systemId }, null);
             }
             else
             {
@@ -5347,11 +5350,11 @@ namespace System.Xml
 
             if (!IsResolverNull)
             {
-                Uri entityBaseUri = null;
+                Uri? entityBaseUri = null;
                 // Resolve base URI
                 if (!string.IsNullOrEmpty(entity.BaseUriString))
                 {
-                    entityBaseUri = _xmlResolver.ResolveUri(null, entity.BaseUriString);
+                    entityBaseUri = _xmlResolver!.ResolveUri(null, entity.BaseUriString);
                 }
                 await PushExternalEntityOrSubsetAsync(entity.PublicId, entity.SystemId, entityBaseUri, entity.Name).ConfigureAwait(false);
 
@@ -5371,10 +5374,10 @@ namespace System.Xml
             }
             else
             {
-                Encoding enc = _ps.encoding;
+                Encoding? enc = _ps.encoding;
 
                 PushParsingState();
-                InitStringInput(entity.SystemId, enc, string.Empty);
+                InitStringInput(entity.SystemId!, enc, string.Empty);
 
                 RegisterEntity(entity);
 

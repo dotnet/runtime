@@ -962,7 +962,7 @@ GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
             }
 
             GenTree* valueOp = impPopStack().val;
-            impPopStack();
+            impPopStack(); // pops the indexOp that we already have.
             GenTree* vectorOp = impSIMDPopStack(getSIMDTypeForSize(simdSize));
 
             GenTree* clonedVectorOp = nullptr;

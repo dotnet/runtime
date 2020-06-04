@@ -43,6 +43,15 @@ SET_DEFAULT_DEBUG_CHANNEL(THREAD); // some headers have code with asserts, so do
 #include <sys/param.h>
 #include <sys/sysctl.h>
 #include <kvm.h>
+#elif defined(__sun)
+#ifndef _KERNEL
+#define _KERNEL
+#define UNDEF_KERNEL
+#endif
+#include <sys/procfs.h>
+#ifdef UNDEF_KERNEL
+#undef _KERNEL
+#endif
 #endif
 
 #include <signal.h>
@@ -1441,7 +1450,11 @@ CorUnix::GetThreadTimesInternal(
     CPalThread *pThread;
     CPalThread *pTargetThread;
     IPalObject *pobjThread = NULL;
+#ifdef __sun
+    int fd;
+#else // __sun
     clockid_t cid;
+#endif // __sun
 
     pThread = InternalGetCurrentThread();
 
@@ -1463,7 +1476,6 @@ CorUnix::GetThreadTimesInternal(
 
 #if HAVE_PTHREAD_GETCPUCLOCKID
     if (pthread_getcpuclockid(pTargetThread->GetPThreadSelf(), &cid) != 0)
-#endif
     {
         ASSERT("Unable to get clock from thread\n", hThread);
         SetLastError(ERROR_INTERNAL_ERROR);
@@ -1479,6 +1491,33 @@ CorUnix::GetThreadTimesInternal(
         pTargetThread->Unlock(pThread);
         goto SetTimesToZero;
     }
+#elif defined(__sun)
+    timestruc_t ts;
+    int readResult;
+    char statusFilename[64];
+    snprintf(statusFilename, sizeof(statusFilename), "/proc/%d/lwp/%d/lwpstatus", getpid(), pTargetThread->GetLwpId());
+    fd = open(statusFilename, O_RDONLY);
+    if (fd == -1)
+    {
+       ASSERT("open(%s) failed; errno is %d (%s)\n", statusFilename, errno, strerror(errno));
+       SetLastError(ERROR_INTERNAL_ERROR);
+       pTargetThread->Unlock(pThread);
+       goto SetTimesToZero;
+    }
+
+    lwpstatus_t status;
+    do
+    {
+        readResult = read(fd, &status, sizeof(status));
+    }
+    while ((readResult == -1) && (errno == EINTR));
+
+    close(fd);
+
+    ts = status.pr_utime;
+#else // HAVE_PTHREAD_GETCPUCLOCKID
+#error "Don't know how to obtain user cpu time on this platform."
+#endif // HAVE_PTHREAD_GETCPUCLOCKID
 
     pTargetThread->Unlock(pThread);
 

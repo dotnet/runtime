@@ -81,6 +81,25 @@ namespace Dynamic
 
             // Enumerate collection
             List<string> list = new List<string>();
+
+            // Get and use enumerator directly
+            System.Collections.IEnumerator enumerator = obj.GetEnumerator();
+            while (enumerator.MoveNext())
+            {
+                list.Add((string)enumerator.Current);
+            }
+            Assert.AreAllEqual(array, list);
+
+            list.Clear();
+            enumerator.Reset();
+            while (enumerator.MoveNext())
+            {
+                list.Add((string)enumerator.Current);
+            }
+            Assert.AreAllEqual(array, list);
+
+            // Iterate over object that handles DISPID_NEWENUM
+            list.Clear();
             foreach (string str in obj)
             {
                 list.Add(str);

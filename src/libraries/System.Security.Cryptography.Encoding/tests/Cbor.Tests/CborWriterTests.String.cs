@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 #nullable enable
-using System;
 using System.Linq;
 using Test.Cryptography;
 using Xunit;
@@ -22,9 +21,9 @@ namespace System.Formats.Cbor.Tests
         {
             byte[] expectedEncoding = hexExpectedEncoding.HexToByteArray();
             byte[] input = hexInput.HexToByteArray();
-            using var writer = new CborWriter();
+            var writer = new CborWriter();
             writer.WriteByteString(input);
-            AssertHelper.HexEqual(expectedEncoding, writer.GetEncoding());
+            AssertHelper.HexEqual(expectedEncoding, writer.Encode());
         }
 
         [Theory]
@@ -37,9 +36,9 @@ namespace System.Formats.Cbor.Tests
             byte[][] chunkInputs = hexChunkInputs.Select(ch => ch.HexToByteArray()).ToArray();
             byte[] expectedEncoding = hexExpectedEncoding.HexToByteArray();
 
-            using var writer = new CborWriter(encodeIndefiniteLengths: true);
+            var writer = new CborWriter(convertIndefiniteLengthEncodings: false);
             Helpers.WriteChunkedByteString(writer, chunkInputs);
-            AssertHelper.HexEqual(expectedEncoding, writer.GetEncoding());
+            AssertHelper.HexEqual(expectedEncoding, writer.Encode());
         }
 
         [Theory]
@@ -52,9 +51,9 @@ namespace System.Formats.Cbor.Tests
             byte[][] chunkInputs = hexChunkInputs.Select(ch => ch.HexToByteArray()).ToArray();
             byte[] expectedEncoding = hexExpectedEncoding.HexToByteArray();
 
-            using var writer = new CborWriter();
+            var writer = new CborWriter(convertIndefiniteLengthEncodings: true);
             Helpers.WriteChunkedByteString(writer, chunkInputs);
-            AssertHelper.HexEqual(expectedEncoding, writer.GetEncoding());
+            AssertHelper.HexEqual(expectedEncoding, writer.Encode());
         }
 
         [Theory]
@@ -68,9 +67,9 @@ namespace System.Formats.Cbor.Tests
         public static void WriteTextString_SingleValue_HappyPath(string input, string hexExpectedEncoding)
         {
             byte[] expectedEncoding = hexExpectedEncoding.HexToByteArray();
-            using var writer = new CborWriter();
+            var writer = new CborWriter();
             writer.WriteTextString(input);
-            AssertHelper.HexEqual(expectedEncoding, writer.GetEncoding());
+            AssertHelper.HexEqual(expectedEncoding, writer.Encode());
         }
 
         [Theory]
@@ -81,9 +80,9 @@ namespace System.Formats.Cbor.Tests
         public static void WriteTextString_IndefiniteLength_NoPatching_SingleValue_HappyPath(string[] chunkInputs, string hexExpectedEncoding)
         {
             byte[] expectedEncoding = hexExpectedEncoding.HexToByteArray();
-            using var writer = new CborWriter(encodeIndefiniteLengths: true);
+            var writer = new CborWriter(convertIndefiniteLengthEncodings: false);
             Helpers.WriteChunkedTextString(writer, chunkInputs);
-            AssertHelper.HexEqual(expectedEncoding, writer.GetEncoding());
+            AssertHelper.HexEqual(expectedEncoding, writer.Encode());
         }
 
         [Theory]
@@ -94,17 +93,32 @@ namespace System.Formats.Cbor.Tests
         public static void WriteTextString_IndefiniteLength_WithPatching_SingleValue_HappyPath(string[] chunkInputs, string hexExpectedEncoding)
         {
             byte[] expectedEncoding = hexExpectedEncoding.HexToByteArray();
-            using var writer = new CborWriter(encodeIndefiniteLengths: false);
+            var writer = new CborWriter(convertIndefiniteLengthEncodings: true);
             Helpers.WriteChunkedTextString(writer, chunkInputs);
-            AssertHelper.HexEqual(expectedEncoding, writer.GetEncoding());
+            AssertHelper.HexEqual(expectedEncoding, writer.Encode());
         }
 
-        [Fact]
-        public static void WriteTextString_InvalidUnicodeString_ShouldThrowArgumentException()
+        [Theory]
+        [InlineData(CborConformanceLevel.Lax)]
+        public static void WriteTextString_InvalidUnicodeString_LaxConformance_ShouldSucceed(CborConformanceLevel conformanceLevel)
+        {
+            string invalidUnicodeString = "\ud800";
+            byte[] expectedEncoding = { 0x63, 0xef, 0xbf, 0xbd };
+
+            var writer = new CborWriter(conformanceLevel);
+            writer.WriteTextString(invalidUnicodeString);
+            AssertHelper.HexEqual(expectedEncoding, writer.Encode());
+        }
+
+        [Theory]
+        [InlineData(CborConformanceLevel.Strict)]
+        [InlineData(CborConformanceLevel.Canonical)]
+        [InlineData(CborConformanceLevel.Ctap2Canonical)]
+        public static void WriteTextString_InvalidUnicodeString_StrictConformance_ShouldThrowArgumentException(CborConformanceLevel conformanceLevel)
         {
             // NB Xunit's InlineDataAttribute will corrupt string literals containing invalid unicode
             string invalidUnicodeString = "\ud800";
-            using var writer = new CborWriter();
+            var writer = new CborWriter(conformanceLevel);
             ArgumentException exn = Assert.Throws<ArgumentException>(() => writer.WriteTextString(invalidUnicodeString));
             Assert.NotNull(exn.InnerException);
             Assert.IsType<System.Text.EncoderFallbackException>(exn.InnerException);
@@ -119,7 +133,7 @@ namespace System.Formats.Cbor.Tests
         [InlineData(nameof(CborWriter.WriteStartMap))]
         public static void WriteTextString_IndefiniteLength_NestedWrites_ShouldThrowInvalidOperationException(string opName)
         {
-            using var writer = new CborWriter();
+            var writer = new CborWriter();
             writer.WriteStartTextString();
             Assert.Throws<InvalidOperationException>(() => Helpers.ExecOperation(writer, opName));
         }
@@ -130,7 +144,7 @@ namespace System.Formats.Cbor.Tests
         [InlineData(nameof(CborWriter.WriteEndMap))]
         public static void WriteTextString_IndefiniteLength_ImbalancedWrites_ShouldThrowInvalidOperationException(string opName)
         {
-            using var writer = new CborWriter();
+            var writer = new CborWriter();
             writer.WriteStartTextString();
             Assert.Throws<InvalidOperationException>(() => Helpers.ExecOperation(writer, opName));
         }
@@ -147,7 +161,7 @@ namespace System.Formats.Cbor.Tests
         [InlineData(nameof(CborWriter.WriteEndMap))]
         public static void WriteByteString_IndefiniteLength_NestedWrites_ShouldThrowInvalidOperationException(string opName)
         {
-            using var writer = new CborWriter();
+            var writer = new CborWriter();
             writer.WriteStartByteString();
             Assert.Throws<InvalidOperationException>(() => Helpers.ExecOperation(writer, opName));
         }
@@ -158,9 +172,27 @@ namespace System.Formats.Cbor.Tests
         [InlineData(nameof(CborWriter.WriteEndMap))]
         public static void WriteByteString_IndefiniteLength_ImbalancedWrites_ShouldThrowInvalidOperationException(string opName)
         {
-            using var writer = new CborWriter();
+            var writer = new CborWriter();
             writer.WriteStartByteString();
             Assert.Throws<InvalidOperationException>(() => Helpers.ExecOperation(writer, opName));
+        }
+
+        [Theory]
+        [InlineData(CborConformanceLevel.Canonical)]
+        [InlineData(CborConformanceLevel.Ctap2Canonical)]
+        public static void WriteStartByteString_NoPatching_UnsupportedConformance_ShouldThrowInvalidOperationException(CborConformanceLevel conformanceLevel)
+        {
+            var writer = new CborWriter(conformanceLevel, convertIndefiniteLengthEncodings: false);
+            Assert.Throws<InvalidOperationException>(() => writer.WriteStartByteString());
+        }
+
+        [Theory]
+        [InlineData(CborConformanceLevel.Canonical)]
+        [InlineData(CborConformanceLevel.Ctap2Canonical)]
+        public static void WriteStartTextString_NoPatching_UnsupportedConformance_ShouldThrowInvalidOperationException(CborConformanceLevel conformanceLevel)
+        {
+            var writer = new CborWriter(conformanceLevel, convertIndefiniteLengthEncodings: false);
+            Assert.Throws<InvalidOperationException>(() => writer.WriteStartTextString());
         }
     }
 }

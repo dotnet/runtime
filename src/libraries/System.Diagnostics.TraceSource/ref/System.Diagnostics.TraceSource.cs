@@ -207,12 +207,13 @@ namespace System.Diagnostics
     public abstract partial class TraceListener : System.MarshalByRefObject, System.IDisposable
     {
         protected TraceListener() { }
-        protected TraceListener(string name) { }
+        protected TraceListener(string? name) { }
         public System.Collections.Specialized.StringDictionary Attributes { get { throw null; } }
         public System.Diagnostics.TraceFilter? Filter { get { throw null; } set { } }
         public int IndentLevel { get { throw null; } set { } }
         public int IndentSize { get { throw null; } set { } }
         public virtual bool IsThreadSafe { get { throw null; } }
+        [System.Diagnostics.CodeAnalysis.AllowNull]
         public virtual string Name { get { throw null; } set { } }
         protected bool NeedIndent { get { throw null; } set { } }
         public System.Diagnostics.TraceOptions TraceOutputOptions { get { throw null; } set { } }

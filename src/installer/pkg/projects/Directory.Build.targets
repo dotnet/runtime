@@ -16,10 +16,10 @@
   </PropertyGroup>
 
   <!--
-    Mono does not need some pkgproj (no host on mobile, no crossgen for desktop), so allow projects to 
+    Mono does not need some pkgproj (no host on mobile, no crossgen for desktop), so allow projects to
     opt out.
   -->
-  <Target Name="MonoSkipBuildProps" 
+  <Target Name="MonoSkipBuildProps"
           Condition="'$(SkipBuildOnRuntimePackOnlyOS)' == 'true' and '$(RuntimeFlavor)' == 'Mono'"
           BeforeTargets="GetSkipBuildProps">
     <PropertyGroup>
@@ -364,8 +364,6 @@
   <Target Name="AddCrossgenToolPackageReferences"
           BeforeTargets="CollectPackageReferences">
     <ItemGroup>
-      <CrossgenToolPackageReference Include="$(MicrosoftTargetingPackPrivateWinRTPackage)" Version="$(MicrosoftTargetingPackPrivateWinRTVersion)" />
-
       <!-- This tool is a prebuilt not buildable from source. -->
       <CrossgenToolPackageReference
         Condition="'$(DotNetBuildFromSource)' != 'true'"

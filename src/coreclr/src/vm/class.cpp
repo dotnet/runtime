@@ -964,10 +964,206 @@ void ClassLoader::LoadExactParents(MethodTable *pMT)
 
     MethodTableBuilder::CopyExactParentSlots(pMT, pApproxParentMT);
 
+    ValidateMethodsWithCovariantReturnTypes(pMT);
+
     // We can now mark this type as having exact parents
     pMT->SetHasExactParent();
 
     RETURN;
+}
+
+// Checks if two types are compatible according to compatible-with as described in ECMA 335 I.8.7.1
+// Most of the checks are performed by the CanCastTo, but with some cases pre-filtered out.
+//
+/*static*/
+bool ClassLoader::IsCompatibleWith(TypeHandle hType1, TypeHandle hType2)
+{
+    // Structs can be cast to the interfaces they implement, but they are not compatible according to ECMA I.8.7.1
+    bool isCastFromValueTypeToReferenceType = hType2.IsValueType() && !hType1.IsValueType();
+    if (isCastFromValueTypeToReferenceType)
+    {
+        return false;
+    }
+
+    // Nullable<T> can be cast to T, but this is not compatible according to ECMA I.8.7.1
+    bool isCastFromNullableOfTtoT = hType1.GetMethodTable()->IsNullable() && hType2.IsEquivalentTo(hType1.GetMethodTable()->GetInstantiation()[0]);
+    if (isCastFromNullableOfTtoT)
+    {
+        return false;
+    }
+
+    {
+        GCX_COOP();
+        return hType2.GetMethodTable()->CanCastTo(hType1.GetMethodTable(), NULL);
+    }
+}
+
+/*static*/
+void ClassLoader::ValidateMethodsWithCovariantReturnTypes(MethodTable* pMT)
+{
+    CONTRACTL
+    {
+        STANDARD_VM_CHECK;
+        PRECONDITION(CheckPointer(pMT));
+    }
+    CONTRACTL_END;
+
+    //
+    // Validation for methods with covariant return types is a two step process.
+    //
+    // The first step is to validate that the return types on overriding methods with covariant return types are
+    // compatible with the return type of the method being overridden. Compatibility rules are defined by
+    // ECMA I.8.7.1, which is what the CanCastTo() API checks.
+    //
+    // The second step is to propagate an overriding MethodImpl to all applicable vtable slots if the MethodImpl
+    // has the PreserveBaseOverrides attribute. This is to ensure that if we use the signature of one of
+    // the base type methods to call the overriding method, we still execute the overriding method.
+    //
+    // Consider this case:
+    //
+    //      class A {
+    //          RetType VirtualFunction() { }
+    //      }
+    //      class B : A {
+    //          [PreserveBaseOverrides]
+    //          DerivedRetType VirtualFunction() { .override A.VirtualFuncion }
+    //      }
+    //      class C : B {
+    //          MoreDerivedRetType VirtualFunction() { .override A.VirtualFunction }
+    //      }
+    //
+    // NOTE: Typically the attribute would be added to the MethodImpl on C, but was omitted in this example to
+    //       illustrate how its presence on a MethodImpl on the base type can propagate as well. In other words,
+    //       think of it as applying to the vtable slot itself, so any MethodImpl that overrides this slot on a
+    //       derived type will propagate to all other applicable vtable slots.
+    //
+    // Given an object of type C, the attribute will ensure that:
+    //      callvirt RetType A::VirtualFunc()               -> executes the MethodImpl on C
+    //      callvirt DerivedRetType B::VirtualFunc()        -> executes the MethodImpl on C
+    //      callvirt MoreDerivedRetType C::VirtualFunc()    -> executes the MethodImpl on C
+    //
+    // Without the attribute, the second callvirt would normally execute the MethodImpl on B (the MethodImpl on
+    // C does not override the vtable slot of B's MethodImpl, but only overrides the declaring method's vtable slot.
+    //
+
+    // Validation not applicable to interface types and value types, since these are not currently
+    // supported with the covariant return feature
+
+    if (pMT->IsInterface() || pMT->IsValueType())
+        return;
+
+    MethodTable* pParentMT = pMT->GetParentMethodTable();
+    if (pParentMT == NULL)
+        return;
+
+    // Step 1: Validate compatibility of return types on overriding methods
+
+    for (WORD i = 0; i < pParentMT->GetNumVirtuals(); i++)
+    {
+        MethodDesc* pMD = pMT->GetMethodDescForSlot(i);
+        MethodDesc* pParentMD = pParentMT->GetMethodDescForSlot(i);
+
+        if (pMD == pParentMD)
+            continue;
+
+        if (!pMD->RequiresCovariantReturnTypeChecking() && !pParentMD->RequiresCovariantReturnTypeChecking())
+            continue;
+
+        // If the bit is not set on this method, but we reach here because it's been set on the method at the same slot on
+        // the base type, set the bit for the current method to ensure any future overriding method down the chain gets checked.
+        if (!pMD->RequiresCovariantReturnTypeChecking())
+            pMD->SetRequiresCovariantReturnTypeChecking();
+
+        // The context used to load the return type of the parent method has to use the generic method arguments
+        // of the overriding method, otherwise the type comparison below will not work correctly
+        SigTypeContext context1(pParentMD->GetClassInstantiation(), pMD->GetMethodInstantiation());
+        MetaSig methodSig1(pParentMD);
+        TypeHandle hType1 = methodSig1.GetReturnProps().GetTypeHandleThrowing(pParentMD->GetModule(), &context1, ClassLoader::LoadTypesFlag::LoadTypes, CLASS_LOAD_EXACTPARENTS);
+
+        SigTypeContext context2(pMD);
+        MetaSig methodSig2(pMD);
+        TypeHandle hType2 = methodSig2.GetReturnProps().GetTypeHandleThrowing(pMD->GetModule(), &context2, ClassLoader::LoadTypesFlag::LoadTypes, CLASS_LOAD_EXACTPARENTS);
+
+        _ASSERTE(hType1.GetMethodTable() != NULL);
+        _ASSERTE(hType2.GetMethodTable() != NULL);
+
+        if (!IsCompatibleWith(hType1, hType2))
+        {
+            SString strAssemblyName;
+            pMD->GetAssembly()->GetDisplayName(strAssemblyName);
+
+            SString strInvalidTypeName;
+            TypeString::AppendType(strInvalidTypeName, TypeHandle(pMD->GetMethodTable()));
+
+            SString strInvalidMethodName;
+            TypeString::AppendMethod(strInvalidMethodName, pMD, pMD->GetMethodInstantiation());
+
+            SString strParentMethodName;
+            TypeString::AppendMethod(strParentMethodName, pParentMD, pParentMD->GetMethodInstantiation());
+
+            COMPlusThrow(
+                kTypeLoadException,
+                IDS_CLASSLOAD_MI_BADRETURNTYPE,
+                strInvalidMethodName,
+                strInvalidTypeName,
+                strAssemblyName,
+                strParentMethodName);
+        }
+    }
+
+    // Step 2: propate overriding MethodImpls to applicable vtable slots if the declaring method has the attribute
+
+    MethodTable::MethodDataWrapper hMTData(MethodTable::GetMethodData(pMT, FALSE));
+
+    for (WORD i = 0; i < pParentMT->GetNumVirtuals(); i++)
+    {
+        MethodDesc* pMD = pMT->GetMethodDescForSlot(i);
+        MethodDesc* pParentMD = pParentMT->GetMethodDescForSlot(i);
+        if (pMD == pParentMD)
+            continue;
+
+        // The attribute is only applicable to MethodImpls. For anything else, it will be treated as a no-op
+        if (!pMD->IsMethodImpl())
+            continue;
+
+        // Search if the attribute has been applied on this vtable slot, either by the current MethodImpl, or by a previous
+        // MethodImpl somewhere in the base type hierarchy.
+        bool foundAttribute = false;
+        MethodTable* pCurrentMT = pMT;
+        while (!foundAttribute && pCurrentMT != NULL && i < pCurrentMT->GetNumVirtuals())
+        {
+            MethodDesc* pCurrentMD = pCurrentMT->GetMethodDescForSlot(i);
+
+            // The attribute is only applicable to MethodImpls. For anything else, it will be treated as a no-op
+            if (pCurrentMD->IsMethodImpl())
+            {
+                BYTE* pVal = NULL;
+                ULONG cbVal = 0;
+                if (pCurrentMD->GetCustomAttribute(WellKnownAttribute::PreserveBaseOverridesAttribute, (const void**)&pVal, &cbVal) == S_OK)
+                    foundAttribute = true;
+            }
+
+            pCurrentMT = pCurrentMT->GetParentMethodTable();
+        }
+
+        if (!foundAttribute)
+            continue;
+
+        // Search for any vtable slot still pointing at the parent method, and update it with the current overriding method
+        for (WORD j = i; j < pParentMT->GetNumVirtuals(); j++)
+        {
+            MethodDesc* pCurrentMD = pMT->GetMethodDescForSlot(j);
+            if (pCurrentMD == pParentMD)
+            {
+                // This is a vtable slot that needs to be updated to the new overriding method because of the
+                // presence of the attribute.
+                pMT->SetSlot(j, pMT->GetSlot(i));
+                _ASSERT(pMT->GetMethodDescForSlot(j) == pMD);
+
+                hMTData->UpdateImplMethodDesc(pMD, j);
+            }
+        }
+    }
 }
 
 //*******************************************************************************
@@ -1514,31 +1710,28 @@ TypeHandle MethodTable::SetupCoClassForInterface()
     const BYTE *pVal = NULL;
     ULONG cbVal = 0;
 
-    if (!IsProjectedFromWinRT()) // ignore classic COM interop CA on WinRT types
+    HRESULT hr = GetCustomAttribute(WellKnownAttribute::CoClass, (const void **)&pVal, &cbVal);
+    if (hr == S_OK)
     {
-        HRESULT hr = GetCustomAttribute(WellKnownAttribute::CoClass, (const void **)&pVal, &cbVal);
-        if (hr == S_OK)
-        {
-            CustomAttributeParser cap(pVal, cbVal);
+        CustomAttributeParser cap(pVal, cbVal);
 
-            IfFailThrow(cap.SkipProlog());
+        IfFailThrow(cap.SkipProlog());
 
-            // Retrieve the COM source interface class name.
-            ULONG       cbName;
-            LPCUTF8     szName;
-            IfFailThrow(cap.GetNonNullString(&szName, &cbName));
+        // Retrieve the COM source interface class name.
+        ULONG       cbName;
+        LPCUTF8     szName;
+        IfFailThrow(cap.GetNonNullString(&szName, &cbName));
 
-            // Copy the name to a temporary buffer and NULL terminate it.
-            StackSString ss(SString::Utf8, szName, cbName);
+        // Copy the name to a temporary buffer and NULL terminate it.
+        StackSString ss(SString::Utf8, szName, cbName);
 
-            // Try to load the class using its name as a fully qualified name. If that fails,
-            // then we try to load it in the assembly of the current class.
-            CoClassType = TypeName::GetTypeUsingCASearchRules(ss.GetUnicode(), GetAssembly());
+        // Try to load the class using its name as a fully qualified name. If that fails,
+        // then we try to load it in the assembly of the current class.
+        CoClassType = TypeName::GetTypeUsingCASearchRules(ss.GetUnicode(), GetAssembly());
 
-            // Cache the coclass type
-            g_IBCLogger.LogEEClassCOWTableAccess(this);
-            GetClass_NoLogging()->SetCoClassForInterface(CoClassType);
-        }
+        // Cache the coclass type
+        g_IBCLogger.LogEEClassCOWTableAccess(this);
+        GetClass_NoLogging()->SetCoClassForInterface(CoClassType);
     }
     return CoClassType;
 }
@@ -1887,22 +2080,19 @@ CorIfaceAttr MethodTable::GetComInterfaceType()
     if (ItfType != (CorIfaceAttr)-1)
         return ItfType;
 
-    if (IsProjectedFromWinRT())
-    {
-        // WinRT interfaces are always IInspectable-based
-        ItfType = ifInspectable;
-    }
-    else
-    {
-        // Retrieve the interface type from the metadata.
-        HRESULT hr = GetMDImport()->GetIfaceTypeOfTypeDef(GetCl(), (ULONG*)&ItfType);
-        IfFailThrow(hr);
+    // Retrieve the interface type from the metadata.
+    HRESULT hr = GetMDImport()->GetIfaceTypeOfTypeDef(GetCl(), (ULONG*)&ItfType);
+    IfFailThrow(hr);
 
-        if (hr != S_OK)
-        {
-            // if not found in metadata, use the default
-            ItfType = ifDual;
-        }
+    if (hr != S_OK)
+    {
+        // if not found in metadata, use the default
+        ItfType = ifDual;
+    }
+
+    if (ItfType == ifInspectable)
+    {
+        COMPlusThrow(kPlatformNotSupportedException, IDS_EE_NO_IINSPECTABLE);
     }
 
     // Cache the interface type
@@ -2249,7 +2439,7 @@ CorClassIfaceAttr MethodTable::GetComClassInterfaceType()
     if (HasGenericClassInstantiationInHierarchy())
         return clsIfNone;
 
-    // If the class does not support IClassX because it derives from or implements WinRT types,
+    // If the class does not support IClassX,
     // then it is considered ClassInterfaceType.None unless explicitly overriden by the CA
     if (!ClassSupportsIClassX(this))
         return clsIfNone;
@@ -2620,41 +2810,20 @@ void EEClass::Save(DataImage *image, MethodTable *pMT)
 
     if (pMT->IsInterface())
     {
-        // Make sure our guid is computed
-
-#ifdef FEATURE_COMINTEROP
-        // Generic WinRT types can have their GUID computed only if the instantiation is WinRT-legal
-        if (!pMT->IsProjectedFromWinRT() ||
-            !pMT->SupportsGenericInterop(TypeHandle::Interop_NativeToManaged) ||
-             pMT->IsLegalNonArrayWinRTType())
-#endif // FEATURE_COMINTEROP
+        GUID dummy;
+        if (SUCCEEDED(pMT->GetGuidNoThrow(&dummy, TRUE, FALSE)))
         {
-            GUID dummy;
-            if (SUCCEEDED(pMT->GetGuidNoThrow(&dummy, TRUE, FALSE)))
-            {
-                GuidInfo* pGuidInfo = pMT->GetGuidInfo();
-                _ASSERTE(pGuidInfo != NULL);
+            GuidInfo* pGuidInfo = GetGuidInfo();
+            _ASSERTE(pGuidInfo != NULL);
 
-                image->StoreStructure(pGuidInfo, sizeof(GuidInfo),
-                                      DataImage::ITEM_GUID_INFO);
-
-#ifdef FEATURE_COMINTEROP
-                if (pMT->IsLegalNonArrayWinRTType())
-                {
-                    Module *pModule = pMT->GetModule();
-                    if (pModule->CanCacheWinRTTypeByGuid(pMT))
-                    {
-                        pModule->CacheWinRTTypeByGuid(pMT, pGuidInfo);
-                    }
-                }
-#endif // FEATURE_COMINTEROP
-            }
-            else
-            {
-                // make sure we don't store a GUID_NULL guid in the NGEN image
-                // instead we'll compute the GUID at runtime, and throw, if appropriate
-                m_pGuidInfo.SetValueMaybeNull(NULL);
-            }
+            image->StoreStructure(pGuidInfo, sizeof(GuidInfo),
+                                    DataImage::ITEM_GUID_INFO);
+        }
+        else
+        {
+            // make sure we don't store a GUID_NULL guid in the NGEN image
+            // instead we'll compute the GUID at runtime, and throw, if appropriate
+            m_pGuidInfo.SetValueMaybeNull(NULL);
         }
     }
 

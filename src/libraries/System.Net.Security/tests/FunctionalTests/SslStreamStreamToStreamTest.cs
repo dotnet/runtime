@@ -259,6 +259,34 @@ namespace System.Net.Security.Tests
             }
         }
 
+        [Fact]
+        public async Task SslStream_StreamToStream_ZeroByteRead_SucceedsWhenDataAvailable()
+        {
+            (NetworkStream clientStream, NetworkStream serverStream) = TestHelper.GetConnectedTcpStreams();
+            using var clientSslStream = new SslStream(clientStream, leaveInnerStreamOpen: false, AllowAnyServerCertificate);
+            using var serverSslStream = new SslStream(serverStream);
+            await DoHandshake(clientSslStream, serverSslStream);
+
+            for (int iter = 0; iter < 2; iter++)
+            {
+                ValueTask<int> zeroByteRead = clientSslStream.ReadAsync(Memory<byte>.Empty);
+                Assert.False(zeroByteRead.IsCompleted);
+
+                await serverSslStream.WriteAsync(Encoding.UTF8.GetBytes("hello"));
+                Assert.Equal(0, await zeroByteRead);
+
+                var readBytes = new byte[5];
+                int count = 0;
+                while (count < readBytes.Length)
+                {
+                    int n = await clientSslStream.ReadAsync(readBytes.AsMemory(count));
+                    Assert.InRange(n, 1, readBytes.Length - count);
+                    count += n;
+                }
+                Assert.Equal("hello", Encoding.UTF8.GetString(readBytes));
+            }
+        }
+
         [Theory]
         [InlineData(false)]
         [InlineData(true)]

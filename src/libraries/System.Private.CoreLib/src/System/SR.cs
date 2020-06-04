@@ -24,7 +24,6 @@ namespace System
             return GetResourceString(resourceKey, string.Empty);
         }
 
-        [PreserveDependency(".cctor()", "System.Resources.ResourceManager")]
         private static string InternalGetResourceString(string key)
         {
             if (key.Length == 0)

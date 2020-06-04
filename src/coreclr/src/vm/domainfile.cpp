@@ -31,8 +31,6 @@
 #include "dllimportcallback.h"
 #include "peimagelayout.inl"
 
-#include "winrthelpers.h"
-
 #ifdef FEATURE_PERFMAP
 #include "perfmap.h"
 #endif // FEATURE_PERFMAP
@@ -1000,44 +998,6 @@ void DomainFile::FinishLoad()
 
     // Are we absolutely required to use a native image?
     CheckZapRequired();
-
-#if defined(FEATURE_COMINTEROP)
-    // If this is a winmd file, ensure that the ngen reference namespace is loadable.
-    // This is necessary as on the phone we don't check ngen image dependencies, and thus we can get in a situation
-    // where a winmd is loaded as a dependency of an ngen image, but the type used to build cross module references
-    // in winmd files isn't loaded.
-    PEFile* peFile = GetFile();
-    if (peFile && peFile->AsAssembly()->IsWindowsRuntime() && peFile->HasHostAssembly())
-    {
-        IMDInternalImport *pImport = GetFile()->GetPersistentMDImport();
-        LPCSTR  szNameSpace;
-        LPCSTR  szTypeName;
-        // It does not make sense to pass the file name to recieve fake type name for empty WinMDs, because we would use the name
-        // for binding in next call to BindAssemblySpec which would fail for fake WinRT type name
-        // We will throw/return the error instead and the caller will recognize it and react to it by not creating the ngen image -
-        // see code:Zapper::ComputeDependenciesInCurrentDomain
-        if (SUCCEEDED(::GetFirstWinRTTypeDef(pImport, &szNameSpace, &szTypeName, NULL, NULL)))
-        {
-            // Build assembly spec to describe binding to that WinRT type.
-            AssemblySpec spec;
-            IfFailThrow(spec.Init("WindowsRuntimeAssemblyName, ContentType=WindowsRuntime"));
-            spec.SetWindowsRuntimeType(szNameSpace, szTypeName);
-
-            // Bind to assembly using the CLRPriv binder infrastructure. (All WinRT loads are done through CLRPriv binders
-            ReleaseHolder<IAssemblyName> pAssemblyName;
-            IfFailThrow(spec.CreateFusionName(&pAssemblyName, FALSE, TRUE));
-            ReleaseHolder<ICLRPrivAssembly> pPrivAssembly;
-            IfFailThrow(GetFile()->GetHostAssembly()->BindAssemblyByName(pAssemblyName, &pPrivAssembly));
-
-            // Verify that we found this. If this invariant doesn't hold, then the ngen images that reference this winmd are be invalid.
-            // ALSO, this winmd file is invalid as it doesn't follow spec about how it is distributed.
-            if (GetAppDomain()->FindAssembly(pPrivAssembly) != this)
-            {
-                ThrowHR(COR_E_BADIMAGEFORMAT);
-            }
-        }
-    }
-#endif //defined(FEATURE_COMINTEROP)
 #endif // FEATURE_PREJIT
 
     // Flush any log messages

@@ -34,6 +34,7 @@ extern "C" {
 #include <inttypes.h>
 #include <stddef.h>
 #include <ucontext.h>
+#include <signal.h>
 
 #define UNW_TARGET      aarch64
 #define UNW_TARGET_AARCH64      1
@@ -192,7 +193,7 @@ typedef struct
 	unsigned long uc_flags;
 	struct ucontext *uc_link;
 	stack_t uc_stack;
-	__sigset_t uc_sigmask;
+	sigset_t uc_sigmask;
 	struct unw_sigcontext uc_mcontext;
   } unw_tdep_context_t;
 

@@ -79,21 +79,6 @@
 ::System.Xml.ReaderWriter
 ::System.Xml.XDocument
 ::System.Xml.XmlSerializer
-::Windows.ApplicationModel
-::Windows.Data
-::Windows.Devices
-::Windows.Foundation
-::Windows.Globalization
-::Windows.Graphics
-::Windows.Management
-::Windows.Media
-::Windows.Networking
-::Windows.Security
-::Windows.Storage
-::Windows.System
-::Windows.UI
-::Windows.UI.Xaml
-::Windows.Web
 ::END_OF_LIST
 
 @echo off
@@ -134,8 +119,6 @@ set CROSSGENIMAGEPATH=%_NTTREE%\ni
 rmdir /S /Q %CROSSGENIMAGEPATH%
 if not exist %CROSSGENIMAGEPATH% mkdir %CROSSGENIMAGEPATH%
 
-set WINMDPATH=%WINDIR%\System32\WinMetadata
-
 set SELF=%~fd0
 set FAILED=
 
@@ -157,7 +140,6 @@ exit /B 1
 
 set FILEPATH=
 call :ProbeFile %ILIMAGEPATH%\%1.dll
-call :ProbeFile %WINMDPATH%\%1.winmd
 
 if "%FILEPATH%" == "" ( echo File not found: %1 & goto LError )
 
@@ -166,8 +148,8 @@ echo ========= COMPILE and COMPARE %1 ==========
 echo ngen install /nodependencies %FILEPATH%
 ngen install /nodependencies %FILEPATH%
 echo.
-echo %_NTTREE%\crossgen /platform_assemblies_paths %ILIMAGEPATH%;%CROSSGENIMAGEPATH% /Platform_Winmd_Paths %WINMDPATH% /in %FILEPATH% /out %CROSSGENIMAGEPATH%\%1.ni.dll
-%_NTTREE%\crossgen /platform_assemblies_paths %ILIMAGEPATH%;%CROSSGENIMAGEPATH% /Platform_Winmd_Paths %WINMDPATH% /in %FILEPATH% /out %CROSSGENIMAGEPATH%\%1.ni.dll
+echo %_NTTREE%\crossgen /platform_assemblies_paths %ILIMAGEPATH%;%CROSSGENIMAGEPATH% /in %FILEPATH% /out %CROSSGENIMAGEPATH%\%1.ni.dll
+%_NTTREE%\crossgen /platform_assemblies_paths %ILIMAGEPATH%;%CROSSGENIMAGEPATH% /in %FILEPATH% /out %CROSSGENIMAGEPATH%\%1.ni.dll
 IF NOT "%ERRORLEVEL%"=="0" set FAILED=1
 echo.
 forfiles /P %NATIVEIMAGEPATH% /M %1.ni.dll /S /C "cmd /c echo Compare: @path & fc /B @path %CROSSGENIMAGEPATH%\%1.ni.dll > %CROSSGENIMAGEPATH%\diff.txt & IF NOT ERRORLEVEL 1 del %CROSSGENIMAGEPATH%\diff.txt"

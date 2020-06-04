@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System;
 using System.IO;
 using System.Xml.Schema;
@@ -29,12 +30,12 @@ namespace System.Xml
             return writer.WriteEndDocumentAsync();
         }
 
-        public override Task WriteDocTypeAsync(string name, string pubid, string sysid, string subset)
+        public override Task WriteDocTypeAsync(string name, string? pubid, string? sysid, string subset)
         {
             return writer.WriteDocTypeAsync(name, pubid, sysid, subset);
         }
 
-        public override Task WriteStartElementAsync(string prefix, string localName, string ns)
+        public override Task WriteStartElementAsync(string? prefix, string localName, string? ns)
         {
             return writer.WriteStartElementAsync(prefix, localName, ns);
         }
@@ -49,7 +50,7 @@ namespace System.Xml
             return writer.WriteFullEndElementAsync();
         }
 
-        protected internal override Task WriteStartAttributeAsync(string prefix, string localName, string ns)
+        protected internal override Task WriteStartAttributeAsync(string? prefix, string localName, string? ns)
         {
             return writer.WriteStartAttributeAsync(prefix, localName, ns);
         }

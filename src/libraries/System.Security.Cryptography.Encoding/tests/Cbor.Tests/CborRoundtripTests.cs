@@ -56,9 +56,9 @@ namespace System.Formats.Cbor.Tests
 #endif
         public static void Roundtrip_Int64(long input)
         {
-            using var writer = new CborWriter();
+            var writer = new CborWriter();
             writer.WriteInt64(input);
-            byte[] encoding = writer.GetEncoding();
+            byte[] encoding = writer.Encode();
 
             var reader = new CborReader(encoding);
             long result = reader.ReadInt64();
@@ -90,9 +90,9 @@ namespace System.Formats.Cbor.Tests
 #endif
         public static void Roundtrip_UInt64(ulong input)
         {
-            using var writer = new CborWriter();
+            var writer = new CborWriter();
             writer.WriteUInt64(input);
-            byte[] encoding = writer.GetEncoding();
+            byte[] encoding = writer.Encode();
 
             var reader = new CborReader(encoding);
             ulong result = reader.ReadUInt64();
@@ -113,9 +113,9 @@ namespace System.Formats.Cbor.Tests
         {
             byte[]? input = hexInput?.HexToByteArray();
 #endif
-            using var writer = new CborWriter();
+            var writer = new CborWriter();
             writer.WriteByteString(input);
-            byte[] encoding = writer.GetEncoding();
+            byte[] encoding = writer.Encode();
 
             var reader = new CborReader(encoding);
             byte[] result = reader.ReadByteString();
@@ -137,9 +137,9 @@ namespace System.Formats.Cbor.Tests
 #endif
         public static void Roundtrip_TextString(string? input)
         {
-            using var writer = new CborWriter();
+            var writer = new CborWriter();
             writer.WriteTextString(input);
-            byte[] encoding = writer.GetEncoding();
+            byte[] encoding = writer.Encode();
 
             var reader = new CborReader(encoding);
             string result = reader.ReadTextString();
@@ -160,9 +160,9 @@ namespace System.Formats.Cbor.Tests
         {
             byte[]? input = hexInput?.HexToByteArray();
 #endif
-            using var writer = new CborWriter();
+            var writer = new CborWriter();
             writer.WriteByteString(input);
-            byte[] encoding = writer.GetEncoding();
+            byte[] encoding = writer.Encode();
 
             int length = input?.Length ?? 0;
             int lengthEncodingLength = GetLengthEncodingLength(length);
