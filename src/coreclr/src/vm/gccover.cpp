@@ -1412,29 +1412,17 @@ BOOL OnGcCoverageInterrupt(PCONTEXT regs)
     }
 
     // If the thread is in preemptive mode then we must be in a
-    // PInvoke stub with an inlined frame, or be in a reverse PInvoke
-    // stub that's about to return.
+    // PInvoke stub, a method that has an inline PInvoke frame,
+    // or be in a reverse PInvoke stub that's about to return.
     //
-    // A PInvoke stub should should properly report GC refs if we
+    // The PInvoke cases should should properly report GC refs if we
     // trigger GC here. But a reverse PInvoke stub may over-report
     // leading to spurious failures, as we would not normally report
-    // anything for this method.
-    //
-    // So, suppress GC for the reverse PInvoke stubs.
-    if (!pThread->PreemptiveGCDisabled())
+    // anything for this method at this point.
+    if (!pThread->PreemptiveGCDisabled() && pMD->HasUnmanagedCallersOnlyAttribute())
     {
-        _ASSERTE(pMD->IsILStub());
-        PTR_DynamicMethodDesc pDynamicMD = pMD->AsDynamicMethodDesc();
-
-        if (pDynamicMD->IsReverseStub())
-        {
-            RemoveGcCoverageInterrupt(instrPtr, savedInstrPtr);
-            return TRUE;
-        }
-        else
-        {
-            _ASSERTE(pDynamicMD->IsPInvokeStub());
-        }
+        RemoveGcCoverageInterrupt(instrPtr, savedInstrPtr);
+        return TRUE;
     }
 
 #if defined(USE_REDIRECT_FOR_GCSTRESS) && !defined(TARGET_UNIX)
