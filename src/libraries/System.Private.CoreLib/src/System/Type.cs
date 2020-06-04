@@ -150,7 +150,7 @@ namespace System
 
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)]
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2006:UnrecognizedReflectionPattern",
-            Justification = "Linker doesn't recongnize GetConstructors(BindingFlags.Public) but this is safe")]
+            Justification = "Linker doesn't recongnize GetConstructors(BindingFlags.Public) but this is what the body is doing")]
         public ConstructorInfo[] GetConstructors() => GetConstructors(BindingFlags.Public | BindingFlags.Instance);
 
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)]
@@ -164,7 +164,7 @@ namespace System
 
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicEvents)]
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2006:UnrecognizedReflectionPattern",
-            Justification = "Linker doesn't recongnize GetEvents(BindingFlags.Public) but this is safe")]
+            Justification = "Linker doesn't recongnize GetEvents(BindingFlags.Public) but this is what the body is doing")]
         public virtual EventInfo[] GetEvents() => GetEvents(Type.DefaultLookup);
 
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicEvents | DynamicallyAccessedMemberTypes.NonPublicEvents)]
@@ -178,7 +178,7 @@ namespace System
 
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields)]
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2006:UnrecognizedReflectionPattern",
-            Justification = "Linker doesn't recongnize GetFields(BindingFlags.Public) but this is safe")]
+            Justification = "Linker doesn't recongnize GetFields(BindingFlags.Public) but this is what the body is doing")]
         public FieldInfo[] GetFields() => GetFields(Type.DefaultLookup);
 
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields | DynamicallyAccessedMemberTypes.NonPublicFields)]
@@ -268,7 +268,7 @@ namespace System
 
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)]
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2006:UnrecognizedReflectionPattern",
-            Justification = "Linker doesn't recongnize GetMethods(BindingFlags.Public) but this is safe")]
+            Justification = "Linker doesn't recongnize GetMethods(BindingFlags.Public) but this is what the body is doing")]
         public MethodInfo[] GetMethods() => GetMethods(Type.DefaultLookup);
 
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.NonPublicMethods)]
@@ -282,7 +282,7 @@ namespace System
 
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicNestedTypes)]
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2006:UnrecognizedReflectionPattern",
-            Justification = "Linker doesn't recongnize GetNestedTypes(BindingFlags.Public) but this is safe")]
+            Justification = "Linker doesn't recongnize GetNestedTypes(BindingFlags.Public) but this is what the body is doing")]
         public Type[] GetNestedTypes() => GetNestedTypes(Type.DefaultLookup);
 
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicNestedTypes | DynamicallyAccessedMemberTypes.NonPublicNestedTypes)]
@@ -301,7 +301,7 @@ namespace System
 
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)]
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2006:UnrecognizedReflectionPattern",
-            Justification = "Linker doesn't recongnize GetPropertyImpl(BindingFlags.Public) but this is safe")]
+            Justification = "Linker doesn't recongnize GetPropertyImpl(BindingFlags.Public) but this is what the body is doing")]
         public PropertyInfo? GetProperty(string name, Type? returnType)
         {
             if (name == null)
@@ -333,7 +333,7 @@ namespace System
 
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)]
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2006:UnrecognizedReflectionPattern",
-            Justification = "Linker doesn't recongnize GetProperties(BindingFlags.Public) but this is safe")]
+            Justification = "Linker doesn't recongnize GetProperties(BindingFlags.Public) but this is what the body is doing")]
         public PropertyInfo[] GetProperties() => GetProperties(Type.DefaultLookup);
 
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.NonPublicProperties)]
