@@ -58,7 +58,10 @@ namespace Internal.JitInterface
         private IntPtr _unmanagedCallbacks; // array of pointers to JIT-EE interface callbacks
         private Object _keepAlive; // Keeps delegates for the callbacks alive
 
+        [UnmanagedFunctionPointer(CallingConvention.StdCall)]
         private delegate IntPtr JitStartupDelegate(IntPtr host);
+
+        [UnmanagedFunctionPointer(CallingConvention.StdCall)]
         private delegate IntPtr GetJitDelegate();
 
         private delegate IntPtr GetJitHostDelegate(IntPtr configProvider);
