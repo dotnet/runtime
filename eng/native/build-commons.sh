@@ -49,7 +49,7 @@ check_prereqs()
     echo "Checking prerequisites..."
 
     if ! cmake --help 2>&1 | grep -q \\-B; then
-        echo "Please install v3.14.5 or newer from https://www.cmake.org/download/."
+        echo "Please install cmake v3.14.5 or newer from https://www.cmake.org/download/."
         exit 1
     fi
 
