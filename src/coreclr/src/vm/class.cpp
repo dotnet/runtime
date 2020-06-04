@@ -2813,7 +2813,7 @@ void EEClass::Save(DataImage *image, MethodTable *pMT)
         GUID dummy;
         if (SUCCEEDED(pMT->GetGuidNoThrow(&dummy, TRUE, FALSE)))
         {
-            GuidInfo* pGuidInfo = GetGuidInfo();
+            GuidInfo* pGuidInfo = pMT->GetGuidInfo();
             _ASSERTE(pGuidInfo != NULL);
 
             image->StoreStructure(pGuidInfo, sizeof(GuidInfo),
