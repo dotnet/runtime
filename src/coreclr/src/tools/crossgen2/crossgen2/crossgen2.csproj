@@ -77,7 +77,7 @@
   </ItemGroup>
 
   <ItemGroup Condition="'$(CrossHostArch)' != ''">
-    <Content Include="$(BinDir)\$(CrossHostArch)\jitinterface$(LibraryNameExtension)"
+    <Content Include="$(BinDir)\$(CrossHostArch)\$(LibraryNamePrefix)jitinterface$(LibraryNameExtension)"
       CopyToOutputDirectory="PreserveNewest"
       CopyToPublishDirectory="PreserveNewest"
       Link="$(CrossHostSpec)\%(FileName)%(Extension)"
