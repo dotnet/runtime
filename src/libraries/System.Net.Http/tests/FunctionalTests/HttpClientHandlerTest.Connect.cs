@@ -22,7 +22,7 @@ namespace System.Net.Http.Functional.Tests
                     request.Headers.Host = "foo.com:345";
 
                     // We need to use ResponseHeadersRead here, otherwise we will hang trying to buffer the response body.
-                    Task<HttpResponseMessage> responseTask = client.SendAsync(request,  HttpCompletionOption.ResponseHeadersRead);
+                    Task<HttpResponseMessage> responseTask = client.SendAsync(TestAsync, request,  HttpCompletionOption.ResponseHeadersRead);
 
                     await server.AcceptConnectionAsync(async connection =>
                     {
@@ -80,7 +80,7 @@ namespace System.Net.Http.Functional.Tests
                     HttpRequestMessage request = new HttpRequestMessage(new HttpMethod("CONNECT"), url) { Version = UseVersion };
                     request.Headers.Host = "foo.com:345";
                     // We need to use ResponseHeadersRead here, otherwise we will hang trying to buffer the response body.
-                    Task<HttpResponseMessage> responseTask = client.SendAsync(request,  HttpCompletionOption.ResponseHeadersRead);
+                    Task<HttpResponseMessage> responseTask = client.SendAsync(TestAsync, request,  HttpCompletionOption.ResponseHeadersRead);
                     await server.AcceptConnectionAsync(async connection =>
                     {
                         Task<List<string>> serverTask = connection.ReadRequestHeaderAndSendResponseAsync(HttpStatusCode.Forbidden, content: "error");
