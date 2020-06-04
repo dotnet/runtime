@@ -52,7 +52,7 @@ EventPipeEventSource::EventPipeEventSource()
         1,      /* eventID */
         s_pProcessInfoEventName,
         0,      /* keywords */
-        0,      /* version */
+        1,      /* version */
         EventPipeEventLevel::LogAlways,
         params,
         numParams,
