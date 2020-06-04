@@ -1096,11 +1096,35 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 
 				return ins;
 			}
-		}
-	} else if (in_corlib &&
-			(strcmp (cmethod_klass_name_space, "System.Threading") == 0) &&
-			(strcmp (cmethod_klass_name, "Interlocked") == 0)) {
-		ins = NULL;
+		} else if (in_corlib &&
+			(strcmp (cmethod_klass_name_space, "System.Collections.Generic") == 0) &&
+			(strcmp (cmethod_klass_name, "EqualityComparer`1") == 0) &&
+			(strcmp (cmethod->name, "get_Default") == 0)) {
+
+			MonoType *param_type = mono_class_get_generic_class (cmethod->klass)->context.class_inst->type_argv [0];
+			MonoClass *inst;
+			MonoGenericContext ctx;
+			ERROR_DECL (error);
+
+			memset (&ctx, 0, sizeof (ctx));
+
+			MonoType *argss [ ] = { param_type };
+			ctx.class_inst = mono_metadata_get_generic_inst (1, argss);
+
+			inst = mono_class_inflate_generic_class_checked (mono_class_get_iequatable_class (), &ctx, error);
+			mono_error_assert_ok (error);
+
+			if (mono_class_is_assignable_from_internal (inst, mono_class_from_mono_type_internal (param_type)) && param_type->type != MONO_TYPE_U1 && param_type->type != MONO_TYPE_STRING) {
+				MonoClass *gcomparer_inst;
+
+				// return something fake non-null
+				EMIT_NEW_ICONST (cfg, ins, 1);
+				return ins;
+			}
+		} else if (in_corlib &&
+				(strcmp (cmethod_klass_name_space, "System.Threading") == 0) &&
+				(strcmp (cmethod_klass_name, "Interlocked") == 0)) {
+			ins = NULL;
 
 #if SIZEOF_REGISTER == 8
 		if (!cfg->llvm_only && strcmp (cmethod->name, "Read") == 0 && fsig->param_count == 1 && (fsig->params [0]->type == MONO_TYPE_I8)) {
