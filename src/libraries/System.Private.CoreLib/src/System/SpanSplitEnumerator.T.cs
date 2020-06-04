@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 namespace System
-{ 
+{
     /// <summary>
     /// <see cref="System.SpanSplitEnumerator{T}"/> allows for enumeration of each element within a <see cref="System.ReadOnlySpan{T}"/>
     /// that has been split using a provided separator.
@@ -14,10 +14,10 @@ namespace System
 
         private readonly ReadOnlySpan<T> _separators;
         private readonly T _separator;
-        
+
         private readonly int _separatorLength;
         private readonly bool _splitOnSingleToken;
-        
+
         private readonly bool _isInitialized;
 
         private int _startCurrent;
@@ -29,7 +29,7 @@ namespace System
         /// </summary>
         /// <returns>Returns a <see cref="System.SpanSplitEnumerator{T}"/> that can be used to iterate over the split span.</returns>
         public SpanSplitEnumerator<T> GetEnumerator() => this;
-        
+
         /// <summary>
         /// Returns the current element of the enumeration.
         /// </summary>

@@ -26,8 +26,10 @@ namespace System.SpanTests
             var charSpanEnumerator = new SpanSplitEnumerator<string>();
             Assert.Equal(new Range(0, 0), charSpanEnumerator.Current);
             Assert.False(charSpanEnumerator.MoveNext());
+
             // Implicit DoesNotThrow assertion
             charSpanEnumerator.GetEnumerator();
+
             var stringSpanEnumerator = new SpanSplitEnumerator<string>();
             Assert.Equal(new Range(0, 0), stringSpanEnumerator.Current);
             Assert.False(stringSpanEnumerator.MoveNext());
