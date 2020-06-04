@@ -51,8 +51,7 @@ namespace System.Globalization
             IntPtr icuucLib = LoadLibrary(CreateLibraryName("libicuuc", suffix, extension, version, versionAtEnd), failOnLoadFailure: true);
             IntPtr icuinLib = LoadLibrary(CreateLibraryName("libicui18n", suffix, extension, version, versionAtEnd), failOnLoadFailure: true);
 
-            // if suffix.length == 1 it means there is no suffix but we added the '.' separator.
-            Interop.Globalization.InitICUFunctions(icuucLib, icuinLib, version, suffix.Length == 1 ? default : suffix);
+            Interop.Globalization.InitICUFunctions(icuucLib, icuinLib, version, default);
         }
     }
 }

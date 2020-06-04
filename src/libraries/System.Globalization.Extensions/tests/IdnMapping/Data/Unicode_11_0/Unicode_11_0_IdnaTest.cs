@@ -40,18 +40,12 @@ namespace System.Globalization.Tests
         {
             var split = line.Split(';');
 
-            // TODO: Fix on NLS, as it doesn't run Non Transitional tests
             Type = IdnType.Nontransitional;
 
             Source = EscapedToLiteralString(split[0], lineNumber);
 
             UnicodeResult = new ConformanceIdnaUnicodeTestResult(EscapedToLiteralString(split[1], lineNumber), Source, EscapedToLiteralString(split[2], lineNumber), string.Empty);
             ASCIIResult = new ConformanceIdnaTestResult(EscapedToLiteralString(split[3], lineNumber), UnicodeResult.Value, EscapedToLiteralString(split[4], lineNumber), UnicodeResult.StatusValue);
-
-            if (Type == IdnType.Transitional)
-            {
-                ASCIIResult = new ConformanceIdnaTestResult(EscapedToLiteralString(split[5], lineNumber), ASCIIResult.Value, EscapedToLiteralString(split[6], lineNumber), ASCIIResult.StatusValue);
-            }
 
             LineNumber = lineNumber;
         }

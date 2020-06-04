@@ -62,9 +62,9 @@ namespace System.Globalization.Tests
 
             Success = true;
 
-            if (StatusValue.StartsWith("[", StringComparison.Ordinal) && string.CompareOrdinal(StatusValue, "[]") != 0)
+            if (StatusValue.StartsWith('[') && StatusValue != "[]")
             {
-                if (string.CompareOrdinal(StatusValue, Value) == 0)
+                if (StatusValue == Value)
                 {
                     Success = false;
                     return;
@@ -73,8 +73,7 @@ namespace System.Globalization.Tests
                 string[] statusCodes = StatusValue[1..^1].Split(',');
                 for (int i = 0; i < statusCodes.Length; i++)
                 {
-                    string statusCode = statusCodes[i].Trim();
-                    if (!IsIgnoredError(statusCode))
+                    if (!IsIgnoredError(statusCodes[i].Trim()))
                     {
                         Success = false;
                         break;
@@ -87,7 +86,7 @@ namespace System.Globalization.Tests
         {
             // We don't validate for BIDI rule so we can ignore BIDI codes
             // If we're validating ToAscii we ignore rule V2 (UIDNA_ERROR_HYPHEN_3_4) for compatibility with windows.
-            return statusCode.StartsWith("B") || (ResultType == IdnaTestResultType.ToAscii && statusCode == "V2");
+            return statusCode.StartsWith('B') || (ResultType == IdnaTestResultType.ToAscii && statusCode == "V2");
         }
     }
 }

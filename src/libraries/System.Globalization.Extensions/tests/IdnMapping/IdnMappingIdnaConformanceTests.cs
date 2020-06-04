@@ -28,7 +28,10 @@ namespace System.Globalization.Tests
             {
                 try
                 {
-                    var map = new IdnMapping();
+                    var map = new IdnMapping()
+                    {
+                        UseStd3AsciiRules = true
+                    };
                     var asciiResult = map.GetAscii(entry.Source);
                     Assert.Equal(entry.ASCIIResult.Value, asciiResult, StringComparer.OrdinalIgnoreCase);
                 }
@@ -87,7 +90,10 @@ namespace System.Globalization.Tests
             {
                 try
                 {
-                    var map = new IdnMapping();
+                    var map = new IdnMapping()
+                    {
+                        UseStd3AsciiRules = true
+                    };
                     AssertExtensions.Throws<ArgumentException>("unicode", () => map.GetAscii(entry.Source));
                 }
                 catch (ThrowsException)
@@ -113,7 +119,10 @@ namespace System.Globalization.Tests
             {
                 try
                 {
-                    var map = new IdnMapping();
+                    var map = new IdnMapping()
+                    {
+                        UseStd3AsciiRules = true
+                    };
                     AssertExtensions.Throws<ArgumentException>("ascii", () => map.GetUnicode(entry.Source));
                 }
                 catch (ThrowsException)
