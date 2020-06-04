@@ -19,7 +19,7 @@ namespace System.Globalization
             {
                 if (TryGetAppLocalIcuSwitchValue(out string? icuSuffixAndVersion))
                 {
-                    LoadAppLocalIcu(icuSuffixAndVersion, suffixWithSeparator: true);
+                    LoadAppLocalIcu(icuSuffixAndVersion);
                 }
                 else if (Interop.Globalization.LoadICU() == 0)
                 {
@@ -41,15 +41,16 @@ namespace System.Globalization
             string extension = version.Length > 0 ? "so." : "so";
             bool versionAtEnd = true;
 #endif
+            ReadOnlySpan<char> suffixAndSeparator = string.Concat(suffix, ".");
 
 #if !TARGET_OSX
             // In Linux we need to load libicudata first because libicuuc and libicui18n depend on it. In order for the loader to find
             // it on the same path, we load it before loading the other two libraries.
-            LoadLibrary(CreateLibraryName("libicudata", suffix, extension, version, versionAtEnd), failOnLoadFailure: true);
+            LoadLibrary(CreateLibraryName("libicudata", suffixAndSeparator, extension, version, versionAtEnd), failOnLoadFailure: true);
 #endif
 
-            IntPtr icuucLib = LoadLibrary(CreateLibraryName("libicuuc", suffix, extension, version, versionAtEnd), failOnLoadFailure: true);
-            IntPtr icuinLib = LoadLibrary(CreateLibraryName("libicui18n", suffix, extension, version, versionAtEnd), failOnLoadFailure: true);
+            IntPtr icuucLib = LoadLibrary(CreateLibraryName("libicuuc", suffixAndSeparator, extension, version, versionAtEnd), failOnLoadFailure: true);
+            IntPtr icuinLib = LoadLibrary(CreateLibraryName("libicui18n", suffixAndSeparator, extension, version, versionAtEnd), failOnLoadFailure: true);
 
             Interop.Globalization.InitICUFunctions(icuucLib, icuinLib, version, suffix);
         }

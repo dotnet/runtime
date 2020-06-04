@@ -44,7 +44,7 @@ namespace System.Globalization
             return true;
         }
 
-        private static void LoadAppLocalIcu(string icuSuffixAndVersion, bool suffixWithSeparator = false)
+        private static void LoadAppLocalIcu(string icuSuffixAndVersion)
         {
             ReadOnlySpan<char> version;
             ReadOnlySpan<char> icuSuffix = default;
@@ -60,11 +60,6 @@ namespace System.Globalization
             else
             {
                 version = icuSuffixAndVersion;
-            }
-
-            if (suffixWithSeparator)
-            {
-                icuSuffix = string.Concat(icuSuffix, ".");
             }
 
             LoadAppLocalIcuCore(version, icuSuffix);
