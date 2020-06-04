@@ -638,8 +638,8 @@ namespace System.Threading.Tasks.Tests
                 mode == CtorMode.Task ? new ValueTask(Task.CompletedTask) :
                 new ValueTask(ManualResetValueTaskSourceFactory.Completed(0, null), 0);
 
-            var tcs = new TaskCompletionSource<bool>();
-            t.GetAwaiter().OnCompleted(() => tcs.SetResult(true));
+            var tcs = new TaskCompletionSource();
+            t.GetAwaiter().OnCompleted(() => tcs.SetResult());
             await tcs.Task;
         }
 
@@ -654,8 +654,8 @@ namespace System.Threading.Tasks.Tests
                 mode == CtorMode.Task ? new ValueTask(Task.CompletedTask) :
                 new ValueTask(ManualResetValueTaskSourceFactory.Completed(0, null), 0);
 
-            var tcs = new TaskCompletionSource<bool>();
-            t.GetAwaiter().UnsafeOnCompleted(() => tcs.SetResult(true));
+            var tcs = new TaskCompletionSource();
+            t.GetAwaiter().UnsafeOnCompleted(() => tcs.SetResult());
             await tcs.Task;
         }
 
@@ -670,8 +670,8 @@ namespace System.Threading.Tasks.Tests
                 mode == CtorMode.Task ? new ValueTask<int>(Task.FromResult(42)) :
                 new ValueTask<int>(ManualResetValueTaskSourceFactory.Completed(42, null), 0);
 
-            var tcs = new TaskCompletionSource<bool>();
-            t.GetAwaiter().OnCompleted(() => tcs.SetResult(true));
+            var tcs = new TaskCompletionSource();
+            t.GetAwaiter().OnCompleted(() => tcs.SetResult());
             await tcs.Task;
         }
 
@@ -686,8 +686,8 @@ namespace System.Threading.Tasks.Tests
                 mode == CtorMode.Task ? new ValueTask<int>(Task.FromResult(42)) :
                 new ValueTask<int>(ManualResetValueTaskSourceFactory.Completed(42, null), 0);
 
-            var tcs = new TaskCompletionSource<bool>();
-            t.GetAwaiter().UnsafeOnCompleted(() => tcs.SetResult(true));
+            var tcs = new TaskCompletionSource();
+            t.GetAwaiter().UnsafeOnCompleted(() => tcs.SetResult());
             await tcs.Task;
         }
 
@@ -705,8 +705,8 @@ namespace System.Threading.Tasks.Tests
                 mode == CtorMode.Task ? new ValueTask(Task.CompletedTask) :
                 new ValueTask(ManualResetValueTaskSourceFactory.Completed(0, null), 0);
 
-            var tcs = new TaskCompletionSource<bool>();
-            t.ConfigureAwait(continueOnCapturedContext).GetAwaiter().OnCompleted(() => tcs.SetResult(true));
+            var tcs = new TaskCompletionSource();
+            t.ConfigureAwait(continueOnCapturedContext).GetAwaiter().OnCompleted(() => tcs.SetResult());
             await tcs.Task;
         }
 
@@ -724,8 +724,8 @@ namespace System.Threading.Tasks.Tests
                 mode == CtorMode.Task ? new ValueTask(Task.CompletedTask) :
                 new ValueTask(ManualResetValueTaskSourceFactory.Completed(0, null), 0);
 
-            var tcs = new TaskCompletionSource<bool>();
-            t.ConfigureAwait(continueOnCapturedContext).GetAwaiter().UnsafeOnCompleted(() => tcs.SetResult(true));
+            var tcs = new TaskCompletionSource();
+            t.ConfigureAwait(continueOnCapturedContext).GetAwaiter().UnsafeOnCompleted(() => tcs.SetResult());
             await tcs.Task;
         }
 
@@ -743,8 +743,8 @@ namespace System.Threading.Tasks.Tests
                 mode == CtorMode.Task ? new ValueTask<int>(Task.FromResult(42)) :
                 new ValueTask<int>(ManualResetValueTaskSourceFactory.Completed(42, null), 0);
 
-            var tcs = new TaskCompletionSource<bool>();
-            t.ConfigureAwait(continueOnCapturedContext).GetAwaiter().OnCompleted(() => tcs.SetResult(true));
+            var tcs = new TaskCompletionSource();
+            t.ConfigureAwait(continueOnCapturedContext).GetAwaiter().OnCompleted(() => tcs.SetResult());
             await tcs.Task;
         }
 
@@ -762,8 +762,8 @@ namespace System.Threading.Tasks.Tests
                 mode == CtorMode.Task ? new ValueTask<int>(Task.FromResult(42)) :
                 new ValueTask<int>(ManualResetValueTaskSourceFactory.Completed(42, null), 0);
 
-            var tcs = new TaskCompletionSource<bool>();
-            t.ConfigureAwait(continueOnCapturedContext).GetAwaiter().UnsafeOnCompleted(() => tcs.SetResult(true));
+            var tcs = new TaskCompletionSource();
+            t.ConfigureAwait(continueOnCapturedContext).GetAwaiter().UnsafeOnCompleted(() => tcs.SetResult());
             await tcs.Task;
         }
 
@@ -966,8 +966,8 @@ namespace System.Threading.Tasks.Tests
         [Fact]
         public void NonGeneric_OperatorEquals()
         {
-            var completedTcs = new TaskCompletionSource<int>();
-            completedTcs.SetResult(42);
+            var completedTcs = new TaskCompletionSource();
+            completedTcs.SetResult();
 
             var completedVts = ManualResetValueTaskSourceFactory.Completed(42, null);
 
@@ -1009,8 +1009,8 @@ namespace System.Threading.Tasks.Tests
         [Fact]
         public void NonGeneric_OperatorNotEquals()
         {
-            var completedTcs = new TaskCompletionSource<int>();
-            completedTcs.SetResult(42);
+            var completedTcs = new TaskCompletionSource();
+            completedTcs.SetResult();
 
             var completedVts = ManualResetValueTaskSourceFactory.Completed(42, null);
 

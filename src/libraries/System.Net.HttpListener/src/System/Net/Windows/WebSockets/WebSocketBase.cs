@@ -38,7 +38,7 @@ namespace System.Net.WebSockets
         private readonly WebSocketBuffer _internalBuffer;
         private readonly KeepAliveTracker _keepAliveTracker;
         private volatile bool _cleanedUp;
-        private volatile TaskCompletionSource<object> _closeReceivedTaskCompletionSource;
+        private volatile TaskCompletionSource _closeReceivedTaskCompletionSource;
         private volatile Task _closeOutputTask;
         private volatile bool _isDisposed;
         private volatile Task _closeNetworkConnectionTask;
@@ -747,10 +747,7 @@ namespace System.Net.WebSockets
                         closeOutputTask = _closeOutputTask;
                         if (closeOutputTask == null && State != WebSocketState.CloseSent)
                         {
-                            if (_closeReceivedTaskCompletionSource == null)
-                            {
-                                _closeReceivedTaskCompletionSource = new TaskCompletionSource<object>();
-                            }
+                            _closeReceivedTaskCompletionSource ??= new TaskCompletionSource();
 
                             closeOutputTask = CloseOutputAsync(closeStatus,
                                 statusDescription,
@@ -759,8 +756,7 @@ namespace System.Net.WebSockets
                     }
                     else
                     {
-                        Debug.Assert(_closeReceivedTaskCompletionSource != null,
-                            "'_closeReceivedTaskCompletionSource' MUST NOT be NULL.");
+                        Debug.Assert(_closeReceivedTaskCompletionSource != null, "'_closeReceivedTaskCompletionSource' MUST NOT be NULL.");
                         closeOutputTask = _closeReceivedTaskCompletionSource.Task;
                     }
 
@@ -1394,11 +1390,7 @@ namespace System.Net.WebSockets
             if (State == WebSocketState.Open)
             {
                 _state = WebSocketState.CloseReceived;
-
-                if (_closeReceivedTaskCompletionSource == null)
-                {
-                    _closeReceivedTaskCompletionSource = new TaskCompletionSource<object>();
-                }
+                _closeReceivedTaskCompletionSource ??= new TaskCompletionSource();
 
                 return false;
             }
@@ -1409,10 +1401,7 @@ namespace System.Net.WebSockets
         private void FinishOnCloseReceived(WebSocketCloseStatus closeStatus,
             string closeStatusDescription)
         {
-            if (_closeReceivedTaskCompletionSource != null)
-            {
-                _closeReceivedTaskCompletionSource.TrySetResult(null);
-            }
+            _closeReceivedTaskCompletionSource?.TrySetResult();
 
             _closeStatus = closeStatus;
             _closeStatusDescription = closeStatusDescription;

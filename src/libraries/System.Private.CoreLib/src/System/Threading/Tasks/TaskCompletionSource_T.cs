@@ -7,14 +7,14 @@ using System.Collections.Generic;
 namespace System.Threading.Tasks
 {
     /// <summary>
-    /// Represents the producer side of a <see cref="Tasks.Task"/> unbound to a
-    /// delegate, providing access to the consumer side through the <see cref="Tasks.Task"/> property.
+    /// Represents the producer side of a <see cref="Task{TResult}"/> unbound to a
+    /// delegate, providing access to the consumer side through the <see cref="Task"/> property.
     /// </summary>
     /// <remarks>
     /// <para>
-    /// It is often the case that a <see cref="Tasks.Task"/> is desired to
+    /// It is often the case that a <see cref="Task{TResult}"/> is desired to
     /// represent another asynchronous operation.
-    /// <see cref="TaskCompletionSource">TaskCompletionSource</see> is provided for this purpose. It enables
+    /// <see cref="TaskCompletionSource{TResult}">TaskCompletionSource</see> is provided for this purpose. It enables
     /// the creation of a task that can be handed out to consumers, and those consumers can use the members
     /// of the task as they would any other. However, unlike most tasks, the state of a task created by a
     /// TaskCompletionSource is controlled explicitly by the methods on TaskCompletionSource. This enables the
@@ -23,64 +23,63 @@ namespace System.Threading.Tasks
     /// corresponding TaskCompletionSource.
     /// </para>
     /// <para>
-    /// All members of <see cref="TaskCompletionSource"/> are thread-safe
+    /// All members of <see cref="TaskCompletionSource{TResult}"/> are thread-safe
     /// and may be used from multiple threads concurrently.
     /// </para>
     /// </remarks>
-    public class TaskCompletionSource
+    /// <typeparam name="TResult">The type of the result value associated with this <see
+    /// cref="TaskCompletionSource{TResult}"/>.</typeparam>
+    public class TaskCompletionSource<TResult>
     {
-        private readonly Task _task;
+        private readonly Task<TResult> _task;
 
-        /// <summary>Creates a <see cref="TaskCompletionSource"/>.</summary>
-        public TaskCompletionSource() => _task = new Task();
+        /// <summary>Creates a <see cref="TaskCompletionSource{TResult}"/>.</summary>
+        public TaskCompletionSource() => _task = new Task<TResult>();
 
-        /// <summary>Creates a <see cref="TaskCompletionSource"/> with the specified options.</summary>
+        /// <summary>Creates a <see cref="TaskCompletionSource{TResult}"/> with the specified options.</summary>
         /// <remarks>
-        /// The <see cref="Tasks.Task"/> created by this instance and accessible through its <see cref="Task"/> property
+        /// The <see cref="Task{TResult}"/> created by this instance and accessible through its <see cref="Task"/> property
         /// will be instantiated using the specified <paramref name="creationOptions"/>.
         /// </remarks>
-        /// <param name="creationOptions">The options to use when creating the underlying <see cref="Tasks.Task"/>.</param>
+        /// <param name="creationOptions">The options to use when creating the underlying <see cref="Task{TResult}"/>.</param>
         /// <exception cref="ArgumentOutOfRangeException">
         /// The <paramref name="creationOptions"/> represent options invalid for use
-        /// with a <see cref="TaskCompletionSource"/>.
+        /// with a <see cref="TaskCompletionSource{TResult}"/>.
         /// </exception>
         public TaskCompletionSource(TaskCreationOptions creationOptions) :
             this(null, creationOptions)
         {
         }
 
-        /// <summary>Creates a <see cref="TaskCompletionSource"/> with the specified state.</summary>
+        /// <summary>Creates a <see cref="TaskCompletionSource{TResult}"/> with the specified state.</summary>
         /// <param name="state">The state to use as the underlying
-        /// <see cref="Tasks.Task"/>'s AsyncState.</param>
+        /// <see cref="Task{TResult}"/>'s AsyncState.</param>
         public TaskCompletionSource(object? state) :
             this(state, TaskCreationOptions.None)
         {
         }
 
-        /// <summary>Creates a <see cref="TaskCompletionSource"/> with the specified state and options.</summary>
-        /// <param name="creationOptions">The options to use when creating the underlying <see cref="Tasks.Task"/>.</param>
-        /// <param name="state">The state to use as the underlying <see cref="Tasks.Task"/>'s AsyncState.</param>
-        /// <exception cref="ArgumentOutOfRangeException">The <paramref name="creationOptions"/> represent options invalid for use with a <see cref="TaskCompletionSource"/>.</exception>
+        /// <summary>Creates a <see cref="TaskCompletionSource{TResult}"/> with the specified state and options.</summary>
+        /// <param name="creationOptions">The options to use when creating the underlying <see cref="Task{TResult}"/>.</param>
+        /// <param name="state">The state to use as the underlying <see cref="Task{TResult}"/>'s AsyncState.</param>
+        /// <exception cref="ArgumentOutOfRangeException">The <paramref name="creationOptions"/> represent options invalid for use with a <see cref="TaskCompletionSource{TResult}"/>.</exception>
         public TaskCompletionSource(object? state, TaskCreationOptions creationOptions) =>
-            _task = new Task(state, creationOptions, promiseStyle: true);
+            _task = new Task<TResult>(state, creationOptions);
 
-        /// <summary>
-        /// Gets the <see cref="Tasks.Task"/> created
-        /// by this <see cref="TaskCompletionSource"/>.
-        /// </summary>
+        /// <summary>Gets the <see cref="Task{TResult}"/> created by this <see cref="TaskCompletionSource{TResult}"/>.</summary>
         /// <remarks>
-        /// This property enables a consumer access to the <see cref="Task"/> that is controlled by this instance.
+        /// This property enables a consumer access to the <see cref="Task{TResult}"/> that is controlled by this instance.
         /// The <see cref="SetResult"/>, <see cref="SetException(Exception)"/>, <see cref="SetException(IEnumerable{Exception})"/>,
         /// and <see cref="SetCanceled"/> methods (and their "Try" variants) on this instance all result in the relevant state
         /// transitions on this underlying Task.
         /// </remarks>
-        public Task Task => _task;
+        public Task<TResult> Task => _task;
 
-        /// <summary>Transitions the underlying <see cref="Tasks.Task"/> into the <see cref="TaskStatus.Faulted"/> state.</summary>
-        /// <param name="exception">The exception to bind to this <see cref="Tasks.Task"/>.</param>
+        /// <summary>Transitions the underlying <see cref="Task{TResult}"/> into the <see cref="TaskStatus.Faulted"/> state.</summary>
+        /// <param name="exception">The exception to bind to this <see cref="Task{TResult}"/>.</param>
         /// <exception cref="ArgumentNullException">The <paramref name="exception"/> argument is null.</exception>
         /// <exception cref="InvalidOperationException">
-        /// The underlying <see cref="Tasks.Task"/> is already in one of the three final states:
+        /// The underlying <see cref="Task{TResult}"/> is already in one of the three final states:
         /// <see cref="TaskStatus.RanToCompletion"/>,
         /// <see cref="TaskStatus.Faulted"/>, or
         /// <see cref="TaskStatus.Canceled"/>.
@@ -93,12 +92,12 @@ namespace System.Threading.Tasks
             }
         }
 
-        /// <summary>Transitions the underlying <see cref="Tasks.Task"/> into the <see cref="TaskStatus.Faulted"/> state.</summary>
-        /// <param name="exceptions">The collection of exceptions to bind to this <see cref="Tasks.Task"/>.</param>
+        /// <summary>Transitions the underlying <see cref="Task{TResult}"/> into the <see cref="TaskStatus.Faulted"/> state.</summary>
+        /// <param name="exceptions">The collection of exceptions to bind to this <see cref="Task{TResult}"/>.</param>
         /// <exception cref="ArgumentNullException">The <paramref name="exceptions"/> argument is null.</exception>
         /// <exception cref="ArgumentException">There are one or more null elements in <paramref name="exceptions"/>.</exception>
         /// <exception cref="InvalidOperationException">
-        /// The underlying <see cref="Tasks.Task"/> is already in one of the three final states:
+        /// The underlying <see cref="Task{TResult}"/> is already in one of the three final states:
         /// <see cref="TaskStatus.RanToCompletion"/>,
         /// <see cref="TaskStatus.Faulted"/>, or
         /// <see cref="TaskStatus.Canceled"/>.
@@ -112,12 +111,12 @@ namespace System.Threading.Tasks
         }
 
         /// <summary>
-        /// Attempts to transition the underlying <see cref="Tasks.Task"/> into the <see cref="TaskStatus.Faulted"/> state.
+        /// Attempts to transition the underlying <see cref="Task{TResult}"/> into the <see cref="TaskStatus.Faulted"/> state.
         /// </summary>
-        /// <param name="exception">The exception to bind to this <see cref="Tasks.Task"/>.</param>
+        /// <param name="exception">The exception to bind to this <see cref="Task{TResult}"/>.</param>
         /// <returns>True if the operation was successful; otherwise, false.</returns>
         /// <remarks>
-        /// This operation will return false if the <see cref="Tasks.Task"/> is already in one of the three final states:
+        /// This operation will return false if the <see cref="Task{TResult}"/> is already in one of the three final states:
         /// <see cref="TaskStatus.RanToCompletion"/>,
         /// <see cref="TaskStatus.Faulted"/>, or
         /// <see cref="TaskStatus.Canceled"/>.
@@ -140,12 +139,12 @@ namespace System.Threading.Tasks
         }
 
         /// <summary>
-        /// Attempts to transition the underlying <see cref="Tasks.Task"/> into the <see cref="TaskStatus.Faulted"/> state.
+        /// Attempts to transition the underlying <see cref="Task{TResult}"/> into the <see cref="TaskStatus.Faulted"/> state.
         /// </summary>
-        /// <param name="exceptions">The collection of exceptions to bind to this <see cref="Tasks.Task"/>.</param>
+        /// <param name="exceptions">The collection of exceptions to bind to this <see cref="Task{TResult}"/>.</param>
         /// <returns>True if the operation was successful; otherwise, false.</returns>
         /// <remarks>
-        /// This operation will return false if the <see cref="Tasks.Task"/> is already in one of the three final states:
+        /// This operation will return false if the <see cref="Task{TResult}"/> is already in one of the three final states:
         /// <see cref="TaskStatus.RanToCompletion"/>,
         /// <see cref="TaskStatus.Faulted"/>, or
         /// <see cref="TaskStatus.Canceled"/>.
@@ -186,35 +185,37 @@ namespace System.Threading.Tasks
         }
 
         /// <summary>
-        /// Transitions the underlying <see cref="Tasks.Task"/> into the <see cref="TaskStatus.RanToCompletion"/> state.
+        /// Transitions the underlying <see cref="Task{TResult}"/> into the <see cref="TaskStatus.RanToCompletion"/> state.
         /// </summary>
+        /// <param name="result">The result value to bind to this <see cref="Task{TResult}"/>.</param>
         /// <exception cref="InvalidOperationException">
-        /// The underlying <see cref="Tasks.Task"/> is already in one of the three final states:
+        /// The underlying <see cref="Task{TResult}"/> is already in one of the three final states:
         /// <see cref="TaskStatus.RanToCompletion"/>,
         /// <see cref="TaskStatus.Faulted"/>, or
         /// <see cref="TaskStatus.Canceled"/>.
         /// </exception>
-        public void SetResult()
+        public void SetResult(TResult result)
         {
-            if (!TrySetResult())
+            if (!TrySetResult(result))
             {
                 ThrowHelper.ThrowInvalidOperationException(ExceptionResource.TaskT_TransitionToFinal_AlreadyCompleted);
             }
         }
 
         /// <summary>
-        /// Attempts to transition the underlying <see cref="Tasks.Task"/> into the <see cref="TaskStatus.RanToCompletion"/> state.
+        /// Attempts to transition the underlying <see cref="Task{TResult}"/> into the <see cref="TaskStatus.RanToCompletion"/> state.
         /// </summary>
+        /// <param name="result">The result value to bind to this <see cref="Task{TResult}"/>.</param>
         /// <returns>True if the operation was successful; otherwise, false.</returns>
         /// <remarks>
-        /// This operation will return false if the <see cref="Tasks.Task"/> is already in one of the three final states:
+        /// This operation will return false if the <see cref="Task{TResult}"/> is already in one of the three final states:
         /// <see cref="TaskStatus.RanToCompletion"/>,
         /// <see cref="TaskStatus.Faulted"/>, or
         /// <see cref="TaskStatus.Canceled"/>.
         /// </remarks>
-        public bool TrySetResult()
+        public bool TrySetResult(TResult result)
         {
-            bool rval = _task.TrySetResult();
+            bool rval = _task.TrySetResult(result);
             if (!rval)
             {
                 _task.SpinUntilCompleted();
@@ -224,10 +225,10 @@ namespace System.Threading.Tasks
         }
 
         /// <summary>
-        /// Transitions the underlying <see cref="Tasks.Task"/> into the <see cref="TaskStatus.Canceled"/> state.
+        /// Transitions the underlying <see cref="Task{TResult}"/> into the <see cref="TaskStatus.Canceled"/> state.
         /// </summary>
         /// <exception cref="InvalidOperationException">
-        /// The underlying <see cref="Tasks.Task"/> is already in one of the three final states:
+        /// The underlying <see cref="Task{TResult}"/> is already in one of the three final states:
         /// <see cref="TaskStatus.RanToCompletion"/>,
         /// <see cref="TaskStatus.Faulted"/>, or
         /// <see cref="TaskStatus.Canceled"/>.
@@ -235,12 +236,12 @@ namespace System.Threading.Tasks
         public void SetCanceled() => SetCanceled(default);
 
         /// <summary>
-        /// Transitions the underlying <see cref="Tasks.Task"/> into the <see cref="TaskStatus.Canceled"/> state
+        /// Transitions the underlying <see cref="Task{TResult}"/> into the <see cref="TaskStatus.Canceled"/> state
         /// using the specified token.
         /// </summary>
-        /// <param name="cancellationToken">The cancellation token with which to cancel the <see cref="Tasks.Task"/>.</param>
+        /// <param name="cancellationToken">The cancellation token with which to cancel the <see cref="Task{TResult}"/>.</param>
         /// <exception cref="InvalidOperationException">
-        /// The underlying <see cref="Tasks.Task"/> is already in one of the three final states:
+        /// The underlying <see cref="Task{TResult}"/> is already in one of the three final states:
         /// <see cref="TaskStatus.RanToCompletion"/>,
         /// <see cref="TaskStatus.Faulted"/>, or
         /// <see cref="TaskStatus.Canceled"/>.
@@ -254,11 +255,11 @@ namespace System.Threading.Tasks
         }
 
         /// <summary>
-        /// Attempts to transition the underlying <see cref="Tasks.Task"/> into the <see cref="TaskStatus.Canceled"/> state.
+        /// Attempts to transition the underlying <see cref="Task{TResult}"/> into the <see cref="TaskStatus.Canceled"/> state.
         /// </summary>
         /// <returns>True if the operation was successful; otherwise, false.</returns>
         /// <remarks>
-        /// This operation will return false if the <see cref="Tasks.Task"/> is already in one of the three final states:
+        /// This operation will return false if the <see cref="Task{TResult}"/> is already in one of the three final states:
         /// <see cref="TaskStatus.RanToCompletion"/>,
         /// <see cref="TaskStatus.Faulted"/>, or
         /// <see cref="TaskStatus.Canceled"/>.
@@ -266,12 +267,12 @@ namespace System.Threading.Tasks
         public bool TrySetCanceled() => TrySetCanceled(default);
 
         /// <summary>
-        /// Attempts to transition the underlying <see cref="Tasks.Task"/> into the <see cref="TaskStatus.Canceled"/> state.
+        /// Attempts to transition the underlying <see cref="Task{TResult}"/> into the <see cref="TaskStatus.Canceled"/> state.
         /// </summary>
-        /// <param name="cancellationToken">The cancellation token with which to cancel the <see cref="Tasks.Task"/>.</param>
+        /// <param name="cancellationToken">The cancellation token with which to cancel the <see cref="Task{TResult}"/>.</param>
         /// <returns>True if the operation was successful; otherwise, false.</returns>
         /// <remarks>
-        /// This operation will return false if the <see cref="Tasks.Task"/> is already in one of the three final states:
+        /// This operation will return false if the <see cref="Task{TResult}"/> is already in one of the three final states:
         /// <see cref="TaskStatus.RanToCompletion"/>,
         /// <see cref="TaskStatus.Faulted"/>, or
         /// <see cref="TaskStatus.Canceled"/>.
