@@ -20,6 +20,7 @@ namespace Internal.Runtime.InteropServices
         /// <param name="assemblyPath">The path to the assembly (as a pointer to a UTF-16 C string).</param>
         public static unsafe void LoadInMemoryAssembly(IntPtr moduleHandle, IntPtr assemblyPath)
         {
+#if TARGET_WINDOWS
             string? assemblyPathString = Marshal.PtrToStringUni(assemblyPath);
             if (assemblyPathString == null)
             {
@@ -30,6 +31,9 @@ namespace Internal.Runtime.InteropServices
             // (the load process rewrites the stubs that call here to call the actual methods they're supposed to)
             AssemblyLoadContext context = new IsolatedComponentLoadContext(assemblyPathString);
             context.LoadFromInMemoryModule(moduleHandle);
+#else
+            throw new PlatformNotSupportedException();
+#endif
         }
     }
 }
