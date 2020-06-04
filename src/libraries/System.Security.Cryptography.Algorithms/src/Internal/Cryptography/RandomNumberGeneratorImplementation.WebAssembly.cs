@@ -19,7 +19,7 @@ namespace System.Security.Cryptography
             int res = s_randomStream.Read(span);
             if (res != count)
             {
-                throw Interop.Crypto.CreateOpenSslCryptographicException();
+                throw new CryptographicException();
             }
         }
     }
