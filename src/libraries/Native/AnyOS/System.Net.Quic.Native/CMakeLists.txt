@@ -80,5 +80,5 @@ target_link_libraries(System.Net.Quic.Native
 install (TARGETS System.Net.Quic.Native DESTINATION .)
 
 if ("${CMAKE_HOST_SYSTEM_NAME}" STREQUAL "Windows")
-    install (FILES ${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_BUILD_TYPE}/System.Net.Quic.Native.pdb DESTINATION .)
+    install(FILES $<TARGET_PDB_FILE:System.Net.Quic.Native> DESTINATION . OPTIONAL)
 endif()
