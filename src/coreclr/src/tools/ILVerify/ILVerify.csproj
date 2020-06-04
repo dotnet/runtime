@@ -2,12 +2,10 @@
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <TargetFramework>netcoreapp3.1</TargetFramework>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
 
-  <ItemGroup>
-    <PackageReference Include="System.CommandLine" Version="$(SystemCommandLineVersion)" />
-    <ProjectReference Include="..\ILVerification\ILVerification.csproj" />
-  </ItemGroup>
+  <Import Project="..\ILVerification\ILVerification.projitems" />
 
   <ItemGroup>
     <Compile Include="..\Common\CommandLine\CommandLineException.cs">
@@ -17,4 +15,9 @@
       <Link>CommandLine\CommandLineHelpers.cs</Link>
     </Compile>
   </ItemGroup>  
+
+  <ItemGroup>
+    <PackageReference Include="System.CommandLine" Version="$(SystemCommandLineVersion)" />
+    <PackageReference Include="System.Reflection.Metadata" Version="1.8.0" />
+  </ItemGroup>
 </Project>
