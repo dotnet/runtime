@@ -426,7 +426,7 @@ namespace System.Net.Http
                 throw error!;
             }
 
-            // Register for cancellation and trear down the underlying stream in case of cancellation/timeout.
+            // Register for cancellation and tear down the underlying stream in case of cancellation/timeout.
             CancellationTokenRegistration cancellationRegistration = cancellationToken.Register(swr =>
             {
                 var streamWeakRef = (WeakReference<MemoryStream>)swr!;

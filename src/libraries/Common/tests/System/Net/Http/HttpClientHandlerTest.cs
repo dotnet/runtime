@@ -1950,13 +1950,13 @@ namespace System.Net.Http.Functional.Tests
 
         public static IEnumerable<object[]> Interim1xxStatusCode()
         {
-            yield return new object[] { (HttpStatusCode)100 };  // 100 Continue.
+            yield return new object[] { (HttpStatusCode) 100 }; // 100 Continue.
             // 101 SwitchingProtocols will be treated as a final status code.
-            yield return new object[] { (HttpStatusCode)102 }; // 102 Processing.
-            yield return new object[] { (HttpStatusCode)103 }; // 103 EarlyHints.
-            yield return new object[] { (HttpStatusCode)150 };
-            yield return new object[] { (HttpStatusCode)180 };
-            yield return new object[] { (HttpStatusCode)199 };
+            yield return new object[] { (HttpStatusCode) 102 }; // 102 Processing.
+            yield return new object[] { (HttpStatusCode) 103 }; // 103 EarlyHints.
+            yield return new object[] { (HttpStatusCode) 150 };
+            yield return new object[] { (HttpStatusCode) 180 };
+            yield return new object[] { (HttpStatusCode) 199 };
         }
 
         [Theory]
