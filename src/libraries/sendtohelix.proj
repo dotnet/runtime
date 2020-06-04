@@ -35,8 +35,9 @@
     <IncludeDotNetCli>true</IncludeDotNetCli>
     <DotNetCliPackageType>sdk</DotNetCliPackageType>
     <DotNetCliVersion>3.1.201</DotNetCliVersion>
-    <HelixPreCommands>"$HELIX_CORRELATION_PAYLOAD"/dotnet/dotnet tool install --tool-path "$HELIX_CORRELATION_PAYLOAD"/xharness-cli --version $(MicrosoftDotNetXHarnessTestRunnersXunitVersion) --add-source https://dnceng.pkgs.visualstudio.com/public/_packaging/dotnet-eng/nuget/v3/index.json Microsoft.DotNet.XHarness.CLI;</HelixPreCommands>
-    <HelixPreCommands>$(HelixPreCommands) export DOTNET_ROOT="$HELIX_CORRELATION_PAYLOAD"/dotnet; export PATH="$HELIX_CORRELATION_PAYLOAD"/xharness-cli:$PATH</HelixPreCommands>
+    <HelixPreCommands>$(HelixPreCommands) "$HELIX_CORRELATION_PAYLOAD"/dotnet/dotnet tool install --tool-path "$HELIX_CORRELATION_PAYLOAD"/xharness-cli --version $(MicrosoftDotNetXHarnessTestRunnersXunitVersion) --add-source https://dnceng.pkgs.visualstudio.com/public/_packaging/dotnet-eng/nuget/v3/index.json Microsoft.DotNet.XHarness.CLI;</HelixPreCommands>
+    <HelixPreCommands>$(HelixPreCommands) export DOTNET_ROOT="$HELIX_CORRELATION_PAYLOAD"/dotnet;</HelixPreCommands>
+    <HelixPreCommands>$(HelixPreCommands) export PATH="$HELIX_CORRELATION_PAYLOAD"/xharness-cli:$PATH</HelixPreCommands>
     <HelixCommand Condition="'$(TargetOS)' == 'iOS'">sudo launchctl asuser `id -u` sh ./RunTests.sh</HelixCommand>
   </PropertyGroup>
 
