@@ -251,6 +251,67 @@ void GetExceptionMessage(OBJECTREF throwable, SString &result)
         pString->GetSString(result);
 } // void GetExceptionMessage()
 
+#if FEATURE_COMINTEROP
+// This method returns IRestrictedErrorInfo associated with the ErrorObject.
+// It checks whether the given managed exception object has __HasRestrictedLanguageErrorObject set
+// in which case it returns the IRestrictedErrorInfo associated with the __RestrictedErrorObject.
+IRestrictedErrorInfo* GetRestrictedErrorInfoFromErrorObject(OBJECTREF throwable)
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_COOPERATIVE;
+        INJECT_FAULT(ThrowOutOfMemory());
+    }
+    CONTRACTL_END;
+
+    IRestrictedErrorInfo* pRestrictedErrorInfo = NULL;
+
+    // If there is no object, there is no restricted error.
+    if (throwable == NULL)
+        return NULL;
+
+    _ASSERTE(IsException(throwable->GetMethodTable()));        // what is the pathway here?
+    if (!IsException(throwable->GetMethodTable()))
+    {
+        return NULL;
+    }
+
+    struct _gc {
+        OBJECTREF Throwable;
+        OBJECTREF RestrictedErrorInfoObjRef;
+    } gc;
+
+    ZeroMemory(&gc, sizeof(gc));
+    GCPROTECT_BEGIN(gc);
+
+    gc.Throwable = throwable;
+
+    // Get the MethodDesc on which we'll call.
+    MethodDescCallSite getRestrictedLanguageErrorObject(METHOD__EXCEPTION__TRY_GET_RESTRICTED_LANGUAGE_ERROR_OBJECT, &gc.Throwable);
+
+    // Make the call.
+    ARG_SLOT Args[] =
+    {
+        ObjToArgSlot(gc.Throwable),
+        PtrToArgSlot(&gc.RestrictedErrorInfoObjRef)
+    };
+
+    BOOL bHasLanguageRestrictedErrorObject = (BOOL)getRestrictedLanguageErrorObject.Call_RetBool(Args);
+
+    if(bHasLanguageRestrictedErrorObject)
+    {
+        // The __RestrictedErrorObject represents IRestrictedErrorInfo RCW of a non-CLR platform. Lets get the corresponding IRestrictedErrorInfo for it.
+        pRestrictedErrorInfo = (IRestrictedErrorInfo *)GetComIPFromObjectRef(&gc.RestrictedErrorInfoObjRef, IID_IRestrictedErrorInfo);
+    }
+
+    GCPROTECT_END();
+
+    return pRestrictedErrorInfo;
+}
+#endif
+
 STRINGREF GetExceptionMessage(OBJECTREF throwable)
 {
     CONTRACTL
@@ -2985,9 +3046,22 @@ void FreeExceptionData(ExceptionData *pedata)
         SysFreeString(pedata->bstrDescription);
     if (pedata->bstrHelpFile)
         SysFreeString(pedata->bstrHelpFile);
+#ifdef FEATURE_COMINTEROP
+    if (pedata->bstrRestrictedError)
+        SysFreeString(pedata->bstrRestrictedError);
+    if (pedata->bstrReference)
+        SysFreeString(pedata->bstrReference);
+    if (pedata->bstrCapabilitySid)
+        SysFreeString(pedata->bstrCapabilitySid);
+    if (pedata->pRestrictedErrorInfo)
+    {
+        ULONG cbRef = SafeRelease(pedata->pRestrictedErrorInfo);
+        LogInteropRelease(pedata->pRestrictedErrorInfo, cbRef, "IRestrictedErrorInfo");
+    }
+#endif // FEATURE_COMINTEROP
 }
 
-void GetExceptionForHR(HRESULT hr, IErrorInfo* pErrInfo, OBJECTREF* pProtectedThrowable)
+void GetExceptionForHR(HRESULT hr, IErrorInfo* pErrInfo, bool fUseCOMException, OBJECTREF* pProtectedThrowable, IRestrictedErrorInfo *pResErrorInfo, BOOL bHasLangRestrictedErrInfo)
 {
     CONTRACTL
     {
@@ -3031,7 +3105,7 @@ void GetExceptionForHR(HRESULT hr, IErrorInfo* pErrInfo, OBJECTREF* pProtectedTh
         // the native IErrorInfo.
         if ((*pProtectedThrowable) == NULL)
         {
-            EECOMException ex(hr, pErrInfo COMMA_INDEBUG(FALSE));
+            EECOMException ex(hr, pErrInfo, fUseCOMException, pResErrorInfo, bHasLangRestrictedErrInfo COMMA_INDEBUG(FALSE));
             (*pProtectedThrowable) = ex.GetThrowable();
         }
     }
@@ -3041,9 +3115,16 @@ void GetExceptionForHR(HRESULT hr, IErrorInfo* pErrInfo, OBJECTREF* pProtectedTh
     // so we'll create an exception based solely on the hresult.
     if ((*pProtectedThrowable) == NULL)
     {
-        EEMessageException ex(hr);
+        EEMessageException ex(hr, fUseCOMException);
         (*pProtectedThrowable) = ex.GetThrowable();
     }
+}
+
+void GetExceptionForHR(HRESULT hr, IErrorInfo* pErrInfo, OBJECTREF* pProtectedThrowable)
+{
+    WRAPPER_NO_CONTRACT;
+
+    GetExceptionForHR(hr, pErrInfo, true, pProtectedThrowable);
 }
 
 void GetExceptionForHR(HRESULT hr, OBJECTREF* pProtectedThrowable)
@@ -3063,7 +3144,7 @@ void GetExceptionForHR(HRESULT hr, OBJECTREF* pProtectedThrowable)
         pErrInfo = NULL;
 #endif
 
-    GetExceptionForHR(hr, pErrInfo, pProtectedThrowable);
+    GetExceptionForHR(hr, pErrInfo, true, pProtectedThrowable);
 }
 
 
@@ -4034,7 +4115,7 @@ LONG WatsonLastChance(                  // EXCEPTION_CONTINUE_SEARCH, _CONTINUE_
 // Crash dump generating program arguments if enabled.
 LPCWSTR g_createDumpCommandLine = nullptr;
 
-static void
+static void 
 BuildCreateDumpCommandLine(
     SString& commandLine,
     LPCWSTR dumpName,
@@ -6736,7 +6817,7 @@ AdjustContextForJITHelpers(
         SetSP(pContext, PCODE((BYTE*)GetSP(pContext) + sizeof(void*)));
     }
 
-    if ((f_IP >= (void *) JIT_StackProbe) && (f_IP <= (void *) JIT_StackProbe_End))
+    if ((f_IP >= (void *) JIT_StackProbe) && (f_IP <= (void *) JIT_StackProbe_End)) 
     {
         TADDR ebp = GetFP(pContext);
         void* callsite = (void *)*dac_cast<PTR_PCODE>(ebp + 4);
@@ -11651,11 +11732,11 @@ VOID DECLSPEC_NORETURN RealCOMPlusThrowHR(HRESULT hr, IErrorInfo* pErrInfo, Exce
     {
         if (pInnerException == NULL)
         {
-            EX_THROW(EECOMException, (hr, pErrInfo));
+            EX_THROW(EECOMException, (hr, pErrInfo, true, NULL, FALSE));
         }
         else
         {
-            EX_THROW_WITH_INNER(EECOMException, (hr, pErrInfo), pInnerException);
+            EX_THROW_WITH_INNER(EECOMException, (hr, pErrInfo, true, NULL, FALSE), pInnerException);
         }
     }
     else

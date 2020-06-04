@@ -12,7 +12,7 @@
 #ifndef __MDInternalRO__h__
 #define __MDInternalRO__h__
 
-#include "metamodel.h"
+#include "winmdinterfaces.h"
 
 #ifdef FEATURE_METADATA_INTERNAL_APIS
 

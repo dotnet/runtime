@@ -127,6 +127,10 @@ namespace BINDER_SPACE
         {
             SetContentType(AssemblyContentType_Default);
         }
+        else if (IsAfContentType_WindowsRuntime(dwRefOrDefFlags))
+        {
+            SetContentType(AssemblyContentType_WindowsRuntime);
+        }
         else
         {
             IF_FAIL_GO(FUSION_E_INVALID_NAME);

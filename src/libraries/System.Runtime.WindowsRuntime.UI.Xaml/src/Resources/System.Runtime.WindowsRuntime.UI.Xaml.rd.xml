@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<Directives xmlns="http://schemas.microsoft.com/netfx/2013/01/metadata">
+  <Library Name="System.Runtime.WindowsRuntime.UI.Xaml">
+    <!-- System.Private.Interop will create the following type through reflection, see GetMappingExceptionForHR for more info-->
+    <Type Name="Windows.UI.Xaml.Markup.XamlParseException" Dynamic="Required Public" />
+    <Type Name="Windows.UI.Xaml.Automation.ElementNotAvailableException" Dynamic="Required Public" />
+    <Type Name="Windows.UI.Xaml.Automation.ElementNotEnabledException" Dynamic="Required Public" />
+    <Type Name="Windows.UI.Xaml.LayoutCycleException" Dynamic="Required Public" />
+  </Library>
+</Directives>

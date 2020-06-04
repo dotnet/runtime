@@ -16,6 +16,12 @@
 #include "class.h"
 #include "typehandle.h"
 
+// To work around a warning about redefining "TypeName" include the file
+// that defines Windows.UI.Xaml.Interop.TypeName now.
+#ifdef FEATURE_COMINTEROP
+#include <windows.ui.xaml.interop.h>
+#endif
+
 //#define TYPE_NAME_RESERVED_CHAR W(",[]&*+\\")
 
 bool inline IsTypeNameReservedChar(WCHAR ch)
@@ -43,7 +49,8 @@ DomainAssembly * LoadDomainAssembly(
     SString *  psszAssemblySpec,
     Assembly * pRequestingAssembly,
     ICLRPrivBinder * pPrivHostBinder,
-    BOOL       bThrowIfNotFound);
+    BOOL       bThrowIfNotFound,
+    SString *  pssOuterTypeName);
 
 class TypeName
 {
@@ -330,6 +337,7 @@ public:
         BOOL bIgnoreCase,
         BOOL bProhibitAssemblyQualifiedName,
         Assembly* pRequestingAssembly,
+        BOOL bLoadTypeFromPartialNameHack,
         OBJECTREF *pKeepAlive,
         ICLRPrivBinder * pPrivHostBinder = nullptr);
 
@@ -395,6 +403,7 @@ private:
 
         Assembly* pRequestingAssembly,
         ICLRPrivBinder * pPrivHostBinder,
+        BOOL bLoadTypeFromPartialNameHack,
         OBJECTREF *pKeepAlive);
 
     //----------------------------------------------------------------------------------------------------------------

@@ -1710,28 +1710,31 @@ TypeHandle MethodTable::SetupCoClassForInterface()
     const BYTE *pVal = NULL;
     ULONG cbVal = 0;
 
-    HRESULT hr = GetCustomAttribute(WellKnownAttribute::CoClass, (const void **)&pVal, &cbVal);
-    if (hr == S_OK)
+    if (!IsProjectedFromWinRT()) // ignore classic COM interop CA on WinRT types
     {
-        CustomAttributeParser cap(pVal, cbVal);
+        HRESULT hr = GetCustomAttribute(WellKnownAttribute::CoClass, (const void **)&pVal, &cbVal);
+        if (hr == S_OK)
+        {
+            CustomAttributeParser cap(pVal, cbVal);
 
-        IfFailThrow(cap.SkipProlog());
+            IfFailThrow(cap.SkipProlog());
 
-        // Retrieve the COM source interface class name.
-        ULONG       cbName;
-        LPCUTF8     szName;
-        IfFailThrow(cap.GetNonNullString(&szName, &cbName));
+            // Retrieve the COM source interface class name.
+            ULONG       cbName;
+            LPCUTF8     szName;
+            IfFailThrow(cap.GetNonNullString(&szName, &cbName));
 
-        // Copy the name to a temporary buffer and NULL terminate it.
-        StackSString ss(SString::Utf8, szName, cbName);
+            // Copy the name to a temporary buffer and NULL terminate it.
+            StackSString ss(SString::Utf8, szName, cbName);
 
-        // Try to load the class using its name as a fully qualified name. If that fails,
-        // then we try to load it in the assembly of the current class.
-        CoClassType = TypeName::GetTypeUsingCASearchRules(ss.GetUnicode(), GetAssembly());
+            // Try to load the class using its name as a fully qualified name. If that fails,
+            // then we try to load it in the assembly of the current class.
+            CoClassType = TypeName::GetTypeUsingCASearchRules(ss.GetUnicode(), GetAssembly());
 
-        // Cache the coclass type
-        g_IBCLogger.LogEEClassCOWTableAccess(this);
-        GetClass_NoLogging()->SetCoClassForInterface(CoClassType);
+            // Cache the coclass type
+            g_IBCLogger.LogEEClassCOWTableAccess(this);
+            GetClass_NoLogging()->SetCoClassForInterface(CoClassType);
+        }
     }
     return CoClassType;
 }
@@ -2080,19 +2083,22 @@ CorIfaceAttr MethodTable::GetComInterfaceType()
     if (ItfType != (CorIfaceAttr)-1)
         return ItfType;
 
-    // Retrieve the interface type from the metadata.
-    HRESULT hr = GetMDImport()->GetIfaceTypeOfTypeDef(GetCl(), (ULONG*)&ItfType);
-    IfFailThrow(hr);
-
-    if (hr != S_OK)
+    if (IsProjectedFromWinRT())
     {
-        // if not found in metadata, use the default
-        ItfType = ifDual;
+        // WinRT interfaces are always IInspectable-based
+        ItfType = ifInspectable;
     }
-
-    if (ItfType == ifInspectable)
+    else
     {
-        COMPlusThrow(kPlatformNotSupportedException, IDS_EE_NO_IINSPECTABLE);
+        // Retrieve the interface type from the metadata.
+        HRESULT hr = GetMDImport()->GetIfaceTypeOfTypeDef(GetCl(), (ULONG*)&ItfType);
+        IfFailThrow(hr);
+
+        if (hr != S_OK)
+        {
+            // if not found in metadata, use the default
+            ItfType = ifDual;
+        }
     }
 
     // Cache the interface type
@@ -2439,7 +2445,7 @@ CorClassIfaceAttr MethodTable::GetComClassInterfaceType()
     if (HasGenericClassInstantiationInHierarchy())
         return clsIfNone;
 
-    // If the class does not support IClassX,
+    // If the class does not support IClassX because it derives from or implements WinRT types,
     // then it is considered ClassInterfaceType.None unless explicitly overriden by the CA
     if (!ClassSupportsIClassX(this))
         return clsIfNone;
@@ -2810,20 +2816,41 @@ void EEClass::Save(DataImage *image, MethodTable *pMT)
 
     if (pMT->IsInterface())
     {
-        GUID dummy;
-        if (SUCCEEDED(pMT->GetGuidNoThrow(&dummy, TRUE, FALSE)))
-        {
-            GuidInfo* pGuidInfo = pMT->GetGuidInfo();
-            _ASSERTE(pGuidInfo != NULL);
+        // Make sure our guid is computed
 
-            image->StoreStructure(pGuidInfo, sizeof(GuidInfo),
-                                    DataImage::ITEM_GUID_INFO);
-        }
-        else
+#ifdef FEATURE_COMINTEROP
+        // Generic WinRT types can have their GUID computed only if the instantiation is WinRT-legal
+        if (!pMT->IsProjectedFromWinRT() ||
+            !pMT->SupportsGenericInterop(TypeHandle::Interop_NativeToManaged) ||
+             pMT->IsLegalNonArrayWinRTType())
+#endif // FEATURE_COMINTEROP
         {
-            // make sure we don't store a GUID_NULL guid in the NGEN image
-            // instead we'll compute the GUID at runtime, and throw, if appropriate
-            m_pGuidInfo.SetValueMaybeNull(NULL);
+            GUID dummy;
+            if (SUCCEEDED(pMT->GetGuidNoThrow(&dummy, TRUE, FALSE)))
+            {
+                GuidInfo* pGuidInfo = pMT->GetGuidInfo();
+                _ASSERTE(pGuidInfo != NULL);
+
+                image->StoreStructure(pGuidInfo, sizeof(GuidInfo),
+                                      DataImage::ITEM_GUID_INFO);
+
+#ifdef FEATURE_COMINTEROP
+                if (pMT->IsLegalNonArrayWinRTType())
+                {
+                    Module *pModule = pMT->GetModule();
+                    if (pModule->CanCacheWinRTTypeByGuid(pMT))
+                    {
+                        pModule->CacheWinRTTypeByGuid(pMT, pGuidInfo);
+                    }
+                }
+#endif // FEATURE_COMINTEROP
+            }
+            else
+            {
+                // make sure we don't store a GUID_NULL guid in the NGEN image
+                // instead we'll compute the GUID at runtime, and throw, if appropriate
+                m_pGuidInfo.SetValueMaybeNull(NULL);
+            }
         }
     }
 

@@ -37,6 +37,7 @@
 #ifdef FEATURE_COMINTEROP
 #include "clrtocomcall.h"
 #include "comtoclrcall.h"
+#include "winrttypenameconverter.h"
 #endif // FEATURE_COMINTEROP
 
 #include "dllimportcallback.h"
@@ -44,6 +45,16 @@
 #include "sigbuilder.h"
 #include "cgensys.h"
 #include "peimagelayout.inl"
+
+
+#ifdef FEATURE_COMINTEROP
+#include "clrprivbinderwinrt.h"
+#include "winrthelpers.h"
+#endif
+
+#ifdef CROSSGEN_COMPILE
+#include "crossgenroresolvenamespace.h"
+#endif
 
 #ifndef NO_NGENPDB
 #include <cvinfo.h>
@@ -286,30 +297,54 @@ HRESULT CEECompileInfo::LoadAssemblyByPath(
             AppDomain * pDomain = AppDomain::GetCurrentDomain();
 
             PEAssemblyHolder pAssemblyHolder;
+            BOOL isWinRT = FALSE;
 
-            //ExplicitBind
-            CoreBindResult bindResult;
-            spec.SetCodeBase(pImage->GetPath());
-            spec.Bind(
-                pDomain,
-                TRUE,                   // fThrowOnFileNotFound
-                &bindResult,
+#ifdef FEATURE_COMINTEROP
+            isWinRT = spec.IsContentType_WindowsRuntime();
+            if (isWinRT)
+            {
+                LPCSTR  szNameSpace;
+                LPCSTR  szTypeName;
+                // It does not make sense to pass the file name to recieve fake type name for empty WinMDs, because we would use the name
+                // for binding in next call to BindAssemblySpec which would fail for fake WinRT type name
+                // We will throw/return the error instead and the caller will recognize it and react to it by not creating the ngen image -
+                // see code:Zapper::ComputeDependenciesInCurrentDomain
+                IfFailThrow(::GetFirstWinRTTypeDef(pImage->GetMDImport(), &szNameSpace, &szTypeName, NULL, NULL));
+                spec.SetWindowsRuntimeType(szNameSpace, szTypeName);
+            }
+#endif //FEATURE_COMINTEROP
 
-                // fNgenExplicitBind: Generally during NGEN compilation, this is
-                // TRUE, meaning "I am NGEN, and I am doing an explicit bind to the IL
-                // image, so don't infer the NI and try to open it, because I already
-                // have it open". But if we're executing crossgen /CreatePDB, this should
-                // be FALSE so that downstream code doesn't assume we're explicitly
-                // trying to bind to an IL image (we're actually explicitly trying to
-                // open an NI).
-                !fExplicitBindToNativeImage,
+            // If there is a host binder then use it to bind the assembly.
+            if (isWinRT)
+            {
+                pAssemblyHolder = pDomain->BindAssemblySpec(&spec, TRUE);
+            }
+            else
+            {
+                //ExplicitBind
+                CoreBindResult bindResult;
+                spec.SetCodeBase(pImage->GetPath());
+                spec.Bind(
+                    pDomain,
+                    TRUE,                   // fThrowOnFileNotFound
+                    &bindResult,
 
-                // fExplicitBindToNativeImage: Most callers want this FALSE; but crossgen
-                // /CreatePDB explicitly specifies NI names to open, and cannot assume
-                // that IL assemblies will be available.
-                fExplicitBindToNativeImage
-                );
-            pAssemblyHolder = PEAssembly::Open(&bindResult,FALSE);
+                    // fNgenExplicitBind: Generally during NGEN compilation, this is
+                    // TRUE, meaning "I am NGEN, and I am doing an explicit bind to the IL
+                    // image, so don't infer the NI and try to open it, because I already
+                    // have it open". But if we're executing crossgen /CreatePDB, this should
+                    // be FALSE so that downstream code doesn't assume we're explicitly
+                    // trying to bind to an IL image (we're actually explicitly trying to
+                    // open an NI).
+                    !fExplicitBindToNativeImage,
+
+                    // fExplicitBindToNativeImage: Most callers want this FALSE; but crossgen
+                    // /CreatePDB explicitly specifies NI names to open, and cannot assume
+                    // that IL assemblies will be available.
+                    fExplicitBindToNativeImage
+                    );
+                pAssemblyHolder = PEAssembly::Open(&bindResult,FALSE);
+            }
 
             // Now load assembly into domain.
             DomainAssembly * pDomainAssembly = pDomain->LoadDomainAssembly(&spec, pAssemblyHolder, FILE_LOAD_BEGIN);
@@ -340,6 +375,71 @@ HRESULT CEECompileInfo::LoadAssemblyByPath(
 
     return hr;
 }
+
+
+#ifdef FEATURE_COMINTEROP
+HRESULT CEECompileInfo::LoadTypeRefWinRT(
+    IMDInternalImport       *pAssemblyImport,
+    mdTypeRef               ref,
+    CORINFO_ASSEMBLY_HANDLE *pHandle)
+{
+    STANDARD_VM_CONTRACT;
+
+    HRESULT hr = S_OK;
+
+    ReleaseHolder<IAssemblyName> pAssemblyName;
+
+    COOPERATIVE_TRANSITION_BEGIN();
+
+    EX_TRY
+    {
+        Assembly *pAssembly;
+
+        mdToken tkResolutionScope;
+        if(FAILED(pAssemblyImport->GetResolutionScopeOfTypeRef(ref, &tkResolutionScope)))
+            hr = S_FALSE;
+        else if(TypeFromToken(tkResolutionScope) == mdtAssemblyRef)
+        {
+            DWORD dwAssemblyRefFlags;
+            IfFailThrow(pAssemblyImport->GetAssemblyRefProps(tkResolutionScope, NULL, NULL,
+                                                     NULL, NULL,
+                                                     NULL, NULL, &dwAssemblyRefFlags));
+            if (IsAfContentType_WindowsRuntime(dwAssemblyRefFlags))
+            {
+                LPCSTR psznamespace;
+                LPCSTR pszname;
+                IfFailThrow(pAssemblyImport->GetNameOfTypeRef(ref, &psznamespace, &pszname));
+                AssemblySpec spec;
+                spec.InitializeSpec(tkResolutionScope, pAssemblyImport, NULL);
+                spec.SetWindowsRuntimeType(psznamespace, pszname);
+
+                _ASSERTE(spec.HasBindableIdentity());
+
+                pAssembly = spec.LoadAssembly(FILE_LOADED);
+
+                //
+                // Return the module handle
+                //
+
+                *pHandle = CORINFO_ASSEMBLY_HANDLE(pAssembly);
+            }
+            else
+            {
+                hr = S_FALSE;
+            }
+        }
+        else
+        {
+            hr = S_FALSE;
+        }
+    }
+    EX_CATCH_HRESULT(hr);
+
+    COOPERATIVE_TRANSITION_END();
+
+    return hr;
+}
+#endif
 
 BOOL CEECompileInfo::IsInCurrentVersionBubble(CORINFO_MODULE_HANDLE hModule)
 {
@@ -1283,17 +1383,38 @@ void CEECompileInfo::EncodeModuleAsIndex(CORINFO_MODULE_HANDLE  fromHandle,
         if (!pRefCache)
             ThrowOutOfMemory();
 
-        result = pRefCache->m_sAssemblyRefMap.LookupValue((UPTR)assembly, NULL);
 
-        if (result == (UPTR)INVALIDENTRY)
-            token = fromModule->FindAssemblyRef(assembly);
-        else
-            token = (mdAssemblyRef) result;
-
-        if (IsNilToken(token))
+        if (!assembly->GetManifestFile()->HasBindableIdentity())
         {
-            token = fromAssembly->AddAssemblyRef(assembly, pAssemblyEmit);
+            // If the module that we'd like to encode for a later fixup doesn't have
+            // a bindable identity, then this will fail at runtime. So, we ask the
+            // compilation domain for a matching assembly with a bindable identity.
+            // This is possible because this module must have been bound in the past,
+            // and the compilation domain will keep track of at least one corresponding
+            // bindable identity.
+            AssemblySpec defSpec;
+            defSpec.InitializeSpec(assembly->GetManifestFile());
+
+            AssemblySpec* pRefSpec = pDomain->FindAssemblyRefSpecForDefSpec(&defSpec);
+            _ASSERTE(pRefSpec != nullptr);
+
+            IfFailThrow(pRefSpec->EmitToken(pAssemblyEmit, &token, TRUE, TRUE));
             token += fromModule->GetAssemblyRefMax();
+        }
+        else
+        {
+            result = pRefCache->m_sAssemblyRefMap.LookupValue((UPTR)assembly, NULL);
+
+            if (result == (UPTR)INVALIDENTRY)
+                token = fromModule->FindAssemblyRef(assembly);
+            else
+                token = (mdAssemblyRef) result;
+
+            if (IsNilToken(token))
+            {
+                token = fromAssembly->AddAssemblyRef(assembly, pAssemblyEmit);
+                token += fromModule->GetAssemblyRefMax();
+            }
         }
 
         *pIndex = RidFromToken(token);
@@ -4929,6 +5050,24 @@ static void SpecializeEqualityComparer(SString& ss, Instantiation& inst)
     }
 }
 
+#ifdef FEATURE_COMINTEROP
+// Instantiation of WinRT types defined in non-WinRT module. This check is required to generate marshaling stubs for
+// instantiations of shadow WinRT types like EventHandler<ITracingStatusChangedEventArgs> in mscorlib.
+static BOOL IsInstantationOfShadowWinRTType(MethodTable * pMT)
+{
+    STANDARD_VM_CONTRACT;
+
+    Instantiation inst = pMT->GetInstantiation();
+    for (DWORD i = 0; i < inst.GetNumArgs(); i++)
+    {
+        TypeHandle th = inst[i];
+        if (th.IsProjectedFromWinRT() && !th.GetModule()->IsWindowsRuntimeModule())
+            return TRUE;
+    }
+    return FALSE;
+}
+#endif
+
 void CEEPreloader::ApplyTypeDependencyProductionsForType(TypeHandle t)
 {
     STANDARD_VM_CONTRACT;
@@ -4941,6 +5080,52 @@ void CEEPreloader::ApplyTypeDependencyProductionsForType(TypeHandle t)
 
     if (!pMT->HasInstantiation() || pMT->ContainsGenericVariables())
         return;
+
+#ifdef FEATURE_COMINTEROP
+    // At run-time, generic redirected interfaces and delegates need matching instantiations
+    // of other types/methods in order to be marshaled across the interop boundary.
+    if (m_image->GetModule()->IsWindowsRuntimeModule() || IsInstantationOfShadowWinRTType(pMT))
+    {
+        // We only apply WinRT dependencies when compiling .winmd assemblies since redirected
+        // types are heavily used in non-WinRT code as well and would bloat native images.
+        if (pMT->IsLegalNonArrayWinRTType())
+        {
+            TypeHandle thWinRT;
+            WinMDAdapter::RedirectedTypeIndex index;
+            if (WinRTInterfaceRedirector::ResolveRedirectedInterface(pMT, &index))
+            {
+                // redirected interface needs the mscorlib-local definition of the corresponding WinRT type
+                MethodTable *pWinRTMT = WinRTInterfaceRedirector::GetWinRTTypeForRedirectedInterfaceIndex(index);
+                thWinRT = TypeHandle(pWinRTMT);
+
+                // and matching stub methods
+                WORD wNumSlots = pWinRTMT->GetNumVirtuals();
+                for (WORD i = 0; i < wNumSlots; i++)
+                {
+                    MethodDesc *pAdapterMD = WinRTInterfaceRedirector::GetStubMethodForRedirectedInterface(
+                        index,
+                        i,
+                        TypeHandle::Interop_NativeToManaged,
+                        FALSE,
+                        pMT->GetInstantiation());
+
+                    TriageMethodForZap(pAdapterMD, TRUE);
+                }
+            }
+            if (WinRTDelegateRedirector::ResolveRedirectedDelegate(pMT, &index))
+            {
+                // redirected delegate needs the mscorlib-local definition of the corresponding WinRT type
+                thWinRT = TypeHandle(WinRTDelegateRedirector::GetWinRTTypeForRedirectedDelegateIndex(index));
+            }
+
+            if (!thWinRT.IsNull())
+            {
+                thWinRT = thWinRT.Instantiate(pMT->GetInstantiation());
+                TriageTypeForZap(thWinRT, TRUE);
+            }
+        }
+    }
+#endif // FEATURE_COMINTEROP
 
     pMT = pMT->GetCanonicalMethodTable();
 
@@ -5433,6 +5618,36 @@ void CEEPreloader::ExpandTypeDependencies(TypeHandle th)
         TriageTypeForZap(pMT->GetCanonicalMethodTable(), TRUE);
     }
 
+    if (pMT->SupportsGenericInterop(TypeHandle::Interop_ManagedToNative))
+    {
+        MethodTable::IntroducedMethodIterator itr(pMT->GetCanonicalMethodTable());
+        for (/**/; itr.IsValid(); itr.Next())
+        {
+            MethodDesc *pMD = itr.GetMethodDesc();
+
+            if (!pMD->HasMethodInstantiation())
+            {
+                if (pMT->IsInterface() || !pMD->IsSharedByGenericInstantiations())
+                {
+                    pMD = MethodDesc::FindOrCreateAssociatedMethodDesc(
+                        pMD,
+                        pMT,
+                        FALSE,              // forceBoxedEntryPoint
+                        Instantiation(),    // methodInst
+                        FALSE,              // allowInstParam
+                        TRUE);              // forceRemotableMethod
+                }
+                else
+                {
+                    _ASSERTE(pMT->IsDelegate());
+                    pMD = InstantiatedMethodDesc::FindOrCreateExactClassMethod(pMT, pMD);
+                }
+
+                AddToUncompiledMethods(pMD, TRUE);
+            }
+        }
+    }
+
     // Make sure parent type is saved
     TriageTypeForZap(pMT->GetParentMethodTable(), TRUE);
 
@@ -5869,7 +6084,19 @@ static void SetStubMethodDescOnInteropMethodDesc(MethodDesc* pInteropMD, MethodD
         }
         else
         {
-            pDelegateClass->m_pForwardStubMD = pStubMD;
+#ifdef FEATURE_COMINTEROP
+            // We don't currently NGEN both the P/Invoke and WinRT stubs for WinRT delegates.
+            // If that changes, this function will need an extra parameter to tell what kind
+            // of stub is being passed.
+            if (pInteropMD->GetMethodTable()->IsWinRTDelegate())
+            {
+                pDelegateClass->m_pComPlusCallInfo->m_pStubMD.SetValue(pStubMD);
+            }
+            else
+#endif // FEATURE_COMINTEROP
+            {
+                pDelegateClass->m_pForwardStubMD = pStubMD;
+            }
         }
     }
     else
@@ -5985,17 +6212,37 @@ void CEEPreloader::GenerateMethodStubs(
             MethodTable* pMT = pMD->GetMethodTable();
             CONSISTENCY_CHECK(pMT->IsDelegate());
 
-            if (!pMD->HasClassOrMethodInstantiation())
+            // we can filter out non-WinRT generic delegates right off the top
+            if (!pMD->HasClassOrMethodInstantiation() || pMT->IsProjectedFromWinRT()
+#ifdef FEATURE_COMINTEROP
+                || WinRTTypeNameConverter::IsRedirectedType(pMT)
+#endif // FEATURE_COMINTEROP
+                )
             {
                 if (COMDelegate::IsDelegateInvokeMethod(pMD)) // build forward stub
                 {
-                    // Build the stub only if the delegate is decorated with UnmanagedFunctionPointerAttribute.
-                    // Forward delegate stubs are rare so we require this opt-in to avoid bloating NGEN images.
-
-                    if (S_OK == pMT->GetMDImport()->GetCustomAttributeByName(
-                        pMT->GetCl(), g_UnmanagedFunctionPointerAttribute, NULL, NULL))
+#ifdef FEATURE_COMINTEROP
+                    if ((pMT->IsProjectedFromWinRT() || WinRTTypeNameConverter::IsRedirectedType(pMT)) &&
+                        (!pMT->HasInstantiation() || pMT->SupportsGenericInterop(TypeHandle::Interop_ManagedToNative))) // filter out shared generics
                     {
-                        pStubMD = COMDelegate::GetILStubMethodDesc((EEImplMethodDesc *)pMD, dwNGenStubFlags);
+                        // Build the stub for all WinRT delegates, these will definitely be used for interop.
+                        if (pMT->IsLegalNonArrayWinRTType())
+                        {
+                            COMDelegate::PopulateComPlusCallInfo(pMT);
+                            pStubMD = COMDelegate::GetILStubMethodDesc((EEImplMethodDesc *)pMD, dwNGenStubFlags);
+                        }
+                    }
+                    else
+#endif // FEATURE_COMINTEROP
+                    {
+                        // Build the stub only if the delegate is decorated with UnmanagedFunctionPointerAttribute.
+                        // Forward delegate stubs are rare so we require this opt-in to avoid bloating NGEN images.
+
+                        if (S_OK == pMT->GetMDImport()->GetCustomAttributeByName(
+                            pMT->GetCl(), g_UnmanagedFunctionPointerAttribute, NULL, NULL))
+                        {
+                            pStubMD = COMDelegate::GetILStubMethodDesc((EEImplMethodDesc *)pMD, dwNGenStubFlags);
+                        }
                     }
                 }
             }
@@ -6037,8 +6284,8 @@ void CEEPreloader::GenerateMethodStubs(
     //
     if (pMD->IsEEImpl() && COMDelegate::IsDelegateInvokeMethod(pMD))
     {
-        // Reverse P/Invoke is not supported for generic methods
-        if (!pMD->HasClassOrMethodInstantiation())
+        // Reverse P/Invoke is not supported for generic methods and WinRT delegates
+        if (!pMD->HasClassOrMethodInstantiation() && !pMD->GetMethodTable()->IsProjectedFromWinRT())
         {
             EX_TRY
             {
@@ -6706,43 +6953,102 @@ HRESULT CompilationDomain::AddDependency(AssemblySpec *pRefSpec,
         pRefSpec = &spec;
     }
 
-    _ASSERTE(pRefSpec->HasUniqueIdentity());
-
-    //
-    // See if we've already added the contents of the ref
-    // Else, emit token for the ref
-    //
-
-    if (m_pDependencyRefSpecs->Store(pRefSpec))
-        return S_OK;
-
-    mdAssemblyRef refToken;
-    IfFailRet(pRefSpec->EmitToken(m_pEmit, &refToken));
-
-    //
-    // Make a spec for the bound assembly
-    //
-
-    mdAssemblyRef defToken = mdAssemblyRefNil;
-
-    // All dependencies of a shared assembly need to be shared. So for a shared
-    // assembly, we want to remember the missing assembly ref during ngen, so that
-    // we can probe eagerly for the dependency at load time, and make sure that
-    // it is loaded as shared.
-    // In such a case, pFile will be NULL
-    if (pFile)
+#ifdef FEATURE_COMINTEROP
+    // Only cache ref specs that have a unique identity. This is needed to avoid caching
+    // things like WinRT type specs, which would benefit very little from being cached.
+    if (!pRefSpec->HasUniqueIdentity())
     {
-        AssemblySpec assemblySpec;
-        assemblySpec.InitializeSpec(pFile);
+        // Successful bind of a reference with a non-unique assembly identity.
+        _ASSERTE(pRefSpec->IsContentType_WindowsRuntime());
 
-        IfFailRet(assemblySpec.EmitToken(m_pEmit, &defToken));
+        AssemblySpec defSpec;
+        if (pFile != NULL)
+        {
+            defSpec.InitializeSpec(pFile);
+
+            // Windows Runtime Native Image binding depends on details exclusively described by the definition winmd file.
+            // Therefore we can actually drop the existing ref spec here entirely.
+            // Also, Windows Runtime Native Image binding uses the simple name of the ref spec as the
+            // resolution rule for PreBind when finding definition assemblies.
+            // See comment on CLRPrivBinderWinRT::PreBind for further details.
+            pRefSpec = &defSpec;
+        }
+
+        // Unfortunately, we don't have any choice regarding failures (pFile == NULL) because
+        // there is no value to canonicalize on (i.e., a def spec created from a non-NULL
+        // pFile) and so we must cache all non-unique-assembly-id failures.
+        const AssemblySpecDefRefMapEntry * pEntry = m_dependencyDefRefMap.LookupPtr(&defSpec);
+        if (pFile == NULL || pEntry == NULL)
+        {
+            mdAssemblyRef refToken = mdAssemblyRefNil;
+            IfFailRet(pRefSpec->EmitToken(m_pEmit, &refToken, TRUE, TRUE));
+
+            mdAssemblyRef defToken = mdAssemblyRefNil;
+            if (pFile != NULL)
+            {
+                IfFailRet(defSpec.EmitToken(m_pEmit, &defToken, TRUE, TRUE));
+
+                NewHolder<AssemblySpec> pNewDefSpec = new AssemblySpec();
+                pNewDefSpec->CopyFrom(&defSpec);
+                pNewDefSpec->CloneFields();
+
+                NewHolder<AssemblySpec> pNewRefSpec = new AssemblySpec();
+                pNewRefSpec->CopyFrom(pRefSpec);
+                pNewRefSpec->CloneFields();
+
+                _ASSERTE(m_dependencyDefRefMap.LookupPtr(pNewDefSpec) == NULL);
+
+                AssemblySpecDefRefMapEntry e;
+                e.m_pDef = pNewDefSpec;
+                e.m_pRef = pNewRefSpec;
+                m_dependencyDefRefMap.Add(e);
+
+                pNewDefSpec.SuppressRelease();
+                pNewRefSpec.SuppressRelease();
+            }
+
+            IfFailRet(AddDependencyEntry(pFile, refToken, defToken));
+        }
     }
+    else
+#endif // FEATURE_COMINTEROP
+    {
+        //
+        // See if we've already added the contents of the ref
+        // Else, emit token for the ref
+        //
 
-    //
-    // Add the entry.  Include the PEFile if we are not doing explicit bindings.
-    //
+        if (m_pDependencyRefSpecs->Store(pRefSpec))
+            return S_OK;
 
-    IfFailRet(AddDependencyEntry(pFile, refToken, defToken));
+        mdAssemblyRef refToken;
+        IfFailRet(pRefSpec->EmitToken(m_pEmit, &refToken));
+
+        //
+        // Make a spec for the bound assembly
+        //
+
+        mdAssemblyRef defToken = mdAssemblyRefNil;
+
+        // All dependencies of a shared assembly need to be shared. So for a shared
+        // assembly, we want to remember the missing assembly ref during ngen, so that
+        // we can probe eagerly for the dependency at load time, and make sure that
+        // it is loaded as shared.
+        // In such a case, pFile will be NULL
+        if (pFile)
+        {
+            AssemblySpec assemblySpec;
+            assemblySpec.InitializeSpec(pFile);
+
+            IfFailRet(assemblySpec.EmitToken(m_pEmit, &defToken));
+        }
+
+        //
+        // Add the entry.  Include the PEFile if we are not doing explicit bindings.
+        //
+
+        IfFailRet(AddDependencyEntry(pFile, refToken, defToken));
+    }
 
     return S_OK;
 }
@@ -6854,11 +7160,21 @@ PEAssembly *CompilationDomain::BindAssemblySpec(
         //
         // Record missing dependencies
         //
-        IfFailThrow(AddDependency(pSpec, NULL));
+#ifdef FEATURE_COMINTEROP
+        if (!g_fNGenWinMDResilient || pSpec->HasUniqueIdentity())
+#endif
+        {
+            IfFailThrow(AddDependency(pSpec, NULL));
+        }
     }
     EX_END_HOOK
 
-    IfFailThrow(AddDependency(pSpec, pFile));
+#ifdef FEATURE_COMINTEROP
+    if (!g_fNGenWinMDResilient || pSpec->HasUniqueIdentity())
+#endif
+    {
+        IfFailThrow(AddDependency(pSpec, pFile));
+    }
 
     return pFile;
 }
@@ -6911,6 +7227,49 @@ HRESULT
 
 
 #ifdef CROSSGEN_COMPILE
+HRESULT CompilationDomain::SetPlatformWinmdPaths(LPCWSTR pwzPlatformWinmdPaths)
+{
+    STANDARD_VM_CONTRACT;
+
+#ifdef FEATURE_COMINTEROP
+    // Create the array list on the heap since it will be passed off for the Crossgen RoResolveNamespace mockup to keep for the life of the process
+    StringArrayList *saPaths = new StringArrayList();
+
+    SString strPaths(pwzPlatformWinmdPaths);
+    if (!strPaths.IsEmpty())
+    {
+        for (SString::Iterator i = strPaths.Begin(); i != strPaths.End(); )
+        {
+            // Skip any leading spaces or semicolons
+            if (strPaths.Skip(i, W(';')))
+            {
+                continue;
+            }
+
+            SString::Iterator iEnd = i;     // Where current assembly name ends
+            SString::Iterator iNext;        // Where next assembly name starts
+            if (strPaths.Find(iEnd, W(';')))
+            {
+                iNext = iEnd + 1;
+            }
+            else
+            {
+                iNext = iEnd = strPaths.End();
+            }
+
+            _ASSERTE(i < iEnd);
+            if(i != iEnd)
+            {
+                saPaths->Append(SString(strPaths, i, iEnd));
+            }
+            i = iNext;
+        }
+    }
+    Crossgen::SetFirstPartyWinMDPaths(saPaths);
+#endif // FEATURE_COMINTEROP
+
+    return S_OK;
+}
 
 #ifdef FEATURE_READYTORUN_COMPILER
 

@@ -1,0 +1,45 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;netstandard1.1;netstandard2.0;netcoreapp3.0-Windows_NT</TargetFrameworks>
+    <ExcludeCurrentNetCoreAppFromPackage>true</ExcludeCurrentNetCoreAppFromPackage>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+  <!-- DesignTimeBuild requires all the TargetFramework Derived Properties to not be present in the first property group. -->
+  <PropertyGroup Condition="$(TargetFramework.StartsWith('netstandard'))">
+    <GeneratePlatformNotSupportedAssemblyMessage>SR.PlatformNotSupported_WindowsRuntime</GeneratePlatformNotSupportedAssemblyMessage>
+    <GeneratePlatformNotSupportedAssemblyWithGlobalPrefix>true</GeneratePlatformNotSupportedAssemblyWithGlobalPrefix>
+    <AssemblyVersion Condition="'$(TargetFramework)' == 'netstandard1.1'">4.0.1.0</AssemblyVersion>
+  </PropertyGroup>
+  <ItemGroup Condition="!$(TargetFramework.StartsWith('netstandard'))">
+    <Compile Include="System\Runtime\InteropServices\HResults.cs" />
+    <Compile Include="System\Windows\CornerRadius.cs" />
+    <Compile Include="System\Windows\Duration.cs" />
+    <Compile Include="System\Windows\GridLength.cs" />
+    <Compile Include="System\Windows\Thickness.cs" />
+    <Compile Include="System\Windows\TokenizerHelper.cs" />
+    <Compile Include="System\Windows\LayoutCycleException.cs" />
+    <Compile Include="System\Windows\Automation\ElementNotAvailableException.cs" />
+    <Compile Include="System\Windows\Automation\ElementNotEnabledException.cs" />
+    <Compile Include="System\Windows\Controls\Primitives\GeneratorPosition.cs" />
+    <Compile Include="System\Windows\Markup\XamlParseException.cs" />
+    <Compile Include="System\Windows\Media\Matrix.cs" />
+    <Compile Include="System\Windows\Media\Animation\KeyTime.cs" />
+    <Compile Include="System\Windows\Media\Animation\RepeatBehavior.cs" />
+    <Compile Include="System\Windows\Media\Media3D\Matrix3D.cs" />
+    <Compile Include="$(CommonPath)System\Runtime\InteropServices\WindowsRuntime\WindowsRuntimeImportAttribute.cs"
+             Link="Common\System\Runtime\InteropServices\WindowsRuntime\WindowsRuntimeImportAttribute.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="!$(TargetFramework.StartsWith('netstandard'))">
+    <Reference Include="System.Runtime" />
+    <Reference Include="System.Resources.ResourceManager" />
+    <Reference Include="System.Runtime.WindowsRuntime" />
+    <Reference Include="System.Runtime.Extensions" />
+  </ItemGroup>
+  <ItemGroup Condition="$(TargetFramework.StartsWith('netstandard'))">
+    <Reference Include="System.Runtime" />
+    <Reference Include="System.IO" />
+    <Reference Include="System.Threading.Tasks" />
+    <Reference Include="System.Resources.ResourceManager" />
+    <Reference Include="System.Runtime.WindowsRuntime" />
+  </ItemGroup>
+</Project>

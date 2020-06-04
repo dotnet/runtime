@@ -2262,7 +2262,28 @@ VirtualCallStubManager::Resolver(
         MethodTable * pItfMT = GetTypeFromToken(token);
         implSlot = pItfMT->FindDispatchSlot(TYPE_ID_THIS_CLASS, token.GetSlotNumber(), throwOnConflict);
 
-        _ASSERTE(!pItfMT->HasInstantiation());
+        if (pItfMT->HasInstantiation())
+        {
+            DispatchSlot ds(implSlot);
+            MethodDesc * pTargetMD = ds.GetMethodDesc();
+            if (!pTargetMD->HasMethodInstantiation())
+            {
+                _ASSERTE(pItfMT->IsProjectedFromWinRT() || pItfMT->IsWinRTRedirectedInterface(TypeHandle::Interop_ManagedToNative));
+
+                MethodDesc *pInstMD = MethodDesc::FindOrCreateAssociatedMethodDesc(
+                    pTargetMD,
+                    pItfMT,
+                    FALSE,              // forceBoxedEntryPoint
+                    Instantiation(),    // methodInst
+                    FALSE,              // allowInstParam
+                    TRUE);              // forceRemotableMethod
+
+                _ASSERTE(pInstMD->IsComPlusCall() || pInstMD->IsGenericComPlusCall());
+
+                *ppTarget = pInstMD->GetStableEntryPoint();
+                return TRUE;
+            }
+        }
 
         fShouldPatch = TRUE;
     }

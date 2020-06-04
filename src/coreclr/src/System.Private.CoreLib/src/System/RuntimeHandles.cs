@@ -406,16 +406,17 @@ namespace System
         [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
         private static extern void GetTypeByName(string name, bool throwOnError, bool ignoreCase, StackCrawlMarkHandle stackMark,
             ObjectHandleOnStack assemblyLoadContext,
-            ObjectHandleOnStack type, ObjectHandleOnStack keepalive);
+            bool loadTypeFromPartialName, ObjectHandleOnStack type, ObjectHandleOnStack keepalive);
 
         // Wrapper function to reduce the need for ifdefs.
-        internal static RuntimeType? GetTypeByName(string name, bool throwOnError, bool ignoreCase, ref StackCrawlMark stackMark)
+        internal static RuntimeType? GetTypeByName(string name, bool throwOnError, bool ignoreCase, ref StackCrawlMark stackMark, bool loadTypeFromPartialName)
         {
-            return GetTypeByName(name, throwOnError, ignoreCase, ref stackMark, AssemblyLoadContext.CurrentContextualReflectionContext!);
+            return GetTypeByName(name, throwOnError, ignoreCase, ref stackMark, AssemblyLoadContext.CurrentContextualReflectionContext!, loadTypeFromPartialName);
         }
 
         internal static RuntimeType? GetTypeByName(string name, bool throwOnError, bool ignoreCase, ref StackCrawlMark stackMark,
-                                                  AssemblyLoadContext assemblyLoadContext)
+                                                  AssemblyLoadContext assemblyLoadContext,
+                                                  bool loadTypeFromPartialName)
         {
             if (string.IsNullOrEmpty(name))
             {
@@ -431,7 +432,7 @@ namespace System
             GetTypeByName(name, throwOnError, ignoreCase,
                 new StackCrawlMarkHandle(ref stackMark),
                 ObjectHandleOnStack.Create(ref assemblyLoadContextStack),
-                ObjectHandleOnStack.Create(ref type), ObjectHandleOnStack.Create(ref keepAlive));
+                loadTypeFromPartialName, ObjectHandleOnStack.Create(ref type), ObjectHandleOnStack.Create(ref keepAlive));
             GC.KeepAlive(keepAlive);
 
             return type;

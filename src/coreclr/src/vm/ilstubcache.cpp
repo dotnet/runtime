@@ -270,13 +270,18 @@ MethodDesc* ILStubCache::CreateNewMethodDesc(LoaderHeap* pCreationHeap, MethodTa
         {
             pMD->m_dwExtendedFlags |= DynamicMethodDesc::nomdReverseStub;
 
-            ILStubResolver::ILStubType type = ILStubResolver::COMToCLRInteropStub;
+            ILStubResolver::ILStubType type = (SF_IsWinRTStub(dwStubFlags) ? ILStubResolver::WinRTToCLRInteropStub : ILStubResolver::COMToCLRInteropStub);
             pMD->GetILStubResolver()->SetStubType(type);
         }
         else
         {
-            ILStubResolver::ILStubType type =  ILStubResolver::CLRToCOMInteropStub;
+            ILStubResolver::ILStubType type = (SF_IsWinRTStub(dwStubFlags) ? ILStubResolver::CLRToWinRTInteropStub : ILStubResolver::CLRToCOMInteropStub);
             pMD->GetILStubResolver()->SetStubType(type);
+        }
+
+        if (SF_IsWinRTDelegateStub(dwStubFlags))
+        {
+            pMD->m_dwExtendedFlags |= DynamicMethodDesc::nomdDelegateCOMStub;
         }
     }
     else

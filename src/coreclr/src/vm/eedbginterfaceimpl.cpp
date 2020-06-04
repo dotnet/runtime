@@ -813,7 +813,8 @@ MethodDesc *EEDbgInterfaceImpl::LoadMethodDef(Module* pModule,
         if (numGenericClassArgs > 0)
         {
             thOwner = ClassLoader::LoadGenericInstantiationThrowing(pModule, typeDef, Instantiation(pGenericClassArgs, numGenericClassArgs));
-            forceRemotable = false;
+            // for classes supporting generic interop force remotable method descs
+            forceRemotable = thOwner.GetMethodTable()->SupportsGenericInterop(TypeHandle::Interop_ManagedToNative);
         }
 #endif // FEATURE_COMINTEROP
     }

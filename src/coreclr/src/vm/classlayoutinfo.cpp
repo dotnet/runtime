@@ -548,6 +548,9 @@ VOID EEClassLayoutInfo::CollectLayoutFieldMetadataThrowing(
    mdTypeDef      cl,               // cl of the NStruct being loaded
    BYTE           packingSize,      // packing size (from @dll.struct)
    BYTE           nlType,           // nltype (from @dll.struct)
+#ifdef FEATURE_COMINTEROP
+   BOOL           isWinRT,          // Is the type a WinRT type
+#endif // FEATURE_COMINTEROP
    BOOL           fExplicitOffsets, // explicit offsets?
    MethodTable   *pParentMT,        // the loaded superclass
    ULONG          cTotalFields,         // total number of fields (instance and static)
@@ -634,8 +637,13 @@ VOID EEClassLayoutInfo::CollectLayoutFieldMetadataThrowing(
     ULONG cInstanceFields = 0;
 
     ParseNativeTypeFlags nativeTypeFlags = ParseNativeTypeFlags::None;
-    if (nlType == nltAnsi)
-        nativeTypeFlags = ParseNativeTypeFlags::IsAnsi;
+#ifdef FEATURE_COMINTEROP
+    if (isWinRT)
+        nativeTypeFlags = ParseNativeTypeFlags::IsWinRT;
+    else // WinRT types have nlType == nltAnsi but should be treated as Unicode
+#endif // FEATURE_COMINTEROP
+        if (nlType == nltAnsi)
+            nativeTypeFlags = ParseNativeTypeFlags::IsAnsi;
 
     BOOL isBlittable;
 
@@ -812,8 +820,13 @@ EEClassNativeLayoutInfo* EEClassNativeLayoutInfo::CollectNativeLayoutFieldMetada
     CorNativeLinkType charSet = pMT->GetCharSet();
 
     ParseNativeTypeFlags nativeTypeFlags = ParseNativeTypeFlags::None;
-    if (charSet == nltAnsi)
-        nativeTypeFlags = ParseNativeTypeFlags::IsAnsi;
+#ifdef FEATURE_COMINTEROP
+    if (pMT->IsProjectedFromWinRT())
+        nativeTypeFlags = ParseNativeTypeFlags::IsWinRT;
+    else // WinRT types have nlType == nltAnsi but should be treated as Unicode
+#endif // FEATURE_COMINTEROP
+        if (charSet == nltAnsi)
+            nativeTypeFlags = ParseNativeTypeFlags::IsAnsi;
 
     ApproxFieldDescIterator fieldDescs(pMT, ApproxFieldDescIterator::INSTANCE_FIELDS);
 

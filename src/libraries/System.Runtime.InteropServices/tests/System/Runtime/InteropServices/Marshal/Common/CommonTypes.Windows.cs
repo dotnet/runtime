@@ -60,8 +60,6 @@ namespace System.Runtime.InteropServices.Tests.Common
     [ClassInterface(ClassInterfaceType.None)]
     public class IInspectableComObject : IInspectableInterface { }
 
-    public class IInspectableManagedObject : IInspectableInterface {}
-
     public class SubComImportObject : ComImportObject { }
 
     public class GenericSubComImportObject<T> : ComImportObject { }

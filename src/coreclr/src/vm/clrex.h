@@ -247,7 +247,7 @@ class EEException : public CLRException
     //
     //   each reKind is associated with one or more hresults.
     //   every hresult is associated with exactly one reKind (with kCOMException being the catch-all.)
-    static RuntimeExceptionKind GetKindFromHR(HRESULT hr);
+    static RuntimeExceptionKind GetKindFromHR(HRESULT hr, bool fIsWinRtMode = false);
   protected:
     static HRESULT GetHRFromKind(RuntimeExceptionKind reKind);
 
@@ -291,6 +291,8 @@ class EEMessageException : public EEException
                        LPCWSTR szArg3 = NULL, LPCWSTR szArg4 = NULL, LPCWSTR szArg5 = NULL, LPCWSTR szArg6 = NULL);
 
     EEMessageException(HRESULT hr);
+
+    EEMessageException(HRESULT hr, bool fUseCOMException);
 
     EEMessageException(HRESULT hr, UINT resID, LPCWSTR szArg1 = NULL, LPCWSTR szArg2 = NULL, LPCWSTR szArg3 = NULL,
                        LPCWSTR szArg4 = NULL, LPCWSTR szArg5 = NULL, LPCWSTR szArg6 = NULL);
@@ -402,6 +404,14 @@ struct ExceptionData
     BSTR    bstrHelpFile;
     DWORD   dwHelpContext;
     GUID    guid;
+#ifdef FEATURE_COMINTEROP
+    BSTR      bstrRestrictedError;              // Returned from IRestrictedErrorInfo::GetErrorDetails
+    BSTR      bstrReference;                    // Returned from IRestrictedErrorInfo::GetReference
+    BSTR      bstrCapabilitySid;                // Returned from IRestrictedErrorInfo::GetErrorDetails
+    IUnknown *pRestrictedErrorInfo;             // AddRef-ed RestrictedErrorInfo pointer
+                                                // We need to keep this alive as long as user need the reference
+    BOOL      bHasLanguageRestrictedErrorInfo;
+#endif // FEATURE_COMINTEROP
 };
 
 class EECOMException : public EEException
@@ -417,7 +427,10 @@ class EECOMException : public EEException
     EECOMException(ExceptionData *pED);
     EECOMException(
         HRESULT hr,
-        IErrorInfo *pErrInfo
+        IErrorInfo *pErrInfo,
+        bool fUseCOMException,
+        IRestrictedErrorInfo *pRestrictedErrInfo,
+        BOOL bHasLanguageRestrictedErrorInfo
         COMMA_INDEBUG(BOOL bCheckInProcCCWTearOff = TRUE));
     ~EECOMException();
 
@@ -965,6 +978,16 @@ inline EEException::EEException(HRESULT hr)
 
 inline EEMessageException::EEMessageException(HRESULT hr)
   : EEException(GetKindFromHR(hr)),
+    m_hr(hr),
+    m_resID(0)
+{
+    WRAPPER_NO_CONTRACT;
+
+    m_arg1.Printf("%.8x", hr);
+}
+
+inline EEMessageException::EEMessageException(HRESULT hr, bool fUseCOMException)
+  : EEException(GetKindFromHR(hr, !fUseCOMException)),
     m_hr(hr),
     m_resID(0)
 {

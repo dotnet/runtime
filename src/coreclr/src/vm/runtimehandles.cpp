@@ -379,6 +379,49 @@ FCIMPLEND
 
 #include <optdefault.h>
 
+
+
+
+#ifdef FEATURE_COMINTEROP
+FCIMPL1(FC_BOOL_RET, RuntimeTypeHandle::IsWindowsRuntimeObjectType, ReflectClassBaseObject *rtTypeUNSAFE)
+{
+    FCALL_CONTRACT;
+
+    BOOL isWindowsRuntimeType = FALSE;
+
+    TypeHandle typeHandle = rtTypeUNSAFE->GetType();
+    MethodTable *pMT = typeHandle.GetMethodTable();
+
+    if (pMT != NULL)
+    {
+        isWindowsRuntimeType = pMT->IsWinRTObjectType();
+    }
+
+    FC_RETURN_BOOL(isWindowsRuntimeType);
+}
+FCIMPLEND
+
+#ifdef FEATURE_COMINTEROP_WINRT_MANAGED_ACTIVATION
+FCIMPL1(FC_BOOL_RET, RuntimeTypeHandle::IsTypeExportedToWindowsRuntime, ReflectClassBaseObject *rtTypeUNSAFE)
+{
+    FCALL_CONTRACT;
+
+    BOOL isExportedToWinRT = FALSE;
+
+    TypeHandle typeHandle = rtTypeUNSAFE->GetType();
+    MethodTable *pMT = typeHandle.GetMethodTable();
+
+    if (pMT != NULL)
+    {
+        isExportedToWinRT = pMT->IsExportedToWinRT();
+    }
+
+    FC_RETURN_BOOL(isExportedToWinRT);
+}
+FCIMPLEND
+#endif
+#endif // FEATURE_COMINTEROP
+
 NOINLINE static MethodDesc * RestoreMethodHelper(MethodDesc * pMethod, LPVOID __me)
 {
     FC_INNER_PROLOG_NO_ME_SETUP();
@@ -1374,7 +1417,7 @@ void QCALLTYPE RuntimeTypeHandle::GetTypeByNameUsingCARules(LPCWSTR pwzClassName
 void QCALLTYPE RuntimeTypeHandle::GetTypeByName(LPCWSTR pwzClassName, BOOL bThrowOnError, BOOL bIgnoreCase,
                                                 QCall::StackCrawlMarkHandle pStackMark,
                                                 QCall::ObjectHandleOnStack pAssemblyLoadContext,
-                                                QCall::ObjectHandleOnStack retType,
+                                                BOOL bLoadTypeFromPartialNameHack, QCall::ObjectHandleOnStack retType,
                                                 QCall::ObjectHandleOnStack keepAlive)
 {
     QCALL_CONTRACT;
@@ -1402,7 +1445,7 @@ void QCALLTYPE RuntimeTypeHandle::GetTypeByName(LPCWSTR pwzClassName, BOOL bThro
 
         typeHandle = TypeName::GetTypeManaged(pwzClassName, NULL, bThrowOnError, bIgnoreCase, /*bProhibitAsmQualifiedName =*/ FALSE,
                                               SystemDomain::GetCallersAssembly(pStackMark),
-                                              (OBJECTREF*)keepAlive.m_ppObject,
+                                              bLoadTypeFromPartialNameHack, (OBJECTREF*)keepAlive.m_ppObject,
                                               pPrivHostBinder);
     }
 

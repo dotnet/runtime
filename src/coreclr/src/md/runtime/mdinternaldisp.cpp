@@ -16,7 +16,7 @@
 #include "corpriv.h"
 #include "assemblymdinternaldisp.h"
 #include "pedecoder.h"
-#include "metamodel.h"
+#include "winmdinterfaces.h"
 
 #ifdef FEATURE_METADATA_INTERNAL_APIS
 
@@ -184,7 +184,18 @@ STDAPI GetMDInternalInterface(
 
         IfFailGo( pInternalRO->Init(const_cast<void*>(pData), cbData) );
 
-        IfFailGo(pInternalRO->QueryInterface(riid, ppIUnk));
+#ifdef FEATURE_COMINTEROP
+        IfFailGo(pInternalRO->QueryInterface(IID_IMDCommon, (void**)&pInternalROMDCommon));
+        IfFailGo( (flags & ofNoTransform) ? S_FALSE : CheckIfWinMDAdapterNeeded(pInternalROMDCommon));
+        if (hr == S_OK)
+        {
+            IfFailGo(CreateWinMDInternalImportRO(pInternalROMDCommon, riid, (void**)ppIUnk));
+        }
+        else
+#endif // FEATURE_COMINTEROP
+        {
+            IfFailGo(pInternalRO->QueryInterface(riid, ppIUnk));
+        }
 
     }
     else

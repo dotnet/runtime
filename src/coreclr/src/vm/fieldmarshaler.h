@@ -45,7 +45,8 @@ struct RawFieldPlacementInfo
 enum class ParseNativeTypeFlags : int
 {
     None    = 0x00,
-    IsAnsi  = 0x01
+    IsAnsi  = 0x01,
+    IsWinRT = 0x02,
 };
 
 //=======================================================================

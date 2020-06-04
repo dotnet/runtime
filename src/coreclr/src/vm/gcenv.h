@@ -13,6 +13,10 @@
 
 #include "threadsuspend.h"
 
+#ifdef FEATURE_COMINTEROP
+#include <windows.ui.xaml.h>
+#endif
+
 #include "stubhelpers.h"
 
 #include "eeprofinterfaces.inl"

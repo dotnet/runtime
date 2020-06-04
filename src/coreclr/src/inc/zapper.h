@@ -117,6 +117,7 @@ class Zapper
     SString                 m_platformResourceRoots;
     SString                 m_appPaths;
     SString                 m_appNiPaths;
+    SString                 m_platformWinmdPaths;
 
 #if !defined(FEATURE_MERGE_JIT_AND_ENGINE)
     SString                 m_CLRJITPath;
@@ -349,6 +350,7 @@ class Zapper
     void SetPlatformResourceRoots(LPCWSTR pwzPlatformResourceRoots);
     void SetAppPaths(LPCWSTR pwzAppPaths);
     void SetAppNiPaths(LPCWSTR pwzAppNiPaths);
+    void SetPlatformWinmdPaths(LPCWSTR pwzPlatformWinmdPaths);
 
 #if !defined(FEATURE_MERGE_JIT_AND_ENGINE)
     void SetCLRJITPath(LPCWSTR pwszCLRJITPath);
@@ -437,6 +439,8 @@ class ZapperOptions
     bool        m_fNGenLastRetry;       // This is retry of the compilation
 
     CORJIT_FLAGS m_compilerFlags;
+
+    bool        m_fNoMetaData;          // Do not copy metadata and IL to native image
 
     void SetCompilerFlags(void);
 

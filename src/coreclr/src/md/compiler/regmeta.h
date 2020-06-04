@@ -24,6 +24,8 @@
 
 #include "sigparser.h"
 
+#include "winmdinterfaces.h"
+
 class FilterManager;
 
 // Support for symbol binding meta data.  This is a custom value hung off of
