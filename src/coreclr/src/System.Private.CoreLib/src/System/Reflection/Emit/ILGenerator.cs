@@ -1115,7 +1115,7 @@ namespace System.Reflection.Emit
         #endregion
 
         #region IL Macros
-        public virtual void ThrowException([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] Type excType)
+        public virtual void ThrowException([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] Type excType)
         {
             // Emits the il to throw an exception
 
