@@ -602,7 +602,7 @@ $@"{nameof(UnregisterClassForTypeInternal)} arguments:
         // LicenseContext
         private readonly MethodInfo _setSavedLicenseKey;
 
-        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.DefaultConstructor)]
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
         private readonly Type _licInfoHelper;
 
         private readonly MethodInfo _licInfoHelperContains;

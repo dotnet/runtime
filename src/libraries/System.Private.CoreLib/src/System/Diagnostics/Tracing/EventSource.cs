@@ -337,6 +337,11 @@ namespace System.Diagnostics.Tracing
             return GetName(eventSourceType, EventManifestOptions.None);
         }
 
+#if !ES_BUILD_STANDALONE
+        private const DynamicallyAccessedMemberTypes ManifestMemberTypes = DynamicallyAccessedMemberTypes.PublicNestedTypes
+            | DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.NonPublicMethods;
+#endif
+
         /// <summary>
         /// Returns a string of the XML manifest associated with the eventSourceType. The scheme for this XML is
         /// documented at in EventManifest Schema https://docs.microsoft.com/en-us/windows/desktop/WES/eventmanifestschema-schema.
@@ -349,7 +354,7 @@ namespace System.Diagnostics.Tracing
         /// <returns>The XML data string</returns>
         public static string? GenerateManifest(
 #if !ES_BUILD_STANDALONE
-            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicNestedTypes | DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.NonPublicMethods)]
+            [DynamicallyAccessedMembers(ManifestMemberTypes)]
 #endif
             Type eventSourceType,
             string? assemblyPathToIncludeInManifest)
@@ -370,7 +375,7 @@ namespace System.Diagnostics.Tracing
         /// <returns>The XML data string or null</returns>
         public static string? GenerateManifest(
 #if !ES_BUILD_STANDALONE
-            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicNestedTypes | DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.NonPublicMethods)]
+            [DynamicallyAccessedMembers(ManifestMemberTypes)]
 #endif
             Type eventSourceType,
             string? assemblyPathToIncludeInManifest,
@@ -3202,7 +3207,7 @@ namespace System.Diagnostics.Tracing
         // then the descriptors are not creaed, and just the manifest is generated.
         private static byte[]? CreateManifestAndDescriptors(
 #if !ES_BUILD_STANDALONE
-            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicNestedTypes | DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.NonPublicMethods)]
+            [DynamicallyAccessedMembers(ManifestMemberTypes)]
 #endif
             Type eventSourceType,
             string? eventSourceDllName,
