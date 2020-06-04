@@ -253,7 +253,6 @@ jobs:
       testGroup: innerloop
       nameSuffix: All_Mono
       buildArgs: -s mono+libs+installer -c $(_BuildConfig)
-                 /p:StripSymbols=true /p:SkipTests=true
       condition: >-
         or(
           eq(dependencies.checkout.outputs['SetPathVars_libraries.containsChange'], true),
@@ -277,7 +276,6 @@ jobs:
       testGroup: innerloop
       nameSuffix: All_Mono
       buildArgs: -s mono+libs+installer -c $(_BuildConfig)
-                 /p:StripSymbols=true /p:SkipTests=true
       condition: >-
         or(
           eq(dependencies.checkout.outputs['SetPathVars_libraries.containsChange'], true),
@@ -299,7 +297,6 @@ jobs:
       testGroup: innerloop
       nameSuffix: All_Mono_LLVMJIT
       buildArgs: -s mono+libs+installer -c $(_BuildConfig)
-                 /p:StripSymbols=true /p:SkipTests=true
                  /p:MonoEnableLLVM=true /p:MonoBundleLLVMOptimizer=false
       condition: >-
         or(
@@ -319,7 +316,6 @@ jobs:
       testGroup: innerloop
       nameSuffix: All_Mono_LLVMJIT
       buildArgs: -s mono+libs+installer -c $(_BuildConfig)
-                 /p:StripSymbols=true /p:SkipTests=true
                  /p:MonoEnableLLVM=true /p:MonoBundleLLVMOptimizer=false
       condition: >-
         or(
@@ -342,7 +338,6 @@ jobs:
       testGroup: innerloop
       nameSuffix: All_Mono_LLVMAOT
       buildArgs: -s mono+libs+installer -c $(_BuildConfig)
-                 /p:StripSymbols=true /p:SkipTests=true
                  /p:MonoEnableLLVM=true /p:MonoBundleLLVMOptimizer=true
       condition: >-
         or(
@@ -362,7 +357,6 @@ jobs:
       testGroup: innerloop
       nameSuffix: All_Mono_LLVMAOT
       buildArgs: -s mono+libs+installer -c $(_BuildConfig)
-                 /p:StripSymbols=true /p:SkipTests=true
                  /p:MonoEnableLLVM=true /p:MonoBundleLLVMOptimizer=true
       condition: >-
         or(
