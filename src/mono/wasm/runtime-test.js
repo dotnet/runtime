@@ -48,6 +48,15 @@ if (typeof crypto == 'undefined') {
 	}
 }
 
+if (typeof performance == 'undefined') {
+	// performance.now() is used by emscripten and doesn't work in JSC
+	var performance = {
+		now: function () {
+			return Date.now ();
+		}
+	}
+}
+
 try {
 	if (typeof arguments == "undefined")
 		arguments = WScript.Arguments;

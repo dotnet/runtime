@@ -31,17 +31,11 @@
 #define PRIxA PRIA PRIx
 #endif
 
-#ifdef HOST_UNIX
-#define TRACE(args...) Trace(args)
-#else
-#define TRACE(args, ...)
-#endif
-
 #ifndef HOST_WINDOWS
 static const char ElfMagic[] = { 0x7f, 'E', 'L', 'F', '\0' };
 #endif
 
-class ElfReaderExport: public ElfReader
+class ElfReaderExport : public ElfReader
 {
 private:
     ICorDebugDataTarget* m_dataTarget;
@@ -115,7 +109,7 @@ ElfReader::~ElfReader()
 bool
 ElfReader::PopulateForSymbolLookup(uint64_t baseAddress)
 {
-    TRACE("PopulateForSymbolLookup: base %" PRIA PRIx64 "\n", baseAddress);
+    Trace("PopulateForSymbolLookup: base %" PRIA PRIx64 "\n", baseAddress);
     Elf_Dyn* dynamicAddr = nullptr;
     uint64_t loadbias = 0;
 
@@ -145,10 +139,10 @@ ElfReader::PopulateForSymbolLookup(uint64_t baseAddress)
     {
         Elf_Dyn dyn;
         if (!ReadMemory(dynamicAddr, &dyn, sizeof(dyn))) {
-            TRACE("ERROR: ReadMemory(%p, %" PRIx ") dyn FAILED\n", dynamicAddr, sizeof(dyn));
+            Trace("ERROR: ReadMemory(%p, %" PRIx ") dyn FAILED\n", dynamicAddr, sizeof(dyn));
             return false;
         }
-        TRACE("DSO: dyn %p tag %" PRId " (%" PRIx ") d_ptr %" PRIxA "\n", dynamicAddr, dyn.d_tag, dyn.d_tag, dyn.d_un.d_ptr);
+        Trace("DSO: dyn %p tag %" PRId " (%" PRIx ") d_ptr %" PRIxA "\n", dynamicAddr, dyn.d_tag, dyn.d_tag, dyn.d_un.d_ptr);
         if (dyn.d_tag == DT_NULL) {
             break;
         }
@@ -168,7 +162,7 @@ ElfReader::PopulateForSymbolLookup(uint64_t baseAddress)
     }
 
     if (m_gnuHashTableAddr == nullptr || m_stringTableAddr == nullptr || m_symbolTableAddr == nullptr) {
-        TRACE("ERROR: hash, string or symbol table address not found\n");
+        Trace("ERROR: hash, string or symbol table address not found\n");
         return false;
     }
 
@@ -200,14 +194,14 @@ ElfReader::TryLookupSymbol(std::string symbolName, uint64_t* symbolOffset)
                     if (symbolName.compare(possibleName) == 0)
                     {
                         *symbolOffset = symbol.st_value;
-                        TRACE("TryLookupSymbol found '%s' at offset %" PRIxA "\n", symbolName.c_str(), *symbolOffset);
+                        Trace("TryLookupSymbol found '%s' at offset %" PRIxA "\n", symbolName.c_str(), *symbolOffset);
                         return true;
                     }
                 }
             }
         }
     }
-    TRACE("TryLookupSymbol '%s' not found\n", symbolName.c_str());
+    Trace("TryLookupSymbol '%s' not found\n", symbolName.c_str());
     *symbolOffset = 0;
     return false;
 }
@@ -230,11 +224,11 @@ bool
 ElfReader::InitializeGnuHashTable()
 {
     if (!ReadMemory(m_gnuHashTableAddr, &m_hashTable, sizeof(m_hashTable))) {
-        TRACE("ERROR: InitializeGnuHashTable hashtable ReadMemory(%p) FAILED\n", m_gnuHashTableAddr);
+        Trace("ERROR: InitializeGnuHashTable hashtable ReadMemory(%p) FAILED\n", m_gnuHashTableAddr);
         return false;
     }
     if (m_hashTable.BucketCount <= 0 || m_hashTable.SymbolOffset == 0) {
-        TRACE("ERROR: InitializeGnuHashTable invalid BucketCount or SymbolOffset\n");
+        Trace("ERROR: InitializeGnuHashTable invalid BucketCount or SymbolOffset\n");
         return false;
     }
     m_buckets = (int32_t*)malloc(m_hashTable.BucketCount * sizeof(int32_t));
@@ -243,7 +237,7 @@ ElfReader::InitializeGnuHashTable()
     }
     void* bucketsAddress = (char*)m_gnuHashTableAddr + sizeof(GnuHashTable) + (m_hashTable.BloomSize * sizeof(size_t));
     if (!ReadMemory(bucketsAddress, m_buckets, m_hashTable.BucketCount * sizeof(int32_t))) {
-        TRACE("ERROR: InitializeGnuHashTable buckets ReadMemory(%p) FAILED\n", bucketsAddress);
+        Trace("ERROR: InitializeGnuHashTable buckets ReadMemory(%p) FAILED\n", bucketsAddress);
         return false;
     }
     m_chainsAddress = (char*)bucketsAddress + (m_hashTable.BucketCount * sizeof(int32_t));
@@ -255,12 +249,12 @@ ElfReader::GetPossibleSymbolIndex(const std::string& symbolName, std::vector<int
 {
     uint32_t hash = Hash(symbolName);
     int i = m_buckets[hash % m_hashTable.BucketCount] - m_hashTable.SymbolOffset;
-    TRACE("GetPossibleSymbolIndex hash %08x index: %d BucketCount %d SymbolOffset %08x\n", hash, i, m_hashTable.BucketCount, m_hashTable.SymbolOffset);
+    Trace("GetPossibleSymbolIndex hash %08x index: %d BucketCount %d SymbolOffset %08x\n", hash, i, m_hashTable.BucketCount, m_hashTable.SymbolOffset);
     for (;; i++)
     {
         int32_t chainVal;
         if (!GetChain(i, &chainVal)) {
-            TRACE("ERROR: GetPossibleSymbolIndex GetChain FAILED\n");
+            Trace("ERROR: GetPossibleSymbolIndex GetChain FAILED\n");
             return false;
         }
         if ((chainVal & 0xfffffffe) == (hash & 0xfffffffe))
@@ -302,13 +296,13 @@ ElfReader::GetStringAtIndex(int index, std::string& result)
     while(true)
     {
         if (index > m_stringTableSize) {
-            TRACE("ERROR: GetStringAtIndex index %d > string table size\n", index);
+            Trace("ERROR: GetStringAtIndex index %d > string table size\n", index);
             return false;
         }
         char ch;
         void* address = (char*)m_stringTableAddr + index;
         if (!ReadMemory(address, &ch, sizeof(ch))) {
-            TRACE("ERROR: GetStringAtIndex ReadMemory(%p) FAILED\n", address);
+            Trace("ERROR: GetStringAtIndex ReadMemory(%p) FAILED\n", address);
             return false;
         }
         if (ch == '\0') {
@@ -329,7 +323,7 @@ ElfReader::GetStringAtIndex(int index, std::string& result)
 bool
 ElfReader::EnumerateElfInfo(Elf_Phdr* phdrAddr, int phnum)
 {
-    TRACE("EnumerateElfInfo: phdr %p phnum %d\n", phdrAddr, phnum);
+    Trace("EnumerateElfInfo: phdr %p phnum %d\n", phdrAddr, phnum);
 
     if (phdrAddr == nullptr || phnum <= 0) {
         return false;
@@ -360,10 +354,10 @@ ElfReader::EnumerateLinkMapEntries(Elf_Dyn* dynamicAddr)
     {
         Elf_Dyn dyn;
         if (!ReadMemory(dynamicAddr, &dyn, sizeof(dyn))) {
-            TRACE("ERROR: ReadMemory(%p, %" PRIx ") dyn FAILED\n", dynamicAddr, sizeof(dyn));
+            Trace("ERROR: ReadMemory(%p, %" PRIx ") dyn FAILED\n", dynamicAddr, sizeof(dyn));
             return false;
         }
-        TRACE("DSO: dyn %p tag %" PRId " (%" PRIx ") d_ptr %" PRIxA "\n", dynamicAddr, dyn.d_tag, dyn.d_tag, dyn.d_un.d_ptr);
+        Trace("DSO: dyn %p tag %" PRId " (%" PRIx ") d_ptr %" PRIxA "\n", dynamicAddr, dyn.d_tag, dyn.d_tag, dyn.d_un.d_ptr);
         if (dyn.d_tag == DT_NULL) {
             break;
         }
@@ -373,14 +367,14 @@ ElfReader::EnumerateLinkMapEntries(Elf_Dyn* dynamicAddr)
         dynamicAddr++;
     }
 
-    TRACE("DSO: rdebugAddr %p\n", rdebugAddr);
+    Trace("DSO: rdebugAddr %p\n", rdebugAddr);
     if (rdebugAddr == nullptr) {
         return false;
     }
 
     struct r_debug debugEntry;
     if (!ReadMemory(rdebugAddr, &debugEntry, sizeof(debugEntry))) {
-        TRACE("ERROR: ReadMemory(%p, %" PRIx ") r_debug FAILED\n", rdebugAddr, sizeof(debugEntry));
+        Trace("ERROR: ReadMemory(%p, %" PRIx ") r_debug FAILED\n", rdebugAddr, sizeof(debugEntry));
         return false;
     }
 
@@ -389,7 +383,7 @@ ElfReader::EnumerateLinkMapEntries(Elf_Dyn* dynamicAddr)
     {
         struct link_map map;
         if (!ReadMemory(linkMapAddr, &map, sizeof(map))) {
-            TRACE("ERROR: ReadMemory(%p, %" PRIx ") link_map FAILED\n", linkMapAddr, sizeof(map));
+            Trace("ERROR: ReadMemory(%p, %" PRIx ") link_map FAILED\n", linkMapAddr, sizeof(map));
             return false;
         }
         // Read the module's name and make sure the memory is added to the core dump
@@ -401,7 +395,7 @@ ElfReader::EnumerateLinkMapEntries(Elf_Dyn* dynamicAddr)
             {
                 char ch;
                 if (!ReadMemory(map.l_name + i, &ch, sizeof(ch))) {
-                    TRACE("DSO: ReadMemory link_map name %p + %d FAILED\n", map.l_name, i);
+                    Trace("DSO: ReadMemory link_map name %p + %d FAILED\n", map.l_name, i);
                     break;
                 }
                 if (ch == '\0') {
@@ -410,7 +404,7 @@ ElfReader::EnumerateLinkMapEntries(Elf_Dyn* dynamicAddr)
                 moduleName.append(1, ch);
             }
         }
-        TRACE("\nDSO: link_map entry %p l_ld %p l_addr (Ehdr) %" PRIx " %s\n", linkMapAddr, map.l_ld, map.l_addr, moduleName.c_str());
+        Trace("\nDSO: link_map entry %p l_ld %p l_addr (Ehdr) %" PRIx " %s\n", linkMapAddr, map.l_ld, map.l_addr, moduleName.c_str());
 
         // Call the derived class for each module
         VisitModule(map.l_addr, moduleName);
@@ -428,11 +422,11 @@ ElfReader::EnumerateProgramHeaders(uint64_t baseAddress, uint64_t* ploadbias, El
 {
     Elf_Ehdr ehdr;
     if (!ReadMemory((void*)baseAddress, &ehdr, sizeof(ehdr))) {
-        TRACE("ERROR: EnumerateProgramHeaders ReadMemory(%p, %" PRIx ") ehdr FAILED\n", (void*)baseAddress, sizeof(ehdr));
+        Trace("ERROR: EnumerateProgramHeaders ReadMemory(%p, %" PRIx ") ehdr FAILED\n", (void*)baseAddress, sizeof(ehdr));
         return false;
     }
     if (memcmp(ehdr.e_ident, ElfMagic, strlen(ElfMagic)) != 0) {
-        TRACE("ERROR: EnumerateProgramHeaders Invalid elf header signature\n");
+        Trace("ERROR: EnumerateProgramHeaders Invalid elf header signature\n");
         return false;
     }
     _ASSERTE(ehdr.e_phentsize == sizeof(Elf_Phdr));
@@ -449,7 +443,7 @@ ElfReader::EnumerateProgramHeaders(uint64_t baseAddress, uint64_t* ploadbias, El
     if (ehdr.e_phoff == 0 || phnum <= 0) {
         return false;
     }
-    TRACE("ELF: type %d mach 0x%x ver %d flags 0x%x phnum %d phoff %" PRIxA " phentsize 0x%02x shnum %d shoff %" PRIxA " shentsize 0x%02x shstrndx %d\n",
+    Trace("ELF: type %d mach 0x%x ver %d flags 0x%x phnum %d phoff %" PRIxA " phentsize 0x%02x shnum %d shoff %" PRIxA " shentsize 0x%02x shstrndx %d\n",
         ehdr.e_type, ehdr.e_machine, ehdr.e_version, ehdr.e_flags, phnum, ehdr.e_phoff, ehdr.e_phentsize, ehdr.e_shnum, ehdr.e_shoff, ehdr.e_shentsize, ehdr.e_shstrndx);
 
     Elf_Phdr* phdrAddr = reinterpret_cast<Elf_Phdr*>(baseAddress + ehdr.e_phoff);
@@ -469,12 +463,12 @@ ElfReader::EnumerateProgramHeaders(Elf_Phdr* phdrAddr, int phnum, uint64_t baseA
     {
         Elf_Phdr ph;
         if (!ReadMemory(phdrAddr + i, &ph, sizeof(ph))) {
-            TRACE("ERROR: ReadMemory(%p, %" PRIx ") phdr FAILED\n", phdrAddr + i, sizeof(ph));
+            Trace("ERROR: ReadMemory(%p, %" PRIx ") phdr FAILED\n", phdrAddr + i, sizeof(ph));
             return false;
         }
         if (ph.p_type == PT_LOAD && ph.p_offset == 0) {
             loadbias -= ph.p_vaddr;
-            TRACE("PHDR: loadbias %" PRIA PRIx64 "\n", loadbias);
+            Trace("PHDR: loadbias %" PRIA PRIx64 "\n", loadbias);
             break;
         }
     }
@@ -488,10 +482,10 @@ ElfReader::EnumerateProgramHeaders(Elf_Phdr* phdrAddr, int phnum, uint64_t baseA
     {
         Elf_Phdr ph;
         if (!ReadMemory(phdrAddr + i, &ph, sizeof(ph))) {
-            TRACE("ERROR: ReadMemory(%p, %" PRIx ") phdr FAILED\n", phdrAddr + i, sizeof(ph));
+            Trace("ERROR: ReadMemory(%p, %" PRIx ") phdr FAILED\n", phdrAddr + i, sizeof(ph));
             return false;
         }
-        TRACE("PHDR: %p type %d (%x) vaddr %" PRIxA " memsz %" PRIxA " paddr %" PRIxA " filesz %" PRIxA " offset %" PRIxA " align %" PRIxA "\n",
+        Trace("PHDR: %p type %d (%x) vaddr %" PRIxA " memsz %" PRIxA " paddr %" PRIxA " filesz %" PRIxA " offset %" PRIxA " align %" PRIxA "\n",
             phdrAddr + i, ph.p_type, ph.p_type, ph.p_vaddr, ph.p_memsz, ph.p_paddr, ph.p_filesz, ph.p_offset, ph.p_align);
 
         switch (ph.p_type)
