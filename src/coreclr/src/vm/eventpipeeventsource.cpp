@@ -23,7 +23,7 @@ const WCHAR* EventPipeEventSource::s_pOSInformation = W("Windows");
 const WCHAR* EventPipeEventSource::s_pOSInformation = W("OSX");
 #elif defined(__linux__)
 const WCHAR* EventPipeEventSource::s_pOSInformation = W("Linux");
-#elif
+#else
 const WCHAR* EventPipeEventSource::s_pOSInformation = W("Unknown");
 #endif
 
