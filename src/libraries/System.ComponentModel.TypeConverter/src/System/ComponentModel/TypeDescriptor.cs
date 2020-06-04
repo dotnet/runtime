@@ -2319,8 +2319,7 @@ namespace System.ComponentModel
         [EditorBrowsable(EditorBrowsableState.Advanced)]
         public static Type ComObjectType
         {
-            [PreserveDependency(".ctor", "System.ComponentModel.TypeDescriptor/TypeDescriptorComObject")]
-            [PreserveDependency(".ctor", "System.ComponentModel.TypeDescriptor/ComNativeDescriptorProxy")]
+            [DynamicallyAccessedMembersAttribute(DynamicallyAccessedMemberTypes.DefaultConstructor)]
             get => typeof(TypeDescriptorComObject);
         }
 

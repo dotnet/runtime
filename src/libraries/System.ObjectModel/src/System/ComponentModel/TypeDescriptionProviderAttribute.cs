@@ -39,6 +39,7 @@ namespace System.ComponentModel
         /// The TypeName property returns the assembly qualified type name
         /// for the type description provider.
         /// </summary>
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.DefaultConstructor)]
         public string TypeName { get; }
     }
 }
