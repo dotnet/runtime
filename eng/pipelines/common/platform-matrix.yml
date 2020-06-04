@@ -19,7 +19,6 @@ parameters:
   helixQueuesTemplate: ''
   stagedBuild: false
   # When set to false, suppresses reuse of OSX managed build artifacts (for pipelines without an OSX obj)
-  managedOsxBuild: true
   # When set to true, passes the 'platforms' value as a job parameter also named 'platforms'.
   # Handled as an opt-in parameter to avoid excessive yaml.
   passPlatforms: false
@@ -74,6 +73,51 @@ jobs:
 #        managedTestBuildOsGroup: Linux
 #        crossrootfsDir: '/crossrootfs/arm64'
 #        ${{ insert }}: ${{ parameters.jobParameters }}
+=======
+- ${{ if or(containsValue(parameters.platforms, 'Linux_arm'), in(parameters.platformGroup, 'all', 'gcstress')) }}:
+  - template: xplat-setup.yml
+    parameters:
+      jobTemplate: ${{ parameters.jobTemplate }}
+      helixQueuesTemplate: ${{ parameters.helixQueuesTemplate }}
+      osGroup: Linux
+      archType: arm
+      platform: Linux_arm
+      container:
+        image: ubuntu-16.04-cross-20200413125008-09ec757
+        registry: mcr
+      jobParameters:
+        runtimeFlavor: ${{ parameters.runtimeFlavor }}
+        stagedBuild: ${{ parameters.stagedBuild }}
+        buildConfig: ${{ parameters.buildConfig }}
+        ${{ if eq(parameters.passPlatforms, true) }}:
+          platforms: ${{ parameters.platforms }}
+        helixQueueGroup: ${{ parameters.helixQueueGroup }}
+        crossrootfsDir: '/crossrootfs/arm'
+        ${{ insert }}: ${{ parameters.jobParameters }}
+
+# Linux arm64
+
+- ${{ if or(containsValue(parameters.platforms, 'Linux_arm64'), in(parameters.platformGroup, 'all', 'gcstress')) }}:
+  - template: xplat-setup.yml
+    parameters:
+      jobTemplate: ${{ parameters.jobTemplate }}
+      helixQueuesTemplate: ${{ parameters.helixQueuesTemplate }}
+      osGroup: Linux
+      archType: arm64
+      platform: Linux_arm64
+      container:
+        image: ubuntu-16.04-cross-arm64-20200413125008-cfdd435
+        registry: mcr
+      jobParameters:
+        runtimeFlavor: ${{ parameters.runtimeFlavor }}
+        stagedBuild: ${{ parameters.stagedBuild }}
+        buildConfig: ${{ parameters.buildConfig }}
+        ${{ if eq(parameters.passPlatforms, true) }}:
+          platforms: ${{ parameters.platforms }}
+        helixQueueGroup: ${{ parameters.helixQueueGroup }}
+        crossrootfsDir: '/crossrootfs/arm64'
+        ${{ insert }}: ${{ parameters.jobParameters }}
+>>>>>>> origin/master
 
 # Linux musl x64
 
@@ -88,6 +132,7 @@ jobs:
 #      platform: Linux_musl_x64
 #      container:
         # alpine coreclr cmake errors on newer builds
+<<<<<<< HEAD
 #        ${{ if eq(parameters.runtimeFlavor, 'mono') }}:
 #          image: alpine-3.9-WithNode-0fc54a3-20200131134036
 #        ${{ if eq(parameters.runtimeFlavor, 'coreclr') }}:
@@ -345,7 +390,6 @@ jobs:
         ${{ if eq(parameters.passPlatforms, true) }}:
           platforms: ${{ parameters.platforms }}
         helixQueueGroup: ${{ parameters.helixQueueGroup }}
-        managedTestBuildOsGroup: OSX
         ${{ insert }}: ${{ parameters.jobParameters }}
 
 # iOS x86

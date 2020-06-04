@@ -504,12 +504,7 @@ End
 // used to remember which types have been logged (to avoid duplicate logging of the
 // same type).
 Crst EtwTypeLogHash
-    AcquiredAfter ThreadStore AllowedFiles Cer TPMethodTable
-    AcquiredBefore AvailableParamTypes ConnectionNameTable DeadlockDetection DebuggerController
-               DebuggerHeapLock DebuggerJitInfo DynamicIL ExecuteManRangeLock HandleTable IbcProfile
-               JitGenericHandleCache JumpStubCache LoaderHeap ModuleLookupTable ProfilingAPIStatus
-               ProfilerGCRefDataFreeList RWLock SingleUseLock SyncBlockCache SystemDomainDelayedUnloadList
-               ThreadIdDispenser ThreadStaticDataHashTable
+    AcquiredAfter AllowedFiles Cer SingleUseLock TPMethodTable
 End
 
 Crst Remoting
