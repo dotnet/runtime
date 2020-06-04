@@ -4018,13 +4018,14 @@ BOOL gc_heap::reserve_initial_memory (size_t normal_size, size_t large_size, siz
     }
 
     size_t temp_pinned_size = (separated_poh_p ? 0 : pinned_size);
+    size_t separate_pinned_size = memory_details.block_count * pinned_size;
     size_t requestedMemory = memory_details.block_count * (normal_size + large_size + temp_pinned_size);
 
     uint8_t* allatonce_block = (uint8_t*)virtual_alloc (requestedMemory, use_large_pages_p);
     uint8_t* separated_poh_block = nullptr;
     if (allatonce_block && separated_poh_p)
     {
-        separated_poh_block = (uint8_t*)virtual_alloc ((memory_details.block_count * pinned_size), false);
+        separated_poh_block = (uint8_t*)virtual_alloc (separate_pinned_size, false);
         if (!separated_poh_block)
         {
             virtual_free (allatonce_block, requestedMemory);
@@ -4036,7 +4037,7 @@ BOOL gc_heap::reserve_initial_memory (size_t normal_size, size_t large_size, siz
         if (separated_poh_p)
         {
             g_gc_lowest_address = min (allatonce_block, separated_poh_block);
-            g_gc_highest_address = max (allatonce_block + requestedMemory, separated_poh_block + (memory_details.block_count * pinned_size));
+            g_gc_highest_address = max ((allatonce_block + requestedMemory), (separated_poh_block + separate_pinned_size));
             memory_details.allocation_pattern = initial_memory_details::ALLATONCE_SEPARATED_POH;
         }
         else
@@ -35305,17 +35306,10 @@ HRESULT GCHeap::Initialize()
 #ifdef MULTIPLE_HEAPS
             if (nhp_from_config == 0)
             {
-                if (nhp > gc_heap::heap_hard_limit_oh[0] / min_segment_size_hard_limit)
+                for (int i = 0; i < (total_oh_count - 1); i++)
                 {
-                    nhp = (uint32_t)(gc_heap::heap_hard_limit_oh[0] / min_segment_size_hard_limit);
-                }
-                if (nhp > gc_heap::heap_hard_limit_oh[1] / min_segment_size_hard_limit)
-                {
-                    nhp = (uint32_t)(gc_heap::heap_hard_limit_oh[1] / min_segment_size_hard_limit);
-                }
-                if (nhp > gc_heap::heap_hard_limit_oh[2] / min_segment_size_hard_limit)
-                {
-                    nhp = (uint32_t)(gc_heap::heap_hard_limit_oh[2] / min_segment_size_hard_limit);
+                    uint32_t nhp_oh = (uint32_t)(gc_heap::heap_hard_limit_oh[i] / min_segment_size_hard_limit);
+                    nhp = min (nhp, nhp_oh);
                 }
                 if (nhp == 0)
                 {
@@ -35327,9 +35321,9 @@ HRESULT GCHeap::Initialize()
             large_seg_size = gc_heap::heap_hard_limit_oh[1] / nhp;
             pin_seg_size = gc_heap::heap_hard_limit_oh[2] / nhp;
 
-            size_t aligned_seg_size = align_on_segment_hard_limit (gc_heap::heap_hard_limit_oh[0] / nhp);
-            size_t aligned_large_seg_size = align_on_segment_hard_limit (gc_heap::heap_hard_limit_oh[1] / nhp);
-            size_t aligned_pin_seg_size = align_on_segment_hard_limit (gc_heap::heap_hard_limit_oh[2] / nhp);
+            size_t aligned_seg_size = align_on_segment_hard_limit (seg_size);
+            size_t aligned_large_seg_size = align_on_segment_hard_limit (large_seg_size);
+            size_t aligned_pin_seg_size = align_on_segment_hard_limit (pin_seg_size);
 
             if (!gc_heap::use_large_pages_p)
             {
