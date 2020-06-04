@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Linq;
 using Mono.Cecil;
 
 namespace Mono.Linker
@@ -6,30 +7,30 @@ namespace Mono.Linker
 	public class UnconditionalSuppressMessageAttributeState
 	{
 		private readonly LinkContext _context;
-		private readonly Dictionary<ICustomAttributeProvider, Dictionary<int, SuppressMessageInfo>> _localSuppressions;
-
-		private bool HasLocalSuppressions {
-			get {
-				return _localSuppressions.Count != 0;
-			}
-		}
+		private readonly Dictionary<ICustomAttributeProvider, Dictionary<int, SuppressMessageInfo>> _suppressions;
+		private HashSet<AssemblyDefinition> InitializedAssemblies { get; }
 
 		public UnconditionalSuppressMessageAttributeState (LinkContext context)
 		{
 			_context = context;
-			_localSuppressions = new Dictionary<ICustomAttributeProvider, Dictionary<int, SuppressMessageInfo>> ();
+			_suppressions = new Dictionary<ICustomAttributeProvider, Dictionary<int, SuppressMessageInfo>> ();
+			InitializedAssemblies = new HashSet<AssemblyDefinition> ();
 		}
 
-		public void AddLocalSuppression (CustomAttribute ca, ICustomAttributeProvider provider)
+		public void AddSuppression (CustomAttribute ca, ICustomAttributeProvider provider)
 		{
 			SuppressMessageInfo info;
-			if (!TryDecodeSuppressMessageAttributeData (ca, out info)) {
+			if (!TryDecodeSuppressMessageAttributeData (ca, out info))
 				return;
-			}
 
-			if (!_localSuppressions.TryGetValue (provider, out var suppressions)) {
+			AddSuppression (info, provider);
+		}
+
+		private void AddSuppression (SuppressMessageInfo info, ICustomAttributeProvider provider)
+		{
+			if (!_suppressions.TryGetValue (provider, out var suppressions)) {
 				suppressions = new Dictionary<int, SuppressMessageInfo> ();
-				_localSuppressions.Add (provider, suppressions);
+				_suppressions.Add (provider, suppressions);
 			}
 
 			if (suppressions.ContainsKey (info.Id))
@@ -40,18 +41,36 @@ namespace Mono.Linker
 
 		public bool IsSuppressed (int id, MessageOrigin warningOrigin, out SuppressMessageInfo info)
 		{
-			if (HasLocalSuppressions && warningOrigin.MemberDefinition != null) {
-				IMemberDefinition memberDefinition = warningOrigin.MemberDefinition;
-				while (memberDefinition != null) {
-					if (IsLocallySuppressed (id, memberDefinition, out info))
-						return true;
+			info = default;
+			if (warningOrigin.MemberDefinition == null)
+				return false;
 
-					memberDefinition = memberDefinition.DeclaringType;
-				}
+			IMemberDefinition elementContainingWarning = warningOrigin.MemberDefinition;
+			ModuleDefinition module = GetModuleFromProvider (warningOrigin.MemberDefinition);
+			DecodeModuleLevelAndGlobalSuppressMessageAttributes (module);
+			while (elementContainingWarning != null) {
+				if (IsSuppressed (id, elementContainingWarning, out info))
+					return true;
+
+				elementContainingWarning = elementContainingWarning.DeclaringType;
 			}
 
-			info = default;
+			// Check if there's an assembly or module level suppression.
+			if (IsSuppressed (id, module, out info) ||
+				IsSuppressed (id, module.Assembly, out info))
+				return true;
+
 			return false;
+		}
+
+		private bool IsSuppressed (int id, ICustomAttributeProvider provider, out SuppressMessageInfo info)
+		{
+			info = default;
+			if (provider == null)
+				return false;
+
+			return (_suppressions.TryGetValue (provider, out var suppressions) &&
+				suppressions.TryGetValue (id, out info));
 		}
 
 		private static bool TryDecodeSuppressMessageAttributeData (CustomAttribute attribute, out SuppressMessageInfo info)
@@ -96,12 +115,70 @@ namespace Mono.Linker
 			return true;
 		}
 
-		private bool IsLocallySuppressed (int id, ICustomAttributeProvider provider, out SuppressMessageInfo info)
+		public ModuleDefinition GetModuleFromProvider (ICustomAttributeProvider provider)
 		{
-			Dictionary<int, SuppressMessageInfo> suppressions;
-			info = default;
-			return _localSuppressions.TryGetValue (provider, out suppressions) &&
-				suppressions.TryGetValue (id, out info);
+			switch (provider.MetadataToken.TokenType) {
+			case TokenType.Module:
+				return provider as ModuleDefinition;
+			case TokenType.Assembly:
+				return (provider as AssemblyDefinition).MainModule;
+			case TokenType.TypeDef:
+				return (provider as TypeDefinition).Module;
+			case TokenType.Method:
+			case TokenType.Property:
+			case TokenType.Field:
+			case TokenType.Event:
+				return (provider as IMemberDefinition).DeclaringType.Module;
+			default:
+				return null;
+			}
+		}
+
+		private void DecodeModuleLevelAndGlobalSuppressMessageAttributes (ModuleDefinition module)
+		{
+			AssemblyDefinition assembly = module.Assembly;
+			if (!InitializedAssemblies.Contains (assembly)) {
+				LookForModuleLevelAndGlobalSuppressions (module, assembly);
+				foreach (var _module in assembly.Modules)
+					LookForModuleLevelAndGlobalSuppressions (_module, _module);
+			}
+		}
+
+		public void LookForModuleLevelAndGlobalSuppressions (ModuleDefinition module, ICustomAttributeProvider provider)
+		{
+			var attributes = provider.CustomAttributes.
+					Where (a => TypeRefHasUnconditionalSuppressions (a.AttributeType));
+			foreach (var instance in attributes) {
+				SuppressMessageInfo info;
+				if (!TryDecodeSuppressMessageAttributeData (instance, out info))
+					continue;
+
+				if (info.Target == null && (info.Scope == "module" || info.Scope == null)) {
+					AddSuppression (info, provider);
+					continue;
+				}
+
+				if (info.Target == null || info.Scope == null)
+					continue;
+
+				switch (info.Scope) {
+				case "type":
+				case "member":
+					foreach (var result in DocumentationSignatureParser.GetMembersForDocumentationSignature (info.Target, module))
+						AddSuppression (info, provider);
+
+					break;
+				default:
+					_context.LogMessage (MessageContainer.CreateInfoMessage ($"Scope `{info.Scope}` used in `UnconditionalSuppressMessage` is currently not supported."));
+					break;
+				}
+			}
+		}
+
+		public static bool TypeRefHasUnconditionalSuppressions (TypeReference typeRef)
+		{
+			return typeRef.Name == "UnconditionalSuppressMessageAttribute" &&
+				typeRef.Namespace == "System.Diagnostics.CodeAnalysis";
 		}
 	}
 }
