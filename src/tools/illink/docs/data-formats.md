@@ -190,9 +190,9 @@ Entire method body is replaces with `throw` instruction when method is reference
 </linker>
 ```
 
-### Override field value with a constant
+### Override static field value with a constant
 
-The `initialize` attribute is optional and when not specified the code to set the field to the value will not be generated.
+The `initialize` attribute is optional and when not specified the code to set the static field to the value will not be generated.
 
 ```xml
 <linker>
