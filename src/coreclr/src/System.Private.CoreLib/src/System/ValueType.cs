@@ -22,7 +22,7 @@ namespace System
     public abstract class ValueType
     {
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2006:UnrecognizedReflectionPattern",
-            Justification = "Unused fields don't make a difference for equality")]
+            Justification = "Trimmed fields don't make a difference for equality")]
         public override bool Equals(object? obj)
         {
             if (null == obj)
