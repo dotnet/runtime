@@ -40,6 +40,12 @@ jobs:
       - name: _crossBuildPropertyArg
         value: /p:CrossBuild=${{ ne(parameters.crossrootfsDir, '') }}
 
+      - name: _officialBuildParameter
+        $ {{ if eq(parameters.isOfficialBuild, true) }}:
+          value: /p:OfficialBuildId=$(Build.BuildNumber)
+        $ {{ if ne(parameters.isOfficialBuild, true) }}:
+          value: ''
+
       - ${{ parameters.variables }}
 
     steps:
@@ -58,7 +64,7 @@ jobs:
         displayName: Disk Usage before Build
 
     # Build
-    - script: $(Build.SourcesDirectory)$(dir)build$(scriptExt) -ci -arch ${{ parameters.archType }} $(_osParameter) ${{ parameters.buildArgs }} $(_crossBuildPropertyArg)
+    - script: $(Build.SourcesDirectory)$(dir)build$(scriptExt) -ci -arch ${{ parameters.archType }} $(_osParameter) ${{ parameters.buildArgs }} $(_officialBuildParameter) $(_crossBuildPropertyArg)
       displayName: Build product
 
     - ${{ if in(parameters.osGroup, 'OSX', 'iOS','tvOS') }}: 
