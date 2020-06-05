@@ -433,13 +433,6 @@ namespace System.Net.Http.Functional.Tests
                     canReadFunc: () => true,
                     readAsyncFunc: async (buffer, offset, count, cancellationToken) =>
                     {
-                        // This might be called from sync Read which has no ability to pass the actual cancellationToken.
-                        // So rather than deadlock, take a new token from the source.
-                        if (cancellationToken == default)
-                        {
-                            cancellationToken = tokenSource.Token;
-                        }
-                        
                         int result = 1;
                         if (called)
                         {
@@ -476,13 +469,6 @@ namespace System.Net.Http.Functional.Tests
                     positionSetFunc: _ => {},
                     readAsyncFunc: async (buffer, offset, count, cancellationToken) =>
                     {
-                        // This might be called from sync Read which has no ability to pass the actual cancellationToken.
-                        // So rather than deadlock, take a new token from the source.
-                        if (cancellationToken == default)
-                        {
-                            cancellationToken = tokenSource.Token;
-                        }
-
                         int result = 1;
                         if (called)
                         {
@@ -519,13 +505,6 @@ namespace System.Net.Http.Functional.Tests
                     positionSetFunc: _ => {},
                     readAsyncFunc: async (buffer, offset, count, cancellationToken) =>
                     {
-                        // This might be called from sync Read which has no ability to pass the actual cancellationToken.
-                        // So rather than deadlock, take a new token from the source.
-                        if (cancellationToken == default)
-                        {
-                            cancellationToken = tokenSource.Token;
-                        }
-
                         int result = 1;
                         if (called)
                         {
@@ -555,7 +534,11 @@ namespace System.Net.Http.Functional.Tests
         [MemberData(nameof(PostAsync_Cancel_CancellationTokenPassedToContent_MemberData))]
         public async Task PostAsync_Cancel_CancellationTokenPassedToContent(HttpContent content, CancellationTokenSource cancellationTokenSource)
         {
-            if (IsWinHttpHandler && UseVersion >= HttpVersion20.Value)
+            if (IsWinHttpHandler)
+            {
+                return;
+            }
+            if (!TestAsync)
             {
                 return;
             }
