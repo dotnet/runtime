@@ -148,10 +148,7 @@ struct InterpMethod {
 	void **data_items;
 	guint32 *local_offsets;
 	guint32 *exvar_offsets;
-	gpointer jit_wrapper;
-	gpointer jit_addr;
-	MonoMethodSignature *jit_sig;
-	gint32 jit_vt_res_size;
+	gpointer jit_call_info;
 	gpointer jit_entry;
 	gpointer llvmonly_unbox_entry;
 	MonoType *rtype;
