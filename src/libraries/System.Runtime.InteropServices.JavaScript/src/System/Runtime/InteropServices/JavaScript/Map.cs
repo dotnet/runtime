@@ -236,20 +236,13 @@ namespace System.Runtime.InteropServices.JavaScript
                 {
                     if (!_disposedValue)
                     {
-                        if (disposing)
-                        {
-                            // TODO: dispose managed state (managed objects).
-                        }
 
-                        // TODO: free unmanaged resources (unmanaged objects) and override a finalizer below.
-                        // TODO: set large fields to null.
                         _mapItemIterator?.Dispose();
                         _mapItemIterator = null;
                         _disposedValue = true;
                     }
                 }
 
-                //TODO: override a finalizer only if Dispose (bool disposing) above has code to free unmanaged resources.
                 ~MapItemEnumerator()
                 {
                     // Do not change this code. Put cleanup code in Dispose(bool disposing) above.

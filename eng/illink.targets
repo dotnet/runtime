@@ -150,7 +150,6 @@
             RootAssemblyNames=""
             OutputDirectory="$(ILLinkTrimOutputPath)"
             ClearInitLocals="$(ILLinkClearInitLocals)"
-            ClearInitLocalsAssemblies="$(TargetName)"
             ExtraArgs="$(ILLinkArgs)"
             ToolExe="$(_DotNetHostFileName)"
             ToolPath="$(_DotNetHostDirectory)" />

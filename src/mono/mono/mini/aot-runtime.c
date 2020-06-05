@@ -259,6 +259,9 @@ static MonoJumpInfo*
 decode_patches (MonoAotModule *amodule, MonoMemPool *mp, int n_patches, gboolean llvm, guint32 *got_offsets);
 
 static void
+load_container_amodule (MonoAssemblyLoadContext *alc);
+
+static void
 amodule_lock (MonoAotModule *amodule)
 {
 	mono_os_mutex_lock (&amodule->mutex);
@@ -2573,6 +2576,10 @@ mono_aot_register_module (gpointer *aot_info)
 	g_hash_table_insert (static_aot_modules, aname, info);
 
 	if (info->flags & MONO_AOT_FILE_FLAG_EAGER_LOAD) {
+		/*
+		 * This assembly contains shared generic instances/wrappers, etc. It needs be be loaded
+		 * before AOT code is loaded.
+		 */
 		g_assert (!container_assm_name);
 		container_assm_name = aname;
 	}
@@ -2605,6 +2612,11 @@ mono_aot_cleanup (void)
 	g_hash_table_destroy (aot_modules);
 }
 
+/*
+ * load_container_amodule:
+ *
+ *   Load the container assembly and its AOT image.
+ */
 static void
 load_container_amodule (MonoAssemblyLoadContext *alc)
 {
@@ -2618,7 +2630,11 @@ load_container_amodule (MonoAssemblyLoadContext *alc)
 	MonoImageOpenStatus status = MONO_IMAGE_OK;
 	MonoAssemblyOpenRequest req;
 	gchar *dll = g_strdup_printf (		"%s.dll", local_ref);
-	mono_assembly_request_prepare_open (&req, MONO_ASMCTX_DEFAULT, alc);
+	/*
+	 * Using INTERNAL avoids firing managed assembly load events
+	 * whose execution might require this module to be already loaded.
+	 */
+	mono_assembly_request_prepare_open (&req, MONO_ASMCTX_INTERNAL, alc);
 	MonoAssembly *assm = mono_assembly_request_open (dll, &req, &status);
 	if (!assm) {
 		gchar *exe = g_strdup_printf ("%s.exe", local_ref);

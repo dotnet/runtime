@@ -228,7 +228,8 @@ namespace System.Text.Json
         private void InitializeConstructorParameters(Dictionary<string, JsonPropertyInfo> propertyCache, ConstructorInfo constructorInfo)
         {
             ParameterInfo[] parameters = constructorInfo!.GetParameters();
-            Dictionary<string, JsonParameterInfo> parameterCache = CreateParameterCache(parameters.Length, Options);
+            Dictionary<string, JsonParameterInfo> parameterCache = new Dictionary<string, JsonParameterInfo>(
+                parameters.Length, Options.PropertyNameCaseInsensitive ? StringComparer.OrdinalIgnoreCase : null);
 
             foreach (ParameterInfo parameterInfo in parameters)
             {

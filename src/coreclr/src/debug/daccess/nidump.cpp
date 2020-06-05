@@ -5503,18 +5503,12 @@ NativeImageDumper::EnumMnemonics s_MTFlagsHigh[] =
 
     MTFLAG_ENTRY(HasFinalizer),
     MTFLAG_ENTRY(IfNotInterfaceThenMarshalable),
-#if defined(FEATURE_COMINTEROP)
-    MTFLAG_ENTRY(IfInterfaceThenHasGuidInfo),
-#endif
 #if defined(FEATURE_ICASTABLE)
     MTFLAG_ENTRY(ICastable),
 #endif
     MTFLAG_ENTRY(HasIndirectParent),
     MTFLAG_ENTRY(ContainsPointers),
     MTFLAG_ENTRY(HasTypeEquivalence),
-#if defined(FEATURE_COMINTEROP)
-    MTFLAG_ENTRY(HasRCWPerTypeData),
-#endif
     MTFLAG_ENTRY(HasCriticalFinalizer),
     MTFLAG_ENTRY(Collectible),
     MTFLAG_ENTRY(ContainsGenericVariables),
@@ -5541,7 +5535,6 @@ NativeImageDumper::EnumMnemonics s_MTFlags2[] =
     MTFLAG2_ENTRY(IsIntrinsicType),
     MTFLAG2_ENTRY(RequiresDispatchTokenFat),
     MTFLAG2_ENTRY(HasCctor),
-    MTFLAG2_ENTRY(HasCCWTemplate),
 #ifdef FEATURE_64BIT_ALIGNMENT
     MTFLAG2_ENTRY(RequiresAlign8),
 #endif
@@ -7190,47 +7183,6 @@ NativeImageDumper::DumpMethodTable( PTR_MethodTable mt, const char * name,
         DisplayEndStructure( METHODTABLES );//OptionalMember_GenericsStaticsInfo
 
     }
-
-#ifdef FEATURE_COMINTEROP
-    if (haveCompleteExtents &&
-        mt->HasGuidInfo() &&
-        CHECK_OPT(METHODTABLES)
-        )
-    {
-        PTR_GuidInfo guidInfo(*mt->GetGuidInfoPtr());
-
-        if (guidInfo != NULL)
-        {
-            m_display->StartStructureWithOffset( "OptionalMember_GuidInfo",
-                                                 mt->GetOffsetOfOptionalMember(MethodTable::OptionalMember_GuidInfo),
-                                                 sizeof(void*),
-                                                 DPtrToPreferredAddr(guidInfo),
-                                                 sizeof(GuidInfo)
-                                                 );
-            TempBuffer buf;
-            GuidToString( guidInfo->m_Guid, buf );
-            DisplayWriteFieldStringW( m_Guid, (const WCHAR *)buf, GuidInfo,
-                                      ALWAYS );
-            DisplayWriteFieldFlag( m_bGeneratedFromName,
-                                   guidInfo->m_bGeneratedFromName,
-                                   GuidInfo, ALWAYS );
-            DisplayEndStructure( ALWAYS ); // OptionalMember_GuidInfo
-        }
-    }
-
-    if (haveCompleteExtents &&
-        mt->HasCCWTemplate()
-        && CHECK_OPT(METHODTABLES)
-        )
-    {
-        PTR_ComCallWrapperTemplate ccwTemplate(TO_TADDR(*mt->GetCCWTemplatePtr()));
-        m_display->WriteFieldPointer( "OptionalMember_CCWTemplate",
-                                      mt->GetOffsetOfOptionalMember(MethodTable::OptionalMember_CCWTemplate),
-                                      sizeof(void *),
-                                      DPtrToPreferredAddr(ccwTemplate)
-                                      );
-    }
-#endif // FEATURE_COMINTEROP
 
     DisplayEndStructure( METHODTABLES ); //MethodTable
 } // NativeImageDumper::DumpMethodTable

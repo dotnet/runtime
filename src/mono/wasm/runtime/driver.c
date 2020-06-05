@@ -294,7 +294,7 @@ icall_table_lookup_symbol (void *func)
 
 void mono_initialize_internals ()
 {
-	mono_add_internal_call ("WebAssembly.Runtime::InvokeJS", mono_wasm_invoke_js);
+	mono_add_internal_call ("Interop/Runtime::InvokeJS", mono_wasm_invoke_js);
 	// TODO: what happens when two types in different assemblies have the same FQN?
 
 	// Blazor specific custom routines - see dotnet_support.js for backing code

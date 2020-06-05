@@ -16836,6 +16836,11 @@ bool Compiler::impReturnInstruction(int prefixFlags, OPCODE& opcode)
                     }
                 }
             }
+
+            if (impInlineInfo->retExpr != nullptr)
+            {
+                impInlineInfo->retBB = compCurBB;
+            }
         }
     }
 

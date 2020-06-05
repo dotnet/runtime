@@ -214,10 +214,8 @@ ClassLoader::CreateTypeHandleForNonCanonicalGenericInstantiation(
 
 #ifdef FEATURE_COMINTEROP
     BOOL fHasDynamicInterfaceMap = pOldMT->HasDynamicInterfaceMap();
-    BOOL fHasRCWPerTypeData = pOldMT->HasRCWPerTypeData();
 #else // FEATURE_COMINTEROP
     BOOL fHasDynamicInterfaceMap = FALSE;
-    BOOL fHasRCWPerTypeData = FALSE;
 #endif // FEATURE_COMINTEROP
 
     // Collectible types have some special restrictions
@@ -248,9 +246,6 @@ ClassLoader::CreateTypeHandleForNonCanonicalGenericInstantiation(
     DWORD cbIMap = pOldMT->GetInterfaceMapSize();
     InterfaceInfo_t * pOldIMap = (InterfaceInfo_t *)pOldMT->GetInterfaceMap();
 
-    BOOL fHasGuidInfo = FALSE;
-    BOOL fHasCCWTemplate = FALSE;
-
     DWORD dwMultipurposeSlotsMask = 0;
     dwMultipurposeSlotsMask |= MethodTable::enum_flag_HasPerInstInfo;
     if (wNumInterfaces != 0)
@@ -262,9 +257,6 @@ ClassLoader::CreateTypeHandleForNonCanonicalGenericInstantiation(
     // We need space for the optional members.
     DWORD cbOptional = MethodTable::GetOptionalMembersAllocationSize(dwMultipurposeSlotsMask,
                                                       fHasGenericsStaticsInfo,
-                                                      fHasGuidInfo,
-                                                      fHasCCWTemplate,
-                                                      fHasRCWPerTypeData,
                                                       pOldMT->HasTokenOverflow());
 
     // We need space for the PerInstInfo, i.e. the generic dictionary pointers...
@@ -452,14 +444,6 @@ ClassLoader::CreateTypeHandleForNonCanonicalGenericInstantiation(
     if (fHasGenericsStaticsInfo)
         pMT->SetDynamicStatics(TRUE);
 
-
-#ifdef FEATURE_COMINTEROP
-    if (fHasCCWTemplate)
-        pMT->SetHasCCWTemplate();
-    if (fHasGuidInfo)
-        pMT->SetHasGuidInfo();
-#endif
-
     // Since we are fabricating a new MT based on an existing one, the per-inst info should
     // be non-null
     _ASSERTE(pOldMT->HasPerInstInfo());
@@ -593,9 +577,6 @@ ClassLoader::CreateTypeHandleForNonCanonicalGenericInstantiation(
     _ASSERTE(!fHasGenericsStaticsInfo == !pMT->HasGenericsStaticsInfo());
 #ifdef FEATURE_COMINTEROP
     _ASSERTE(!fHasDynamicInterfaceMap == !pMT->HasDynamicInterfaceMap());
-    _ASSERTE(!fHasRCWPerTypeData == !pMT->HasRCWPerTypeData());
-    _ASSERTE(!fHasCCWTemplate == !pMT->HasCCWTemplate());
-    _ASSERTE(!fHasGuidInfo == !pMT->HasGuidInfo());
 #endif
 
     LOG((LF_CLASSLOADER, LL_INFO1000, "GENERICS: Replicated methodtable to create type %s\n", pMT->GetDebugClassName()));

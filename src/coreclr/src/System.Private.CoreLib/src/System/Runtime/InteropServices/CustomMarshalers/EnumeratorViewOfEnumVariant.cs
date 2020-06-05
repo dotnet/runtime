@@ -2,12 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Collections;
 using System.Runtime.InteropServices.ComTypes;
 
 namespace System.Runtime.InteropServices.CustomMarshalers
 {
-    internal class EnumeratorViewOfEnumVariant : ICustomAdapter, IEnumerator
+    internal class EnumeratorViewOfEnumVariant : ICustomAdapter, System.Collections.IEnumerator
     {
         private readonly IEnumVARIANT _enumVariantObject;
         private bool _fetchedLastObject;
@@ -56,6 +55,9 @@ namespace System.Runtime.InteropServices.CustomMarshalers
             {
                 Marshal.ThrowExceptionForHR(hr);
             }
+
+            _fetchedLastObject = false;
+            _current = null;
         }
 
         public object GetUnderlyingObject()
