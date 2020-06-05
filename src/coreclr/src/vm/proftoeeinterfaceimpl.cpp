@@ -6534,9 +6534,13 @@ HRESULT ProfToEEInterfaceImpl::GetNativeCodeStartAddresses(FunctionID functionID
             NativeCodeVersionCollection nativeCodeVersions = ilCodeVersion.GetNativeCodeVersions(pMD);
             for (NativeCodeVersionIterator iter = nativeCodeVersions.Begin(); iter != nativeCodeVersions.End(); iter++)
             {
-                addresses.Append((*iter).GetNativeCode());
+                PCODE codeStart = (*iter).GetNativeCode();
 
-                ++trueLen;
+                if (codeStart != NULL)
+                {
+                    addresses.Append(codeStart);
+                    ++trueLen;
+                }
             }
         }
 
