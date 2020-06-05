@@ -97,12 +97,8 @@ jobs:
           name: NetCoreInternal-Pool
           queue: BuildPool.Ubuntu.1604.Amd64
 
-        # Public OSX Build Pool
-        ${{ if and(in(parameters.osGroup, 'OSX', 'iOS', 'tvOS'), eq(variables['System.TeamProject'], 'public')) }}:
-          vmImage: 'macOS-10.14'
-
-        # Official OSX Build Pool
-        ${{ if and(in(parameters.osGroup, 'OSX', 'iOS', 'tvOS'), ne(variables['System.TeamProject'], 'public')) }}:
+        # OSX Build Pool (we don't have on-prem OSX BuildPool
+        ${{ if in(parameters.osGroup, 'OSX', 'iOS', 'tvOS') }}:
           vmImage: 'macOS-10.14'
 
         # Official Build Windows Pool

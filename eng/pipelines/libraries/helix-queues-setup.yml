@@ -89,17 +89,11 @@ jobs:
 
     # Android
     - ${{ if in(parameters.platform, 'Android_x86', 'Android_x64') }}:
-      - ${{ if eq(parameters.jobParameters.isFullMatrix, true) }}:
-        - Ubuntu.1804.Amd64.Android.Open
-      - ${{ if eq(parameters.jobParameters.isFullMatrix, false) }}:
-        - Ubuntu.1804.Amd64.Android.Open
+      - Ubuntu.1804.Amd64.Android.Open
 
     # iOS x64/x86
     - ${{ if in(parameters.platform, 'iOS_x64', 'iOS_x86') }}:
-      - ${{ if eq(parameters.jobParameters.isFullMatrix, true) }}:
-        - OSX.1015.Amd64.Open
-      - ${{ if eq(parameters.jobParameters.isFullMatrix, false) }}:
-        - OSX.1015.Amd64.Open
+      - OSX.1015.Amd64.Open
 
     # Windows_NT x64
     - ${{ if eq(parameters.platform, 'Windows_NT_x64') }}:
