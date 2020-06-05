@@ -571,7 +571,7 @@
     <Compile Include="System\Security\Cryptography\AesGcm.Unix.cs" />
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetsBrowser)' == 'true'">
-    <Compile Include="Internal\Cryptography\RandomNumberGeneratorImplementation.WebAssembly.cs" />
+    <Compile Include="Internal\Cryptography\RandomNumberGeneratorImplementation.Browser.cs" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="System.Collections" />
