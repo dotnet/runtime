@@ -111,7 +111,9 @@ namespace System.IO.Ports.Tests
         public void Encoding_UTF7()
         {
             Debug.WriteLine("Verifying UTF7Encoding Encoding");
+#pragma warning disable BCL0001 // Encoding.UTF7 property is obsolete
             VerifyException(Encoding.UTF7, ThrowAt.Set, typeof(ArgumentException));
+#pragma warning restore BCL0001
         }
 
         [ConditionalFact(nameof(HasOneSerialPort))]

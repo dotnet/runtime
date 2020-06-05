@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Threading;
 
@@ -105,18 +106,23 @@ namespace System.Text
         // Return a list of all EncodingInfo objects describing all of our encodings
         internal static EncodingInfo[] GetEncodings()
         {
-            EncodingInfo[] arrayEncodingInfo = new EncodingInfo[s_mappedCodePages.Length];
+            List<EncodingInfo> encodingInfos = new List<EncodingInfo>(s_mappedCodePages.Length);
 
             for (int i = 0; i < s_mappedCodePages.Length; i++)
             {
-                arrayEncodingInfo[i] = new EncodingInfo(
+                if (s_mappedCodePages[i] == Encoding.CodePageUTF7 && !Encoding.IsUTF7EncodingEnabled)
+                {
+                    continue; // skip this entry
+                }
+
+                encodingInfos.Add(new EncodingInfo(
                     s_mappedCodePages[i],
                     s_webNames[s_webNameIndices[i]..s_webNameIndices[i + 1]],
                     GetDisplayName(s_mappedCodePages[i], i)
-                    );
+                ));
             }
 
-            return arrayEncodingInfo;
+            return encodingInfos.ToArray();
         }
 
         internal static CodePageDataItem? GetCodePageDataItem(int codePage)

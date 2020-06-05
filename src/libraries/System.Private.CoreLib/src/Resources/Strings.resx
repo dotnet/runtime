@@ -3739,4 +3739,7 @@
   <data name="SwitchExpressionException_UnmatchedValue" xml:space="preserve">
     <value>Unmatched value was {0}.</value>
   </data>
+  <data name="Encoding_UTF7_Disabled" xml:space="preserve">
+    <value>Support for UTF-7 has been disabled. See {0} for more information.</value>
+  </data>
 </root>

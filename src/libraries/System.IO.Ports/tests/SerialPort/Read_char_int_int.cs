@@ -34,6 +34,9 @@ namespace System.IO.Ports.Tests
         //The maximum buffer size when an exception is not expected
         private const int maxBufferSize = 8;
 
+        // The web name of Encoding.UTF7
+        private const string utf7WebName = "utf-7";
+
         public enum ReadDataFromEnum { NonBuffered, Buffered, BufferedAndNonBuffered };
 
         #region Test Cases
@@ -950,7 +953,7 @@ namespace System.IO.Ports.Tests
                     Fail("ERROR!!!: Expected to read {0} chars actually read {1}", xmitCharBuffer.Length, numRead);
                 }
 
-                if (encoding.EncodingName == Encoding.UTF7.EncodingName)
+                if (encoding.WebName == utf7WebName)
                 {
                     //If UTF7Encoding is being used we might leave a - in the stream
                     if (com1.BytesToRead == xmitByteBuffer.Length + 1)

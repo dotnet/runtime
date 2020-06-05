@@ -4,6 +4,7 @@
 
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Runtime.Serialization;
@@ -75,6 +76,8 @@ namespace System.Text
 
     public abstract partial class Encoding : ICloneable
     {
+        private const string ENABLEUTF7_APPCONTEXT_SWITCH_NAME = "System.Text.Encoding.EnableUnsafeUTF7Encoding";
+
         // For netcore we use UTF8 as default encoding since ANSI isn't available
         private static readonly UTF8Encoding.UTF8EncodingSealed s_defaultEncoding = new UTF8Encoding.UTF8EncodingSealed(encoderShouldEmitUTF8Identifier: false);
 
@@ -104,7 +107,7 @@ namespace System.Text
         internal const int ISO_8859_1 = 28591;    // Latin1
 
         // Special code pages
-        private const int CodePageUTF7 = 65000;
+        internal const int CodePageUTF7 = 65000;
         private const int CodePageUTF8 = 65001;
         private const int CodePageUTF32 = 12000;
         private const int CodePageUTF32BE = 12001;
@@ -224,7 +227,6 @@ namespace System.Text
                 case CodePageBigEndian: return BigEndianUnicode; // 1201
                 case CodePageUTF32: return UTF32;                // 12000
                 case CodePageUTF32BE: return BigEndianUTF32;     // 12001
-                case CodePageUTF7: return UTF7;                  // 65000
                 case CodePageUTF8: return UTF8;                  // 65001
                 case CodePageASCII: return ASCII;                // 20127
                 case ISO_8859_1: return Latin1;                  // 28591
@@ -235,6 +237,27 @@ namespace System.Text
                 case CodePageNoThread:                           // 3 CP_THREAD_ACP
                 case CodePageNoSymbol:                           // 42 CP_SYMBOL
                     throw new ArgumentException(SR.Format(SR.Argument_CodepageNotSupported, codepage), nameof(codepage));
+
+                case CodePageUTF7:                               // 65000
+                    {
+                        // Support for UTF-7 is disabled by default. It can be re-enabled by registering a custom
+                        // provider (which early-exits this method before the 'switch' statement) or by using
+                        // AppContext. If support is not enabled, we'll provide a friendly error message stating
+                        // how the developer can re-enable it in their application.
+
+                        if (IsUTF7EncodingEnabled)
+                        {
+#pragma warning disable BCL0001 // Encoding.UTF7 property getter is obsolete
+                            return UTF7;
+#pragma warning restore BCL0001
+                        }
+                        else
+                        {
+                            string moreInfoUrl = string.Format(CultureInfo.InvariantCulture, Obsoletions.SHARED_URL_FORMAT, Obsoletions.SYSTEM_TEXT_ENCODING_UTF7_DIAGID);
+                            string exceptionMessage = SR.Format(SR.Encoding_UTF7_Disabled, moreInfoUrl);
+                            throw new NotSupportedException(exceptionMessage); // matches generic "unknown code page" exception type
+                        }
+                    }
             }
 
             if (codepage < 0 || codepage > 65535)
@@ -1015,7 +1038,17 @@ namespace System.Text
         // Returns an encoding for the UTF-7 format. The returned encoding will be
         // an instance of the UTF7Encoding class.
 
+        [Obsolete(Obsoletions.SYSTEM_TEXT_ENCODING_UTF7_MESSAGE, DiagnosticId = Obsoletions.SYSTEM_TEXT_ENCODING_UTF7_DIAGID, UrlFormat = Obsoletions.SHARED_URL_FORMAT)]
         public static Encoding UTF7 => UTF7Encoding.s_default;
+
+        internal static bool IsUTF7EncodingEnabled
+        {
+            get
+            {
+                AppContext.TryGetSwitch(ENABLEUTF7_APPCONTEXT_SWITCH_NAME, out bool isEnabled);
+                return isEnabled;
+            }
+        }
 
         // Returns an encoding for the UTF-8 format. The returned encoding will be
         // an instance of the UTF8Encoding class.
