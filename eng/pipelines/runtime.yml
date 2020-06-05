@@ -251,7 +251,7 @@ jobs:
     - Linux_arm
     jobParameters:
       testGroup: innerloop
-      nameSuffix: All_Mono
+      nameSuffix: AllSubsets_Mono
       buildArgs: -s mono+libs+installer -c $(_BuildConfig)
       condition: >-
         or(
@@ -274,7 +274,7 @@ jobs:
     - Linux_musl_x64
     jobParameters:
       testGroup: innerloop
-      nameSuffix: All_Mono
+      nameSuffix: AllSubsets_Mono
       buildArgs: -s mono+libs+installer -c $(_BuildConfig)
       condition: >-
         or(
@@ -295,7 +295,7 @@ jobs:
     - OSX_x64
     jobParameters:
       testGroup: innerloop
-      nameSuffix: All_Mono_LLVMJIT
+      nameSuffix: AllSubsets_Mono_LLVMJIT
       buildArgs: -s mono+libs+installer -c $(_BuildConfig)
                  /p:MonoEnableLLVM=true /p:MonoBundleLLVMOptimizer=false
       condition: >-
@@ -314,7 +314,7 @@ jobs:
     - Linux_x64
     jobParameters:
       testGroup: innerloop
-      nameSuffix: All_Mono_LLVMJIT
+      nameSuffix: AllSubsets_Mono_LLVMJIT
       buildArgs: -s mono+libs+installer -c $(_BuildConfig)
                  /p:MonoEnableLLVM=true /p:MonoBundleLLVMOptimizer=false
       condition: >-
@@ -336,7 +336,7 @@ jobs:
     - Linux_x64
     jobParameters:
       testGroup: innerloop
-      nameSuffix: All_Mono_LLVMAOT
+      nameSuffix: AllSubsets_Mono_LLVMAOT
       buildArgs: -s mono+libs+installer -c $(_BuildConfig)
                  /p:MonoEnableLLVM=true /p:MonoBundleLLVMOptimizer=true
       condition: >-
@@ -355,7 +355,7 @@ jobs:
     - OSX_x64
     jobParameters:
       testGroup: innerloop
-      nameSuffix: All_Mono_LLVMAOT
+      nameSuffix: AllSubsets_Mono_LLVMAOT
       buildArgs: -s mono+libs+installer -c $(_BuildConfig)
                  /p:MonoEnableLLVM=true /p:MonoBundleLLVMOptimizer=true
       condition: >-
