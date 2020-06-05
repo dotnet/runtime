@@ -23,9 +23,16 @@ void ProfilerDiagnosticProtocolHelper::HandleIpcMessage(DiagnosticsIpc::IpcMessa
     }
     CONTRACTL_END;
 
-    switch ((DiagnosticsIpc::ProfilerCommandId)message.GetHeader().CommandId)
+    if (!g_fEEStarted)
     {
-    case DiagnosticsIpc::ProfilerCommandId::AttachProfiler:
+        DiagnosticsIpc::IpcMessage::SendErrorMessage(pStream, CORDIAGIPC_E_UNKNOWN_ERROR);
+        delete pStream;
+        return;
+    }
+
+    switch ((ProfilerCommandId)message.GetHeader().CommandId)
+    {
+    case ProfilerCommandId::AttachProfiler:
         ProfilerDiagnosticProtocolHelper::AttachProfiler(message, pStream);
         break;
 

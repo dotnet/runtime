@@ -75,37 +75,21 @@ namespace DiagnosticsIpc
         Server        = 0xFF,
     };
 
+    // Overlaps with DiagnosticServerResponseId
+    // DON'T create overlapping values
     enum class DiagnosticServerCommandId : uint8_t
     {
-        OK            = 0x00,
+        // 0x00 used in DiagnosticServerResponseId
         ResumeRuntime = 0x01,
+        // 0xFF used DiagnosticServerResponseId
+    };
+
+    // Overlaps with DiagnosticServerCommandId
+    // DON'T create overlapping values
+    enum class DiagnosticServerResponseId : uint8_t
+    {
+        OK            = 0x00,
         Error         = 0xFF,
-    };
-
-    // The event pipe command set is 0x02
-    // see diagnosticsipc.h and diagnosticserver.h for more details
-    enum class EventPipeCommandId : uint8_t
-    {
-        StopTracing     = 0x01,
-        CollectTracing  = 0x02,
-        CollectTracing2 = 0x03,
-        // future
-    };
-
-    // The Diagnostic command set is 0x01
-    enum class DumpCommandId : uint8_t
-    {
-        // reserved      = 0x00,
-        GenerateCoreDump = 0x01,
-        // future
-    };
-
-    // The Diagnostic command set is 0x01
-    enum class ProfilerCommandId : uint8_t
-    {
-        // reserved      = 0x00,
-        AttachProfiler = 0x01,
-        // future
     };
 
     struct MagicVersion
@@ -189,7 +173,7 @@ namespace DiagnosticsIpc
         { DotnetIpcMagic_V1 },
         (uint16_t)sizeof(IpcHeader),
         (uint8_t)DiagnosticServerCommandSet::Server,
-        (uint8_t)DiagnosticServerCommandId::OK,
+        (uint8_t)DiagnosticServerResponseId::OK,
         (uint16_t)0x0000
     };
 
@@ -198,7 +182,7 @@ namespace DiagnosticsIpc
         { DotnetIpcMagic_V1 },
         (uint16_t)sizeof(IpcHeader),
         (uint8_t)DiagnosticServerCommandSet::Server,
-        (uint8_t)DiagnosticServerCommandId::Error,
+        (uint8_t)DiagnosticServerResponseId::Error,
         (uint16_t)0x0000
     };
 

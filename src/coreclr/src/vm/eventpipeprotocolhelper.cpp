@@ -119,15 +119,21 @@ void EventPipeProtocolHelper::HandleIpcMessage(DiagnosticsIpc::IpcMessage& messa
     }
     CONTRACTL_END;
 
-    switch ((DiagnosticsIpc::EventPipeCommandId)message.GetHeader().CommandId)
+    switch ((EventPipeCommandId)message.GetHeader().CommandId)
     {
-    case DiagnosticsIpc::EventPipeCommandId::CollectTracing:
+    case EventPipeCommandId::CollectTracing:
         EventPipeProtocolHelper::CollectTracing(message, pStream);
         break;
-    case DiagnosticsIpc::EventPipeCommandId::CollectTracing2:
+    case EventPipeCommandId::CollectTracing2:
         EventPipeProtocolHelper::CollectTracing2(message, pStream);
         break;
-    case DiagnosticsIpc::EventPipeCommandId::StopTracing:
+    case EventPipeCommandId::StopTracing:
+        if (!g_fEEStarted)
+        {
+            DiagnosticsIpc::IpcMessage::SendErrorMessage(pStream, CORDIAGIPC_E_UNKNOWN_ERROR);
+            delete pStream;
+            return;
+        }
         EventPipeProtocolHelper::StopTracing(message, pStream);
         break;
 
