@@ -543,8 +543,8 @@ namespace ILCompiler.PEWriter
                 int newSectionStartRva = AlignmentHelper.AlignUp(sectionStartRva, _sectionOverAlignByPadding);
                 if (newSectionStartRva > sectionStartRva)
                 {
-                    int padding = newSectionStartRva - sectionStartRva;
-                    _paddingToInject.Add((location.PointerToRawData + previouslyInjectedPadding, newSectionStartRva - sectionStartRva));
+                    int padding = newSectionStartRva - (location.PointerToRawData + previouslyInjectedPadding);
+                    _paddingToInject.Add((location.PointerToRawData + previouslyInjectedPadding, padding));
                     previouslyInjectedPadding += padding;
                 }
                 sectionStartRva = newSectionStartRva;
