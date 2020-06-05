@@ -825,7 +825,6 @@ namespace ILCompiler.Reflection.ReadyToRun
             Options = options;
         }
 
-        public StringBuilder CurrentBuilder;
         /// <summary>
         /// Dump options are used to specify details of signature formatting.
         /// </summary>
@@ -867,7 +866,6 @@ namespace ILCompiler.Reflection.ReadyToRun
 
             public string GetMethodFromMethodDef(MetadataReader reader, MethodDefinitionHandle handle, string owningTypeOverride)
             {
-                StringBuilder signaturePrefixBuilder = new StringBuilder();
                 uint methodDefToken = (uint)MetadataTokens.GetToken(handle);
                 return MetadataNameFormatter.FormatHandle(
                     reader,
@@ -878,7 +876,6 @@ namespace ILCompiler.Reflection.ReadyToRun
 
             public string GetMethodFromMemberRef(MetadataReader reader, MemberReferenceHandle handle, string owningTypeOverride)
             {
-                StringBuilder signaturePrefixBuilder = new StringBuilder();
                 uint methodRefToken = (uint)MetadataTokens.GetToken(handle);
                 return MetadataNameFormatter.FormatHandle(
                     reader,
@@ -921,7 +918,7 @@ namespace ILCompiler.Reflection.ReadyToRun
                     builder.Append("[INST] ");
                 }
                 builder.Append(method);
-                return method;
+                return builder.ToString();
             }
         }
 
