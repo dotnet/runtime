@@ -279,8 +279,7 @@ namespace System
             }
         }
 
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2006:UnrecognizedReflectionPattern",
-            Justification = "Recognized as an intrinsic - no annotation possible")]
+        [RequiresUnreferencedCode("Type and its constructor could be removed")]
         public ObjectHandle? CreateInstance(string assemblyName, string typeName)
         {
             if (assemblyName == null)
@@ -291,8 +290,7 @@ namespace System
             return Activator.CreateInstance(assemblyName, typeName);
         }
 
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2006:UnrecognizedReflectionPattern",
-            Justification = "Recognized as an intrinsic - no annotation possible")]
+        [RequiresUnreferencedCode("Type and its constructor could be removed")]
         public ObjectHandle? CreateInstance(string assemblyName, string typeName, bool ignoreCase, BindingFlags bindingAttr, Binder? binder, object?[]? args, System.Globalization.CultureInfo? culture, object?[]? activationAttributes)
         {
             if (assemblyName == null)
@@ -310,8 +308,7 @@ namespace System
                                             activationAttributes);
         }
 
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2006:UnrecognizedReflectionPattern",
-            Justification = "Recognized as an intrinsic - no annotation possible")]
+        [RequiresUnreferencedCode("Type and its constructor could be removed")]
         public ObjectHandle? CreateInstance(string assemblyName, string typeName, object?[]? activationAttributes)
         {
             if (assemblyName == null)
@@ -322,16 +319,14 @@ namespace System
             return Activator.CreateInstance(assemblyName, typeName, activationAttributes);
         }
 
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2006:UnrecognizedReflectionPattern",
-            Justification = "Recognized as an intrinsic - no annotation possible")]
+        [RequiresUnreferencedCode("Type and its constructor could be removed")]
         public object? CreateInstanceAndUnwrap(string assemblyName, string typeName)
         {
             ObjectHandle? oh = CreateInstance(assemblyName, typeName);
             return oh?.Unwrap();
         }
 
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2006:UnrecognizedReflectionPattern",
-            Justification = "Recognized as an intrinsic - no annotation possible")]
+        [RequiresUnreferencedCode("Type and its constructor could be removed")]
         public object? CreateInstanceAndUnwrap(string assemblyName, string typeName, bool ignoreCase, BindingFlags bindingAttr, Binder? binder, object?[]? args, System.Globalization.CultureInfo? culture, object?[]? activationAttributes)
         {
             ObjectHandle? oh = CreateInstance(assemblyName,
@@ -345,23 +340,20 @@ namespace System
             return oh?.Unwrap();
         }
 
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2006:UnrecognizedReflectionPattern",
-            Justification = "Recognized as an intrinsic - no annotation possible")]
+        [RequiresUnreferencedCode("Type and its constructor could be removed")]
         public object? CreateInstanceAndUnwrap(string assemblyName, string typeName, object?[]? activationAttributes)
         {
             ObjectHandle? oh = CreateInstance(assemblyName, typeName, activationAttributes);
             return oh?.Unwrap();
         }
 
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2006:UnrecognizedReflectionPattern",
-            Justification = "Recognized as an intrinsic - no annotation possible")]
+        [RequiresUnreferencedCode("Type and its constructor could be removed")]
         public ObjectHandle? CreateInstanceFrom(string assemblyFile, string typeName)
         {
             return Activator.CreateInstanceFrom(assemblyFile, typeName);
         }
 
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2006:UnrecognizedReflectionPattern",
-            Justification = "Recognized as an intrinsic - no annotation possible")]
+        [RequiresUnreferencedCode("Type and its constructor could be removed")]
         public ObjectHandle? CreateInstanceFrom(string assemblyFile, string typeName, bool ignoreCase, BindingFlags bindingAttr, Binder? binder, object?[]? args, System.Globalization.CultureInfo? culture, object?[]? activationAttributes)
         {
             return Activator.CreateInstanceFrom(assemblyFile,
@@ -374,23 +366,20 @@ namespace System
                                                 activationAttributes);
         }
 
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2006:UnrecognizedReflectionPattern",
-            Justification = "Recognized as an intrinsic - no annotation possible")]
+        [RequiresUnreferencedCode("Type and its constructor could be removed")]
         public ObjectHandle? CreateInstanceFrom(string assemblyFile, string typeName, object?[]? activationAttributes)
         {
             return Activator.CreateInstanceFrom(assemblyFile, typeName, activationAttributes);
         }
 
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2006:UnrecognizedReflectionPattern",
-            Justification = "Recognized as an intrinsic - no annotation possible")]
+        [RequiresUnreferencedCode("Type and its constructor could be removed")]
         public object? CreateInstanceFromAndUnwrap(string assemblyFile, string typeName)
         {
             ObjectHandle? oh = CreateInstanceFrom(assemblyFile, typeName);
             return oh?.Unwrap();
         }
 
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2006:UnrecognizedReflectionPattern",
-            Justification = "Recognized as an intrinsic - no annotation possible")]
+        [RequiresUnreferencedCode("Type and its constructor could be removed")]
         public object? CreateInstanceFromAndUnwrap(string assemblyFile, string typeName, bool ignoreCase, BindingFlags bindingAttr, Binder? binder, object?[]? args, System.Globalization.CultureInfo? culture, object?[]? activationAttributes)
         {
             ObjectHandle? oh = CreateInstanceFrom(assemblyFile,
@@ -404,8 +393,7 @@ namespace System
             return oh?.Unwrap();
         }
 
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2006:UnrecognizedReflectionPattern",
-            Justification = "Recognized as an intrinsic - no annotation possible")]
+        [RequiresUnreferencedCode("Type and its constructor could be removed")]
         public object? CreateInstanceFromAndUnwrap(string assemblyFile, string typeName, object?[]? activationAttributes)
         {
             ObjectHandle? oh = CreateInstanceFrom(assemblyFile, typeName, activationAttributes);

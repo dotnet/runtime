@@ -41,18 +41,15 @@ namespace System
         public static object? CreateInstance(Type type) =>
             CreateInstance(type, nonPublic: false);
 
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2006:UnrecognizedReflectionPattern",
-            Justification = "Recognized as an intrinsic - no annotation possible")]
+        [RequiresUnreferencedCode("Type and its constructor could be removed")]
         public static ObjectHandle? CreateInstanceFrom(string assemblyFile, string typeName) =>
             CreateInstanceFrom(assemblyFile, typeName, false, ConstructorDefault, null, null, null, null);
 
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2006:UnrecognizedReflectionPattern",
-            Justification = "Recognized as an intrinsic - no annotation possible")]
+        [RequiresUnreferencedCode("Type and its constructor could be removed")]
         public static ObjectHandle? CreateInstanceFrom(string assemblyFile, string typeName, object?[]? activationAttributes) =>
             CreateInstanceFrom(assemblyFile, typeName, false, ConstructorDefault, null, null, null, activationAttributes);
 
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2006:UnrecognizedReflectionPattern",
-            Justification = "Recognized as an intrinsic - no annotation possible")]
+        [RequiresUnreferencedCode("Type and its constructor could be removed")]
         public static ObjectHandle? CreateInstanceFrom(string assemblyFile, string typeName, bool ignoreCase, BindingFlags bindingAttr, Binder? binder, object?[]? args, CultureInfo? culture, object?[]? activationAttributes)
         {
             Assembly assembly = Assembly.LoadFrom(assemblyFile);
