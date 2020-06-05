@@ -14,7 +14,7 @@ namespace System.Net.Security
     internal static class SSPIHandleCache
     {
         private const int c_MaxCacheSize = 0x1F;  // must a (power of 2) - 1
-        private static readonly SafeCredentialReference[] s_cacheSlots = new SafeCredentialReference[c_MaxCacheSize + 1];
+        private static readonly SafeCredentialReference?[] s_cacheSlots = new SafeCredentialReference[c_MaxCacheSize + 1];
         private static int s_current = -1;
 
         internal static void CacheCredential(SafeFreeCredentials newHandle)
@@ -31,10 +31,10 @@ namespace System.Net.Security
                 unchecked
                 {
                     int index = Interlocked.Increment(ref s_current) & c_MaxCacheSize;
-                    newRef = Interlocked.Exchange<SafeCredentialReference>(ref s_cacheSlots[index], newRef);
+                    newRef = Interlocked.Exchange(ref s_cacheSlots[index], newRef);
                 }
 
-                newRef.Dispose();
+                newRef?.Dispose();
             }
             catch (Exception e)
             {
