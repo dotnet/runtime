@@ -640,7 +640,7 @@ set __CompositeResponseFile=%__CompositeOutputDir%\framework-r2r.dll.rsp
 
 if defined __CompositeBuildMode (
     mkdir !__CompositeOutputDir!
-    del /Y !__CompositeResponseFile!
+    del /Q !__CompositeResponseFile!
     echo --composite>>!__CompositeResponseFile!
     echo -O>>!__CompositeResponseFile!
     echo --targetarch:%__BuildArch%>>!__CompositeResponseFile!
