@@ -35,9 +35,4 @@
       <LogicalName>NormalizationDataWin7</LogicalName>
     </EmbeddedResource>
   </ItemGroup>
-  <ItemGroup>
-    <!-- <RuntimeHostConfigurationOption Include="System.Globalization.AppLocalIcu" Value="67.1" /> -->
-    <IcuAssemblies Include="/home/santifdezm/icu/icu/usr/local/lib/*.so*" />
-    <RuntimeTargetsCopyLocalItems Include="@(IcuAssemblies)" AssetType="native" CopyLocal="true" DestinationSubDirectory="runtimes/linux-x64/native/" DestinationSubPath="%(FileName)%(Extension)" RuntimeIdentifier="linux-x64" NuGetPackageId="xunit" />
-  </ItemGroup>
 </Project>

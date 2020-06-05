@@ -51,7 +51,7 @@ namespace System.Globalization
             IntPtr icuucLib = LoadLibrary(CreateLibraryName("libicuuc", suffix, extension, version, versionAtEnd), failOnLoadFailure: true);
             IntPtr icuinLib = LoadLibrary(CreateLibraryName("libicui18n", suffix, extension, version, versionAtEnd), failOnLoadFailure: true);
 
-            Interop.Globalization.InitICUFunctions(icuucLib, icuinLib, version, default);
+            Interop.Globalization.InitICUFunctions(icuucLib, icuinLib, version, suffix);
         }
     }
 }
