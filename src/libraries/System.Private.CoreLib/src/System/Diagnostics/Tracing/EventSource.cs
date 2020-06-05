@@ -1469,7 +1469,7 @@ namespace System.Diagnostics.Tracing
                 m_etwProvider = etwProvider;
 
 #if TARGET_WINDOWS
-#if (!ES_BUILD_STANDALONE && !ES_BUILD_PN)
+#if (!ES_BUILD_STANDALONE)
                 // API available on OS >= Win 8 and patched Win 7.
                 // Disable only for FrameworkEventSource to avoid recursion inside exception handling.
                 if (this.Name != "System.Diagnostics.Eventing.FrameworkEventSource" || Environment.IsWindows8OrAbove)
@@ -1831,11 +1831,8 @@ namespace System.Diagnostics.Tracing
                     if (dataType.IsEnum())
                     {
                         dataType = Enum.GetUnderlyingType(dataType);
-#if ES_BUILD_PN
-                        int dataTypeSize = (int)dataType.TypeHandle.ToEETypePtr().ValueTypeSize;
-#else
+
                         int dataTypeSize = System.Runtime.InteropServices.Marshal.SizeOf(dataType);
-#endif
                         if (dataTypeSize < sizeof(int))
                             dataType = typeof(int);
                         goto Again;
@@ -2452,49 +2449,8 @@ namespace System.Diagnostics.Tracing
         /// code:m_eventData for where we use this.
         /// </summary>
 
-        /*
-         EventMetadata was public in the separate System.Diagnostics.Tracing assembly(pre NS2.0),
-         now the move to CoreLib marked them as private.
-         While they are technically private (it's a contract used between the library and the ILC toolchain),
-         we need them to be rooted and exported from shared library for the system to work.
-         For now I'm simply marking them as public again.A cleaner solution might be to use.rd.xml to
-         root them and modify shared library definition to force export them.
-         */
-#if ES_BUILD_PN
-        public
-#else
-        internal
-#endif
-        partial struct EventMetadata
+        internal partial struct EventMetadata
         {
-#if ES_BUILD_PN
-            public EventMetadata(EventDescriptor descriptor,
-                EventTags tags,
-                bool enabledForAnyListener,
-                bool enabledForETW,
-                string name,
-                string message,
-                EventParameterType[] parameterTypes)
-            {
-                this.Descriptor = descriptor;
-                this.Tags = tags;
-                this.EnabledForAnyListener = enabledForAnyListener;
-                this.EnabledForETW = enabledForETW;
-#if FEATURE_PERFTRACING
-                this.EnabledForEventPipe = false;
-#endif
-                this.TriggersActivityTracking = 0;
-                this.Name = name;
-                this.Message = message;
-                this.Parameters = null!;
-                this.TraceLoggingEventTypes = null;
-                this.ActivityOptions = EventActivityOptions.None;
-                this.ParameterTypes = parameterTypes;
-                this.HasRelatedActivityID = false;
-                this.EventHandle = IntPtr.Zero;
-            }
-#endif
-
             public EventDescriptor Descriptor;
             public IntPtr EventHandle;              // EventPipeEvent handle.
             public EventTags Tags;
@@ -2514,13 +2470,8 @@ namespace System.Diagnostics.Tracing
 
             public TraceLoggingEventTypes? TraceLoggingEventTypes;
             public EventActivityOptions ActivityOptions;
-
-#if ES_BUILD_PN
-            public EventParameterType[] ParameterTypes;
-#endif
         }
 
-#if !ES_BUILD_PN
         private static int GetParameterCount(EventMetadata eventData)
         {
             return eventData.Parameters.Length;
@@ -2532,101 +2483,6 @@ namespace System.Diagnostics.Tracing
         }
 
         private const bool m_EventSourcePreventRecursion = false;
-#else
-        private static int GetParameterCount(EventMetadata eventData)
-        {
-            int paramCount;
-            if (eventData.Parameters == null)
-            {
-                paramCount = eventData.ParameterTypes.Length;
-            }
-            else
-            {
-                paramCount = eventData.Parameters.Length;
-            }
-
-            return paramCount;
-        }
-
-        private static Type GetDataType(EventMetadata eventData, int parameterId)
-        {
-            Type dataType;
-            if (eventData.Parameters == null)
-            {
-                dataType = EventTypeToType(eventData.ParameterTypes[parameterId]);
-            }
-            else
-            {
-                dataType = eventData.Parameters[parameterId].ParameterType;
-            }
-
-            return dataType;
-        }
-
-        private static readonly bool m_EventSourcePreventRecursion = true;
-
-        public enum EventParameterType
-        {
-            Boolean,
-            Byte,
-            SByte,
-            Char,
-            Int16,
-            UInt16,
-            Int32,
-            UInt32,
-            Int64,
-            UInt64,
-            IntPtr,
-            Single,
-            Double,
-            Decimal,
-            Guid,
-            String
-        }
-
-        private static Type EventTypeToType(EventParameterType type)
-        {
-            switch (type)
-            {
-                case EventParameterType.Boolean:
-                    return typeof(bool);
-                case EventParameterType.Byte:
-                    return typeof(byte);
-                case EventParameterType.SByte:
-                    return typeof(sbyte);
-                case EventParameterType.Char:
-                    return typeof(char);
-                case EventParameterType.Int16:
-                    return typeof(short);
-                case EventParameterType.UInt16:
-                    return typeof(ushort);
-                case EventParameterType.Int32:
-                    return typeof(int);
-                case EventParameterType.UInt32:
-                    return typeof(uint);
-                case EventParameterType.Int64:
-                    return typeof(long);
-                case EventParameterType.UInt64:
-                    return typeof(ulong);
-                case EventParameterType.IntPtr:
-                    return typeof(IntPtr);
-                case EventParameterType.Single:
-                    return typeof(float);
-                case EventParameterType.Double:
-                    return typeof(double);
-                case EventParameterType.Decimal:
-                    return typeof(decimal);
-                case EventParameterType.Guid:
-                    return typeof(Guid);
-                case EventParameterType.String:
-                    return typeof(string);
-                default:
-                    // TODO: should I throw an exception here?
-                    return null!;
-            }
-        }
-#endif
 
         // This is the internal entry point that code:EventListeners call when wanting to send a command to a
         // eventSource. The logic is as follows
@@ -3058,11 +2914,9 @@ namespace System.Diagnostics.Tracing
         // When that is the case, we have the build the custom assemblies on a member by hand.
         internal static Attribute? GetCustomAttributeHelper(MemberInfo member, Type attributeType, EventManifestOptions flags = EventManifestOptions.None)
         {
-#if !ES_BUILD_PN
-            // On ProjectN, ReflectionOnly() always equals false.  AllowEventSourceOverride is an option that allows either Microsoft.Diagnostics.Tracing or
+            // AllowEventSourceOverride is an option that allows either Microsoft.Diagnostics.Tracing or
             // System.Diagnostics.Tracing EventSource to be considered valid.  This should not mattter anywhere but in Microsoft.Diagnostics.Tracing (nuget package).
             if (!member.Module.Assembly.ReflectionOnly() && (flags & EventManifestOptions.AllowEventSourceOverride) == 0)
-#endif // !ES_BUILD_PN
             {
                 // Let the runtime to the work for us, since we can execute code in this context.
                 Attribute? firstAttribute = null;
@@ -3074,7 +2928,7 @@ namespace System.Diagnostics.Tracing
                 return firstAttribute;
             }
 
-#if (!ES_BUILD_PCL && !ES_BUILD_PN)
+#if (!ES_BUILD_PCL)
             foreach (CustomAttributeData data in CustomAttributeData.GetCustomAttributes(member))
             {
                 if (AttributeTypeNamesMatch(attributeType, data.Constructor.ReflectedType!))
@@ -3116,7 +2970,7 @@ namespace System.Diagnostics.Tracing
             }
 
             return null;
-#else // ES_BUILD_PCL && ES_BUILD_PN
+#else // ES_BUILD_PCL
             // Don't use nameof here because the resource doesn't exist on some platforms, which results in a compilation error.
             throw new ArgumentException("EventSource_PCLPlatformNotSupportedReflection", "EventSource");
 #endif
@@ -3705,7 +3559,7 @@ namespace System.Diagnostics.Tracing
         /// <returns>The literal value or -1 if the value could not be determined. </returns>
         private static int GetHelperCallFirstArg(MethodInfo method)
         {
-#if (!ES_BUILD_PCL && !ES_BUILD_PN)
+#if (!ES_BUILD_PCL)
             // Currently searches for the following pattern
             //
             // ...     // CAN ONLY BE THE INSTRUCTIONS BELOW
@@ -3834,7 +3688,7 @@ namespace System.Diagnostics.Tracing
         {
             try
             {
-#if (!ES_BUILD_PCL && !ES_BUILD_PN)
+#if (!ES_BUILD_PCL)
                 // send message to debugger without delay
                 System.Diagnostics.Debugger.Log(0, null, string.Format("EventSource Error: {0}{1}", msg, Environment.NewLine));
 #endif
