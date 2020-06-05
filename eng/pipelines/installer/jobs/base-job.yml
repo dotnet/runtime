@@ -77,14 +77,6 @@ jobs:
   - name: SignType
     value: test
 
-  - ${{ if eq(parameters.runtimeVariant, 'llvmjit') }}:
-    - name: llvmParameter
-      value: /p:MonoEnableLLVM=true
-
-  - ${{ if eq(parameters.runtimeVariant, 'llvmaot') }}:
-    - name: llvmParameter
-      value: /p:MonoEnableLLVM=true /p:MonoBundleLLVMOptimizer=true
-
   # Set up non-PR build from internal project
   - ${{ if eq(parameters.isOfficialBuild, true) }}:
     - name: SignType
