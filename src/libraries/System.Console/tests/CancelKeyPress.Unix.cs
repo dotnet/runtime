@@ -36,12 +36,12 @@ public partial class CancelKeyPressTests
         RemoteExecutor.Invoke(() =>
         {
             var mre = new ManualResetEventSlim();
-            var tcs = new TaskCompletionSource<object>();
+            var tcs = new TaskCompletionSource();
 
             // CancelKeyPress is triggered by SIGINT/SIGQUIT
             Console.CancelKeyPress += (sender, e) =>
             {
-                tcs.SetResult(null);
+                tcs.SetResult();
                 // Block CancelKeyPress
                 Assert.True(mre.Wait(WaitFailTestTimeoutSeconds * 1000));
             };

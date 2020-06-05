@@ -298,7 +298,9 @@ namespace System.Threading.Tasks
                 };
             }
             else
+            {
                 m_stateFlags = TASK_STATE_RAN_TO_COMPLETION | optionFlags;
+            }
         }
 
         /// <summary>Constructor for use with promise-style tasks that aren't configurable.</summary>
@@ -1373,6 +1375,18 @@ namespace System.Threading.Tasks
         /// to create this task.
         /// </summary>
         public TaskCreationOptions CreationOptions => Options & (TaskCreationOptions)(~InternalTaskOptions.InternalOptionsMask);
+
+        /// <summary>Spins until the task is completed.</summary>
+        /// <remarks>This should only be called if the task is in the process of being completed by another thread.</remarks>
+        internal void SpinUntilCompleted()
+        {
+            // Spin wait until the completion is finalized by another thread.
+            SpinWait sw = default;
+            while (!IsCompleted)
+            {
+                sw.SpinOnce();
+            }
+        }
 
         /// <summary>
         /// Gets a <see cref="System.Threading.WaitHandle"/> that can be used to wait for the task to
