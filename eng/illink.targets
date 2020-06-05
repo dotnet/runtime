@@ -54,7 +54,7 @@
   <ItemGroup>
     <None Include="$(ILLinkTrimXmlLibraryBuild)" Condition="'$(ILLinkTrimXmlLibraryBuild)' != ''" />
     <None Include="$(ILLinkSubstitutionsXml)" Condition="'$(ILLinkSubstitutionsXml)' != ''" />
-    <None Include="@(ILLinkSubstitutionsXml)" />
+    <None Include="@(ILLinkSubstitutionsXmls)" />
   </ItemGroup>
 
   <!-- Custom binplacing for pre/post-trimming and reports that is useful for analysis 
@@ -89,15 +89,14 @@
 
   <UsingTask TaskName="CombineLinkerXmlFiles" AssemblyFile="$(ILLinkTasksPath)" />
   <Target Name="_CombineILLinkSubstitutionsXmls"
-          Condition="'$(ILLinkSubstitutionsXml)' == '' and '@(ILLinkSubstitutionsXml)' != ''"
-          Inputs="@(ILLinkSubstitutionsXml)"
+          Condition="'$(ILLinkSubstitutionsXml)' == '' and '@(ILLinkSubstitutionsXmls)' != ''"
+          Inputs="@(ILLinkSubstitutionsXmls)"
           Outputs="$(ILLinkSubstitutionsXmlIntermediatePath)">
     <PropertyGroup>
       <ILLinkSubstitutionsXml>$(ILLinkSubstitutionsXmlIntermediatePath)</ILLinkSubstitutionsXml>
     </PropertyGroup>
 
-    <CombineLinkerXmlFiles Condition="'@(ILLinkSubstitutionsXml)' != ''"
-                           LinkerXmlFiles="@(ILLinkSubstitutionsXml)"
+    <CombineLinkerXmlFiles LinkerXmlFiles="@(ILLinkSubstitutionsXmls)"
                            CombinedLinkerXmlFile="$(ILLinkSubstitutionsXml)" />
 
     <ItemGroup>
