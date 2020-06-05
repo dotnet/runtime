@@ -9,11 +9,21 @@ using System.Runtime.InteropServices;
 
 namespace R2RTest
 {
+    class Crossgen2RunnerOptions
+    {
+        public bool Composite { get; set; }
+        /// <summary>
+        /// True for scenarios where the composite image has dependencies outside itself that should not be unrooted inputs
+        /// </summary>
+        public bool PartialComposite { get; set; }
+    }
+
     /// <summary>
     /// Compiles assemblies using the Cross-Platform AOT compiler
     /// </summary>
-    class CpaotRunner : CompilerRunner
+    class Crossgen2Runner : CompilerRunner
     {
+        private Crossgen2RunnerOptions Crossgen2RunnerOptions;
         public override CompilerIndex Index => CompilerIndex.CPAOT;
 
         // Crossgen2 runs on top of corerun.
@@ -23,10 +33,13 @@ namespace R2RTest
         protected readonly List<string> _referenceFiles = new List<string>();
 
         private string Crossgen2Path => Path.Combine(_options.CoreRootDirectory.FullName, "crossgen2", "crossgen2.dll");
+        private bool CompositeMode => Crossgen2RunnerOptions != null ? Crossgen2RunnerOptions.Composite : _options.Composite;
 
-        public CpaotRunner(BuildOptions options, IEnumerable<string> references)
+        public Crossgen2Runner(BuildOptions options, Crossgen2RunnerOptions crossgen2RunnerOptions, IEnumerable<string> references)
             : base(options, references)
         {
+            Crossgen2RunnerOptions = crossgen2RunnerOptions;
+
             // Some scenarios are easier to express when we give Crossgen2 a list of reference assemblies instead of directories,
             // so allow an override here.
             foreach (var reference in references)
@@ -91,7 +104,7 @@ namespace R2RTest
                 yield return "--inputbubble";
             }
 
-            if (_options.Composite)
+            if (CompositeMode)
             {
                 yield return "--composite";
             }
@@ -126,7 +139,7 @@ namespace R2RTest
                 uniqueFolders.UnionWith(_referenceFolders);
                 uniqueFolders.Remove(frameworkFolder);
 
-                foreach (string reference in ResolveReferences(uniqueFolders, _options.Composite ? 'u' : 'r'))
+                foreach (string reference in ResolveReferences(uniqueFolders, CompositeMode && !Crossgen2RunnerOptions.PartialComposite ? 'u' : 'r'))
                 {
                     yield return reference;
                 }
@@ -137,7 +150,7 @@ namespace R2RTest
                 // This is useful for crossgen2-specific scenarios since crossgen2 expects a list of files unlike crossgen1
                 foreach (var reference in _referenceFiles)
                 {
-                    yield return (_options.Composite && !_options.PartialComposite ? "-u:" : "-r:") + reference;
+                    yield return (CompositeMode && !Crossgen2RunnerOptions.PartialComposite ? "-u:" : "-r:") + reference;
                 }
             }
         }
