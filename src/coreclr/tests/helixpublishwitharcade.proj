@@ -36,7 +36,7 @@
         RuntimeVariant=$(_RuntimeVariant);
         BundledNETCoreAppPackageVersion=$(BundledNETCoreAppPackageVersion);
         HelixRuntimeRid=$(HelixRuntimeRid)
-      </_PropertiesToPass>
+        </_PropertiesToPass>
     </PropertyGroup>
 
     <Message Text="DotNetCliVersion: $(DotNetCliVersion)" Importance="High" />
@@ -138,7 +138,16 @@
       </_PayloadFiles>
     </ItemGroup>
 
-    <Copy SourceFiles="@(_PayloadFiles)" DestinationFiles="@(_PayloadFiles->'$(PayloadsRootDirectory)%(FileRelativeToPayloadsRootDirectory)')" />
+    <ItemGroup>
+      <!-- Remove the managed pdbs from our payloads.
+           This is for performance reasons to reduce our helix payload size  -->
+      <ReducedPayloadFiles Include="@(_PayloadFiles)" Condition=" '%(Extension)' != '.pdb' " />
+      
+      <ReducedPayloadFilesFinal Include="@(ReducedPayloadFiles)" Condition=" '%(Extension)' != '.sh' and '$(TargetsWindows)' == 'true' "/>
+      <ReducedPayloadFilesFinal Include="@(ReducedPayloadFiles)" Condition=" '%(Extension)' != '.cmd' and '$(TargetsWindows)' != 'true' "/>
+    </ItemGroup>
+
+    <Copy SourceFiles="@(ReducedPayloadFilesFinal)" DestinationFiles="@(ReducedPayloadFilesFinal->'$(PayloadsRootDirectory)%(FileRelativeToPayloadsRootDirectory)')" />
   </Target>
 
   <Target Name="PrepareCorrelationPayloadDirectory">
