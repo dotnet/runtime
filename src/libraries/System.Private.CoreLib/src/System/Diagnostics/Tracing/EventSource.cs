@@ -649,15 +649,9 @@ namespace System.Diagnostics.Tracing
         {
             m_config = ValidateSettings(settings);
 
-
-            GetMetadata(out Guid eventSourceGuid, out string? eventSourceName, out _, out _);
-
-            if (eventSourceGuid.Equals(Guid.Empty) || eventSourceName == null)
-            {
-                Type myType = this.GetType();
-                eventSourceGuid = GetGuid(myType);
-                eventSourceName = GetName(myType);
-            }
+            Type myType = this.GetType();
+            Guid eventSourceGuid = GetGuid(myType);
+            string eventSourceName = GetName(myType);
 
             Initialize(eventSourceGuid, eventSourceName, traits);
         }
@@ -708,25 +702,6 @@ namespace System.Diagnostics.Tracing
             }
         }
 #endif
-
-        internal virtual void GetMetadata(out Guid eventSourceGuid, out string? eventSourceName, out EventMetadata[]? eventData, out byte[]? manifestBytes)
-        {
-            //
-            // In ProjectN subclasses need to override this method, and return the data from their EventSourceAttribute and EventAttribute annotations.
-            // On other architectures it is a no-op.
-            //
-            // eventDescriptors needs to contain one EventDescriptor for each event; the event's ID should be the same as its index in this array.
-            // manifestBytes is a UTF-8 encoding of the ETW manifest for the type.
-            //
-            // This will be implemented by an IL rewriter, so we can't make this method abstract or the initial build of the subclass would fail.
-            //
-            eventSourceGuid = Guid.Empty;
-            eventSourceName = null;
-            eventData = null;
-            manifestBytes = null;
-
-            return;
-        }
 
         /// <summary>
         /// This method is called when the eventSource is updated by the controller.
@@ -2771,28 +2746,11 @@ namespace System.Diagnostics.Tracing
 #endif
             if (m_eventData == null)
             {
-                Guid eventSourceGuid = Guid.Empty;
+                // get the metadata via reflection.
+                Debug.Assert(m_rawManifest == null);
+                m_rawManifest = CreateManifestAndDescriptors(this.GetType(), Name, this);
+                Debug.Assert(m_eventData != null);
 
-                // Try the GetMetadata provided by the ILTransform in ProjectN. The default sets all to null, and in that case we fall back
-                // to the reflection approach.
-                GetMetadata(out eventSourceGuid, out string? eventSourceName, out EventMetadata[]? eventData, out byte[]? manifest);
-
-                if (eventSourceGuid.Equals(Guid.Empty) || eventSourceName == null || eventData == null || manifest == null)
-                {
-                    // GetMetadata failed, so we have to set it via reflection.
-                    Debug.Assert(m_rawManifest == null);
-
-                    m_rawManifest = CreateManifestAndDescriptors(this.GetType(), Name, this);
-                    Debug.Assert(m_eventData != null);
-                }
-                else
-                {
-                    // GetMetadata worked, so set the fields as appropriate.
-                    m_name = eventSourceName;
-                    m_guid = eventSourceGuid;
-                    m_eventData = eventData;
-                    m_rawManifest = manifest;
-                }
                 // TODO Enforce singleton pattern
                 Debug.Assert(EventListener.s_EventSources != null, "should be called within lock on EventListener.EventListenersLock which ensures s_EventSources to be initialized");
                 foreach (WeakReference<EventSource> eventSourceRef in EventListener.s_EventSources)
