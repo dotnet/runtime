@@ -156,7 +156,7 @@ jobs:
 #
 # Build CoreCLR checked using GCC toolchain
 # Only when CoreCLR is changed
-# 
+#
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:
     jobTemplate: /eng/pipelines/coreclr/templates/build-job.yml
@@ -467,6 +467,24 @@ jobs:
       liveRuntimeBuildConfig: release
 
 #
+# Build libraries using Mono CoreLib only
+#
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
+    jobTemplate: /eng/pipelines/libraries/build-job.yml
+    buildConfig: Release
+    runtimeFlavor: mono
+    platforms:
+    - Android_x86
+    - Android_x64
+    - Android_arm
+    - tvOS_arm64
+    - iOS_arm
+    - iOS_x64
+    jobParameters:
+      liveRuntimeBuildConfig: release
+
+#
 # Libraries Build that only run when libraries is changed
 #
 - template: /eng/pipelines/common/platform-matrix.yml
@@ -563,11 +581,14 @@ jobs:
     - OSX_x64
     - Linux_x64
     - Windows_NT_x64
+    - iOS_x64
+    - Android_x86
+    - Android_x64
     jobParameters:
       isOfficialBuild: false
       liveRuntimeBuildConfig: release
       testScope: innerloop
-      condition: >- 
+      condition: >-
         or(
           eq(dependencies.checkout.outputs['SetPathVars_libraries.containsChange'], true),
           eq(dependencies.checkout.outputs['SetPathVars_coreclr.containsChange'], true),
@@ -710,6 +731,8 @@ jobs:
     - OSX_x64
     - Linux_arm64
     - Linux_x64
+    - iOS_x64
+    - Android_x64
     helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
     jobParameters:
       isOfficialBuild: false

@@ -45,7 +45,9 @@ jobs:
       variables:
         - librariesTestsArtifactName: ${{ format('libraries_test_assets_{0}_{1}_{2}', parameters.osGroup, parameters.archType, parameters.buildConfig) }}
         - _archiveTestsParameter: /p:ArchiveTests=true
-        
+        - ${{ if eq(parameters.osGroup, 'Android') }}:
+          - ANDROID_OPENSSL_AAR: /tmp/openssl-android
+
         - ${{ parameters.variables }}
 
       steps:
@@ -57,7 +59,11 @@ jobs:
             unpackFolder: $(Build.SourcesDirectory)/artifacts
             cleanUnpackFolder: false
 
-        - ${{ if in(parameters.osGroup, 'OSX', 'iOS','tvOS') }}: 
+        - ${{ if in(parameters.osGroup, 'Android') }}:
+          - script: $(Build.SourcesDirectory)/eng/install-native-dependencies.sh ${{ parameters.osGroup }}
+            displayName: Install Build Dependencies
+
+        - ${{ if in(parameters.osGroup, 'OSX', 'iOS','tvOS') }}:
           - script: |
               du -sh $(Build.SourcesDirectory)/*
               df -h
@@ -69,7 +75,7 @@ jobs:
                 $(_archiveTestsParameter)
           displayName: Restore and Build
 
-        - ${{ if in(parameters.osGroup, 'OSX', 'iOS','tvOS') }}: 
+        - ${{ if in(parameters.osGroup, 'OSX', 'iOS','tvOS') }}:
           - script: |
               du -sh $(Build.SourcesDirectory)/*
               df -h

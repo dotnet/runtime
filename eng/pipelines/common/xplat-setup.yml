@@ -18,7 +18,7 @@ jobs:
     variables:
       # Disable component governance in our CI builds. These builds are not shipping nor
       # are they a service. Also the component governance jobs issue lots of inconsequential
-      # warnings and errors into our build timelines that make it hard to track down 
+      # warnings and errors into our build timelines that make it hard to track down
       # real errors in the build
       - name: skipComponentGovernanceDetection
         value: true
@@ -29,17 +29,6 @@ jobs:
       # https://github.com/dotnet/runtime/issues/32805
       - name: System.DisableZipDownload
         value: true
-
-      - name: buildConfigUpper
-        ${{ if eq(parameters.jobParameters.buildConfig, 'debug') }}:
-          value: 'Debug'
-        ${{ if eq(parameters.jobParameters.buildConfig, 'release') }}:
-          value: 'Release'
-        ${{ if eq(parameters.jobParameters.buildConfig, 'checked') }}:
-          value: 'Checked'
-
-      - name: _BuildConfig
-        value: $(buildConfigUpper)
 
       - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
         - name: archiveExtension
@@ -99,25 +88,21 @@ jobs:
     ${{ if eq(parameters.jobParameters.pool, '') }}:
       pool:
         # Public Linux Build Pool
-        ${{ if and(in(parameters.osGroup, 'Linux', 'FreeBSD'), eq(variables['System.TeamProject'], 'public')) }}:
+        ${{ if and(in(parameters.osGroup, 'Android', 'Linux', 'FreeBSD'), eq(variables['System.TeamProject'], 'public')) }}:
           name:  NetCorePublic-Pool
           queue: BuildPool.Ubuntu.1604.Amd64.Open
 
         # Official Build Linux Pool
-        ${{ if and(in(parameters.osGroup, 'Linux', 'FreeBSD'), ne(variables['System.TeamProject'], 'public')) }}:
+        ${{ if and(in(parameters.osGroup, 'Android', 'Linux', 'FreeBSD'), ne(variables['System.TeamProject'], 'public')) }}:
           name: NetCoreInternal-Pool
           queue: BuildPool.Ubuntu.1604.Amd64
 
         # Public OSX Build Pool
-        ${{ if eq(parameters.osGroup, 'OSX') }}:
+        ${{ if and(in(parameters.osGroup, 'OSX', 'iOS', 'tvOS'), eq(variables['System.TeamProject'], 'public')) }}:
           vmImage: 'macOS-10.14'
 
-        # Public OSX Build Pool
-        ${{ if eq(parameters.osGroup, 'iOS') }}:
-          vmImage: 'macOS-10.14'
-
-        # Public OSX Build Pool
-        ${{ if eq(parameters.osGroup, 'tvOS') }}:
+        # Official OSX Build Pool
+        ${{ if and(in(parameters.osGroup, 'OSX', 'iOS', 'tvOS'), ne(variables['System.TeamProject'], 'public')) }}:
           vmImage: 'macOS-10.14'
 
         # Official Build Windows Pool
