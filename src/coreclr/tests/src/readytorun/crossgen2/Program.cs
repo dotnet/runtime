@@ -1189,6 +1189,26 @@ internal class Program
         return true;
     }
 
+    enum TestEnum
+    {
+        A,
+        B
+    }
+
+    private static bool EnumValuesToStringTest()
+    {
+        string buffer = "";
+        foreach (TestEnum val in Enum.GetValues(typeof(TestEnum)))
+        {
+            buffer += val.ToString();
+        }
+
+        if (buffer != "AB")
+            return false;
+
+        return true;
+    }
+
     private static string EmitTextFileForTesting()
     {
         string file = Path.GetTempFileName();
@@ -1253,6 +1273,7 @@ internal class Program
         RunTest("ObjectGetTypeOnGenericParamTest", ObjectGetTypeOnGenericParamTest());
         RunTest("ObjectToStringOnGenericParamTestSByte", ObjectToStringOnGenericParamTestSByte());
         RunTest("ObjectToStringOnGenericParamTestVersionBubbleLocalStruct", ObjectToStringOnGenericParamTestVersionBubbleLocalStruct());
+        RunTest("EnumValuesToStringTest", EnumValuesToStringTest());
 
         File.Delete(TextFileName);
 
