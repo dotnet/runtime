@@ -71,9 +71,9 @@ namespace Microsoft.Extensions.DependencyInjection
         public ServiceDescriptor(System.Type serviceType, System.Func<System.IServiceProvider, object> factory, Microsoft.Extensions.DependencyInjection.ServiceLifetime lifetime) { }
         public ServiceDescriptor(System.Type serviceType, object instance) { }
         public ServiceDescriptor(System.Type serviceType, System.Type implementationType, Microsoft.Extensions.DependencyInjection.ServiceLifetime lifetime) { }
-        public System.Func<System.IServiceProvider, object> ImplementationFactory { get { throw null; } }
-        public object ImplementationInstance { get { throw null; } }
-        public System.Type ImplementationType { get { throw null; } }
+        public System.Func<System.IServiceProvider, object>? ImplementationFactory { get { throw null; } }
+        public object? ImplementationInstance { get { throw null; } }
+        public System.Type? ImplementationType { get { throw null; } }
         public Microsoft.Extensions.DependencyInjection.ServiceLifetime Lifetime { get { throw null; } }
         public System.Type ServiceType { get { throw null; } }
         public static Microsoft.Extensions.DependencyInjection.ServiceDescriptor Describe(System.Type serviceType, System.Func<System.IServiceProvider, object> implementationFactory, Microsoft.Extensions.DependencyInjection.ServiceLifetime lifetime) { throw null; }
