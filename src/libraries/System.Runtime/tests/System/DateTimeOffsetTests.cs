@@ -1253,6 +1253,7 @@ namespace System.Tests
 
         [Theory]
         [MemberData(nameof(ToString_MatchesExpected_MemberData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36896", TestPlatforms.iOS)]
         public static void ToString_MatchesExpected(DateTimeOffset dateTimeOffset, string format, IFormatProvider provider, string expected)
         {
             if (provider == null)
@@ -1271,6 +1272,7 @@ namespace System.Tests
 
         [Theory]
         [MemberData(nameof(ToString_WithCulture_MatchesExpected_MemberData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36896", TestPlatforms.iOS)]
         public static void ToString_WithCulture_MatchesExpected(DateTimeOffset dateTimeOffset, string format, CultureInfo culture, string expected)
         {
             Assert.Equal(expected, dateTimeOffset.ToString(format, culture));
@@ -1352,6 +1354,7 @@ namespace System.Tests
 
         [Theory]
         [MemberData(nameof(ToString_MatchesExpected_MemberData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36896", TestPlatforms.iOS)]
         public static void TryFormat_MatchesExpected(DateTimeOffset dateTimeOffset, string format, IFormatProvider provider, string expected)
         {
             var destination = new char[expected.Length];

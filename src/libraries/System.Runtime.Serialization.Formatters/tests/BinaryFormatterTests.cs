@@ -72,6 +72,7 @@ namespace System.Runtime.Serialization.Formatters.Tests
         [Theory]
         [SkipOnCoreClr("Takes too long on Checked", RuntimeConfiguration.Checked)]
         [MemberData(nameof(SerializableEqualityComparers_MemberData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36896", TestPlatforms.iOS)]
         public void ValidateEqualityComparersAgainstBlobs(object obj, TypeSerializableValue[] blobs)
             => ValidateAndRoundtrip(obj, blobs, true);
 

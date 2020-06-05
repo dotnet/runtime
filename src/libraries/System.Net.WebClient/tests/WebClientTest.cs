@@ -369,6 +369,7 @@ namespace System.Net.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36890", TestPlatforms.iOS)]
         public static async Task ResponseHeaders_ContainsHeadersAfterOperation()
         {
             var wc = new DerivedWebClient(); // verify we can use a derived type as well
@@ -421,6 +422,7 @@ namespace System.Net.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36890", TestPlatforms.iOS)]
         public static async Task RequestHeaders_SpecialHeaders_RequestSucceeds()
         {
             var wc = new WebClient();
@@ -440,6 +442,7 @@ namespace System.Net.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36890", TestPlatforms.iOS)]
         public static async Task ConcurrentOperations_Throw()
         {
             await LoopbackServer.CreateServerAsync((server, url) =>
@@ -513,6 +516,7 @@ namespace System.Net.Tests
         [InlineData(null)]
         [InlineData("text/html; charset=utf-8")]
         [InlineData("text/html; charset=us-ascii")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36890", TestPlatforms.iOS)]
         public async Task DownloadString_Success(string contentType)
         {
             await LoopbackServer.CreateServerAsync(async (server, url) =>
@@ -530,6 +534,7 @@ namespace System.Net.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36890", TestPlatforms.iOS)]
         public async Task DownloadData_Success()
         {
             await LoopbackServer.CreateServerAsync(async (server, url) =>
@@ -551,6 +556,7 @@ namespace System.Net.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36890", TestPlatforms.iOS)]
         public async Task DownloadData_LargeData_Success()
         {
             await LoopbackServer.CreateServerAsync(async (server, url) =>
@@ -579,6 +585,7 @@ namespace System.Net.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36890", TestPlatforms.iOS)]
         public async Task DownloadFile_Success()
         {
             await LoopbackServer.CreateServerAsync(async (server, url) =>
@@ -601,6 +608,7 @@ namespace System.Net.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36890", TestPlatforms.iOS)]
         public async Task OpenRead_Success()
         {
             await LoopbackServer.CreateServerAsync(async (server, url) =>

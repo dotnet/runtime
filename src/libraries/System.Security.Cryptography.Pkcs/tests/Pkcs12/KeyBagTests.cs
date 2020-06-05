@@ -12,6 +12,7 @@ namespace System.Security.Cryptography.Pkcs.Tests.Pkcs12
         private static readonly ReadOnlyMemory<byte> s_derNull = new byte[] { 0x05, 0x00 };
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void BuildWithFactoryReadDirect()
         {
             using (RSA rsa = RSA.Create())

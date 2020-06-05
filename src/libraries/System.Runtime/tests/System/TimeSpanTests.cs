@@ -616,6 +616,7 @@ namespace System.Tests
 
         [Theory]
         [MemberData(nameof(Parse_Valid_TestData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36896", TestPlatforms.iOS)]
         public static void Parse(string input, IFormatProvider provider, TimeSpan expected)
         {
             TimeSpan result;
@@ -678,6 +679,7 @@ namespace System.Tests
 
         [Theory]
         [MemberData(nameof(Parse_Invalid_TestData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36896", TestPlatforms.iOS)]
         public static void Parse_Invalid(string input, IFormatProvider provider, Type exceptionType)
         {
             TimeSpan result;
@@ -1035,6 +1037,7 @@ namespace System.Tests
 
         [Theory]
         [MemberData(nameof(ToString_TestData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36896", TestPlatforms.iOS)]
         public static void ToString_Valid(TimeSpan input, string format, CultureInfo info, string expected)
         {
             Assert.Equal(expected, input.ToString(format, info));
@@ -1224,6 +1227,7 @@ namespace System.Tests
 
         [Theory]
         [MemberData(nameof(Parse_ValidWithOffsetCount_TestData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36896", TestPlatforms.iOS)]
         public static void Parse_Span(string inputString, int offset, int count, IFormatProvider provider, TimeSpan expected)
         {
             ReadOnlySpan<char> input = inputString.AsSpan(offset, count);
@@ -1254,6 +1258,7 @@ namespace System.Tests
 
         [Theory]
         [MemberData(nameof(Parse_Invalid_TestData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36896", TestPlatforms.iOS)]
         public static void Parse_Span_Invalid(string inputString, IFormatProvider provider, Type exceptionType)
         {
             if (inputString != null)
@@ -1356,6 +1361,7 @@ namespace System.Tests
 
         [Theory]
         [MemberData(nameof(ToString_TestData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36896", TestPlatforms.iOS)]
         public static void TryFormat_Valid(TimeSpan input, string format, CultureInfo info, string expected)
         {
             int charsWritten;

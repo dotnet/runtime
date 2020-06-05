@@ -1723,6 +1723,7 @@ namespace System.Tests
 
         [Theory]
         [MemberData(nameof(Parse_ValidInput_Succeeds_MemberData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36896", TestPlatforms.iOS)]
         public static void Parse_ValidInput_Succeeds(string input, CultureInfo culture, DateTime? expected)
         {
             Assert.Equal(expected, DateTime.Parse(input, culture));
@@ -1844,6 +1845,7 @@ namespace System.Tests
 
         [Theory]
         [MemberData(nameof(ParseExact_ValidInput_Succeeds_MemberData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36896", TestPlatforms.iOS)]
         public static void ParseExact_ValidInput_Succeeds(string input, string format, CultureInfo culture, DateTimeStyles style, DateTime? expected)
         {
             DateTime result1 = DateTime.ParseExact(input, format, culture, style);
@@ -2019,6 +2021,7 @@ namespace System.Tests
 
         [Theory]
         [MemberData(nameof(ToString_MatchesExpected_MemberData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36896", TestPlatforms.iOS)]
         public void ToString_Invoke_ReturnsExpected(DateTime dateTime, string format, IFormatProvider provider, string expected)
         {
             if (provider == null)
@@ -2315,6 +2318,7 @@ namespace System.Tests
 
         [Theory]
         [MemberData(nameof(Parse_ValidInput_Succeeds_MemberData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36896", TestPlatforms.iOS)]
         public static void Parse_Span_ValidInput_Succeeds(string input, CultureInfo culture, DateTime? expected)
         {
             Assert.Equal(expected, DateTime.Parse(input.AsSpan(), culture));
@@ -2322,6 +2326,7 @@ namespace System.Tests
 
         [Theory]
         [MemberData(nameof(ParseExact_ValidInput_Succeeds_MemberData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36896", TestPlatforms.iOS)]
         public static void ParseExact_Span_ValidInput_Succeeds(string input, string format, CultureInfo culture, DateTimeStyles style, DateTime? expected)
         {
             DateTime result1 = DateTime.ParseExact(input.AsSpan(), format, culture, style);

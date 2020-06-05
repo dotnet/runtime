@@ -89,6 +89,7 @@ namespace System.Xml.Tests
         [InlineData("empty")]
         [InlineData("notcompiled")]
         [InlineData("compiled")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void SetSchemaSetTo_Empty_NotCompiled_Compiled(string schemaSetStatus)
         {
             XmlSchemaValidator val;
@@ -334,6 +335,7 @@ namespace System.Xml.Tests
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void ImportAnotherSchemaThat_Is_IsNot_InSchemaSet(bool importTwice)
         {
             XmlSchemaValidator val;

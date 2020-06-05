@@ -50,6 +50,7 @@ namespace System.Xml.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void CallOnElementWithNoAttributesAfterValidateElement()
         {
             XmlSchemaValidator val = CreateValidator(XSDFILE_GET_EXPECTED_ATTRIBUTES);
@@ -69,6 +70,7 @@ namespace System.Xml.Tests
         [InlineData("Default")]
         [InlineData("Fixed")]
         [InlineData("FixedRequired")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void CallOnElementWith_Required_Optional_Default_Fixed_FixedRequired_AttributesAfterValidateElement(string attrType)
         {
             XmlSchemaValidator val = CreateValidator(XSDFILE_GET_EXPECTED_ATTRIBUTES);
@@ -91,6 +93,7 @@ namespace System.Xml.Tests
         [InlineData("Fixed", "after")]
         [InlineData("FixedRequired", "before")]
         [InlineData("FixedRequired", "after")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void Call_Before_After_GetUnspecifiedDefaultAttributeWhenJust_Required_Optional_Fixed_FixedRequired_AttributesAreLeft(string attrType, string callOrder)
         {
             XmlSchemaValidator val = CreateValidator(XSDFILE_GET_EXPECTED_ATTRIBUTES);
@@ -113,6 +116,7 @@ namespace System.Xml.Tests
         [Theory]
         [InlineData("before")]
         [InlineData("after")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void Call_Before_After_GetUnspecifiedDefaultAttributesWhenJustDefaultAttributesAreLeft(string callOrder)
         {
             XmlSchemaValidator val = CreateValidator(XSDFILE_GET_EXPECTED_ATTRIBUTES);

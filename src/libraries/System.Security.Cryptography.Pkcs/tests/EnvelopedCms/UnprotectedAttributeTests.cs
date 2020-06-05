@@ -15,6 +15,7 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
     public static partial class UnprotectedAttributeTests
     {
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void TestUnprotectedAttributes0_RoundTrip()
         {
             byte[] encodedMessage = CreateEcmsWithAttributes();
@@ -43,6 +44,7 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void TestUnprotectedAttributes1_DocumentDescription_RoundTrip()
         {
             byte[] encodedMessage = CreateEcmsWithAttributes(new Pkcs9DocumentDescription("My Description"));
@@ -73,6 +75,7 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void TestUnprotectedAttributes1_DocumenName_RoundTrip()
         {
             byte[] encodedMessage = CreateEcmsWithAttributes(new Pkcs9DocumentName("My Name"));
@@ -103,6 +106,7 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void TestUnprotectedAttributes1_SigningTime_RoundTrip()
         {
             byte[] encodedMessage = CreateEcmsWithAttributes(new Pkcs9SigningTime(new DateTime(2018, 4, 1, 8, 30, 05)));
@@ -135,6 +139,7 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void TestUnprotectedAttributes1_ContentType_RoundTrip()
         {
             byte[] rawData = "06072a9fa20082f300".HexToByteArray();
@@ -168,6 +173,7 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void TestUnprotectedAttributes1_MessageDigest_RoundTrip()
         {
             byte[] rawData = "0405032d58805d".HexToByteArray();
@@ -202,6 +208,7 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void TestUnprotectedAttributes1_Merge3_RoundTrip()
         {
             byte[] encodedMessage = CreateEcmsWithAttributes(
@@ -239,6 +246,7 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void TestUnprotectedAttributes1_Heterogenous3_RoundTrip()
         {
             byte[] encodedMessage = CreateEcmsWithAttributes(
@@ -315,6 +323,7 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void TestUnprotectedAttributes1_Arbitrary_RoundTrip()
         {
             byte[] encodedMessage = CreateEcmsWithAttributes(
@@ -349,6 +358,7 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void TestUnprotectedAttributes1_OutOfNamespace_RoundTrip()
         {
             byte[] constraintsRawData = "30070101ff02020100".HexToByteArray();
@@ -387,6 +397,7 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void TestUnprotectedAttributes_AlwaysReturnsPkcs9AttributeObject()
         {
             byte[] encodedMessage = CreateEcmsWithAttributes(

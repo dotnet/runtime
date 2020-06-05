@@ -18,6 +18,7 @@ namespace System.Globalization.Tests
 
         [Theory]
         [MemberData(nameof(CurrencyDecimalDigits_TestData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36883", TestPlatforms.iOS)]
         public void CurrencyDecimalDigits_Get_ReturnsExpected(NumberFormatInfo format, int expectedNls, int expectedIcu)
         {
             int expected = PlatformDetection.IsNlsGlobalization ? expectedNls : expectedIcu;

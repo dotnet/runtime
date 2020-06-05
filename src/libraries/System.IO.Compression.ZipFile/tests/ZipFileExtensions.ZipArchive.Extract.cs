@@ -9,6 +9,7 @@ namespace System.IO.Compression.Tests
     public class ZipFile_ZipArchive_Extract : ZipFileTestBase
     {
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36884", TestPlatforms.iOS)]
         public void ExtractToDirectoryExtension()
         {
             using (ZipArchive archive = ZipFile.Open(zfile("normal.zip"), ZipArchiveMode.Read))
@@ -23,6 +24,7 @@ namespace System.IO.Compression.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36884", TestPlatforms.iOS)]
         public void ExtractToDirectoryExtension_Unicode()
         {
             using (ZipArchive archive = ZipFile.OpenRead(zfile("unicode.zip")))

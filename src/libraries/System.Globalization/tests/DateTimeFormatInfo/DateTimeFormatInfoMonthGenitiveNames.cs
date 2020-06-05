@@ -36,6 +36,7 @@ namespace System.Globalization.Tests
 
         [Theory]
         [MemberData(nameof(MonthGenitiveNames_Get_TestData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36883", TestPlatforms.iOS)]
         public void MonthGenitiveNames_Get_ReturnsExpected(DateTimeFormatInfo format, string[] expected)
         {
             Assert.Equal(expected, format.MonthGenitiveNames);

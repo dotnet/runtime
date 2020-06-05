@@ -68,6 +68,7 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36882", TestPlatforms.iOS)]
         public void Debug_WriteLineNull_IndentsEmptyStringProperly()
         {
             Debug.Indent();
@@ -209,6 +210,7 @@ namespace System.Diagnostics.Tests
         [InlineData(-1, 0)]
         [InlineData(0, 0)]
         [InlineData(1, 1)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36882", TestPlatforms.iOS)]
         public void IndentLevel_Set_GetReturnsExpected(int indentLevel, int expectedIndentLevel)
         {
             Debug.IndentLevel = indentLevel;

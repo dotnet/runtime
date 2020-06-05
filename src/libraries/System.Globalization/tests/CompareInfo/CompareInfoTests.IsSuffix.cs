@@ -94,6 +94,7 @@ namespace System.Globalization.Tests
 
         [Theory]
         [MemberData(nameof(IsSuffix_TestData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36883", TestPlatforms.iOS)]
         public void IsSuffix(CompareInfo compareInfo, string source, string value, CompareOptions options, bool expected)
         {
             if (options == CompareOptions.None)
@@ -121,6 +122,7 @@ namespace System.Globalization.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36883", TestPlatforms.iOS)]
         public void IsSuffix_UnassignedUnicode()
         {
             bool result = PlatformDetection.IsIcuGlobalization ? false : true;

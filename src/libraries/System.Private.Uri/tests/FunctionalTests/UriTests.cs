@@ -538,6 +538,7 @@ namespace System.PrivateUri.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36891", TestPlatforms.iOS)]
         public static void TestCompare()
         {
             Uri uri1 = new Uri("http://www.contoso.com/path?name#frag");

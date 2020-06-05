@@ -91,6 +91,7 @@ namespace System.Security.Cryptography.EcDiffieHellman.Tests
 
         [Theory]
         [MemberData(nameof(EveryKeysize))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void PublicKey_NotNull(int keySize)
         {
             using (ECDiffieHellman ecdh = ECDiffieHellmanFactory.Create(keySize))
@@ -101,6 +102,7 @@ namespace System.Security.Cryptography.EcDiffieHellman.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void PublicKeyIsFactory()
         {
             using (ECDiffieHellman ecdh = ECDiffieHellmanFactory.Create())
@@ -114,6 +116,7 @@ namespace System.Security.Cryptography.EcDiffieHellman.Tests
         [Theory]
         [InlineData(false)]
         [InlineData(true)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void UseAfterDispose(bool importKey)
         {
             ECDiffieHellman key = ECDiffieHellmanFactory.Create();

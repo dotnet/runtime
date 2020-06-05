@@ -66,6 +66,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void TestConstructor_DER()
         {
             byte[] expectedThumbPrintSha1 =
@@ -99,6 +100,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void TestConstructor_PEM()
         {
             byte[] expectedThumbPrintSha1 =
@@ -143,6 +145,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void TestCopyConstructor_Pal()
         {
             using (var c1 = new X509Certificate2(TestData.PfxData, TestData.PfxDataPassword))
@@ -185,6 +188,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void TestCopyConstructor_Lifetime_Independent()
         {
             var c1 = new X509Certificate2(TestData.PfxData, TestData.PfxDataPassword);
@@ -212,6 +216,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void TestCopyConstructor_Lifetime_Cloned()
         {
             var c1 = new X509Certificate2(TestData.PfxData, TestData.PfxDataPassword);
@@ -234,6 +239,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void TestCopyConstructor_Lifetime_Cloned_Reversed()
         {
             var c1 = new X509Certificate2(TestData.PfxData, TestData.PfxDataPassword);
@@ -303,6 +309,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void TestNullConstructorArguments()
         {
             Assert.Throws<ArgumentNullException>(() => new X509Certificate2((string)null));
@@ -347,6 +354,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void InvalidCertificateBlob()
         {
             CryptographicException ex = Assert.ThrowsAny<CryptographicException>(

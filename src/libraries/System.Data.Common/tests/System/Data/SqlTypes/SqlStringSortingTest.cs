@@ -51,6 +51,7 @@ namespace System.Data.SqlTypes.Tests
         [InlineData("cs-CZ", 0x0405)] // Czech - Czech Republic
         [InlineData("fr-CH", 0x100c)] // French - Switzerland
         [InlineData("en-US", 0x0409)] // English - United States
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36879", TestPlatforms.iOS)]
         public static void SqlStringValidComparisonTest(string cultureName, int localeId)
         {
             if (PlatformDetection.IsIcuGlobalization && cultureName == "ja-JP" && localeId == 0x0411)

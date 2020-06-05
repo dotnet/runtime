@@ -222,6 +222,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void ThirdPartyProvider_RSA()
         {
             using (RSA rsaOther = new RSAOther())
@@ -427,6 +428,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void ThirdPartyProvider_DSA()
         {
             using (DSA dsaOther = new DSAOther())
@@ -518,6 +520,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void ThirdPartyProvider_ECDsa()
         {
             using (ECDsaOther ecdsaOther = new ECDsaOther())

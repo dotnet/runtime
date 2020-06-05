@@ -247,6 +247,7 @@ namespace System.Data.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36879", TestPlatforms.iOS)]
         public void SimpleDataSet()
         {
             DataSet ds = GetDataSet(_xml8, null);
@@ -338,6 +339,7 @@ namespace System.Data.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36879", TestPlatforms.iOS)]
         public void TwoElementTable()
         {
             // FIXME: Also test ReadXml (, XmlReadMode.InferSchema) and
@@ -357,6 +359,7 @@ namespace System.Data.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36879", TestPlatforms.iOS)]
         public void ConflictSimpleComplexColumns()
         {
             DataSet ds = GetDataSet(_xml18, null);
@@ -378,6 +381,7 @@ namespace System.Data.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36879", TestPlatforms.iOS)]
         public void ConflictColumnTable()
         {
             DataSet ds = GetDataSet(_xml19, null);
@@ -399,6 +403,7 @@ namespace System.Data.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36879", TestPlatforms.iOS)]
         public void ConflictColumnTableAttribute()
         {
             // Conflicts between a column and a table, additionally an attribute.
@@ -422,6 +427,7 @@ namespace System.Data.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36879", TestPlatforms.iOS)]
         public void ConflictAttributeDataTable()
         {
             Assert.Throws<DataException>(() =>
@@ -434,6 +440,7 @@ namespace System.Data.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36879", TestPlatforms.iOS)]
         public void ConflictExistingPrimaryKey()
         {
             Assert.Throws<ConstraintException>(() =>

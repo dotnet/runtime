@@ -14,6 +14,7 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
         public DecryptTestsUsingExplicitPrivateKey() : base(true) { }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void DecryptUsingWrongPrivateKeyType()
         {
             byte[] content = new byte[] { 1, 2, 3, 4 };

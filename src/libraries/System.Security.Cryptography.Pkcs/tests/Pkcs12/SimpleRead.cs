@@ -14,6 +14,7 @@ namespace System.Security.Cryptography.Pkcs.Tests.Pkcs12
     public static class SimpleRead
     {
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void Test1()
         {
             var loader = (CertLoaderFromRawData)Certificates.RSAKeyTransferCapi1;
@@ -100,6 +101,7 @@ namespace System.Security.Cryptography.Pkcs.Tests.Pkcs12
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void ReadWithEncryptedContents()
         {
             var loader = (CertLoaderFromRawData)Certificates.RSAKeyTransfer_ExplicitSki;

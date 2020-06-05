@@ -11,6 +11,7 @@ namespace System.Security.Cryptography.Rsa.Tests
     public partial class RSAKeyExchangeFormatterTests
     {
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void VerifyDecryptKeyExchangeOaep()
         {
             using (RSA rsa = RSAFactory.Create())
@@ -24,6 +25,7 @@ namespace System.Security.Cryptography.Rsa.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void VerifyDecryptKeyExchangePkcs1()
         {
             using (RSA rsa = RSAFactory.Create())
@@ -37,6 +39,7 @@ namespace System.Security.Cryptography.Rsa.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void TestKnownValueOaep()
         {
             using (RSA rsa = RSAFactory.Create())
@@ -54,6 +57,7 @@ namespace System.Security.Cryptography.Rsa.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void TestKnownValuePkcs1()
         {
             using (RSA rsa = RSAFactory.Create())

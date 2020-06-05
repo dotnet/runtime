@@ -26,6 +26,7 @@ namespace System.Globalization.Tests
 
         [Theory]
         [MemberData(nameof(Ctor_String_TestData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36883", TestPlatforms.iOS)]
         public void Ctor_String(string name, string[] expectedNames)
         {
             CultureInfo culture = new CultureInfo(name);
@@ -34,6 +35,7 @@ namespace System.Globalization.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36883", TestPlatforms.iOS)]
         public void Ctor_String_Invalid()
         {
             AssertExtensions.Throws<ArgumentNullException>("name", () => new CultureInfo(null)); // Name is null

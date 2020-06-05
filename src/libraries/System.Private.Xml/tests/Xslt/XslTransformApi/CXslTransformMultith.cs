@@ -77,6 +77,7 @@ namespace System.Xml.Tests
         //[Variation("Local and global variables", Params = new object[] { "xslt_mutith_variable_local_and_global.xsl", "xslt_mutith_variable_local_and_global.xsl" })]
         [InlineData("xslt_mutith_variable_local_and_global.xsl", "xslt_mutith_variable_local_and_global.xsl")]
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void Variations(object param0, object param1)
         {
             string xslFile = (string)param0;

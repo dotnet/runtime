@@ -30,6 +30,7 @@ namespace BasicEventSourceTests
         /// Tests EventSource Traits.
         /// </summary>
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36882", TestPlatforms.iOS)]
         public void Test_EventSource_Traits_Contract()
         {
             TestUtilities.CheckNoEventSourcesRunning("Start");
@@ -46,6 +47,7 @@ namespace BasicEventSourceTests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36882", TestPlatforms.iOS)]
         public void Test_EventSource_Traits_Dynamic()
         {
             TestUtilities.CheckNoEventSourcesRunning("Start");

@@ -258,6 +258,7 @@ namespace System.Xml.Tests
         //[Variation(Desc = "v101.1 - Include: A with NS includes B with no NS", Priority = 0, Params = new object[] { "include_v1_a.xsd", 1, "ns-a:e2" })]
         [InlineData("include_v1_a.xsd", 1, "ns-a:e2")]
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void v101(object param0, object param1, object param2)
         {
             XmlSchemaSet sc = new XmlSchemaSet();
@@ -284,6 +285,7 @@ namespace System.Xml.Tests
         //-----------------------------------------------------------------------------------
         //[Variation(Desc = "v102 - Include: A with NS includes B with a diff NS (INVALID)", Priority = 1)]
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void v102()
         {
             XmlSchemaSet sc = new XmlSchemaSet();
@@ -332,6 +334,7 @@ namespace System.Xml.Tests
         //-----------------------------------------------------------------------------------
         //[Variation(Desc = "v103 - Include: A(ns-a) which includes B(ns-a) twice", Priority = 2)]
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void v103()
         {
             XmlSchemaSet sc = new XmlSchemaSet();
@@ -362,6 +365,7 @@ namespace System.Xml.Tests
         //-----------------------------------------------------------------------------------
         //[Variation(Desc = "v104 - Include: A(ns-a) which includes B(No NS) twice", Priority = 2)]
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void v104()
         {
             XmlSchemaSet sc = new XmlSchemaSet();
@@ -393,6 +397,7 @@ namespace System.Xml.Tests
         //-----------------------------------------------------------------------------------
         //[Variation(Desc = "v105 - Include: A,B,C all include each other, all with no ns and refer each others' types", Priority = 2)]
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void v105()
         {
             XmlSchemaSet sc = new XmlSchemaSet();
@@ -429,6 +434,7 @@ namespace System.Xml.Tests
         //-----------------------------------------------------------------------------------
         //[Variation(Desc = "v106 - Include: A,B,C all include each other, all with same ns and refer each others' types", Priority = 2)]
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void v106()
         {
             XmlSchemaSet sc = new XmlSchemaSet();
@@ -475,6 +481,7 @@ namespace System.Xml.Tests
 
         //[Variation(Desc = "v112 - 20008213 SOM: SourceUri property on a chameleon include is not set", Priority = 1)]
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void v107()
         {
             bool succeeded = false;
@@ -522,6 +529,7 @@ namespace System.Xml.Tests
         //[Variation(Desc = "v201.1 - Include: A with NS includes B with no NS", Priority = 0, Params = new object[] { "include_v1_a.xsd", 1, "ns-a:e2" })]
         [InlineData("include_v1_a.xsd", 1, "ns-a:e2")]
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void v201(object param0, object param1, object param2)
         {
             XmlSchemaSet sc = new XmlSchemaSet();
@@ -549,6 +557,7 @@ namespace System.Xml.Tests
         //-----------------------------------------------------------------------------------
         //[Variation(Desc = "v202 - Include: A with NS includes B with a diff NS (INVALID)", Priority = 1)]
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void v202()
         {
             XmlSchemaSet sc = new XmlSchemaSet();
@@ -597,6 +606,7 @@ namespace System.Xml.Tests
         //-----------------------------------------------------------------------------------
         //[Variation(Desc = "v203 - Include: A(ns-a) which includes B(ns-a) twice", Priority = 2)]
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void v203()
         {
             XmlSchemaSet sc = new XmlSchemaSet();
@@ -627,6 +637,7 @@ namespace System.Xml.Tests
         //-----------------------------------------------------------------------------------
         //[Variation(Desc = "v204 - Include: A(ns-a) which includes B(No NS) twice", Priority = 2)]
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void v204()
         {
             XmlSchemaSet sc = new XmlSchemaSet();
@@ -658,6 +669,7 @@ namespace System.Xml.Tests
         //-----------------------------------------------------------------------------------
         //[Variation(Desc = "v205 - Include: A,B,C all include each other, all with no ns and refer each others' types", Priority = 2)]
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void v205()
         {
             XmlSchemaSet sc = new XmlSchemaSet();
@@ -694,6 +706,7 @@ namespace System.Xml.Tests
         //-----------------------------------------------------------------------------------
         //[Variation(Desc = "v206 - Include: A,B,C all include each other, all with same ns and refer each others' types", Priority = 2)]
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void v206()
         {
             XmlSchemaSet sc = new XmlSchemaSet();
@@ -740,6 +753,7 @@ namespace System.Xml.Tests
 
         //[Variation(Desc = "v212 - 20008213 SOM: SourceUri property on a chameleon include is not set", Priority = 1)]
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void v207()
         {
             bool succeeded = false;

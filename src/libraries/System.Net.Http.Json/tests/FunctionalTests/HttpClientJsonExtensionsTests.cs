@@ -22,6 +22,7 @@ namespace System.Net.Http.Json.Functional.Tests
             };
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36890", TestPlatforms.iOS)]
         public async Task TestGetFromJsonAsync()
         {
             const string json = @"{""Name"":""David"",""Age"":24}";
@@ -57,6 +58,7 @@ namespace System.Net.Http.Json.Functional.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36890", TestPlatforms.iOS)]
         public async Task TestGetFromJsonAsyncUnsuccessfulResponseAsync()
         {
             const int NumRequests = 2;
@@ -79,6 +81,7 @@ namespace System.Net.Http.Json.Functional.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36890", TestPlatforms.iOS)]
         public async Task TestPostAsJsonAsync()
         {
             const int NumRequests = 4;
@@ -114,6 +117,7 @@ namespace System.Net.Http.Json.Functional.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36890", TestPlatforms.iOS)]
         public async Task TestPutAsJsonAsync()
         {
             const int NumRequests = 4;
@@ -175,6 +179,7 @@ namespace System.Net.Http.Json.Functional.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36890", TestPlatforms.iOS)]
         public async Task AllowNullRequesturlAsync()
         {
             const int NumRequests = 4;

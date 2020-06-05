@@ -92,6 +92,7 @@ namespace System.Globalization.Tests
 
         [Theory]
         [MemberData(nameof(IsPrefix_TestData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36883", TestPlatforms.iOS)]
         public void IsPrefix(CompareInfo compareInfo, string source, string value, CompareOptions options, bool expected)
         {
             if (options == CompareOptions.None)
@@ -119,6 +120,7 @@ namespace System.Globalization.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36883", TestPlatforms.iOS)]
         public void IsPrefix_UnassignedUnicode()
         {
             bool result = PlatformDetection.IsNlsGlobalization ? true : false;

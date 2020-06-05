@@ -265,6 +265,7 @@ namespace System.Globalization.Tests
                                                               s_invariantCompare.Compare("\u3060", "\uFF80\uFF9E", CompareOptions.IgnoreKanaType | CompareOptions.IgnoreWidth | CompareOptions.IgnoreCase) == 0;
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36883", TestPlatforms.iOS)]
         public void CompareWithUnassignedChars()
         {
             int result = PlatformDetection.IsNlsGlobalization ? 0 : -1;
@@ -274,6 +275,7 @@ namespace System.Globalization.Tests
 
         [ConditionalTheory(nameof(IsNotWindowsKanaRegressedVersion))]
         [MemberData(nameof(Compare_Kana_TestData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36883", TestPlatforms.iOS)]
         public void CompareWithKana(CompareInfo compareInfo, string string1, string string2, CompareOptions options, int expected)
         {
             Compare_Advanced(compareInfo, string1, 0, string1?.Length ?? 0, string2, 0, string2?.Length ?? 0, options, expected);

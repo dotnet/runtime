@@ -9,6 +9,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
     public static class CertificateRequestApiTests
     {
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void ConstructorDefaults()
         {
             const string TestCN = "CN=Test";
@@ -25,6 +26,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void ToPkcs10_ArgumentExceptions()
         {
             using (ECDsa ecdsa = ECDsa.Create(EccTestData.Secp256r1Data.KeyParameters))
@@ -36,6 +38,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void SelfSign_ArgumentValidation()
         {
             using (RSA rsa = RSA.Create())
@@ -51,6 +54,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void Sign_ArgumentValidation()
         {
             using (X509Certificate2 testRoot = new X509Certificate2(TestData.PfxData, TestData.PfxDataPassword))
@@ -84,6 +88,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void CtorValidation_ECDSA_string()
         {
             string subjectName = null;
@@ -111,6 +116,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void CtorValidation_ECDSA_X500DN()
         {
             X500DistinguishedName subjectName = null;
@@ -138,6 +144,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void CtorValidation_RSA_string()
         {
             string subjectName = null;
@@ -172,6 +179,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void CtorValidation_RSA_X500DN()
         {
             X500DistinguishedName subjectName = null;
@@ -206,6 +214,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void CtorValidation_PublicKey_X500DN()
         {
             X500DistinguishedName subjectName = null;

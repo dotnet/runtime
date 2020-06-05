@@ -20,12 +20,14 @@ namespace System.IO.Compression.Tests
         [InlineData("emptydir.zip", "emptydir")]
         [InlineData("small.zip", "small")]
         [InlineData("unicode.zip", "unicode")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36884", TestPlatforms.iOS)]
         public static async Task UpdateReadNormal(string zipFile, string zipFolder)
         {
             IsZipSameAsDir(await StreamHelpers.CreateTempCopyStream(zfile(zipFile)), zfolder(zipFolder), ZipArchiveMode.Update, requireExplicit: true, checkTimes: true);
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36884", TestPlatforms.iOS)]
         public static async Task UpdateReadTwice()
         {
             using (ZipArchive archive = new ZipArchive(await StreamHelpers.CreateTempCopyStream(zfile("small.zip")), ZipArchiveMode.Update))
@@ -48,6 +50,7 @@ namespace System.IO.Compression.Tests
         [InlineData("normal")]
         [InlineData("empty")]
         [InlineData("unicode")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36884", TestPlatforms.iOS)]
         public static async Task UpdateCreate(string zipFolder)
         {
             var zs = new LocalMemoryStream();
@@ -113,6 +116,7 @@ namespace System.IO.Compression.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36884", TestPlatforms.iOS)]
         public static async Task DeleteAndMoveEntries()
         {
             //delete and move
@@ -139,6 +143,7 @@ namespace System.IO.Compression.Tests
         [Theory]
         [InlineData(false)]
         [InlineData(true)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36884", TestPlatforms.iOS)]
         public static async Task AppendToEntry(bool writeWithSpans)
         {
             //append
@@ -170,6 +175,7 @@ namespace System.IO.Compression.Tests
 
         }
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36884", TestPlatforms.iOS)]
         public static async Task OverwriteEntry()
         {
             //Overwrite file
@@ -197,6 +203,7 @@ namespace System.IO.Compression.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36884", TestPlatforms.iOS)]
         public static async Task AddFileToArchive()
         {
             //add file
@@ -211,6 +218,7 @@ namespace System.IO.Compression.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36884", TestPlatforms.iOS)]
         public static async Task AddFileToArchive_AfterReading()
         {
             //add file and read entries before
@@ -227,6 +235,7 @@ namespace System.IO.Compression.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36884", TestPlatforms.iOS)]
         public static async Task AddFileToArchive_ThenReadEntries()
         {
             //add file and read entries after
@@ -261,6 +270,7 @@ namespace System.IO.Compression.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36884", TestPlatforms.iOS)]
         public static async Task UpdateModeInvalidOperations()
         {
             using (LocalMemoryStream ms = await LocalMemoryStream.readAppFileAsync(zfile("normal.zip")))

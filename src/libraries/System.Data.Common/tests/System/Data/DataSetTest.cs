@@ -368,6 +368,7 @@ namespace System.Data.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36879", TestPlatforms.iOS)]
         public void ReadWriteXml()
         {
             var ds = new DataSet();
@@ -425,6 +426,7 @@ namespace System.Data.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36879", TestPlatforms.iOS)]
         public void ReadWriteXmlDiffGram()
         {
             var ds = new DataSet();
@@ -508,6 +510,7 @@ namespace System.Data.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36879", TestPlatforms.iOS)]
         public void WriteXmlSchema()
         {
             using (new ThreadCultureChange("fi-FI"))
@@ -990,6 +993,7 @@ namespace System.Data.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36879", TestPlatforms.iOS)]
         public void WriteXmlToStream()
         {
             string xml = "<set><table1><col1>sample text</col1><col2/></table1><table2 attr='value'><col3>sample text 2</col3></table2></set>";
@@ -1029,6 +1033,7 @@ namespace System.Data.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36879", TestPlatforms.iOS)]
         public void ReadWriteXml2()
         {
             string xml = "<FullTextResponse><Domains><AvailResponse info='y' name='novell-ximian-group' /><AvailResponse info='n' name='ximian' /></Domains></FullTextResponse>";
@@ -1047,6 +1052,7 @@ namespace System.Data.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36879", TestPlatforms.iOS)]
         public void ReadWriteXml3()
         {
             string input = @"<FullTextResponse>
@@ -1560,6 +1566,7 @@ namespace System.Data.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36879", TestPlatforms.iOS)]
         public void WriteXmlModeSchema1()
         {
             // Keeping the brackets as the test otherwise starts to fail.

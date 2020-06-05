@@ -79,10 +79,12 @@ namespace System.Security.Cryptography.Xml.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public void AsymmetricEncryptionRoundtripUseOAEP() =>
             AsymmetricEncryptionRoundtrip_Helper(useOAEP: true); // OAEP is recommended
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public void AsymmetricEncryptionRoundtrip() =>
             AsymmetricEncryptionRoundtrip_Helper(useOAEP: false);
 

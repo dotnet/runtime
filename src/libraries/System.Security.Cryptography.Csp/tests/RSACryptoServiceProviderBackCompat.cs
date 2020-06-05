@@ -15,6 +15,7 @@ namespace System.Security.Cryptography.Csp.Tests
 
         [Theory]
         [MemberData(nameof(AlgorithmIdentifiers))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void AlgorithmLookups(string primaryId, object halg)
         {
             using (var rsa = new RSACryptoServiceProvider())
@@ -29,6 +30,7 @@ namespace System.Security.Cryptography.Csp.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void ApiInterop_OldToNew()
         {
             using (var rsa = new RSACryptoServiceProvider())
@@ -39,6 +41,7 @@ namespace System.Security.Cryptography.Csp.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void ApiInterop_OldToNew_Positional()
         {
             using (var rsa = new RSACryptoServiceProvider())
@@ -49,6 +52,7 @@ namespace System.Security.Cryptography.Csp.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void ApiInterop_OldToNew_Stream()
         {
             const int TotalCount = 10;
@@ -63,6 +67,7 @@ namespace System.Security.Cryptography.Csp.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void ApiInterop_NewToOld()
         {
             using (var rsa = new RSACryptoServiceProvider())
@@ -91,6 +96,7 @@ namespace System.Security.Cryptography.Csp.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void SignHash_WrongSizeHash()
         {
             using (var rsa = new RSACryptoServiceProvider())
@@ -100,6 +106,7 @@ namespace System.Security.Cryptography.Csp.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void SignHash_PublicKey()
         {
             using (var rsa = new RSACryptoServiceProvider())
@@ -121,6 +128,7 @@ namespace System.Security.Cryptography.Csp.Tests
         [InlineData(true, false)]
         [InlineData(false, true)]
         // (false, false) is not required, that would be equivalent to the RSA AlgorithmImplementation suite.
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void VerifyLegacySignVerifyHash(bool useLegacySign, bool useLegacyVerify)
         {
             byte[] dataHash, signature;

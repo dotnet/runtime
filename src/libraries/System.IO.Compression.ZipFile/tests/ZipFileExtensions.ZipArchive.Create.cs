@@ -13,6 +13,7 @@ namespace System.IO.Compression.Tests
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36884", TestPlatforms.iOS)]
         public async Task CreateEntryFromFileExtension(bool withCompressionLevel)
         {
             //add file

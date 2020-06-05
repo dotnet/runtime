@@ -64,6 +64,7 @@ namespace System.Runtime.Loader.Tests
         [InlineData("es-MX", "Spanish (Mexico) language Main description 1.0.0")]
         [InlineData("fr", "Neutral language Main description 1.0.0")]
         [InlineData("fr-FR", "Neutral language Main description 1.0.0")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36896", TestPlatforms.iOS)]
         public static void mainResources(string lang, string expected)
         {
             Assert.Equal(expected, Describe(lang));
@@ -116,6 +117,7 @@ namespace System.Runtime.Loader.Tests
         [InlineData("ReferencedClassLibNeutralIsSatellite", "ReferencedClassLibNeutralIsSatellite.Program, ReferencedClassLibNeutralIsSatellite", "en",      "English language ReferencedClassLibNeutralIsSatellite description 1.0.0")]
         [InlineData("ReferencedClassLibNeutralIsSatellite", "ReferencedClassLibNeutralIsSatellite.Program, ReferencedClassLibNeutralIsSatellite", "en-US",   "English language ReferencedClassLibNeutralIsSatellite description 1.0.0")]
         [InlineData("ReferencedClassLibNeutralIsSatellite", "ReferencedClassLibNeutralIsSatellite.Program, ReferencedClassLibNeutralIsSatellite", "es",      "Neutral (es) language ReferencedClassLibNeutralIsSatellite description 1.0.0")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36896", TestPlatforms.iOS)]
         public void describeLib(string alc, string type, string culture, string expected)
         {
             string result = "Oops";
@@ -167,6 +169,7 @@ namespace System.Runtime.Loader.Tests
         [InlineData("ReferencedClassLib", "ReferencedClassLib", "en")]
         [InlineData("ReferencedClassLibNeutralIsSatellite", "ReferencedClassLibNeutralIsSatellite", "en")]
         [InlineData("ReferencedClassLibNeutralIsSatellite", "ReferencedClassLibNeutralIsSatellite", "es")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36896", TestPlatforms.iOS)]
         public void SatelliteLoadsCorrectly(string alc, string assemblyName, string culture)
         {
             AssemblyName satelliteAssemblyName = new AssemblyName(assemblyName + ".resources");

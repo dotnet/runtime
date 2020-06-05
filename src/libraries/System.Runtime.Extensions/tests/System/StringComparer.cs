@@ -93,6 +93,7 @@ namespace System.Tests
 
         [Theory]
         [MemberData(nameof(UpperLowerCasing_TestData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36896", TestPlatforms.iOS)]
         public static void CreateWithCulturesTest(string lowerForm, string upperForm, string cultureName)
         {
             CultureInfo ci = CultureInfo.GetCultureInfo(cultureName);
@@ -191,6 +192,7 @@ namespace System.Tests
         [Theory]
         [MemberData(nameof(CreateFromCultureAndOptionsData))]
         [MemberData(nameof(CreateFromCultureAndOptionsStringSortData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36896", TestPlatforms.iOS)]
         public static void CreateFromCultureAndOptions(string actualString, string expectedString, string cultureName, CompareOptions options, bool result)
         {
             CultureInfo ci = CultureInfo.GetCultureInfo(cultureName);
@@ -202,6 +204,7 @@ namespace System.Tests
 
         [Theory]
         [MemberData(nameof(CreateFromCultureAndOptionsData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36896", TestPlatforms.iOS)]
         public static void CreateFromCultureAndOptionsStringSort(string actualString, string expectedString, string cultureName, CompareOptions options, bool result)
         {
             CultureInfo ci = CultureInfo.GetCultureInfo(cultureName);

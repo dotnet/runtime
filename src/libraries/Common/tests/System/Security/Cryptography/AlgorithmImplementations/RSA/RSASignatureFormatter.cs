@@ -11,6 +11,7 @@ namespace System.Security.Cryptography.Rsa.Tests
     public partial class RSASignatureFormatterTests : AsymmetricSignatureFormatterTests
     {
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void VerifySignature_SHA1()
         {
             using (RSA rsa = RSAFactory.Create())
@@ -29,6 +30,7 @@ namespace System.Security.Cryptography.Rsa.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void VerifySignature_SHA256()
         {
             using (RSA rsa = RSAFactory.Create())

@@ -103,6 +103,7 @@ namespace System.Globalization.Tests
 
         [Theory]
         [MemberData(nameof(DigitSubstitution_TestData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36883", TestPlatforms.iOS)]
         public void DigitSubstitutionListTest(string cultureName, DigitShapes shape)
         {
             try

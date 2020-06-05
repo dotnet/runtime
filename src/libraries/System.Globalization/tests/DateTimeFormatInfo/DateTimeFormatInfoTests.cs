@@ -62,6 +62,7 @@ namespace System.Globalization.Tests
 
         [Theory]
         [MemberData(nameof(DateTimeFormatInfo_TestData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36883", TestPlatforms.iOS)]
         public void NativeCalendarName_Get_ReturnsExpected(DateTimeFormatInfo dtfi, Calendar calendar, string nativeCalendarName)
         {
             try
@@ -135,6 +136,7 @@ namespace System.Globalization.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36883", TestPlatforms.iOS)]
         public void Months_GetHebrew_ReturnsExpected()
         {
             CultureInfo ci = new CultureInfo("he-IL");
@@ -163,6 +165,7 @@ namespace System.Globalization.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36883", TestPlatforms.iOS)]
         public void TestFirstYearOfJapaneseEra()
         {
             DateTimeFormatInfo jpnFormat = new CultureInfo("ja-JP").DateTimeFormat;

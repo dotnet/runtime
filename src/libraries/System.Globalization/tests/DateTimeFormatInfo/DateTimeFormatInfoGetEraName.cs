@@ -25,6 +25,7 @@ namespace System.Globalization.Tests
 
         [Theory]
         [MemberData(nameof(GetEraName_TestData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36883", TestPlatforms.iOS)]
         public void GetEraName_Invoke_ReturnsExpected(DateTimeFormatInfo format, int era, string expected)
         {
             Assert.Equal(expected, format.GetEraName(era));

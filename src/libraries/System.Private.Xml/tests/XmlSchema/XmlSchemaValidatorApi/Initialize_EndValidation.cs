@@ -23,6 +23,7 @@ namespace System.Xml.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void InitializeShouldResetIDConstraints()
         {
             XmlSchemaValidator val = CreateValidator(XSDFILE_IDENTITY_CONSTRAINS);
@@ -171,6 +172,7 @@ namespace System.Xml.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void InitializeWithElementValidateSameElement()
         {
             XmlSchemaValidator val;
@@ -198,6 +200,7 @@ namespace System.Xml.Tests
         [InlineData("other")]
         [InlineData("type")]
         [InlineData("attribute")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void InitializeWithElementValidate_OtherElement_Type_Attribute(string typeToValidate)
         {
             XmlSchemaValidator val;
@@ -255,6 +258,7 @@ namespace System.Xml.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void InitializeWithTypeValidateSameType()
         {
             XmlSchemaValidator val;
@@ -280,6 +284,7 @@ namespace System.Xml.Tests
         [Theory]
         [InlineData("other")]
         [InlineData("attribute")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void InitializeWithTypeValidate_OtherType_Attribute(string typeToValidate)
         {
             XmlSchemaValidator val;
@@ -330,6 +335,7 @@ namespace System.Xml.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void InitializeWithTypeValidateElement()
         {
             XmlSchemaValidator val;
@@ -355,6 +361,7 @@ namespace System.Xml.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void InitializeWithAttributeValidateSameAttribute()
         {
             XmlSchemaValidator val;
@@ -379,6 +386,7 @@ namespace System.Xml.Tests
         [InlineData("other")]
         [InlineData("element")]
         [InlineData("type")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void InitializeWithAttributeValidate_OtherAttribute_Element_Type(string typeToValidate)
         {
             XmlSchemaValidator val;
@@ -478,6 +486,7 @@ namespace System.Xml.Tests
         [Theory]
         [InlineData("text")]
         [InlineData("whitespace")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void SetPartiaValidationAndCallValidate_Text_WhiteSpace_Valid(string typeToValidate)
         {
             XmlSchemaValidator val;
@@ -527,6 +536,7 @@ namespace System.Xml.Tests
         [InlineData("valid")]
         [InlineData("missing")]
         [InlineData("ignore")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void TestForRootLevelIdentityConstraints_Valid_IDREFMissingInvalid_IgnoreIdentityConstraintsIsSetInvalid(string validity)
         {
             XmlSchemaValidator val;

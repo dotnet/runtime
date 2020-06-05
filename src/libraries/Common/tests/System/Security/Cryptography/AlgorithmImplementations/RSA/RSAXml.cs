@@ -11,6 +11,7 @@ namespace System.Security.Cryptography.Rsa.Tests
     public static class RSAXml
     {
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void TestRead1032Parameters_Public()
         {
             RSAParameters expectedParameters = ImportExport.MakePublic(TestData.RSA1032Parameters);
@@ -33,6 +34,7 @@ namespace System.Security.Cryptography.Rsa.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void TestRead1032Parameters_Private()
         {
             // Bonus trait of this XML: the root element name is wrong
@@ -383,6 +385,7 @@ zM=
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void TestReadDiminishedDPParameters_Public()
         {
             RSAParameters expectedParameters =
@@ -404,6 +407,7 @@ zM=
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void TestReadDiminishedDPParameters_Private_Base64Binary()
         {
             // This test uses the base64Binary version of the DP value, where the 0x00
@@ -446,6 +450,7 @@ zM=
 
         [Fact]
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void TestReadDiminishedDPParameters_Private_CryptoBinary()
         {
             // This test writes the DP value as a CryptoBinary, meaning the leading
@@ -538,6 +543,7 @@ zM=
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void TestWrite1032Parameters(bool includePrivateParameters)
         {
             TestWriteXml(
@@ -585,6 +591,7 @@ zM=
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void TestWrite2048Parameters(bool includePrivateParameters)
         {
             TestWriteXml(
@@ -904,6 +911,7 @@ zM=
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void TestWriteDiminishedDPParameters(bool includePrivateParameters)
         {
             // This test checks for the base64Binary version of DP (leading 0x00 written),
@@ -935,6 +943,7 @@ zM=
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void TestWriteUnusualExponentParameters(bool includePrivateParameters)
         {
             // This test ensures we pay attention to the Exponent value, instead of assuming
@@ -982,6 +991,7 @@ zM=
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void FromToXml()
         {
             using (RSA rsa = RSAFactory.Create())

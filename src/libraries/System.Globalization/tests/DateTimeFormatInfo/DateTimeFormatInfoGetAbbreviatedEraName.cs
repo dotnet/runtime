@@ -20,6 +20,7 @@ namespace System.Globalization.Tests
 
         [Theory]
         [MemberData(nameof(GetAbbreviatedEraName_TestData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36883", TestPlatforms.iOS)]
         public void GetAbbreviatedEraName_Invoke_ReturnsExpected(DateTimeFormatInfo format, int era, string expected)
         {
             Assert.Equal(expected, format.GetAbbreviatedEraName(era));

@@ -10,6 +10,7 @@ namespace System.Net.NetworkInformation.Tests
     public class ConnectionsParsingTests : FileCleanupTestBase
     {
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36890", TestPlatforms.iOS)]
         public void NumSocketConnectionsParsing()
         {
             string sockstatFile = GetTestFilePath();
@@ -31,6 +32,7 @@ namespace System.Net.NetworkInformation.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36890", TestPlatforms.iOS)]
         public void ActiveTcpConnectionsParsing()
         {
             string tcpFile = GetTestFilePath();
@@ -84,6 +86,7 @@ namespace System.Net.NetworkInformation.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36890", TestPlatforms.iOS)]
         public void TcpListenersParsing()
         {
             string tcpFile = GetTestFilePath();
@@ -99,6 +102,7 @@ namespace System.Net.NetworkInformation.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36890", TestPlatforms.iOS)]
         public void UdpListenersParsing()
         {
             string udpFile = GetTestFilePath();

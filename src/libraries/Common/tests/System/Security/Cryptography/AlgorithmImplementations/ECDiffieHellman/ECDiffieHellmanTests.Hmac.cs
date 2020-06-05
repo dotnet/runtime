@@ -26,6 +26,7 @@ namespace System.Security.Cryptography.EcDiffieHellman.Tests
 
         [Theory]
         [MemberData(nameof(MismatchedKeysizes))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void HmacDerivation_SameSizeOtherKeyRequired(int aliceSize, int bobSize)
         {
             using (ECDiffieHellman alice = ECDiffieHellmanFactory.Create(aliceSize))
@@ -39,6 +40,7 @@ namespace System.Security.Cryptography.EcDiffieHellman.Tests
 
         [Theory]
         [MemberData(nameof(EveryKeysize))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void SymmetricDerivation_Hmac(int keySize)
         {
             using (ECDiffieHellman alice = ECDiffieHellmanFactory.Create(keySize))
@@ -54,6 +56,7 @@ namespace System.Security.Cryptography.EcDiffieHellman.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void HmacDerivationVariesOnPublicKey()
         {
             using (ECDiffieHellman alice = ECDiffieHellmanFactory.Create())
@@ -71,6 +74,7 @@ namespace System.Security.Cryptography.EcDiffieHellman.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void HmacDerivationVariesOnAlgorithm()
         {
             using (ECDiffieHellman alice = ECDiffieHellmanFactory.Create())
@@ -86,6 +90,7 @@ namespace System.Security.Cryptography.EcDiffieHellman.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void HmacDerivationVariesOnKey()
         {
             byte[] hmacKeyAlice = { 0, 1, 2, 3, 4, 5 };
@@ -105,6 +110,7 @@ namespace System.Security.Cryptography.EcDiffieHellman.Tests
 
         [Theory]
         [MemberData(nameof(EveryKeysize))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void SymmetricDerivation_HmacPrepend(int keySize)
         {
             byte[] prefix = new byte[10];
@@ -122,6 +128,7 @@ namespace System.Security.Cryptography.EcDiffieHellman.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void HmacDerivationVariesOnPrepend()
         {
             byte[] alicePrefix = new byte[10];
@@ -142,6 +149,7 @@ namespace System.Security.Cryptography.EcDiffieHellman.Tests
 
         [Theory]
         [MemberData(nameof(EveryKeysize))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void SymmetricDerivation_HmacAppend(int keySize)
         {
             byte[] suffix = new byte[10];
@@ -159,6 +167,7 @@ namespace System.Security.Cryptography.EcDiffieHellman.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void HmacDerivationVariesOnAppend()
         {
             byte[] aliceSuffix = new byte[10];
@@ -178,6 +187,7 @@ namespace System.Security.Cryptography.EcDiffieHellman.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void HmacDerivationIsStable()
         {
             using (ECDiffieHellman alice = ECDiffieHellmanFactory.Create())
@@ -193,6 +203,7 @@ namespace System.Security.Cryptography.EcDiffieHellman.Tests
 
         [Theory]
         [MemberData(nameof(EveryKeysize))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void SymmetricDerivation_HmacNullKey(int keySize)
         {
             using (ECDiffieHellman alice = ECDiffieHellmanFactory.Create(keySize))
@@ -208,6 +219,7 @@ namespace System.Security.Cryptography.EcDiffieHellman.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void HmacNullKeyDerivationIsStable()
         {
             using (ECDiffieHellman alice = ECDiffieHellmanFactory.Create())
@@ -222,6 +234,7 @@ namespace System.Security.Cryptography.EcDiffieHellman.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void SimpleHmacMethodForwardsNull()
         {
             using (ECDiffieHellman ecdh = ECDiffieHellmanFactory.Create())
@@ -235,6 +248,7 @@ namespace System.Security.Cryptography.EcDiffieHellman.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void SimpleHmacNullKeyForwardsNull()
         {
             using (ECDiffieHellman ecdh = ECDiffieHellmanFactory.Create())
@@ -319,6 +333,7 @@ namespace System.Security.Cryptography.EcDiffieHellman.Tests
 #if NETCOREAPP
         [Theory]
         [MemberData(nameof(HmacDerivationTestCases))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void HmacDerivation_KnownResults(
             HashAlgorithmName hashAlgorithm,
             string hmacKeyBytes,

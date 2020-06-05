@@ -34,6 +34,7 @@ D9fVWpuVzYpEDfZm");
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void EnsureAttributesRoundtrip()
         {
             Pkcs8PrivateKeyInfo pkcs8Info;
@@ -70,6 +71,7 @@ D9fVWpuVzYpEDfZm");
         [Theory]
         [InlineData(false)]
         [InlineData(true)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void Decode_SkipCopyIsRespected(bool skipCopy)
         {
             Pkcs8PrivateKeyInfo pkcs8Info;
@@ -220,6 +222,7 @@ D9fVWpuVzYpEDfZm");
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void DecryptionFailures()
         {
             using (RSA rsa = RSA.Create())
@@ -257,6 +260,7 @@ D9fVWpuVzYpEDfZm");
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void ReencryptAndImport()
         {
             byte[] secret = { 42 };

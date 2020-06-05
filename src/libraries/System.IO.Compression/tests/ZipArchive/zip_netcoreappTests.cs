@@ -15,6 +15,7 @@ namespace System.IO.Compression.Tests
         [InlineData("Linux_RW_RW_R__.zip", 0x8000 + 0x0100 + 0x0080 + 0x0020 + 0x0010 + 0x0004)]
         [InlineData("Linux_RWXRW_R__.zip", 0x8000 + 0x01C0 + 0x0020 + 0x0010 + 0x0004)]
         [InlineData("OSX_RWXRW_R__.zip", 0x8000 + 0x01C0 + 0x0020 + 0x0010 + 0x0004)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36884", TestPlatforms.iOS)]
         public static async Task Read_UnixFilePermissions(string zipName, uint expectedAttr)
         {
             using (ZipArchive archive = new ZipArchive(await StreamHelpers.CreateTempCopyStream(compat(zipName)), ZipArchiveMode.Read))
@@ -31,6 +32,7 @@ namespace System.IO.Compression.Tests
         [InlineData(int.MinValue)]
         [InlineData(0)]
         [InlineData((0x8000 + 0x01C0 + 0x0020 + 0x0010 + 0x0004) << 16)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36884", TestPlatforms.iOS)]
         public static async Task RoundTrips_UnixFilePermissions(int expectedAttr)
         {
             using (var stream = await StreamHelpers.CreateTempCopyStream(zfile("normal.zip")))

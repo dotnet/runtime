@@ -12,6 +12,7 @@ namespace System.Runtime.InteropServices.RuntimeInformationTests
     public class RuntimeIdentifierTests
     {
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36896", TestPlatforms.iOS)]
         public void VerifyOSRid()
         {
             Assert.NotNull(RuntimeInformation.RuntimeIdentifier);

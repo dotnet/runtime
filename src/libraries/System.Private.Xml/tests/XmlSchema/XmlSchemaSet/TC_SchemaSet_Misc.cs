@@ -273,6 +273,7 @@ namespace System.Xml.Tests
 
         //[Variation(Desc = "v25 - Bug 338038 - Conflicting definitions for xml attributes in two schemas", Priority = 1)]
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void v25()
         {
             XmlSchemaSet ss = new XmlSchemaSet();
@@ -298,6 +299,7 @@ namespace System.Xml.Tests
 
         //[Variation(Desc = "v26 - Bug 338038 - Change type of xml:lang to decimal and xml:base to short in two steps", Priority = 1)]
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void v26()
         {
             XmlSchemaSet ss = new XmlSchemaSet();
@@ -327,6 +329,7 @@ namespace System.Xml.Tests
 
         //[Variation(Desc = "v27 - Bug 338038 - Add new attributes to the already present xml namespace System.Xml.Tests", Priority = 1)]
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void v27()
         {
             XmlSchemaSet ss = new XmlSchemaSet();
@@ -351,6 +354,7 @@ namespace System.Xml.Tests
 
         //[Variation(Desc = "v28 - Bug 338038 - Add new attributes to the already present xml namespace System.Xml.Tests, remove default ns schema", Priority = 1)]
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void v28()
         {
             string xmlns = @"http://www.w3.org/XML/1998/namespace";
@@ -912,6 +916,7 @@ namespace System.Xml.Tests
 
         //[Variation(Desc = "v120a.XmlDocument.Load non-validating reader.Expect IOE.")]
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void v120a()
         {
             XmlReaderSettings readerSettings = new XmlReaderSettings();
@@ -1008,6 +1013,7 @@ namespace System.Xml.Tests
 
         //[Variation(Desc = "Dev10_40561 Redefine Chameleon: Unexpected qualified name on local particle")]
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void Dev10_40561()
         {
             Initialize();
@@ -1061,6 +1067,7 @@ namespace System.Xml.Tests
 
         //[Variation(Desc = "Dev10_40509 Assert and NRE when validate the XML against the XSD")]
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void Dev10_40509()
         {
             Initialize();

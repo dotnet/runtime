@@ -17,6 +17,7 @@ namespace System.IO.Pipes.Tests
         public virtual bool SupportsBidirectionalReadingWriting => false;
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36884", TestPlatforms.iOS)]
         public void WriteWithNullBuffer_Throws_ArgumentNullException()
         {
             using (ServerClientPair pair = CreateServerClientPair())
@@ -41,6 +42,7 @@ namespace System.IO.Pipes.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36884", TestPlatforms.iOS)]
         public void WriteWithNegativeOffset_Throws_ArgumentOutOfRangeException()
         {
             using (ServerClientPair pair = CreateServerClientPair())
@@ -57,6 +59,7 @@ namespace System.IO.Pipes.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36884", TestPlatforms.iOS)]
         public void WriteWithNegativeCount_Throws_ArgumentOutOfRangeException()
         {
             using (ServerClientPair pair = CreateServerClientPair())
@@ -72,6 +75,7 @@ namespace System.IO.Pipes.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36884", TestPlatforms.iOS)]
         public void WriteWithOutOfBoundsArray_Throws_ArgumentException()
         {
             using (ServerClientPair pair = CreateServerClientPair())
@@ -119,6 +123,7 @@ namespace System.IO.Pipes.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36884", TestPlatforms.iOS)]
         public void ReadOnWriteOnlyPipe_Throws_NotSupportedException()
         {
             if (SupportsBidirectionalReadingWriting)
@@ -143,6 +148,7 @@ namespace System.IO.Pipes.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36884", TestPlatforms.iOS)]
         public async Task WriteZeroLengthBuffer_Nop()
         {
             using (ServerClientPair pair = CreateServerClientPair())
@@ -158,6 +164,7 @@ namespace System.IO.Pipes.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36884", TestPlatforms.iOS)]
         public void WritePipeUnsupportedMembers_Throws_NotSupportedException()
         {
             using (ServerClientPair pair = CreateServerClientPair())
@@ -178,6 +185,7 @@ namespace System.IO.Pipes.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36884", TestPlatforms.iOS)]
         public void WriteToDisposedWriteablePipe_Throws_ObjectDisposedException()
         {
             using (ServerClientPair pair = CreateServerClientPair())
@@ -196,6 +204,7 @@ namespace System.IO.Pipes.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36884", TestPlatforms.iOS)]
         public virtual void WriteToPipeWithClosedPartner_Throws_IOException()
         {
             using (ServerClientPair pair = CreateServerClientPair())
@@ -219,6 +228,7 @@ namespace System.IO.Pipes.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36884", TestPlatforms.iOS)]
         public async Task ValidFlush_DoesntThrow()
         {
             using (ServerClientPair pair = CreateServerClientPair())
@@ -232,6 +242,7 @@ namespace System.IO.Pipes.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36884", TestPlatforms.iOS)]
         public void ReadOnWriteOnlyPipe_Span_Throws_NotSupportedException()
         {
             if (SupportsBidirectionalReadingWriting)
@@ -251,6 +262,7 @@ namespace System.IO.Pipes.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36884", TestPlatforms.iOS)]
         public async Task WriteZeroLengthBuffer_Span_Nop()
         {
             using (ServerClientPair pair = CreateServerClientPair())
@@ -264,6 +276,7 @@ namespace System.IO.Pipes.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36884", TestPlatforms.iOS)]
         public void WriteToDisposedWriteablePipe_Span_Throws_ObjectDisposedException()
         {
             using (ServerClientPair pair = CreateServerClientPair())
@@ -278,6 +291,7 @@ namespace System.IO.Pipes.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36884", TestPlatforms.iOS)]
         public virtual void WriteToPipeWithClosedPartner_Span_Throws_IOException()
         {
             using (ServerClientPair pair = CreateServerClientPair())
@@ -299,6 +313,7 @@ namespace System.IO.Pipes.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36884", TestPlatforms.iOS)]
         public void DisposeAsync_NothingWrittenNeedsToBeFlushed_CompletesSynchronously()
         {
             ServerClientPair pair = CreateServerClientPair();

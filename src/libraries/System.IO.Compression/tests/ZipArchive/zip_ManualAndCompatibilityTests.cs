@@ -17,12 +17,14 @@ namespace System.IO.Compression.Tests
         [InlineData("dotnetzipstreaming.zip", "normal", false, false)]
         [InlineData("sharpziplib.zip", "normalWithoutEmptyDir", false, false)]
         [InlineData("xceedstreaming.zip", "normal", false, false)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36884", TestPlatforms.iOS)]
         public static async Task CompatibilityTests(string zipFile, string zipFolder, bool requireExplicit, bool checkTimes)
         {
             IsZipSameAsDir(await StreamHelpers.CreateTempCopyStream(compat(zipFile)), zfolder(zipFolder), ZipArchiveMode.Update, requireExplicit, checkTimes);
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36884", TestPlatforms.iOS)]
         public static async Task Deflate64Zip()
         {
             IsZipSameAsDir(await StreamHelpers.CreateTempCopyStream(compat("deflate64.zip")), zfolder("normal"), ZipArchiveMode.Update, requireExplicit: true, checkTimes: true);
@@ -34,6 +36,7 @@ namespace System.IO.Compression.Tests
         [InlineData("word.docx", "word", false, false)]
         [InlineData("silverlight.xap", "silverlight", false, false)]
         [InlineData("packaging.package", "packaging", false, false)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36884", TestPlatforms.iOS)]
         public static async Task CompatibilityTestsMsFiles(string withTrailing, string withoutTrailing, bool requireExplicit, bool checkTimes)
         {
             IsZipSameAsDir(await StreamHelpers.CreateTempCopyStream(compat(withTrailing)), compat(withoutTrailing), ZipArchiveMode.Update, requireExplicit, checkTimes);
@@ -53,6 +56,7 @@ namespace System.IO.Compression.Tests
         [InlineData("WindowsInvalid_FromWindows.zip", "aa<b>d")]
         [InlineData("NullCharFileName_FromWindows.zip", "a\06b6d")]
         [InlineData("NullCharFileName_FromUnix.zip", "a\06b6d")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36884", TestPlatforms.iOS)]
         public static async Task ZipWithInvalidFileNames_ParsedBasedOnSourceOS(string zipName, string fileName)
         {
             using (Stream stream = await StreamHelpers.CreateTempCopyStream(compat(zipName)))
@@ -93,6 +97,7 @@ namespace System.IO.Compression.Tests
         [InlineData("net46_unicode.zip", "unicode")]
         [InlineData("net45_normal.zip", "normal")]
         [InlineData("net46_normal.zip", "normal")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36884", TestPlatforms.iOS)]
         public static async Task ZipBinaryCompat_LocalFileHeaders(string zipFile, string zipFolder)
         {
             using (MemoryStream actualArchiveStream = new MemoryStream())
@@ -158,6 +163,7 @@ namespace System.IO.Compression.Tests
         [InlineData("net46_unicode.zip", "unicode")]
         [InlineData("net45_normal.zip", "normal")]
         [InlineData("net46_normal.zip", "normal")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36884", TestPlatforms.iOS)]
         public static async Task ZipBinaryCompat_CentralDirectoryHeaders(string zipFile, string zipFolder)
         {
             using (MemoryStream actualArchiveStream = new MemoryStream())

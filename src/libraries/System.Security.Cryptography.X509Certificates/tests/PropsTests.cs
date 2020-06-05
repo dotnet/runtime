@@ -33,6 +33,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void TestSerialBytes()
         {
             byte[] expectedSerialBytes = "b00000000100dd9f3bd08b0aaf11b000000033".HexToByteArray();
@@ -59,6 +60,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         //       Readers SHOULD handle negative values.
         //       (Presumably readers also "should" handle long values created under the previous rules)
         [InlineData("My.cer", "D5B5BC1C458A558845BFF51CB4DFF31C")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void TestSerialString(string fileName, string expectedSerial)
         {
             using (var c = new X509Certificate2(Path.Combine("TestData", fileName)))
@@ -139,6 +141,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void GetPublicKey_X509Signature_NoParameters()
         {
             // Normally RSA signature AlgorithmIdentifiers get represented as
@@ -193,6 +196,7 @@ Wry5FNNo
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void TestNotBefore()
         {
             DateTime expected = new DateTime(2013, 1, 24, 22, 33, 39, DateTimeKind.Utc).ToLocalTime();
@@ -204,6 +208,7 @@ Wry5FNNo
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void TestNotAfter()
         {
             DateTime expected = new DateTime(2014, 4, 24, 22, 33, 39, DateTimeKind.Utc).ToLocalTime();
@@ -224,6 +229,7 @@ Wry5FNNo
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void TestSignatureAlgorithm()
         {
             using (var c = new X509Certificate2(TestData.MsCertificate))
@@ -233,6 +239,7 @@ Wry5FNNo
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void TestHasPrivateKey()
         {
             using (var c = new X509Certificate2(TestData.MsCertificate))
@@ -251,6 +258,7 @@ Wry5FNNo
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void TestVersion()
         {
             using (var c = new X509Certificate2(TestData.MsCertificate))
@@ -334,6 +342,7 @@ Wry5FNNo
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void TestSubjectName()
         {
             using (var c = new X509Certificate2(TestData.MsCertificate))
@@ -345,6 +354,7 @@ Wry5FNNo
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void TestIssuerName()
         {
             using (var c = new X509Certificate2(TestData.MsCertificate))
@@ -357,6 +367,7 @@ Wry5FNNo
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void TestGetNameInfo()
         {
             using (var c = new X509Certificate2(TestData.MsCertificate))
@@ -391,72 +402,84 @@ Wry5FNNo
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void ComplexGetNameInfo_SimpleName_Cert()
         {
             TestComplexGetNameInfo("cn.subject.example.org", X509NameType.SimpleName, false);
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void ComplexGetNameInfo_SimpleName_Issuer()
         {
             TestComplexGetNameInfo("cn.issuer.example.org", X509NameType.SimpleName, true);
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void ComplexGetNameInfo_EmailName_Cert()
         {
             TestComplexGetNameInfo("sanemail1@example.org", X509NameType.EmailName, false);
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void ComplexGetNameInfo_EmailName_Issuer()
         {
             TestComplexGetNameInfo("ianemail1@example.org", X509NameType.EmailName, true);
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void ComplexGetNameInfo_UpnName_Cert()
         {
             TestComplexGetNameInfo("subjectupn1@example.org", X509NameType.UpnName, false);
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void ComplexGetNameInfo_UpnName_Issuer()
         {
             TestComplexGetNameInfo("issuerupn1@example.org", X509NameType.UpnName, true);
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void ComplexGetNameInfo_DnsName_Cert()
         {
             TestComplexGetNameInfo("dns1.subject.example.org", X509NameType.DnsName, false);
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void ComplexGetNameInfo_DnsName_Issuer()
         {
             TestComplexGetNameInfo("dns1.issuer.example.org", X509NameType.DnsName, true);
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void ComplexGetNameInfo_DnsFromAlternativeName_Cert()
         {
             TestComplexGetNameInfo("dns1.subject.example.org", X509NameType.DnsFromAlternativeName, false);
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void ComplexGetNameInfo_DnsFromAlternativeName_Issuer()
         {
             TestComplexGetNameInfo("dns1.issuer.example.org", X509NameType.DnsFromAlternativeName, true);
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void ComplexGetNameInfo_UrlName_Cert()
         {
             TestComplexGetNameInfo("http://uri1.subject.example.org/", X509NameType.UrlName, false);
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void ComplexGetNameInfo_UrlName_Issuer()
         {
             TestComplexGetNameInfo("http://uri1.issuer.example.org/", X509NameType.UrlName, true);

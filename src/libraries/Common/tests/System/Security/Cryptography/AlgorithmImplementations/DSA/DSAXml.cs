@@ -11,6 +11,7 @@ namespace System.Security.Cryptography.Dsa.Tests
     public static class DSAXml
     {
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void TestRead512Parameters_Public()
         {
             DSAParameters expectedParameters = DSATestData.Dsa512Parameters;
@@ -29,6 +30,7 @@ namespace System.Security.Cryptography.Dsa.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void TestRead512Parameters_Private()
         {
             TestReadXml(
@@ -47,6 +49,7 @@ namespace System.Security.Cryptography.Dsa.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void TestRead576Parameters_Public()
         {
             DSAParameters expectedParameters = DSATestData.Dsa576Parameters;
@@ -77,6 +80,7 @@ gVpUm2/QztrwRLALfP4TUZAtdyfW1/tzYAOk4cTNjfv0MeT/RzPz+pLHZfDP+UTj7VaoW3WVPrFpASSJ
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void TestRead576Parameters_Private()
         {
             TestReadXml(
@@ -107,6 +111,7 @@ rDJpPhzXKtY+GgtugVfrvKZx09s=
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void TestRead1024Parameters_Public()
         {
             DSAParameters expectedParameters = DSATestData.GetDSA1024Params();
@@ -142,6 +147,7 @@ wTus47S0TeE=
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void TestRead1024Parameters_Private()
         {
             TestReadXml(
@@ -183,6 +189,7 @@ S      9      R      /       j       6       9        C        v        C
         }
 
         [ConditionalFact(typeof(DSAFactory), nameof(DSAFactory.SupportsFips186_3))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void TestRead2048Parameters_Public()
         {
             DSAParameters expectedParameters = DSATestData.Dsa2048DeficientXParameters;
@@ -223,6 +230,7 @@ S      9      R      /       j       6       9        C        v        C
         }
 
         [ConditionalFact(typeof(DSAFactory), nameof(DSAFactory.SupportsFips186_3))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void TestRead2048Parameters_Private_CryptoBinary()
         {
             TestReadXml(
@@ -261,6 +269,7 @@ S      9      R      /       j       6       9        C        v        C
         }
 
         [ConditionalFact(typeof(DSAFactory), nameof(DSAFactory.SupportsFips186_3))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void TestRead2048Parameters_Private_Base64Binary()
         {
             TestReadXml(
@@ -301,6 +310,7 @@ S      9      R      /       j       6       9        C        v        C
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void TestWrite512Parameters(bool includePrivateParameters)
         {
             TestWriteXml(
@@ -325,6 +335,7 @@ S      9      R      /       j       6       9        C        v        C
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void TestWrite576Parameters(bool includePrivateParameters)
         {
             TestWriteXml(
@@ -349,6 +360,7 @@ S      9      R      /       j       6       9        C        v        C
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void TestWrite1024Parameters(bool includePrivateParameters)
         {
             TestWriteXml(
@@ -376,6 +388,7 @@ S      9      R      /       j       6       9        C        v        C
         [ConditionalTheory(typeof(DSAFactory), nameof(DSAFactory.SupportsFips186_3))]
         [InlineData(true)]
         [InlineData(false)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void TestWriteDeficientXParameters(bool includePrivateParameters)
         {
             TestWriteXml(
@@ -581,6 +594,7 @@ S      9      R      /       j       6       9        C        v        C
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void FromXmlWithSeedAndCounterAndJ()
         {
             // This key comes from FIPS-186-2, Appendix 5, Example of the DSA.
@@ -615,6 +629,7 @@ S      9      R      /       j       6       9        C        v        C
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void FromXmlWrongJ_OK()
         {
             // No one really reads the J value on import, but xmldsig defined it,
@@ -688,6 +703,7 @@ S      9      R      /       j       6       9        C        v        C
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void FromXmlWrongCounter_SometimesOK()
         {
             // DSACryptoServiceProvider doesn't check this error state, DSACng does.
@@ -740,6 +756,7 @@ S      9      R      /       j       6       9        C        v        C
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void FromXml_CounterOverflow_Succeeds()
         {
             // The counter value should be 105 (0x69).

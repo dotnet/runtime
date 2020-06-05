@@ -17,6 +17,7 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
 
         [Theory]
         [MemberData(nameof(TestKeyTransEncryptedKey_RsaAlgorithmTypes))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void TestKeyTransEncryptedKey_RsaAlgorithms(RSAEncryptionPadding encryptionPadding, string expectedOid, byte[] expectedParameters)
         {
             KeyTransRecipientInfo recipientInfo1 = EncodeKeyTransl_Rsa2048(encryptionPadding, Certificates.RSA2048Sha256KeyTransfer1);
@@ -33,6 +34,7 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void TestKeyTransEncryptedKey_RsaOaepMd5_Throws()
         {
             RSAEncryptionPadding oaepMd5Padding = RSAEncryptionPadding.CreateOaep(HashAlgorithmName.MD5);

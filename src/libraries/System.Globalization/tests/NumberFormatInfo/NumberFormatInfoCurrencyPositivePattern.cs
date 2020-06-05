@@ -18,6 +18,7 @@ namespace System.Globalization.Tests
 
         [Theory]
         [MemberData(nameof(CurrencyPositivePattern_TestData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36883", TestPlatforms.iOS)]
         public void CurrencyPositivePattern_Get_ReturnsExpected(NumberFormatInfo format, int expected)
         {
             Assert.Equal(expected, format.CurrencyPositivePattern);

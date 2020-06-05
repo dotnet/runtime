@@ -106,6 +106,7 @@ namespace System.Xml.Tests
         [InlineData("ElementOnlyElement", XmlSchemaContentType.ElementOnly, "second")]
         [InlineData("EmptyElement", XmlSchemaContentType.Empty, "second")]
         [InlineData("MixedElement", XmlSchemaContentType.Mixed, "second")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void CallValidateElementAndCHeckXmlSchemaInfoFOr_Simple_Complex_Empty_Mixed_Element_First_Second_Overload(string elemType, XmlSchemaContentType schemaContentType, string overload)
         {
             XmlSchemaValidator val;
@@ -137,6 +138,7 @@ namespace System.Xml.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void SanityTestsForNestedElements()
         {
             XmlSchemaValidator val;
@@ -171,6 +173,7 @@ namespace System.Xml.Tests
         [Theory]
         [InlineData(XmlSchemaValidationFlags.ReportValidationWarnings | XmlSchemaValidationFlags.ProcessIdentityConstraints | XmlSchemaValidationFlags.ProcessInlineSchema | XmlSchemaValidationFlags.ProcessSchemaLocation)]
         [InlineData(XmlSchemaValidationFlags.ReportValidationWarnings | XmlSchemaValidationFlags.ProcessIdentityConstraints | XmlSchemaValidationFlags.ProcessInlineSchema)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void CheckSchemaLocationIs_UsedWhenSpecified_NotUsedWhenFlagIsNotSet(XmlSchemaValidationFlags allFlags)
         {
             XmlSchemaValidator val;
@@ -208,6 +211,7 @@ namespace System.Xml.Tests
         [Theory]
         [InlineData(XmlSchemaValidationFlags.ReportValidationWarnings | XmlSchemaValidationFlags.ProcessIdentityConstraints | XmlSchemaValidationFlags.ProcessInlineSchema | XmlSchemaValidationFlags.ProcessSchemaLocation)]
         [InlineData(XmlSchemaValidationFlags.ReportValidationWarnings | XmlSchemaValidationFlags.ProcessIdentityConstraints | XmlSchemaValidationFlags.ProcessInlineSchema)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void CheckNoNamespaceSchemaLocationIs_UsedWhenSpecified_NotUsedWhenFlagIsSet(XmlSchemaValidationFlags allFlags)
         {
             XmlSchemaValidator val;
@@ -243,6 +247,7 @@ namespace System.Xml.Tests
         [Theory]
         [InlineData(null)]
         [InlineData("false")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void CallWith_Null_False_XsiNil(string xsiNil)
         {
             XmlSchemaValidator val;
@@ -270,6 +275,7 @@ namespace System.Xml.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void CallWithXsiNilTrue()
         {
             XmlSchemaValidator val;
@@ -288,6 +294,7 @@ namespace System.Xml.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void ProvideValidXsiType()
         {
             XmlSchemaValidator val;
@@ -306,6 +313,7 @@ namespace System.Xml.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void ProvideInvalidXsiType()
         {
             XmlSchemaValidator val;
@@ -391,6 +399,7 @@ namespace System.Xml.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void CheckThatWarningOccursWhenUndefinedElementIsValidatedWithLaxValidation()
         {
             XmlSchemaValidator val;
@@ -412,6 +421,7 @@ namespace System.Xml.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void CheckThatWarningsDontOccurWhenIgnoreValidationWarningsIsSet()
         {
             XmlSchemaValidator val;
@@ -432,6 +442,7 @@ namespace System.Xml.Tests
 
         //342447
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void VerifyThatSubstitutionGroupMembersAreResolvedAndAddedToTheList()
         {
             XmlSchemaValidator val;

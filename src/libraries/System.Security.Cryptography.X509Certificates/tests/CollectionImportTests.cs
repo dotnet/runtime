@@ -21,6 +21,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void ImportEmpty_Pkcs12()
         {
             using (ImportedCollection ic = Cert.Import(TestData.EmptyPfx))
@@ -31,6 +32,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void ImportX509DerBytes()
         {
             using (ImportedCollection ic = Cert.Import(TestData.MsCertificate))
@@ -41,6 +43,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void ImportX509PemBytes()
         {
             using (ImportedCollection ic = Cert.Import(TestData.MsCertificatePemBytes))
@@ -51,6 +54,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void ImportX509DerFile()
         {
             using (ImportedCollection ic = Cert.Import(Path.Combine("TestData", "MS.cer")))
@@ -61,6 +65,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void ImportX509PemFile()
         {
             using (ImportedCollection ic = Cert.Import(Path.Combine("TestData", "MS.pem")))
@@ -71,6 +76,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void ImportPkcs7DerBytes_Empty()
         {
             using (ImportedCollection ic = Cert.Import(TestData.Pkcs7EmptyDerBytes))
@@ -81,6 +87,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void ImportPkcs7PemBytes_Empty()
         {
             using (ImportedCollection ic = Cert.Import(TestData.Pkcs7EmptyPemBytes))
@@ -91,6 +98,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void ImportPkcs7DerFile_Empty()
         {
             using (ImportedCollection ic = Cert.Import(Path.Combine("TestData", "empty.p7b")))
@@ -101,6 +109,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void ImportPkcs7PemFile_Empty()
         {
             using (ImportedCollection ic = Cert.Import(Path.Combine("TestData", "empty.p7c")))
@@ -111,6 +120,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void ImportPkcs7DerBytes_Single()
         {
             using (ImportedCollection ic = Cert.Import(TestData.Pkcs7SingleDerBytes))
@@ -123,6 +133,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void ImportPkcs7PemBytes_Single()
         {
             using (ImportedCollection ic = Cert.Import(TestData.Pkcs7SinglePemBytes))
@@ -135,6 +146,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void ImportPkcs7DerFile_Single()
         {
             using (ImportedCollection ic = Cert.Import(Path.Combine("TestData", "singlecert.p7b")))
@@ -147,6 +159,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void ImportPkcs7PemFile_Single()
         {
             using (ImportedCollection ic = Cert.Import(Path.Combine("TestData", "singlecert.p7c")))
@@ -159,6 +172,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void ImportPkcs7DerBytes_Chain()
         {
             using (ImportedCollection ic = Cert.Import(TestData.Pkcs7ChainDerBytes))
@@ -169,6 +183,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void ImportPkcs7PemBytes_Chain()
         {
             using (ImportedCollection ic = Cert.Import(TestData.Pkcs7ChainPemBytes))
@@ -179,6 +194,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void ImportPkcs7DerFile_Chain()
         {
             using (ImportedCollection ic = Cert.Import(Path.Combine("TestData", "certchain.p7b")))
@@ -189,6 +205,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void ImportPkcs7PemFile_Chain()
         {
             using (ImportedCollection ic = Cert.Import(Path.Combine("TestData", "certchain.p7c")))
@@ -200,6 +217,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
         [Theory]
         [MemberData(nameof(StorageFlags))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void ImportPkcs12Bytes_Single(X509KeyStorageFlags keyStorageFlags)
         {
             using (ImportedCollection ic = Cert.Import(TestData.PfxData, TestData.PfxDataPassword, keyStorageFlags))
@@ -212,6 +230,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
         [Theory]
         [MemberData(nameof(StorageFlags))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void ImportPkcs12Bytes_Single_VerifyContents(X509KeyStorageFlags keyStorageFlags)
         {
             using (var pfxCer = new X509Certificate2(TestData.PfxData, TestData.PfxDataPassword, Cert.EphemeralIfPossible))
@@ -236,6 +255,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
         [Theory]
         [MemberData(nameof(StorageFlags))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void ImportPkcs12File_Single(X509KeyStorageFlags keyStorageFlags)
         {
             using (ImportedCollection ic = Cert.Import(Path.Combine("TestData", "My.pfx"), TestData.PfxDataPassword, keyStorageFlags))
@@ -248,6 +268,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
         [Theory]
         [MemberData(nameof(StorageFlags))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void ImportPkcs12Bytes_Chain(X509KeyStorageFlags keyStorageFlags)
         {
             using (ImportedCollection ic = Cert.Import(TestData.ChainPfxBytes, TestData.ChainPfxPassword, keyStorageFlags))
@@ -260,6 +281,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
         [Theory]
         [MemberData(nameof(StorageFlags))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void ImportPkcs12File_Chain(X509KeyStorageFlags keyStorageFlags)
         {
             using (ImportedCollection ic = Cert.Import(Path.Combine("TestData", "test.pfx"), TestData.ChainPfxPassword, keyStorageFlags))
@@ -272,6 +294,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
         [Theory]
         [MemberData(nameof(StorageFlags))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void ImportPkcs12File_Chain_VerifyContents(X509KeyStorageFlags keyStorageFlags)
         {
             using (ImportedCollection ic = Cert.Import(Path.Combine("TestData", "test.pfx"), TestData.ChainPfxPassword, keyStorageFlags))

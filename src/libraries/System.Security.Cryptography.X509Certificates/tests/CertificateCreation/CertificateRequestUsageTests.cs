@@ -11,6 +11,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
     public static class CertificateRequestUsageTests
     {
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void ReproduceBigExponentCsr()
         {
             X509Extension sanExtension = new X509Extension(
@@ -44,6 +45,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void ReproduceBigExponentCert()
         {
             DateTimeOffset notBefore = new DateTimeOffset(2016, 3, 2, 1, 48, 0, TimeSpan.Zero);
@@ -123,6 +125,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
         [Theory]
         [InlineData(false)]
         [InlineData(true)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void SimpleSelfSign_RSA(bool exportPfx)
         {
             using (RSA rsa = RSA.Create())
@@ -137,6 +140,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
         [Theory]
         [InlineData(false)]
         [InlineData(true)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void SimpleSelfSign_ECC(bool exportPfx)
         {
             using (ECDsa ecdsa = ECDsa.Create(ECCurve.NamedCurves.nistP521))
@@ -187,6 +191,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void SelfSign_RSA_UseCertKeys()
         {
             X509Certificate2 cert;
@@ -226,6 +231,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void SelfSign_ECC_UseCertKeys()
         {
             X509Certificate2 cert;
@@ -262,6 +268,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void SelfSign_ECC_DiminishedPoint_UseCertKeys()
         {
             X509Certificate2 cert;
@@ -304,6 +311,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
         [InlineData("0080", "0080")]
         [InlineData("00000080", "0080")]
         [InlineData("00000000", "00")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void SerialNumber_AlwaysPositive(string desiredSerial, string expectedSerial)
         {
             using (ECDsa ecdsa = ECDsa.Create(EccTestData.Secp521r1_DiminishedPublic_Data.KeyParameters))
@@ -332,6 +340,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void AlwaysVersion3()
         {
             using (ECDsa ecdsa = ECDsa.Create(EccTestData.Secp384r1Data.KeyParameters))
@@ -368,6 +377,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void UniqueExtensions()
         {
             using (RSA rsa = RSA.Create())
@@ -391,6 +401,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void CheckTimeNested()
         {
             HashAlgorithmName hashAlgorithm = HashAlgorithmName.SHA256;
@@ -537,6 +548,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void ECDSA_Signing_RSA()
         {
             using (RSA rsa = RSA.Create())
@@ -577,6 +589,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void ECDSA_Signing_RSAPublicKey()
         {
             using (RSA rsa = RSA.Create())
@@ -618,6 +631,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void RSA_Signing_ECDSA()
         {
             using (RSA rsa = RSA.Create())
@@ -657,6 +671,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void RSACertificateNoPaddingMode()
         {
             using (RSA rsa = RSA.Create())
@@ -698,6 +713,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
         [Theory]
         [InlineData(false)]
         [InlineData(true)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void FractionalSecondsNotWritten(bool selfSigned)
         {
             using (X509Certificate2 savedCert = new X509Certificate2(TestData.PfxData, TestData.PfxDataPassword))

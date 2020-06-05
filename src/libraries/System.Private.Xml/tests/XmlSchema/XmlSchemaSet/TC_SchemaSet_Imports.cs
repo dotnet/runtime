@@ -336,6 +336,7 @@ namespace System.Xml.Tests
         //-----------------------------------------------------------------------------------
         //[Variation(Desc = "v13 - Import: B(ns-b) added, A(ns-a) imports B with bogus url", Priority = 2)]
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void v16()
         {
             XmlSchemaSet sc = new XmlSchemaSet();
@@ -356,6 +357,7 @@ namespace System.Xml.Tests
         //-----------------------------------------------------------------------------------
         //[Variation(Desc = "v14 - Import: A(ns-a) includes B(ns-a) which imports C(ns-c)", Priority = 2)]
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void v17()
         {
             XmlSchemaSet sc = new XmlSchemaSet();
@@ -379,6 +381,7 @@ namespace System.Xml.Tests
         //-----------------------------------------------------------------------------------
         //[Variation(Desc = "v15 - Import: A(ns-a) includes A(ns-a) of v17", Priority = 2)]
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void v18()
         {
             XmlSchemaSet sc = new XmlSchemaSet();
@@ -402,6 +405,7 @@ namespace System.Xml.Tests
         //-----------------------------------------------------------------------------------
         //[Variation(Desc = "v16 - Import: A(ns-b) imports A(ns-a) of v17", Priority = 2)]
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void v19()
         {
             XmlSchemaSet sc = new XmlSchemaSet();
@@ -471,6 +475,7 @@ namespace System.Xml.Tests
         //[Variation(Desc = "v25- Import: Bug 114549 , A imports only B's NS, and B also improts A's NS AND refers to A's type, D refers to A's type (WARNING)", Priority = 1, Params = new object[] { "import_v24_b.xsd", "import_v21_c.xsd", "import_v25_d.xsd", "import_v22_a.xsd" })]
         [InlineData("import_v24_b.xsd", "import_v21_c.xsd", "import_v25_d.xsd", "import_v22_a.xsd")]
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void v24(object param0, object param1, object param2, object param3)
         {
             XmlSchemaSet ss = new XmlSchemaSet();
@@ -491,6 +496,7 @@ namespace System.Xml.Tests
 
         //[Variation(Desc = "v100 - Import: Bug 105897", Priority = 1)]
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void v100()
         {
             XmlSchemaSet ss = new XmlSchemaSet();
@@ -598,6 +604,7 @@ namespace System.Xml.Tests
         //[Variation(Desc = "v102.2 - Import: Add B(no ns) with ns-b , then A(ns-a) which imports B (no ns)", Priority = 1, Params = new object[] { "import_v5_a.xsd", "import_v4_b.xsd", 3, "ns-b", null })]
         [InlineData("import_v5_a.xsd", "import_v4_b.xsd", "ns-b")]
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void v102a(object param0, object param1, object param3)
         {
             XmlSchemaSet sc = new XmlSchemaSet();
@@ -865,6 +872,7 @@ namespace System.Xml.Tests
         //-----------------------------------------------------------------------------------
         //[Variation(Desc = "v108 - Import: A(ns-a) imports B(ns-b) imports C (ns-a)", Priority = 1)]
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void v108()
         {
             XmlSchemaSet sc = new XmlSchemaSet();
@@ -888,6 +896,7 @@ namespace System.Xml.Tests
         //-----------------------------------------------------------------------------------
         //[Variation(Desc = "v109 - Import: A(ns-a) imports B(ns-b) and C (ns-b)", Priority = 1)]
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void v109()
         {
             XmlSchemaSet sc = new XmlSchemaSet();
@@ -911,6 +920,7 @@ namespace System.Xml.Tests
         //-----------------------------------------------------------------------------------
         //[Variation(Desc = "v110 - Import: A imports B and B and C, B imports C and D, C imports D and A", Priority = 1)]
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void v110()
         {
             XmlSchemaSet sc = new XmlSchemaSet();
@@ -932,6 +942,7 @@ namespace System.Xml.Tests
         //-----------------------------------------------------------------------------------
         //[Variation(Desc = "v111 - Import: A(ns-a) imports B(ns-b) and C (ns-b), B and C include each other", Priority = 2)]
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void v111()
         {
             XmlSchemaSet sc = new XmlSchemaSet();
@@ -954,6 +965,7 @@ namespace System.Xml.Tests
         //-----------------------------------------------------------------------------------
         //[Variation(Desc = "v112 - Import: A(ns-a) imports B(BOGUS) and C (ns-c)", Priority = 2)]
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void v112()
         {
             XmlSchemaSet sc = new XmlSchemaSet();
@@ -975,6 +987,7 @@ namespace System.Xml.Tests
         //-----------------------------------------------------------------------------------
         //[Variation(Desc = "v113 - Import: B(ns-b) added, A(ns-a) imports B with bogus url", Priority = 2)]
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void v113()
         {
             XmlSchemaSet sc = new XmlSchemaSet();
@@ -999,6 +1012,7 @@ namespace System.Xml.Tests
         //-----------------------------------------------------------------------------------
         //[Variation(Desc = "v114 - Import: A(ns-a) includes B(ns-a) which imports C(ns-c)", Priority = 2)]
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void v114()
         {
             XmlSchemaSet sc = new XmlSchemaSet();
@@ -1026,6 +1040,7 @@ namespace System.Xml.Tests
         //-----------------------------------------------------------------------------------
         //[Variation(Desc = "v115 - Import: A(ns-a) includes A(ns-a) of v17", Priority = 2)]
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void v115()
         {
             XmlSchemaSet sc = new XmlSchemaSet();
@@ -1053,6 +1068,7 @@ namespace System.Xml.Tests
         //-----------------------------------------------------------------------------------
         //[Variation(Desc = "v116 - Import: A(ns-b) imports A(ns-a) of v17", Priority = 2)]
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void v116()
         {
             XmlSchemaSet sc = new XmlSchemaSet();
@@ -1076,6 +1092,7 @@ namespace System.Xml.Tests
         //-----------------------------------------------------------------------------------
         //[Variation(Desc = "v117 - Import: A,B,C,D all import and reference each other for types", Priority = 2)]
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void v117()
         {
             XmlSchemaSet sc = new XmlSchemaSet();
@@ -1122,6 +1139,7 @@ namespace System.Xml.Tests
         //[Variation(Desc = "v123- Import: Bug 114549 , A imports only B's NS, and B also improts A's NS AND refers to A's types", Priority = 1, Params = new object[] { "import_v24_b.xsd", "import_v21_c.xsd", "import_v21_d.xsd", "import_v22_a.xsd" })]
         [InlineData("import_v24_b.xsd", "import_v21_c.xsd", "import_v21_d.xsd", "import_v22_a.xsd")]
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void v118(object param0, object param1, object param2, object param3)
         {
             XmlSchemaSet ss = new XmlSchemaSet();
@@ -1153,6 +1171,7 @@ namespace System.Xml.Tests
         //[Variation(Desc = "v125- Import: Bug 114549 , A imports only B's NS, and B also improts A's NS AND refers to A's type, D refers to A's type (WARNING)", Priority = 1, Params = new object[] { "import_v24_b.xsd", "import_v21_c.xsd", "import_v25_d.xsd", "import_v22_a.xsd" })]
         [InlineData("import_v24_b.xsd", "import_v21_c.xsd", "import_v25_d.xsd", "import_v22_a.xsd")]
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void v119(object param0, object param1, object param2, object param3)
         {
             XmlSchemaSet ss = new XmlSchemaSet();
@@ -1183,6 +1202,7 @@ namespace System.Xml.Tests
 
         //[Variation(Desc = "v120 - Import: Bug 105897", Priority = 1)]
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void v120()
         {
             XmlSchemaSet ss = new XmlSchemaSet();
@@ -1294,6 +1314,7 @@ namespace System.Xml.Tests
         //[Variation(Desc = "v202.2 - Import: Add B(no ns) with ns-b , then A(ns-a) which imports B (no ns)", Priority = 1, Params = new object[] { "import_v5_a.xsd", "import_v4_b.xsd", 3, "ns-b", null })]
         [InlineData("import_v5_a.xsd", "import_v4_b.xsd", "ns-b")]
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void v202a(object param0, object param1, object param3)
         {
             XmlSchemaSet sc = new XmlSchemaSet();
@@ -1564,6 +1585,7 @@ namespace System.Xml.Tests
         //-----------------------------------------------------------------------------------
         //[Variation(Desc = "v208 - Import: A(ns-a) imports B(ns-b) imports C (ns-a)", Priority = 1)]
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void v208()
         {
             XmlSchemaSet sc = new XmlSchemaSet();
@@ -1586,6 +1608,7 @@ namespace System.Xml.Tests
         //-----------------------------------------------------------------------------------
         //[Variation(Desc = "v209 - Import: A(ns-a) imports B(ns-b) and C (ns-b)", Priority = 1)]
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void v209()
         {
             XmlSchemaSet sc = new XmlSchemaSet();
@@ -1608,6 +1631,7 @@ namespace System.Xml.Tests
         //-----------------------------------------------------------------------------------
         //[Variation(Desc = "v210 - Import: A imports B and B and C, B imports C and D, C imports D and A", Priority = 1)]
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void v210()
         {
             XmlSchemaSet sc = new XmlSchemaSet();
@@ -1629,6 +1653,7 @@ namespace System.Xml.Tests
         //-----------------------------------------------------------------------------------
         //[Variation(Desc = "v211 - Import: A(ns-a) imports B(ns-b) and C (ns-b), B and C include each other", Priority = 2)]
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void v211()
         {
             XmlSchemaSet sc = new XmlSchemaSet();
@@ -1651,6 +1676,7 @@ namespace System.Xml.Tests
         //-----------------------------------------------------------------------------------
         //[Variation(Desc = "v212 - Import: A(ns-a) imports B(BOGUS) and C (ns-c)", Priority = 2)]
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void v212()
         {
             XmlSchemaSet sc = new XmlSchemaSet();
@@ -1672,6 +1698,7 @@ namespace System.Xml.Tests
         //-----------------------------------------------------------------------------------
         //[Variation(Desc = "v213 - Import: B(ns-b) added, A(ns-a) imports B with bogus url", Priority = 2)]
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void v213()
         {
             XmlSchemaSet sc = new XmlSchemaSet();
@@ -1696,6 +1723,7 @@ namespace System.Xml.Tests
         //-----------------------------------------------------------------------------------
         //[Variation(Desc = "v214 - Import: A(ns-a) includes B(ns-a) which imports C(ns-c)", Priority = 2)]
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void v214()
         {
             XmlSchemaSet sc = new XmlSchemaSet();
@@ -1722,6 +1750,7 @@ namespace System.Xml.Tests
         //-----------------------------------------------------------------------------------
         //[Variation(Desc = "v215 - Import: A(ns-a) includes A(ns-a) of v17", Priority = 2)]
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void v215()
         {
             XmlSchemaSet sc = new XmlSchemaSet();
@@ -1748,6 +1777,7 @@ namespace System.Xml.Tests
         //-----------------------------------------------------------------------------------
         //[Variation(Desc = "v216 - Import: A(ns-b) imports A(ns-a) of v17", Priority = 2)]
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void v216()
         {
             XmlSchemaSet sc = new XmlSchemaSet();
@@ -1770,6 +1800,7 @@ namespace System.Xml.Tests
         //-----------------------------------------------------------------------------------
         //[Variation(Desc = "v217 - Import: A,B,C,D all import and reference each other for types", Priority = 2)]
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void v217()
         {
             XmlSchemaSet sc = new XmlSchemaSet();
@@ -1816,6 +1847,7 @@ namespace System.Xml.Tests
         //[Variation(Desc = "v223- Import: Bug 114549 , A imports only B's NS, and B also improts A's NS AND refers to A's types", Priority = 1, Params = new object[] { "import_v24_b.xsd", "import_v21_c.xsd", "import_v21_d.xsd", "import_v22_a.xsd" })]
         [InlineData("import_v24_b.xsd", "import_v21_c.xsd", "import_v21_d.xsd", "import_v22_a.xsd")]
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void v218(object param0, object param1, object param2, object param3)
         {
             XmlSchemaSet ss = new XmlSchemaSet();
@@ -1847,6 +1879,7 @@ namespace System.Xml.Tests
         //[Variation(Desc = "v225- Import: Bug 114549 , A imports only B's NS, and B also improts A's NS AND refers to A's type, D refers to A's type (WARNING)", Priority = 1, Params = new object[] { "import_v24_b.xsd", "import_v21_c.xsd", "import_v25_d.xsd", "import_v22_a.xsd" })]
         [InlineData("import_v24_b.xsd", "import_v21_c.xsd", "import_v25_d.xsd", "import_v22_a.xsd")]
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void v219(object param0, object param1, object param2, object param3)
         {
             XmlSchemaSet ss = new XmlSchemaSet();
@@ -1877,6 +1910,7 @@ namespace System.Xml.Tests
 
         //[Variation(Desc = "v220 - Import: Bug 105897", Priority = 1)]
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void v220()
         {
             XmlSchemaSet ss = new XmlSchemaSet();

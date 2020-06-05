@@ -782,6 +782,7 @@ namespace System.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36896", TestPlatforms.iOS)]
         public static void ToLower()
         {
             Assert.Equal('a', char.ToLower('A'));
@@ -803,6 +804,7 @@ namespace System.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36896", TestPlatforms.iOS)]
         public static void ToLowerInvariant()
         {
             Assert.Equal('a', char.ToLowerInvariant('A'));
@@ -833,6 +835,7 @@ namespace System.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36896", TestPlatforms.iOS)]
         public static void ToUpper()
         {
             Assert.Equal('A', char.ToUpper('A'));
@@ -854,6 +857,7 @@ namespace System.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36896", TestPlatforms.iOS)]
         public static void ToUpperInvariant()
         {
             Assert.Equal('A', char.ToUpperInvariant('A'));
@@ -1102,6 +1106,7 @@ namespace System.Tests
 
         [Theory]
         [MemberData(nameof(UpperLowerCasing_TestData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36896", TestPlatforms.iOS)]
         public static void CasingTest(char lowerForm, char upperForm, string cultureName)
         {
             CultureInfo ci = CultureInfo.GetCultureInfo(cultureName);

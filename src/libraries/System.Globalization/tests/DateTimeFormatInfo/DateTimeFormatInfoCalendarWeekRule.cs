@@ -18,6 +18,7 @@ namespace System.Globalization.Tests
 
         [Theory]
         [MemberData(nameof(CalendarWeekRule_Get_TestData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36883", TestPlatforms.iOS)]
         public void CalendarWeekRuleTest(DateTimeFormatInfo format, CalendarWeekRule expected)
         {
             Assert.Equal(expected, format.CalendarWeekRule);

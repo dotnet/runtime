@@ -26,6 +26,7 @@ namespace System.Xml.Tests
         [Theory]
         [InlineData(null, "")]
         [InlineData("attr", null)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void PassNull_LocalName_NameSpace__Invalid(string localName, string nameSpace)
         {
             XmlSchemaValidator val = CreateValidator(XSDFILE_VALIDATE_ATTRIBUTE);
@@ -46,6 +47,7 @@ namespace System.Xml.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void PassNullValueGetter__Invalid()
         {
             XmlSchemaValidator val = CreateValidator(XSDFILE_VALIDATE_ATTRIBUTE);
@@ -66,6 +68,7 @@ namespace System.Xml.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void PassNullXmlSchemaInfo__Valid()
         {
             XmlSchemaValidator val = CreateValidator(XSDFILE_VALIDATE_ATTRIBUTE);
@@ -84,6 +87,7 @@ namespace System.Xml.Tests
         [InlineData("DefaultAttribute")]
         [InlineData("FixedAttribute")]
         [InlineData("FixedRequiredAttribute")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void Validate_Required_Optional_Default_Fixed_FixedRequired_Attribute(string attrType)
         {
             XmlSchemaValidator val = CreateValidator(XSDFILE_VALIDATE_ATTRIBUTE);
@@ -101,6 +105,7 @@ namespace System.Xml.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void ValidateAttributeWithNamespace()
         {
             XmlSchemaValidator val = CreateValidator(XSDFILE_VALIDATE_ATTRIBUTE);
@@ -118,6 +123,7 @@ namespace System.Xml.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void ValidateAnyAttribute()
         {
             XmlSchemaValidator val = CreateValidator(XSDFILE_VALIDATE_ATTRIBUTE);
@@ -133,6 +139,7 @@ namespace System.Xml.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void AskForDefaultAttributesAndValidateThem()
         {
             XmlSchemaValidator val = CreateValidator(XSDFILE_200_DEF_ATTRIBUTES);
@@ -157,6 +164,7 @@ namespace System.Xml.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void ValidateTopLevelAttribute()
         {
             XmlSchemaValidator val;
@@ -176,6 +184,7 @@ namespace System.Xml.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void ValidateSameAttributeTwice()
         {
             XmlSchemaValidator val = CreateValidator(XSDFILE_VALIDATE_ATTRIBUTE);
@@ -210,6 +219,7 @@ namespace System.Xml.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void PassNull__Invalid()
         {
             XmlSchemaValidator val = CreateValidator(XSDFILE_VALIDATE_ATTRIBUTE);
@@ -230,6 +240,7 @@ namespace System.Xml.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void CallTwice()
         {
             XmlSchemaValidator val = CreateValidator(XSDFILE_VALIDATE_ATTRIBUTE);
@@ -249,6 +260,7 @@ namespace System.Xml.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void NestBetweenValidateAttributeCalls()
         {
             XmlSchemaValidator val = CreateValidator(XSDFILE_VALIDATE_ATTRIBUTE);
@@ -276,6 +288,7 @@ namespace System.Xml.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void CallAfterGetExpectedAttributes()
         {
             XmlSchemaValidator val = CreateValidator(XSDFILE_VALIDATE_ATTRIBUTE);
@@ -294,6 +307,7 @@ namespace System.Xml.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void CallAfterValidatingSomeDefaultAttributes()
         {
             XmlSchemaValidator val = CreateValidator(XSDFILE_VALIDATE_ATTRIBUTE);
@@ -317,6 +331,7 @@ namespace System.Xml.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void CallOnElementWithFixedAttribute()
         {
             XmlSchemaValidator val = CreateValidator(XSDFILE_VALIDATE_ATTRIBUTE);
@@ -332,6 +347,7 @@ namespace System.Xml.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void v6a()
         {
             XmlSchemaValidator val = CreateValidator(XSDFILE_VALIDATE_ATTRIBUTE);
@@ -378,6 +394,7 @@ namespace System.Xml.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void CallOnELementWithNoAttributes()
         {
             XmlSchemaValidator val = CreateValidator(XSDFILE_VALIDATE_ATTRIBUTE);
@@ -390,6 +407,7 @@ namespace System.Xml.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void CallAfterValidationOfAllAttributes()
         {
             XmlSchemaValidator val = CreateValidator(XSDFILE_VALIDATE_ATTRIBUTE);
@@ -406,6 +424,7 @@ namespace System.Xml.Tests
         [Theory]
         [InlineData("OptionalAttribute")]
         [InlineData("FixedAttribute")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void CallWithoutValidationOf_Optional_Fixed_Attributes(string attrType)
         {
             XmlSchemaValidator val = CreateValidator(XSDFILE_VALIDATE_ATTRIBUTE);
@@ -420,6 +439,7 @@ namespace System.Xml.Tests
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void CallWithoutValidationOfDefaultAttributesGetUnspecifiedDefault_Called_NotCalled(bool call)
         {
             XmlSchemaValidator val = CreateValidator(XSDFILE_VALIDATE_ATTRIBUTE);
@@ -437,6 +457,7 @@ namespace System.Xml.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void CallWithoutValidationOfRequiredAttribute()
         {
             XmlSchemaValidator val = CreateValidator(XSDFILE_VALIDATE_ATTRIBUTE);

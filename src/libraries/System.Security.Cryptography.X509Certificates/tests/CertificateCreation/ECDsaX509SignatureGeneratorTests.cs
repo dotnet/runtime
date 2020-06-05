@@ -21,6 +21,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
 
         [Theory]
         [MemberData(nameof(GetApplicableTestData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void PublicKeyEncoding(EccTestData testData)
         {
             ECParameters keyParameters = testData.KeyParameters;
@@ -60,6 +61,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
         [InlineData("SHA256")]
         [InlineData("SHA384")]
         [InlineData("SHA512")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void SignatureAlgorithm_StableNotSame(string hashAlgorithmName)
         {
             using (ECDsa ecdsa = ECDsa.Create(EccTestData.Secp256r1Data.KeyParameters))
@@ -79,6 +81,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
         [InlineData("MD5")]
         [InlineData("SHA1")]
         [InlineData("Potato")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void SignatureAlgorithm_NotSupported(string hashAlgorithmName)
         {
             using (ECDsa ecdsa = ECDsa.Create(EccTestData.Secp256r1Data.KeyParameters))
@@ -96,6 +99,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
         [InlineData("SHA256")]
         [InlineData("SHA384")]
         [InlineData("SHA512")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void SignatureAlgorithm_Encoding(string hashAlgorithmName)
         {
             string expectedAlgOid;

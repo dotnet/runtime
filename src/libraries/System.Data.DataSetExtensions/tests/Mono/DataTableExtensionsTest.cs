@@ -76,6 +76,7 @@ namespace MonoTests.System.Data
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36879", TestPlatforms.iOS)]
         public void AsEnumerable()
         {
             DataSet ds = new DataSet();

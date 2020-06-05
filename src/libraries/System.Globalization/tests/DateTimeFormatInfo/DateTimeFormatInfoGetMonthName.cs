@@ -27,6 +27,7 @@ namespace System.Globalization.Tests
 
         [Theory]
         [MemberData(nameof(GetMonthName_TestData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36883", TestPlatforms.iOS)]
         public void GetMonthName_Invoke_ReturnsExpected(DateTimeFormatInfo format, string[] expected)
         {
             for (int i = MinMonth; i <= MaxMonth; ++i)

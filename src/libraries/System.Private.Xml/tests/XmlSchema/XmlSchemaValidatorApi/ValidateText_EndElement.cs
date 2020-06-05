@@ -22,6 +22,7 @@ namespace System.Xml.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void PassNull()
         {
             XmlSchemaValidator val = CreateValidator(new XmlSchemaSet());
@@ -40,6 +41,7 @@ namespace System.Xml.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void TopLevelText()
         {
             XmlSchemaValidator val = CreateValidator(XSDFILE_VALIDATE_TEXT);
@@ -59,6 +61,7 @@ namespace System.Xml.Tests
         [Theory]
         [InlineData("single")]
         [InlineData("multiple")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void SanityTestForSimpleType_MultipleCallInOneContext(string param)
         {
             XmlSchemaValidator val = CreateValidator(XSDFILE_VALIDATE_TEXT);
@@ -91,6 +94,7 @@ namespace System.Xml.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void MixedContent()
         {
             XmlSchemaValidator val = CreateValidator(XSDFILE_VALIDATE_TEXT);
@@ -122,6 +126,7 @@ namespace System.Xml.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void ElementOnlyContent()
         {
             XmlSchemaValidator val = CreateValidator(XSDFILE_VALIDATE_TEXT);
@@ -147,6 +152,7 @@ namespace System.Xml.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void EmptyContent()
         {
             XmlSchemaValidator val = CreateValidator(XSDFILE_VALIDATE_TEXT);
@@ -202,6 +208,7 @@ namespace System.Xml.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void TopLevelWhitespace()
         {
             XmlSchemaValidator val = CreateValidator(XSDFILE_VALIDATE_TEXT);
@@ -219,6 +226,7 @@ namespace System.Xml.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void WhitespaceInsideElement_Single()
         {
             XmlSchemaValidator val = CreateValidator(XSDFILE_VALIDATE_TEXT);
@@ -250,6 +258,7 @@ namespace System.Xml.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void WhitespaceInEmptyContent__Invalid()
         {
             XmlSchemaValidator val = CreateValidator(XSDFILE_VALIDATE_TEXT);
@@ -273,6 +282,7 @@ namespace System.Xml.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void PassNonWhitespaceContent()
         {
             XmlSchemaValidator val = CreateValidator(XSDFILE_VALIDATE_TEXT);
@@ -325,6 +335,7 @@ namespace System.Xml.Tests
 
         // BUG 305258
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void SanityTestForComplexTypes()
         {
             XmlSchemaValidator val = CreateValidator(XSDFILE_VALIDATE_END_ELEMENT);
@@ -355,6 +366,7 @@ namespace System.Xml.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void IncompleteContet__Valid()
         {
             XmlSchemaValidator val = CreateValidator(XSDFILE_VALIDATE_END_ELEMENT);
@@ -382,6 +394,7 @@ namespace System.Xml.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void IncompleteContent__Invalid()
         {
             XmlSchemaValidator val = CreateValidator(XSDFILE_VALIDATE_END_ELEMENT);
@@ -411,6 +424,7 @@ namespace System.Xml.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void TextNodeWithoutValidateTextCall()
         {
             XmlSchemaValidator val = CreateValidator(XSDFILE_VALIDATE_END_ELEMENT);
@@ -431,6 +445,7 @@ namespace System.Xml.Tests
         // 2nd overload
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void Typed_NullXmlSchemaInfo()
         {
             XmlSchemaValidator val = CreateValidator(XSDFILE_VALIDATE_END_ELEMENT);
@@ -446,6 +461,7 @@ namespace System.Xml.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void Typed_NullTypedValue()
         {
             XmlSchemaValidator val = CreateValidator(XSDFILE_VALIDATE_END_ELEMENT);
@@ -467,6 +483,7 @@ namespace System.Xml.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void CallValidateTextThenValidateEndElementWithTypedValue()
         {
             XmlSchemaValidator val = CreateValidator(XSDFILE_VALIDATE_END_ELEMENT);
@@ -492,6 +509,7 @@ namespace System.Xml.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void CheckSchemaInfoAfterCallingValidateEndElementWithTypedValue()
         {
             XmlSchemaValidator val = CreateValidator(XSDFILE_VALIDATE_END_ELEMENT);
@@ -514,6 +532,7 @@ namespace System.Xml.Tests
 
         //bug #305258
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void SanityTestForEmptyTypes()
         {
             XmlSchemaValidator val = CreateValidator(XSDFILE_VALIDATE_END_ELEMENT);
@@ -538,6 +557,7 @@ namespace System.Xml.Tests
         [InlineData("duplicate")]
         [InlineData("missing")]
         [InlineData("ignore")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void TestForIdentityConstraints_Valid_InvalidDuplicateKey_InvalidKeyRefMissing_InvalidIdentitiConstraintIsSet(string constrType)
         {
             XmlSchemaValidator val;
@@ -649,6 +669,7 @@ namespace System.Xml.Tests
 
         //Bug #305376
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void AllXmlSchemaInfoArgsCanBeNull()
         {
             XmlSchemaValidator val = CreateValidator(XSDFILE_VALIDATE_END_ELEMENT);
@@ -674,6 +695,7 @@ namespace System.Xml.Tests
         [Theory]
         [InlineData("first")]
         [InlineData("second")] //(BUG #307549)
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void TestXmlSchemaInfoValuesAfterUnionValidation_Without_With_ValidationEndElementOverload(string overload)
         {
             XmlSchemaValidator val = CreateValidator(XSDFILE_VALIDATE_END_ELEMENT);
@@ -699,6 +721,7 @@ namespace System.Xml.Tests
 
         //BUG #308578
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void CallValidateEndElementWithTypedValueForComplexContent()
         {
             XmlSchemaValidator val = CreateValidator(XSDFILE_VALIDATE_END_ELEMENT);
@@ -761,6 +784,7 @@ namespace System.Xml.Tests
         [Theory]
         [InlineData("valid")]
         [InlineData("invalid")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void SkipAfterValidating_ValidContent_IncompleteContent(string validity)
         {
             XmlSchemaValidator val = CreateValidator(XSDFILE_VALIDATE_END_ELEMENT);
@@ -792,6 +816,7 @@ namespace System.Xml.Tests
 
         //bug #306869
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void ValidateTextAndSkip()
         {
             XmlSchemaValidator val = CreateValidator(XSDFILE_VALIDATE_END_ELEMENT);
@@ -810,6 +835,7 @@ namespace System.Xml.Tests
 
         //bug #306869
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void ValidateAttributesAndSkip()
         {
             XmlSchemaValidator val = CreateValidator(XSDFILE_VALIDATE_END_ELEMENT);
@@ -826,6 +852,7 @@ namespace System.Xml.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void CheckThatSkipToEndElementJumpsIntoRightContext()
         {
             XmlSchemaValidator val = CreateValidator(XSDFILE_VALIDATE_END_ELEMENT);

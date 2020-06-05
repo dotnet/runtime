@@ -13,6 +13,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         [Theory]
         [InlineData("My.pfx", X509ContentType.Pkcs12)]
         [InlineData("My.cer", X509ContentType.Cert)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void TestFileContentType(string fileName, X509ContentType contentType)
         {
             string fullPath = Path.Combine("TestData", fileName);
@@ -22,6 +23,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
         [Theory]
         [MemberData(nameof(GetContentBlobsWithType))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void TestBlobContentType(string caseName, byte[] blob, X509ContentType contentType)
         {
             _ = caseName;
@@ -30,6 +32,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void TestThrowsWhenGivenInvalidContent()
         {
             byte[] blob = new byte[] { 0x00, 0xFF, 0x00, 0xFF };

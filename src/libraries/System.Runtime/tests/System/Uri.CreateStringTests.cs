@@ -1242,6 +1242,7 @@ namespace System.Tests
 
         [Theory]
         [MemberData(nameof(Create_String_Invalid_TestData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36896", TestPlatforms.iOS)]
         public void Create_String_Invalid(string uriString, UriKind uriKind)
         {
             if (uriKind == UriKind.Absolute)

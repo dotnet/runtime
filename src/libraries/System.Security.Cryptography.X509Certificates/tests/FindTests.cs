@@ -112,6 +112,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
         [Theory]
         [MemberData(nameof(GenerateInvalidInputs))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void FindWithWrongTypeValue(X509FindType findType, Type badValueType)
         {
             object badValue;
@@ -142,30 +143,35 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
         [Theory]
         [MemberData(nameof(GenerateInvalidOidInputs))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void FindWithBadOids(X509FindType findType, string badOid)
         {
             RunExceptionTest<ArgumentException>(findType, badOid);
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void FindByNullName()
         {
             RunExceptionTest<ArgumentNullException>(X509FindType.FindBySubjectName, null);
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void FindByInvalidThumbprint()
         {
             RunZeroMatchTest(X509FindType.FindByThumbprint, "Nothing");
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void FindByInvalidThumbprint_RightLength()
         {
             RunZeroMatchTest(X509FindType.FindByThumbprint, "ffffffffffffffffffffffffffffffffffffffff");
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void FindByValidThumbprint()
         {
             RunTest(
@@ -180,6 +186,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void FindByThumbprint_WithLrm()
         {
             RunTest(
@@ -196,6 +203,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         [Theory]
         [InlineData(false)]
         [InlineData(true)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void FindByValidThumbprint_ValidOnly(bool validOnly)
         {
             using (var msCer = new X509Certificate2(TestData.MsCertificate))
@@ -233,6 +241,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void FindByValidThumbprint_RootCert()
         {
             using (X509Store machineRoot = new X509Store(StoreName.Root, StoreLocation.LocalMachine))
@@ -329,6 +338,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         [Theory]
         [InlineData("Nothing")]
         [InlineData("US, Redmond, Microsoft Corporation, MOPR, Microsoft Corporation")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void TestSubjectName_NoMatch(string subjectQualifier)
         {
             RunZeroMatchTest(X509FindType.FindBySubjectName, subjectQualifier);
@@ -344,6 +354,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         [InlineData("Washington, Redmond")]
         [InlineData("US, Washington, Redmond, Microsoft Corporation, MOPR, Microsoft Corporation")]
         [InlineData("us, washington, redmond, microsoft corporation, mopr, microsoft corporation")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void TestSubjectName_Match(string subjectQualifier)
         {
             RunSingleMatchTest_MsCer(X509FindType.FindBySubjectName, subjectQualifier);
@@ -357,6 +368,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         [InlineData("CN=Microsoft Corporation,     OU=MOPR, O=Microsoft Corporation, L=Redmond, S=Washington, C=US")]
         [InlineData("CN=Microsoft Corporation, OU=MOPR, O=Microsoft Corporation, L=Redmond, S=Washington, C=US    ")]
         [InlineData("    CN=Microsoft Corporation, OU=MOPR, O=Microsoft Corporation, L=Redmond, S=Washington, C=US")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void TestDistinguishedSubjectName_NoMatch(string distinguishedSubjectName)
         {
             RunZeroMatchTest(X509FindType.FindBySubjectDistinguishedName, distinguishedSubjectName);
@@ -366,12 +378,14 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         [InlineData("CN=Microsoft Corporation, OU=MOPR, O=Microsoft Corporation, L=Redmond, S=Washington, C=US")]
         [InlineData("CN=microsoft corporation, OU=MOPR, O=Microsoft Corporation, L=Redmond, S=Washington, C=US")]
         [InlineData("cn=microsoft corporation, ou=mopr, o=microsoft corporation, l=redmond, s=washington, c=us")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void TestDistinguishedSubjectName_Match(string distinguishedSubjectName)
         {
             RunSingleMatchTest_MsCer(X509FindType.FindBySubjectDistinguishedName, distinguishedSubjectName);
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void TestIssuerName_NoMatch()
         {
             RunZeroMatchTest(X509FindType.FindByIssuerName, "Nothing");
@@ -387,6 +401,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         [InlineData("Washington, Redmond")]
         [InlineData("US, Washington, Redmond, Microsoft Corporation, Microsoft Code Signing PCA")]
         [InlineData("us, washington, redmond, microsoft corporation, microsoft code signing pca")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void TestIssuerName_Match(string issuerQualifier)
         {
             RunSingleMatchTest_MsCer(X509FindType.FindByIssuerName, issuerQualifier);
@@ -399,6 +414,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         [InlineData("CN=Microsoft Code Signing PCA,     O=Microsoft Corporation, L=Redmond, S=Washington, C=US")]
         [InlineData("CN=Microsoft Code Signing PCA, O=Microsoft Corporation, L=Redmond, S=Washington, C=US    ")]
         [InlineData("    CN=Microsoft Code Signing PCA, O=Microsoft Corporation, L=Redmond, S=Washington, C=US")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void TestDistinguishedIssuerName_NoMatch(string issuerDistinguishedName)
         {
             RunZeroMatchTest(X509FindType.FindByIssuerDistinguishedName, issuerDistinguishedName);
@@ -408,12 +424,14 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         [InlineData("CN=Microsoft Code Signing PCA, O=Microsoft Corporation, L=Redmond, S=Washington, C=US")]
         [InlineData("CN=microsoft Code signing pca, O=Microsoft Corporation, L=Redmond, S=Washington, C=US")]
         [InlineData("cn=microsoft code signing pca, o=microsoft corporation, l=redmond, s=washington, c=us")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void TestDistinguishedIssuerName_Match(string issuerDistinguishedName)
         {
             RunSingleMatchTest_MsCer(X509FindType.FindByIssuerDistinguishedName, issuerDistinguishedName);
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void TestByTimeValid_Before()
         {
             RunTest(
@@ -434,6 +452,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void TestByTimeValid_After()
         {
             RunTest(
@@ -454,6 +473,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void TestByTimeValid_Between()
         {
             RunTest(
@@ -483,6 +503,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void TestByTimeValid_Match()
         {
             RunTest(
@@ -497,6 +518,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void TestFindByTimeNotYetValid_Match()
         {
             RunTest(
@@ -527,6 +549,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void TestFindByTimeNotYetValid_NoMatch()
         {
             RunTest(
@@ -557,6 +580,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void TestFindByTimeExpired_Match()
         {
             RunTest(
@@ -587,6 +611,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void TestFindByTimeExpired_NoMatch()
         {
             RunTest(
@@ -617,6 +642,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void TestBySerialNumber_Decimal()
         {
             // Decimal string is an allowed input format.
@@ -626,6 +652,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void TestBySerialNumber_DecimalLeadingZeros()
         {
             // Checking that leading zeros are ignored.
@@ -640,12 +667,14 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         [InlineData("0001137338006039264696476027508428304567989436592")]
         // Compat: Minus signs are ignored
         [InlineData("-1137338006039264696476027508428304567989436592")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void TestBySerialNumber_Decimal_CertB(string serialNumber)
         {
             RunSingleMatchTest_MsCer(X509FindType.FindBySerialNumber, serialNumber);
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void TestBySerialNumber_Hex()
         {
             // Hex string is also an allowed input format.
@@ -655,6 +684,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void TestBySerialNumber_HexIgnoreCase()
         {
             // Hex string is also an allowed input format and case-blind
@@ -664,6 +694,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void TestBySerialNumber_HexLeadingZeros()
         {
             // Checking that leading zeros are ignored.
@@ -673,6 +704,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void TestBySerialNumber_WithSpaces()
         {
             // Hex string is also an allowed input format and case-blind
@@ -682,6 +714,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void TestBySerialNumber_WithLRM()
         {
             // Hex string is also an allowed input format and case-blind
@@ -691,6 +724,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void TestBySerialNumber_NoMatch()
         {
             RunZeroMatchTest(
@@ -700,12 +734,14 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
         [Theory]
         [MemberData(nameof(GenerateWorkingFauxSerialNumbers))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void TestBySerialNumber_Match_NonDecimalInput(string input)
         {
             RunSingleMatchTest_MsCer(X509FindType.FindBySerialNumber, input);
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void TestByExtension_FriendlyName()
         {
             // Cannot just say "Enhanced Key Usage" here because the extension name is localized.
@@ -714,6 +750,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void TestByExtension_OidValue()
         {
             RunSingleMatchTest_MsCer(X509FindType.FindByExtension, "2.5.29.37");
@@ -721,6 +758,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
         [Fact]
         // Compat: Non-ASCII digits don't throw, but don't match.
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void TestByExtension_OidValue_ArabicNumericChar()
         {
             // This uses the same OID as TestByExtension_OidValue, but uses "Arabic-Indic Digit Two" instead
@@ -730,18 +768,21 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void TestByExtension_UnknownFriendlyName()
         {
             RunExceptionTest<ArgumentException>(X509FindType.FindByExtension, "BOGUS");
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void TestByExtension_NoMatch()
         {
             RunZeroMatchTest(X509FindType.FindByExtension, "2.9");
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void TestBySubjectKeyIdentifier_UsingFallback()
         {
             RunSingleMatchTest_PfxCer(
@@ -764,6 +805,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         [InlineData("597 1A6 5A3 34D DA9 807 80F F84 1EB E87 F97 232 41F 2")]
         // Non-symmetric whitespace is allowed
         [InlineData("    5971A65   A334DDA980780FF84  1EBE87F97           23241F   2")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void TestBySubjectKeyIdentifier_ExtensionPresent(string subjectKeyIdentifier)
         {
             RunSingleMatchTest_MsCer(X509FindType.FindBySubjectKeyIdentifier, subjectKeyIdentifier);
@@ -776,6 +818,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         [InlineData(LeftToRightMark + "59 71 A6 5A 33 4D DA 98 07 80 FF 84 1E BE 87 F9 72 32 41 F2 3")]
         // Compat: Lone trailing nybbles are ignored, even if not hex
         [InlineData(LeftToRightMark + "59 71 A6 5A 33 4D DA 98 07 80 FF 84 1E BE 87 F9 72 32 41 F2 p")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void TestBySubjectKeyIdentifier_ExtensionPresentWithLTM(string subjectKeyIdentifier)
         {
             RunSingleMatchTest_MsCer(X509FindType.FindBySubjectKeyIdentifier, subjectKeyIdentifier);
@@ -790,18 +833,21 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         [InlineData("59 71 A6 5A 33 4D DA 98 07 80 FF 84 1E BE 87 p9 72 32 41 F2")]
         // Compat: A non-hex character as the low nybble makes the whole byte FF.
         [InlineData("59 71 A6 5A 33 4D DA 98 07 80 0p 84 1E BE 87 F9 72 32 41 F2")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void TestBySubjectKeyIdentifier_Compat(string subjectKeyIdentifier)
         {
             RunSingleMatchTest_MsCer(X509FindType.FindBySubjectKeyIdentifier, subjectKeyIdentifier);
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void TestBySubjectKeyIdentifier_NoMatch()
         {
             RunZeroMatchTest(X509FindType.FindBySubjectKeyIdentifier, "");
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void TestBySubjectKeyIdentifier_NoMatch_RightLength()
         {
             RunZeroMatchTest(
@@ -810,6 +856,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void TestByApplicationPolicy_MatchAll()
         {
             RunTest(
@@ -829,6 +876,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void TestByApplicationPolicy_NoPolicyAlwaysMatches()
         {
             // PfxCer doesn't have any application policies which means it's good for all usages (even nonsensical ones.)
@@ -836,6 +884,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void TestByApplicationPolicy_NoMatch()
         {
             RunTest(
@@ -855,6 +904,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void TestByCertificatePolicies_MatchA()
         {
             using (var policyCert = new X509Certificate2(TestData.CertWithPolicies))
@@ -868,6 +918,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void TestByCertificatePolicies_MatchB()
         {
             using (var policyCert = new X509Certificate2(TestData.CertWithPolicies))
@@ -881,6 +932,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void TestByCertificatePolicies_NoMatch()
         {
             using (var policyCert = new X509Certificate2(TestData.CertWithPolicies))
@@ -897,6 +949,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void TestByTemplate_MatchA()
         {
             using (var templatedCert = new X509Certificate2(TestData.CertWithTemplateData))
@@ -910,6 +963,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void TestByTemplate_MatchB()
         {
             using (var templatedCert = new X509Certificate2(TestData.CertWithTemplateData))
@@ -923,6 +977,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void TestByTemplate_NoMatch()
         {
             using (var templatedCert = new X509Certificate2(TestData.CertWithTemplateData))
@@ -944,6 +999,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         [InlineData(X509KeyUsageFlags.DigitalSignature)]
         [InlineData("DigitalSignature")]
         [InlineData("digitalSignature")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void TestFindByKeyUsage_Match(object matchCriteria)
         {
             TestFindByKeyUsage(true, matchCriteria);
@@ -955,6 +1011,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         [InlineData(X509KeyUsageFlags.KeyEncipherment)]
         [InlineData("KeyEncipherment")]
         [InlineData("KEYEncipherment")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void TestFindByKeyUsage_NoMatch(object matchCriteria)
         {
             TestFindByKeyUsage(false, matchCriteria);

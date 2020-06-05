@@ -26,6 +26,7 @@ namespace System.Security.Cryptography.EcDiffieHellman.Tests
 
         [Theory]
         [MemberData(nameof(MismatchedKeysizes))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void TlsDerivation_SameSizeOtherKeyRequired(int aliceSize, int bobSize)
         {
             using (ECDiffieHellman alice = ECDiffieHellmanFactory.Create(aliceSize))
@@ -38,6 +39,7 @@ namespace System.Security.Cryptography.EcDiffieHellman.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void TlsRequiresLabel()
         {
             using (ECDiffieHellman ecdh = ECDiffieHellmanFactory.Create())
@@ -49,6 +51,7 @@ namespace System.Security.Cryptography.EcDiffieHellman.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void TlsRequiresSeed()
         {
             using (ECDiffieHellman ecdh = ECDiffieHellmanFactory.Create())
@@ -63,6 +66,7 @@ namespace System.Security.Cryptography.EcDiffieHellman.Tests
         [InlineData(0)]
         [InlineData(63)]
         [InlineData(65)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void TlsRequiresSeed64(int seedSize)
         {
             byte[] seed = new byte[seedSize];
@@ -77,6 +81,7 @@ namespace System.Security.Cryptography.EcDiffieHellman.Tests
 
         [Theory]
         [MemberData(nameof(EveryKeysize))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void SymmetricDerivation_TlsPrf(int keySize)
         {
             using (ECDiffieHellman alice = ECDiffieHellmanFactory.Create(keySize))
@@ -92,6 +97,7 @@ namespace System.Security.Cryptography.EcDiffieHellman.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void TlsPrfDerivationIsStable()
         {
             using (ECDiffieHellman alice = ECDiffieHellmanFactory.Create())
@@ -107,6 +113,7 @@ namespace System.Security.Cryptography.EcDiffieHellman.Tests
 
         [Theory]
         [MemberData(nameof(EveryKeysize))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void TlsPrfOutputIs48Bytes(int keySize)
         {
             using (ECDiffieHellman ecdh = ECDiffieHellmanFactory.Create(keySize))
@@ -119,6 +126,7 @@ namespace System.Security.Cryptography.EcDiffieHellman.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void TlsPrfVariesOnOtherKey()
         {
             using (ECDiffieHellman alice = ECDiffieHellmanFactory.Create())
@@ -136,6 +144,7 @@ namespace System.Security.Cryptography.EcDiffieHellman.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void TlsPrfVariesOnLabel()
         {
             byte[] aliceLabel = s_fourByteLabel;
@@ -154,6 +163,7 @@ namespace System.Security.Cryptography.EcDiffieHellman.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void TlsPrfVariesOnSeed()
         {
             byte[] aliceSeed = s_emptySeed;
@@ -193,6 +203,7 @@ namespace System.Security.Cryptography.EcDiffieHellman.Tests
 #if NETCOREAPP
         [Theory]
         [MemberData(nameof(TlsDerivationTestCases))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void TlsDerivation_KnownResults(string labelText, string answerHex)
         {
             byte[] label = Encoding.ASCII.GetBytes(labelText);

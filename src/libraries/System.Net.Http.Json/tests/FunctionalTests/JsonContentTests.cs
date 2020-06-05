@@ -69,6 +69,7 @@ namespace System.Net.Http.Json.Functional.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36890", TestPlatforms.iOS)]
         public async Task SendQuotedCharsetAsync()
         {
 
@@ -104,6 +105,7 @@ namespace System.Net.Http.Json.Functional.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36890", TestPlatforms.iOS)]
         public async Task JsonContentMediaTypeValidateOnServerAsync()
         {
             await LoopbackServer.CreateClientAndServerAsync(
@@ -161,6 +163,7 @@ namespace System.Net.Http.Json.Functional.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36890", TestPlatforms.iOS)]
         public static async Task ValidateUtf16IsTranscodedAsync()
         {
             await LoopbackServer.CreateClientAndServerAsync(
@@ -202,6 +205,7 @@ namespace System.Net.Http.Json.Functional.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36890", TestPlatforms.iOS)]
         public async Task TestJsonContentNullContentTypeAsync()
         {
             await LoopbackServer.CreateClientAndServerAsync(

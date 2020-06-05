@@ -235,6 +235,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void SignerInfo_AddRemoveUnsignedAttributes_JoinCounterSignaturesAttributesIntoOne()
         {
             byte[] message = { 1, 2, 3, 4, 5 };

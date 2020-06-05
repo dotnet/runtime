@@ -20,6 +20,7 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
         public static bool DoesNotSupportDiffieHellman => !SupportsDiffieHellman;
 
         [ConditionalFact(nameof(DoesNotSupportDiffieHellman))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void TestKeyAgreement_PlatformNotSupported()
         {
             ContentInfo contentInfo = new ContentInfo(new byte[] { 1, 2, 3 });

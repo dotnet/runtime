@@ -124,6 +124,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void BuildFromSignerInfo()
         {
             ContentInfo content = new ContentInfo(new byte[] { 1, 2, 3, 4 });
@@ -263,6 +264,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
         [InlineData(Rfc3161RequestResponseStatus.DoesNotParse, 5)]
         [InlineData(Rfc3161RequestResponseStatus.DoesNotParse, 6)]
         [InlineData(Rfc3161RequestResponseStatus.DoesNotParse, 7)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void ProcessResponse_FreeTsa_WithCerts_NoNonce(Rfc3161RequestResponseStatus expectedStatus, int variant)
         {
             const string Padding = "0400";

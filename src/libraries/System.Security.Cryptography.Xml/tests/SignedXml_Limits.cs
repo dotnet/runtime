@@ -21,6 +21,7 @@ namespace System.Security.Cryptography.Xml.Tests
         [InlineData(MaxTransformsPerReference, MaxReferencesPerSignedInfo + 1, true)]
         [InlineData(MaxTransformsPerReference + 1, MaxReferencesPerSignedInfo, true)]
         [InlineData(MaxTransformsPerReference + 1, MaxReferencesPerSignedInfo + 1, true)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void TestReferenceLimits(int numTransformsPerReference, int numReferencesPerSignedInfo, bool loadXmlThrows)
         {
             string xml = $@"<?xml version=""1.0"" encoding=""UTF-8""?>

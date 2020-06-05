@@ -93,6 +93,7 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public void ReadWriteNistP521Pkcs8()
         {
             const string base64 = @"
@@ -107,6 +108,7 @@ oA==";
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public void ReadWriteNistP521Pkcs8_ECDH()
         {
             const string base64 = @"
@@ -123,6 +125,7 @@ kdJEBnF/hv3v3ghuCblUpX3A9elFl1bWDCqubeABqN27PwLIwjUkcp9Ui34jMlIz
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public void ReadWriteNistP521SubjectPublicKeyInfo()
         {
             const string base64 = @"
@@ -135,6 +138,7 @@ GOHeQPlen/5PV7eRU6A=";
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public void ReadWriteNistP521SubjectPublicKeyInfo_ECDH()
         {
             const string base64 = @"
@@ -150,6 +154,7 @@ yMI1JHKfVIt+IzJSM+9n3TB1K5JPKXRZ48LhKujY9P5EVOOEfBiyVcrO9Zc3uRjh
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public void ReadNistP521EncryptedPkcs8_Pbes2_Aes128_Sha384()
         {
             // PBES2, PBKDF2 (SHA384), AES128
@@ -174,6 +179,7 @@ qtlbnispri1a/EghiaPQ0po=";
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public void ReadNistP521EncryptedPkcs8_Pbes2_Aes128_Sha384_PasswordBytes()
         {
             // PBES2, PBKDF2 (SHA384), AES128
@@ -198,6 +204,7 @@ qtlbnispri1a/EghiaPQ0po=";
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public void ReadNistP256EncryptedPkcs8_Pbes1_RC2_MD5()
         {
             const string base64 = @"
@@ -217,6 +224,7 @@ m8STNpW+zSpHWlpHpWHgXGq4wrUKJifxOv6Rm5KTYcvUT38=";
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public void ReadWriteNistP256ECPrivateKey()
         {
             const string base64 = @"
@@ -230,6 +238,7 @@ NfZ9nLTVjxeD08pD548KWrqmJAeZNsDDqQ==";
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public void ReadWriteNistP256ExplicitECPrivateKey()
         {
             ReadWriteBase64ECPrivateKey(
@@ -247,6 +256,7 @@ HVmSNfZ9nLTVjxeD08pD548KWrqmJAeZNsDDqQ==",
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public void ReadWriteNistP256ExplicitPkcs8()
         {
             ReadWriteBase64Pkcs8(
@@ -264,6 +274,7 @@ Ji0iy6T3Y16v8maAqNihK6YdWZI19n2ctNWPF4PTykPnjwpauqYkB5k2wMOp",
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public void ReadWriteNistP256ExplicitEncryptedPkcs8()
         {
             ReadWriteBase64EncryptedPkcs8(
@@ -287,6 +298,7 @@ eWDIWFuFRj58uAQ65/viFausHWt1BdywcwcyVRb2eLI5MR7DWA==",
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public void ReadWriteNistP256ExplicitSubjectPublicKeyInfo()
         {
             ReadWriteBase64SubjectPublicKeyInfo(
@@ -303,6 +315,7 @@ kaMmLSLLpPdjXq/yZoCo2KErph1ZkjX2fZy01Y8Xg9PKQ+ePClq6piQHmTbAw6k=",
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public void ReadWriteBrainpoolKey1ECPrivateKey()
         {
             ReadWriteBase64ECPrivateKey(
@@ -314,6 +327,7 @@ jwk5x2KSdsrb/pnAHDZQk1TictLI7vH2zDIF0AV+ud5sqeMQUJY=",
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public void ReadWriteBrainpoolKey1Pkcs8()
         {
             ReadWriteBase64Pkcs8(
@@ -326,6 +340,7 @@ bKnjEFCW",
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public void ReadWriteBrainpoolKey1EncryptedPkcs8()
         {
             ReadWriteBase64EncryptedPkcs8(
@@ -343,6 +358,7 @@ HiDaMtpw7yT5+32Vkxv5C2jvqNPpicmEFpf2wJ8yVLQtMOKAF2sOwxN/",
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public void ReadWriteBrainpoolKey1SubjectPublicKeyInfo()
         {
             ReadWriteBase64SubjectPublicKeyInfo(
@@ -354,6 +370,7 @@ ctLI7vH2zDIF0AV+ud5sqeMQUJY=",
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public void ReadWriteSect163k1Key1ECPrivateKey()
         {
             ReadWriteBase64ECPrivateKey(
@@ -365,6 +382,7 @@ zIElQ1/mRYnV/KbcGIdVHQeI/rti/8kkjYs5iv4+C1w8ArP+Nw==",
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public void ReadWriteSect163k1Key1Pkcs8()
         {
             ReadWriteBase64Pkcs8(
@@ -377,6 +395,7 @@ PAKz/jc=",
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public void ReadWriteSect163k1Key1EncryptedPkcs8()
         {
             ReadWriteBase64EncryptedPkcs8(
@@ -394,6 +413,7 @@ f+ESRyxDnBgKz6H2RKeenyrwVhxF98SyJzAdP637vR3QmDNAWWAgoUhg",
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public void ReadWriteSect163k1Key1SubjectPublicKeyInfo()
         {
             ReadWriteBase64SubjectPublicKeyInfo(
@@ -405,6 +425,7 @@ u2L/ySSNizmK/j4LXDwCs/43",
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public void ReadWriteSect163k1Key1ExplicitECPrivateKey()
         {
             ReadWriteBase64ECPrivateKey(
@@ -419,6 +440,7 @@ iv4+C1w8ArP+Nw==",
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public void ReadWriteSect163k1Key1ExplicitPkcs8()
         {
             ReadWriteBase64Pkcs8(
@@ -433,6 +455,7 @@ ptwYh1UdB4j+u2L/ySSNizmK/j4LXDwCs/43",
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public void ReadWriteSect163k1Key1ExplicitEncryptedPkcs8()
         {
             ReadWriteBase64EncryptedPkcs8(
@@ -453,6 +476,7 @@ z2NFvWcpK0Fh9fCVGuXV9sjJ5qE=",
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public void ReadWriteSect163k1Key1ExplicitSubjectPublicKeyInfo()
         {
             ReadWriteBase64SubjectPublicKeyInfo(
@@ -466,6 +490,7 @@ njcZzIElQ1/mRYnV/KbcGIdVHQeI/rti/8kkjYs5iv4+C1w8ArP+Nw==",
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public void ReadWriteSect283k1Key1ECPrivateKey()
         {
             ReadWriteBase64ECPrivateKey(
@@ -478,6 +503,7 @@ fbmZXDVgPF5rL4zf8Otx03rjQxughJ66sTpMkAPHlp9VzZA=",
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public void ReadWriteSect283k1Key1Pkcs8()
         {
             ReadWriteBase64Pkcs8(
@@ -491,6 +517,7 @@ Vc2Q",
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public void ReadWriteSect283k1Key1EncryptedPkcs8()
         {
             ReadWriteBase64EncryptedPkcs8(
@@ -509,6 +536,7 @@ nTvuaAMG/xvXzKoigakX+1D60cmftPsC7t23SF+xMdzfZNlJGrxXFYX1Gg==",
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public void ReadWriteSect283k1Key1SubjectPublicKeyInfo()
         {
             ReadWriteBase64SubjectPublicKeyInfo(
@@ -520,6 +548,7 @@ V9r2k5CdhAcW7qeqBH25mVw1YDxeay+M3/DrcdN640MboISeurE6TJADx5afVc2Q",
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public void ReadWriteC2pnb163v1ECPrivateKey()
         {
             ReadWriteBase64ECPrivateKey(
@@ -531,6 +560,7 @@ Jy8cVYJCaIjpG9aSV3SUIyJIqgQnCDD3oQCa1nCojekr1ZJIzIE7RQ==",
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public void ReadWriteC2pnb163v1Pkcs8()
         {
             ReadWriteBase64Pkcs8(
@@ -543,6 +573,7 @@ K9WSSMyBO0U=",
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public void ReadWriteC2pnb163v1EncryptedPkcs8()
         {
             ReadWriteBase64EncryptedPkcs8(
@@ -561,6 +592,7 @@ wiA=",
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public void ReadWriteC2pnb163v1SubjectPublicKeyInfo()
         {
             ReadWriteBase64SubjectPublicKeyInfo(
@@ -572,6 +604,7 @@ BCcIMPehAJrWcKiN6SvVkkjMgTtF",
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public void ReadWriteC2pnb163v1ExplicitECPrivateKey()
         {
             ReadWriteBase64ECPrivateKey(
@@ -587,6 +620,7 @@ dJQjIkiqBCcIMPehAJrWcKiN6SvVkkjMgTtF",
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public void ReadWriteC2pnb163v1ExplicitPkcs8()
         {
             ReadWriteBase64Pkcs8(
@@ -602,6 +636,7 @@ BAIRJy8cVYJCaIjpG9aSV3SUIyJIqgQnCDD3oQCa1nCojekr1ZJIzIE7RQ==",
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public void ReadWriteC2pnb163v1ExplicitEncryptedPkcs8()
         {
             ReadWriteBase64EncryptedPkcs8(
@@ -623,6 +658,7 @@ wxcZ+wOsnebIwy4ftKL+klh5EXv/9S5sCjC8g8J2cA6GmcZbiQ==",
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public void ReadWriteC2pnb163v1ExplicitSubjectPublicKeyInfo()
         {
             ReadWriteBase64SubjectPublicKeyInfo(
@@ -674,6 +710,7 @@ HMdNrq/BAgECAywABAIRJy8cVYJCaIjpG9aSV3SUIyJIqgQnCDD3oQCa1nCojekr
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public void NoFuzzyECPrivateKey()
         {
             using (T key = CreateKey())

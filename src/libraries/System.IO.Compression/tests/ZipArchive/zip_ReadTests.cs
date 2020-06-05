@@ -18,6 +18,7 @@ namespace System.IO.Compression.Tests
         [InlineData("emptydir.zip", "emptydir")]
         [InlineData("small.zip", "small")]
         [InlineData("unicode.zip", "unicode")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36884", TestPlatforms.iOS)]
         public static async Task ReadNormal(string zipFile, string zipFolder)
         {
             await IsZipSameAsDirAsync(zfile(zipFile), zfolder(zipFolder), ZipArchiveMode.Read);
@@ -32,6 +33,7 @@ namespace System.IO.Compression.Tests
         [InlineData("emptydir.zip", "emptydir")]
         [InlineData("small.zip", "small")]
         [InlineData("unicode.zip", "unicode")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36884", TestPlatforms.iOS)]
         public static async Task TestStreamingRead(string zipFile, string zipFolder)
         {
             using (var stream = await StreamHelpers.CreateTempCopyStream(zfile(zipFile)))
@@ -43,6 +45,7 @@ namespace System.IO.Compression.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36884", TestPlatforms.iOS)]
         public static async Task ReadStreamOps()
         {
             using (ZipArchive archive = new ZipArchive(await StreamHelpers.CreateTempCopyStream(zfile("normal.zip")), ZipArchiveMode.Read))
@@ -61,6 +64,7 @@ namespace System.IO.Compression.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36884", TestPlatforms.iOS)]
         public static async Task ReadInterleaved()
         {
             using (ZipArchive archive = new ZipArchive(await StreamHelpers.CreateTempCopyStream(zfile("normal.zip"))))
@@ -147,6 +151,7 @@ namespace System.IO.Compression.Tests
             }
         }
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36884", TestPlatforms.iOS)]
         public static async Task ReadModeInvalidOpsTest()
         {
             ZipArchive archive = new ZipArchive(await StreamHelpers.CreateTempCopyStream(zfile("normal.zip")), ZipArchiveMode.Read);

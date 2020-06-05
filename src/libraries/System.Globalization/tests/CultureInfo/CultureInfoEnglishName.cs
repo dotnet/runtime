@@ -18,6 +18,7 @@ namespace System.Globalization.Tests
 
         [Theory]
         [MemberData(nameof(EnglishName_TestData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36883", TestPlatforms.iOS)]
         public void EnglishName(string name, string expected)
         {
             CultureInfo myTestCulture = new CultureInfo(name);

@@ -33,6 +33,7 @@ namespace System.Net.NetworkInformation
             }
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public virtual void Add(IPAddress address)
         {
             throw new NotSupportedException(SR.net_collection_readonly);
@@ -61,6 +62,7 @@ namespace System.Net.NetworkInformation
             }
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public virtual bool Remove(IPAddress address)
         {
             throw new NotSupportedException(SR.net_collection_readonly);

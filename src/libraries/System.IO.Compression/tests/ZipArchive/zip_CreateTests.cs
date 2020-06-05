@@ -61,6 +61,7 @@ namespace System.IO.Compression.Tests
         [InlineData("normal", true, false)]
         [InlineData("small", false, true)]
         [InlineData("normal", false, true)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36884", TestPlatforms.iOS)]
         public static async Task CreateNormal_Seekable(string folder, bool useSpansForWriting, bool writeInChunks)
         {
             using (var s = new MemoryStream())
@@ -77,6 +78,7 @@ namespace System.IO.Compression.Tests
         [InlineData("normal")]
         [InlineData("empty")]
         [InlineData("emptydir")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36884", TestPlatforms.iOS)]
         public static async Task CreateNormal_Unseekable(string folder)
         {
             using (var s = new MemoryStream())
@@ -89,6 +91,7 @@ namespace System.IO.Compression.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36884", TestPlatforms.iOS)]
         public static async Task CreateNormal_Unicode_Seekable()
         {
             using (var s = new MemoryStream())
@@ -101,6 +104,7 @@ namespace System.IO.Compression.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36884", TestPlatforms.iOS)]
         public static async Task CreateNormal_Unicode_Unseekable()
         {
             using (var s = new MemoryStream())

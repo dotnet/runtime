@@ -538,6 +538,7 @@ namespace System.Globalization.Tests
 
         [Theory]
         [MemberData(nameof(CultureInfo_TestData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36883", TestPlatforms.iOS)]
         public void LcidTest(string cultureName, int lcid, string specificCultureName, string threeLetterISOLanguageName, string threeLetterWindowsLanguageName, string alternativeCultureName, string consoleUICultureName)
         {
             _ = alternativeCultureName;
@@ -606,6 +607,7 @@ namespace System.Globalization.Tests
 
         [Theory]
         [MemberData(nameof(CultureInfo_TestData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36883", TestPlatforms.iOS)]
         public void GetCulturesTest(string cultureName, int lcid, string specificCultureName, string threeLetterISOLanguageName, string threeLetterWindowsLanguageName, string alternativeCultureName, string consoleUICultureName)
         {
             _ = lcid;

@@ -23,6 +23,7 @@ namespace System.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36896", TestPlatforms.iOS)]
         public void UserName_Valid()
         {
             string name = Environment.UserName;

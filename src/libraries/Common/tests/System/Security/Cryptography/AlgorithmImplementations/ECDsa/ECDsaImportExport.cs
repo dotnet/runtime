@@ -12,6 +12,7 @@ namespace System.Security.Cryptography.EcDsa.Tests
     {
 #if NETCOREAPP
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void DiminishedCoordsRoundtrip()
         {
             ECParameters toImport = EccTestData.GetNistP521DiminishedCoordsParameters();
@@ -108,6 +109,7 @@ namespace System.Security.Cryptography.EcDsa.Tests
         }
 
         [ConditionalTheory(nameof(ECExplicitCurvesSupported)), MemberData(nameof(TestCurves))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void TestExplicitCurvesSignVerify(CurveDef curveDef)
         {
             using (ECDsa ec1 = ECDsaFactory.Create(curveDef.Curve))

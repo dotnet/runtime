@@ -19,6 +19,7 @@ namespace System.Globalization.Tests
         [InlineData("en")]
         [InlineData("zh-Hans")]
         [InlineData("zh-Hant")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36883", TestPlatforms.iOS)]
         public void GetCompareInfo(string name)
         {
             CompareInfo compare = CompareInfo.GetCompareInfo(name);
@@ -62,6 +63,7 @@ namespace System.Globalization.Tests
 
         [Theory]
         [MemberData(nameof(GetHashCodeTestData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36883", TestPlatforms.iOS)]
         public void GetHashCodeTest(string source1, CompareOptions options1, string source2, CompareOptions options2, bool expected)
         {
             CompareInfo invariantCompare = CultureInfo.InvariantCulture.CompareInfo;
@@ -355,6 +357,7 @@ namespace System.Globalization.Tests
 
         [ConditionalTheory(typeof(CompareInfoCompareTests), nameof(CompareInfoCompareTests.IsNotWindowsKanaRegressedVersion))]
         [MemberData(nameof(SortKey_Kana_TestData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36883", TestPlatforms.iOS)]
         public void SortKeyKanaTest(CompareInfo compareInfo, string string1, string string2, CompareOptions options, int expected)
         {
             SortKeyTest(compareInfo, string1, string2, options, expected);
@@ -362,6 +365,7 @@ namespace System.Globalization.Tests
 
         [Theory]
         [MemberData(nameof(SortKey_TestData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36883", TestPlatforms.iOS)]
         public void SortKeyTest(CompareInfo compareInfo, string string1, string string2, CompareOptions options, int expectedSign)
         {
             SortKey sk1 = compareInfo.GetSortKey(string1, options);
@@ -406,6 +410,7 @@ namespace System.Globalization.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36883", TestPlatforms.iOS)]
         public void SortKeyMiscTest()
         {
             CompareInfo ci = new CultureInfo("en-US").CompareInfo;
@@ -461,6 +466,7 @@ namespace System.Globalization.Tests
 
         [Theory]
         [MemberData(nameof(IsSortable_TestData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36883", TestPlatforms.iOS)]
         public void IsSortableTest(object sourceObj, bool expected)
         {
             string source = sourceObj as string ?? new string((char[])sourceObj);
@@ -480,6 +486,7 @@ namespace System.Globalization.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36883", TestPlatforms.iOS)]
         public void VersionTest()
         {
             SortVersion sv1 = CultureInfo.GetCultureInfo("en-US").CompareInfo.Version;
@@ -492,6 +499,7 @@ namespace System.Globalization.Tests
 
         [Theory]
         [MemberData(nameof(GetHashCodeTestData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36883", TestPlatforms.iOS)]
         public void GetHashCode_Span(string source1, CompareOptions options1, string source2, CompareOptions options2, bool expectSameHashCode)
         {
             CompareInfo invariantCompare = CultureInfo.InvariantCulture.CompareInfo;

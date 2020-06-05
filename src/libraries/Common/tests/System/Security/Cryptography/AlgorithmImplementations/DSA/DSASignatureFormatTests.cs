@@ -180,6 +180,7 @@ namespace System.Security.Cryptography.Dsa.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public void OffsetAndCountOutOfRange()
         {
             KeyDescription keyDescription = GetKey();
@@ -330,6 +331,7 @@ namespace System.Security.Cryptography.Dsa.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public void Rfc23279TrySignHashUnderMax()
         {
             KeyDescription keyDescription = GetKey();
@@ -358,6 +360,7 @@ namespace System.Security.Cryptography.Dsa.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public void Rfc23279TrySignDataUnderMax()
         {
             KeyDescription keyDescription = GetKey();

@@ -37,6 +37,7 @@ namespace System.Data.Common
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36879", TestPlatforms.iOS)]
         public void GetFactoryWithInvariantNameTest()
         {
             ClearRegisteredFactories();
@@ -48,6 +49,7 @@ namespace System.Data.Common
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36879", TestPlatforms.iOS)]
         public void GetFactoryWithDbConnectionTest()
         {
             ClearRegisteredFactories();
@@ -59,6 +61,7 @@ namespace System.Data.Common
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36879", TestPlatforms.iOS)]
         public void GetFactoryWithDataRowTest()
         {
             ClearRegisteredFactories();
@@ -66,6 +69,7 @@ namespace System.Data.Common
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36879", TestPlatforms.iOS)]
         public void RegisterFactoryWithTypeNameTest()
         {
             ClearRegisteredFactories();
@@ -73,6 +77,7 @@ namespace System.Data.Common
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36879", TestPlatforms.iOS)]
         public void RegisterFactoryWithTypeTest()
         {
             ClearRegisteredFactories();
@@ -80,6 +85,7 @@ namespace System.Data.Common
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36879", TestPlatforms.iOS)]
         public void RegisterFactoryWithInstanceTest()
         {
             ClearRegisteredFactories();
@@ -87,6 +93,7 @@ namespace System.Data.Common
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36879", TestPlatforms.iOS)]
         public void RegisterFactoryWithWrongTypeTest()
         {
             ClearRegisteredFactories();
@@ -95,6 +102,7 @@ namespace System.Data.Common
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36879", TestPlatforms.iOS)]
         public void RegisterFactoryWithBadInvariantNameTest()
         {
             ClearRegisteredFactories();
@@ -103,6 +111,7 @@ namespace System.Data.Common
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36879", TestPlatforms.iOS)]
         public void RegisterFactoryWithAssemblyQualifiedNameTest()
         {
             ClearRegisteredFactories();
@@ -110,6 +119,7 @@ namespace System.Data.Common
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36879", TestPlatforms.iOS)]
         public void RegisterFactoryWithWrongAssemblyQualifiedNameTest()
         {
             ClearRegisteredFactories();
@@ -126,6 +136,7 @@ namespace System.Data.Common
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36879", TestPlatforms.iOS)]
         public void UnregisterFactoryTest()
         {
             ClearRegisteredFactories();
@@ -136,6 +147,7 @@ namespace System.Data.Common
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36879", TestPlatforms.iOS)]
         public void TryGetFactoryTest()
         {
             ClearRegisteredFactories();
@@ -148,6 +160,7 @@ namespace System.Data.Common
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36879", TestPlatforms.iOS)]
         public void ReplaceFactoryWithRegisterFactoryWithTypeTest()
         {
             ClearRegisteredFactories();
@@ -162,6 +175,7 @@ namespace System.Data.Common
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36879", TestPlatforms.iOS)]
         public void GetProviderInvariantNamesTest()
         {
             ClearRegisteredFactories();

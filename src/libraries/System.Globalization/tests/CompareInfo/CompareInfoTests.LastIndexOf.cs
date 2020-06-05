@@ -137,6 +137,7 @@ namespace System.Globalization.Tests
         [Theory]
         [MemberData(nameof(LastIndexOf_TestData))]
         [MemberData(nameof(LastIndexOf_U_WithDiaeresis_TestData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36883", TestPlatforms.iOS)]
         public void LastIndexOf_String(CompareInfo compareInfo, string source, string value, int startIndex, int count, CompareOptions options, int expected)
         {
             if (value.Length == 1)
@@ -256,12 +257,14 @@ namespace System.Globalization.Tests
 
         [Theory]
         [MemberData(nameof(LastIndexOf_Aesc_Ligature_TestData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36883", TestPlatforms.iOS)]
         public void LastIndexOf_Aesc_Ligature(CompareInfo compareInfo, string source, string value, int startIndex, int count, CompareOptions options, int expected)
         {
             LastIndexOf_String(compareInfo, source, value, startIndex, count, options, expected);
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36883", TestPlatforms.iOS)]
         public void LastIndexOf_UnassignedUnicode()
         {
             bool useNls = PlatformDetection.IsNlsGlobalization;

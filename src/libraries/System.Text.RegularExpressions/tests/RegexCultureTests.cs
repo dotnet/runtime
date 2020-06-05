@@ -35,6 +35,7 @@ namespace System.Text.RegularExpressions.Tests
         [InlineData(RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)]
         [InlineData(RegexOptions.Compiled)]
         [InlineData(RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36900", TestPlatforms.iOS)]
         public void CharactersComparedOneByOne_Invariant(RegexOptions options)
         {
             // Regex compares characters one by one.  If that changes, it could impact the behavior of
@@ -74,6 +75,7 @@ namespace System.Text.RegularExpressions.Tests
         [Theory]
         [InlineData(2)]
         [InlineData(256)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36900", TestPlatforms.iOS)]
         public void TurkishI_Is_Differently_LowerUpperCased_In_Turkish_Culture(int length)
         {
             var turkish = new CultureInfo("tr-TR");

@@ -23,6 +23,7 @@ namespace System.Xml.Tests
         [InlineData("ctor")]
         [InlineData("init")]
         [InlineData("end")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void CallAfter_Constructor_Initialize_EndValidation(string after)
         {
             XmlSchemaValidator val = CreateValidator(XSDFILE_GET_EXPECTED_PARTICLES);
@@ -48,6 +49,7 @@ namespace System.Xml.Tests
         [InlineData("elem")]
         [InlineData("attrib")]
         [InlineData("endof")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void CallAfterValidate_Element_Attribute_EndOfAttributes_ForSequence(string after)
         {
             XmlSchemaValidator val = CreateValidator(XSDFILE_GET_EXPECTED_PARTICLES);
@@ -74,6 +76,7 @@ namespace System.Xml.Tests
         [Theory]
         [InlineData("inside")]
         [InlineData("end")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void CallForSequence_Between_After_ValidationAllSeqElements(string callOn)
         {
             XmlSchemaValidator val = CreateValidator(XSDFILE_GET_EXPECTED_PARTICLES);
@@ -111,6 +114,7 @@ namespace System.Xml.Tests
         [InlineData("elem")]
         [InlineData("attrib")]
         [InlineData("endof")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void CallAfterValidate_Element_Attribute_EndOfAttributes_ForChoice(string after)
         {
             XmlSchemaValidator val = CreateValidator(XSDFILE_GET_EXPECTED_PARTICLES);
@@ -137,6 +141,7 @@ namespace System.Xml.Tests
         [Theory]
         [InlineData("elem1")]
         [InlineData("elem2")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void CallForChoiceAfterValidating_1_2_ChoiceElement(string elemAfter)
         {
             XmlSchemaValidator val = CreateValidator(XSDFILE_GET_EXPECTED_PARTICLES);
@@ -162,6 +167,7 @@ namespace System.Xml.Tests
         [InlineData("elem")]
         [InlineData("attrib")]
         [InlineData("endof")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void CallAfterValidate_Element_Attribute_EndOfAttributes_ForAll(string after)
         {
             XmlSchemaValidator val = CreateValidator(XSDFILE_GET_EXPECTED_PARTICLES);
@@ -188,6 +194,7 @@ namespace System.Xml.Tests
         [Theory]
         [InlineData("elem1")]
         [InlineData("elem2")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void CallForAllAfterValidating_1_2_element(string elemAfter)
         {
             XmlSchemaValidator val = CreateValidator(XSDFILE_GET_EXPECTED_PARTICLES);
@@ -211,6 +218,7 @@ namespace System.Xml.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void CallForAllAfterValidatingBothElements()
         {
             XmlSchemaValidator val = CreateValidator(XSDFILE_GET_EXPECTED_PARTICLES);
@@ -234,6 +242,7 @@ namespace System.Xml.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void CallForElementWithReferenceToGlobalElement()
         {
             XmlSchemaValidator val = CreateValidator(XSDFILE_GET_EXPECTED_PARTICLES);
@@ -261,6 +270,7 @@ namespace System.Xml.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void CallForElementWithZeroMinOccurs()
         {
             XmlSchemaValidator val = CreateValidator(XSDFILE_GET_EXPECTED_PARTICLES);
@@ -276,6 +286,7 @@ namespace System.Xml.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void CallForElementWithZeroMaxOccurs()
         {
             XmlSchemaValidator val = CreateValidator(XSDFILE_GET_EXPECTED_PARTICLES);
@@ -293,6 +304,7 @@ namespace System.Xml.Tests
         [Theory]
         [InlineData("before")]
         [InlineData("after")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void CallForSequence_Before_After_ValidatingWildcard(string callOrder)
         {
             XmlSchemaValidator val;
@@ -330,6 +342,7 @@ namespace System.Xml.Tests
         [Theory]
         [InlineData("before")]
         [InlineData("after")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void CallForChoice_Before_After_ValidatingWildcard(string callOrder)
         {
             XmlSchemaValidator val;
@@ -383,6 +396,7 @@ namespace System.Xml.Tests
         [Theory]
         [InlineData("before")]
         [InlineData("after")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void CallForSequenceWithChoiceGroup_Before_After_ValidatingGroupMembers(string callOrder)
         {
             XmlSchemaValidator val = CreateValidator(XSDFILE_GET_EXPECTED_PARTICLES);
@@ -413,6 +427,7 @@ namespace System.Xml.Tests
         [Theory]
         [InlineData("before")]
         [InlineData("after")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void CallForChoiceWithSequenceGroup_Before_After_ValidatingGroupMembers(string callOrder)
         {
             XmlSchemaValidator val = CreateValidator(XSDFILE_GET_EXPECTED_PARTICLES);
@@ -443,6 +458,7 @@ namespace System.Xml.Tests
         [Theory]
         [InlineData("before")]
         [InlineData("after")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void CallForExtendedSequence_Before_After_ValidatingSeqOrAllBaseElements(string callOrder)
         {
             XmlSchemaValidator val = CreateValidator(XSDFILE_GET_EXPECTED_PARTICLES);
@@ -476,6 +492,7 @@ namespace System.Xml.Tests
         [Theory]
         [InlineData("before")]
         [InlineData("after")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void CallForExtendedChoice_Before_After_ValidatingBaseChoiceElement(string callOrder)
         {
             XmlSchemaValidator val = CreateValidator(XSDFILE_GET_EXPECTED_PARTICLES);
@@ -511,6 +528,7 @@ namespace System.Xml.Tests
         [InlineData("Choice", "after" )]
         [InlineData("All", "before")]
         [InlineData("All", "after")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void CallForRestricted_Sequence_Choice_All__Before_After_ValidatingSeqElements(string restrType, string callOrder)
         {
             XmlSchemaValidator val = CreateValidator(XSDFILE_GET_EXPECTED_PARTICLES);
@@ -540,6 +558,7 @@ namespace System.Xml.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void CallForChoiceWithElementsFromDifferentNamespaces()
         {
             XmlSchemaValidator val;
@@ -573,6 +592,7 @@ namespace System.Xml.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void CallForElementWithoutTypeDefined()
         {
             XmlSchemaValidator val;

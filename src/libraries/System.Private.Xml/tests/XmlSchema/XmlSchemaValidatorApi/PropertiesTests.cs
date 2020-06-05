@@ -25,6 +25,7 @@ namespace System.Xml.Tests
 
         //BUG #304124
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void DefaultValueForXmlResolver_XmlUrlResolver()
         {
             XmlNamespaceManager manager = new XmlNamespaceManager(new NameTable());
@@ -89,6 +90,7 @@ namespace System.Xml.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void InternalSchemaSetShouldUseSeparateXmlResolver()
         {
             CXmlTestResolver res = new CXmlTestResolver();
@@ -151,6 +153,7 @@ namespace System.Xml.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void SetResolverToCustomValidateSomethingSetResolverToNullThenVerify()
         {
             CXmlTestResolver res = new CXmlTestResolver();

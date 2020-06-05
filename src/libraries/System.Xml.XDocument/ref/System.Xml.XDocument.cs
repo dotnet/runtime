@@ -171,6 +171,7 @@ namespace System.Xml.Linq
         public System.Xml.Linq.XDocumentType DocumentType { get { throw null; } }
         public override System.Xml.XmlNodeType NodeType { get { throw null; } }
         public System.Xml.Linq.XElement Root { get { throw null; } }
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static System.Xml.Linq.XDocument Load(System.IO.Stream stream) { throw null; }
         public static System.Xml.Linq.XDocument Load(System.IO.Stream stream, System.Xml.Linq.LoadOptions options) { throw null; }
         public static System.Xml.Linq.XDocument Load(System.IO.TextReader textReader) { throw null; }

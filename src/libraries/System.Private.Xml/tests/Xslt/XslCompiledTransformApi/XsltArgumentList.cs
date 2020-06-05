@@ -76,6 +76,7 @@ namespace System.Xml.Tests
         //[Variation(Desc = "Dictionary.XsltArgumentList.AddParam/AddExtensionObject", Param = 4)]
         [InlineData(4)]
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void GetParam_Tuple(object param)
         {
             WriteXmlAndXslFiles();
@@ -135,6 +136,7 @@ namespace System.Xml.Tests
 
         //[Variation("Param name is empty string")]
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void GetParam3()
         {
             m_xsltArg = new XsltArgumentList();
@@ -150,6 +152,7 @@ namespace System.Xml.Tests
 
         //[Variation("Param name is non existent")]
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void GetParam4()
         {
             m_xsltArg = new XsltArgumentList();
@@ -165,6 +168,7 @@ namespace System.Xml.Tests
 
         //[Variation("Invalid Param name")]
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void GetParam5()
         {
             m_xsltArg = new XsltArgumentList();
@@ -180,6 +184,7 @@ namespace System.Xml.Tests
 
         //[Variation("Very Long Param")]
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void GetParam6()
         {
             m_xsltArg = new XsltArgumentList();
@@ -194,6 +199,7 @@ namespace System.Xml.Tests
 
         //[Variation("Namespace URI = null")]
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void GetParam7()
         {
             m_xsltArg = new XsltArgumentList();
@@ -209,6 +215,7 @@ namespace System.Xml.Tests
 
         //[Variation("Namespace URI is empty string")]
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void GetParam8()
         {
             m_xsltArg = new XsltArgumentList();
@@ -223,6 +230,7 @@ namespace System.Xml.Tests
 
         //[Variation("Namespace URI non-existent")]
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void GetParam9()
         {
             m_xsltArg = new XsltArgumentList();
@@ -254,6 +262,7 @@ namespace System.Xml.Tests
 
         //[Variation("Very long namespace System.Xml.Tests")]
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void GetParam10()
         {
             m_xsltArg = new XsltArgumentList();
@@ -268,6 +277,7 @@ namespace System.Xml.Tests
 
         //[Variation("Invalid Namespace URI")]
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void GetParam11()
         {
             m_xsltArg = new XsltArgumentList();
@@ -280,6 +290,7 @@ namespace System.Xml.Tests
 
         //[Variation("Different Data Types")]
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void GetParam12()
         {
             m_xsltArg = new XsltArgumentList();
@@ -341,6 +352,7 @@ namespace System.Xml.Tests
 
         //[Variation("Case Sensitivity")]
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void GetParam13()
         {
             m_xsltArg = new XsltArgumentList();
@@ -361,6 +373,7 @@ namespace System.Xml.Tests
 
         //[Variation("Whitespace")]
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void GetParam14()
         {
             int i = 1;
@@ -394,6 +407,7 @@ namespace System.Xml.Tests
 
         //[Variation("Call After Param has been removed")]
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void GetParam15()
         {
             m_xsltArg = new XsltArgumentList();
@@ -409,6 +423,7 @@ namespace System.Xml.Tests
 
         //[Variation("Call multiple Times")]
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void GetParam16()
         {
             m_xsltArg = new XsltArgumentList();
@@ -432,6 +447,7 @@ namespace System.Xml.Tests
 
         //[Variation("Using XSL namespace")]
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void GetParam17()
         {
             m_xsltArg = new XsltArgumentList();
@@ -449,6 +465,7 @@ namespace System.Xml.Tests
 
         //[Variation("Resolving conflicts with variables with different namespaces")]
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void GetParam18()
         {
             m_xsltArg = new XsltArgumentList();
@@ -474,6 +491,7 @@ namespace System.Xml.Tests
 
         //[Variation("Namespace AND param = null")]
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void GetParam19()
         {
             m_xsltArg = new XsltArgumentList();
@@ -489,6 +507,7 @@ namespace System.Xml.Tests
 
         //[Variation("Data Types - Of type Double ")]
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void GetParamDoubles()
         {
             double d1 = double.PositiveInfinity;
@@ -576,6 +595,7 @@ namespace System.Xml.Tests
         //DCR : 298350 - XsltArgumentList no longer reports the same type on the GetParam methods
         //[Variation(id = 20, Desc = "Add Parameter other than XSLT Data Type and verify the type, expected same as added", Pri = 0)]
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void GetParam20()
         {
             m_xsltArg = new XsltArgumentList();
@@ -611,6 +631,7 @@ namespace System.Xml.Tests
         //[Variation(Desc = "Basic Verification Test", Pri = 1)]
         [InlineData(XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void GetExtObject1(XslInputType xslInputType, ReaderType readerType, OutputType outputType, NavType navType)
         {
             MyObject obj = new MyObject(1, _output);
@@ -638,6 +659,7 @@ namespace System.Xml.Tests
 
         //[Variation("Namespace URI = null")]
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void GetExtObject2()
         {
             m_xsltArg = new XsltArgumentList();
@@ -657,6 +679,7 @@ namespace System.Xml.Tests
         //[Variation("Namespace URI is empty string", Param = "showParam.txt")]
         [InlineData("showParam.txt", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void GetExtObject3(object param, XslInputType xslInputType, ReaderType readerType, OutputType outputType, NavType navType)
         {
             string Baseline = Path.Combine("baseline", (string)param);
@@ -684,6 +707,7 @@ namespace System.Xml.Tests
         //[Variation("Namespace URI non-existent")]
         [InlineData(XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void GetExtObject4(XslInputType xslInputType, ReaderType readerType, OutputType outputType, NavType navType)
         {
             m_xsltArg = new XsltArgumentList();
@@ -711,6 +735,7 @@ namespace System.Xml.Tests
         //[Variation("Very long namespace System.Xml.Tests")]
         [InlineData(XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void GetExtObject5(XslInputType xslInputType, ReaderType readerType, OutputType outputType, NavType navType)
         {
             m_xsltArg = new XsltArgumentList();
@@ -737,6 +762,7 @@ namespace System.Xml.Tests
 
         //[Variation("Invalid namespace System.Xml.Tests")]
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void GetExtObject6()
         {
             m_xsltArg = new XsltArgumentList();
@@ -750,6 +776,7 @@ namespace System.Xml.Tests
 
         //[Variation("Different Data Types")]
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void GetExtObject7()
         {
             m_xsltArg = new XsltArgumentList();
@@ -811,6 +838,7 @@ namespace System.Xml.Tests
         //[Variation("Case sensitivity")]
         [InlineData(XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void GetExtObject8(XslInputType xslInputType, ReaderType readerType, OutputType outputType, NavType navType)
         {
             MyObject obj = new MyObject(8, _output);
@@ -859,6 +887,7 @@ namespace System.Xml.Tests
         //[Variation("Whitespace")]
         [InlineData(XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void GetExtObject9(XslInputType xslInputType, ReaderType readerType, OutputType outputType, NavType navType)
         {
             int i = 1;
@@ -894,6 +923,7 @@ namespace System.Xml.Tests
         //[Variation("Call after object has been removed")]
         [InlineData(XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void GetExtObject10(XslInputType xslInputType, ReaderType readerType, OutputType outputType, NavType navType)
         {
             MyObject obj = new MyObject(10, _output);
@@ -925,6 +955,7 @@ namespace System.Xml.Tests
         //[Variation("Call multiple times")]
         [InlineData(XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void GetExtObject11(XslInputType xslInputType, ReaderType readerType, OutputType outputType, NavType navType)
         {
             MyObject obj = new MyObject(11, _output);
@@ -953,6 +984,7 @@ namespace System.Xml.Tests
 
         //[Variation("Using XSL Namespace")]
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void GetExtObject12()
         {
             m_xsltArg = new XsltArgumentList();
@@ -1002,6 +1034,7 @@ namespace System.Xml.Tests
         [InlineData("showParam1.txt", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
         [InlineData("showParam1.txt", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void AddParam1(object param, XslInputType xslInputType, ReaderType readerType, OutputType outputType, NavType navType)
         {
             string Baseline = Path.Combine("baseline", (string)param);
@@ -1024,6 +1057,7 @@ namespace System.Xml.Tests
 
         //[Variation("Param  = null")]
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void AddParam2()
         {
             m_xsltArg = new XsltArgumentList();
@@ -1042,6 +1076,7 @@ namespace System.Xml.Tests
 
         //[Variation("Param name is empty string")]
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void AddParam3()
         {
             m_xsltArg = new XsltArgumentList();
@@ -1069,6 +1104,7 @@ namespace System.Xml.Tests
         [InlineData("LongParam.txt", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
         [InlineData("LongParam.txt", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void AddParam4(object param, XslInputType xslInputType, ReaderType readerType, OutputType outputType, NavType navType)
         {
             string Baseline = Path.Combine("baseline", (string)param);
@@ -1091,6 +1127,7 @@ namespace System.Xml.Tests
 
         //[Variation("Invalid Param name")]
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void AddParam5()
         {
             m_xsltArg = new XsltArgumentList();
@@ -1109,6 +1146,7 @@ namespace System.Xml.Tests
 
         //[Variation("Namespace URI = null")]
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void AddParam6()
         {
             m_xsltArg = new XsltArgumentList();
@@ -1136,6 +1174,7 @@ namespace System.Xml.Tests
         [InlineData("showParam7.txt", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
         [InlineData("showParam7.txt", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void AddParam7(object param, XslInputType xslInputType, ReaderType readerType, OutputType outputType, NavType navType)
         {
             string Baseline = Path.Combine("baseline", (string)param);
@@ -1168,6 +1207,7 @@ namespace System.Xml.Tests
         [InlineData("showParam.txt", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
         [InlineData("showParam.txt", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void AddParam8(object param, XslInputType xslInputType, ReaderType readerType, OutputType outputType, NavType navType)
         {
             string Baseline = Path.Combine("baseline", (string)param);
@@ -1190,6 +1230,7 @@ namespace System.Xml.Tests
 
         //[Variation("Invalid Namespace URI")]
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void AddParam9()
         {
             m_xsltArg = new XsltArgumentList();
@@ -1200,6 +1241,7 @@ namespace System.Xml.Tests
 
         //[Variation("Setting a param that already exists")]
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void AddParam11()
         {
             m_xsltArg = new XsltArgumentList();
@@ -1228,6 +1270,7 @@ namespace System.Xml.Tests
         [InlineData("AddParam12.txt", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
         [InlineData("AddParam12.txt", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void AddParam12(object param, XslInputType xslInputType, ReaderType readerType, OutputType outputType, NavType navType)
         {
             string Baseline = Path.Combine("baseline", (string)param);
@@ -1273,6 +1316,7 @@ namespace System.Xml.Tests
         [InlineData("AddParam13.txt", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
         [InlineData("AddParam13.txt", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void AddParam13(object param, XslInputType xslInputType, ReaderType readerType, OutputType outputType, NavType navType)
         {
             string Baseline = Path.Combine("baseline", (string)param);
@@ -1317,6 +1361,7 @@ namespace System.Xml.Tests
         [InlineData("AddParam14.txt", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
         [InlineData("AddParam14.txt", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void AddParam14(object param, XslInputType xslInputType, ReaderType readerType, OutputType outputType, NavType navType)
         {
             string Baseline = Path.Combine("baseline", (string)param);
@@ -1357,6 +1402,7 @@ namespace System.Xml.Tests
 
         //[Variation("Object is null")]
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void AddParam15()
         {
             m_xsltArg = new XsltArgumentList();
@@ -1384,6 +1430,7 @@ namespace System.Xml.Tests
         [InlineData("AddParam16.txt", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
         [InlineData("AddParam16.txt", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void AddParam16(object param, XslInputType xslInputType, ReaderType readerType, OutputType outputType, NavType navType)
         {
             string Baseline = Path.Combine("baseline", (string)param);
@@ -1443,6 +1490,7 @@ namespace System.Xml.Tests
         [InlineData("AddParam17.txt", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
         [InlineData("AddParam17.txt", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void AddParam17(object param, XslInputType xslInputType, ReaderType readerType, OutputType outputType, NavType navType)
         {
             string Baseline = Path.Combine("baseline", (string)param);
@@ -1506,6 +1554,7 @@ namespace System.Xml.Tests
         [InlineData("AddParam18.txt", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
         [InlineData("AddParam18.txt", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void AddParam18(object param, XslInputType xslInputType, ReaderType readerType, OutputType outputType, NavType navType)
         {
             string Baseline = Path.Combine("baseline", (string)param);
@@ -1540,6 +1589,7 @@ namespace System.Xml.Tests
         [InlineData("AddParam19.txt", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
         [InlineData("AddParam19.txt", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void AddParam19(object param, XslInputType xslInputType, ReaderType readerType, OutputType outputType, NavType navType)
         {
             string Baseline = Path.Combine("baseline", (string)param);
@@ -1582,6 +1632,7 @@ namespace System.Xml.Tests
         [InlineData("AddParam20.txt", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
         [InlineData("AddParam20.txt", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void AddParam20(object param, XslInputType xslInputType, ReaderType readerType, OutputType outputType, NavType navType)
         {
             string Baseline = Path.Combine("baseline", (string)param);
@@ -1623,6 +1674,7 @@ namespace System.Xml.Tests
 
         //[Variation("Using Default XSLT namespace")]
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void AddParam21()
         {
             m_xsltArg = new XsltArgumentList();
@@ -1643,6 +1695,7 @@ namespace System.Xml.Tests
         [InlineData(XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
         [InlineData(XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void AddExtObject32(XslInputType xslInputType, ReaderType readerType, OutputType outputType, NavType navType)
         {
             string expected1 = @"<?xml version=""1.0"" encoding=""utf-8""?><out>Param: first</out>";
@@ -2433,6 +2486,7 @@ namespace System.Xml.Tests
         [InlineData("myObjectDef.txt", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
         [InlineData("myObjectDef.txt", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void AddExtObject1(object param, XslInputType xslInputType, ReaderType readerType, OutputType outputType, NavType navType)
         {
             MyObject obj = new MyObject(1, _output);
@@ -2452,6 +2506,7 @@ namespace System.Xml.Tests
 
         //[Variation("namespace System.Xml.Tests = null")]
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void AddExtObject2()
         {
             MyObject obj = new MyObject(2, _output);
@@ -2471,6 +2526,7 @@ namespace System.Xml.Tests
 
         //[Variation("namespace System.Xml.Tests is empty string")]
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void AddExtObject3()
         {
             MyObject obj = new MyObject(3, _output);
@@ -2492,6 +2548,7 @@ namespace System.Xml.Tests
         [InlineData("myObjectLongNS.txt", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
         [InlineData("myObjectLongNS.txt", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void AddExtObject4(object param, XslInputType xslInputType, ReaderType readerType, OutputType outputType, NavType navType)
         {
             m_xsltArg = new XsltArgumentList();
@@ -2511,6 +2568,7 @@ namespace System.Xml.Tests
 
         //[Variation("Invalid namespace System.Xml.Tests")]
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void AddExtObject5()
         {
             MyObject obj = new MyObject(5, _output);
@@ -2522,6 +2580,7 @@ namespace System.Xml.Tests
 
         //[Variation("Same Namespace different objects")]
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void AddExtObject7()
         {
             MyObject obj1 = new MyObject(1, _output);
@@ -2552,6 +2611,7 @@ namespace System.Xml.Tests
         [InlineData("myObjectDef.txt", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
         [InlineData("myObjectDef.txt", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void AddExtObject8(object param, XslInputType xslInputType, ReaderType readerType, OutputType outputType, NavType navType)
         {
             MyObject obj = new MyObject(1, _output);
@@ -2581,6 +2641,7 @@ namespace System.Xml.Tests
 
         //[Variation("Set a null object")]
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void AddExtObject9()
         {
             MyObject obj = new MyObject(9, _output);
@@ -2609,6 +2670,7 @@ namespace System.Xml.Tests
         [InlineData(XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
         [InlineData(XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void AddExtObject10(XslInputType xslInputType, ReaderType readerType, OutputType outputType, NavType navType)
         {
             string expected = @"<?xml version=""1.0"" encoding=""utf-8""?><result xmlns:myObj=""urn:my-object"">
@@ -2641,6 +2703,7 @@ namespace System.Xml.Tests
         [InlineData("myObjectDef.txt", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
         [InlineData("myObjectDef.txt", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void AddExtObject11(object param, XslInputType xslInputType, ReaderType readerType, OutputType outputType, NavType navType)
         {
             string Baseline = Path.Combine("baseline", (string)param);
@@ -2676,6 +2739,7 @@ namespace System.Xml.Tests
         [InlineData(XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
         [InlineData(XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void AddExtObject12(XslInputType xslInputType, ReaderType readerType, OutputType outputType, NavType navType)
         {
             int i = 1;
@@ -2703,6 +2767,7 @@ namespace System.Xml.Tests
 
         //[Variation("Add object many times")]
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void AddExtObject13()
         {
             MyObject obj = new MyObject(13, _output);
@@ -2732,6 +2797,7 @@ namespace System.Xml.Tests
         [InlineData("myObjectDef.txt", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
         [InlineData("myObjectDef.txt", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void AddExtObject14(object param, XslInputType xslInputType, ReaderType readerType, OutputType outputType, NavType navType)
         {
             string Baseline = Path.Combine("baseline", (string)param);
@@ -2765,6 +2831,7 @@ namespace System.Xml.Tests
         [InlineData(XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
         [InlineData(XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void AddExtObject15(XslInputType xslInputType, ReaderType readerType, OutputType outputType, NavType navType)
         {
             MyObject obj = new MyObject(15, _output);
@@ -2796,6 +2863,7 @@ namespace System.Xml.Tests
         [InlineData(XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
         [InlineData(XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void AddExtObject16(XslInputType xslInputType, ReaderType readerType, OutputType outputType, NavType navType)
         {
             MyObject obj = new MyObject(1, _output);
@@ -2842,6 +2910,7 @@ namespace System.Xml.Tests
         [InlineData(XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
         [InlineData(XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void AddExtObject17(XslInputType xslInputType, ReaderType readerType, OutputType outputType, NavType navType)
         {
             string expected = @"<?xml version=""1.0"" encoding=""utf-8""?><result xmlns:myObj=""urn:my-object"">
@@ -2873,6 +2942,7 @@ namespace System.Xml.Tests
         [InlineData("MyObject_Recursion.txt", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
         [InlineData("MyObject_Recursion.txt", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void AddExtObject18(object param, XslInputType xslInputType, ReaderType readerType, OutputType outputType, NavType navType)
         {
             MyObject obj = new MyObject(18, _output);
@@ -2901,6 +2971,7 @@ namespace System.Xml.Tests
         [InlineData("MyObject_FnExists.txt", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
         [InlineData("MyObject_FnExists.txt", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void AddExtObject20(object param, XslInputType xslInputType, ReaderType readerType, OutputType outputType, NavType navType)
         {
             string Baseline = Path.Combine("baseline", (string)param);
@@ -2929,6 +3000,7 @@ namespace System.Xml.Tests
         [InlineData("MyObject_Arguments.txt", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
         [InlineData("MyObject_Arguments.txt", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void AddExtObject21(object param, XslInputType xslInputType, ReaderType readerType, OutputType outputType, NavType navType)
         {
             string Baseline = Path.Combine("baseline", (string)param);
@@ -2948,6 +3020,7 @@ namespace System.Xml.Tests
 
         //[Variation("Multiple Objects in same NameSpace")]
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void AddExtObject24()
         {
             m_xsltArg = new XsltArgumentList();
@@ -2979,6 +3052,7 @@ namespace System.Xml.Tests
         [InlineData(XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
         [InlineData(XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void TC_ExtensionObj_Function_Mismatch_IncorrectCasing(XslInputType xslInputType, ReaderType readerType, OutputType outputType, NavType navType)
         {
             MyObject obj = new MyObject(25, _output);
@@ -3002,6 +3076,7 @@ namespace System.Xml.Tests
         [InlineData(XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
         [InlineData(XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void AddExtObject26(XslInputType xslInputType, ReaderType readerType, OutputType outputType, NavType navType)
         {
             MyObject obj = new MyObject(26, _output);
@@ -3035,6 +3110,7 @@ namespace System.Xml.Tests
         [InlineData("MyObject_KeepingState.txt", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
         [InlineData("MyObject_KeepingState.txt", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void AddExtObject27(object param, XslInputType xslInputType, ReaderType readerType, OutputType outputType, NavType navType)
         {
             MyObject obj = new MyObject(27, _output);
@@ -3063,6 +3139,7 @@ namespace System.Xml.Tests
         [InlineData("MyObject_KillerStrings.txt", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
         [InlineData("MyObject_KillerStrings.txt", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void AddExtObject28(object param, XslInputType xslInputType, ReaderType readerType, OutputType outputType, NavType navType)
         {
             MyObject obj = new MyObject(28, _output);
@@ -3094,6 +3171,7 @@ namespace System.Xml.Tests
         [InlineData(XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
         [InlineData(XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void AddExtObject29(XslInputType xslInputType, ReaderType readerType, OutputType outputType, NavType navType)
         {
             MyObject obj = new MyObject(29, _output);
@@ -3118,6 +3196,7 @@ namespace System.Xml.Tests
 
         //[Variation("Using Default XSLT namespace")]
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void AddExtObject31()
         {
             MyObject obj = new MyObject(31, _output);
@@ -3252,6 +3331,7 @@ namespace System.Xml.Tests
         [InlineData("sort.xsl", "sort.txt", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
 
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void AddExtObject33(object param0, object param1, XslInputType xslInputType, ReaderType readerType, OutputType outputType, NavType navType)
         {
             ExObj obj = new ExObj(0, _output);
@@ -3331,6 +3411,7 @@ namespace System.Xml.Tests
         [InlineData("param4.xsl", "param4.txt", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
         [InlineData("param4.xsl", "param4.txt", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void AddExtObject41(object param0, object param1, XslInputType xslInputType, ReaderType readerType, OutputType outputType, NavType navType)
         {
             /*
@@ -3406,6 +3487,7 @@ namespace System.Xml.Tests
         [InlineData("RemoveParam1.txt", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
         [InlineData("RemoveParam1.txt", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void RemoveParam1(object param, XslInputType xslInputType, ReaderType readerType, OutputType outputType, NavType navType)
         {
             m_xsltArg = new XsltArgumentList();
@@ -3440,6 +3522,7 @@ namespace System.Xml.Tests
 
         //[Variation(id = 2, Desc = "Param name is null", Pri = 1, Param = "RemoveParam2.txt")]
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void RemoveParam2()
         {
             m_xsltArg = new XsltArgumentList();
@@ -3458,6 +3541,7 @@ namespace System.Xml.Tests
         [InlineData("showParam.txt", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
         [InlineData("showParam.txt", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void RemoveParam3(object param, XslInputType xslInputType, ReaderType readerType, OutputType outputType, NavType navType)
         {
             string Baseline = Path.Combine("baseline", (string)param);
@@ -3479,6 +3563,7 @@ namespace System.Xml.Tests
         [InlineData("showParam.txt", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
         [InlineData("showParam.txt", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void RemoveParam4(object param, XslInputType xslInputType, ReaderType readerType, OutputType outputType, NavType navType)
         {
             string Baseline = Path.Combine("baseline", (string)param);
@@ -3500,6 +3585,7 @@ namespace System.Xml.Tests
         [InlineData("showParam.txt", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
         [InlineData("showParam.txt", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void RemoveParam5(object param, XslInputType xslInputType, ReaderType readerType, OutputType outputType, NavType navType)
         {
             string Baseline = Path.Combine("baseline", (string)param);
@@ -3521,6 +3607,7 @@ namespace System.Xml.Tests
         [InlineData("showParamLongName.txt", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
         [InlineData("showParamLongName.txt", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void RemoveParam6(object param, XslInputType xslInputType, ReaderType readerType, OutputType outputType, NavType navType)
         {
             string Baseline = Path.Combine("baseline", (string)param);
@@ -3540,6 +3627,7 @@ namespace System.Xml.Tests
 
         //[Variation("Namespace URI is null")]
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void RemoveParam7()
         {
             m_xsltArg = new XsltArgumentList();
@@ -3559,6 +3647,7 @@ namespace System.Xml.Tests
         [InlineData("showParam.txt", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
         [InlineData("showParam.txt", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void RemoveParam8(object param, XslInputType xslInputType, ReaderType readerType, OutputType outputType, NavType navType)
         {
             string Baseline = Path.Combine("baseline", (string)param);
@@ -3582,6 +3671,7 @@ namespace System.Xml.Tests
         [InlineData("RemoveParam9.txt", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
         [InlineData("RemoveParam9.txt", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void RemoveParam9(object param, XslInputType xslInputType, ReaderType readerType, OutputType outputType, NavType navType)
         {
             string Baseline = Path.Combine("baseline", (string)param);
@@ -3605,6 +3695,7 @@ namespace System.Xml.Tests
         [InlineData("showParam.txt", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
         [InlineData("showParam.txt", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void RemoveParam10(object param, XslInputType xslInputType, ReaderType readerType, OutputType outputType, NavType navType)
         {
             string Baseline = Path.Combine("baseline", (string)param);
@@ -3628,6 +3719,7 @@ namespace System.Xml.Tests
         [InlineData("showParam.txt", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
         [InlineData("showParam.txt", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void RemoveParam11(object param, XslInputType xslInputType, ReaderType readerType, OutputType outputType, NavType navType)
         {
             string Baseline = Path.Combine("baseline", (string)param);
@@ -3836,6 +3928,7 @@ namespace System.Xml.Tests
         [InlineData("RemoveParam12.txt", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
         [InlineData("RemoveParam12.txt", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void RemoveParam12(object param, XslInputType xslInputType, ReaderType readerType, OutputType outputType, NavType navType)
         {
             string Baseline = Path.Combine("baseline", (string)param);
@@ -3862,6 +3955,7 @@ namespace System.Xml.Tests
         [InlineData("RemoveParam13.txt", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
         [InlineData("RemoveParam13.txt", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void RemoveParam13(object param, XslInputType xslInputType, ReaderType readerType, OutputType outputType, NavType navType)
         {
             string Baseline = Path.Combine("baseline", (string)param);
@@ -3911,6 +4005,7 @@ namespace System.Xml.Tests
         [InlineData("showParam.txt", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
         [InlineData("showParam.txt", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void RemoveParam14(object param, XslInputType xslInputType, ReaderType readerType, OutputType outputType, NavType navType)
         {
             string Baseline = Path.Combine("baseline", (string)param);
@@ -3932,6 +4027,7 @@ namespace System.Xml.Tests
 
         //[Variation("Using Default XSLT Namespace")]
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void RemoveParam15()
         {
             m_xsltArg = new XsltArgumentList();
@@ -3963,6 +4059,7 @@ namespace System.Xml.Tests
         [InlineData(XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
         [InlineData(XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void RemoveExtObj1(XslInputType xslInputType, ReaderType readerType, OutputType outputType, NavType navType)
         {
             MyObject obj = new MyObject(1, _output);
@@ -3986,6 +4083,7 @@ namespace System.Xml.Tests
 
         //[Variation("Namespace URI is null")]
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void RemoveExtObj2()
         {
             MyObject obj = new MyObject(2, _output);
@@ -4009,6 +4107,7 @@ namespace System.Xml.Tests
         [InlineData("showParam.txt", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
         [InlineData("showParam.txt", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void RemoveExtObj3(object param, XslInputType xslInputType, ReaderType readerType, OutputType outputType, NavType navType)
         {
             string Baseline = Path.Combine("baseline", (string)param);
@@ -4034,6 +4133,7 @@ namespace System.Xml.Tests
         [InlineData("myObjectDef.txt", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
         [InlineData("myObjectDef.txt", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void RemoveExtObj4(object param, XslInputType xslInputType, ReaderType readerType, OutputType outputType, NavType navType)
         {
             string Baseline = Path.Combine("baseline", (string)param);
@@ -4058,6 +4158,7 @@ namespace System.Xml.Tests
         [InlineData(XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
         [InlineData(XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void RemoveExtObj5(XslInputType xslInputType, ReaderType readerType, OutputType outputType, NavType navType)
         {
             m_xsltArg = new XsltArgumentList();
@@ -4085,6 +4186,7 @@ namespace System.Xml.Tests
         [InlineData("showParam.txt", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
         [InlineData("showParam.txt", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void RemoveExtObj6(object param, XslInputType xslInputType, ReaderType readerType, OutputType outputType, NavType navType)
         {
             string Baseline = Path.Combine("baseline", (string)param);
@@ -4124,6 +4226,7 @@ namespace System.Xml.Tests
         [InlineData("myObjectDef.txt", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
         [InlineData("myObjectDef.txt", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void RemoveExtObj7(object param, XslInputType xslInputType, ReaderType readerType, OutputType outputType, NavType navType)
         {
             MyObject obj = new MyObject(7, _output);
@@ -4152,6 +4255,7 @@ namespace System.Xml.Tests
         [InlineData(XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
         [InlineData(XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void RemoveExtObj8(XslInputType xslInputType, ReaderType readerType, OutputType outputType, NavType navType)
         {
             int i = 1;
@@ -4191,6 +4295,7 @@ namespace System.Xml.Tests
         [InlineData("showParam.txt", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
         [InlineData("showParam.txt", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void RemoveExtObj9(object param, XslInputType xslInputType, ReaderType readerType, OutputType outputType, NavType navType)
         {
             string Baseline = Path.Combine("baseline", (string)param);
@@ -4226,6 +4331,7 @@ namespace System.Xml.Tests
         //[Variation(Desc = "Basic Verification Test", Pri = 1, Param = "showParam.txt")]
         [InlineData("showParam.txt", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void Clear1(object param, XslInputType xslInputType, ReaderType readerType, OutputType outputType, NavType navType)
         {
             string Baseline = Path.Combine("baseline", (string)param);
@@ -4253,6 +4359,7 @@ namespace System.Xml.Tests
         //[Variation("Clear with nothing loaded", Param = "showParam.txt")]
         [InlineData("showParam.txt", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void Clear2(object param, XslInputType xslInputType, ReaderType readerType, OutputType outputType, NavType navType)
         {
             string Baseline = Path.Combine("baseline", (string)param);
@@ -4271,6 +4378,7 @@ namespace System.Xml.Tests
         //[Variation("Clear Params", Param = "showParam.txt")]
         [InlineData("showParam.txt", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void Clear3(object param, XslInputType xslInputType, ReaderType readerType, OutputType outputType, NavType navType)
         {
             string Baseline = Path.Combine("baseline", (string)param);
@@ -4298,6 +4406,7 @@ namespace System.Xml.Tests
         //[Variation("Clear Extension Objects")]
         [InlineData(XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void Clear4(XslInputType xslInputType, ReaderType readerType, OutputType outputType, NavType navType)
         {
             MyObject obj = new MyObject(26, _output);
@@ -4330,6 +4439,7 @@ namespace System.Xml.Tests
         //[Variation("Clear Many Objects", Param = "showParam.txt")]
         [InlineData("showParam.txt", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void Clear5(object param, XslInputType xslInputType, ReaderType readerType, OutputType outputType, NavType navType)
         {
             string Baseline = Path.Combine("baseline", (string)param);
@@ -4375,6 +4485,7 @@ namespace System.Xml.Tests
         //[Variation("Clear Multiple Times", Param = "showParam.txt")]
         [InlineData("showParam.txt", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void Clear6(object param, XslInputType xslInputType, ReaderType readerType, OutputType outputType, NavType navType)
         {
             string Baseline = Path.Combine("baseline", (string)param);
@@ -4403,6 +4514,7 @@ namespace System.Xml.Tests
         //[Variation("Loading one object, but clearing another", Param = "ClearParam7.txt")]
         [InlineData("ClearParam7.txt", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void Clear7(object param, XslInputType xslInputType, ReaderType readerType, OutputType outputType, NavType navType)
         {
             string Baseline = Path.Combine("baseline", (string)param);
@@ -4428,6 +4540,7 @@ namespace System.Xml.Tests
         //[Variation("Clear after objects have been \"Removed\"", Param = "showParam.txt")]
         [InlineData("showParam.txt", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void Clear8(object param, XslInputType xslInputType, ReaderType readerType, OutputType outputType, NavType navType)
         {
             string Baseline = Path.Combine("baseline", (string)param);
@@ -4515,6 +4628,7 @@ namespace System.Xml.Tests
         //[Variation(id = 10, Desc = "OnQueryEvent Exists - xsl:message with template content and  terminate='yes'", Priority = 1, Params = new object[] { "Message10.xsl", "yes", "yes", "Message10.txt" })]
         [InlineData("Message10.xsl", "yes", "yes", "Message10.txt")]
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void EventsTests(object param0, object param1, object param2, object param3)
         {
             XslCompiledTransform xslt = new XslCompiledTransform();
@@ -4602,6 +4716,7 @@ namespace System.Xml.Tests
 
         //[Variation(id = 1, Desc = "Call Current without MoveNext")]
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void NodeIter1()
         {
             var e = Assert.ThrowsAny<XsltException>(() =>
@@ -4621,6 +4736,7 @@ namespace System.Xml.Tests
 
         //[Variation(id = 2, Desc = "Call Current after MoveNext")]
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void NodeIter2()
         {
             var e = Assert.ThrowsAny<XsltException>(() =>

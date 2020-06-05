@@ -13,6 +13,7 @@ namespace System.IO.Compression.Tests
     public class ZipFile_Create : ZipFileTestBase
     {
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36884", TestPlatforms.iOS)]
         public async Task CreateFromDirectoryNormal()
         {
             string folderName = zfolder("normal");
@@ -23,6 +24,7 @@ namespace System.IO.Compression.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36884", TestPlatforms.iOS)]
         public void CreateFromDirectory_IncludeBaseDirectory()
         {
             string folderName = zfolder("normal");
@@ -47,6 +49,7 @@ namespace System.IO.Compression.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36884", TestPlatforms.iOS)]
         public void CreateFromDirectoryUnicode()
         {
             string folderName = zfolder("unicode");
@@ -149,6 +152,7 @@ namespace System.IO.Compression.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36884", TestPlatforms.iOS)]
         public void InvalidFiles()
         {
             Assert.Throws<InvalidDataException>(() => ZipFile.OpenRead(bad("EOCDmissing.zip")));
@@ -228,6 +232,7 @@ namespace System.IO.Compression.Tests
         [Theory]
         [InlineData("LZMA.zip", true)]
         [InlineData("invalidDeflate.zip", false)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36884", TestPlatforms.iOS)]
         public void UnsupportedCompressionRoutine(string zipName, bool throwsOnOpen)
         {
             string filename = bad(zipName);
@@ -276,6 +281,7 @@ namespace System.IO.Compression.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36884", TestPlatforms.iOS)]
         public void InvalidDates()
         {
             using (ZipArchive archive = ZipFile.OpenRead(bad("invaliddate.zip")))
@@ -375,6 +381,7 @@ namespace System.IO.Compression.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36884", TestPlatforms.iOS)]
         public async Task UpdateAddFile()
         {
             //add file

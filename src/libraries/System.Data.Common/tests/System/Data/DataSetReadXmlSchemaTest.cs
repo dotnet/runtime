@@ -53,6 +53,7 @@ namespace System.Data.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36879", TestPlatforms.iOS)]
         public void SingleElementTreatmentDifference()
         {
             // This is one of the most complicated case. When the content
@@ -324,6 +325,7 @@ namespace System.Data.Tests
 
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36879", TestPlatforms.iOS)]
         public void ElementHasIdentityConstraint()
         {
             string constraints = @"
@@ -682,6 +684,7 @@ namespace System.Data.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36879", TestPlatforms.iOS)]
         public void TestAnnotatedRelation1()
         {
             var ds = new DataSet();
@@ -733,6 +736,7 @@ namespace System.Data.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36879", TestPlatforms.iOS)]
         public void TestAnnotatedRelation2()
         {
             var ds = new DataSet();
@@ -905,6 +909,7 @@ namespace System.Data.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36879", TestPlatforms.iOS)]
         public void ReadAnnotatedRelations_MultipleColumns()
         {
             var ds = new DataSet();

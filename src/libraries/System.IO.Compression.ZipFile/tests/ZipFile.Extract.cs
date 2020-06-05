@@ -17,6 +17,7 @@ namespace System.IO.Compression.Tests
         [InlineData("appended.zip", "small")]
         [InlineData("prepended.zip", "small")]
         [InlineData("noexplicitdir.zip", "explicitdir")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36884", TestPlatforms.iOS)]
         public void ExtractToDirectoryNormal(string file, string folder)
         {
             string zipFileName = zfile(file);
@@ -35,6 +36,7 @@ namespace System.IO.Compression.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36884", TestPlatforms.iOS)]
         public void ExtractToDirectoryUnicode()
         {
             string zipFileName = zfile("unicode.zip");
@@ -120,6 +122,7 @@ namespace System.IO.Compression.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36884", TestPlatforms.iOS)]
         public void ExtractToDirectoryOverwrite()
         {
             string zipFileName = zfile("normal.zip");
@@ -137,6 +140,7 @@ namespace System.IO.Compression.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36884", TestPlatforms.iOS)]
         public void ExtractToDirectoryOverwriteEncoding()
         {
             string zipFileName = zfile("normal.zip");
@@ -154,6 +158,7 @@ namespace System.IO.Compression.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36884", TestPlatforms.iOS)]
         public void ExtractToDirectoryZipArchiveOverwrite()
         {
             string zipFileName = zfile("normal.zip");

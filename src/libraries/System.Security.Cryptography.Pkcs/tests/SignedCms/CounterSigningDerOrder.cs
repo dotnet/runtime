@@ -11,6 +11,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
     public static class CounterSigningDerOrder
     {
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void CounterSigningReindexes()
         {
             ContentInfo content = new ContentInfo(new byte[] { 7 });

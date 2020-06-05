@@ -17,6 +17,7 @@ namespace System.Globalization.Tests
 
         [Theory]
         [MemberData(nameof(YearMonthPattern_Get_TestData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36883", TestPlatforms.iOS)]
         public void YearMonthPattern(DateTimeFormatInfo format, string expected)
         {
             Assert.Equal(expected, format.YearMonthPattern);

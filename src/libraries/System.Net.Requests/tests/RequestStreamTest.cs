@@ -18,6 +18,7 @@ namespace System.Net.Tests
         #region Write
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36890", TestPlatforms.iOS)]
         public async Task Write_BufferIsNull_ThrowsArgumentNullException()
         {
             await GetRequestStream((stream) =>
@@ -27,6 +28,7 @@ namespace System.Net.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36890", TestPlatforms.iOS)]
         public async Task Write_OffsetIsNegative_ThrowsArgumentOutOfRangeException()
         {
             await GetRequestStream((stream) =>
@@ -36,6 +38,7 @@ namespace System.Net.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36890", TestPlatforms.iOS)]
         public async Task Write_CountIsNegative_ThrowsArgumentOutOfRangeException()
         {
             await GetRequestStream((stream) =>
@@ -45,6 +48,7 @@ namespace System.Net.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36890", TestPlatforms.iOS)]
         public async Task Write_OffsetPlusCountExceedsBufferLength_ThrowsArgumentException()
         {
             await GetRequestStream((stream) =>
@@ -54,6 +58,7 @@ namespace System.Net.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36890", TestPlatforms.iOS)]
         public async Task Write_OffsetPlusCountMaxValueExceedsBufferLength_Throws()
         {
             await GetRequestStream((stream) =>
@@ -67,6 +72,7 @@ namespace System.Net.Tests
         #region WriteAsync
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36890", TestPlatforms.iOS)]
         public async Task WriteAsync_BufferIsNull_ThrowsArgumentNullException()
         {
             await GetRequestStream((stream) =>
@@ -76,6 +82,7 @@ namespace System.Net.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36890", TestPlatforms.iOS)]
         public async Task WriteAsync_OffsetIsNegative_ThrowsArgumentOutOfRangeException()
         {
             await GetRequestStream((stream) =>
@@ -85,6 +92,7 @@ namespace System.Net.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36890", TestPlatforms.iOS)]
         public async Task WriteAsync_CountIsNegative_ThrowsArgumentOutOfRangeException()
         {
             await GetRequestStream((stream) =>
@@ -94,6 +102,7 @@ namespace System.Net.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36890", TestPlatforms.iOS)]
         public async Task WriteAsync_OffsetPlusCountExceedsBufferLength_ThrowsArgumentException()
         {
             await GetRequestStream((stream) =>
@@ -103,6 +112,7 @@ namespace System.Net.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36890", TestPlatforms.iOS)]
         public async Task WriteAsync_OffsetPlusCountMaxValueExceedsBufferLength_Throws()
         {
             await GetRequestStream((stream) =>
@@ -112,6 +122,7 @@ namespace System.Net.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36890", TestPlatforms.iOS)]
         public async Task WriteAsync_ValidParameters_TaskRanToCompletion()
         {
             await GetRequestStream((stream) =>
@@ -122,6 +133,7 @@ namespace System.Net.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36890", TestPlatforms.iOS)]
         public async Task WriteAsync_TokenIsCanceled_TaskIsCanceled()
         {
             await GetRequestStream((stream) =>
@@ -138,6 +150,7 @@ namespace System.Net.Tests
         #region BeginWrite
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36890", TestPlatforms.iOS)]
         public async Task BeginWriteAsync_BufferIsNull_ThrowsArgumentNullException()
         {
             await GetRequestStream((stream) =>
@@ -147,6 +160,7 @@ namespace System.Net.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36890", TestPlatforms.iOS)]
         public async Task BeginWriteAsync_OffsetIsNegative_ThrowsArgumentOutOfRangeException()
         {
             await GetRequestStream((stream) =>
@@ -156,6 +170,7 @@ namespace System.Net.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36890", TestPlatforms.iOS)]
         public async Task BeginWriteAsync_CountIsNegative_ThrowsArgumentOutOfRangeException()
         {
             await GetRequestStream((stream) =>
@@ -165,6 +180,7 @@ namespace System.Net.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36890", TestPlatforms.iOS)]
         public async Task BeginWriteAsync_OffsetPlusCountExceedsBufferLength_ThrowsArgumentException()
         {
             await GetRequestStream((stream) =>
@@ -174,6 +190,7 @@ namespace System.Net.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36890", TestPlatforms.iOS)]
         public async Task BeginWriteAsync_OffsetPlusCountMaxValueExceedsBufferLength_Throws()
         {
             await GetRequestStream((stream) =>
@@ -183,6 +200,7 @@ namespace System.Net.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36890", TestPlatforms.iOS)]
         public async Task BeginWriteAsync_ValidParameters_TaskRanToCompletion()
         {
             await GetRequestStream((stream) =>
@@ -197,6 +215,7 @@ namespace System.Net.Tests
         #endregion
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36890", TestPlatforms.iOS)]
         public async Task FlushAsync_TaskRanToCompletion()
         {
             await GetRequestStream((stream) =>
@@ -207,6 +226,7 @@ namespace System.Net.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36890", TestPlatforms.iOS)]
         public async Task FlushAsync_TokenIsCanceled_TaskIsCanceled()
         {
             await GetRequestStream((stream) =>

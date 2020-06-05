@@ -65,6 +65,7 @@ namespace System.Data.Tests.SqlTypes
         [Theory]
         [InlineData(1033, "en-US")]
         [InlineData(1036, "fr-FR")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36879", TestPlatforms.iOS)]
         public void Constructor_ValueLcid_Success(int lcid, string name)
         {
             const string value = "foo";
@@ -91,6 +92,7 @@ namespace System.Data.Tests.SqlTypes
 
         // Test constructor
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36879", TestPlatforms.iOS)]
         public void Create()
         {
             // SqlString (String)
@@ -171,6 +173,7 @@ namespace System.Data.Tests.SqlTypes
 
         // Test properties
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36879", TestPlatforms.iOS)]
         public void Properties()
         {
             using (new ThreadCultureChange("en-AU"))

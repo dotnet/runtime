@@ -63,6 +63,7 @@ namespace System.Security.Cryptography.Pkcs.Tests.Pkcs12
         [InlineData(0)]
         [InlineData(1)]
         [InlineData(100)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void ReadIndefiniteEncodingNoMac(int trailingByteCount)
         {
             ReadOnlyMemory<byte> source = PadContents(Pkcs12Documents.IndefiniteEncodingNoMac, trailingByteCount);

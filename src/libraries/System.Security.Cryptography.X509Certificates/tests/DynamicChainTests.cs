@@ -54,6 +54,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
         [Theory]
         [MemberData(nameof(InvalidSignature3Cases))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void BuildInvalidSignatureTwice(
             X509ChainStatusFlags endEntityErrors,
             X509ChainStatusFlags intermediateErrors,
@@ -203,6 +204,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void BasicConstraints_ExceedMaximumPathLength()
         {
             X509Extension[] rootExtensions = new [] {
@@ -249,6 +251,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void BasicConstraints_ViolatesCaFalse()
         {
             X509Extension[] intermediateExtensions = new [] {
@@ -283,6 +286,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void TestLeafCertificateWithUnknownCriticalExtension()
         {
             using (RSA key = RSA.Create())
@@ -319,6 +323,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void TestInvalidAia()
         {
             using (RSA key = RSA.Create())
@@ -394,6 +399,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         [InlineData(true, X509ChainStatusFlags.NoError)]
         // Test with ExtraStore containing root certificate
         [InlineData(false, X509ChainStatusFlags.UntrustedRoot)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void CustomRootTrustDoesNotTrustIntermediates(
             bool saveAllInCustomTrustStore,
             X509ChainStatusFlags chainFlags)
@@ -430,6 +436,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void CustomTrustModeWithNoCustomTrustCerts()
         {
             TestDataGenerator.MakeTestChain3(

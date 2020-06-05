@@ -26,6 +26,7 @@ namespace System.Security.Cryptography.Dsa.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void ImportFromPem_Pkcs8UnEncrypted_Simple()
         {
             using (DSA dsa = DSAFactory.Create())
@@ -46,6 +47,7 @@ fve77OGaTv4qbZwinTYAg86p9yHzmwW6+XBS3vxnpYorBBYCFC49eoTIW2Z4Xh9v
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void ImportFromPem_Pkcs8UnEncrypted_IgnoresUnrelatedAlgorithm()
         {
             using (DSA dsa = DSAFactory.Create())
@@ -71,6 +73,7 @@ fve77OGaTv4qbZwinTYAg86p9yHzmwW6+XBS3vxnpYorBBYCFC49eoTIW2Z4Xh9v
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void ImportFromPem_Pkcs8_UnrelatedPrecedingPem()
         {
             using (DSA dsa = DSAFactory.Create())
@@ -94,6 +97,7 @@ fve77OGaTv4qbZwinTYAg86p9yHzmwW6+XBS3vxnpYorBBYCFC49eoTIW2Z4Xh9v
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void ImportFromPem_Pkcs8_PrecedingMalformedPem()
         {
             using (DSA dsa = DSAFactory.Create())
@@ -117,6 +121,7 @@ fve77OGaTv4qbZwinTYAg86p9yHzmwW6+XBS3vxnpYorBBYCFC49eoTIW2Z4Xh9v
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void ImportFromPem_SubjectPublicKeyInfo_Simple()
         {
             using (DSA dsa = DSAFactory.Create())
@@ -251,6 +256,7 @@ m5NTLEHDwUd7idstLzPXuah0WEjgao5oO1BEUR4byjYlJ+F89Cs4BhUCAwEAAQ==
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void ImportFromEncryptedPem_Pkcs8_Encrypted_Char_Simple()
         {
             using (DSA dsa = DSAFactory.Create())
@@ -273,6 +279,7 @@ v8pi3w==
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void ImportFromEncryptedPem_Pkcs8_Encrypted_Byte_Simple()
         {
             using (DSA dsa = DSAFactory.Create())

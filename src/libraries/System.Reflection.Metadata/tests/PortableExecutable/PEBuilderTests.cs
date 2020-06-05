@@ -135,6 +135,7 @@ namespace System.Reflection.PortableExecutable.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36892", TestPlatforms.iOS)]
         public void BasicValidationSigned()
         {
             using (var peStream = new MemoryStream())
@@ -655,6 +656,7 @@ namespace System.Reflection.PortableExecutable.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36892", TestPlatforms.iOS)]
         public void Checksum()
         {
             Assert.True(TestChecksumAndAuthenticodeSignature(new MemoryStream(Misc.Signed), Misc.KeyPair));

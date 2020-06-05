@@ -26,6 +26,7 @@ namespace System.Security.Cryptography.Rsa.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void ImportFromPem_RSAPrivateKey_Simple()
         {
             using (RSA rsa = RSAFactory.Create())
@@ -73,6 +74,7 @@ acPiMCuFTnRSFYAhozpmsqoLyTREqwIhAMLJlZTGjEB2N+sEazH5ToEczQzKqp7t
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void ImportFromPem_Pkcs8UnEncrypted_UnrelatedAlgorithmIsIgnored()
         {
             using (RSA rsa = RSAFactory.Create())
@@ -119,6 +121,7 @@ m5NTLEHDwUd7idstLzPXuah0WEjgao5oO1BEUR4byjYlJ+F89Cs4BhUCAwEAAQ==
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void ImportFromPem_SubjectPublicKeyInfo_IgnoresUnrelatedAlgorithm()
         {
             using (RSA rsa = RSAFactory.Create())
@@ -141,6 +144,7 @@ m5NTLEHDwUd7idstLzPXuah0WEjgao5oO1BEUR4byjYlJ+F89Cs4BhUCAwEAAQ==
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void ImportFromPem_RSAPublicKey_Simple()
         {
             using (RSA rsa = RSAFactory.Create())
@@ -159,6 +163,7 @@ MEgCQQC3P1n17ovVXiS3/wKa0WqFQ8ltJT5UMZuTUyxBw8FHe4nbLS8z17modFhI
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void ImportFromPem_RSAPrivateKey_PrecedingUnrelatedPem()
         {
             using (RSA rsa = RSAFactory.Create())
@@ -196,6 +201,7 @@ yZWUxoxAdjfrBGsx+U6BHM0Myqqe7fY7hjWzj4aBCw==
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void ImportFromPem_RSAPrivateKey_PrecedingMalformedPem()
         {
             using (RSA rsa = RSAFactory.Create())
@@ -221,6 +227,7 @@ yZWUxoxAdjfrBGsx+U6BHM0Myqqe7fY7hjWzj4aBCw==
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void ImportFromPem_RSAPrivateKey_IgnoresOtherAlgorithms()
         {
             using (RSA rsa = RSAFactory.Create())
@@ -383,6 +390,7 @@ eDr38gQ/Hk0CgW3/RFrNWdbIpfMifs80vqCUNqDggcQixEmDVZ0gwq4+wz8EVyYG
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void ImportFromEncryptedPem_Pkcs8Encrypted_Char_Simple()
         {
             using (RSA rsa = RSAFactory.Create())
@@ -408,6 +416,7 @@ CA7ffFk=
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void ImportFromEncryptedPem_Pkcs8Encrypted_Byte_Simple()
         {
             using (RSA rsa = RSAFactory.Create())

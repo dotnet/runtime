@@ -162,6 +162,7 @@ namespace System.Net.Mail.Tests
 
         [Theory]
         [MemberData(nameof(GetInvalidEmailTestData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36890", TestPlatforms.iOS)]
         public void TestInvalidEmailAddresses(string address)
         {
             Assert.Throws<FormatException>(() => { new MailAddress(address); });

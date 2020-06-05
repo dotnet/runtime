@@ -30,6 +30,7 @@ namespace System.Security.Cryptography.Rsa.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public void Decrypt_VariousSizeSpans_Success()
         {
             using (RSA rsa = RSAFactory.Create())
@@ -62,6 +63,7 @@ namespace System.Security.Cryptography.Rsa.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public void Encrypt_VariousSizeSpans_Success()
         {
             using (RSA rsa = RSAFactory.Create())
@@ -89,18 +91,21 @@ namespace System.Security.Cryptography.Rsa.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public void Decrypt_WrongKey_Pkcs7()
         {
             Decrypt_WrongKey(RSAEncryptionPadding.Pkcs1);
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public void Decrypt_WrongKey_OAEP_SHA1()
         {
             Decrypt_WrongKey(RSAEncryptionPadding.OaepSHA1);
         }
 
         [ConditionalFact(nameof(SupportsSha2Oaep))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public void Decrypt_WrongKey_OAEP_SHA256()
         {
             Decrypt_WrongKey(RSAEncryptionPadding.OaepSHA256);

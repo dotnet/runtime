@@ -335,8 +335,10 @@ namespace System.Reflection.Emit
         public override System.Type[] GetTypes() { throw null; }
         public override bool IsDefined(System.Type attributeType, bool inherit) { throw null; }
         public override bool IsResource() { throw null; }
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36892", TestPlatforms.iOS)]
         public override System.Reflection.FieldInfo? ResolveField(int metadataToken, System.Type[]? genericTypeArguments, System.Type[]? genericMethodArguments) { throw null; }
         public override System.Reflection.MemberInfo? ResolveMember(int metadataToken, System.Type[]? genericTypeArguments, System.Type[]? genericMethodArguments) { throw null; }
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36892", TestPlatforms.iOS)]
         public override System.Reflection.MethodBase? ResolveMethod(int metadataToken, System.Type[]? genericTypeArguments, System.Type[]? genericMethodArguments) { throw null; }
         public override byte[] ResolveSignature(int metadataToken) { throw null; }
         public override string ResolveString(int metadataToken) { throw null; }

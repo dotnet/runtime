@@ -123,6 +123,7 @@ namespace System.Net.Tests
 
         [Theory]
         [MemberData(nameof(Dates_ReadValue_Data))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36890", TestPlatforms.iOS)]
         public async Task LastModified_ReadValue(string raw, DateTime expected)
         {
             await LoopbackServer.CreateServerAsync(async (server, url) =>
@@ -143,6 +144,7 @@ namespace System.Net.Tests
 
         [Theory]
         [MemberData(nameof(Dates_Always_Invalid_Data))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36890", TestPlatforms.iOS)]
         public async Task Date_AlwaysInvalidValue(string invalid)
         {
             await LastModified_InvalidValue(invalid);
@@ -150,6 +152,7 @@ namespace System.Net.Tests
 
         [Theory]
         [MemberData(nameof(Dates_Now_Invalid_Data))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36890", TestPlatforms.iOS)]
         public async Task LastModified_InvalidValue(string invalid)
         {
             await LoopbackServer.CreateServerAsync(async (server, url) =>
@@ -169,6 +172,7 @@ namespace System.Net.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36890", TestPlatforms.iOS)]
         public async Task LastModified_NotPresent()
         {
             await LoopbackServer.CreateServerAsync(async (server, url) =>
@@ -199,6 +203,7 @@ namespace System.Net.Tests
         [InlineData("text/html")]
         [InlineData("text/html; charset=utf-8")]
         [InlineData("TypeAndNoSubType")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36890", TestPlatforms.iOS)]
         public async Task ContentType_ServerResponseHasContentTypeHeader_ContentTypeReceivedCorrectly(string expectedContentType)
         {
             await LoopbackServer.CreateServerAsync(async (server, url) =>
@@ -216,6 +221,7 @@ namespace System.Net.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36890", TestPlatforms.iOS)]
         public async Task ContentType_ServerResponseMissingContentTypeHeader_ContentTypeIsEmptyString()
         {
             await LoopbackServer.CreateServerAsync(async (server, url) =>

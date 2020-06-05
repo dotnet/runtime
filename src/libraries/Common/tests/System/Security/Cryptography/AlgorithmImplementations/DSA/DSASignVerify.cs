@@ -113,6 +113,7 @@ namespace System.Security.Cryptography.Dsa.Tests
         public abstract bool VerifyData(DSA dsa, byte[] data, byte[] signature, HashAlgorithmName hashAlgorithm);
 
         [ConditionalFact(nameof(SupportsKeyGeneration))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public void InvalidKeySize_DoesNotInvalidateKey()
         {
             using (DSA dsa = DSAFactory.Create())
@@ -175,6 +176,7 @@ namespace System.Security.Cryptography.Dsa.Tests
         }
 
         [ConditionalFact(nameof(SupportsKeyGeneration))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public void SignAndVerifyDataNew1024()
         {
             using (DSA dsa = DSAFactory.Create(1024))
@@ -186,6 +188,7 @@ namespace System.Security.Cryptography.Dsa.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public void VerifyKnown_512()
         {
             byte[] signature = (
@@ -202,6 +205,7 @@ namespace System.Security.Cryptography.Dsa.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public void VerifyKnown_576()
         {
             byte[] signature = (
@@ -218,6 +222,7 @@ namespace System.Security.Cryptography.Dsa.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public void PublicKey_CannotSign()
         {
             DSAParameters keyParameters = DSATestData.GetDSA1024Params();
@@ -233,18 +238,21 @@ namespace System.Security.Cryptography.Dsa.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public void SignAndVerifyDataExplicit1024()
         {
             SignAndVerify(DSATestData.HelloBytes, "SHA1", DSATestData.GetDSA1024Params(), 40);
         }
 
         [ConditionalFact(nameof(SupportsFips186_3))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public void SignAndVerifyDataExplicit2048()
         {
             SignAndVerify(DSATestData.HelloBytes, "SHA256", DSATestData.GetDSA2048Params(), 64);
         }
 
         [ConditionalFact(nameof(SupportsFips186_3))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public void VerifyKnown_2048_SHA256()
         {
             byte[] signature =
@@ -269,6 +277,7 @@ namespace System.Security.Cryptography.Dsa.Tests
         }
 
         [ConditionalFact(nameof(SupportsFips186_3))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public void VerifyKnown_2048_SHA384()
         {
             byte[] signature =
@@ -293,6 +302,7 @@ namespace System.Security.Cryptography.Dsa.Tests
         }
 
         [ConditionalFact(nameof(SupportsFips186_3))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public void VerifyKnown_2048_SHA512()
         {
             byte[] signature =
@@ -317,6 +327,7 @@ namespace System.Security.Cryptography.Dsa.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public void VerifyKnownSignature()
         {
             using (DSA dsa = DSAFactory.Create())
@@ -336,6 +347,7 @@ namespace System.Security.Cryptography.Dsa.Tests
         }
 
         [ConditionalFact(nameof(SupportsFips186_3))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public void Sign2048WithSha1()
         {
             byte[] data = { 1, 2, 3, 4 };
@@ -351,6 +363,7 @@ namespace System.Security.Cryptography.Dsa.Tests
         }
 
         [ConditionalFact(nameof(SupportsFips186_3))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public void Verify2048WithSha1()
         {
             byte[] data = { 1, 2, 3, 4 };

@@ -57,6 +57,7 @@ namespace System.Xml.Tests
         //[Variation(id = 11, Desc = "Test the combination of script and document function with EnableScript, only script should work", Pri = 2, Params = new object[] { "XsltSettings.xml", "XsltSettings3.xsl", false, true })]
         [InlineData(11, "XsltSettings.xml", "XsltSettings3.xsl", false, true)]
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void XsltSettings1_1_ContainsScript(object param0, object param1, object param2, object param3, object param4)
         {
             var e = Assert.ThrowsAny<XsltException>(() => XsltSettings1_1(param0, param1, param2, param3, param4));
@@ -72,6 +73,7 @@ namespace System.Xml.Tests
         //[Variation(id = 20, Desc = "Test 10 with TrustedXslt override, should work", Pri = 1, Params = new object[] { "XsltSettings.xml", "XsltSettings3.xsl", false, false, true, true })]
         [InlineData(20, "XsltSettings.xml", "XsltSettings3.xsl", false, false, true, true)]
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void XsltSettings1_2_ContainsScript(object param0, object param1, object param2, object param3, object param4, object param5, object param6)
         {
             var e = Assert.ThrowsAny<XsltException>(() => XsltSettings1_2(param0, param1, param2, param3, param4, param5, param6));
@@ -83,6 +85,7 @@ namespace System.Xml.Tests
         //[Variation(id = 8, Desc = "Test the document function with TrustedXslt, should work", Pri = 1, Params = new object[] { "XsltSettings.xml", "XsltSettings2.xsl", true, true })]
         [InlineData(8, "XsltSettings.xml", "XsltSettings2.xsl", true, true)]
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void XsltSettings1_1_ExternalURI(object param0, object param1, object param2, object param3, object param4)
         {
             AppContext.SetSwitch("Switch.System.Xml.AllowDefaultResolver", true);
@@ -93,6 +96,7 @@ namespace System.Xml.Tests
         //[Variation(id = 18, Desc = "Test 6 with EnableDocumentFunction override, should work", Pri = 1, Params = new object[] { "XsltSettings.xml", "XsltSettings2.xsl", false, false, true, false })]
         [InlineData(18, "XsltSettings.xml", "XsltSettings2.xsl", false, false, true, false)]
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void XsltSettings1_2_ExternalURI(object param0, object param1, object param2, object param3, object param4, object param5, object param6)
         {
             AppContext.SetSwitch("Switch.System.Xml.AllowDefaultResolver", true);
@@ -124,6 +128,7 @@ namespace System.Xml.Tests
 
          */
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void XsltSettings1_1(object param0, object param1, object param2, object param3, object param4)
         {
             Init(param1.ToString(), param2.ToString());
@@ -197,6 +202,7 @@ namespace System.Xml.Tests
 
          */
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void XsltSettings1_2(object param0, object param1, object param2, object param3, object param4, object param5, object param6)
         {
             Init(param1.ToString(), param2.ToString());
@@ -258,6 +264,7 @@ namespace System.Xml.Tests
         //[Variation(id = 24, Desc = "Disable Scripting and load a stylesheet with multiple script blocks with different languages", Pri = 1, Params = new object[] { "XsltSettings.xml", "XsltSettings8.xsl", false, false })]
         [InlineData("XsltSettings.xml", "XsltSettings8.xsl", false, false)]
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void XsltSettings2(object param0, object param1, object param2, object param3)
         {
             Init(param0.ToString(), param1.ToString());
@@ -294,6 +301,7 @@ namespace System.Xml.Tests
         //[Variation(id = 31, Desc = "Disable DocumentFunction and Stylesheet has an entity reference to doc(), ENTITY s document('foo.xml')", Pri = 1, Params = new object[] { "XsltSettings.xml", "XsltSettings15.xsl", false, false })]
         [InlineData("XsltSettings.xml", "XsltSettings15.xsl", false, false)]
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void XsltSettings3(object param0, object param1, object param2, object param3)
         {
             Init(param0.ToString(), param1.ToString());

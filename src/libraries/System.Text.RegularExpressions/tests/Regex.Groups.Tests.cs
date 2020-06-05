@@ -868,6 +868,7 @@ namespace System.Text.RegularExpressions.Tests
         [MemberData(nameof(Groups_CustomCulture_TestData_Danish))]
         [MemberData(nameof(Groups_CustomCulture_TestData_Turkish))]
         [MemberData(nameof(Groups_CustomCulture_TestData_AzeriLatin))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36900", TestPlatforms.iOS)]
         public void Groups(string cultureName, string pattern, string input, RegexOptions options, string[] expectedGroups)
         {
             if (cultureName is null)

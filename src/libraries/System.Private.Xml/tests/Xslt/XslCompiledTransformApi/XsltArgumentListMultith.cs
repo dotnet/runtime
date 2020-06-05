@@ -67,6 +67,7 @@ namespace System.Xml.Tests
         // Same instance testing:
         // Multiple GetParam() over same ArgumentList
         ////////////////////////////////////////////////////////////////
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public int GetParam1(object args)
         {
             object retObj;
@@ -84,6 +85,7 @@ namespace System.Xml.Tests
             return 1;
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public int GetParam2(object args)
         {
             object retObj;
@@ -104,6 +106,7 @@ namespace System.Xml.Tests
 
         //[Variation("Multiple GetParam for same parameter name")]
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void proc1()
         {
             CThreads rThreads = new CThreads(_output);
@@ -122,6 +125,7 @@ namespace System.Xml.Tests
 
         //[Variation("Multiple GetParam for different parameter name")]
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void proc2()
         {
             CThreads rThreads = new CThreads(_output);

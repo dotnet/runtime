@@ -26,6 +26,7 @@ namespace System.Xml.Tests
         [Theory]
         [InlineData(null, "")]
         [InlineData("attr", null)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void PassNull_LocalName_Namespace__Invalid(string localName, string nameSpace)
         {
             XmlSchemaValidator val = CreateValidator(XSDFILE_VALIDATE_ATTRIBUTE);

@@ -15,6 +15,7 @@ namespace System.IO.Pipes.Tests
     public sealed class NamedPipeTest_CrossProcess
     {
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36884", TestPlatforms.iOS)]
         public void InheritHandles_AvailableInChildProcess()
         {
             string pipeName = GetUniquePipeName();
@@ -46,6 +47,7 @@ namespace System.IO.Pipes.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36884", TestPlatforms.iOS)]
         public void PingPong_Sync()
         {
             // Create names for two pipes
@@ -72,6 +74,7 @@ namespace System.IO.Pipes.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36884", TestPlatforms.iOS)]
         public async Task PingPong_Async()
         {
             // Create names for two pipes

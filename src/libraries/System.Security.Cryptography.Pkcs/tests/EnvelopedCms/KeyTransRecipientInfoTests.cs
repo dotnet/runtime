@@ -22,6 +22,7 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
     public static partial class KeyTransRecipientInfoTests
     {
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void TestKeyTransVersion_RoundTrip()
         {
             KeyTransRecipientInfo recipient = EncodeKeyTransl();
@@ -36,6 +37,7 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void TestKeyTransType_RoundTrip()
         {
             KeyTransRecipientInfo recipient = EncodeKeyTransl();
@@ -50,6 +52,7 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void TestKeyTransRecipientIdType_RoundTrip()
         {
             KeyTransRecipientInfo recipient = EncodeKeyTransl();
@@ -66,6 +69,7 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void TestKeyTransRecipientIdValue_RoundTrip()
         {
             KeyTransRecipientInfo recipient = EncodeKeyTransl();
@@ -90,6 +94,7 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void TestKeyTransRecipientIdType_Ski_RoundTrip()
         {
             KeyTransRecipientInfo recipient = EncodeKeyTransl(SubjectIdentifierType.SubjectKeyIdentifier);
@@ -106,6 +111,7 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void TestKeyTransRecipientIdValue_Ski_RoundTrip()
         {
             KeyTransRecipientInfo recipient = EncodeKeyTransl(SubjectIdentifierType.SubjectKeyIdentifier);
@@ -157,6 +163,7 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void TestKeyTransKeyEncryptionAlgorithm_RoundTrip()
         {
             KeyTransRecipientInfo recipient = EncodeKeyTransl();
@@ -175,6 +182,7 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void TestKeyTransEncryptedKey_RoundTrip()
         {
             KeyTransRecipientInfo recipient = EncodeKeyTransl();

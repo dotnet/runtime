@@ -80,6 +80,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void SignerInfo_CounterSignerInfos_UniquePerCall_WhenNonEmpty()
         {
             SignedCms cms = new SignedCms();
@@ -156,6 +157,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
 #endif
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void SignerInfo_Certificate_Same()
         {
             SignedCms cms = new SignedCms();
@@ -185,6 +187,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void CheckSignature_ExtraStore_IsAdditional()
         {
             SignedCms cms = new SignedCms();
@@ -200,6 +203,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void CheckSignature_MD5WithRSA()
         {
             SignedCms cms = new SignedCms();
@@ -214,6 +218,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void CheckSignature_SHA1WithRSA()
         {
             SignedCms cms = new SignedCms();
@@ -228,6 +233,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void CheckSignature_SHA256WithRSA()
         {
             SignedCms cms = new SignedCms();
@@ -242,6 +248,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void CheckSignature_SHA384WithRSA()
         {
             SignedCms cms = new SignedCms();
@@ -256,6 +263,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void CheckSignature_SHA512WithRSA()
         {
             SignedCms cms = new SignedCms();
@@ -270,6 +278,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void CheckSignature_SHA256WithRSADigest_And_RSA256WithRSASignature()
         {
             SignedCms cms = new SignedCms();
@@ -284,6 +293,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void CheckSignature_ECDSA256SignedWithRSASha256HashIdentifier()
         {
             SignedCms cms = new SignedCms();
@@ -299,6 +309,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
 
         [Fact]
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "NetFx bug in matching logic")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void RemoveCounterSignature_MatchesIssuerAndSerialNumber()
         {
             SignedCms cms = new SignedCms();
@@ -330,6 +341,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
 
         [Fact]
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "NetFx bug in matching logic")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void RemoveCounterSignature_MatchesSubjectKeyIdentifier()
         {
             SignedCms cms = new SignedCms();
@@ -363,6 +375,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
 
         [Fact]
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "NetFx bug in matching logic")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void RemoveCounterSignature_MatchesNoSignature()
         {
             SignedCms cms = new SignedCms();
@@ -395,6 +408,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
 
         [Fact]
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "NetFx bug in matching logic")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void RemoveCounterSignature_UsesLiveState()
         {
             SignedCms cms = new SignedCms();
@@ -445,6 +459,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
         [InlineData(0)]
         [InlineData(1)]
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "NetFx bug")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void RemoveCounterSignature_EncodedInSingleAttribute(int indexToRemove)
         {
             SignedCms cms = new SignedCms();
@@ -568,6 +583,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void AddCounterSigner_DuplicateCert_RSA()
         {
             SignedCms cms = new SignedCms();
@@ -616,6 +632,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
         [Theory]
         [InlineData(SubjectIdentifierType.IssuerAndSerialNumber)]
         [InlineData(SubjectIdentifierType.SubjectKeyIdentifier)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void AddCounterSigner_RSA(SubjectIdentifierType identifierType)
         {
             SignedCms cms = new SignedCms();
@@ -662,6 +679,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
 
         [Fact]
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Not supported by crypt32")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void AddCounterSignerToUnsortedAttributeSignature()
         {
             SignedCms cms = new SignedCms();
@@ -699,6 +717,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void AddCounterSigner_DSA()
         {
             SignedCms cms = new SignedCms();
@@ -767,6 +786,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
         [InlineData(SubjectIdentifierType.SubjectKeyIdentifier, Oids.Sha384)]
         [InlineData(SubjectIdentifierType.IssuerAndSerialNumber, Oids.Sha512)]
         [InlineData(SubjectIdentifierType.SubjectKeyIdentifier, Oids.Sha512)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void AddCounterSigner_ECDSA(SubjectIdentifierType identifierType, string digestOid)
         {
             SignedCms cms = new SignedCms();
@@ -829,6 +849,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void AddFirstCounterSigner_NoSignature_NoPrivateKey()
         {
             SignedCms cms = new SignedCms();
@@ -862,6 +883,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void AddFirstCounterSigner_NoSignature()
         {
             SignedCms cms = new SignedCms();
@@ -914,6 +936,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
         [Theory]
         [InlineData(false)]
         [InlineData(true)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void AddSecondCounterSignature_NoSignature_WithCert(bool addExtraCert)
         {
             AddSecondCounterSignature_NoSignature(withCertificate: true, addExtraCert);
@@ -925,6 +948,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         [InlineData(false)]
         [InlineData(true)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void AddSecondCounterSignature_NoSignature_WithoutCert(bool addExtraCert)
         {
             AddSecondCounterSignature_NoSignature(withCertificate: false, addExtraCert);
@@ -1025,6 +1049,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void EnsureExtraCertsAdded()
         {
             SignedCms cms = new SignedCms();

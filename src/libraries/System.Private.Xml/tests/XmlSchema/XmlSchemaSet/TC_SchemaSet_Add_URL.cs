@@ -84,6 +84,7 @@ namespace System.Xml.Tests
         //-----------------------------------------------------------------------------------
         [Fact]
         //[Variation(Desc = "v5 - ns = unmatching, URL = valid")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void v5()
         {
             try
@@ -102,6 +103,7 @@ namespace System.Xml.Tests
         //-----------------------------------------------------------------------------------
         [Fact]
         //[Variation(Desc = "v6 - adding same chameleon for diff NS")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void v6()
         {
             XmlSchemaSet sc = new XmlSchemaSet();
@@ -119,6 +121,7 @@ namespace System.Xml.Tests
         //-----------------------------------------------------------------------------------
         [Fact]
         //[Variation(Desc = "v7 - adding same URL for null ns")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void v7()
         {
             XmlSchemaSet sc = new XmlSchemaSet();
@@ -137,6 +140,7 @@ namespace System.Xml.Tests
         //-----------------------------------------------------------------------------------
         [Fact]
         //[Variation(Desc = "v8 - adding a schema with NS and one without, to a NS.")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void v8()
         {
             XmlSchemaSet sc = new XmlSchemaSet();
@@ -152,6 +156,7 @@ namespace System.Xml.Tests
         //-----------------------------------------------------------------------------------
         [Fact]
         //[Variation(Desc = "v9 - adding URL to XSD schema")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void v9()
         {
             XmlSchemaSet sc = new XmlSchemaSet();
@@ -172,6 +177,7 @@ namespace System.Xml.Tests
         //-----------------------------------------------------------------------------------
         [Fact]
         //[Variation(Desc = "v10 - Adding schema with top level element collision")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void v10()
         {
             XmlSchemaSet sc = new XmlSchemaSet();
@@ -197,6 +203,7 @@ namespace System.Xml.Tests
         //-----------------------------------------------------------------------------------
         [Fact]
         //[Variation(Desc = "v11 - Adding schema with top level element collision to Compiled Schemaset")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void v11()
         {
             XmlSchemaSet sc = new XmlSchemaSet();
@@ -223,6 +230,7 @@ namespace System.Xml.Tests
         //-----------------------------------------------------------------------------------
         [Fact]
         //[Variation(Desc = "v12 - Adding schema with no tagetNS with element already existing in NS")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void v12()
         {
             XmlSchemaSet sc = new XmlSchemaSet();
@@ -244,6 +252,7 @@ namespace System.Xml.Tests
         //-----------------------------------------------------------------------------------
         [Fact]
         //[Variation(Desc = "435368 - schema validation error")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void v13()
         {
             string xsdPath = Path.Combine(TestData._Root, @"bug435368.xsd");

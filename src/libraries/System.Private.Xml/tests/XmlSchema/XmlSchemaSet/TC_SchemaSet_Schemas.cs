@@ -76,6 +76,7 @@ namespace System.Xml.Tests
         //-----------------------------------------------------------------------------------
         //[Variation(Desc = "v4 - Schemas on non empty collection,call Schemas,Edit check all members of ICollection")]
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void v4()
         {
             XmlSchemaSet sc = new XmlSchemaSet();

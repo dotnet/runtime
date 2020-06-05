@@ -119,6 +119,7 @@ namespace System.Xml.Tests
 
         //[Variation("Multiple Transform(): Reader - AVTs")]
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void proc3()
         {
             Load("xslt_multith_AVTs.xsl", "xslt_multith_AVTs.xml");
@@ -139,6 +140,7 @@ namespace System.Xml.Tests
 
         //[Variation("Multiple Transform(): Reader - xsl:key")]
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void proc4()
         {
             Load("xslt_multith_keytest.xsl", "xslt_multith_keytest.xml");
@@ -159,6 +161,7 @@ namespace System.Xml.Tests
 
         //[Variation("Multiple Transform(): Reader - xsl:sort")]
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void proc5()
         {
             Load("xslt_multith_sorting.xsl", "xslt_multith_sorting.xml");
@@ -179,6 +182,7 @@ namespace System.Xml.Tests
 
         //[Variation("Multiple Transform(): Reader - Attribute Sets")]
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void proc6()
         {
             Load("xslt_mutith_attribute_sets.xsl", "xslt_mutith_attribute_sets.xml");
@@ -199,6 +203,7 @@ namespace System.Xml.Tests
 
         //[Variation("Multiple Transform(): Reader - Boolean Expression AND")]
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void proc7()
         {
             Load("xslt_mutith_boolean_expr_and.xsl", "xslt_mutith_boolean_expr_and.xml");
@@ -219,6 +224,7 @@ namespace System.Xml.Tests
 
         //[Variation("Multiple Transform(): Reader - Boolean Expression OR")]
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void proc8()
         {
             Load("xslt_mutith_boolean_expr_or.xsl", "xslt_mutith_boolean_expr_or.xml");
@@ -239,6 +245,7 @@ namespace System.Xml.Tests
 
         //[Variation("Multiple Transform(): Reader - FormatNubmer function")]
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void proc9()
         {
             Load("xslt_mutith_format_number.xsl", "xslt_mutith_format_number.xml");
@@ -259,6 +266,7 @@ namespace System.Xml.Tests
 
         //[Variation("Multiple Transform(): Reader - Position() function")]
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void proc10()
         {
             Load("xslt_mutith_position_func.xsl", "xslt_mutith_position_func.xml");
@@ -279,6 +287,7 @@ namespace System.Xml.Tests
 
         //[Variation("Multiple Transform(): Reader - preserve space")]
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void proc11()
         {
             Load("xslt_mutith_preserve_space.xsl", "xslt_mutith_preserve_space.xml");
@@ -299,6 +308,7 @@ namespace System.Xml.Tests
 
         //[Variation("Multiple Transform(): Reader - Variable nodeset")]
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void proc12()
         {
             Load("xslt_mutith_variable_nodeset.xsl", "xslt_mutith_variable_nodeset.xml");

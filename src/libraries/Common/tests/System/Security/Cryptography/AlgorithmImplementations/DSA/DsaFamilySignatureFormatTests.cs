@@ -131,6 +131,7 @@ namespace System.Security.Cryptography.Algorithms.Tests
 
         [Theory]
         [MemberData(nameof(SignatureFormats))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public void SignHashVerifyHash(DSASignatureFormat signatureFormat)
         {
             KeyDescription key = GetKey();
@@ -142,6 +143,7 @@ namespace System.Security.Cryptography.Algorithms.Tests
 
         [Theory]
         [MemberData(nameof(SignatureFormats))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public void SignDataVerifyData_SHA1(DSASignatureFormat signatureFormat)
         {
             HashAlgorithmName hashAlgorithm = HashAlgorithmName.SHA1;
@@ -154,6 +156,7 @@ namespace System.Security.Cryptography.Algorithms.Tests
 
         [Theory]
         [MemberData(nameof(SignatureFormats))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public void SignDataVerifyHash_SHA1(DSASignatureFormat signatureFormat)
         {
             HashAlgorithmName hashAlgorithm = HashAlgorithmName.SHA1;
@@ -171,6 +174,7 @@ namespace System.Security.Cryptography.Algorithms.Tests
 
         [Theory]
         [MemberData(nameof(SignatureFormats))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public void SignDataVerifyData_SHA256(DSASignatureFormat signatureFormat)
         {
             if (!SupportsSha2)
@@ -186,6 +190,7 @@ namespace System.Security.Cryptography.Algorithms.Tests
 
         [Theory]
         [MemberData(nameof(SignatureFormats))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public void SignDataVerifyHash_SHA256(DSASignatureFormat signatureFormat)
         {
             if (!SupportsSha2)
@@ -205,6 +210,7 @@ namespace System.Security.Cryptography.Algorithms.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public void VerifyInvalidRfc3279Signature()
         {
             KeyDescription key = GetKey();
@@ -233,6 +239,7 @@ namespace System.Security.Cryptography.Algorithms.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public void Rfc3279SignatureValidatesLength()
         {
             KeyDescription key = GetKey();
@@ -266,6 +273,7 @@ namespace System.Security.Cryptography.Algorithms.Tests
         [Theory]
         [InlineData(DSASignatureFormat.IeeeP1363FixedFieldConcatenation, DSASignatureFormat.Rfc3279DerSequence)]
         [InlineData(DSASignatureFormat.Rfc3279DerSequence, DSASignatureFormat.IeeeP1363FixedFieldConcatenation)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public void SignatureFormatsAreNotCompatible(DSASignatureFormat signFormat, DSASignatureFormat verifyFormat)
         {
             if (!SupportsSha2)
@@ -305,6 +313,7 @@ namespace System.Security.Cryptography.Algorithms.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public void BadSignatureFormat()
         {
             KeyDescription key = GetKey();
@@ -330,6 +339,7 @@ namespace System.Security.Cryptography.Algorithms.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public void EmptyHashAlgorithm()
         {
             KeyDescription key = GetKey();
@@ -348,6 +358,7 @@ namespace System.Security.Cryptography.Algorithms.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public void UnknownHashAlgorithm()
         {
             KeyDescription key = GetKey();
@@ -365,6 +376,7 @@ namespace System.Security.Cryptography.Algorithms.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public void NullInputs()
         {
             if (IsNotArrayBased)

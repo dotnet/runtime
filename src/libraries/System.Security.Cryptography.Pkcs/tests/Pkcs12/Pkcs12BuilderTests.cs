@@ -370,6 +370,7 @@ namespace System.Security.Cryptography.Pkcs.Tests.Pkcs12
         [Theory]
         [InlineData(false)]
         [InlineData(true)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void BuildEmptyContents(bool withMac)
         {
             string password;
@@ -424,6 +425,7 @@ namespace System.Security.Cryptography.Pkcs.Tests.Pkcs12
         [Theory]
         [InlineData(false)]
         [InlineData(true)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void BuildWithoutContents(bool withMac)
         {
             string password;
@@ -477,6 +479,7 @@ namespace System.Security.Cryptography.Pkcs.Tests.Pkcs12
         [Theory]
         [InlineData(false)]
         [InlineData(true)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void BuildWithEmptySafeContents(bool encrypted)
         {
             string pw = nameof(BuildWithEmptySafeContents);

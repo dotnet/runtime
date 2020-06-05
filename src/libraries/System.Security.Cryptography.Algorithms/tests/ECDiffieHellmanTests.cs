@@ -14,6 +14,7 @@ namespace System.Security.Cryptography.EcDiffieHellman.Tests
     public partial class ECDiffieHellmanTests
     {
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void ECCurve_ctor()
         {
             using (ECDiffieHellman ecdh = ECDiffieHellmanFactory.Create(ECCurve.NamedCurves.nistP256))
@@ -39,6 +40,7 @@ namespace System.Security.Cryptography.EcDiffieHellman.Tests
         [InlineData("1.3.132.0.35", 521)] //secp521r1
         [InlineData("1.3.132.0.34", 384)] //secp384r1
         [InlineData("1.2.840.10045.3.1.7", 256)] //secp256v1
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void ECCurve_ctor_SEC2_OID_From_Value(string oidValue, int expectedKeySize)
         {
             ECCurve ecCurve = ECCurve.CreateFromValue(oidValue);
@@ -50,6 +52,7 @@ namespace System.Security.Cryptography.EcDiffieHellman.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void Equivalence_Hash()
         {
             using (ECDiffieHellman ecdh = ECDiffieHellmanFactory.Create())

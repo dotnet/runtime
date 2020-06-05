@@ -52,6 +52,7 @@ namespace System.Globalization.Tests
 
         [Theory]
         [MemberData(nameof(GetEra_TestData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36883", TestPlatforms.iOS)]
         public void GetEra_Invoke_RetrunsExpected(DateTimeFormatInfo format, string eraName, int expected)
         {
             Assert.Equal(expected, format.GetEra(eraName));

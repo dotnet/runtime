@@ -31,6 +31,7 @@ namespace System.Globalization.Tests
         [InlineData("as")]
         [InlineData("es-BO")]
         [InlineData("fr-CA")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36883", TestPlatforms.iOS)]
         public void CurrencyNegativePattern_Get_ReturnsExpected_ByLocale(string locale)
         {
             CultureInfo culture;

@@ -15,6 +15,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
         [InlineData(nameof(TimestampTokenTestData.FreeTsaDotOrg1))]
         [InlineData(nameof(TimestampTokenTestData.Symantec1))]
         [InlineData(nameof(TimestampTokenTestData.DigiCert1))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void ParseDocument(string testDataName)
         {
             TimestampTokenTestData testData = TimestampTokenTestData.GetTestData(testDataName);
@@ -26,6 +27,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
         [InlineData(nameof(TimestampTokenTestData.FreeTsaDotOrg1))]
         [InlineData(nameof(TimestampTokenTestData.Symantec1))]
         [InlineData(nameof(TimestampTokenTestData.DigiCert1))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void ParseDocument_ExcessData(string testDataName)
         {
             TimestampTokenTestData testData = TimestampTokenTestData.GetTestData(testDataName);
@@ -211,6 +213,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void TryDecode_Fails_MalformedToken()
         {
             ContentInfo contentInfo = new ContentInfo(
@@ -240,6 +243,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
         [InlineData(X509IncludeOption.None, SigningCertificateOption.ValidHashNoName)]
         [InlineData(X509IncludeOption.WholeChain, SigningCertificateOption.ValidHashWithName)]
         [InlineData(X509IncludeOption.None, SigningCertificateOption.ValidHashWithName)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void MatchV1(X509IncludeOption includeOption, SigningCertificateOption v1Option)
         {
             CustomBuild_CertMatch(
@@ -253,6 +257,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
         [Theory]
         [InlineData(X509IncludeOption.WholeChain)]
         [InlineData(X509IncludeOption.None)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void CertHashMismatchV1(X509IncludeOption includeOption)
         {
             CustomBuild_CertMismatch(
@@ -280,6 +285,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
             X509IncludeOption.None,
             SigningCertificateOption.ValidHashWithInvalidName,
             SubjectIdentifierType.IssuerAndSerialNumber)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void CertMismatchIssuerAndSerialV1(
             X509IncludeOption includeOption,
             SigningCertificateOption v1Option,
@@ -327,6 +333,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
             X509IncludeOption.None,
             SigningCertificateOption.ValidHashWithName,
             "SHA384")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void MatchV2(
             X509IncludeOption includeOption,
             SigningCertificateOption v2Option,
@@ -350,6 +357,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
         [InlineData(X509IncludeOption.None, "SHA1")]
         [InlineData(X509IncludeOption.WholeChain, "SHA384")]
         [InlineData(X509IncludeOption.None, "SHA384")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void CertHashMismatchV2(X509IncludeOption includeOption, string hashAlgName)
         {
             CustomBuild_CertMismatch(
@@ -402,6 +410,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
             SigningCertificateOption.ValidHashWithInvalidName,
             SubjectIdentifierType.IssuerAndSerialNumber,
             "SHA384")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void CertMismatchIssuerAndSerialV2(
             X509IncludeOption includeOption,
             SigningCertificateOption v2Option,
@@ -499,6 +508,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
             SigningCertificateOption.ValidHashWithName,
             SigningCertificateOption.ValidHashWithName,
             "SHA384")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void CertMatchV1AndV2(
             X509IncludeOption includeOption,
             SigningCertificateOption v1Option,
@@ -545,6 +555,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
             SigningCertificateOption.ValidHashNoName,
             SubjectIdentifierType.IssuerAndSerialNumber,
             null)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void CertMismatchV1OrV2(
             X509IncludeOption includeOption,
             SigningCertificateOption v1Option,
@@ -565,6 +576,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
         [Theory]
         [InlineData(X509IncludeOption.WholeChain)]
         [InlineData(X509IncludeOption.None)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void TimestampTooOld(X509IncludeOption includeOption)
         {
             CertLoader loader = Certificates.ValidLookingTsaCert;
@@ -586,6 +598,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
         [Theory]
         [InlineData(X509IncludeOption.WholeChain)]
         [InlineData(X509IncludeOption.None)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void TimestampTooNew(X509IncludeOption includeOption)
         {
             CertLoader loader = Certificates.ValidLookingTsaCert;
@@ -607,6 +620,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
         [Theory]
         [InlineData(X509IncludeOption.WholeChain)]
         [InlineData(X509IncludeOption.None)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void NoEkuExtension(X509IncludeOption includeOption)
         {
             CertLoader loader = Certificates.RSA2048SignatureOnly;
@@ -630,6 +644,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
         [Theory]
         [InlineData(X509IncludeOption.WholeChain)]
         [InlineData(X509IncludeOption.None)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void TwoEkuExtensions(X509IncludeOption includeOption)
         {
             CertLoader loader = Certificates.TwoEkuTsaCert;
@@ -660,6 +675,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
         [Theory]
         [InlineData(X509IncludeOption.WholeChain)]
         [InlineData(X509IncludeOption.None)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void NonCriticalEkuExtension(X509IncludeOption includeOption)
         {
             CertLoader loader = Certificates.NonCriticalTsaEku;
@@ -686,6 +702,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
         [Theory]
         [InlineData(X509IncludeOption.WholeChain)]
         [InlineData(X509IncludeOption.None)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void NoTsaEku(X509IncludeOption includeOption)
         {
             CertLoader loader = Certificates.TlsClientServerCert;

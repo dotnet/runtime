@@ -11,6 +11,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
     public static class LoadFromFileTests
     {
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void TestIssuer()
         {
             using (X509Certificate2 c = LoadCertificateFromFile())
@@ -24,6 +25,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void TestSubject()
         {
             using (X509Certificate2 c = LoadCertificateFromFile())
@@ -37,6 +39,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void TestSerial()
         {
             string expectedSerialHex = "33000000B011AF0A8BD03B9FDD0001000000B0";
@@ -54,6 +57,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void TestThumbprint()
         {
             string expectedThumbPrintHex = "108E2BA23632620C427C570B6D9DB51AC31387FE";
@@ -78,6 +82,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         [InlineData("SHA384", true)]
         [InlineData("SHA512", false)]
         [InlineData("SHA512", true)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void TestThumbprint_ByHashAlgorithm(string hashAlgName, bool viaSpan)
         {
             string expectedThumbprintHex;
@@ -154,6 +159,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 #endif
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void TestGetFormat()
         {
             using (X509Certificate2 c = LoadCertificateFromFile())
@@ -164,6 +170,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void TestGetKeyAlgorithm()
         {
             using (X509Certificate2 c = LoadCertificateFromFile())
@@ -174,6 +181,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void TestGetKeyAlgorithmParameters()
         {
             string expected = "0500";
@@ -188,6 +196,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void TestGetPublicKey()
         {
             string expectedPublicKeyHex =
@@ -253,6 +262,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void TestLoadConcatenatedPemFile()
         {
             using (X509Certificate2 c = new X509Certificate2(TestData.ConcatenatedPemFile))

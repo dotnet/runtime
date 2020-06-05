@@ -26,6 +26,7 @@ namespace System.Net.Http.Json.Functional.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36890", TestPlatforms.iOS)]
         public async Task HttpContentGetThenReadFromJsonAsync()
         {
             const int NumRequests = 2;
@@ -55,6 +56,7 @@ namespace System.Net.Http.Json.Functional.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36890", TestPlatforms.iOS)]
         public async Task HttpContentReturnValueIsNull()
         {
             const int NumRequests = 2;
@@ -83,6 +85,7 @@ namespace System.Net.Http.Json.Functional.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36890", TestPlatforms.iOS)]
         public async Task TestReadFromJsonNoMessageBodyAsync()
         {
             await LoopbackServer.CreateClientAndServerAsync(
@@ -102,6 +105,7 @@ namespace System.Net.Http.Json.Functional.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36890", TestPlatforms.iOS)]
         public async Task TestReadFromJsonNoContentTypeAsync()
         {
             await LoopbackServer.CreateClientAndServerAsync(
@@ -119,6 +123,7 @@ namespace System.Net.Http.Json.Functional.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36890", TestPlatforms.iOS)]
         public async Task TestGetFromJsonQuotedCharSetAsync()
         {
             List<HttpHeaderData> customHeaders = new List<HttpHeaderData>
@@ -142,6 +147,7 @@ namespace System.Net.Http.Json.Functional.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36890", TestPlatforms.iOS)]
         public async Task TestGetFromJsonThrowOnInvalidCharSetAsync()
         {
             List<HttpHeaderData> customHeaders = new List<HttpHeaderData>
@@ -165,6 +171,7 @@ namespace System.Net.Http.Json.Functional.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36890", TestPlatforms.iOS)]
         public async Task TestGetFromJsonAsyncTextPlainUtf16Async()
         {
             const string json = @"{""Name"":""David"",""Age"":24}";
@@ -210,6 +217,7 @@ namespace System.Net.Http.Json.Functional.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36890", TestPlatforms.iOS)]
         public async Task EnsureDefaultJsonSerializerOptionsAsync()
         {
             await LoopbackServer.CreateClientAndServerAsync(
@@ -231,6 +239,7 @@ namespace System.Net.Http.Json.Functional.Tests
         [InlineData("application/foo+json")] // Structured Syntax Json Suffix
         [InlineData("application/foo+Json")]
         [InlineData("appLiCaTiOn/a+JsOn")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36890", TestPlatforms.iOS)]
         public async Task TestValidMediaTypes(string mediaType)
         {
             List<HttpHeaderData> customHeaders = new List<HttpHeaderData>
@@ -261,6 +270,7 @@ namespace System.Net.Http.Json.Functional.Tests
         [InlineData("application/+json")] // empty subtype before suffix is invalid.
         [InlineData("application/problem+")] // no suffix after '+'.
         [InlineData("application/problem+foo+json")] // more than one '+' not allowed.
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36890", TestPlatforms.iOS)]
         public async Task TestInvalidMediaTypeAsync(string mediaType)
         {
             List<HttpHeaderData> customHeaders = new List<HttpHeaderData>

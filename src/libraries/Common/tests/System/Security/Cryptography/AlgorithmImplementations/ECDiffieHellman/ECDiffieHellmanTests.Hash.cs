@@ -22,6 +22,7 @@ namespace System.Security.Cryptography.EcDiffieHellman.Tests
 
         [Theory]
         [MemberData(nameof(MismatchedKeysizes))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void HashDerivation_SameSizeOtherKeyRequired(int aliceSize, int bobSize)
         {
             using (ECDiffieHellman alice = ECDiffieHellmanFactory.Create(aliceSize))
@@ -34,6 +35,7 @@ namespace System.Security.Cryptography.EcDiffieHellman.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void HashDerivation_AlgorithmRequired()
         {
             using (ECDiffieHellman ecdh = ECDiffieHellmanFactory.Create())
@@ -46,6 +48,7 @@ namespace System.Security.Cryptography.EcDiffieHellman.Tests
 
         [Theory]
         [MemberData(nameof(EveryKeysize))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void HashDerivation(int keySize)
         {
             using (ECDiffieHellman alice = ECDiffieHellmanFactory.Create(keySize))
@@ -61,6 +64,7 @@ namespace System.Security.Cryptography.EcDiffieHellman.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void HashDerivationVariesOnPublicKey()
         {
             using (ECDiffieHellman alice = ECDiffieHellmanFactory.Create())
@@ -78,6 +82,7 @@ namespace System.Security.Cryptography.EcDiffieHellman.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void HashDerivationVariesOnAlgorithm()
         {
             using (ECDiffieHellman alice = ECDiffieHellmanFactory.Create())
@@ -94,6 +99,7 @@ namespace System.Security.Cryptography.EcDiffieHellman.Tests
 
         [Theory]
         [MemberData(nameof(EveryKeysize))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void SymmetricDerivation_HashPrepend(int keySize)
         {
             byte[] prefix = new byte[10];
@@ -111,6 +117,7 @@ namespace System.Security.Cryptography.EcDiffieHellman.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void HashDerivationVariesOnPrepend()
         {
             byte[] alicePrefix = new byte[10];
@@ -131,6 +138,7 @@ namespace System.Security.Cryptography.EcDiffieHellman.Tests
 
         [Theory]
         [MemberData(nameof(EveryKeysize))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void SymmetricDerivation_HashAppend(int keySize)
         {
             byte[] suffix = new byte[10];
@@ -148,6 +156,7 @@ namespace System.Security.Cryptography.EcDiffieHellman.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void HashDerivationVariesOnAppend()
         {
             byte[] aliceSuffix = new byte[10];
@@ -167,6 +176,7 @@ namespace System.Security.Cryptography.EcDiffieHellman.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void HashDerivationIsStable()
         {
             using (ECDiffieHellman alice = ECDiffieHellmanFactory.Create())
@@ -181,6 +191,7 @@ namespace System.Security.Cryptography.EcDiffieHellman.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void SimpleHashMethodForwardsNull()
         {
             using (ECDiffieHellman ecdh = ECDiffieHellmanFactory.Create())
@@ -194,6 +205,7 @@ namespace System.Security.Cryptography.EcDiffieHellman.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void DeriveKeyMaterialEquivalentToDeriveKeyFromHash()
         {
             using (ECDiffieHellman ecdh = ECDiffieHellmanFactory.Create())
@@ -263,6 +275,7 @@ namespace System.Security.Cryptography.EcDiffieHellman.Tests
 #if NETCOREAPP
         [Theory]
         [MemberData(nameof(HashDerivationTestCases))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void HashDerivation_KnownResults(
             HashAlgorithmName hashAlgorithm,
             string prependBytes,

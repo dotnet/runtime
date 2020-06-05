@@ -541,6 +541,7 @@ namespace System.Data.Tests
         #region test namespaces
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36879", TestPlatforms.iOS)]
         public void InferXmlSchema_BasicXml()
         {
             StringBuilder sb = new StringBuilder();
@@ -573,6 +574,7 @@ namespace System.Data.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36879", TestPlatforms.iOS)]
         public void InferXmlSchema_WithoutIgnoreNameSpaces()
         {
             StringBuilder sb = new StringBuilder();
@@ -598,6 +600,7 @@ namespace System.Data.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36879", TestPlatforms.iOS)]
         public void InferXmlSchema_IgnoreNameSpace()
         {
             StringBuilder sb = new StringBuilder();
@@ -638,6 +641,7 @@ namespace System.Data.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36879", TestPlatforms.iOS)]
         public void InferXmlSchema_IgnoreNameSpaces() //Ignoring 2 namespaces
         {
             StringBuilder sb = new StringBuilder();
@@ -668,6 +672,7 @@ namespace System.Data.Tests
 
         #region inferringTables
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36879", TestPlatforms.iOS)]
         public void InferXmlSchema_inferringTables1()
         {
             //According to the msdn documantaion :
@@ -692,6 +697,7 @@ namespace System.Data.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36879", TestPlatforms.iOS)]
         public void InferXmlSchema_inferringTables2()
         {
             //According to the msdn documantaion :
@@ -742,6 +748,7 @@ namespace System.Data.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36879", TestPlatforms.iOS)]
         public void InferXmlSchema_inferringTables4()
         {
             //According to the msdn documantaion :
@@ -767,6 +774,7 @@ namespace System.Data.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36879", TestPlatforms.iOS)]
         public void InferXmlSchema_inferringTables5()
         {
             //According to the msdn documantaion :
@@ -792,6 +800,7 @@ namespace System.Data.Tests
 
         #region inferringColumns
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36879", TestPlatforms.iOS)]
         public void InferXmlSchema_inferringColumns1()
         {
             //ms-help://MS.MSDNQTR.2003FEB.1033/cpguide/html/cpconinferringcolumns.htm
@@ -816,6 +825,7 @@ namespace System.Data.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36879", TestPlatforms.iOS)]
         public void InferXmlSchema_inferringColumns2()
         {
             //ms-help://MS.MSDNQTR.2003FEB.1033/cpguide/html/cpconinferringcolumns.htm
@@ -851,6 +861,7 @@ namespace System.Data.Tests
         #region Inferring Relationships
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36879", TestPlatforms.iOS)]
         public void InferXmlSchema_inferringRelationships1()
         {
             //ms-help://MS.MSDNQTR.2003FEB.1033/cpguide/html/cpconinferringrelationships.htm
@@ -915,6 +926,7 @@ namespace System.Data.Tests
         #region Inferring Element Text
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36879", TestPlatforms.iOS)]
         public void InferXmlSchema_elementText1()
         {
             //ms-help://MS.MSDNQTR.2003FEB.1033/cpguide/html/cpconinferringelementtext.htm
@@ -943,6 +955,7 @@ namespace System.Data.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36879", TestPlatforms.iOS)]
         public void InferXmlSchema_elementText2()
         {
             //ms-help://MS.MSDNQTR.2003FEB.1033/cpguide/html/cpconinferringelementtext.htm
@@ -989,6 +1002,7 @@ namespace System.Data.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36879", TestPlatforms.iOS)]
         public void DataSetSpecificCulture()
         {
             using (new ThreadCultureChange("cs-CZ"))
@@ -2236,6 +2250,7 @@ namespace System.Data.Tests
             Assert.Equal("Stock_Price", ds.Tables[2].ParentRelations[0].RelationName);
         }
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36879", TestPlatforms.iOS)]
         public void ReadXml_Strm3()
         {
             DataSet ds = new DataSet("TestDataSet");
@@ -2265,6 +2280,7 @@ namespace System.Data.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36879", TestPlatforms.iOS)]
         public void ReadXml_Strm4()
         {
             _ds = new DataSet("Stocks");
@@ -2366,6 +2382,7 @@ namespace System.Data.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36879", TestPlatforms.iOS)]
         public void ReadXml_Strm5()
         {
             string xmlData;
@@ -2590,6 +2607,7 @@ namespace System.Data.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36879", TestPlatforms.iOS)]
         public void ReadXml_Strm6()
         {
             // TC1
@@ -3071,6 +3089,7 @@ namespace System.Data.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36879", TestPlatforms.iOS)]
         public void WriteXml_Stream()
         {
             {

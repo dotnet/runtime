@@ -10,6 +10,7 @@ namespace System.Net.NetworkInformation.Tests
     public class StatisticsParsingTests : FileCleanupTestBase
     {
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36890", TestPlatforms.iOS)]
         public void Icmpv4Parsing()
         {
             string fileName = GetTestFilePath();
@@ -45,6 +46,7 @@ namespace System.Net.NetworkInformation.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36890", TestPlatforms.iOS)]
         public void Icmpv6Parsing()
         {
             string fileName = GetTestFilePath();
@@ -85,6 +87,7 @@ namespace System.Net.NetworkInformation.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36890", TestPlatforms.iOS)]
         public void TcpGlobalStatisticsParsing()
         {
             string fileName = GetTestFilePath();
@@ -108,6 +111,7 @@ namespace System.Net.NetworkInformation.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36890", TestPlatforms.iOS)]
         public void Udpv4GlobalStatisticsParsing()
         {
             string fileName = GetTestFilePath();
@@ -123,6 +127,7 @@ namespace System.Net.NetworkInformation.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36890", TestPlatforms.iOS)]
         public void Udpv6GlobalStatisticsParsing()
         {
             string fileName = GetTestFilePath();
@@ -138,6 +143,7 @@ namespace System.Net.NetworkInformation.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36890", TestPlatforms.iOS)]
         public void Ipv4GlobalStatisticsParsing()
         {
             string fileName = GetTestFilePath();
@@ -166,6 +172,7 @@ namespace System.Net.NetworkInformation.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36890", TestPlatforms.iOS)]
         public void Ipv6GlobalStatisticsParsing()
         {
             string fileName = GetTestFilePath();
@@ -192,6 +199,7 @@ namespace System.Net.NetworkInformation.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36890", TestPlatforms.iOS)]
         public void IpInterfaceStatisticsParsingFirst()
         {
             string fileName = GetTestFilePath();
@@ -218,6 +226,7 @@ namespace System.Net.NetworkInformation.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36890", TestPlatforms.iOS)]
         public void IpInterfaceStatisticsParsingLast()
         {
             string fileName = GetTestFilePath();

@@ -11,6 +11,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
     public static class SignedCmsWholeDocumentTests
     {
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void ReadRsaPssDocument()
         {
             SignedCms cms = new SignedCms();
@@ -120,6 +121,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void ReadRsaPkcs1SimpleDocument()
         {
             SignedCms cms = new SignedCms();
@@ -188,6 +190,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void ReadRsaPkcs1CounterSigned()
         {
             SignedCms cms = new SignedCms();
@@ -269,6 +272,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void CheckNoSignatureDocument()
         {
             SignedCms cms = new SignedCms();
@@ -389,6 +393,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void NonEmbeddedCertificate()
         {
             SignedCms cms = new SignedCms();
@@ -502,6 +507,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void ReadRsaPkcs1DoubleCounterSigned()
         {
             SignedCms cms = new SignedCms();

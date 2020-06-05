@@ -122,6 +122,7 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
         //
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void PostEncrypt_Version()
         {
             ContentInfo expectedContentInfo = new ContentInfo(new byte[] { 1, 2, 3 });
@@ -137,6 +138,7 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void PostEncrypt_RecipientInfos()
         {
             ContentInfo expectedContentInfo = new ContentInfo(new byte[] { 1, 2, 3 });
@@ -151,6 +153,7 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void PostEncrypt_Decrypt()
         {
             ContentInfo expectedContentInfo = new ContentInfo(new byte[] { 1, 2, 3 });
@@ -163,6 +166,7 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void PostEncrypt_ContentInfo()
         {
             ContentInfo expectedContentInfo = new ContentInfo(new byte[] { 1, 2, 3 });
@@ -429,6 +433,7 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void PostEncode_DifferentData()
         {
             // This ensures that the decoding and encoding output different values to make sure Encrypt changes the state of the data.

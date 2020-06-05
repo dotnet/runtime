@@ -29,6 +29,7 @@ namespace System.Security.Cryptography.Pkcs.Tests.Pkcs12
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void DataNotValidatedInCtor()
         {
             using (X509Certificate2 cert = Certificates.RSAKeyTransferCapi1.GetCertificate())
@@ -79,6 +80,7 @@ namespace System.Security.Cryptography.Pkcs.Tests.Pkcs12
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void CertificateReadsSuccessfully()
         {
             using (X509Certificate2 cert = Certificates.RSAKeyTransferCapi1.GetCertificate())

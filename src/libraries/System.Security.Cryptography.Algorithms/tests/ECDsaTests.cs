@@ -46,6 +46,7 @@ namespace System.Security.Cryptography.Algorithms.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public void Array_SignData_VerifyData_UsesHashDataAndSignHashAndVerifyHash()
         {
             using (var ecdsa = new OverrideAbstractECDsa(ECDsaFactory.Create()))
@@ -82,6 +83,7 @@ namespace System.Security.Cryptography.Algorithms.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public void Stream_SignData_VerifyData_UsesHashDataAndSignHashAndVerifyHash()
         {
             using (var ecdsa = new OverrideAbstractECDsa(ECDsaFactory.Create()))
@@ -108,6 +110,7 @@ namespace System.Security.Cryptography.Algorithms.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public void Span_TrySignData_VerifyData_UsesTryHashDataAndTrySignHashAndTryVerifyHash()
         {
             using (var ecdsa = new OverrideAbstractECDsa(ECDsaFactory.Create()))

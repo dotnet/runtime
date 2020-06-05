@@ -128,6 +128,7 @@ namespace System.Security.Cryptography.Xml.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public void ImportDSAKeyValue()
         {
             string p = "6zJxhRqpk5yQ7sjFSr6mPepyVwpTAXSmw1oh+5Cn/z1DjFSpW6rC6sTOkE3CMNwWOwIzrpVS3bWep7wo9CaBrOPIIVe+E4sqpPeyM2wr10mQThHEsCQAjnxBhJJindf9amaBhi6sOtVNnyETFWV6yKDptZEm9c3xdl4L7ogEbX8=";

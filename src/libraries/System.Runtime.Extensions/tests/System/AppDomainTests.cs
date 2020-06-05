@@ -45,6 +45,7 @@ namespace System.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36896", TestPlatforms.iOS)]
         public void TargetFrameworkTest()
         {
             const int ExpectedExitCode = 0;

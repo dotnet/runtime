@@ -357,6 +357,7 @@ namespace System.Xml.Tests
 
         //[Variation(Desc = "v20 - 358206 : Removing the last schema from the set should clear the global tables", Priority = 2)]
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void v20()
         {
             XmlSchemaSet sc = new XmlSchemaSet();

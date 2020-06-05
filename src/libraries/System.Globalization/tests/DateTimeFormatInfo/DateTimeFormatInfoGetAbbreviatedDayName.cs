@@ -24,6 +24,7 @@ namespace System.Globalization.Tests
 
         [Theory]
         [MemberData(nameof(GetAbbreviatedDayName_TestData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36883", TestPlatforms.iOS)]
         public void GetAbbreviatedDayName_Invoke_ReturnsExpected(DateTimeFormatInfo info, string[] expected)
         {
             DayOfWeek[] values = new DayOfWeek[]

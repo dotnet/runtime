@@ -14,6 +14,7 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
         [InlineData(SubjectIdentifierType.IssuerAndSerialNumber)]
         [InlineData(SubjectIdentifierType.SubjectKeyIdentifier)]
         [InlineData(SubjectIdentifierType.Unknown)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void SubjectIdentifier_MatchesCert(SubjectIdentifierType type)
         {
             using (X509Certificate2 cert = Certificates.RSAKeyTransfer_ExplicitSki.GetCertificate())
@@ -28,6 +29,7 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
         [InlineData(SubjectIdentifierType.IssuerAndSerialNumber)]
         [InlineData(SubjectIdentifierType.SubjectKeyIdentifier)]
         [InlineData(SubjectIdentifierType.Unknown)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void SubjectIdentifier_DoesNotMatchCert(SubjectIdentifierType type)
         {
             using (X509Certificate2 cert = Certificates.RSAKeyTransfer_ExplicitSki.GetCertificate())

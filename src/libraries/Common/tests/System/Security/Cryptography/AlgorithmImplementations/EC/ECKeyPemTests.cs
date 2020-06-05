@@ -28,6 +28,7 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public void ImportFromPem_ECPrivateKey_Simple()
         {
             using (TAlg key = CreateKey())
@@ -45,6 +46,7 @@ NfZ9nLTVjxeD08pD548KWrqmJAeZNsDDqQ==
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public void ImportFromPem_ECPrivateKey_IgnoresUnrelatedAlgorithm()
         {
             using (TAlg key = CreateKey())
@@ -71,6 +73,7 @@ NfZ9nLTVjxeD08pD548KWrqmJAeZNsDDqQ==
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public void ImportFromPem_Pkcs8_Simple()
         {
             using (TAlg key = CreateKey())
@@ -88,6 +91,7 @@ y6T3Y16v8maAqNihK6YdWZI19n2ctNWPF4PTykPnjwpauqYkB5k2wMOp
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public void ImportFromPem_Pkcs8_IgnoresUnrelatedAlgorithm()
         {
             using (TAlg key = CreateKey())
@@ -114,6 +118,7 @@ y6T3Y16v8maAqNihK6YdWZI19n2ctNWPF4PTykPnjwpauqYkB5k2wMOp
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public void ImportFromPem_Spki_Simple()
         {
             using (TAlg key = CreateKey())
@@ -130,6 +135,7 @@ Isuk92Ner/JmgKjYoSumHVmSNfZ9nLTVjxeD08pD548KWrqmJAeZNsDDqQ==
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public void ImportFromPem_Spki_PrecedingUnrelatedPemIsIgnored()
         {
             using (TAlg key = CreateKey())
@@ -161,6 +167,7 @@ Isuk92Ner/JmgKjYoSumHVmSNfZ9nLTVjxeD08pD548KWrqmJAeZNsDDqQ==
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public void ImportFromPem_Spki_IgnoresUnrelatedAlgorithms()
         {
             using (TAlg key = CreateKey())
@@ -186,6 +193,7 @@ Isuk92Ner/JmgKjYoSumHVmSNfZ9nLTVjxeD08pD548KWrqmJAeZNsDDqQ==
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public void ImportFromPem_Spki_PrecedingMalformedPem()
         {
             using (TAlg key = CreateKey())
@@ -311,6 +319,7 @@ Qh0fqdrNovgFLubbJFMQN/MwwIAfIuf0Mn0WFYYeQiBJ3kg=
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public void ImportFromEncryptedPem_Pkcs8_Char_Simple()
         {
             using (TAlg key = CreateKey())
@@ -331,6 +340,7 @@ Qh0fqdrNovgFLubbJFMQN/MwwIAfIuf0Mn0WFYYeQiBJ3kg=
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public void ImportFromEncryptedPem_Pkcs8_Byte_Simple()
         {
             using (TAlg key = CreateKey())

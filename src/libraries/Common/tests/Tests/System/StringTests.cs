@@ -621,6 +621,7 @@ namespace System.Tests
         [InlineData(null, 0, null, 0, 0, StringComparison.OrdinalIgnoreCase, 0)]
         [InlineData("Hello", 0, null, 0, 5, StringComparison.OrdinalIgnoreCase, 1)]
         [InlineData(null, 0, "Hello", 0, 5, StringComparison.OrdinalIgnoreCase, -1)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36896", TestPlatforms.iOS)]
         public static void Compare(string strA, int indexA, string strB, int indexB, int length, StringComparison comparisonType, int expected)
         {
             bool hasNullInputs = (strA == null || strB == null);
@@ -1667,6 +1668,7 @@ namespace System.Tests
         [InlineData("Hello", "llo" + SoftHyphen, StringComparison.OrdinalIgnoreCase, false)]
         [InlineData("", "", StringComparison.OrdinalIgnoreCase, true)]
         [InlineData("", "a", StringComparison.OrdinalIgnoreCase, false)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36896", TestPlatforms.iOS)]
         public static void EndsWith_StringComparison(string s, string value, StringComparison comparisonType, bool expected)
         {
             if (comparisonType == StringComparison.CurrentCulture)
@@ -2157,6 +2159,7 @@ namespace System.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36896", TestPlatforms.iOS)]
         public static void EndsWithMatchNonOrdinal_StringComparison()
         {
             string s = "dabc";
@@ -2541,6 +2544,7 @@ namespace System.Tests
 
         [Theory]
         [MemberData(nameof(Equals_EncyclopaediaData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36896", TestPlatforms.iOS)]
         public void Equals_Encyclopaedia_ReturnsExpected(StringComparison comparison, bool expected)
         {
             string source = "encyclop\u00e6dia";
@@ -2861,6 +2865,7 @@ namespace System.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36896", TestPlatforms.iOS)]
         public static void IndexOf_TurkishI_TurkishCulture()
         {
             using (new ThreadCultureChange("tr-TR"))
@@ -2944,6 +2949,7 @@ namespace System.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36896", TestPlatforms.iOS)]
         public static void IndexOf_HungarianDoubleCompression_HungarianCulture()
         {
             using (new ThreadCultureChange("hu-HU"))
@@ -2994,6 +3000,7 @@ namespace System.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36896", TestPlatforms.iOS)]
         public static void IndexOf_EquivalentDiacritics_EnglishUSCulture()
         {
             using (new ThreadCultureChange("en-US"))
@@ -3028,6 +3035,7 @@ namespace System.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36896", TestPlatforms.iOS)]
         public static void IndexOf_EquivalentDiacritics_InvariantCulture()
         {
             using (new ThreadCultureChange(CultureInfo.InvariantCulture))
@@ -4657,6 +4665,7 @@ namespace System.Tests
         [InlineData("Hello", SoftHyphen + "Hel", StringComparison.OrdinalIgnoreCase, false)]
         [InlineData("", "", StringComparison.OrdinalIgnoreCase, true)]
         [InlineData("", "hello", StringComparison.OrdinalIgnoreCase, false)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36896", TestPlatforms.iOS)]
         public static void StartsWith_StringComparison(string s, string value, StringComparison comparisonType, bool expected)
         {
             if (comparisonType == StringComparison.CurrentCulture)
@@ -5074,6 +5083,7 @@ namespace System.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36896", TestPlatforms.iOS)]
         public static void Test_ToLower_Culture()
         {
             foreach (object[] testdata in ToLower_Culture_TestData())
@@ -5551,6 +5561,7 @@ namespace System.Tests
 
         [Theory]
         [MemberData(nameof(ToUpper_Culture_TestData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36896", TestPlatforms.iOS)]
         public static void Test_ToUpper_Culture(string actual, string expected, CultureInfo culture)
         {
             Assert.Equal(expected, actual.ToUpper(culture));
@@ -5609,6 +5620,7 @@ namespace System.Tests
 
         [Theory]
         [MemberData(nameof(ToUpper_TurkishI_TurkishCulture_MemberData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36896", TestPlatforms.iOS)]
         public static void ToUpper_TurkishI_TurkishCulture(string s, string expected)
         {
             using (new ThreadCultureChange("tr-TR"))
@@ -5629,6 +5641,7 @@ namespace System.Tests
 
         [Theory]
         [MemberData(nameof(ToUpper_TurkishI_EnglishUSCulture_MemberData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36896", TestPlatforms.iOS)]
         public static void ToUpper_TurkishI_EnglishUSCulture(string s, string expected)
         {
             using (new ThreadCultureChange("en-US"))
@@ -6735,6 +6748,7 @@ namespace System.Tests
 
         [Theory]
         [MemberData(nameof(Compare_TestData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36896", TestPlatforms.iOS)]
         public static void CompareTest(string s1, string s2, string cultureName, bool ignoreCase, int expected)
         {
             CultureInfo ci = cultureName != null ? CultureInfo.GetCultureInfo(cultureName) : null;
@@ -6780,6 +6794,7 @@ namespace System.Tests
 
         [Theory]
         [MemberData(nameof(StartEndWith_TestData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36896", TestPlatforms.iOS)]
         public static void StartEndWithTest(string source, string start, string end, string cultureName, bool ignoreCase, bool expected)
         {
              CultureInfo ci = cultureName != null ? CultureInfo.GetCultureInfo(cultureName) : null;
@@ -6792,6 +6807,7 @@ namespace System.Tests
         [InlineData("", StringComparison.Ordinal, true)]
         [InlineData(ZeroWidthJoiner, StringComparison.InvariantCulture, true)]
         [InlineData(ZeroWidthJoiner, StringComparison.Ordinal, false)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36896", TestPlatforms.iOS)]
         public static void StartEndWith_ZeroWeightValue(string value, StringComparison comparison, bool expectedStartsAndEndsWithResult)
         {
             Assert.Equal(expectedStartsAndEndsWithResult, string.Empty.StartsWith(value, comparison));
@@ -6972,6 +6988,7 @@ namespace System.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36896", TestPlatforms.iOS)]
         public static void StartsWithMatchNonOrdinal_StringComparison()
         {
             string s1 = "abcd";

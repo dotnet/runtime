@@ -23,6 +23,7 @@ namespace System.Globalization.Tests
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))] // OS changes
         [MemberData(nameof(TextInfo_TestData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36883", TestPlatforms.iOS)]
         public void MiscTest(string cultureName, int lcid, int ansiCodePage, int ebcdiCCodePage, int macCodePage, int oemCodePage, bool isRightToLeft)
         {
             TextInfo ti = CultureInfo.GetCultureInfo(cultureName).TextInfo;
@@ -116,6 +117,7 @@ namespace System.Globalization.Tests
         [Theory]
         [InlineData("en-US", false)]
         [InlineData("ar", true)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36883", TestPlatforms.iOS)]
         public void IsRightToLeft(string name, bool expected)
         {
             Assert.Equal(expected, new CultureInfo(name).TextInfo.IsRightToLeft);
@@ -263,6 +265,7 @@ namespace System.Globalization.Tests
 
         [Theory]
         [MemberData(nameof(ToLower_TestData_netcore))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36883", TestPlatforms.iOS)]
         public void ToLower_Netcore(string name, string str, string expected)
         {
             TestToLower(name, str, expected);
@@ -386,6 +389,7 @@ namespace System.Globalization.Tests
 
         [Theory]
         [MemberData(nameof(ToUpper_TestData_netcore))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36883", TestPlatforms.iOS)]
         public void ToUpper_netcore(string name, string str, string expected)
         {
             TestToUpper(name, str, expected);

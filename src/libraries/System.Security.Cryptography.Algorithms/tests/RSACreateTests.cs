@@ -17,6 +17,7 @@ namespace System.Security.Cryptography.Algorithms.Tests
         [InlineData(1088)]
         [InlineData(1152)]
         [InlineData(2048)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void CreateWithKeysize(int keySizeInBits)
         {
             using (RSA rsa = RSA.Create(keySizeInBits))
@@ -40,18 +41,21 @@ namespace System.Security.Cryptography.Algorithms.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void CreateWithParameters_1032()
         {
             CreateWithParameters(TestData.RSA1032Parameters);
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void CreateWithParameters_UnusualExponent()
         {
             CreateWithParameters(TestData.UnusualExponentParameters);
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void CreateWithParameters_2048()
         {
             CreateWithParameters(TestData.RSA2048Params);

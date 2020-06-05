@@ -34,6 +34,7 @@ namespace System.Security.Cryptography.Csp.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void PublicOnly_WithPrivateKey()
         {
             using (var dsa = new DSACryptoServiceProvider())
@@ -247,6 +248,7 @@ namespace System.Security.Cryptography.Csp.Tests
         }
 
         [ConditionalFact(nameof(SupportsKeyGeneration))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void VerifyHash_InvalidHashAlgorithm_Throws()
         {
             byte[] hashVal;
@@ -263,6 +265,7 @@ namespace System.Security.Cryptography.Csp.Tests
         }
 
         [ConditionalFact(nameof(SupportsKeyGeneration))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void SignHash_DefaultAlgorithm_Success()
         {
             byte[] hashVal;
@@ -294,6 +297,7 @@ namespace System.Security.Cryptography.Csp.Tests
         }
 
         [ConditionalFact(nameof(SupportsKeyGeneration))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void VerifyHash_DefaultAlgorithm_Success()
         {
             byte[] hashVal;
@@ -310,6 +314,7 @@ namespace System.Security.Cryptography.Csp.Tests
         }
 
         [ConditionalFact(nameof(SupportsKeyGeneration))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void VerifyHash_CaseInsensitive_Success()
         {
             byte[] hashVal;
@@ -349,6 +354,7 @@ namespace System.Security.Cryptography.Csp.Tests
         }
 
         [ConditionalFact(nameof(SupportsKeyGeneration))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void VerifyData_InvalidHashAlgorithm_Throws()
         {
             using (var dsa = new DSACryptoServiceProvider())

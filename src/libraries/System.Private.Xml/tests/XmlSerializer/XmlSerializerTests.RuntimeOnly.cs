@@ -1318,6 +1318,7 @@ public static partial class XmlSerializerTests
     }
 
     [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
     public static void XmlSchemaTest()
     {
         var schemas = new XmlSchemas();

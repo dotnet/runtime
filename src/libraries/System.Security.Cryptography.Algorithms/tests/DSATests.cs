@@ -22,6 +22,7 @@ namespace System.Security.Cryptography.Algorithms.Tests
         }
 
         [ConditionalFact(nameof(SupportsKeyGeneration))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public void TryCreateSignature_UsesCreateSignature()
         {
             var input = new byte[1024];
@@ -63,6 +64,7 @@ namespace System.Security.Cryptography.Algorithms.Tests
         }
 
         [ConditionalFact(nameof(SupportsKeyGeneration))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public void TrySignData_UsesTryHashDataAndTryCreateSignature()
         {
             var input = new byte[1024];
@@ -88,6 +90,7 @@ namespace System.Security.Cryptography.Algorithms.Tests
         }
 
         [ConditionalFact(nameof(SupportsKeyGeneration))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public void VerifyData_Array_UsesHashDataAndVerifySignature()
         {
             var input = new byte[1024];
@@ -112,6 +115,7 @@ namespace System.Security.Cryptography.Algorithms.Tests
         }
 
         [ConditionalFact(nameof(SupportsKeyGeneration))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public void VerifyData_Stream_UsesHashDataAndVerifySignature()
         {
             var input = new byte[1024];
@@ -131,6 +135,7 @@ namespace System.Security.Cryptography.Algorithms.Tests
         }
 
         [ConditionalFact(nameof(SupportsKeyGeneration))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public void VerifyData_Span_UsesTryHashDataAndVerifySignature()
         {
             var input = new byte[1024];

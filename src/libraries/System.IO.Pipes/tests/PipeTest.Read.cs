@@ -19,6 +19,7 @@ namespace System.IO.Pipes.Tests
         public virtual bool SupportsBidirectionalReadingWriting => false;
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36884", TestPlatforms.iOS)]
         public void ReadWithNullBuffer_Throws_ArgumentNullException()
         {
             using (ServerClientPair pair = CreateServerClientPair())
@@ -42,6 +43,7 @@ namespace System.IO.Pipes.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36884", TestPlatforms.iOS)]
         public void ReadWithNegativeOffset_Throws_ArgumentOutOfRangeException()
         {
             using (ServerClientPair pair = CreateServerClientPair())
@@ -57,6 +59,7 @@ namespace System.IO.Pipes.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36884", TestPlatforms.iOS)]
         public void ReadWithNegativeCount_Throws_ArgumentOutOfRangeException()
         {
             using (ServerClientPair pair = CreateServerClientPair())
@@ -72,6 +75,7 @@ namespace System.IO.Pipes.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36884", TestPlatforms.iOS)]
         public void ReadWithOutOfBoundsArray_Throws_ArgumentException()
         {
             using (ServerClientPair pair = CreateServerClientPair())
@@ -119,6 +123,7 @@ namespace System.IO.Pipes.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36884", TestPlatforms.iOS)]
         public void WriteToReadOnlyPipe_Throws_NotSupportedException()
         {
             if (SupportsBidirectionalReadingWriting)
@@ -148,6 +153,7 @@ namespace System.IO.Pipes.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36884", TestPlatforms.iOS)]
         public async Task ReadWithZeroLengthBuffer_Nop()
         {
             using (ServerClientPair pair = CreateServerClientPair())
@@ -162,6 +168,7 @@ namespace System.IO.Pipes.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36884", TestPlatforms.iOS)]
         public void ReadPipeUnsupportedMembers_Throws_NotSupportedException()
         {
             using (ServerClientPair pair = CreateServerClientPair())
@@ -182,6 +189,7 @@ namespace System.IO.Pipes.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36884", TestPlatforms.iOS)]
         public void ReadOnDisposedReadablePipe_Throws_ObjectDisposedException()
         {
             using (ServerClientPair pair = CreateServerClientPair())
@@ -200,6 +208,7 @@ namespace System.IO.Pipes.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36884", TestPlatforms.iOS)]
         public void CopyToAsync_InvalidArgs_Throws()
         {
             using (ServerClientPair pair = CreateServerClientPair())
@@ -215,6 +224,7 @@ namespace System.IO.Pipes.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36884", TestPlatforms.iOS)]
         public virtual async Task ReadFromPipeWithClosedPartner_ReadNoBytes()
         {
             using (ServerClientPair pair = CreateServerClientPair())
@@ -234,6 +244,7 @@ namespace System.IO.Pipes.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36884", TestPlatforms.iOS)]
         public async Task ValidWriteAsync_ValidReadAsync()
         {
             using (ServerClientPair pair = CreateServerClientPair())
@@ -252,6 +263,7 @@ namespace System.IO.Pipes.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36884", TestPlatforms.iOS)]
         public void ValidWrite_ValidRead()
         {
             using (ServerClientPair pair = CreateServerClientPair())
@@ -271,6 +283,7 @@ namespace System.IO.Pipes.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36884", TestPlatforms.iOS)]
         public void ValidWriteByte_ValidReadByte()
         {
             using (ServerClientPair pair = CreateServerClientPair())
@@ -357,6 +370,7 @@ namespace System.IO.Pipes.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36884", TestPlatforms.iOS)]
         public async Task ValidWriteAsync_ValidReadAsync_APM()
         {
             using (ServerClientPair pair = CreateServerClientPair())
@@ -413,6 +427,7 @@ namespace System.IO.Pipes.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36884", TestPlatforms.iOS)]
         public void WriteToReadOnlyPipe_Span_Throws_NotSupportedException()
         {
             if (SupportsBidirectionalReadingWriting)
@@ -433,6 +448,7 @@ namespace System.IO.Pipes.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36884", TestPlatforms.iOS)]
         public async Task ReadWithZeroLengthBuffer_Span_Nop()
         {
             using (ServerClientPair pair = CreateServerClientPair())
@@ -447,6 +463,7 @@ namespace System.IO.Pipes.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36884", TestPlatforms.iOS)]
         public void ReadOnDisposedReadablePipe_Span_Throws_ObjectDisposedException()
         {
             using (ServerClientPair pair = CreateServerClientPair())
@@ -461,6 +478,7 @@ namespace System.IO.Pipes.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36884", TestPlatforms.iOS)]
         public virtual async Task ReadFromPipeWithClosedPartner_Span_ReadNoBytes()
         {
             using (ServerClientPair pair = CreateServerClientPair())
@@ -479,6 +497,7 @@ namespace System.IO.Pipes.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36884", TestPlatforms.iOS)]
         public async Task ValidWriteAsync_Span_ValidReadAsync()
         {
             using (ServerClientPair pair = CreateServerClientPair())

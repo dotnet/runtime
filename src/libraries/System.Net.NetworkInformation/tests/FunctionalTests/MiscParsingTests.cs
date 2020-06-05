@@ -10,6 +10,7 @@ namespace System.Net.NetworkInformation.Tests
     public class MiscParsingTests : FileCleanupTestBase
     {
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36890", TestPlatforms.iOS)]
         public void NumRoutesParsing()
         {
             string fileName = GetTestFilePath();
@@ -19,6 +20,7 @@ namespace System.Net.NetworkInformation.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36890", TestPlatforms.iOS)]
         public void DefaultTtlParsing()
         {
             string fileName = GetTestFilePath();
@@ -28,6 +30,7 @@ namespace System.Net.NetworkInformation.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36890", TestPlatforms.iOS)]
         public static void RawIntFileParsing()
         {
             int val = StringParsingHelpers.ParseRawIntFile("NetworkFiles/rawint");
@@ -38,6 +41,7 @@ namespace System.Net.NetworkInformation.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36890", TestPlatforms.iOS)]
         public static void RawLongFileParsing()
         {
             long val = StringParsingHelpers.ParseRawLongFile("NetworkFiles/rawlong");
@@ -48,6 +52,7 @@ namespace System.Net.NetworkInformation.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36890", TestPlatforms.iOS)]
         public static void RawHexIntParsing()
         {
             int val = StringParsingHelpers.ParseRawHexFileAsInt("NetworkFiles/rawhexint");

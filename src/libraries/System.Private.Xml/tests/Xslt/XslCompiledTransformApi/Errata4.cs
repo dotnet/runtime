@@ -286,6 +286,7 @@ namespace System.Xml.Tests
         //[Variation(Priority = 0, Desc = "Valid name CharType.NameSurrogateHighChar", Params = new object[] { true, CharType.NameSurrogateHighChar })]
         //[Variation(Priority = 0, Desc = "Valid name CharType.NameSurrogateLowChar", Params = new object[] { true, CharType.NameSurrogateLowChar })]
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void TestXslTransform(object param0, object param1)
         {
             int numOfRepeat = 300; // from the test case

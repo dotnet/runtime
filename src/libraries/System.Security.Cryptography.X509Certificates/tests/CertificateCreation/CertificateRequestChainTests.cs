@@ -13,6 +13,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
         public static bool PlatformSupportsPss { get; } = DetectPssSupport();
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void CreateChain_ECC()
         {
             using (ECDsa rootKey = ECDsa.Create(ECCurve.NamedCurves.nistP521))
@@ -30,6 +31,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void CreateChain_RSA()
         {
             using (RSA rootKey = RSA.Create(3072))
@@ -49,6 +51,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void CreateChain_Hybrid()
         {
             using (ECDsa rootKey = ECDsa.Create(ECCurve.NamedCurves.nistP521))
@@ -93,6 +96,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
         [InlineData(true, true, X509KeyUsageFlags.KeyCertSign, true)]
         [InlineData(true, true, X509KeyUsageFlags.DigitalSignature, false)]
         [InlineData(true, true, X509KeyUsageFlags.KeyCertSign | X509KeyUsageFlags.DigitalSignature, true)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void ChainCertRequirements(bool useIntermed, bool? isCA, X509KeyUsageFlags keyUsage, bool expectSuccess)
         {
             HashAlgorithmName hashAlgorithm = HashAlgorithmName.SHA384;

@@ -22,6 +22,7 @@ namespace System.IO.Compression
         /// </summary>
         [Theory]
         [MemberData(nameof(UncompressedTestFiles))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36884", TestPlatforms.iOS)]
         public async Task DecompressFailsWithRealGzStream(string uncompressedPath)
         {
             string fileName = Path.Combine("GZipTestData", Path.GetFileName(uncompressedPath) + ".gz");

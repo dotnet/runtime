@@ -308,6 +308,7 @@ namespace System.Net.Tests
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36890", TestPlatforms.iOS)]
         public async Task ContentLength_Get_ExpectSameAsGetResponseStream(bool useSsl)
         {
             var options = new LoopbackServer.Options { UseSsl = useSsl };
@@ -361,6 +362,7 @@ namespace System.Net.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36890", TestPlatforms.iOS)]
         public async Task Headers_SetAfterRequestSubmitted_ThrowsInvalidOperationException()
         {
             await LoopbackServer.CreateServerAsync(async (server, uri) =>
@@ -383,6 +385,7 @@ namespace System.Net.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36890", TestPlatforms.iOS)]
         public async Task HttpWebRequest_SetHostHeader_ContainsPortNumber()
         {
             await LoopbackServer.CreateServerAsync(async (server, uri) =>
@@ -498,6 +501,7 @@ namespace System.Net.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36890", TestPlatforms.iOS)]
         public async Task Timeout_SetTenMillisecondsOnLoopback_ThrowsWebException()
         {
             await LoopbackServer.CreateServerAsync((server, url) =>
@@ -648,6 +652,7 @@ namespace System.Net.Tests
         [InlineData(null)]
         [InlineData(false)]
         [InlineData(true)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36890", TestPlatforms.iOS)]
         public async Task KeepAlive_CorrectConnectionHeaderSent(bool? keepAlive)
         {
             await LoopbackServer.CreateServerAsync(async (server, url) =>
@@ -1159,6 +1164,7 @@ namespace System.Net.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36890", TestPlatforms.iOS)]
         public async Task BeginGetRequestStream_CreateRequestThenBeginGetResponsePrior_ThrowsProtocolViolationException()
         {
             await LoopbackServer.CreateServerAsync((server, url) =>
@@ -1176,6 +1182,7 @@ namespace System.Net.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36890", TestPlatforms.iOS)]
         public async Task BeginGetResponse_CreateRequestThenCallTwice_ThrowsInvalidOperationException()
         {
             await LoopbackServer.CreateServerAsync((server, url) =>
@@ -1198,6 +1205,7 @@ namespace System.Net.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36890", TestPlatforms.iOS)]
         public async Task GetResponseAsync_AllowAutoRedirectTrueWithTooManyRedirects_ThrowsWebException()
         {
             await LoopbackServer.CreateClientAndServerAsync(async uri =>
@@ -1211,6 +1219,7 @@ namespace System.Net.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36890", TestPlatforms.iOS)]
         public async Task GetResponseAsync_AllowAutoRedirectFalseWithRedirect_ReturnsRedirectResponse()
         {
             await LoopbackServer.CreateClientAndServerAsync(async uri =>
@@ -1226,6 +1235,7 @@ namespace System.Net.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36890", TestPlatforms.iOS)]
         public async Task GetResponseAsync_AllowAutoRedirectFalseWithBadRequest_ThrowsWebException()
         {
             await LoopbackServer.CreateClientAndServerAsync(async uri =>
@@ -1238,6 +1248,7 @@ namespace System.Net.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36890", TestPlatforms.iOS)]
         public async Task GetRequestStreamAsync_WriteAndDisposeRequestStreamThenOpenRequestStream_ThrowsArgumentException()
         {
             await LoopbackServer.CreateServerAsync(async (server, url) =>
@@ -1253,6 +1264,7 @@ namespace System.Net.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36890", TestPlatforms.iOS)]
         public async Task GetRequestStreamAsync_SetPOSTThenGet_ExpectNotNull()
         {
             await LoopbackServer.CreateServerAsync(async (server, url) =>
@@ -1267,6 +1279,7 @@ namespace System.Net.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36890", TestPlatforms.iOS)]
         public async Task GetResponseAsync_GetResponseStream_ExpectNotNull()
         {
             await LoopbackServer.CreateClientAndServerAsync(async uri =>
@@ -1283,6 +1296,7 @@ namespace System.Net.Tests
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36890", TestPlatforms.iOS)]
         public async Task GetResponseAsync_GetResponseStream_ContainsHost(bool useSsl)
         {
             var options = new LoopbackServer.Options { UseSsl = useSsl };
@@ -1330,6 +1344,7 @@ namespace System.Net.Tests
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36890", TestPlatforms.iOS)]
         public async Task GetResponseAsync_PostRequestStream_ContainsData(bool useSsl)
         {
             var options = new LoopbackServer.Options { UseSsl = useSsl };
@@ -1375,6 +1390,7 @@ namespace System.Net.Tests
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36890", TestPlatforms.iOS)]
         public async Task GetResponseAsync_UseDefaultCredentials_ExpectSuccess(bool useSsl)
         {
             var options = new LoopbackServer.Options { UseSsl = useSsl };
@@ -1400,6 +1416,7 @@ namespace System.Net.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36890", TestPlatforms.iOS)]
         public async Task GetResponseAsync_ResourceNotFound_ThrowsWebException()
         {
             await LoopbackServer.CreateClientAndServerAsync(async uri =>
@@ -1414,6 +1431,7 @@ namespace System.Net.Tests
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36890", TestPlatforms.iOS)]
         public async Task HaveResponse_GetResponseAsync_ExpectTrue(bool useSsl)
         {
             var options = new LoopbackServer.Options { UseSsl = useSsl };
@@ -1432,6 +1450,7 @@ namespace System.Net.Tests
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36890", TestPlatforms.iOS)]
         public async Task Headers_GetResponseHeaders_ContainsExpectedValue(bool useSsl)
         {
             var options = new LoopbackServer.Options { UseSsl = useSsl };
@@ -1532,6 +1551,7 @@ namespace System.Net.Tests
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36890", TestPlatforms.iOS)]
         public async Task ResponseUri_GetResponseAsync_ExpectSameUri(bool useSsl)
         {
             var options = new LoopbackServer.Options { UseSsl = useSsl };
@@ -1555,6 +1575,7 @@ namespace System.Net.Tests
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36890", TestPlatforms.iOS)]
         public async Task SimpleScenario_UseGETVerb_Success(bool useSsl)
         {
             var options = new LoopbackServer.Options { UseSsl = useSsl };
@@ -1571,6 +1592,7 @@ namespace System.Net.Tests
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36890", TestPlatforms.iOS)]
         public async Task SimpleScenario_UsePOSTVerb_Success(bool useSsl)
         {
             var options = new LoopbackServer.Options { UseSsl = useSsl };
@@ -1593,6 +1615,7 @@ namespace System.Net.Tests
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36890", TestPlatforms.iOS)]
         public async Task ContentType_AddHeaderWithNoContent_SendRequest_HeaderGetsSent(bool useSsl)
         {
             const string ContentType = "text/plain; charset=utf-8";
@@ -1734,6 +1757,7 @@ namespace System.Net.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36890", TestPlatforms.iOS)]
         public async Task HttpWebRequest_EndGetRequestStreamContext_ExpectedValue()
         {
             await LoopbackServer.CreateServerAsync((server, url) =>
@@ -1774,6 +1798,7 @@ namespace System.Net.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36890", TestPlatforms.iOS)]
         public async Task Abort_BeginGetResponseThenAbort_ResponseCallbackCalledBeforeAbortReturns()
         {
             await LoopbackServer.CreateServerAsync((server, url) =>
@@ -1813,6 +1838,7 @@ namespace System.Net.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36890", TestPlatforms.iOS)]
         public async Task Abort_BeginGetResponseUsingNoCallbackThenAbort_Success()
         {
             await LoopbackServer.CreateServerAsync((server, url) =>

@@ -13,12 +13,14 @@ namespace System.Security.Cryptography.Dsa.Tests
         public static bool SupportsFips186_3 => DSAFactory.SupportsFips186_3;
 
         [ConditionalFact(typeof(DSAFactory), nameof(DSAFactory.SupportsKeyGeneration))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void UseAfterDispose_NewKey()
         {
             UseAfterDispose(false);
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void UseAfterDispose_ImportedKey()
         {
             UseAfterDispose(true);
@@ -72,6 +74,7 @@ namespace System.Security.Cryptography.Dsa.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void ReadWriteDsa512Pkcs8()
         {
             ReadWriteBase64Pkcs8(
@@ -85,6 +88,7 @@ fve77OGaTv4qbZwinTYAg86p9yHzmwW6+XBS3vxnpYorBBYCFC49eoTIW2Z4Xh9v
         }
 
         [ConditionalFact(nameof(SupportsFips186_3))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void ReadWriteDsa2048DeficientXPkcs8()
         {
             ReadWriteBase64Pkcs8(
@@ -106,6 +110,7 @@ hpTvzzEtnljU3dHAHig4M/TxSeX5vUVJMEQxthvg2tcXtTjFzVL94ajmYZPonQnB
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void ReadWriteDsa512EncryptedPkcs8()
         {
             // pbeWithSHA1And40BitRC2-CBC (PKCS12-PBE)
@@ -126,6 +131,7 @@ UCouQg==",
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void ReadWriteDsa576EncryptedPkcs8()
         {
             // pbeWithSHA1And128BitRC2-CBC (PKCS12-PBE)
@@ -146,6 +152,7 @@ itsfZ16jNKxoJbAx3psVTGdzxnw8",
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void ReadWriteDsa1024EncryptedPkcs8()
         {
             // pbeWithSHA1AndDES-CBC (PBES1)
@@ -168,6 +175,7 @@ CU+l4wPQR0rRmYHIJJIvFh5OXk84pV0crsOrekw7tHeNU6DMzw==",
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void ReadWriteDsa1024EncryptedPkcs8_PasswordBytes()
         {
             // pbeWithSHA1AndDES-CBC (PBES1)
@@ -190,6 +198,7 @@ CU+l4wPQR0rRmYHIJJIvFh5OXk84pV0crsOrekw7tHeNU6DMzw==",
         }
 
         [ConditionalFact(nameof(SupportsFips186_3))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void ReadWriteDsa2048EncryptedPkcs8()
         {
             ReadBase64EncryptedPkcs8(
@@ -217,6 +226,7 @@ EDVKgNkAxxCnPVjTUalttxCxTv7FC/vxfN7ulB2uKzicegsf6t/nS6i2dpJjUYDF
         }
 
         [ConditionalFact(nameof(SupportsFips186_3))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void ReadWriteDsa2048DeficientXEncryptedPkcs8()
         {
             ReadBase64EncryptedPkcs8(
@@ -244,6 +254,7 @@ dOwrkyNhKY+C3S3Hrg+1jGkxn95eJRPX7giU2GBUdc535JhKZH4=",
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void ReadWriteDsa576SubjectPublicKeyInfo()
         {
             ReadWriteBase64SubjectPublicKeyInfo(
@@ -258,6 +269,7 @@ ZfDP+UTj7VaoW3WVPrFpASSJhbtfiROY6rXjlkXn",
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void ReadWriteDsa1024SubjectPublicKeyInfo()
         {
             ReadWriteBase64SubjectPublicKeyInfo(
@@ -276,6 +288,7 @@ pfTBO6zjtLRN4Q==",
         }
 
         [ConditionalFact(nameof(SupportsFips186_3))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void ReadWriteDsa2048SubjectPublicKeyInfo()
         {
             ReadWriteBase64SubjectPublicKeyInfo(
@@ -302,6 +315,7 @@ vAB5Wz646GeWztKawSR/9xIqHq8IECV1FXI=",
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void NoFuzzySubjectPublicKeyInfo()
         {
             using (DSA key = DSAFactory.Create())
@@ -333,6 +347,7 @@ vAB5Wz646GeWztKawSR/9xIqHq8IECV1FXI=",
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void NoFuzzyPkcs8()
         {
             using (DSA key = DSAFactory.Create())
@@ -364,6 +379,7 @@ vAB5Wz646GeWztKawSR/9xIqHq8IECV1FXI=",
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void NoFuzzyEncryptedPkcs8()
         {
             using (DSA key = DSAFactory.Create())
@@ -389,6 +405,7 @@ vAB5Wz646GeWztKawSR/9xIqHq8IECV1FXI=",
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void NoPrivKeyFromPublicOnly()
         {
             using (DSA key = DSAFactory.Create())
@@ -418,6 +435,7 @@ vAB5Wz646GeWztKawSR/9xIqHq8IECV1FXI=",
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void BadPbeParameters()
         {
             using (DSA key = DSAFactory.Create())
@@ -542,6 +560,7 @@ vAB5Wz646GeWztKawSR/9xIqHq8IECV1FXI=",
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void DecryptPkcs12WithBytes()
         {
             using (DSA key = DSAFactory.Create())

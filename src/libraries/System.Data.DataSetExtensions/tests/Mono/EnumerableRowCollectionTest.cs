@@ -42,6 +42,7 @@ namespace MonoTests.System.Data
         private string _testDataSet = "Mono/testdataset1.xml";
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36879", TestPlatforms.iOS)]
         public void QueryWhere()
         {
             var ds = new DataSet();
@@ -69,6 +70,7 @@ namespace MonoTests.System.Data
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36879", TestPlatforms.iOS)]
         public void QueryWhereSelect ()
         {
             var ds = new DataSet ();
@@ -90,6 +92,7 @@ namespace MonoTests.System.Data
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36879", TestPlatforms.iOS)]
         public void QueryWhereSelectOrderBy ()
         {
             var ds = new DataSet ();
@@ -120,6 +123,7 @@ namespace MonoTests.System.Data
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36879", TestPlatforms.iOS)]
         public void QueryWhereSelectOrderByDescending ()
         {
             var ds = new DataSet ();
@@ -150,6 +154,7 @@ namespace MonoTests.System.Data
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36879", TestPlatforms.iOS)]
         public void ThenBy ()
         {
             var ds = new DataSet ();
@@ -180,6 +185,7 @@ namespace MonoTests.System.Data
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36879", TestPlatforms.iOS)]
         public void ThenByDescending ()
         {
             var ds = new DataSet ();

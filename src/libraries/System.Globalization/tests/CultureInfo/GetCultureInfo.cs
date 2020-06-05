@@ -26,6 +26,7 @@ namespace System.Globalization.Tests
         [ConditionalTheory(nameof(PlatformSupportsFakeCulture))]
         [InlineData("en@US")]
         [InlineData("\uFFFF")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36883", TestPlatforms.iOS)]
         public void TestInvalidCultureNames(string name)
         {
             Assert.Throws<CultureNotFoundException>(() => CultureInfo.GetCultureInfo(name));
@@ -37,6 +38,7 @@ namespace System.Globalization.Tests
         [InlineData("xx")]
         [InlineData("xx-XX")]
         [InlineData("xx-YY")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36883", TestPlatforms.iOS)]
         public void TestFakeCultureNames(string name)
         {
             Assert.Equal(name, CultureInfo.GetCultureInfo(name).Name);

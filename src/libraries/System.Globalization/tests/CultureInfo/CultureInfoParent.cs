@@ -12,6 +12,7 @@ namespace System.Globalization.Tests
         [InlineData("en-US", "en")]
         [InlineData("en", "")]
         [InlineData("", "")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36883", TestPlatforms.iOS)]
         public void Parent(string name, string expectedParentName)
         {
             CultureInfo culture = new CultureInfo(name);
@@ -19,6 +20,7 @@ namespace System.Globalization.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36883", TestPlatforms.iOS)]
         public void Parent_ParentChain()
         {
             CultureInfo myExpectParentCulture = new CultureInfo("uz-Cyrl-UZ");

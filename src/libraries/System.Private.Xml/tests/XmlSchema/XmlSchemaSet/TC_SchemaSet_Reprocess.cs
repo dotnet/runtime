@@ -533,6 +533,7 @@ namespace System.Xml.Tests
         //[Variation(Desc = "v51 Regression bug 382119 - XmlEditor:  Changes within an include is not getting picked up as expected - redefine", Priority = 1, Params = new object[] { "bug382119_c.xsd", "bug382119_red.xsd", "bug382119_red1.xsd", false })]
         [InlineData("bug382119_c.xsd", "bug382119_red.xsd", "bug382119_red1.xsd", false)]
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void v51(object param0, object param1, object param2, object param3)
         {
             bWarningCallback = false;

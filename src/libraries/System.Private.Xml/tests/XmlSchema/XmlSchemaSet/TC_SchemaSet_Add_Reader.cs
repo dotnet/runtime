@@ -29,6 +29,7 @@ namespace System.Xml.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void NullNamespaceValidReader()
         {
             XmlSchemaSet sc = new XmlSchemaSet();
@@ -40,6 +41,7 @@ namespace System.Xml.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void ValidNamespaceValidReader()
         {
             XmlSchemaSet sc = new XmlSchemaSet();
@@ -51,6 +53,7 @@ namespace System.Xml.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void ValidNamespaceReaderPositionedOnElementButNoXsdSchemaTag()
         {
             Assert.ThrowsAny<XmlSchemaException>(() =>
@@ -65,6 +68,7 @@ namespace System.Xml.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void NamespaceUnmatchingReaderValid()
         {
             Assert.ThrowsAny<XmlSchemaException>(() =>
@@ -76,6 +80,7 @@ namespace System.Xml.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void Adding2ReadersOnSchemaWithNoNamespacesAddWithDiffNamespace()
         {
             XmlSchemaSet sc = new XmlSchemaSet();
@@ -90,6 +95,7 @@ namespace System.Xml.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void AddingSameReaderForNullNamespace()
         {
             XmlSchemaSet sc = new XmlSchemaSet();
@@ -105,6 +111,7 @@ namespace System.Xml.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void AddingReaderOnXDRSchema()
         {
             Assert.ThrowsAny<XmlSchemaException>(() =>
@@ -116,6 +123,7 @@ namespace System.Xml.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void ValidNamespaceReaderPositionedOnANonElementNode()
         {
             Assert.ThrowsAny<XmlSchemaException>(() =>
@@ -131,6 +139,7 @@ namespace System.Xml.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void ValidNamespaceValidReaderWithResolverSetToNull()
         {
             XmlSchemaSet sc = new XmlSchemaSet();

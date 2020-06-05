@@ -50,6 +50,7 @@ namespace System.Xml.Tests
 
         //[Variation(id = 1, Desc = "Verify the default value of the OutputSettings, expected null", Pri = 0)]
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void OS1()
         {
             XslCompiledTransform xslt = new XslCompiledTransform();
@@ -74,6 +75,7 @@ namespace System.Xml.Tests
         //[Variation(id = 9, Desc = "Verify the OutputMethod when multiple output methods (Text,Xml,Html) are defined, expected Html", Pri = 1, Params = new object[] { "books.xml", "OutputMethod_Multiple3.xsl" })]
         [InlineData("books.xml", "OutputMethod_Multiple3.xsl", 9)]
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void OS2(object param0, object param1, object param2)
         {
             Init(param0.ToString(), param1.ToString());
@@ -125,6 +127,7 @@ namespace System.Xml.Tests
         //[Variation(id = 12, Desc = "Verify OmitXmlDeclaration when omit-xml-declared is no in XSLT, expected false", Pri = 1, Params = new object[] { "books.xml", "OmitXmlDecl_No.xsl", false, "OmitXmlDeclaration must be 'no'" })]
         [InlineData("books.xml", "OmitXmlDecl_No.xsl", false)]
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void OS3(object param0, object param1, object param2)
         {
             Init(param0.ToString(), param1.ToString());
@@ -137,6 +140,7 @@ namespace System.Xml.Tests
         //[Variation(id = 13, Desc = "Verify OutputSettings when omit-xml-declaration has an invalid value, expected null", Pri = 2, Params = new object[] { "books.xml", "OmitXmlDecl_Invalid1.xsl" })]
         [InlineData("books.xml", "OmitXmlDecl_Invalid1.xsl")]
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void OS4(object param0, object param1)
         {
             Init(param0.ToString(), param1.ToString());
@@ -158,6 +162,7 @@ namespace System.Xml.Tests
         //[Variation(id = 14, Desc = "Verify OutputSettings on non well-formed XSLT, expected null", Pri = 2, Params = new object[] { "books.xml", "OmitXmlDecl_Invalid2.xsl" })]
         [InlineData("books.xml", "OmitXmlDecl_Invalid2.xsl")]
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void OS5(object param0, object param1)
         {
             Init(param0.ToString(), param1.ToString());
@@ -179,6 +184,7 @@ namespace System.Xml.Tests
         //[Variation(id = 18, Desc = "Verify Encoding set to windows-1252 explicitly, expected windows-1252", Pri = 1, Params = new object[] { "books.xml", "Encoding4.xsl", "windows-1252", "Encoding must be windows-1252" })]
         [InlineData("books.xml", "Encoding4.xsl", "windows-1252")]
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void OS6_Windows1252Encoding(object param0, object param1, object param2)
         {
             Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
@@ -194,6 +200,7 @@ namespace System.Xml.Tests
         //[Variation(id = 19, Desc = "Verify Encoding when multiple xsl:output tags are present, expected the last set (iso-8859-1)", Pri = 1, Params = new object[] { "books.xml", "Encoding5.xsl", "iso-8859-1", "Encoding must be iso-8859-1" })]
         [InlineData("books.xml", "Encoding5.xsl", "iso-8859-1")]
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void OS6(object param0, object param1, object param2)
         {
             Init(param0.ToString(), param1.ToString());
@@ -211,6 +218,7 @@ namespace System.Xml.Tests
         //[Variation(id = 22, Desc = "Verify Indent when indent is no in XSLT, expected false", Pri = 1, Params = new object[] { "books.xml", "Indent_No.xsl", false, "Indent must be 'no'" })]
         [InlineData("books.xml", "Indent_No.xsl", false)]
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void OS7(object param0, object param1, object param2)
         {
             Init(param0.ToString(), param1.ToString());
@@ -223,6 +231,7 @@ namespace System.Xml.Tests
         //[Variation(id = 23, Desc = "Verify OutputSettings when Indent has an invalid value, expected null", Pri = 2, Params = new object[] { "books.xml", "Indent_Invalid1.xsl" })]
         [InlineData("books.xml", "Indent_Invalid1.xsl")]
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void OS8(object param0, object param1)
         {
             Init(param0.ToString(), param1.ToString());
@@ -244,6 +253,7 @@ namespace System.Xml.Tests
         //[Variation(id = 24, Desc = "Verify OutputSettings on non well-formed XSLT, expected null", Pri = 2, Params = new object[] { "books.xml", "Indent_Invalid2.xsl" })]
         [InlineData("books.xml", "Indent_Invalid2.xsl")]
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void OS9(object param0, object param1)
         {
             Init(param0.ToString(), param1.ToString());
@@ -265,6 +275,7 @@ namespace System.Xml.Tests
         //[Variation(id = 25, Desc = "Verify OutputSettings with all attributes on xsl:output", Pri = 0, Params = new object[] { "books.xml", "OutputSettings.xsl" })]
         [InlineData("books.xml", "OutputSettings.xsl")]
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void OS10(object param0, object param1)
         {
             Init(param0.ToString(), param1.ToString());
@@ -285,6 +296,7 @@ namespace System.Xml.Tests
         //[Variation(id = 26, Desc = "Compare Stream Output with XmlWriter over Stream with OutputSettings", Pri = 0, Params = new object[] { "books.xml", "OutputSettings1.xsl" })]
         [InlineData("books.xml", "OutputSettings1.xsl")]
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void OS11(object param0, object param1)
         {
             Init(param0.ToString(), param1.ToString());

@@ -49,6 +49,7 @@ namespace System.Xml.Tests
         //-----------------------------------------------------------------------------------
         //[Variation(Desc = "v3 - Add two schemas for diff ns with imports/includes and Count")]
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void v3()
         {
             XmlSchemaSet sc = new XmlSchemaSet();

@@ -23,6 +23,7 @@ namespace System.Globalization.Tests
 
         [Theory]
         [MemberData(nameof(NumberGroupSizes_TestData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36883", TestPlatforms.iOS)]
         public void NumberGroupSizes_Get_ReturnsExpected(NumberFormatInfo format, int[] expected)
         {
             Assert.Equal(expected, format.NumberGroupSizes);

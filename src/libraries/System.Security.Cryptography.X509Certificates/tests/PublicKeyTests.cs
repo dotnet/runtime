@@ -55,6 +55,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void TestOid_RSA()
         {
             PublicKey pk = GetTestRsaKey();
@@ -62,6 +63,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void TestOid_DSA()
         {
             PublicKey pk = GetTestDsaKey();
@@ -69,6 +71,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void TestOid_ECDSA()
         {
             PublicKey pk = GetTestECDsaKey();
@@ -76,6 +79,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void TestPublicKey_Key_RSA()
         {
             PublicKey pk = GetTestRsaKey();
@@ -91,6 +95,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void TestPublicKey_Key_DSA()
         {
             PublicKey pk = GetTestDsaKey();
@@ -106,6 +111,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void TestPublicKey_Key_ECDSA()
         {
             PublicKey pk = GetTestECDsaKey();
@@ -141,6 +147,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void TestEncodedKeyValue_RSA()
         {
             byte[] expectedPublicKey = (
@@ -160,6 +167,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void TestEncodedKeyValue_DSA()
         {
             byte[] expectedPublicKey = (
@@ -175,6 +183,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void TestEncodedKeyValue_ECDSA()
         {
             // Uncompressed key (04), then the X coord, then the Y coord.
@@ -189,6 +198,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void TestEncodedParameters_RSA()
         {
             PublicKey pk = GetTestRsaKey();
@@ -199,6 +209,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void TestEncodedParameters_DSA()
         {
             byte[] expectedParameters = (
@@ -218,6 +229,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void TestEncodedParameters_ECDSA()
         {
             // OID: 1.2.840.10045.3.1.7
@@ -228,6 +240,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void TestKey_RSA()
         {
             using (X509Certificate2 cert = new X509Certificate2(TestData.MsCertificate))
@@ -288,6 +301,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void TestKey_RSA384_ValidatesSignature()
         {
             byte[] signature =
@@ -310,6 +324,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Theory, MemberData(nameof(BrainpoolCurves))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void TestKey_ECDsabrainpool_PublicKey(byte[] curveData, byte[] notUsed)
         {
             _ = notUsed;
@@ -337,6 +352,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void TestECDsaPublicKey()
         {
             byte[] helloBytes = Encoding.ASCII.GetBytes("Hello");
@@ -352,6 +368,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void TestECDsaPublicKey_ValidatesSignature()
         {
             // This signature was produced as the output of ECDsaCng.SignData with the same key
@@ -391,6 +408,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Theory, MemberData(nameof(BrainpoolCurves))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void TestECDsaPublicKey_BrainpoolP160r1_ValidatesSignature(byte[] curveData, byte[] existingSignature)
         {
             byte[] helloBytes = Encoding.ASCII.GetBytes("Hello");
@@ -427,6 +445,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void TestECDsaPublicKey_NonSignatureCert()
         {
             using (var cert = new X509Certificate2(TestData.EccCert_KeyAgreement))
@@ -441,6 +460,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void TestECDsa224PublicKey()
         {
             using (var cert = new X509Certificate2(TestData.ECDsa224Certificate))
@@ -478,6 +498,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
 #if !NO_DSA_AVAILABLE
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void TestDSAPublicKey()
         {
             using (var cert = new X509Certificate2(TestData.DssCer))
@@ -489,6 +510,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void TestDSAPublicKey_VerifiesSignature()
         {
             byte[] data = { 1, 2, 3, 4, 5 };
@@ -508,6 +530,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void TestDSAPublicKey_RSACert()
         {
             using (var cert = new X509Certificate2(TestData.Rsa384CertificatePemBytes))
@@ -518,6 +541,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void TestDSAPublicKey_ECDSACert()
         {
             using (var cert = new X509Certificate2(TestData.ECDsa256Certificate))

@@ -93,6 +93,7 @@ namespace System.Security.Cryptography.Xml.Tests
         [Theory]
         [InlineData("System.Security.Cryptography.Xml.Tests.EncryptedXmlSample1.xml")]
         [InlineData("System.Security.Cryptography.Xml.Tests.EncryptedXmlSample3.xml")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public void RsaDecryption(string resourceName)
         {
             XmlDocument doc = new XmlDocument();
@@ -159,6 +160,7 @@ namespace System.Security.Cryptography.Xml.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public void RoundtripSample1()
         {
             using (StringWriter sw = new StringWriter())
@@ -247,6 +249,7 @@ namespace System.Security.Cryptography.Xml.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public void Encrypt_X509()
         {
             XmlDocument doc = new XmlDocument();
@@ -271,6 +274,7 @@ namespace System.Security.Cryptography.Xml.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public void Encrypt_X509_XmlNull()
         {
             using (X509Certificate2 certificate = TestHelpers.GetSampleX509Certificate())
@@ -317,6 +321,7 @@ namespace System.Security.Cryptography.Xml.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public void Encrypt_RSA()
         {
             using (RSA rsa = RSA.Create())
@@ -608,6 +613,7 @@ namespace System.Security.Cryptography.Xml.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public void EncryptKey_RSA_UseOAEP()
         {
             byte[] data = Encoding.ASCII.GetBytes("12345678");

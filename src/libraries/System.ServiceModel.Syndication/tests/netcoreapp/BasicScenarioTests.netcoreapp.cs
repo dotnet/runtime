@@ -12,6 +12,7 @@ namespace System.ServiceModel.Syndication.Tests
     public static partial class BasicScenarioTests
     {
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36898", TestPlatforms.iOS)]
         public static void SyndicationFeed_Rss_DateTimeParser()
         {
             // *** SETUP *** \\
@@ -36,6 +37,7 @@ namespace System.ServiceModel.Syndication.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36898", TestPlatforms.iOS)]
         public static void SyndicationFeed_Rss_UriParser()
         {
             // *** SETUP *** \\
@@ -70,6 +72,7 @@ namespace System.ServiceModel.Syndication.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36898", TestPlatforms.iOS)]
         public static void SyndicationFeed_Atom_DateTimeParser()
         {
             // *** SETUP *** \\
@@ -100,6 +103,7 @@ namespace System.ServiceModel.Syndication.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36898", TestPlatforms.iOS)]
         public static void SyndicationFeed_Atom_UriParser()
         {
             // *** SETUP *** \\
@@ -132,6 +136,7 @@ namespace System.ServiceModel.Syndication.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36898", TestPlatforms.iOS)]
         public static void SyndicationFeed_RSS_Optional_Elements()
         {
             using (XmlReader reader = XmlReader.Create("TestFeeds/rssSpecExample.xml"))
@@ -159,6 +164,7 @@ namespace System.ServiceModel.Syndication.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36898", TestPlatforms.iOS)]
         public static void SyndicationFeed_Load_Write_RSS_With_Optional_Elements()
         {
             List<AllowableDifference> allowableDifferences = GetRssFeedPositiveTestAllowableDifferences();
@@ -170,6 +176,7 @@ namespace System.ServiceModel.Syndication.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36898", TestPlatforms.iOS)]
         public static void SyndicationFeed_Load_Write_RSS_Use_Optional_Element_Properties()
         {
             List<AllowableDifference> allowableDifferences = GetRssFeedPositiveTestAllowableDifferences();

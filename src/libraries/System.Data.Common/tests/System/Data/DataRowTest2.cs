@@ -1895,6 +1895,7 @@ namespace System.Data.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36879", TestPlatforms.iOS)]
         public void IsNull_ByName()
         {
             DataTable dt = new DataTable();

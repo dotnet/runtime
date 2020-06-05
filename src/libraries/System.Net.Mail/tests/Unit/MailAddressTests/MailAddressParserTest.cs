@@ -461,6 +461,7 @@ namespace System.Net.Mail.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36890", TestPlatforms.iOS)]
         public void MailAddress_NeedsUnicodeNormalization_ShouldParseAndNormalize()
         {
             string needsNormalization = "\u0063\u0301\u0327\u00BE";
@@ -474,6 +475,7 @@ namespace System.Net.Mail.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36890", TestPlatforms.iOS)]
         public void MailAddress_NeedsUnicodeNormalizationWithDisplayName_ShouldParseAndNormalize()
         {
             string needsNormalization = "\u0063\u0301\u0327\u00BE";

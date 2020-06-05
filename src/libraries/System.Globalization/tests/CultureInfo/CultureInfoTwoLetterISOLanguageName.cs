@@ -12,6 +12,7 @@ namespace System.Globalization.Tests
         [InlineData("de-DE", "de")]
         [InlineData("en", "en")]
         [InlineData("", "iv")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36883", TestPlatforms.iOS)]
         public void TwoLetterISOLanguageName(string name, string expected)
         {
             Assert.Equal(expected, new CultureInfo(name).TwoLetterISOLanguageName);

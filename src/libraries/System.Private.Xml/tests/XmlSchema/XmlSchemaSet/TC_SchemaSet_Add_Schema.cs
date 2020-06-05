@@ -398,6 +398,7 @@ namespace System.Xml.Tests
 
         //[Variation(Desc = "649967a.XmlSchemaSet.Reprocess() fix is changing a collection where schemas are stored")]
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void v12a()
         {
             using (XmlReader r = XmlReader.Create(Path.Combine(TestData._Root, @"bug264908_v1.xsd")))

@@ -197,6 +197,7 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36882", TestPlatforms.iOS)]
         public void Trace_ClearTraceListeners_StopsWritingToDebugger()
         {
             VerifyLogged(() => Debug.Write("pizza"), "pizza");
@@ -230,6 +231,7 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36882", TestPlatforms.iOS)]
         public void TraceWriteLineIf()
         {
             VerifyLogged(() => Trace.WriteLineIf(true, 5), "5" + Environment.NewLine);

@@ -44,6 +44,7 @@ namespace System.Security.Cryptography.Csp.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void PublicOnly_WithNoPrivate()
         {
             using (var rsa = new RSACryptoServiceProvider())
@@ -366,6 +367,7 @@ namespace System.Security.Cryptography.Csp.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void Verify_InvalidPaddingMode_Throws()
         {
             using (var rsa = new RSACryptoServiceProvider())
@@ -385,6 +387,7 @@ namespace System.Security.Cryptography.Csp.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void SignData_VerifyHash_CaseInsensitive_Success()
         {
             byte[] hashVal;

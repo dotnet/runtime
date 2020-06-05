@@ -57,6 +57,7 @@ namespace System.Xml.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void WhitespaceInsideElement()
         {
             XmlSchemaValidator val = CreateValidator(XSDFILE_VALIDATE_TEXT);
@@ -111,6 +112,7 @@ namespace System.Xml.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36903", TestPlatforms.iOS)]
         public void PassNonWhitespaceContent__ShouldNotWork()
         {
             XmlSchemaValidator val = CreateValidator(XSDFILE_VALIDATE_TEXT);

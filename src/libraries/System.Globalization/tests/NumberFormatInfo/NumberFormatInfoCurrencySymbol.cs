@@ -12,6 +12,7 @@ namespace System.Globalization.Tests
         [InlineData("en-US", "$")]
         [InlineData("en-GB", "\x00a3")] // pound
         [InlineData("", "\x00a4")] // international
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36883", TestPlatforms.iOS)]
         public void CurrencySymbol_Get_ReturnsExpected(string name, string expected)
         {
             Assert.Equal(expected, CultureInfo.GetCultureInfo(name).NumberFormat.CurrencySymbol);

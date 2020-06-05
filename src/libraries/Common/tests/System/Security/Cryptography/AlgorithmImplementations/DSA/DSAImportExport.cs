@@ -12,6 +12,7 @@ namespace System.Security.Cryptography.Dsa.Tests
         public static bool SupportsKeyGeneration => DSAFactory.SupportsKeyGeneration;
 
         [ConditionalFact(nameof(SupportsKeyGeneration))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void ExportAutoKey()
         {
             DSAParameters privateParams;
@@ -41,6 +42,7 @@ namespace System.Security.Cryptography.Dsa.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void Import_512()
         {
             using (DSA dsa = DSAFactory.Create())
@@ -52,6 +54,7 @@ namespace System.Security.Cryptography.Dsa.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void Import_576()
         {
             using (DSA dsa = DSAFactory.Create())
@@ -63,6 +66,7 @@ namespace System.Security.Cryptography.Dsa.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void Import_1024()
         {
             using (DSA dsa = DSAFactory.Create())
@@ -74,6 +78,7 @@ namespace System.Security.Cryptography.Dsa.Tests
         }
 
         [ConditionalFact(nameof(SupportsFips186_3))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void Import_2048()
         {
             using (DSA dsa = DSAFactory.Create())
@@ -85,6 +90,7 @@ namespace System.Security.Cryptography.Dsa.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void MultiExport()
         {
             DSAParameters imported = DSATestData.GetDSA1024Params();
@@ -115,6 +121,7 @@ namespace System.Security.Cryptography.Dsa.Tests
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void ImportRoundTrip(bool includePrivate)
         {
             DSAParameters imported = DSATestData.GetDSA1024Params();
@@ -135,6 +142,7 @@ namespace System.Security.Cryptography.Dsa.Tests
         [Theory]
         [InlineData(false)]
         [InlineData(true)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void ExportAfterDispose(bool importKey)
         {
             DSA key = importKey ? DSAFactory.Create(DSATestData.GetDSA1024Params()) : DSAFactory.Create(512);

@@ -18,6 +18,7 @@ namespace System.Globalization.Tests
 
         [Theory]
         [MemberData(nameof(FirstDayOfWeek_Get_TestData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36883", TestPlatforms.iOS)]
         public void FirstDayOfWeek(DateTimeFormatInfo format, DayOfWeek expected)
         {
             Assert.Equal(expected, format.FirstDayOfWeek);

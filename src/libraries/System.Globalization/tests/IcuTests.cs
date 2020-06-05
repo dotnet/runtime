@@ -31,6 +31,7 @@ namespace System.Globalization.Tests
         }
 
         [ConditionalFact(nameof(IsIcuCompatiblePlatform))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36883", TestPlatforms.iOS)]
         public static void IcuShouldBeLoaded()
         {
             Assert.True(PlatformDetection.IsIcuGlobalization);

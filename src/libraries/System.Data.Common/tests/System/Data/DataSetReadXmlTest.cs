@@ -66,6 +66,7 @@ namespace System.Data.Tests
         private const string schema2 = schema1 + xml8;
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36879", TestPlatforms.iOS)]
         public void ReadSimpleAuto()
         {
             DataSet ds;
@@ -286,6 +287,7 @@ namespace System.Data.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36879", TestPlatforms.iOS)]
         public void ReadSimpleInferSchema()
         {
             DataSet ds;
@@ -607,6 +609,7 @@ namespace System.Data.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36879", TestPlatforms.iOS)]
         public void ReadComplexElementDocument()
         {
             var ds = new DataSet();
@@ -640,6 +643,7 @@ namespace System.Data.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36879", TestPlatforms.iOS)]
         public void NameConflictDSAndTable()
         {
             string xml = @"<PriceListDetails>
@@ -658,6 +662,7 @@ namespace System.Data.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36879", TestPlatforms.iOS)]
         public void ColumnOrder()
         {
             string xml = "<?xml version=\"1.0\" standalone=\"yes\"?>" +
@@ -691,6 +696,7 @@ namespace System.Data.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36879", TestPlatforms.iOS)]
         public void XmlSpace()
         {
             string xml = "<?xml version=\"1.0\" standalone=\"yes\"?>" +

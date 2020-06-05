@@ -132,6 +132,7 @@ namespace System.Security.Cryptography.Rsa.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public void SignEmptyHash()
         {
             using (RSA rsa = RSAFactory.Create())
@@ -142,6 +143,7 @@ namespace System.Security.Cryptography.Rsa.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public void ExpectedSignature_SHA1_384()
         {
             byte[] expectedSignature =
@@ -173,6 +175,7 @@ namespace System.Security.Cryptography.Rsa.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public void ExpectedSignature_SHA1_1032()
         {
             byte[] expectedSignature =
@@ -200,6 +203,7 @@ namespace System.Security.Cryptography.Rsa.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public void ExpectedSignature_SHA1_2048()
         {
             byte[] expectedSignature = new byte[]
@@ -242,6 +246,7 @@ namespace System.Security.Cryptography.Rsa.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public void ExpectedSignature_SHA256_1024()
         {
             byte[] expectedSignature = new byte[]
@@ -268,6 +273,7 @@ namespace System.Security.Cryptography.Rsa.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public void ExpectedSignature_SHA256_2048()
         {
             byte[] expectedSignature = new byte[]
@@ -310,6 +316,7 @@ namespace System.Security.Cryptography.Rsa.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public void ExpectSignature_SHA256_1024_Stream()
         {
             byte[] expectedSignature = new byte[]
@@ -345,6 +352,7 @@ namespace System.Security.Cryptography.Rsa.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public void VerifySignature_SHA1_384()
         {
             byte[] signature =
@@ -361,6 +369,7 @@ namespace System.Security.Cryptography.Rsa.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public void VerifySignature_SHA1_1032()
         {
             byte[] signature =
@@ -388,6 +397,7 @@ namespace System.Security.Cryptography.Rsa.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public void VerifySignature_SHA1_2048()
         {
             byte[] signature = new byte[]
@@ -430,6 +440,7 @@ namespace System.Security.Cryptography.Rsa.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public void VerifySignature_SHA256_1024()
         {
             byte[] signature = new byte[]
@@ -456,6 +467,7 @@ namespace System.Security.Cryptography.Rsa.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public void VerifySignature_SHA256_2048()
         {
             byte[] signature = new byte[]
@@ -498,24 +510,28 @@ namespace System.Security.Cryptography.Rsa.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public void SignAndVerify_SHA1_1024()
         {
             SignAndVerify(TestData.HelloBytes, "SHA1", TestData.RSA1024Params);
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public void SignAndVerify_SHA1_2048()
         {
             SignAndVerify(TestData.HelloBytes, "SHA1", TestData.RSA2048Params);
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public void SignAndVerify_SHA256_1024()
         {
             SignAndVerify(TestData.HelloBytes, "SHA256", TestData.RSA1024Params);
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public void NegativeVerify_WrongAlgorithm()
         {
             using (RSA rsa = RSAFactory.Create())
@@ -529,6 +545,7 @@ namespace System.Security.Cryptography.Rsa.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public void NegativeVerify_WrongSignature()
         {
             using (RSA rsa = RSAFactory.Create())
@@ -545,6 +562,7 @@ namespace System.Security.Cryptography.Rsa.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public void NegativeVerify_TamperedData()
         {
             using (RSA rsa = RSAFactory.Create())
@@ -557,6 +575,7 @@ namespace System.Security.Cryptography.Rsa.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public void NegativeVerify_BadKeysize()
         {
             byte[] signature;
@@ -577,6 +596,7 @@ namespace System.Security.Cryptography.Rsa.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public void PkcsSignHash_MismatchedHashSize()
         {
             RSASignaturePadding padding = RSASignaturePadding.Pkcs1;
@@ -600,6 +620,7 @@ namespace System.Security.Cryptography.Rsa.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public void ExpectedHashSignature_SHA1_2048()
         {
             byte[] expectedHashSignature = new byte[]
@@ -649,6 +670,7 @@ namespace System.Security.Cryptography.Rsa.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public void ExpectedHashSignature_SHA256_1024()
         {
             byte[] expectedHashSignature = new byte[]
@@ -682,6 +704,7 @@ namespace System.Security.Cryptography.Rsa.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public void ExpectedHashSignature_SHA256_2048()
         {
             byte[] expectedHashSignature = new byte[]
@@ -731,6 +754,7 @@ namespace System.Security.Cryptography.Rsa.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public void VerifyHashSignature_SHA1_2048()
         {
             byte[] hashSignature = new byte[]
@@ -780,6 +804,7 @@ namespace System.Security.Cryptography.Rsa.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public void VerifyHashSignature_SHA256_1024()
         {
             byte[] hashSignature = new byte[]
@@ -813,6 +838,7 @@ namespace System.Security.Cryptography.Rsa.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public void VerifyHashSignature_SHA256_2048()
         {
             byte[] hashSignature = new byte[]
@@ -867,6 +893,7 @@ namespace System.Security.Cryptography.Rsa.Tests
         [InlineData("SHA512")]
         [InlineData("MD5")]
         [InlineData("SHA1")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public void PssRoundtrip(string hashAlgorithmName)
         {
             RSAParameters privateParameters = TestData.RSA2048Params;
@@ -909,6 +936,7 @@ namespace System.Security.Cryptography.Rsa.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public void VerifyExpectedSignature_PssSha256_RSA2048()
         {
             byte[] modulus2048Signature = (
@@ -929,6 +957,7 @@ namespace System.Security.Cryptography.Rsa.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public void VerifyExpectedSignature_PssSha256_RSA16384()
         {
             byte[] modulus2048Signature = (
@@ -1005,6 +1034,7 @@ namespace System.Security.Cryptography.Rsa.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public void VerifyExpectedSignature_PssSha384()
         {
             byte[] bigModulusSignature = (
@@ -1022,6 +1052,7 @@ namespace System.Security.Cryptography.Rsa.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public void VerifyExpectedSignature_PssSha512()
         {
             byte[] helloSignature = (
@@ -1100,6 +1131,7 @@ namespace System.Security.Cryptography.Rsa.Tests
         }
 
         [ConditionalFact(nameof(SupportsPss))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public void PssSignature_WrongHashAlgorithm()
         {
             RSASignaturePadding padding = RSASignaturePadding.Pss;
@@ -1114,6 +1146,7 @@ namespace System.Security.Cryptography.Rsa.Tests
 
         [ConditionalFact(nameof(SupportsPss))]
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public void PssVerifyHash_MismatchedHashSize()
         {
             // This is a legal SHA-1 value, which we're going to use with SHA-2-256 instead.
@@ -1137,6 +1170,7 @@ namespace System.Security.Cryptography.Rsa.Tests
 
         [ConditionalFact(nameof(SupportsPss))]
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public void PssSignHash_MismatchedHashSize()
         {
             RSASignaturePadding padding = RSASignaturePadding.Pss;
@@ -1160,6 +1194,7 @@ namespace System.Security.Cryptography.Rsa.Tests
         }
 
         [ConditionalFact(nameof(SupportsPss))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public void PssSignature_WrongData()
         {
             RSASignaturePadding padding = RSASignaturePadding.Pss;
@@ -1175,6 +1210,7 @@ namespace System.Security.Cryptography.Rsa.Tests
         }
 
         [ConditionalFact(nameof(SupportsPss))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public void PssSignature_WrongLength()
         {
             RSASignaturePadding padding = RSASignaturePadding.Pss;

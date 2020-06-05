@@ -56,12 +56,14 @@ namespace System.IO.Pipes.Tests
             AssertExtensions.Throws<ArgumentOutOfRangeException>("pipeName", () => new NamedPipeServerStream(reservedName, direction, 1, PipeTransmissionMode.Byte, PipeOptions.None, 0, 0));}
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36884", TestPlatforms.iOS)]
         public static void Create_PipeName()
         {
             new NamedPipeServerStream(GetUniquePipeName()).Dispose();
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36884", TestPlatforms.iOS)]
         public static void Create_PipeName_Direction_MaxInstances()
         {
             new NamedPipeServerStream(GetUniquePipeName(), PipeDirection.Out, 1).Dispose();

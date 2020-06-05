@@ -58,6 +58,7 @@ namespace System.Security.Cryptography.EcDsa.Tests
     public abstract partial class ECDsaTests : ECDsaTestsBase
     {
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public void KeySizeProp()
         {
             using (ECDsa e = ECDsaFactory.Create())
@@ -80,6 +81,7 @@ namespace System.Security.Cryptography.EcDsa.Tests
         }
 
         [Theory, MemberData(nameof(TestNewCurves))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public void TestRegenKeyExplicit(CurveDef curveDef)
         {
             ECParameters param, param2;
@@ -182,6 +184,7 @@ namespace System.Security.Cryptography.EcDsa.Tests
 
         [Theory]
         [MemberData(nameof(TestCurves))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public void TestRegenKeyNamed(CurveDef curveDef)
         {
             ECParameters param, param2;
@@ -205,6 +208,7 @@ namespace System.Security.Cryptography.EcDsa.Tests
         }
 
         [ConditionalFact(nameof(ECExplicitCurvesSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public void TestRegenKeyNistP256()
         {
             ECParameters param, param2;
@@ -227,6 +231,7 @@ namespace System.Security.Cryptography.EcDsa.Tests
 
         [Theory]
         [MemberData(nameof(TestCurves))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public void TestChangeFromNamedCurveToKeySize(CurveDef curveDef)
         {
             if (!curveDef.Curve.IsNamed)
@@ -253,6 +258,7 @@ namespace System.Security.Cryptography.EcDsa.Tests
         }
 
         [ConditionalFact(nameof(ECExplicitCurvesSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public void TestPositive256WithExplicitParameters()
         {
             using (ECDsa ecdsa = ECDsaFactory.Create())
@@ -263,6 +269,7 @@ namespace System.Security.Cryptography.EcDsa.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public void TestNegative256WithRandomKey()
         {
             using (ECDsa ecdsa = ECDsaFactory.Create(ECCurve.NamedCurves.nistP256))

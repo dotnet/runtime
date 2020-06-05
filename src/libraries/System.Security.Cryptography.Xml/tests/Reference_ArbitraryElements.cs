@@ -40,6 +40,7 @@ namespace System.Security.Cryptography.Xml.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void Transforms_ExtraData_CData_Text()
         {
             string arbitraryData = @"text";
@@ -60,6 +61,7 @@ namespace System.Security.Cryptography.Xml.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void Transforms_ExtraData_XmlProcessingInstruction()
         {
             string xml = $@"<?xml version=""1.0"" encoding=""UTF-8""?>
@@ -93,6 +95,7 @@ namespace System.Security.Cryptography.Xml.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void ExtraAttributes()
         {
             foreach (string includeID in new string[] { "", $@" Id=""""" })
@@ -106,6 +109,7 @@ namespace System.Security.Cryptography.Xml.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void DuplicateLegalAttributes()
         {
             foreach (string includeID in new string[] { "", $@" Id=""""", $@" Id="""" Id=""""" })

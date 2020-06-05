@@ -9,6 +9,7 @@ namespace System.Security.Cryptography.Xml.Tests
     public class SignedXml_SignatureMethodAlgorithm
     {
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void TestDummySignatureAlgorithm()
         {
             string objectToConstruct = typeof(DummyClass).AssemblyQualifiedName;

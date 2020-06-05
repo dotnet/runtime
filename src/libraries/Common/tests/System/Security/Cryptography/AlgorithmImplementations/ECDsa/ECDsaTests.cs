@@ -143,6 +143,7 @@ namespace System.Security.Cryptography.EcDsa.Tests
 
         [Theory]
         [MemberData(nameof(RealImplementations))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public void UseAfterDispose_Import(ECDsa ecdsa)
         {
             ecdsa.ImportParameters(EccTestData.GetNistP256ReferenceKey());
@@ -199,6 +200,7 @@ namespace System.Security.Cryptography.EcDsa.Tests
 
         [Theory]
         [MemberData(nameof(RealImplementations))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public void SignData_MaxOffset_ZeroLength_NoThrow(ECDsa ecdsa)
         {
             // Explicitly larger than Array.Empty
@@ -210,6 +212,7 @@ namespace System.Security.Cryptography.EcDsa.Tests
 
         [Theory]
         [MemberData(nameof(RealImplementations))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public void VerifyData_MaxOffset_ZeroLength_NoThrow(ECDsa ecdsa)
         {
             // Explicitly larger than Array.Empty
@@ -221,6 +224,7 @@ namespace System.Security.Cryptography.EcDsa.Tests
 
         [Theory]
         [MemberData(nameof(RealImplementations))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public void Roundtrip_WithOffset(ECDsa ecdsa)
         {
             byte[] data = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 };
@@ -240,6 +244,7 @@ namespace System.Security.Cryptography.EcDsa.Tests
         [InlineData(256)]
         [InlineData(384)]
         [InlineData(521)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public void CreateKey(int keySize)
         {
             using (ECDsa ecdsa = ECDsaFactory.Create())
@@ -269,6 +274,7 @@ namespace System.Security.Cryptography.EcDsa.Tests
 
         [Theory]
         [MemberData(nameof(InteroperableSignatureConfigurations))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public void SignVerify_InteroperableSameKeys_RoundTripsUnlessTampered(ECDsa ecdsa, HashAlgorithmName hashAlgorithm)
         {
             byte[] data = Encoding.UTF8.GetBytes("something to repeat and sign");

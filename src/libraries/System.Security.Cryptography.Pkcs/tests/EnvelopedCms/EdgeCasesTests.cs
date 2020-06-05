@@ -198,6 +198,7 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void ReuseEnvelopeCmsEncodeThenDecode()
         {
             // Test ability to encrypt, encode and decode all in one EnvelopedCms instance.
@@ -228,6 +229,7 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void ReuseEnvelopeCmsDecodeThenEncode()
         {
             byte[] encodedMessage =
@@ -310,6 +312,7 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void EnvelopedCmsDecryptNullary()
         {
             byte[] encodedMessage =
@@ -427,6 +430,7 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void CmsRecipient1AryCtor()
         {
             using (X509Certificate2 cert = Certificates.RSAKeyTransfer1.GetCertificate())
@@ -438,6 +442,7 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void CmsRecipientPassUnknown()
         {
             using (X509Certificate2 cert = Certificates.RSAKeyTransfer1.GetCertificate())
@@ -518,6 +523,7 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void EncryptEnvelopedOctetStringWithIncompleteContent()
         {
             byte[] content = "04040203".HexToByteArray();
@@ -534,6 +540,7 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void EncryptEnvelopedOneByteArray()
         {
             byte[] content = "04".HexToByteArray();

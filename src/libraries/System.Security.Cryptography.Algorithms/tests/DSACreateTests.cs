@@ -30,6 +30,7 @@ namespace System.Security.Cryptography.Algorithms.Tests
 
         [ConditionalTheory(nameof(SupportsKeyGeneration), nameof(SupportsFips186_3))]
         [InlineData(1088)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void CreateWithKeysize_BigKeys(int keySizeInBits)
         {
             using (DSA dsa = DSA.Create(keySizeInBits))
@@ -52,12 +53,14 @@ namespace System.Security.Cryptography.Algorithms.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void CreateWithParameters_512()
         {
             CreateWithParameters(DSATestData.Dsa512Parameters);
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void CreateWithParameters_1024()
         {
             CreateWithParameters(DSATestData.GetDSA1024Params());

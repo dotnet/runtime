@@ -13,6 +13,7 @@ namespace System.Net.NetworkInformation.Tests
         [InlineData("NetworkFiles/resolv.conf")]
         [InlineData("NetworkFiles/resolv_nonewline.conf")]
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36890", TestPlatforms.iOS)]
         public void DnsSuffixParsing(string file)
         {
             string fileName = GetTestFilePath();
@@ -25,6 +26,7 @@ namespace System.Net.NetworkInformation.Tests
         [InlineData("NetworkFiles/resolv.conf")]
         [InlineData("NetworkFiles/resolv_nonewline.conf")]
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36890", TestPlatforms.iOS)]
         public void DnsAddressesParsing(string file)
         {
             string fileName = GetTestFilePath();

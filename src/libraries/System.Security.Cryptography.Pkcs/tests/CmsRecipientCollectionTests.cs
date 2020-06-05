@@ -22,6 +22,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
     public static class CmsRecipientCollectionTests
     {
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void Nullary()
         {
             CmsRecipientCollection c = new CmsRecipientCollection();
@@ -29,6 +30,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void Oneary()
         {
             CmsRecipient a0 = s_cr0;
@@ -37,6 +39,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void Twoary()
         {
             CmsRecipient a0 = s_cr0;
@@ -48,6 +51,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void Twoary_Ski()
         {
             CmsRecipient a0 = s_cr0;
@@ -59,6 +63,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void Twoary_Negative()
         {
             object ignore;
@@ -106,6 +111,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void AddNegative()
         {
             CmsRecipientCollection c = new CmsRecipientCollection();
@@ -113,6 +119,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void RemoveNegative()
         {
             CmsRecipientCollection c = new CmsRecipientCollection();
@@ -120,6 +127,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void RemoveNonExistent()
         {
             CmsRecipientCollection c = new CmsRecipientCollection();
@@ -128,6 +136,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void IndexOutOfBounds()
         {
             CmsRecipient a0 = s_cr0;
@@ -145,6 +154,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void CopyExceptions()
         {
             CmsRecipient a0 = s_cr0;

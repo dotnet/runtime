@@ -30,6 +30,7 @@ namespace System.IO.Compression.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36884", TestPlatforms.iOS)]
         public static async Task InvalidInstanceMethods()
         {
             Stream zipFile = await StreamHelpers.CreateTempCopyStream(zfile("normal.zip"));
@@ -99,6 +100,7 @@ namespace System.IO.Compression.Tests
         [Theory]
         [InlineData("LZMA.zip")]
         [InlineData("invalidDeflate.zip")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36884", TestPlatforms.iOS)]
         public static async Task ZipArchiveEntry_InvalidUpdate(string zipname)
         {
             string filename = bad(zipname);
@@ -129,6 +131,7 @@ namespace System.IO.Compression.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36884", TestPlatforms.iOS)]
         public static async Task LargeArchive_DataDescriptor_Read_NonZip64_FileLengthGreaterThanIntMax()
         {
             MemoryStream stream = await LocalMemoryStream.readAppFileAsync(strange("fileLengthGreaterIntLessUInt.zip"));
@@ -159,6 +162,7 @@ namespace System.IO.Compression.Tests
 
         [Fact]
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Fix not shipped for .NET Framework.")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36884", TestPlatforms.iOS)]
         public static async Task ZipArchiveEntry_CorruptedStream_ReadMode_CopyTo_UpToUncompressedSize()
         {
             MemoryStream stream = await LocalMemoryStream.readAppFileAsync(zfile("normal.zip"));
@@ -188,6 +192,7 @@ namespace System.IO.Compression.Tests
 
         [Fact]
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Fix not shipped for .NET Framework.")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36884", TestPlatforms.iOS)]
         public static async Task ZipArchiveEntry_CorruptedStream_ReadMode_Read_UpToUncompressedSize()
         {
             MemoryStream stream = await LocalMemoryStream.readAppFileAsync(zfile("normal.zip"));
@@ -219,6 +224,7 @@ namespace System.IO.Compression.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36884", TestPlatforms.iOS)]
         public static void ZipArchiveEntry_CorruptedStream_EnsureNoExtraBytesReadOrOverWritten()
         {
             MemoryStream stream = populateStream().Result;
@@ -257,6 +263,7 @@ namespace System.IO.Compression.Tests
 
         [Fact]
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Deflate64 zip support is not available on .NET Framework.")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36884", TestPlatforms.iOS)]
         public static async Task Zip64ArchiveEntry_CorruptedStream_CopyTo_UpToUncompressedSize()
         {
             MemoryStream stream = await LocalMemoryStream.readAppFileAsync(compat("deflate64.zip"));
@@ -284,6 +291,7 @@ namespace System.IO.Compression.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36884", TestPlatforms.iOS)]
         public static async Task ZipArchiveEntry_CorruptedStream_UnCompressedSizeBiggerThanExpected_NothingShouldBreak()
         {
             MemoryStream stream = await LocalMemoryStream.readAppFileAsync(zfile("normal.zip"));
@@ -306,6 +314,7 @@ namespace System.IO.Compression.Tests
 
         [Fact]
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Deflate64 zip support is not available on .NET Framework.")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36884", TestPlatforms.iOS)]
         public static async Task Zip64ArchiveEntry_CorruptedFile_Read_UpToUncompressedSize()
         {
             MemoryStream stream = await LocalMemoryStream.readAppFileAsync(compat("deflate64.zip"));
@@ -333,6 +342,7 @@ namespace System.IO.Compression.Tests
 
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36884", TestPlatforms.iOS)]
         public static async Task UnseekableVeryLargeArchive_DataDescriptor_Read_Zip64()
         {
             MemoryStream stream = await LocalMemoryStream.readAppFileAsync(strange("veryLarge.zip"));
@@ -355,6 +365,7 @@ namespace System.IO.Compression.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36884", TestPlatforms.iOS)]
         public static async Task UpdateZipArchive_AppendTo_CorruptedFileEntry()
         {
             MemoryStream stream = await StreamHelpers.CreateTempCopyStream(zfile("normal.zip"));
@@ -397,6 +408,7 @@ namespace System.IO.Compression.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36884", TestPlatforms.iOS)]
         public static async Task UpdateZipArchive_OverwriteCorruptedEntry()
         {
             MemoryStream stream = await StreamHelpers.CreateTempCopyStream(zfile("normal.zip"));
@@ -437,6 +449,7 @@ namespace System.IO.Compression.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36884", TestPlatforms.iOS)]
         public static async Task UpdateZipArchive_AddFileTo_ZipWithCorruptedFile()
         {
             string addingFile = "added.txt";
@@ -535,6 +548,7 @@ namespace System.IO.Compression.Tests
         [Theory]
         [InlineData("CDoffsetOutOfBounds.zip")]
         [InlineData("EOCDmissing.zip")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36884", TestPlatforms.iOS)]
         public static async Task ZipArchive_InvalidStream(string zipname)
         {
             string filename = bad(zipname);
@@ -545,6 +559,7 @@ namespace System.IO.Compression.Tests
         [Theory]
         [InlineData("CDoffsetInBoundsWrong.zip")]
         [InlineData("numberOfEntriesDifferent.zip")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36884", TestPlatforms.iOS)]
         public static async Task ZipArchive_InvalidEntryTable(string zipname)
         {
             string filename = bad(zipname);
@@ -558,6 +573,7 @@ namespace System.IO.Compression.Tests
         [InlineData("localFileOffsetOutOfBounds.zip", true)]
         [InlineData("LZMA.zip", true)]
         [InlineData("invalidDeflate.zip", false)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36884", TestPlatforms.iOS)]
         public static async Task ZipArchive_InvalidEntry(string zipname, bool throwsOnOpen)
         {
             string filename = bad(zipname);
@@ -579,6 +595,7 @@ namespace System.IO.Compression.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36884", TestPlatforms.iOS)]
         public static async Task ZipArchiveEntry_InvalidLastWriteTime_Read()
         {
             using (ZipArchive archive = new ZipArchive(await StreamHelpers.CreateTempCopyStream(
@@ -613,6 +630,7 @@ namespace System.IO.Compression.Tests
         [InlineData("extradata/zip64ThenExtraData.zip", "verysmall", true)]
         [InlineData("dataDescriptor.zip", "normalWithoutBinary", false)]
         [InlineData("filenameTimeAndSizesDifferentInLH.zip", "verysmall", false)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36884", TestPlatforms.iOS)]
         public static async Task StrangeFiles(string zipFile, string zipFolder, bool requireExplicit)
         {
             IsZipSameAsDir(await StreamHelpers.CreateTempCopyStream(strange(zipFile)), zfolder(zipFolder), ZipArchiveMode.Update, requireExplicit, checkTimes: true);
@@ -623,6 +641,7 @@ namespace System.IO.Compression.Tests
         /// cause any bytes to be left in ZLib's buffer.
         /// </summary>
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36884", TestPlatforms.iOS)]
         public static void ZipWithLargeSparseFile()
         {
             string zipname = strange("largetrailingwhitespacedeflation.zip");
@@ -727,6 +746,7 @@ namespace System.IO.Compression.Tests
         /// Prepends 64KB of garbage at the beginning of the file. Verifies we throw.
         /// </summary>
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36884", TestPlatforms.iOS)]
         public static void ReadArchive_WithEOCDComment_TrailingPrecedingGarbage()
         {
             void InsertEntry(ZipArchive archive, string name, string contents)

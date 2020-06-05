@@ -195,6 +195,7 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public void EncryptToNegativeSerialNumber()
         {
             CertLoader negativeSerial = Certificates.NegativeSerialNumber;
@@ -691,6 +692,7 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public void DecryptEnvelopedOctetStringWithDefiniteLength()
         {
             // enveloped content consists of 5 bytes: <id: 1 byte><length: 1 byte><content: 3 bytes>
@@ -710,6 +712,7 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public void DecryptEnvelopedOctetStringWithInefficientlyEncodedLength()
         {
             // enveloped content consists of 5 or 6 bytes: <id: 1 byte><length: 1 or 2 bytes><content: 3 bytes>
@@ -731,6 +734,7 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
 
         [Fact]
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "netfx does not allow it")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public void DecryptEnvelopedEmptyArray()
         {
             byte[] content = Array.Empty<byte>();
@@ -743,6 +747,7 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public void DecryptEnvelopedEmptyOctetString()
         {
             byte[] content = "0400".HexToByteArray();
@@ -755,6 +760,7 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public void DecryptEnvelopedOctetStringWithExtraData()
         {
             byte[] content = "04010203".HexToByteArray();
@@ -767,6 +773,7 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public void DecryptEnvelopedDataWithNonPkcs7Oid()
         {
             byte[] content = "3003010203".HexToByteArray();
@@ -778,6 +785,7 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
         }
 
         [ConditionalFact(nameof(SupportsIndefiniteLengthEncoding))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public void DecryptEnvelopedEmptyOctetStringWithIndefiniteLength()
         {
             byte[] content = "30800000".HexToByteArray();
@@ -790,6 +798,7 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
         }
 
         [ConditionalFact(nameof(SupportsIndefiniteLengthEncoding))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public void DecryptEnvelopedOctetStringWithIndefiniteLength()
         {
             byte[] content = "308004000000".HexToByteArray();

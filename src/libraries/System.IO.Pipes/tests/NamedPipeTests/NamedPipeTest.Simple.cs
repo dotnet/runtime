@@ -34,6 +34,7 @@ namespace System.IO.Pipes.Tests
 
         [Theory]
         [MemberData(nameof(OneWayReadWritesMemberData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36884", TestPlatforms.iOS)]
         public async Task OneWayReadWrites(PipeOptions serverOptions, PipeOptions clientOptions, bool asyncServerOps, bool asyncClientOps)
         {
             using (NamedPipePair pair = CreateNamedPipePair(serverOptions, clientOptions))
@@ -102,6 +103,7 @@ namespace System.IO.Pipes.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36884", TestPlatforms.iOS)]
         public async Task ClonedServer_ActsAsOriginalServer()
         {
             byte[] msg1 = new byte[] { 5, 7, 9, 10 };
@@ -143,6 +145,7 @@ namespace System.IO.Pipes.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36884", TestPlatforms.iOS)]
         public async Task ClonedClient_ActsAsOriginalClient()
         {
             byte[] msg1 = new byte[] { 5, 7, 9, 10 };
@@ -182,6 +185,7 @@ namespace System.IO.Pipes.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36884", TestPlatforms.iOS)]
         public void ConnectOnAlreadyConnectedClient_Throws_InvalidOperationException()
         {
             using (NamedPipePair pair = CreateNamedPipePair())
@@ -200,6 +204,7 @@ namespace System.IO.Pipes.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36884", TestPlatforms.iOS)]
         public void WaitForConnectionOnAlreadyConnectedServer_Throws_InvalidOperationException()
         {
             using (NamedPipePair pair = CreateNamedPipePair())
@@ -218,6 +223,7 @@ namespace System.IO.Pipes.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36884", TestPlatforms.iOS)]
         public async Task CancelTokenOn_ServerWaitForConnectionAsync_Throws_OperationCanceledException()
         {
             using (NamedPipePair pair = CreateNamedPipePair())
@@ -268,6 +274,7 @@ namespace System.IO.Pipes.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36884", TestPlatforms.iOS)]
         public async Task OperationsOnDisconnectedServer()
         {
             using (NamedPipePair pair = CreateNamedPipePair())
@@ -305,6 +312,7 @@ namespace System.IO.Pipes.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36884", TestPlatforms.iOS)]
         public virtual async Task OperationsOnDisconnectedClient()
         {
             using (NamedPipePair pair = CreateNamedPipePair())
@@ -383,6 +391,7 @@ namespace System.IO.Pipes.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36884", TestPlatforms.iOS)]
         public void OperationsOnUnconnectedServer()
         {
             using (NamedPipePair pair = CreateNamedPipePair())
@@ -417,6 +426,7 @@ namespace System.IO.Pipes.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36884", TestPlatforms.iOS)]
         public void OperationsOnUnconnectedClient()
         {
             using (NamedPipePair pair = CreateNamedPipePair())
@@ -448,6 +458,7 @@ namespace System.IO.Pipes.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36884", TestPlatforms.iOS)]
         public async Task DisposedServerPipe_Throws_ObjectDisposedException()
         {
             using (NamedPipePair pair = CreateNamedPipePair())
@@ -464,6 +475,7 @@ namespace System.IO.Pipes.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36884", TestPlatforms.iOS)]
         public async Task DisposedClientPipe_Throws_ObjectDisposedException()
         {
             using (NamedPipePair pair = CreateNamedPipePair())
@@ -480,6 +492,7 @@ namespace System.IO.Pipes.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36884", TestPlatforms.iOS)]
         public async Task ReadAsync_DisconnectDuringRead_Returns0()
         {
             using (NamedPipePair pair = CreateNamedPipePair())
@@ -523,6 +536,7 @@ namespace System.IO.Pipes.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36884", TestPlatforms.iOS)]
         public async Task Server_ReadWriteCancelledToken_Throws_OperationCanceledException()
         {
             using (NamedPipePair pair = CreateNamedPipePair())
@@ -621,6 +635,7 @@ namespace System.IO.Pipes.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36884", TestPlatforms.iOS)]
         public async Task Client_ReadWriteCancelledToken_Throws_OperationCanceledException()
         {
             using (NamedPipePair pair = CreateNamedPipePair())
@@ -717,6 +732,7 @@ namespace System.IO.Pipes.Tests
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36884", TestPlatforms.iOS)]
         public async Task ManyConcurrentOperations(bool cancelable)
         {
             using (NamedPipePair pair = CreateNamedPipePair(PipeOptions.Asynchronous, PipeOptions.Asynchronous))

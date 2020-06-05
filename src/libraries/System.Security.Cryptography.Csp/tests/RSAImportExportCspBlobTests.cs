@@ -10,6 +10,7 @@ namespace System.Security.Cryptography.Rsa.Tests
     public class RSAImportExportCspBlobTests
     {
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void ExportImportPublicOnly()
         {
             byte[] expectedExport = ByteUtils.HexToByteArray(
@@ -42,6 +43,7 @@ namespace System.Security.Cryptography.Rsa.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void ExportImportPublicPrivate()
         {
             // This blob contains the private key of TestData.CspTestKey. The guidelines for the TestData class
@@ -82,6 +84,7 @@ namespace System.Security.Cryptography.Rsa.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void RSAParametersToBlob_PublicOnly()
         {
             byte[] blob;
@@ -113,6 +116,7 @@ namespace System.Security.Cryptography.Rsa.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36897", TestPlatforms.iOS)]
         public static void RSAParametersToBlob_PublicPrivate()
         {
             byte[] blob;
