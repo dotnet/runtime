@@ -870,8 +870,20 @@ int fx_muxer_t::run_app(host_context_t *context)
 
 int fx_muxer_t::get_runtime_delegate(host_context_t *context, coreclr_delegate_type type, void **delegate)
 {
-    if (context->is_app)
-        return StatusCode::InvalidArgFailure;
+    switch (type)
+    {
+    case coreclr_delegate_type::com_activation:
+    case coreclr_delegate_type::load_in_memory_assembly:
+    case coreclr_delegate_type::winrt_activation:
+    case coreclr_delegate_type::com_register:
+    case coreclr_delegate_type::com_unregister:
+        if (context->is_app)
+            return StatusCode::HostApiUnsupportedScenario;
+        break;
+    default:
+        // Always allowed
+        break;
+    }
 
     // last_known_delegate_type was added in 5.0, so old versions won't set it and it will be zero.
     // But when get_runtime_delegate was originally implemented in 3.0,
