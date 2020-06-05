@@ -892,7 +892,6 @@ namespace System.Net.Http.Functional.Tests
 
                         TaskCanceledException ex = await Assert.ThrowsAsync<TaskCanceledException>(() => sendTask);
                         Assert.IsType<TimeoutException>(ex.InnerException);
-                        Assert.Contains("HttpContent.CopyTo(", ex.ToString());
                     }
                     finally
                     {
@@ -963,14 +962,13 @@ namespace System.Net.Http.Functional.Tests
                     {
                         var sendTask = Task.Run(() => {
                             using HttpClient httpClient = CreateHttpClient();
-                            httpClient.Timeout = TimeSpan.FromSeconds(1);
+                            httpClient.Timeout = TimeSpan.FromSeconds(0.5);
 
                             HttpResponseMessage response = httpClient.Send(new HttpRequestMessage(HttpMethod.Get, uri));
                         });
 
                         TaskCanceledException ex = await Assert.ThrowsAsync<TaskCanceledException>(() => sendTask);
                         Assert.IsType<TimeoutException>(ex.InnerException);
-                        Assert.Contains("HttpContent.LoadIntoBuffer(", ex.ToString());
                     }
                     finally
                     {
