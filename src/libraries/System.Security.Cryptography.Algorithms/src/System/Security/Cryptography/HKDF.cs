@@ -150,7 +150,7 @@ namespace System.Security.Cryptography
                     }
                     else
                     {
-                        if (remainingOutput.Length > 0)
+                        if (!remainingOutput.IsEmpty)
                         {
                             Debug.Assert(hashLength <= 512 / 8, "hashLength is larger than expected, consider increasing this value or using regular allocation");
                             Span<byte> lastChunk = stackalloc byte[hashLength];

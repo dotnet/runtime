@@ -991,7 +991,7 @@ namespace System.Text.Json
         {
             Debug.Assert(requiredSize > 0);
 
-            if (_memory.Length == 0)
+            if (_memory.IsEmpty)
             {
                 FirstCallToGetMemory(requiredSize);
                 return;
@@ -1028,7 +1028,7 @@ namespace System.Text.Json
 
         private void FirstCallToGetMemory(int requiredSize)
         {
-            Debug.Assert(_memory.Length == 0);
+            Debug.Assert(_memory.IsEmpty);
             Debug.Assert(BytesPending == 0);
 
             int sizeHint = Math.Max(InitialGrowthSize, requiredSize);

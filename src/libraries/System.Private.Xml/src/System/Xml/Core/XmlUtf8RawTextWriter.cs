@@ -116,7 +116,7 @@ namespace System.Xml
             if (!stream.CanSeek || stream.Position == 0)
             {
                 ReadOnlySpan<byte> bom = _encoding.Preamble;
-                if (bom.Length != 0)
+                if (!bom.IsEmpty)
                 {
                     bom.CopyTo(new Span<byte>(_bufBytes).Slice(1));
                     _bufPos += bom.Length;

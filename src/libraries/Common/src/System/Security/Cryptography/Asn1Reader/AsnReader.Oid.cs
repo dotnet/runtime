@@ -97,7 +97,7 @@ namespace System.Security.Cryptography.Asn1
             out long? smallValue,
             out BigInteger? largeValue)
         {
-            Debug.Assert(source.Length > 0);
+            Debug.Assert(!source.IsEmpty);
 
             // T-REC-X.690-201508 sec 8.19.2 (last sentence)
             if (source[0] == 0x80)

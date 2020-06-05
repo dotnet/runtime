@@ -98,7 +98,7 @@ namespace System.Net.Security
         {
             bool result = frame.Length > 4;
 
-            if (frame.Length >= 1)
+            if (!frame.IsEmpty)
             {
                 header.Type = (TlsContentType)frame[0];
 

@@ -1233,7 +1233,7 @@ namespace System.Text
 
         public StringBuilder Append(ReadOnlySpan<char> value)
         {
-            if (value.Length > 0)
+            if (!value.IsEmpty)
             {
                 unsafe
                 {
@@ -1481,7 +1481,7 @@ namespace System.Text
                 throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_Index);
             }
 
-            if (value.Length > 0)
+            if (!value.IsEmpty)
             {
                 unsafe
                 {
@@ -1751,7 +1751,7 @@ namespace System.Text
 
                 if (cf != null)
                 {
-                    if (itemFormatSpan.Length != 0)
+                    if (!itemFormatSpan.IsEmpty)
                     {
                         itemFormat = new string(itemFormatSpan);
                     }
@@ -1782,7 +1782,7 @@ namespace System.Text
                     // Otherwise, fallback to trying IFormattable or calling ToString.
                     if (arg is IFormattable formattableArg)
                     {
-                        if (itemFormatSpan.Length != 0)
+                        if (!itemFormatSpan.IsEmpty)
                         {
                             itemFormat ??= new string(itemFormatSpan);
                         }

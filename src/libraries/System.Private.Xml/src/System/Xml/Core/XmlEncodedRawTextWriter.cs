@@ -181,7 +181,7 @@ namespace System.Xml
 
             if (!stream.CanSeek || stream.Position == 0)
             {
-                if (bom.Length != 0)
+                if (!bom.IsEmpty)
                 {
                     this._stream.Write(bom);
                 }

@@ -748,7 +748,7 @@ namespace System
         public static bool TryFormatInt32(int value, int hexMask, ReadOnlySpan<char> format, IFormatProvider? provider, Span<char> destination, out int charsWritten)
         {
             // Fast path for default format
-            if (format.Length == 0)
+            if (format.IsEmpty)
             {
                 return value >= 0 ?
                     TryUInt32ToDecStr((uint)value, digits: -1, destination, out charsWritten) :
@@ -847,7 +847,7 @@ namespace System
         public static bool TryFormatUInt32(uint value, ReadOnlySpan<char> format, IFormatProvider? provider, Span<char> destination, out int charsWritten)
         {
             // Fast path for default format
-            if (format.Length == 0)
+            if (format.IsEmpty)
             {
                 return TryUInt32ToDecStr(value, digits: -1, destination, out charsWritten);
             }
@@ -946,7 +946,7 @@ namespace System
         public static bool TryFormatInt64(long value, ReadOnlySpan<char> format, IFormatProvider? provider, Span<char> destination, out int charsWritten)
         {
             // Fast path for default format
-            if (format.Length == 0)
+            if (format.IsEmpty)
             {
                 return value >= 0 ?
                     TryUInt64ToDecStr((ulong)value, digits: -1, destination, out charsWritten) :
@@ -1045,7 +1045,7 @@ namespace System
         public static bool TryFormatUInt64(ulong value, ReadOnlySpan<char> format, IFormatProvider? provider, Span<char> destination, out int charsWritten)
         {
             // Fast path for default format
-            if (format.Length == 0)
+            if (format.IsEmpty)
             {
                 return TryUInt64ToDecStr(value, digits: -1, destination, out charsWritten);
             }
@@ -1579,7 +1579,7 @@ namespace System
         internal static unsafe char ParseFormatSpecifier(ReadOnlySpan<char> format, out int digits)
         {
             char c = default;
-            if (format.Length > 0)
+            if (!format.IsEmpty)
             {
                 // If the format begins with a symbol, see if it's a standard format
                 // with or without a specified number of digits.
@@ -1637,7 +1637,7 @@ namespace System
 
             // Default empty format to be "G"; custom format is signified with '\0'.
             digits = -1;
-            return format.Length == 0 || c == '\0' ? // For compat, treat '\0' as the end of the specifier, even if the specifier extends beyond it.
+            return format.IsEmpty || c == '\0' ? // For compat, treat '\0' as the end of the specifier, even if the specifier extends beyond it.
                 'G' :
                 '\0';
         }

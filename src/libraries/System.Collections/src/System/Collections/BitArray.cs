@@ -903,7 +903,7 @@ namespace System.Collections
 
                 if (extraBits > 0)
                 {
-                    Debug.Assert(span.Length > 0);
+                    Debug.Assert(!span.IsEmpty);
                     Debug.Assert(m_array.Length > quotient);
                     // mask the final byte
                     span[remainder] = (byte)((m_array[quotient] >> (remainder * 8)) & ((1 << (int)extraBits) - 1));

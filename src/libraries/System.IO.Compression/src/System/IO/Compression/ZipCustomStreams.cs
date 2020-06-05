@@ -431,7 +431,7 @@ namespace System.IO.Compression
             ThrowIfDisposed();
             Debug.Assert(CanWrite);
 
-            if (source.Length == 0)
+            if (source.IsEmpty)
                 return;
 
             if (!_everWritten)

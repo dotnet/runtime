@@ -164,7 +164,7 @@ namespace System.IO.Enumeration
             // if one of the locations in the expression is also just exhausted, the name is in the
             // language defined by the regular expression.
 
-            if (expression.Length == 0 || name.Length == 0)
+            if (expression.IsEmpty || name.IsEmpty)
                 return false;
 
             if (expression[0] == '*')

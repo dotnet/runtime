@@ -142,7 +142,7 @@ namespace System.Collections.Immutable
         /// </value>
         public bool IsEmpty
         {
-            get { return this.Count == 0; }
+            get { return IsEmpty; }
         }
 
         /// <summary>

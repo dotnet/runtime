@@ -235,7 +235,7 @@ namespace System.Security.Cryptography
                             p.Slice(0, len).CopyTo(retSpan);
                             retSpan = retSpan.Slice(len);
 
-                            if (retSpan.Length == 0)
+                            if (retSpan.IsEmpty)
                             {
                                 return;
                             }

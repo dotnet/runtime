@@ -207,7 +207,7 @@ namespace Internal.Cryptography.Pal
             Debug.Assert(_pfxAsn.MacData.HasValue);
             ReadOnlySpan<byte> authSafeSpan = authSafeContents.Span;
 
-            if (password.Length == 0)
+            if (password.IsEmpty)
             {
                 // VerifyMac produces different answers for the empty string and the null string,
                 // when the length is 0 try empty first (more common), then null.

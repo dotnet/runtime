@@ -216,7 +216,7 @@ namespace System.Text.Json.Serialization.Converters
                         if (preserveReferences)
                         {
                             ReadOnlySpan<byte> propertyName = reader.GetSpan();
-                            if (propertyName.Length > 0 && propertyName[0] == '$')
+                            if (!propertyName.IsEmpty && propertyName[0] == '$')
                             {
                                 ThrowHelper.ThrowUnexpectedMetadataException(propertyName, ref reader, ref state);
                             }

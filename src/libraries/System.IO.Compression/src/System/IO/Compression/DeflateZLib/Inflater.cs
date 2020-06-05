@@ -72,7 +72,7 @@ namespace System.IO.Compression
         public unsafe int Inflate(Span<byte> destination)
         {
             // If Inflate is called on an invalid or unready inflater, return 0 to indicate no bytes have been read.
-            if (destination.Length == 0)
+            if (destination.IsEmpty)
                 return 0;
 
             fixed (byte* bufPtr = &MemoryMarshal.GetReference(destination))

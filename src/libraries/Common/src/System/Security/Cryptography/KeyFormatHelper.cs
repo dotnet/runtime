@@ -261,9 +261,9 @@ namespace System.Security.Cryptography
             ReadOnlySpan<byte> algorithmIdentifier = algorithmIdentifierWriter.EncodeAsSpan();
             ReadOnlySpan<byte> privateKey = privateKeyWriter.EncodeAsSpan();
 
-            Debug.Assert(algorithmIdentifier.Length > 0, "algorithmIdentifier was empty");
+            Debug.Assert(!algorithmIdentifier.IsEmpty, "algorithmIdentifier was empty");
             Debug.Assert(algorithmIdentifier[0] == 0x30, "algorithmIdentifier is not a constructed sequence");
-            Debug.Assert(privateKey.Length > 0, "privateKey was empty");
+            Debug.Assert(!privateKey.IsEmpty, "privateKey was empty");
 
             // https://tools.ietf.org/html/rfc5208#section-5
             //

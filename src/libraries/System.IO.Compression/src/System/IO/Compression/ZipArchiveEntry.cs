@@ -1217,7 +1217,7 @@ namespace System.IO.Compression
                 Debug.Assert(CanWrite);
 
                 // if we're not actually writing anything, we don't want to trigger the header
-                if (source.Length == 0)
+                if (source.IsEmpty)
                     return;
 
                 if (!_everWritten)

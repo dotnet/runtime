@@ -180,7 +180,7 @@ namespace System.Xml
                 if (emitBOM)
                 {
                     ReadOnlySpan<byte> bom = _encoding.Preamble;
-                    if (bom.Length > 0)
+                    if (!bom.IsEmpty)
                         _stream.Write(bom);
                 }
             }

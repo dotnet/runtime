@@ -293,7 +293,7 @@ namespace System.Net.Http.Headers
             }
             while (idx != -1);
 
-            if (value.Length != 0)
+            if (!value.IsEmpty)
             {
                 builder.Append(value);
             }
@@ -372,7 +372,7 @@ namespace System.Net.Http.Headers
             if (idx == -1)
             {
                 // Hostnames shouldn't require quoted pairs, so this should be the hot path.
-                result = value.Length != 0 ? new string(value) : null;
+                result = !value.IsEmpty ? new string(value) : null;
                 return true;
             }
 
@@ -400,7 +400,7 @@ namespace System.Net.Http.Headers
             }
             while (idx != -1);
 
-            if (value.Length != 0)
+            if (!value.IsEmpty)
             {
                 builder.Append(value);
             }
@@ -441,7 +441,7 @@ namespace System.Net.Http.Headers
 
         private static bool TryReadQuotedInt32Value(ReadOnlySpan<char> value, out int result)
         {
-            if (value.Length == 0)
+            if (value.IsEmpty)
             {
                 result = 0;
                 return false;

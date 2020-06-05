@@ -11,7 +11,7 @@ namespace System.Buffers.Text
     {
         private static bool TryParseByteN(ReadOnlySpan<byte> source, out byte value, out int bytesConsumed)
         {
-            if (source.Length < 1)
+            if (source.IsEmpty)
                 goto FalseExit;
 
             int index = 0;
@@ -92,7 +92,7 @@ namespace System.Buffers.Text
 
         private static bool TryParseUInt16N(ReadOnlySpan<byte> source, out ushort value, out int bytesConsumed)
         {
-            if (source.Length < 1)
+            if (source.IsEmpty)
                 goto FalseExit;
 
             int index = 0;
@@ -173,7 +173,7 @@ namespace System.Buffers.Text
 
         private static bool TryParseUInt32N(ReadOnlySpan<byte> source, out uint value, out int bytesConsumed)
         {
-            if (source.Length < 1)
+            if (source.IsEmpty)
                 goto FalseExit;
 
             int index = 0;
@@ -254,7 +254,7 @@ namespace System.Buffers.Text
 
         private static bool TryParseUInt64N(ReadOnlySpan<byte> source, out ulong value, out int bytesConsumed)
         {
-            if (source.Length < 1)
+            if (source.IsEmpty)
                 goto FalseExit;
 
             int index = 0;

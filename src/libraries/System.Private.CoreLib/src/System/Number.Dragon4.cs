@@ -87,7 +87,7 @@ namespace System
         {
             int curDigit = 0;
 
-            Debug.Assert(buffer.Length > 0);
+            Debug.Assert(!buffer.IsEmpty);
 
             // We deviate from the original algorithm and just assert that the mantissa
             // is not zero. Comparing to zero is fine since the caller should have set

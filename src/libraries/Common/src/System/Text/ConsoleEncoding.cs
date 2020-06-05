@@ -9,7 +9,7 @@ namespace System.Text
     {
         public static Encoding RemovePreamble(this Encoding encoding)
         {
-            if (encoding.Preamble.Length == 0)
+            if (encoding.Preamble.IsEmpty)
             {
                 return encoding;
             }

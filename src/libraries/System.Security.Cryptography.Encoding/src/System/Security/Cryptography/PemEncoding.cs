@@ -474,7 +474,7 @@ namespace System.Security.Cryptography
 
             Debug.Assert(remainingData.Length < BytesPerLine);
 
-            if (remainingData.Length > 0)
+            if (!remainingData.IsEmpty)
             {
                 charsWritten += WriteBase64(remainingData, destination, charsWritten);
                 charsWritten += Write(NewLine, destination, charsWritten);

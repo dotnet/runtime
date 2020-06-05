@@ -57,7 +57,7 @@ namespace System.IO.Enumeration
 
             bool isDirectoryModified = true;
 
-            if (directoryName.Length != 0)
+            if (!directoryName.IsEmpty)
             {
                 // Need to fix up the input paths
                 directory = Path.Join(directory.AsSpan(), directoryName);

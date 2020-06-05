@@ -30,7 +30,7 @@ namespace System.Buffers
 
             sequence.GetFirstSpan(out ReadOnlySpan<T> first, out _nextPosition);
             CurrentSpan = first;
-            _moreData = first.Length > 0;
+            _moreData = !first.IsEmpty;
 
             if (!_moreData && !sequence.IsSingleSegment)
             {
@@ -167,7 +167,7 @@ namespace System.Buffers
                 while (Sequence.TryGet(ref nextPosition, out currentMemory, advance: true))
                 {
                     // Skip empty segment
-                    if (currentMemory.Length > 0)
+                    if (!currentMemory.IsEmpty)
                     {
                         if (remainingOffset >= currentMemory.Length)
                         {
@@ -258,7 +258,7 @@ namespace System.Buffers
             {
                 _moreData = true;
 
-                if (memory.Length == 0)
+                if (memory.IsEmpty)
                 {
                     CurrentSpan = default;
                     // No data in the first span, move to one with data
@@ -288,7 +288,7 @@ namespace System.Buffers
                 while (Sequence.TryGet(ref _nextPosition, out ReadOnlyMemory<T> memory, advance: true))
                 {
                     _currentPosition = previousNextPosition;
-                    if (memory.Length > 0)
+                    if (!memory.IsEmpty)
                     {
                         CurrentSpan = memory.Span;
                         CurrentSpanIndex = 0;
@@ -436,7 +436,7 @@ namespace System.Buffers
             SequencePosition next = _nextPosition;
             while (Sequence.TryGet(ref next, out ReadOnlyMemory<T> nextSegment, true))
             {
-                if (nextSegment.Length > 0)
+                if (!nextSegment.IsEmpty)
                 {
                     ReadOnlySpan<T> nextSpan = nextSegment.Span;
                     int toCopy = Math.Min(nextSpan.Length, destination.Length - copied);

@@ -37,7 +37,7 @@ namespace System.Security.Cryptography
                 nonce,
                 Interop.Crypto.EvpCipherDirection.Encrypt);
 
-            if (associatedData.Length != 0)
+            if (!associatedData.IsEmpty)
             {
                 if (!Interop.Crypto.EvpCipherUpdate(_ctxHandle, Span<byte>.Empty, out _, associatedData))
                 {
@@ -82,7 +82,7 @@ namespace System.Security.Cryptography
                 nonce,
                 Interop.Crypto.EvpCipherDirection.Decrypt);
 
-            if (associatedData.Length != 0)
+            if (!associatedData.IsEmpty)
             {
                 if (!Interop.Crypto.EvpCipherUpdate(_ctxHandle, Span<byte>.Empty, out _, associatedData))
                 {

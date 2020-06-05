@@ -191,7 +191,7 @@ namespace System.Runtime.Versioning
                     versionFound = true;
 
                     // Allow the version to include a 'v' or 'V' prefix...
-                    if (value.Length > 0 && (value[0] == VersionValuePrefix || value[0] == 'V'))
+                    if (!value.IsEmpty && (value[0] == VersionValuePrefix || value[0] == 'V'))
                     {
                         value = value.Slice(1);
                     }
@@ -209,7 +209,7 @@ namespace System.Runtime.Versioning
                 //
                 else if (key.Equals(ProfileKey, StringComparison.OrdinalIgnoreCase))
                 {
-                    if (value.Length > 0)
+                    if (!value.IsEmpty)
                     {
                         _profile = value.ToString();
                     }

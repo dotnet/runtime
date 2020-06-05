@@ -242,7 +242,7 @@ namespace System.IO
         {
             // 3 cases: UNC ("\\server\share"), Device ("\\?\C:\"), or Dos ("C:\")
             ReadOnlySpan<char> root = GetPathRoot(path);
-            if (root.Length == 0)
+            if (root.IsEmpty)
                 return root;
 
             // Cut from "\\?\UNC\Server\Share" to "Server\Share"

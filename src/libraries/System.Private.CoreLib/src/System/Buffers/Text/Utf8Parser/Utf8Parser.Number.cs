@@ -24,7 +24,7 @@ namespace System.Buffers.Text
             number.CheckConsistency();
             textUsedExponentNotation = false;
 
-            if (source.Length == 0)
+            if (source.IsEmpty)
             {
                 bytesConsumed = 0;
                 return false;

@@ -234,7 +234,7 @@ namespace System.Text.Json
 
         internal static MetadataPropertyName GetMetadataPropertyName(ReadOnlySpan<byte> propertyName)
         {
-            if (propertyName.Length > 0 && propertyName[0] == '$')
+            if (!propertyName.IsEmpty && propertyName[0] == '$')
             {
                 switch (propertyName.Length)
                 {

@@ -1122,7 +1122,7 @@ namespace System.Text.Json
         private bool ConsumeLiteral(ReadOnlySpan<byte> literal, JsonTokenType tokenType)
         {
             ReadOnlySpan<byte> span = _buffer.Slice(_consumed);
-            Debug.Assert(span.Length > 0);
+            Debug.Assert(!span.IsEmpty);
             Debug.Assert(span[0] == 'n' || span[0] == 't' || span[0] == 'f');
 
             if (!span.StartsWith(literal))
@@ -1139,7 +1139,7 @@ namespace System.Text.Json
 
         private bool CheckLiteral(ReadOnlySpan<byte> span, ReadOnlySpan<byte> literal)
         {
-            Debug.Assert(span.Length > 0 && span[0] == literal[0]);
+            Debug.Assert(!span.IsEmpty && span[0] == literal[0]);
 
             int indexOfFirstMismatch = 0;
 
@@ -1414,7 +1414,7 @@ namespace System.Text.Json
         private bool TryGetNumber(ReadOnlySpan<byte> data, out int consumed)
         {
             // TODO: https://github.com/dotnet/runtime/issues/27837
-            Debug.Assert(data.Length > 0);
+            Debug.Assert(!data.IsEmpty);
 
             _numberFormat = default;
             consumed = 0;
@@ -2292,7 +2292,7 @@ namespace System.Text.Json
             // Create local copy to avoid bounds checks.
             ReadOnlySpan<byte> localBuffer = _buffer.Slice(_consumed + 1);
 
-            if (localBuffer.Length > 0)
+            if (!localBuffer.IsEmpty)
             {
                 byte marker = localBuffer[0];
                 if (marker == JsonConstants.Slash)
@@ -2469,7 +2469,7 @@ namespace System.Text.Json
             // Create local copy to avoid bounds checks.
             ReadOnlySpan<byte> localBuffer = _buffer.Slice(_consumed + 1);
 
-            if (localBuffer.Length > 0)
+            if (!localBuffer.IsEmpty)
             {
                 byte marker = localBuffer[0];
                 if (marker == JsonConstants.Slash)

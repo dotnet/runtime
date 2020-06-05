@@ -157,7 +157,7 @@ namespace System.Collections.Immutable
         public bool IsEmpty
         {
             [NonVersionable]
-            get { return this.Length == 0; }
+            get { return IsEmpty; }
         }
 
         /// <summary>
@@ -266,7 +266,7 @@ namespace System.Collections.Immutable
         public ImmutableArray<T>.Builder ToBuilder()
         {
             var self = this;
-            if (self.Length == 0)
+            if (self.IsEmpty)
             {
                 return new Builder(); // allow the builder to create itself with a reasonable default capacity
             }

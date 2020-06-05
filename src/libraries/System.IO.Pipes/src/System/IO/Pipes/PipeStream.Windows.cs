@@ -327,7 +327,7 @@ namespace System.IO.Pipes
 
             // You can't use the fixed statement on an array of length 0. Note that async callers
             // check to avoid calling this first, so they can call user's callback
-            if (buffer.Length == 0)
+            if (buffer.IsEmpty)
             {
                 errorCode = 0;
                 return 0;
@@ -365,7 +365,7 @@ namespace System.IO.Pipes
 
             // You can't use the fixed statement on an array of length 0. Note that async callers
             // check to avoid calling this first, so they can call user's callback
-            if (buffer.Length == 0)
+            if (buffer.IsEmpty)
             {
                 errorCode = 0;
                 return 0;

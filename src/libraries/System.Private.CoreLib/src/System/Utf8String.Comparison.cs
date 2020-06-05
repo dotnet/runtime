@@ -85,7 +85,7 @@ namespace System
         /// </remarks>
         public static bool AreEquivalent(ReadOnlySpan<byte> utf8Text, ReadOnlySpan<char> utf16Text)
         {
-            if (utf8Text.Length == 0 && utf16Text.Length == 0)
+            if (utf8Text.IsEmpty && utf16Text.IsEmpty)
             {
                 // Don't use IsEmpty for this check; JIT can optimize "Length == 0" better
                 // for this particular scenario.

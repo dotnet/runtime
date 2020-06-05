@@ -26,7 +26,7 @@ namespace System.Net.Http.HPack
             Debug.Assert(value >= 0);
             Debug.Assert(numBits >= 1 && numBits <= 8);
 
-            if (destination.Length == 0)
+            if (destination.IsEmpty)
             {
                 bytesWritten = 0;
                 return false;

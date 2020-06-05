@@ -170,7 +170,7 @@ namespace System.Security.Cryptography.Asn1
             // This while loop could be rewritten to include the FracState and Suffix
             // processing steps.  But since there's a forward flow to the state machine
             // the loop body then needs to account for that.
-            while (state == HmsState && contents.Length != 0)
+            while (state == HmsState && !contents.IsEmpty)
             {
                 byte? nextState = GetNextState(contents[0]);
 
@@ -261,7 +261,7 @@ namespace System.Security.Cryptography.Asn1
                     lastFracDigit = (byte)(nonSemantic % 10);
                 }
 
-                if (contents.Length != 0)
+                if (!contents.IsEmpty)
                 {
                     byte? nextState = GetNextState(contents[0]);
 
@@ -313,7 +313,7 @@ namespace System.Security.Cryptography.Asn1
                     int offsetHour = ParseNonNegativeIntAndSlice(ref contents, 2);
                     int offsetMinute = 0;
 
-                    if (contents.Length != 0)
+                    if (!contents.IsEmpty)
                     {
                         offsetMinute = ParseNonNegativeIntAndSlice(ref contents, 2);
                     }

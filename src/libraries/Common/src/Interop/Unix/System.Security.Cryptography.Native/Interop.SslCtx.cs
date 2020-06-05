@@ -49,7 +49,7 @@ internal static partial class Interop
             int protocolSize = 0;
             foreach (SslApplicationProtocol protocol in applicationProtocols)
             {
-                if (protocol.Protocol.Length == 0 || protocol.Protocol.Length > byte.MaxValue)
+                if (protocol.Protocol.IsEmpty || protocol.Protocol.Length > byte.MaxValue)
                 {
                     throw new ArgumentException(SR.net_ssl_app_protocols_invalid, nameof(applicationProtocols));
                 }

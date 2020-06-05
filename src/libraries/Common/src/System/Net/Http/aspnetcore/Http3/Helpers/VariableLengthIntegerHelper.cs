@@ -39,7 +39,7 @@ namespace System.Net.Http
 
         public static bool TryRead(ReadOnlySpan<byte> buffer, out long value, out int bytesRead)
         {
-            if (buffer.Length != 0)
+            if (!buffer.IsEmpty)
             {
                 byte firstByte = buffer[0];
 
@@ -151,7 +151,7 @@ namespace System.Net.Http
 
             if (longToEncode < OneByteLimit)
             {
-                if (buffer.Length != 0)
+                if (!buffer.IsEmpty)
                 {
                     buffer[0] = (byte)longToEncode;
                     bytesWritten = 1;

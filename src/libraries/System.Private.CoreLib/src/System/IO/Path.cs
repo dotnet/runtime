@@ -418,9 +418,9 @@ namespace System.IO
 
         public static string Join(ReadOnlySpan<char> path1, ReadOnlySpan<char> path2)
         {
-            if (path1.Length == 0)
+            if (path1.IsEmpty)
                 return path2.ToString();
-            if (path2.Length == 0)
+            if (path2.IsEmpty)
                 return path1.ToString();
 
             return JoinInternal(path1, path2);
@@ -428,13 +428,13 @@ namespace System.IO
 
         public static string Join(ReadOnlySpan<char> path1, ReadOnlySpan<char> path2, ReadOnlySpan<char> path3)
         {
-            if (path1.Length == 0)
+            if (path1.IsEmpty)
                 return Join(path2, path3);
 
-            if (path2.Length == 0)
+            if (path2.IsEmpty)
                 return Join(path1, path3);
 
-            if (path3.Length == 0)
+            if (path3.IsEmpty)
                 return Join(path1, path2);
 
             return JoinInternal(path1, path2, path3);
@@ -442,16 +442,16 @@ namespace System.IO
 
         public static string Join(ReadOnlySpan<char> path1, ReadOnlySpan<char> path2, ReadOnlySpan<char> path3, ReadOnlySpan<char> path4)
         {
-            if (path1.Length == 0)
+            if (path1.IsEmpty)
                 return Join(path2, path3, path4);
 
-            if (path2.Length == 0)
+            if (path2.IsEmpty)
                 return Join(path1, path3, path4);
 
-            if (path3.Length == 0)
+            if (path3.IsEmpty)
                 return Join(path1, path2, path4);
 
-            if (path4.Length == 0)
+            if (path4.IsEmpty)
                 return Join(path1, path2, path3);
 
             return JoinInternal(path1, path2, path3, path4);
@@ -523,12 +523,12 @@ namespace System.IO
         public static bool TryJoin(ReadOnlySpan<char> path1, ReadOnlySpan<char> path2, Span<char> destination, out int charsWritten)
         {
             charsWritten = 0;
-            if (path1.Length == 0 && path2.Length == 0)
+            if (path1.IsEmpty && path2.IsEmpty)
                 return true;
 
-            if (path1.Length == 0 || path2.Length == 0)
+            if (path1.IsEmpty || path2.IsEmpty)
             {
-                ref ReadOnlySpan<char> pathToUse = ref path1.Length == 0 ? ref path2 : ref path1;
+                ref ReadOnlySpan<char> pathToUse = ref path1.IsEmpty ? ref path2 : ref path1;
                 if (destination.Length < pathToUse.Length)
                 {
                     return false;
@@ -557,14 +557,14 @@ namespace System.IO
         public static bool TryJoin(ReadOnlySpan<char> path1, ReadOnlySpan<char> path2, ReadOnlySpan<char> path3, Span<char> destination, out int charsWritten)
         {
             charsWritten = 0;
-            if (path1.Length == 0 && path2.Length == 0 && path3.Length == 0)
+            if (path1.IsEmpty && path2.IsEmpty && path3.IsEmpty)
                 return true;
 
-            if (path1.Length == 0)
+            if (path1.IsEmpty)
                 return TryJoin(path2, path3, destination, out charsWritten);
-            if (path2.Length == 0)
+            if (path2.IsEmpty)
                 return TryJoin(path1, path3, destination, out charsWritten);
-            if (path3.Length == 0)
+            if (path3.IsEmpty)
                 return TryJoin(path1, path2, destination, out charsWritten);
 
             int neededSeparators = EndsInDirectorySeparator(path1) || PathInternal.StartsWithDirectorySeparator(path2) ? 0 : 1;
@@ -642,7 +642,7 @@ namespace System.IO
 
         private static unsafe string JoinInternal(ReadOnlySpan<char> first, ReadOnlySpan<char> second)
         {
-            Debug.Assert(first.Length > 0 && second.Length > 0, "should have dealt with empty paths");
+            Debug.Assert(!first.IsEmpty && !second.IsEmpty, "should have dealt with empty paths");
 
             bool hasSeparator = PathInternal.IsDirectorySeparator(first[first.Length - 1])
                 || PathInternal.IsDirectorySeparator(second[0]);
@@ -668,7 +668,7 @@ namespace System.IO
 
         private static unsafe string JoinInternal(ReadOnlySpan<char> first, ReadOnlySpan<char> second, ReadOnlySpan<char> third)
         {
-            Debug.Assert(first.Length > 0 && second.Length > 0 && third.Length > 0, "should have dealt with empty paths");
+            Debug.Assert(!first.IsEmpty && !second.IsEmpty && !third.IsEmpty, "should have dealt with empty paths");
 
             bool firstHasSeparator = PathInternal.IsDirectorySeparator(first[first.Length - 1])
                 || PathInternal.IsDirectorySeparator(second[0]);
@@ -700,7 +700,7 @@ namespace System.IO
 
         private static unsafe string JoinInternal(ReadOnlySpan<char> first, ReadOnlySpan<char> second, ReadOnlySpan<char> third, ReadOnlySpan<char> fourth)
         {
-            Debug.Assert(first.Length > 0 && second.Length > 0 && third.Length > 0 && fourth.Length > 0, "should have dealt with empty paths");
+            Debug.Assert(!first.IsEmpty && !second.IsEmpty && !third.IsEmpty && !fourth.IsEmpty, "should have dealt with empty paths");
 
             bool firstHasSeparator = PathInternal.IsDirectorySeparator(first[first.Length - 1])
                 || PathInternal.IsDirectorySeparator(second[0]);

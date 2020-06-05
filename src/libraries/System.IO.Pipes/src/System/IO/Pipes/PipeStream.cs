@@ -190,7 +190,7 @@ namespace System.IO.Pipes
 
             CheckReadOperations();
 
-            if (buffer.Length == 0)
+            if (buffer.IsEmpty)
             {
                 UpdateMessageCompletion(false);
                 return new ValueTask<int>(0);
@@ -297,7 +297,7 @@ namespace System.IO.Pipes
 
             CheckWriteOperations();
 
-            if (buffer.Length == 0)
+            if (buffer.IsEmpty)
             {
                 return default;
             }

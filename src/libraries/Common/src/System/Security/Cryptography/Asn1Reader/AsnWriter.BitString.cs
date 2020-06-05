@@ -77,7 +77,7 @@ namespace System.Security.Cryptography.Asn1
             CheckDisposed();
 
             // T-REC-X.690-201508 sec 8.6.2.3
-            if (bitString.Length == 0 && unusedBitCount != 0)
+            if (bitString.IsEmpty && unusedBitCount != 0)
             {
                 throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
             }

@@ -71,7 +71,7 @@ namespace System.Linq
             // immutable array object that would be allocated when it's passed as an IEnumerable<T>,
             // and for the EnumeratorObject that would be allocated when enumerating the boxed array.
 
-            return immutableArray.Length == 0 ?
+            return immutableArray.IsEmpty ?
                 Enumerable.Empty<TResult>() :
                 SelectManyIterator(immutableArray, collectionSelector, resultSelector);
         }
@@ -97,7 +97,7 @@ namespace System.Linq
         /// <param name="immutableArray"></param>
         public static bool Any<T>(this ImmutableArray<T> immutableArray)
         {
-            return immutableArray.Length > 0;
+            return !immutableArray.IsEmpty;
         }
 
         /// <summary>
@@ -259,7 +259,7 @@ namespace System.Linq
         {
             Requires.NotNull(func, nameof(func));
 
-            if (immutableArray.Length == 0)
+            if (immutableArray.IsEmpty)
             {
                 return default(T)!;
             }
@@ -358,8 +358,7 @@ namespace System.Linq
 
             // In the event of an empty array, generate the same exception
             // that the linq extension method would.
-            return immutableArray.Length > 0
-                ? immutableArray[0]
+            return !immutableArray.IsEmpty ? immutableArray[0]
                 : Enumerable.First(immutableArray.array!);
         }
 
@@ -403,8 +402,7 @@ namespace System.Linq
         {
             // In the event of an empty array, generate the same exception
             // that the linq extension method would.
-            return immutableArray.Length > 0
-                ? immutableArray[immutableArray.Length - 1]
+            return !immutableArray.IsEmpty ? immutableArray[immutableArray.Length - 1]
                 : Enumerable.Last(immutableArray.array!);
         }
 

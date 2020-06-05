@@ -349,7 +349,7 @@ namespace System
 #endif
         unsafe string Ctor(ReadOnlySpan<char> value)
         {
-            if (value.Length == 0)
+            if (value.IsEmpty)
                 return Empty;
 
             string result = FastAllocateString(value.Length);

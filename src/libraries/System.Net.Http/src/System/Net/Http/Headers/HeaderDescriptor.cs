@@ -68,7 +68,7 @@ namespace System.Net.Http.Headers
         // Returns false for invalid header name.
         public static bool TryGet(ReadOnlySpan<byte> headerName, out HeaderDescriptor descriptor)
         {
-            Debug.Assert(headerName.Length > 0);
+            Debug.Assert(!headerName.IsEmpty);
 
             KnownHeader? knownHeader = KnownHeaders.TryGetKnownHeader(headerName);
             if (knownHeader != null)
@@ -118,7 +118,7 @@ namespace System.Net.Http.Headers
 
         public string GetHeaderValue(ReadOnlySpan<byte> headerValue)
         {
-            if (headerValue.Length == 0)
+            if (headerValue.IsEmpty)
             {
                 return string.Empty;
             }

@@ -42,7 +42,7 @@ namespace System
             int sourceIndex = 0;
             int destIndex = 0;
 
-            if (utf16.Length == 0)
+            if (utf16.IsEmpty)
                 goto DoneExit;
 
             ref sbyte decodingMap = ref MemoryMarshal.GetReference(DecodingMap);

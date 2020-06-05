@@ -30,7 +30,7 @@ namespace System.Net.Http.HPack
             // | 1 |        Index (7+)         |
             // +---+---------------------------+
 
-            if (destination.Length != 0)
+            if (!destination.IsEmpty)
             {
                 destination[0] = 0x80;
                 return IntegerEncoder.Encode(index, 7, destination, out bytesWritten);
@@ -193,7 +193,7 @@ namespace System.Net.Http.HPack
             // | Value String (Length octets)  |
             // +-------------------------------+
 
-            if ((uint)destination.Length != 0)
+            if (!destination.IsEmpty)
             {
                 destination[0] = 0;
                 if (IntegerEncoder.Encode(index, 4, destination, out int indexLength))
@@ -370,7 +370,7 @@ namespace System.Net.Http.HPack
             // |  String Data (Length octets)  |
             // +-------------------------------+
 
-            if (destination.Length != 0)
+            if (!destination.IsEmpty)
             {
                 destination[0] = 0; // TODO: Use Huffman encoding
                 if (IntegerEncoder.Encode(value.Length, 7, destination, out int integerLength))
@@ -430,7 +430,7 @@ namespace System.Net.Http.HPack
             // |  String Data (Length octets)  |
             // +-------------------------------+
 
-            if (destination.Length != 0)
+            if (!destination.IsEmpty)
             {
                 destination[0] = 0; // TODO: Use Huffman encoding
                 if (IntegerEncoder.Encode(value.Length, 7, destination, out int integerLength))
@@ -464,7 +464,7 @@ namespace System.Net.Http.HPack
             // |  String Data (Length octets)  |
             // +-------------------------------+
 
-            if (destination.Length != 0)
+            if (!destination.IsEmpty)
             {
                 destination[0] = 0; // TODO: Use Huffman encoding
                 if (IntegerEncoder.Encode(value.Length, 7, destination, out int integerLength))
@@ -492,7 +492,7 @@ namespace System.Net.Http.HPack
             // | 0 | 0 | 1 |   Max size (5+)   |
             // +---+---------------------------+
 
-            if (destination.Length != 0)
+            if (!destination.IsEmpty)
             {
                 destination[0] = 0x20;
                 return IntegerEncoder.Encode(value, 5, destination, out bytesWritten);
@@ -506,7 +506,7 @@ namespace System.Net.Http.HPack
         {
             bytesWritten = 0;
 
-            if (values.Length == 0)
+            if (values.IsEmpty)
             {
                 return EncodeStringLiteral("", destination, out bytesWritten);
             }
@@ -515,7 +515,7 @@ namespace System.Net.Http.HPack
                 return EncodeStringLiteral(values[0], destination, out bytesWritten);
             }
 
-            if (destination.Length != 0)
+            if (!destination.IsEmpty)
             {
                 int valueLength = 0;
 

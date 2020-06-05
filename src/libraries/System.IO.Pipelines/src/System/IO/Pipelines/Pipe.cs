@@ -179,7 +179,7 @@ namespace System.IO.Pipelines
             // If writing is currently active and enough space, don't need to take the lock to just set WritingActive.
             // IsWritingActive is needed to prevent the reader releasing the writers memory when it fully consumes currently written.
             if (!_operationState.IsWritingActive ||
-                _writingHeadMemory.Length == 0 || _writingHeadMemory.Length < sizeHint)
+                _writingHeadMemory.IsEmpty || _writingHeadMemory.Length < sizeHint)
             {
                 AllocateWriteHeadSynchronized(sizeHint);
             }
@@ -991,7 +991,7 @@ namespace System.IO.Pipelines
                 source = source.Slice(writable);
                 AdvanceCore(writable);
 
-                if (source.Length == 0)
+                if (source.IsEmpty)
                 {
                     break;
                 }

@@ -80,8 +80,8 @@ namespace System.Globalization
             Debug.Assert(!GlobalizationMode.Invariant);
             Debug.Assert(GlobalizationMode.UseNls);
 
-            Debug.Assert(source.Length != 0);
-            Debug.Assert(value.Length != 0);
+            Debug.Assert(!source.IsEmpty);
+            Debug.Assert(!value.IsEmpty);
 
             uint positionFlag = fromBeginning ? (uint)FIND_FROMSTART : FIND_FROMEND;
             return FindStringOrdinal(positionFlag, source, value, ignoreCase);
@@ -312,7 +312,7 @@ namespace System.Globalization
             Debug.Assert(!GlobalizationMode.Invariant);
             Debug.Assert(GlobalizationMode.UseNls);
 
-            Debug.Assert(target.Length != 0);
+            Debug.Assert(!target.IsEmpty);
 
             uint positionFlag = fromBeginning ? (uint)FIND_FROMSTART : FIND_FROMEND;
             return FindString(positionFlag | (uint)GetNativeCompareFlags(options), source, target, matchLengthPtr);

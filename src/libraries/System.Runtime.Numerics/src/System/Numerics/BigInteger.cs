@@ -1244,7 +1244,7 @@ namespace System.Numerics
                         return null;
                     default: // case GetBytesMode.Span:
                         bytesWritten = 1;
-                        if (destination.Length != 0)
+                        if (!destination.IsEmpty)
                         {
                             destination[0] = 0;
                             return s_success;

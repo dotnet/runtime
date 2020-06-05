@@ -23,7 +23,7 @@ namespace System.Diagnostics.Tracing
                 // It is possible that an older version of the event was emitted.
                 // If this happens, the payload might be missing arguments at the end.
                 // We can just leave these unset.
-                if (payload.Length <= 0)
+                if (payload.IsEmpty)
                 {
                     break;
                 }

@@ -388,7 +388,7 @@ namespace System.IO
         private bool MatchPattern(ReadOnlySpan<char> relativePath)
         {
             ReadOnlySpan<char> name = IO.Path.GetFileName(relativePath);
-            if (name.Length == 0)
+            if (name.IsEmpty)
                 return false;
 
             string[] filters = _filters.GetFilters();

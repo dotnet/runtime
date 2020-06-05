@@ -494,7 +494,7 @@ namespace System
             }
 
             // Check to see if this is a prefix or exact match requirement
-            if (str.Length > 0 && str[str.Length - 1] == '*')
+            if (!str.IsEmpty && str[str.Length - 1] == '*')
             {
                 str = str.Slice(0, str.Length - 1);
                 return name.StartsWith(str, comparison);

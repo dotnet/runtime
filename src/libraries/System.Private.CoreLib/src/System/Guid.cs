@@ -314,7 +314,7 @@ namespace System
         {
             guidString = guidString.Trim(); // Remove whitespace from beginning and end
 
-            if (guidString.Length == 0)
+            if (guidString.IsEmpty)
             {
                 result.SetFailure(overflow: false, nameof(SR.Format_GuidUnrecognized));
                 return false;
@@ -484,7 +484,7 @@ namespace System
             guidString = EatAllWhitespace(guidString);
 
             // Check for leading '{'
-            if ((uint)guidString.Length == 0 || guidString[0] != '{')
+            if (guidString.IsEmpty || guidString[0] != '{')
             {
                 result.SetFailure(overflow: false, nameof(SR.Format_GuidBrace));
                 return false;
@@ -646,7 +646,7 @@ namespace System
 
         private static bool TryParseHex(ReadOnlySpan<char> guidString, out uint result, ref bool overflow)
         {
-            if ((uint)guidString.Length > 0)
+            if (!guidString.IsEmpty)
             {
                 if (guidString[0] == '+')
                 {
@@ -1034,7 +1034,7 @@ namespace System
         // Returns whether the guid is successfully formatted as a span.
         public bool TryFormat(Span<char> destination, out int charsWritten, ReadOnlySpan<char> format = default)
         {
-            if (format.Length == 0)
+            if (format.IsEmpty)
             {
                 format = "D";
             }

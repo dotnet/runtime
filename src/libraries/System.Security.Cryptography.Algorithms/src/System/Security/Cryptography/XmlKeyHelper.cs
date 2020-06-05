@@ -126,7 +126,7 @@ namespace System.Security.Cryptography
         internal static void WriteCryptoBinary(string name, ReadOnlySpan<byte> value, StringBuilder builder)
         {
             Debug.Assert(name.Length > 0);
-            Debug.Assert(value.Length > 0);
+            Debug.Assert(!value.IsEmpty);
             Debug.Assert(builder != null);
 
             builder.Append('<');

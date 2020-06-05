@@ -37,7 +37,7 @@ namespace System.IO.Compression
 
             OperationStatus lastResult = OperationStatus.DestinationTooSmall;
             // We want to continue calling Decompress until we're either out of space for output or until Decompress indicates it is finished.
-            while (buffer.Length > 0 && lastResult != OperationStatus.Done)
+            while (!buffer.IsEmpty && lastResult != OperationStatus.Done)
             {
                 if (lastResult == OperationStatus.NeedMoreData)
                 {
@@ -122,7 +122,7 @@ namespace System.IO.Compression
                 int totalWritten = 0;
                 OperationStatus lastResult = OperationStatus.DestinationTooSmall;
                 // We want to continue calling Decompress until we're either out of space for output or until Decompress indicates it is finished.
-                while (buffer.Length > 0 && lastResult != OperationStatus.Done)
+                while (!buffer.IsEmpty && lastResult != OperationStatus.Done)
                 {
                     if (lastResult == OperationStatus.NeedMoreData)
                     {

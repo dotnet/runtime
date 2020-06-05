@@ -688,7 +688,7 @@ namespace System.IO
                 WriteCore(source);
                 return;
             }
-            else if (source.Length == 0)
+            else if (source.IsEmpty)
             {
                 return;  // Don't allocate a buffer then call memcpy for 0 bytes.
             }

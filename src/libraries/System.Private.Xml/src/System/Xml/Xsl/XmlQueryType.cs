@@ -149,7 +149,7 @@ namespace System.Xml.Xsl
                 return false;
 
             // None is subtype of every other type
-            if (Count == 0)
+            if (IsEmpty)
                 return false;
 
             // Check item types

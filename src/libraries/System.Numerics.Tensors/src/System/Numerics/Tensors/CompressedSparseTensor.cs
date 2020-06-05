@@ -223,7 +223,7 @@ namespace System.Numerics.Tensors
         {
             if (values.Length < min)
             {
-                var newCapacity = values.Length == 0 ? defaultCapacity : values.Length * 2;
+                var newCapacity = values.IsEmpty ? defaultCapacity : values.Length * 2;
 
                 if (newCapacity > Length)
                 {

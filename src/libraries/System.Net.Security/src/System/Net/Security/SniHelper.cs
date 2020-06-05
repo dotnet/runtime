@@ -315,7 +315,7 @@ namespace System.Net.Security
         private static ReadOnlySpan<byte> SkipOpaqueType1(ReadOnlySpan<byte> bytes)
         {
             const int OpaqueTypeLengthSize = sizeof(byte);
-            if (bytes.Length < OpaqueTypeLengthSize)
+            if (bytes.IsEmpty)
             {
                 return ReadOnlySpan<byte>.Empty;
             }

@@ -281,7 +281,7 @@ namespace System.Numerics.Tensors
         /// <param name="reverseStride">False (default) to indicate that the first dimension is most major (farthest apart) and the last dimension is most minor (closest together): akin to row-major in a rank-2 tensor.  True to indicate that the last dimension is most major (farthest apart) and the first dimension is most minor (closest together): akin to column-major in a rank-2 tensor.</param>
         protected Tensor(ReadOnlySpan<int> dimensions, bool reverseStride)
         {
-            if (dimensions.Length == 0)
+            if (dimensions.IsEmpty)
             {
                 throw new ArgumentException(SR.DimensionsMustContainElements, nameof(dimensions));
             }

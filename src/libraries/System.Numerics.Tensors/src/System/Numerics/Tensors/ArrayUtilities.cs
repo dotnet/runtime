@@ -12,7 +12,7 @@ namespace System.Numerics.Tensors
 
         public static long GetProduct(ReadOnlySpan<int> dimensions, int startIndex = 0)
         {
-            if (dimensions.Length == 0)
+            if (dimensions.IsEmpty)
             {
                 return 0;
             }

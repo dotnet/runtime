@@ -88,7 +88,7 @@ namespace System.IO.Enumeration
         {
             get
             {
-                if (_fullPath.Length == 0)
+                if (_fullPath.IsEmpty)
                 {
                     Debug.Assert(Directory.Length + FileName.Length < _pathBuffer.Length,
                         $"directory ({Directory.Length} chars) & name ({Directory.Length} chars) too long for buffer ({_pathBuffer.Length} chars)");
@@ -104,7 +104,7 @@ namespace System.IO.Enumeration
         {
             get
             {
-                if (_directoryEntry.NameLength != 0 && _fileName.Length == 0)
+                if (_directoryEntry.NameLength != 0 && _fileName.IsEmpty)
                 {
                     fixed (char* c = _fileNameBuffer)
                     {

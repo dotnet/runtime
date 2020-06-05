@@ -367,7 +367,7 @@ namespace System.Net.Sockets
             StartConfiguring();
             try
             {
-                if (buffer.Length != 0 && _bufferList != null)
+                if (!buffer.IsEmpty && _bufferList != null)
                 {
                     throw new ArgumentException(SR.Format(SR.net_ambiguousbuffers, nameof(BufferList)));
                 }

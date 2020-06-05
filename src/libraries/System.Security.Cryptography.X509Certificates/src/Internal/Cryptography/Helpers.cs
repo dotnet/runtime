@@ -44,7 +44,7 @@ namespace Internal.Cryptography
 
             ReadOnlySpan<char> s = hexString;
 
-            if (s.Length != 0 && s[0] == '\u200E')
+            if (!s.IsEmpty && s[0] == '\u200E')
             {
                 s = s.Slice(1);
             }

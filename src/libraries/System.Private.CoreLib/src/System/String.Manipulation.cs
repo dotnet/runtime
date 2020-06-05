@@ -1177,7 +1177,7 @@ namespace System
 
         private string ReplaceHelper(int oldValueLength, string newValue, ReadOnlySpan<int> indices)
         {
-            Debug.Assert(indices.Length > 0);
+            Debug.Assert(!indices.IsEmpty);
 
             long dstLength = this.Length + ((long)(newValue.Length - oldValueLength)) * indices.Length;
             if (dstLength > int.MaxValue)
@@ -1291,7 +1291,7 @@ namespace System
             ReadOnlySpan<int> sepList = sepListBuilder.AsSpan();
 
             // Handle the special case of no replaces.
-            if (sepList.Length == 0)
+            if (sepList.IsEmpty)
             {
                 return new string[] { this };
             }
@@ -1370,7 +1370,7 @@ namespace System
             ReadOnlySpan<int> lengthList = lengthListBuilder.AsSpan();
 
             // Handle the special case of no replaces.
-            if (sepList.Length == 0)
+            if (sepList.IsEmpty)
             {
                 return new string[] { this };
             }
@@ -1391,7 +1391,7 @@ namespace System
 
             MakeSeparatorList(separator, ref sepListBuilder);
             ReadOnlySpan<int> sepList = sepListBuilder.AsSpan();
-            if (sepList.Length == 0)
+            if (sepList.IsEmpty)
             {
                 // there are no separators so sepListBuilder did not rent an array from pool and there is no need to dispose it
                 return new string[] { this };

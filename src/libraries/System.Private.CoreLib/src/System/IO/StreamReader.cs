@@ -172,7 +172,7 @@ namespace System.IO
             _byteLen = 0;
             _bytePos = 0;
             _detectEncoding = detectEncodingFromByteOrderMarks;
-            _checkPreamble = encoding.Preamble.Length > 0;
+            _checkPreamble = !encoding.Preamble.IsEmpty;
             _isBlocked = false;
             _closable = !leaveOpen;
         }

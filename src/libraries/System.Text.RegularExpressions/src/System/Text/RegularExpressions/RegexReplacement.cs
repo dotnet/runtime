@@ -148,7 +148,7 @@ namespace System.Text.RegularExpressions
                 // Add the segment if it's not empty.  A common case for it being empty
                 // is if the developer is using Regex.Replace as a way to implement
                 // Regex.Remove, where the replacement string is empty.
-                if (segment.Length != 0)
+                if (!segment.IsEmpty)
                 {
                     segments.Add(segment);
                 }
@@ -180,7 +180,7 @@ namespace System.Text.RegularExpressions
                 // Add the segment to the list if it's not empty.  A common case for it being
                 // empty is if the developer is using Regex.Replace as a way to implement
                 // Regex.Remove, where the replacement string is empty.
-                if (segment.Length != 0)
+                if (!segment.IsEmpty)
                 {
                     segments.Add(segment);
                 }

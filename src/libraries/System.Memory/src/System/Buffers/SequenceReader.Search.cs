@@ -76,7 +76,7 @@ namespace System.Buffers
                 return false;
             }
 
-            Debug.Assert(sequence.Length > 0);
+            Debug.Assert(!sequence.IsEmpty);
             span = sequence.IsSingleSegment ? sequence.First.Span : sequence.ToArray();
             return true;
         }
@@ -143,7 +143,7 @@ namespace System.Buffers
                 else
                 {
                     // No delimiter, need to check the end of the span for odd number of escapes then advance
-                    if (remaining.Length > 0 && remaining[remaining.Length - 1].Equals(delimiterEscape))
+                    if (!remaining.IsEmpty && remaining[remaining.Length - 1].Equals(delimiterEscape))
                     {
                         int escapeCount = 1;
                         int i = remaining.Length - 2;
@@ -415,7 +415,7 @@ namespace System.Buffers
         /// <returns>True if the <paramref name="delimiter"/> was found.</returns>
         public bool TryReadTo(out ReadOnlySequence<T> sequence, ReadOnlySpan<T> delimiter, bool advancePastDelimiter = true)
         {
-            if (delimiter.Length == 0)
+            if (delimiter.IsEmpty)
             {
                 sequence = default;
                 return true;
@@ -771,7 +771,7 @@ namespace System.Buffers
                         return false;
                     }
 
-                    if (nextSegment.Length > 0)
+                    if (!nextSegment.IsEmpty)
                     {
                         next = next.Slice(currentSpan.Length);
                         currentSpan = nextSegment.Span;

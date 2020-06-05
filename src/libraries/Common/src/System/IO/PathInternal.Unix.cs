@@ -13,11 +13,11 @@ namespace System.IO
     {
         internal static int GetRootLength(ReadOnlySpan<char> path)
         {
-            return path.Length > 0 && IsDirectorySeparator(path[0]) ? 1 : 0;
+            return !path.IsEmpty && IsDirectorySeparator(path[0]) ? 1 : 0;
         }
 
         internal static bool EndsInDirectorySeparator(ReadOnlySpan<char> path)
-            => path.Length > 0 && IsDirectorySeparator(path[path.Length - 1]);
+            => !path.IsEmpty && IsDirectorySeparator(path[path.Length - 1]);
 
         internal static ReadOnlySpan<char> TrimEndingDirectorySeparator(ReadOnlySpan<char> path) =>
             EndsInDirectorySeparator(path) && !IsRoot(path) ?

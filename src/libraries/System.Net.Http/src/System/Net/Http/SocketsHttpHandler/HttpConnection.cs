@@ -323,7 +323,7 @@ namespace System.Net.Http
             TaskCompletionSource<bool>? allowExpect100ToContinue = null;
             Task? sendRequestContentTask = null;
             Debug.Assert(_currentRequest == null, $"Expected null {nameof(_currentRequest)}.");
-            Debug.Assert(RemainingBuffer.Length == 0, "Unexpected data in read buffer");
+            Debug.Assert(RemainingBuffer.IsEmpty, "Unexpected data in read buffer");
 
             _currentRequest = request;
             HttpMethod normalizedMethod = HttpMethod.Normalize(request.Method);
@@ -878,7 +878,7 @@ namespace System.Net.Http
 
         private static void ParseHeaderNameValue(HttpConnection connection, ReadOnlySpan<byte> line, HttpResponseMessage response, bool isFromTrailer)
         {
-            Debug.Assert(line.Length > 0);
+            Debug.Assert(!line.IsEmpty);
 
             int pos = 0;
             while (line[pos] != (byte)':' && line[pos] != (byte)' ')
@@ -1502,7 +1502,7 @@ namespace System.Net.Http
         private int ReadBuffered(Span<byte> destination)
         {
             // This is called when reading the response body.
-            Debug.Assert(destination.Length != 0);
+            Debug.Assert(!destination.IsEmpty);
 
             int remaining = _readLength - _readOffset;
             if (remaining > 0)
@@ -1787,7 +1787,7 @@ namespace System.Net.Http
         {
             Debug.Assert(_currentRequest == null, "Connection should no longer be associated with a request.");
             Debug.Assert(_readAheadTask == null, "Expected a previous initial read to already be consumed.");
-            Debug.Assert(RemainingBuffer.Length == 0, "Unexpected data in connection read buffer.");
+            Debug.Assert(RemainingBuffer.IsEmpty, "Unexpected data in connection read buffer.");
 
             // If we decided not to reuse the connection (either because the server sent Connection: close,
             // or there was some other problem while processing the request that makes the connection unusable),

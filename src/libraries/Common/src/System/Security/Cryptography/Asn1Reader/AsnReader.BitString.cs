@@ -83,7 +83,7 @@ namespace System.Security.Cryptography.Asn1
             {
                 // A BER reader which encountered a situation where an "unused" bit was not
                 // set to 0.
-                if (value.Length != 0 && normalizedLastByte != value[value.Length - 1])
+                if (!value.IsEmpty && normalizedLastByte != value[value.Length - 1])
                 {
                     unusedBitCount = 0;
                     value = default;
@@ -306,7 +306,7 @@ namespace System.Security.Cryptography.Asn1
             }
 
             // T-REC-X.690-201508 sec 8.6.2.3
-            if (source.Length == 0)
+            if (source.IsEmpty)
             {
                 throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
             }
@@ -364,7 +364,7 @@ namespace System.Security.Cryptography.Asn1
             byte normalizedLastByte,
             Span<byte> destination)
         {
-            if (value.Length == 0)
+            if (value.IsEmpty)
             {
                 return;
             }

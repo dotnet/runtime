@@ -67,7 +67,7 @@ namespace System.Text.Json
                 _currentPosition = jsonData.Start;
                 _nextPosition = _currentPosition;
 
-                bool firstSegmentIsEmpty = _buffer.Length == 0;
+                bool firstSegmentIsEmpty = _buffer.IsEmpty;
                 if (firstSegmentIsEmpty)
                 {
                     // Once we find a non-empty segment, we need to set current position to it.
@@ -77,7 +77,7 @@ namespace System.Text.Json
                     {
                         // _currentPosition should point to the segment right befor the segment that _nextPosition points to.
                         _currentPosition = previousNextPosition;
-                        if (memory.Length != 0)
+                        if (!memory.IsEmpty)
                         {
                             _buffer = memory.Span;
                             break;
@@ -311,7 +311,7 @@ namespace System.Text.Json
                     _isLastSegment = true;
                     return false;
                 }
-                if (memory.Length != 0)
+                if (!memory.IsEmpty)
                 {
                     break;
                 }
@@ -515,7 +515,7 @@ namespace System.Text.Json
         private bool ConsumeLiteralMultiSegment(ReadOnlySpan<byte> literal, JsonTokenType tokenType)
         {
             ReadOnlySpan<byte> span = _buffer.Slice(_consumed);
-            Debug.Assert(span.Length > 0);
+            Debug.Assert(!span.IsEmpty);
             Debug.Assert(span[0] == 'n' || span[0] == 't' || span[0] == 'f');
 
             int consumed = literal.Length;
@@ -542,7 +542,7 @@ namespace System.Text.Json
 
         private bool CheckLiteralMultiSegment(ReadOnlySpan<byte> span, ReadOnlySpan<byte> literal, out int consumed)
         {
-            Debug.Assert(span.Length > 0 && span[0] == literal[0]);
+            Debug.Assert(!span.IsEmpty && span[0] == literal[0]);
 
             Span<byte> readSoFar = stackalloc byte[literal.Length];
             int written = 0;
@@ -630,7 +630,7 @@ namespace System.Text.Json
 
         private int FindMismatch(ReadOnlySpan<byte> span, ReadOnlySpan<byte> literal)
         {
-            Debug.Assert(span.Length > 0);
+            Debug.Assert(!span.IsEmpty);
 
             int indexOfFirstMismatch = 0;
 
@@ -1121,7 +1121,7 @@ namespace System.Text.Json
         private bool TryGetNumberMultiSegment(ReadOnlySpan<byte> data, out int consumed)
         {
             // TODO: https://github.com/dotnet/runtime/issues/27837
-            Debug.Assert(data.Length > 0);
+            Debug.Assert(!data.IsEmpty);
 
             _numberFormat = default;
 
@@ -2227,7 +2227,7 @@ namespace System.Text.Json
             // Create local copy to avoid bounds checks.
             ReadOnlySpan<byte> localBuffer = _buffer.Slice(_consumed);
 
-            if (localBuffer.Length == 0)
+            if (localBuffer.IsEmpty)
             {
                 if (IsLastSpan)
                 {
@@ -2260,7 +2260,7 @@ namespace System.Text.Json
             _bytePositionInLine++;
             localBuffer = localBuffer.Slice(1);
 
-            if (localBuffer.Length == 0)
+            if (localBuffer.IsEmpty)
             {
                 if (IsLastSpan)
                 {
@@ -2503,7 +2503,7 @@ namespace System.Text.Json
 
             while (true)
             {
-                Debug.Assert(localBuffer.Length > 0);
+                Debug.Assert(!localBuffer.IsEmpty);
 
                 if (expectSlash)
                 {

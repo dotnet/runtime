@@ -70,7 +70,7 @@ namespace System.Text.Json
         /// </exception>
         public static JsonEncodedText Encode(ReadOnlySpan<char> value, JavaScriptEncoder? encoder = null)
         {
-            if (value.Length == 0)
+            if (value.IsEmpty)
             {
                 return new JsonEncodedText(Array.Empty<byte>());
             }
@@ -111,7 +111,7 @@ namespace System.Text.Json
         /// </exception>
         public static JsonEncodedText Encode(ReadOnlySpan<byte> utf8Value, JavaScriptEncoder? encoder = null)
         {
-            if (utf8Value.Length == 0)
+            if (utf8Value.IsEmpty)
             {
                 return new JsonEncodedText(Array.Empty<byte>());
             }

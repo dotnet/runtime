@@ -93,7 +93,7 @@ namespace System.Buffers
         {
             standardFormat = default;
 
-            if (format.Length == 0)
+            if (format.IsEmpty)
                 return true;
 
             char symbol = format[0];

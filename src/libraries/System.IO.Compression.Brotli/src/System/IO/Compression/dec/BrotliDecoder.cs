@@ -80,7 +80,7 @@ namespace System.IO.Compression
                             default:
                                 source = source.Slice(source.Length - (int)availableInput);
                                 destination = destination.Slice(destination.Length - (int)availableOutput);
-                                if (brotliResult == 2 && source.Length == 0)
+                                if (brotliResult == 2 && source.IsEmpty)
                                     return OperationStatus.NeedMoreData;
                                 break;
                         }

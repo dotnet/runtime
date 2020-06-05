@@ -155,7 +155,7 @@ namespace System.Security.Cryptography
 
             using (SafeNCryptKeyHandle keyHandle = GetDuplicatedKeyHandle())
             {
-                if (encrypt && data.Length == 0)
+                if (encrypt && data.IsEmpty)
                 {
                     byte[] rented = CryptoPool.Rent(modulusSizeInBytes);
                     Span<byte> paddedMessage = new Span<byte>(rented, 0, modulusSizeInBytes);

@@ -18,7 +18,7 @@ internal static partial class Interop
             Debug.Assert(icuuc != IntPtr.Zero);
             Debug.Assert(icuin != IntPtr.Zero);
 
-            InitICUFunctions(icuuc, icuin, version.ToString(), suffix.Length > 0 ? suffix.ToString() : null);
+            InitICUFunctions(icuuc, icuin, version.ToString(), !suffix.IsEmpty ? suffix.ToString() : null);
         }
 
         [DllImport(Libraries.GlobalizationNative, EntryPoint = "GlobalizationNative_InitICUFunctions")]

@@ -958,7 +958,7 @@ namespace System.Text.RegularExpressions
                 RegexOptions startingNodeOptions = startingNode.Options;
                 string? originalStartingString = startingNode.Str;
                 ReadOnlySpan<char> startingSpan = startingNode.Type == One ? stackalloc char[1] { startingNode.Ch } : (ReadOnlySpan<char>)originalStartingString;
-                Debug.Assert(startingSpan.Length > 0);
+                Debug.Assert(!startingSpan.IsEmpty);
 
                 // Now compare the rest of the branches against it.
                 for (int i = 1; i < children.Count; i++)
@@ -1002,7 +1002,7 @@ namespace System.Text.RegularExpressions
                 }
 
                 // If we get here, we have a starting string prefix shared by all branches.
-                Debug.Assert(startingSpan.Length > 0);
+                Debug.Assert(!startingSpan.IsEmpty);
 
                 // Now remove the prefix from each branch.
                 for (int i = 0; i < children.Count; i++)

@@ -154,7 +154,7 @@ namespace System.IO.Pipes
                 // Such a case is already handled by Socket.Send, so we use it here.
                 try
                 {
-                    while (buffer.Length > 0)
+                    while (!buffer.IsEmpty)
                     {
                         int bytesWritten = socket.Send(buffer, SocketFlags.None);
                         buffer = buffer.Slice(bytesWritten);
@@ -169,7 +169,7 @@ namespace System.IO.Pipes
             // For anonymous pipes, write the file descriptor.
             fixed (byte* bufPtr = &MemoryMarshal.GetReference(buffer))
             {
-                while (buffer.Length > 0)
+                while (!buffer.IsEmpty)
                 {
                     int bytesWritten = CheckPipeCall(Interop.Sys.Write(_handle, bufPtr, buffer.Length));
                     buffer = buffer.Slice(bytesWritten);
@@ -197,7 +197,7 @@ namespace System.IO.Pipes
 
             try
             {
-                while (source.Length > 0)
+                while (!source.IsEmpty)
                 {
                     int bytesWritten = await _handle!.NamedPipeSocket!.SendAsync(source, SocketFlags.None, cancellationToken).ConfigureAwait(false);
                     Debug.Assert(bytesWritten > 0 && bytesWritten <= source.Length);

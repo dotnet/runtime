@@ -23,7 +23,7 @@ namespace System.Net.Http
 
             public override int Read(Span<byte> buffer)
             {
-                if (_connection == null || buffer.Length == 0)
+                if (_connection == null || buffer.IsEmpty)
                 {
                     // Response body fully consumed or the caller didn't ask for any data.
                     return 0;
@@ -59,7 +59,7 @@ namespace System.Net.Http
             {
                 CancellationHelper.ThrowIfCancellationRequested(cancellationToken);
 
-                if (_connection == null || buffer.Length == 0)
+                if (_connection == null || buffer.IsEmpty)
                 {
                     // Response body fully consumed or the caller didn't ask for any data
                     return 0;
@@ -177,7 +177,7 @@ namespace System.Net.Http
                 Debug.Assert(_connection != null);
 
                 ReadOnlyMemory<byte> connectionBuffer = _connection.RemainingBuffer;
-                if (connectionBuffer.Length == 0)
+                if (connectionBuffer.IsEmpty)
                 {
                     return default;
                 }

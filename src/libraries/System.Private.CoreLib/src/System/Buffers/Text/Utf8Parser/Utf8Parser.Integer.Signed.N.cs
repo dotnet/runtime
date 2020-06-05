@@ -8,7 +8,7 @@ namespace System.Buffers.Text
     {
         private static bool TryParseSByteN(ReadOnlySpan<byte> source, out sbyte value, out int bytesConsumed)
         {
-            if (source.Length < 1)
+            if (source.IsEmpty)
                 goto FalseExit;
 
             int sign = 1;
@@ -100,7 +100,7 @@ namespace System.Buffers.Text
 
         private static bool TryParseInt16N(ReadOnlySpan<byte> source, out short value, out int bytesConsumed)
         {
-            if (source.Length < 1)
+            if (source.IsEmpty)
                 goto FalseExit;
 
             int sign = 1;
@@ -192,7 +192,7 @@ namespace System.Buffers.Text
 
         private static bool TryParseInt32N(ReadOnlySpan<byte> source, out int value, out int bytesConsumed)
         {
-            if (source.Length < 1)
+            if (source.IsEmpty)
                 goto FalseExit;
 
             int sign = 1;
@@ -287,7 +287,7 @@ namespace System.Buffers.Text
 
         private static bool TryParseInt64N(ReadOnlySpan<byte> source, out long value, out int bytesConsumed)
         {
-            if (source.Length < 1)
+            if (source.IsEmpty)
                 goto FalseExit;
 
             int sign = 1;

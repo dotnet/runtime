@@ -444,7 +444,7 @@ namespace System.Net.Http
             public void OnHeader(ReadOnlySpan<byte> name, ReadOnlySpan<byte> value)
             {
                 if (NetEventSource.IsEnabled) Trace($"{Encoding.ASCII.GetString(name)}: {Encoding.ASCII.GetString(value)}");
-                Debug.Assert(name.Length > 0);
+                Debug.Assert(!name.IsEmpty);
 
                 _headerBudgetRemaining -= name.Length + value.Length;
                 if (_headerBudgetRemaining < 0)
@@ -896,7 +896,7 @@ namespace System.Net.Http
 
             private (bool wait, int bytesRead) TryReadFromBuffer(Span<byte> buffer, bool partOfSyncRead = false)
             {
-                Debug.Assert(buffer.Length > 0);
+                Debug.Assert(!buffer.IsEmpty);
 
                 Debug.Assert(!Monitor.IsEntered(SyncObject));
                 lock (SyncObject)
@@ -928,7 +928,7 @@ namespace System.Net.Http
 
             public int ReadData(Span<byte> buffer, HttpResponseMessage responseMessage)
             {
-                if (buffer.Length == 0)
+                if (buffer.IsEmpty)
                 {
                     return 0;
                 }
@@ -958,7 +958,7 @@ namespace System.Net.Http
 
             public async ValueTask<int> ReadDataAsync(Memory<byte> buffer, HttpResponseMessage responseMessage, CancellationToken cancellationToken)
             {
-                if (buffer.Length == 0)
+                if (buffer.IsEmpty)
                 {
                     return 0;
                 }
@@ -1077,7 +1077,7 @@ namespace System.Net.Http
                     default;
                 try
                 {
-                    while (buffer.Length > 0)
+                    while (!buffer.IsEmpty)
                     {
                         int sendSize = -1;
                         lock (SyncObject)

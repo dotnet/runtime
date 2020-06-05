@@ -27,7 +27,7 @@ namespace System.Net.Http
                 // here are those that are already covered by the token having been registered with
                 // to close the connection.
 
-                ValueTask task = buffer.Length == 0 ?
+                ValueTask task = buffer.IsEmpty ?
                     // Don't write if nothing was given, especially since we don't want to accidentally send a 0 chunk,
                     // which would indicate end of body.  Instead, just ensure no content is stuck in the buffer.
                     connection.FlushAsync() :

@@ -2354,7 +2354,7 @@ namespace System
                 throw new ArgumentException(SR.Format(SR.Arg_EnumIllegalVal, (int)options), nameof(options));
             }
 
-            if (bytes.Length == 0)
+            if (bytes.IsEmpty)
             {
                 return string.Empty;
             }
@@ -2441,7 +2441,7 @@ namespace System
                 throw new ArgumentException(SR.Format(SR.Arg_EnumIllegalVal, (int)options), nameof(options));
             }
 
-            if (bytes.Length == 0)
+            if (bytes.IsEmpty)
             {
                 charsWritten = 0;
                 return true;
@@ -2591,7 +2591,7 @@ namespace System
 
             bytesWritten = 0;
 
-            while (chars.Length != 0)
+            while (!chars.IsEmpty)
             {
                 // Attempt to decode a segment that doesn't contain whitespace.
                 bool complete = TryDecodeFromUtf16(chars, bytes, out int consumedInThisIteration, out int bytesWrittenInThisIteration);
@@ -2602,7 +2602,7 @@ namespace System
                 chars = chars.Slice(consumedInThisIteration);
                 bytes = bytes.Slice(bytesWrittenInThisIteration);
 
-                Debug.Assert(chars.Length != 0); // If TryDecodeFromUtf16() consumed the entire buffer, it could not have returned false.
+                Debug.Assert(!chars.IsEmpty); // If TryDecodeFromUtf16() consumed the entire buffer, it could not have returned false.
                 if (chars[0].IsSpace())
                 {
                     // If we got here, the very first character not consumed was a whitespace. We can skip past any consecutive whitespace, then continue decoding.
@@ -2619,7 +2619,7 @@ namespace System
 
                     chars = chars.Slice(indexOfFirstNonSpace);
 
-                    if ((bytesWrittenInThisIteration % 3) != 0 && chars.Length != 0)
+                    if ((bytesWrittenInThisIteration % 3) != 0 && !chars.IsEmpty)
                     {
                         // If we got here, the last successfully decoded block encountered an end-marker, yet we have trailing non-whitespace characters.
                         // That is not allowed.
@@ -2631,7 +2631,7 @@ namespace System
                 }
                 else
                 {
-                    Debug.Assert(chars.Length != 0 && !chars[0].IsSpace());
+                    Debug.Assert(!chars.IsEmpty && !chars[0].IsSpace());
 
                     // If we got here, it is possible that there is whitespace that occurred in the middle of a 4-byte chunk. That is, we still have
                     // up to three Base64 characters that were left undecoded by the fast-path helper because they didn't form a complete 4-byte chunk.
@@ -2679,7 +2679,7 @@ namespace System
 
         private static void CopyToTempBufferWithoutWhiteSpace(ReadOnlySpan<char> chars, Span<char> tempBuffer, out int consumed, out int charsWritten)
         {
-            Debug.Assert(tempBuffer.Length != 0); // We only bound-check after writing a character to the tempBuffer.
+            Debug.Assert(!tempBuffer.IsEmpty); // We only bound-check after writing a character to the tempBuffer.
 
             charsWritten = 0;
             for (int i = 0; i < chars.Length; i++)

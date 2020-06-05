@@ -8,7 +8,7 @@ namespace System.Buffers.Text
     {
         private static bool TryParseByteX(ReadOnlySpan<byte> source, out byte value, out int bytesConsumed)
         {
-            if (source.Length < 1)
+            if (source.IsEmpty)
             {
                 bytesConsumed = 0;
                 value = default;
@@ -91,7 +91,7 @@ namespace System.Buffers.Text
 
         private static bool TryParseUInt16X(ReadOnlySpan<byte> source, out ushort value, out int bytesConsumed)
         {
-            if (source.Length < 1)
+            if (source.IsEmpty)
             {
                 bytesConsumed = 0;
                 value = default;
@@ -174,7 +174,7 @@ namespace System.Buffers.Text
 
         private static bool TryParseUInt32X(ReadOnlySpan<byte> source, out uint value, out int bytesConsumed)
         {
-            if (source.Length < 1)
+            if (source.IsEmpty)
             {
                 bytesConsumed = 0;
                 value = default;
@@ -257,7 +257,7 @@ namespace System.Buffers.Text
 
         private static bool TryParseUInt64X(ReadOnlySpan<byte> source, out ulong value, out int bytesConsumed)
         {
-            if (source.Length < 1)
+            if (source.IsEmpty)
             {
                 bytesConsumed = 0;
                 value = default;

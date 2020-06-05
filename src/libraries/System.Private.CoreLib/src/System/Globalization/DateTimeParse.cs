@@ -82,13 +82,13 @@ namespace System
 
         internal static bool TryParseExact(ReadOnlySpan<char> s, ReadOnlySpan<char> format, DateTimeFormatInfo dtfi, DateTimeStyles style, ref DateTimeResult result)
         {
-            if (s.Length == 0)
+            if (s.IsEmpty)
             {
                 result.SetFailure(ParseFailureKind.FormatWithParameter, nameof(SR.Format_BadDateTime));
                 return false;
             }
 
-            if (format.Length == 0)
+            if (format.IsEmpty)
             {
                 result.SetBadFormatSpecifierFailure();
                 return false;
@@ -175,7 +175,7 @@ namespace System
                 return false;
             }
 
-            if (s.Length == 0)
+            if (s.IsEmpty)
             {
                 result.SetFailure(ParseFailureKind.FormatWithParameter, nameof(SR.Format_BadDateTime));
                 return false;
@@ -2477,7 +2477,7 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
         //
         internal static bool TryParse(ReadOnlySpan<char> s, DateTimeFormatInfo dtfi, DateTimeStyles styles, ref DateTimeResult result)
         {
-            if (s.Length == 0)
+            if (s.IsEmpty)
             {
                 result.SetFailure(ParseFailureKind.FormatWithParameter, nameof(SR.Format_BadDateTime));
                 return false;

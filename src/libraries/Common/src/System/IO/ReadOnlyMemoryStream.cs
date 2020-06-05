@@ -74,7 +74,7 @@ namespace System.IO
         {
             int remaining = _content.Length - _position;
 
-            if (remaining <= 0 || buffer.Length == 0)
+            if (remaining <= 0 || buffer.IsEmpty)
             {
                 return 0;
             }

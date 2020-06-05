@@ -39,7 +39,7 @@ namespace System
         // Converts a Boolean into a Span of bytes with length one.
         public static bool TryWriteBytes(Span<byte> destination, bool value)
         {
-            if (destination.Length < sizeof(byte))
+            if (destination.IsEmpty)
                 return false;
 
             Unsafe.WriteUnaligned(ref MemoryMarshal.GetReference(destination), value ? (byte)1 : (byte)0);
@@ -443,7 +443,7 @@ namespace System
 
         public static bool ToBoolean(ReadOnlySpan<byte> value)
         {
-            if (value.Length < sizeof(byte))
+            if (value.IsEmpty)
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.value);
             return Unsafe.ReadUnaligned<byte>(ref MemoryMarshal.GetReference(value)) != 0;
         }

@@ -1061,7 +1061,7 @@ namespace System
         private static StringBuilder FormatStringBuilder(DateTime dateTime, ReadOnlySpan<char> format, DateTimeFormatInfo dtfi, TimeSpan offset)
         {
             Debug.Assert(dtfi != null);
-            if (format.Length == 0)
+            if (format.IsEmpty)
             {
                 bool timeOnlySpecialCase = false;
                 if (dateTime.Ticks < Calendar.TicksPerDay)

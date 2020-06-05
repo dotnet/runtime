@@ -716,7 +716,7 @@ namespace Internal.Cryptography.Pal
         private static string UrlPathAppend(string baseUri, ReadOnlyMemory<char> resource)
         {
             Debug.Assert(baseUri.Length > 0);
-            Debug.Assert(resource.Length > 0);
+            Debug.Assert(!resource.IsEmpty);
 
             int count = baseUri.Length + resource.Length;
 

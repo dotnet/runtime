@@ -1211,7 +1211,7 @@ namespace System.Globalization
         /// <summary>Common private ParseExact method called by both ParseExact and TryParseExact.</summary>
         private static bool TryParseExactTimeSpan(ReadOnlySpan<char> input, ReadOnlySpan<char> format, IFormatProvider? formatProvider, TimeSpanStyles styles, ref TimeSpanResult result)
         {
-            if (format.Length == 0)
+            if (format.IsEmpty)
             {
                 return result.SetBadFormatSpecifierFailure();
             }
@@ -1664,7 +1664,7 @@ namespace System.Globalization
                 return result.SetArgumentNullFailure(nameof(formats));
             }
 
-            if (input.Length == 0)
+            if (input.IsEmpty)
             {
                 return result.SetBadTimeSpanFailure();
             }

@@ -748,7 +748,7 @@ namespace System.IO.Ports
                 {
                     r.ProcessBytes(numBytes);
 
-                    if (r.Buffer.Length == 0)
+                    if (r.Buffer.IsEmpty)
                     {
                         r.Complete();
                     }
@@ -959,7 +959,7 @@ namespace System.IO.Ports
 
             internal void Complete()
             {
-                Debug.Assert(Buffer.Length == 0);
+                Debug.Assert(Buffer.IsEmpty);
                 TrySetResult(Buffer.Length);
             }
 

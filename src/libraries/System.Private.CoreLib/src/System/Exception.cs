@@ -169,7 +169,7 @@ namespace System
                 Write(Environment.NewLineConst, ref resultSpan);
                 Write(stackTrace, ref resultSpan);
             }
-            Debug.Assert(resultSpan.Length == 0);
+            Debug.Assert(resultSpan.IsEmpty);
 
             // Return it
             return result;

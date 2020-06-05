@@ -707,7 +707,7 @@ namespace System.Security.Cryptography
 
                 if (allocateSignature)
                 {
-                    Debug.Assert(destination.Length == 0);
+                    Debug.Assert(destination.IsEmpty);
                     signature = new byte[bytesRequired];
                     destination = signature;
                 }
@@ -739,7 +739,7 @@ namespace System.Security.Cryptography
 
                 if (allocateSignature)
                 {
-                    Debug.Assert(destination.Length == 0);
+                    Debug.Assert(destination.IsEmpty);
                     signature = new byte[bytesRequired];
                     destination = signature;
                 }

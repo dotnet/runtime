@@ -86,7 +86,7 @@ namespace System.Runtime.InteropServices
         {
             int byteLength;
 
-            if (chars.Length == 0)
+            if (chars.IsEmpty)
             {
                 byteLength = 0;
             }
@@ -109,7 +109,7 @@ namespace System.Runtime.InteropServices
         {
             int byteLength;
 
-            if (chars.Length == 0)
+            if (chars.IsEmpty)
             {
                 byteLength = 0;
             }

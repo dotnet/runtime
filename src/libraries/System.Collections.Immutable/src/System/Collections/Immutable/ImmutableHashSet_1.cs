@@ -99,7 +99,7 @@ namespace System.Collections.Immutable
         /// </summary>
         public bool IsEmpty
         {
-            get { return this.Count == 0; }
+            get { return IsEmpty; }
         }
 
         #region IHashKeyCollection<T> Properties

@@ -30,8 +30,8 @@ namespace System.Globalization
 
         internal static unsafe int InvariantIndexOf(ReadOnlySpan<char> source, ReadOnlySpan<char> value, bool ignoreCase, bool fromBeginning = true)
         {
-            Debug.Assert(source.Length != 0);
-            Debug.Assert(value.Length != 0);
+            Debug.Assert(!source.IsEmpty);
+            Debug.Assert(!value.IsEmpty);
 
             fixed (char* pSource = &MemoryMarshal.GetReference(source))
             fixed (char* pValue = &MemoryMarshal.GetReference(value))

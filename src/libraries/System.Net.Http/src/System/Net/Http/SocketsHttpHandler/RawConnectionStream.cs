@@ -24,7 +24,7 @@ namespace System.Net.Http
             public override int Read(Span<byte> buffer)
             {
                 HttpConnection? connection = _connection;
-                if (connection == null || buffer.Length == 0)
+                if (connection == null || buffer.IsEmpty)
                 {
                     // Response body fully consumed or the caller didn't ask for any data
                     return 0;
@@ -46,7 +46,7 @@ namespace System.Net.Http
                 CancellationHelper.ThrowIfCancellationRequested(cancellationToken);
 
                 HttpConnection? connection = _connection;
-                if (connection == null || buffer.Length == 0)
+                if (connection == null || buffer.IsEmpty)
                 {
                     // Response body fully consumed or the caller didn't ask for any data
                     return 0;
@@ -160,7 +160,7 @@ namespace System.Net.Http
                     throw new IOException(SR.ObjectDisposed_StreamClosed);
                 }
 
-                if (buffer.Length != 0)
+                if (!buffer.IsEmpty)
                 {
                     connection.WriteWithoutBuffering(buffer);
                 }
@@ -179,7 +179,7 @@ namespace System.Net.Http
                     return new ValueTask(Task.FromException(ExceptionDispatchInfo.SetCurrentStackTrace(new IOException(SR.ObjectDisposed_StreamClosed))));
                 }
 
-                if (buffer.Length == 0)
+                if (buffer.IsEmpty)
                 {
                     return default;
                 }

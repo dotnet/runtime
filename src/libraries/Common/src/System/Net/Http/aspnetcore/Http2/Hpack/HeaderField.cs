@@ -14,7 +14,7 @@ namespace System.Net.Http.HPack
 
         public HeaderField(ReadOnlySpan<byte> name, ReadOnlySpan<byte> value)
         {
-            Debug.Assert(name.Length > 0);
+            Debug.Assert(!name.IsEmpty);
 
             // TODO: We're allocating here on every new table entry.
             // That means a poorly-behaved server could cause us to allocate repeatedly.

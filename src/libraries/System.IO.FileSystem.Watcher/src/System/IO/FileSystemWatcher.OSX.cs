@@ -607,7 +607,7 @@ namespace System.IO
             }
             private static bool DoesItemExist(ReadOnlySpan<char> path, bool isFile)
             {
-                if (path.IsEmpty || path.Length == 0)
+                if (path.IsEmpty || path.IsEmpty)
                     return false;
 
                 if (!isFile)

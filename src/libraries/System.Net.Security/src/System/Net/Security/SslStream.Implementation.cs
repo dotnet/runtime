@@ -496,7 +496,7 @@ namespace System.Net.Security
                 int chunkBytes = Math.Min(buffer.Length, MaxDataSize);
                 await WriteSingleChunk(writeAdapter, buffer.Slice(0, chunkBytes)).ConfigureAwait(false);
                 buffer = buffer.Slice(chunkBytes);
-            } while (buffer.Length != 0);
+            } while (!buffer.IsEmpty);
         }
 
         private ValueTask WriteSingleChunk<TIOAdapter>(TIOAdapter writeAdapter, ReadOnlyMemory<byte> buffer)
@@ -865,7 +865,7 @@ namespace System.Net.Security
         {
             ThrowIfExceptionalOrNotAuthenticatedOrShutdown();
 
-            if (buffer.Length == 0 && !SslStreamPal.CanEncryptEmptyMessage)
+            if (buffer.IsEmpty && !SslStreamPal.CanEncryptEmptyMessage)
             {
                 // If it's an empty message and the PAL doesn't support that, we're done.
                 return;
@@ -1040,7 +1040,7 @@ namespace System.Net.Security
 
             int version = -1;
 
-            if (bytes.Length == 0)
+            if (bytes.IsEmpty)
             {
                 NetEventSource.Fail(this, "Header buffer is not allocated.");
             }

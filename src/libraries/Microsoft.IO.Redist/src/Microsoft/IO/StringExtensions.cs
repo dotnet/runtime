@@ -21,7 +21,7 @@ namespace Microsoft.IO
         {
             if (span.Length != value.Length)
                 return false;
-            if (value.Length == 0)  // span.Length == value.Length == 0
+            if (value.IsEmpty)  // span.Length == value.Length == 0
                 return true;
             return span.SequenceEqual(value);
         }

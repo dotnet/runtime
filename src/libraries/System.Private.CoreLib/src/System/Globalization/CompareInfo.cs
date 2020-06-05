@@ -153,7 +153,7 @@ namespace System.Globalization
         /// </returns>
         public static bool IsSortable(ReadOnlySpan<char> text)
         {
-            if (text.Length == 0)
+            if (text.IsEmpty)
             {
                 return false;
             }

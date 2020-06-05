@@ -47,7 +47,7 @@ namespace System.Buffers.Text
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static bool TryFormatUInt32SingleDigit(uint value, Span<byte> destination, out int bytesWritten)
         {
-            if (destination.Length == 0)
+            if (destination.IsEmpty)
             {
                 bytesWritten = 0;
                 return false;

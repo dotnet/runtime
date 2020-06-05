@@ -48,7 +48,7 @@ namespace System.Security.Cryptography
                             pbeParameters.HashAlgorithm.Name);
                     }
 
-                    if (passwordBytes.Length > 0 && password.Length == 0)
+                    if (!passwordBytes.IsEmpty && password.IsEmpty)
                     {
                         throw AlgorithmKdfRequiresChars(
                             encryptionAlgorithm.ToString());
@@ -144,7 +144,7 @@ namespace System.Security.Cryptography
             {
                 if (pkcs12)
                 {
-                    if (password.IsEmpty && passwordBytes.Length > 0)
+                    if (password.IsEmpty && !passwordBytes.IsEmpty)
                     {
                         throw AlgorithmKdfRequiresChars(algorithmIdentifier.Algorithm.Value);
                     }
@@ -165,7 +165,7 @@ namespace System.Security.Cryptography
                     byte[]? rented = null;
                     System.Text.Encoding? encoding = null;
 
-                    if (passwordBytes.Length > 0 || password.Length == 0)
+                    if (!passwordBytes.IsEmpty || password.IsEmpty)
                     {
                         effectivePasswordBytes = passwordBytes;
                     }
@@ -312,11 +312,11 @@ namespace System.Security.Cryptography
 
             if (!isPkcs12)
             {
-                if (passwordBytes.Length == 0 && password.Length > 0)
+                if (passwordBytes.IsEmpty && !password.IsEmpty)
                 {
                     pwdTmpBytes = new byte[encoding.GetByteCount(password)];
                 }
-                else if (passwordBytes.Length == 0)
+                else if (passwordBytes.IsEmpty)
                 {
                     pwdTmpBytes = Array.Empty<byte>();
                 }
@@ -332,7 +332,7 @@ namespace System.Security.Cryptography
                 if (isPkcs12)
                 {
                     // Verified by ValidatePbeParameters, which should be called at entrypoints.
-                    Debug.Assert(password.Length > 0 || passwordBytes.IsEmpty);
+                    Debug.Assert(!password.IsEmpty || passwordBytes.IsEmpty);
                     Debug.Assert(pbeParameters.HashAlgorithm == HashAlgorithmName.SHA1);
 
                     derivedKey = new byte[keySizeBytes];
@@ -355,12 +355,12 @@ namespace System.Security.Cryptography
                 }
                 else
                 {
-                    if (passwordBytes.Length > 0)
+                    if (!passwordBytes.IsEmpty)
                     {
                         Debug.Assert(pwdTmpBytes!.Length == passwordBytes.Length);
                         passwordBytes.CopyTo(pwdTmpBytes);
                     }
-                    else if (password.Length > 0)
+                    else if (!password.IsEmpty)
                     {
                         int length = encoding.GetBytes(password, pwdTmpBytes);
 
@@ -440,7 +440,7 @@ namespace System.Security.Cryptography
             byte[]? rented = null;
             System.Text.Encoding? encoding = null;
 
-            if (passwordBytes.Length > 0 || password.Length == 0)
+            if (!passwordBytes.IsEmpty || password.IsEmpty)
             {
                 effectivePasswordBytes = passwordBytes;
             }

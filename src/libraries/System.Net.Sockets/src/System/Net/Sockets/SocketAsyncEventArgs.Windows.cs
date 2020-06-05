@@ -1052,7 +1052,7 @@ namespace System.Net.Sockets
                     }
                 }
             }
-            else if (_buffer.Length != 0)
+            else if (!_buffer.IsEmpty)
             {
                 NetEventSource.DumpBuffer(this, _buffer, _offset, size);
             }

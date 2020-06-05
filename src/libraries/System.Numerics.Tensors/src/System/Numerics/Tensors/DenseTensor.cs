@@ -160,7 +160,7 @@ namespace System.Numerics.Tensors
         /// <returns>A new tensor that reinterprets backing Buffer of this tensor with different dimensions.</returns>
         public override Tensor<T> Reshape(ReadOnlySpan<int> dimensions)
         {
-            if (dimensions.Length == 0)
+            if (dimensions.IsEmpty)
             {
                 throw new ArgumentException(SR.DimensionsMustContainElements, nameof(dimensions));
             }

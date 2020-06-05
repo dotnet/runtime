@@ -308,7 +308,7 @@ namespace System.Security.Cryptography
                     return false;
                 }
 
-                if (padding == RSAEncryptionPadding.Pkcs1 && data.Length > 0)
+                if (padding == RSAEncryptionPadding.Pkcs1 && !data.IsEmpty)
                 {
                     const int Pkcs1PaddingOverhead = 11;
                     int maxAllowed = rsaSize - Pkcs1PaddingOverhead;

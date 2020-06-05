@@ -444,7 +444,7 @@ namespace System.Net.Http
 
             public override int Read(Span<byte> buffer)
             {
-                if (buffer.Length == 0)
+                if (buffer.IsEmpty)
                 {
                     return 0;
                 }
@@ -489,7 +489,7 @@ namespace System.Net.Http
 
             public async ValueTask<int> ReadAsyncPrivate(Memory<byte> buffer, CancellationToken cancellationToken)
             {
-                if (buffer.Length == 0)
+                if (buffer.IsEmpty)
                 {
                     return 0;
                 }

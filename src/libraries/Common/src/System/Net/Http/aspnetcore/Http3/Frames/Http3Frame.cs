@@ -43,7 +43,7 @@ namespace System.Net.Http
         {
             Debug.Assert(VariableLengthIntegerHelper.GetByteCount((long)frameType) == 1, $"{nameof(TryWriteFrameEnvelope)} assumes {nameof(frameType)} will fit within a single byte varint.");
 
-            if (buffer.Length != 0)
+            if (!buffer.IsEmpty)
             {
                 buffer[0] = (byte)frameType;
                 buffer = buffer.Slice(1);

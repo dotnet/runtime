@@ -139,7 +139,7 @@ namespace System.Buffers
                 input.Slice(0, writeSize).CopyTo(destination);
                 writer.Advance(writeSize);
                 input = input.Slice(writeSize);
-                if (input.Length > 0)
+                if (!input.IsEmpty)
                 {
                     destination = writer.GetSpan();
 

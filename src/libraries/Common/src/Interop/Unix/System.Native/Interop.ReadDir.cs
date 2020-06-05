@@ -45,7 +45,7 @@ internal static partial class Interop
                     ? new ReadOnlySpan<byte>(Name, new ReadOnlySpan<byte>(Name, NameBufferSize).IndexOf<byte>(0))
                     : new ReadOnlySpan<byte>(Name, NameLength);
 
-                Debug.Assert(nameBytes.Length > 0, "we shouldn't have gotten a garbage value from the OS");
+                Debug.Assert(!nameBytes.IsEmpty, "we shouldn't have gotten a garbage value from the OS");
 
                 int charCount = Encoding.UTF8.GetChars(nameBytes, buffer);
                 ReadOnlySpan<char> value = buffer.Slice(0, charCount);

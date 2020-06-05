@@ -80,7 +80,7 @@ namespace System.Net.Security
         {
             resultSize = 0;
 
-            Debug.Assert(input.Length > 0, $"{nameof(input.Length)} > 0 since {nameof(CanEncryptEmptyMessage)} is false");
+            Debug.Assert(!input.IsEmpty, $"{nameof(input.Length)} > 0 since {nameof(CanEncryptEmptyMessage)} is false");
 
             try
             {
@@ -248,7 +248,7 @@ namespace System.Net.Security
                     }
                 }
 
-                if (inputBuffer.Length > 0)
+                if (!inputBuffer.IsEmpty)
                 {
                     sslContext!.Write(inputBuffer);
                 }

@@ -460,7 +460,7 @@ namespace System.Net.Sockets
             {
                 // Zero byte read is performed to know when data is available.
                 // We don't have to call receive, our caller is interested in the event.
-                if (Buffer.Length == 0 && Flags == SocketFlags.None && SocketAddress == null)
+                if (Buffer.IsEmpty && Flags == SocketFlags.None && SocketAddress == null)
                 {
                     BytesTransferred = 0;
                     ReceivedFlags = SocketFlags.None;

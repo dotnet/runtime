@@ -207,7 +207,7 @@ namespace System.Runtime.InteropServices.JavaScript
         public unsafe int CopyFrom(ReadOnlySpan<U> span)
         {
             // source has to be instantiated.
-            if (span == null || span.Length == 0)
+            if (span == null || span.IsEmpty)
             {
                 throw new System.ArgumentException($"Invalid argument: {nameof(span)} can not be null and must have a length");
             }

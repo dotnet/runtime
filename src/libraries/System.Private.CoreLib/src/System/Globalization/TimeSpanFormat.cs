@@ -46,7 +46,7 @@ namespace System.Globalization
         /// <summary>Main method called from TimeSpan.TryFormat.</summary>
         internal static bool TryFormat(TimeSpan value, Span<char> destination, out int charsWritten, ReadOnlySpan<char> format, IFormatProvider? formatProvider)
         {
-            if (format.Length == 0)
+            if (format.IsEmpty)
             {
                 return TryFormatStandard(value, StandardFormat.C, null, destination, out charsWritten);
             }
@@ -294,7 +294,7 @@ namespace System.Globalization
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static void WriteDigits(uint value, Span<char> buffer)
         {
-            Debug.Assert(buffer.Length > 0);
+            Debug.Assert(!buffer.IsEmpty);
 
             for (int i = buffer.Length - 1; i >= 1; i--)
             {

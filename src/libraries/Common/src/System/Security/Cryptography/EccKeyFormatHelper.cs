@@ -120,7 +120,7 @@ namespace System.Security.Cryptography
             {
                 ReadOnlySpan<byte> publicKeyBytes = key.PublicKey.Value.Span;
 
-                if (publicKeyBytes.Length == 0)
+                if (publicKeyBytes.IsEmpty)
                 {
                     throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
                 }
@@ -181,7 +181,7 @@ namespace System.Security.Cryptography
 
             ReadOnlySpan<byte> publicKeyBytes = key.Span;
 
-            if (publicKeyBytes.Length == 0)
+            if (publicKeyBytes.IsEmpty)
             {
                 throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
             }

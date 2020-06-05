@@ -3777,7 +3777,7 @@ namespace System
         {
             static char ToLowerCaseAscii(char c) => (uint)(c - 'A') <= 'Z' - 'A' ? (char)(c | 0x20) : c;
 
-            if (span.Length == 0)
+            if (span.IsEmpty)
             {
                 return ParsingError.BadScheme;
             }

@@ -295,7 +295,7 @@ namespace System
             RuntimeType rt = ValidateRuntimeType(enumType);
 
             ReadOnlySpan<char> valueSpan = value.AsSpan().TrimStart();
-            if (valueSpan.Length == 0)
+            if (valueSpan.IsEmpty)
             {
                 if (throwOnFailure)
                 {
@@ -374,7 +374,7 @@ namespace System
             }
 
             ReadOnlySpan<char> valueSpan = value.AsSpan().TrimStart();
-            if (valueSpan.Length == 0)
+            if (valueSpan.IsEmpty)
             {
                 if (throwOnFailure)
                 {
@@ -647,7 +647,7 @@ namespace System
 
             bool parsed = true;
             ulong localResult = 0;
-            while (value.Length > 0)
+            while (!value.IsEmpty)
             {
                 // Find the next separator.
                 ReadOnlySpan<char> subvalue;

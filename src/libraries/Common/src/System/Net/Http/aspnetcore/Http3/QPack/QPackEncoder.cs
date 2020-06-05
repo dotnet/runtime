@@ -172,7 +172,7 @@ namespace System.Net.Http.QPack
 
         private static bool EncodeValueString(string s, Span<byte> buffer, out int length)
         {
-            if (buffer.Length != 0)
+            if (!buffer.IsEmpty)
             {
                 buffer[0] = 0;
                 if (IntegerEncoder.Encode(s.Length, 7, buffer, out int nameLength))
@@ -202,13 +202,13 @@ namespace System.Net.Http.QPack
                 return EncodeValueString(values[0], buffer, out length);
             }
 
-            if (values.Length == 0)
+            if (values.IsEmpty)
             {
                 // TODO: this will be called with a string array from HttpHeaderCollection. Can we ever get a 0-length array from that? Assert if not.
                 return EncodeValueString(string.Empty, buffer, out length);
             }
 
-            if (buffer.Length > 0)
+            if (!buffer.IsEmpty)
             {
                 Debug.Assert(separator != null);
                 int valueLength = separator.Length * (values.Length - 1);
@@ -268,7 +268,7 @@ namespace System.Net.Http.QPack
         {
             const int toLowerMask = 0x20;
 
-            if (buffer.Length != 0)
+            if (!buffer.IsEmpty)
             {
                 buffer[0] = 0x30;
 

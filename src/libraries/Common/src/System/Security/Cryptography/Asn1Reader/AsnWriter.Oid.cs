@@ -268,7 +268,7 @@ namespace System.Security.Cryptography.Asn1
         // ITU-T-X.690-201508 sec 8.19.5
         private static int EncodeSubIdentifier(Span<byte> dest, ref BigInteger subIdentifier)
         {
-            Debug.Assert(dest.Length > 0);
+            Debug.Assert(!dest.IsEmpty);
 
             if (subIdentifier.IsZero)
             {

@@ -492,7 +492,7 @@ namespace System.Net.WebSockets
             }
 
             // Write the payload
-            if (payloadBuffer.Length > 0)
+            if (!payloadBuffer.IsEmpty)
             {
                 payloadBuffer.CopyTo(new Span<byte>(_sendBuffer, headerLength, payloadBuffer.Length));
 
@@ -700,7 +700,7 @@ namespace System.Net.WebSockets
                     Debug.Assert(header.Opcode == MessageOpcode.Binary || header.Opcode == MessageOpcode.Text, $"Unexpected opcode {header.Opcode}");
 
                     // If there's no data to read, return an appropriate result.
-                    if (header.PayloadLength == 0 || payloadBuffer.Length == 0)
+                    if (header.PayloadLength == 0 || payloadBuffer.IsEmpty)
                     {
                         _lastReceiveHeader = header;
                         return resultGetter.GetResult(

@@ -468,7 +468,7 @@ namespace System.Security.Cryptography
             int count = 0;
             Span<byte> bigEndianCount = stackalloc byte[sizeof(int)];
 
-            while (writePtr.Length > 0)
+            while (!writePtr.IsEmpty)
             {
                 hasher.AppendData(mgfSeed);
                 BinaryPrimitives.WriteInt32BigEndian(bigEndianCount, count);
@@ -508,7 +508,7 @@ namespace System.Security.Cryptography
         // to the object-less RandomNumberGenerator.Fill.
         private static void FillNonZeroBytes(Span<byte> data)
         {
-            while (data.Length > 0)
+            while (!data.IsEmpty)
             {
                 // Fill the remaining portion of the span with random bytes.
                 RandomNumberGenerator.Fill(data);

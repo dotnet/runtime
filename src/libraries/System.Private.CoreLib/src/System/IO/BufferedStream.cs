@@ -1146,7 +1146,7 @@ namespace System.IO
 
                     if (_writePos < _bufferSize)
                     {
-                        Debug.Assert(buffer.Length == 0);
+                        Debug.Assert(buffer.IsEmpty);
                         return;
                     }
 

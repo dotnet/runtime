@@ -996,7 +996,7 @@ namespace System.Text
         /// </remarks>
         public bool TryEncodeToUtf16(Span<char> destination, out int charsWritten)
         {
-            if (destination.Length >= 1)
+            if (!destination.IsEmpty)
             {
                 if (IsBmp)
                 {
@@ -1034,7 +1034,7 @@ namespace System.Text
         {
             // The bit patterns below come from the Unicode Standard, Table 3-6.
 
-            if (destination.Length >= 1)
+            if (!destination.IsEmpty)
             {
                 if (IsAscii)
                 {

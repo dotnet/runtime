@@ -471,7 +471,7 @@ namespace System.Text.RegularExpressions
         /// </summary>
         private void AddSet(ReadOnlySpan<char> set)
         {
-            if (set.Length == 0)
+            if (set.IsEmpty)
             {
                 return;
             }

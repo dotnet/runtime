@@ -235,9 +235,9 @@ namespace System.Security.Cryptography.Pkcs
 
         private static void CircularCopy(ReadOnlySpan<byte> bytes, Span<byte> destination)
         {
-            Debug.Assert(bytes.Length > 0);
+            Debug.Assert(!bytes.IsEmpty);
 
-            while (destination.Length > 0)
+            while (!destination.IsEmpty)
             {
                 if (destination.Length >= bytes.Length)
                 {
@@ -258,7 +258,7 @@ namespace System.Security.Cryptography.Pkcs
             Encoding bigEndianUnicode = System.Text.Encoding.BigEndianUnicode;
             Debug.Assert(destination.Length % 2 == 0);
 
-            while (destination.Length > 0)
+            while (!destination.IsEmpty)
             {
                 if (destination.Length >= fullCopyLen)
                 {

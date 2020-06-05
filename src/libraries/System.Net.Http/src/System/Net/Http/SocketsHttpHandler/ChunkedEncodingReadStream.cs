@@ -38,7 +38,7 @@ namespace System.Net.Http
 
             public override int Read(Span<byte> buffer)
             {
-                if (_connection == null || buffer.Length == 0)
+                if (_connection == null || buffer.IsEmpty)
                 {
                     // Response body fully consumed or the caller didn't ask for any data.
                     return 0;
@@ -68,7 +68,7 @@ namespace System.Net.Http
                         // the remaining chunk data and the buffer are both at least as large
                         // as the connection buffer.  That avoids an unnecessary copy while still reading
                         // the maximum amount we'd otherwise read at a time.
-                        Debug.Assert(_connection.RemainingBuffer.Length == 0);
+                        Debug.Assert(_connection.RemainingBuffer.IsEmpty);
                         bytesRead = _connection.Read(buffer.Slice(0, (int)Math.Min((ulong)buffer.Length, _chunkBytesRemaining)));
                         if (bytesRead == 0)
                         {
@@ -103,7 +103,7 @@ namespace System.Net.Http
                     return new ValueTask<int>(Task.FromCanceled<int>(cancellationToken));
                 }
 
-                if (_connection == null || buffer.Length == 0)
+                if (_connection == null || buffer.IsEmpty)
                 {
                     // Response body fully consumed or the caller didn't ask for any data.
                     return new ValueTask<int>(0);
@@ -133,7 +133,7 @@ namespace System.Net.Http
                 // Should only be called if ReadChunksFromConnectionBuffer returned 0.
 
                 Debug.Assert(_connection != null);
-                Debug.Assert(buffer.Length > 0);
+                Debug.Assert(!buffer.IsEmpty);
 
                 CancellationTokenRegistration ctr = _connection.RegisterCancellation(cancellationToken);
                 try
@@ -154,7 +154,7 @@ namespace System.Net.Http
                             // the remaining chunk data and the buffer are both at least as large
                             // as the connection buffer.  That avoids an unnecessary copy while still reading
                             // the maximum amount we'd otherwise read at a time.
-                            Debug.Assert(_connection.RemainingBuffer.Length == 0);
+                            Debug.Assert(_connection.RemainingBuffer.IsEmpty);
                             int bytesRead = await _connection.ReadAsync(buffer.Slice(0, (int)Math.Min((ulong)buffer.Length, _chunkBytesRemaining))).ConfigureAwait(false);
                             if (bytesRead == 0)
                             {
@@ -210,7 +210,7 @@ namespace System.Net.Http
                         while (true)
                         {
                             ReadOnlyMemory<byte> bytesRead = ReadChunkFromConnectionBuffer(int.MaxValue, ctr);
-                            if (bytesRead.Length == 0)
+                            if (bytesRead.IsEmpty)
                             {
                                 break;
                             }
@@ -239,11 +239,11 @@ namespace System.Net.Http
             private int ReadChunksFromConnectionBuffer(Span<byte> buffer, CancellationTokenRegistration cancellationRegistration)
             {
                 int totalBytesRead = 0;
-                while (buffer.Length > 0)
+                while (!buffer.IsEmpty)
                 {
                     ReadOnlyMemory<byte> bytesRead = ReadChunkFromConnectionBuffer(buffer.Length, cancellationRegistration);
                     Debug.Assert(bytesRead.Length <= buffer.Length);
-                    if (bytesRead.Length == 0)
+                    if (bytesRead.IsEmpty)
                     {
                         break;
                     }
@@ -305,7 +305,7 @@ namespace System.Net.Http
                             Debug.Assert(_chunkBytesRemaining > 0);
 
                             ReadOnlyMemory<byte> connectionBuffer = _connection.RemainingBuffer;
-                            if (connectionBuffer.Length == 0)
+                            if (connectionBuffer.IsEmpty)
                             {
                                 return default;
                             }
@@ -331,7 +331,7 @@ namespace System.Net.Http
                                 return default;
                             }
 
-                            if (currentLine.Length != 0)
+                            if (!currentLine.IsEmpty)
                             {
                                 throw new HttpRequestException(SR.Format(SR.net_http_invalid_response_chunk_terminator_invalid, Encoding.ASCII.GetString(currentLine)));
                             }
@@ -443,7 +443,7 @@ namespace System.Net.Http
                         while (true)
                         {
                             ReadOnlyMemory<byte> bytesRead = ReadChunkFromConnectionBuffer(int.MaxValue, ctr);
-                            if (bytesRead.Length == 0)
+                            if (bytesRead.IsEmpty)
                             {
                                 break;
                             }

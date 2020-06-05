@@ -473,7 +473,7 @@ namespace System.Numerics
         internal static char ParseFormatSpecifier(ReadOnlySpan<char> format, out int digits)
         {
             digits = -1;
-            if (format.Length == 0)
+            if (format.IsEmpty)
             {
                 return 'R';
             }

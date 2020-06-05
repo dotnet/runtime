@@ -72,7 +72,7 @@ namespace System
         {
             if (span.Length != value.Length)
                 return false;
-            if (value.Length == 0)  // span.Length == value.Length == 0
+            if (value.IsEmpty)  // span.Length == value.Length == 0
                 return true;
             return span.SequenceEqual(value);
         }
@@ -82,7 +82,7 @@ namespace System
         {
             if (span.Length != value.Length)
                 return false;
-            if (value.Length == 0)  // span.Length == value.Length == 0
+            if (value.IsEmpty)  // span.Length == value.Length == 0
                 return true;
             return CompareInfo.EqualsOrdinalIgnoreCase(ref MemoryMarshal.GetReference(span), ref MemoryMarshal.GetReference(value), span.Length);
         }
@@ -109,7 +109,7 @@ namespace System
                     return CompareInfo.Invariant.Compare(span, other, string.GetCaseCompareOfComparisonCulture(comparisonType));
 
                 case StringComparison.Ordinal:
-                    if (span.Length == 0 || other.Length == 0)
+                    if (span.IsEmpty || other.IsEmpty)
                         return span.Length - other.Length;
                     return string.CompareOrdinal(span, other);
 

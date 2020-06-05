@@ -260,7 +260,7 @@ internal static partial class Interop
             sendCount = 0;
             Exception? handshakeException = null;
 
-            if (input.Length > 0)
+            if (!input.IsEmpty)
             {
                 if (Ssl.BioWrite(context.InputBio!, ref MemoryMarshal.GetReference(input), input.Length) != input.Length)
                 {
@@ -488,7 +488,7 @@ internal static partial class Interop
                 for (int i = 0; i < protocolList.Count; i++)
                 {
                     var clientList = new Span<byte>(inp, (int)inlen);
-                    while (clientList.Length > 0)
+                    while (!clientList.IsEmpty)
                     {
                         byte length = clientList[0];
                         Span<byte> clientProto = clientList.Slice(1, length);

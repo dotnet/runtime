@@ -270,7 +270,7 @@ namespace System.IO
             {
                 _haveWrittenPreamble = true;
                 ReadOnlySpan<byte> preamble = _encoding.Preamble;
-                if (preamble.Length > 0)
+                if (!preamble.IsEmpty)
                 {
                     _stream.Write(preamble);
                 }

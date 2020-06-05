@@ -259,7 +259,7 @@ namespace System.Security.Cryptography.Pkcs
                 ReadOnlySpan<byte> nonceSpan = nonceMemory.Span;
 
                 // If it's empty, or it would be negative, insert the requisite byte.
-                if (nonceSpan.Length == 0 || nonceSpan[0] >= 0x80)
+                if (nonceSpan.IsEmpty || nonceSpan[0] >= 0x80)
                 {
                     byte[] temp = new byte[nonceSpan.Length + 1];
                     nonceSpan.CopyTo(temp.AsSpan(1));

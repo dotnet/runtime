@@ -12,7 +12,7 @@ namespace System.Security.Cryptography
         // they can share this one implementation of FillSpan.
         internal static unsafe void FillSpan(Span<byte> data)
         {
-            if (data.Length > 0)
+            if (!data.IsEmpty)
             {
                 fixed (byte* ptr = data) GetBytes(ptr, data.Length);
             }
@@ -32,7 +32,7 @@ namespace System.Security.Cryptography
 
         public override unsafe void GetBytes(Span<byte> data)
         {
-            if (data.Length > 0)
+            if (!data.IsEmpty)
             {
                 fixed (byte* ptr = data) GetBytes(ptr, data.Length);
             }
@@ -46,7 +46,7 @@ namespace System.Security.Cryptography
 
         public override void GetNonZeroBytes(Span<byte> data)
         {
-            while (data.Length > 0)
+            while (!data.IsEmpty)
             {
                 // Fill the remaining portion of the span with random bytes.
                 GetBytes(data);

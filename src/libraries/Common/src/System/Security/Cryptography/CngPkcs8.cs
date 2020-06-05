@@ -47,7 +47,7 @@ namespace System.Security.Cryptography
                 ReadOnlySpan<char>.Empty,
                 passwordBytes);
 
-            if (passwordBytes.Length == 0)
+            if (passwordBytes.IsEmpty)
             {
                 // Switch to character-based, since that's the native input format.
                 return key.ExportEncryptedPkcs8PrivateKey(ReadOnlySpan<char>.Empty, pbeParameters);
@@ -66,7 +66,7 @@ namespace System.Security.Cryptography
             Span<byte> destination,
             out int bytesWritten)
         {
-            if (passwordBytes.Length == 0)
+            if (passwordBytes.IsEmpty)
             {
                 // Switch to character-based, since that's the native input format.
                 return key.TryExportEncryptedPkcs8PrivateKey(

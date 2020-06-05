@@ -36,7 +36,7 @@ namespace System.Security.Cryptography
                 Interop.Crypto.EvpCipherSetCcmNonceLength(ctx, nonce.Length);
                 Interop.Crypto.EvpCipherSetKeyAndIV(ctx, _key, nonce, Interop.Crypto.EvpCipherDirection.NoChange);
 
-                if (associatedData.Length != 0)
+                if (!associatedData.IsEmpty)
                 {
                     // length needs to be known ahead of time in CCM mode
                     Interop.Crypto.EvpCipherSetInputLength(ctx, plaintext.Length);
@@ -87,7 +87,7 @@ namespace System.Security.Cryptography
 
                 Interop.Crypto.EvpCipherSetKeyAndIV(ctx, _key, nonce, Interop.Crypto.EvpCipherDirection.Decrypt);
 
-                if (associatedData.Length != 0)
+                if (!associatedData.IsEmpty)
                 {
                     // length needs to be known ahead of time in CCM mode
                     Interop.Crypto.EvpCipherSetInputLength(ctx, ciphertext.Length);

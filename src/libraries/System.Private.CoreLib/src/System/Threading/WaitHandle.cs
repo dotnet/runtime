@@ -193,7 +193,7 @@ namespace System.Threading
             Span<SafeWaitHandle?> safeWaitHandles,
             Span<IntPtr> unsafeWaitHandles)
         {
-            Debug.Assert(waitHandles.Length > 0);
+            Debug.Assert(!waitHandles.IsEmpty);
             Debug.Assert(waitHandles.Length <= MaxWaitHandles);
 
             bool lastSuccess = true;
@@ -259,7 +259,7 @@ namespace System.Threading
 
         private static int WaitMultiple(ReadOnlySpan<WaitHandle> waitHandles, bool waitAll, int millisecondsTimeout)
         {
-            if (waitHandles.Length == 0)
+            if (waitHandles.IsEmpty)
             {
                 throw new ArgumentException(SR.Argument_EmptyWaithandleArray, nameof(waitHandles));
             }

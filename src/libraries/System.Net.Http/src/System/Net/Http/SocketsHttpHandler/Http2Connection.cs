@@ -402,7 +402,7 @@ namespace System.Net.Http
         {
             if (hasPad)
             {
-                if (frameData.Length == 0)
+                if (frameData.IsEmpty)
                 {
                     ThrowProtocolError();
                 }
@@ -485,7 +485,7 @@ namespace System.Net.Http
                 http2Stream.OnResponseData(frameData, endStream);
             }
 
-            if (frameData.Length > 0)
+            if (!frameData.IsEmpty)
             {
                 ExtendWindow(frameData.Length);
             }
@@ -527,7 +527,7 @@ namespace System.Net.Http
 
                 // Parse settings and process the ones we care about.
                 ReadOnlySpan<byte> settings = _incomingBuffer.ActiveSpan.Slice(0, frameHeader.PayloadLength);
-                while (settings.Length > 0)
+                while (!settings.IsEmpty)
                 {
                     Debug.Assert((settings.Length % 6) == 0);
 
@@ -1195,7 +1195,7 @@ namespace System.Net.Http
                 headerBuffer = new ArrayBuffer(InitialConnectionBufferSize, usePool: true);
                 WriteHeaders(request, ref headerBuffer);
                 ReadOnlyMemory<byte> remaining = headerBuffer.ActiveMemory;
-                Debug.Assert(remaining.Length > 0);
+                Debug.Assert(!remaining.IsEmpty);
 
                 // Calculate the total number of bytes we're going to use (content + headers).
                 int frameCount = ((remaining.Length - 1) / FrameHeader.MaxPayloadLength) + 1;
@@ -1204,7 +1204,7 @@ namespace System.Net.Http
                 ReadOnlyMemory<byte> current;
                 (current, remaining) = SplitBuffer(remaining, FrameHeader.MaxPayloadLength);
                 FrameFlags flags =
-                    (remaining.Length == 0 ? FrameFlags.EndHeaders : FrameFlags.None) |
+                    (remaining.IsEmpty ? FrameFlags.EndHeaders : FrameFlags.None) |
                     (request.Content == null ? FrameFlags.EndStream : FrameFlags.None);
 
                 // Construct and initialize the new Http2Stream instance.  It's stream ID must be set below
@@ -1253,10 +1253,10 @@ namespace System.Net.Http
                         if (NetEventSource.IsEnabled) s.thisRef.Trace(s.http2Stream.StreamId, $"Wrote HEADERS frame. Length={s.current.Length}, flags={s.flags}");
 
                         // Copy CONTINUATION frames, if any.
-                        while (s.remaining.Length > 0)
+                        while (!s.remaining.IsEmpty)
                         {
                             (s.current, s.remaining) = SplitBuffer(s.remaining, FrameHeader.MaxPayloadLength);
-                            s.flags = s.remaining.Length == 0 ? FrameFlags.EndHeaders : FrameFlags.None;
+                            s.flags = s.remaining.IsEmpty ? FrameFlags.EndHeaders : FrameFlags.None;
 
                             FrameHeader.WriteTo(span, s.current.Length, FrameType.Continuation, s.flags, s.http2Stream.StreamId);
                             span = span.Slice(FrameHeader.Size);
@@ -1265,7 +1265,7 @@ namespace System.Net.Http
                             if (NetEventSource.IsEnabled) s.thisRef.Trace(s.http2Stream.StreamId, $"Wrote CONTINUATION frame. Length={s.current.Length}, flags={s.flags}");
                         }
 
-                        Debug.Assert(span.Length == 0);
+                        Debug.Assert(span.IsEmpty);
 
                         return s.mustFlush || (s.flags & FrameFlags.EndStream) != 0 ? FlushTiming.AfterPendingWrites : FlushTiming.Eventually;
                     }
@@ -1292,7 +1292,7 @@ namespace System.Net.Http
         {
             ReadOnlyMemory<byte> remaining = buffer;
 
-            while (remaining.Length > 0)
+            while (!remaining.IsEmpty)
             {
                 // Once credit had been granted, we want to actually consume those bytes.
                 int frameSize = Math.Min(remaining.Length, FrameHeader.MaxPayloadLength);
