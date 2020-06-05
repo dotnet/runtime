@@ -148,8 +148,9 @@ jobs:
       displayName: Build managed product components and packages
 
     # Build native test components
-    - script: $(coreClrRepoRootDir)build-test$(scriptExt) skipstressdependencies skipmanaged skipgeneratelayout $(buildConfig) $(archType) $(crossArg) $(osArg) $(priorityArg) $(compilerArg)
-      displayName: Build native test components
+    - ${{ if ne(parameters.isOfficialBuild, true) }}:
+      - script: $(coreClrRepoRootDir)build-test$(scriptExt) skipstressdependencies skipmanaged skipgeneratelayout $(buildConfig) $(archType) $(crossArg) $(osArg) $(priorityArg) $(compilerArg)
+        displayName: Build native test components
 
     # Sign on Windows
     - ${{ if and(eq(parameters.osGroup, 'Windows_NT'), eq(parameters.signBinaries, 'true')) }}:
@@ -178,15 +179,16 @@ jobs:
           displayName: 'product build'
 
       # Publish test native components for consumption by test execution.
-      - template: /eng/pipelines/common/upload-artifact-step.yml
-        parameters:
-          rootFolder: $(nativeTestArtifactRootFolderPath)
-          includeRootFolder: false
-          archiveType: $(archiveType)
-          tarCompression: $(tarCompression)
-          archiveExtension: $(archiveExtension)
-          artifactName: $(nativeTestArtifactName)
-          displayName: 'native test components'
+      - ${{ if ne(parameters.isOfficialBuild, true) }}:
+        - template: /eng/pipelines/common/upload-artifact-step.yml
+          parameters:
+            rootFolder: $(nativeTestArtifactRootFolderPath)
+            includeRootFolder: false
+            archiveType: $(archiveType)
+            tarCompression: $(tarCompression)
+            archiveExtension: $(archiveExtension)
+            artifactName: $(nativeTestArtifactName)
+            displayName: 'native test components'
 
     # Get key vault secrets for publishing
     - ${{ if and(ne(variables['System.TeamProject'], 'public'), ne(variables['Build.Reason'], 'PullRequest')) }}:
