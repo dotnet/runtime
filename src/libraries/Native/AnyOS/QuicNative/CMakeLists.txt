@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.12)
-project(System.Net.Quic.Native C)
+project(QuicNative C)
 
 include(ExternalProject)
 
@@ -28,6 +28,8 @@ if ("${CMAKE_HOST_SYSTEM_NAME}" STREQUAL "Windows")
 
     # disable warnings in order to not fail the build
     set(OPENSSL_CFLAGS /wd4133 /wd4244 /wd4267)
+
+    set(VERSION_FILE_PATH ${CMAKE_REPO_ROOT}/artifacts/obj/NativeVersion.rc)
 else()
     set(PLATFORM "linux86_64")
     set(OPENSSL_STATIC_LIBS
@@ -35,6 +37,8 @@ else()
             "${OPENSSL_ARTIFACT_DIR}/lib/libcrypto.a")
     set(OPENSSL_CONFIG_TARGET linux-x86_64)
     set(OPENSSL_BUILD_TOOL make)
+
+    # Linux version of CMAKE already defines the VERSION_FILE_PATH variable
 endif()
 
 set(OPENSSL_CONFIG_OPTIONS
@@ -61,24 +65,26 @@ ExternalProject_Add(OpenSSL
 
 include_directories(${OPENSSL_ARTIFACT_DIR}/include)
 
-add_library(System.Net.Quic.Native SHARED library.c library.h)
-add_dependencies(System.Net.Quic.Native OpenSSL)
+add_library(QuicNative SHARED
+  library.c library.h
+  ${VERSION_FILE_PATH})
+add_dependencies(QuicNative OpenSSL)
 
 # Allow specification of arguments that should be passed to the linker
 if (${__LinkArgs})
-    SET_TARGET_PROPERTIES(System.Net.Quic.Native PROPERTIES LINK_FLAGS ${__LinkArgs})
+    SET_TARGET_PROPERTIES(QuicNative PROPERTIES LINK_FLAGS ${__LinkArgs})
 endif()
 
 # Allow specification of libraries that should be linked against
 # CMake doesn't like space delimiters as input to target_link_libraries
 separate_arguments(linker_libs_sanitized WINDOWS_COMMAND ${__LinkLibraries})
-target_link_libraries(System.Net.Quic.Native
+target_link_libraries(QuicNative
     ${EXTRA_LIBS}
     ${linker_libs_sanitized}
     ${OPENSSL_STATIC_LIBS})
 
-install (TARGETS System.Net.Quic.Native DESTINATION .)
+install (TARGETS QuicNative DESTINATION .)
 
 if ("${CMAKE_HOST_SYSTEM_NAME}" STREQUAL "Windows")
-    install(FILES $<TARGET_PDB_FILE:System.Net.Quic.Native> DESTINATION . OPTIONAL)
+    install(FILES $<TARGET_PDB_FILE:QuicNative> DESTINATION . OPTIONAL)
 endif()

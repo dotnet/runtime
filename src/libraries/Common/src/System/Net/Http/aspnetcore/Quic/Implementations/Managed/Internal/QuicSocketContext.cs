@@ -247,7 +247,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal
                             // discard the completed task.
                             socketReceiveTask = null;
                         }
-                        else 
+                        else
                         {
                             // no pending async task, receive synchronously if there is some data
                             if (!_socket.Poll(0, SelectMode.SelectRead))

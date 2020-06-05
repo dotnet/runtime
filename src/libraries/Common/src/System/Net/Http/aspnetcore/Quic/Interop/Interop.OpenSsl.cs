@@ -11,7 +11,7 @@ internal static partial class Interop
 {
     internal static unsafe class OpenSslQuic
     {
-        internal const string QuicNative = "System.Net.Quic.Native";
+        internal const string QuicNative = "QuicNative";
         internal const string Ssl = QuicNative;
         internal const string Crypto = QuicNative;
 

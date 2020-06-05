@@ -3,7 +3,6 @@
 using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
 using System.Net.Quic.Implementations.Managed.Internal;
 using System.Net.Quic.Implementations.Managed.Internal.OpenSsl;
 using System.Net.Security;
@@ -48,6 +47,8 @@ namespace System.Net.Quic.Implementations.Managed
 
         private static readonly IntPtr _callbacksPtr;
 
+        // this initialization actually cannot be done in a field initializer
+#pragma warning disable CA1810
         static unsafe Tls()
         {
             _callbacksPtr = Marshal.AllocHGlobal(sizeof(OpenSslQuicMethods.NativeCallbacks));
@@ -66,6 +67,7 @@ namespace System.Net.Quic.Implementations.Managed
             //     Interop.OpenSslQuic.__globalSslCtx,
             //     tlsExtServernameCallbackDelegate);
         }
+#pragma warning restore CA1810
 
         internal Tls(GCHandle handle, QuicClientConnectionOptions options, TransportParameters localTransportParams)
             : this(handle,
@@ -219,7 +221,7 @@ namespace System.Net.Quic.Implementations.Managed
             if (_serverCertificateSelectionCallback != null)
             {
                 Debug.Assert(_isServer);
-                var cert = _serverCertificateSelectionCallback(null, hostname);
+                var cert = _serverCertificateSelectionCallback(this, hostname);
                 if (cert != null)
                 {
                     SetServerCertificate(cert);
@@ -230,11 +232,27 @@ namespace System.Net.Quic.Implementations.Managed
 
         private void SetCiphersuites(CipherSuitesPolicy? policy)
         {
-            // if no policy supplied, use default ciphers
+            // if no policy supplied, use all supported ciphers
             IEnumerable<TlsCipherSuite> ciphers = _supportedCiphers;
+
             if (policy != null)
             {
-                ciphers = _supportedCiphers.Intersect(policy.AllowedCipherSuites);
+                // do a set intersection with supported ciphers
+                List<TlsCipherSuite> filteredCiphers = new List<TlsCipherSuite>();
+
+                foreach (var cipher in policy.AllowedCipherSuites)
+                {
+                    foreach (var supportedCipher in _supportedCiphers)
+                    {
+                        if (cipher == supportedCipher)
+                        {
+                            filteredCiphers.Add(cipher);
+                            break;
+                        }
+                    }
+                }
+
+                ciphers = filteredCiphers;
             }
 
             string ciphersString = string.Join(":", ciphers);
