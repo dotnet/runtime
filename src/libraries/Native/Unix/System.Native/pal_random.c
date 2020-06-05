@@ -168,9 +168,7 @@ int32_t SystemNative_GetCryptographicallySecureRandomBytes(uint8_t* buffer, int3
                     {
                         continue;
                     }
-
-                    assert(false && "read from /dev/urandom has failed");
-                    break;
+                    return -1;
                 }
 
                 offset += n;
