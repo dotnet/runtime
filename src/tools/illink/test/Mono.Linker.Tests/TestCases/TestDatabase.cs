@@ -92,6 +92,11 @@ namespace Mono.Linker.Tests.TestCases
 			return NUnitCasesBySuiteName ("PreserveDependencies");
 		}
 
+		public static IEnumerable<TestCaseData> DynamicDependenciesTests ()
+		{
+			return NUnitCasesBySuiteName ("DynamicDependencies");
+		}
+
 		public static IEnumerable<TestCaseData> LibrariesTests ()
 		{
 			return NUnitCasesBySuiteName ("Libraries");

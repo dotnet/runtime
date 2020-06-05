@@ -109,6 +109,7 @@ namespace Mono.Linker
 		OverrideOnInstantiatedType = 66, // instantiated type -> override method on the type
 
 		// Linker-specific behavior (preservation hints, patterns, user inputs, linker outputs, etc.)
+		DynamicDependency = 67, // DynamicDependency attribute -> member
 		PreservedDependency = 67, // PreserveDependency attribute -> member
 		AccessedViaReflection = 68, // method -> detected member accessed via reflection from that method
 		PreservedMethod = 69, // type/method -> preserved method (explicitly preserved in Annotations by XML or other steps)

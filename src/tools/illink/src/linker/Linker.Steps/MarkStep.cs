@@ -30,6 +30,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Text.RegularExpressions;
 using Mono.Cecil;
@@ -54,7 +55,10 @@ namespace Mono.Linker.Steps
 #if DEBUG
 		static readonly DependencyKind[] _entireTypeReasons = new DependencyKind[] {
 			DependencyKind.NestedType,
+#if !FEATURE_ILLINK
 			DependencyKind.PreservedDependency,
+#endif
+			DependencyKind.DynamicDependency,
 			DependencyKind.TypeInAssembly,
 			DependencyKind.AccessedViaReflection,
 			DependencyKind.BaseType,
@@ -71,7 +75,10 @@ namespace Mono.Linker.Steps
 			DependencyKind.InteropMethodDependency,
 			DependencyKind.Ldtoken,
 			DependencyKind.MemberOfType,
+#if !FEATURE_ILLINK
 			DependencyKind.PreservedDependency,
+#endif
+			DependencyKind.DynamicDependency,
 			DependencyKind.ReferencedBySpecialAttribute,
 			DependencyKind.TypePreserve,
 		};
@@ -87,6 +94,7 @@ namespace Mono.Linker.Steps
 			DependencyKind.CustomAttributeArgumentValue,
 			DependencyKind.DeclaringType,
 			DependencyKind.DeclaringTypeOfCalledMethod,
+			DependencyKind.DynamicDependency,
 			DependencyKind.ElementType,
 			DependencyKind.FieldType,
 			DependencyKind.GenericArgumentType,
@@ -130,7 +138,10 @@ namespace Mono.Linker.Steps
 			DependencyKind.Newobj,
 			DependencyKind.Override,
 			DependencyKind.OverrideOnInstantiatedType,
+#if !FEATURE_ILLINK
 			DependencyKind.PreservedDependency,
+#endif
+			DependencyKind.DynamicDependency,
 			DependencyKind.PreservedMethod,
 			DependencyKind.ReferencedBySpecialAttribute,
 			DependencyKind.SerializationMethodForType,
@@ -367,7 +378,7 @@ namespace Mono.Linker.Steps
 				} catch (Exception e) when (!(e is LinkerFatalErrorException)) {
 					throw new LinkerFatalErrorException (
 						MessageContainer.CreateErrorMessage ($"Error processing method '{method.FullName}' in assembly '{method.Module.Name}'", 1005,
-						origin: MessageOrigin.TryGetOrigin (method, 0)), e);
+						origin: MessageOrigin.TryGetOrigin (method)), e);
 				}
 			}
 		}
@@ -522,9 +533,8 @@ namespace Mono.Linker.Steps
 			bool markOnUse = _context.KeepUsedAttributeTypesOnly && Annotations.GetAction (GetAssemblyFromCustomAttributeProvider (provider)) == AssemblyAction.Link;
 
 			foreach (CustomAttribute ca in provider.CustomAttributes) {
-				if (ProcessLinkerSpecialAttribute (ca, provider, reason)) {
+				if (ProcessLinkerSpecialAttribute (ca, provider, reason))
 					continue;
-				}
 
 				if (markOnUse) {
 					_lateMarkedAttributes.Enqueue ((new AttributeProviderPair (ca, provider), reason));
@@ -534,24 +544,120 @@ namespace Mono.Linker.Steps
 				MarkCustomAttribute (ca, reason);
 				MarkSpecialCustomAttributeDependencies (ca, provider);
 			}
+
+			if (!(provider is MethodDefinition || provider is FieldDefinition))
+				return;
+
+			var dynamicDependencies = _context.Annotations.GetLinkerAttributes<DynamicDependency> ((IMemberDefinition) provider);
+
+			foreach (var dynamicDependency in dynamicDependencies)
+				MarkDynamicDependency (dynamicDependency, (MemberReference) provider);
 		}
 
 		protected virtual bool ProcessLinkerSpecialAttribute (CustomAttribute ca, ICustomAttributeProvider provider, in DependencyInfo reason)
 		{
-			if (IsUserDependencyMarker (ca.AttributeType) && provider is MemberReference mr) {
+			var isPreserveDependency = IsUserDependencyMarker (ca.AttributeType);
+			var isDynamicDependency = ca.AttributeType.IsTypeOf<DynamicDependencyAttribute> ();
+
+			if (!((isPreserveDependency || isDynamicDependency) && provider is MemberReference mr))
+				return false;
+
+			if (isPreserveDependency)
 				MarkUserDependency (mr, ca);
 
-				if (_context.KeepDependencyAttributes || Annotations.GetAction (mr.Module.Assembly) != AssemblyAction.Link) {
-					MarkCustomAttribute (ca, reason);
-				} else {
-					// Record the custom attribute so that it has a reason, without actually marking it.
-					Tracer.AddDirectDependency (ca, reason, marked: false);
-				}
-
-				return true;
+			if (_context.KeepDependencyAttributes || Annotations.GetAction (mr.Module.Assembly) != AssemblyAction.Link) {
+				MarkCustomAttribute (ca, reason);
+			} else {
+				// Record the custom attribute so that it has a reason, without actually marking it.
+				Tracer.AddDirectDependency (ca, reason, marked: false);
 			}
 
-			return false;
+			return true;
+		}
+
+		void MarkDynamicDependency (DynamicDependency dynamicDependency, MemberReference context)
+		{
+			Debug.Assert (context is MethodDefinition || context is FieldDefinition);
+			AssemblyDefinition assembly;
+			if (dynamicDependency.AssemblyName != null) {
+				assembly = _context.GetLoadedAssembly (dynamicDependency.AssemblyName);
+				if (assembly == null) {
+					_context.LogWarning ($"Unresolved assembly '{dynamicDependency.AssemblyName}' in DynamicDependencyAttribute on '{context}'", 2035, MessageOrigin.TryGetOrigin (context.Resolve ()));
+					return;
+				}
+			} else {
+				assembly = context.Module.Assembly;
+				Debug.Assert (assembly != null);
+			}
+
+			TypeDefinition type;
+			if (dynamicDependency.TypeName is string typeName) {
+				type = DocumentationSignatureParser.GetTypeByDocumentationSignature (assembly, typeName);
+				if (type == null) {
+					_context.LogWarning ($"Unresolved type '{typeName}' in DynamicDependencyAttribute on '{context}'", 2036, MessageOrigin.TryGetOrigin (context.Resolve ()));
+					return;
+				}
+			} else if (dynamicDependency.Type is TypeReference typeReference) {
+				type = typeReference.Resolve ();
+				if (type == null) {
+					_context.LogWarning ($"Unresolved type '{typeReference}' in DynamicDependencyAtribute on '{context}'", 2036, MessageOrigin.TryGetOrigin (context.Resolve ()));
+					return;
+				}
+			} else {
+				type = context.DeclaringType.Resolve ();
+				if (type == null) {
+					_context.LogWarning ($"Unresolved type '{context.DeclaringType}' in DynamicDependencyAttribute on '{context}'", 2036, MessageOrigin.TryGetOrigin (context.Resolve ()));
+					return;
+				}
+			}
+
+			IEnumerable<IMemberDefinition> members;
+			if (dynamicDependency.MemberSignature is string memberSignature) {
+				members = DocumentationSignatureParser.GetMembersByDocumentationSignature (type, memberSignature);
+				if (!members.Any ()) {
+					_context.LogWarning ($"No members were resolved for '{memberSignature}' in DynamicDependencyAttribute on '{context}'", 2037, MessageOrigin.TryGetOrigin (context.Resolve ()));
+					return;
+				}
+			} else {
+				var memberTypes = dynamicDependency.MemberTypes;
+				members = DynamicallyAccessedMembersBinder.GetDynamicallyAccessedMembers (type, memberTypes);
+				if (!members.Any ()) {
+					_context.LogWarning ($"No members were resolved for '{memberTypes}' in DynamicDependencyAttribute on '{context}'", 2037, MessageOrigin.TryGetOrigin (context.Resolve ()));
+					return;
+				}
+			}
+
+			MarkMembers (type, members, new DependencyInfo (DependencyKind.DynamicDependency, dynamicDependency.OriginalAttribute));
+		}
+
+		void MarkMembers (TypeDefinition typeDefinition, IEnumerable<IMemberDefinition> members, DependencyInfo reason)
+		{
+			foreach (var member in members) {
+				switch (member) {
+				case TypeDefinition type:
+					MarkType (type, reason);
+					break;
+				case MethodDefinition method:
+					MarkMethod (method, reason);
+					break;
+				case FieldDefinition field:
+					MarkField (field, reason);
+					break;
+				case PropertyDefinition property:
+					MarkProperty (property, reason);
+					MarkMethodIfNotNull (property.GetMethod, reason);
+					MarkMethodIfNotNull (property.SetMethod, reason);
+					MarkMethodsIf (property.OtherMethods, m => true, reason);
+					break;
+				case EventDefinition @event:
+					MarkEvent (@event, reason);
+					MarkMethodsIf (@event.OtherMethods, m => true, reason);
+					break;
+				case null:
+					MarkEntireType (typeDefinition, includeBaseTypes: true, reason);
+					break;
+				}
+			}
 		}
 
 		protected static AssemblyDefinition GetAssemblyFromCustomAttributeProvider (ICustomAttributeProvider provider)
@@ -571,27 +677,13 @@ namespace Mono.Linker.Steps
 
 		protected virtual bool IsUserDependencyMarker (TypeReference type)
 		{
-			return PreserveDependencyLookupStep.IsPreserveDependencyAttribute (type);
+			return DynamicDependencyLookupStep.IsPreserveDependencyAttribute (type);
 		}
 
 		protected virtual void MarkUserDependency (MemberReference context, CustomAttribute ca)
 		{
-			if (ca.HasProperties && ca.Properties[0].Name == "Condition") {
-				var condition = ca.Properties[0].Argument.Value as string;
-				switch (condition) {
-				case "":
-				case null:
-					break;
-				case "DEBUG":
-					if (!_context.KeepMembersForDebugger)
-						return;
-
-					break;
-				default:
-					// Don't have yet a way to match the general condition so everything is excluded
-					return;
-				}
-			}
+			if (!DynamicDependency.ShouldProcess (_context, ca))
+				return;
 
 			AssemblyDefinition assembly;
 			var args = ca.ConstructorArguments;
@@ -2284,7 +2376,7 @@ namespace Mono.Linker.Steps
 				var baseType = method.DeclaringType.BaseType.Resolve ();
 				if (!MarkDefaultConstructor (baseType, new DependencyInfo (DependencyKind.BaseDefaultCtorForStubbedMethod, method)))
 					throw new LinkerFatalErrorException (MessageContainer.CreateErrorMessage ($"Cannot stub constructor on '{method.DeclaringType}' when base type does not have default constructor",
-						1006, origin: MessageOrigin.TryGetOrigin (method, 0)));
+						1006, origin: MessageOrigin.TryGetOrigin (method)));
 
 				break;
 
@@ -2608,11 +2700,6 @@ namespace Mono.Linker.Steps
 			Annotations.Mark (iface, new DependencyInfo (DependencyKind.InterfaceImplementationOnType, type));
 		}
 
-		bool HasManuallyTrackedDependency (MethodBody methodBody)
-		{
-			return PreserveDependencyLookupStep.HasPreserveDependencyAttribute (methodBody.Method);
-		}
-
 		//
 		// Extension point for reflection logic handling customization
 		//
@@ -2626,9 +2713,6 @@ namespace Mono.Linker.Steps
 		//
 		protected virtual void MarkReflectionLikeDependencies (MethodBody body, bool requiresReflectionMethodBodyScanner)
 		{
-			if (HasManuallyTrackedDependency (body))
-				return;
-
 			if (requiresReflectionMethodBodyScanner) {
 				var scanner = new ReflectionMethodBodyScanner (_context, this, _flowAnnotations);
 				scanner.ScanAndProcessReturnValue (body);

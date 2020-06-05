@@ -162,9 +162,9 @@ error and warning codes.
 
 - The linker found a call to a method which is annotated with 'RequiresUnreferencedCodeAttribute' which can break functionality of a trimmed application.
 
-#### `IL2027`: Attribute 'attribute' should only be used once on 'method'.
+#### `IL2027`: Attribute 'attribute' should only be used once on 'member'.
 
-- The linker found multiple instances of attribute 'attribute' on 'method'. This attribute is only allowed to have one instance, linker will only use the fist instance and ignore the rest.
+- The linker found multiple instances of attribute 'attribute' on 'member'. This attribute is only allowed to have one instance, linker will only use the fist instance and ignore the rest.
 
 #### `IL2028`: Attribute 'attribute' on 'method' doesn't have a required constructor argument.
 
@@ -185,3 +185,23 @@ error and warning codes.
 #### `IL2032`: Argument 'argument' specified in 'XML document location' could not be transformed to the constructor parameter type
 
 - The number of arguments correspond to a certain type constructor, but the type of arguments specified in the xml does not match the type of arguments in the constructor.
+
+#### `IL2033`: Deprecated PreserveDependencyAttribute on 'member'. Use DynamicDependencyAttribute instead.
+
+- PreserveDependencyAttribute was an internal attribute that was never officially supported. Instead, use the similar DynamicDependencyAttribute.
+
+#### `IL2034`: Invalid DynamicDependencyAttribute on 'member'
+
+- The input contains an invalid use of DynamicDependencyAttribute. Ensure that you are using one of the officially supported constructors.
+
+#### `IL2035`: Unresolved assembly 'assemblyName' in DynamicDependencyAttribute on 'member'
+
+- The assembly string given in a DynamicDependencyAttribute constructor could not be resolved. Ensure that the argument specifies a valid asembly name, and that the assembly is available to the linker.
+
+#### `IL2036`: Unresolved type 'typeName' in DynamicDependencyAttribute on 'member'
+
+- The type in a DynamicDependencyAttribute constructor could not be resolved. Ensure that the argument specifies a valid type name or type reference, that the type exists in the specified assembly, and that the assembly is available to the linker.
+
+### `IL2037`: No members were resolved for 'memberSignature/memberTypes' in DynamicDependencyAttribute on 'member'
+
+- The member signature or DynamicallyAccessedMemberTypes in a DynamicDependencyAttribute constructor did not resolve to any members on the type. If you using a signature, ensure that it refers to an existing member, and that it uses the format defined at https://github.com/dotnet/csharplang/blob/master/spec/documentation-comments.md#id-string-format. If using DynamicallyAccessedMemberTypes, ensure that the type contains members of the specified member types.
