@@ -654,7 +654,11 @@ SHARED_API int32_t HOSTFXR_CALLTYPE hostfxr_get_runtime_delegate(
     if (context == nullptr)
         return StatusCode::InvalidArgFailure;
 
-    return fx_muxer_t::get_runtime_delegate(context, hostfxr_delegate_to_coreclr_delegate(type), delegate);
+    coreclr_delegate_type delegate_type = hostfxr_delegate_to_coreclr_delegate(type);
+    if (delegate_type == coreclr_delegate_type::invalid)
+        return StatusCode::InvalidArgFailure;
+
+    return fx_muxer_t::get_runtime_delegate(context, delegate_type, delegate);
 }
 
 //
