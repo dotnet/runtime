@@ -255,6 +255,7 @@ namespace System.IO
                     return ConsoleKey.Enter;
 
                 case '\n':
+                    // Windows compatibility; LF is Ctrl+Enter
                     isCtrl = true;
                     return ConsoleKey.Enter;
 
@@ -361,8 +362,11 @@ namespace System.IO
             return key != default(ConsoleKey);
         }
 
-        public ConsoleKeyInfo ReadKey(out bool previouslyProcessed) =>
-            ReadKeyCore(disableCrLfConversions: true, out previouslyProcessed);
+        public ConsoleKeyInfo ReadKey(out bool previouslyProcessed)
+        {
+            // Console.ReadKey() requires the precise input character
+            return ReadKeyCore(disableCrLfConversions: true, out previouslyProcessed);
+        }
 
         /// <summary>
         /// Try to intercept the key pressed.

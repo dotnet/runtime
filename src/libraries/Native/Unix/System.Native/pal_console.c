@@ -186,6 +186,9 @@ static bool ConfigureTerminal(bool signalForBreak, bool forChild, uint8_t minCha
 
     if (disableCrLfConversions)
     {
+        // Disable any CR-to-NL, NL-to-CR or Ignore-CR settings
+        // Required for scenaria where the precise input character is needed
+        // such as System.Console.ReadKey()
         termios.c_iflag &= (uint32_t)(~(ICRNL | INLCR | IGNCR));
     }
 
