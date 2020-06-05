@@ -954,24 +954,28 @@ namespace System.Net.Http.Functional.Tests
         {
             string content = "Test content";
 
+            ManualResetEventSlim mres = new ManualResetEventSlim();
+
             await LoopbackServer.CreateClientAndServerAsync(
                 async uri =>
                 {
-                    var sendTask = Task.Run(() => {
-                        using HttpClient httpClient = CreateHttpClient();
-                        httpClient.Timeout = TimeSpan.FromSeconds(0.5);
+                    try
+                    {
+                        var sendTask = Task.Run(() => {
+                            using HttpClient httpClient = CreateHttpClient();
+                            httpClient.Timeout = TimeSpan.FromSeconds(1);
 
-                        HttpResponseMessage response = httpClient.Send(new HttpRequestMessage(HttpMethod.Get, uri) {
-                            Content = new CustomContent(stream =>
-                            {
-                                stream.Write(Encoding.UTF8.GetBytes(content));
-                            })
+                            HttpResponseMessage response = httpClient.Send(new HttpRequestMessage(HttpMethod.Get, uri));
                         });
-                    });
 
-                    TaskCanceledException ex = await Assert.ThrowsAsync<TaskCanceledException>(() => sendTask);
-                    Assert.IsType<TimeoutException>(ex.InnerException);
-                    Assert.Contains("HttpContent.LoadIntoBuffer(", ex.ToString());
+                        TaskCanceledException ex = await Assert.ThrowsAsync<TaskCanceledException>(() => sendTask);
+                        Assert.IsType<TimeoutException>(ex.InnerException);
+                        Assert.Contains("HttpContent.LoadIntoBuffer(", ex.ToString());
+                    }
+                    finally
+                    {
+                        mres.Set();
+                    }
                 },
                 async server =>
                 {
@@ -981,7 +985,7 @@ namespace System.Net.Http.Functional.Tests
                         await connection.SendResponseAsync(headers: new List<HttpHeaderData>() {
                             new HttpHeaderData("Content-Length", (content.Length * 2).ToString())
                         });
-                        await Task.Delay(TimeSpan.FromSeconds(1));
+                        mres.Wait();
                         await connection.Writer.WriteLineAsync(content);
                     });
                 }); 

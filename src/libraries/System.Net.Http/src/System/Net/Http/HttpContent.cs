@@ -429,12 +429,12 @@ namespace System.Net.Http
             // Register for cancellation and tear down the underlying stream in case of cancellation/timeout.
             CancellationTokenRegistration cancellationRegistration = cancellationToken.Register(swr =>
             {
-                var streamWeakRef = (WeakReference<MemoryStream>)swr!;
-                if (streamWeakRef.TryGetTarget(out MemoryStream? stream))
+                var weakThisRef = (WeakReference<HttpContent>)swr!;
+                if (weakThisRef.TryGetTarget(out HttpContent? strongThisRef))
                 {
-                    stream.Dispose();
+                    strongThisRef.Dispose();
                 }
-            }, new WeakReference<MemoryStream>(tempBuffer));
+            }, new WeakReference<HttpContent>(this));
 
             try
             {
