@@ -1,10 +1,7 @@
 ﻿#!/usr/bin/env bash
 
 EXECUTION_DIR=$(dirname $0)
-TEST_NAME=$1
-TARGET_ARCH=$2
-TARGET=
-SCHEME_SDK=
+[[RunCommands]]
 
 if [ "$TARGET_ARCH" == "arm" ]; then
     TARGET=ios-device
@@ -38,15 +35,25 @@ while true; do
         sleep 5
     fi
 done
+# Restart the simulator to make sure it is tied to the right user session
+xcode_version=11.4
+xcode_path="/Applications/Xcode${xcode_version/./}.app"
+simulator_app="$xcode_path/Contents/Developer/Applications/Simulator.app"
+pid=`ps aux | grep "$simulator_app" | grep -v grep | tr -s ' ' | cut -d ' ' -f 2`
+if [ ! -z "$pid" ]; then
+    sudo kill "$pid"
+fi
+open -a "$simulator_app"
+export XHARNESS_OUT="$EXECUTION_DIR/xharness-output"
 
-XHARNESS_OUT="$EXECUTION_DIR/xharness-output"
-
-dotnet xharness ios test --app="$APP_BUNDLE" \
-    --targets=$TARGET \
+dotnet xharness ios test \
+    --targets="$TARGET" \
+    --app="$APP_BUNDLE" \
+    --xcode="/Applications/Xcode114.app" \
     --output-directory=$XHARNESS_OUT
 
 _exitCode=$?
 
-echo "Xharness artifacts: $XHARNESS_OUT"
+echo "Xharness artifacts: `ls -lh $XHARNESS_OUT`"
 
 exit $_exitCode
