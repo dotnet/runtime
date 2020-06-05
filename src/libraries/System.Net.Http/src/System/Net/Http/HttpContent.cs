@@ -254,6 +254,53 @@ namespace System.Net.Http
             return _bufferedContent.ToArray();
         }
 
+        public Stream ReadAsStream() =>
+            ReadAsStream(CancellationToken.None);
+
+        public Stream ReadAsStream(CancellationToken cancellationToken)
+        {
+            CheckDisposed();
+
+            // _contentReadStream will be either null (nothing yet initialized), a Stream (it was previously
+            // initialized in TryReadAsStream/ReadAsStream), or a Task<Stream> (it was previously initialized
+            // in ReadAsStreamAsync).
+
+            if (_contentReadStream == null) // don't yet have a Stream
+            {
+                Stream s = TryGetBuffer(out ArraySegment<byte> buffer) ?
+                    new MemoryStream(buffer.Array!, buffer.Offset, buffer.Count, writable: false) :
+                    CreateContentReadStream(cancellationToken);
+                _contentReadStream = s;
+                return s;
+            }
+            else if (_contentReadStream is Stream stream) // have a Stream
+            {
+                return stream;
+            }
+            else // have a Task<Stream>
+            {
+                // Several options here:
+                // 0. Forbid any combination of ReadAsStreamAsync and ReadAsStream to be called on the same HttpContent instance.
+                //    It would require introducing a new variable and checking it the same way as we check for _disposed.
+                // 1. Just throw in any case, the ReadAsStreamAsync has been called previously
+                //    It will throw even if ReadAsStreamAsync had Stream available synchrounously
+                throw new HttpRequestException(SR.net_http_content_read_as_stream_has_task);
+                // 2. If the task is completed, return the stream it holds; otherwise throw.
+                /*Debug.Assert(_contentReadStream is Task<Stream>, $"Expected a Task<Stream>, got ${_contentReadStream}");
+                Task<Stream> t = (Task<Stream>)_contentReadStream;
+                Stream s = t.Status == TaskStatus.RanToCompletion ? t.Result : throw new HttpRequestException(SR.net_http_content_read_as_stream_has_task);*/
+                // 3. If the task is completed, return the stream it holds; call CreateContentReadStream.
+                //    Optionally, store the stream in _contentReadStream, effectivelly overriding stored task.
+                /*Debug.Assert(_contentReadStream is Task<Stream>, $"Expected a Task<Stream>, got ${_contentReadStream}");
+                Task<Stream> t = (Task<Stream>)_contentReadStream;
+                Stream s = t.Status == TaskStatus.RanToCompletion ? t.Result : CreateContentReadStream(cancellationToken);
+                _contentReadStream = s;
+                return s;*/
+                // 4. Split _contentReadStream into 2 fields (stream and task).
+                //    Allowing to have multiple calls to ReadAsStream/ReadAsStreamAsync with cached results.
+            }
+        }
+
         public Task<Stream> ReadAsStreamAsync() =>
             ReadAsStreamAsync(CancellationToken.None);
 
@@ -262,7 +309,7 @@ namespace System.Net.Http
             CheckDisposed();
 
             // _contentReadStream will be either null (nothing yet initialized), a Stream (it was previously
-            // initialized in TryReadAsStream), or a Task<Stream> (it was previously initialized here
+            // initialized in TryReadAsStream/ReadAsStream), or a Task<Stream> (it was previously initialized here
             // in ReadAsStreamAsync).
 
             if (_contentReadStream == null) // don't yet have a Stream
@@ -291,7 +338,7 @@ namespace System.Net.Http
             CheckDisposed();
 
             // _contentReadStream will be either null (nothing yet initialized), a Stream (it was previously
-            // initialized here in TryReadAsStream), or a Task<Stream> (it was previously initialized
+            // initialized in TryReadAsStream/ReadAsStream), or a Task<Stream> (it was previously initialized here
             // in ReadAsStreamAsync).
 
             if (_contentReadStream == null) // don't yet have a Stream
@@ -526,6 +573,12 @@ namespace System.Net.Http
                 if (NetEventSource.IsEnabled) NetEventSource.Error(this, e);
                 throw;
             }
+        }
+
+        protected virtual Stream CreateContentReadStream(CancellationToken cancellationToken)
+        {
+            LoadIntoBuffer(MaxBufferSize, cancellationToken);
+            return _bufferedContent!;
         }
 
         protected virtual Task<Stream> CreateContentReadStreamAsync()
