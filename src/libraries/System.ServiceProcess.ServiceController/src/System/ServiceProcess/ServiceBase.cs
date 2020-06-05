@@ -954,7 +954,8 @@ namespace System.ServiceProcess
             {
                 if (AutoLog)
                 {
-                    EventLog.WriteEntry(message);
+                    EventLogEntryType eventLogEntryType = error ? EventLogEntryType.Error : EventLogEntryType.Information;
+                    EventLog.WriteEntry(message, eventLogEntryType);
                 }
             }
             catch
