@@ -55,7 +55,7 @@ namespace Mono.Linker
 		protected readonly Dictionary<MethodDefinition, List<OverrideInformation>> override_methods = new Dictionary<MethodDefinition, List<OverrideInformation>> ();
 		protected readonly Dictionary<MethodDefinition, List<MethodDefinition>> base_methods = new Dictionary<MethodDefinition, List<MethodDefinition>> ();
 		protected readonly Dictionary<AssemblyDefinition, ISymbolReader> symbol_readers = new Dictionary<AssemblyDefinition, ISymbolReader> ();
-		readonly Dictionary<MethodDefinition, LinkerAttributesInformation> method_linker_attributes = new Dictionary<MethodDefinition, LinkerAttributesInformation> ();
+		readonly Dictionary<IMemberDefinition, LinkerAttributesInformation> linker_attributes = new Dictionary<IMemberDefinition, LinkerAttributesInformation> ();
 
 		readonly Dictionary<object, Dictionary<IMetadataTokenProvider, object>> custom_annotations = new Dictionary<object, Dictionary<IMetadataTokenProvider, object>> ();
 		protected readonly Dictionary<AssemblyDefinition, HashSet<string>> resources_to_remove = new Dictionary<AssemblyDefinition, HashSet<string>> ();
@@ -63,7 +63,6 @@ namespace Mono.Linker
 		readonly HashSet<TypeDefinition> marked_types_with_cctor = new HashSet<TypeDefinition> ();
 		protected readonly HashSet<TypeDefinition> marked_instantiated = new HashSet<TypeDefinition> ();
 		protected readonly HashSet<MethodDefinition> indirectly_called = new HashSet<MethodDefinition> ();
-
 
 		public AnnotationStore (LinkContext context) => this.context = context;
 
@@ -429,34 +428,42 @@ namespace Mono.Linker
 			return marked_types_with_cctor.Add (type);
 		}
 
-		public bool HasLinkerAttribute<T> (MethodDefinition method) where T : Attribute
+		public bool HasLinkerAttribute<T> (IMemberDefinition member) where T : Attribute
 		{
-			if (!method_linker_attributes.TryGetValue (method, out var linkerAttributeInformation)) {
-				linkerAttributeInformation = new LinkerAttributesInformation (context, method);
-				method_linker_attributes.Add (method, linkerAttributeInformation);
+			// Avoid setting up and inserting LinkerAttributesInformation for members without attributes.
+			if (!member.HasCustomAttributes)
+				return false;
+
+			if (!linker_attributes.TryGetValue (member, out var linkerAttributeInformation)) {
+				linkerAttributeInformation = new LinkerAttributesInformation (context, member);
+				linker_attributes.Add (member, linkerAttributeInformation);
 			}
 
 			return linkerAttributeInformation.HasAttribute<T> ();
 		}
 
-		public IEnumerable<T> GetLinkerAttributes<T> (MethodDefinition method) where T : Attribute
+		public IEnumerable<T> GetLinkerAttributes<T> (IMemberDefinition member) where T : Attribute
 		{
-			if (!method_linker_attributes.TryGetValue (method, out var linkerAttributeInformation)) {
-				linkerAttributeInformation = new LinkerAttributesInformation (context, method);
-				method_linker_attributes.Add (method, linkerAttributeInformation);
+			// Avoid setting up and inserting LinkerAttributesInformation for members without attributes.
+			if (!member.HasCustomAttributes)
+				return Enumerable.Empty<T> ();
+
+			if (!linker_attributes.TryGetValue (member, out var linkerAttributeInformation)) {
+				linkerAttributeInformation = new LinkerAttributesInformation (context, member);
+				linker_attributes.Add (member, linkerAttributeInformation);
 			}
 
 			return linkerAttributeInformation.GetAttributes<T> ();
 		}
 
-		public bool TryGetLinkerAttribute<T> (MethodDefinition method, out T attribute) where T : Attribute
+		public bool TryGetLinkerAttribute<T> (IMemberDefinition member, out T attribute) where T : Attribute
 		{
-			var attributes = GetLinkerAttributes<T> (method);
+			var attributes = GetLinkerAttributes<T> (member);
 			if (attributes.Count () > 1) {
-				context.LogWarning ($"Attribute '{typeof (T).FullName}' should only be used once on '{method}'.",
-					2027, MessageOrigin.TryGetOrigin (method, 0));
+				context.LogWarning ($"Attribute '{typeof (T).FullName}' should only be used once on '{member}'.", 2027, MessageOrigin.TryGetOrigin (member));
 			}
 
+			Debug.Assert (attributes.Count () <= 1);
 			attribute = attributes.FirstOrDefault ();
 			return attribute != null;
 		}

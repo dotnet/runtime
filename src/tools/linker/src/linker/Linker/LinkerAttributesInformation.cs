@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using Mono.Cecil;
@@ -14,32 +15,38 @@ namespace Mono.Linker
 	{
 		readonly Dictionary<Type, List<Attribute>> _linkerAttributes;
 
-		public LinkerAttributesInformation (LinkContext context, MethodDefinition method)
+		public LinkerAttributesInformation (LinkContext context, ICustomAttributeProvider provider)
 		{
 			_linkerAttributes = null;
 
-			if (method.HasCustomAttributes) {
-				foreach (var customAttribute in method.CustomAttributes) {
+			if (provider.HasCustomAttributes) {
+				foreach (var customAttribute in provider.CustomAttributes) {
 					var attributeType = customAttribute.AttributeType;
 					Attribute attributeValue = null;
-					if (attributeType.Name == "RequiresUnreferencedCodeAttribute" && attributeType.Namespace == "System.Diagnostics.CodeAnalysis") {
-						attributeValue = ProcessRequiresUnreferencedCodeAttribute (context, method, customAttribute);
-					}
-
-					if (attributeValue != null) {
-						if (_linkerAttributes == null)
-							_linkerAttributes = new Dictionary<Type, List<Attribute>> ();
-
-						Type attributeValueType = attributeValue.GetType ();
-						if (!_linkerAttributes.TryGetValue (attributeValueType, out var attributeList)) {
-							attributeList = new List<Attribute> ();
-							_linkerAttributes.Add (attributeValueType, attributeList);
-						}
-
-						attributeList.Add (attributeValue);
-					}
+					if (attributeType.IsTypeOf<RequiresUnreferencedCodeAttribute> ())
+						attributeValue = ProcessRequiresUnreferencedCodeAttribute (context, provider, customAttribute);
+					else if (attributeType.IsTypeOf<DynamicDependencyAttribute> ())
+						attributeValue = DynamicDependency.ProcessAttribute (context, provider, customAttribute);
+					AddAttribute (ref _linkerAttributes, attributeValue);
 				}
 			}
+		}
+
+		static void AddAttribute (ref Dictionary<Type, List<Attribute>> attributes, Attribute attributeValue)
+		{
+			if (attributeValue == null)
+				return;
+
+			if (attributes == null)
+				attributes = new Dictionary<Type, List<Attribute>> ();
+
+			Type attributeValueType = attributeValue.GetType ();
+			if (!attributes.TryGetValue (attributeValueType, out var attributeList)) {
+				attributeList = new List<Attribute> ();
+				attributes.Add (attributeValueType, attributeList);
+			}
+
+			attributeList.Add (attributeValue);
 		}
 
 		public bool HasAttribute<T> () where T : Attribute
@@ -59,8 +66,11 @@ namespace Mono.Linker
 			return attributeList.Cast<T> ();
 		}
 
-		static Attribute ProcessRequiresUnreferencedCodeAttribute (LinkContext context, MethodDefinition method, CustomAttribute customAttribute)
+		static Attribute ProcessRequiresUnreferencedCodeAttribute (LinkContext context, ICustomAttributeProvider provider, CustomAttribute customAttribute)
 		{
+			if (!(provider is MethodDefinition method))
+				return null;
+
 			if (customAttribute.HasConstructorArguments) {
 				string message = (string) customAttribute.ConstructorArguments[0].Value;
 				string url = null;
@@ -74,7 +84,7 @@ namespace Mono.Linker
 			}
 
 			context.LogWarning ($"Attribute '{typeof (RequiresUnreferencedCodeAttribute).FullName}' on '{method}' doesn't have a required constructor argument.",
-				2028, MessageOrigin.TryGetOrigin (method, 0));
+				2028, MessageOrigin.TryGetOrigin (method));
 			return null;
 		}
 	}

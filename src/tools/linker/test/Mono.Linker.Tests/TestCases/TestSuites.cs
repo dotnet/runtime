@@ -109,6 +109,12 @@ namespace Mono.Linker.Tests.TestCases
 			Run (testCase);
 		}
 
+		[TestCaseSource (typeof (TestDatabase), nameof (TestDatabase.DynamicDependenciesTests))]
+		public void DynamicDependenciesTests (TestCase testCase)
+		{
+			Run (testCase);
+		}
+
 		[TestCaseSource (typeof (TestDatabase), nameof (TestDatabase.SymbolsTests))]
 		public void SymbolsTests (TestCase testCase)
 		{

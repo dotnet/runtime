@@ -259,5 +259,11 @@ namespace Mono.Linker
 			return type.Name == name
 				&& type.Namespace == ns;
 		}
+
+		public static bool IsTypeOf<T> (this TypeReference tr)
+		{
+			var type = typeof (T);
+			return tr.Name == type.Name && tr.Namespace == tr.Namespace;
+		}
 	}
 }

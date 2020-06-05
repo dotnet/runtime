@@ -26,12 +26,12 @@ namespace Mono.Linker
 			MemberDefinition = null;
 		}
 
-		public MessageOrigin (IMemberDefinition memberDefinition, int sourceLine = 0, int sourceColumn = 0)
+		public MessageOrigin (IMemberDefinition memberDefinition)
 		{
 			FileName = null;
 			MemberDefinition = memberDefinition;
-			SourceLine = sourceLine;
-			SourceColumn = sourceColumn;
+			SourceLine = 0;
+			SourceColumn = 0;
 		}
 
 		private MessageOrigin (string fileName, IMemberDefinition memberDefinition, int sourceLine = 0, int sourceColumn = 0)
@@ -42,8 +42,11 @@ namespace Mono.Linker
 			SourceColumn = sourceColumn;
 		}
 
-		public static MessageOrigin TryGetOrigin (MethodDefinition sourceMethod, int ilOffset)
+		public static MessageOrigin TryGetOrigin (IMemberDefinition sourceMember, int ilOffset = 0)
 		{
+			if (!(sourceMember is MethodDefinition sourceMethod))
+				return new MessageOrigin (sourceMember);
+
 			if (sourceMethod.DebugInformation.HasSequencePoints) {
 				SequencePoint correspondingSequencePoint = sourceMethod.DebugInformation.SequencePoints
 					.Where (s => s.Offset <= ilOffset)?.Last ();

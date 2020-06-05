@@ -6,7 +6,7 @@ namespace Mono.Linker.Tests.Cases.PreserveDependencies
 {
 	[KeptMemberInAssembly ("library.dll", "Mono.Linker.Tests.Cases.PreserveDependencies.Dependencies.PreserveDependencyMethodInAssemblyLibrary", ".ctor()")]
 	[SetupCompileBefore ("FakeSystemAssembly.dll", new[] { "Dependencies/PreserveDependencyAttribute.cs" })]
-	[SetupCompileBefore ("library.dll", new[] { "Dependencies/PreserveDependencyMethodInAssemblyLibrary.cs" }, new[] { "FakeSystemAssembly.dll" })]
+	[SetupCompileBefore ("library.dll", new[] { "Dependencies/PreserveDependencyMethodInAssemblyLibrary.cs" })]
 	public class PreserveDependencyMethodInAssembly
 	{
 		public static void Main ()
