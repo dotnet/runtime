@@ -426,6 +426,7 @@ jobs:
     buildConfig: release
     platforms:
     - OSX_x64
+    - iOS_x64
     jobParameters:
       condition: >-
         or(
