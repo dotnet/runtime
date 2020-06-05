@@ -247,7 +247,6 @@ jobs:
     - tvOS_x64
     - iOS_arm64
     - iOS_x86
-    - iOS_x64
     - Browser_wasm
     - Linux_arm
     jobParameters:
@@ -462,9 +461,9 @@ jobs:
     - Linux_musl_x64
     - Linux_x64
     - OSX_x64
+    - iOS_x64
     - Windows_NT_x64
     - FreeBSD_x64
-    - iOS_x64
     jobParameters:
       liveRuntimeBuildConfig: release
 
