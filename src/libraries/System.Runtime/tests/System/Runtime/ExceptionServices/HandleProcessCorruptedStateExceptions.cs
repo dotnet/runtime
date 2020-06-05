@@ -36,7 +36,7 @@ namespace System.Runtime.ExceptionServices.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [PlatformSpecific(TestPlatforms.Windows)] // Feature Corrupting Exceptions not present for Linux
         public static void ProcessExit_Called()
         {

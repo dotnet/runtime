@@ -40,7 +40,7 @@ namespace System.Transactions.Tests
         /// <summary>
         /// This test case will verify various Async TransactionScope usage with task and async/await and also nested mixed mode(legacy TS and async TS) usage.
         /// </summary>
-        [Theory]
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [InlineData(0)]
         [InlineData(1)]
         [InlineData(2)]

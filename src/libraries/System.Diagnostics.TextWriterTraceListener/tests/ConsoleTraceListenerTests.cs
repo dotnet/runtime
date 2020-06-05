@@ -38,7 +38,7 @@ namespace System.Diagnostics.TextWriterTraceListenerTests
             }
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [InlineData(false)]
         [InlineData(true)]
         public static void WriteExpectedOutput(bool value)
@@ -65,7 +65,7 @@ namespace System.Diagnostics.TextWriterTraceListenerTests
             }, value.ToString()).Dispose();
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [InlineData(false)]
         [InlineData(true)]
         public static void WriteLineExpectedOutput(bool value)

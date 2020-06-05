@@ -72,7 +72,7 @@ namespace System.ComponentModel.Tests
             Assert.Equal(42, ((CustomType)attr.Value).Value);
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [InlineData(typeof(CustomType), true, "", 0)]
         [InlineData(typeof(int), false, "42", 42)]
         public void Ctor_TypeDescriptorNotFound_ExceptionFallback(Type type, bool returnNull, string stringToConvert, int expectedValue)

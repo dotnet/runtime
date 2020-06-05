@@ -556,7 +556,7 @@ namespace System.Threading.Tasks.Tests
             }));
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [InlineData("1", null)]
         [InlineData("true", null)]
         [InlineData("true", "1")]

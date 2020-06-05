@@ -48,7 +48,7 @@ namespace System.IO.Tests
             yield return new string[] { "/tmp/", null };
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void GetTempPath_SetEnvVar_Unix()
         {
             RemoteExecutor.Invoke(() =>

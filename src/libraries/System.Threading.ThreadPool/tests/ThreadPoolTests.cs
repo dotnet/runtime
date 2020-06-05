@@ -559,7 +559,7 @@ namespace System.Threading.ThreadPools.Tests
             public void Execute() { }
         }
 
-        [ConditionalFact(nameof(HasAtLeastThreeProcessors))]
+        [ConditionalFact(nameof(HasAtLeastThreeProcessorsAndRemoteExecutorSupported))]
         public void MetricsTest()
         {
             RemoteExecutor.Invoke(() =>
@@ -697,6 +697,6 @@ namespace System.Threading.ThreadPools.Tests
             }).Dispose();
         }
 
-        public static bool HasAtLeastThreeProcessors => Environment.ProcessorCount >= 3;
+        public static bool HasAtLeastThreeProcessorsAndRemoteExecutorSupported => Environment.ProcessorCount >= 3 && RemoteExecutor.IsSupported;
     }
 }

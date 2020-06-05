@@ -17,7 +17,7 @@ namespace System.Diagnostics.Tests
 {
     public class ProcessStreamReadTests : ProcessTestBase
     {
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void TestSyncErrorStream()
         {
             Process p = CreateProcessPortable(RemotelyInvokable.ErrorProcessBody);
@@ -29,7 +29,7 @@ namespace System.Diagnostics.Tests
             Assert.True(p.WaitForExit(WaitInMS));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void TestAsyncErrorStream()
         {
             for (int i = 0; i < 2; ++i)
@@ -56,7 +56,7 @@ namespace System.Diagnostics.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void TestSyncOutputStream()
         {
             Process p = CreateProcessPortable(RemotelyInvokable.StreamBody);
@@ -67,7 +67,7 @@ namespace System.Diagnostics.Tests
             Assert.Equal(RemotelyInvokable.TestConsoleApp + " started" + Environment.NewLine + RemotelyInvokable.TestConsoleApp + " closed" + Environment.NewLine, s);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void TestAsyncOutputStream()
         {
             for (int i = 0; i < 2; ++i)
@@ -93,7 +93,7 @@ namespace System.Diagnostics.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         async public Task TestAsyncOutputStream_CancelOutputRead()
         {
             // This test might have some false negatives due to possible race condition in System.Diagnostics.AsyncStreamReader.ReadBufferAsync
@@ -176,7 +176,7 @@ namespace System.Diagnostics.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         async public Task TestAsyncOutputStream_BeginCancelBeginOutputRead()
         {
             using (AnonymousPipeServerStream pipeWrite = new AnonymousPipeServerStream(PipeDirection.Out, HandleInheritability.Inheritable))
@@ -315,7 +315,7 @@ namespace System.Diagnostics.Tests
         }
 
         [PlatformSpecific(~TestPlatforms.Windows)] // currently on Windows these operations async-over-sync on Windows
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public async Task ReadAsync_OutputStreams_Cancel_RespondsQuickly()
         {
             Process p = CreateProcessLong();
@@ -350,7 +350,7 @@ namespace System.Diagnostics.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void TestSyncStreams()
         {
             const string expected = "This string should come as output";
@@ -367,7 +367,7 @@ namespace System.Diagnostics.Tests
             p.WaitForExit(); // wait for event handlers to complete
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void TestEOFReceivedWhenStdInClosed()
         {
             // This is the test for the fix of https://github.com/dotnet/runtime/issues/19277.
@@ -422,7 +422,7 @@ namespace System.Diagnostics.Tests
             p1.Dispose();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void TestAsyncHalfCharacterAtATime()
         {
             var receivedOutput = false;
@@ -463,7 +463,7 @@ namespace System.Diagnostics.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void TestManyOutputLines()
         {
             const int ExpectedLineCount = 144;
@@ -491,7 +491,7 @@ namespace System.Diagnostics.Tests
             Assert.Equal(ExpectedLineCount + 1, totalLinesReceived);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [SkipOnCoreClr("Avoid asserts in FileStream.Read when concurrently disposed", ~RuntimeConfiguration.Release)]
         public void TestClosingStreamsAsyncDoesNotThrow()
         {
@@ -510,7 +510,7 @@ namespace System.Diagnostics.Tests
             RemotelyInvokable.FireClosedEvent();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void TestClosingStreamsUndefinedDoesNotThrow()
         {
             Process p = CreateProcessPortable(RemotelyInvokable.WriteLinesAfterClose);
@@ -522,7 +522,7 @@ namespace System.Diagnostics.Tests
             RemotelyInvokable.FireClosedEvent();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void TestClosingSyncModeDoesNotCloseStreams()
         {
             Process p = CreateProcessPortable(RemotelyInvokable.WriteLinesAfterClose);
@@ -541,7 +541,7 @@ namespace System.Diagnostics.Tests
             error.ReadToEnd();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void TestStreamNegativeTests()
         {
             {
@@ -590,7 +590,7 @@ namespace System.Diagnostics.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void TestCustomStandardInputEncoding()
         {
             var process = CreateProcessPortable(RemotelyInvokable.ReadLineWithCustomEncodingWriteLineWithUtf8, Encoding.UTF32.WebName);
@@ -611,7 +611,7 @@ namespace System.Diagnostics.Tests
             Assert.Equal(RemotelyInvokable.SuccessExitCode, process.ExitCode);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void TestMismatchedStandardInputEncoding()
         {
             var process = CreateProcessPortable(RemotelyInvokable.ReadLineWithCustomEncodingWriteLineWithUtf8, Encoding.UTF32.WebName);

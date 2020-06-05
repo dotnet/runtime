@@ -197,7 +197,7 @@ public class WindowAndCursorProps
         Assert.Throws<PlatformNotSupportedException>(() => Console.Title);
     }
 
-    [Fact]
+    [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
     [PlatformSpecific(TestPlatforms.AnyUnix)]  // Expected behavior specific to Unix
     public static void Title_SetUnix_Success()
     {
@@ -223,7 +223,9 @@ public class WindowAndCursorProps
         Assert.Equal(trimmedTitle, title);
     }
 
-    [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))] // Nano currently ignores set title
+    private static bool IsNotWindowsNanoServerAndRemoteExecutorSupported => PlatformDetection.IsNotWindowsNanoServer && RemoteExecutor.IsSupported;
+
+    [ConditionalTheory(nameof(IsNotWindowsNanoServerAndRemoteExecutorSupported))] // Nano currently ignores set title
     [ActiveIssue("https://github.com/dotnet/runtime/issues/34454", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
     [InlineData(0)]
     [InlineData(1)]
