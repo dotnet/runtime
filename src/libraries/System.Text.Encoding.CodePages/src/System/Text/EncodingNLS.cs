@@ -392,7 +392,7 @@ namespace System.Text
             }
         }
 
-        private static string? GetLocalizedEncodingNameResource(int codePage) =>
+        internal static string? GetLocalizedEncodingNameResource(int codePage) =>
             codePage switch
             {
                 37 => SR.Globalization_cp_37,
@@ -549,12 +549,45 @@ namespace System.Text
                     _webName = EncodingTable.GetWebNameFromCodePage(CodePage);
                     if (_webName == null)
                     {
-                        throw new NotSupportedException(
-                            SR.Format(SR.NotSupported_NoCodepageData, CodePage));
+                        throw new NotSupportedException(SR.Format(SR.NotSupported_NoCodepageData, CodePage));
                     }
                 }
                 return _webName;
             }
         }
+
+        public override string HeaderName
+        {
+            get
+            {
+                switch (CodePage)
+                {
+                    case 932: return "iso-2022-jp";
+                    case 50221: return "iso-2022-jp";
+                    case 50225: return "euc-kr";
+                    default: return WebName;
+                }
+            }
+        }
+
+        public override string BodyName
+        {
+            get
+            {
+                switch (CodePage)
+                {
+                    case 932: return "iso-2022-jp";
+                    case 1250: return "iso-8859-2";
+                    case 1251: return "koi8-r";
+                    case 1252: return "iso-8859-1";
+                    case 1253: return "iso-8859-7";
+                    case 1254: return "iso-8859-9";
+                    case 50221: return "iso-2022-jp";
+                    case 50225: return "iso-2022-kr";
+                    default: return WebName;
+                }
+            }
+        }
+
     }
 }

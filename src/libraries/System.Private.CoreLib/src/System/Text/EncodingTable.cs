@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Threading;
 
@@ -117,6 +118,26 @@ namespace System.Text
             }
 
             return arrayEncodingInfo;
+        }
+
+        internal static EncodingInfo[] GetEncodings(Dictionary<int, EncodingInfo> encodingInfoList)
+        {
+            Debug.Assert(encodingInfoList != null);
+
+            for (int i = 0; i < s_mappedCodePages.Length; i++)
+            {
+                if (!encodingInfoList.TryGetValue(s_mappedCodePages[i], out _))
+                {
+                    encodingInfoList[s_mappedCodePages[i]] = new EncodingInfo(s_mappedCodePages[i], s_webNames[s_webNameIndices[i]..s_webNameIndices[i + 1]],
+                                                                              GetDisplayName(s_mappedCodePages[i], i));
+                }
+            }
+
+            var collection = encodingInfoList.Values;
+            EncodingInfo[] result = new EncodingInfo[collection.Count];
+            collection.CopyTo(result, 0);
+
+            return result;
         }
 
         internal static CodePageDataItem? GetCodePageDataItem(int codePage)

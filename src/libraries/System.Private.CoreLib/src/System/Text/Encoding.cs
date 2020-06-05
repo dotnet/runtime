@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
+using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Runtime.InteropServices;
@@ -291,7 +292,15 @@ namespace System.Text
         }
 
         // Return a list of all EncodingInfo objects describing all of our encodings
-        public static EncodingInfo[] GetEncodings() => EncodingTable.GetEncodings();
+        /// <summary>
+        /// Get the <see cref="EncodingProvider"/> list from the runtime and all registered encoding providers
+        /// </summary>
+        /// <returns>The list of the <see cref="EncodingProvider"/> objects</returns>
+        public static EncodingInfo[] GetEncodings()
+        {
+            Dictionary<int, EncodingInfo>? result = EncodingProvider.GetEncodingListFromProviders();
+            return result == null ? EncodingTable.GetEncodings() : EncodingTable.GetEncodings(result);
+        }
 
         public virtual byte[] GetPreamble() => Array.Empty<byte>();
 
