@@ -939,6 +939,13 @@
         </ExcludeList>
     </ItemGroup>
 
+    <!-- Crossgen2 on ARM64 specific -->
+    <ItemGroup Condition="'$(XunitTestBinBase)' != '' and '$(TestBuildMode)' == 'crossgen2' and '$(RuntimeFlavor)' == 'coreclr' and ('$(TargetArchitecture)' == 'arm64' or '$(AltJitArch)' == 'arm64')">
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/JitBlue/GitHub_27924/GitHub_27924/*">
+            <Issue>https://github.com/dotnet/runtime/issues/34316</Issue>
+        </ExcludeList>        
+    </ItemGroup>
+
     <!-- runtest.proj finds all the *.cmd/*.sh scripts in a test folder and creates corresponding test methods.
          Exclude these scripts to avoid creating such methods for the superpmicollect dependent test projects
          and running them separately from superpmicollect test. These should be excluded regardless of RuntimeFlavor/os/arch-->
