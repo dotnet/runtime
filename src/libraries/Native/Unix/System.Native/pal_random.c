@@ -108,3 +108,77 @@ void SystemNative_GetNonCryptographicallySecureRandomBytes(uint8_t* buffer, int3
     }
 #endif // HAVE_ARC4RANDOM_BUF
 }
+
+/*
+
+Generate cryptographically strong random bytes.
+
+Return 0 on success, -1 on failure.
+*/
+int32_t SystemNative_GetCryptographicallySecureRandomBytes(uint8_t* buffer, int32_t bufferLength)
+{
+    // Same as GetNonCryptographicallySecureRandomBytes, but don't fall back to a PRNG
+    assert(buffer != NULL);
+
+    static volatile int rand_des = -1;
+    long num = 0;
+    static bool sMissingDevURandom;
+
+    if (!sMissingDevURandom)
+    {
+        if (rand_des == -1)
+        {
+            int fd;
+
+            do
+            {
+#if HAVE_O_CLOEXEC
+                fd = open("/dev/urandom", O_RDONLY | O_CLOEXEC);
+#else
+                fd = open("/dev/urandom", O_RDONLY);
+                fcntl(fd, F_SETFD, FD_CLOEXEC);
+#endif
+            }
+            while ((fd == -1) && (errno == EINTR));
+
+            if (fd != -1)
+            {
+                int expected = -1;
+                if (!__atomic_compare_exchange_n(&rand_des, &expected, fd, false, __ATOMIC_SEQ_CST, __ATOMIC_SEQ_CST))
+                {
+                    // Another thread has already set the rand_des
+                    close(fd);
+                }
+            }
+            else if (errno == ENOENT)
+            {
+                sMissingDevURandom = true;
+            }
+        }
+
+        if (rand_des != -1)
+        {
+            int32_t offset = 0;
+            do
+            {
+                ssize_t n = read(rand_des, buffer + offset , (size_t)(bufferLength - offset));
+                if (n == -1)
+                {
+                    if (errno == EINTR)
+                    {
+                        continue;
+                    }
+
+                    assert(false && "read from /dev/urandom has failed");
+                    break;
+                }
+
+                offset += n;
+            }
+            while (offset != bufferLength);
+            return 0;
+        }
+    }
+
+    return -1;
+}

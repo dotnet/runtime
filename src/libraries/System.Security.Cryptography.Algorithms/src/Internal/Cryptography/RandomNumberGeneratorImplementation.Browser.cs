@@ -9,23 +9,13 @@ namespace System.Security.Cryptography
 {
     internal partial class RandomNumberGeneratorImplementation
     {
-        private static readonly FileStream s_randomStream = new FileStream("/dev/random", FileMode.Open, FileAccess.Read);
-
         private static unsafe void GetBytes(byte* pbBuffer, int count)
         {
             Debug.Assert(count > 0);
 
-            int pos = 0;
-            while (pos < count)
-            {
-                var span = new Span<byte>(pbBuffer + pos, count - pos);
-                int res = s_randomStream.Read(span);
-                if (res == 0)
-                {
-                    throw new CryptographicException();
-                }
-                pos += res;
-            }
+            int res = Interop.GetCryptographicallySecureRandomBytes(pbBuffer, count);
+            if (res != 0)
+                throw new CryptographicException();
         }
     }
 }
