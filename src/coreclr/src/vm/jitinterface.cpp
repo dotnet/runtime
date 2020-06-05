@@ -9724,7 +9724,7 @@ CORINFO_CLASS_HANDLE CEEInfo::getArgClass (
 
 /*********************************************************************/
 
-CorInfoType CEEInfo::getHFAType(CORINFO_CLASS_HANDLE hClass)
+CorInfoHFAElemType CEEInfo::getHFAType(CORINFO_CLASS_HANDLE hClass)
 {
     CONTRACTL {
         THROWS;
@@ -9732,13 +9732,13 @@ CorInfoType CEEInfo::getHFAType(CORINFO_CLASS_HANDLE hClass)
         MODE_PREEMPTIVE;
     } CONTRACTL_END;
 
-    CorInfoType result = CORINFO_TYPE_UNDEF;
+    CorInfoHFAElemType result = CORINFO_HFA_ELEM_NONE;
 
     JIT_TO_EE_TRANSITION();
 
     TypeHandle VMClsHnd(hClass);
 
-    result = asCorInfoType(VMClsHnd.GetHFAType());
+    result = VMClsHnd.GetHFAType();
 
     EE_TO_JIT_TRANSITION();
 

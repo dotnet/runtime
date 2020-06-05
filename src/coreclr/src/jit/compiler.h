@@ -139,53 +139,50 @@ const int BAD_STK_OFFS = 0xBAADF00D; // for LclVarDsc::lvStkOffs
 // HFA info shared by LclVarDsc and fgArgTabEntry
 //------------------------------------------------------------------------
 #ifdef FEATURE_HFA
-enum HfaElemKind : unsigned int
+inline bool IsHfa(CorInfoHFAElemType kind)
 {
-    HFA_ELEM_NONE,
-    HFA_ELEM_FLOAT,
-    HFA_ELEM_DOUBLE,
-    HFA_ELEM_SIMD16
-};
-inline bool IsHfa(HfaElemKind kind)
-{
-    return kind != HFA_ELEM_NONE;
+    return kind != CORINFO_HFA_ELEM_NONE;
 }
-inline var_types HfaTypeFromElemKind(HfaElemKind kind)
+inline var_types HfaTypeFromElemKind(CorInfoHFAElemType kind)
 {
     switch (kind)
     {
-        case HFA_ELEM_FLOAT:
+        case CORINFO_HFA_ELEM_FLOAT:
             return TYP_FLOAT;
-        case HFA_ELEM_DOUBLE:
+        case CORINFO_HFA_ELEM_DOUBLE:
             return TYP_DOUBLE;
 #ifdef FEATURE_SIMD
-        case HFA_ELEM_SIMD16:
+        case CORINFO_HFA_ELEM_VECTOR64:
+            return TYP_SIMD8;
+        case CORINFO_HFA_ELEM_VECTOR128:
             return TYP_SIMD16;
 #endif
-        case HFA_ELEM_NONE:
+        case CORINFO_HFA_ELEM_NONE:
             return TYP_UNDEF;
         default:
             assert(!"Invalid HfaElemKind");
             return TYP_UNDEF;
     }
 }
-inline HfaElemKind HfaElemKindFromType(var_types type)
+inline CorInfoHFAElemType HfaElemKindFromType(var_types type)
 {
     switch (type)
     {
         case TYP_FLOAT:
-            return HFA_ELEM_FLOAT;
+            return CORINFO_HFA_ELEM_FLOAT;
         case TYP_DOUBLE:
-            return HFA_ELEM_DOUBLE;
+            return CORINFO_HFA_ELEM_DOUBLE;
 #ifdef FEATURE_SIMD
+        case TYP_SIMD8:
+            return CORINFO_HFA_ELEM_VECTOR64;
         case TYP_SIMD16:
-            return HFA_ELEM_SIMD16;
+            return CORINFO_HFA_ELEM_VECTOR128;
 #endif
         case TYP_UNDEF:
-            return HFA_ELEM_NONE;
+            return CORINFO_HFA_ELEM_NONE;
         default:
             assert(!"Invalid HFA Type");
-            return HFA_ELEM_NONE;
+            return CORINFO_HFA_ELEM_NONE;
     }
 }
 #endif // FEATURE_HFA
@@ -484,8 +481,8 @@ public:
     unsigned char lvIsMultiRegRet : 1; // true if this is a multireg LclVar struct assigned from a multireg call
 
 #ifdef FEATURE_HFA
-    HfaElemKind _lvHfaElemKind : 2; // What kind of an HFA this is (HFA_ELEM_NONE if it is not an HFA).
-#endif                              // FEATURE_HFA
+    CorInfoHFAElemType _lvHfaElemKind : 3; // What kind of an HFA this is (CORINFO_HFA_ELEM_NONE if it is not an HFA).
+#endif                                     // FEATURE_HFA
 
 #ifdef DEBUG
     // TODO-Cleanup: See the note on lvSize() - this flag is only in use by asserts that are checking for struct
@@ -591,18 +588,19 @@ public:
 #elif defined(TARGET_ARM64)
         switch (_lvHfaElemKind)
         {
-            case HFA_ELEM_NONE:
+            case CORINFO_HFA_ELEM_NONE:
                 assert(!"lvHfaSlots called for non-HFA");
                 break;
-            case HFA_ELEM_FLOAT:
+            case CORINFO_HFA_ELEM_FLOAT:
                 assert((lvExactSize % 4) == 0);
                 slots = lvExactSize >> 2;
                 break;
-            case HFA_ELEM_DOUBLE:
+            case CORINFO_HFA_ELEM_DOUBLE:
+            case CORINFO_HFA_ELEM_VECTOR64:
                 assert((lvExactSize % 8) == 0);
                 slots = lvExactSize >> 3;
                 break;
-            case HFA_ELEM_SIMD16:
+            case CORINFO_HFA_ELEM_VECTOR128:
                 assert((lvExactSize % 16) == 0);
                 slots = lvExactSize >> 4;
                 break;
@@ -919,7 +917,10 @@ public:
     void SetHfaType(var_types type)
     {
 #ifdef FEATURE_HFA
-        _lvHfaElemKind = HfaElemKindFromType(type);
+        CorInfoHFAElemType elemKind = HfaElemKindFromType(type);
+        _lvHfaElemKind              = elemKind;
+        // Ensure we've allocated enough bits.
+        assert(_lvHfaElemKind == elemKind);
 #endif // FEATURE_HFA
     }
 
@@ -1447,7 +1448,7 @@ public:
     bool _isSplit : 1; // True when this argument is split between the registers and OutArg area
 #endif                 // FEATURE_ARG_SPLIT
 #ifdef FEATURE_HFA
-    HfaElemKind _hfaElemKind : 2; // What kind of an HFA this is (HFA_ELEM_NONE if it is not an HFA).
+    CorInfoHFAElemType _hfaElemKind : 3; // What kind of an HFA this is (CORINFO_HFA_ELEM_NONE if it is not an HFA).
 #endif
 
     bool isLateArg()
@@ -1610,7 +1611,10 @@ public:
             if (!IsHfaArg())
             {
                 // We haven't previously set this; do so now.
-                _hfaElemKind = HfaElemKindFromType(type);
+                CorInfoHFAElemType elemKind = HfaElemKindFromType(type);
+                _hfaElemKind                = elemKind;
+                // Ensure we've allocated enough bits.
+                assert(_hfaElemKind == elemKind);
                 if (isPassedInRegisters())
                 {
                     numRegs = numHfaRegs;
@@ -2126,10 +2130,11 @@ public:
 #endif // ARM_SOFTFP
 
     //-------------------------------------------------------------------------
-    // Functions to handle homogeneous floating-point aggregates (HFAs) in ARM.
+    // Functions to handle homogeneous floating-point aggregates (HFAs) in ARM/ARM64.
     // HFAs are one to four element structs where each element is the same
-    // type, either all float or all double. They are treated specially
-    // in the ARM Procedure Call Standard, specifically, they are passed in
+    // type, either all float or all double. We handle HVAs (one to four elements of
+    // vector types) uniformly with HFAs. HFAs are treated specially
+    // in the ARM/ARM64 Procedure Call Standards, specifically, they are passed in
     // floating-point registers instead of the general purpose registers.
     //
 

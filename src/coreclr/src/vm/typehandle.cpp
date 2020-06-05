@@ -421,7 +421,7 @@ bool TypeHandle::IsHFA() const
     return false;
 }
 
-CorElementType TypeHandle::GetHFAType() const
+CorInfoHFAElemType TypeHandle::GetHFAType() const
 {
     WRAPPER_NO_CONTRACT;
 
@@ -431,7 +431,7 @@ CorElementType TypeHandle::GetHFAType() const
     if (AsTypeDesc()->IsNativeValueType())
         return AsNativeValueType()->GetNativeHFAType();
 
-    return ELEMENT_TYPE_END;
+    return CORINFO_HFA_ELEM_NONE;
 }
 
 
