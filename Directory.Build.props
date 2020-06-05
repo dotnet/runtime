@@ -86,6 +86,9 @@
 
   <!-- Language configuration -->
   <PropertyGroup>
+    <!-- default to allowing all language features -->
+    <LangVersion>preview</LangVersion>
+    <LangVersion Condition="'$(MSBuildProjectExtension)' == '.vbproj'">latest</LangVersion>
     <Deterministic>true</Deterministic>
   </PropertyGroup>
 
