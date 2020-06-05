@@ -102,7 +102,7 @@ namespace System.IO
 
         public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default(CancellationToken)) =>
             cancellationToken.IsCancellationRequested ?
-                new ValueTask<int>(Task.FromCanceled<int>(cancellationToken)) :
+                ValueTask.FromCanceled<int>(cancellationToken) :
                 new ValueTask<int>(Read(buffer.Span));
 
         public override IAsyncResult BeginRead(byte[] buffer, int offset, int count, AsyncCallback? callback, object? state) =>

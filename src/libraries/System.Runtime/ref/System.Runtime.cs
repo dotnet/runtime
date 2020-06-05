@@ -11008,6 +11008,12 @@ namespace System.Threading.Tasks
         private readonly int _dummyPrimitive;
         public ValueTask(System.Threading.Tasks.Sources.IValueTaskSource source, short token) { throw null; }
         public ValueTask(System.Threading.Tasks.Task task) { throw null; }
+        public static System.Threading.Tasks.ValueTask CompletedTask { get { throw null; } }
+        public static System.Threading.Tasks.ValueTask FromCanceled(System.Threading.CancellationToken cancellationToken) { throw null; }
+        public static System.Threading.Tasks.ValueTask<TResult> FromCanceled<TResult>(System.Threading.CancellationToken cancellationToken) { throw null; }
+        public static System.Threading.Tasks.ValueTask FromException(System.Exception exception) { throw null; }
+        public static System.Threading.Tasks.ValueTask<TResult> FromException<TResult>(System.Exception exception) { throw null; }
+        public static System.Threading.Tasks.ValueTask<TResult> FromResult<TResult>(TResult result) { throw null; }
         public bool IsCanceled { get { throw null; } }
         public bool IsCompleted { get { throw null; } }
         public bool IsCompletedSuccessfully { get { throw null; } }

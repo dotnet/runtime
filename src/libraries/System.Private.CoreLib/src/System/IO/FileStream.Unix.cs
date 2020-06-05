@@ -674,7 +674,7 @@ namespace System.IO
             Debug.Assert(_asyncState != null);
 
             if (cancellationToken.IsCancellationRequested)
-                return new ValueTask(Task.FromCanceled(cancellationToken));
+                return ValueTask.FromCanceled(cancellationToken);
 
             if (_fileHandle.IsClosed)
                 throw Error.GetFileNotOpen();
@@ -705,7 +705,7 @@ namespace System.IO
                     }
                     catch (Exception exc)
                     {
-                        return new ValueTask(Task.FromException(exc));
+                        return ValueTask.FromException(exc);
                     }
                     finally
                     {
