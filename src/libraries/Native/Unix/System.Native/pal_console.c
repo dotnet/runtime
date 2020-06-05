@@ -161,7 +161,7 @@ static bool TcSetAttr(struct termios* termios, bool blockIfBackground)
     return rv;
 }
 
-static bool ConfigureTerminal(bool signalForBreak, bool forChild, uint8_t minChars, uint8_t decisecondsTimeout, bool blockIfBackground)
+static bool ConfigureTerminal(bool signalForBreak, bool forChild, uint8_t minChars, uint8_t decisecondsTimeout, bool blockIfBackground, bool disableCrLfConversions)
 {
     if (!g_hasTty)
     {
@@ -184,7 +184,10 @@ static bool ConfigureTerminal(bool signalForBreak, bool forChild, uint8_t minCha
         termios.c_lflag &= (uint32_t)(~(ECHO | ICANON | IEXTEN));
     }
 
-    termios.c_iflag &= (uint32_t)(~(ICRNL | INLCR | IGNCR));
+    if (disableCrLfConversions)
+    {
+        termios.c_iflag &= (uint32_t)(~(ICRNL | INLCR | IGNCR));
+    }
 
     termios.c_cc[VMIN] = minChars;
     termios.c_cc[VTIME] = decisecondsTimeout;
@@ -224,13 +227,15 @@ void UninitializeTerminal()
     }
 }
 
-void SystemNative_InitializeConsoleBeforeRead(uint8_t minChars, uint8_t decisecondsTimeout)
+void SystemNative_InitializeConsoleBeforeRead(uint8_t minChars, uint8_t decisecondsTimeout, int32_t disableCrLfConversions)
 {
+    assert(disableCrLfConversions == 0 || disableCrLfConversions == 1);
+
     if (pthread_mutex_lock(&g_lock) == 0)
     {
         g_reading = true;
 
-        ConfigureTerminal(g_signalForBreak, /* forChild */ false, minChars, decisecondsTimeout, /* blockIfBackground */ true);
+        ConfigureTerminal(g_signalForBreak, /* forChild */ false, minChars, decisecondsTimeout, /* blockIfBackground */ true, disableCrLfConversions);
 
         pthread_mutex_unlock(&g_lock);
     }
@@ -265,7 +270,7 @@ void SystemNative_ConfigureTerminalForChildProcess(int32_t childUsesTerminal)
             g_hasCurrentTermios = false;
         }
 
-        ConfigureTerminal(g_signalForBreak, /* forChild */ childUsesTerminal, /* minChars */ 1, /* decisecondsTimeout */ 0, /* blockIfBackground */ false);
+        ConfigureTerminal(g_signalForBreak, /* forChild */ childUsesTerminal, /* minChars */ 1, /* decisecondsTimeout */ 0, /* blockIfBackground */ false, /* disableCrLfConversions */ false);
 
         // Redo "Application mode" when there are no more children using the terminal.
         if (!childUsesTerminal)
@@ -374,7 +379,7 @@ void SystemNative_GetControlCharacters(
 
 int32_t SystemNative_StdinReady()
 {
-    SystemNative_InitializeConsoleBeforeRead(1, 0);
+    SystemNative_InitializeConsoleBeforeRead(1, 0, false);
     struct pollfd fd = { .fd = STDIN_FILENO, .events = POLLIN };
     int rv = poll(&fd, 1, 0) > 0 ? 1 : 0;
     SystemNative_UninitializeConsoleAfterRead();
@@ -410,7 +415,7 @@ int32_t SystemNative_SetSignalForBreak(int32_t signalForBreak)
 
     if (pthread_mutex_lock(&g_lock) == 0)
     {
-        if (ConfigureTerminal(signalForBreak, /* forChild */ false, /* minChars */ 1, /* decisecondsTimeout */ 0, /* blockIfBackground */ true))
+        if (ConfigureTerminal(signalForBreak, /* forChild */ false, /* minChars */ 1, /* decisecondsTimeout */ 0, /* blockIfBackground */ true, /* disableCrLfConversions */ false))
         {
             g_signalForBreak = signalForBreak;
             rv = 1;

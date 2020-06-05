@@ -97,7 +97,7 @@ namespace System.IO
                     // Read the next key.  This may come from previously read keys, from previously read but
                     // unprocessed data, or from an actual stdin read.
                     bool previouslyProcessed;
-                    ConsoleKeyInfo keyInfo = ReadKey(out previouslyProcessed);
+                    ConsoleKeyInfo keyInfo = ReadKeyCore(disableCrLfConversions: false, out previouslyProcessed);
                     if (!consumeKeys && keyInfo.Key != ConsoleKey.Backspace) // backspace is the only character not written out in the below if/elses.
                     {
                         _tmpKeys.Push(keyInfo);
@@ -361,6 +361,9 @@ namespace System.IO
             return key != default(ConsoleKey);
         }
 
+        public ConsoleKeyInfo ReadKey(out bool previouslyProcessed) =>
+            ReadKeyCore(disableCrLfConversions: true, out previouslyProcessed);
+
         /// <summary>
         /// Try to intercept the key pressed.
         ///
@@ -371,7 +374,7 @@ namespace System.IO
         /// not work, we simply return the char associated with that
         /// key with ConsoleKey set to default value.
         /// </summary>
-        public unsafe ConsoleKeyInfo ReadKey(out bool previouslyProcessed)
+        private unsafe ConsoleKeyInfo ReadKeyCore(bool disableCrLfConversions, out bool previouslyProcessed)
         {
             // Order of reading:
             // 1. A read should first consult _availableKeys, as this contains input that has already been both read from stdin and processed into ConsoleKeyInfos.
@@ -385,7 +388,7 @@ namespace System.IO
             }
 
             previouslyProcessed = false;
-            Interop.Sys.InitializeConsoleBeforeRead();
+            Interop.Sys.InitializeConsoleBeforeRead(disableCrLfConversions: disableCrLfConversions);
             try
             {
                 ConsoleKey key;
