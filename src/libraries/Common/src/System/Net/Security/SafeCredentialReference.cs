@@ -4,7 +4,6 @@ using System.Runtime.ConstrainedExecution;
 
 namespace System.Net.Security
 {
-
     //
     // This is a class holding a Credential handle reference, used for static handles cache
     //
@@ -24,6 +23,7 @@ namespace System.Net.Security
 
             return new SafeCredentialReference(target);
         }
+
         private SafeCredentialReference(SafeFreeCredentials target)
         {
             // Bumps up the refcount on Target to signify that target handle is statically cached so
