@@ -823,6 +823,10 @@ namespace System.Numerics
                         sum.register.double_0 = (double)(left.register.double_0 + right.register.double_0);
                         sum.register.double_1 = (double)(left.register.double_1 + right.register.double_1);
                     }
+                    else
+                    {
+                        throw new NotSupportedException(SR.Arg_TypeNotSupported);
+                    }
                     return sum;
                 }
             }
@@ -1034,6 +1038,10 @@ namespace System.Numerics
                     {
                         difference.register.double_0 = (double)(left.register.double_0 - right.register.double_0);
                         difference.register.double_1 = (double)(left.register.double_1 - right.register.double_1);
+                    }
+                    else
+                    {
+                        throw new NotSupportedException(SR.Arg_TypeNotSupported);
                     }
                     return difference;
                 }
@@ -1247,6 +1255,10 @@ namespace System.Numerics
                     {
                         product.register.double_0 = (double)(left.register.double_0 * right.register.double_0);
                         product.register.double_1 = (double)(left.register.double_1 * right.register.double_1);
+                    }
+                    else
+                    {
+                        throw new NotSupportedException(SR.Arg_TypeNotSupported);
                     }
                     return product;
                 }
@@ -1480,6 +1492,10 @@ namespace System.Numerics
                     {
                         quotient.register.double_0 = (double)(left.register.double_0 / right.register.double_0);
                         quotient.register.double_1 = (double)(left.register.double_1 / right.register.double_1);
+                    }
+                    else
+                    {
+                        throw new NotSupportedException(SR.Arg_TypeNotSupported);
                     }
                     return quotient;
                 }
