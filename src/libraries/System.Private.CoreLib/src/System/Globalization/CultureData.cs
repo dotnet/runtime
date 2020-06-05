@@ -627,10 +627,6 @@ namespace System.Globalization
             invariant._iFirstWeekOfYear = 0;                      // first week of year
             invariant._waCalendars = new CalendarId[] { CalendarId.GREGORIAN };       // all available calendar type(s).  The first one is the default calendar
 
-            // Store for specific data about each calendar
-            invariant._calendars = new CalendarData[CalendarData.MAX_CALENDARS];
-            invariant._calendars[0] = CalendarData.Invariant;
-
             // Text information
             invariant._iReadingLayout = 0;
 
@@ -1749,6 +1745,11 @@ namespace System.Globalization
 
         internal CalendarData GetCalendar(CalendarId calendarId)
         {
+            if (GlobalizationMode.Invariant)
+            {
+                return CalendarData.Invariant;
+            }
+
             Debug.Assert(calendarId > 0 && calendarId <= CalendarId.LAST_CALENDAR,
                 "[CultureData.GetCalendar] Expect calendarId to be in a valid range");
 
@@ -1927,7 +1928,7 @@ namespace System.Globalization
             {
                 if (GlobalizationMode.Invariant)
                 {
-                    return CultureInfo.GetCalendarInstance(CalendarIds[0]);
+                    return new GregorianCalendar();
                 }
 
                 CalendarId defaultCalId = (CalendarId)GetLocaleInfoCore(LocaleNumberData.CalendarType);

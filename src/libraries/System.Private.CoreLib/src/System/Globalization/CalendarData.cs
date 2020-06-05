@@ -324,6 +324,11 @@ namespace System.Globalization
 
         internal static CalendarData GetCalendarData(CalendarId calendarId)
         {
+            if (GlobalizationMode.Invariant)
+            {
+                return CalendarData.Invariant;
+            }
+
             //
             // Get a calendar.
             // Unfortunately we depend on the locale in the OS, so we need a locale

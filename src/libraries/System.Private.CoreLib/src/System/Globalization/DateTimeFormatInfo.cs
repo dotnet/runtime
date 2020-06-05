@@ -407,6 +407,14 @@ namespace System.Globalization
                     return;
                 }
 
+                if (GlobalizationMode.Invariant)
+                {
+                    if (value.ID == calendar.ID)
+                        return;
+
+                    throw new ArgumentOutOfRangeException(nameof(value), value, SR.Argument_InvalidCalendar);
+                }
+
                 for (int i = 0; i < OptionalCalendars.Length; i++)
                 {
                     if (OptionalCalendars[i] == value.ID)
