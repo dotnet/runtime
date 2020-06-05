@@ -80,34 +80,34 @@
     </ItemGroup>
 
     <MonoAOTCompiler Condition="'$(RunAOTCompilation)' == 'true'"
-                     CompilerBinaryPath="$(RuntimePackNativeDir)cross\mono-aot-cross"
-                     Mode="Full"
-                     OutputType="AsmOnly"
-                     Assemblies="@(AotInputAssemblies)"
-                     UseLLVM="$(MonoEnableLLVM)"
-                     LLVMPath="$(RuntimePackNativeDir)cross">
+        CompilerBinaryPath="$(RuntimePackNativeDir)cross\mono-aot-cross"
+        Mode="Full"
+        OutputType="AsmOnly"
+        Assemblies="@(AotInputAssemblies)"
+        UseLLVM="$(MonoEnableLLVM)"
+        LLVMPath="$(RuntimePackNativeDir)cross">
         <Output TaskParameter="CompiledAssemblies" ItemName="BundleAssemblies" />
     </MonoAOTCompiler>
 
     <!-- Run App bundler, it uses AOT libs (if needed), link all native bits, compile simple UI (written in ObjC)
          and produce an app bundle (with xcode project) -->
     <RemoveDir Directories="$(BundleDir)" />
-    <AppleAppBuilderTask Arch="$(TargetArchitecture)"
-                         ProjectName="$(AssemblyName)"
-                         MonoRuntimeHeaders="$(RuntimePackNativeDir)include\mono-2.0"
-                         Assemblies="@(BundleAssemblies)"
-                         MainLibraryFileName="AppleTestRunner.dll"
-                         UseConsoleUITemplate="True"
-                         GenerateXcodeProject="True"
-                         BuildAppBundle="True"
-                         Optimized="True"
-                         DevTeamProvisioning="$(DevTeamProvisioning)"
-                         OutputDirectory="$(BundleDir)"
-                         AppDir="$(PublishDir)">
+    <AppleAppBuilderTask
+        Arch="$(TargetArchitecture)"
+        ProjectName="$(AssemblyName)"
+        MonoRuntimeHeaders="$(RuntimePackNativeDir)include\mono-2.0"
+        Assemblies="@(BundleAssemblies)"
+        MainLibraryFileName="AppleTestRunner.dll"
+        UseConsoleUITemplate="True"
+        GenerateXcodeProject="True"
+        BuildAppBundle="True"
+        Optimized="True"
+        DevTeamProvisioning="$(DevTeamProvisioning)"
+        OutputDirectory="$(BundleDir)"
+        AppDir="$(PublishDir)">
         <Output TaskParameter="AppBundlePath" PropertyName="AppBundlePath" />
         <Output TaskParameter="XcodeProjectPath" PropertyName="XcodeProjectPath" />
     </AppleAppBuilderTask>
-
     <Message Importance="High" Text="Xcode: $(XcodeProjectPath)"/>
     <Message Importance="High" Text="App: $(AppBundlePath)"/>
 
@@ -129,12 +129,13 @@
       <AssemblySearchPaths Include="$(PublishDir)"/>
     </ItemGroup>
     <Error Condition="!Exists('$(RuntimePackRidDir)')" Text="RuntimePackRidDir=$(RuntimePackRidDir) doesn't exist" />
-    <WasmAppBuilder AppDir="$(BundleDir)"
-                    RuntimePackDir="$(RuntimePackRidDir)"
-                    MainAssembly="$(PublishDir)\WasmTestRunner.dll"
-                    MainJS="$(MonoProjectRoot)\wasm\runtime-test.js"
-                    ExtraAssemblies="$(PublishDir)\$(AssemblyName).dll"
-                    AssemblySearchPaths="@(AssemblySearchPaths)"/>
+    <WasmAppBuilder
+      AppDir="$(BundleDir)"
+      RuntimePackDir="$(RuntimePackRidDir)"
+      MainAssembly="$(PublishDir)\WasmTestRunner.dll"
+      MainJS="$(MonoProjectRoot)\wasm\runtime-test.js"
+      ExtraAssemblies="$(PublishDir)\$(AssemblyName).dll"
+      AssemblySearchPaths="@(AssemblySearchPaths)"/>
   </Target>
 
   <Target Name="AddTestRunnersToPublishedFiles"

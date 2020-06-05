@@ -75,7 +75,7 @@ jobs:
                 $(_archiveTestsParameter)
           displayName: Restore and Build
 
-        - ${{ if in(parameters.osGroup, 'OSX', 'iOS','tvOS') }}:
+        - ${{ if in(parameters.osGroup, 'OSX', 'iOS','tvOS') }}: 
           - script: |
               du -sh $(Build.SourcesDirectory)/*
               df -h

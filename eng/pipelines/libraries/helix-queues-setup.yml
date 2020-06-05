@@ -118,7 +118,7 @@ jobs:
       # NET472
       - ${{ if eq(parameters.jobParameters.framework, 'net472') }}:
         - Windows.10.Amd64.Client19H1.Open
-
+      
       # AllConfigurations
       - ${{ if eq(parameters.jobParameters.framework, 'allConfigurations') }}:
         - Windows.10.Amd64.Server19H1.Open

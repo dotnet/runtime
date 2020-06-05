@@ -7,11 +7,11 @@
     <TimeoutInSeconds Condition="'$(TargetArchitecture)' == 'arm64' or '$(TargetArchitecture)' == 'arm'">1800</TimeoutInSeconds>
     <TimeoutInSeconds Condition="'$(TimeoutInSeconds)' == ''">900</TimeoutInSeconds>
     <_timeoutSpan>$([System.TimeSpan]::FromSeconds($(TimeoutInSeconds)))</_timeoutSpan>
-
+    
     <!-- We need to enable xunit reporter so that it parses test results
          Package testing doesn't run on xunit. -->
     <EnableXunitReporter Condition="'$(BuildAllConfigurations)' != 'true'">true</EnableXunitReporter>
-
+    
     <TestArchiveRuntimeFile>$(TestArchiveRuntimeRoot)test-runtime-$(BuildSettings).zip</TestArchiveRuntimeFile>
     <TestArchiveRuntimeFile Condition="'$(BuildAllConfigurations)' == 'true'">$(TestArchiveRuntimeRoot)packages-testPayload-$(Configuration).zip</TestArchiveRuntimeFile>
 
@@ -66,7 +66,7 @@
   <PropertyGroup Condition="'$(HelixCommand)' == ''">
     <HelixPreCommands Condition="'$(MonoEnvOptions)' != '' and '$(OSGroup)' == 'Windows_NT'">set MONO_ENV_OPTIONS='$(MonoEnvOptions)'</HelixPreCommands>
     <HelixPreCommands Condition="'$(MonoEnvOptions)' != '' and '$(OSGroup)' != 'Windows_NT'">export MONO_ENV_OPTIONS='$(MonoEnvOptions)'</HelixPreCommands>
-
+    
     <!--
       For windows we need to use call, since the command is going to be called from a bat script created by Helix
       and we exit /b at the end of RunTests.cmd, Helix runs some other commands after ours within the bat script,

@@ -156,7 +156,7 @@ jobs:
 #
 # Build CoreCLR checked using GCC toolchain
 # Only when CoreCLR is changed
-#
+# 
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:
     jobTemplate: /eng/pipelines/coreclr/templates/build-job.yml
@@ -573,7 +573,7 @@ jobs:
       isOfficialBuild: false
       liveRuntimeBuildConfig: release
       testScope: innerloop
-      condition: >-
+      condition: >- 
         or(
           eq(dependencies.checkout.outputs['SetPathVars_libraries.containsChange'], true),
           eq(dependencies.checkout.outputs['SetPathVars_coreclr.containsChange'], true),
