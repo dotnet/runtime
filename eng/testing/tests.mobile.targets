@@ -62,6 +62,7 @@
     <Error Condition="!Exists('$(RuntimePackRidDir)')" Text="RuntimePackRidDir=$(RuntimePackRidDir) doesn't exist" />
     <Error Condition="('$(TargetArchitecture)' == 'arm64' or '$(TargetArchitecture)' == 'arm') and '$(DevTeamProvisioning)' == ''"
            Text="'DevTeamProvisioning' needs to be set for device builds. Set it to 'UBF8T346G9' if you're part of the Microsoft team account." />
+    <Error Condition="'$(TestArchiveTestsDir)' == ''" Text="TestArchiveTestsDir property to archive the test folder must be set." />
 
     <WriteLinesToFile File="$(PublishDir)xunit-excludes.txt" Lines="$(_withoutCategories.Replace(';', '%0dcategory='))" />
 
@@ -74,31 +75,30 @@
     </ItemGroup>
 
     <MonoAOTCompiler Condition="'$(RunAOTCompilation)' == 'true'"
-        CompilerBinaryPath="$(RuntimePackNativeDir)cross\mono-aot-cross"
-        Mode="Full"
-        OutputType="AsmOnly"
-        Assemblies="@(AotInputAssemblies)"
-        UseLLVM="$(MonoEnableLLVM)"
-        LLVMPath="$(RuntimePackNativeDir)cross">
+                     CompilerBinaryPath="$(RuntimePackNativeDir)cross\mono-aot-cross"
+                     Mode="Full"
+                     OutputType="AsmOnly"
+                     Assemblies="@(AotInputAssemblies)"
+                     UseLLVM="$(MonoEnableLLVM)"
+                     LLVMPath="$(RuntimePackNativeDir)cross">
         <Output TaskParameter="CompiledAssemblies" ItemName="BundleAssemblies" />
     </MonoAOTCompiler>
 
     <!-- Run App bundler, it uses AOT libs (if needed), link all native bits, compile simple UI (written in ObjC)
          and produce an app bundle (with xcode project) -->
     <RemoveDir Directories="$(BundleDir)" />
-    <AppleAppBuilderTask
-        Arch="$(TargetArchitecture)"
-        ProjectName="$(AssemblyName)"
-        MonoRuntimeHeaders="$(RuntimePackNativeDir)include\mono-2.0"
-        Assemblies="@(BundleAssemblies)"
-        MainLibraryFileName="AppleTestRunner.dll"
-        UseConsoleUITemplate="True"
-        GenerateXcodeProject="True"
-        BuildAppBundle="True"
-        Optimized="True"
-        DevTeamProvisioning="$(DevTeamProvisioning)"
-        OutputDirectory="$(BundleDir)"
-        AppDir="$(PublishDir)">
+    <AppleAppBuilderTask Arch="$(TargetArchitecture)"
+                         ProjectName="$(AssemblyName)"
+                         MonoRuntimeHeaders="$(RuntimePackNativeDir)include\mono-2.0"
+                         Assemblies="@(BundleAssemblies)"
+                         MainLibraryFileName="AppleTestRunner.dll"
+                         UseConsoleUITemplate="True"
+                         GenerateXcodeProject="True"
+                         BuildAppBundle="True"
+                         Optimized="True"
+                         DevTeamProvisioning="$(DevTeamProvisioning)"
+                         OutputDirectory="$(BundleDir)"
+                         AppDir="$(PublishDir)">
         <Output TaskParameter="AppBundlePath" PropertyName="AppBundlePath" />
         <Output TaskParameter="XcodeProjectPath" PropertyName="XcodeProjectPath" />
     </AppleAppBuilderTask>
@@ -111,7 +111,8 @@
     </ItemGroup>
 
     <Copy SourceFiles="@(_appFiles)"
-          DestinationFolder="$(TestArchiveTestsDir)/%(RecursiveDir)" SkipUnchangedFiles="true"/>
+          DestinationFolder="$(TestArchiveTestsDir)/%(RecursiveDir)"
+          SkipUnchangedFiles="true"/>
 
   </Target>
 
@@ -123,24 +124,12 @@
       <AssemblySearchPaths Include="$(PublishDir)"/>
     </ItemGroup>
     <Error Condition="!Exists('$(RuntimePackRidDir)')" Text="RuntimePackRidDir=$(RuntimePackRidDir) doesn't exist" />
-    <WasmAppBuilder
-      AppDir="$(BundleDir)"
-      RuntimePackDir="$(RuntimePackRidDir)"
-      MainAssembly="$(PublishDir)\WasmTestRunner.dll"
-      MainJS="$(MonoProjectRoot)\wasm\runtime-test.js"
-      ExtraAssemblies="$(PublishDir)\$(AssemblyName).dll"
-      AssemblySearchPaths="@(AssemblySearchPaths)"/>
-  </Target>
-
-  <Target Name="AddTestRunnersToPublishedFiles"
-          AfterTargets="ComputeResolvedFilesToPublishList">
-    <ItemGroup>
-      <_runnerFilesToPublish Include="$(AndroidTestRunnerDir)*" Condition="'$(TargetOS)' == 'Android'" />
-      <_runnerFilesToPublish Include="$(AppleTestRunnerDir)*" Condition="'$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'tvOS'" />
-      <_runnerFilesToPublish Include="$(WasmTestRunnerDir)*" Condition="'$(TargetOS)' == 'Browser'" />
-
-      <ResolvedFileToPublish Include="@(_runnerFilesToPublish)" RelativePath="%(FileName)%(Extension)" CopyToPublishDirectory="PreserveNewest" PostprocessAssembly="true" />
-    </ItemGroup>
+    <WasmAppBuilder AppDir="$(BundleDir)"
+                    RuntimePackDir="$(RuntimePackRidDir)"
+                    MainAssembly="$(PublishDir)\WasmTestRunner.dll"
+                    MainJS="$(MonoProjectRoot)\wasm\runtime-test.js"
+                    ExtraAssemblies="$(PublishDir)\$(AssemblyName).dll"
+                    AssemblySearchPaths="@(AssemblySearchPaths)"/>
   </Target>
 
   <Target Name="AddFrameworkReference">
