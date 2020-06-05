@@ -572,6 +572,8 @@
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetsBrowser)' == 'true'">
     <Compile Include="Internal\Cryptography\RandomNumberGeneratorImplementation.Browser.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.GetRandomBytes.cs"
+             Link="Common\Interop\Unix\System.Native\Interop.GetRandomBytes.cs" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="System.Collections" />
