@@ -563,8 +563,7 @@ namespace System.Reflection.Emit
             if (field == null)
                 throw new ArgumentNullException(nameof(field));
 
-            throw new NotImplementedException();
-            //return new FieldToken (GetToken (field));
+            return new FieldToken(GetToken (field), field.GetType());
         }
 
         // FIXME:
