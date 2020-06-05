@@ -9,10 +9,140 @@ using System.IO;
 using System.Net.Sockets;
 using System.Runtime.InteropServices;
 using System.Text;
+using System.Threading.Tasks;
+using Microsoft.Diagnostics.Tools.RuntimeClient;
+using System.Threading;
+using System.Linq;
+using System.Reflection;
 
 // modified version of same code in dotnet/diagnostics for testing
 namespace Tracing.Tests.Common
 {
+    public static class Utils
+    {
+        public static readonly string DiagnosticsMonitorAddressEnvKey = "DOTNET_DiagnosticsMonitorAddress";
+        public static readonly string DiagnosticsMonitorPauseOnStartEnvKey = "DOTNET_DiagnosticsMonitorPauseOnStart";
+
+        public static async Task<T> WaitTillTimeout<T>(Task<T> task, TimeSpan timeout)
+        {
+            using var cts = new CancellationTokenSource();
+            var completedTask = await Task.WhenAny(task, Task.Delay(timeout, cts.Token));
+            if (completedTask == task)
+            {
+                cts.Cancel();
+                return await task;
+            }
+            else
+            {
+                throw new TimeoutException("Task timed out");
+            }
+        }
+
+        public static async Task WaitTillTimeout(Task task, TimeSpan timeout)
+        {
+            using var cts = new CancellationTokenSource();
+            var completedTask = await Task.WhenAny(task, Task.Delay(timeout, cts.Token));
+            if (completedTask == task)
+            {
+                cts.Cancel();
+                return;
+            }
+            else
+            {
+                throw new TimeoutException("Task timed out");
+            }
+        }
+
+        public static async Task<bool> RunSubprocess(Assembly currentAssembly, Dictionary<string,string> environment, Func<Task> beforeExecution = null, Func<int, Task> duringExecution = null, Func<Task> afterExecution = null)
+        {
+            bool fSuccess = true;
+            using (var process = new Process())
+            {
+                if (beforeExecution != null)
+                    await beforeExecution();
+
+                var stdoutSb = new StringBuilder();
+                var stderrSb = new StringBuilder();
+
+                process.StartInfo.UseShellExecute = false;
+                process.StartInfo.CreateNoWindow = true;
+                foreach ((string key, string value) in environment)
+                    process.StartInfo.Environment.Add(key, value);
+                process.StartInfo.FileName = Process.GetCurrentProcess().MainModule.FileName;
+                process.StartInfo.Arguments = new Uri(currentAssembly.CodeBase).LocalPath + " 0";
+                process.StartInfo.RedirectStandardOutput = true;
+                process.StartInfo.RedirectStandardInput = true;
+                process.StartInfo.RedirectStandardError = true;
+
+                Logger.logger.Log($"running sub-process: {process.StartInfo.FileName} {process.StartInfo.Arguments}");
+                DateTime startTime = DateTime.Now;
+                process.OutputDataReceived += new DataReceivedEventHandler((s,e) =>
+                {
+                    if (!string.IsNullOrEmpty(e.Data))
+                    {
+                        stdoutSb.Append($"\n\t{(DateTime.Now - startTime).TotalSeconds,5:f1}s: {e.Data}");
+                    }
+                });
+
+                process.ErrorDataReceived += new DataReceivedEventHandler((s,e) =>
+                {
+                    if (!string.IsNullOrEmpty(e.Data))
+                    {
+                        stderrSb.Append($"\n\t{(DateTime.Now - startTime).TotalSeconds,5:f1}s: {e.Data}");
+                    }
+                });
+
+                fSuccess &= process.Start();
+                if (!fSuccess)
+                    throw new Exception("Failed to start subprocess");
+                StreamWriter subprocesssStdIn = process.StandardInput;
+                process.BeginOutputReadLine();
+                process.BeginErrorReadLine();
+                Logger.logger.Log($"subprocess started: {fSuccess}");
+                Logger.logger.Log($"subprocess PID: {process.Id}");
+
+                while (!EventPipeClient.ListAvailablePorts().Contains(process.Id))
+                {
+                    Logger.logger.Log($"Standard Diagnostics Server connection not created yet -> try again in 100 ms");
+                    await Task.Delay(100);
+                }
+
+                try
+                {
+                    if (duringExecution != null)
+                        await duringExecution(process.Id);
+                    Logger.logger.Log($"Sending 'exit' to subprocess stdin");
+                    subprocesssStdIn.WriteLine("exit");
+                    subprocesssStdIn.Close();
+                    if (!process.WaitForExit(5000))
+                    {
+                        Logger.logger.Log("Subprocess didn't exit in 5 seconds!");
+                        throw new TimeoutException("Subprocess didn't exit in 5 seconds");
+                    }
+                    Logger.logger.Log($"SubProcess exited - Exit code: {process.ExitCode}");
+                }
+                catch (Exception e)
+                {
+                    Logger.logger.Log(e.ToString());
+                    Logger.logger.Log($"Calling process.Kill()");
+                    process.Kill();
+                    fSuccess=false;
+                }
+                finally
+                {
+                    Logger.logger.Log($"Subprocess stdout: {stdoutSb.ToString()}");
+                    Logger.logger.Log($"Subprocess stderr: {stderrSb.ToString()}");
+                }
+
+
+                if (afterExecution != null)
+                    await afterExecution();
+            }
+
+            return fSuccess;
+        }
+    }
+
     public class IpcHeader
     {
         IpcHeader() { }
@@ -58,7 +188,7 @@ namespace Tracing.Tests.Common
         {
             IpcHeader header = new IpcHeader
             {
-                Magic = reader.ReadBytes(14),
+                Magic = reader.ReadBytes(MagicSizeInBytes),
                 Size = reader.ReadUInt16(),
                 CommandSet = reader.ReadByte(),
                 CommandId = reader.ReadByte(),
