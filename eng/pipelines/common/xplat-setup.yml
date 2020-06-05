@@ -30,17 +30,13 @@ jobs:
       - name: System.DisableZipDownload
         value: true
 
-      - ${{ if eq(parameters.jobParameters.buildConfig, 'checked') }}:
-        - name: buildConfigUpper
-          value: 'Checked'
-
-      - ${{ if eq(parameters.jobParameters.buildConfig, 'debug') }}:
-        - name: buildConfigUpper
+      - name: buildConfigUpper
+        ${{ if eq(parameters.jobParameters.buildConfig, 'debug') }}:
           value: 'Debug'
-
-      - ${{ if eq(parameters.jobParameters.buildConfig, 'release') }}:
-        - name: buildConfigUpper
+        ${{ if eq(parameters.jobParameters.buildConfig, 'release') }}:
           value: 'Release'
+        ${{ if eq(parameters.jobParameters.buildConfig, 'checked') }}:
+          value: 'Checked'
 
       - name: _BuildConfig
         value: $(buildConfigUpper)
