@@ -663,8 +663,8 @@ public:
 
     COM_METHOD EventPipeWriteEvent(
         EVENTPIPE_EVENT eventHandle,
-        COR_PRF_EVENT_DATA data[],
         UINT32 cData,
+        COR_PRF_EVENT_DATA data[],
         LPCGUID pActivityId,
         LPCGUID pRelatedActivityId);
 

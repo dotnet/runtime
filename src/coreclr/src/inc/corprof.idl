@@ -4096,9 +4096,9 @@ interface ICorProfilerInfo12 : ICorProfilerInfo11
 
     HRESULT EventPipeWriteEvent(
                 [in] EVENTPIPE_EVENT    eventHandle,
+                [in] UINT32             cData,
                 [in, size_is(cData)]
                      COR_PRF_EVENT_DATA data[],
-                [in] UINT32             cData,
                 [in] LPCGUID            pActivityId,
                 [in] LPCGUID            pRelatedActivityId);
 }

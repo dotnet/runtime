@@ -105,8 +105,7 @@ void EventPipeMetadataGenerator::GetEventMetadataLength(
     }
     else
     {
-        // Each parameter has an optional array identifier and then a 4 byte
-        // TypeCode + the field name (parameterName.Length + 1) * 2 bytes.
+        // Each parameter has an 4 byte TypeCode + the field name (parameterName.Length + 1) * 2 bytes
         for(UINT32 i = 0; i < paramCount; i++)
         {
             _ASSERTE(pParams[i].Name != NULL);

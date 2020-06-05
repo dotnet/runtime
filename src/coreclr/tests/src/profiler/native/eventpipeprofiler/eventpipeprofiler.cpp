@@ -40,21 +40,21 @@ HRESULT EventPipeProfiler::Initialize(IUnknown* pICorProfilerInfoUnk)
 
     // Create a param descriptor for every type
     COR_PRF_EVENTPIPE_PARAM_DESC allTypesParams[] = {
-        { 0, COR_PRF_EVENTPIPE_BOOLEAN,  WCHAR("Boolean") },
-        { 0, COR_PRF_EVENTPIPE_CHAR,     WCHAR("Char") },
-        { 0, COR_PRF_EVENTPIPE_SBYTE,    WCHAR("SByte") },
-        { 0, COR_PRF_EVENTPIPE_BYTE,     WCHAR("Byte") },
-        { 0, COR_PRF_EVENTPIPE_INT16,    WCHAR("Int16") },
-        { 0, COR_PRF_EVENTPIPE_UINT16,   WCHAR("UInt16") },
-        { 0, COR_PRF_EVENTPIPE_INT32,    WCHAR("Int32") },
-        { 0, COR_PRF_EVENTPIPE_UINT32,   WCHAR("UInt32") },
-        { 0, COR_PRF_EVENTPIPE_INT64,    WCHAR("Int64") },
-        { 0, COR_PRF_EVENTPIPE_UINT64,   WCHAR("UInt64") },
-        { 0, COR_PRF_EVENTPIPE_SINGLE,   WCHAR("Single") },
-        { 0, COR_PRF_EVENTPIPE_DOUBLE,   WCHAR("Double") },
-        { 0, COR_PRF_EVENTPIPE_GUID,     WCHAR("Guid") },
-        { 0, COR_PRF_EVENTPIPE_STRING,   WCHAR("String") },
-        { 0, COR_PRF_EVENTPIPE_DATETIME, WCHAR("DateTime") }
+        { COR_PRF_EVENTPIPE_BOOLEAN,  0, WCHAR("Boolean") },
+        { COR_PRF_EVENTPIPE_CHAR,     0, WCHAR("Char") },
+        { COR_PRF_EVENTPIPE_SBYTE,    0, WCHAR("SByte") },
+        { COR_PRF_EVENTPIPE_BYTE,     0, WCHAR("Byte") },
+        { COR_PRF_EVENTPIPE_INT16,    0, WCHAR("Int16") },
+        { COR_PRF_EVENTPIPE_UINT16,   0, WCHAR("UInt16") },
+        { COR_PRF_EVENTPIPE_INT32,    0, WCHAR("Int32") },
+        { COR_PRF_EVENTPIPE_UINT32,   0, WCHAR("UInt32") },
+        { COR_PRF_EVENTPIPE_INT64,    0, WCHAR("Int64") },
+        { COR_PRF_EVENTPIPE_UINT64,   0, WCHAR("UInt64") },
+        { COR_PRF_EVENTPIPE_SINGLE,   0, WCHAR("Single") },
+        { COR_PRF_EVENTPIPE_DOUBLE,   0, WCHAR("Double") },
+        { COR_PRF_EVENTPIPE_GUID,     0, WCHAR("Guid") },
+        { COR_PRF_EVENTPIPE_STRING,   0, WCHAR("String") },
+        { COR_PRF_EVENTPIPE_DATETIME, 0, WCHAR("DateTime") }
     };
 
     const size_t allTypesParamsCount = sizeof(allTypesParams) / sizeof(allTypesParams[0]);
@@ -79,7 +79,7 @@ HRESULT EventPipeProfiler::Initialize(IUnknown* pICorProfilerInfoUnk)
     }
 
     COR_PRF_EVENTPIPE_PARAM_DESC arrayTypeParams[] = {
-        { COR_PRF_EVENTPIPE_FLAG_ARRAY_TYPE, COR_PRF_EVENTPIPE_INT32,    WCHAR("IntArray")},
+        { COR_PRF_EVENTPIPE_ARRAY, COR_PRF_EVENTPIPE_INT32,    WCHAR("IntArray")},
     };
     const size_t arrayTypeParamsCount = sizeof(arrayTypeParams) / sizeof(arrayTypeParams[0]);
     hr = _pCorProfilerInfo12->EventPipeDefineEvent(
@@ -124,7 +124,7 @@ HRESULT EventPipeProfiler::Initialize(IUnknown* pICorProfilerInfoUnk)
     }
 
     COR_PRF_EVENTPIPE_PARAM_DESC simpleParams[] = {
-        { 0, COR_PRF_EVENTPIPE_INT32, WCHAR("Int32") }
+        { COR_PRF_EVENTPIPE_INT32, 0, WCHAR("Int32") }
     };
 
     const size_t simpleParamsCount = sizeof(simpleParams) / sizeof(simpleParams[0]);
@@ -259,8 +259,8 @@ HRESULT EventPipeProfiler::FunctionSeen(FunctionID functionID)
 
         HRESULT hr = _pCorProfilerInfo12->EventPipeWriteEvent(
                         _allTypesEvent,
-                        eventData,
                         sizeof(eventData)/sizeof(eventData[0]),
+                        eventData,
                         NULL,
                         NULL);
         if (FAILED(hr))
@@ -290,8 +290,8 @@ HRESULT EventPipeProfiler::FunctionSeen(FunctionID functionID)
         arrayTypeEventData[0].size = arraySize;
         hr = _pCorProfilerInfo12->EventPipeWriteEvent(
                         _arrayTypeEvent,
-                        arrayTypeEventData,
                         sizeof(arrayTypeEventData) / sizeof(arrayTypeEventData[0]),
+                        arrayTypeEventData,
                         NULL,
                         NULL);
         if (FAILED(hr))
@@ -325,8 +325,8 @@ HRESULT EventPipeProfiler::FunctionSeen(FunctionID functionID)
 
             hr = _pCorProfilerInfo12->EventPipeWriteEvent(
                         _simpleEvent,
-                        simpleEventData,
                         sizeof(simpleEventData) / sizeof(simpleEventData[0]),
+                        simpleEventData,
                         NULL,
                         NULL);
             if (FAILED(hr))

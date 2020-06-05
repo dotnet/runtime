@@ -17247,8 +17247,8 @@ EXTERN_C const IID IID_ICorProfilerInfo12;
 
         virtual HRESULT STDMETHODCALLTYPE EventPipeWriteEvent(
             /* [in] */ EVENTPIPE_EVENT eventHandle,
-            /* [size_is][in] */ COR_PRF_EVENT_DATA data[  ],
             /* [in] */ UINT32 cData,
+            /* [size_is][in] */ COR_PRF_EVENT_DATA data[  ],
             /* [in] */ LPCGUID pActivityId,
             /* [in] */ LPCGUID pRelatedActivityId) = 0;
 
@@ -17900,8 +17900,8 @@ EXTERN_C const IID IID_ICorProfilerInfo12;
         HRESULT ( STDMETHODCALLTYPE *EventPipeWriteEvent )(
             ICorProfilerInfo12 * This,
             /* [in] */ EVENTPIPE_EVENT eventHandle,
-            /* [size_is][in] */ COR_PRF_EVENT_DATA data[  ],
             /* [in] */ UINT32 cData,
+            /* [size_is][in] */ COR_PRF_EVENT_DATA data[  ],
             /* [in] */ LPCGUID pActivityId,
             /* [in] */ LPCGUID pRelatedActivityId);
 
@@ -18239,8 +18239,8 @@ EXTERN_C const IID IID_ICorProfilerInfo12;
 #define ICorProfilerInfo12_EventPipeDefineEvent(This,provHandle,szName,eventID,keywords,eventVersion,level,opcode,needStack,cParamDescs,pParamDescs,pEventHandle)   \
     ( (This)->lpVtbl -> EventPipeDefineEvent(This,provHandle,szName,eventID,keywords,eventVersion,level,opcode,needStack,cParamDescs,pParamDescs,pEventHandle) )
 
-#define ICorProfilerInfo12_EventPipeWriteEvent(This,eventHandle,data,cData,pActivityId,pRelatedActivityId)  \
-    ( (This)->lpVtbl -> EventPipeWriteEvent(This,eventHandle,data,cData,pActivityId,pRelatedActivityId) )
+#define ICorProfilerInfo12_EventPipeWriteEvent(This,eventHandle,cData,data,pActivityId,pRelatedActivityId)  \
+    ( (This)->lpVtbl -> EventPipeWriteEvent(This,eventHandle,cData,data,pActivityId,pRelatedActivityId) )
 
 #endif /* COBJMACROS */
 

@@ -64,22 +64,22 @@ namespace EventPipeTests
 
                         if (traceEvent.EventName == "AllTypesEvent")
                         {
-                            success |= ValidateAllTypesEvent(traceEvent);
+                            success &= ValidateAllTypesEvent(traceEvent);
                             ++allTypesEventCount;
                         }
                         else if (traceEvent.EventName == "EmptyEvent")
                         {
-                            success |= ValidateEmptyEvent(traceEvent);
+                            success &= ValidateEmptyEvent(traceEvent);
                             ++emptyEventCount;
                         }
                         else if(traceEvent.EventName == "SimpleEvent")
                         {
-                            success |= ValidateSimpleEvent(traceEvent, simpleEventCount);
+                            success &= ValidateSimpleEvent(traceEvent, simpleEventCount);
                             ++simpleEventCount;
                         }
                         else if(traceEvent.EventName == "ArrayTypeEvent")
                         {
-                            success |= ValidateArrayTypeEvent(traceEvent);
+                            success &= ValidateArrayTypeEvent(traceEvent);
                             ++arrayTypeEventCount;
                         }
 

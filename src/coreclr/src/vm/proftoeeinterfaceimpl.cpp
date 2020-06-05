@@ -7105,6 +7105,16 @@ HRESULT ProfToEEInterfaceImpl::EventPipeDefineEvent(
         return E_INVALIDARG;
     }
 
+    for (UINT32 i = 0; i < cParamDescs; ++i)
+    {
+        if ((EventPipeParameterType)(pParamDescs[i].type) == EventPipeParameterType::Object)
+        {
+            // The native EventPipeMetadataGenerator only knows how to encode
+            // primitive types, it would not handle Object correctly
+            return E_INVALIDARG;
+        }
+    }
+
     HRESULT hr = S_OK;
     EX_TRY
     {
@@ -7149,8 +7159,8 @@ HRESULT ProfToEEInterfaceImpl::EventPipeDefineEvent(
 
 HRESULT ProfToEEInterfaceImpl::EventPipeWriteEvent(
     EVENTPIPE_EVENT eventHandle,
-    COR_PRF_EVENT_DATA data[],
     UINT32 cData,
+    COR_PRF_EVENT_DATA data[],
     LPCGUID pActivityId,
     LPCGUID pRelatedActivityId)
 {
