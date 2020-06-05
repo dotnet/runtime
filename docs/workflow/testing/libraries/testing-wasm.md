@@ -7,10 +7,18 @@ In order to be able to run tests, the following JavaScript engines should be ins
 
 They can be installed as a part of [jsvu](https://github.com/GoogleChromeLabs/jsvu).
 
-Please make sure that a JavaScript engine binary is available via command line.  
-In case of JSVU, just update PATH variable:
+Please make sure that a JavaScript engine binary is available via command line,  
+e.g. for V8:
 ```bash
-PATH=/Users/<your_user>/.jsvu/:$PATH 
+$ v8
+V8 version 8.5.62
+```
+
+If you use `jsvu`, first add its location to PATH variable  
+e.g. for V8
+
+```bash
+PATH=/Users/<your_user>/.jsvu/:$PATH V8
 ```
 
 ## Building Libs and Tests for WebAssembly
@@ -36,6 +44,11 @@ It's possible to set a JavaScript engine explicitly by adding `/p:JSEngine` prop
 ```
 ./dotnet.sh build /t:Test src/Common/tests /p:TargetOS=Browser /p:TargetArchitecture=wasm /p:Configuration=release /p:JSEngine=SpiderMonkey
 ```
+
+At the moment supported values are:
+- `V8`
+- `JavaScriptCore`
+- `SpiderMonkey`
 
 By default, `V8` engine is used.
 
