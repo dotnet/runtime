@@ -17,6 +17,28 @@
 const WCHAR* EventPipeEventSource::s_pProviderName = W("Microsoft-DotNETCore-EventPipe");
 const WCHAR* EventPipeEventSource::s_pProcessInfoEventName = W("ProcessInfo");
 
+#if defined(HOST_WINDOWS)
+const WCHAR* EventPipeEventSource::s_pOSInformation = W("Windows");
+#elif defined(__APPLE__)
+const WCHAR* EventPipeEventSource::s_pOSInformation = W("macOS");
+#elif defined(__linux__)
+const WCHAR* EventPipeEventSource::s_pOSInformation = W("Linux");
+#else
+const WCHAR* EventPipeEventSource::s_pOSInformation = W("Unknown");
+#endif
+
+#if defined(TARGET_X86)
+const WCHAR* EventPipeEventSource::s_pArchInformation = W("x86");
+#elif defined(TARGET_AMD64)
+const WCHAR* EventPipeEventSource::s_pArchInformation = W("x64");
+#elif defined(TARGET_ARM)
+const WCHAR* EventPipeEventSource::s_pArchInformation = W("arm32");
+#elif defined(TARGET_ARM64)
+const WCHAR* EventPipeEventSource::s_pArchInformation = W("arm64");
+#else
+const WCHAR* EventPipeEventSource::s_pArchInformation = W("Unknown");
+#endif
+
 EventPipeEventSource::EventPipeEventSource()
 {
     CONTRACTL
@@ -30,17 +52,21 @@ EventPipeEventSource::EventPipeEventSource()
     m_pProvider = EventPipe::CreateProvider(SL(s_pProviderName), NULL, NULL);
 
     // Generate metadata.
-    const unsigned int numParams = 1;
+    const unsigned int numParams = 3;
     EventPipeParameterDesc params[numParams];
     params[0].Type = EventPipeParameterType::String;
     params[0].Name = W("CommandLine");
+    params[1].Type = EventPipeParameterType::String;
+    params[1].Name = W("OSInformation");
+    params[2].Type = EventPipeParameterType::String;
+    params[2].Name = W("ArchInformation");
 
     size_t metadataLength = 0;
     BYTE *pMetadata = EventPipeMetadataGenerator::GenerateEventMetadata(
         1,      /* eventID */
         s_pProcessInfoEventName,
         0,      /* keywords */
-        0,      /* version */
+        1,      /* version */
         EventPipeEventLevel::LogAlways,
         params,
         numParams,
@@ -113,12 +139,18 @@ void EventPipeEventSource::SendProcessInfo(LPCWSTR pCommandLine)
     }
     CONTRACTL_END;
 
-    EventData data[1];
+    EventData data[3];
     data[0].Ptr = (UINT64) pCommandLine;
     data[0].Size = (unsigned int)(wcslen(pCommandLine) + 1) * 2;
     data[0].Reserved = 0;
+    data[1].Ptr = (UINT64)s_pOSInformation;
+    data[1].Size = (unsigned int)(wcslen(s_pOSInformation) + 1) * 2;
+    data[1].Reserved = 0;
+    data[2].Ptr = (UINT64)s_pArchInformation;
+    data[2].Size = (unsigned int)(wcslen(s_pArchInformation) + 1) * 2;
+    data[2].Reserved = 0;
 
-    EventPipe::WriteEvent(*m_pProcessInfoEvent, data, 1);
+    EventPipe::WriteEvent(*m_pProcessInfoEvent, data, 3);
 }
 
 #endif // FEATURE_PERFTRACING
