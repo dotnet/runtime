@@ -49,9 +49,6 @@ jobs:
         - _crossBuildPropertyArg: ''
         - _testRunNamePrefixSuffix: ''
 
-        # we need to override this value to support build-coreclr-and-libraries-job.yml
-        - _BuildConfig: ${{ parameters.buildConfig }}
-
         - librariesBuildArtifactName: ${{ format('libraries_bin_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
 
         - ${{ if ne(parameters.testScope, '') }}:
@@ -111,6 +108,9 @@ jobs:
 
         - _buildArguments: $(_runtimeConfigurationArg) -configuration ${{ parameters.buildConfig }} -ci -arch ${{ parameters.archType }} $(_finalFrameworkArg) $(_testScopeArg) $(_runtimeOSArg) $(_msbuildCommonParameters) $(_runtimeArtifactsPathArg) $(_crossBuildPropertyArg)
         - ${{ parameters.variables }}
+
+        # we need to override this value to support build-coreclr-and-libraries-job.yml
+        - _BuildConfig: ${{ parameters.buildConfig }}
 
       dependsOn:
       - checkout
