@@ -222,6 +222,7 @@ namespace System.Linq.Expressions.Tests
 
         // Order this last to give IcosanaryInt32Func a chance to have been used by other tests.
         [Fact, TestOrder(1)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/37474", TestPlatforms.Android)]
         public void ImplicitlyTyped()
         {
             LambdaExpression exp = Expression.Lambda(
@@ -792,6 +793,7 @@ namespace System.Linq.Expressions.Tests
 
 #if FEATURE_COMPILE
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/37474", TestPlatforms.Android)]
         public void AboveByteMaxArityArgIL()
         {
             ParameterExpression[] pars = Enumerable.Range(0, 300)
@@ -884,6 +886,7 @@ namespace System.Linq.Expressions.Tests
 
 #if FEATURE_COMPILE
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/37474", TestPlatforms.Android)]
         public void AboveByteMaxArityArgAddressIL()
         {
             ParameterExpression parToMutate = Expression.Parameter(typeof(Mutable));
@@ -967,6 +970,7 @@ namespace System.Linq.Expressions.Tests
 
         [Fact]
         [SkipOnTargetFramework(~TargetFrameworkMonikers.Netcoreapp, "Optimization in .NET Core")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/37474", TestPlatforms.Android)]
         public void ValidateThatInterpreterWithSimpleTypeUsesDynamicThunk()
         {
             Expression<Action<object,object,object>> complexaction = (object o1, object o2, object o3) => Console.WriteLine("");

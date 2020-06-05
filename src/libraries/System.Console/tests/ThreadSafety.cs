@@ -13,6 +13,7 @@ public class ThreadSafety
 
     [Fact]
     [PlatformSpecific(~TestPlatforms.Browser)]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/37465", TestPlatforms.Android)]
     public static void OpenStandardXXXCanBeCalledConcurrently()
     {
         Parallel.For(0, NumberOfIterations, i =>
@@ -42,6 +43,7 @@ public class ThreadSafety
 
     [Fact]
     [PlatformSpecific(~TestPlatforms.Browser)]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/37465", TestPlatforms.Android)]
     public static void SetStandardXXXCanBeCalledConcurrently()
     {
         TextReader savedStandardInput = Console.In;
@@ -85,6 +87,7 @@ public class ThreadSafety
 
     [Fact]
     [PlatformSpecific(~TestPlatforms.Browser)]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/37465", TestPlatforms.Android)]
     public static void ReadMayBeCalledConcurrently()
     {
         const char TestChar = '+';

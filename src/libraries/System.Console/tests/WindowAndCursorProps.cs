@@ -338,6 +338,7 @@ public class WindowAndCursorProps
 
     [Fact]
     [PlatformSpecific(~TestPlatforms.Browser)]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/37465", TestPlatforms.Android)]
     public static void SetCursorPosition_Invoke_Success()
     {
         if (!OperatingSystem.IsWindows() || (!Console.IsInputRedirected && !Console.IsOutputRedirected))
@@ -365,6 +366,7 @@ public class WindowAndCursorProps
 
     [Fact]
     [PlatformSpecific(~TestPlatforms.Browser)]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/37465", TestPlatforms.Android)]
     public static void GetCursorPosition_Invoke_ReturnsExpected()
     {
         if (!Console.IsInputRedirected && !Console.IsOutputRedirected)
@@ -392,6 +394,7 @@ public class WindowAndCursorProps
 
     [Fact]
     [PlatformSpecific(~TestPlatforms.Browser)]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/37465", TestPlatforms.Android)]
     public void CursorLeft_Set_GetReturnsExpected()
     {
         if (!Console.IsInputRedirected && !Console.IsOutputRedirected)
@@ -414,6 +417,7 @@ public class WindowAndCursorProps
     [InlineData(-1)]
     [InlineData(short.MaxValue + 1)]
     [PlatformSpecific(~TestPlatforms.Browser)]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/37465", TestPlatforms.Android)]
     public void CursorLeft_SetInvalid_ThrowsArgumentOutOfRangeException(int value)
     {
         if (PlatformDetection.IsWindows && Console.IsOutputRedirected)
@@ -435,6 +439,7 @@ public class WindowAndCursorProps
 
     [Fact]
     [PlatformSpecific(~TestPlatforms.Browser)]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/37465", TestPlatforms.Android)]
     public void CursorTop_Set_GetReturnsExpected()
     {
         if (!Console.IsInputRedirected && !Console.IsOutputRedirected)
@@ -457,6 +462,7 @@ public class WindowAndCursorProps
     [InlineData(-1)]
     [InlineData(short.MaxValue + 1)]
     [PlatformSpecific(~TestPlatforms.Browser)]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/37465", TestPlatforms.Android)]
     public void CursorTop_SetInvalid_ThrowsArgumentOutOfRangeException(int value)
     {
         if (PlatformDetection.IsWindows & Console.IsOutputRedirected)

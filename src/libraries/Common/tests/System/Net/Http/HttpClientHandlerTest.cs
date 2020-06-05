@@ -228,6 +228,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/37087", TestPlatforms.Android)]
         public async Task GetAsync_IPv6LinkLocalAddressUri_Success()
         {
             if (IsWinHttpHandler && UseVersion >= HttpVersion20.Value)

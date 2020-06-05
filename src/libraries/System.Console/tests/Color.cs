@@ -13,6 +13,7 @@ public class Color
 {
     [Fact]
     [PlatformSpecific(~TestPlatforms.Browser)]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/37465", TestPlatforms.Android)]
     public static void InvalidColors()
     {
         AssertExtensions.Throws<ArgumentException>(null, () => Console.BackgroundColor = (ConsoleColor)42);
@@ -21,6 +22,7 @@ public class Color
 
     [Fact]
     [PlatformSpecific(~TestPlatforms.Browser)]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/37465", TestPlatforms.Android)]
     public static void RoundtrippingColor()
     {
         Console.BackgroundColor = Console.BackgroundColor;
@@ -50,6 +52,7 @@ public class Color
 
     [Fact]
     [PlatformSpecific(~TestPlatforms.Browser)]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/37465", TestPlatforms.Android)]
     public static void RedirectedOutputDoesNotUseAnsiSequences()
     {
         // Make sure that redirecting to a memory stream causes Console not to write out the ANSI sequences

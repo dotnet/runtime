@@ -174,6 +174,7 @@ namespace System.Globalization.Tests
         [MemberData(nameof(IndexOf_TestData))]
         [MemberData(nameof(IndexOf_Aesc_Ligature_TestData))]
         [MemberData(nameof(IndexOf_U_WithDiaeresis_TestData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36672", TestPlatforms.Android)]
         public void IndexOf_String(CompareInfo compareInfo, string source, string value, int startIndex, int count, CompareOptions options, int expected, int expectedMatchLength)
         {
             if (value.Length == 1)

@@ -23,6 +23,7 @@ public partial class ConsoleEncoding
     [Theory]
     [MemberData(nameof(InputData))]
     [PlatformSpecific(~TestPlatforms.Browser)]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/37465", TestPlatforms.Android)]
     public void TestEncoding(string inputString)
     {
         TextWriter outConsoleStream = Console.Out;
@@ -80,6 +81,7 @@ public partial class ConsoleEncoding
 
     [Fact]
     [PlatformSpecific(~TestPlatforms.Browser)]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/37465", TestPlatforms.Android)]
     public void TestValidEncodings()
     {
         Action<Encoding> check = encoding =>

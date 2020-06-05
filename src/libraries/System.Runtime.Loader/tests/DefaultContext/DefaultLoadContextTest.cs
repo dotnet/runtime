@@ -84,6 +84,7 @@ namespace System.Runtime.Loader.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/37093", TestPlatforms.Android)]
         public void LoadInDefaultContext()
         {
             // This will attempt to load an assembly, by path, in the Default Load context via the Resolving event

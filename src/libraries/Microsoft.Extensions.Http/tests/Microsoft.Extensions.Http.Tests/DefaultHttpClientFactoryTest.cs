@@ -342,6 +342,7 @@ namespace Microsoft.Extensions.Http
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported), nameof(PlatformDetection.IsPreciseGcSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/37463", TestPlatforms.Android)]
         public async Task Factory_CleanupCycle_DisposesEligibleHandler()
         {
             // Arrange

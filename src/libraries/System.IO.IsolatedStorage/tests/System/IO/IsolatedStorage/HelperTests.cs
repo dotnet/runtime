@@ -37,6 +37,7 @@ namespace System.IO.IsolatedStorage.Tests
             InlineData(IsolatedStorageScope.Assembly | IsolatedStorageScope.Roaming),
             InlineData(IsolatedStorageScope.Machine)
             ]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36836", TestPlatforms.Android)]
         public void GetDataDirectory(IsolatedStorageScope scope)
         {
             // Machine scope is behind a policy that isn't enabled by default

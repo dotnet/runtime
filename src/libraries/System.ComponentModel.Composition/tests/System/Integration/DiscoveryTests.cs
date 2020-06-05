@@ -786,6 +786,7 @@ namespace Tests.Integration
         public class FooWithTwoFoos : IFoo1, IFoo2 { }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/37464", TestPlatforms.Android)]
         public void InheritedExport_TwoInterfaces()
         {
             var container = ContainerFactory.CreateWithAttributedCatalog(typeof(FooWithTwoFoos));

@@ -370,6 +370,7 @@ namespace System.Globalization.Tests
 
         [Theory]
         [MemberData(nameof(SortKey_TestData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36672", TestPlatforms.Android)]
         public void SortKeyTest(CompareInfo compareInfo, string string1, string string2, CompareOptions options, int expectedSign)
         {
             SortKey sk1 = compareInfo.GetSortKey(string1, options);

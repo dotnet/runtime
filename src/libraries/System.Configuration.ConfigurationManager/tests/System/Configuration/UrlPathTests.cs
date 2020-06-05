@@ -25,6 +25,7 @@ namespace System.ConfigurationTests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/37071", TestPlatforms.Android)]
         public void GetDirectoryOrRootName_GettingDirectoryFromAFilePath()
         {
             string exePath = AppDomain.CurrentDomain.BaseDirectory;

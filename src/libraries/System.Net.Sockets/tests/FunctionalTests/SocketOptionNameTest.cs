@@ -520,6 +520,7 @@ namespace System.Net.Sockets.Tests
         [Theory]
         [InlineData(AddressFamily.InterNetwork)]
         [InlineData(AddressFamily.InterNetworkV6)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/37087", TestPlatforms.Android)]
         public void GetSetRawSocketOption_Roundtrips(AddressFamily family)
         {
             int SOL_SOCKET;

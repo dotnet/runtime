@@ -11,6 +11,7 @@ namespace System.Data.Tests
         [InlineData("Microsoft.SqlServer.Server.SqlMetaData")] // Type from System.Data.SqlClient
         [InlineData("System.Data.SqlTypes.SqlBytes")] // Type from System.Data.Common
         [PlatformSpecific(~TestPlatforms.Browser)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36841", TestPlatforms.Android)]
         public void TestSystemData(string typeName)
         {
             // Verify that the type can be loaded via .NET Framework compat facade

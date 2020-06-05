@@ -426,6 +426,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/37094", TestPlatforms.Android)]
         public static void MachineRootStore_NonEmpty()
         {
             // This test will fail on systems where the administrator has gone out of their

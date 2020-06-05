@@ -72,6 +72,7 @@ namespace System.Net.Security.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/37087", TestPlatforms.Android)]
         public async Task ServerNoEncryption_ClientNoEncryption_ConnectWithNoEncryption()
         {
             using (var serverNoEncryption = new DummyTcpServer(

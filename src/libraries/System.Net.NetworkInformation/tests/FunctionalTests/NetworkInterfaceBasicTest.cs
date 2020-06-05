@@ -20,6 +20,7 @@ namespace System.Net.NetworkInformation.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/37087", TestPlatforms.Android)]
         public void BasicTest_GetNetworkInterfaces_AtLeastOne()
         {
             Assert.NotEqual<int>(0, NetworkInterface.GetAllNetworkInterfaces().Length);
@@ -132,6 +133,7 @@ namespace System.Net.NetworkInformation.Tests
 
         [Fact]
         [Trait("IPv4", "true")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/37087", TestPlatforms.Android)]
         public void BasicTest_StaticLoopbackIndex_MatchesLoopbackNetworkInterface()
         {
             Assert.True(Capability.IPv4Support());
@@ -155,6 +157,7 @@ namespace System.Net.NetworkInformation.Tests
 
         [Fact]
         [Trait("IPv4", "true")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/37087", TestPlatforms.Android)]
         public void BasicTest_StaticLoopbackIndex_ExceptionIfV4NotSupported()
         {
             Assert.True(Capability.IPv4Support());
@@ -164,6 +167,7 @@ namespace System.Net.NetworkInformation.Tests
 
         [Fact]
         [Trait("IPv6", "true")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/37087", TestPlatforms.Android)]
         public void BasicTest_StaticIPv6LoopbackIndex_MatchesLoopbackNetworkInterface()
         {
             Assert.True(Capability.IPv6Support());
@@ -188,6 +192,7 @@ namespace System.Net.NetworkInformation.Tests
 
         [Fact]
         [Trait("IPv6", "true")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/37087", TestPlatforms.Android)]
         public void BasicTest_StaticIPv6LoopbackIndex_ExceptionIfV6NotSupported()
         {
             Assert.True(Capability.IPv6Support());
@@ -268,6 +273,7 @@ namespace System.Net.NetworkInformation.Tests
 
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // https://github.com/dotnet/runtime/issues/20029 and https://github.com/Microsoft/WSL/issues/3561
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/37087", TestPlatforms.Android)]
         public void BasicTest_GetIsNetworkAvailable_Success()
         {
             Assert.True(NetworkInterface.GetIsNetworkAvailable());

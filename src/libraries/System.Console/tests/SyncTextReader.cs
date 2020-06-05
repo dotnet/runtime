@@ -79,6 +79,7 @@ public class SyncTextReader
 
     [Fact]
     [PlatformSpecific(~TestPlatforms.Browser)]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/37465", TestPlatforms.Android)]
     public void ReadToEnd()
     {
         var expected = string.Join(Environment.NewLine, s_testLines);
@@ -94,6 +95,7 @@ public class SyncTextReader
 
     [Fact]
     [PlatformSpecific(~TestPlatforms.Browser)]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/37465", TestPlatforms.Android)]
     public void ReadBlock()
     {
         var expected = new[] { 'H', 'e', 'l', 'l', 'o' };
@@ -113,6 +115,7 @@ public class SyncTextReader
 
     [Fact]
     [PlatformSpecific(~TestPlatforms.Browser)]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/37465", TestPlatforms.Android)]
     public void Read()
     {
         var expected = new[] { 'H', 'e', 'l', 'l', 'o' };
@@ -132,6 +135,7 @@ public class SyncTextReader
 
     [Fact]
     [PlatformSpecific(~TestPlatforms.Browser)]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/37465", TestPlatforms.Android)]
     public void Peek()
     {
         const string expected = "ABC";
@@ -146,6 +150,7 @@ public class SyncTextReader
 
     [Fact]
     [PlatformSpecific(~TestPlatforms.Browser)]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/37465", TestPlatforms.Android)]
     public void ReadToEndAsync()
     {
         var expected = string.Join(Environment.NewLine, s_testLines);
@@ -161,6 +166,7 @@ public class SyncTextReader
 
     [Fact]
     [PlatformSpecific(~TestPlatforms.Browser)]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/37465", TestPlatforms.Android)]
     public void ReadBlockAsync()
     {
         var expected = new[] { 'H', 'e', 'l', 'l', 'o' };
@@ -186,6 +192,7 @@ public class SyncTextReader
 
     [Fact]
     [PlatformSpecific(~TestPlatforms.Browser)]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/37465", TestPlatforms.Android)]
     public void ReadAsync()
     {
         var expected = new[] { 'H', 'e', 'l', 'l', 'o' };
@@ -211,6 +218,7 @@ public class SyncTextReader
 
     [Fact]
     [PlatformSpecific(~TestPlatforms.Browser)]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/37465", TestPlatforms.Android)]
     public void ReadLineAsync()
     {
         var expected = string.Join(Environment.NewLine, s_testLines);

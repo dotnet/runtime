@@ -44,7 +44,8 @@ namespace System.Tests
         }
 
         [Fact]
-        [PlatformSpecific(~TestPlatforms.Browser)] // throws pNSE
+        [PlatformSpecific(~TestPlatforms.Browser)] // throws PNSE
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/37093", TestPlatforms.Android)]
         public void TargetFrameworkTest()
         {
             const int ExpectedExitCode = 0;

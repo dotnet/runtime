@@ -597,6 +597,7 @@ namespace System.Runtime.Loader.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/37093", TestPlatforms.Android)]
         void AssemblyLoadStringMultiLoadedAssemblyDefault()
         {
             string name = _fixture.defaultAlcAssembly.GetName().Name;
@@ -613,6 +614,7 @@ namespace System.Runtime.Loader.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/37093", TestPlatforms.Android)]
         void AssemblyLoadStringMultiLoadedAssemblyIsolated()
         {
             string name = _fixture.defaultAlcAssembly.GetName().Name;
@@ -745,6 +747,7 @@ namespace System.Runtime.Loader.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/37093", TestPlatforms.Android)]
         void TypeGetTypeStringMultiLoadedAssemblyDefault()
         {
             string typeName = typeof(ContextualReflectionTestFixture).AssemblyQualifiedName;
@@ -781,6 +784,7 @@ namespace System.Runtime.Loader.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/37093", TestPlatforms.Android)]
         void TypeGetTypeStringMultiLoadedAssemblyIsolated()
         {
             string typeName = typeof(ContextualReflectionTestFixture).AssemblyQualifiedName;
@@ -879,6 +883,7 @@ namespace System.Runtime.Loader.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/37093", TestPlatforms.Android)]
         void AssemblyGetTypeStringMultiLoadedAssemblyDefault()
         {
             string typeNameAGenericClass = typeof(AGenericClass<>).FullName;
@@ -902,6 +907,7 @@ namespace System.Runtime.Loader.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/37093", TestPlatforms.Android)]
         void AssemblyGetTypeStringMultiLoadedAssemblyIsolated()
         {
             string typeNameAGenericClass = typeof(AGenericClass<>).FullName;
@@ -973,6 +979,7 @@ namespace System.Runtime.Loader.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/37093", TestPlatforms.Android)]
         void ActivatorCreateInstanceNullGenericMultiLoadedAssemblyDefault()
         {
             string typeNameAGenericClass = typeof(AGenericClass<>).FullName;
@@ -986,6 +993,7 @@ namespace System.Runtime.Loader.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/37093", TestPlatforms.Android)]
         void ActivatorCreateInstanceNullGenericMultiLoadedAssemblyIsolated()
         {
             string typeNameAGenericClass = typeof(AGenericClass<>).FullName;
@@ -999,6 +1007,7 @@ namespace System.Runtime.Loader.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/37093", TestPlatforms.Android)]
         void ActivatorCreateInstanceNameGenericMultiLoadedAssemblyDefault()
         {
             string typeNameAGenericClass = typeof(AGenericClass<>).FullName;
@@ -1013,6 +1022,7 @@ namespace System.Runtime.Loader.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/37093", TestPlatforms.Android)]
         void ActivatorCreateInstanceNameGenericMultiLoadedAssemblyIsolated()
         {
             string typeNameAGenericClass = typeof(AGenericClass<>).FullName;

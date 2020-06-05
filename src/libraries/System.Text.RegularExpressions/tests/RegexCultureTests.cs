@@ -73,6 +73,7 @@ namespace System.Text.RegularExpressions.Tests
         [Theory]
         [InlineData(2)]
         [InlineData(256)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36848", TestPlatforms.Android)]
         public void TurkishI_Is_Differently_LowerUpperCased_In_Turkish_Culture(int length)
         {
             var turkish = new CultureInfo("tr-TR");

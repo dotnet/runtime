@@ -14,6 +14,7 @@ public partial class CancelKeyPressTests
 
     [Fact]
     [PlatformSpecific(~TestPlatforms.Browser)]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/37465", TestPlatforms.Android)]
     public static void CanAddAndRemoveHandler()
     {
         ConsoleCancelEventHandler handler = (sender, e) =>

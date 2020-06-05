@@ -259,6 +259,7 @@ public class ReadAndWrite
 
     [Fact]
     [PlatformSpecific(~TestPlatforms.Browser)]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/37465", TestPlatforms.Android)]
     public static unsafe void OutputEncodingPreamble()
     {
         Encoding curEncoding = Console.OutputEncoding;
@@ -282,6 +283,7 @@ public class ReadAndWrite
 
     [Fact]
     [PlatformSpecific(~TestPlatforms.Browser)]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/37465", TestPlatforms.Android)]
     public static unsafe void OutputEncoding()
     {
         Encoding curEncoding = Console.OutputEncoding;
@@ -350,6 +352,7 @@ public class ReadAndWrite
 
     [Fact]
     [PlatformSpecific(~TestPlatforms.Browser)]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/37465", TestPlatforms.Android)]
     public static void ReadAndReadLine()
     {
         TextWriter savedStandardOutput = Console.Out;

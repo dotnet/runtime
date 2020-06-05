@@ -103,6 +103,7 @@ namespace Microsoft.VisualBasic.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/37066", TestPlatforms.Android)]
         public void Command()
         {
             var expected = Environment.CommandLine;
