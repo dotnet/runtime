@@ -189,7 +189,7 @@ HRESULT STDMETHODCALLTYPE EventPipeProfiler::JITCachedFunctionSearchFinished(Fun
 HRESULT EventPipeProfiler::FunctionSeen(FunctionID functionID)
 {
     String functionName = GetFunctionIDName(functionID);
-    if (functionName == L"TriggerMethod")
+    if (functionName == WCHAR("TriggerMethod"))
     {
         printf("TriggerMethod found! Sending event...\n");
 
@@ -248,7 +248,7 @@ HRESULT EventPipeProfiler::FunctionSeen(FunctionID functionID)
         eventData[12].ptr = reinterpret_cast<UINT64>(&guid);
         eventData[12].size = sizeof(GUID);
         // { COR_PRF_EVENTPIPE_STRING, WCHAR("String") }
-        LPCWCH str = L"Hello, this is a string!";
+        LPCWCH str = WCHAR("Hello, this is a string!");
         eventData[13].ptr = reinterpret_cast<UINT64>(str);
         eventData[13].size = static_cast<UINT32>(wcslen(str) + 1 /*include null char*/) * sizeof(WCHAR);
         // { COR_PRF_EVENTPIPE_DATETIME, WCHAR("DateTime") }
