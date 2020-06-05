@@ -817,7 +817,7 @@ void emitter::emitInsSanityCheck(instrDesc* id)
             assert(isVectorRegister(id->idReg2()));
             assert(isVectorRegister(id->idReg3()));
             elemsize = optGetElemsize(id->idInsOpt());
-            assert(isValidVectorIndex(id->idOpSize(), elemsize, emitGetInsSC(id)));
+            assert(isValidVectorIndex(EA_16BYTE, elemsize, emitGetInsSC(id)));
             break;
 
         case IF_DV_3C: // DV_3C   .Q.........mmmmm ......nnnnnddddd      Vd Vn Vm   (vector)
@@ -6247,7 +6247,7 @@ void emitter::emitIns_R_R_R_I(instruction ins,
                 assert(isValidArrangement(size, opt));
                 elemsize = optGetElemsize(opt);
                 assert(isValidVectorElemsizeFloat(elemsize));
-                assert(isValidVectorIndex(size, elemsize, imm));
+                assert(isValidVectorIndex(EA_16BYTE, elemsize, imm));
                 assert(opt != INS_OPTS_1D); // Reserved encoding
                 fmt = IF_DV_3BI;
             }
@@ -10966,7 +10966,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             code     = emitInsCode(ins, fmt);
             imm      = emitGetInsSC(id);
             elemsize = optGetElemsize(id->idInsOpt());
-            assert(isValidVectorIndex(id->idOpSize(), elemsize, imm));
+            assert(isValidVectorIndex(EA_16BYTE, elemsize, imm));
             code |= insEncodeVectorsize(id->idOpSize()); // Q
             code |= insEncodeFloatElemsize(elemsize);    // X
             code |= insEncodeFloatIndex(elemsize, imm);  // L H
