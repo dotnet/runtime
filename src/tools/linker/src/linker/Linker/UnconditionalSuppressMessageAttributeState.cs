@@ -169,7 +169,7 @@ namespace Mono.Linker
 
 					break;
 				default:
-					_context.LogMessage (MessageContainer.CreateInfoMessage ($"Scope `{info.Scope}` used in `UnconditionalSuppressMessage` is currently not supported."));
+					_context.LogMessage ($"Scope `{info.Scope}` used in `UnconditionalSuppressMessage` is currently not supported.");
 					break;
 				}
 			}

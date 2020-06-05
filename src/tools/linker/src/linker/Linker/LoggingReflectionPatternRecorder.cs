@@ -59,7 +59,7 @@ namespace Mono.Linker
 					location = source.DeclaringType?.FullName + "::" + source.Name;
 			}
 
-			_context.LogMessage (MessageContainer.CreateWarningMessage (_context, location + message, 2006, origin, "Unrecognized reflection pattern"));
+			_context.LogWarning (location + message, 2006, origin, "Unrecognized reflection pattern");
 		}
 
 		static string GetSignature (MethodDefinition method)
