@@ -23,9 +23,9 @@ PATH=/Users/<your_user>/.jsvu/:$PATH V8
 
 ## Building Libs and Tests for WebAssembly
 
-Now we're ready to build everything for WebAssembly:
+Now we're ready to build everything for WebAssembly (for more details, please read [this document](../../building/libraries/webassembly-instructions.md#building-everything)):
 ```bash
-./build.sh --arch wasm --subset mono -c Release
+./build.sh --arch wasm --os Browser -c release
 ```
 and even run tests one by one for each library:
 ```
