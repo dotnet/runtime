@@ -201,6 +201,21 @@ namespace System.ServiceProcess.Tests
             testService.DeleteTestServices();
         }
 
+        [ConditionalFact(nameof(IsElevatedAndSupportsEventLogs))]
+        public void PropagateExceptionFromOnStartResultsInCorrectEventLogSeverity()
+        {
+            string serviceName = nameof(PropagateExceptionFromOnStartResultsInCorrectEventLogSeverity) + Guid.NewGuid().ToString();
+            var testService = new TestServiceProvider(serviceName);
+            Assert.True(EventLog.SourceExists(serviceName));
+
+            EventLog log = new EventLog(serviceName);
+            EventLogEntryCollection eventLogEntries = log.Entries;
+            Assert.True(eventLogEntries.Count == 1);
+            Assert.True(eventLogEntries[0].EntryType == EventLogEntryType.Error);
+
+            testService.DeleteTestServices();
+        }
+
         private ServiceController ConnectToServer()
         {
             _testService.Client.Connect(connectionTimeout);
