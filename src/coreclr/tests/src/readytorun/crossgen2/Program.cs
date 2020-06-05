@@ -8,6 +8,8 @@ using System.IO;
 using System.Linq.Expressions;
 using System.Numerics;
 using System.Reflection;
+using System.Reflection.Metadata;
+using System.Reflection.PortableExecutable;
 using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
 using System.Text;
@@ -563,6 +565,25 @@ internal class Program
         using (var enumerator = listOfString.GetEnumerator())
         {
             Console.WriteLine($@"DisposeEnumeratorTest: {enumerator}");
+        }
+        return true;
+    }
+
+    private static bool DisposeEnumeratorTestWithConstrainedCall()
+    {
+        string thisAssembly = Assembly.GetExecutingAssembly().Location;
+
+        using (var fs = new FileStream(thisAssembly, FileMode.Open, FileAccess.Read))
+        {
+            using (var pereader = new PEReader(fs))
+            {
+                var reader = pereader.GetMetadataReader();
+                var methodDefinitionHandleCollection = reader.MethodDefinitions;
+                foreach (var methodDefinitionHandle in methodDefinitionHandleCollection)
+                {
+                    break;
+                }
+            }
         }
         return true;
     }
@@ -1249,6 +1270,7 @@ internal class Program
         RunTest("DisposeStructTest", DisposeStructTest());
         RunTest("DisposeClassTest", DisposeClassTest());
         RunTest("DisposeEnumeratorTest", DisposeEnumeratorTest());
+        RunTest("DisposeEnumeratorTestWithConstrainedCall", DisposeEnumeratorTestWithConstrainedCall());
         RunTest("EmptyArrayOfInt", EmptyArrayOfInt());
         RunTest("EnumerateEmptyArrayOfInt", EnumerateEmptyArrayOfInt());
         RunTest("EmptyArrayOfString", EmptyArrayOfString());
