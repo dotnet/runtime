@@ -755,17 +755,23 @@ namespace System.Net.Sockets
 
             // IsReady returns whether an operation can be executed immediately.
             // observedSequenceNumber must be passed to StartAsyncOperation.
-            public bool IsReady(SocketAsyncContext context, out int? observedSequenceNumber)
+            public bool IsReady(SocketAsyncContext context, out int observedSequenceNumber)
             {
                 // It is safe to read _state and _sequence without using Lock.
                 // - The return value is soly based on Volatile.Read of _state.
                 // - The Volatile.Read of _sequenceNumber ensures we read a value before executing the operation.
                 //   This is needed to retry the operation in StartAsyncOperation in case the _sequenceNumber incremented.
                 // - Because no Lock is taken, it is possible we observe a sequence number increment before the state
-                //   becomes Ready. When that happens, observedSequenceNumber is null, and StartAsyncOperation will execute the operation.
+                //   becomes Ready. When that happens, observedSequenceNumber is decremented, and StartAsyncOperation will
+                //   execute the operation because the sequence number won't match.
                 QueueState state = (QueueState)Volatile.Read(ref Unsafe.As<QueueState, int>(ref _state));
+                observedSequenceNumber = Volatile.Read(ref _sequenceNumber);
+
                 bool isReady = state == QueueState.Ready || state == QueueState.Stopped;
-                observedSequenceNumber = isReady ? Volatile.Read(ref _sequenceNumber) : default;
+                if (!isReady)
+                {
+                    observedSequenceNumber--;
+                }
 
                 Trace(context, $"{isReady}");
 
@@ -773,7 +779,7 @@ namespace System.Net.Sockets
             }
 
             // Return true for pending, false for completed synchronously (including failure and abort)
-            public bool StartAsyncOperation(SocketAsyncContext context, TOperation operation, int? observedSequenceNumber, CancellationToken cancellationToken = default)
+            public bool StartAsyncOperation(SocketAsyncContext context, TOperation operation, int observedSequenceNumber, CancellationToken cancellationToken = default)
             {
                 Trace(context, $"Enter");
 
@@ -1278,7 +1284,7 @@ namespace System.Net.Sockets
             }
         }
 
-        private void PerformSyncOperation<TOperation>(ref OperationQueue<TOperation> queue, TOperation operation, int timeout, int? observedSequenceNumber)
+        private void PerformSyncOperation<TOperation>(ref OperationQueue<TOperation> queue, TOperation operation, int timeout, int observedSequenceNumber)
             where TOperation : AsyncOperation
         {
             Debug.Assert(timeout == -1 || timeout > 0, $"Unexpected timeout: {timeout}");
@@ -1360,7 +1366,7 @@ namespace System.Net.Sockets
             Debug.Assert(socketAddressLen > 0, $"Unexpected socketAddressLen: {socketAddressLen}");
 
             SocketError errorCode;
-            int? observedSequenceNumber;
+            int observedSequenceNumber;
             if (_receiveQueue.IsReady(this, out observedSequenceNumber) &&
                 SocketPal.TryCompleteAccept(_socket, socketAddress, ref socketAddressLen, out acceptedFd, out errorCode))
             {
@@ -1390,7 +1396,7 @@ namespace System.Net.Sockets
             SetNonBlocking();
 
             SocketError errorCode;
-            int? observedSequenceNumber;
+            int observedSequenceNumber;
             if (_receiveQueue.IsReady(this, out observedSequenceNumber) &&
                 SocketPal.TryCompleteAccept(_socket, socketAddress, ref socketAddressLen, out acceptedFd, out errorCode))
             {
@@ -1428,7 +1434,7 @@ namespace System.Net.Sockets
             // before we try to complete it via epoll notification.
             // Thus, always call TryStartConnect regardless of readiness.
             SocketError errorCode;
-            int? observedSequenceNumber;
+            int observedSequenceNumber;
             _sendQueue.IsReady(this, out observedSequenceNumber);
             if (SocketPal.TryStartConnect(_socket, socketAddress, socketAddressLen, out errorCode))
             {
@@ -1459,7 +1465,7 @@ namespace System.Net.Sockets
             // We need to initiate the connect before we try to complete it.
             // Thus, always call TryStartConnect regardless of readiness.
             SocketError errorCode;
-            int? observedSequenceNumber;
+            int observedSequenceNumber;
             _sendQueue.IsReady(this, out observedSequenceNumber);
             if (SocketPal.TryStartConnect(_socket, socketAddress, socketAddressLen, out errorCode))
             {
@@ -1506,7 +1512,7 @@ namespace System.Net.Sockets
 
             SocketFlags receivedFlags;
             SocketError errorCode;
-            int? observedSequenceNumber;
+            int observedSequenceNumber;
             if (_receiveQueue.IsReady(this, out observedSequenceNumber) &&
                 (SocketPal.TryCompleteReceiveFrom(_socket, buffer.Span, flags, socketAddress, ref socketAddressLen, out bytesReceived, out receivedFlags, out errorCode) ||
                 !ShouldRetrySyncOperation(out errorCode)))
@@ -1534,7 +1540,7 @@ namespace System.Net.Sockets
         {
             SocketFlags receivedFlags;
             SocketError errorCode;
-            int? observedSequenceNumber;
+            int observedSequenceNumber;
             if (_receiveQueue.IsReady(this, out observedSequenceNumber) &&
                 (SocketPal.TryCompleteReceiveFrom(_socket, buffer, flags, socketAddress, ref socketAddressLen, out bytesReceived, out receivedFlags, out errorCode) ||
                 !ShouldRetrySyncOperation(out errorCode)))
@@ -1567,7 +1573,7 @@ namespace System.Net.Sockets
             SetNonBlocking();
 
             SocketError errorCode;
-            int? observedSequenceNumber;
+            int observedSequenceNumber;
             if (_receiveQueue.IsReady(this, out observedSequenceNumber) &&
                 SocketPal.TryCompleteReceive(_socket, buffer.Span, flags, out bytesReceived, out errorCode))
             {
@@ -1600,7 +1606,7 @@ namespace System.Net.Sockets
             SetNonBlocking();
 
             SocketError errorCode;
-            int? observedSequenceNumber;
+            int observedSequenceNumber;
             if (_receiveQueue.IsReady(this, out observedSequenceNumber) &&
                 SocketPal.TryCompleteReceiveFrom(_socket, buffer.Span, flags, socketAddress, ref socketAddressLen, out bytesReceived, out receivedFlags, out errorCode))
             {
@@ -1647,7 +1653,7 @@ namespace System.Net.Sockets
 
             SocketFlags receivedFlags;
             SocketError errorCode;
-            int? observedSequenceNumber;
+            int observedSequenceNumber;
             if (_receiveQueue.IsReady(this, out observedSequenceNumber) &&
                 (SocketPal.TryCompleteReceiveFrom(_socket, buffers, flags, socketAddress, ref socketAddressLen, out bytesReceived, out receivedFlags, out errorCode) ||
                 !ShouldRetrySyncOperation(out errorCode)))
@@ -1677,7 +1683,7 @@ namespace System.Net.Sockets
             SetNonBlocking();
 
             SocketError errorCode;
-            int? observedSequenceNumber;
+            int observedSequenceNumber;
             if (_receiveQueue.IsReady(this, out observedSequenceNumber) &&
                 SocketPal.TryCompleteReceiveFrom(_socket, buffers, flags, socketAddress, ref socketAddressLen, out bytesReceived, out receivedFlags, out errorCode))
             {
@@ -1715,7 +1721,7 @@ namespace System.Net.Sockets
 
             SocketFlags receivedFlags;
             SocketError errorCode;
-            int? observedSequenceNumber;
+            int observedSequenceNumber;
             if (_receiveQueue.IsReady(this, out observedSequenceNumber) &&
                 (SocketPal.TryCompleteReceiveMessageFrom(_socket, buffer.Span, buffers, flags, socketAddress, ref socketAddressLen, isIPv4, isIPv6, out bytesReceived, out receivedFlags, out ipPacketInformation, out errorCode) ||
                 !ShouldRetrySyncOperation(out errorCode)))
@@ -1749,7 +1755,7 @@ namespace System.Net.Sockets
             SetNonBlocking();
 
             SocketError errorCode;
-            int? observedSequenceNumber;
+            int observedSequenceNumber;
             if (_receiveQueue.IsReady(this, out observedSequenceNumber) &&
                 SocketPal.TryCompleteReceiveMessageFrom(_socket, buffer.Span, buffers, flags, socketAddress, ref socketAddressLen, isIPv4, isIPv6, out bytesReceived, out receivedFlags, out ipPacketInformation, out errorCode))
             {
@@ -1803,7 +1809,7 @@ namespace System.Net.Sockets
 
             bytesSent = 0;
             SocketError errorCode;
-            int? observedSequenceNumber;
+            int observedSequenceNumber;
             if (_sendQueue.IsReady(this, out observedSequenceNumber) &&
                 (SocketPal.TryCompleteSendTo(_socket, buffer, ref offset, ref count, flags, socketAddress, socketAddressLen, ref bytesSent, out errorCode) ||
                 !ShouldRetrySyncOperation(out errorCode)))
@@ -1835,7 +1841,7 @@ namespace System.Net.Sockets
             bytesSent = 0;
             SocketError errorCode;
             int bufferIndexIgnored = 0, offset = 0, count = buffer.Length;
-            int? observedSequenceNumber;
+            int observedSequenceNumber;
             if (_sendQueue.IsReady(this, out observedSequenceNumber) &&
                 (SocketPal.TryCompleteSendTo(_socket, buffer, null, ref bufferIndexIgnored, ref offset, ref count, flags, socketAddress, socketAddressLen, ref bytesSent, out errorCode) ||
                 !ShouldRetrySyncOperation(out errorCode)))
@@ -1869,7 +1875,7 @@ namespace System.Net.Sockets
 
             bytesSent = 0;
             SocketError errorCode;
-            int? observedSequenceNumber;
+            int observedSequenceNumber;
             if (_sendQueue.IsReady(this, out observedSequenceNumber) &&
                 SocketPal.TryCompleteSendTo(_socket, buffer.Span, ref offset, ref count, flags, socketAddress, socketAddressLen, ref bytesSent, out errorCode))
             {
@@ -1917,7 +1923,7 @@ namespace System.Net.Sockets
             int bufferIndex = 0;
             int offset = 0;
             SocketError errorCode;
-            int? observedSequenceNumber;
+            int observedSequenceNumber;
             if (_sendQueue.IsReady(this, out observedSequenceNumber) &&
                 (SocketPal.TryCompleteSendTo(_socket, buffers, ref bufferIndex, ref offset, flags, socketAddress, socketAddressLen, ref bytesSent, out errorCode) ||
                 !ShouldRetrySyncOperation(out errorCode)))
@@ -1950,7 +1956,7 @@ namespace System.Net.Sockets
             int bufferIndex = 0;
             int offset = 0;
             SocketError errorCode;
-            int? observedSequenceNumber;
+            int observedSequenceNumber;
             if (_sendQueue.IsReady(this, out observedSequenceNumber) &&
                 SocketPal.TryCompleteSendTo(_socket, buffers, ref bufferIndex, ref offset, flags, socketAddress, socketAddressLen, ref bytesSent, out errorCode))
             {
@@ -1985,7 +1991,7 @@ namespace System.Net.Sockets
 
             bytesSent = 0;
             SocketError errorCode;
-            int? observedSequenceNumber;
+            int observedSequenceNumber;
             if (_sendQueue.IsReady(this, out observedSequenceNumber) &&
                 (SocketPal.TryCompleteSendFile(_socket, fileHandle, ref offset, ref count, ref bytesSent, out errorCode) ||
                 !ShouldRetrySyncOperation(out errorCode)))
@@ -2013,7 +2019,7 @@ namespace System.Net.Sockets
 
             bytesSent = 0;
             SocketError errorCode;
-            int? observedSequenceNumber;
+            int observedSequenceNumber;
             if (_sendQueue.IsReady(this, out observedSequenceNumber) &&
                 SocketPal.TryCompleteSendFile(_socket, fileHandle, ref offset, ref count, ref bytesSent, out errorCode))
             {
