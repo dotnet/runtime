@@ -38,8 +38,8 @@ namespace ILCompiler
         public bool Resilient { get; set; }
         public bool Map { get; set; }
         public int Parallelism { get; set; }
-
-
+        public ReadyToRunMethodLayoutAlgorithm MethodLayout { get; set; }
+        public ReadyToRunFileLayoutAlgorithm FileLayout { get; set; }
         public string SingleMethodTypeName { get; set; }
         public string SingleMethodName { get; set; }
         public string[] SingleMethodGenericArgs { get; set; }
@@ -177,6 +177,14 @@ namespace ILCompiler
                 new Option(new[] { "--map" }, SR.MapFileOption)
                 {
                     Argument = new Argument<bool>()
+                },
+                new Option(new[] { "--method-layout" }, "Layout file using profile driven optimization assuming the layout algorithm specified. The default value is DefaultSort, which indicates that complex layout is disabled")
+                {
+                    Argument = new Argument<ReadyToRunMethodLayoutAlgorithm>()
+                },
+                new Option(new[] { "--file-layout" }, "Layout file using profile driven optimization assuming the layout algorithm specified. The default value is DefaultSort, which indicates that complex layout is disabled")
+                {
+                    Argument = new Argument<ReadyToRunFileLayoutAlgorithm>()
                 },
             };
         }

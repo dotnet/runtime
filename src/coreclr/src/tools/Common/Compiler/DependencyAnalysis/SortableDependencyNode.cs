@@ -31,6 +31,9 @@ namespace ILCompiler.DependencyAnalysis
         /// </remarks>
         public abstract int ClassCode { get; }
 
+        // Custom sort order. Used to override the default sorting mechanics.
+        public int CustomSort = int.MaxValue;
+
         // Note to implementers: the type of `other` is actually the same as the type of `this`.
         public virtual int CompareToImpl(ISortableNode other, CompilerComparer comparer)
         {
@@ -162,6 +165,9 @@ namespace ILCompiler.DependencyAnalysis
 
             if (phaseX == phaseY)
             {
+                if (x.CustomSort != y.CustomSort)
+                    return x.CustomSort.CompareTo(y.CustomSort);
+
                 int codeX = x.ClassCode;
                 int codeY = y.ClassCode;
                 if (codeX == codeY)
