@@ -23,8 +23,7 @@
   <!-- Language configuration -->
   <PropertyGroup>
     <!-- default to allowing all language features -->
-    <LangVersion Condition="'$(LangVersionOverride)' == ''">preview</LangVersion>
-    <LangVersion Condition="'$(LangVersionOverride)' != ''">$(LangVersionOverride)</LangVersion>
+    <LangVersion>preview</LangVersion>
     <LangVersion Condition="'$(Language)' == 'VB'">latest</LangVersion>
   </PropertyGroup>
 
