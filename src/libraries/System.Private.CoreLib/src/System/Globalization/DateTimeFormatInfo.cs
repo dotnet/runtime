@@ -409,7 +409,7 @@ namespace System.Globalization
 
                 if (GlobalizationMode.Invariant)
                 {
-                    if (value.ID == calendar.ID)
+                    if (value.ID == calendar?.ID)
                         return;
 
                     throw new ArgumentOutOfRangeException(nameof(value), value, SR.Argument_InvalidCalendar);
