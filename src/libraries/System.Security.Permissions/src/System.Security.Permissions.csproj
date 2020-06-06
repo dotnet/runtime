@@ -5,6 +5,9 @@
     <ExcludeCurrentNetCoreAppFromPackage>true</ExcludeCurrentNetCoreAppFromPackage>
     <ExcludeCurrentFullFrameworkFromPackage>true</ExcludeCurrentFullFrameworkFromPackage>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'">
+    <DefineConstants>$(DefineConstants);CAS_OBSOLETIONS</DefineConstants>
+  </PropertyGroup>
   <ItemGroup Condition="!$(TargetFramework.StartsWith('net4'))">
     <Compile Include="System\ApplicationIdentity.cs" />
     <Compile Include="System\Configuration\ConfigurationPermission.cs" />
