@@ -6043,6 +6043,125 @@ namespace System.Runtime.Intrinsics.Arm
         public static Vector128<uint> LeadingZeroCount(Vector128<uint> value) => LeadingZeroCount(value);
 
         /// <summary>
+        /// uint8x8_t vld1_lane_u8 (uint8_t const * ptr, uint8x8_t src, const int lane)
+        ///   A32: VLD1.8 { Dd[index] }, [Rn]
+        ///   A64: LD1 { Vt.B }[index], [Xn]
+        /// </summary>
+        public static unsafe Vector64<byte> LoadAndInsertScalar(Vector64<byte> value, byte index, byte* address) => LoadAndInsertScalar(value, index, address);
+
+        /// <summary>
+        /// int16x4_t vld1_lane_s16 (int16_t const * ptr, int16x4_t src, const int lane)
+        ///   A32: VLD1.16 { Dd[index] }, [Rn]
+        ///   A64: LD1 { Vt.H }[index], [Xn]
+        /// </summary>
+        public static unsafe Vector64<short> LoadAndInsertScalar(Vector64<short> value, byte index, short* address) => LoadAndInsertScalar(value, index, address);
+
+        /// <summary>
+        /// int32x2_t vld1_lane_s32 (int32_t const * ptr, int32x2_t src, const int lane)
+        ///   A32: VLD1.32 { Dd[index] }, [Rn]
+        ///   A64: LD1 { Vt.S }[index], [Xn]
+        /// </summary>
+        public static unsafe Vector64<int> LoadAndInsertScalar(Vector64<int> value, byte index, int* address) => LoadAndInsertScalar(value, index, address);
+
+        /// <summary>
+        /// int8x8_t vld1_lane_s8 (int8_t const * ptr, int8x8_t src, const int lane)
+        ///   A32: VLD1.8 { Dd[index] }, [Rn]
+        ///   A64: LD1 { Vt.B }[index], [Xn]
+        /// </summary>
+        public static unsafe Vector64<sbyte> LoadAndInsertScalar(Vector64<sbyte> value, byte index, sbyte* address) => LoadAndInsertScalar(value, index, address);
+
+        /// <summary>
+        /// float32x2_t vld1_lane_f32 (float32_t const * ptr, float32x2_t src, const int lane)
+        ///   A32: VLD1.32 { Dd[index] }, [Rn]
+        ///   A64: LD1 { Vt.S }[index], [Xn]
+        /// </summary>
+        public static unsafe Vector64<float> LoadAndInsertScalar(Vector64<float> value, byte index, float* address) => LoadAndInsertScalar(value, index, address);
+
+        /// <summary>
+        /// uint16x4_t vld1_lane_u16 (uint16_t const * ptr, uint16x4_t src, const int lane)
+        ///   A32: VLD1.16 { Dd[index] }, [Rn]
+        ///   A64: LD1 { Vt.H }[index], [Xn]
+        /// </summary>
+        public static unsafe Vector64<ushort> LoadAndInsertScalar(Vector64<ushort> value, byte index, ushort* address) => LoadAndInsertScalar(value, index, address);
+
+        /// <summary>
+        /// uint32x2_t vld1_lane_u32 (uint32_t const * ptr, uint32x2_t src, const int lane)
+        ///   A32: VLD1.32 { Dd[index] }, [Rn]
+        ///   A64: LD1 { Vt.S }[index], [Xn]
+        /// </summary>
+        public static unsafe Vector64<uint> LoadAndInsertScalar(Vector64<uint> value, byte index, uint* address) => LoadAndInsertScalar(value, index, address);
+
+        /// <summary>
+        /// uint8x16_t vld1q_lane_u8 (uint8_t const * ptr, uint8x16_t src, const int lane)
+        ///   A32: VLD1.8 { Dd[index] }, [Rn]
+        ///   A64: LD1 { Vt.B }[index], [Xn]
+        /// </summary>
+        public static unsafe Vector128<byte> LoadAndInsertScalar(Vector128<byte> value, byte index, byte* address) => LoadAndInsertScalar(value, index, address);
+
+        /// <summary>
+        /// float64x2_t vld1q_lane_f64 (float64_t const * ptr, float64x2_t src, const int lane)
+        ///   A32: VLDR.64 Dd, [Rn]
+        ///   A64: LD1 { Vt.D }[index], [Xn]
+        /// </summary>
+        public static unsafe Vector128<double> LoadAndInsertScalar(Vector128<double> value, byte index, double* address) => LoadAndInsertScalar(value, index, address);
+
+        /// <summary>
+        /// int16x8_t vld1q_lane_s16 (int16_t const * ptr, int16x8_t src, const int lane)
+        ///   A32: VLD1.16 { Dd[index] }, [Rn]
+        ///   A64: LD1 { Vt.H }[index], [Xn]
+        /// </summary>
+        public static unsafe Vector128<short> LoadAndInsertScalar(Vector128<short> value, byte index, short* address) => LoadAndInsertScalar(value, index, address);
+
+        /// <summary>
+        /// int32x4_t vld1q_lane_s32 (int32_t const * ptr, int32x4_t src, const int lane)
+        ///   A32: VLD1.32 { Dd[index] }, [Rn]
+        ///   A64: LD1 { Vt.S }[index], [Xn]
+        /// </summary>
+        public static unsafe Vector128<int> LoadAndInsertScalar(Vector128<int> value, byte index, int* address) => LoadAndInsertScalar(value, index, address);
+
+        /// <summary>
+        /// int64x2_t vld1q_lane_s64 (int64_t const * ptr, int64x2_t src, const int lane)
+        ///   A32: VLDR.64 Dd, [Rn]
+        ///   A64: LD1 { Vt.D }[index], [Xn]
+        /// </summary>
+        public static unsafe Vector128<long> LoadAndInsertScalar(Vector128<long> value, byte index, long* address) => LoadAndInsertScalar(value, index, address);
+
+        /// <summary>
+        /// int8x16_t vld1q_lane_s8 (int8_t const * ptr, int8x16_t src, const int lane)
+        ///   A32: VLD1.8 { Dd[index] }, [Rn]
+        ///   A64: LD1 { Vt.B }[index], [Xn]
+        /// </summary>
+        public static unsafe Vector128<sbyte> LoadAndInsertScalar(Vector128<sbyte> value, byte index, sbyte* address) => LoadAndInsertScalar(value, index, address);
+
+        /// <summary>
+        /// float32x4_t vld1q_lane_f32 (float32_t const * ptr, float32x4_t src, const int lane)
+        ///   A32: VLD1.32 { Dd[index] }, [Rn]
+        ///   A64: LD1 { Vt.S }[index], [Xn]
+        /// </summary>
+        public static unsafe Vector128<float> LoadAndInsertScalar(Vector128<float> value, byte index, float* address) => LoadAndInsertScalar(value, index, address);
+
+        /// <summary>
+        /// uint16x8_t vld1q_lane_u16 (uint16_t const * ptr, uint16x8_t src, const int lane)
+        ///   A32: VLD1.16 { Dd[index] }, [Rn]
+        ///   A64: LD1 { Vt.H }[index], [Xn]
+        /// </summary>
+        public static unsafe Vector128<ushort> LoadAndInsertScalar(Vector128<ushort> value, byte index, ushort* address) => LoadAndInsertScalar(value, index, address);
+
+        /// <summary>
+        /// uint32x4_t vld1q_lane_u32 (uint32_t const * ptr, uint32x4_t src, const int lane)
+        ///   A32: VLD1.32 { Dd[index] }, [Rn]
+        ///   A64: LD1 { Vt.S }[index], [Xn]
+        /// </summary>
+        public static unsafe Vector128<uint> LoadAndInsertScalar(Vector128<uint> value, byte index, uint* address) => LoadAndInsertScalar(value, index, address);
+
+        /// <summary>
+        /// uint64x2_t vld1q_lane_u64 (uint64_t const * ptr, uint64x2_t src, const int lane)
+        ///   A32: VLDR.64 Dd, [Rn]
+        ///   A64: LD1 { Vt.D }[index], [Xn]
+        /// </summary>
+        public static unsafe Vector128<ulong> LoadAndInsertScalar(Vector128<ulong> value, byte index, ulong* address) => LoadAndInsertScalar(value, index, address);
+
+        /// <summary>
         /// uint8x8_t vld1_dup_u8 (uint8_t const * ptr)
         ///   A32: VLD1.8 { Dd[] }, [Rn]
         ///   A64: LD1R { Vt.8B }, [Xn]
