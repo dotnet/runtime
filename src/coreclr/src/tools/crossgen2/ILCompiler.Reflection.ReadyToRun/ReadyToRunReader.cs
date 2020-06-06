@@ -475,7 +475,7 @@ namespace ILCompiler.Reflection.ReadyToRun
             }
         }
 
-        public Dictionary<TMethod, ReadyToRunMethod> GetCustomMethodToRuntimeFunctionMapping<TType, TMethod, TGenericContext>(IR2RSignatureTypeProvider<TType, TMethod, TGenericContext> provider)
+        public IReadOnlyDictionary<TMethod, ReadyToRunMethod> GetCustomMethodToRuntimeFunctionMapping<TType, TMethod, TGenericContext>(IR2RSignatureTypeProvider<TType, TMethod, TGenericContext> provider)
         {
             EnsureEntrypointRuntimeFunctionToReadyToRunMethodDict();
 

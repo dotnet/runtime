@@ -50,8 +50,11 @@ namespace ILCompiler
         private ProfileDataManager _profileData;
         private NodeFactory _nodeFactory;
 
-        private List<MethodWithGCInfo> SortByRegion(ImmutableArray<DependencyNodeCore<NodeFactory>> nodes, Func<MethodWithGCInfo, int> getRegion)
+        public ImmutableArray<DependencyNodeCore<NodeFactory>> ApplyProfilerGuidedMethodSort(ImmutableArray<DependencyNodeCore<NodeFactory>> nodes)
         {
+            if (_methodLayoutAlgorithm == ReadyToRunMethodLayoutAlgorithm.DefaultSort)
+                return nodes;
+
             List<MethodWithGCInfo> methods = new List<MethodWithGCInfo>();
             foreach (var node in nodes)
             {
@@ -60,75 +63,33 @@ namespace ILCompiler
                     methods.Add(method);
                 }
             }
-            methods.MergeSortAllowDuplicates((MethodWithGCInfo left, MethodWithGCInfo right) => getRegion(left).CompareTo(getRegion(right)));
-            return methods;
-        }
-
-        public ImmutableArray<DependencyNodeCore<NodeFactory>> ApplyProfilerGuidedMethodSort(ImmutableArray<DependencyNodeCore<NodeFactory>> nodes)
-        {
-            if (_methodLayoutAlgorithm == ReadyToRunMethodLayoutAlgorithm.DefaultSort)
-                return nodes;
-
-            Func<List<MethodWithGCInfo>> sortedMethods = null;
 
             if (_methodLayoutAlgorithm == ReadyToRunMethodLayoutAlgorithm.ExclusiveWeight)
             {
-                sortedMethods = () =>
-                {
-                    List<MethodWithGCInfo> methods = new List<MethodWithGCInfo>();
-                    foreach (var node in nodes)
-                    {
-                        if (node is MethodWithGCInfo method)
-                        {
-                            methods.Add(method);
-                        }
-                    }
-
-                    methods.MergeSortAllowDuplicates(sortMethodWithGCInfoByWeight);
-                    return methods;
-                };
+                methods.MergeSortAllowDuplicates(sortMethodWithGCInfoByWeight);
 
                 int sortMethodWithGCInfoByWeight(MethodWithGCInfo left, MethodWithGCInfo right)
                 {
                     return -MethodWithGCInfoToWeight(left).CompareTo(MethodWithGCInfoToWeight(right));
                 }
-                double MethodWithGCInfoToWeight(MethodWithGCInfo method)
-                {
-                    var profileData = _profileData[method.Method];
-                    double weight = 0;
-
-                    if (profileData != null)
-                    {
-                        weight = profileData.ExclusiveWeight;
-                    }
-                    return weight;
-                }
             }
             else if (_methodLayoutAlgorithm == ReadyToRunMethodLayoutAlgorithm.HotCold)
             {
-                sortedMethods = () => SortByRegion(nodes, (method) =>
-                {
-                    var profileData = _profileData[method.Method];
-                    double weight = 0;
+                methods.MergeSortAllowDuplicates((MethodWithGCInfo left, MethodWithGCInfo right) => ComputeHotColdRegion(left).CompareTo(ComputeHotColdRegion(right)));
 
-                    if (profileData != null)
-                    {
-                        weight = profileData.ExclusiveWeight;
-                    }
-                    return weight > 0 ? 0 : 1;
-                });
+                int ComputeHotColdRegion(MethodWithGCInfo method)
+                {
+                    return MethodWithGCInfoToWeight(method) > 0 ? 0 : 1;
+                }
             }
             else if (_methodLayoutAlgorithm == ReadyToRunMethodLayoutAlgorithm.HotWarmCold)
             {
-                sortedMethods = () => SortByRegion(nodes, (method) =>
-                {
-                    var profileData = _profileData[method.Method];
-                    double weight = 0;
+                methods.MergeSortAllowDuplicates((MethodWithGCInfo left, MethodWithGCInfo right) => ComputeHotWarmColdRegion(left).CompareTo(ComputeHotWarmColdRegion(right)));
 
-                    if (profileData != null)
-                    {
-                        weight = profileData.ExclusiveWeight;
-                    }
+                int ComputeHotWarmColdRegion(MethodWithGCInfo method)
+                {
+                    double weight = MethodWithGCInfoToWeight(method);
+
                     // If weight is greater than 128 its probably signicantly used at runtime
                     if (weight > 128)
                         return 0;
@@ -140,12 +101,12 @@ namespace ILCompiler
 
                     // Methods without weight are probably relatively rarely used
                     return 2;
-                });
+                };
             }
 
             int sortOrder = 0;
 
-            List<MethodWithGCInfo> sortedMethodsList = sortedMethods();
+            List<MethodWithGCInfo> sortedMethodsList = methods;
 
             foreach (var methodNode in sortedMethodsList)
             {
@@ -165,6 +126,18 @@ namespace ILCompiler
             var newNodesArray = nodes.ToArray();
             newNodesArray.MergeSortAllowDuplicates(new SortableDependencyNode.ObjectNodeComparer(new CompilerComparer()));
             return newNodesArray.ToImmutableArray();
+
+            double MethodWithGCInfoToWeight(MethodWithGCInfo method)
+            {
+                var profileData = _profileData[method.Method];
+                double weight = 0;
+
+                if (profileData != null)
+                {
+                    weight = profileData.ExclusiveWeight;
+                }
+                return weight;
+            }
 
             void ApplySortToDependencies(DependencyNodeCore<NodeFactory> node, int depth)
             {

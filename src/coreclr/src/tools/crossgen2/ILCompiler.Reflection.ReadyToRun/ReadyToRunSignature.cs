@@ -368,12 +368,12 @@ namespace ILCompiler.Reflection.ReadyToRun
 
     public interface IR2RSignatureTypeProvider<TType, TMethod, TGenericContext> : ISignatureTypeProvider<TType, TGenericContext>
     {
-        public TType GetCanonType();
-        public TMethod GetMethodFromMethodDef(MetadataReader reader, MethodDefinitionHandle handle, TType owningTypeOverride);
-        public TMethod GetMethodFromMemberRef(MetadataReader reader, MemberReferenceHandle handle, TType owningTypeOverride);
-        public TMethod GetInstantiatedMethod(TMethod uninstantiatedMethod, ImmutableArray<TType> instantiation);
-        public TMethod GetConstrainedMethod(TMethod method, TType constraint);
-        public TMethod GetMethodWithFlags(ReadyToRunMethodSigFlags flags, TMethod method);
+        TType GetCanonType();
+        TMethod GetMethodFromMethodDef(MetadataReader reader, MethodDefinitionHandle handle, TType owningTypeOverride);
+        TMethod GetMethodFromMemberRef(MetadataReader reader, MemberReferenceHandle handle, TType owningTypeOverride);
+        TMethod GetInstantiatedMethod(TMethod uninstantiatedMethod, ImmutableArray<TType> instantiation);
+        TMethod GetConstrainedMethod(TMethod method, TType constraint);
+        TMethod GetMethodWithFlags(ReadyToRunMethodSigFlags flags, TMethod method);
     }
 
     /// <summary>
@@ -1033,22 +1033,6 @@ namespace ILCompiler.Reflection.ReadyToRun
         {
             int startOffset = Offset;
             uint value = ReadUInt();
-            EmitInlineSignatureBinaryForm(builder, startOffset);
-            return value;
-        }
-
-        private int ReadIntAndEmitInlineSignatureBinary(StringBuilder builder)
-        {
-            int startOffset = Offset;
-            int value = ReadInt();
-            EmitInlineSignatureBinaryForm(builder, startOffset);
-            return value;
-        }
-
-        private uint ReadTokenAndEmitInlineSignatureBinary(StringBuilder builder)
-        {
-            int startOffset = Offset;
-            uint value = ReadToken();
             EmitInlineSignatureBinaryForm(builder, startOffset);
             return value;
         }
