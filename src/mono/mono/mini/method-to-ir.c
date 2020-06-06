@@ -8843,7 +8843,7 @@ calli_end:
 				handle_ctor_call (cfg, cmethod, fsig, context_used, sp, ip, &ctor_inline_costs);
 
 				// don't contribute to inline_const if ctor has [MethodImpl(MethodImplOptions.AggressiveInlining)]
-				if (COMPILE_LLVM(cfg) && !(cmethod->iflags & METHOD_IMPL_ATTRIBUTE_AGGRESSIVE_INLINING))
+				if (!COMPILE_LLVM(cfg) || !(cmethod->iflags & METHOD_IMPL_ATTRIBUTE_AGGRESSIVE_INLINING))
 					inline_costs += ctor_inline_costs;
 
 				CHECK_CFG_EXCEPTION;
