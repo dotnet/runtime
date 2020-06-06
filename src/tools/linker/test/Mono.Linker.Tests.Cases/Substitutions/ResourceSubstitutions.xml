@@ -1,0 +1,8 @@
+<linker>
+  <assembly fullname="test, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null">
+    <resource /> <!-- invalid -->
+    <resource name="ResourceFile.txt" /> <!-- invalid -->
+    <resource name="ResourceFile.txt" action="remove" />
+    <resource name="MissingResourceFile.txt" action="remove" /> <!-- resource does not exist -->
+  </assembly>
+</linker>

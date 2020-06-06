@@ -38,5 +38,14 @@ namespace Mono.Linker
 			var type = assembly.MainModule.GetType (fullName);
 			return type?.Resolve ();
 		}
+
+		public static EmbeddedResource FindEmbeddedResource (this AssemblyDefinition assembly, string name)
+		{
+			foreach (var resource in assembly.MainModule.Resources) {
+				if (resource is EmbeddedResource embeddedResource && embeddedResource.Name == name)
+					return embeddedResource;
+			}
+			return null;
+		}
 	}
 }

@@ -4,6 +4,8 @@ using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
 namespace Mono.Linker.Tests.Cases.Substitutions
 {
+	[SetupCompileResource ("Dependencies/ResourceFile.txt", "ResourceFileRemoveWhenTrue.txt")]
+	[SetupCompileResource ("Dependencies/ResourceFile.txt", "ResourceFileRemoveWhenFalse.txt")]
 	[SetupLinkerSubstitutionFile ("FeatureSubstitutionsGlobalTrue.xml")]
 	[SetupLinkerSubstitutionFile ("FeatureSubstitutionsGlobalFalse.xml")]
 	[SetupLinkerSubstitutionFile ("FeatureSubstitutionsNested.xml")]
@@ -12,6 +14,9 @@ namespace Mono.Linker.Tests.Cases.Substitutions
 	[SetupLinkerArgument ("--feature", "TypeCondition", "true")]
 	[SetupLinkerArgument ("--feature", "MethodCondition", "false")]
 	[SetupLinkerArgument ("--feature", "FieldCondition", "true")]
+	[SetupLinkerArgument ("--feature", "ResourceCondition", "true")]
+	[RemovedResourceInAssembly ("test.exe", "ResourceFileRemoveWhenTrue.txt")]
+	[KeptResource ("ResourceFileRemoveWhenFalse.txt")]
 	public class FeatureSubstitutionsNested
 	{
 		public static void Main ()
