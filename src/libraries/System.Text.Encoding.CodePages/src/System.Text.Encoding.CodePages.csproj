@@ -48,6 +48,9 @@
   <ItemGroup Condition="$(TargetFramework.StartsWith('netstandard')) and '$(TargetsWindows)' != 'true' ">
     <Compile Include="System\Text\CodePagesEncodingProvider.Default.cs" />
   </ItemGroup>
+  <ItemGroup Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)' and '$(TargetsWindows)' != 'true' ">
+    <Compile Include="System\Text\CodePagesEncodingProvider.Default.cs" />
+  </ItemGroup>
   <ItemGroup Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'">
     <Compile Include="System\Text\CodePagesEncodingProvider.netcoreapp.cs" />
   </ItemGroup>
