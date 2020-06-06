@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
-#if ES_BUILD_PCL || ES_BUILD_PN
+#if ES_BUILD_PCL
 using System.Collections.Generic;
 #endif
 using System.Reflection;
@@ -209,7 +209,7 @@ namespace Microsoft.Reflection
 #endif
     internal static class ReflectionExtensions
     {
-#if (!ES_BUILD_PCL && !ES_BUILD_PN)
+#if (!ES_BUILD_PCL)
 
         //
         // Type extension methods
@@ -239,11 +239,7 @@ namespace Microsoft.Reflection
         public static Assembly Assembly(this Type type) { return type.GetTypeInfo().Assembly; }
         public static IEnumerable<PropertyInfo> GetProperties(this Type type)
         {
-#if ES_BUILD_PN
-            return type.GetProperties();
-#else
             return type.GetRuntimeProperties();
-#endif
         }
         public static MethodInfo? GetGetMethod(this PropertyInfo propInfo) { return propInfo.GetMethod; }
         public static Type[] GetGenericArguments(this Type type) { return type.GenericTypeArguments; }
