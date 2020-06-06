@@ -6,6 +6,7 @@ using System.Diagnostics;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.Intrinsics;
+using System.Runtime.Intrinsics.Arm;
 using System.Runtime.Intrinsics.X86;
 
 using Internal.Runtime.CompilerServices;
@@ -222,7 +223,7 @@ namespace System
             {
                 // Input isn't char aligned, we won't be able to align it to a Vector
             }
-            else if (Sse2.IsSupported)
+            else if (Sse2.IsSupported || AdvSimd.IsSupported)
             {
                 // Avx2 branch also operates on Sse2 sizes, so check is combined.
                 // Needs to be double length to allow us to align the data first.
@@ -398,6 +399,47 @@ namespace System
                             // Find bitflag offset of first match and add to current offset,
                             // flags are in bytes so divide for chars
                             return (int)(offset + ((uint)BitOperations.TrailingZeroCount(matches) / sizeof(char)));
+                        } while (lengthToExamine > 0);
+                    }
+
+                    if (offset < length)
+                    {
+                        lengthToExamine = length - offset;
+                        goto SequentialScan;
+                    }
+                }
+            }
+            else if (AdvSimd.IsSupported)
+            {
+                if (offset < length)
+                {
+                    Debug.Assert(length - offset >= Vector128<ushort>.Count);
+
+                    lengthToExamine = GetCharVector128SpanLength(offset, length);
+                    if (lengthToExamine > 0)
+                    {
+                        Vector128<ushort> values = Vector128.Create((ushort)value);
+                        Vector128<ushort> mask = Vector128.Create((ushort)0, 1, 2, 3, 4, 5, 6, 7);
+                        do
+                        {
+                            Debug.Assert(lengthToExamine >= Vector128<ushort>.Count);
+
+                            Vector128<ushort> search = LoadVector128(ref searchSpace, offset);
+
+                            Vector128<ushort> compareResult = AdvSimd.CompareEqual(values, search);
+                            if (AdvSimd.Arm64.MaxAcross(compareResult).ToScalar() == 0)
+                            {
+                                // Zero flags set so no matches
+                                offset += Vector128<ushort>.Count;
+                                lengthToExamine -= Vector128<ushort>.Count;
+                                continue;
+                            }
+
+                            // Try to find the first lane that is set inside compareResult.
+                            Vector128<ushort> invertedCompareResult = AdvSimd.Not(compareResult);
+                            Vector128<ushort> selectedLanes = AdvSimd.Or(invertedCompareResult, mask);
+                            ushort firstIndexMatch = AdvSimd.Arm64.MinAcross(selectedLanes).ToScalar();
+                            return (int)(offset + firstIndexMatch);
                         } while (lengthToExamine > 0);
                     }
 

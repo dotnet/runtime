@@ -6,6 +6,7 @@ using System.Diagnostics;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.Intrinsics;
+using System.Runtime.Intrinsics.Arm;
 using System.Runtime.Intrinsics.X86;
 
 using Internal.Runtime.CompilerServices;
@@ -194,7 +195,7 @@ namespace System
             nuint offset = 0; // Use nuint for arithmetic to avoid unnecessary 64->32->64 truncations
             nuint lengthToExamine = (nuint)(uint)length;
 
-            if (Avx2.IsSupported || Sse2.IsSupported)
+            if (Avx2.IsSupported || Sse2.IsSupported || AdvSimd.IsSupported)
             {
                 // Avx2 branch also operates on Sse2 sizes, so check is combined.
                 if (length >= Vector128<byte>.Count * 2)
@@ -361,6 +362,40 @@ namespace System
 
                         // Find bitflag offset of first match and add to current offset
                         return (int)(offset + (uint)BitOperations.TrailingZeroCount(matches));
+                    }
+
+                    if (offset < (nuint)(uint)length)
+                    {
+                        lengthToExamine = ((nuint)(uint)length - offset);
+                        goto SequentialScan;
+                    }
+                }
+            }
+            else if (AdvSimd.IsSupported)
+            {
+                if (offset < (nuint)(uint)length)
+                {
+                    lengthToExamine = GetByteVector128SpanLength(offset, length);
+
+                    Vector128<byte> mask = Vector128.Create((byte)0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15);
+                    Vector128<byte> values = Vector128.Create(value);
+                    while (lengthToExamine > offset)
+                    {
+                        Vector128<byte> search = LoadVector128(ref searchSpace, offset);
+
+                        Vector128<byte> compareResult = AdvSimd.CompareEqual(values, search);
+                        if (AdvSimd.Arm64.MaxAcross(compareResult).ToScalar() == 0)
+                        {
+                            // Zero flags set so no matches
+                            offset += (nuint)Vector128<byte>.Count;
+                            continue;
+                        }
+
+                        // Try to find the first lane that is set inside compareResult.
+                        Vector128<byte> invertedCompareResult = AdvSimd.Not(compareResult);
+                        Vector128<byte> selectedLanes = AdvSimd.Or(invertedCompareResult, mask);
+                        byte firstIndexMatch = AdvSimd.Arm64.MinAcross(selectedLanes).ToScalar();
+                        return (int)(offset + firstIndexMatch);
                     }
 
                     if (offset < (nuint)(uint)length)
