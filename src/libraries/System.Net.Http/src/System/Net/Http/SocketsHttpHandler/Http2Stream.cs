@@ -1299,12 +1299,12 @@ namespace System.Net.Http
 
                     if (http2Stream == null)
                     {
-                        return new ValueTask<int>(Task.FromException<int>(ExceptionDispatchInfo.SetCurrentStackTrace(new ObjectDisposedException(nameof(Http2ReadStream)))));
+                        return ValueTask.FromException<int>(ExceptionDispatchInfo.SetCurrentStackTrace(new ObjectDisposedException(nameof(Http2ReadStream))));
                     }
 
                     if (cancellationToken.IsCancellationRequested)
                     {
-                        return new ValueTask<int>(Task.FromCanceled<int>(cancellationToken));
+                        return ValueTask.FromCanceled<int>(cancellationToken);
                     }
 
                     return http2Stream.ReadDataAsync(destination, _responseMessage, cancellationToken);
@@ -1366,7 +1366,7 @@ namespace System.Net.Http
 
                     if (http2Stream == null)
                     {
-                        return new ValueTask(Task.FromException(new ObjectDisposedException(nameof(Http2WriteStream))));
+                        return ValueTask.FromException(new ObjectDisposedException(nameof(Http2WriteStream)));
                     }
 
                     return http2Stream.SendDataAsync(buffer, cancellationToken);

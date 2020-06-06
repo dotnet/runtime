@@ -265,7 +265,7 @@ namespace System.IO
                 }
                 catch (Exception e)
                 {
-                    return new ValueTask(Task.FromException(e));
+                    return ValueTask.FromException(e);
                 }
             }
 
@@ -316,7 +316,7 @@ namespace System.IO
             }
             catch (Exception exc)
             {
-                return new ValueTask(Task.FromException(exc));
+                return ValueTask.FromException(exc);
             }
         }
 
@@ -1083,7 +1083,7 @@ namespace System.IO
             public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default)
             {
                 return cancellationToken.IsCancellationRequested ?
-                    new ValueTask(Task.FromCanceled(cancellationToken)) :
+                    ValueTask.FromCanceled(cancellationToken) :
                     default;
             }
 
