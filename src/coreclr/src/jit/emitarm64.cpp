@@ -6366,6 +6366,11 @@ void emitter::emitIns_R_R_R_I(instruction ins,
             assert((opt == INS_OPTS_4H) || (opt == INS_OPTS_2S));
             elemsize = optGetElemsize(opt);
             assert(isValidVectorIndex(EA_16BYTE, elemsize, imm));
+            // Restricted to V0-V15 when element size is H
+            if ((elemsize == EA_2BYTE) && (reg3 >= REG_V16))
+            {
+                assert(!"Invalid reg3");
+            }
             fmt = IF_DV_3HI;
             break;
 
@@ -6382,6 +6387,11 @@ void emitter::emitIns_R_R_R_I(instruction ins,
             assert((opt == INS_OPTS_8H) || (opt == INS_OPTS_4S));
             elemsize = optGetElemsize(opt);
             assert(isValidVectorIndex(EA_16BYTE, elemsize, imm));
+            // Restricted to V0-V15 when element size is H
+            if ((elemsize == EA_2BYTE) && (reg3 >= REG_V16))
+            {
+                assert(!"Invalid reg3");
+            }
             fmt = IF_DV_3HI;
             break;
 
