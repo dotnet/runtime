@@ -39,8 +39,12 @@ namespace Mono.Linker.Steps
 				ProcessType (type);
 
 			if (FeatureGlobalization) {
-				foreach (var res in MonoCollationResources)
-					Context.Annotations.AddResourceToRemove (assembly, res);
+				foreach (var res in MonoCollationResources) {
+					var resource = assembly.FindEmbeddedResource (res);
+					if (resource == null)
+						continue;
+					Context.Annotations.AddResourceToRemove (assembly, resource);
+				}
 			}
 		}
 

@@ -6,8 +6,7 @@
     </type>
     <!-- Or on the type element. -->
     <type fullname="Mono.Linker.Tests.Cases.Substitutions.FeatureSubstitutionsNested" feature="TypeCondition" featurevalue="true">
-      <method signature="System.Boolean TypeConditionMethod()" body="stub" value="true">
-      </method>
+      <method signature="System.Boolean TypeConditionMethod()" body="stub" value="true" />
       <!-- Or on the method element. -->
       <method signature="System.Boolean MethodConditionMethod()" body="stub" value="false" feature="MethodCondition" featurevalue="false" />
       <!-- Else case -->
@@ -19,9 +18,12 @@
     </type>
     <!-- Else case for the type feature attribute -->
     <type fullname="Mono.Linker.Tests.Cases.Substitutions.FeatureSubstitutionsNested" feature="TypeCondition" featurevalue="false">
-      <method signature="System.Boolean TypeConditionMethod()" body="stub" value="false">
-      </method>
+      <method signature="System.Boolean TypeConditionMethod()" body="stub" value="false" />
     </type>
+    <!-- Or on the resource element. -->
+    <resource name="ResourceFileRemoveWhenTrue.txt" action="remove" feature="ResourceCondition" featurevalue="true" />
+    <!-- Else case -->
+    <resource name="ResourceFileRemoveWhenFalse.txt" action="remove" feature="ResourceCondition" featurevalue="false" />
   </assembly>
   <!-- Else case for the assembly feature attribute -->
   <assembly fullname="test, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null" feature="AssemblyCondition" featurevalue="true">

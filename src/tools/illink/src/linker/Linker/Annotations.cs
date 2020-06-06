@@ -58,7 +58,7 @@ namespace Mono.Linker
 		readonly Dictionary<IMemberDefinition, LinkerAttributesInformation> linker_attributes = new Dictionary<IMemberDefinition, LinkerAttributesInformation> ();
 
 		readonly Dictionary<object, Dictionary<IMetadataTokenProvider, object>> custom_annotations = new Dictionary<object, Dictionary<IMetadataTokenProvider, object>> ();
-		protected readonly Dictionary<AssemblyDefinition, HashSet<string>> resources_to_remove = new Dictionary<AssemblyDefinition, HashSet<string>> ();
+		protected readonly Dictionary<AssemblyDefinition, HashSet<EmbeddedResource>> resources_to_remove = new Dictionary<AssemblyDefinition, HashSet<EmbeddedResource>> ();
 		protected readonly HashSet<CustomAttribute> marked_attributes = new HashSet<CustomAttribute> ();
 		readonly HashSet<TypeDefinition> marked_types_with_cctor = new HashSet<TypeDefinition> ();
 		protected readonly HashSet<TypeDefinition> marked_instantiated = new HashSet<TypeDefinition> ();
@@ -283,20 +283,20 @@ namespace Mono.Linker
 			return field_values.TryGetValue (field, out value);
 		}
 
-		public HashSet<string> GetResourcesToRemove (AssemblyDefinition assembly)
+		public HashSet<EmbeddedResource> GetResourcesToRemove (AssemblyDefinition assembly)
 		{
-			if (resources_to_remove.TryGetValue (assembly, out HashSet<string> resources))
+			if (resources_to_remove.TryGetValue (assembly, out HashSet<EmbeddedResource> resources))
 				return resources;
 
 			return null;
 		}
 
-		public void AddResourceToRemove (AssemblyDefinition assembly, string name)
+		public void AddResourceToRemove (AssemblyDefinition assembly, EmbeddedResource resource)
 		{
-			if (!resources_to_remove.TryGetValue (assembly, out HashSet<string> resources))
-				resources = resources_to_remove[assembly] = new HashSet<string> ();
+			if (!resources_to_remove.TryGetValue (assembly, out HashSet<EmbeddedResource> resources))
+				resources = resources_to_remove[assembly] = new HashSet<EmbeddedResource> ();
 
-			resources.Add (name);
+			resources.Add (resource);
 		}
 
 		public void SetPublic (IMetadataTokenProvider provider)

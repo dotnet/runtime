@@ -10,7 +10,7 @@ namespace Mono.Linker.Steps
 	{
 		readonly XPathDocument _document;
 		readonly string _xmlDocumentLocation;
-		readonly string _resourceName;
+		readonly EmbeddedResource _resource;
 		readonly AssemblyDefinition _resourceAssembly;
 
 		public BodySubstituterStep (XPathDocument document, string xmlDocumentLocation)
@@ -19,22 +19,22 @@ namespace Mono.Linker.Steps
 			_xmlDocumentLocation = xmlDocumentLocation;
 		}
 
-		public BodySubstituterStep (XPathDocument document, string resourceName, AssemblyDefinition resourceAssembly, string xmlDocumentLocation = "")
+		public BodySubstituterStep (XPathDocument document, EmbeddedResource resource, AssemblyDefinition resourceAssembly, string xmlDocumentLocation = "")
 			: this (document, xmlDocumentLocation)
 		{
-			if (string.IsNullOrEmpty (resourceName))
-				throw new ArgumentNullException (nameof (resourceName));
+			if (resource == null)
+				throw new ArgumentNullException (nameof (resource));
 
-			_resourceName = resourceName;
+			_resource = resource;
 			_resourceAssembly = resourceAssembly ?? throw new ArgumentNullException (nameof (resourceAssembly));
 		}
 
 		protected override void Process ()
 		{
-			if (!string.IsNullOrEmpty (_resourceName) && Context.StripSubstitutions)
-				Context.Annotations.AddResourceToRemove (_resourceAssembly, _resourceName);
+			if (_resource != null && Context.StripSubstitutions)
+				Context.Annotations.AddResourceToRemove (_resourceAssembly, _resource);
 
-			if (!string.IsNullOrEmpty (_resourceName) && Context.IgnoreSubstitutions)
+			if (_resource != null && Context.IgnoreSubstitutions)
 				return;
 
 			ReadSubstitutions (_document);
@@ -99,6 +99,7 @@ namespace Mono.Linker.Steps
 		void ProcessAssembly (AssemblyDefinition assembly, XPathNodeIterator iterator)
 		{
 			ProcessTypes (assembly, iterator.Current.SelectChildren ("type", ""));
+			ProcessResources (assembly, iterator.Current.SelectChildren ("resource", ""));
 		}
 
 		void ProcessTypes (AssemblyDefinition assembly, XPathNodeIterator iterator)
@@ -223,6 +224,36 @@ namespace Mono.Linker.Steps
 			string init = GetAttribute (iterator.Current, "initialize");
 			if (init?.ToLowerInvariant () == "true") {
 				Annotations.SetSubstitutedInit (field);
+			}
+		}
+
+		void ProcessResources (AssemblyDefinition assembly, XPathNodeIterator iterator)
+		{
+			while (iterator.MoveNext ()) {
+				XPathNavigator nav = iterator.Current;
+
+				if (!ShouldProcessSubstitutions (nav))
+					continue;
+
+				string name = GetAttribute (nav, "name");
+				if (String.IsNullOrEmpty (name)) {
+					Context.LogWarning ($"Missing 'name' attribute for resource.", 2038, _xmlDocumentLocation);
+					continue;
+				}
+
+				string action = GetAttribute (nav, "action");
+				if (action != "remove") {
+					Context.LogWarning ($"Invalid 'action' attribute for resource '{name}'.", 2039, _xmlDocumentLocation);
+					continue;
+				}
+
+				EmbeddedResource resource = assembly.FindEmbeddedResource (name);
+				if (resource == null) {
+					Context.LogWarning ($"Could not find embedded resource '{name}' to remove in assembly '{assembly.Name.Name}'.", 2040, _xmlDocumentLocation);
+					continue;
+				}
+
+				Context.Annotations.AddResourceToRemove (assembly, resource);
 			}
 		}
 

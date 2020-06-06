@@ -205,3 +205,15 @@ error and warning codes.
 ### `IL2037`: No members were resolved for 'memberSignature/memberTypes' in DynamicDependencyAttribute on 'member'
 
 - The member signature or DynamicallyAccessedMemberTypes in a DynamicDependencyAttribute constructor did not resolve to any members on the type. If you using a signature, ensure that it refers to an existing member, and that it uses the format defined at https://github.com/dotnet/csharplang/blob/master/spec/documentation-comments.md#id-string-format. If using DynamicallyAccessedMemberTypes, ensure that the type contains members of the specified member types.
+
+#### `IL2038`: Missing 'name' attribute for resource.
+
+- The resource element in a substitution file did not have a 'name' attribute. Add a 'name' attribute with the name of the resource to remove.
+
+#### `IL2039`: Invalid 'action' attribute for resource 'resource'.
+
+- The resource element in a substitution file did not have a valid 'action' attribute. Add an 'action' attribute to this element, with value 'remove' to tell the linker to remove this resource.
+
+#### `IL2040`: Could not find embedded resource 'resource' to remove in assembly 'assembly'.
+
+- The resource name in a substitution file could not be found in the specified assembly. Ensure that the resource name matches the name of an embedded resource in the assembly.

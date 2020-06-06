@@ -204,6 +204,16 @@ The `initialize` attribute is optional and when not specified the code to set th
 </linker>
 ```
 
+### Remove embedded resources
+
+```xml
+<linker>
+  <assembly fullname="Assembly">
+    <resource name="Resource" action="remove" />
+  </assembly>
+</linker>
+```
+
 ### Conditional substitutions
 
 The `feature` and `featurevalue` attributes are optional, but must be used together when used.

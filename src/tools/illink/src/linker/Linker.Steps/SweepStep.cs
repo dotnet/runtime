@@ -195,17 +195,12 @@ namespace Mono.Linker.Steps
 		void SweepResources (AssemblyDefinition assembly)
 		{
 			var resourcesToRemove = Annotations.GetResourcesToRemove (assembly);
-			if (resourcesToRemove != null) {
-				var resources = assembly.MainModule.Resources;
+			if (resourcesToRemove == null)
+				return;
 
-				for (int i = 0; i < resources.Count; i++) {
-					if (!(resources[i] is EmbeddedResource resource))
-						continue;
-
-					if (resourcesToRemove.Contains (resource.Name))
-						resources.RemoveAt (i--);
-				}
-			}
+			var resources = assembly.MainModule.Resources;
+			foreach (var resource in resourcesToRemove)
+				resources.Remove (resource);
 		}
 
 		void SweepReferences (AssemblyDefinition assembly, AssemblyDefinition referenceToRemove)

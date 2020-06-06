@@ -52,7 +52,7 @@ namespace Mono.Linker.Steps
 
 		readonly XPathDocument _document;
 		readonly string _xmlDocumentLocation;
-		readonly string _resourceName;
+		readonly EmbeddedResource _resource;
 		readonly AssemblyDefinition _resourceAssembly;
 
 		public ResolveFromXmlStep (XPathDocument document, string xmlDocumentLocation)
@@ -61,13 +61,13 @@ namespace Mono.Linker.Steps
 			_xmlDocumentLocation = xmlDocumentLocation;
 		}
 
-		public ResolveFromXmlStep (XPathDocument document, string resourceName, AssemblyDefinition resourceAssembly, string xmlDocumentLocation = "<unspecified>")
+		public ResolveFromXmlStep (XPathDocument document, EmbeddedResource resource, AssemblyDefinition resourceAssembly, string xmlDocumentLocation = "<unspecified>")
 			: this (document, xmlDocumentLocation)
 		{
-			if (string.IsNullOrEmpty (resourceName))
-				throw new ArgumentNullException (nameof (resourceName));
+			if (resource == null)
+				throw new ArgumentNullException (nameof (resource));
 
-			_resourceName = resourceName;
+			_resource = resource;
 			_resourceAssembly = resourceAssembly ?? throw new ArgumentNullException (nameof (resourceAssembly));
 		}
 
@@ -80,10 +80,10 @@ namespace Mono.Linker.Steps
 			if (!nav.MoveToChild ("linker", _ns))
 				return;
 
-			if (!string.IsNullOrEmpty (_resourceName) && Context.StripDescriptors)
-				Context.Annotations.AddResourceToRemove (_resourceAssembly, _resourceName);
+			if (_resource != null && Context.StripDescriptors)
+				Context.Annotations.AddResourceToRemove (_resourceAssembly, _resource);
 
-			if (!string.IsNullOrEmpty (_resourceName) && Context.IgnoreDescriptors)
+			if (_resource != null && Context.IgnoreDescriptors)
 				return;
 
 			try {
