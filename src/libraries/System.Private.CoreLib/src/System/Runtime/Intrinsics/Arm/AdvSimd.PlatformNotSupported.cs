@@ -11474,6 +11474,125 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe void Store(ulong* address, Vector128<ulong> source) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
+        /// void vst1_lane_u8 (uint8_t * ptr, uint8x8_t val, const int lane)
+        ///   A32: VST1.8 { Dd[index] }, [Rn]
+        ///   A64: ST1 { Vt.B }[index], [Xn]
+        /// </summary>
+        public static unsafe void StoreSelectedScalar(byte* address, Vector64<byte> value, byte index) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// void vst1_lane_s16 (int16_t * ptr, int16x4_t val, const int lane)
+        ///   A32: VST1.16 { Dd[index] }, [Rn]
+        ///   A64: ST1 { Vt.H }[index], [Xn]
+        /// </summary>
+        public static unsafe void StoreSelectedScalar(short* address, Vector64<short> value, byte index) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// void vst1_lane_s32 (int32_t * ptr, int32x2_t val, const int lane)
+        ///   A32: VST1.32 { Dd[index] }, [Rn]
+        ///   A64: ST1 { Vt.S }[index], [Xn]
+        /// </summary>
+        public static unsafe void StoreSelectedScalar(int* address, Vector64<int> value, byte index) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// void vst1_lane_s8 (int8_t * ptr, int8x8_t val, const int lane)
+        ///   A32: VST1.8 { Dd[index] }, [Rn]
+        ///   A64: ST1 { Vt.B }[index], [Xn]
+        /// </summary>
+        public static unsafe void StoreSelectedScalar(sbyte* address, Vector64<sbyte> value, byte index) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// void vst1_lane_f32 (float32_t * ptr, float32x2_t val, const int lane)
+        ///   A32: VST1.32 { Dd[index] }, [Rn]
+        ///   A64: ST1 { Vt.S }[index], [Xn]
+        /// </summary>
+        public static unsafe void StoreSelectedScalar(float* address, Vector64<float> value, byte index) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// void vst1_lane_u16 (uint16_t * ptr, uint16x4_t val, const int lane)
+        ///   A32: VST1.16 { Dd[index] }, [Rn]
+        ///   A64: ST1 { Vt.H }[index], [Xn]
+        /// </summary>
+        public static unsafe void StoreSelectedScalar(ushort* address, Vector64<ushort> value, byte index) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// void vst1_lane_u32 (uint32_t * ptr, uint32x2_t val, const int lane)
+        ///   A32: VST1.32 { Dd[index] }, [Rn]
+        ///   A64: ST1 { Vt.S }[index], [Xn]
+        /// </summary>
+        public static unsafe void StoreSelectedScalar(uint* address, Vector64<uint> value, byte index) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// void vst1q_lane_u8 (uint8_t * ptr, uint8x16_t val, const int lane)
+        ///   A32: VST1.8 { Dd[index] }, [Rn]
+        ///   A64: ST1 { Vt.B }[index], [Xn]
+        /// </summary>
+        public static unsafe void StoreSelectedScalar(byte* address, Vector128<byte> value, byte index) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// void vst1q_lane_f64 (float64_t * ptr, float64x2_t val, const int lane)
+        ///   A32: VSTR.64 Dd, [Rn]
+        ///   A64: ST1 { Vt.D }[index], [Xn]
+        /// </summary>
+        public static unsafe void StoreSelectedScalar(double* address, Vector128<double> value, byte index) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// void vst1q_lane_s16 (int16_t * ptr, int16x8_t val, const int lane)
+        ///   A32: VST1.16 { Dd[index] }, [Rn]
+        ///   A64: ST1 { Vt.H }[index], [Xn]
+        /// </summary>
+        public static unsafe void StoreSelectedScalar(short* address, Vector128<short> value, byte index) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// void vst1q_lane_s32 (int32_t * ptr, int32x4_t val, const int lane)
+        ///   A32: VST1.32 { Dd[index] }, [Rn]
+        ///   A64: ST1 { Vt.S }[index], [Xn]
+        /// </summary>
+        public static unsafe void StoreSelectedScalar(int* address, Vector128<int> value, byte index) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// void vst1q_lane_s64 (int64_t * ptr, int64x2_t val, const int lane)
+        ///   A32: VSTR.64 Dd, [Rn]
+        ///   A64: ST1 { Vt.D }[index], [Xn]
+        /// </summary>
+        public static unsafe void StoreSelectedScalar(long* address, Vector128<long> value, byte index) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// void vst1q_lane_s8 (int8_t * ptr, int8x16_t val, const int lane)
+        ///   A32: VST1.8 { Dd[index] }, [Rn]
+        ///   A64: ST1 { Vt.B }[index], [Xn]
+        /// </summary>
+        public static unsafe void StoreSelectedScalar(sbyte* address, Vector128<sbyte> value, byte index) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// void vst1q_lane_f32 (float32_t * ptr, float32x4_t val, const int lane)
+        ///   A32: VST1.32 { Dd[index] }, [Rn]
+        ///   A64: ST1 { Vt.S }[index], [Xn]
+        /// </summary>
+        public static unsafe void StoreSelectedScalar(float* address, Vector128<float> value, byte index) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// void vst1q_lane_u16 (uint16_t * ptr, uint16x8_t val, const int lane)
+        ///   A32: VST1.16 { Dd[index] }, [Rn]
+        ///   A64: ST1 { Vt.H }[index], [Xn]
+        /// </summary>
+        public static unsafe void StoreSelectedScalar(ushort* address, Vector128<ushort> value, byte index) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// void vst1q_lane_u32 (uint32_t * ptr, uint32x4_t val, const int lane)
+        ///   A32: VST1.32 { Dd[index] }, [Rn]
+        ///   A64: ST1 { Vt.S }[index], [Xn]
+        /// </summary>
+        public static unsafe void StoreSelectedScalar(uint* address, Vector128<uint> value, byte index) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// void vst1q_lane_u64 (uint64_t * ptr, uint64x2_t val, const int lane)
+        ///   A32: VSTR.64 Dd, [Rn]
+        ///   A64: ST1 { Vt.D }[index], [Xn]
+        /// </summary>
+        public static unsafe void StoreSelectedScalar(ulong* address, Vector128<ulong> value, byte index) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
         /// uint8x8_t vsub_u8 (uint8x8_t a, uint8x8_t b)
         ///   A32: VSUB.I8 Dd, Dn, Dm
         ///   A64: SUB Vd.8B, Vn.8B, Vm.8B
