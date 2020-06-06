@@ -637,6 +637,18 @@ namespace System.Globalization.Tests
             Assert.True(cultureName.Equals(ci.CompareInfo.Name, StringComparison.OrdinalIgnoreCase));
         }
 
+        [Theory]
+        [MemberData(nameof(Cultures_TestData))]
+        public void SetCultureData(string cultureName)
+        {
+            CultureInfo ci = new CultureInfo(cultureName);
+
+            //
+            // DateTimeInfo
+            //
+            Assert.Throws<InvalidOperationException>(() => ci.DateTimeFormat.Calendar = new GregorianCalendar());
+        }
+
         [Fact]
         public void TestEnum()
         {
