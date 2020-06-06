@@ -9,15 +9,6 @@
     <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-Linux;$(NetCoreAppCurrent)-Browser;$(NetCoreAppCurrent)-OSX</TargetFrameworks>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Quic\Implementations\Managed\**\*.cs">
-      <link>Common\System\Net\Http\aspnetcore\Quic\Implementations\Managed\%(RecursiveDir)%(Filename)%(Extension)</link>
-    </Compile>
-    <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Quic\Interop\Interop.OpenSsl.cs">
-      <Link>Common\System\Net\Http\aspnetcore\Quic\Interop\Interop.OpenSsl.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Quic\Interop\OpenSslQuicMethods.cs">
-      <Link>Common\System\Net\Http\aspnetcore\Quic\Interop\OpenSslQuicMethods.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)Interop\Unix\Interop.Libraries.cs" Condition="'$(TargetsUnix)' == 'true'"
              Link="Common\Interop\Unix\Interop.Libraries.cs" />
     <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\NetEventSource.Common.cs"

@@ -32,12 +32,12 @@ namespace System.Net.Quic
         }
 
         // !!! TEMPORARY: Remove "implementationProvider" before shipping
-        internal QuicListener(QuicImplementationProvider implementationProvider, IPEndPoint listenEndPoint, SslServerAuthenticationOptions sslServerAuthenticationOptions)
+        public QuicListener(QuicImplementationProvider implementationProvider, IPEndPoint listenEndPoint, SslServerAuthenticationOptions sslServerAuthenticationOptions)
             : this(implementationProvider,  new QuicListenerOptions() { ListenEndPoint = listenEndPoint, ServerAuthenticationOptions = sslServerAuthenticationOptions })
         {
         }
 
-        internal QuicListener(QuicImplementationProvider implementationProvider, QuicListenerOptions options)
+        public QuicListener(QuicImplementationProvider implementationProvider, QuicListenerOptions options)
         {
             _provider = implementationProvider.CreateListener(options);
         }

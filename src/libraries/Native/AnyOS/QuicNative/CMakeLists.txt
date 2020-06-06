@@ -29,7 +29,9 @@ if ("${CMAKE_HOST_SYSTEM_NAME}" STREQUAL "Windows")
     # disable warnings in order to not fail the build
     set(OPENSSL_CFLAGS /wd4133 /wd4244 /wd4267)
 
-    set(VERSION_FILE_PATH ${CMAKE_REPO_ROOT}/artifacts/obj/NativeVersion.rc)
+    if(${CMAKE_REPO_ROOT})
+        set(VERSION_FILE_PATH ${CMAKE_REPO_ROOT}/artifacts/obj/NativeVersion.rc)
+    endif()
 else()
     set(PLATFORM "linux86_64")
     set(OPENSSL_STATIC_LIBS

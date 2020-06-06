@@ -17,7 +17,7 @@ internal static partial class Interop
 
         private const string EntryPointPrefix = "QuicNative_";
 
-#if WANT_QUIC_PUBLIC
+#if FEATURE_QUIC_STANDALONE
         [DllImport("libdl.so")]
         private static extern IntPtr dlopen(string filename, int flags);
 
@@ -43,7 +43,7 @@ internal static partial class Interop
 
             if (handle == IntPtr.Zero)
             {
-                throw new DllNotFoundException("Cannot find System.Net.Quic.Native lib");
+                throw new DllNotFoundException($"Cannot find {QuicNative}");
             }
 
             _globalSslCtx = SslCtxNew(TlsMethod());

@@ -7,7 +7,7 @@ using System.Net.Security;
 
 namespace System.Net
 {
-#if WANT_QUIC_PUBLIC
+#if FEATURE_QUIC_STANDALONE
     [EventSource(Name = "Microsoft-System-Net-Quic")]
 #endif
     internal sealed partial class NetEventSource : EventSource

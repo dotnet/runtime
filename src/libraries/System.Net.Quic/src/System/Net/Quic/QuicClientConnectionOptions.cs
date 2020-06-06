@@ -9,7 +9,7 @@ namespace System.Net.Quic
     /// <summary>
     /// Options to provide to the <see cref="QuicConnection"/> when connecting to a Listener.
     /// </summary>
-#if WANT_QUIC_PUBLIC
+#if FEATURE_QUIC_PUBLIC
     public
 #else
     internal
