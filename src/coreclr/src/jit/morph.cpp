@@ -4424,8 +4424,7 @@ GenTree* Compiler::fgMorphMultiregStructArg(GenTree* arg, fgArgTabEntry* fgEntry
                 )
         {
             // We have a HFA struct.
-            var_types useElemType = elemType;
-            noway_assert(useElemType == varDsc->GetHfaType());
+            noway_assert(elemType == varDsc->GetHfaType());
             noway_assert(elemSize == genTypeSize(elemType));
             noway_assert(elemCount == (varDsc->lvExactSize / elemSize));
             noway_assert(elemSize * elemCount == varDsc->lvExactSize);

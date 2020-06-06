@@ -20,7 +20,7 @@ struct WrappedVector256 { Vector256<byte> _; }
 struct S1 { WrappedVector64 x; Vector64<byte> y; }
 
 // Was incorrectly treated as HFA(double): passed in d0, d1.
-// Should be passed as non-NFA in x0, x1.
+// Should be passed as non-HFA in x0, x1.
 struct S2 { WrappedVector64 x; double y; }
 
 // Incorrectly treated as HVA(simd16): passed in q0, q1, q2.

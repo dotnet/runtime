@@ -10112,6 +10112,11 @@ var_types Compiler::GetHfaType(CORINFO_CLASS_HANDLE hClass)
     if (hClass != NO_CLASS_HANDLE)
     {
         CorInfoHFAElemType elemKind = info.compCompHnd->getHFAType(hClass);
+        if (elemKind != CORINFO_HFA_ELEM_NONE)
+        {
+            // This type may not appear elsewhere, but it will occupy a floating point register.
+            compFloatingPointUsed = true;
+        }
         return HfaTypeFromElemKind(elemKind);
     }
 #endif // FEATURE_HFA

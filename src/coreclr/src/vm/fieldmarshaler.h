@@ -265,7 +265,7 @@ public:
     CorInfoHFAElemType GetNativeHFAType() const
     {
         LIMITED_METHOD_CONTRACT;
-        return (CorInfoHFAElemType)m_hfaType;
+        return m_hfaType;
     }
 
     void SetHFAType(CorInfoHFAElemType hfaType)
@@ -273,7 +273,7 @@ public:
         LIMITED_METHOD_CONTRACT;
         // We should call this at most once.
         _ASSERTE(m_hfaType == CORINFO_HFA_ELEM_NONE);
-        m_hfaType = (CorInfoHFAElemType)hfaType;
+        m_hfaType = hfaType;
     }
 #else
     bool IsNativeHFA() const
