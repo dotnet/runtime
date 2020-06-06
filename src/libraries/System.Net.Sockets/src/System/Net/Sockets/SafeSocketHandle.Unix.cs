@@ -116,9 +116,15 @@ namespace System.Net.Sockets
             // We don't care about synchronization because this is idempotent
             if (!_underlyingHandleNonBlocking)
             {
-                AsyncContext.SetNonBlocking();
-                _underlyingHandleNonBlocking = true;
+                // This calls back into MarkNonBlocking()
+                AsyncContext.SetNonBlockingIfNotSet();
             }
+        }
+
+        internal void MarkNonBlocking()
+        {
+            // We don't care about synchronization because this is idempotent
+            _underlyingHandleNonBlocking = true;
         }
 
         internal bool IsNonBlocking
@@ -131,7 +137,6 @@ namespace System.Net.Sockets
             {
                 _nonBlocking = value;
 
-                //
                 // If transitioning to non-blocking, we need to set the native socket to non-blocking mode.
                 // If we ever transition back to blocking, we keep the native socket in non-blocking mode, and emulate
                 // blocking.  This avoids problems with switching to native blocking while there are pending async

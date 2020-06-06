@@ -370,8 +370,7 @@ namespace System.Net.Sockets
 
             protected override bool DoTryComplete(SocketAsyncContext context)
             {
-                int bufferIndex = 0;
-                return SocketPal.TryCompleteSendTo(context._socket, Buffer.Span, null, ref bufferIndex, ref Offset, ref Count, Flags, SocketAddress, SocketAddressLen, ref BytesTransferred, out ErrorCode);
+                return SocketPal.TryCompleteSendTo(context._socket, Buffer.Span.Slice(Offset, Count), Flags, SocketAddress, SocketAddressLen, ref BytesTransferred, out ErrorCode);
             }
 
             public override void InvokeCallback(bool allowPooling)
@@ -400,7 +399,7 @@ namespace System.Net.Sockets
 
             protected override bool DoTryComplete(SocketAsyncContext context)
             {
-                return SocketPal.TryCompleteSendTo(context._socket, default(ReadOnlySpan<byte>), Buffers, ref BufferIndex, ref Offset, ref Count, Flags, SocketAddress, SocketAddressLen, ref BytesTransferred, out ErrorCode);
+                return SocketPal.TryCompleteSendTo(context._socket, Buffers!, ref BufferIndex, ref Offset, Flags, SocketAddress, SocketAddressLen, ref BytesTransferred, out ErrorCode);
             }
 
             public override void InvokeCallback(bool allowPooling)
@@ -428,8 +427,7 @@ namespace System.Net.Sockets
 
             protected override bool DoTryComplete(SocketAsyncContext context)
             {
-                int bufferIndex = 0;
-                return SocketPal.TryCompleteSendTo(context._socket, new ReadOnlySpan<byte>(BufferPtr, Offset + Count), null, ref bufferIndex, ref Offset, ref Count, Flags, SocketAddress, SocketAddressLen, ref BytesTransferred, out ErrorCode);
+                return SocketPal.TryCompleteSendTo(context._socket, new ReadOnlySpan<byte>(BufferPtr + Offset, Count), Flags, SocketAddress, SocketAddressLen, ref BytesTransferred, out ErrorCode);
             }
         }
 
@@ -1226,9 +1224,8 @@ namespace System.Net.Sockets
             return aborted;
         }
 
-        public void SetNonBlocking()
+        public void SetNonBlockingIfNotSet()
         {
-            //
             // Our sockets may start as blocking, and later transition to non-blocking, either because the user
             // explicitly requested non-blocking mode, or because we need non-blocking mode to support async
             // operations.  We never transition back to blocking mode, to avoid problems synchronizing that
@@ -1239,13 +1236,19 @@ namespace System.Net.Sockets
             //
             if (!_nonBlockingSet)
             {
-                if (Interop.Sys.Fcntl.SetIsNonBlocking(_socket, 1) != 0)
-                {
-                    throw new SocketException((int)SocketPal.GetSocketErrorForErrorCode(Interop.Sys.GetLastError()));
-                }
-
-                _nonBlockingSet = true;
+                SetNonBlocking();
             }
+        }
+
+        private void SetNonBlocking()
+        {
+            if (Interop.Sys.Fcntl.SetIsNonBlocking(_socket, 1) != 0)
+            {
+                throw new SocketException((int)SocketPal.GetSocketErrorForErrorCode(Interop.Sys.GetLastError()));
+            }
+
+            _nonBlockingSet = true;
+            _socket.MarkNonBlocking();
         }
 
         private void PerformSyncOperation<TOperation>(ref OperationQueue<TOperation> queue, TOperation operation, int timeout, int observedSequenceNumber)
@@ -1357,7 +1360,7 @@ namespace System.Net.Sockets
             Debug.Assert(socketAddressLen > 0, $"Unexpected socketAddressLen: {socketAddressLen}");
             Debug.Assert(callback != null, "Expected non-null callback");
 
-            SetNonBlocking();
+            SetNonBlockingIfNotSet();
 
             SocketError errorCode;
             int observedSequenceNumber;
@@ -1423,7 +1426,7 @@ namespace System.Net.Sockets
             Debug.Assert(socketAddressLen > 0, $"Unexpected socketAddressLen: {socketAddressLen}");
             Debug.Assert(callback != null, "Expected non-null callback");
 
-            SetNonBlocking();
+            SetNonBlockingIfNotSet();
 
             // Connect is different than the usual "readiness" pattern of other operations.
             // We need to initiate the connect before we try to complete it.
@@ -1534,7 +1537,7 @@ namespace System.Net.Sockets
 
         public SocketError ReceiveAsync(Memory<byte> buffer, SocketFlags flags, out int bytesReceived, Action<int, byte[]?, int, SocketFlags, SocketError> callback, CancellationToken cancellationToken = default)
         {
-            SetNonBlocking();
+            SetNonBlockingIfNotSet();
 
             SocketError errorCode;
             int observedSequenceNumber;
@@ -1567,7 +1570,7 @@ namespace System.Net.Sockets
 
         public SocketError ReceiveFromAsync(Memory<byte> buffer,  SocketFlags flags, byte[]? socketAddress, ref int socketAddressLen, out int bytesReceived, out SocketFlags receivedFlags, Action<int, byte[]?, int, SocketFlags, SocketError> callback, CancellationToken cancellationToken = default)
         {
-            SetNonBlocking();
+            SetNonBlockingIfNotSet();
 
             SocketError errorCode;
             int observedSequenceNumber;
@@ -1644,7 +1647,7 @@ namespace System.Net.Sockets
 
         public SocketError ReceiveFromAsync(IList<ArraySegment<byte>> buffers, SocketFlags flags, byte[]? socketAddress, ref int socketAddressLen, out int bytesReceived, out SocketFlags receivedFlags, Action<int, byte[]?, int, SocketFlags, SocketError> callback)
         {
-            SetNonBlocking();
+            SetNonBlockingIfNotSet();
 
             SocketError errorCode;
             int observedSequenceNumber;
@@ -1716,7 +1719,7 @@ namespace System.Net.Sockets
 
         public SocketError ReceiveMessageFromAsync(Memory<byte> buffer, IList<ArraySegment<byte>>? buffers, SocketFlags flags, byte[] socketAddress, ref int socketAddressLen, bool isIPv4, bool isIPv6, out int bytesReceived, out SocketFlags receivedFlags, out IPPacketInformation ipPacketInformation, Action<int, byte[], int, SocketFlags, IPPacketInformation, SocketError> callback)
         {
-            SetNonBlocking();
+            SetNonBlockingIfNotSet();
 
             SocketError errorCode;
             int observedSequenceNumber;
@@ -1756,17 +1759,6 @@ namespace System.Net.Sockets
         public SocketError Send(ReadOnlySpan<byte> buffer, SocketFlags flags, int timeout, out int bytesSent) =>
             SendTo(buffer, flags, null, 0, timeout, out bytesSent);
 
-        public SocketError Send(byte[] buffer, int offset, int count, SocketFlags flags, int timeout, out int bytesSent)
-        {
-            return SendTo(buffer, offset, count, flags, null, 0, timeout, out bytesSent);
-        }
-
-        public SocketError SendAsync(Memory<byte> buffer, int offset, int count, SocketFlags flags, out int bytesSent, Action<int, byte[]?, int, SocketFlags, SocketError> callback, CancellationToken cancellationToken)
-        {
-            int socketAddressLen = 0;
-            return SendToAsync(buffer, offset, count, flags, null, ref socketAddressLen, out bytesSent, callback, cancellationToken);
-        }
-
         public SocketError SendTo(byte[] buffer, int offset, int count, SocketFlags flags, byte[]? socketAddress, int socketAddressLen, int timeout, out int bytesSent)
         {
             Debug.Assert(timeout == -1 || timeout > 0, $"Unexpected timeout: {timeout}");
@@ -1775,7 +1767,7 @@ namespace System.Net.Sockets
             SocketError errorCode;
             int observedSequenceNumber;
             if (_sendQueue.IsReady(this, out observedSequenceNumber) &&
-                (SocketPal.TryCompleteSendTo(_socket, buffer, ref offset, ref count, flags, socketAddress, socketAddressLen, ref bytesSent, out errorCode) ||
+                (SocketPal.TryCompleteSendTo(_socket, buffer.AsSpan(offset, count), flags, socketAddress, socketAddressLen, ref bytesSent, out errorCode) ||
                 !ShouldRetrySyncOperation(out errorCode)))
             {
                 return errorCode;
@@ -1784,8 +1776,8 @@ namespace System.Net.Sockets
             var operation = new BufferMemorySendOperation(this)
             {
                 Buffer = buffer,
-                Offset = offset,
-                Count = count,
+                Offset = offset + bytesSent,
+                Count = count - bytesSent,
                 Flags = flags,
                 SocketAddress = socketAddress,
                 SocketAddressLen = socketAddressLen,
@@ -1804,10 +1796,9 @@ namespace System.Net.Sockets
 
             bytesSent = 0;
             SocketError errorCode;
-            int bufferIndexIgnored = 0, offset = 0, count = buffer.Length;
             int observedSequenceNumber;
             if (_sendQueue.IsReady(this, out observedSequenceNumber) &&
-                (SocketPal.TryCompleteSendTo(_socket, buffer, null, ref bufferIndexIgnored, ref offset, ref count, flags, socketAddress, socketAddressLen, ref bytesSent, out errorCode) ||
+                (SocketPal.TryCompleteSendTo(_socket, buffer, flags, socketAddress, socketAddressLen, ref bytesSent, out errorCode) ||
                 !ShouldRetrySyncOperation(out errorCode)))
             {
                 return errorCode;
@@ -1818,8 +1809,8 @@ namespace System.Net.Sockets
                 var operation = new BufferPtrSendOperation(this)
                 {
                     BufferPtr = bufferPtr,
-                    Offset = offset,
-                    Count = count,
+                    Offset = bytesSent,
+                    Count = buffer.Length - bytesSent,
                     Flags = flags,
                     SocketAddress = socketAddress,
                     SocketAddressLen = socketAddressLen,
@@ -1833,15 +1824,51 @@ namespace System.Net.Sockets
             }
         }
 
+        public SocketError SendAsync(Memory<byte> buffer, SocketFlags flags, Action<int, byte[]?, int, SocketFlags, SocketError> callback, out int bytesSent, CancellationToken cancellationToken)
+        {
+            SetNonBlockingIfNotSet();
+
+            bytesSent = 0;
+            if (_sendQueue.IsReady(this, out int observedSequenceNumber))
+            {
+                SocketError errorCode = SocketPal.SendAsync(_socket, buffer.Span, flags, out bytesSent);
+                if (errorCode != SocketError.WouldBlock)
+                {
+                    return errorCode;
+                }
+            }
+
+            BufferMemorySendOperation operation = RentBufferMemorySendOperation();
+            operation.Callback = callback;
+            operation.Buffer = buffer;
+            operation.Offset = bytesSent;
+            operation.Count = buffer.Length - bytesSent;
+            operation.Flags = flags;
+            operation.SocketAddress = null;
+            operation.SocketAddressLen = 0;
+            operation.BytesTransferred = bytesSent;
+
+            if (!_sendQueue.StartAsyncOperation(this, operation, observedSequenceNumber, cancellationToken))
+            {
+                bytesSent = operation.BytesTransferred;
+                SocketError errorCode = operation.ErrorCode;
+
+                ReturnOperation(operation);
+                return errorCode;
+            }
+
+            return SocketError.IOPending;
+        }
+
         public SocketError SendToAsync(Memory<byte> buffer, int offset, int count, SocketFlags flags, byte[]? socketAddress, ref int socketAddressLen, out int bytesSent, Action<int, byte[]?, int, SocketFlags, SocketError> callback, CancellationToken cancellationToken = default)
         {
-            SetNonBlocking();
+            SetNonBlockingIfNotSet();
 
             bytesSent = 0;
             SocketError errorCode;
             int observedSequenceNumber;
             if (_sendQueue.IsReady(this, out observedSequenceNumber) &&
-                SocketPal.TryCompleteSendTo(_socket, buffer.Span, ref offset, ref count, flags, socketAddress, socketAddressLen, ref bytesSent, out errorCode))
+                SocketPal.TryCompleteSendTo(_socket, buffer.Span.Slice(offset, count), flags, socketAddress, socketAddressLen, ref bytesSent, out errorCode))
             {
                 return errorCode;
             }
@@ -1849,8 +1876,8 @@ namespace System.Net.Sockets
             BufferMemorySendOperation operation = RentBufferMemorySendOperation();
             operation.Callback = callback;
             operation.Buffer = buffer;
-            operation.Offset = offset;
-            operation.Count = count;
+            operation.Offset = offset + bytesSent;
+            operation.Count = count - bytesSent;
             operation.Flags = flags;
             operation.SocketAddress = socketAddress;
             operation.SocketAddressLen = socketAddressLen;
@@ -1914,7 +1941,7 @@ namespace System.Net.Sockets
 
         public SocketError SendToAsync(IList<ArraySegment<byte>> buffers, SocketFlags flags, byte[]? socketAddress, ref int socketAddressLen, out int bytesSent, Action<int, byte[]?, int, SocketFlags, SocketError> callback)
         {
-            SetNonBlocking();
+            SetNonBlockingIfNotSet();
 
             bytesSent = 0;
             int bufferIndex = 0;
@@ -1979,7 +2006,7 @@ namespace System.Net.Sockets
 
         public SocketError SendFileAsync(SafeFileHandle fileHandle, long offset, long count, out long bytesSent, Action<long, SocketError> callback)
         {
-            SetNonBlocking();
+            SetNonBlockingIfNotSet();
 
             bytesSent = 0;
             SocketError errorCode;

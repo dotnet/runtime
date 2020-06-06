@@ -1286,7 +1286,7 @@ namespace System.Net.Sockets
             if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"SRC:{LocalEndPoint} DST:{RemoteEndPoint} size:{size}");
 
             int bytesTransferred;
-            errorCode = SocketPal.Send(_handle, buffer, offset, size, socketFlags, out bytesTransferred);
+            errorCode = SocketPal.Send(_handle, buffer.AsSpan(offset, size), socketFlags, out bytesTransferred);
 
             // Throw an appropriate SocketException if the native call fails.
             if (errorCode != SocketError.Success)

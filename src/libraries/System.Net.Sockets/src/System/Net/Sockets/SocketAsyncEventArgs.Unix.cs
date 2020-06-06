@@ -229,7 +229,14 @@ namespace System.Net.Sockets
             SocketError errorCode;
             if (_bufferList == null)
             {
-                errorCode = handle.AsyncContext.SendAsync(_buffer, _offset, _count, _socketFlags, out bytesSent, TransferCompletionCallback, cancellationToken);
+                if (_offset == 0 && _count == _buffer.Length)
+                {
+                    errorCode = handle.AsyncContext.SendAsync(_buffer, _socketFlags, TransferCompletionCallback, out bytesSent, cancellationToken);
+                }
+                else
+                {
+                    errorCode = handle.AsyncContext.SendAsync(_buffer.Slice(_offset, _count), _socketFlags, TransferCompletionCallback, out bytesSent, cancellationToken);
+                }
             }
             else
             {

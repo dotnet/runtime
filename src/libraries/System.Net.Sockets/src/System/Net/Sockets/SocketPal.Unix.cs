@@ -159,7 +159,7 @@ namespace System.Net.Sockets
             return checked((int)received);
         }
 
-        private static unsafe int SysSend(SafeSocketHandle socket, SocketFlags flags, ReadOnlySpan<byte> buffer, ref int offset, ref int count, out Interop.Error errno)
+        private static unsafe int SysSend(SafeSocketHandle socket, SocketFlags flags, ReadOnlySpan<byte> buffer, int offset, int count, out Interop.Error errno)
         {
             int sent;
             fixed (byte* b = &MemoryMarshal.GetReference(buffer))
@@ -177,12 +177,10 @@ namespace System.Net.Sockets
                 return -1;
             }
 
-            offset += sent;
-            count -= sent;
             return sent;
         }
 
-        private static unsafe int SysSend(SafeSocketHandle socket, SocketFlags flags, ReadOnlySpan<byte> buffer, ref int offset, ref int count, byte[] socketAddress, int socketAddressLen, out Interop.Error errno)
+        private static unsafe int SysSend(SafeSocketHandle socket, SocketFlags flags, ReadOnlySpan<byte> buffer, int offset, int count, byte[] socketAddress, int socketAddressLen, out Interop.Error errno)
         {
             int sent;
             fixed (byte* sockAddr = socketAddress)
@@ -217,8 +215,6 @@ namespace System.Net.Sockets
                 return -1;
             }
 
-            offset += sent;
-            count -= sent;
             return sent;
         }
 
@@ -815,39 +811,21 @@ namespace System.Net.Sockets
             }
         }
 
-        public static bool TryCompleteSendTo(SafeSocketHandle socket, Span<byte> buffer, ref int offset, ref int count, SocketFlags flags, byte[]? socketAddress, int socketAddressLen, ref int bytesSent, out SocketError errorCode)
-        {
-            int bufferIndex = 0;
-            return TryCompleteSendTo(socket, buffer, null, ref bufferIndex, ref offset, ref count, flags, socketAddress, socketAddressLen, ref bytesSent, out errorCode);
-        }
-
         public static bool TryCompleteSendTo(SafeSocketHandle socket, ReadOnlySpan<byte> buffer, SocketFlags flags, byte[]? socketAddress, int socketAddressLen, ref int bytesSent, out SocketError errorCode)
-        {
-            int bufferIndex = 0, offset = 0, count = buffer.Length;
-            return TryCompleteSendTo(socket, buffer, null, ref bufferIndex, ref offset, ref count, flags, socketAddress, socketAddressLen, ref bytesSent, out errorCode);
-        }
-
-        public static bool TryCompleteSendTo(SafeSocketHandle socket, IList<ArraySegment<byte>> buffers, ref int bufferIndex, ref int offset, SocketFlags flags, byte[]? socketAddress, int socketAddressLen, ref int bytesSent, out SocketError errorCode)
-        {
-            int count = 0;
-            return TryCompleteSendTo(socket, default(ReadOnlySpan<byte>), buffers, ref bufferIndex, ref offset, ref count, flags, socketAddress, socketAddressLen, ref bytesSent, out errorCode);
-        }
-
-        public static bool TryCompleteSendTo(SafeSocketHandle socket, ReadOnlySpan<byte> buffer, IList<ArraySegment<byte>>? buffers, ref int bufferIndex, ref int offset, ref int count, SocketFlags flags, byte[]? socketAddress, int socketAddressLen, ref int bytesSent, out SocketError errorCode)
         {
             bool successfulSend = false;
             long start = socket.IsUnderlyingBlocking && socket.SendTimeout > 0 ? Environment.TickCount64 : 0; // Get ticks only if timeout is set and socket is blocking.
 
+            int offset = 0;
+            int count = buffer.Length;
             while (true)
             {
                 int sent;
                 Interop.Error errno;
                 try
                 {
-                    sent = buffers != null ?
-                        SysSend(socket, flags, buffers, ref bufferIndex, ref offset, socketAddress, socketAddressLen, out errno) :
-                        socketAddress == null ? SysSend(socket, flags, buffer, ref offset, ref count, out errno) :
-                                                SysSend(socket, flags, buffer, ref offset, ref count, socketAddress, socketAddressLen, out errno);
+                    sent = socketAddress == null ? SysSend(socket, flags, buffer, offset, count, out errno) :
+                                            SysSend(socket, flags, buffer, offset, count, socketAddress, socketAddressLen, out errno);
                 }
                 catch (ObjectDisposedException)
                 {
@@ -868,17 +846,18 @@ namespace System.Net.Sockets
                     return false;
                 }
 
-                successfulSend = true;
                 bytesSent += sent;
 
-                bool isComplete = sent == 0 ||
-                    (buffers == null && count == 0) ||
-                    (buffers != null && bufferIndex == buffers.Count);
-                if (isComplete)
+                if (sent == 0 || (count == sent))
                 {
                     errorCode = SocketError.Success;
                     return true;
                 }
+
+                offset += sent;
+                count -= sent;
+
+                successfulSend = true;
 
                 if (socket.IsUnderlyingBlocking && socket.SendTimeout > 0 && (Environment.TickCount64 - start) >= socket.SendTimeout)
                 {
@@ -889,7 +868,60 @@ namespace System.Net.Sockets
                     errorCode = SocketError.TimedOut;
                     return true;
                 }
+            }
+        }
 
+        public static bool TryCompleteSendTo(SafeSocketHandle socket, IList<ArraySegment<byte>> buffers, ref int bufferIndex, ref int offset, SocketFlags flags, byte[]? socketAddress, int socketAddressLen, ref int bytesSent, out SocketError errorCode)
+        {
+            bool successfulSend = false;
+            long start = socket.IsUnderlyingBlocking && socket.SendTimeout > 0 ? Environment.TickCount64 : 0; // Get ticks only if timeout is set and socket is blocking.
+
+            while (true)
+            {
+                int sent;
+                Interop.Error errno;
+                try
+                {
+                    sent = SysSend(socket, flags, buffers!, ref bufferIndex, ref offset, socketAddress, socketAddressLen, out errno);
+                }
+                catch (ObjectDisposedException)
+                {
+                    // The socket was closed, or is closing.
+                    errorCode = SocketError.OperationAborted;
+                    return true;
+                }
+
+                if (sent == -1)
+                {
+                    if (!successfulSend && errno != Interop.Error.EAGAIN && errno != Interop.Error.EWOULDBLOCK)
+                    {
+                        errorCode = GetSocketErrorForErrorCode(errno);
+                        return true;
+                    }
+
+                    errorCode = successfulSend ? SocketError.Success : SocketError.WouldBlock;
+                    return false;
+                }
+
+                bytesSent += sent;
+
+                if (sent == 0 || (bufferIndex == buffers.Count))
+                {
+                    errorCode = SocketError.Success;
+                    return true;
+                }
+
+                successfulSend = true;
+
+                if (socket.IsUnderlyingBlocking && socket.SendTimeout > 0 && (Environment.TickCount64 - start) >= socket.SendTimeout)
+                {
+                    // When socket is truly in blocking mode, we depend on OS to enforce send timeout.
+                    // When we are here we had partial send when we neither completed or failed.
+                    // If we loop again, OS will wait another configured timeout before returning from system call.
+                    // This block check checks is we used all our timer across all iterations.
+                    errorCode = SocketError.TimedOut;
+                    return true;
+                }
             }
         }
 
@@ -1051,19 +1083,6 @@ namespace System.Net.Sockets
             return errorCode;
         }
 
-        public static SocketError Send(SafeSocketHandle handle, byte[] buffer, int offset, int count, SocketFlags socketFlags, out int bytesTransferred)
-        {
-            if (!handle.IsNonBlocking)
-            {
-                return handle.AsyncContext.Send(buffer, offset, count, socketFlags, handle.SendTimeout, out bytesTransferred);
-            }
-
-            bytesTransferred = 0;
-            SocketError errorCode;
-            TryCompleteSendTo(handle, buffer, ref offset, ref count, socketFlags, null, 0, ref bytesTransferred, out errorCode);
-            return errorCode;
-        }
-
         public static SocketError Send(SafeSocketHandle handle, ReadOnlySpan<byte> buffer, SocketFlags socketFlags, out int bytesTransferred)
         {
             if (!handle.IsNonBlocking)
@@ -1075,6 +1094,66 @@ namespace System.Net.Sockets
             SocketError errorCode;
             TryCompleteSendTo(handle, buffer, socketFlags, null, 0, ref bytesTransferred, out errorCode);
             return errorCode;
+        }
+
+        public static unsafe SocketError SendAsync(SafeSocketHandle handle, ReadOnlySpan<byte> buffer, SocketFlags socketFlags, out int bytesTransferred)
+        {
+            Debug.Assert(handle.IsNonBlocking);
+
+            long start = handle.IsUnderlyingBlocking && handle.SendTimeout > 0 ? Environment.TickCount64 : 0; // Get ticks only if timeout is set and socket is blocking.
+
+            bytesTransferred = 0;
+            int count = buffer.Length;
+            while (true)
+            {
+                try
+                {
+                    int sent;
+                    Interop.Error errno;
+                    fixed (byte* b = &MemoryMarshal.GetReference(buffer))
+                    {
+                        errno = Interop.Sys.Send(
+                            handle,
+                            &b[bytesTransferred],
+                            count,
+                            socketFlags,
+                            &sent);
+                    }
+
+                    if (errno != Interop.Error.SUCCESS)
+                    {
+                        if (errno != Interop.Error.EAGAIN && errno != Interop.Error.EWOULDBLOCK)
+                        {
+                            return SocketError.WouldBlock;
+                        }
+
+                        return GetSocketErrorForErrorCode(errno);
+                    }
+
+                    bytesTransferred += sent;
+
+                    if (sent == 0 || (count == sent))
+                    {
+                        return SocketError.Success;
+                    }
+
+                    count -= sent;
+                }
+                catch (ObjectDisposedException)
+                {
+                    // The socket was closed, or is closing.
+                    return SocketError.OperationAborted;
+                }
+
+                if (handle.IsUnderlyingBlocking && handle.SendTimeout > 0 && (Environment.TickCount64 - start) >= handle.SendTimeout)
+                {
+                    // When socket is truly in blocking mode, we depend on OS to enforce send timeout.
+                    // When we are here we had partial send when we neither completed or failed.
+                    // If we loop again, OS will wait another configured timeout before returning from system call.
+                    // This block check checks is we used all our timer across all iterations.
+                    return SocketError.TimedOut;
+                }
+            }
         }
 
         public static SocketError SendFile(SafeSocketHandle handle, FileStream fileStream)
@@ -1105,7 +1184,7 @@ namespace System.Net.Sockets
 
             bytesTransferred = 0;
             SocketError errorCode;
-            TryCompleteSendTo(handle, buffer, ref offset, ref count, socketFlags, socketAddress, socketAddressLen, ref bytesTransferred, out errorCode);
+            TryCompleteSendTo(handle, buffer.AsSpan(offset, count), socketFlags, socketAddress, socketAddressLen, ref bytesTransferred, out errorCode);
             return errorCode;
         }
 
@@ -1774,7 +1853,7 @@ namespace System.Net.Sockets
         public static SocketError SendAsync(SafeSocketHandle handle, byte[] buffer, int offset, int count, SocketFlags socketFlags, OverlappedAsyncResult asyncResult)
         {
             int bytesSent;
-            SocketError socketError = handle.AsyncContext.SendAsync(buffer, offset, count, socketFlags, out bytesSent, asyncResult.CompletionCallback, CancellationToken.None);
+            SocketError socketError = handle.AsyncContext.SendAsync(buffer.AsMemory(offset, count), socketFlags, asyncResult.CompletionCallback, out bytesSent, CancellationToken.None);
             if (socketError == SocketError.Success)
             {
                 asyncResult.CompletionCallback(bytesSent, null, 0, SocketFlags.None, SocketError.Success);
