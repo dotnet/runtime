@@ -6,6 +6,7 @@ using System.Linq;
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
+using System.Text;
 using Xunit;
 
 namespace System.Security.Cryptography.X509Certificates.Tests
@@ -1424,6 +1425,55 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                     key.SignData(serializedCert, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
                 }
             }
+        }
+
+        [Fact]
+        public static void ImportFromPem_SingleCertificate_Success()
+        {
+            X509Certificate2Collection cc = new X509Certificate2Collection();
+            cc.ImportFromPem(PemTestData.ECDsaCertificate);
+            Assert.Single(cc);
+            Assert.Equal("E844FA74BC8DCE46EF4F8605EA00008F161AB56F", cc[0].Thumbprint);
+        }
+
+        [Fact]
+        public static void ImportFromPem_SingleCertificate_IgnoresUnrelatedPems_Success()
+        {
+            string pemAggregate = PemTestData.ECDsaPkcs8Key + PemTestData.ECDsaCertificate;
+            X509Certificate2Collection cc = new X509Certificate2Collection();
+            cc.ImportFromPem(pemAggregate);
+            Assert.Single(cc);
+            Assert.Equal("E844FA74BC8DCE46EF4F8605EA00008F161AB56F", cc[0].Thumbprint);
+        }
+
+        [Fact]
+        public static void ImportFromPem_MultiplePems_Success()
+        {
+            string pemAggregate = PemTestData.RsaCertificate + PemTestData.ECDsaCertificate;
+            X509Certificate2Collection cc = new X509Certificate2Collection();
+            cc.ImportFromPem(pemAggregate);
+            Assert.Equal(2, cc.Count);
+            Assert.Equal("A33348E44A047A121F44E810E888899781E1FF19", cc[0].Thumbprint);
+            Assert.Equal("E844FA74BC8DCE46EF4F8605EA00008F161AB56F", cc[1].Thumbprint);
+        }
+
+        [Fact]
+        public static void ImportFromPem_Exception_AllOrNothing()
+        {
+            X509Certificate2Collection cc = new X509Certificate2Collection();
+            cc.ImportFromPem(PemTestData.DsaCertificate);
+
+            StringBuilder builder = new StringBuilder();
+            builder.AppendLine(PemTestData.RsaCertificate);
+            builder.AppendLine(@"
+-----BEGIN CERTIFICATE-----
+MIII
+-----END CERTIFICATE-----");
+            builder.AppendLine(PemTestData.ECDsaCertificate);
+
+            Assert.ThrowsAny<CryptographicException>(() => cc.ImportFromPem(builder.ToString()));
+            Assert.Single(cc);
+            Assert.Equal("35052C549E4E7805E4EA204C2BE7F4BC19B88EC8", cc[0].Thumbprint);
         }
 
         private static void TestExportSingleCert_SecureStringPassword(X509ContentType ct)
