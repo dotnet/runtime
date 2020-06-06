@@ -625,7 +625,16 @@ namespace System.Globalization
             // Calendar specific data
             invariant._iFirstDayOfWeek = 0;                      // first day of week
             invariant._iFirstWeekOfYear = 0;                      // first week of year
-            invariant._waCalendars = new CalendarId[] { CalendarId.GREGORIAN };       // all available calendar type(s).  The first one is the default calendar
+
+            if (!GlobalizationMode.Invariant)
+            {
+                // all available calendar type(s).  The first one is the default calendar
+                invariant._waCalendars = new CalendarId[] { CalendarId.GREGORIAN };
+
+                // Store for specific data about each calendar
+                invariant._calendars = new CalendarData[CalendarData.MAX_CALENDARS];
+                invariant._calendars[0] = CalendarData.Invariant;
+            }
 
             // Text information
             invariant._iReadingLayout = 0;
