@@ -233,4 +233,22 @@
     <None Include="$(MSBuildProjectDirectory)\**\*.cs"
           Exclude="$(DefaultItemExcludes);$(DefaultExcludesInProjectFolder);@(Compile)" />
   </ItemGroup>
+
+  <!--Instructs compiler not to emit .locals init, using SkipLocalsInitAttribute.-->
+  <Choose>
+    <When Condition="'$(ShouldSkipLocalsInit)' == 'true' and '$(IsNETCoreApp)' == 'true'">
+      <PropertyGroup >
+        <!-- This is needed to use the SkipLocalsInitAttribute. -->
+        <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+      </PropertyGroup>
+
+      <ItemGroup>
+        <Compile Include="$(CommonPath)ShouldSkipLocalsInit.cs" Link="Common\ShouldSkipLocalsInit.cs" />
+      </ItemGroup>
+      <ItemGroup Condition="$(TargetFramework.StartsWith('netstandard')) or $(TargetFramework.StartsWith('net4')) or '$(TargetFramework)' == 'netcoreapp3.0' or '$(TargetFrameworkIdentifier)' == '.NETFramework'">
+        <Compile Include="$(CoreLibSharedDir)System\Runtime\CompilerServices\SkipLocalsInitAttribute.cs" Link="System\Runtime\CompilerServices\SkipLocalsInitAttribute.cs" />
+      </ItemGroup>
+    </When>
+  </Choose>
+
 </Project>

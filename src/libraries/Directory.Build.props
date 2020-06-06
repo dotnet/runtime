@@ -293,8 +293,8 @@
   <PropertyGroup>
     <EnableDefaultItems>false</EnableDefaultItems>
 
-    <!-- Clear the init locals flag on all src projects, except those in VB, where we can't use spans. -->
-    <ILLinkClearInitLocals Condition="'$(IsSourceProject)' == 'true' and '$(Language)' != 'VB'">true</ILLinkClearInitLocals>
+    <!-- Clear the init locals flag on all src C# projects that have .NET Core as a TFM. Exclude VB (we can't use spans), F# (no project written in F#), and IL. -->
+    <ShouldSkipLocalsInit Condition="'$(IsSourceProject)' == 'true' and '$(Language)' == 'C#'">true</ShouldSkipLocalsInit>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(BuildAllConfigurations)' != 'true'">
