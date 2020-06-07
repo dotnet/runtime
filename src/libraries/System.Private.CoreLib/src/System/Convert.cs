@@ -2866,10 +2866,10 @@ namespace System
         {
             if (chars.Length == 0)
                 return Array.Empty<byte>();
-            if (chars.Length % 2 != 0)
+            if ((uint)chars.Length % 2 != 0)
                 throw new FormatException(SR.Format_BadHexLength);
 
-            byte[] result = GC.AllocateUninitializedArray<byte>(chars.Length / 2);
+            byte[] result = GC.AllocateUninitializedArray<byte>(chars.Length >> 1);
 
             if (!HexConverter.TryDecodeFromUtf16(chars, result))
                 throw new FormatException(SR.Format_BadHexChar);
@@ -2925,7 +2925,7 @@ namespace System
         {
             if (bytes.Length == 0)
                 return string.Empty;
-            if ((long)bytes.Length * 2 > int.MaxValue)
+            if (bytes.Length > int.MaxValue / 2)
                 throw new OutOfMemoryException();
 
             return HexConverter.ToString(bytes, HexConverter.Casing.Upper);
