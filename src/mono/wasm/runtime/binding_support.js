@@ -497,7 +497,7 @@ var BindingSupportLib = {
 		},
 		wasm_binding_obj_new: function (js_obj_id, type)
 		{
-			return this.call_method (this.bind_js_obj, null, "ii", [js_obj_id, ownsHandle, type]);
+			return this.call_method (this.bind_js_obj, null, "ii", [js_obj_id, type]);
 		},
 		wasm_bind_existing: function (mono_obj, js_id)
 		{
