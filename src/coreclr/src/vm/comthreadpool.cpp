@@ -286,7 +286,7 @@ INT64 QCALLTYPE ThreadPoolNative::GetCompletedWorkItemCount()
 FCIMPL0(INT64, ThreadPoolNative::GetPendingUnmanagedWorkItemCount)
 {
     FCALL_CONTRACT;
-    _ASSERTE(!ThreadpoolMgr::UsePortableThreadPool());
+    _ASSERTE_ALL_BUILDS(__FILE__, !ThreadpoolMgr::UsePortableThreadPool());
 
     return PerAppDomainTPCountList::GetUnmanagedTPCount()->GetNumRequests();
 }
@@ -297,7 +297,7 @@ FCIMPLEND
 FCIMPL0(VOID, ThreadPoolNative::NotifyRequestProgress)
 {
     FCALL_CONTRACT;
-    _ASSERTE(!ThreadpoolMgr::UsePortableThreadPool());
+    _ASSERTE_ALL_BUILDS(__FILE__, !ThreadpoolMgr::UsePortableThreadPool());
     _ASSERTE(ThreadpoolMgr::IsInitialized()); // can't be here without requesting a thread first
 
     ThreadpoolMgr::NotifyWorkItemCompleted();
@@ -322,6 +322,8 @@ FCIMPLEND
 FCIMPL1(VOID, ThreadPoolNative::ReportThreadStatus, CLR_BOOL isWorking)
 {
     FCALL_CONTRACT;
+    _ASSERTE_ALL_BUILDS(__FILE__, !ThreadpoolMgr::UsePortableThreadPool());
+
     ThreadpoolMgr::ReportThreadStatus(isWorking);
 }
 FCIMPLEND
@@ -329,7 +331,7 @@ FCIMPLEND
 FCIMPL0(FC_BOOL_RET, ThreadPoolNative::NotifyRequestComplete)
 {
     FCALL_CONTRACT;
-    _ASSERTE(!ThreadpoolMgr::UsePortableThreadPool());
+    _ASSERTE_ALL_BUILDS(__FILE__, !ThreadpoolMgr::UsePortableThreadPool());
     _ASSERTE(ThreadpoolMgr::IsInitialized()); // can't be here without requesting a thread first
 
     ThreadpoolMgr::NotifyWorkItemCompleted();
@@ -392,6 +394,7 @@ FCIMPLEND
 FCIMPL0(FC_BOOL_RET, ThreadPoolNative::GetEnableWorkerTracking)
 {
     FCALL_CONTRACT;
+    _ASSERTE_ALL_BUILDS(__FILE__, !ThreadpoolMgr::UsePortableThreadPool());
 
     BOOL result = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_ThreadPool_EnableWorkerTracking) ? TRUE : FALSE;
     FC_RETURN_BOOL(result);
@@ -479,7 +482,7 @@ FCIMPL5(LPVOID, ThreadPoolNative::CorRegisterWaitForSingleObject,
                                         Object* registeredWaitObjectUNSAFE)
 {
     FCALL_CONTRACT;
-    _ASSERTE(!ThreadpoolMgr::UsePortableThreadPool());
+    _ASSERTE_ALL_BUILDS(__FILE__, !ThreadpoolMgr::UsePortableThreadPool());
 
     HANDLE handle = 0;
     struct _gc
@@ -534,7 +537,7 @@ FCIMPLEND
 FCIMPL1(void, ThreadPoolNative::CorQueueWaitCompletion, Object* completeWaitWorkItemObjectUNSAFE)
 {
     FCALL_CONTRACT;
-    _ASSERTE(ThreadpoolMgr::UsePortableThreadPool());
+    _ASSERTE_ALL_BUILDS(__FILE__, ThreadpoolMgr::UsePortableThreadPool());
 
     HANDLE completeWaitWorkItemHandle = NULL;
     struct _gc
@@ -583,7 +586,7 @@ BOOL QCALLTYPE ThreadPoolNative::RequestWorkerThread()
 
     BEGIN_QCALL;
 
-    _ASSERTE(!ThreadpoolMgr::UsePortableThreadPool());
+    _ASSERTE_ALL_BUILDS(__FILE__, !ThreadpoolMgr::UsePortableThreadPool());
 
     ThreadpoolMgr::EnsureInitialized();
     ThreadpoolMgr::SetAppDomainRequestsActive();
@@ -612,7 +615,7 @@ BOOL QCALLTYPE ThreadPoolNative::PerformGateActivities(INT32 cpuUtilization)
 
     BEGIN_QCALL;
 
-    _ASSERTE(ThreadpoolMgr::UsePortableThreadPool());
+    _ASSERTE_ALL_BUILDS(__FILE__, ThreadpoolMgr::UsePortableThreadPool());
 
     ThreadpoolMgr::PerformGateActivities(cpuUtilization);
     needGateThread = ThreadpoolMgr::NeedGateThreadForIOCompletions();
@@ -627,7 +630,7 @@ BOOL QCALLTYPE ThreadPoolNative::PerformGateActivities(INT32 cpuUtilization)
 FCIMPL2(FC_BOOL_RET, ThreadPoolNative::CorUnregisterWait, LPVOID WaitHandle, Object* objectToNotify)
 {
     FCALL_CONTRACT;
-    _ASSERTE(!ThreadpoolMgr::UsePortableThreadPool());
+    _ASSERTE_ALL_BUILDS(__FILE__, !ThreadpoolMgr::UsePortableThreadPool());
 
     BOOL retVal = false;
     SAFEHANDLEREF refSH = (SAFEHANDLEREF) ObjectToOBJECTREF(objectToNotify);
@@ -683,7 +686,7 @@ FCIMPLEND
 FCIMPL1(void, ThreadPoolNative::CorWaitHandleCleanupNative, LPVOID WaitHandle)
 {
     FCALL_CONTRACT;
-    _ASSERTE(!ThreadpoolMgr::UsePortableThreadPool());
+    _ASSERTE_ALL_BUILDS(__FILE__, !ThreadpoolMgr::UsePortableThreadPool());
 
     HELPER_METHOD_FRAME_BEGIN_0();
 
@@ -702,7 +705,7 @@ void QCALLTYPE ThreadPoolNative::ExecuteUnmanagedThreadPoolWorkItem(LPTHREAD_STA
 
     BEGIN_QCALL;
 
-    _ASSERTE(ThreadpoolMgr::UsePortableThreadPool());
+    _ASSERTE_ALL_BUILDS(__FILE__, ThreadpoolMgr::UsePortableThreadPool());
     callback(state);
 
     END_QCALL;
