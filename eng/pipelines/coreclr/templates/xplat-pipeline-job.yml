@@ -8,7 +8,6 @@ parameters:
   container: ''
   testGroup: ''
   crossrootfsDir: ''
-  corefxTests: false
   liveLibrariesBuildConfig: ''
   stagedBuild: false
   strategy: ''
