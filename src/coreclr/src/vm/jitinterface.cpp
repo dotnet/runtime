@@ -9161,15 +9161,60 @@ CORINFO_CLASS_HANDLE CEEInfo::getUniqueImplementingClass(CORINFO_CLASS_HANDLE ba
         MODE_PREEMPTIVE;
     } CONTRACTL_END;
 
-    CORINFO_CLASS_HANDLE result = NULL;
+    int                  implementators = 0;
+    CORINFO_CLASS_HANDLE result         = NULL;
+
+#if !defined(CROSSGEN_COMPILE)
+    TypeHandle         baseHnd         = (TypeHandle)baseType;
+    IMDInternalImport* pInternalImport = NULL;
+    Module*            pModule         = baseHnd.GetModule();
+    MethodTable*       pMT             = NULL;
+    mdTypeDef          tdCur           = mdTypeDefNil;
 
     JIT_TO_EE_TRANSITION();
 
-    result = NULL; // EGOR: implement here
+    // Look for implementations in the current Module
+    // TODO: scan all modules? Get hints from ILLink/R2R?
+    pInternalImport = pModule->GetMDImport();
+    HENUMTypeDefInternalHolder hEnum(pInternalImport);
+    hEnum.EnumTypeDefInit();
+
+    while (pInternalImport->EnumNext(&hEnum, &tdCur))
+    {
+        TypeHandle curClass;
+        EX_TRY
+        {
+            curClass = ClassLoader::LoadTypeDefOrRefThrowing(pModule, tdCur,
+                                             ClassLoader::ReturnNullIfNotFound,
+                                             ClassLoader::PermitUninstDefOrRef);
+        }
+        EX_CATCH
+        {
+            continue;
+        }
+        EX_END_CATCH(SwallowAllExceptions)
+
+        if (!curClass.IsNull())
+        {
+            pMT = curClass.GetMethodTable();
+            MethodTable* baseMT = baseHnd.GetMethodTable();
+            if (pMT->ImplementsInterface(baseMT))
+            {
+                result = static_cast<CORINFO_CLASS_HANDLE>(curClass.AsPtr());
+                implementators++;
+            }
+
+            if (implementators > 1)
+            {
+                // implentation is not unqiue - give up
+                break;
+            }
+        }
+    }
 
     EE_TO_JIT_TRANSITION();
-
-    return result;
+#endif
+    return implementators == 1 ? result : NULL;
 }
 
 /*********************************************************************/

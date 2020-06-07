@@ -1417,7 +1417,7 @@ enum mcPackets
     Packet_GetStringConfigValue                          = 152, // Added 2/12/2015
     Packet_GetCookieForPInvokeCalliSig                   = 48,
     Packet_GetDefaultEqualityComparerClass               = 162, // Added 9/24/2017
-    Packet_GetUniqueImplementingClass                    = 162, // Added 6/7/2020
+    Packet_GetUniqueImplementingClass                    = 179, // Added 6/7/2020
     Packet_GetDelegateCtor                               = 49,
     Packet_GetEEInfo                                     = 50,
     Packet_GetEHinfo                                     = 51,

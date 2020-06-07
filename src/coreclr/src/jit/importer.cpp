@@ -20350,9 +20350,16 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
             return;
         }
 
+        bool guessUniqueInterface = false;
+
+        INDEBUG(guessUniqueInterface = (JitConfig.JitGuardedDevirtualizationGuessUniqueInterface() > 0););
+
         CORINFO_CLASS_HANDLE uniqueImplementingClass = NO_CLASS_HANDLE;
 
-        uniqueImplementingClass = info.compCompHnd->getUniqueImplementingClass(objClass);
+        if (guessUniqueInterface && !opts.IsReadyToRun() && opts.OptimizationEnabled())
+        {
+            uniqueImplementingClass = info.compCompHnd->getUniqueImplementingClass(objClass);
+        }
 
         if (uniqueImplementingClass == NO_CLASS_HANDLE)
         {
@@ -20362,10 +20369,6 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
 
         JITDUMP("Only known implementor of interface %p (%s) is %p (%s)!\n", dspPtr(objClass), objClassName,
                 uniqueImplementingClass, eeGetClassName(uniqueImplementingClass));
-
-        bool guessUniqueInterface = true;
-
-        INDEBUG(guessUniqueInterface = (JitConfig.JitGuardedDevirtualizationGuessUniqueInterface() > 0););
 
         if (!guessUniqueInterface)
         {
