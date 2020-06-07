@@ -10201,6 +10201,7 @@ namespace System.Text
         public virtual bool IsMailNewsSave { get { throw null; } }
         public bool IsReadOnly { get { throw null; } }
         public virtual bool IsSingleByte { get { throw null; } }
+        public static System.Text.Encoding Latin1 { get { throw null; } }
         public virtual System.ReadOnlySpan<byte> Preamble { get { throw null; } }
         public static System.Text.Encoding Unicode { get { throw null; } }
         public static System.Text.Encoding UTF32 { get { throw null; } }

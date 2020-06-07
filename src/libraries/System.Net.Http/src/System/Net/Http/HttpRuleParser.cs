@@ -18,8 +18,7 @@ namespace System.Net.Http
         internal const int MaxInt64Digits = 19;
         internal const int MaxInt32Digits = 10;
 
-        // iso-8859-1, Western European (ISO)
-        internal static readonly Encoding DefaultHttpEncoding = Encoding.GetEncoding(28591);
+        internal static Encoding DefaultHttpEncoding => Encoding.Latin1;
 
         private static bool[] CreateTokenChars()
         {
