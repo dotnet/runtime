@@ -5,11 +5,16 @@ namespace System.Tests
 {
     public class ConvertFromHexStringTests
     {
-        [Fact]
-        public static void KnownByteSequence()
+        [Theory]
+        [InlineData("000102FDFEFF")]
+        [InlineData("000102fdfeff")]
+        [InlineData("000102fDfEfF")]
+        [InlineData("000102FdFeFf")]
+        [InlineData("000102FDfeFF")]
+        public static void KnownByteSequence(string value)
         {
-            string inputString = "000102FDFEFF";
-            Assert.Equal(new byte[] { 0x00, 0x01, 0x02, 0xFD, 0xFE, 0xFF }, Convert.FromHexString(inputString));
+            byte[] knownSequence = {0x00, 0x01, 0x02, 0xFD, 0xFE, 0xFF};
+            TestSequence(knownSequence, value);
         }
 
         [Fact]
@@ -23,7 +28,13 @@ namespace System.Tests
                 sb.Append(i.ToString("X2"));
             }
 
-            Assert.Equal(values, Convert.FromHexString(sb.ToString()));
+            TestSequence(values, sb.ToString());
+            TestSequence(values, sb.ToString().ToLower());
+        }
+
+        private static void TestSequence(byte[] expected, string actual)
+        {
+            Assert.Equal(expected, Convert.FromHexString(actual));
         }
 
         [Fact]
@@ -54,12 +65,6 @@ namespace System.Tests
         public static void InvalidInputString_NonAsciiCharacter()
         {
             Assert.Throws<FormatException>(() => Convert.FromHexString("0\u0308"));
-        }
-
-        [Fact]
-        public static void InvalidInputString_Lowercase()
-        {
-            Assert.Throws<FormatException>(() => Convert.FromHexString("010a"));
         }
 
         [Fact]

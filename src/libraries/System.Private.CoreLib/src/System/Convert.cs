@@ -2871,7 +2871,7 @@ namespace System
 
             byte[] result = GC.AllocateUninitializedArray<byte>(chars.Length / 2);
 
-            if (!HexConverter.TryDecodeFromUtf16Upper(chars, result))
+            if (!HexConverter.TryDecodeFromUtf16(chars, result))
                 throw new FormatException(SR.Format_BadHexChar);
 
             return result;
