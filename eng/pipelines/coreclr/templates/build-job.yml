@@ -1,7 +1,9 @@
 parameters:
   archType: ''
   buildConfig: ''
-  compilerName: 'clang'
+  # compilerName specifies the compiler to use to do the builds. This can either be 'gcc' or left
+  # unset to use the default (clang on Linux/Mac, Visual C++ on Windows).
+  compilerName: ''
   condition: true
   container: ''
   crossrootfsDir: ''
@@ -37,7 +39,7 @@ jobs:
     ${{ if eq(parameters.compilerName, 'gcc') }}:
       name: ${{ format('coreclr_{0}_product_build_{1}{1}_{3}_{4}', parameters.compilerName, parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
       displayName: ${{ format('CoreCLR GCC Product Build {0}{1} {2} {3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
-    ${{ if eq(parameters.compilerName, 'clang') }}:
+    ${{ if ne(parameters.compilerName, 'gcc') }}:
       name: ${{ format('coreclr_{0}_product_build_{1}{2}_{3}_{4}', parameters.runtimeVariant, parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
       displayName: ${{ format('CoreCLR {0} Product Build {1}{2} {3} {4}', parameters.runtimeVariant, parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
 
@@ -64,7 +66,7 @@ jobs:
         value: '-gcc'
       - name: publishLogsArtifactPrefix
         value: 'BuildLogs_CoreCLR_GCC'
-    - ${{ if and(ne(parameters.osGroup, 'Windows_NT'), eq(parameters.compilerName, 'clang')) }}:
+    - ${{ if and(ne(parameters.osGroup, 'Windows_NT'), ne(parameters.compilerName, 'gcc')) }}:
       - name: compilerArg
         value: '-clang9'
       # Building for x64 MUSL happens on Alpine Linux and we need to use the stable version available there
@@ -165,8 +167,8 @@ jobs:
         continueOnError: true
         condition: always()
 
-    # We only test on clang binaries.
-    - ${{ if eq(parameters.compilerName, 'clang') }}:
+    # Builds using gcc are not tested.
+    - ${{ if ne(parameters.compilerName, 'gcc') }}:
       # Publish product output directory for consumption by tests.
       - template: /eng/pipelines/common/upload-artifact-step.yml
         parameters:
