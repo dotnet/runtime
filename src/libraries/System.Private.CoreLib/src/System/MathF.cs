@@ -23,6 +23,8 @@ namespace System
 
         public const float PI = 3.14159265f;
 
+        public const float Tau = 6.283185307f;
+
         private const int maxRoundingDigits = 6;
 
         // This table is required for the Round function which can specify the number of digits to round to
