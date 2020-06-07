@@ -910,6 +910,11 @@ namespace Internal.JitInterface
             return comparer != null ? ObjectToHandle(comparer) : null;
         }
 
+        private CORINFO_CLASS_STRUCT_* getUniqueImplementingClass(CORINFO_CLASS_STRUCT_* baseType)
+        {
+            return null;
+        }
+
         private bool isIntrinsicType(CORINFO_CLASS_STRUCT_* classHnd)
         {
             TypeDesc type = HandleToObject(classHnd);

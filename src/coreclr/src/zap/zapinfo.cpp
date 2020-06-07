@@ -3973,6 +3973,12 @@ CORINFO_CLASS_HANDLE ZapInfo::getDefaultEqualityComparerClass(
     return m_pEEJitInfo->getDefaultEqualityComparerClass(elemType);
 }
 
+CORINFO_CLASS_HANDLE ZapInfo::getUniqueImplementingClass(
+    CORINFO_CLASS_HANDLE baseType)
+{
+    return m_pEEJitInfo->getUniqueImplementingClass(baseType);
+}
+
 void ZapInfo::expandRawHandleIntrinsic(
     CORINFO_RESOLVED_TOKEN *        pResolvedToken,
     CORINFO_GENERICHANDLE_RESULT *  pResult)

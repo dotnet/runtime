@@ -130,6 +130,8 @@ CORINFO_METHOD_HANDLE getUnboxedEntry(
 // Returns null if the type can't be determined exactly.
 CORINFO_CLASS_HANDLE getDefaultEqualityComparerClass(CORINFO_CLASS_HANDLE elemType);
 
+CORINFO_CLASS_HANDLE getUniqueImplementingClass(CORINFO_CLASS_HANDLE baseType);
+
 // Given resolved token that corresponds to an intrinsic classified as
 // a CORINFO_INTRINSIC_GetRawHandle intrinsic, fetch the handle associated
 // with the token. If this is not possible at compile-time (because the current method's

@@ -9153,6 +9153,25 @@ CORINFO_CLASS_HANDLE CEEInfo::getDefaultEqualityComparerClassHelper(CORINFO_CLAS
     return CORINFO_CLASS_HANDLE(resultTh.GetMethodTable());
 }
 
+CORINFO_CLASS_HANDLE CEEInfo::getUniqueImplementingClass(CORINFO_CLASS_HANDLE baseType)
+{
+    CONTRACTL {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_PREEMPTIVE;
+    } CONTRACTL_END;
+
+    CORINFO_CLASS_HANDLE result = NULL;
+
+    JIT_TO_EE_TRANSITION();
+
+    result = NULL; // EGOR: implement here
+
+    EE_TO_JIT_TRANSITION();
+
+    return result;
+}
+
 /*********************************************************************/
 void CEEInfo::getFunctionEntryPoint(CORINFO_METHOD_HANDLE  ftnHnd,
                                     CORINFO_CONST_LOOKUP * pResult,

@@ -202,6 +202,13 @@ CORINFO_CLASS_HANDLE MyICJI::getDefaultEqualityComparerClass(CORINFO_CLASS_HANDL
     return result;
 }
 
+CORINFO_CLASS_HANDLE MyICJI::getUniqueImplementingClass(CORINFO_CLASS_HANDLE cls)
+{
+    jitInstance->mc->cr->AddCall("getUniqueImplementingClass");
+    CORINFO_CLASS_HANDLE result = jitInstance->mc->repGetUniqueImplementingClass(cls);
+    return result;
+}
+
 void MyICJI::expandRawHandleIntrinsic(CORINFO_RESOLVED_TOKEN* pResolvedToken, CORINFO_GENERICHANDLE_RESULT* pResult)
 {
     jitInstance->mc->cr->AddCall("expandRawHandleIntrinsic");

@@ -20352,7 +20352,7 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
 
         CORINFO_CLASS_HANDLE uniqueImplementingClass = NO_CLASS_HANDLE;
 
-        // info.compCompHnd->getUniqueImplementingClass(objClass);
+        uniqueImplementingClass = info.compCompHnd->getUniqueImplementingClass(objClass);
 
         if (uniqueImplementingClass == NO_CLASS_HANDLE)
         {

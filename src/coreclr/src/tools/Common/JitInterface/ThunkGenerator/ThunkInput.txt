@@ -177,6 +177,7 @@ FUNCTIONS
     CORINFO_METHOD_HANDLE resolveVirtualMethod(            CORINFO_METHOD_HANDLE       virtualMethod,          CORINFO_CLASS_HANDLE        implementingClass,            CORINFO_CONTEXT_HANDLE      ownerType);
     CORINFO_METHOD_HANDLE getUnboxedEntry(CORINFO_METHOD_HANDLE ftn, BoolStar requiresInstMethodTableArg);
     CORINFO_CLASS_HANDLE getDefaultEqualityComparerClass(CORINFO_CLASS_HANDLE elemType);
+    CORINFO_CLASS_HANDLE getUniqueImplementingClass(CORINFO_CLASS_HANDLE baseType);
     void expandRawHandleIntrinsic(CORINFO_RESOLVED_TOKEN *        pResolvedToken, CORINFO_GENERICHANDLE_RESULT *  pResult);
     CorInfoIntrinsics getIntrinsicID(        CORINFO_METHOD_HANDLE       method        , BoolStar pMustExpand);
     bool isIntrinsicType(           CORINFO_CLASS_HANDLE        classHnd );

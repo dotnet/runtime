@@ -3158,6 +3158,23 @@ CORINFO_CLASS_HANDLE MethodContext::repGetDefaultEqualityComparerClass(CORINFO_C
     return result;
 }
 
+void MethodContext::recGetUniqueImplementingClass(CORINFO_CLASS_HANDLE cls, CORINFO_CLASS_HANDLE result)
+{
+    if (GetUniqueImplementingClass == nullptr)
+        GetUniqueImplementingClass = new LightWeightMap<DWORDLONG, DWORDLONG>();
+
+    GetUniqueImplementingClass->Add((DWORDLONG)cls, (DWORDLONG)result);
+}
+void MethodContext::dmpGetUniqueImplementingClass(DWORDLONG key, DWORDLONG value)
+{
+    printf("GetUniqueImplementingClass key cls-%016llX, value cls-%016llX", key, value);
+}
+CORINFO_CLASS_HANDLE MethodContext::repGetUniqueImplementingClass(CORINFO_CLASS_HANDLE cls)
+{
+    CORINFO_CLASS_HANDLE result = (CORINFO_CLASS_HANDLE)GetUniqueImplementingClass->Get((DWORDLONG)cls);
+    return result;
+}
+
 void MethodContext::recGetTokenTypeAsHandle(CORINFO_RESOLVED_TOKEN* pResolvedToken, CORINFO_CLASS_HANDLE result)
 {
     if (GetTokenTypeAsHandle == nullptr)

@@ -163,6 +163,16 @@ CORINFO_CLASS_HANDLE WrapICorJitInfo::getDefaultEqualityComparerClass(
     return temp;
 }
 
+CORINFO_CLASS_HANDLE WrapICorJitInfo::getUniqueImplementingClass(
+            CORINFO_CLASS_HANDLE baseType
+            )
+{
+    API_ENTER(getUniqueImplementingClass);
+    CORINFO_CLASS_HANDLE temp = wrapHnd->getUniqueImplementingClass(baseType);
+    API_LEAVE(getUniqueImplementingClass);
+    return temp;
+}
+
 void WrapICorJitInfo::expandRawHandleIntrinsic(
         CORINFO_RESOLVED_TOKEN *        pResolvedToken,
         CORINFO_GENERICHANDLE_RESULT *  pResult)

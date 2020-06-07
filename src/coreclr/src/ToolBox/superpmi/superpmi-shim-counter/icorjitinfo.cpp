@@ -177,6 +177,12 @@ CORINFO_CLASS_HANDLE interceptor_ICJI::getDefaultEqualityComparerClass(CORINFO_C
     return original_ICorJitInfo->getDefaultEqualityComparerClass(cls);
 }
 
+CORINFO_CLASS_HANDLE interceptor_ICJI::getUniqueImplementingClass(CORINFO_CLASS_HANDLE cls)
+{
+    mcs->AddCall("getUniqueImplementingClass");
+    return original_ICorJitInfo->getUniqueImplementingClass(cls);
+}
+
 void interceptor_ICJI::expandRawHandleIntrinsic(CORINFO_RESOLVED_TOKEN*       pResolvedToken,
                                                 CORINFO_GENERICHANDLE_RESULT* pResult)
 {

@@ -682,6 +682,9 @@ public:
     CORINFO_CLASS_HANDLE getDefaultEqualityComparerClass(
         CORINFO_CLASS_HANDLE elemType);
 
+    CORINFO_CLASS_HANDLE getUniqueImplementingClass(
+        CORINFO_CLASS_HANDLE baseType);
+
     void expandRawHandleIntrinsic(
         CORINFO_RESOLVED_TOKEN *        pResolvedToken,
         CORINFO_GENERICHANDLE_RESULT *  pResult);

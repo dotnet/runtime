@@ -217,11 +217,11 @@ TODO: Talk about initializing strutures before use
 #endif
 #endif
 
-SELECTANY const GUID JITEEVersionIdentifier = { /* 8b2226a2-ac30-4f5c-ae5c-926c792ecdb9 */
-    0x8b2226a2,
-    0xac30,
-    0x4f5c,
-    { 0xae, 0x5c, 0x92, 0x6c, 0x79, 0x2e, 0xcd, 0xb9 }
+SELECTANY const GUID JITEEVersionIdentifier = { /* 34d57104-4280-472f-a13e-842ab177777d */
+    0x34d57104,
+    0x4280,
+    0x472f,
+    { 0xa1, 0x3e, 0x84, 0x2a, 0xb1, 0x77, 0x77, 0x7d }
 };
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -2100,6 +2100,10 @@ public:
     // Returns null if the type can't be determined exactly.
     virtual CORINFO_CLASS_HANDLE getDefaultEqualityComparerClass(
             CORINFO_CLASS_HANDLE elemType
+            ) = 0;
+
+    virtual CORINFO_CLASS_HANDLE getUniqueImplementingClass(
+            CORINFO_CLASS_HANDLE baseType
             ) = 0;
 
     // Given resolved token that corresponds to an intrinsic classified as

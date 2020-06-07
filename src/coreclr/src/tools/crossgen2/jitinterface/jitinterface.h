@@ -25,6 +25,7 @@ struct JitInterfaceCallbacks
     void* (* resolveVirtualMethod)(void * thisHandle, CorInfoException** ppException, void* virtualMethod, void* implementingClass, void* ownerType);
     void* (* getUnboxedEntry)(void * thisHandle, CorInfoException** ppException, void* ftn, bool* requiresInstMethodTableArg);
     void* (* getDefaultEqualityComparerClass)(void * thisHandle, CorInfoException** ppException, void* elemType);
+    void* (* getUniqueImplementingClass)(void * thisHandle, CorInfoException** ppException, void* baseType);
     void (* expandRawHandleIntrinsic)(void * thisHandle, CorInfoException** ppException, void* pResolvedToken, void* pResult);
     int (* getIntrinsicID)(void * thisHandle, CorInfoException** ppException, void* method, bool* pMustExpand);
     bool (* isIntrinsicType)(void * thisHandle, CorInfoException** ppException, void* classHnd);
@@ -318,6 +319,15 @@ public:
     {
         CorInfoException* pException = nullptr;
         void* _ret = _callbacks->getDefaultEqualityComparerClass(_thisHandle, &pException, elemType);
+        if (pException != nullptr)
+            throw pException;
+        return _ret;
+    }
+
+    virtual void* getUniqueImplementingClass(void* baseType)
+    {
+        CorInfoException* pException = nullptr;
+        void* _ret = _callbacks->getUniqueImplementingClass(_thisHandle, &pException, baseType);
         if (pException != nullptr)
             throw pException;
         return _ret;
