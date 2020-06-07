@@ -34,13 +34,13 @@ namespace Microsoft.Extensions.Configuration.Ini
                 while (reader.Peek() != -1)
                 {
                     var rawLine = reader.ReadLine();
-                    var line = rawLine.Trim();
 
                     // Ignore blank lines
-                    if (string.IsNullOrWhiteSpace(line))
+                    if (string.IsNullOrWhiteSpace(rawLine))
                     {
                         continue;
                     }
+                    var line = rawLine.Trim();
                     // Ignore comments
                     if (line[0] == ';' || line[0] == '#' || line[0] == '/')
                     {
