@@ -11785,10 +11785,31 @@ void CodeGen::genMultiRegStoreToLocal(GenTreeLclVar* lclNode)
     //    define reg #0
     //    use reg #1 from src, including any reload or copy
     //    define reg #1
-    // If we defined it as using all the source registers, there would be more
-    // conflicts and higher register pressure. In addition, it complicates the
-    // register allocation for copies & reloads, as they are currently modeled by
-    // the register allocator to happen just prior to the use.
+    //    etc.
+    // Imagine the following scenario:
+    //    There are 3 registers used. Prior to this node, they occupy registers r3, r2 and r1.
+    //    There are 3 registers defined by this node. They need to be placed in r1, r2 and r3,
+    //    in that order.
+    //
+    // If we defined the as using all the source registers at once, we'd have to adopt one
+    // of the following models:
+    //  - All (or all but one) of the incoming sources are marked "delayFree" so that they won't
+    //    get the same register as any of the registers being defined. This would result in copies for
+    //    the common case where the source and destination registers are the same (e.g. when a CALL
+    //    result is assigned to a lclVar, which is then returned).
+    //    - For our example (and for many/most cases) we would have to copy or spill all sources.
+    //  - We allow circular dependencies between source and destination registers. This would require
+    //    the code generator to determine the order in which the copies must be generated, and would
+    //    require a temp register in case a swap is required. This complexity would have to be handled
+    //    in both the normal code generation case, as well as for copies & reloads, as they are currently
+    //    modeled by the register allocator to happen just prior to the use.
+    //    - For our example, a temp would be required to swap r1 and r3, unless a swap instruction is
+    //      available on the target.
+    //
+    // By having a multi-reg local use and define each field in order, we avoid these issues, and the
+    // register allocator will ensure that any conflicts are resolved via spill or inserted COPYs.
+    // For our example, the register allocator would simple spill r1 because the first def requires it.
+    // The code generator would move r3  to r1, leave r2 alone, and then load the spilled value into r3.
 
     int  offset        = 0;
     bool isMultiRegVar = lclNode->IsMultiRegLclVar();
@@ -12006,10 +12027,10 @@ void CodeGen::genRegCopy(GenTree* treeNode)
 }
 
 //------------------------------------------------------------------------
-// genRegCopy: Produce code for asingle register of a multireg copy node.
+// genRegCopy: Produce code for a single register of a multireg copy node.
 //
 // Arguments:
-//    tree - the GT_COPY node
+//    tree          - The GT_COPY node
 //    multiRegIndex - The index of the register to be copied
 //
 // Notes:
@@ -12026,13 +12047,11 @@ void CodeGen::genRegCopy(GenTree* treeNode)
 regNumber CodeGen::genRegCopy(GenTree* treeNode, unsigned multiRegIndex)
 {
     assert(treeNode->OperGet() == GT_COPY);
-    GenTree* op1 = treeNode->AsOp()->gtOp1;
+    GenTree* op1 = treeNode->gtGetOp1();
     assert(op1->IsMultiRegNode());
 
     GenTreeCopyOrReload* copyNode = treeNode->AsCopyOrReload();
-    // GenTreeCopyOrReload only reports the highest index that has a valid register.
-    unsigned regCount = copyNode->GetRegCount();
-    assert(regCount <= MAX_MULTIREG_COUNT);
+    assert(copyNode->GetRegCount() <= MAX_MULTIREG_COUNT);
 
     // Consume op1's register, which will perform any necessary reloads.
     genConsumeReg(op1, multiRegIndex);

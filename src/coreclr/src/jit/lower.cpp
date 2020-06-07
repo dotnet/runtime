@@ -2976,9 +2976,9 @@ void Lowering::LowerRet(GenTreeUnOp* ret)
                 CheckMultiRegLclVar(op1->AsLclVar(), &retTypeDesc);
             }
         }
-#else // !FEATURE_MULTIREG_RET
+        else
 #ifdef DEBUG
-        if (varTypeIsStruct(ret->TypeGet()) != varTypeIsStruct(retVal->TypeGet()))
+            if (varTypeIsStruct(ret->TypeGet()) != varTypeIsStruct(retVal->TypeGet()))
         {
             if (varTypeIsStruct(ret->TypeGet()))
             {

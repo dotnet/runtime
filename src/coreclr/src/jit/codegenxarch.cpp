@@ -4384,28 +4384,28 @@ void CodeGen::genCodeForStoreLclFld(GenTreeLclFld* tree)
 // genCodeForStoreLclVar: Produce code for a GT_STORE_LCL_VAR node.
 //
 // Arguments:
-//    tree - the GT_STORE_LCL_VAR node
+//    lclNode - the GT_STORE_LCL_VAR node
 //
-void CodeGen::genCodeForStoreLclVar(GenTreeLclVar* tree)
+void CodeGen::genCodeForStoreLclVar(GenTreeLclVar* lclNode)
 {
-    assert(tree->OperIs(GT_STORE_LCL_VAR));
+    assert(lclNode->OperIs(GT_STORE_LCL_VAR));
 
-    regNumber targetReg = tree->GetRegNum();
+    regNumber targetReg = lclNode->GetRegNum();
     emitter*  emit      = GetEmitter();
 
-    GenTree* op1 = tree->gtGetOp1();
+    GenTree* op1 = lclNode->gtGetOp1();
 
-    // Multi-reg nodes are handled separately.
+    // Stores from a multi-reg source are handled separately.
     if (op1->gtSkipReloadOrCopy()->IsMultiRegNode())
     {
-        genMultiRegStoreToLocal(tree);
+        genMultiRegStoreToLocal(lclNode);
     }
     else
     {
-        unsigned   lclNum = tree->GetLclNum();
+        unsigned   lclNum = lclNode->GetLclNum();
         LclVarDsc* varDsc = compiler->lvaGetDesc(lclNum);
 
-        var_types targetType = varDsc->GetRegisterType(tree);
+        var_types targetType = varDsc->GetRegisterType(lclNode);
 
 #ifdef DEBUG
         var_types op1Type = op1->TypeGet();
@@ -4424,7 +4424,7 @@ void CodeGen::genCodeForStoreLclVar(GenTreeLclVar* tree)
 #if !defined(TARGET_64BIT)
         if (targetType == TYP_LONG)
         {
-            genStoreLongLclVar(tree);
+            genStoreLongLclVar(lclNode);
             return;
         }
 #endif // !defined(TARGET_64BIT)
@@ -4433,7 +4433,7 @@ void CodeGen::genCodeForStoreLclVar(GenTreeLclVar* tree)
         // storing of TYP_SIMD12 (i.e. Vector3) field
         if (targetType == TYP_SIMD12)
         {
-            genStoreLclTypeSIMD12(tree);
+            genStoreLclTypeSIMD12(lclNode);
             return;
         }
 #endif // FEATURE_SIMD
@@ -4449,7 +4449,7 @@ void CodeGen::genCodeForStoreLclVar(GenTreeLclVar* tree)
             {
                 emit->emitIns_S_R(ins_Store(srcType, compiler->isSIMDTypeLocalAligned(lclNum)),
                                   emitTypeSize(targetType), bitCastSrc->GetRegNum(), lclNum, 0);
-                genUpdateLife(tree);
+                genUpdateLife(lclNode);
                 varDsc->SetRegNum(REG_STK);
             }
             else
@@ -4461,7 +4461,7 @@ void CodeGen::genCodeForStoreLclVar(GenTreeLclVar* tree)
         {
             // stack store
             emit->emitInsStoreLcl(ins_Store(targetType, compiler->isSIMDTypeLocalAligned(lclNum)),
-                                  emitTypeSize(targetType), tree);
+                                  emitTypeSize(targetType), lclNode);
             varDsc->SetRegNum(REG_STK);
         }
         else
@@ -4493,12 +4493,12 @@ void CodeGen::genCodeForStoreLclVar(GenTreeLclVar* tree)
             else if (op1->GetRegNum() != targetReg)
             {
                 assert(op1->GetRegNum() != REG_NA);
-                emit->emitInsBinary(ins_Move_Extend(targetType, true), emitTypeSize(tree), tree, op1);
+                emit->emitInsBinary(ins_Move_Extend(targetType, true), emitTypeSize(lclNode), lclNode, op1);
             }
         }
         if (targetReg != REG_NA)
         {
-            genProduceReg(tree);
+            genProduceReg(lclNode);
         }
     }
 }

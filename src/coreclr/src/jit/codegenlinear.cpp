@@ -1321,7 +1321,7 @@ void CodeGen::genCheckConsumeNode(GenTree* const node)
 //
 regNumber CodeGen::genConsumeReg(GenTree* tree, unsigned multiRegIndex)
 {
-    if (tree->OperGet() == GT_COPY)
+    if (tree->OperIs(GT_COPY))
     {
         genRegCopy(tree, multiRegIndex);
     }
