@@ -24,12 +24,11 @@
       <BinPlaceItem Include="$(NativeBinDir)*.dwarf" />
       <BinPlaceItem Condition="'$(TargetOS)' == 'Browser'" Include="$(NativeBinDir)dotnet.js" />
       <BinPlaceItem Condition="'$(TargetOS)' == 'Browser'" Include="$(NativeBinDir)dotnet.wasm" />
-
-      <FileWrites Include="@(NativeBinPlaceItem)" />
+      <FileWrites Include="@(BinPlaceItem)" />
     </ItemGroup>
 
     <ItemGroup Condition="'$(RuntimeFlavor)' == 'Mono' and '$(TargetsMobile)' != 'true'">
-      <TestHostBinPlaceItem Include="%(NativeBinPlaceItem.Identity)" />
+      <TestHostBinPlaceItem Include="@(BinPlaceItem)" />
       <FileWrites Include="@(TestHostBinPlaceItem)" />
     </ItemGroup>
   </Target>

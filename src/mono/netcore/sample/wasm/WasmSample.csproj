@@ -6,7 +6,7 @@
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <TargetArchitecture>wasm</TargetArchitecture>
     <TargetOS>Browser</TargetOS>
-    <MicrosoftNetCoreAppRuntimePackDir>$(ArtifactsDir)bin\microsoft.netcore.app.runtime\$(NetCoreAppCurrent)-$(TargetOS)-$(Configuration)-$(TargetArchitecture)\runtimes\browser-wasm\</MicrosoftNetCoreAppRuntimePackDir>
+    <MicrosoftNetCoreAppRuntimePackDir>$(ArtifactsBinDir)microsoft.netcore.app.runtime.browser-wasm\$(Configuration)\runtimes\browser-wasm\</MicrosoftNetCoreAppRuntimePackDir>
     <BuildDir>$(MSBuildThisFileDirectory)obj\$(Configuration)\wasm</BuildDir>
     <AppDir>$(MSBuildThisFileDirectory)bin\$(Configuration)\publish</AppDir>
   </PropertyGroup>

@@ -90,23 +90,22 @@
       <RuntimePath>$(TestHostRootPath)</RuntimePath>
     </BinPlaceTargetFrameworks>
 
-    <!-- Microsoft.NetCore.App.Ref targeting pack binplacing. -->
+    <!-- Microsoft.NetCore.App.Ref targeting pack -->
     <BinPlaceTargetFrameworks Include="$(NetCoreAppCurrent)">
       <RefPath>$(MicrosoftNetCoreAppRefPackRefDir)</RefPath>
     </BinPlaceTargetFrameworks>
 
-    <!--
-      Setup the runtime pack structure for mobile platforms (for testing and installer)
-      Corresponding assemblies are added to lib
-      Corresponding libMono and system.native libraries are added to native
-    -->
+    <!-- Microsoft.NetCore.App.Runtime targeting pack -->
     <BinPlaceTargetFrameworks Include="$(NetCoreAppCurrent)-$(TargetOS)">
       <NativePath>$(MicrosoftNetCoreAppRuntimePackNativeDir)</NativePath>
       <RuntimePath>$(MicrosoftNetCoreAppRuntimePackRidLibTfmDir)</RuntimePath>
     </BinPlaceTargetFrameworks>
     <!-- Corresponding libMono and system.native libraries are added to testhost shared framework -->
-    <BinPlaceTargetFrameworks Condition="'$(RuntimeFlavor)' == 'Mono' and '$(TargetsMobile)' != 'true'" Include="$(NetCoreAppCurrent)-$(TargetOS)">
-      <RuntimePath>$(TestHostRuntimePath)</RuntimePath>
+    <BinPlaceTargetFrameworks Include="$(NetCoreAppCurrent)-$(TargetOS)"
+                              Condition="'$(BinPlaceTestSharedFramework)' == 'true' and
+                                         '$(RuntimeFlavor)' == 'Mono' and
+                                         '$(TargetsMobile)' != 'true'">
+      <RuntimePath>$(NETCoreAppTestSharedFrameworkPath)</RuntimePath>
       <ItemName>TestHostBinPlaceItem</ItemName>
     </BinPlaceTargetFrameworks>
 
@@ -128,6 +127,7 @@
     </BinPlaceTargetFrameworks>
     <!-- for BuildAllConfigurations make sure runtimepaths are created for all vertical target frameworks. -->
     <BinPlaceTargetFrameworks Condition="'$(BuildAllConfigurations)' == 'true' and ('$(BinPlaceForTargetVertical)' == 'true' or ('$(TargetFramework)' != '$(NetCoreAppCurrent)' and '$(TargetFrameworkSuffix)' == ''))" Include="$(NetCoreAppCurrent)-$(TargetOS)">
+      <NativePath>$(ArtifactsBinDir)runtime/%(Identity)-$(Configuration)-$(TargetArchitecture)</NativePath>
       <RuntimePath>$(ArtifactsBinDir)runtime/%(Identity)-$(Configuration)-$(TargetArchitecture)</RuntimePath>
     </BinPlaceTargetFrameworks>
 
