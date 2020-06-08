@@ -41,7 +41,6 @@
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(TargetsMobile)' == 'true'">
-    <ArchiveTests>false</ArchiveTests>
     <IncludeDotNetCli>true</IncludeDotNetCli>
     <MicrosoftDotNetXHarnessCLIVersion>1.0.0-prerelease.20308.1</MicrosoftDotNetXHarnessCLIVersion>
   </PropertyGroup>
