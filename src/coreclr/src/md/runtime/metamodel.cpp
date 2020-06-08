@@ -472,6 +472,16 @@ CMiniMdBase::CMiniMdBase()
     _ASSERTE((TypeFromToken(mdtGenericParam) >> 24)     == TBL_GenericParam);
     _ASSERTE((TypeFromToken(mdtMethodSpec) >> 24)       == TBL_MethodSpec);
     _ASSERTE((TypeFromToken(mdtGenericParamConstraint) >> 24) == TBL_GenericParamConstraint);
+    /* Portable PDB tables */
+    _ASSERTE((TypeFromToken(mdtDocument) >> 24)         == TBL_Document);
+    _ASSERTE((TypeFromToken(mdtMethodDebugInformation) >> 24) == TBL_MethodDebugInformation);
+    _ASSERTE((TypeFromToken(mdtLocalScope) >> 24)       == TBL_LocalScope);
+    _ASSERTE((TypeFromToken(mdtLocalVariable) >> 24)    == TBL_LocalVariable);
+    _ASSERTE((TypeFromToken(mdtLocalConstant) >> 24)    == TBL_LocalConstant);
+    _ASSERTE((TypeFromToken(mdtImportScope) >> 24)      == TBL_ImportScope);
+    // TODO:
+    // _ASSERTE((TypeFromToken(mdtStateMachineMethod) >> 24) == TBL_StateMachineMethod);
+    // _ASSERTE((TypeFromToken(mdtCustomDebugInformation) >> 24) == TBL_CustomDebugInformation);
 } // CMiniMdBase::CMiniMdBase
 
 
@@ -700,7 +710,7 @@ CMiniMdBase::InitColsForTable(
 
     iOffset = 0;
 
-    pTemplate = GetTableDefTemplate(ixTbl);
+        pTemplate = GetTableDefTemplate(ixTbl);
 
     PREFIX_ASSUME(pTemplate->m_pColDefs != NULL);
 
@@ -746,22 +756,31 @@ CMiniMdBase::InitColsForTable(
         {   // Fixed type.
             switch (pCols[ixCol].m_Type)
             {
+            /* Portable PDB tables */
+            // Commenting out column offset asserts.
+            // It makes sense to assert calculated offsets against values from the table
+            // definition templates, only if the fixed field columns appear at the beginning
+            // of a table record.
+            // Initializing StartOffset and Length (4th and 5th columns of the portable PDB
+            // LocalScope table) can cause assertion to fail at this point, since preceeding
+            // column sizes are determined dynamically (2 or 4 bytes for RIDs depending on the
+            // number of records) and cannot be compared against the static template.
             case iBYTE:
                 iSize = 1;
                 _ASSERTE(pCols[ixCol].m_cbColumn == iSize);
-                _ASSERTE(pCols[ixCol].m_oColumn == iOffset);
+                // _ASSERTE(pCols[ixCol].m_oColumn == iOffset);
                 break;
             case iSHORT:
             case iUSHORT:
                 iSize = 2;
                 _ASSERTE(pCols[ixCol].m_cbColumn == iSize);
-                _ASSERTE(pCols[ixCol].m_oColumn == iOffset);
+                // _ASSERTE(pCols[ixCol].m_oColumn == iOffset);
                 break;
             case iLONG:
             case iULONG:
                 iSize = 4;
                 _ASSERTE(pCols[ixCol].m_cbColumn == iSize);
-                _ASSERTE(pCols[ixCol].m_oColumn == iOffset);
+                // _ASSERTE(pCols[ixCol].m_oColumn == iOffset);
                 break;
             case iSTRING:
                 iSize = (Schema.m_heaps & CMiniMdSchema::HEAP_STRING_4) ? 4 : 2;

@@ -1521,6 +1521,155 @@ public:
     };
 };
 
+/* Portable PDB tables */
+// -- Dummy records to fill the gap to 0x30
+class DummyRec
+{
+public:
+    enum {
+        COL_COUNT,
+        COL_KEY
+    };
+};
+class Dummy1Rec : public DummyRec {};
+class Dummy2Rec : public DummyRec {};
+class Dummy3Rec : public DummyRec {};
+
+class DocumentRec
+{
+public:
+    enum {
+        COL_Name,
+        COL_HashAlgorithm,
+        COL_Hash,
+        COL_Language,
+        COL_COUNT,
+        COL_KEY
+    };
+};
+
+class MethodDebugInformationRec
+{
+public:
+    enum {
+        COL_Document,
+        COL_SequencePoints,
+        COL_COUNT,
+        COL_KEY
+    };
+};
+
+class LocalScopeRec
+{
+METADATA_FIELDS_PROTECTION:
+    ULONG      m_StartOffset;
+    ULONG      m_Length;
+public:
+    enum {
+        COL_Method,
+        COL_ImportScope,
+        COL_VariableList,
+        COL_ConstantList,
+        COL_StartOffset,
+        COL_Length,
+        COL_COUNT,
+        COL_KEY
+    };
+
+    ULONG GetStartOffset()
+    {
+        LIMITED_METHOD_CONTRACT;
+
+        return GET_UNALIGNED_VAL32(&m_StartOffset);
+    }
+    void SetStartOffset(ULONG startOffset)
+    {
+        LIMITED_METHOD_CONTRACT;
+
+        m_StartOffset = VAL32(startOffset);
+    }
+
+    ULONG GetLength()
+    {
+        LIMITED_METHOD_CONTRACT;
+
+        return GET_UNALIGNED_VAL32(&m_Length);
+    }
+    void SetLength(ULONG length)
+    {
+        LIMITED_METHOD_CONTRACT;
+
+        m_Length = VAL32(length);
+    }
+};
+
+class LocalVariableRec
+{
+METADATA_FIELDS_PROTECTION:
+    USHORT      m_Attributes;
+    USHORT      m_Index;
+public:
+    enum {
+        COL_Attributes,
+        COL_Index,
+        COL_Name,
+        COL_COUNT,
+        COL_KEY
+    };
+
+    USHORT GetAttributes()
+    {
+        LIMITED_METHOD_CONTRACT;
+
+        return GET_UNALIGNED_VAL16(&m_Attributes);
+    }
+    void SetAttributes(USHORT attributes)
+    {
+        LIMITED_METHOD_CONTRACT;
+
+        m_Attributes = VAL16(attributes);
+    }
+
+    USHORT GetIndex()
+    {
+        LIMITED_METHOD_CONTRACT;
+
+        return GET_UNALIGNED_VAL16(&m_Index);
+    }
+    void SetIndex(USHORT index)
+    {
+        LIMITED_METHOD_CONTRACT;
+
+        m_Index = VAL16(index);
+    }
+};
+
+class LocalConstantRec
+{
+public:
+    enum {
+        COL_Name,
+        COL_Signature,
+        COL_COUNT,
+        COL_KEY
+    };
+};
+
+class ImportScopeRec
+{
+public:
+    enum {
+        COL_Parent,
+        COL_Imports,
+        COL_COUNT,
+        COL_KEY
+    };
+};
+
+// TODO:
+// class StateMachineMethodRec
+// class CustomDebugInformationRec
+
 #include <poppack.h>
 
 // List of MiniMd tables.
@@ -1571,6 +1720,22 @@ public:
     MiniMdTable(GenericParam)     \
     MiniMdTable(MethodSpec)     \
     MiniMdTable(GenericParamConstraint) \
+    /* Portable PDB tables */ \
+    /* Dummy tables to fill the gap to 0x30 */ \
+    MiniMdTable(Dummy1)                             /* 0x2D */ \
+    MiniMdTable(Dummy2)                             /* 0x2E */ \
+    MiniMdTable(Dummy3)                             /* 0x2F */ \
+    /* Actual portable PDB tables */ \
+    MiniMdTable(Document)                           /* 0x30 */ \
+    MiniMdTable(MethodDebugInformation)             /* 0x31 */ \
+    MiniMdTable(LocalScope)                         /* 0x32 */ \
+    MiniMdTable(LocalVariable)                      /* 0x33 */ \
+    MiniMdTable(LocalConstant)                      /* 0x34 */ \
+    MiniMdTable(ImportScope)                        /* 0x35 */ \
+    // TODO:
+    // MiniMdTable(StateMachineMethod)                 /* 0x36 */ \
+    // MiniMdTable(CustomDebugInformation)             /* 0x37 */ \
+
 
 #undef MiniMdTable
 #define MiniMdTable(x) TBL_##x,
@@ -1578,7 +1743,7 @@ enum {
     MiniMdTables()
     TBL_COUNT,                              // Highest table.
     TBL_COUNT_V1 = TBL_NestedClass + 1,    // Highest table in v1.0 database
-    TBL_COUNT_V2 = TBL_GenericParamConstraint + 1 // Highest in v2.0 database
+    TBL_COUNT_V2 = TBL_ImportScope + 1 // Highest in v2.0 database
 };
 #undef MiniMdTable
 
