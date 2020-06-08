@@ -131,9 +131,15 @@ namespace System.IO
 
         // Clears all buffers for this writer and causes any buffered data to be
         // written to the underlying device.
-        public virtual void Flush() => OutStream.Flush();
+        public virtual void Flush()
+        {
+            OutStream.Flush();
+        }
 
-        public virtual long Seek(int offset, SeekOrigin origin) => OutStream.Seek(offset, origin);
+        public virtual long Seek(int offset, SeekOrigin origin)
+        {
+            return OutStream.Seek(offset, origin);
+        }
 
         // Writes a boolean to this stream. A single byte is written to the stream
         // with the value 0 representing false or the value 1 representing true.
@@ -168,8 +174,10 @@ namespace System.IO
         // This default implementation calls the Write(Object, int, int)
         // method to write the byte array.
         //
-        public virtual void Write(byte[] buffer, int index, int count) => OutStream.Write(buffer, index, count);
-
+        public virtual void Write(byte[] buffer, int index, int count)
+        {
+            OutStream.Write(buffer, index, count);
+        }
 
         // Writes a character to this stream. The current position of the stream is
         // advanced by two.
@@ -255,7 +263,10 @@ namespace System.IO
         //
         public virtual void Write(int value)
         {
-            BinaryPrimitives.WriteInt32LittleEndian(_buffer, value);
+            _buffer[0] = (byte)value;
+            _buffer[1] = (byte)(value >> 8);
+            _buffer[2] = (byte)(value >> 16);
+            _buffer[3] = (byte)(value >> 24);
             OutStream.Write(_buffer, 0, 4);
         }
 
@@ -265,7 +276,10 @@ namespace System.IO
         [CLSCompliant(false)]
         public virtual void Write(uint value)
         {
-            BinaryPrimitives.WriteUInt32LittleEndian(_buffer, value);
+            _buffer[0] = (byte)value;
+            _buffer[1] = (byte)(value >> 8);
+            _buffer[2] = (byte)(value >> 16);
+            _buffer[3] = (byte)(value >> 24);
             OutStream.Write(_buffer, 0, 4);
         }
 
@@ -293,10 +307,13 @@ namespace System.IO
         //
         public virtual unsafe void Write(float value)
         {
-            BinaryPrimitives.WriteSingleLittleEndian(_buffer, value);
+            uint TmpValue = *(uint*)&value;
+            _buffer[0] = (byte)TmpValue;
+            _buffer[1] = (byte)(TmpValue >> 8);
+            _buffer[2] = (byte)(TmpValue >> 16);
+            _buffer[3] = (byte)(TmpValue >> 24);
             OutStream.Write(_buffer, 0, 4);
         }
-
 
         // Writes a length-prefixed string to this stream in the BinaryWriter's
         // current Encoding. This method first writes the length of the string as
