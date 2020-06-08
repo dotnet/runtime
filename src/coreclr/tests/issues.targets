@@ -1501,7 +1501,7 @@
 	  <Issue>https://github.com/dotnet/runtime/issues/37509</Issue>
 	</ExcludeList>
 	<ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/MethodImpl/CovariantReturns/UnitTest/**"
-		     Exclude="$(XunitTestBinBase)/Loader/classloader/MethodImpl/CovariantReturns/UnitTest/AttributeTesting/*;$(XunitTestBinBase)/Loader/classloader/MethodImpl/CovariantReturns/UnitTest/UnitTest/*">
+		     Exclude="$(XunitTestBinBase)/Loader/classloader/MethodImpl/CovariantReturns/UnitTest/AttributeTesting/*;$(XunitTestBinBase)/Loader/classloader/MethodImpl/CovariantReturns/UnitTest/UnitTest/*;$(XunitTestBinBase)/Loader/classloader/MethodImpl/CovariantReturns/UnitTest/OverrideMoreDerivedReturn/*">
 	  <Issue>https://github.com/dotnet/runtime/issues/37509</Issue>
 	</ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/regressions/347422/b347422/**">

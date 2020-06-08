@@ -3382,16 +3382,18 @@ mono_class_setup_vtable_general (MonoClass *klass, MonoMethod **overrides, int o
 					TRACE_INTERFACE_VTABLE (printf ("preserve base overrides attribute is on slot %d is on the decl method %s; not adding any more overrides\n", decl->slot, mono_method_full_name (decl, 1)));
 					continue;
 				}
+				g_assert (impl_class == klass || decl->slot < impl_class->vtable_size);
+				MonoMethod *prev_impl = impl_class == klass ? impl : impl_class->vtable [decl->slot];
 				/* 
-				 * if we see any method that occupies the declared slot between us and the class with
-				 * the attribute, remap it to out impl method.
+				 * if we see any method that occupies the declared slot anywhere in the inheritance
+				 * chain, add a mapping to replace it with our current implementation.
 				 */
-				TRACE_INTERFACE_VTABLE (printf ("override impl [slot %d] %s or some method in this slot in a parent class has the preserve base overrides attribute.  overridden by %s\n", decl->slot, mono_method_full_name (decl, 1), mono_method_full_name (impl, 1)));
+				TRACE_INTERFACE_VTABLE (printf ("override decl [slot %d] %s in class %s has method %s in this slot and it has the preserve base overrides attribute.  overridden by %s\n", decl->slot, mono_method_full_name (decl, 1), mono_type_full_name (m_class_get_byval_arg (impl_class)), mono_method_full_name (prev_impl, 1), mono_method_full_name (impl, 1)));
 				g_assert (impl_class != NULL);
-				for (MonoClass *cur_class = klass->parent; cur_class && cur_class != impl_class->parent; cur_class = cur_class->parent) {
+				for (MonoClass *cur_class = klass->parent; cur_class ; cur_class = cur_class->parent) {
 					if (decl->slot >= cur_class->vtable_size)
 						break;
-					MonoMethod *prev_impl = cur_class->vtable[decl->slot];
+					prev_impl = cur_class->vtable[decl->slot];
 					g_hash_table_insert (override_map, prev_impl, impl);
 					TRACE_INTERFACE_VTABLE (do {
 							char *full_name = mono_type_full_name (m_class_get_byval_arg (cur_class));
