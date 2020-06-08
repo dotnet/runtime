@@ -105,7 +105,10 @@
 
     <ItemGroup Condition="'$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'tvOS'">
       <!-- Find all directories named *.app and strip the trailing slash -->
-      <XHarnessAppFolderToTest Include="$([System.IO.Directory]::GetDirectories('$(TestArchiveTestsRoot)', '*.app', System.IO.SearchOption.AllDirectories))">
+      <_appBundleFiles Include="$(TestArchiveTestsRoot)**/*"/>
+      <_appBundleDirs Include="@(_appBundleFiles->'%(RootDir)%(Directory)'->Distinct())"/>
+      <XHarnessAppFolderToTest Include="@(_appBundleDirs->Replace(&quot;.app/&quot;, &quot;.app&quot;))"
+                               Condition="$([System.Text.RegularExpressions.Regex]::IsMatch(%(Identity), '\.app/?$'))">
         <Targets Condition="'$(TargetArchitecture)' == 'arm'">ios-device</Targets>
         <Targets Condition="'$(TargetArchitecture)' == 'arm64'">ios-device</Targets>
         <Targets Condition="'$(TargetArchitecture)' == 'x64'">ios-simulator-64</Targets>
