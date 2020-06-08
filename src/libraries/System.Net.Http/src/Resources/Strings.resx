@@ -556,9 +556,9 @@
     <value>Stream aborted by peer ({0}).</value>
   </data>
   <data name="net_http_missing_sync_implementation" xml:space="preserve">
-    <value>The synchronous API is not supported by '{0}'. If you're using custom '{1}' and wish to use synchronous HTTP APIs, you must override '{2}' virtual method.</value>
+    <value>The synchronous method is not supported by '{0}'. If you're using a custom '{1}' and wish to use synchronous HTTP methods, you must override its '{2}' virtual method.</value>
   </data>
   <data name="net_http_sync_not_supported" xml:space="preserve">
-    <value>The synchronous API is not supported by '{0}' for HTTP/2 or higher. Either use an async implementation or downgrade you request version to HTTP/1.1 or lower.</value>
+    <value>The synchronous method is not supported by '{0}' for HTTP/2 or higher. Either use an asynchronous method or downgrade the request version to HTTP/1.1 or lower.</value>
   </data>
 </root>
