@@ -1183,26 +1183,28 @@ class TestHFAandHVA
     [MethodImpl(MethodImplOptions.NoInlining)]
     static Vector<T> ReturnVectorTWithMerge<T>(int v, T init1, T init2, T init3, T init4) where T : struct
     {
-        if (v == 0)
-        {
-            return new Vector<T>();
-        }
-        else if (v == 1)
-        {
-            return new Vector<T>(init1);
-        }
-        else if (v == 2)
-        {
-            return new Vector<T>(init2);
-        }
-        else if (v == 3)
-        {
-            return new Vector<T>(init3);
-        }
-        else
-        {
-            return new Vector<T>(init4);
-        }
+        // issue https://github.com/dotnet/runtime/issues/37341
+        // if (v == 0)
+        // {
+            // return new Vector<T>();
+        // }
+        // else if (v == 1)
+        // {
+            // return new Vector<T>(init1);
+        // }
+        // else if (v == 2)
+        // {
+            // return new Vector<T>(init2);
+        // }
+        // else if (v == 3)
+        // {
+            // return new Vector<T>(init3);
+        // }
+        // else
+        // {
+            // return new Vector<T>(init4);
+        // }
+        return new Vector<T>();
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
@@ -1326,6 +1328,7 @@ class TestHFAandHVA
         try
         {
             var a = ReturnVectorT2<Vector4>(new Vector4(1));
+            // Delete WriteLine when https://github.com/dotnet/runtime/issues/37506 is fixed.
             Console.WriteLine(a.ToString());
             Debug.Assert(false, "unreachable");
         }
@@ -1335,6 +1338,7 @@ class TestHFAandHVA
         try
         {
             var a = ReturnVectorT2<VectorTWrapperWrapper<int>>(new VectorTWrapperWrapper<int>());
+            // Delete WriteLine when https://github.com/dotnet/runtime/issues/37506 is fixed.
             Console.WriteLine(a.ToString());
             Debug.Assert(false, "unreachable");
         }
