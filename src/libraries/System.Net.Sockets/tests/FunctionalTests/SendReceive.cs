@@ -1360,14 +1360,14 @@ namespace System.Net.Sockets.Tests
                 data[0] = data[499] = 2;
                 Assert.Equal(500, sender.Send(data));
 
-                var tcs = new TaskCompletionSource<bool>();
+                var tcs = new TaskCompletionSource();
                 SocketAsyncEventArgs args = new SocketAsyncEventArgs();
 
                 var receiveBufer = new byte[600];
                 receiveBufer[0] = data[499] = 0;
 
                 args.SetBuffer(receiveBufer, 0, receiveBufer.Length);
-                args.Completed += delegate { tcs.SetResult(true); };
+                args.Completed += delegate { tcs.SetResult(); };
 
                 // First peek at the message.
                 args.SocketFlags = SocketFlags.Peek;
@@ -1381,7 +1381,7 @@ namespace System.Net.Sockets.Tests
                 receiveBufer[0] = receiveBufer[499] = 0;
 
                 // Now, we should be able to get same message again.
-                tcs = new TaskCompletionSource<bool>();
+                tcs = new TaskCompletionSource();
                 args.SocketFlags = SocketFlags.None;
                 if (receiver.ReceiveAsync(args))
                 {
@@ -1393,7 +1393,7 @@ namespace System.Net.Sockets.Tests
                 receiveBufer[0] = receiveBufer[499] = 0;
 
                 // Set buffer smaller than message.
-                tcs = new TaskCompletionSource<bool>();
+                tcs = new TaskCompletionSource();
                 args.SetBuffer(receiveBufer, 0, 100);
                 if (receiver.ReceiveAsync(args))
                 {

@@ -68,6 +68,7 @@ EventPipeEventSource::EventPipeEventSource()
         0,      /* keywords */
         1,      /* version */
         EventPipeEventLevel::LogAlways,
+        0,      /* opcode */
         params,
         numParams,
         &metadataLength);

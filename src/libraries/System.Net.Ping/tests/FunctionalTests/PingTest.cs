@@ -663,17 +663,17 @@ namespace System.Net.NetworkInformation.Tests
 
             using (Ping p = new Ping())
             {
-                TaskCompletionSource<bool> tcs = null;
+                TaskCompletionSource tcs = null;
                 PingCompletedEventArgs ea = null;
                 p.PingCompleted += (s, e) =>
                 {
                     ea = e;
-                    tcs.TrySetResult(true);
+                    tcs.TrySetResult();
                 };
                 Action reset = () =>
                 {
                     ea = null;
-                    tcs = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+                    tcs = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
                 };
 
                 // Several normal iterations

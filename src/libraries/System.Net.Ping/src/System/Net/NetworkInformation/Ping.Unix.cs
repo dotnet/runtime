@@ -328,9 +328,9 @@ namespace System.Net.NetworkInformation
         {
             using (Process p = GetPingProcess(address, buffer, timeout, options))
             {
-                var processCompletion = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+                var processCompletion = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
                 p.EnableRaisingEvents = true;
-                p.Exited += (s, e) => processCompletion.SetResult(true);
+                p.Exited += (s, e) => processCompletion.SetResult();
                 p.Start();
 
                 var cts = new CancellationTokenSource();

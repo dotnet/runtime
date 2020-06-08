@@ -536,7 +536,7 @@ namespace System.Threading
                         // simplify by just failing in that case.
                         var e = new InvalidOperationException(SR.InvalidOperation_TimerAlreadyClosed);
                         e.SetCurrentStackTrace();
-                        return new ValueTask(Task.FromException(e));
+                        return ValueTask.FromException(e);
                     }
                 }
                 else

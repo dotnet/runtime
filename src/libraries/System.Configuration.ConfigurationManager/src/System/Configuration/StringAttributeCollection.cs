@@ -44,7 +44,7 @@ namespace System.Configuration
                 foreach (string item in items)
                 {
                     string trimmedItem = item.Trim();
-                    if (trimmedItem.Length != 0) Add(item.Trim());
+                    if (trimmedItem.Length != 0) Add(trimmedItem);
                 }
             }
             _originalString = ToString();

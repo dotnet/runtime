@@ -160,7 +160,7 @@ namespace System.Net.Http
             }
         }
 
-        public CookieContainer CookieContainer
+        public CookieContainer? CookieContainer
         {
             get
             {
@@ -193,7 +193,7 @@ namespace System.Net.Http
             X509Certificate2,
             X509Chain,
             SslPolicyErrors,
-            bool> ServerCertificateValidationCallback
+            bool>? ServerCertificateValidationCallback
         {
             get
             {
@@ -273,7 +273,7 @@ namespace System.Net.Http
             }
         }
 
-        public ICredentials ServerCredentials
+        public ICredentials? ServerCredentials
         {
             get
             {
@@ -308,7 +308,7 @@ namespace System.Net.Http
             }
         }
 
-        public ICredentials DefaultProxyCredentials
+        public ICredentials? DefaultProxyCredentials
         {
             get
             {
@@ -322,7 +322,7 @@ namespace System.Net.Http
             }
         }
 
-        public IWebProxy Proxy
+        public IWebProxy? Proxy
         {
             get
             {

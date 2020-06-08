@@ -6,12 +6,14 @@
 #include "ilrewriter.h"
 #include <iostream>
 #include <utility>
+#include <vector>
 
 using std::map;
 using std::unordered_set;
 using std::make_pair;
 using std::shared_ptr;
 using std::make_shared;
+using std::vector;
 
 #ifndef __FUNCTION_NAME__
     #ifdef WIN32   //WINDOWS
@@ -127,6 +129,78 @@ bool ReJITProfiler::FunctionSeen(FunctionID functionId)
     String functionName = GetFunctionIDName(functionId);
     ModuleID moduleId = GetModuleIDForFunction(functionId);
     String moduleName = GetModuleIDName(moduleId);
+
+    // Check for runtime issue #13404, we would return NULL addresses in
+    // GetNativeCodeStartAddresses for R2R methods when called from
+    // JITCachedFunctionSearchFinished
+    ULONG rejitCount;
+    HRESULT hr = pCorProfilerInfo->GetReJITIDs(functionId,
+                                               0,
+                                               &rejitCount,
+                                               NULL);
+    if (FAILED(hr))
+    {
+        printf("GetReJITIDs failed with hr=0x%x\n", hr);
+        _failures++;
+        return S_OK;
+    }
+
+    if (rejitCount > 0)
+    {
+        vector<ReJITID> rejitIds(rejitCount);
+        HRESULT hr = pCorProfilerInfo->GetReJITIDs(functionId,
+                                                   (ULONG)rejitIds.size(),
+                                                   &rejitCount,
+                                                   &rejitIds[0]);
+        if (FAILED(hr))
+        {
+            printf("GetReJITIDs failed with hr=0x%x\n", hr);
+            _failures++;
+            return S_OK;
+        }
+
+        for (auto &&id : rejitIds)
+        {
+            UINT32 countAddresses;
+            hr = pCorProfilerInfo->GetNativeCodeStartAddresses(functionId,
+                                                               id,
+                                                               0,
+                                                               &countAddresses,
+                                                               NULL);
+            if (FAILED(hr))
+            {
+                printf("GetNativeCodeStartAddresses failed with hr=0x%x\n", hr);
+                _failures++;
+                continue;
+            }
+            else if (countAddresses == 0)
+            {
+                continue;
+            }
+
+            vector<UINT_PTR> codeStartAddresses(countAddresses);
+            hr = pCorProfilerInfo->GetNativeCodeStartAddresses(functionId,
+                                                               id,
+                                                               (ULONG)codeStartAddresses.size(),
+                                                               &countAddresses,
+                                                               &codeStartAddresses[0]);
+            if (FAILED(hr))
+            {
+                printf("GetNativeCodeStartAddresses failed with hr=0x%x\n", hr);
+                _failures++;
+                continue;
+            }
+
+            for (auto &&address : codeStartAddresses)
+            {
+                if (address == NULL)
+                {
+                    printf("Found NULL start address from GetNativeCodeStartAddresses.\n");
+                    _failures++;
+                }
+            }
+        }
+    }
 
     if (functionName == TargetMethodName && EndsWith(moduleName, TargetModuleName))
     {
