@@ -526,7 +526,7 @@ Kind: {CC110556-A091-4D38-9FEC-25AB9A351A6A}
 
 The blob stores UTF8 encoded text file in JSON format that includes information on how to locate the content of documents listed in Document table on a source server.
 
-##### <a name="CompilationReferences"></a>Compilation Metadata References (C# and VB compilers)
+##### <a name="CompilationMetadataReferences"></a>Compilation Metadata References (C# and VB compilers)
 Parent: Module
 
 Kind: {7E4D4708-096E-4C5C-AEDA-CB10BA6A740D}
