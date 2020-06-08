@@ -9,15 +9,17 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 
+using Console = System.Diagnostics.Debug;
+
 namespace System.Runtime.InteropServices.JavaScript
 {
     public static class Runtime
     {
-        // / <summary>
-        // / Execute the provided string in the JavaScript context
-        // / </summary>
-        // / <returns>The js.</returns>
-        // / <param name="str">String.</param>
+        // <summary>
+        // Execute the provided string in the JavaScript context
+        // </summary>
+        // <returns>The js.</returns>
+        // <param name="str">String.</param>
         public static string InvokeJS(string str)
         {
             return Interop.Runtime.InvokeJS(str);
@@ -78,7 +80,6 @@ namespace System.Runtime.InteropServices.JavaScript
             return Interop.Runtime.GetGlobalObject(str);
         }
 
-        //private static readonly Dictionary<int, JSObject?> _boundObjects = new Dictionary<int, JSObject?>();
         private static readonly Dictionary<int, WeakReference> _boundObjects = new Dictionary<int, WeakReference>();
 
         // weak_delegate_table is a ConditionalWeakTable with the Delegate and associated JSObject:
@@ -89,20 +90,15 @@ namespace System.Runtime.InteropServices.JavaScript
 
         private static readonly Dictionary<object, JSObject?> _rawToJS = new Dictionary<object, JSObject?>();
 
-        public static int BindJSObject(int jsId, bool ownsHandle, Type mappedType)
+        public static int BindJSObject(int jsId, bool ownsHandle, int mappedType)
         {
             lock (_boundObjects)
             {
                 if (!_boundObjects.TryGetValue(jsId, out WeakReference? obj))
                 {
-                    if (mappedType != null)
-                    {
-                        return BindJSType(jsId, ownsHandle, mappedType);
-                    }
-                    else
-                    {
-                        _boundObjects[jsId] = obj = new WeakReference(new JSObject((IntPtr)jsId, ownsHandle), true);
-                    }
+                    IntPtr jsIntPtr = (IntPtr)jsId;
+                    obj = new WeakReference(mappedType > 0 ? BindJSType(jsIntPtr, ownsHandle, mappedType) : new JSObject(jsIntPtr, ownsHandle), true);
+                    _boundObjects.Add (jsId, obj);
                 }
                 JSObject? target = obj.Target as JSObject;
                 return target == null ? 0 : (int)(IntPtr)target.AnyRefHandle;
@@ -136,22 +132,60 @@ namespace System.Runtime.InteropServices.JavaScript
             }
         }
 
-        public static int BindJSType(int jsId, bool ownsHandle, Type mappedType)
+        private static JSObject BindJSType(IntPtr jsIntPtr, bool ownsHandle, int coreType)
         {
-            lock (_boundObjects)
+            CoreObject coreObject;
+            switch (coreType)
             {
-                if (!_boundObjects.TryGetValue(jsId, out WeakReference? reference))
-                {
-                    ConstructorInfo? jsobjectnew = mappedType.GetConstructor(BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.ExactBinding,
-                            null, new Type[] { typeof(IntPtr), typeof(bool) }, null);
-                    JSObject? newJSType = jsobjectnew?.Invoke(new object[] { (IntPtr)jsId, ownsHandle }) as JSObject;
-                    if (newJSType == null)
-                        return -1;
-                    _boundObjects[jsId] = reference = new WeakReference(newJSType, true);
-                }
-                JSObject? refTarget = reference?.Target as JSObject;
-                return refTarget == null ? 0 : (int)(IntPtr)refTarget.AnyRefHandle;
+                case 1:
+                    coreObject = new Array(jsIntPtr, ownsHandle);
+                    break;
+                case 2:
+                    coreObject = new ArrayBuffer(jsIntPtr, ownsHandle);
+                    break;
+                case 3:
+                    coreObject = new DataView(jsIntPtr, ownsHandle);
+                    break;
+                case 4:
+                    coreObject = new Function(jsIntPtr, ownsHandle);
+                    break;
+                case 5:
+                    coreObject = new Map(jsIntPtr, ownsHandle);
+                    break;
+                case 6:
+                    coreObject = new SharedArrayBuffer(jsIntPtr, ownsHandle);
+                    break;
+                case 10:
+                    coreObject = new Int8Array(jsIntPtr, ownsHandle);
+                    break;
+                case 11:
+                    coreObject = new Uint8Array(jsIntPtr, ownsHandle);
+                    break;
+                case 12:
+                    coreObject = new Uint8ClampedArray(jsIntPtr, ownsHandle);
+                    break;
+                case 13:
+                    coreObject = new Int16Array(jsIntPtr, ownsHandle);
+                    break;
+                case 14:
+                    coreObject = new Uint16Array(jsIntPtr, ownsHandle);
+                    break;
+                case 15:
+                    coreObject = new Int32Array(jsIntPtr, ownsHandle);
+                    break;
+                case 16:
+                    coreObject = new Uint32Array(jsIntPtr, ownsHandle);
+                    break;
+                case 17:
+                    coreObject = new Float32Array(jsIntPtr, ownsHandle);
+                    break;
+                case 18:
+                    coreObject = new Float64Array(jsIntPtr, ownsHandle);
+                    break;
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(coreType));
             }
+            return coreObject;
         }
 
         public static int UnBindJSObject(int jsId)
@@ -310,7 +344,18 @@ namespace System.Runtime.InteropServices.JavaScript
         {
             GCHandle h = (GCHandle)(IntPtr)gcHandle;
             JSObject? o = h.Target as JSObject;
-            return o?.RawObject ?? null;
+
+            if (o != null && o.WeakRawObject != null)
+            {
+                var target = o.WeakRawObject.Target;
+                if (target != null)
+                {
+                    return target;
+                }
+            }
+            if (o != null && o.RawObject != null)
+                return o.RawObject;
+            return o;
         }
 
         public static object BoxInt(int i)
@@ -536,20 +581,20 @@ namespace System.Runtime.InteropServices.JavaScript
         public static void SafeHandleRelease(SafeHandle safeHandle)
         {
             safeHandle.DangerousRelease();
-            //#if DEBUG_HANDLE
+#if !DEBUG_HANDLE
             var _anyref = safeHandle as AnyRef;
             if (_anyref != null)
             {
                 _anyref.Release();
                 System.Diagnostics.Debug.WriteLine($"\tSafeHandleRelease: {safeHandle.DangerousGetHandle()} / RefCount: {_anyref.RefCount}");
             }
-            //#endif
+#endif
         }
 
         public static void SafeHandleReleaseByHandle(int js_id)
         {
 #if !DEBUG_HANDLE
-            System.Diagnostics.Debug.WriteLine ($"SafeHandleReleaseByHandle: {js_id}");
+            System.Diagnostics.Debug.WriteLine($"SafeHandleReleaseByHandle: {js_id}");
 #endif
             lock (_boundObjects)
             {
@@ -575,9 +620,9 @@ namespace System.Runtime.InteropServices.JavaScript
 
         public static IntPtr SafeHandleGetHandle(SafeHandle safeHandle, bool addRef)
         {
-//#if DEBUG_HANDLE
-            System.Diagnostics.Debug.WriteLine ($"SafeHandleGetHandle: {safeHandle.DangerousGetHandle ()} / addRef {addRef}");
-//#endif
+#if !DEBUG_HANDLE
+            System.Diagnostics.Debug.WriteLine($"SafeHandleGetHandle: {safeHandle.DangerousGetHandle()} / addRef {addRef}");
+#endif
             if (addRef)
                 if (SafeHandleAddRef(safeHandle))
                     return safeHandle.DangerousGetHandle();

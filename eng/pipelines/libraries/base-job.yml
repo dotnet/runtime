@@ -38,7 +38,6 @@ jobs:
       pool: ${{ parameters.pool }}
       variables:
         - _buildScriptFileName: build
-        - _BuildConfig: ${{ parameters.buildConfig }}
 
         - _msbuildCommonParameters: ''
         # rename this variable, due to collision with build-native.proj
@@ -109,6 +108,9 @@ jobs:
 
         - _buildArguments: $(_runtimeConfigurationArg) -configuration ${{ parameters.buildConfig }} -ci -arch ${{ parameters.archType }} $(_finalFrameworkArg) $(_testScopeArg) $(_runtimeOSArg) $(_msbuildCommonParameters) $(_runtimeArtifactsPathArg) $(_crossBuildPropertyArg)
         - ${{ parameters.variables }}
+
+        # we need to override this value to support build-coreclr-and-libraries-job.yml
+        - _BuildConfig: ${{ parameters.buildConfig }}
 
       dependsOn:
       - checkout

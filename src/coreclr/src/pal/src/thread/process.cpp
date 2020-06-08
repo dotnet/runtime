@@ -60,6 +60,7 @@ SET_DEFAULT_DEBUG_CHANNEL(PROCESS); // some headers have code with asserts, so d
 #include <semaphore.h>
 #include <stdint.h>
 #include <dlfcn.h>
+#include <limits.h>
 
 #ifdef __linux__
 #include <sys/syscall.h> // __NR_membarrier

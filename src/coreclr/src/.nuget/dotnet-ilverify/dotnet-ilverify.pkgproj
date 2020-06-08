@@ -18,9 +18,6 @@
     <PackageFile Include="$(ArtifactsDir)bin\ILVerify\$(TargetArchitecture)\$(Configuration)\ILVerify.dll">
        <TargetPath>tools\netcoreapp3.1\any\ILVerify.dll</TargetPath>
     </PackageFile>
-    <PackageFile Include="$(ArtifactsDir)bin\ILVerify\$(TargetArchitecture)\$(Configuration)\ILVerification.dll">
-       <TargetPath>tools\netcoreapp3.1\any\ILVerification.dll</TargetPath>
-    </PackageFile>
     <PackageFile Include="$(ArtifactsDir)bin\ILVerify\$(TargetArchitecture)\$(Configuration)\System.CommandLine.dll">
        <TargetPath>tools\netcoreapp3.1\any\System.CommandLine.dll</TargetPath>
     </PackageFile>

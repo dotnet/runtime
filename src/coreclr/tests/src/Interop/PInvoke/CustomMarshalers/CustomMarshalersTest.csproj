@@ -4,10 +4,8 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <ReferenceSystemPrivateCoreLib>true</ReferenceSystemPrivateCoreLib>
     <!-- CustomMarshalers unsupported outside of windows -->
-    <TestUnsupportedOutsideWindows>true</TestUnsupportedOutsideWindows>
-    <DisableProjectBuild Condition="'$(TargetsUnix)' == 'true'">true</DisableProjectBuild>
+    <CLRTestTargetUnsupported Condition="'$(TargetsWindows)' != 'true'">true</CLRTestTargetUnsupported>
   </PropertyGroup>
-  <Import Project="$([MSBuild]::GetPathOfFileAbove(Interop.settings.targets))" />
   <ItemGroup>
     <Compile Include="*.cs" />
   </ItemGroup>
