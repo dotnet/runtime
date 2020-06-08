@@ -1867,31 +1867,29 @@ namespace System.Net.Http.Functional.Tests
 
         public static IEnumerable<object[]> ExpectContinueVersion()
         {
-            var versions = new string[] {"1.0", "1.1", "2.0"};
-            var expectContinue = new bool?[] {true, false, null};
             return
-                from expect in expectContinue
-                from version in versions
+                from expect in new bool?[] {true, false, null}
+                from version in new Version[] {new Version(1, 0), new Version(1, 1), new Version(2, 0)}
                 select new object[] {expect, version};
         }
 
         [OuterLoop("Uses external server")]
         [Theory]
         [MemberData(nameof(ExpectContinueVersion))]
-        public async Task PostAsync_ExpectContinue_Success(bool? expectContinue, string version)
+        public async Task PostAsync_ExpectContinue_Success(bool? expectContinue, Version version)
         {
             // Sync API supported only up to HTTP/1.1
-            if (!TestAsync && version == "2.0")
+            if (!TestAsync && version.Major >= 2)
             {
                 return;
             }
 
             using (HttpClient client = CreateHttpClient())
             {
-                var req = new HttpRequestMessage(HttpMethod.Post, version == "2.0" ? Configuration.Http.Http2RemoteEchoServer : Configuration.Http.RemoteEchoServer)
+                var req = new HttpRequestMessage(HttpMethod.Post, version.Major == 2 ? Configuration.Http.Http2RemoteEchoServer : Configuration.Http.RemoteEchoServer)
                 {
                     Content = new StringContent("Test String", Encoding.UTF8),
-                    Version = new Version(version)
+                    Version = version
                 };
                 req.Headers.ExpectContinue = expectContinue;
 
@@ -1902,7 +1900,7 @@ namespace System.Net.Http.Functional.Tests
                     if (!IsWinHttpHandler)
                     {
                         const string ExpectedReqHeader = "\"Expect\": \"100-continue\"";
-                        if (expectContinue == true && (version == "1.1" || version == "2.0"))
+                        if (expectContinue == true && (version >= new Version(1, 1)))
                         {
                             Assert.Contains(ExpectedReqHeader, await response.Content.ReadAsStringAsync());
                         }
