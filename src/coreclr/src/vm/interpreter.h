@@ -15,6 +15,12 @@
 #include "callhelpers.h"
 #include "codeversion.h"
 
+#ifdef PAL_STDCPP_COMPAT
+#include <type_traits>
+#else
+#include "clr_std/type_traits"
+#endif
+
 typedef SSIZE_T NativeInt;
 typedef SIZE_T NativeUInt;
 typedef SIZE_T NativePtr;

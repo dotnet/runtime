@@ -7888,17 +7888,41 @@ void Interpreter::LdElemWithType()
         }
         else
         {
-            T res = reinterpret_cast<Array<T>*>(a)->GetDirectConstPointerToNonObjectElements()[index];
-            /*if (cit == CORINFO_TYPE_INT)
+            intptr_t res_ptr = reinterpret_cast<intptr_t>(reinterpret_cast<Array<T>*>(a)->GetDirectConstPointerToNonObjectElements());
+            if (cit == CORINFO_TYPE_INT)
             {
+                assert(std::is_integral<T>::value);
+
                 // Widen narrow types.
-                int ires = reinterpret_cast<int>(res);
+                int ires;
+                switch (sizeof(T))
+                {
+                case 1:
+                    ires = std::is_same<T, INT8>::value ?
+                           static_cast<int>(reinterpret_cast<INT8*>(res_ptr)[index]) :
+                           static_cast<int>(reinterpret_cast<UINT8*>(res_ptr)[index]);
+                    break;
+                case 2:
+                    ires = std::is_same<T, INT16>::value ?
+                           static_cast<int>(reinterpret_cast<INT16*>(res_ptr)[index]) :
+                           static_cast<int>(reinterpret_cast<UINT16*>(res_ptr)[index]);
+                    break;
+                case 4:
+                    ires = std::is_same<T, INT32>::value ?
+                           static_cast<int>(reinterpret_cast<INT32*>(res_ptr)[index]) :
+                           static_cast<int>(reinterpret_cast<UINT32*>(res_ptr)[index]);
+                    break;
+                default:
+                    _ASSERTE_MSG(false, "This should have exhausted all the possible sizes.");
+                    break;
+                }
+
                 OpStackSet<int>(arrInd, ires);
             }
             else
-            {*/
-                OpStackSet<T>(arrInd, res);
-            //}
+            {
+                OpStackSet<T>(arrInd, ((T*) res_ptr)[index]);
+            }
         }
     }
     else
