@@ -242,6 +242,9 @@ public:
     static BOOL SetMaxThreadsHelper(DWORD MaxWorkerThreads,
                                         DWORD MaxIOCompletionThreads);
 
+    static bool CanSetMinIOCompletionThreads(DWORD ioCompletionThreads);
+    static bool CanSetMaxIOCompletionThreads(DWORD ioCompletionThreads);
+
     static BOOL SetMaxThreads(DWORD MaxWorkerThreads,
                               DWORD MaxIOCompletionThreads);
 

@@ -202,6 +202,28 @@ FCIMPL4(INT32, ThreadPoolNative::GetNextConfigUInt32Value,
 FCIMPLEND
 
 /*****************************************************************************************************/
+FCIMPL1(FC_BOOL_RET, ThreadPoolNative::CorCanSetMinIOCompletionThreads, DWORD ioCompletionThreads)
+{
+    FCALL_CONTRACT;
+    _ASSERTE_ALL_BUILDS(__FILE__, ThreadpoolMgr::UsePortableThreadPool());
+
+    BOOL result = ThreadpoolMgr::CanSetMinIOCompletionThreads(ioCompletionThreads);
+    FC_RETURN_BOOL(result);
+}
+FCIMPLEND
+
+/*****************************************************************************************************/
+FCIMPL1(FC_BOOL_RET, ThreadPoolNative::CorCanSetMaxIOCompletionThreads, DWORD ioCompletionThreads)
+{
+    FCALL_CONTRACT;
+    _ASSERTE_ALL_BUILDS(__FILE__, ThreadpoolMgr::UsePortableThreadPool());
+
+    BOOL result = ThreadpoolMgr::CanSetMaxIOCompletionThreads(ioCompletionThreads);
+    FC_RETURN_BOOL(result);
+}
+FCIMPLEND
+
+/*****************************************************************************************************/
 FCIMPL2(FC_BOOL_RET, ThreadPoolNative::CorSetMaxThreads,DWORD workerThreads, DWORD completionPortThreads)
 {
     FCALL_CONTRACT;

@@ -528,6 +528,31 @@ void ThreadpoolMgr::InitPlatformVariables()
 #endif
 }
 
+bool ThreadpoolMgr::CanSetMinIOCompletionThreads(DWORD ioCompletionThreads)
+{
+    WRAPPER_NO_CONTRACT;
+    _ASSERTE(UsePortableThreadPool());
+
+    EnsureInitialized();
+
+    // The lock used by SetMinThreads() and SetMaxThreads() is not taken here, the caller is expected to synchronize between
+    // them. The conditions here should be the same as in the corresponding Set function.
+    return ioCompletionThreads <= (DWORD)MaxLimitTotalCPThreads;
+}
+
+bool ThreadpoolMgr::CanSetMaxIOCompletionThreads(DWORD ioCompletionThreads)
+{
+    WRAPPER_NO_CONTRACT;
+    _ASSERTE(UsePortableThreadPool());
+    _ASSERTE(ioCompletionThreads != 0);
+
+    EnsureInitialized();
+
+    // The lock used by SetMinThreads() and SetMaxThreads() is not taken here, the caller is expected to synchronize between
+    // them. The conditions here should be the same as in the corresponding Set function.
+    return ioCompletionThreads >= (DWORD)MinLimitTotalCPThreads;
+}
+
 BOOL ThreadpoolMgr::SetMaxThreadsHelper(DWORD MaxWorkerThreads,
                                         DWORD MaxIOCompletionThreads)
 {

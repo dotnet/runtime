@@ -27,6 +27,8 @@ public:
         UINT32 *configValueRef,
         BOOL *isBooleanRef,
         LPCWSTR *appContextConfigNameRef);
+    static FCDECL1(FC_BOOL_RET, CorCanSetMinIOCompletionThreads, DWORD ioCompletionThreads);
+    static FCDECL1(FC_BOOL_RET, CorCanSetMaxIOCompletionThreads, DWORD ioCompletionThreads);
     static FCDECL2(FC_BOOL_RET, CorSetMaxThreads, DWORD workerThreads, DWORD completionPortThreads);
     static FCDECL2(VOID, CorGetMaxThreads, DWORD* workerThreads, DWORD* completionPortThreads);
     static FCDECL2(FC_BOOL_RET, CorSetMinThreads, DWORD workerThreads, DWORD completionPortThreads);

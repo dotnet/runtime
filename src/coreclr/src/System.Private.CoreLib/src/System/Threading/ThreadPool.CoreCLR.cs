@@ -230,19 +230,41 @@ namespace System.Threading
                 ? AppContextConfigHelper.GetBooleanConfig("System.Threading.ThreadPool.EnableWorkerTracking", false)
                 : GetEnableWorkerTrackingNative();
 
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        internal static extern bool CanSetMinIOCompletionThreads(int ioCompletionThreads);
+
+        internal static void SetMinIOCompletionThreads(int ioCompletionThreads)
+        {
+            Debug.Assert(UsePortableThreadPool);
+            Debug.Assert(ioCompletionThreads >= 0);
+
+            bool success = SetMinThreadsNative(1, ioCompletionThreads); // worker thread count is ignored
+            Debug.Assert(success);
+        }
+
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        internal static extern bool CanSetMaxIOCompletionThreads(int ioCompletionThreads);
+
+        internal static void SetMaxIOCompletionThreads(int ioCompletionThreads)
+        {
+            Debug.Assert(UsePortableThreadPool);
+            Debug.Assert(ioCompletionThreads > 0);
+
+            bool success = SetMaxThreadsNative(1, ioCompletionThreads); // worker thread count is ignored
+            Debug.Assert(success);
+        }
+
         public static bool SetMaxThreads(int workerThreads, int completionPortThreads)
         {
-            if (workerThreads < 0 || completionPortThreads < 0)
+            if (UsePortableThreadPool)
             {
-                return false;
+                return PortableThreadPool.ThreadPoolInstance.SetMaxThreads(workerThreads, completionPortThreads);
             }
 
-            if (UsePortableThreadPool && !PortableThreadPool.ThreadPoolInstance.SetMaxThreads(workerThreads))
-            {
-                return false;
-            }
-
-            return SetMaxThreadsNative(workerThreads, completionPortThreads);
+            return
+                workerThreads >= 0 &&
+                completionPortThreads >= 0 &&
+                SetMaxThreadsNative(workerThreads, completionPortThreads);
         }
 
         public static void GetMaxThreads(out int workerThreads, out int completionPortThreads)
@@ -257,17 +279,15 @@ namespace System.Threading
 
         public static bool SetMinThreads(int workerThreads, int completionPortThreads)
         {
-            if (workerThreads < 0 || completionPortThreads < 0)
+            if (UsePortableThreadPool)
             {
-                return false;
+                return PortableThreadPool.ThreadPoolInstance.SetMinThreads(workerThreads, completionPortThreads);
             }
 
-            if (UsePortableThreadPool && !PortableThreadPool.ThreadPoolInstance.SetMinThreads(workerThreads))
-            {
-                return false;
-            }
-
-            return SetMinThreadsNative(workerThreads, completionPortThreads);
+            return
+                workerThreads >= 0 &&
+                completionPortThreads >= 0 &&
+                SetMinThreadsNative(workerThreads, completionPortThreads);
         }
 
         public static void GetMinThreads(out int workerThreads, out int completionPortThreads)

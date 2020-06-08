@@ -92,22 +92,29 @@ namespace System.Threading
             };
         }
 
-        public bool SetMinThreads(int minThreads)
+        public bool SetMinThreads(int workerThreads, int ioCompletionThreads)
         {
+            if (workerThreads < 0 || ioCompletionThreads < 0)
+            {
+                return false;
+            }
+
             _maxMinThreadLock.Acquire();
             try
             {
-                if (minThreads < 0 || minThreads > _maxThreads)
+                if (workerThreads > _maxThreads || !ThreadPool.CanSetMinIOCompletionThreads(ioCompletionThreads))
                 {
                     return false;
                 }
+
+                ThreadPool.SetMinIOCompletionThreads(ioCompletionThreads);
 
                 if (s_forcedMinWorkerThreads != 0)
                 {
                     return true;
                 }
 
-                short newMinThreads = (short)Math.Max(1, Math.Min(minThreads, MaxPossibleThreadCount));
+                short newMinThreads = (short)Math.Max(1, Math.Min(workerThreads, MaxPossibleThreadCount));
                 _minThreads = newMinThreads;
 
                 ThreadCounts counts = _separated.counts.VolatileRead();
@@ -137,24 +144,31 @@ namespace System.Threading
             }
         }
 
-        public int GetMinThreads() => _minThreads;
+        public int GetMinThreads() => Volatile.Read(ref _minThreads);
 
-        public bool SetMaxThreads(int maxThreads)
+        public bool SetMaxThreads(int workerThreads, int ioCompletionThreads)
         {
+            if (workerThreads <= 0 || ioCompletionThreads <= 0)
+            {
+                return false;
+            }
+
             _maxMinThreadLock.Acquire();
             try
             {
-                if (maxThreads < _minThreads || maxThreads == 0)
+                if (workerThreads < _minThreads || !ThreadPool.CanSetMaxIOCompletionThreads(ioCompletionThreads))
                 {
                     return false;
                 }
+
+                ThreadPool.SetMaxIOCompletionThreads(ioCompletionThreads);
 
                 if (s_forcedMaxWorkerThreads != 0)
                 {
                     return true;
                 }
 
-                short newMaxThreads = (short)Math.Min(maxThreads, MaxPossibleThreadCount);
+                short newMaxThreads = (short)Math.Min(workerThreads, MaxPossibleThreadCount);
                 _maxThreads = newMaxThreads;
 
                 ThreadCounts counts = _separated.counts.VolatileRead();
@@ -180,7 +194,7 @@ namespace System.Threading
             }
         }
 
-        public int GetMaxThreads() => _maxThreads;
+        public int GetMaxThreads() => Volatile.Read(ref _maxThreads);
 
         public int GetAvailableThreads()
         {

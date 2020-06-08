@@ -50,14 +50,14 @@ namespace System.Threading
         internal static readonly bool EnableWorkerTracking =
             AppContextConfigHelper.GetBooleanConfig("System.Threading.ThreadPool.EnableWorkerTracking", false);
 
-        public static bool SetMaxThreads(int workerThreads, int completionPortThreads)
-        {
-            if (workerThreads < 0 || completionPortThreads < 0)
-            {
-                return false;
-            }
-            return PortableThreadPool.ThreadPoolInstance.SetMaxThreads(workerThreads);
-        }
+        internal static bool CanSetMinIOCompletionThreads(int ioCompletionThreads) => true;
+        internal static void SetMinIOCompletionThreads(int ioCompletionThreads) { }
+
+        internal static bool CanSetMaxIOCompletionThreads(int ioCompletionThreads) => true;
+        internal static void SetMaxIOCompletionThreads(int ioCompletionThreads) { }
+
+        public static bool SetMaxThreads(int workerThreads, int completionPortThreads) =>
+            PortableThreadPool.ThreadPoolInstance.SetMaxThreads(workerThreads, completionPortThreads);
 
         public static void GetMaxThreads(out int workerThreads, out int completionPortThreads)
         {
@@ -67,19 +67,13 @@ namespace System.Threading
             completionPortThreads = 1;
         }
 
-        public static bool SetMinThreads(int workerThreads, int completionPortThreads)
-        {
-            if (workerThreads < 0 || completionPortThreads < 0)
-            {
-                return false;
-            }
-            return PortableThreadPool.ThreadPoolInstance.SetMinThreads(workerThreads);
-        }
+        public static bool SetMinThreads(int workerThreads, int completionPortThreads) =>
+            PortableThreadPool.ThreadPoolInstance.SetMinThreads(workerThreads, completionPortThreads);
 
         public static void GetMinThreads(out int workerThreads, out int completionPortThreads)
         {
             workerThreads = PortableThreadPool.ThreadPoolInstance.GetMinThreads();
-            completionPortThreads = 0;
+            completionPortThreads = 1;
         }
 
         public static void GetAvailableThreads(out int workerThreads, out int completionPortThreads)
