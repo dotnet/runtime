@@ -5431,6 +5431,7 @@ BOOL MethodDesc::HasUnmanagedCallersOnlyAttribute()
         nullptr);
     if (hr != S_OK)
     {
+        // See https://github.com/dotnet/runtime/issues/37622
         hr = GetCustomAttribute(
             WellKnownAttribute::NativeCallableInternal,
             nullptr,
