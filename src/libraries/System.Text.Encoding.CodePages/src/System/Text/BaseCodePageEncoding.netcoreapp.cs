@@ -25,24 +25,24 @@ namespace System.Text
 
                 EncodingInfo [] encodingInfoList = new EncodingInfo[codePagesCount];
 
-                Span<byte> pCodePageIndexBytes = stackalloc byte[sizeof(CodePageIndex)]; // 40 bytes
-                CodePageIndex* pCodePageIndex = (CodePageIndex*) Unsafe.AsPointer(ref pCodePageIndexBytes.GetPinnableReference());
+                CodePageIndex codePageIndex = default;
+                Span<byte> pCodePageIndex = new Span<byte>(&codePageIndex, Unsafe.SizeOf<CodePageIndex>());
 
                 for (int i = 0; i < codePagesCount; i++)
                 {
-                    s_codePagesEncodingDataStream.Read(pCodePageIndexBytes);
+                    s_codePagesEncodingDataStream.Read(pCodePageIndex);
 
                     string codePageName;
-                    switch (pCodePageIndex->CodePage)
+                    switch (codePageIndex.CodePage)
                     {
                         // Fixup some encoding names.
                         case 950:   codePageName = "big5"; break;
                         case 10002: codePageName = "x-mac-chinesetrad"; break;
                         case 20833: codePageName = "x-ebcdic-koreanextended"; break;
-                        default:    codePageName = new string((char*) pCodePageIndex); break;
+                        default:    codePageName = new string(&codePageIndex.CodePageName); break;
                     }
 
-                    string? resourceName = EncodingNLS.GetLocalizedEncodingNameResource(pCodePageIndex->CodePage);
+                    string? resourceName = EncodingNLS.GetLocalizedEncodingNameResource(codePageIndex.CodePage);
                     string? displayName = null;
 
                     if (resourceName != null && resourceName.StartsWith("Globalization_cp_", StringComparison.OrdinalIgnoreCase))
@@ -50,7 +50,7 @@ namespace System.Text
                         displayName = SR.GetResourceString(resourceName);
                     }
 
-                    encodingInfoList[i] = new EncodingInfo(provider, pCodePageIndex->CodePage, codePageName, displayName ?? codePageName);
+                    encodingInfoList[i] = new EncodingInfo(provider, codePageIndex.CodePage, codePageName, displayName ?? codePageName);
                 }
 
                 return encodingInfoList;
