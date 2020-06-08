@@ -10252,7 +10252,7 @@ void Compiler::gtDispRegVal(GenTree* tree)
         for (unsigned i = 1; i < regCount; i++)
         {
             regNumber reg = tree->AsCopyOrReload()->GetRegNumByIdx(i);
-            printf(",%s", (reg == REG_NA) ? ",NA" : compRegVarName(reg));
+            printf(",%s", (reg == REG_NA) ? "NA" : compRegVarName(reg));
         }
     }
 #endif
