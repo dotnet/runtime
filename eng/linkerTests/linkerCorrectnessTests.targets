@@ -1,0 +1,113 @@
+<Project>
+  <PropertyGroup>
+    <LinkerTestDir>$(ArtifactsBinDir)linkerTests/</LinkerTestDir>
+    <LinkerTestProjectsDir>$(LinkerTestDir)projects/</LinkerTestProjectsDir>
+    <TestDotNetPath>$(DotNetRoot)dotnet</TestDotNetPath>
+
+    <ProjectTemplate>$(MSBuildThisFileDirectory)project.csproj.template</ProjectTemplate>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <TestConsoleAppSourceFiles Include="$(MSBuildProjectDirectory)/*.cs" />
+
+    <TestSupportFiles Include="$(MSBuildThisFileDirectory)SupportFiles/Directory.Build.props">
+      <DestinationFolder>$(LinkerTestDir)</DestinationFolder>
+    </TestSupportFiles>
+    <TestSupportFiles Include="$(MSBuildThisFileDirectory)SupportFiles/Directory.Build.targets">
+      <DestinationFolder>$(LinkerTestDir)</DestinationFolder>
+    </TestSupportFiles>
+  </ItemGroup>
+
+  <Target Name="CreateTestDir"
+          Inputs="@(TestSupportFiles)"
+          Outputs="@(TestSupportFiles->'%(DestinationFolder)\%(FileName)%(Extension)')">
+    <MakeDir Directories="%(TestSupportFiles.DestinationFolder)" />
+    <Copy SourceFiles="@(TestSupportFiles)" DestinationFolder="%(TestSupportFiles.DestinationFolder)" />
+  </Target>
+
+  <Target Name="GetTestConsoleApps">
+    <ItemGroup>
+      <TestConsoleAppSourceFiles>
+        <ProjectDir>$(LinkerTestProjectsDir)$(MSBuildProjectName)/%(Filename)/</ProjectDir>
+      </TestConsoleAppSourceFiles>
+      <TestConsoleAppSourceFiles>
+        <ProjectFile>%(ProjectDir)project.csproj</ProjectFile>
+        <AssetsFile>%(ProjectDir)obj/project.assets.json</AssetsFile>
+        <TestCommand>%(ProjectDir)bin\Release\net5.0\win-x64\publish\CoreRun.exe /v project.dll</TestCommand>
+        <TestExecutionDirectory>%(ProjectDir)bin\Release\net5.0\win-x64\publish\</TestExecutionDirectory>
+      </TestConsoleAppSourceFiles>
+    </ItemGroup>
+
+    <ItemGroup>
+      <TestConsoleApps Include="@(TestConsoleAppSourceFiles->'%(ProjectFile)')">
+        <ProjectCompileItems>%(Identity)</ProjectCompileItems>
+      </TestConsoleApps>
+    </ItemGroup>
+  </Target>
+
+  <Target Name="GenerateProjects"
+          DependsOnTargets="GetTestConsoleApps;CreateTestDir"
+          Inputs="@(TestConsoleAppSourceFiles);$(ProjectTemplate)"
+          Outputs="%(TestConsoleApps.Identity)">
+    <PropertyGroup>
+      <_projectDir>%(TestConsoleApps.ProjectDir)/</_projectDir>
+      <_projectFile>%(TestConsoleApps.ProjectFile)</_projectFile>
+      <_projectSourceFile>%(TestConsoleApps.ProjectCompileItems)</_projectSourceFile>
+    </PropertyGroup>
+
+    <MakeDir Directories="$(_projectDir)" />
+    <WriteLinesToFile File="$(_projectFile)"
+                      Lines="$([System.IO.File]::ReadAllText('$(ProjectTemplate)').Replace('{RuntimePackDir}', '$(RuntimePackDir)'))"
+                      Overwrite="true" />
+    <Copy SourceFiles="$(_projectSourceFile)"
+          DestinationFolder="$(_projectDir)" />
+    <Message Text="Generated $(_projectFile)" />
+  </Target>
+
+  <Target Name="RestoreProjects"
+          DependsOnTargets="GenerateProjects">
+    <PropertyGroup>
+      <TestRestoreCommand>"$(TestDotNetPath)"</TestRestoreCommand>
+      <TestRestoreCommand>$(TestRestoreCommand) restore</TestRestoreCommand>
+      <TestRestoreCommand>$(TestRestoreCommand) /nr:false</TestRestoreCommand>
+      <TestRestoreCommand>$(TestRestoreCommand) /warnaserror</TestRestoreCommand>
+      <TestRestoreCommand>$(TestRestoreCommand) -p:configuration=Release</TestRestoreCommand>
+    </PropertyGroup>
+
+    <Exec Command="$(TestRestoreCommand)" StandardOutputImportance="Low" WorkingDirectory="%(TestConsoleApps.ProjectDir)" />
+  </Target>
+
+  <Target Name="PublishTrimmedProjects"
+          DependsOnTargets="RestoreProjects">
+    <PropertyGroup>
+      <TestRestoreCommand>"$(TestDotNetPath)"</TestRestoreCommand>
+      <TestRestoreCommand>$(TestRestoreCommand) msbuild /t:PublishTrimmed</TestRestoreCommand>
+      <TestRestoreCommand>$(TestRestoreCommand) /nr:false</TestRestoreCommand>
+      <TestRestoreCommand>$(TestRestoreCommand) /warnaserror</TestRestoreCommand>
+      <TestRestoreCommand>$(TestRestoreCommand) -p:configuration=Release</TestRestoreCommand>
+    </PropertyGroup>
+
+    <Exec Command="$(TestRestoreCommand)" StandardOutputImportance="Low" WorkingDirectory="%(TestConsoleApps.ProjectDir)" />
+  </Target>
+
+  <Target Name="ExecuteApplications"
+          Inputs="%(TestConsoleApps.Identity)"
+          Outputs="_unused"
+          DependsOnTargets="PublishTrimmedProjects"
+          Condition="'$(ArchiveTests)' != 'true'">
+
+    <Exec IgnoreExitCode="true" Command="%(TestConsoleApps.TestCommand)" StandardOutputImportance="Low" WorkingDirectory="%(TestConsoleApps.TestExecutionDirectory)">
+      <Output TaskParameter="ExitCode" PropertyName="ExecutionExitCode" />
+    </Exec>
+
+    <Error Condition="'$(ExecutionExitCode)' != '100'" Text="Error: [Failed Test]: %(TestConsoleApps.ProjectCompileItems) The Command %(TestConsoleApps.TestCommand) return a non-success exit code." />
+  </Target>
+
+  <Target Name="Build" DependsOnTargets="ExecuteApplications;ArchiveHelixItems" />
+
+  <!-- ArchiveHelixItems target will be implemented in a subsequent change in order to add Helix support -->
+  <Target Name="ArchiveHelixItems" />
+
+  <!-- define test to do nothing, for this project Build does all the testing -->
+  <Target Name="Test" DependsOnTargets="Build" />
+</Project>

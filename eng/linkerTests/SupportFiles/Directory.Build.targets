@@ -1,0 +1,17 @@
+<Project>
+  <Target Name="AddFrameworkReference">
+    <ItemGroup>
+      <FrameworkReference Include="Microsoft.NETCore.App" />
+    </ItemGroup>
+  </Target>
+
+  <Target Name="UpdateRuntimePack"
+          DependsOnTargets="AddFrameworkReference;ResolveFrameworkReferences">
+    <ItemGroup>
+      <ResolvedRuntimePack Update="@(ResolvedRuntimePack)" PackageDirectory="$(RuntimePackDir)" />
+    </ItemGroup>
+  </Target>
+
+  <Target Name="PublishTrimmed" DependsOnTargets="UpdateRuntimePack;Publish" />
+
+</Project>
