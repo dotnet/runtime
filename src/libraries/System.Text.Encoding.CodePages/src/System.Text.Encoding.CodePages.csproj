@@ -53,6 +53,7 @@
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'">
     <Compile Include="System\Text\CodePagesEncodingProvider.netcoreapp.cs" />
+    <Compile Include="System\Text\BaseCodePageEncoding.netcoreapp.cs" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="Data\codepages.nlp">

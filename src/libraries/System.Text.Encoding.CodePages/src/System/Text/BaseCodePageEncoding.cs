@@ -8,7 +8,6 @@ using System.Diagnostics;
 using System.Runtime.InteropServices;
 using Microsoft.Win32.SafeHandles;
 using System.Runtime.Serialization;
-using System.Runtime.CompilerServices;
 
 namespace System.Text
 {
@@ -42,7 +41,7 @@ namespace System.Text
     //       WORD        byteReplace;    // 2 bytes = 48     // default replacement byte(s)
     //       BYTE[]      data;           // data section
     //   }
-    internal abstract class BaseCodePageEncoding : EncodingNLS, ISerializable
+    internal abstract partial class BaseCodePageEncoding : EncodingNLS, ISerializable
     {
         internal const string CODE_PAGE_DATA_FILE_NAME = "codepages.nlp";
 
@@ -186,52 +185,6 @@ namespace System.Text
             LoadManagedCodePage();
         }
 
-        internal static unsafe EncodingInfo [] GetEncodings(CodePagesEncodingProvider provider)
-        {
-            lock (s_streamLock)
-            {
-                s_codePagesEncodingDataStream.Seek(CODEPAGE_DATA_FILE_HEADER_SIZE, SeekOrigin.Begin);
-
-                int codePagesCount;
-                fixed (byte* pBytes = &s_codePagesDataHeader[0])
-                {
-                    CodePageDataFileHeader* pDataHeader = (CodePageDataFileHeader*)pBytes;
-                    codePagesCount = pDataHeader->CodePageCount;
-                }
-
-                EncodingInfo [] encodingInfoList = new EncodingInfo[codePagesCount];
-
-                Span<byte> pCodePageIndexBytes = stackalloc byte[sizeof(CodePageIndex)]; // 40 bytes
-                CodePageIndex* pCodePageIndex = (CodePageIndex*) Unsafe.AsPointer(ref pCodePageIndexBytes.GetPinnableReference());
-
-                for (int i = 0; i < codePagesCount; i++)
-                {
-                    s_codePagesEncodingDataStream.Read(pCodePageIndexBytes);
-
-                    string codePageName;
-                    switch (pCodePageIndex->CodePage)
-                    {
-                        // Fixup some encoding names.
-                        case 950:   codePageName = "big5"; break;
-                        case 10002: codePageName = "x-mac-chinesetrad"; break;
-                        case 20833: codePageName = "x-ebcdic-koreanextended"; break;
-                        default:    codePageName = new string((char*) pCodePageIndex); break;
-                    }
-
-                    string? resourceName = EncodingNLS.GetLocalizedEncodingNameResource(pCodePageIndex->CodePage);
-                    string? displayName = null;
-
-                    if (resourceName != null && resourceName.StartsWith("Globalization_cp_", StringComparison.OrdinalIgnoreCase))
-                    {
-                        displayName = SR.GetResourceString(resourceName);
-                    }
-
-                    encodingInfoList[i] = new EncodingInfo(provider, pCodePageIndex->CodePage, codePageName, displayName ?? codePageName);
-                }
-
-                return encodingInfoList;
-            }
-        }
 
         // Look up the code page pointer
         private unsafe bool FindCodePage(int codePage)
