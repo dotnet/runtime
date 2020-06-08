@@ -20,7 +20,7 @@
       <AndroidAbi Condition="'$(TargetArchitecture)' == 'x86'">x86</AndroidAbi>
     </PropertyGroup>
 
-    <Error Condition="!Exists('$(RuntimePackRidDir)')" Text="RuntimePackRidDir=$(RuntimePackRidDir) doesn't exist" />
+    <Error Condition="!Exists('$(MicrosoftNetCoreAppRuntimePackRidDir)')" Text="MicrosoftNetCoreAppRuntimePackRidDir=$(MicrosoftNetCoreAppRuntimePackRidDir) doesn't exist" />
 
     <!-- TEMP: consume OpenSSL binaries from external sources via env. variables -->
     <Copy Condition="'$(ANDROID_OPENSSL_AAR)' != ''"
@@ -36,7 +36,7 @@
     <AndroidAppBuilderTask
         Abi="$(AndroidAbi)"
         ProjectName="$(AssemblyName)"
-        MonoRuntimeHeaders="$(RuntimePackNativeDir)include\mono-2.0"
+        MonoRuntimeHeaders="$(MicrosoftNetCoreAppRuntimePackNativeDir)include\mono-2.0"
         MainLibraryFileName="AndroidTestRunner.dll"
         StripDebugSymbols="False"
         OutputDir="$(BundleDir)"
@@ -59,7 +59,7 @@
   <Import Project="$(MonoAOTCompilerDir)MonoAOTCompiler.props" />
 
   <Target Condition="'$(TargetOS)' == 'iOS'" Name="BundleTestAppleApp">
-    <Error Condition="!Exists('$(RuntimePackRidDir)')" Text="RuntimePackRidDir=$(RuntimePackRidDir) doesn't exist" />
+    <Error Condition="!Exists('$(MicrosoftNetCoreAppRuntimePackRidDir)')" Text="MicrosoftNetCoreAppRuntimePackRidDir=$(MicrosoftNetCoreAppRuntimePackRidDir) doesn't exist" />
     <Error Condition="('$(TargetArchitecture)' == 'arm64' or '$(TargetArchitecture)' == 'arm') and '$(DevTeamProvisioning)' == ''"
            Text="'DevTeamProvisioning' needs to be set for device builds. Set it to 'UBF8T346G9' if you're part of the Microsoft team account." />
 
@@ -74,12 +74,12 @@
     </ItemGroup>
 
     <MonoAOTCompiler Condition="'$(RunAOTCompilation)' == 'true'"
-        CompilerBinaryPath="$(RuntimePackNativeDir)cross\mono-aot-cross"
+        CompilerBinaryPath="$(MicrosoftNetCoreAppRuntimePackNativeDir)cross\mono-aot-cross"
         Mode="Full"
         OutputType="AsmOnly"
         Assemblies="@(AotInputAssemblies)"
         UseLLVM="$(MonoEnableLLVM)"
-        LLVMPath="$(RuntimePackNativeDir)cross">
+        LLVMPath="$(MicrosoftNetCoreAppRuntimePackNativeDir)cross">
         <Output TaskParameter="CompiledAssemblies" ItemName="BundleAssemblies" />
     </MonoAOTCompiler>
 
@@ -89,7 +89,7 @@
     <AppleAppBuilderTask
         Arch="$(TargetArchitecture)"
         ProjectName="$(AssemblyName)"
-        MonoRuntimeHeaders="$(RuntimePackNativeDir)include\mono-2.0"
+        MonoRuntimeHeaders="$(MicrosoftNetCoreAppRuntimePackNativeDir)include\mono-2.0"
         Assemblies="@(BundleAssemblies)"
         MainLibraryFileName="AppleTestRunner.dll"
         UseConsoleUITemplate="True"
@@ -114,10 +114,10 @@
     <ItemGroup>
       <AssemblySearchPaths Include="$(PublishDir)"/>
     </ItemGroup>
-    <Error Condition="!Exists('$(RuntimePackRidDir)')" Text="RuntimePackRidDir=$(RuntimePackRidDir) doesn't exist" />
+    <Error Condition="!Exists('$(MicrosoftNetCoreAppRuntimePackRidDir)')" Text="MicrosoftNetCoreAppRuntimePackRidDir=$(MicrosoftNetCoreAppRuntimePackRidDir) doesn't exist" />
     <WasmAppBuilder
       AppDir="$(BundleDir)"
-      RuntimePackDir="$(RuntimePackRidDir)"
+      MicrosoftNetCoreAppRuntimePackDir="$(MicrosoftNetCoreAppRuntimePackRidDir)"
       MainAssembly="$(PublishDir)\WasmTestRunner.dll"
       MainJS="$(MonoProjectRoot)\wasm\runtime-test.js"
       ExtraAssemblies="$(PublishDir)\$(AssemblyName).dll"
@@ -144,7 +144,7 @@
   <Target Name="UpdateRuntimePack"
           DependsOnTargets="AddFrameworkReference;ResolveFrameworkReferences">
     <ItemGroup>
-      <ResolvedRuntimePack Update="@(ResolvedRuntimePack)" PackageDirectory="$(RuntimePackDir)" />
+      <ResolvedRuntimePack Update="@(ResolvedRuntimePack)" PackageDirectory="$(MicrosoftNetCoreAppRuntimePackDir)" />
     </ItemGroup>
   </Target>
 

@@ -21,7 +21,7 @@ public class WasmAppBuilder : Task
     [Required]
     public string? AppDir { get; set; }
     [Required]
-    public string? RuntimePackDir { get; set; }
+    public string? MicrosoftNetCoreAppRuntimePackDir { get; set; }
     [Required]
     public string? MainAssembly { get; set; }
     [Required]
@@ -73,7 +73,7 @@ public class WasmAppBuilder : Task
         foreach (var assembly in _assemblies!.Values)
             File.Copy(assembly.Location, Path.Join(AppDir, "managed", Path.GetFileName(assembly.Location)), true);
         foreach (var f in new string[] { "dotnet.wasm", "dotnet.js" })
-            File.Copy(Path.Join (RuntimePackDir, "native", f), Path.Join(AppDir, f), true);
+            File.Copy(Path.Join (MicrosoftNetCoreAppRuntimePackDir, "native", f), Path.Join(AppDir, f), true);
         File.Copy(MainJS!, Path.Join(AppDir, "runtime.js"),  true);
 
         if (ExtraFiles != null)
