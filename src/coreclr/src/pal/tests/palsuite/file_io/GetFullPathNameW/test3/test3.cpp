@@ -106,8 +106,8 @@ int __cdecl main(int argc, char *argv[])
 
     /* Initialize the receiving char buffers.
     */
-    memset(szReturnedPath, 0, _MAX_DIR+1);
-    memset(szFullFileName, 0, _MAX_DIR+1);
+    memset(szReturnedPath, 0, sizeof(szReturnedPath));
+    memset(szFullFileName, 0, sizeof(szFullFileName));
 
     /* Create Full filename to pass, will include '..\'
     * in the middle of the path.
