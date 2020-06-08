@@ -9171,7 +9171,9 @@ public:
 
     // Returns true if the method returns a value in more than one return register,
     // it should replace/be  merged with compMethodReturnsMultiRegRetType when #36868 is fixed.
-    bool compMethodReturnsResInMultiplyRegisters()
+    // The difference from original `compMethodReturnsMultiRegRetType` is in ARM64 SIMD16 handling,
+    // this method correctly returns false for it (it is passed as HVA), when the original returns true.
+    bool compMethodReturnsMultiRegRegTypeAlternate()
     {
 #if FEATURE_MULTIREG_RET
 #if defined(TARGET_X86)

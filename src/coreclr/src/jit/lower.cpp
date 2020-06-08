@@ -3109,7 +3109,7 @@ void Lowering::LowerRetStruct(GenTreeUnOp* ret)
         {
             assert(!comp->compDoOldStructRetyping());
             assert(ret->gtGetOp1()->TypeIs(TYP_SIMD16));
-            assert(comp->compMethodReturnsResInMultiplyRegisters());
+            assert(comp->compMethodReturnsMultiRegRegTypeAlternate());
             ret->ChangeType(comp->info.compRetNativeType);
         }
         else
@@ -3120,7 +3120,7 @@ void Lowering::LowerRetStruct(GenTreeUnOp* ret)
     }
 #endif
 
-    if (comp->compMethodReturnsResInMultiplyRegisters())
+    if (comp->compMethodReturnsMultiRegRegTypeAlternate())
     {
         return;
     }
@@ -3206,12 +3206,13 @@ void Lowering::LowerRetStruct(GenTreeUnOp* ret)
 //    node - The return node to lower.
 //
 // Notes:
+//    - the function is only for LclVars that are returned in one register;
 //    - if LclVar is allocated in memory then read it as return type;
 //    - if LclVar can be enregistered read it as register type and add a bitcast if necessary;
 //
 void Lowering::LowerRetStructLclVar(GenTreeUnOp* ret)
 {
-    assert(!comp->compMethodReturnsResInMultiplyRegisters());
+    assert(!comp->compMethodReturnsMultiRegRegTypeAlternate());
     assert(!comp->compDoOldStructRetyping());
     assert(ret->OperIs(GT_RETURN));
     GenTreeLclVarCommon* lclVar = ret->gtGetOp1()->AsLclVar();

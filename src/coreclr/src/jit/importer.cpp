@@ -803,6 +803,7 @@ void Compiler::impAssignTempGen(unsigned             tmpNum,
         var_types varType = lvaTable[tmpNum].lvType;
         assert(tiVerificationNeeded || varType == TYP_UNDEF || varTypeIsStruct(varType));
         lvaSetStruct(tmpNum, structType, false);
+
         varType = lvaTable[tmpNum].lvType;
         // Now, set the type of the struct value. Note that lvaSetStruct may modify the type
         // of the lclVar to a specialized type (e.g. TYP_SIMD), based on the handle (structType)
