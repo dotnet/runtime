@@ -7,6 +7,10 @@ namespace System.Runtime.InteropServices
     /// <summary>
     /// Interface used to participate in a type cast failure.
     /// </summary>
+    /// <remarks>
+    /// Implementation of this interface on a value type will be ignored. Only non-value types are allowed
+    /// to participate in a type cast failure through this interface.
+    /// </remarks>
     public interface IDynamicInterfaceCastable
     {
         /// <summary>

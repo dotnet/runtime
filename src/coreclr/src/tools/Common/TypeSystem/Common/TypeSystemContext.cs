@@ -782,12 +782,15 @@ namespace Internal.TypeSystem
             if ((mask & TypeFlags.IsIDynamicInterfaceCastableComputed) == TypeFlags.IsIDynamicInterfaceCastableComputed)
             {
                 TypeDesc typeDefinition = type.GetTypeDefinition();
-                foreach (DefType interfaceType in typeDefinition.RuntimeInterfaces)
+                if (!typeDefinition.IsValueType)
                 {
-                    if (IsIDynamicInterfaceCastableInterface(interfaceType))
+                    foreach (DefType interfaceType in typeDefinition.RuntimeInterfaces)
                     {
-                        flags |= TypeFlags.IsIDynamicInterfaceCastable;
-                        break;
+                        if (IsIDynamicInterfaceCastableInterface(interfaceType))
+                        {
+                            flags |= TypeFlags.IsIDynamicInterfaceCastable;
+                            break;
+                        }
                     }
                 }
 
