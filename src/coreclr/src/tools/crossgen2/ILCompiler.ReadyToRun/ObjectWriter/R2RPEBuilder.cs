@@ -275,7 +275,7 @@ namespace ILCompiler.PEWriter
 
             _sectionBuilder.RelocateOutputFile(outputPeFile, Header.ImageBase, outputStream);
 
-            UpdateSectionRVAs(outputStream);
+            UpdateSectionRVAs(outputStream, 2*1024*1024);
             ApplyMachineOSOverride(outputStream);
 
             SetPEHeaderTimeStamp(outputStream, timeDateStamp);
@@ -308,7 +308,7 @@ namespace ILCompiler.PEWriter
             sizeof(short) + // SizeOfOptionalHeader:
             sizeof(ushort); // Characteristics
 
-        const int OffsetOfChecksum =
+        const int OffsetOfSectionAlign =
             sizeof(short) + // Magic
             sizeof(byte) +  // MajorLinkerVersion
             sizeof(byte) +  // MinorLinkerVersion
@@ -317,8 +317,9 @@ namespace ILCompiler.PEWriter
             sizeof(int) +   // SizeOfUninitializedData
             sizeof(int) +   // AddressOfEntryPoint
             sizeof(int) +   // BaseOfCode
-            sizeof(long) +  // PE32:  BaseOfData (int), ImageBase (int) 
+            sizeof(long);   // PE32:  BaseOfData (int), ImageBase (int) 
                             // PE32+: ImageBase (long)
+        const int OffsetOfChecksum = OffsetOfSectionAlign +
             sizeof(int) +   // SectionAlignment
             sizeof(int) +   // FileAlignment
             sizeof(short) + // MajorOperatingSystemVersion
@@ -357,8 +358,16 @@ namespace ILCompiler.PEWriter
         /// we're performing the same transformation on Windows where it is a no-op.
         /// </summary>
         /// <param name="outputStream"></param>
-        private void UpdateSectionRVAs(Stream outputStream)
+        private void UpdateSectionRVAs(Stream outputStream, int? updateSectionAlign)
         {
+            if (updateSectionAlign.HasValue)
+            {
+                outputStream.Seek(DosHeaderSize + PESignatureSize + COFFHeaderSize + OffsetOfSectionAlign, SeekOrigin.Begin);
+                byte[] alignBytes = BitConverter.GetBytes(updateSectionAlign.Value);
+                Debug.Assert(alignBytes.Length == sizeof(int));
+                outputStream.Write(alignBytes, 0, alignBytes.Length);
+            }
+
             int peHeaderSize =
                 OffsetOfChecksum +
                 sizeof(int) +             // Checksum

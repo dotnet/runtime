@@ -2357,13 +2357,20 @@ void * MAPMapPEFile(HANDLE hFile, off_t offset)
     // We're going to start adding mappings to the mapping list, so take the critical section
     InternalEnterCriticalSection(pThread, &mapping_critsec);
 
+    SIZE_T reserveSize = virtualSize;
+    bool forceOveralign = false;
+    if ((ntHeader.OptionalHeader.SectionAlignment) > GetVirtualPageSize())
+    {
+        reserveSize += ntHeader.OptionalHeader.SectionAlignment;
+    }
+
 #ifdef HOST_64BIT
     // First try to reserve virtual memory using ExecutableAllocator. This allows all PE images to be
     // near each other and close to the coreclr library which also allows the runtime to generate
     // more efficient code (by avoiding usage of jump stubs). Alignment to a 64 KB granularity should
     // not be necessary (alignment to page size should be sufficient), but see
     // ExecutableMemoryAllocator::AllocateMemory() for the reason why it is done.
-    loadedBase = ReserveMemoryFromExecutableAllocator(pThread, ALIGN_UP(virtualSize, VIRTUAL_64KB));
+    loadedBase = ReserveMemoryFromExecutableAllocator(pThread, ALIGN_UP(reserveSize, VIRTUAL_64KB));
 #endif // HOST_64BIT
 
     if (loadedBase == NULL)
@@ -2384,7 +2391,7 @@ void * MAPMapPEFile(HANDLE hFile, off_t offset)
             mapFlags |= MAP_JIT;
         }
 #endif // __APPLE__
-        loadedBase = mmap(usedBaseAddr, virtualSize, PROT_NONE, mapFlags, -1, 0);
+        loadedBase = mmap(usedBaseAddr, reserveSize, PROT_NONE, mapFlags, -1, 0);
     }
 
     if (MAP_FAILED == loadedBase)
@@ -2413,11 +2420,18 @@ void * MAPMapPEFile(HANDLE hFile, off_t offset)
     }
 #endif // _DEBUG
 
+    size_t headerSize;
+    headerSize = GetVirtualPageSize(); // if there are lots of sections, this could be wrong
+
+    if (forceOveralign)
+    {
+        loadedBase = ALIGN_UP(loadedBase, ntHeader.OptionalHeader.SectionAlignment);
+        headerSize = ntHeader.OptionalHeader.SectionAlignment;
+    }
+
     //we have now reserved memory (potentially we got rebased).  Walk the PE sections and map each part
     //separately.
 
-    size_t headerSize;
-    headerSize = GetVirtualPageSize(); // if there are lots of sections, this could be wrong
 
     //first, map the PE header to the first page in the image.  Get pointers to the section headers
     palError = MAPmmapAndRecord(pFileObject, loadedBase,
