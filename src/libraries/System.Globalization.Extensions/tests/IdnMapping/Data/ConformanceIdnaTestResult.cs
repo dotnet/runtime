@@ -7,6 +7,12 @@ using System.Collections.Generic;
 
 namespace System.Globalization.Tests
 {
+    public enum IdnaTestResultType
+    {
+        ToUnicode,
+        ToAscii
+    }
+
     public class ConformanceIdnaTestResult
     {
         /// <summary>
@@ -22,18 +28,65 @@ namespace System.Globalization.Tests
         /// </summary>
         public string Value { get; private set; }
 
-        public ConformanceIdnaTestResult(string entry, string fallbackValue)
+        public IdnaTestResultType ResultType { get; private set; }
+
+        public string StatusValue { get; private set; }
+
+        public ConformanceIdnaTestResult(string entry, string fallbackValue, IdnaTestResultType resultType = IdnaTestResultType.ToAscii)
+            : this(entry, fallbackValue, null, null, useValueForStatus: true, resultType)
         {
-            if (string.IsNullOrWhiteSpace(entry))
-                SetValues(fallbackValue);
-            else
-                SetValues(entry);
         }
 
-        private void SetValues(string entry)
+        public ConformanceIdnaTestResult(string entry, string fallbackValue, string statusValue, string statusFallbackValue, IdnaTestResultType resultType = IdnaTestResultType.ToAscii)
+            : this(entry, fallbackValue, statusValue, statusFallbackValue, useValueForStatus: false, resultType)
+        {
+        }
+
+        private ConformanceIdnaTestResult(string entry, string fallbackValue, string statusValue, string statusFallbackValue, bool useValueForStatus, IdnaTestResultType resultType)
+        {
+            ResultType = resultType;
+            SetValue(string.IsNullOrEmpty(entry.Trim()) ? fallbackValue : entry);
+            SetSuccess(useValueForStatus ?
+                            Value :
+                            string.IsNullOrEmpty(statusValue.Trim()) ? statusFallbackValue : statusValue);
+        }
+
+        private void SetValue(string entry)
         {
             Value = entry.Trim();
-            Success = !Value.StartsWith("[", StringComparison.Ordinal);
+        }
+
+        private void SetSuccess(string statusValue)
+        {
+            StatusValue = statusValue.Trim();
+
+            Success = true;
+
+            if (StatusValue.StartsWith('[') && StatusValue != "[]")
+            {
+                if (StatusValue == Value)
+                {
+                    Success = false;
+                    return;
+                }
+
+                string[] statusCodes = StatusValue[1..^1].Split(',');
+                for (int i = 0; i < statusCodes.Length; i++)
+                {
+                    if (!IsIgnoredError(statusCodes[i].Trim()))
+                    {
+                        Success = false;
+                        break;
+                    }
+                }
+            }
+        }
+
+        private bool IsIgnoredError(string statusCode)
+        {
+            // We don't validate for BIDI rule so we can ignore BIDI codes
+            // If we're validating ToAscii we ignore rule V2 (UIDNA_ERROR_HYPHEN_3_4) for compatibility with windows.
+            return statusCode.StartsWith('B') || (ResultType == IdnaTestResultType.ToAscii && statusCode == "V2");
         }
     }
 }

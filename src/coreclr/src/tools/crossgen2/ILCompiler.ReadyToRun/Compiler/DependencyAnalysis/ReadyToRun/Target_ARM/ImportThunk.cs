@@ -34,11 +34,15 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                     // r4 contains indirection cell
                     // push r4
                     instructionEncoder.EmitPUSH(Register.R4);
-                    int index = _instanceCell.Table.IndexFromBeginningOfArray;
-                    // mov r4, #index
-                    instructionEncoder.EmitMOV(Register.R4, index);
-                    // push r4
-                    instructionEncoder.EmitPUSH(Register.R4);
+
+                    if (!relocsOnly)
+                    {
+                        int index = _instanceCell.Table.IndexFromBeginningOfArray;
+                        // mov r4, #index
+                        instructionEncoder.EmitMOV(Register.R4, index);
+                        // push r4
+                        instructionEncoder.EmitPUSH(Register.R4);
+                    }
 
                     // mov r4, [module]
                     instructionEncoder.EmitMOV(Register.R4, _moduleImport);

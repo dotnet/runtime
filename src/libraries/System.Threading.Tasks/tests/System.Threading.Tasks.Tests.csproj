@@ -23,6 +23,8 @@
     <Compile Include="Task\TaskPropertiesTests.cs" />
     <Compile Include="Task\TaskCreateTest.cs" />
     <Compile Include="Task\TaskWaitAllAnyTest.cs" />
+    <Compile Include="Task\TaskCompletionSourceTests.cs" />
+    <Compile Include="Task\TaskCompletionSourceTResultTests.cs" />
     <Compile Include="Task\TaskContinueWithTests.cs" />
     <Compile Include="Task\TaskContinueWithAllAnyTests.cs" />
     <Compile Include="Task\TaskContinueWith_ContFuncAndActionWithArgsTests.cs" />

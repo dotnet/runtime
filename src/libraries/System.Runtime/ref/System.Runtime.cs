@@ -2532,6 +2532,7 @@ namespace System
     {
         public const double E = 2.718281828459045;
         public const double PI = 3.141592653589793;
+        public const double Tau = 6.283185307179586;
         public static decimal Abs(decimal value) { throw null; }
         public static double Abs(double value) { throw null; }
         public static short Abs(short value) { throw null; }
@@ -2648,6 +2649,7 @@ namespace System
     {
         public const float E = 2.7182817f;
         public const float PI = 3.1415927f;
+        public const float Tau = 6.2831855f;
         public static float Abs(float x) { throw null; }
         public static float Acos(float x) { throw null; }
         public static float Acosh(float x) { throw null; }
@@ -10201,6 +10203,7 @@ namespace System.Text
         public virtual bool IsMailNewsSave { get { throw null; } }
         public bool IsReadOnly { get { throw null; } }
         public virtual bool IsSingleByte { get { throw null; } }
+        public static System.Text.Encoding Latin1 { get { throw null; } }
         public virtual System.ReadOnlySpan<byte> Preamble { get { throw null; } }
         public static System.Text.Encoding Unicode { get { throw null; } }
         public static System.Text.Encoding UTF32 { get { throw null; } }
@@ -10702,8 +10705,10 @@ namespace System.Threading.Tasks
         public static System.Threading.Tasks.Task<TResult[]> WhenAll<TResult>(System.Collections.Generic.IEnumerable<System.Threading.Tasks.Task<TResult>> tasks) { throw null; }
         public static System.Threading.Tasks.Task<TResult[]> WhenAll<TResult>(params System.Threading.Tasks.Task<TResult>[] tasks) { throw null; }
         public static System.Threading.Tasks.Task<System.Threading.Tasks.Task> WhenAny(System.Collections.Generic.IEnumerable<System.Threading.Tasks.Task> tasks) { throw null; }
+        public static System.Threading.Tasks.Task<System.Threading.Tasks.Task> WhenAny(System.Threading.Tasks.Task task1, System.Threading.Tasks.Task task2) { throw null; }
         public static System.Threading.Tasks.Task<System.Threading.Tasks.Task> WhenAny(params System.Threading.Tasks.Task[] tasks) { throw null; }
         public static System.Threading.Tasks.Task<System.Threading.Tasks.Task<TResult>> WhenAny<TResult>(System.Collections.Generic.IEnumerable<System.Threading.Tasks.Task<TResult>> tasks) { throw null; }
+        public static System.Threading.Tasks.Task<System.Threading.Tasks.Task<TResult>> WhenAny<TResult>(System.Threading.Tasks.Task<TResult> task1, System.Threading.Tasks.Task<TResult> task2) { throw null; }
         public static System.Threading.Tasks.Task<System.Threading.Tasks.Task<TResult>> WhenAny<TResult>(params System.Threading.Tasks.Task<TResult>[] tasks) { throw null; }
         public static System.Runtime.CompilerServices.YieldAwaitable Yield() { throw null; }
     }
@@ -10722,6 +10727,24 @@ namespace System.Threading.Tasks
         public TaskCanceledException(string? message, System.Exception? innerException, System.Threading.CancellationToken token) { }
         public TaskCanceledException(System.Threading.Tasks.Task? task) { }
         public System.Threading.Tasks.Task? Task { get { throw null; } }
+    }
+    public partial class TaskCompletionSource
+    {
+        public TaskCompletionSource() { }
+        public TaskCompletionSource(object? state) { }
+        public TaskCompletionSource(object? state, System.Threading.Tasks.TaskCreationOptions creationOptions) { }
+        public TaskCompletionSource(System.Threading.Tasks.TaskCreationOptions creationOptions) { }
+        public System.Threading.Tasks.Task Task { get { throw null; } }
+        public void SetCanceled() { }
+        public void SetCanceled(System.Threading.CancellationToken cancellationToken) { }
+        public void SetException(System.Collections.Generic.IEnumerable<System.Exception> exceptions) { }
+        public void SetException(System.Exception exception) { }
+        public void SetResult() { }
+        public bool TrySetCanceled() { throw null; }
+        public bool TrySetCanceled(System.Threading.CancellationToken cancellationToken) { throw null; }
+        public bool TrySetException(System.Collections.Generic.IEnumerable<System.Exception> exceptions) { throw null; }
+        public bool TrySetException(System.Exception exception) { throw null; }
+        public bool TrySetResult() { throw null; }
     }
     public partial class TaskCompletionSource<TResult>
     {
@@ -10988,6 +11011,12 @@ namespace System.Threading.Tasks
         private readonly int _dummyPrimitive;
         public ValueTask(System.Threading.Tasks.Sources.IValueTaskSource source, short token) { throw null; }
         public ValueTask(System.Threading.Tasks.Task task) { throw null; }
+        public static System.Threading.Tasks.ValueTask CompletedTask { get { throw null; } }
+        public static System.Threading.Tasks.ValueTask FromCanceled(System.Threading.CancellationToken cancellationToken) { throw null; }
+        public static System.Threading.Tasks.ValueTask<TResult> FromCanceled<TResult>(System.Threading.CancellationToken cancellationToken) { throw null; }
+        public static System.Threading.Tasks.ValueTask FromException(System.Exception exception) { throw null; }
+        public static System.Threading.Tasks.ValueTask<TResult> FromException<TResult>(System.Exception exception) { throw null; }
+        public static System.Threading.Tasks.ValueTask<TResult> FromResult<TResult>(TResult result) { throw null; }
         public bool IsCanceled { get { throw null; } }
         public bool IsCompleted { get { throw null; } }
         public bool IsCompletedSuccessfully { get { throw null; } }

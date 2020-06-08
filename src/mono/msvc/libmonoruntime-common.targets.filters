@@ -73,10 +73,10 @@
     <ClInclude Include="$(MonoSourceLocation)\mono\metadata\coree-internals.h">
       <Filter>Header Files$(MonoRuntimeFilterSubFolder)\common</Filter>
     </ClInclude>
-    <ClInclude Include="$(MonoSourceLocation)\mono\metadata\culture-info.h">
+    <ClInclude Include="$(MonoSourceLocation)\mono\culture\culture-info.h">
       <Filter>Header Files$(MonoRuntimeFilterSubFolder)\common</Filter>
     </ClInclude>
-    <ClInclude Include="$(MonoSourceLocation)\mono\metadata\culture-info-tables.h">
+    <ClInclude Include="$(MonoSourceLocation)\mono\culture\culture-info-tables.h">
       <Filter>Header Files$(MonoRuntimeFilterSubFolder)\common</Filter>
     </ClInclude>
     <ClCompile Include="$(MonoSourceLocation)\mono\metadata\debug-helpers.c">
@@ -175,7 +175,7 @@
     <ClInclude Include="$(MonoSourceLocation)\mono\metadata\loader-internals.h">
       <Filter>Header Files$(MonoRuntimeFilterSubFolder)\common</Filter>
     </ClInclude>
-    <ClCompile Include="$(MonoSourceLocation)\mono\metadata\locales.c">
+    <ClCompile Include="$(MonoSourceLocation)\mono\culture\locales.c">
       <Filter>Source Files$(MonoRuntimeFilterSubFolder)\common</Filter>
     </ClCompile>
     <ClInclude Include="$(MonoSourceLocation)\mono\metadata\locales.h">

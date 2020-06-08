@@ -88,7 +88,7 @@ void Phase::PrePhase()
     static Phases s_whitelist[] = {PHASE_BUILD_SSA, PHASE_RATIONALIZE, PHASE_LOWERING, PHASE_STACK_LEVEL_SETTER};
     bool          doPrePhase    = false;
 
-    for (int i = 0; i < sizeof(s_whitelist) / sizeof(Phases); i++)
+    for (size_t i = 0; i < sizeof(s_whitelist) / sizeof(Phases); i++)
     {
         if (m_phase == s_whitelist[i])
         {
@@ -175,7 +175,7 @@ void Phase::PostPhase(PhaseStatus status)
 
     if (madeChanges)
     {
-        for (int i = 0; i < sizeof(s_whitelist) / sizeof(Phases); i++)
+        for (size_t i = 0; i < sizeof(s_whitelist) / sizeof(Phases); i++)
         {
             if (m_phase == s_whitelist[i])
             {

@@ -351,7 +351,7 @@ namespace System.Net.Http
         {
             if (cancellationToken.IsCancellationRequested)
             {
-                return new ValueTask<HttpConnection?>(Task.FromCanceled<HttpConnection?>(cancellationToken));
+                return ValueTask.FromCanceled<HttpConnection?>(cancellationToken);
             }
 
             TimeSpan pooledConnectionLifetime = _poolManager.Settings._pooledConnectionLifetime;

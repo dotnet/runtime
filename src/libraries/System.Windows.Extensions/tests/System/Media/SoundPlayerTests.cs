@@ -503,8 +503,8 @@ namespace System.Media.Test
         {
             using (FileStream stream = File.OpenRead(sourceLocation.Replace("file://", "")))
             {
-                var tcs = new TaskCompletionSource<bool>();
-                AsyncCompletedEventHandler handler = (s, e) => tcs.SetResult(true);
+                var tcs = new TaskCompletionSource();
+                AsyncCompletedEventHandler handler = (s, e) => tcs.SetResult();
 
                 var player = new SoundPlayer();
                 player.LoadCompleted += handler;

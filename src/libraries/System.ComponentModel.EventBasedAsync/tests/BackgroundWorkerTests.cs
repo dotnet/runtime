@@ -74,13 +74,13 @@ namespace System.ComponentModel.EventBasedAsync.Tests
         [Fact]
         public async Task RunWorkerAsync_NoOnWorkHandler_SetsResultToNull()
         {
-            var tcs = new TaskCompletionSource<bool>();
+            var tcs = new TaskCompletionSource();
             var backgroundWorker = new BackgroundWorker { WorkerReportsProgress = true };
             backgroundWorker.RunWorkerCompleted += (sender, e) =>
             {
                 Assert.Null(e.Result);
                 Assert.False(backgroundWorker.IsBusy);
-                tcs.SetResult(true);
+                tcs.SetResult();
             };
 
             backgroundWorker.RunWorkerAsync();

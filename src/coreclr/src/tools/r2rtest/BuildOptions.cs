@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 
 namespace R2RTest
@@ -45,6 +46,31 @@ namespace R2RTest
         public string InputFileSearchString { get; set; }
         public string ConfigurationSuffix => (Release ? "-ret.out" : "-chk.out");
         public string GCStress { get; set; }
+        public string DotNetCli
+        {
+            get
+            {
+                if (_dotnetCli == null)
+                {
+                    _dotnetCli = Process.GetCurrentProcess().MainModule.FileName;
+                    Console.WriteLine($"Using dotnet: {_dotnetCli}");
+
+                    if (Path.GetFileNameWithoutExtension(_dotnetCli).Equals("r2rtest", StringComparison.OrdinalIgnoreCase))
+                    {
+                        throw new ArgumentException("Error: --dotnet-cli argument is required to run crossgen2. Cannot use the host running r2rtest itself when launched by its native app host.");
+                    }
+                }
+
+                return _dotnetCli;
+            } 
+            set
+            {
+                _dotnetCli = value;
+                Console.WriteLine($"Using dotnet: {_dotnetCli}");
+            }
+        }
+        private string _dotnetCli;
+
 
         public IEnumerable<string> ReferencePaths()
         {

@@ -76,6 +76,7 @@ inline HRESULT HRESULT_FROM_WIN32(unsigned long x)
 #define S_OK                    0x0
 #define E_FAIL                  0x80004005
 #define E_OUTOFMEMORY           0x8007000E
+#define E_INVALIDARG            0x80070057
 #define COR_E_EXECUTIONENGINE   0x80131506
 #define CLR_E_GC_BAD_AFFINITY_CONFIG 0x8013200A
 #define CLR_E_GC_BAD_AFFINITY_CONFIG_FORMAT 0x8013200B
