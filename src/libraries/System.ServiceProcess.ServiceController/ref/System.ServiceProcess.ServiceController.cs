@@ -41,7 +41,8 @@ namespace System.ServiceProcess
         public int ExitCode { get { throw null; } set { } }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Advanced)]
         protected System.IntPtr ServiceHandle { get { throw null; } }
-        public string ServiceName { get { throw null; } set { } }
+        [System.Diagnostics.CodeAnalysis.DisallowNull]
+        public string? ServiceName { get { throw null; } set { } }
         protected override void Dispose(bool disposing) { }
         protected virtual void OnContinue() { }
         protected virtual void OnCustomCommand(int command) { }
@@ -131,7 +132,7 @@ namespace System.ServiceProcess
         private readonly int _dummyPrimitive;
         public System.ServiceProcess.SessionChangeReason Reason { get { throw null; } }
         public int SessionId { get { throw null; } }
-        public override bool Equals(object obj) { throw null; }
+        public override bool Equals(object? obj) { throw null; }
         public bool Equals(System.ServiceProcess.SessionChangeDescription changeDescription) { throw null; }
         public override int GetHashCode() { throw null; }
         public static bool operator ==(System.ServiceProcess.SessionChangeDescription a, System.ServiceProcess.SessionChangeDescription b) { throw null; }
@@ -153,7 +154,7 @@ namespace System.ServiceProcess
     {
         public TimeoutException() { }
         protected TimeoutException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
-        public TimeoutException(string message) { }
-        public TimeoutException(string message, System.Exception innerException) { }
+        public TimeoutException(string? message) { }
+        public TimeoutException(string? message, System.Exception? innerException) { }
     }
 }
