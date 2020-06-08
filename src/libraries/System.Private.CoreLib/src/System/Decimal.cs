@@ -578,25 +578,12 @@ namespace System
         internal static void GetBytes(in decimal d, byte[] buffer)
         {
             Debug.Assert(buffer != null && buffer.Length >= 16, "[GetBytes]buffer != null && buffer.Length >= 16");
-            buffer[0] = (byte)d.lo;
-            buffer[1] = (byte)(d.lo >> 8);
-            buffer[2] = (byte)(d.lo >> 16);
-            buffer[3] = (byte)(d.lo >> 24);
+            Span<byte> b = buffer;
 
-            buffer[4] = (byte)d.mid;
-            buffer[5] = (byte)(d.mid >> 8);
-            buffer[6] = (byte)(d.mid >> 16);
-            buffer[7] = (byte)(d.mid >> 24);
-
-            buffer[8] = (byte)d.hi;
-            buffer[9] = (byte)(d.hi >> 8);
-            buffer[10] = (byte)(d.hi >> 16);
-            buffer[11] = (byte)(d.hi >> 24);
-
-            buffer[12] = (byte)d.flags;
-            buffer[13] = (byte)(d.flags >> 8);
-            buffer[14] = (byte)(d.flags >> 16);
-            buffer[15] = (byte)(d.flags >> 24);
+            BinaryPrimitives.WriteInt32LittleEndian(b, d.lo);
+            BinaryPrimitives.WriteInt32LittleEndian(b.Slice(4), d.mid);
+            BinaryPrimitives.WriteInt32LittleEndian(b.Slice(8), d.hi);
+            BinaryPrimitives.WriteInt32LittleEndian(b.Slice(12), d.flags);
         }
 
         internal static decimal ToDecimal(ReadOnlySpan<byte> span)
