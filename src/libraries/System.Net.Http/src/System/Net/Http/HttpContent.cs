@@ -352,7 +352,7 @@ namespace System.Net.Http
         }
 
         protected virtual Task SerializeToStreamAsync(Stream stream, TransportContext? context, CancellationToken cancellationToken) =>
-            SerializeToStreamAsync(stream, context);
+            SerializeToStreamAsync(stream, context, cancellationToken);
 
         // TODO https://github.com/dotnet/runtime/issues/31316: Expose something to enable this publicly.  For very specific
         // HTTP/2 scenarios (e.g. gRPC), we need to be able to allow request content to continue sending after SendAsync has
@@ -572,7 +572,7 @@ namespace System.Net.Http
         protected virtual Task<Stream> CreateContentReadStreamAsync(CancellationToken cancellationToken)
         {
             // Drops the CT for compatibility reasons, see https://github.com/dotnet/runtime/issues/916#issuecomment-562083237
-            return CreateContentReadStreamAsync();
+            return CreateContentReadStreamAsync(cancellationToken);
         }
 
         // As an optimization for internal consumers of HttpContent (e.g. HttpClient.GetStreamAsync), and for

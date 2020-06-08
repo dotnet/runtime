@@ -24,7 +24,7 @@ namespace System.Net.Http
 
         protected override Task SerializeToStreamAsync(Stream stream, TransportContext? context, CancellationToken cancellationToken) =>
             cancellationToken.IsCancellationRequested ? Task.FromCanceled(cancellationToken) :
-            SerializeToStreamAsync(stream, context);
+            SerializeToStreamAsync(stream, context, cancellationToken);
 
         protected override Stream CreateContentReadStream(CancellationToken cancellationToken) =>
             EmptyReadStream.Instance;
@@ -34,7 +34,7 @@ namespace System.Net.Http
 
         protected override Task<Stream> CreateContentReadStreamAsync(CancellationToken cancellationToken) =>
             cancellationToken.IsCancellationRequested ? Task.FromCanceled<Stream>(cancellationToken) :
-            CreateContentReadStreamAsync();
+            CreateContentReadStreamAsync(cancellationToken);
 
         internal override Stream? TryCreateContentReadStream() => EmptyReadStream.Instance;
 
