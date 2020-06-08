@@ -18,6 +18,7 @@ namespace System.Net.Sockets
         public const bool SupportsMultipleConnectAttempts = false;
         public static readonly int MaximumAddressSize = Interop.Sys.GetMaximumAddressSize();
         private static readonly bool SupportsDualModeIPv4PacketInfo = GetPlatformSupportsDualModeIPv4PacketInfo();
+        private const int IovStackThreshold = 8;
 
         private static bool GetPlatformSupportsDualModeIPv4PacketInfo()
         {
@@ -234,8 +235,9 @@ namespace System.Net.Sockets
             }
 
             int maxBuffers = buffers.Count - startIndex;
-            var handles = new GCHandle[maxBuffers];
-            var iovecs = new Interop.Sys.IOVector[maxBuffers];
+            bool allocOnStack = maxBuffers <= IovStackThreshold;
+            Span<GCHandle> handles = allocOnStack ? stackalloc GCHandle[maxBuffers] : new GCHandle[maxBuffers];
+            Span<Interop.Sys.IOVector> iovecs = allocOnStack ? stackalloc Interop.Sys.IOVector[maxBuffers] : new Interop.Sys.IOVector[maxBuffers];
 
             int sent;
             int toSend = 0, iovCount = maxBuffers;
@@ -321,23 +323,29 @@ namespace System.Net.Sockets
 
         private static unsafe int SysReceive(SafeSocketHandle socket, SocketFlags flags, IList<ArraySegment<byte>> buffers, byte[]? socketAddress, ref int socketAddressLen, out SocketFlags receivedFlags, out Interop.Error errno)
         {
-            int available = 0;
-            errno = Interop.Sys.GetBytesAvailable(socket, &available);
-            if (errno != Interop.Error.SUCCESS)
+            int maxBuffers = buffers.Count;
+            bool allocOnStack = maxBuffers <= IovStackThreshold;
+
+            // When there are many buffers, reduce the number of pinned buffers based on available bytes.
+            int available = int.MaxValue;
+            if (!allocOnStack)
             {
-                receivedFlags = 0;
-                return -1;
-            }
-            if (available == 0)
-            {
-                // Don't truncate iovecs.
-                available = int.MaxValue;
+                errno = Interop.Sys.GetBytesAvailable(socket, &available);
+                if (errno != Interop.Error.SUCCESS)
+                {
+                    receivedFlags = 0;
+                    return -1;
+                }
+                if (available == 0)
+                {
+                    // Don't truncate iovecs.
+                    available = int.MaxValue;
+                }
             }
 
             // Pin buffers and set up iovecs.
-            int maxBuffers = buffers.Count;
-            var handles = new GCHandle[maxBuffers];
-            var iovecs = new Interop.Sys.IOVector[maxBuffers];
+            Span<GCHandle> handles = allocOnStack ? stackalloc GCHandle[maxBuffers] : new GCHandle[maxBuffers];
+            Span<Interop.Sys.IOVector> iovecs = allocOnStack ? stackalloc Interop.Sys.IOVector[maxBuffers] : new Interop.Sys.IOVector[maxBuffers];
 
             int sockAddrLen = 0;
             if (socketAddress != null)
@@ -476,8 +484,9 @@ namespace System.Net.Sockets
             Debug.Assert(socketAddress != null, "Expected non-null socketAddress");
 
             int buffersCount = buffers.Count;
-            var handles = new GCHandle[buffersCount];
-            var iovecs = new Interop.Sys.IOVector[buffersCount];
+            bool allocOnStack = buffersCount <= IovStackThreshold;
+            Span<GCHandle> handles = allocOnStack ? stackalloc GCHandle[buffersCount] : new GCHandle[buffersCount];
+            Span<Interop.Sys.IOVector> iovecs = allocOnStack ? stackalloc Interop.Sys.IOVector[buffersCount] : new Interop.Sys.IOVector[buffersCount];
             try
             {
                 // Pin buffers and set up iovecs.
