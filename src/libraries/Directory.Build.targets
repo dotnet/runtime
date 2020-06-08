@@ -92,7 +92,7 @@
 
     <!-- Microsoft.NetCore.App.Ref targeting pack -->
     <BinPlaceTargetFrameworks Include="$(NetCoreAppCurrent)">
-      <RefPath>$(MicrosoftNetCoreAppRefPackRefDir)</RefPath>
+      <RefPath Condition="'$(IsNETCoreAppRef)' == 'true'">$(MicrosoftNetCoreAppRefPackRefDir)</RefPath>
     </BinPlaceTargetFrameworks>
 
     <!-- Microsoft.NetCore.App.Runtime targeting pack -->
