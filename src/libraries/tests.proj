@@ -19,15 +19,9 @@
 
   <ItemGroup>
     <!-- We currently only test with C# projects. -->
-    <ProjectReference Include="$(MSBuildThisFileDirectory)System.Buffers\tests\System.Buffers.Tests.csproj"
-                      Exclude="@(ProjectExclusions)"
-                      Condition="'$(BuildAllConfigurations)' != 'true' and '$(TargetOS)' == 'iOS'" />
-    <ProjectReference Include="$(MSBuildThisFileDirectory)System.Text.Json\tests\System.Text.Json.Tests.csproj"
-                      Exclude="@(ProjectExclusions)"
-                      Condition="'$(BuildAllConfigurations)' != 'true' and '$(TargetOS)' == 'iOS'" />
     <ProjectReference Include="$(MSBuildThisFileDirectory)*\tests\**\*.Tests.csproj"
                       Exclude="@(ProjectExclusions)"
-                      Condition="'$(BuildAllConfigurations)' != 'true' and '$(TargetOS)' != 'iOS'" />
+                      Condition="'$(BuildAllConfigurations)' != 'true'" />
     <ProjectReference Include="$(MSBuildThisFileDirectory)pkg\test\testPackages.proj"
                       Condition="'$(BuildAllConfigurations)' == 'true'" />
   </ItemGroup>
