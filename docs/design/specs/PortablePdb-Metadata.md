@@ -576,6 +576,10 @@ The blob has the following structure:
 | name       | UTF8 NIL-terminated | Name of the compilation option.  |
 | value      | UTF8 NIL-terminated | Value of the compilation option. |
 
+There shall be no two entries with the same _name_ in the list.
+
+It is recommended, but not required that _name_ is lower-case and uses hyphen (`-`) for separating words.
+
 Common options:
 
 | name               | value format                                                   | description                          |
