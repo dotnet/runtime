@@ -82,6 +82,7 @@
 
   <UsingTask TaskName="CreateFrameworkListFile" AssemblyFile="$(DotNetBuildTasksSharedFrameworkTaskFile)"/>
   <Target Name="GenerateFrameworkListFile"
+          Condition="'$(BuildTargetFramework)' == '$(NetCoreAppCurrent)'"
           AfterTargets="RestoreTestHost">
     <PropertyGroup>
       <_frameworkListFile>$(MicrosoftNetCoreAppRuntimePackDir)data\RuntimeList.xml</_frameworkListFile>
