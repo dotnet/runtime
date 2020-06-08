@@ -9,7 +9,7 @@
     <CoverageReportDir>$(ArtifactsDir)coverage</CoverageReportDir>
     <EnableCoverageSupport>true</EnableCoverageSupport>
   </PropertyGroup>
-  
+
   <!-- Projects that don't support code coverage measurement. -->
   <ItemGroup Condition="'$(Coverage)' == 'true'">
     <ProjectExclusions Include="$(CommonTestPath)Common.Tests.csproj" />
@@ -22,7 +22,11 @@
     <ProjectReference Include="$(MSBuildThisFileDirectory)System.Buffers\tests\System.Buffers.Tests.csproj"
                       Exclude="@(ProjectExclusions)"
                       Condition="'$(BuildAllConfigurations)' != 'true' and '$(TargetOS)' == 'iOS'" />
-    <ProjectReference Include="$(MSBuildThisFileDirectory)*\tests\**\*.Tests.csproj"
+    <!-- <ProjectReference Include="$(MSBuildThisFileDirectory)*\tests\**\*.Tests.csproj" -->
+    <ProjectReference Include="$(MSBuildThisFileDirectory)System.Buffers\tests\System.Buffers.Tests.csproj"
+                      Exclude="@(ProjectExclusions)"
+                      Condition="'$(BuildAllConfigurations)' != 'true' and '$(TargetOS)' != 'iOS'" />
+    <ProjectReference Include="$(MSBuildThisFileDirectory)System.Text.Json\tests\System.Text.Json.Tests.csproj"
                       Exclude="@(ProjectExclusions)"
                       Condition="'$(BuildAllConfigurations)' != 'true' and '$(TargetOS)' != 'iOS'" />
     <ProjectReference Include="$(MSBuildThisFileDirectory)pkg\test\testPackages.proj"
