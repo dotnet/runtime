@@ -104,10 +104,7 @@
           DependsOnTargets="CompressRuntimeDirectory">
 
     <ItemGroup Condition="'$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'tvOS'">
-      <!-- Find all directories named *.app and strip the trailing slash -->
-      <_appBundleFiles Include="$(TestArchiveTestsRoot)**/*"/>
-      <_appBundleDirs Include="@(_appBundleFiles->'%(RootDir)%(Directory)'->Distinct())"/>
-      <XHarnessAppFolderToTest Include="@(_appBundleDirs)" Condition="$([System.Text.RegularExpressions.Regex]::IsMatch(%(Identity), '\.app/?$'))">
+      <XHarnessAppFolderToTest Include="$([System.IO.Directory]::GetDirectories('$(TestArchiveTestsRoot)', '*.app', System.IO.SearchOption.AllDirectories))">
         <Targets Condition="'$(TargetArchitecture)' == 'arm'">ios-device</Targets>
         <Targets Condition="'$(TargetArchitecture)' == 'arm64'">ios-device</Targets>
         <Targets Condition="'$(TargetArchitecture)' == 'x64'">ios-simulator-64</Targets>
@@ -116,15 +113,16 @@
     </ItemGroup>
 
     <ItemGroup Condition="'$(TargetOS)' == 'Android'">
-      <XHarnessPackageToTest Include="$(TestArchiveTestsRoot)**/*.apk">
-        <Targets Condition="'$(TargetArchitecture)' == 'arm64'">arm64-v8a</Targets>
+      <XHarnessPackageToTest Include="$(TestArchiveTestsRoot)**/*.zip">
         <Targets Condition="'$(TargetArchitecture)' == 'arm'">armeabi-v7a</Targets>
+        <Targets Condition="'$(TargetArchitecture)' == 'arm64'">arm64-v8a</Targets>
         <Targets Condition="'$(TargetArchitecture)' == 'x64'">x86_64</Targets>
         <Targets Condition="'$(TargetArchitecture)' == 'x86'">x86</Targets>
         <AndroidPackageName>net.dot.%(Filename)</AndroidPackageName>
         <AndroidInstrumentationName>net.dot.MonoRunner</AndroidInstrumentationName>
       </XHarnessPackageToTest>
     </ItemGroup>
+    <Message Text="!!!!!!!     @(XHarnessPackageToTest)" Importance="high" />
 
     <ItemGroup Condition="'$(TargetsMobile)' == 'false'">
       <HelixCorrelationPayload Include="$(HelixCorrelationPayload)" />

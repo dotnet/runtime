@@ -49,9 +49,18 @@
         <Output TaskParameter="ApkPackageId"  PropertyName="ApkPackageId" />
         <Output TaskParameter="ApkBundlePath" PropertyName="ApkBundlePath" />
     </AndroidAppBuilderTask>
+
     <Message Importance="High" Text="PackageId:       $(ApkPackageId)"/>
     <Message Importance="High" Text="Instrumentation: net.dot.MonoRunner"/>
     <Message Importance="High" Text="Apk:             $(ApkBundlePath)"/>
+
+    <ItemGroup>
+      <_apkFiles Include="$(BundleDir)/../**/*.apk" />
+    </ItemGroup>
+
+    <Copy SourceFiles="@(_apkFiles)"
+          DestinationFolder="$(TestArchiveTestsDir)"
+          SkipUnchangedFiles="true"/>
   </Target>
 
   <!-- Generate a self-contained app bundle for iOS with tests. -->
