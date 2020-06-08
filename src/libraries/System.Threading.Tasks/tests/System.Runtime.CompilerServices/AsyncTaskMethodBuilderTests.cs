@@ -533,7 +533,7 @@ namespace System.Threading.Tasks.Tests
             // We want to make sure that holding on to the resulting Task doesn't keep
             // that finalizable object alive.
 
-            var tcs = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+            var tcs = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
 
             Task t = null;
 
@@ -545,7 +545,7 @@ namespace System.Threading.Tasks.Tests
                     GC.KeepAlive(s); // keep s referenced by the state machine
                 }
 
-                var state = new InvokeActionOnFinalization { Action = () => tcs.SetResult(true) };
+                var state = new InvokeActionOnFinalization { Action = () => tcs.SetResult() };
                 var al = new AsyncLocal<object>() { Value = state }; // ensure the object is stored in ExecutionContext
                 t = YieldOnceAsync(state); // ensure the object is stored in the state machine
                 al.Value = null;
@@ -650,7 +650,7 @@ namespace System.Threading.Tasks.Tests
         {
             int local1 = 42;
             string local2 = "stored data";
-            await new TaskCompletionSource<bool>().Task; // await will never complete
+            await new TaskCompletionSource().Task; // await will never complete
             GC.KeepAlive(local1);
             GC.KeepAlive(local2);
         }

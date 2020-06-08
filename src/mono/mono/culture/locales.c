@@ -28,8 +28,8 @@
 #include <mono/metadata/exception.h>
 #include <mono/metadata/monitor.h>
 #include <mono/metadata/locales.h>
-#include <mono/metadata/culture-info.h>
-#include <mono/metadata/culture-info-tables.h>
+#include <mono/culture/culture-info.h>
+#include <mono/culture/culture-info-tables.h>
 #include <mono/utils/bsearch.h>
 
 #ifndef DISABLE_NORMALIZATION
@@ -40,7 +40,7 @@
 #if defined(__APPLE__)
 #include <CoreFoundation/CoreFoundation.h>
 #endif
-#include "icall-decl.h"
+#include <mono/metadata/icall-decl.h>
 
 #undef DEBUG
 

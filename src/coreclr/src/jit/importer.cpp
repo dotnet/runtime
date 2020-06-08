@@ -106,7 +106,7 @@ void Compiler::impPushOnStack(GenTree* tree, typeInfo ti)
         // attempts to do that have proved too difficult.  Instead, we'll assume that in checks like this,
         // when there's a mismatch, it's because of this reason -- the typeInfo::AreEquivalentModuloNativeInt
         // method used in the last disjunct allows exactly this mismatch.
-        assert(ti.IsDead() || (ti.IsByRef() && (tree->TypeGet() == TYP_I_IMPL) || tree->TypeGet() == TYP_BYREF) ||
+        assert(ti.IsDead() || (ti.IsByRef() && ((tree->TypeGet() == TYP_I_IMPL) || (tree->TypeGet() == TYP_BYREF))) ||
                (ti.IsUnboxedGenericTypeVar() && tree->TypeGet() == TYP_REF) ||
                (ti.IsObjRef() && tree->TypeGet() == TYP_REF) || (ti.IsMethod() && tree->TypeGet() == TYP_I_IMPL) ||
                (ti.IsType(TI_STRUCT) && tree->TypeGet() != TYP_REF) ||
@@ -5430,7 +5430,7 @@ void Compiler::verVerifyCall(OPCODE                  opcode,
 
                     if ((actualMethodAttribs & CORINFO_FLG_VIRTUAL) && ((actualMethodAttribs & CORINFO_FLG_FINAL) == 0))
                     {
-                        VerifyOrReturn(tiActualObj.IsThisPtr() && lvaIsOriginalThisReadOnly() ||
+                        VerifyOrReturn((tiActualObj.IsThisPtr() && lvaIsOriginalThisReadOnly()) ||
                                            verIsBoxedValueType(tiActualObj),
                                        "The 'this' parameter to the call must be either the calling method's "
                                        "'this' parameter or "
@@ -5586,7 +5586,7 @@ DONE_ARGS:
 
         if (opcode == CEE_CALL && (mflags & CORINFO_FLG_VIRTUAL) && ((mflags & CORINFO_FLG_FINAL) == 0))
         {
-            VerifyOrReturn(tiThis.IsThisPtr() && lvaIsOriginalThisReadOnly() || verIsBoxedValueType(tiThis),
+            VerifyOrReturn((tiThis.IsThisPtr() && lvaIsOriginalThisReadOnly()) || verIsBoxedValueType(tiThis),
                            "The 'this' parameter to the call must be either the calling method's 'this' parameter or "
                            "a boxed value type.");
         }
@@ -10356,7 +10356,7 @@ var_types Compiler::impGetByRefResultType(genTreeOps oper, bool fUnsigned, GenTr
         assert(genActualType(op1->TypeGet()) != TYP_BYREF && genActualType(op2->TypeGet()) != TYP_BYREF);
 
         assert(genActualType(op1->TypeGet()) == genActualType(op2->TypeGet()) ||
-               varTypeIsFloating(op1->gtType) && varTypeIsFloating(op2->gtType));
+               (varTypeIsFloating(op1->gtType) && varTypeIsFloating(op2->gtType)));
 
         type = genActualType(op1->gtType);
 
@@ -11326,7 +11326,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 // We had better assign it a value of the correct type
                 assertImp(
                     genActualType(lclTyp) == genActualType(op1->gtType) ||
-                    genActualType(lclTyp) == TYP_I_IMPL && (op1->IsLocalAddrExpr() != nullptr) ||
+                    (genActualType(lclTyp) == TYP_I_IMPL && op1->IsLocalAddrExpr() != nullptr) ||
                     (genActualType(lclTyp) == TYP_I_IMPL && (op1->gtType == TYP_BYREF || op1->gtType == TYP_REF)) ||
                     (genActualType(op1->gtType) == TYP_I_IMPL && lclTyp == TYP_BYREF) ||
                     (varTypeIsFloating(lclTyp) && varTypeIsFloating(op1->TypeGet())) ||
@@ -12637,8 +12637,8 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 #endif // TARGET_64BIT
 
                 assertImp(genActualType(op1->TypeGet()) == genActualType(op2->TypeGet()) ||
-                          varTypeIsI(op1->TypeGet()) && varTypeIsI(op2->TypeGet()) ||
-                          varTypeIsFloating(op1->gtType) && varTypeIsFloating(op2->gtType));
+                          (varTypeIsI(op1->TypeGet()) && varTypeIsI(op2->TypeGet())) ||
+                          (varTypeIsFloating(op1->gtType) && varTypeIsFloating(op2->gtType)));
 
                 /* Create the comparison node */
 
@@ -12737,8 +12737,8 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 #endif // TARGET_64BIT
 
                 assertImp(genActualType(op1->TypeGet()) == genActualType(op2->TypeGet()) ||
-                          varTypeIsI(op1->TypeGet()) && varTypeIsI(op2->TypeGet()) ||
-                          varTypeIsFloating(op1->gtType) && varTypeIsFloating(op2->gtType));
+                          (varTypeIsI(op1->TypeGet()) && varTypeIsI(op2->TypeGet())) ||
+                          (varTypeIsFloating(op1->gtType) && varTypeIsFloating(op2->gtType)));
 
                 if (opts.OptimizationEnabled() && (block->bbJumpDest == block->bbNext))
                 {
@@ -15469,9 +15469,9 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     }
                 }
 
-                assert(helper == CORINFO_HELP_UNBOX && op1->gtType == TYP_BYREF || // Unbox helper returns a byref.
-                       helper == CORINFO_HELP_UNBOX_NULLABLE &&
-                           varTypeIsStruct(op1) // UnboxNullable helper returns a struct.
+                assert((helper == CORINFO_HELP_UNBOX && op1->gtType == TYP_BYREF) || // Unbox helper returns a byref.
+                       (helper == CORINFO_HELP_UNBOX_NULLABLE &&
+                        varTypeIsStruct(op1)) // UnboxNullable helper returns a struct.
                        );
 
                 /*

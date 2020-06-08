@@ -14,7 +14,7 @@ namespace System.Net.Test.Common
         private MemoryStream _readStream;
         private readonly bool _isServer;
         private SemaphoreSlim _readStreamLock = new SemaphoreSlim(1, 1);
-        private TaskCompletionSource<object> _flushTcs;
+        private TaskCompletionSource _flushTcs;
 
         public VirtualNetworkStream(VirtualNetwork network, bool isServer)
         {
@@ -44,7 +44,7 @@ namespace System.Net.Test.Common
             {
                 throw new InvalidOperationException();
             }
-            _flushTcs = new TaskCompletionSource<object>();
+            _flushTcs = new TaskCompletionSource();
 
             return _flushTcs.Task;
         }
@@ -58,7 +58,7 @@ namespace System.Net.Test.Common
                 throw new InvalidOperationException();
             }
 
-            _flushTcs.SetResult(null);
+            _flushTcs.SetResult();
             _flushTcs = null;
         }
 

@@ -610,7 +610,7 @@ namespace System.Diagnostics.Tracing
             dataStart = 0;
             if (filterData == null)
             {
-#if (!ES_BUILD_PCL && !ES_BUILD_PN && TARGET_WINDOWS)
+#if (!ES_BUILD_PCL && TARGET_WINDOWS)
                 string regKey = @"\Microsoft\Windows\CurrentVersion\Winevt\Publishers\{" + m_providerId + "}";
                 if (IntPtr.Size == 8)
                     regKey = @"Software\Wow6432Node" + regKey;

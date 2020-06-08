@@ -543,13 +543,7 @@ emit_unsafe_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignatu
 
 		t = ctx->method_inst->type_argv [0];
 		t = mini_get_underlying_type (t);
-		if (MONO_TYPE_IS_PRIMITIVE (t) && t->type != MONO_TYPE_R4 && t->type != MONO_TYPE_R8) {
-			dreg = alloc_ireg (cfg);
-			EMIT_NEW_LOAD_MEMBASE_TYPE (cfg, ins, t, args [0]->dreg, 0);
-			ins->type = STACK_I4;
-			ins->flags |= MONO_INST_UNALIGNED;
-			return ins;
-		}
+		return mini_emit_memory_load (cfg, t, args [0], 0, MONO_INST_UNALIGNED);
 	} else if (!strcmp (cmethod->name, "WriteUnaligned")) {
 		g_assert (ctx);
 		g_assert (ctx->method_inst);
@@ -558,12 +552,10 @@ emit_unsafe_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignatu
 
 		t = ctx->method_inst->type_argv [0];
 		t = mini_get_underlying_type (t);
-		if (MONO_TYPE_IS_PRIMITIVE (t) && t->type != MONO_TYPE_R4 && t->type != MONO_TYPE_R8) {
-			dreg = alloc_ireg (cfg);
-			EMIT_NEW_STORE_MEMBASE_TYPE (cfg, ins, t, args [0]->dreg, 0, args [1]->dreg);
-			ins->flags |= MONO_INST_UNALIGNED;
-			return ins;
-		}
+		mini_emit_memory_store (cfg, t, args [0], args [1], MONO_INST_UNALIGNED);
+		MONO_INST_NEW (cfg, ins, OP_NOP);
+		MONO_ADD_INS (cfg->cbb, ins);
+		return ins;
 	} else if (!strcmp (cmethod->name, "ByteOffset")) {
 		g_assert (ctx);
 		g_assert (ctx->method_inst);
