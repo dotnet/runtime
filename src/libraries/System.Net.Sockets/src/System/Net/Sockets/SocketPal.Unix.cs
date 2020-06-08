@@ -347,8 +347,8 @@ namespace System.Net.Sockets
             }
 
             // Pin buffers and set up iovecs.
-            Span<GCHandle> handles = allocOnStack ? stackalloc GCHandle[maxBuffers] : new GCHandle[maxBuffers];
-            Span<Interop.Sys.IOVector> iovecs = allocOnStack ? stackalloc Interop.Sys.IOVector[maxBuffers] : new Interop.Sys.IOVector[maxBuffers];
+            Span<GCHandle> handles = allocOnStack ? stackalloc GCHandle[IovStackThreshold] : new GCHandle[maxBuffers];
+            Span<Interop.Sys.IOVector> iovecs = allocOnStack ? stackalloc Interop.Sys.IOVector[IovStackThreshold] : new Interop.Sys.IOVector[maxBuffers];
 
             int sockAddrLen = 0;
             if (socketAddress != null)
