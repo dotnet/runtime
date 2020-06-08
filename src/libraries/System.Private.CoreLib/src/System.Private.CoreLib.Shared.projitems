@@ -338,6 +338,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\UmAlQuraCalendar.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\UnicodeCategory.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Guid.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Half.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\HashCode.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IAsyncDisposable.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IAsyncResult.cs" />

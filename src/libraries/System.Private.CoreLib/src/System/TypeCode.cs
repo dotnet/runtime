@@ -43,5 +43,6 @@ namespace System
         Decimal = 15,       // Decimal
         DateTime = 16,      // DateTime
         String = 18,        // Unicode character string
+        Half = 19,          // IEEE 16-bit float
     }
 }
