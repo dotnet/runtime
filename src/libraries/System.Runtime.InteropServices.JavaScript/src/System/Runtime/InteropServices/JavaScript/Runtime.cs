@@ -118,62 +118,59 @@ namespace System.Runtime.InteropServices.JavaScript
         private static int BindJSType(IntPtr jsIntPtr, int coreType)
         {
             int jsId = (int)jsIntPtr;
-            if (!_boundObjects.TryGetValue(jsId, out JSObject? obj))
+            CoreObject coreObject;
+            switch (coreType)
             {
-                CoreObject coreObject;
-                switch (coreType)
-                {
-                    case 1:
-                        coreObject = new Array(jsIntPtr);
-                        break;
-                    case 2:
-                        coreObject = new ArrayBuffer(jsIntPtr);
-                        break;
-                    case 3:
-                        coreObject = new DataView(jsIntPtr);
-                        break;
-                    case 4:
-                        coreObject = new Function(jsIntPtr);
-                        break;
-                    case 5:
-                        coreObject = new Map(jsIntPtr);
-                        break;
-                    case 6:
-                        coreObject = new SharedArrayBuffer(jsIntPtr);
-                        break;
-                    case 10:
-                        coreObject = new Int8Array(jsIntPtr);
-                        break;
-                    case 11:
-                        coreObject = new Uint8Array(jsIntPtr);
-                        break;
-                    case 12:
-                        coreObject = new Uint8ClampedArray(jsIntPtr);
-                        break;
-                    case 13:
-                        coreObject = new Int16Array(jsIntPtr);
-                        break;
-                    case 14:
-                        coreObject = new Uint16Array(jsIntPtr);
-                        break;
-                    case 15:
-                        coreObject = new Int32Array(jsIntPtr);
-                        break;
-                    case 16:
-                        coreObject = new Uint32Array(jsIntPtr);
-                        break;
-                    case 17:
-                        coreObject = new Float32Array(jsIntPtr);
-                        break;
-                    case 18:
-                        coreObject = new Float64Array(jsIntPtr);
-                        break;
-                    default:
-                        throw new ArgumentOutOfRangeException(nameof(coreType));
-                }
-                _boundObjects.Add(jsId, obj = coreObject);
+                case 1:
+                    coreObject = new Array(jsIntPtr);
+                    break;
+                case 2:
+                    coreObject = new ArrayBuffer(jsIntPtr);
+                    break;
+                case 3:
+                    coreObject = new DataView(jsIntPtr);
+                    break;
+                case 4:
+                    coreObject = new Function(jsIntPtr);
+                    break;
+                case 5:
+                    coreObject = new Map(jsIntPtr);
+                    break;
+                case 6:
+                    coreObject = new SharedArrayBuffer(jsIntPtr);
+                    break;
+                case 10:
+                    coreObject = new Int8Array(jsIntPtr);
+                    break;
+                case 11:
+                    coreObject = new Uint8Array(jsIntPtr);
+                    break;
+                case 12:
+                    coreObject = new Uint8ClampedArray(jsIntPtr);
+                    break;
+                case 13:
+                    coreObject = new Int16Array(jsIntPtr);
+                    break;
+                case 14:
+                    coreObject = new Uint16Array(jsIntPtr);
+                    break;
+                case 15:
+                    coreObject = new Int32Array(jsIntPtr);
+                    break;
+                case 16:
+                    coreObject = new Uint32Array(jsIntPtr);
+                    break;
+                case 17:
+                    coreObject = new Float32Array(jsIntPtr);
+                    break;
+                case 18:
+                    coreObject = new Float64Array(jsIntPtr);
+                    break;
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(coreType));
             }
-            return obj == null ? 0 : (int)(IntPtr)obj.Handle;
+            _boundObjects.Add(jsId, coreObject);
+            return (int)(IntPtr)coreObject.Handle;
         }
 
         public static int UnBindJSObject(int jsId)
