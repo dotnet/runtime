@@ -6,43 +6,14 @@
 
 #define IMAGE_FILE_MACHINE_AMD64             0x8664  // AMD64 (K8)
 
-DumpDataTarget::DumpDataTarget(pid_t pid) :
+DumpDataTarget::DumpDataTarget(CrashInfo& crashInfo) :
     m_ref(1),
-    m_pid(pid),
-#ifndef HAVE_PROCESS_VM_READV
-    m_fd(-1),
-#endif
-    m_crashInfo(nullptr)
+    m_crashInfo(crashInfo)
 {
 }
 
 DumpDataTarget::~DumpDataTarget()
 {
-#ifndef HAVE_PROCESS_VM_READV
-    if (m_fd != -1)
-    {
-        close(m_fd);
-        m_fd = -1;
-    }
-#endif
-}
-
-bool
-DumpDataTarget::Initialize(CrashInfo * crashInfo)
-{
-#ifndef HAVE_PROCESS_VM_READV
-    char memPath[128];
-    _snprintf_s(memPath, sizeof(memPath), sizeof(memPath), "/proc/%lu/mem", m_pid);
-
-    m_fd = open(memPath, O_RDONLY);
-    if (m_fd == -1)
-    {
-        fprintf(stderr, "open(%s) FAILED %d (%s)\n", memPath, errno, strerror(errno));
-        return false;
-    }
-#endif
-    m_crashInfo = crashInfo;
-    return true;
 }
 
 STDMETHODIMP
@@ -120,23 +91,22 @@ DumpDataTarget::GetImageBase(
     /* [string][in] */ LPCWSTR moduleName,
     /* [out] */ CLRDATA_ADDRESS *baseAddress)
 {
-    assert(m_crashInfo != nullptr);
     *baseAddress = 0;
 
     char tempModuleName[MAX_PATH];
     int length = WideCharToMultiByte(CP_ACP, 0, moduleName, -1, tempModuleName, sizeof(tempModuleName), NULL, NULL);
     if (length > 0)
     {
-        for (const MemoryRegion& image : m_crashInfo->ModuleMappings())
+        for (const MemoryRegion& image : m_crashInfo.ModuleMappings())
         {
-            const char *name = strrchr(image.FileName(), '/');
+            const char *name = strrchr(image.FileName().c_str(), '/');
             if (name != nullptr)
             {
                 name++;
             }
             else
             {
-                name = image.FileName();
+                name = image.FileName().c_str();
             }
             if (strcmp(name, tempModuleName) == 0)
             {
@@ -155,20 +125,13 @@ DumpDataTarget::ReadVirtual(
     /* [in] */ ULONG32 size,
     /* [optional][out] */ ULONG32 *done)
 {
-#ifdef HAVE_PROCESS_VM_READV
-    iovec local{ buffer, size };
-    iovec remote{ (void*)(ULONG_PTR)address, size };
-    ssize_t read = process_vm_readv(m_pid, &local, 1, &remote, 1, 0);
-#else
-    assert(m_fd != -1);
-    ssize_t read = pread64(m_fd, buffer, size, (off64_t)(ULONG_PTR)address);
-#endif
-    if (read == -1)
+    size_t read = 0;
+    if (!m_crashInfo.ReadProcessMemory((void*)(ULONG_PTR)address, buffer, size, &read))
     {
         *done = 0;
         return E_FAIL;
     }
-    *done = (ULONG32)read;
+    *done = read;
     return S_OK;
 }
 
@@ -218,14 +181,13 @@ DumpDataTarget::GetThreadContext(
     /* [in] */ ULONG32 contextSize,
     /* [out, size_is(contextSize)] */ PBYTE context)
 {
-    assert(m_crashInfo != nullptr);
     if (contextSize < sizeof(CONTEXT))
     {
         assert(false);
         return E_INVALIDARG;
     }
     memset(context, 0, contextSize);
-    for (const ThreadInfo* thread : m_crashInfo->Threads())
+    for (const ThreadInfo* thread : m_crashInfo.Threads())
     {
         if (thread->Tid() == (pid_t)threadID)
         {

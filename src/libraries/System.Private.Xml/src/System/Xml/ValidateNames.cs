@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System;
 using System.Xml.XPath;
 using System.Diagnostics;
@@ -328,7 +329,7 @@ namespace System.Xml
         /// If the NameTest contains a star, null values for localName (case NCName':*'), or for
         /// both localName and prefix (case '*') are returned.
         /// </summary>
-        internal static void ParseNameTestThrow(string s, out string prefix, out string localName)
+        internal static void ParseNameTestThrow(string s, out string? prefix, out string? localName)
         {
             int len, lenLocal, offset;
 

@@ -20,18 +20,15 @@ namespace System.Diagnostics.Tests
         public void TestConstruction()
         {
             RemoteExecutor.Invoke(() => {
-                using (ActivitySource as1 = new ActivitySource("Source1"))
-                {
-                    Assert.Equal("Source1", as1.Name);
-                    Assert.Equal(String.Empty, as1.Version);
-                    Assert.False(as1.HasListeners());
-                    using (ActivitySource as2 =  new ActivitySource("Source2", "1.1.1.2"))
-                    {
-                        Assert.Equal("Source2", as2.Name);
-                        Assert.Equal("1.1.1.2", as2.Version);
-                        Assert.False(as2.HasListeners());
-                    }
-                }
+                using ActivitySource as1 = new ActivitySource("Source1");
+                Assert.Equal("Source1", as1.Name);
+                Assert.Equal(String.Empty, as1.Version);
+                Assert.False(as1.HasListeners());
+
+                using ActivitySource as2 =  new ActivitySource("Source2", "1.1.1.2");
+                Assert.Equal("Source2", as2.Name);
+                Assert.Equal("1.1.1.2", as2.Version);
+                Assert.False(as2.HasListeners());
             }).Dispose();
         }
 
@@ -39,20 +36,17 @@ namespace System.Diagnostics.Tests
         public void TestStartActivityWithNoListener()
         {
             RemoteExecutor.Invoke(() => {
-                using (ActivitySource aSource =  new ActivitySource("SourceActivity"))
-                {
-                    Assert.Equal("SourceActivity", aSource.Name);
-                    Assert.Equal(string.Empty, aSource.Version);
-                    Assert.False(aSource.HasListeners());
+                using ActivitySource aSource =  new ActivitySource("SourceActivity");
+                Assert.Equal("SourceActivity", aSource.Name);
+                Assert.Equal(string.Empty, aSource.Version);
+                Assert.False(aSource.HasListeners());
 
-                    Activity current = Activity.Current;
-                    using (Activity a1 = aSource.StartActivity("a1"))
-                    {
-                        // no listeners, we should get null activity.
-                        Assert.Null(a1);
-                        Assert.Equal(Activity.Current, current);
-                    }
-                }
+                Activity current = Activity.Current;
+
+                // no listeners, we should get null activity.
+                using Activity a1 = aSource.StartActivity("a1");
+                Assert.Null(a1);
+                Assert.Equal(Activity.Current, current);
             }).Dispose();
         }
 
@@ -60,27 +54,21 @@ namespace System.Diagnostics.Tests
         public void TestActivityWithListenerNoActivityCreate()
         {
             RemoteExecutor.Invoke(() => {
-                using (ActivitySource aSource =  new ActivitySource("SourceActivityListener"))
-                {
-                    Assert.False(aSource.HasListeners());
+                using ActivitySource aSource =  new ActivitySource("SourceActivityListener");
+                Assert.False(aSource.HasListeners());
 
-                    using (ActivityListener listener = new ActivityListener
-                        {
-                            ActivityStarted = activity => Assert.NotNull(activity),
-                            ActivityStopped = activity => Assert.NotNull(activity),
-                            ShouldListenTo = (activitySource) => object.ReferenceEquals(aSource, activitySource),
-                            GetRequestedDataUsingParentId = (ref ActivityCreationOptions<string> activityOptions) => ActivityDataRequest.None,
-                            GetRequestedDataUsingContext = (ref ActivityCreationOptions<ActivityContext> activityOptions) => ActivityDataRequest.None
-                        }
-                    )
-                    {
-                        ActivitySource.AddActivityListener(listener);
-                        Assert.True(aSource.HasListeners());
+                using ActivityListener listener = new ActivityListener();
+                listener.ActivityStarted = activity => Assert.NotNull(activity);
+                listener.ActivityStopped = activity => Assert.NotNull(activity);
+                listener.ShouldListenTo = (activitySource) => object.ReferenceEquals(aSource, activitySource);
+                listener.GetRequestedDataUsingParentId = (ref ActivityCreationOptions<string> activityOptions) => ActivityDataRequest.None;
+                listener.GetRequestedDataUsingContext = (ref ActivityCreationOptions<ActivityContext> activityOptions) => ActivityDataRequest.None;
 
-                        // The listener is not allowing to create a new Activity.
-                        Assert.Null(aSource.StartActivity("nullActivity"));
-                    }
-                }
+                ActivitySource.AddActivityListener(listener);
+                Assert.True(aSource.HasListeners());
+
+                // The listener is not allowing to create a new Activity.
+                Assert.Null(aSource.StartActivity("nullActivity"));
             }).Dispose();
         }
 
@@ -93,51 +81,47 @@ namespace System.Diagnostics.Tests
                     int counter = 0;
                     Assert.False(aSource.HasListeners());
 
-                    using (ActivityListener listener = new ActivityListener
-                        {
-                            ActivityStarted = activity => counter++,
-                            ActivityStopped = activity => counter--,
-                            ShouldListenTo = (activitySource) => object.ReferenceEquals(aSource, activitySource),
-                            GetRequestedDataUsingParentId = (ref ActivityCreationOptions<string> activityOptions) => ActivityDataRequest.AllDataAndRecorded,
-                            GetRequestedDataUsingContext = (ref ActivityCreationOptions<ActivityContext> activityOptions) => ActivityDataRequest.AllDataAndRecorded
-                        }
-                    )
+                    using ActivityListener listener = new ActivityListener();
+                    listener.ActivityStarted = activity => counter++;
+                    listener.ActivityStopped = activity => counter--;
+                    listener.ShouldListenTo = (activitySource) => object.ReferenceEquals(aSource, activitySource);
+                    listener.GetRequestedDataUsingParentId = (ref ActivityCreationOptions<string> activityOptions) => ActivityDataRequest.AllDataAndRecorded;
+                    listener.GetRequestedDataUsingContext = (ref ActivityCreationOptions<ActivityContext> activityOptions) => ActivityDataRequest.AllDataAndRecorded;
+
+                    ActivitySource.AddActivityListener(listener);
+
+                    Assert.True(aSource.HasListeners());
+
+                    using (Activity activity = aSource.StartActivity("AllDataRequestedActivity"))
                     {
-                        ActivitySource.AddActivityListener(listener);
+                        Assert.NotNull(activity);
+                        Assert.True(activity.IsAllDataRequested);
+                        Assert.Equal(1, counter);
 
-                        Assert.True(aSource.HasListeners());
+                        Assert.Equal(0, activity.Tags.Count());
+                        Assert.Equal(0, activity.Baggage.Count());
 
-                        using (Activity activity = aSource.StartActivity("AllDataRequestedActivity"))
+                        Assert.True(object.ReferenceEquals(activity, activity.AddTag("key", "value")));
+                        Assert.True(object.ReferenceEquals(activity, activity.AddBaggage("key", "value")));
+
+                        Assert.Equal(1, activity.Tags.Count());
+                        Assert.Equal(1, activity.Baggage.Count());
+
+                        using (Activity activity1 = aSource.StartActivity("AllDataRequestedActivity1"))
                         {
-                            Assert.NotNull(activity);
-                            Assert.True(activity.IsAllDataRequested);
-                            Assert.Equal(1, counter);
+                            Assert.NotNull(activity1);
+                            Assert.True(activity1.IsAllDataRequested);
+                            Assert.Equal(2, counter);
 
-                            Assert.Equal(0, activity.Tags.Count());
-                            Assert.Equal(0, activity.Baggage.Count());
-
-                            Assert.True(object.ReferenceEquals(activity, activity.AddTag("key", "value")));
-                            Assert.True(object.ReferenceEquals(activity, activity.AddBaggage("key", "value")));
-
-                            Assert.Equal(1, activity.Tags.Count());
-                            Assert.Equal(1, activity.Baggage.Count());
-
-                            using (Activity activity1 = aSource.StartActivity("AllDataRequestedActivity1"))
-                            {
-                                Assert.NotNull(activity1);
-                                Assert.True(activity1.IsAllDataRequested);
-                                Assert.Equal(2, counter);
-
-                                Assert.Equal(0, activity1.Links.Count());
-                                Assert.Equal(0, activity1.Events.Count());
-                                Assert.True(object.ReferenceEquals(activity1, activity1.AddEvent(new ActivityEvent("e1"))));
-                                Assert.Equal(1, activity1.Events.Count());
-                            }
-                            Assert.Equal(1, counter);
+                            Assert.Equal(0, activity1.Links.Count());
+                            Assert.Equal(0, activity1.Events.Count());
+                            Assert.True(object.ReferenceEquals(activity1, activity1.AddEvent(new ActivityEvent("e1"))));
+                            Assert.Equal(1, activity1.Events.Count());
                         }
-
-                        Assert.Equal(0, counter);
+                        Assert.Equal(1, counter);
                     }
+
+                    Assert.Equal(0, counter);
                 }
             }).Dispose();
         }
@@ -151,27 +135,20 @@ namespace System.Diagnostics.Tests
                 Assert.Equal("", new Activity("a3").Source.Name);
                 Assert.Equal(string.Empty, new Activity("a4").Source.Version);
 
-                using (ActivitySource aSource = new ActivitySource("SourceToTest", "1.2.3.4"))
-                {
-                    //Ensure at least we have a listener to allow Activity creation
-                    using (ActivityListener listener = new ActivityListener
-                        {
-                            ActivityStarted = activity => Assert.NotNull(activity),
-                            ActivityStopped = activity => Assert.NotNull(activity),
-                            ShouldListenTo = (activitySource) => object.ReferenceEquals(aSource, activitySource),
-                            GetRequestedDataUsingParentId = (ref ActivityCreationOptions<string> activityOptions) => ActivityDataRequest.AllData,
-                            GetRequestedDataUsingContext = (ref ActivityCreationOptions<ActivityContext> activityOptions) => ActivityDataRequest.AllData
-                        }
-                    )
-                    {
-                        ActivitySource.AddActivityListener(listener);
+                using ActivitySource aSource = new ActivitySource("SourceToTest", "1.2.3.4");
 
-                        using (Activity activity = aSource.StartActivity("ActivityToTest"))
-                        {
-                            Assert.True(object.ReferenceEquals(aSource, activity.Source));
-                        }
-                    }
-                }
+                // Ensure at least we have a listener to allow Activity creation
+                using ActivityListener listener = new ActivityListener();
+                listener.ActivityStarted = activity => Assert.NotNull(activity);
+                listener.ActivityStopped = activity => Assert.NotNull(activity);
+                listener.ShouldListenTo = (activitySource) => object.ReferenceEquals(aSource, activitySource);
+                listener.GetRequestedDataUsingParentId = (ref ActivityCreationOptions<string> activityOptions) => ActivityDataRequest.AllData;
+                listener.GetRequestedDataUsingContext = (ref ActivityCreationOptions<ActivityContext> activityOptions) => ActivityDataRequest.AllData;
+
+                ActivitySource.AddActivityListener(listener);
+
+                using Activity activity = aSource.StartActivity("ActivityToTest");
+                Assert.True(object.ReferenceEquals(aSource, activity.Source));
             }).Dispose();
         }
 
@@ -182,16 +159,14 @@ namespace System.Diagnostics.Tests
                 int activityStartCount = 0;
                 int activityStopCount  = 0;
 
-                using (ActivityListener listener = new ActivityListener
-                    {
-                        ActivityStarted = activity => activityStartCount++,
-                        ActivityStopped = activity => activityStopCount++,
-                        ShouldListenTo = (activitySource) => activitySource.Name == "" && activitySource.Version == "",
-                        GetRequestedDataUsingParentId = (ref ActivityCreationOptions<string> activityOptions) => ActivityDataRequest.AllData,
-                        GetRequestedDataUsingContext = (ref ActivityCreationOptions<ActivityContext> activityOptions) => ActivityDataRequest.AllData
-                    }
-                )
+                using (ActivityListener listener = new ActivityListener())
                 {
+                    listener.ActivityStarted = activity => activityStartCount++;
+                    listener.ActivityStopped = activity => activityStopCount++;
+                    listener.ShouldListenTo = (activitySource) => activitySource.Name == "" && activitySource.Version == "";
+                    listener.GetRequestedDataUsingParentId = (ref ActivityCreationOptions<string> activityOptions) => ActivityDataRequest.AllData;
+                    listener.GetRequestedDataUsingContext = (ref ActivityCreationOptions<ActivityContext> activityOptions) => ActivityDataRequest.AllData;
+
                     ActivitySource.AddActivityListener(listener);
 
                     Assert.Equal(0, activityStartCount);
@@ -263,7 +238,7 @@ namespace System.Diagnostics.Tests
                 {
                     Assert.False(a2.IsAllDataRequested);
                     Assert.True((a2.ActivityTraceFlags & ActivityTraceFlags.Recorded) == 0);
-                    
+
                     Assert.Equal(2, activityStartCount);
                     Assert.Equal(0, activityStopCount);
                 }
@@ -285,7 +260,7 @@ namespace System.Diagnostics.Tests
                 {
                     Assert.True(a3.IsAllDataRequested);
                     Assert.True((a3.ActivityTraceFlags & ActivityTraceFlags.Recorded) == 0);
-                    
+
                     Assert.Equal(5, activityStartCount);
                     Assert.Equal(2, activityStopCount);
                 }
@@ -329,58 +304,52 @@ namespace System.Diagnostics.Tests
             RemoteExecutor.Invoke(() => {
                 ActivitySource source = new ActivitySource("MultipleListenerSource");
 
-                using (ActivityListener listener = new ActivityListener
-                    {
-                        ActivityStarted = activity => Assert.NotNull(activity),
-                        ActivityStopped = activity => Assert.NotNull(activity),
-                        ShouldListenTo = (activitySource) => true,
-                        GetRequestedDataUsingParentId = (ref ActivityCreationOptions<string> activityOptions) => ActivityDataRequest.AllData,
-                        GetRequestedDataUsingContext = (ref ActivityCreationOptions<ActivityContext> activityOptions) => ActivityDataRequest.AllData
-                    }
-                )
+                using ActivityListener listener = new ActivityListener();
+                listener.ActivityStarted = activity => Assert.NotNull(activity);
+                listener.ActivityStopped = activity => Assert.NotNull(activity);
+                listener.ShouldListenTo = (activitySource) => true;
+                listener.GetRequestedDataUsingParentId = (ref ActivityCreationOptions<string> activityOptions) => ActivityDataRequest.AllData;
+                listener.GetRequestedDataUsingContext = (ref ActivityCreationOptions<ActivityContext> activityOptions) => ActivityDataRequest.AllData;
+
+                ActivitySource.AddActivityListener(listener);
+
+                ActivityContext ctx = new ActivityContext(ActivityTraceId.CreateRandom(), ActivitySpanId.CreateRandom(), ActivityTraceFlags.Recorded, "key0-value0");
+
+                List<ActivityLink> links = new List<ActivityLink>();
+                links.Add(new ActivityLink(new ActivityContext(ActivityTraceId.CreateRandom(), ActivitySpanId.CreateRandom(), ActivityTraceFlags.None, "key1-value1")));
+                links.Add(new ActivityLink(new ActivityContext(ActivityTraceId.CreateRandom(), ActivitySpanId.CreateRandom(), ActivityTraceFlags.None, "key2-value2")));
+
+                List<KeyValuePair<string, string>> attributes = new List<KeyValuePair<string, string>>();
+                attributes.Add(new KeyValuePair<string, string>("tag1", "tagValue1"));
+                attributes.Add(new KeyValuePair<string, string>("tag2", "tagValue2"));
+                attributes.Add(new KeyValuePair<string, string>("tag3", "tagValue3"));
+
+                using (Activity activity = source.StartActivity("a1", ActivityKind.Client, ctx, attributes, links))
                 {
-                    ActivitySource.AddActivityListener(listener);
+                    Assert.NotNull(activity);
+                    Assert.Equal("a1", activity.OperationName);
+                    Assert.Equal("a1", activity.DisplayName);
+                    Assert.Equal(ActivityKind.Client, activity.Kind);
 
-                    ActivityContext ctx = new ActivityContext(ActivityTraceId.CreateRandom(), ActivitySpanId.CreateRandom(), ActivityTraceFlags.Recorded, "key0-value0");
+                    Assert.Equal(ctx.TraceId, activity.TraceId);
+                    Assert.Equal(ctx.SpanId, activity.ParentSpanId);
+                    Assert.Equal(ctx.TraceFlags, activity.ActivityTraceFlags);
+                    Assert.Equal(ctx.TraceState, activity.TraceStateString);
+                    Assert.Equal(ActivityIdFormat.W3C, activity.IdFormat);
 
-                    List<ActivityLink> links = new List<ActivityLink>();
-                    links.Add(new ActivityLink(new ActivityContext(ActivityTraceId.CreateRandom(), ActivitySpanId.CreateRandom(), ActivityTraceFlags.None, "key1-value1")));
-                    links.Add(new ActivityLink(new ActivityContext(ActivityTraceId.CreateRandom(), ActivitySpanId.CreateRandom(), ActivityTraceFlags.None, "key2-value2")));
-
-                    List<KeyValuePair<string, string>> attributes = new List<KeyValuePair<string, string>>();
-                    attributes.Add(new KeyValuePair<string, string>("tag1", "tagValue1"));
-                    attributes.Add(new KeyValuePair<string, string>("tag2", "tagValue2"));
-                    attributes.Add(new KeyValuePair<string, string>("tag3", "tagValue3"));
-
-                    using (Activity activity = source.StartActivity("a1", ActivityKind.Client, ctx, attributes, links))
+                    foreach (KeyValuePair<string, string> pair in attributes)
                     {
-                        Assert.NotNull(activity);
-                        Assert.Equal("a1", activity.OperationName);
-                        Assert.Equal("a1", activity.DisplayName);
-                        Assert.Equal(ActivityKind.Client, activity.Kind);
-
-                        Assert.Equal(ctx.TraceId, activity.TraceId);
-                        Assert.Equal(ctx.SpanId, activity.ParentSpanId);
-                        Assert.Equal(ctx.TraceFlags, activity.ActivityTraceFlags);
-                        Assert.Equal(ctx.TraceState, activity.TraceStateString);
-                        Assert.Equal(ActivityIdFormat.W3C, activity.IdFormat);
-
-                        foreach (KeyValuePair<string, string> pair in attributes)
-                        {
-                            Assert.NotEqual(default, activity.Tags.FirstOrDefault((p) => pair.Key == p.Key && pair.Value == pair.Value));
-                        }
-
-                        foreach (ActivityLink link in links)
-                        {
-                            Assert.NotEqual(default, activity.Links.FirstOrDefault((l) => link == l));
-                        }
+                        Assert.NotEqual(default, activity.Tags.FirstOrDefault((p) => pair.Key == p.Key && pair.Value == pair.Value));
                     }
 
-                    using (Activity activity = source.StartActivity("a2", ActivityKind.Client, "NoW3CParentId", attributes, links))
+                    foreach (ActivityLink link in links)
                     {
-                        Assert.Equal(ActivityIdFormat.Hierarchical, activity.IdFormat);
+                        Assert.NotEqual(default, activity.Links.FirstOrDefault((l) => link == l));
                     }
                 }
+
+                using Activity activity1 = source.StartActivity("a2", ActivityKind.Client, "NoW3CParentId", attributes, links);
+                Assert.Equal(ActivityIdFormat.Hierarchical, activity1.IdFormat);
             }).Dispose();
         }
 
@@ -388,32 +357,26 @@ namespace System.Diagnostics.Tests
         public void TestDefaultParentContext()
         {
             RemoteExecutor.Invoke(() => {
-                using (ActivitySource aSource = new ActivitySource("ParentContext"))
+                using ActivitySource aSource = new ActivitySource("ParentContext");
+                using ActivityListener listener = new ActivityListener();
+
+                listener.ShouldListenTo = (activitySource) => activitySource.Name == "ParentContext";
+                listener.GetRequestedDataUsingContext = (ref ActivityCreationOptions<ActivityContext> activityOptions) =>
                 {
-                    using (ActivityListener listener = new ActivityListener
+                    Activity c = Activity.Current;
+                    if (c != null)
                     {
-                        ShouldListenTo = (activitySource) => activitySource.Name == "ParentContext",
-                        GetRequestedDataUsingContext = (ref ActivityCreationOptions<ActivityContext> activityOptions) =>
-                        {
-                            Activity c = Activity.Current;
-                            if (c != null)
-                            {
-                                Assert.Equal(c.Context, activityOptions.Parent);
-                            }
-
-                            return ActivityDataRequest.AllData;
-                        }
-                    })
-                    {
-                        ActivitySource.AddActivityListener(listener);
-
-                        using (Activity a = aSource.StartActivity("a", ActivityKind.Server, new ActivityContext(ActivityTraceId.CreateRandom(), ActivitySpanId.CreateRandom(), 0)))
-                        using (Activity b = aSource.StartActivity("b"))
-                        {
-                            Assert.Equal(a.Context, b.Parent.Context);
-                        }
+                        Assert.Equal(c.Context, activityOptions.Parent);
                     }
-                }
+
+                    return ActivityDataRequest.AllData;
+                };
+
+                ActivitySource.AddActivityListener(listener);
+
+                using Activity a = aSource.StartActivity("a", ActivityKind.Server, new ActivityContext(ActivityTraceId.CreateRandom(), ActivitySpanId.CreateRandom(), 0));
+                using Activity b = aSource.StartActivity("b");
+                Assert.Equal(a.Context, b.Parent.Context);
             }).Dispose();
         }
 

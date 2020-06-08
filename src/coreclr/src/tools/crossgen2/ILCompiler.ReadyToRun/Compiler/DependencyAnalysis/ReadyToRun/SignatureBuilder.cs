@@ -440,10 +440,10 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                         {
                             flags |= (uint)ReadyToRunMethodSigFlags.READYTORUN_METHOD_SIG_MemberRefToken;
 
-                            MemberReference memberRef = method.Token.MetadataReader.GetMemberReference((MemberReferenceHandle)method.Token.Handle);
-                            if (method.Token.Module.GetObject(memberRef.Parent) != (object)method.Method.OwningType)
+                            // Owner type is needed for type specs to instantiating stubs or generics with signature variables still present
+                            if (!method.Method.OwningType.IsDefType &&
+                                ((flags & (uint)ReadyToRunMethodSigFlags.READYTORUN_METHOD_SIG_InstantiatingStub) != 0 || method.Method.OwningType.ContainsSignatureVariables()))
                             {
-                                // We have a memberref token for a different type - encode owning type explicitly in the signature
                                 flags |= (uint)ReadyToRunMethodSigFlags.READYTORUN_METHOD_SIG_OwnerType;
                             }
 

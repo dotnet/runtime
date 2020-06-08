@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 namespace System.Xml.Schema
 {
     using System.Collections;
@@ -166,8 +167,8 @@ namespace System.Xml.Schema
 
         private bool IsValidAttributeGroupRedefine(XmlSchemaObject existingObject, XmlSchemaObject item, XmlSchemaObjectTable table)
         {
-            XmlSchemaAttributeGroup attGroup = item as XmlSchemaAttributeGroup;
-            XmlSchemaAttributeGroup existingAttGroup = existingObject as XmlSchemaAttributeGroup;
+            XmlSchemaAttributeGroup attGroup = (item as XmlSchemaAttributeGroup)!;
+            XmlSchemaAttributeGroup existingAttGroup = (existingObject as XmlSchemaAttributeGroup)!;
             if (existingAttGroup == attGroup.Redefined)
             { //attribute group is the redefinition of existingObject
                 if (existingAttGroup.AttributeUses.Count == 0)
@@ -185,8 +186,8 @@ namespace System.Xml.Schema
 
         private bool IsValidGroupRedefine(XmlSchemaObject existingObject, XmlSchemaObject item, XmlSchemaObjectTable table)
         {
-            XmlSchemaGroup group = item as XmlSchemaGroup;
-            XmlSchemaGroup existingGroup = existingObject as XmlSchemaGroup;
+            XmlSchemaGroup group = (item as XmlSchemaGroup)!;
+            XmlSchemaGroup existingGroup = (existingObject as XmlSchemaGroup)!;
             if (existingGroup == group.Redefined)
             { //group is the redefinition of existingObject
                 if (existingGroup.CanonicalParticle == null)
@@ -204,8 +205,8 @@ namespace System.Xml.Schema
 
         private bool IsValidTypeRedefine(XmlSchemaObject existingObject, XmlSchemaObject item, XmlSchemaObjectTable table)
         {
-            XmlSchemaType schemaType = item as XmlSchemaType;
-            XmlSchemaType existingType = existingObject as XmlSchemaType;
+            XmlSchemaType schemaType = (item as XmlSchemaType)!;
+            XmlSchemaType existingType = (existingObject as XmlSchemaType)!;
             if (existingType == schemaType.Redefined)
             { //schemaType is the redefinition of existingObject
                 if (existingType.ElementDecl == null)

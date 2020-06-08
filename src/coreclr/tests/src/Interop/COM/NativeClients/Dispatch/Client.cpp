@@ -10,6 +10,7 @@ void Validate_Numeric_In_ReturnByRef();
 void Validate_Float_In_ReturnAndUpdateByRef();
 void Validate_Double_In_ReturnAndUpdateByRef();
 void Validate_LCID_Marshaled();
+void Validate_Enumerator();
 
 template<COINIT TM>
 struct ComInit
@@ -41,6 +42,7 @@ int __cdecl main()
         Validate_Float_In_ReturnAndUpdateByRef();
         Validate_Double_In_ReturnAndUpdateByRef();
         Validate_LCID_Marshaled();
+        Validate_Enumerator();
     }
     catch (HRESULT hr)
     {
@@ -64,6 +66,7 @@ void Validate_Numeric_In_ReturnByRef()
     LCID lcid = MAKELCID(LANG_USER_DEFAULT, SORT_DEFAULT);
     DISPID methodId;
 
+    ::wprintf(W("Invoke %s\n"), numericMethodName);
     THROW_IF_FAILED(dispatchTesting->GetIDsOfNames(
         IID_NULL,
         &numericMethodName,
@@ -173,6 +176,7 @@ void Validate_Float_In_ReturnAndUpdateByRef()
     LCID lcid = MAKELCID(LANG_USER_DEFAULT, SORT_DEFAULT);
     DISPID methodId;
 
+    ::wprintf(W("Invoke %s\n"), numericMethodName);
     THROW_IF_FAILED(dispatchTesting->GetIDsOfNames(
         IID_NULL,
         &numericMethodName,
@@ -226,6 +230,7 @@ void Validate_Double_In_ReturnAndUpdateByRef()
     LCID lcid = MAKELCID(LANG_USER_DEFAULT, SORT_DEFAULT);
     DISPID methodId;
 
+    ::wprintf(W("Invoke %s\n"), numericMethodName);
     THROW_IF_FAILED(dispatchTesting->GetIDsOfNames(
         IID_NULL,
         &numericMethodName,
@@ -279,6 +284,7 @@ void Validate_LCID_Marshaled()
     LCID lcid = MAKELCID(MAKELANGID(LANG_SPANISH, SUBLANG_SPANISH_CHILE), SORT_DEFAULT);
     DISPID methodId;
 
+    ::wprintf(W("Invoke %s\n"), numericMethodName);
     THROW_IF_FAILED(dispatchTesting->GetIDsOfNames(
         IID_NULL,
         &numericMethodName,
@@ -306,4 +312,97 @@ void Validate_LCID_Marshaled()
     ));
 
     THROW_FAIL_IF_FALSE(lcid == V_I4(&result));
+}
+
+namespace
+{
+    void ValidateExpectedEnumVariant(IEnumVARIANT *enumVariant, int expectedStart, int expectedCount)
+    {
+        HRESULT hr;
+        VARIANT element;
+        ULONG numFetched;
+        for(int i = expectedStart; i < expectedStart + expectedCount; ++i)
+        {
+            THROW_IF_FAILED(enumVariant->Next(1, &element, &numFetched));
+            THROW_FAIL_IF_FALSE(numFetched == 1);
+            THROW_FAIL_IF_FALSE(V_I4(&element) == i)
+            ::VariantClear(&element);
+        }
+
+        hr = enumVariant->Next(1, &element, &numFetched);
+        THROW_FAIL_IF_FALSE(hr == S_FALSE && numFetched == 0);
+    }
+
+    void ValidateReturnedEnumerator(VARIANT *toValidate)
+    {
+        HRESULT hr;
+        THROW_FAIL_IF_FALSE(V_VT(toValidate) == VT_UNKNOWN || V_VT(toValidate) == VT_DISPATCH);
+
+        ComSmartPtr<IEnumVARIANT> enumVariant;
+        THROW_IF_FAILED(V_UNKNOWN(toValidate)->QueryInterface<IEnumVARIANT>(&enumVariant));
+
+        // Implementation of IDispatchTesting should return [0,9]
+        ValidateExpectedEnumVariant(enumVariant, 0, 10);
+
+        THROW_IF_FAILED(enumVariant->Reset());
+        ValidateExpectedEnumVariant(enumVariant, 0, 10);
+
+        THROW_IF_FAILED(enumVariant->Reset());
+        THROW_IF_FAILED(enumVariant->Skip(3));
+        ValidateExpectedEnumVariant(enumVariant, 3, 7);
+    }
+}
+
+void Validate_Enumerator()
+{
+    HRESULT hr;
+
+    CoreShimComActivation csact{ W("NETServer"), W("DispatchTesting") };
+
+    ComSmartPtr<IDispatchTesting> dispatchTesting;
+    THROW_IF_FAILED(::CoCreateInstance(CLSID_DispatchTesting, nullptr, CLSCTX_INPROC, IID_IDispatchTesting, (void**)&dispatchTesting));
+    LCID lcid = MAKELCID(LANG_USER_DEFAULT, SORT_DEFAULT);
+
+    ::printf("Invoke GetEnumerator (DISPID_NEWENUM)\n");
+    DISPPARAMS params {};
+    VARIANT result;
+    THROW_IF_FAILED(dispatchTesting->Invoke(
+        DISPID_NEWENUM,
+        IID_NULL,
+        lcid,
+        DISPATCH_METHOD,
+        &params,
+        &result,
+        nullptr,
+        nullptr
+    ));
+
+    ::printf(" -- Validate returned IEnumVARIANT\n");
+    ValidateReturnedEnumerator(&result);
+
+    LPOLESTR methodName = (LPOLESTR)W("ExplicitGetEnumerator");
+
+    ::wprintf(W("Invoke %s\n"), methodName);
+    DISPID methodId;
+    THROW_IF_FAILED(dispatchTesting->GetIDsOfNames(
+        IID_NULL,
+        &methodName,
+        1,
+        lcid,
+        &methodId));
+
+    ::VariantClear(&result);
+    THROW_IF_FAILED(dispatchTesting->Invoke(
+        methodId,
+        IID_NULL,
+        lcid,
+        DISPATCH_METHOD,
+        &params,
+        &result,
+        nullptr,
+        nullptr
+    ));
+
+    ::printf(" -- Validate returned IEnumVARIANT\n");
+    ValidateReturnedEnumerator(&result);
 }

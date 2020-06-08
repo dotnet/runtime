@@ -19,7 +19,7 @@ namespace System.Text.Json.Serialization.Converters
         }
 
         [PreserveDependency(
-            ".ctor(System.Text.Json.Serialization.Converters.EnumConverterOptions)",
+            ".ctor(System.Text.Json.Serialization.Converters.EnumConverterOptions, System.Text.Json.JsonSerializerOptions)",
             "System.Text.Json.Serialization.Converters.EnumConverter`1")]
         public override JsonConverter CreateConverter(Type type, JsonSerializerOptions options)
         {
@@ -27,7 +27,7 @@ namespace System.Text.Json.Serialization.Converters
                 typeof(EnumConverter<>).MakeGenericType(type),
                 BindingFlags.Instance | BindingFlags.Public,
                 binder: null,
-                new object[] { EnumConverterOptions.AllowNumbers },
+                new object[] { EnumConverterOptions.AllowNumbers, options },
                 culture: null)!;
 
             return converter;

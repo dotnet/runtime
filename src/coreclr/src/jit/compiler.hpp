@@ -4670,6 +4670,11 @@ inline static bool StructHasCustomLayout(DWORD attribs)
     return ((attribs & CORINFO_FLG_CUSTOMLAYOUT) != 0);
 }
 
+inline static bool StructHasNoPromotionFlagSet(DWORD attribs)
+{
+    return ((attribs & CORINFO_FLG_DONT_PROMOTE) != 0);
+}
+
 /*****************************************************************************
  * This node should not be referenced by anyone now. Set its values to garbage
  * to catch extra references

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System.Text;
 using System.Diagnostics;
 
@@ -38,7 +39,7 @@ namespace System.Xml
                 int i = _leftOverBytesCount;
                 while (i < 3 && count > 0)
                 {
-                    _leftOverBytes[i++] = buffer[index++];
+                    _leftOverBytes![i++] = buffer[index++];
                     count--;
                 }
 
@@ -50,7 +51,7 @@ namespace System.Xml
                 }
 
                 // encode the left-over buffer and write out
-                int leftOverChars = Convert.ToBase64CharArray(_leftOverBytes, 0, 3, _charsLine, 0);
+                int leftOverChars = Convert.ToBase64CharArray(_leftOverBytes!, 0, 3, _charsLine, 0);
                 await WriteCharsAsync(_charsLine, 0, leftOverChars).ConfigureAwait(false);
             }
 
@@ -89,7 +90,7 @@ namespace System.Xml
         {
             if (_leftOverBytesCount > 0)
             {
-                int leftOverChars = Convert.ToBase64CharArray(_leftOverBytes, 0, _leftOverBytesCount, _charsLine, 0);
+                int leftOverChars = Convert.ToBase64CharArray(_leftOverBytes!, 0, _leftOverBytesCount, _charsLine, 0);
                 await WriteCharsAsync(_charsLine, 0, leftOverChars).ConfigureAwait(false);
                 _leftOverBytesCount = 0;
             }
