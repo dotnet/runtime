@@ -198,6 +198,7 @@ namespace JIT.HardwareIntrinsics.Arm
 
         private static readonly int Op1ElementCount = Unsafe.SizeOf<Vector64<SByte>>() / sizeof(SByte);
         private static readonly int RetElementCount = Unsafe.SizeOf<Vector128<SByte>>() / sizeof(SByte);
+        private static readonly byte Imm = 1;
 
         private static SByte[] _data = new SByte[Op1ElementCount];
 

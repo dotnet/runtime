@@ -20,6 +20,8 @@
       <NativeBinPlaceItem Include="$(NativeBinDir)*.dbg" />
       <NativeBinPlaceItem Include="$(NativeBinDir)*.dylib" />
       <NativeBinPlaceItem Include="$(NativeBinDir)*.dwarf" />
+      <NativeBinPlaceItem Condition="'$(TargetOS)' == 'Browser'" Include="$(NativeBinDir)dotnet.js" />
+      <NativeBinPlaceItem Condition="'$(TargetOS)' == 'Browser'" Include="$(NativeBinDir)dotnet.wasm" />
 
       <BinPlaceItem Condition="'$(BinPlaceTestRuntimePack)' != 'true'" Include="@(NativeBinPlaceItem)" />
       <FileWrites Include="@(NativeBinPlaceItem)" />

@@ -31,7 +31,7 @@ public class MonoRunner extends Instrumentation
     static MonoRunner inst;
 
     static {
-        System.loadLibrary("runtime-android");
+        System.loadLibrary("monodroid");
     }
 
     @Override
@@ -48,7 +48,11 @@ public class MonoRunner extends Instrumentation
         Context context = getContext();
         String filesDir = context.getFilesDir().getAbsolutePath();
         String cacheDir = context.getCacheDir().getAbsolutePath();
-        String docsDir  = context.getExternalFilesDir(Environment.DIRECTORY_DOCUMENTS).getAbsolutePath();
+        File docsPath  = context.getExternalFilesDir(Environment.DIRECTORY_DOCUMENTS);
+        if (docsPath == null) {
+            docsPath = context.getCacheDir();
+        }
+        String docsDir = docsPath.getAbsolutePath();
 
         // unzip libs and test files to filesDir
         unzipAssets(context, filesDir, "assets.zip");

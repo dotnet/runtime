@@ -1070,7 +1070,7 @@ namespace Internal.JitInterface
 
 #if READYTORUN
             TypeDesc owningType = methodIL.OwningMethod.GetTypicalMethodDefinition().OwningType;
-            bool recordToken = _compilation.NodeFactory.CompilationModuleGroup.VersionsWithType(owningType) && owningType is EcmaType;
+            bool recordToken = _compilation.CompilationModuleGroup.VersionsWithType(owningType) && owningType is EcmaType;
 #endif
 
             if (result is MethodDesc)
@@ -1220,7 +1220,9 @@ namespace Internal.JitInterface
         private byte* getClassName(CORINFO_CLASS_STRUCT_* cls)
         {
             var type = HandleToObject(cls);
-            return (byte*)GetPin(StringToUTF8(type.ToString()));
+            StringBuilder nameBuilder = new StringBuilder();
+            TypeString.Instance.AppendName(nameBuilder, type);
+            return (byte*)GetPin(StringToUTF8(nameBuilder.ToString()));
         }
 
         private byte* getClassNameFromMetadata(CORINFO_CLASS_STRUCT_* cls, byte** namespaceName)
@@ -1356,6 +1358,15 @@ namespace Internal.JitInterface
                 if (metadataType.IsAbstract)
                     result |= CorInfoFlag.CORINFO_FLG_ABSTRACT;
             }
+
+#if READYTORUN
+            if (!_compilation.CompilationModuleGroup.VersionsWithType(type))
+            {
+                // Prevent the JIT from drilling into types outside of the current versioning bubble
+                result |= CorInfoFlag.CORINFO_FLG_DONT_PROMOTE;
+                result &= ~CorInfoFlag.CORINFO_FLG_BEFOREFIELDINIT;
+            }
+#endif
 
             return (uint)result;
         }

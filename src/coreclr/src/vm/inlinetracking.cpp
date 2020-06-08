@@ -629,7 +629,7 @@ COUNT_T PersistentInlineTrackingMapR2R2::GetInliners(PTR_Module inlineeOwnerMod,
     CONTRACTL_END;
 
     _ASSERTE(inlineeOwnerMod);
-    _ASSERTE(inliners);
+    _ASSERTE(inliners != NULL || inlinersSize == 0);
 
     if (incompleteData)
     {

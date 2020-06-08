@@ -23,7 +23,6 @@
 #include "dispatchinfo.h"
 #include "wrappers.h"
 #include "internalunknownimpl.h"
-#include "rcwwalker.h"
 #include "util.hpp"
 
 class CCacheLineAllocator;
@@ -151,8 +150,6 @@ private:
 //
 //--------------------------------------------------------------------------------
 
-class WinRTManagedClassFactory;
-
 //--------------------------------------------------------------------------------
 // COM callable wrappers for CLR objects
 //--------------------------------------------------------------------------------
@@ -168,9 +165,7 @@ public:
     {
         enum
         {
-            // There is a small number of types that the class is castable to via variance and QI'ed for
-            // (typically just IFoo<object> where the class implements IFoo<IBar> and IFoo is covariant).
-            // There is also some number of IIDs QI'ed for by external code (e.g. Jupiter) that we won't
+            // There is also some number of IIDs QI'ed for by external code that we won't
             // recognize - this number is potentially unbounded so even if this was a different data
             // structure, we would want to limit its size. Simple sequentially searched array seems to
             // work the best both in terms of memory footprint and lookup performance.
@@ -247,22 +242,13 @@ public:
         void InsertInterfaceTemplate(REFIID riid, ComCallWrapperTemplate *pTemplate);
     };
 
-    // Iterates COM-exposed interfaces of a class. Handles arrays which support IIterable<T>,
-    // IVector<T>, and IVectorView<T>, as well as WinRT class factories which support factory
-    // and static interfaces. It is also aware of redirected interfaces - both the .NET and the
-    // corresponding WinRT type are reported
+    // Iterates COM-exposed interfaces of a class.
     class CCWInterfaceMapIterator
     {
     private:
         struct InterfaceProps
         {
             MethodTable *m_pItfMT;
-
-            WinMDAdapter::RedirectedTypeIndex m_RedirectedIndex; // valid if m_dwIsRedirectedInterface is set
-
-            DWORD m_dwIsRedirectedInterface : 1;
-            DWORD m_dwIsFactoryInterface    : 1;
-            DWORD m_dwIsStaticInterface     : 1;
         };
 
         StackSArray<InterfaceProps> m_Interfaces;
@@ -274,10 +260,10 @@ public:
             return m_Interfaces[(COUNT_T)m_Index];
         }
 
-        InterfaceProps &AppendInterface(MethodTable *pItfMT, bool isRedirected);
+        InterfaceProps &AppendInterface(MethodTable *pItfMT);
 
     public:
-        CCWInterfaceMapIterator(TypeHandle thClass, WinRTManagedClassFactory *pClsFact, bool fIterateRedirectedInterfaces);
+        CCWInterfaceMapIterator(TypeHandle thClass);
 
         BOOL Next()
         {
@@ -307,30 +293,6 @@ public:
         {
             LIMITED_METHOD_CONTRACT;
             m_Index = (COUNT_T)-1;
-        }
-
-        BOOL IsFactoryInterface() const
-        {
-            LIMITED_METHOD_CONTRACT;
-            return GetCurrentInterfaceProps().m_dwIsFactoryInterface;
-        }
-
-        BOOL IsStaticInterface() const
-        {
-            LIMITED_METHOD_CONTRACT;
-            return GetCurrentInterfaceProps().m_dwIsStaticInterface;
-        }
-
-        BOOL IsRedirectedInterface() const
-        {
-            LIMITED_METHOD_CONTRACT;
-            return GetCurrentInterfaceProps().m_dwIsRedirectedInterface;
-        }
-
-        WinMDAdapter::RedirectedTypeIndex GetRedirectedInterfaceIndex() const
-        {
-            LIMITED_METHOD_CONTRACT;
-            return GetCurrentInterfaceProps().m_RedirectedIndex;
         }
     };
 
@@ -376,18 +338,6 @@ public:
         return (m_flags & enum_ImplementsICustomQueryInterface);
     }
 
-    BOOL SupportsIInspectable()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return (m_flags & enum_SupportsIInspectable);
-    }
-
-    BOOL SupportsVariantInterface()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return (m_flags & enum_SupportsVariantInterface);
-    }
-
     BOOL RepresentsVariantInterface()
     {
         LIMITED_METHOD_CONTRACT;
@@ -418,16 +368,10 @@ public:
         return m_thClass;
     }
 
-    MethodTable *GetWinRTRuntimeClass()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return m_pWinRTRuntimeClass;
-    }
-
     BOOL IsSafeTypeForMarshalling();
 
     // Creates a new Template and caches it on the MethodTable or class factory.
-    static ComCallWrapperTemplate *CreateTemplate(TypeHandle thClass, WinRTManagedClassFactory *pClsFact = NULL);
+    static ComCallWrapperTemplate *CreateTemplate(TypeHandle thClass);
 
     // Creates a new Template for just one interface. Used for lazily created CCWs for interfaces with variance.
     static ComCallWrapperTemplate *CreateTemplateForInterface(MethodTable *pItfMT);
@@ -457,7 +401,6 @@ private:
     ComCallWrapperTemplate*                 m_pParent;
     TypeHandle                              m_thClass;
     MethodTable*                            m_pDefaultItf;
-    MethodTable*                            m_pWinRTRuntimeClass;
     ComMethodTable*                         m_pClassComMT;
     ComMethodTable*                         m_pBasicComMT;
 
@@ -469,10 +412,9 @@ private:
 
         enum_InvisibleParent                  = 0x20,
         enum_ImplementsICustomQueryInterface  = 0x40,
-        enum_SupportsIInspectable             = 0x80,
+        // enum_Unused                        = 0x80,
         enum_SupportsIClassX                  = 0x100,
 
-        enum_SupportsVariantInterface         = 0x200, // this is a template for a class that implements an interface with variance
         enum_RepresentsVariantInterface       = 0x400, // this is a template for an interface with variance
 
         enum_UseOleAutDispatchImpl            = 0x800, // the class is decorated with IDispatchImplAttribute(CompatibleImpl)
@@ -523,13 +465,6 @@ struct IDispatchVtable : IUnkVtable
     SLOT        m_Invoke;
 };
 
-struct IInspectableVtable : IUnkVtable
-{
-    SLOT        m_GetIIDs;
-    SLOT        m_GetRuntimeClassName;
-    SLOT        m_GetTrustLevel;
-};
-
 enum Masks
 {
     enum_InterfaceTypeMask              = 0x00000003,
@@ -543,13 +478,11 @@ enum Masks
     enum_GuidGenerated                  = 0x00000400,
     // enum_unused                      = 0x00001000,
     enum_IsBasic                        = 0x00002000,
-    enum_IsWinRTDelegate                = 0x00004000,
-    enum_IsWinRTTrivialAggregate        = 0x00008000,
-    enum_IsWinRTFactoryInterface        = 0x00010000,
-    enum_IsWinRTStaticInterface         = 0x00020000,
-    enum_IsWinRTRedirectedInterface     = 0x00040000,
-
-    enum_WinRTRedirectedInterfaceMask   = 0xFF000000, // the highest byte contains redirected interface index
+    // enum_unused                      = 0x00004000,
+    // enum_unused                      = 0x00008000,
+    // enum_unused                      = 0x00010000,
+    // enum_unused                      = 0x00020000,
+    // enum_unused                      = 0x00040000,
 };
 
 typedef DPTR(struct ComMethodTable) PTR_ComMethodTable;
@@ -565,7 +498,6 @@ struct ComMethodTable
     void LayOutClassMethodTable();
     BOOL LayOutInterfaceMethodTable(MethodTable* pClsMT);
     void LayOutBasicMethodTable();
-    void LayOutDelegateMethodTable();
 
     // Accessor for the IDispatch information.
     DispatchInfo* GetDispatchInfo();
@@ -651,63 +583,6 @@ struct ComMethodTable
         return (m_Flags & enum_IsBasic) != 0;
     }
 
-    BOOL IsWinRTDelegate()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return (m_Flags & enum_IsWinRTDelegate) != 0;
-    }
-
-    BOOL IsWinRTTrivialAggregate()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return (m_Flags & enum_IsWinRTTrivialAggregate) != 0;
-    }
-
-    BOOL IsWinRTFactoryInterface()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return (m_Flags & enum_IsWinRTFactoryInterface) != 0;
-    }
-
-    BOOL IsWinRTStaticInterface()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return (m_Flags & enum_IsWinRTStaticInterface) != 0;
-    }
-
-    VOID SetIsWinRTFactoryInterface()
-    {
-        LIMITED_METHOD_CONTRACT;
-        m_Flags |= enum_IsWinRTFactoryInterface;
-    }
-
-    VOID SetIsWinRTStaticInterface()
-    {
-        LIMITED_METHOD_CONTRACT;
-        m_Flags |= enum_IsWinRTStaticInterface;
-    }
-
-    BOOL IsWinRTRedirectedInterface()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return (m_Flags & enum_IsWinRTRedirectedInterface) != 0;
-    }
-
-    WinMDAdapter::RedirectedTypeIndex GetWinRTRedirectedInterfaceIndex()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return (WinMDAdapter::RedirectedTypeIndex)((m_Flags & enum_WinRTRedirectedInterfaceMask) >> 24);
-    }
-
-    void SetWinRTRedirectedInterfaceIndex(WinMDAdapter::RedirectedTypeIndex index)
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        m_Flags |= ((size_t)index << 24);
-        m_Flags |= enum_IsWinRTRedirectedInterface;
-        _ASSERTE(GetWinRTRedirectedInterfaceIndex() == index);
-    }
-
     BOOL HasInvisibleParent()
     {
         LIMITED_METHOD_CONTRACT;
@@ -759,7 +634,6 @@ struct ComMethodTable
         switch (ItfType)
         {
             case ifVtable:      return (sizeof(IUnkVtable) / sizeof(SLOT));
-            case ifInspectable: return (sizeof(IInspectableVtable) / sizeof(SLOT));
             default:            return (sizeof(IDispatchVtable) / sizeof(SLOT));
         }
     }
@@ -1213,24 +1087,6 @@ public:
     // Release for a Wrapper object
     inline ULONG Release();
 
-    // Get Jupiter RefCount
-    inline ULONG GetJupiterRefCount();
-
-    // AddRef Jupiter Ref Count
-    // Jupiter Ref count becomes strong ref if pegged, otherwise weak ref
-    inline ULONG AddJupiterRef();
-
-    // Release Jupiter Ref Count
-    // Jupiter Ref count becomes strong ref if pegged, otherwise weak ref
-    inline ULONG ReleaseJupiterRef();
-
-    // Return whether this CCW is pegged or not by Jupiter
-    inline BOOL IsPegged();
-
-    // Return whether this CCW is pegged or not (either by Jupiter, or globally)
-    // We globally peg every Jupiter CCW outside Gen 2 GCs
-    inline BOOL IsConsideredPegged();
-
     // Initialize the simple wrapper.
     static void InitSimpleWrapper(ComCallWrapper* pWrap, SimpleComCallWrapper* pSimpleWrap);
 
@@ -1319,33 +1175,6 @@ public:
         Wrapper<ComCallWrapper*, CCWHolderDoNothing, CCWRelease, NULL>::operator=(p);
     }
 };
-
-typedef DPTR(class WeakReferenceImpl) PTR_WeakReferenceImpl;
-
-//
-// Represents a domain-bound weak reference to the object (not the CCW)
-//
-class WeakReferenceImpl : public IUnknownCommon<IWeakReference, IID_IWeakReference>
-{
-private:
-    OBJECTHANDLE        m_ppObject;             // Short weak global handle points back to the object,
-
-public:
-    WeakReferenceImpl(SimpleComCallWrapper *pSimpleWrapper, Thread *pCurrentThread);
-    virtual ~WeakReferenceImpl();
-
-    // IWeakReference methods
-    virtual HRESULT STDMETHODCALLTYPE Resolve(REFIID riid, IInspectable **ppvObject);
-
-private :
-    static void Resolve_Callback(LPVOID lpData);
-    static void Resolve_Callback_SwitchToPreemp(LPVOID lpData);
-
-    HRESULT ResolveInternal(Thread *pThread, REFIID riid, IInspectable **ppvObject);
-
-    HRESULT Cleanup();
-};
-
 //
 // Uncommonly used data on Simple CCW
 // Created on-demand
@@ -1356,7 +1185,6 @@ private :
 struct SimpleCCWAuxData
 {
     VolatilePtr<DispatchExInfo>     m_pDispatchExInfo;  // Information required by the IDispatchEx standard interface
-                                                        // Not available on WinRT types
 
     SimpleCCWAuxData()
     {
@@ -1386,7 +1214,6 @@ struct SimpleComCallWrapper
 private:
     friend class ComCallWrapper;
     friend class ClrDataAccess;
-    friend class WeakReferenceImpl;
 
     enum SimpleComCallWrapperFlags
     {
@@ -1395,7 +1222,7 @@ private:
         enum_IsHandleWeak                      = 0x4,
         enum_IsComActivated                    = 0x8,
         // unused                              = 0x10,
-        enum_IsPegged                          = 0x80,
+        // unused                              = 0x80,
         // unused                              = 0x100,
         enum_CustomQIRespondsToIMarshal        = 0x200,
         enum_CustomQIRespondsToIMarshal_Inited = 0x400,
@@ -1406,14 +1233,10 @@ public :
     {
         CLEANUP_SENTINEL        = 0x0000000080000000,       // Sentinel -> 1 bit
         COM_REFCOUNT_MASK       = 0x000000007FFFFFFF,       // COM -> 31 bits
-        JUPITER_REFCOUNT_MASK   = 0xFFFFFFFF00000000,       // Jupiter -> 32 bits
-        JUPITER_REFCOUNT_SHIFT  = 32,
-        JUPITER_REFCOUNT_INC    = 0x0000000100000000,
         EXT_COM_REFCOUNT_MASK   = 0x00000000FFFFFFFF,       // For back-compat, preserve the higher-bit so that outside can observe it
         ALL_REFCOUNT_MASK       = 0xFFFFFFFF7FFFFFFF,
     };
 
-    #define GET_JUPITER_REF(x)  ((ULONG)(((x) & SimpleComCallWrapper::JUPITER_REFCOUNT_MASK) >> SimpleComCallWrapper::JUPITER_REFCOUNT_SHIFT))
     #define GET_COM_REF(x)      ((ULONG)((x) & SimpleComCallWrapper::COM_REFCOUNT_MASK))
     #define GET_EXT_COM_REF(x)  ((ULONG)((x) & SimpleComCallWrapper::EXT_COM_REFCOUNT_MASK))
 
@@ -1589,33 +1412,11 @@ public:
         FastInterlockOr((ULONG*)&m_flags, enum_IsComActivated);
     }
 
-    inline BOOL IsPegged()
-    {
-        LIMITED_METHOD_DAC_CONTRACT;
-
-        return m_flags & enum_IsPegged;
-    }
-
-    inline void MarkPegged()
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        FastInterlockOr((ULONG*)&m_flags, enum_IsPegged);
-    }
-
-    inline void UnMarkPegged()
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        FastInterlockAnd((ULONG*)&m_flags, ~enum_IsPegged);
-    }
-
     // Used for the creation and deletion of simple wrappers
     static SimpleComCallWrapper* CreateSimpleWrapper();
 
     // Determines if the type associated with the ComCallWrapper supports exceptions.
     static BOOL SupportsExceptions(MethodTable *pMT);
-    static BOOL SupportsIStringable(MethodTable *pMT);
 
     // Determines if the type supports IReflect / IExpando.
     static BOOL SupportsIReflect(MethodTable *pMT);
@@ -1835,7 +1636,7 @@ public:
         // point unless newRefCount equals CLEANUP_SENTINEL (it's the only case when we know that Neuter
         // or another Release could not swoop in and destroy our data structures).
 
-        // If we hit the sentinel value in COM ref count and jupiter ref count == 0, it's our responsibility to clean up.
+        // If we hit the sentinel value in COM ref count == 0, it's our responsibility to clean up.
         if (newRefCount == CLEANUP_SENTINEL)
         {
             ReleaseImplCleanup();
@@ -1845,56 +1646,7 @@ public:
         return GET_EXT_COM_REF(newRefCount);
     }
 
-    inline ULONG AddJupiterRef()
-    {
-        WRAPPER_NO_CONTRACT;
-
-        LONGLONG llOldRefCount;
-        LONGLONG llNewRefCount;
-
-        do {
-            llOldRefCount = m_llRefCount;
-            llNewRefCount = llOldRefCount + JUPITER_REFCOUNT_INC;
-        } while (InterlockedCompareExchange64(&m_llRefCount, llNewRefCount, llOldRefCount) != llOldRefCount);
-
-        LOG((LF_INTEROP, LL_INFO1000,
-            "SimpleComCallWrapper::AddJupiterRef() called on SimpleComCallWrapper 0x%p, cbRef = 0x%x, cbJupiterRef = 0x%x\n", this, GET_COM_REF(llNewRefCount), GET_JUPITER_REF(llNewRefCount)));
-
-        return GET_JUPITER_REF(llNewRefCount);
-    }
-
-    inline ULONG ReleaseJupiterRef()
-    {
-        WRAPPER_NO_CONTRACT;
-
-        LONGLONG llOldRefCount;
-        LONGLONG llNewRefCount;
-
-        do {
-            llOldRefCount = m_llRefCount;
-            llNewRefCount = llOldRefCount - JUPITER_REFCOUNT_INC;
-        } while (InterlockedCompareExchange64(&m_llRefCount, llNewRefCount, llOldRefCount) != llOldRefCount);
-
-        LOG((LF_INTEROP, LL_INFO1000,
-            "SimpleComCallWrapper::ReleaseJupiterRef() called on SimpleComCallWrapper 0x%p, cbRef = 0x%x, cbJupiterRef = 0x%x\n", this, GET_COM_REF(llNewRefCount), GET_JUPITER_REF(llNewRefCount)));
-
-        if (llNewRefCount == CLEANUP_SENTINEL)
-        {
-            // If we hit the sentinel value, it's our responsibility to clean up.
-            m_pWrap->Cleanup();
-        }
-
-        return GET_JUPITER_REF(llNewRefCount);
-    }
-
 #endif // !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
-
-    inline ULONG GetJupiterRefCount()
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        return GET_JUPITER_REF(READ_REF(m_llRefCount));
-    }
 
     MethodTable* GetMethodTable()
     {
@@ -1936,25 +1688,6 @@ public:
     {
         LIMITED_METHOD_CONTRACT;
         return m_pTemplate;
-    }
-
-    // Creates new AddRef-ed IWeakReference*
-    IWeakReference *CreateWeakReference(Thread *pCurrentThread)
-    {
-        CONTRACTL
-        {
-            THROWS;
-            GC_TRIGGERS;
-            MODE_PREEMPTIVE;
-            PRECONDITION(pCurrentThread == GetThread());
-        }
-        CONTRACTL_END;
-
-        // Create a WeakReferenceImpl with RefCount = 1
-        // No need to call AddRef
-        WeakReferenceImpl *pWeakRef = new WeakReferenceImpl(this, pCurrentThread);
-
-        return pWeakRef;
     }
 
     // Returns TRUE if the ICustomQI implementation returns Handled or Failed for IID_IMarshal.
@@ -2020,7 +1753,8 @@ private:
 
     DWORD                           m_flags;
 
-    // This maintains both COM ref and Jupiter ref in 64-bit
+    // This maintains the 32-bit COM refcount in 64-bits
+    // to enable also tracking the Cleanup sentinel. See code:CLEANUP_SENTINEL
     LONGLONG                        m_llRefCount;
  };
 
@@ -2119,35 +1853,6 @@ inline ULONG ComCallWrapper::Release()
     return m_pSimpleWrapper->Release();
 }
 
-inline ULONG ComCallWrapper::AddJupiterRef()
-{
-    CONTRACTL
-    {
-        WRAPPER(THROWS);
-        WRAPPER(GC_TRIGGERS);
-        MODE_ANY;
-        INSTANCE_CHECK;
-    }
-    CONTRACTL_END;
-
-    return m_pSimpleWrapper->AddJupiterRef();
-}
-
-inline ULONG ComCallWrapper::ReleaseJupiterRef()
-{
-    CONTRACTL
-    {
-        WRAPPER(THROWS);
-        WRAPPER(GC_TRIGGERS);
-        MODE_ANY;
-        INSTANCE_CHECK;
-        PRECONDITION(CheckPointer(m_pSimpleWrapper));
-    }
-    CONTRACTL_END;
-
-    return m_pSimpleWrapper->ReleaseJupiterRef();
-}
-
 inline void ComCallWrapper::InitSimpleWrapper(ComCallWrapper* pWrap, SimpleComCallWrapper* pSimpleWrap)
 {
     CONTRACTL
@@ -2189,41 +1894,6 @@ inline void ComCallWrapper::ClearSimpleWrapper(ComCallWrapper* pWrap)
     }
 }
 #endif // !DACCESS_COMPILE && !CROSSGEN_COMPILE
-
-inline BOOL ComCallWrapper::IsPegged()
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-        INSTANCE_CHECK;
-    }
-    CONTRACTL_END;
-
-    return m_pSimpleWrapper->IsPegged();
-}
-
-inline BOOL ComCallWrapper::IsConsideredPegged()
-{
-    LIMITED_METHOD_DAC_CONTRACT;
-
-    return m_pSimpleWrapper->IsPegged() || RCWWalker::IsGlobalPeggingOn();
-}
-
-inline ULONG ComCallWrapper::GetJupiterRefCount()
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-        INSTANCE_CHECK;
-    }
-    CONTRACTL_END;
-
-    return m_pSimpleWrapper->GetJupiterRefCount();
-}
 
 inline PTR_ComCallWrapper ComCallWrapper::GetWrapperFromIP(PTR_IUnknown pUnk)
 {
@@ -2302,21 +1972,15 @@ inline BOOL ComCallWrapper::IsWrapperActive()
 
     LONGLONG llRefCount = m_pSimpleWrapper->GetRealRefCount();
     ULONG cbRef = GET_COM_REF(llRefCount);
-    ULONG cbJupiterRef = GET_JUPITER_REF(llRefCount);
 
-    // We only consider jupiter ref count to be a "strong" ref count if it is pegged and it is alive
-    // Note that there is no concern for resurrecting this CCW in the next Gen0/1 GC
-    // because this CCW will be promoted to Gen 2 very quickly
-    BOOL bHasJupiterStrongRefCount = (cbJupiterRef > 0 && IsConsideredPegged());
-
-    BOOL bHasStrongCOMRefCount = ((cbRef > 0) || bHasJupiterStrongRefCount);
+    BOOL bHasStrongCOMRefCount = ((cbRef > 0));
 
     BOOL bIsWrapperActive = (bHasStrongCOMRefCount && !m_pSimpleWrapper->IsHandleWeak());
 
     LOG((LF_INTEROP, LL_INFO1000,
-         "CCW 0x%p: cbRef = 0x%x, cbJupiterRef = 0x%x, IsPegged = %d, GlobalPegging = %d, IsHandleWeak = %d\n",
+         "CCW 0x%p: cbRef = 0x%x, IsHandleWeak = %d\n",
          this,
-         cbRef, cbJupiterRef, m_pSimpleWrapper->IsPegged(), RCWWalker::IsGlobalPeggingOn(), m_pSimpleWrapper->IsHandleWeak()));
+         cbRef, m_pSimpleWrapper->IsHandleWeak()));
     LOG((LF_INTEROP, LL_INFO1000, "CCW 0x%p: IsWrapperActive returned %d\n", this, bIsWrapperActive));
 
     return bIsWrapperActive;

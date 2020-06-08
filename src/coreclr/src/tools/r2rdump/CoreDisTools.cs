@@ -45,7 +45,7 @@ namespace R2RDump
 
         public unsafe static int GetInstruction(IntPtr Disasm, RuntimeFunction rtf, int imageOffset, int rtfOffset, byte[] image, out string instr)
         {
-            int instrSize = 1;
+            int instrSize;
             fixed (byte* p = image)
             {
                 IntPtr ptr = (IntPtr)(p + imageOffset + rtfOffset);
@@ -58,7 +58,7 @@ namespace R2RDump
 
         public static IntPtr GetDisasm(Machine machine)
         {
-            TargetArch target = TargetArch.Target_Host;
+            TargetArch target;
             switch (machine)
             {
                 case Machine.Amd64:
@@ -87,6 +87,16 @@ namespace R2RDump
     public class Disassembler : IDisposable
     {
         /// <summary>
+        /// Indentation of instruction mnemonics in naked mode with no offsets.
+        /// </summary>
+        private const int NakedNoOffsetIndentation = 4;
+
+        /// <summary>
+        /// Indentation of instruction mnemonics in naked mode with offsets.
+        /// </summary>
+        private const int NakedWithOffsetIndentation = 11;
+
+        /// <summary>
         /// R2R reader is used to access architecture info, the PE image data and symbol table.
         /// </summary>
         private readonly ReadyToRunReader _reader;
@@ -102,6 +112,16 @@ namespace R2RDump
         private readonly IntPtr _disasm;
 
         /// <summary>
+        /// Indentation of instruction mnemonics.
+        /// </summary>
+        public int MnemonicIndentation { get; private set; }
+
+        /// <summary>
+        /// Indentation of instruction mnemonics.
+        /// </summary>
+        public int OperandsIndentation { get; private set; }
+
+        /// <summary>
         /// Store the R2R reader and construct the disassembler for the appropriate architecture.
         /// </summary>
         /// <param name="reader"></param>
@@ -110,6 +130,7 @@ namespace R2RDump
             _reader = reader;
             _options = options;
             _disasm = CoreDisTools.GetDisasm(_reader.Machine);
+            SetIndentations();
         }
 
         /// <summary>
@@ -124,7 +145,52 @@ namespace R2RDump
         }
 
         /// <summary>
-        /// Parse a single instruction and return the RVA of the next instruction.
+        /// Set indentations for mnemonics and operands.
+        /// </summary>
+        private void SetIndentations()
+        {
+            if (_options.Naked)
+            {
+                MnemonicIndentation = _options.HideOffsets ? NakedNoOffsetIndentation : NakedWithOffsetIndentation;
+            }
+            else
+            {
+                // The length of the byte dump starting with the first hexadecimal digit and ending with the final space
+                int byteDumpLength = _reader.Machine switch
+                {
+                    // Most instructions are no longer than 7 bytes. CorDisasm::dumpInstruction always pads byte dumps
+                    // to 7 * 3 characters; see https://github.com/dotnet/llilc/blob/master/lib/CoreDisTools/coredistools.cpp.
+                    Machine.I386 => 7 * 3,
+                    Machine.Amd64 => 7 * 3,
+
+                    // Instructions are either 2 or 4 bytes long
+                    Machine.ArmThumb2 => 4 * 3,
+
+                    // Instructions are dumped as 4-byte hexadecimal integers
+                    Machine.Arm64 => 4 * 2 + 1,
+
+                    _ => throw new NotImplementedException()
+                };
+
+                MnemonicIndentation = NakedWithOffsetIndentation + byteDumpLength;
+            }
+
+            // This leaves 7 characters for the mnemonic
+            OperandsIndentation = MnemonicIndentation + 8;
+        }
+
+        /// <summary>
+        /// Append spaces to the string builder to achieve at least the given indentation.
+        /// </summary>
+        private static void EnsureIndentation(StringBuilder builder, int lineStartIndex, int desiredIndentation)
+        {
+            int currentIndentation = builder.Length - lineStartIndex;
+            int spacesToAppend = Math.Max(desiredIndentation - currentIndentation, 1);
+            builder.Append(' ', spacesToAppend);
+        }
+
+        /// <summary>
+        /// Parse and dump a single instruction and return its size in bytes.
         /// </summary>
         /// <param name="rtf">Runtime function to parse</param>
         /// <param name="imageOffset">Offset within the PE image byte array</param>
@@ -142,46 +208,107 @@ namespace R2RDump
             int instrSize = CoreDisTools.GetInstruction(_disasm, rtf, imageOffset, rtfOffset, _reader.Image, out instruction);
             CoreDisTools.ClearOutputBuffer();
 
-            instruction = instruction.Replace('\t', ' ');
+            // CoreDisTools dumps instructions in the following format:
+            //
+            //      address: bytes [padding] \t mnemonic [\t operands] \n
+            //
+            // However, due to an LLVM issue regarding instruction prefixes (https://bugs.llvm.org/show_bug.cgi?id=7709),
+            // multiple lines may be returned for a single x86/x64 instruction.
 
-            if (_options.Naked)
+            var builder = new StringBuilder();
+            int lineNum = 0;
+            // The start index of the last line in builder
+            int lineStartIndex = 0;
+
+            // Remove this foreach wrapper and line* variables after the aforementioned LLVM issue is fixed
+            foreach (string line in instruction.Split(new char[] { '\n' }, StringSplitOptions.RemoveEmptyEntries))
             {
-                StringBuilder nakedInstruction = new StringBuilder();
-                foreach (string line in instruction.Split(new char[] { '\n' }, StringSplitOptions.RemoveEmptyEntries))
-                {
-                    int colon = line.IndexOf(':');
-                    if (colon >= 0)
-                    {
-                        colon += 2;
-                        while (colon + 3 <= line.Length &&
-                            IsXDigit(line[colon]) &&
-                            IsXDigit(line[colon + 1]) &&
-                            line[colon + 2] == ' ')
-                        {
-                            colon += 3;
-                        }
+                int colonIndex = line.IndexOf(':');
+                int tab1Index = line.IndexOf('\t');
 
+                if ((0 < colonIndex) && (colonIndex < tab1Index))
+                {
+                    // First handle the address and the byte dump
+                    if (_options.Naked)
+                    {
                         if (!_options.HideOffsets)
                         {
-                            nakedInstruction.Append($"{(rtfOffset + rtf.CodeOffset),8:x4}:");
-                            nakedInstruction.Append("  ");
+                            // All lines but the last one must represent single-byte prefixes, so add lineNum to the offset
+                            builder.Append($"{rtf.CodeOffset + rtfOffset + lineNum,8:x4}:");
                         }
-                        else
-                        {
-                            nakedInstruction.Append("    ");
-                        }
-                        nakedInstruction.Append(line.Substring(colon).TrimStart());
-                        nakedInstruction.Append('\n');
                     }
                     else
                     {
-                        nakedInstruction.Append(' ', 7);
-                        nakedInstruction.Append(line.TrimStart());
-                        nakedInstruction.Append('\n');
+                        if (_reader.Machine == Machine.Arm64)
+                        {
+                            // Replace " hh hh hh hh " byte dump with " hhhhhhhh ".
+                            // CoreDisTools should be fixed to dump bytes this way for ARM64.
+                            uint instructionBytes = BitConverter.ToUInt32(_reader.Image, imageOffset + rtfOffset);
+                            builder.Append(line, 0, colonIndex + 1);
+                            builder.Append(' ');
+                            builder.Append(instructionBytes.ToString("x8"));
+                        }
+                        else
+                        {
+                            // Copy the offset and the byte dump
+                            int byteDumpEndIndex = tab1Index;
+                            do
+                            {
+                                byteDumpEndIndex--;
+                            }
+                            while (line[byteDumpEndIndex] == ' ');
+                            builder.Append(line, 0, byteDumpEndIndex + 1);
+                        }
+                        builder.Append(' ');
+                    }
+
+                    // Now handle the mnemonic and operands. Ensure proper indentation for the mnemonic.
+                    EnsureIndentation(builder, lineStartIndex, MnemonicIndentation);
+
+                    int tab2Index = line.IndexOf('\t', tab1Index + 1);
+                    if (tab2Index >= 0)
+                    {
+                        // Copy everything between the first and the second tabs
+                        builder.Append(line, tab1Index + 1, tab2Index - tab1Index - 1);
+                        // Ensure proper indentation for the operands
+                        EnsureIndentation(builder, lineStartIndex, OperandsIndentation);
+                        int afterTab2Index = tab2Index + 1;
+
+                        // Work around an LLVM issue causing an extra space to be output before operands;
+                        // see https://reviews.llvm.org/D35946.
+                        if ((afterTab2Index < line.Length) &&
+                            ((line[afterTab2Index] == ' ') || (line[afterTab2Index] == '\t')))
+                        {
+                            afterTab2Index++;
+                        }
+
+                        // Copy everything after the second tab
+                        int savedLength = builder.Length;
+                        builder.Append(line, afterTab2Index, line.Length - afterTab2Index);
+                        // There should be no extra tabs. Should we encounter them, replace them with a single space.
+                        if (line.IndexOf('\t', afterTab2Index) >= 0)
+                        {
+                            builder.Replace('\t', ' ', savedLength, builder.Length - savedLength);
+                        }
+                    }
+                    else
+                    {
+                        // Copy everything after the first tab
+                        builder.Append(line, tab1Index + 1, line.Length - tab1Index - 1);
                     }
                 }
-                instruction = nakedInstruction.ToString();
+                else
+                {
+                    // Should not happen. Just replace tabs with spaces.
+                    builder.Append(line.Replace('\t', ' '));
+                }
+
+                builder.Append('\n');
+                lineNum++;
+                lineStartIndex = builder.Length;
             }
+
+            instruction = builder.ToString();
 
             switch (_reader.Machine)
             {
@@ -194,7 +321,6 @@ namespace R2RDump
                     break;
 
                 case Machine.ArmThumb2:
-                case Machine.Thumb:
                     break;
 
                 case Machine.Arm64:
@@ -206,11 +332,6 @@ namespace R2RDump
 
             instruction = instruction.Replace("\n", Environment.NewLine);
             return instrSize;
-        }
-
-        private static bool IsXDigit(char c)
-        {
-            return Char.IsDigit(c) || (c >= 'A' && c <= 'F') || (c >= 'a' && c <= 'f');
         }
 
         const string RelIPTag = "[rip ";

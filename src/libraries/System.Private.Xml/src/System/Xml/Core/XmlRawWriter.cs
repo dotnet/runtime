@@ -162,7 +162,7 @@ namespace System.Xml
         }
 
         // Forward call to WriteString(string).
-        public override void WriteWhitespace(string ws)
+        public override void WriteWhitespace(string? ws)
         {
             WriteString(ws);
         }

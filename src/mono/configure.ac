@@ -943,6 +943,16 @@ if test x$with_core = xonly; then
 fi
 AM_CONDITIONAL(ENABLE_NETCORE, test x$with_core = xonly)
 
+if test x$with_core = xonly; then
+	if test -f $srcdir/mono/eventpipe/ep.h; then
+		enable_perftracing=yes
+	fi
+	if test x$enable_perftracing = xyes; then
+		AC_DEFINE(ENABLE_PERFTRACING,1,[Enables support for eventpipe library])
+	fi
+fi
+AM_CONDITIONAL(ENABLE_PERFTRACING, test x$enable_perftracing = xyes)
+
 #
 # A sanity check to catch cases where the package was unpacked
 # with an ancient tar program (Solaris)
@@ -3920,6 +3930,8 @@ else
 	AC_CHECK_LIB(oleaut32, main, LIBS="$LIBS -loleaut32", AC_ERROR(bad mingw install?))
 	AC_CHECK_LIB(advapi32, main, LIBS="$LIBS -ladvapi32", AC_ERROR(bad mingw install?))
 	AC_CHECK_LIB(version, main, LIBS="$LIBS -lversion", AC_ERROR(bad mingw install?))
+
+	AC_CHECK_TYPES([struct sockaddr_in6], [AC_DEFINE(HAVE_STRUCT_SOCKADDR_IN6)], , [#include <ws2tcpip.h>])
 
 	dnl *********************************
 	dnl *** Check for struct ip_mreqn ***

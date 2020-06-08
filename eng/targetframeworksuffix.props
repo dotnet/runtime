@@ -71,7 +71,7 @@
     </When>
     <When Condition="'$(TargetFrameworkSuffix)' == 'Browser'">
       <PropertyGroup>
-        <TargetsLinux>true</TargetsLinux>
+        <TargetsUnix>true</TargetsUnix>
         <TargetsBrowser>true</TargetsBrowser>
       </PropertyGroup>
     </When>

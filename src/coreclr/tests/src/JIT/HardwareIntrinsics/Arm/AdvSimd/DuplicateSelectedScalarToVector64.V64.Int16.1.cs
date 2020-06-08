@@ -198,6 +198,7 @@ namespace JIT.HardwareIntrinsics.Arm
 
         private static readonly int Op1ElementCount = Unsafe.SizeOf<Vector64<Int16>>() / sizeof(Int16);
         private static readonly int RetElementCount = Unsafe.SizeOf<Vector64<Int16>>() / sizeof(Int16);
+        private static readonly byte Imm = 1;
 
         private static Int16[] _data = new Int16[Op1ElementCount];
 

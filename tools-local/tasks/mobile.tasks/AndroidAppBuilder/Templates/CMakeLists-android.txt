@@ -1,16 +1,16 @@
 cmake_minimum_required(VERSION 3.10)
 
-project(runtime-android)
+project(monodroid)
 
 add_library(
-    runtime-android
+    monodroid
     SHARED
-    runtime-android.c)
+    monodroid.c)
 
 include_directories("%MonoInclude%")
 
 target_link_libraries(
-    runtime-android
+    monodroid
     %NativeLibrariesToLink%
     libz.so
     log

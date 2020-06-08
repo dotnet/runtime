@@ -6,6 +6,9 @@ using System.Diagnostics;
 
 namespace System.Formats.Cbor
 {
+    /// <summary>
+    ///   Represents CBOR Major Types, as defined in RFC7049 section 2.1.
+    /// </summary>
     internal enum CborMajorType : byte
     {
         UnsignedInteger = 0,
@@ -18,12 +21,11 @@ namespace System.Formats.Cbor
         Simple = 7,
     }
 
+    /// <summary>
+    ///   Represents the 5-bit additional information included in a CBOR initial byte.
+    /// </summary>
     internal enum CborAdditionalInfo : byte
     {
-        SimpleValueFalse = 20,
-        SimpleValueTrue = 21,
-        SimpleValueNull = 22,
-
         Additional8BitData = 24,
         Additional16BitData = 25,
         Additional32BitData = 26,
@@ -31,15 +33,17 @@ namespace System.Formats.Cbor
         IndefiniteLength = 31,
     }
 
-    /// Represents the Cbor Data item initial byte structure
+    /// <summary>
+    ///   Represents a CBOR initial byte
+    /// </summary>
     internal readonly struct CborInitialByte
     {
         public const byte IndefiniteLengthBreakByte = 0xff;
-        private const byte AdditionalInformationMask = 0b000_11111;
+        public const byte AdditionalInformationMask = 0b000_11111;
 
         public byte InitialByte { get; }
 
-        internal CborInitialByte(CborMajorType majorType, CborAdditionalInfo additionalInfo)
+        public CborInitialByte(CborMajorType majorType, CborAdditionalInfo additionalInfo)
         {
             Debug.Assert((byte)majorType < 8, "CBOR Major Type is out of range");
             Debug.Assert((byte)additionalInfo < 32, "CBOR initial byte additional info is out of range");
@@ -47,7 +51,7 @@ namespace System.Formats.Cbor
             InitialByte = (byte)(((byte)majorType << 5) | (byte)additionalInfo);
         }
 
-        internal CborInitialByte(byte initialByte)
+        public CborInitialByte(byte initialByte)
         {
             InitialByte = initialByte;
         }

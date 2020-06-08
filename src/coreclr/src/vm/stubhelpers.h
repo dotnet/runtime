@@ -48,12 +48,6 @@ public:
 
 #ifdef FEATURE_COMINTEROP
     static FCDECL4(IUnknown*,       GetCOMIPFromRCW,                    Object* pSrcUNSAFE, MethodDesc* pMD, void **ppTarget, CLR_BOOL* pfNeedsRelease);
-    static FCDECL3(IUnknown*,       GetCOMIPFromRCW_WinRT,              Object* pSrcUNSAFE, MethodDesc* pMD, void **ppTarget);
-    static FCDECL3(IUnknown*,       GetCOMIPFromRCW_WinRTSharedGeneric, Object* pSrcUNSAFE, MethodDesc* pMD, void **ppTarget);
-    static FCDECL3(IUnknown*,       GetCOMIPFromRCW_WinRTDelegate,      Object* pSrcUNSAFE, MethodDesc* pMD, void **ppTarget);
-
-    static FCDECL2(FC_BOOL_RET,     ShouldCallWinRTInterface,           Object* pSrcUNSAFE, MethodDesc* pMD);
-    static FCDECL3(DelegateObject*, GetTargetForAmbiguousVariantCall,   Object* pSrcUNSAFE, MethodTable* pMT, CLR_BOOL *pfUseString);
 
     static FCDECL2(void,            ObjectMarshaler__ConvertToNative, Object* pSrcUNSAFE, VARIANT* pDest);
     static FCDECL1(Object*,         ObjectMarshaler__ConvertToManaged, VARIANT* pSrc);
@@ -63,13 +57,6 @@ public:
     static FCDECL4(Object*,         InterfaceMarshaler__ConvertToManaged, IUnknown **ppUnk, MethodTable *pItfMT, MethodTable *pClsMT, DWORD dwFlags);
     static void QCALLTYPE           InterfaceMarshaler__ClearNative(IUnknown * pUnk);
     static FCDECL1(Object *,        InterfaceMarshaler__ConvertToManagedWithoutUnboxing, IUnknown *pNative);
-
-    static FCDECL1(StringObject*,   UriMarshaler__GetRawUriFromNative, ABI::Windows::Foundation::IUriRuntimeClass* pIUriRC);
-    static FCDECL2(IUnknown*,       UriMarshaler__CreateNativeUriInstance, __in_ecount(strLen) CLR_CHAR* pRawUriObj, UINT strLen);
-
-    static FCDECL1(MethodDesc *,    GetDelegateInvokeMethod, DelegateObject *pThisUNSAFE);
-    static FCDECL2(IInspectable *,  GetWinRTFactoryReturnValue, Object *pThisUNSAFE, PCODE pCtorEntry);
-    static FCDECL2(IInspectable *,  GetOuterInspectable, Object *pThisUNSAFE, MethodDesc *pCtorMD);
 #endif // FEATURE_COMINTEROP
 
     static FCDECL0(void,            SetLastError            );
@@ -84,7 +71,7 @@ public:
     static FCDECL1(Object*,         GetHRExceptionObject,   HRESULT hr);
 
 #ifdef FEATURE_COMINTEROP
-    static FCDECL4(Object*,         GetCOMHRExceptionObject, HRESULT hr, MethodDesc *pMD, Object *unsafe_pThis, CLR_BOOL fForWinRT);
+    static FCDECL3(Object*,         GetCOMHRExceptionObject, HRESULT hr, MethodDesc *pMD, Object *unsafe_pThis);
 #endif // FEATURE_COMINTEROP
 
     static FCDECL3(void*,           CreateCustomMarshalerHelper, MethodDesc* pMD, mdToken paramToken, TypeHandle hndManagedType);
@@ -104,10 +91,6 @@ public:
     static FCDECL3(void,            ValidateObject, Object *pObjUNSAFE, MethodDesc *pMD, Object *pThisUNSAFE);
     static FCDECL3(void,            ValidateByref, void *pByref, MethodDesc *pMD, Object *pThisUNSAFE);
 
-#ifdef FEATURE_COMINTEROP
-    static FCDECL1(Object*,         GetWinRTFactoryObject,  MethodDesc *pCMD);
-#endif // FEATURE_COMINTEROP
-
 #ifdef PROFILING_SUPPORTED
     //-------------------------------------------------------
     // Profiler helper
@@ -119,11 +102,6 @@ public:
 #ifdef	FEATURE_ARRAYSTUB_AS_IL
     static FCDECL2(void,            ArrayTypeCheck,             Object*, PtrArray*);
 #endif
-
-#ifdef FEATURE_COMINTEROP
-    static FCDECL2(StringObject *,              WinRTTypeNameConverter__ConvertToWinRTTypeName,  ReflectClassBaseObject *pTypeUNSAFE, CLR_BOOL *pbIsWinRTPrimitive);
-    static FCDECL2(ReflectClassBaseObject *,    WinRTTypeNameConverter__GetTypeFromWinRTTypeName, StringObject *pWinRTTypeNameUNSAFE, CLR_BOOL *pbIsPrimitive);
-#endif // FEATURE_COMINTEROP
 
 #ifdef FEATURE_MULTICASTSTUB_AS_IL
     static FCDECL2(void,            MulticastDebuggerTraceHelper, Object*, INT32);

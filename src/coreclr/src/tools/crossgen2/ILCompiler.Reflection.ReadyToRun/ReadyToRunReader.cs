@@ -708,7 +708,7 @@ namespace ILCompiler.Reflection.ReadyToRun
                     int runtimeFunctionId;
                     int? fixupOffset;
                     GetRuntimeFunctionIndexFromOffset(offset, out runtimeFunctionId, out fixupOffset);
-                    ReadyToRunMethod method = new ReadyToRunMethod(this, _methods.Count, metadataReader, methodHandle, runtimeFunctionId, owningType: null, constrainedType: null, instanceArgs: null, fixupOffset: fixupOffset);
+                    ReadyToRunMethod method = new ReadyToRunMethod(this, metadataReader, methodHandle, runtimeFunctionId, owningType: null, constrainedType: null, instanceArgs: null, fixupOffset: fixupOffset);
 
                     if (method.EntryPointRuntimeFunctionId < 0 || method.EntryPointRuntimeFunctionId >= isEntryPoint.Length)
                     {
@@ -793,7 +793,6 @@ namespace ILCompiler.Reflection.ReadyToRun
                 GetRuntimeFunctionIndexFromOffset((int)decoder.Offset, out runtimeFunctionId, out fixupOffset);
                 ReadyToRunMethod method = new ReadyToRunMethod(
                     this,
-                    _methods.Count,
                     mdReader,
                     methodHandle,
                     runtimeFunctionId,

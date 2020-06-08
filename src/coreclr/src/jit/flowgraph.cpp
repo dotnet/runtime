@@ -271,23 +271,16 @@ void Compiler::fgInstrumentMethod()
 
     HRESULT res = info.compCompHnd->allocMethodBlockCounts(countOfBlocks, &profileBlockCountsStart);
 
-    Statement* stmt;
-
     if (!SUCCEEDED(res))
     {
         // The E_NOTIMPL status is returned when we are profiling a generic method from a different assembly
         if (res == E_NOTIMPL)
         {
-            // In such cases we still want to add the method entry callback node
-
-            GenTreeCall::Use* args = gtNewCallArgs(gtNewIconEmbMethHndNode(info.compMethodHnd));
-            GenTree*          call = gtNewHelperCallNode(CORINFO_HELP_BBT_FCN_ENTER, TYP_VOID, args);
-
-            stmt = gtNewStmt(call);
+            // expected failure...
         }
         else
         {
-            noway_assert(!"Error:  failed to allocate profileBlockCounts");
+            noway_assert(!"Error: failed to allocate profileBlockCounts");
             return;
         }
     }
@@ -310,8 +303,8 @@ void Compiler::fgInstrumentMethod()
             }
 
             // Assign the current block's IL offset into the profile data
-            currentBlockCounts->ILOffset = block->bbCodeOffs;
-            assert(currentBlockCounts->ExecutionCount == 0); // This value should already be zero-ed out
+            currentBlockCounts->ILOffset       = block->bbCodeOffs;
+            currentBlockCounts->ExecutionCount = 0;
 
             size_t addrOfCurrentExecutionCount = (size_t)&currentBlockCounts->ExecutionCount;
 
@@ -337,50 +330,51 @@ void Compiler::fgInstrumentMethod()
         // Check that we allocated and initialized the same number of BlockCounts tuples
         noway_assert(countOfBlocks == 0);
 
-        // Add the method entry callback node
-
-        GenTree* arg;
+        // When prejitting, add the method entry callback node
+        if (opts.jitFlags->IsSet(JitFlags::JIT_FLAG_PREJIT))
+        {
+            GenTree* arg;
 
 #ifdef FEATURE_READYTORUN_COMPILER
-        if (opts.IsReadyToRun())
-        {
-            mdMethodDef currentMethodToken = info.compCompHnd->getMethodDefFromMethod(info.compMethodHnd);
+            if (opts.IsReadyToRun())
+            {
+                mdMethodDef currentMethodToken = info.compCompHnd->getMethodDefFromMethod(info.compMethodHnd);
 
-            CORINFO_RESOLVED_TOKEN resolvedToken;
-            resolvedToken.tokenContext = MAKE_METHODCONTEXT(info.compMethodHnd);
-            resolvedToken.tokenScope   = info.compScopeHnd;
-            resolvedToken.token        = currentMethodToken;
-            resolvedToken.tokenType    = CORINFO_TOKENKIND_Method;
+                CORINFO_RESOLVED_TOKEN resolvedToken;
+                resolvedToken.tokenContext = MAKE_METHODCONTEXT(info.compMethodHnd);
+                resolvedToken.tokenScope   = info.compScopeHnd;
+                resolvedToken.token        = currentMethodToken;
+                resolvedToken.tokenType    = CORINFO_TOKENKIND_Method;
 
-            info.compCompHnd->resolveToken(&resolvedToken);
+                info.compCompHnd->resolveToken(&resolvedToken);
 
-            arg = impTokenToHandle(&resolvedToken);
-        }
-        else
+                arg = impTokenToHandle(&resolvedToken);
+            }
+            else
 #endif
-        {
-            arg = gtNewIconEmbMethHndNode(info.compMethodHnd);
+            {
+                arg = gtNewIconEmbMethHndNode(info.compMethodHnd);
+            }
+
+            GenTreeCall::Use* args = gtNewCallArgs(arg);
+            GenTree*          call = gtNewHelperCallNode(CORINFO_HELP_BBT_FCN_ENTER, TYP_VOID, args);
+
+            // Get the address of the first blocks ExecutionCount
+            size_t addrOfFirstExecutionCount = (size_t)&profileBlockCountsStart->ExecutionCount;
+
+            // Read Basic-Block count value
+            GenTree* valueNode = gtNewIndOfIconHandleNode(TYP_INT, addrOfFirstExecutionCount, GTF_ICON_BBC_PTR, false);
+
+            // Compare Basic-Block count value against zero
+            GenTree*   relop = gtNewOperNode(GT_NE, TYP_INT, valueNode, gtNewIconNode(0, TYP_INT));
+            GenTree*   colon = new (this, GT_COLON) GenTreeColon(TYP_VOID, gtNewNothingNode(), call);
+            GenTree*   cond  = gtNewQmarkNode(TYP_VOID, relop, colon);
+            Statement* stmt  = gtNewStmt(cond);
+
+            fgEnsureFirstBBisScratch();
+            fgInsertStmtAtEnd(fgFirstBB, stmt);
         }
-
-        GenTreeCall::Use* args = gtNewCallArgs(arg);
-        GenTree*          call = gtNewHelperCallNode(CORINFO_HELP_BBT_FCN_ENTER, TYP_VOID, args);
-
-        // Get the address of the first blocks ExecutionCount
-        size_t addrOfFirstExecutionCount = (size_t)&profileBlockCountsStart->ExecutionCount;
-
-        // Read Basic-Block count value
-        GenTree* valueNode = gtNewIndOfIconHandleNode(TYP_INT, addrOfFirstExecutionCount, GTF_ICON_BBC_PTR, false);
-
-        // Compare Basic-Block count value against zero
-        GenTree* relop = gtNewOperNode(GT_NE, TYP_INT, valueNode, gtNewIconNode(0, TYP_INT));
-        GenTree* colon = new (this, GT_COLON) GenTreeColon(TYP_VOID, gtNewNothingNode(), call);
-        GenTree* cond  = gtNewQmarkNode(TYP_VOID, relop, colon);
-        stmt           = gtNewStmt(cond);
     }
-
-    fgEnsureFirstBBisScratch();
-
-    fgInsertStmtAtEnd(fgFirstBB, stmt);
 }
 
 /*****************************************************************************
@@ -5281,7 +5275,7 @@ void Compiler::fgMarkBackwardJump(BasicBlock* targetBlock, BasicBlock* sourceBlo
 
     for (BasicBlock* block = targetBlock; block != sourceBlock->bbNext; block = block->bbNext)
     {
-        if ((block->bbFlags & BBF_BACKWARD_JUMP) == 0)
+        if (((block->bbFlags & BBF_BACKWARD_JUMP) == 0) && (block->bbJumpKind != BBJ_RETURN))
         {
             block->bbFlags |= BBF_BACKWARD_JUMP;
             compHasBackwardJump = true;
@@ -14530,19 +14524,40 @@ bool Compiler::fgOptimizeSwitchBranches(BasicBlock* block)
 // fgBlockEndFavorsTailDuplication:
 //     Heuristic function that returns true if this block ends in a statement that looks favorable
 //     for tail-duplicating its successor (such as assigning a constant to a local).
-//  Args:
-//      block: BasicBlock we are considering duplicating the successor of
-//  Returns:
-//      true if it seems like a good idea
 //
-bool Compiler::fgBlockEndFavorsTailDuplication(BasicBlock* block)
+//  Arguments:
+//      block: BasicBlock we are considering duplicating the successor of
+//      lclNum: local that is used by the successor block, provided by
+//        prior call to fgBlockIsGoodTailDuplicationCandidate
+//
+//  Returns:
+//     true if block end is favorable for tail duplication
+//
+//  Notes:
+//     This is the second half of the evaluation for tail duplication, where we try
+//     to determine if this predecessor block assigns a constant or provides useful
+//     information about a local that is tested in an unconditionally executed successor.
+//     If so then duplicating the successor will likely allow the test to be
+//     optimized away.
+//
+bool Compiler::fgBlockEndFavorsTailDuplication(BasicBlock* block, unsigned lclNum)
 {
     if (block->isRunRarely())
     {
         return false;
     }
 
-    Statement* lastStmt = block->lastStmt();
+    // If the local is address exposed, we currently can't optimize.
+    //
+    LclVarDsc* const lclDsc = lvaGetDesc(lclNum);
+
+    if (lclDsc->lvAddrExposed)
+    {
+        return false;
+    }
+
+    Statement* const lastStmt  = block->lastStmt();
+    Statement* const firstStmt = block->FirstNonPhiDef();
 
     if (lastStmt == nullptr)
     {
@@ -14553,37 +14568,76 @@ bool Compiler::fgBlockEndFavorsTailDuplication(BasicBlock* block)
     // is an assignment of a constant, arraylength, or a relop.
     // This is because these statements produce information about values
     // that would otherwise be lost at the upcoming merge point.
-    GenTree* tree = lastStmt->GetRootNode();
-    if (tree->gtOper != GT_ASG)
+    //
+    // Check up to N statements...
+    //
+    const int  limit = 2;
+    int        count = 0;
+    Statement* stmt  = lastStmt;
+
+    while (count < limit)
     {
-        return false;
+        count++;
+        GenTree* const tree = stmt->GetRootNode();
+        if (tree->OperIs(GT_ASG) && !tree->OperIsBlkOp())
+        {
+            GenTree* const op1 = tree->AsOp()->gtOp1;
+
+            if (op1->IsLocal())
+            {
+                const unsigned op1LclNum = op1->AsLclVarCommon()->GetLclNum();
+
+                if (op1LclNum == lclNum)
+                {
+                    GenTree* const op2 = tree->AsOp()->gtOp2;
+
+                    if (op2->OperIs(GT_ARR_LENGTH) || op2->OperIsConst() || op2->OperIsCompare())
+                    {
+                        return true;
+                    }
+                }
+            }
+        }
+
+        Statement* const prevStmt = stmt->GetPrevStmt();
+
+        // The statement list prev links wrap from first->last, so exit
+        // when we see lastStmt again, as we've now seen all statements.
+        //
+        if (prevStmt == lastStmt)
+        {
+            break;
+        }
+
+        stmt = prevStmt;
     }
 
-    if (tree->OperIsBlkOp())
-    {
-        return false;
-    }
-
-    GenTree* op2 = tree->AsOp()->gtOp2;
-    if (op2->gtOper != GT_ARR_LENGTH && !op2->OperIsConst() && ((op2->OperKind() & GTK_RELOP) == 0))
-    {
-        return false;
-    }
-
-    return true;
+    return false;
 }
 
 //-------------------------------------------------------------
 // fgBlockIsGoodTailDuplicationCandidate:
 //     Heuristic function that examines a block (presumably one that is a merge point) to determine
-//     if it should be duplicated.
-// args:
-//     target - the tail block (candidate for duplication)
-// returns:
-//     true if this block seems like a good candidate for duplication
+//     if it is a good candidate to be duplicated.
 //
-bool Compiler::fgBlockIsGoodTailDuplicationCandidate(BasicBlock* target)
+// Arguments:
+//     target - the tail block (candidate for duplication)
+//
+// Returns:
+//     true if this is a good candidate, false otherwise
+//     if true, lclNum is set to lcl to scan for in predecessor block
+//
+// Notes:
+//     The current heuristic is that tail duplication is deemed favorable if this
+//     block simply tests the value of a local against a constant or some other local.
+//
+//     This is the first half of the evaluation for tail duplication. We subsequently
+//     need to check if predecessors of this block assigns a constant to the local.
+//
+bool Compiler::fgBlockIsGoodTailDuplicationCandidate(BasicBlock* target, unsigned* lclNum)
 {
+    *lclNum = BAD_VAR_NUM;
+
     // Here we are looking for blocks with a single statement feeding a conditional branch.
     // These blocks are small, and when duplicated onto the tail of blocks that end in
     // assignments, there is a high probability of the branch completely going away.
@@ -14616,8 +14670,8 @@ bool Compiler::fgBlockIsGoodTailDuplicationCandidate(BasicBlock* target)
     }
 
     // must be some kind of relational operator
-    GenTree* cond = tree->AsOp()->gtOp1;
-    if (!(cond->OperKind() & GTK_RELOP))
+    GenTree* const cond = tree->AsOp()->gtOp1;
+    if (!cond->OperIsCompare())
     {
         return false;
     }
@@ -14628,6 +14682,7 @@ bool Compiler::fgBlockIsGoodTailDuplicationCandidate(BasicBlock* target)
     {
         op1 = op1->AsOp()->gtOp1;
     }
+
     if (!op1->IsLocal() && !op1->OperIsConst())
     {
         return false;
@@ -14639,7 +14694,40 @@ bool Compiler::fgBlockIsGoodTailDuplicationCandidate(BasicBlock* target)
     {
         op2 = op2->AsOp()->gtOp1;
     }
+
     if (!op2->IsLocal() && !op2->OperIsConst())
+    {
+        return false;
+    }
+
+    // Tree must have one constant and one local, or be comparing
+    // the same local to itself.
+    unsigned lcl1 = BAD_VAR_NUM;
+    unsigned lcl2 = BAD_VAR_NUM;
+
+    if (op1->IsLocal())
+    {
+        lcl1 = op1->AsLclVarCommon()->GetLclNum();
+    }
+
+    if (op2->IsLocal())
+    {
+        lcl2 = op2->AsLclVarCommon()->GetLclNum();
+    }
+
+    if ((lcl1 != BAD_VAR_NUM) && op2->OperIsConst())
+    {
+        *lclNum = lcl1;
+    }
+    else if ((lcl2 != BAD_VAR_NUM) && op1->OperIsConst())
+    {
+        *lclNum = lcl2;
+    }
+    else if ((lcl1 != BAD_VAR_NUM) && (lcl1 == lcl2))
+    {
+        *lclNum = lcl1;
+    }
+    else
     {
         return false;
     }
@@ -14652,28 +14740,35 @@ bool Compiler::fgBlockIsGoodTailDuplicationCandidate(BasicBlock* target)
 //    For a block which has an unconditional branch, look to see if its target block
 //    is a good candidate for tail duplication, and if so do that duplication.
 //
-// Args:
+// Arguments:
 //    block  - block with uncond branch
 //    target - block which is target of first block
 //
-// returns: true if changes were made
-
+// Returns: true if changes were made
+//
+// Notes:
+//   This optimization generally reduces code size and path length.
+//
 bool Compiler::fgOptimizeUncondBranchToSimpleCond(BasicBlock* block, BasicBlock* target)
 {
-    assert(block->bbJumpKind == BBJ_ALWAYS);
-    assert(block->bbJumpDest == target);
-
     if (!BasicBlock::sameEHRegion(block, target))
     {
         return false;
     }
 
-    if (!fgBlockIsGoodTailDuplicationCandidate(target))
+    unsigned lclNum = BAD_VAR_NUM;
+
+    // First check if the successor tests a local and then branches on the result
+    // of a test, and obtain the local if so.
+    //
+    if (!fgBlockIsGoodTailDuplicationCandidate(target, &lclNum))
     {
         return false;
     }
 
-    if (!fgBlockEndFavorsTailDuplication(block))
+    // See if this block assigns constant or other interesting tree to that same local.
+    //
+    if (!fgBlockEndFavorsTailDuplication(block, lclNum))
     {
         return false;
     }
@@ -14708,6 +14803,8 @@ bool Compiler::fgOptimizeUncondBranchToSimpleCond(BasicBlock* block, BasicBlock*
 
     JITDUMP("fgOptimizeUncondBranchToSimpleCond(from " FMT_BB " to cond " FMT_BB "), created new uncond " FMT_BB "\n",
             block->bbNum, target->bbNum, next->bbNum);
+    JITDUMP("   expecting opts to key off V%02u, added cloned compare [%06u] to " FMT_BB "\n", lclNum,
+            dspTreeID(cloned), block->bbNum);
 
     if (fgStmtListThreaded)
     {
@@ -14719,8 +14816,10 @@ bool Compiler::fgOptimizeUncondBranchToSimpleCond(BasicBlock* block, BasicBlock*
     return true;
 }
 
+//-------------------------------------------------------------
 // fgOptimizeBranchToNext:
 //    Optimize a block which has a branch to the following block
+//
 // Args:
 //    block - block with a branch
 //    bNext - block which is both next and the target of the first block
@@ -16739,6 +16838,18 @@ bool Compiler::fgUpdateFlowGraph(bool doTailDuplication)
             {
                 bDest = block->bbJumpDest;
                 if (doTailDuplication && fgOptimizeUncondBranchToSimpleCond(block, bDest))
+                {
+                    change   = true;
+                    modified = true;
+                    bDest    = block->bbJumpDest;
+                    bNext    = block->bbNext;
+                }
+            }
+
+            if (block->bbJumpKind == BBJ_NONE)
+            {
+                bDest = nullptr;
+                if (doTailDuplication && fgOptimizeUncondBranchToSimpleCond(block, block->bbNext))
                 {
                     change   = true;
                     modified = true;
@@ -22514,9 +22625,10 @@ Compiler::fgWalkResult Compiler::fgUpdateInlineReturnExpressionPlaceHolder(GenTr
         // This folding may uncover more GT_RET_EXPRs, so we loop around
         // until we've got something distinct.
         //
-        GenTree* inlineCandidate = tree->gtRetExprVal();
-        inlineCandidate          = comp->gtFoldExpr(inlineCandidate);
-        var_types retType        = tree->TypeGet();
+        unsigned __int64 bbFlags         = 0;
+        GenTree*         inlineCandidate = tree->gtRetExprVal(&bbFlags);
+        inlineCandidate                  = comp->gtFoldExpr(inlineCandidate);
+        var_types retType                = tree->TypeGet();
 
 #ifdef DEBUG
         if (comp->verbose)
@@ -22532,6 +22644,7 @@ Compiler::fgWalkResult Compiler::fgUpdateInlineReturnExpressionPlaceHolder(GenTr
 #endif // DEBUG
 
         tree->ReplaceWith(inlineCandidate, comp);
+        comp->compCurBB->bbFlags |= (bbFlags & BBF_SPLIT_GAINED);
 
 #ifdef DEBUG
         if (comp->verbose)
@@ -22881,6 +22994,7 @@ void Compiler::fgInvokeInlineeCompiler(GenTreeCall* call, InlineResult* inlineRe
     inlineInfo.iciBlock               = compCurBB;
     inlineInfo.thisDereferencedFirst  = false;
     inlineInfo.retExpr                = nullptr;
+    inlineInfo.retBB                  = nullptr;
     inlineInfo.retExprClassHnd        = nullptr;
     inlineInfo.retExprClassHndIsExact = false;
     inlineInfo.inlineResult           = inlineResult;
@@ -23244,7 +23358,7 @@ void Compiler::fgInsertInlineeBlocks(InlineInfo* pInlineInfo)
 
         // topBlock contains at least one statement before the split.
         // And the split is before the first statement.
-        // In this case, topBlock should be empty, and everything else should be moved to the bottonBlock.
+        // In this case, topBlock should be empty, and everything else should be moved to the bottomBlock.
         bottomBlock->bbStmtList = topBlock->bbStmtList;
         topBlock->bbStmtList    = nullptr;
     }
@@ -23424,13 +23538,17 @@ _Done:
             gtDispTree(pInlineInfo->retExpr);
         }
 #endif // DEBUG
-        // Replace the call with the return expression
-        iciCall->ReplaceWith(pInlineInfo->retExpr, this);
 
-        if (bottomBlock != nullptr)
+        // Replace the call with the return expression. Note that iciCall won't be part of the IR
+        // but may still be referenced from a GT_RET_EXPR node. We will replace GT_RET_EXPR node
+        // in fgUpdateInlineReturnExpressionPlaceHolder. At that time we will also update the flags
+        // on the basic block of GT_RET_EXPR node.
+        if (iciCall->gtInlineCandidateInfo->retExpr->OperGet() == GT_RET_EXPR)
         {
-            bottomBlock->bbFlags |= InlineeCompiler->fgLastBB->bbFlags & BBF_SPLIT_GAINED;
+            // Save the basic block flags from the retExpr basic block.
+            iciCall->gtInlineCandidateInfo->retExpr->AsRetExpr()->bbFlags = pInlineInfo->retBB->bbFlags;
         }
+        iciCall->ReplaceWith(pInlineInfo->retExpr, this);
     }
 
     //
@@ -23787,7 +23905,7 @@ Statement* Compiler::fgInlinePrependStatements(InlineInfo* inlineInfo)
             if (tmpNum != BAD_VAR_NUM)
             {
                 LclVarDsc* const tmpDsc = lvaGetDesc(tmpNum);
-                if (!fgVarNeedsExplicitZeroInit(tmpDsc, bbInALoop, bbIsReturn))
+                if (!fgVarNeedsExplicitZeroInit(tmpNum, bbInALoop, bbIsReturn))
                 {
                     JITDUMP("\nSuppressing zero-init for V%02u -- expect to zero in prolog\n", tmpNum);
                     tmpDsc->lvSuppressedZeroInit = 1;

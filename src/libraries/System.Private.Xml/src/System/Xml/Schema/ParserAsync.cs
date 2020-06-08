@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 namespace System.Xml.Schema
 {
     using System;
@@ -15,7 +16,7 @@ namespace System.Xml.Schema
 
     internal sealed partial class Parser
     {
-        public async Task StartParsingAsync(XmlReader reader, string targetNamespace)
+        public async Task StartParsingAsync(XmlReader reader, string? targetNamespace)
         {
             _reader = reader;
             _positionInfo = PositionInfo.GetPositionInfo(reader);
@@ -44,7 +45,7 @@ namespace System.Xml.Schema
             if (_schemaType == SchemaType.XSD)
             {
                 _schema = new XmlSchema();
-                _schema.BaseUri = new Uri(reader.BaseURI, UriKind.RelativeOrAbsolute);
+                _schema.BaseUri = new Uri(reader.BaseURI!, UriKind.RelativeOrAbsolute);
                 _builder = new XsdBuilder(reader, _namespaceManager, _schema, _nameTable, _schemaNames, _eventHandler);
             }
             else

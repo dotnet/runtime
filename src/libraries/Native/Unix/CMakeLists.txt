@@ -1,14 +1,9 @@
-cmake_minimum_required(VERSION 3.14.2)
+cmake_minimum_required(VERSION 3.14.5)
 cmake_policy(SET CMP0042 NEW)
 
 project(CoreFX C)
 
 include(${CLR_ENG_NATIVE_DIR}/configuretools.cmake)
-
-if(CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS)
-    # CMake 3.14.5 contains bug fixes for iOS
-    cmake_minimum_required(VERSION 3.14.5)
-endif()
 
 if(NOT CLR_CMAKE_TARGET_BROWSER)
     cmake_policy(SET CMP0083 NEW)

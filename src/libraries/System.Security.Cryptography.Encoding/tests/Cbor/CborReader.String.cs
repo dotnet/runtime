@@ -12,12 +12,26 @@ namespace System.Formats.Cbor
 {
     public partial class CborReader
     {
-        private static readonly System.Text.Encoding s_utf8Encoding = new System.Text.UTF8Encoding(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: true);
+        // Implements major type 2,3 decoding per https://tools.ietf.org/html/rfc7049#section-2.1
 
-        // stores a reusable List allocation for keeping ranges in the buffer
+        // stores a reusable List allocation for storing indefinite length string chunk offsets
         private List<(int Offset, int Length)>? _indefiniteLengthStringRangeAllocation = null;
 
-        // Implements major type 2 decoding per https://tools.ietf.org/html/rfc7049#section-2.1
+        /// <summary>
+        ///   Reads the next data item as a byte string (major type 2).
+        /// </summary>
+        /// <returns>The decoded byte array.</returns>
+        /// <exception cref="InvalidOperationException">
+        ///   the next date item does not have the correct major type.
+        /// </exception>
+        /// <exception cref="FormatException">
+        ///   the next value has an invalid CBOR encoding. -or-
+        ///   there was an unexpected end of CBOR encoding data. -or-
+        ///   the next value uses a CBOR encoding that is not valid under the current conformance level.
+        /// </exception>
+        /// <remarks>
+        ///   The method accepts indefinite length strings, which it will concatenate to a single string.
+        /// </remarks>
         public byte[] ReadByteString()
         {
             CborInitialByte header = PeekInitialByte(expectedType: CborMajorType.ByteString);
@@ -26,21 +40,44 @@ namespace System.Formats.Cbor
             {
                 if (_isConformanceLevelCheckEnabled && CborConformanceLevelHelpers.RequiresDefiniteLengthItems(ConformanceLevel))
                 {
-                    throw new FormatException("Indefinite-length items not supported under the current conformance level.");
+                    throw new FormatException(SR.Format(SR.Cbor_ConformanceLevel_IndefiniteLengthItemsNotSupported, ConformanceLevel));
                 }
 
-                return ReadChunkedByteStringConcatenated();
+                return ReadIndefiniteLengthByteStringConcatenated();
             }
 
-            int length = checked((int)ReadUnsignedInteger(_buffer.Span, header, out int additionalBytes));
-            EnsureBuffer(1 + additionalBytes + length);
+            ReadOnlySpan<byte> buffer = GetRemainingBytes();
+            int length = DecodeDefiniteLength(header, buffer, out int bytesRead);
+            EnsureReadCapacity(bytesRead + length);
             byte[] result = new byte[length];
-            _buffer.Slice(1 + additionalBytes, length).CopyTo(result);
-            AdvanceBuffer(1 + additionalBytes + length);
+            buffer.Slice(bytesRead, length).CopyTo(result);
+            AdvanceBuffer(bytesRead + length);
             AdvanceDataItemCounters();
             return result;
         }
 
+        /// <summary>
+        ///   Reads the next data item as a byte string (major type 2).
+        /// </summary>
+        /// <param name="destination">The buffer in which to write.</param>
+        /// <param name="bytesWritten">
+        ///   On success, receives the number of bytes written to <paramref name="destination"/>.
+        /// </param>
+        /// <returns>
+        ///   <see langword="true" /> and advances the reader if <paramref name="destination"/> had sufficient
+        ///   length to receive the value, otherwise <see langword="false" /> and the reader does not advance.
+        /// </returns>
+        /// <exception cref="InvalidOperationException">
+        ///   the next data item does not have the correct major type.
+        /// </exception>
+        /// <exception cref="FormatException">
+        ///   the next value has an invalid CBOR encoding. -or-
+        ///   there was an unexpected end of CBOR encoding data. -or-
+        ///   the next value uses a CBOR encoding that is not valid under the current conformance level.
+        /// </exception>
+        /// <remarks>
+        ///   The method accepts indefinite length strings, which it will concatenate to a single string.
+        /// </remarks>
         public bool TryReadByteString(Span<byte> destination, out int bytesWritten)
         {
             CborInitialByte header = PeekInitialByte(expectedType: CborMajorType.ByteString);
@@ -49,14 +86,15 @@ namespace System.Formats.Cbor
             {
                 if (_isConformanceLevelCheckEnabled && CborConformanceLevelHelpers.RequiresDefiniteLengthItems(ConformanceLevel))
                 {
-                    throw new FormatException("Indefinite-length items not supported under the current conformance level.");
+                    throw new FormatException(SR.Format(SR.Cbor_ConformanceLevel_IndefiniteLengthItemsNotSupported, ConformanceLevel));
                 }
 
-                return TryReadChunkedByteStringConcatenated(destination, out bytesWritten);
+                return TryReadIndefiniteLengthByteStringConcatenated(destination, out bytesWritten);
             }
 
-            int length = checked((int)ReadUnsignedInteger(_buffer.Span, header, out int additionalBytes));
-            EnsureBuffer(1 + additionalBytes + length);
+            ReadOnlySpan<byte> buffer = GetRemainingBytes();
+            int length = DecodeDefiniteLength(header, buffer, out int bytesRead);
+            EnsureReadCapacity(bytesRead + length);
 
             if (length > destination.Length)
             {
@@ -64,15 +102,77 @@ namespace System.Formats.Cbor
                 return false;
             }
 
-            _buffer.Span.Slice(1 + additionalBytes, length).CopyTo(destination);
-            AdvanceBuffer(1 + additionalBytes + length);
+            buffer.Slice(bytesRead, length).CopyTo(destination);
+            AdvanceBuffer(bytesRead + length);
             AdvanceDataItemCounters();
 
             bytesWritten = length;
             return true;
         }
 
-        // Implements major type 3 decoding per https://tools.ietf.org/html/rfc7049#section-2.1
+        /// <summary>
+        ///   Reads the next data item as the start of an indefinite-length byte string (major type 2).
+        /// </summary>
+        /// <exception cref="InvalidOperationException">
+        ///   the next data item does not have the correct major type. -or-
+        ///   the next data item is a definite-length encoded string.
+        /// </exception>
+        /// <exception cref="FormatException">
+        ///   the next value has an invalid CBOR encoding. -or-
+        ///   there was an unexpected end of CBOR encoding data. -or-
+        ///   the next value uses a CBOR encoding that is not valid under the current conformance level.
+        /// </exception>
+        public void ReadStartByteString()
+        {
+            CborInitialByte header = PeekInitialByte(expectedType: CborMajorType.ByteString);
+
+            if (header.AdditionalInfo != CborAdditionalInfo.IndefiniteLength)
+            {
+                throw new InvalidOperationException(SR.Cbor_Reader_NotIndefiniteLengthString);
+            }
+
+            if (_isConformanceLevelCheckEnabled && CborConformanceLevelHelpers.RequiresDefiniteLengthItems(ConformanceLevel))
+            {
+                throw new FormatException(SR.Format(SR.Cbor_ConformanceLevel_IndefiniteLengthItemsNotSupported, ConformanceLevel));
+            }
+
+            AdvanceBuffer(1);
+            PushDataItem(CborMajorType.ByteString, definiteLength: null);
+        }
+
+        /// <summary>
+        ///   End reading an indefinite-length byte string (major type 2).
+        /// </summary>
+        /// <exception cref="InvalidOperationException">
+        ///   the current context is not an indefinite-length string. -or-
+        ///   the reader is not at the end of the string
+        /// </exception>
+        /// <exception cref="FormatException">
+        ///   there was an unexpected end of CBOR encoding data
+        /// </exception>
+        public void ReadEndByteString()
+        {
+            ValidateNextByteIsBreakByte();
+            PopDataItem(CborMajorType.ByteString);
+            AdvanceDataItemCounters();
+            AdvanceBuffer(1);
+        }
+
+        /// <summary>
+        ///   Reads the next data item as a UTF-8 text string (major type 3).
+        /// </summary>
+        /// <returns>The decoded string.</returns>
+        /// <exception cref="InvalidOperationException">
+        ///   the next data item does not have the correct major type.
+        /// </exception>
+        /// <exception cref="FormatException">
+        ///   the next value has an invalid CBOR encoding. -or-
+        ///   there was an unexpected end of CBOR encoding data. -or-
+        ///   the next value uses a CBOR encoding that is not valid under the current conformance level.
+        /// </exception>
+        /// <remarks>
+        ///   The method accepts indefinite length strings, which it will concatenate to a single string.
+        /// </remarks>
         public string ReadTextString()
         {
             CborInitialByte header = PeekInitialByte(expectedType: CborMajorType.TextString);
@@ -81,31 +181,55 @@ namespace System.Formats.Cbor
             {
                 if (_isConformanceLevelCheckEnabled && CborConformanceLevelHelpers.RequiresDefiniteLengthItems(ConformanceLevel))
                 {
-                    throw new FormatException("Indefinite-length items not supported under the current conformance level.");
+                    throw new FormatException(SR.Format(SR.Cbor_ConformanceLevel_IndefiniteLengthItemsNotSupported, ConformanceLevel));
                 }
 
-                return ReadChunkedTextStringConcatenated();
+                return ReadIndefiniteLengthTextStringConcatenated();
             }
 
-            int length = checked((int)ReadUnsignedInteger(_buffer.Span, header, out int additionalBytes));
-            EnsureBuffer(1 + additionalBytes + length);
-            ReadOnlySpan<byte> encodedString = _buffer.Span.Slice(1 + additionalBytes, length);
+            ReadOnlySpan<byte> buffer = GetRemainingBytes();
+            int length = DecodeDefiniteLength(header, buffer, out int bytesRead);
+            EnsureReadCapacity(bytesRead + length);
+            ReadOnlySpan<byte> encodedString = buffer.Slice(bytesRead, length);
+            Encoding utf8Encoding = CborConformanceLevelHelpers.GetUtf8Encoding(ConformanceLevel);
 
             string result;
             try
             {
-                result = s_utf8Encoding.GetString(encodedString);
+                result = utf8Encoding.GetString(encodedString);
             }
             catch (DecoderFallbackException e)
             {
-                throw new FormatException("Text string payload is not a valid UTF8 string.", e);
+                throw new FormatException(SR.Cbor_Reader_InvalidCbor_InvalidUtf8StringEncoding, e);
             }
 
-            AdvanceBuffer(1 + additionalBytes + length);
+            AdvanceBuffer(bytesRead + length);
             AdvanceDataItemCounters();
             return result;
         }
 
+        /// <summary>
+        ///   Reads the next data item as a UTF-8 text string (major type 3).
+        /// </summary>
+        /// <param name="destination">The buffer in which to write.</param>
+        /// <param name="charsWritten">
+        ///   On success, receives the number of chars written to <paramref name="destination"/>.
+        /// </param>
+        /// <returns>
+        ///   <see langword="true" /> and advances the reader if <paramref name="destination"/> had sufficient
+        ///   length to receive the value, otherwise <see langword="false" /> and the reader does not advance.
+        /// </returns>
+        /// <exception cref="InvalidOperationException">
+        ///   the next data item does not have the correct major type.
+        /// </exception>
+        /// <exception cref="FormatException">
+        ///   the next value has an invalid CBOR encoding. -or-
+        ///   there was an unexpected end of CBOR encoding data. -or-
+        ///   the next value uses a CBOR encoding that is not valid under the current conformance level.
+        /// </exception>
+        /// <remarks>
+        ///   The method accepts indefinite length strings, which it will concatenate to a single string.
+        /// </remarks>
         public bool TryReadTextString(Span<char> destination, out int charsWritten)
         {
             CborInitialByte header = PeekInitialByte(expectedType: CborMajorType.TextString);
@@ -114,18 +238,20 @@ namespace System.Formats.Cbor
             {
                 if (_isConformanceLevelCheckEnabled && CborConformanceLevelHelpers.RequiresDefiniteLengthItems(ConformanceLevel))
                 {
-                    throw new FormatException("Indefinite-length items not supported under the current conformance level.");
+                    throw new FormatException(SR.Format(SR.Cbor_ConformanceLevel_IndefiniteLengthItemsNotSupported, ConformanceLevel));
                 }
 
-                return TryReadChunkedTextStringConcatenated(destination, out charsWritten);
+                return TryReadIndefiniteLengthTextStringConcatenated(destination, out charsWritten);
             }
 
-            int byteLength = checked((int)ReadUnsignedInteger(_buffer.Span, header, out int additionalBytes));
-            EnsureBuffer(1 + additionalBytes + byteLength);
+            ReadOnlySpan<byte> buffer = GetRemainingBytes();
+            int byteLength = DecodeDefiniteLength(header, buffer, out int bytesRead);
+            EnsureReadCapacity(bytesRead + byteLength);
 
-            ReadOnlySpan<byte> encodedSlice = _buffer.Span.Slice(1 + additionalBytes, byteLength);
+            Encoding utf8Encoding = CborConformanceLevelHelpers.GetUtf8Encoding(ConformanceLevel);
+            ReadOnlySpan<byte> encodedSlice = buffer.Slice(bytesRead, byteLength);
 
-            int charLength = ValidateUtf8AndGetCharCount(encodedSlice);
+            int charLength = ValidateUtf8AndGetCharCount(encodedSlice, utf8Encoding);
 
             if (charLength > destination.Length)
             {
@@ -133,126 +259,67 @@ namespace System.Formats.Cbor
                 return false;
             }
 
-            s_utf8Encoding.GetChars(encodedSlice, destination);
-            AdvanceBuffer(1 + additionalBytes + byteLength);
+            utf8Encoding.GetChars(encodedSlice, destination);
+            AdvanceBuffer(bytesRead + byteLength);
             AdvanceDataItemCounters();
             charsWritten = charLength;
             return true;
         }
 
-        public void ReadStartTextStringIndefiniteLength()
+        /// <summary>
+        ///   Reads the next data item as the start of an indefinite-length UTF-8 text string (major type 3).
+        /// </summary>
+        /// <exception cref="InvalidOperationException">
+        ///   the next data item does not have the correct major type. -or-
+        ///   the next data item is a definite-length encoded string.
+        /// </exception>
+        /// <exception cref="FormatException">
+        ///   the next value has an invalid CBOR encoding. -or-
+        ///   there was an unexpected end of CBOR encoding data. -or-
+        ///   the next value uses a CBOR encoding that is not valid under the current conformance level.
+        /// </exception>
+        public void ReadStartTextString()
         {
             CborInitialByte header = PeekInitialByte(expectedType: CborMajorType.TextString);
 
             if (header.AdditionalInfo != CborAdditionalInfo.IndefiniteLength)
             {
-                throw new InvalidOperationException("CBOR text string is not of indefinite length.");
+                throw new InvalidOperationException(SR.Cbor_Reader_NotIndefiniteLengthString);
             }
 
             if (_isConformanceLevelCheckEnabled && CborConformanceLevelHelpers.RequiresDefiniteLengthItems(ConformanceLevel))
             {
-                throw new FormatException("Indefinite-length items not supported under the current conformance level.");
+                throw new FormatException(SR.Format(SR.Cbor_ConformanceLevel_IndefiniteLengthItemsNotSupported, ConformanceLevel));
             }
 
             AdvanceBuffer(1);
-            PushDataItem(CborMajorType.TextString, expectedNestedItems: null);
+            PushDataItem(CborMajorType.TextString, definiteLength: null);
         }
 
-        public void ReadEndTextStringIndefiniteLength()
+        /// <summary>
+        ///   End reading an indefinite-length UTF-8 text string (major type 3).
+        /// </summary>
+        /// <exception cref="InvalidOperationException">
+        ///   the current context is not an indefinite-length string. -or-
+        ///   the reader is not at the end of the string
+        /// </exception>
+        /// <exception cref="FormatException">
+        ///   there was an unexpected end of CBOR encoding data
+        /// </exception>
+        public void ReadEndTextString()
         {
-            ReadNextIndefiniteLengthBreakByte();
+            ValidateNextByteIsBreakByte();
             PopDataItem(CborMajorType.TextString);
             AdvanceDataItemCounters();
             AdvanceBuffer(1);
         }
 
-        public void ReadStartByteStringIndefiniteLength()
+        private byte[] ReadIndefiniteLengthByteStringConcatenated()
         {
-            CborInitialByte header = PeekInitialByte(expectedType: CborMajorType.ByteString);
-
-            if (header.AdditionalInfo != CborAdditionalInfo.IndefiniteLength)
-            {
-                throw new InvalidOperationException("CBOR text string is not of indefinite length.");
-            }
-
-            if (_isConformanceLevelCheckEnabled && CborConformanceLevelHelpers.RequiresDefiniteLengthItems(ConformanceLevel))
-            {
-                throw new FormatException("Indefinite-length items not supported under the current conformance level.");
-            }
-
-            AdvanceBuffer(1);
-            PushDataItem(CborMajorType.ByteString, expectedNestedItems: null);
-        }
-
-        public void ReadEndByteStringIndefiniteLength()
-        {
-            ReadNextIndefiniteLengthBreakByte();
-            PopDataItem(CborMajorType.ByteString);
-            AdvanceDataItemCounters();
-            AdvanceBuffer(1);
-        }
-
-        private bool TryReadChunkedByteStringConcatenated(Span<byte> destination, out int bytesWritten)
-        {
-            List<(int Offset, int Length)> ranges = ReadChunkedStringRanges(CborMajorType.ByteString, out int encodingLength, out int concatenatedBufferSize);
-
-            if (concatenatedBufferSize > destination.Length)
-            {
-                bytesWritten = 0;
-                return false;
-            }
-
-            ReadOnlySpan<byte> source = _buffer.Span;
-
-            foreach ((int o, int l) in ranges)
-            {
-                source.Slice(o, l).CopyTo(destination);
-                destination = destination.Slice(l);
-            }
-
-            bytesWritten = concatenatedBufferSize;
-            AdvanceBuffer(encodingLength);
-            AdvanceDataItemCounters();
-            ReturnIndefiniteLengthStringRangeList(ranges);
-            return true;
-        }
-
-        private bool TryReadChunkedTextStringConcatenated(Span<char> destination, out int charsWritten)
-        {
-            List<(int Offset, int Length)> ranges = ReadChunkedStringRanges(CborMajorType.TextString, out int encodingLength, out int _);
-            ReadOnlySpan<byte> buffer = _buffer.Span;
-
-            int concatenatedStringSize = 0;
-            foreach ((int o, int l) in ranges)
-            {
-                concatenatedStringSize += ValidateUtf8AndGetCharCount(buffer.Slice(o, l));
-            }
-
-            if (concatenatedStringSize > destination.Length)
-            {
-                charsWritten = 0;
-                return false;
-            }
-
-            foreach ((int o, int l) in ranges)
-            {
-                s_utf8Encoding.GetChars(buffer.Slice(o, l), destination);
-                destination = destination.Slice(l);
-            }
-
-            charsWritten = concatenatedStringSize;
-            AdvanceBuffer(encodingLength);
-            AdvanceDataItemCounters();
-            ReturnIndefiniteLengthStringRangeList(ranges);
-            return true;
-        }
-
-        private byte[] ReadChunkedByteStringConcatenated()
-        {
-            List<(int Offset, int Length)> ranges = ReadChunkedStringRanges(CborMajorType.ByteString, out int encodingLength, out int concatenatedBufferSize);
+            List<(int Offset, int Length)> ranges = ReadIndefiniteLengthStringChunkRanges(CborMajorType.ByteString, out int encodingLength, out int concatenatedBufferSize);
             var output = new byte[concatenatedBufferSize];
 
-            ReadOnlySpan<byte> source = _buffer.Span;
+            ReadOnlySpan<byte> source = GetRemainingBytes();
             Span<byte> target = output;
 
             foreach ((int o, int l) in ranges)
@@ -268,60 +335,118 @@ namespace System.Formats.Cbor
             return output;
         }
 
-        private string ReadChunkedTextStringConcatenated()
+        private bool TryReadIndefiniteLengthByteStringConcatenated(Span<byte> destination, out int bytesWritten)
         {
-            List<(int Offset, int Length)> ranges = ReadChunkedStringRanges(CborMajorType.TextString, out int encodingLength, out int concatenatedBufferSize);
-            ReadOnlySpan<byte> buffer = _buffer.Span;
-            int concatenatedStringSize = 0;
+            List<(int Offset, int Length)> ranges = ReadIndefiniteLengthStringChunkRanges(CborMajorType.ByteString, out int encodingLength, out int concatenatedBufferSize);
+
+            if (concatenatedBufferSize > destination.Length)
+            {
+                bytesWritten = 0;
+                return false;
+            }
+
+            ReadOnlySpan<byte> source = GetRemainingBytes();
 
             foreach ((int o, int l) in ranges)
             {
-                concatenatedStringSize += ValidateUtf8AndGetCharCount(buffer.Slice(o, l));
+                source.Slice(o, l).CopyTo(destination);
+                destination = destination.Slice(l);
             }
 
-            string output = string.Create(concatenatedStringSize, (ranges, _buffer), BuildString);
+            bytesWritten = concatenatedBufferSize;
+            AdvanceBuffer(encodingLength);
+            AdvanceDataItemCounters();
+            ReturnIndefiniteLengthStringRangeList(ranges);
+            return true;
+        }
+
+        private string ReadIndefiniteLengthTextStringConcatenated()
+        {
+            List<(int Offset, int Length)> ranges = ReadIndefiniteLengthStringChunkRanges(CborMajorType.TextString, out int encodingLength, out int concatenatedBufferSize);
+            Encoding utf8Encoding = CborConformanceLevelHelpers.GetUtf8Encoding(ConformanceLevel);
+            ReadOnlySpan<byte> buffer = GetRemainingBytes();
+
+            // calculate the string character length
+            int concatenatedStringSize = 0;
+            foreach ((int o, int l) in ranges)
+            {
+                concatenatedStringSize += ValidateUtf8AndGetCharCount(buffer.Slice(o, l), utf8Encoding);
+            }
+
+            // build the string using range data
+            string output = string.Create(concatenatedStringSize, (ranges, _data.Slice(_offset), utf8Encoding), BuildString);
 
             AdvanceBuffer(encodingLength);
             AdvanceDataItemCounters();
             ReturnIndefiniteLengthStringRangeList(ranges);
             return output;
 
-            static void BuildString(Span<char> target, (List<(int Offset, int Length)> ranges, ReadOnlyMemory<byte> source) input)
+            static void BuildString(Span<char> target, (List<(int Offset, int Length)> ranges, ReadOnlyMemory<byte> source, Encoding utf8Encoding) input)
             {
                 ReadOnlySpan<byte> source = input.source.Span;
 
                 foreach ((int o, int l) in input.ranges)
                 {
-                    s_utf8Encoding.GetChars(source.Slice(o, l), target);
-                    target = target.Slice(l);
+                    int charsWritten = input.utf8Encoding.GetChars(source.Slice(o, l), target);
+                    target = target.Slice(charsWritten);
                 }
 
                 Debug.Assert(target.IsEmpty);
             }
         }
 
-        // reads a buffer starting with an indefinite-length string,
-        // performing validation and returning a list of ranges containing the individual chunk payloads
-        private List<(int Offset, int Length)> ReadChunkedStringRanges(CborMajorType type, out int encodingLength, out int concatenatedBufferSize)
+        private bool TryReadIndefiniteLengthTextStringConcatenated(Span<char> destination, out int charsWritten)
+        {
+            List<(int Offset, int Length)> ranges = ReadIndefiniteLengthStringChunkRanges(CborMajorType.TextString, out int encodingLength, out int _);
+            ReadOnlySpan<byte> buffer = GetRemainingBytes();
+            Encoding utf8Encoding = CborConformanceLevelHelpers.GetUtf8Encoding(ConformanceLevel);
+
+            // calculate the string character length
+            int concatenatedStringSize = 0;
+            foreach ((int o, int l) in ranges)
+            {
+                concatenatedStringSize += ValidateUtf8AndGetCharCount(buffer.Slice(o, l), utf8Encoding);
+            }
+
+            if (concatenatedStringSize > destination.Length)
+            {
+                charsWritten = 0;
+                return false;
+            }
+
+            foreach ((int o, int l) in ranges)
+            {
+                utf8Encoding.GetChars(buffer.Slice(o, l), destination);
+                destination = destination.Slice(l);
+            }
+
+            charsWritten = concatenatedStringSize;
+            AdvanceBuffer(encodingLength);
+            AdvanceDataItemCounters();
+            ReturnIndefiniteLengthStringRangeList(ranges);
+            return true;
+        }
+
+        // Reads a buffer starting with an indefinite-length string,
+        // performing validation and returning a list of ranges
+        // containing the individual chunk payloads
+        private List<(int Offset, int Length)> ReadIndefiniteLengthStringChunkRanges(CborMajorType type, out int encodingLength, out int concatenatedBufferSize)
         {
             List<(int Offset, int Length)> ranges = AcquireIndefiniteLengthStringRangeList();
-            ReadOnlySpan<byte> buffer = _buffer.Span;
+            ReadOnlySpan<byte> data = GetRemainingBytes();
             concatenatedBufferSize = 0;
 
             int i = 1; // skip the indefinite-length initial byte
-            CborInitialByte nextInitialByte = ReadNextInitialByte(buffer.Slice(i), type);
+            CborInitialByte nextInitialByte = ReadNextInitialByte(data.Slice(i), type);
 
             while (nextInitialByte.InitialByte != CborInitialByte.IndefiniteLengthBreakByte)
             {
-                checked
-                {
-                    int chunkLength = (int)ReadUnsignedInteger(buffer.Slice(i), nextInitialByte, out int additionalBytes);
-                    ranges.Add((i + 1 + additionalBytes, chunkLength));
-                    i += 1 + additionalBytes + chunkLength;
-                    concatenatedBufferSize += chunkLength;
-                }
+                int chunkLength = DecodeDefiniteLength(nextInitialByte, data.Slice(i), out int bytesRead);
+                ranges.Add((i + bytesRead, chunkLength));
+                i += bytesRead + chunkLength;
+                concatenatedBufferSize += chunkLength;
 
-                nextInitialByte = ReadNextInitialByte(buffer.Slice(i), type);
+                nextInitialByte = ReadNextInitialByte(data.Slice(i), type);
             }
 
             encodingLength = i + 1; // include the break byte
@@ -329,48 +454,51 @@ namespace System.Formats.Cbor
 
             static CborInitialByte ReadNextInitialByte(ReadOnlySpan<byte> buffer, CborMajorType expectedType)
             {
-                EnsureBuffer(buffer, 1);
-                var cib = new CborInitialByte(buffer[0]);
+                EnsureReadCapacity(buffer, 1);
+                var header = new CborInitialByte(buffer[0]);
 
-                if (cib.InitialByte != CborInitialByte.IndefiniteLengthBreakByte && cib.MajorType != expectedType)
+                if (header.InitialByte != CborInitialByte.IndefiniteLengthBreakByte && header.MajorType != expectedType)
                 {
-                    throw new FormatException("Indefinite-length CBOR string containing invalid data item.");
+                    throw new FormatException(SR.Cbor_Reader_InvalidCbor_IndefiniteLengthStringContainsInvalidDataItem);
                 }
 
-                return cib;
+                return header;
             }
         }
 
         // SkipValue() helper: reads a cbor string without allocating or copying to a buffer
-        // NB this only handles definite-length chunks
         private void SkipString(CborMajorType type)
         {
+            Debug.Assert(type == CborMajorType.ByteString || type == CborMajorType.TextString);
+
             CborInitialByte header = PeekInitialByte(expectedType: type);
 
-            ReadOnlySpan<byte> buffer = _buffer.Span;
-            int byteLength = checked((int)ReadUnsignedInteger(buffer, header, out int additionalBytes));
-            EnsureBuffer(1 + additionalBytes + byteLength);
+            ReadOnlySpan<byte> buffer = GetRemainingBytes();
+            int byteLength = DecodeDefiniteLength(header, buffer, out int bytesRead);
+            EnsureReadCapacity(bytesRead + byteLength);
 
-            // Force any UTF8 decoding errors if text string
-            if (_isConformanceLevelCheckEnabled && type == CborMajorType.TextString)
+            // if conformance level requires it, validate the utf-8 encoding that is being skipped
+            if (type == CborMajorType.TextString && _isConformanceLevelCheckEnabled &&
+                CborConformanceLevelHelpers.RequiresUtf8Validation(ConformanceLevel))
             {
-                ReadOnlySpan<byte> encodedSlice = buffer.Slice(1 + additionalBytes, byteLength);
-                ValidateUtf8AndGetCharCount(encodedSlice);
+                ReadOnlySpan<byte> encodedSlice = buffer.Slice(bytesRead, byteLength);
+                Encoding utf8Encoding = CborConformanceLevelHelpers.GetUtf8Encoding(ConformanceLevel);
+                ValidateUtf8AndGetCharCount(encodedSlice, utf8Encoding);
             }
 
-            AdvanceBuffer(1 + additionalBytes + byteLength);
+            AdvanceBuffer(bytesRead + byteLength);
             AdvanceDataItemCounters();
         }
 
-        private int ValidateUtf8AndGetCharCount(ReadOnlySpan<byte> buffer)
+        private int ValidateUtf8AndGetCharCount(ReadOnlySpan<byte> buffer, Encoding utf8Encoding)
         {
             try
             {
-                return s_utf8Encoding.GetCharCount(buffer);
+                return utf8Encoding.GetCharCount(buffer);
             }
             catch (DecoderFallbackException e)
             {
-                throw new FormatException("Text string payload is not a valid UTF8 string.", e);
+                throw new FormatException(SR.Cbor_Reader_InvalidCbor_InvalidUtf8StringEncoding, e);
             }
         }
 

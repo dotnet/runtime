@@ -140,6 +140,7 @@ jobs:
     - Linux_x64
     - Linux_arm
     - Linux_arm64
+    - Linux_musl_arm64
     - Linux_musl_x64
     - Windows_NT_x86
     - Windows_NT_x64
@@ -232,6 +233,138 @@ jobs:
             eq(dependencies.checkout.outputs['SetPathVars_coreclr.containsChange'], true),
             eq(variables['isFullMatrix'], true)))
 
+# Build the whole product using Mono runtime
+# Only when libraries, mono or installer are changed
+#
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
+    jobTemplate: /eng/pipelines/common/global-build-job.yml
+    buildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
+    runtimeFlavor: mono
+    platforms:
+    - Android_x86
+    - Android_arm64
+    - tvOS_x64
+    - iOS_arm64
+    - iOS_x86
+    - Browser_wasm
+    - Linux_arm
+    jobParameters:
+      testGroup: innerloop
+      nameSuffix: AllSubsets_Mono
+      buildArgs: -s mono+libs+installer -c $(_BuildConfig)
+      condition: >-
+        or(
+          eq(dependencies.checkout.outputs['SetPathVars_libraries.containsChange'], true),
+          eq(dependencies.checkout.outputs['SetPathVars_mono.containsChange'], true),
+          eq(dependencies.checkout.outputs['SetPathVars_installer.containsChange'], true),
+          eq(variables['isFullMatrix'], true))
+
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
+    jobTemplate: /eng/pipelines/common/global-build-job.yml
+    buildConfig: Release
+    runtimeFlavor: mono
+    platforms:
+    - Android_x64
+    - Android_arm
+    - tvOS_arm64
+    - iOS_arm
+    - iOS_x64
+    - Linux_musl_x64
+    jobParameters:
+      testGroup: innerloop
+      nameSuffix: AllSubsets_Mono
+      buildArgs: -s mono+libs+installer -c $(_BuildConfig)
+      condition: >-
+        or(
+          eq(dependencies.checkout.outputs['SetPathVars_libraries.containsChange'], true),
+          eq(dependencies.checkout.outputs['SetPathVars_mono.containsChange'], true),
+          eq(dependencies.checkout.outputs['SetPathVars_installer.containsChange'], true),
+          eq(variables['isFullMatrix'], true))
+
+#
+# Build Mono and Installer on LLVMJIT mode
+#
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
+    jobTemplate: /eng/pipelines/common/global-build-job.yml
+    buildConfig: Release
+    runtimeFlavor: mono
+    platforms:
+    - OSX_x64
+    jobParameters:
+      testGroup: innerloop
+      nameSuffix: AllSubsets_Mono_LLVMJIT
+      buildArgs: -s mono+libs+installer -c $(_BuildConfig)
+                 /p:MonoEnableLLVM=true /p:MonoBundleLLVMOptimizer=false
+      condition: >-
+        or(
+          eq(dependencies.checkout.outputs['SetPathVars_libraries.containsChange'], true),
+          eq(dependencies.checkout.outputs['SetPathVars_mono.containsChange'], true),
+          eq(dependencies.checkout.outputs['SetPathVars_installer.containsChange'], true),
+          eq(variables['isFullMatrix'], true))
+
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
+    jobTemplate: /eng/pipelines/common/global-build-job.yml
+    buildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
+    runtimeFlavor: mono
+    platforms:
+    - Linux_x64
+    jobParameters:
+      testGroup: innerloop
+      nameSuffix: AllSubsets_Mono_LLVMJIT
+      buildArgs: -s mono+libs+installer -c $(_BuildConfig)
+                 /p:MonoEnableLLVM=true /p:MonoBundleLLVMOptimizer=false
+      condition: >-
+        or(
+          eq(dependencies.checkout.outputs['SetPathVars_libraries.containsChange'], true),
+          eq(dependencies.checkout.outputs['SetPathVars_mono.containsChange'], true),
+          eq(dependencies.checkout.outputs['SetPathVars_installer.containsChange'], true),
+          eq(variables['isFullMatrix'], true))
+
+#
+# Build Mono and Installer on LLVMAOT mode
+#
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
+    jobTemplate: /eng/pipelines/common/global-build-job.yml
+    buildConfig: Release
+    runtimeFlavor: mono
+    platforms:
+    - Linux_x64
+    jobParameters:
+      testGroup: innerloop
+      nameSuffix: AllSubsets_Mono_LLVMAOT
+      buildArgs: -s mono+libs+installer -c $(_BuildConfig)
+                 /p:MonoEnableLLVM=true /p:MonoBundleLLVMOptimizer=true
+      condition: >-
+        or(
+          eq(dependencies.checkout.outputs['SetPathVars_libraries.containsChange'], true),
+          eq(dependencies.checkout.outputs['SetPathVars_mono.containsChange'], true),
+          eq(dependencies.checkout.outputs['SetPathVars_installer.containsChange'], true),
+          eq(variables['isFullMatrix'], true))
+
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
+    jobTemplate: /eng/pipelines/common/global-build-job.yml
+    buildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
+    runtimeFlavor: mono
+    platforms:
+    - OSX_x64
+    jobParameters:
+      testGroup: innerloop
+      nameSuffix: AllSubsets_Mono_LLVMAOT
+      buildArgs: -s mono+libs+installer -c $(_BuildConfig)
+                 /p:MonoEnableLLVM=true /p:MonoBundleLLVMOptimizer=true
+      condition: >-
+        or(
+          eq(dependencies.checkout.outputs['SetPathVars_libraries.containsChange'], true),
+          eq(dependencies.checkout.outputs['SetPathVars_mono.containsChange'], true),
+          eq(dependencies.checkout.outputs['SetPathVars_installer.containsChange'], true),
+          eq(variables['isFullMatrix'], true))
+
 #
 # Build Mono debug
 # Only when libraries or mono changed
@@ -242,22 +375,9 @@ jobs:
     runtimeFlavor: mono
     buildConfig: debug
     platforms:
-    - Android_x64
-    - Android_x86
-    - Android_arm
-    - Android_arm64
-    - tvOS_x64
-    - tvOS_arm64
-    - iOS_x64
-    - iOS_x86
-    - iOS_arm
-    - iOS_arm64
     - OSX_x64
     - Linux_x64
-    - Linux_arm
     - Linux_arm64
-    - Linux_musl_x64
-    - Browser_wasm
     # - Linux_musl_arm64
     - Windows_NT_x64
     # - Windows_NT_x86
@@ -280,21 +400,8 @@ jobs:
     runtimeFlavor: mono
     buildConfig: release
     platforms:
-    - Android_x64
-    - Android_x86
-    - Android_arm
-    - Android_arm64
-    - tvOS_x64
-    - tvOS_arm64
-    - iOS_x64
-    - iOS_x86
-    - iOS_arm
-    - iOS_arm64
     - Linux_x64
-    - Linux_arm
     - Linux_arm64
-    - Linux_musl_x64
-    - Browser_wasm
     # - Linux_musl_arm64
     - Windows_NT_x64
     # - Windows_NT_x86
@@ -323,112 +430,6 @@ jobs:
         or(
           eq(dependencies.checkout.outputs['SetPathVars_libraries.containsChange'], true),
           eq(dependencies.checkout.outputs['SetPathVars_runtimetests.containsChange'], true),
-          eq(dependencies.checkout.outputs['SetPathVars_mono.containsChange'], true),
-          eq(variables['isFullMatrix'], true))
-
-
-
-#
-# Build Mono LLVM debug
-# Only when libraries or mono changed
-#
-- template: /eng/pipelines/common/platform-matrix.yml
-  parameters:
-    jobTemplate: /eng/pipelines/mono/templates/build-job.yml
-    runtimeFlavor: mono
-    buildConfig: debug
-    platforms:
-    - OSX_x64
-    - Linux_x64
-    # - Linux_arm
-    # - Linux_arm64
-    # - Linux_musl_x64
-    # - Linux_musl_arm64
-    # - Windows_NT_x64
-    # - Windows_NT_x86
-    # - Windows_NT_arm
-    # - Windows_NT_arm64
-    jobParameters:
-      runtimeVariant: LLVMJIT
-      condition: >-
-        or(
-          eq(dependencies.checkout.outputs['SetPathVars_libraries.containsChange'], true),
-          eq(dependencies.checkout.outputs['SetPathVars_mono.containsChange'], true),
-          eq(variables['isFullMatrix'], true))
-
-- template: /eng/pipelines/common/platform-matrix.yml
-  parameters:
-    jobTemplate: /eng/pipelines/mono/templates/build-job.yml
-    runtimeFlavor: mono
-    buildConfig: debug
-    platforms:
-    - OSX_x64
-    - Linux_x64
-    # - Linux_arm
-    # - Linux_arm64
-    # - Linux_musl_x64
-    # - Linux_musl_arm64
-    # - Windows_NT_x64
-    # - Windows_NT_x86
-    # - Windows_NT_arm
-    # - Windows_NT_arm64
-    jobParameters:
-      runtimeVariant: LLVMAOT
-      condition: >-
-        or(
-          eq(dependencies.checkout.outputs['SetPathVars_libraries.containsChange'], true),
-          eq(dependencies.checkout.outputs['SetPathVars_mono.containsChange'], true),
-          eq(variables['isFullMatrix'], true))
-
-#
-# Build Mono LLVM release
-# Only when libraries or mono changed
-#
-- template: /eng/pipelines/common/platform-matrix.yml
-  parameters:
-    jobTemplate: /eng/pipelines/mono/templates/build-job.yml
-    runtimeFlavor: mono
-    buildConfig: release
-    platforms:
-    - OSX_x64
-    - Linux_x64
-    # - Linux_arm
-    # - Linux_arm64
-    # - Linux_musl_x64
-    # - Linux_musl_arm64
-    # - Windows_NT_x64
-    # - Windows_NT_x86
-    # - Windows_NT_arm
-    # - Windows_NT_arm64
-    jobParameters:
-      runtimeVariant: LLVMJIT
-      condition: >-
-        or(
-          eq(dependencies.checkout.outputs['SetPathVars_libraries.containsChange'], true),
-          eq(dependencies.checkout.outputs['SetPathVars_mono.containsChange'], true),
-          eq(variables['isFullMatrix'], true))
-
-- template: /eng/pipelines/common/platform-matrix.yml
-  parameters:
-    jobTemplate: /eng/pipelines/mono/templates/build-job.yml
-    runtimeFlavor: mono
-    buildConfig: release
-    platforms:
-    - OSX_x64
-    - Linux_x64
-    # - Linux_arm
-    # - Linux_arm64
-    # - Linux_musl_x64
-    # - Linux_musl_arm64
-    # - Windows_NT_x64
-    # - Windows_NT_x86
-    # - Windows_NT_arm
-    # - Windows_NT_arm64
-    jobParameters:
-      runtimeVariant: LLVMAOT
-      condition: >-
-        or(
-          eq(dependencies.checkout.outputs['SetPathVars_libraries.containsChange'], true),
           eq(dependencies.checkout.outputs['SetPathVars_mono.containsChange'], true),
           eq(variables['isFullMatrix'], true))
 
@@ -464,38 +465,6 @@ jobs:
     - FreeBSD_x64
     jobParameters:
       liveRuntimeBuildConfig: release
-
-#
-# Build libraries using Mono CoreLib only
-#
-- template: /eng/pipelines/common/platform-matrix.yml
-  parameters:
-    jobTemplate: /eng/pipelines/libraries/build-job.yml
-    buildConfig: Release
-    runtimeFlavor: mono
-    platforms:
-    - Android_x64
-    - Android_arm
-    - tvOS_arm64
-    - iOS_arm
-    - iOS_x64
-    jobParameters:
-      liveRuntimeBuildConfig: release
-
-- template: /eng/pipelines/common/platform-matrix.yml
-  parameters:
-    jobTemplate: /eng/pipelines/libraries/build-job.yml
-    buildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
-    runtimeFlavor: mono
-    platforms:
-    - Android_x86
-    - Android_arm64
-    - tvOS_x64
-    - iOS_arm64
-    - iOS_x86
-    - Browser_wasm
-    jobParameters:
-      liveRuntimeBuildConfig: debug
 
 #
 # Libraries Build that only run when libraries is changed
@@ -551,24 +520,6 @@ jobs:
           eq(variables['isFullMatrix'], true))
 
 #
-# Libraries Sourcebuild Build
-#
-- template: /eng/pipelines/common/platform-matrix.yml
-  parameters:
-    jobTemplate: /eng/pipelines/libraries/build-job.yml
-    buildConfig: Release
-    platforms:
-    - Linux_x64
-    jobParameters:
-      runTests: false
-      liveRuntimeBuildConfig: release
-      isSourceBuild: true
-      condition: >-
-        or(
-          eq(dependencies.checkout.outputs['SetPathVars_libraries.containsChange'], true),
-          eq(variables['isFullMatrix'], true))
-
-#
 # Installer Build and Test
 # These are always built since they only take like 15 minutes
 # we expect these to be done before we finish libraries or coreclr testing.
@@ -597,61 +548,6 @@ jobs:
       - Windows_NT_x64
       - FreeBSD_x64
     jobParameters:
-      liveRuntimeBuildConfig: release
-      liveLibrariesBuildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
-
-- template: /eng/pipelines/installer/installer-matrix.yml
-  parameters:
-    buildConfig: Release
-    runtimeFlavor: mono
-    platforms:
-    - Android_x64
-    - Android_arm
-    - tvOS_arm64
-    - iOS_arm
-    - iOS_x64
-    jobParameters:
-      liveRuntimeBuildConfig: release
-      liveLibrariesBuildConfig: Release
-
-- template: /eng/pipelines/installer/installer-matrix.yml
-  parameters:
-    buildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
-    runtimeFlavor: mono
-    platforms:
-    - Android_x86
-    - Android_arm64
-    - tvOS_x64
-    - iOS_arm64
-    - iOS_x86
-    - OSX_x64
-    - Linux_x64
-    - Browser_wasm
-    jobParameters:
-      liveRuntimeBuildConfig: release
-      liveLibrariesBuildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
-
-- template: /eng/pipelines/installer/installer-matrix.yml
-  parameters:
-    buildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
-    runtimeFlavor: mono
-    platforms:
-    - OSX_x64
-    - Linux_x64
-    jobParameters:
-      runtimeVariant: LLVMJIT
-      liveRuntimeBuildConfig: release
-      liveLibrariesBuildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
-
-- template: /eng/pipelines/installer/installer-matrix.yml
-  parameters:
-    buildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
-    runtimeFlavor: mono
-    platforms:
-    - OSX_x64
-    - Linux_x64
-    jobParameters:
-      runtimeVariant: LLVMAOT
       liveRuntimeBuildConfig: release
       liveLibrariesBuildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
 
@@ -706,31 +602,7 @@ jobs:
     jobTemplate: /eng/pipelines/common/templates/runtimes/build-test-job.yml
     buildConfig: checked
     platforms:
-    - Linux_arm 
-    - Windows_NT_x86
-    - Windows_NT_arm
-    - Windows_NT_arm64
-    jobParameters:
-      testGroup: innerloop
-      liveLibrariesBuildConfig: Release
-      condition: >-
-        or(
-          eq(dependencies.checkout.outputs['SetPathVars_coreclr.containsChange'], true),
-          eq(variables['isFullMatrix'], true))
-
-#
-# CoreCLR Test builds using live libraries debug build
-# Only when CoreCLR is changed
-#
-- template: /eng/pipelines/common/platform-matrix.yml
-  parameters:
-    jobTemplate: /eng/pipelines/common/templates/runtimes/build-test-job.yml
-    buildConfig: checked
-    platforms:
-    - OSX_x64
-    - Linux_x64
-    - Linux_arm64
-    - Windows_NT_x64
+    - CoreClrTestBuildHost # Either OSX_x64 or Linux_x64
     jobParameters:
       testGroup: innerloop
       liveLibrariesBuildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
@@ -790,8 +662,7 @@ jobs:
     buildConfig: release
     runtimeFlavor: mono
     platforms:
-    - OSX_x64
-    - Linux_arm64
+    - CoreClrTestBuildHost # Either OSX_x64 or Linux_x64
     jobParameters:
       testGroup: innerloop
       liveLibrariesBuildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
@@ -843,6 +714,37 @@ jobs:
     jobParameters:
       isOfficialBuild: false
       isFullMatrix: ${{ variables.isFullMatrix }}
+      runtimeDisplayName: mono
+      testScope: innerloop
+      liveRuntimeBuildConfig: release
+      dependsOnTestBuildConfiguration: ${{ variables.debugOnPrReleaseOnRolling }}
+      dependsOnTestArchitecture: x64
+      condition: >-
+        or(
+          eq(dependencies.checkout.outputs['SetPathVars_libraries.containsChange'], true),
+          eq(dependencies.checkout.outputs['SetPathVars_mono.containsChange'], true),
+          eq(variables['isFullMatrix'], true))
+
+#
+# Libraries Release Test Execution against a release mono interpreter runtime.
+# Only when libraries or mono changed
+#
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
+    jobTemplate: /eng/pipelines/libraries/run-test-job.yml
+    runtimeFlavor: mono
+    buildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
+    platforms:
+    # - Windows_NT_x64
+    #- OSX_x64
+    - Linux_arm64
+    - Linux_x64
+    helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
+    jobParameters:
+      isOfficialBuild: false
+      isFullMatrix: ${{ variables.isFullMatrix }}
+      interpreter: true
+      runtimeDisplayName: mono_interpreter
       testScope: innerloop
       liveRuntimeBuildConfig: release
       dependsOnTestBuildConfiguration: ${{ variables.debugOnPrReleaseOnRolling }}
@@ -921,6 +823,8 @@ jobs:
     buildConfig: Release
     platforms:
     # - Windows_NT_arm return this when https://github.com/dotnet/runtime/issues/1097 is fixed.
+    - Linux_arm
+    - Linux_musl_arm64
     - Windows_NT_x86
     helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
     helixQueueGroup: libraries
@@ -942,6 +846,7 @@ jobs:
     - Windows_NT_x64
     - Linux_x64
     - Linux_musl_x64
+    - Linux_arm64
     helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
     helixQueueGroup: libraries
     jobParameters:

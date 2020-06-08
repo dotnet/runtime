@@ -21,6 +21,9 @@ namespace System.Net.Security
     /// </summary>
     public partial class NegotiateStream : AuthenticatedStream
     {
+        /// <summary>Set as the _exception when the instance is disposed.</summary>
+        private static readonly ExceptionDispatchInfo s_disposedSentinel = ExceptionDispatchInfo.Capture(new ObjectDisposedException(nameof(NegotiateStream), (string?)null));
+
         private const int ERROR_TRUST_FAILURE = 1790;   // Used to serialize protectionLevel or impersonationLevel mismatch error to the remote side.
         private const int MaxReadFrameSize = 64 * 1024;
         private const int MaxWriteDataSize = 63 * 1024; // 1k for the framing and trailer that is always less as per SSPI.
@@ -40,7 +43,7 @@ namespace System.Net.Security
         private volatile int _readInProgress;
         private volatile int _authInProgress;
 
-        private Exception? _exception;
+        private ExceptionDispatchInfo? _exception;
         private StreamFramer? _framer;
         private NTAuthentication? _context;
         private bool _canRetryAuthentication;
@@ -70,7 +73,7 @@ namespace System.Net.Security
         {
             try
             {
-                _exception = new ObjectDisposedException(nameof(NegotiateStream));
+                _exception = s_disposedSentinel;
                 _context?.CloseContext();
             }
             finally
@@ -83,7 +86,7 @@ namespace System.Net.Security
         {
             try
             {
-                _exception = new ObjectDisposedException(nameof(NegotiateStream));
+                _exception = s_disposedSentinel;
                 _context?.CloseContext();
             }
             finally
@@ -508,6 +511,29 @@ namespace System.Net.Security
         public override void EndWrite(IAsyncResult asyncResult) =>
             TaskToApm.End(asyncResult);
 
+        private void ThrowIfExceptional()
+        {
+            ExceptionDispatchInfo? e = _exception;
+            if (e != null)
+            {
+                ThrowExceptional(e);
+            }
+
+            // Local function to make the check method more inline friendly.
+            static void ThrowExceptional(ExceptionDispatchInfo e)
+            {
+                // If the stored exception just indicates disposal, throw a new ODE rather than the stored one,
+                // so as to not continually build onto the shared exception's stack.
+                if (ReferenceEquals(e, s_disposedSentinel))
+                {
+                    throw new ObjectDisposedException(nameof(NegotiateStream));
+                }
+
+                // Throw the stored exception.
+                e.Throw();
+            }
+        }
+
         /// <summary>Validates user parameters for all Read/Write methods.</summary>
         private static void ValidateParameters(byte[] buffer, int offset, int count)
         {
@@ -567,9 +593,9 @@ namespace System.Net.Security
             ProtectionLevel protectionLevel,
             TokenImpersonationLevel impersonationLevel)
         {
-            if (_exception != null && !_canRetryAuthentication)
+            if (!_canRetryAuthentication)
             {
-                ExceptionDispatchInfo.Throw(_exception);
+                ThrowIfExceptional();
             }
 
             if (_context != null && _context.IsValidContext)
@@ -666,9 +692,9 @@ namespace System.Net.Security
 
         private void SetFailed(Exception e)
         {
-            if (!(_exception is ObjectDisposedException))
+            if (_exception == null || !(_exception.SourceException is ObjectDisposedException))
             {
-                _exception = e;
+                _exception = ExceptionDispatchInfo.Capture(e);
             }
 
             _context?.CloseContext();
@@ -676,10 +702,7 @@ namespace System.Net.Security
 
         private void ThrowIfFailed(bool authSuccessCheck)
         {
-            if (_exception != null)
-            {
-                ExceptionDispatchInfo.Throw(_exception);
-            }
+            ThrowIfExceptional();
 
             if (authSuccessCheck && !IsAuthenticatedCore)
             {

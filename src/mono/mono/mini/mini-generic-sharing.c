@@ -1253,6 +1253,27 @@ get_wrapper_shared_type_full (MonoType *t, gboolean is_field)
 		return mono_get_int32_type ();
 	case MONO_TYPE_U4:
 		return m_class_get_byval_arg (mono_defaults.uint32_class);
+	case MONO_TYPE_I8:
+#if TARGET_SIZEOF_VOID_P == 8
+		/* Use native int as its already used for byref */
+		return m_class_get_byval_arg (mono_defaults.int_class);
+#else
+		return m_class_get_byval_arg (mono_defaults.int64_class);
+#endif
+	case MONO_TYPE_U8:
+		return m_class_get_byval_arg (mono_defaults.uint64_class);
+	case MONO_TYPE_I:
+#if TARGET_SIZEOF_VOID_P == 8
+		return m_class_get_byval_arg (mono_defaults.int_class);
+#else
+		return m_class_get_byval_arg (mono_defaults.int32_class);
+#endif
+	case MONO_TYPE_U:
+#if TARGET_SIZEOF_VOID_P == 8
+		return m_class_get_byval_arg (mono_defaults.uint64_class);
+#else
+		return m_class_get_byval_arg (mono_defaults.uint32_class);
+#endif
 	case MONO_TYPE_OBJECT:
 	case MONO_TYPE_CLASS:
 	case MONO_TYPE_SZARRAY:
@@ -1309,16 +1330,6 @@ get_wrapper_shared_type_full (MonoType *t, gboolean is_field)
 			t = shared_type;
 		return t;
 	}
-#if TARGET_SIZEOF_VOID_P == 8
-	case MONO_TYPE_I8:
-		return mono_get_int_type ();
-#endif
-#if TARGET_SIZEOF_VOID_P == 4
-	case MONO_TYPE_I:
-		return mono_get_int32_type ();
-	case MONO_TYPE_U:
-		return m_class_get_byval_arg (mono_defaults.uint32_class);
-#endif
 	default:
 		break;
 	}

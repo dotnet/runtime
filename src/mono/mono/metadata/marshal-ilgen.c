@@ -113,6 +113,12 @@ emit_struct_conv (MonoMethodBuilder *mb, MonoClass *klass, gboolean to_object);
 static void
 emit_struct_conv_full (MonoMethodBuilder *mb, MonoClass *klass, gboolean to_object, int offset_of_first_child_field, MonoMarshalNative string_encoding);
 
+static MonoJitICallId
+conv_to_icall (MonoMarshalConv conv, int *ind_store_type);
+
+static MonoMarshalConv
+conv_str_inverse (MonoMarshalConv conv);
+
 /**
  * mono_mb_strdup:
  * \param mb the MethodBuilder
@@ -460,34 +466,22 @@ emit_ptr_to_object_conv (MonoMethodBuilder *mb, MonoType *type, MonoMarshalConv 
 		}
 		mono_mb_emit_byte (mb, CEE_STIND_REF);		
 		break;		
-	case MONO_MARSHAL_CONV_STR_LPTSTR:
-		mono_mb_emit_ldloc (mb, 1);
-		mono_mb_emit_ldloc (mb, 0);
-		mono_mb_emit_byte (mb, CEE_LDIND_I);
-#ifdef TARGET_WIN32
-		mono_mb_emit_icall (mb, ves_icall_mono_string_from_utf16);
-#else
-		mono_mb_emit_icall (mb, ves_icall_string_new_wrapper);
-#endif
-		mono_mb_emit_byte (mb, CEE_STIND_REF);	
-		break;
 
-		// In Mono historically LPSTR was treated as a UTF8STR
-	case MONO_MARSHAL_CONV_STR_LPSTR:
+	case MONO_MARSHAL_CONV_STR_ANSIBSTR:
+	case MONO_MARSHAL_CONV_STR_TBSTR:
 	case MONO_MARSHAL_CONV_STR_UTF8STR:
-		mono_mb_emit_ldloc (mb, 1);
-		mono_mb_emit_ldloc (mb, 0);
-		mono_mb_emit_byte (mb, CEE_LDIND_I);
-		mono_mb_emit_icall (mb, ves_icall_string_new_wrapper);
-		mono_mb_emit_byte (mb, CEE_STIND_REF);		
-		break;
 	case MONO_MARSHAL_CONV_STR_LPWSTR:
+	case MONO_MARSHAL_CONV_STR_LPSTR:
+	case MONO_MARSHAL_CONV_STR_LPTSTR:
+	case MONO_MARSHAL_CONV_STR_BSTR: {
 		mono_mb_emit_ldloc (mb, 1);
 		mono_mb_emit_ldloc (mb, 0);
 		mono_mb_emit_byte (mb, CEE_LDIND_I);
-		mono_mb_emit_icall (mb, ves_icall_mono_string_from_utf16);
+		mono_mb_emit_icall_id (mb, conv_to_icall (conv_str_inverse (conv), NULL));
 		mono_mb_emit_byte (mb, CEE_STIND_REF);
 		break;
+	}
+
 	case MONO_MARSHAL_CONV_OBJECT_STRUCT: {
 		MonoClass *klass = mono_class_from_mono_type_internal (type);
 		int src_var, dst_var;
@@ -576,9 +570,6 @@ emit_ptr_to_object_conv (MonoMethodBuilder *mb, MonoType *type, MonoMarshalConv 
 		break;
 	}
 		
-	case MONO_MARSHAL_CONV_STR_BSTR:
-	case MONO_MARSHAL_CONV_STR_ANSIBSTR:
-	case MONO_MARSHAL_CONV_STR_TBSTR:
 	case MONO_MARSHAL_CONV_ARRAY_SAVEARRAY:
 	default: {
 		char *msg = g_strdup_printf ("marshaling conversion %d not implemented", conv);
@@ -586,6 +577,98 @@ emit_ptr_to_object_conv (MonoMethodBuilder *mb, MonoType *type, MonoMarshalConv 
 		mono_mb_emit_exception_marshal_directive (mb, msg);
 		break;
 	}
+	}
+}
+
+// On legacy Mono, LPTSTR was either UTF16 or UTF8 depending on platform
+static inline MonoJitICallId
+mono_string_to_platform_unicode (void)
+{
+#ifdef TARGET_WIN32
+	return MONO_JIT_ICALL_mono_marshal_string_to_utf16;
+#else
+	return MONO_JIT_ICALL_mono_string_to_utf8str;
+#endif
+}
+
+static inline MonoJitICallId
+mono_string_from_platform_unicode (void)
+{
+#ifdef TARGET_WIN32
+	return MONO_JIT_ICALL_ves_icall_mono_string_from_utf16;
+#else
+	return MONO_JIT_ICALL_ves_icall_string_new_wrapper;
+#endif
+}
+
+static inline MonoJitICallId
+mono_string_builder_to_platform_unicode (void)
+{
+#ifdef TARGET_WIN32
+	return MONO_JIT_ICALL_mono_string_builder_to_utf16;
+#else
+	return MONO_JIT_ICALL_mono_string_builder_to_utf8;
+#endif
+}
+
+static inline MonoJitICallId
+mono_string_builder_from_platform_unicode (void)
+{
+#ifdef TARGET_WIN32
+	return MONO_JIT_ICALL_mono_string_utf16_to_builder;
+#else
+	return MONO_JIT_ICALL_mono_string_utf8_to_builder;
+#endif
+}
+
+static MonoMarshalConv
+conv_str_inverse (MonoMarshalConv conv)
+{
+	switch (conv) {
+	// AnsiBStr
+	case MONO_MARSHAL_CONV_STR_ANSIBSTR:
+		return MONO_MARSHAL_CONV_ANSIBSTR_STR;
+	case MONO_MARSHAL_CONV_ANSIBSTR_STR:
+		return MONO_MARSHAL_CONV_STR_ANSIBSTR;
+
+	// BStr
+	case MONO_MARSHAL_CONV_STR_BSTR:
+		return MONO_MARSHAL_CONV_BSTR_STR;
+	case MONO_MARSHAL_CONV_BSTR_STR:
+		return MONO_MARSHAL_CONV_STR_BSTR;
+
+	// LPStr
+	case MONO_MARSHAL_CONV_STR_LPSTR:
+		return MONO_MARSHAL_CONV_LPSTR_STR;
+	case MONO_MARSHAL_CONV_LPSTR_STR:
+		return MONO_MARSHAL_CONV_STR_LPSTR;
+
+	// LPTStr
+	case MONO_MARSHAL_CONV_STR_LPTSTR:
+		return MONO_MARSHAL_CONV_LPTSTR_STR;
+	case MONO_MARSHAL_CONV_LPTSTR_STR:
+		return MONO_MARSHAL_CONV_STR_LPTSTR;
+
+	// LPUTF8Str
+	case MONO_MARSHAL_CONV_STR_UTF8STR:
+		return MONO_MARSHAL_CONV_UTF8STR_STR;
+	case MONO_MARSHAL_CONV_UTF8STR_STR:
+		return MONO_MARSHAL_CONV_STR_UTF8STR;
+
+	// LPWStr
+	case MONO_MARSHAL_CONV_STR_LPWSTR:
+		return MONO_MARSHAL_CONV_LPWSTR_STR;
+	case MONO_MARSHAL_CONV_LPWSTR_STR:
+		return MONO_MARSHAL_CONV_STR_LPWSTR;
+
+	// TBStr
+	case MONO_MARSHAL_CONV_STR_TBSTR:
+		return MONO_MARSHAL_CONV_TBSTR_STR;
+	case MONO_MARSHAL_CONV_TBSTR_STR:
+		return MONO_MARSHAL_CONV_STR_TBSTR;
+
+	default:
+		g_assert_not_reached ();
 	}
 }
 
@@ -602,78 +685,100 @@ conv_to_icall (MonoMarshalConv conv, int *ind_store_type)
 		ind_store_type = &dummy;
 	*ind_store_type = CEE_STIND_I;
 	switch (conv) {
-	case MONO_MARSHAL_CONV_STR_LPWSTR:
-		return MONO_JIT_ICALL_mono_marshal_string_to_utf16;
-	case MONO_MARSHAL_CONV_LPWSTR_STR:
+	// AnsiBStr
+	case MONO_MARSHAL_CONV_STR_ANSIBSTR:
+		return MONO_JIT_ICALL_mono_string_to_ansibstr;
+	case MONO_MARSHAL_CONV_ANSIBSTR_STR:
 		*ind_store_type = CEE_STIND_REF;
-		return MONO_JIT_ICALL_ves_icall_mono_string_from_utf16;
-	case MONO_MARSHAL_CONV_LPTSTR_STR:
-		*ind_store_type = CEE_STIND_REF;
-		return MONO_JIT_ICALL_ves_icall_string_new_wrapper;
-	case MONO_MARSHAL_CONV_UTF8STR_STR:
-	case MONO_MARSHAL_CONV_LPSTR_STR:
-		*ind_store_type = CEE_STIND_REF;
-		return MONO_JIT_ICALL_ves_icall_string_new_wrapper;
-	case MONO_MARSHAL_CONV_STR_LPTSTR:
-#ifdef TARGET_WIN32
-		return MONO_JIT_ICALL_mono_marshal_string_to_utf16;
-#else
-		return MONO_JIT_ICALL_mono_string_to_utf8str;
-#endif
-		// In Mono historically LPSTR was treated as a UTF8STR
-	case MONO_MARSHAL_CONV_STR_UTF8STR:
-	case MONO_MARSHAL_CONV_STR_LPSTR:
-		return MONO_JIT_ICALL_mono_string_to_utf8str;
+		return MONO_JIT_ICALL_mono_string_from_ansibstr;
+
+	// BStr
 	case MONO_MARSHAL_CONV_STR_BSTR:
 		return MONO_JIT_ICALL_mono_string_to_bstr;
 	case MONO_MARSHAL_CONV_BSTR_STR:
 		*ind_store_type = CEE_STIND_REF;
 		return MONO_JIT_ICALL_mono_string_from_bstr_icall;
-	case MONO_MARSHAL_CONV_STR_TBSTR:
-	case MONO_MARSHAL_CONV_STR_ANSIBSTR:
-		return MONO_JIT_ICALL_mono_string_to_ansibstr;
-	case MONO_MARSHAL_CONV_SB_UTF8STR:
+
+	// LPStr
+	// In Mono, LPSTR was historically treated as UTF8STR
+	case MONO_MARSHAL_CONV_STR_LPSTR:
+		return MONO_JIT_ICALL_mono_string_to_utf8str;
+	case MONO_MARSHAL_CONV_LPSTR_STR:
+		*ind_store_type = CEE_STIND_REF;
+		return MONO_JIT_ICALL_ves_icall_string_new_wrapper;
 	case MONO_MARSHAL_CONV_SB_LPSTR:
 		return MONO_JIT_ICALL_mono_string_builder_to_utf8;
+	case MONO_MARSHAL_CONV_LPSTR_SB:
+		*ind_store_type = CEE_STIND_REF;
+		return MONO_JIT_ICALL_mono_string_utf8_to_builder;
+
+	// LPTStr
+	// FIXME: This is how LPTStr was handled on legacy, but it's not correct and for netcore we should implement this more properly.
+	// This type is supposed to detect ANSI or UTF16 (as LPTStr can be either depending on _UNICODE) and handle it accordingly.
+	// The CoreCLR test for this type only tests as LPWSTR regardless of platform.
+	case MONO_MARSHAL_CONV_STR_LPTSTR:
+		return mono_string_to_platform_unicode ();
+	case MONO_MARSHAL_CONV_LPTSTR_STR:
+		*ind_store_type = CEE_STIND_REF;
+		return mono_string_from_platform_unicode ();
 	case MONO_MARSHAL_CONV_SB_LPTSTR:
-#ifdef TARGET_WIN32
-		return MONO_JIT_ICALL_mono_string_builder_to_utf16;
-#else
+		return mono_string_builder_to_platform_unicode ();
+	case MONO_MARSHAL_CONV_LPTSTR_SB:
+		*ind_store_type = CEE_STIND_REF;
+		return mono_string_builder_from_platform_unicode ();
+
+	// LPUTF8Str
+	case MONO_MARSHAL_CONV_STR_UTF8STR:
+		return MONO_JIT_ICALL_mono_string_to_utf8str;
+	case MONO_MARSHAL_CONV_UTF8STR_STR:
+		*ind_store_type = CEE_STIND_REF;
+		return MONO_JIT_ICALL_ves_icall_string_new_wrapper;
+	case MONO_MARSHAL_CONV_SB_UTF8STR:
 		return MONO_JIT_ICALL_mono_string_builder_to_utf8;
-#endif
+	case MONO_MARSHAL_CONV_UTF8STR_SB:
+		*ind_store_type = CEE_STIND_REF;
+		return MONO_JIT_ICALL_mono_string_utf8_to_builder;
+
+	// LPWStr
+	case MONO_MARSHAL_CONV_STR_LPWSTR:
+		return MONO_JIT_ICALL_mono_marshal_string_to_utf16;
+	case MONO_MARSHAL_CONV_LPWSTR_STR:
+		*ind_store_type = CEE_STIND_REF;
+		return MONO_JIT_ICALL_ves_icall_mono_string_from_utf16;
 	case MONO_MARSHAL_CONV_SB_LPWSTR:
 		return MONO_JIT_ICALL_mono_string_builder_to_utf16;
-	case MONO_MARSHAL_CONV_ARRAY_SAVEARRAY:
-		return MONO_JIT_ICALL_mono_array_to_savearray;
-	case MONO_MARSHAL_CONV_ARRAY_LPARRAY:
-		return MONO_JIT_ICALL_mono_array_to_lparray;
-	case MONO_MARSHAL_FREE_LPARRAY:
-		return MONO_JIT_ICALL_mono_free_lparray;
+	case MONO_MARSHAL_CONV_LPWSTR_SB:
+		*ind_store_type = CEE_STIND_REF;
+		return MONO_JIT_ICALL_mono_string_utf16_to_builder;
+
+	// TBStr
+	case MONO_MARSHAL_CONV_STR_TBSTR:
+		return MONO_JIT_ICALL_mono_string_to_tbstr;
+	case MONO_MARSHAL_CONV_TBSTR_STR:
+		*ind_store_type = CEE_STIND_REF;
+		return MONO_JIT_ICALL_mono_string_from_tbstr;
+
+	case MONO_MARSHAL_CONV_STR_BYVALSTR:
+		return MONO_JIT_ICALL_mono_string_to_byvalstr;
+	case MONO_MARSHAL_CONV_STR_BYVALWSTR:
+		return MONO_JIT_ICALL_mono_string_to_byvalwstr;
+
 	case MONO_MARSHAL_CONV_DEL_FTN:
 		return MONO_JIT_ICALL_mono_delegate_to_ftnptr;
 	case MONO_MARSHAL_CONV_FTN_DEL:
 		*ind_store_type = CEE_STIND_REF;
 		return MONO_JIT_ICALL_mono_ftnptr_to_delegate;
-	case MONO_MARSHAL_CONV_UTF8STR_SB:
-	case MONO_MARSHAL_CONV_LPSTR_SB:
-		*ind_store_type = CEE_STIND_REF;
-		return MONO_JIT_ICALL_mono_string_utf8_to_builder;
-	case MONO_MARSHAL_CONV_LPTSTR_SB:
-		*ind_store_type = CEE_STIND_REF;
-#ifdef TARGET_WIN32
-		return MONO_JIT_ICALL_mono_string_utf16_to_builder;
-#else
-		return MONO_JIT_ICALL_mono_string_utf8_to_builder;
-#endif
-	case MONO_MARSHAL_CONV_LPWSTR_SB:
-		*ind_store_type = CEE_STIND_REF;
-		return MONO_JIT_ICALL_mono_string_utf16_to_builder;
+
+	case MONO_MARSHAL_CONV_ARRAY_SAVEARRAY:
+		return MONO_JIT_ICALL_mono_array_to_savearray;
 	case MONO_MARSHAL_FREE_ARRAY:
 		return MONO_JIT_ICALL_mono_marshal_free_array;
-	case MONO_MARSHAL_CONV_STR_BYVALSTR:
-		return MONO_JIT_ICALL_mono_string_to_byvalstr;
-	case MONO_MARSHAL_CONV_STR_BYVALWSTR:
-		return MONO_JIT_ICALL_mono_string_to_byvalwstr;
+
+	case MONO_MARSHAL_CONV_ARRAY_LPARRAY:
+		return MONO_JIT_ICALL_mono_array_to_lparray;
+	case MONO_MARSHAL_FREE_LPARRAY:
+		return MONO_JIT_ICALL_mono_free_lparray;
+
 	default:
 		g_assert_not_reached ();
 	}
@@ -701,7 +806,6 @@ emit_object_to_ptr_conv (MonoMethodBuilder *mb, MonoType *type, MonoMarshalConv 
 		mono_mb_emit_byte (mb, CEE_NEG);
 		mono_mb_emit_byte (mb, CEE_STIND_I2);
 		break;
-	// In Mono historically LPSTR was treated as a UTF8STR
 	case MONO_MARSHAL_CONV_STR_UTF8STR:
 	case MONO_MARSHAL_CONV_STR_LPWSTR:
 	case MONO_MARSHAL_CONV_STR_LPSTR:
@@ -4988,6 +5092,15 @@ emit_marshal_vtype_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 	return conv_arg;
 }
 
+static inline void
+emit_string_free_icall (MonoMethodBuilder *mb, MonoMarshalConv conv)
+{
+	if (conv == MONO_MARSHAL_CONV_BSTR_STR || conv == MONO_MARSHAL_CONV_ANSIBSTR_STR || conv == MONO_MARSHAL_CONV_TBSTR_STR)
+		mono_mb_emit_icall (mb, mono_free_bstr);
+	else
+		mono_mb_emit_icall (mb, mono_marshal_free);
+}
+
 static int
 emit_marshal_string_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 					 MonoMarshalSpec *spec, 
@@ -5071,10 +5184,7 @@ emit_marshal_string_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 
 		if (need_free) {
 			mono_mb_emit_ldloc (mb, conv_arg);
-			if (conv == MONO_MARSHAL_CONV_BSTR_STR)
-				mono_mb_emit_icall (mb, mono_free_bstr);
-			else
-				mono_mb_emit_icall (mb, mono_marshal_free);
+			emit_string_free_icall (mb, conv);
 		}
 		break;
 
@@ -5101,10 +5211,7 @@ emit_marshal_string_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 
 		/* free the string */
 		mono_mb_emit_ldloc (mb, 0);
-		if (conv == MONO_MARSHAL_CONV_BSTR_STR)
-			mono_mb_emit_icall (mb, mono_free_bstr);
-		else
-			mono_mb_emit_icall (mb, mono_marshal_free);
+		emit_string_free_icall (mb, conv);
 		break;
 
 	case MARSHAL_ACTION_MANAGED_CONV_IN:

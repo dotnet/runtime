@@ -353,7 +353,7 @@ namespace System
         }
 
         [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
-        private static extern IntPtr _RegisterFrozenSegment(IntPtr sectionAddress, IntPtr sectionSize);
+        private static extern IntPtr _RegisterFrozenSegment(IntPtr sectionAddress, nint sectionSize);
 
         [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
         private static extern void _UnregisterFrozenSegment(IntPtr segmentHandle);

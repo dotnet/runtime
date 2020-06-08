@@ -5,7 +5,6 @@
 #include "createdump.h"
 
 DumpWriter::DumpWriter(CrashInfo& crashInfo) :
-    m_ref(1),
     m_fd(-1),
     m_crashInfo(crashInfo)
 {
@@ -22,49 +21,13 @@ DumpWriter::~DumpWriter()
     m_crashInfo.Release();
 }
 
-STDMETHODIMP
-DumpWriter::QueryInterface(
-    ___in REFIID InterfaceId,
-    ___out PVOID* Interface)
-{
-    if (InterfaceId == IID_IUnknown)
-    {
-        *Interface = (IUnknown*)this;
-        AddRef();
-        return S_OK;
-    }
-    else
-    {
-        *Interface = NULL;
-        return E_NOINTERFACE;
-    }
-}
-
-STDMETHODIMP_(ULONG)
-DumpWriter::AddRef()
-{
-    LONG ref = InterlockedIncrement(&m_ref);
-    return ref;
-}
-
-STDMETHODIMP_(ULONG)
-DumpWriter::Release()
-{
-    LONG ref = InterlockedDecrement(&m_ref);
-    if (ref == 0)
-    {
-        delete this;
-    }
-    return ref;
-}
-
 bool
 DumpWriter::OpenDump(const char* dumpFileName)
 {
     m_fd = open(dumpFileName, O_WRONLY|O_CREAT|O_TRUNC, 0664);
     if (m_fd == -1)
     {
-        fprintf(stderr, "Could not open output %s: %s\n", dumpFileName, strerror(errno));
+        fprintf(stderr, "Could not open output %s: %d %s\n", dumpFileName, errno, strerror(errno));
         return false;
     }
     return true;
@@ -113,7 +76,14 @@ DumpWriter::WriteDump()
     // is used to store the actual program header count.
 
     // PT_NOTE + number of memory regions
-    uint64_t phnum = 1 + m_crashInfo.MemoryRegions().size();
+    uint64_t phnum = 1;
+    for (const MemoryRegion& memoryRegion : m_crashInfo.MemoryRegions())
+    {
+        if (memoryRegion.IsBackedByMemory())
+        {
+            phnum++;
+        }
+    }
 
     if (phnum < PH_HDR_CANARY) {
         ehdr.e_phnum = phnum;
@@ -171,24 +141,19 @@ DumpWriter::WriteDump()
     // Write memory region note headers
     for (const MemoryRegion& memoryRegion : m_crashInfo.MemoryRegions())
     {
-        phdr.p_flags = memoryRegion.Permissions();
-        phdr.p_vaddr = memoryRegion.StartAddress();
-        phdr.p_memsz = memoryRegion.Size();
-
         if (memoryRegion.IsBackedByMemory())
         {
+            phdr.p_flags = memoryRegion.Permissions();
+            phdr.p_vaddr = memoryRegion.StartAddress();
+            phdr.p_memsz = memoryRegion.Size();
+
             offset += filesz;
             phdr.p_filesz = filesz = memoryRegion.Size();
             phdr.p_offset = offset;
-        }
-        else
-        {
-            phdr.p_filesz = 0;
-            phdr.p_offset = 0;
-        }
 
-        if (!WriteData(&phdr, sizeof(phdr))) {
-            return false;
+            if (!WriteData(&phdr, sizeof(phdr))) {
+                return false;
+            }
         }
     }
 
@@ -220,14 +185,17 @@ DumpWriter::WriteDump()
     // Zero out the end of the PT_NOTE section to the boundary
     // and then laydown the memory blocks
     if (finalNoteAlignment > 0) {
-        assert(finalNoteAlignment < sizeof(m_tempBuffer));
+        if (finalNoteAlignment > sizeof(m_tempBuffer)) {
+            fprintf(stderr, "finalNoteAlignment %zu > sizeof(m_tempBuffer)\n", finalNoteAlignment);
+            return false;
+        }
         memset(m_tempBuffer, 0, finalNoteAlignment);
         if (!WriteData(m_tempBuffer, finalNoteAlignment)) {
             return false;
         }
     }
 
-    TRACE("Writing %zd memory regions to core file\n", m_crashInfo.MemoryRegions().size());
+    TRACE("Writing %" PRIu64 " memory regions to core file\n", phnum - 1);
 
     // Read from target process and write memory regions to core
     uint64_t total = 0;
@@ -243,10 +211,10 @@ DumpWriter::WriteDump()
             while (size > 0)
             {
                 uint32_t bytesToRead = std::min(size, (uint32_t)sizeof(m_tempBuffer));
-                uint32_t read = 0;
+                size_t read = 0;
 
-                if (FAILED(m_crashInfo.DataTarget()->ReadVirtual(address, m_tempBuffer, bytesToRead, &read))) {
-                    fprintf(stderr, "ReadVirtual(%" PRIA PRIx64 ", %08x) FAILED\n", address, bytesToRead);
+                if (!m_crashInfo.ReadProcessMemory((void*)address, m_tempBuffer, bytesToRead, &read)) {
+                    fprintf(stderr, "ReadProcessMemory(%" PRIA PRIx64 ", %08x) FAILED\n", address, bytesToRead);
                     return false;
                 }
 
@@ -274,7 +242,7 @@ DumpWriter::WriteProcessInfo()
     processInfo.pr_pid = m_crashInfo.Pid();
     processInfo.pr_ppid = m_crashInfo.Ppid();
     processInfo.pr_pgrp = m_crashInfo.Tgid();
-    strcpy_s(processInfo.pr_fname, sizeof(processInfo.pr_fname), m_crashInfo.Name());
+    m_crashInfo.Name().copy(processInfo.pr_fname, sizeof(processInfo.pr_fname));
 
     Nhdr nhdr;
     memset(&nhdr, 0, sizeof(nhdr));
@@ -342,7 +310,7 @@ DumpWriter::GetNTFileInfoSize(size_t* alignmentBytes)
 
     // File name storage needed
     for (const MemoryRegion& image : m_crashInfo.ModuleMappings()) {
-        size += strlen(image.FileName());
+        size += image.FileName().length();
     }
     // Notes must end on 4 byte alignment
     size_t alignmentBytesNeeded = 4 - (size % 4);
@@ -399,7 +367,7 @@ DumpWriter::WriteNTFileInfo()
 
     for (const MemoryRegion& image : m_crashInfo.ModuleMappings())
     {
-        if (!WriteData(image.FileName(), strlen(image.FileName())) ||
+        if (!WriteData(image.FileName().c_str(), image.FileName().length()) ||
             !WriteData("\0", 1)) {
             return false;
         }
@@ -494,7 +462,7 @@ DumpWriter::WriteData(const void* buffer, size_t length)
         } while (written == -1 && errno == EINTR);
 
         if (written < 1) {
-            fprintf(stderr, "WriteData FAILED %s\n", strerror(errno));
+            fprintf(stderr, "WriteData FAILED %d %s\n", errno, strerror(errno));
             return false;
         }
         done += written;

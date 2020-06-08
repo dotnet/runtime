@@ -4,6 +4,7 @@
     <RunScriptInputName Condition="'$(TargetOS)' != 'Windows_NT'">RunnerTemplate.sh</RunScriptInputName>
     <RunScriptInputName Condition="'$(TargetOS)' == 'iOS'">AppleRunnerTemplate.sh</RunScriptInputName>
     <RunScriptInputName Condition="'$(TargetOS)' == 'Android'">AndroidRunnerTemplate.sh</RunScriptInputName>
+    <RunScriptInputName Condition="'$(TargetOS)' == 'Browser'">WasmRunnerTemplate.sh</RunScriptInputName>
 
     <RunScriptInputPath>$(MSBuildThisFileDirectory)$(RunScriptInputName)</RunScriptInputPath>
 
@@ -82,6 +83,7 @@
       <RunTestsCommand>"$(RunScriptOutputPath)" --runtime-path "$(TestHostRootPath.TrimEnd('\/'))"</RunTestsCommand>
       <RunTestsCommand Condition="'$(TestRspFile)' != '' and '$(RuntimeFlavor)' != 'Mono'">$(RunTestsCommand) --rsp-file "$(TestRspFile)"</RunTestsCommand>
       <RunTestsCommand Condition="'$(TargetsMobile)' == 'true'">"$(RunScriptOutputPath)" $(AssemblyName) $(TargetArchitecture)</RunTestsCommand>
+      <RunTestsCommand Condition="'$(TargetOS)' == 'Browser'">"$(RunScriptOutputPath)" $(JSEngine) $(AssemblyName).dll $(_withoutCategories.Replace(';', ' -notrait category='))</RunTestsCommand>
     </PropertyGroup>
 
     <!-- Invoke the run script with the test host as the runtime path. -->

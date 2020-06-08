@@ -179,11 +179,11 @@ namespace System.Xml.Schema
                     return;
                 }
 
-                ContentValidator contentValidator = context.ElementDecl.ContentValidator;
+                ContentValidator contentValidator = context.ElementDecl!.ContentValidator;
                 XmlSchemaContentType contentType = contentValidator.ContentType;
                 if (contentType == XmlSchemaContentType.ElementOnly)
                 {
-                    ArrayList names = contentValidator.ExpectedElements(context, false);
+                    ArrayList? names = contentValidator.ExpectedElements(context, false);
                     if (names == null)
                     {
                         SendValidationEvent(SR.Sch_InvalidTextInElement, XmlSchemaValidator.BuildElementName(context.LocalName, context.Namespace));
@@ -211,7 +211,7 @@ namespace System.Xml.Schema
             Debug.Assert(context != null);
             if (context.NeedValidateChildren)
             {
-                XmlSchemaContentType contentType = context.ElementDecl.ContentValidator.ContentType;
+                XmlSchemaContentType contentType = context.ElementDecl!.ContentValidator.ContentType;
                 if (context.IsNill)
                 {
                     SendValidationEvent(SR.Sch_ContentInNill, XmlSchemaValidator.QNameString(context.LocalName, context.Namespace));

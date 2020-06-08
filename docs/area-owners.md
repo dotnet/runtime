@@ -119,4 +119,4 @@ Below table shows the combined area owners on this repository:
 | **Microsoft contract assemblies** | | |
 | area-Microsoft.CSharp | @cston @333fred | Archived component - limited churn/contributions (see [#33170](https://github.com/dotnet/corefx/issues/33170)) |
 | area-Microsoft.VisualBasic | @cston @333fred | Archived component - limited churn/contributions (see [#33170](https://github.com/dotnet/corefx/issues/33170)) |
-| area-Microsoft.Win32 | @maryamariyan @Anipik | |
+| area-Microsoft.Win32 | @maryamariyan @Anipik | Including System.Windows.Extensions |

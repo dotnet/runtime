@@ -11650,6 +11650,17 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac)
                     op2->AsDblCon()->gtDconVal = 1.0 / divisor;
                 }
             }
+
+            // array.Length is always positive so GT_DIV can be changed to GT_UDIV
+            // if op2 is a positive cns
+            if (!optValnumCSE_phase && op1->OperIs(GT_ARR_LENGTH) && op2->IsIntegralConst() &&
+                op2->AsIntCon()->IconValue() >= 2) // for 0 and 1 it doesn't matter if it's UDIV or DIV
+            {
+                assert(tree->OperIs(GT_DIV));
+                tree->ChangeOper(GT_UDIV);
+                return fgMorphSmpOp(tree, mac);
+            }
+
 #ifndef TARGET_64BIT
             if (typ == TYP_LONG)
             {
@@ -11712,6 +11723,16 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac)
                     tree->AsOp()->gtOp2 = op2 = gtNewCastNode(TYP_DOUBLE, op2, false, TYP_DOUBLE);
                 }
                 goto USE_HELPER_FOR_ARITH;
+            }
+
+            // array.Length is always positive so GT_DIV can be changed to GT_UDIV
+            // if op2 is a positive cns
+            if (!optValnumCSE_phase && op1->OperIs(GT_ARR_LENGTH) && op2->IsIntegralConst() &&
+                op2->AsIntCon()->IconValue() >= 2) // for 0 and 1 it doesn't matter if it's UMOD or MOD
+            {
+                assert(tree->OperIs(GT_MOD));
+                tree->ChangeOper(GT_UMOD);
+                return fgMorphSmpOp(tree, mac);
             }
 
             // Do not use optimizations (unlike UMOD's idiv optimizing during codegen) for signed mod.

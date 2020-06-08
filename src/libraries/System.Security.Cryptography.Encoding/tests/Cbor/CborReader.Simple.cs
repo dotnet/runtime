@@ -8,80 +8,122 @@ namespace System.Formats.Cbor
 {
     public partial class CborReader
     {
+        private const int SizeOfHalf = 2; // the size in bytes of an IEEE 754 Half-Precision float
+
+        /// <summary>
+        ///   Reads the next data item as a single-precision floating point number (major type 7).
+        /// </summary>
+        /// <returns>The decoded value.</returns>
+        /// <exception cref="InvalidOperationException">
+        ///   the next data item does not have the correct major type. -or-
+        ///   the next simple value is not a floating-point number encoding. -or-
+        ///   the encoded value is a double-precision float
+        /// </exception>
+        /// <exception cref="FormatException">
+        ///   the next value has an invalid CBOR encoding. -or-
+        ///   there was an unexpected end of CBOR encoding data. -or-
+        ///   the next value uses a CBOR encoding that is not valid under the current conformance level.
+        /// </exception>
         public float ReadSingle()
         {
             CborInitialByte header = PeekInitialByte(expectedType: CborMajorType.Simple);
-            ReadOnlySpan<byte> buffer = _buffer.Span;
+            ReadOnlySpan<byte> buffer = GetRemainingBytes();
             float result;
 
             switch (header.AdditionalInfo)
             {
                 case CborAdditionalInfo.Additional16BitData:
-                    EnsureBuffer(buffer, 3);
+                    EnsureReadCapacity(buffer, 1 + SizeOfHalf);
                     result = (float)ReadHalfBigEndian(buffer.Slice(1));
-                    AdvanceBuffer(3);
+                    AdvanceBuffer(1 + SizeOfHalf);
                     AdvanceDataItemCounters();
                     return result;
 
                 case CborAdditionalInfo.Additional32BitData:
-                    EnsureBuffer(buffer, 5);
+                    EnsureReadCapacity(buffer, 1 + sizeof(float));
                     result = BinaryPrimitives.ReadSingleBigEndian(buffer.Slice(1));
-                    AdvanceBuffer(5);
+                    AdvanceBuffer(1 + sizeof(float));
                     AdvanceDataItemCounters();
                     return result;
 
                 case CborAdditionalInfo.Additional64BitData:
-                    throw new InvalidOperationException("Attempting to read double-precision floating point encoding as single-precision.");
+                    throw new InvalidOperationException(SR.Cbor_Reader_ReadingDoubleAsSingle);
 
                 default:
-                    throw new InvalidOperationException("CBOR data item does not encode a floating point number.");
+                    throw new InvalidOperationException(SR.Cbor_Reader_NotAFloatEncoding);
 
             }
         }
 
+        /// <summary>
+        ///   Reads the next data item as a double-precision floating point number (major type 7).
+        /// </summary>
+        /// <returns>The decoded <see cref="double"/> value.</returns>
+        /// <exception cref="InvalidOperationException">
+        ///   the next data item does not have the correct major type. -or-
+        ///   the next simple value is not a floating-point number encoding
+        /// </exception>
+        /// <exception cref="FormatException">
+        ///   the next value has an invalid CBOR encoding. -or-
+        ///   there was an unexpected end of CBOR encoding data. -or-
+        ///   the next value uses a CBOR encoding that is not valid under the current conformance level.
+        /// </exception>
         public double ReadDouble()
         {
             CborInitialByte header = PeekInitialByte(expectedType: CborMajorType.Simple);
-            ReadOnlySpan<byte> buffer = _buffer.Span;
+            ReadOnlySpan<byte> buffer = GetRemainingBytes();
             double result;
 
             switch (header.AdditionalInfo)
             {
                 case CborAdditionalInfo.Additional16BitData:
-                    EnsureBuffer(buffer, 3);
+                    EnsureReadCapacity(buffer, 1 + SizeOfHalf);
                     result = ReadHalfBigEndian(buffer.Slice(1));
-                    AdvanceBuffer(3);
+                    AdvanceBuffer(1 + SizeOfHalf);
                     AdvanceDataItemCounters();
                     return result;
 
                 case CborAdditionalInfo.Additional32BitData:
-                    EnsureBuffer(buffer, 5);
+                    EnsureReadCapacity(buffer, 1 + sizeof(float));
                     result = BinaryPrimitives.ReadSingleBigEndian(buffer.Slice(1));
-                    AdvanceBuffer(5);
+                    AdvanceBuffer(1 + sizeof(float));
                     AdvanceDataItemCounters();
                     return result;
 
                 case CborAdditionalInfo.Additional64BitData:
-                    EnsureBuffer(buffer, 9);
+                    EnsureReadCapacity(buffer, 1 + sizeof(double));
                     result = BinaryPrimitives.ReadDoubleBigEndian(buffer.Slice(1));
-                    AdvanceBuffer(9);
+                    AdvanceBuffer(1 + sizeof(double));
                     AdvanceDataItemCounters();
                     return result;
 
                 default:
-                    throw new InvalidOperationException("CBOR data item does not encode a floating point number.");
+                    throw new InvalidOperationException(SR.Cbor_Reader_NotAFloatEncoding);
             }
         }
 
+        /// <summary>
+        ///   Reads the next data item as a boolean value (major type 7).
+        /// </summary>
+        /// <returns>The decoded <see cref="bool"/> value.</returns>
+        /// <exception cref="InvalidOperationException">
+        ///   the next data item does not have the correct major type. -or-
+        ///   the next simple value is not a boolean encoding
+        /// </exception>
+        /// <exception cref="FormatException">
+        ///   the next value has an invalid CBOR encoding. -or-
+        ///   there was an unexpected end of CBOR encoding data. -or-
+        ///   the next value uses a CBOR encoding that is not valid under the current conformance level.
+        /// </exception>
         public bool ReadBoolean()
         {
             CborInitialByte header = PeekInitialByte(expectedType: CborMajorType.Simple);
 
             bool result = header.AdditionalInfo switch
             {
-                CborAdditionalInfo.SimpleValueFalse => false,
-                CborAdditionalInfo.SimpleValueTrue => true,
-                _ => throw new InvalidOperationException("CBOR data item does not encode a boolean value."),
+                (CborAdditionalInfo)CborSimpleValue.False => false,
+                (CborAdditionalInfo)CborSimpleValue.True => true,
+                _ => throw new InvalidOperationException(SR.Cbor_Reader_NotABooleanEncoding),
             };
 
             AdvanceBuffer(1);
@@ -89,45 +131,72 @@ namespace System.Formats.Cbor
             return result;
         }
 
+        /// <summary>
+        ///   Reads the next data item as a null value (major type 7).
+        /// </summary>
+        /// <exception cref="InvalidOperationException">
+        ///   the next data item does not have the correct major type. -or-
+        ///   the next simple value is not a null value encoding
+        /// </exception>
+        /// <exception cref="FormatException">
+        ///   the next value has an invalid CBOR encoding. -or-
+        ///   there was an unexpected end of CBOR encoding data. -or-
+        ///   the next value uses a CBOR encoding that is not valid under the current conformance level.
+        /// </exception>
         public void ReadNull()
         {
             CborInitialByte header = PeekInitialByte(expectedType: CborMajorType.Simple);
 
             switch (header.AdditionalInfo)
             {
-                case CborAdditionalInfo.SimpleValueNull:
+                case (CborAdditionalInfo)CborSimpleValue.Null:
                     AdvanceBuffer(1);
                     AdvanceDataItemCounters();
                     return;
                 default:
-                    throw new InvalidOperationException("CBOR data item does not encode a null value.");
+                    throw new InvalidOperationException(SR.Cbor_Reader_NotANullEncoding);
             }
         }
 
+        /// <summary>
+        ///   Reads the next data item as a CBOR simple value (major type 7).
+        /// </summary>
+        /// <returns>The decoded <see cref="CborSimpleValue"/> value.</returns>
+        /// <exception cref="InvalidOperationException">
+        ///   the next data item does not have the correct major type. -or-
+        ///   the next simple value is not a simple value encoding
+        /// </exception>
+        /// <exception cref="FormatException">
+        ///   the next value has an invalid CBOR encoding. -or-
+        ///   there was an unexpected end of CBOR encoding data. -or-
+        ///   the next value uses a CBOR encoding that is not valid under the current conformance level.
+        /// </exception>
         public CborSimpleValue ReadSimpleValue()
         {
             CborInitialByte header = PeekInitialByte(expectedType: CborMajorType.Simple);
 
             switch (header.AdditionalInfo)
             {
-                case CborAdditionalInfo info when (byte)info < 24:
+                case CborAdditionalInfo info when info < CborAdditionalInfo.Additional8BitData:
                     AdvanceBuffer(1);
                     AdvanceDataItemCounters();
                     return (CborSimpleValue)header.AdditionalInfo;
                 case CborAdditionalInfo.Additional8BitData:
-                    EnsureBuffer(2);
-                    byte value = _buffer.Span[1];
+                    EnsureReadCapacity(2);
+                    byte value = _data.Span[_offset + 1];
 
-                    if (value < 32)
+                    if (value <= (byte)CborAdditionalInfo.IndefiniteLength &&
+                        _isConformanceLevelCheckEnabled &&
+                        CborConformanceLevelHelpers.RequireCanonicalSimpleValueEncodings(ConformanceLevel))
                     {
-                        throw new FormatException("Two-byte CBOR simple value must be between 32 and 255.");
+                        throw new FormatException(SR.Format(SR.Cbor_ConformanceLevel_InvalidSimpleValueEncoding, ConformanceLevel));
                     }
 
                     AdvanceBuffer(2);
                     AdvanceDataItemCounters();
                     return (CborSimpleValue)value;
                 default:
-                    throw new InvalidOperationException("CBOR data item does not encode a simple value.");
+                    throw new InvalidOperationException(SR.Cbor_Reader_NotASimpleValueEncoding);
             }
         }
 
@@ -142,11 +211,11 @@ namespace System.Formats.Cbor
 
             if (exp == 0)
             {
-                value = mant * 5.9604644775390625e-08 /* precomputed 2^-24 */;
+                value = Math.ScaleB(mant, -24);
             }
             else if (exp != 31)
             {
-                value = (mant + 1024) * Math.Pow(2, exp - 25);
+                value = Math.ScaleB(mant + 1024, exp - 25);
             }
             else
             {
