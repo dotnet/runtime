@@ -1226,9 +1226,8 @@ namespace System.Net.Sockets
             return aborted;
         }
 
-        public void SetNonBlocking()
+        public void SetNonBlockingIfNotSet()
         {
-            //
             // Our sockets may start as blocking, and later transition to non-blocking, either because the user
             // explicitly requested non-blocking mode, or because we need non-blocking mode to support async
             // operations.  We never transition back to blocking mode, to avoid problems synchronizing that
@@ -1239,13 +1238,20 @@ namespace System.Net.Sockets
             //
             if (!_nonBlockingSet)
             {
-                if (Interop.Sys.Fcntl.SetIsNonBlocking(_socket, 1) != 0)
-                {
-                    throw new SocketException((int)SocketPal.GetSocketErrorForErrorCode(Interop.Sys.GetLastError()));
-                }
-
-                _nonBlockingSet = true;
+                SetNonBlocking();
             }
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private void SetNonBlocking()
+        {
+            if (Interop.Sys.Fcntl.SetIsNonBlocking(_socket, 1) != 0)
+            {
+                throw new SocketException((int)SocketPal.GetSocketErrorForErrorCode(Interop.Sys.GetLastError()));
+            }
+
+            _nonBlockingSet = true;
+            _socket.MarkNonBlocking();
         }
 
         private void PerformSyncOperation<TOperation>(ref OperationQueue<TOperation> queue, TOperation operation, int timeout, int observedSequenceNumber)
@@ -1357,7 +1363,7 @@ namespace System.Net.Sockets
             Debug.Assert(socketAddressLen > 0, $"Unexpected socketAddressLen: {socketAddressLen}");
             Debug.Assert(callback != null, "Expected non-null callback");
 
-            SetNonBlocking();
+            SetNonBlockingIfNotSet();
 
             SocketError errorCode;
             int observedSequenceNumber;
@@ -1423,7 +1429,7 @@ namespace System.Net.Sockets
             Debug.Assert(socketAddressLen > 0, $"Unexpected socketAddressLen: {socketAddressLen}");
             Debug.Assert(callback != null, "Expected non-null callback");
 
-            SetNonBlocking();
+            SetNonBlockingIfNotSet();
 
             // Connect is different than the usual "readiness" pattern of other operations.
             // We need to initiate the connect before we try to complete it.
@@ -1534,7 +1540,7 @@ namespace System.Net.Sockets
 
         public SocketError ReceiveAsync(Memory<byte> buffer, SocketFlags flags, out int bytesReceived, Action<int, byte[]?, int, SocketFlags, SocketError> callback, CancellationToken cancellationToken = default)
         {
-            SetNonBlocking();
+            SetNonBlockingIfNotSet();
 
             SocketError errorCode;
             int observedSequenceNumber;
@@ -1567,7 +1573,7 @@ namespace System.Net.Sockets
 
         public SocketError ReceiveFromAsync(Memory<byte> buffer,  SocketFlags flags, byte[]? socketAddress, ref int socketAddressLen, out int bytesReceived, out SocketFlags receivedFlags, Action<int, byte[]?, int, SocketFlags, SocketError> callback, CancellationToken cancellationToken = default)
         {
-            SetNonBlocking();
+            SetNonBlockingIfNotSet();
 
             SocketError errorCode;
             int observedSequenceNumber;
@@ -1644,7 +1650,7 @@ namespace System.Net.Sockets
 
         public SocketError ReceiveFromAsync(IList<ArraySegment<byte>> buffers, SocketFlags flags, byte[]? socketAddress, ref int socketAddressLen, out int bytesReceived, out SocketFlags receivedFlags, Action<int, byte[]?, int, SocketFlags, SocketError> callback)
         {
-            SetNonBlocking();
+            SetNonBlockingIfNotSet();
 
             SocketError errorCode;
             int observedSequenceNumber;
@@ -1716,7 +1722,7 @@ namespace System.Net.Sockets
 
         public SocketError ReceiveMessageFromAsync(Memory<byte> buffer, IList<ArraySegment<byte>>? buffers, SocketFlags flags, byte[] socketAddress, ref int socketAddressLen, bool isIPv4, bool isIPv6, out int bytesReceived, out SocketFlags receivedFlags, out IPPacketInformation ipPacketInformation, Action<int, byte[], int, SocketFlags, IPPacketInformation, SocketError> callback)
         {
-            SetNonBlocking();
+            SetNonBlockingIfNotSet();
 
             SocketError errorCode;
             int observedSequenceNumber;
@@ -1835,7 +1841,7 @@ namespace System.Net.Sockets
 
         public SocketError SendToAsync(Memory<byte> buffer, int offset, int count, SocketFlags flags, byte[]? socketAddress, ref int socketAddressLen, out int bytesSent, Action<int, byte[]?, int, SocketFlags, SocketError> callback, CancellationToken cancellationToken = default)
         {
-            SetNonBlocking();
+            SetNonBlockingIfNotSet();
 
             bytesSent = 0;
             SocketError errorCode;
@@ -1914,7 +1920,7 @@ namespace System.Net.Sockets
 
         public SocketError SendToAsync(IList<ArraySegment<byte>> buffers, SocketFlags flags, byte[]? socketAddress, ref int socketAddressLen, out int bytesSent, Action<int, byte[]?, int, SocketFlags, SocketError> callback)
         {
-            SetNonBlocking();
+            SetNonBlockingIfNotSet();
 
             bytesSent = 0;
             int bufferIndex = 0;
@@ -1979,7 +1985,7 @@ namespace System.Net.Sockets
 
         public SocketError SendFileAsync(SafeFileHandle fileHandle, long offset, long count, out long bytesSent, Action<long, SocketError> callback)
         {
-            SetNonBlocking();
+            SetNonBlockingIfNotSet();
 
             bytesSent = 0;
             SocketError errorCode;

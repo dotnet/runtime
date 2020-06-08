@@ -116,9 +116,15 @@ namespace System.Net.Sockets
             // We don't care about synchronization because this is idempotent
             if (!_underlyingHandleNonBlocking)
             {
-                AsyncContext.SetNonBlocking();
-                _underlyingHandleNonBlocking = true;
+                // Calls back into MarkNonBlocking()
+                AsyncContext.SetNonBlockingIfNotSet();
             }
+        }
+
+        internal void MarkNonBlocking()
+        {
+            // We don't care about synchronization because this is idempotent
+            _underlyingHandleNonBlocking = true;
         }
 
         internal bool IsNonBlocking
