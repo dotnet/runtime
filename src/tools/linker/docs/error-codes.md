@@ -217,3 +217,7 @@ error and warning codes.
 #### `IL2040`: Could not find embedded resource 'resource' to remove in assembly 'assembly'.
 
 - The resource name in a substitution file could not be found in the specified assembly. Ensure that the resource name matches the name of an embedded resource in the assembly.
+
+#### `IL2041`: DynamicallyAccessedMembersAttribute is specified on method 'method'. The DynamicallyAccessedMembersAttribute is only allowed on method parameters, return value or generic parameters.
+
+- Method 'method' has the DynamicallyAccessedMembersAttribute directly on the method itself. This is only allowed for instance methods on System.Type and similar classes. Usually this means the attribute should be placed on the return value of the method (or one of its parameters).
