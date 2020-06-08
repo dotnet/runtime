@@ -68,7 +68,8 @@ usage()
 
   echo "Native build settings:"
   echo "  --clang                    Optional argument to build using clang in PATH (default)."
-  echo "  --clangx.y                 Optional argument to build using clang version x.y."
+  echo "  --clangx                   Optional argument to build using clang version x (used for Clang 7 and newer)."
+  echo "  --clangx.y                 Optional argument to build using clang version x.y (used for Clang 6 and older)."
   echo "  --cmakeargs                User-settable additional arguments passed to CMake."
   echo "  --gcc                      Optional argument to build using gcc in PATH (default)."
   echo "  --gccx.y                   Optional argument to build using gcc version x.y."
