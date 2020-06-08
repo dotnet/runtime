@@ -491,11 +491,8 @@ namespace System.Text
 
         public static Encoding ASCII => ASCIIEncoding.s_default;
 
-        // Returns an encoding for the Latin1 character set. The returned encoding
-        // will be an instance of the Latin1Encoding class.
-        //
-        // This is for our optimizations
-        private static Encoding Latin1 => Latin1Encoding.s_default;
+        /// <summary>Gets an encoding for the Latin1 character set (ISO-8859-1).</summary>
+        public static Encoding Latin1 => Latin1Encoding.s_default;
 
         // Returns the number of bytes required to encode the given character
         // array.

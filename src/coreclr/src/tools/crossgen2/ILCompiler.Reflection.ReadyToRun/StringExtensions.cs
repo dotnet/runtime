@@ -60,17 +60,19 @@ namespace ILCompiler.Reflection.ReadyToRun
                 }
                 else
                 {
-                    string escaped = c switch
+                    string escaped = null;
+                    switch(c)
                     {
-                        '\0' => @"\0",
-                        '\a' => @"\a",
-                        '\b' => @"\b",
-                        '\f' => @"\f",
-                        '\n' => @"\n",
-                        '\r' => @"\r",
-                        '\t' => @"\t",
-                        '\v' => @"\v",
-                        _ => @"\u" + ((int)c).ToString("x4")
+                        case '\0': escaped = @"\0"; break;
+                        case '\a': escaped = @"\a"; break;
+                        case '\b': escaped = @"\b"; break;
+                        case '\f': escaped = @"\f"; break;
+                        case '\n': escaped = @"\n"; break;
+                        case '\r': escaped = @"\r"; break;
+                        case '\t': escaped = @"\t"; break;
+                        case '\v': escaped = @"\v"; break;
+                        default :
+                            escaped = @"\u" + ((int)c).ToString("x4"); break;
                     };
                     builder.Append(escaped);
                 }

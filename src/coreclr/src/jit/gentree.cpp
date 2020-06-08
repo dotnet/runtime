@@ -22,7 +22,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 /*****************************************************************************/
 
 const unsigned short GenTree::gtOperKindTable[] = {
-#define GTNODE(en, st, cm, ok) ok + GTK_COMMUTE *cm,
+#define GTNODE(en, st, cm, ok) (ok) + GTK_COMMUTE *cm,
 #include "gtlist.h"
 };
 
@@ -10483,7 +10483,7 @@ void Compiler::gtDispLclVar(unsigned lclNum, bool padForBiggestDisp)
 
     printf("%s", buf);
 
-    if (padForBiggestDisp && (charsPrinted < LONGEST_COMMON_LCL_VAR_DISPLAY_LENGTH))
+    if (padForBiggestDisp && (charsPrinted < (int)LONGEST_COMMON_LCL_VAR_DISPLAY_LENGTH))
     {
         printf("%*c", LONGEST_COMMON_LCL_VAR_DISPLAY_LENGTH - charsPrinted, ' ');
     }

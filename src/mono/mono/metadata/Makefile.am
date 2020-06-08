@@ -160,6 +160,10 @@ libmonoruntime_shimglobalization_la_CFLAGS = @ICU_CFLAGS@ -I$(top_srcdir)/../lib
 endif
 endif
 
+if !ENABLE_NETCORE
+culture_libraries = ../culture/libmono-culture.la
+endif
+
 #
 # This library contains the icall tables if the runtime was configured with --disable-icall-tables
 #
@@ -254,8 +258,6 @@ common_sources = \
 	coree.c 		\
 	coree.h 		\
 	coree-internals.h \
-	culture-info.h  	\
-	culture-info-tables.h	\
 	debug-helpers.c		\
 	debug-mono-symfile.h	\
 	debug-mono-symfile.c	\
@@ -292,7 +294,6 @@ common_sources = \
 	loaded-images.c		\
 	loaded-images-global.c	\
 	loaded-images-netcore.c	\
-	locales.c		\
 	locales.h		\
 	lock-tracer.c		\
 	lock-tracer.h		\
@@ -449,12 +450,12 @@ if !ENABLE_MSVC_ONLY
 libmonoruntime_la_SOURCES = $(common_sources) $(icall_tables_sources) $(ilgen_sources) $(gc_dependent_sources) $(null_gc_sources) $(boehm_sources)
 # Add CXX_ADD_CFLAGS per-library until/unless https://github.com/dotnet/corefx/pull/31342.
 libmonoruntime_la_CFLAGS = $(BOEHM_DEFINES) @CXX_ADD_CFLAGS@
-libmonoruntime_la_LIBADD = libmonoruntime-config.la $(support_libraries) $(shim_libraries)
+libmonoruntime_la_LIBADD = libmonoruntime-config.la $(culture_libraries) $(support_libraries) $(shim_libraries)
 
 libmonoruntimesgen_la_SOURCES = $(common_sources) $(icall_tables_sources) $(ilgen_sources) $(gc_dependent_sources) $(sgen_sources)
 # Add CXX_ADD_CFLAGS per-library until/unless https://github.com/dotnet/corefx/pull/31342.
 libmonoruntimesgen_la_CFLAGS = $(SGEN_DEFINES) @CXX_ADD_CFLAGS@
-libmonoruntimesgen_la_LIBADD = libmonoruntime-config.la $(support_libraries) $(shim_libraries)
+libmonoruntimesgen_la_LIBADD = libmonoruntime-config.la $(culture_libraries) $(support_libraries) $(shim_libraries)
 
 endif # !ENABLE_MSVC_ONLY
 
