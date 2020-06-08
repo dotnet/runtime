@@ -347,19 +347,23 @@ public class WindowAndCursorProps
         if (!Console.IsInputRedirected && !Console.IsOutputRedirected)
         {
             int origLeft = Console.CursorLeft, origTop = Console.CursorTop;
+            (int, int) origTuple = Console.GetCursorPosition();
 
             Console.SetCursorPosition(10, 12);
             Assert.Equal(10, Console.CursorLeft);
             Assert.Equal(12, Console.CursorTop);
+            Assert.Equal((10, 12), Console.GetCursorPosition());
 
             Console.SetCursorPosition(origLeft, origTop);
             Assert.Equal(origLeft, Console.CursorLeft);
             Assert.Equal(origTop, Console.CursorTop);
+            Assert.Equal(origTuple, Console.GetCursorPosition());
         }
         else if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
         {
             Assert.Equal(0, Console.CursorLeft);
             Assert.Equal(0, Console.CursorTop);
+            Assert.Equal((0, 0), Console.GetCursorPosition());
         }
     }
 
