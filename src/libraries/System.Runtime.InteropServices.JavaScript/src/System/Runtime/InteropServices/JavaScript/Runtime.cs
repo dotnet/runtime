@@ -112,7 +112,6 @@ namespace System.Runtime.InteropServices.JavaScript
 
         private static JSObject BindJSType(IntPtr jsIntPtr, int coreType)
         {
-            int jsId = (int)jsIntPtr;
             CoreObject coreObject;
             switch (coreType)
             {
