@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk" DefaultTargets="BuildApp">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>Library</OutputType>
     <OutputPath>bin</OutputPath>
@@ -8,7 +8,7 @@
     <TargetOS>Browser</TargetOS>
     <RuntimePackDir>$(ArtifactsDir)bin\lib-runtime-packs\$(NetCoreAppCurrent)-$(TargetOS)-$(Configuration)-$(TargetArchitecture)\runtimes\browser-wasm</RuntimePackDir>
     <BuildDir>$(MSBuildThisFileDirectory)\obj\$(Configuration)\wasm</BuildDir>
-    <AppDir>$(MSBuildThisFileDirectory)\StaticServer\wwwroot</AppDir>
+    <AppDir>$(MSBuildThisFileDirectory)..\wwwroot</AppDir>
   </PropertyGroup>
 
   <Target Name="RebuildWasmAppBuilder">
@@ -19,7 +19,8 @@
   <UsingTask TaskName="WasmAppBuilder" 
       AssemblyFile="$(ArtifactsBinDir)\WasmAppBuilder\$(Configuration)\$(NetCoreAppCurrent)\publish\WasmAppBuilder.dll"/>
 
-  <Target Name="BuildApp" DependsOnTargets="RebuildWasmAppBuilder;Build">
+  <Target Name="_PublishManagedOutputDir"
+    BeforeTargets="Publish">
     <ItemGroup>
       <AssemblySearchPaths Include="bin"/>
       <AssemblySearchPaths Include="$(RuntimePackDir)\native"/>
@@ -35,6 +36,7 @@
   </Target>
 
   <ItemGroup>
-    <Compile Include="Program.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Program.cs" />
   </ItemGroup>
+
 </Project>

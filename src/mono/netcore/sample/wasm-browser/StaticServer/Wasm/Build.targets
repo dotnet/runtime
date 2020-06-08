@@ -1,0 +1,10 @@
+<Project>
+  <Target Name="_BuildWasmApp" AfterTargets="Build">
+    <MSBuild Projects="$(MSBuildThisFileDirectory)WasmSample.csproj"
+             Properties="Configuration=$(Configuration)" Targets="Build" />
+  </Target>
+  <Target Name="_PublishWasmApp" BeforeTargets="Publish" DependsOnTargets="_BuildWasmApp">
+    <MSBuild Projects="$(MSBuildThisFileDirectory)WasmSample.csproj"
+             Properties="Configuration=$(Configuration)" Targets="_PublishManagedOutputDir" />
+  </Target>
+</Project>
