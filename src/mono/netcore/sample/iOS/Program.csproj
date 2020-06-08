@@ -17,7 +17,7 @@
   <Target Name="TrickRuntimePackLocation" AfterTargets="ProcessFrameworkReferences">
     <ItemGroup>
       <RuntimePack>
-        <PackageDirectory>$(ArtifactBinsDir)microsoft.netcore.app.runtime\$(NetCoreAppCurrent)-iOS-$(Configuration)-$(TargetArchitecture)</PackageDirectory>
+        <PackageDirectory>$(ArtifactBinDir)microsoft.netcore.app.runtime.ios-$(TargetArchitecture)\$(Configuration)</PackageDirectory>
       </RuntimePack>
     </ItemGroup>
     <Message Text="Packaged ID: %(RuntimePack.PackageDirectory)" Importance="high" />
