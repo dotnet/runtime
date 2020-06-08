@@ -8,6 +8,7 @@ set(MDRUNTIMERW_SOURCES
   stgtiggerstorage.cpp
   stgtiggerstream.cpp
   mdinternalrw.cpp
+  pdbheap.cpp
 )
 
 set(MDRUNTIMERW_HEADERS
@@ -29,6 +30,7 @@ set(MDRUNTIMERW_HEADERS
   ../inc/metamodel.h
   ../inc/metamodelro.h
   ../inc/metamodelrw.h
+  ../inc/pdbheap.h
   ../inc/rwutil.h
   ../inc/stgio.h
   ../inc/stgtiggerstorage.h

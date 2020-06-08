@@ -39,6 +39,7 @@ enum MAPPINGTYPE
 #define ENC_MODEL_STREAM_A          "#-"
 #define MINIMAL_MD_STREAM_A         "#JTD"
 #define HOT_MODEL_STREAM_A          "#!"
+#define PDB_STREAM_A                "#Pdb"
 
 
 #define SCHEMA_STREAM               W("#Schema")
@@ -50,5 +51,6 @@ enum MAPPINGTYPE
 #define ENC_MODEL_STREAM            W("#-")
 #define MINIMAL_MD_STREAM           W("#JTD")
 #define HOT_MODEL_STREAM            W("#!")
+#define PDB_STREAM                  W("#Pdb")
 
 #endif // __MDCommon_h__

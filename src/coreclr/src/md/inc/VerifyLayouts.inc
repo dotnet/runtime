@@ -166,6 +166,7 @@ FIELD(CLiteWeightStgdbRW, m_wszFileName, sizeof(void*))
 FIELD(CLiteWeightStgdbRW, m_dwDatabaseLFT, 4)
 FIELD(CLiteWeightStgdbRW, m_dwDatabaseLFS, 4)
 FIELD(CLiteWeightStgdbRW, m_pStgIO, sizeof(void*))
+FIELD(CLiteWeightStgdbRW, m_pPdbHeap, sizeof(void*))
 END_TYPE(CLiteWeightStgdbRW, 8)
 
 BEGIN_TYPE_ESCAPED(CLiteWeightStgdb<CMiniMdRW>, CLiteWeightStgdb__CMiniMdRW__, 0)

@@ -563,6 +563,24 @@ DECLARE_INTERFACE_(IMetaDataEmit, IUnknown)
 };      // IMetaDataEmit
 
 //-------------------------------------
+//--- Portable PDBstream data structure
+//-------------------------------------
+typedef struct PDB_ID
+{
+    GUID            pdbGuid;
+    ULONG           pdbTimeStamp;
+} PDB_ID;
+
+typedef struct PORT_PDB_STREAM {
+    PDB_ID          id;
+    mdMethodDef     entryPoint;
+    ULONG64         referencedTypeSystemTables;
+    ULONG           *typeSystemTableRows;
+    ULONG           typeSystemTableRowsSize;
+} PORTABLE_PDB_STREAM;
+
+
+//-------------------------------------
 //--- IMetaDataEmit2
 //-------------------------------------
 // {F5DD9950-F693-42e6-830E-7B833E8146A9}
@@ -613,6 +631,14 @@ DECLARE_INTERFACE_(IMetaDataEmit2, IMetaDataEmit)
 
     STDMETHOD(ResetENCLog)() PURE;          // S_OK or error.
 
+    STDMETHOD(GetReferencedTypeSysTables)(  // S_OK or error.
+        ULONG64     *refTables,             // [OUT] Bit vector of referenced type system metadata tables.
+        ULONG       refTableRows[],         // [OUT] Array of number of rows for each referenced type system table.
+        const ULONG maxTableRowsSize,       // [IN]  Max size of the rows array.
+        ULONG       *tableRowsSize) PURE;   // [OUT] Actual size of the rows array.
+
+    STDMETHOD(DefinePdbStream)(             // S_OK or error.
+        PORT_PDB_STREAM *pdbStream) PURE;   // [IN] Portable pdb stream data.
 };
 
 //-------------------------------------

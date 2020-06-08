@@ -2046,6 +2046,89 @@ ErrExit:
 } // RegMeta::_SetGenericParamProps
 
 //*****************************************************************************
+// Get referenced type system metadata tables.
+//*****************************************************************************
+STDMETHODIMP RegMeta::GetReferencedTypeSysTables(   // S_OK or error.
+    ULONG64       *refTables,                       // [OUT] Bit vector of referenced type system metadata tables.
+    ULONG         refTableRows[],                   // [OUT] Array of number of rows for each referenced type system table.
+    const ULONG   maxTableRowsSize,                 // [IN]  Max size of the rows array.
+    ULONG         *tableRowsSize)                   // [OUT] Size of the rows array.
+{
+#ifdef FEATURE_METADATA_EMIT_IN_DEBUGGER
+    return E_NOTIMPL;
+#else //!FEATURE_METADATA_EMIT_IN_DEBUGGER
+    HRESULT hr = S_OK;
+
+    BEGIN_ENTRYPOINT_NOTHROW;
+
+    LOG((LOGMD, "RegMeta::GetReferencedTypeSysTables()\n"));
+    START_MD_PERF();
+
+    ULONG64 refTablesBitVector = 0;
+    ULONG count = 0;
+    for (ULONG i = 0; i < TBL_COUNT; i++)
+    {
+        if (m_pStgdb->m_MiniMd.m_Tables[i].GetRecordCount() > 0)
+        {
+            refTablesBitVector |= (ULONG64)1UL << i;
+            count++;
+        }
+    }
+
+    _ASSERTE(count <= maxTableRowsSize);
+    if (count > maxTableRowsSize)
+    {
+        hr = META_E_BADMETADATA;
+        goto ErrExit;
+    }
+
+    *refTables = refTablesBitVector;
+    *tableRowsSize = count;
+
+    ULONG* ptr = refTableRows;
+    for (ULONG i = 0; i < TBL_COUNT; i++)
+    {
+        ULONG rowsSize = m_pStgdb->m_MiniMd.m_Tables[i].GetRecordCount();
+        if (rowsSize > 0)
+            *ptr++ = rowsSize;
+    }
+
+ErrExit:
+    STOP_MD_PERF(GetReferencedTypeSysTables);
+
+    END_ENTRYPOINT_NOTHROW;
+    return hr;
+#endif //!FEATURE_METADATA_EMIT_IN_DEBUGGER
+} // RegMeta::GetReferencedTypeSysTables
+
+
+//*****************************************************************************
+// Defines PDB stream data for portable PDB metadata
+//*****************************************************************************
+STDMETHODIMP RegMeta::DefinePdbStream(      // S_OK or error.
+    PORT_PDB_STREAM* pdbStream)             // [IN] Portable pdb stream data.
+{
+#ifdef FEATURE_METADATA_EMIT_IN_DEBUGGER
+    return E_NOTIMPL;
+#else //!FEATURE_METADATA_EMIT_IN_DEBUGGER
+    HRESULT hr = S_OK;
+
+    BEGIN_ENTRYPOINT_NOTHROW;
+
+    LOG((LOGMD, "RegMeta::DefinePdbStream()\n"));
+    START_MD_PERF();
+
+    IfFailGo(m_pStgdb->m_pPdbHeap->SetData(pdbStream));
+
+ErrExit:
+    STOP_MD_PERF(DefinePdbStream);
+
+    END_ENTRYPOINT_NOTHROW;
+    return hr;
+#endif //!FEATURE_METADATA_EMIT_IN_DEBUGGER
+} // RegMeta::DefinePdbStream
+
+//*****************************************************************************
 // Create and set a MethodSpec record.
 //*****************************************************************************
 STDMETHODIMP RegMeta::DefineMethodSpec( // S_OK or error

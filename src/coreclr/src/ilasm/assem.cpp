@@ -225,6 +225,7 @@ Assembler::~Assembler()
     if (m_pPortablePdbWritter != NULL)
     {
         delete m_pPortablePdbWritter;
+        m_pPortablePdbWritter = NULL;
     }
     if (m_pDisp != NULL)
     {

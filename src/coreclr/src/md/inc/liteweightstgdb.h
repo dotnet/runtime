@@ -22,6 +22,7 @@
 class StgIO;
 
 #include "mdcommon.h"
+#include "pdbheap.h"
 
 #ifdef _PREFAST_
 #pragma warning(push)
@@ -102,7 +103,7 @@ class CLiteWeightStgdbRW : public CLiteWeightStgdb<CMiniMdRW>
             CQuickBytes*            pqkSigEmit,
             ULONG*                  pcbSig);
 public:
-    CLiteWeightStgdbRW() : m_cbSaveSize(0), m_pStreamList(0), m_pNextStgdb(NULL), m_pStgIO(NULL)
+    CLiteWeightStgdbRW() : m_cbSaveSize(0), m_pStreamList(0), m_pNextStgdb(NULL), m_pStgIO(NULL), m_pPdbHeap(NULL)
     {
         m_wszFileName = NULL;
         m_pImage = NULL;
@@ -251,6 +252,7 @@ private:
     DWORD    m_dwDatabaseLFT;   // Low bytes of the database file's last write time
     DWORD    m_dwDatabaseLFS;   // Low bytes of the database file's size
     StgIO *  m_pStgIO;          // For file i/o.
+    PdbHeap *m_pPdbHeap;
 
 };  // class CLiteWeightStgdbRW
 

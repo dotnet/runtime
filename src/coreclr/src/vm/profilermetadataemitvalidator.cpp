@@ -779,6 +779,23 @@ HRESULT ProfilerMetadataEmitValidator::ResetENCLog()
     return COR_E_NOTSUPPORTED;
 }
 
+HRESULT ProfilerMetadataEmitValidator::GetReferencedTypeSysTables(
+        ULONG64     *refTables,
+        ULONG       refTableRows[],
+        const ULONG maxTableRowsSize,
+        ULONG       *tableRowsSize)
+{
+    LIMITED_METHOD_CONTRACT;
+    return COR_E_NOTSUPPORTED;
+}
+
+HRESULT ProfilerMetadataEmitValidator::DefinePdbStream(
+        PORT_PDB_STREAM *pdbStream)
+{
+    LIMITED_METHOD_CONTRACT;
+    return COR_E_NOTSUPPORTED;
+}
+
     //IMetaDataAssemblyEmit
 HRESULT ProfilerMetadataEmitValidator::DefineAssembly(
         const void  *pbPublicKey,

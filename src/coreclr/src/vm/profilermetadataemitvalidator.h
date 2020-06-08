@@ -363,6 +363,15 @@ public:
         mdToken      rtkConstraints[]);
 
     virtual HRESULT STDMETHODCALLTYPE ResetENCLog();
+    
+    virtual HRESULT STDMETHODCALLTYPE GetReferencedTypeSysTables(
+        ULONG64     *refTables,
+        ULONG       refTableRows[],
+        const ULONG maxTableRowsSize,
+        ULONG       *tableRowsSize);
+
+    virtual HRESULT STDMETHODCALLTYPE DefinePdbStream(
+        PORT_PDB_STREAM *pdbStream);
 
     //IMetaDataAssemblyEmit
     virtual HRESULT STDMETHODCALLTYPE DefineAssembly(

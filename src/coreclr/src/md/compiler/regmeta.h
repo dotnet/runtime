@@ -1105,6 +1105,15 @@ public:
         DWORD        reserved,                // [IN] For future use (e.g. non-type parameters)
         mdToken      rtkConstraints[]);     // [IN] Array of type constraints (TypeDef,TypeRef,TypeSpec)
 
+    STDMETHODIMP GetReferencedTypeSysTables(// S_OK or error.
+        ULONG64      *refTables,            // [OUT] Bit vector of referenced type system metadata tables.
+        ULONG        refTableRows[],        // [OUT] Array of number of rows for each referenced type system table.
+        const ULONG  maxTableRowsSize,      // [IN]  Max size of the rows array.
+        ULONG        *tableRowsSize);       // [OUT] Actual size of the rows array.
+
+    STDMETHODIMP DefinePdbStream(           // S_OK or error.
+        PORT_PDB_STREAM* pdbStream);        // [IN] Portable pdb stream data.
+
 //*****************************************************************************
 // IMetaDataAssemblyEmit
 //*****************************************************************************

@@ -29,6 +29,7 @@ set(MDRUNTIME_HEADERS
   ../inc/mdcolumndescriptors.h
   ../inc/metamodel.h
   ../inc/metamodelro.h
+  ../inc/pdbheap.h
   ../inc/recordpool.h
   metamodelcolumndefs.h
   mdinternaldisp.h

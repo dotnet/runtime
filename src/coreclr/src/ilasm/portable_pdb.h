@@ -16,11 +16,11 @@ public:
     IMetaDataEmit2*     GetEmitter();
     GUID*               GetGuid();
     ULONG               GetTimestamp();
+    HRESULT             BuildPdbStream(IMetaDataEmit2* peEmitter, mdMethodDef entryPoint);
 
 private:
-    GUID                m_guid;
-    ULONG               m_timestamp;
     IMetaDataEmit2*     m_pdbEmitter;
+    PORT_PDB_STREAM     m_pdbStream;
 };
 
 #endif
