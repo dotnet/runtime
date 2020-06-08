@@ -4654,20 +4654,26 @@ call:
 		MINT_IN_CASE(MINT_MUL_R8)
 			BINOP(f, *);
 			MINT_IN_BREAK;
-		MINT_IN_CASE(MINT_DIV_I4)
-			if (sp [-1].data.i == 0)
+		MINT_IN_CASE(MINT_DIV_I4) {
+			gint32 l1 = sp [-1].data.i;
+			gint32 l2 = sp [-2].data.i;
+			if (l1 == 0)
 				goto div_zero_label;
-			if (sp [-1].data.i == (-1) && sp [-2].data.i == G_MININT32)
+			if (l1 == (-1) && l2 == G_MININT32)
 				goto overflow_label;
 			BINOP(i, /);
 			MINT_IN_BREAK;
-		MINT_IN_CASE(MINT_DIV_I8)
-			if (sp [-1].data.l == 0)
+		}
+		MINT_IN_CASE(MINT_DIV_I8) {
+			gint64 l1 = sp [-1].data.l;
+			gint64 l2 = sp [-2].data.l;
+			if (l1 == 0)
 				goto div_zero_label;
-			if (sp [-1].data.l == (-1) && sp [-2].data.l == G_MININT64)
+			if (l1 == (-1) && l2 == G_MININT64)
 				goto overflow_label;
 			BINOP(l, /);
 			MINT_IN_BREAK;
+			}
 		MINT_IN_CASE(MINT_DIV_R4)
 			BINOP(f_r4, /);
 			MINT_IN_BREAK;
@@ -4689,20 +4695,26 @@ call:
 				goto div_zero_label;
 			BINOP_CAST(l, /, guint64);
 			MINT_IN_BREAK;
-		MINT_IN_CASE(MINT_REM_I4)
-			if (sp [-1].data.i == 0)
+		MINT_IN_CASE(MINT_REM_I4) {
+			int i1 = sp [-1].data.i;
+			int i2 = sp [-2].data.i;
+			if (i1 == 0)
 				goto div_zero_label;
-			if (sp [-1].data.i == (-1) && sp [-2].data.i == G_MININT32)
+			if (i1 == (-1) && i2 == G_MININT32)
 				goto overflow_label;
 			BINOP(i, %);
 			MINT_IN_BREAK;
-		MINT_IN_CASE(MINT_REM_I8)
-			if (sp [-1].data.l == 0)
+		}
+		MINT_IN_CASE(MINT_REM_I8) {
+			gint64 l1 = sp [-1].data.l;
+			gint64 l2 = sp [-2].data.l;
+			if (l1 == 0)
 				goto div_zero_label;
-			if (sp [-1].data.l == (-1) && sp [-2].data.l == G_MININT64)
+			if (l1 == (-1) && l2 == G_MININT64)
 				goto overflow_label;
 			BINOP(l, %);
 			MINT_IN_BREAK;
+		}
 		MINT_IN_CASE(MINT_REM_R4)
 			/* FIXME: what do we actually do here? */
 			--sp;
