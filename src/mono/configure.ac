@@ -320,6 +320,11 @@ case "$host" in
                 	# available during cross-compilation
                 	mono_cv_uscore=no
                 fi
+                case "$host" in
+                *-musl)
+                        AC_DEFINE(MUSL, 1, [musl libc])
+                        ;;
+                esac
 		case "$host" in
 		*-tizen-linux-*)
 			platform_tizen=yes
