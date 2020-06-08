@@ -128,18 +128,26 @@ namespace Mono.Linker.Dataflow
 					// IL space assigns index 0 to the `this` parameter on instance methods.
 
 
+					DynamicallyAccessedMemberTypes methodMemberTypes = GetMemberTypesForDynamicallyAccessedMemberAttribute (method);
+
 					int offset;
 					if (method.HasImplicitThis ()) {
 						offset = 1;
 						if (IsTypeInterestingForDataflow (method.DeclaringType)) {
-							DynamicallyAccessedMemberTypes ta = GetMemberTypesForDynamicallyAccessedMemberAttribute (method);
-							if (ta != DynamicallyAccessedMemberTypes.None) {
+							// If there an annotation on the method itself and it's one of the special types (System.Type for example)
+							// treat that annotation as annotating the "this" parameter.
+							if (methodMemberTypes != DynamicallyAccessedMemberTypes.None) {
 								paramAnnotations = new DynamicallyAccessedMemberTypes[method.Parameters.Count + offset];
-								paramAnnotations[0] = ta;
+								paramAnnotations[0] = methodMemberTypes;
 							}
+						} else if (methodMemberTypes != DynamicallyAccessedMemberTypes.None) {
+							_context.LogWarning ($"DynamicallyAccessedMembersAttribute is specified on method '{method}'. The DynamicallyAccessedMembersAttribute is only allowed on method parameters, return value or generic parameters.", 2041, method);
 						}
 					} else {
 						offset = 0;
+						if (methodMemberTypes != DynamicallyAccessedMemberTypes.None) {
+							_context.LogWarning ($"DynamicallyAccessedMembersAttribute is specified on method '{method}'. The DynamicallyAccessedMembersAttribute is only allowed on method parameters, return value or generic parameters.", 2041, method);
+						}
 					}
 
 					for (int i = 0; i < method.Parameters.Count; i++) {
