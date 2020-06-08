@@ -125,7 +125,6 @@
     <FeaturePortableTimer>true</FeaturePortableTimer>
     <FeaturePortableThreadPool>true</FeaturePortableThreadPool>
     <FeaturePerfTracing>true</FeaturePerfTracing>
-    <FeatureHardwareIntrinsics>true</FeatureHardwareIntrinsics>
     <FeatureDefaultInterfaces>true</FeatureDefaultInterfaces>
   </PropertyGroup>
 
