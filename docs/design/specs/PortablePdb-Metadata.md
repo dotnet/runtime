@@ -582,11 +582,13 @@ Common options:
 |:-------------------|:---------------------------------------------------------------|:-------------------------------------|
 | `language`         | `CSharp` or `VisualBasic`                                      | Language name.                       |
 | `language-version` | `[0-9]+(\.[0-9]+)?`                                            | Language version.                    |
-| `compiler-version` | [SemVer2](https://semver.org/spec/v2.0.0.html) version string  | Compiler version with _build metadata_ set to commit SHA for officially released compiler. |
-| `runtime-version`  | [SemVer2](https://semver.org/spec/v2.0.0.html) version string  | Version of the CLR core library with _build metadata_ set to commit SHA for officially released .NET Core runtime. |
+| `compiler-version` | [SemVer2](https://semver.org/spec/v2.0.0.html) version string  | Version of the compiler used to build the module with _build metadata_ set to commit SHA for officially released compiler. |
+| `runtime-version`  | [SemVer2](https://semver.org/spec/v2.0.0.html) version string  | Version of the CLR used to build the module with _build metadata_ set to commit SHA for officially released .NET Core runtime. |
 
 Other options listed in the blob are specific to each compiler. Future versions of the compiler may add additional options.
 The order of the options in the list is insignificant.
+
+> The `runtime-version` is significant since the compiler may have used certain functionality from the runtime that impacts the compilation output (e.g. Unicode tables, etc.)
 
 > The purpose of this data is to allow a tool to reconstruct the compilation the module was built from.
 > The source files for the compilation are expected to be recovered from the source server using [SourceLink](#SourceLink) and/or from [sources embedded](#EmbeddedSource) in the PDB.
