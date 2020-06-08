@@ -102,9 +102,7 @@
     </BinPlaceTargetFrameworks>
     <!-- Corresponding libMono and system.native libraries are added to testhost shared framework -->
     <BinPlaceTargetFrameworks Include="$(NetCoreAppCurrent)-$(TargetOS)"
-                              Condition="'$(BinPlaceTestSharedFramework)' == 'true' and
-                                         '$(RuntimeFlavor)' == 'Mono' and
-                                         '$(TargetsMobile)' != 'true'">
+                              Condition="'$(BinPlaceTestSharedFramework)' == 'true'">
       <RuntimePath>$(NETCoreAppTestSharedFrameworkPath)</RuntimePath>
       <ItemName>TestHostBinPlaceItem</ItemName>
     </BinPlaceTargetFrameworks>
