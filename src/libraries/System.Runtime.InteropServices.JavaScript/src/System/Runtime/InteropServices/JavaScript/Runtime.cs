@@ -75,22 +75,17 @@ namespace System.Runtime.InteropServices.JavaScript
 
         public static int BindJSObject(int jsId, int mappedType)
         {
+            JSObject? obj;
             lock (_boundObjects)
             {
-                if (!_boundObjects.TryGetValue(jsId, out JSObject? obj))
+                if (!_boundObjects.TryGetValue(jsId, out obj))
                 {
-                    IntPtr jsIntPtr = (IntPtr)jsId;
-                    if (mappedType > 0)
-                    {
-                        return BindJSType(jsIntPtr, mappedType);
-                    }
-                    else
-                    {
-                        _boundObjects[jsId] = obj = new JSObject(jsIntPtr);
-                    }
+                  IntPtr jsIntPtr = (IntPtr)jsId;
+                  obj = mappedType > 0 ? BindJSType(jsIntPtr, mappedType) : new JSObject(jsIntPtr);
+                  _boundObjects.Add (jsId, obj);
                 }
-                return obj == null ? 0 : (int)(IntPtr)obj.Handle;
             }
+            return obj == null ? 0 : (int)(IntPtr)obj.Handle;
         }
 
         public static int BindCoreCLRObject(int jsId, int gcHandle)
@@ -115,7 +110,7 @@ namespace System.Runtime.InteropServices.JavaScript
             }
         }
 
-        private static int BindJSType(IntPtr jsIntPtr, int coreType)
+        private static JSObject BindJSType(IntPtr jsIntPtr, int coreType)
         {
             int jsId = (int)jsIntPtr;
             CoreObject coreObject;
@@ -169,8 +164,7 @@ namespace System.Runtime.InteropServices.JavaScript
                 default:
                     throw new ArgumentOutOfRangeException(nameof(coreType));
             }
-            _boundObjects.Add(jsId, coreObject);
-            return (int)(IntPtr)coreObject.Handle;
+            return coreObject;
         }
 
         public static int UnBindJSObject(int jsId)
