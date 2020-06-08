@@ -18,6 +18,9 @@ namespace System.Net.Sockets
         public const bool SupportsMultipleConnectAttempts = false;
         public static readonly int MaximumAddressSize = Interop.Sys.GetMaximumAddressSize();
         private static readonly bool SupportsDualModeIPv4PacketInfo = GetPlatformSupportsDualModeIPv4PacketInfo();
+
+        // IovStackThreshold matches Linux's UIO_FASTIOV, which is the number of 'struct iovec'
+        // that get stackalloced in the Linux kernel.
         private const int IovStackThreshold = 8;
 
         private static bool GetPlatformSupportsDualModeIPv4PacketInfo()
@@ -236,8 +239,8 @@ namespace System.Net.Sockets
 
             int maxBuffers = buffers.Count - startIndex;
             bool allocOnStack = maxBuffers <= IovStackThreshold;
-            Span<GCHandle> handles = allocOnStack ? stackalloc GCHandle[maxBuffers] : new GCHandle[maxBuffers];
-            Span<Interop.Sys.IOVector> iovecs = allocOnStack ? stackalloc Interop.Sys.IOVector[maxBuffers] : new Interop.Sys.IOVector[maxBuffers];
+            Span<GCHandle> handles = allocOnStack ? stackalloc GCHandle[IovStackThreshold] : new GCHandle[maxBuffers];
+            Span<Interop.Sys.IOVector> iovecs = allocOnStack ? stackalloc Interop.Sys.IOVector[IovStackThreshold] : new Interop.Sys.IOVector[maxBuffers];
 
             int sent;
             int toSend = 0, iovCount = maxBuffers;
@@ -485,8 +488,8 @@ namespace System.Net.Sockets
 
             int buffersCount = buffers.Count;
             bool allocOnStack = buffersCount <= IovStackThreshold;
-            Span<GCHandle> handles = allocOnStack ? stackalloc GCHandle[buffersCount] : new GCHandle[buffersCount];
-            Span<Interop.Sys.IOVector> iovecs = allocOnStack ? stackalloc Interop.Sys.IOVector[buffersCount] : new Interop.Sys.IOVector[buffersCount];
+            Span<GCHandle> handles = allocOnStack ? stackalloc GCHandle[IovStackThreshold] : new GCHandle[buffersCount];
+            Span<Interop.Sys.IOVector> iovecs = allocOnStack ? stackalloc Interop.Sys.IOVector[IovStackThreshold] : new Interop.Sys.IOVector[buffersCount];
             try
             {
                 // Pin buffers and set up iovecs.
