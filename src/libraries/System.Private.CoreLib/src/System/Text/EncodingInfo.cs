@@ -59,20 +59,13 @@ namespace System.Text
         /// Compare this <see cref="EncodingInfo"/> object to other object.
         /// </summary>
         /// <param name="value">The other object to compare with this object</param>
-        /// <returns>True if the value object is EncodingInfo object and has a codepage equals to this EncodingInfo object codepage. Othewise, it returns False</returns>
-        public override bool Equals(object? value)
-        {
-            if (value is EncodingInfo that)
-            {
-                return CodePage == that.CodePage;
-            }
-            return false;
-        }
+        /// <returns>True if the value object is EncodingInfo object and has a codepage equals to this EncodingInfo object codepage. Otherwise, it returns False</returns>
+        public override bool Equals(object? value) => value is EncodingInfo that && CodePage == that.CodePage;
 
         /// <summary>
-        /// Get a hashcode represent the current EncodingInfo object
+        /// Get a hashcode representing the current EncodingInfo object.
         /// </summary>
-        /// <returns>The integer value represent the hash code of the EncodingInfo object. The hashcode is basically the encoding codepage value</returns>
+        /// <returns>The integer value representing the hash code of the EncodingInfo object.</returns>
         public override int GetHashCode()
         {
             return CodePage;

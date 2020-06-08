@@ -132,10 +132,10 @@ namespace System.Text
 
             for (int i = 0; i < mappedCodePages.Length; i++)
             {
-                if (!encodingInfoList.TryGetValue(mappedCodePages[i], out _))
+                if (!encodingInfoList.ContainsKey(mappedCodePages[i]))
                 {
                     encodingInfoList[mappedCodePages[i]] = new EncodingInfo(mappedCodePages[i], webNames[webNameIndices[i]..webNameIndices[i + 1]],
-                                                                              GetDisplayName(mappedCodePages[i], i));
+                                                                            GetDisplayName(mappedCodePages[i], i));
                 }
             }
 
