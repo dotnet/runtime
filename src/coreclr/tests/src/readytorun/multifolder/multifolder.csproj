@@ -34,6 +34,7 @@ $(CLRTestBatchPreCommands)
     echo -r:%21CORE_ROOT%21\netstandard.dll>>%__ResponseFile%
     echo -o:%scriptPath%\multifolder-composite.dll>>%__ResponseFile%
     echo --crp:%scriptPath%\..>>%__ResponseFile%
+    echo --targetarch:%__BuildArch%>>%__ResponseFile%
     echo %scriptPath%\multifolder.dll>>%__ResponseFile%
     echo %scriptPath%\..\FolderA\FolderA\FolderA.dll>>%__ResponseFile%
     echo %scriptPath%\..\FolderB\FolderB\FolderB.dll>>%__ResponseFile%
@@ -71,6 +72,7 @@ $(BashCLRTestPreCommands)
     echo -r:$CORE_ROOT/netstandard.dll>>$__ResponseFile
     echo -o:$__OutputDir/multifolder-composite.dll>>$__ResponseFile
     echo --crp:$__OutputDir/..>>$__ResponseFile
+    echo --targetarch:$__BuildArch>>$__ResponseFile
     echo $__OutputDir/multifolder.dll>>$__ResponseFile
     echo $__OutputDir/../FolderA/FolderA/FolderA.dll>>$__ResponseFile
     echo $__OutputDir/../FolderB/FolderB/FolderB.dll>>$__ResponseFile

@@ -96,7 +96,7 @@ private:
     NativeImage(AssemblyLoadContext *pAssemblyLoadContext, PEImageLayout *peImageLayout, LPCUTF8 imageFileName);
 
 protected:
-    void Initialize(READYTORUN_HEADER *header, LoaderAllocator *loaderAllocator);
+    void Initialize(READYTORUN_HEADER *header, LoaderAllocator *loaderAllocator, AllocMemTracker *pamTracker);
 
 public:
     ~NativeImage();

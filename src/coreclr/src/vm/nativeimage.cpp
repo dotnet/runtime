@@ -62,12 +62,11 @@ NativeImage::NativeImage(AssemblyLoadContext *pAssemblyLoadContext, PEImageLayou
     m_eagerFixupsHaveRun = false;
 }
 
-void NativeImage::Initialize(READYTORUN_HEADER *pHeader, LoaderAllocator *pLoaderAllocator)
+void NativeImage::Initialize(READYTORUN_HEADER *pHeader, LoaderAllocator *pLoaderAllocator, AllocMemTracker *pamTracker)
 {
     LoaderHeap *pHeap = pLoaderAllocator->GetHighFrequencyHeap();
 
-    AllocMemTracker amTracker;
-    m_pReadyToRunInfo = new ReadyToRunInfo(/*pModule*/ NULL, m_pImageLayout, pHeader, /*compositeImage*/ NULL, &amTracker);
+    m_pReadyToRunInfo = new ReadyToRunInfo(/*pModule*/ NULL, m_pImageLayout, pHeader, /*compositeImage*/ NULL, pamTracker);
     m_pComponentAssemblies = m_pReadyToRunInfo->FindSection(ReadyToRunSectionType::ComponentAssemblies);
     m_componentAssemblyCount = m_pComponentAssemblies->Size / sizeof(READYTORUN_COMPONENT_ASSEMBLIES_ENTRY);
     
@@ -94,8 +93,7 @@ void NativeImage::Initialize(READYTORUN_HEADER *pHeader, LoaderAllocator *pLoade
     S_SIZE_T dwAllocSize = S_SIZE_T(sizeof(PTR_Assembly)) * S_SIZE_T(m_manifestAssemblyCount);
 
     // Note: Memory allocated on loader heap is zero filled
-    m_pNativeMetadataAssemblyRefMap = (PTR_Assembly*)amTracker.Track(pLoaderAllocator->GetLowFrequencyHeap()->AllocMem(dwAllocSize));
-    amTracker.SuppressRelease();
+    m_pNativeMetadataAssemblyRefMap = (PTR_Assembly*)pamTracker->Track(pLoaderAllocator->GetLowFrequencyHeap()->AllocMem(dwAllocSize));
 }
 
 NativeImage::~NativeImage()
@@ -212,11 +210,13 @@ NativeImage *NativeImage::Open(
         COMPlusThrowHR(COR_E_BADIMAGEFORMAT);
     }
     NewHolder<NativeImage> image = new NativeImage(pAssemblyLoadContext, peLoadedImage.Extract(), nativeImageFileName);
-    image->Initialize(pHeader, pLoaderAllocator);
+    AllocMemTracker amTracker;
+    image->Initialize(pHeader, pLoaderAllocator, &amTracker);
     pExistingImage = AppDomain::GetCurrentDomain()->SetNativeImage(nativeImageFileName, image);
     if (pExistingImage == nullptr)
     {
         // No pre-existing image, new image has been stored in the map
+        amTracker.SuppressRelease();
         return image.Extract();
     }
     // Return pre-existing image if it was loaded into the same ALC, null otherwise
