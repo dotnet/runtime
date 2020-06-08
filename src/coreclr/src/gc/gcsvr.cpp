@@ -24,9 +24,9 @@
 namespace SVR {
 #include "gcimpl.h"
 #include "gc.cpp"
-#ifdef USE_VXSORT
+#if defined(USE_VXSORT64) || defined(USE_VXSORT32)
 #include "vxsort.cpp"
-#endif //USE_VXSORT
+#endif //USE_VXSORT64 || USE_VXSORT32
 }
 
 #endif // defined(FEATURE_SVR_GC)

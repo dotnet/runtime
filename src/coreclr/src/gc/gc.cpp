@@ -20,7 +20,7 @@
 #include "gcpriv.h"
 
 #if defined(TARGET_AMD64) && defined(TARGET_WINDOWS)
-#define USE_VXSORT
+#define USE_VXSORT32
 #else
 #define USE_INTROSORT
 #endif
@@ -2064,7 +2064,7 @@ uint8_t* tree_search (uint8_t* tree, uint8_t* old_address);
 
 #ifdef USE_INTROSORT
 #define _sort introsort::sort
-#elif defined(USE_VXSORT)
+#elif defined(USE_VXSORT64) || defined(USE_VXSORT32)
 #define _sort vxsort
 namespace std
 {
@@ -2078,6 +2078,18 @@ namespace std
         }
     };
 
+#ifdef USE_VXSORT32
+    template <>
+    class numeric_limits<uint32_t>
+    {
+    public:
+        static uint32_t Max()
+        {
+            return 0xffffffff;
+        }
+    };
+#endif //USE_VXSORT64
+#ifdef USE_VXSORT64
     template <>
     class numeric_limits<int64_t>
     {
@@ -2087,15 +2099,15 @@ namespace std
             return 0x7fffffffffffffff;
         }
     };
+#endif //USE_VXSORT64
 }
 
-#ifdef USE_VXSORT
 #include "vxsort.h"
-#endif
 
+#ifdef USE_VXSORT64
 void vxsort(uint8_t** low, uint8_t** high, unsigned int depth)
 {
-//    auto sorter = gcsort::vxsort<int64_t, gcsort::AVX2>();
+    //    auto sorter = gcsort::vxsort<int64_t, gcsort::AVX2>();
     auto sorter = gcsort::vxsort<int64_t, gcsort::AVX2, 8>();
     sorter.sort((int64_t*)low, (int64_t*)high);
 #ifdef _DEBUG
@@ -2105,6 +2117,21 @@ void vxsort(uint8_t** low, uint8_t** high, unsigned int depth)
     }
 #endif
 }
+#elif defined(USE_VXSORT32)
+void vxsort(uint32_t* low, uint32_t* high, unsigned int depth)
+{
+    //    auto sorter = gcsort::vxsort<uint32_t, gcsort::AVX2>();
+    auto sorter = gcsort::vxsort<uint32_t, gcsort::AVX2, 8>();
+    sorter.sort(low, high);
+#ifdef _DEBUG
+    for (uint32_t* p = low; p < high; p++)
+    {
+        assert(p[0] <= p[1]);
+    }
+#endif
+}
+#endif
+
 #else //USE_INTROSORT
 #define _sort qsort1
 void qsort1(uint8_t** low, uint8_t** high, unsigned int depth);
@@ -8220,6 +8247,7 @@ private:
 
 #ifdef MULTIPLE_HEAPS
 #ifdef PARALLEL_MARK_LIST_SORT
+NOINLINE
 void gc_heap::sort_mark_list()
 {
     // if this heap had a mark list overflow, we don't do anything
@@ -8262,6 +8290,39 @@ void gc_heap::sort_mark_list()
         return;
     }
 
+#ifdef USE_VXSORT32
+    uint8_t* low = gc_low;
+    uint8_t* high = heap_segment_allocated (ephemeral_heap_segment);
+    size_t size = high - low;
+    assert((uint32_t)size == size);
+    uint8_t** mark_list = &g_mark_list_copy[heap_number * mark_list_size];
+    uint8_t** mark_list_end = &mark_list[mark_list_size - 1];
+    uint32_t* mark_list_32 = (uint32_t*)mark_list;
+    uint32_t* mark_list_curr_32 = mark_list_32;
+    uint32_t* mark_list_end_32 = (uint32_t*)mark_list_end;
+    for (int i = 0; i < n_heaps; i++)
+    {
+        gc_heap* hp = g_heaps[i];
+        uint8_t** end = hp->mark_list_index;
+        for (uint8_t** p = hp->mark_list; p < end; p++)
+        {
+            uint8_t* item = *p;
+            if (item < low || high <= item)
+                continue;
+            size_t offset = item - low;
+            assert((uint32_t)offset == offset);
+            if (mark_list_curr_32 < mark_list_end_32)
+                *mark_list_curr_32++ = (uint32_t)offset;
+            else
+                break;
+        }
+    }
+    mark_list_index_32 = mark_list_curr_32;
+    if (mark_list_curr_32 < mark_list_end_32)
+    {
+        _sort (mark_list_32, mark_list_curr_32 - 1, 0);
+    }
+#else
     dprintf (3, ("Sorting mark lists"));
     if (mark_list_index > mark_list)
         _sort (mark_list, mark_list_index - 1, 0);
@@ -8355,6 +8416,7 @@ void gc_heap::sort_mark_list()
 #undef predicate
 
 //    printf("second phase of sort_mark_list for heap %d took %u cycles\n", this->heap_number, GetCycleCount32() - start);
+#endif //USE_VXSORT32
 }
 
 void gc_heap::append_to_mark_list(uint8_t **start, uint8_t **end)
@@ -8367,6 +8429,34 @@ void gc_heap::append_to_mark_list(uint8_t **start, uint8_t **end)
 //    printf("heap %d: appended %Id slots to mark_list\n", heap_number, slots_to_copy);
 }
 
+#ifdef USE_VXSORT32
+void gc_heap::merge_mark_lists()
+{
+    // in case of mark list overflow, don't bother
+    if (mark_list_index > mark_list_end)
+    {
+        //        printf("merge_mark_lists: overflow\n");
+        return;
+    }
+
+    // in this case we have a sorted list of 32 bit offsets from gc_low
+    uint32_t* mark_list_32 = (uint32_t*)&g_mark_list_copy[heap_number * mark_list_size];
+    size_t element_count = mark_list_index_32 - mark_list_32;
+    uint8_t** mark_list = &g_mark_list[heap_number * mark_list_size];
+    uint8_t** mark_list_end = &mark_list[mark_list_size - 1];
+    if (element_count > mark_list_size)
+    {
+        mark_list_index = mark_list_end + 1;
+        return;
+    }
+    uint8_t* low = gc_low;
+    for (size_t i = 0; i < element_count; i++)
+    {
+        mark_list[i] = low + mark_list_32[i];
+    }
+    mark_list_index = &mark_list[element_count];
+}
+#else //!USE_VXSORT32
 void gc_heap::merge_mark_lists()
 {
     uint8_t** source[MAX_SUPPORTED_CPUS];
@@ -8507,6 +8597,7 @@ void gc_heap::merge_mark_lists()
     }
 #endif //defined(_DEBUG) || defined(TRACE_GC)
 }
+#endif //!USE_VXSORT32
 #else //PARALLEL_MARK_LIST_SORT
 void gc_heap::combine_mark_lists()
 {
@@ -10094,7 +10185,7 @@ gc_heap::init_semi_shared()
 
 #ifdef MARK_LIST
 #ifdef MULTIPLE_HEAPS
-    mark_list_size = min (1024*1024, max (8192, soh_segment_size/(2*10*32)));
+    mark_list_size = min (300*1024, max (8192, soh_segment_size/(2*10*32)));
     g_mark_list = make_mark_list (mark_list_size*n_heaps);
 
     min_balance_threshold = alloc_quantum_balance_units * CLR_SIZE * 2;
@@ -21997,7 +22088,26 @@ void gc_heap::plan_phase (int condemned_gen_number)
         )
     {
 #ifndef MULTIPLE_HEAPS
+#ifdef USE_VXSORT32
+        ptrdiff_t entry_count = mark_list_index - mark_list;
+        uint32_t* mark_list_32 = (uint32_t*)mark_list;
+        uint8_t* low = gc_low;
+        for (ptrdiff_t i = 0; i < entry_count; i++)
+        {
+            uint8_t* item = mark_list[i];
+            size_t offset = item - low;
+            assert((uint32_t)offset == offset);
+            mark_list_32[i] = (uint32_t)offset;
+        }
+        _sort(&mark_list_32[0], &mark_list_32[entry_count-1], 0);
+        for (ptrdiff_t i = entry_count - 1; i >= 0; i--)
+        {
+            uint32_t offset = mark_list_32[i];
+            mark_list[i] = low + offset;
+        }
+#else //!USE_VXSORT32
         _sort (&mark_list[0], mark_list_index-1, 0);
+#endif
         //printf ("using mark list at GC #%d", dd_collection_count (dynamic_data_of (0)));
         //verify_qsort_array (&mark_list[0], mark_list_index-1);
 #endif //!MULTIPLE_HEAPS

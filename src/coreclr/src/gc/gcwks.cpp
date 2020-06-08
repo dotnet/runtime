@@ -24,8 +24,8 @@
 namespace WKS {
 #include "gcimpl.h"
 #include "gc.cpp"
-#ifdef USE_VXSORT
+#if defined(USE_VXSORT64) || defined(USE_VXSORT32)
 #include "vxsort.cpp"
-#endif //USE_VXSORT
+#endif //USE_VXSORT64 || USE_VXSORT32
 }
 

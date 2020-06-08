@@ -457,7 +457,7 @@ private:
         return readRight;
     }
 
-    void sort(T* left, T* right,
+    void realsort(T* left, T* right,
               alignment_hint realignHint,
               int depthLimit) {
         auto length = (size_t)(right - left + 1);
@@ -561,8 +561,8 @@ private:
 
 
         _depth++;
-        sort(left, sep - 2, realignHint.realign_right(), depthLimit);
-        sort(sep, right, realignHint.realign_left(), depthLimit);
+        realsort(left, sep - 2, realignHint.realign_right(), depthLimit);
+        realsort(sep, right, realignHint.realign_left(), depthLimit);
         _depth--;
     }
 
@@ -804,7 +804,7 @@ public:
     NOINLINE void sort(T* left, T* right) {
         reset(left, right);
         auto depthLimit = 2 * floor_log2_plus_one(right + 1 - left);
-        sort(left, right, alignment_hint(), depthLimit);
+        realsort(left, right, alignment_hint(), depthLimit);
     }
 };
 

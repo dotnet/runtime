@@ -3734,6 +3734,11 @@ protected:
     PER_HEAP
     uint8_t** mark_list_end;
 
+#if defined(TARGET_AMD64) && defined(TARGET_WINDOWS) && defined(MULTIPLE_HEAPS)
+    PER_HEAP
+    uint32_t* mark_list_index_32;
+#endif //defined(TARGET_AMD64) && defined(TARGET_WINDOWS) && defined(MULTIPLE_HEAPS)
+
     PER_HEAP
     uint8_t** mark_list_index;
 
