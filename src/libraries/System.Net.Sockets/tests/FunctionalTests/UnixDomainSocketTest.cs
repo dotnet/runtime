@@ -59,9 +59,9 @@ namespace System.Net.Sockets.Tests
 
                 SocketAsyncEventArgs args = new SocketAsyncEventArgs();
                 args.RemoteEndPoint = endPoint;
-                args.Completed += (s, e) => ((TaskCompletionSource<bool>)e.UserToken).SetResult(true);
+                args.Completed += (s, e) => ((TaskCompletionSource)e.UserToken).SetResult();
 
-                var complete = new TaskCompletionSource<bool>();
+                var complete = new TaskCompletionSource();
                 args.UserToken = complete;
 
                 using (Socket sock = new Socket(AddressFamily.Unix, SocketType.Stream, ProtocolType.Unspecified))
@@ -94,9 +94,9 @@ namespace System.Net.Sockets.Tests
             {
                 SocketAsyncEventArgs args = new SocketAsyncEventArgs();
                 args.RemoteEndPoint = endPoint;
-                args.Completed += (s, e) => ((TaskCompletionSource<bool>)e.UserToken).SetResult(true);
+                args.Completed += (s, e) => ((TaskCompletionSource)e.UserToken).SetResult();
 
-                var complete = new TaskCompletionSource<bool>();
+                var complete = new TaskCompletionSource();
                 args.UserToken = complete;
 
                 using (Socket sock = new Socket(AddressFamily.Unix, SocketType.Stream, ProtocolType.Unspecified))

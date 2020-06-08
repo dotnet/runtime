@@ -48,7 +48,7 @@ namespace System.Net.Http.Functional.Tests
         [Fact]
         public async Task ExecutionContext_HttpConnectionLifetimeDoesntKeepContextAlive()
         {
-            var clientCompleted = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+            var clientCompleted = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
             await LoopbackServer.CreateClientAndServerAsync(async uri =>
             {
                 try
@@ -69,7 +69,7 @@ namespace System.Net.Http.Functional.Tests
                 }
                 finally
                 {
-                    clientCompleted.SetResult(true);
+                    clientCompleted.SetResult();
                 }
             }, async server =>
             {
@@ -84,7 +84,7 @@ namespace System.Net.Http.Functional.Tests
         [MethodImpl(MethodImplOptions.NoInlining)] // avoid JIT extending lifetime of the finalizable object
         private static (Task completedOnFinalized, Task getRequest) MakeHttpRequestWithTcsSetOnFinalizationInAsyncLocal(HttpClient client, Uri uri)
         {
-            var tcs = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+            var tcs = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
 
             // Put something in ExecutionContext, start the HTTP request, then undo the EC change.
             var al = new AsyncLocal<object>() { Value = new SetOnFinalized() { _completedWhenFinalized = tcs } };
@@ -101,8 +101,8 @@ namespace System.Net.Http.Functional.Tests
 
         private sealed class SetOnFinalized
         {
-            internal TaskCompletionSource<bool> _completedWhenFinalized;
-            ~SetOnFinalized() => _completedWhenFinalized.SetResult(true);
+            internal TaskCompletionSource _completedWhenFinalized;
+            ~SetOnFinalized() => _completedWhenFinalized.SetResult();
         }
     }
 
@@ -467,7 +467,7 @@ namespace System.Net.Http.Functional.Tests
         [InlineData(true)]
         public async Task DisposeTargetStream_ThrowsObjectDisposedException(bool knownLength)
         {
-            var tcs = new TaskCompletionSource<int>(TaskCreationOptions.RunContinuationsAsynchronously);
+            var tcs = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
             await LoopbackServerFactory.CreateClientAndServerAsync(async uri =>
             {
                 try
@@ -480,7 +480,7 @@ namespace System.Net.Http.Functional.Tests
                 }
                 finally
                 {
-                    tcs.SetResult(0);
+                    tcs.SetResult();
                 }
             }, server => tcs.Task);
         }
@@ -1283,7 +1283,7 @@ namespace System.Net.Http.Functional.Tests
             {
                 await LoopbackServer.CreateServerAsync(async (server, uri) =>
                 {
-                    var releaseServer = new TaskCompletionSource<bool>();
+                    var releaseServer = new TaskCompletionSource();
 
                     // Make multiple requests iteratively.
 
@@ -1297,7 +1297,7 @@ namespace System.Net.Http.Functional.Tests
                     Task serverTask2 = server.AcceptConnectionSendCustomResponseAndCloseAsync(LoopbackServer.GetHttpResponse(connectionClose: true));
                     await new[] { client.GetStringAsync(uri), serverTask2 }.WhenAllOrAnyFailed();
 
-                    releaseServer.SetResult(true);
+                    releaseServer.SetResult();
                     await serverTask1;
                 });
             }
@@ -1429,7 +1429,7 @@ namespace System.Net.Http.Functional.Tests
         {
             RemoteExecutor.Invoke(async (secureString, useVersionString) =>
             {
-                var releaseServer = new TaskCompletionSource<bool>();
+                var releaseServer = new TaskCompletionSource();
                 await LoopbackServer.CreateClientAndServerAsync(async uri =>
                 {
                     using (var handler = new SocketsHttpHandler())
@@ -1453,7 +1453,7 @@ namespace System.Net.Http.Functional.Tests
                         // and thus could have some false negatives, but there won't be any false positives.
                         Assert.True(exceptions.Count == 0, string.Concat(exceptions));
 
-                        releaseServer.SetResult(true);
+                        releaseServer.SetResult();
                     }
                 }, server => server.AcceptConnectionAsync(async connection =>
                 {
@@ -1468,7 +1468,7 @@ namespace System.Net.Http.Functional.Tests
         [Fact]
         public void HandlerDroppedWithoutDisposal_NotKeptAlive()
         {
-            var tcs = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+            var tcs = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
             HandlerDroppedWithoutDisposal_NotKeptAliveCore(tcs);
             for (int i = 0; i < 10; i++)
             {
@@ -1479,13 +1479,13 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        private void HandlerDroppedWithoutDisposal_NotKeptAliveCore(TaskCompletionSource<bool> setOnFinalized)
+        private void HandlerDroppedWithoutDisposal_NotKeptAliveCore(TaskCompletionSource setOnFinalized)
         {
             // This relies on knowing that in order for the connection pool to operate, it needs
             // to maintain a reference to the supplied IWebProxy.  As such, we provide a proxy
             // that when finalized will set our event, so that we can determine the state associated
             // with a handler has gone away.
-            IWebProxy p = new PassthroughProxyWithFinalizerCallback(() => setOnFinalized.TrySetResult(true));
+            IWebProxy p = new PassthroughProxyWithFinalizerCallback(() => setOnFinalized.TrySetResult());
 
             // Make a bunch of requests and drop the associated HttpClient instances after making them, without disposal.
             Task.WaitAll((from i in Enumerable.Range(0, 10)

@@ -19,7 +19,6 @@ namespace R2RTest
                 .AddCommand(CompileSubtree())
                 .AddCommand(CompileFramework())
                 .AddCommand(CompileNugetPackages())
-                .AddCommand(CompileCrossgenRsp())
                 .AddCommand(CompileSerp());
 
             return parser;
@@ -27,11 +26,15 @@ namespace R2RTest
             Command CreateCommand(string name, string description, Option[] options, Func<BuildOptions, int> action)
             {
                 Command command = new Command(name, description);
+                foreach (var option in GetCommonOptions())
+                    command.AddOption(option);
                 foreach (var option in options)
                     command.AddOption(option);
                 command.Handler = CommandHandler.Create<BuildOptions>(action);
                 return command;
             }
+
+            Option[] GetCommonOptions() => new[] { CoreRootDirectory(), DotNetCli() };
 
             Command CompileFolder() =>
                 CreateCommand("compile-directory", "Compile all assemblies in directory",
@@ -39,7 +42,6 @@ namespace R2RTest
                     {
                         InputDirectory(),
                         OutputDirectory(),
-                        CoreRootDirectory(),
                         Crossgen(),
                         CrossgenPath(),
                         NoJit(),
@@ -73,7 +75,6 @@ namespace R2RTest
                     {
                         InputDirectory(),
                         OutputDirectory(),
-                        CoreRootDirectory(),
                         Crossgen(),
                         CrossgenPath(),
                         NoJit(),
@@ -104,7 +105,6 @@ namespace R2RTest
                 CreateCommand("compile-framework", "Compile managed framework assemblies in Core_Root",
                     new Option[]
                     {
-                        CoreRootDirectory(),
                         Crossgen(),
                         CrossgenPath(),
                         NoCrossgen2(),
@@ -131,7 +131,6 @@ namespace R2RTest
                         InputDirectory(),
                         OutputDirectory(),
                         PackageList(),
-                        CoreRootDirectory(),
                         Crossgen(),
                         NoCleanup(),
                         DegreeOfParallelism(),
@@ -140,23 +139,6 @@ namespace R2RTest
                     },
                     CompileNugetCommand.CompileNuget);
 
-            Command CompileCrossgenRsp() =>
-                CreateCommand("compile-crossgen-rsp", "Use existing Crossgen .rsp file(s) to build assemblies, optionally rewriting base paths",
-                    new Option[]
-                    {
-                        InputDirectory(),
-                        CrossgenResponseFile(),
-                        OutputDirectory(),
-                        CoreRootDirectory(),
-                        Crossgen(),
-                        NoCleanup(),
-                        DegreeOfParallelism(),
-                        CompilationTimeoutMinutes(),
-                        RewriteOldPath(),
-                        RewriteNewPath(),
-                    },
-                    CompileFromCrossgenRspCommand.CompileFromCrossgenRsp);
-
             Command CompileSerp() =>
                 CreateCommand("compile-serp", "Compile existing application",
                     new Option[]
@@ -164,7 +146,6 @@ namespace R2RTest
                         InputDirectory(),
                         OutputDirectory(),
                         DegreeOfParallelism(),
-                        CoreRootDirectory(),
                         AspNetPath(),
                         Composite(),
                         PartialComposite(),
@@ -180,7 +161,10 @@ namespace R2RTest
                 new Option<DirectoryInfo>(new[] { "--output-directory", "-out" }, "Folder to emit compiled assemblies").LegalFilePathsOnly();
 
             Option CoreRootDirectory() =>
-                new Option<DirectoryInfo>(new[] { "--core-root-directory", "-cr" }, "Location of the CoreCLR CORE_ROOT folder").ExistingOnly();
+                new Option<DirectoryInfo>(new[] { "--core-root-directory", "-cr" }, "Location of the CoreCLR CORE_ROOT folder")
+                {
+                    Required = true
+                }.ExistingOnly();
 
             Option ReferencePath() =>
                 new Option<DirectoryInfo[]>(new[] { "--reference-path", "-r" }, "Folder containing assemblies to reference during compilation")
@@ -250,17 +234,6 @@ namespace R2RTest
             Option R2RDumpPath() =>
                 new Option<FileInfo>(new[] { "--r2r-dump-path", "-r2r" }, "Path to R2RDump.exe/dll").ExistingOnly();;
 
-            Option CrossgenResponseFile() =>
-                new Option<FileInfo>(new [] { "--crossgen-response-file", "-rsp" }, "Response file to transpose").ExistingOnly();;
-
-            Option RewriteOldPath() =>
-                new Option<DirectoryInfo[]>(new[] { "--rewrite-old-path" }, "Path substring to replace")
-                    { Argument = new Argument<DirectoryInfo[]>() { Arity = ArgumentArity.ZeroOrMore } };
-
-            Option RewriteNewPath() =>
-                new Option<DirectoryInfo[]>(new[] { "--rewrite-new-path" }, "Path substring to use instead")
-                    { Argument = new Argument<DirectoryInfo[]>() { Arity = ArgumentArity.ZeroOrMore } };
-
             Option MeasurePerf() =>
                 new Option<bool>(new[] { "--measure-perf" }, "Print out compilation time");
 
@@ -269,6 +242,10 @@ namespace R2RTest
 
             Option GCStress() =>
                 new Option<string>(new[] { "--gcstress" }, "Run tests with the specified GC stress level enabled (the argument value is in hex)");
+
+            Option DotNetCli() =>
+                new Option<string>(new [] { "--dotnet-cli", "-cli" }, "For dev box testing, point at .NET 5 dotnet.exe or <repo>/dotnet.cmd.");
+                
 
             //
             // compile-nuget specific options

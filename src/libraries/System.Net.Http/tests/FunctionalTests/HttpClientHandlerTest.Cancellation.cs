@@ -24,7 +24,7 @@ namespace System.Net.Http.Functional.Tests
         [Fact]
         public async Task ConnectTimeout_TimesOutSSLAuth_Throws()
         {
-            var releaseServer = new TaskCompletionSource<bool>();
+            var releaseServer = new TaskCompletionSource();
             await LoopbackServer.CreateClientAndServerAsync(async uri =>
             {
                 using (var handler = new SocketsHttpHandler())
@@ -33,15 +33,13 @@ namespace System.Net.Http.Functional.Tests
                     handler.ConnectTimeout = TimeSpan.FromSeconds(1);
 
                     var sw = Stopwatch.StartNew();
-
                     await Assert.ThrowsAnyAsync<OperationCanceledException>(() =>
                         invoker.SendAsync(TestAsync, new HttpRequestMessage(HttpMethod.Get,
-                            new UriBuilder(uri) { Scheme = "https" }.ToString())
-                        { Version = UseVersion }, default));
+                            new UriBuilder(uri) { Scheme = "https" }.ToString()) { Version = UseVersion }, default));
                     sw.Stop();
 
                     Assert.InRange(sw.ElapsedMilliseconds, 500, 60_000);
-                    releaseServer.SetResult(true);
+                    releaseServer.SetResult();
                 }
             }, server => releaseServer.Task); // doesn't establish SSL connection
         }

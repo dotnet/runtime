@@ -19,7 +19,7 @@ namespace R2RTest
         // Crossgen2 runs on top of corerun.
         protected override string CompilerRelativePath => "";
 
-        protected override string CompilerFileName => "corerun".AppendOSExeSuffix();
+        protected override string CompilerFileName => _options.DotNetCli;
         protected readonly List<string> _referenceFiles = new List<string>();
 
         private string Crossgen2Path => Path.Combine(_options.CoreRootDirectory.FullName, "crossgen2", "crossgen2.dll");

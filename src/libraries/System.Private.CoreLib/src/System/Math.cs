@@ -29,6 +29,8 @@ namespace System
 
         public const double PI = 3.14159265358979323846;
 
+        public const double Tau = 6.283185307179586476925;
+
         private const int maxRoundingDigits = 15;
 
         private const double doubleRoundLimit = 1e16d;

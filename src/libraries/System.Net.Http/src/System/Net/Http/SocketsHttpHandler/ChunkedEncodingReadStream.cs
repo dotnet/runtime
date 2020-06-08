@@ -100,7 +100,7 @@ namespace System.Net.Http
                 if (cancellationToken.IsCancellationRequested)
                 {
                     // Cancellation requested.
-                    return new ValueTask<int>(Task.FromCanceled<int>(cancellationToken));
+                    return ValueTask.FromCanceled<int>(cancellationToken);
                 }
 
                 if (_connection == null || buffer.Length == 0)

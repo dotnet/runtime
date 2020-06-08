@@ -235,7 +235,7 @@ namespace System.IO
         }
 
         public override ValueTask<int> ReadBlockAsync(Memory<char> buffer, CancellationToken cancellationToken = default) =>
-            cancellationToken.IsCancellationRequested ? new ValueTask<int>(Task.FromCanceled<int>(cancellationToken)) :
+            cancellationToken.IsCancellationRequested ? ValueTask.FromCanceled<int>(cancellationToken) :
             new ValueTask<int>(ReadBlock(buffer.Span));
 
         public override Task<int> ReadAsync(char[] buffer, int index, int count)
@@ -257,7 +257,7 @@ namespace System.IO
         }
 
         public override ValueTask<int> ReadAsync(Memory<char> buffer, CancellationToken cancellationToken = default) =>
-            cancellationToken.IsCancellationRequested ? new ValueTask<int>(Task.FromCanceled<int>(cancellationToken)) :
+            cancellationToken.IsCancellationRequested ? ValueTask.FromCanceled<int>(cancellationToken) :
             new ValueTask<int>(Read(buffer.Span));
         #endregion
     }
