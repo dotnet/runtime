@@ -10849,7 +10849,7 @@ void Compiler::gtDispLeaf(GenTree* tree, IndentStack* indentStack)
                             fieldVarDsc->PrintVarReg();
                         }
 
-                        if (fieldVarDsc->lvTracked && fgLocalVarLivenessDone &&
+                        if (fieldVarDsc->lvTracked && fgLocalVarLivenessDone && tree->IsMultiRegLclVar() &&
                             tree->AsLclVar()->IsLastUse(i - varDsc->lvFieldLclStart))
                         {
                             printf(" (last use)");
