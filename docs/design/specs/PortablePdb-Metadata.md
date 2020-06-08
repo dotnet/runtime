@@ -585,7 +585,6 @@ Common options:
 | name               | value format                                                   | description                          |
 |:-------------------|:---------------------------------------------------------------|:-------------------------------------|
 | `language`         | `CSharp` or `VisualBasic`                                      | Language name.                       |
-| `language-version` | `[0-9]+(\.[0-9]+)?`                                            | Language version.                    |
 | `compiler-version` | [SemVer2](https://semver.org/spec/v2.0.0.html) version string  | Version of the compiler used to build the module with _build metadata_ set to commit SHA for officially released compiler. |
 | `runtime-version`  | [SemVer2](https://semver.org/spec/v2.0.0.html) version string  | Version of the CLR used to build the module with _build metadata_ set to commit SHA for officially released .NET Core runtime. |
 
