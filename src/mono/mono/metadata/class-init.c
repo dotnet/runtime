@@ -789,6 +789,10 @@ class_has_isbyreflike_attribute (MonoClass *klass)
 static gboolean G_GNUC_UNUSED
 method_has_preserve_base_overrides_attribute (MonoMethod *method)
 {
+	MonoImage *image = m_class_get_image (method->klass);
+	/* FIXME: implement well known attribute check for dynamic images */
+	if (image_is_dynamic (image))
+		return FALSE;
 	return method_has_wellknown_attribute (method, "System.Runtime.CompilerServices", "PreserveBaseOverridesAttribute", TRUE);
 }
 
