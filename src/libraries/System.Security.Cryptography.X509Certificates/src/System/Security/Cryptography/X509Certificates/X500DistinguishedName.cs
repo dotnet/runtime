@@ -59,12 +59,12 @@ namespace System.Security.Cryptography.X509Certificates
         public string Decode(X500DistinguishedNameFlags flag)
         {
             ThrowIfInvalid(flag);
-            return X509Pal.Instance.X500DistinguishedNameDecode(RawData, flag);
+            return X509Pal.Instance.X500DistinguishedNameDecode(RawData!, flag);
         }
 
         public override string Format(bool multiLine)
         {
-            return X509Pal.Instance.X500DistinguishedNameFormat(RawData, multiLine);
+            return X509Pal.Instance.X500DistinguishedNameFormat(RawData!, multiLine);
         }
 
         private static byte[] Encode(string distinguishedName, X500DistinguishedNameFlags flags)

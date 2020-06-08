@@ -23,7 +23,7 @@ namespace System.Security.Cryptography.X509Certificates
         }
 
         public X509KeyUsageExtension(AsnEncodedData encodedKeyUsage, bool critical)
-            : base(Oids.KeyUsage, encodedKeyUsage.RawData, critical)
+            : base(Oids.KeyUsage, encodedKeyUsage.RawData!, critical)
         {
         }
 
@@ -38,7 +38,7 @@ namespace System.Security.Cryptography.X509Certificates
             {
                 if (!_decoded)
                 {
-                    X509Pal.Instance.DecodeX509KeyUsageExtension(RawData, out _keyUsages);
+                    X509Pal.Instance.DecodeX509KeyUsageExtension(RawData!, out _keyUsages);
                     _decoded = true;
                 }
                 return _keyUsages;

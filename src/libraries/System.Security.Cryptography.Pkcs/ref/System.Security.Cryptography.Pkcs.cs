@@ -156,7 +156,7 @@ namespace System.Security.Cryptography.Pkcs
     public sealed partial class Pkcs9ContentType : System.Security.Cryptography.Pkcs.Pkcs9AttributeObject
     {
         public Pkcs9ContentType() { }
-        public System.Security.Cryptography.Oid ContentType { get { throw null; } }
+        public System.Security.Cryptography.Oid? ContentType { get { throw null; } }
         public override void CopyFrom(System.Security.Cryptography.AsnEncodedData asnEncodedData) { }
     }
     public sealed partial class Pkcs9DocumentDescription : System.Security.Cryptography.Pkcs.Pkcs9AttributeObject
@@ -164,7 +164,7 @@ namespace System.Security.Cryptography.Pkcs
         public Pkcs9DocumentDescription() { }
         public Pkcs9DocumentDescription(byte[] encodedDocumentDescription) { }
         public Pkcs9DocumentDescription(string documentDescription) { }
-        public string DocumentDescription { get { throw null; } }
+        public string? DocumentDescription { get { throw null; } }
         public override void CopyFrom(System.Security.Cryptography.AsnEncodedData asnEncodedData) { }
     }
     public sealed partial class Pkcs9DocumentName : System.Security.Cryptography.Pkcs.Pkcs9AttributeObject
@@ -172,13 +172,13 @@ namespace System.Security.Cryptography.Pkcs
         public Pkcs9DocumentName() { }
         public Pkcs9DocumentName(byte[] encodedDocumentName) { }
         public Pkcs9DocumentName(string documentName) { }
-        public string DocumentName { get { throw null; } }
+        public string? DocumentName { get { throw null; } }
         public override void CopyFrom(System.Security.Cryptography.AsnEncodedData asnEncodedData) { }
     }
     public sealed partial class Pkcs9MessageDigest : System.Security.Cryptography.Pkcs.Pkcs9AttributeObject
     {
         public Pkcs9MessageDigest() { }
-        public byte[] MessageDigest { get { throw null; } }
+        public byte[]? MessageDigest { get { throw null; } }
         public override void CopyFrom(System.Security.Cryptography.AsnEncodedData asnEncodedData) { }
     }
     public sealed partial class Pkcs9SigningTime : System.Security.Cryptography.Pkcs.Pkcs9AttributeObject

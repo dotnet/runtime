@@ -34,11 +34,11 @@ namespace System.Security.Cryptography.Pkcs
         // Public properties.
         //
 
-        public byte[] MessageDigest
+        public byte[]? MessageDigest
         {
             get
             {
-                return _lazyMessageDigest ?? (_lazyMessageDigest = Decode(RawData));
+                return _lazyMessageDigest ??= Decode(RawData);
             }
         }
 

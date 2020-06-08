@@ -37,11 +37,11 @@ namespace System.Security.Cryptography.Pkcs
         // Public methods.
         //
 
-        public string DocumentDescription
+        public string? DocumentDescription
         {
             get
             {
-                return _lazyDocumentDescription ?? (_lazyDocumentDescription = Decode(RawData));
+                return _lazyDocumentDescription ??= Decode(RawData);
             }
         }
 

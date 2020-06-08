@@ -21,7 +21,7 @@ namespace System.Security.Cryptography.X509Certificates
         }
 
         public X509Extension(AsnEncodedData encodedExtension, bool critical)
-            : this(encodedExtension.Oid!, encodedExtension.RawData, critical)
+            : this(encodedExtension.Oid!, encodedExtension.RawData!, critical)
         {
         }
 

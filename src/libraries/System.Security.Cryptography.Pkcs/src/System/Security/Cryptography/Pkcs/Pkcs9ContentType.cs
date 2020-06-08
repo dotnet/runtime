@@ -24,11 +24,11 @@ namespace System.Security.Cryptography.Pkcs
         // Public properties.
         //
 
-        public Oid ContentType
+        public Oid? ContentType
         {
             get
             {
-                return _lazyContentType ?? (_lazyContentType = Decode(RawData));
+                return _lazyContentType ??= Decode(RawData);
             }
         }
 

@@ -29,8 +29,8 @@ namespace Internal.Cryptography.Pal
             if (matchesConstraints != null && !matchesConstraints(certificate))
                 return null;
 
-            byte[] rawEncodedKeyValue = publicKey.EncodedKeyValue.RawData;
-            byte[] rawEncodedParameters = publicKey.EncodedParameters.RawData;
+            byte[] rawEncodedKeyValue = publicKey.EncodedKeyValue.RawData!;
+            byte[] rawEncodedParameters = publicKey.EncodedParameters.RawData!;
             return (T)(X509Pal.Instance.DecodePublicKey(algorithmOid, rawEncodedKeyValue, rawEncodedParameters, certificate.Pal));
         }
 

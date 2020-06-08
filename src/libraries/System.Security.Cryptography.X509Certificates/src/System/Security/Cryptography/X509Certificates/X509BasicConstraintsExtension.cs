@@ -28,7 +28,7 @@ namespace System.Security.Cryptography.X509Certificates
         }
 
         public X509BasicConstraintsExtension(AsnEncodedData encodedBasicConstraints, bool critical)
-            : base(Oids.BasicConstraints2, encodedBasicConstraints.RawData, critical)
+            : base(Oids.BasicConstraints2, encodedBasicConstraints.RawData!, critical)
         {
         }
 
@@ -82,9 +82,9 @@ namespace System.Security.Cryptography.X509Certificates
         private void DecodeExtension()
         {
             if (Oid!.Value == Oids.BasicConstraints)
-                X509Pal.Instance.DecodeX509BasicConstraintsExtension(RawData, out _certificateAuthority, out _hasPathLenConstraint, out _pathLenConstraint);
+                X509Pal.Instance.DecodeX509BasicConstraintsExtension(RawData!, out _certificateAuthority, out _hasPathLenConstraint, out _pathLenConstraint);
             else
-                X509Pal.Instance.DecodeX509BasicConstraints2Extension(RawData, out _certificateAuthority, out _hasPathLenConstraint, out _pathLenConstraint);
+                X509Pal.Instance.DecodeX509BasicConstraints2Extension(RawData!, out _certificateAuthority, out _hasPathLenConstraint, out _pathLenConstraint);
 
             _decoded = true;
         }

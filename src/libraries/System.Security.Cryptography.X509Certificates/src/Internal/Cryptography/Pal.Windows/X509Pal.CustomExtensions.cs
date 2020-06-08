@@ -225,10 +225,10 @@ namespace Internal.Cryptography.Pal
             {
                 fixed (byte* pszOidValue = key.Oid.ValueAsAscii())
                 {
-                    byte[] encodedParameters = key.EncodedParameters.RawData;
+                    byte[] encodedParameters = key.EncodedParameters.RawData!;
                     fixed (byte* pEncodedParameters = encodedParameters)
                     {
-                        byte[] encodedKeyValue = key.EncodedKeyValue.RawData;
+                        byte[] encodedKeyValue = key.EncodedKeyValue.RawData!;
                         fixed (byte* pEncodedKeyValue = encodedKeyValue)
                         {
                             CERT_PUBLIC_KEY_INFO publicKeyInfo = new CERT_PUBLIC_KEY_INFO()

@@ -16,7 +16,7 @@ namespace System.Security.Cryptography.Pkcs
     {
         private const string DummySignerSubjectName = "CN=Dummy Signer";
         internal static readonly byte[] DummySignerEncodedValue =
-            new X500DistinguishedName(DummySignerSubjectName).RawData;
+            new X500DistinguishedName(DummySignerSubjectName).RawData!;
 
         internal SubjectIdentifier(SubjectIdentifierType type, object value)
         {

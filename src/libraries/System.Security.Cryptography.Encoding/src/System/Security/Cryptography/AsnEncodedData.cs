@@ -4,6 +4,7 @@
 
 using System;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using Internal.Cryptography;
 
 namespace System.Security.Cryptography
@@ -23,7 +24,7 @@ namespace System.Security.Cryptography
         {
             if (asnEncodedData == null)
                 throw new ArgumentNullException(nameof(asnEncodedData));
-            Reset(asnEncodedData._oid, asnEncodedData._rawData);
+            Reset(asnEncodedData._oid, asnEncodedData._rawData!); // will throw if _rawData is null
         }
 
         public AsnEncodedData(Oid? oid, byte[] rawData)
@@ -49,7 +50,8 @@ namespace System.Security.Cryptography
             }
         }
 
-        public byte[] RawData
+        [DisallowNull]
+        public byte[]? RawData
         {
             get
             {
@@ -69,7 +71,7 @@ namespace System.Security.Cryptography
         {
             if (asnEncodedData == null)
                 throw new ArgumentNullException(nameof(asnEncodedData));
-            Reset(asnEncodedData._oid, asnEncodedData._rawData);
+            Reset(asnEncodedData._oid, asnEncodedData._rawData!); // will throw if _rawData is null
         }
 
         public virtual string Format(bool multiLine)
@@ -88,6 +90,6 @@ namespace System.Security.Cryptography
         }
 
         private Oid? _oid = null;
-        private byte[] _rawData = null!; // initialized in helper method Reset for all public constuctors
+        private byte[]? _rawData;
     }
 }

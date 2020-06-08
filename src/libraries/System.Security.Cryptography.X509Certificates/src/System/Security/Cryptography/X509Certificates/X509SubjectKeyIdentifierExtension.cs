@@ -24,7 +24,7 @@ namespace System.Security.Cryptography.X509Certificates
         }
 
         public X509SubjectKeyIdentifierExtension(AsnEncodedData encodedSubjectKeyIdentifier, bool critical)
-            : base(Oids.SubjectKeyIdentifier, encodedSubjectKeyIdentifier.RawData, critical)
+            : base(Oids.SubjectKeyIdentifier, encodedSubjectKeyIdentifier.RawData!, critical)
         {
         }
 
@@ -55,7 +55,7 @@ namespace System.Security.Cryptography.X509Certificates
                 if (!_decoded)
                 {
                     byte[] subjectKeyIdentifierValue;
-                    X509Pal.Instance.DecodeX509SubjectKeyIdentifierExtension(RawData, out subjectKeyIdentifierValue);
+                    X509Pal.Instance.DecodeX509SubjectKeyIdentifierExtension(RawData!, out subjectKeyIdentifierValue);
                     _subjectKeyIdentifier = subjectKeyIdentifierValue.ToHexStringUpper();
                     _decoded = true;
                 }
@@ -101,11 +101,11 @@ namespace System.Security.Cryptography.X509Certificates
             switch (algorithm)
             {
                 case X509SubjectKeyIdentifierHashAlgorithm.Sha1:
-                    return ComputeSha1(key.EncodedKeyValue.RawData);
+                    return ComputeSha1(key.EncodedKeyValue.RawData!);
 
                 case X509SubjectKeyIdentifierHashAlgorithm.ShortSha1:
                     {
-                        byte[] sha1 = ComputeSha1(key.EncodedKeyValue.RawData);
+                        byte[] sha1 = ComputeSha1(key.EncodedKeyValue.RawData!);
 
                         //  ShortSha1: The keyIdentifier is composed of a four bit type field with
                         //  the value 0100 followed by the least significant 60 bits of the

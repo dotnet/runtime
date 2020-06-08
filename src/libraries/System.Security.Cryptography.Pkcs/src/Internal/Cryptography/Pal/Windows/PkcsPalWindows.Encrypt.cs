@@ -182,7 +182,7 @@ namespace Internal.Cryptography.Pal.Windows
                         DATA_BLOB* pValues = (DATA_BLOB*)(hb.Alloc(numValues, sizeof(DATA_BLOB)));
                         for (int j = 0; j < numValues; j++)
                         {
-                            byte[] rawData = values[j].RawData;
+                            byte[] rawData = values[j].RawData!;
                             pValues[j].cbData = (uint)(rawData.Length);
                             pValues[j].pbData = hb.AllocBytes(rawData);
                         }
