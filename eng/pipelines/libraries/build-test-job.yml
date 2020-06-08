@@ -47,9 +47,6 @@ jobs:
         - ${{ if notIn(parameters.osGroup, 'iOS', 'tvOS') }}:
           - name: _archiveTestsParameter
             value: /p:ArchiveTests=true
-        - ${{ if eq(parameters.osGroup, 'Android') }}:
-          - ANDROID_OPENSSL_AAR: /tmp/openssl-android
-
         - ${{ parameters.variables }}
 
       steps:
@@ -61,11 +58,7 @@ jobs:
             unpackFolder: $(Build.SourcesDirectory)/artifacts
             cleanUnpackFolder: false
 
-        - ${{ if in(parameters.osGroup, 'Android') }}:
-          - script: $(Build.SourcesDirectory)/eng/install-native-dependencies.sh ${{ parameters.osGroup }}
-            displayName: Install Build Dependencies
-
-        - ${{ if in(parameters.osGroup, 'OSX', 'iOS','tvOS') }}:
+        - ${{ if in(parameters.osGroup, 'OSX', 'iOS','tvOS') }}: 
           - script: |
               du -sh $(Build.SourcesDirectory)/*
               df -h

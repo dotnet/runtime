@@ -567,8 +567,6 @@ jobs:
     - Linux_x64
     - Windows_NT_x64
     - iOS_x64
-    - Android_x86
-    - Android_x64
     jobParameters:
       isOfficialBuild: false
       liveRuntimeBuildConfig: release
@@ -717,7 +715,6 @@ jobs:
     - Linux_arm64
     - Linux_x64
     - iOS_x64
-    - Android_x64
     helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
     jobParameters:
       isOfficialBuild: false
