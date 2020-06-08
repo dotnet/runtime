@@ -64,7 +64,8 @@ message ("Looking for coreclr_static lib at location: '${CORECLR_STATIC_LIB_LOCA
 
 if(CLR_CMAKE_TARGET_WIN32)
     set(CORECLR_LIBRARIES
-        ${CORECLR_STATIC_LIB_LOCATION}/coreclr_static.lib
+        # Disable superhost on Win32 for now.
+        # ${CORECLR_STATIC_LIB_LOCATION}/coreclr_static.lib
         ${STATIC_MT_CRT_LIB}
         ${STATIC_MT_VCRT_LIB}
         kernel32.lib

@@ -78,13 +78,15 @@ hostfxr_main_fn hostfxr_resolver_t::resolve_main_v1()
 
 hostfxr_resolver_t::hostfxr_resolver_t(const pal::string_t& app_root)
 {
-    // TODO: WIP this is just to make coreclr stuff _used_
+#if !defined(_WIN32)
+    // TODO: WIP this is just to make coreclr stuff "used"
     //       to see how linker handles this.
     if (app_root.length() == 100000)
     {
         coreclr_initialize(nullptr, nullptr, 0, nullptr, nullptr, nullptr, nullptr);
         coreclr_execute_assembly(0, 0, 0, nullptr, nullptr, nullptr);
     }
+#endif
 
     if (app_root.length() == 0)
     {
