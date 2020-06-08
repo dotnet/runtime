@@ -5429,6 +5429,14 @@ BOOL MethodDesc::HasUnmanagedCallersOnlyAttribute()
         WellKnownAttribute::UnmanagedCallersOnly,
         nullptr,
         nullptr);
+    if (hr != S_OK)
+    {
+        hr = GetCustomAttribute(
+            WellKnownAttribute::NativeCallableInternal,
+            nullptr,
+            nullptr);
+    }
+
     return (hr == S_OK) ? TRUE : FALSE;
 }
 
