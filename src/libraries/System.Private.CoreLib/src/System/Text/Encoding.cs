@@ -291,9 +291,8 @@ namespace System.Text
                 GetEncoding(EncodingTable.GetCodePageFromName(name), encoderFallback, decoderFallback);
         }
 
-        // Return a list of all EncodingInfo objects describing all of our encodings
         /// <summary>
-        /// Get the <see cref="EncodingProvider"/> list from the runtime and all registered encoding providers
+        /// Get the <see cref="EncodingInfo"/> list from the runtime and all registered encoding providers
         /// </summary>
         /// <returns>The list of the <see cref="EncodingProvider"/> objects</returns>
         public static EncodingInfo[] GetEncodings()

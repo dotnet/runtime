@@ -53,17 +53,7 @@ namespace System.Text
         /// Get the <see cref="Encoding"/> object match the information in the <see cref="EncodingInfo"/> object
         /// </summary>
         /// <returns>The <see cref="Encoding"/> object</returns>
-        public Encoding GetEncoding()
-        {
-            Encoding? encoding = null;
-
-            if (Provider != null)
-            {
-                encoding = Provider.GetEncoding(CodePage);
-            }
-
-            return encoding ?? Encoding.GetEncoding(CodePage);
-        }
+        public Encoding GetEncoding() => Provider?.GetEncoding(CodePage) ?? Encoding.GetEncoding(CodePage);
 
         /// <summary>
         /// Compare this <see cref="EncodingInfo"/> object to other object.
@@ -88,6 +78,6 @@ namespace System.Text
             return CodePage;
         }
 
-        internal EncodingProvider? Provider {get;}
+        internal EncodingProvider? Provider { get; }
     }
 }

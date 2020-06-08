@@ -68,10 +68,10 @@ namespace System.Text
 
         internal static Encoding? GetEncodingFromProvider(int codepage)
         {
-            if (s_providers == null)
+            EncodingProvider[]? providers = s_providers;
+            if (providers == null)
                 return null;
 
-            EncodingProvider[] providers = s_providers;
             foreach (EncodingProvider provider in providers)
             {
                 Encoding? enc = provider.GetEncoding(codepage);
@@ -84,10 +84,10 @@ namespace System.Text
 
         internal static Dictionary<int, EncodingInfo>? GetEncodingListFromProviders()
         {
-            if (s_providers == null)
+            EncodingProvider[]? providers = s_providers;
+            if (providers == null)
                 return null;
 
-            EncodingProvider[] providers = s_providers;
             Dictionary<int, EncodingInfo> result = new Dictionary<int, EncodingInfo>();
 
             foreach (EncodingProvider provider in providers)
@@ -97,10 +97,7 @@ namespace System.Text
                 {
                     foreach (EncodingInfo ei in encodingInfoList)
                     {
-                        if (!result.TryGetValue(ei.CodePage, out _))
-                        {
-                            result[ei.CodePage] = ei;
-                        }
+                        result.TryAdd(ei.CodePage, ei);
                     }
                 }
             }

@@ -556,38 +556,27 @@ namespace System.Text
             }
         }
 
-        public override string HeaderName
-        {
-            get
+        public override string HeaderName =>
+            CodePage switch
             {
-                switch (CodePage)
-                {
-                    case 932: return "iso-2022-jp";
-                    case 50221: return "iso-2022-jp";
-                    case 50225: return "euc-kr";
-                    default: return WebName;
-                }
-            }
-        }
+                932 => "iso-2022-jp",
+                50221 => "iso-2022-jp",
+                50225 => "euc-kr",
+                _ => WebName,
+            };
 
-        public override string BodyName
-        {
-            get
+        public override string BodyName =>
+            CodePage switch
             {
-                switch (CodePage)
-                {
-                    case 932: return "iso-2022-jp";
-                    case 1250: return "iso-8859-2";
-                    case 1251: return "koi8-r";
-                    case 1252: return "iso-8859-1";
-                    case 1253: return "iso-8859-7";
-                    case 1254: return "iso-8859-9";
-                    case 50221: return "iso-2022-jp";
-                    case 50225: return "iso-2022-kr";
-                    default: return WebName;
-                }
-            }
-        }
-
+                932 =>   "iso-2022-jp",
+                1250 =>  "iso-8859-2",
+                1251 =>  "koi8-r",
+                1252 =>  "iso-8859-1",
+                1253 =>  "iso-8859-7",
+                1254 =>  "iso-8859-9",
+                50221 => "iso-2022-jp",
+                50225 => "iso-2022-kr",
+                _ => WebName,
+            };
     }
 }
