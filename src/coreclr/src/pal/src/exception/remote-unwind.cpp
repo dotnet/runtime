@@ -65,15 +65,6 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 SET_DEFAULT_DEBUG_CHANNEL(EXCEPT);
 
-#ifndef ElfW
-#define ElfW(foo) Elf_ ## foo
-#endif
-#define Ehdr   ElfW(Ehdr)
-#define Phdr   ElfW(Phdr)
-#define Shdr   ElfW(Shdr)
-#define Nhdr   ElfW(Nhdr)
-#define Dyn    ElfW(Dyn)
-
 #else // HOST_UNIX
 
 #include <windows.h>
@@ -91,19 +82,11 @@ typedef BOOL(*UnwindReadMemoryCallback)(PVOID address, PVOID buffer, SIZE_T size
 #define ASSERT(x, ...)
 #define TRACE(x, ...)
 
-#ifndef ElfW
 #ifdef TARGET_64BIT
 #define ElfW(foo) Elf64_ ## foo
 #else // TARGET_64BIT
 #define ElfW(foo) Elf32_ ## foo
 #endif // TARGET_64BIT
-#endif // ElfW
-
-#define Ehdr   ElfW(Ehdr)
-#define Phdr   ElfW(Phdr)
-#define Shdr   ElfW(Shdr)
-#define Nhdr   ElfW(Nhdr)
-#define Dyn    ElfW(Dyn)
 
 #define PALAPI
 
@@ -127,6 +110,15 @@ typedef BOOL(*UnwindReadMemoryCallback)(PVOID address, PVOID buffer, SIZE_T size
 #define PRIA "016"
 #define PRIxA PRIA PRIx
 #endif
+
+#ifndef ElfW
+#define ElfW(foo) Elf_ ## foo
+#endif
+#define Ehdr   ElfW(Ehdr)
+#define Phdr   ElfW(Phdr)
+#define Shdr   ElfW(Shdr)
+#define Nhdr   ElfW(Nhdr)
+#define Dyn    ElfW(Dyn)
 
 
 extern "C" int
