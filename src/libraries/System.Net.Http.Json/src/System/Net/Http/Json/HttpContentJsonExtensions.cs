@@ -32,9 +32,11 @@ namespace System.Net.Http.Json
 
         private static async Task<object?> ReadFromJsonAsyncCore(HttpContent content, Type type, Encoding? sourceEncoding, JsonSerializerOptions? options, CancellationToken cancellationToken)
         {
-            #pragma warning disable CA2016 // The overload that takes a CancellationToken is not available in netstandard2.0
+#if NETCOREAPP
+            Stream contentStream = await content.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false);
+#else
             Stream contentStream = await content.ReadAsStreamAsync().ConfigureAwait(false);
-            #pragma warning restore
+#endif
 
             // Wrap content stream into a transcoding stream that buffers the data transcoded from the sourceEncoding to utf-8.
             if (sourceEncoding != null && sourceEncoding != Encoding.UTF8)
@@ -54,9 +56,11 @@ namespace System.Net.Http.Json
 
         private static async Task<T> ReadFromJsonAsyncCore<T>(HttpContent content, Encoding? sourceEncoding, JsonSerializerOptions? options, CancellationToken cancellationToken)
         {
-            #pragma warning disable CA2016 // The overload that takes a CancellationToken is not available in netstandard2.0
+#if NETCOREAPP
+            Stream contentStream = await content.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false);
+#else
             Stream contentStream = await content.ReadAsStreamAsync().ConfigureAwait(false);
-            #pragma warning restore
+#endif
 
             // Wrap content stream into a transcoding stream that buffers the data transcoded from the sourceEncoding to utf-8.
             if (sourceEncoding != null && sourceEncoding != Encoding.UTF8)

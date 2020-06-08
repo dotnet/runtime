@@ -114,7 +114,7 @@ namespace System.Threading.Channels
                     parent._blockedReader = newBlockedReader;
                 }
 
-                oldBlockedReader?.TrySetCanceled(cancellationToken);
+                oldBlockedReader?.TrySetCanceled(default);
                 return newBlockedReader.ValueTaskOfT;
             }
 
@@ -183,7 +183,7 @@ namespace System.Threading.Channels
                     parent._waitingReader = newWaitingReader;
                 }
 
-                oldWaitingReader?.TrySetCanceled(cancellationToken);
+                oldWaitingReader?.TrySetCanceled(default);
                 return newWaitingReader.ValueTaskOfT;
             }
 
