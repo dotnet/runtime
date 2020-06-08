@@ -3499,7 +3499,7 @@ namespace System
         // Checks on implicit File: scheme due to simple Dos/Unc path passed
         // returns the start of the next component position
         // throws UriFormatException if invalid scheme
-        private static unsafe int ParseSchemeCheckImplicitFile(string uriString,
+        private static int ParseSchemeCheckImplicitFile(string uriString,
             ref ParsingError err, ref Flags flags, ref UriParser? syntax)
         {
             Debug.Assert((flags & Flags.Debug_LeftConstructor) == 0);
