@@ -147,10 +147,11 @@ namespace System.Net.Http.Functional.Tests
                 // Framework won't ever have the sync API.
                 // This shouldn't be called due to AsyncBoolValues returning only true on Framework.
                 Debug.Fail("Framework doesn't have Sync API and it shouldn't be attempted to be tested.");
-                return Task.FromResult<HttpResponseMessage>(null);
+                throw new Exception("Shouldn't be reachable");
 #endif
             }
         }
+
         public static Task<HttpResponseMessage> SendAsync(this HttpMessageInvoker invoker, bool async, HttpRequestMessage request, CancellationToken cancellationToken = default)
         {
             if (async)
@@ -167,7 +168,7 @@ namespace System.Net.Http.Functional.Tests
                 // Framework won't ever have the sync API.
                 // This shouldn't be called due to AsyncBoolValues returning only true on Framework.
                 Debug.Fail("Framework doesn't have Sync API and it shouldn't be attempted to be tested.");
-                return Task.FromResult<HttpResponseMessage>(null);
+                throw new Exception("Shouldn't be reachable");
 #endif
             }
         }
