@@ -588,6 +588,6 @@ Common options:
 Other options listed in the blob are specific to each compiler. Future versions of the compiler may add additional options.
 The order of the options in the list is insignificant.
 
-> The purpose of this data is to allow a tool to reconstruct a compilation the module was built from.
+> The purpose of this data is to allow a tool to reconstruct the compilation the module was built from.
 > The source files for the compilation are expected to be recovered from the source server using [SourceLink](#SourceLink) and/or from [sources embedded](#EmbeddedSource) in the PDB.
 > The metadata references for the compilation are expected to be recovered from a file indexing service (e.g. symbol server) using information in [Compilation Metadata References](#CompilationMetadataReferences) record.
