@@ -1083,8 +1083,7 @@ namespace System.Diagnostics
             EventHandler? exited = _onExited;
             if (exited != null)
             {
-                ISynchronizeInvoke? syncObj = SynchronizingObject;
-                if (syncObj != null && syncObj.InvokeRequired)
+                if (SynchronizingObject is ISynchronizeInvoke syncObj && syncObj.InvokeRequired)
                 {
                     syncObj.BeginInvoke(exited, new object[] { this, EventArgs.Empty });
                 }
@@ -1581,8 +1580,7 @@ namespace System.Diagnostics
             {
                 // Call back to user informing data is available
                 DataReceivedEventArgs e = new DataReceivedEventArgs(data);
-                ISynchronizeInvoke? syncObj = SynchronizingObject;
-                if (syncObj != null && syncObj.InvokeRequired)
+                if (SynchronizingObject is ISynchronizeInvoke syncObj && syncObj.InvokeRequired)
                 {
                     syncObj.Invoke(outputDataReceived, new object[] { this, e });
                 }
@@ -1601,8 +1599,7 @@ namespace System.Diagnostics
             {
                 // Call back to user informing data is available.
                 DataReceivedEventArgs e = new DataReceivedEventArgs(data);
-                ISynchronizeInvoke? syncObj = SynchronizingObject;
-                if (syncObj != null && syncObj.InvokeRequired)
+                if (SynchronizingObject is ISynchronizeInvoke syncObj && syncObj.InvokeRequired)
                 {
                     syncObj.Invoke(errorDataReceived, new object[] { this, e });
                 }
