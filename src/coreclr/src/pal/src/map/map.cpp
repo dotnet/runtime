@@ -2233,6 +2233,8 @@ void * MAPMapPEFile(HANDLE hFile, off_t offset)
     bool forceRelocs = false;
     char* envVar;
 #endif
+    SIZE_T reserveSize = 0;
+    bool forceOveralign = false;
 
     ENTRY("MAPMapPEFile (hFile=%p offset=%zx)\n", hFile, offset);
 
@@ -2357,11 +2359,11 @@ void * MAPMapPEFile(HANDLE hFile, off_t offset)
     // We're going to start adding mappings to the mapping list, so take the critical section
     InternalEnterCriticalSection(pThread, &mapping_critsec);
 
-    SIZE_T reserveSize = virtualSize;
-    bool forceOveralign = false;
+    reserveSize = virtualSize;
     if ((ntHeader.OptionalHeader.SectionAlignment) > GetVirtualPageSize())
     {
         reserveSize += ntHeader.OptionalHeader.SectionAlignment;
+        forceOveralign = true;
     }
 
 #ifdef HOST_64BIT

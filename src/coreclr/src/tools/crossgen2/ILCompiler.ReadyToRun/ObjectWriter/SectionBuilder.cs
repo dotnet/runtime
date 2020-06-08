@@ -692,6 +692,11 @@ namespace ILCompiler.PEWriter
 
             _relocationDirectoryEntry = new DirectoryEntry(sectionLocation.RelativeVirtualAddress, builder.Count);
 
+            // Must be at least 1 byte in section
+            if (builder.Count == 0)
+            {
+                builder.WriteByte(1);
+            }
             // Pad out reloc section to 2MB
             int finalAlignment = 2 * 1024 * 1024;
             int alignedOffset = (builder.Count + finalAlignment - 1) & -finalAlignment;
