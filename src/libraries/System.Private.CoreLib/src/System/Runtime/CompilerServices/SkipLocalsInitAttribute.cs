@@ -5,8 +5,8 @@
 namespace System.Runtime.CompilerServices
 {
     /// <summary>
-    /// Used to indicate to the compiler that the <c>.locals init</c> flag should
-    /// not be set in nested method headers when emitting to metadata.
+    /// Used to indicate to the compiler that the <c>.locals init</c>
+    /// flag should not be set in method headers.
     /// </summary>
     /// <remarks>
     /// This attribute is unsafe because it may reveal uninitialized memory to
@@ -26,12 +26,7 @@ namespace System.Runtime.CompilerServices
         | AttributeTargets.Method
         | AttributeTargets.Property
         | AttributeTargets.Event, Inherited = false)]
-#if SYSTEM_PRIVATE_CORELIB
-    public
-#else
-    internal
-#endif
-    sealed class SkipLocalsInitAttribute : Attribute
+    public sealed class SkipLocalsInitAttribute : Attribute
     {
         public SkipLocalsInitAttribute()
         {

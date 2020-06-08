@@ -293,8 +293,7 @@
   <PropertyGroup>
     <EnableDefaultItems>false</EnableDefaultItems>
 
-    <!-- Clear the init locals flag on all src C# projects that have .NET Core as a TFM. Exclude VB (we can't use spans), F# (no project written in F#), and IL. -->
-    <ShouldSkipLocalsInit Condition="'$(IsSourceProject)' == 'true' and '$(Language)' == 'C#'">true</ShouldSkipLocalsInit>
+    <SkipLocalsInit Condition="'$(IsSourceProject)' == 'true' and '$(Language)' == 'C#'">true</SkipLocalsInit>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(BuildAllConfigurations)' != 'true'">
