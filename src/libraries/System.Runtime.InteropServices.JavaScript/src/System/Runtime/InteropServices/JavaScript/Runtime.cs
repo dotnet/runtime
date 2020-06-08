@@ -73,23 +73,19 @@ namespace System.Runtime.InteropServices.JavaScript
         private static readonly Dictionary<int, JSObject?> _boundObjects = new Dictionary<int, JSObject?>();
         private static readonly Dictionary<object, JSObject?> _rawToJS = new Dictionary<object, JSObject?>();
 
-        public static int BindJSObject(int jsId, Type mappedType)
+        public static int BindJSObject(int jsId, int mappedType)
         {
+            JSObject? obj;
             lock (_boundObjects)
             {
-                if (!_boundObjects.TryGetValue(jsId, out JSObject? obj))
+                if (!_boundObjects.TryGetValue(jsId, out obj))
                 {
-                    if (mappedType != null)
-                    {
-                        return BindJSType(jsId, mappedType);
-                    }
-                    else
-                    {
-                        _boundObjects[jsId] = obj = new JSObject((IntPtr)jsId);
-                    }
+                  IntPtr jsIntPtr = (IntPtr)jsId;
+                  obj = mappedType > 0 ? BindJSType(jsIntPtr, mappedType) : new JSObject(jsIntPtr);
+                  _boundObjects.Add (jsId, obj);
                 }
-                return obj == null ? 0 : (int)(IntPtr)obj.Handle;
             }
+            return obj == null ? 0 : (int)(IntPtr)obj.Handle;
         }
 
         public static int BindCoreCLRObject(int jsId, int gcHandle)
@@ -114,18 +110,60 @@ namespace System.Runtime.InteropServices.JavaScript
             }
         }
 
-        public static int BindJSType(int jsId, Type mappedType)
+        private static JSObject BindJSType(IntPtr jsIntPtr, int coreType)
         {
-            lock (_boundObjects)
+            CoreObject coreObject;
+            switch (coreType)
             {
-                if (!_boundObjects.TryGetValue(jsId, out JSObject? obj))
-                {
-                    ConstructorInfo? jsobjectnew = mappedType.GetConstructor(BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.ExactBinding,
-                            null, new Type[] { typeof(IntPtr) }, null);
-                    _boundObjects[jsId] = obj = jsobjectnew == null ? null : (JSObject)jsobjectnew.Invoke(new object[] { (IntPtr)jsId });
-                }
-                return obj == null ? 0 : (int)(IntPtr)obj.Handle;
+                case 1:
+                    coreObject = new Array(jsIntPtr);
+                    break;
+                case 2:
+                    coreObject = new ArrayBuffer(jsIntPtr);
+                    break;
+                case 3:
+                    coreObject = new DataView(jsIntPtr);
+                    break;
+                case 4:
+                    coreObject = new Function(jsIntPtr);
+                    break;
+                case 5:
+                    coreObject = new Map(jsIntPtr);
+                    break;
+                case 6:
+                    coreObject = new SharedArrayBuffer(jsIntPtr);
+                    break;
+                case 10:
+                    coreObject = new Int8Array(jsIntPtr);
+                    break;
+                case 11:
+                    coreObject = new Uint8Array(jsIntPtr);
+                    break;
+                case 12:
+                    coreObject = new Uint8ClampedArray(jsIntPtr);
+                    break;
+                case 13:
+                    coreObject = new Int16Array(jsIntPtr);
+                    break;
+                case 14:
+                    coreObject = new Uint16Array(jsIntPtr);
+                    break;
+                case 15:
+                    coreObject = new Int32Array(jsIntPtr);
+                    break;
+                case 16:
+                    coreObject = new Uint32Array(jsIntPtr);
+                    break;
+                case 17:
+                    coreObject = new Float32Array(jsIntPtr);
+                    break;
+                case 18:
+                    coreObject = new Float64Array(jsIntPtr);
+                    break;
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(coreType));
             }
+            return coreObject;
         }
 
         public static int UnBindJSObject(int jsId)
@@ -257,14 +295,6 @@ namespace System.Runtime.InteropServices.JavaScript
         public static bool IsSimpleArray(object a)
         {
             return a is System.Array arr && arr.Rank == 1 && arr.GetLowerBound(0) == 0;
-        }
-
-        public static object? GetCoreType(string coreObj)
-        {
-            Assembly asm = typeof(Runtime).Assembly;
-            Type? type = asm.GetType(coreObj);
-            return type;
-
         }
 
         [StructLayout(LayoutKind.Explicit)]
