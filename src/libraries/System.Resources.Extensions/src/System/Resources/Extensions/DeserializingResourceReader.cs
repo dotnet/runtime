@@ -51,9 +51,9 @@ namespace System.Resources.Extensions
 
         internal class UndoTruncatedTypeNameSerializationBinder : SerializationBinder
         {
-            public override Type BindToType(string assemblyName, string typeName)
+            public override Type? BindToType(string assemblyName, string typeName)
             {
-                Type type = null;
+                Type? type = null;
 
                 // determine if we have a mangled generic type name
                 if (typeName != null && assemblyName != null && !AreBracketsBalanced(typeName))
@@ -212,7 +212,7 @@ namespace System.Resources.Extensions
                             stream = new MemoryStream(bytes, false);
                         }
 
-                        value = Activator.CreateInstance(type, new object[] { stream });
+                        value = Activator.CreateInstance(type, new object[] { stream })!;
                         break;
                     }
                 default:
