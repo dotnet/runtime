@@ -3107,10 +3107,18 @@ void Lowering::LowerRetStruct(GenTreeUnOp* ret)
     {
         if (comp->info.compRetNativeType == TYP_STRUCT)
         {
-            assert(!comp->compDoOldStructRetyping());
             assert(ret->gtGetOp1()->TypeIs(TYP_SIMD16));
             assert(comp->compMethodReturnsMultiRegRegTypeAlternate());
-            ret->ChangeType(comp->info.compRetNativeType);
+            if (!comp->compDoOldStructRetyping())
+            {
+                ret->ChangeType(comp->info.compRetNativeType);
+            }
+            else
+            {
+                // With old struct retyping a value that is returned as HFA
+                // could have both SIMD16 or STRUCT types, keep it as it.
+                return;
+            }
         }
         else
         {
