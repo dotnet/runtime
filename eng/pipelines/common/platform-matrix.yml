@@ -27,7 +27,6 @@ parameters:
 jobs:
 
 # Linux arm
-
 - ${{ if or(containsValue(parameters.platforms, 'Linux_arm'), in(parameters.platformGroup, 'all', 'gcstress')) }}:
   - template: xplat-setup.yml
     parameters:
