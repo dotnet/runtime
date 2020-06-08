@@ -360,12 +360,6 @@ namespace
         coreclr_shutdown_2_ptr * shutdownCoreCLR,
         const char* clrFilesAbsolutePath)
     {
-//TODO: WIP remove COREBUNDLE_BUILD
-#ifdef COREBUNDLE_BUILD
-        * initializeCoreCLR = coreclr_initialize;
-        *executeAssembly = coreclr_execute_assembly;
-        *shutdownCoreCLR = coreclr_shutdown_2;
-#else
         std::string coreClrDllPath(clrFilesAbsolutePath);
         coreClrDllPath.append("/");
         coreClrDllPath.append(coreClrDll);
@@ -404,7 +398,7 @@ namespace
             fprintf(stderr, "Function coreclr_shutdown_2 not found in the libcoreclr.so\n");
             return false;
         }
-#endif
+
         return true;
     }
 }
@@ -471,13 +465,9 @@ int ExecuteManagedAssembly(
     coreclr_shutdown_2_ptr shutdownCoreCLR;
     if (!GetCoreClrFunctions(&initializeCoreCLR, &executeAssembly, &shutdownCoreCLR, clrFilesAbsolutePath))
         return -1;
-#ifdef COREBUNDLE_BUILD
-    bool useServerGcDefault = true;
-#else
-    bool useServerGcDefault = false;
-#endif
 
     // Check whether we are enabling server GC (off by default)
+    bool useServerGcDefault = false;
     const char* useServerGc = GetEnvValueBoolean(serverGcVar, useServerGcDefault);
 
     // Check Globalization Invariant mode (false by default)
@@ -506,9 +496,6 @@ int ExecuteManagedAssembly(
         "NATIVE_DLL_SEARCH_DIRECTORIES",
         "System.GC.Server",
         "System.Globalization.Invariant",
-#ifdef COREBUNDLE_BUILD
-        "OVERRIDE_SYSTEM_PATH",
-#endif
     };
     const char *propertyValues[] = {
         // TRUSTED_PLATFORM_ASSEMBLIES
@@ -523,9 +510,6 @@ int ExecuteManagedAssembly(
         useServerGc,
         // System.Globalization.Invariant
         globalizationInvariant,
-#ifdef COREBUNDLE_BUILD
-        clrFilesAbsolutePath,
-#endif
     };
 
     void* hostHandle;
