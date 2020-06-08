@@ -63,7 +63,7 @@
     <HelixCommand>$(HelixCommand) /p:LocalPackagesPath="%HELIX_CORRELATION_PAYLOAD%\packages\"</HelixCommand>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(HelixCommand)' == ''">
+  <PropertyGroup Condition="'$(HelixCommand)' == '' and '$(TargetsMobile)' != 'true'">
     <HelixPreCommands Condition="'$(MonoEnvOptions)' != '' and '$(OSGroup)' == 'Windows_NT'">set MONO_ENV_OPTIONS='$(MonoEnvOptions)'</HelixPreCommands>
     <HelixPreCommands Condition="'$(MonoEnvOptions)' != '' and '$(OSGroup)' != 'Windows_NT'">export MONO_ENV_OPTIONS='$(MonoEnvOptions)'</HelixPreCommands>
 

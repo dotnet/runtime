@@ -61,7 +61,9 @@ jobs:
         - ${{ parameters.variables }}
         - ${{ if eq(parameters.osGroup, 'Browser') }}:
           - EMSDK_PATH: /usr/local/emscripten
-        # for coreclr library builds (when not testing) build corelib as well.   
+        - ${{ if eq(parameters.osGroup, 'Android') }}:
+          - ANDROID_OPENSSL_AAR: /tmp/openssl-android
+        # for coreclr library builds (when not testing) build corelib as well.
         - ${{ if and(eq(parameters.runtimeFlavor, 'coreclr'), eq(parameters.testScope, '')) }}:
           - _subset: clr.corelib+libs
         # Tests only run for 'allConfiguration' and 'net472' build-jobs
@@ -90,14 +92,14 @@ jobs:
                 $(_additionalBuildArguments)
           displayName: Restore and Build Product
 
-        - ${{ if in(parameters.osGroup, 'OSX', 'iOS','tvOS') }}: 
+        - ${{ if in(parameters.osGroup, 'OSX', 'iOS','tvOS') }}:
           - script: |
               du -sh $(Build.SourcesDirectory)/*
               df -h
             displayName: Disk Usage after Build
 
         - ${{ if eq(parameters.runTests, false) }}:
-          - ${{ if ne(parameters.isOfficialBuild, true) }}:            
+          - ${{ if ne(parameters.isOfficialBuild, true) }}:
             - task: CopyFiles@2
               displayName: Prepare testhost folder to publish
               inputs:
