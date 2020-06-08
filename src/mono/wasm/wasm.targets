@@ -15,6 +15,10 @@
     <WasmPInvokeAssemblies Include="$(ArtifactsBinDir)\System.Console\$(NetCoreAppCurrent)-Browser-$(Configuration)\System.Console.dll"/>
     <WasmPInvokeAssemblies Include="$(ArtifactsBinDir)\System.IO.FileSystem\$(NetCoreAppCurrent)-Unix-$(Configuration)\System.IO.FileSystem.dll"/>
     <WasmPInvokeAssemblies Include="$(ArtifactsBinDir)\System.IO.FileSystem.DriveInfo\$(NetCoreAppCurrent)-Unix-$(Configuration)\System.IO.FileSystem.DriveInfo.dll"/>
+    <WasmPInvokeAssemblies Include="$(ArtifactsBinDir)\System.IO.MemoryMappedFiles\$(NetCoreAppCurrent)-Unix-$(Configuration)\System.IO.MemoryMappedFiles.dll"/>
+    <WasmPInvokeAssemblies Include="$(ArtifactsBinDir)\System.Net.Sockets\$(NetCoreAppCurrent)-Unix-$(Configuration)\System.Net.Sockets.dll"/>
+    <WasmPInvokeAssemblies Include="$(ArtifactsBinDir)\System.Net.Primitives\$(NetCoreAppCurrent)-Unix-$(Configuration)\System.Net.Primitives.dll"/>
+    <WasmPInvokeAssemblies Include="$(ArtifactsBinDir)\System.Net.NameResolution\$(NetCoreAppCurrent)-Unix-$(Configuration)\System.Net.NameResolution.dll"/>
   </ItemGroup>
 
   <Target Name="CheckEnv">
