@@ -54,13 +54,9 @@
     <Message Importance="High" Text="Instrumentation: net.dot.MonoRunner"/>
     <Message Importance="High" Text="Apk:             $(ApkBundlePath)"/>
 
-    <ItemGroup>
-      <_apkFiles Include="$(BundleDir)/../**/*.apk" />
-    </ItemGroup>
-
-    <Copy SourceFiles="@(_apkFiles)"
+    <Copy SourceFiles="$(ApkBundlePath)"
           DestinationFolder="$(TestArchiveTestsDir)"
-          SkipUnchangedFiles="true"/>
+          SkipUnchangedFiles="true" />
   </Target>
 
   <!-- Generate a self-contained app bundle for iOS with tests. -->
