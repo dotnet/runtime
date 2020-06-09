@@ -116,7 +116,7 @@ namespace Internal.JitInterface
         private extern static char* GetExceptionMessage(IntPtr obj);
 
 
-        public static void Startup(TargetOS targetOS, TargetArchitecture targetArchitecture, string jitPathOverride)
+        public static void Startup(TargetDetails target, string jitPathOverride)
         {
             Debug.Assert(s_jitLibrary == IntPtr.Zero);
 
@@ -126,7 +126,7 @@ namespace Internal.JitInterface
             }
             else
             {
-                string jitLibraryName = JitLibrary + '-' + GetTargetSpec(targetOS, targetArchitecture);
+                string jitLibraryName = JitLibrary + '-' + GetTargetSpec(target);
                 s_jitLibrary = NativeLibrary.Load(jitLibraryName, typeof(CorInfoImpl).Assembly, searchPath: null);
             }
 
@@ -136,16 +136,16 @@ namespace Internal.JitInterface
             s_jitStartup(GetJitHost(JitConfigProvider.Instance.UnmanagedInstance));
         }
 
-        private static string GetTargetSpec(TargetOS targetOS, TargetArchitecture targetArchitecture)
+        private static string GetTargetSpec(TargetDetails target)
         {
-            string targetOSComponent = (targetOS == TargetOS.Windows ? "win" : "unix");
-            string targetArchComponent = targetArchitecture switch
+            string targetOSComponent = (target.OperatingSystem == TargetOS.Windows ? "win" : "unix");
+            string targetArchComponent = target.Architecture switch
             {
                 TargetArchitecture.X86 => "x86",
                 TargetArchitecture.X64 => "x64",
                 TargetArchitecture.ARM => "arm",
                 TargetArchitecture.ARM64 => "arm64",
-                _ => throw new NotImplementedException(targetArchitecture.ToString())
+                _ => throw new NotImplementedException(target.Architecture.ToString())
             };
             return targetOSComponent + '-' + targetArchComponent;
         }

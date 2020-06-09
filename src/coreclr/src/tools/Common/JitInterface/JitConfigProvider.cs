@@ -31,8 +31,7 @@ namespace Internal.JitInterface
         private object _keepAlive; // Keeps callback delegates alive
 
         public static void Initialize(
-            TargetOS targetOS,
-            TargetArchitecture targetArchitecture,
+            TargetDetails target,
             IEnumerable<CorJitFlag> jitFlags,
             IEnumerable<KeyValuePair<string, string>> parameters,
             string jitPath = null)
@@ -44,7 +43,7 @@ namespace Internal.JitInterface
             if (Interlocked.CompareExchange(ref s_instance, config, null) != null)
                 throw new InvalidOperationException();
 
-            CorInfoImpl.Startup(targetOS, targetArchitecture, jitPath);
+            CorInfoImpl.Startup(target, jitPath);
         }
 
         public IntPtr UnmanagedInstance

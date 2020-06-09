@@ -48,8 +48,6 @@
       <TargetSpec>$(TargetOSComponent)-$(TargetArchitecture)</TargetSpec>
     </PropertyGroup>
 
-    <Error Condition="'$(TargetOSComponent)' == ''" Text="Unsupported target OS: '$(TargetOS)'" />
-
     <ItemGroup>
       <Crossgen2File Include="$(CoreCLRCrossgen2Dir)crossgen2$(ExeSuffix)" />
       <Crossgen2File Include="$(CoreCLRCrossgen2Dir)crossgen2.dll" />
