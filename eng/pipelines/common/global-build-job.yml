@@ -41,9 +41,9 @@ jobs:
         value: /p:CrossBuild=${{ ne(parameters.crossrootfsDir, '') }}
 
       - name: _officialBuildParameter
-        $ {{ if eq(parameters.isOfficialBuild, true) }}:
+        ${{ if eq(parameters.isOfficialBuild, true) }}:
           value: /p:OfficialBuildId=$(Build.BuildNumber)
-        $ {{ if ne(parameters.isOfficialBuild, true) }}:
+        ${{ if ne(parameters.isOfficialBuild, true) }}:
           value: ''
 
       - ${{ parameters.variables }}

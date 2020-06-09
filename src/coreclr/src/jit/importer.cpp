@@ -13890,7 +13890,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         if (fgVarNeedsExplicitZeroInit(lclNum, bbInALoop, bbIsReturn))
                         {
                             // Append a tree to zero-out the temp
-                            newObjThisPtr = gtNewLclvNode(lclNum, lvaTable[lclNum].TypeGet());
+                            newObjThisPtr = gtNewLclvNode(lclNum, lclDsc->TypeGet());
 
                             newObjThisPtr = gtNewBlkOpNode(newObjThisPtr,    // Dest
                                                            gtNewIconNode(0), // Value

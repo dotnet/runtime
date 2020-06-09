@@ -713,7 +713,7 @@ var BindingSupportLib = {
 
 			if (!this.delegate_dynamic_invoke) {
 				if (!this.corlib)
-					this.corlib = this.assembly_load ("mscorlib");
+					this.corlib = this.assembly_load ("System.Private.CoreLib");
 				if (!this.delegate_class)
 					this.delegate_class = this.find_class (this.corlib, "System", "Delegate");
 				if (!this.delegate_class)

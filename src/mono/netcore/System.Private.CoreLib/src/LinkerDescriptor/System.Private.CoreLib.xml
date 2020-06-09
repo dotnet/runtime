@@ -307,6 +307,11 @@
 			<method signature="System.Void .ctor()" />
 		</type>
 
+		<type fullname="System.PlatformNotSupportedException">
+			<!-- mono_error_set_platform_not_supported -->
+			<method signature="System.Void .ctor(System.String)" />
+		</type>
+
 		<!-- mono-error.c (mono_error_set_ambiguous_implementation) -->
 		<type fullname="System.Runtime.AmbiguousImplementationException">
 			<!-- mono_error_set_ambiguous_implementation -->

@@ -375,7 +375,7 @@ Starts the runtime and returns a function pointer to specified functionality of 
 * `delegate` - when successful, the native function pointer to the requested runtime functionality.
 
 In .NET Core 3.0 the function only works if `hostfxr_initialize_for_runtime_config` was used to initialize the host context.
-In .NET 5 the function also works if `hostfxr_initialize_for_dotnet_command_line` was used to initialize the host context. Also for .NET 5 it will only be allowed to request `hdt_get_function_pointer` on a context initialized via `hostfxr_initialize_for_dotnet_command_line`, all other runtime delegates will not be supported in this case.
+In .NET 5 the function also works if `hostfxr_initialize_for_dotnet_command_line` was used to initialize the host context. Also for .NET 5 it will only be allowed to request `hdt_load_assembly_and_get_function_pointer` or `hdt_get_function_pointer` on a context initialized via `hostfxr_initialize_for_dotnet_command_line`, all other runtime delegates will not be supported in this case.
 
 
 ### Cleanup
