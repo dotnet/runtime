@@ -7,8 +7,7 @@ namespace Mono.Linker.Tests.Cases.Resources
 	[SetupLinkerCoreAction ("link")]
 	[IgnoreDescriptors (false)]
 
-	// We need to rename the resource so that it matches the name of an assembly being processed.  This is a requriement of the black list step
-	[SetupCompileResource ("Dependencies/EmbeddedLinkXmlFileIsProcessed.xml", "test.xml")]
+	[SetupCompileResource ("Dependencies/EmbeddedLinkXmlFileIsProcessed.xml", "ILLink.Descriptors.xml")]
 	[SkipPeVerify]
 	public class EmbeddedLinkXmlFileIsProcessed
 	{

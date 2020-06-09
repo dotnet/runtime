@@ -8,10 +8,9 @@ namespace Mono.Linker.Tests.Cases.Resources
 	[IgnoreDescriptors (true)]
 	[StripDescriptors (true)]
 
-	// We need to rename the resource so that it matches the name of an assembly being processed.  This is a requriement of the black list step
-	[SetupCompileResource ("Dependencies/EmbeddedLinkXmlFileIsNotProcessedWithIgnoreDescriptorsAndRemoved.xml", "test.xml")]
+	[SetupCompileResource ("Dependencies/EmbeddedLinkXmlFileIsNotProcessedWithIgnoreDescriptorsAndRemoved.xml", "ILLink.Descriptors.xml")]
 	[SkipPeVerify]
-	[RemovedResourceInAssembly ("test.exe", "test.xml")]
+	[RemovedResourceInAssembly ("test.exe", "ILLink.Descriptors.xml")]
 	public class EmbeddedLinkXmlFileIsNotProcessedWithIgnoreDescriptorsAndRemoved
 	{
 		public static void Main ()
