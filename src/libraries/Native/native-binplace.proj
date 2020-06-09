@@ -4,6 +4,8 @@
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent);netstandard2.0;$(NetFrameworkCurrent)</TargetFrameworks>
     <TargetFramework>$(BuildTargetFramework)</TargetFramework>
+    <BinPlaceRuntime>false</BinPlaceRuntime>
+    <BinPlaceNative>true</BinPlaceNative>
   </PropertyGroup>
 
   <Import Sdk="Microsoft.NET.Sdk" Project="Sdk.targets" />
@@ -11,23 +13,22 @@
   <!-- Ordering matters! Overriding GetBinPlaceItems and Build targets after the Sdk import. -->
   <Target Name="GetBinPlaceItems">
     <ItemGroup>
-      <NativeBinPlaceItem Include="$(NativeBinDir)*.dll" />
-      <NativeBinPlaceItem Include="$(NativeBinDir)*.pdb" />
-      <NativeBinPlaceItem Include="$(NativeBinDir)*.lib" />
-      <NativeBinPlaceItem Include="$(NativeBinDir)*.a" />
-      <NativeBinPlaceItem Include="$(NativeBinDir)*.bc" />
-      <NativeBinPlaceItem Include="$(NativeBinDir)*.so" />
-      <NativeBinPlaceItem Include="$(NativeBinDir)*.dbg" />
-      <NativeBinPlaceItem Include="$(NativeBinDir)*.dylib" />
-      <NativeBinPlaceItem Include="$(NativeBinDir)*.dwarf" />
-      <NativeBinPlaceItem Condition="'$(TargetOS)' == 'Browser'" Include="$(NativeBinDir)dotnet.js" />
-      <NativeBinPlaceItem Condition="'$(TargetOS)' == 'Browser'" Include="$(NativeBinDir)dotnet.wasm" />
-
-      <BinPlaceItem Condition="'$(BinPlaceTestRuntimePack)' != 'true'" Include="@(NativeBinPlaceItem)" />
-      <FileWrites Include="@(NativeBinPlaceItem)" />
+      <BinPlaceItem Include="$(NativeBinDir)*.dll" />
+      <BinPlaceItem Include="$(NativeBinDir)*.pdb" />
+      <BinPlaceItem Include="$(NativeBinDir)*.lib" />
+      <BinPlaceItem Include="$(NativeBinDir)*.a" />
+      <BinPlaceItem Include="$(NativeBinDir)*.bc" />
+      <BinPlaceItem Include="$(NativeBinDir)*.so" />
+      <BinPlaceItem Include="$(NativeBinDir)*.dbg" />
+      <BinPlaceItem Include="$(NativeBinDir)*.dylib" />
+      <BinPlaceItem Include="$(NativeBinDir)*.dwarf" />
+      <BinPlaceItem Condition="'$(TargetOS)' == 'Browser'" Include="$(NativeBinDir)dotnet.js" />
+      <BinPlaceItem Condition="'$(TargetOS)' == 'Browser'" Include="$(NativeBinDir)dotnet.wasm" />
+      <FileWrites Include="@(BinPlaceItem)" />
     </ItemGroup>
-    <ItemGroup Condition="'$(BinPlaceTestRuntimePack)' == 'true' and '$(TargetsMobile)' != 'true'">
-      <TestHostBinPlaceItem Include="%(NativeBinPlaceItem.Identity)" />
+
+    <ItemGroup Condition="'$(RuntimeFlavor)' == 'Mono' and '$(TargetsMobile)' != 'true'">
+      <TestHostBinPlaceItem Include="@(BinPlaceItem)" />
       <FileWrites Include="@(TestHostBinPlaceItem)" />
     </ItemGroup>
   </Target>

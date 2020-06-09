@@ -649,7 +649,7 @@ namespace System.Security.AccessControl
         //
 
         private int _accessMask;
-        private SecurityIdentifier _sid = null!; // Initialized in constructor using property
+        private SecurityIdentifier _sid;
 
         #endregion
 
@@ -711,7 +711,7 @@ namespace System.Security.AccessControl
             {
                 return _sid;
             }
-
+            [MemberNotNull(nameof(_sid))]
             set
             {
                 if (value == null)

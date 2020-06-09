@@ -44,17 +44,17 @@ namespace System.Net.Mail
         private SmtpDeliveryMethod _deliveryMethod = SmtpDeliveryMethod.Network;
         private SmtpDeliveryFormat _deliveryFormat = SmtpDeliveryFormat.SevenBit; // Non-EAI default
         private string? _pickupDirectoryLocation;
-        private SmtpTransport _transport = null!; // initialized by helper called from ctor
+        private SmtpTransport _transport;
         private MailMessage? _message; //required to prevent premature finalization
         private MailWriter? _writer;
         private MailAddressCollection? _recipients;
-        private SendOrPostCallback _onSendCompletedDelegate = null!; // initialized by helper called from ctor
+        private SendOrPostCallback _onSendCompletedDelegate;
         private Timer? _timer;
         private ContextAwareResult? _operationCompletedResult;
         private AsyncOperation? _asyncOp;
         private static readonly AsyncCallback s_contextSafeCompleteCallback = new AsyncCallback(ContextSafeCompleteCallback);
         private const int DefaultPort = 25;
-        internal string _clientDomain = null!; // initialized by helper called from ctor
+        internal string _clientDomain;
         private bool _disposed;
         private ServicePoint? _servicePoint;
         // (async only) For when only some recipients fail.  We still send the e-mail to the others.
@@ -112,6 +112,9 @@ namespace System.Net.Mail
             }
         }
 
+        [MemberNotNull(nameof(_transport))]
+        [MemberNotNull(nameof(_onSendCompletedDelegate))]
+        [MemberNotNull(nameof(_clientDomain))]
         private void Initialize()
         {
             _transport = new SmtpTransport(this);

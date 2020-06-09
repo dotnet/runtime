@@ -684,7 +684,7 @@ namespace System.Net.Http.Functional.Tests
             Assert.NotNull(proxy);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void DefaultProxy_SetGet_Roundtrips()
         {
             RemoteExecutor.Invoke(() =>
@@ -695,7 +695,7 @@ namespace System.Net.Http.Functional.Tests
             }).Dispose();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void DefaultProxy_Credentials_SetGet_Roundtrips()
         {
             RemoteExecutor.Invoke(() =>

@@ -4,8 +4,9 @@
 
 using System.Buffers;
 using System.Buffers.Binary;
-using System.Text;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
+using System.Text;
 
 using Internal.Cryptography;
 
@@ -21,7 +22,7 @@ namespace System.Security.Cryptography
         private HMAC _hmac;
         private readonly int _blockSize;
 
-        private byte[] _buffer = null!; // Initialized in helper
+        private byte[] _buffer;
         private uint _block;
         private int _startIndex;
         private int _endIndex;
@@ -245,6 +246,7 @@ namespace System.Security.Cryptography
             throw new CryptographicException(SR.Format(SR.Cryptography_UnknownHashAlgorithm, hashAlgorithm.Name));
         }
 
+        [MemberNotNull(nameof(_buffer))]
         private void Initialize()
         {
             if (_buffer != null)

@@ -24,7 +24,7 @@ namespace System.IO.Pipes.Tests
             _output = output;
         }
 
-        [ConditionalTheory]
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [OuterLoop("Needs sudo access")]
         [Trait(XunitConstants.Category, XunitConstants.RequiresElevation)]
         [InlineData(PipeOptions.None, PipeOptions.None)]

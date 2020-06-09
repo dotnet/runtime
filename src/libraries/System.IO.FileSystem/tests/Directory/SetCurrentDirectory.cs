@@ -29,7 +29,7 @@ namespace System.IO.Tests
             Assert.Throws<DirectoryNotFoundException>(() => Directory.SetCurrentDirectory(GetTestFilePath()));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void SetToValidOtherDirectory()
         {
             RemoteExecutor.Invoke(() =>
@@ -47,7 +47,9 @@ namespace System.IO.Tests
 
         public sealed class Directory_SetCurrentDirectory_SymLink : FileSystemTest
         {
-            [ConditionalFact(nameof(CanCreateSymbolicLinks))]
+            private static bool CanCreateSymbolicLinksAndRemoteExecutorSupported => CanCreateSymbolicLinks && RemoteExecutor.IsSupported;
+
+            [ConditionalFact(nameof(CanCreateSymbolicLinksAndRemoteExecutorSupported))]
             public void SetToPathContainingSymLink()
             {
                 RemoteExecutor.Invoke(() =>

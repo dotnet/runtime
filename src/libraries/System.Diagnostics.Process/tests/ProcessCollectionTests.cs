@@ -4,6 +4,7 @@
 
 using System.Collections;
 using System.Linq;
+using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 
 namespace System.Diagnostics.Tests
@@ -58,7 +59,7 @@ namespace System.Diagnostics.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void TestThreadCollectionBehavior()
         {
             CreateDefaultProcess();

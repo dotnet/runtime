@@ -888,7 +888,7 @@ namespace System.Net.NetworkInformation.Tests
         }
 
         [PlatformSpecific(TestPlatforms.AnyUnix)]
-        [Theory]
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [Trait(XunitConstants.Category, XunitConstants.RequiresElevation)]
         [InlineData(AddressFamily.InterNetwork)]
         [InlineData(AddressFamily.InterNetworkV6)]
