@@ -562,6 +562,22 @@ HRESULT CLiteWeightStgdbRW::GetSaveSize(// S_OK or error.
         }
     }
 
+    // [IMPORTANT]:
+    // Apparently, string pool must exist in the portable PDB metadata in order to be recognized
+    // by the VS debugger. For this purpose, we are adding a dummy " " value in cases when
+    // the string pool is empty.
+    // Interestingly enough, similar is done for user string pool (check above #549).
+    // TODO: do this in a more clever way, and check if/why/when this is necessary
+    if (m_MiniMd.m_StringHeap.GetUnalignedSize() <= 1)
+    {
+        if (!IsENCDelta(m_MiniMd.m_OptionValue.m_UpdateMode) &&
+            !m_MiniMd.IsMinimalDelta())
+        {
+            UINT32 nIndex_Ignore;
+            IfFailGo(m_MiniMd.m_StringHeap.AddString(" ", &nIndex_Ignore));
+        }
+    }
+
     // If we're saving a delta metadata, figure out how much space it will take to
     // save the minimal metadata stream (used only to identify that we have a delta
     // metadata... nothing should be in that stream.
