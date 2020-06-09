@@ -152,6 +152,12 @@ namespace ILCompiler.PEWriter
         private bool _written;
 
         /// <summary>
+        /// If non-null, the PE file will be laid out such that it can naturally be mapped with a higher alignment than 4KB
+        /// This is used to support loading via large pages on Linux
+        /// </summary>
+        private readonly int? _customPESectionAllignment;
+
+        /// <summary>
         /// Constructor initializes the various control structures and combines the section list.
         /// </summary>
         /// <param name="target">Target environment specifier</param>
@@ -162,7 +168,8 @@ namespace ILCompiler.PEWriter
             PEHeaderBuilder peHeaderBuilder,
             ISymbolNode r2rHeaderExportSymbol,
             string outputFileSimpleName,
-            Func<RuntimeFunctionsTableNode> getRuntimeFunctionsTable)
+            Func<RuntimeFunctionsTableNode> getRuntimeFunctionsTable,
+            int? customPESectionAllignment)
             : base(peHeaderBuilder, deterministicIdProvider: null)
         {
             _target = target;
@@ -171,16 +178,14 @@ namespace ILCompiler.PEWriter
 
             _sectionBuilder = new SectionBuilder(target);
 
-/*            int hugetlbIndex = _sectionBuilder.AddSection(".hugetlb", SectionCharacteristics.ContainsInitializedData | SectionCharacteristics.MemRead, 0x1000);
-            _sectionBuilder.PadOutSectionWithBytes(hugetlbIndex, 60 * 1024);
-*/
+            _textSectionIndex = _sectionBuilder.AddSection(TextSectionName, SectionCharacteristics.ContainsCode | SectionCharacteristics.MemExecute | SectionCharacteristics.MemRead, 512);
+            _dataSectionIndex = _sectionBuilder.AddSection(DataSectionName, SectionCharacteristics.ContainsInitializedData | SectionCharacteristics.MemWrite | SectionCharacteristics.MemRead, 512);
 
-            _textSectionIndex = _sectionBuilder.AddSection(TextSectionName, SectionCharacteristics.ContainsCode | SectionCharacteristics.MemExecute | SectionCharacteristics.MemRead, 0x1000);
-            _dataSectionIndex = _sectionBuilder.AddSection(DataSectionName, SectionCharacteristics.ContainsInitializedData | SectionCharacteristics.MemWrite | SectionCharacteristics.MemRead, 0x1000);
+            _customPESectionAllignment = customPESectionAllignment;
 
             if (r2rHeaderExportSymbol != null)
             {
-                int exportIndex = _sectionBuilder.AddSection(R2RPEBuilder.ExportDataSectionName, SectionCharacteristics.ContainsInitializedData | SectionCharacteristics.MemRead, 0x1000);
+                _sectionBuilder.AddSection(R2RPEBuilder.ExportDataSectionName, SectionCharacteristics.ContainsInitializedData | SectionCharacteristics.MemRead, 512);
                 _sectionBuilder.AddExportSymbol("RTR_HEADER", 1, r2rHeaderExportSymbol);
                 _sectionBuilder.SetDllNameForExportDirectoryTable(outputFileSimpleName);
             }
@@ -272,13 +277,11 @@ namespace ILCompiler.PEWriter
         public void Write(Stream outputStream, int timeDateStamp)
         {
             BlobBuilder outputPeFile = new BlobBuilder();
-            _sectionBuilder.PadOutSection(_textSectionIndex, 2 * 1024 * 1024, 0);
-            _sectionBuilder.PadOutSection(_dataSectionIndex, 2 * 1024 * 1024, 0);
             Serialize(outputPeFile);
 
             _sectionBuilder.RelocateOutputFile(outputPeFile, Header.ImageBase, outputStream, _paddingToInject);
 
-            UpdateSectionRVAs(outputStream, 2*1024*1024);
+            UpdateSectionRVAs(outputStream, _customPESectionAllignment);
             ApplyMachineOSOverride(outputStream);
 
             SetPEHeaderTimeStamp(outputStream, timeDateStamp);
@@ -510,8 +513,6 @@ namespace ILCompiler.PEWriter
             return _sections;
         }
 
-        private int _sectionOverAlignByPadding = 0x2 * 1024 * 1024;
-
         /// <summary>
         /// Output the section with a given name. For sections existent in the source MSIL PE file
         /// (.text, optionally .rsrc and .reloc), we first copy the content of the input MSIL PE file
@@ -533,14 +534,14 @@ namespace ILCompiler.PEWriter
                 outputSectionIndex--;
             }
 
-            if (_sectionOverAlignByPadding != 0)
+            if (_customPESectionAllignment.HasValue && _customPESectionAllignment.Value != 0)
             {
                 if (outputSectionIndex > 0)
                 {
                     sectionStartRva = Math.Max(sectionStartRva, _sectionRVAs[outputSectionIndex - 1] + _sectionRawSizes[outputSectionIndex - 1]);
                 }
 
-                int newSectionStartRva = AlignmentHelper.AlignUp(sectionStartRva, _sectionOverAlignByPadding);
+                int newSectionStartRva = AlignmentHelper.AlignUp(sectionStartRva, _customPESectionAllignment.Value);
                 if (newSectionStartRva > sectionStartRva)
                 {
                     int padding = newSectionStartRva - (location.PointerToRawData + previouslyInjectedPadding);
@@ -597,13 +598,13 @@ namespace ILCompiler.PEWriter
             {
                 sectionDataBuilder.WriteByte(0);
             }
-            /*
-            if (_sectionOverAlignByPadding != 0)
+
+            if (_customPESectionAllignment.HasValue && _customPESectionAllignment.Value != 0)
             {
                 // Align the end of the section to the padding offset
-                int count = AlignmentHelper.AlignUp(sectionDataBuilder.Count, _sectionOverAlignByPadding);
+                int count = AlignmentHelper.AlignUp(sectionDataBuilder.Count, _customPESectionAllignment.Value);
                 sectionDataBuilder.WriteBytes(0, count - sectionDataBuilder.Count);
-            }*/
+            }
 
             if (outputSectionIndex >= 0)
             {
@@ -667,7 +668,6 @@ namespace ILCompiler.PEWriter
             int sectionAlignment = 0x1000;
             if (!target.IsWindows && is64BitTarget)
             {
-                fileAlignment = 0x1000;
                 // On Linux, we must match the bottom 12 bits of section RVA's to their file offsets. For this reason
                 // we need the same alignment for both.
                 sectionAlignment = fileAlignment;

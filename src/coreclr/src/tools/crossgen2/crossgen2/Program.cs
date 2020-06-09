@@ -478,6 +478,7 @@ namespace ILCompiler
                         .FileLayoutAlgorithms(_commandLineOptions.MethodLayout, _commandLineOptions.FileLayout)
                         .UseJitPath(_commandLineOptions.JitPath)
                         .UseInstructionSetSupport(instructionSetSupport)
+                        .UseCustomPESectionAlignment(_commandLineOptions.CustomPESectionAlignment)
                         .GenerateOutputFile(_commandLineOptions.OutputFilePath.FullName)
                         .UseILProvider(ilProvider)
                         .UseBackendOptions(_commandLineOptions.CodegenOptions)

@@ -28,6 +28,7 @@ namespace ILCompiler
         private ProfileDataManager _profileData;
         private ReadyToRunMethodLayoutAlgorithm _r2rMethodLayoutAlgorithm;
         private ReadyToRunFileLayoutAlgorithm _r2rFileLayoutAlgorithm;
+        private int? _customPESectionAllignment;
 
         private string _jitPath;
         private string _outputFile;
@@ -137,6 +138,12 @@ namespace ILCompiler
             return this;
         }
 
+        public ReadyToRunCodegenCompilationBuilder UseCustomPESectionAlignment(int? customPESectionAllignment)
+        {
+            _customPESectionAllignment = customPESectionAllignment;
+            return this;
+        }
+
         public override ICompilation ToCompilation()
         {
             // TODO: only copy COR headers for single-assembly build and for composite build with embedded MSIL
@@ -223,7 +230,8 @@ namespace ILCompiler
                 _parallelism,
                 _profileData,
                 _r2rMethodLayoutAlgorithm,
-                _r2rFileLayoutAlgorithm);
+                _r2rFileLayoutAlgorithm,
+                _customPESectionAllignment);
         }
     }
 }
