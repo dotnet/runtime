@@ -1440,20 +1440,20 @@ GenTree* Compiler::impAssignStructPtr(GenTree*             destAddr,
     }
     else if (compDoOldStructRetyping())
     {
-        if (dest->OperIs(GT_LCL_VAR) &&
-            (src->IsMultiRegNode() ||
-             (src->OperIs(GT_RET_EXPR) && src->AsRetExpr()->gtInlineCandidate->AsCall()->HasMultiRegRetVal())))
-        {
-            if (lvaEnregMultiRegVars && varTypeIsStruct(dest))
-            {
-                dest->AsLclVar()->SetMultiReg();
-            }
-            if (src->OperIs(GT_CALL))
-            {
-                lvaGetDesc(dest->AsLclVar())->lvIsMultiRegRet = true;
-            }
-        }
         dest->gtType = asgType;
+    }
+    if (dest->OperIs(GT_LCL_VAR) &&
+        (src->IsMultiRegNode() ||
+        (src->OperIs(GT_RET_EXPR) && src->AsRetExpr()->gtInlineCandidate->AsCall()->HasMultiRegRetVal())))
+    {
+        if (lvaEnregMultiRegVars && varTypeIsStruct(dest))
+        {
+            dest->AsLclVar()->SetMultiReg();
+        }
+        if (src->OperIs(GT_CALL))
+        {
+            lvaGetDesc(dest->AsLclVar())->lvIsMultiRegRet = true;
+        }
     }
 
     dest->gtFlags |= destFlags;
