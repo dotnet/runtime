@@ -56,6 +56,37 @@ namespace System.Diagnostics.Tests
             }
         }
 
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void TestAsyncErrorStream_SynchronizingObject(bool invokeRequired)
+        {
+            StringBuilder sb = new StringBuilder();
+            int invokeCalled = 0;
+
+            Process p = CreateProcessPortable(RemotelyInvokable.ErrorProcessBody);
+            p.SynchronizingObject = new DelegateSynchronizeInvoke()
+            {
+                InvokeRequiredDelegate = () => invokeRequired,
+                InvokeDelegate = (d, args) =>
+                {
+                    invokeCalled++;
+                    return d.DynamicInvoke(args);
+                }
+            };
+            p.StartInfo.RedirectStandardError = true;
+            p.ErrorDataReceived += (s, e) => sb.Append(e.Data);
+            p.Start();
+            p.BeginErrorReadLine();
+
+            Assert.True(p.WaitForExit(WaitInMS));
+            p.WaitForExit(); // This ensures async event handlers are finished processing.
+
+            const string Expected = RemotelyInvokable.TestConsoleApp + " started error stream" + RemotelyInvokable.TestConsoleApp + " closed error stream";
+            Assert.Equal(Expected, sb.ToString());
+            Assert.Equal(invokeRequired ? 3 : 0, invokeCalled);
+        }
+
         [Fact]
         public void TestSyncOutputStream()
         {
@@ -489,6 +520,47 @@ namespace System.Diagnostics.Tests
 
             Assert.Equal(ExpectedLineCount, nonWhitespaceLinesReceived);
             Assert.Equal(ExpectedLineCount + 1, totalLinesReceived);
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void TestManyOutputLines_SynchronizingObject(bool invokeRequired)
+        {
+            const int ExpectedLineCount = 144;
+
+            int nonWhitespaceLinesReceived = 0;
+            int totalLinesReceived = 0;
+            int invokeCalled = 0;
+
+            Process p = CreateProcessPortable(RemotelyInvokable.Write144Lines);
+            p.SynchronizingObject = new DelegateSynchronizeInvoke()
+            {
+                InvokeRequiredDelegate = () => invokeRequired,
+                InvokeDelegate = (d, args) =>
+                {
+                    invokeCalled++;
+                    return d.DynamicInvoke(args);
+                }
+            };
+            p.StartInfo.RedirectStandardOutput = true;
+            p.OutputDataReceived += (s, e) =>
+            {
+                if (!string.IsNullOrWhiteSpace(e.Data))
+                {
+                    nonWhitespaceLinesReceived++;
+                }
+                totalLinesReceived++;
+            };
+            p.Start();
+            p.BeginOutputReadLine();
+
+            Assert.True(p.WaitForExit(WaitInMS));
+            p.WaitForExit(); // This ensures async event handlers are finished processing.
+
+            Assert.Equal(ExpectedLineCount, nonWhitespaceLinesReceived);
+            Assert.Equal(ExpectedLineCount + 1, totalLinesReceived);
+            Assert.Equal(invokeRequired ? totalLinesReceived : 0, invokeCalled);
         }
 
         [Fact]
