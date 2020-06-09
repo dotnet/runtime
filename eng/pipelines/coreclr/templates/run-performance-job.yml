@@ -70,8 +70,8 @@ jobs:
         - Interpreter: ' --monointerpreter'
 
 
-      - group: DotNet-HelixApi-Access
-      - group: dotnet-benchview
+    - group: DotNet-HelixApi-Access
+    - group: dotnet-benchview
 
     workspace:
       clean: all
