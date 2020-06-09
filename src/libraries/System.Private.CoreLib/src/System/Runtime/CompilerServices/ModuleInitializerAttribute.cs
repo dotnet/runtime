@@ -6,7 +6,10 @@ namespace System.Runtime.CompilerServices
 {
     /// <summary>
     /// Used to indicate to the compiler that a method should be called
-    /// in its containing module's initializer. When one or more valid methods
+    /// in its containing module's initializer.
+    /// </summary>
+    /// <remarks>
+    /// When one or more valid methods
     /// with this attribute are found in a compilation, the compiler will
     /// emit a `<Module>..cctor` which calls the attributed methods
     /// in the order they appear in source.
@@ -19,8 +22,7 @@ namespace System.Runtime.CompilerServices
     /// - The method must not be generic or be contained in a generic type.
     /// - The method must be accessible from the `<Module>` class.
     ///   - This means the method's effective accessibility must be `internal` or `public`.
-    /// </summary>
-    /// <remarks>
+    ///
     /// The specification for module initializers in the .NET runtime can be found here:
     /// https://github.com/dotnet/runtime/blob/master/docs/design/specs/Ecma-335-Augments.md#module-initializer
     /// </remarks>
