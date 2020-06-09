@@ -33,6 +33,7 @@ gint64 mono_100ns_datetime_from_timeval (struct timeval tv);
 #include <mach/clock.h>
 typedef clock_serv_t mono_clock_id_t;
 #elif defined(HAVE_CLOCKID_T)
+#include <sys/types.h>
 typedef clockid_t mono_clock_id_t;
 #else
 typedef void *mono_clock_id_t;
