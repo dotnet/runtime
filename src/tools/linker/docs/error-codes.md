@@ -221,3 +221,11 @@ error and warning codes.
 #### `IL2041`: DynamicallyAccessedMembersAttribute is specified on method 'method'. The DynamicallyAccessedMembersAttribute is only allowed on method parameters, return value or generic parameters.
 
 - Method 'method' has the DynamicallyAccessedMembersAttribute directly on the method itself. This is only allowed for instance methods on System.Type and similar classes. Usually this means the attribute should be placed on the return value of the method (or one of its parameters).
+
+#### `IL2042`: Could not find a unique backing field for property 'property' to propagate DynamicallyAccessedMembersAttribute
+
+- The property 'property' has DynamicallyAccessedMembersAttribute on it, but the linker could not determine the backing fields for the property to propagate the attribute to the field.
+
+#### `IL2043`: Trying to propagate DynamicallyAccessedMemberAttribute from property 'property' to its getter 'method', but it already has such attribute.
+
+- Propagating DynamicallyAccessedMembersAttribute from property 'property' to its getter 'method' found that the getter already has such an attribute. The existing attribute will be used.
