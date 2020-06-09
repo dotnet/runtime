@@ -1444,7 +1444,7 @@ GenTree* Compiler::impAssignStructPtr(GenTree*             destAddr,
     }
     if (dest->OperIs(GT_LCL_VAR) &&
         (src->IsMultiRegNode() ||
-        (src->OperIs(GT_RET_EXPR) && src->AsRetExpr()->gtInlineCandidate->AsCall()->HasMultiRegRetVal())))
+         (src->OperIs(GT_RET_EXPR) && src->AsRetExpr()->gtInlineCandidate->AsCall()->HasMultiRegRetVal())))
     {
         if (lvaEnregMultiRegVars && varTypeIsStruct(dest))
         {
