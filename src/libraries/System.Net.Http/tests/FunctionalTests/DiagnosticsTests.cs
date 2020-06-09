@@ -801,7 +801,7 @@ namespace System.Net.Http.Functional.Tests
                         {
                             // In sync test case we execute client.Send(...) in separate thread to prevent deadlocks,
                             // so it will never finish immediately and we need to wait for it.
-                            SpinWait.SpinUntil(() => sendTask.IsCompleted);
+                            ((IAsyncResult)sendTask).AsyncWaitHandle.WaitOne();
                         }
                         Assert.True(sendTask.IsFaulted);
                         Assert.IsType<NotSupportedException>(sendTask.Exception.InnerException);

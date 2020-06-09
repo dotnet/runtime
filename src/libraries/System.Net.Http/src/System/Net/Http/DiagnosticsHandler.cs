@@ -114,15 +114,15 @@ namespace System.Net.Http
                 InjectHeaders(currentActivity, request);
             }
 
+            Task<HttpResponseMessage>? responseTask = null;
             HttpResponseMessage? response = null;
             TaskStatus taskStatus = TaskStatus.Faulted;
             try
             {
                 if (async)
                 {
-                    Task<HttpResponseMessage>? responseTask = base.SendAsync(request, cancellationToken);
+                    responseTask = base.SendAsync(request, cancellationToken);
                     response = await responseTask.ConfigureAwait(false);
-                    taskStatus = responseTask.Status;
                 }
                 else
                 {
@@ -158,7 +158,7 @@ namespace System.Net.Http
                         // pass the request in the payload, so consumers can have it in Stop for failed/canceled requests
                         // and not retain all requests in Start
                         request,
-                        taskStatus));
+                        responseTask?.Status ?? taskStatus));
                 }
                 // Try to write System.Net.Http.Response event (deprecated)
                 if (s_diagnosticListener.IsEnabled(DiagnosticsHandlerLoggingStrings.ResponseWriteNameDeprecated))
@@ -169,7 +169,7 @@ namespace System.Net.Http
                             response,
                             loggingRequestId,
                             timestamp,
-                            taskStatus));
+                            responseTask?.Status ?? taskStatus));
                 }
             }
         }

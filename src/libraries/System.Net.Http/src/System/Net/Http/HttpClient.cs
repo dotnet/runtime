@@ -542,17 +542,11 @@ namespace System.Net.Http
             HttpResponseMessage? response = null;
             try
             {
-                if (async)
-                {
-                    // Wait for the send request to complete, getting back the response.
-                    response = await sendTask.ConfigureAwait(false);
-                }
-                else
-                {
-                    // In sync scenario the ValueTask already contains the result, it has been constructed that way in Send method.
-                    response = sendTask.Result;
-                }
+                // In sync scenario the ValueTask must already contains the result.
+                Debug.Assert(async || sendTask.IsCompleted, "In synchronous scenario, the sendTask must be already completed.");
 
+                // Wait for the send request to complete, getting back the response.
+                response = await sendTask.ConfigureAwait(false);
                 if (response == null)
                 {
                     throw new InvalidOperationException(SR.net_http_handler_noresponse);

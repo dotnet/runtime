@@ -40,38 +40,7 @@ namespace System.Net.Http
             // (For async, we need to do more gymnastics with SocketAsyncEventArgs.)
             if (!async)
             {
-                cancellationToken.ThrowIfCancellationRequested();
-                Socket? socket = new Socket(SocketType.Stream, ProtocolType.Tcp);
-                try
-                {
-                    socket.NoDelay = true;
-                    using (cancellationToken.UnsafeRegister(s => ((Socket)s!).Dispose(), socket))
-                    {
-                        socket.Connect(new DnsEndPoint(host, port));
-                    }
-                }
-                catch (Exception e)
-                {
-                    socket.Dispose();
-
-                    if (CancellationHelper.ShouldWrapInOperationCanceledException(e, cancellationToken))
-                    {
-                        // Cancellation was requested, so assume that the failure is due to
-                        // the cancellation request. This is a bit unorthodox, as usually we'd
-                        // prioritize a non-OperationCanceledException over a cancellation
-                        // request to avoid losing potentially pertinent information.  But given
-                        // the cancellation design where we tear down the underlying stream upon
-                        // a cancellation request, which can then result in a myriad of different
-                        // exceptions (argument exceptions, object disposed exceptions, socket exceptions,
-                        // etc.), as a middle ground we treat it as cancellation, but still propagate the
-                        // original information as the inner exception, for diagnostic purposes.
-                        throw CancellationHelper.CreateOperationCanceledException(e, cancellationToken);
-                    }
-
-                    throw;
-                }
-
-                return new NetworkStream(socket, ownsSocket: true);
+                return Connect(host, port, cancellationToken);
             }
 
             // Rather than creating a new Socket and calling ConnectAsync on it, we use the static
@@ -116,6 +85,42 @@ namespace System.Net.Http
             {
                 saea.Dispose();
             }
+        }
+
+        private static Stream Connect(string host, int port, CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            var socket = new Socket(SocketType.Stream, ProtocolType.Tcp);
+            try
+            {
+                socket.NoDelay = true;
+                using (cancellationToken.UnsafeRegister(s => ((Socket)s!).Dispose(), socket))
+                {
+                    socket.Connect(new DnsEndPoint(host, port));
+                }
+            }
+            catch (Exception e)
+            {
+                socket.Dispose();
+
+                if (CancellationHelper.ShouldWrapInOperationCanceledException(e, cancellationToken))
+                {
+                    // Cancellation was requested, so assume that the failure is due to
+                    // the cancellation request. This is a bit unorthodox, as usually we'd
+                    // prioritize a non-OperationCanceledException over a cancellation
+                    // request to avoid losing potentially pertinent information.  But given
+                    // the cancellation design where we tear down the underlying stream upon
+                    // a cancellation request, which can then result in a myriad of different
+                    // exceptions (argument exceptions, object disposed exceptions, socket exceptions,
+                    // etc.), as a middle ground we treat it as cancellation, but still propagate the
+                    // original information as the inner exception, for diagnostic purposes.
+                    throw CancellationHelper.CreateOperationCanceledException(e, cancellationToken);
+                }
+
+                throw;
+            }
+
+            return new NetworkStream(socket, ownsSocket: true);
         }
 
         /// <summary>SocketAsyncEventArgs that carries with it additional state for a Task builder and a CancellationToken.</summary>
