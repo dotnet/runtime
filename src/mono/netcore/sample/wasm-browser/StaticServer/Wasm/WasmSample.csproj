@@ -21,14 +21,14 @@
   <Target Name="_PublishManagedOutputDir"
     BeforeTargets="Publish">
     <ItemGroup>
-      <AssemblySearchPaths Include="bin"/>
+      <AssemblySearchPaths Include="$(OutputPath)"/>
       <AssemblySearchPaths Include="$(RuntimePackDir)\native"/>
       <AssemblySearchPaths Include="$(RuntimePackDir)\lib\$(NetCoreAppCurrent)"/>
     </ItemGroup>
     <WasmAppBuilder
       AppDir="$(AppDir)"
       RuntimePackDir="$(RuntimePackDir)"
-      MainAssembly="bin\WasmSample.dll"
+      MainAssembly="$(OutputPath)WasmSample.dll"
       MainJS="runtime.js"
       AssemblySearchPaths="@(AssemblySearchPaths)"/>
     <Exec Command="chmod a+x $(AppDir)/run-v8.sh" />
