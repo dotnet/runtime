@@ -31,7 +31,7 @@ namespace System.ServiceProcess
         private ManualResetEvent? _startCompletedSignal;
         private ExceptionDispatchInfo? _startFailedException;
         private int _acceptedCommands;
-        private string? _serviceName;
+        private string _serviceName;
         private bool _nameFrozen;          // set to true once we've started running and ServiceName can't be changed any more.
         private bool _commandPropsFrozen;  // set to true once we've use the Can... properties.
         private bool _disposed;
@@ -264,13 +264,13 @@ namespace System.ServiceProcess
         /// <devdoc>
         ///    <para> Indicates the short name used to identify the service to the system.</para>
         /// </devdoc>
-        [DisallowNull]
-        public string? ServiceName
+        public string ServiceName
         {
             get
             {
                 return _serviceName;
             }
+            [MemberNotNull(nameof(_serviceName))]
             set
             {
                 if (_nameFrozen)
