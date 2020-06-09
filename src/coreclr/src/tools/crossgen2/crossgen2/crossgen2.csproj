@@ -68,7 +68,7 @@
     <Content Include="$(BinDir)\$(NativeArchFolder)$(LibraryNamePrefix)clrjit$(LibraryNameExtension)"
       CopyToOutputDirectory="PreserveNewest"
       CopyToPublishDirectory="PreserveNewest"
-      Link="$(HostSpec)\$(TargetSpec)\$(LibraryNamePrefix)clrjitilc$(LibraryNameExtension)"
+      Link="$(TargetSpec)\$(LibraryNamePrefix)clrjitilc$(LibraryNameExtension)"
      />
   </ItemGroup>
 
