@@ -50,6 +50,8 @@ namespace System
     {
         #region Definitions
 
+        internal IntPtr m_handle;
+
         internal enum MemberListType
         {
             All,

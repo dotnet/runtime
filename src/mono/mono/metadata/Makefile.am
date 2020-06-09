@@ -154,9 +154,10 @@ nodist_libmonoruntime_shimglobalization_la_SOURCES = \
 									@ICU_SHIM_PATH@/pal_localeStringData.c \
 									@ICU_SHIM_PATH@/pal_normalization.c \
 									@ICU_SHIM_PATH@/pal_timeZoneInfo.c \
-									@ICU_SHIM_PATH@/pal_icushim.c
+									@ICU_SHIM_PATH@/pal_icushim.c \
+									@ICU_SHIM_QCALLS_PATH@/entrypoints.c
 
-libmonoruntime_shimglobalization_la_CFLAGS = @ICU_CFLAGS@ -I$(top_srcdir)/../libraries/Native/Unix/Common/
+libmonoruntime_shimglobalization_la_CFLAGS = @ICU_CFLAGS@ -I$(top_srcdir)/../libraries/Native/Unix/System.Globalization.Native/ -I$(top_srcdir)/../libraries/Native/Unix/Common/
 endif
 endif
 
@@ -266,7 +267,7 @@ common_sources = \
 	domain-internals.h	\
 	environment.c		\
 	environment.h		\
-	icall-eventpipe.c	\
+	qcall-eventpipe.c	\
 	exception.c		\
 	exception.h		\
 	exception-internals.h	\
@@ -413,7 +414,10 @@ common_sources = \
 	callspec.h	\
 	callspec.c	\
 	abi.c	\
-	native-library.c
+	native-library.c \
+	native-library.h \
+	qcalllist.h \
+	native-library-qcall.c
 
 # These source files have compile time dependencies on GC code
 gc_dependent_sources = \

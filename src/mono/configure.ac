@@ -6815,6 +6815,7 @@ if test x$with_core = xonly; then
 	fi
 	if test x$have_shim_globalization = xyes || test x$cross_compiling = xyes; then
 		ICU_SHIM_PATH=../../../libraries/Native/Unix/System.Globalization.Native
+		ICU_SHIM_QCALLS_PATH=../../../coreclr/src/libraries-native
 		if test x$target_osx = xyes; then
 			ORIG_CPPFLAGS=$CPPFLAGS
 			# adding icu path to pkg_config_path
@@ -6825,11 +6826,11 @@ if test x$with_core = xonly; then
 				[AC_MSG_ERROR([Cannot find libicucore, skipping build for System.Globalization.Native. .NET globalization is not expected to function.])])
 			AC_CHECK_HEADER(unicode/utypes.h, [have_sys_icu=yes], [have_sys_icu=no])
 			if test x$have_sys_icu = xyes; then
-				ICU_CFLAGS="$CPPFLAGS -DOSX_ICU_LIBRARY_PATH=AS_ESCAPE(\"/usr/lib/libicucore.dylib\", '\"') -DTARGET_UNIX -DU_DISABLE_RENAMING -Wno-reserved-id-macro -Wno-documentation -Wno-documentation-unknown-command -Wno-switch-enum -Wno-covered-switch-default -Wno-covered-switch-default -Wno-extra-semi-stmt -Wno-unknown-warning-option -Wno-deprecated-declarations"
+				ICU_CFLAGS="$CPPFLAGS -DPALEXPORT="" -DOSX_ICU_LIBRARY_PATH=AS_ESCAPE(\"/usr/lib/libicucore.dylib\", '\"') -DTARGET_UNIX -DU_DISABLE_RENAMING -Wno-reserved-id-macro -Wno-documentation -Wno-documentation-unknown-command -Wno-switch-enum -Wno-covered-switch-default -Wno-covered-switch-default -Wno-extra-semi-stmt -Wno-unknown-warning-option -Wno-deprecated-declarations"
 			fi
 			CPPFLAGS=$ORIG_CPPFLAGS
 		elif test x$platform_android = xyes; then 
-			ICU_CFLAGS="-DHAVE_UDAT_STANDALONE_SHORTER_WEEKDAYS -DHAVE_SET_MAX_VARIABLE -DTARGET_UNIX -DTARGET_ANDROID -Wno-reserved-id-macro -Wno-documentation -Wno-documentation-unknown-command -Wno-switch-enum -Wno-covered-switch-default -Wno-covered-switch-default -Wno-extra-semi-stmt -Wno-unknown-warning-option"
+			ICU_CFLAGS="-DPALEXPORT="" -DHAVE_UDAT_STANDALONE_SHORTER_WEEKDAYS -DHAVE_SET_MAX_VARIABLE -DTARGET_UNIX -DTARGET_ANDROID -Wno-reserved-id-macro -Wno-documentation -Wno-documentation-unknown-command -Wno-switch-enum -Wno-covered-switch-default -Wno-covered-switch-default -Wno-extra-semi-stmt -Wno-unknown-warning-option"
 			have_sys_icu=yes 
 		elif test x$host_linux = xyes; then
 			AC_CHECK_LIB(icuuc, main, LIBS=$LIBS,
@@ -6838,13 +6839,14 @@ if test x$with_core = xonly; then
 				[AC_MSG_ERROR([Cannot find libicui18n, try installing libicu-dev (or the appropriate package for your platform).])])
 			AC_CHECK_HEADER(unicode/utypes.h, [have_sys_icu=yes], [have_sys_icu=no])
 			if test x$have_sys_icu = xyes; then
-				ICU_CFLAGS="-DTARGET_UNIX -Wno-reserved-id-macro -Wno-documentation -Wno-documentation-unknown-command -Wno-switch-enum -Wno-covered-switch-default -Wno-covered-switch-default -Wno-extra-semi-stmt -Wno-unknown-warning-option"
+				ICU_CFLAGS="-DPALEXPORT="" -DTARGET_UNIX -Wno-reserved-id-macro -Wno-documentation -Wno-documentation-unknown-command -Wno-switch-enum -Wno-covered-switch-default -Wno-covered-switch-default -Wno-extra-semi-stmt -Wno-unknown-warning-option"
 			fi
 		fi
 		AC_SUBST(ICU_CFLAGS)
 	fi
 fi
 AC_SUBST(ICU_SHIM_PATH)
+AC_SUBST(ICU_SHIM_QCALLS_PATH)
 AM_CONDITIONAL(HAVE_SYS_ICU, test x$have_sys_icu = xyes)
 
 AC_SUBST(CFLAGS)

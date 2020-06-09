@@ -192,7 +192,6 @@
       <Compile Include="$(BclSourcesRoot)\System\Diagnostics\Debugger.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Diagnostics\StackFrame.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Diagnostics\StackTrace.Mono.cs" />
-      <Compile Include="$(BclSourcesRoot)\System\Diagnostics\Tracing\EventPipe.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\IO\Stream.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\IO\FileLoadException.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Reflection\Assembly.Mono.cs" />
