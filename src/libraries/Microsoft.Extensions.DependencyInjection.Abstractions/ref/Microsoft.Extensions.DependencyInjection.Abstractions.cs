@@ -22,7 +22,7 @@ namespace Microsoft.Extensions.DependencyInjection
     public partial interface IServiceCollection : System.Collections.Generic.ICollection<Microsoft.Extensions.DependencyInjection.ServiceDescriptor>, System.Collections.Generic.IEnumerable<Microsoft.Extensions.DependencyInjection.ServiceDescriptor>, System.Collections.Generic.IList<Microsoft.Extensions.DependencyInjection.ServiceDescriptor>, System.Collections.IEnumerable
     {
     }
-    public partial interface IServiceProviderFactory<TContainerBuilder>
+    public partial interface IServiceProviderFactory<TContainerBuilder> where TContainerBuilder : notnull
     {
         TContainerBuilder CreateBuilder(Microsoft.Extensions.DependencyInjection.IServiceCollection services);
         System.IServiceProvider CreateServiceProvider(TContainerBuilder containerBuilder);
@@ -107,8 +107,8 @@ namespace Microsoft.Extensions.DependencyInjection
     {
         public static Microsoft.Extensions.DependencyInjection.IServiceScope CreateScope(this System.IServiceProvider provider) { throw null; }
         public static object GetRequiredService(this System.IServiceProvider provider, System.Type serviceType) { throw null; }
-        public static T GetRequiredService<T>(this System.IServiceProvider provider) { throw null; }
-        public static System.Collections.Generic.IEnumerable<object> GetServices(this System.IServiceProvider provider, System.Type serviceType) { throw null; }
+        public static T GetRequiredService<T>(this System.IServiceProvider provider) where T : notnull { throw null; }
+        public static System.Collections.Generic.IEnumerable<object?> GetServices(this System.IServiceProvider provider, System.Type serviceType) { throw null; }
         public static System.Collections.Generic.IEnumerable<T> GetServices<T>(this System.IServiceProvider provider) { throw null; }
         public static T GetService<T>(this System.IServiceProvider provider) { throw null; }
     }
