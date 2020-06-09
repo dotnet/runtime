@@ -902,8 +902,12 @@ namespace System.Net.Http.Functional.Tests
                 { 
                     await server.AcceptConnectionAsync(async connection =>
                     {
-                        await connection.ReadRequestHeaderAsync();
-                        mres.Wait();
+                        try
+                        {
+                            await connection.ReadRequestHeaderAsync();
+                            mres.Wait();
+                        }
+                        catch { }
                     });
                 });
         }
@@ -943,7 +947,11 @@ namespace System.Net.Http.Functional.Tests
                         });
                         await Task.Delay(TimeSpan.FromSeconds(0.5));
                         cts.Cancel();
-                        await connection.Writer.WriteLineAsync(content);
+                        try
+                        {
+                            await connection.Writer.WriteLineAsync(content);
+                        }
+                        catch { }
                     });
                 }); 
         }
@@ -979,12 +987,16 @@ namespace System.Net.Http.Functional.Tests
                 {
                     await server.AcceptConnectionAsync(async connection =>
                     {
-                        await connection.ReadRequestDataAsync();
-                        await connection.SendResponseAsync(headers: new List<HttpHeaderData>() {
-                            new HttpHeaderData("Content-Length", (content.Length * 2).ToString())
-                        });
-                        mres.Wait();
-                        await connection.Writer.WriteLineAsync(content);
+                        try
+                        {
+                            await connection.ReadRequestDataAsync();
+                            await connection.SendResponseAsync(headers: new List<HttpHeaderData>() {
+                                new HttpHeaderData("Content-Length", (content.Length * 2).ToString())
+                            });
+                            mres.Wait();
+                            await connection.Writer.WriteLineAsync(content);
+                        }
+                        catch { }
                     });
                 }); 
         }
