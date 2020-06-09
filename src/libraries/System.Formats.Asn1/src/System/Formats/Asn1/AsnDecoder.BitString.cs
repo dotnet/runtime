@@ -80,7 +80,7 @@ namespace System.Formats.Asn1
             {
                 // Check that this isn't a BER reader which encountered a situation where
                 // an "unused" bit was not set to 0.
-                if (localValue.Length == 0 || normalizedLastByte == localValue[localValue.Length - 1])
+                if (localValue.IsEmpty || normalizedLastByte == localValue[localValue.Length - 1])
                 {
                     unusedBitCount = localUbc;
                     value = localValue;
@@ -293,7 +293,7 @@ namespace System.Formats.Asn1
                 byte[] ret = localValue.ToArray();
 
                 // Update the last byte in case it's a non-canonical byte in a BER encoding.
-                if (localValue.Length > 0)
+                if (!localValue.IsEmpty)
                 {
                     ret[ret.Length - 1] = normalizedLastByte;
                 }
@@ -344,7 +344,7 @@ namespace System.Formats.Asn1
             }
 
             // T-REC-X.690-201508 sec 8.6.2.3
-            if (source.Length == 0)
+            if (source.IsEmpty)
             {
                 throw new AsnContentException();
             }
@@ -402,7 +402,7 @@ namespace System.Formats.Asn1
             byte normalizedLastByte,
             Span<byte> destination)
         {
-            if (value.Length == 0)
+            if (value.IsEmpty)
             {
                 return;
             }

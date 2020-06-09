@@ -54,7 +54,7 @@ namespace System.Formats.Asn1
                 out int consumed);
 
             // T-REC-X.690-201508 sec 8.8.2
-            if (contents.Length != 0)
+            if (!contents.IsEmpty)
             {
                 throw new AsnContentException();
             }

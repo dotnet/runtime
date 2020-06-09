@@ -391,7 +391,7 @@ namespace System.Formats.Asn1
             Text.Encoding encoding,
             out int charsWritten)
         {
-            if (source.Length == 0)
+            if (source.IsEmpty)
             {
                 charsWritten = 0;
                 return true;
@@ -443,7 +443,7 @@ namespace System.Formats.Asn1
 
             string str;
 
-            if (contents.Length == 0)
+            if (contents.IsEmpty)
             {
                 str = string.Empty;
             }

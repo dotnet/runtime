@@ -55,7 +55,7 @@ namespace System.Formats.Asn1
             }
 
             // T-REC-X.690-201508 sec 8.6.2.3
-            if (bitString.Length == 0 && unusedBitCount != 0)
+            if (bitString.IsEmpty && unusedBitCount != 0)
             {
                 throw new ArgumentException(SR.Argument_UnusedBitCountMustBeZero, nameof(unusedBitCount));
             }

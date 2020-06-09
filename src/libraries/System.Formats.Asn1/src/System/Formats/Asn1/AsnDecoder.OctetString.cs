@@ -507,7 +507,7 @@ namespace System.Formats.Asn1
             contents = source.Slice(headerLength);
             int tooBig = contentLength ?? SeekEndOfContents(contents, ruleSet);
 
-            if (tmpSpace.Length > 0 && tooBig > tmpSpace.Length)
+            if (!tmpSpace.IsEmpty && tooBig > tmpSpace.Length)
             {
                 bool isIndefinite = contentLength == null;
                 tooBig = CountConstructedOctetString(contents, ruleSet, isIndefinite);
