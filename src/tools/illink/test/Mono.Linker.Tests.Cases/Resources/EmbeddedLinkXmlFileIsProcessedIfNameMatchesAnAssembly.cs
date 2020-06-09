@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
 using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
@@ -6,12 +6,11 @@ namespace Mono.Linker.Tests.Cases.Resources
 {
 	[SetupLinkerCoreAction ("link")]
 	[IgnoreDescriptors (false)]
-	[StripDescriptors (false)]
 
-	[SetupCompileResource ("Dependencies/EmbeddedLinkXmlFileIsProcessedAndKept.xml", "ILLink.Descriptors.xml")]
+	// Rename the resource so that it matches the name of an assembly being processed.
+	[SetupCompileResource ("Dependencies/EmbeddedLinkXmlFileIsProcessedIfNameMatchesAnAssembly.xml", "test.xml")]
 	[SkipPeVerify]
-	[KeptResource ("ILLink.Descriptors.xml")]
-	public class EmbeddedLinkXmlFileIsProcessedAndKept
+	public class EmbeddedLinkXmlFileIsProcessedIfNameMatchesAnAssembly
 	{
 		public static void Main ()
 		{

@@ -140,7 +140,7 @@ control options listed below.
 
 | File Format | Resource Name  |  Control Option  |
 |---|---|---|
-| Descriptor  | assemblyname.xml  |   --ignore-descriptors |
+| Descriptor  | ILLink.Descriptors.xml  |   --ignore-descriptors |
 | Substition  | ILLink.Substitution.xml  |  --ignore-substitutions |
 
 

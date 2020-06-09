@@ -65,10 +65,10 @@ namespace Mono.Linker.Steps
 					.Where (res => res.ResourceType == ResourceType.Embedded)
 					.Where (res => res.Name.EndsWith (".xml", StringComparison.OrdinalIgnoreCase));
 				foreach (var rsc in embeddedXml
-									.Where (res => ShouldProcessRootDescriptorResource (GetAssemblyName (res.Name)))
+									.Where (res => ShouldProcessRootDescriptorResource (res.Name))
 									.Cast<EmbeddedResource> ()) {
 					try {
-						Context.LogMessage ($"Processing embedded resource linker descriptor: {rsc.Name}");
+						Context.LogMessage ($"Processing embedded linker descriptor {rsc.Name} from {asm.Name}");
 						steps_to_add.Push (GetExternalResolveStep (rsc, asm));
 					} catch (XmlException ex) {
 						/* This could happen if some broken XML file is embedded. */
@@ -80,7 +80,7 @@ namespace Mono.Linker.Steps
 									.Where (res => res.Name.Equals ("ILLink.Substitutions.xml", StringComparison.OrdinalIgnoreCase))
 									.Cast<EmbeddedResource> ()) {
 					try {
-						Context.LogMessage ($"Processing embedded {rsc.Name} from {asm.Name}");
+						Context.LogMessage ($"Processing embedded substitution descriptor {rsc.Name} from {asm.Name}");
 						steps_to_add.Push (GetExternalSubstitutionStep (rsc, asm));
 					} catch (XmlException ex) {
 						Context.LogError ($"Error processing {rsc.Name}: {ex}", 1003);
@@ -101,9 +101,13 @@ namespace Mono.Linker.Steps
 			return descriptor.Substring (0, pos);
 		}
 
-		bool ShouldProcessRootDescriptorResource (string name)
+		bool ShouldProcessRootDescriptorResource (string resourceName)
 		{
-			AssemblyDefinition assembly = Context.GetLoadedAssembly (name);
+			if (resourceName.Equals ("ILLink.Descriptors.xml", StringComparison.OrdinalIgnoreCase))
+				return true;
+
+			var assemblyName = GetAssemblyName (resourceName);
+			AssemblyDefinition assembly = Context.GetLoadedAssembly (assemblyName);
 
 			if (assembly == null)
 				return false;
