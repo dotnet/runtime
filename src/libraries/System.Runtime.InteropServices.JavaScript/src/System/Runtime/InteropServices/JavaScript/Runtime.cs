@@ -97,44 +97,26 @@ namespace System.Runtime.InteropServices.JavaScript
             return obj?.Int32Handle ?? 0;
         }
 
-        private static JSObject BindJSType(IntPtr jsIntPtr, int coreType)
-        {
-            switch (coreType)
+        private static JSObject BindJSType(IntPtr jsIntPtr, int coreType) =>
+            coreType switch
             {
-                case 1:
-                    return new Array(jsIntPtr);
-                case 2:
-                    return new ArrayBuffer(jsIntPtr);
-                case 3:
-                    return new DataView(jsIntPtr);
-                case 4:
-                    return new Function(jsIntPtr);
-                case 5:
-                    return new Map(jsIntPtr);
-                case 6:
-                    return new SharedArrayBuffer(jsIntPtr);
-                case 10:
-                    return new Int8Array(jsIntPtr);
-                case 11:
-                    return new Uint8Array(jsIntPtr);
-                case 12:
-                    return new Uint8ClampedArray(jsIntPtr);
-                case 13:
-                    return new Int16Array(jsIntPtr);
-                case 14:
-                    return new Uint16Array(jsIntPtr);
-                case 15:
-                    return new Int32Array(jsIntPtr);
-                case 16:
-                    return new Uint32Array(jsIntPtr);
-                case 17:
-                    return new Float32Array(jsIntPtr);
-                case 18:
-                    return new Float64Array(jsIntPtr);
-                default:
-                    throw new ArgumentOutOfRangeException(nameof(coreType));
-            }
-        }
+                1 => new Array(jsIntPtr),
+                2 => new ArrayBuffer(jsIntPtr),
+                3 => new DataView(jsIntPtr),
+                4 => new Function(jsIntPtr),
+                5 => new Map(jsIntPtr),
+                6 => new SharedArrayBuffer(jsIntPtr),
+                10 => new Int8Array(jsIntPtr),
+                11 => new Uint8Array(jsIntPtr),
+                12 => new Uint8ClampedArray(jsIntPtr),
+                13 => new Int16Array(jsIntPtr),
+                14 => new Uint16Array(jsIntPtr),
+                15 => new Int32Array(jsIntPtr),
+                16 => new Uint32Array(jsIntPtr),
+                17 => new Float32Array(jsIntPtr),
+                18 => new Float64Array(jsIntPtr),
+                _ => throw new ArgumentOutOfRangeException(nameof(coreType))
+            };
 
         public static int UnBindJSObject(int jsId)
         {
