@@ -21,7 +21,7 @@ namespace System.Tests
             new object[] { 255 },
         };
 
-        [Theory]
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [MemberData(nameof(ExitCodeValues))]
         public static void CheckExitCode(int expectedExitCode)
         {

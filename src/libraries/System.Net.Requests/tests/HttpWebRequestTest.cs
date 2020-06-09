@@ -765,7 +765,7 @@ namespace System.Net.Tests
             AssertExtensions.Throws<ArgumentException>("value", () => request.Expect = "100-continue");
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void DefaultMaximumResponseHeadersLength_SetAndGetLength_ValuesMatch()
         {
             RemoteExecutor.Invoke(() =>
@@ -785,7 +785,7 @@ namespace System.Net.Tests
             }).Dispose();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void DefaultMaximumErrorResponseLength_SetAndGetLength_ValuesMatch()
         {
             RemoteExecutor.Invoke(() =>
@@ -805,7 +805,7 @@ namespace System.Net.Tests
             }).Dispose();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void DefaultCachePolicy_SetAndGetPolicyReload_ValuesMatch()
         {
             RemoteExecutor.Invoke(() =>
@@ -1489,7 +1489,7 @@ namespace System.Net.Tests
         [ActiveIssue("https://github.com/dotnet/runtime/issues/31380")]
         [OuterLoop("Uses external server")]
         [PlatformSpecific(TestPlatforms.AnyUnix)] // The default proxy is resolved via WinINet on Windows.
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public async Task ProxySetViaEnvironmentVariable_DefaultProxyCredentialsUsed()
         {
             var cred = new NetworkCredential(Guid.NewGuid().ToString("N"), Guid.NewGuid().ToString("N"));
@@ -1622,7 +1622,7 @@ namespace System.Net.Tests
             Assert.Equal(MediaType, request.MediaType);
         }
 
-        [Theory, MemberData(nameof(MixedWebRequestParameters))]
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported)), MemberData(nameof(MixedWebRequestParameters))]
         public void GetResponseAsync_ParametersAreNotCachable_CreateNewClient(HttpWebRequestParameters requestParameters, bool connectionReusedParameter)
         {
             RemoteExecutor.Invoke(async (serializedParameters, connectionReusedString) =>
@@ -1671,7 +1671,7 @@ namespace System.Net.Tests
             }, JsonSerializer.Serialize<HttpWebRequestParameters>(requestParameters), connectionReusedParameter.ToString()).Dispose();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void GetResponseAsync_ParametersAreCachableButDifferent_CreateNewClient()
         {
             RemoteExecutor.Invoke(async () =>

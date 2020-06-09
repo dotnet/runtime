@@ -132,7 +132,7 @@ namespace System.IO.Tests
             Assert.False(linkPathFI.Exists, "linkPath should no longer exist");
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void UnsharedFileExists()
         {
             string path = GetTestFilePath();
@@ -146,7 +146,7 @@ namespace System.IO.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [PlatformSpecific(~TestPlatforms.OSX)]
         public void LockedFileExists()
         {

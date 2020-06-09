@@ -33,7 +33,7 @@ namespace System.Diagnostics.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void MainWindowHandle_GetUnix_ThrowsPlatformNotSupportedException()
         {
             CreateDefaultProcess();
@@ -186,7 +186,7 @@ namespace System.Diagnostics.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [PlatformSpecific(TestPlatforms.Linux)] // s_allowedProgramsToRun is Linux specific
         public void ProcessStart_UseShellExecute_OnUnix_FallsBackWhenNotRealExecutable()
         {
@@ -260,7 +260,7 @@ namespace System.Diagnostics.Tests
             Assert.True(File.Exists(testFilePath));
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [InlineData((string)null, true)]
         [InlineData("", true)]
         [InlineData("open", true)]
@@ -420,7 +420,7 @@ namespace System.Diagnostics.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [Trait(XunitConstants.Category, XunitConstants.RequiresElevation)]
         public void TestPriorityClassUnix()
         {
@@ -447,7 +447,7 @@ namespace System.Diagnostics.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [Trait(XunitConstants.Category, XunitConstants.RequiresElevation)]
         public void TestBasePriorityOnUnix()
         {
@@ -504,7 +504,7 @@ namespace System.Diagnostics.Tests
             Assert.NotEqual(0, e.NativeErrorCode);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void TestStartWithNonExistingUserThrows()
         {
             Process p = CreateProcessPortable(RemotelyInvokable.Dummy);
@@ -512,7 +512,7 @@ namespace System.Diagnostics.Tests
             Assert.Throws<Win32Exception>(() => p.Start());
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void TestExitCodeKilledChild()
         {
             using (Process p = CreateProcessLong())
@@ -548,7 +548,7 @@ namespace System.Diagnostics.Tests
             return RemoteExecutor.SuccessExitCode;
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/28922", TestPlatforms.AnyUnix)]
         public unsafe void TestCheckChildProcessUserAndGroupIds()
         {
@@ -573,7 +573,7 @@ namespace System.Diagnostics.Tests
         /// Tests when running as root and starting a new process as a normal user,
         /// the new process doesn't have elevated privileges.
         /// </summary>
-        [Theory]
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [OuterLoop("Needs sudo access")]
         [Trait(XunitConstants.Category, XunitConstants.RequiresElevation)]
         [InlineData(true)]
@@ -649,7 +649,7 @@ namespace System.Diagnostics.Tests
         /// Tests whether child processes are reaped (cleaning up OS resources)
         /// when they terminate.
         /// </summary>
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [PlatformSpecific(TestPlatforms.Linux)] // Test uses Linux specific '/proc' filesystem
         public async Task TestChildProcessCleanup()
         {
@@ -665,7 +665,7 @@ namespace System.Diagnostics.Tests
         /// Tests whether child processes are reaped (cleaning up OS resources)
         /// when they terminate after the Process was Disposed.
         /// </summary>
-        [Theory]
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [InlineData(false, false)]
         [InlineData(false, true)]
         [InlineData(true, false)]
@@ -721,7 +721,7 @@ namespace System.Diagnostics.Tests
         /// <summary>
         /// Tests the ProcessWaitState reference count drops to zero.
         /// </summary>
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [PlatformSpecific(TestPlatforms.AnyUnix)] // Test validates Unix implementation
         public async Task TestProcessWaitStateReferenceCount()
         {
@@ -771,12 +771,14 @@ namespace System.Diagnostics.Tests
             }
         }
 
+        private static bool IsStressModeEnabledAndRemoteExecutorSupported => TestEnvironment.IsStressModeEnabled && RemoteExecutor.IsSupported;
+
         /// <summary>
         /// Verifies a new Process instance can refer to a process with a recycled pid for which
         /// there is still an existing Process instance. Operations on the existing instance will
         /// throw since that process has exited.
         /// </summary>
-        [ConditionalFact(typeof(TestEnvironment), nameof(TestEnvironment.IsStressModeEnabled))]
+        [ConditionalFact(nameof(IsStressModeEnabledAndRemoteExecutorSupported))]
         public void TestProcessRecycledPid()
         {
             const int LinuxPidMaxDefault = 32768;
@@ -810,7 +812,7 @@ namespace System.Diagnostics.Tests
             Assert.True(foundRecycled);
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [InlineData(true)]
         [InlineData(false)]
         public async Task Kill_ExitedNonChildProcess_DoesNotThrow(bool killTree)
@@ -894,16 +896,6 @@ namespace System.Diagnostics.Tests
         {
             FieldInfo referenCountField = waitState.GetType().GetField("_outstandingRefCount", BindingFlags.NonPublic | BindingFlags.Instance);
             return (int)referenCountField.GetValue(waitState);
-        }
-
-        private void RunTestAsSudo(Func<string, int> testMethod, string arg)
-        {
-            RemoteInvokeOptions options = new RemoteInvokeOptions()
-            {
-                RunAsSudo = true
-            };
-            using (RemoteInvokeHandle handle = RemoteExecutor.Invoke(testMethod, arg, options))
-            { }
         }
 
         [DllImport("libc")]

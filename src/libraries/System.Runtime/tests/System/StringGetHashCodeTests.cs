@@ -17,7 +17,7 @@ namespace System.Tests
         /// and confirming it is different (modulo possible values of int).
         /// If the legacy hash codes are being returned, it will not be different.
         /// </summary>
-        [Theory]
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [MemberData(nameof(GetHashCode_TestData))]
         public void GetHashCodeWithStringComparer_UseSameStringInTwoProcesses_ReturnsDifferentHashCodes(int getHashCodeIndex)
         {
