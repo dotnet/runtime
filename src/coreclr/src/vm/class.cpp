@@ -1096,6 +1096,15 @@ bool ClassLoader::IsCompatibleWith(TypeHandle hType1, TypeHandle hType2)
         return IsMethodSignatureCompatibleWith(hType1.AsFnPtrType(), hType2.AsFnPtrType());
     }
 
+    // None of the types can be a managed pointer, a pointer or a function pointer here,
+    // all the valid cases were handled above.
+    if (hType1.IsByRef() || hType2.IsByRef() ||
+        hType1.IsPointer() || hType2.IsPointer() ||
+        hType1.IsFnPtrType() || hType2.IsFnPtrType())
+    {
+        return false;
+    }
+
     _ASSERTE(hType1.GetMethodTable() != NULL);
     _ASSERTE(hType2.GetMethodTable() != NULL);
 

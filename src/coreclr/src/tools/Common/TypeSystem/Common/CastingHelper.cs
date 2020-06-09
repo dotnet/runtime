@@ -120,6 +120,15 @@ namespace Internal.TypeSystem
                 return IsMethodSignatureCompatibleWith(thisType, otherType);
             }
 
+            // None of the types can be a managed pointer, a pointer or a function pointer here,
+            // all the valid cases were handled above.
+            if (thisType.IsByRef || otherType.IsByRef ||
+                thisType.IsPointer || otherType.IsPointer ||
+                thisType.IsFunctionPointer || otherType.IsFunctionPointer)
+            {
+                return false;
+            }
+
             // Nullable<T> can be cast to T, but this is not compatible according to ECMA I.8.7.1
             bool isCastFromNullableOfTtoT = thisType.IsNullable && otherType.IsEquivalentTo(thisType.Instantiation[0]);
             if (isCastFromNullableOfTtoT)
