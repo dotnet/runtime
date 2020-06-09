@@ -2,9 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Reflection;
-using System.Runtime.CompilerServices;
 using System.Text.Json.Serialization;
 
 namespace System.Text.Json
@@ -16,8 +16,6 @@ namespace System.Text.Json
     /// or a type's converter, if the current instance is a <see cref="JsonClassInfo.PropertyInfoForClassInfo"/>.
     internal sealed class JsonPropertyInfo<T> : JsonPropertyInfo
     {
-        private static readonly T s_defaultValue = default!;
-
         public Func<object, T>? Get { get; private set; }
         public Action<object, T>? Set { get; private set; }
 
@@ -102,7 +100,7 @@ namespace System.Text.Json
 
             if (value == null)
             {
-                Debug.Assert(s_defaultValue == null && Converter.CanBeNull);
+                Debug.Assert(default(T) == null && Converter.CanBeNull);
 
                 success = true;
                 if (!IgnoreDefaultValuesOnWrite)
@@ -131,9 +129,9 @@ namespace System.Text.Json
                     }
                 }
             }
-            else if (IgnoreDefaultValuesOnWrite && Converter._defaultComparer.Equals(s_defaultValue, value))
+            else if (IgnoreDefaultValuesOnWrite && EqualityComparer<T>.Default.Equals(default, value))
             {
-                Debug.Assert(s_defaultValue != null && !Converter.CanBeNull);
+                Debug.Assert(default(T) != null && !Converter.CanBeNull);
                 success = true;
             }
             else
@@ -179,7 +177,7 @@ namespace System.Text.Json
                     ThrowHelper.ThrowJsonException_DeserializeUnableToConvertValue(Converter.TypeToConvert);
                 }
 
-                Debug.Assert(s_defaultValue == null);
+                Debug.Assert(default(T) == null);
 
                 if (!IgnoreDefaultValuesOnRead)
                 {
