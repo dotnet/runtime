@@ -2,6 +2,15 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+/*============================================================
+**
+**
+**
+** Purpose: An IEEE 768 compliant float16 type
+**
+**
+===========================================================*/
+
 using System.Diagnostics;
 using System.Globalization;
 using System.Numerics;
@@ -16,7 +25,7 @@ namespace System
 
     [Serializable]
     [StructLayout(LayoutKind.Sequential)]
-    public readonly struct Half : IComparable, IFormattable, IComparable<Half>, IEquatable<Half>
+    public readonly struct Half : IComparable, IFormattable, IComparable<Half>, IEquatable<Half>, ISpanFormattable
     {
         private const NumberStyles DefaultParseStyle = NumberStyles.Float | NumberStyles.AllowThousands;
 
@@ -60,14 +69,6 @@ namespace System
         private const ushort MinValueBits = 0xFBFF;
         private const ushort MaxValueBits = 0x7BFF;
 
-        //
-        // Constants that should be returned if values that cannot be represented are converted
-        //
-
-        private const long IllegalValueToInt64 = long.MinValue;
-        private const ulong IllegalValueToUInt64 = ulong.MinValue;
-        private const int IllegalValueToInt32 = int.MinValue;
-        private const uint IllegalValueToUInt32 = uint.MinValue;
 
         //
         // Well-defined and commonly used values
@@ -88,12 +89,6 @@ namespace System
         private static readonly Half NegativeZero = new Half(NegativeZeroBits);            // -0.0
 
         private readonly ushort m_value; // Do not rename (binary serialization)
-
-        //internal const uint SingleSignMask = 0x8000_0000;
-        //internal const int SingleSignShift = 31;
-        //internal const uint SingleExponentMask = 0x7F80_0000;
-        //internal const int SingleExponentShift = 23;
-        //internal const uint SingleSignificandMask = 0x007F_FFFF;
 
         private Half(ushort value)
         {
@@ -541,6 +536,7 @@ namespace System
         }
 
         #region Utilities
+
         internal static uint ToUInt32(float value)
                    => (uint)BitConverter.SingleToInt32Bits(value);
 
