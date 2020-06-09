@@ -30,6 +30,7 @@
         TargetArchitecture=$(TargetArchitecture);
         Configuration=$(Configuration);
         TargetOS=$(TargetOS);
+        TargetRuntimeIdentifier=$(TargetRuntimeIdentifier);
         TestRunNamePrefixSuffix=$(TestRunNamePrefixSuffix);
         Creator=$(Creator);
         HelixAccessToken=$(HelixAccessToken);
