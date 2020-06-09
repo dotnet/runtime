@@ -479,7 +479,6 @@ namespace System
     {
         protected Attribute() { }
         public virtual object TypeId { get { throw null; } }
-        [System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute("ReflectionAnalysis", "IL2006:UnrecognizedReflectionPattern", Justification="Unused fields don't make a difference for equality")]
         public override bool Equals(object? obj) { throw null; }
         public static System.Attribute? GetCustomAttribute(System.Reflection.Assembly element, System.Type attributeType) { throw null; }
         public static System.Attribute? GetCustomAttribute(System.Reflection.Assembly element, System.Type attributeType, bool inherit) { throw null; }
@@ -505,7 +504,6 @@ namespace System
         public static System.Attribute[] GetCustomAttributes(System.Reflection.ParameterInfo element, bool inherit) { throw null; }
         public static System.Attribute[] GetCustomAttributes(System.Reflection.ParameterInfo element, System.Type attributeType) { throw null; }
         public static System.Attribute[] GetCustomAttributes(System.Reflection.ParameterInfo element, System.Type attributeType, bool inherit) { throw null; }
-        [System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute("ReflectionAnalysis", "IL2006:UnrecognizedReflectionPattern", Justification="Unused fields don't make a difference for hashcode quality")]
         public override int GetHashCode() { throw null; }
         public virtual bool IsDefaultAttribute() { throw null; }
         public static bool IsDefined(System.Reflection.Assembly element, System.Type attributeType) { throw null; }
@@ -4085,7 +4083,6 @@ namespace System
         [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicConstructors | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicConstructors)]
         protected abstract System.Reflection.ConstructorInfo? GetConstructorImpl(System.Reflection.BindingFlags bindingAttr, System.Reflection.Binder? binder, System.Reflection.CallingConventions callConvention, System.Type[] types, System.Reflection.ParameterModifier[]? modifiers);
         [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicConstructors)]
-        [System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute("ReflectionAnalysis", "IL2006:UnrecognizedReflectionPattern", Justification="Linker doesn't recongnize GetConstructors(BindingFlags.Public) but this is what the body is doing")]
         public System.Reflection.ConstructorInfo[] GetConstructors() { throw null; }
         [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicConstructors | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicConstructors)]
         public abstract System.Reflection.ConstructorInfo[] GetConstructors(System.Reflection.BindingFlags bindingAttr);
@@ -4093,7 +4090,6 @@ namespace System
         public abstract System.Type? GetElementType();
         public virtual string? GetEnumName(object value) { throw null; }
         public virtual string[] GetEnumNames() { throw null; }
-        [System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute("ReflectionAnalysis", "IL2006:UnrecognizedReflectionPattern", Justification="The single instance field on enum types is never trimmed")]
         public virtual System.Type GetEnumUnderlyingType() { throw null; }
         public virtual System.Array GetEnumValues() { throw null; }
         [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicEvents)]
@@ -4101,7 +4097,6 @@ namespace System
         [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicEvents | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicEvents)]
         public abstract System.Reflection.EventInfo? GetEvent(string name, System.Reflection.BindingFlags bindingAttr);
         [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicEvents)]
-        [System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute("ReflectionAnalysis", "IL2006:UnrecognizedReflectionPattern", Justification="Linker doesn't recongnize GetEvents(BindingFlags.Public) but this is what the body is doing")]
         public virtual System.Reflection.EventInfo[] GetEvents() { throw null; }
         [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicEvents | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicEvents)]
         public abstract System.Reflection.EventInfo[] GetEvents(System.Reflection.BindingFlags bindingAttr);
@@ -4110,7 +4105,6 @@ namespace System
         [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicFields | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicFields)]
         public abstract System.Reflection.FieldInfo? GetField(string name, System.Reflection.BindingFlags bindingAttr);
         [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicFields)]
-        [System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute("ReflectionAnalysis", "IL2006:UnrecognizedReflectionPattern", Justification="Linker doesn't recongnize GetFields(BindingFlags.Public) but this is what the body is doing")]
         public System.Reflection.FieldInfo[] GetFields() { throw null; }
         [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicFields | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicFields)]
         public abstract System.Reflection.FieldInfo[] GetFields(System.Reflection.BindingFlags bindingAttr);
@@ -4157,7 +4151,6 @@ namespace System
         [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicMethods | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicMethods)]
         protected abstract System.Reflection.MethodInfo? GetMethodImpl(string name, System.Reflection.BindingFlags bindingAttr, System.Reflection.Binder? binder, System.Reflection.CallingConventions callConvention, System.Type[]? types, System.Reflection.ParameterModifier[]? modifiers);
         [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicMethods)]
-        [System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute("ReflectionAnalysis", "IL2006:UnrecognizedReflectionPattern", Justification="Linker doesn't recongnize GetMethods(BindingFlags.Public) but this is what the body is doing")]
         public System.Reflection.MethodInfo[] GetMethods() { throw null; }
         [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicMethods | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicMethods)]
         public abstract System.Reflection.MethodInfo[] GetMethods(System.Reflection.BindingFlags bindingAttr);
@@ -4166,12 +4159,10 @@ namespace System
         [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicNestedTypes | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicNestedTypes)]
         public abstract System.Type? GetNestedType(string name, System.Reflection.BindingFlags bindingAttr);
         [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicNestedTypes)]
-        [System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute("ReflectionAnalysis", "IL2006:UnrecognizedReflectionPattern", Justification="Linker doesn't recongnize GetNestedTypes(BindingFlags.Public) but this is what the body is doing")]
         public System.Type[] GetNestedTypes() { throw null; }
         [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicNestedTypes | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicNestedTypes)]
         public abstract System.Type[] GetNestedTypes(System.Reflection.BindingFlags bindingAttr);
         [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicProperties)]
-        [System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute("ReflectionAnalysis", "IL2006:UnrecognizedReflectionPattern", Justification="Linker doesn't recongnize GetProperties(BindingFlags.Public) but this is what the body is doing")]
         public System.Reflection.PropertyInfo[] GetProperties() { throw null; }
         [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicProperties | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicProperties)]
         public abstract System.Reflection.PropertyInfo[] GetProperties(System.Reflection.BindingFlags bindingAttr);
@@ -4182,7 +4173,6 @@ namespace System
         [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicProperties | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicProperties)]
         public System.Reflection.PropertyInfo? GetProperty(string name, System.Reflection.BindingFlags bindingAttr, System.Reflection.Binder? binder, System.Type? returnType, System.Type[] types, System.Reflection.ParameterModifier[]? modifiers) { throw null; }
         [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicProperties)]
-        [System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute("ReflectionAnalysis", "IL2006:UnrecognizedReflectionPattern", Justification="Linker doesn't recongnize GetPropertyImpl(BindingFlags.Public) but this is what the body is doing")]
         public System.Reflection.PropertyInfo? GetProperty(string name, System.Type? returnType) { throw null; }
         [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicProperties)]
         public System.Reflection.PropertyInfo? GetProperty(string name, System.Type? returnType, System.Type[] types) { throw null; }
@@ -4863,7 +4853,6 @@ namespace System
     public abstract partial class ValueType
     {
         protected ValueType() { }
-        [System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute("ReflectionAnalysis", "IL2006:UnrecognizedReflectionPattern", Justification="Trimmed fields don't make a difference for equality")]
         public override bool Equals(object? obj) { throw null; }
         public override int GetHashCode() { throw null; }
         public override string? ToString() { throw null; }
