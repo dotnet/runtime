@@ -12,7 +12,7 @@ namespace System.Tests
     public partial class NonStandardConfigurationTests
     {
         [PlatformSpecific(TestPlatforms.AnyUnix)] // Uses P/Invokes
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void NonBlockingStdout_AllDataReceived()
         {
             RemoteInvokeHandle remote = RemoteExecutor.Invoke(() =>

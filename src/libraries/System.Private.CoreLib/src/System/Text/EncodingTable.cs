@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Threading;
 
@@ -105,18 +106,47 @@ namespace System.Text
         // Return a list of all EncodingInfo objects describing all of our encodings
         internal static EncodingInfo[] GetEncodings()
         {
-            EncodingInfo[] arrayEncodingInfo = new EncodingInfo[s_mappedCodePages.Length];
+            ushort[] mappedCodePages = s_mappedCodePages;
+            EncodingInfo[] arrayEncodingInfo = new EncodingInfo[mappedCodePages.Length];
+            string webNames = s_webNames;
+            int[] webNameIndices = s_webNameIndices;
 
-            for (int i = 0; i < s_mappedCodePages.Length; i++)
+            for (int i = 0; i < mappedCodePages.Length; i++)
             {
                 arrayEncodingInfo[i] = new EncodingInfo(
-                    s_mappedCodePages[i],
-                    s_webNames[s_webNameIndices[i]..s_webNameIndices[i + 1]],
-                    GetDisplayName(s_mappedCodePages[i], i)
+                    mappedCodePages[i],
+                    webNames[webNameIndices[i]..webNameIndices[i + 1]],
+                    GetDisplayName(mappedCodePages[i], i)
                     );
             }
 
             return arrayEncodingInfo;
+        }
+
+        internal static EncodingInfo[] GetEncodings(Dictionary<int, EncodingInfo> encodingInfoList)
+        {
+            Debug.Assert(encodingInfoList != null);
+            ushort[] mappedCodePages = s_mappedCodePages;
+            string webNames = s_webNames;
+            int[] webNameIndices = s_webNameIndices;
+
+            for (int i = 0; i < mappedCodePages.Length; i++)
+            {
+                if (!encodingInfoList.ContainsKey(mappedCodePages[i]))
+                {
+                    encodingInfoList[mappedCodePages[i]] = new EncodingInfo(mappedCodePages[i], webNames[webNameIndices[i]..webNameIndices[i + 1]],
+                                                                            GetDisplayName(mappedCodePages[i], i));
+                }
+            }
+
+            var result = new EncodingInfo[encodingInfoList.Count];
+            int j = 0;
+            foreach (KeyValuePair<int, EncodingInfo> pair in encodingInfoList)
+            {
+                result[j++] = pair.Value;
+            }
+
+            return result;
         }
 
         internal static CodePageDataItem? GetCodePageDataItem(int codePage)

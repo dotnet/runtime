@@ -3,8 +3,8 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
+using System.Formats.Asn1;
 using System.Linq;
-using System.Security.Cryptography.Asn1;
 using Xunit;
 
 namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
@@ -277,153 +277,134 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
 
             DateTimeOffset newExpiry = now.AddSeconds(2);
 
-            using (AsnWriter writer = new AsnWriter(AsnEncodingRules.DER))
+            AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
+
+            using (writer.PushSequence())
             {
-                writer.PushSequence();
-                {
-                    writer.WriteObjectIdentifier("1.2.840.113549.1.1.11");
-                    writer.WriteNull();
-
-                    writer.PopSequence();
-                }
-
-                byte[] signatureAlgId = writer.Encode();
-                writer.Reset();
-
-                // TBSCertList
-                writer.PushSequence();
-                {
-                    // version v2(1)
-                    writer.WriteInteger(1);
-
-                    // signature (AlgorithmIdentifier)
-                    writer.WriteEncodedValue(signatureAlgId);
-
-                    // issuer
-                    if (CorruptRevocationIssuerName)
-                    {
-                        writer.WriteEncodedValue(s_nonParticipatingName.RawData);
-                    }
-                    else
-                    {
-                        writer.WriteEncodedValue(_cert.SubjectName.RawData);
-                    }
-
-                    if (RevocationExpiration.HasValue)
-                    {
-                        // thisUpdate
-                        writer.WriteUtcTime(_cert.NotBefore);
-
-                        // nextUpdate
-                        writer.WriteUtcTime(RevocationExpiration.Value);
-                    }
-                    else
-                    {
-                        // thisUpdate
-                        writer.WriteUtcTime(now);
-
-                        // nextUpdate
-                        writer.WriteUtcTime(newExpiry);
-                    }
-
-                    // revokedCertificates (don't write down if empty)
-                    if (_revocationList?.Count > 0)
-                    {
-                        // SEQUENCE OF
-                        writer.PushSequence();
-                        {
-                            foreach ((byte[] serial, DateTimeOffset when) in _revocationList)
-                            {
-                                // Anonymous CRL Entry type
-                                writer.PushSequence();
-                                {
-                                    writer.WriteInteger(serial);
-                                    writer.WriteUtcTime(when);
-
-                                    writer.PopSequence();
-                                }
-                            }
-
-                            writer.PopSequence();
-                        }
-                    }
-
-                    // extensions [0] EXPLICIT Extensions
-                    writer.PushSequence(s_context0);
-                    {
-                        // Extensions (SEQUENCE OF)
-                        writer.PushSequence();
-                        {
-                            if (_akidExtension == null)
-                            {
-                                _akidExtension = CreateAkidExtension();
-                            }
-
-                            // Authority Key Identifier Extension
-                            writer.PushSequence();
-                            {
-                                writer.WriteObjectIdentifier(_akidExtension.Oid.Value);
-
-                                if (_akidExtension.Critical)
-                                {
-                                    writer.WriteBoolean(true);
-                                }
-
-                                writer.WriteOctetString(_akidExtension.RawData);
-                                writer.PopSequence();
-                            }
-
-                            // CRL Number Extension
-                            writer.PushSequence();
-                            {
-                                writer.WriteObjectIdentifier("2.5.29.20");
-
-                                using (AsnWriter nested = new AsnWriter(AsnEncodingRules.DER))
-                                {
-                                    nested.WriteInteger(_crlNumber);
-                                    writer.WriteOctetString(nested.Encode());
-                                }
-
-                                writer.PopSequence();
-                            }
-
-                            writer.PopSequence();
-                        }
-
-                        writer.PopSequence(s_context0);
-                    }
-
-                    writer.PopSequence();
-                }
-
-                byte[] tbsCertList = writer.Encode();
-                writer.Reset();
-
-                byte[] signature;
-
-                using (RSA key = _cert.GetRSAPrivateKey())
-                {
-                    signature =
-                        key.SignData(tbsCertList, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
-
-                    if (CorruptRevocationSignature)
-                    {
-                        signature[5] ^= 0xFF;
-                    }
-                }
-
-                // CertificateList
-                writer.PushSequence();
-                {
-                    writer.WriteEncodedValue(tbsCertList);
-                    writer.WriteEncodedValue(signatureAlgId);
-                    writer.WriteBitString(signature);
-
-                    writer.PopSequence();
-                }
-
-                _crl = writer.Encode();
+                writer.WriteObjectIdentifier("1.2.840.113549.1.1.11");
+                writer.WriteNull();
             }
+
+            byte[] signatureAlgId = writer.Encode();
+            writer.Reset();
+
+            // TBSCertList
+            using (writer.PushSequence())
+            {
+                // version v2(1)
+                writer.WriteInteger(1);
+
+                // signature (AlgorithmIdentifier)
+                writer.WriteEncodedValue(signatureAlgId);
+
+                // issuer
+                if (CorruptRevocationIssuerName)
+                {
+                    writer.WriteEncodedValue(s_nonParticipatingName.RawData);
+                }
+                else
+                {
+                    writer.WriteEncodedValue(_cert.SubjectName.RawData);
+                }
+
+                if (RevocationExpiration.HasValue)
+                {
+                    // thisUpdate
+                    writer.WriteUtcTime(_cert.NotBefore);
+
+                    // nextUpdate
+                    writer.WriteUtcTime(RevocationExpiration.Value);
+                }
+                else
+                {
+                    // thisUpdate
+                    writer.WriteUtcTime(now);
+
+                    // nextUpdate
+                    writer.WriteUtcTime(newExpiry);
+                }
+
+                // revokedCertificates (don't write down if empty)
+                if (_revocationList?.Count > 0)
+                {
+                    // SEQUENCE OF
+                    using (writer.PushSequence())
+                    {
+                        foreach ((byte[] serial, DateTimeOffset when) in _revocationList)
+                        {
+                            // Anonymous CRL Entry type
+                            using (writer.PushSequence())
+                            {
+                                writer.WriteInteger(serial);
+                                writer.WriteUtcTime(when);
+                            }
+                        }
+                    }
+                }
+
+                // extensions [0] EXPLICIT Extensions
+                using (writer.PushSequence(s_context0))
+                {
+                    // Extensions (SEQUENCE OF)
+                    using (writer.PushSequence())
+                    {
+                        if (_akidExtension == null)
+                        {
+                            _akidExtension = CreateAkidExtension();
+                        }
+
+                        // Authority Key Identifier Extension
+                        using (writer.PushSequence())
+                        {
+                            writer.WriteObjectIdentifier(_akidExtension.Oid.Value);
+
+                            if (_akidExtension.Critical)
+                            {
+                                writer.WriteBoolean(true);
+                            }
+
+                            writer.WriteOctetString(_akidExtension.RawData);
+                        }
+
+                        // CRL Number Extension
+                        using (writer.PushSequence())
+                        {
+                            writer.WriteObjectIdentifier("2.5.29.20");
+
+                            using (writer.PushOctetString())
+                            {
+                                writer.WriteInteger(_crlNumber);
+                            }
+                        }
+                    }
+                }
+            }
+
+            byte[] tbsCertList = writer.Encode();
+            writer.Reset();
+
+            byte[] signature;
+
+            using (RSA key = _cert.GetRSAPrivateKey())
+            {
+                signature =
+                    key.SignData(tbsCertList, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
+
+                if (CorruptRevocationSignature)
+                {
+                    signature[5] ^= 0xFF;
+                }
+            }
+
+            // CertificateList
+            using (writer.PushSequence())
+            {
+                writer.WriteEncodedValue(tbsCertList);
+                writer.WriteEncodedValue(signatureAlgId);
+                writer.WriteBitString(signature);
+            }
+
+            _crl = writer.Encode();
 
             _crlExpiry = newExpiry;
             _crlNumber++;
@@ -445,10 +426,9 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
             CertStatus status = CheckRevocation(certId, ref revokedTime);
             X509Certificate2 responder = (_ocspResponder ?? _cert);
 
-            using (AsnWriter writer = new AsnWriter(AsnEncodingRules.DER))
-            {
-                /*
-                 
+            AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
+
+            /*
    ResponseData ::= SEQUENCE {
       version              [0] EXPLICIT Version DEFAULT v1,
       responderID              ResponderID,
@@ -456,179 +436,152 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
       responses                SEQUENCE OF SingleResponse,
       responseExtensions   [1] EXPLICIT Extensions OPTIONAL }
                  */
-                writer.PushSequence();
+            using (writer.PushSequence())
+            {
+                // Skip version (v1)
+
+                /*
+ResponderID ::= CHOICE {
+  byName               [1] Name,
+  byKey                [2] KeyHash }
+                 */
+
+                using (writer.PushSequence(s_context1))
                 {
-                    // Skip version (v1)
-
-                    /*
-   ResponderID ::= CHOICE {
-      byName               [1] Name,
-      byKey                [2] KeyHash }
-                     */
-
-                    writer.PushSequence(s_context1);
+                    if (CorruptRevocationIssuerName)
                     {
-                        if (CorruptRevocationIssuerName)
+                        writer.WriteEncodedValue(s_nonParticipatingName.RawData);
+                    }
+                    else
+                    {
+                        writer.WriteEncodedValue(responder.SubjectName.RawData);
+                    }
+                }
+
+                writer.WriteGeneralizedTime(now);
+
+                using (writer.PushSequence())
+                {
+                    /*
+SingleResponse ::= SEQUENCE {
+  certID                       CertID,
+  certStatus                   CertStatus,
+  thisUpdate                   GeneralizedTime,
+  nextUpdate         [0]       EXPLICIT GeneralizedTime OPTIONAL,
+  singleExtensions   [1]       EXPLICIT Extensions OPTIONAL }
+                     */
+                    using (writer.PushSequence())
+                    {
+                        writer.WriteEncodedValue(certId.Span);
+
+                        if (status == CertStatus.OK)
                         {
-                            writer.WriteEncodedValue(s_nonParticipatingName.RawData);
+                            writer.WriteNull(s_context0);
+                        }
+                        else if (status == CertStatus.Revoked)
+                        {
+                            writer.PushSequence(s_context1);
+                            writer.WriteGeneralizedTime(revokedTime);
+                            writer.PopSequence(s_context1);
                         }
                         else
                         {
-                            writer.WriteEncodedValue(responder.SubjectName.RawData);
+                            Assert.Equal(CertStatus.Unknown, status);
+                            writer.WriteNull(s_context2);
                         }
 
-                        writer.PopSequence(s_context1);
-                    }
-
-                    writer.WriteGeneralizedTime(now);
-
-                    writer.PushSequence();
-                    {
-                        /*
-   SingleResponse ::= SEQUENCE {
-      certID                       CertID,
-      certStatus                   CertStatus,
-      thisUpdate                   GeneralizedTime,
-      nextUpdate         [0]       EXPLICIT GeneralizedTime OPTIONAL,
-      singleExtensions   [1]       EXPLICIT Extensions OPTIONAL }
-                         */
-                        writer.PushSequence();
+                        if (RevocationExpiration.HasValue)
                         {
-                            writer.WriteEncodedValue(certId.Span);
+                            writer.WriteGeneralizedTime(
+                                _cert.NotBefore,
+                                omitFractionalSeconds: true);
 
-                            if (status == CertStatus.OK)
-                            {
-                                writer.WriteNull(s_context0);
-                            }
-                            else if (status == CertStatus.Revoked)
-                            {
-                                writer.PushSequence(s_context1);
-                                writer.WriteGeneralizedTime(revokedTime);
-                                writer.PopSequence(s_context1);
-                            }
-                            else
-                            {
-                                Assert.Equal(CertStatus.Unknown, status);
-                                writer.WriteNull(s_context2);
-                            }
-
-                            if (RevocationExpiration.HasValue)
+                            using (writer.PushSequence(s_context0))
                             {
                                 writer.WriteGeneralizedTime(
-                                    _cert.NotBefore,
+                                    RevocationExpiration.Value,
                                     omitFractionalSeconds: true);
-
-                                writer.PushSequence(s_context0);
-                                {
-                                    writer.WriteGeneralizedTime(
-                                        RevocationExpiration.Value,
-                                        omitFractionalSeconds: true);
-
-                                    writer.PopSequence(s_context0);
-                                }
                             }
-                            else
-                            {
-                                writer.WriteGeneralizedTime(now, omitFractionalSeconds: true);
-                            }
-
-                            writer.PopSequence();
                         }
-
-                        writer.PopSequence();
-                    }
-
-                    if (!nonceExtension.IsEmpty)
-                    {
-                        writer.PushSequence(s_context1);
+                        else
                         {
-                            writer.PushSequence();
-                            writer.WriteEncodedValue(nonceExtension.Span);
-                            writer.PopSequence();
-                            writer.PopSequence(s_context1);
+                            writer.WriteGeneralizedTime(now, omitFractionalSeconds: true);
                         }
                     }
-
-                    writer.PopSequence();
                 }
 
-                byte[] tbsResponseData = writer.Encode();
-                writer.Reset();
-
-                /*
-                    BasicOCSPResponse       ::= SEQUENCE {
-      tbsResponseData      ResponseData,
-      signatureAlgorithm   AlgorithmIdentifier,
-      signature            BIT STRING,
-      certs            [0] EXPLICIT SEQUENCE OF Certificate OPTIONAL }
-                 */
-                writer.PushSequence();
+                if (!nonceExtension.IsEmpty)
                 {
-                    writer.WriteEncodedValue(tbsResponseData);
-
-                    writer.PushSequence();
+                    using (writer.PushSequence(s_context1))
+                    using (writer.PushSequence())
                     {
-                        writer.WriteObjectIdentifier("1.2.840.113549.1.1.11");
-                        writer.WriteNull();
-                        writer.PopSequence();
+                        writer.WriteEncodedValue(nonceExtension.Span);
                     }
-
-                    using (RSA rsa = responder.GetRSAPrivateKey())
-                    {
-                        byte[] signature = rsa.SignData(
-                            tbsResponseData,
-                            HashAlgorithmName.SHA256,
-                            RSASignaturePadding.Pkcs1);
-
-                        if (CorruptRevocationSignature)
-                        {
-                            signature[5] ^= 0xFF;
-                        }
-
-                        writer.WriteBitString(signature);
-                    }
-
-                    if (_ocspResponder != null)
-                    {
-                        writer.PushSequence(s_context0);
-                        {
-                            writer.PushSequence();
-                            {
-                                writer.WriteEncodedValue(_ocspResponder.RawData);
-                                writer.PopSequence();
-                            }
-
-                            writer.PopSequence(s_context0);
-                        }
-                    }
-
-                    writer.PopSequence();
                 }
-
-                byte[] responseBytes = writer.Encode();
-                writer.Reset();
-
-                writer.PushSequence();
-                {
-                    writer.WriteEnumeratedValue(OcspResponseStatus.Successful);
-
-                    writer.PushSequence(s_context0);
-                    {
-                        writer.PushSequence();
-                        {
-                            writer.WriteObjectIdentifier("1.3.6.1.5.5.7.48.1.1");
-                            writer.WriteOctetString(responseBytes);
-                            writer.PopSequence();
-                        }
-
-                        writer.PopSequence(s_context0);
-                    }
-
-                    writer.PopSequence();
-                }
-
-                return writer.Encode();
             }
+
+            byte[] tbsResponseData = writer.Encode();
+            writer.Reset();
+
+            /*
+                BasicOCSPResponse       ::= SEQUENCE {
+  tbsResponseData      ResponseData,
+  signatureAlgorithm   AlgorithmIdentifier,
+  signature            BIT STRING,
+  certs            [0] EXPLICIT SEQUENCE OF Certificate OPTIONAL }
+             */
+            using (writer.PushSequence())
+            {
+                writer.WriteEncodedValue(tbsResponseData);
+
+                using (writer.PushSequence())
+                {
+                    writer.WriteObjectIdentifier("1.2.840.113549.1.1.11");
+                    writer.WriteNull();
+                }
+
+                using (RSA rsa = responder.GetRSAPrivateKey())
+                {
+                    byte[] signature = rsa.SignData(
+                        tbsResponseData,
+                        HashAlgorithmName.SHA256,
+                        RSASignaturePadding.Pkcs1);
+
+                    if (CorruptRevocationSignature)
+                    {
+                        signature[5] ^= 0xFF;
+                    }
+
+                    writer.WriteBitString(signature);
+                }
+
+                if (_ocspResponder != null)
+                {
+                    using (writer.PushSequence(s_context0))
+                    using (writer.PushSequence())
+                    {
+                        writer.WriteEncodedValue(_ocspResponder.RawData);
+                        writer.PopSequence();
+                    }
+                }
+            }
+
+            byte[] responseBytes = writer.Encode();
+            writer.Reset();
+
+            using (writer.PushSequence())
+            {
+                writer.WriteEnumeratedValue(OcspResponseStatus.Successful);
+
+                using (writer.PushSequence(s_context0))
+                using (writer.PushSequence())
+                {
+                    writer.WriteObjectIdentifier("1.3.6.1.5.5.7.48.1.1");
+                    writer.WriteOctetString(responseBytes);
+                }
+            }
+
+            return writer.Encode();
         }
 
         private CertStatus CheckRevocation(ReadOnlyMemory<byte> certId, ref DateTimeOffset revokedTime)
@@ -639,7 +592,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
 
             AsnReader algIdReader = idReader.ReadSequence();
 
-            if (algIdReader.ReadObjectIdentifierAsString() != "1.3.14.3.2.26")
+            if (algIdReader.ReadObjectIdentifier() != "1.3.14.3.2.26")
             {
                 return CertStatus.Unknown;
             }
@@ -658,7 +611,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
                 }
             }
 
-            if (!idReader.TryReadPrimitiveOctetStringBytes(out ReadOnlyMemory<byte> reqDn))
+            if (!idReader.TryReadPrimitiveOctetString(out ReadOnlyMemory<byte> reqDn))
             {
                 idReader.ThrowIfNotEmpty();
             }
@@ -668,7 +621,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
                 return CertStatus.Unknown;
             }
 
-            if (!idReader.TryReadPrimitiveOctetStringBytes(out ReadOnlyMemory<byte> reqKeyHash))
+            if (!idReader.TryReadPrimitiveOctetString(out ReadOnlyMemory<byte> reqKeyHash))
             {
                 idReader.ThrowIfNotEmpty();
             }
@@ -699,69 +652,55 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
 
         private static X509Extension CreateAiaExtension(string ocspStem)
         {
-            using (AsnWriter writer = new AsnWriter(AsnEncodingRules.DER))
+            AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
+
+            // AuthorityInfoAccessSyntax (SEQUENCE OF)
+            using (writer.PushSequence())
             {
-                // AuthorityInfoAccessSyntax (SEQUENCE OF)
-                writer.PushSequence();
+                // AccessDescription
+                using (writer.PushSequence())
                 {
-                    // AccessDescription
-                    writer.PushSequence();
-                    {
-                        writer.WriteObjectIdentifier("1.3.6.1.5.5.7.48.1");
+                    writer.WriteObjectIdentifier("1.3.6.1.5.5.7.48.1");
 
-                        writer.WriteCharacterString(
-                            new Asn1Tag(TagClass.ContextSpecific, 6),
-                            UniversalTagNumber.IA5String,
-                            ocspStem);
-
-                        writer.PopSequence();
-                    }
-
-                    writer.PopSequence();
+                    writer.WriteCharacterString(
+                        UniversalTagNumber.IA5String,
+                        ocspStem,
+                        new Asn1Tag(TagClass.ContextSpecific, 6));
                 }
-
-                return new X509Extension("1.3.6.1.5.5.7.1.1", writer.Encode(), false);
             }
+
+            return new X509Extension("1.3.6.1.5.5.7.1.1", writer.Encode(), false);
         }
 
         private static X509Extension CreateCdpExtension(string cdp)
         {
-            using (AsnWriter writer = new AsnWriter(AsnEncodingRules.DER))
+            AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
+
+            // SEQUENCE OF
+            using (writer.PushSequence())
             {
-                // SEQUENCE OF
-                writer.PushSequence();
+                // DistributionPoint
+                using (writer.PushSequence())
                 {
-                    // DistributionPoint
-                    writer.PushSequence();
+                    // Because DistributionPointName is a CHOICE type this tag is explicit.
+                    // (ITU-T REC X.680-201508 C.3.2.2(g)(3rd bullet))
+                    // distributionPoint [0] DistributionPointName
+                    using (writer.PushSequence(s_context0))
                     {
-                        // Because DistributionPointName is a CHOICE type this tag is explicit.
-                        // (ITU-T REC X.680-201508 C.3.2.2(g)(3rd bullet))
-                        // distributionPoint [0] DistributionPointName
-                        writer.PushSequence(s_context0);
+                        // [0] DistributionPointName (GeneralNames (SEQUENCE OF))
+                        using (writer.PushSequence(s_context0))
                         {
-                            // [0] DistributionPointName (GeneralNames (SEQUENCE OF))
-                            writer.PushSequence(s_context0);
-                            {
-                                // GeneralName ([6]  IA5String)
-                                writer.WriteCharacterString(
-                                    new Asn1Tag(TagClass.ContextSpecific, 6),
-                                    UniversalTagNumber.IA5String,
-                                    cdp);
-
-                                writer.PopSequence(s_context0);
-                            }
-
-                            writer.PopSequence(s_context0);
+                            // GeneralName ([6]  IA5String)
+                            writer.WriteCharacterString(
+                                UniversalTagNumber.IA5String,
+                                cdp,
+                                new Asn1Tag(TagClass.ContextSpecific, 6));
                         }
-
-                        writer.PopSequence();
                     }
-
-                    writer.PopSequence();
                 }
-
-                return new X509Extension("2.5.29.31", writer.Encode(), false);
             }
+
+            return new X509Extension("2.5.29.31", writer.Encode(), false);
         }
 
         private X509Extension CreateAkidExtension()
@@ -769,53 +708,49 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
             X509SubjectKeyIdentifierExtension skid =
                 _cert.Extensions.OfType<X509SubjectKeyIdentifierExtension>().SingleOrDefault();
 
-            using (AsnWriter writer = new AsnWriter(AsnEncodingRules.DER))
+            AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
+
+            // AuthorityKeyIdentifier
+            using (writer.PushSequence())
             {
-                // AuthorityKeyIdentifier
-                writer.PushSequence();
+                if (skid == null)
                 {
-                    if (skid == null)
+                    // authorityCertIssuer [1] GeneralNames (SEQUENCE OF)
+                    using (writer.PushSequence(s_context1))
                     {
-                        // authorityCertIssuer [1] GeneralNames (SEQUENCE OF)
-                        writer.PushSequence(s_context1);
-                        {
-                            // directoryName [4] Name
-                            byte[] dn = _cert.SubjectName.RawData;
+                        // directoryName [4] Name
+                        byte[] dn = _cert.SubjectName.RawData;
 
-                            if (!s_context4.TryEncode(dn, out int written) || written != 1)
-                            {
-                                throw new InvalidOperationException();
-                            }
-
-                            writer.WriteEncodedValue(dn);
-                            writer.PopSequence(s_context1);
-                        }
-
-                        // authorityCertSerialNumber [2] CertificateSerialNumber (INTEGER)
-                        byte[] serial = _cert.GetSerialNumber();
-                        Array.Reverse(serial);
-                        writer.WriteInteger(s_context2, serial);
-                    }
-                    else
-                    {
-                        // keyIdentifier [0] KeyIdentifier (OCTET STRING)
-                        AsnReader reader = new AsnReader(skid.RawData, AsnEncodingRules.BER);
-                        ReadOnlyMemory<byte> contents;
-
-                        if (!reader.TryReadPrimitiveOctetStringBytes(out contents))
+                        if (s_context4.Encode(dn) != 1)
                         {
                             throw new InvalidOperationException();
                         }
 
-                        reader.ThrowIfNotEmpty();
-                        writer.WriteOctetString(s_context0, contents.Span);
+                        writer.WriteEncodedValue(dn);
                     }
 
-                    writer.PopSequence();
+                    // authorityCertSerialNumber [2] CertificateSerialNumber (INTEGER)
+                    byte[] serial = _cert.GetSerialNumber();
+                    Array.Reverse(serial);
+                    writer.WriteInteger(serial, s_context2);
                 }
+                else
+                {
+                    // keyIdentifier [0] KeyIdentifier (OCTET STRING)
+                    AsnReader reader = new AsnReader(skid.RawData, AsnEncodingRules.BER);
+                    ReadOnlyMemory<byte> contents;
 
-                return new X509Extension("2.5.29.35", writer.Encode(), false);
+                    if (!reader.TryReadPrimitiveOctetString(out contents))
+                    {
+                        throw new InvalidOperationException();
+                    }
+
+                    reader.ThrowIfNotEmpty();
+                    writer.WriteOctetString(contents.Span, s_context0);
+                }
             }
+
+            return new X509Extension("2.5.29.35", writer.Encode(), false);
         }
 
         private enum OcspResponseStatus

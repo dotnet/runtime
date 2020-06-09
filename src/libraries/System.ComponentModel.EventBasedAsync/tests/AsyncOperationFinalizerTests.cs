@@ -11,7 +11,7 @@ namespace System.ComponentModel.Tests
 {
     public class AsyncOperationFinalizerTests
     {
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void Finalizer_OperationCompleted_DoesNotCallOperationCompleted()
         {
             RemoteExecutor.Invoke(() =>
@@ -35,7 +35,7 @@ namespace System.ComponentModel.Tests
             Assert.True(tracker.OperationDidComplete);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void Finalizer_OperationNotCompleted_CompletesOperation()
         {
             RemoteExecutor.Invoke(() =>

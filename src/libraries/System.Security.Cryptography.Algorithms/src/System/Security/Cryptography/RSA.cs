@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Buffers;
+using System.Formats.Asn1;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography.Asn1;
@@ -288,34 +289,26 @@ namespace System.Security.Cryptography
 
         public virtual byte[] ExportRSAPrivateKey()
         {
-            using (AsnWriter pkcs1PrivateKey = WritePkcs1PrivateKey())
-            {
-                return pkcs1PrivateKey.Encode();
-            }
+            AsnWriter pkcs1PrivateKey = WritePkcs1PrivateKey();
+            return pkcs1PrivateKey.Encode();
         }
 
         public virtual bool TryExportRSAPrivateKey(Span<byte> destination, out int bytesWritten)
         {
-            using (AsnWriter pkcs1PrivateKey = WritePkcs1PrivateKey())
-            {
-                return pkcs1PrivateKey.TryEncode(destination, out bytesWritten);
-            }
+            AsnWriter pkcs1PrivateKey = WritePkcs1PrivateKey();
+            return pkcs1PrivateKey.TryEncode(destination, out bytesWritten);
         }
 
         public virtual byte[] ExportRSAPublicKey()
         {
-            using (AsnWriter pkcs1PublicKey = WritePkcs1PublicKey())
-            {
-                return pkcs1PublicKey.Encode();
-            }
+            AsnWriter pkcs1PublicKey = WritePkcs1PublicKey();
+            return pkcs1PublicKey.Encode();
         }
 
         public virtual bool TryExportRSAPublicKey(Span<byte> destination, out int bytesWritten)
         {
-            using (AsnWriter pkcs1PublicKey = WritePkcs1PublicKey())
-            {
-                return pkcs1PublicKey.TryEncode(destination, out bytesWritten);
-            }
+            AsnWriter pkcs1PublicKey = WritePkcs1PublicKey();
+            return pkcs1PublicKey.TryEncode(destination, out bytesWritten);
         }
 
         public override unsafe bool TryExportSubjectPublicKeyInfo(Span<byte> destination, out int bytesWritten)
@@ -343,10 +336,8 @@ namespace System.Security.Cryptography
                             continue;
                         }
 
-                        using (AsnWriter writer = RSAKeyFormatHelper.WriteSubjectPublicKeyInfo(rented.AsSpan(0, pkcs1Size)))
-                        {
-                            return writer.TryEncode(destination, out bytesWritten);
-                        }
+                        AsnWriter writer = RSAKeyFormatHelper.WriteSubjectPublicKeyInfo(rented.AsSpan(0, pkcs1Size));
+                        return writer.TryEncode(destination, out bytesWritten);
                     }
                     finally
                     {
@@ -358,10 +349,8 @@ namespace System.Security.Cryptography
 
         public override bool TryExportPkcs8PrivateKey(Span<byte> destination, out int bytesWritten)
         {
-            using (AsnWriter writer = WritePkcs8PrivateKey())
-            {
-                return writer.TryEncode(destination, out bytesWritten);
-            }
+            AsnWriter writer = WritePkcs8PrivateKey();
+            return writer.TryEncode(destination, out bytesWritten);
         }
 
         private unsafe AsnWriter WritePkcs8PrivateKey()
@@ -414,14 +403,14 @@ namespace System.Security.Cryptography
                 password,
                 ReadOnlySpan<byte>.Empty);
 
-            using (AsnWriter pkcs8PrivateKey = WritePkcs8PrivateKey())
-            using (AsnWriter writer = KeyFormatHelper.WriteEncryptedPkcs8(
+            AsnWriter pkcs8PrivateKey = WritePkcs8PrivateKey();
+
+            AsnWriter writer = KeyFormatHelper.WriteEncryptedPkcs8(
                 password,
                 pkcs8PrivateKey,
-                pbeParameters))
-            {
-                return writer.TryEncode(destination, out bytesWritten);
-            }
+                pbeParameters);
+
+            return writer.TryEncode(destination, out bytesWritten);
         }
 
         public override bool TryExportEncryptedPkcs8PrivateKey(
@@ -438,14 +427,14 @@ namespace System.Security.Cryptography
                 ReadOnlySpan<char>.Empty,
                 passwordBytes);
 
-            using (AsnWriter pkcs8PrivateKey = WritePkcs8PrivateKey())
-            using (AsnWriter writer = KeyFormatHelper.WriteEncryptedPkcs8(
+            AsnWriter pkcs8PrivateKey = WritePkcs8PrivateKey();
+
+            AsnWriter writer = KeyFormatHelper.WriteEncryptedPkcs8(
                 passwordBytes,
                 pkcs8PrivateKey,
-                pbeParameters))
-            {
-                return writer.TryEncode(destination, out bytesWritten);
-            }
+                pbeParameters);
+
+            return writer.TryEncode(destination, out bytesWritten);
         }
 
         private AsnWriter WritePkcs1PublicKey()
@@ -494,56 +483,79 @@ namespace System.Security.Cryptography
 
         public virtual unsafe void ImportRSAPublicKey(ReadOnlySpan<byte> source, out int bytesRead)
         {
-            fixed (byte* ptr = &MemoryMarshal.GetReference(source))
+            try
             {
-                using (MemoryManager<byte> manager = new PointerMemoryManager<byte>(ptr, source.Length))
+                AsnDecoder.ReadEncodedValue(
+                    source,
+                    AsnEncodingRules.BER,
+                    out _,
+                    out _,
+                    out int localRead);
+
+                fixed (byte* ptr = &MemoryMarshal.GetReference(source))
                 {
-                    AsnReader reader = new AsnReader(manager.Memory, AsnEncodingRules.BER);
-                    ReadOnlyMemory<byte> firstValue = reader.PeekEncodedValue();
-                    int localRead = firstValue.Length;
+                    using (MemoryManager<byte> manager = new PointerMemoryManager<byte>(ptr, localRead))
+                    {
+                        AlgorithmIdentifierAsn ignored = default;
+                        RSAKeyFormatHelper.ReadRsaPublicKey(manager.Memory, ignored, out RSAParameters rsaParameters);
 
-                    AlgorithmIdentifierAsn ignored = default;
-                    RSAKeyFormatHelper.ReadRsaPublicKey(firstValue, ignored, out RSAParameters rsaParameters);
+                        ImportParameters(rsaParameters);
 
-                    ImportParameters(rsaParameters);
-
-                    bytesRead = localRead;
+                        bytesRead = localRead;
+                    }
                 }
+            }
+            catch (AsnContentException e)
+            {
+                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding, e);
             }
         }
 
         public virtual unsafe void ImportRSAPrivateKey(ReadOnlySpan<byte> source, out int bytesRead)
         {
-            fixed (byte* ptr = &MemoryMarshal.GetReference(source))
+            try
             {
-                using (MemoryManager<byte> manager = new PointerMemoryManager<byte>(ptr, source.Length))
+                AsnDecoder.ReadEncodedValue(
+                    source,
+                    AsnEncodingRules.BER,
+                    out _,
+                    out _,
+                    out int firstValueLength);
+
+                fixed (byte* ptr = &MemoryMarshal.GetReference(source))
                 {
-                    AsnReader reader = new AsnReader(manager.Memory, AsnEncodingRules.BER);
-                    ReadOnlyMemory<byte> firstValue = reader.PeekEncodedValue();
-                    int localRead = firstValue.Length;
-
-                    AlgorithmIdentifierAsn ignored = default;
-                    RSAKeyFormatHelper.FromPkcs1PrivateKey(firstValue, ignored, out RSAParameters rsaParameters);
-
-                    fixed (byte* dPin = rsaParameters.D)
-                    fixed (byte* pPin = rsaParameters.P)
-                    fixed (byte* qPin = rsaParameters.Q)
-                    fixed (byte* dpPin = rsaParameters.DP)
-                    fixed (byte* dqPin = rsaParameters.DQ)
-                    fixed (byte* qInvPin = rsaParameters.InverseQ)
+                    using (MemoryManager<byte> manager = new PointerMemoryManager<byte>(ptr, firstValueLength))
                     {
-                        try
-                        {
-                            ImportParameters(rsaParameters);
-                        }
-                        finally
-                        {
-                            ClearPrivateParameters(rsaParameters);
-                        }
-                    }
+                        ReadOnlyMemory<byte> firstValue = manager.Memory;
+                        int localRead = firstValue.Length;
 
-                    bytesRead = localRead;
+                        AlgorithmIdentifierAsn ignored = default;
+                        RSAKeyFormatHelper.FromPkcs1PrivateKey(firstValue, ignored, out RSAParameters rsaParameters);
+
+                        fixed (byte* dPin = rsaParameters.D)
+                        fixed (byte* pPin = rsaParameters.P)
+                        fixed (byte* qPin = rsaParameters.Q)
+                        fixed (byte* dpPin = rsaParameters.DP)
+                        fixed (byte* dqPin = rsaParameters.DQ)
+                        fixed (byte* qInvPin = rsaParameters.InverseQ)
+                        {
+                            try
+                            {
+                                ImportParameters(rsaParameters);
+                            }
+                            finally
+                            {
+                                ClearPrivateParameters(rsaParameters);
+                            }
+                        }
+
+                        bytesRead = localRead;
+                    }
                 }
+            }
+            catch (AsnContentException e)
+            {
+                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding, e);
             }
         }
 

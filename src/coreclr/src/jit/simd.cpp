@@ -1824,6 +1824,25 @@ GenTree* Compiler::impSIMDIntrinsic(OPCODE                opcode,
         return nullptr;
     }
 
+#if defined(TARGET_XARCH)
+    CORINFO_InstructionSet minimumIsa = InstructionSet_SSE2;
+#elif defined(TARGET_ARM64)
+    CORINFO_InstructionSet minimumIsa = InstructionSet_AdvSimd;
+#else
+#error Unsupported platform
+#endif // !TARGET_XARCH && !TARGET_ARM64
+
+    if (!compOpportunisticallyDependsOn(minimumIsa))
+    {
+        // The user disabled support for the baseline ISA so
+        // don't emit any SIMD intrinsics as they all require
+        // this at a minimum. We will, however, return false
+        // for IsHardwareAccelerated as that will help with
+        // dead code elimination.
+
+        return (intrinsicInfo->id == SIMDIntrinsicHWAccel) ? gtNewIconNode(0, TYP_INT) : nullptr;
+    }
+
     SIMDIntrinsicID simdIntrinsicID = intrinsicInfo->id;
     var_types       simdType;
     if (baseType != TYP_UNKNOWN)

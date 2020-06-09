@@ -24,8 +24,8 @@ namespace System.Net.Mime
     {
         private readonly TrackingStringDictionary _parameters = new TrackingStringDictionary();
 
-        private string _mediaType = null!; // initialized by helper called from ctor
-        private string _subType = null!; // initialized by helper called from ctor
+        private string _mediaType;
+        private string _subType;
         private bool _isChanged;
         private string _type;
         private bool _isPersisted;
@@ -231,86 +231,71 @@ namespace System.Net.Mime
         public override int GetHashCode() => ToString().ToLowerInvariant().GetHashCode();
 
         // Helper methods.
-
+        [MemberNotNull(nameof(_mediaType))]
+        [MemberNotNull(nameof(_subType))]
         private void ParseValue()
         {
-            int offset = 0;
-            Exception? exception = null;
-
             try
             {
+                int offset = 0;
+
                 _mediaType = MailBnfHelper.ReadToken(_type, ref offset, null);
                 if (_mediaType == null || _mediaType.Length == 0 || offset >= _type.Length || _type[offset++] != '/')
                 {
-                    exception = new FormatException(SR.ContentTypeInvalid);
+                    throw new FormatException(SR.ContentTypeInvalid);
                 }
 
-                if (exception == null)
+                _subType = MailBnfHelper.ReadToken(_type, ref offset, null);
+                if (_subType == null || _subType.Length == 0)
                 {
-                    _subType = MailBnfHelper.ReadToken(_type, ref offset, null);
-                    if (_subType == null || _subType.Length == 0)
-                    {
-                        exception = new FormatException(SR.ContentTypeInvalid);
-                    }
+                    throw new FormatException(SR.ContentTypeInvalid);
                 }
 
-                if (exception == null)
+                while (MailBnfHelper.SkipCFWS(_type, ref offset))
                 {
-                    while (MailBnfHelper.SkipCFWS(_type, ref offset))
+                    if (_type[offset++] != ';')
                     {
-                        if (_type[offset++] != ';')
-                        {
-                            exception = new FormatException(SR.ContentTypeInvalid);
-                            break;
-                        }
-
-                        if (!MailBnfHelper.SkipCFWS(_type, ref offset))
-                        {
-                            break;
-                        }
-
-                        string? paramAttribute = MailBnfHelper.ReadParameterAttribute(_type, ref offset, null);
-
-                        if (paramAttribute == null || paramAttribute.Length == 0)
-                        {
-                            exception = new FormatException(SR.ContentTypeInvalid);
-                            break;
-                        }
-
-                        string? paramValue;
-                        if (offset >= _type.Length || _type[offset++] != '=')
-                        {
-                            exception = new FormatException(SR.ContentTypeInvalid);
-                            break;
-                        }
-
-                        if (!MailBnfHelper.SkipCFWS(_type, ref offset))
-                        {
-                            exception = new FormatException(SR.ContentTypeInvalid);
-                            break;
-                        }
-
-                        paramValue = _type[offset] == '"' ?
-                            MailBnfHelper.ReadQuotedString(_type, ref offset, null) :
-                            MailBnfHelper.ReadToken(_type, ref offset, null);
-
-                        if (paramValue == null)
-                        {
-                            exception = new FormatException(SR.ContentTypeInvalid);
-                            break;
-                        }
-
-                        _parameters.Add(paramAttribute, paramValue);
+                        throw new FormatException(SR.ContentTypeInvalid);
                     }
+
+                    if (!MailBnfHelper.SkipCFWS(_type, ref offset))
+                    {
+                        break;
+                    }
+
+                    string? paramAttribute = MailBnfHelper.ReadParameterAttribute(_type, ref offset, null);
+
+                    if (paramAttribute == null || paramAttribute.Length == 0)
+                    {
+                        throw new FormatException(SR.ContentTypeInvalid);
+                    }
+
+                    string? paramValue;
+                    if (offset >= _type.Length || _type[offset++] != '=')
+                    {
+                        throw new FormatException(SR.ContentTypeInvalid);
+                    }
+
+                    if (!MailBnfHelper.SkipCFWS(_type, ref offset))
+                    {
+                        throw new FormatException(SR.ContentTypeInvalid);
+                    }
+
+                    paramValue = _type[offset] == '"' ?
+                        MailBnfHelper.ReadQuotedString(_type, ref offset, null) :
+                        MailBnfHelper.ReadToken(_type, ref offset, null);
+
+                    if (paramValue == null)
+                    {
+                        throw new FormatException(SR.ContentTypeInvalid);
+                    }
+
+                    _parameters.Add(paramAttribute, paramValue);
                 }
+
                 _parameters.IsChanged = false;
             }
-            catch (FormatException)
-            {
-                throw new FormatException(SR.ContentTypeInvalid);
-            }
-
-            if (exception != null)
+            catch (FormatException fe) when (fe.Message != SR.ContentTypeInvalid)
             {
                 throw new FormatException(SR.ContentTypeInvalid);
             }

@@ -2,14 +2,15 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Diagnostics.CodeAnalysis;
+
 namespace System.Text.RegularExpressions
 {
     public class RegexCompilationInfo
     {
-        // initialized by setter called by constructor
-        private string _pattern = null!;
-        private string _name = null!;
-        private string _nspace = null!;
+        private string _pattern;
+        private string _name;
+        private string _nspace;
 
         private TimeSpan _matchTimeout;
 
@@ -43,6 +44,7 @@ namespace System.Text.RegularExpressions
         public string Name
         {
             get => _name;
+            [MemberNotNull(nameof(_name))]
             set
             {
                 if (value == null)
@@ -62,6 +64,7 @@ namespace System.Text.RegularExpressions
         public string Namespace
         {
             get => _nspace;
+            [MemberNotNull(nameof(_nspace))]
             set => _nspace = value ?? throw new ArgumentNullException(nameof(Namespace));
         }
 
@@ -70,6 +73,7 @@ namespace System.Text.RegularExpressions
         public string Pattern
         {
             get => _pattern;
+            [MemberNotNull(nameof(_pattern))]
             set => _pattern = value ?? throw new ArgumentNullException(nameof(Pattern));
         }
     }

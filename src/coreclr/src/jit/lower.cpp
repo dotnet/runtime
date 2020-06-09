@@ -2975,9 +2975,8 @@ void Lowering::LowerRet(GenTreeUnOp* ret)
             }
         }
 #endif // DEBUG
-        if (varTypeIsStruct(ret) && !comp->compMethodReturnsMultiRegRetType())
+        if (varTypeIsStruct(ret))
         {
-            assert(!comp->compDoOldStructRetyping());
             LowerRetStruct(ret);
         }
     }
@@ -3103,7 +3102,37 @@ void Lowering::LowerStoreLocCommon(GenTreeLclVarCommon* lclStore)
 //
 void Lowering::LowerRetStruct(GenTreeUnOp* ret)
 {
-    assert(!comp->compMethodReturnsMultiRegRetType());
+#if defined(FEATURE_HFA) && defined(TARGET_ARM64)
+    if (ret->TypeIs(TYP_SIMD16))
+    {
+        if (comp->info.compRetNativeType == TYP_STRUCT)
+        {
+            assert(ret->gtGetOp1()->TypeIs(TYP_SIMD16));
+            assert(comp->compMethodReturnsMultiRegRegTypeAlternate());
+            if (!comp->compDoOldStructRetyping())
+            {
+                ret->ChangeType(comp->info.compRetNativeType);
+            }
+            else
+            {
+                // With old struct retyping a value that is returned as HFA
+                // could have both SIMD16 or STRUCT types, keep it as it.
+                return;
+            }
+        }
+        else
+        {
+            assert(comp->info.compRetNativeType == TYP_SIMD16);
+            return;
+        }
+    }
+#endif
+
+    if (comp->compMethodReturnsMultiRegRegTypeAlternate())
+    {
+        return;
+    }
+
     assert(!comp->compDoOldStructRetyping());
     assert(ret->OperIs(GT_RETURN));
     assert(varTypeIsStruct(ret));
@@ -3185,12 +3214,13 @@ void Lowering::LowerRetStruct(GenTreeUnOp* ret)
 //    node - The return node to lower.
 //
 // Notes:
+//    - the function is only for LclVars that are returned in one register;
 //    - if LclVar is allocated in memory then read it as return type;
 //    - if LclVar can be enregistered read it as register type and add a bitcast if necessary;
 //
 void Lowering::LowerRetStructLclVar(GenTreeUnOp* ret)
 {
-    assert(!comp->compMethodReturnsMultiRegRetType());
+    assert(!comp->compMethodReturnsMultiRegRegTypeAlternate());
     assert(!comp->compDoOldStructRetyping());
     assert(ret->OperIs(GT_RETURN));
     GenTreeLclVarCommon* lclVar = ret->gtGetOp1()->AsLclVar();
@@ -3271,18 +3301,31 @@ void Lowering::LowerCallStruct(GenTreeCall* call)
         return;
     }
 
-#ifdef TARGET_ARMARCH
-    // !compDoOldStructRetyping is not supported on arm yet,
-    // because of HFA.
-    assert(comp->compDoOldStructRetyping());
-    return;
-#else // !TARGET_ARMARCH
+#if defined(FEATURE_HFA)
+    if (comp->IsHfa(call))
+    {
+#if defined(TARGET_ARM64)
+        assert(comp->GetHfaCount(call) == 1);
+#elif defined(TARGET_ARM)
+        // ARM returns double in 2 float registers, but
+        // `call->HasMultiRegRetVal()` count double registers.
+        assert(comp->GetHfaCount(call) <= 2);
+#elif  // !TARGET_ARM64 && !TARGET_ARM
+        unreached();
+#endif // !TARGET_ARM64 && !TARGET_ARM
+        var_types hfaType = comp->GetHfaType(call);
+        if (call->TypeIs(hfaType))
+        {
+            return;
+        }
+    }
+#endif // FEATURE_HFA
 
     assert(!comp->compDoOldStructRetyping());
     CORINFO_CLASS_HANDLE        retClsHnd = call->gtRetClsHnd;
     Compiler::structPassingKind howToReturnStruct;
     var_types                   returnType = comp->getReturnTypeForStruct(retClsHnd, &howToReturnStruct);
-    assert(!varTypeIsStruct(returnType) && returnType != TYP_UNKNOWN);
+    assert(returnType != TYP_STRUCT && returnType != TYP_UNKNOWN);
     var_types origType = call->TypeGet();
     call->gtType       = genActualType(returnType);
 
@@ -3297,12 +3340,18 @@ void Lowering::LowerCallStruct(GenTreeCall* call)
             case GT_STORE_BLK:
             case GT_STORE_OBJ:
                 // Leave as is, the user will handle it.
-                assert(user->TypeIs(origType));
+                assert(user->TypeIs(origType) || varTypeIsSIMD(user->TypeGet()));
                 break;
+
+#ifdef FEATURE_SIMD
+            case GT_STORE_LCL_FLD:
+                assert(varTypeIsSIMD(user) && (returnType == user->TypeGet()));
+                break;
+#endif // FEATURE_SIMD
 
             case GT_STOREIND:
 #ifdef FEATURE_SIMD
-                if (user->TypeIs(TYP_SIMD8))
+                if (varTypeIsSIMD(user))
                 {
                     user->ChangeType(returnType);
                     break;
@@ -3319,7 +3368,6 @@ void Lowering::LowerCallStruct(GenTreeCall* call)
                 unreached();
         }
     }
-#endif // !TARGET_ARMARCH
 }
 
 //----------------------------------------------------------------------------------------------
@@ -3338,9 +3386,8 @@ void Lowering::LowerStoreCallStruct(GenTreeBlk* store)
     assert(store->Data()->IsCall());
     GenTreeCall* call = store->Data()->AsCall();
 
-    const ClassLayout* layout = store->GetLayout();
-    assert(layout->GetSlotCount() == 1);
-    const var_types regType = layout->GetRegisterType();
+    const ClassLayout* layout  = store->GetLayout();
+    const var_types    regType = layout->GetRegisterType();
 
     unsigned storeSize = store->GetLayout()->GetSize();
     if (regType != TYP_UNDEF)

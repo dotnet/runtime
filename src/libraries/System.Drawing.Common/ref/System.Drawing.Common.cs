@@ -305,7 +305,7 @@ namespace System.Drawing
         [System.ComponentModel.DesignerSerializationVisibilityAttribute(System.ComponentModel.DesignerSerializationVisibility.Hidden)]
         public string Name { get { throw null; } }
         [System.ComponentModel.BrowsableAttribute(false)]
-        public string OriginalFontName { get { throw null; } }
+        public string? OriginalFontName { get { throw null; } }
         public float Size { get { throw null; } }
         [System.ComponentModel.BrowsableAttribute(false)]
         public float SizeInPoints { get { throw null; } }

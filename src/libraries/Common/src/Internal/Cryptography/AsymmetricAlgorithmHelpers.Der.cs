@@ -4,8 +4,8 @@
 
 using System;
 using System.Diagnostics;
+using System.Formats.Asn1;
 using System.Security.Cryptography;
-using System.Security.Cryptography.Asn1;
 
 namespace Internal.Cryptography
 {
@@ -19,10 +19,8 @@ namespace Internal.Cryptography
         /// </summary>
         public static byte[] ConvertIeee1363ToDer(ReadOnlySpan<byte> input)
         {
-            using (AsnWriter writer = WriteIeee1363ToDer(input))
-            {
-                return writer.Encode();
-            }
+            AsnWriter writer = WriteIeee1363ToDer(input);
+            return writer.Encode();
         }
 
         internal static bool TryConvertIeee1363ToDer(
@@ -30,10 +28,8 @@ namespace Internal.Cryptography
             Span<byte> destination,
             out int bytesWritten)
         {
-            using (AsnWriter writer = WriteIeee1363ToDer(input))
-            {
-                return writer.TryEncode(destination, out bytesWritten);
-            }
+            AsnWriter writer = WriteIeee1363ToDer(input);
+            return writer.TryEncode(destination, out bytesWritten);
         }
 
         private static AsnWriter WriteIeee1363ToDer(ReadOnlySpan<byte> input)
@@ -73,16 +69,23 @@ namespace Internal.Cryptography
 
             Debug.Assert(destination.Length >= encodedSize);
 
-            AsnValueReader reader = new AsnValueReader(input, AsnEncodingRules.DER);
-            AsnValueReader sequenceReader = reader.ReadSequence();
-            reader.ThrowIfNotEmpty();
-            ReadOnlySpan<byte> rDer = sequenceReader.ReadIntegerBytes();
-            ReadOnlySpan<byte> sDer = sequenceReader.ReadIntegerBytes();
-            sequenceReader.ThrowIfNotEmpty();
+            try
+            {
+                AsnValueReader reader = new AsnValueReader(input, AsnEncodingRules.DER);
+                AsnValueReader sequenceReader = reader.ReadSequence();
+                reader.ThrowIfNotEmpty();
+                ReadOnlySpan<byte> rDer = sequenceReader.ReadIntegerBytes();
+                ReadOnlySpan<byte> sDer = sequenceReader.ReadIntegerBytes();
+                sequenceReader.ThrowIfNotEmpty();
 
-            CopySignatureField(rDer, destination.Slice(0, fieldSizeBytes));
-            CopySignatureField(sDer, destination.Slice(fieldSizeBytes, fieldSizeBytes));
-            return encodedSize;
+                CopySignatureField(rDer, destination.Slice(0, fieldSizeBytes));
+                CopySignatureField(sDer, destination.Slice(fieldSizeBytes, fieldSizeBytes));
+                return encodedSize;
+            }
+            catch (AsnContentException e)
+            {
+                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding, e);
+            }
         }
 
         internal static int GetMaxDerSignatureSize(int fieldSizeBits)
