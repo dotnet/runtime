@@ -296,25 +296,43 @@ namespace System.Threading
                     for (int i = 0; i < _numPendingRemoves; i++)
                     {
                         RegisteredWaitHandle waitHandleToRemove = _pendingRemoves[i]!;
-                        for (int j = 0; j < _numUserWaits; j++)
+                        int numUserWaits = _numUserWaits;
+                        int j = 0;
+                        for (; j < numUserWaits && waitHandleToRemove != _registeredWaits[j]; j++)
                         {
-                            if (waitHandleToRemove == _registeredWaits[j])
-                            {
-                                waitHandleToRemove.OnRemoveWait();
-                                _registeredWaits[j] = _registeredWaits[_numUserWaits - 1];
-                                Debug.Assert(_registeredWaits[j] != null);
-                                _waitHandles[j + 1] = _waitHandles[_numUserWaits];
-                                Debug.Assert(_waitHandles[j + 1] != null);
-                                _registeredWaits[_numUserWaits - 1] = null!;
-                                _waitHandles[_numUserWaits] = null!;
-                                --_numUserWaits;
-                                _pendingRemoves[i] = null;
-
-                                waitHandleToRemove.Handle.DangerousRelease();
-                                break;
-                            }
                         }
-                        Debug.Assert(_pendingRemoves[i] == null);
+                        Debug.Assert(j < numUserWaits);
+
+                        waitHandleToRemove.OnRemoveWait();
+
+                        if (j + 1 < numUserWaits)
+                        {
+                            // Not removing the last element. Due to the possibility of there being duplicate system wait
+                            // objects in the wait array, perhaps even with different handle values due to the use of
+                            // DuplicateHandle(), don't reorder handles for fairness. When there are duplicate system wait
+                            // objects in the wait array and the wait object gets signaled, the system may release the wait in
+                            // in deterministic order based on the order in the wait array. Instead, shift the array.
+
+                            int removeAt = j;
+                            int count = numUserWaits;
+                            Array.Copy(_registeredWaits, removeAt + 1, _registeredWaits, removeAt, count - (removeAt + 1));
+
+                            // Corresponding elements in the wait handles array are shifted up by one
+                            removeAt++;
+                            count++;
+                            Array.Copy(_waitHandles, removeAt + 1, _waitHandles, removeAt, count - (removeAt + 1));
+                        }
+                        else
+                        {
+                            // Removing the last element
+                            _registeredWaits[j] = null!;
+                            _waitHandles[j + 1] = null!;
+                        }
+
+                        _numUserWaits = numUserWaits - 1;
+                        _pendingRemoves[i] = null;
+
+                        waitHandleToRemove.Handle.DangerousRelease();
                     }
                     _numPendingRemoves = 0;
 
