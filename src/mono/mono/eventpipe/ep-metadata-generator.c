@@ -25,6 +25,9 @@ ep_metadata_generator_generate_event_metadata (
 	ep_return_null_if_nok (params_len == 0 || params != NULL);
 	ep_return_null_if_nok (metadata_len != NULL);
 
+	uint8_t *buffer = NULL;
+	uint8_t * current = NULL;
+
 	// The order of fields is defined in coreclr\src\mscorlib\shared\System\Diagnostics\Tracing\EventSource.cs DefineEventPipeEvents method
 	// eventID			: 4 bytes
 	// eventName		: (eventName.Length + 1) * 2 bytes
@@ -42,10 +45,10 @@ ep_metadata_generator_generate_event_metadata (
 	}
 
 	// Allocate a metadata blob.
-	uint8_t *buffer = ep_rt_byte_array_alloc (*metadata_len);
+	buffer = ep_rt_byte_array_alloc (*metadata_len);
 	ep_raise_error_if_nok (buffer != NULL);
 
-	uint8_t * current = buffer;
+	current = buffer;
 
 	// Write the event ID.
 	memcpy (current, &event_id, sizeof (event_id));

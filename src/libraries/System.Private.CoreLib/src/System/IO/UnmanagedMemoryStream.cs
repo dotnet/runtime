@@ -547,7 +547,7 @@ namespace System.IO
         {
             if (cancellationToken.IsCancellationRequested)
             {
-                return new ValueTask<int>(Task.FromCanceled<int>(cancellationToken));
+                return ValueTask.FromCanceled<int>(cancellationToken);
             }
 
             try
@@ -571,7 +571,7 @@ namespace System.IO
             }
             catch (Exception ex)
             {
-                return new ValueTask<int>(Task.FromException<int>(ex));
+                return ValueTask.FromException<int>(ex);
             }
         }
 
@@ -840,7 +840,7 @@ namespace System.IO
         {
             if (cancellationToken.IsCancellationRequested)
             {
-                return new ValueTask(Task.FromCanceled(cancellationToken));
+                return ValueTask.FromCanceled(cancellationToken);
             }
 
             try
@@ -859,7 +859,7 @@ namespace System.IO
             }
             catch (Exception ex)
             {
-                return new ValueTask(Task.FromException(ex));
+                return ValueTask.FromException(ex);
             }
         }
 

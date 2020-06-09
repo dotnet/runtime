@@ -284,10 +284,6 @@ struct CrossModuleGenericsStaticsInfo
 };  // struct CrossModuleGenericsStaticsInfo
 typedef DPTR(CrossModuleGenericsStaticsInfo) PTR_CrossModuleGenericsStaticsInfo;
 
-#ifdef FEATURE_COMINTEROP
-struct RCWPerTypeData;
-#endif // FEATURE_COMINTEROP
-
 //
 // This struct consolidates the writeable parts of the MethodTable
 // so that we can layout a read-only MethodTable with a pointer
@@ -312,7 +308,7 @@ struct MethodTableWriteableData
         enum_flag_IsNotFullyLoaded          = 0x00000040,
         enum_flag_DependenciesLoaded        = 0x00000080,     // class and all depedencies loaded up to CLASS_LOADED_BUT_NOT_VERIFIED
 
-        enum_flag_SkipWinRTOverride         = 0x00000100,     // No WinRT override is needed
+        // enum_unused                      = 0x00000100,
 
         enum_flag_CanCompareBitsOrUseFastGetHashCode       = 0x00000200,     // Is any field type or sub field type overrode Equals or GetHashCode
         enum_flag_HasCheckedCanCompareBitsOrUseFastGetHashCode   = 0x00000400,  // Whether we have checked the overridden Equals or GetHashCode
@@ -324,7 +320,7 @@ struct MethodTableWriteableData
         enum_flag_NGEN_IsFixedUp            = 0x00010000, // This MT has been fixed up during NGEN
         enum_flag_NGEN_IsNeedsRestoreCached = 0x00020000, // Set if we have cached the results of needs restore computation
         enum_flag_NGEN_CachedNeedsRestore   = 0x00040000, // The result of the needs restore computation
-        enum_flag_NGEN_OverridingInterface  = 0x00080000, // Overriding interface that we should generate WinRT CCW stubs for.
+        // enum_unused                      = 0x00080000,
 
 #ifdef FEATURE_READYTORUN_COMPILER
         enum_flag_NGEN_IsLayoutFixedComputed                    = 0x0010000, // Set if we have cached the result of IsLayoutFixed computation
@@ -419,26 +415,6 @@ public:
         _ASSERTE(!IsNeedsRestoreCached());
         m_dwFlags |= enum_flag_NGEN_IsNeedsRestoreCached;
         if (fNeedsRestore) m_dwFlags |= enum_flag_NGEN_CachedNeedsRestore;
-    }
-
-    inline void SetIsOverridingInterface()
-    {
-        CONTRACTL
-        {
-            THROWS;
-            GC_NOTRIGGER;
-            MODE_ANY;
-        }
-        CONTRACTL_END;
-
-        if ((m_dwFlags & enum_flag_NGEN_OverridingInterface) != 0) return;
-        FastInterlockOr((ULONG *) &m_dwFlags, enum_flag_NGEN_OverridingInterface);
-    }
-
-    inline BOOL IsOverridingInterface() const
-    {
-        LIMITED_METHOD_CONTRACT;
-        return (m_dwFlags & enum_flag_NGEN_OverridingInterface);
     }
 #endif // FEATURE_PREJIT
 
@@ -704,11 +680,6 @@ public:
     //-------------------------------------------------------------------
     // COM INTEROP
     //
-    BOOL IsProjectedFromWinRT();
-    BOOL IsExportedToWinRT();
-    BOOL IsWinRTDelegate();
-    BOOL IsWinRTRedirectedInterface(TypeHandle::InteropKind interopKind);
-    BOOL IsWinRTRedirectedDelegate();
 
 #ifdef FEATURE_COMINTEROP
     TypeHandle GetCoClassForInterface();
@@ -723,14 +694,6 @@ public:
     CorIfaceAttr    GetComInterfaceType();
     void SetComInterfaceType(CorIfaceAttr ItfType);
 
-    // Determines whether this is a WinRT-legal type
-    BOOL IsLegalWinRTType(OBJECTREF *poref);
-
-    // Determines whether this is a WinRT-legal type - don't use it with array
-    BOOL IsLegalNonArrayWinRTType();
-
-    MethodTable *GetDefaultWinRTInterface();
-
     OBJECTHANDLE GetOHDelegate();
     void SetOHDelegate (OBJECTHANDLE _ohDelegate);
 
@@ -744,9 +707,6 @@ public:
     // Helper to get parent class skipping over COM class in
     // the hierarchy
     MethodTable* GetComPlusParentMethodTable();
-
-    // class is a WinRT object class (is itself or derives from a ProjectedFromWinRT class)
-    BOOL IsWinRTObjectType();
 
     DWORD IsComImport();
 
@@ -786,13 +746,6 @@ public:
     // NOTE: The current caller of this is ComInterop, and it makes calls
     // under its own lock to ensure not duplicates.
     InteropMethodTableData *GetComInteropData();
-
-#else // !FEATURE_COMINTEROP
-    BOOL IsWinRTObjectType()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return FALSE;
-    }
 #endif // !FEATURE_COMINTEROP
 
     // class is a com object class
@@ -1090,18 +1043,6 @@ public:
             || (GetWriteableData()->m_dwFlags & MethodTableWriteableData::enum_flag_IsNotFullyLoaded) == 0;
     }
 
-    inline BOOL IsSkipWinRTOverride()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return (GetWriteableData_NoLogging()->m_dwFlags & MethodTableWriteableData::enum_flag_SkipWinRTOverride);
-    }
-
-    inline void SetSkipWinRTOverride()
-    {
-        WRAPPER_NO_CONTRACT;
-        FastInterlockOr(&GetWriteableDataForWrite_NoLogging()->m_dwFlags, MethodTableWriteableData::enum_flag_SkipWinRTOverride);
-    }
-
     inline BOOL CanCompareBitsOrUseFastGetHashCode()
     {
         LIMITED_METHOD_CONTRACT;
@@ -1346,16 +1287,6 @@ public:
         LIMITED_METHOD_CONTRACT;
         return !HasInstantiation() || IsGenericTypeDefinition();
     }
-
-    typedef enum
-    {
-        modeProjected = 0x1,
-        modeRedirected = 0x2,
-        modeAll = modeProjected|modeRedirected
-    } Mode;
-
-    // Is this a generic interface/delegate that can be used for COM interop?
-    inline BOOL SupportsGenericInterop(TypeHandle::InteropKind interopKind, Mode = modeAll);
 
     BOOL HasSameTypeDefAs(MethodTable *pMT);
     BOOL HasSameTypeDefAs_NoLogging(MethodTable *pMT);
@@ -2827,19 +2758,6 @@ public:
 #endif
 
     //-------------------------------------------------------------------
-    // REMOTEABLE METHOD INFO
-    //
-
-#ifdef FEATURE_COMINTEROP
-    void SetHasGuidInfo();
-    BOOL HasGuidInfo();
-    void SetHasCCWTemplate();
-    BOOL HasCCWTemplate();
-    void SetHasRCWPerTypeData();
-    BOOL HasRCWPerTypeData();
-#endif // FEATURE_COMINTEROP
-
-    //-------------------------------------------------------------------
     // DICTIONARIES FOR GENERIC INSTANTIATIONS
     //
     // The PerInstInfo pointer is a pointer to per-instantiation pointer table,
@@ -3049,10 +2967,6 @@ public:
     // The GUID Info
     // Used by COM interop to get GUIDs (IIDs and CLSIDs)
 
-    // Get/store cached GUID information
-    PTR_GuidInfo GetGuidInfo();
-    void SetGuidInfo(GuidInfo* pGuidInfo);
-
     // Get and cache the GUID for this interface/class
     HRESULT GetGuidNoThrow(GUID *pGuid, BOOL bGenerateIfNotFound, BOOL bClassic = TRUE);
 
@@ -3065,14 +2979,6 @@ public:
     //   * for everything else returns the GetGuid(, TRUE)
     BOOL    GetGuidForWinRT(GUID *pGuid);
 
-private:
-    // Create RCW data associated with this type.
-    RCWPerTypeData *CreateRCWPerTypeData(bool bThrowOnOOM);
-
-public:
-    // Get the RCW data associated with this type or NULL if the type does not need such data or allocation
-    // failed (only if bThrowOnOOM is false).
-    RCWPerTypeData *GetRCWPerTypeData(bool bThrowOnOOM = true);
 #endif // FEATURE_COMINTEROP
 
     // Convenience method - determine if the interface/class has a guid specified (even if not yet cached)
@@ -3162,6 +3068,8 @@ public:
 
         virtual UINT32 GetNumVirtuals() = 0;
         virtual UINT32 GetNumMethods() = 0;
+
+        virtual void UpdateImplMethodDesc(MethodDesc* pMD, UINT32 slotNumber) = 0;
 
       protected:
         static const UINT32 INVALID_SLOT_NUMBER = UINT32_MAX;
@@ -3266,6 +3174,8 @@ protected:
             { LIMITED_METHOD_CONTRACT; return m_pDeclMT->GetNumVirtuals(); }
         virtual UINT32 GetNumMethods()
             { LIMITED_METHOD_CONTRACT; return m_pDeclMT->GetCanonicalMethodTable()->GetNumMethods(); }
+
+        virtual void UpdateImplMethodDesc(MethodDesc* pMD, UINT32 slotNumber);
 
       protected:
         void Init(MethodData *pParentData);
@@ -3373,6 +3283,10 @@ protected:
             { LIMITED_METHOD_CONTRACT; return m_pDeclMT->GetNumVirtuals(); }
         virtual UINT32 GetNumMethods()
             { LIMITED_METHOD_CONTRACT; return m_pDeclMT->GetNumMethods(); }
+
+        virtual void UpdateImplMethodDesc(MethodDesc* pMD, UINT32 slotNumber)
+            { LIMITED_METHOD_CONTRACT; } 
+
     };  // class MethodDataInterface
 
     //--------------------------------------------------------------------------------------
@@ -3411,6 +3325,9 @@ protected:
             { WRAPPER_NO_CONTRACT; return m_pDecl->GetNumVirtuals(); }
         virtual UINT32 GetNumMethods()
             { WRAPPER_NO_CONTRACT; return m_pDecl->GetNumVirtuals(); }
+
+        virtual void UpdateImplMethodDesc(MethodDesc* pMD, UINT32 slotNumber)
+            { LIMITED_METHOD_CONTRACT; } 
 
       protected:
         UINT32 MapToImplSlotNumber(UINT32 slotNumber);
@@ -3681,9 +3598,7 @@ private:
 
         enum_flag_HasFinalizer                = 0x00100000, // instances require finalization
 
-#ifdef FEATURE_COMINTEROP
-        enum_flag_IfInterfaceThenHasGuidInfo    = 0x00200000, // Does the type has optional GuidInfo
-#endif // FEATURE_COMINTEROP
+        // enum_flag_unused                   = 0x00200000,
 
         enum_flag_ICastable                   = 0x00400000, // class implements ICastable interface
 
@@ -3693,9 +3608,7 @@ private:
 
         enum_flag_HasTypeEquivalence          = 0x02000000, // can be equivalent to another type
 
-#ifdef FEATURE_COMINTEROP
-        enum_flag_HasRCWPerTypeData           = 0x04000000, // has optional pointer to RCWPerTypeData
-#endif // FEATURE_COMINTEROP
+        // enum_flag_unused                   = 0x04000000,
 
         enum_flag_HasCriticalFinalizer        = 0x08000000, // finalizer must be run on Appdomain Unload
         enum_flag_Collectible                 = 0x10000000,
@@ -3747,7 +3660,7 @@ private:
         enum_flag_RequiresDispatchTokenFat  = 0x0200,
 
         enum_flag_HasCctor                  = 0x0400,
-        enum_flag_HasCCWTemplate            = 0x0800, // Has an extra field pointing to a CCW template
+        // enum_flag_unused                 = 0x0800,
 
 #ifdef FEATURE_64BIT_ALIGNMENT
         enum_flag_RequiresAlign8            = 0x1000, // Type requires 8-byte alignment (only set on platforms that require this and don't get it implicitly)
@@ -3953,23 +3866,12 @@ private:
     /* Accessing this member efficiently is currently performance critical for static field accesses               */ \
     /* in generic classes, so place it early in the list. */                                                          \
     METHODTABLE_OPTIONAL_MEMBER(GenericsStaticsInfo,    GenericsStaticsInfo,            GetGenericsStaticsInfo      ) \
-    /* Accessed by interop, fairly frequently. */                                                                     \
-    METHODTABLE_COMINTEROP_OPTIONAL_MEMBERS()                                                                         \
     /* Accessed during x-domain transition only, so place it late in the list. */                                     \
     METHODTABLE_REMOTING_OPTIONAL_MEMBERS()                                                                           \
     /* Accessed during certain generic type load operations only, so low priority */                                  \
     METHODTABLE_OPTIONAL_MEMBER(ExtraInterfaceInfo,     TADDR,                          GetExtraInterfaceInfoPtr    ) \
     /* TypeDef token for assemblies with more than 64k types. Never happens in real world. */                         \
     METHODTABLE_OPTIONAL_MEMBER(TokenOverflow,          TADDR,                          GetTokenOverflowPtr         ) \
-
-#ifdef FEATURE_COMINTEROP
-#define METHODTABLE_COMINTEROP_OPTIONAL_MEMBERS() \
-    METHODTABLE_OPTIONAL_MEMBER(GuidInfo,               PTR_GuidInfo,                   GetGuidInfoPtr              ) \
-    METHODTABLE_OPTIONAL_MEMBER(RCWPerTypeData,         RCWPerTypeData *,               GetRCWPerTypeDataPtr        ) \
-    METHODTABLE_OPTIONAL_MEMBER(CCWTemplate,            ComCallWrapperTemplate *,       GetCCWTemplatePtr           )
-#else
-#define METHODTABLE_COMINTEROP_OPTIONAL_MEMBERS()
-#endif
 
 #define METHODTABLE_REMOTING_OPTIONAL_MEMBERS()
 
@@ -4018,9 +3920,6 @@ private:
     inline static DWORD GetOptionalMembersAllocationSize(
                                                   DWORD dwMultipurposeSlotsMask,
                                                   BOOL needsGenericsStaticsInfo,
-                                                  BOOL needsGuidInfo,
-                                                  BOOL needsCCWTemplate,
-                                                  BOOL needsRCWPerTypeData,
                                                   BOOL needsTokenOverflow);
     inline DWORD GetOptionalMembersSize();
 

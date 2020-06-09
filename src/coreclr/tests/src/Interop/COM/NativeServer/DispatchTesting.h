@@ -17,6 +17,72 @@ VARIANTARG *NextArg(_In_ VARIANTARG *args, _Inout_ size_t &currIndex)
     return (args + (currIndex--));
 }
 
+class Enumerator : public UnknownImpl, public IEnumVARIANT
+{
+public:
+    Enumerator(ULONG count)
+        : _count { count }
+        , _current { 0 }
+    { }
+
+public: // IEnumVARIANT
+    HRESULT STDMETHODCALLTYPE Next( 
+        ULONG celt,
+        VARIANT *rgVar,
+        ULONG *pCeltFetched)
+    {
+        for(*pCeltFetched = 0; *pCeltFetched < celt && _current < _count; ++*pCeltFetched, ++_current)
+        {
+            VariantClear(&(rgVar[*pCeltFetched]));
+            V_VT(&rgVar[*pCeltFetched]) = VT_I4;
+            V_I4(&(rgVar[*pCeltFetched])) = _current;
+        }
+        
+        return celt == *pCeltFetched ? S_OK : S_FALSE;
+    }
+
+    HRESULT STDMETHODCALLTYPE Skip(ULONG celt)
+    {
+        ULONG indexMaybe = _current + celt;
+        if (indexMaybe >= _count)
+        {
+            _current = _count - 1;
+            return S_FALSE;
+        }
+
+        _current = indexMaybe;
+        return S_OK;
+    }
+
+    HRESULT STDMETHODCALLTYPE Reset()
+    {
+        _current = 0;
+        return S_OK;
+    }
+
+    HRESULT STDMETHODCALLTYPE Clone(IEnumVARIANT **ppEnum)
+    {
+        Enumerator* clone = new Enumerator(_count);
+        clone->_current = _current;
+        *ppEnum = clone;
+        return S_OK;
+    }
+
+public: // IUnknown
+    HRESULT STDMETHODCALLTYPE QueryInterface(
+        REFIID riid,
+        void** ppvObject)
+    {
+        return DoQueryInterface(riid, ppvObject, static_cast<IEnumVARIANT *>(this));
+    }
+
+    DEFINE_REF_COUNTING();
+
+private:
+    ULONG _count;
+    ULONG _current;
+};
+
 class DispatchTesting : public UnknownImpl, public IDispatchTesting
 {
 private:
@@ -112,6 +178,13 @@ public: // IDispatch
             {
                 return PassThroughLCID_Proxy(lcid, pVarResult);
             }
+            case 7:
+            case DISPID_NEWENUM:
+            {
+                V_VT(pVarResult) = VT_UNKNOWN;
+                V_UNKNOWN(pVarResult) = new Enumerator(10);
+                return S_OK;
+            }
             }
 
             return E_NOTIMPL;
@@ -183,6 +256,13 @@ public: // IDispatchTesting
         pRetVal->y = (input->y * 2);
         pRetVal->z = (input->z * 2);
         pRetVal->w = (input->w * 2);
+        return S_OK;
+    }
+
+    HRESULT STDMETHODCALLTYPE ExplicitGetEnumerator(
+        /* [retval][out] */ IUnknown** retval)
+    {
+        *retval = new Enumerator(10);
         return S_OK;
     }
 
@@ -440,7 +520,8 @@ const WCHAR * const DispatchTesting::Names[] =
     W("Add_Double_ReturnAndUpdateByRef"),
     W("TriggerException"),
     W("DoubleHVAValues"),
-    W("PassThroughLCID")
+    W("PassThroughLCID"),
+    W("ExplicitGetEnumerator")
 };
 
 const int DispatchTesting::NamesCount = ARRAYSIZE(DispatchTesting::Names);

@@ -12,8 +12,8 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
-using Microsoft.DotNet.XHarness.Tests.Runners;
-using Microsoft.DotNet.XHarness.Tests.Runners.Core;
+using Microsoft.DotNet.XHarness.TestRunners.Common;
+using Microsoft.DotNet.XHarness.TestRunners.Xunit;
 
 public class SimpleAndroidTestRunner : AndroidApplicationEntryPoint, IDevice
 {
@@ -30,7 +30,8 @@ public class SimpleAndroidTestRunner : AndroidApplicationEntryPoint, IDevice
         }
         int exitCode = 0;
         s_MainTestName = Path.GetFileNameWithoutExtension(s_testLibs[0]);
-        var simpleTestRunner = new SimpleAndroidTestRunner(true);
+        string? verbose = Environment.GetEnvironmentVariable("XUNIT_VERBOSE")?.ToLower();
+        var simpleTestRunner = new SimpleAndroidTestRunner(verbose == "true" || verbose == "1");
         simpleTestRunner.TestsCompleted += (e, result) => 
         {
             if (result.FailedTests > 0)
@@ -71,8 +72,6 @@ public class SimpleAndroidTestRunner : AndroidApplicationEntryPoint, IDevice
     protected override int? MaxParallelThreads => _maxParallelThreads;
 
     protected override IDevice Device => this;
-
-    protected override TestRunnerType TestRunner => TestRunnerType.Xunit;
 
     protected override string? IgnoreFilesDirectory => null;
 

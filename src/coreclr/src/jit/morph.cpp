@@ -10191,8 +10191,19 @@ GenTree* Compiler::fgMorphBlockOperand(GenTree* tree, var_types asgType, unsigne
         }
         else if (effectiveVal->TypeGet() != asgType)
         {
-            GenTree* addr = gtNewOperNode(GT_ADDR, TYP_BYREF, effectiveVal);
-            effectiveVal  = gtNewIndir(asgType, addr);
+            if (effectiveVal->IsCall())
+            {
+#ifdef DEBUG
+                GenTreeCall* call = effectiveVal->AsCall();
+                assert(call->TypeGet() == TYP_STRUCT);
+                assert(blockWidth == info.compCompHnd->getClassSize(call->gtRetClsHnd));
+#endif
+            }
+            else
+            {
+                GenTree* addr = gtNewOperNode(GT_ADDR, TYP_BYREF, effectiveVal);
+                effectiveVal  = gtNewIndir(asgType, addr);
+            }
         }
     }
     else
@@ -11941,7 +11952,7 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac)
 
                 return tree;
             }
-            if (tree->TypeIs(TYP_STRUCT) && op1->OperIs(GT_OBJ, GT_BLK))
+            if (varTypeIsStruct(tree) && op1->OperIs(GT_OBJ, GT_BLK))
             {
                 assert(!compDoOldStructRetyping());
                 GenTree* addr = op1->AsBlk()->Addr();

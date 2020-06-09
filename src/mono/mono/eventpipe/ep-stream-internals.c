@@ -109,6 +109,9 @@ ep_fast_serializer_alloc (StreamWriter *stream_writer)
 {
 	ep_return_null_if_nok (stream_writer != NULL);
 
+	const ep_char8_t signature[] = "!FastSerialization.1"; // the consumer lib expects exactly the same string, it must not be changed
+	uint32_t signature_len = EP_ARRAY_SIZE (signature) - 1;
+
 	FastSerializer *instance = ep_rt_object_alloc (FastSerializer);
 	ep_raise_error_if_nok (instance != NULL);
 
@@ -117,8 +120,6 @@ ep_fast_serializer_alloc (StreamWriter *stream_writer)
 	instance->required_padding = 0;
 	instance->write_error_encountered = false;
 
-	const ep_char8_t signature[] = "!FastSerialization.1"; // the consumer lib expects exactly the same string, it must not be changed
-	uint32_t signature_len = EP_ARRAY_SIZE (signature) - 1;
 	ep_fast_serializer_write_string (instance, signature, signature_len);
 
 ep_on_exit:

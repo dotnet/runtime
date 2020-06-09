@@ -6351,7 +6351,7 @@ void CodeGen::genZeroInitFrame(int untrLclHi, int untrLclLo, regNumber initReg, 
                 emit->emitIns_AR_R(ins_Store(TYP_I_IMPL), EA_PTRSIZE, zeroReg, frameReg, untrLclLo + i);
             }
 #if defined(TARGET_AMD64)
-            assert((i == blkSize) || (i + sizeof(int) == blkSize));
+            assert((i == blkSize) || (i + (int)sizeof(int) == blkSize));
             if (i != blkSize)
             {
                 emit->emitIns_AR_R(ins_Store(TYP_INT), EA_4BYTE, zeroReg, frameReg, untrLclLo + i);
@@ -6412,7 +6412,7 @@ void CodeGen::genZeroInitFrame(int untrLclHi, int untrLclLo, regNumber initReg, 
                 {
                     emit->emitIns_AR_R(ins_Store(TYP_I_IMPL), EA_PTRSIZE, zeroReg, frameReg, untrLclLo + i);
                 }
-                assert((i == alignmentLoBlkSize) || (i + sizeof(int) == alignmentLoBlkSize));
+                assert((i == alignmentLoBlkSize) || (i + (int)sizeof(int) == alignmentLoBlkSize));
                 if (i != alignmentLoBlkSize)
                 {
                     emit->emitIns_AR_R(ins_Store(TYP_INT), EA_4BYTE, zeroReg, frameReg, untrLclLo + i);
@@ -6530,7 +6530,7 @@ void CodeGen::genZeroInitFrame(int untrLclHi, int untrLclLo, regNumber initReg, 
                     emit->emitIns_AR_R(ins_Store(TYP_I_IMPL), EA_PTRSIZE, zeroReg, frameReg, alignedLclHi + i);
                 }
 #if defined(TARGET_AMD64)
-                assert((i == alignmentHiBlkSize) || (i + sizeof(int) == alignmentHiBlkSize));
+                assert((i == alignmentHiBlkSize) || (i + (int)sizeof(int) == alignmentHiBlkSize));
                 if (i != alignmentHiBlkSize)
                 {
                     emit->emitIns_AR_R(ins_Store(TYP_INT), EA_4BYTE, zeroReg, frameReg, alignedLclHi + i);
@@ -11750,8 +11750,8 @@ void CodeGen::genRegCopy(GenTree* treeNode)
         // There should never be any circular dependencies, and we will check that here.
 
         GenTreeCopyOrReload* copyNode = treeNode->AsCopyOrReload();
-        unsigned             regCount = copyNode->GetRegCount();
-        // GenTreeCopyOrReload only reports the number of registers that are valid.
+        // GenTreeCopyOrReload only reports the highest index that has a valid register.
+        unsigned regCount = copyNode->GetRegCount();
         assert(regCount <= MAX_MULTIREG_COUNT);
 
         // First set the source registers as busy if they haven't been spilled.
@@ -11767,13 +11767,15 @@ void CodeGen::genRegCopy(GenTree* treeNode)
         // First do any copies - we'll do the reloads after all the copies are complete.
         for (unsigned i = 0; i < regCount; ++i)
         {
-            regNumber sourceReg     = op1->GetRegByIndex(i);
-            regNumber targetReg     = copyNode->GetRegNumByIdx(i);
-            regMaskTP targetRegMask = genRegMask(targetReg);
-            // GenTreeCopyOrReload only reports the number of registers that are valid.
+            regNumber sourceReg = op1->GetRegByIndex(i);
+            regNumber targetReg = copyNode->GetRegNumByIdx(i);
+            // GenTreeCopyOrReload only reports the highest index that has a valid register.
+            // However there may be lower indices that have no valid register (i.e. the register
+            // on the source is still valid at the consumer).
             if (targetReg != REG_NA)
             {
                 // We shouldn't specify a no-op move.
+                regMaskTP targetRegMask = genRegMask(targetReg);
                 assert(sourceReg != targetReg);
                 assert((busyRegs & targetRegMask) == 0);
                 // Clear sourceReg from the busyRegs, and add targetReg.

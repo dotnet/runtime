@@ -1630,6 +1630,7 @@ void Compiler::StructPromotionHelper::CheckRetypedAsScalar(CORINFO_FIELD_HANDLE 
 //
 bool Compiler::StructPromotionHelper::CanPromoteStructType(CORINFO_CLASS_HANDLE typeHnd)
 {
+    assert(typeHnd != nullptr);
     if (!compiler->eeIsValueClass(typeHnd))
     {
         // TODO-ObjectStackAllocation: Enable promotion of fields of stack-allocated objects.
@@ -1685,6 +1686,13 @@ bool Compiler::StructPromotionHelper::CanPromoteStructType(CORINFO_CLASS_HANDLE 
 
     structPromotionInfo.fieldCnt = (unsigned char)fieldCnt;
     DWORD typeFlags              = compHandle->getClassAttribs(typeHnd);
+
+    if (StructHasNoPromotionFlagSet(typeFlags))
+    {
+        // In AOT ReadyToRun compilation, don't try to promote fields of types
+        // outside of the current version bubble.
+        return false;
+    }
 
     bool overlappingFields = StructHasOverlappingFields(typeFlags);
     if (overlappingFields)
@@ -1858,6 +1866,7 @@ bool Compiler::StructPromotionHelper::CanPromoteStructVar(unsigned lclNum)
     }
 
     CORINFO_CLASS_HANDLE typeHnd = varDsc->lvVerTypeInfo.GetClassHandle();
+    assert(typeHnd != nullptr);
     return CanPromoteStructType(typeHnd);
 }
 
@@ -4078,7 +4087,7 @@ void Compiler::lvaMarkLocalVars()
     else if (lvaReportParamTypeArg())
     {
         // We should have a context arg.
-        assert(info.compTypeCtxtArg != BAD_VAR_NUM);
+        assert(info.compTypeCtxtArg != (int)BAD_VAR_NUM);
         lvaGetDesc(info.compTypeCtxtArg)->lvImplicitlyReferenced = reportParamTypeArg;
     }
 

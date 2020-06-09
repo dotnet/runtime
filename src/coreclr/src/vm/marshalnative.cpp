@@ -694,25 +694,6 @@ FCIMPL1(int, MarshalNative::GetHRForException, Object* eUNSAFE)
 }
 FCIMPLEND
 
-FCIMPL1(int, MarshalNative::GetHRForException_WinRT, Object* eUNSAFE)
-{
-    CONTRACTL {
-       NOTHROW;    // Used by reverse COM IL stubs, so we must not throw exceptions back to COM
-       DISABLED(GC_TRIGGERS); // FCALLS with HELPER frames have issues with GC_TRIGGERS
-       MODE_COOPERATIVE;
-    } CONTRACTL_END;
-
-    int retVal = 0;
-    OBJECTREF e = (OBJECTREF) eUNSAFE;
-    HELPER_METHOD_FRAME_BEGIN_RET_NOTHROW_1({ retVal = COR_E_STACKOVERFLOW; }, e);
-
-    retVal = SetupErrorInfo(e, /* isWinRTScenario = */ TRUE);
-
-    HELPER_METHOD_FRAME_END_NOTHROW();
-    return retVal;
-}
-FCIMPLEND
-
 #ifdef FEATURE_COMINTEROP
 
 //====================================================================
@@ -767,9 +748,6 @@ FCIMPL1(ITypeInfo*, MarshalNative::GetITypeInfoForType, ReflectClassBaseObject* 
         COMPlusThrowArgumentException(W("t"), W("Argument_MustBeRuntimeType"));
 
     TypeHandle th = refClass->GetType();
-
-    if (th.GetMethodTable() != NULL && (th.IsProjectedFromWinRT() || th.IsExportedToWinRT()))
-        COMPlusThrowArgumentException(W("t"), W("Argument_ObjIsWinRTObject"));
 
     if (th.HasInstantiation())
         COMPlusThrowArgumentException(W("t"), W("Argument_NeedNonGenericType"));
@@ -901,14 +879,11 @@ FCIMPL4(IUnknown*, MarshalNative::GetComInterfaceForObjectNative, Object* orefUN
 
     TypeHandle th = refClass->GetType();
 
-    if (!th.SupportsGenericInterop(TypeHandle::Interop_NativeToManaged))
-    {
-        if (th.HasInstantiation())
-            COMPlusThrowArgumentException(W("t"), W("Argument_NeedNonGenericType"));
+    if (th.HasInstantiation())
+        COMPlusThrowArgumentException(W("t"), W("Argument_NeedNonGenericType"));
 
-        if (oref->GetMethodTable()->HasInstantiation())
-            COMPlusThrowArgumentException(W("o"), W("Argument_NeedNonGenericObject"));
-    }
+    if (oref->GetMethodTable()->HasInstantiation())
+        COMPlusThrowArgumentException(W("o"), W("Argument_NeedNonGenericObject"));
 
     // If the IID being asked for does not represent an interface then
     // throw an argument exception.
@@ -995,7 +970,7 @@ FCIMPL1(Object*, MarshalNative::GetUniqueObjectForIUnknownWithoutUnboxing, IUnkn
     // Ensure COM is started up.
     EnsureComStarted();
 
-    GetObjectRefFromComIP(&oref, pUnk, NULL, NULL, ObjFromComIP::UNIQUE_OBJECT | ObjFromComIP::IGNORE_WINRT_AND_SKIP_UNBOXING);
+    GetObjectRefFromComIP(&oref, pUnk, NULL, NULL, ObjFromComIP::UNIQUE_OBJECT);
 
     HELPER_METHOD_FRAME_END();
     return OBJECTREFToObject(oref);
@@ -1033,9 +1008,6 @@ FCIMPL2(Object*, MarshalNative::GetTypedObjectForIUnknown, IUnknown* pUnk, Refle
             COMPlusThrowArgumentException(W("t"), W("Argument_MustBeRuntimeType"));
 
         TypeHandle th = refClass->GetType();
-
-        if (th.GetMethodTable() != NULL && (th.IsProjectedFromWinRT() || th.IsExportedToWinRT()))
-            COMPlusThrowArgumentException(W("t"), W("Argument_ObjIsWinRTObject"));
 
         if (th.HasInstantiation())
             COMPlusThrowArgumentException(W("t"), W("Argument_NeedNonGenericType"));
@@ -1077,10 +1049,6 @@ FCIMPL2(IUnknown*, MarshalNative::CreateAggregatedObject, IUnknown* pOuter, Obje
 
     if (oref == NULL)
         COMPlusThrowArgumentNull(W("o"));
-
-    MethodTable *pMT = oref->GetMethodTable();
-    if (pMT->IsWinRTObjectType() || pMT->IsExportedToWinRT())
-        COMPlusThrowArgumentException(W("o"), W("Argument_ObjIsWinRTObject"));
 
     // Ensure COM is started up.
     EnsureComStarted();
@@ -1809,162 +1777,6 @@ FCIMPL2(void, MarshalNative::ChangeWrapperHandleStrength, Object* orefUNSAFE, CL
     HELPER_METHOD_FRAME_END();
 }
 FCIMPLEND
-
-FCIMPL2(void, MarshalNative::InitializeWrapperForWinRT, Object *unsafe_pThis, IUnknown **ppUnk)
-{
-    FCALL_CONTRACT;
-
-    OBJECTREF oref = ObjectToOBJECTREF(unsafe_pThis);
-    HELPER_METHOD_FRAME_BEGIN_1(oref);
-
-    _ASSERTE(ppUnk != NULL);
-    if (*ppUnk == NULL)
-    {
-        // this should never happen but it's not nice to AV if the factory method is busted and returns NULL
-        COMPlusThrow(kNullReferenceException);
-    }
-
-    // the object does not have the right RCW yet
-    COMInterfaceMarshaler marshaler;
-    marshaler.Init(*ppUnk, oref->GetMethodTable(), GET_THREAD(), RCW::CF_SupportsIInspectable | RCW::CF_QueryForIdentity);
-
-    // the following will assign NULL to *ppUnk which signals to the caller that we successfully
-    // initialized the RCW so (*ppUnk)->Release() should be suppressed
-    marshaler.InitializeExistingComObject(&oref, ppUnk);
-
-    HELPER_METHOD_FRAME_END();
-}
-FCIMPLEND
-
-FCIMPL2(void, MarshalNative::InitializeManagedWinRTFactoryObject, Object *unsafe_pThis, ReflectClassBaseObject *unsafe_pType)
-{
-    FCALL_CONTRACT;
-
-    OBJECTREF orefThis = ObjectToOBJECTREF(unsafe_pThis);
-    REFLECTCLASSBASEREF orefType = (REFLECTCLASSBASEREF)ObjectToOBJECTREF(unsafe_pType);
-    HELPER_METHOD_FRAME_BEGIN_2(orefThis, orefType);
-
-    MethodTable *pMT = orefType->GetType().GetMethodTable();
-
-    // get the special "factory" template for the type
-    _ASSERTE(pMT->IsExportedToWinRT());
-    WinRTManagedClassFactory *pFactory = GetComClassFactory(pMT)->AsWinRTManagedClassFactory();
-
-    ComCallWrapperTemplate *pTemplate = pFactory->GetOrCreateComCallWrapperTemplate(orefThis->GetMethodTable());
-
-    // create a CCW for the factory object using the template
-    CCWHolder pCCWHold = ComCallWrapper::InlineGetWrapper(&orefThis, pTemplate);
-
-    HELPER_METHOD_FRAME_END();
-}
-FCIMPLEND
-
-//
-// Create activation factory and wraps it with a unique RCW
-//
-// This is necessary because WinRT factories are often implemented as a singleton,
-// and getting back a RCW for such WinRT factory would usually get back a RCW from
-// another apartment, even if the interface pointe returned from GetActivationFactory
-// is a raw pointer. As a result, user would randomly get back RCWs for activation
-// factories from other apartments and make transiton to those apartments and cause
-// deadlocks and create objects in incorrect apartments
-//
-// The solution here is to always create a unique RCW
-//
-FCIMPL1(Object *, MarshalNative::GetNativeActivationFactory, ReflectClassBaseObject *unsafe_pType)
-{
-    FCALL_CONTRACT;
-
-    REFLECTCLASSBASEREF orefType = (REFLECTCLASSBASEREF)ObjectToOBJECTREF(unsafe_pType);
-    OBJECTREF orefFactory = NULL;
-    HELPER_METHOD_FRAME_BEGIN_RET_2(orefFactory, orefType);
-
-    MethodTable *pMT = orefType->GetType().GetMethodTable();
-
-    // Must be a native WinRT type
-    _ASSERTE(pMT->IsProjectedFromWinRT());
-
-    //
-    // Get the activation factory instance for this WinRT type and create a RCW for it
-    //
-    GetNativeWinRTFactoryObject(
-        pMT,
-        GET_THREAD(),
-        NULL,               // No factory interface available at this point
-        TRUE,               // Create unique RCW - See comments for this function for more details
-        NULL,               // No callback necessary
-        &orefFactory        // return value
-        );
-
-    HELPER_METHOD_FRAME_END();
-
-    return OBJECTREFToObject(orefFactory);
-}
-FCIMPLEND
-
-void QCALLTYPE MarshalNative::GetInspectableIIDs(
-                        QCall::ObjectHandleOnStack hobj,
-                        QCall::ObjectHandleOnStack retArrayGuids)
-{
-    CONTRACTL
-    {
-        QCALL_CHECK;
-        PRECONDITION(CheckPointer(*hobj.m_ppObject));
-    }
-    CONTRACTL_END;
-
-    BEGIN_QCALL;
-
-    SyncBlock * pSyncBlock = NULL;
-
-    {
-        GCX_COOP();
-
-        // set return to failure value
-        retArrayGuids.Set(NULL);
-
-        OBJECTREF orComObject = NULL;
-        GCPROTECT_BEGIN(orComObject);
-
-        orComObject = ObjectToOBJECTREF(*hobj.m_ppObject);
-
-        // Validation: hobj represents a non-NULL System.__ComObject instance
-        if(orComObject == NULL)
-            COMPlusThrowArgumentNull(W("obj"));
-
-        MethodTable* pMT = orComObject->GetMethodTable();
-        PREFIX_ASSUME(pMT != NULL);
-        if(!pMT->IsComObjectType())
-            COMPlusThrow(kArgumentException, IDS_EE_SRC_OBJ_NOT_COMOBJECT);
-
-        // while in cooperative mode, retrieve the object's sync block
-        pSyncBlock = orComObject->PassiveGetSyncBlock();
-
-        GCPROTECT_END();
-    } // close the GCX_COOP scope
-
-
-    InteropSyncBlockInfo * pInteropInfo;
-    RCW * pRCW;
-    SafeComHolderPreemp<IInspectable> pInspectable;
-
-    // Retrieve obj's IInspectable interface pointer
-    if (pSyncBlock != NULL
-        && (pInteropInfo = pSyncBlock->GetInteropInfoNoCreate()) != NULL
-        && (pRCW = pInteropInfo->GetRawRCW()) != NULL
-        && (pInspectable = pRCW->GetIInspectable()) != NULL)
-    {
-        // retrieve IIDs using IInspectable::GetIids()
-        ULONG size = 0;
-        CoTaskMemHolder<IID> rgIIDs(NULL);
-        if (SUCCEEDED(pInspectable->GetIids(&size, &rgIIDs)))
-        {
-            retArrayGuids.SetGuidArray(rgIIDs, size);
-        }
-    }
-
-    END_QCALL;
-}
 
 //====================================================================
 // Helper function used in the COM slot to method info mapping.

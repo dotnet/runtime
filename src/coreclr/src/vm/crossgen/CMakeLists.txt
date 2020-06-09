@@ -133,7 +133,6 @@ set(VM_CROSSGEN_HEADERS
   ../fieldmarshaler.h
   ../genericdict.h
   ../generics.h
-  ../generics.inl
   ../hash.h
   ../ilinstrumentation.h
   ../ilmarshalers.h
@@ -234,27 +233,16 @@ endif()
 if (CLR_CMAKE_TARGET_WIN32)
   list(APPEND VM_CROSSGEN_SOURCES
     ../classcompat.cpp
-    ../clrprivbinderwinrt.cpp
-    ../clrprivtypecachewinrt.cpp
     ../comtoclrcall.cpp
     ../clrtocomcall.cpp
-    ../crossgenroparsetypename.cpp
-    ../crossgenroresolvenamespace.cpp
     ../runtimecallablewrapper.cpp
-    ../winrthelpers.cpp
-    ../winrttypenameconverter.cpp
   )
 
   list(APPEND VM_CROSSGEN_HEADERS
     ../classcompat.h
-    ../clrprivbinderwinrt.h
-    ../clrprivtypecachewinrt.h
     ../clrtocomcall.h
     ../comtoclrcall.h
-    ../crossgenroresolvenamespace.h
     ../runtimecallablewrapper.h
-    ../winrthelpers.h
-    ../winrttypenameconverter.h
   )
 
   list(APPEND VM_CROSSGEN_SOURCES ${VM_CROSSGEN_HEADERS})

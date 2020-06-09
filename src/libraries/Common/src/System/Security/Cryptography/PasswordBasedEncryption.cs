@@ -5,6 +5,7 @@
 #nullable enable
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Formats.Asn1;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography.Asn1;
 using System.Security.Cryptography.Pkcs;
@@ -82,7 +83,7 @@ namespace System.Security.Cryptography
 
             bool pkcs12 = false;
 
-            switch (algorithmIdentifier.Algorithm.Value)
+            switch (algorithmIdentifier.Algorithm)
             {
                 case Oids.PbeWithMD5AndDESCBC:
                     digestAlgorithmName = HashAlgorithmName.MD5;
@@ -134,7 +135,7 @@ namespace System.Security.Cryptography
                     throw new CryptographicException(
                         SR.Format(
                             SR.Cryptography_UnknownAlgorithmIdentifier,
-                            algorithmIdentifier.Algorithm.Value));
+                            algorithmIdentifier.Algorithm));
             }
 
             Debug.Assert(digestAlgorithmName.Name != null);
@@ -146,7 +147,7 @@ namespace System.Security.Cryptography
                 {
                     if (password.IsEmpty && passwordBytes.Length > 0)
                     {
-                        throw AlgorithmKdfRequiresChars(algorithmIdentifier.Algorithm.Value);
+                        throw AlgorithmKdfRequiresChars(algorithmIdentifier.Algorithm);
                     }
 
                     return Pkcs12PbeDecrypt(
@@ -294,7 +295,7 @@ namespace System.Security.Cryptography
             ReadOnlySpan<byte> passwordBytes,
             SymmetricAlgorithm cipher,
             bool isPkcs12,
-            ReadOnlySpan<byte> source,
+            AsnWriter source,
             PbeParameters pbeParameters,
             ReadOnlySpan<byte> salt,
             byte[] destination,
@@ -304,7 +305,8 @@ namespace System.Security.Cryptography
             byte[] derivedKey;
             byte[] iv = cipher.IV;
 
-            byte[] sourceRent = CryptoPool.Rent(source.Length);
+            int sourceLength = source.GetEncodedLength();
+            byte[] sourceRent = CryptoPool.Rent(sourceLength);
             int keySizeBytes = cipher.KeySize / 8;
             int iterationCount = pbeParameters.IterationCount;
             HashAlgorithmName prf = pbeParameters.HashAlgorithm;
@@ -392,12 +394,16 @@ namespace System.Security.Cryptography
                         Debug.Assert(encryptor.CanTransformMultipleBlocks);
 
                         int blockSizeBytes = (cipher.BlockSize / 8);
-                        int remaining = source.Length % blockSizeBytes;
-                        int fullBlocksLength = source.Length - remaining;
+                        int remaining = sourceLength % blockSizeBytes;
+                        int fullBlocksLength = sourceLength - remaining;
 
                         try
                         {
-                            source.CopyTo(sourceRent);
+                            if (!source.TryEncode(sourceRent, out _))
+                            {
+                                Debug.Fail("TryEncode failed with a pre-allocated buffer");
+                                throw new CryptographicException();
+                            }
 
                             int written = 0;
 
@@ -421,7 +427,7 @@ namespace System.Security.Cryptography
                         }
                         finally
                         {
-                            CryptoPool.Return(sourceRent, source.Length);
+                            CryptoPool.Return(sourceRent, sourceLength);
                         }
                     }
                 }
@@ -501,16 +507,16 @@ namespace System.Security.Cryptography
 
             PBES2Params pbes2Params = PBES2Params.Decode(algorithmParameters.Value, AsnEncodingRules.BER);
 
-            if (pbes2Params.KeyDerivationFunc.Algorithm.Value != Oids.Pbkdf2)
+            if (pbes2Params.KeyDerivationFunc.Algorithm != Oids.Pbkdf2)
             {
                 throw new CryptographicException(
                     SR.Format(
                         SR.Cryptography_UnknownAlgorithmIdentifier,
-                        pbes2Params.EncryptionScheme.Algorithm.Value));
+                        pbes2Params.EncryptionScheme.Algorithm));
             }
 
             Rfc2898DeriveBytes pbkdf2 =
-                OpenPbkdf2(password, pbes2Params.KeyDerivationFunc.Parameters, out byte? requestedKeyLength);
+                OpenPbkdf2(password, pbes2Params.KeyDerivationFunc.Parameters, out int? requestedKeyLength);
 
             using (pbkdf2)
             {
@@ -545,10 +551,10 @@ namespace System.Security.Cryptography
         [SuppressMessage("Microsoft.Security", "CA5351", Justification = "DES used when specified by the input data")]
         private static SymmetricAlgorithm OpenCipher(
             AlgorithmIdentifierAsn encryptionScheme,
-            byte? requestedKeyLength,
+            int? requestedKeyLength,
             ref Span<byte> iv)
         {
-            string? algId = encryptionScheme.Algorithm.Value;
+            string? algId = encryptionScheme.Algorithm;
 
             if (algId == Oids.Aes128Cbc ||
                 algId == Oids.Aes192Cbc ||
@@ -668,21 +674,34 @@ namespace System.Security.Cryptography
                 throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
             }
 
-            AsnReader reader = new AsnReader(encryptionSchemeParameters.Value, AsnEncodingRules.BER);
-
-            if (!reader.TryCopyOctetStringBytes(iv, out int bytesWritten) || bytesWritten != length)
+            try
             {
-                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
-            }
+                ReadOnlySpan<byte> source = encryptionSchemeParameters.Value.Span;
 
-            reader.ThrowIfNotEmpty();
-            iv = iv.Slice(0, bytesWritten);
+                bool gotIv = AsnDecoder.TryReadOctetString(
+                    source,
+                    iv,
+                    AsnEncodingRules.BER,
+                    out int consumed,
+                    out int bytesWritten);
+
+                if (!gotIv || bytesWritten != length || consumed != source.Length)
+                {
+                    throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
+                }
+
+                iv = iv.Slice(0, bytesWritten);
+            }
+            catch (AsnContentException e)
+            {
+                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding, e);
+            }
         }
 
         private static unsafe Rfc2898DeriveBytes OpenPbkdf2(
             ReadOnlySpan<byte> password,
             ReadOnlyMemory<byte>? parameters,
-            out byte? requestedKeyLength)
+            out int? requestedKeyLength)
         {
             if (!parameters.HasValue)
             {
@@ -707,7 +726,7 @@ namespace System.Security.Cryptography
                 throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
             }
 
-            HashAlgorithmName prf = pbkdf2Params.Prf.Algorithm.Value switch
+            HashAlgorithmName prf = pbkdf2Params.Prf.Algorithm switch
             {
                 Oids.HmacWithSha1 => HashAlgorithmName.SHA1,
                 Oids.HmacWithSha256 => HashAlgorithmName.SHA256,
@@ -990,7 +1009,7 @@ namespace System.Security.Cryptography
 
             if (isPkcs12)
             {
-                writer.WriteObjectIdentifier(encryptionAlgorithmOid);
+                writer.WriteObjectIdentifierForCrypto(encryptionAlgorithmOid);
 
                 // pkcs-12PbeParams
                 {
@@ -1002,7 +1021,7 @@ namespace System.Security.Cryptography
             }
             else
             {
-                writer.WriteObjectIdentifier(Oids.PasswordBasedEncryptionScheme2);
+                writer.WriteObjectIdentifierForCrypto(Oids.PasswordBasedEncryptionScheme2);
 
                 // PBES2-params
                 {
@@ -1011,7 +1030,7 @@ namespace System.Security.Cryptography
                     // keyDerivationFunc
                     {
                         writer.PushSequence();
-                        writer.WriteObjectIdentifier(Oids.Pbkdf2);
+                        writer.WriteObjectIdentifierForCrypto(Oids.Pbkdf2);
 
                         // PBKDF2-params
                         {
@@ -1024,7 +1043,7 @@ namespace System.Security.Cryptography
                             if (hmacOid != Oids.HmacWithSha1)
                             {
                                 writer.PushSequence();
-                                writer.WriteObjectIdentifier(hmacOid);
+                                writer.WriteObjectIdentifierForCrypto(hmacOid);
                                 writer.WriteNull();
                                 writer.PopSequence();
                             }
@@ -1038,7 +1057,7 @@ namespace System.Security.Cryptography
                     // encryptionScheme
                     {
                         writer.PushSequence();
-                        writer.WriteObjectIdentifier(encryptionAlgorithmOid);
+                        writer.WriteObjectIdentifierForCrypto(encryptionAlgorithmOid);
                         writer.WriteOctetString(iv);
                         writer.PopSequence();
                     }

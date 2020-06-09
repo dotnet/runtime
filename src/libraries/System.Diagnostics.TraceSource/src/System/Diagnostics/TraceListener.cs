@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Text;
 using System.Globalization;
 using System.Runtime.InteropServices;
@@ -37,7 +38,7 @@ namespace System.Diagnostics
         /// <para>Initializes a new instance of the <see cref='System.Diagnostics.TraceListener'/> class using the specified name as the
         ///    listener.</para>
         /// </devdoc>
-        protected TraceListener(string name)
+        protected TraceListener(string? name)
         {
             _listenerName = name;
         }
@@ -55,9 +56,10 @@ namespace System.Diagnostics
         /// <devdoc>
         /// <para> Gets or sets a name for this <see cref='System.Diagnostics.TraceListener'/>.</para>
         /// </devdoc>
+        [AllowNull]
         public virtual string Name
         {
-            get { return (_listenerName == null) ? "" : _listenerName; }
+            get { return _listenerName ?? ""; }
 
             set { _listenerName = value; }
         }

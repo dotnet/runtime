@@ -84,8 +84,7 @@ namespace System
 
             bool hasUnicode = false;
 
-            if (IriParsing &&
-                (CheckForUnicode(_string) || CheckForEscapedUnreserved(_string)))
+            if (IriParsing && CheckForUnicodeOrEscapedUnreserved(_string))
             {
                 _flags |= Flags.HasUnicode;
                 hasUnicode = true;
@@ -213,49 +212,30 @@ namespace System
             }
         }
 
-        //
         // Unescapes entire string and checks if it has unicode chars
-        //
-        private bool CheckForUnicode(string data)
+        // Also checks for sequences that are 3986 Unreserved characters as these should be un-escaped
+        private static bool CheckForUnicodeOrEscapedUnreserved(string data)
         {
             for (int i = 0; i < data.Length; i++)
             {
                 char c = data[i];
                 if (c == '%')
                 {
-                    if (i + 2 < data.Length)
+                    if ((uint)(i + 2) < (uint)data.Length)
                     {
-                        if (UriHelper.EscapedAscii(data[i + 1], data[i + 2]) > 0x7F)
+                        char value = UriHelper.DecodeHexChars(data[i + 1], data[i + 2]);
+
+                        if (value >= UriHelper.UnreservedTable.Length || UriHelper.UnreservedTable[value])
                         {
                             return true;
                         }
+
                         i += 2;
                     }
                 }
                 else if (c > 0x7F)
                 {
                     return true;
-                }
-            }
-            return false;
-        }
-
-        // Does this string have any %6A sequences that are 3986 Unreserved characters?  These should be un-escaped.
-        private unsafe bool CheckForEscapedUnreserved(string data)
-        {
-            fixed (char* tempPtr = data)
-            {
-                for (int i = 0; i < data.Length - 2; ++i)
-                {
-                    if (tempPtr[i] == '%' && IsHexDigit(tempPtr[i + 1]) && IsHexDigit(tempPtr[i + 2])
-                        && tempPtr[i + 1] >= '0' && tempPtr[i + 1] <= '7') // max 0x7F
-                    {
-                        char ch = UriHelper.EscapedAscii(tempPtr[i + 1], tempPtr[i + 2]);
-                        if (ch != c_DummyChar && UriHelper.IsUnreserved(ch))
-                        {
-                            return true;
-                        }
-                    }
                 }
             }
             return false;

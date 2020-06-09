@@ -6,12 +6,14 @@
 #include "ilrewriter.h"
 #include <iostream>
 #include <utility>
+#include <vector>
 
 using std::map;
 using std::unordered_set;
 using std::make_pair;
 using std::shared_ptr;
 using std::make_shared;
+using std::vector;
 
 #ifndef __FUNCTION_NAME__
     #ifdef WIN32   //WINDOWS
@@ -122,11 +124,83 @@ HRESULT STDMETHODCALLTYPE ReJITProfiler::JITCompilationStarted(FunctionID functi
     return S_OK;
 }
 
-HRESULT ReJITProfiler::FunctionSeen(FunctionID functionId)
+bool ReJITProfiler::FunctionSeen(FunctionID functionId)
 {
     String functionName = GetFunctionIDName(functionId);
     ModuleID moduleId = GetModuleIDForFunction(functionId);
     String moduleName = GetModuleIDName(moduleId);
+
+    // Check for runtime issue #13404, we would return NULL addresses in
+    // GetNativeCodeStartAddresses for R2R methods when called from
+    // JITCachedFunctionSearchFinished
+    ULONG rejitCount;
+    HRESULT hr = pCorProfilerInfo->GetReJITIDs(functionId,
+                                               0,
+                                               &rejitCount,
+                                               NULL);
+    if (FAILED(hr))
+    {
+        printf("GetReJITIDs failed with hr=0x%x\n", hr);
+        _failures++;
+        return S_OK;
+    }
+
+    if (rejitCount > 0)
+    {
+        vector<ReJITID> rejitIds(rejitCount);
+        HRESULT hr = pCorProfilerInfo->GetReJITIDs(functionId,
+                                                   (ULONG)rejitIds.size(),
+                                                   &rejitCount,
+                                                   &rejitIds[0]);
+        if (FAILED(hr))
+        {
+            printf("GetReJITIDs failed with hr=0x%x\n", hr);
+            _failures++;
+            return S_OK;
+        }
+
+        for (auto &&id : rejitIds)
+        {
+            UINT32 countAddresses;
+            hr = pCorProfilerInfo->GetNativeCodeStartAddresses(functionId,
+                                                               id,
+                                                               0,
+                                                               &countAddresses,
+                                                               NULL);
+            if (FAILED(hr))
+            {
+                printf("GetNativeCodeStartAddresses failed with hr=0x%x\n", hr);
+                _failures++;
+                continue;
+            }
+            else if (countAddresses == 0)
+            {
+                continue;
+            }
+
+            vector<UINT_PTR> codeStartAddresses(countAddresses);
+            hr = pCorProfilerInfo->GetNativeCodeStartAddresses(functionId,
+                                                               id,
+                                                               (ULONG)codeStartAddresses.size(),
+                                                               &countAddresses,
+                                                               &codeStartAddresses[0]);
+            if (FAILED(hr))
+            {
+                printf("GetNativeCodeStartAddresses failed with hr=0x%x\n", hr);
+                _failures++;
+                continue;
+            }
+
+            for (auto &&address : codeStartAddresses)
+            {
+                if (address == NULL)
+                {
+                    printf("Found NULL start address from GetNativeCodeStartAddresses.\n");
+                    _failures++;
+                }
+            }
+        }
+    }
 
     if (functionName == TargetMethodName && EndsWith(moduleName, TargetModuleName))
     {
@@ -134,6 +208,8 @@ HRESULT ReJITProfiler::FunctionSeen(FunctionID functionId)
         _targetFuncId = functionId;
         _targetModuleId = GetModuleIDForFunction(_targetFuncId);
         _targetMethodDef = GetMethodDefForFunction(_targetFuncId);
+
+        return true;
     }
     else if (functionName == ReJITTriggerMethodName && EndsWith(moduleName, TargetModuleName))
     {
@@ -155,12 +231,13 @@ HRESULT ReJITProfiler::FunctionSeen(FunctionID functionId)
         _profInfo10->RequestRevert(1, &_targetModuleId, &_targetMethodDef, nullptr);
     }
 
-    return S_OK;
+    return false;
 }
 
 HRESULT STDMETHODCALLTYPE ReJITProfiler::JITCompilationFinished(FunctionID functionId, HRESULT hrStatus, BOOL fIsSafeToBlock)
 {
-    return FunctionSeen(functionId);
+    FunctionSeen(functionId);
+    return S_OK;
 }
 
 HRESULT STDMETHODCALLTYPE ReJITProfiler::JITInlining(FunctionID callerId, FunctionID calleeId, BOOL* pfShouldInline)
@@ -176,12 +253,13 @@ HRESULT STDMETHODCALLTYPE ReJITProfiler::JITCachedFunctionSearchFinished(Functio
 {
     if (result == COR_PRF_CACHED_FUNCTION_FOUND)
     {
-        HRESULT hr;
-        if(FAILED(hr = FunctionSeen(functionId)))
+        // FunctionSeen will return true if it's a method we're tracking, and false otherwise
+        if(!FunctionSeen(functionId))
         {
-            return hr;
+            return S_OK;
         }
 
+        HRESULT hr;
         // TODO: this only looks in the same module as the function, with version bubbles that may
         // not hold.
         ModuleID modId = GetModuleIDForFunction(functionId);
@@ -296,6 +374,22 @@ HRESULT STDMETHODCALLTYPE ReJITProfiler::GetReJITParameters(ModuleID moduleId, m
 
 HRESULT STDMETHODCALLTYPE ReJITProfiler::ReJITCompilationFinished(FunctionID functionId, ReJITID rejitId, HRESULT hrStatus, BOOL fIsSafeToBlock)
 {
+    ULONG rejitIDsCount;
+    HRESULT hr = pCorProfilerInfo->GetReJITIDs(functionId, 0, &rejitIDsCount, NULL);
+    if (FAILED(hr))
+    {
+        printf("GetReJITIDs failed with hr=0x%x\n", hr);
+        _failures++;
+        return hr;
+    }
+
+    if (rejitIDsCount == 0)
+    {
+        printf("GetReJITIDs returned 0 for a method with a known ReJIT.\n");
+        _failures++;
+        return S_OK;
+    }
+
     return S_OK;
 }
 
@@ -344,6 +438,7 @@ FunctionID ReJITProfiler::GetFunctionIDFromToken(ModuleID module, mdMethodDef to
                                                            &functionId)))
     {
         printf("Call to GetFunctionFromToken failed with hr=0x%x\n", hr);
+        _failures++;
         return mdTokenNil;
     }
 
@@ -368,6 +463,13 @@ mdMethodDef ReJITProfiler::GetMethodDefForFunction(FunctionID functionId)
                                             SHORT_LENGTH,
                                             &nTypeArgs,
                                             typeArgs);
+    if (FAILED(hr))
+    {
+        printf("Call to GetFunctionInfo2 failed with hr=0x%x\n", hr);
+        _failures++;
+        return mdTokenNil;
+    }
+
     return token;
 }
 

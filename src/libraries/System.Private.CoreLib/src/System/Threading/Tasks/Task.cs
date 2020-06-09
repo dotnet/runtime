@@ -298,7 +298,9 @@ namespace System.Threading.Tasks
                 };
             }
             else
+            {
                 m_stateFlags = TASK_STATE_RAN_TO_COMPLETION | optionFlags;
+            }
         }
 
         /// <summary>Constructor for use with promise-style tasks that aren't configurable.</summary>
@@ -1374,6 +1376,18 @@ namespace System.Threading.Tasks
         /// </summary>
         public TaskCreationOptions CreationOptions => Options & (TaskCreationOptions)(~InternalTaskOptions.InternalOptionsMask);
 
+        /// <summary>Spins until the task is completed.</summary>
+        /// <remarks>This should only be called if the task is in the process of being completed by another thread.</remarks>
+        internal void SpinUntilCompleted()
+        {
+            // Spin wait until the completion is finalized by another thread.
+            SpinWait sw = default;
+            while (!IsCompleted)
+            {
+                sw.SpinOnce();
+            }
+        }
+
         /// <summary>
         /// Gets a <see cref="System.Threading.WaitHandle"/> that can be used to wait for the task to
         /// complete.
@@ -1881,13 +1895,6 @@ namespace System.Threading.Tasks
 #if CORERT
             RuntimeExceptionHelpers.ReportUnhandledException(edi.SourceException);
 #else
-
-#if FEATURE_COMINTEROP
-            // If we have the new error reporting APIs, report this error.
-            if (System.Runtime.InteropServices.WindowsRuntime.WindowsRuntimeMarshal.ReportUnhandledError(edi.SourceException))
-                return;
-#endif
-
             // Propagate the exception(s) on the ThreadPool
             ThreadPool.QueueUserWorkItem(state => ((ExceptionDispatchInfo)state!).Throw(), edi);
 
@@ -5959,7 +5966,6 @@ namespace System.Threading.Tasks
             return TaskFactory.CommonCWAnyLogic(tasksCopy);
         }
 
-        // TODO https://github.com/dotnet/runtime/issues/23021: Make this public.
         /// <summary>Creates a task that will complete when either of the supplied tasks have completed.</summary>
         /// <param name="task1">The first task to wait on for completion.</param>
         /// <param name="task2">The second task to wait on for completion.</param>
@@ -5971,7 +5977,7 @@ namespace System.Threading.Tasks
         /// <exception cref="System.ArgumentNullException">
         /// The <paramref name="task1"/> or <paramref name="task2"/> argument was null.
         /// </exception>
-        internal static Task<Task> WhenAny(Task task1, Task task2) =>
+        public static Task<Task> WhenAny(Task task1, Task task2) =>
             (task1 is null) || (task2 is null) ? throw new ArgumentNullException(task1 is null ? nameof(task1) : nameof(task2)) :
             task1.IsCompleted ? FromResult(task1) :
             task2.IsCompleted ? FromResult(task2) :
@@ -6128,7 +6134,6 @@ namespace System.Threading.Tasks
                 TaskContinuationOptions.ExecuteSynchronously | TaskContinuationOptions.DenyChildAttach, TaskScheduler.Default);
         }
 
-        // TODO https://github.com/dotnet/runtime/issues/23021: Make this public.
         /// <summary>Creates a task that will complete when either of the supplied tasks have completed.</summary>
         /// <param name="task1">The first task to wait on for completion.</param>
         /// <param name="task2">The second task to wait on for completion.</param>
@@ -6140,7 +6145,7 @@ namespace System.Threading.Tasks
         /// <exception cref="System.ArgumentNullException">
         /// The <paramref name="task1"/> or <paramref name="task2"/> argument was null.
         /// </exception>
-        internal static Task<Task<TResult>> WhenAny<TResult>(Task<TResult> task1, Task<TResult> task2) =>
+        public static Task<Task<TResult>> WhenAny<TResult>(Task<TResult> task1, Task<TResult> task2) =>
             (task1 is null) || (task2 is null) ? throw new ArgumentNullException(task1 is null ? nameof(task1) : nameof(task2)) :
             task1.IsCompleted ? FromResult(task1) :
             task2.IsCompleted ? FromResult(task2) :

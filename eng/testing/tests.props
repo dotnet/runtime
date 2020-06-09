@@ -33,6 +33,12 @@
     <PlatformManifestFile />
   </PropertyGroup>
 
+  <!-- Provide runtime options to Mono (interpreter, aot, debugging, etc) -->
+  <ItemGroup Condition="'$(MonoEnvOptions)' != ''">
+    <RunScriptCommands Condition="'$(TargetsWindows)' == 'true'" Include="set MONO_ENV_OPTIONS='$(MonoEnvOptions)'" />
+    <RunScriptCommands Condition="'$(TargetsWindows)' != 'true'" Include="export MONO_ENV_OPTIONS='$(MonoEnvOptions)'" />
+  </ItemGroup>
+
   <!--
     Unit/Functional/Integration test support.
     Supported runners: xunit.

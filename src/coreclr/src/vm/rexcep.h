@@ -79,30 +79,6 @@
 
 #include "namespace.h"
 
-
-// Temporary workaround - adding some HRESULTs that the Jupiter team will define and
-// add to one of their header files for errors.  Once these have been RI'ed into
-// windows and are in a file adjacent to winerror.h, we can remove these constants.
-// Given integration time, remove this by August 2011 at the very latest.
-#ifndef E_XAMLPARSEFAILED
-#define E_XAMLPARSEFAILED _HRESULT_TYPEDEF_(0x802B000AL)
-#endif
-#ifndef E_LAYOUTCYCLE
-#define E_LAYOUTCYCLE _HRESULT_TYPEDEF_(0x802B0014L)
-#endif
-#ifndef E_ELEMENTNOTENABLED
-#define E_ELEMENTNOTENABLED _HRESULT_TYPEDEF_(0x802B001EL)
-#endif
-#ifndef E_ELEMENTNOTAVAILABLE
-#define E_ELEMENTNOTAVAILABLE _HRESULT_TYPEDEF_(0x802B001FL)
-#endif
-#ifndef RO_E_CLOSED
-#define RO_E_CLOSED _HRESULT_TYPEDEF_(0x80000013L)
-#endif
-#ifndef APPMODEL_ERROR_NO_PACKAGE
-#define APPMODEL_ERROR_NO_PACKAGE        15700L
-#endif
-
 //
 // Actual definition of the exceptions and their matching HRESULT's.
 // HRESULTs are expected to be defined in CorError.h, and must also be
@@ -140,8 +116,7 @@ DEFINE_EXCEPTION(g_SystemNS,       BadImageFormatException,        true,
                  HRESULT_FROM_WIN32(ERROR_FILE_CORRUPT),
                  IDS_CLASSLOAD_32BITCLRLOADING64BITASSEMBLY,
                  COR_E_LOADING_REFERENCE_ASSEMBLY,
-                 META_E_BAD_SIGNATURE,
-                 COR_E_LOADING_WINMD_REFERENCE_ASSEMBLY)
+                 META_E_BAD_SIGNATURE)
 
 // CannotUnloadAppDomainException is removed in CoreCLR
 #define kCannotUnloadAppDomainException kException
@@ -212,14 +187,6 @@ DEFINE_EXCEPTION(g_InteropNS,          InvalidOleVariantTypeException, false,  C
 
 DEFINE_EXCEPTION(g_SystemNS,           InvalidOperationException,      false,  COR_E_INVALIDOPERATION)
 
-#ifdef FEATURE_COMINTEROP
-DEFINE_EXCEPTION_HR_WINRT_ONLY(g_SystemNS, InvalidOperationException,  COR_E_INVALIDOPERATION,
-                                                                       E_ILLEGAL_STATE_CHANGE,
-                                                                       E_ILLEGAL_METHOD_CALL,
-                                                                       E_ILLEGAL_DELEGATE_ASSIGNMENT,
-                                                                       HRESULT_FROM_WIN32(APPMODEL_ERROR_NO_PACKAGE))
-#endif  // FEATURE_COMINTEROP
-
 DEFINE_EXCEPTION(g_SystemNS,           InvalidProgramException,        false,  COR_E_INVALIDPROGRAM)
 
 DEFINE_EXCEPTION(g_IONS,               IOException,                    false,  COR_E_IO, CTL_E_DEVICEIOERROR, STD_CTL_SCODE(31036), STD_CTL_SCODE(31037))
@@ -245,9 +212,11 @@ DEFINE_EXCEPTION(g_SystemNS,           NullReferenceException,         false,  C
 // Note: this has to come after NullReferenceException since we want NullReferenceException to be created
 // when E_POINTER is returned from COM interfaces.
 DEFINE_EXCEPTION(g_SystemNS,           AccessViolationException,       false,  E_POINTER)
-
+#ifdef TARGET_WINDOWS
 DEFINE_EXCEPTION(g_SystemNS,           ObjectDisposedException,        false,  COR_E_OBJECTDISPOSED, RO_E_CLOSED)
-
+#else
+DEFINE_EXCEPTION(g_SystemNS,           ObjectDisposedException,        false,  COR_E_OBJECTDISPOSED)
+#endif
 DEFINE_EXCEPTION(g_SystemNS,           OperationCanceledException,     false,  COR_E_OPERATIONCANCELED)
 
 DEFINE_EXCEPTION(g_SystemNS,           OverflowException,              false,  COR_E_OVERFLOW, CTL_E_OVERFLOW)
@@ -317,17 +286,8 @@ DEFINE_EXCEPTION(g_SystemNS,           ArgumentNullException,          false,  E
 // All exceptions defined in other .NET Framework assemblies have to be at the end
 //
 
-#ifdef FEATURE_COMINTEROP
-// Jupiter needs some HRESULTs mapped to exceptions in .NET Framework assemblies other than mscorlib.
-DEFINE_EXCEPTION_IN_OTHER_FX_ASSEMBLY(g_MarkupNS, XamlParseException, "System.Runtime.WindowsRuntime.UI.Xaml", false, E_XAMLPARSEFAILED)
-DEFINE_EXCEPTION_IN_OTHER_FX_ASSEMBLY(g_AutomationNS, ElementNotAvailableException, "System.Runtime.WindowsRuntime.UI.Xaml", false, E_ELEMENTNOTAVAILABLE)
-DEFINE_EXCEPTION_IN_OTHER_FX_ASSEMBLY(g_AutomationNS, ElementNotEnabledException, "System.Runtime.WindowsRuntime.UI.Xaml", false, E_ELEMENTNOTENABLED)
-DEFINE_EXCEPTION_IN_OTHER_FX_ASSEMBLY(g_DirectUINS, LayoutCycleException, "System.Runtime.WindowsRuntime.UI.Xaml", false, E_LAYOUTCYCLE)
-#endif // FEATURE_COMINTEROP
 
 
 // Please see comments on at the top of this list
 
 #undef DEFINE_EXCEPTION
-#undef DEFINE_EXCEPTION_HR_WINRT_ONLY
-#undef DEFINE_EXCEPTION_IN_OTHER_FX_ASSEMBLY

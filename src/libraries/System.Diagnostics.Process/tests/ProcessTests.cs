@@ -134,6 +134,42 @@ namespace System.Diagnostics.Tests
             }
         }
 
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void TestExited_SynchronizingObject(bool invokeRequired)
+        {
+            bool exitedInvoked = false;
+            Task beginInvokeTask = null;
+
+            Process p = CreateProcessLong();
+            p.SynchronizingObject = new DelegateSynchronizeInvoke()
+            {
+                InvokeRequiredDelegate = () => invokeRequired,
+                BeginInvokeDelegate = (d, args) =>
+                {
+                    Assert.Null(beginInvokeTask);
+                    beginInvokeTask = Task.Run(() => d.DynamicInvoke(args));
+                    return beginInvokeTask;
+                }
+            };
+            p.EnableRaisingEvents = true;
+            p.Exited += delegate { exitedInvoked = true; };
+            StartSleepKillWait(p);
+
+            if (invokeRequired)
+            {
+                Assert.NotNull(beginInvokeTask);
+                beginInvokeTask.Wait();
+            }
+            else
+            {
+                Assert.Null(beginInvokeTask);
+            }
+
+            Assert.True(exitedInvoked);
+        }
+
         [Fact]
         public void ProcessStart_TryExitCommandAsFileName_ThrowsWin32Exception()
         {

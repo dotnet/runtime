@@ -1,5 +1,12 @@
 <Project>
   <PropertyGroup>
+    <PrepareResourcesDependsOn>
+      _EmbedILLinkSubstitutionsXmls;
+      $(PrepareResourcesDependsOn)
+    </PrepareResourcesDependsOn>
+  </PropertyGroup>
+
+  <PropertyGroup>
     <TargetsTriggeredByCompilation Condition="'$(DesignTimeBuild)' != 'true'">
       $(TargetsTriggeredByCompilation);
       _SetILLinkTrimAssembly;
@@ -31,6 +38,8 @@
     <ILLinkTrimXml Condition="'$(ILLinkTrimXml)' == '' and Exists('$(MSBuildProjectDirectory)/ILLinkTrim.xml')">$(MSBuildProjectDirectory)/ILLinkTrim.xml</ILLinkTrimXml>
     <!-- ILLinkTrim_LibraryBuild.xml files are only used during building the library, not an app. They shouldn't be embedded into the assembly. -->
     <ILLinkTrimXmlLibraryBuild Condition="'$(ILLinkTrimXmlLibraryBuild)' == '' and Exists('$(MSBuildProjectDirectory)/ILLinkTrim_LibraryBuild.xml')">$(MSBuildProjectDirectory)/ILLinkTrim_LibraryBuild.xml</ILLinkTrimXmlLibraryBuild>
+    <ILLinkSubstitutionsXml Condition="'$(ILLinkSubstitutionsXml)' == '' and Exists('$(MSBuildProjectDirectory)/ILLink.Substitutions.xml')">$(MSBuildProjectDirectory)/ILLink.Substitutions.xml</ILLinkSubstitutionsXml>
+    <ILLinkSubstitutionsXmlIntermediatePath>$(IntermediateOutputPath)ILLink.Substitutions.xml</ILLinkSubstitutionsXmlIntermediatePath>
 
     <!-- if building a PDB, tell illink to rewrite the symbols file -->
     <ILLinkRewritePDBs Condition="'$(ILLinkRewritePDBs)' == '' and '$(DebugSymbols)' != 'false'">true</ILLinkRewritePDBs>
@@ -42,8 +51,10 @@
     </EmbeddedResource>
   </ItemGroup>
 
-  <ItemGroup Condition="'$(ILLinkTrimXmlLibraryBuild)' != ''">
-    <None Include="$(ILLinkTrimXmlLibraryBuild)" />
+  <ItemGroup>
+    <None Include="$(ILLinkTrimXmlLibraryBuild)" Condition="'$(ILLinkTrimXmlLibraryBuild)' != ''" />
+    <None Include="$(ILLinkSubstitutionsXml)" Condition="'$(ILLinkSubstitutionsXml)' != ''" />
+    <None Include="@(ILLinkSubstitutionsXmls)" />
   </ItemGroup>
 
   <!-- Custom binplacing for pre/post-trimming and reports that is useful for analysis 
@@ -64,6 +75,35 @@
     </BinPlaceTargetFramework>
   </ItemGroup>
 
+  <Target Name="_EmbedILLinkSubstitutionsXmls"
+          Condition="'$(ILLinkTrimAssembly)' == 'true'"
+          DependsOnTargets="_CombineILLinkSubstitutionsXmls">
+
+    <ItemGroup Condition="'$(ILLinkSubstitutionsXml)' != ''">
+      <EmbeddedResource Include="$(ILLinkSubstitutionsXml)">
+        <LogicalName>ILLink.Substitutions.xml</LogicalName>
+      </EmbeddedResource>
+    </ItemGroup>
+
+  </Target>
+
+  <UsingTask TaskName="CombineLinkerXmlFiles" AssemblyFile="$(ILLinkTasksPath)" />
+  <Target Name="_CombineILLinkSubstitutionsXmls"
+          Condition="'$(ILLinkSubstitutionsXml)' == '' and '@(ILLinkSubstitutionsXmls)' != ''"
+          Inputs="@(ILLinkSubstitutionsXmls)"
+          Outputs="$(ILLinkSubstitutionsXmlIntermediatePath)">
+    <PropertyGroup>
+      <ILLinkSubstitutionsXml>$(ILLinkSubstitutionsXmlIntermediatePath)</ILLinkSubstitutionsXml>
+    </PropertyGroup>
+
+    <CombineLinkerXmlFiles LinkerXmlFiles="@(ILLinkSubstitutionsXmls)"
+                           CombinedLinkerXmlFile="$(ILLinkSubstitutionsXml)" />
+
+    <ItemGroup>
+      <FileWrites Include="$(ILLinkSubstitutionsXml)" />
+    </ItemGroup>
+  </Target>
+  
   <Target Name="_SetILLinkTrimAssembly" 
           Condition="'$(ILLinkTrimAssembly)' == ''"
           DependsOnTargets="GetBinPlaceTargetFramework">
@@ -96,6 +136,8 @@
       <ILLinkArgs Condition="'$(ILLinkTrimXml)' != ''">$(ILLinkArgs) --strip-descriptors false</ILLinkArgs>
       <!-- pass the non-embedded root xml file on the command line -->
       <ILLinkArgs Condition="'$(ILLinkTrimXmlLibraryBuild)' != ''">$(ILLinkArgs) -x "$(ILLinkTrimXmlLibraryBuild)"</ILLinkArgs>
+      <!-- don't remove the embedded substitutions xml resource since ILLink may run again on the assembly -->
+      <ILLinkArgs Condition="'$(ILLinkSubstitutionsXml)' != ''">$(ILLinkArgs) --strip-substitutions false</ILLinkArgs>
       <!-- ignore unresolved references -->
       <ILLinkArgs>$(ILLinkArgs) --skip-unresolved true</ILLinkArgs>
       <!-- keep interface implementations -->
@@ -150,7 +192,6 @@
             RootAssemblyNames=""
             OutputDirectory="$(ILLinkTrimOutputPath)"
             ClearInitLocals="$(ILLinkClearInitLocals)"
-            ClearInitLocalsAssemblies="$(TargetName)"
             ExtraArgs="$(ILLinkArgs)"
             ToolExe="$(_DotNetHostFileName)"
             ToolPath="$(_DotNetHostDirectory)" />

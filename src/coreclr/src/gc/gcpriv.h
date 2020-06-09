@@ -1283,7 +1283,7 @@ public:
 
 protected:
     PER_HEAP_ISOLATED
-    BOOL reserve_initial_memory (size_t normal_size, size_t large_size, size_t pinned_size, int num_heaps, bool use_large_pages_p);
+    BOOL reserve_initial_memory (size_t normal_size, size_t large_size, size_t pinned_size, int num_heaps, bool use_large_pages_p, bool separated_poh_p);
 
     PER_HEAP_ISOLATED
     void destroy_initial_memory();
@@ -3382,6 +3382,9 @@ public:
     //testing to change the general case.
     PER_HEAP_ISOLATED
     size_t heap_hard_limit;
+
+    PER_HEAP_ISOLATED
+    size_t heap_hard_limit_oh[total_oh_count - 1];
 
     PER_HEAP_ISOLATED
     CLRCriticalSection check_commit_cs;

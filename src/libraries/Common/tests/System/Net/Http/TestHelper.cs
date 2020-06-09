@@ -120,7 +120,7 @@ namespace System.Net.Http.Functional.Tests
                 return;
             }
 
-            FieldInfo socketsHttpHandlerField = typeof(HttpClientHandler).GetField("_socketsHttpHandler", BindingFlags.NonPublic | BindingFlags.Instance);
+            FieldInfo socketsHttpHandlerField = typeof(HttpClientHandler).GetField("_underlyingHandler", BindingFlags.NonPublic | BindingFlags.Instance);
             if (socketsHttpHandlerField == null)
             {
                 // Not using .NET Core implementation, i.e. could be .NET Framework.

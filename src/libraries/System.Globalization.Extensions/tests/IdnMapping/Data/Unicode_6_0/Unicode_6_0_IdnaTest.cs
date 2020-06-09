@@ -20,14 +20,8 @@ namespace System.Globalization.Tests
     ///
     /// If the value of toUnicode or toASCII is the same as source, the column will be blank.
     /// </summary>
-    public class Unicode_6_0_IdnaTest : IConformanceIdnaTest
+    public class Unicode_6_0_IdnaTest : Unicode_IdnaTest
     {
-        public IdnType Type { get; set; }
-        public string Source { get; set; }
-        public ConformanceIdnaUnicodeTestResult UnicodeResult { get; set; }
-        public ConformanceIdnaTestResult ASCIIResult { get; set; }
-        public int LineNumber { get; set; }
-
         public Unicode_6_0_IdnaTest(string line, int lineNumber)
         {
             var split = line.Split(';');
@@ -52,36 +46,6 @@ namespace System.Globalization.Tests
                 default:
                     throw new ArgumentOutOfRangeException(nameof(idnType), "Unknown idnType");
             }
-        }
-
-        /// <summary>
-        /// This will convert strings with escaped sequences to literal characters.  The input string is
-        /// expected to have escaped sequences in the form of '\uXXXX'.
-        ///
-        /// Example: "a\u0020b" will be converted to 'a b'.
-        /// </summary>
-        private static string EscapedToLiteralString(string escaped, int lineNumber)
-        {
-            var sb = new StringBuilder();
-
-            for (int i = 0; i < escaped.Length; i++)
-            {
-                if (i + 1 < escaped.Length && escaped[i] == '\\' && escaped[i + 1] == 'u')
-                {
-                    // Verify that the escaped sequence is not malformed
-                    Assert.True(i + 5 < escaped.Length, "There was a problem converting to literal string on Line " + lineNumber);
-
-                    var codepoint = Convert.ToInt32(escaped.Substring(i + 2, 4), 16);
-                    sb.Append((char)codepoint);
-                    i += 5;
-                }
-                else
-                {
-                    sb.Append(escaped[i]);
-                }
-            }
-
-            return sb.ToString().Trim();
         }
     }
 }

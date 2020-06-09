@@ -5472,7 +5472,7 @@ ves_icall_System_Reflection_RuntimeAssembly_GetAotIdInternal (MonoArrayHandle gu
 #endif
 
 static MonoAssemblyName*
-create_referenced_assembly_name (MonoDomain *domain, MonoImage *image, MonoTableInfo *t, int i, MonoError *error)
+create_referenced_assembly_name (MonoDomain *domain, MonoImage *image, int i, MonoError *error)
 {
 	MonoAssemblyName *aname = g_new0 (MonoAssemblyName, 1);
 
@@ -5501,14 +5501,21 @@ ves_icall_System_Reflection_Assembly_InternalGetReferencedAssemblies (MonoReflec
 	MonoDomain *domain = MONO_HANDLE_DOMAIN (assembly);
 	MonoAssembly *ass = MONO_HANDLE_GETVAL(assembly, assembly);
 	MonoImage *image = ass->image;
+	int count;
 
-	MonoTableInfo *t = &image->tables [MONO_TABLE_ASSEMBLYREF];
-	int count = t->rows;
+	if (image_is_dynamic (ass->image)) {
+		MonoDynamicTable *t = &(((MonoDynamicImage*) image)->tables [MONO_TABLE_ASSEMBLYREF]);
+		count = t->rows;
+	}
+	else {
+		MonoTableInfo *t = &image->tables [MONO_TABLE_ASSEMBLYREF];
+		count = t->rows;
+	}
 
 	GPtrArray *result = g_ptr_array_sized_new (count);
 
 	for (int i = 0; i < count; i++) {
-		MonoAssemblyName *aname = create_referenced_assembly_name (domain, image, t, i, error);
+		MonoAssemblyName *aname = create_referenced_assembly_name (domain, image, i, error);
 		if (!is_ok (error))
 			break;
 		g_ptr_array_add (result, aname);
@@ -5533,8 +5540,47 @@ g_concat_dir_and_file (const char *dir, const char *file)
 		return g_strconcat (dir, file, (const char*)NULL);
 }
 
-void *
-ves_icall_System_Reflection_RuntimeAssembly_GetManifestResourceInternal (MonoReflectionAssemblyHandle assembly_h, MonoStringHandle name, gint32 *size, MonoReflectionModuleHandleOut ref_module, MonoError *error) 
+#ifdef ENABLE_NETCORE
+static MonoReflectionAssemblyHandle
+try_resource_resolve_name (MonoReflectionAssemblyHandle assembly_handle, MonoStringHandle name_handle)
+{
+	MonoObjectHandle ret;
+
+	ERROR_DECL (error);
+
+	HANDLE_FUNCTION_ENTER ();
+
+	if (mono_runtime_get_no_exec ())
+		goto return_null;
+
+	MONO_STATIC_POINTER_INIT (MonoMethod, resolve_method)
+
+		MonoClass *alc_class = mono_class_get_assembly_load_context_class ();
+		g_assert (alc_class);
+		resolve_method = mono_class_get_method_from_name_checked (alc_class, "OnResourceResolve", -1, 0, error);
+
+	MONO_STATIC_POINTER_INIT_END (MonoMethod, resolve_method)
+
+	goto_if_nok (error, return_null);
+
+	gpointer args [2];
+	args [0] = MONO_HANDLE_RAW (assembly_handle);
+	args [1] = MONO_HANDLE_RAW (name_handle);
+	ret = mono_runtime_try_invoke_handle (resolve_method, NULL_HANDLE, args, error);
+	goto_if_nok (error, return_null);
+
+	goto exit;
+
+return_null:
+	ret = NULL_HANDLE;
+
+exit:
+	HANDLE_FUNCTION_RETURN_REF (MonoReflectionAssembly, MONO_HANDLE_CAST (MonoReflectionAssembly, ret));
+}
+#endif
+
+static void *
+get_manifest_resource_internal (MonoReflectionAssemblyHandle assembly_h, MonoStringHandle name, gint32 *size, MonoReflectionModuleHandleOut ref_module, MonoError *error)
 {
 	MonoDomain *domain = MONO_HANDLE_DOMAIN (assembly_h);
 	MonoAssembly *assembly = MONO_HANDLE_GETVAL (assembly_h, assembly);
@@ -5580,6 +5626,22 @@ ves_icall_System_Reflection_RuntimeAssembly_GetManifestResourceInternal (MonoRef
 	MONO_HANDLE_ASSIGN (ref_module, rm);
 
 	return (void*)mono_image_get_resource (module, cols [MONO_MANIFEST_OFFSET], (guint32*)size);
+}
+
+void *
+ves_icall_System_Reflection_RuntimeAssembly_GetManifestResourceInternal (MonoReflectionAssemblyHandle assembly_h, MonoStringHandle name, gint32 *size, MonoReflectionModuleHandleOut ref_module, MonoError *error) 
+{
+	gpointer ret = get_manifest_resource_internal (assembly_h, name, size, ref_module, error);
+
+#ifdef ENABLE_NETCORE
+	if (!ret) {
+		MonoReflectionAssemblyHandle event_assembly_h = try_resource_resolve_name (assembly_h, name);
+		if (MONO_HANDLE_BOOL (event_assembly_h))
+			ret = get_manifest_resource_internal (event_assembly_h, name, size, ref_module, error);
+	}
+#endif
+
+	return ret;
 }
 
 static gboolean

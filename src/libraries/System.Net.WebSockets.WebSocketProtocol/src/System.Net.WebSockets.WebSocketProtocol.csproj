@@ -5,7 +5,7 @@
     <NoWarn>$(NoWarn);CS1573</NoWarn>
     <TargetFrameworks>$(NetCoreAppCurrent);netstandard2.0;netcoreapp2.1</TargetFrameworks>
     <ExcludeCurrentNetCoreAppFromPackage>true</ExcludeCurrentNetCoreAppFromPackage>
-    <Nullable>annotations</Nullable>
+    <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(CommonPath)System\Net\WebSockets\ManagedWebSocket.cs"

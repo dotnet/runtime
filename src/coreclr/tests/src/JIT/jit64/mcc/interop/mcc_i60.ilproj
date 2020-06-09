@@ -3,8 +3,7 @@
     <OutputType>Exe</OutputType>
     <CLRTestPriority>1</CLRTestPriority>
     <!-- Test unsupported outside of windows uses native varargs -->
-    <TestUnsupportedOutsideWindows>true</TestUnsupportedOutsideWindows>
-    <DisableProjectBuild Condition="'$(TargetsUnix)' == 'true'">true</DisableProjectBuild>
+    <CLRTestTargetUnsupported Condition="'$(TargetsWindows)' != 'true'">true</CLRTestTargetUnsupported>
   </PropertyGroup>
   <PropertyGroup>
     <DebugType>PdbOnly</DebugType>

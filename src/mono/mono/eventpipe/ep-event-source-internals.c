@@ -26,7 +26,8 @@ ep_event_source_alloc (void)
 
 	// Generate metadata.
 	EventPipeParameterDesc params [1];
-	const uint32_t params_len = EP_ARRAY_SIZE (params);
+	uint32_t params_len;
+	params_len = EP_ARRAY_SIZE (params);
 
 	command_line_arg_utf16 = ep_rt_utf8_to_utf16_string ("CommandLine", -1);
 	ep_raise_error_if_nok (command_line_arg_utf16 != NULL);
@@ -36,7 +37,8 @@ ep_event_source_alloc (void)
 	event_name_utf16 = ep_rt_utf8_to_utf16_string ("ProcessInfo", -1);
 	ep_raise_error_if_nok (event_name_utf16 != NULL);
 
-	size_t metadata_len = 0;
+	size_t metadata_len;
+	metadata_len = 0;
 	metadata = ep_metadata_generator_generate_event_metadata (
 		1,		/* eventID */
 		event_name_utf16,

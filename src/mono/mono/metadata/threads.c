@@ -1710,7 +1710,7 @@ ves_icall_System_Threading_Thread_Thread_internal (MonoThreadObjectHandle thread
 	MonoObject *start = MONO_HANDLE_RAW (start_handle);
 
 #ifdef DISABLE_THREADS
-	mono_error_set_not_supported (error, "Cannot start threads on this runtime.");
+	mono_error_set_platform_not_supported (error, "Cannot start threads on this runtime.");
 	return FALSE;
 #endif
 
@@ -6744,7 +6744,7 @@ ves_icall_System_Threading_Thread_StartInternal (MonoThreadObjectHandle thread_h
 	gboolean res;
 
 #ifdef DISABLE_THREADS
-	mono_error_set_not_supported (error, "Cannot start threads on this runtime.");
+	mono_error_set_platform_not_supported (error, "Cannot start threads on this runtime.");
 	return;
 #endif
 
