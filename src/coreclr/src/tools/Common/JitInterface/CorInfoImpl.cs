@@ -115,13 +115,21 @@ namespace Internal.JitInterface
         private extern static char* GetExceptionMessage(IntPtr obj);
 
 
-        public static void Startup(TargetOS targetOS, TargetArchitecture targetArchitecture)
+        public static void Startup(TargetOS targetOS, TargetArchitecture targetArchitecture, string jitPathOverride)
         {
             Debug.Assert(s_jitLibrary == IntPtr.Zero);
 
-            string crossgenPath = Path.GetDirectoryName(typeof(CorInfoImpl).Assembly.Location);
-            string jitTargetPath = Path.Combine(crossgenPath, GetTargetSpec(targetOS, targetArchitecture));
-            string jitLibraryName = Path.Combine(jitTargetPath, GetLibraryPrefix() + JitLibrary + GetLibraryExtension());
+            string jitLibraryName;
+            if (!string.IsNullOrEmpty(jitPathOverride))
+            {
+                jitLibraryName = jitPathOverride;
+            }
+            else
+            {
+                string crossgenPath = Path.GetDirectoryName(typeof(CorInfoImpl).Assembly.Location);
+                string jitTargetPath = Path.Combine(crossgenPath, GetTargetSpec(targetOS, targetArchitecture));
+                jitLibraryName = Path.Combine(jitTargetPath, GetLibraryPrefix() + JitLibrary + GetLibraryExtension());
+            }
 
             s_jitLibrary = NativeLibrary.Load(jitLibraryName);
             s_jitStartup = Marshal.GetDelegateForFunctionPointer<JitStartupDelegate>(NativeLibrary.GetExport(s_jitLibrary, "jitStartup"));

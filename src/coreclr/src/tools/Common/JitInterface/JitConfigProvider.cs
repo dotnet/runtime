@@ -44,23 +44,7 @@ namespace Internal.JitInterface
             if (Interlocked.CompareExchange(ref s_instance, config, null) != null)
                 throw new InvalidOperationException();
 
-#if READYTORUN
-            if (jitPath != null)
-            {
-                NativeLibrary.SetDllImportResolver(typeof(CorInfoImpl).Assembly, (libName, assembly, searchPath) =>
-                {
-                    IntPtr libHandle = IntPtr.Zero;
-                    if (libName == CorInfoImpl.JitLibrary)
-                    {
-                        libHandle = NativeLibrary.Load(jitPath, assembly, searchPath);
-                    }
-                    return libHandle;
-                });
-            }
-#else
-            Debug.Assert(jitPath == null);
-#endif
-            CorInfoImpl.Startup(targetOS, targetArchitecture);
+            CorInfoImpl.Startup(targetOS, targetArchitecture, jitPath);
         }
 
         public IntPtr UnmanagedInstance
