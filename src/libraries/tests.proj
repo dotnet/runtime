@@ -19,7 +19,7 @@
 
   <ItemGroup>
     <!-- We currently only test with C# projects. -->
-    <ProjectReference Include="$(MSBuildThisFileDirectory)*\tests\**\*.Tests.csproj"
+    <ProjectReference Include="$(MSBuildThisFileDirectory)*\tests\**\System.Buffers.Tests.csproj"
                       Exclude="@(ProjectExclusions)"
                       Condition="'$(BuildAllConfigurations)' != 'true'" />
     <ProjectReference Include="$(MSBuildThisFileDirectory)pkg\test\testPackages.proj"
