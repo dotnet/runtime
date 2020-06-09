@@ -61,6 +61,9 @@ jobs:
         - HelixPreCommand: 'sudo apt-get -y install python3-venv;python3 -m venv $HELIX_WORKITEM_PAYLOAD/.venv;source $HELIX_WORKITEM_PAYLOAD/.venv/Scripts/activate;export PYTHONPATH=;pip3 install --user azure.storage.blob==12.0.0 --force-reinstall;pip3 install --user azure.storage.queue==12.0.0 --force-reinstall;export PERFLAB_UPLOAD_TOKEN="$(PerfCommandUploadTokenLinux)"'
         - IsInternal: --internal
         
+      - group: DotNet-HelixApi-Access
+      - group: dotnet-benchview
+
     - ${{ if and(eq(parameters.codeGenType, 'Interpreter'), eq(parameters.runtimeType, 'mono')) }}:
       - ${{ if eq( parameters.osGroup, 'Windows_NT') }}:
         - HelixPreCommand: '$(HelixPreCommand);set MONO_ENV_OPTIONS="--interpreter"'
@@ -68,10 +71,6 @@ jobs:
       - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
         - HelixPreCommand: '$(HelixPreCommand);export MONO_ENV_OPTIONS="--interpreter"'
         - Interpreter: ' --monointerpreter'
-
-
-    - group: DotNet-HelixApi-Access
-    - group: dotnet-benchview
 
     workspace:
       clean: all
