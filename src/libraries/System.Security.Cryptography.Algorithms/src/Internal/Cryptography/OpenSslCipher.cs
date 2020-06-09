@@ -5,6 +5,7 @@
 using System;
 using System.Buffers;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using Microsoft.Win32.SafeHandles;
@@ -14,7 +15,7 @@ namespace Internal.Cryptography
     internal class OpenSslCipher : BasicSymmetricCipher
     {
         private readonly bool _encrypting;
-        private SafeEvpCipherCtxHandle _ctx = null!;
+        private SafeEvpCipherCtxHandle _ctx;
 
         public OpenSslCipher(IntPtr algorithm, CipherMode cipherMode, int blockSizeInBytes, byte[] key, int effectiveKeyLength, byte[]? iv, bool encrypting)
             : base(cipherMode.GetCipherIv(iv), blockSizeInBytes)
@@ -126,6 +127,7 @@ namespace Internal.Cryptography
             return bytesWritten;
         }
 
+        [MemberNotNull(nameof(_ctx))]
         private void OpenKey(IntPtr algorithm, byte[] key, int effectiveKeyLength)
         {
             _ctx = Interop.Crypto.EvpCipherCreate(
