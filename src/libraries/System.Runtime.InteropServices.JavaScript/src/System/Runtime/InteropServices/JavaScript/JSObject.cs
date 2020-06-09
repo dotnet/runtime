@@ -6,6 +6,7 @@ using System;
 
 namespace System.Runtime.InteropServices.JavaScript
 {
+    using Console = System.Diagnostics.Debug;
     public interface IJSObject
     {
         int JSHandle { get; }
@@ -162,22 +163,28 @@ namespace System.Runtime.InteropServices.JavaScript
             bool ret = false;
 
 #if DEBUG_HANDLE
-			Console.WriteLine ($"Release Handle handle:{handle}");
-			try {
+            Console.WriteLine($"Release Handle handle:{handle}");
+            try
+            {
 #endif
-            FreeHandle();
+                FreeHandle();
+                ret = true;
 
 #if DEBUG_HANDLE
-			} catch (Exception exception) {
-				Console.WriteLine ($"ReleaseHandle: {exception.Message}");
-				ret = true;  // Avoid a second assert.
-				throw;
-			} finally {
-				if (!ret) {
-					Console.WriteLine ($"ReleaseHandle failed. handle:{handle}");
-				}
-			}
-			//Runtime.DumpExistingObjects();
+            }
+            catch (Exception exception)
+            {
+                Console.WriteLine($"ReleaseHandle: {exception.Message}");
+                ret = true;  // Avoid a second assert.
+                throw;
+            }
+            finally
+            {
+                if (!ret)
+                {
+                    Console.WriteLine($"ReleaseHandle failed. handle:{handle}");
+                }
+            }
 #endif
             return ret;
         }

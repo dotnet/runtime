@@ -42,8 +42,6 @@ namespace System.Runtime.InteropServices.JavaScript
 
         public static void FreeObject(object obj)
         {
-            // We no longer need to free on delegates.
-            // Leave this here for now so it does not break code.
             if (obj.GetType().IsSubclassOf(typeof(Delegate)))
             {
                 return;
@@ -53,7 +51,6 @@ namespace System.Runtime.InteropServices.JavaScript
             {
                 if (_rawToJS.TryGetValue(obj, out JSObject? jsobj))
                 {
-                    //raw_to_js [obj].RawObject = null;
                     _rawToJS.Remove(obj);
                     if (jsobj != null)
                     {
@@ -98,7 +95,7 @@ namespace System.Runtime.InteropServices.JavaScript
                 {
                     IntPtr jsIntPtr = (IntPtr)jsId;
                     obj = new WeakReference(mappedType > 0 ? BindJSType(jsIntPtr, ownsHandle, mappedType) : new JSObject(jsIntPtr, ownsHandle), true);
-                    _boundObjects.Add (jsId, obj);
+                    _boundObjects.Add(jsId, obj);
                 }
                 JSObject? target = obj.Target as JSObject;
                 return target == null ? 0 : (int)(IntPtr)target.AnyRefHandle;
@@ -543,62 +540,59 @@ namespace System.Runtime.InteropServices.JavaScript
             return new Uri(uri);
         }
 
-
         public static bool SafeHandleAddRef(SafeHandle safeHandle)
         {
-            bool b = false;
-            //#if DEBUG_HANDLE
+            bool _addRefSucceeded = false;
+#if DEBUG_HANDLE
             var _anyref = safeHandle as AnyRef;
-            //#endif
+#endif
             try
             {
-                safeHandle.DangerousAddRef(ref b);
-                //#if DEBUG_HANDLE
-                if (b && _anyref != null)
+                safeHandle.DangerousAddRef(ref _addRefSucceeded);
+#if DEBUG_HANDLE
+                if (_addRefSucceeded && _anyref != null)
                     _anyref.AddRef();
-                //#endif
-
+#endif
             }
             catch
             {
-                if (b)
+                if (_addRefSucceeded)
                 {
                     safeHandle.DangerousRelease();
-                    //#if DEBUG_HANDLE
-
+#if DEBUG_HANDLE
                     if (_anyref != null)
                         _anyref.Release();
-                    //#endif
-                    b = false;
+#endif
+                    _addRefSucceeded = false;
                 }
             }
-            //#if DEBUG_HANDLE
-            System.Diagnostics.Debug.WriteLine($"\tSafeHandleAddRef: {safeHandle.DangerousGetHandle()} / RefCount: {((_anyref == null) ? 0 : _anyref.RefCount)}");
-            //#endif
-            return b;
+#if DEBUG_HANDLE
+            Console.WriteLine($"\tSafeHandleAddRef: {safeHandle.DangerousGetHandle()} / RefCount: {((_anyref == null) ? 0 : _anyref.RefCount)}");
+#endif
+            return _addRefSucceeded;
         }
 
         public static void SafeHandleRelease(SafeHandle safeHandle)
         {
             safeHandle.DangerousRelease();
-#if !DEBUG_HANDLE
+#if DEBUG_HANDLE
             var _anyref = safeHandle as AnyRef;
             if (_anyref != null)
             {
                 _anyref.Release();
-                System.Diagnostics.Debug.WriteLine($"\tSafeHandleRelease: {safeHandle.DangerousGetHandle()} / RefCount: {_anyref.RefCount}");
+                Console.WriteLine($"\tSafeHandleRelease: {safeHandle.DangerousGetHandle()} / RefCount: {_anyref.RefCount}");
             }
 #endif
         }
 
-        public static void SafeHandleReleaseByHandle(int js_id)
+        public static void SafeHandleReleaseByHandle(int jsId)
         {
-#if !DEBUG_HANDLE
-            System.Diagnostics.Debug.WriteLine($"SafeHandleReleaseByHandle: {js_id}");
+#if DEBUG_HANDLE
+            Console.WriteLine($"SafeHandleReleaseByHandle: {jsId}");
 #endif
             lock (_boundObjects)
             {
-                if (_boundObjects.TryGetValue(js_id, out WeakReference? reference))
+                if (_boundObjects.TryGetValue(jsId, out WeakReference? reference))
                 {
                     if (reference.Target != null)
                     {
@@ -606,13 +600,13 @@ namespace System.Runtime.InteropServices.JavaScript
                     }
                     else
                     {
-                        System.Diagnostics.Debug.WriteLine($"\tSafeHandleReleaseByHandle: did not find active target {js_id} / target: {reference.Target}");
+                        Console.WriteLine($"\tSafeHandleReleaseByHandle: did not find active target {jsId} / target: {reference.Target}");
                     }
 
                 }
                 else
                 {
-                    System.Diagnostics.Debug.WriteLine($"\tSafeHandleReleaseByHandle: did not find reference for {js_id}");
+                    Console.WriteLine($"\tSafeHandleReleaseByHandle: did not find reference for {jsId}");
                 }
             }
 
@@ -620,8 +614,8 @@ namespace System.Runtime.InteropServices.JavaScript
 
         public static IntPtr SafeHandleGetHandle(SafeHandle safeHandle, bool addRef)
         {
-#if !DEBUG_HANDLE
-            System.Diagnostics.Debug.WriteLine($"SafeHandleGetHandle: {safeHandle.DangerousGetHandle()} / addRef {addRef}");
+#if DEBUG_HANDLE
+            Console.WriteLine($"SafeHandleGetHandle: {safeHandle.DangerousGetHandle()} / addRef {addRef}");
 #endif
             if (addRef)
                 if (SafeHandleAddRef(safeHandle))

@@ -36,7 +36,7 @@ namespace System.Runtime.InteropServices.JavaScript
         // We should not provide a finalizer - SafeHandle's critical finalizer will call ReleaseHandle inside a CER for us.
         protected override bool ReleaseHandle() => throw new NotImplementedException();
 
-#if !DEBUG_HANDLE
+#if DEBUG_HANDLE
         private int _refCount = 0;
 
         public void AddRef()
