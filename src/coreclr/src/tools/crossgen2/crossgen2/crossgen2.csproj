@@ -45,7 +45,7 @@
     <CrossHostArch Condition="'$(TargetArchitecture)' == 'arm64'">x64</CrossHostArch>
 
     <TargetOSComponent Condition="'$(TargetOS)' == 'Windows_NT'">win</TargetOSComponent>
-    <TargetOSComponent Condition="'$(TargetOS)' == 'Linux'">lnx</TargetOSComponent>
+    <TargetOSComponent Condition="'$(TargetOS)' == 'Linux'">linux</TargetOSComponent>
     <TargetOSComponent Condition="'$(TargetOS)' == 'OSX'">osx</TargetOSComponent>
     <TargetSpec>$(TargetOSComponent)-$(TargetArchitecture)</TargetSpec>
 

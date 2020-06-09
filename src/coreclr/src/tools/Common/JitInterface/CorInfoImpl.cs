@@ -160,7 +160,7 @@ namespace Internal.JitInterface
             string targetOSComponent = targetOS switch
             {
                 TargetOS.Windows => "win",
-                TargetOS.Linux => "lnx",
+                TargetOS.Linux => "linux",
                 TargetOS.OSX => "osx",
                 _ => throw new NotImplementedException(targetOS.ToString())
             };
