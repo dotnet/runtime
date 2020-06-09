@@ -551,8 +551,8 @@ The meaning of the _flags_ byte:
 
 | flag      | description                                                     |
 |:----------|:----------------------------------------------------------------|
-| 0b0000001 | Embed interop types.                                            |
-| 0b0000010 | The referenced file is an assembly (as opposed to a netmodule). |
+| 0b0000001 | The referenced file is an assembly (as opposed to a netmodule). |
+| 0b0000010 | Embed interop types.                                            |
 
 The remaining bits are reserved for future use and have currently no meaning.
 
