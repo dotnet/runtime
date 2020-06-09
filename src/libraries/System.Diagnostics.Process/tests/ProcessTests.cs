@@ -139,7 +139,7 @@ namespace System.Diagnostics.Tests
         [InlineData(true)]
         public void TestExited_SynchronizingObject(bool invokeRequired)
         {
-            bool exitedInvoked = false;
+            var mres = new ManualResetEventSlim();
             Task beginInvokeTask = null;
 
             Process p = CreateProcessLong();
@@ -154,20 +154,20 @@ namespace System.Diagnostics.Tests
                 }
             };
             p.EnableRaisingEvents = true;
-            p.Exited += delegate { exitedInvoked = true; };
+            p.Exited += delegate { mres.Set(); };
             StartSleepKillWait(p);
+
+            Assert.True(mres.Wait(WaitInMS));
 
             if (invokeRequired)
             {
                 Assert.NotNull(beginInvokeTask);
-                beginInvokeTask.Wait();
+                Assert.True(beginInvokeTask.Wait(WaitInMS));
             }
             else
             {
                 Assert.Null(beginInvokeTask);
             }
-
-            Assert.True(exitedInvoked);
         }
 
         [Fact]
