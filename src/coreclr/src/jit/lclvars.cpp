@@ -3396,12 +3396,18 @@ void Compiler::lvaSortByRefCount()
                 lvaSetVarDoNotEnregister(lclNum DEBUGARG(DNER_IsStruct));
             }
         }
-        else if (varDsc->lvIsStructField && (lvaGetParentPromotionType(lclNum) != PROMOTION_TYPE_INDEPENDENT))
+        else if (varDsc->lvIsStructField && (lvaGetParentPromotionType(lclNum) != PROMOTION_TYPE_INDEPENDENT) &&
+                 (lvaGetDesc(varDsc->lvParentLcl)->lvRefCnt() > 1))
         {
             // SSA must exclude struct fields that are not independently promoted
             // as dependent fields could be assigned using a CopyBlock
             // resulting in a single node causing multiple SSA definitions
             // which isn't currently supported by SSA
+            //
+            // If the parent struct local ref count is less than 2, then either the struct is no longer
+            // referenced or the field is no longer referenced: we increment the struct local ref count in incRefCnts
+            // for each field use when the struct is dependently promoted. This can happen, e.g, if we've removed
+            // a block initialization for the struct. In that case we can still track the local field.
             //
             // TODO-CQ:  Consider using lvLclBlockOpAddr and only marking these LclVars
             // untracked when a blockOp is used to assign the struct.
