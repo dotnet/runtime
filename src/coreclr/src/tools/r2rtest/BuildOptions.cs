@@ -31,7 +31,6 @@ namespace R2RTest
         public bool Release { get; set; }
         public bool LargeBubble { get; set; }
         public bool Composite { get; set; }
-        public bool PartialComposite { get; set; }
         public int Crossgen2Parallelism { get; set; }
         public int CompilationTimeoutMinutes { get; set; }
         public int ExecutionTimeoutMinutes { get; set; }
@@ -42,6 +41,7 @@ namespace R2RTest
         public DirectoryInfo[] RewriteOldPath { get; set; }
         public DirectoryInfo[] RewriteNewPath { get; set; }
         public DirectoryInfo AspNetPath { get; set; }
+        public SerpCompositeScenario CompositeScenario { get; set; }
         public bool MeasurePerf { get; set; }
         public string InputFileSearchString { get; set; }
         public string ConfigurationSuffix => (Release ? "-ret.out" : "-chk.out");
@@ -117,7 +117,7 @@ namespace R2RTest
                 List<string> cpaotReferencePaths = new List<string>();
                 cpaotReferencePaths.Add(CoreRootOutputPath(CompilerIndex.CPAOT, isFramework));
                 cpaotReferencePaths.AddRange(overrideReferencePaths != null ? overrideReferencePaths : ReferencePaths());
-                runners.Add(new CpaotRunner(this, cpaotReferencePaths));
+                runners.Add(new Crossgen2Runner(this, crossgen2RunnerOptions: null, cpaotReferencePaths));
             }
 
             if (Crossgen)

@@ -4257,13 +4257,7 @@ struct GenTreeCall final : public GenTree
         {
             return true;
         }
-#elif defined(FEATURE_HFA) && defined(TARGET_ARM64)
-        // SIMD types are returned in vector regs on ARM64.
-        if (varTypeIsSIMD(gtType))
-        {
-            return false;
-        }
-#endif // FEATURE_HFA && TARGET_ARM64
+#endif
 
         if (!varTypeIsStruct(gtType) || HasRetBufArg())
         {

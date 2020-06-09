@@ -19,6 +19,7 @@ namespace System
         public static bool CursorVisible { get { throw null; } set { } }
         public static System.IO.TextWriter Error { get { throw null; } }
         public static System.ConsoleColor ForegroundColor { get { throw null; } set { } }
+        public static (int Left, int Top) GetCursorPosition() { throw null; }
         public static System.IO.TextReader In { get { throw null; } }
         public static System.Text.Encoding InputEncoding { get { throw null; } set { } }
         public static bool IsErrorRedirected { get { throw null; } }

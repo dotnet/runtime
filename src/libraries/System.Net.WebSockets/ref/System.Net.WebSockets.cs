@@ -115,7 +115,7 @@ namespace System.Net.WebSockets
     public partial class WebSocketReceiveResult
     {
         public WebSocketReceiveResult(int count, System.Net.WebSockets.WebSocketMessageType messageType, bool endOfMessage) { }
-        public WebSocketReceiveResult(int count, System.Net.WebSockets.WebSocketMessageType messageType, bool endOfMessage, System.Net.WebSockets.WebSocketCloseStatus? closeStatus, string closeStatusDescription) { }
+        public WebSocketReceiveResult(int count, System.Net.WebSockets.WebSocketMessageType messageType, bool endOfMessage, System.Net.WebSockets.WebSocketCloseStatus? closeStatus, string? closeStatusDescription) { }
         public System.Net.WebSockets.WebSocketCloseStatus? CloseStatus { get { throw null; } }
         public string? CloseStatusDescription { get { throw null; } }
         public int Count { get { throw null; } }

@@ -6,10 +6,12 @@ parameters:
   osGroup: ''
   osSubgroup: ''
   container: ''
+  crossrootfsDir: ''
   variables: {}
   timeoutInMinutes: ''
   pool: ''
   condition: true
+  isOfficialBuild: false
   extraStepsTemplate: ''
   extraStepsParameters: {}
 
@@ -34,10 +36,23 @@ jobs:
         - name: _osParameter
           value: /p:RuntimeOS=linux-musl /p:OutputRid=linux-musl-${{ parameters.archType }}
 
+      # Do not rename as it clashes with MSBuild property in libraries/build-native.proj
+      - name: _crossBuildPropertyArg
+        value: /p:CrossBuild=${{ ne(parameters.crossrootfsDir, '') }}
+
+      - name: _officialBuildParameter
+        $ {{ if eq(parameters.isOfficialBuild, true) }}:
+          value: /p:OfficialBuildId=$(Build.BuildNumber)
+        $ {{ if ne(parameters.isOfficialBuild, true) }}:
+          value: ''
+
       - ${{ parameters.variables }}
 
     steps:
     - template: /eng/pipelines/common/clone-checkout-bundle-step.yml
+
+    - ${{ if eq(parameters.isOfficialBuild, true) }}:
+      - template: /eng/pipelines/common/restore-internal-tools.yml
 
     - ${{ if in(parameters.osGroup, 'OSX', 'iOS', 'tvOS') }}:
       - script: $(Build.SourcesDirectory)/eng/install-native-dependencies.sh ${{ parameters.osGroup }}
@@ -49,7 +64,7 @@ jobs:
         displayName: Disk Usage before Build
 
     # Build
-    - script: $(Build.SourcesDirectory)$(dir)build$(scriptExt) -ci -arch ${{ parameters.archType }} $(_osParameter) ${{ parameters.buildArgs }}
+    - script: $(Build.SourcesDirectory)$(dir)build$(scriptExt) -ci -arch ${{ parameters.archType }} $(_osParameter) ${{ parameters.buildArgs }} $(_officialBuildParameter) $(_crossBuildPropertyArg)
       displayName: Build product
 
     - ${{ if in(parameters.osGroup, 'OSX', 'iOS','tvOS') }}: 
@@ -57,15 +72,6 @@ jobs:
           du -sh $(Build.SourcesDirectory)/*
           df -h
         displayName: Disk Usage after Build
-
-    - task: PublishBuildArtifacts@1
-      displayName: Publish Logs
-      inputs:
-        PathtoPublish: '$(Build.SourcesDirectory)/artifacts/log/'
-        PublishLocation: Container
-        ArtifactName: Logs_Build_${{ parameters.osGroup }}_${{ parameters.osSubGroup }}_${{ parameters.archType }}_${{ parameters.buildConfig }}_${{ parameters.nameSuffix }}
-      continueOnError: true
-      condition: always()
 
       # If intended to send extra steps after regular build add them here.
     - ${{ if ne(parameters.extraStepsTemplate, '') }}:
@@ -76,3 +82,12 @@ jobs:
           archType: ${{ parameters.archType }}
           buildConfig: ${{ parameters.buildConfig }}
           ${{ insert }}: ${{ parameters.extraStepsParameters }}
+
+    - task: PublishBuildArtifacts@1
+      displayName: Publish Logs
+      inputs:
+        PathtoPublish: '$(Build.SourcesDirectory)/artifacts/log/'
+        PublishLocation: Container
+        ArtifactName: Logs_Build_${{ parameters.osGroup }}_${{ parameters.osSubGroup }}_${{ parameters.archType }}_${{ parameters.buildConfig }}_${{ parameters.nameSuffix }}
+      continueOnError: true
+      condition: always()
