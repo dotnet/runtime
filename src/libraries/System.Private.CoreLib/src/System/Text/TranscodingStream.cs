@@ -367,7 +367,7 @@ namespace System.Text
 
             if (cancellationToken.IsCancellationRequested)
             {
-                return new ValueTask<int>(Task.FromCanceled<int>(cancellationToken));
+                return ValueTask.FromCanceled<int>(cancellationToken);
             }
 
             return ReadAsyncCore(buffer, cancellationToken);
@@ -537,7 +537,7 @@ namespace System.Text
 
             if (cancellationToken.IsCancellationRequested)
             {
-                return new ValueTask(Task.FromCanceled(cancellationToken));
+                return ValueTask.FromCanceled(cancellationToken);
             }
 
             return WriteAsyncCore(buffer, cancellationToken);

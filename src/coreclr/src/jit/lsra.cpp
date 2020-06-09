@@ -6162,7 +6162,7 @@ void LinearScan::allocateRegisters()
     if (getLsraExtendLifeTimes())
     {
         // If we have extended lifetimes, we need to make sure all the registers are freed.
-        for (int regNumIndex = 0; regNumIndex <= REG_FP_LAST; regNumIndex++)
+        for (size_t regNumIndex = 0; regNumIndex <= REG_FP_LAST; regNumIndex++)
         {
             RegRecord& regRecord = physRegs[regNumIndex];
             Interval*  interval  = regRecord.assignedInterval;
@@ -6624,9 +6624,9 @@ void LinearScan::writeRegisters(RefPosition* currentRefPosition, GenTree* tree)
 //                                   |       GT_ADD (3)   |
 //                                   +---------+----------+
 //                                             |
-//                                           /   \
-//                                         /       \
-//                                       /           \
+//                                           /   '\'
+//                                         /       '\'
+//                                       /           '\'
 //                   +-------------------+           +----------------------+
 //                   |         x (1)     | "tree"    |         y (2)        |
 //                   +-------------------+           +----------------------+
@@ -6637,9 +6637,9 @@ void LinearScan::writeRegisters(RefPosition* currentRefPosition, GenTree* tree)
 //                                   |       GT_ADD (4)   |
 //                                   +---------+----------+
 //                                             |
-//                                           /   \
-//                                         /       \
-//                                       /           \
+//                                           /   '\'
+//                                         /       '\'
+//                                       /           '\'
 //                   +-------------------+           +----------------------+
 //                   |  GT_RELOAD (3)    |           |         y (2)        |
 //                   +-------------------+           +----------------------+

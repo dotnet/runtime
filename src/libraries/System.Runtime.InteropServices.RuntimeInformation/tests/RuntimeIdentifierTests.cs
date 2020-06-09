@@ -19,7 +19,7 @@ namespace System.Runtime.InteropServices.RuntimeInformationTests
             Assert.EndsWith(RuntimeInformation.ProcessArchitecture.ToString(), RuntimeInformation.RuntimeIdentifier, StringComparison.OrdinalIgnoreCase);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void VerifyEnvironmentVariable()
         {
             RemoteInvokeOptions options = new RemoteInvokeOptions();
@@ -31,7 +31,7 @@ namespace System.Runtime.InteropServices.RuntimeInformationTests
             }, options).Dispose();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void VerifyAppContextVariable()
         {
             RemoteExecutor.Invoke(() =>
@@ -42,7 +42,7 @@ namespace System.Runtime.InteropServices.RuntimeInformationTests
             }).Dispose();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void VerifyAppContextVariableUnknown()
         {
             RemoteExecutor.Invoke(() =>

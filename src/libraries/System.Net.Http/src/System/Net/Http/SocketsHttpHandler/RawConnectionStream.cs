@@ -170,13 +170,13 @@ namespace System.Net.Http
             {
                 if (cancellationToken.IsCancellationRequested)
                 {
-                    return new ValueTask(Task.FromCanceled(cancellationToken));
+                    return ValueTask.FromCanceled(cancellationToken);
                 }
 
                 HttpConnection? connection = _connection;
                 if (connection == null)
                 {
-                    return new ValueTask(Task.FromException(ExceptionDispatchInfo.SetCurrentStackTrace(new IOException(SR.ObjectDisposed_StreamClosed))));
+                    return ValueTask.FromException(ExceptionDispatchInfo.SetCurrentStackTrace(new IOException(SR.ObjectDisposed_StreamClosed)));
                 }
 
                 if (buffer.Length == 0)

@@ -66,7 +66,7 @@ namespace System.IO.Tests
         }
 
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void Dispose_CallsVirtualDisposeTrueArg_ThrowsDuringFlushWriteBuffer_DisposeThrows()
         {
             RemoteExecutor.Invoke(() =>
@@ -111,7 +111,9 @@ namespace System.IO.Tests
             }).Dispose();
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsPreciseGcSupported))]
+        private static bool IsPreciseGcSupportedAndRemoteExecutorSupported => PlatformDetection.IsPreciseGcSupported && RemoteExecutor.IsSupported;
+
+        [ConditionalFact(nameof(IsPreciseGcSupportedAndRemoteExecutorSupported))]
         public void NoDispose_CallsVirtualDisposeFalseArg_ThrowsDuringFlushWriteBuffer_FinalizerWontThrow()
         {
             RemoteExecutor.Invoke(() =>

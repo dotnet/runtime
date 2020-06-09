@@ -2270,7 +2270,7 @@ namespace System.Tests
         }
 
         // We test the existance of a specific English time zone name to avoid failures on non-English platforms.
-        [ConditionalFact(nameof(IsEnglishUILanguage))]
+        [ConditionalFact(nameof(IsEnglishUILanguageAndRemoteExecutorSupported))]
         public static void TestNameWithInvariantCulture()
         {
             RemoteExecutor.Invoke(() =>
@@ -2290,7 +2290,7 @@ namespace System.Tests
 
         }
 
-        private static bool IsEnglishUILanguage() => CultureInfo.CurrentUICulture.Name == "en" || CultureInfo.CurrentUICulture.Name.StartsWith("en-", StringComparison.Ordinal);
+        private static bool IsEnglishUILanguageAndRemoteExecutorSupported => (CultureInfo.CurrentUICulture.Name == "en" || CultureInfo.CurrentUICulture.Name.StartsWith("en-", StringComparison.Ordinal)) && RemoteExecutor.IsSupported;
 
         private static void VerifyConvertException<TException>(DateTimeOffset inputTime, string destinationTimeZoneId) where TException : Exception
         {

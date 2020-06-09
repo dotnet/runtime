@@ -6,6 +6,7 @@ using System.ComponentModel;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Linq;
+using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 using System.Threading.Tasks;
 
@@ -13,7 +14,7 @@ namespace System.Diagnostics.Tests
 {
     public partial class ProcessThreadTests : ProcessTestBase
     {
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void TestCommonPriorityAndTimeProperties()
         {
             CreateDefaultProcess();
@@ -156,7 +157,7 @@ namespace System.Diagnostics.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void TestThreadStateProperty()
         {
             CreateDefaultProcess();
@@ -168,7 +169,7 @@ namespace System.Diagnostics.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void Threads_GetMultipleTimes_ReturnsSameInstance()
         {
             CreateDefaultProcess();

@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Runtime.InteropServices;
 using System.Security.Cryptography.X509Certificates;
 
 namespace System.Security.Cryptography.Asn1
@@ -16,7 +15,7 @@ namespace System.Security.Cryptography.Asn1
                 throw new ArgumentNullException(nameof(extension));
             }
 
-            ExtnId = extension.Oid!;
+            ExtnId = extension.Oid!.Value!;
             Critical = extension.Critical;
             ExtnValue = extension.RawData;
         }

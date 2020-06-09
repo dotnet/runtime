@@ -11,7 +11,7 @@ namespace System.Threading.Tasks.Dataflow.Tests
 {
     public class EtwTests
     {
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void TestEtw()
         {
             RemoteExecutor.Invoke(() =>

@@ -71,22 +71,6 @@ namespace System.Runtime.CompilerServices.Tests
         }
 
         [Fact]
-        public static unsafe void OffsetToStringData()
-        {
-            // RuntimeHelpers.OffsetToStringData
-            char[] expectedValues = new char[] { 'a', 'b', 'c', 'd', 'e', 'f' };
-            string s = "abcdef";
-
-            fixed (char* values = s) // Compiler will use OffsetToStringData with fixed statements
-            {
-                for (int i = 0; i < expectedValues.Length; i++)
-                {
-                    Assert.Equal(expectedValues[i], values[i]);
-                }
-            }
-        }
-
-        [Fact]
         public static void InitializeArray()
         {
             // Void RuntimeHelpers.InitializeArray(Array, RuntimeFieldHandle)

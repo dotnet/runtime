@@ -122,6 +122,7 @@
     <Reference Include="System.Text.Encoding.Extensions" />
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetsOSX)' == 'true' or '$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true'">
+    <Reference Include="System.Formats.Asn1" />
     <Reference Include="System.Runtime.Numerics" />
     <Reference Include="System.Threading" />
   </ItemGroup>

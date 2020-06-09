@@ -4,9 +4,8 @@
 
 using System;
 using System.Collections.Generic;
-using System.Runtime.InteropServices;
+using System.Formats.Asn1;
 using System.Security.Cryptography;
-using System.Security.Cryptography.Asn1;
 using System.Security.Cryptography.X509Certificates;
 using System.Security.Cryptography.X509Certificates.Asn1;
 
@@ -292,11 +291,18 @@ namespace Internal.Cryptography.Pal
 
         private static int ReadInhibitAnyPolicyExtension(byte[] rawData)
         {
-            AsnReader reader = new AsnReader(rawData, AsnEncodingRules.DER);
-            int inhibitAnyPolicy;
-            reader.TryReadInt32(out inhibitAnyPolicy);
-            reader.ThrowIfNotEmpty();
-            return inhibitAnyPolicy;
+            try
+            {
+                AsnReader reader = new AsnReader(rawData, AsnEncodingRules.DER);
+                int inhibitAnyPolicy;
+                reader.TryReadInt32(out inhibitAnyPolicy);
+                reader.ThrowIfNotEmpty();
+                return inhibitAnyPolicy;
+            }
+            catch (AsnContentException e)
+            {
+                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding, e);
+            }
         }
 
         private static void ReadCertPolicyConstraintsExtension(byte[] rawData, CertificatePolicy policy)
@@ -313,14 +319,21 @@ namespace Internal.Cryptography.Pal
         {
             HashSet<string> oids = new HashSet<string>();
 
-            AsnReader reader = new AsnReader(rawData, AsnEncodingRules.DER);
-            AsnReader sequenceReader = reader.ReadSequence();
-            reader.ThrowIfNotEmpty();
-
-            //OidCollection usages
-            while (sequenceReader.HasData)
+            try
             {
-                oids.Add(sequenceReader.ReadObjectIdentifierAsString());
+                AsnReader reader = new AsnReader(rawData, AsnEncodingRules.DER);
+                AsnReader sequenceReader = reader.ReadSequence();
+                reader.ThrowIfNotEmpty();
+
+                //OidCollection usages
+                while (sequenceReader.HasData)
+                {
+                    oids.Add(sequenceReader.ReadObjectIdentifier());
+                }
+            }
+            catch (AsnContentException e)
+            {
+                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding, e);
             }
 
             return oids;
@@ -328,40 +341,54 @@ namespace Internal.Cryptography.Pal
 
         internal static ISet<string> ReadCertPolicyExtension(byte[] rawData)
         {
-            AsnValueReader reader = new AsnValueReader(rawData, AsnEncodingRules.DER);
-            AsnValueReader sequenceReader = reader.ReadSequence();
-            reader.ThrowIfNotEmpty();
-
-            HashSet<string> policies = new HashSet<string>();
-            while (sequenceReader.HasData)
+            try
             {
-                PolicyInformationAsn.Decode(ref sequenceReader, rawData, out PolicyInformationAsn policyInformation);
-                policies.Add(policyInformation.PolicyIdentifier);
+                AsnValueReader reader = new AsnValueReader(rawData, AsnEncodingRules.DER);
+                AsnValueReader sequenceReader = reader.ReadSequence();
+                reader.ThrowIfNotEmpty();
 
-                // There is an optional policy qualifier here, but it is for information
-                // purposes, there is no logic that would be changed.
+                HashSet<string> policies = new HashSet<string>();
+                while (sequenceReader.HasData)
+                {
+                    PolicyInformationAsn.Decode(ref sequenceReader, rawData, out PolicyInformationAsn policyInformation);
+                    policies.Add(policyInformation.PolicyIdentifier);
 
-                // Since reader (the outer one) has already skipped past the rest of the
-                // sequence we don't particularly need to drain out here.
+                    // There is an optional policy qualifier here, but it is for information
+                    // purposes, there is no logic that would be changed.
+
+                    // Since reader (the outer one) has already skipped past the rest of the
+                    // sequence we don't particularly need to drain out here.
+                }
+
+                return policies;
             }
-
-            return policies;
+            catch (AsnContentException e)
+            {
+                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding, e);
+            }
         }
 
         private static List<CertificatePolicyMappingAsn> ReadCertPolicyMappingsExtension(byte[] rawData)
         {
-            AsnValueReader reader = new AsnValueReader(rawData, AsnEncodingRules.DER);
-            AsnValueReader sequenceReader = reader.ReadSequence();
-            reader.ThrowIfNotEmpty();
-
-            List<CertificatePolicyMappingAsn> mappings = new List<CertificatePolicyMappingAsn>();
-            while (sequenceReader.HasData)
+            try
             {
-                CertificatePolicyMappingAsn.Decode(ref sequenceReader, rawData, out CertificatePolicyMappingAsn mapping);
-                mappings.Add(mapping);
-            }
+                AsnValueReader reader = new AsnValueReader(rawData, AsnEncodingRules.DER);
+                AsnValueReader sequenceReader = reader.ReadSequence();
+                reader.ThrowIfNotEmpty();
 
-            return mappings;
+                List<CertificatePolicyMappingAsn> mappings = new List<CertificatePolicyMappingAsn>();
+                while (sequenceReader.HasData)
+                {
+                    CertificatePolicyMappingAsn.Decode(ref sequenceReader, rawData, out CertificatePolicyMappingAsn mapping);
+                    mappings.Add(mapping);
+                }
+
+                return mappings;
+            }
+            catch (AsnContentException e)
+            {
+                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding, e);
+            }
         }
     }
 }

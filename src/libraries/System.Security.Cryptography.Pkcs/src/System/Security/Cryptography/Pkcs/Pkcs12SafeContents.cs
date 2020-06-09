@@ -4,8 +4,8 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Formats.Asn1;
 using System.Linq;
-using System.Security.Cryptography.Asn1;
 using System.Security.Cryptography.Asn1.Pkcs12;
 using System.Security.Cryptography.Asn1.Pkcs7;
 using System.Security.Cryptography.X509Certificates;
@@ -172,9 +172,7 @@ namespace System.Security.Cryptography.Pkcs
                 throw new ArgumentNullException(nameof(secretType));
 
             // Read to ensure that there is precisely one legally encoded value.
-            AsnReader reader = new AsnReader(secretValue, AsnEncodingRules.BER);
-            reader.ReadEncodedValue();
-            reader.ThrowIfNotEmpty();
+            PkcsHelpers.EnsureSingleBerValue(secretValue.Span);
 
             Pkcs12SecretBag bag = new Pkcs12SecretBag(secretType, secretValue);
             AddSafeBag(bag);
@@ -282,19 +280,27 @@ namespace System.Security.Cryptography.Pkcs
         private static List<Pkcs12SafeBag> ReadBags(ReadOnlyMemory<byte> serialized)
         {
             List<SafeBagAsn> serializedBags = new List<SafeBagAsn>();
-            AsnValueReader reader = new AsnValueReader(serialized.Span, AsnEncodingRules.BER);
-            AsnValueReader sequenceReader = reader.ReadSequence();
 
-            reader.ThrowIfNotEmpty();
-            while (sequenceReader.HasData)
+            try
             {
-                SafeBagAsn.Decode(ref sequenceReader, serialized, out SafeBagAsn serializedBag);
-                serializedBags.Add(serializedBag);
+                AsnValueReader reader = new AsnValueReader(serialized.Span, AsnEncodingRules.BER);
+                AsnValueReader sequenceReader = reader.ReadSequence();
+
+                reader.ThrowIfNotEmpty();
+                while (sequenceReader.HasData)
+                {
+                    SafeBagAsn.Decode(ref sequenceReader, serialized, out SafeBagAsn serializedBag);
+                    serializedBags.Add(serializedBag);
+                }
+
+                if (serializedBags.Count == 0)
+                {
+                    return new List<Pkcs12SafeBag>(0);
+                }
             }
-
-            if (serializedBags.Count == 0)
+            catch (AsnContentException e)
             {
-                return new List<Pkcs12SafeBag>(0);
+                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding, e);
             }
 
             List<Pkcs12SafeBag> bags = new List<Pkcs12SafeBag>(serializedBags.Count);
@@ -328,6 +334,9 @@ namespace System.Security.Cryptography.Pkcs
                             break;
                     }
                 }
+                catch (AsnContentException)
+                {
+                }
                 catch (CryptographicException)
                 {
                 }
@@ -352,81 +361,72 @@ namespace System.Security.Cryptography.Pkcs
             Debug.Assert(pbeParameters != null);
             Debug.Assert(pbeParameters.IterationCount >= 1);
 
-            AsnWriter? writer = null;
+            AsnWriter contentsWriter = Encode();
 
-            using (AsnWriter contentsWriter = Encode())
+            PasswordBasedEncryption.InitiateEncryption(
+                pbeParameters,
+                out SymmetricAlgorithm cipher,
+                out string hmacOid,
+                out string encryptionAlgorithmOid,
+                out bool isPkcs12);
+
+            int cipherBlockBytes = cipher.BlockSize / 8;
+            byte[] encryptedRent = CryptoPool.Rent(contentsWriter.GetEncodedLength() + cipherBlockBytes);
+            Span<byte> encryptedSpan = Span<byte>.Empty;
+            Span<byte> iv = stackalloc byte[cipherBlockBytes];
+            Span<byte> salt = stackalloc byte[16];
+            RandomNumberGenerator.Fill(salt);
+
+            try
             {
-                ReadOnlySpan<byte> contentsSpan = contentsWriter.EncodeAsSpan();
-
-                PasswordBasedEncryption.InitiateEncryption(
+                int written = PasswordBasedEncryption.Encrypt(
+                    password,
+                    passwordBytes,
+                    cipher,
+                    isPkcs12,
+                    contentsWriter,
                     pbeParameters,
-                    out SymmetricAlgorithm cipher,
-                    out string hmacOid,
-                    out string encryptionAlgorithmOid,
-                    out bool isPkcs12);
+                    salt,
+                    encryptedRent,
+                    iv);
 
-                int cipherBlockBytes = cipher.BlockSize / 8;
-                byte[] encryptedRent = CryptoPool.Rent(contentsSpan.Length + cipherBlockBytes);
-                Span<byte> encryptedSpan = Span<byte>.Empty;
-                Span<byte> iv = stackalloc byte[cipherBlockBytes];
-                Span<byte> salt = stackalloc byte[16];
-                RandomNumberGenerator.Fill(salt);
+                encryptedSpan = encryptedRent.AsSpan(0, written);
 
-                try
+                AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
+
+                // EncryptedData
+                writer.PushSequence();
+
+                // version
+                // Since we're not writing unprotected attributes, version=0
+                writer.WriteInteger(0);
+
+                // encryptedContentInfo
                 {
-                    int written = PasswordBasedEncryption.Encrypt(
-                        password,
-                        passwordBytes,
-                        cipher,
+                    writer.PushSequence();
+                    writer.WriteObjectIdentifierForCrypto(Oids.Pkcs7Data);
+
+                    PasswordBasedEncryption.WritePbeAlgorithmIdentifier(
+                        writer,
                         isPkcs12,
-                        contentsSpan,
-                        pbeParameters,
+                        encryptionAlgorithmOid,
                         salt,
-                        encryptedRent,
+                        pbeParameters.IterationCount,
+                        hmacOid,
                         iv);
 
-                    encryptedSpan = encryptedRent.AsSpan(0, written);
-
-                    writer = new AsnWriter(AsnEncodingRules.DER);
-
-                    // EncryptedData
-                    writer.PushSequence();
-
-                    // version
-                    // Since we're not writing unprotected attributes, version=0
-                    writer.WriteInteger(0);
-
-                    // encryptedContentInfo
-                    {
-                        writer.PushSequence();
-                        writer.WriteObjectIdentifier(Oids.Pkcs7Data);
-
-                        PasswordBasedEncryption.WritePbeAlgorithmIdentifier(
-                            writer,
-                            isPkcs12,
-                            encryptionAlgorithmOid,
-                            salt,
-                            pbeParameters.IterationCount,
-                            hmacOid,
-                            iv);
-
-                        writer.WriteOctetString(
-                            new Asn1Tag(TagClass.ContextSpecific, 0),
-                            encryptedSpan);
-
-                        writer.PopSequence();
-                    }
-
+                    writer.WriteOctetString(encryptedSpan, new Asn1Tag(TagClass.ContextSpecific, 0));
                     writer.PopSequence();
+                }
 
-                    return writer.Encode();
-                }
-                finally
-                {
-                    CryptographicOperations.ZeroMemory(encryptedSpan);
-                    CryptoPool.Return(encryptedRent, clearSize: 0);
-                    writer?.Dispose();
-                }
+                writer.PopSequence();
+
+                return writer.Encode();
+            }
+            finally
+            {
+                CryptographicOperations.ZeroMemory(encryptedSpan);
+                CryptoPool.Return(encryptedRent, clearSize: 0);
             }
         }
 
@@ -438,7 +438,7 @@ namespace System.Security.Cryptography.Pkcs
                 ConfidentialityMode == Pkcs12ConfidentialityMode.PublicKey)
             {
                 writer = new AsnWriter(AsnEncodingRules.BER);
-                writer.WriteEncodedValue(_encrypted.Span);
+                writer.WriteEncodedValueForCrypto(_encrypted.Span);
                 return writer;
             }
 
@@ -446,67 +446,60 @@ namespace System.Security.Cryptography.Pkcs
 
             writer = new AsnWriter(AsnEncodingRules.BER);
 
-            try
-            {
-                writer.PushSequence();
+            writer.PushSequence();
 
-                if (_bags != null)
+            if (_bags != null)
+            {
+                foreach (Pkcs12SafeBag safeBag in _bags)
                 {
-                    foreach (Pkcs12SafeBag safeBag in _bags)
-                    {
-                        safeBag.EncodeTo(writer);
-                    }
+                    safeBag.EncodeTo(writer);
                 }
+            }
 
-                writer.PopSequence();
-                return writer;
-            }
-            catch
-            {
-                writer.Dispose();
-                throw;
-            }
+            writer.PopSequence();
+            return writer;
         }
 
         internal ContentInfoAsn EncodeToContentInfo()
         {
-            using (AsnWriter contentsWriter = Encode())
+            AsnWriter contentsWriter = Encode();
+
+            if (ConfidentialityMode == Pkcs12ConfidentialityMode.None)
             {
-                if (ConfidentialityMode == Pkcs12ConfidentialityMode.None)
-                {
-                    using (AsnWriter valueWriter = new AsnWriter(AsnEncodingRules.DER))
-                    {
-                        valueWriter.WriteOctetString(contentsWriter.EncodeAsSpan());
+                AsnWriter valueWriter = new AsnWriter(AsnEncodingRules.DER);
 
-                        return new ContentInfoAsn
-                        {
-                            ContentType = Oids.Pkcs7Data,
-                            Content = valueWriter.Encode(),
-                        };
-                    }
+                using (valueWriter.PushOctetString())
+                {
+                    contentsWriter.CopyTo(valueWriter);
                 }
 
-                if (ConfidentialityMode == Pkcs12ConfidentialityMode.Password)
+                return new ContentInfoAsn
                 {
-                    return new ContentInfoAsn
-                    {
-                        ContentType = Oids.Pkcs7Encrypted,
-                        Content = contentsWriter.Encode(),
-                    };
-                }
-
-                if (ConfidentialityMode == Pkcs12ConfidentialityMode.PublicKey)
-                {
-                    return new ContentInfoAsn
-                    {
-                        ContentType = Oids.Pkcs7Enveloped,
-                        Content = contentsWriter.Encode(),
-                    };
-                }
-
-                Debug.Fail($"No handler for {ConfidentialityMode}");
-                throw new CryptographicException();
+                    ContentType = Oids.Pkcs7Data,
+                    Content = valueWriter.Encode(),
+                };
             }
+
+            if (ConfidentialityMode == Pkcs12ConfidentialityMode.Password)
+            {
+                return new ContentInfoAsn
+                {
+                    ContentType = Oids.Pkcs7Encrypted,
+                    Content = contentsWriter.Encode(),
+                };
+            }
+
+            if (ConfidentialityMode == Pkcs12ConfidentialityMode.PublicKey)
+            {
+                return new ContentInfoAsn
+                {
+                    ContentType = Oids.Pkcs7Enveloped,
+                    Content = contentsWriter.Encode(),
+                };
+            }
+
+            Debug.Fail($"No handler for {ConfidentialityMode}");
+            throw new CryptographicException();
         }
     }
 }
