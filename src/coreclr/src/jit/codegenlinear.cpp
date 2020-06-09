@@ -1321,6 +1321,12 @@ regNumber CodeGen::genConsumeReg(GenTree* tree, unsigned multiRegIndex)
     {
         reg = genRegCopy(tree, multiRegIndex);
     }
+    else if (reg == REG_NA)
+    {
+        assert(tree->OperIs(GT_RELOAD));
+        reg = tree->gtGetOp1()->GetRegByIndex(multiRegIndex);
+        assert(reg != REG_NA);
+    }
     genUnspillRegIfNeeded(tree, multiRegIndex);
 
     // UpdateLifeFieldVar() will return true if local var should be spilled.
@@ -1340,11 +1346,6 @@ regNumber CodeGen::genConsumeReg(GenTree* tree, unsigned multiRegIndex)
         unsigned   fieldVarNum = varDsc->lvFieldLclStart + multiRegIndex;
         LclVarDsc* fldVarDsc   = compiler->lvaGetDesc(fieldVarNum);
         assert(fldVarDsc->lvLRACandidate);
-        if (reg == REG_NA)
-        {
-            assert(tree->IsCopyOrReload());
-            reg = lcl->AsLclVar()->GetRegNumByIdx(multiRegIndex);
-        }
         bool isInReg      = fldVarDsc->lvIsInReg() && reg != REG_NA;
         bool isInMemory   = !isInReg || fldVarDsc->lvLiveInOutOfHndlr;
         bool isFieldDying = lcl->IsLastUse(multiRegIndex);
