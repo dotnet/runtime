@@ -876,7 +876,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			if (pattern.SourceInstruction?.Operand is IMetadataTokenProvider instructionOperand) {
 				operationDescription = "Usage of " + GetFullMemberNameFromDefinition (instructionOperand) + " unrecognized";
 			} else
-				operationDescription = "Usage of " + pattern.AccessedItem + " unrecognized";
+				operationDescription = "Usage of " + GetFullMemberNameFromDefinition (pattern.AccessedItem) + " unrecognized";
 			return $"{GetFullMemberNameFromDefinition (pattern.Source)}: {operationDescription} '{pattern.Message}'";
 		}
 
