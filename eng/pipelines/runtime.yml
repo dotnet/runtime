@@ -288,6 +288,7 @@ jobs:
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:
     jobTemplate: /eng/pipelines/common/global-build-job.yml
+    helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
     buildConfig: Release
     runtimeFlavor: mono
     platforms:
@@ -296,7 +297,6 @@ jobs:
       testGroup: innerloop
       nameSuffix: AllSubsets_Mono
       buildArgs: -s mono+libs+installer+libs.tests -c $(_BuildConfig)
-      helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
       extraStepsTemplate: /eng/pipelines/libraries/helix.yml
       extraStepsParameters:
         creator: dotnet-bot
