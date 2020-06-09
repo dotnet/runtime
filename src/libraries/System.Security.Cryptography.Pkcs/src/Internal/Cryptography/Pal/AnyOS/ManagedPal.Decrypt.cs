@@ -4,6 +4,7 @@
 
 using System;
 using System.Diagnostics;
+using System.Formats.Asn1;
 using System.Security.Cryptography;
 using System.Security.Cryptography.Asn1;
 using System.Security.Cryptography.Pkcs;
@@ -117,43 +118,14 @@ namespace Internal.Cryptography.Pal.AnyOS
                 // existing CMS that have the incorrect wrapping, we attempt to remove it.
                 if (contentType == Oids.Pkcs7Data)
                 {
-                    byte[]? tmp = null;
-
-                    try
+                    if (decrypted?.Length > 0 && decrypted[0] == 0x04)
                     {
-                        AsnReader reader = new AsnReader(decrypted, AsnEncodingRules.BER);
-
-                        if (reader.TryReadPrimitiveOctetStringBytes(out ReadOnlyMemory<byte> contents))
+                        try
                         {
-                            decrypted = contents.ToArray();
+                            decrypted = AsnDecoder.ReadOctetString(decrypted, AsnEncodingRules.BER, out _);
                         }
-                        else
+                        catch (AsnContentException)
                         {
-                            tmp = CryptoPool.Rent(decrypted!.Length);
-
-                            if (reader.TryCopyOctetStringBytes(tmp, out int written))
-                            {
-                                Span<byte> innerContents = new Span<byte>(tmp, 0, written);
-                                decrypted = innerContents.ToArray();
-                                innerContents.Clear();
-                            }
-                            else
-                            {
-                                Debug.Fail("Octet string grew during copy");
-                                // If this happens (which requires decrypted was overwritten, which
-                                // shouldn't be possible), just leave decrypted alone.
-                            }
-                        }
-                    }
-                    catch (CryptographicException)
-                    {
-                    }
-                    finally
-                    {
-                        if (tmp != null)
-                        {
-                            // Already cleared
-                            CryptoPool.Return(tmp, clearSize: 0);
                         }
                     }
                 }
@@ -170,19 +142,18 @@ namespace Internal.Cryptography.Pal.AnyOS
 
             private static byte[] GetAsnSequenceWithContentNoValidation(ReadOnlySpan<byte> content)
             {
-                using (AsnWriter writer = new AsnWriter(AsnEncodingRules.BER))
-                {
-                    // Content may be invalid ASN.1 data.
-                    // We will encode it as octet string to bypass validation
-                    writer.WriteOctetString(content);
-                    byte[] encoded = writer.Encode();
+                AsnWriter writer = new AsnWriter(AsnEncodingRules.BER);
 
-                    // and replace octet string tag (0x04) with sequence tag (0x30 or constructed 0x10)
-                    Debug.Assert(encoded[0] == 0x04);
-                    encoded[0] = 0x30;
+                // Content may be invalid ASN.1 data.
+                // We will encode it as octet string to bypass validation
+                writer.WriteOctetString(content);
+                byte[] encoded = writer.Encode();
 
-                    return encoded;
-                }
+                // and replace octet string tag (0x04) with sequence tag (0x30 or constructed 0x10)
+                Debug.Assert(encoded[0] == 0x04);
+                encoded[0] = 0x30;
+
+                return encoded;
             }
 
             private static byte[]? DecryptContent(

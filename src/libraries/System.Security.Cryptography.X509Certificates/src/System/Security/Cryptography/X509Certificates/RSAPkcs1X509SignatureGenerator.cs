@@ -3,8 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
-using System.Security.Cryptography.Asn1;
-using Internal.Cryptography;
+using System.Formats.Asn1;
 
 namespace System.Security.Cryptography.X509Certificates
 {
@@ -69,14 +68,12 @@ namespace System.Security.Cryptography.X509Certificates
                     SR.Format(SR.Cryptography_UnknownHashAlgorithm, hashAlgorithm.Name));
             }
 
-            using (AsnWriter writer = new AsnWriter(AsnEncodingRules.DER))
-            {
-                writer.PushSequence();
-                writer.WriteObjectIdentifier(oid);
-                writer.WriteNull();
-                writer.PopSequence();
-                return writer.Encode();
-            }
+            AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
+            writer.PushSequence();
+            writer.WriteObjectIdentifier(oid);
+            writer.WriteNull();
+            writer.PopSequence();
+            return writer.Encode();
         }
     }
 }

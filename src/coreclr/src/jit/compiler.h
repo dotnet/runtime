@@ -9169,6 +9169,38 @@ public:
 #endif // FEATURE_MULTIREG_RET
     }
 
+    // Returns true if the method returns a value in more than one return register,
+    // it should replace/be  merged with compMethodReturnsMultiRegRetType when #36868 is fixed.
+    // The difference from original `compMethodReturnsMultiRegRetType` is in ARM64 SIMD16 handling,
+    // this method correctly returns false for it (it is passed as HVA), when the original returns true.
+    bool compMethodReturnsMultiRegRegTypeAlternate()
+    {
+#if FEATURE_MULTIREG_RET
+#if defined(TARGET_X86)
+        // On x86 only 64-bit longs are returned in multiple registers
+        return varTypeIsLong(info.compRetNativeType);
+#else // targets: X64-UNIX, ARM64 or ARM32
+#if defined(TARGET_ARM64)
+        // TYP_SIMD16 is returned in one register.
+        if (info.compRetNativeType == TYP_SIMD16)
+        {
+            return false;
+        }
+#endif
+        // On all other targets that support multireg return values:
+        // Methods returning a struct in multiple registers have a return value of TYP_STRUCT.
+        // Such method's compRetNativeType is TYP_STRUCT without a hidden RetBufArg
+        return varTypeIsStruct(info.compRetNativeType) && (info.compRetBuffArg == BAD_VAR_NUM);
+#endif // TARGET_XXX
+
+#else // not FEATURE_MULTIREG_RET
+
+        // For this architecture there are no multireg returns
+        return false;
+
+#endif // FEATURE_MULTIREG_RET
+    }
+
     // Returns true if the method being compiled returns a value
     bool compMethodHasRetVal()
     {

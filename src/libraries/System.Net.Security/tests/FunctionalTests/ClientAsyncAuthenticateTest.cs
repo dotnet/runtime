@@ -41,6 +41,12 @@ namespace System.Net.Security.Tests
         }
 
         [Fact]
+        public async Task ClientAsyncAuthenticate_ConnectionInfoInCallback_DoesNotThrow()
+        {
+            await ClientAsyncSslHelper(EncryptionPolicy.RequireEncryption, SslProtocols.Tls12, SslProtocolSupport.DefaultSslProtocols, AllowAnyServerCertificateAndVerifyConnectionInfo);
+        }
+
+        [Fact]
         public async Task ClientAsyncAuthenticate_ServerNoEncryption_NoConnect()
         {
             // Don't use Tls13 since we are trying to use NullEncryption
@@ -139,7 +145,8 @@ namespace System.Net.Security.Tests
         private async Task ClientAsyncSslHelper(
             EncryptionPolicy encryptionPolicy,
             SslProtocols clientSslProtocols,
-            SslProtocols serverSslProtocols)
+            SslProtocols serverSslProtocols,
+            RemoteCertificateValidationCallback certificateCallback = null)
         {
             _log.WriteLine("Server: " + serverSslProtocols + "; Client: " + clientSslProtocols);
 
@@ -150,7 +157,7 @@ namespace System.Net.Security.Tests
             {
                 server.SslProtocols = serverSslProtocols;
                 await client.ConnectAsync(server.RemoteEndPoint.Address, server.RemoteEndPoint.Port);
-                using (SslStream sslStream = new SslStream(client.GetStream(), false, AllowAnyServerCertificate, null))
+                using (SslStream sslStream = new SslStream(client.GetStream(), false, certificateCallback != null ? certificateCallback : AllowAnyServerCertificate, null))
                 {
                     Task clientAuthTask = sslStream.AuthenticateAsClientAsync("localhost", null, clientSslProtocols, false);
                     await clientAuthTask.TimeoutAfter(TestConfiguration.PassingTestTimeoutMilliseconds);
@@ -170,6 +177,20 @@ namespace System.Net.Security.Tests
               X509Chain chain,
               SslPolicyErrors sslPolicyErrors)
         {
+            return true;  // allow everything
+        }
+
+        private bool AllowAnyServerCertificateAndVerifyConnectionInfo(
+              object sender,
+              X509Certificate certificate,
+              X509Chain chain,
+              SslPolicyErrors sslPolicyErrors)
+        {
+            SslStream stream = (SslStream)sender;
+
+            Assert.NotEqual(SslProtocols.None, stream.SslProtocol);
+            Assert.NotEqual(CipherAlgorithmType.None, stream.CipherAlgorithm);
+
             return true;  // allow everything
         }
 

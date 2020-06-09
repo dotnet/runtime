@@ -9108,6 +9108,7 @@ namespace System.Runtime.CompilerServices
     }
     public static partial class RuntimeHelpers
     {
+        [System.ObsoleteAttribute("OffsetToStringData is obsolete. Use string.GetPinnableReference() instead.")]
         public static int OffsetToStringData { get { throw null; } }
         public static IntPtr AllocateTypeAssociatedMemory(Type type, int size) { throw null; }
         public static void EnsureSufficientExecutionStack() { }
@@ -10265,7 +10266,7 @@ namespace System.Text
     }
     public sealed partial class EncodingInfo
     {
-        internal EncodingInfo() { }
+        public EncodingInfo(System.Text.EncodingProvider provider, int codePage, string name, string displayName) {}
         public int CodePage { get { throw null; } }
         public string DisplayName { get { throw null; } }
         public string Name { get { throw null; } }
@@ -10280,6 +10281,7 @@ namespace System.Text
         public virtual System.Text.Encoding? GetEncoding(int codepage, System.Text.EncoderFallback encoderFallback, System.Text.DecoderFallback decoderFallback) { throw null; }
         public abstract System.Text.Encoding? GetEncoding(string name);
         public virtual System.Text.Encoding? GetEncoding(string name, System.Text.EncoderFallback encoderFallback, System.Text.DecoderFallback decoderFallback) { throw null; }
+        public virtual System.Collections.Generic.IEnumerable<System.Text.EncodingInfo> GetEncodings() { throw null; }
     }
     public enum NormalizationForm
     {

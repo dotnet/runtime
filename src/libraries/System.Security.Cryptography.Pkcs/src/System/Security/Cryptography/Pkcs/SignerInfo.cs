@@ -4,6 +4,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Formats.Asn1;
 using System.Linq;
 using System.Security.Cryptography.Asn1;
 using System.Security.Cryptography.Pkcs.Asn1;
@@ -19,10 +20,10 @@ namespace System.Security.Cryptography.Pkcs
         public int Version { get; }
         public SubjectIdentifier SignerIdentifier { get; }
 
-        private readonly Oid _digestAlgorithm;
+        private readonly string _digestAlgorithm;
         private readonly AttributeAsn[]? _signedAttributes;
         private readonly ReadOnlyMemory<byte>? _signedAttributesMemory;
-        private readonly Oid _signatureAlgorithm;
+        private readonly string _signatureAlgorithm;
         private readonly ReadOnlyMemory<byte>? _signatureAlgorithmParameters;
         private readonly ReadOnlyMemory<byte> _signature;
         private readonly AttributeAsn[]? _unsignedAttributes;
@@ -116,9 +117,9 @@ namespace System.Security.Cryptography.Pkcs
             }
         }
 
-        public Oid DigestAlgorithm => new Oid(_digestAlgorithm);
+        public Oid DigestAlgorithm => new Oid(_digestAlgorithm, null);
 
-        public Oid SignatureAlgorithm => new Oid(_signatureAlgorithm);
+        public Oid SignatureAlgorithm => new Oid(_signatureAlgorithm, null);
 
         private delegate void WithSelfInfoDelegate(ref SignerInfoAsn mySigned);
 
@@ -165,7 +166,7 @@ namespace System.Security.Cryptography.Pkcs
                 {
                     ref AttributeAsn attributeAsn = ref unsignedAttrs[i];
 
-                    if (attributeAsn.AttrType.Value == Oids.CounterSigner)
+                    if (attributeAsn.AttrType == Oids.CounterSigner)
                     {
                         for (int j = 0; j < attributeAsn.AttrValues.Length; j++)
                         {
@@ -179,11 +180,9 @@ namespace System.Security.Cryptography.Pkcs
                                 // counterSigner represent the current state of `this`
                                 action(ref counterSigner);
 
-                                using (AsnWriter writer = new AsnWriter(AsnEncodingRules.DER))
-                                {
-                                    counterSigner.Encode(writer);
-                                    counterSignerBytes = writer.Encode();
-                                }
+                                AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
+                                counterSigner.Encode(writer);
+                                counterSignerBytes = writer.Encode();
 
                                 // Re-normalize the document
                                 _document.Reencode();
@@ -274,7 +273,7 @@ namespace System.Security.Cryptography.Pkcs
 
             foreach (AttributeAsn attributeAsn in unsignedAttrs)
             {
-                if (attributeAsn.AttrType.Value == Oids.CounterSigner)
+                if (attributeAsn.AttrType == Oids.CounterSigner)
                 {
                     foreach (ReadOnlyMemory<byte> attrValue in attributeAsn.AttrValues)
                     {
@@ -321,16 +320,14 @@ namespace System.Security.Cryptography.Pkcs
 
             AttributeAsn newUnsignedAttr;
 
-            using (AsnWriter writer = new AsnWriter(AsnEncodingRules.DER))
-            {
-                newSignerInfo.Encode(writer);
+            AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
+            newSignerInfo.Encode(writer);
 
-                newUnsignedAttr = new AttributeAsn
-                {
-                    AttrType = new Oid(Oids.CounterSigner, Oids.CounterSigner),
-                    AttrValues = new[] { new ReadOnlyMemory<byte>(writer.Encode()) },
-                };
-            }
+            newUnsignedAttr = new AttributeAsn
+            {
+                AttrType = Oids.CounterSigner,
+                AttrValues = new[] { new ReadOnlyMemory<byte>(writer.Encode()) },
+            };
 
             ref SignedDataAsn signedData = ref _document.GetRawData();
             ref SignerInfoAsn mySigner = ref signedData.SignerInfos[myIdx];
@@ -393,7 +390,7 @@ namespace System.Security.Cryptography.Pkcs
             {
                 AttributeAsn attributeAsn = unsignedAttrs[i];
 
-                if (attributeAsn.AttrType.Value == Oids.CounterSigner)
+                if (attributeAsn.AttrType == Oids.CounterSigner)
                 {
                     if (index < csIndex + attributeAsn.AttrValues.Length)
                     {
@@ -483,7 +480,7 @@ namespace System.Security.Cryptography.Pkcs
 
         public void CheckHash()
         {
-            if (_signatureAlgorithm.Value != Oids.NoSignature)
+            if (_signatureAlgorithm != Oids.NoSignature)
             {
                 throw new CryptographicException(SR.Cryptography_Pkcs_InvalidSignatureParameters);
             }
@@ -613,7 +610,7 @@ namespace System.Security.Cryptography.Pkcs
             {
                 byte[] contentDigest = hasher.GetHashAndReset();
 
-                using (AsnWriter writer = new AsnWriter(AsnEncodingRules.DER))
+                AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
                 {
                     // Some CMS implementations exist which do not sort the attributes prior to
                     // generating the signature.  While they are not, technically, validly signed,
@@ -636,7 +633,7 @@ namespace System.Security.Cryptography.Pkcs
                         // .NET Framework doesn't seem to validate the content type attribute,
                         // so we won't, either.
 
-                        if (attr.AttrType.Value == Oids.MessageDigest)
+                        if (attr.AttrType == Oids.MessageDigest)
                         {
                             CryptographicAttributeObject obj = MakeAttribute(attr);
 
@@ -660,27 +657,15 @@ namespace System.Security.Cryptography.Pkcs
                     {
                         writer.PopSequence();
 
-#if NETCOREAPP || NETSTANDARD2_1
-                        Span<byte> setOfTag = stackalloc byte[1];
-                        setOfTag[0] = 0x31;
-
-                        hasher.AppendData(setOfTag);
-                        hasher.AppendData(writer.EncodeAsSpan().Slice(1));
-#else
                         byte[] encoded = writer.Encode();
                         encoded[0] = 0x31;
                         hasher.AppendData(encoded);
-#endif
                     }
                     else
                     {
                         writer.PopSetOf();
 
-#if NETCOREAPP || NETSTANDARD2_1
-                        hasher.AppendData(writer.EncodeAsSpan());
-#else
                         hasher.AppendData(writer.Encode());
-#endif
                     }
                 }
             }
@@ -837,7 +822,7 @@ namespace System.Security.Cryptography.Pkcs
             {
                 for (int i = startIndex; i < attributes.Length; i++)
                 {
-                    if (attributes[i].AttrType.Value == oid.Value)
+                    if (attributes[i].AttrType == oid.Value)
                     {
                         return i;
                     }

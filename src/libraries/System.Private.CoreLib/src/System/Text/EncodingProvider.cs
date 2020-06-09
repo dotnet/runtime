@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections.Generic;
+
 namespace System.Text
 {
     public abstract class EncodingProvider
@@ -37,6 +39,8 @@ namespace System.Text
             return enc;
         }
 
+        public virtual IEnumerable<EncodingInfo> GetEncodings() => Array.Empty<EncodingInfo>();
+
         internal static void AddProvider(EncodingProvider provider)
         {
             if (provider == null)
@@ -64,10 +68,10 @@ namespace System.Text
 
         internal static Encoding? GetEncodingFromProvider(int codepage)
         {
-            if (s_providers == null)
+            EncodingProvider[]? providers = s_providers;
+            if (providers == null)
                 return null;
 
-            EncodingProvider[] providers = s_providers;
             foreach (EncodingProvider provider in providers)
             {
                 Encoding? enc = provider.GetEncoding(codepage);
@@ -76,6 +80,29 @@ namespace System.Text
             }
 
             return null;
+        }
+
+        internal static Dictionary<int, EncodingInfo>? GetEncodingListFromProviders()
+        {
+            EncodingProvider[]? providers = s_providers;
+            if (providers == null)
+                return null;
+
+            Dictionary<int, EncodingInfo> result = new Dictionary<int, EncodingInfo>();
+
+            foreach (EncodingProvider provider in providers)
+            {
+                IEnumerable<EncodingInfo>? encodingInfoList = provider.GetEncodings();
+                if (encodingInfoList != null)
+                {
+                    foreach (EncodingInfo ei in encodingInfoList)
+                    {
+                        result.TryAdd(ei.CodePage, ei);
+                    }
+                }
+            }
+
+            return result;
         }
 
         internal static Encoding? GetEncodingFromProvider(string encodingName)

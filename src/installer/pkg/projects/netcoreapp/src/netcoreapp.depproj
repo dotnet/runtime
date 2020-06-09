@@ -3,8 +3,6 @@
   <PropertyGroup>
     <FrameworkPackageName>Microsoft.NETCore.App</FrameworkPackageName>
     <BuildFullPlatformManifest>false</BuildFullPlatformManifest>
-    <!-- Workaround for https://github.com/dotnet/runtime/issues/37503 -->
-    <PermitDllAndExeFilesLackingFileVersion Condition="'$(OS)' == 'Windows_NT' and '$(RuntimeFlavor)' == 'Mono'">true</PermitDllAndExeFilesLackingFileVersion>
   </PropertyGroup>
 
   <ItemGroup>
