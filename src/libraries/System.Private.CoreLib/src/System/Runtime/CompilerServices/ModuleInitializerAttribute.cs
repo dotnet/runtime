@@ -11,8 +11,7 @@ namespace System.Runtime.CompilerServices
     /// <remarks>
     /// When one or more valid methods
     /// with this attribute are found in a compilation, the compiler will
-    /// emit a `&lt;Module&gt;..cctor` which calls the attributed methods
-    /// in the order they appear in source.
+    /// emit a `&lt;Module&gt;..cctor` which calls each of the attributed methods.
     ///
     /// Certain requirements are imposed on any method targeted with this attribute:
     /// - The method must be `static`.
