@@ -247,7 +247,7 @@
       </PropertyGroup>
 
       <ItemGroup>
-        <Compile Include="$(CommonPath)ShouldSkipLocalsInit.cs" Link="Common\ShouldSkipLocalsInit.cs" />
+        <Compile Include="$(CommonPath)SkipLocalsInit.cs" Link="Common\SkipLocalsInit.cs" />
       </ItemGroup>
     </When>
   </Choose>
