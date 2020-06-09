@@ -9085,7 +9085,7 @@ namespace System.Runtime.CompilerServices
         InternalCall = 4096,
     }
     [System.AttributeUsage(System.AttributeTargets.Method, Inherited=false)]
-    public sealed class ModuleInitializerAttribute : Attribute
+    public sealed class ModuleInitializerAttribute : System.Attribute
     {
         public ModuleInitializerAttribute() { }
     }
