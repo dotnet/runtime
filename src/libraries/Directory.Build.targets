@@ -234,9 +234,13 @@
           Exclude="$(DefaultItemExcludes);$(DefaultExcludesInProjectFolder);@(Compile)" />
   </ItemGroup>
 
+  <PropertyGroup>
+    <SkipLocalsInit Condition="'$(IsSourceProject)' == 'true' and '$(MSBuildProjectExtension)' == '.csproj' and '$(IsNETCoreApp)' == 'true' and '$(TargetFramework)' == '$(NetCoreAppCurrent)'">true</SkipLocalsInit>
+  </PropertyGroup>
+
   <!--Instructs compiler not to emit .locals init, using SkipLocalsInitAttribute.-->
   <Choose>
-    <When Condition="'$(SkipLocalsInit)' == 'true' and '$(IsNETCoreApp)' == 'true' and '$(TargetFramework)' == '$(NetCoreAppCurrent)'">
+    <When Condition="'$(SkipLocalsInit)' == 'true'">
       <PropertyGroup >
         <!-- This is needed to use the SkipLocalsInitAttribute. -->
         <AllowUnsafeBlocks>true</AllowUnsafeBlocks>

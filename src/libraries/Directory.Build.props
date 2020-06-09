@@ -292,8 +292,6 @@
 
   <PropertyGroup>
     <EnableDefaultItems>false</EnableDefaultItems>
-
-    <SkipLocalsInit Condition="'$(IsSourceProject)' == 'true' and '$(Language)' == 'C#'">true</SkipLocalsInit>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(BuildAllConfigurations)' != 'true'">
