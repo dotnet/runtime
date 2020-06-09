@@ -6,6 +6,7 @@ using System;
 using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Formats.Asn1;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Security.Cryptography.Asn1;
@@ -31,24 +32,31 @@ namespace Internal.Cryptography.Pal
 
         protected void ParsePkcs12(byte[] data)
         {
-            // RFC7292 specifies BER instead of DER
-            AsnValueReader reader = new AsnValueReader(data, AsnEncodingRules.BER);
-            ReadOnlySpan<byte> encodedData = reader.PeekEncodedValue();
-
-            // Windows compatibility: Ignore trailing data.
-            if (encodedData.Length != data.Length)
+            try
             {
-                reader = new AsnValueReader(encodedData, AsnEncodingRules.BER);
+                // RFC7292 specifies BER instead of DER
+                AsnValueReader reader = new AsnValueReader(data, AsnEncodingRules.BER);
+                ReadOnlySpan<byte> encodedData = reader.PeekEncodedValue();
+
+                // Windows compatibility: Ignore trailing data.
+                if (encodedData.Length != data.Length)
+                {
+                    reader = new AsnValueReader(encodedData, AsnEncodingRules.BER);
+                }
+
+                PfxAsn.Decode(ref reader, data, out PfxAsn pfxAsn);
+
+                if (pfxAsn.AuthSafe.ContentType != Oids.Pkcs7Data)
+                {
+                    throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
+                }
+
+                _pfxAsn = pfxAsn;
             }
-
-            PfxAsn.Decode(ref reader, data, out PfxAsn pfxAsn);
-
-            if (pfxAsn.AuthSafe.ContentType != Oids.Pkcs7Data)
+            catch (AsnContentException e)
             {
-                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
+                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding, e);
             }
-
-            _pfxAsn = pfxAsn;
         }
 
         internal CertAndKey GetSingleCert()
@@ -337,20 +345,27 @@ namespace Internal.Cryptography.Pal
             // and one plain (contains encrypted keys)
             ContentInfoAsn[] rented = ArrayPool<ContentInfoAsn>.Shared.Rent(10);
 
-            AsnValueReader outer = new AsnValueReader(authSafeContents.Span, AsnEncodingRules.BER);
-            AsnValueReader reader = outer.ReadSequence();
-            outer.ThrowIfNotEmpty();
-            int i = 0;
-
-            while (reader.HasData)
+            try
             {
-                GrowIfNeeded(ref rented, i);
-                ContentInfoAsn.Decode(ref reader, authSafeContents, out rented[i]);
-                i++;
-            }
+                AsnValueReader outer = new AsnValueReader(authSafeContents.Span, AsnEncodingRules.BER);
+                AsnValueReader reader = outer.ReadSequence();
+                outer.ThrowIfNotEmpty();
+                int i = 0;
 
-            rented.AsSpan(i).Clear();
-            return rented;
+                while (reader.HasData)
+                {
+                    GrowIfNeeded(ref rented, i);
+                    ContentInfoAsn.Decode(ref reader, authSafeContents, out rented[i]);
+                    i++;
+                }
+
+                rented.AsSpan(i).Clear();
+                return rented;
+            }
+            catch (AsnContentException e)
+            {
+                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding, e);
+            }
         }
 
         private void DecryptAndProcessSafeContents(
@@ -469,7 +484,7 @@ namespace Internal.Cryptography.Pal
 
                 foreach (AttributeAsn attr in certBagAttrs[certBagIdx] ?? Array.Empty<AttributeAsn>())
                 {
-                    if (attr.AttrType.Value == Oids.LocalKeyId && attr.AttrValues.Length > 0)
+                    if (attr.AttrType == Oids.LocalKeyId && attr.AttrValues.Length > 0)
                     {
                         matchingKeyIdx = FindMatchingKey(
                             keyBags,
@@ -533,7 +548,7 @@ namespace Internal.Cryptography.Pal
             {
                 case Oids.Rsa:
                 case Oids.RsaPss:
-                    switch (publicKeyInfo.Algorithm.Algorithm.Value)
+                    switch (publicKeyInfo.Algorithm.Algorithm)
                     {
                         case Oids.Rsa:
                         case Oids.RsaPss:
@@ -547,7 +562,7 @@ namespace Internal.Cryptography.Pal
                         AlgorithmIdentifierAsn.RepresentsNull(keyParams);
                 case Oids.EcPublicKey:
                 case Oids.EcDiffieHellman:
-                    switch (publicKeyInfo.Algorithm.Algorithm.Value)
+                    switch (publicKeyInfo.Algorithm.Algorithm)
                     {
                         case Oids.EcPublicKey:
                         case Oids.EcDiffieHellman:
@@ -561,7 +576,7 @@ namespace Internal.Cryptography.Pal
                         publicKeyInfo.Algorithm.Parameters.Value.Span.SequenceEqual(keyParams);
             }
 
-            if (algorithm != publicKeyInfo.Algorithm.Algorithm.Value)
+            if (algorithm != publicKeyInfo.Algorithm.Algorithm)
             {
                 return false;
             }
@@ -583,7 +598,7 @@ namespace Internal.Cryptography.Pal
             {
                 foreach (AttributeAsn attr in keyBags[i].BagAttributes ?? Array.Empty<AttributeAsn>())
                 {
-                    if (attr.AttrType.Value == Oids.LocalKeyId && attr.AttrValues.Length > 0)
+                    if (attr.AttrType == Oids.LocalKeyId && attr.AttrValues.Length > 0)
                     {
                         ReadOnlyMemory<byte> curKeyId =
                             Helpers.DecodeOctetStringAsMemory(attr.AttrValues[0]);
@@ -668,33 +683,40 @@ namespace Internal.Cryptography.Pal
                 contentData = Helpers.DecodeOctetStringAsMemory(contentData);
             }
 
-            AsnValueReader outer = new AsnValueReader(contentData.Span, AsnEncodingRules.BER);
-            AsnValueReader reader = outer.ReadSequence();
-            outer.ThrowIfNotEmpty();
-
-            while (reader.HasData)
+            try
             {
-                SafeBagAsn.Decode(ref reader, contentData, out SafeBagAsn bag);
+                AsnValueReader outer = new AsnValueReader(contentData.Span, AsnEncodingRules.BER);
+                AsnValueReader reader = outer.ReadSequence();
+                outer.ThrowIfNotEmpty();
 
-                if (bag.BagId == Oids.Pkcs12CertBag)
+                while (reader.HasData)
                 {
-                    CertBagAsn certBag = CertBagAsn.Decode(bag.BagValue, AsnEncodingRules.BER);
+                    SafeBagAsn.Decode(ref reader, contentData, out SafeBagAsn bag);
 
-                    if (certBag.CertId == Oids.Pkcs12X509CertBagType)
+                    if (bag.BagId == Oids.Pkcs12CertBag)
                     {
-                        GrowIfNeeded(ref certBags, certBagIdx);
-                        GrowIfNeeded(ref certBagAttrs, certBagIdx);
-                        certBags[certBagIdx] = certBag;
-                        certBagAttrs[certBagIdx] = bag.BagAttributes;
-                        certBagIdx++;
+                        CertBagAsn certBag = CertBagAsn.Decode(bag.BagValue, AsnEncodingRules.BER);
+
+                        if (certBag.CertId == Oids.Pkcs12X509CertBagType)
+                        {
+                            GrowIfNeeded(ref certBags, certBagIdx);
+                            GrowIfNeeded(ref certBagAttrs, certBagIdx);
+                            certBags[certBagIdx] = certBag;
+                            certBagAttrs[certBagIdx] = bag.BagAttributes;
+                            certBagIdx++;
+                        }
+                    }
+                    else if (bag.BagId == Oids.Pkcs12KeyBag || bag.BagId == Oids.Pkcs12ShroudedKeyBag)
+                    {
+                        GrowIfNeeded(ref keyBags, keyBagIdx);
+                        keyBags[keyBagIdx] = bag;
+                        keyBagIdx++;
                     }
                 }
-                else if (bag.BagId == Oids.Pkcs12KeyBag || bag.BagId == Oids.Pkcs12ShroudedKeyBag)
-                {
-                    GrowIfNeeded(ref keyBags, keyBagIdx);
-                    keyBags[keyBagIdx] = bag;
-                    keyBagIdx++;
-                }
+            }
+            catch (AsnContentException e)
+            {
+                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding, e);
             }
         }
 

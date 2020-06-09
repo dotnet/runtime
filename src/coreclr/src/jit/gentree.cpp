@@ -22,7 +22,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 /*****************************************************************************/
 
 const unsigned short GenTree::gtOperKindTable[] = {
-#define GTNODE(en, st, cm, ok) ok + GTK_COMMUTE *cm,
+#define GTNODE(en, st, cm, ok) (ok) + GTK_COMMUTE *cm,
 #include "gtlist.h"
 };
 
@@ -6263,9 +6263,11 @@ GenTree* Compiler::gtNewInlineCandidateReturnExpr(GenTree* inlineCandidate, var_
 {
     assert(GenTree::s_gtNodeSizes[GT_RET_EXPR] == TREE_NODE_SZ_LARGE);
 
-    GenTree* node = new (this, GT_RET_EXPR) GenTreeRetExpr(type);
+    GenTreeRetExpr* node = new (this, GT_RET_EXPR) GenTreeRetExpr(type);
 
-    node->AsRetExpr()->gtInlineCandidate = inlineCandidate;
+    node->gtInlineCandidate = inlineCandidate;
+
+    node->bbFlags = 0;
 
     if (varTypeIsStruct(inlineCandidate) && !inlineCandidate->OperIsBlkOp())
     {
@@ -10481,7 +10483,7 @@ void Compiler::gtDispLclVar(unsigned lclNum, bool padForBiggestDisp)
 
     printf("%s", buf);
 
-    if (padForBiggestDisp && (charsPrinted < LONGEST_COMMON_LCL_VAR_DISPLAY_LENGTH))
+    if (padForBiggestDisp && (charsPrinted < (int)LONGEST_COMMON_LCL_VAR_DISPLAY_LENGTH))
     {
         printf("%*c", LONGEST_COMMON_LCL_VAR_DISPLAY_LENGTH - charsPrinted, ' ');
     }
@@ -15145,6 +15147,11 @@ GenTree* Compiler::gtNewTempAssign(
             // and now it is merging to a struct again.
             assert(!compDoOldStructRetyping());
             assert(tmp == genReturnLocal);
+            ok = true;
+        }
+        else if (varTypeIsSIMD(dstTyp) && (valTyp == TYP_STRUCT))
+        {
+            assert(val->IsCall());
             ok = true;
         }
 

@@ -136,7 +136,7 @@ namespace System.Net.Http.Tests
             Assert.Equal("must-revalidate, proxy-revalidate, private=\"token2, token3\"", cacheControl.ToString());
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void ToString_NegativeValues_UsesMinusSignRegardlessOfCurrentCulture()
         {
             RemoteExecutor.Invoke(() =>

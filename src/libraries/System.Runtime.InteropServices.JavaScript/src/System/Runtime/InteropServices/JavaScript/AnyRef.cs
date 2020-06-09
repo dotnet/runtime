@@ -2,14 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.Runtime.InteropServices;
-
 namespace System.Runtime.InteropServices.JavaScript
 {
     public class AnyRef
     {
-        public int JSHandle { get; internal set; }
+        public int JSHandle { get; protected private set; }
         internal GCHandle Handle;
 
         internal AnyRef(int jsHandle)
@@ -23,5 +20,7 @@ namespace System.Runtime.InteropServices.JavaScript
             JSHandle = (int)jsHandle;
             Handle = GCHandle.Alloc(this);
         }
+
+        internal int Int32Handle => (int)(IntPtr)Handle;
     }
 }

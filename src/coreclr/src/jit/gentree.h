@@ -1708,7 +1708,7 @@ public:
     inline GenTree* gtEffectiveVal(bool commaOnly = false);
 
     // Tunnel through any GT_RET_EXPRs
-    inline GenTree* gtRetExprVal();
+    inline GenTree* gtRetExprVal(unsigned __int64* pbbFlags = nullptr);
 
     // Return the child of this node if it is a GT_RELOAD or GT_COPY; otherwise simply return the node itself
     inline GenTree* gtSkipReloadOrCopy();
@@ -4257,13 +4257,7 @@ struct GenTreeCall final : public GenTree
         {
             return true;
         }
-#elif defined(FEATURE_HFA) && defined(TARGET_ARM64)
-        // SIMD types are returned in vector regs on ARM64.
-        if (varTypeIsSIMD(gtType))
-        {
-            return false;
-        }
-#endif // FEATURE_HFA && TARGET_ARM64
+#endif
 
         if (!varTypeIsStruct(gtType) || HasRetBufArg())
         {
@@ -5627,6 +5621,8 @@ protected:
 struct GenTreeRetExpr : public GenTree
 {
     GenTree* gtInlineCandidate;
+
+    unsigned __int64 bbFlags;
 
     CORINFO_CLASS_HANDLE gtRetClsHnd;
 
@@ -7040,6 +7036,11 @@ inline GenTree* GenTree::gtEffectiveVal(bool commaOnly)
 //-------------------------------------------------------------------------
 // gtRetExprVal - walk back through GT_RET_EXPRs
 //
+// Arguments:
+//    pbbFlags - out-parameter that is set to the flags of the basic block
+//               containing the inlinee return value. The value is 0
+//               for unsuccessful inlines.
+//
 // Returns:
 //    tree representing return value from a successful inline,
 //    or original call for failed or yet to be determined inline.
@@ -7048,17 +7049,25 @@ inline GenTree* GenTree::gtEffectiveVal(bool commaOnly)
 //    Multi-level inlines can form chains of GT_RET_EXPRs.
 //    This method walks back to the root of the chain.
 
-inline GenTree* GenTree::gtRetExprVal()
+inline GenTree* GenTree::gtRetExprVal(unsigned __int64* pbbFlags)
 {
-    GenTree* retExprVal = this;
+    GenTree*         retExprVal = this;
+    unsigned __int64 bbFlags    = 0;
+
     for (;;)
     {
         if (retExprVal->gtOper == GT_RET_EXPR)
         {
-            retExprVal = retExprVal->AsRetExpr()->gtInlineCandidate;
+            GenTreeRetExpr* retExp = retExprVal->AsRetExpr();
+            retExprVal             = retExp->gtInlineCandidate;
+            bbFlags                = retExp->bbFlags;
         }
         else
         {
+            if (pbbFlags != nullptr)
+            {
+                *pbbFlags = bbFlags;
+            }
             return retExprVal;
         }
     }

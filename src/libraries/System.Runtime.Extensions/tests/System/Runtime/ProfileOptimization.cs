@@ -11,7 +11,7 @@ namespace System.Runtime.Tests
 {
     public class ProfileOptimizationTest : FileCleanupTestBase
     {
-        [Theory]
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [InlineData(false)]
         [InlineData(true)]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/31853", TestRuntimes.Mono)]

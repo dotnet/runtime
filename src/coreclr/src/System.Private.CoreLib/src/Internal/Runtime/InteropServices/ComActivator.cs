@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Reflection;
 using System.Runtime.InteropServices;
@@ -700,7 +701,9 @@ $@"{nameof(UnregisterClassForTypeInternal)} arguments:
         // LicenseContext
         private readonly MethodInfo _setSavedLicenseKey;
 
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
         private readonly Type _licInfoHelper;
+
         private readonly MethodInfo _licInfoHelperContains;
 
         // RCW Activation

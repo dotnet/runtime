@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Formats.Asn1;
 using System.Globalization;
 using System.Security.Cryptography;
 using System.Security.Cryptography.Asn1;
@@ -166,78 +167,97 @@ namespace Internal.Cryptography
 
         public static void ValidateDer(ReadOnlyMemory<byte> encodedValue)
         {
-            Asn1Tag tag;
-            AsnReader reader = new AsnReader(encodedValue, AsnEncodingRules.DER);
-
-            while (reader.HasData)
+            try
             {
-                tag = reader.PeekTag();
+                Asn1Tag tag;
+                AsnReader reader = new AsnReader(encodedValue, AsnEncodingRules.DER);
 
-                // If the tag is in the UNIVERSAL class
-                //
-                // DER limits the constructed encoding to SEQUENCE and SET, as well as anything which gets
-                // a defined encoding as being an IMPLICIT SEQUENCE.
-                if (tag.TagClass == TagClass.Universal)
+                while (reader.HasData)
                 {
-                    switch ((UniversalTagNumber)tag.TagValue)
+                    tag = reader.PeekTag();
+
+                    // If the tag is in the UNIVERSAL class
+                    //
+                    // DER limits the constructed encoding to SEQUENCE and SET, as well as anything which gets
+                    // a defined encoding as being an IMPLICIT SEQUENCE.
+                    if (tag.TagClass == TagClass.Universal)
                     {
-                        case UniversalTagNumber.External:
-                        case UniversalTagNumber.Embedded:
-                        case UniversalTagNumber.Sequence:
-                        case UniversalTagNumber.Set:
-                        case UniversalTagNumber.UnrestrictedCharacterString:
-                            if (!tag.IsConstructed)
-                            {
-                                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
-                            }
-                            break;
+                        switch ((UniversalTagNumber)tag.TagValue)
+                        {
+                            case UniversalTagNumber.External:
+                            case UniversalTagNumber.Embedded:
+                            case UniversalTagNumber.Sequence:
+                            case UniversalTagNumber.Set:
+                            case UniversalTagNumber.UnrestrictedCharacterString:
+                                if (!tag.IsConstructed)
+                                {
+                                    throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
+                                }
 
-                        default:
-                            if (tag.IsConstructed)
-                            {
-                                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
-                            }
-                            break;
+                                break;
+                            default:
+                                if (tag.IsConstructed)
+                                {
+                                    throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
+                                }
+
+                                break;
+                        }
                     }
-                }
 
-                if (tag.IsConstructed)
-                {
-                    ValidateDer(reader.PeekContentBytes());
-                }
+                    if (tag.IsConstructed)
+                    {
+                        ValidateDer(reader.PeekContentBytes());
+                    }
 
-                // Skip past the current value.
-                reader.ReadEncodedValue();
+                    // Skip past the current value.
+                    reader.ReadEncodedValue();
+                }
+            }
+            catch (AsnContentException e)
+            {
+                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding, e);
             }
         }
 
         public static ReadOnlyMemory<byte> DecodeOctetStringAsMemory(ReadOnlyMemory<byte> encodedOctetString)
         {
-            AsnReader reader = new AsnReader(encodedOctetString, AsnEncodingRules.BER);
-
-            if (reader.PeekEncodedValue().Length != encodedOctetString.Length)
+            try
             {
-                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
-            }
+                ReadOnlySpan<byte> input = encodedOctetString.Span;
 
-            // Almost everything in X.509 is DER-encoded, which means Octet String values are
-            // encoded as a primitive (non-segmented)
-            //
-            // Even in BER Octet Strings are usually encoded as a primitive.
-            if (reader.TryReadPrimitiveOctetStringBytes(out ReadOnlyMemory<byte> primitiveContents))
+                if (AsnDecoder.TryReadPrimitiveOctetString(
+                    input,
+                    AsnEncodingRules.BER,
+                    out ReadOnlySpan<byte> primitive,
+                    out int consumed))
+                {
+                    if (consumed != input.Length)
+                    {
+                        throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
+                    }
+
+                    if (input.Overlaps(primitive, out int offset))
+                    {
+                        return encodedOctetString.Slice(offset, primitive.Length);
+                    }
+
+                    Debug.Fail("input.Overlaps(primitive) failed after TryReadPrimitiveOctetString succeeded");
+                }
+
+                byte[] ret = AsnDecoder.ReadOctetString(input, AsnEncodingRules.BER, out consumed);
+
+                if (consumed != input.Length)
+                {
+                    throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
+                }
+
+                return ret;
+            }
+            catch (AsnContentException e)
             {
-                return primitiveContents;
+                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding, e);
             }
-
-            byte[] tooBig = new byte[encodedOctetString.Length];
-
-            if (reader.TryCopyOctetStringBytes(tooBig, out int bytesWritten))
-            {
-                return tooBig.AsMemory(0, bytesWritten);
-            }
-
-            Debug.Fail("TryCopyOctetStringBytes failed with an over-allocated array");
-            throw new CryptographicException();
         }
     }
 

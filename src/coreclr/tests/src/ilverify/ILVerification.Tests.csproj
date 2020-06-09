@@ -5,6 +5,7 @@
     <CLRTestPriority>1</CLRTestPriority>
     <!-- The test uses xunit directly and it fails to find the test assembly for some reason -->
     <UnloadabilityIncompatible>true</UnloadabilityIncompatible>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
 
   <ItemGroup>
@@ -14,13 +15,11 @@
     <Compile Include="..\Common\XunitBase.cs" />
   </ItemGroup>
 
+  <Import Project="..\..\..\src\tools\ILVerification\ILVerification.projitems" />
+
   <ItemGroup>
     <PackageReference Include="xunit" Version="$(XUnitVersion)" />
     <PackageReference Include="Newtonsoft.Json" Version="9.0.1" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <ProjectReference Include="..\..\..\src\tools\ILVerification\ILVerification.csproj" />
   </ItemGroup>
 
   <ItemGroup>

@@ -1228,7 +1228,7 @@ namespace System.Net.Http
             {
                 if (_stream == null)
                 {
-                    return new ValueTask<int>(Task.FromException<int>(new ObjectDisposedException(nameof(Http3RequestStream))));
+                    return ValueTask.FromException<int>(new ObjectDisposedException(nameof(Http3RequestStream)));
                 }
 
                 Debug.Assert(_response != null);
@@ -1275,7 +1275,7 @@ namespace System.Net.Http
             {
                 if (_stream == null)
                 {
-                    return new ValueTask(Task.FromException(new ObjectDisposedException(nameof(Http3WriteStream))));
+                    return ValueTask.FromException(new ObjectDisposedException(nameof(Http3WriteStream)));
                 }
 
                 return _stream.WriteRequestContentAsync(buffer, cancellationToken);

@@ -5,8 +5,8 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Formats.Asn1;
 using System.Numerics;
-using System.Security.Cryptography.Asn1;
 using System.Security.Cryptography.X509Certificates;
 
 namespace System.Security.Cryptography.Pkcs
@@ -149,6 +149,10 @@ namespace System.Security.Cryptography.Pkcs
 
                 return !sequence.HasData;
             }
+            catch (AsnContentException)
+            {
+                return false;
+            }
             catch (CryptographicException)
             {
                 return false;
@@ -163,7 +167,7 @@ namespace System.Security.Cryptography.Pkcs
                 fieldSize * 2 == ieeeSignature.Length,
                 $"ieeeSignature.Length ({ieeeSignature.Length}) must be even");
 
-            using (AsnWriter writer = new AsnWriter(AsnEncodingRules.DER))
+            AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
             {
                 writer.PushSequence();
 

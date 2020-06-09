@@ -18,12 +18,12 @@ namespace System.ServiceProcess
             HResult = ServiceControllerTimeout;
         }
 
-        public TimeoutException(string message) : base(message)
+        public TimeoutException(string? message) : base(message)
         {
             HResult = ServiceControllerTimeout;
         }
 
-        public TimeoutException(string message, Exception innerException)
+        public TimeoutException(string? message, Exception? innerException)
             : base(message, innerException)
         {
             HResult = ServiceControllerTimeout;

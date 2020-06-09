@@ -686,7 +686,7 @@ namespace System.Net.Sockets
             // If we successfully process all enqueued operations, then the state becomes Ready;
             // otherwise, the state becomes Waiting and we wait for another epoll notification.
 
-            private enum QueueState : byte
+            private enum QueueState : int
             {
                 Ready = 0,          // Indicates that data MAY be available on the socket.
                                     // Queue must be empty.
@@ -729,18 +729,31 @@ namespace System.Net.Sockets
                 _sequenceNumber = 0;
             }
 
-            // IsReady returns the current _sequenceNumber, which must be passed to StartAsyncOperation below.
+            // IsReady returns whether an operation can be executed immediately.
+            // observedSequenceNumber must be passed to StartAsyncOperation.
             public bool IsReady(SocketAsyncContext context, out int observedSequenceNumber)
             {
-                using (Lock())
+                // It is safe to read _state and _sequence without using Lock.
+                // - The return value is soley based on Volatile.Read of _state.
+                // - The Volatile.Read of _sequenceNumber ensures we read a value before executing the operation.
+                //   This is needed to retry the operation in StartAsyncOperation in case the _sequenceNumber incremented.
+                // - Because no Lock is taken, it is possible we observe a sequence number increment before the state
+                //   becomes Ready. When that happens, observedSequenceNumber is decremented, and StartAsyncOperation will
+                //   execute the operation because the sequence number won't match.
+
+                Debug.Assert(sizeof(QueueState) == sizeof(int));
+                QueueState state = (QueueState)Volatile.Read(ref Unsafe.As<QueueState, int>(ref _state));
+                observedSequenceNumber = Volatile.Read(ref _sequenceNumber);
+
+                bool isReady = state == QueueState.Ready || state == QueueState.Stopped;
+                if (!isReady)
                 {
-                    observedSequenceNumber = _sequenceNumber;
-                    bool isReady = (_state == QueueState.Ready) || (_state == QueueState.Stopped);
-
-                    Trace(context, $"{isReady}");
-
-                    return isReady;
+                    observedSequenceNumber--;
                 }
+
+                Trace(context, $"{isReady}");
+
+                return isReady;
             }
 
             // Return true for pending, false for completed synchronously (including failure and abort)
@@ -1087,6 +1100,7 @@ namespace System.Net.Sockets
                                 if (_tail == null)
                                 {
                                     _state = QueueState.Ready;
+                                    _sequenceNumber++;
                                 }
                             }
                         }

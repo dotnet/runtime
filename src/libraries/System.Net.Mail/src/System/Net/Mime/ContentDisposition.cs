@@ -4,6 +4,7 @@
 
 using System.Collections.Generic;
 using System.Collections.Specialized;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Net.Mail;
 using System.Text;
@@ -20,7 +21,7 @@ namespace System.Net.Mime
 
         private TrackingValidationObjectDictionary? _parameters;
         private string _disposition;
-        private string _dispositionType = null!; // set by ctor or by helper called from ctor
+        private string _dispositionType;
         private bool _isChanged;
         private bool _isPersisted;
 
@@ -259,6 +260,7 @@ namespace System.Net.Mime
 
         public override int GetHashCode() => ToString().ToLowerInvariant().GetHashCode();
 
+        [MemberNotNull(nameof(_dispositionType))]
         private void ParseValue()
         {
             int offset = 0;

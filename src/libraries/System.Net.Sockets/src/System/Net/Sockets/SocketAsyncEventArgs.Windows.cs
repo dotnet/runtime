@@ -4,6 +4,7 @@
 
 using System.Buffers;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -37,7 +38,7 @@ namespace System.Net.Sockets
         private FileStream[]? _sendPacketsFileStreams;
 
         // Overlapped object related variables.
-        private PreAllocatedOverlapped _preAllocatedOverlapped = null!; // initialized by helper called from ctor
+        private PreAllocatedOverlapped _preAllocatedOverlapped;
         private readonly StrongBox<SocketAsyncEventArgs?> _strongThisRef = new StrongBox<SocketAsyncEventArgs?>(); // state for _preAllocatedOverlapped; .Value set to this while operations in flight
 
         // Cancellation support
@@ -47,6 +48,7 @@ namespace System.Net.Sockets
         private PinState _pinState;
         private enum PinState : byte { None = 0, MultipleBuffer, SendPackets }
 
+        [MemberNotNull(nameof(_preAllocatedOverlapped))]
         private void InitializeInternals()
         {
             // PreAllocatedOverlapped captures ExecutionContext, but SocketAsyncEventArgs ensures

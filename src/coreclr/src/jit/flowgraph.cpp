@@ -5275,7 +5275,7 @@ void Compiler::fgMarkBackwardJump(BasicBlock* targetBlock, BasicBlock* sourceBlo
 
     for (BasicBlock* block = targetBlock; block != sourceBlock->bbNext; block = block->bbNext)
     {
-        if ((block->bbFlags & BBF_BACKWARD_JUMP) == 0)
+        if (((block->bbFlags & BBF_BACKWARD_JUMP) == 0) && (block->bbJumpKind != BBJ_RETURN))
         {
             block->bbFlags |= BBF_BACKWARD_JUMP;
             compHasBackwardJump = true;
@@ -22625,9 +22625,10 @@ Compiler::fgWalkResult Compiler::fgUpdateInlineReturnExpressionPlaceHolder(GenTr
         // This folding may uncover more GT_RET_EXPRs, so we loop around
         // until we've got something distinct.
         //
-        GenTree* inlineCandidate = tree->gtRetExprVal();
-        inlineCandidate          = comp->gtFoldExpr(inlineCandidate);
-        var_types retType        = tree->TypeGet();
+        unsigned __int64 bbFlags         = 0;
+        GenTree*         inlineCandidate = tree->gtRetExprVal(&bbFlags);
+        inlineCandidate                  = comp->gtFoldExpr(inlineCandidate);
+        var_types retType                = tree->TypeGet();
 
 #ifdef DEBUG
         if (comp->verbose)
@@ -22643,6 +22644,7 @@ Compiler::fgWalkResult Compiler::fgUpdateInlineReturnExpressionPlaceHolder(GenTr
 #endif // DEBUG
 
         tree->ReplaceWith(inlineCandidate, comp);
+        comp->compCurBB->bbFlags |= (bbFlags & BBF_SPLIT_GAINED);
 
 #ifdef DEBUG
         if (comp->verbose)
@@ -22992,6 +22994,7 @@ void Compiler::fgInvokeInlineeCompiler(GenTreeCall* call, InlineResult* inlineRe
     inlineInfo.iciBlock               = compCurBB;
     inlineInfo.thisDereferencedFirst  = false;
     inlineInfo.retExpr                = nullptr;
+    inlineInfo.retBB                  = nullptr;
     inlineInfo.retExprClassHnd        = nullptr;
     inlineInfo.retExprClassHndIsExact = false;
     inlineInfo.inlineResult           = inlineResult;
@@ -23355,7 +23358,7 @@ void Compiler::fgInsertInlineeBlocks(InlineInfo* pInlineInfo)
 
         // topBlock contains at least one statement before the split.
         // And the split is before the first statement.
-        // In this case, topBlock should be empty, and everything else should be moved to the bottonBlock.
+        // In this case, topBlock should be empty, and everything else should be moved to the bottomBlock.
         bottomBlock->bbStmtList = topBlock->bbStmtList;
         topBlock->bbStmtList    = nullptr;
     }
@@ -23535,13 +23538,17 @@ _Done:
             gtDispTree(pInlineInfo->retExpr);
         }
 #endif // DEBUG
-        // Replace the call with the return expression
-        iciCall->ReplaceWith(pInlineInfo->retExpr, this);
 
-        if (bottomBlock != nullptr)
+        // Replace the call with the return expression. Note that iciCall won't be part of the IR
+        // but may still be referenced from a GT_RET_EXPR node. We will replace GT_RET_EXPR node
+        // in fgUpdateInlineReturnExpressionPlaceHolder. At that time we will also update the flags
+        // on the basic block of GT_RET_EXPR node.
+        if (iciCall->gtInlineCandidateInfo->retExpr->OperGet() == GT_RET_EXPR)
         {
-            bottomBlock->bbFlags |= InlineeCompiler->fgLastBB->bbFlags & BBF_SPLIT_GAINED;
+            // Save the basic block flags from the retExpr basic block.
+            iciCall->gtInlineCandidateInfo->retExpr->AsRetExpr()->bbFlags = pInlineInfo->retBB->bbFlags;
         }
+        iciCall->ReplaceWith(pInlineInfo->retExpr, this);
     }
 
     //
