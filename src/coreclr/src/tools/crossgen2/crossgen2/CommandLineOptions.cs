@@ -178,11 +178,11 @@ namespace ILCompiler
                 {
                     Argument = new Argument<bool>()
                 },
-                new Option(new[] { "--method-layout" }, "Layout file using profile driven optimization assuming the layout algorithm specified. The default value is DefaultSort, which indicates that complex layout is disabled")
+                new Option(new[] { "--method-layout" }, SR.MethodLayoutOption)
                 {
                     Argument = new Argument<ReadyToRunMethodLayoutAlgorithm>()
                 },
-                new Option(new[] { "--file-layout" }, "Layout file using profile driven optimization assuming the layout algorithm specified. The default value is DefaultSort, which indicates that complex layout is disabled")
+                new Option(new[] { "--file-layout" }, SR.FileLayoutOption)
                 {
                     Argument = new Argument<ReadyToRunFileLayoutAlgorithm>()
                 },
