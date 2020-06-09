@@ -2235,6 +2235,8 @@ void * MAPMapPEFile(HANDLE hFile, off_t offset)
 #endif
     SIZE_T reserveSize = 0;
     bool forceOveralign = false;
+    int readWriteFlags = MAP_FILE|MAP_PRIVATE|MAP_FIXED;
+    int readOnlyFlags = readWriteFlags;
 
     ENTRY("MAPMapPEFile (hFile=%p offset=%zx)\n", hFile, offset);
 
@@ -2429,6 +2431,12 @@ void * MAPMapPEFile(HANDLE hFile, off_t offset)
     {
         loadedBase = ALIGN_UP(loadedBase, ntHeader.OptionalHeader.SectionAlignment);
         headerSize = ntHeader.OptionalHeader.SectionAlignment;
+        char *mapAsShared = EnvironGetenv("PAL_MAP_READONLY_PE_HUGE_PE_AS_SHARED");
+
+        // If PAL_MAP_READONLY_PE_HUGE_PE_AS_SHARED os set to 1. map the readonly sections as shared
+        // which works well with the behavior of the hugetlbfs
+        if (mapAsShared != NULL && (strcmp(mapAsShared, "1") == 0))
+            readOnlyFlags = MAP_FILE|MAP_SHARED|MAP_FIXED;
     }
 
     //we have now reserved memory (potentially we got rebased).  Walk the PE sections and map each part
@@ -2437,7 +2445,7 @@ void * MAPMapPEFile(HANDLE hFile, off_t offset)
 
     //first, map the PE header to the first page in the image.  Get pointers to the section headers
     palError = MAPmmapAndRecord(pFileObject, loadedBase,
-                    loadedBase, headerSize, PROT_READ, MAP_FILE|MAP_PRIVATE|MAP_FIXED, fd, offset,
+                    loadedBase, headerSize, PROT_READ, readOnlyFlags, fd, offset,
                     (void**)&loadedHeader);
     if (NO_ERROR != palError)
     {
@@ -2517,18 +2525,22 @@ void * MAPMapPEFile(HANDLE hFile, off_t offset)
         //Don't discard these sections.  We need them to verify PE files
         //if (currentHeader.Characteristics & IMAGE_SCN_MEM_DISCARDABLE)
         //    continue;
+        int flags = readOnlyFlags;
         if (currentHeader.Characteristics & IMAGE_SCN_MEM_EXECUTE)
             prot |= PROT_EXEC;
         if (currentHeader.Characteristics & IMAGE_SCN_MEM_READ)
             prot |= PROT_READ;
         if (currentHeader.Characteristics & IMAGE_SCN_MEM_WRITE)
+        {
             prot |= PROT_WRITE;
+            flags = readWriteFlags;
+        }
 
         palError = MAPmmapAndRecord(pFileObject, loadedBase,
                         sectionBase,
                         currentHeader.SizeOfRawData,
                         prot,
-                        MAP_FILE|MAP_PRIVATE|MAP_FIXED,
+                        flags,
                         fd,
                         offset + currentHeader.PointerToRawData,
                         &sectionData);
