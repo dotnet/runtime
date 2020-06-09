@@ -1862,6 +1862,9 @@ typedef enum LoadHintEnum
 #define DEFAULTDEPENDENCY_TYPE_W                W("System.Runtime.CompilerServices.DefaultDependencyAttribute")
 #define DEFAULTDEPENDENCY_TYPE                  "System.Runtime.CompilerServices.DefaultDependencyAttribute"
 
+#define UNIQUEIMPL_TYPE_W                       W("System.Runtime.CompilerServices.UniqueImplAttribute")
+#define UNIQUEIMPL_TYPE                         "System.Runtime.CompilerServices.UniqueImplAttribute"
+
 #define DEPENDENCY_TYPE_W                       W("System.Runtime.CompilerServices.DependencyAttribute")
 #define DEPENDENCY_TYPE                         "System.Runtime.CompilerServices.DependencyAttribute"
 

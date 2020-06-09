@@ -26,6 +26,7 @@
 #include "dbginterface.h"
 #include "dllimport.h"
 #include "gcheaputilities.h"
+#include "caparser.h"
 #include "comdelegate.h"
 #include "corprof.h"
 #include "eeprofinterfaces.h"
@@ -9161,60 +9162,42 @@ CORINFO_CLASS_HANDLE CEEInfo::getUniqueImplementingClass(CORINFO_CLASS_HANDLE ba
         MODE_PREEMPTIVE;
     } CONTRACTL_END;
 
-    int                  implementators = 0;
-    CORINFO_CLASS_HANDLE result         = NULL;
+    CORINFO_CLASS_HANDLE result = NULL;
 
 #if !defined(CROSSGEN_COMPILE)
-    TypeHandle         baseHnd         = (TypeHandle)baseType;
-    IMDInternalImport* pInternalImport = NULL;
-    Module*            pModule         = baseHnd.GetModule();
-    MethodTable*       pMT             = NULL;
-    mdTypeDef          tdCur           = mdTypeDefNil;
+    TypeHandle         baseHnd = (TypeHandle)baseType;
+    Module*            pModule = baseHnd.GetModule();
+    const BYTE*        pbAttr  = NULL; // Custom attribute data as a BYTE*.
+    ULONG              cbAttr  = NULL; // Size of custom attribute data.
+
+    _ASSERTE(baseHnd.IsInterface());
 
     JIT_TO_EE_TRANSITION();
 
-    // Look for implementations in the current Module
-    // TODO: scan all modules? Get hints from ILLink/R2R?
-    pInternalImport = pModule->GetMDImport();
-    HENUMTypeDefInternalHolder hEnum(pInternalImport);
-    hEnum.EnumTypeDefInit();
-
-    while (pInternalImport->EnumNext(&hEnum, &tdCur))
+    if (!FAILED(pModule->GetMDImport()->GetCustomAttributeByName(
+        baseHnd.GetCl(), UNIQUEIMPL_TYPE, (const void**)&pbAttr, &cbAttr)) && pbAttr)
     {
-        TypeHandle curClass;
-        EX_TRY
+        CustomAttributeParser cap(pbAttr, cbAttr);
+        if (!FAILED(cap.ValidateProlog()))
         {
-            curClass = ClassLoader::LoadTypeDefOrRefThrowing(pModule, tdCur,
-                                             ClassLoader::ReturnNullIfNotFound,
-                                             ClassLoader::PermitUninstDefOrRef);
-        }
-        EX_CATCH
-        {
-            continue;
-        }
-        EX_END_CATCH(SwallowAllExceptions)
-
-        if (!curClass.IsNull())
-        {
-            pMT = curClass.GetMethodTable();
-            MethodTable* baseMT = baseHnd.GetMethodTable();
-            if (pMT->ImplementsInterface(baseMT))
+            LPCUTF8 szString;
+            ULONG   cbString;
+            if (!FAILED(cap.GetNonNullString(&szString, &cbString)))
             {
-                result = static_cast<CORINFO_CLASS_HANDLE>(curClass.AsPtr());
-                implementators++;
-            }
-
-            if (implementators > 1)
-            {
-                // implentation is not unqiue - give up
-                break;
+                StackSString ss(SString::Utf8, szString, cbString);
+                TypeHandle implHandle = TypeName::GetTypeUsingCASearchRules(
+                    ss.GetUnicode(), pModule->GetAssembly());
+                if (!implHandle.IsNull())
+                {
+                    result = static_cast<CORINFO_CLASS_HANDLE>(implHandle.AsPtr());
+                }
             }
         }
     }
 
     EE_TO_JIT_TRANSITION();
 #endif
-    return implementators == 1 ? result : NULL;
+    return result;
 }
 
 /*********************************************************************/

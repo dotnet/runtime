@@ -397,7 +397,7 @@ CONFIG_INTEGER(JitEnableGuardedDevirtualization, W("JitEnableGuardedDevirtualiza
 
 #if defined(DEBUG)
 // Various policies for GuardedDevirtualization
-CONFIG_INTEGER(JitGuardedDevirtualizationGuessUniqueInterface, W("JitGuardedDevirtualizationGuessUniqueInterface"), 1)
+CONFIG_INTEGER(JitGuardedDevirtualizationGuessUniqueInterface, W("JitGuardedDevirtualizationGuessUniqueInterface"), 0)
 CONFIG_INTEGER(JitGuardedDevirtualizationGuessBestClass, W("JitGuardedDevirtualizationGuessBestClass"), 1)
 #endif // DEBUG
 
