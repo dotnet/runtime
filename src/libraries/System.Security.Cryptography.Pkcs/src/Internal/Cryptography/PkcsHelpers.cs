@@ -4,18 +4,17 @@
 
 using System;
 using System.Buffers;
-using System.Collections.Generic;
-using System.Text;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
+using System.Formats.Asn1;
 using System.IO;
-using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Security.Cryptography.Asn1;
 using System.Security.Cryptography.Asn1.Pkcs7;
 using System.Security.Cryptography.Pkcs;
 using System.Security.Cryptography.X509Certificates;
+using System.Text;
 using X509IssuerSerial = System.Security.Cryptography.Xml.X509IssuerSerial;
-using System.Diagnostics.CodeAnalysis;
 
 namespace Internal.Cryptography
 {
@@ -123,32 +122,41 @@ namespace Internal.Cryptography
         {
             byte[] normalizedValue;
 
-            using (AsnWriter writer = new AsnWriter(AsnEncodingRules.DER))
+            AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
+            writer.PushSetOf();
+
+            foreach (AttributeAsn item in setItems)
             {
-                writer.PushSetOf();
-                foreach (AttributeAsn item in setItems)
-                {
-                    item.Encode(writer);
-                }
-                writer.PopSetOf();
-                normalizedValue = writer.Encode();
-                if (encodedValueProcessor != null)
-                {
-                    encodedValueProcessor(normalizedValue);
-                }
+                item.Encode(writer);
             }
 
-            AsnValueReader reader = new AsnValueReader(normalizedValue, AsnEncodingRules.DER);
-            AsnValueReader setReader = reader.ReadSetOf();
-            AttributeAsn[] decodedSet = new AttributeAsn[setItems.Length];
-            int i = 0;
-            while (setReader.HasData)
+            writer.PopSetOf();
+            normalizedValue = writer.Encode();
+
+            if (encodedValueProcessor != null)
             {
-                AttributeAsn.Decode(ref setReader, normalizedValue, out AttributeAsn item);
-                decodedSet[i] = item;
-                i++;
+                encodedValueProcessor(normalizedValue);
             }
-            return decodedSet;
+
+            try
+            {
+                AsnValueReader reader = new AsnValueReader(normalizedValue, AsnEncodingRules.DER);
+                AsnValueReader setReader = reader.ReadSetOf();
+                AttributeAsn[] decodedSet = new AttributeAsn[setItems.Length];
+                int i = 0;
+                while (setReader.HasData)
+                {
+                    AttributeAsn.Decode(ref setReader, normalizedValue, out AttributeAsn item);
+                    decodedSet[i] = item;
+                    i++;
+                }
+
+                return decodedSet;
+            }
+            catch (AsnContentException e)
+            {
+                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding, e);
+            }
         }
 
         internal static byte[] EncodeContentInfo(
@@ -162,11 +170,9 @@ namespace Internal.Cryptography
                 Content = content,
             };
 
-            using (AsnWriter writer = new AsnWriter(ruleSet))
-            {
-                contentInfo.Encode(writer);
-                return writer.Encode();
-            }
+            AsnWriter writer = new AsnWriter(ruleSet);
+            contentInfo.Encode(writer);
+            return writer.Encode();
         }
 
         public static CmsRecipientCollection DeepCopy(this CmsRecipientCollection recipients)
@@ -445,128 +451,143 @@ namespace Internal.Cryptography
             }
         }
 
-        public static ReadOnlyMemory<byte> DecodeOctetStringAsMemory(ReadOnlyMemory<byte> encodedOctetString)
+        public static void EnsureSingleBerValue(ReadOnlySpan<byte> source)
         {
-            AsnReader reader = new AsnReader(encodedOctetString, AsnEncodingRules.BER);
+            if (!AsnDecoder.TryReadEncodedValue(source, AsnEncodingRules.BER, out _, out _, out _, out int consumed) ||
+                consumed != source.Length)
+            {
+                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
+            }
+        }
 
-            if (reader.PeekEncodedValue().Length != encodedOctetString.Length)
+        public static int FirstBerValueLength(ReadOnlySpan<byte> source)
+        {
+            if (!AsnDecoder.TryReadEncodedValue(source, AsnEncodingRules.BER, out _, out _, out _, out int consumed))
             {
                 throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
             }
 
-            if (reader.TryReadPrimitiveOctetStringBytes(out ReadOnlyMemory<byte> primitiveContents))
+            return consumed;
+        }
+
+        public static ReadOnlyMemory<byte> DecodeOctetStringAsMemory(ReadOnlyMemory<byte> encodedOctetString)
+        {
+            try
             {
-                return primitiveContents;
+                ReadOnlySpan<byte> input = encodedOctetString.Span;
+
+                if (AsnDecoder.TryReadPrimitiveOctetString(
+                    input,
+                    AsnEncodingRules.BER,
+                    out ReadOnlySpan<byte> primitive,
+                    out int consumed))
+                {
+                    if (consumed != input.Length)
+                    {
+                        throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
+                    }
+
+                    if (input.Overlaps(primitive, out int offset))
+                    {
+                        return encodedOctetString.Slice(offset, primitive.Length);
+                    }
+
+                    Debug.Fail("input.Overlaps(primitive) failed after TryReadPrimitiveOctetString succeeded");
+                }
+
+                byte[] ret = AsnDecoder.ReadOctetString(input, AsnEncodingRules.BER, out consumed);
+
+                if (consumed != input.Length)
+                {
+                    throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
+                }
+
+                return ret;
             }
-
-            byte[] tooBig = new byte[encodedOctetString.Length];
-
-            if (reader.TryCopyOctetStringBytes(tooBig, out int bytesWritten))
+            catch (AsnContentException e)
             {
-                return tooBig.AsMemory(0, bytesWritten);
+                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding, e);
             }
-
-            Debug.Fail("TryCopyOctetStringBytes failed with an over-allocated array");
-            throw new CryptographicException();
         }
 
         public static byte[] DecodeOctetString(ReadOnlyMemory<byte> encodedOctets)
         {
-            // Read using BER because the CMS specification says the encoding is BER.
-            AsnReader reader = new AsnReader(encodedOctets, AsnEncodingRules.BER);
-
-            const int ArbitraryStackLimit = 256;
-            Span<byte> tmp = stackalloc byte[ArbitraryStackLimit];
-            // Use stackalloc 0 so data can later hold a slice of tmp.
-            ReadOnlySpan<byte> data = stackalloc byte[0];
-            byte[]? poolBytes = null;
-
             try
             {
-                if (!reader.TryReadPrimitiveOctetStringBytes(out var contents))
-                {
-                    if (reader.TryCopyOctetStringBytes(tmp, out int bytesWritten))
-                    {
-                        data = tmp.Slice(0, bytesWritten);
-                    }
-                    else
-                    {
-                        poolBytes = CryptoPool.Rent(reader.PeekContentBytes().Length);
+                // Read using BER because the CMS specification says the encoding is BER.
+                byte[] ret = AsnDecoder.ReadOctetString(encodedOctets.Span, AsnEncodingRules.BER, out int consumed);
 
-                        if (!reader.TryCopyOctetStringBytes(poolBytes, out bytesWritten))
-                        {
-                            Debug.Fail("TryCopyOctetStringBytes failed with a provably-large-enough buffer");
-                            throw new CryptographicException();
-                        }
-
-                        data = new ReadOnlySpan<byte>(poolBytes, 0, bytesWritten);
-                    }
-                }
-                else
+                if (consumed != encodedOctets.Length)
                 {
-                    data = contents.Span;
+                    throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
                 }
 
-                reader.ThrowIfNotEmpty();
-
-                return data.ToArray();
+                return ret;
             }
-            finally
+            catch (AsnContentException e)
             {
-                if (poolBytes != null)
-                {
-                    CryptoPool.Return(poolBytes, data.Length);
-                }
+                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding, e);
             }
         }
 
         public static byte[] EncodeOctetString(byte[] octets)
         {
             // Write using DER to support the most readers.
-            using (AsnWriter writer = new AsnWriter(AsnEncodingRules.DER))
-            {
-                writer.WriteOctetString(octets);
-                return writer.Encode();
-            }
+            AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
+            writer.WriteOctetString(octets);
+            return writer.Encode();
         }
 
         public static byte[] EncodeUtcTime(DateTime utcTime)
         {
             const int maxLegalYear = 2049;
             // Write using DER to support the most readers.
-            using (AsnWriter writer = new AsnWriter(AsnEncodingRules.DER))
-            {
-                try
-                {
-                    // Sending the DateTime through ToLocalTime here will cause the right normalization
-                    // of DateTimeKind.Unknown.
-                    //
-                    // Unknown => Local (adjust) => UTC (adjust "back", add Z marker; matches Windows)
-                    if (utcTime.Kind == DateTimeKind.Unspecified)
-                    {
-                        writer.WriteUtcTime(utcTime.ToLocalTime(), maxLegalYear);
-                    }
-                    else
-                    {
-                        writer.WriteUtcTime(utcTime, maxLegalYear);
-                    }
+            AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
 
-                    return writer.Encode();
-                }
-                catch (ArgumentException ex)
+            try
+            {
+                // Sending the DateTime through ToLocalTime here will cause the right normalization
+                // of DateTimeKind.Unknown.
+                //
+                // Unknown => Local (adjust) => UTC (adjust "back", add Z marker; matches Windows)
+                if (utcTime.Kind == DateTimeKind.Unspecified)
                 {
-                    throw new CryptographicException(ex.Message, ex);
+                    writer.WriteUtcTime(utcTime.ToLocalTime(), maxLegalYear);
                 }
+                else
+                {
+                    writer.WriteUtcTime(utcTime, maxLegalYear);
+                }
+
+                return writer.Encode();
+            }
+            catch (ArgumentException ex)
+            {
+                throw new CryptographicException(ex.Message, ex);
             }
         }
 
         public static DateTime DecodeUtcTime(byte[] encodedUtcTime)
         {
             // Read using BER because the CMS specification says the encoding is BER.
-            AsnReader reader = new AsnReader(encodedUtcTime, AsnEncodingRules.BER);
-            DateTimeOffset value = reader.ReadUtcTime();
-            reader.ThrowIfNotEmpty();
-            return value.UtcDateTime;
+            try
+            {
+                DateTimeOffset value = AsnDecoder.ReadUtcTime(
+                    encodedUtcTime,
+                    AsnEncodingRules.BER,
+                    out int consumed);
+
+                if (consumed != encodedUtcTime.Length)
+                {
+                    throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
+                }
+
+                return value.UtcDateTime;
+            }
+            catch (AsnContentException e)
+            {
+                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding, e);
+            }
         }
 
         public static string DecodeOid(ReadOnlySpan<byte> encodedOid)
@@ -578,10 +599,24 @@ namespace Internal.Cryptography
             }
 
             // Read using BER because the CMS specification says the encoding is BER.
-            AsnValueReader reader = new AsnValueReader(encodedOid, AsnEncodingRules.BER);
-            string value = reader.ReadObjectIdentifierAsString();
-            reader.ThrowIfNotEmpty();
-            return value;
+            try
+            {
+                string value = AsnDecoder.ReadObjectIdentifier(
+                    encodedOid,
+                    AsnEncodingRules.BER,
+                    out int consumed);
+
+                if (consumed != encodedOid.Length)
+                {
+                    throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
+                }
+
+                return value;
+            }
+            catch (AsnContentException e)
+            {
+                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding, e);
+            }
         }
 
         public static bool TryGetRsaOaepEncryptionPadding(
@@ -602,9 +637,9 @@ namespace Internal.Cryptography
             {
                 OaepParamsAsn oaepParameters = OaepParamsAsn.Decode(parameters.Value, AsnEncodingRules.DER);
 
-                if (oaepParameters.MaskGenFunc.Algorithm.Value != Oids.Mgf1 ||
+                if (oaepParameters.MaskGenFunc.Algorithm != Oids.Mgf1 ||
                     oaepParameters.MaskGenFunc.Parameters == null ||
-                    oaepParameters.PSourceFunc.Algorithm.Value != Oids.PSpecified
+                    oaepParameters.PSourceFunc.Algorithm != Oids.PSpecified
                     )
                 {
                     exception = new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
@@ -613,7 +648,7 @@ namespace Internal.Cryptography
 
                 AlgorithmIdentifierAsn mgf1AlgorithmIdentifier = AlgorithmIdentifierAsn.Decode(oaepParameters.MaskGenFunc.Parameters.Value, AsnEncodingRules.DER);
 
-                if (mgf1AlgorithmIdentifier.Algorithm.Value != oaepParameters.HashFunc.Algorithm.Value)
+                if (mgf1AlgorithmIdentifier.Algorithm != oaepParameters.HashFunc.Algorithm)
                 {
                     exception = new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
                     return false;
@@ -628,7 +663,7 @@ namespace Internal.Cryptography
                     return false;
                 }
 
-                switch (oaepParameters.HashFunc.Algorithm.Value)
+                switch (oaepParameters.HashFunc.Algorithm)
                 {
                     case Oids.Sha1:
                         rsaEncryptionPadding = RSAEncryptionPadding.OaepSHA1;
@@ -645,7 +680,7 @@ namespace Internal.Cryptography
                     default:
                         exception = new CryptographicException(
                             SR.Cryptography_Cms_UnknownAlgorithm,
-                            oaepParameters.HashFunc.Algorithm.Value);
+                            oaepParameters.HashFunc.Algorithm);
                         return false;
                 }
             }

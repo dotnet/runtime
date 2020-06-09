@@ -11,12 +11,26 @@ namespace System.IO.MemoryMappedFiles
 {
     public partial class MemoryMappedFile
     {
+        // This will verify file access.
+        private static void VerifyMemoryMappedFileAccess(MemoryMappedFileAccess access, long capacity, FileStream fileStream)
+        {
+            if (access == MemoryMappedFileAccess.Read && capacity > fileStream.Length)
+            {
+                throw new ArgumentException(SR.Argument_ReadAccessWithLargeCapacity);
+            }
+
+            // one can always create a small view if they do not want to map an entire file
+            if (fileStream.Length > capacity)
+            {
+                throw new ArgumentOutOfRangeException(nameof(capacity), SR.ArgumentOutOfRange_CapacityGEFileSizeRequired);
+            }
+        }
+
         /// <summary>
         /// Used by the 2 Create factory method groups.  A null fileHandle specifies that the
         /// memory mapped file should not be associated with an existing file on disk (i.e. start
         /// out empty).
         /// </summary>
-
         private static SafeMemoryMappedFileHandle CreateCore(
             FileStream? fileStream, string? mapName, HandleInheritability inheritability,
             MemoryMappedFileAccess access, MemoryMappedFileOptions options, long capacity)
@@ -24,6 +38,11 @@ namespace System.IO.MemoryMappedFiles
             SafeFileHandle? fileHandle = fileStream != null ? fileStream.SafeFileHandle : null;
             Interop.Kernel32.SECURITY_ATTRIBUTES secAttrs = GetSecAttrs(inheritability);
 
+
+            if (fileStream != null)
+            {
+                VerifyMemoryMappedFileAccess(access, capacity, fileStream);
+            }
 
             SafeMemoryMappedFileHandle handle = fileHandle != null ?
                 Interop.CreateFileMapping(fileHandle, ref secAttrs, GetPageAccess(access) | (int)options, capacity, mapName) :

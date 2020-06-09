@@ -4,6 +4,7 @@
 
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Formats.Asn1;
 using System.Linq;
 using System.Security.Cryptography.Asn1;
 using System.Security.Cryptography.Pkcs.Asn1;
@@ -16,6 +17,8 @@ namespace System.Security.Cryptography.Pkcs
     {
         private readonly byte[] _encodedBytes;
         private readonly Rfc3161TstInfo _parsedData;
+        private Oid? _policyOid;
+        private Oid? _hashAlgorithmId;
         private ReadOnlyMemory<byte>? _tsaNameBytes;
 
         public Rfc3161TimestampTokenInfo(
@@ -56,8 +59,8 @@ namespace System.Security.Cryptography.Pkcs
         }
 
         public int Version => _parsedData.Version;
-        public Oid PolicyId => _parsedData.Policy;
-        public Oid HashAlgorithmId => _parsedData.MessageImprint.HashAlgorithm.Algorithm;
+        public Oid PolicyId => (_policyOid ??= new Oid(_parsedData.Policy, null));
+        public Oid HashAlgorithmId => (_hashAlgorithmId ??= new Oid(_parsedData.MessageImprint.HashAlgorithm.Algorithm, null));
         public ReadOnlyMemory<byte> GetMessageHash() => _parsedData.MessageImprint.HashedMessage;
         public ReadOnlyMemory<byte> GetSerialNumber() => _parsedData.SerialNumber;
         public DateTimeOffset Timestamp => _parsedData.GenTime;
@@ -77,12 +80,10 @@ namespace System.Security.Cryptography.Pkcs
                     return null;
                 }
 
-                using (AsnWriter writer = new AsnWriter(AsnEncodingRules.DER))
-                {
-                    tsaName.Value.Encode(writer);
-                    _tsaNameBytes = writer.Encode();
-                    Debug.Assert(_tsaNameBytes.HasValue);
-                }
+                AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
+                tsaName.Value.Encode(writer);
+                _tsaNameBytes = writer.Encode();
+                Debug.Assert(_tsaNameBytes.HasValue);
             }
 
             return _tsaNameBytes.Value;
@@ -198,6 +199,13 @@ namespace System.Security.Cryptography.Pkcs
                 bytesConsumed = firstElement.Length;
                 return true;
             }
+            catch (AsnContentException)
+            {
+                tstInfo = default;
+                bytesConsumed = 0;
+                copiedBytes = null;
+                return false;
+            }
             catch (CryptographicException)
             {
                 tstInfo = default;
@@ -228,12 +236,12 @@ namespace System.Security.Cryptography.Pkcs
             {
                 // The only legal value as of 2017.
                 Version = 1,
-                Policy = policyId,
+                Policy = policyId.Value!,
                 MessageImprint =
                 {
                     HashAlgorithm =
                     {
-                        Algorithm = hashAlgorithmId,
+                        Algorithm = hashAlgorithmId.Value!,
                         Parameters = AlgorithmIdentifierAsn.ExplicitDerNull,
                     },
 
@@ -261,11 +269,9 @@ namespace System.Security.Cryptography.Pkcs
                     Select(ex => new X509ExtensionAsn(ex)).ToArray();
             }
 
-            using (AsnWriter writer = new AsnWriter(AsnEncodingRules.DER))
-            {
-                tstInfo.Encode(writer);
-                return writer.Encode();
-            }
+            AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
+            tstInfo.Encode(writer);
+            return writer.Encode();
         }
     }
 }

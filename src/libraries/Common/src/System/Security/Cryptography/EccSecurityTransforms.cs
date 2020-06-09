@@ -5,9 +5,9 @@
 #nullable enable
 using System.Buffers;
 using System.Diagnostics;
+using System.Formats.Asn1;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography.Apple;
-using System.Security.Cryptography.Asn1;
 
 namespace System.Security.Cryptography
 {
@@ -234,19 +234,38 @@ namespace System.Security.Cryptography
 
         private static SafeSecKeyRefHandle ImportKey(ECParameters parameters)
         {
+            AsnWriter keyWriter;
+            bool hasPrivateKey;
+
             if (parameters.D != null)
             {
-                using (AsnWriter privateKey = EccKeyFormatHelper.WriteECPrivateKey(parameters))
-                {
-                    return Interop.AppleCrypto.ImportEphemeralKey(privateKey.EncodeAsSpan(), true);
-                }
+                keyWriter = EccKeyFormatHelper.WriteECPrivateKey(parameters);
+                hasPrivateKey = true;
             }
             else
             {
-                using (AsnWriter publicKey = EccKeyFormatHelper.WriteSubjectPublicKeyInfo(parameters))
-                {
-                    return Interop.AppleCrypto.ImportEphemeralKey(publicKey.EncodeAsSpan(), false);
-                }
+                keyWriter = EccKeyFormatHelper.WriteSubjectPublicKeyInfo(parameters);
+                hasPrivateKey = false;
+            }
+
+            byte[] rented = CryptoPool.Rent(keyWriter.GetEncodedLength());
+
+            if (!keyWriter.TryEncode(rented, out int written))
+            {
+                Debug.Fail("TryEncode failed with a pre-allocated buffer");
+                throw new InvalidOperationException();
+            }
+
+            // Explicitly clear the inner buffer
+            keyWriter.Reset();
+
+            try
+            {
+                return Interop.AppleCrypto.ImportEphemeralKey(rented.AsSpan(0, written), hasPrivateKey);
+            }
+            finally
+            {
+                CryptoPool.Return(rented, written);
             }
         }
 

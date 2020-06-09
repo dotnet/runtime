@@ -347,19 +347,23 @@ public class WindowAndCursorProps
         if (!Console.IsInputRedirected && !Console.IsOutputRedirected)
         {
             int origLeft = Console.CursorLeft, origTop = Console.CursorTop;
+            (int, int) origTuple = Console.GetCursorPosition();
 
             Console.SetCursorPosition(10, 12);
             Assert.Equal(10, Console.CursorLeft);
             Assert.Equal(12, Console.CursorTop);
+            Assert.Equal((10, 12), Console.GetCursorPosition());
 
             Console.SetCursorPosition(origLeft, origTop);
             Assert.Equal(origLeft, Console.CursorLeft);
             Assert.Equal(origTop, Console.CursorTop);
+            Assert.Equal(origTuple, Console.GetCursorPosition());
         }
         else if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
         {
             Assert.Equal(0, Console.CursorLeft);
             Assert.Equal(0, Console.CursorTop);
+            Assert.Equal((0, 0), Console.GetCursorPosition());
         }
     }
 
@@ -482,7 +486,7 @@ public class WindowAndCursorProps
             AssertExtensions.Throws<ArgumentOutOfRangeException>("left", () => Console.SetWindowPosition(-1, Console.WindowTop));
             AssertExtensions.Throws<ArgumentOutOfRangeException>("top", () => Console.SetWindowPosition(Console.WindowLeft, -1));
             AssertExtensions.Throws<ArgumentOutOfRangeException>("left", () => Console.SetWindowPosition(Console.BufferWidth - Console.WindowWidth + 2, Console.WindowTop));
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("top", () => Console.SetWindowPosition(Console.WindowHeight, Console.BufferHeight - Console.WindowHeight + 2));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("left", () => Console.SetWindowPosition(Console.WindowHeight, Console.BufferHeight - Console.WindowHeight + 2));
 
             int origTop = Console.WindowTop;
             int origLeft = Console.WindowLeft;
@@ -517,8 +521,6 @@ public class WindowAndCursorProps
             AssertExtensions.Throws<ArgumentOutOfRangeException>("height", () => Console.SetWindowSize(Console.WindowHeight, -1));
             AssertExtensions.Throws<ArgumentOutOfRangeException>("width", () => Console.SetWindowSize(short.MaxValue - Console.WindowLeft, Console.WindowHeight));
             AssertExtensions.Throws<ArgumentOutOfRangeException>("height", () => Console.SetWindowSize(Console.WindowWidth, short.MaxValue - Console.WindowTop));
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("width", () => Console.SetWindowSize(Console.LargestWindowWidth + 1, Console.WindowHeight));
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("height", () => Console.SetWindowSize(Console.WindowWidth, Console.LargestWindowHeight + 1));
 
             int origWidth = Console.WindowWidth;
             int origHeight = Console.WindowHeight;
