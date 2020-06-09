@@ -36,7 +36,7 @@ namespace System.Buffers
         /// <summary>
         /// Determines if the <see cref="ReadOnlySequence{T}"/> is empty.
         /// </summary>
-        public bool IsEmpty => IsEmpty;
+        public bool IsEmpty => Length == 0;
 
         /// <summary>
         /// Determines if the <see cref="ReadOnlySequence{T}"/> contains a single <see cref="ReadOnlyMemory{T}"/> segment.

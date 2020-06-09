@@ -358,7 +358,8 @@ namespace System.Linq
 
             // In the event of an empty array, generate the same exception
             // that the linq extension method would.
-            return !immutableArray.IsEmpty ? immutableArray[0]
+            return !immutableArray.IsEmpty
+                ? immutableArray[0]
                 : Enumerable.First(immutableArray.array!);
         }
 
@@ -402,7 +403,8 @@ namespace System.Linq
         {
             // In the event of an empty array, generate the same exception
             // that the linq extension method would.
-            return !immutableArray.IsEmpty ? immutableArray[immutableArray.Length - 1]
+            return !immutableArray.IsEmpty
+                ? immutableArray[immutableArray.Length - 1]
                 : Enumerable.Last(immutableArray.array!);
         }
 
