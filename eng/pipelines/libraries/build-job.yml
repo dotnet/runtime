@@ -61,8 +61,6 @@ jobs:
         - ${{ parameters.variables }}
         - ${{ if eq(parameters.osGroup, 'Browser') }}:
           - EMSDK_PATH: /usr/local/emscripten
-        - ${{ if eq(parameters.osGroup, 'Android') }}:
-          - ANDROID_OPENSSL_AAR: /tmp/openssl-android
         # for coreclr library builds (when not testing) build corelib as well.   
         - ${{ if and(eq(parameters.runtimeFlavor, 'coreclr'), eq(parameters.testScope, '')) }}:
           - _subset: clr.corelib+libs
@@ -77,7 +75,7 @@ jobs:
         - ${{ if eq(parameters.isOfficialBuild, true) }}:
           - template: /eng/pipelines/common/restore-internal-tools.yml
 
-        - ${{ if in(parameters.osGroup, 'OSX', 'iOS', 'tvOS', 'Android') }}:
+        - ${{ if in(parameters.osGroup, 'OSX', 'iOS', 'tvOS') }}:
           - script: $(Build.SourcesDirectory)/eng/install-native-dependencies.sh ${{ parameters.osGroup }}
             displayName: Install Build Dependencies
 
@@ -105,13 +103,6 @@ jobs:
               inputs:
                 sourceFolder: $(Build.SourcesDirectory)/artifacts/bin/testhost
                 targetFolder: $(Build.ArtifactStagingDirectory)/artifacts/bin/testhost
-
-            - ${{ if eq(parameters.runtimeFlavor, 'mono') }}:
-              - task: CopyFiles@2
-                displayName: Prepare lib-runtime-packs folder to publish
-                inputs:
-                  sourceFolder: $(Build.SourcesDirectory)/artifacts/bin/microsoft.netcore.app.runtime.android-x64
-                  targetFolder: $(Build.ArtifactStagingDirectory)/artifacts/bin/microsoft.netcore.app.runtime.android-x64
 
             - task: CopyFiles@2
               displayName: Prepare artifacts toolset folder to publish
