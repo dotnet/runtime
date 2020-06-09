@@ -230,7 +230,6 @@ reinit_frame (InterpFrame *frame, InterpFrame *parent, InterpMethod *imethod, st
 	frame->imethod = imethod;
 	frame->stack_args = stack_args;
 	frame->stack = NULL;
-	frame->ip = NULL;
 	frame->state.ip = NULL;
 }
 
@@ -1080,7 +1079,11 @@ interp_throw (ThreadContext *context, MonoException *ex, InterpFrame *frame, con
 	MonoLMFExt ext;
 
 	interp_push_lmf (&ext, frame);
-	frame->ip = ip;
+	/*
+	 * When explicitly throwing exception we pass the ip of the instruction that throws the exception.
+	 * Offset the subtraction from interp_frame_get_ip, so we don't end up in prev instruction.
+	 */
+	frame->state.ip = ip + 1;
 
 	if (mono_object_isinst_checked ((MonoObject *) ex, mono_defaults.exception_class, error)) {
 		MonoException *mono_ex = ex;
@@ -3329,7 +3332,6 @@ method_entry (ThreadContext *context, InterpFrame *frame,
 		g_print ("(%p) Transforming %s\n", mono_thread_internal_current (), mn);
 		g_free (mn);
 #endif
-		frame->ip = NULL;
 		MonoException *ex = do_transform_method (frame, context);
 		if (ex) {
 			*out_ex = ex;
@@ -3601,7 +3603,6 @@ main_loop:
 			if (!new_method->transformed) {
 				error_init_reuse (error);
 
-				frame->ip = ip;
 				mono_interp_transform_method (new_method, context, error);
 				MonoException *ex = mono_error_convert_to_exception (error);
 				if (ex)
@@ -3635,7 +3636,6 @@ main_loop:
 			gboolean is_multicast = del->method == NULL;
 			InterpMethod *del_imethod = (InterpMethod*)del->interp_invoke_impl;
 
-			frame->ip = ip;
 			if (!del_imethod) {
 				if (is_multicast) {
 					error_init_reuse (error);
@@ -3699,8 +3699,6 @@ main_loop:
 		MINT_IN_CASE(MINT_CALLI) {
 			MonoMethodSignature *csignature;
 
-			frame->ip = ip;
-
 			csignature = (MonoMethodSignature*)frame->imethod->data_items [ip [1]];
 			--sp;
 
@@ -3735,7 +3733,8 @@ main_loop:
 			gboolean save_last_error = ip [3];
 
 			sp--;
-			frame->ip = ip;
+			/* for calls, have ip pointing at the start of next instruction */
+			frame->state.ip = ip + 4;
 
 			sp = do_icall_wrapper (frame, csignature, opcode, sp, target_ip, save_last_error);
 			EXCEPTION_CHECKPOINT_GC_UNSAFE;
@@ -3745,8 +3744,6 @@ main_loop:
 		}
 		MINT_IN_CASE(MINT_CALLI_NAT_DYNAMIC) {
 			MonoMethodSignature* csignature;
-
-			frame->ip = ip;
 
 			csignature = (MonoMethodSignature*)frame->imethod->data_items [ip [1]];
 
@@ -3768,8 +3765,6 @@ main_loop:
 			MonoMethodSignature* csignature;
 			stackval retval;
 
-			frame->ip = ip;
-
 			csignature = (MonoMethodSignature*)frame->imethod->data_items [ip [1]];
 
 			--sp;
@@ -3784,6 +3779,8 @@ main_loop:
 			retval.data.p = vt_sp;
 
 			gboolean save_last_error = ip [4];
+			/* for calls, have ip pointing at the start of next instruction */
+			frame->state.ip = ip + 5;
 			ves_pinvoke_method (csignature, (MonoFuncV)code, context, frame, &retval, save_last_error, sp);
 
 			CHECK_RESUME_STATE (context);
@@ -3799,8 +3796,6 @@ main_loop:
 		MINT_IN_CASE(MINT_CALLVIRT_FAST) {
 			MonoObject *this_arg;
 			int slot;
-
-			frame->ip = ip;
 
 			cmethod = (InterpMethod*)frame->imethod->data_items [ip [1]];
 			slot = (gint16)ip [2];
@@ -3838,6 +3833,7 @@ main_loop:
 				goto call;
 
 			} else if (code_type == IMETHOD_CODE_COMPILED) {
+				frame->state.ip = ip;
 				error_init_reuse (error);
 				do_jit_call (sp, vt_sp, frame, cmethod, error);
 				if (!is_ok (error)) {
@@ -3863,7 +3859,6 @@ main_loop:
 			/* The real signature for vararg calls */
 			csig = (MonoMethodSignature*) frame->imethod->data_items [ip [2]];
 
-			frame->ip = ip;
 			/* Push all vararg arguments from normal sp to vt_sp together with the signature */
 			copy_varargs_vtstack (csig, sp, vt_sp);
 			vt_sp -= ip [3];
@@ -3892,7 +3887,6 @@ main_loop:
 				sp [0].data.p = unboxed;
 			}
 
-			frame->ip = ip;
 #ifdef ENABLE_EXPERIMENT_TIERED
 			ip += 5;
 #else
@@ -3907,7 +3901,6 @@ main_loop:
 			sp -= ip [2];
 			vt_sp -= ip [3];
 
-			frame->ip = ip;
 #ifdef ENABLE_EXPERIMENT_TIERED
 			ip += 5;
 #else
@@ -3949,9 +3942,10 @@ call:
 		MINT_IN_CASE(MINT_JIT_CALL) {
 			InterpMethod *rmethod = (InterpMethod*)frame->imethod->data_items [ip [1]];
 			error_init_reuse (error);
-			frame->ip = ip;
 			sp -= rmethod->param_count + rmethod->hasthis;
 			vt_sp -= ip [2];
+			/* for calls, have ip pointing at the start of next instruction */
+			frame->state.ip = ip + 3;
 			do_jit_call (sp, vt_sp, frame, rmethod, error);
 			if (!is_ok (error)) {
 				MonoException *ex = mono_error_convert_to_exception (error);
@@ -3964,8 +3958,8 @@ call:
 				sp++;
 				vt_sp += ((JitCallInfo*)rmethod->jit_call_info)->vt_res_size;
 			}
-
 			ip += 3;
+
 			MINT_IN_BREAK;
 		}
 		MINT_IN_CASE(MINT_JIT_CALL2) {
@@ -3973,20 +3967,20 @@ call:
 			InterpMethod *rmethod = (InterpMethod *) READ64 (ip + 1);
 
 			error_init_reuse (error);
-			frame->ip = ip;
 
 			sp -= rmethod->param_count + rmethod->hasthis;
+			frame->state.ip = ip + 5;
 			do_jit_call (sp, vt_sp, frame, rmethod, error);
 			if (!is_ok (error)) {
 				MonoException *ex = mono_error_convert_to_exception (error);
 				THROW_EX (ex, ip);
 			}
-			ip += 5;
 
 			CHECK_RESUME_STATE (context);
 
 			if (rmethod->rtype->type != MONO_TYPE_VOID)
 				sp++;
+			ip += 5;
 #else
 			g_error ("MINT_JIT_ICALL2 shouldn't be used");
 #endif
@@ -5039,8 +5033,6 @@ call:
 			MINT_IN_BREAK;
 		}
 		MINT_IN_CASE(MINT_NEWOBJ_STRING) {
-			frame->ip = ip;
-
 			cmethod = (InterpMethod*)frame->imethod->data_items [ip [1]];
 
 			const int param_count = ip [2];
@@ -5086,7 +5078,6 @@ call:
 				sp += param_count + 2;
 			} else {
 				cmethod = (InterpMethod*)frame->imethod->data_items [imethod_index];
-				frame->ip = ip - 4;
 				goto call_newobj;
 			}
 
@@ -5099,8 +5090,6 @@ call:
 			gboolean is_inlined = imethod_index == INLINED_METHOD_FLAG;
 
 			guint16 const param_count = ip [2];
-
-			frame->ip = ip;
 
 			// Make room for extra parameter and result.
 			if (param_count) {
@@ -5140,11 +5129,7 @@ call_newobj:
 			goto call;
 
 		MINT_IN_CASE(MINT_NEWOBJ) {
-
-			frame->ip = ip;
-
 			guint32 const token = ip [1];
-			ip += 2; // FIXME: Do this after throw?
 
 			cmethod = (InterpMethod*)frame->imethod->data_items [token];
 
@@ -5197,10 +5182,10 @@ call_newobj:
 				mono_error_assert_ok (error);
 			}
 #endif
+			ip += 2;
 			goto call_newobj;
 		}
 		MINT_IN_CASE(MINT_NEWOBJ_MAGIC) {
-			frame->ip = ip;
 			ip += 2;
 
 			MINT_IN_BREAK;
@@ -6396,11 +6381,9 @@ call_newobj:
 		MINT_IN_CASE(MINT_LEAVE_S)
 		MINT_IN_CASE(MINT_LEAVE_CHECK)
 		MINT_IN_CASE(MINT_LEAVE_S_CHECK) {
-
+			guint32 ip_offset = ip - frame->imethod->code;
 			g_assert (sp >= frame->stack);
 			sp = frame->stack; /* spec says stack should be empty at endfinally so it should be at the start too */
-
-			frame->ip = ip;
 
 			int opcode = *ip;
 			gboolean const check = opcode == MINT_LEAVE_CHECK || opcode == MINT_LEAVE_S_CHECK;
@@ -6408,7 +6391,7 @@ call_newobj:
 			if (check && frame->imethod->method->wrapper_type != MONO_WRAPPER_RUNTIME_INVOKE) {
 				MonoException *abort_exc = mono_interp_leave (frame);
 				if (abort_exc)
-					THROW_EX (abort_exc, frame->ip);
+					THROW_EX (abort_exc, ip);
 			}
 
 			opcode = *ip; // Refetch to avoid register/stack pressure.
@@ -6425,7 +6408,6 @@ call_newobj:
 			if (frame->imethod == NULL || (method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL)
 					|| (method->iflags & (METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL | METHOD_IMPL_ATTRIBUTE_RUNTIME)))
 				goto exit_frame;
-			guint32 const ip_offset = frame->ip - frame->imethod->code;
 
 			finally_ips = g_slist_prepend (finally_ips, (void *)endfinally_ip);
 
@@ -6470,7 +6452,7 @@ call_newobj:
 		MINT_IN_CASE(MINT_ICALL_PPPPP_P)
 		MINT_IN_CASE(MINT_ICALL_PPPPPP_V)
 		MINT_IN_CASE(MINT_ICALL_PPPPPP_P)
-			frame->ip = ip;
+			frame->state.ip = ip + 2;
 			sp = do_icall_wrapper (frame, NULL, *ip, sp, frame->imethod->data_items [ip [1]], FALSE);
 			EXCEPTION_CHECKPOINT_GC_UNSAFE;
 			CHECK_RESUME_STATE (context);
@@ -6527,9 +6509,10 @@ call_newobj:
 
 				/*
 				 * Make this point to the MINT_SDB_SEQ_POINT instruction which follows this since
-				 * the address of that instruction is stored as the seq point address.
+				 * the address of that instruction is stored as the seq point address. Add also
+				 * 1 to offset subtraction from interp_frame_get_ip.
 				 */
-				frame->ip = ip + 1;
+				frame->state.ip = ip + 2;
 
 				/*
 				 * Use the same trampoline as the JIT. This ensures that
@@ -6555,7 +6538,8 @@ call_newobj:
 				bp_tramp = (T)tramp;
 			}
 
-			frame->ip = ip;
+			/* Add 1 to offset subtraction from interp_frame_get_ip */
+			frame->state.ip = ip + 1;
 
 			/* Use the same trampoline as the JIT */
 			do_debugger_tramp (bp_tramp, frame);
@@ -7377,7 +7361,6 @@ interp_run_finally (StackFrameInfo *frame, int clause_index, gpointer handler_ip
 {
 	InterpFrame *iframe = (InterpFrame*)frame->interp_frame;
 	ThreadContext *context = get_context ();
-	const unsigned short *old_ip = iframe->ip;
 	FrameClauseArgs clause_args;
 	const guint16 *state_ip;
 
@@ -7400,7 +7383,6 @@ interp_run_finally (StackFrameInfo *frame, int clause_index, gpointer handler_ip
 	if (context->has_resume_state) {
 		return TRUE;
 	} else {
-		iframe->ip = old_ip;
 		return FALSE;
 	}
 }
@@ -7443,6 +7425,21 @@ typedef struct {
 	InterpFrame *current;
 } StackIter;
 
+static gpointer
+interp_frame_get_ip (MonoInterpFrameHandle frame)
+{
+	InterpFrame *iframe = (InterpFrame*)frame;
+
+	g_assert (iframe->imethod);
+	/*
+	 * For calls, state.ip points to the instruction following the call, so we need to subtract
+	 * in order to get inside the call instruction range. Other instructions that set the IP for
+	 * the rest of the runtime to see, like throws and sdb breakpoints, will need to account for
+	 * this subtraction that we are doing here.
+	 */
+	return (gpointer)(iframe->state.ip - 1);
+}
+
 /*
  * interp_frame_iter_init:
  *
@@ -7484,8 +7481,8 @@ interp_frame_iter_next (MonoInterpStackIter *iter, StackFrameInfo *frame)
 		frame->type = FRAME_TYPE_MANAGED_TO_NATIVE;
 	} else {
 		frame->type = FRAME_TYPE_INTERP;
-		/* This is the offset in the interpreter IR */
-		frame->native_offset = (guint8*)iframe->ip - (guint8*)iframe->imethod->code;
+		/* This is the offset in the interpreter IR. */
+		frame->native_offset = (guint8*)interp_frame_get_ip (iframe) - (guint8*)iframe->imethod->code;
 		if (!method->wrapper_type || method->wrapper_type == MONO_WRAPPER_DYNAMIC_METHOD)
 			frame->managed = TRUE;
 	}
@@ -7532,15 +7529,6 @@ interp_frame_get_jit_info (MonoInterpFrameHandle frame)
 
 	g_assert (iframe->imethod);
 	return iframe->imethod->jinfo;
-}
-
-static gpointer
-interp_frame_get_ip (MonoInterpFrameHandle frame)
-{
-	InterpFrame *iframe = (InterpFrame*)frame;
-
-	g_assert (iframe->imethod);
-	return (gpointer)iframe->ip;
 }
 
 static gpointer
