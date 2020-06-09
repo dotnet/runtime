@@ -9108,6 +9108,7 @@ namespace System.Runtime.CompilerServices
     }
     public static partial class RuntimeHelpers
     {
+        [System.ObsoleteAttribute("OffsetToStringData is obsolete. Use string.GetPinnableReference() instead.")]
         public static int OffsetToStringData { get { throw null; } }
         public static IntPtr AllocateTypeAssociatedMemory(Type type, int size) { throw null; }
         public static void EnsureSufficientExecutionStack() { }

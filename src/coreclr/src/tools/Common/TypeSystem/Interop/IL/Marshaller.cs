@@ -1448,31 +1448,44 @@ namespace Internal.TypeSystem.Interop
             if (ShouldBePinned)
             {
                 //
-                // Pin the string and push a pointer to the first character on the stack.
+                // Pin the char& and push a pointer to the first character on the stack.
                 //
-                TypeDesc stringType = Context.GetWellKnownType(WellKnownType.String);
+                TypeDesc charRefType = Context.GetWellKnownType(WellKnownType.Char).MakeByRefType();
 
-                ILLocalVariable vPinnedString = emitter.NewLocal(stringType, true);
-                ILCodeLabel lNullString = emitter.NewCodeLabel();
+                ILLocalVariable vPinnedCharRef = emitter.NewLocal(charRefType, true);
+
+                ILCodeLabel lNonNullString = emitter.NewCodeLabel();
+                ILCodeLabel lCommonExit = emitter.NewCodeLabel();
 
                 LoadManagedValue(codeStream);
-                codeStream.EmitStLoc(vPinnedString);
-                codeStream.EmitLdLoc(vPinnedString);
+                codeStream.Emit(ILOpcode.brtrue, lNonNullString);
 
-                codeStream.Emit(ILOpcode.conv_i);
-                codeStream.Emit(ILOpcode.dup);
+                //
+                // Null input case
+                // Don't pin anything - load a zero-value nuint (void*) onto the stack
+                //
+                codeStream.Emit(ILOpcode.ldc_i4_0);
+                codeStream.Emit(ILOpcode.conv_u);
+                codeStream.Emit(ILOpcode.br, lCommonExit);
 
-                // Marshalling a null string?
-                codeStream.Emit(ILOpcode.brfalse, lNullString);
-
+                //
+                // Non-null input case
+                // Extract the char& from the string, pin it, then convert it to a nuint (void*)
+                //
+                codeStream.EmitLabel(lNonNullString);
+                LoadManagedValue(codeStream);
                 codeStream.Emit(ILOpcode.call, emitter.NewToken(
-                    Context.SystemModule.
-                        GetKnownType("System.Runtime.CompilerServices", "RuntimeHelpers").
-                            GetKnownMethod("get_OffsetToStringData", null)));
+                    Context.GetWellKnownType(WellKnownType.String).
+                        GetKnownMethod("GetPinnableReference", null)));
+                codeStream.EmitStLoc(vPinnedCharRef);
+                codeStream.EmitLdLoc(vPinnedCharRef);
+                codeStream.Emit(ILOpcode.conv_u);
 
-                codeStream.Emit(ILOpcode.add);
-
-                codeStream.EmitLabel(lNullString);
+                //
+                // Common exit
+                // Top of stack contains a nuint (void*) pointing to start of char data, or nullptr
+                //
+                codeStream.EmitLabel(lCommonExit);
                 StoreNativeValue(codeStream);
             }
             else
