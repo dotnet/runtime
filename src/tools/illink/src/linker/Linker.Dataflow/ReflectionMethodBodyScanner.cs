@@ -205,6 +205,7 @@ namespace Mono.Linker.Dataflow
 			Type_GetProperty,
 			Type_GetEvent,
 			Type_GetNestedType,
+			Type_get_AssemblyQualifiedName,
 			Expression_Call,
 			Expression_Field,
 			Expression_Property,
@@ -341,6 +342,12 @@ namespace Mono.Linker.Dataflow
 					&& calledMethod.HasParameterOfType (0, "System", "String")
 					&& calledMethod.HasThis
 					=> IntrinsicId.Type_GetNestedType,
+
+				// System.Type.AssemblyQualifiedName
+				"get_AssemblyQualifiedName" when calledMethod.IsDeclaredOnType ("System", "Type")
+					&& !calledMethod.HasParameters
+					&& calledMethod.HasThis
+					=> IntrinsicId.Type_get_AssemblyQualifiedName,
 
 				// System.Type.GetProperty (string)
 				// System.Type.GetProperty (string, BindingFlags)
@@ -860,6 +867,28 @@ namespace Mono.Linker.Dataflow
 								// Otherwise fall back to the bitfield requirements
 								RequireDynamicallyAccessedMembers (ref reflectionContext, requiredMemberKinds, value, calledMethodDefinition);
 							}
+						}
+					}
+					break;
+
+				//
+				// AssemblyQualifiedName
+				//
+				case IntrinsicId.Type_get_AssemblyQualifiedName: {
+
+						ValueNode transformedResult = null;
+						foreach (var value in methodParams[0].UniqueValues ()) {
+							if (value is LeafValueWithDynamicallyAccessedMemberNode dynamicallyAccessedThing) {
+								var annotatedString = new AnnotatedStringValue (dynamicallyAccessedThing.DynamicallyAccessedMemberKinds);
+								transformedResult = MergePointValue.MergeValues (transformedResult, annotatedString);
+							} else {
+								transformedResult = null;
+								break;
+							}
+						}
+
+						if (transformedResult != null) {
+							methodReturnValue = transformedResult;
 						}
 					}
 					break;

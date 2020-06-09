@@ -24,6 +24,7 @@ namespace Mono.Linker.Dataflow
 		RuntimeTypeHandle,              // known value - TypeRepresented
 		KnownString,                    // known value - Contents
 		ConstInt,                       // known value - Int32
+		AnnotatedString,                // string with known annotation
 
 		MethodParameter,                // symbolic placeholder
 		MethodReturn,                   // symbolic placeholder
@@ -366,6 +367,7 @@ namespace Mono.Linker.Dataflow
 			case ValueNodeKind.SystemType:
 			case ValueNodeKind.RuntimeTypeHandle:
 			case ValueNodeKind.KnownString:
+			case ValueNodeKind.AnnotatedString:
 			case ValueNodeKind.ConstInt:
 			case ValueNodeKind.MethodParameter:
 			case ValueNodeKind.LoadField:
@@ -679,6 +681,39 @@ namespace Mono.Linker.Dataflow
 		protected override string NodeToString ()
 		{
 			return ValueNodeDump.ValueNodeToString (this, ParameterIndex, DynamicallyAccessedMemberKinds);
+		}
+	}
+
+	/// <summary>
+	/// String with a known annotation.
+	/// </summary>
+	class AnnotatedStringValue : LeafValueWithDynamicallyAccessedMemberNode
+	{
+		public AnnotatedStringValue (DynamicallyAccessedMemberTypes dynamicallyAccessedMemberKinds)
+		{
+			Kind = ValueNodeKind.AnnotatedString;
+			DynamicallyAccessedMemberKinds = dynamicallyAccessedMemberKinds;
+		}
+
+		public override bool Equals (ValueNode other)
+		{
+			if (other == null)
+				return false;
+			if (this.Kind != other.Kind)
+				return false;
+
+			var otherValue = (AnnotatedStringValue) other;
+			return this.DynamicallyAccessedMemberKinds == otherValue.DynamicallyAccessedMemberKinds;
+		}
+
+		public override int GetHashCode ()
+		{
+			return HashCode.Combine (Kind, DynamicallyAccessedMemberKinds);
+		}
+
+		protected override string NodeToString ()
+		{
+			return ValueNodeDump.ValueNodeToString (this, DynamicallyAccessedMemberKinds);
 		}
 	}
 
