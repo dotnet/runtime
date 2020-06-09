@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Globalization;
 using System.Runtime.Loader;
@@ -97,6 +98,8 @@ namespace System
             throw new ArgumentException(SR.Arg_MustBeType, nameof(type));
         }
 
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2006:UnrecognizedReflectionPattern",
+            Justification = "Implementation detail of Activator that linker intrinsically recognizes")]
         private static ObjectHandle? CreateInstanceInternal(string assemblyString,
                                                            string typeName,
                                                            bool ignoreCase,

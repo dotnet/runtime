@@ -39,7 +39,7 @@
     <Error Text="Subset not recognized: @(InvalidSpecifiedSubsetName, ' ')"
            Condition="'$(UserRequestedHelp)' != 'true'" />
 
-    <Error Text="Choose a subset to use, or do not specify a subset to perform the full build."
+    <Error Text="This is not an error. These are the available subsets. You can choose one or none at all for a full build."
            Condition="'$(UserRequestedHelp)' == 'true'" />
   </Target>
 

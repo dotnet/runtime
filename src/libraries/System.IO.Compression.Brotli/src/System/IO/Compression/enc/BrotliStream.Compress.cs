@@ -77,7 +77,7 @@ namespace System.IO.Compression
             EnsureNotDisposed();
 
             return cancellationToken.IsCancellationRequested ?
-                new ValueTask(Task.FromCanceled<int>(cancellationToken)) :
+                ValueTask.FromCanceled(cancellationToken) :
                 WriteAsyncMemoryCore(buffer, cancellationToken);
         }
 

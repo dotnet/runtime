@@ -216,19 +216,19 @@ namespace System.Diagnostics.Tests
             Process p = CreateProcessLong();
             p.EnableRaisingEvents = true;
 
-            var tcs = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+            var tcs = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
             if (addHandlerBeforeStart)
             {
-                p.Exited += delegate { tcs.SetResult(true); };
+                p.Exited += delegate { tcs.SetResult(); };
             }
             p.Start();
             if (!addHandlerBeforeStart)
             {
-                p.Exited += delegate { tcs.SetResult(true); };
+                p.Exited += delegate { tcs.SetResult(); };
             }
 
             p.Kill();
-            Assert.True(await tcs.Task);
+            await tcs.Task;
 
             Assert.True(p.WaitForExit(0));
             p.WaitForExit(); // wait for event handlers to complete
@@ -242,21 +242,19 @@ namespace System.Diagnostics.Tests
             Process p = CreateProcessLong();
             p.EnableRaisingEvents = true;
 
-            var tcs = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+            var tcs = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
             if (addHandlerBeforeStart)
             {
-                p.Exited += delegate
-                { tcs.SetResult(true); };
+                p.Exited += delegate { tcs.SetResult(); };
             }
             p.Start();
             if (!addHandlerBeforeStart)
             {
-                p.Exited += delegate
-                { tcs.SetResult(true); };
+                p.Exited += delegate { tcs.SetResult(); };
             }
 
             p.Kill();
-            Assert.True(await tcs.Task);
+            await tcs.Task;
 
             var token = new CancellationToken(canceled: true);
             await p.WaitForExitAsync(token);
@@ -274,12 +272,11 @@ namespace System.Diagnostics.Tests
         {
             using (Process p = CreateProcessPortable(RemotelyInvokable.ExitWithCode, exitCode.ToString()))
             {
-                var tcs = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+                var tcs = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
                 p.EnableRaisingEvents = true;
-                p.Exited += delegate
-                { tcs.SetResult(true); };
+                p.Exited += delegate { tcs.SetResult(); };
                 p.Start();
-                Assert.True(await tcs.Task);
+                await tcs.Task;
                 Assert.Equal(exitCode, p.ExitCode);
             }
         }

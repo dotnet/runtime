@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
+using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Runtime.InteropServices;
@@ -290,8 +291,15 @@ namespace System.Text
                 GetEncoding(EncodingTable.GetCodePageFromName(name), encoderFallback, decoderFallback);
         }
 
-        // Return a list of all EncodingInfo objects describing all of our encodings
-        public static EncodingInfo[] GetEncodings() => EncodingTable.GetEncodings();
+        /// <summary>
+        /// Get the <see cref="EncodingInfo"/> list from the runtime and all registered encoding providers
+        /// </summary>
+        /// <returns>The list of the <see cref="EncodingProvider"/> objects</returns>
+        public static EncodingInfo[] GetEncodings()
+        {
+            Dictionary<int, EncodingInfo>? result = EncodingProvider.GetEncodingListFromProviders();
+            return result == null ? EncodingTable.GetEncodings() : EncodingTable.GetEncodings(result);
+        }
 
         public virtual byte[] GetPreamble() => Array.Empty<byte>();
 
@@ -491,11 +499,8 @@ namespace System.Text
 
         public static Encoding ASCII => ASCIIEncoding.s_default;
 
-        // Returns an encoding for the Latin1 character set. The returned encoding
-        // will be an instance of the Latin1Encoding class.
-        //
-        // This is for our optimizations
-        private static Encoding Latin1 => Latin1Encoding.s_default;
+        /// <summary>Gets an encoding for the Latin1 character set (ISO-8859-1).</summary>
+        public static Encoding Latin1 => Latin1Encoding.s_default;
 
         // Returns the number of bytes required to encode the given character
         // array.

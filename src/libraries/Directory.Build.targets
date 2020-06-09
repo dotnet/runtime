@@ -6,7 +6,7 @@
   <Import Project="..\..\Directory.Build.targets" />
 
   <PropertyGroup>
-    <NoWarn Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework' or '$(TargetFrameworkIdentifier)' == '.NETStandard'">$(NoWarn);nullable</NoWarn>
+    <NoWarn Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework' or '$(TargetFrameworkIdentifier)' == '.NETStandard' or '$(TargetFramework)' == 'netcoreapp2.1'">$(NoWarn);nullable</NoWarn>
     <!-- Reset these properties back to blank, since they are defaulted by Microsoft.NET.Sdk -->
     <FileAlignment Condition="'$(FileAlignment)' == '512'" />
     <ErrorReport Condition="'$(ErrorReport)' == 'prompt'" />

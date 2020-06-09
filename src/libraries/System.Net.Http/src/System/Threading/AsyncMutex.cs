@@ -72,7 +72,7 @@ namespace System.Threading
             // If the mutex is not currently held nor contended, enter immediately.
             // Otherwise, fall back to a more expensive likely-asynchronous wait.
             return
-                cancellationToken.IsCancellationRequested ? FromCanceled(cancellationToken) :
+                cancellationToken.IsCancellationRequested ? ValueTask.FromCanceled(cancellationToken) :
                 Interlocked.Decrement(ref _gate) >= 0 ? default :
                 Contended(cancellationToken);
 
@@ -240,12 +240,6 @@ namespace System.Threading
                 w?.Set();
             }
         }
-
-        /// <summary>Creates a canceled ValueTask.</summary>
-        /// <remarks>Separated out to reduce asm for this rare path in the call site.</remarks>
-        [MethodImpl(MethodImplOptions.NoInlining)]
-        private static ValueTask FromCanceled(CancellationToken cancellationToken) =>
-            new ValueTask(Task.FromCanceled(cancellationToken));
 
         /// <summary>Represents a waiter for the mutex.</summary>
         /// <remarks>Implemented as a reusable backing source for a value task.</remarks>

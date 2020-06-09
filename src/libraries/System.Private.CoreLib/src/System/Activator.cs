@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Reflection;
 using System.Runtime.Remoting;
@@ -40,12 +41,15 @@ namespace System
         public static object? CreateInstance(Type type) =>
             CreateInstance(type, nonPublic: false);
 
+        [RequiresUnreferencedCode("Type and its constructor could be removed")]
         public static ObjectHandle? CreateInstanceFrom(string assemblyFile, string typeName) =>
             CreateInstanceFrom(assemblyFile, typeName, false, ConstructorDefault, null, null, null, null);
 
+        [RequiresUnreferencedCode("Type and its constructor could be removed")]
         public static ObjectHandle? CreateInstanceFrom(string assemblyFile, string typeName, object?[]? activationAttributes) =>
             CreateInstanceFrom(assemblyFile, typeName, false, ConstructorDefault, null, null, null, activationAttributes);
 
+        [RequiresUnreferencedCode("Type and its constructor could be removed")]
         public static ObjectHandle? CreateInstanceFrom(string assemblyFile, string typeName, bool ignoreCase, BindingFlags bindingAttr, Binder? binder, object?[]? args, CultureInfo? culture, object?[]? activationAttributes)
         {
             Assembly assembly = Assembly.LoadFrom(assemblyFile);

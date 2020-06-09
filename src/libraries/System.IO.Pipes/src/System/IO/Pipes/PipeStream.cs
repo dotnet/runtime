@@ -185,7 +185,7 @@ namespace System.IO.Pipes
 
             if (cancellationToken.IsCancellationRequested)
             {
-                return new ValueTask<int>(Task.FromCanceled<int>(cancellationToken));
+                return ValueTask.FromCanceled<int>(cancellationToken);
             }
 
             CheckReadOperations();
@@ -292,7 +292,7 @@ namespace System.IO.Pipes
 
             if (cancellationToken.IsCancellationRequested)
             {
-                return new ValueTask(Task.FromCanceled<int>(cancellationToken));
+                return ValueTask.FromCanceled(cancellationToken);
             }
 
             CheckWriteOperations();

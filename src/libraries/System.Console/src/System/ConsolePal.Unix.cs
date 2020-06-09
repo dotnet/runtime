@@ -416,24 +416,10 @@ namespace System
             }
         }
 
-        public static int CursorLeft
+        public static (int Left, int Top) GetCursorPosition()
         {
-            get
-            {
-                int left, top;
-                TryGetCursorPosition(out left, out top);
-                return left;
-            }
-        }
-
-        public static int CursorTop
-        {
-            get
-            {
-                int left, top;
-                TryGetCursorPosition(out left, out top);
-                return top;
-            }
+            TryGetCursorPosition(out int left, out int top);
+            return (left, top);
         }
 
         /// <summary>

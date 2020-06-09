@@ -16,7 +16,14 @@ namespace System.Security.Cryptography.Pkcs.Tests
         {
             Pkcs9AttributeObject p = new Pkcs9AttributeObject();
             Assert.Null(p.Oid);
-            Assert.Null(p.RawData);
+            if (PlatformDetection.IsNetCore)
+            {
+                Assert.Empty(p.RawData);
+            }
+            else
+            {
+                Assert.Null(p.RawData);
+            }
         }
 
         [Fact]
@@ -147,8 +154,16 @@ namespace System.Security.Cryptography.Pkcs.Tests
         public static void DocumentDescriptionNullary()
         {
             Pkcs9DocumentDescription p = new Pkcs9DocumentDescription();
-            Assert.Null(p.RawData);
-            Assert.Null(p.DocumentDescription);
+            if (PlatformDetection.IsNetCore)
+            {
+                Assert.Empty(p.RawData);
+                Assert.Throws<CryptographicException>(() => p.DocumentDescription);
+            }
+            else
+            {
+                Assert.Null(p.RawData);
+                Assert.Null(p.DocumentDescription);
+            }
             string oid = p.Oid.Value;
             Assert.Equal(s_OidDocumentDescription, oid);
         }
@@ -188,8 +203,16 @@ namespace System.Security.Cryptography.Pkcs.Tests
         public static void DocumentNameNullary()
         {
             Pkcs9DocumentName p = new Pkcs9DocumentName();
-            Assert.Null(p.RawData);
-            Assert.Null(p.DocumentName);
+            if (PlatformDetection.IsNetCore)
+            {
+                Assert.Empty(p.RawData);
+                Assert.Throws<CryptographicException>(() => p.DocumentName);
+            }
+            else
+            {
+                Assert.Null(p.RawData);
+                Assert.Null(p.DocumentName);
+            }
             string oid = p.Oid.Value;
             Assert.Equal(s_OidDocumentName, oid);
         }
@@ -297,8 +320,16 @@ namespace System.Security.Cryptography.Pkcs.Tests
         public static void ContentTypeNullary()
         {
             Pkcs9ContentType p = new Pkcs9ContentType();
-            Assert.Null(p.RawData);
-            Assert.Null(p.ContentType);
+            if (PlatformDetection.IsNetCore)
+            {
+                Assert.Empty(p.RawData);
+                Assert.Throws<CryptographicException>(() => p.ContentType);
+            }
+            else
+            {
+                Assert.Null(p.RawData);
+                Assert.Null(p.ContentType);
+            }
             string oid = p.Oid.Value;
             Assert.Equal(s_OidContentType, oid);
         }
@@ -357,8 +388,16 @@ namespace System.Security.Cryptography.Pkcs.Tests
         public static void MessageDigestNullary()
         {
             Pkcs9MessageDigest p = new Pkcs9MessageDigest();
-            Assert.Null(p.RawData);
-            Assert.Null(p.MessageDigest);
+            if (PlatformDetection.IsNetCore)
+            {
+                Assert.Empty(p.RawData);
+                Assert.Throws<CryptographicException>(() => p.MessageDigest);
+            }
+            else
+            {
+                Assert.Null(p.RawData);
+                Assert.Null(p.MessageDigest);
+            }
             string oid = p.Oid.Value;
             Assert.Equal(s_OidMessageDigest, oid);
         }

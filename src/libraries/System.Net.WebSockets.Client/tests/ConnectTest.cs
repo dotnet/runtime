@@ -260,7 +260,7 @@ namespace System.Net.WebSockets.Client.Tests
         [ActiveIssue("https://github.com/dotnet/runtime/issues/34690", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         public async Task ConnectAsync_CancellationRequestedAfterConnect_ThrowsOperationCanceledException()
         {
-            var releaseServer = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+            var releaseServer = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
             await LoopbackServer.CreateClientAndServerAsync(async uri =>
             {
                 var clientSocket = new ClientWebSocket();
@@ -274,7 +274,7 @@ namespace System.Net.WebSockets.Client.Tests
                 }
                 finally
                 {
-                    releaseServer.SetResult(true);
+                    releaseServer.SetResult();
                     clientSocket.Dispose();
                 }
             }, server => server.AcceptConnectionAsync(async connection =>

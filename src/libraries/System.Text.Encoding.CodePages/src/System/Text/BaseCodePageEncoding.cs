@@ -41,7 +41,7 @@ namespace System.Text
     //       WORD        byteReplace;    // 2 bytes = 48     // default replacement byte(s)
     //       BYTE[]      data;           // data section
     //   }
-    internal abstract class BaseCodePageEncoding : EncodingNLS, ISerializable
+    internal abstract partial class BaseCodePageEncoding : EncodingNLS, ISerializable
     {
         internal const string CODE_PAGE_DATA_FILE_NAME = "codepages.nlp";
 
@@ -184,6 +184,7 @@ namespace System.Text
             // We had it, so load it
             LoadManagedCodePage();
         }
+
 
         // Look up the code page pointer
         private unsafe bool FindCodePage(int codePage)

@@ -3,8 +3,8 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
-using System.Text;
 using System.Diagnostics;
+using System.Formats.Asn1;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Security.Cryptography.Pkcs;
@@ -15,7 +15,6 @@ using FILETIME = System.Runtime.InteropServices.ComTypes.FILETIME;
 using Microsoft.Win32.SafeHandles;
 
 using static Interop.Crypt32;
-using System.Security.Cryptography.Asn1;
 
 namespace Internal.Cryptography.Pal.Windows
 {
@@ -69,20 +68,36 @@ namespace Internal.Cryptography.Pal.Windows
 
         private static void ReencodeIfUsingIndefiniteLengthEncodingOnOuterStructure(ref byte[] encodedContent)
         {
-            AsnReader reader = new AsnReader(encodedContent, AsnEncodingRules.BER);
-            reader.ReadTagAndLength(out int? contentsLength, out int _);
-
-            if (contentsLength != null)
+            try
             {
-                // definite length, do nothing
-                return;
-            }
+                Asn1Tag.Decode(encodedContent, out int tagLength);
 
-            using (AsnWriter writer = new AsnWriter(AsnEncodingRules.BER))
-            {
+                if (encodedContent.Length <= tagLength)
+                {
+                    throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
+                }
+
+                if (encodedContent[tagLength] != 0x80)
+                {
+                    // definite length, do nothing
+                    return;
+                }
+
+                AsnDecoder.ReadEncodedValue(
+                    encodedContent,
+                    AsnEncodingRules.BER,
+                    out int contentOffset,
+                    out int contentLength,
+                    out _);
+
+                AsnWriter writer = new AsnWriter(AsnEncodingRules.BER);
                 // Tag doesn't matter here as we won't write it into the document
-                writer.WriteOctetString(reader.PeekContentBytes().Span);
+                writer.WriteOctetString(encodedContent.AsSpan(contentOffset, contentLength));
                 encodedContent = writer.Encode();
+            }
+            catch (AsnContentException e)
+            {
+                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding, e);
             }
         }
 

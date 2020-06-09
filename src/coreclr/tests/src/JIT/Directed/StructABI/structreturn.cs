@@ -9,6 +9,7 @@ using System.Numerics;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics;
 
 #region Test struct return optimizations.
 class TestStructReturns
@@ -927,7 +928,7 @@ class TestMergeReturnBlocks
 }
 #endregion
 
-class TestHFA
+class TestHFAandHVA
 {
     [MethodImpl(MethodImplOptions.NoInlining)]
     static float ReturnFloat()
@@ -963,6 +964,17 @@ class TestHFA
     static Vector4 ReturnVector4UsingCall()
     {
         return ReturnVector4();
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static void TestReturnPrimitives()
+    {
+        ReturnFloat();
+        ReturnDouble();
+        ReturnVector2();
+        ReturnVector3();
+        ReturnVector4();
+        ReturnVector4UsingCall();
     }
 
     struct FloatWrapper
@@ -1110,14 +1122,8 @@ class TestHFA
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public static void Test()
+    static void TestReturnPrimitivesInWrappers()
     {
-        ReturnFloat();
-        ReturnDouble();
-        ReturnVector2();
-        ReturnVector3();
-        ReturnVector4();
-        ReturnVector4UsingCall();
         ReturnFloatWrapper();
         ReturnDoubleWrapper();
         ReturnFloats2Wrapper();
@@ -1130,6 +1136,387 @@ class TestHFA
         ReturnVector3Wrapper();
         ReturnVector4Wrapper();
         ReturnVector2x2Wrapper();
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static Vector<int> ReturnVectorInt()
+    {
+        return new Vector<int>();
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static Vector<int> ReturnVectorIntUsingCall()
+    {
+        var v = ReturnVectorInt();
+        return v;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static Vector<float> ReturnVectorFloat()
+    {
+        return new Vector<float>();
+    }
+
+    struct A
+    {
+        bool a;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static Vector<A> ReturnVectorA()
+    {
+        return new Vector<A>();
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static Vector<float> ReturnVectorFloat2()
+    {
+        return (Vector<float>)ReturnVectorA();
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static Vector<T> ReturnVectorT<T>() where T : struct
+    {
+        return new Vector<T>();
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static Vector<T> ReturnVectorTWithMerge<T>(int v, T init1, T init2, T init3, T init4) where T : struct
+    {
+        // issue https://github.com/dotnet/runtime/issues/37341
+        // if (v == 0)
+        // {
+            // return new Vector<T>();
+        // }
+        // else if (v == 1)
+        // {
+            // return new Vector<T>(init1);
+        // }
+        // else if (v == 2)
+        // {
+            // return new Vector<T>(init2);
+        // }
+        // else if (v == 3)
+        // {
+            // return new Vector<T>(init3);
+        // }
+        // else
+        // {
+            // return new Vector<T>(init4);
+        // }
+        return new Vector<T>();
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static Vector<T> ReturnVectorT2<T>(T init) where T : struct
+    {
+        var a = new Vector<T>();
+        var b = new Vector<T>(init);
+        var c = new Vector<T>(init);
+        var d = a + b + c;
+        return d;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static Vector<int> ReturnVectorInt2<T>(Vector<T> left, Vector<T> right) where T : struct
+    {
+        Vector<int> cond = (Vector<int>)Vector.LessThan(left, right);
+        return cond;
+    }
+
+    struct VectorShortWrapper
+    {
+        Vector<short> f;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static VectorShortWrapper ReturnVectorShortWrapper()
+    {
+        return new VectorShortWrapper();
+    }
+
+    struct VectorLongWrapper
+    {
+        Vector<long> f;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static VectorLongWrapper ReturnVectorLongWrapper()
+    {
+        return new VectorLongWrapper();
+    }
+
+    struct VectorDoubleWrapper
+    {
+        Vector<double> f;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static VectorDoubleWrapper ReturnVectorDoubleWrapper()
+    {
+        return new VectorDoubleWrapper();
+    }
+
+    struct VectorTWrapper<T> where T : struct
+    {
+        Vector<T> f;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static VectorTWrapper<T> ReturnVectorTWrapper<T>() where T : struct
+    {
+        return new VectorTWrapper<T>();
+    }
+
+    struct VectorTWrapperWrapper<T> where T : struct
+    {
+        VectorTWrapper<T> f;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static VectorTWrapperWrapper<T> ReturnVectorTWrapperWrapper<T>() where T : struct
+    {
+        return new VectorTWrapperWrapper<T>();
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static void TestReturnViaThrowing<T>() where T : struct
+    {
+        Vector<T> vector = Vector<T>.One;
+        try
+        {
+            T value = vector[Vector<T>.Count];
+            System.Diagnostics.Debug.Assert(false);
+        }
+        catch (IndexOutOfRangeException)
+        {
+            return;
+        }
+        System.Diagnostics.Debug.Assert(false);
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static void TestThrowing()
+    {
+        TestReturnViaThrowing<byte>();
+        TestReturnViaThrowing<sbyte>();
+        TestReturnViaThrowing<ushort>();
+        TestReturnViaThrowing<short>();
+        TestReturnViaThrowing<uint>();
+        TestReturnViaThrowing<int>();
+        TestReturnViaThrowing<ulong>();
+        TestReturnViaThrowing<long>();
+        TestReturnViaThrowing<float>();
+        TestReturnViaThrowing<double>();
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static void TestReturnVectorT()
+    {
+        ReturnVectorInt();
+        ReturnVectorIntUsingCall();
+        ReturnVectorFloat();
+        ReturnVectorT<int>();
+        ReturnVectorT<uint>();
+        ReturnVectorT<short>();
+        ReturnVectorT<long>();
+        ReturnVectorT<Vector2>();
+        ReturnVectorT<Vector3>();
+        ReturnVectorT<Vector4>();
+        ReturnVectorT<VectorTWrapperWrapper<int>>();
+        ReturnVectorT2<int>(1);
+        try
+        {
+            var a = ReturnVectorT2<Vector4>(new Vector4(1));
+            // Delete WriteLine when https://github.com/dotnet/runtime/issues/37506 is fixed.
+            Console.WriteLine(a.ToString());
+            Debug.Assert(false, "unreachable");
+        }
+        catch (System.NotSupportedException)
+        {
+        }
+        try
+        {
+            var a = ReturnVectorT2<VectorTWrapperWrapper<int>>(new VectorTWrapperWrapper<int>());
+            // Delete WriteLine when https://github.com/dotnet/runtime/issues/37506 is fixed.
+            Console.WriteLine(a.ToString());
+            Debug.Assert(false, "unreachable");
+        }
+        catch (System.NotSupportedException)
+        {
+        }
+        ReturnVectorInt2<float>(new Vector<float>(1), new Vector<float>(2));
+        ReturnVectorInt2<int>(new Vector<int>(1), new Vector<int>(2));
+
+        ReturnVectorTWithMerge(0, 0, 0, 0, 0);
+        ReturnVectorTWithMerge(1, 0.0, 0.0, 0.0, 0.0);
+        ReturnVectorTWithMerge<short>(2, 0, 0, 0, 0);
+        ReturnVectorTWithMerge<long>(3, 0, 0, 0, 0);
+        ReturnVectorTWithMerge<Vector<Single>>(3, new Vector<Single>(0), new Vector<Single>(0), new Vector<Single>(0), new Vector<Single>(0));
+
+        ReturnVectorShortWrapper();
+        ReturnVectorLongWrapper();
+        ReturnVectorDoubleWrapper();
+        ReturnVectorTWrapper<bool>();
+        ReturnVectorTWrapper<byte>();
+        ReturnVectorTWrapperWrapper<int>();
+        ReturnVectorTWrapperWrapper<Vector2>();
+        ReturnVectorTWrapperWrapper<Vector3>();
+        ReturnVectorTWrapperWrapper<float>();
+
+        TestThrowing();
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static Vector64<int> ReturnVector64Int()
+    {
+        return System.Runtime.Intrinsics.Vector64.Create(1);
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static Vector64<double> ReturnVector64Double()
+    {
+        return System.Runtime.Intrinsics.Vector64.Create(1.0);
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static Vector64<int> ReturnVector64IntWithMerge(int v)
+    {
+        switch (v)
+        {
+            case 0:
+                return System.Runtime.Intrinsics.Vector64.Create(0);
+            case 1:
+                return System.Runtime.Intrinsics.Vector64.Create(1);
+            case 2:
+                return System.Runtime.Intrinsics.Vector64.Create(2);
+            case 3:
+                return System.Runtime.Intrinsics.Vector64.Create(3);
+            case 4:
+                return System.Runtime.Intrinsics.Vector64.Create(4);
+            case 5:
+                return System.Runtime.Intrinsics.Vector64.Create(5);
+        }
+        return System.Runtime.Intrinsics.Vector64.Create(6);
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static void TestReturnVector64(int v)
+    {
+        var a = ReturnVector64Int();
+        var b = ReturnVector64Double();
+        var c = ReturnVector64IntWithMerge(8);
+        if (v == 0)
+        {
+            Console.WriteLine(a);
+            Console.WriteLine(b);
+            Console.WriteLine(c);
+        }
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static Vector128<int> ReturnVector128Int()
+    {
+        return System.Runtime.Intrinsics.Vector128.Create(1);
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static Vector128<double> ReturnVector128Double()
+    {
+        return System.Runtime.Intrinsics.Vector128.Create(1.0);
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static Vector128<int> ReturnVector128IntWithMerge(int v)
+    {
+        switch (v)
+        {
+            case 0:
+                return System.Runtime.Intrinsics.Vector128.Create(0);
+            case 1:
+                return System.Runtime.Intrinsics.Vector128.Create(1);
+            case 2:
+                return System.Runtime.Intrinsics.Vector128.Create(2);
+            case 3:
+                return System.Runtime.Intrinsics.Vector128.Create(3);
+            case 4:
+                return System.Runtime.Intrinsics.Vector128.Create(4);
+            case 5:
+                return System.Runtime.Intrinsics.Vector128.Create(5);
+        }
+        return System.Runtime.Intrinsics.Vector128.Create(6);
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static void TestReturnVector128(int v)
+    {
+        var a = ReturnVector128Int();
+        var b = ReturnVector128Double();
+        var c = ReturnVector128IntWithMerge(8);
+        if (v == 0)
+        {
+            Console.WriteLine(a);
+            Console.WriteLine(b);
+            Console.WriteLine(c);
+        }
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static Vector256<int> ReturnVector256Int()
+    {
+        return System.Runtime.Intrinsics.Vector256.Create(1);
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static Vector256<double> ReturnVector256Double()
+    {
+        return System.Runtime.Intrinsics.Vector256.Create(1.0);
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static Vector256<int> ReturnVector256IntWithMerge(int v)
+    {
+        switch (v)
+        {
+            case 0:
+                return System.Runtime.Intrinsics.Vector256.Create(0);
+            case 1:
+                return System.Runtime.Intrinsics.Vector256.Create(1);
+            case 2:
+                return System.Runtime.Intrinsics.Vector256.Create(2);
+            case 3:
+                return System.Runtime.Intrinsics.Vector256.Create(3);
+            case 4:
+                return System.Runtime.Intrinsics.Vector256.Create(4);
+            case 5:
+                return System.Runtime.Intrinsics.Vector256.Create(5);
+        }
+        return System.Runtime.Intrinsics.Vector256.Create(6);
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static void TestReturnVector256(int v)
+    {
+        var a = ReturnVector256Int();
+        var b = ReturnVector256Double();
+        var c = ReturnVector256IntWithMerge(8);
+        if (v == 0)
+        {
+            Console.WriteLine(a);
+            Console.WriteLine(b);
+            Console.WriteLine(c);
+        }
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static void Test()
+    {
+        TestReturnPrimitives();
+        TestReturnPrimitivesInWrappers();
+        TestReturnVectorT();
+        TestReturnVector64(1);
+        TestReturnVector128(1);
+        TestReturnVector256(1);
     }
 }
 
@@ -1334,7 +1721,7 @@ class TestStructs
         TestStructReturns.Test();
         TestUnsafeCasts.Test();
         TestMergeReturnBlocks.Test();
-        TestHFA.Test();
+        TestHFAandHVA.Test();
         TestNon2PowerStructs.Test();
         return 100;
     }

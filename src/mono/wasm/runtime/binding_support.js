@@ -89,7 +89,6 @@ var BindingSupportLib = {
 			this.box_js_double = get_method ("BoxDouble");
 			this.box_js_bool = get_method ("BoxBool");
 			this.is_simple_array = get_method ("IsSimpleArray");
-			this.get_core_type = get_method ("GetCoreType");
 			this.setup_js_cont = get_method ("SetupJSContinuation");
 
 			this.create_tcs = get_method ("CreateTaskSource");
@@ -498,7 +497,7 @@ var BindingSupportLib = {
 		},
 		wasm_binding_obj_new: function (js_obj_id, type)
 		{
-			return this.call_method (this.bind_js_obj, null, "io", [js_obj_id, type]);
+			return this.call_method (this.bind_js_obj, null, "ii", [js_obj_id, type]);
 		},
 		wasm_bind_existing: function (mono_obj, js_id)
 		{
@@ -819,7 +818,41 @@ var BindingSupportLib = {
 		},
 		wasm_get_core_type: function (obj)
 		{
-			return this.call_method (this.get_core_type, null, "so", [ "WebAssembly.Core."+obj.constructor.name ]);
+			switch (true)
+			{
+				case obj instanceof Array:
+					return 1;
+				case obj instanceof ArrayBuffer:
+					return 2;
+				case obj instanceof DataView:
+					return 3;
+				case obj instanceof Function:
+					return 4;
+				case obj instanceof Map:
+					return 5;
+				case obj instanceof SharedArrayBuffer:
+					return 6;
+				case obj instanceof Int8Array:
+					return 10;
+				case obj instanceof Uint8Array:
+					return 11;
+				case obj instanceof Uint8ClampedArray:
+					return 12;
+				case obj instanceof Int16Array:
+					return 13;
+				case obj instanceof Uint16Array:
+					return 14;
+				case obj instanceof Int32Array:
+					return 15;
+				case obj instanceof Uint32Array:
+					return 16;
+				case obj instanceof Float32Array:
+					return 17;
+				case obj instanceof Float64Array:
+					return 18;
+				default:
+					return undefined;
+			}
 		},
 		get_wasm_type: function(obj) {
 			var coreType = obj[Symbol.for("wasm type")];
@@ -846,7 +879,7 @@ var BindingSupportLib = {
 					obj.__mono_jshandle__ = handle;
 					// Obtain the JS -> C# type mapping.
 					var wasm_type = this.get_wasm_type(obj);
-					gc_handle = obj.__mono_gchandle__ = this.wasm_binding_obj_new(handle + 1, wasm_type);
+					gc_handle = obj.__mono_gchandle__ = this.wasm_binding_obj_new(handle + 1, typeof wasm_type === "undefined" ? -1 : wasm_type);
 					this.mono_wasm_object_registry[handle] = obj;
 						
 				}

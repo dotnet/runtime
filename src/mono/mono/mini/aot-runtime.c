@@ -6010,10 +6010,10 @@ i32_idx_comparer (const void *key, const void *member)
 }
 
 static int
-i16_idx_comparer (const void *key, const void *member)
+ui16_idx_comparer (const void *key, const void *member)
 {
 	int idx1 = GPOINTER_TO_INT (key);
-	int idx2 = *(gint16*)member;
+	int idx2 = *(guint16*)member;
 	return idx1 - idx2;
 }
 
@@ -6088,7 +6088,7 @@ mono_aot_get_unbox_trampoline (MonoMethod *method, gpointer addr)
 			g_assert (*(int*)ptr == method_index);
 			unbox_tramp_idx = (guint32*)ptr - (guint32*)amodule->info.llvm_unbox_tramp_indexes;
 		} else {
-			void *ptr = mono_binary_search (GINT_TO_POINTER (method_index), amodule->info.llvm_unbox_tramp_indexes, amodule->info.llvm_unbox_tramp_num, amodule->info.llvm_unbox_tramp_elemsize, i16_idx_comparer);
+			void *ptr = mono_binary_search (GINT_TO_POINTER (method_index), amodule->info.llvm_unbox_tramp_indexes, amodule->info.llvm_unbox_tramp_num, amodule->info.llvm_unbox_tramp_elemsize, ui16_idx_comparer);
 			g_assert (ptr);
 			g_assert (*(gint16*)ptr == method_index);
 			unbox_tramp_idx = (guint16*)ptr - (guint16*)amodule->info.llvm_unbox_tramp_indexes;

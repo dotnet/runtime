@@ -629,6 +629,9 @@ VOID UMThunkMarshInfo::SetUpForUnmanagedCallersOnly()
     CorPinvokeMap callConv = (CorPinvokeMap)0;
 
     HRESULT hr = pMD->GetCustomAttribute(WellKnownAttribute::UnmanagedCallersOnly, (const VOID **)(&pData), (ULONG *)&cData);
+    if (hr == S_FALSE)
+        hr = pMD->GetCustomAttribute(WellKnownAttribute::NativeCallableInternal, (const VOID **)(&pData), (ULONG *)&cData);
+
     IfFailThrow(hr);
 
     _ASSERTE(cData > 0);
