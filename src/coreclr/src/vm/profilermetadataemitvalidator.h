@@ -372,6 +372,14 @@ public:
 
     virtual HRESULT STDMETHODCALLTYPE DefinePdbStream(
         PORT_PDB_STREAM *pdbStream);
+        
+    virtual HRESULT STDMETHODCALLTYPE DefineDocument(
+        char        *docName,
+        GUID        *hashAlg,
+        BYTE        *hashVal,
+        ULONG       hashValSize,
+        GUID        *lang,
+        mdDocument  *docMdToken);
 
     //IMetaDataAssemblyEmit
     virtual HRESULT STDMETHODCALLTYPE DefineAssembly(

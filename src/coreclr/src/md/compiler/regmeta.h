@@ -1114,6 +1114,14 @@ public:
     STDMETHODIMP DefinePdbStream(           // S_OK or error.
         PORT_PDB_STREAM* pdbStream);        // [IN] Portable pdb stream data.
 
+    STDMETHODIMP DefineDocument(            // S_OK or error.
+        char        *docName,               // [IN] Document name (string will be tokenized).
+        GUID        *hashAlg,               // [IN] Hash algorithm GUID.
+        BYTE        *hashVal,               // [IN] Hash value.
+        ULONG       hashValSize,            // [IN] Hash value size.
+        GUID        *lang,                  // [IN] Language GUID.
+        mdDocument  *docMdToken);           // [OUT] Token of the defined document.
+
 //*****************************************************************************
 // IMetaDataAssemblyEmit
 //*****************************************************************************
@@ -1264,6 +1272,11 @@ public:
 
     STDMETHOD(SetMDUpdateMode)(
         ULONG updateMode, ULONG *pPreviousUpdateMode);
+
+    STDMETHODIMP GetPathSeparator(          // S_OK or error.
+        char        *path,                  // [IN] Path string to search.
+        char        *separator,             // [OUT] Separator used in path string, NULL if none.
+        ULONG       *partsCount);           // [OUT] Number of parts separated by the separator.
 
 //*****************************************************************************
 // IMetaDataHelper

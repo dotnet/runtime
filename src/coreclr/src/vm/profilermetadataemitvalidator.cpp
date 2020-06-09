@@ -796,6 +796,18 @@ HRESULT ProfilerMetadataEmitValidator::DefinePdbStream(
     return COR_E_NOTSUPPORTED;
 }
 
+HRESULT ProfilerMetadataEmitValidator::DefineDocument(
+    char        *docName,
+    GUID        *hashAlg,
+    BYTE        *hashVal,
+    ULONG       hashValSize,
+    GUID        *lang,
+    mdDocument  *docMdToken)
+{
+    LIMITED_METHOD_CONTRACT;
+    return COR_E_NOTSUPPORTED;
+}
+
     //IMetaDataAssemblyEmit
 HRESULT ProfilerMetadataEmitValidator::DefineAssembly(
         const void  *pbPublicKey,

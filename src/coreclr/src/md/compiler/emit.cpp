@@ -2129,6 +2129,98 @@ ErrExit:
 } // RegMeta::DefinePdbStream
 
 //*****************************************************************************
+// Defines a document for portable PDB metadata
+//*****************************************************************************
+STDMETHODIMP RegMeta::DefineDocument(       // S_OK or error.
+    char    *docName,                       // [IN] Document name (string will be tokenized).
+    GUID    *hashAlg,                       // [IN] Hash algorithm GUID.
+    BYTE    *hashVal,                       // [IN] Hash value.
+    ULONG   hashValSize,                    // [IN] Hash value size.
+    GUID    *lang,                          // [IN] Language GUID.
+    mdDocument  *docMdToken)                // [OUT] Token of the defined document.
+{
+#ifdef FEATURE_METADATA_EMIT_IN_DEBUGGER
+    return E_NOTIMPL;
+#else //!FEATURE_METADATA_EMIT_IN_DEBUGGER
+    HRESULT hr = S_OK;
+
+    BEGIN_ENTRYPOINT_NOTHROW;
+
+    LOG((LOGMD, "RegMeta::DefineDocument(%s)\n", docName));
+    START_MD_PERF();
+    LOCKWRITE();
+
+    IfFailGo(m_pStgdb->m_MiniMd.PreUpdate());
+
+    // determine separator and number of separated parts
+    char delim[2] = "";
+    ULONG partsCount = 0;
+    GetPathSeparator(docName, delim, &partsCount);
+    delim[1] = '\0';
+
+    // allocate the maximum size of a document blob
+    // treating each compressed index to take maximum of 4 bytes.
+    // the actual size will be calculated once we compress each index.
+    ULONG docNameBlobMaxSize = sizeof(char) + sizeof(ULONG) * partsCount; // (delim + 4 * partsCount)
+    BYTE* docNameBlob = new BYTE[docNameBlobMaxSize];
+    UINT32* partsIndexes = new UINT32[partsCount];
+
+    // add path parts to blob heap and store their indexes
+    UINT32* partsIndexesPtr = partsIndexes;
+    char* stringToken = strtok(docName, (const char*)delim);
+    while (stringToken != NULL)
+    {
+        IfFailGo(m_pStgdb->m_MiniMd.m_BlobHeap.AddBlob(MetaData::DataBlob((BYTE*)stringToken, (ULONG)strlen(stringToken)), partsIndexesPtr++));
+        stringToken = strtok(NULL, (const char*)delim);
+    }
+
+    // build up the documentBlob ::= separator part+
+    ULONG docNameBlobSize = 0;
+    BYTE* docNameBlobPtr = docNameBlob;
+    // put separator
+    *docNameBlobPtr = delim[0];
+    docNameBlobPtr++;
+    docNameBlobSize++;
+    // put part+: compress and put each part index
+    for (ULONG i = 0; i < partsCount; i++)
+    {
+        ULONG cnt = CorSigCompressData(partsIndexes[i], docNameBlobPtr);
+        docNameBlobPtr += cnt;
+        docNameBlobSize += cnt;
+    }
+
+    _ASSERTE(docNameBlobSize <= docNameBlobMaxSize);
+
+    // Add record
+    ULONG docRecord;
+    DocumentRec* pDocument;
+    IfFailGo(m_pStgdb->m_MiniMd.AddDocumentRecord(&pDocument, &docRecord));
+    // Name column
+    IfFailGo(m_pStgdb->m_MiniMd.PutBlob(TBL_Document, DocumentRec::COL_Name, pDocument, docNameBlob, docNameBlobSize));
+    // HashAlgorithm column
+    IfFailGo(m_pStgdb->m_MiniMd.PutGuid(TBL_Document, DocumentRec::COL_HashAlgorithm, pDocument, *hashAlg));
+    // HashValue column
+    IfFailGo(m_pStgdb->m_MiniMd.PutBlob(TBL_Document, DocumentRec::COL_Hash, pDocument, hashVal, hashValSize));
+    // Language column
+    IfFailGo(m_pStgdb->m_MiniMd.PutGuid(TBL_Document, DocumentRec::COL_Language, pDocument, *lang));
+
+    *docMdToken = TokenFromRid(docRecord, mdtDocument);
+
+ErrExit:
+    if (docNameBlob != NULL)
+        delete[] docNameBlob;
+
+    if (partsIndexes != NULL)
+        delete[] partsIndexes;
+
+    STOP_MD_PERF(DefineDocument);
+
+    END_ENTRYPOINT_NOTHROW;
+    return hr;
+#endif //!FEATURE_METADATA_EMIT_IN_DEBUGGER
+} // RegMeta::DefineDocument
+
+//*****************************************************************************
 // Create and set a MethodSpec record.
 //*****************************************************************************
 STDMETHODIMP RegMeta::DefineMethodSpec( // S_OK or error

@@ -639,6 +639,14 @@ DECLARE_INTERFACE_(IMetaDataEmit2, IMetaDataEmit)
 
     STDMETHOD(DefinePdbStream)(             // S_OK or error.
         PORT_PDB_STREAM *pdbStream) PURE;   // [IN] Portable pdb stream data.
+
+    STDMETHOD(DefineDocument)(              // S_OK or error.
+        char        *docName,               // [IN] Document name (string will be tokenized).
+        GUID        *hashAlg,               // [IN] Hash algorithm GUID.
+        BYTE        *hashVal,               // [IN] Hash value.
+        ULONG       hashValSize,            // [IN] Hash value size.
+        GUID        *lang,                  // [IN] Language GUID.
+        mdDocument  *docMdToken) PURE;      // [OUT] Token of the defined document.
 };
 
 //-------------------------------------
