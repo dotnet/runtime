@@ -419,7 +419,8 @@ namespace System.Runtime.InteropServices
     }
     public partial interface IDynamicInterfaceCastable
     {
-        System.RuntimeTypeHandle GetInterfaceImplementation(System.RuntimeTypeHandle interfaceType, bool isinstTest);
+        bool IsInterfaceImplemented(System.RuntimeTypeHandle interfaceType, bool isDirectCast);
+        System.RuntimeTypeHandle GetInterfaceImplementation(System.RuntimeTypeHandle interfaceType);
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.Assembly, Inherited=false)]
     public sealed partial class ImportedFromTypeLibAttribute : System.Attribute

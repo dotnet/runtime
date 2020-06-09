@@ -2159,9 +2159,7 @@ BOOL ObjIsInstanceOfCore(Object *pObject, TypeHandle toTypeHnd, BOOL throwCastEx
 #endif // FEATURE_ICASTABLE
         if (pMT->IsIDynamicInterfaceCastable())
         {
-            fCast = throwCastException
-                ? (DynamicInterfaceCastable::GetInterfaceImplementation(&obj, toTypeHnd) != NULL)
-                : DynamicInterfaceCastable::IsInstanceOf(&obj, toTypeHnd);
+            fCast = DynamicInterfaceCastable::IsInstanceOf(&obj, toTypeHnd, throwCastException);
         }
     }
 

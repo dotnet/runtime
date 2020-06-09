@@ -12,16 +12,21 @@ namespace System.Runtime.InteropServices
     internal static class DynamicInterfaceCastableHelpers
     {
         [Diagnostics.StackTraceHidden]
-        internal static RuntimeType? GetInterfaceImplementation(IDynamicInterfaceCastable castable, RuntimeType interfaceType, bool isinstTest)
+        internal static bool IsInterfaceImplemented(IDynamicInterfaceCastable castable, RuntimeType interfaceType, bool isDirectCast)
         {
-            RuntimeTypeHandle handle = castable.GetInterfaceImplementation(new RuntimeTypeHandle(interfaceType), isinstTest);
-            if (handle.Equals(default))
-            {
-                if (!isinstTest)
-                    throw new InvalidCastException(SR.Format(SR.InvalidCast_FromTo, castable.GetType(), interfaceType));
+            bool isImplemented= castable.IsInterfaceImplemented(new RuntimeTypeHandle(interfaceType), isDirectCast);
+            if (!isImplemented && isDirectCast)
+                throw new InvalidCastException(SR.Format(SR.InvalidCast_FromTo, castable.GetType(), interfaceType));
 
-                return null;
-            }
+            return isImplemented;
+        }
+
+        [Diagnostics.StackTraceHidden]
+        internal static RuntimeType? GetInterfaceImplementation(IDynamicInterfaceCastable castable, RuntimeType interfaceType)
+        {
+            RuntimeTypeHandle handle = castable.GetInterfaceImplementation(new RuntimeTypeHandle(interfaceType));
+            if (handle.Equals(default))
+                throw new InvalidCastException(SR.Format(SR.InvalidCast_FromTo, castable.GetType(), interfaceType));
 
             RuntimeType implType = handle.GetRuntimeType();
             if (!implType.IsInterface)

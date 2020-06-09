@@ -155,14 +155,22 @@ namespace IDynamicInterfaceCastableTests
             this.interfaceToImplMap = interfaceToImplMap;
         }
 
-        public RuntimeTypeHandle GetInterfaceImplementation(RuntimeTypeHandle interfaceType, bool isinstTest)
+        public bool IsInterfaceImplemented(RuntimeTypeHandle interfaceType, bool isDirectCast)
+        {
+            if (interfaceToImplMap != null && interfaceToImplMap.ContainsKey(Type.GetTypeFromHandle(interfaceType)))
+                return true;
+
+            if (isDirectCast)
+                throw new DynamicInterfaceCastableException(interfaceType);
+
+            return false;
+        }
+
+        public RuntimeTypeHandle GetInterfaceImplementation(RuntimeTypeHandle interfaceType)
         {
             Type implMaybe;
             if (interfaceToImplMap != null && interfaceToImplMap.TryGetValue(Type.GetTypeFromHandle(interfaceType), out implMaybe))
                 return implMaybe.TypeHandle;
-
-            if (!isinstTest)
-                throw new DynamicInterfaceCastableException(interfaceType);
 
             return default(RuntimeTypeHandle);
         }
@@ -190,7 +198,15 @@ namespace IDynamicInterfaceCastableTests
 
         public InvalidReturn InvalidImplementation { get; set; }
 
-        public RuntimeTypeHandle GetInterfaceImplementation(RuntimeTypeHandle interfaceType, bool isinstTest)
+        public bool IsInterfaceImplemented(RuntimeTypeHandle interfaceType, bool isDirectCast)
+        {
+            if (InvalidImplementation == InvalidReturn.ThrowException)
+                throw new DynamicInterfaceCastableException(interfaceType);
+
+            return interfaceType.Equals(typeof(ITest).TypeHandle);
+        }
+
+        public RuntimeTypeHandle GetInterfaceImplementation(RuntimeTypeHandle interfaceType)
         {
             if (!interfaceType.Equals(typeof(ITest).TypeHandle))
                 return default(RuntimeTypeHandle);
@@ -397,21 +413,22 @@ namespace IDynamicInterfaceCastableTests
             Console.WriteLine($"Running {nameof(ValidateErrorHandling)}");
 
             var castableObj = new BadDynamicInterfaceCastable();
+            var testObj = (ITest)castableObj;
             Exception ex;
 
             Console.WriteLine(" -- Validate non-interface");
             castableObj.InvalidImplementation = BadDynamicInterfaceCastable.InvalidReturn.Class;
-            ex = Assert.Throws<InvalidOperationException>(() => { var _ = (ITest)castableObj; });
+            ex = Assert.Throws<InvalidOperationException>(() => testObj.GetMyType());
             Console.WriteLine($" ---- {ex.GetType().Name}: {ex.Message}");
 
             Console.WriteLine(" -- Validate missing attribute");
             castableObj.InvalidImplementation = BadDynamicInterfaceCastable.InvalidReturn.NoAttribute;
-            ex = Assert.Throws<InvalidOperationException>(() => { var _ = (ITest)castableObj; });
+            ex = Assert.Throws<InvalidOperationException>(() => testObj.GetMyType());
             Console.WriteLine($" ---- {ex.GetType().Name}: {ex.Message}");
 
             Console.WriteLine(" -- Validate requested interface not implemented");
             castableObj.InvalidImplementation = BadDynamicInterfaceCastable.InvalidReturn.NotImplemented;
-            ex = Assert.Throws<InvalidOperationException>(() => { var _ = (ITest)castableObj; });
+            ex = Assert.Throws<InvalidOperationException>(() => testObj.GetMyType());
             Console.WriteLine($" ---- {ex.GetType().Name}: {ex.Message}");
 
             Console.WriteLine(" -- Validate no default implementation");
@@ -440,7 +457,7 @@ namespace IDynamicInterfaceCastableTests
 
             Console.WriteLine(" -- Validate return default handle");
             castableObj.InvalidImplementation = BadDynamicInterfaceCastable.InvalidReturn.DefaultHandle;
-            ex = Assert.Throws<InvalidCastException>(() => { var _ = (ITest)castableObj; });
+            ex = Assert.Throws<InvalidCastException>(() => testObj.GetMyType());
             Console.WriteLine($" ---- {ex.GetType().Name}: {ex.Message}");
         }
 

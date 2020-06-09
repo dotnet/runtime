@@ -18,29 +18,40 @@ namespace System.Runtime.InteropServices
         /// is not contained in the class's metadata.
         /// </summary>
         /// <param name="interfaceType">The interface type.</param>
-        /// <param name="isinstTest">Indicates the function is being used to test if this object is an instance of the given interface</param>
-        /// <returns>The type that should be used to dispatch for <paramref name="interfaceType"/> on the current object.</returns>
+        /// <param name="isDirectCast">Indicates the function is being used as part of a direct cast.</param>
+        /// <returns>Whether or not this object can be cast to the given interface</returns>
         /// <remarks>
         /// This is called if casting this object to the given interface type would
         /// otherwise fail. Casting here means the IL isinst and castclass instructions
-        /// in the case where they are given an interface type as the target type. This
-        /// function may also be called during interface dispatch.
+        /// in the case where they are given an interface type as the target type.
         ///
-        /// The returned type must be an interface type and have the <see cref="DynamicInterfaceCastableImplementationAttribute"/>.
-        /// Otherwise <see cref="System.InvalidOperationException" />, will be thrown.
-        ///
-        /// When <paramref name="isinstTest" /> is set to true, this function should avoid
-        /// throwing exceptions. A return return value of default(RuntimeTypeHandle) will
-        /// indicate that the implementing class is not an instance of the given interface.
-        /// If <paramref name="isinstTest" /> is false and default(RuntimeTypeHandle) is
-        /// returned, then <see cref="System.InvalidCastException" /> will be thrown unless
-        /// an exception is thrown by the implementation.
+        /// If <paramref name="isDirectCast" /> is false (i.e. isinst instruction), this
+        /// function should avoid throwing exceptions. If <paramref name="isDirectCast" />
+        /// is true (i.e. castclass instruction) and this function returns false, then
+        /// <see cref="System.InvalidCastException" /> will be thrown unless an exception
+        /// is thrown by the implementation.
         /// </remarks>
-        RuntimeTypeHandle GetInterfaceImplementation(RuntimeTypeHandle interfaceType, bool isinstTest);
+        bool IsInterfaceImplemented(RuntimeTypeHandle interfaceType, bool isDirectCast);
+
+        /// <summary>
+        /// Called during interface dispatch when the given interface type cannot be found
+        /// in the class's metadata.
+        /// </summary>
+        /// <param name="interfaceType">The interface type.</param>
+        /// <returns>The type that should be used to dispatch for <paramref name="interfaceType"/> on the current object.</returns>
+        /// <remarks>
+        /// When this function is called, the cast of this object to the given interface
+        /// should already have been verified through the castclass/isinst instructions.
+        ///
+        /// The returned type must be an interface type and be marked with the
+        /// <see cref="DynamicInterfaceCastableImplementationAttribute"/>. Otherwise,
+        /// <see cref="System.InvalidOperationException" /> will be thrown.
+        /// </remarks>
+        RuntimeTypeHandle GetInterfaceImplementation(RuntimeTypeHandle interfaceType);
     }
 
     /// <summary>
-    /// Attribute required by any type that is returned by <see cref="IDynamicInterfaceCastable.GetInterfaceImplementation(RuntimeTypeHandle, bool)"/>.
+    /// Attribute required by any type that is returned by <see cref="IDynamicInterfaceCastable.GetInterfaceImplementation(RuntimeTypeHandle)"/>.
     /// </summary>
     /// <remarks>
     /// This attribute is used to enforce policy in the runtime and make
