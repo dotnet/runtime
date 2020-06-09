@@ -3,11 +3,9 @@
 // See the LICENSE file in the project root for more information.
 
 #nullable enable
-using System.Buffers;
 using System.Diagnostics;
+using System.Formats.Asn1;
 using System.Numerics;
-using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 using System.Security.Cryptography.Asn1;
 
 namespace System.Security.Cryptography
@@ -39,11 +37,29 @@ namespace System.Security.Cryptography
 
             ret.G = parms.G.ExportKeyParameter(ret.P.Length);
 
-            AsnReader reader = new AsnReader(xBytes, AsnEncodingRules.DER);
-            // Force a positive interpretation because Windows sometimes writes negative numbers.
-            BigInteger x = new BigInteger(reader.ReadIntegerBytes().Span, isUnsigned: true, isBigEndian: true);
+            BigInteger x;
+
+            try
+            {
+                ReadOnlySpan<byte> xSpan = AsnDecoder.ReadIntegerBytes(
+                    xBytes.Span,
+                    AsnEncodingRules.DER,
+                    out int consumed);
+
+                if (consumed != xBytes.Length)
+                {
+                    throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
+                }
+
+                // Force a positive interpretation because Windows sometimes writes negative numbers.
+                x = new BigInteger(xSpan, isUnsigned: true, isBigEndian: true);
+            }
+            catch (AsnContentException e)
+            {
+                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding, e);
+            }
+
             ret.X = x.ExportKeyParameter(ret.Q.Length);
-            reader.ThrowIfNotEmpty();
 
             // The public key is not contained within the format, calculate it.
             BigInteger y = BigInteger.ModPow(parms.G, x, parms.P);
@@ -55,9 +71,24 @@ namespace System.Security.Cryptography
             in AlgorithmIdentifierAsn algId,
             out DSAParameters ret)
         {
-            AsnReader reader = new AsnReader(yBytes, AsnEncodingRules.DER);
-            BigInteger y = reader.ReadInteger();
-            reader.ThrowIfNotEmpty();
+            BigInteger y;
+
+            try
+            {
+                y = AsnDecoder.ReadInteger(
+                    yBytes.Span,
+                    AsnEncodingRules.DER,
+                    out int consumed);
+
+                if (consumed != yBytes.Length)
+                {
+                    throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
+                }
+            }
+            catch (AsnContentException e)
+            {
+                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding, e);
+            }
 
             if (!algId.Parameters.HasValue)
             {
@@ -186,17 +217,27 @@ namespace System.Security.Cryptography
 
         private static void WriteKeyComponent(AsnWriter writer, byte[]? component, bool bitString)
         {
-            using (AsnWriter inner = new AsnWriter(AsnEncodingRules.DER))
+            if (bitString)
             {
+                AsnWriter inner = new AsnWriter(AsnEncodingRules.DER);
                 inner.WriteKeyParameterInteger(component);
 
-                if (bitString)
+                byte[] tmp = CryptoPool.Rent(inner.GetEncodedLength());
+
+                if (!inner.TryEncode(tmp, out int written))
                 {
-                    writer.WriteBitString(inner.EncodeAsSpan());
+                    Debug.Fail("TryEncode failed with a pre-allocated buffer");
+                    throw new CryptographicException();
                 }
-                else
+
+                writer.WriteBitString(tmp.AsSpan(0, written));
+                CryptoPool.Return(tmp, written);
+            }
+            else
+            {
+                using (writer.PushOctetString())
                 {
-                    writer.WriteOctetString(inner.EncodeAsSpan());
+                    writer.WriteKeyParameterInteger(component);
                 }
             }
         }

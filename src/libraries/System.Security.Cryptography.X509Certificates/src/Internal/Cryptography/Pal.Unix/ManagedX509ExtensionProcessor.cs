@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Formats.Asn1;
 using System.Security.Cryptography;
 using System.Security.Cryptography.Asn1;
 using System.Security.Cryptography.X509Certificates;
@@ -23,18 +24,25 @@ namespace Internal.Cryptography.Pal
                 (KeyUsageFlagsAsn)(ReverseBitOrder((byte)(((ushort)keyUsages >> 8))) << 8);
 
             // The expected output of this method isn't the SEQUENCE value, but just the payload bytes.
-            using (AsnWriter writer = new AsnWriter(AsnEncodingRules.DER))
-            {
-                writer.WriteNamedBitList(keyUsagesAsn);
-                return writer.Encode();
-            }
+            AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
+            writer.WriteNamedBitList(keyUsagesAsn);
+            return writer.Encode();
         }
 
         public virtual void DecodeX509KeyUsageExtension(byte[] encoded, out X509KeyUsageFlags keyUsages)
         {
-            AsnReader reader = new AsnReader(encoded, AsnEncodingRules.BER);
-            KeyUsageFlagsAsn keyUsagesAsn = reader.ReadNamedBitListValue<KeyUsageFlagsAsn>();
-            reader.ThrowIfNotEmpty();
+            KeyUsageFlagsAsn keyUsagesAsn;
+
+            try
+            {
+                AsnReader reader = new AsnReader(encoded, AsnEncodingRules.BER);
+                keyUsagesAsn = reader.ReadNamedBitListValue<KeyUsageFlagsAsn>();
+                reader.ThrowIfNotEmpty();
+            }
+            catch (AsnContentException e)
+            {
+                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding, e);
+            }
 
             // DER encodings of BIT_STRING values number the bits as
             // 01234567 89 (big endian), plus a number saying how many bits of the last byte were padding.
@@ -75,11 +83,9 @@ namespace Internal.Cryptography.Pal
             if (hasPathLengthConstraint)
                 constraints.PathLengthConstraint = pathLengthConstraint;
 
-            using (AsnWriter writer = new AsnWriter(AsnEncodingRules.DER))
-            {
-                constraints.Encode(writer);
-                return writer.Encode();
-            }
+            AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
+            constraints.Encode(writer);
+            return writer.Encode();
         }
 
         public virtual bool SupportsLegacyBasicConstraintsExtension => false;
@@ -121,16 +127,17 @@ namespace Internal.Cryptography.Pal
             //
             // KeyPurposeId ::= OBJECT IDENTIFIER
 
-            using (AsnWriter writer = new AsnWriter(AsnEncodingRules.DER))
+            AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
+
+            using (writer.PushSequence())
             {
-                writer.PushSequence();
                 foreach (Oid usage in usages)
                 {
-                    writer.WriteObjectIdentifier(usage);
+                    writer.WriteObjectIdentifierForCrypto(usage.Value!);
                 }
-                writer.PopSequence();
-                return writer.Encode();
             }
+
+            return writer.Encode();
         }
 
         public virtual void DecodeX509EnhancedKeyUsageExtension(byte[] encoded, out OidCollection usages)
@@ -141,13 +148,21 @@ namespace Internal.Cryptography.Pal
             //
             // KeyPurposeId ::= OBJECT IDENTIFIER
 
-            AsnReader reader = new AsnReader(encoded, AsnEncodingRules.BER);
-            AsnReader sequenceReader = reader.ReadSequence();
-            reader.ThrowIfNotEmpty();
-            usages = new OidCollection();
-            while (sequenceReader.HasData)
+            try
             {
-                usages.Add(sequenceReader.ReadObjectIdentifier());
+                AsnReader reader = new AsnReader(encoded, AsnEncodingRules.BER);
+                AsnReader sequenceReader = reader.ReadSequence();
+                reader.ThrowIfNotEmpty();
+                usages = new OidCollection();
+
+                while (sequenceReader.HasData)
+                {
+                    usages.Add(new Oid(sequenceReader.ReadObjectIdentifier(), null));
+                }
+            }
+            catch (AsnContentException e)
+            {
+                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding, e);
             }
         }
 
@@ -164,11 +179,9 @@ namespace Internal.Cryptography.Pal
             //
             // KeyIdentifier ::= OCTET STRING
 
-            using (AsnWriter writer = new AsnWriter(AsnEncodingRules.DER))
-            {
-                writer.WriteOctetString(subjectKeyIdentifier);
-                return writer.Encode();
-            }
+            AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
+            writer.WriteOctetString(subjectKeyIdentifier);
+            return writer.Encode();
         }
 
         public virtual void DecodeX509SubjectKeyIdentifierExtension(byte[] encoded, out byte[] subjectKeyIdentifier)
@@ -178,13 +191,26 @@ namespace Internal.Cryptography.Pal
 
         internal static byte[] DecodeX509SubjectKeyIdentifierExtension(byte[] encoded)
         {
-            AsnReader reader = new AsnReader(encoded, AsnEncodingRules.BER);
-            ReadOnlyMemory<byte> contents;
-            if (!reader.TryReadPrimitiveOctetStringBytes(out contents))
+            ReadOnlySpan<byte> contents;
+
+            try
             {
-                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
+                bool gotContents = AsnDecoder.TryReadPrimitiveOctetString(
+                    encoded,
+                    AsnEncodingRules.BER,
+                    out contents,
+                    out int consumed);
+
+                if (!gotContents || consumed != encoded.Length)
+                {
+                    throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
+                }
             }
-            reader.ThrowIfNotEmpty();
+            catch (AsnContentException e)
+            {
+                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding, e);
+            }
+
             return contents.ToArray();
         }
 
@@ -195,13 +221,14 @@ namespace Internal.Cryptography.Pal
             // of the DER structural bytes.
 
             SubjectPublicKeyInfoAsn spki = default;
-            spki.Algorithm = new AlgorithmIdentifierAsn { Algorithm = key.Oid, Parameters = key.EncodedParameters.RawData };
+            spki.Algorithm = new AlgorithmIdentifierAsn { Algorithm = key.Oid!.Value!, Parameters = key.EncodedParameters.RawData };
             spki.SubjectPublicKey = key.EncodedKeyValue.RawData;
 
-            using (AsnWriter writer = new AsnWriter(AsnEncodingRules.DER))
+            AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
+            spki.Encode(writer);
+
             using (SHA1 hash = SHA1.Create())
             {
-                spki.Encode(writer);
                 return hash.ComputeHash(writer.Encode());
             }
         }
