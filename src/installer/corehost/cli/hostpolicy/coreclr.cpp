@@ -5,46 +5,12 @@
 #include <cassert>
 
 #include "coreclr.h"
+#include "coreclr_resolver_t.h"
 #include <utils.h>
 #include <error_codes.h>
 
-// Prototype of the coreclr_initialize function from coreclr.dll
-using coreclr_initialize_fn = pal::hresult_t(STDMETHODCALLTYPE *)(
-    const char* exePath,
-    const char* appDomainFriendlyName,
-    int propertyCount,
-    const char** propertyKeys,
-    const char** propertyValues,
-    coreclr_t::host_handle_t* hostHandle,
-    unsigned int* domainId);
-
-// Prototype of the coreclr_shutdown function from coreclr.dll
-using coreclr_shutdown_fn = pal::hresult_t(STDMETHODCALLTYPE *)(
-    coreclr_t::host_handle_t hostHandle,
-    unsigned int domainId,
-    int* latchedExitCode);
-
-// Prototype of the coreclr_execute_assembly function from coreclr.dll
-using coreclr_execute_assembly_fn = pal::hresult_t(STDMETHODCALLTYPE *)(
-    coreclr_t::host_handle_t hostHandle,
-    unsigned int domainId,
-    int argc,
-    const char** argv,
-    const char* managedAssemblyPath,
-    unsigned int* exitCode);
-
-// Prototype of the coreclr_create_delegate function from coreclr.dll
-using coreclr_create_delegate_fn = pal::hresult_t(STDMETHODCALLTYPE *)(
-    coreclr_t::host_handle_t hostHandle,
-    unsigned int domainId,
-    const char* entryPointAssemblyName,
-    const char* entryPointTypeName,
-    const char* entryPointMethodName,
-    void** delegate);
-
 namespace
 {
-    pal::dll_t g_coreclr = nullptr;
     coreclr_shutdown_fn coreclr_shutdown = nullptr;
     coreclr_initialize_fn coreclr_initialize = nullptr;
     coreclr_execute_assembly_fn coreclr_execute_assembly = nullptr;
@@ -52,25 +18,15 @@ namespace
 
     bool coreclr_bind(const pal::string_t& libcoreclr_path)
     {
-        assert(g_coreclr == nullptr);
+        assert(coreclr_initialize == nullptr);
 
-        pal::string_t coreclr_dll_path(libcoreclr_path);
-        append_path(&coreclr_dll_path, LIBCORECLR_NAME);
+        coreclr_resolver_contract_t contract;
+        coreclr_resolver_t::resolve_coreclr(libcoreclr_path, contract);
 
-        if (!pal::load_library(&coreclr_dll_path, &g_coreclr))
-        {
-            return false;
-        }
-
-        coreclr_initialize = reinterpret_cast<coreclr_initialize_fn>(pal::get_symbol(g_coreclr, "coreclr_initialize"));
-        coreclr_shutdown = reinterpret_cast<coreclr_shutdown_fn>(pal::get_symbol(g_coreclr, "coreclr_shutdown_2"));
-        coreclr_execute_assembly = reinterpret_cast<coreclr_execute_assembly_fn>(pal::get_symbol(g_coreclr, "coreclr_execute_assembly"));
-        coreclr_create_delegate = reinterpret_cast<coreclr_create_delegate_fn>(pal::get_symbol(g_coreclr, "coreclr_create_delegate"));
-
-        assert(coreclr_initialize != nullptr
-            && coreclr_shutdown != nullptr
-            && coreclr_execute_assembly != nullptr
-            && coreclr_create_delegate != nullptr);
+        coreclr_initialize = contract.coreclr_initialize;
+        coreclr_shutdown = contract.coreclr_shutdown;
+        coreclr_execute_assembly = contract.coreclr_execute_assembly;
+        coreclr_create_delegate = contract.coreclr_create_delegate;
 
         return true;
     }
@@ -89,7 +45,7 @@ pal::hresult_t coreclr_t::create(
         return StatusCode::CoreClrBindFailure;
     }
 
-    assert(g_coreclr != nullptr && coreclr_initialize != nullptr);
+    assert(coreclr_initialize != nullptr);
 
     host_handle_t host_handle;
     domain_id_t domain_id;
@@ -140,7 +96,7 @@ pal::hresult_t coreclr_t::execute_assembly(
     const char* managed_assembly_path,
     unsigned int* exit_code)
 {
-    assert(g_coreclr != nullptr && coreclr_execute_assembly != nullptr);
+    assert(coreclr_execute_assembly != nullptr);
 
     return coreclr_execute_assembly(
         _host_handle,
@@ -157,7 +113,7 @@ pal::hresult_t coreclr_t::create_delegate(
     const char* entryPointMethodName,
     void** delegate)
 {
-    assert(g_coreclr != nullptr && coreclr_execute_assembly != nullptr);
+    assert(coreclr_execute_assembly != nullptr);
 
     return coreclr_create_delegate(
         _host_handle,
@@ -170,7 +126,7 @@ pal::hresult_t coreclr_t::create_delegate(
 
 pal::hresult_t coreclr_t::shutdown(int* latchedExitCode)
 {
-    assert(g_coreclr != nullptr && coreclr_shutdown != nullptr);
+    assert(coreclr_shutdown != nullptr);
 
     std::lock_guard<std::mutex> lock{ _shutdown_lock };
 
