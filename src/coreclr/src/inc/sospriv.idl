@@ -390,3 +390,19 @@ interface ISOSDacInterface7 : IUnknown
     HRESULT GetProfilerModifiedILInformation(CLRDATA_ADDRESS methodDesc, struct DacpProfilerILData *pILData);
     HRESULT GetMethodsWithProfilerModifiedIL(CLRDATA_ADDRESS mod, CLRDATA_ADDRESS *methodDescs, int cMethodDescs, int *pcMethodDescs);
 };
+
+[
+    object,
+    local,
+    uuid(c12f35a9-e55c-4520-a894-b3dc5165dfce)
+]
+interface ISOSDacInterface8 : IUnknown
+{
+    // WKS
+    HRESULT GetGenerationTable(unsigned int cGenerations, struct DacpGenerationData *pGenerationData, unsigned int *pNeeded);
+    HRESULT GetFinalizationFillPointers(unsigned int cFillPointers, CLRDATA_ADDRESS *pFinalizationFillPointers, unsigned int *pNeeded);
+
+    // SVR
+    HRESULT GetGenerationTableSvr(CLRDATA_ADDRESS heapAddr, unsigned int cGenerations, struct DacpGenerationData *pGenerationData, unsigned int *pNeeded);
+    HRESULT GetFinalizationFillPointersSvr(CLRDATA_ADDRESS heapAddr, unsigned int cFillPointers, CLRDATA_ADDRESS *pFinalizationFillPointers, unsigned int *pNeeded);
+}
