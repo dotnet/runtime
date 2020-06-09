@@ -1692,13 +1692,6 @@
     ]
   },
   {
-    "Name": "System.Runtime.Intrinsics.Experimental",
-    "Description": "Provides APIs for accessing processor specific instructions.",
-    "CommonTypes": [
-        "System.Runtime.Intrinsics.Arm.Arm64"
-    ]
-  },
-  {
     "Name": "System.Runtime.Handles",
     "Description": "Provides base classes, including System.Runtime.InteropServices.CriticalHandle and System.Runtime.InteropServices.SafeHandle, for types that represent operating system handles.",
     "CommonTypes": [
