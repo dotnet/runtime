@@ -57,8 +57,8 @@
       <Crossgen2File Include="$(CoreCLRCrossgen2Dir)ILCompiler*.dll" />
       <Crossgen2File Include="$(CoreCLRCrossgen2Dir)Microsoft.DiaSymReader.dll" />
       <Crossgen2File Include="$(CoreCLRCrossgen2Dir)System.CommandLine.dll" />
-      <Crossgen2File Include="$(TargetSpec)/$(CoreCLRCrossgen2Dir)$(LibraryFilePrefix)clrjitilc$(LibraryFileExtension)" />
       <Crossgen2File Include="$(CoreCLRCrossgen2Dir)$(LibraryFilePrefix)jitinterface$(LibraryFileExtension)" />
+      <Crossgen2File Include="$(CoreCLRCrossgen2Dir)$(TargetSpec)/$(LibraryFilePrefix)clrjitilc$(LibraryFileExtension)" />
       <!-- Include the native and managed files from the Microsoft.NETCore.App shared framework -->
       <Crossgen2File Include="@(RuntimeFile)" Condition="'%(RuntimeFile.TargetPath)' == 'runtimes/$(PackageRID)/native'" />
       <Crossgen2File Include="@(RuntimeFile)" Condition="'%(RuntimeFile.TargetPath)' == 'runtimes/$(PackageRID)/lib/$(NetCoreAppCurrent)'" />
