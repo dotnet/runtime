@@ -758,12 +758,14 @@ namespace System.Net.Sockets
             public bool IsReady(SocketAsyncContext context, out int observedSequenceNumber)
             {
                 // It is safe to read _state and _sequence without using Lock.
-                // - The return value is soly based on Volatile.Read of _state.
+                // - The return value is soley based on Volatile.Read of _state.
                 // - The Volatile.Read of _sequenceNumber ensures we read a value before executing the operation.
                 //   This is needed to retry the operation in StartAsyncOperation in case the _sequenceNumber incremented.
                 // - Because no Lock is taken, it is possible we observe a sequence number increment before the state
                 //   becomes Ready. When that happens, observedSequenceNumber is decremented, and StartAsyncOperation will
                 //   execute the operation because the sequence number won't match.
+
+                Debug.Assert(sizeof(QueueState) == sizeof(int));
                 QueueState state = (QueueState)Volatile.Read(ref Unsafe.As<QueueState, int>(ref _state));
                 observedSequenceNumber = Volatile.Read(ref _sequenceNumber);
 
