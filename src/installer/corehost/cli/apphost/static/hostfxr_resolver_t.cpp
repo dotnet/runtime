@@ -15,42 +15,6 @@ extern "C"
     hostfxr_error_writer_fn HOSTFXR_CALLTYPE hostfxr_set_error_writer(hostfxr_error_writer_fn error_writer);
 }
 
-extern "C"
-{
-    using host_handle_t = void*;
-    using domain_id_t = std::uint32_t;
-
-    pal::hresult_t STDMETHODCALLTYPE coreclr_initialize(
-        const char* exePath,
-        const char* appDomainFriendlyName,
-        int propertyCount,
-        const char** propertyKeys,
-        const char** propertyValues,
-        host_handle_t* hostHandle,
-        unsigned int* domainId);
-
-    pal::hresult_t STDMETHODCALLTYPE coreclr_shutdown(
-        host_handle_t hostHandle,
-        unsigned int domainId,
-        int* latchedExitCode);
-
-    pal::hresult_t STDMETHODCALLTYPE coreclr_execute_assembly(
-        host_handle_t hostHandle,
-        unsigned int domainId,
-        int argc,
-        const char** argv,
-        const char* managedAssemblyPath,
-        unsigned int* exitCode);
-
-    pal::hresult_t STDMETHODCALLTYPE coreclr_create_delegate(
-        host_handle_t hostHandle,
-        unsigned int domainId,
-        const char* entryPointAssemblyName,
-        const char* entryPointTypeName,
-        const char* entryPointMethodName,
-        void** delegate);
-}
-
 hostfxr_main_bundle_startupinfo_fn hostfxr_resolver_t::resolve_main_bundle_startupinfo()
 {
     assert(m_hostfxr_dll == nullptr);
@@ -78,16 +42,6 @@ hostfxr_main_fn hostfxr_resolver_t::resolve_main_v1()
 
 hostfxr_resolver_t::hostfxr_resolver_t(const pal::string_t& app_root)
 {
-#if !defined(_WIN32)
-    // TODO: WIP this is just to make coreclr stuff "used"
-    //       to see how linker handles this.
-    if (app_root.length() == 100000)
-    {
-        coreclr_initialize(nullptr, nullptr, 0, nullptr, nullptr, nullptr, nullptr);
-        coreclr_execute_assembly(0, 0, 0, nullptr, nullptr, nullptr);
-    }
-#endif
-
     if (app_root.length() == 0)
     {
         trace::info(_X("Application root path is empty. This shouldn't happen"));
