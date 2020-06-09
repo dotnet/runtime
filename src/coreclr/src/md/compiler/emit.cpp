@@ -2221,6 +2221,46 @@ ErrExit:
 } // RegMeta::DefineDocument
 
 //*****************************************************************************
+// Defines sequence points for portable PDB metadata
+//*****************************************************************************
+STDMETHODIMP RegMeta::DefineSequencePoints(     // S_OK or error.
+    ULONG       docRid,                         // [IN] Document RID.
+    BYTE        *sequencePtsBlob,               // [IN] Sequence point blob.
+    ULONG       sequencePtsBlobSize)            // [IN] Sequence point blob size.
+{
+#ifdef FEATURE_METADATA_EMIT_IN_DEBUGGER
+    return E_NOTIMPL;
+#else //!FEATURE_METADATA_EMIT_IN_DEBUGGER
+    HRESULT hr = S_OK;
+
+    BEGIN_ENTRYPOINT_NOTHROW;
+
+    LOG((LOGMD, "RegMeta::DefineSequencePoints()\n"));
+    START_MD_PERF();
+
+    LOCKWRITE();
+
+    IfFailGo(m_pStgdb->m_MiniMd.PreUpdate());
+
+    ULONG methodDbgInfoRec;
+    MethodDebugInformationRec* pMethodDbgInfo;
+    IfFailGo(m_pStgdb->m_MiniMd.AddMethodDebugInformationRecord(&pMethodDbgInfo, &methodDbgInfoRec));
+    // Document column
+    IfFailGo(m_pStgdb->m_MiniMd.PutCol(TBL_MethodDebugInformation,
+        MethodDebugInformationRec::COL_Document, pMethodDbgInfo, docRid));
+    // Sequence points column
+    IfFailGo(m_pStgdb->m_MiniMd.PutBlob(TBL_MethodDebugInformation,
+        MethodDebugInformationRec::COL_SequencePoints, pMethodDbgInfo, sequencePtsBlob, sequencePtsBlobSize));
+
+ErrExit:
+    STOP_MD_PERF(DefineSequencePoints);
+
+    END_ENTRYPOINT_NOTHROW;
+    return hr;
+#endif //!FEATURE_METADATA_EMIT_IN_DEBUGGER
+} // RegMeta::DefineSequencePoints
+
+//*****************************************************************************
 // Create and set a MethodSpec record.
 //*****************************************************************************
 STDMETHODIMP RegMeta::DefineMethodSpec( // S_OK or error

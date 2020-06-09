@@ -1122,6 +1122,11 @@ public:
         GUID        *lang,                  // [IN] Language GUID.
         mdDocument  *docMdToken);           // [OUT] Token of the defined document.
 
+    STDMETHODIMP DefineSequencePoints(      // S_OK or error.
+        ULONG       docRid,                 // [IN] Document RID.
+        BYTE        *sequencePtsBlob,       // [IN] Sequence point blob.
+        ULONG       sequencePtsBlobSize);   // [IN] Sequence point blob size.
+
 //*****************************************************************************
 // IMetaDataAssemblyEmit
 //*****************************************************************************

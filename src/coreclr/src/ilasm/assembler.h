@@ -643,6 +643,7 @@ struct Instr
 	unsigned column_end;
     unsigned pc;
     ISymUnmanagedDocumentWriter* pWriter;
+    Document* pOwnerDocument;
 };
 #define INSTR_POOL_SIZE 16
 

@@ -647,6 +647,12 @@ DECLARE_INTERFACE_(IMetaDataEmit2, IMetaDataEmit)
         ULONG       hashValSize,            // [IN] Hash value size.
         GUID        *lang,                  // [IN] Language GUID.
         mdDocument  *docMdToken) PURE;      // [OUT] Token of the defined document.
+
+    STDMETHOD(DefineSequencePoints)(        // S_OK or error.
+        ULONG       docRid,                 // [IN] Document RID.
+        BYTE        *sequencePtsBlob,       // [IN] Sequence point blob.
+        ULONG       sequencePtsBlobSize) PURE; // [IN] Sequence point blob size.
+
 };
 
 //-------------------------------------

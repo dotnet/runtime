@@ -29,6 +29,10 @@ private:
 
 typedef FIFO<Document> DocumentList;
 
+class BinStr;
+class Method;
+struct LinePC;
+
 //*****************************************************************************
 // PortablePdbWritter
 //*****************************************************************************
@@ -41,8 +45,15 @@ public:
     IMetaDataEmit2*     GetEmitter();
     GUID*               GetGuid();
     ULONG               GetTimestamp();
+    Document*           GetCurrentDocument();
     HRESULT             BuildPdbStream(IMetaDataEmit2* peEmitter, mdMethodDef entryPoint);
     HRESULT             DefineDocument(char* name, GUID* language);
+    HRESULT             DefineSequencePoints(Method* method);
+
+private:
+    BOOL                VerifySequencePoint(LinePC* curr, LinePC* next);
+    void                CompressUnsignedLong(ULONG srcData, BinStr* dstBuffer);
+    void                CompressSignedLong(LONG srcData, BinStr* dstBuffer);
 
 private:
     IMetaDataEmit2*     m_pdbEmitter;

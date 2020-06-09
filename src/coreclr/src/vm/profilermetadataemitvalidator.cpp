@@ -808,6 +808,15 @@ HRESULT ProfilerMetadataEmitValidator::DefineDocument(
     return COR_E_NOTSUPPORTED;
 }
 
+HRESULT ProfilerMetadataEmitValidator::DefineSequencePoints(
+    ULONG       docRid,
+    BYTE        *sequencePtsBlob,
+    ULONG       sequencePtsBlobSize)
+{
+    LIMITED_METHOD_CONTRACT;
+    return COR_E_NOTSUPPORTED;
+}
+
     //IMetaDataAssemblyEmit
 HRESULT ProfilerMetadataEmitValidator::DefineAssembly(
         const void  *pbPublicKey,

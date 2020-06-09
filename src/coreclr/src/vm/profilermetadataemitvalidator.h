@@ -381,6 +381,11 @@ public:
         GUID        *lang,
         mdDocument  *docMdToken);
 
+    virtual HRESULT STDMETHODCALLTYPE DefineSequencePoints(
+        ULONG       docRid,
+        BYTE        *sequencePtsBlob,
+        ULONG       sequencePtsBlobSize);
+
     //IMetaDataAssemblyEmit
     virtual HRESULT STDMETHODCALLTYPE DefineAssembly(
         const void  *pbPublicKey,

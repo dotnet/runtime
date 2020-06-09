@@ -4,6 +4,7 @@
 
 #include "portable_pdb.h"
 #include <time.h>
+#include "assembler.h"
 
 //*****************************************************************************
 // Document
@@ -104,6 +105,11 @@ ULONG PortablePdbWritter::GetTimestamp()
     return m_pdbStream.id.pdbTimeStamp;
 }
 
+Document* PortablePdbWritter::GetCurrentDocument()
+{
+    return m_currentDocument;
+}
+
 HRESULT PortablePdbWritter::BuildPdbStream(IMetaDataEmit2* peEmitter, mdMethodDef entryPoint)
 {
     HRESULT hr = S_OK;
@@ -175,4 +181,154 @@ HRESULT PortablePdbWritter::DefineDocument(char* name, GUID* language)
     }
 
     return hr;
+}
+
+HRESULT PortablePdbWritter::DefineSequencePoints(Method* method)
+{
+    HRESULT hr = S_OK;
+    BinStr* blob = new BinStr();
+
+    // Blob ::= header SequencePointRecord (SequencePointRecord | document-record)*
+    // SequencePointRecord :: = sequence-point-record | hidden-sequence-point-record
+
+    // header ::= {LocalSignature, InitialDocument}
+    // LocalSignature
+    ULONG localSigRid = RidFromToken(method->m_LocalsSig);
+    CompressUnsignedLong(localSigRid, blob);
+    // InitialDocument TODO: skip this for now
+
+    // SequencePointRecord
+    ULONG offset = 0;
+    ULONG deltaLines = 0;
+    LONG deltaColumns = 0;
+    LONG deltaStartLine = 0;
+    LONG deltaStartColumn = 0;
+    LinePC* currSeqPoint = NULL;
+    LinePC* prevSeqPoint = NULL;
+    LinePC* prevNonHiddenSeqPoint = NULL;
+    LinePC* nextSeqPoint = NULL;
+    BOOL isValid = TRUE;
+
+    for (UINT32 i = 0; i < method->m_LinePCList.COUNT(); i++)
+    {
+        currSeqPoint = method->m_LinePCList.PEEK(i);
+        if (i < (method->m_LinePCList.COUNT() - 1))
+            nextSeqPoint = method->m_LinePCList.PEEK(i + 1);
+        else
+            nextSeqPoint = NULL;
+
+        isValid = VerifySequencePoint(currSeqPoint, nextSeqPoint);
+        if (!isValid)
+        {
+            method->m_pAssembler->report->warn("Sequence point at line: [0x%x] and offset: [0x%x] in method '%s' is not valid!\n",
+                currSeqPoint->Line,
+                currSeqPoint->PC,
+                method->m_szName);
+            hr = E_FAIL;
+            break; // TODO: break or ignore?
+        }
+
+        if (!currSeqPoint->IsHidden)
+        {
+            //offset
+            offset = (i == 0) ? currSeqPoint->PC : currSeqPoint->PC - prevSeqPoint->PC;
+            CompressUnsignedLong(offset, blob);
+
+            //delta lines
+            deltaLines = currSeqPoint->LineEnd - currSeqPoint->Line;
+            CompressUnsignedLong(deltaLines, blob);
+
+            //delta columns
+            deltaColumns = currSeqPoint->ColumnEnd - currSeqPoint->Column;
+            if (deltaLines == 0)
+                CompressUnsignedLong(deltaColumns, blob);
+            else
+                CompressSignedLong(deltaColumns, blob);
+
+            //delta start line
+            if (prevNonHiddenSeqPoint == NULL)
+            {
+                deltaStartLine = currSeqPoint->Line;
+                CompressUnsignedLong(deltaStartLine, blob);
+            }
+            else
+            {
+                deltaStartLine = currSeqPoint->Line - prevNonHiddenSeqPoint->Line;
+                CompressSignedLong(deltaStartLine, blob);
+            }
+
+            //delta start column
+            if (prevNonHiddenSeqPoint == NULL)
+            {
+                deltaStartColumn = currSeqPoint->Column;
+                CompressUnsignedLong(deltaStartColumn, blob);
+            }
+            else
+            {
+                deltaStartColumn = currSeqPoint->Column - prevNonHiddenSeqPoint->Column;
+                CompressSignedLong(deltaStartColumn, blob);
+            }
+
+            prevNonHiddenSeqPoint = currSeqPoint;
+        }
+        else
+        {
+            //offset
+            offset = (i == 0) ? currSeqPoint->PC : currSeqPoint->PC - prevSeqPoint->PC;
+            CompressUnsignedLong(offset, blob);
+
+            //delta lines
+            deltaLines = 0;
+            CompressUnsignedLong(deltaLines, blob);
+
+            //delta lines
+            deltaColumns = 0;
+            CompressUnsignedLong(deltaColumns, blob);
+        }
+        prevSeqPoint = currSeqPoint;
+    }
+
+    // finally define sequence points for the method
+    if (isValid && currSeqPoint != NULL)
+    {
+        ULONG documentRid = RidFromToken(currSeqPoint->pOwnerDocument->GetToken());
+        hr = m_pdbEmitter->DefineSequencePoints(documentRid, blob->ptr(), blob->length());
+    }
+
+    delete blob;
+    return hr;
+}
+
+BOOL PortablePdbWritter::VerifySequencePoint(LinePC* curr, LinePC* next)
+{
+    if (!curr->IsHidden)
+    {
+        if ((curr->PC >= 0 && curr->PC < 0x20000000) &&
+            (next == NULL || (next != NULL && curr->PC < next->PC)) &&
+            (curr->Line >= 0 && curr->Line < 0x20000000 && curr->Line != 0xfeefee) &&
+            (curr->LineEnd >= 0 && curr->LineEnd < 0x20000000 && curr->LineEnd != 0xfeefee) &&
+            (curr->Column >= 0 && curr->Column < 0x10000) &&
+            (curr->ColumnEnd >= 0 && curr->ColumnEnd < 0x10000) &&
+            (curr->LineEnd > curr->Line || (curr->Line == curr->LineEnd && curr->ColumnEnd > curr->Column)))
+        {
+            return TRUE;
+        }
+        else
+        {
+            return FALSE;
+        }
+    }
+    return TRUE;
+}
+
+void PortablePdbWritter::CompressUnsignedLong(ULONG srcData, BinStr* dstBuffer)
+{
+    ULONG cnt = CorSigCompressData(srcData, dstBuffer->getBuff(sizeof(ULONG) + 1));
+    dstBuffer->remove((sizeof(ULONG) + 1) - cnt);
+}
+
+void PortablePdbWritter::CompressSignedLong(LONG srcData, BinStr* dstBuffer)
+{
+    ULONG cnt = CorSigCompressSignedInt(srcData, dstBuffer->getBuff(sizeof(LONG) + 1));
+    dstBuffer->remove((sizeof(LONG) + 1) - cnt);
 }
