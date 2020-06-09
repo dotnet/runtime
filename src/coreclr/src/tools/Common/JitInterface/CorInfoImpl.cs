@@ -45,7 +45,7 @@ namespace Internal.JitInterface
             ARM64 = 0xaa64,
         }
 
-        internal const string JitLibrary = "clrjitilc";
+        internal const string JitLibrary = "clrjit";
 
 #if SUPPORT_JIT
         private const string JitSupportLibrary = "*";
@@ -119,19 +119,16 @@ namespace Internal.JitInterface
         {
             Debug.Assert(s_jitLibrary == IntPtr.Zero);
 
-            string jitLibraryName;
             if (!string.IsNullOrEmpty(jitPathOverride))
             {
-                jitLibraryName = jitPathOverride;
+                s_jitLibrary = NativeLibrary.Load(jitPathOverride);
             }
             else
             {
-                string crossgenPath = Path.GetDirectoryName(typeof(CorInfoImpl).Assembly.Location);
-                string jitTargetPath = Path.Combine(crossgenPath, GetTargetSpec(targetOS, targetArchitecture));
-                jitLibraryName = Path.Combine(jitTargetPath, GetLibraryPrefix() + JitLibrary + GetLibraryExtension());
+                string jitLibraryName = JitLibrary + '-' + GetTargetSpec(targetOS, targetArchitecture);
+                s_jitLibrary = NativeLibrary.Load(jitLibraryName, typeof(CorInfoImpl).Assembly, searchPath: null);
             }
 
-            s_jitLibrary = NativeLibrary.Load(jitLibraryName);
             s_jitStartup = Marshal.GetDelegateForFunctionPointer<JitStartupDelegate>(NativeLibrary.GetExport(s_jitLibrary, "jitStartup"));
             s_getJit = Marshal.GetDelegateForFunctionPointer<GetJitDelegate>(NativeLibrary.GetExport(s_jitLibrary, "getJit"));
 
@@ -165,13 +162,7 @@ namespace Internal.JitInterface
 
         private static string GetTargetSpec(TargetOS targetOS, TargetArchitecture targetArchitecture)
         {
-            string targetOSComponent = targetOS switch
-            {
-                TargetOS.Windows => "win",
-                TargetOS.Linux => "linux",
-                TargetOS.OSX => "osx",
-                _ => throw new NotImplementedException(targetOS.ToString())
-            };
+            string targetOSComponent = (targetOS == TargetOS.Windows ? "win" : "unix");
             string targetArchComponent = targetArchitecture switch
             {
                 TargetArchitecture.X64 => "x64",

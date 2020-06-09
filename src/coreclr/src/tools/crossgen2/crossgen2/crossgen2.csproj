@@ -44,9 +44,8 @@
     <CrossHostArch></CrossHostArch>
     <CrossHostArch Condition="'$(TargetArchitecture)' == 'arm64'">x64</CrossHostArch>
 
+    <TargetOSComponent>unix</TargetOSComponent>
     <TargetOSComponent Condition="'$(TargetOS)' == 'Windows_NT'">win</TargetOSComponent>
-    <TargetOSComponent Condition="'$(TargetOS)' == 'Linux'">linux</TargetOSComponent>
-    <TargetOSComponent Condition="'$(TargetOS)' == 'OSX'">osx</TargetOSComponent>
     <TargetSpec>$(TargetOSComponent)-$(TargetArchitecture)</TargetSpec>
 
     <LibraryNamePrefix>lib</LibraryNamePrefix>
@@ -68,7 +67,7 @@
     <Content Include="$(BinDir)\$(NativeArchFolder)$(LibraryNamePrefix)clrjit$(LibraryNameExtension)"
       CopyToOutputDirectory="PreserveNewest"
       CopyToPublishDirectory="PreserveNewest"
-      Link="$(TargetSpec)\$(LibraryNamePrefix)clrjitilc$(LibraryNameExtension)"
+      Link="$(LibraryNamePrefix)clrjit-$(TargetSpec)$(LibraryNameExtension)"
      />
   </ItemGroup>
 
@@ -95,10 +94,9 @@
       UseHardLinksIfPossible="true"
       />
 
-    <MakeDir Directories="$(CrossPackageFolder)\$(TargetSpec)" />
     <Copy
       SourceFiles="$(BinDir)\$(CrossHostArch)\$(LibraryNamePrefix)clrjit$(LibraryNameExtension)"
-      DestinationFiles="$(CrossPackageFolder)\$(TargetSpec)\$(LibraryNamePrefix)clrjitilc$(LibraryNameExtension)"
+      DestinationFiles="$(CrossPackageFolder)\$(LibraryNamePrefix)clrjit-$(TargetSpec)$(LibraryNameExtension)"
       UseHardLinksIfPossible="true"
       />
 
