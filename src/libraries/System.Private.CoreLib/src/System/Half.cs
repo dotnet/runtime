@@ -2,15 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-/*============================================================
-**
-**
-**
-** Purpose: An IEEE 768 compliant float16 type
-**
-**
-===========================================================*/
-
 using System.Diagnostics;
 using System.Globalization;
 using System.Numerics;
@@ -19,19 +10,18 @@ using System.Runtime.InteropServices;
 
 namespace System
 {
-    // ===================================================================================================
     // Portions of the code implemented below are based on the 'Berkeley SoftFloat Release 3e' algorithms.
-    // ===================================================================================================
 
+    /// <summary>
+    /// An IEEE 754 compliant float16 type.
+    /// </summary>
     [Serializable]
     [StructLayout(LayoutKind.Sequential)]
     public readonly struct Half : IComparable, IFormattable, IComparable<Half>, IEquatable<Half>, ISpanFormattable
     {
         private const NumberStyles DefaultParseStyle = NumberStyles.Float | NumberStyles.AllowThousands;
 
-        //
         // Constants for manipulating the private bit-representation
-        //
 
         private const ushort SignMask = 0x8000;
         private const ushort SignShift = 15;
@@ -51,9 +41,7 @@ namespace System
         private const ushort MinSignificand = 0x0000;
         private const ushort MaxSignificand = 0x03FF;
 
-        //
         // Constants representing the private bit-representation for various default values
-        //
 
         private const ushort PositiveZeroBits = 0x0000;
         private const ushort NegativeZeroBits = 0x8000;
@@ -166,22 +154,15 @@ namespace System
 
         public static bool operator ==(Half left, Half right)
         {
-            if (IsNaN(left) || IsNaN(right))
-            {
-                // IEEE defines that NaN is not equal to anything, including itself.
-                return false;
-            }
-
-            // IEEE defines that positive and negative zero are equivalent.
-            return (left.m_value == right.m_value) || AreZero(left, right);
+            return left.Equals(right);
         }
 
         public static bool operator !=(Half left, Half right)
         {
-            return !(left == right);
+            return !(left.Equals(right));
         }
 
-        // <summary>Determines whether the specified value is finite (zero, subnormal, or normal).</summary>
+        /// <summary>Determines whether the specified value is finite (zero, subnormal, or normal).</summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool IsFinite(Half value)
         {
@@ -243,21 +224,45 @@ namespace System
                 && ((absValue & ExponentMask) == 0);    // is subnormal (has a zero exponent)
         }
 
+        /// <summary>
+        /// Parses a <see cref="Half"/> from a <see cref="string"/> in the default parse style.
+        /// </summary>
+        /// <param name="s">The input to be parsed.</param>
+        /// <returns>The equivalent <see cref="Half"/> value representing the input string. If the input exceeds Half's range, a <see cref="Half.PositiveInfinity"/> or <see cref="Half.NegativeInfinity"/> is returned. </returns>
         public static Half Parse(string s)
         {
             return (Half)float.Parse(s, style: DefaultParseStyle, provider: null);
         }
 
+        /// <summary>
+        /// Parses a <see cref="Half"/> from a <see cref="string"/> in the given <see cref="NumberStyles"/>.
+        /// </summary>
+        /// <param name="s">The input to be parsed.</param>
+        /// <param name="style">The <see cref="NumberStyles"/> used to parse the input.</param>
+        /// <returns>The equivalent <see cref="Half"/> value representing the input string. If the input exceeds Half's range, a <see cref="Half.PositiveInfinity"/> or <see cref="Half.NegativeInfinity"/> is returned. </returns>
         public static Half Parse(string s, NumberStyles style)
         {
             return (Half)float.Parse(s, style);
         }
 
+        /// <summary>
+        /// Parses a <see cref="Half"/> from a <see cref="string"/> and <see cref="IFormatProvider"/>.
+        /// </summary>
+        /// <param name="s">The input to be parsed.</param>
+        /// <param name="provider">A format provider.</param>
+        /// <returns>The equivalent <see cref="Half"/> value representing the input string. If the input exceeds Half's range, a <see cref="Half.PositiveInfinity"/> or <see cref="Half.NegativeInfinity"/> is returned. </returns>
         public static Half Parse(string s, IFormatProvider provider)
         {
             return (Half)float.Parse(s, provider);
         }
 
+        /// <summary>
+        /// Parses a <see cref="Half"/> from a <see cref="string"/> with the given <see cref="NumberStyles"/> and <see cref="IFormatProvider"/>.
+        /// </summary>
+        /// <param name="s">The input to be parsed.</param>
+        /// <param name="style">The <see cref="NumberStyles"/> used to parse the input.</param>
+        /// <param name="provider">A format provider.</param>
+        /// <returns>The equivalent <see cref="Half"/> value representing the input string. If the input exceeds Half's range, a <see cref="Half.PositiveInfinity"/> or <see cref="Half.NegativeInfinity"/> is returned. </returns>
         public static Half Parse(string s, NumberStyles style = DefaultParseStyle, IFormatProvider? provider = null)
         {
             if (s is null)
@@ -267,26 +272,61 @@ namespace System
             return Parse(s.AsSpan(), style, provider);
         }
 
+        /// <summary>
+        /// Parses a <see cref="Half"/> from a <see cref="ReadOnlySpan{Char}"/> and <see cref="IFormatProvider"/>.
+        /// </summary>
+        /// <param name="s">The input to be parsed.</param>
+        /// <param name="style">The <see cref="NumberStyles"/> used to parse the input.</param>
+        /// <param name="provider">A format provider. </param>
+        /// <returns>The equivalent <see cref="Half"/> value representing the input string. If the input exceeds Half's range, a <see cref="Half.PositiveInfinity"/> or <see cref="Half.NegativeInfinity"/> is returned. </returns>
         public static Half Parse(ReadOnlySpan<char> s, NumberStyles style = DefaultParseStyle, IFormatProvider? provider = null)
         {
             return (Half)(float.Parse(s, style, provider));
         }
 
+        /// <summary>
+        /// Tries to parses a <see cref="Half"/> from a <see cref="string"/> in the default parse style.
+        /// </summary>
+        /// <param name="s">The input to be parsed.</param>
+        /// <param name="result">The equivalent <see cref="Half"/> value representing the input string if the parse was successful. If the input exceeds Half's range, a <see cref="Half.PositiveInfinity"/> or <see cref="Half.NegativeInfinity"/> is returned. If the parse was unsuccessful, a default <see cref="Half"/> value is returned.</param>
+        /// <returns><see langword="true" /> if the parse was successful, <see langword="false" /> otherwise.</returns>
         public static bool TryParse(string s, out Half result)
         {
             return TryParse(s, DefaultParseStyle, provider: null, out result);
         }
 
+        /// <summary>
+        /// Tries to parses a <see cref="Half"/> from a <see cref="ReadOnlySpan{Char}"/> in the default parse style.
+        /// </summary>
+        /// <param name="s">The input to be parsed.</param>
+        /// <param name="result">The equivalent <see cref="Half"/> value representing the input string if the parse was successful. If the input exceeds Half's range, a <see cref="Half.PositiveInfinity"/> or <see cref="Half.NegativeInfinity"/> is returned. If the parse was unsuccessful, a default <see cref="Half"/> value is returned.</param>
+        /// <returns><see langword="true" /> if the parse was successful, <see langword="false" /> otherwise.</returns>
         public static bool TryParse(ReadOnlySpan<char> s, out Half result)
         {
             return TryParse(s, DefaultParseStyle, provider: null, out result);
         }
 
+        /// <summary>
+        /// Tries to parse a <see cref="Half"/> from a <see cref="string"/> with the given <see cref="NumberStyles"/> and <see cref="IFormatProvider"/>.
+        /// </summary>
+        /// <param name="s">The input to be parsed.</param>
+        /// <param name="style">The <see cref="NumberStyles"/> used to parse the input.</param>
+        /// <param name="provider">A format provider. </param>
+        /// <param name="result">The equivalent <see cref="Half"/> value representing the input string if the parse was successful. If the input exceeds Half's range, a <see cref="Half.PositiveInfinity"/> or <see cref="Half.NegativeInfinity"/> is returned. If the parse was unsuccessful, a default <see cref="Half"/> value is returned.</param>
+        /// <returns><see langword="true" /> if the parse was successful, <see langword="false" /> otherwise.</returns>
         public static bool TryParse(string s, NumberStyles style, IFormatProvider? provider, out Half result)
         {
             return TryParse(s.AsSpan(), style, provider, out result);
         }
 
+        /// <summary>
+        /// Tries to parse a <see cref="Half"/> from a <see cref="ReadOnlySpan{Char}"/> with the given <see cref="NumberStyles"/> and <see cref="IFormatProvider"/>.
+        /// </summary>
+        /// <param name="s">The input to be parsed.</param>
+        /// <param name="style">The <see cref="NumberStyles"/> used to parse the input.</param>
+        /// <param name="provider">A format provider. </param>
+        /// <param name="result">The equivalent <see cref="Half"/> value representing the input string if the parse was successful. If the input exceeds Half's range, a <see cref="Half.PositiveInfinity"/> or <see cref="Half.NegativeInfinity"/> is returned. If the parse was unsuccessful, a default <see cref="Half"/> value is returned.</param>
+        /// <returns><see langword="true" /> if the parse was successful, <see langword="false" /> otherwise.</returns>
         public static bool TryParse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider? provider, out Half result)
         {
             bool ret = false;
@@ -323,6 +363,11 @@ namespace System
             return (ushort)(value.m_value & ~SignMask);
         }
 
+        /// <summary>
+        /// Compares this object to another object, returning an integer that indicates the relationship.
+        /// </summary>
+        /// <returns>A value less than zero if this is less than <paramref name="obj"/>, zero if this is equal to <paramref name="obj"/>, or a value greater than zero if this is greater than <paramref name="obj"/>.</returns>
+        /// <exception cref="ArgumentException">Thrown when <paramref name="obj"/> is not of type <see cref="Half"/>.</exception>
         public int CompareTo(object? obj)
         {
             if (!(obj is Half))
@@ -332,6 +377,10 @@ namespace System
             return CompareTo((Half)(obj));
         }
 
+        /// <summary>
+        /// Compares this object to another object, returning an integer that indicates the relationship.
+        /// </summary>
+        /// <returns>A value less than zero if this is less than <paramref name="other"/>, zero if this is equal to <paramref name="other"/>, or a value greater than zero if this is greater than <paramref name="other"/>.</returns>
         public int CompareTo(Half other)
         {
             if ((short)(m_value) < (short)(other.m_value))
@@ -358,11 +407,17 @@ namespace System
             return 1;
         }
 
+        /// <summary>
+        /// Returns a value that indicates whether this instance is equal to a specified <paramref name="obj"/>.
+        /// </summary>
         public override bool Equals(object? obj)
         {
             return (obj is Half) && Equals((Half)(obj));
         }
 
+        /// <summary>
+        /// Returns a value that indicates whether this instance is equal to a specified <paramref name="other"/> value.
+        /// </summary>
         public bool Equals(Half other)
         {
             if (IsNaN(this) || IsNaN(other))
@@ -375,6 +430,9 @@ namespace System
             return (m_value == other.m_value) || AreZero(this, other);
         }
 
+        /// <summary>
+        /// Serves as the default hash function.
+        /// </summary>
         public override int GetHashCode()
         {
             if (IsNaNOrZero(this))
@@ -385,32 +443,47 @@ namespace System
             return m_value;
         }
 
-        public TypeCode GetTypeCode()
-        {
-            return TypeCode.Half;
-        }
-
+        /// <summary>
+        /// Returns a string representation of the current value.
+        /// </summary>
         public override string ToString()
         {
             return ToString(format: null, formatProvider: null);
         }
 
+        /// <summary>
+        /// Returns a string representation of the current value using the specified <paramref name="format"/>.
+        /// </summary>
         public string ToString(string? format)
         {
             return ((float)this).ToString(format);
         }
 
+        /// <summary>
+        /// Returns a string representation of the current value with the specified <paramref name="formatProvider"/>.
+        /// </summary>
         public string ToString(IFormatProvider? formatProvider)
         {
             return ((float)this).ToString(formatProvider);
         }
 
+        /// <summary>
+        /// Returns a string representation of the current value using the specified <paramref name="format"/> and <paramref name="formatProvider"/>.
+        /// </summary>
         public string ToString(string? format, IFormatProvider? formatProvider)
         {
             return ((float)this).ToString(format: null, formatProvider);
 
         }
 
+        /// <summary>
+        /// Tries to format the value of the current Half instance into the provided span of characters.
+        /// </summary>
+        /// <param name="destination">When this method returns, this instance's value formatted as a span of characters.</param>
+        /// <param name="charsWritten">When this method returns, the number of characters that were written in <paramref name="destination"/>.</param>
+        /// <param name="format">A span containing the characters that represent a standard or custom format string that defines the acceptable format for <paramref name="destination"/>.</param>
+        /// <param name="formatProvider">An optional object that supplies culture-specific formatting information for <paramref name="destination"/>.</param>
+        /// <returns></returns>
         public bool TryFormat(Span<char> destination, out int charsWritten, ReadOnlySpan<char> format = default, IFormatProvider? formatProvider = null)
         {
             return ((float)this).TryFormat(destination, out charsWritten, format, formatProvider);

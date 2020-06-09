@@ -11,13 +11,11 @@ namespace System.Tests
 {
     public partial class HalfTests
     {
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static unsafe ushort HalfToUInt16Bits(Half value)
         {
             return *((ushort*)&value);
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static unsafe Half UInt16BitsToHalf(ushort value)
         {
             return *((Half*)&value);

@@ -2208,7 +2208,6 @@ namespace System
         public bool Equals(System.Half other) { throw null; }
         public override bool Equals(object? obj) { throw null; }
         public override int GetHashCode() { throw null; }
-        public System.TypeCode GetTypeCode() { throw null; }
         public static bool IsFinite(System.Half value) { throw null; }
         public static bool IsInfinity(System.Half value) { throw null; }
         public static bool IsNaN(System.Half value) { throw null; }
@@ -4354,7 +4353,6 @@ namespace System
         Decimal = 15,
         DateTime = 16,
         String = 18,
-        Half = 19,
     }
     [System.CLSCompliantAttribute(false)]
     public ref partial struct TypedReference
