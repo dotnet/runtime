@@ -11,7 +11,7 @@ namespace System.Runtime.CompilerServices
     /// <remarks>
     /// When one or more valid methods
     /// with this attribute are found in a compilation, the compiler will
-    /// emit a `<Module>..cctor` which calls the attributed methods
+    /// emit a `&lt;Module&gt;..cctor` which calls the attributed methods
     /// in the order they appear in source.
     ///
     /// Certain requirements are imposed on any method targeted with this attribute:
