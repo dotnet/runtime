@@ -263,8 +263,6 @@ namespace ILCompiler
             _inputFiles = inputFiles;
             CompilationModuleGroup = (ReadyToRunCompilationModuleGroupBase)nodeFactory.CompilationModuleGroup;
 
-            CorInfoImpl.Startup(nodeFactory.Target.OperatingSystem, nodeFactory.Target.Architecture);
-
             // Generate baseline support specification for InstructionSetSupport. This will prevent usage of the generated
             // code if the runtime environment doesn't support the specified instruction set
             string instructionSetSupportString = ReadyToRunInstructionSetSupportSignature.ToInstructionSetSupportString(instructionSetSupport);

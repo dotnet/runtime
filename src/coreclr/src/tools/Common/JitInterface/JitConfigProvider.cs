@@ -8,6 +8,7 @@ using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Threading;
 using ILCompiler;
+using Internal.TypeSystem;
 using NumberStyles = System.Globalization.NumberStyles;
 
 namespace Internal.JitInterface
@@ -29,7 +30,12 @@ namespace Internal.JitInterface
         private Dictionary<string, string> _config = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
         private object _keepAlive; // Keeps callback delegates alive
 
-        public static void Initialize(IEnumerable<CorJitFlag> jitFlags, IEnumerable<KeyValuePair<string, string>> parameters, string jitPath = null)
+        public static void Initialize(
+            TargetOS targetOS,
+            TargetArchitecture targetArchitecture,
+            IEnumerable<CorJitFlag> jitFlags,
+            IEnumerable<KeyValuePair<string, string>> parameters,
+            string jitPath = null)
         {
             var config = new JitConfigProvider(jitFlags, parameters);
 
@@ -54,6 +60,7 @@ namespace Internal.JitInterface
 #else
             Debug.Assert(jitPath == null);
 #endif
+            CorInfoImpl.Startup(targetOS, targetArchitecture);
         }
 
         public IntPtr UnmanagedInstance

@@ -638,6 +638,13 @@ set __FailedAssemblies=
 set __CompositeOutputDir=%CORE_ROOT%\composite.out
 set __CompositeResponseFile=%__CompositeOutputDir%\framework-r2r.dll.rsp
 
+set __CrossgenDir=%__BinDir%
+if /i "%__BuildArch%" == "arm" (set __CrossgenDir=!__CrossgenDir!\x86)
+if /i "%__BuildArch%" == "arm64" (set __CrossgenDir=!__CrossgenDir!\x64)
+
+set __CrossgenExe="%__CrossgenDir%\crossgen.exe"
+set __Crossgen2Dll="%__RepoRootDir%\dotnet.cmd" "%__CrossgenDir%\crossgen2\crossgen2.dll"
+
 if defined __CompositeBuildMode (
     mkdir !__CompositeOutputDir!
     del /Q !__CompositeResponseFile!
@@ -667,8 +674,7 @@ if defined __CompositeBuildMode (
 )
 
 if defined __CompositeBuildMode (
-    set __CompositeCommandLine="%__RepoRootDir%\dotnet.cmd"
-    set __CompositeCommandLine=!__CompositeCommandLine! "%CORE_ROOT%\crossgen2\crossgen2.dll"
+    set __CompositeCommandLine=%__Crossgen2Dll%
     set __CompositeCommandLine=!__CompositeCommandLine! "@%__CompositeResponseFile%"
     echo Building composite R2R framework^: !__CompositeCommandLine!
     call !__CompositeCommandLine!
@@ -689,15 +695,6 @@ REM Compile the managed assemblies in Core_ROOT before running the tests
 set AssemblyPath=%1
 set AssemblyName=%2
 
-set __CrossgenExe="%__BinDir%\crossgen.exe"
-if /i "%__BuildArch%" == "arm" ( set __CrossgenExe="%__BinDir%\x86\crossgen.exe" )
-if /i "%__BuildArch%" == "arm64" ( set __CrossgenExe="%__BinDir%\x64\crossgen.exe" )
-set __CrossgenExe=%__CrossgenExe%
-
-if defined __DoCrossgen2 (
-    set __CrossgenExe="%__RepoRootDir%\dotnet.cmd" "%CORE_ROOT%\crossgen2\crossgen2.dll"
-)
-
 REM Intentionally avoid using the .dll extension to prevent
 REM subsequent compilations from picking it up as a reference
 set __CrossgenOutputFile="%CORE_ROOT%\temp.ni._dll"
@@ -708,7 +705,7 @@ if defined __DoCrossgen (
     echo !__CrossgenCmd!
     !__CrossgenCmd!
 ) else (
-    set __CrossgenCmd=!__CrossgenExe! -r:"!CORE_ROOT!\System.*.dll" -r:"!CORE_ROOT!\Microsoft.*.dll" -r:"!CORE_ROOT!\mscorlib.dll" -r:"!CORE_ROOT!\netstandard.dll" -O --inputbubble --out:!__CrossgenOutputFile! !AssemblyPath! --targetarch %__BuildArch%
+    set __CrossgenCmd=!__Crossgen2Dll! -r:"!CORE_ROOT!\System.*.dll" -r:"!CORE_ROOT!\Microsoft.*.dll" -r:"!CORE_ROOT!\mscorlib.dll" -r:"!CORE_ROOT!\netstandard.dll" -O --inputbubble --out:!__CrossgenOutputFile! !AssemblyPath! --targetarch %__BuildArch%
     echo !__CrossgenCmd!
     call !__CrossgenCmd!
 )
