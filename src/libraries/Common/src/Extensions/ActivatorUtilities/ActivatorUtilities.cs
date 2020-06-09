@@ -217,7 +217,7 @@ namespace Microsoft.Extensions.Internal
             Type instanceType,
             Type[] argumentTypes,
             [NotNull] out ConstructorInfo? matchingConstructor,
-            [NotNull] out int?[]? parameterMap)
+            out int?[]? parameterMap)
         {
             matchingConstructor = null;
             parameterMap = null;
@@ -235,7 +235,7 @@ namespace Microsoft.Extensions.Internal
             Type instanceType,
             Type[] argumentTypes,
             [NotNullWhen(true)] ref ConstructorInfo? matchingConstructor,
-            [NotNullWhen(true)] ref int?[]? parameterMap)
+            ref int?[]? parameterMap)
         {
             foreach (var constructor in instanceType.GetTypeInfo().DeclaredConstructors)
             {
@@ -256,7 +256,7 @@ namespace Microsoft.Extensions.Internal
                 }
             }
 
-            return matchingConstructor != null && parameterMap != null;
+            return matchingConstructor != null;
         }
 
         // Tries to find constructor marked with ActivatorUtilitiesConstructorAttribute
@@ -264,7 +264,7 @@ namespace Microsoft.Extensions.Internal
             Type instanceType,
             Type[] argumentTypes,
             [NotNullWhen(true)] ref ConstructorInfo? matchingConstructor,
-            [NotNullWhen(true)] ref int?[]? parameterMap)
+            ref int?[]? parameterMap)
         {
             var seenPreferred = false;
             foreach (var constructor in instanceType.GetTypeInfo().DeclaredConstructors)
@@ -292,7 +292,7 @@ namespace Microsoft.Extensions.Internal
                 }
             }
 
-            return matchingConstructor != null && parameterMap != null;
+            return matchingConstructor != null;
         }
 
         // Creates an injective parameterMap from givenParameterTypes to assignable constructorParameters.
