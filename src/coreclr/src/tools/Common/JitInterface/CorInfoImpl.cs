@@ -58,6 +58,8 @@ namespace Internal.JitInterface
         private IntPtr _unmanagedCallbacks; // array of pointers to JIT-EE interface callbacks
         private Object _keepAlive; // Keeps delegates for the callbacks alive
 
+        private ExceptionDispatchInfo _lastException;
+
         [UnmanagedFunctionPointer(CallingConvention.StdCall)]
         private delegate IntPtr JitStartupDelegate(IntPtr host);
 
@@ -68,7 +70,6 @@ namespace Internal.JitInterface
 
         private static JitStartupDelegate s_jitStartup;
         private static GetJitDelegate s_getJit;
-        private ExceptionDispatchInfo _lastException;
 
         [DllImport(JitSupportLibrary)]
         private extern static IntPtr GetJitHost(IntPtr configProvider);
@@ -135,37 +136,14 @@ namespace Internal.JitInterface
             s_jitStartup(GetJitHost(JitConfigProvider.Instance.UnmanagedInstance));
         }
 
-        private static string GetLibraryPrefix()
-        {
-            return RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "" : "lib";
-        }
-
-        private static string GetLibraryExtension()
-        {
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-            {
-                return ".dll";
-            }
-            else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
-            {
-                return ".so";
-            }
-            else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
-            {
-                return ".dylib";
-            }
-            else
-            {
-                throw new NotImplementedException("GetLibraryExtension");
-            }
-        }
-
         private static string GetTargetSpec(TargetOS targetOS, TargetArchitecture targetArchitecture)
         {
             string targetOSComponent = (targetOS == TargetOS.Windows ? "win" : "unix");
             string targetArchComponent = targetArchitecture switch
             {
+                TargetArchitecture.X86 => "x86",
                 TargetArchitecture.X64 => "x64",
+                TargetArchitecture.ARM => "arm",
                 TargetArchitecture.ARM64 => "arm64",
                 _ => throw new NotImplementedException(targetArchitecture.ToString())
             };
