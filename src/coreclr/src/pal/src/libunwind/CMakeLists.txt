@@ -61,11 +61,15 @@ if (CLR_CMAKE_HOST_UNIX)
         # in include/tdep like it works for similar files on other architectures. So we need to add
         # the include/tdep-arm to include directories
         include_directories(../include/tdep-arm)
+        # We compile code with -std=c99 and the asm keyword is not recognized as it is a gnu extension
+        add_definitions(-Dasm=__asm__)
     elseif(CLR_CMAKE_TARGET_ARCH_ARM64)
         if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
             # Disable warning due to labs function called on unsigned argument
             add_compile_options(-Wno-absolute-value)
         endif()
+        # We compile code with -std=c99 and the asm keyword is not recognized as it is a gnu extension
+        add_definitions(-Dasm=__asm__)
     elseif(CLR_CMAKE_TARGET_ARCH_I386)
         # Disable warning for a bug in the libunwind source src/x86/Gos-linux.c, but not in code that we exercise
         add_compile_options(-Wno-incompatible-pointer-types)
