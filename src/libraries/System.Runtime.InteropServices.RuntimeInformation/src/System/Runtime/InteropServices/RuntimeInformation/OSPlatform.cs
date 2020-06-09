@@ -12,13 +12,9 @@ namespace System.Runtime.InteropServices
 
         public static OSPlatform FreeBSD { get; } = new OSPlatform("FREEBSD");
 
-        public static OSPlatform iOS { get; } = new OSPlatform("IOS");
-
         public static OSPlatform Linux { get; } = new OSPlatform("LINUX");
 
         public static OSPlatform OSX { get; } = new OSPlatform("OSX");
-
-        public static OSPlatform tvOS { get; } = new OSPlatform("TVOS");
 
         public static OSPlatform Windows { get; } = new OSPlatform("WINDOWS");
 

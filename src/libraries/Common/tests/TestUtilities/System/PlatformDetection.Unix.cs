@@ -46,9 +46,9 @@ namespace System
         public static bool IsNotFedoraOrRedHatFamily => !IsFedora && !IsRedHatFamily;
         public static bool IsNotDebian10 => !IsDebian10;
         public static bool IsNotApple =>
-            !RuntimeInformation.IsOSPlatform(OSPlatform.iOS) &&
+            !RuntimeInformation.IsOSPlatform(OSPlatform.Create("IOS")) &&
             !RuntimeInformation.IsOSPlatform(OSPlatform.OSX) &&
-            !RuntimeInformation.IsOSPlatform(OSPlatform.tvOS);
+            !RuntimeInformation.IsOSPlatform(OSPlatform.Create("TVOS"));
 
         public static bool IsSuperUser => !IsWindows ?
             libc.geteuid() == 0 :
