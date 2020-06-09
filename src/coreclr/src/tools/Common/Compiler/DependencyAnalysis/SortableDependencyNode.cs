@@ -12,7 +12,7 @@ using Internal.TypeSystem;
 
 namespace ILCompiler.DependencyAnalysis
 {
-    public abstract class SortableDependencyNode : DependencyNodeCore<NodeFactory>, ISortableNode
+    public abstract partial class SortableDependencyNode : DependencyNodeCore<NodeFactory>, ISortableNode
     {
 #if !SUPPORT_JIT
         /// <summary>
@@ -30,9 +30,6 @@ namespace ILCompiler.DependencyAnalysis
         /// If two manage to conflict (which is pretty unlikely), just make a new one...
         /// </remarks>
         public abstract int ClassCode { get; }
-
-        // Custom sort order. Used to override the default sorting mechanics.
-        public int CustomSort = int.MaxValue;
 
         // Note to implementers: the type of `other` is actually the same as the type of `this`.
         public virtual int CompareToImpl(ISortableNode other, CompilerComparer comparer)
@@ -157,6 +154,8 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
+        static partial void ApplyCustomSort(SortableDependencyNode x, SortableDependencyNode y, ref int result);
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static int CompareImpl(SortableDependencyNode x, SortableDependencyNode y, CompilerComparer comparer)
         {
@@ -165,8 +164,10 @@ namespace ILCompiler.DependencyAnalysis
 
             if (phaseX == phaseY)
             {
-                if (x.CustomSort != y.CustomSort)
-                    return x.CustomSort.CompareTo(y.CustomSort);
+                int customSort = 0;
+                ApplyCustomSort(x, y, ref customSort);
+                if (customSort != 0)
+                    return customSort;
 
                 int codeX = x.ClassCode;
                 int codeY = y.ClassCode;
