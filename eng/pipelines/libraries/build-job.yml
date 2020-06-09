@@ -104,13 +104,6 @@ jobs:
                 sourceFolder: $(Build.SourcesDirectory)/artifacts/bin/testhost
                 targetFolder: $(Build.ArtifactStagingDirectory)/artifacts/bin/testhost
 
-            - ${{ if eq(parameters.runtimeFlavor, 'mono') }}:
-              - task: CopyFiles@2
-                displayName: Prepare lib-runtime-packs folder to publish
-                inputs:
-                  sourceFolder: $(Build.SourcesDirectory)/artifacts/bin/microsoft.netcore.app.runtime.ios-x64
-                  targetFolder: $(Build.ArtifactStagingDirectory)/artifacts/bin/microsoft.netcore.app.runtime.ios-x64
-
             - task: CopyFiles@2
               displayName: Prepare artifacts toolset folder to publish
               inputs:

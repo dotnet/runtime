@@ -44,9 +44,8 @@ jobs:
 
       variables:
         - librariesTestsArtifactName: ${{ format('libraries_test_assets_{0}_{1}_{2}', parameters.osGroup, parameters.archType, parameters.buildConfig) }}
-        - ${{ if notIn(parameters.osGroup, 'iOS', 'tvOS') }}:
-          - name: _archiveTestsParameter
-            value: /p:ArchiveTests=true
+        - _archiveTestsParameter: /p:ArchiveTests=true
+        
         - ${{ parameters.variables }}
 
       steps:
