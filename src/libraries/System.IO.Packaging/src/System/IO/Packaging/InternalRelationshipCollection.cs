@@ -19,6 +19,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Xml;                           // for XmlReader/Writer
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.IO.Packaging
 {
@@ -79,7 +80,7 @@ namespace System.IO.Packaging
         /// <param name="relationshipType">relationship type that uniquely defines the role of the relationship</param>
         /// <param name="id">String that conforms to the xsd:ID datatype. Unique across the source's relationships.
         /// Null OK (ID will be generated).</param>
-        internal PackageRelationship Add(Uri targetUri, TargetMode targetMode, string relationshipType, string id)
+        internal PackageRelationship Add(Uri targetUri, TargetMode targetMode, string relationshipType, string? id)
         {
             return Add(targetUri, targetMode, relationshipType, id, parsing: false);
         }
@@ -87,7 +88,7 @@ namespace System.IO.Packaging
         /// <summary>
         /// Return the relationship whose id is 'id', and null if not found.
         /// </summary>
-        internal PackageRelationship GetRelationship(string id)
+        internal PackageRelationship? GetRelationship(string id)
             => _relationships.TryGetValue(id, out var result) ? result : null;
 
         /// <summary>
@@ -171,7 +172,7 @@ namespace System.IO.Packaging
         /// <param name="package">package</param>
         /// <param name="part">part will be null if package is the source of the relationships</param>
         /// <remarks>Shared constructor</remarks>
-        private InternalRelationshipCollection(Package package, PackagePart part)
+        private InternalRelationshipCollection(Package package, PackagePart? part)
         {
             Debug.Assert(package != null, "package parameter passed should never be null");
 
@@ -200,7 +201,7 @@ namespace System.IO.Packaging
         /// </summary>
         /// <param name="part">may be null</param>
         /// <returns>name of relationship part for the given part</returns>
-        private static Uri GetRelationshipPartUri(PackagePart part)
+        private static Uri GetRelationshipPartUri(PackagePart? part)
         {
             Uri sourceUri;
 
@@ -275,7 +276,7 @@ namespace System.IO.Packaging
 
                                     int expectedAttributesCount = 3;
 
-                                    string targetModeAttributeValue = reader.GetAttribute(TargetModeAttributeName);
+                                    string? targetModeAttributeValue = reader.GetAttribute(TargetModeAttributeName);
                                     if (targetModeAttributeValue != null)
                                         expectedAttributesCount++;
 
@@ -311,7 +312,7 @@ namespace System.IO.Packaging
         {
             // Attribute : TargetMode
 
-            string targetModeAttributeValue = reader.GetAttribute(TargetModeAttributeName);
+            string? targetModeAttributeValue = reader.GetAttribute(TargetModeAttributeName);
 
             //If the TargetMode attribute is missing in the underlying markup then we assume it to be internal
             TargetMode relationshipTargetMode = TargetMode.Internal;
@@ -335,20 +336,20 @@ namespace System.IO.Packaging
 
             // Attribute : Target
             // create a new PackageRelationship
-            string targetAttributeValue = reader.GetAttribute(TargetAttributeName);
+            string? targetAttributeValue = reader.GetAttribute(TargetAttributeName);
             if (string.IsNullOrEmpty(targetAttributeValue))
                 throw new XmlException(SR.Format(SR.RequiredRelationshipAttributeMissing, TargetAttributeName), null, reader.LineNumber, reader.LinePosition);
 
             Uri targetUri = new Uri(targetAttributeValue, DotNetRelativeOrAbsolute);
 
             // Attribute : Type
-            string typeAttributeValue = reader.GetAttribute(TypeAttributeName);
+            string? typeAttributeValue = reader.GetAttribute(TypeAttributeName);
             if (string.IsNullOrEmpty(typeAttributeValue))
                 throw new XmlException(SR.Format(SR.RequiredRelationshipAttributeMissing, TypeAttributeName), null, reader.LineNumber, reader.LinePosition);
 
             // Attribute : Id
             // Get the Id attribute (required attribute).
-            string idAttributeValue = reader.GetAttribute(IdAttributeName);
+            string? idAttributeValue = reader.GetAttribute(IdAttributeName);
             if (string.IsNullOrEmpty(idAttributeValue))
                 throw new XmlException(SR.Format(SR.RequiredRelationshipAttributeMissing, IdAttributeName), null, reader.LineNumber, reader.LinePosition);
 
@@ -383,7 +384,7 @@ namespace System.IO.Packaging
         /// Null OK (ID will be generated).</param>
         /// <param name="parsing">Indicates whether the add call is made while parsing existing relationships
         /// from a relationship part, or we are adding a new relationship</param>
-        private PackageRelationship Add(Uri targetUri, TargetMode targetMode, string relationshipType, string id, bool parsing)
+        private PackageRelationship Add(Uri targetUri, TargetMode targetMode, string relationshipType, string? id, bool parsing)
         {
             if (targetUri == null)
                 throw new ArgumentNullException(nameof(targetUri));
@@ -515,6 +516,7 @@ namespace System.IO.Packaging
         /// </summary>
         /// <remarks>
         /// </remarks>
+        [MemberNotNull(nameof(_relationshipPart))]
         private void EnsureRelationshipPart()
         {
             if (_relationshipPart == null || _relationshipPart.IsDeleted)
@@ -562,7 +564,7 @@ namespace System.IO.Packaging
         //Throws an exception if the xml:base attribute is present in the Relationships XML
         private void ThrowIfXmlBaseAttributeIsPresent(XmlCompatibilityReader reader)
         {
-            string xmlBaseAttributeValue = reader.GetAttribute(XmlBaseAttributeName);
+            string? xmlBaseAttributeValue = reader.GetAttribute(XmlBaseAttributeName);
 
             if (xmlBaseAttributeValue != null)
                 throw new XmlException(SR.Format(SR.InvalidXmlBaseAttributePresent, XmlBaseAttributeName), null, reader.LineNumber, reader.LinePosition);
@@ -614,8 +616,8 @@ namespace System.IO.Packaging
         private readonly OrderedDictionary<string, PackageRelationship> _relationships;
         private bool _dirty;    // true if we have uncommitted changes to _relationships
         private readonly Package _package;     // our package - in case _sourcePart is null
-        private readonly PackagePart _sourcePart;      // owning part - null if package is the owner
-        private PackagePart _relationshipPart;  // where our relationships are persisted
+        private readonly PackagePart? _sourcePart;      // owning part - null if package is the owner
+        private PackagePart? _relationshipPart;  // where our relationships are persisted
         private readonly Uri _uri;           // the URI of our relationship part
 
         //------------------------------------------------------
