@@ -23,22 +23,22 @@ namespace System
 
         [DebuggerHidden]
         [DebuggerStepThrough]
-        public static object? CreateInstance(Type type, BindingFlags bindingAttr, Binder? binder, object?[]? args, CultureInfo? culture) =>
+        public static object? CreateInstance([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.NonPublicConstructors | DynamicallyAccessedMemberTypes.PublicConstructors)] Type type, BindingFlags bindingAttr, Binder? binder, object?[]? args, CultureInfo? culture) =>
             CreateInstance(type, bindingAttr, binder, args, culture, null);
 
         [DebuggerHidden]
         [DebuggerStepThrough]
-        public static object? CreateInstance(Type type, params object?[]? args) =>
+        public static object? CreateInstance([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] Type type, params object?[]? args) =>
             CreateInstance(type, ConstructorDefault, null, args, null, null);
 
         [DebuggerHidden]
         [DebuggerStepThrough]
-        public static object? CreateInstance(Type type, object?[]? args, object?[]? activationAttributes) =>
+        public static object? CreateInstance([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] Type type, object?[]? args, object?[]? activationAttributes) =>
             CreateInstance(type, ConstructorDefault, null, args, null, activationAttributes);
 
         [DebuggerHidden]
         [DebuggerStepThrough]
-        public static object? CreateInstance(Type type) =>
+        public static object? CreateInstance([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] Type type) =>
             CreateInstance(type, nonPublic: false);
 
         [RequiresUnreferencedCode("Type and its constructor could be removed")]
