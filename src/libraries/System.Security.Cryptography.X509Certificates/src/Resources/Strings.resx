@@ -185,7 +185,7 @@
     <value>The provided PublicKey object is invalid, valid Oid and EncodedKeyValue property values are required.</value>
   </data>
   <data name="Cryptography_InvalidRsaParameters" xml:space="preserve">
-    <value>The specified RSA parameters are not valid; both Exponent and Modulus are required fields.</value>
+    <value>The specified RSA parameters are not valid. Exponent and Modulus are required. If D is present, it must have the same length as Modulus. If D is present, P, Q, DP, DQ, and InverseQ are required and must have half the length of Modulus, rounded up, otherwise they must be omitted.</value>
   </data>
   <data name="Cryptography_InvalidStoreHandle" xml:space="preserve">
     <value>The store handle is invalid.</value>
