@@ -110,8 +110,8 @@ jobs:
               - task: CopyFiles@2
                 displayName: Prepare lib-runtime-packs folder to publish
                 inputs:
-                  sourceFolder: $(Build.SourcesDirectory)/artifacts/bin/lib-runtime-packs
-                  targetFolder: $(Build.ArtifactStagingDirectory)/artifacts/bin/lib-runtime-packs
+                  sourceFolder: $(Build.SourcesDirectory)/artifacts/bin/microsoft.netcore.app.runtime.ios-x64
+                  targetFolder: $(Build.ArtifactStagingDirectory)/artifacts/bin/microsoft.netcore.app.runtime.ios-x64
 
             - task: CopyFiles@2
               displayName: Prepare artifacts toolset folder to publish
