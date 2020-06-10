@@ -1,7 +1,9 @@
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
+using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
 namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces.OnValueType
 {
+	[SetupLinkerDescriptorFile ("UnusedExplicitInterfaceHasMethodPreservedViaXml.xml")]
 	public class UnusedExplicitInterfaceHasMethodPreservedViaXml
 	{
 		public static void Main ()

@@ -12,6 +12,7 @@ namespace Mono.Linker.Tests.Cases.LinkXml
 
 	[RemovedAssembly ("Forwarder.dll")]
 	[KeptMemberInAssembly ("Library.dll", typeof (CanPreserveAnExportedType_Library), "Field1", "Method()", ".ctor()")]
+	[SetupLinkerDescriptorFile ("CanPreserveExportedTypesUsingRegex.xml")]
 	class CanPreserveExportedTypesUsingRegex
 	{
 		public static void Main ()

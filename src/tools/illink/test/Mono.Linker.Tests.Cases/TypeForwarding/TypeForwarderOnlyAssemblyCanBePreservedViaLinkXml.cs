@@ -19,6 +19,7 @@ namespace Mono.Linker.Tests.Cases.TypeForwarding
 	[KeptMemberInAssembly ("Library.dll", typeof (LibraryUsingForwarder), "GetValueFromOtherAssembly()")]
 
 	[KeptTypeInAssembly ("Forwarder.dll", typeof (ImplementationLibrary))]
+	[SetupLinkerDescriptorFile ("TypeForwarderOnlyAssemblyCanBePreservedViaLinkXml.xml")]
 	public class TypeForwarderOnlyAssemblyCanBePreservedViaLinkXml
 	{
 		static void Main ()

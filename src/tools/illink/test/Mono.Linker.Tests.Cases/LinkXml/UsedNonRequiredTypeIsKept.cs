@@ -1,7 +1,9 @@
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
+using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
 namespace Mono.Linker.Tests.Cases.LinkXml
 {
+	[SetupLinkerDescriptorFile ("UsedNonRequiredTypeIsKept.xml")]
 	public class UsedNonRequiredTypeIsKept
 	{
 		public static void Main ()

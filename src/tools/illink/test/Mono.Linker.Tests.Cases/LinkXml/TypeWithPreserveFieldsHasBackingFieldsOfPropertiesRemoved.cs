@@ -1,9 +1,9 @@
-﻿
-
-using Mono.Linker.Tests.Cases.Expectations.Assertions;
+﻿using Mono.Linker.Tests.Cases.Expectations.Assertions;
+using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
 namespace Mono.Linker.Tests.Cases.LinkXml
 {
+	[SetupLinkerDescriptorFile ("TypeWithPreserveFieldsHasBackingFieldsOfPropertiesRemoved.xml")]
 	class TypeWithPreserveFieldsHasBackingFieldsOfPropertiesRemoved
 	{
 		public static void Main ()

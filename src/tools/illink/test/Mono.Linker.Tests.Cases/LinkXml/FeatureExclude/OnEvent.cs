@@ -8,6 +8,7 @@ namespace Mono.Linker.Tests.Cases.LinkXml.FeatureExclude
 	[IgnoreTestCase ("--exclude-feature is not supported on .NET Core")]
 #endif
 	[SetupLinkerArgument ("--exclude-feature", "one")]
+	[SetupLinkerDescriptorFile ("OnEvent.xml")]
 	public class OnEvent
 	{
 		public static void Main ()
