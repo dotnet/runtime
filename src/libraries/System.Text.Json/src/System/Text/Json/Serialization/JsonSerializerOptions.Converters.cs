@@ -18,6 +18,8 @@ namespace System.Text.Json
         // The global list of built-in simple converters.
         private static readonly Dictionary<Type, JsonConverter> s_defaultSimpleConverters = GetDefaultSimpleConverters();
 
+        private static readonly Type s_nullableOfTType = typeof(Nullable<>);
+
         // The global list of built-in converters that override CanConvert().
         private static readonly JsonConverter[] s_defaultFactoryConverters = new JsonConverter[]
         {
@@ -175,6 +177,16 @@ namespace System.Text.Json
 
                 // A factory cannot return null; GetConverterInternal checked for that.
                 Debug.Assert(converter != null);
+            }
+
+            Type converterTypeToConvert = converter.TypeToConvert;
+
+            // Wrap non-nullable-struct returning converter with NullableConverter<T> to avoid passing
+            // an invalid argument to setters for nullable struct properties, where applicable, which would
+            // cause an InvalidProgramException when the generated IL is invoked.
+            if (IsNullableType(runtimePropertyType) && !IsNullableType(converterTypeToConvert))
+            {
+                converter = NullableConverterFactory.CreateValueConverter(converterTypeToConvert, converter);
             }
 
             return converter;
@@ -345,6 +357,11 @@ namespace System.Text.Json
 
             ThrowHelper.ThrowInvalidOperationException_SerializationDuplicateAttribute(attributeType, classType, memberInfo);
             return default;
+        }
+
+        private static bool IsNullableType(Type type)
+        {
+            return type.IsGenericType && type.GetGenericTypeDefinition() == s_nullableOfTType;
         }
     }
 }

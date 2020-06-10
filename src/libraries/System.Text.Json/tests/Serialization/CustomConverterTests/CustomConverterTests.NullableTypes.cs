@@ -1,5 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+
 using System.Diagnostics;
 using Xunit;
 
@@ -276,6 +277,210 @@ namespace System.Text.Json.Serialization.Tests
                 json = JsonSerializer.Serialize<PocoSingleInt[]>(new PocoSingleInt[] { poco, poco }, options);
                 Assert.Equal(@"[{""MyInt"":42},{""MyInt"":42}]", json);
             }
+        }
+
+        [Fact]
+        public static void TestNullableStructInClass_ConverterOnProperty()
+        {
+            string serialized = JsonSerializer.Serialize(new ClassWithNullableStruct_ConverterOnProperty { MyStruct = new TestStruct { InnerValue = 5 } });
+            Assert.Equal(@"{""MyStruct"":{""InnerValue"":10}}", serialized);
+
+            ClassWithNullableStruct_ConverterOnProperty obj = JsonSerializer.Deserialize<ClassWithNullableStruct_ConverterOnProperty>(serialized);
+            Assert.Equal(15, obj.MyStruct?.InnerValue);
+        }
+
+        [Fact]
+        public static void TestNullableStructInClass_ConverterOnType()
+        {
+            string serialized = JsonSerializer.Serialize(new ClassWithNullableStruct_ConverterOnStruct { MyStruct = new TestStructWithConverter { InnerValue = 5 } });
+            Assert.Equal(@"{""MyStruct"":{""InnerValue"":10}}", serialized);
+
+            ClassWithNullableStruct_ConverterOnStruct obj = JsonSerializer.Deserialize<ClassWithNullableStruct_ConverterOnStruct>(serialized);
+            Assert.Equal(15, obj.MyStruct?.InnerValue);
+        }
+
+        [Fact]
+        public static void TestNullableStructInClass_ConverterOnOptions()
+        {
+            var options = new JsonSerializerOptions { Converters = { new JsonTestStructValueChangingConverter() } };
+
+            string serialized = JsonSerializer.Serialize(new ClassWithNullableStruct { MyStruct = new TestStruct { InnerValue = 5 } }, options);
+            Assert.Equal(@"{""MyStruct"":{""InnerValue"":10}}", serialized);
+
+            ClassWithNullableStruct obj = JsonSerializer.Deserialize<ClassWithNullableStruct>(serialized, options);
+            Assert.Equal(15, obj.MyStruct?.InnerValue);
+        }
+
+        [Fact]
+        public static void TestNullableStruct_AsRootType()
+        {
+            TestStructWithConverter? obj = new TestStructWithConverter { InnerValue = 5 };
+            string serialized = JsonSerializer.Serialize(obj);
+            Assert.Equal(@"{""InnerValue"":10}", serialized);
+
+            obj = JsonSerializer.Deserialize<TestStructWithConverter?>(serialized);
+            Assert.Equal(15, obj?.InnerValue);
+        }
+
+        private class ClassWithNullableStruct_ConverterOnProperty
+        {
+            [JsonConverter(typeof(JsonTestStructValueChangingConverter))]
+            public TestStruct? MyStruct { get; set; }
+        }
+
+        private class ClassWithNullableStruct_ConverterOnStruct
+        {
+            public TestStructWithConverter? MyStruct { get; set; }
+        }
+
+        private class ClassWithNullableStruct
+        {
+            public TestStruct? MyStruct { get; set; }
+        }
+
+        [JsonConverter(typeof(JsonTestStructWithConverterValueChangingConverter))]
+        public struct TestStructWithConverter
+        {
+            public int InnerValue { get; set; }
+        }
+
+        private class JsonTestStructValueChangingConverter : JsonConverter<TestStruct>
+        {
+            public override bool CanConvert(Type typeToConvert) =>
+                typeToConvert == typeof(TestStruct) || typeToConvert == typeof(TestStruct?);
+
+            public override TestStruct Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+            {
+                Debug.Assert(reader.TokenType == JsonTokenType.StartObject);
+                reader.Read();
+
+                Debug.Assert(reader.TokenType == JsonTokenType.PropertyName);
+                Debug.Assert(reader.GetString() == "InnerValue");
+                reader.Read();
+
+                var obj = new TestStruct
+                {
+                    InnerValue = reader.GetInt32() + 5
+                };
+
+                reader.Read();
+                Debug.Assert(reader.TokenType == JsonTokenType.EndObject);
+
+                return obj;
+            }
+
+            public override void Write(Utf8JsonWriter writer, TestStruct value, JsonSerializerOptions options)
+            {
+                writer.WriteStartObject();
+                writer.WriteNumber("InnerValue", value.InnerValue + 5);
+                writer.WriteEndObject();
+            }
+        }
+
+        private class JsonTestStructWithConverterValueChangingConverter : JsonConverter<TestStructWithConverter>
+        {
+            public override bool CanConvert(Type typeToConvert) =>
+                typeToConvert == typeof(TestStructWithConverter) || typeToConvert == typeof(TestStructWithConverter?);
+
+            public override TestStructWithConverter Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+            {
+                Console.WriteLine("called");
+
+                if (reader.TokenType == JsonTokenType.Null)
+                {
+                    throw new NullNotAllowedException();
+                }
+
+                if (reader.TokenType != JsonTokenType.StartObject)
+                {
+                    throw new JsonException();
+                }
+
+                reader.Read();
+
+                if (reader.TokenType != JsonTokenType.PropertyName || reader.GetString() != "InnerValue")
+                {
+                    throw new JsonException();
+                }
+
+                reader.Read();
+
+                var obj = new TestStructWithConverter
+                {
+                    InnerValue = reader.GetInt32() + 5
+                };
+
+                reader.Read();
+
+                if (reader.TokenType != JsonTokenType.EndObject)
+                {
+                    throw new JsonException();
+                }
+
+                return obj;
+            }
+
+            public override void Write(Utf8JsonWriter writer, TestStructWithConverter value, JsonSerializerOptions options)
+            {
+                Console.WriteLine("called");
+                writer.WriteStartObject();
+                writer.WriteNumber("InnerValue", value.InnerValue + 5);
+                writer.WriteEndObject();
+            }
+        }
+
+        private class NullNotAllowedException : Exception
+        {
+        }
+
+        [Fact]
+        public static void NullableStruct_HandleNull_Default()
+        {
+            // Regardless of HandleNull selection, we don't pass null to underlying converters of the internal Nullable<T> converter.
+
+            string serialized = JsonSerializer.Serialize(new ClassWithNullableStruct_ConverterOnStruct());
+            Assert.Equal(@"{""MyStruct"":null}", serialized);
+
+            ClassWithNullableStruct_ConverterOnStruct obj = JsonSerializer.Deserialize<ClassWithNullableStruct_ConverterOnStruct>(serialized);
+            Assert.Null(obj.MyStruct?.InnerValue);
+        }
+
+        [Fact]
+        public static void NullableStruct_HandleNull_OptIn()
+        {
+            // Regardless of HandleNull selection, we don't pass null to underlying converters of the internal Nullable<T> converter.
+
+            var options = new JsonSerializerOptions { Converters = { new NullableStructConverter_HandleNullOptIn() } };
+
+            string serialized = JsonSerializer.Serialize(new ClassWithNullableStruct_ConverterOnStruct(), options);
+            Assert.Equal(@"{""MyStruct"":null}", serialized);
+
+            ClassWithNullableStruct_ConverterOnStruct obj = JsonSerializer.Deserialize<ClassWithNullableStruct_ConverterOnStruct>(serialized, options);
+            Assert.Null(obj.MyStruct?.InnerValue);
+        }
+
+        private class NullableStructConverter_HandleNullOptIn : JsonTestStructWithConverterValueChangingConverter
+        {
+            public override bool HandleNull => true;
+        }
+
+        [Fact]
+        public static void NullableStruct_HandleNull_OptOut()
+        {
+            // Regardless of HandleNull selection, we don't pass null to underlying converters of the internal Nullable<T> converter.
+
+            var options = new JsonSerializerOptions { Converters = { new NullableStructConverter_HandleNullOptOut() } };
+
+            string serialized = JsonSerializer.Serialize(new ClassWithNullableStruct_ConverterOnStruct(), options);
+            Assert.Equal(@"{""MyStruct"":null}", serialized);
+
+            ClassWithNullableStruct_ConverterOnStruct obj = JsonSerializer.Deserialize<ClassWithNullableStruct_ConverterOnStruct>(serialized, options);
+            Assert.Null(obj.MyStruct?.InnerValue);
+        }
+
+        private class NullableStructConverter_HandleNullOptOut : JsonTestStructWithConverterValueChangingConverter
+        {
+            public override bool HandleNull => false;
         }
     }
 }
