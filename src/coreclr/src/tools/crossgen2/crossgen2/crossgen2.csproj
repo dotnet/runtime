@@ -78,19 +78,15 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <PackageFile Include="$(BinDir)\crossgen2\*" Exclude="$(BinDir)\crossgen2\$(JitInterfaceLibraryName)" />
+      <PackageFile Include="$(BinDir)\crossgen2\*"
+        Exclude="$(BinDir)\crossgen2\$(JitInterfaceLibraryName);$(BinDir)\crossgen2\$(LibraryNamePrefix)clrjit-*$(LibraryNameExtension)" />
+      <PackageFile Include="$(BinDir)\$(CrossHostArch)\$(JitInterfaceLibraryName)" />
     </ItemGroup>
 
     <MakeDir Directories="$(CrossPackageFolder)" />
     <Copy
       SourceFiles="@(PackageFile)"
       DestinationFiles="@(PackageFile->'$(CrossPackageFolder)\%(FileName)%(Extension)')"
-      UseHardLinksIfPossible="true"
-      />
-
-    <Copy
-      SourceFiles="$(BinDir)\$(CrossHostArch)\$(JitInterfaceLibraryName)"
-      DestinationFiles="$(CrossPackageFolder)\$(JitInterfaceLibraryName)"
       UseHardLinksIfPossible="true"
       />
 

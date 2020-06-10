@@ -17,6 +17,8 @@ namespace Internal.JitInterface
     {
         // Jit configuration is static because RyuJIT doesn't support multiple hosts within the same process.
         private static JitConfigProvider s_instance;
+        private static IntPtr s_jitLibrary;
+
         public static JitConfigProvider Instance
         {
             get
@@ -43,7 +45,32 @@ namespace Internal.JitInterface
             if (Interlocked.CompareExchange(ref s_instance, config, null) != null)
                 throw new InvalidOperationException();
 
-            CorInfoImpl.Startup(target, jitPath);
+#if READYTORUN
+            NativeLibrary.SetDllImportResolver(typeof(CorInfoImpl).Assembly, (libName, assembly, searchPath) =>
+            {
+                IntPtr libHandle = IntPtr.Zero;
+                if (libName == CorInfoImpl.JitLibrary)
+                {
+                    if (s_jitLibrary == IntPtr.Zero)
+                    {
+                        if (!string.IsNullOrEmpty(jitPath))
+                        {
+                            s_jitLibrary = NativeLibrary.Load(jitPath);
+                        }
+                        else
+                        {
+                            s_jitLibrary = NativeLibrary.Load("clrjit-" + GetTargetSpec(target), assembly, searchPath);
+                        }
+                    }
+                    libHandle = s_jitLibrary;
+                }
+                return libHandle;
+            });
+#else
+            Debug.Assert(jitPath == null);
+#endif
+
+            CorInfoImpl.Startup();
         }
 
         public IntPtr UnmanagedInstance
@@ -108,6 +135,20 @@ namespace Internal.JitInterface
             }
 
             return String.Empty;
+        }
+
+        private static string GetTargetSpec(TargetDetails target)
+        {
+            string targetOSComponent = (target.OperatingSystem == TargetOS.Windows ? "win" : "unix");
+            string targetArchComponent = target.Architecture switch
+            {
+                TargetArchitecture.X86 => "x86",
+                TargetArchitecture.X64 => "x64",
+                TargetArchitecture.ARM => "arm",
+                TargetArchitecture.ARM64 => "arm64",
+                _ => throw new NotImplementedException(target.Architecture.ToString())
+            };
+            return targetOSComponent + '-' + targetArchComponent;
         }
 
         #region Unmanaged instance

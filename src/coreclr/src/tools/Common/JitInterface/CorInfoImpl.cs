@@ -45,7 +45,7 @@ namespace Internal.JitInterface
             ARM64 = 0xaa64,
         }
 
-        internal const string JitLibrary = "clrjit";
+        internal const string JitLibrary = "clrjitilc";
 
 #if SUPPORT_JIT
         private const string JitSupportLibrary = "*";
@@ -60,16 +60,11 @@ namespace Internal.JitInterface
 
         private ExceptionDispatchInfo _lastException;
 
-        [UnmanagedFunctionPointer(CallingConvention.StdCall)]
-        private delegate IntPtr JitStartupDelegate(IntPtr host);
+        [DllImport(JitLibrary, CallingConvention = CallingConvention.StdCall)] // stdcall in CoreCLR!
+        private extern static IntPtr jitStartup(IntPtr host);
 
-        [UnmanagedFunctionPointer(CallingConvention.StdCall)]
-        private delegate IntPtr GetJitDelegate();
-
-        private static IntPtr s_jitLibrary;
-
-        private static JitStartupDelegate s_jitStartup;
-        private static GetJitDelegate s_getJit;
+        [DllImport(JitLibrary, CallingConvention = CallingConvention.StdCall)]
+        private extern static IntPtr getJit();
 
         [DllImport(JitSupportLibrary)]
         private extern static IntPtr GetJitHost(IntPtr configProvider);
@@ -93,7 +88,7 @@ namespace Internal.JitInterface
         private extern static uint GetMaxIntrinsicSIMDVectorLength(IntPtr jit, CORJIT_FLAGS* flags);
 
         [DllImport(JitSupportLibrary)]
-        private extern static IntPtr AllocException([MarshalAs(UnmanagedType.LPWStr)] string message, int messageLength);
+        private extern static IntPtr AllocException([MarshalAs(UnmanagedType.LPWStr)]string message, int messageLength);
 
         private IntPtr AllocException(Exception ex)
         {
@@ -115,44 +110,14 @@ namespace Internal.JitInterface
         [DllImport(JitSupportLibrary)]
         private extern static char* GetExceptionMessage(IntPtr obj);
 
-
-        public static void Startup(TargetDetails target, string jitPathOverride)
+        public static void Startup()
         {
-            Debug.Assert(s_jitLibrary == IntPtr.Zero);
-
-            if (!string.IsNullOrEmpty(jitPathOverride))
-            {
-                s_jitLibrary = NativeLibrary.Load(jitPathOverride);
-            }
-            else
-            {
-                string jitLibraryName = JitLibrary + '-' + GetTargetSpec(target);
-                s_jitLibrary = NativeLibrary.Load(jitLibraryName, typeof(CorInfoImpl).Assembly, searchPath: null);
-            }
-
-            s_jitStartup = Marshal.GetDelegateForFunctionPointer<JitStartupDelegate>(NativeLibrary.GetExport(s_jitLibrary, "jitStartup"));
-            s_getJit = Marshal.GetDelegateForFunctionPointer<GetJitDelegate>(NativeLibrary.GetExport(s_jitLibrary, "getJit"));
-
-            s_jitStartup(GetJitHost(JitConfigProvider.Instance.UnmanagedInstance));
-        }
-
-        private static string GetTargetSpec(TargetDetails target)
-        {
-            string targetOSComponent = (target.OperatingSystem == TargetOS.Windows ? "win" : "unix");
-            string targetArchComponent = target.Architecture switch
-            {
-                TargetArchitecture.X86 => "x86",
-                TargetArchitecture.X64 => "x64",
-                TargetArchitecture.ARM => "arm",
-                TargetArchitecture.ARM64 => "arm64",
-                _ => throw new NotImplementedException(target.Architecture.ToString())
-            };
-            return targetOSComponent + '-' + targetArchComponent;
+            jitStartup(GetJitHost(JitConfigProvider.Instance.UnmanagedInstance));
         }
 
         public CorInfoImpl()
         {
-            _jit = s_getJit();
+            _jit = getJit();
             if (_jit == IntPtr.Zero)
             {
                 throw new IOException("Failed to initialize JIT");
