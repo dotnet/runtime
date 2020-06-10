@@ -393,8 +393,9 @@ namespace System.Globalization
             [MemberNotNull(nameof(calendar))]
             set
             {
-                if (IsReadOnly)
+                if (IsReadOnly || GlobalizationMode.Invariant)
                 {
+                    Debug.Assert(IsReadOnly, "Invariant Calendar is always readonly");
                     throw new InvalidOperationException(SR.InvalidOperation_ReadOnly);
                 }
                 if (value == null)
@@ -405,12 +406,6 @@ namespace System.Globalization
                 if (value == calendar)
                 {
                     return;
-                }
-
-                if (GlobalizationMode.Invariant)
-                {
-                    Debug.Fail("Invariant Calendar is always readonly");
-                    throw new ArgumentOutOfRangeException(nameof(value), value, SR.Argument_InvalidCalendar);
                 }
 
                 for (int i = 0; i < OptionalCalendars.Length; i++)
