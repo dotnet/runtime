@@ -93,7 +93,7 @@ namespace System.Runtime.InteropServices.JavaScript
                 if (_boundObjects.TryGetValue(jsId, out WeakReference? existingObj))
                 {
                     var instance = existingObj?.Target as JSObject;
-                    if (instance?.AnyRefHandle != h && h.IsAllocated)
+                    if (instance?.Int32Handle != (int)(IntPtr)h && h.IsAllocated)
                         throw new JSException($"Multiple handles pointing at jsId: {jsId}");
 
                     obj = instance;
@@ -138,11 +138,6 @@ namespace System.Runtime.InteropServices.JavaScript
             lock (_boundObjects)
             {
                 _boundObjects.Remove(objToRelease.JSHandle);
-                objToRelease.SetHandleAsInvalid();
-                objToRelease.IsDisposed = true;
-                objToRelease.RawObject = null;
-                objToRelease.WeakRawObject = null;
-                objToRelease.AnyRefHandle.Free();
             }
             return true;
         }
@@ -156,17 +151,7 @@ namespace System.Runtime.InteropServices.JavaScript
                 if (obj?.RawObject != null)
                 {
                     _rawToJS.Remove(obj.RawObject);
-
-                    Interop.Runtime.ReleaseHandle(obj.JSHandle, out int exception);
-                    if (exception != 0)
-                        throw new JSException($"Error releasing handle on (js-obj js '{obj.JSHandle}' mono '{obj.Int32Handle} raw '{obj.RawObject != null})");
-
-                    // Calling Release Handle above only removes the reference from the JavaScript side but does not
-                    // release the bridged JSObject associated with the raw object so we have to do that ourselves.
-                    obj.SetHandleAsInvalid();
-                    obj.IsDisposed = true;
-                    obj.RawObject = null;
-                    obj.AnyRefHandle.Free();
+                    obj.FreeHandle();
                 }
             }
         }

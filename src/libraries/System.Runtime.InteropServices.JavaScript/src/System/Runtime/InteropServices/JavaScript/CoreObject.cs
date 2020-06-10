@@ -21,7 +21,7 @@ namespace System.Runtime.InteropServices.JavaScript
     {
         protected CoreObject(int jsHandle) : base(jsHandle, true)
         {
-            object result = Interop.Runtime.BindCoreObject(jsHandle, (int)(IntPtr)AnyRefHandle, out int exception);
+            object result = Interop.Runtime.BindCoreObject(jsHandle, Int32Handle, out int exception);
             if (exception != 0)
                 throw new JSException($"CoreObject Error binding: {result}");
         }

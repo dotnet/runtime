@@ -30,7 +30,7 @@ namespace System.Runtime.InteropServices.JavaScript
 
         public JSObject() : this(Interop.Runtime.New<object>(), true)
         {
-            object result = Interop.Runtime.BindCoreObject(JSHandle, (int)(IntPtr)AnyRefHandle, out int exception);
+            object result = Interop.Runtime.BindCoreObject(JSHandle, Int32Handle, out int exception);
             if (exception != 0)
                 throw new JSException($"JSObject Error binding: {result}");
 
@@ -119,7 +119,7 @@ namespace System.Runtime.InteropServices.JavaScript
         {
             object setPropResult = Interop.Runtime.SetObjectProperty(JSHandle, name, value, createIfNotExists, hasOwnProperty, out int exception);
             if (exception != 0)
-                throw new JSException($"Error setting {name} on (js-obj js '{JSHandle}' .NET '{(IntPtr)AnyRefHandle} raw '{RawObject != null})");
+                throw new JSException($"Error setting {name} on (js-obj js '{JSHandle}' .NET '{Int32Handle} raw '{RawObject != null})");
         }
 
         /// <summary>
@@ -146,9 +146,14 @@ namespace System.Runtime.InteropServices.JavaScript
         /// <param name="prop">The String name or Symbol of the property to test.</param>
         public bool PropertyIsEnumerable(string prop) => (bool)Invoke("propertyIsEnumerable", prop);
 
-        protected void FreeHandle()
+        internal void FreeHandle()
         {
             Runtime.ReleaseJSObject(this);
+            SetHandleAsInvalid();
+            IsDisposed = true;
+            RawObject = null;
+            WeakRawObject = null;
+            AnyRefHandle.Free();
         }
 
         public override bool Equals(object? obj) => obj is JSObject other && JSHandle == other.JSHandle;

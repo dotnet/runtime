@@ -12,20 +12,15 @@ namespace System.Runtime.InteropServices.JavaScript
 {
     public abstract class AnyRef : SafeHandleMinusOneIsInvalid
     {
-        private GCHandle AnyRefHandle;
-
+        protected GCHandle AnyRefHandle;
         public int JSHandle => (int)handle;
 
+        internal AnyRef(int jsHandle, bool ownsHandle) : this((IntPtr)jsHandle, ownsHandle)
+        { }
 
-        internal AnyRef(int js_handle, bool ownsHandle) : base(ownsHandle)
+        internal AnyRef(IntPtr jsHandle, bool ownsHandle) : base(ownsHandle)
         {
-            SetHandle((IntPtr)js_handle);
-            AnyRefHandle = GCHandle.Alloc(this, ownsHandle ? GCHandleType.Weak : GCHandleType.Normal);
-        }
-
-        internal AnyRef(IntPtr js_handle, bool ownsHandle) : base(ownsHandle)
-        {
-            SetHandle(js_handle);
+            SetHandle(jsHandle);
             AnyRefHandle = GCHandle.Alloc(this, ownsHandle ? GCHandleType.Weak : GCHandleType.Normal);
         }
         internal int Int32Handle => (int)(IntPtr)AnyRefHandle;
