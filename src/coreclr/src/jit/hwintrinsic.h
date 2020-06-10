@@ -722,7 +722,7 @@ struct HWIntrinsicInfo
 struct HWIntrinsic final
 {
     HWIntrinsic(const GenTreeHWIntrinsic* node)
-        : op1(nullptr), op2(nullptr), op3(nullptr), numOperands(0), baseType(TYP_UNDEF)
+        : op1(nullptr), op2(nullptr), op3(nullptr), op4(nullptr), numOperands(0), baseType(TYP_UNDEF)
     {
         assert(node != nullptr);
 
@@ -749,6 +749,7 @@ struct HWIntrinsic final
     GenTree*            op1;
     GenTree*            op2;
     GenTree*            op3;
+    GenTree*            op4;
     int                 numOperands;
     var_types           baseType;
 
@@ -772,10 +773,19 @@ private:
             op2                  = list->Current();
             list                 = list->Rest();
             op3                  = list->Current();
+            list                 = list->Rest();
 
-            assert(list->Rest() == nullptr);
+            if (list != nullptr)
+            {
+                op4 = list->Current();
+                assert(list->Rest() == nullptr);
 
-            numOperands = 3;
+                numOperands = 4;
+            }
+            else
+            {
+                numOperands = 3;
+            }
         }
         else if (op2 != nullptr)
         {
@@ -785,6 +795,8 @@ private:
         {
             numOperands = 1;
         }
+
+        assert(HWIntrinsicInfo::lookupNumArgs(id) == numOperands);
     }
 
     void InitializeBaseType(const GenTreeHWIntrinsic* node)
