@@ -339,7 +339,7 @@ namespace System.Net.Http
         {
             if (request.Version.Major >= 2)
             {
-                throw new NotSupportedException(SR.Format(SR.net_http_sync_not_supported, GetType()));
+                throw new NotSupportedException(SR.Format(SR.net_http_http2_sync_not_supported, GetType()));
             }
 
             CheckDisposed();
