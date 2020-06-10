@@ -243,8 +243,8 @@ namespace System.Globalization
 
             // Remember our culture
             _cultureData = cultureData;
-
-            Calendar = cal;
+            calendar = cal;
+            InitializeOverridableProperties(cultureData, calendar.ID);
         }
 
         private void InitializeOverridableProperties(CultureData cultureData, CalendarId calendarId)
@@ -409,9 +409,7 @@ namespace System.Globalization
 
                 if (GlobalizationMode.Invariant)
                 {
-                    if (value.ID == calendar?.ID)
-                        return;
-
+                    Debug.Assert(calendar != null, "DateTimeFormatInfo.Calendar: calendar != null");
                     throw new ArgumentOutOfRangeException(nameof(value), value, SR.Argument_InvalidCalendar);
                 }
 
