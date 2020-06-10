@@ -8,7 +8,7 @@ namespace System.Security.Permissions
     public sealed partial class PrincipalPermissionAttribute : CodeAccessSecurityAttribute
     {
 #if CAS_OBSOLETIONS
-        [Obsolete("PrincipalPermissionAttribute is not honored by the runtime and must not be used.", error: true, DiagnosticId = "BCL0002", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [Obsolete("PrincipalPermissionAttribute is not honored by the runtime and must not be used.", error: true, DiagnosticId = "MSLIB0002", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
 #endif
         public PrincipalPermissionAttribute(SecurityAction action) : base(default(SecurityAction)) { }
         public bool Authenticated { get; set; }
