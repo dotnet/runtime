@@ -32,7 +32,7 @@ namespace System
         public static bool IsFedora => IsDistroAndVersion("fedora");
 
         // OSX family
-        public static bool IsApple =>
+        public static bool IsOSXLike =>
             RuntimeInformation.IsOSPlatform(OSPlatform.Create("IOS")) ||
             RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ||
             RuntimeInformation.IsOSPlatform(OSPlatform.Create("TVOS"));
@@ -54,7 +54,7 @@ namespace System
             libc.geteuid() == 0 :
             throw new PlatformNotSupportedException();
 
-        public static Version OpenSslVersion => !IsApple && !IsWindows ?
+        public static Version OpenSslVersion => !IsOSXLike && !IsWindows ?
             GetOpenSslVersion() :
             throw new PlatformNotSupportedException();
 

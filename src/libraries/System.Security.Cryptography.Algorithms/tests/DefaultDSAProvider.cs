@@ -26,11 +26,11 @@ namespace System.Security.Cryptography.Dsa.Tests
         {
             get
             {
-                return !(PlatformDetection.IsWindows7 || PlatformDetection.IsApple);
+                return !(PlatformDetection.IsWindows7 || PlatformDetection.IsOSXLike);
             }
         }
 
-        public bool SupportsKeyGeneration => !PlatformDetection.IsApple;
+        public bool SupportsKeyGeneration => !PlatformDetection.IsOSXLike;
     }
 
     public partial class DSAFactory

@@ -8,7 +8,7 @@ namespace System.Drawing.Tests
 {
     public class GdiplusTests
     {
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsApple))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsOSXLike))]
         public void IsAtLeastLibgdiplus6()
         {
             Assert.True(Helpers.GetIsWindowsOrAtLeastLibgdiplus6());
