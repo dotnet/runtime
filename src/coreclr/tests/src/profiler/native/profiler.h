@@ -109,7 +109,7 @@ protected:
     String GetModuleIDName(ModuleID modId);
 
 public:
-    ICorProfilerInfo8* pCorProfilerInfo;
+    ICorProfilerInfo9* pCorProfilerInfo;
 
     Profiler();
     virtual ~Profiler();

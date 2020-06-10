@@ -37,8 +37,17 @@ Test cases are categorized by priority level. The most important subset should b
         // The .NET Foundation licenses this file to you under the MIT license.
         // See the LICENSE file in the project root for more information.
     ```
-* Disable building of a test by conditionally setting the `<DisableProjectBuild>` property.
-    * e.g. `<DisableProjectBuild Condition=" '$(Platform)' == 'arm64' ">true</DisableProjectBuild>`
+* The managed portion of all tests should be able to build on any platform.
+In fact in CI the managed portion of all tests will be built on OSX.
+Each target will run a subset of the tests built on OSX.
+Therefore the managed portion of each test **must not contain**:
+  * Target platform dependent conditionally compiled code.
+  * Target platform dependent conditionally included files
+  * Target platform dependent conditional `<DefineConstants/>`
+* Disable building and running a test on selected Targets by conditionally setting the `<CLRTestTargetUnsupported>` property.
+    * e.g. `<CLRTestTargetUnsupported Condition="'$(TargetArchitecture)' == 'arm64'">true</CLRTestTargetUnsupported>`
+* Disable building of a test by unconditionally setting the `<DisableProjectBuild>` property.
+    * e.g. `<DisableProjectBuild>true</DisableProjectBuild>`
 * Exclude test from GCStress runs by adding the following to the csproj:
     * `<GCStressIncompatible>true</GCStressIncompatible>`
 * Exclude test from JIT stress runs runs by adding the following to the csproj:
@@ -46,6 +55,9 @@ Test cases are categorized by priority level. The most important subset should b
 * Add NuGet references by updating the following [test project](https://github.com/dotnet/runtime/blob/master/src/coreclr/tests/src/Common/test_dependencies/test_dependencies.csproj).
 * Get access to System.Private.CoreLib types and methods that are not exposed via public surface by adding the following to the csproj:
     * `<ReferenceSystemPrivateCoreLib>true</ReferenceSystemPrivateCoreLib>`
+* Any System.Private.CoreLib types and methods used by tests must be available for building on all platforms.
+This means there must be enough implementation for the C# compiler to find the referenced types and methods. Unsupported target platforms
+should simply `throw new PlatformNotSupportedException()` in its dummy method implementations.
 * Update exclusion list at [tests/issues.targets](https://github.com/dotnet/runtime/blob/master/src/coreclr/tests/issues.targets) if the test fails due to active bug.
 
 ### Creating a C# test project

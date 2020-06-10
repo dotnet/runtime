@@ -944,6 +944,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\Tasks\TaskAsyncEnumerableExtensions.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\Tasks\TaskCanceledException.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\Tasks\TaskCompletionSource.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Threading\Tasks\TaskCompletionSource_T.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\Tasks\TaskContinuation.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\Tasks\TaskExceptionHolder.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\Tasks\TaskExtensions.cs" />
@@ -1056,6 +1057,9 @@
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Normaliz\Interop.Normalization.cs">
       <Link>Common\Interop\Windows\Normaliz\Interop.Normalization.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)SkipLocalsInit.cs">
+      <Link>Common\SkipLocalsInit.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)System\HResults.cs">
       <Link>Common\System\HResults.cs</Link>

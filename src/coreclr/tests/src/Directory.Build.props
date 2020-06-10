@@ -107,6 +107,13 @@
     </When>
   </Choose>
 
+  <!-- Set arch specific properties -->
+  <PropertyGroup>
+    <TargetBits>32</TargetBits>
+    <TargetBits Condition="'$(TargetArchitecture)'=='x64'">64</TargetBits>
+    <TargetBits Condition="'$(TargetArchitecture)'=='arm64'">64</TargetBits>
+  </PropertyGroup>
+
   <PropertyGroup>
     <TargetRid>$(__RuntimeId)</TargetRid>
     <TargetRid Condition="'$(TargetRid)' == ''">$(TestNugetRuntimeId)</TargetRid>

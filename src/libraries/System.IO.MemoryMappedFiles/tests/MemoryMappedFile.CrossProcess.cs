@@ -9,7 +9,7 @@ namespace System.IO.MemoryMappedFiles.Tests
 {
     public class CrossProcessTests : FileCleanupTestBase
     {
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void DataShared()
         {
             // Create a new file and load it into an MMF

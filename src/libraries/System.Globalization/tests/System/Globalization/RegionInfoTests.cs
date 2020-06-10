@@ -64,7 +64,7 @@ namespace System.Globalization.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [PlatformSpecific(TestPlatforms.Windows)]
         public void CurrentRegion_Windows()
         {

@@ -1411,6 +1411,20 @@ BOOL OnGcCoverageInterrupt(PCONTEXT regs)
         return TRUE;
     }
 
+    // If the thread is in preemptive mode then we must be in a
+    // PInvoke stub, a method that has an inline PInvoke frame,
+    // or be in a reverse PInvoke stub that's about to return.
+    //
+    // The PInvoke cases should should properly report GC refs if we
+    // trigger GC here. But a reverse PInvoke stub may over-report
+    // leading to spurious failures, as we would not normally report
+    // anything for this method at this point.
+    if (!pThread->PreemptiveGCDisabled() && pMD->HasUnmanagedCallersOnlyAttribute())
+    {
+        RemoveGcCoverageInterrupt(instrPtr, savedInstrPtr);
+        return TRUE;
+    }
+
 #if defined(USE_REDIRECT_FOR_GCSTRESS) && !defined(TARGET_UNIX)
     // If we're unable to redirect, then we simply won't test GC at this
     // location.

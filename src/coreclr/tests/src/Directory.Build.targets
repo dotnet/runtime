@@ -4,7 +4,6 @@
     <CLRTestKind Condition="'$(CLRTestKind)' == '' and '$(OutputType)' == 'Library'">SharedLibrary</CLRTestKind>
     <CLRTestKind Condition="'$(CLRTestKind)' == ''">BuildAndRun</CLRTestKind>
     <CLRTestPriority Condition="'$(CLRTestPriority)' == ''">0</CLRTestPriority>
-    <CLRTestNeedTarget Condition="'$(CLRTestNeedTarget)' == ''">0</CLRTestNeedTarget>
   </PropertyGroup>
 
   <!-- All CLRTests need to be of a certain "kind". These kinds are enumerated below.
@@ -73,8 +72,7 @@
     <_WillCLRTestProjectBuild Condition="'$(_WillCLRTestProjectBuild)' == ''">false</_WillCLRTestProjectBuild>
     <_WillCLRTestProjectBuild Condition="'$(BuildAllProjects)' != 'true'">true</_WillCLRTestProjectBuild>
     <_WillCLRTestProjectBuild Condition="'$(BuildAllProjects)' == 'true' And '$(CLRTestPriority)' &lt;= '$(CLRTestPriorityToBuild)'">true</_WillCLRTestProjectBuild>
-    <_WillCLRTestProjectBuild Condition="'$(CLRTestNeedTargetToBuild)' == 'targetGeneric' And '$(CLRTestNeedTarget)' == '1'">false</_WillCLRTestProjectBuild>
-    <_WillCLRTestProjectBuild Condition="'$(CLRTestNeedTargetToBuild)' == 'targetSpecific' And '$(CLRTestNeedTarget)' != '1'">false</_WillCLRTestProjectBuild>
+    <_WillCLRTestProjectBuild Condition="'$(CLRTestBuildAllTargets)' != 'allTargets' And '$(CLRTestTargetUnsupported)' == 'true'">false</_WillCLRTestProjectBuild>
     <_WillCLRTestProjectBuild Condition="'$(DisableProjectBuild)' == 'true'">false</_WillCLRTestProjectBuild>
   </PropertyGroup>
 
@@ -105,14 +103,8 @@
     <ProjectLanguage Condition="'$(MSBuildProjectExtension)' == '.csproj' OR '$(Language)' == 'C#' OR '$(ProjectLanguage)'==''">CSharp</ProjectLanguage>
 
     <SkipImportILTargets Condition="'$(CLRTestPriority)' &gt; '$(CLRTestPriorityToBuild)'">true</SkipImportILTargets>
-    <SkipImportILTargets Condition="'$(CLRTestNeedTargetToBuild)' != '' And '$(CLRTestNeedTarget)' != '$(CLRTestNeedTargetToBuild)'">true</SkipImportILTargets>
+    <SkipImportILTargets Condition="'$(CLRTestBuildAllTargets)' != '' And '$(CLRTestNeedTarget)' != '$(CLRTestBuildAllTargets)'">true</SkipImportILTargets>
   </PropertyGroup>
-
-  <Import Project="CLRTest.Execute.targets" />
-  <Target Name="CreateExecuteScript"
-          AfterTargets="Build"
-          Condition="'$(GenerateRunScript)' != 'false' And ('$(_WillCLRTestProjectBuild)' == 'true')"
-          DependsOnTargets="GenerateExecutionScriptsInternal" />
 
   <Target Name="CopyNativeProjectBinaries" Condition="'$(_CopyNativeProjectBinaries)' == 'true'">
 
@@ -200,6 +192,13 @@
 
   <Target Name="CopyAllNativeProjectReferenceBinaries" DependsOnTargets="ResolveCmakeNativeProjectReference;ConsolidateNativeProjectReference" />
 
+  <!-- Build shell or command scripts whenever we copy native binaries -->
+  <Import Project="CLRTest.Execute.targets" />
+  <Target Name="CreateExecuteScript"
+          BeforeTargets="Build;CopyAllNativeProjectReferenceBinaries"
+          Condition="'$(_CopyNativeProjectBinaries)' == 'true' And '$(GenerateRunScript)' != 'false' And ('$(_WillCLRTestProjectBuild)' == 'true')"
+          DependsOnTargets="GenerateExecutionScriptsInternal" />
+
   <Target Name="UpdateReferenceItems"
           BeforeTargets="BeforeResolveReferences"
   >
@@ -248,6 +247,7 @@
   </PropertyGroup>
 
   <Import Project="$(RepositoryEngineeringDir)liveBuilds.targets"/>
+  <Import Project="$(MSBuildProjectFullPath).targets" Condition="Exists('$(MSBuildProjectFullPath).targets')"/>
 
   <Import Project="../../clr.featuredefines.props" />
 </Project>

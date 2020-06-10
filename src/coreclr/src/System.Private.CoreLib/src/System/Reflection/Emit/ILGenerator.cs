@@ -4,6 +4,7 @@
 
 using System.Buffers.Binary;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics.SymbolStore;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -1114,7 +1115,7 @@ namespace System.Reflection.Emit
         #endregion
 
         #region IL Macros
-        public virtual void ThrowException(Type excType)
+        public virtual void ThrowException([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] Type excType)
         {
             // Emits the il to throw an exception
 
@@ -1136,6 +1137,7 @@ namespace System.Reflection.Emit
             Emit(OpCodes.Throw);
         }
 
+        [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)]
         private static Type GetConsoleType()
         {
             return Type.GetType("System.Console, System.Console", throwOnError: true)!;
@@ -1174,7 +1176,7 @@ namespace System.Reflection.Emit
                 throw new ArgumentException(SR.NotSupported_OutputStreamUsingTypeBuilder);
             }
             parameterTypes[0] = cls;
-            MethodInfo? mi = prop.ReturnType.GetMethod("WriteLine", parameterTypes);
+            MethodInfo? mi = typeof(System.IO.TextWriter).GetMethod("WriteLine", parameterTypes);
             if (mi == null)
             {
                 throw new ArgumentException(SR.Argument_EmitWriteLineType, nameof(localBuilder));
@@ -1214,7 +1216,7 @@ namespace System.Reflection.Emit
                 throw new NotSupportedException(SR.NotSupported_OutputStreamUsingTypeBuilder);
             }
             parameterTypes[0] = cls;
-            MethodInfo? mi = prop.ReturnType.GetMethod("WriteLine", parameterTypes);
+            MethodInfo? mi = typeof(System.IO.TextWriter).GetMethod("WriteLine", parameterTypes);
             if (mi == null)
             {
                 throw new ArgumentException(SR.Argument_EmitWriteLineType, nameof(fld));

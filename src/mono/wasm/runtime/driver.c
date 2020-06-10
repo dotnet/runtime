@@ -294,7 +294,7 @@ icall_table_lookup_symbol (void *func)
 
 void mono_initialize_internals ()
 {
-	mono_add_internal_call ("WebAssembly.Runtime::InvokeJS", mono_wasm_invoke_js);
+	mono_add_internal_call ("Interop/Runtime::InvokeJS", mono_wasm_invoke_js);
 	// TODO: what happens when two types in different assemblies have the same FQN?
 
 	// Blazor specific custom routines - see dotnet_support.js for backing code
@@ -312,8 +312,8 @@ mono_wasm_load_runtime (const char *managed_path, int enable_debugging)
 {
 	const char *interp_opts = "";
 
-	monoeg_g_setenv ("MONO_LOG_LEVEL", "debug", 0);
-	monoeg_g_setenv ("MONO_LOG_MASK", "gc", 0);
+	//monoeg_g_setenv ("MONO_LOG_LEVEL", "debug", 0);
+	//monoeg_g_setenv ("MONO_LOG_MASK", "gc", 0);
 #ifdef ENABLE_NETCORE
 	monoeg_g_setenv ("DOTNET_SYSTEM_GLOBALIZATION_INVARIANT", "1", 0);
 #endif

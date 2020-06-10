@@ -143,7 +143,7 @@ namespace System.Diagnostics.TraceSourceTests
             Assert.Equal(expectedLogFileName, listener.LogFileName);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void EntryAssemblyName_Default_IncludedInTrace()
         {
             RemoteExecutor.Invoke(() =>
@@ -155,7 +155,7 @@ namespace System.Diagnostics.TraceSourceTests
             }).Dispose();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void EntryAssemblyName_Null_NotIncludedInTrace()
         {
             RemoteExecutor.Invoke(() =>

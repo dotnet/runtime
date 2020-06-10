@@ -3,8 +3,8 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
+using System.Formats.Asn1;
 using System.Net;
-using System.Security.Cryptography.Asn1;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Web;
@@ -316,7 +316,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
                     ReadOnlyMemory<byte> wholeExtension = requestExtensions.PeekEncodedValue();
                     AsnReader extension = requestExtensions.ReadSequence();
 
-                    if (extension.ReadObjectIdentifierAsString() == "1.3.6.1.5.5.7.48.1.2")
+                    if (extension.ReadObjectIdentifier() == "1.3.6.1.5.5.7.48.1.2")
                     {
                         nonceExtension = wholeExtension;
                     }

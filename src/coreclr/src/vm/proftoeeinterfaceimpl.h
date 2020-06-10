@@ -650,11 +650,12 @@ public:
 
     COM_METHOD EventPipeDefineEvent(
         EVENTPIPE_PROVIDER provHandle,
-        const WCHAR *szName, 
+        const WCHAR *szName,
         UINT32 eventID,
         UINT64 keywords,
         UINT32 eventVersion,
         UINT32 level,
+        UINT8 opcode,
         BOOL needStack,
         UINT32 cParamDescs,
         COR_PRF_EVENTPIPE_PARAM_DESC pParamDescs[],
@@ -662,13 +663,13 @@ public:
 
     COM_METHOD EventPipeWriteEvent(
         EVENTPIPE_EVENT eventHandle,
-        COR_PRF_EVENT_DATA data[],
         UINT32 cData,
+        COR_PRF_EVENT_DATA data[],
         LPCGUID pActivityId,
         LPCGUID pRelatedActivityId);
 
     // end ICorProfilerInfo12
-    
+
 protected:
 
     // Internal Helper Functions

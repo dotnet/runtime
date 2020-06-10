@@ -3,8 +3,6 @@ parameters:
   archType: ''
   osGroup: ''
   osSubgroup: ''
-  managedTestBuildOsGroup: ''
-  managedTestBuildOsSubgroup: ''
   container: ''
   testGroup: ''
   crossrootfsDir: ''
@@ -37,8 +35,6 @@ jobs:
     archType: ${{ parameters.archType }}
     osGroup: ${{ parameters.osGroup }}
     osSubgroup: ${{ parameters.osSubgroup }}
-    managedTestBuildOsGroup: ${{ parameters.managedTestBuildOsGroup }}
-    managedTestBuildOsSubgroup: ${{ parameters.managedTestBuildOsSubgroup }}
     container: ${{ parameters.container }}
     testGroup: ${{ parameters.testGroup }}
     crossrootfsDir: ${{ parameters.crossrootfsDir }}
@@ -57,9 +53,9 @@ jobs:
     dependsOn:
     - ${{ if ne(parameters.corefxTests, true) }}:
       - ${{ if eq(parameters.testGroup, 'innerloop') }}:
-        - '${{ parameters.runtimeFlavor }}_common_test_build_p0_${{ parameters.managedTestBuildOsGroup }}${{ parameters.managedTestBuildOsSubgroup }}_${{ parameters.archType }}_${{parameters.buildConfig }}'
+        - '${{ parameters.runtimeFlavor }}_common_test_build_p0_AnyOS_AnyCPU_${{parameters.buildConfig }}'
       - ${{ if ne(parameters.testGroup, 'innerloop') }}:
-        - '${{ parameters.runtimeFlavor }}_common_test_build_p1_${{ parameters.managedTestBuildOsGroup }}${{ parameters.managedTestBuildOsSubgroup }}_${{ parameters.archType }}_${{parameters.buildConfig }}'
+        - '${{ parameters.runtimeFlavor }}_common_test_build_p1_AnyOS_AnyCPU_${{parameters.buildConfig }}'
     - ${{ if ne(parameters.stagedBuild, true) }}:
       - ${{ format('{0}_{1}_product_build_{2}{3}_{4}_{5}', parameters.runtimeFlavor, parameters.runtimeVariant, parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
       - ${{ if ne(parameters.liveLibrariesBuildConfig, '') }}:
@@ -195,9 +191,9 @@ jobs:
       - template: /eng/pipelines/common/download-artifact-step.yml
         parameters:
           unpackFolder: '$(managedTestArtifactRootFolderPath)'
-          artifactFileName: '$(managedTestArtifactName)$(archiveExtension)'
-          artifactName: '$(managedTestArtifactName)'
-          displayName: 'managed test artifacts (built on ${{ parameters.managedTestBuildOsGroup }}${{ parameters.managedTestBuildOsSubgroup }})'
+          artifactFileName: '$(managedGenericTestArtifactName).tar.gz'
+          artifactName: '$(managedGenericTestArtifactName)'
+          displayName: 'generic managed test artifacts'
 
 
     # Download product binaries directory
@@ -218,13 +214,14 @@ jobs:
           artifactName: '$(coreClrProductArtifactName)'
           displayName: 'CoreCLR product download for Mono'
 
+
     # Download and unzip the Microsoft.NET.Sdk.IL package needed for traversing
     # ilproj test projects during copynativeonly.
     - ${{ if ne(parameters.corefxTests, true) }}:
       - template: /eng/pipelines/common/download-artifact-step.yml
         parameters:
           unpackFolder: '$(microsoftNetSdkIlFolderPath)'
-          artifactFileName: '$(microsoftNetSdkIlArtifactName)$(archiveExtension)'
+          artifactFileName: '$(microsoftNetSdkIlArtifactName).tar.gz'
           artifactName: '$(microsoftNetSdkIlArtifactName)'
           displayName: 'Microsoft.NET.Sdk.IL package'
 
@@ -245,7 +242,7 @@ jobs:
     # the native artifacts to the final test folders is dependent on availability of the
     # managed test artifacts.
     - ${{ if ne(parameters.corefxTests, true) }}:
-      - script: $(coreClrRepoRootDir)build-test$(scriptExt) copynativeonly $(crossgenArg) $(buildConfig) $(archType) $(priorityArg) $(librariesOverrideArg)
+      - script: $(coreClrRepoRootDir)build-test$(scriptExt) skipstressdependencies copynativeonly $(crossgenArg) $(buildConfig) $(archType) $(priorityArg) $(librariesOverrideArg)
         displayName: Copy native test components to test output folder
 
 
@@ -260,9 +257,15 @@ jobs:
       displayName: Generate test wrappers
 
 
+    # Compose the Core_Root folder containing all artifacts needed for running
+    # CoreCLR tests.
+    - script: $(coreClrRepoRootDir)build-test$(scriptExt) generatelayoutonly $(runtimeFlavorArgs) $(crossgenArg) $(buildConfig) $(archType) $(crossArg) $(priorityArg) $(librariesOverrideArg)
+      displayName: Generate CORE_ROOT
+
+
     # Crossgen framework assemblies prior to triggering readyToRun execution runs.
     - ${{ if eq(parameters.readyToRun, true) }}:
-      - script: $(coreClrRepoRootDir)build-test$(scriptExt) skipmanaged skipnative $(crossgenArg) $(buildConfig) $(archType) $(crossArg) $(priorityArg) $(librariesOverrideArg)
+      - script: $(coreClrRepoRootDir)build-test$(scriptExt) crossgenframeworkonly $(crossgenArg) $(buildConfig) $(archType) $(crossArg) $(priorityArg) $(librariesOverrideArg)
         displayName: Crossgen framework assemblies
 
     # Overwrite coreclr runtime binaries with mono ones

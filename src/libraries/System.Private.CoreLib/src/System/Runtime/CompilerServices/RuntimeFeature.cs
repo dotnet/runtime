@@ -31,6 +31,7 @@ namespace System.Runtime.CompilerServices
             switch (feature)
             {
                 case PortablePdb:
+                case CovariantReturnsOfClasses:
 #if FEATURE_DEFAULT_INTERFACES
                 case DefaultImplementationsOfInterfaces:
 #endif

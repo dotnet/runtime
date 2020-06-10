@@ -92,9 +92,7 @@ namespace System
             set => throw new PlatformNotSupportedException();
         }
 
-        public static int CursorLeft => throw new PlatformNotSupportedException();
-
-        public static int CursorTop => throw new PlatformNotSupportedException();
+        public static (int Left, int Top) GetCursorPosition() => throw new PlatformNotSupportedException();
 
         public static string Title
         {
