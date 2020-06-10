@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Net.Security;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 
 namespace System.Net.Http
@@ -345,24 +346,27 @@ namespace System.Net.Http
                 return Task.FromException<HttpResponseMessage>(error);
             }
 
-            if (HttpTelemetry.IsEnabled && request.RequestUri != null)
+            return HttpTelemetry.IsEnabled && request.RequestUri != null ?
+                WithLogging(handler, request, cancellationToken) :
+                handler.SendAsync(request, cancellationToken);
+
+            static async Task<HttpResponseMessage> WithLogging(HttpMessageHandler handler, HttpRequestMessage request, CancellationToken cancellationToken)
             {
-                // Wrap the task for event activity-id threading.
+                Debug.Assert(request.RequestUri != null);
                 HttpTelemetry.Log.RequestStart(request.RequestUri.IdnHost, request.RequestUri.Port);
-                Task<HttpResponseMessage> task = handler.SendAsync(request, cancellationToken);
-                task.ContinueWith(
-                    t => HttpTelemetry.Log.RequestAbort(),
-                    cancellationToken,
-                    TaskContinuationOptions.OnlyOnCanceled | TaskContinuationOptions.OnlyOnFaulted | TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default);
-                task.ContinueWith(
-                    t => HttpTelemetry.Log.RequestStop(request.RequestUri.IdnHost, request.RequestUri.Port),
-                    cancellationToken,
-                    TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default);
-                return task;
-            }
-            else
-            {
-                return handler.SendAsync(request, cancellationToken);
+                try
+                {
+                    return await handler.SendAsync(request, cancellationToken).ConfigureAwait(false);
+                }
+                catch
+                {
+                    HttpTelemetry.Log.RequestAbort(request.RequestUri.IdnHost, request.RequestUri.Port);
+                    throw;
+                }
+                finally
+                {
+                    HttpTelemetry.Log.RequestStop(request.RequestUri.IdnHost, request.RequestUri.Port);
+                }
             }
         }
 

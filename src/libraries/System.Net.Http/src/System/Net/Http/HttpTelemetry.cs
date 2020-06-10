@@ -7,11 +7,6 @@ using System.Diagnostics.Tracing;
 using System.Runtime.CompilerServices;
 using System.Threading;
 
-// TODO: Get rid of this once I figure out how to handle build errors like these given the current lazy creation pattern:
-//     System\Net\Http\HttpTelemetry.cs(19,32): error CS8618: Non-nullable field '_startedRequestsCounter' is uninitialized.
-//     Consider declaring the field as nullable. [S:\GitHub\runtime\src\libraries\System.Net.Http\src\System.Net.Http.csproj]
-#nullable disable
-
 namespace System.Net.Http
 {
     [EventSource(Name = "System.Net.Http")]
@@ -19,10 +14,10 @@ namespace System.Net.Http
     {
         public static readonly HttpTelemetry Log = new HttpTelemetry();
 
-        private IncrementingPollingCounter _requestsPerSecondCounter;
-        private PollingCounter _startedRequestsCounter;
-        private PollingCounter _currentRequestsCounter;
-        private PollingCounter _abortedRequestsCounter;
+        private IncrementingPollingCounter? _requestsPerSecondCounter;
+        private PollingCounter? _startedRequestsCounter;
+        private PollingCounter? _currentRequestsCounter;
+        private PollingCounter? _abortedRequestsCounter;
 
         private long _startedRequests;
         private long _currentRequests;
@@ -52,10 +47,11 @@ namespace System.Net.Http
             WriteEvent(2, host, port);
         }
 
-        [NonEvent]
-        public void RequestAbort()
+        [Event(3, Level = EventLevel.Error)]
+        public void RequestAbort(string host, int port)
         {
             Interlocked.Increment(ref _abortedRequests);
+            WriteEvent(3, host, port);
         }
 
         protected override void OnEventCommand(EventCommandEventArgs command)
@@ -66,13 +62,13 @@ namespace System.Net.Http
                 // They aren't disabled afterwards...
 
                 // The cumulative number of HTTP requests started since the process started.
-                _startedRequestsCounter ??= new PollingCounter("requests-started", this, () => _startedRequests)
+                _startedRequestsCounter ??= new PollingCounter("requests-started", this, () => Interlocked.Read(ref _startedRequests))
                 {
                     DisplayName = "Requests Started",
                 };
 
                 // The number of HTTP requests started per second since the process started.
-                _requestsPerSecondCounter ??= new IncrementingPollingCounter("requests-started-per-second", this, () => _startedRequests)
+                _requestsPerSecondCounter ??= new IncrementingPollingCounter("requests-started-per-second", this, () => Interlocked.Read(ref _startedRequests))
                 {
                     DisplayName = "Requests Started Rate",
                     DisplayRateTimeScale = TimeSpan.FromSeconds(1)
@@ -81,20 +77,20 @@ namespace System.Net.Http
                 // The cumulative number of HTTP requests aborted since the process started.
                 // Aborted means that an exception occurred during the handler's Send(Async) call as a result of a
                 // connection related error, timeout, or explicitly cancelled.
-                _abortedRequestsCounter ??= new PollingCounter("requests-aborted", this, () => _abortedRequests)
+                _abortedRequestsCounter ??= new PollingCounter("requests-aborted", this, () => Interlocked.Read(ref _abortedRequests))
                 {
                     DisplayName = "Requests Aborted"
                 };
 
                 // The number of HTTP requests aborted per second since the process started.
-                _requestsPerSecondCounter ??= new IncrementingPollingCounter("requests-aborted-per-second", this, () => _abortedRequests)
+                _requestsPerSecondCounter ??= new IncrementingPollingCounter("requests-aborted-per-second", this, () => Interlocked.Read(ref _abortedRequests))
                 {
                     DisplayName = "Requests Aborted Rate",
                     DisplayRateTimeScale = TimeSpan.FromSeconds(1)
                 };
 
                 // The current number of active HTTP requests that have started but not yet completed or aborted.
-                _currentRequestsCounter ??= new PollingCounter("current-requests", this, () => _currentRequests)
+                _currentRequestsCounter ??= new PollingCounter("current-requests", this, () => Interlocked.Read(ref _currentRequests))
                 {
                     DisplayName = "Current Requests"
                 };
