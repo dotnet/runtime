@@ -10,6 +10,7 @@ T:System.Configuration.ConfigurationPropertyAttribute
 T:System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverageAttribute
 T:System.Diagnostics.CodeAnalysis.MemberNotNullAttribute
 T:System.Diagnostics.CodeAnalysis.SuppressMessageAttribute
+T:System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute
 T:System.Diagnostics.DebuggerBrowsableAttribute
 T:System.Diagnostics.DebuggerDisplayAttribute
 T:System.Diagnostics.DebuggerHiddenAttribute

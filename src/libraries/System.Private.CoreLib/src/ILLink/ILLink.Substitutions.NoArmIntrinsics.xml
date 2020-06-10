@@ -1,0 +1,31 @@
+<linker>
+  <assembly fullname="System.Private.CoreLib">
+    <type fullname="System.Runtime.Intrinsics.Arm.AdvSimd">
+      <method signature="System.Boolean get_IsSupported()" body="stub" value="false" /> 
+    </type>
+    <type fullname="System.Runtime.Intrinsics.Arm.AdvSimd/Arm64">
+      <method signature="System.Boolean get_IsSupported()" body="stub" value="false" /> 
+    </type>
+    <type fullname="System.Runtime.Intrinsics.Arm.Aes">
+      <method signature="System.Boolean get_IsSupported()" body="stub" value="false" /> 
+    </type>
+    <type fullname="System.Runtime.Intrinsics.Arm.ArmBase">
+      <method signature="System.Boolean get_IsSupported()" body="stub" value="false" /> 
+    </type>
+    <type fullname="System.Runtime.Intrinsics.Arm.ArmBase/Arm64">
+      <method signature="System.Boolean get_IsSupported()" body="stub" value="false" /> 
+    </type>
+    <type fullname="System.Runtime.Intrinsics.Arm.Crc32">
+      <method signature="System.Boolean get_IsSupported()" body="stub" value="false" /> 
+    </type>
+    <type fullname="System.Runtime.Intrinsics.Arm.Crc32/Arm64">
+      <method signature="System.Boolean get_IsSupported()" body="stub" value="false" /> 
+    </type>
+    <type fullname="System.Runtime.Intrinsics.Arm.Sha1">
+      <method signature="System.Boolean get_IsSupported()" body="stub" value="false" /> 
+    </type>
+    <type fullname="System.Runtime.Intrinsics.Arm.Sha256">
+      <method signature="System.Boolean get_IsSupported()" body="stub" value="false" /> 
+    </type>
+  </assembly>
+</linker>
