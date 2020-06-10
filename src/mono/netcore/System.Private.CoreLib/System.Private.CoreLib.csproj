@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <!-- Generate Mono corelib version file -->
   <Import Project="GenerateMonoCoreLibVersionFile.targets" />
 
@@ -19,9 +19,6 @@
     <OutputPath>$(BinDir)IL/</OutputPath>
     <Configurations>Debug;Release;Checked</Configurations>
     <Platforms>x64;x86;arm;arm64;wasm</Platforms>
-
-    <ILLinkTrimAssembly>true</ILLinkTrimAssembly>
-    <ILLinkTrimXml>$(MSBuildThisFileDirectory)src\LinkerDescriptor\System.Private.CoreLib.xml</ILLinkTrimXml>
   </PropertyGroup>
 
   <!-- Note that various places in SPCL depend on this resource name i.e. TplEventSource -->
@@ -128,7 +125,6 @@
     <FeaturePortableTimer>true</FeaturePortableTimer>
     <FeaturePortableThreadPool>true</FeaturePortableThreadPool>
     <FeaturePerfTracing>true</FeaturePerfTracing>
-    <FeatureHardwareIntrinsics>true</FeatureHardwareIntrinsics>
     <FeatureDefaultInterfaces>true</FeatureDefaultInterfaces>
   </PropertyGroup>
 
@@ -144,6 +140,18 @@
     <DefineConstants Condition="'$(TargetstvOS)' == 'true'">$(DefineConstants);TARGET_TVOS</DefineConstants>
   </PropertyGroup>
 
+  <!-- ILLinker settings -->
+  <PropertyGroup>
+    <ILLinkTrimAssembly>true</ILLinkTrimAssembly>
+    <ILLinkDirectory>$(MSBuildThisFileDirectory)src\ILLink\</ILLinkDirectory>
+    <ILLinkTrimXml>$(ILLinkDirectory)System.Private.CoreLib.xml</ILLinkTrimXml>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ILLinkSubstitutionsXmls Include="$(ILLinkDirectory)ILLink.Substitutions.$(Platform).xml"
+                             Condition="Exists('$(ILLinkDirectory)ILLink.Substitutions.$(Platform).xml')" />
+  </ItemGroup>
+  
   <!-- Sources -->
   <ItemGroup>
       <Compile Include="$(BclSourcesRoot)\Mono\Console.Mono.cs" />

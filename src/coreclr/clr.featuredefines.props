@@ -3,7 +3,6 @@
         <FeatureCoreCLR>true</FeatureCoreCLR>
         <FeatureCollectibleALC>true</FeatureCollectibleALC>
         <FeatureEventTrace>true</FeatureEventTrace>
-        <FeatureHardwareIntrinsics>true</FeatureHardwareIntrinsics>
         <FeatureICastable>true</FeatureICastable>
         <FeatureManagedEtwChannels>true</FeatureManagedEtwChannels>
         <FeatureManagedEtw>true</FeatureManagedEtw>

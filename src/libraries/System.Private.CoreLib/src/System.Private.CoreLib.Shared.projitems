@@ -9,7 +9,24 @@
   <PropertyGroup>
     <Nullable>enable</Nullable>
     <IsOSXLike Condition="'$(TargetsOSX)' == 'true' or '$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true'">true</IsOSXLike>
+    <SupportsArmIntrinsics Condition="'$(Platform)' == 'arm64'">true</SupportsArmIntrinsics>
+    <SupportsX86Intrinsics Condition="'$(Platform)' == 'x64' or ('$(Platform)' == 'x86' and '$(TargetsUnix)' != 'true')">true</SupportsX86Intrinsics>
+    <ILLinkSharedDirectory>$(MSBuildThisFileDirectory)ILLink\</ILLinkSharedDirectory>
   </PropertyGroup>
+  <ItemGroup>
+    <ILLinkSubstitutionsXmls Include="$(ILLinkSharedDirectory)ILLink.Substitutions.Shared.xml" />
+    <!-- TODO: Enable these substitutions files for more platforms once https://github.com/mono/linker/issues/1260 is fixed -->
+    <ILLinkSubstitutionsXmls Include="$(ILLinkSharedDirectory)ILLink.Substitutions.LittleEndian.xml"
+                             Condition="'$(Platform)' == 'wasm'" />
+
+    <ILLinkSubstitutionsXmls Include="$(ILLinkSharedDirectory)ILLink.Substitutions.32bit.xml"
+                             Condition="'$(Platform)' == 'wasm'" />
+
+    <ILLinkSubstitutionsXmls Include="$(ILLinkSharedDirectory)ILLink.Substitutions.NoArmIntrinsics.xml"
+                             Condition="'$(Platform)' == 'wasm'" />
+    <ILLinkSubstitutionsXmls Include="$(ILLinkSharedDirectory)ILLink.Substitutions.NoX86Intrinsics.xml"
+                             Condition="'$(Platform)' == 'wasm'" />
+  </ItemGroup>
   <ItemGroup>
     <Compile Include="$(MSBuildThisFileDirectory)Internal\IO\File.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Internal\Padding.cs" />
@@ -1789,7 +1806,7 @@
       <Link>Common\Interop\OSX\Interop.Libraries.cs</Link>
     </Compile>
   </ItemGroup>
-  <ItemGroup Condition="'$(FeatureHardwareIntrinsics)' == 'true' and ('$(Platform)' == 'x64' or ('$(Platform)' == 'x86' and '$(TargetsUnix)' != 'true'))">
+  <ItemGroup Condition="'$(SupportsX86Intrinsics)' == 'true'">
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\X86\Aes.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\X86\Avx.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\X86\Avx2.cs" />
@@ -1807,7 +1824,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\X86\Ssse3.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\X86\X86Base.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(FeatureHardwareIntrinsics)' != 'true' or ('$(Platform)' != 'x64' and ('$(Platform)' != 'x86' or ('$(Platform)' == 'x86' and '$(TargetsUnix)' == 'true')))">
+  <ItemGroup Condition="'$(SupportsX86Intrinsics)' != 'true'">
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\X86\Aes.PlatformNotSupported.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\X86\Avx.PlatformNotSupported.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\X86\Avx2.PlatformNotSupported.cs" />
@@ -1825,7 +1842,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\X86\Ssse3.PlatformNotSupported.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\X86\X86Base.PlatformNotSupported.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(FeatureHardwareIntrinsics)' == 'true' and '$(Platform)' == 'arm64'">
+  <ItemGroup Condition="'$(SupportsArmIntrinsics)' == 'true'">
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\Arm\AdvSimd.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\Arm\Aes.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\Arm\ArmBase.cs" />
@@ -1833,7 +1850,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\Arm\Sha1.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\Arm\Sha256.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(FeatureHardwareIntrinsics)' != 'true' or '$(Platform)' != 'arm64'">
+  <ItemGroup Condition="'$(SupportsArmIntrinsics)' != 'true'">
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\Arm\AdvSimd.PlatformNotSupported.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\Arm\Aes.PlatformNotSupported.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\Arm\ArmBase.PlatformNotSupported.cs" />
