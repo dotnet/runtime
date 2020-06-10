@@ -1422,7 +1422,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [OuterLoop]
-        [Theory]
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [InlineData(false)]
         [InlineData(true)]
         public void ConnectionsPooledThenDisposed_NoUnobservedTaskExceptions(bool secure)

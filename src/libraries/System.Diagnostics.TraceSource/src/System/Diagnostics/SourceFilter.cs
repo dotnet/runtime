@@ -4,12 +4,13 @@
 
 using System;
 using System.Collections;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Diagnostics
 {
     public class SourceFilter : TraceFilter
     {
-        private string _src = null!;
+        private string _src;
 
         public SourceFilter(string source)
         {
@@ -31,6 +32,7 @@ namespace System.Diagnostics
             {
                 return _src;
             }
+            [MemberNotNull(nameof(_src))]
             set
             {
                 if (value == null)

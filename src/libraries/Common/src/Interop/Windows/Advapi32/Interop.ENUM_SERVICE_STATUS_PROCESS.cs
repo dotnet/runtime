@@ -11,8 +11,8 @@ internal partial class Interop
         [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
         internal class ENUM_SERVICE_STATUS_PROCESS
         {
-            internal string serviceName = null;
-            internal string displayName = null;
+            internal string? serviceName = null;
+            internal string? displayName = null;
             internal int serviceType = 0;
             internal int currentState = 0;
             internal int controlsAccepted = 0;

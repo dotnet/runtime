@@ -2,8 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-
 namespace System.Runtime.InteropServices.JavaScript
 {
     public interface IJSObject
@@ -20,7 +18,7 @@ namespace System.Runtime.InteropServices.JavaScript
         internal object? RawObject;
 
         // to detect redundant calls
-        public bool IsDisposed { get; internal set; }
+        public bool IsDisposed { get; private set; }
 
         public JSObject() : this(Interop.Runtime.New<object>())
         {
@@ -94,7 +92,16 @@ namespace System.Runtime.InteropServices.JavaScript
         /// <param name="prop">The String name or Symbol of the property to test.</param>
         public bool PropertyIsEnumerable(string prop) => (bool)Invoke("propertyIsEnumerable", prop);
 
-        protected void FreeHandle()
+        internal void ReleaseHandle()
+        {
+            FreeHandle();
+            JSHandle = -1;
+            IsDisposed = true;
+            RawObject = null;
+            Handle.Free();
+        }
+
+        private void FreeHandle()
         {
             Interop.Runtime.ReleaseHandle(JSHandle, out int exception);
             if (exception != 0)
@@ -103,10 +110,7 @@ namespace System.Runtime.InteropServices.JavaScript
 
         public override bool Equals(object? obj) => obj is JSObject other && JSHandle == other.JSHandle;
 
-        public override int GetHashCode()
-        {
-            return JSHandle;
-        }
+        public override int GetHashCode() => JSHandle;
 
         ~JSObject()
         {
@@ -147,6 +151,5 @@ namespace System.Runtime.InteropServices.JavaScript
         {
             return $"(js-obj js '{JSHandle}' .NET '{(IntPtr)Handle} raw '{RawObject != null})";
         }
-
     }
 }

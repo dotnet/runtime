@@ -505,7 +505,7 @@ namespace System.Text.RegularExpressions.Tests
             Assert.Throws<RegexMatchTimeoutException>(() => new Regex(Pattern, options, TimeSpan.FromMilliseconds(100)).Match(input));
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [InlineData(RegexOptions.None)]
         [InlineData(RegexOptions.None | (RegexOptions)0x80 /* Debug */)]
         [InlineData(RegexOptions.Compiled)]
@@ -963,7 +963,9 @@ namespace System.Text.RegularExpressions.Tests
             }
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotArmProcess))] // times out on ARM
+        private static bool IsNotArmProcessAndRemoteExecutorSupported => PlatformDetection.IsNotArmProcess && RemoteExecutor.IsSupported;
+
+        [ConditionalTheory(nameof(IsNotArmProcessAndRemoteExecutorSupported))] // times out on ARM
         [InlineData(RegexOptions.None)]
         [InlineData(RegexOptions.Compiled)]
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, ".NET Framework does not have fix for https://github.com/dotnet/runtime/issues/24749")]

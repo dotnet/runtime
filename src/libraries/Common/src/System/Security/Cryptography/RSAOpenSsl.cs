@@ -5,9 +5,8 @@
 #nullable enable
 using System.Buffers;
 using System.Diagnostics;
+using System.Formats.Asn1;
 using System.IO;
-using System.Runtime.InteropServices;
-using System.Security.Cryptography.Asn1;
 using Microsoft.Win32.SafeHandles;
 using Internal.Cryptography;
 
@@ -442,27 +441,34 @@ namespace System.Security.Cryptography
         {
             ThrowIfDisposed();
 
-            fixed (byte* ptr = &MemoryMarshal.GetReference(source))
+            int read;
+
+            try
             {
-                using (MemoryManager<byte> manager = new PointerMemoryManager<byte>(ptr, source.Length))
-                {
-                    AsnReader reader = new AsnReader(manager.Memory, AsnEncodingRules.BER);
-                    ReadOnlyMemory<byte> firstElement = reader.PeekEncodedValue();
-
-                    SafeRsaHandle key = Interop.Crypto.DecodeRsaPublicKey(firstElement.Span);
-
-                    Interop.Crypto.CheckValidOpenSslHandle(key);
-
-                    FreeKey();
-                    _key = new Lazy<SafeRsaHandle>(key);
-
-                    // Use ForceSet instead of the property setter to ensure that LegalKeySizes doesn't interfere
-                    // with the already loaded key.
-                    ForceSetKeySize(BitsPerByte * Interop.Crypto.RsaSize(key));
-
-                    bytesRead = firstElement.Length;
-                }
+                AsnDecoder.ReadEncodedValue(
+                    source,
+                    AsnEncodingRules.BER,
+                    out _,
+                    out _,
+                    out read);
             }
+            catch (AsnContentException e)
+            {
+                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding, e);
+            }
+
+            SafeRsaHandle key = Interop.Crypto.DecodeRsaPublicKey(source.Slice(0, read));
+
+            Interop.Crypto.CheckValidOpenSslHandle(key);
+
+            FreeKey();
+            _key = new Lazy<SafeRsaHandle>(key);
+
+            // Use ForceSet instead of the property setter to ensure that LegalKeySizes doesn't interfere
+            // with the already loaded key.
+            ForceSetKeySize(BitsPerByte * Interop.Crypto.RsaSize(key));
+
+            bytesRead = read;
         }
 
         public override void ImportEncryptedPkcs8PrivateKey(

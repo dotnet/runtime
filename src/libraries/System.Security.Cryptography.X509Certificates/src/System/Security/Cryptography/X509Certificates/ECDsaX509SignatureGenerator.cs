@@ -3,8 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
-using System.Numerics;
-using System.Security.Cryptography.Asn1;
+using System.Formats.Asn1;
 using Internal.Cryptography;
 
 namespace System.Security.Cryptography.X509Certificates
@@ -44,13 +43,11 @@ namespace System.Security.Cryptography.X509Certificates
                     SR.Format(SR.Cryptography_UnknownHashAlgorithm, hashAlgorithm.Name));
             }
 
-            using (AsnWriter writer = new AsnWriter(AsnEncodingRules.DER))
-            {
-                writer.PushSequence();
-                writer.WriteObjectIdentifier(oid);
-                writer.PopSequence();
-                return writer.Encode();
-            }
+            AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
+            writer.PushSequence();
+            writer.WriteObjectIdentifier(oid);
+            writer.PopSequence();
+            return writer.Encode();
         }
 
         public override byte[] SignData(byte[] data, HashAlgorithmName hashAlgorithm)
@@ -86,11 +83,9 @@ namespace System.Security.Cryptography.X509Certificates
                 };
             }
 
-            using (AsnWriter writer = new AsnWriter(AsnEncodingRules.DER))
-            {
-                writer.WriteObjectIdentifier(curveOid!);
-                curveOidEncoded = writer.Encode();
-            }
+            AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
+            writer.WriteObjectIdentifier(curveOid!);
+            curveOidEncoded = writer.Encode();
 
             Debug.Assert(ecParameters.Q.X!.Length == ecParameters.Q.Y!.Length);
             byte[] uncompressedPoint = new byte[1 + ecParameters.Q.X.Length + ecParameters.Q.Y.Length];

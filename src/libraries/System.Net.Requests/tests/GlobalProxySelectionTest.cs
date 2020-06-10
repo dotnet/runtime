@@ -37,7 +37,7 @@ namespace System.Net.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void Select_Success()
         {
             RemoteExecutor.Invoke(() =>
