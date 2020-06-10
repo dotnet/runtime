@@ -32,6 +32,10 @@ namespace System
         public static bool IsFedora => IsDistroAndVersion("fedora");
 
         // OSX family
+        public static bool IsApple =>
+            RuntimeInformation.IsOSPlatform(OSPlatform.Create("IOS")) ||
+            RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ||
+            RuntimeInformation.IsOSPlatform(OSPlatform.Create("TVOS"));
         public static bool IsOSX => RuntimeInformation.IsOSPlatform(OSPlatform.OSX);
         public static bool IsNotOSX => !IsOSX;
         public static bool IsMacOsHighSierraOrHigher => IsOSX && Environment.OSVersion.Version >= new Version(10, 13);
@@ -45,16 +49,12 @@ namespace System
         public static bool IsRedHatFamily7 => IsRedHatFamilyAndVersion(7);
         public static bool IsNotFedoraOrRedHatFamily => !IsFedora && !IsRedHatFamily;
         public static bool IsNotDebian10 => !IsDebian10;
-        public static bool IsNotApple =>
-            !RuntimeInformation.IsOSPlatform(OSPlatform.Create("IOS")) &&
-            !RuntimeInformation.IsOSPlatform(OSPlatform.OSX) &&
-            !RuntimeInformation.IsOSPlatform(OSPlatform.Create("TVOS"));
 
         public static bool IsSuperUser => !IsWindows ?
             libc.geteuid() == 0 :
             throw new PlatformNotSupportedException();
 
-        public static Version OpenSslVersion => IsNotApple && !IsWindows ?
+        public static Version OpenSslVersion => !IsApple && !IsWindows ?
             GetOpenSslVersion() :
             throw new PlatformNotSupportedException();
 
