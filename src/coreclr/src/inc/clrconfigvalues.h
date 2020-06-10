@@ -395,6 +395,7 @@ RETAIL_CONFIG_DWORD_INFO(INTERNAL_TraceInterpreterIL, W("TraceInterpreterIL"), 0
 RETAIL_CONFIG_DWORD_INFO(INTERNAL_TraceInterpreterOstack, W("TraceInterpreterOstack"), 0, "Logs operand stack after each IL instruction of interpreted methods to the console")
 CONFIG_DWORD_INFO(INTERNAL_TraceInterpreterVerbose, W("TraceInterpreterVerbose"), 0, "Logs interpreter progress with detailed messages to the console")
 CONFIG_DWORD_INFO(INTERNAL_TraceInterpreterJITTransition, W("TraceInterpreterJITTransition"), 0, "Logs when the interpreter determines a method should be JITted")
+RETAIL_CONFIG_DWORD_INFO(INTERNAL_InterpreterDebuggable, W("InterpreterDebuggable"), 0, "If non-zero, interpret methods in the Debug/Checked configurations")
 #endif
 // The JIT queries this ConfigDWORD but it doesn't know if FEATURE_INTERPRETER is enabled
 RETAIL_CONFIG_DWORD_INFO(INTERNAL_InterpreterFallback, W("InterpreterFallback"), 0, "Fallback to the interpreter when the JIT compiler fails")

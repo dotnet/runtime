@@ -12259,15 +12259,23 @@ CorJitResult invokeCompileMethodHelper(EEJitManager *jitMgr,
 
 #ifdef FEATURE_INTERPRETER
     static ConfigDWORD s_InterpreterFallback;
+    static ConfigDWORD s_InterpreterDebuggable;
 
-    bool isInterpreterStub   = false;
-    bool interpreterFallback = (s_InterpreterFallback.val(CLRConfig::INTERNAL_InterpreterFallback) != 0);
+    bool isInterpreterStub     = false;
+    bool interpreterFallback   = (s_InterpreterFallback.val(CLRConfig::INTERNAL_InterpreterFallback) != 0);
+#ifdef DEBUG
+    bool interpreterDebuggable = (s_InterpreterDebuggable.val(CLRConfig::INTERNAL_InterpreterDebuggable) != 0);
+#else
+    bool interpreterDebuggable = false;
+#endif // DEBUG
 
     if (interpreterFallback == false)
     {
         // If we're doing an "import_only" compilation, it's for verification, so don't interpret.
         // (We assume that importation is completely architecture-independent, or at least nearly so.)
-        if (FAILED(ret) && !jitFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_IMPORT_ONLY)/* && !jitFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_MAKEFINALCODE)*/)
+        if (FAILED(ret) &&
+            !jitFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_IMPORT_ONLY) &&
+            (!jitFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_MAKEFINALCODE) || interpreterDebuggable))
         {
             if (SUCCEEDED(ret = Interpreter::GenerateInterpreterStub(comp, info, nativeEntry, nativeSizeOfCode)))
             {
@@ -12290,7 +12298,9 @@ CorJitResult invokeCompileMethodHelper(EEJitManager *jitMgr,
     {
         // If we're doing an "import_only" compilation, it's for verification, so don't interpret.
         // (We assume that importation is completely architecture-independent, or at least nearly so.)
-        if (FAILED(ret) && !jitFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_IMPORT_ONLY)/* && !jitFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_MAKEFINALCODE)*/)
+        if (FAILED(ret) &&
+            !jitFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_IMPORT_ONLY) &&
+            (!jitFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_MAKEFINALCODE) || interpreterDebuggable))
         {
             if (SUCCEEDED(ret = Interpreter::GenerateInterpreterStub(comp, info, nativeEntry, nativeSizeOfCode)))
             {
