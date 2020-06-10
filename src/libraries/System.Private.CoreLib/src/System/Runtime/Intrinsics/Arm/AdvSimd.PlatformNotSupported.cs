@@ -7073,6 +7073,62 @@ namespace System.Runtime.Intrinsics.Arm
         public static Vector128<ulong> MultiplyBySelectedScalarWideningLowerAndSubtract(Vector128<ulong> minuend, Vector64<uint> left, Vector128<uint> right, byte rightIndex) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
+        /// int32x4_t vmull_high_lane_s16 (int16x8_t a, int16x4_t v, const int lane)
+        ///   A32: VMULL.S16 Qd, Dn+1, Dm[lane]
+        ///   A64: SMULL2 Vd.4S, Vn.8H, Vm.H[lane]
+        /// </summary>
+        public static Vector128<int> MultiplyBySelectedScalarWideningUpper(Vector128<short> left, Vector64<short> right, byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int32x4_t vmull_high_laneq_s16 (int16x8_t a, int16x8_t v, const int lane)
+        ///   A32: VMULL.S16 Qd, Dn+1, Dm[lane]
+        ///   A64: SMULL2 Vd.4S, Vn.8H, Vm.H[lane]
+        /// </summary>
+        public static Vector128<int> MultiplyBySelectedScalarWideningUpper(Vector128<short> left, Vector128<short> right, byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int64x2_t vmull_high_lane_s32 (int32x4_t a, int32x2_t v, const int lane)
+        ///   A32: VMULL.S32 Qd, Dn+1, Dm[lane]
+        ///   A64: SMULL2 Vd.2D, Vn.4S, Vm.S[lane]
+        /// </summary>
+        public static Vector128<long> MultiplyBySelectedScalarWideningUpper(Vector128<int> left, Vector64<int> right, byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int64x2_t vmull_high_laneq_s32 (int32x4_t a, int32x4_t v, const int lane)
+        ///   A32: VMULL.S32 Qd, Dn+1, Dm[lane]
+        ///   A64: SMULL2 Vd.2D, Vn.4S, Vm.S[lane]
+        /// </summary>
+        public static Vector128<long> MultiplyBySelectedScalarWideningUpper(Vector128<int> left, Vector128<int> right, byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint32x4_t vmull_high_lane_u16 (uint16x8_t a, uint16x4_t v, const int lane)
+        ///   A32: VMULL.U16 Qd, Dn+1, Dm[lane]
+        ///   A64: UMULL2 Vd.4S, Vn.8H, Vm.H[lane]
+        /// </summary>
+        public static Vector128<uint> MultiplyBySelectedScalarWideningUpper(Vector128<ushort> left, Vector64<ushort> right, byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint32x4_t vmull_high_laneq_u16 (uint16x8_t a, uint16x8_t v, const int lane)
+        ///   A32: VMULL.U16 Qd, Dn+1, Dm[lane]
+        ///   A64: UMULL2 Vd.4S, Vn.8H, Vm.H[lane]
+        /// </summary>
+        public static Vector128<uint> MultiplyBySelectedScalarWideningUpper(Vector128<ushort> left, Vector128<ushort> right, byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint64x2_t vmull_high_lane_u32 (uint32x4_t a, uint32x2_t v, const int lane)
+        ///   A32: VMULL.U32 Qd, Dn+1, Dm[lane]
+        ///   A64: UMULL2 Vd.2D, Vn.4S, Vm.S[lane]
+        /// </summary>
+        public static Vector128<ulong> MultiplyBySelectedScalarWideningUpper(Vector128<uint> left, Vector64<uint> right, byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint64x2_t vmull_high_laneq_u32 (uint32x4_t a, uint32x4_t v, const int lane)
+        ///   A32: VMULL.U32 Qd, Dn+1, Dm[lane]
+        ///   A64: UMULL2 Vd.2D, Vn.4S, Vm.S[lane]
+        /// </summary>
+        public static Vector128<ulong> MultiplyBySelectedScalarWideningUpper(Vector128<uint> left, Vector128<uint> right, byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
         /// float64x1_t vmul_f64 (float64x1_t a, float64x1_t b)
         ///   A32: VMUL.F64 Dd, Dn, Dm
         ///   A64: FMUL Dd, Dn, Dm
