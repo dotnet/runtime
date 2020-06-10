@@ -48,6 +48,10 @@
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetFramework)' != 'net45' And '$(TargetFramework)' != 'netstandard1.1'">
     <Compile Include="System\Diagnostics\Activity.Current.net46.cs" />
+    <Compile Include="System\Diagnostics\LocalAppContextSwitches.cs" />
+    <Compile Include="$(CommonPath)System\LocalAppContextSwitches.Common.cs">
+      <Link>Common\System\LocalAppContextSwitches.Common.cs</Link>
+    </Compile>
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetFramework)' == 'net45' ">
     <Compile Include="System\Diagnostics\Activity.Current.net45.cs" />
@@ -81,6 +85,9 @@
     <Reference Include="System.Runtime.InteropServices" />
     <Reference Include="System.Threading" />
     <Reference Include="System.Resources.ResourceManager" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetFramework)' == 'netstandard1.3'">
+    <Reference Include="System.AppContext" />
   </ItemGroup>
   <ItemGroup Condition="$(TargetFramework.StartsWith('net4'))">
     <Compile Include="AssemblyInfo.netfx.cs" />

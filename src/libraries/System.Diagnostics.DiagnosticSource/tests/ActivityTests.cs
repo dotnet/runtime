@@ -210,8 +210,7 @@ namespace System.Diagnostics.Tests
 
             Assert.Equal(parentId, activity.ParentId);
 
-            // With probability 1/MaxLong, Activity.Id length may be expectedIdLength + 1
-            Assert.InRange(activity.Id.Length, expectedIdLength, expectedIdLength + 1);
+            Assert.Equal(27, activity.Id.Length);
             Assert.DoesNotContain('#', activity.Id);
         }
 
@@ -258,6 +257,7 @@ namespace System.Diagnostics.Tests
         public void IdGenerationInternalParent()
         {
             var parent = new Activity("parent");
+            parent.SetIdFormat(ActivityIdFormat.Hierarchical);
             parent.Start();
             var child1 = new Activity("child1");
             var child2 = new Activity("child2");
@@ -539,7 +539,7 @@ namespace System.Diagnostics.Tests
         {
             Activity activity = new Activity("activity1");
             activity.Start();
-            Assert.Equal(ActivityIdFormat.Hierarchical, activity.IdFormat);
+            Assert.Equal(ActivityIdFormat.W3C, activity.IdFormat);
         }
 
         [Fact]
@@ -637,9 +637,9 @@ namespace System.Diagnostics.Tests
         {
             Activity activity = new Activity("activity");
             activity.Start();
-            Assert.Equal(ActivityIdFormat.Hierarchical, activity.IdFormat);
-            Assert.Equal("00000000000000000000000000000000", activity.TraceId.ToHexString());
-            Assert.Equal("0000000000000000", activity.SpanId.ToHexString());
+            Assert.Equal(ActivityIdFormat.W3C, activity.IdFormat);
+            Assert.NotEqual("00000000000000000000000000000000", activity.TraceId.ToHexString());
+            Assert.NotEqual("0000000000000000", activity.SpanId.ToHexString());
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
