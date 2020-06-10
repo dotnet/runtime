@@ -103,9 +103,8 @@ namespace System.Runtime.InteropServices.JavaScript
                     obj = h.Target as JSObject;
                     _boundObjects.Add(jsId, new WeakReference(obj, true));
                 }
-
-                return obj?.Int32Handle ?? 0;
             }
+            return obj?.Int32Handle ?? 0;
         }
 
         private static JSObject BindJSType(IntPtr jsIntPtr, bool ownsHandle, int coreType) =>
