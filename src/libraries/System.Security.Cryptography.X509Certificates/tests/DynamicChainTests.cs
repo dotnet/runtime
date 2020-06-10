@@ -122,13 +122,9 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 {
                     rootErrors &= ~X509ChainStatusFlags.NotSignatureValid;
 
-                    // On 10.12 this is just UntrustedRoot.
                     // On 10.13+ it becomes PartialChain, and UntrustedRoot goes away.
-                    if (PlatformDetection.IsMacOsHighSierraOrHigher)
-                    {
-                        rootErrors &= ~X509ChainStatusFlags.UntrustedRoot;
-                        rootErrors |= X509ChainStatusFlags.PartialChain;
-                    }
+                    rootErrors &= ~X509ChainStatusFlags.UntrustedRoot;
+                    rootErrors |= X509ChainStatusFlags.PartialChain;
                 }
             }
             else if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
