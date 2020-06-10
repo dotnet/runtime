@@ -98,6 +98,42 @@ namespace System.Runtime.Intrinsics.Arm
         //     public static Vector128<float> MultiplySubtract(Vector128<float> minuend, Vector128<float> left, Vector128<float> right) => MultiplySubtract(minuend, left, right);
         //
         //     /// <summary>
+        //     /// float32x2_t vmls_n_f32 (float32x2_t a, float32x2_t b, float32_t c)
+        //     ///   A32: VMLS.F32 Dd, Dn, Dm[0]
+        //     /// </summary>
+        //     public static Vector64<float> MultiplySubtractByScalar(Vector64<float> minuend, Vector64<float> left, Vector64<float> right) => MultiplySubtractByScalar(minuend, left, right);
+        //
+        //     /// <summary>
+        //     /// float32x4_t vmlsq_n_f32 (float32x4_t a, float32x4_t b, float32_t c)
+        //     ///   A32: VMLS.F32 Qd, Qn, Dm[0]
+        //     /// </summary>
+        //     public static Vector128<float> MultiplySubtractByScalar(Vector128<float> minuend, Vector128<float> left, Vector64<float> right) => MultiplySubtractByScalar(minuend, left, right);
+        //
+        //     /// <summary>
+        //     /// float32x2_t vmls_lane_f32 (float32x2_t a, float32x2_t b, float32x2_t v, const int lane)
+        //     ///   A32: VMLS.F32 Dd, Dn, Dm[lane]
+        //     /// </summary>
+        //     public static Vector64<float> MultiplySubtractBySelectedScalar(Vector64<float> minuend, Vector64<float> left, Vector64<float> right, byte rightIndex) => MultiplySubtractBySelectedScalar(minuend, left, right, rightIndex);
+        //
+        //     /// <summary>
+        //     /// float32x2_t vmls_laneq_f32 (float32x2_t a, float32x2_t b, float32x4_t v, const int lane)
+        //     ///   A32: VMLS.F32 Dd, Dn, Dm[lane]
+        //     /// </summary>
+        //     public static Vector64<float> MultiplySubtractBySelectedScalar(Vector64<float> minuend, Vector64<float> left, Vector128<float> right, byte rightIndex) => MultiplySubtractBySelectedScalar(minuend, left, right, rightIndex);
+        //
+        //     /// <summary>
+        //     /// float32x4_t vmlsq_lane_f32 (float32x4_t a, float32x4_t b, float32x2_t v, const int lane)
+        //     ///   A32: VMLS.F32 Qd, Qn, Dm[lane]
+        //     /// </summary>
+        //     public static Vector128<float> MultiplySubtractBySelectedScalar(Vector128<float> minuend, Vector128<float> left, Vector64<float> right, byte rightIndex) => MultiplySubtractBySelectedScalar(minuend, left, right, rightIndex);
+        //
+        //     /// <summary>
+        //     /// float32x4_t vmlsq_laneq_f32 (float32x4_t a, float32x4_t b, float32x4_t v, const int lane)
+        //     ///   A32: VMLS.F32 Qd, Qn, Dm[lane]
+        //     /// </summary>
+        //     public static Vector128<float> MultiplySubtractBySelectedScalar(Vector128<float> minuend, Vector128<float> left, Vector128<float> right, byte rightIndex) => MultiplySubtractBySelectedScalar(minuend, left, right, rightIndex);
+        //
+        //     /// <summary>
         //     /// float64x1_t vmls_f64 (float64x1_t a, float64x1_t b, float64x1_t c)
         //     ///   A32: VMLS.F64 Dd, Dn, Dm
         //     /// </summary>
