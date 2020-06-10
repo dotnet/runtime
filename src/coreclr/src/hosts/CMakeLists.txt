@@ -6,7 +6,6 @@ if(CLR_CMAKE_HOST_WIN32)
   add_subdirectory(coreshim)
 else(CLR_CMAKE_HOST_WIN32)
   add_definitions(-D_FILE_OFFSET_BITS=64)
-
   include_directories(${CMAKE_CURRENT_BINARY_DIR})
   include(unixcoreruncommon/configure.cmake)
   add_subdirectory(unixcorerun)
