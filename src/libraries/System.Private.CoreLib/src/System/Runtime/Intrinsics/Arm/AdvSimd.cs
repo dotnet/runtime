@@ -6469,21 +6469,6 @@ namespace System.Runtime.Intrinsics.Arm
         public static Vector128<uint> Multiply(Vector128<uint> left, Vector128<uint> right) => Multiply(left, right);
 
         /// <summary>
-        /// float64x1_t vmul_f64 (float64x1_t a, float64x1_t b)
-        ///   A32: VMUL.F64 Dd, Dn, Dm
-        ///   A64: FMUL Dd, Dn, Dm
-        /// </summary>
-        public static Vector64<double> MultiplyScalar(Vector64<double> left, Vector64<double> right) => MultiplyScalar(left, right);
-
-        /// <summary>
-        /// float32_t vmuls_f32 (float32_t a, float32_t b)
-        ///   A32: VMUL.F32 Sd, Sn, Sm
-        ///   A64: FMUL Sd, Sn, Sm
-        /// The above native signature does not exist. We provide this additional overload for consistency with the other scalar APIs.
-        /// </summary>
-        public static Vector64<float> MultiplyScalar(Vector64<float> left, Vector64<float> right) => MultiplyScalar(left, right);
-
-        /// <summary>
         /// uint8x8_t vmla_u8 (uint8x8_t a, uint8x8_t b, uint8x8_t c)
         ///   A32: VMLA.I8 Dd, Dn, Dm
         ///   A64: MLA Vd.8B, Vn.8B, Vm.8B
@@ -6566,6 +6551,21 @@ namespace System.Runtime.Intrinsics.Arm
         ///   A64: MLA Vd.4S, Vn.4S, Vm.4S
         /// </summary>
         public static Vector128<uint> MultiplyAdd(Vector128<uint> addend, Vector128<uint> left, Vector128<uint> right) => MultiplyAdd(addend, left, right);
+
+        /// <summary>
+        /// float64x1_t vmul_f64 (float64x1_t a, float64x1_t b)
+        ///   A32: VMUL.F64 Dd, Dn, Dm
+        ///   A64: FMUL Dd, Dn, Dm
+        /// </summary>
+        public static Vector64<double> MultiplyScalar(Vector64<double> left, Vector64<double> right) => MultiplyScalar(left, right);
+
+        /// <summary>
+        /// float32_t vmuls_f32 (float32_t a, float32_t b)
+        ///   A32: VMUL.F32 Sd, Sn, Sm
+        ///   A64: FMUL Sd, Sn, Sm
+        /// The above native signature does not exist. We provide this additional overload for consistency with the other scalar APIs.
+        /// </summary>
+        public static Vector64<float> MultiplyScalar(Vector64<float> left, Vector64<float> right) => MultiplyScalar(left, right);
 
         /// <summary>
         /// uint8x8_t vmls_u8 (uint8x8_t a, uint8x8_t b, uint8x8_t c)
