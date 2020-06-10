@@ -4728,8 +4728,8 @@ private:
     ClassLayout* m_layout;
 
     union {
-        var_types      gtOtherBaseType; // For AVX2 Gather* intrinsics
-        regNumberSmall gtOtherReg;      // For intrinsics that return 2 registers
+        var_types gtAuxiliaryType; // For intrinsics than need another type (e.g. Avx2.Gather* or SIMD (by element))
+        regNumberSmall gtOtherReg; // For intrinsics that return 2 registers
     };
 
 public:
@@ -4766,14 +4766,14 @@ public:
         assert(gtOtherReg == reg);
     }
 
-    var_types GetOtherBaseType() const
+    var_types GetAuxiliaryType() const
     {
-        return gtOtherBaseType;
+        return gtAuxiliaryType;
     }
 
-    void SetOtherBaseType(var_types type)
+    void SetAuxiliaryType(var_types type)
     {
-        gtOtherBaseType = type;
+        gtAuxiliaryType = type;
     }
 
     GenTreeJitIntrinsic(genTreeOps oper, var_types type, GenTree* op1, GenTree* op2, var_types baseType, unsigned size)

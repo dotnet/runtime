@@ -1461,7 +1461,7 @@ AGAIN:
                     if ((op1->AsHWIntrinsic()->gtHWIntrinsicId != op2->AsHWIntrinsic()->gtHWIntrinsicId) ||
                         (op1->AsHWIntrinsic()->gtSIMDBaseType != op2->AsHWIntrinsic()->gtSIMDBaseType) ||
                         (op1->AsHWIntrinsic()->gtSIMDSize != op2->AsHWIntrinsic()->gtSIMDSize) ||
-                        (op1->AsHWIntrinsic()->GetOtherBaseType() != op2->AsHWIntrinsic()->GetOtherBaseType()))
+                        (op1->AsHWIntrinsic()->GetAuxiliaryType() != op2->AsHWIntrinsic()->GetAuxiliaryType()))
                     {
                         return false;
                     }
@@ -2131,7 +2131,7 @@ AGAIN:
                     hash += tree->AsHWIntrinsic()->gtHWIntrinsicId;
                     hash += tree->AsHWIntrinsic()->gtSIMDBaseType;
                     hash += tree->AsHWIntrinsic()->gtSIMDSize;
-                    hash += tree->AsHWIntrinsic()->GetOtherBaseType();
+                    hash += tree->AsHWIntrinsic()->GetAuxiliaryType();
                     break;
 #endif // FEATURE_HW_INTRINSICS
 
@@ -7478,7 +7478,7 @@ GenTree* Compiler::gtCloneExpr(
                     GenTreeHWIntrinsic(hwintrinsicOp->TypeGet(), hwintrinsicOp->gtGetOp1(),
                                        hwintrinsicOp->gtGetOp2IfPresent(), hwintrinsicOp->gtHWIntrinsicId,
                                        hwintrinsicOp->gtSIMDBaseType, hwintrinsicOp->gtSIMDSize);
-                copy->AsHWIntrinsic()->SetOtherBaseType(hwintrinsicOp->GetOtherBaseType());
+                copy->AsHWIntrinsic()->SetAuxiliaryType(hwintrinsicOp->GetAuxiliaryType());
             }
             break;
 #endif

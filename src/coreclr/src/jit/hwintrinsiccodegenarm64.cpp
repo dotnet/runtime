@@ -356,7 +356,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
 
             case NI_AdvSimd_AddWideningUpper:
                 assert(varTypeIsIntegral(intrin.baseType));
-                if (node->GetOtherBaseType() == intrin.baseType)
+                if (node->GetAuxiliaryType() == intrin.baseType)
                 {
                     ins = varTypeIsUnsigned(intrin.baseType) ? INS_uaddl2 : INS_saddl2;
                 }
@@ -368,7 +368,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
 
             case NI_AdvSimd_SubtractWideningUpper:
                 assert(varTypeIsIntegral(intrin.baseType));
-                if (node->GetOtherBaseType() == intrin.baseType)
+                if (node->GetAuxiliaryType() == intrin.baseType)
                 {
                     ins = varTypeIsUnsigned(intrin.baseType) ? INS_usubl2 : INS_ssubl2;
                 }
