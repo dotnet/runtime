@@ -155,7 +155,12 @@ namespace ILCompiler.PEWriter
         /// If non-null, the PE file will be laid out such that it can naturally be mapped with a higher alignment than 4KB
         /// This is used to support loading via large pages on Linux
         /// </summary>
-        private readonly int? _customPESectionAllignment;
+        private readonly int? _customPESectionAlignment;
+
+        /// <summary>
+        /// Physical file padding that has already been determined.
+        /// </summary>
+        private int _previouslyInjectedPadding = 0;
 
         /// <summary>
         /// Constructor initializes the various control structures and combines the section list.
@@ -169,7 +174,7 @@ namespace ILCompiler.PEWriter
             ISymbolNode r2rHeaderExportSymbol,
             string outputFileSimpleName,
             Func<RuntimeFunctionsTableNode> getRuntimeFunctionsTable,
-            int? customPESectionAllignment)
+            int? customPESectionAlignment)
             : base(peHeaderBuilder, deterministicIdProvider: null)
         {
             _target = target;
@@ -181,7 +186,7 @@ namespace ILCompiler.PEWriter
             _textSectionIndex = _sectionBuilder.AddSection(TextSectionName, SectionCharacteristics.ContainsCode | SectionCharacteristics.MemExecute | SectionCharacteristics.MemRead, 512);
             _dataSectionIndex = _sectionBuilder.AddSection(DataSectionName, SectionCharacteristics.ContainsInitializedData | SectionCharacteristics.MemWrite | SectionCharacteristics.MemRead, 512);
 
-            _customPESectionAllignment = customPESectionAllignment;
+            _customPESectionAlignment = customPESectionAlignment;
 
             if (r2rHeaderExportSymbol != null)
             {
@@ -281,7 +286,7 @@ namespace ILCompiler.PEWriter
 
             _sectionBuilder.RelocateOutputFile(outputPeFile, Header.ImageBase, outputStream, _paddingToInject);
 
-            UpdateSectionRVAs(outputStream, _customPESectionAllignment);
+            UpdateSectionRVAs(outputStream, _customPESectionAlignment);
             ApplyMachineOSOverride(outputStream);
 
             SetPEHeaderTimeStamp(outputStream, timeDateStamp);
@@ -522,7 +527,6 @@ namespace ILCompiler.PEWriter
         /// <param name="name">Section name</param>
         /// <param name="location">RVA and file location where the section will be put</param>
         /// <returns>Blob builder representing the section data</returns>
-        int previouslyInjectedPadding = 0;
         protected override BlobBuilder SerializeSection(string name, SectionLocation location)
         {
             BlobBuilder sectionDataBuilder = null;
@@ -534,19 +538,19 @@ namespace ILCompiler.PEWriter
                 outputSectionIndex--;
             }
 
-            if (_customPESectionAllignment.HasValue && _customPESectionAllignment.Value != 0)
+            if (_customPESectionAlignment.HasValue && _customPESectionAlignment.Value != 0)
             {
                 if (outputSectionIndex > 0)
                 {
                     sectionStartRva = Math.Max(sectionStartRva, _sectionRVAs[outputSectionIndex - 1] + _sectionRawSizes[outputSectionIndex - 1]);
                 }
 
-                int newSectionStartRva = AlignmentHelper.AlignUp(sectionStartRva, _customPESectionAllignment.Value);
+                int newSectionStartRva = AlignmentHelper.AlignUp(sectionStartRva, _customPESectionAlignment.Value);
                 if (newSectionStartRva > sectionStartRva)
                 {
-                    int padding = newSectionStartRva - (location.PointerToRawData + previouslyInjectedPadding);
-                    _paddingToInject.Add((location.PointerToRawData + previouslyInjectedPadding, padding));
-                    previouslyInjectedPadding += padding;
+                    int padding = newSectionStartRva - (location.PointerToRawData + _previouslyInjectedPadding);
+                    _paddingToInject.Add((location.PointerToRawData + _previouslyInjectedPadding, padding));
+                    _previouslyInjectedPadding += padding;
                 }
                 sectionStartRva = newSectionStartRva;
                 location = new SectionLocation(sectionStartRva, sectionStartRva);
@@ -599,10 +603,10 @@ namespace ILCompiler.PEWriter
                 sectionDataBuilder.WriteByte(0);
             }
 
-            if (_customPESectionAllignment.HasValue && _customPESectionAllignment.Value != 0)
+            if (_customPESectionAlignment.HasValue && _customPESectionAlignment.Value != 0)
             {
                 // Align the end of the section to the padding offset
-                int count = AlignmentHelper.AlignUp(sectionDataBuilder.Count, _customPESectionAllignment.Value);
+                int count = AlignmentHelper.AlignUp(sectionDataBuilder.Count, _customPESectionAlignment.Value);
                 sectionDataBuilder.WriteBytes(0, count - sectionDataBuilder.Count);
             }
 

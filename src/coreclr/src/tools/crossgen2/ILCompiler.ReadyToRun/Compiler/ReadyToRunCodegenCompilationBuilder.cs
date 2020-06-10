@@ -28,7 +28,7 @@ namespace ILCompiler
         private ProfileDataManager _profileData;
         private ReadyToRunMethodLayoutAlgorithm _r2rMethodLayoutAlgorithm;
         private ReadyToRunFileLayoutAlgorithm _r2rFileLayoutAlgorithm;
-        private int? _customPESectionAllignment;
+        private int? _customPESectionAlignment;
 
         private string _jitPath;
         private string _outputFile;
@@ -138,9 +138,9 @@ namespace ILCompiler
             return this;
         }
 
-        public ReadyToRunCodegenCompilationBuilder UseCustomPESectionAlignment(int? customPESectionAllignment)
+        public ReadyToRunCodegenCompilationBuilder UseCustomPESectionAlignment(int? customPESectionAlignment)
         {
-            _customPESectionAllignment = customPESectionAllignment;
+            _customPESectionAlignment = customPESectionAlignment;
             return this;
         }
 
@@ -231,7 +231,7 @@ namespace ILCompiler
                 _profileData,
                 _r2rMethodLayoutAlgorithm,
                 _r2rFileLayoutAlgorithm,
-                _customPESectionAllignment);
+                _customPESectionAlignment);
         }
     }
 }
