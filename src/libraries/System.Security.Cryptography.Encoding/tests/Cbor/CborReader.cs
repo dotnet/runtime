@@ -19,7 +19,7 @@ namespace System.Formats.Cbor
         private Stack<StackFrame>? _nestedDataItems;
         private CborMajorType? _currentMajorType = null; // major type of the currently written data item. Null iff at the root context
         private int? _definiteLength; // predetermined definite-length of current data item context
-        private int _itemsWritten = 0; // number of items written in the current context
+        private int _itemsRead = 0; // number of items read in the current context
         private int _frameOffset = 0; // buffer offset particular to the current data item context
         private bool _isTagContext = false; // true if reader is expecting a tagged value
 
@@ -122,7 +122,7 @@ namespace System.Formats.Cbor
 
         private CborReaderState PeekStateCore(bool throwOnFormatErrors)
         {
-            if (_definiteLength - _itemsWritten == 0)
+            if (_definiteLength - _itemsRead == 0)
             {
                 // is at the end of a definite-length context
                 switch (_currentMajorType)
@@ -180,7 +180,7 @@ namespace System.Formats.Cbor
                         case CborMajorType.ByteString: return CborReaderState.EndByteString;
                         case CborMajorType.TextString: return CborReaderState.EndTextString;
                         case CborMajorType.Array: return CborReaderState.EndArray;
-                        case CborMajorType.Map when _itemsWritten % 2 == 0: return CborReaderState.EndMap;
+                        case CborMajorType.Map when _itemsRead % 2 == 0: return CborReaderState.EndMap;
                         case CborMajorType.Map:
                             return throwOnFormatErrors ?
                                 throw new FormatException(SR.Cbor_Reader_InvalidCbor_KeyMissingValue) :
@@ -264,7 +264,7 @@ namespace System.Formats.Cbor
 
         private CborInitialByte PeekInitialByte()
         {
-            if (_definiteLength - _itemsWritten == 0)
+            if (_definiteLength - _itemsRead == 0)
             {
                 throw new InvalidOperationException(SR.Cbor_Reader_NoMoreDataItemsToRead);
             }
@@ -332,7 +332,7 @@ namespace System.Formats.Cbor
                 type: _currentMajorType,
                 frameOffset: _frameOffset,
                 definiteLength: _definiteLength,
-                itemsWritten: _itemsWritten,
+                itemsWritten: _itemsRead,
                 currentKeyOffset: _currentKeyOffset,
                 previousKeyEncodingRange: _previousKeyEncodingRange,
                 keyEncodingRanges: _keyEncodingRanges
@@ -342,7 +342,7 @@ namespace System.Formats.Cbor
 
             _currentMajorType = majorType;
             _definiteLength = definiteLength;
-            _itemsWritten = 0;
+            _itemsRead = 0;
             _frameOffset = _offset;
             _isTagContext = false;
             _currentKeyOffset = null;
@@ -364,7 +364,7 @@ namespace System.Formats.Cbor
                 throw new InvalidOperationException(SR.Format(SR.Cbor_PopMajorTypeMismatch, (int)_currentMajorType.Value));
             }
 
-            if (_definiteLength - _itemsWritten > 0)
+            if (_definiteLength - _itemsRead > 0)
             {
                 throw new InvalidOperationException(SR.Cbor_NotAtEndOfDefiniteLengthDataItem);
             }
@@ -385,11 +385,11 @@ namespace System.Formats.Cbor
 
         private void AdvanceDataItemCounters()
         {
-            Debug.Assert(_definiteLength is null || _definiteLength - _itemsWritten > 0);
+            Debug.Assert(_definiteLength is null || _definiteLength - _itemsRead > 0);
 
             if (_currentMajorType == CborMajorType.Map)
             {
-                if (_itemsWritten % 2 == 0)
+                if (_itemsRead % 2 == 0)
                 {
                     HandleMapKeyRead();
                 }
@@ -399,7 +399,7 @@ namespace System.Formats.Cbor
                 }
             }
 
-            _itemsWritten++;
+            _itemsRead++;
             _isTagContext = false;
         }
 
@@ -475,7 +475,7 @@ namespace System.Formats.Cbor
             _currentMajorType = frame.MajorType;
             _frameOffset = frame.FrameOffset;
             _definiteLength = frame.DefiniteLength;
-            _itemsWritten = frame.ItemsWritten;
+            _itemsRead = frame.ItemsWritten;
             _currentKeyOffset = frame.CurrentKeyOffset;
             _previousKeyEncodingRange = frame.PreviousKeyEncodingRange;
             _keyEncodingRanges = frame.KeyEncodingRanges;
@@ -523,7 +523,7 @@ namespace System.Formats.Cbor
                 depth: CurrentDepth,
                 offset: _offset,
                 frameOffset: _frameOffset,
-                itemsWritten: _itemsWritten,
+                itemsWritten: _itemsRead,
                 currentKeyOffset: _currentKeyOffset,
                 previousKeyEncodingRange: _previousKeyEncodingRange);
         }
@@ -558,14 +558,14 @@ namespace System.Formats.Cbor
 
             // Remove any key encodings added after the current checkpoint.
             // This is only needed when rolling back key reads in the Strict conformance level.
-            if (_keyEncodingRanges != null && _itemsWritten > checkpoint.ItemsWritten)
+            if (_keyEncodingRanges != null && _itemsRead > checkpoint.ItemsWritten)
             {
                 int checkpointOffset = checkpoint.Offset;
                 _keyEncodingRanges.RemoveWhere(key => key.Offset >= checkpointOffset);
             }
 
             _offset = checkpoint.Offset;
-            _itemsWritten = checkpoint.ItemsWritten;
+            _itemsRead = checkpoint.ItemsWritten;
             _previousKeyEncodingRange = checkpoint.PreviousKeyEncodingRange;
             _currentKeyOffset = checkpoint.CurrentKeyOffset;
             _cachedState = CborReaderState.None;

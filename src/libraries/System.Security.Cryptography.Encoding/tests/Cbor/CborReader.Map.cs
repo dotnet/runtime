@@ -91,7 +91,7 @@ namespace System.Formats.Cbor
             {
                 ValidateNextByteIsBreakByte();
 
-                if (_itemsWritten % 2 != 0)
+                if (_itemsRead % 2 != 0)
                 {
                     throw new FormatException(SR.Cbor_Reader_InvalidCbor_KeyMissingValue);
                 }
@@ -114,7 +114,7 @@ namespace System.Formats.Cbor
         // conformance book-keeping after a key data item has been read
         private void HandleMapKeyRead()
         {
-            Debug.Assert(_currentKeyOffset != null && _itemsWritten % 2 == 0);
+            Debug.Assert(_currentKeyOffset != null && _itemsRead % 2 == 0);
 
             (int Offset, int Length) currentKeyRange = (_currentKeyOffset.Value, _offset - _currentKeyOffset.Value);
 
@@ -135,7 +135,7 @@ namespace System.Formats.Cbor
         // conformance book-keeping after a value data item has been read
         private void HandleMapValueRead()
         {
-            Debug.Assert(_currentKeyOffset != null && _itemsWritten % 2 != 0);
+            Debug.Assert(_currentKeyOffset != null && _itemsRead % 2 != 0);
 
             _currentKeyOffset = _offset;
         }
