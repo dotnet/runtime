@@ -299,6 +299,48 @@ HRESULT PortablePdbWritter::DefineSequencePoints(Method* method)
     return hr;
 }
 
+HRESULT PortablePdbWritter::DefineLocalScope(Method* method)
+{
+    mdLocalVariable firstLocVarToken = mdLocalScopeNil;
+    if (!_DefineLocalScope(method->m_Tok, &method->m_MainScope, &firstLocVarToken))
+        return E_FAIL;
+    else
+        return S_OK;
+}
+
+BOOL PortablePdbWritter::_DefineLocalScope(mdMethodDef methodDefToken, Scope* currScope, mdLocalVariable* firstLocVarToken)
+{
+    BOOL fSuccess = FALSE;
+    ARG_NAME_LIST* pLocalVar = currScope->pLocals;
+    while (pLocalVar != NULL)
+    {
+        mdLocalVariable locVarToken = mdLocalScopeNil;
+        USHORT attribute = 0;                                       // TODO: not supported for now
+        USHORT index = pLocalVar->dwAttr & 0xffff; // slot
+        if (FAILED(m_pdbEmitter->DefineLocalVariable(attribute, index, (char*)pLocalVar->szName, &locVarToken))) goto exit;
+
+        if (*firstLocVarToken == mdLocalScopeNil)
+            *firstLocVarToken = locVarToken;
+
+        pLocalVar = pLocalVar->pNext;
+    }
+
+    ULONG methodRid = RidFromToken(methodDefToken);
+    ULONG importScopeRid = RidFromToken(mdImportScopeNil);          // TODO: not supported for now
+    ULONG firstLocalVarRid = RidFromToken(*firstLocVarToken);
+    ULONG firstLocalConstRid = RidFromToken(mdLocalConstantNil);    // TODO: not supported for now
+    ULONG start = currScope->dwStart;
+    ULONG length = currScope->dwEnd - currScope->dwStart;
+    if (FAILED(m_pdbEmitter->DefineLocalScope(methodRid, importScopeRid, firstLocalVarRid, firstLocalConstRid, start, length))) goto exit;
+
+    fSuccess = TRUE;
+    for (ULONG i = 0; i < currScope->SubScope.COUNT(); i++)
+        fSuccess &= _DefineLocalScope(methodDefToken, currScope->SubScope.PEEK(i), firstLocVarToken);
+
+exit:
+    return fSuccess;
+}
+
 BOOL PortablePdbWritter::VerifySequencePoint(LinePC* curr, LinePC* next)
 {
     if (!curr->IsHidden)

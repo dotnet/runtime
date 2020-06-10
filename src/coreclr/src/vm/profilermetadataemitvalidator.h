@@ -385,6 +385,20 @@ public:
         ULONG       docRid,
         BYTE        *sequencePtsBlob,
         ULONG       sequencePtsBlobSize);
+        
+    virtual HRESULT STDMETHODCALLTYPE DefineLocalScope(
+        ULONG       methodDefRid,
+        ULONG       importScopeRid,
+        ULONG       firstLocalVarRid,
+        ULONG       firstLocalConstRid,
+        ULONG       startOffset,
+        ULONG       length);
+
+    virtual HRESULT STDMETHODCALLTYPE DefineLocalVariable(
+        USHORT      attribute,
+        USHORT      index,
+        char        *name,
+        mdLocalVariable *locVarToken);
 
     //IMetaDataAssemblyEmit
     virtual HRESULT STDMETHODCALLTYPE DefineAssembly(

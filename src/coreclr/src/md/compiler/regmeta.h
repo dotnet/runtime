@@ -1127,6 +1127,20 @@ public:
         BYTE        *sequencePtsBlob,       // [IN] Sequence point blob.
         ULONG       sequencePtsBlobSize);   // [IN] Sequence point blob size.
 
+    STDMETHODIMP DefineLocalScope(          // S_OK or error.
+        ULONG       methodDefRid,           // [IN] Method RID.
+        ULONG       importScopeRid,         // [IN] Import scope RID.
+        ULONG       firstLocalVarRid,       // [IN] First local variable RID (of the continous run).
+        ULONG       firstLocalConstRid,     // [IN] First local constant RID (of the continous run).
+        ULONG       startOffset,            // [IN] Start offset of the scope.
+        ULONG       length);                // [IN] Scope length.
+
+    STDMETHODIMP DefineLocalVariable(       // S_OK or error.
+        USHORT      attribute,              // [IN] Variable attribute.
+        USHORT      index,                  // [IN] Variable index (slot).
+        char        *name,                  // [IN] Variable name.
+        mdLocalVariable *locVarToken);      // [OUT] Token of the defined variable.
+
 //*****************************************************************************
 // IMetaDataAssemblyEmit
 //*****************************************************************************

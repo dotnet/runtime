@@ -653,6 +653,19 @@ DECLARE_INTERFACE_(IMetaDataEmit2, IMetaDataEmit)
         BYTE        *sequencePtsBlob,       // [IN] Sequence point blob.
         ULONG       sequencePtsBlobSize) PURE; // [IN] Sequence point blob size.
 
+    STDMETHOD(DefineLocalScope)(            // S_OK or error.
+        ULONG       methodDefRid,           // [IN] Method RID.
+        ULONG       importScopeRid,         // [IN] Import scope RID.
+        ULONG       firstLocalVarRid,       // [IN] First local variable RID (of the continous run).
+        ULONG       firstLocalConstRid,     // [IN] First local constant RID (of the continous run).
+        ULONG       startOffset,            // [IN] Start offset of the scope.
+        ULONG       length) PURE;           // [IN] Scope length.
+
+    STDMETHOD(DefineLocalVariable)(         // S_OK or error.
+        USHORT      attribute,              // [IN] Variable attribute.
+        USHORT      index,                  // [IN] Variable index (slot).
+        char        *name,                  // [IN] Variable name.
+        mdLocalVariable *locVarToken) PURE; // [OUT] Token of the defined variable.
 };
 
 //-------------------------------------

@@ -16,21 +16,21 @@ class Document
 public:
     Document();
     ~Document();
-
-    char* GetName();
-    void                SetName(char* name);
-    mdDocument          GetToken();
-    void                SetToken(mdDocument token);
+    char*           GetName();
+    void            SetName(char* name);
+    mdDocument      GetToken();
+    void            SetToken(mdDocument token);
 
 private:
-    char* m_name;
-    mdDocument          m_token;
+    char*           m_name;
+    mdDocument      m_token;
 };
 
 typedef FIFO<Document> DocumentList;
 
 class BinStr;
 class Method;
+class Scope;
 struct LinePC;
 
 //*****************************************************************************
@@ -41,25 +41,27 @@ class PortablePdbWritter
 public:
     PortablePdbWritter();
     ~PortablePdbWritter();
-    HRESULT             Init(IMetaDataEmit2* pdbEmitter);
-    IMetaDataEmit2*     GetEmitter();
-    GUID*               GetGuid();
-    ULONG               GetTimestamp();
-    Document*           GetCurrentDocument();
-    HRESULT             BuildPdbStream(IMetaDataEmit2* peEmitter, mdMethodDef entryPoint);
-    HRESULT             DefineDocument(char* name, GUID* language);
-    HRESULT             DefineSequencePoints(Method* method);
+    HRESULT         Init(IMetaDataEmit2* pdbEmitter);
+    IMetaDataEmit2* GetEmitter();
+    GUID*           GetGuid();
+    ULONG           GetTimestamp();
+    Document*       GetCurrentDocument();
+    HRESULT         BuildPdbStream(IMetaDataEmit2* peEmitter, mdMethodDef entryPoint);
+    HRESULT         DefineDocument(char* name, GUID* language);
+    HRESULT         DefineSequencePoints(Method* method);
+    HRESULT         DefineLocalScope(Method* method);
 
 private:
-    BOOL                VerifySequencePoint(LinePC* curr, LinePC* next);
-    void                CompressUnsignedLong(ULONG srcData, BinStr* dstBuffer);
-    void                CompressSignedLong(LONG srcData, BinStr* dstBuffer);
+    BOOL            VerifySequencePoint(LinePC* curr, LinePC* next);
+    void            CompressUnsignedLong(ULONG srcData, BinStr* dstBuffer);
+    void            CompressSignedLong(LONG srcData, BinStr* dstBuffer);
+    BOOL            _DefineLocalScope(mdMethodDef methodDefToken, Scope* currScope, mdLocalVariable* firstLocVarToken);
 
 private:
-    IMetaDataEmit2*     m_pdbEmitter;
-    PORT_PDB_STREAM     m_pdbStream;
-    DocumentList        m_documentList;
-    Document*           m_currentDocument;
+    IMetaDataEmit2* m_pdbEmitter;
+    PORT_PDB_STREAM m_pdbStream;
+    DocumentList    m_documentList;
+    Document*       m_currentDocument;
 };
 
 #endif

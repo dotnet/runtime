@@ -584,6 +584,8 @@ BOOL Assembler::EmitMethodBody(Method* pMethod, BinStr* pbsOut)
                 {
                     if (FAILED(m_pPortablePdbWritter->DefineSequencePoints(pMethod)))
                         return FALSE;
+                    if (FAILED(m_pPortablePdbWritter->DefineLocalScope(pMethod)))
+                        return FALSE;
                 }
             } // end if(fIncludeDebugInfo)
             //-----------------------------------------------------

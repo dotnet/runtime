@@ -1562,7 +1562,9 @@ public:
 class LocalScopeRec
 {
 METADATA_FIELDS_PROTECTION:
+    // [IMPORTANT]: Assigning values directly can override other columns, use PutCol instead
     ULONG      m_StartOffset;
+    // [IMPORTANT]: Assigning values directly can override other columns, use PutCol instead
     ULONG      m_Length;
 public:
     enum {
@@ -1575,32 +1577,6 @@ public:
         COL_COUNT,
         COL_KEY
     };
-
-    ULONG GetStartOffset()
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        return GET_UNALIGNED_VAL32(&m_StartOffset);
-    }
-    void SetStartOffset(ULONG startOffset)
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        m_StartOffset = VAL32(startOffset);
-    }
-
-    ULONG GetLength()
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        return GET_UNALIGNED_VAL32(&m_Length);
-    }
-    void SetLength(ULONG length)
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        m_Length = VAL32(length);
-    }
 };
 
 class LocalVariableRec

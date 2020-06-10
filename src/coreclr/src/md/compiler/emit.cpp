@@ -2261,6 +2261,93 @@ ErrExit:
 } // RegMeta::DefineSequencePoints
 
 //*****************************************************************************
+// Defines a local scope for portable PDB metadata
+//*****************************************************************************
+STDMETHODIMP RegMeta::DefineLocalScope(     // S_OK or error.
+    ULONG       methodDefRid,               // [IN] Method RID.
+    ULONG       importScopeRid,             // [IN] Import scope RID.
+    ULONG       firstLocalVarRid,           // [IN] First local variable RID (of the continous run).
+    ULONG       firstLocalConstRid,         // [IN] First local constant RID (of the continous run).
+    ULONG       startOffset,                // [IN] Start offset of the scope.
+    ULONG       length)                     // [IN] Scope length.
+{
+#ifdef FEATURE_METADATA_EMIT_IN_DEBUGGER
+    return E_NOTIMPL;
+#else //!FEATURE_METADATA_EMIT_IN_DEBUGGER
+    HRESULT hr = S_OK;
+
+    BEGIN_ENTRYPOINT_NOTHROW;
+
+    LOG((LOGMD, "RegMeta::DefineLocalScope()\n"));
+    START_MD_PERF();
+
+    LOCKWRITE();
+
+    IfFailGo(m_pStgdb->m_MiniMd.PreUpdate());
+
+    ULONG localScopeRecord;
+    LocalScopeRec* pLocalScope;
+    IfFailGo(m_pStgdb->m_MiniMd.AddLocalScopeRecord(&pLocalScope, &localScopeRecord));
+    IfFailGo(m_pStgdb->m_MiniMd.PutCol(TBL_LocalScope, LocalScopeRec::COL_Method, pLocalScope, methodDefRid));
+    IfFailGo(m_pStgdb->m_MiniMd.PutCol(TBL_LocalScope, LocalScopeRec::COL_ImportScope, pLocalScope, importScopeRid));
+    IfFailGo(m_pStgdb->m_MiniMd.PutCol(TBL_LocalScope, LocalScopeRec::COL_VariableList, pLocalScope, firstLocalVarRid));
+    IfFailGo(m_pStgdb->m_MiniMd.PutCol(TBL_LocalScope, LocalScopeRec::COL_ConstantList, pLocalScope, firstLocalConstRid));
+    IfFailGo(m_pStgdb->m_MiniMd.PutCol(TBL_LocalScope, LocalScopeRec::COL_StartOffset, pLocalScope, startOffset));
+    IfFailGo(m_pStgdb->m_MiniMd.PutCol(TBL_LocalScope, LocalScopeRec::COL_Length, pLocalScope, length));
+
+    // TODO: Force set sorted tables flag, do this properly
+    m_pStgdb->m_MiniMd.SetSorted(TBL_LocalScope, true);
+
+ErrExit:
+    STOP_MD_PERF(DefineLocalScope);
+
+    END_ENTRYPOINT_NOTHROW;
+    return hr;
+#endif //!FEATURE_METADATA_EMIT_IN_DEBUGGER
+} // RegMeta::DefineLocalScope
+
+//*****************************************************************************
+// Defines a local variable for portable PDB metadata
+//*****************************************************************************
+STDMETHODIMP RegMeta::DefineLocalVariable(      // S_OK or error.
+    USHORT      attribute,                      // [IN] Variable attribute.
+    USHORT      index,                          // [IN] Variable index (slot).
+    char        *name,                          // [IN] Variable name.
+    mdLocalVariable* locVarToken)               // [OUT] Token of the defined variable.
+{
+#ifdef FEATURE_METADATA_EMIT_IN_DEBUGGER
+    return E_NOTIMPL;
+#else //!FEATURE_METADATA_EMIT_IN_DEBUGGER
+    HRESULT hr = S_OK;
+
+    BEGIN_ENTRYPOINT_NOTHROW;
+
+    LOG((LOGMD, "RegMeta::DefineLocalVariable(%s)\n", name));
+    START_MD_PERF();
+
+    LOCKWRITE();
+
+    IfFailGo(m_pStgdb->m_MiniMd.PreUpdate());
+
+    ULONG localVariableRecord;
+    LocalVariableRec* pLocalVariable;
+    IfFailGo(m_pStgdb->m_MiniMd.AddLocalVariableRecord(&pLocalVariable, &localVariableRecord));
+    IfFailGo(m_pStgdb->m_MiniMd.PutString(TBL_LocalVariable, LocalVariableRec::COL_Name, pLocalVariable, name));
+
+    pLocalVariable->SetAttributes(attribute);
+    pLocalVariable->SetIndex(index);
+
+    *locVarToken = TokenFromRid(localVariableRecord, mdtLocalVariable);
+
+ErrExit:
+    STOP_MD_PERF(DefineLocalVariable);
+
+    END_ENTRYPOINT_NOTHROW;
+    return hr;
+#endif //!FEATURE_METADATA_EMIT_IN_DEBUGGER
+} // RegMeta::DefineLocalVariable
+
+//*****************************************************************************
 // Create and set a MethodSpec record.
 //*****************************************************************************
 STDMETHODIMP RegMeta::DefineMethodSpec( // S_OK or error
