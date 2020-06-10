@@ -299,7 +299,7 @@ namespace System.Net.Security
 
                     if (message.Failed)
                     {
-                        NetEventSource.Error(this, message.Status);
+                        if (NetEventSource.IsEnabled) NetEventSource.Error(this, message.Status);
 
                         if (_lastFrame.Header.Type == TlsContentType.Alert && _lastFrame.AlertDescription != TlsAlertDescription.CloseNotify &&
                                  message.Status.ErrorCode == SecurityStatusPalErrorCode.IllegalMessage)
@@ -380,7 +380,7 @@ namespace System.Net.Security
 
             if (_lastFrame.Header.Length < 0)
             {
-                NetEventSource.Error(this, "invalid TLS frame size");
+                if (NetEventSource.IsEnabled) NetEventSource.Error(this, "invalid TLS frame size");
                 throw new IOException(SR.net_frame_read_size);
             }
 
@@ -402,9 +402,9 @@ namespace System.Net.Security
             }
             else if (_lastFrame.Header.Type == TlsContentType.Handshake)
             {
-                if (NetEventSource.IsEnabled ||
-                    (_handshakeBuffer.ActiveReadOnlySpan[TlsFrameHelper.HeaderSize] == (byte)TlsHandshakeType.ClientHello &&
-                    _sslAuthenticationOptions!.ServerCertSelectionDelegate != null))
+                if ((_handshakeBuffer.ActiveReadOnlySpan[TlsFrameHelper.HeaderSize] == (byte)TlsHandshakeType.ClientHello &&
+                    _sslAuthenticationOptions!.ServerCertSelectionDelegate != null) ||
+                     NetEventSource.IsEnabled)
                 {
                     TlsFrameHelper.ProcessingOptions options = NetEventSource.IsEnabled ?
                                                                 TlsFrameHelper.ProcessingOptions.All :

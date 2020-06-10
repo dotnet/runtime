@@ -361,13 +361,12 @@ namespace System.Net.Security
             int helloLength = ReadUInt24BigEndian(sslHandshake.Slice(HelloLengthOffset));
             ReadOnlySpan<byte> helloData = sslHandshake.Slice(HelloOffset);
 
-            //  if (helloData.Length != helloLength)
             if (helloData.Length < helloLength)
             {
                 return false;
             }
 
-            // ProtocolVersion may be different from farme header.
+            // ProtocolVersion may be different from frame header.
             if (helloData[ProtocolVersionMajorOffset] == ProtocolVersionTlsMajorValue)
             {
                 info.SupportedVersions |= TlsMinorVersionToProtocol(helloData[ProtocolVersionMinorOffset]);
