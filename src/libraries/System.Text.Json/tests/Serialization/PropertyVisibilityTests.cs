@@ -328,28 +328,25 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        public static void HiddenPropertiesIgnored_WhenOverridesIgnored_AndPropertyNameConflicts()
+        public static void HiddenPropertiesIgnored_WhenOverridesIgnored()
         {
             string serialized = JsonSerializer.Serialize(new DerivedClass_With_IgnoredOverride());
-            Assert.Equal(@"{""MyProp"":false}", serialized);
+            Assert.Equal(@"{}", serialized);
 
             serialized = JsonSerializer.Serialize(new DerivedClass_With_IgnoredOverride_And_ConflictingPropertyName());
             Assert.Equal(@"{""MyProp"":null}", serialized);
 
             serialized = JsonSerializer.Serialize(new DerivedClass_With_NewProperty());
-            Assert.Equal(@"{""MyProp"":false}", serialized);
+            Assert.Equal(@"{}", serialized);
 
             serialized = JsonSerializer.Serialize(new DerivedClass_With_NewProperty_And_ConflictingPropertyName());
             Assert.Equal(@"{""MyProp"":null}", serialized);
 
             serialized = JsonSerializer.Serialize(new DerivedClass_WithNewProperty_Of_DifferentType());
-            Assert.Equal(@"{""MyProp"":false}", serialized);
+            Assert.Equal(@"{}", serialized);
 
             serialized = JsonSerializer.Serialize(new DerivedClass_WithNewProperty_Of_DifferentType_And_ConflictingPropertyName());
             Assert.Equal(@"{""MyProp"":null}", serialized);
-
-            serialized = JsonSerializer.Serialize(new DerivedClass_WithIgnoredOverride());
-            Assert.Equal(@"{""MyProp"":false}", serialized);
 
             serialized = JsonSerializer.Serialize(new FurtherDerivedClass_With_ConflictingPropertyName());
             Assert.Equal(@"{""MyProp"":null}", serialized);
