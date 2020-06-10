@@ -17,8 +17,6 @@ namespace Internal.JitInterface
     {
         // Jit configuration is static because RyuJIT doesn't support multiple hosts within the same process.
         private static JitConfigProvider s_instance;
-        private static IntPtr s_jitLibrary;
-
         public static JitConfigProvider Instance
         {
             get
@@ -51,18 +49,14 @@ namespace Internal.JitInterface
                 IntPtr libHandle = IntPtr.Zero;
                 if (libName == CorInfoImpl.JitLibrary)
                 {
-                    if (s_jitLibrary == IntPtr.Zero)
+                    if (!string.IsNullOrEmpty(jitPath))
                     {
-                        if (!string.IsNullOrEmpty(jitPath))
-                        {
-                            s_jitLibrary = NativeLibrary.Load(jitPath);
-                        }
-                        else
-                        {
-                            s_jitLibrary = NativeLibrary.Load("clrjit-" + GetTargetSpec(target), assembly, searchPath);
-                        }
+                        libHandle = NativeLibrary.Load(jitPath);
                     }
-                    libHandle = s_jitLibrary;
+                    else
+                    {
+                        libHandle = NativeLibrary.Load("clrjit-" + GetTargetSpec(target), assembly, searchPath);
+                    }
                 }
                 return libHandle;
             });
