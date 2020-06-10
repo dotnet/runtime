@@ -40,7 +40,7 @@ CodeGen::HWIntrinsicImmOpHelper::HWIntrinsicImmOpHelper(CodeGen* codeGen, GenTre
     : codeGen(codeGen), endLabel(nullptr), nonZeroLabel(nullptr), branchTargetReg(REG_NA)
 {
     assert(codeGen != nullptr);
-    assert(HWIntrinsicInfo::isImmOp(intrin->gtHWIntrinsicId, immOp));
+    assert(varTypeIsIntegral(immOp));
 
     if (immOp->isContainedIntOrIImmed())
     {
@@ -52,8 +52,20 @@ CodeGen::HWIntrinsicImmOpHelper::HWIntrinsicImmOpHelper(CodeGen* codeGen, GenTre
     }
     else
     {
-        HWIntrinsicInfo::lookupImmBounds(intrin->gtHWIntrinsicId, intrin->gtSIMDSize, intrin->gtSIMDBaseType,
-                                         &immLowerBound, &immUpperBound);
+        const HWIntrinsicCategory category = HWIntrinsicInfo::lookupCategory(intrin->gtHWIntrinsicId);
+
+        if (category == HW_Category_SIMDByIndexedElement)
+        {
+            assert(varTypeIsSIMD(intrin->GetAuxiliaryType()));
+            const unsigned int indexedElementSimdSize = genTypeSize(intrin->GetAuxiliaryType());
+            HWIntrinsicInfo::lookupImmBounds(intrin->gtHWIntrinsicId, indexedElementSimdSize, intrin->gtSIMDBaseType,
+                                             &immLowerBound, &immUpperBound);
+        }
+        else
+        {
+            HWIntrinsicInfo::lookupImmBounds(intrin->gtHWIntrinsicId, intrin->gtSIMDSize, intrin->gtSIMDBaseType,
+                                             &immLowerBound, &immUpperBound);
+        }
 
         nonConstImmReg = immOp->GetRegNum();
         immValue       = immLowerBound;
