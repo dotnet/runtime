@@ -210,7 +210,6 @@ namespace System.Diagnostics.Tests
 
             Assert.Equal(parentId, activity.ParentId);
 
-            Assert.Equal(27, activity.Id.Length);
             Assert.DoesNotContain('#', activity.Id);
         }
 

@@ -1,5 +1,5 @@
 {
   "configProperties": {
-    "Switch.System.Diagnostics.DefaultActivityIdFormatIsHierarchial": true
+    "System.Diagnostics.DefaultActivityIdFormatIsHierarchial": true
   }
 }

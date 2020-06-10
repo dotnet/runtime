@@ -12,7 +12,7 @@ namespace System
         public static bool DefaultActivityIdFormatIsHierarchial
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get => GetCachedSwitchValue("Switch.System.Diagnostics.DefaultActivityIdFormatIsHierarchial", ref s_defaultActivityIdFormatIsHierarchial);
+            get => GetCachedSwitchValue("System.Diagnostics.DefaultActivityIdFormatIsHierarchial", ref s_defaultActivityIdFormatIsHierarchial);
         }
     }
 }
