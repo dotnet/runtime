@@ -30,7 +30,7 @@ namespace System.Xml
             return writer.WriteEndDocumentAsync();
         }
 
-        public override Task WriteDocTypeAsync(string name, string? pubid, string? sysid, string subset)
+        public override Task WriteDocTypeAsync(string name, string? pubid, string? sysid, string? subset)
         {
             return writer.WriteDocTypeAsync(name, pubid, sysid, subset);
         }

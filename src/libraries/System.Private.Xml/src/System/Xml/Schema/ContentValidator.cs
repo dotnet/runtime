@@ -101,7 +101,7 @@ namespace System.Xml.Schema
                     break;
                 case NamespaceList.ListType.Other:
                     // Create a symbol for the excluded namespace, but don't set a particle for it.
-                    AddWildcard(list.Excluded, null);
+                    AddWildcard(list.Excluded!, null);
                     if (!allowLocal)
                     {
                         AddWildcard(string.Empty, null); //##local is not allowed
@@ -1055,7 +1055,7 @@ namespace System.Xml.Schema
             if (elem != null && (global || !elem.RefName.IsEmpty))
             {
                 XmlSchemaObjectTable substitutionGroups = schemaSet.SubstitutionGroups;
-                XmlSchemaSubstitutionGroup grp = (XmlSchemaSubstitutionGroup)substitutionGroups[elem.QualifiedName];
+                XmlSchemaSubstitutionGroup? grp = (XmlSchemaSubstitutionGroup?)substitutionGroups[elem.QualifiedName];
                 if (grp != null)
                 {
                     //Grp members wil contain the head as well, so filter head as we added it already

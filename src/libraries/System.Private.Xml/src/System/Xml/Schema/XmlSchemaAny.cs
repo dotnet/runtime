@@ -86,11 +86,11 @@ namespace System.Xml.Schema
             }
         }
 
-        internal void BuildNamespaceList(string targetNamespace)
+        internal void BuildNamespaceList(string? targetNamespace)
         {
             if (_ns != null)
             { //If namespace="" default to namespace="##any"
-                _namespaceList = new NamespaceList(_ns, targetNamespace);
+                _namespaceList = new NamespaceList(_ns, targetNamespace!);
             }
             else
             {

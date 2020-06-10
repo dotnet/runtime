@@ -94,7 +94,7 @@ namespace System.Xml.Schema
             _cs = cs;
         }
 
-        public override bool EndElement(string localname, string URN)
+        public override bool EndElement(string localname, string? URN)
         {
             base.EndElement(localname, URN);
             if (_KSpointer > 0 && this.CurrentDepth == lastDepth)
@@ -189,7 +189,7 @@ namespace System.Xml.Schema
         }
 
         private DecimalStruct? _dstruct = null;
-        private object _ovalue;
+        private object? _ovalue;
         private readonly string _svalue;      // only for output
         private XmlSchemaDatatype _xsdtype;
         private readonly int _dim = 1;
@@ -222,7 +222,7 @@ namespace System.Xml.Schema
             }
         }
 
-        public object Value
+        public object? Value
         {
             get { return _ovalue; }
             set { _ovalue = value; }
@@ -234,7 +234,7 @@ namespace System.Xml.Schema
             set { _xsdtype = value; }
         }
 
-        public TypedObject(object obj, string svalue, XmlSchemaDatatype xsdtype)
+        public TypedObject(object? obj, string svalue, XmlSchemaDatatype xsdtype)
         {
             _ovalue = obj;
             _svalue = svalue;
@@ -244,7 +244,7 @@ namespace System.Xml.Schema
                 xsdtype is Datatype_hexBinary)
             {
                 _isList = true;
-                _dim = ((Array)obj).Length;
+                _dim = ((Array)obj!).Length;
             }
         }
 
@@ -284,7 +284,7 @@ namespace System.Xml.Schema
                         _dstruct = new DecimalStruct(_dim);
                         for (int i = 0; i < _dim; i++)
                         {
-                            _dstruct.Dvalue[i] = Convert.ToDecimal(((Array)_ovalue).GetValue(i), NumberFormatInfo.InvariantInfo);
+                            _dstruct.Dvalue[i] = Convert.ToDecimal(((Array)_ovalue!).GetValue(i), NumberFormatInfo.InvariantInfo);
                         }
                     }
                     else
@@ -349,7 +349,7 @@ namespace System.Xml.Schema
             {
                 if (other.IsList)
                 { //Both are lists and values are XmlAtomicValue[] or clrvalue[]. So use Datatype_List.Compare
-                    return this.Type.Compare(this.Value, other.Value) == 0;
+                    return this.Type.Compare(this.Value!, other.Value!) == 0;
                 }
                 else
                 { //this is a list and other is a single value
@@ -382,7 +382,7 @@ namespace System.Xml.Schema
             }
             else
             { //Both are not lists
-                return this.Value.Equals(other.Value);
+                return this.Value!.Equals(other.Value);
             }
         }
     }
@@ -471,15 +471,15 @@ namespace System.Xml.Schema
                         }
                         else
                         {
-                            for (int j = 0; j < ((Array)_ks[i].Value).Length; j++)
+                            for (int j = 0; j < ((Array)_ks[i].Value!).Length; j++)
                             {
-                                _hashcode += ((Array)_ks[i].Value).GetValue(j)!.GetHashCode();
+                                _hashcode += ((Array)_ks[i].Value!).GetValue(j)!.GetHashCode();
                             }
                         }
                     }
                     else
                     { //not a list
-                        _hashcode += _ks[i].Value.GetHashCode();
+                        _hashcode += _ks[i].Value!.GetHashCode();
                     }
                 }
             }

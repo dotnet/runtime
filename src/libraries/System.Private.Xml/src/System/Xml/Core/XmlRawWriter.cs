@@ -271,7 +271,7 @@ namespace System.Xml
             WriteEndElement(prefix, localName, ns);
         }
 
-        internal virtual void WriteQualifiedName(string prefix, string localName, string ns)
+        internal virtual void WriteQualifiedName(string prefix, string localName, string? ns)
         {
             if (prefix.Length != 0)
             {
