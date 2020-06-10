@@ -29,7 +29,9 @@ const MonoQCallDef c_qcalls[] =
 {
 #define FCClassElement(name,namespace,funcs) {name, namespace, funcs},
 FCClassElement("EventPipeInternal", "System.Diagnostics.Tracing", gEventPipeInternalFuncs)
+#ifdef GLOBALIZATION_SHIM
 FCClassElement("Globalization", "", gPalGlobalizationNative)
+#endif
 };
 
-#endif 
+#endif

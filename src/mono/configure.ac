@@ -6829,9 +6829,11 @@ if test x$with_core = xonly; then
 				ICU_CFLAGS="$CPPFLAGS -DPALEXPORT="" -DOSX_ICU_LIBRARY_PATH=AS_ESCAPE(\"/usr/lib/libicucore.dylib\", '\"') -DTARGET_UNIX -DU_DISABLE_RENAMING -Wno-reserved-id-macro -Wno-documentation -Wno-documentation-unknown-command -Wno-switch-enum -Wno-covered-switch-default -Wno-covered-switch-default -Wno-extra-semi-stmt -Wno-unknown-warning-option -Wno-deprecated-declarations"
 			fi
 			CPPFLAGS=$ORIG_CPPFLAGS
+			GLOBALIZATION_SHIM_DEFINES="-DGLOBALIZATION_SHIM"
 		elif test x$platform_android = xyes; then 
 			ICU_CFLAGS="-DPALEXPORT="" -DHAVE_UDAT_STANDALONE_SHORTER_WEEKDAYS -DHAVE_SET_MAX_VARIABLE -DTARGET_UNIX -DTARGET_ANDROID -Wno-reserved-id-macro -Wno-documentation -Wno-documentation-unknown-command -Wno-switch-enum -Wno-covered-switch-default -Wno-covered-switch-default -Wno-extra-semi-stmt -Wno-unknown-warning-option"
 			have_sys_icu=yes 
+			GLOBALIZATION_SHIM_DEFINES="-DGLOBALIZATION_SHIM"
 		elif test x$host_linux = xyes; then
 			AC_CHECK_LIB(icuuc, main, LIBS=$LIBS,
 				[AC_MSG_ERROR([Cannot find libicuuc, try installing libicu-dev (or the appropriate package for your platform).])])
@@ -6841,8 +6843,10 @@ if test x$with_core = xonly; then
 			if test x$have_sys_icu = xyes; then
 				ICU_CFLAGS="-DPALEXPORT="" -DTARGET_UNIX -Wno-reserved-id-macro -Wno-documentation -Wno-documentation-unknown-command -Wno-switch-enum -Wno-covered-switch-default -Wno-covered-switch-default -Wno-extra-semi-stmt -Wno-unknown-warning-option"
 			fi
+			GLOBALIZATION_SHIM_DEFINES="-DGLOBALIZATION_SHIM"
 		fi
 		AC_SUBST(ICU_CFLAGS)
+		AC_SUBST(GLOBALIZATION_SHIM_DEFINES)
 	fi
 fi
 AC_SUBST(ICU_SHIM_PATH)
