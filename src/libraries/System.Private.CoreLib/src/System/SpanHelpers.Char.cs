@@ -419,7 +419,13 @@ namespace System
                     if (lengthToExamine > 0)
                     {
                         Vector128<ushort> values = Vector128.Create((ushort)value);
-                        Vector128<ushort> mask = Vector128.Create((ushort)0, 1, 2, 3, 4, 5, 6, 7);
+
+                        // 0x00100001 contant to select the first lane that is set in compareResult.
+                        // The LSB 0x0001 corresponds to 0th lane, the MSB 0x0010 corresponds to 1st lane.
+                        // The pattern is repeated for selecting other lanes.
+                        Vector128<byte> mask = Vector128.Create((uint)0x100001).AsByte();
+                        int matchedLane = 0;
+
                         do
                         {
                             Debug.Assert(lengthToExamine >= Vector128<ushort>.Count);
@@ -427,19 +433,15 @@ namespace System
                             Vector128<ushort> search = LoadVector128(ref searchSpace, offset);
 
                             Vector128<ushort> compareResult = AdvSimd.CompareEqual(values, search);
-                            if (AdvSimd.Arm64.MaxAcross(compareResult).ToScalar() == 0)
+
+                            if (!TryFindFirstMatchedLane(mask, compareResult.AsByte(), ref matchedLane))
                             {
                                 // Zero flags set so no matches
                                 offset += Vector128<ushort>.Count;
                                 lengthToExamine -= Vector128<ushort>.Count;
                                 continue;
                             }
-
-                            // Try to find the first lane that is set inside compareResult.
-                            Vector128<ushort> invertedCompareResult = AdvSimd.Not(compareResult);
-                            Vector128<ushort> selectedLanes = AdvSimd.Or(invertedCompareResult, mask);
-                            ushort firstIndexMatch = AdvSimd.Arm64.MinAcross(selectedLanes).ToScalar();
-                            return (int)(offset + firstIndexMatch);
+                            return (int)(offset + (matchedLane >> 2));
                         } while (lengthToExamine > 0);
                     }
 
