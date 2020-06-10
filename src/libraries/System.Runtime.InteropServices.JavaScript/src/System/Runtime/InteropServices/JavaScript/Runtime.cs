@@ -15,12 +15,12 @@ namespace System.Runtime.InteropServices.JavaScript
     {
 
         private static readonly Dictionary<int, WeakReference> _boundObjects = new Dictionary<int, WeakReference>();
-        private static readonly Dictionary<object, JSObject?> _rawToJS = new Dictionary<object, JSObject?>();
+        private static readonly Dictionary<object, JSObject> _rawToJS = new Dictionary<object, JSObject>();
         // _weakDelegateTable is a ConditionalWeakTable with the Delegate and associated JSObject:
         // Key Lifetime:
         //    Once the key dies, the dictionary automatically removes the key/value entry.
         // No need to lock as it is thread safe.
-        private static readonly ConditionalWeakTable<Delegate, JSObject?> _weakDelegateTable = new ConditionalWeakTable<Delegate, JSObject?>();
+        private static readonly ConditionalWeakTable<Delegate, JSObject> _weakDelegateTable = new ConditionalWeakTable<Delegate, JSObject>();
 
         // <summary>
         // Execute the provided string in the JavaScript context
