@@ -239,7 +239,10 @@ namespace System.Net.Sockets
 
                 SocketAsyncEventArgs args = _internalArgs!;
                 args.RemoteEndPoint = new IPEndPoint(attemptAddress, _endPoint!.Port);
-                if (!attemptSocket.ConnectAsync(args))
+                bool pending = attemptSocket.ConnectAsync(args);
+                // Copy the socket address so we can use it in exception message.
+                _userArgs!._socketAddress = _internalArgs!._socketAddress;
+                if (!pending)
                 {
                     InternalConnectCallback(null, args);
                 }
