@@ -115,7 +115,7 @@ namespace System.Formats.Cbor
         ///   Indicates that the reader has completed reading a full CBOR document.
         /// </summary>
         /// <remarks>
-        ///   If <see cref="CborReader.AllowMultipleRootLevelValues"/> is set to <see langword="true" />,
+        ///   If <see cref="CborReader.AllowMultipleRootLevelValues"/> is set to <see langword="false" />,
         ///   the reader will report this value even if the buffer contains trailing bytes.
         /// </remarks>
         Finished,

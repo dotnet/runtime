@@ -34,7 +34,7 @@ namespace System.Formats.Cbor
         }
 
         /// <summary>
-        ///   Reads the next data item as an usigned integer (major type 0).
+        ///   Reads the next data item as an unsigned integer (major type 0).
         /// </summary>
         /// <returns>The decoded integer value.</returns>
         /// <exception cref="InvalidOperationException">
@@ -80,7 +80,7 @@ namespace System.Formats.Cbor
         }
 
         /// <summary>
-        ///   Reads the next data item as an usigned integer (major type 0).
+        ///   Reads the next data item as an unsigned integer (major type 0).
         /// </summary>
         /// <returns>The decoded integer value.</returns>
         /// <exception cref="InvalidOperationException">
