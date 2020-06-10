@@ -17,7 +17,6 @@
     <Configurations>Debug;Release;Checked</Configurations>
     <Platforms>x64;x86;arm;arm64</Platforms>
 
-    <ILLinkClearInitLocals>true</ILLinkClearInitLocals>
     <ILLinkTrimAssembly>true</ILLinkTrimAssembly>
     <ILLinkTrimXml>$(IntermediateOutputPath)System.Private.CoreLib.xml</ILLinkTrimXml>
   </PropertyGroup>
