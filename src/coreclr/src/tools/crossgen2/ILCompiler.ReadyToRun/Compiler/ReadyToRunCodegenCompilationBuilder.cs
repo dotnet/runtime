@@ -26,6 +26,9 @@ namespace ILCompiler
         private bool _generateMapFile;
         private int _parallelism;
         private InstructionSetSupport _instructionSetSupport;
+        private ProfileDataManager _profileData;
+        private ReadyToRunMethodLayoutAlgorithm _r2rMethodLayoutAlgorithm;
+        private ReadyToRunFileLayoutAlgorithm _r2rFileLayoutAlgorithm;
 
         private string _jitPath;
         private string _outputFile;
@@ -95,6 +98,19 @@ namespace ILCompiler
         public ReadyToRunCodegenCompilationBuilder UseResilience(bool resilient)
         {
             _resilient = resilient;
+            return this;
+        }
+
+        public ReadyToRunCodegenCompilationBuilder UseProfileData(ProfileDataManager profileData)
+        {
+            _profileData = profileData;
+            return this;
+        }
+
+        public ReadyToRunCodegenCompilationBuilder FileLayoutAlgorithms(ReadyToRunMethodLayoutAlgorithm r2rMethodLayoutAlgorithm, ReadyToRunFileLayoutAlgorithm r2rFileLayoutAlgorithm)
+        {
+            _r2rMethodLayoutAlgorithm = r2rMethodLayoutAlgorithm;
+            _r2rFileLayoutAlgorithm = r2rFileLayoutAlgorithm;
             return this;
         }
 
@@ -205,7 +221,10 @@ namespace ILCompiler
                 _instructionSetSupport,
                 _resilient,
                 _generateMapFile,
-                _parallelism);
+                _parallelism,
+                _profileData,
+                _r2rMethodLayoutAlgorithm,
+                _r2rFileLayoutAlgorithm);
         }
     }
 }

@@ -16,10 +16,11 @@ using System.IO.MemoryMappedFiles;
 
 using Microsoft.Diagnostics.Tracing.Parsers.Clr;
 using System.Reflection.Metadata;
+using ILCompiler.Reflection.ReadyToRun;
 
 namespace Microsoft.Diagnostics.Tools.Pgo
 {
-    class TraceTypeSystemContext : MetadataTypeSystemContext, IMetadataStringDecoderProvider
+    class TraceTypeSystemContext : MetadataTypeSystemContext, IMetadataStringDecoderProvider, IAssemblyResolver
     {
         private readonly PgoTraceProcess _pgoTraceProcess;
         private readonly ModuleLoadLogger _moduleLoadLogger;
@@ -359,5 +360,22 @@ namespace Microsoft.Diagnostics.Tools.Pgo
                 _metadataStringDecoder = new CachingMetadataStringDecoder(0x10000); // TODO: Tune the size
             return _metadataStringDecoder;
         }
+
+        MetadataReader IAssemblyResolver.FindAssembly(MetadataReader metadataReader, AssemblyReferenceHandle assemblyReferenceHandle, string parentFile)
+        {
+            return ((EcmaAssembly)this.GetModuleForSimpleName(metadataReader.GetString(metadataReader.GetAssemblyReference(assemblyReferenceHandle).Name), false)).MetadataReader;
+        }
+
+        MetadataReader IAssemblyResolver.FindAssembly(string simpleName, string parentFile)
+        {
+            return ((EcmaAssembly)this.GetModuleForSimpleName(simpleName, false)).MetadataReader;
+        }
+        bool IAssemblyResolver.Naked => false;
+
+        bool IAssemblyResolver.SignatureBinary => false;
+
+        bool IAssemblyResolver.InlineSignatureBinary => false;
+
+
     }
 }
