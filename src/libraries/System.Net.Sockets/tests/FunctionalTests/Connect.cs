@@ -83,12 +83,14 @@ namespace System.Net.Sockets.Tests
         }
 
         [OuterLoop("Slow on Windows")]
-        [Fact]
-        public virtual async Task Connect_WhenFails_ThrowsSocketExceptionWithIPEndpointInfo()
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public virtual async Task Connect_WhenFails_ThrowsSocketExceptionWithIPEndpointInfo(bool useDns)
         {
             // Port 288 is unassigned:
             // https://www.iana.org/assignments/service-names-port-numbers/service-names-port-numbers.txt
-            IPEndPoint badEndpoint = new IPEndPoint(IPAddress.Loopback, 288);
+            EndPoint badEndpoint = useDns ? (EndPoint)new DnsEndPoint("localhost", 288) : new IPEndPoint(IPAddress.Loopback, 288);
             using Socket client = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
             SocketException ex = await Assert.ThrowsAnyAsync<SocketException>(() => ConnectAsync(client, badEndpoint));
             Assert.Contains("127.0.0.1", ex.Message);
@@ -219,6 +221,6 @@ namespace System.Net.Sockets.Tests
         public ConnectEap(ITestOutputHelper output) : base(output) {}
 
         // We should skip this since the exception creation logic is defined in SocketHelperEap.
-        public override Task Connect_WhenFails_ThrowsSocketExceptionWithIPEndpointInfo() => Task.CompletedTask;
+        public override Task Connect_WhenFails_ThrowsSocketExceptionWithIPEndpointInfo(bool useDns) => Task.CompletedTask;
     }
 }
