@@ -1709,8 +1709,8 @@ public:
     MiniMdTable(LocalConstant)                      /* 0x34 */ \
     MiniMdTable(ImportScope)                        /* 0x35 */ \
     // TODO:
-    // MiniMdTable(StateMachineMethod)                 /* 0x36 */ \
-    // MiniMdTable(CustomDebugInformation)             /* 0x37 */ \
+    // MiniMdTable(StateMachineMethod)                 /* 0x36 */
+    // MiniMdTable(CustomDebugInformation)             /* 0x37 */
 
 
 #undef MiniMdTable
