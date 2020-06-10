@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Linq.Expressions;
@@ -217,7 +218,7 @@ namespace Microsoft.Extensions.Internal
             Type instanceType,
             Type[] argumentTypes,
             [NotNull] out ConstructorInfo? matchingConstructor,
-            out int?[]? parameterMap)
+            [NotNull] out int?[]? parameterMap)
         {
             matchingConstructor = null;
             parameterMap = null;
@@ -235,7 +236,7 @@ namespace Microsoft.Extensions.Internal
             Type instanceType,
             Type[] argumentTypes,
             [NotNullWhen(true)] ref ConstructorInfo? matchingConstructor,
-            ref int?[]? parameterMap)
+            [NotNullWhen(true)] ref int?[]? parameterMap)
         {
             foreach (var constructor in instanceType.GetTypeInfo().DeclaredConstructors)
             {
@@ -256,7 +257,13 @@ namespace Microsoft.Extensions.Internal
                 }
             }
 
-            return matchingConstructor != null;
+            if (matchingConstructor != null)
+            {
+                Debug.Assert(parameterMap != null);
+                return true;
+            }
+
+            return false;
         }
 
         // Tries to find constructor marked with ActivatorUtilitiesConstructorAttribute
@@ -264,7 +271,7 @@ namespace Microsoft.Extensions.Internal
             Type instanceType,
             Type[] argumentTypes,
             [NotNullWhen(true)] ref ConstructorInfo? matchingConstructor,
-            ref int?[]? parameterMap)
+            [NotNullWhen(true)] ref int?[]? parameterMap)
         {
             var seenPreferred = false;
             foreach (var constructor in instanceType.GetTypeInfo().DeclaredConstructors)
@@ -292,7 +299,13 @@ namespace Microsoft.Extensions.Internal
                 }
             }
 
-            return matchingConstructor != null;
+            if (matchingConstructor != null)
+            {
+                Debug.Assert(parameterMap != null);
+                return true;
+            }
+
+            return false;
         }
 
         // Creates an injective parameterMap from givenParameterTypes to assignable constructorParameters.
