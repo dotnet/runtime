@@ -322,7 +322,6 @@ struct HWIntrinsicInfo
 #error Unsupported platform
 #endif
 
-    static bool isInImmRange(NamedIntrinsic id, int ival, int simdSize, var_types baseType);
     static bool isImmOp(NamedIntrinsic id, const GenTree* op);
     static bool isFullyImplementedIsa(CORINFO_InstructionSet isa);
     static bool isScalarIsa(CORINFO_InstructionSet isa);
