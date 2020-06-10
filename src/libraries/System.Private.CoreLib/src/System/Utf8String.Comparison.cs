@@ -85,7 +85,9 @@ namespace System
         /// </remarks>
         public static bool AreEquivalent(ReadOnlySpan<byte> utf8Text, ReadOnlySpan<char> utf16Text)
         {
-            if (utf8Text.IsEmpty && utf16Text.IsEmpty)
+#pragma warning disable CA1836 // Prefer IsEmpty over Count
+            if (utf8Text.Length == 0 && utf16Text.Length == 0)
+#pragma warning restore CA1836 // Prefer IsEmpty over Count
             {
                 // Don't use IsEmpty for this check; JIT can optimize "Length == 0" better
                 // for this particular scenario.
