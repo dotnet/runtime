@@ -9184,9 +9184,20 @@ CORINFO_CLASS_HANDLE CEEInfo::getUniqueImplementingClass(CORINFO_CLASS_HANDLE ba
             ULONG   cbString;
             if (!FAILED(cap.GetNonNullString(&szString, &cbString)))
             {
-                StackSString ss(SString::Utf8, szString, cbString);
+                // The attribute has the following layout:
+                //
+                //   public Type Type { get; }
+                //   public bool AlwaysUnique { get; }
+                //
+                // The second field is not used yet. It should tell the JIT that the App
+                // is not going to load/emit additional implementation for given interface
+                //
+                // signed char alwaysUnique;
+                // cap.GetI1(&alwaysUnique);
+
+                StackSString stackStr(SString::Utf8, szString, cbString);
                 TypeHandle implHandle = TypeName::GetTypeUsingCASearchRules(
-                    ss.GetUnicode(), pModule->GetAssembly());
+                    stackStr.GetUnicode(), pModule->GetAssembly());
                 if (!implHandle.IsNull())
                 {
                     result = static_cast<CORINFO_CLASS_HANDLE>(implHandle.AsPtr());
