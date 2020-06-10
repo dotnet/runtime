@@ -447,7 +447,7 @@ namespace System.Net.Sockets
                 _eventQueue = engine._eventQueue;
             }
 
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            [MethodImpl(MethodImplOptions.NoInlining)]
             public bool HandleSocketEvents(int numEvents)
             {
                 SocketAsyncContext? context = null;
