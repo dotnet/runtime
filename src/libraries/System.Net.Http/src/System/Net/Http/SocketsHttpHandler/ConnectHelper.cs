@@ -34,15 +34,13 @@ namespace System.Net.Http
             }
         }
 
-        public static async ValueTask<Stream> ConnectAsync(string host, int port, bool async, CancellationToken cancellationToken)
+        public static ValueTask<Stream> ConnectAsync(string host, int port, bool async, CancellationToken cancellationToken)
         {
-            // For synchronous connections, we can just create a socket and make the connection.
-            // (For async, we need to do more gymnastics with SocketAsyncEventArgs.)
-            if (!async)
-            {
-                return Connect(host, port, cancellationToken);
-            }
+            return async ? ConnectAsync(host, port, cancellationToken) : new ValueTask<Stream>(Connect(host, port, cancellationToken));
+        }
 
+        public static async ValueTask<Stream> ConnectAsync(string host, int port, CancellationToken cancellationToken)
+        {
             // Rather than creating a new Socket and calling ConnectAsync on it, we use the static
             // Socket.ConnectAsync with a SocketAsyncEventArgs, as we can then use Socket.CancelConnectAsync
             // to cancel it if needed.
@@ -89,6 +87,7 @@ namespace System.Net.Http
 
         private static Stream Connect(string host, int port, CancellationToken cancellationToken)
         {
+            // For synchronous connections, we can just create a socket and make the connection.
             cancellationToken.ThrowIfCancellationRequested();
             var socket = new Socket(SocketType.Stream, ProtocolType.Tcp);
             try
