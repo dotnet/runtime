@@ -89,7 +89,8 @@ void Compiler::fgInit()
     fgCurBBEpochSize         = 0;
     fgBBSetCountInSizeTUnits = 0;
 
-    genReturnBB = nullptr;
+    genReturnBB    = nullptr;
+    genReturnLocal = BAD_VAR_NUM;
 
     /* We haven't reached the global morphing phase */
     fgGlobalMorph = false;

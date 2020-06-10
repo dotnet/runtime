@@ -536,12 +536,13 @@ public:
                         // be merged separatly.
                         GenTreeLclVar* lclVar = retVal->AsLclVar();
                         unsigned       lclNum = lclVar->GetLclNum();
-                        if (!m_compiler->lvaIsImplicitByRefLocal(lclVar->GetLclNum()))
+                        if (!m_compiler->compMethodReturnsMultiRegRegTypeAlternate() &&
+                            !m_compiler->lvaIsImplicitByRefLocal(lclVar->GetLclNum()))
                         {
                             LclVarDsc* varDsc = m_compiler->lvaGetDesc(lclNum);
                             if (varDsc->lvFieldCnt > 1)
                             {
-                                m_compiler->lvaSetVarDoNotEnregister(lclNum DEBUGARG(Compiler::DNER_IsStructArg));
+                                m_compiler->lvaSetVarDoNotEnregister(lclNum DEBUGARG(Compiler::DNER_BlockOp));
                             }
                         }
                     }

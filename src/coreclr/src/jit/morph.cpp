@@ -10336,6 +10336,19 @@ GenTree* Compiler::fgMorphCopyBlock(GenTree* tree)
     }
 #endif // FEATURE_MULTIREG_RET
 
+    if (src->IsCall() && dest->OperIs(GT_LCL_VAR) && !compDoOldStructRetyping())
+    {
+        LclVarDsc* varDsc = lvaGetDesc(dest->AsLclVar());
+        if (varTypeIsStruct(varDsc) && varDsc->CanBeReplacedWithItsField(this))
+        {
+            JITDUMP(" not morphing a single reg call return\n");
+            // Set `lvIsMultiRegRet` to exclude it from SSA, it is a temporary solution,
+            // inspired by multi-reg call work. We should support SSA for such structs in the future.
+            varDsc->lvIsMultiRegRet = true;
+            return tree;
+        }
+    }
+
     // If we have an array index on the lhs, we need to create an obj node.
 
     dest = fgMorphBlkNode(dest, true);
@@ -11969,30 +11982,9 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac)
 
                 return tree;
             }
-            if (varTypeIsStruct(tree) && op1->OperIs(GT_OBJ, GT_BLK))
+            if (!compDoOldStructRetyping() && !tree->TypeIs(TYP_VOID) && op1->OperIs(GT_OBJ, GT_BLK, GT_IND))
             {
-                assert(!compDoOldStructRetyping());
-                GenTree* addr = op1->AsBlk()->Addr();
-                // if we return `OBJ` or `BLK` from a local var, lcl var has to have a stack address.
-                if (addr->OperIs(GT_ADDR) && addr->gtGetOp1()->OperIs(GT_LCL_VAR))
-                {
-                    GenTreeLclVar* lclVar = addr->gtGetOp1()->AsLclVar();
-                    assert(!gtIsActiveCSE_Candidate(addr) && !gtIsActiveCSE_Candidate(op1));
-                    if (gtGetStructHandle(tree) == gtGetStructHandleIfPresent(lclVar))
-                    {
-                        // Fold *(&x).
-                        tree->AsUnOp()->gtOp1 = op1;
-                        DEBUG_DESTROY_NODE(op1);
-                        DEBUG_DESTROY_NODE(addr);
-                        op1 = lclVar;
-                    }
-                    else
-                    {
-                        // TODO-1stClassStructs: It is not address-taken or block operation,
-                        // but the current IR doesn't allow to express that cast without stack, see #11413.
-                        lvaSetVarDoNotEnregister(lclVar->GetLclNum() DEBUGARG(DNER_BlockOp));
-                    }
-                }
+                op1 = fgMorphRetInd(tree->AsUnOp());
             }
             break;
 
@@ -14219,6 +14211,88 @@ DONE_MORPHING_CHILDREN:
 
     return tree;
 }
+
+//----------------------------------------------------------------------------------------------
+// fgMorphRetInd: Try to get rid of extra IND(ADDR()) pairs in a return tree.
+//
+// Arguments:
+//    node - The return node that uses an indirection.
+//
+// Return Value:
+//    the original op1 of the ret if there was no optimization or an optimized new op1.
+//
+GenTree* Compiler::fgMorphRetInd(GenTreeUnOp* ret)
+{
+    assert(!compDoOldStructRetyping());
+    assert(ret->OperIs(GT_RETURN));
+    assert(ret->gtGetOp1()->OperIs(GT_IND, GT_BLK, GT_OBJ));
+    GenTreeIndir* ind  = ret->gtGetOp1()->AsIndir();
+    GenTree*      addr = ind->Addr();
+
+    if (addr->OperIs(GT_ADDR) && addr->gtGetOp1()->OperIs(GT_LCL_VAR))
+    {
+        // If `return` retypes LCL_VAR as a smaller struct it should not set `doNotEnregister` on that
+        // LclVar.
+        // Example: in `Vector128:AsVector2` we have RETURN SIMD8(OBJ SIMD8(ADDR byref(LCL_VAR SIMD16))).
+        GenTreeLclVar* lclVar = addr->gtGetOp1()->AsLclVar();
+        if (!lvaIsImplicitByRefLocal(lclVar->GetLclNum()))
+        {
+            assert(!gtIsActiveCSE_Candidate(addr) && !gtIsActiveCSE_Candidate(ind));
+            unsigned indSize;
+            if (ind->OperIs(GT_IND))
+            {
+                indSize = genTypeSize(ind);
+            }
+            else
+            {
+                indSize = ind->AsBlk()->GetLayout()->GetSize();
+            }
+
+            LclVarDsc* varDsc = lvaGetDesc(lclVar);
+
+            unsigned lclVarSize;
+            if (!lclVar->TypeIs(TYP_STRUCT))
+
+            {
+                lclVarSize = genTypeSize(varDsc->TypeGet());
+            }
+            else
+            {
+                lclVarSize = varDsc->lvExactSize;
+            }
+            // TODO: change conditions in `canFold` to `indSize <= lclVarSize`, but currently do not support `BITCAST
+            // int<-SIMD16` etc.
+            assert((indSize <= lclVarSize) || varDsc->lvDoNotEnregister);
+
+#if defined(TARGET_64BIT)
+            bool canFold = (indSize == lclVarSize);
+#else // !TARGET_64BIT
+            // TODO: improve 32 bit targets handling for LONG returns if necessary, nowadays we do not support `BITCAST
+            // long<->double` there.
+            bool canFold = (indSize == lclVarSize) && (lclVarSize <= REGSIZE_BYTES);
+#endif
+            // TODO: support `genReturnBB != nullptr`, it requires #11413 to avoid `Incompatible types for
+            // gtNewTempAssign`.
+            if (canFold && (genReturnBB == nullptr))
+            {
+                // Fold (TYPE1)*(&(TYPE2)x) even if types do not match, lowering will handle it.
+                // Getting rid of this IND(ADDR()) pair allows to keep lclVar as not address taken
+                // and enregister it.
+                DEBUG_DESTROY_NODE(ind);
+                DEBUG_DESTROY_NODE(addr);
+
+                ret->gtOp1 = lclVar;
+                return ret->gtGetOp1();
+            }
+            else if (!varDsc->lvDoNotEnregister)
+            {
+                lvaSetVarDoNotEnregister(lclVar->GetLclNum() DEBUGARG(Compiler::DNER_VMNeedsStackAddr));
+            }
+        }
+    }
+    return ind;
+}
+
 #ifdef _PREFAST_
 #pragma warning(pop)
 #endif

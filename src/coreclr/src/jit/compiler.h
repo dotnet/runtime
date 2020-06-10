@@ -985,6 +985,8 @@ public:
         return GetLayout()->GetRegisterType();
     }
 
+    bool CanBeReplacedWithItsField(Compiler* comp) const;
+
 #ifdef DEBUG
 public:
     const char* lvReason;
@@ -5602,6 +5604,7 @@ private:
     GenTree* fgMorphCopyBlock(GenTree* tree);
     GenTree* fgMorphForRegisterFP(GenTree* tree);
     GenTree* fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac = nullptr);
+    GenTree* fgMorphRetInd(GenTreeUnOp* tree);
     GenTree* fgMorphModToSubMulDiv(GenTreeOp* tree);
     GenTree* fgMorphSmpOpOptional(GenTreeOp* tree);
 
@@ -9179,7 +9182,7 @@ public:
 
     // Returns true if the method returns a value in more than one return register,
     // it should replace/be  merged with compMethodReturnsMultiRegRetType when #36868 is fixed.
-    // The difference from original `compMethodReturnsMultiRegRetType` is in ARM64 SIMD16 handling,
+    // The difference from original `compMethodReturnsMultiRegRetType` is in ARM64 SIMD* handling,
     // this method correctly returns false for it (it is passed as HVA), when the original returns true.
     bool compMethodReturnsMultiRegRegTypeAlternate()
     {
@@ -9189,8 +9192,8 @@ public:
         return varTypeIsLong(info.compRetNativeType);
 #else // targets: X64-UNIX, ARM64 or ARM32
 #if defined(TARGET_ARM64)
-        // TYP_SIMD16 is returned in one register.
-        if (info.compRetNativeType == TYP_SIMD16)
+        // TYP_SIMD* are returned in one register.
+        if (varTypeIsSIMD(info.compRetNativeType))
         {
             return false;
         }
