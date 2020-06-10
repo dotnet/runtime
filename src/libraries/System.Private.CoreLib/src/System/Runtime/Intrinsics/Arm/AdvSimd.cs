@@ -895,6 +895,192 @@ namespace System.Runtime.Intrinsics.Arm
             public static Vector64<float> FusedMultiplySubtractScalarBySelectedScalar(Vector64<float> minuend, Vector64<float> left, Vector128<float> right, byte rightIndex) => FusedMultiplySubtractScalarBySelectedScalar(minuend, left, right, rightIndex);
 
             /// <summary>
+            /// uint8x8_t vcopy_lane_u8 (uint8x8_t a, const int lane1, uint8x8_t b, const int lane2)
+            ///   A64: INS Vd.B[lane1], Vn.B[lane2]
+            /// </summary>
+            public static Vector64<byte> InsertSelectedScalar(Vector64<byte> result, byte resultIndex, Vector64<byte> value, byte valueIndex) => InsertSelectedScalar(result, resultIndex, value, valueIndex);
+
+            /// <summary>
+            /// uint8x8_t vcopy_laneq_u8 (uint8x8_t a, const int lane1, uint8x16_t b, const int lane2)
+            ///   A64: INS Vd.B[lane1], Vn.B[lane2]
+            /// </summary>
+            public static Vector64<byte> InsertSelectedScalar(Vector64<byte> result, byte resultIndex, Vector128<byte> value, byte valueIndex) => InsertSelectedScalar(result, resultIndex, value, valueIndex);
+
+            /// <summary>
+            /// int16x4_t vcopy_lane_s16 (int16x4_t a, const int lane1, int16x4_t b, const int lane2)
+            ///   A64: INS Vd.H[lane1], Vn.H[lane2]
+            /// </summary>
+            public static Vector64<short> InsertSelectedScalar(Vector64<short> result, byte resultIndex, Vector64<short> value, byte valueIndex) => InsertSelectedScalar(result, resultIndex, value, valueIndex);
+
+            /// <summary>
+            /// int16x4_t vcopy_laneq_s16 (int16x4_t a, const int lane1, int16x8_t b, const int lane2)
+            ///   A64: INS Vd.H[lane1], Vn.H[lane2]
+            /// </summary>
+            public static Vector64<short> InsertSelectedScalar(Vector64<short> result, byte resultIndex, Vector128<short> value, byte valueIndex) => InsertSelectedScalar(result, resultIndex, value, valueIndex);
+
+            /// <summary>
+            /// int32x2_t vcopy_lane_s32 (int32x2_t a, const int lane1, int32x2_t b, const int lane2)
+            ///   A64: INS Vd.S[lane1], Vn.S[lane2]
+            /// </summary>
+            public static Vector64<int> InsertSelectedScalar(Vector64<int> result, byte resultIndex, Vector64<int> value, byte valueIndex) => InsertSelectedScalar(result, resultIndex, value, valueIndex);
+
+            /// <summary>
+            /// int32x2_t vcopy_laneq_s32 (int32x2_t a, const int lane1, int32x4_t b, const int lane2)
+            ///   A64: INS Vd.S[lane1], Vn.S[lane2]
+            /// </summary>
+            public static Vector64<int> InsertSelectedScalar(Vector64<int> result, byte resultIndex, Vector128<int> value, byte valueIndex) => InsertSelectedScalar(result, resultIndex, value, valueIndex);
+
+            /// <summary>
+            /// int8x8_t vcopy_lane_s8 (int8x8_t a, const int lane1, int8x8_t b, const int lane2)
+            ///   A64: INS Vd.B[lane1], Vn.B[lane2]
+            /// </summary>
+            public static Vector64<sbyte> InsertSelectedScalar(Vector64<sbyte> result, byte resultIndex, Vector64<sbyte> value, byte valueIndex) => InsertSelectedScalar(result, resultIndex, value, valueIndex);
+
+            /// <summary>
+            /// int8x8_t vcopy_laneq_s8 (int8x8_t a, const int lane1, int8x16_t b, const int lane2)
+            ///   A64: INS Vd.B[lane1], Vn.B[lane2]
+            /// </summary>
+            public static Vector64<sbyte> InsertSelectedScalar(Vector64<sbyte> result, byte resultIndex, Vector128<sbyte> value, byte valueIndex) => InsertSelectedScalar(result, resultIndex, value, valueIndex);
+
+            /// <summary>
+            /// float32x2_t vcopy_lane_f32 (float32x2_t a, const int lane1, float32x2_t b, const int lane2)
+            ///   A64: INS Vd.S[lane1], Vn.S[lane2]
+            /// </summary>
+            public static Vector64<float> InsertSelectedScalar(Vector64<float> result, byte resultIndex, Vector64<float> value, byte valueIndex) => InsertSelectedScalar(result, resultIndex, value, valueIndex);
+
+            /// <summary>
+            /// float32x2_t vcopy_laneq_f32 (float32x2_t a, const int lane1, float32x4_t b, const int lane2)
+            ///   A64: INS Vd.S[lane1], Vn.S[lane2]
+            /// </summary>
+            public static Vector64<float> InsertSelectedScalar(Vector64<float> result, byte resultIndex, Vector128<float> value, byte valueIndex) => InsertSelectedScalar(result, resultIndex, value, valueIndex);
+
+            /// <summary>
+            /// uint16x4_t vcopy_lane_u16 (uint16x4_t a, const int lane1, uint16x4_t b, const int lane2)
+            ///   A64: INS Vd.H[lane1], Vn.H[lane2]
+            /// </summary>
+            public static Vector64<ushort> InsertSelectedScalar(Vector64<ushort> result, byte resultIndex, Vector64<ushort> value, byte valueIndex) => InsertSelectedScalar(result, resultIndex, value, valueIndex);
+
+            /// <summary>
+            /// uint16x4_t vcopy_laneq_u16 (uint16x4_t a, const int lane1, uint16x8_t b, const int lane2)
+            ///   A64: INS Vd.H[lane1], Vn.H[lane2]
+            /// </summary>
+            public static Vector64<ushort> InsertSelectedScalar(Vector64<ushort> result, byte resultIndex, Vector128<ushort> value, byte valueIndex) => InsertSelectedScalar(result, resultIndex, value, valueIndex);
+
+            /// <summary>
+            /// uint32x2_t vcopy_lane_u32 (uint32x2_t a, const int lane1, uint32x2_t b, const int lane2)
+            ///   A64: INS Vd.S[lane1], Vn.S[lane2]
+            /// </summary>
+            public static Vector64<uint> InsertSelectedScalar(Vector64<uint> result, byte resultIndex, Vector64<uint> value, byte valueIndex) => InsertSelectedScalar(result, resultIndex, value, valueIndex);
+
+            /// <summary>
+            /// uint32x2_t vcopy_laneq_u32 (uint32x2_t a, const int lane1, uint32x4_t b, const int lane2)
+            ///   A64: INS Vd.S[lane1], Vn.S[lane2]
+            /// </summary>
+            public static Vector64<uint> InsertSelectedScalar(Vector64<uint> result, byte resultIndex, Vector128<uint> value, byte valueIndex) => InsertSelectedScalar(result, resultIndex, value, valueIndex);
+
+            /// <summary>
+            /// uint8x16_t vcopyq_lane_u8 (uint8x16_t a, const int lane1, uint8x8_t b, const int lane2)
+            ///   A64: INS Vd.B[lane1], Vn.B[lane2]
+            /// </summary>
+            public static Vector128<byte> InsertSelectedScalar(Vector128<byte> result, byte resultIndex, Vector64<byte> value, byte valueIndex) => InsertSelectedScalar(result, resultIndex, value, valueIndex);
+
+            /// <summary>
+            /// uint8x16_t vcopyq_laneq_u8 (uint8x16_t a, const int lane1, uint8x16_t b, const int lane2)
+            ///   A64: INS Vd.B[lane1], Vn.B[lane2]
+            /// </summary>
+            public static Vector128<byte> InsertSelectedScalar(Vector128<byte> result, byte resultIndex, Vector128<byte> value, byte valueIndex) => InsertSelectedScalar(result, resultIndex, value, valueIndex);
+
+            /// <summary>
+            /// float64x2_t vcopyq_laneq_f64 (float64x2_t a, const int lane1, float64x2_t b, const int lane2)
+            ///   A64: INS Vd.D[lane1], Vn.D[lane2]
+            /// </summary>
+            public static Vector128<double> InsertSelectedScalar(Vector128<double> result, byte resultIndex, Vector128<double> value, byte valueIndex) => InsertSelectedScalar(result, resultIndex, value, valueIndex);
+
+            /// <summary>
+            /// int16x8_t vcopyq_lane_s16 (int16x8_t a, const int lane1, int16x4_t b, const int lane2)
+            ///   A64: INS Vd.H[lane1], Vn.H[lane2]
+            /// </summary>
+            public static Vector128<short> InsertSelectedScalar(Vector128<short> result, byte resultIndex, Vector64<short> value, byte valueIndex) => InsertSelectedScalar(result, resultIndex, value, valueIndex);
+
+            /// <summary>
+            /// int16x8_t vcopyq_laneq_s16 (int16x8_t a, const int lane1, int16x8_t b, const int lane2)
+            ///   A64: INS Vd.H[lane1], Vn.H[lane2]
+            /// </summary>
+            public static Vector128<short> InsertSelectedScalar(Vector128<short> result, byte resultIndex, Vector128<short> value, byte valueIndex) => InsertSelectedScalar(result, resultIndex, value, valueIndex);
+
+            /// <summary>
+            /// int32x4_t vcopyq_lane_s32 (int32x4_t a, const int lane1, int32x2_t b, const int lane2)
+            ///   A64: INS Vd.S[lane1], Vn.S[lane2]
+            /// </summary>
+            public static Vector128<int> InsertSelectedScalar(Vector128<int> result, byte resultIndex, Vector64<int> value, byte valueIndex) => InsertSelectedScalar(result, resultIndex, value, valueIndex);
+
+            /// <summary>
+            /// int32x4_t vcopyq_laneq_s32 (int32x4_t a, const int lane1, int32x4_t b, const int lane2)
+            ///   A64: INS Vd.S[lane1], Vn.S[lane2]
+            /// </summary>
+            public static Vector128<int> InsertSelectedScalar(Vector128<int> result, byte resultIndex, Vector128<int> value, byte valueIndex) => InsertSelectedScalar(result, resultIndex, value, valueIndex);
+
+            /// <summary>
+            /// int64x2_t vcopyq_laneq_s64 (int64x2_t a, const int lane1, int64x2_t b, const int lane2)
+            ///   A64: INS Vd.D[lane1], Vn.D[lane2]
+            /// </summary>
+            public static Vector128<long> InsertSelectedScalar(Vector128<long> result, byte resultIndex, Vector128<long> value, byte valueIndex) => InsertSelectedScalar(result, resultIndex, value, valueIndex);
+
+            /// <summary>
+            /// int8x16_t vcopyq_lane_s8 (int8x16_t a, const int lane1, int8x8_t b, const int lane2)
+            ///   A64: INS Vd.B[lane1], Vn.B[lane2]
+            /// </summary>
+            public static Vector128<sbyte> InsertSelectedScalar(Vector128<sbyte> result, byte resultIndex, Vector64<sbyte> value, byte valueIndex) => InsertSelectedScalar(result, resultIndex, value, valueIndex);
+
+            /// <summary>
+            /// int8x16_t vcopyq_laneq_s8 (int8x16_t a, const int lane1, int8x16_t b, const int lane2)
+            ///   A64: INS Vd.B[lane1], Vn.B[lane2]
+            /// </summary>
+            public static Vector128<sbyte> InsertSelectedScalar(Vector128<sbyte> result, byte resultIndex, Vector128<sbyte> value, byte valueIndex) => InsertSelectedScalar(result, resultIndex, value, valueIndex);
+
+            /// <summary>
+            /// float32x4_t vcopyq_lane_f32 (float32x4_t a, const int lane1, float32x2_t b, const int lane2)
+            ///   A64: INS Vd.S[lane1], Vn.S[lane2]
+            /// </summary>
+            public static Vector128<float> InsertSelectedScalar(Vector128<float> result, byte resultIndex, Vector64<float> value, byte valueIndex) => InsertSelectedScalar(result, resultIndex, value, valueIndex);
+
+            /// <summary>
+            /// float32x4_t vcopyq_laneq_f32 (float32x4_t a, const int lane1, float32x4_t b, const int lane2)
+            ///   A64: INS Vd.S[lane1], Vn.S[lane2]
+            /// </summary>
+            public static Vector128<float> InsertSelectedScalar(Vector128<float> result, byte resultIndex, Vector128<float> value, byte valueIndex) => InsertSelectedScalar(result, resultIndex, value, valueIndex);
+
+            /// <summary>
+            /// uint16x8_t vcopyq_lane_u16 (uint16x8_t a, const int lane1, uint16x4_t b, const int lane2)
+            ///   A64: INS Vd.H[lane1], Vn.H[lane2]
+            /// </summary>
+            public static Vector128<ushort> InsertSelectedScalar(Vector128<ushort> result, byte resultIndex, Vector64<ushort> value, byte valueIndex) => InsertSelectedScalar(result, resultIndex, value, valueIndex);
+
+            /// <summary>
+            /// uint16x8_t vcopyq_laneq_u16 (uint16x8_t a, const int lane1, uint16x8_t b, const int lane2)
+            ///   A64: INS Vd.H[lane1], Vn.H[lane2]
+            /// </summary>
+            public static Vector128<ushort> InsertSelectedScalar(Vector128<ushort> result, byte resultIndex, Vector128<ushort> value, byte valueIndex) => InsertSelectedScalar(result, resultIndex, value, valueIndex);
+
+            /// <summary>
+            /// uint32x4_t vcopyq_lane_u32 (uint32x4_t a, const int lane1, uint32x2_t b, const int lane2)
+            ///   A64: INS Vd.S[lane1], Vn.S[lane2]
+            /// </summary>
+            public static Vector128<uint> InsertSelectedScalar(Vector128<uint> result, byte resultIndex, Vector64<uint> value, byte valueIndex) => InsertSelectedScalar(result, resultIndex, value, valueIndex);
+
+            /// <summary>
+            /// uint32x4_t vcopyq_laneq_u32 (uint32x4_t a, const int lane1, uint32x4_t b, const int lane2)
+            ///   A64: INS Vd.S[lane1], Vn.S[lane2]
+            /// </summary>
+            public static Vector128<uint> InsertSelectedScalar(Vector128<uint> result, byte resultIndex, Vector128<uint> value, byte valueIndex) => InsertSelectedScalar(result, resultIndex, value, valueIndex);
+
+            /// <summary>
+            /// uint64x2_t vcopyq_laneq_u64 (uint64x2_t a, const int lane1, uint64x2_t b, const int lane2)
+            ///   A64: INS Vd.D[lane1], Vn.D[lane2]
+            /// </summary>
+            public static Vector128<ulong> InsertSelectedScalar(Vector128<ulong> result, byte resultIndex, Vector128<ulong> value, byte valueIndex) => InsertSelectedScalar(result, resultIndex, value, valueIndex);
+
+            /// <summary>
             /// float64x2_t vld1q_dup_f64 (float64_t const * ptr)
             ///   A64: LD1R { Vt.2D }, [Xn]
             /// </summary>
