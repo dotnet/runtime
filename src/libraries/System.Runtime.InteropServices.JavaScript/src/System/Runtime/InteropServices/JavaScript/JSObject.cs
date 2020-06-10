@@ -4,9 +4,10 @@
 
 using System;
 
+using Console = System.Diagnostics.Debug;
+
 namespace System.Runtime.InteropServices.JavaScript
 {
-    using Console = System.Diagnostics.Debug;
     public interface IJSObject
     {
         int JSHandle { get; }

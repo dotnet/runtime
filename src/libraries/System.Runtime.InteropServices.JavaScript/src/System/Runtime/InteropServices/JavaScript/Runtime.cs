@@ -221,7 +221,6 @@ namespace System.Runtime.InteropServices.JavaScript
         public static int GetJSObjectId(object rawObj)
         {
             JSObject? obj = rawObj as JSObject;
-            Console.WriteLine($"GetJSObjectId {rawObj.GetType()}");
             lock (_rawToJS)
             {
                 if (obj is null && rawObj.GetType().IsSubclassOf(typeof(Delegate)))
