@@ -56,7 +56,8 @@
 
     <Copy SourceFiles="$(ApkBundlePath)"
           DestinationFolder="$(TestArchiveTestsDir)"
-          SkipUnchangedFiles="true" />
+          SkipUnchangedFiles="true"
+          Condition="'$(ArchiveTests)' == 'true' and '$(IgnoreForCI)' != 'true'" />
   </Target>
 
   <!-- Generate a self-contained app bundle for iOS with tests. -->
@@ -122,7 +123,8 @@
 
     <Copy SourceFiles="@(_appFiles)"
           DestinationFolder="$(TestArchiveTestsDir)/%(RecursiveDir)"
-          SkipUnchangedFiles="true"/>
+          SkipUnchangedFiles="true"
+          Condition="'$(ArchiveTests)' == 'true' and '$(IgnoreForCI)' != 'true'" />
 
   </Target>
 
