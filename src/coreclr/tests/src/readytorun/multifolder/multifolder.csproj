@@ -60,6 +60,7 @@ $(CLRTestBatchPreCommands)
 
     set ExePath=%scriptPath%\multifolder\multifolder.dll
     set COMPlus_NativeImageSearchPaths=%scriptPath%
+    set COMPlus_BreakOnUncaughtException=1
 
 ]]></CLRTestBatchPreCommands>
     <BashCLRTestPreCommands><![CDATA[
@@ -98,6 +99,7 @@ $(BashCLRTestPreCommands)
 
     ExePath=$__OutputDir/multifolder/multifolder.dll
     export COMPlus_NativeImageSearchPaths=$__OutputDir
+    export COMPlus_BreakOnUncaughtException=1
 
 ]]></BashCLRTestPreCommands>
   </PropertyGroup>
