@@ -727,19 +727,9 @@ namespace System.Globalization
             {
                 if (_dateTimeInfo == null)
                 {
-                    DateTimeFormatInfo temp;
-                    if (GlobalizationMode.Invariant)
-                    {
-                        temp = DateTimeFormatInfo.InvariantInfo;
-                    }
-                    else
-                    {
-                        // Change the calendar of DTFI to the specified calendar of this CultureInfo.
-                        temp = new DateTimeFormatInfo(_cultureData, this.Calendar)
-                        {
-                            _isReadOnly = _isReadOnly
-                        };
-                    }
+                    // Change the calendar of DTFI to the specified calendar of this CultureInfo.
+                    DateTimeFormatInfo temp = new DateTimeFormatInfo(_cultureData, this.Calendar);
+                    temp._isReadOnly = _isReadOnly;
                     Interlocked.CompareExchange(ref _dateTimeInfo, temp, null);
                 }
                 return _dateTimeInfo!;

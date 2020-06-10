@@ -646,7 +646,11 @@ namespace System.Globalization.Tests
             //
             // DateTimeInfo
             //
-            Assert.Throws<InvalidOperationException>(() => ci.DateTimeFormat.Calendar = new GregorianCalendar());
+            var calendar = new GregorianCalendar();
+            ci.DateTimeFormat.Calendar = calendar;
+            Assert.Equal(calendar, ci.DateTimeFormat.Calendar);
+
+            Assert.Throws<ArgumentOutOfRangeException>(() => ci.DateTimeFormat.Calendar = new TaiwanCalendar());
         }
 
         [Fact]
