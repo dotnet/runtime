@@ -427,14 +427,10 @@ namespace System.Net.Http
             }
 
             // Register for cancellation and tear down the underlying stream in case of cancellation/timeout.
-            CancellationTokenRegistration cancellationRegistration = cancellationToken.Register(swr =>
-            {
-                var weakThisRef = (WeakReference<HttpContent>)swr!;
-                if (weakThisRef.TryGetTarget(out HttpContent? strongThisRef))
-                {
-                    strongThisRef.Dispose();
-                }
-            }, new WeakReference<HttpContent>(this));
+            // We're only comfortable disposing of the HttpContent instance like this because LoadIntoBuffer is internal and
+            // we're only using it on content instances we get back from a handler's Send call that haven't been given out to the user yet.
+            // If we were to ever make LoadIntoBuffer public, we'd need to rethink this.
+            CancellationTokenRegistration cancellationRegistration = cancellationToken.Register(s => ((HttpContent)s!).Dispose(), this);
 
             try
             {
@@ -448,15 +444,6 @@ namespace System.Net.Http
 
                 if (CancellationHelper.ShouldWrapInOperationCanceledException(e, cancellationToken))
                 {
-                    // Cancellation was requested, so assume that the failure is due to
-                    // the cancellation request. This is a bit unorthodox, as usually we'd
-                    // prioritize a non-OperationCanceledException over a cancellation
-                    // request to avoid losing potentially pertinent information.  But given
-                    // the cancellation design where we tear down the underlying stream upon
-                    // a cancellation request, which can then result in a myriad of different
-                    // exceptions (argument exceptions, object disposed exceptions, socket exceptions,
-                    // etc.), as a middle ground we treat it as cancellation, but still propagate the
-                    // original information as the inner exception, for diagnostic purposes.
                     throw CancellationHelper.CreateOperationCanceledException(e, cancellationToken);
                 }
 

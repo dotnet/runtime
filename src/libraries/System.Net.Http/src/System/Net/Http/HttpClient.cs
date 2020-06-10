@@ -494,7 +494,6 @@ namespace System.Net.Http
         private ValueTask<HttpResponseMessage> SendAsyncCore(HttpRequestMessage request, HttpCompletionOption completionOption,
             bool async, CancellationToken cancellationToken)
         {
-
             if (request == null)
             {
                 throw new ArgumentNullException(nameof(request));
@@ -507,8 +506,7 @@ namespace System.Net.Http
             // PrepareRequestMessage will resolve the request address against the base address.
 
             // Combines given cancellationToken with the global one and the timeout.
-            CancellationTokenSource cts =
-                PrepareCancellationTokenSource(cancellationToken, out bool disposeCts, out long timeoutTime);
+            CancellationTokenSource cts = PrepareCancellationTokenSource(cancellationToken, out bool disposeCts, out long timeoutTime);
 
             // Initiate the send.
             ValueTask<HttpResponseMessage> responseTask;
