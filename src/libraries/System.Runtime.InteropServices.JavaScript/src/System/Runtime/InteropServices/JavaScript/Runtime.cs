@@ -72,16 +72,17 @@ namespace System.Runtime.InteropServices.JavaScript
 
         private static int BindJSObject(int jsId, bool ownsHandle, int mappedType)
         {
+            WeakReference? reference;
             lock (_boundObjects)
             {
-                if (!_boundObjects.TryGetValue(jsId, out WeakReference? obj))
+                if (!_boundObjects.TryGetValue(jsId, out reference))
                 {
                     IntPtr jsIntPtr = (IntPtr)jsId;
-                    obj = new WeakReference(mappedType > 0 ? BindJSType(jsIntPtr, ownsHandle, mappedType) : new JSObject(jsIntPtr, ownsHandle), true);
-                    _boundObjects.Add(jsId, obj);
+                    reference = new WeakReference(mappedType > 0 ? BindJSType(jsIntPtr, ownsHandle, mappedType) : new JSObject(jsIntPtr, ownsHandle), true);
+                    _boundObjects.Add(jsId, reference);
                 }
-                return obj.Target is JSObject target ? target.Int32Handle : 0;
             }
+            return reference?.Target is JSObject target ? target.Int32Handle : 0;
         }
 
         private static int BindCoreCLRObject(int jsId, int gcHandle)
