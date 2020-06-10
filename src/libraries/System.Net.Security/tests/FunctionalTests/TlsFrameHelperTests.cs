@@ -4,11 +4,12 @@
 
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.Authentication;
 using Xunit;
 
 namespace System.Net.Security.Tests
 {
-    public class SniHelperTest
+    public class TlsFrameHelperTests
     {
         [Fact]
         public void SniHelper_ValidData_Ok()
@@ -32,11 +33,56 @@ namespace System.Net.Security.Tests
 
         private void InvalidClientHello(byte[] clientHello, int id, bool shouldPass)
         {
-            string ret = SniHelper.GetServerName(clientHello);
+            string ret = TlsFrameHelper.GetServerName(clientHello);
             if (shouldPass)
                 Assert.NotNull(ret);
             else
                 Assert.Null(ret);
+        }
+
+        [Fact]
+        public void TlsFrameHelper_ValidData_Ok()
+        {
+            TlsFrameHelper.TlsFrameInfo info = default;
+            Assert.True(TlsFrameHelper.TryGetFrameInfo(s_validClientHello, ref info));
+
+            Assert.Equal(SslProtocols.Tls12, info.Header.Version);
+            Assert.Equal(203, info.Header.Length);
+            Assert.Equal(SslProtocols.Tls12, info.SupportedVersions);
+            Assert.Equal(TlsFrameHelper.ApplicationProtocolInfo.None, info.ApplicationProtocols);
+        }
+
+        [Fact]
+        public void TlsFrameHelper_Tls12ClientHello_Ok()
+        {
+            TlsFrameHelper.TlsFrameInfo info = default;
+            Assert.True(TlsFrameHelper.TryGetFrameInfo(s_Tls12ClientHello, ref info));
+
+            Assert.Equal(SslProtocols.Tls, info.Header.Version);
+            Assert.Equal(SslProtocols.Tls|SslProtocols.Tls12, info.SupportedVersions);
+            Assert.Equal(TlsFrameHelper.ApplicationProtocolInfo.Http11 | TlsFrameHelper.ApplicationProtocolInfo.Http2, info.ApplicationProtocols);
+        }
+
+        [Fact]
+        public void TlsFrameHelper_Tls13ClientHello_Ok()
+        {
+            TlsFrameHelper.TlsFrameInfo info = default;
+            Assert.True(TlsFrameHelper.TryGetFrameInfo(s_Tls13ClientHello, ref info));
+
+            Assert.Equal(SslProtocols.Tls, info.Header.Version);
+            Assert.Equal(SslProtocols.Tls | SslProtocols.Tls11 | SslProtocols.Tls12 | SslProtocols.Tls13, info.SupportedVersions);
+            Assert.Equal(TlsFrameHelper.ApplicationProtocolInfo.Other, info.ApplicationProtocols);
+        }
+
+        [Fact]
+        public void TlsFrameHelper_Tls12ServerHello_Ok()
+        {
+            TlsFrameHelper.TlsFrameInfo info = default;
+            Assert.True(TlsFrameHelper.TryGetFrameInfo(s_Tls12ServerHello, ref info));
+
+            Assert.Equal(SslProtocols.Tls12, info.Header.Version);
+            Assert.Equal(SslProtocols.Tls12, info.SupportedVersions);
+            Assert.Equal(TlsFrameHelper.ApplicationProtocolInfo.Http2, info.ApplicationProtocols);
         }
 
         public static IEnumerable<object[]> InvalidClientHelloData()
@@ -162,6 +208,176 @@ namespace System.Net.Security.Tests
             0x00, 0x01, 0x00
         };
 
+        private static byte[] s_Tls12ClientHello = new byte[] {
+            // SslPlainText.(ContentType+ProtocolVersion)
+            0x16, 0x03, 0x01,
+            // SslPlainText.length
+            0x00, 0xD1,
+            // Handshake.msg_type (client hello)
+            0x01,
+            // Handshake.length
+            0x00, 0x00, 0xCD,
+            // ClientHello.client_version
+            0x03, 0x03,
+            // ClientHello.random
+            0x0C, 0x3C, 0x85, 0x78, 0xCA,
+            0x67, 0x70, 0xAA, 0x38, 0xCB,
+            0x28, 0xBC, 0xDC, 0x3E, 0x30,
+            0xBF, 0x11, 0x96, 0x95, 0x1A,
+            0xB9, 0xF0, 0x99, 0xA4, 0x91,
+            0x09, 0x13, 0xB4, 0x89, 0x94,
+            0x27, 0x2E,
+            // ClientHello.SessionId
+            0x00,
+            // ClientHello.cipher_suites_length
+            0x00, 0x5C,
+            // ClientHello.cipher_suites
+            0xC0, 0x30, 0xC0, 0x2C, 0xC0, 0x28, 0xC0, 0x24,
+            0xC0, 0x14, 0xC0, 0x0A, 0x00, 0x9f, 0x00, 0x6B,
+            0x00, 0x39, 0xCC, 0xA9, 0xCC, 0xA8, 0xCC, 0xAA,
+            0xFF, 0x85, 0x00, 0xC4, 0x00, 0x88, 0x00, 0x81,
+            0x00, 0x9D, 0x00, 0x3D, 0x00, 0x35, 0x00, 0xC0,
+            0x00, 0x84, 0xC0, 0x2f, 0xC0, 0x2B, 0xC0, 0x27,
+            0xC0, 0x23, 0xC0, 0x13, 0xC0, 0x09, 0x00, 0x9E,
+            0x00, 0x67, 0x00, 0x33, 0x00, 0xBE, 0x00, 0x45,
+            0x00, 0x9C, 0x00, 0x3C, 0x00, 0x2F, 0x00, 0xBA,
+            0x00, 0x41, 0xC0, 0x11, 0xC0, 0x07, 0x00, 0x05,
+            0x00, 0x04, 0xC0, 0x12, 0xC0, 0x08, 0x00, 0x16,
+            0x00, 0x0a, 0x00, 0xff,
+            // ClientHello.compression_methods
+            0x01, 0x01,
+            // ClientHello.extension_list_length
+            0x00, 0x48,
+            // Extension.extension_type (ec_point_formats)
+            0x00, 0x0b, 0x00, 0x02, 0x01, 0x00,
+            // Extension.extension_type (supported_groups)
+            0x00, 0x0A, 0x00, 0x08, 0x00, 0x06, 0x00, 0x1D,
+            0x00, 0x17, 0x00, 0x18,
+            // Extension.extension_type (session_ticket)
+            0x00, 0x23, 0x00, 0x00,
+            // Extension.extension_type (signature_algorithms)
+            0x00, 0x0D, 0x00, 0x1C, 0x00, 0x1A, 0x06, 0x01,
+            0x06, 0x03, 0xEF, 0xEF, 0x05, 0x01, 0x05, 0x03,
+            0x04, 0x01, 0x04, 0x03, 0xEE, 0xEE, 0xED, 0xED,
+            0x03, 0x01, 0x03, 0x03, 0x02, 0x01, 0x02, 0x03,
+            // Extension.extension_type (application_level_Protocol)
+            0x00, 0x10, 0x00, 0x0e, 0x00, 0x0C, 0x02, 0x68,
+            0x32, 0x08, 0x68, 0x74, 0x74, 0x70, 0x2F, 0x31,
+            0x2E, 0x31
+        };
+
+        private static byte[] s_Tls13ClientHello = new byte[] {
+            // SslPlainText.(ContentType+ProtocolVersion)
+            0x16, 0x03, 0x01,
+            // SslPlainText.length
+            0x01, 0x08,
+            // Handshake.msg_type (client hello)
+            0x01,
+            // Handshake.length
+            0x00, 0x01, 0x04,
+            // ClientHello.client_version
+            0x03, 0x03,
+            // ClientHello.random
+            0x0C, 0x3C, 0x85, 0x78, 0xCA, 0x67, 0x70, 0xAA,
+            0x38, 0xCB, 0x28, 0xBC, 0xDC, 0x3E, 0x30, 0xBF,
+            0x11, 0x96, 0x95, 0x1A, 0xB9, 0xF0, 0x99, 0xA4,
+            0x91, 0x09, 0x13, 0xB4, 0x89, 0x94, 0x27, 0x2E,
+            // ClientHello.SessionId_Length
+            0x20,
+            // ClientHello.SessionId
+            0x0C, 0x3C, 0x85, 0x78, 0xCA, 0x67, 0x70, 0xAA,
+            0x38, 0xCB, 0x28, 0xBC, 0xDC, 0x3E, 0x30, 0xBF,
+            0x11, 0x96, 0x95, 0x1A, 0xB9, 0xF0, 0x99, 0xA4,
+            0x91, 0x09, 0x13, 0xB4, 0x89, 0x94, 0x27, 0x2E,
+            // ClientHello.cipher_suites_length
+            0x00, 0x0C,
+            // ClientHello.cipher_suites
+            0x13, 0x02, 0x13, 0x03, 0x13, 0x01, 0xC0, 0x14,
+            0xc0, 0x30, 0x00, 0xFF,
+            // ClientHello.compression_methods
+            0x01, 0x00,
+            // ClientHello.extension_list_length
+            0x00, 0xAF,
+            // Extension.extension_type (server_name) (10.211.55.2)
+            0x00, 0x00, 0x00, 0x10, 0x00, 0x0e, 0x00, 0x00,
+            0x0B, 0x31, 0x30, 0x2E, 0x32, 0x31, 0x31, 0x2E,
+            0x35, 0x35, 0x2E, 0x32,
+            // Extension.extension_type (ec_point_formats)
+            0x00, 0x0B, 0x00, 0x04, 0x03, 0x00, 0x01, 0x02,
+            // Extension.extension_type (supported_groups)
+            0x00, 0x0A, 0x00, 0x0C, 0x00, 0x0A, 0x00, 0x1D,
+            0x00, 0x17, 0x00, 0x1E, 0x00, 0x19, 0x00, 0x18,
+            // Extension.extension_type (application_level_Protocol) (boo)
+            0x00, 0x10, 0x00, 0x06, 0x00, 0x04, 0x03, 0x62,
+            0x6f, 0x6f,
+            // Extension.extension_type (encrypt_then_mac)
+            0x00, 0x16, 0x00, 0x00,
+            // Extension.extension_type (extended_master_key_secret)
+            0x00, 0x17, 0x00, 0x00,
+            // Extension.extension_type (signature_algorithms)
+            0x00, 0x0D, 0x00, 0x30, 0x00, 0x2E,
+            0x06, 0x03, 0xEF, 0xEF, 0x05, 0x01, 0x05, 0x03,
+            0x06, 0x03, 0xEF, 0xEF, 0x05, 0x01, 0x05, 0x03,
+            0x06, 0x03, 0xEF, 0xEF, 0x05, 0x01, 0x05, 0x03,
+            0x04, 0x01, 0x04, 0x03, 0xEE, 0xEE, 0xED, 0xED,
+            0x03, 0x01, 0x03, 0x03, 0x02, 0x01, 0x02, 0x03,
+            0x03, 0x01, 0x03, 0x03, 0x02, 0x01,
+            // Extension.extension_type (supported_versions)
+            0x00, 0x2B, 0x00, 0x09, 0x08, 0x03, 0x04, 0x03,
+            0x03, 0x03, 0x02, 0x03, 0x01,
+            // Extension.extension_type (psk_key_exchange_modes)
+            0x00, 0x2D, 0x00, 0x02, 0x01, 0x01,
+            // Extension.extension_type (key_share)
+            0x00, 0x33, 0x00, 0x26, 0x00, 0x24, 0x00, 0x1D,
+            0x00, 0x20,
+            0x04, 0x01, 0x04, 0x03, 0xEE, 0xEE, 0xED, 0xED,
+            0x03, 0x01, 0x03, 0x03, 0x02, 0x01, 0x02, 0x03,
+            0x04, 0x01, 0x04, 0x03, 0xEE, 0xEE, 0xED, 0xED,
+            0x03, 0x01, 0x03, 0x03, 0x02, 0x01, 0x02, 0x03
+        };
+
+        private static byte[] s_Tls12ServerHello = new byte[] {
+            // SslPlainText.(ContentType+ProtocolVersion)
+            0x16, 0x03, 0x03,
+            // SslPlainText.length
+            0x00, 0x64,
+            // Handshake.msg_type (srever hello)
+            0x02,
+            // Handshake.length
+            0x00, 0x00, 0x60,
+            // ServerHello.client_version
+            0x03, 0x03,
+            // ServerHello.random
+            0x0C, 0x3C, 0x85, 0x78, 0xCA,
+            0x67, 0x70, 0xAA, 0x38, 0xCB,
+            0x28, 0xBC, 0xDC, 0x3E, 0x30,
+            0xBF, 0x11, 0x96, 0x95, 0x1A,
+            0xB9, 0xF0, 0x99, 0xA4, 0x91,
+            0x09, 0x13, 0xB4, 0x89, 0x94,
+            0x27, 0x2E,
+            // ServerHello.SessionId_Length
+            0x20,
+            // ServerHello.SessionId
+            0x0C, 0x3C, 0x85, 0x78, 0xCA, 0x67, 0x70, 0xAA,
+            0x38, 0xCB, 0x28, 0xBC, 0xDC, 0x3E, 0x30, 0xBF,
+            0x11, 0x96, 0x95, 0x1A, 0xB9, 0xF0, 0x99, 0xA4,
+            0x91, 0x09, 0x13, 0xB4, 0x89, 0x94, 0x27, 0x2E,
+            // ServerHello.cipher_suite
+            0xC0, 0x2B,
+            // ServerHello.compression_method
+            0x00,
+            // ClientHello.extension_list_length
+            0x00, 0x18,
+            // Extension.extension_type (extended_master_secreet)
+            0x00, 0x17, 0x00, 0x00,
+            // Extension.extension_type (renegotiation_info)
+            0xFF, 0x01, 0x00, 0x01, 0x00,
+            // Extension.extension_type (ec_point_formats)
+            0x00, 0x0B, 0x00, 0x02, 0x01, 0x00,
+            // Extension.extension_type (application_level_Protocol)
+            0x00, 0x10, 0x00, 0x05, 0x00, 0x03, 0x02, 0x68, 0x32,
+        };
+
         private static IEnumerable<byte[]> InvalidClientHello()
         {
             // This test covers following test cases:
@@ -259,6 +475,7 @@ namespace System.Net.Security.Tests
                 0x00, 0x02, 0x00
             };
 
+            // #2
             yield return new byte[] {
                 // SslPlainText.(ContentType+ProtocolVersion)
                 0x16, 0x03, 0x03,
@@ -347,6 +564,7 @@ namespace System.Net.Security.Tests
                 0xFF, 0xFF, 0x00
             };
 
+            // #3
             yield return new byte[] {
                 // SslPlainText.(ContentType+ProtocolVersion)
                 0x16, 0x03, 0x03,
@@ -435,6 +653,7 @@ namespace System.Net.Security.Tests
                 0x00, 0x01, 0x00
             };
 
+            // #4
             yield return new byte[] {
                 // SslPlainText.(ContentType+ProtocolVersion)
                 0x16, 0x03, 0x03,
@@ -523,6 +742,7 @@ namespace System.Net.Security.Tests
                 0x00, 0x01, 0x00
             };
 
+            // #5
             yield return new byte[] {
                 // SslPlainText.(ContentType+ProtocolVersion)
                 0x16, 0x03, 0x03,
@@ -611,6 +831,7 @@ namespace System.Net.Security.Tests
                 0x00, 0x01, 0x00
             };
 
+            // #6
             yield return new byte[] {
                 // SslPlainText.(ContentType+ProtocolVersion)
                 0x16, 0x03, 0x03,
@@ -699,6 +920,7 @@ namespace System.Net.Security.Tests
                 0x00, 0x01, 0x00
             };
 
+            // #7
             yield return new byte[] {
                 // SslPlainText.(ContentType+ProtocolVersion)
                 0x16, 0x03, 0x03,
@@ -787,6 +1009,7 @@ namespace System.Net.Security.Tests
                 0x00, 0x01, 0x00
             };
 
+            // #8
             yield return new byte[] {
                 // SslPlainText.(ContentType+ProtocolVersion)
                 0x16, 0x03, 0x03,
@@ -875,6 +1098,7 @@ namespace System.Net.Security.Tests
                 0x00, 0x01, 0x00
             };
 
+            // #9
             yield return new byte[] {
                 // SslPlainText.(ContentType+ProtocolVersion)
                 0x16, 0x03, 0x03,
@@ -963,6 +1187,7 @@ namespace System.Net.Security.Tests
                 0x00, 0x01, 0x00
             };
 
+            // #10
             yield return new byte[] {
                 // SslPlainText.(ContentType+ProtocolVersion)
                 0x16, 0x03, 0x03,
@@ -1051,6 +1276,7 @@ namespace System.Net.Security.Tests
                 0x00, 0x01, 0x00
             };
 
+            // #11
             yield return new byte[] {
                 // SslPlainText.(ContentType+ProtocolVersion)
                 0x16, 0x03, 0x03,
@@ -1139,6 +1365,7 @@ namespace System.Net.Security.Tests
                 0x00, 0x01, 0x00
             };
 
+            // #10
             yield return new byte[] {
                 // SslPlainText.(ContentType+ProtocolVersion)
                 0x16, 0x03, 0x03,
@@ -1227,6 +1454,7 @@ namespace System.Net.Security.Tests
                 0x00, 0x01, 0x00
             };
 
+            // #13
             yield return new byte[] {
                 // SslPlainText.(ContentType+ProtocolVersion)
                 0x16, 0x03, 0x03,
@@ -1315,6 +1543,7 @@ namespace System.Net.Security.Tests
                 0x00, 0x01, 0x00
             };
 
+            // #14
             yield return new byte[] {
                 // SslPlainText.(ContentType+ProtocolVersion)
                 0x16, 0x03, 0x03,
@@ -1403,6 +1632,7 @@ namespace System.Net.Security.Tests
                 0x00, 0x01, 0x00
             };
 
+            // #15
             yield return new byte[] {
                 // SslPlainText.(ContentType+ProtocolVersion)
                 0x16, 0x03, 0x03,
@@ -1491,6 +1721,7 @@ namespace System.Net.Security.Tests
                 0x00, 0x01, 0x00
             };
 
+            // #16
             yield return new byte[] {
                 // SslPlainText.(ContentType+ProtocolVersion)
                 0x16, 0x03, 0x03,
@@ -1579,6 +1810,7 @@ namespace System.Net.Security.Tests
                 0x00, 0x01, 0x00
             };
 
+            // #17
             yield return new byte[] {
                 // SslPlainText.(ContentType+ProtocolVersion)
                 0x16, 0x03, 0x03,
@@ -1667,6 +1899,7 @@ namespace System.Net.Security.Tests
                 0x00, 0x01, 0x00
             };
 
+            // #18
             yield return new byte[] {
                 // SslPlainText.(ContentType+ProtocolVersion)
                 0x16, 0x03, 0x03,
@@ -1755,6 +1988,7 @@ namespace System.Net.Security.Tests
                 0x00, 0x01, 0x00
             };
 
+            // #19
             yield return new byte[] {
                 // SslPlainText.(ContentType+ProtocolVersion)
                 0x16, 0x03, 0x03,
@@ -1843,6 +2077,7 @@ namespace System.Net.Security.Tests
                 0x00, 0x01, 0x00
             };
 
+            // #20
             yield return new byte[] {
                 // SslPlainText.(ContentType+ProtocolVersion)
                 0x16, 0x03, 0x03,
@@ -1931,6 +2166,7 @@ namespace System.Net.Security.Tests
                 0x00, 0x01, 0x00
             };
 
+            // #21
             yield return new byte[] {
                 // SslPlainText.(ContentType+ProtocolVersion)
                 0x16, 0x03, 0x03,
@@ -2019,6 +2255,7 @@ namespace System.Net.Security.Tests
                 0x00, 0x01, 0x00
             };
 
+            // #22
             yield return new byte[] {
                 // SslPlainText.(ContentType+ProtocolVersion)
                 0x16, 0x03, 0x03,
@@ -2107,6 +2344,7 @@ namespace System.Net.Security.Tests
                 0x00, 0x01, 0x00
             };
 
+            // #23
             yield return new byte[] {
                 // SslPlainText.(ContentType+ProtocolVersion)
                 0x16, 0x03, 0x03,
@@ -2195,6 +2433,7 @@ namespace System.Net.Security.Tests
                 0x00, 0x01, 0x00
             };
 
+            // #24
             yield return new byte[] {
                 // SslPlainText.(ContentType+ProtocolVersion)
                 0x16, 0x03, 0x03,
@@ -2283,6 +2522,7 @@ namespace System.Net.Security.Tests
                 0x00, 0x01, 0x00
             };
 
+            // #25
             yield return new byte[] {
                 // SslPlainText.(ContentType+ProtocolVersion)
                 0x16, 0x03, 0x03,
@@ -2371,6 +2611,7 @@ namespace System.Net.Security.Tests
                 0x00, 0x01, 0x00
             };
 
+            // #26
             yield return new byte[] {
                 // SslPlainText.(ContentType+ProtocolVersion)
                 0x16, 0x03, 0x03,
@@ -2459,6 +2700,7 @@ namespace System.Net.Security.Tests
                 0x00, 0x01, 0x00
             };
 
+            // #27
             yield return new byte[] {
                 // SslPlainText.(ContentType+ProtocolVersion)
                 0x16, 0x03, 0x03,
@@ -2547,6 +2789,7 @@ namespace System.Net.Security.Tests
                 0x00, 0x01, 0x00
             };
 
+            // #28
             yield return new byte[] {
                 // SslPlainText.(ContentType+ProtocolVersion)
                 0x16, 0x03, 0x03,
@@ -2635,6 +2878,7 @@ namespace System.Net.Security.Tests
                 0x00, 0x01, 0x00
             };
 
+            // #29
             yield return new byte[] {
                 // SslPlainText.(ContentType+ProtocolVersion)
                 0x16, 0x03, 0x03,
@@ -2723,6 +2967,7 @@ namespace System.Net.Security.Tests
                 0x00, 0x01, 0x00
             };
 
+            // #30
             yield return new byte[] {
                 // SslPlainText.(ContentType+ProtocolVersion)
                 0x16, 0x03, 0x03,
@@ -2811,6 +3056,7 @@ namespace System.Net.Security.Tests
                 0x00, 0x01, 0x00
             };
 
+            // #31
             yield return new byte[] {
                 // SslPlainText.(ContentType+ProtocolVersion)
                 0x16, 0x03, 0x03,
@@ -2899,6 +3145,7 @@ namespace System.Net.Security.Tests
                 0x00, 0x01, 0x00
             };
 
+            // #32
             yield return new byte[] {
                 // SslPlainText.(ContentType+ProtocolVersion)
                 0x16, 0x03, 0x03,
@@ -2987,6 +3234,7 @@ namespace System.Net.Security.Tests
                 0x00, 0x01, 0x00
             };
 
+            // #33
             yield return new byte[] {
                 // SslPlainText.(ContentType+ProtocolVersion)
                 0x16, 0x03, 0x03,
@@ -3075,6 +3323,7 @@ namespace System.Net.Security.Tests
                 0x00, 0x01, 0x00
             };
 
+            // #34
             yield return new byte[] {
                 // SslPlainText.(ContentType+ProtocolVersion) - unknown
                 0x01, 0x03, 0x04,
@@ -3163,6 +3412,7 @@ namespace System.Net.Security.Tests
                 0x00, 0x01, 0x00
             };
 
+            // #35
             yield return new byte[] {
                 // SslPlainText.(ContentType+ProtocolVersion)
                 0x16, 0x03, 0x03,
