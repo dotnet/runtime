@@ -15,7 +15,6 @@
 #include "shimload.h"
 #include "metadataexports.h"
 #include "ex.h"
-#include <configuration.h>
 
 #include <dbgenginemetrics.h>
 
@@ -325,6 +324,7 @@ STDAPI GetCORSystemDirectoryInternaL(SString& pBuffer)
 
     HRESULT hr = S_OK;
     BEGIN_ENTRYPOINT_NOTHROW;
+
 
 #ifdef CROSSGEN_COMPILE
 
