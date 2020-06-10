@@ -7017,6 +7017,62 @@ namespace System.Runtime.Intrinsics.Arm
         public static Vector128<ulong> MultiplyBySelectedScalarWideningLowerAndAdd(Vector128<ulong> addend, Vector64<uint> left, Vector128<uint> right, byte rightIndex) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
+        /// int32x4_t vmlsl_lane_s16 (int32x4_t a, int16x4_t b, int16x4_t v, const int lane)
+        ///   A32: VMLSL.S16 Qd, Dn, Dm[lane]
+        ///   A64: SMLSL Vd.4S, Vn.4H, Vm.H[lane]
+        /// </summary>
+        public static Vector128<int> MultiplyBySelectedScalarWideningLowerAndSubtract(Vector128<int> minuend, Vector64<short> left, Vector64<short> right, byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int32x4_t vmlsl_laneq_s16 (int32x4_t a, int16x4_t b, int16x8_t v, const int lane)
+        ///   A32: VMLSL.S16 Qd, Dn, Dm[lane]
+        ///   A64: SMLSL Vd.4S, Vn.4H, Vm.H[lane]
+        /// </summary>
+        public static Vector128<int> MultiplyBySelectedScalarWideningLowerAndSubtract(Vector128<int> minuend, Vector64<short> left, Vector128<short> right, byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int64x2_t vmlsl_lane_s32 (int64x2_t a, int32x2_t b, int32x2_t v, const int lane)
+        ///   A32: VMLSL.S32 Qd, Dn, Dm[lane]
+        ///   A64: SMLSL Vd.2D, Vn.2S, Vm.S[lane]
+        /// </summary>
+        public static Vector128<long> MultiplyBySelectedScalarWideningLowerAndSubtract(Vector128<long> minuend, Vector64<int> left, Vector64<int> right, byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int64x2_t vmlsl_laneq_s32 (int64x2_t a, int32x2_t b, int32x4_t v, const int lane)
+        ///   A32: VMLSL.S32 Qd, Dn, Dm[lane]
+        ///   A64: SMLSL Vd.2D, Vn.2S, Vm.S[lane]
+        /// </summary>
+        public static Vector128<long> MultiplyBySelectedScalarWideningLowerAndSubtract(Vector128<long> minuend, Vector64<int> left, Vector128<int> right, byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint32x4_t vmlsl_lane_u16 (uint32x4_t a, uint16x4_t b, uint16x4_t v, const int lane)
+        ///   A32: VMLSL.U16 Qd, Dn, Dm[lane]
+        ///   A64: UMLSL Vd.4S, Vn.4H, Vm.H[lane]
+        /// </summary>
+        public static Vector128<uint> MultiplyBySelectedScalarWideningLowerAndSubtract(Vector128<uint> minuend, Vector64<ushort> left, Vector64<ushort> right, byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint32x4_t vmlsl_laneq_u16 (uint32x4_t a, uint16x4_t b, uint16x8_t v, const int lane)
+        ///   A32: VMLSL.U16 Qd, Dn, Dm[lane]
+        ///   A64: UMLSL Vd.4S, Vn.4H, Vm.H[lane]
+        /// </summary>
+        public static Vector128<uint> MultiplyBySelectedScalarWideningLowerAndSubtract(Vector128<uint> minuend, Vector64<ushort> left, Vector128<ushort> right, byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint64x2_t vmlsl_lane_u32 (uint64x2_t a, uint32x2_t b, uint32x2_t v, const int lane)
+        ///   A32: VMLSL.U32 Qd, Dn, Dm[lane]
+        ///   A64: UMLSL Vd.2D, Vn.2S, Vm.S[lane]
+        /// </summary>
+        public static Vector128<ulong> MultiplyBySelectedScalarWideningLowerAndSubtract(Vector128<ulong> minuend, Vector64<uint> left, Vector64<uint> right, byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint64x2_t vmlsl_laneq_u32 (uint64x2_t a, uint32x2_t b, uint32x4_t v, const int lane)
+        ///   A32: VMLSL.U32 Qd, Dn, Dm[lane]
+        ///   A64: UMLSL Vd.2D, Vn.2S, Vm.S[lane]
+        /// </summary>
+        public static Vector128<ulong> MultiplyBySelectedScalarWideningLowerAndSubtract(Vector128<ulong> minuend, Vector64<uint> left, Vector128<uint> right, byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
         /// float64x1_t vmul_f64 (float64x1_t a, float64x1_t b)
         ///   A32: VMUL.F64 Dd, Dn, Dm
         ///   A64: FMUL Dd, Dn, Dm
