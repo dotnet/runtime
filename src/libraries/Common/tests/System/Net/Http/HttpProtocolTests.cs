@@ -91,7 +91,8 @@ namespace System.Net.Http.Functional.Tests
                     }
                     else
                     {
-                        await Assert.ThrowsAsync<NotSupportedException>(() => TestHelper.WhenAllCompletedOrAnyFailed(getResponseTask, serverTask));
+                        // Await only client side that will throw. Nothing will get to the server side due to this exception thus do not await it at all.
+                        await Assert.ThrowsAsync<NotSupportedException>(() => getResponseTask);
                     }
                 }
             }, new LoopbackServer.Options { StreamWrapper = GetStream_ClientDisconnectOk});
