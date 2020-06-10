@@ -255,14 +255,6 @@ namespace System.Runtime.InteropServices.JavaScript
             return a is System.Array arr && arr.Rank == 1 && arr.GetLowerBound(0) == 0;
         }
 
-        public static object? GetCoreType(string coreObj)
-        {
-            Assembly asm = typeof(Runtime).Assembly;
-            Type? type = asm.GetType(coreObj);
-            return type;
-
-        }
-
         [StructLayout(LayoutKind.Explicit)]
         public struct IntPtrAndHandle
         {
