@@ -420,10 +420,8 @@ namespace System
                     {
                         Vector128<ushort> values = Vector128.Create((ushort)value);
 
-                        // 0x00100001 contant to select the first lane that is set in compareResult.
-                        // The LSB 0x0001 corresponds to 0th lane, the MSB 0x0010 corresponds to 1st lane.
-                        // The pattern is repeated for selecting other lanes.
-                        Vector128<byte> mask = Vector128.Create((uint)0x100001).AsByte();
+                        // Mask to help select first lane that is set. Each lane in the mask has different bit pattern.
+                        Vector128<byte> mask = Vector128.Create((byte)1, 4, 16, 64, 1, 4, 16, 64, 1, 4, 16, 64, 1, 4, 16, 64);
                         int matchedLane = 0;
 
                         do
@@ -431,7 +429,6 @@ namespace System
                             Debug.Assert(lengthToExamine >= Vector128<ushort>.Count);
 
                             Vector128<ushort> search = LoadVector128(ref searchSpace, offset);
-
                             Vector128<ushort> compareResult = AdvSimd.CompareEqual(values, search);
 
                             if (!TryFindFirstMatchedLane(mask, compareResult.AsByte(), ref matchedLane))
@@ -441,6 +438,7 @@ namespace System
                                 lengthToExamine -= Vector128<ushort>.Count;
                                 continue;
                             }
+
                             return (int)(offset + (matchedLane >> 2));
                         } while (lengthToExamine > 0);
                     }
