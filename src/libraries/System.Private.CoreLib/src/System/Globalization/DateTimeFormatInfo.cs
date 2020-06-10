@@ -409,7 +409,7 @@ namespace System.Globalization
 
                 if (GlobalizationMode.Invariant)
                 {
-                    Debug.Assert(calendar != null, "DateTimeFormatInfo.Calendar: calendar != null");
+                    Debug.Fail("Invariant Calendar is always readonly");
                     throw new ArgumentOutOfRangeException(nameof(value), value, SR.Argument_InvalidCalendar);
                 }
 
