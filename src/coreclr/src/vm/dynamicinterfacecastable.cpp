@@ -29,7 +29,7 @@ namespace
         args[ARGNUM_2] = BOOL_TO_ARGHOLDER(isDirectCast);
 
         BOOL isImplemented;
-        CALL_MANAGED_METHOD(isImplemented, BOOL, args);
+        CALL_MANAGED_METHOD(isImplemented, CLR_BOOL, args);
         INDEBUG(managedType = NULL); // managedType wasn't protected during the call
 
         RETURN isImplemented;

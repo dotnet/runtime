@@ -419,7 +419,7 @@ namespace System.Runtime.InteropServices
     }
     public partial interface IDynamicInterfaceCastable
     {
-        bool IsInterfaceImplemented(System.RuntimeTypeHandle interfaceType, bool isDirectCast);
+        bool IsInterfaceImplemented(System.RuntimeTypeHandle interfaceType, bool throwIfNotImplemented);
         System.RuntimeTypeHandle GetInterfaceImplementation(System.RuntimeTypeHandle interfaceType);
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.Assembly, Inherited=false)]
