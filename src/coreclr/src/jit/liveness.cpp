@@ -1645,18 +1645,19 @@ bool Compiler::fgComputeLifeUntrackedLocal(VARSET_TP&           life,
 
     for (unsigned i = varDsc.lvFieldLclStart; i < varDsc.lvFieldLclStart + varDsc.lvFieldCnt; ++i)
     {
+        LclVarDsc* fieldVarDsc = lvaGetDesc(i);
 #if !defined(TARGET_64BIT)
-        if (!varTypeIsLong(lvaTable[i].lvType) || !lvaTable[i].lvPromoted)
+        if (!varTypeIsLong(fieldVarDsc->lvType) || !fieldVarDsc->lvPromoted)
 #endif // !defined(TARGET_64BIT)
         {
-            noway_assert(lvaTable[i].lvIsStructField);
+            noway_assert(fieldVarDsc->lvIsStructField);
         }
-        if (lvaTable[i].lvTracked)
+        if (fieldVarDsc->lvTracked)
         {
-            const unsigned varIndex = lvaTable[i].lvVarIndex;
+            const unsigned varIndex = fieldVarDsc->lvVarIndex;
             noway_assert(varIndex < lvaTrackedCount);
             VarSetOps::AddElemD(this, fieldSet, varIndex);
-            if (isDef && !VarSetOps::IsMember(this, life, varIndex))
+            if (isDef && lclVarNode->IsMultiRegLclVar() && !VarSetOps::IsMember(this, life, varIndex))
             {
                 // Dead definition.
                 lclVarNode->AsLclVar()->SetLastUse(i - varDsc.lvFieldLclStart);
