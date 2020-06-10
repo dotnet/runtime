@@ -55,6 +55,9 @@ $(CLRTestBatchPreCommands)
     echo Running crossgen2: %__Command%
     %__Command%
 
+    dir %scriptPath%
+    dir %scriptPath%\multifolder
+
     set ExePath=%scriptPath%\multifolder\multifolder.dll
     set COMPlus_NativeImageSearchPaths=%scriptPath%
 
