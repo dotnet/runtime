@@ -14,7 +14,7 @@ namespace System.Text.Json.Serialization.Converters
     {
         protected override bool ReadAndCacheConstructorArgument(ref ReadStack state, ref Utf8JsonReader reader, JsonParameterInfo jsonParameterInfo)
         {
-            bool success = jsonParameterInfo.ReadJson(ref state, ref reader, out object? arg);
+            bool success = jsonParameterInfo.ConverterBase.TryReadAsObject(ref reader, jsonParameterInfo.Options, ref state, out object? arg);
 
             if (success)
             {

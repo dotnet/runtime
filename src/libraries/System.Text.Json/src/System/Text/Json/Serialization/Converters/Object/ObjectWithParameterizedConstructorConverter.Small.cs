@@ -30,33 +30,49 @@ namespace System.Text.Json.Serialization.Converters
             switch (jsonParameterInfo.Position)
             {
                 case 0:
-                    success = ((JsonParameterInfo<TArg0>)jsonParameterInfo).ReadJsonTyped(ref state, ref reader, out TArg0 arg0);
-                    if (success)
                     {
-                        arguments.Arg0 = arg0!;
+                        var info = (JsonParameterInfo<TArg0>)jsonParameterInfo;
+                        var converter = (JsonConverter<TArg0>)jsonParameterInfo.ConverterBase;
+                        success = converter.TryRead(ref reader, info.RuntimePropertyType, info.Options, ref state, out TArg0 arg0);
+                        if (success)
+                        {
+                            arguments.Arg0 = arg0!;
+                        }
+                        break;
                     }
-                    break;
                 case 1:
-                    success = ((JsonParameterInfo<TArg1>)jsonParameterInfo).ReadJsonTyped(ref state, ref reader, out TArg1 arg1);
-                    if (success)
                     {
-                        arguments.Arg1 = arg1!;
+                        var info = (JsonParameterInfo<TArg1>)jsonParameterInfo;
+                        var converter = (JsonConverter<TArg1>)jsonParameterInfo.ConverterBase;
+                        success = converter.TryRead(ref reader, info.RuntimePropertyType, info.Options, ref state, out TArg1 arg1);
+                        if (success)
+                        {
+                            arguments.Arg1 = arg1!;
+                        }
+                        break;
                     }
-                    break;
                 case 2:
-                    success = ((JsonParameterInfo<TArg2>)jsonParameterInfo).ReadJsonTyped(ref state, ref reader, out TArg2 arg2);
-                    if (success)
                     {
-                        arguments.Arg2 = arg2!;
+                        var info = (JsonParameterInfo<TArg2>)jsonParameterInfo;
+                        var converter = (JsonConverter<TArg2>)jsonParameterInfo.ConverterBase;
+                        success = converter.TryRead(ref reader, info.RuntimePropertyType, info.Options, ref state, out TArg2 arg2);
+                        if (success)
+                        {
+                            arguments.Arg2 = arg2!;
+                        }
+                        break;
                     }
-                    break;
                 case 3:
-                    success = ((JsonParameterInfo<TArg3>)jsonParameterInfo).ReadJsonTyped(ref state, ref reader, out TArg3 arg3);
-                    if (success)
                     {
-                        arguments.Arg3 = arg3!;
+                        var info = (JsonParameterInfo<TArg3>)jsonParameterInfo;
+                        var converter = (JsonConverter<TArg3>)jsonParameterInfo.ConverterBase;
+                        success = converter.TryRead(ref reader, info.RuntimePropertyType, info.Options, ref state, out TArg3 arg3);
+                        if (success)
+                        {
+                            arguments.Arg3 = arg3!;
+                        }
+                        break;
                     }
-                    break;
                 default:
                     Debug.Fail("More than 4 params: we should be in override for LargeObjectWithParameterizedConstructorConverter.");
                     throw new InvalidOperationException();
