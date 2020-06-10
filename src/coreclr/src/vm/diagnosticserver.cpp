@@ -86,7 +86,7 @@ DWORD WINAPI DiagnosticServer::DiagnosticsServerThread(LPVOID)
 
 #ifdef FEATURE_PROFAPI_ATTACH_DETACH
             case DiagnosticsIpc::DiagnosticServerCommandSet::Profiler:
-                ProfilerDiagnosticProtocolHelper::AttachProfiler(message, pStream);
+                ProfilerDiagnosticProtocolHelper::HandleIpcMessage(message, pStream);
                 break;
 #endif // FEATURE_PROFAPI_ATTACH_DETACH
 

@@ -128,12 +128,6 @@ void EventPipeProtocolHelper::HandleIpcMessage(DiagnosticsIpc::IpcMessage& messa
         EventPipeProtocolHelper::CollectTracing2(message, pStream);
         break;
     case EventPipeCommandId::StopTracing:
-        if (!g_fEEStarted)
-        {
-            DiagnosticsIpc::IpcMessage::SendErrorMessage(pStream, CORDIAGIPC_E_UNKNOWN_ERROR);
-            delete pStream;
-            return;
-        }
         EventPipeProtocolHelper::StopTracing(message, pStream);
         break;
 

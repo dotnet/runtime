@@ -450,7 +450,8 @@ void EventPipe::Disable(EventPipeSessionID id)
     }
     CONTRACTL_END;
 
-    SetupThread();
+    if (s_CanStartThreads)
+        SetupThread();
 
     if (id == 0)
         return;
@@ -520,7 +521,7 @@ void EventPipe::DisableInternal(EventPipeSessionID id, EventPipeProviderCallback
     pSession->Disable(); // WriteAllBuffersToFile, and remove providers.
 
     // Do rundown before fully stopping the session unless rundown wasn't requested
-    if (pSession->RundownRequested())
+    if (pSession->RundownRequested() && s_CanStartThreads)
     {
         pSession->EnableRundown(); // Set Rundown provider.
 
