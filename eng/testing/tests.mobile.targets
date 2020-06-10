@@ -117,7 +117,8 @@
 
     <Copy SourceFiles="@(_appFiles)"
           DestinationFolder="$(TestArchiveTestsDir)/%(RecursiveDir)"
-          SkipUnchangedFiles="true"/>
+          SkipUnchangedFiles="true"
+          Condition="'$(ArchiveTests)' == 'true' and '$(IgnoreForCI)' != 'true'" />
 
   </Target>
 
