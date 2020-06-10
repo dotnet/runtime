@@ -450,7 +450,6 @@ namespace System.Net.Sockets
             [MethodImpl(MethodImplOptions.NoInlining)]
             public bool HandleSocketEvents(int numEvents)
             {
-                SocketAsyncContext? context = null;
                 bool enqueuedEvent = false;
                 foreach (var socketEvent in new ReadOnlySpan<Interop.Sys.SocketEvent>(Buffer, numEvents))
                 {
@@ -459,7 +458,7 @@ namespace System.Net.Sockets
                     if (_handleToContextMap.TryGetValue(handle, out SocketAsyncContextWrapper contextWrapper))
                     {
                         Debug.Assert(handle.ToInt64() < MaxHandles.ToInt64(), $"Unexpected values: handle={handle}, MaxHandles={MaxHandles}");
-                        context = contextWrapper.Context;
+                        SocketAsyncContext context = contextWrapper.Context;
 
                         Interop.Sys.SocketEvents events = context.HandleSyncEventsSpeculatively(socketEvent.Events);
                         if (events != Interop.Sys.SocketEvents.None)
