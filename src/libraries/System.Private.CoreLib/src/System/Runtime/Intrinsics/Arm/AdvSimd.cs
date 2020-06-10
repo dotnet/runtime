@@ -1233,6 +1233,42 @@ namespace System.Runtime.Intrinsics.Arm
             public static Vector128<float> MultiplyExtended(Vector128<float> left, Vector128<float> right) => MultiplyExtended(left, right);
 
             /// <summary>
+            /// float64x2_t vmulxq_lane_f64 (float64x2_t a, float64x1_t v, const int lane)
+            ///   A64: FMULX Vd.2D, Vn.2D, Vm.D[0]
+            /// </summary>
+            public static Vector128<double> MultiplyExtendedByScalar(Vector128<double> left, Vector64<double> right) => MultiplyExtendedByScalar(left, right);
+
+            /// <summary>
+            /// float32x2_t vmulx_lane_f32 (float32x2_t a, float32x2_t v, const int lane)
+            ///   A64: FMULX Vd.2S, Vn.2S, Vm.S[lane]
+            /// </summary>
+            public static Vector64<float> MultiplyExtendedBySelectedScalar(Vector64<float> left, Vector64<float> right, byte rightIndex) => MultiplyExtendedBySelectedScalar(left, right, rightIndex);
+
+            /// <summary>
+            /// float32x2_t vmulx_laneq_f32 (float32x2_t a, float32x4_t v, const int lane)
+            ///   A64: FMULX Vd.2S, Vn.2S, Vm.S[lane]
+            /// </summary>
+            public static Vector64<float> MultiplyExtendedBySelectedScalar(Vector64<float> left, Vector128<float> right, byte rightIndex) => MultiplyExtendedBySelectedScalar(left, right, rightIndex);
+
+            /// <summary>
+            /// float64x2_t vmulxq_laneq_f64 (float64x2_t a, float64x2_t v, const int lane)
+            ///   A64: FMULX Vd.2D, Vn.2D, Vm.D[lane]
+            /// </summary>
+            public static Vector128<double> MultiplyExtendedBySelectedScalar(Vector128<double> left, Vector128<double> right, byte rightIndex) => MultiplyExtendedBySelectedScalar(left, right, rightIndex);
+
+            /// <summary>
+            /// float32x4_t vmulxq_lane_f32 (float32x4_t a, float32x2_t v, const int lane)
+            ///   A64: FMULX Vd.4S, Vn.4S, Vm.S[lane]
+            /// </summary>
+            public static Vector128<float> MultiplyExtendedBySelectedScalar(Vector128<float> left, Vector64<float> right, byte rightIndex) => MultiplyExtendedBySelectedScalar(left, right, rightIndex);
+
+            /// <summary>
+            /// float32x4_t vmulxq_laneq_f32 (float32x4_t a, float32x4_t v, const int lane)
+            ///   A64: FMULX Vd.4S, Vn.4S, Vm.S[lane]
+            /// </summary>
+            public static Vector128<float> MultiplyExtendedBySelectedScalar(Vector128<float> left, Vector128<float> right, byte rightIndex) => MultiplyExtendedBySelectedScalar(left, right, rightIndex);
+
+            /// <summary>
             /// float64x1_t vmulx_f64 (float64x1_t a, float64x1_t b)
             ///   A64: FMULX Dd, Dn, Dm
             /// </summary>
