@@ -288,6 +288,7 @@ namespace System.Net.Security
                             // If we failed without OS sending out alert, inject one here to be consistent across platforms.
                             byte[] alert = TlsFrameHelper.CreateAlertFrame(_lastFrame.Header.Version, TlsAlertDescription.ProtocolVersion);
                             await adapter.WriteAsync(alert, 0, alert.Length).ConfigureAwait(false);
+                            await adapter.FlushAsync().ConfigureAwait(false);
                         }
                         else if (_lastFrame.Header.Type == TlsContentType.Alert && _lastAlertDescription != TlsAlertDescription.CloseNotify &&
                                  message.Status.ErrorCode == SecurityStatusPalErrorCode.IllegalMessage)
