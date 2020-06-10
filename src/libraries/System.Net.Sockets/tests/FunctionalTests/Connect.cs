@@ -128,7 +128,7 @@ namespace System.Net.Sockets.Tests
                 }
                 else
                 {
-                    SocketException se = await Assert.ThrowsAsync<SocketException>(() => ConnectAsync(client, new IPEndPoint(IPAddress.Loopback, port)));
+                    SocketException se = await Assert.ThrowsAnyAsync<SocketException>(() => ConnectAsync(client, new IPEndPoint(IPAddress.Loopback, port)));
                     Assert.Equal(SocketError.IsConnected, se.SocketErrorCode);
                 }
             }
