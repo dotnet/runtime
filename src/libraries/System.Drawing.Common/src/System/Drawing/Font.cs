@@ -29,7 +29,7 @@ namespace System.Drawing
         private byte _gdiCharSet = SafeNativeMethods.DEFAULT_CHARSET;
         private bool _gdiVerticalFont;
         private string _systemFontName = "";
-        private string _originalFontName = null!;
+        private string? _originalFontName;
 
         // Return value is in Unit (the unit the font was created in)
         /// <summary>
@@ -108,7 +108,7 @@ namespace System.Drawing
         /// This property is required by the framework and not intended to be used directly.
         /// </summary>
         [Browsable(false)]
-        public string OriginalFontName => _originalFontName;
+        public string? OriginalFontName => _originalFontName;
 
         /// <summary>
         /// Gets the name of this <see cref='Font'/>.

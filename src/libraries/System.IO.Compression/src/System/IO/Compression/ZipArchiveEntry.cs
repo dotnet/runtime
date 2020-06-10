@@ -36,8 +36,8 @@ namespace System.IO.Compression
         private bool _everOpenedForWrite;
         private Stream? _outstandingWriteStream;
         private uint _externalFileAttr;
-        private string _storedEntryName = null!;  // indirectly set in constructor using FullName property
-        private byte[] _storedEntryNameBytes = null!;
+        private string _storedEntryName;
+        private byte[] _storedEntryNameBytes;
         // only apply to update mode
         private List<ZipGenericExtraField>? _cdUnknownExtraFields;
         private List<ZipGenericExtraField>? _lhUnknownExtraFields;
@@ -185,6 +185,8 @@ namespace System.IO.Compression
                 return _storedEntryName;
             }
 
+            [MemberNotNull(nameof(_storedEntryNameBytes))]
+            [MemberNotNull(nameof(_storedEntryName))]
             private set
             {
                 if (value == null)

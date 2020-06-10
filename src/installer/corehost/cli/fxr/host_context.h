@@ -27,12 +27,12 @@ public: // static
     static int create(
         const hostpolicy_contract_t &hostpolicy_contract,
         corehost_init_t &init,
-        int32_t initialization_options,
+        uint32_t initialization_options,
         /*out*/ std::unique_ptr<host_context_t> &context);
     static int create_secondary(
         const hostpolicy_contract_t &hostpolicy_contract,
         std::unordered_map<pal::string_t, pal::string_t> &config_properties,
-        int32_t initialization_options,
+        uint32_t initialization_options,
         /*out*/ std::unique_ptr<host_context_t> &context);
     static host_context_t* from_handle(const hostfxr_handle handle, bool allow_invalid_type = false);
 

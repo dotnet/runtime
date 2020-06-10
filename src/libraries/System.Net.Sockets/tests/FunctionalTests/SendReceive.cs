@@ -1567,7 +1567,7 @@ namespace System.Net.Sockets.Tests
         public SendReceiveSync(ITestOutputHelper output) : base(output) { }
 
         [OuterLoop]
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void BlockingRead_DoesntRequireAnotherThreadPoolThread()
         {
             RemoteExecutor.Invoke(() =>

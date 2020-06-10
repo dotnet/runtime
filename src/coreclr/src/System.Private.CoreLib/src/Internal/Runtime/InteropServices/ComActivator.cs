@@ -703,6 +703,7 @@ $@"{nameof(UnregisterClassForTypeInternal)} arguments:
 
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
         private readonly Type _licInfoHelper;
+
         private readonly MethodInfo _licInfoHelperContains;
 
         // RCW Activation

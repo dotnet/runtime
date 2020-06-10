@@ -81,8 +81,6 @@ var BindingSupportLib = {
 			this.bind_js_obj = get_method ("BindJSObject");
 			this.bind_core_clr_obj = get_method ("BindCoreCLRObject");
 			this.bind_existing_obj = get_method ("BindExistingObject");
-			this.unbind_js_obj = get_method ("UnBindJSObject");
-			this.unbind_js_obj_and_free = get_method ("UnBindJSObjectAndFree");			
 			this.unbind_raw_obj_and_free = get_method ("UnBindRawJSObjectAndFree");			
 			this.get_js_id = get_method ("GetJSObjectId");
 			this.get_raw_mono_obj = get_method ("GetDotNetObject");
@@ -529,16 +527,6 @@ var BindingSupportLib = {
 			return this.call_method (this.bind_core_clr_obj, null, "ii", [js_id, gc_handle]);
 		},
 
-		wasm_unbind_js_obj: function (js_obj_id)
-		{
-			this.call_method (this.unbind_js_obj, null, "i", [js_obj_id]);
-		},		
-
-		wasm_unbind_js_obj_and_free: function (js_obj_id)
-		{
-			this.call_method (this.unbind_js_obj_and_free, null, "i", [js_obj_id]);
-		},		
-
 		wasm_get_js_id: function (mono_obj)
 		{
 			return this.call_method (this.get_js_id, null, "m", [mono_obj]);
@@ -739,7 +727,7 @@ var BindingSupportLib = {
 
 			if (!this.delegate_dynamic_invoke) {
 				if (!this.corlib)
-					this.corlib = this.assembly_load ("mscorlib");
+					this.corlib = this.assembly_load ("System.Private.CoreLib");
 				if (!this.delegate_class)
 					this.delegate_class = this.find_class (this.corlib, "System", "Delegate");
 				if (!this.delegate_class)

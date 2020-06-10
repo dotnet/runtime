@@ -13,7 +13,7 @@
 
   <!-- Explicitly build the runtime.depproj project first to correctly set up the testhost. -->
   <ItemGroup>
-    <RuntimeProject Include="restore\runtime\runtime.depproj" />
+    <RuntimeProject Include="$(MSBuildThisFileDirectory)restore\runtime\runtime.depproj" />
     <ProjectReference Include="@(RuntimeProject)" Condition="'$(MSBuildRestoreSessionId)' != ''" />
 
     <ProjectReference Include="$(CommonTestPath)AppleTestRunner\AppleTestRunner.csproj" Condition="'$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'tvOS'"/>
@@ -35,7 +35,7 @@
 
   <!-- Microsoft.XmlSerializer.Generator should not be marked as a platform item and be copy-local instead. -->
   <Target Name="CollectSharedFrameworkRuntimeFiles"
-          Condition="'$(PlatformManifestFile)' != '' and '$(BuildingNETCoreAppVertical)' == 'true'">
+          Condition="'$(BuildTargetFramework)' == '$(NetCoreAppCurrent)'">
     <ItemGroup>
       <_manualSharedFrameworkRuntimeFiles Include="System.Security.Cryptography.Native.OpenSsl.so" />
       <_manualSharedFrameworkRuntimeFiles Include="System.Security.Cryptography.Native.Apple.dylib" />
@@ -54,11 +54,16 @@
           Condition="'$(PlatformManifestFile)' != '' and '$(BuildTargetFramework)' == '$(NetCoreAppCurrent)'"
           AfterTargets="RestoreTestHost">
     <GenerateFileVersionProps Files="@(SharedFrameworkRuntimeFiles)"
-                              PackageId="Microsoft.NETCore.App"
+                              PackageId="$(SharedFrameworkName)"
                               PackageVersion="$(ProductVersion)"
                               PlatformManifestFile="$(PlatformManifestFile)"
-                              PreferredPackages="Microsoft.NetCore.App"
+                              PreferredPackages="$(SharedFrameworkName)"
                               PermitDllAndExeFilesLackingFileVersion="true" />
+
+    <Copy SourceFiles="$(PlatformManifestFile)"
+          DestinationFolder="$(MicrosoftNetCoreAppRefPackDataDir)"
+          UseHardlinksIfPossible="true"
+          SkipUnchangedFiles="true" />
   </Target>
 
   <!--
@@ -77,20 +82,20 @@
 
   <UsingTask TaskName="CreateFrameworkListFile" AssemblyFile="$(DotNetBuildTasksSharedFrameworkTaskFile)"/>
   <Target Name="GenerateFrameworkListFile"
-          Condition="'$(BinPlaceTestRuntimePack)' == 'true'"
+          Condition="'$(BuildTargetFramework)' == '$(NetCoreAppCurrent)'"
           AfterTargets="RestoreTestHost">
     <PropertyGroup>
-      <FrameworkListFilename>RuntimeList.xml</FrameworkListFilename>
-      <FrameworkListFile>$(RuntimePackDir)/data/$(FrameworkListFilename)</FrameworkListFile>
+      <_frameworkListFile>$(MicrosoftNetCoreAppRuntimePackDir)data\RuntimeList.xml</_frameworkListFile>
+      <_targetFrameworkPath>runtimes/$(PackageRID)/</_targetFrameworkPath>
     </PropertyGroup>
 
     <ItemGroup>
-      <_runtimePackLibFiles Include="$(RuntimePackLibDir)*.*">
-        <TargetPath>$(RuntimePackTargetFrameworkPath)/lib/$(NetCoreAppCurrent)</TargetPath>
+      <_runtimePackLibFiles Include="$(MicrosoftNetCoreAppRuntimePackRidLibTfmDir)*.*">
+        <TargetPath>$(_targetFrameworkPath)lib/$(NetCoreAppCurrent)</TargetPath>
         <IsSymbolFile Condition="$([System.String]::Copy('%(Identity)').EndsWith('pdb'))">true</IsSymbolFile>
       </_runtimePackLibFiles>
-      <_runtimePackNativeFiles Include="$(RuntimePackNativeDir)*.*">
-        <TargetPath>$(RuntimePackTargetFrameworkPath)/native</TargetPath>
+      <_runtimePackNativeFiles Include="$(MicrosoftNetCoreAppRuntimePackNativeDir)*.*">
+        <TargetPath>$(_targetFrameworkPath)native</TargetPath>
         <IsNative>true</IsNative>
       </_runtimePackNativeFiles>
 
@@ -100,11 +105,15 @@
       <FrameworkListRootAttributes Include="FrameworkName" Value="$(SharedFrameworkName)" />
     </ItemGroup>
 
-    <CreateFrameworkListFile
-      Files="@(_runtimePackLibFiles);@(_runtimePackNativeFiles)"
-      TargetFile="$(FrameworkListFile)"
-      TargetFilePrefixes="ref/;runtimes/"
-      RootAttributes="@(FrameworkListRootAttributes)" />
+    <CreateFrameworkListFile Files="@(_runtimePackLibFiles);@(_runtimePackNativeFiles)"
+                             TargetFile="$(_frameworkListFile)"
+                             TargetFilePrefixes="ref/;runtimes/"
+                             RootAttributes="@(FrameworkListRootAttributes)" />
+
+    <Copy SourceFiles="$(_frameworkListFile)"
+          DestinationFolder="$(MicrosoftNetCoreAppRefPackDataDir)"
+          UseHardlinksIfPossible="true"
+          SkipUnchangedFiles="true" />
   </Target>
 
   <Import Project="Sdk.targets" Sdk="Microsoft.DotNet.Build.Tasks.SharedFramework.Sdk" />

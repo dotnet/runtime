@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Formats.Asn1;
 using System.Security.Cryptography;
 using System.Security.Cryptography.Asn1;
 using System.Text;
@@ -139,7 +140,7 @@ namespace Internal.Cryptography
 
                 return output.ToString();
             }
-            catch (CryptographicException)
+            catch (AsnContentException)
             {
                 return null;
             }

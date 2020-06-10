@@ -152,10 +152,7 @@ namespace System.Runtime.InteropServices.JavaScript
 
         public override bool Equals(object? obj) => obj is JSObject other && JSHandle == other.JSHandle;
 
-        public override int GetHashCode()
-        {
-            return JSHandle;
-        }
+        public override int GetHashCode() => JSHandle;
 
         // We should not provide a finalizer - SafeHandle's critical finalizer will call ReleaseHandle inside a CER for us.
         protected override bool ReleaseHandle()
@@ -167,8 +164,8 @@ namespace System.Runtime.InteropServices.JavaScript
             try
             {
 #endif
-                FreeHandle();
-                ret = true;
+            FreeHandle();
+            ret = true;
 
 #if DEBUG_HANDLE
             }
@@ -191,8 +188,7 @@ namespace System.Runtime.InteropServices.JavaScript
 
         public override string ToString()
         {
-            return $"(js-obj js '{(IntPtr)AnyRefHandle}' raw '{RawObject != null}' weak_raw '{WeakRawObject != null}')";
+            return $"(js-obj js '{Int32Handle}' raw '{RawObject != null}' weak_raw '{WeakRawObject != null}')";
         }
-
     }
 }

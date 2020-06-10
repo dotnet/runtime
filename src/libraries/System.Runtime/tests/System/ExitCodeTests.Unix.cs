@@ -16,7 +16,7 @@ namespace System.Tests
         [DllImport("libc", SetLastError = true)]
         private static extern int kill(int pid, int sig);
 
-        [Theory]
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/31656", TestRuntimes.Mono)]
         [InlineData(null)]
         [InlineData(0)]

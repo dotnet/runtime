@@ -6,6 +6,7 @@ using Microsoft.Win32.SafeHandles;
 using System;
 using System.ComponentModel;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -290,10 +291,10 @@ namespace System.Security.Principal
         private IdentifierAuthority _identifierAuthority;
         // values guaranteed to be non-null on account of CreateFromParts()
         // method called by every constructor in this class.
-        private int[] _subAuthorities = null!;
-        private byte[] _binaryForm = null!;
+        private int[] _subAuthorities;
+        private byte[] _binaryForm;
         private SecurityIdentifier? _accountDomainSid;
-        private bool _accountDomainSidInitialized = false;
+        private bool _accountDomainSidInitialized;
 
         //
         // Computed attributes of a SID
@@ -312,6 +313,8 @@ namespace System.Security.Principal
         //       the typecast
         //
 
+        [MemberNotNull(nameof(_binaryForm))]
+        [MemberNotNull(nameof(_subAuthorities))]
 #if NETCOREAPP2_0
         private void CreateFromParts(IdentifierAuthority identifierAuthority, int[] subAuthorities)
 #else
@@ -396,6 +399,8 @@ namespace System.Security.Principal
             }
         }
 
+        [MemberNotNull(nameof(_binaryForm))]
+        [MemberNotNull(nameof(_subAuthorities))]
         private void CreateFromBinaryForm(byte[] binaryForm, int offset)
         {
             //
