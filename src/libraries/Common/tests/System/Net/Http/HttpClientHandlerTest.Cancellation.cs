@@ -538,6 +538,8 @@ namespace System.Net.Http.Functional.Tests
             {
                 return;
             }
+            // Skipping test for a sync scenario becasue DelegateStream drops the original cancellationToken when it calls Read/Write methods.
+            // As a result, ReadAsyncFunc receives default in cancellationToken, which will never get signaled through the cancellationTokenSource.
             if (!TestAsync)
             {
                 return;
