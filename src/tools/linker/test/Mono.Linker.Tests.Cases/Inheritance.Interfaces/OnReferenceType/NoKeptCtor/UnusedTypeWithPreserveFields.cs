@@ -1,7 +1,9 @@
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
+using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
 namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces.OnReferenceType.NoKeptCtor
 {
+	[SetupLinkerDescriptorFile ("UnusedTypeWithPreserveFields.xml")]
 	public class UnusedTypeWithPreserveFields
 	{
 		public static void Main ()

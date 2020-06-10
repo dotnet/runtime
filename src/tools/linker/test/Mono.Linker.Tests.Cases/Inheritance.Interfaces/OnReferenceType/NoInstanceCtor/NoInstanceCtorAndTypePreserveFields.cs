@@ -21,6 +21,7 @@ namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces.OnReferenceType.NoInsta
 	[RemovedMemberInAssembly ("library",
 		"Mono.Linker.Tests.Cases.Inheritance.Interfaces.OnReferenceType.NoInstanceCtor.Dependencies.NoInstanceCtorAndAssemblyPreserveAll_Lib/A",
 		"Bar()")]
+	[SetupLinkerDescriptorFile ("NoInstanceCtorAndTypePreserveFields.xml")]
 
 	// pedump reports this is valid with the following error.
 	//

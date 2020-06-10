@@ -4,6 +4,7 @@ using Mono.Linker.Tests.Cases.Expectations.Metadata;
 namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces.OnReferenceType.NoKeptCtor
 {
 	[SetupLinkerArgument ("--enable-opt", "unreachablebodies")]
+	[SetupLinkerDescriptorFile ("UnusedTypeHasExplicitInterfacePropertyPreservedViaXml.xml")]
 	public class UnusedTypeHasExplicitInterfacePropertyPreservedViaXml
 	{
 		public static void Main ()

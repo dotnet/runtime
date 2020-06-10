@@ -5,6 +5,7 @@ using Mono.Linker.Tests.Cases.Expectations.Metadata;
 namespace Mono.Linker.Tests.Cases.Attributes.OnlyKeepUsed
 {
 	[SetupLinkerArgument ("--used-attrs-only", "true")]
+	[SetupLinkerDescriptorFile ("UnusedAttributePreservedViaLinkXmlIsKept.xml")]
 	class UnusedAttributePreservedViaLinkXmlIsKept
 	{
 		static void Main ()

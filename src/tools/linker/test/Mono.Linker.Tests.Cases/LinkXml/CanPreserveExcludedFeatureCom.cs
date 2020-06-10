@@ -9,6 +9,7 @@ namespace Mono.Linker.Tests.Cases.LinkXml
 	[IgnoreTestCase ("--exclude-feature is not supported on .NET Core")]
 #endif
 	[SetupLinkerArgument ("--exclude-feature", "com")]
+	[SetupLinkerDescriptorFile ("CanPreserveExcludedFeatureCom.xml")]
 	public class CanPreserveExcludedFeatureCom
 	{
 		public static void Main ()

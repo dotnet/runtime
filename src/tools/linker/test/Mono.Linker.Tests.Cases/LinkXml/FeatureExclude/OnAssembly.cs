@@ -12,6 +12,7 @@ namespace Mono.Linker.Tests.Cases.LinkXml.FeatureExclude
 	[SetupCompileBefore ("library2.dll", new[] { typeof (OnAssembly_Lib2) })]
 	[RemovedTypeInAssembly ("library1.dll", typeof (OnAssembly_Lib1.FeatureOneClass))]
 	[KeptTypeInAssembly ("library2.dll", typeof (OnAssembly_Lib2.FeatureTwoClass))]
+	[SetupLinkerDescriptorFile ("OnAssembly.xml")]
 	public class OnAssembly
 	{
 		public static void Main ()

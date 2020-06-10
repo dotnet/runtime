@@ -1,6 +1,0 @@
-﻿<linker>
-  <assembly fullname="test, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null">
-    <type fullname="Mono.Linker.Tests.Cases.LinkXml.PreserveBackingFieldWhenPropertyIsKept" preserve="fields">
-    </type>
-  </assembly>
-</linker>

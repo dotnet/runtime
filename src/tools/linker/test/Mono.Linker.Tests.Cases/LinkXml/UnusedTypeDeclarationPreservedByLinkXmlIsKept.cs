@@ -1,8 +1,10 @@
 ﻿using System;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
+using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
 namespace Mono.Linker.Tests.Cases.LinkXml
 {
+	[SetupLinkerDescriptorFile ("UnusedTypeDeclarationPreservedByLinkXmlIsKept.xml")]
 	public class UnusedTypeDeclarationPreservedByLinkXmlIsKept
 	{
 		public static void Main ()

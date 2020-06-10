@@ -4,6 +4,7 @@ using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
 namespace Mono.Linker.Tests.Cases.LinkXml
 {
+	[SetupLinkerDescriptorFile ("PreserveIndividualMembersOfNonRequiredType.xml")]
 	class PreserveIndividualMembersOfNonRequiredType
 	{
 		public static void Main ()

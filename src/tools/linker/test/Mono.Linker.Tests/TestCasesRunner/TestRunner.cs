@@ -109,8 +109,6 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			var caseDefinedOptions = metadataProvider.GetLinkerOptions (sandbox.InputDirectory);
 
 			builder.AddOutputDirectory (sandbox.OutputDirectory);
-			foreach (var linkXmlFile in sandbox.LinkXmlFiles)
-				builder.AddLinkXmlFile (linkXmlFile);
 
 			foreach (var rspFile in sandbox.ResponseFiles)
 				builder.AddResponseFile (rspFile);

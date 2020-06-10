@@ -1,7 +1,9 @@
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
+using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
 namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces.OnReferenceType
 {
+	[SetupLinkerDescriptorFile ("InterfaceMarkOrderingDoesNotMatter3.xml")]
 	public class InterfaceMarkOrderingDoesNotMatter3
 	{
 		public static void Main ()

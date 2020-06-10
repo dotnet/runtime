@@ -12,6 +12,7 @@ namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces.OnReferenceType.NoInsta
 		"Mono.Linker.Tests.Cases.Inheritance.Interfaces.OnReferenceType.NoInstanceCtor.Dependencies.NoInstanceCtorAndAssemblyPreserveAll_Lib/A",
 		"library",
 		"Mono.Linker.Tests.Cases.Inheritance.Interfaces.OnReferenceType.NoInstanceCtor.Dependencies.NoInstanceCtorAndAssemblyPreserveAll_Lib/IBar")]
+	[SetupLinkerDescriptorFile ("NoInstanceCtorAndTypePreserveNone.xml")]
 	// pedump reports this is valid with the following error.
 	//
 	// Assertion at metadata.c:1073, condition `index < meta->heap_blob.size' not met

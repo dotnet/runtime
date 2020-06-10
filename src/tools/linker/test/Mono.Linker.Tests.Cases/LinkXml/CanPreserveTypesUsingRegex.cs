@@ -1,9 +1,11 @@
 ﻿using System;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
+using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
 namespace Mono.Linker.Tests.Cases.LinkXml
 {
 	[KeptMember (".ctor()")]
+	[SetupLinkerDescriptorFile ("CanPreserveTypesUsingRegex.xml")]
 	class CanPreserveTypesUsingRegex
 	{
 		public static void Main ()
