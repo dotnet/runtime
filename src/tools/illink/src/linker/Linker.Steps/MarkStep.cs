@@ -613,7 +613,7 @@ namespace Mono.Linker.Steps
 
 			IEnumerable<IMemberDefinition> members;
 			if (dynamicDependency.MemberSignature is string memberSignature) {
-				members = DocumentationSignatureParser.GetMembersByDocumentationSignature (type, memberSignature);
+				members = DocumentationSignatureParser.GetMembersByDocumentationSignature (type, memberSignature, acceptName: true);
 				if (!members.Any ()) {
 					_context.LogWarning ($"No members were resolved for '{memberSignature}' in DynamicDependencyAttribute on '{context}'", 2037, MessageOrigin.TryGetOrigin (context.Resolve ()));
 					return;

@@ -65,13 +65,13 @@ namespace Mono.Linker
 		}
 
 		// Takes a member signature (not including the declaring type) and returns the matching members on the type.
-		public static IEnumerable<IMemberDefinition> GetMembersByDocumentationSignature (TypeDefinition type, string signature)
+		public static IEnumerable<IMemberDefinition> GetMembersByDocumentationSignature (TypeDefinition type, string signature, bool acceptName = false)
 		{
 			int index = 0;
 			var results = new List<IMemberDefinition> ();
 			var nameBuilder = new StringBuilder ();
 			var (name, arity) = DocumentationSignatureParser.ParseTypeOrNamespaceName (signature, ref index, nameBuilder);
-			DocumentationSignatureParser.GetMatchingMembers (signature, ref index, type.Module, type, name, arity, DocumentationSignatureParser.MemberType.All, results);
+			DocumentationSignatureParser.GetMatchingMembers (signature, ref index, type.Module, type, name, arity, DocumentationSignatureParser.MemberType.All, results, acceptName);
 			return results;
 		}
 
@@ -195,7 +195,7 @@ namespace Mono.Linker
 		// Gets all members of the specified member kinds of the containing type, with
 		// mathing name, arity, and signature at the current index (for methods and properties).
 		// This will also resolve types from the given module if no containing type is given.
-		public static void GetMatchingMembers (string id, ref int index, ModuleDefinition module, TypeDefinition? containingType, string memberName, int arity, MemberType memberTypes, List<IMemberDefinition> results)
+		public static void GetMatchingMembers (string id, ref int index, ModuleDefinition module, TypeDefinition? containingType, string memberName, int arity, MemberType memberTypes, List<IMemberDefinition> results, bool acceptName = false)
 		{
 			if (memberTypes.HasFlag (MemberType.Type))
 				GetMatchingTypes (module, containingType, memberName, arity, results);
@@ -207,13 +207,13 @@ namespace Mono.Linker
 			int endIndex = index;
 
 			if (memberTypes.HasFlag (MemberType.Method)) {
-				GetMatchingMethods (id, ref index, containingType, memberName, arity, results);
+				GetMatchingMethods (id, ref index, containingType, memberName, arity, results, acceptName);
 				endIndex = index;
 				index = startIndex;
 			}
 
 			if (memberTypes.HasFlag (MemberType.Property)) {
-				GetMatchingProperties (id, ref index, containingType, memberName, results);
+				GetMatchingProperties (id, ref index, containingType, memberName, results, acceptName);
 				endIndex = index;
 				index = startIndex;
 			}
@@ -527,7 +527,7 @@ namespace Mono.Linker
 			}
 		}
 
-		static void GetMatchingMethods (string id, ref int index, TypeDefinition? type, string memberName, int arity, List<IMemberDefinition> results)
+		static void GetMatchingMethods (string id, ref int index, TypeDefinition? type, string memberName, int arity, List<IMemberDefinition> results, bool acceptName = false)
 		{
 			if (type == null)
 				return;
@@ -546,7 +546,9 @@ namespace Mono.Linker
 					continue;
 
 				parameters.Clear ();
+				bool isNameOnly = true;
 				if (PeekNextChar (id, index) == '(') {
+					isNameOnly = false;
 					// if the parameters cannot be identified (some error), then the symbol cannot match, try next method symbol
 					if (!ParseParameterList (id, ref index, method, parameters))
 						continue;
@@ -554,30 +556,31 @@ namespace Mono.Linker
 
 				// note: this allows extra characters at the end
 
-				if (!AllParametersMatch (method.Parameters, parameters))
-					continue;
-
 				if (PeekNextChar (id, index) == '~') {
+					isNameOnly = false;
 					index++;
 					string? returnType = ParseTypeSymbol (id, ref index, method);
 					if (returnType == null)
 						continue;
 
 					// if return type is specified, then it must match
-					if (GetSignaturePart (method.ReturnType) == returnType) {
-						results.Add (method);
-						endIndex = index;
-					}
-				} else {
-					// no return type specified, then any matches
-					results.Add (method);
-					endIndex = index;
+					if (GetSignaturePart (method.ReturnType) != returnType)
+						continue;
 				}
+
+				if (!isNameOnly || !acceptName) {
+					// check parameters unless we are matching a name only
+					if (!AllParametersMatch (method.Parameters, parameters))
+						continue;
+				}
+
+				results.Add (method);
+				endIndex = index;
 			}
 			index = endIndex;
 		}
 
-		static void GetMatchingProperties (string id, ref int index, TypeDefinition? type, string memberName, List<IMemberDefinition> results)
+		static void GetMatchingProperties (string id, ref int index, TypeDefinition? type, string memberName, List<IMemberDefinition> results, bool acceptName = false)
 		{
 			if (type == null)
 				return;
@@ -598,16 +601,16 @@ namespace Mono.Linker
 					} else {
 						parameters.Clear ();
 					}
-
-					if (ParseParameterList (id, ref index, property.DeclaringType, parameters)
-						&& AllParametersMatch (property.Parameters, parameters)) {
-						results.Add (property);
-						endIndex = index;
-					}
-				} else if (property.Parameters.Count == 0) {
-					results.Add (property);
-					endIndex = index;
+					if (!ParseParameterList (id, ref index, property.DeclaringType, parameters))
+						continue;
+					if (!AllParametersMatch (property.Parameters, parameters))
+						continue;
+				} else {
+					if (!acceptName && property.Parameters.Count != 0)
+						continue;
 				}
+				results.Add (property);
+				endIndex = index;
 			}
 
 			index = endIndex;

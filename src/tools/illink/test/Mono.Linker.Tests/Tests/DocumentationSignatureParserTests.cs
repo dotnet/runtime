@@ -368,6 +368,10 @@ namespace Mono.Linker.Tests
 			[ExpectGeneratedDocumentationSignature ("M:Mono.Linker.Tests.DocumentationSignatureParserTests.A.op_Addition(Mono.Linker.Tests.DocumentationSignatureParserTests.A,Mono.Linker.Tests.DocumentationSignatureParserTests.A)")]
 			[ExpectExactlyResolvedDocumentationSignature ("M:Mono.Linker.Tests.DocumentationSignatureParserTests.A.op_Addition(Mono.Linker.Tests.DocumentationSignatureParserTests.A,Mono.Linker.Tests.DocumentationSignatureParserTests.A)")]
 			public static A operator + (A left, A right) => null;
+
+			[ExpectGeneratedDocumentationSignature ("M:Mono.Linker.Tests.DocumentationSignatureParserTests.A.MWithReturnType")]
+			[ExpectExactlyResolvedDocumentationSignature ("M:Mono.Linker.Tests.DocumentationSignatureParserTests.A.MWithReturnType~System.Boolean")]
+			public static bool MWithReturnType () => false;
 		}
 
 		public struct S<T>
