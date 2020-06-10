@@ -556,7 +556,9 @@ namespace System.Net.Security
             // ServerName is an opaque type (length of sufficient size for max data length is prepended)
             const int NameTypeOffset = 0;
             const int HostNameStructOffset = NameTypeOffset + sizeof(NameType);
+#pragma warning disable CA1836 // Prefer IsEmpty over Count
             if (serverName.Length < HostNameStructOffset)
+#pragma warning restore CA1836 // Prefer IsEmpty over Count
             {
                 invalid = true;
                 return null;
@@ -771,7 +773,9 @@ namespace System.Net.Security
         private static ReadOnlySpan<byte> SkipOpaqueType1(ReadOnlySpan<byte> bytes)
         {
             const int OpaqueTypeLengthSize = sizeof(byte);
+#pragma warning disable CA1836 // Prefer IsEmpty over Count
             if (bytes.Length < OpaqueTypeLengthSize)
+#pragma warning restore CA1836 // Prefer IsEmpty over Count
             {
                 return ReadOnlySpan<byte>.Empty;
             }
