@@ -163,5 +163,25 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         private ref struct MyRefStruct { }
+
+        [Fact]
+        public void ArraySegmentTest()
+        {
+            var obj = new ClassWithArraySegment()
+            {
+                ArraySegment = new ArraySegment<byte>(new byte[] { 1 }),
+            };
+
+            string serialized = JsonSerializer.Serialize(obj);
+            Assert.Equal(@"{""ArraySegment"":[1]}", serialized);
+
+            NotSupportedException ex = Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<ClassWithArraySegment>(serialized));
+            Assert.Contains(typeof(ArraySegment<byte>).ToString(), ex.ToString());
+        }
+
+        private class ClassWithArraySegment
+        {
+            public ArraySegment<byte> ArraySegment { get; set; }
+        }
     }
 }
