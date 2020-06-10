@@ -5,7 +5,7 @@
 var BindingSupportLib = {
 	$BINDING__postset: 'BINDING.export_functions (Module);',
 	$BINDING: {
-		BINDING_ASM: "[WebAssembly.Bindings]WebAssembly.Runtime",
+		BINDING_ASM: "[System.Runtime.InteropServices.JavaScript]System.Runtime.InteropServices.JavaScript.Runtime",
 		mono_wasm_object_registry: [],
 		mono_wasm_ref_counter: 0,
 		mono_wasm_free_list: [],
@@ -57,7 +57,7 @@ var BindingSupportLib = {
 
 			if (binding_fqn_class !== null && typeof binding_fqn_class !== "undefined")
 			{
-				var namespace = "WebAssembly";
+				var namespace = "System.Runtime.InteropServices.JavaScript";
 				var classname = binding_fqn_class.length > 0 ? binding_fqn_class : "Runtime";
 				if (binding_fqn_class.indexOf(".") != -1) {
 					var idx = binding_fqn_class.lastIndexOf(".");
@@ -83,13 +83,12 @@ var BindingSupportLib = {
 			this.unbind_js_obj_and_free = get_method ("UnBindJSObjectAndFree");			
 			this.unbind_raw_obj_and_free = get_method ("UnBindRawJSObjectAndFree");			
 			this.get_js_id = get_method ("GetJSObjectId");
-			this.get_raw_mono_obj = get_method ("GetMonoObject");
+			this.get_raw_mono_obj = get_method ("GetDotNetObject");
 
 			this.box_js_int = get_method ("BoxInt");
 			this.box_js_double = get_method ("BoxDouble");
 			this.box_js_bool = get_method ("BoxBool");
 			this.is_simple_array = get_method ("IsSimpleArray");
-			this.get_core_type = get_method ("GetCoreType");
 			this.setup_js_cont = get_method ("SetupJSContinuation");
 
 			this.create_tcs = get_method ("CreateTaskSource");
@@ -103,7 +102,6 @@ var BindingSupportLib = {
 			this.create_date_time = get_method ("CreateDateTime");
 			this.create_uri = get_method ("CreateUri");
 
-			this.object_to_enum = get_method ("ObjectToEnum");
 			this.init = true;
 		},
 
@@ -499,7 +497,7 @@ var BindingSupportLib = {
 		},
 		wasm_binding_obj_new: function (js_obj_id, type)
 		{
-			return this.call_method (this.bind_js_obj, null, "io", [js_obj_id, type]);
+			return this.call_method (this.bind_js_obj, null, "ii", [js_obj_id, type]);
 		},
 		wasm_bind_existing: function (mono_obj, js_id)
 		{
@@ -715,7 +713,7 @@ var BindingSupportLib = {
 
 			if (!this.delegate_dynamic_invoke) {
 				if (!this.corlib)
-					this.corlib = this.assembly_load ("mscorlib");
+					this.corlib = this.assembly_load ("System.Private.CoreLib");
 				if (!this.delegate_class)
 					this.delegate_class = this.find_class (this.corlib, "System", "Delegate");
 				if (!this.delegate_class)
@@ -820,7 +818,41 @@ var BindingSupportLib = {
 		},
 		wasm_get_core_type: function (obj)
 		{
-			return this.call_method (this.get_core_type, null, "so", [ "WebAssembly.Core."+obj.constructor.name ]);
+			switch (true)
+			{
+				case obj instanceof Array:
+					return 1;
+				case obj instanceof ArrayBuffer:
+					return 2;
+				case obj instanceof DataView:
+					return 3;
+				case obj instanceof Function:
+					return 4;
+				case obj instanceof Map:
+					return 5;
+				case obj instanceof SharedArrayBuffer:
+					return 6;
+				case obj instanceof Int8Array:
+					return 10;
+				case obj instanceof Uint8Array:
+					return 11;
+				case obj instanceof Uint8ClampedArray:
+					return 12;
+				case obj instanceof Int16Array:
+					return 13;
+				case obj instanceof Uint16Array:
+					return 14;
+				case obj instanceof Int32Array:
+					return 15;
+				case obj instanceof Uint32Array:
+					return 16;
+				case obj instanceof Float32Array:
+					return 17;
+				case obj instanceof Float64Array:
+					return 18;
+				default:
+					return undefined;
+			}
 		},
 		get_wasm_type: function(obj) {
 			var coreType = obj[Symbol.for("wasm type")];
@@ -847,7 +879,7 @@ var BindingSupportLib = {
 					obj.__mono_jshandle__ = handle;
 					// Obtain the JS -> C# type mapping.
 					var wasm_type = this.get_wasm_type(obj);
-					gc_handle = obj.__mono_gchandle__ = this.wasm_binding_obj_new(handle + 1, wasm_type);
+					gc_handle = obj.__mono_gchandle__ = this.wasm_binding_obj_new(handle + 1, typeof wasm_type === "undefined" ? -1 : wasm_type);
 					this.mono_wasm_object_registry[handle] = obj;
 						
 				}

@@ -36,7 +36,7 @@ namespace Internal.Cryptography.Pal.AnyOS
             internal byte[]? DecryptCek(X509Certificate2? cert, RSA? privateKey, out Exception? exception)
             {
                 ReadOnlyMemory<byte>? parameters = _asn.KeyEncryptionAlgorithm.Parameters;
-                string? keyEncryptionAlgorithm = _asn.KeyEncryptionAlgorithm.Algorithm.Value;
+                string? keyEncryptionAlgorithm = _asn.KeyEncryptionAlgorithm.Algorithm;
 
                 switch (keyEncryptionAlgorithm)
                 {
@@ -53,7 +53,7 @@ namespace Internal.Cryptography.Pal.AnyOS
                     default:
                         exception = new CryptographicException(
                             SR.Cryptography_Cms_UnknownAlgorithm,
-                            _asn.KeyEncryptionAlgorithm.Algorithm.Value);
+                            _asn.KeyEncryptionAlgorithm.Algorithm);
 
                         return null;
                 }
@@ -141,27 +141,27 @@ namespace Internal.Cryptography.Pal.AnyOS
 
             if (padding == RSAEncryptionPadding.Pkcs1)
             {
-                ktri.KeyEncryptionAlgorithm.Algorithm = new Oid(Oids.Rsa, Oids.Rsa);
+                ktri.KeyEncryptionAlgorithm.Algorithm = Oids.Rsa;
                 ktri.KeyEncryptionAlgorithm.Parameters = s_rsaPkcsParameters;
             }
             else if (padding == RSAEncryptionPadding.OaepSHA1)
             {
-                ktri.KeyEncryptionAlgorithm.Algorithm = new Oid(Oids.RsaOaep, Oids.RsaOaep);
+                ktri.KeyEncryptionAlgorithm.Algorithm = Oids.RsaOaep;
                 ktri.KeyEncryptionAlgorithm.Parameters = s_rsaOaepSha1Parameters;
             }
             else if (padding == RSAEncryptionPadding.OaepSHA256)
             {
-                ktri.KeyEncryptionAlgorithm.Algorithm = new Oid(Oids.RsaOaep, Oids.RsaOaep);
+                ktri.KeyEncryptionAlgorithm.Algorithm = Oids.RsaOaep;
                 ktri.KeyEncryptionAlgorithm.Parameters = s_rsaOaepSha256Parameters;
             }
             else if (padding == RSAEncryptionPadding.OaepSHA384)
             {
-                ktri.KeyEncryptionAlgorithm.Algorithm = new Oid(Oids.RsaOaep, Oids.RsaOaep);
+                ktri.KeyEncryptionAlgorithm.Algorithm = Oids.RsaOaep;
                 ktri.KeyEncryptionAlgorithm.Parameters = s_rsaOaepSha384Parameters;
             }
             else if (padding == RSAEncryptionPadding.OaepSHA512)
             {
-                ktri.KeyEncryptionAlgorithm.Algorithm = new Oid(Oids.RsaOaep, Oids.RsaOaep);
+                ktri.KeyEncryptionAlgorithm.Algorithm = Oids.RsaOaep;
                 ktri.KeyEncryptionAlgorithm.Parameters = s_rsaOaepSha512Parameters;
             }
             else

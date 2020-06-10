@@ -26,7 +26,7 @@ internal class Utils
         IDictionary<string, string>? envVars = null,
         string? workingDir = null,
         bool ignoreErrors = false,
-        bool silent = false)
+        bool silent = true)
     {
         LogInfo($"Running: {path} {args}");
         var outputBuilder = new StringBuilder();
@@ -52,7 +52,7 @@ internal class Utils
 
         Process? process = Process.Start(processStartInfo);
         if (process == null)
-            throw new ArgumentException("Process.Start({path} {args}) returned null process");
+            throw new ArgumentException($"Process.Start({path} {args}) returned null process");
 
         process.ErrorDataReceived += (sender, e) =>
         {
@@ -60,8 +60,8 @@ internal class Utils
             {
                 LogError(e.Data);
                 outputBuilder.AppendLine(e.Data);
-                errorBuilder.AppendLine(e.Data);
             }
+            errorBuilder.AppendLine(e.Data);
         };
         process.OutputDataReceived += (sender, e) =>
         {

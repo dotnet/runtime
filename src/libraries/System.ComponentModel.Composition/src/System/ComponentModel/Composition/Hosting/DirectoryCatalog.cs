@@ -23,16 +23,16 @@ namespace System.ComponentModel.Composition.Hosting
     public partial class DirectoryCatalog : ComposablePartCatalog, INotifyComposablePartCatalogChanged, ICompositionElement
     {
         private readonly Lock _thisLock = new Lock();
-        private readonly ICompositionElement? _definitionOrigin = null;
-        private ComposablePartCatalogCollection _catalogCollection = null!; // Always initialized with Initialize()
-        private Dictionary<string, AssemblyCatalog> _assemblyCatalogs = null!;
-        private volatile bool _isDisposed = false;
-        private string _path = null!;
-        private string _fullPath = null!;
-        private string _searchPattern = null!;
-        private ReadOnlyCollection<string> _loadedFiles = null!;
+        private readonly ICompositionElement? _definitionOrigin;
+        private ComposablePartCatalogCollection _catalogCollection;
+        private Dictionary<string, AssemblyCatalog> _assemblyCatalogs;
+        private volatile bool _isDisposed;
+        private string _path;
+        private string _fullPath;
+        private string _searchPattern;
+        private ReadOnlyCollection<string> _loadedFiles;
 
-        private readonly ReflectionContext? _reflectionContext = null;
+        private readonly ReflectionContext? _reflectionContext;
 
         /// <summary>
         ///     Creates a catalog of <see cref="ComposablePartDefinition"/>s based on all the *.dll files
@@ -745,6 +745,12 @@ namespace System.ComponentModel.Composition.Hosting
             return RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? fullPath.ToUpperInvariant() : fullPath;
         }
 
+        [MemberNotNull(nameof(_path))]
+        [MemberNotNull(nameof(_fullPath))]
+        [MemberNotNull(nameof(_searchPattern))]
+        [MemberNotNull(nameof(_assemblyCatalogs))]
+        [MemberNotNull(nameof(_catalogCollection))]
+        [MemberNotNull(nameof(_loadedFiles))]
         private void Initialize(string path, string searchPattern)
         {
             _path = path;

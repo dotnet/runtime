@@ -629,7 +629,7 @@ namespace System.Globalization.Tests
             Assert.True(found, $"Expected to find the culture {cultureName} in the enumerated list");
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void ClearCachedDataTest()
         {
             RemoteExecutor.Invoke(() =>

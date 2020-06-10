@@ -138,8 +138,6 @@
         Include="$(MonoArtifactsPath)\cross\*.*" />
       <MonoIncludeFiles Condition="'$(TargetsMobile)' == 'true'"
         Include="$(MonoArtifactsPath)\include\**\*.*" />
-      <WasmDistFiles Condition="'$(TargetOS)' == 'Browser'"
-        Include="$(MonoArtifactsPath)\wasm\runtimes\**\*.*" />
     </ItemGroup>
 
     <Error Condition="'@(RuntimeFiles)' == ''" Text="The '$(RuntimeFlavor)' subset must be built before building this project." />
@@ -176,7 +174,9 @@
         $(LibrariesAllBinArtifactsPath)*.dll;
         $(LibrariesAllBinArtifactsPath)*.pdb"
         IsNative="" />
-      <LibrariesRuntimeFiles Condition="'$(TargetsMobile)' != 'true'" Include="
+      <ExcludeNativeLibrariesRuntimeFiles Condition="'$(IncludeOOBLibraries)' != 'true'"
+                                          Include="$(LibrariesNativeArtifactsPath)libSystem.IO.Ports.Native.*" />
+      <LibrariesRuntimeFiles Include="
         $(LibrariesNativeArtifactsPath)*.dll;
         $(LibrariesNativeArtifactsPath)*.dylib;
         $(LibrariesNativeArtifactsPath)*.a;
@@ -184,10 +184,12 @@
         $(LibrariesNativeArtifactsPath)*.dbg;
         $(LibrariesNativeArtifactsPath)*.dwarf;
         $(LibrariesNativeArtifactsPath)*.pdb"
-        IsNative="true" />
-      <LibrariesRuntimeFiles Condition="'$(TargetsMobile)' == 'true'"
+        IsNative="true"
+        Exclude="@(ExcludeNativeLibrariesRuntimeFiles)" />
+      <LibrariesRuntimeFiles Condition="'$(TargetOS)' == 'Browser'"
                              Include="
-        $(LibrariesNativeArtifactsPath)**\*.*" 
+        $(LibrariesNativeArtifactsPath)dotnet.js;
+        $(LibrariesNativeArtifactsPath)dotnet.wasm;"
         IsNative="true" />
     </ItemGroup>
 

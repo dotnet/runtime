@@ -17,47 +17,100 @@ scriptroot="$( cd -P "$( dirname "$source" )" && pwd )"
 usage()
 {
   echo "Common settings:"
-  echo "  --subset                   Build a subset, print available subsets with -subset help (short: -s)"
-  echo "  --os                       Build operating system: Windows_NT, Linux, FreeBSD, OSX, tvOS, iOS, Android, Browser, NetBSD or SunOS"
-  echo "  --arch                     Build platform: x86, x64, arm, armel, arm64 or wasm"
-  echo "  --configuration            Build configuration: Debug, Release or [CoreCLR]Checked (short: -c)"
-  echo "  --runtimeConfiguration     Runtime build configuration: Debug, Release or [CoreCLR]Checked (short: -rc)"
-  echo "  --librariesConfiguration   Libraries build configuration: Debug or Release (short: -lc)"
-  echo "  --projects <value>         Project or solution file(s) to build"
-  echo "  --verbosity                MSBuild verbosity: q[uiet], m[inimal], n[ormal], d[etailed], and diag[nostic] (short: -v)"
-  echo "  --binaryLog                Output binary log (short: -bl)"
-  echo "  --cross                    Optional argument to signify cross compilation"
-  echo "  --help                     Print help and exit (short: -h)"
+  echo "  --arch                          Target platform: x86, x64, arm, armel, arm64 or wasm."
+  echo "                                  [Default: Your machine's architecture.]"
+  echo "  --binaryLog (-bl)               Output binary log."
+  echo "  --cross                         Optional argument to signify cross compilation."
+  echo "  --configuration (-c)            Build configuration: Debug, Release or Checked."
+  echo "                                  Checked is exclusive to the CLR subset. It is the same as Debug, except code is"
+  echo "                                  compiled with optimizations enabled."
+  echo "                                  [Default: Debug]"
+  echo "  --help (-h)                     Print help and exit."
+  echo "  --librariesConfiguration (-lc)  Libraries build configuration: Debug or Release."
+  echo "                                  [Default: Debug]"
+  echo "  --os                            Target operating system: Windows_NT, Linux, FreeBSD, OSX, tvOS, iOS, Android,"
+  echo "                                  Browser, NetBSD or SunOS."
+  echo "                                  [Default: Your machine's OS.]"
+  echo "  --projects <value>              Project or solution file(s) to build."
+  echo "  --runtimeConfiguration (-rc)    Runtime build configuration: Debug, Release or Checked."
+  echo "                                  Checked is exclusive to the CLR runtime. It is the same as Debug, except code is"
+  echo "                                  compiled with optimizations enabled."
+  echo "                                  [Default: Debug]"
+  echo "  --subset (-s)                   Build a subset, print available subsets with -subset help."
+  echo "                                 '--subset' can be omitted if the subset is given as the first argument."
+  echo "                                  [Default: Builds the entire repo.]"
+  echo "  --verbosity (-v)                MSBuild verbosity: q[uiet], m[inimal], n[ormal], d[etailed], and diag[nostic]."
+  echo "                                  [Default: Minimal]"
   echo ""
 
   echo "Actions (defaults to --restore --build):"
-  echo "  --restore                  Restore dependencies (short: -r)"
-  echo "  --build                    Build all source projects (short: -b)"
-  echo "  --rebuild                  Rebuild all source projects"
-  echo "  --test                     Build and run tests (short: -t)"
-  echo "  --pack                     Package build outputs into NuGet packages"
-  echo "  --sign                     Sign build outputs"
-  echo "  --publish                  Publish artifacts (e.g. symbols)"
-  echo "  --clean                    Clean the solution"
+  echo "  --build (-b)               Build all source projects."
+  echo "                             This assumes --restore has been run already."
+  echo "  --clean                    Clean the solution."
+  echo "  --pack                     Package build outputs into NuGet packages."
+  echo "  --publish                  Publish artifacts (e.g. symbols)."
+  echo "                             This assumes --build has been run already."
+  echo "  --rebuild                  Rebuild all source projects."
+  echo "  --restore (-r)             Restore dependencies."
+  echo "  --sign                     Sign build outputs."
+  echo "  --test (-t)                Incrementally builds and runs tests."
+  echo "                             Use in conjuction with --testnobuild to only run tests."
   echo ""
 
   echo "Libraries settings:"
-  echo "  --framework                Build framework: net5.0 or net472 (short: -f)"
-  echo "  --coverage                 Collect code coverage when testing"
-  echo "  --testscope                Test scope, allowed values: innerloop, outerloop, all"
-  echo "  --testnobuild              Skip building tests when invoking -test"
-  echo "  --allconfigurations        Build packages for all build configurations"
+  echo "  --allconfigurations        Build packages for all build configurations."
+  echo "  --coverage                 Collect code coverage when testing."
+  echo "  --framework (-f)           Build framework: net5.0 or net472."
+  echo "                             [Default: net5.0]"
+  echo "  --testnobuild              Skip building tests when invoking -test."
+  echo "  --testscope                Test scope, allowed values: innerloop, outerloop, all."
   echo ""
 
   echo "Native build settings:"
-  echo "  --clang                    Optional argument to build using clang in PATH (default)"
-  echo "  --clangx.y                 Optional argument to build using clang version x.y"
+  echo "  --clang                    Optional argument to build using clang in PATH (default)."
+  echo "  --clangx                   Optional argument to build using clang version x (used for Clang 7 and newer)."
+  echo "  --clangx.y                 Optional argument to build using clang version x.y (used for Clang 6 and older)."
   echo "  --cmakeargs                User-settable additional arguments passed to CMake."
-  echo "  --gcc                      Optional argument to build using gcc in PATH (default)"
-  echo "  --gccx.y                   Optional argument to build using gcc version x.y"
+  echo "  --gcc                      Optional argument to build using gcc in PATH (default)."
+  echo "  --gccx.y                   Optional argument to build using gcc version x.y."
+  echo ""
 
   echo "Command line arguments starting with '/p:' are passed through to MSBuild."
   echo "Arguments can also be passed in with a single hyphen."
+  echo ""
+
+  echo "Here are some quick examples. These assume you are on a Linux x64 machine:"
+  echo ""
+  echo "* Build CoreCLR for Linux x64 on Release configuration:"
+  echo "./build.sh clr -c release"
+  echo ""
+  echo "* Build Debug libraries with a Release runtime for Linux x64."
+  echo "./build.sh clr+libs -rc release"
+  echo ""
+  echo "* Build Release libraries and their tests with a Checked runtime for Linux x64, and run the tests."
+  echo "./build.sh clr+libs+libs.tests -rc checked -lc release -test"
+  echo ""
+  echo "* Build CoreCLR for Linux x64 on Debug configuration using Clang 9."
+  echo "./build.sh clr -clang9"
+  echo ""
+  echo "* Build CoreCLR for Linux x64 on Debug configuration using GCC 8.4."
+  echo "./build.sh clr -gcc8.4"
+  echo ""
+  echo "* Cross-compile CoreCLR runtime for Linux ARM64 on Release configuration."
+  echo "./build.sh clr.runtime -arch arm64 -c release -cross"
+  echo ""
+  echo "However, for this example, you need to already have ROOTFS_DIR set up."
+  echo "Further information on this can be found here:"
+  echo "https://github.com/dotnet/runtime/blob/master/docs/workflow/building/coreclr/linux-instructions.md"
+  echo ""
+  echo "* Build Mono runtime for Linux x64 on Release configuration."
+  echo "./build.sh mono -c release"
+  echo ""
+  echo "It's important to mention that to build Mono for the first time,"
+  echo "you need to build the CLR and Libs subsets beforehand."
+  echo "This is done automatically if a full build is performed at first."
+  echo ""
+  echo "For more general information, check out https://github.com/dotnet/runtime/blob/master/docs/workflow/README.md"
 }
 
 initDistroRid()
@@ -79,6 +132,11 @@ initDistroRid()
     initDistroRidGlobal ${targetOs} ${buildArch} ${isPortableBuild} ${passedRootfsDir}
 }
 
+showSubsetHelp()
+{
+  "$scriptroot/common/build.sh" "-restore" "-build" "/p:Subset=help" "/clp:nosummary"
+}
+
 arguments=''
 cmakeargs=''
 extraargs=''
@@ -95,6 +153,11 @@ while [[ $# > 0 ]]; do
   opt="$(echo "${1/#--/-}" | awk '{print tolower($0)}')"
 
   if [[ $firstArgumentChecked -eq 0 && $opt =~ ^[a-zA-Z.+]+$ ]]; then
+    if [ $opt == "help" ]; then
+      showSubsetHelp
+      exit 0
+    fi
+
     arguments="$arguments /p:Subset=$1"
     shift 1
     continue
@@ -110,9 +173,14 @@ while [[ $# > 0 ]]; do
 
      -subset|-s)
       if [ -z ${2+x} ]; then
-        arguments="$arguments /p:Subset=help"
-        shift 1
+        showSubsetHelp
+        exit 0
       else
+        passedSubset="$(echo "$2" | awk '{print tolower($0)}')"
+        if [ $passedSubset == "help" ]; then
+          showSubsetHelp
+          exit 0
+        fi
         arguments="$arguments /p:Subset=$2"
         shift 2
       fi

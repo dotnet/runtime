@@ -89,7 +89,7 @@ ep_session_enable_rundown_lock_held (EventPipeSession *session)
 	//!  JittedMethodILToNativeMapKeyword   (0x00020000)
 	//!  ThreadTransferKeyword              (0x80000000)
 	const uint64_t keywords = 0x80020138;
-	const uint32_t verbose_logging_level = (uint32_t)EP_EVENT_LEVEL_VERBOSE;
+	const EventPipeEventLevel verbose_logging_level = EP_EVENT_LEVEL_VERBOSE;
 
 	EventPipeProviderConfiguration rundown_providers [2];
 	uint32_t rundown_providers_len = EP_ARRAY_SIZE (rundown_providers);
@@ -201,7 +201,7 @@ ep_session_get_next_event (EventPipeSession *session)
 EventPipeWaitHandle
 ep_session_get_wait_event (EventPipeSession *session)
 {
-	ep_raise_error_if_nok (session != NULL);
+	ep_return_zero_if_nok (session != NULL);
 
 	EventPipeBufferManager *buffer_manager = ep_session_get_buffer_manager (session);
 	ep_raise_error_if_nok (buffer_manager != NULL);

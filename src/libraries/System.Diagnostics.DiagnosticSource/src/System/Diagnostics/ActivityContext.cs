@@ -21,12 +21,6 @@ namespace System.Diagnostics
         /// <param name="traceState"> Carries system-specific configuration data.</param>
         public ActivityContext(ActivityTraceId traceId, ActivitySpanId spanId, ActivityTraceFlags traceFlags, string? traceState = null)
         {
-            // We don't allow creating context with invalid span or trace Ids.
-            if (traceId == default || spanId == default)
-            {
-                throw new ArgumentException(SR.SpanIdOrTraceIdInvalid, traceId == default ? nameof(traceId) : nameof(spanId));
-            }
-
             TraceId = traceId;
             SpanId = spanId;
             TraceFlags = traceFlags;

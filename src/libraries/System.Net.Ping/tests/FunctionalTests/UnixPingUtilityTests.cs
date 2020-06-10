@@ -69,16 +69,9 @@ namespace System.Net.NetworkInformation.Tests
             p.BeginOutputReadLine();
             p.BeginErrorReadLine();
 
-            // There are multiple issues with ping6 in macOS 10.12 (Sierra), see https://github.com/dotnet/runtime/issues/24682.
-            bool isPing6OnMacSierra = IsPing6OnMacSierra(p.StartInfo);
-
             string pingOutput;
             if (!p.WaitForExit(TestSettings.PingTimeout))
             {
-                // Workaround known issues with ping6 in macOS 10.12
-                if (isPing6OnMacSierra)
-                    return;
-
                 pingOutput = string.Join("\n", stdOutLines);
                 string stdErr = string.Join("\n", stdErrLines);
                 throw new Exception(
@@ -92,10 +85,6 @@ namespace System.Net.NetworkInformation.Tests
             var exitCode = p.ExitCode;
             if (exitCode != 0)
             {
-                // Workaround known issues with ping6 in macOS 10.12
-                if (isPing6OnMacSierra)
-                    return;
-
                 string stdErr = string.Join("\n", stdErrLines);
                 throw new Exception(
                     $"[{p.StartInfo.FileName} {p.StartInfo.Arguments}] process exit code is {exitCode}.\nStdOut:[{pingOutput}]\nStdErr:[{stdErr}]");
@@ -122,13 +111,6 @@ namespace System.Net.NetworkInformation.Tests
                 throw new Exception(
                     $"Parse error for [{p.StartInfo.FileName} {p.StartInfo.Arguments}] process exit code is {exitCode}.\nStdOut:[{pingOutput}]\nStdErr:[{stdErr}]", e);
             }
-        }
-
-        private static bool IsPing6OnMacSierra(ProcessStartInfo startInfo)
-        {
-            return startInfo.FileName.Equals(UnixCommandLinePing.Ping6UtilityPath) &&
-                    RuntimeInformation.IsOSPlatform(OSPlatform.OSX) &&
-                    !PlatformDetection.IsMacOsHighSierraOrHigher;
         }
 
         private static Process ConstructPingProcess(IPAddress localAddress, int payloadSize, int timeout)

@@ -79,7 +79,7 @@ namespace System.Net.Security
             }
             catch (Exception exc)
             {
-                return new ValueTask(Task.FromException(exc));
+                return ValueTask.FromException(exc);
             }
         }
 

@@ -216,13 +216,14 @@ namespace System.Globalization
                     {
                         // Failed, set it to a locale (fa-IR) that's alway has Gregorian US available in the OS
                         localeName = "fa-IR";
-                    }
-                    // See if that works
-                    if (!CallGetCalendarInfoEx(localeName, calendar, CAL_SCALNAME, out string _))
-                    {
-                        // Failed again, just use en-US with the gregorian calendar
-                        localeName = "en-US";
-                        calendar = CalendarId.GREGORIAN;
+
+                        // See if that works
+                        if (!CallGetCalendarInfoEx(localeName, calendar, CAL_SCALNAME, out string _))
+                        {
+                            // Failed again, just use en-US with the gregorian calendar
+                            localeName = "en-US";
+                            calendar = CalendarId.GREGORIAN;
+                        }
                     }
                     break;
                 case CalendarId.TAIWAN:

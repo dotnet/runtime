@@ -26,7 +26,7 @@ public partial class CancelKeyPressTests
         Console.CancelKeyPress -= handler;
     }
 
-    [Fact]
+    [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
     public void CanAddAndRemoveHandler_Remote()
     {
         // xunit registers a CancelKeyPress handler at the beginning of the test run and never

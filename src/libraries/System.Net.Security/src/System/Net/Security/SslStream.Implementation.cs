@@ -535,7 +535,7 @@ namespace System.Net.Security
             if (status.ErrorCode != SecurityStatusPalErrorCode.OK)
             {
                 ArrayPool<byte>.Shared.Return(rentedBuffer);
-                return new ValueTask(Task.FromException(ExceptionDispatchInfo.SetCurrentStackTrace(new IOException(SR.net_io_encrypt, SslStreamPal.GetException(status)))));
+                return ValueTask.FromException(ExceptionDispatchInfo.SetCurrentStackTrace(new IOException(SR.net_io_encrypt, SslStreamPal.GetException(status))));
             }
 
             ValueTask t = writeAdapter.WriteAsync(outBuffer, 0, encryptedBytes);

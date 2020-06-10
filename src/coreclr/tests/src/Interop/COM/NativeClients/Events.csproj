@@ -5,8 +5,7 @@
     <CLRTestScriptLocalCoreShim>true</CLRTestScriptLocalCoreShim>
     <RequiresMockHostPolicy>true</RequiresMockHostPolicy>
     <IlrtTestKind>BuildOnly</IlrtTestKind>
-    <TestUnsupportedOutsideWindows>true</TestUnsupportedOutsideWindows>
-    <DisableProjectBuild Condition="'$(TargetsUnix)' == 'true'">true</DisableProjectBuild>
+    <CLRTestTargetUnsupported Condition="'$(TargetsWindows)' != 'true'">true</CLRTestTargetUnsupported>
     <DefineConstants>BLOCK_WINDOWS_NANO</DefineConstants>
   </PropertyGroup>
   <ItemGroup>
@@ -14,14 +13,7 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="Events/CMakeLists.txt" />
-    <ProjectReference Include="../NetServer/NetServer.csproj" />
+    <ProjectReference Include="../NETServer/NETServer.csproj" />
     <ProjectReference Include="$(TestSourceDir)Common/CoreCLRTestLibrary/CoreCLRTestLibrary.csproj" />
   </ItemGroup>
-  <PropertyGroup>
-    <CLRTestNeedTarget>1</CLRTestNeedTarget>
-  </PropertyGroup>
-  <ItemGroup>
-    <TraitTags Include="OsSpecific" />
-  </ItemGroup>
-  <Import Project="$([MSBuild]::GetPathOfFileAbove(Interop.settings.targets))" />
 </Project>

@@ -94,9 +94,6 @@ public:
     static OBJECTREF ConvertToDelegate(LPVOID pCallback, MethodTable* pMT);
 
 #ifdef FEATURE_COMINTEROP
-    // Marshals a WinRT delegate interface pointer to a managed Delegate
-    static OBJECTREF ConvertWinRTInterfaceToDelegate(IUnknown *pUnk, MethodTable* pMT);
-
     static ComPlusCallInfo * PopulateComPlusCallInfo(MethodTable * pDelMT);
 #endif // FEATURE_COMINTEROP
 

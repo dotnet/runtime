@@ -73,16 +73,14 @@ namespace System.Runtime.InteropServices
 {
     public abstract unsafe class SafeBuffer : SafeHandleZeroOrMinusOneIsInvalid
     {
-        // Steal UIntPtr.MaxValue as our uninitialized value.
-        private static readonly UIntPtr Uninitialized = (UIntPtr.Size == 4) ?
-            ((UIntPtr)uint.MaxValue) : ((UIntPtr)ulong.MaxValue);
-
-        private UIntPtr _numBytes;
+        private nuint _numBytes;
 
         protected SafeBuffer(bool ownsHandle) : base(ownsHandle)
         {
             _numBytes = Uninitialized;
         }
+
+        private static nuint Uninitialized => nuint.MaxValue;
 
         /// <summary>
         /// Specifies the size of the region of memory, in bytes.  Must be
@@ -98,7 +96,7 @@ namespace System.Runtime.InteropServices
             if (numBytes >= (ulong)Uninitialized)
                 throw new ArgumentOutOfRangeException(nameof(numBytes), SR.ArgumentOutOfRange_UIntPtrMax);
 
-            _numBytes = (UIntPtr)numBytes;
+            _numBytes = (nuint)numBytes;
         }
 
         /// <summary>
@@ -226,7 +224,7 @@ namespace System.Runtime.InteropServices
             uint sizeofT = SizeOf<T>();
             uint alignedSizeofT = AlignedSizeOf<T>();
             byte* ptr = (byte*)handle + byteOffset;
-            SpaceCheck(ptr, checked((ulong)(alignedSizeofT * count)));
+            SpaceCheck(ptr, checked((nuint)(alignedSizeofT * count)));
 
             bool mustCallRelease = false;
             try
@@ -302,7 +300,7 @@ namespace System.Runtime.InteropServices
             uint sizeofT = SizeOf<T>();
             uint alignedSizeofT = AlignedSizeOf<T>();
             byte* ptr = (byte*)handle + byteOffset;
-            SpaceCheck(ptr, checked((ulong)(alignedSizeofT * count)));
+            SpaceCheck(ptr, checked((nuint)(alignedSizeofT * count)));
 
             bool mustCallRelease = false;
             try
@@ -338,18 +336,18 @@ namespace System.Runtime.InteropServices
                 if (_numBytes == Uninitialized)
                     throw NotInitialized();
 
-                return (ulong)_numBytes;
+                return _numBytes;
             }
         }
 
         /* No indexer.  The perf would be misleadingly bad.  People should use
          * AcquirePointer and ReleasePointer instead.  */
 
-        private void SpaceCheck(byte* ptr, ulong sizeInBytes)
+        private void SpaceCheck(byte* ptr, nuint sizeInBytes)
         {
-            if ((ulong)_numBytes < sizeInBytes)
+            if (_numBytes < sizeInBytes)
                 NotEnoughRoom();
-            if ((ulong)(ptr - (byte*)handle) > ((ulong)_numBytes) - sizeInBytes)
+            if ((ulong)(ptr - (byte*)handle) > (_numBytes - sizeInBytes))
                 NotEnoughRoom();
         }
 

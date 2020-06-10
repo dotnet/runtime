@@ -33,7 +33,6 @@ class Object;
 #include "comdelegate.h"
 #include "comcache.h"
 #include "notifyexternals.h"
-#include "winrttypenameconverter.h"
 #include "../md/compiler/custattr.h"
 #include "olevariant.h"
 #include "interopconverter.h"
@@ -41,7 +40,6 @@ class Object;
 #include "caparser.h"
 #include "classnames.h"
 #include "objectnative.h"
-#include "rcwwalker.h"
 #include "finalizerthread.h"
 
 // static
@@ -746,37 +744,6 @@ IUnknown *AppXComClassFactory::CreateInstanceInternal(IUnknown *pOuter, BOOL *pf
 #endif //FEATURE_APPX
 
 //-------------------------------------------------------------
-MethodTable *WinRTClassFactory::GetTypeFromAttribute(IMDInternalImport *pImport, mdCustomAttribute tkAttribute)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    // get raw custom attribute
-    const BYTE  *pbAttr = NULL;
-    ULONG cbAttr = 0;
-    IfFailThrowBF(pImport->GetCustomAttributeAsBlob(tkAttribute, (const void **)&pbAttr, &cbAttr), BFA_INVALID_TOKEN, m_pClassMT->GetModule());
-
-    CustomAttributeParser cap(pbAttr, cbAttr);
-    IfFailThrowBF(cap.ValidateProlog(), BFA_BAD_CA_HEADER, m_pClassMT->GetModule());
-
-    // retrieve the factory interface name
-    LPCUTF8 szName;
-    ULONG   cbName;
-    IfFailThrow(cap.GetNonNullString(&szName, &cbName));
-
-    // copy the name to a temporary buffer and NULL terminate it
-    StackSString ss(SString::Utf8, szName, cbName);
-
-    // load the factory interface
-    return TypeName::GetTypeUsingCASearchRules(ss.GetUnicode(), m_pClassMT->GetAssembly()).GetMethodTable();
-}
-
-//-------------------------------------------------------------
 // Returns true if the first parameter of the CA's method ctor is a System.Type
 static BOOL AttributeFirstParamIsSystemType(mdCustomAttribute tkAttribute, IMDInternalImport *pImport)
 {
@@ -857,320 +824,6 @@ static BOOL AttributeFirstParamIsSystemType(mdCustomAttribute tkAttribute, IMDIn
 
     return TRUE;
 }
-
-//-------------------------------------------------------------
-void WinRTClassFactory::Init()
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    HRESULT hr;
-    IMDInternalImport *pImport = m_pClassMT->GetMDImport();
-
-    {
-        // Sealed classes may have Windows.Foundation.Activatable attributes.  Such classes must be sealed, because we'd
-        // have no way to use their ctor from a derived class (no composition)
-        // Unsealed classes may have Windows.Foundation.Composable attributes.  These are currently mutually exclusive, but we
-        // may need to relax this in the future for versioning reasons (so a class can be unsealed in a new version without
-        // being binary breaking).
-        // Note that we just ignore activation attributes if they occur on the wrong type of class
-        LPCSTR attributeName;
-        if (IsComposition())
-        {
-            attributeName = g_WindowsFoundationComposableAttributeClassName;
-        }
-        else
-        {
-            attributeName = g_WindowsFoundationActivatableAttributeClassName;
-        }
-
-        MDEnumHolder hEnum(pImport);
-
-        // find and parse all WindowsFoundationActivatableAttribute/WindowsFoundationComposableAttribute attributes
-        hr = pImport->EnumCustomAttributeByNameInit(m_pClassMT->GetCl(), attributeName, &hEnum);
-        IfFailThrow(hr);
-
-        if (hr == S_OK) // there are factory interfaces
-        {
-            mdCustomAttribute tkAttribute;
-            while (pImport->EnumNext(&hEnum, &tkAttribute))
-            {
-                if (!AttributeFirstParamIsSystemType(tkAttribute, pImport))
-                {
-                    // The first parameter of the Composable/Activatable attribute is not a System.Type
-                    // and therefore the attribute does not specify a factory interface so we ignore the attribute
-                    continue;
-                }
-                // get raw custom attribute
-                const BYTE  *pbAttr = NULL;
-                ULONG cbAttr = 0;
-                IfFailThrowBF(pImport->GetCustomAttributeAsBlob(tkAttribute, (const void **)&pbAttr, &cbAttr), BFA_INVALID_TOKEN, m_pClassMT->GetModule());
-                CustomAttributeParser cap(pbAttr, cbAttr);
-                IfFailThrowBF(cap.ValidateProlog(), BFA_BAD_CA_HEADER, m_pClassMT->GetModule());
-
-                // The activation factory interface is stored in the attribute by type name
-                LPCUTF8 szFactoryInterfaceName;
-                ULONG cbFactoryInterfaceName;
-                IfFailThrow(cap.GetNonNullString(&szFactoryInterfaceName, &cbFactoryInterfaceName));
-
-                StackSString strFactoryInterface(SString::Utf8, szFactoryInterfaceName, cbFactoryInterfaceName);
-                MethodTable *pMTFactoryInterface = LoadWinRTType(&strFactoryInterface, /* bThrowIfNotFound = */ TRUE).GetMethodTable();
-
-                _ASSERTE(pMTFactoryInterface);
-                m_factoryInterfaces.Append(pMTFactoryInterface);
-            }
-        }
-    }
-
-    {
-        // find and parse all Windows.Foundation.Static attributes
-        MDEnumHolder hEnum(pImport);
-        hr = pImport->EnumCustomAttributeByNameInit(m_pClassMT->GetCl(), g_WindowsFoundationStaticAttributeClassName, &hEnum);
-        IfFailThrow(hr);
-
-        if (hr == S_OK) // there are static interfaces
-        {
-            mdCustomAttribute tkAttribute;
-            while (pImport->EnumNext(&hEnum, &tkAttribute))
-            {
-                if (!AttributeFirstParamIsSystemType(tkAttribute, pImport))
-                {
-                    // The first parameter of the Static attribute is not a System.Type
-                    // and therefore the attribute does not specify a factory interface so we ignore the attribute
-                    continue;
-                }
-
-                const BYTE  *pbAttr = NULL;
-                ULONG cbAttr = 0;
-                IfFailThrowBF(pImport->GetCustomAttributeAsBlob(tkAttribute, (const void **)&pbAttr, &cbAttr), BFA_INVALID_TOKEN, m_pClassMT->GetModule());
-
-                CustomAttributeParser cap(pbAttr, cbAttr);
-                IfFailThrowBF(cap.ValidateProlog(), BFA_BAD_CA_HEADER, m_pClassMT->GetModule());
-
-                // retrieve the factory interface name
-                LPCUTF8 szName;
-                ULONG   cbName;
-                IfFailThrow(cap.GetNonNullString(&szName, &cbName));
-
-                // copy the name to a temporary buffer and NULL terminate it
-                StackSString ss(SString::Utf8, szName, cbName);
-                TypeHandle th = LoadWinRTType(&ss, /* bThrowIfNotFound = */ TRUE);
-
-                MethodTable *pMTStaticInterface = th.GetMethodTable();
-                m_staticInterfaces.Append(pMTStaticInterface);
-            }
-        }
-    }
-
-    {
-
-		// Special case (not pretty): WinMD types requires you to put DefaultAttribute on interfaceImpl to
-		// mark the interface as default interface. But C# doesn't allow you to do that so we have
-		// to do it manually here.
-		MethodTable* pAsyncTracingEventArgsMT = MscorlibBinder::GetClass(CLASS__ASYNC_TRACING_EVENT_ARGS);
-		if(pAsyncTracingEventArgsMT == m_pClassMT)
-		{
-			m_pDefaultItfMT = MscorlibBinder::GetClass(CLASS__IASYNC_TRACING_EVENT_ARGS);
-		}
-		else
-		{
-			// parse the DefaultAttribute to figure out the default interface of the class
-			HENUMInternalHolder hEnumInterfaceImpl(pImport);
-			hEnumInterfaceImpl.EnumInit(mdtInterfaceImpl, m_pClassMT->GetCl());
-
-        DWORD cInterfaces = pImport->EnumGetCount(&hEnumInterfaceImpl);
-        if (cInterfaces != 0)
-        {
-            mdInterfaceImpl ii;
-            while (pImport->EnumNext(&hEnumInterfaceImpl, &ii))
-            {
-                const BYTE *pbAttr;
-                ULONG cbAttr;
-                HRESULT hr = pImport->GetCustomAttributeByName(ii, g_WindowsFoundationDefaultClassName, (const void **)&pbAttr, &cbAttr);
-                IfFailThrow(hr);
-                if (hr == S_OK)
-                {
-                    mdToken typeRefOrDefOrSpec;
-                    IfFailThrow(pImport->GetTypeOfInterfaceImpl(ii, &typeRefOrDefOrSpec));
-
-                    TypeHandle th = ClassLoader::LoadTypeDefOrRefOrSpecThrowing(
-                        m_pClassMT->GetModule(),
-                        typeRefOrDefOrSpec,
-                        NULL,
-                        ClassLoader::ThrowIfNotFound,
-                        ClassLoader::FailIfUninstDefOrRef,
-                        ClassLoader::LoadTypes, CLASS_LOAD_EXACTPARENTS);
-
-                    m_pDefaultItfMT = th.GetMethodTable();
-                    break;
-                }
-            }
-        }
-    }
-    }
-
-    // initialize m_hClassName
-    InlineSString<DEFAULT_NONSTACK_CLASSNAME_SIZE> ssClassName;
-    m_pClassMT->_GetFullyQualifiedNameForClass(ssClassName);
-
-#ifndef CROSSGEN_COMPILE
-    if (!GetAppDomain()->IsCompilationDomain())
-    {
-        // don't bother creating the HSTRING when NGENing - we may run on downlevel
-        IfFailThrow(WindowsCreateString(ssClassName.GetUnicode(), ssClassName.GetCount(), &m_hClassName));
-    }
-#endif
-
-    if (ssClassName.BeginsWith(SL(W("Windows."))))
-    {
-        // parse the GCPressureAttribute only on first party runtime classes
-        const BYTE *pVal = NULL;
-        ULONG cbVal = 0;
-
-        if (S_OK == pImport->GetCustomAttributeByName(m_pClassMT->GetCl(), g_WindowsFoundationGCPressureAttributeClassName, (const void **)&pVal, &cbVal))
-        {
-            CustomAttributeParser cap(pVal, cbVal);
-            CaNamedArg namedArgs[1];
-
-            // First, the void constructor
-            IfFailThrow(ParseKnownCaArgs(cap, NULL, 0));
-
-            // Then, find the named argument
-            namedArgs[0].InitI4FieldEnum("amount", "Windows.Foundation.Metadata.GCPressureAmount", -1);
-
-            IfFailThrow(ParseKnownCaNamedArgs(cap, namedArgs, lengthof(namedArgs)));
-
-            static_assert(RCW::GCPressureSize_WinRT_Medium == RCW::GCPressureSize_WinRT_Low    + 1, "RCW::GCPressureSize does not match Windows.Foundation.Metadata.GCPressureAmount");
-            static_assert(RCW::GCPressureSize_WinRT_High   == RCW::GCPressureSize_WinRT_Medium + 1, "RCW::GCPressureSize does not match Windows.Foundation.Metadata.GCPressureAmount");
-
-            int amount = namedArgs[0].val.i4;
-            if (amount >= 0 && amount < (RCW::GCPressureSize_COUNT - RCW::GCPressureSize_WinRT_Low))
-            {
-                m_GCPressure = (RCW::GCPressureSize)(amount + RCW::GCPressureSize_WinRT_Low);
-            }
-        }
-    }
-}
-
-//-------------------------------------------------------------
-MethodDesc *WinRTClassFactory::FindFactoryMethod(PCCOR_SIGNATURE pSig, DWORD cSig, Module *pModule)
-{
-    CONTRACTL
-    {
-        STANDARD_VM_CHECK;
-        PRECONDITION(CheckPointer(pSig));
-        PRECONDITION(CheckPointer(pModule));
-    }
-    CONTRACTL_END;
-
-    COUNT_T count = m_factoryInterfaces.GetCount();
-    for (UINT i = 0; i < count; i++)
-    {
-        MethodTable *pMT = m_factoryInterfaces[i];
-
-        MethodDesc *pMD = MemberLoader::FindMethod(pMT, "", pSig, cSig, pModule, MemberLoader::FM_IgnoreName);
-        if (pMD != NULL)
-        {
-            return pMD;
-        }
-    }
-
-    return NULL;
-}
-
-//-------------------------------------------------------------
-MethodDesc *WinRTClassFactory::FindStaticMethod(LPCUTF8 pszName, PCCOR_SIGNATURE pSig, DWORD cSig, Module *pModule)
-{
-    CONTRACTL
-    {
-        STANDARD_VM_CHECK;
-        PRECONDITION(CheckPointer(pszName));
-        PRECONDITION(CheckPointer(pSig));
-        PRECONDITION(CheckPointer(pModule));
-    }
-    CONTRACTL_END;
-
-    COUNT_T count = m_staticInterfaces.GetCount();
-    for (UINT i = 0; i < count; i++)
-    {
-        MethodTable *pMT = m_staticInterfaces[i];
-
-        MethodDesc *pMD = MemberLoader::FindMethod(pMT, pszName, pSig, cSig, pModule);
-        if (pMD != NULL)
-        {
-            return pMD;
-        }
-    }
-
-    return NULL;
-}
-
-//-------------------------------------------------------------
-void WinRTClassFactory::Cleanup()
-{
-    LIMITED_METHOD_CONTRACT;
-
-    if (m_hClassName != NULL)
-    {
-        // HSTRING has been created, which means combase should have been loaded.
-        // Delay load will not fail.
-        _ASSERTE(WszGetModuleHandle(W("combase.dll")) != NULL);
-        CONTRACT_VIOLATION(ThrowsViolation);
-
-#ifndef CROSSGEN_COMPILE
-        WindowsDeleteString(m_hClassName);
-#endif
-    }
-    delete m_pWinRTOverrideInfo;
-    delete this;
-}
-
-//-------------------------------------------------------------
-void WinRTManagedClassFactory::Cleanup()
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_TRIGGERS;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    if (m_pCCWTemplate != NULL)
-    {
-        m_pCCWTemplate->Release();
-        m_pCCWTemplate = NULL;
-    }
-
-    WinRTClassFactory::Cleanup(); // deletes 'this'
-}
-#ifndef CROSSGEN_COMPILE
-//-------------------------------------------------------------
-ComCallWrapperTemplate *WinRTManagedClassFactory::GetOrCreateComCallWrapperTemplate(MethodTable *pFactoryMT)
-{
-    CONTRACT (ComCallWrapperTemplate *)
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-        PRECONDITION(CheckPointer(pFactoryMT));
-        POSTCONDITION(CheckPointer(RETVAL));
-    }
-    CONTRACT_END;
-
-    if (m_pCCWTemplate == NULL)
-    {
-        ComCallWrapperTemplate::CreateTemplate(TypeHandle(pFactoryMT), this);
-    }
-
-    RETURN m_pCCWTemplate;
-}
-#endif // CROSSGEN_COMPILE
 
 #endif // FEATURE_COMINTEROP_UNMANAGED_ACTIVATION
 
@@ -1365,7 +1018,7 @@ BOOL RCWCache::FindOrInsertWrapper_NoLock(IUnknown* pIdentity, RCWHolder* pRCW, 
 //--------------------------------------------------------------------------------
 // ULONG RCWCache::ReleaseWrappers()
 // Helper to release the complus wrappers in the cache that lives in the specified
-// context (including Jupiter RCWs) or all the wrappers in the cache if the pCtxCookie is null.
+// context or all the wrappers in the cache if the pCtxCookie is null.
 void RCWCache::ReleaseWrappersWorker(LPVOID pCtxCookie)
 {
     CONTRACTL
@@ -1404,12 +1057,11 @@ void RCWCache::ReleaseWrappersWorker(LPVOID pCtxCookie)
                 _ASSERTE(pWrap != NULL);
 
                 // If a context cookie was specified, then only clean up wrappers that
-                // are in that context, including non-FTM regular RCWs, and FTM Jupiter objects
+                // are in that context, including non-FTM regular RCWs
                 // Otherwise clean up all the wrappers.
                 // Ignore RCWs that aggregate the FTM if we are cleaning up context
-                // specific RCWs (note that we rely on this behavior in WinRT factory cache code)
-                // Note that Jupiter RCWs are special and they are considered to be context-bound
-                if (!pCtxCookie || ((pWrap->GetWrapperCtxCookie() == pCtxCookie) && (pWrap->IsJupiterObject() || !pWrap->IsFreeThreaded())))
+                // specific RCWs
+                if (!pCtxCookie || ((pWrap->GetWrapperCtxCookie() == pCtxCookie) && !pWrap->IsFreeThreaded()))
                 {
                     if (!pWrap->IsURTAggregated())
                         CleanupList.AddWrapper_NoLock(pWrap);
@@ -1505,9 +1157,6 @@ public:
                 // No need to use InterlockedOr here since every other place that modifies the flags
                 // runs in cooperative GC mode (i.e. definitely not concurrently with this function).
                 pRCW->m_Flags.m_Detached = 1;
-
-                if (pRCW->IsJupiterObject())
-                    RCWWalker::BeforeJupiterRCWDestroyed(pRCW);
             }
         }
     }
@@ -2053,10 +1702,6 @@ const int RCW::s_rGCPressureTable[GCPressureSize_COUNT] =
     GC_PRESSURE_PROCESS_LOCAL,   // GCPressureSize_ProcessLocal
     GC_PRESSURE_MACHINE_LOCAL,   // GCPressureSize_MachineLocal
     GC_PRESSURE_REMOTE,          // GCPressureSize_Remote
-    GC_PRESSURE_WINRT_BASE,      // GCPressureSize_WinRT_Base
-    GC_PRESSURE_WINRT_LOW,       // GCPressureSize_WinRT_Low
-    GC_PRESSURE_WINRT_MEDIUM,    // GCPressureSize_WinRT_Medium
-    GC_PRESSURE_WINRT_HIGH,      // GCPressureSize_WinRT_High
 };
 
 // Deletes all items in code:s_RCWStandbyList.
@@ -2073,8 +1718,7 @@ void RCW::FlushStandbyList()
     }
 }
 //--------------------------------------------------------------------------------
-// The IUnknown passed in is AddRef'ed if we succeed in creating the wrapper unless
-// the CF_SuppressAddRef flag is set.
+// The IUnknown passed in is AddRef'ed if we succeed in creating the wrapper.
 RCW* RCW::CreateRCW(IUnknown *pUnk, DWORD dwSyncBlockIndex, DWORD flags, MethodTable *pClassMT)
 {
     CONTRACT (RCW*)
@@ -2092,10 +1736,6 @@ RCW* RCW::CreateRCW(IUnknown *pUnk, DWORD dwSyncBlockIndex, DWORD flags, MethodT
         GCX_PREEMP();
         pRCW = RCW::CreateRCWInternal(pUnk, dwSyncBlockIndex, flags, pClassMT);
     }
-
-    // No exception after this point
-    if (pRCW->IsJupiterObject())
-        RCWWalker::AfterJupiterRCWCreated(pRCW);
 
     RETURN pRCW;
 }
@@ -2151,31 +1791,11 @@ RCW* RCW::CreateRCWInternal(IUnknown *pUnk, DWORD dwSyncBlockIndex, DWORD flags,
     // Log the creation
     LogRCWCreate(pWrap, pUnk);
 
-    // Remember that the object is known to support IInspectable
-    pWrap->m_Flags.m_fSupportsIInspectable = !!(flags & CF_SupportsIInspectable);
-
     // Initialize wrapper
     pWrap->Initialize(pUnk, dwSyncBlockIndex, pClassMT);
 
-    if (flags & CF_SupportsIInspectable)
-    {
-        // WinRT objects always apply some GC pressure
-        GCPressureSize pressureSize = GCPressureSize_WinRT_Base;
-
-        // if we have a strongly-typed non-delegate RCW, we may have read the GC pressure amount from metadata
-        if (pClassMT->IsProjectedFromWinRT() && !pClassMT->IsDelegate())
-        {
-            WinRTClassFactory *pFactory = GetComClassFactory(pClassMT)->AsWinRTClassFactory();
-            pressureSize = pFactory->GetGCPressure();
-        }
-
-        pWrap->AddMemoryPressure(pressureSize);
-    }
-
-    // Check to see if this is a DCOM proxy if either we've been explicitly asked to, or if
-    // we're talking to a non-WinRT object and we need to add memory pressure
-    const bool checkForDCOMProxy =  (flags & CF_DetectDCOMProxy) ||
-                                   !(flags & CF_SupportsIInspectable);
+    // Check to see if this is a DCOM proxy
+    const bool checkForDCOMProxy =  (flags & CF_DetectDCOMProxy);
 
     if (checkForDCOMProxy)
     {
@@ -2196,24 +1816,20 @@ RCW* RCW::CreateRCWInternal(IUnknown *pUnk, DWORD dwSyncBlockIndex, DWORD flags,
                     pWrap->m_Flags.m_fIsDCOMProxy = 1;
                 }
 
-                // Only add memory pressure for proxies for non-WinRT objects
-                if (!(flags & CF_SupportsIInspectable))
+                switch(dwValue)
                 {
-                    switch(dwValue)
-                    {
-                        case SERVER_LOCALITY_PROCESS_LOCAL:
-                            pressureSize = GCPressureSize_ProcessLocal;
-                            break;
-                        case SERVER_LOCALITY_MACHINE_LOCAL:
-                            pressureSize = GCPressureSize_MachineLocal;
-                            break;
-                        case SERVER_LOCALITY_REMOTE:
-                            pressureSize = GCPressureSize_Remote;
-                            break;
-                        default:
-                            pressureSize = GCPressureSize_None;
-                            break;
-                    }
+                    case SERVER_LOCALITY_PROCESS_LOCAL:
+                        pressureSize = GCPressureSize_ProcessLocal;
+                        break;
+                    case SERVER_LOCALITY_MACHINE_LOCAL:
+                        pressureSize = GCPressureSize_MachineLocal;
+                        break;
+                    case SERVER_LOCALITY_REMOTE:
+                        pressureSize = GCPressureSize_Remote;
+                        break;
+                    default:
+                        pressureSize = GCPressureSize_None;
+                        break;
                 }
             }
         }
@@ -2298,39 +1914,6 @@ void RCW::Initialize(IUnknown* pUnk, DWORD dwSyncBlockIndex, MethodTable *pClass
     // Store the sync block index.
     m_SyncBlockIndex = dwSyncBlockIndex;
 
-    // Check if this object is a Jupiter object (only for WinRT scenarios)
-    _ASSERTE(m_Flags.m_fIsJupiterObject == 0);
-    if (SupportsIInspectable())
-    {
-        SafeComHolderPreemp<IJupiterObject> pJupiterObject = NULL;
-        HRESULT hr = SafeQueryInterfacePreemp(pUnk, IID_IJupiterObject, (IUnknown **)&pJupiterObject);
-        LogInteropQI(pUnk, IID_IJupiterObject, hr, "QI for IJupiterObject");
-
-        if (SUCCEEDED(hr))
-        {
-            // A Jupiter object that is not free threaded is not allowed
-            if (!IsFreeThreaded())
-            {
-                StackSString ssObjClsName;
-                StackSString ssDestClsName;
-
-                pClassMT->_GetFullyQualifiedNameForClass(ssObjClsName);
-
-                COMPlusThrow(kInvalidCastException, IDS_EE_CANNOTCAST,
-                             ssObjClsName.GetUnicode(), W("IAgileObject"));
-            }
-
-            RCWWalker::OnJupiterRCWCreated(this, pJupiterObject);
-
-            SetJupiterObject(pJupiterObject);
-
-            if (!IsURTAggregated())
-            {
-                pJupiterObject.SuppressRelease();
-            }
-        }
-    }
-
     // Log the wrapper initialization.
     LOG((LF_INTEROP, LL_INFO100, "Initializing RCW %p with SyncBlock index %d\n", this, dwSyncBlockIndex));
 
@@ -2366,18 +1949,6 @@ VOID RCW::MarkURTAggregated()
         PRECONDITION(m_Flags.m_fURTContained == 0);
     }
     CONTRACTL_END;
-
-    if (!m_Flags.m_fURTAggregated && m_Flags.m_fIsJupiterObject)
-    {
-        // Notify Jupiter that we are about to release IJupiterObject
-        RCWWalker::BeforeInterfaceRelease(this);
-
-        // If we mark this RCW as aggregated and we've done a QI for IJupiterObject,
-        // release it to account for the extra ref
-        // Note that this is a quick fix for PDC-2 and eventually we should replace
-        // this with a better fix
-        SafeRelease(GetJupiterObject());
-    }
 
     m_Flags.m_fURTAggregated = 1;
 }
@@ -2633,9 +2204,6 @@ void RCW::MinorCleanup()
     // wrappers from wrapper cache,
     pCache->RemoveWrapper(this);
 
-    if (IsJupiterObject() && !IsDetached())
-        RCWWalker::BeforeJupiterRCWDestroyed(this);
-
     // Clear the SyncBlockIndex as the object is being GC'd and the index will become
     // invalid as soon as the object is collected.
     m_SyncBlockIndex = 0;
@@ -2740,8 +2308,6 @@ void RCW::CreateDuplicateWrapper(MethodTable *pNewMT, RCWHolder* pNewRCW)
         pAutoUnk = GetIUnknown();
 
         DWORD flags = 0;
-        if (SupportsIInspectable())
-            flags |= CF_SupportsIInspectable;
 
         // make sure we "pin" the syncblock before switching to preemptive mode
         SyncBlock *pSB = NewWrapperObj->GetSyncBlock();
@@ -2915,14 +2481,6 @@ IDispatch *RCW::GetIDispatch()
     return (IDispatch *)GetWellKnownInterface(IID_IDispatch);
 }
 
-//-----------------------------------------------------------------
-// Get the IInspectable pointer for the wrapper
-IInspectable *RCW::GetIInspectable()
-{
-    WRAPPER_NO_CONTRACT;
-    return (IInspectable *)GetWellKnownInterface(IID_IInspectable);
-}
-
 //-----------------------------------------------
 // Free GC handle and remove SyncBlock entry
 void RCW::DecoupleFromObject()
@@ -2937,9 +2495,6 @@ void RCW::DecoupleFromObject()
 
     if (m_SyncBlockIndex != 0)
     {
-        if (IsJupiterObject() && !IsDetached())
-            RCWWalker::BeforeJupiterRCWDestroyed(this);
-
         // remove reference to wrapper from sync block
         SyncBlock* pSB = GetSyncBlock();
         _ASSERTE(pSB);
@@ -3001,86 +2556,6 @@ HRESULT RCW::SafeQueryInterfaceRemoteAware(REFIID iid, IUnknown** ppResUnk)
 
 #endif //#ifndef CROSSGEN_COMPILE
 
-//-----------------------------------------------------------------
-// Returns a redirected collection interface corresponding to a given ICollection/ICollection<T> or NULL
-// if the given interface is not ICollection/ICollection<T>. This also works for IReadOnlyCollection<T>.
-// The BOOL parameters help resolve the ambiguity around ICollection<KeyValuePair<K, V>>.
-// static
-MethodTable *RCW::ResolveICollectionInterface(MethodTable *pItfMT, BOOL fPreferIDictionary, BOOL *pfChosenIDictionary)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-        PRECONDITION(CheckPointer(pItfMT));
-        PRECONDITION(CheckPointer(pfChosenIDictionary, NULL_OK));
-    }
-    CONTRACTL_END;
-
-    if (pfChosenIDictionary != NULL)
-        *pfChosenIDictionary = FALSE;
-
-    // Casting/calling via ICollection<T> means QI/calling through IVector<T>, casting/calling via ICollection<KeyValuePair<K, V>> means
-    // QI/calling via IMap<K, V> OR IVector<IKeyValuePair<K, V>>. See which case it is.
-    if (pItfMT->HasSameTypeDefAs(MscorlibBinder::GetExistingClass(CLASS__ICOLLECTIONGENERIC)))
-    {
-        Instantiation inst = pItfMT->GetInstantiation();
-        TypeHandle arg = inst[0];
-
-        if (fPreferIDictionary)
-        {
-            if (!arg.IsTypeDesc() && arg.GetMethodTable()->HasSameTypeDefAs(MscorlibBinder::GetClass(CLASS__KEYVALUEPAIRGENERIC)))
-            {
-                // ICollection<KeyValuePair<K, V>> -> IDictionary<K, V>
-                if (pfChosenIDictionary != NULL)
-                    *pfChosenIDictionary = TRUE;
-
-                pItfMT = GetAppDomain()->GetRedirectedType(WinMDAdapter::RedirectedTypeIndex_System_Collections_Generic_IDictionary);
-                return TypeHandle(pItfMT).Instantiate(arg.GetInstantiation()).GetMethodTable();
-            }
-        }
-
-        // ICollection<T> -> IList<T>
-        pItfMT = GetAppDomain()->GetRedirectedType(WinMDAdapter::RedirectedTypeIndex_System_Collections_Generic_IList);
-        return TypeHandle(pItfMT).Instantiate(inst).GetMethodTable();
-    }
-
-    // Casting/calling via IReadOnlyCollection<T> means QI/calling through IVectorView<T>, casting/calling via IReadOnlyCollection<KeyValuePair<K, V>> means
-    // QI/calling via IMapView<K, V> OR IVectorView<IKeyValuePair<K, V>>. See which case it is.
-    if (pItfMT->HasSameTypeDefAs(MscorlibBinder::GetExistingClass(CLASS__IREADONLYCOLLECTIONGENERIC)))
-    {
-        Instantiation inst = pItfMT->GetInstantiation();
-        TypeHandle arg = inst[0];
-
-        if (fPreferIDictionary)
-        {
-            if (!arg.IsTypeDesc() && arg.GetMethodTable()->HasSameTypeDefAs(MscorlibBinder::GetClass(CLASS__KEYVALUEPAIRGENERIC)))
-            {
-                // IReadOnlyCollection<KeyValuePair<K, V>> -> IReadOnlyDictionary<K, V>
-                if (pfChosenIDictionary != NULL)
-                    *pfChosenIDictionary = TRUE;
-
-                pItfMT = GetAppDomain()->GetRedirectedType(WinMDAdapter::RedirectedTypeIndex_System_Collections_Generic_IReadOnlyDictionary);
-                return TypeHandle(pItfMT).Instantiate(arg.GetInstantiation()).GetMethodTable();
-            }
-        }
-
-        // IReadOnlyCollection<T> -> IReadOnlyList<T>
-        pItfMT = GetAppDomain()->GetRedirectedType(WinMDAdapter::RedirectedTypeIndex_System_Collections_Generic_IReadOnlyList);
-        return TypeHandle(pItfMT).Instantiate(inst).GetMethodTable();
-    }
-
-    // Casting/calling via ICollection means QI/calling through IBindableVector (projected to IList).
-    if (pItfMT == MscorlibBinder::GetExistingClass(CLASS__ICOLLECTION))
-    {
-        return MscorlibBinder::GetExistingClass(CLASS__ILIST);
-    }
-
-    // none of the above
-    return NULL;
-}
-
 // Helper method to allow us to compare a MethodTable against a known method table
 // from mscorlib.  If the mscorlib type isn't loaded, we don't load it because we
 // know that it can't be the MethodTable we're curious about.
@@ -3101,611 +2576,7 @@ static bool MethodTableHasSameTypeDefAsMscorlibClass(MethodTable* pMT, BinderCla
     return (pMT->HasSameTypeDefAs(pMT_MscorlibClass) != FALSE);
 }
 
-// Returns an interface with variance corresponding to pMT or NULL if pMT does not support variance.
-// The reason why we don't just call HasVariance() is that we also deal with the WinRT interfaces
-// like IIterable<T> which do not (and cannot) have variance from .NET type system point of view.
-// static
-MethodTable *RCW::GetVariantMethodTable(MethodTable *pMT)
-{
-    CONTRACT(MethodTable *)
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-        PRECONDITION(CheckPointer(pMT));
-        POSTCONDITION(RETVAL == NULL || RETVAL->HasVariance());
-    }
-    CONTRACT_END;
-
-    RCWPerTypeData *pData = pMT->GetRCWPerTypeData();
-    if (pData == NULL)
-    {
-        // if this type has no RCW data allocated, we know for sure that pMT has no
-        // corresponding MethodTable with variance
-        _ASSERTE(ComputeVariantMethodTable(pMT) == NULL);
-        RETURN NULL;
-    }
-
-    if ((pData->m_dwFlags & RCWPerTypeData::VariantTypeInited) == 0)
-    {
-        pData->m_pVariantMT = ComputeVariantMethodTable(pMT);
-        FastInterlockOr(&pData->m_dwFlags, RCWPerTypeData::VariantTypeInited);
-    }
-    RETURN pData->m_pVariantMT;
-}
-
-// static
-MethodTable *RCW::ComputeVariantMethodTable(MethodTable *pMT)
-{
-    CONTRACT(MethodTable *)
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-        PRECONDITION(CheckPointer(pMT));
-        POSTCONDITION(RETVAL == NULL || RETVAL->HasVariance());
-    }
-    CONTRACT_END;
-
-    if (!pMT->IsProjectedFromWinRT() && !WinRTTypeNameConverter::ResolveRedirectedType(pMT, NULL))
-    {
-        RETURN NULL;
-    }
-
-    if (pMT->HasVariance())
-    {
-        RETURN pMT;
-    }
-
-    // IIterable and IVectorView are not marked as covariant. Check them explicitly and
-    // return the corresponding IEnumerable / IReadOnlyList instantiation.
-    if (MethodTableHasSameTypeDefAsMscorlibClass(pMT, CLASS__IITERABLE))
-    {
-        RETURN TypeHandle(MscorlibBinder::GetExistingClass(CLASS__IENUMERABLEGENERIC)).
-               Instantiate(pMT->GetInstantiation()).AsMethodTable();
-    }
-    if (MethodTableHasSameTypeDefAsMscorlibClass(pMT, CLASS__IVECTORVIEW))
-    {
-        RETURN TypeHandle(MscorlibBinder::GetExistingClass(CLASS__IREADONLYLISTGENERIC)).
-               Instantiate(pMT->GetInstantiation()).AsMethodTable();
-    }
-
-    // IIterator is not marked as covariant either. Return the covariant IEnumerator.
-    DefineFullyQualifiedNameForClassW();
-    if (MethodTableHasSameTypeDefAsMscorlibClass(pMT, CLASS__IITERATOR) ||
-        wcscmp(GetFullyQualifiedNameForClassW_WinRT(pMT), g_WinRTIIteratorClassNameW) == 0)
-    {
-        RETURN TypeHandle(MscorlibBinder::GetClass(CLASS__IENUMERATORGENERIC)).
-               Instantiate(pMT->GetInstantiation()).AsMethodTable();
-    }
-
-    RETURN NULL;
-}
-
 #ifndef CROSSGEN_COMPILE
-//-----------------------------------------------------------------
-// Determines the interface that should be QI'ed for when the RCW is cast to pItfMT.
-RCW::InterfaceRedirectionKind RCW::GetInterfaceForQI(MethodTable *pItfMT, MethodTable **pNewItfMT)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-        PRECONDITION(CheckPointer(pItfMT));
-        PRECONDITION(CheckPointer(pNewItfMT));
-    }
-    CONTRACTL_END;
-
-    // We don't want to be redirecting interfaces if the underlying COM object is not a WinRT type
-    if (SupportsIInspectable() || pItfMT->IsWinRTRedirectedDelegate())
-    {
-        MethodTable *pNewItfMT1;
-        MethodTable *pNewItfMT2;
-        InterfaceRedirectionKind redirectionKind = GetInterfacesForQI(pItfMT, &pNewItfMT1, &pNewItfMT2);
-
-        //
-        // IEnumerable may need three QI attempts:
-        // 1. IEnumerable/IDispatch+DISPID_NEWENUM
-        // 2. IBindableIterable
-        // 3. IIterable<T> for a T
-        //
-        // Is this 3rd attempt on IEnumerable (non-generic)?
-        if (redirectionKind == InterfaceRedirection_Other_RetryOnFailure &&
-            pItfMT != *pNewItfMT && *pNewItfMT != NULL &&
-            pItfMT == MscorlibBinder::GetExistingClass(CLASS__IENUMERABLE))
-        {
-            // Yes - we are at 3rd attempt;
-            // QI for IEnumerable/IDispatch+DISPID_NEWENUM and for IBindableIterable failed
-            // and we are about to see if we know of an IIterable<T> to use.
-
-            MethodDesc *pMD = GetGetEnumeratorMethod();
-            if (pMD != NULL)
-            {
-                // we have already determined what casting to IEnumerable means for this RCW
-                TypeHandle th = TypeHandle(MscorlibBinder::GetClass(CLASS__IITERABLE));
-                *pNewItfMT = th.Instantiate(pMD->GetClassInstantiation()).GetMethodTable();
-                return InterfaceRedirection_IEnumerable;
-            }
-
-            // The last attempt failed, this is an error.
-            return InterfaceRedirection_UnresolvedIEnumerable;
-        }
-
-        if ((redirectionKind != InterfaceRedirection_IEnumerable_RetryOnFailure &&
-             redirectionKind != InterfaceRedirection_Other_RetryOnFailure) || *pNewItfMT == NULL)
-        {
-            // First attempt - use pNewItfMT1
-            *pNewItfMT = pNewItfMT1;
-            return redirectionKind;
-        }
-        else
-        {
-            // Second attempt - use pNewItfMT2
-            *pNewItfMT = pNewItfMT2;
-
-            if (redirectionKind == InterfaceRedirection_IEnumerable_RetryOnFailure)
-                return InterfaceRedirection_IEnumerable;
-
-            // Get ready for the 3rd attmpt if 2nd attempt fails
-            // This only happens for non-generic IEnumerable
-            if (pItfMT == MscorlibBinder::GetExistingClass(CLASS__IENUMERABLE))
-                return InterfaceRedirection_IEnumerable_RetryOnFailure;
-
-            return InterfaceRedirection_IEnumerable;
-        }
-    }
-
-    *pNewItfMT = pItfMT;
-    return InterfaceRedirection_None;
-}
-#endif // !CROSSGEN_COMPILE
-
-// static
-RCW::InterfaceRedirectionKind RCW::GetInterfacesForQI(MethodTable *pItfMT, MethodTable **ppNewItfMT1, MethodTable **ppNewItfMT2)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-        PRECONDITION(CheckPointer(pItfMT));
-        PRECONDITION(CheckPointer(ppNewItfMT1));
-        PRECONDITION(CheckPointer(ppNewItfMT2));
-    }
-    CONTRACTL_END;
-
-    RCWPerTypeData *pData = pItfMT->GetRCWPerTypeData();
-    if (pData == NULL)
-    {
-#ifdef _DEBUG
-        // verify that if the per-type data is NULL, the type has indeed no redirection
-        MethodTable *pNewItfMT1;
-        MethodTable *pNewItfMT2;
-        _ASSERTE(ComputeInterfacesForQI(pItfMT, &pNewItfMT1, &pNewItfMT2) == InterfaceRedirection_None);
-#endif // _DEBUG
-
-        *ppNewItfMT1 = pItfMT;
-        *ppNewItfMT2 = NULL;
-        return InterfaceRedirection_None;
-    }
-    else
-    {
-        if ((pData->m_dwFlags & RCWPerTypeData::RedirectionInfoInited) == 0)
-        {
-            pData->m_RedirectionKind = ComputeInterfacesForQI(pItfMT, &pData->m_pMTForQI1, &pData->m_pMTForQI2);
-            FastInterlockOr(&pData->m_dwFlags, RCWPerTypeData::RedirectionInfoInited);
-        }
-
-        *ppNewItfMT1 = pData->m_pMTForQI1;
-        *ppNewItfMT2 = pData->m_pMTForQI2;
-        return pData->m_RedirectionKind;
-    }
-}
-
-// static
-RCW::InterfaceRedirectionKind RCW::ComputeInterfacesForQI(MethodTable *pItfMT, MethodTable **ppNewItfMT1, MethodTable **ppNewItfMT2)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-        PRECONDITION(CheckPointer(pItfMT));
-        PRECONDITION(CheckPointer(ppNewItfMT1));
-        PRECONDITION(CheckPointer(ppNewItfMT2));
-    }
-    CONTRACTL_END;
-
-    if (pItfMT->IsProjectedFromWinRT())
-    {
-        // If we're casting to IIterable<T> directly, then while we do want to QI IIterable<T>, also
-        // make a note that it is redirected from IEnumerable<T>
-        if (pItfMT->HasInstantiation() && pItfMT->HasSameTypeDefAs(MscorlibBinder::GetClass(CLASS__IITERABLE)))
-        {
-            *ppNewItfMT1 = pItfMT;
-            return InterfaceRedirection_IEnumerable;
-        }
-    }
-    else
-    {
-        WinMDAdapter::RedirectedTypeIndex redirectedInterfaceIndex;
-        RCW::InterfaceRedirectionKind redirectionKind = InterfaceRedirection_None;
-
-        BOOL fChosenIDictionary;
-        MethodTable *pResolvedItfMT = ResolveICollectionInterface(pItfMT, TRUE, &fChosenIDictionary);
-        if (pResolvedItfMT == NULL)
-        {
-            pResolvedItfMT = pItfMT;
-            // Let ResolveRedirectedType convert IDictionary/IList to the corresponding WinRT type as usual
-        }
-
-        if (WinRTInterfaceRedirector::ResolveRedirectedInterface(pResolvedItfMT, &redirectedInterfaceIndex))
-        {
-            TypeHandle th = WinRTInterfaceRedirector::GetWinRTTypeForRedirectedInterfaceIndex(redirectedInterfaceIndex);
-
-            if (th.HasInstantiation())
-            {
-                *ppNewItfMT1 = th.Instantiate(pResolvedItfMT->GetInstantiation()).GetMethodTable();
-                if (pItfMT->CanCastToInterface(MscorlibBinder::GetClass(CLASS__IENUMERABLE)))
-                {
-                    redirectionKind = InterfaceRedirection_IEnumerable;
-                }
-                else
-                {
-                    _ASSERTE(!fChosenIDictionary);
-                    redirectionKind = InterfaceRedirection_Other;
-                }
-            }
-            else
-            {
-                // pItfMT is a non-generic redirected interface - for compat reasons do QI for the interface first,
-                // and if it fails, use redirection
-                *ppNewItfMT1 = pItfMT;
-                *ppNewItfMT2 = th.GetMethodTable();
-                redirectionKind = InterfaceRedirection_Other_RetryOnFailure;
-            }
-        }
-
-        if (fChosenIDictionary)
-        {
-            // pItfMT is the ambiguous ICollection<KeyValuePair<K, V>> and *ppNewItfMT1 at this point is the
-            // corresponding IMap<K, V>, now we are going to assign IVector<IKeyValuePair<K, V>> to *ppNewItfMT2
-            pResolvedItfMT = ResolveICollectionInterface(pItfMT, FALSE, NULL);
-
-            VERIFY(WinRTInterfaceRedirector::ResolveRedirectedInterface(pResolvedItfMT, &redirectedInterfaceIndex));
-            TypeHandle th = WinRTInterfaceRedirector::GetWinRTTypeForRedirectedInterfaceIndex(redirectedInterfaceIndex);
-
-            *ppNewItfMT2 = th.Instantiate(pItfMT->GetInstantiation()).GetMethodTable();
-            redirectionKind = InterfaceRedirection_IEnumerable_RetryOnFailure;
-        }
-
-        if (redirectionKind != InterfaceRedirection_None)
-        {
-            return redirectionKind;
-        }
-
-        if (WinRTDelegateRedirector::ResolveRedirectedDelegate(pItfMT, &redirectedInterfaceIndex))
-        {
-            TypeHandle th = TypeHandle(WinRTDelegateRedirector::GetWinRTTypeForRedirectedDelegateIndex(redirectedInterfaceIndex));
-
-            if (pItfMT->HasInstantiation())
-            {
-                th = th.Instantiate(pItfMT->GetInstantiation());
-            }
-
-            *ppNewItfMT1 = th.GetMethodTable();
-            return InterfaceRedirection_Other;
-        }
-    }
-
-    *ppNewItfMT1 = pItfMT;
-    return InterfaceRedirection_None;
-}
-
-#ifndef CROSSGEN_COMPILE
-//-----------------------------------------------------------------
-// Returns a known working IEnumerable<T>::GetEnumerator to be used in lieu of the non-generic
-// IEnumerable::GetEnumerator.
-MethodDesc *RCW::GetGetEnumeratorMethod()
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    if (m_pAuxiliaryData == NULL || m_pAuxiliaryData->m_pGetEnumeratorMethod == NULL)
-    {
-        MethodTable *pClsMT;
-        {
-            GCX_COOP();
-            pClsMT = GetExposedObject()->GetMethodTable();
-        }
-
-        SetGetEnumeratorMethod(pClsMT);
-    }
-
-    return (m_pAuxiliaryData == NULL ? NULL : m_pAuxiliaryData->m_pGetEnumeratorMethod);
-}
-
-//-----------------------------------------------------------------
-// Sets the first "known" GetEnumerator method on the RCW if not set already.
-void RCW::SetGetEnumeratorMethod(MethodTable *pMT)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    if (m_pAuxiliaryData != NULL && m_pAuxiliaryData->m_pGetEnumeratorMethod != NULL)
-        return;
-
-    // Retrieve cached GetEnumerator method or compute the right one for this pMT
-    MethodDesc *pMD = GetOrComputeGetEnumeratorMethodForType(pMT);
-
-    if (pMD != NULL)
-    {
-        // We successfully got a GetEnumerator method - cache it in the RCW
-        // We can have multiple casts going on concurrently, make sure that
-        // the result of this method is stable.
-        InterlockedCompareExchangeT(&GetOrCreateAuxiliaryData()->m_pGetEnumeratorMethod, pMD, NULL);
-    }
-}
-
-// Retrieve cached GetEnumerator method or compute the right one for a specific type
-MethodDesc *RCW::GetOrComputeGetEnumeratorMethodForType(MethodTable *pMT)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    MethodDesc *pMD = NULL;
-
-    RCWPerTypeData *pData = pMT->GetRCWPerTypeData();
-    if (pData != NULL)
-    {
-        if ((pData->m_dwFlags & RCWPerTypeData::GetEnumeratorInited) == 0)
-        {
-            pData->m_pGetEnumeratorMethod = ComputeGetEnumeratorMethodForType(pMT);
-            FastInterlockOr(&pData->m_dwFlags, RCWPerTypeData::GetEnumeratorInited);
-        }
-
-        pMD = pData->m_pGetEnumeratorMethod;
-    }
-    else
-    {
-        pMD = ComputeGetEnumeratorMethodForType(pMT);
-    }
-
-    return pMD;
-}
-
-// Compute the first GetEnumerator for a specific type
-MethodDesc *RCW::ComputeGetEnumeratorMethodForType(MethodTable *pMT)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    MethodDesc *pMD = ComputeGetEnumeratorMethodForTypeInternal(pMT);
-
-    // Walk the interface impl and use these interfaces to compute
-    MethodTable::InterfaceMapIterator it = pMT->IterateInterfaceMap();
-    while (pMD == NULL && it.Next())
-    {
-        pMT = it.GetInterface();
-        pMD = GetOrComputeGetEnumeratorMethodForType(pMT);
-    }
-
-    return pMD;
-}
-
-// Get the GetEnumerator method for IEnumerable<T> or IIterable<T>
-MethodDesc *RCW::ComputeGetEnumeratorMethodForTypeInternal(MethodTable *pMT)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    if (!pMT->HasSameTypeDefAs(MscorlibBinder::GetExistingClass(CLASS__IENUMERABLEGENERIC)))
-    {
-        // If we have an IIterable<T>, we want to get the enumerator for the equivalent
-        // instantiation of IEnumerable<T>
-        if (pMT->HasSameTypeDefAs(MscorlibBinder::GetClass(CLASS__IITERABLE)))
-        {
-            TypeHandle thEnumerable = TypeHandle(MscorlibBinder::GetExistingClass(CLASS__IENUMERABLEGENERIC));
-            pMT = thEnumerable.Instantiate(pMT->GetInstantiation()).GetMethodTable();
-        }
-        else
-        {
-            return NULL;
-        }
-    }
-
-    MethodDesc *pMD = pMT->GetMethodDescForSlot(0);
-    _ASSERTE(strcmp(pMD->GetName(), "GetEnumerator") == 0);
-
-    if (pMD->IsSharedByGenericInstantiations())
-    {
-        pMD = MethodDesc::FindOrCreateAssociatedMethodDesc(
-            pMD,
-            pMT,
-            FALSE,           // forceBoxedEntryPoint
-            Instantiation(), // methodInst
-            FALSE,           // allowInstParam
-            TRUE);           // forceRemotableMethod
-    }
-
-    return pMD;
-}
-
-
-//-----------------------------------------------------------------
-// Notifies the RCW of an interface that is known to be supported by the COM object.
-// pItfMT is the type which the object directly supports, originalInst is the instantiation
-// that we asked for. I.e. we know that the object supports pItfMT<originalInst> via
-// variance because the QI for IID(pItfMT) succeeded.
-void RCW::SetSupportedInterface(MethodTable *pItfMT, Instantiation originalInst)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    BOOL fIsEnumerable = (pItfMT->HasSameTypeDefAs(MscorlibBinder::GetExistingClass(CLASS__IENUMERABLEGENERIC)) ||
-                          pItfMT->HasSameTypeDefAs(MscorlibBinder::GetClass(CLASS__IITERABLE)));
-
-    if (fIsEnumerable || pItfMT->HasSameTypeDefAs(MscorlibBinder::GetExistingClass(CLASS__IREADONLYLISTGENERIC)) ||
-                         pItfMT->HasSameTypeDefAs(MscorlibBinder::GetClass(CLASS__IVECTORVIEW)))
-    {
-        WinRTInterfaceRedirector::WinRTLegalStructureBaseType baseType;
-        if (!originalInst.IsEmpty())
-        {
-            // use the original instantiation if available
-            baseType = WinRTInterfaceRedirector::GetStructureBaseType(originalInst);
-        }
-        else
-        {
-            baseType = WinRTInterfaceRedirector::GetStructureBaseType(pItfMT->GetInstantiation());
-        }
-
-        switch (baseType)
-        {
-            case WinRTInterfaceRedirector::BaseType_Object:
-            {
-                OBJECTHANDLE *pohHandleField = fIsEnumerable ?
-                    &GetOrCreateAuxiliaryData()->m_ohObjectVariantCallTarget_IEnumerable :
-                    &GetOrCreateAuxiliaryData()->m_ohObjectVariantCallTarget_IReadOnlyList;
-
-                if (*pohHandleField != NULL)
-                {
-                    // we've already established the behavior so we can skip the code below
-                    break;
-                }
-
-                if (!originalInst.IsEmpty())
-                {
-                    MethodTable *pInstArgMT = pItfMT->GetInstantiation()[0].GetMethodTable();
-
-                    if (pInstArgMT == g_pStringClass)
-                    {
-                        // We are casting the RCW to IEnumerable<string> or IReadOnlyList<string> - we special-case this common case
-                        // so we don't have to create the delegate.
-                        FastInterlockCompareExchangePointer<OBJECTHANDLE>(pohHandleField, VARIANCE_STUB_TARGET_USE_STRING, NULL);
-                    }
-                    else if (pInstArgMT == g_pExceptionClass ||
-                             pInstArgMT == MscorlibBinder::GetClass(CLASS__TYPE) ||
-                             pInstArgMT->IsArray() ||
-                             pInstArgMT->IsDelegate())
-                    {
-                        // We are casting the RCW to IEnumerable<T> or IReadOnlyList<T> where T is Type/Exception/an array/a delegate
-                        // i.e. an unbounded set of types. We'll create a delegate pointing to the right stub and cache it on the RCW
-                        // so we can handle the calls via GetEnumerator/Indexer_Get as fast as possible.
-
-                        MethodDesc *pTargetMD = MscorlibBinder::GetMethod(fIsEnumerable ?
-                            METHOD__ITERABLE_TO_ENUMERABLE_ADAPTER__GET_ENUMERATOR_STUB :
-                            METHOD__IVECTORVIEW_TO_IREADONLYLIST_ADAPTER__INDEXER_GET);
-
-                        pTargetMD = MethodDesc::FindOrCreateAssociatedMethodDesc(
-                            pTargetMD,
-                            pTargetMD->GetMethodTable(),
-                            FALSE,                      // forceBoxedEntryPoint
-                            pItfMT->GetInstantiation(), // methodInst
-                            FALSE,                      // allowInstParam
-                            TRUE);                      // forceRemotableMethod
-
-                        MethodTable *pMT = MscorlibBinder::GetClass(fIsEnumerable ?
-                            CLASS__GET_ENUMERATOR_DELEGATE :
-                            CLASS__INDEXER_GET_DELEGATE);
-
-                        pMT = TypeHandle(pMT).Instantiate(pItfMT->GetInstantiation()).AsMethodTable();
-
-                        GCX_COOP();
-
-                        DELEGATEREF pDelObj = NULL;
-                        GCPROTECT_BEGIN(pDelObj);
-
-                        pDelObj = (DELEGATEREF)AllocateObject(pMT);
-                        pDelObj->SetTarget(GetExposedObject());
-                        pDelObj->SetMethodPtr(pTargetMD->GetMultiCallableAddrOfCode());
-
-                        OBJECTHANDLEHolder oh = GetAppDomain()->CreateHandle(pDelObj);
-                        if (FastInterlockCompareExchangePointer<OBJECTHANDLE>(pohHandleField, oh, NULL) == NULL)
-                        {
-                            oh.SuppressRelease();
-                        }
-
-                        GCPROTECT_END();
-                    }
-                }
-
-                // the default is "use T", i.e. handle the call as normal
-                if (*pohHandleField == NULL)
-                {
-                    FastInterlockCompareExchangePointer<OBJECTHANDLE>(pohHandleField, VARIANCE_STUB_TARGET_USE_T, NULL);
-                }
-                break;
-            }
-
-            case WinRTInterfaceRedirector::BaseType_IEnumerable:
-            case WinRTInterfaceRedirector::BaseType_IEnumerableOfChar:
-            {
-                // The only WinRT-legal type that implements IEnumerable<IEnumerable> or IEnumerable<IEnumerable<char>> or
-                // IReadOnlyList<IEnumerable> or IReadOnlyList<IEnumerable<char>> AND is not an IInspectable on the WinRT
-                // side is string. We'll use a couple of flags here since the number of options is small.
-
-                InterfaceVarianceBehavior varianceBehavior = (fIsEnumerable ? IEnumerableSupported : IReadOnlyListSupported);
-
-                if (!originalInst.IsEmpty())
-                {
-                    MethodTable *pInstArgMT = pItfMT->GetInstantiation()[0].GetMethodTable();
-                    if (pInstArgMT == g_pStringClass)
-                    {
-                        varianceBehavior = (InterfaceVarianceBehavior)
-                            (varianceBehavior | (fIsEnumerable ? IEnumerableSupportedViaStringInstantiation : IReadOnlyListSupportedViaStringInstantiation));
-                    }
-
-                    RCWAuxiliaryData::RCWAuxFlags newAuxFlags = { 0 };
-
-                    if (baseType == WinRTInterfaceRedirector::BaseType_IEnumerable)
-                    {
-                        newAuxFlags.m_InterfaceVarianceBehavior_OfIEnumerable = varianceBehavior;
-                    }
-                    else
-                    {
-                        _ASSERTE(baseType == WinRTInterfaceRedirector::BaseType_IEnumerableOfChar);
-                        newAuxFlags.m_InterfaceVarianceBehavior_OfIEnumerableOfChar = varianceBehavior;
-                    }
-
-                    RCWAuxiliaryData *pAuxData = GetOrCreateAuxiliaryData();
-                    FastInterlockOr(&pAuxData->m_AuxFlags.m_dwFlags, newAuxFlags.m_dwFlags);
-                }
-            }
-        }
-    }
-}
-
 // Performs QI for the given interface, optionally instantiating it with the given generic args.
 HRESULT RCW::CallQueryInterface(MethodTable *pMT, Instantiation inst, IID *piid, IUnknown **ppUnk)
 {
@@ -3718,156 +2589,14 @@ HRESULT RCW::CallQueryInterface(MethodTable *pMT, Instantiation inst, IID *piid,
     CONTRACTL_END;
 
     HRESULT hr;
-    MethodTable *pCastToMT = pMT;
-    MethodTable *pCOMItfMT = NULL;
-    InterfaceRedirectionKind redirection = InterfaceRedirection_None;
 
     if (!inst.IsEmpty())
     {
         pMT = TypeHandle(pMT).Instantiate(inst).GetMethodTable();
     }
 
-    do
-    {
-        redirection = GetInterfaceForQI(pMT, &pCOMItfMT);
-
-        if (redirection == InterfaceRedirection_UnresolvedIEnumerable)
-        {
-            // We just say no in this case. If we threw an exception, we would make the "as" operator
-            // throwing which would be ECMA violation.
-            return E_NOINTERFACE;
-        }
-
-        // To avoid throwing BadImageFormatException later in ComputeGuidForGenericTypes we must fail early if this is a generic type and not a legal WinRT type.
-        if (pCOMItfMT->SupportsGenericInterop(TypeHandle::Interop_NativeToManaged, MethodTable::modeProjected) && !pCOMItfMT->IsLegalNonArrayWinRTType())
-        {
-            return E_NOINTERFACE;
-        }
-        else
-        {
-            // Retrieve the IID of the interface.
-            pCOMItfMT->GetGuid(piid, TRUE);
-        }
-
-        // QI for the interface.
-        hr = SafeQueryInterfaceRemoteAware(*piid, ppUnk);
-    }
-    while (hr == E_NOINTERFACE &&   // Terminate the loop if the QI failed for some other reasons (for example, context transition failure)
-           (redirection == InterfaceRedirection_IEnumerable_RetryOnFailure || redirection == InterfaceRedirection_Other_RetryOnFailure));
-
-    if (SUCCEEDED(hr))
-    {
-        if (redirection == InterfaceRedirection_IEnumerable)
-        {
-            // remember the first IEnumerable<T> interface we successfully QI'ed for
-            SetGetEnumeratorMethod(pMT);
-        }
-
-        // remember successful QI's for interesting interfaces passing the original instantiation so we know that variance was involved
-        SetSupportedInterface(pCOMItfMT, pCastToMT->GetInstantiation());
-    }
-
-    return hr;
-}
-
-// Performs QI for interfaces that are castable to pMT using co-/contra-variance.
-HRESULT RCW::CallQueryInterfaceUsingVariance(MethodTable *pMT, IUnknown **ppUnk)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    HRESULT hr = E_NOINTERFACE;
-
-    // see if pMT is an interface with variance, if not we return NULL
-    MethodTable *pVariantMT = GetVariantMethodTable(pMT);
-
-    if (pVariantMT != NULL)
-    {
-        MethodTable *pItfMT = NULL;
-        IID variantIid;
-
-        MethodTable *pClassMT;
-
-        {
-            GCX_COOP();
-            pClassMT = GetExposedObject()->GetMethodTable();
-        }
-
-        // Try interfaces that we know about from metadata
-        if (pClassMT != NULL && pClassMT != g_pBaseCOMObject)
-        {
-            MethodTable::InterfaceMapIterator it = pClassMT->IterateInterfaceMap();
-            while (FAILED(hr) && it.Next())
-            {
-                pItfMT = GetVariantMethodTable(it.GetInterface());
-                if (pItfMT != NULL && pItfMT->CanCastByVarianceToInterfaceOrDelegate(pVariantMT, NULL))
-                {
-                    hr = CallQueryInterface(pMT, pItfMT->GetInstantiation(), &variantIid, ppUnk);
-                }
-            }
-        }
-
-        // Then try the interface pointer cache
-        CachedInterfaceEntryIterator it = IterateCachedInterfacePointers();
-        while (FAILED(hr) && it.Next())
-        {
-            MethodTable *pCachedItfMT = (MethodTable *)it.GetEntry()->m_pMT;
-            if (pCachedItfMT != NULL)
-            {
-                pItfMT = GetVariantMethodTable(pCachedItfMT);
-                if (pItfMT != NULL && pItfMT->CanCastByVarianceToInterfaceOrDelegate(pVariantMT, NULL))
-                {
-                    hr = CallQueryInterface(pMT, pItfMT->GetInstantiation(), &variantIid, ppUnk);
-                }
-
-                // The cached interface may not support variance, but one of its base interfaces can
-                if (FAILED(hr))
-                {
-                    MethodTable::InterfaceMapIterator it = pCachedItfMT->IterateInterfaceMap();
-                    while (FAILED(hr) && it.Next())
-                    {
-                        pItfMT = GetVariantMethodTable(it.GetInterface());
-                        if (pItfMT != NULL && pItfMT->CanCastByVarianceToInterfaceOrDelegate(pVariantMT, NULL))
-                        {
-                            hr = CallQueryInterface(pMT, pItfMT->GetInstantiation(), &variantIid, ppUnk);
-                        }
-                    }
-                }
-            }
-        }
-
-        // If we still haven't succeeded, enumerate the variant interface cache
-        if (FAILED(hr) && m_pAuxiliaryData != NULL && m_pAuxiliaryData->m_prVariantInterfaces != NULL)
-        {
-            // make a copy of the cache under the lock
-            ArrayList rVariantInterfacesCopy;
-            {
-                CrstHolder ch(&m_pAuxiliaryData->m_VarianceCacheCrst);
-
-                ArrayList::Iterator it = m_pAuxiliaryData->m_prVariantInterfaces->Iterate();
-                while (it.Next())
-                {
-                    rVariantInterfacesCopy.Append(it.GetElement());
-                }
-            }
-
-            ArrayList::Iterator it = rVariantInterfacesCopy.Iterate();
-            while (FAILED(hr) && it.Next())
-            {
-                pItfMT = (MethodTable *)it.GetElement();
-                if (pItfMT->CanCastByVarianceToInterfaceOrDelegate(pVariantMT, NULL))
-                {
-                    hr = CallQueryInterface(pMT, pItfMT->GetInstantiation(), &variantIid, ppUnk);
-                }
-            }
-        }
-    }
-
+    pMT->GetGuid(piid, TRUE);
+    hr = SafeQueryInterfaceRemoteAware(*piid, ppUnk);
     return hr;
 }
 
@@ -3933,31 +2662,10 @@ IUnknown* RCW::GetComIPForMethodTableFromCache(MethodTable* pMT)
     // First, try to QI for the interface that we were asked for
     hr = CallQueryInterface(pMT, Instantiation(), &iid, &pUnk);
 
-    // If that failed and the interface has variance, we'll try to find another instantiation
-    bool fVarianceUsed = false;
-    if (FAILED(hr))
-    {
-        hr = CallQueryInterfaceUsingVariance(pMT, &pUnk);
-        if (pUnk != NULL)
-        {
-            fVarianceUsed = true;
-        }
-    }
-
     if (pUnk == NULL)
         RETURN NULL;
 
-    bool fAllowOutOfContextCache = true;
-    if (!pMT->IsProjectedFromWinRT() && !pMT->IsWinRTRedirectedInterface(TypeHandle::Interop_ManagedToNative) && !pMT->IsWinRTRedirectedDelegate())
-    {
-        // This is not a WinRT interface and we could in theory use the out-of-context auxiliary cache,
-        // at worst we would just do
-        // fAllowOutOfContextCache = !IsURTAggregated()
-        // however such a change has some breaking potential (COM proxies would live much longer) and is
-        // considered to risky for an in-place release.
-
-        fAllowOutOfContextCache = false;
-    }
+    bool fAllowOutOfContextCache = false;
 
     // try to cache the interface pointer in the inline cache. This cache can only store interface pointers
     // returned from QI's in the same context where we created the RCW.
@@ -3974,11 +2682,6 @@ IUnknown* RCW::GetComIPForMethodTableFromCache(MethodTable* pMT)
                     // Get an extra addref to hold this reference alive in our cache
                     cbRef = SafeAddRef(pUnk);
                     LogInteropAddRef(pUnk, cbRef, "RCW::GetComIPForMethodTableFromCache: Addref because storing pUnk in InterfaceEntry cache");
-
-                    // Notify Jupiter we have done a AddRef
-                    // We should do this *after* we made a AddRef because we should never
-                    // be in a state where report refs > actual refs
-                    RCWWalker::AfterInterfaceAddRef(this);
                 }
 
                 fInterfaceCached = true;
@@ -3999,29 +2702,9 @@ IUnknown* RCW::GetComIPForMethodTableFromCache(MethodTable* pMT)
             // Get an extra addref to hold this reference alive in our cache
             cbRef = SafeAddRef(pUnk);
             LogInteropAddRef(pUnk, cbRef, "RCW::GetComIPForMethodTableFromCache: Addref because storing pUnk in the auxiliary interface pointer cache");
-
-            // Notify Jupiter we have done a AddRef
-            // We should do this *after* we made a AddRef because we should never
-            // be in a state where report refs > actual refs
-            RCWWalker::AfterInterfaceAddRef(this);
         }
 
         fInterfaceCached = true;
-    }
-
-    // Make sure we cache successful QI's for variant interfaces. This is so we can cast an RCW for
-    // example to IEnumerable<object> if we previously successfully QI'ed for IEnumerable<IFoo>. We
-    // only need to do this if we actually didn't use variance for this QI.
-    if (!fVarianceUsed)
-    {
-        MethodTable *pVariantMT = GetVariantMethodTable(pMT);
-
-        // We can also skip the potentially expensive CacheVariantInterface call if we already inserted
-        // the variant interface into our interface pointer cache.
-        if (pVariantMT != NULL && (!fInterfaceCached || pVariantMT != pMT))
-        {
-            GetOrCreateAuxiliaryData()->CacheVariantInterface(pVariantMT);
-        }
     }
 
     RETURN pUnk;
@@ -4181,19 +2864,12 @@ HRESULT __stdcall RCW::ReleaseAllInterfacesCallBack(LPVOID pData)
 
                 if (pCurrentCtxCookie == NULL || pCurrentCtxCookie == it.GetCtxCookie() || pWrap->IsFreeThreaded())
                 {
-                    // Notify Jupiter we are about to do a Release() for every cached interface pointer
-                    // This needs to be made before call Release because we should never be in a
-                    // state that we report more than the actual ref
-                    RCWWalker::BeforeInterfaceRelease(pWrap);
-
                     // make sure we never try to clean this up again
                     pEntry->Free();
                     SafeReleasePreemp(pUnk, pWrap);
                 }
                 else
                 {
-                    _ASSERTE(!pWrap->IsJupiterObject());
-
                     // Retrieve the addref'ed context entry that the wrapper lives in.
                     CtxEntryHolder pCtxEntry = it.GetCtxEntry();
 
@@ -4234,11 +2910,6 @@ void RCW::ReleaseAllInterfaces()
 
     RCW_VTABLEPTR(this);
 
-    // Notify Jupiter we are about to do a Release() for IUnknown
-    // This needs to be made before call Release because we should never be in a
-    // state that we report more than the actual ref
-    RCWWalker::BeforeInterfaceRelease(this);
-
     // Release the pUnk held by IUnkEntry
     m_UnkEntry.ReleaseInterface(this);
 
@@ -4252,11 +2923,6 @@ void RCW::ReleaseAllInterfaces()
 
             if (!m_aInterfaceEntries[i].IsFree())
             {
-                // Notify Jupiter we are about to do a Release() for every cached interface pointer
-                // This needs to be made before call Release because we should never be in a
-                // state that we report more than the actual ref
-                RCWWalker::BeforeInterfaceRelease(this);
-
                 DWORD cbRef = SafeReleasePreemp(m_aInterfaceEntries[i].m_pUnknown, this);
                 LogInteropRelease(m_aInterfaceEntries[i].m_pUnknown, cbRef, "RCW::ReleaseAllInterfaces: Releasing ref from InterfaceEntry table");
             }
@@ -4328,14 +2994,9 @@ bool RCW::SupportsMngStdInterface(MethodTable *pItfMT)
 
         // If the requested interface is IEnumerable then we need to check to see if the
         // COM object implements IDispatch and has a member with DISPID_NEWENUM.
-        if (pItfMT == MscorlibBinder::GetExistingClass(CLASS__IENUMERABLE))
+        if (pItfMT == MscorlibBinder::GetClass(CLASS__IENUMERABLE))
         {
-            SafeComHolder<IDispatch> pDisp = NULL;
-            if  (!AppX::IsAppXProcess())
-            {
-                 // Get the IDispatch on the current thread.
-                 pDisp = GetIDispatch();
-            }
+            SafeComHolder<IDispatch> pDisp = GetIDispatch();
             if (pDisp)
             {
                 DISPPARAMS DispParams = {0, 0, NULL, NULL};
@@ -4371,177 +3032,6 @@ bool RCW::SupportsMngStdInterface(MethodTable *pItfMT)
     }
 
     return false;
-}
-
-//---------------------------------------------------------------------
-// Determines whether a call through the given interface should use new
-// WinRT interop (as opposed to classic COM).
-TypeHandle::CastResult RCW::SupportsWinRTInteropInterfaceNoGC(MethodTable *pItfMT)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    WinMDAdapter::RedirectedTypeIndex index;
-
-    // @TODO: Make this nicer?
-    RedirectionBehavior redirectionBehavior;
-    if (pItfMT == MscorlibBinder::GetExistingClass(CLASS__IENUMERABLE))
-        redirectionBehavior = (RedirectionBehavior)m_Flags.m_RedirectionBehavior_IEnumerable;
-    else if (pItfMT == MscorlibBinder::GetExistingClass(CLASS__ICOLLECTION))
-        redirectionBehavior = (RedirectionBehavior)m_Flags.m_RedirectionBehavior_ICollection;
-    else if (pItfMT == MscorlibBinder::GetExistingClass(CLASS__ILIST))
-        redirectionBehavior = (RedirectionBehavior)m_Flags.m_RedirectionBehavior_IList;
-    else if (WinRTInterfaceRedirector::ResolveRedirectedInterface(pItfMT, &index) && index == WinMDAdapter::RedirectedTypeIndex_System_Collections_Specialized_INotifyCollectionChanged)
-        redirectionBehavior = (RedirectionBehavior)m_Flags.m_RedirectionBehavior_INotifyCollectionChanged;
-    else if (WinRTInterfaceRedirector::ResolveRedirectedInterface(pItfMT, &index) && index == WinMDAdapter::RedirectedTypeIndex_System_ComponentModel_INotifyPropertyChanged)
-        redirectionBehavior = (RedirectionBehavior)m_Flags.m_RedirectionBehavior_INotifyPropertyChanged;
-    else if (WinRTInterfaceRedirector::ResolveRedirectedInterface(pItfMT, &index) && index == WinMDAdapter::RedirectedTypeIndex_System_Windows_Input_ICommand)
-        redirectionBehavior = (RedirectionBehavior)m_Flags.m_RedirectionBehavior_ICommand;
-    else if (WinRTInterfaceRedirector::ResolveRedirectedInterface(pItfMT, &index) && index == WinMDAdapter::RedirectedTypeIndex_System_IDisposable)
-        redirectionBehavior = (RedirectionBehavior)m_Flags.m_RedirectionBehavior_IDisposable;
-    else
-    {
-        UNREACHABLE_MSG("Unknown redirected interface");
-    }
-
-    if ((redirectionBehavior & RedirectionBehaviorComputed) == 0)
-    {
-        // we don't know yet what the behavior should be
-        return TypeHandle::MaybeCast;
-    }
-
-    return ((redirectionBehavior & RedirectionBehaviorEnabled) == 0 ?
-        TypeHandle::CannotCast :
-        TypeHandle::CanCast);
-}
-
-//---------------------------------------------------------------------
-// This is a GC-triggering variant of code:SupportsWinRTInteropInterfaceNoGC.
-bool RCW::SupportsWinRTInteropInterface(MethodTable *pItfMT)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE;
-    }
-    CONTRACTL_END;
-
-    TypeHandle::CastResult result = SupportsWinRTInteropInterfaceNoGC(pItfMT);
-    switch (result)
-    {
-        case TypeHandle::CanCast: return true;
-        case TypeHandle::CannotCast: return false;
-    }
-
-    WinMDAdapter::RedirectedTypeIndex index;
-    bool fLegacySupported;
-
-    // @TODO: Make this nicer?
-    RedirectionBehavior redirectionBehavior;
-    RCWFlags newFlags = { 0 };
-
-    if (pItfMT == MscorlibBinder::GetExistingClass(CLASS__IENUMERABLE))
-    {
-        redirectionBehavior = ComputeRedirectionBehavior(pItfMT, &fLegacySupported);
-        newFlags.m_RedirectionBehavior_IEnumerable = redirectionBehavior;
-        newFlags.m_RedirectionBehavior_IEnumerable_LegacySupported = fLegacySupported;
-    }
-    else if (pItfMT == MscorlibBinder::GetExistingClass(CLASS__ICOLLECTION))
-    {
-        redirectionBehavior = ComputeRedirectionBehavior(pItfMT, &fLegacySupported);
-        newFlags.m_RedirectionBehavior_ICollection = redirectionBehavior;
-    }
-    else if (pItfMT == MscorlibBinder::GetExistingClass(CLASS__ILIST))
-    {
-        redirectionBehavior = ComputeRedirectionBehavior(pItfMT, &fLegacySupported);
-        newFlags.m_RedirectionBehavior_IList = redirectionBehavior;
-    }
-    else if (WinRTInterfaceRedirector::ResolveRedirectedInterface(pItfMT, &index) && index == WinMDAdapter::RedirectedTypeIndex_System_Collections_Specialized_INotifyCollectionChanged)
-    {
-        redirectionBehavior = ComputeRedirectionBehavior(pItfMT, &fLegacySupported);
-        newFlags.m_RedirectionBehavior_INotifyCollectionChanged = redirectionBehavior;
-    }
-    else if (WinRTInterfaceRedirector::ResolveRedirectedInterface(pItfMT, &index) && index == WinMDAdapter::RedirectedTypeIndex_System_ComponentModel_INotifyPropertyChanged)
-    {
-        redirectionBehavior = ComputeRedirectionBehavior(pItfMT, &fLegacySupported);
-        newFlags.m_RedirectionBehavior_INotifyPropertyChanged = redirectionBehavior;
-    }
-    else if (WinRTInterfaceRedirector::ResolveRedirectedInterface(pItfMT, &index) && index == WinMDAdapter::RedirectedTypeIndex_System_Windows_Input_ICommand)
-    {
-        redirectionBehavior = ComputeRedirectionBehavior(pItfMT, &fLegacySupported);
-        newFlags.m_RedirectionBehavior_ICommand = redirectionBehavior;
-    }
-    else if (WinRTInterfaceRedirector::ResolveRedirectedInterface(pItfMT, &index) && index == WinMDAdapter::RedirectedTypeIndex_System_IDisposable)
-    {
-        redirectionBehavior = ComputeRedirectionBehavior(pItfMT, &fLegacySupported);
-        newFlags.m_RedirectionBehavior_IDisposable = redirectionBehavior;
-    }
-    else
-    {
-        UNREACHABLE_MSG("Unknown redirected interface");
-    }
-
-    // Use interlocked operation so we don't race with other threads trying to set some other flags on the RCW.
-    // Note that since we are in cooperative mode, we don't race with RCWCache::DetachWrappersWorker here.
-    FastInterlockOr(&m_Flags.m_dwFlags, newFlags.m_dwFlags);
-
-    _ASSERTE((redirectionBehavior & RedirectionBehaviorComputed) != 0);
-    return ((redirectionBehavior & RedirectionBehaviorEnabled) != 0);
-}
-
-//---------------------------------------------------------------------
-// Computes the result of code:SupportsWinRTInteropInterface.
-RCW::RedirectionBehavior RCW::ComputeRedirectionBehavior(MethodTable *pItfMT, bool *pfLegacySupported)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE;
-    }
-    CONTRACTL_END;
-
-    *pfLegacySupported = false;
-
-    // @TODO: It may be possible to take advantage of metadata (e.g. non-WinRT ComImport class says it implements ICollection -> use classic COM)
-    // and/or the interface cache but for now we'll just QI.
-
-    IID iid;
-    pItfMT->GetGuid(&iid, TRUE, TRUE);
-
-    SafeComHolder<IUnknown> pUnk;
-    if (SUCCEEDED(SafeQueryInterfaceRemoteAware(iid, &pUnk)))
-    {
-        // if the object supports the legacy COM interface we don't use redirection
-        *pfLegacySupported = true;
-        return RedirectionBehaviorComputed;
-    }
-
-    if (SupportsMngStdInterface(pItfMT))
-    {
-        // if the object supports the corresponding "managed std" interface we don't use redirection
-        *pfLegacySupported = true;
-        return RedirectionBehaviorComputed;
-    }
-
-    COMOBJECTREF oref = GetExposedObject();
-    if (ComObject::SupportsInterface(oref, pItfMT))
-    {
-        // the cast succeeded but we know that the legacy COM interface is not implemented
-        // -> we know for sure that the object supports the WinRT redirected interface
-        return (RedirectionBehavior)(RedirectionBehaviorComputed | RedirectionBehaviorEnabled);
-    }
-
-    // The object does not support anything which means that we are in a failure case and an
-    // exception will be thrown. For back compat we want the exception message to include the
-    // classic COM IID so we'll return the "no redirection" result.
-    return RedirectionBehaviorComputed;
 }
 
 //--------------------------------------------------------------------------------
@@ -4665,20 +3155,17 @@ BOOL ComObject::SupportsInterface(OBJECTREF oref, MethodTable* pIntfTable)
                 if (!pMT->FindDynamicallyAddedInterface(pIntfTable))
                 {
                     // It's not there.
-                    if (!pMT->IsWinRTObjectType())
+                    // Check if the object supports all of these interfaces only if this is a classic COM interop
+                    // scenario. This is a perf optimization (no need to QI for base interfaces if we don't really
+                    // need them just yet) and also has a usability aspect. If this SupportsInterface call failed
+                    // because one of the base interfaces is not supported, the exception we'd throw would contain
+                    // only the name of the "top level" interface which would confuse the developer.
+                    MethodTable::InterfaceMapIterator it = pIntfTable->IterateInterfaceMap();
+                    while (it.Next())
                     {
-                        // Check if the object supports all of these interfaces only if this is a classic COM interop
-                        // scenario. This is a perf optimization (no need to QI for base interfaces if we don't really
-                        // need them just yet) and also has a usability aspect. If this SupportsInterface call failed
-                        // because one of the base interfaces is not supported, the exception we'd throw would contain
-                        // only the name of the "top level" interface which would confuse the developer.
-                        MethodTable::InterfaceMapIterator it = pIntfTable->IterateInterfaceMap();
-                        while (it.Next())
-                        {
-                            bSupportsItf = Object::SupportsInterface(oref, it.GetInterface());
-                            if (!bSupportsItf)
-                                break;
-                        }
+                        bSupportsItf = Object::SupportsInterface(oref, it.GetInterface());
+                        if (!bSupportsItf)
+                            break;
                     }
 
                     // If the object supports all these interfaces, attempt to add the interface table
@@ -4749,39 +3236,17 @@ void ComObject::ThrowInvalidCastException(OBJECTREF *pObj, MethodTable *pCastToM
         pRCW.Init(*pObj);
 
         // Retrieve the IID of the interface.
-        MethodTable *pCOMItfMT = NULL;
-        if (pRCW->GetInterfaceForQI(thCastTo.GetMethodTable(), &pCOMItfMT) == RCW::InterfaceRedirection_UnresolvedIEnumerable)
-        {
-            // A special exception message for the case where we are unable to figure out the
-            // redirected interface because we haven't seen a cast to a generic IEnumerable yet.
-            COMPlusThrow(kInvalidCastException, IDS_EE_WINRT_IENUMERABLE_BAD_CAST);
-        }
+        MethodTable *pCOMItfMT = thCastTo.GetMethodTable();
 
-        if (pCOMItfMT->IsProjectedFromWinRT())
-        {
-            // pCOMItfMT could be a generic WinRT-illegal interface in which case GetGuid would throw a confusing BadImageFormatException
-            // so we swallow the exception and throw the generic InvalidCastException instead
-            if (FAILED(pCOMItfMT->GetGuidNoThrow(&iid, FALSE)))
-            {
-                COMPlusThrow(kInvalidCastException, IDS_EE_CANNOTCAST, strComObjClassName.GetUnicode(), strCastToName.GetUnicode());
-            }
-        }
-        else
-        {
-            // keep calling the throwing GetGuid for non-WinRT interfaces (back compat)
-            pCOMItfMT->GetGuid(&iid, TRUE);
-        }
+        // keep calling the throwing GetGuid (back compat)
+        pCOMItfMT->GetGuid(&iid, TRUE);
 
         // Query for the interface to determine the failure HRESULT.
         hr = pRCW->SafeQueryInterfaceRemoteAware(iid, (IUnknown**)&pItf);
 
         // If this function was called, it means the QI call failed in the past. If it
         // no longer fails now, we still need to throw, so throw a generic invalid cast exception.
-        if (SUCCEEDED(hr) ||
-            // Also throw the generic exception if the QI failed with E_NOINTERFACE and this is
-            // a WinRT scenario - the user is very likely not interested in details like IID and
-            // HRESULT, they just want to get the "managed" experience.
-            (hr == E_NOINTERFACE && (thClass.GetMethodTable()->IsWinRTObjectType() || pCOMItfMT->IsProjectedFromWinRT())))
+        if (SUCCEEDED(hr))
         {
             COMPlusThrow(kInvalidCastException, IDS_EE_CANNOTCAST, strComObjClassName.GetUnicode(), strCastToName.GetUnicode());
         }
@@ -4847,13 +3312,6 @@ void ComObject::ThrowInvalidCastException(OBJECTREF *pObj, MethodTable *pCastToM
     {
         // Validate that this function wasn't erroneously called.
         _ASSERTE(!thClass.CanCastTo(thCastTo));
-
-        if (thClass.GetMethodTable()->IsWinRTObjectType() || thCastTo.IsProjectedFromWinRT() || thCastTo.GetMethodTable()->IsWinRTObjectType())
-        {
-            // don't mention any "COM components" in the exception if we failed to cast a WinRT object or
-            // to a WinRT object, throw the simple generic InvalidCastException instead
-            COMPlusThrow(kInvalidCastException, IDS_EE_CANNOTCAST, strComObjClassName.GetUnicode(), strCastToName.GetUnicode());
-        }
 
         if (thCastTo.IsComObjectType())
         {
@@ -4959,396 +3417,6 @@ IUnknown *ComObject::GetComIPFromRCWThrowing(OBJECTREF *pObj, MethodTable* pIntf
 
     RETURN pIUnk;
 }
-
-//
-// Create override information based on interface lookup
-//
-WinRTOverrideInfo::WinRTOverrideInfo(EEClass *pClass)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE;
-        PRECONDITION(CheckPointer(pClass));
-    }
-    CONTRACTL_END;
-
-    ::ZeroMemory(this, sizeof(WinRTOverrideInfo));
-
-    MethodTable *pMT = pClass->GetMethodTable();
-
-    _ASSERTE(IsTdClass(pClass->GetAttrClass()));
-    //
-    // Iterate through each implemented interface
-    // Note that the interface map is laid from parent to child
-    // So we start from the most derived class, and climb our way up to parent, instead of
-    // inspecting interface map directly
-    //
-    while (pMT != g_pBaseCOMObject)
-    {
-        MethodTable *pParentMT = pMT->GetParentMethodTable();
-        unsigned dwParentInterfaces = 0;
-        if (pParentMT)
-            dwParentInterfaces = pParentMT->GetNumInterfaces();
-
-        DWORD dwFound = 0;
-
-        //
-        // Scanning only current class only if the current class have more interface than parent
-        //
-        if (pMT->GetNumInterfaces() > dwParentInterfaces)
-        {
-            MethodTable::InterfaceMapIterator it = pMT->IterateInterfaceMapFrom(dwParentInterfaces);
-            while (!it.Finished())
-            {
-                MethodTable *pImplementedIntfMT = it.GetInterface();
-
-                // Only check private interfaces as they are exclusive
-                if (IsTdNotPublic(pImplementedIntfMT->GetAttrClass()) && pImplementedIntfMT->IsProjectedFromWinRT())
-                {
-                    if (m_pToStringMD == NULL)
-                    {
-                        m_pToStringMD = MemberLoader::FindMethod(
-                            pImplementedIntfMT,
-                            "ToString",
-                            &gsig_IM_RetStr);
-                        if (m_pToStringMD != NULL)
-                            dwFound++;
-                    }
-
-                    if (m_pGetHashCodeMD == NULL)
-                    {
-                        m_pGetHashCodeMD = MemberLoader::FindMethod(
-                            pImplementedIntfMT,
-                            "GetHashCode",
-                            &gsig_IM_RetInt);
-                        if (m_pGetHashCodeMD != NULL)
-                            dwFound++;
-                    }
-
-                    if (m_pEqualsMD == NULL)
-                    {
-                        m_pEqualsMD = MemberLoader::FindMethod(
-                            pImplementedIntfMT,
-                            "Equals",
-                            &gsig_IM_Obj_RetBool);
-                        if (m_pEqualsMD != NULL)
-                            dwFound++;
-                    }
-
-                    if (dwFound == 3)
-                        return;
-                }
-
-                it.Next();
-            }
-        }
-
-        //
-        // Parent has no more interfaces (including parents of parent). We are done
-        //
-        if (dwParentInterfaces == 0)
-            break;
-
-        pMT = pParentMT;
-    }
-}
-
-//
-// If WinRTOverrideInfo is not created, create one. Otherwise return existing one
-//
-WinRTOverrideInfo *WinRTOverrideInfo::GetOrCreateWinRTOverrideInfo(MethodTable *pMT)
-{
-    CONTRACT (WinRTOverrideInfo*)
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-        CAN_TAKE_LOCK;
-        PRECONDITION(CheckPointer(pMT));
-        POSTCONDITION(CheckPointer(RETVAL, NULL_OK));
-    }
-    CONTRACT_END;
-
-    _ASSERTE(pMT != NULL);
-
-    EEClass *pClass = pMT->GetClass();
-
-    //
-    // Retrieve the WinRTOverrideInfo from WinRT class factory
-    // It is kind of sub-optimal but saves a EEClass field
-    //
-    WinRTClassFactory *pClassFactory = GetComClassFactory(pMT)->AsWinRTClassFactory();
-
-    WinRTOverrideInfo *pOverrideInfo = pClassFactory->GetWinRTOverrideInfo();
-    if (pOverrideInfo == NULL)
-    {
-        //
-        // Create the override information
-        //
-        NewHolder<WinRTOverrideInfo> pNewOverrideInfo = new WinRTOverrideInfo(pClass);
-
-        if (pNewOverrideInfo->m_pEqualsMD       == NULL &&
-            pNewOverrideInfo->m_pGetHashCodeMD  == NULL &&
-            pNewOverrideInfo->m_pToStringMD     == NULL)
-        {
-            // Special optimization for where there is no override found
-            pMT->SetSkipWinRTOverride();
-
-            RETURN NULL;
-        }
-        else
-        {
-            if (pClassFactory->SetWinRTOverrideInfo(pNewOverrideInfo))
-            {
-                // We win the race
-                pNewOverrideInfo.SuppressRelease();
-                RETURN pNewOverrideInfo;
-            }
-            else
-            {
-                // Lost the race - retrieve again
-                RETURN pClassFactory->GetWinRTOverrideInfo();
-            }
-        }
-    }
-
-    RETURN pOverrideInfo;
-}
-
-//
-// Redirection for ToString
-//
-NOINLINE static MethodDesc *GetRedirectedToStringMDHelper(Object *pThisUNSAFE, MethodTable *pMT)
-{
-    FC_INNER_PROLOG(ComObject::GetRedirectedToStringMD);
-
-    MethodDesc *pRetMD = NULL;
-
-    // Creates helper frame for GetOrCreateWinRTOverrideInfo (which throws)
-    HELPER_METHOD_FRAME_BEGIN_RET_ATTRIB(Frame::FRAME_ATTR_EXACT_DEPTH|Frame::FRAME_ATTR_CAPTURE_DEPTH_2);
-
-    WinRTOverrideInfo *pOverrideInfo = WinRTOverrideInfo::GetOrCreateWinRTOverrideInfo(pMT);
-    if (pOverrideInfo && pOverrideInfo->m_pToStringMD != NULL)
-    {
-        pRetMD = pOverrideInfo->m_pToStringMD;
-    }
-
-    HELPER_METHOD_FRAME_END();
-
-    FC_INNER_EPILOG();
-
-    return pRetMD;
-}
-
-FCIMPL1(MethodDesc *, ComObject::GetRedirectedToStringMD, Object *pThisUNSAFE)
-{
-    CONTRACTL
-    {
-        FCALL_CHECK;
-        PRECONDITION(CheckPointer(pThisUNSAFE));
-    }
-    CONTRACTL_END;
-
-    MethodTable *pMT = pThisUNSAFE->GetMethodTable();
-    if (pMT->IsSkipWinRTOverride())
-        return NULL;
-
-    FC_INNER_RETURN(MethodDesc*, ::GetRedirectedToStringMDHelper(pThisUNSAFE, pMT));
-}
-FCIMPLEND
-
-FCIMPL2(StringObject *, ComObject::RedirectToString, Object *pThisUNSAFE, MethodDesc *pToStringMD)
-{
-    CONTRACTL
-    {
-        FCALL_CHECK;
-        PRECONDITION(CheckPointer(pThisUNSAFE));
-    }
-    CONTRACTL_END;
-
-    OBJECTREF refThis = ObjectToOBJECTREF(pThisUNSAFE);
-    STRINGREF refString = NULL;
-
-    HELPER_METHOD_FRAME_BEGIN_RET_2(refThis, refString);
-
-    // Note that this has to be virtual. Consider this case
-    //
-    // interface INativeA
-    // {
-
-    //     string ToString();
-    // }
-    //
-    // class NativeA : INativeA
-    // {
-    //     protected override ToString()
-    //     {
-    //         .override IA.ToString()
-    //     }
-    // }
-    //
-    // class Managed : NativeA
-    // {
-    //     override ToString();
-    // }
-    //
-    // If we call IA.ToString virtually, we'll land on INativeA.ToString() which is not correct.
-    // Calling it virtually will solve this problem
-    PREPARE_VIRTUAL_CALLSITE_USING_METHODDESC(pToStringMD, refThis);
-
-    DECLARE_ARGHOLDER_ARRAY(ToStringArgs, 1);
-    ToStringArgs[ARGNUM_0] = OBJECTREF_TO_ARGHOLDER(refThis);
-
-    CALL_MANAGED_METHOD_RETREF(refString, STRINGREF, ToStringArgs);
-
-    HELPER_METHOD_FRAME_END();
-
-    return STRINGREFToObject(refString);
-}
-FCIMPLEND
-
-//
-// Redirection for GetHashCode
-//
-NOINLINE static MethodDesc *GetRedirectedGetHashCodeMDHelper(Object *pThisUNSAFE, MethodTable *pMT)
-{
-    FC_INNER_PROLOG(ComObject::GetRedirectedGetHashCodeMD);
-
-    MethodDesc *pRetMD = NULL;
-
-    // Creates helper frame for GetOrCreateWinRTOverrideInfo (which throws)
-    HELPER_METHOD_FRAME_BEGIN_RET_ATTRIB(Frame::FRAME_ATTR_EXACT_DEPTH|Frame::FRAME_ATTR_CAPTURE_DEPTH_2);
-
-    WinRTOverrideInfo *pOverrideInfo = WinRTOverrideInfo::GetOrCreateWinRTOverrideInfo(pMT);
-    if (pOverrideInfo && pOverrideInfo->m_pGetHashCodeMD != NULL)
-    {
-        pRetMD = pOverrideInfo->m_pGetHashCodeMD;
-    }
-
-    HELPER_METHOD_FRAME_END();
-
-    FC_INNER_EPILOG();
-
-    return pRetMD;
-}
-
-FCIMPL1(MethodDesc *, ComObject::GetRedirectedGetHashCodeMD, Object *pThisUNSAFE)
-{
-    CONTRACTL
-    {
-        FCALL_CHECK;
-        PRECONDITION(CheckPointer(pThisUNSAFE));
-    }
-    CONTRACTL_END;
-
-    MethodTable *pMT = pThisUNSAFE->GetMethodTable();
-    if (pMT->IsSkipWinRTOverride())
-        return NULL;
-
-    FC_INNER_RETURN(MethodDesc*, ::GetRedirectedGetHashCodeMDHelper(pThisUNSAFE, pMT));
-}
-FCIMPLEND
-
-FCIMPL2(int, ComObject::RedirectGetHashCode, Object *pThisUNSAFE, MethodDesc *pGetHashCodeMD)
-{
-    CONTRACTL
-    {
-        FCALL_CHECK;
-        PRECONDITION(CheckPointer(pThisUNSAFE));
-    }
-    CONTRACTL_END;
-
-    OBJECTREF refThis = ObjectToOBJECTREF(pThisUNSAFE);
-    int hash = 0;
-
-    HELPER_METHOD_FRAME_BEGIN_RET_1(refThis);
-
-    // Note that this has to be virtual. See RedirectToString for more details
-    PREPARE_VIRTUAL_CALLSITE_USING_METHODDESC(pGetHashCodeMD, refThis);
-
-    DECLARE_ARGHOLDER_ARRAY(GetHashCodeArgs, 1);
-    GetHashCodeArgs[ARGNUM_0] = OBJECTREF_TO_ARGHOLDER(refThis);
-
-    CALL_MANAGED_METHOD(hash, int, GetHashCodeArgs);
-
-    HELPER_METHOD_FRAME_END();
-
-    return hash;
-}
-FCIMPLEND
-
-NOINLINE static MethodDesc *GetRedirectedEqualsMDHelper(Object *pThisUNSAFE, MethodTable *pMT)
-{
-    FC_INNER_PROLOG(ComObject::GetRedirectedEqualsMD);
-
-    MethodDesc *pRetMD = NULL;
-
-    // Creates helper frame for GetOrCreateWinRTOverrideInfo (which throws)
-    HELPER_METHOD_FRAME_BEGIN_RET_ATTRIB(Frame::FRAME_ATTR_EXACT_DEPTH|Frame::FRAME_ATTR_CAPTURE_DEPTH_2);
-
-    WinRTOverrideInfo *pOverrideInfo = WinRTOverrideInfo::GetOrCreateWinRTOverrideInfo(pMT);
-    if (pOverrideInfo && pOverrideInfo->m_pEqualsMD!= NULL)
-    {
-        pRetMD = pOverrideInfo->m_pEqualsMD;
-    }
-
-    HELPER_METHOD_FRAME_END();
-
-    FC_INNER_EPILOG();
-
-    return pRetMD;
-}
-
-FCIMPL1(MethodDesc *, ComObject::GetRedirectedEqualsMD, Object *pThisUNSAFE)
-{
-    CONTRACTL
-    {
-        FCALL_CHECK;
-        PRECONDITION(CheckPointer(pThisUNSAFE));
-    }
-    CONTRACTL_END;
-
-    MethodTable *pMT = pThisUNSAFE->GetMethodTable();
-    if (pMT->IsSkipWinRTOverride())
-        return NULL;
-
-    FC_INNER_RETURN(MethodDesc*, ::GetRedirectedEqualsMDHelper(pThisUNSAFE, pMT));
-}
-FCIMPLEND
-
-FCIMPL3(FC_BOOL_RET, ComObject::RedirectEquals, Object *pThisUNSAFE, Object *pOtherUNSAFE, MethodDesc *pEqualsMD)
-{
-    CONTRACTL
-    {
-        FCALL_CHECK;
-        PRECONDITION(CheckPointer(pThisUNSAFE));
-    }
-    CONTRACTL_END;
-
-    OBJECTREF refThis = ObjectToOBJECTREF(pThisUNSAFE);
-    OBJECTREF refOther = ObjectToOBJECTREF(pOtherUNSAFE);
-
-    CLR_BOOL ret = FALSE;
-
-    HELPER_METHOD_FRAME_BEGIN_RET_2(refThis, refOther);
-
-    // Note that this has to be virtual. See RedirectToString for more details
-    PREPARE_VIRTUAL_CALLSITE_USING_METHODDESC(pEqualsMD, refThis);
-
-    DECLARE_ARGHOLDER_ARRAY(EqualArgs, 2);
-    EqualArgs[ARGNUM_0] = OBJECTREF_TO_ARGHOLDER(refThis);
-    EqualArgs[ARGNUM_1] = OBJECTREF_TO_ARGHOLDER(refOther);
-
-    CALL_MANAGED_METHOD(ret, CLR_BOOL, EqualArgs);
-
-    HELPER_METHOD_FRAME_END();
-
-    FC_RETURN_BOOL(ret);
-}
-FCIMPLEND
-
 #endif // #ifndef DACCESS_COMPILE
 
 #endif //#ifndef CROSSGEN_COMPILE

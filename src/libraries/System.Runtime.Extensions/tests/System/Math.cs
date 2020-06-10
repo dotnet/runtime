@@ -153,6 +153,24 @@ namespace System.Tests
             }
         }
 
+        [Fact]
+        public static void E()
+        {
+            Assert.Equal(unchecked((long)0x4005BF0A8B145769), BitConverter.DoubleToInt64Bits(Math.E));
+        }
+
+        [Fact]
+        public static void Pi()
+        {
+            Assert.Equal(unchecked((long)0x400921FB54442D18), BitConverter.DoubleToInt64Bits(Math.PI));
+        }
+
+        [Fact]
+        public static void Tau()
+        {
+            Assert.Equal(unchecked((long)0x401921FB54442D18), BitConverter.DoubleToInt64Bits(Math.Tau));
+        }
+
         /// <summary>Verifies that two <see cref="float"/> values are equal, within the <paramref name="variance"/>.</summary>
         /// <param name="expected">The expected value</param>
         /// <param name="actual">The value to be compared against</param>

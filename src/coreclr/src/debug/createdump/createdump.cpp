@@ -12,13 +12,12 @@ bool g_diagnostics = false;
 bool
 CreateDump(const char* dumpPath, int pid, MINIDUMP_TYPE minidumpType)
 {
-    ReleaseHolder<DumpDataTarget> dataTarget = new DumpDataTarget(pid);
-    ReleaseHolder<CrashInfo> crashInfo = new CrashInfo(pid, dataTarget, false);
-    ReleaseHolder<DumpWriter> dumpWriter = new DumpWriter(*crashInfo);
+    ReleaseHolder<CrashInfo> crashInfo = new CrashInfo(pid);
+    DumpWriter dumpWriter(*crashInfo);
     bool result = false;
 
-    // The initialize the data target's ReadVirtual support (opens /proc/$pid/mem)
-    if (!dataTarget->Initialize(crashInfo))
+    // Initialize the crash info 
+    if (!crashInfo->Initialize())
     {
         goto exit;
     }
@@ -32,16 +31,16 @@ CreateDump(const char* dumpPath, int pid, MINIDUMP_TYPE minidumpType)
     {
         goto exit;
     }
-    if (!dumpWriter->OpenDump(dumpPath))
+    if (!dumpWriter.OpenDump(dumpPath))
     {
         goto exit;
     }
-    if (!dumpWriter->WriteDump())
+    if (!dumpWriter.WriteDump())
     {
         goto exit;
     }
     result = true;
 exit:
-    crashInfo->ResumeThreads();
+    crashInfo->CleanupAndResumeProcess();
     return result;
 }

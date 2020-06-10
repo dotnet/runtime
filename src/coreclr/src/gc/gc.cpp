@@ -196,6 +196,25 @@ BOOL is_induced_blocking (gc_reason reason)
             (reason == reason_lowmemory_host_blocking));
 }
 
+gc_oh_num gen_to_oh(int gen)
+{
+    switch (gen)
+    {
+        case soh_gen0: 
+            return gc_oh_num::soh;
+        case soh_gen1:
+            return gc_oh_num::soh;        
+        case soh_gen2:
+            return gc_oh_num::soh;
+        case loh_generation:
+            return gc_oh_num::loh;
+        case poh_generation:
+            return gc_oh_num::poh;
+        default:
+            return gc_oh_num::none;
+    }
+}
+
 #ifndef DACCESS_COMPILE
 int64_t qpf;
 size_t start_time;
@@ -2133,7 +2152,6 @@ void qsort1(uint8_t** low, uint8_t** high, unsigned int depth);
 
 void* virtual_alloc (size_t size);
 void* virtual_alloc (size_t size, bool use_large_pages_p);
-void virtual_free (void* add, size_t size);
 
 /* per heap static initialization */
 #if defined(BACKGROUND_GC) && !defined(MULTIPLE_HEAPS)
@@ -2217,6 +2235,8 @@ CLRCriticalSection gc_heap::check_commit_cs;
 
 size_t      gc_heap::current_total_committed = 0;
 
+size_t      gc_heap::committed_by_oh[total_oh_count] = {0, 0, 0, 0};
+
 size_t      gc_heap::current_total_committed_bookkeeping = 0;
 
 #ifdef SHORT_PLUGS
@@ -2255,6 +2275,8 @@ uint64_t    gc_heap::total_physical_mem = 0;
 uint64_t    gc_heap::entry_available_physical_mem = 0;
 
 size_t      gc_heap::heap_hard_limit = 0;
+
+size_t      gc_heap::heap_hard_limit_oh[total_oh_count - 1] = {0, 0, 0};
 
 bool        affinity_config_specified_p = false;
 #ifdef BACKGROUND_GC
@@ -3970,7 +3992,8 @@ struct initial_memory_details
     { 
         ALLATONCE = 1,
         EACH_GENERATION,
-        EACH_BLOCK
+        EACH_BLOCK,
+        ALLATONCE_SEPARATED_POH
     };
 
     size_t allocation_pattern;
@@ -4016,7 +4039,7 @@ struct initial_memory_details
 
 initial_memory_details memory_details;
 
-BOOL reserve_initial_memory (size_t normal_size, size_t large_size, size_t pinned_size, int num_heaps, bool use_large_pages_p)
+BOOL gc_heap::reserve_initial_memory (size_t normal_size, size_t large_size, size_t pinned_size, int num_heaps, bool use_large_pages_p, bool separated_poh_p)
 {
     BOOL reserve_success = FALSE;
 
@@ -4060,14 +4083,35 @@ BOOL reserve_initial_memory (size_t normal_size, size_t large_size, size_t pinne
         return FALSE;
     }
 
-    size_t requestedMemory = memory_details.block_count * (normal_size + large_size + pinned_size);
+    size_t temp_pinned_size = (separated_poh_p ? 0 : pinned_size);
+    size_t separate_pinned_size = memory_details.block_count * pinned_size;
+    size_t requestedMemory = memory_details.block_count * (normal_size + large_size + temp_pinned_size);
 
     uint8_t* allatonce_block = (uint8_t*)virtual_alloc (requestedMemory, use_large_pages_p);
+    uint8_t* separated_poh_block = nullptr;
+    if (allatonce_block && separated_poh_p)
+    {
+        separated_poh_block = (uint8_t*)virtual_alloc (separate_pinned_size, false);
+        if (!separated_poh_block)
+        {
+            virtual_free (allatonce_block, requestedMemory);
+            allatonce_block = nullptr;
+        }
+    }
     if (allatonce_block)
     {
-        g_gc_lowest_address = allatonce_block;
-        g_gc_highest_address = allatonce_block + requestedMemory;
-        memory_details.allocation_pattern = initial_memory_details::ALLATONCE;
+        if (separated_poh_p)
+        {
+            g_gc_lowest_address = min (allatonce_block, separated_poh_block);
+            g_gc_highest_address = max ((allatonce_block + requestedMemory), (separated_poh_block + separate_pinned_size));
+            memory_details.allocation_pattern = initial_memory_details::ALLATONCE_SEPARATED_POH;
+        }
+        else
+        {
+            g_gc_lowest_address = allatonce_block;
+            g_gc_highest_address = allatonce_block + requestedMemory;
+            memory_details.allocation_pattern = initial_memory_details::ALLATONCE;
+        }
 
         for (int i = 0; i < memory_details.block_count; i++)
         {
@@ -4075,8 +4119,16 @@ BOOL reserve_initial_memory (size_t normal_size, size_t large_size, size_t pinne
                                                              (i * normal_size);
             memory_details.initial_large_heap[i].memory_base = allatonce_block +
                 (memory_details.block_count * normal_size) + (i * large_size);
-            memory_details.initial_pinned_heap[i].memory_base = allatonce_block +
-                (memory_details.block_count * (normal_size + large_size)) + (i * pinned_size);
+            if (separated_poh_p)
+            {
+                memory_details.initial_pinned_heap[i].memory_base = separated_poh_block +
+                                                                  (i * pinned_size);
+            }
+            else
+            {
+                memory_details.initial_pinned_heap[i].memory_base = allatonce_block +
+                    (memory_details.block_count * (normal_size + large_size)) + (i * pinned_size);
+            }
 
             reserve_success = TRUE;
         }
@@ -4086,7 +4138,7 @@ BOOL reserve_initial_memory (size_t normal_size, size_t large_size, size_t pinne
         // try to allocate 3 blocks
         uint8_t* b1 = (uint8_t*)virtual_alloc (memory_details.block_count * normal_size, use_large_pages_p);
         uint8_t* b2 = (uint8_t*)virtual_alloc (memory_details.block_count * large_size, use_large_pages_p);
-        uint8_t* b3 = (uint8_t*)virtual_alloc (memory_details.block_count * pinned_size, use_large_pages_p);
+        uint8_t* b3 = (uint8_t*)virtual_alloc (memory_details.block_count * pinned_size, use_large_pages_p && !separated_poh_p);
 
         if (b1 && b2 && b3)
         {
@@ -4155,7 +4207,7 @@ BOOL reserve_initial_memory (size_t normal_size, size_t large_size, size_t pinne
     return reserve_success;
 }
 
-void destroy_initial_memory()
+void gc_heap::destroy_initial_memory()
 {
     if (memory_details.initial_memory != NULL)
     {
@@ -4163,7 +4215,15 @@ void destroy_initial_memory()
         {
             virtual_free(memory_details.initial_memory[0].memory_base,
                 memory_details.block_count*(memory_details.block_size_normal +
+                memory_details.block_size_large + memory_details.block_size_pinned));
+        }
+        else if (memory_details.allocation_pattern == initial_memory_details::ALLATONCE_SEPARATED_POH)
+        {
+            virtual_free(memory_details.initial_memory[0].memory_base,
+                memory_details.block_count*(memory_details.block_size_normal +
                 memory_details.block_size_large));
+            virtual_free(memory_details.initial_pinned_heap[0].memory_base,
+                memory_details.block_count*(memory_details.block_size_pinned));
         }
         else if (memory_details.allocation_pattern == initial_memory_details::EACH_GENERATION)
         {
@@ -4175,7 +4235,7 @@ void destroy_initial_memory()
 
              virtual_free (memory_details.initial_pinned_heap[0].memory_base,
                 memory_details.block_count*memory_details.block_size_pinned);
-       }
+        }
         else
         {
             assert (memory_details.allocation_pattern == initial_memory_details::EACH_BLOCK);
@@ -4202,7 +4262,8 @@ heap_segment* make_initial_segment (int gen, int h_number)
 {
     void* mem = memory_details.get_initial_memory (gen, h_number);
     size_t size = memory_details.get_initial_size (gen);
-    heap_segment* res = gc_heap::make_heap_segment ((uint8_t*)mem, size , h_number);
+    gc_oh_num oh = gen_to_oh (gen);
+    heap_segment* res = gc_heap::make_heap_segment ((uint8_t*)mem, size, oh, h_number);
 
     return res;
 }
@@ -4267,14 +4328,6 @@ void* virtual_alloc (size_t size, bool use_large_pages_p)
                  requested_size, (size_t)prgmem, (size_t)((uint8_t*)prgmem+requested_size)));
 
     return aligned_mem;
-}
-
-void virtual_free (void* add, size_t size)
-{
-    GCToOSInterface::VirtualRelease (add, size);
-    gc_heap::reserved_memory -= size;
-    dprintf (2, ("Virtual Free size %Id: [%Ix, %Ix[",
-                 size, (size_t)add, (size_t)((uint8_t*)add+size)));
 }
 
 static size_t get_valid_segment_size (BOOL large_seg=FALSE)
@@ -4450,7 +4503,7 @@ gc_heap::soh_get_segment_to_expand()
         }
     }
 
-    heap_segment* result = get_segment (size, FALSE);
+    heap_segment* result = get_segment (size, gc_oh_num::soh);
 
     if(result)
     {
@@ -4491,8 +4544,10 @@ gc_heap::soh_get_segment_to_expand()
 
 //returns 0 in case of allocation failure
 heap_segment*
-gc_heap::get_segment (size_t size, BOOL loh_p)
+gc_heap::get_segment (size_t size, gc_oh_num oh)
 {
+    assert(oh != gc_oh_num::none);
+    BOOL uoh_p = (oh == gc_oh_num::loh) || (oh == gc_oh_num::poh);
     if (heap_hard_limit)
         return NULL;
 
@@ -4561,11 +4616,11 @@ gc_heap::get_segment (size_t size, BOOL loh_p)
         void* mem = virtual_alloc (size);
         if (!mem)
         {
-            fgm_result.set_fgm (fgm_reserve_segment, size, loh_p);
+            fgm_result.set_fgm (fgm_reserve_segment, size, uoh_p);
             return 0;
         }
 
-        result = gc_heap::make_heap_segment ((uint8_t*)mem, size, heap_number);
+        result = gc_heap::make_heap_segment ((uint8_t*)mem, size, oh, heap_number);
 
         if (result)
         {
@@ -4589,7 +4644,7 @@ gc_heap::get_segment (size_t size, BOOL loh_p)
                 end = (uint8_t*)g_gc_highest_address;
             }
 
-            if (gc_heap::grow_brick_card_tables (start, end, size, result, __this, loh_p) != 0)
+            if (gc_heap::grow_brick_card_tables (start, end, size, result, __this, uoh_p) != 0)
             {
                 virtual_free (mem, size);
                 return 0;
@@ -4597,7 +4652,7 @@ gc_heap::get_segment (size_t size, BOOL loh_p)
         }
         else
         {
-            fgm_result.set_fgm (fgm_commit_segment_beg, SEGMENT_INITIAL_COMMIT, loh_p);
+            fgm_result.set_fgm (fgm_commit_segment_beg, SEGMENT_INITIAL_COMMIT, uoh_p);
             virtual_free (mem, size);
         }
 
@@ -4621,11 +4676,11 @@ gc_heap::get_segment (size_t size, BOOL loh_p)
     return result;
 }
 
-void release_segment (heap_segment* sg)
+void gc_heap::release_segment (heap_segment* sg)
 {
     ptrdiff_t delta = 0;
     FIRE_EVENT(GCFreeSegment_V1, heap_segment_mem(sg));
-    virtual_free (sg, (uint8_t*)heap_segment_reserved (sg)-(uint8_t*)sg);
+    virtual_free (sg, (uint8_t*)heap_segment_reserved (sg)-(uint8_t*)sg, sg);
 }
 
 heap_segment* gc_heap::get_segment_for_uoh (int gen_number, size_t size
@@ -4637,7 +4692,8 @@ heap_segment* gc_heap::get_segment_for_uoh (int gen_number, size_t size
 #ifndef MULTIPLE_HEAPS
     gc_heap* hp = 0;
 #endif //MULTIPLE_HEAPS
-    heap_segment* res = hp->get_segment (size, TRUE);
+    gc_oh_num oh = gen_to_oh (gen_number);
+    heap_segment* res = hp->get_segment (size, oh);
     if (res != 0)
     {
 #ifdef MULTIPLE_HEAPS
@@ -5607,7 +5663,7 @@ bool gc_heap::virtual_alloc_commit_for_heap (void* addr, size_t size, int h_numb
     return GCToOSInterface::VirtualCommit(addr, size);
 }
 
-bool gc_heap::virtual_commit (void* address, size_t size, int h_number, bool* hard_limit_exceeded_p)
+bool gc_heap::virtual_commit (void* address, size_t size, gc_oh_num oh, int h_number, bool* hard_limit_exceeded_p)
 {
 #ifndef HOST_64BIT
     assert (heap_hard_limit == 0);
@@ -5615,11 +5671,17 @@ bool gc_heap::virtual_commit (void* address, size_t size, int h_number, bool* ha
 
     if (heap_hard_limit)
     {
+        check_commit_cs.Enter();
         bool exceeded_p = false;
 
-        check_commit_cs.Enter();
-
-        if ((current_total_committed + size) > heap_hard_limit)
+        if (heap_hard_limit_oh[0] != 0)
+        {
+            if ((committed_by_oh[oh] + size) > heap_hard_limit_oh[oh])
+            {
+                exceeded_p = true;
+            }
+        }
+        else if ((current_total_committed + size) > heap_hard_limit)
         {
             dprintf (1, ("%Id + %Id = %Id > limit %Id ",
                 current_total_committed, size,
@@ -5628,8 +5690,10 @@ bool gc_heap::virtual_commit (void* address, size_t size, int h_number, bool* ha
 
             exceeded_p = true;
         }
-        else
+
+        if (!exceeded_p)
         {
+            committed_by_oh[oh] += size;
             current_total_committed += size;
             if (h_number < 0)
                 current_total_committed_bookkeeping += size;
@@ -5656,6 +5720,8 @@ bool gc_heap::virtual_commit (void* address, size_t size, int h_number, bool* ha
     if (!commit_succeeded_p && heap_hard_limit)
     {
         check_commit_cs.Enter();
+        committed_by_oh[oh] -= size;
+        
         dprintf (1, ("commit failed, updating %Id to %Id",
                 current_total_committed, (current_total_committed - size)));
         current_total_committed -= size;
@@ -5664,11 +5730,10 @@ bool gc_heap::virtual_commit (void* address, size_t size, int h_number, bool* ha
 
         check_commit_cs.Leave();
     }
-
     return commit_succeeded_p;
 }
 
-bool gc_heap::virtual_decommit (void* address, size_t size, int h_number)
+bool gc_heap::virtual_decommit (void* address, size_t size, gc_oh_num oh, int h_number)
 {
 #ifndef HOST_64BIT
     assert (heap_hard_limit == 0);
@@ -5679,6 +5744,7 @@ bool gc_heap::virtual_decommit (void* address, size_t size, int h_number)
     if (decommit_succeeded_p && heap_hard_limit)
     {
         check_commit_cs.Enter();
+        committed_by_oh[oh] -= size;
         current_total_committed -= size;
         if (h_number < 0)
             current_total_committed_bookkeeping -= size;
@@ -5686,6 +5752,18 @@ bool gc_heap::virtual_decommit (void* address, size_t size, int h_number)
     }
 
     return decommit_succeeded_p;
+}
+
+void gc_heap::virtual_free (void* add, size_t allocated_size, heap_segment* sg)
+{
+    assert(!heap_hard_limit);
+    bool release_succeeded_p = GCToOSInterface::VirtualRelease (add, allocated_size);
+    if (release_succeeded_p)
+    {
+        reserved_memory -= allocated_size;
+        dprintf (2, ("Virtual Free size %Id: [%Ix, %Ix[",
+                    allocated_size, (size_t)add, (size_t)((uint8_t*)add + allocated_size)));
+    }
 }
 
 class mark
@@ -7291,7 +7369,7 @@ uint32_t* gc_heap::make_card_table (uint8_t* start, uint8_t* end)
     // mark array will be committed separately (per segment).
     size_t commit_size = alloc_size - ms;
 
-    if (!virtual_commit (mem, commit_size))
+    if (!virtual_commit (mem, commit_size, gc_oh_num::none))
     {
         dprintf (1, ("Card table commit failed"));
         GCToOSInterface::VirtualRelease (mem, alloc_size);
@@ -7361,7 +7439,7 @@ int gc_heap::grow_brick_card_tables (uint8_t* start,
                                      size_t size,
                                      heap_segment* new_seg,
                                      gc_heap* hp,
-                                     BOOL loh_p)
+                                     BOOL uoh_p)
 {
     uint8_t* la = g_gc_lowest_address;
     uint8_t* ha = g_gc_highest_address;
@@ -7486,7 +7564,7 @@ int gc_heap::grow_brick_card_tables (uint8_t* start,
 
         if (!mem)
         {
-            set_fgm_result (fgm_grow_table, alloc_size, loh_p);
+            set_fgm_result (fgm_grow_table, alloc_size, uoh_p);
             goto fail;
         }
 
@@ -7497,10 +7575,10 @@ int gc_heap::grow_brick_card_tables (uint8_t* start,
             // mark array will be committed separately (per segment).
             size_t commit_size = alloc_size - ms;
 
-            if (!virtual_commit (mem, commit_size))
+            if (!virtual_commit (mem, commit_size, gc_oh_num::none))
             {
                 dprintf (GC_TABLE_LOG, ("Table commit failed"));
-                set_fgm_result (fgm_commit_table, commit_size, loh_p);
+                set_fgm_result (fgm_commit_table, commit_size, uoh_p);
                 goto fail;
             }
         }
@@ -7567,14 +7645,14 @@ int gc_heap::grow_brick_card_tables (uint8_t* start,
             if (!commit_new_mark_array_global (new_mark_array))
             {
                 dprintf (GC_TABLE_LOG, ("failed to commit portions in the mark array for existing segments"));
-                set_fgm_result (fgm_commit_table, logging_ma_commit_size, loh_p);
+                set_fgm_result (fgm_commit_table, logging_ma_commit_size, uoh_p);
                 goto fail;
             }
 
             if (!commit_mark_array_new_seg (hp, new_seg, translated_ct, saved_g_lowest_address))
             {
                 dprintf (GC_TABLE_LOG, ("failed to commit mark array for the new seg"));
-                set_fgm_result (fgm_commit_table, logging_ma_commit_size, loh_p);
+                set_fgm_result (fgm_commit_table, logging_ma_commit_size, uoh_p);
                 goto fail;
             }
         }
@@ -7691,7 +7769,7 @@ fail:
             if (!commit_mark_array_new_seg (hp, new_seg))
             {
                 dprintf (GC_TABLE_LOG, ("failed to commit mark array for the new seg in range"));
-                set_fgm_result (fgm_commit_table, logging_ma_commit_size, loh_p);
+                set_fgm_result (fgm_commit_table, logging_ma_commit_size, uoh_p);
                 return -1;
             }
         }
@@ -9346,11 +9424,12 @@ int gc_heap::object_gennum_plan (uint8_t* o)
 #pragma optimize("", on)        // Go back to command line default optimizations
 #endif //_MSC_VER && TARGET_X86
 
-heap_segment* gc_heap::make_heap_segment (uint8_t* new_pages, size_t size, int h_number)
+heap_segment* gc_heap::make_heap_segment (uint8_t* new_pages, size_t size, gc_oh_num oh, int h_number)
 {
+    assert(oh != gc_oh_num::none);    
     size_t initial_commit = SEGMENT_INITIAL_COMMIT;
 
-    if (!virtual_commit (new_pages, initial_commit, h_number))
+    if (!virtual_commit (new_pages, initial_commit, oh, h_number))
     {
         return 0;
     }
@@ -9465,15 +9544,22 @@ size_t gc_heap::decommit_heap_segment_pages_worker (heap_segment* seg,
     size_t size = heap_segment_committed (seg) - page_start;
     if (size > 0)
     {
-        virtual_decommit (page_start, size, heap_number);
-        dprintf (3, ("Decommitting heap segment [%Ix, %Ix[(%d)",
-            (size_t)page_start,
-            (size_t)(page_start + size),
-            size));
-        heap_segment_committed (seg) = page_start;
-        if (heap_segment_used (seg) > heap_segment_committed (seg))
+        bool decommit_succeeded_p = virtual_decommit (page_start, size, heap_segment_oh (seg), heap_number);
+        if (decommit_succeeded_p)
         {
-            heap_segment_used (seg) = heap_segment_committed (seg);
+            dprintf (3, ("Decommitting heap segment [%Ix, %Ix[(%d)",
+                (size_t)page_start,
+                (size_t)(page_start + size),
+                size));
+            heap_segment_committed (seg) = page_start;
+            if (heap_segment_used (seg) > heap_segment_committed (seg))
+            {
+                heap_segment_used (seg) = heap_segment_committed (seg);
+            }
+        }
+        else
+        {
+            dprintf (3, ("Decommitting heap segment failed"));
         }
     }
     return size;
@@ -9491,13 +9577,16 @@ void gc_heap::decommit_heap_segment (heap_segment* seg)
 #endif //BACKGROUND_GC
 
     size_t size = heap_segment_committed (seg) - page_start;
-    virtual_decommit (page_start, size, heap_number);
+    bool decommit_succeeded_p = virtual_decommit (page_start, size, heap_segment_oh (seg), heap_number);
 
-    //re-init the segment object
-    heap_segment_committed (seg) = page_start;
-    if (heap_segment_used (seg) > heap_segment_committed (seg))
+    if (decommit_succeeded_p)
     {
-        heap_segment_used (seg) = heap_segment_committed (seg);
+        //re-init the segment object
+        heap_segment_committed (seg) = page_start;
+        if (heap_segment_used (seg) > heap_segment_committed (seg))
+        {
+            heap_segment_used (seg) = heap_segment_committed (seg);
+        }
     }
 }
 
@@ -10105,7 +10194,8 @@ HRESULT gc_heap::initialize_gc (size_t soh_segment_size,
         check_commit_cs.Initialize();
     }
 
-    if (!reserve_initial_memory (soh_segment_size, loh_segment_size, poh_segment_size, number_of_heaps, use_large_pages_p))
+    bool separated_poh_p = use_large_pages_p && heap_hard_limit_oh[0] && (GCConfig::GetGCHeapHardLimitPOH() == 0) && (GCConfig::GetGCHeapHardLimitPOHPercent() == 0);
+    if (!reserve_initial_memory (soh_segment_size, loh_segment_size, poh_segment_size, number_of_heaps, use_large_pages_p, separated_poh_p))
         return E_OUTOFMEMORY;
 
 #ifdef CARD_BUNDLE
@@ -11123,7 +11213,7 @@ BOOL gc_heap::grow_heap_segment (heap_segment* seg, uint8_t* high_address, bool*
                 "Growing heap_segment: %Ix high address: %Ix\n",
                 (size_t)seg, (size_t)high_address);
 
-    bool ret = virtual_commit (heap_segment_committed (seg), c_size, heap_number, hard_limit_exceeded_p);
+    bool ret = virtual_commit (heap_segment_committed (seg), c_size, heap_segment_oh (seg), heap_number, hard_limit_exceeded_p);
     if (ret)
     {
         heap_segment_committed (seg) += c_size;
@@ -12468,7 +12558,14 @@ found_fit:
             assert(gen_number == 0);
             assert(allocated > acontext->alloc_ptr);
 
-            limit -= (allocated - acontext->alloc_ptr);
+            size_t extra = allocated - acontext->alloc_ptr;
+            limit -= extra;
+
+            // Since we are not consuming all the memory we already deducted from the budget,
+            // we should put the extra back.
+            dynamic_data* dd = dynamic_data_of (0);
+            dd_new_allocation (dd) += extra;
+
             // add space for an AC continuity divider
             limit += Align(min_obj_size, align_const);
         }
@@ -12732,7 +12829,7 @@ allocation_state gc_heap::allocate_soh (int gen_number,
                 }
                 else
                 {
-                    assert (commit_failed_p);
+                    assert (commit_failed_p || heap_hard_limit);
                     soh_alloc_state = a_state_cant_allocate;
                     oom_r = oom_cant_commit;
                 }
@@ -17198,7 +17295,9 @@ BOOL gc_heap::expand_soh_with_minimal_gc()
         return TRUE;
     }
     else
+    {
         return FALSE;
+    }
 }
 
 // Only to be done on the thread that calls restart in a join for server GC
@@ -26041,7 +26140,7 @@ BOOL gc_heap::commit_mark_array_by_range (uint8_t* begin, uint8_t* end, uint32_t
                             size));
 #endif //SIMPLE_DPRINTF
 
-    if (virtual_commit (commit_start, size))
+    if (virtual_commit (commit_start, size, gc_oh_num::none))
     {
         // We can only verify the mark array is cleared from begin to end, the first and the last
         // page aren't necessarily all cleared 'cause they could be used by other segments or
@@ -26265,7 +26364,7 @@ void gc_heap::decommit_mark_array_by_seg (heap_segment* seg)
 
         if (decommit_start < decommit_end)
         {
-            if (!virtual_decommit (decommit_start, size))
+            if (!virtual_decommit (decommit_start, size, gc_oh_num::none))
             {
                 dprintf (GC_TABLE_LOG, ("decommit on %Ix for %Id bytes failed",
                                         decommit_start, size));
@@ -35268,6 +35367,64 @@ HRESULT GCHeap::Initialize()
 
 #ifdef HOST_64BIT
     gc_heap::heap_hard_limit = (size_t)GCConfig::GetGCHeapHardLimit();
+    gc_heap::heap_hard_limit_oh[0] = (size_t)GCConfig::GetGCHeapHardLimitSOH();
+    gc_heap::heap_hard_limit_oh[1] = (size_t)GCConfig::GetGCHeapHardLimitLOH();
+    gc_heap::heap_hard_limit_oh[2] = (size_t)GCConfig::GetGCHeapHardLimitPOH();
+
+    if (gc_heap::heap_hard_limit_oh[0] || gc_heap::heap_hard_limit_oh[1] || gc_heap::heap_hard_limit_oh[2])
+    {
+        if (!gc_heap::heap_hard_limit_oh[0])
+        {
+            return E_INVALIDARG;
+        }
+        if (!gc_heap::heap_hard_limit_oh[1])
+        {
+            return E_INVALIDARG;
+        }
+        if (gc_heap::heap_hard_limit_oh[2] < min_segment_size_hard_limit)
+        {
+            gc_heap::heap_hard_limit_oh[2] = min_segment_size_hard_limit;
+        }
+        // This tells the system there is a hard limit, but otherwise we will not compare against this value.
+        gc_heap::heap_hard_limit = 1;
+    }
+    else
+    {
+        uint32_t percent_of_mem_soh = (uint32_t)GCConfig::GetGCHeapHardLimitSOHPercent();
+        uint32_t percent_of_mem_loh = (uint32_t)GCConfig::GetGCHeapHardLimitLOHPercent();
+        uint32_t percent_of_mem_poh = (uint32_t)GCConfig::GetGCHeapHardLimitPOHPercent();
+        if (percent_of_mem_soh || percent_of_mem_loh || percent_of_mem_poh)
+        {
+            if ((percent_of_mem_soh <= 0) || (percent_of_mem_soh >= 100))
+            {
+                return E_INVALIDARG;
+            }
+            if ((percent_of_mem_loh <= 0) || (percent_of_mem_loh >= 100))
+            {
+                return E_INVALIDARG;
+            }
+            else if ((percent_of_mem_poh < 0) || (percent_of_mem_poh >= 100))
+            {
+                return E_INVALIDARG;
+            }
+            if ((percent_of_mem_soh + percent_of_mem_loh + percent_of_mem_poh) >= 100)
+            {
+                return E_INVALIDARG;
+            }
+            gc_heap::heap_hard_limit_oh[0] = (size_t)(gc_heap::total_physical_mem * (uint64_t)percent_of_mem_soh / (uint64_t)100);
+            gc_heap::heap_hard_limit_oh[1] = (size_t)(gc_heap::total_physical_mem * (uint64_t)percent_of_mem_loh / (uint64_t)100);
+            if (percent_of_mem_poh == 0)
+            {
+                gc_heap::heap_hard_limit_oh[2] = min_segment_size_hard_limit;
+            }
+            else
+            {
+                gc_heap::heap_hard_limit_oh[2] = (size_t)(gc_heap::total_physical_mem * (uint64_t)percent_of_mem_poh / (uint64_t)100);
+            }
+            // This tells the system there is a hard limit, but otherwise we will not compare against this value.
+            gc_heap::heap_hard_limit = 1;
+        }
+    }
 
     if (!(gc_heap::heap_hard_limit))
     {
@@ -35354,14 +35511,63 @@ HRESULT GCHeap::Initialize()
 
     size_t seg_size = 0;
     size_t large_seg_size = 0;
+    size_t pin_seg_size = 0;
 
     if (gc_heap::heap_hard_limit)
     {
         gc_heap::use_large_pages_p = GCConfig::GetGCLargePages();
-        seg_size = gc_heap::get_segment_size_hard_limit (&nhp, (nhp_from_config == 0));
-        gc_heap::soh_segment_size = seg_size;
-        large_seg_size = gc_heap::use_large_pages_p ? seg_size : seg_size * 2;
+        if (gc_heap::heap_hard_limit_oh[0])
+        {
+#ifdef MULTIPLE_HEAPS
+            if (nhp_from_config == 0)
+            {
+                for (int i = 0; i < (total_oh_count - 1); i++)
+                {
+                    uint32_t nhp_oh = (uint32_t)(gc_heap::heap_hard_limit_oh[i] / min_segment_size_hard_limit);
+                    nhp = min (nhp, nhp_oh);
+                }
+                if (nhp == 0)
+                {
+                    nhp = 1;
+                }
+            }
+#endif
+            seg_size = gc_heap::heap_hard_limit_oh[0] / nhp;
+            large_seg_size = gc_heap::heap_hard_limit_oh[1] / nhp;
+            pin_seg_size = gc_heap::heap_hard_limit_oh[2] / nhp;
 
+            size_t aligned_seg_size = align_on_segment_hard_limit (seg_size);
+            size_t aligned_large_seg_size = align_on_segment_hard_limit (large_seg_size);
+            size_t aligned_pin_seg_size = align_on_segment_hard_limit (pin_seg_size);
+
+            if (!gc_heap::use_large_pages_p)
+            {
+                aligned_seg_size = round_up_power2 (aligned_seg_size);
+                aligned_large_seg_size = round_up_power2 (aligned_large_seg_size);
+                aligned_pin_seg_size = round_up_power2 (aligned_pin_seg_size);
+            }
+
+            size_t seg_size_from_config = (size_t)GCConfig::GetSegmentSize();
+            if (seg_size_from_config)
+            {
+                size_t aligned_seg_size_config = (gc_heap::use_large_pages_p ? align_on_segment_hard_limit (seg_size) : round_up_power2 (seg_size_from_config));
+                aligned_seg_size = max (aligned_seg_size, aligned_seg_size_config);
+                aligned_large_seg_size = max (aligned_large_seg_size, aligned_seg_size_config);
+                aligned_pin_seg_size = max (aligned_pin_seg_size, aligned_seg_size_config);
+            }
+
+            seg_size = aligned_seg_size;
+            gc_heap::soh_segment_size = seg_size;
+            large_seg_size = aligned_large_seg_size;
+            pin_seg_size = aligned_pin_seg_size;
+        }
+        else
+        {
+            seg_size = gc_heap::get_segment_size_hard_limit (&nhp, (nhp_from_config == 0));
+            gc_heap::soh_segment_size = seg_size;
+            large_seg_size = gc_heap::use_large_pages_p ? seg_size : seg_size * 2;
+            pin_seg_size = large_seg_size;
+        }
         if (gc_heap::use_large_pages_p)
             gc_heap::min_segment_size = min_segment_size_hard_limit;
     }
@@ -35370,26 +35576,30 @@ HRESULT GCHeap::Initialize()
         seg_size = get_valid_segment_size();
         gc_heap::soh_segment_size = seg_size;
         large_seg_size = get_valid_segment_size (TRUE);
+        pin_seg_size = large_seg_size;
     }
+    assert (g_theGCHeap->IsValidSegmentSize (seg_size));
+    assert (g_theGCHeap->IsValidSegmentSize (large_seg_size));
+    assert (g_theGCHeap->IsValidSegmentSize (pin_seg_size));
 
     dprintf (1, ("%d heaps, soh seg size: %Id mb, loh: %Id mb\n",
         nhp,
         (seg_size / (size_t)1024 / 1024),
         (large_seg_size / 1024 / 1024)));
 
-    gc_heap::min_uoh_segment_size = large_seg_size;
+    gc_heap::min_uoh_segment_size = min (large_seg_size, pin_seg_size);
 
     if (gc_heap::min_segment_size == 0)
     {
-        gc_heap::min_segment_size = min (seg_size, large_seg_size);
+        gc_heap::min_segment_size = min (seg_size, gc_heap::min_uoh_segment_size);
     }
     gc_heap::min_segment_size_shr = index_of_highest_set_bit (gc_heap::min_segment_size);
 
 #ifdef MULTIPLE_HEAPS
     gc_heap::n_heaps = nhp;
-    hr = gc_heap::initialize_gc (seg_size, large_seg_size /*loh_segment_size*/, large_seg_size /*poh_segment_size*/, nhp);
+    hr = gc_heap::initialize_gc (seg_size, large_seg_size /*loh_segment_size*/, pin_seg_size /*poh_segment_size*/, nhp);
 #else
-    hr = gc_heap::initialize_gc (seg_size, large_seg_size /*loh_segment_size*/, large_seg_size /*poh_segment_size*/);
+    hr = gc_heap::initialize_gc (seg_size, large_seg_size /*loh_segment_size*/, pin_seg_size /*poh_segment_size*/);
 #endif //MULTIPLE_HEAPS
 
     if (hr != S_OK)

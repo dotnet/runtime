@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System.Collections;
 using System.Diagnostics;
 
@@ -29,15 +30,15 @@ namespace System.Xml
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
-        public XmlQualifiedName(string name) : this(name, string.Empty) { }
+        public XmlQualifiedName(string? name) : this(name, string.Empty) { }
 
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
-        public XmlQualifiedName(string name, string ns)
+        public XmlQualifiedName(string? name, string? ns)
         {
-            _ns = ns == null ? string.Empty : ns;
-            _name = name == null ? string.Empty : name;
+            _ns = ns ?? string.Empty;
+            _name = name ?? string.Empty;
         }
 
         /// <devdoc>
@@ -87,41 +88,40 @@ namespace System.Xml
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
-        public override bool Equals(object other)
+        public override bool Equals(object? other)
         {
-            XmlQualifiedName qname;
-
             if ((object)this == other)
             {
                 return true;
             }
 
-            qname = other as XmlQualifiedName;
+            XmlQualifiedName? qname = other as XmlQualifiedName;
             if (qname != null)
             {
                 return (Name == qname.Name && Namespace == qname.Namespace);
             }
+
             return false;
         }
 
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
-        public static bool operator ==(XmlQualifiedName a, XmlQualifiedName b)
+        public static bool operator ==(XmlQualifiedName? a, XmlQualifiedName? b)
         {
-            if ((object)a == (object)b)
+            if ((object?)a == (object?)b)
                 return true;
 
-            if ((object)a == null || (object)b == null)
+            if ((object?)a == null || (object?)b == null)
                 return false;
 
-            return (a.Name == b.Name && a.Namespace == b.Namespace);
+            return a.Name == b.Name && a.Namespace == b.Namespace;
         }
 
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
-        public static bool operator !=(XmlQualifiedName a, XmlQualifiedName b)
+        public static bool operator !=(XmlQualifiedName? a, XmlQualifiedName? b)
         {
             return !(a == b);
         }
@@ -135,18 +135,16 @@ namespace System.Xml
         }
 
         // --------- Some useful internal stuff -----------------
-        internal void Init(string name, string ns)
+        internal void Init(string? name, string? ns)
         {
-            Debug.Assert(name != null && ns != null);
-            _name = name;
-            _ns = ns;
+            _name = name ?? string.Empty;
+            _ns = ns ?? string.Empty;
             _hash = 0;
         }
 
-        internal void SetNamespace(string ns)
+        internal void SetNamespace(string? ns)
         {
-            Debug.Assert(ns != null);
-            _ns = ns; //Not changing hash since ns is not used to compute hashcode
+            _ns = ns ?? string.Empty; // Not changing hash since ns is not used to compute hashcode
         }
 
         internal void Verify()
@@ -170,7 +168,7 @@ namespace System.Xml
             string localName;
             ValidateNames.ParseQNameThrow(s, out prefix, out localName);
 
-            string uri = nsmgr.LookupNamespace(prefix);
+            string? uri = nsmgr.LookupNamespace(prefix);
             if (uri == null)
             {
                 if (prefix.Length != 0)
@@ -178,12 +176,15 @@ namespace System.Xml
                     throw new XmlException(SR.Xml_UnknownNs, prefix);
                 }
                 else
-                { //Re-map namespace of empty prefix to string.Empty when there is no default namespace declared
+                {
+                    // Re-map namespace of empty prefix to string.Empty when there is no default namespace declared
                     uri = string.Empty;
                 }
             }
+
             return new XmlQualifiedName(localName, uri);
         }
+
         internal XmlQualifiedName Clone()
         {
             return (XmlQualifiedName)MemberwiseClone();

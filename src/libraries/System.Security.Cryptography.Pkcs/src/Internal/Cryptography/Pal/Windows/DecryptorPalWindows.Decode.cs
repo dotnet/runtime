@@ -48,7 +48,7 @@ namespace Internal.Cryptography.Pal.Windows
                 {
                     CRYPT_ALGORITHM_IDENTIFIER* pCryptAlgorithmIdentifier = (CRYPT_ALGORITHM_IDENTIFIER*)(sh.DangerousGetHandle());
                     contentEncryptionAlgorithm = (*pCryptAlgorithmIdentifier).ToAlgorithmIdentifier();
-                    contentEncryptionAlgorithmAsn.Algorithm = contentEncryptionAlgorithm.Oid;
+                    contentEncryptionAlgorithmAsn.Algorithm = contentEncryptionAlgorithm.Oid.Value!;
                     contentEncryptionAlgorithmAsn.Parameters = (*pCryptAlgorithmIdentifier).Parameters.ToByteArray();
                 }
             }

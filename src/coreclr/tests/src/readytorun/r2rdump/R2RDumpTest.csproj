@@ -10,9 +10,10 @@
     <BashDotnetToolCommand>$(CoreClrDir).dotnet/dotnet</BashDotnetToolCommand>
     <CLRTestExecutionArguments>$(CoreClrDir)tests\src\readytorun\r2rdump\files\$(TargetOS).$(TargetArchitecture).$(Configuration)\</CLRTestExecutionArguments>
     <!-- Test unsupported outside of windows -->
+    <CLRTestTargetUnsupported Condition="'$(TargetsWindows)' != 'true'">true</CLRTestTargetUnsupported>
     <!-- Test unsupported on arm targets -->
-    <TestUnsupportedOutsideWindows>true</TestUnsupportedOutsideWindows>
-    <DisableProjectBuild Condition=" '$(TargetArchitecture)' == 'arm64' or '$(TargetArchitecture)' == 'arm' or '$(TargetsUnix)' == 'true' ">true</DisableProjectBuild>
+    <CLRTestTargetUnsupported Condition="'$(TargetArchitecture)' == 'arm64'">true</CLRTestTargetUnsupported>
+    <CLRTestTargetUnsupported Condition="'$(TargetArchitecture)' == 'arm' or '$(TargetArchitecture)' == 'armel'">true</CLRTestTargetUnsupported>
   </PropertyGroup>
   <PropertyGroup>
     <!-- Fails with JIT stress modes, issue #19415 -->

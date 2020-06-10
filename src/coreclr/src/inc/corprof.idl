@@ -757,6 +757,7 @@ typedef enum
     COR_PRF_EVENTPIPE_DATETIME = 16,      // DateTime
     COR_PRF_EVENTPIPE_GUID = 17,          // Guid
     COR_PRF_EVENTPIPE_STRING = 18,        // Unicode character string
+    COR_PRF_EVENTPIPE_ARRAY = 19,         // Arbitrary length array
 } COR_PRF_EVENTPIPE_PARAM_TYPE;
 
 typedef enum
@@ -772,6 +773,8 @@ typedef enum
 typedef struct
 {
     UINT32       type;
+    // Used if type == ArrayType
+    UINT32       elementType;
     const WCHAR *name;
 } COR_PRF_EVENTPIPE_PARAM_DESC;
 
@@ -4079,22 +4082,23 @@ interface ICorProfilerInfo12 : ICorProfilerInfo11
 
     HRESULT EventPipeDefineEvent(
                 [in] EVENTPIPE_PROVIDER     provHandle,
-                [in, string] const WCHAR   *szName, 
+                [in, string] const WCHAR   *szName,
                 [in] UINT32                 eventID,
                 [in] UINT64                 keywords,
                 [in] UINT32                 eventVersion,
                 [in] UINT32                 level,
+                [in] UINT8                  opcode,
                 [in] BOOL                   needStack,
                 [in] UINT32                 cParamDescs,
-                [in, size_is(cParamDescs)] 
+                [in, size_is(cParamDescs)]
                      COR_PRF_EVENTPIPE_PARAM_DESC pParamDescs[],
                 [out] EVENTPIPE_EVENT      *pEventHandle);
 
     HRESULT EventPipeWriteEvent(
                 [in] EVENTPIPE_EVENT    eventHandle,
+                [in] UINT32             cData,
                 [in, size_is(cData)]
                      COR_PRF_EVENT_DATA data[],
-                [in] UINT32             cData,
                 [in] LPCGUID            pActivityId,
                 [in] LPCGUID            pRelatedActivityId);
 }

@@ -149,7 +149,7 @@ ep_config_init (EventPipeConfiguration *config)
 {
 	ep_rt_config_requires_lock_not_held ();
 
-	ep_return_false_if_nok (config != NULL);
+	ep_return_null_if_nok (config != NULL);
 
 	ep_config_set_config_provider (config, ep_create_provider (ep_config_get_default_provider_name_utf8 (), NULL, NULL));
 	ep_raise_error_if_nok (ep_config_get_config_provider (config) != NULL);
@@ -309,6 +309,7 @@ ep_config_build_event_metadata_event (
 	// - GUID ProviderID.
 	// - Optional event description payload.
 
+	EventPipeEventMetadataEvent *instance = NULL;
 	uint8_t *instance_payload = NULL;
 
 	// Calculate the size of the event.
@@ -325,7 +326,8 @@ ep_config_build_event_metadata_event (
 	ep_raise_error_if_nok (instance_payload != NULL);
 	
 	// Fill the buffer with the payload.
-	uint8_t *current = instance_payload;
+	uint8_t *current;
+	current = instance_payload;
 
 	memcpy(current, &metadata_id, sizeof(metadata_id));
 	current += sizeof(metadata_id);
@@ -337,7 +339,7 @@ ep_config_build_event_metadata_event (
 	memcpy(current, payload_data, payload_data_len);
 
 	// Construct the metadata event instance.
-	EventPipeEventMetadataEvent *instance = ep_event_metdata_event_alloc (
+	instance = ep_event_metdata_event_alloc (
 		ep_config_get_metadata_event (config),
 		ep_rt_current_processor_get_number (),
 		ep_rt_current_thread_get_id (),

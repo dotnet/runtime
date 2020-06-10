@@ -56,7 +56,6 @@
 #include "runtimehandles.h"
 #include "reflectioninvocation.h"
 #include "managedmdimport.hpp"
-#include "synchronizationcontextnative.h"
 #include "typestring.h"
 #include "comdependenthandle.h"
 #include "weakreferencenative.h"
@@ -348,8 +347,6 @@ const MscorlibClassDescription c_rgMscorlibClassDescriptions[] =
 
     // Include all exception types here that are defined in mscorlib.  Omit exceptions defined elsewhere.
     #define DEFINE_EXCEPTION(ns, reKind, bHRformessage, ...) { ns , # reKind },
-    #define DEFINE_EXCEPTION_HR_WINRT_ONLY(ns, reKind, ...)
-    #define DEFINE_EXCEPTION_IN_OTHER_FX_ASSEMBLY(ns, reKind, assemblySimpleName, bHRformessage, ...)
     #include "rexcep.h"
 };
 const USHORT c_nMscorlibClassDescriptions = NumItems(c_rgMscorlibClassDescriptions);

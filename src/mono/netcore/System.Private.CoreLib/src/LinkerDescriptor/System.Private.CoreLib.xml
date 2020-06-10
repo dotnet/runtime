@@ -4,7 +4,6 @@
 		<!-- domain.c: mono_defaults.appdomain_class -->
 		<type fullname="Mono.MonoDomain">
 			<field name="_mono_app_domain"/>
-			<field name="UnhandledException"/>
 		</type>
 
 		<!-- appdomain.c: mono_runtime_init -->
@@ -23,17 +22,19 @@
 		  <!-- assembly-load-context.c: mono_alc_invoke_resolve_using_resolve_satellite -->
 		  <method name="MonoResolveUsingResolveSatelliteAssembly" />
 		  <!-- appdomain.c: mono_try_assembly_resolve_handle () -->
-		  <method name="OnAssemblyResolve"/>
+		  <method name="OnAssemblyResolve" />
 		  <!-- appdomain.c: mono_domain_fire_assembly_load_event () -->
-		  <method name="OnAssemblyLoad"/>
+		  <method name="OnAssemblyLoad" />
 		  <!-- native-library.c: netcore_resolve_with_load () -->
-		  <method name="MonoResolveUnmanagedDll"/>
+		  <method name="MonoResolveUnmanagedDll" />
 		  <!-- native-library.c: netcore_resolve_with_resolving_event () -->
-		  <method name="MonoResolveUnmanagedDllUsingEvent"/>
+		  <method name="MonoResolveUnmanagedDllUsingEvent" />
 		  <!-- appdomain.c: mono_domain_fire_assembly_load_event -->
-		  <method name="OnAssemblyLoad"/>
+		  <method name="OnAssemblyLoad" />
 		  <!-- appdomain.c: mono_domain_try_type_resolve_name -->
-		  <method name="OnTypeResolve"/>
+		  <method name="OnTypeResolve" />
+		  <!-- icall.c: try_resource_resolve_name -->
+		  <method name="OnResourceResolve" />
 		</type>
 		
 		<!-- marshal.c: emit_marshal_custom (should not be used on devices)
@@ -304,6 +305,11 @@
 			<method signature="System.Void .ctor(System.String)" />
 			<!-- mono_exception_from_token -->
 			<method signature="System.Void .ctor()" />
+		</type>
+
+		<type fullname="System.PlatformNotSupportedException">
+			<!-- mono_error_set_platform_not_supported -->
+			<method signature="System.Void .ctor(System.String)" />
 		</type>
 
 		<!-- mono-error.c (mono_error_set_ambiguous_implementation) -->
@@ -736,6 +742,10 @@
 			<method name="OnProcessExit"/>
 			<!-- appdomain.c: get_app_context_base_directory -->
 			<method name="get_BaseDirectory"/>
+			<!-- object.c: mono_unhandled_exception_checked -->
+			<field name="UnhandledException"/>
+			<!-- object.c: mono_first_chance_exception_checked -->
+			<field name="FirstChanceException"/>
 		</type>
 
 		<type fullname="Mono.NullByRefReturnException">
@@ -777,21 +787,11 @@
 			<!-- Methods is used by VS Tasks Window. -->
 			<method name="GetActiveTaskFromId" />
 		</type>
-		<type fullname="System.Collections.Generic.GenericArraySortHelper`1">
-			<!-- Instantiated via reflection -->
-			<method name=".ctor" />
-		</type>
-		<type fullname="System.Collections.Generic.GenericArraySortHelper`2">
-			<!-- Instantiated via reflection -->
-			<method name=".ctor" />
-		</type>
 		<!-- Accessed via private reflection by tracing controller. -->
 		<type fullname="System.Diagnostics.Tracing.EventPipe*" />
 		<!-- Accessed via private reflection and by native code. -->
 		<type fullname="System.Diagnostics.Tracing.RuntimeEventSource" />
 		<type fullname="System.Diagnostics.Tracing.NativeRuntimeEventSource" />
-		<!-- Accessed via reflection in TraceLogging-style EventSource events. -->
-		<type fullname="*f__AnonymousType*" />
 		<type fullname="System.Diagnostics.Tracing.PropertyValue/ReferenceTypeHelper`1">
 			<!-- Instantiated via reflection -->
 			<method name=".ctor" />
@@ -799,12 +799,9 @@
 		<!-- Accessed via native code. -->
 		<type fullname="System.Runtime.InteropServices.ComTypes.IEnumerable" />
 		<type fullname="System.Runtime.InteropServices.CustomMarshalers.*" />
-		<!-- Accessed by the WinRT Host -->
-		<type fullname="Internal.Runtime.InteropServices.WindowsRuntime.ActivationFactoryLoader" />
 		<!-- Workaround for https://github.com/mono/linker/issues/378 -->
 		<type fullname="System.Runtime.InteropServices.IDispatch" />
 		<type fullname="Internal.Runtime.InteropServices.IClassFactory2" />
-		<type fullname="Windows.Foundation.Diagnostics.TracingStatusChangedEventArgs" />
 		<type fullname="System.Threading.ThreadPoolBoundHandle">
 			<!-- Workaround to keep .interfaceimpl even though this type
 				is not instantiated on unix:
