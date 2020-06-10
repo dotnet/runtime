@@ -249,7 +249,7 @@ namespace System.Text.Json.Serialization.Tests
             // identifier, and is a candidate to go into the name cache.
 
             // Write the first 45 values.
-            for (int i = 0; i < 45; i++)
+            for (int i = 1; i < 46; i++)
             {
                 JsonSerializer.Serialize((MyEnum)i, options);
             }
@@ -259,20 +259,11 @@ namespace System.Text.Json.Serialization.Tests
 
             // Ensure the approximate size limit for the name cache (a concurrent dictionary) is honored.
             // Use multiple threads to perhaps go over the soft limit of 64, but not by more than a couple.
-            Task[] tasks = new Task[8];
-            tasks[0] = Task.Run(() => JsonSerializer.Serialize((MyEnum)45, options));
-            tasks[1] = Task.Run(() => JsonSerializer.Serialize((MyEnum)46, options));
-            tasks[2] = Task.Run(() => JsonSerializer.Serialize((MyEnum)47, options));
-            tasks[3] = Task.Run(() => JsonSerializer.Serialize((MyEnum)48, options));
-            tasks[4] = Task.Run(() => JsonSerializer.Serialize((MyEnum)49, options));
-            tasks[5] = Task.Run(() => JsonSerializer.Serialize((MyEnum)50, options));
-            tasks[6] = Task.Run(() => JsonSerializer.Serialize((MyEnum)51, options));
-            tasks[7] = Task.Run(() => JsonSerializer.Serialize((MyEnum)52, options));
-            Task.WaitAll(tasks);
+            Parallel.For(0, 8, i => JsonSerializer.Serialize((MyEnum)(46 + i), options));
 
             // Write the remaining enum values. We should not store any more values in
             // the cache. If we do, we may throw OutOfMemoryException on some machines.
-            for (int i = 53; i <= MaxValue; i++)
+            for (int i = 54; i <= MaxValue; i++)
             {
                 JsonSerializer.Serialize((MyEnum)i, options);
             }
