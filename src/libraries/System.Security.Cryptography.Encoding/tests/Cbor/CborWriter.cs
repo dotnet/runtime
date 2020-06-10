@@ -6,6 +6,7 @@
 using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Runtime.InteropServices;
 
 namespace System.Formats.Cbor
 {
@@ -132,46 +133,50 @@ namespace System.Formats.Cbor
         ///   <paramref name="encodedValue"/> is not a well-formed CBOR encoding. -or-
         ///   <paramref name="encodedValue"/> is not valid under the current conformance level
         /// </exception>
-        public void WriteEncodedValue(ReadOnlyMemory<byte> encodedValue)
+        public void WriteEncodedValue(ReadOnlySpan<byte> encodedValue)
         {
             ValidateEncoding(encodedValue, ConformanceLevel);
-            ReadOnlySpan<byte> encodedValueSpan = encodedValue.Span;
-            EnsureWriteCapacity(encodedValueSpan.Length);
+            EnsureWriteCapacity(encodedValue.Length);
 
             // even though the encoding might be valid CBOR, it might not be valid within the current writer context.
             // E.g. we're at the end of a definite-length collection or writing integers in an indefinite-length string.
             // For this reason we write the initial byte separately and perform the usual validation.
-            CborInitialByte initialByte = new CborInitialByte(encodedValueSpan[0]);
+            CborInitialByte initialByte = new CborInitialByte(encodedValue[0]);
             WriteInitialByte(initialByte);
 
             // now copy any remaining bytes
-            encodedValueSpan = encodedValueSpan.Slice(1);
+            encodedValue = encodedValue.Slice(1);
 
-            if (!encodedValueSpan.IsEmpty)
+            if (!encodedValue.IsEmpty)
             {
-                encodedValueSpan.CopyTo(_buffer.AsSpan(_offset));
-                _offset += encodedValueSpan.Length;
+                encodedValue.CopyTo(_buffer.AsSpan(_offset));
+                _offset += encodedValue.Length;
             }
 
             AdvanceDataItemCounters();
 
-            static void ValidateEncoding(ReadOnlyMemory<byte> encodedValue, CborConformanceLevel conformanceLevel)
+            static unsafe void ValidateEncoding(ReadOnlySpan<byte> encodedValue, CborConformanceLevel conformanceLevel)
             {
-                var reader = new CborReader(encodedValue, conformanceLevel: conformanceLevel, allowMultipleRootLevelValues: false);
+                fixed (byte* ptr = &MemoryMarshal.GetReference(encodedValue))
+                {
+                    using var manager = new PointerMemoryManager<byte>(ptr, encodedValue.Length);
+                    var reader = new CborReader(manager.Memory, conformanceLevel: conformanceLevel, allowMultipleRootLevelValues: false);
 
-                try
-                {
-                    reader.SkipValue(disableConformanceLevelChecks: false);
-                }
-                catch (FormatException e)
-                {
-                    throw new ArgumentException(SR.Cbor_Writer_PayloadIsNotValidCbor, e);
+                    try
+                    {
+                        reader.SkipValue(disableConformanceLevelChecks: false);
+                    }
+                    catch (FormatException e)
+                    {
+                        throw new ArgumentException(SR.Cbor_Writer_PayloadIsNotValidCbor, e);
+                    }
+
+                    if (reader.HasData)
+                    {
+                        throw new ArgumentException(SR.Cbor_Writer_PayloadIsNotValidCbor);
+                    }
                 }
 
-                if (reader.HasData)
-                {
-                    throw new ArgumentException(SR.Cbor_Writer_PayloadIsNotValidCbor);
-                }
             }
         }
 
