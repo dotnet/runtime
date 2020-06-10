@@ -400,11 +400,11 @@ namespace System.IO
 
             else
             {
-                WriteWhenCharCountAlignsWithBufferSize(value, totalBytes);
+                WriteWhenEncodingIsNotUtf8(value, totalBytes);
             }
         }
 
-        private unsafe void WriteWhenCharCountAlignsWithBufferSize(string value, int len)
+        private unsafe void WriteWhenEncodingIsNotUtf8(string value, int len)
         {
             // This method should only be called from BinaryWriter(string), which does a null-check
             Debug.Assert(_largeByteBuffer != null);
