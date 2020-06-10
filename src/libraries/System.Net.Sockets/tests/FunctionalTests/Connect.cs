@@ -93,8 +93,7 @@ namespace System.Net.Sockets.Tests
             EndPoint badEndpoint = useDns ? (EndPoint)new DnsEndPoint("localhost", 288) : new IPEndPoint(IPAddress.Loopback, 288);
             using Socket client = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
             SocketException ex = await Assert.ThrowsAnyAsync<SocketException>(() => ConnectAsync(client, badEndpoint));
-            Assert.Contains("127.0.0.1", ex.Message);
-            Assert.Contains("288", ex.Message);
+            Assert.Contains("127.0.0.1:288", ex.Message);
         }
 
         [Fact]
