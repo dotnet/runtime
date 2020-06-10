@@ -359,8 +359,8 @@ namespace System.IO
             if (value == null)
                 throw new ArgumentNullException(nameof(value));
 
-            int bytesLeft = _encoding.GetByteCount(value);
-            Write7BitEncodedInt(bytesLeft);
+            int totalBytes = _encoding.GetByteCount(value);
+            Write7BitEncodedInt(totalBytes);
 
             if (_largeByteBuffer == null)
             {
@@ -368,10 +368,10 @@ namespace System.IO
                 _maxChars = _largeByteBuffer.Length / _encoding.GetMaxByteCount(1);
             }
 
-            if (bytesLeft <= _largeByteBuffer.Length)
+            if (totalBytes <= _largeByteBuffer.Length)
             {
                 _encoding.GetBytes(value, _largeByteBuffer);
-                OutStream.Write(_largeByteBuffer, 0, bytesLeft);
+                OutStream.Write(_largeByteBuffer, 0, totalBytes);
                 return;
             }
 
@@ -394,14 +394,13 @@ namespace System.IO
 
                     OutStream.Write(_largeByteBuffer, 0, byteCount);
                     charStart += charCount;
-                    bytesLeft -= byteCount;
                     numLeft -= charCount;
                 }
             }
 
             else
             {
-                WriteWhenCharCountAlignsWithBufferSize(value, bytesLeft);
+                WriteWhenCharCountAlignsWithBufferSize(value, totalBytes);
             }
         }
 
