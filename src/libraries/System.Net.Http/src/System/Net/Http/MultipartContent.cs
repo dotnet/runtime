@@ -168,20 +168,6 @@ namespace System.Net.Http
         // then the stream will be closed an exception thrown.
         protected override void SerializeToStream(Stream stream, TransportContext? context, CancellationToken cancellationToken)
         {
-            // Only skip the original protected virtual SerializeToStream if this
-            // isn't a derived type that may have overridden the behavior.
-            if (GetType() != typeof(MultipartContent))
-            {
-                base.SerializeToStream(stream, context, cancellationToken);
-            }
-            else
-            {
-                SerializeToStreamCore(stream, context, cancellationToken);
-            }
-        }
-
-        private protected void SerializeToStreamCore(Stream stream, TransportContext? context, CancellationToken cancellationToken)
-        {
             Debug.Assert(stream != null);
             try
             {

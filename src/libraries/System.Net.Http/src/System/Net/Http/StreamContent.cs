@@ -57,21 +57,6 @@ namespace System.Net.Http
 
         protected override void SerializeToStream(Stream stream, TransportContext? context, CancellationToken cancellationToken)
         {
-            // Only skip the original protected virtual SerializeToStream if this
-            // isn't a derived type that may have overridden the behavior.
-            if (GetType() != typeof(StreamContent))
-            {
-                base.SerializeToStream(stream, context, cancellationToken);
-            }
-            else
-            {
-                SerializeToStreamCore(stream, context, cancellationToken);
-            }
-        }
-
-        private void SerializeToStreamCore(Stream stream, TransportContext? context,
-            CancellationToken cancellationToken)
-        {
             Debug.Assert(stream != null);
             PrepareContent();
             // If the stream can't be re-read, make sure that it gets disposed once it is consumed.
