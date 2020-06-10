@@ -42,7 +42,6 @@
 
   <PropertyGroup Condition="'$(TargetsMobile)' == 'true'">
     <IncludeDotNetCli>true</IncludeDotNetCli>
-    <MicrosoftDotNetXHarnessCLIVersion>1.0.0-prerelease.20304.1</MicrosoftDotNetXHarnessCLIVersion>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(HelixType)' == ''">
@@ -53,7 +52,7 @@
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(HelixCommand)' == '' and '$(BuildAllConfigurations)' == 'true'">
-    <HelixPreCommands>$(HelixPreCommands); set DOTNET_CLI_TELEMETRY_OPTOUT=1;set DOTNET_SKIP_FIRST_TIME_EXPERIENCE=1;set DOTNET_MULTILEVEL_LOOKUP=0</HelixPreCommands>
+    <HelixPreCommands>set DOTNET_CLI_TELEMETRY_OPTOUT=1;set DOTNET_SKIP_FIRST_TIME_EXPERIENCE=1;set DOTNET_MULTILEVEL_LOOKUP=0</HelixPreCommands>
 
     <HelixCommand>dotnet msbuild %HELIX_CORRELATION_PAYLOAD%\test.msbuild</HelixCommand>
     <HelixCommand>$(HelixCommand) /warnaserror</HelixCommand>
