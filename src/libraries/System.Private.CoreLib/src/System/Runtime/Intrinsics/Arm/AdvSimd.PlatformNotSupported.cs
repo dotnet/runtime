@@ -1231,6 +1231,30 @@ namespace System.Runtime.Intrinsics.Arm
             public static Vector64<float> MultiplyExtendedScalar(Vector64<float> left, Vector64<float> right) { throw new PlatformNotSupportedException(); }
 
             /// <summary>
+            /// float64_t vmulxd_laneq_f64 (float64_t a, float64x2_t v, const int lane)
+            ///   A64: FMULX Dd, Dn, Vm.D[lane]
+            /// </summary>
+            public static Vector64<double> MultiplyExtendedScalarBySelectedScalar(Vector64<double> left, Vector128<double> right, byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// float32_t vmulxs_lane_f32 (float32_t a, float32x2_t v, const int lane)
+            ///   A64: FMULX Sd, Sn, Vm.S[lane]
+            /// </summary>
+            public static Vector64<float> MultiplyExtendedScalarBySelectedScalar(Vector64<float> left, Vector64<float> right, byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// float32_t vmulxs_laneq_f32 (float32_t a, float32x4_t v, const int lane)
+            ///   A64: FMULX Sd, Sn, Vm.S[lane]
+            /// </summary>
+            public static Vector64<float> MultiplyExtendedScalarBySelectedScalar(Vector64<float> left, Vector128<float> right, byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// float64_t vmuld_laneq_f64 (float64_t a, float64x2_t v, const int lane)
+            ///   A64: FMUL Dd, Dn, Vm.D[lane]
+            /// </summary>
+            public static Vector64<double> MultiplyScalarBySelectedScalar(Vector64<double> left, Vector128<double> right, byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
             /// float64x2_t vnegq_f64 (float64x2_t a)
             ///   A64: FNEG Vd.2D, Vn.2D
             /// </summary>
@@ -6564,6 +6588,20 @@ namespace System.Runtime.Intrinsics.Arm
         /// The above native signature does not exist. We provide this additional overload for consistency with the other scalar APIs.
         /// </summary>
         public static Vector64<float> MultiplyScalar(Vector64<float> left, Vector64<float> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// float32_t vmuls_lane_f32 (float32_t a, float32x2_t v, const int lane)
+        ///   A32: VMUL.F32 Sd, Sn, Dm[lane]
+        ///   A64: FMUL Sd, Sn, Vm.S[lane]
+        /// </summary>
+        public static Vector64<float> MultiplyScalarBySelectedScalar(Vector64<float> left, Vector64<float> right, byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// float32_t vmuls_laneq_f32 (float32_t a, float32x4_t v, const int lane)
+        ///   A32: VMUL.F32 Sd, Sn, Dm[lane]
+        ///   A64: FMUL Sd, Sn, Vm.S[lane]
+        /// </summary>
+        public static Vector64<float> MultiplyScalarBySelectedScalar(Vector64<float> left, Vector128<float> right, byte rightIndex) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// uint8x8_t vmls_u8 (uint8x8_t a, uint8x8_t b, uint8x8_t c)
