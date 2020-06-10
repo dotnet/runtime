@@ -42,14 +42,20 @@
       <File Remove="@(RuntimeFile)" />
     </ItemGroup>
 
+    <PropertyGroup>
+      <TargetOSComponent>unix</TargetOSComponent>
+      <TargetOSComponent Condition="'$(TargetOS)' == 'Windows_NT'">win</TargetOSComponent>
+      <TargetSpec>$(TargetOSComponent)-$(TargetArchitecture)</TargetSpec>
+    </PropertyGroup>
+
     <ItemGroup>
       <Crossgen2File Include="$(CoreCLRCrossgen2Dir)crossgen2$(ExeSuffix)" />
       <Crossgen2File Include="$(CoreCLRCrossgen2Dir)crossgen2.dll" />
       <Crossgen2File Include="$(CoreCLRCrossgen2Dir)ILCompiler*.dll" />
       <Crossgen2File Include="$(CoreCLRCrossgen2Dir)Microsoft.DiaSymReader.dll" />
       <Crossgen2File Include="$(CoreCLRCrossgen2Dir)System.CommandLine.dll" />
-      <Crossgen2File Include="$(CoreCLRCrossgen2Dir)$(LibraryFilePrefix)clrjitilc$(LibraryFileExtension)" />
       <Crossgen2File Include="$(CoreCLRCrossgen2Dir)$(LibraryFilePrefix)jitinterface$(LibraryFileExtension)" />
+      <Crossgen2File Include="$(CoreCLRCrossgen2Dir)$(LibraryFilePrefix)clrjit-$(TargetSpec)$(LibraryFileExtension)" />
       <!-- Include the native and managed files from the Microsoft.NETCore.App shared framework -->
       <Crossgen2File Include="@(RuntimeFile)" Condition="'%(RuntimeFile.TargetPath)' == 'runtimes/$(PackageRID)/native'" />
       <Crossgen2File Include="@(RuntimeFile)" Condition="'%(RuntimeFile.TargetPath)' == 'runtimes/$(PackageRID)/lib/$(NetCoreAppCurrent)'" />
