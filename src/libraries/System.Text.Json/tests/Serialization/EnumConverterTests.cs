@@ -237,23 +237,36 @@ namespace System.Text.Json.Serialization.Tests
         public static void VeryLargeAmountOfEnumsToSerialize()
         {
             // Ensure we don't throw OutOfMemoryException.
-            // Multiple threads are used to ensure the approximate size limit
-            // for the name cache(a concurrent dictionary) is honored.
 
             var options = new JsonSerializerOptions
             {
                 Converters = { new JsonStringEnumConverter() }
             };
 
-            const int MaxValue = 33554432; // Value for MyEnum.Z
-            Task[] tasks = new Task[MaxValue];
+            const int MaxValue = 2097152; // value for MyEnum.V
 
-            for (int i = 0; i < tasks.Length; i++)
+            // Every value between 0 and MaxValue maps to a valid enum
+            // identifier, and is a candidate to go into the name cache.
+
+            // Write the first 45 values.
+            for (int i = 1; i < 46; i++)
             {
-                tasks[i] = Task.Run(() => JsonSerializer.Serialize((MyEnum)i, options));
+                JsonSerializer.Serialize((MyEnum)i, options);
             }
 
-            Task.WaitAll(tasks);
+            // At this point, there are 60 values in the name cache;
+            // 22 cached at warm-up, the rest in the above loop.
+
+            // Ensure the approximate size limit for the name cache (a concurrent dictionary) is honored.
+            // Use multiple threads to perhaps go over the soft limit of 64, but not by more than a couple.
+            Parallel.For(0, 8, i => JsonSerializer.Serialize((MyEnum)(46 + i), options));
+
+            // Write the remaining enum values. We should not store any more values in
+            // the cache. If we do, we may throw OutOfMemoryException on some machines.
+            for (int i = 54; i <= MaxValue; i++)
+            {
+                JsonSerializer.Serialize((MyEnum)i, options);
+            }
         }
 
         [Flags]
@@ -281,10 +294,6 @@ namespace System.Text.Json.Serialization.Tests
             T = 1 << 19,
             U = 1 << 20,
             V = 1 << 21,
-            W = 1 << 22,
-            X = 1 << 23,
-            Y = 1 << 24,
-            Z = 1 << 25,
         }
     }
 }
