@@ -37,6 +37,42 @@ namespace System.Runtime.Intrinsics.Arm
         //     public static Vector128<float> MultiplyAdd(Vector128<float> addend, Vector128<float> left, Vector128<float> right) => MultiplyAdd(addend, left, right);
         //
         //     /// <summary>
+        //     /// float32x2_t vmla_n_f32 (float32x2_t a, float32x2_t b, float32_t c)
+        //     ///   A32: VMLA.F32 Dd, Dn, Dm[0]
+        //     /// </summary>
+        //     public static Vector64<float> MultiplyAddByScalar(Vector64<float> addend, Vector64<float> left, Vector64<float> right) => MultiplyAddByScalar(addend, left, right);
+        //
+        //     /// <summary>
+        //     /// float32x4_t vmlaq_n_f32 (float32x4_t a, float32x4_t b, float32_t c)
+        //     ///   A32: VMLA.F32 Qd, Qn, Dm[0]
+        //     /// </summary>
+        //     public static Vector128<float> MultiplyAddByScalar(Vector128<float> addend, Vector128<float> left, Vector64<float> right) => MultiplyAddByScalar(addend, left, right);
+        //
+        //     /// <summary>
+        //     /// float32x2_t vmla_lane_f32 (float32x2_t a, float32x2_t b, float32x2_t v, const int lane)
+        //     ///   A32: VMLA.F32 Dd, Dn, Dm[lane]
+        //     /// </summary>
+        //     public static Vector64<float> MultiplyAddBySelectedScalar(Vector64<float> addend, Vector64<float> left, Vector64<float> right, byte rightIndex) => MultiplyAddBySelectedScalar(addend, left, right, rightIndex);
+        //
+        //     /// <summary>
+        //     /// float32x2_t vmla_laneq_f32 (float32x2_t a, float32x2_t b, float32x4_t v, const int lane)
+        //     ///   A32: VMLA.F32 Dd, Dn, Dm[lane]
+        //     /// </summary>
+        //     public static Vector64<float> MultiplyAddBySelectedScalar(Vector64<float> addend, Vector64<float> left, Vector128<float> right, byte rightIndex) => MultiplyAddBySelectedScalar(addend, left, right, rightIndex);
+        //
+        //     /// <summary>
+        //     /// float32x4_t vmlaq_lane_f32 (float32x4_t a, float32x4_t b, float32x2_t v, const int lane)
+        //     ///   A32: VMLA.F32 Qd, Qn, Dm[lane]
+        //     /// </summary>
+        //     public static Vector128<float> MultiplyAddBySelectedScalar(Vector128<float> addend, Vector128<float> left, Vector64<float> right, byte rightIndex) => MultiplyAddBySelectedScalar(addend, left, right, rightIndex);
+        //
+        //     /// <summary>
+        //     /// float32x4_t vmlaq_laneq_f32 (float32x4_t a, float32x4_t b, float32x4_t v, const int lane)
+        //     ///   A32: VMLA.F32 Qd, Qn, Dm[lane]
+        //     /// </summary>
+        //     public static Vector128<float> MultiplyAddBySelectedScalar(Vector128<float> addend, Vector128<float> left, Vector128<float> right, byte rightIndex) => MultiplyAddBySelectedScalar(addend, left, right, rightIndex);
+        //
+        //     /// <summary>
         //     /// float64x1_t vmla_f64 (float64x1_t a, float64x1_t b, float64x1_t c)
         //     ///   A32: VMLA.F64 Dd, Dn, Dm
         //     /// </summary>
