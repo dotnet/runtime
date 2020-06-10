@@ -83,6 +83,18 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
+        public async Task Connect_WhenUnavailable_ThrowsSocketExceptionWithInfo()
+        {
+            IPAddress badIp = IPAddress.Parse("4.3.2.1");
+            int badPort = 4321;
+            IPEndPoint badEndpoint = new IPEndPoint(badIp, badPort);
+            using Socket client = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+            SocketException ex = await Assert.ThrowsAnyAsync<SocketException>(() => ConnectAsync(client, badEndpoint));
+            Assert.Contains("4.3.2.1", ex.Message);
+            Assert.Contains("4321", ex.Message);
+        }
+
+        [Fact]
         public async Task Connect_OnConnectedSocket_Fails()
         {
             int port;
