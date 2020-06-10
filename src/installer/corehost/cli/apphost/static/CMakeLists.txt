@@ -180,6 +180,8 @@ if(CLR_CMAKE_HOST_UNIX)
     set_property(TARGET singlefilehost APPEND_STRING PROPERTY LINK_DEPENDS ${EXPORTS_FILE})
 endif(CLR_CMAKE_HOST_UNIX)
 
+set_property(TARGET singlefilehost PROPERTY ENABLE_EXPORTS 1)
+
 target_link_libraries(singlefilehost
     libhostfxr_static
     libhostpolicy_static
