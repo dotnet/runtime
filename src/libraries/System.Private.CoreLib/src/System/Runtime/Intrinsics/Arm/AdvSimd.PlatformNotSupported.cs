@@ -686,7 +686,7 @@ namespace System.Runtime.Intrinsics.Arm
             /// float64x2_t vfmsq_f64 (float64x2_t a, float64x2_t b, float64x2_t c)
             ///   A64: FMLS Vd.2D, Vn.2D, Vm.2D
             /// </summary>
-            public static Vector128<double> FusedMultiplySubtract(Vector128<double> acc, Vector128<double> left, Vector128<double> right) { throw new PlatformNotSupportedException(); }
+            public static Vector128<double> FusedMultiplySubtract(Vector128<double> minuend, Vector128<double> left, Vector128<double> right) { throw new PlatformNotSupportedException(); }
 
             /// <summary>
             /// float64x2_t vmaxq_f64 (float64x2_t a, float64x2_t b)
@@ -5377,29 +5377,14 @@ namespace System.Runtime.Intrinsics.Arm
         ///   A32: VFMS.F32 Dd, Dn, Dm
         ///   A64: FMLS Vd.2S, Vn.2S, Vm.2S
         /// </summary>
-        public static Vector64<float> FusedMultiplySubtract(Vector64<float> acc, Vector64<float> left, Vector64<float> right) { throw new PlatformNotSupportedException(); }
+        public static Vector64<float> FusedMultiplySubtract(Vector64<float> minuend, Vector64<float> left, Vector64<float> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// float32x4_t vfmsq_f32 (float32x4_t a, float32x4_t b, float32x4_t c)
         ///   A32: VFMS.F32 Qd, Qn, Qm
         ///   A64: FMLS Vd.4S, Vn.4S, Vm.4S
         /// </summary>
-        public static Vector128<float> FusedMultiplySubtract(Vector128<float> acc, Vector128<float> left, Vector128<float> right) { throw new PlatformNotSupportedException(); }
-
-        /// <summary>
-        /// float64x1_t vfms_f64 (float64x1_t a, float64x1_t b, float64x1_t c)
-        ///   A32: VFMS.F64 Dd, Dn, Dm
-        ///   A64: FMSUB Dd, Dn, Dm, Da
-        /// </summary>
-        public static Vector64<double> FusedMultiplySubtractScalar(Vector64<double> acc, Vector64<double> left, Vector64<double> right) { throw new PlatformNotSupportedException(); }
-
-        /// <summary>
-        /// float32_t vfmss_f32 (float32_t a, float32_t b, float32_t c)
-        ///   A32: VFMS.F32 Sd, Sn, Sm
-        ///   A64: FMSUB Sd, Sn, Sm, Sa
-        /// The above native signature does not exist. We provide this additional overload for consistency with the other scalar APIs.
-        /// </summary>
-        public static Vector64<float> FusedMultiplySubtractScalar(Vector64<float> acc, Vector64<float> left, Vector64<float> right) { throw new PlatformNotSupportedException(); }
+        public static Vector128<float> FusedMultiplySubtract(Vector128<float> minuend, Vector128<float> left, Vector128<float> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// float64x1_t vfnms_f64 (float64x1_t a, float64x1_t b, float64x1_t c)
@@ -5407,7 +5392,7 @@ namespace System.Runtime.Intrinsics.Arm
         ///   A64: FNMSUB Dd, Dn, Dm, Da
         /// The above native signature does not exist. We provide this additional overload for consistency with the other scalar APIs.
         /// </summary>
-        public static Vector64<double> FusedMultiplySubtractNegatedScalar(Vector64<double> acc, Vector64<double> left, Vector64<double> right) { throw new PlatformNotSupportedException(); }
+        public static Vector64<double> FusedMultiplySubtractNegatedScalar(Vector64<double> minuend, Vector64<double> left, Vector64<double> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// float32_t vfnmss_f32 (float32_t a, float32_t b, float32_t c)
@@ -5415,7 +5400,22 @@ namespace System.Runtime.Intrinsics.Arm
         ///   A64: FNMSUB Sd, Sn, Sm, Sa
         /// The above native signature does not exist. We provide this additional overload for consistency with the other scalar APIs.
         /// </summary>
-        public static Vector64<float> FusedMultiplySubtractNegatedScalar(Vector64<float> acc, Vector64<float> left, Vector64<float> right) { throw new PlatformNotSupportedException(); }
+        public static Vector64<float> FusedMultiplySubtractNegatedScalar(Vector64<float> minuend, Vector64<float> left, Vector64<float> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// float64x1_t vfms_f64 (float64x1_t a, float64x1_t b, float64x1_t c)
+        ///   A32: VFMS.F64 Dd, Dn, Dm
+        ///   A64: FMSUB Dd, Dn, Dm, Da
+        /// </summary>
+        public static Vector64<double> FusedMultiplySubtractScalar(Vector64<double> minuend, Vector64<double> left, Vector64<double> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// float32_t vfmss_f32 (float32_t a, float32_t b, float32_t c)
+        ///   A32: VFMS.F32 Sd, Sn, Sm
+        ///   A64: FMSUB Sd, Sn, Sm, Sa
+        /// The above native signature does not exist. We provide this additional overload for consistency with the other scalar APIs.
+        /// </summary>
+        public static Vector64<float> FusedMultiplySubtractScalar(Vector64<float> minuend, Vector64<float> left, Vector64<float> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// uint8x8_t vhsub_u8 (uint8x8_t a, uint8x8_t b)
