@@ -41,8 +41,7 @@ namespace System.Net.Http
             return sendTask.GetAwaiter().GetResult();
         }
 
-        protected internal override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request,
-            CancellationToken cancellationToken) =>
+        protected internal override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken) =>
             SendAsyncCore(request, async: true, cancellationToken).AsTask();
 
         private async ValueTask<HttpResponseMessage> SendAsyncCore(HttpRequestMessage request, bool async,

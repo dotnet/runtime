@@ -84,8 +84,7 @@ namespace System.Net.Http.Functional.Tests
 
             public SetTcsContent(Stream stream, TaskCompletionSource<bool> tcs) : base(stream) => _tcs = tcs;
 
-            protected override void SerializeToStream(Stream stream, TransportContext context,
-                CancellationToken cancellationToken) =>
+            protected override void SerializeToStream(Stream stream, TransportContext context, CancellationToken cancellationToken) =>
                 SerializeToStreamAsync(stream, context).GetAwaiter().GetResult();
 
             protected override Task SerializeToStreamAsync(Stream stream, TransportContext context)
