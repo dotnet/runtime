@@ -113,30 +113,26 @@ namespace System.Net.Http
                 InjectHeaders(currentActivity, request);
             }
 
-            Task<HttpResponseMessage>? responseTask = null;
             HttpResponseMessage? response = null;
-            TaskStatus taskStatus = TaskStatus.Faulted;
+            TaskStatus taskStatus = TaskStatus.RanToCompletion;
             try
             {
-                if (async)
-                {
-                    responseTask = base.SendAsync(request, cancellationToken);
-                    response = await responseTask.ConfigureAwait(false);
-                }
-                else
-                {
-                    response = base.Send(request, cancellationToken);
-                    taskStatus = TaskStatus.RanToCompletion;
-                }
+                response = async ?
+                    await base.SendAsync(request, cancellationToken).ConfigureAwait(false) :
+                    base.Send(request, cancellationToken);
                 return response;
             }
             catch (OperationCanceledException)
             {
+                taskStatus = TaskStatus.Canceled;
+
                 // we'll report task status in HttpRequestOut.Stop
                 throw;
             }
             catch (Exception ex)
             {
+                taskStatus = TaskStatus.Faulted;
+
                 if (s_diagnosticListener.IsEnabled(DiagnosticsHandlerLoggingStrings.ExceptionEventName))
                 {
                     // If request was initially instrumented, Activity.Current has all necessary context for logging
@@ -157,7 +153,7 @@ namespace System.Net.Http
                         // pass the request in the payload, so consumers can have it in Stop for failed/canceled requests
                         // and not retain all requests in Start
                         request,
-                        responseTask?.Status ?? taskStatus));
+                        taskStatus));
                 }
                 // Try to write System.Net.Http.Response event (deprecated)
                 if (s_diagnosticListener.IsEnabled(DiagnosticsHandlerLoggingStrings.ResponseWriteNameDeprecated))
@@ -168,7 +164,7 @@ namespace System.Net.Http
                             response,
                             loggingRequestId,
                             timestamp,
-                            responseTask?.Status ?? taskStatus));
+                            taskStatus));
                 }
             }
         }
