@@ -24,7 +24,7 @@ namespace System.Net.Primitives.Functional.Tests
             Assert.NotEmpty(EventSource.GenerateManifest(esType, esType.Assembly.Location));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void EventSource_EventsRaisedAsExpected()
         {
             RemoteExecutor.Invoke(() =>

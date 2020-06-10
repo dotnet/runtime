@@ -2,17 +2,18 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.Collections.Generic;
 using System.Reflection;
 using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 
 namespace System.Runtime.InteropServices.JavaScript
 {
     public static class Runtime
     {
+        private static readonly Dictionary<int, JSObject> _boundObjects = new Dictionary<int, JSObject>();
+        private static readonly Dictionary<object, JSObject> _rawToJS = new Dictionary<object, JSObject>();
+
         // / <summary>
         // / Execute the provided string in the JavaScript context
         // / </summary>
@@ -23,7 +24,7 @@ namespace System.Runtime.InteropServices.JavaScript
             return Interop.Runtime.InvokeJS(str);
         }
 
-        public static System.Runtime.InteropServices.JavaScript.Function? CompileFunction(string snippet)
+        public static Function? CompileFunction(string snippet)
         {
             return Interop.Runtime.CompileFunction(snippet);
         }
@@ -40,38 +41,22 @@ namespace System.Runtime.InteropServices.JavaScript
 
         public static void FreeObject(object obj)
         {
+            JSObject? jsobj;
             lock (_rawToJS)
             {
-                if (_rawToJS.TryGetValue(obj, out JSObject? jsobj))
+                if (!_rawToJS.Remove(obj, out jsobj))
                 {
-                    //raw_to_js [obj].RawObject = null;
-                    _rawToJS.Remove(obj);
-                    if (jsobj != null)
-                    {
-                        int exception;
-                        Interop.Runtime.ReleaseObject(jsobj.JSHandle, out exception);
-                        if (exception != 0)
-                            throw new JSException($"Error releasing object on (raw-obj)");
-
-                        jsobj.JSHandle = -1;
-                        jsobj.RawObject = null;
-                        jsobj.IsDisposed = true;
-                        jsobj.Handle.Free();
-                    }
-                }
-                else
-                {
-                    throw new JSException($"Error releasing object on (obj)");
+                    throw new JSException($"Error releasing object {obj}");
                 }
             }
+
+            jsobj.ReleaseHandle();
         }
+
         public static object GetGlobalObject(string? str = null)
         {
             return Interop.Runtime.GetGlobalObject(str);
         }
-
-        private static readonly Dictionary<int, JSObject?> _boundObjects = new Dictionary<int, JSObject?>();
-        private static readonly Dictionary<object, JSObject?> _rawToJS = new Dictionary<object, JSObject?>();
 
         public static int BindJSObject(int jsId, int mappedType)
         {
@@ -80,12 +65,13 @@ namespace System.Runtime.InteropServices.JavaScript
             {
                 if (!_boundObjects.TryGetValue(jsId, out obj))
                 {
-                  IntPtr jsIntPtr = (IntPtr)jsId;
-                  obj = mappedType > 0 ? BindJSType(jsIntPtr, mappedType) : new JSObject(jsIntPtr);
-                  _boundObjects.Add (jsId, obj);
+                    IntPtr jsIntPtr = (IntPtr)jsId;
+                    obj = mappedType > 0 ? BindJSType(jsIntPtr, mappedType) : new JSObject(jsIntPtr);
+                    _boundObjects.Add(jsId, obj);
                 }
             }
-            return obj == null ? 0 : (int)(IntPtr)obj.Handle;
+
+            return obj.Int32Handle;
         }
 
         public static int BindCoreCLRObject(int jsId, int gcHandle)
@@ -97,7 +83,7 @@ namespace System.Runtime.InteropServices.JavaScript
             {
                 if (_boundObjects.TryGetValue(jsId, out JSObject? existingObj))
                 {
-                    if (existingObj?.Handle != h && h.IsAllocated)
+                    if (existingObj.Handle != h && h.IsAllocated)
                         throw new JSException($"Multiple handles pointing at js_id: {jsId}");
 
                     obj = existingObj;
@@ -106,98 +92,49 @@ namespace System.Runtime.InteropServices.JavaScript
                 {
                     obj = h.Target as JSObject;
                 }
-                return obj == null ? 0 : (int)(IntPtr)obj.Handle;
             }
+
+            return obj?.Int32Handle ?? 0;
         }
 
-        private static JSObject BindJSType(IntPtr jsIntPtr, int coreType)
-        {
-            CoreObject coreObject;
-            switch (coreType)
+        private static JSObject BindJSType(IntPtr jsIntPtr, int coreType) =>
+            coreType switch
             {
-                case 1:
-                    coreObject = new Array(jsIntPtr);
-                    break;
-                case 2:
-                    coreObject = new ArrayBuffer(jsIntPtr);
-                    break;
-                case 3:
-                    coreObject = new DataView(jsIntPtr);
-                    break;
-                case 4:
-                    coreObject = new Function(jsIntPtr);
-                    break;
-                case 5:
-                    coreObject = new Map(jsIntPtr);
-                    break;
-                case 6:
-                    coreObject = new SharedArrayBuffer(jsIntPtr);
-                    break;
-                case 10:
-                    coreObject = new Int8Array(jsIntPtr);
-                    break;
-                case 11:
-                    coreObject = new Uint8Array(jsIntPtr);
-                    break;
-                case 12:
-                    coreObject = new Uint8ClampedArray(jsIntPtr);
-                    break;
-                case 13:
-                    coreObject = new Int16Array(jsIntPtr);
-                    break;
-                case 14:
-                    coreObject = new Uint16Array(jsIntPtr);
-                    break;
-                case 15:
-                    coreObject = new Int32Array(jsIntPtr);
-                    break;
-                case 16:
-                    coreObject = new Uint32Array(jsIntPtr);
-                    break;
-                case 17:
-                    coreObject = new Float32Array(jsIntPtr);
-                    break;
-                case 18:
-                    coreObject = new Float64Array(jsIntPtr);
-                    break;
-                default:
-                    throw new ArgumentOutOfRangeException(nameof(coreType));
-            }
-            return coreObject;
-        }
+                1 => new Array(jsIntPtr),
+                2 => new ArrayBuffer(jsIntPtr),
+                3 => new DataView(jsIntPtr),
+                4 => new Function(jsIntPtr),
+                5 => new Map(jsIntPtr),
+                6 => new SharedArrayBuffer(jsIntPtr),
+                10 => new Int8Array(jsIntPtr),
+                11 => new Uint8Array(jsIntPtr),
+                12 => new Uint8ClampedArray(jsIntPtr),
+                13 => new Int16Array(jsIntPtr),
+                14 => new Uint16Array(jsIntPtr),
+                15 => new Int32Array(jsIntPtr),
+                16 => new Uint32Array(jsIntPtr),
+                17 => new Float32Array(jsIntPtr),
+                18 => new Float64Array(jsIntPtr),
+                _ => throw new ArgumentOutOfRangeException(nameof(coreType))
+            };
 
         public static int UnBindJSObject(int jsId)
         {
             lock (_boundObjects)
             {
-                if (_boundObjects.TryGetValue(jsId, out JSObject? obj))
-                {
-                    _boundObjects.Remove(jsId);
-                    return obj == null ? 0 : (int)(IntPtr)obj.Handle;
-                }
-                return 0;
+                return _boundObjects.Remove(jsId, out JSObject? obj) ? obj.Int32Handle : 0;
             }
         }
 
         public static void UnBindJSObjectAndFree(int jsId)
         {
+            JSObject? obj;
             lock (_boundObjects)
             {
-                if (_boundObjects.TryGetValue(jsId, out JSObject? obj))
-                {
-                    if (_boundObjects[jsId] != null)
-                    {
-                        _boundObjects.Remove(jsId);
-                    }
-                    if (obj != null)
-                    {
-                        obj.JSHandle = -1;
-                        obj.IsDisposed = true;
-                        obj.RawObject = null;
-                        obj.Handle.Free();
-                    }
-                }
+                _boundObjects.Remove(jsId, out obj);
             }
+
+            obj?.ReleaseHandle();
         }
 
         public static void UnBindRawJSObjectAndFree(int gcHandle)
@@ -210,18 +147,7 @@ namespace System.Runtime.InteropServices.JavaScript
                 {
                     _rawToJS.Remove(obj.RawObject);
 
-                    int exception;
-                    Interop.Runtime.ReleaseHandle(obj.JSHandle, out exception);
-                    if (exception != 0)
-                        throw new JSException($"Error releasing handle on (js-obj js '{obj.JSHandle}' .NET '{(IntPtr)obj.Handle} raw '{obj.RawObject != null})");
-
-                    // Calling Release Handle above only removes the reference from the JavaScript side but does not
-                    // release the bridged JSObject associated with the raw object so we have to do that ourselves.
-                    obj.JSHandle = -1;
-                    obj.IsDisposed = true;
-                    obj.RawObject = null;
-
-                    obj.Handle.Free();
+                    obj.ReleaseHandle();
                 }
             }
         }
@@ -248,33 +174,39 @@ namespace System.Runtime.InteropServices.JavaScript
 
         public static int BindExistingObject(object rawObj, int jsId)
         {
-            JSObject? obj = rawObj as JSObject;
+            var obj = rawObj as JSObject;
+            if (obj != null)
+                return obj.Int32Handle;
+
             lock (_rawToJS)
             {
-                if (obj == null && !_rawToJS.TryGetValue(rawObj, out obj))
-                    _rawToJS[rawObj] = obj = new JSObject(jsId, rawObj);
-
-                return obj == null ? 0 : (int)(IntPtr)obj.Handle;
+                if (!_rawToJS.TryGetValue(rawObj, out obj)) {
+                    obj = new JSObject(jsId, rawObj);
+                    _rawToJS.Add(rawObj, obj);
+                }
             }
+
+            return obj.Int32Handle;
         }
 
         public static int GetJSObjectId(object rawObj)
         {
-            JSObject? obj = rawObj as JSObject;
+            if (rawObj is JSObject js)
+                return js.JSHandle;
+
             lock (_rawToJS)
             {
-                if (obj == null && !_rawToJS.TryGetValue(rawObj, out obj))
-                    return -1;
-
-                return obj?.JSHandle ?? -1;
+                if (_rawToJS.TryGetValue(rawObj, out JSObject? ojs))
+                    return ojs.JSHandle;
             }
+
+            return -1;
         }
 
         public static object? GetDotNetObject(int gcHandle)
         {
             GCHandle h = (GCHandle)(IntPtr)gcHandle;
-            JSObject? o = h.Target as JSObject;
-            return o?.RawObject ?? null;
+            return h.Target is JSObject js ? js.RawObject : null;
         }
 
         public static object BoxInt(int i)

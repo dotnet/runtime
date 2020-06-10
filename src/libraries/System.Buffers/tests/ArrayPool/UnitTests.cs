@@ -7,6 +7,7 @@ using System.Diagnostics.Tracing;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 
 namespace System.Buffers.ArrayPool.Tests
@@ -398,7 +399,7 @@ namespace System.Buffers.ArrayPool.Tests
             Assert.Equal(64, pool.Rent(63).Length); // still get original size
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public static void RentBufferFiresRentedDiagnosticEvent()
         {
             RemoteInvokeWithTrimming(() =>
@@ -418,7 +419,7 @@ namespace System.Buffers.ArrayPool.Tests
             });
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public static void ReturnBufferFiresDiagnosticEvent()
         {
             RemoteInvokeWithTrimming(() =>
@@ -435,7 +436,7 @@ namespace System.Buffers.ArrayPool.Tests
             });
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public static void RentingNonExistentBufferFiresAllocatedDiagnosticEvent()
         {
             RemoteInvokeWithTrimming(() =>
@@ -445,7 +446,7 @@ namespace System.Buffers.ArrayPool.Tests
             });
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public static void RentingBufferOverConfiguredMaximumSizeFiresDiagnosticEvent()
         {
             RemoteInvokeWithTrimming(() =>
@@ -455,7 +456,7 @@ namespace System.Buffers.ArrayPool.Tests
             });
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public static void RentingManyBuffersFiresExpectedDiagnosticEvents()
         {
             RemoteInvokeWithTrimming(() =>

@@ -14,6 +14,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
     public partial class ComponentActivation : IClassFixture<ComponentActivation.SharedTestState>
     {
         private const string ComponentActivationArg = "load_assembly_and_get_function_pointer";
+        private const string ComponentFromAppActivationArg = "app_load_assembly_and_get_function_pointer";
 
         private readonly SharedTestState sharedState;
 
@@ -44,6 +45,40 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
 
             result.Should()
                 .InitializeContextForConfig(componentProject.RuntimeConfigJson);
+
+            if (validPath && validType && validMethod)
+            {
+                result.Should().Pass()
+                    .And.ExecuteComponentEntryPoint(sharedState.ComponentEntryPoint1, 1, 1);
+            }
+            else
+            {
+                result.Should().Fail();
+            }
+        }
+
+        [Theory]
+        [InlineData(true, true, true)]
+        [InlineData(false, true, true)]
+        [InlineData(true, false, true)]
+        [InlineData(true, true, false)]
+        public void CallDelegateFromApp(bool validPath, bool validType, bool validMethod)
+        {
+            var componentProject = sharedState.ComponentWithNoDependenciesFixture.TestProject;
+            string[] args =
+            {
+                ComponentFromAppActivationArg,
+                sharedState.HostFxrPath,
+                componentProject.AppDll,
+                validPath ? componentProject.AppDll : "BadPath...",
+                validType ? sharedState.ComponentTypeName : $"Component.BadType, {componentProject.AssemblyName}",
+                validMethod ? sharedState.ComponentEntryPoint1 : "BadMethod",
+            };
+            CommandResult result = sharedState.CreateNativeHostCommand(args, sharedState.DotNetRoot)
+                .Execute();
+
+            result.Should()
+                .InitializeContextForApp(componentProject.AppDll);
 
             if (validPath && validType && validMethod)
             {

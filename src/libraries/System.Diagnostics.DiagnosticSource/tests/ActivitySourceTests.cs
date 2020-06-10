@@ -16,7 +16,7 @@ namespace System.Diagnostics.Tests
 {
     public class ActivitySourceTests : IDisposable
     {
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void TestConstruction()
         {
             RemoteExecutor.Invoke(() => {
@@ -32,7 +32,7 @@ namespace System.Diagnostics.Tests
             }).Dispose();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void TestStartActivityWithNoListener()
         {
             RemoteExecutor.Invoke(() => {
@@ -50,7 +50,7 @@ namespace System.Diagnostics.Tests
             }).Dispose();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void TestActivityWithListenerNoActivityCreate()
         {
             RemoteExecutor.Invoke(() => {
@@ -72,7 +72,7 @@ namespace System.Diagnostics.Tests
             }).Dispose();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void TestActivityWithListenerActivityCreateAndAllDataRequested()
         {
             RemoteExecutor.Invoke(() => {
@@ -126,7 +126,7 @@ namespace System.Diagnostics.Tests
             }).Dispose();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void TestActivitySourceAttachedObject()
         {
             RemoteExecutor.Invoke(() => {
@@ -152,7 +152,7 @@ namespace System.Diagnostics.Tests
             }).Dispose();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void TestListeningToConstructedActivityEvents()
         {
             RemoteExecutor.Invoke(() => {
@@ -198,7 +198,7 @@ namespace System.Diagnostics.Tests
             }).Dispose();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void TestExpectedListenersReturnValues()
         {
             RemoteExecutor.Invoke(() => {
@@ -298,7 +298,7 @@ namespace System.Diagnostics.Tests
             }).Dispose();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void TestActivityCreationProperties()
         {
             RemoteExecutor.Invoke(() => {
@@ -353,7 +353,7 @@ namespace System.Diagnostics.Tests
             }).Dispose();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void TestDefaultParentContext()
         {
             RemoteExecutor.Invoke(() => {

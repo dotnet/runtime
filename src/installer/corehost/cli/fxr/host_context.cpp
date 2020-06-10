@@ -14,7 +14,7 @@ namespace
         const hostpolicy_contract_t &hostpolicy_contract,
         const host_interface_t *host_interface,
         const corehost_initialize_request_t *init_request,
-        int32_t initialization_options,
+        uint32_t initialization_options,
         bool already_loaded,
         /*out*/ corehost_context_contract *hostpolicy_context_contract)
     {
@@ -35,6 +35,8 @@ namespace
 
             if (rc == StatusCode::Success)
             {
+                initialization_options |= initialization_options_t::context_contract_version_set;
+                hostpolicy_context_contract->version = sizeof(corehost_context_contract);
                 rc = hostpolicy_contract.initialize(init_request, initialization_options, hostpolicy_context_contract);
             }
         }
@@ -46,11 +48,11 @@ namespace
 int host_context_t::create(
     const hostpolicy_contract_t &hostpolicy_contract,
     corehost_init_t &init,
-    int32_t initialization_options,
+    uint32_t initialization_options,
     /*out*/ std::unique_ptr<host_context_t> &context)
 {
     const host_interface_t &host_interface = init.get_host_init_data();
-    corehost_context_contract hostpolicy_context_contract;
+    corehost_context_contract hostpolicy_context_contract = {};
     int rc = create_context_common(hostpolicy_contract, &host_interface, nullptr, initialization_options, /*already_loaded*/ false, &hostpolicy_context_contract);
     if (rc == StatusCode::Success)
     {
@@ -65,7 +67,7 @@ int host_context_t::create(
 int host_context_t::create_secondary(
     const hostpolicy_contract_t &hostpolicy_contract,
     std::unordered_map<pal::string_t, pal::string_t> &config_properties,
-    int32_t initialization_options,
+    uint32_t initialization_options,
     /*out*/ std::unique_ptr<host_context_t> &context)
 {
     std::vector<const pal::char_t*> config_keys;
@@ -83,7 +85,7 @@ int host_context_t::create_secondary(
     init_request.config_values.len = config_values.size();
     init_request.config_values.arr = config_values.data();
 
-    corehost_context_contract hostpolicy_context_contract;
+    corehost_context_contract hostpolicy_context_contract = {};
     int rc = create_context_common(hostpolicy_contract, nullptr, &init_request, initialization_options, /*already_loaded*/ true, &hostpolicy_context_contract);
     if (STATUS_CODE_SUCCEEDED(rc))
     {

@@ -131,7 +131,7 @@ namespace System.ServiceProcess
         private readonly int _dummyPrimitive;
         public System.ServiceProcess.SessionChangeReason Reason { get { throw null; } }
         public int SessionId { get { throw null; } }
-        public override bool Equals(object obj) { throw null; }
+        public override bool Equals(object? obj) { throw null; }
         public bool Equals(System.ServiceProcess.SessionChangeDescription changeDescription) { throw null; }
         public override int GetHashCode() { throw null; }
         public static bool operator ==(System.ServiceProcess.SessionChangeDescription a, System.ServiceProcess.SessionChangeDescription b) { throw null; }
@@ -153,7 +153,7 @@ namespace System.ServiceProcess
     {
         public TimeoutException() { }
         protected TimeoutException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
-        public TimeoutException(string message) { }
-        public TimeoutException(string message, System.Exception innerException) { }
+        public TimeoutException(string? message) { }
+        public TimeoutException(string? message, System.Exception? innerException) { }
     }
 }

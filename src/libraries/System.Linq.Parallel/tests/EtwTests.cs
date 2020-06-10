@@ -12,7 +12,7 @@ namespace System.Linq.Parallel.Tests
 {
     public class EtwTests
     {
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public static void TestEtw()
         {
             RemoteExecutor.Invoke(() =>
