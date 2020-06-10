@@ -125,20 +125,17 @@ namespace System.Formats.Cbor
             if (_definiteLength - _itemsWritten == 0)
             {
                 // is at the end of a definite-length context
-                if (_currentMajorType is null)
+                switch (_currentMajorType)
                 {
-                    return CborReaderState.Finished;
-                }
-                else
-                {
-                    switch (_currentMajorType.Value)
-                    {
-                        case CborMajorType.Array: return CborReaderState.EndArray;
-                        case CborMajorType.Map: return CborReaderState.EndMap;
-                        default:
-                            Debug.Fail("CborReader internal error. Invalid CBOR major type pushed to stack.");
-                            throw new Exception();
-                    }
+                    case null:
+                        // finished reading root-level document
+                        Debug.Assert(!AllowMultipleRootLevelValues);
+                        return CborReaderState.Finished;
+                    case CborMajorType.Array: return CborReaderState.EndArray;
+                    case CborMajorType.Map: return CborReaderState.EndMap;
+                    default:
+                        Debug.Fail("CborReader internal error. Invalid CBOR major type pushed to stack.");
+                        throw new Exception();
                 }
             }
 
