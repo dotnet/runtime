@@ -122,6 +122,22 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
                 Assert.True(success, "MicrosoftDotComIssuerBytes");
             }
+
+            // High Sierra fails to build a chain for a self-signed certificate with revocation enabled.
+            // https://github.com/dotnet/runtime/issues/22625
+            if (PlatformDetection.IsNotOSX)
+            {
+                using (var microsoftDotComRoot = new X509Certificate2(TestData.MicrosoftDotComRootBytes))
+                {
+                    // NotAfter=7/17/2036
+                    success = microsoftDotComRoot.Verify();
+                    if (!success)
+                    {
+                        LogVerifyErrors(microsoftDotComRoot, "MicrosoftDotComRootBytes");
+                    }
+                    Assert.True(success, "MicrosoftDotComRootBytes");
+                }
+            }
         }
 
         private void LogVerifyErrors(X509Certificate2 cert, string testName)
