@@ -12,14 +12,10 @@ namespace System.Runtime.InteropServices.JavaScript
 {
     public abstract class AnyRef : SafeHandleMinusOneIsInvalid
     {
-        public int JSHandle
-        {
-            get => (int)handle;
-        }
+        private GCHandle AnyRefHandle;
 
-        private AnyRef() : base(true) { }
+        public int JSHandle => (int)handle;
 
-        internal GCHandle AnyRefHandle;
 
         internal AnyRef(int js_handle, bool ownsHandle) : base(ownsHandle)
         {
@@ -35,7 +31,7 @@ namespace System.Runtime.InteropServices.JavaScript
         internal int Int32Handle => (int)(IntPtr)AnyRefHandle;
 
 #if DEBUG_HANDLE
-        private int _refCount = 0;
+        private int _refCount;
 
         internal void AddRef()
         {

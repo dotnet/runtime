@@ -193,47 +193,51 @@ namespace System.Runtime.InteropServices.JavaScript
 
         public static int BindExistingObject(object rawObj, int jsId)
         {
-            JSObject? obj = rawObj as JSObject;
-            lock (_rawToJS)
+            if (rawObj is Delegate dele)
             {
-                if (rawObj.GetType().IsSubclassOf(typeof(Delegate)))
+                lock (_weakDelegateTable)
                 {
-                    Delegate? dele = rawObj as Delegate;
-                    if (obj == null && dele != null && !_weakDelegateTable.TryGetValue(dele, out obj))
-                    {
-                        obj = new JSObject(jsId, true);
-                        _boundObjects[jsId] = new WeakReference(obj);
-                        _weakDelegateTable.Add(dele, obj);
-                        obj.WeakRawObject = new WeakReference(dele, false);
-                    }
+                    JSObject obj = new JSObject(jsId, true);
+                    _boundObjects.Add(jsId, new WeakReference(obj));
+                    _weakDelegateTable.Add(dele, obj);
+                    obj.WeakRawObject = new WeakReference(dele, false);
+                    return obj?.Int32Handle ?? -1;
                 }
-                else
+            }
+            else
+            {
+                lock (_rawToJS)
                 {
-                    if (obj == null && !_rawToJS.TryGetValue(rawObj, out obj))
+                    if (_rawToJS.TryGetValue(rawObj, out JSObject? ojs))
                     {
-                        _rawToJS[rawObj] = obj = new JSObject(jsId, rawObj);
+                        _rawToJS.Add(jsId, ojs = new JSObject(jsId, rawObj));
                     }
+                    return ojs?.Int32Handle ?? 0;
                 }
-                return obj == null ? 0 : obj.Int32Handle;
             }
         }
 
         public static int GetJSObjectId(object rawObj)
         {
-            JSObject? obj = rawObj as JSObject;
-            lock (_rawToJS)
+            if (rawObj is Delegate dele)
             {
-                if (obj is null && rawObj.GetType().IsSubclassOf(typeof(Delegate)))
+                lock (_weakDelegateTable)
                 {
-                    Delegate? dele = rawObj as Delegate;
-                    if (dele != null)
+                    if (_weakDelegateTable.TryGetValue(dele, out JSObject? jsDelegate))
                     {
-                        lock (_weakDelegateTable)
-                            _weakDelegateTable.TryGetValue(dele, out obj);
+                        return jsDelegate?.JSHandle ?? -1;
                     }
                 }
-                if (_rawToJS.TryGetValue(rawObj, out JSObject? ojs))
-                    return ojs?.JSHandle ?? -1;
+            }
+            else
+            {
+                lock (_rawToJS)
+                {
+                    if (_rawToJS.TryGetValue(rawObj, out JSObject? ojs))
+                    {
+                        return ojs?.JSHandle ?? -1;
+                    }
+                }
             }
             return -1;
         }
