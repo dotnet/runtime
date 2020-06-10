@@ -160,7 +160,6 @@ namespace System.Runtime.InteropServices.JavaScript
 
         public override int GetHashCode() => JSHandle;
 
-        // We should not provide a finalizer - SafeHandle's critical finalizer will call ReleaseHandle inside a CER for us.
         protected override bool ReleaseHandle()
         {
             bool ret = false;
