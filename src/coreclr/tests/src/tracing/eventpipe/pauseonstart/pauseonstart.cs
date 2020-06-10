@@ -219,7 +219,7 @@ namespace Tracing.Tests.PauseOnStartValidation
                         circularBufferSizeMB: 1000,
                         format: EventPipeSerializationFormat.NetTrace,
                         providers: new List<Provider> { 
-                            new Provider("Microsoft-Windows-DotNETRuntimePrivate", 0x80000000, EventLevel.Verbose)
+                            new Provider("Microsoft-Windows-DotNETRuntime", UInt64.MaxValue, EventLevel.Verbose)
                         });
 
                     Logger.logger.Log("Starting EventPipeSession over standard connection");
