@@ -5172,14 +5172,6 @@
         "net5.0": "5.0.0.0"
       }
     },
-    "System.Runtime.Intrinsics.Experimental": {
-      "BaselineVersion": "5.0.0",
-      "InboxOn": {},
-      "AssemblyVersionInPackageVersion": {
-        "4.0.0.0": "4.6.0",
-        "5.0.0.0": "5.0.0"
-      }
-    },
     "System.Runtime.Loader": {
       "StableVersions": [
         "4.0.0",
