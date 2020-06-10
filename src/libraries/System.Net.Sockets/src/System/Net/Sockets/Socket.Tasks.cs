@@ -6,6 +6,7 @@ using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Net.Internals;
 using System.Runtime.CompilerServices;
 using System.Runtime.ExceptionServices;
 using System.Runtime.InteropServices;
@@ -1140,7 +1141,10 @@ namespace System.Net.Sockets
 
             private Exception CreateException(SocketError error, bool forAsyncThrow = true)
             {
-                Exception e = new SocketException((int)error);
+                // When available, include the IP endpoint information in connection exceptions:
+                Exception e = LastOperation == SocketAsyncOperation.Connect && _socketAddress != null ?
+                    SocketExceptionFactory.CreateSocketException((int)error, _socketAddress.GetIPEndPoint()) :
+                    new SocketException((int)error);
 
                 if (forAsyncThrow)
                 {
