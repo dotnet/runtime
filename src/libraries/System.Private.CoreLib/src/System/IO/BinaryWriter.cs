@@ -386,11 +386,9 @@ namespace System.IO
             // However, in scenarios where the number of characters aligns perfectly with the buffer size the new
             // implementation saw some performance regressions, therefore in such scenarios (ASCIIEncoding)
             // work will be delegated to the previous implementation.
-            Type encodingType = _encoding.GetType();
-            if (encodingType == typeof(UTF32Encoding) || encodingType == typeof(UTF8Encoding) ||
-                encodingType == typeof(UnicodeEncoding) || encodingType == typeof(UTF7Encoding))
+            if (_encoding.GetType() == typeof(UTF8Encoding))
             {
-                while (bytesLeft > 0)
+                while (numLeft > 0)
                 {
                     _encoder.Convert(str.Slice(charStart), _largeByteBuffer, numLeft <= _maxChars, out int charCount, out int byteCount, out bool _);
 
