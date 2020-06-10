@@ -18,20 +18,19 @@ namespace System.Runtime.InteropServices
         /// is not contained in the class's metadata.
         /// </summary>
         /// <param name="interfaceType">The interface type.</param>
-        /// <param name="isDirectCast">Indicates the function is being used as part of a direct cast.</param>
+        /// <param name="throwIfNotImplemented">Indicates if the function should throw an exception instead of returning false.</param>
         /// <returns>Whether or not this object can be cast to the given interface</returns>
         /// <remarks>
         /// This is called if casting this object to the given interface type would
         /// otherwise fail. Casting here means the IL isinst and castclass instructions
         /// in the case where they are given an interface type as the target type.
         ///
-        /// If <paramref name="isDirectCast" /> is false (i.e. isinst instruction), this
-        /// function should avoid throwing exceptions. If <paramref name="isDirectCast" />
-        /// is true (i.e. castclass instruction) and this function returns false, then
-        /// <see cref="System.InvalidCastException" /> will be thrown unless an exception
-        /// is thrown by the implementation.
+        /// If <paramref name="throwIfNotImplemented" /> is false, this function should
+        /// avoid throwing exceptions. If <paramref name="throwIfNotImplemented" /> is
+        /// true and this function returns false, then <see cref="System.InvalidCastException" />
+        /// will be thrown unless an exception is thrown by the implementation.
         /// </remarks>
-        bool IsInterfaceImplemented(RuntimeTypeHandle interfaceType, bool isDirectCast);
+        bool IsInterfaceImplemented(RuntimeTypeHandle interfaceType, bool throwIfNotImplemented);
 
         /// <summary>
         /// Called during interface dispatch when the given interface type cannot be found

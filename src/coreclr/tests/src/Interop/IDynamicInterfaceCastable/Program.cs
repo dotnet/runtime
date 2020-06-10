@@ -155,12 +155,12 @@ namespace IDynamicInterfaceCastableTests
             this.interfaceToImplMap = interfaceToImplMap;
         }
 
-        public bool IsInterfaceImplemented(RuntimeTypeHandle interfaceType, bool isDirectCast)
+        public bool IsInterfaceImplemented(RuntimeTypeHandle interfaceType, bool throwIfNotImplemented)
         {
             if (interfaceToImplMap != null && interfaceToImplMap.ContainsKey(Type.GetTypeFromHandle(interfaceType)))
                 return true;
 
-            if (isDirectCast)
+            if (throwIfNotImplemented)
                 throw new DynamicInterfaceCastableException(interfaceType);
 
             return false;
@@ -198,7 +198,7 @@ namespace IDynamicInterfaceCastableTests
 
         public InvalidReturn InvalidImplementation { get; set; }
 
-        public bool IsInterfaceImplemented(RuntimeTypeHandle interfaceType, bool isDirectCast)
+        public bool IsInterfaceImplemented(RuntimeTypeHandle interfaceType, bool throwIfNotImplemented)
         {
             if (InvalidImplementation == InvalidReturn.ThrowException)
                 throw new DynamicInterfaceCastableException(interfaceType);

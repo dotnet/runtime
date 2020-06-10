@@ -8,7 +8,7 @@
 
 namespace
 {
-    BOOL CallIsInterfaceImplementated(OBJECTREF *objPROTECTED, const TypeHandle &interfaceTypeHandle, BOOL isDirectCast)
+    BOOL CallIsInterfaceImplementated(OBJECTREF *objPROTECTED, const TypeHandle &interfaceTypeHandle, BOOL throwIfNotImplemented)
     {
         CONTRACT(BOOL) {
             THROWS;
@@ -16,7 +16,7 @@ namespace
             MODE_COOPERATIVE;
             PRECONDITION(objPROTECTED != NULL);
             PRECONDITION(interfaceTypeHandle.IsInterface());
-            POSTCONDITION(!isDirectCast || RETVAL);
+            POSTCONDITION(!throwIfNotImplemented || RETVAL);
         } CONTRACT_END;
 
         PREPARE_NONVIRTUAL_CALLSITE(METHOD__DYNAMICINTERFACECASTABLEHELPERS__IS_INTERFACE_IMPLEMENTED);
@@ -26,7 +26,7 @@ namespace
         DECLARE_ARGHOLDER_ARRAY(args, 3);
         args[ARGNUM_0] = OBJECTREF_TO_ARGHOLDER(*objPROTECTED);
         args[ARGNUM_1] = OBJECTREF_TO_ARGHOLDER(managedType);
-        args[ARGNUM_2] = BOOL_TO_ARGHOLDER(isDirectCast);
+        args[ARGNUM_2] = BOOL_TO_ARGHOLDER(throwIfNotImplemented);
 
         BOOL isImplemented;
         CALL_MANAGED_METHOD(isImplemented, CLR_BOOL, args);
@@ -62,7 +62,7 @@ namespace
     }
 }
 
-BOOL DynamicInterfaceCastable::IsInstanceOf(OBJECTREF *objPROTECTED, const TypeHandle &typeHandle, BOOL isDirectCast)
+BOOL DynamicInterfaceCastable::IsInstanceOf(OBJECTREF *objPROTECTED, const TypeHandle &typeHandle, BOOL throwIfNotImplemented)
 {
     CONTRACT(BOOL) {
         THROWS;
@@ -72,7 +72,7 @@ BOOL DynamicInterfaceCastable::IsInstanceOf(OBJECTREF *objPROTECTED, const TypeH
         PRECONDITION(typeHandle.IsInterface());
     } CONTRACT_END;
 
-    RETURN CallIsInterfaceImplementated(objPROTECTED, typeHandle, isDirectCast);
+    RETURN CallIsInterfaceImplementated(objPROTECTED, typeHandle, throwIfNotImplemented);
 }
 
 OBJECTREF DynamicInterfaceCastable::GetInterfaceImplementation(OBJECTREF *objPROTECTED, const TypeHandle &typeHandle)

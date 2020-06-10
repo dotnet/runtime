@@ -8,7 +8,7 @@
 
 namespace DynamicInterfaceCastable
 {
-    BOOL IsInstanceOf(OBJECTREF *objPROTECTED, const TypeHandle &interfaceTypeHandle, BOOL isDirectCast);
+    BOOL IsInstanceOf(OBJECTREF *objPROTECTED, const TypeHandle &interfaceTypeHandle, BOOL throwIfNotImplemented);
 
     OBJECTREF GetInterfaceImplementation(OBJECTREF *objPROTECTED, const TypeHandle &interfaceTypeHandle);
 }
