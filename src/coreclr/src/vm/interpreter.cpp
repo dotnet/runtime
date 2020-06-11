@@ -1667,7 +1667,8 @@ void Interpreter::JitMethodIfAppropriate(InterpreterMethodInfo* interpMethInfo, 
             bool scheduleTieringBackgroundWork = false;
             NativeCodeVersion activeCodeVersion = md->GetCodeVersionManager()->GetActiveILCodeVersion(md).GetActiveNativeCodeVersion(md);
             ILCodeVersion ilCodeVersion = activeCodeVersion.GetILCodeVersion();
-            if (!ilCodeVersion.HasAnyOptimizedNativeCodeVersion(activeCodeVersion))
+            if (activeCodeVersion.GetOptimizationTier() == NativeCodeVersion::OptimizationTier0 &&
+                !ilCodeVersion.HasAnyOptimizedNativeCodeVersion(activeCodeVersion))
             {
                 GetAppDomain()->GetTieredCompilationManager()->AsyncPromoteToTier1(activeCodeVersion, &scheduleTieringBackgroundWork);
             }
