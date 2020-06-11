@@ -4460,6 +4460,35 @@ void Compiler::compCompile(void** methodCodePtr, ULONG* methodCodeSize, JitFlags
             printf(""); // flush
         }
     }
+    if (lvaEnregMultiRegVars)
+    {
+        unsigned methHash   = info.compMethodHash();
+        char*    lostr      = getenv("JitMultiRegHashLo");
+        unsigned methHashLo = 0;
+        bool     dump       = false;
+        if (lostr != nullptr)
+        {
+            sscanf_s(lostr, "%x", &methHashLo);
+            dump = true;
+        }
+        char*    histr      = getenv("JitMultiRegHashHi");
+        unsigned methHashHi = UINT32_MAX;
+        if (histr != nullptr)
+        {
+            sscanf_s(histr, "%x", &methHashHi);
+            dump = true;
+        }
+        if (methHash < methHashLo || methHash > methHashHi)
+        {
+            lvaEnregMultiRegVars = false;
+        }
+        else if (dump)
+        {
+            printf("Enregistering MultiReg Vars for method %s, hash = 0x%x.\n", info.compFullName,
+                   info.compMethodHash());
+            printf(""); // flush
+        }
+    }
 #endif
 
     // Compute bbNum, bbRefs and bbPreds

@@ -621,7 +621,7 @@ public:
     void CopyReg(GenTree* from);
     bool gtHasReg() const;
 
-    int GetRegisterDstCount() const;
+    int GetRegisterDstCount(Compiler* compiler) const;
 
     regMaskTP gtGetRegMask() const;
 
@@ -798,7 +798,6 @@ public:
 
 #define GTF_VAR_ARR_INDEX   0x00000020 // The variable is part of (the index portion of) an array index expression.
                                        // Shares a value with GTF_REVERSE_OPS, which is meaningless for local var.
-
 
                                                // For additional flags for GT_CALL node see GTF_CALL_M_*
 
@@ -3305,7 +3304,7 @@ public:
         gtSpillFlags = SetMultiRegSpillFlagsByIdx(gtSpillFlags, flags, idx);
     }
 
-    unsigned int GetFieldCount(Compiler* compiler);
+    unsigned int GetFieldCount(Compiler* compiler) const;
     var_types GetFieldTypeByIndex(Compiler* compiler, unsigned idx);
 
     //-------------------------------------------------------------------

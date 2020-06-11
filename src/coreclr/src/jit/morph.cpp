@@ -3672,7 +3672,6 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
                     // actually passed in registers.
                     if (argEntry->isPassedInRegisters())
                     {
-                        assert(argEntry->structDesc.passedInRegisters);
                         if (argObj->OperIs(GT_OBJ))
                         {
                             if (passingSize != structSize)
@@ -10730,8 +10729,18 @@ GenTree* Compiler::fgMorphCopyBlock(GenTree* tree)
         {
             if (!destLclVar->lvRegStruct || (destLclVar->lvType != dest->TypeGet()))
             {
-                // Mark it as DoNotEnregister.
-                lvaSetVarDoNotEnregister(destLclNum DEBUGARG(DNER_BlockOp));
+                if (!dest->IsMultiRegLclVar() || (blockWidth != destLclVar->lvExactSize) ||
+                    (destLclVar->lvCustomLayout && destLclVar->lvContainsHoles))
+                {
+                    // Mark it as DoNotEnregister.
+                    lvaSetVarDoNotEnregister(destLclNum DEBUGARG(DNER_BlockOp));
+                }
+                else if (dest->IsMultiRegLclVar())
+                {
+                    // Handle this as lvIsMultiRegRet; this signals to SSA that it can't consider these fields
+                    // SSA candidates (we don't have a way to represent multiple SSANums on MultiRegLclVar nodes).
+                    destLclVar->lvIsMultiRegRet = true;
+                }
             }
         }
 
