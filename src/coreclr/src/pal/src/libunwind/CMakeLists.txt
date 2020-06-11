@@ -97,7 +97,7 @@ if(CLR_CMAKE_HOST_WIN32)
         # The arm sources include ex_tables.h from include/tdep-arm without going through a redirection
         # in include/tdep like it works for similar files on other architectures. So we need to add
         # the include/tdep-arm to include directories
-        include_directories(../include/tdep-arm)
+        include_directories(include/tdep-arm)
     endif()
 
     # files for cross os compilation
