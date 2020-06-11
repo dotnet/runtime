@@ -243,8 +243,8 @@ namespace System.Globalization
 
             // Remember our culture
             _cultureData = cultureData;
-
-            Calendar = cal;
+            calendar = cal;
+            InitializeOverridableProperties(cultureData, calendar.ID);
         }
 
         private void InitializeOverridableProperties(CultureData cultureData, CalendarId calendarId)
