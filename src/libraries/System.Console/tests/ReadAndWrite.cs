@@ -258,7 +258,8 @@ public class ReadAndWrite
         }
     }
 
-    [Fact]
+    [Fact] 
+    [PlatformSpecific(~TestPlatforms.Browser)]
     public static unsafe void OutputEncodingPreamble()
     {
         Encoding curEncoding = Console.OutputEncoding;
@@ -278,6 +279,14 @@ public class ReadAndWrite
         {
             Console.OutputEncoding = curEncoding;
         }
+    }
+
+    [Fact]
+    [PlatformSpecific(TestPlatforms.Browser)]
+    public static unsafe void OutputEncodingPreamble_Browser()
+    {
+        Encoding curEncoding = Console.OutputEncoding;
+        Assert.Throws<PlatformNotSupportedException>(() => Console.OutputEncoding = curEncoding );
     }
 
     [Fact]
