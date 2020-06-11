@@ -50,7 +50,7 @@ namespace System.Xml
                 }
 
                 // Standalone
-                if (standalone != XmlStandalone.Omit)
+                if (_standalone != XmlStandalone.Omit)
                 {
                     await RawTextAsync("\" standalone=\"").ConfigureAwait(false);
                     await RawTextAsync(standalone == XmlStandalone.Yes ? "yes" : "no").ConfigureAwait(false);
@@ -814,6 +814,7 @@ namespace System.Xml
                         pDst++;
                         pSrc++;
                     }
+
                     Debug.Assert(pSrc <= pSrcEnd);
 
                     // end of value
