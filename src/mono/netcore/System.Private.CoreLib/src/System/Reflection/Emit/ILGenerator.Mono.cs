@@ -32,6 +32,7 @@
 
 #if MONO_FEATURE_SRE
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics.SymbolStore;
 using System.Runtime.InteropServices;
 
@@ -887,6 +888,7 @@ namespace System.Reflection.Emit
             Emit(opcode, helper);
         }
 
+        [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)]
         private static Type GetConsoleType()
         {
             return Type.GetType("System.Console, System.Console", throwOnError: true)!;
@@ -1010,7 +1012,7 @@ namespace System.Reflection.Emit
             get { return sequencePointLists != null; }
         }
 
-        public virtual void ThrowException(Type excType)
+        public virtual void ThrowException([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] Type excType)
         {
             if (excType == null)
                 throw new ArgumentNullException(nameof(excType));
