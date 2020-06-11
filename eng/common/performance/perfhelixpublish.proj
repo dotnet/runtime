@@ -39,7 +39,7 @@
     <Python>python3</Python>
     <CoreRun>$(BaseDirectory)/Core_Root/corerun</CoreRun>
     <BaselineCoreRun>$(BaseDirectory)/Baseline_Core_Root/corerun</BaselineCoreRun>
-    <HelixPreCommands>$(HelixPreCommands);chmod +x $(PerformanceDirectory)/tools/machine-setup.sh;. $(PerformanceDirectory)/tools/machine-setup.sh;export PYTHONPATH=$HELIX_CORRELATION_PAYLOAD/scripts:$HELIX_CORRELATION_PAYLOAD;ls $HELIX_CORRELATION_PAYLOAD</HelixPreCommands>
+    <HelixPreCommands>$(HelixPreCommands);chmod +x $(PerformanceDirectory)/tools/machine-setup.sh;. $(PerformanceDirectory)/tools/machine-setup.sh;export PYTHONPATH=$HELIX_WORKITEM_PAYLOAD/scripts:$HELIX_WORKITEM_PAYLOAD;ls $HELIX_WORKITEM_PAYLOAD</HelixPreCommands>
     <ArtifactsDirectory>$(BaseDirectory)/artifacts/BenchmarkDotNet.Artifacts</ArtifactsDirectory>
     <BaselineArtifactsDirectory>$(BaseDirectory)/artifacts/BenchmarkDotNet.Artifacts_Baseline</BaselineArtifactsDirectory>
     <ResultsComparer>$(PerformanceDirectory)/src/tools/ResultsComparer/ResultsComparer.csproj</ResultsComparer>
@@ -165,9 +165,13 @@
 
   <ItemGroup>
     <!-- Enable crossgen tests on Windows x64 and Windows x86 -->
-    <HelixWorkItem Include="@(CrossgenWorkItem -> 'Crossgen %(Identity)')" Condition="'$(AGENT_OS)' == 'Windows_NT' and '$(MonoDotnet)' != 'true'"/>
+    <HelixWorkItem Include="@(CrossgenWorkItem -> 'Crossgen %(Identity)')" Condition="'$(AGENT_OS)' == 'Windows_NT' and '$(MonoDotnet)' != 'true'">
+      <Timeout>4:00</Timeout>
+    </HelixWorkItem>
     <!-- Enable crossgen2 tests on Windows x64 and Linux x64 -->
-    <HelixWorkItem Include="@(Crossgen2WorkItem -> 'Crossgen2 %(Identity)')" Condition="'$(Architecture)' == 'x64' and '$(MonoDotnet)' != 'true'"/>
+    <HelixWorkItem Include="@(Crossgen2WorkItem -> 'Crossgen2 %(Identity)')" Condition="'$(Architecture)' == 'x64' and '$(MonoDotnet)' != 'true'">
+      <Timeout>4:00</Timeout>
+    </HelixWorkItem>
   </ItemGroup>
   
 </Project>
