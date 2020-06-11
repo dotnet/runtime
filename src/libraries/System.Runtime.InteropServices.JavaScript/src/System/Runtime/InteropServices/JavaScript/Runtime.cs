@@ -94,7 +94,7 @@ namespace System.Runtime.InteropServices.JavaScript
             {
                 if (_boundObjects.TryGetValue(jsId, out WeakReference? existingObj))
                 {
-                    var instance = existingObj?.Target as JSObject;
+                    var instance = existingObj.Target as JSObject;
                     if (instance?.Int32Handle != (int)(IntPtr)h && h.IsAllocated)
                         throw new JSException($"Multiple handles pointing at jsId: {jsId}");
 
