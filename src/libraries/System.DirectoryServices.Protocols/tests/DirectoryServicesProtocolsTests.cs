@@ -19,12 +19,6 @@ namespace System.DirectoryServices.Protocols.Tests
         [ConditionalFact(nameof(IsLdapConfigurationExist))]
         public void TestAddingOU()
         {
-            while(!Debugger.IsAttached)
-            {
-                Thread.Sleep(5000);
-            }
-            Debugger.Break();
-
             using (LdapConnection connection = GetConnection())
             {
                 string ouName = "ProtocolsGroup1";
@@ -542,9 +536,8 @@ namespace System.DirectoryServices.Protocols.Tests
         {
             string filter = $"(&(objectClass=organizationalUnit)(ou={ouName}))";
             SearchRequest searchRequest = new SearchRequest(rootDn, filter, SearchScope.OneLevel, null);
-            //SearchResponse searchResponse = (SearchResponse) connection.SendRequest(searchRequest);
-            var ar = connection.BeginSendRequest(searchRequest, PartialResultProcessing.NoPartialResultSupport, null, null);
-            SearchResponse searchResponse = (SearchResponse)connection.EndSendRequest(ar);
+            IAsyncResult asyncResult = connection.BeginSendRequest(searchRequest, PartialResultProcessing.NoPartialResultSupport, null, null);
+            SearchResponse searchResponse = (SearchResponse)connection.EndSendRequest(asyncResult);
 
             if (searchResponse.Entries.Count > 0)
                 return searchResponse.Entries[0];

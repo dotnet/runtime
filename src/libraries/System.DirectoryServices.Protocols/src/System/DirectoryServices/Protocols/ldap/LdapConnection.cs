@@ -378,9 +378,9 @@ namespace System.DirectoryServices.Protocols
 
                     s_asyncResultTable.Add(asyncResult, messageID);
 
-                    ResponseCallback(ConstructResponseAsync(messageID, operation, ResultAll.LDAP_MSG_ALL, requestTimeout, true, sync: false), requestState);
+                    _ = ResponseCallback(ConstructResponseAsync(messageID, operation, ResultAll.LDAP_MSG_ALL, requestTimeout, true, sync: false), requestState);
 
-                    static async void ResponseCallback(ValueTask<DirectoryResponse> vt, LdapRequestState requestState)
+                    static async Task ResponseCallback(ValueTask<DirectoryResponse> vt, LdapRequestState requestState)
                     {
                         try
                         {
@@ -1440,10 +1440,12 @@ namespace System.DirectoryServices.Protocols
             }
             else
             {
-                // Given that we will be polling every millisecond, we need a stopwatch to make sure we track the timeout
                 timeout.tv_sec = 0;
                 timeout.tv_usec = 0;
                 error = 0;
+                int iterationDelay = 1;
+                // Underlying native libraries don't support callback-based function, so we will instead use polling and
+                // use a Stopwatch to track the timeout manually.
                 Stopwatch watch = Stopwatch.StartNew();
                 while (watch.Elapsed < requestTimeOut)
                 {
@@ -1452,7 +1454,8 @@ namespace System.DirectoryServices.Protocols
                     {
                         break;
                     }
-                    await Task.Delay(1).ConfigureAwait(false);
+                    await Task.Delay(Math.Max(iterationDelay, 100)).ConfigureAwait(false);
+                    iterationDelay *= 2;
                 }
                 watch.Stop();
             }
