@@ -1666,7 +1666,11 @@ void Interpreter::JitMethodIfAppropriate(InterpreterMethodInfo* interpMethInfo, 
 #ifdef FEATURE_TIERED_COMPILATION
             bool scheduleTieringBackgroundWork = false;
             NativeCodeVersion activeCodeVersion = md->GetCodeVersionManager()->GetActiveILCodeVersion(md).GetActiveNativeCodeVersion(md);
-            GetAppDomain()->GetTieredCompilationManager()->AsyncPromoteToTier1(activeCodeVersion, &scheduleTieringBackgroundWork);
+            ILCodeVersion ilCodeVersion = activeCodeVersion.GetILCodeVersion();
+            if (!ilCodeVersion.HasAnyOptimizedNativeCodeVersion(activeCodeVersion))
+            {
+                GetAppDomain()->GetTieredCompilationManager()->AsyncPromoteToTier1(activeCodeVersion, &scheduleTieringBackgroundWork);
+            }
 #else
 #error FEATURE_INTERPRETER depends on FEATURE_TIERED_COMPILATION now
 #endif
