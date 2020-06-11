@@ -8,10 +8,13 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <RunScriptCommands Include="TEST_NAME=$(TestProjectName)" />
-    <RunScriptCommands Include="TARGET_ARCH=$(TargetArchitecture)" />
-    <RunScriptCommands Include="JAVASCRIPT_ENGINE=V8" />
+    <RunScriptCommands Condition="'$(TargetOS)' != 'Browser'" Include="TARGET_ARCH=$(TargetArchitecture)" />
   </ItemGroup>
+
+  <PropertyGroup Condition="'$(TargetOS)' == 'Browser'">
+    <!-- We need to set this in order to get extensibility on xunit category traits and other arguments we pass down to xunit via MSBuild properties -->
+    <RunScriptCommand>$HARNESS_RUNNER xharness wasm test --engine=$(JSEngine) --js-file=runtime.js -v --output-directory=$XHARNESS_OUT -- --enable-gc --run WasmTestRunner.dll $(AssemblyName).dll</RunScriptCommand>
+  </PropertyGroup>
 
   <!-- Generate a self-contained app bundle for Android with tests. -->
   <UsingTask Condition="'$(TargetOS)' == 'Android'"
