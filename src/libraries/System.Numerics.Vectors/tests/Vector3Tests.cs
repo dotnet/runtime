@@ -368,7 +368,7 @@ namespace System.Numerics.Tests
         [Fact]
         public void Vector3LerpTest5()
         {
-            Vector3 a = new Vector3(45.67f, 90.0f);
+            Vector3 a = new Vector3(45.67f, 90.0f, 0f);
             Vector3 b = new Vector3(float.PositiveInfinity, float.NegativeInfinity, 0);
 
             float t = 0.408f;
