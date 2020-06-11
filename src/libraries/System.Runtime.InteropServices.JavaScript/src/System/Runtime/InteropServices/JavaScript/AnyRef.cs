@@ -12,7 +12,7 @@ namespace System.Runtime.InteropServices.JavaScript
 {
     public abstract class AnyRef : SafeHandleMinusOneIsInvalid
     {
-        protected GCHandle AnyRefHandle;
+        private GCHandle AnyRefHandle;
         public int JSHandle => (int)handle;
 
         internal AnyRef(int jsHandle, bool ownsHandle) : this((IntPtr)jsHandle, ownsHandle)
@@ -25,6 +25,10 @@ namespace System.Runtime.InteropServices.JavaScript
         }
         internal int Int32Handle => (int)(IntPtr)AnyRefHandle;
 
+        protected void FreeGCHandle ()
+        {
+            AnyRefHandle.Free();
+        }
 #if DEBUG_HANDLE
         private int _refCount;
 

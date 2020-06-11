@@ -20,11 +20,11 @@ namespace System.Runtime.InteropServices.JavaScript
     {
         internal object? RawObject;
 
-        // Right now this is used for Delegates
-        internal WeakReference? WeakRawObject;
+        // Right now this is used for wrapping Delegates
+        private WeakReference? WeakRawObject;
 
         // to detect redundant calls
-        public bool IsDisposed { get; internal set; }
+        public bool IsDisposed { get; private set; }
 
         public JSObject() : this(Interop.Runtime.New<object>(), true)
         {
@@ -43,6 +43,11 @@ namespace System.Runtime.InteropServices.JavaScript
         internal JSObject(int jsHandle, object rawObj) : base(jsHandle, false)
         {
             RawObject = rawObj;
+        }
+
+        internal JSObject(int jsHandle, Delegate rawDelegate, bool ownsHandle = true) : base(jsHandle, ownsHandle)
+        {
+            WeakRawObject = new WeakReference(rawDelegate, false);
         }
 
         /// <summary>
@@ -144,6 +149,12 @@ namespace System.Runtime.InteropServices.JavaScript
         /// <param name="prop">The String name or Symbol of the property to test.</param>
         public bool PropertyIsEnumerable(string prop) => (bool)Invoke("propertyIsEnumerable", prop);
 
+        internal bool IsWeakWrapper => WeakRawObject?.Target != null;
+
+        internal object? GetWrappedObject ()
+        {
+            return RawObject ?? WeakRawObject?.Target;
+        }
         internal void FreeHandle()
         {
             Runtime.ReleaseJSObject(this);
@@ -151,7 +162,7 @@ namespace System.Runtime.InteropServices.JavaScript
             IsDisposed = true;
             RawObject = null;
             WeakRawObject = null;
-            AnyRefHandle.Free();
+            FreeGCHandle ();
         }
 
         public override bool Equals(object? obj) => obj is JSObject other && JSHandle == other.JSHandle;

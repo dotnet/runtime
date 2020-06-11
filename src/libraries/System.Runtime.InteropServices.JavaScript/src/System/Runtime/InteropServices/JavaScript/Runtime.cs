@@ -50,7 +50,7 @@ namespace System.Runtime.InteropServices.JavaScript
 
         public static void FreeObject(object obj)
         {
-            if (obj.GetType().IsSubclassOf(typeof(Delegate)))
+            if (obj is Delegate)
             {
                 return;
             }
@@ -82,7 +82,7 @@ namespace System.Runtime.InteropServices.JavaScript
                     _boundObjects.Add(jsId, reference);
                 }
             }
-            return reference?.Target is JSObject target ? target.Int32Handle : 0;
+            return reference.Target is JSObject target ? target.Int32Handle : 0;
         }
 
         private static int BindCoreCLRObject(int jsId, int gcHandle)
@@ -134,7 +134,7 @@ namespace System.Runtime.InteropServices.JavaScript
         {
             Interop.Runtime.ReleaseHandle(objToRelease.JSHandle, out int exception);
             if (exception != 0)
-                throw new JSException($"Error releasing handle on (js-obj js '{objToRelease.JSHandle}' mono '{objToRelease.Int32Handle} raw '{objToRelease.RawObject != null}' weak raw '{objToRelease.WeakRawObject?.Target != null}'   )");
+                throw new JSException($"Error releasing handle on (js-obj js '{objToRelease.JSHandle}' mono '{objToRelease.Int32Handle} raw '{objToRelease.RawObject != null}' weak raw '{objToRelease.IsWeakWrapper}'   )");
 
             lock (_boundObjects)
             {
@@ -179,53 +179,47 @@ namespace System.Runtime.InteropServices.JavaScript
 
         private static int BindExistingObject(object rawObj, int jsId)
         {
+            JSObject? jsObject;
             if (rawObj is Delegate dele)
             {
                 lock (_weakDelegateTable)
                 {
-                    JSObject obj = new JSObject(jsId, true);
-                    _boundObjects.Add(jsId, new WeakReference(obj));
-                    _weakDelegateTable.Add(dele, obj);
-                    obj.WeakRawObject = new WeakReference(dele, false);
-                    return obj?.Int32Handle ?? -1;
+                    jsObject = new JSObject(jsId, dele);
+                    _boundObjects.Add(jsId, new WeakReference(jsObject));
+                    _weakDelegateTable.Add(dele, jsObject);
                 }
             }
             else
             {
                 lock (_rawToJS)
                 {
-                    if (_rawToJS.TryGetValue(rawObj, out JSObject? ojs))
+                    if (!_rawToJS.TryGetValue(rawObj, out jsObject))
                     {
-                        _rawToJS.Add(jsId, ojs = new JSObject(jsId, rawObj));
+                        _rawToJS.Add(jsId, jsObject = new JSObject(jsId, rawObj));
                     }
-                    return ojs?.Int32Handle ?? 0;
                 }
             }
+            return jsObject?.Int32Handle ?? -1;
         }
 
         private static int GetJSObjectId(object rawObj)
         {
+            JSObject? jsObject;
             if (rawObj is Delegate dele)
             {
                 lock (_weakDelegateTable)
                 {
-                    if (_weakDelegateTable.TryGetValue(dele, out JSObject? jsDelegate))
-                    {
-                        return jsDelegate?.JSHandle ?? -1;
-                    }
+                    _weakDelegateTable.TryGetValue(dele, out jsObject);
                 }
             }
             else
             {
                 lock (_rawToJS)
                 {
-                    if (_rawToJS.TryGetValue(rawObj, out JSObject? ojs))
-                    {
-                        return ojs?.JSHandle ?? -1;
-                    }
+                    _rawToJS.TryGetValue(rawObj, out jsObject);
                 }
             }
-            return -1;
+            return jsObject?.JSHandle ?? -1;
         }
 
         private static object? GetDotNetObject(int gcHandle)
@@ -233,8 +227,7 @@ namespace System.Runtime.InteropServices.JavaScript
             GCHandle h = (GCHandle)(IntPtr)gcHandle;
 
             return h.Target is JSObject js ?
-                (js.WeakRawObject is WeakReference weakRawObject ? weakRawObject.Target :
-                    js.RawObject ?? h.Target) : h.Target;
+                js.GetWrappedObject() ?? h.Target : h.Target;
         }
 
         private static object BoxInt(int i)
