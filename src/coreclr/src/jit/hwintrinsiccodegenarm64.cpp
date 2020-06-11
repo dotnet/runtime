@@ -632,6 +632,22 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 }
                 break;
 
+            case NI_AdvSimd_Arm64_InsertSelectedScalar:
+            {
+                assert(isRMW);
+                assert(targetReg != op3Reg);
+
+                if (targetReg != op1Reg)
+                {
+                    GetEmitter()->emitIns_R_R(INS_mov, emitTypeSize(node), targetReg, op1Reg);
+                }
+
+                const int resultIndex = (int)intrin.op2->AsIntCon()->gtIconVal;
+                const int valueIndex  = (int)intrin.op4->AsIntCon()->gtIconVal;
+                GetEmitter()->emitIns_R_R_I_I(ins, emitSize, targetReg, op3Reg, resultIndex, valueIndex, opt);
+            }
+            break;
+
             case NI_AdvSimd_LoadAndInsertScalar:
             {
                 assert(isRMW);
