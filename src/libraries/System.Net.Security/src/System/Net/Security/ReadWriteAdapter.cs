@@ -16,6 +16,8 @@ namespace System.Net.Security
 
         Task WaitAsync(TaskCompletionSource<bool> waiter);
 
+        Task FlushAsync();
+
         CancellationToken CancellationToken { get; }
 
         public async ValueTask<int> ReadAllAsync(Memory<byte> buffer)
@@ -60,6 +62,8 @@ namespace System.Net.Security
 
         public Task WaitAsync(TaskCompletionSource<bool> waiter) => waiter.Task;
 
+        public Task FlushAsync() => _stream.FlushAsync();
+
         public CancellationToken CancellationToken { get; }
     }
 
@@ -81,6 +85,12 @@ namespace System.Net.Security
         public Task WaitAsync(TaskCompletionSource<bool> waiter)
         {
             waiter.Task.GetAwaiter().GetResult();
+            return Task.CompletedTask;
+        }
+
+        public Task FlushAsync()
+        {
+            _stream.Flush();
             return Task.CompletedTask;
         }
 

@@ -248,6 +248,7 @@ namespace System.Net.Security
                     if (message.Size > 0)
                     {
                         await adapter.WriteAsync(message.Payload!, 0, message.Size).ConfigureAwait(false);
+                        await adapter.FlushAsync().ConfigureAwait(false);
                         if (NetEventSource.IsEnabled)
                             NetEventSource.Log.SentFrame(this, message.Payload);
                     }
@@ -292,6 +293,7 @@ namespace System.Net.Security
                     {
                         // If there is message send it out even if call failed. It may contain TLS Alert.
                         await adapter.WriteAsync(payload!, 0, size).ConfigureAwait(false);
+                        await adapter.FlushAsync().ConfigureAwait(false);
 
                         if (NetEventSource.IsEnabled)
                             NetEventSource.Log.SentFrame(this, payload);
