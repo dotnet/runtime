@@ -58,43 +58,37 @@ namespace System
 
         // Well-defined and commonly used values
 
-        private static readonly Half s_epsilon = new Half(EpsilonBits);                        //  5.9604645E-08
-        public static Half Epsilon => s_epsilon;
+        public static Half Epsilon =>  new Half(EpsilonBits);                        //  5.9604645E-08
 
-        private static readonly Half s_positiveInfinity = new Half(PositiveInfinityBits);      //  1.0 / 0.0
-        public static Half PositiveInfinity => s_positiveInfinity;
+        public static Half PositiveInfinity => new Half(PositiveInfinityBits);      //  1.0 / 0.0;
 
-        private static readonly Half s_negativeInfinity = new Half(NegativeInfinityBits);      // -1.0 / 0.0
-        public static Half NegativeInfinity => s_negativeInfinity;
+        public static Half NegativeInfinity => new Half(NegativeInfinityBits);      // -1.0 / 0.0
 
-        private static readonly Half s_naN = new Half(NegativeQNaNBits);                       //  0.0 / 0.0
-        public static Half NaN => s_naN;
+        public static Half NaN => new Half(NegativeQNaNBits);                       //  0.0 / 0.0
 
-        private static readonly Half _MinValue = new Half(MinValueBits);                      // -65504
-        public static Half MinValue => _MinValue;
+        public static Half MinValue => new Half(MinValueBits);                      // -65504
 
-        private static readonly Half s_maxValue = new Half(MaxValueBits);                      //  65504
-        public static Half MaxValue => s_maxValue;
+        public static Half MaxValue => new Half(MaxValueBits);                      //  65504
 
         // We use these explicit definitions to avoid the confusion between 0.0 and -0.0.
         private static readonly Half PositiveZero = new Half(PositiveZeroBits);            //  0.0
         private static readonly Half NegativeZero = new Half(NegativeZeroBits);            // -0.0
 
-        private readonly ushort m_value;
+        private readonly ushort _value;
 
         internal Half(ushort value)
         {
-            m_value = value;
+            _value = value;
         }
 
         private Half(bool sign, ushort exp, ushort sig)
-            => m_value = (ushort)(((sign ? 1 : 0) << SignShift) + (exp << ExponentShift) + sig);
+            => _value = (ushort)(((sign ? 1 : 0) << SignShift) + (exp << ExponentShift) + sig);
 
         private sbyte Exponent
         {
             get
             {
-                return (sbyte)((m_value & ExponentMask) >> ExponentShift);
+                return (sbyte)((_value & ExponentMask) >> ExponentShift);
             }
         }
 
@@ -102,7 +96,7 @@ namespace System
         {
             get
             {
-                return (ushort)((m_value & SignificandMask) >> SignificandShift);
+                return (ushort)((_value & SignificandMask) >> SignificandShift);
             }
         }
 
@@ -123,7 +117,7 @@ namespace System
                 // says they should be equal, even if the signs differ.
                 return leftIsNegative && !AreZero(left, right);
             }
-            return (short)(left.m_value) < (short)(right.m_value);
+            return (short)(left._value) < (short)(right._value);
         }
 
         public static bool operator >(Half left, Half right)
@@ -148,7 +142,7 @@ namespace System
                 // says they should be equal, even if the signs differ.
                 return leftIsNegative || AreZero(left, right);
             }
-            return (short)(left.m_value) <= (short)(right.m_value);
+            return (short)(left._value) <= (short)(right._value);
         }
 
         public static bool operator >=(Half left, Half right)
@@ -187,20 +181,20 @@ namespace System
         /// <summary>Determines whether the specified value is negative.</summary>
         public static bool IsNegative(Half value)
         {
-            return (short)(value.m_value) < 0;
+            return (short)(value._value) < 0;
         }
 
         /// <summary>Determines whether the specified value is negative infinity.</summary>
         public static bool IsNegativeInfinity(Half value)
         {
-            return value.m_value == NegativeInfinityBits;
+            return value._value == NegativeInfinityBits;
         }
 
         /// <summary>Determines whether the specified value is normal.</summary>
         // This is probably not worth inlining, it has branches and should be rarely called
         public static bool IsNormal(Half value)
         {
-            int absValue = StripSign(value);
+            uint absValue = StripSign(value);
             return (absValue < PositiveInfinityBits)    // is finite
                 && (absValue != 0)                      // is not zero
                 && ((absValue & ExponentMask) != 0);    // is not subnormal (has a non-zero exponent)
@@ -209,14 +203,14 @@ namespace System
         /// <summary>Determines whether the specified value is positive infinity.</summary>
         public static bool IsPositiveInfinity(Half value)
         {
-            return value.m_value == PositiveInfinityBits;
+            return value._value == PositiveInfinityBits;
         }
 
         /// <summary>Determines whether the specified value is subnormal.</summary>
         // This is probably not worth inlining, it has branches and should be rarely called
         public static bool IsSubnormal(Half value)
         {
-            int absValue = StripSign(value);
+            uint absValue = StripSign(value);
             return (absValue < PositiveInfinityBits)    // is finite
                 && (absValue != 0)                      // is not zero
                 && ((absValue & ExponentMask) == 0);    // is subnormal (has a zero exponent)
@@ -345,17 +339,17 @@ namespace System
             // IEEE defines that positive and negative zero are equal, this gives us a quick equality check
             // for two values by or'ing the private bits together and stripping the sign. They are both zero,
             // and therefore equivalent, if the resulting value is still zero.
-            return (ushort)((left.m_value | right.m_value) & ~SignMask) == 0;
+            return (ushort)((left._value | right._value) & ~SignMask) == 0;
         }
 
         private static bool IsNaNOrZero(Half value)
         {
-            return ((value.m_value - 1) & ~SignMask) >= PositiveInfinityBits;
+            return ((value._value - 1) & ~SignMask) >= PositiveInfinityBits;
         }
 
-        private static ushort StripSign(Half value)
+        private static uint StripSign(Half value)
         {
-            return (ushort)(value.m_value & ~SignMask);
+            return (ushort)(value._value & ~SignMask);
         }
 
         /// <summary>
@@ -422,7 +416,7 @@ namespace System
             }
 
             // IEEE defines that positive and negative zero are equivalent.
-            return (m_value == other.m_value) || AreZero(this, other);
+            return (_value == other._value) || AreZero(this, other);
         }
 
         /// <summary>
@@ -433,9 +427,9 @@ namespace System
             if (IsNaNOrZero(this))
             {
                 // All NaNs should have the same hash code, as should both Zeros.
-                return m_value & PositiveInfinityBits;
+                return _value & PositiveInfinityBits;
             }
-            return m_value;
+            return _value;
         }
 
         /// <summary>
@@ -600,7 +594,7 @@ namespace System
         // IEEE 754 specifies NaNs to be propagated
         internal static Half Negate(Half value)
         {
-            return IsNaN(value) ? value : new Half((ushort)(value.m_value ^ SignMask));
+            return IsNaN(value) ? value : new Half((ushort)(value._value ^ SignMask));
         }
 
         private static (int Exp, uint Sig) NormSubnormalF16Sig(uint sig)
@@ -655,7 +649,7 @@ namespace System
                 exp = 0;
             }
 
-            return new Half(sign, (ushort)exp, sig).m_value;
+            return new Half(sign, (ushort)exp, sig)._value;
         }
 
         // If any bits are lost by shifting, "jam" them into the LSB.
