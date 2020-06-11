@@ -151,7 +151,7 @@ namespace System.Runtime.InteropServices.JavaScript
 
         internal bool IsWeakWrapper => WeakRawObject?.Target != null;
 
-        internal object? GetWrappedObject ()
+        internal object? GetWrappedObject()
         {
             return RawObject ?? WeakRawObject?.Target;
         }
@@ -162,7 +162,7 @@ namespace System.Runtime.InteropServices.JavaScript
             IsDisposed = true;
             RawObject = null;
             WeakRawObject = null;
-            FreeGCHandle ();
+            FreeGCHandle();
         }
 
         public override bool Equals(object? obj) => obj is JSObject other && JSHandle == other.JSHandle;

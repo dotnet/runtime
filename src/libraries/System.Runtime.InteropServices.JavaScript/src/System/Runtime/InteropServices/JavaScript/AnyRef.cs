@@ -25,7 +25,7 @@ namespace System.Runtime.InteropServices.JavaScript
         }
         internal int Int32Handle => (int)(IntPtr)AnyRefHandle;
 
-        protected void FreeGCHandle ()
+        protected void FreeGCHandle()
         {
             AnyRefHandle.Free();
         }

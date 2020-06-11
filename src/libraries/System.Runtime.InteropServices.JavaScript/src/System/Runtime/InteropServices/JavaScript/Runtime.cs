@@ -7,8 +7,7 @@ using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using System.Diagnostics.CodeAnalysis;
-
-using Console = System.Diagnostics.Debug;
+using System.Diagnostics;
 
 namespace System.Runtime.InteropServices.JavaScript
 {
@@ -437,7 +436,7 @@ namespace System.Runtime.InteropServices.JavaScript
                 }
             }
 #if DEBUG_HANDLE
-            Console.WriteLine($"\tSafeHandleAddRef3: {safeHandle.DangerousGetHandle()} / RefCount: {((_anyref == null) ? 0 : _anyref.RefCount)}");
+            Debug.WriteLine($"\tSafeHandleAddRef: {safeHandle.DangerousGetHandle()} / RefCount: {((_anyref == null) ? 0 : _anyref.RefCount)}");
 #endif
             return _addRefSucceeded;
         }
@@ -450,7 +449,7 @@ namespace System.Runtime.InteropServices.JavaScript
             if (_anyref != null)
             {
                 _anyref.Release();
-                Console.WriteLine($"\tSafeHandleRelease3: {safeHandle.DangerousGetHandle()} / RefCount: {_anyref.RefCount}");
+                Debug.WriteLine($"\tSafeHandleRelease: {safeHandle.DangerousGetHandle()} / RefCount: {_anyref.RefCount}");
             }
 #endif
         }
@@ -458,27 +457,26 @@ namespace System.Runtime.InteropServices.JavaScript
         private static void SafeHandleReleaseByHandle(int jsId)
         {
 #if DEBUG_HANDLE
-            Console.WriteLine($"SafeHandleReleaseByHandle3: {jsId}");
+            Debug.WriteLine($"SafeHandleReleaseByHandle: {jsId}");
 #endif
             lock (_boundObjects)
             {
                 if (_boundObjects.TryGetValue(jsId, out WeakReference? reference))
                 {
-                    System.Diagnostics.Debug.Assert(reference.Target != null, $"\tSafeHandleReleaseByHandle: did not find active target {jsId} / target: {reference.Target}");
+                    Debug.Assert(reference.Target != null, $"\tSafeHandleReleaseByHandle: did not find active target {jsId} / target: {reference.Target}");
                     SafeHandleRelease((AnyRef)reference.Target);
                 }
                 else
                 {
-                    Console.WriteLine($"\tSafeHandleReleaseByHandle: did not find reference for {jsId}");
+                    Debug.Fail($"\tSafeHandleReleaseByHandle: did not find reference for {jsId}");
                 }
             }
-
         }
 
         public static IntPtr SafeHandleGetHandle(SafeHandle safeHandle, bool addRef)
         {
 #if DEBUG_HANDLE
-            Console.WriteLine($"SafeHandleGetHandle: {safeHandle.DangerousGetHandle()} / addRef {addRef}");
+            Debug.WriteLine($"SafeHandleGetHandle: {safeHandle.DangerousGetHandle()} / addRef {addRef}");
 #endif
             if (addRef && !SafeHandleAddRef(safeHandle)) return IntPtr.Zero;
             return safeHandle.DangerousGetHandle();
