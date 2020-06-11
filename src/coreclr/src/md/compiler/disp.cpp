@@ -178,25 +178,14 @@ ErrExit:
 
 
 //*****************************************************************************
-// Deliver scope to caller of OpenScope or OpenScopeOnMemory (this may
-// involve wrapping a WinMD adapter.)
+// Deliver scope to caller of OpenScope or OpenScopeOnMemory
 //*****************************************************************************
 static HRESULT DeliverScope(IMDCommon *pMDCommon, REFIID riid, DWORD dwOpenFlags, IUnknown **ppIUnk)
 {
     HRESULT     hr;
     BEGIN_ENTRYPOINT_NOTHROW;
 
-#if defined(FEATURE_COMINTEROP)
-    IfFailGo((dwOpenFlags & ofNoTransform) ? S_FALSE : CheckIfWinMDAdapterNeeded(pMDCommon));
-    if (hr == S_OK)
-    {
-        IfFailGo(CreateWinMDImport(pMDCommon, riid, (void**)ppIUnk));
-    }
-    else
-#endif
-    {
-        IfFailGo(pMDCommon->QueryInterface(riid, (void**)ppIUnk));
-    }
+    IfFailGo(pMDCommon->QueryInterface(riid, (void**)ppIUnk));
 
   ErrExit:
     END_ENTRYPOINT_NOTHROW;

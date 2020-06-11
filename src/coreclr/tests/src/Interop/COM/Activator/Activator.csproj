@@ -4,17 +4,15 @@
     <ReferenceSystemPrivateCoreLib>true</ReferenceSystemPrivateCoreLib>
     <RequiresMockHostPolicy>true</RequiresMockHostPolicy>
     <!-- Test unsupported outside of windows -->
-    <TestUnsupportedOutsideWindows>true</TestUnsupportedOutsideWindows>
-    <DisableProjectBuild Condition="'$(TargetsWindows)' != 'true'">true</DisableProjectBuild>
+    <CLRTestTargetUnsupported Condition="'$(TargetsWindows)' != 'true'">true</CLRTestTargetUnsupported>
     <!-- The test fails casting from ClassFromA from the default ALC to type IGetTypeFromC from a custom ALC -->
     <UnloadabilityIncompatible>true</UnloadabilityIncompatible>
   </PropertyGroup>
-  <Import Project="$([MSBuild]::GetPathOfFileAbove(Interop.settings.targets))" />
   <ItemGroup>
     <Compile Include="Program.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\NetServer\NetServer.csproj" />
+    <ProjectReference Include="..\NETServer\NETServer.csproj" />
     <ProjectReference Include="Servers\AssemblyA.csproj" />
     <ProjectReference Include="Servers\AssemblyB.csproj" />
     <ProjectReference Include="Servers\AssemblyC.csproj" />

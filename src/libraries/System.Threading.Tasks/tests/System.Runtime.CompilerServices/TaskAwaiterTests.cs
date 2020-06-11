@@ -133,14 +133,14 @@ namespace System.Threading.Tasks.Tests
                 Assert.Same(TaskScheduler.Default, TaskScheduler.Current);
 
                 var ctx = new ValidateCorrectContextSynchronizationContext();
-                var tcs = new TaskCompletionSource<bool>();
+                var tcs = new TaskCompletionSource();
                 var ignored = Task.Delay(1).ContinueWith(_ =>
                 {
                     SynchronizationContext orig = SynchronizationContext.Current;
                     SynchronizationContext.SetSynchronizationContext(ctx);
                     try
                     {
-                        tcs.SetResult(true);
+                        tcs.SetResult();
                     }
                     finally
                     {
@@ -162,8 +162,8 @@ namespace System.Threading.Tasks.Tests
                 Assert.Null(SynchronizationContext.Current);
                 Assert.Same(TaskScheduler.Default, TaskScheduler.Current);
 
-                var tcs = new TaskCompletionSource<bool>();
-                var ignored = Task.Delay(1).ContinueWith(_ => tcs.SetResult(true), new QUWITaskScheduler());
+                var tcs = new TaskCompletionSource();
+                var ignored = Task.Delay(1).ContinueWith(_ => tcs.SetResult(), new QUWITaskScheduler());
                 await tcs.Task;
 
                 Assert.Null(SynchronizationContext.Current);
@@ -192,7 +192,7 @@ namespace System.Threading.Tasks.Tests
                     SynchronizationContext.SetSynchronizationContext(sc);
                 }
 
-                var tcs = runContinuationsAsynchronously ? new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously) : new TaskCompletionSource<bool>();
+                var tcs = runContinuationsAsynchronously ? new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously) : new TaskCompletionSource();
 
                 var tl = new ThreadLocal<int>();
                 var tasks = new List<Task>();
@@ -239,7 +239,7 @@ namespace System.Threading.Tasks.Tests
                 Assert.All(tasks, t => Assert.Equal(TaskStatus.WaitingForActivation, t.Status));
 
                 tl.Value = 42;
-                tcs.SetResult(true);
+                tcs.SetResult();
                 tl.Value = 0;
 
                 SynchronizationContext.SetSynchronizationContext(null);
@@ -376,8 +376,8 @@ namespace System.Threading.Tasks.Tests
                 RunWithSchedulerAsCurrent(quwi, delegate
                 {
                     ManualResetEventSlim mres = new ManualResetEventSlim();
-                    var tcs = new TaskCompletionSource<object>();
-                    var awaiter = ((Task)tcs.Task).GetAwaiter();
+                    var tcs = new TaskCompletionSource();
+                    var awaiter = tcs.Task.GetAwaiter();
 
                     bool ranOnScheduler = false;
                     bool ranWithoutSyncCtx = false;
@@ -389,7 +389,7 @@ namespace System.Threading.Tasks.Tests
                     });
                     Assert.False(mres.IsSet, "Callback should not yet have run.");
 
-                    Task.Run(delegate { tcs.SetResult(null); });
+                    Task.Run(delegate { tcs.SetResult(); });
                     mres.Wait();
 
                     Assert.True(ranOnScheduler, "Should have run on scheduler");

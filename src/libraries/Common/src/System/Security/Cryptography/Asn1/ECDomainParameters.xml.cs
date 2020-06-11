@@ -4,9 +4,8 @@
 
 #pragma warning disable SA1028 // ignore whitespace warnings for generated code
 using System;
+using System.Formats.Asn1;
 using System.Runtime.InteropServices;
-using System.Security.Cryptography;
-using System.Security.Cryptography.Asn1;
 
 namespace System.Security.Cryptography.Asn1
 {
@@ -14,7 +13,7 @@ namespace System.Security.Cryptography.Asn1
     internal partial struct ECDomainParameters
     {
         internal System.Security.Cryptography.Asn1.SpecifiedECDomain? Specified;
-        internal Oid? Named;
+        internal string? Named;
 
 #if DEBUG
         static ECDomainParameters()
@@ -53,7 +52,14 @@ namespace System.Security.Cryptography.Asn1
                 if (wroteValue)
                     throw new CryptographicException();
 
-                writer.WriteObjectIdentifier(Named);
+                try
+                {
+                    writer.WriteObjectIdentifier(Named);
+                }
+                catch (ArgumentException e)
+                {
+                    throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding, e);
+                }
                 wroteValue = true;
             }
 
@@ -65,14 +71,33 @@ namespace System.Security.Cryptography.Asn1
 
         internal static ECDomainParameters Decode(ReadOnlyMemory<byte> encoded, AsnEncodingRules ruleSet)
         {
-            AsnValueReader reader = new AsnValueReader(encoded.Span, ruleSet);
+            try
+            {
+                AsnValueReader reader = new AsnValueReader(encoded.Span, ruleSet);
 
-            Decode(ref reader, encoded, out ECDomainParameters decoded);
-            reader.ThrowIfNotEmpty();
-            return decoded;
+                DecodeCore(ref reader, encoded, out ECDomainParameters decoded);
+                reader.ThrowIfNotEmpty();
+                return decoded;
+            }
+            catch (AsnContentException e)
+            {
+                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding, e);
+            }
         }
 
         internal static void Decode(ref AsnValueReader reader, ReadOnlyMemory<byte> rebind, out ECDomainParameters decoded)
+        {
+            try
+            {
+                DecodeCore(ref reader, rebind, out decoded);
+            }
+            catch (AsnContentException e)
+            {
+                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding, e);
+            }
+        }
+
+        private static void DecodeCore(ref AsnValueReader reader, ReadOnlyMemory<byte> rebind, out ECDomainParameters decoded)
         {
             decoded = default;
             Asn1Tag tag = reader.PeekTag();

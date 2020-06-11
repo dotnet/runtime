@@ -482,7 +482,7 @@ namespace System.Runtime.Serialization.Formatters.Tests
             }
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [MemberData(nameof(CrossProcessObjects_MemberData))]
         public void Roundtrip_CrossProcess(object obj)
         {

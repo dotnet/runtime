@@ -47,7 +47,7 @@ public:
 private:
     void AddInlining(FunctionID inliner, FunctionID inlinee);
 
-    HRESULT FunctionSeen(FunctionID func);
+    bool FunctionSeen(FunctionID func);
 
     FunctionID GetFunctionIDFromToken(ModuleID module, mdMethodDef token);
     mdMethodDef GetMethodDefForFunction(FunctionID functionId);

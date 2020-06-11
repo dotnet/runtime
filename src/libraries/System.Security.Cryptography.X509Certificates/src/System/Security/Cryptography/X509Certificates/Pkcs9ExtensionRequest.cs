@@ -3,9 +3,8 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
+using System.Formats.Asn1;
 using System.Security.Cryptography.Asn1;
-using System.Security.Cryptography.X509Certificates.Asn1;
-using Internal.Cryptography;
 
 namespace System.Security.Cryptography.X509Certificates
 {
@@ -21,18 +20,17 @@ namespace System.Security.Cryptography.X509Certificates
             if (extensions == null)
                 throw new ArgumentNullException(nameof(extensions));
 
-            using (AsnWriter writer = new AsnWriter(AsnEncodingRules.DER))
-            {
-                writer.PushSequence();
+            AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
 
+            using (writer.PushSequence())
+            {
                 foreach (X509Extension e in extensions)
                 {
                     new X509ExtensionAsn(e).Encode(writer);
                 }
-
-                writer.PopSequence();
-                return writer.Encode();
             }
+
+            return writer.Encode();
         }
     }
 }

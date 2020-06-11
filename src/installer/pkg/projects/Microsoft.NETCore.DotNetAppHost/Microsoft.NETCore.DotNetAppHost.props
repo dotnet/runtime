@@ -1,8 +1,24 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
 
-  <Import
-    Condition="'$(PackageTargetRuntime)' != '' and Exists('$(MSBuildThisFileDirectory)runtime.$(TargetOS).$(MSBuildThisFile)')"
-    Project="$(MSBuildThisFileDirectory)runtime.$(TargetOS).$(MSBuildThisFile)" />
+  <ItemGroup>
+    <NativeBinary Include="$(DotNetHostBinDir)/apphost$(ApplicationFileExtension)" />
+    <NativeBinary Include="$(DotNetHostBinDir)/singlefilehost$(ApplicationFileExtension)" />
+    <NativeBinary Include="$(DotNetHostBinDir)/$(LibraryFilePrefix)nethost$(LibraryFileExtension)" />
+    <NativeBinary Include="$(DotNetHostBinDir)/$(LibraryFilePrefix)nethost$(StaticLibraryFileExtension)" />
+    <NativeBinary Include="$(DotNetHostBinDir)/nethost.h" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetOS)' == 'Windows_NT'">
+    <NativeBinary Include="$(DotNetHostBinDir)/comhost.dll" />
+    <NativeBinary Include="$(DotNetHostBinDir)/ijwhost.dll" />
+    <NativeBinary Include="$(DotNetHostBinDir)/ijwhost.lib" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(PackageTargetRuntime)' != ''">
+    <File Include="@(NativeBinary)">
+      <TargetPath>runtimes/$(PackageTargetRuntime)/native</TargetPath>
+      <IsNative>true</IsNative>
+    </File>
+  </ItemGroup>
 
 </Project>

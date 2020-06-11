@@ -133,9 +133,6 @@ Crst ClrNotification
     Unordered
 End
 
-Crst CrstCLRPrivBinderLocalWinMDPath
-End
-
 Crst CLRPrivBinderMaps
 End
 
@@ -507,12 +504,7 @@ End
 // used to remember which types have been logged (to avoid duplicate logging of the
 // same type).
 Crst EtwTypeLogHash
-    AcquiredAfter ThreadStore AllowedFiles Cer TPMethodTable
-    AcquiredBefore AvailableParamTypes ConnectionNameTable DeadlockDetection DebuggerController
-               DebuggerHeapLock DebuggerJitInfo DynamicIL ExecuteManRangeLock HandleTable IbcProfile
-               JitGenericHandleCache JumpStubCache LoaderHeap ModuleLookupTable ProfilingAPIStatus
-               ProfilerGCRefDataFreeList RWLock SingleUseLock SyncBlockCache SystemDomainDelayedUnloadList
-               ThreadIdDispenser ThreadStaticDataHashTable
+    AcquiredAfter AllowedFiles Cer SingleUseLock TPMethodTable
 End
 
 Crst Remoting
@@ -667,10 +659,6 @@ End
 
 Crst MulticoreJitManager
     AcquiredBefore MulticoreJitHash ThreadStore
-End
-
-Crst WinRTFactoryCache
-    AcquiredBefore HandleTable
 End
 
 Crst SqmManager

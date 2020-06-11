@@ -19,10 +19,10 @@ namespace System.Net.Http
         // The message shouldn't be sent again if this field is equal to MessageAlreadySent.
         private int _sendStatus = MessageNotYetSent;
 
-        private HttpMethod _method = null!;
+        private HttpMethod _method;
         private Uri? _requestUri;
         private HttpRequestHeaders? _headers;
-        private Version _version = null!;
+        private Version _version;
         private HttpContent? _content;
         private bool _disposed;
         private IDictionary<string, object?>? _properties;
@@ -177,6 +177,8 @@ namespace System.Net.Http
             return sb.ToString();
         }
 
+        [MemberNotNull(nameof(_method))]
+        [MemberNotNull(nameof(_version))]
         private void InitializeValues(HttpMethod method, Uri? requestUri)
         {
             if (method == null)

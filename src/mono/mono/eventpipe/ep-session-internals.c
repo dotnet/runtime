@@ -30,6 +30,7 @@ ep_session_alloc (
 
 	FileStreamWriter *file_stream_writer = NULL;
 	IpcStreamWriter *ipc_stream_writer = NULL;
+	size_t sequence_point_alloc_budget = 0;
 
 	EventPipeSession *instance = ep_rt_object_alloc (EventPipeSession);
 	ep_raise_error_if_nok (instance != NULL);
@@ -42,8 +43,6 @@ ep_session_alloc (
 	instance->session_type = session_type;
 	instance->format = format;
 	instance->rundown_requested = rundown_requested;
-
-	size_t sequence_point_alloc_budget = 0;
 
 	// Hard coded 10MB for now, we'll probably want to make
 	// this configurable later.

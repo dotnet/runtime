@@ -5,9 +5,8 @@
 #pragma warning disable SA1028 // ignore whitespace warnings for generated code
 using System;
 using System.Collections.Generic;
+using System.Formats.Asn1;
 using System.Runtime.InteropServices;
-using System.Security.Cryptography;
-using System.Security.Cryptography.Asn1;
 
 namespace System.Security.Cryptography.X509Certificates.Asn1
 {
@@ -38,7 +37,7 @@ namespace System.Security.Cryptography.X509Certificates.Asn1
 
             if (Reasons.HasValue)
             {
-                writer.WriteNamedBitList(new Asn1Tag(TagClass.ContextSpecific, 1), Reasons.Value);
+                writer.WriteNamedBitList(Reasons.Value, new Asn1Tag(TagClass.ContextSpecific, 1));
             }
 
 
@@ -64,11 +63,18 @@ namespace System.Security.Cryptography.X509Certificates.Asn1
 
         internal static DistributionPointAsn Decode(Asn1Tag expectedTag, ReadOnlyMemory<byte> encoded, AsnEncodingRules ruleSet)
         {
-            AsnValueReader reader = new AsnValueReader(encoded.Span, ruleSet);
+            try
+            {
+                AsnValueReader reader = new AsnValueReader(encoded.Span, ruleSet);
 
-            Decode(ref reader, expectedTag, encoded, out DistributionPointAsn decoded);
-            reader.ThrowIfNotEmpty();
-            return decoded;
+                DecodeCore(ref reader, expectedTag, encoded, out DistributionPointAsn decoded);
+                reader.ThrowIfNotEmpty();
+                return decoded;
+            }
+            catch (AsnContentException e)
+            {
+                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding, e);
+            }
         }
 
         internal static void Decode(ref AsnValueReader reader, ReadOnlyMemory<byte> rebind, out DistributionPointAsn decoded)
@@ -77,6 +83,18 @@ namespace System.Security.Cryptography.X509Certificates.Asn1
         }
 
         internal static void Decode(ref AsnValueReader reader, Asn1Tag expectedTag, ReadOnlyMemory<byte> rebind, out DistributionPointAsn decoded)
+        {
+            try
+            {
+                DecodeCore(ref reader, expectedTag, rebind, out decoded);
+            }
+            catch (AsnContentException e)
+            {
+                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding, e);
+            }
+        }
+
+        private static void DecodeCore(ref AsnValueReader reader, Asn1Tag expectedTag, ReadOnlyMemory<byte> rebind, out DistributionPointAsn decoded)
         {
             decoded = default;
             AsnValueReader sequenceReader = reader.ReadSequence(expectedTag);

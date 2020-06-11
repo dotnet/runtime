@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -17,9 +18,9 @@ namespace System.Xml.Xsl.Runtime
     [EditorBrowsable(EditorBrowsableState.Never)]
     public struct StringConcat
     {
-        private string _s1, _s2, _s3, _s4;
-        private string _delimiter;
-        private List<string> _strList;
+        private string? _s1, _s2, _s3, _s4;
+        private string? _delimiter;
+        private List<string?>? _strList;
         private int _idxStr;
 
         /// <summary>
@@ -34,7 +35,7 @@ namespace System.Xml.Xsl.Runtime
         /// <summary>
         /// Gets or sets the string that delimits concatenated strings.
         /// </summary>
-        public string Delimiter
+        public string? Delimiter
         {
             get { return _delimiter; }
             set { _delimiter = value; }
@@ -71,17 +72,17 @@ namespace System.Xml.Xsl.Runtime
             _idxStr switch
             {
                 0 => string.Empty,
-                1 => _s1,
+                1 => _s1 ?? string.Empty,
                 2 => string.Concat(_s1, _s2),
                 3 => string.Concat(_s1, _s2, _s3),
                 4 => string.Concat(_s1, _s2, _s3, _s4),
-                _ => string.Concat(_strList.ToArray()),
+                _ => string.Concat(_strList!.ToArray()),
             };
 
         /// <summary>
         /// Concatenate a new string to the result without adding a delimiter.
         /// </summary>
-        internal void ConcatNoDelimiter(string s)
+        internal void ConcatNoDelimiter(string? s)
         {
             switch (_idxStr)
             {
@@ -92,14 +93,14 @@ namespace System.Xml.Xsl.Runtime
                 case 4:
                     // Calling Clear() is expensive, allocate a new List instead
                     int capacity = (_strList == null) ? 8 : _strList.Count;
-                    List<string> strList = _strList = new List<string>(capacity);
+                    List<string?> strList = _strList = new List<string?>(capacity);
                     strList.Add(_s1);
                     strList.Add(_s2);
                     strList.Add(_s3);
                     strList.Add(_s4);
                     goto default;
                 default:
-                    _strList.Add(s);
+                    _strList!.Add(s);
                     break;
             }
 

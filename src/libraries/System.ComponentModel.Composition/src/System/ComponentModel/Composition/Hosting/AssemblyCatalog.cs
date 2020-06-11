@@ -25,7 +25,7 @@ namespace System.ComponentModel.Composition.Hosting
     {
         private readonly object _thisLock = new object();
         private readonly ICompositionElement _definitionOrigin;
-        private volatile Assembly _assembly = null!; // Always initiialized with helper
+        private volatile Assembly _assembly;
         private volatile ComposablePartCatalog? _innerCatalog = null;
         private int _isDisposed = 0;
 
@@ -387,6 +387,7 @@ namespace System.ComponentModel.Composition.Hosting
             _definitionOrigin = definitionOrigin;
         }
 
+        [MemberNotNull(nameof(_assembly))]
         private void InitializeAssemblyCatalog(Assembly assembly)
         {
             if (assembly.ReflectionOnly)

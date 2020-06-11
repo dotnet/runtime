@@ -197,8 +197,10 @@ typedef enum MonoAssemblyContextKind {
 	 * any context"): LoadFile(String) and Load(byte[]) are here.
 	 */
 	MONO_ASMCTX_INDIVIDUAL = 3,
+	/* Used internally by the runtime, not visible to managed code */
+	MONO_ASMCTX_INTERNAL = 4,
 
-	MONO_ASMCTX_LAST = 3
+	MONO_ASMCTX_LAST = 4
 } MonoAssemblyContextKind;
 
 typedef struct _MonoAssemblyContext {

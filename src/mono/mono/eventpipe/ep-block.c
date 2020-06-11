@@ -168,13 +168,12 @@ ep_event_block_base_write_event (
 	bool is_sorted_event)
 {
 	ep_return_false_if_nok (event_block_base != NULL && event_instance != NULL);
-
-	EventPipeBlock *block = ep_event_block_base_get_block_ref (event_block_base);
-	ep_raise_error_if_nok (ep_block_get_block (block) != NULL);
+	ep_return_false_if_nok (ep_block_get_block (ep_event_block_base_get_block_ref (event_block_base)) != NULL);
 
 	uint32_t data_len = 0;
 	uint8_t * aligned_end = NULL;
 	uint32_t capture_proc_number = ep_event_instance_get_proc_num (event_instance);
+	EventPipeBlock *block = ep_event_block_base_get_block_ref (event_block_base);
 	uint8_t * write_pointer = ep_block_get_write_pointer (block);
 
 	if (!ep_event_block_base_get_use_header_compression (event_block_base)) {
@@ -333,7 +332,8 @@ ep_event_block_base_write_event (
 
 	EP_ASSERT (write_pointer == aligned_end);
 
-	int64_t instance_timestamp = ep_event_instance_get_timestamp (event_instance);
+	int64_t instance_timestamp;
+	instance_timestamp = ep_event_instance_get_timestamp (event_instance);
 	if (ep_event_block_base_get_min_timestamp (event_block_base) > instance_timestamp)
 		ep_event_block_base_set_min_timestamp (event_block_base, instance_timestamp);
 	if (ep_event_block_base_get_max_timestamp (event_block_base) > instance_timestamp)
@@ -358,11 +358,9 @@ ep_stack_block_write_stack (
 {
 	ep_return_false_if_nok (stack_block != NULL);
 
-	EventPipeBlock *block = ep_event_block_base_get_block_ref (ep_stack_block_get_event_block_base_ref (stack_block));
-	ep_raise_error_if_nok (block != NULL && ep_block_get_block (block) != NULL);
-
 	uint32_t stack_size = ep_stack_contents_get_size (stack);
 	uint32_t total_size = sizeof (stack_size) + stack_size;
+	EventPipeBlock *block = ep_event_block_base_get_block_ref (ep_stack_block_get_event_block_base_ref (stack_block));
 	uint8_t *write_pointer = ep_block_get_write_pointer (block);
 
 	ep_raise_error_if_nok (write_pointer + total_size < ep_block_get_end_of_the_buffer (block));

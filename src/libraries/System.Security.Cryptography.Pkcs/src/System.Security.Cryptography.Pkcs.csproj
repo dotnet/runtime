@@ -344,6 +344,7 @@
     <Reference Include="System.Buffers" />
   </ItemGroup>
   <ItemGroup Condition="'$(IsPartialFacadeAssembly)' != 'true'">
+    <Reference Include="System.Formats.Asn1" />
     <Reference Include="System.Memory" />
     <Reference Include="System.Security.Cryptography.Cng" />
   </ItemGroup>

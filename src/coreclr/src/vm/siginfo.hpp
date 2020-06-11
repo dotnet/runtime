@@ -970,12 +970,12 @@ class MetaSig
         //------------------------------------------------------------------
         CorElementType GetByRefType(TypeHandle* pTy) const;
 
+        //------------------------------------------------------------------
         // Compare types in two signatures, first applying
         // - optional substitutions pSubst1 and pSubst2
         //   to class type parameters (E_T_VAR) in the respective signatures
-        static
-        BOOL
-        CompareElementType(
+        //------------------------------------------------------------------
+        static BOOL CompareElementType(
             PCCOR_SIGNATURE &    pSig1,
             PCCOR_SIGNATURE &    pSig2,
             PCCOR_SIGNATURE      pEndSig1,
@@ -1002,15 +1002,16 @@ class MetaSig
         // Compare two complete method signatures, first applying optional substitutions pSubst1 and pSubst2
         // to class type parameters (E_T_VAR) in the respective signatures
         static BOOL CompareMethodSigs(
-            PCCOR_SIGNATURE pSig1,
-            DWORD       cSig1,
-            Module*     pModule1,
+            PCCOR_SIGNATURE     pSig1,
+            DWORD               cSig1,
+            Module*             pModule1,
             const Substitution* pSubst1,
-            PCCOR_SIGNATURE pSig2,
-            DWORD       cSig2,
-            Module*     pModule2,
+            PCCOR_SIGNATURE     pSig2,
+            DWORD               cSig2,
+            Module*             pModule2,
             const Substitution* pSubst2,
-            TokenPairList *pVisited = NULL
+            BOOL                skipReturnTypeSig,
+            TokenPairList*      pVisited = NULL
         );
 
         // Nonthrowing version of CompareMethodSigs

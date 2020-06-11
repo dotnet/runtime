@@ -14,19 +14,19 @@ using Xunit;
 
 public class RedirectedStream
 {
-    [Fact] // the CI system redirects stdout, so we can only really test the redirected behavior.
+    [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))] // the CI system redirects stdout, so we can only really test the redirected behavior.
     public static void InputRedirect()
     {
         RunRemote(() => { Assert.True(Console.IsInputRedirected); return 42; }, new ProcessStartInfo() { RedirectStandardInput = true });
     }
 
-    [Fact]
+    [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
     public static void OutputRedirect() // the CI system redirects stdout, so we can only really test the redirected behavior.
     {
         RunRemote(() => { Assert.True(Console.IsOutputRedirected); return 42; }, new ProcessStartInfo() { RedirectStandardOutput = true });
     }
 
-    [Fact]
+    [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
     public static void ErrorRedirect() // the CI system redirects stdout, so we can only really test the redirected behavior.
     {
         RunRemote(() => { Assert.True(Console.IsErrorRedirected); return 42; }, new ProcessStartInfo() { RedirectStandardError = true });

@@ -5,7 +5,7 @@
 //
 #include "comcallablewrapper.h"
 
-#ifndef DACCESS_COMPILE
+#if !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
 inline BOOL ComInterfaceSlotIs(IUnknown* pUnk, int slot, LPVOID pvFunction)
 {
     CONTRACTL
@@ -29,8 +29,7 @@ inline BOOL IsInProcCCWTearOff(IUnknown* pUnk)
 {
     WRAPPER_NO_CONTRACT;
     return ComInterfaceSlotIs(pUnk, 0, Unknown_QueryInterface) ||
-           ComInterfaceSlotIs(pUnk, 0, Unknown_QueryInterface_IErrorInfo) ||
-           ComInterfaceSlotIs(pUnk, 0, Unknown_QueryInterface_ICCW);
+           ComInterfaceSlotIs(pUnk, 0, Unknown_QueryInterface_IErrorInfo);
 }
 
 // is the tear-off represent one of the standard interfaces such as IProvideClassInfo, IErrorInfo etc.

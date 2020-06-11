@@ -509,11 +509,8 @@ namespace System.Text.Json
 
         [DoesNotReturn]
         [MethodImpl(MethodImplOptions.NoInlining)]
-        public static void ThrowJsonException_MetadataDuplicateIdFound(string id, ref ReadStack state)
+        public static void ThrowJsonException_MetadataDuplicateIdFound(string id)
         {
-            // Set so JsonPath throws exception with $id in it.
-            state.Current.JsonPropertyName = JsonSerializer.s_metadataId.EncodedUtf8Bytes.ToArray();
-
             ThrowJsonException(SR.Format(SR.MetadataDuplicateIdFound, id));
         }
 

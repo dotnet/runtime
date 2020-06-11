@@ -78,10 +78,8 @@ public:
         Unassigned = 0,
         CLRToNativeInteropStub,
         CLRToCOMInteropStub,
-        CLRToWinRTInteropStub,
         NativeToCLRInteropStub,
         COMToCLRInteropStub,
-        WinRTToCLRInteropStub,
         StructMarshalInteropStub,
 #ifdef FEATURE_ARRAYSTUB_AS_IL
         ArrayOpStub,

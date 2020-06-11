@@ -11,6 +11,7 @@
 
 #pragma warning disable 618 // obsolete types, namely IHashCodeProvider
 
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Runtime.Serialization;
 
@@ -24,9 +25,9 @@ namespace System.Collections.Specialized
     public abstract class NameObjectCollectionBase : ICollection, ISerializable, IDeserializationCallback
     {
         private bool _readOnly = false;
-        private ArrayList _entriesArray = null!; // initialized in Reset method, called from constructor
+        private ArrayList _entriesArray;
         private IEqualityComparer _keyComparer;
-        private volatile Hashtable _entriesTable = null!; // initialized in Reset method, called from constructor
+        private volatile Hashtable _entriesTable;
         private volatile NameObjectEntry? _nullKeyEntry;
         private KeysCollection? _keys;
         private int _version;
@@ -96,6 +97,8 @@ namespace System.Collections.Specialized
         // Private helpers
         //
 
+        [MemberNotNull(nameof(_entriesArray))]
+        [MemberNotNull(nameof(_entriesTable))]
         private void Reset()
         {
             _entriesArray = new ArrayList();
@@ -104,6 +107,8 @@ namespace System.Collections.Specialized
             _version++;
         }
 
+        [MemberNotNull(nameof(_entriesArray))]
+        [MemberNotNull(nameof(_entriesTable))]
         private void Reset(int capacity)
         {
             _entriesArray = new ArrayList(capacity);

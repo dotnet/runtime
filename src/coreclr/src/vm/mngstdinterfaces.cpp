@@ -920,76 +920,9 @@ FCIMPL1(Object*, StdMngIEnumerable::GetEnumerator, Object* refThisUNSAFE)
 
     GCPROTECT_ARRAY_BEGIN(args[0], 1);
 
-    // There are three ways to handle calls via IEnumerable::GetEnumerator on an RCW:
-    // 1. Use BindableIterableToEnumerableAdapter (Jupiter data-binding scenario)
-    // 2. Use IterableToEnumerableAdapter if the object is known to implement IIterable<T> (WinRT)
-    // 3. Use EnumerableToDispatchMarshaler in CustomMarshalers.dll (legacy COM interop)
-    SyncBlock *pSB = (*porefThis)->GetSyncBlock();
-    if (pSB->GetInteropInfoNoCreate() != NULL && pSB->GetInteropInfoNoCreate()->GetRawRCW() != NULL)
-    {
-        RCWHolder pRCW(GetThread());
-        RCWPROTECT_BEGIN(pRCW, pSB);
-
-        if (pRCW->SupportsIInspectable())
-        {
-            //
-            // Test which IEnumerable implementation we want
-            // Prefer WinRT case as WinRT is new scenario
-            //
-            if (pRCW->SupportsWinRTInteropInterface(MscorlibBinder::GetExistingClass(CLASS__IENUMERABLE)))
-            {
-                //
-                // Supports WinRT IEnumerable
-                // Could be either IIterable<T>, IBindableIterable, or IDispatch+DISPID_NEWENUM
-                //
-                MethodDesc *pGetEnumeratorMethod = pRCW->GetGetEnumeratorMethod();
-                if (pGetEnumeratorMethod)
-                {
-                    //
-                    // IIterable<T>/IDispatch+DISPID_NEWENUM - The right enumerator method is saved in pGetEnumeratorMethod
-                    //
-                    MethodDescCallSite callSite(pGetEnumeratorMethod, porefThis);
-
-                    retVal = callSite.Call_RetOBJECTREF(args);
-                }
-                else
-                {
-                    //
-                    // IBindableIterable
-                    //
-                    MethodDescCallSite callSite(MscorlibBinder::GetMethod(METHOD__BINDABLEITERABLE_TO_ENUMERABLE_ADAPTER__GET_ENUMERATOR_STUB));
-                    retVal = callSite.Call_RetOBJECTREF(args);
-                }
-            }
-            else if (!pRCW->SupportsLegacyEnumerableInterface())
-            {
-                // The object does not support IBindableEnumerable nor IDispatch DISPID_NEWENUM enumeration.
-                // Try to use IIterable<T>, throw exception if it fails.
-                MethodDesc *pGetEnumeratorMethod = pRCW->GetGetEnumeratorMethod();
-                if (pGetEnumeratorMethod != NULL)
-                {
-                    // make a virtual call through the generic IEnumerable<T>
-                    MethodDescCallSite callSite(pGetEnumeratorMethod, porefThis);
-
-                    retVal = callSite.Call_RetOBJECTREF(args);
-                }
-                else
-                {
-                    // If we haven't seen a cast to a generic IEnumerable<T> and haven't been able to infer
-                    // the interface statically, we have to throw an exception, suggesting a workaround.
-                    // (This is an inherent limitation, we can't know what to do without type information.)
-                    COMPlusThrow(kInvalidCastException, IDS_EE_WINRT_IENUMERABLE_BAD_CALL);
-                }
-            }
-        }
-
-        RCWPROTECT_END(pRCW);
-    }
-
-    if (retVal == NULL)
-    {
-        retVal = ObjectToOBJECTREF((Object*)GetEnumeratorWorker(args));
-    }
+    // To handle calls via IEnumerable::GetEnumerator on an RCW we use
+    // EnumerableToDispatchMarshaler (legacy COM interop)
+    retVal = ObjectToOBJECTREF((Object*)GetEnumeratorWorker(args));
 
     GCPROTECT_END();
     HELPER_METHOD_FRAME_END();

@@ -33,7 +33,7 @@ ep_provider_alloc (
 	EventPipeCallback callback_func,
 	void *callback_data)
 {
-	ep_return_false_if_nok (config != NULL && provider_name != NULL);
+	ep_return_null_if_nok (config != NULL && provider_name != NULL);
 
 	EventPipeProvider *instance = ep_rt_object_alloc (EventPipeProvider);
 	ep_raise_error_if_nok (instance != NULL);
