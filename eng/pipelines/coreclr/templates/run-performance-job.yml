@@ -95,7 +95,7 @@ jobs:
       env:
         PERFLAB_TARGET_FRAMEWORKS: netcoreapp3.1
       condition: and(succeeded(), eq(variables['Agent.Os'], 'Windows_NT'))
-    - script: $(PerformanceDirectory)/tools/dotnet/$(Architecture)/dotnet publish -c Release -o $(WorkItemDirectory)/ScenarioCorrelation/Startup -f netcoreapp3.1 -r linux-$(Architecture) $(PerformanceDirectory)/src/tools/ScenarioMeasurement/Startup/Startup.csproj
+    - script: $(PerformanceDirectory)/tools/dotnet/$(Architecture)/dotnet publish -c Release -o $(WorkItemDirectory)/ScenarioCorrelation/startup -f netcoreapp3.1 -r linux-$(Architecture) $(PerformanceDirectory)/src/tools/ScenarioMeasurement/Startup/Startup.csproj
       displayName: Build scenario tools (Linux)
       env:
         PERFLAB_TARGET_FRAMEWORKS: netcoreapp3.1
