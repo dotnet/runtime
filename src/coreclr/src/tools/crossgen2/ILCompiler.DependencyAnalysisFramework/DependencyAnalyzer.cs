@@ -311,7 +311,7 @@ namespace ILCompiler.DependencyAnalysisFramework
                 } while (_markStack.Count != 0);
 
                 if (_resultSorter != null)
-                    _markedNodes.Sort(_resultSorter);
+                    _markedNodes.MergeSortAllowDuplicates(_resultSorter);
 
                 _markedNodesFinal = _markedNodes.ToImmutableArray();
                 _markedNodes = null;

@@ -88,7 +88,7 @@ namespace System.Text.Json.Serialization.Tests
             public int MyInt { get; private set; }
 
             [JsonInclude]
-            [JsonIgnore(Condition = JsonIgnoreCondition.WhenNull)]
+            [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
             public string MyString { get; internal set; } = "DefaultString";
 
             [JsonInclude]

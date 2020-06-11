@@ -169,7 +169,7 @@ namespace System.Diagnostics
         public ActivityEvent(string name, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, object>>? attributes) { throw null; }
         public string Name { get { throw null; } }
         public System.DateTimeOffset Timestamp { get { throw null; } }
-        public System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, object>>? Attributes { get { throw null; } }
+        public System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, object>> Attributes { get { throw null; } }
     }
     public readonly struct ActivityContext : System.IEquatable<System.Diagnostics.ActivityContext>
     {

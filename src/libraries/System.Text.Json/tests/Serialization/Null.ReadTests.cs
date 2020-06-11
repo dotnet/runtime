@@ -3,11 +3,9 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
-using Newtonsoft.Json;
-using Xunit;
-using Xunit.Sdk;
 using System.Threading.Tasks;
 using System.IO;
+using Xunit;
 
 namespace System.Text.Json.Serialization.Tests
 {

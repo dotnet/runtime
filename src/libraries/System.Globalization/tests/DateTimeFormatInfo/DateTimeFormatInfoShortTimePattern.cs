@@ -34,6 +34,17 @@ namespace System.Globalization.Tests
         }
 
         [Fact]
+        public void ShortTimePattern_Set_InvalidatesDerivedPattern()
+        {
+            const string Pattern = "#$";
+            var format = new DateTimeFormatInfo();
+            var d = DateTimeOffset.Now;
+            d.ToString("g", format); // GeneralShortTimePattern
+            format.ShortTimePattern = Pattern;
+            Assert.Contains(Pattern, d.ToString("g", format));
+        }
+
+        [Fact]
         public void ShortTimePattern_SetNull_ThrowsArgumentNullException()
         {
             var format = new DateTimeFormatInfo();

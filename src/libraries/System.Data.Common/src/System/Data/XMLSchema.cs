@@ -251,8 +251,7 @@ namespace System.Data
 
         internal static string QualifiedName(string name)
         {
-            int iStart = name.IndexOf(':');
-            if (iStart == -1)
+            if (!name.Contains(':'))
                 return Keywords.XSD_PREFIXCOLON + name;
             else
                 return name;

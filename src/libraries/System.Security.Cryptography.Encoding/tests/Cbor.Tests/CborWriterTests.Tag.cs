@@ -4,11 +4,14 @@
 
 #nullable enable
 using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.Linq;
 using System.Numerics;
 using Test.Cryptography;
 using Xunit;
 
-namespace System.Security.Cryptography.Encoding.Tests.Cbor
+namespace System.Formats.Cbor.Tests
 {
     public partial class CborWriterTests
     {
@@ -26,10 +29,10 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         public static void WriteTag_SingleValue_HappyPath(ulong tag, object value, string hexExpectedEncoding)
         {
             byte[] expectedEncoding = hexExpectedEncoding.HexToByteArray();
-            using var writer = new CborWriter();
+            var writer = new CborWriter();
             writer.WriteTag((CborTag)tag);
             Helpers.WriteValue(writer, value);
-            AssertHelper.HexEqual(expectedEncoding, writer.ToArray());
+            AssertHelper.HexEqual(expectedEncoding, writer.Encode());
         }
 
         [Theory]
@@ -41,13 +44,13 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         public static void WriteTag_NestedTags_HappyPath(ulong[] tags, object value, string hexExpectedEncoding)
         {
             byte[] expectedEncoding = hexExpectedEncoding.HexToByteArray();
-            using var writer = new CborWriter();
+            var writer = new CborWriter();
             foreach (ulong tag in tags)
             {
                 writer.WriteTag((CborTag)tag);
             }
             Helpers.WriteValue(writer, value);
-            AssertHelper.HexEqual(expectedEncoding, writer.ToArray());
+            AssertHelper.HexEqual(expectedEncoding, writer.Encode());
         }
 
         [Theory]
@@ -55,24 +58,22 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         [InlineData(new ulong[] { 1, 2, 3 })]
         public static void WriteTag_NoValue_ShouldThrowInvalidOperationException(ulong[] tags)
         {
-            using var writer = new CborWriter();
+            var writer = new CborWriter();
 
             foreach (ulong tag in tags)
             {
                 writer.WriteTag((CborTag)tag);
             }
 
-            InvalidOperationException exn = Assert.Throws<InvalidOperationException>(() => writer.ToArray());
-
-            Assert.Equal("Buffer contains incomplete CBOR document.", exn.Message);
+            Assert.Throws<InvalidOperationException>(() => writer.Encode());
         }
 
         [Fact]
         public static void WriteTag_NoValueInNestedContext_ShouldThrowInvalidOperationException()
         {
-            using var writer = new CborWriter();
+            var writer = new CborWriter();
 
-            writer.WriteStartArrayIndefiniteLength();
+            writer.WriteStartArray();
             writer.WriteTag(CborTag.Uri);
             Assert.Throws<InvalidOperationException>(() => writer.WriteEndArray());
         }
@@ -84,10 +85,10 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         public static void WriteDateTimeOffset_SingleValue_HappyPath(string valueString, string expectedHexEncoding)
         {
             DateTimeOffset value = DateTimeOffset.Parse(valueString);
-            using var writer = new CborWriter();
+            var writer = new CborWriter();
             writer.WriteDateTimeOffset(value);
 
-            byte[] encoding = writer.ToArray();
+            byte[] encoding = writer.Encode();
             AssertHelper.HexEqual(expectedHexEncoding.HexToByteArray(), encoding);
         }
 
@@ -99,10 +100,10 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         [InlineData(-315619200, "c13a12cff77f")]
         public static void WriteUnixTimeSeconds_Long_SingleValue_HappyPath(long value, string expectedHexEncoding)
         {
-            using var writer = new CborWriter();
+            var writer = new CborWriter();
             writer.WriteUnixTimeSeconds(value);
 
-            byte[] encoding = writer.ToArray();
+            byte[] encoding = writer.Encode();
             AssertHelper.HexEqual(expectedHexEncoding.HexToByteArray(), encoding);
         }
 
@@ -116,10 +117,10 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         [InlineData(15870467036.15, "c1fb420d8fa0dee13333")]
         public static void WriteUnixTimeSeconds_Double_SingleValue_HappyPath(double value, string expectedHexEncoding)
         {
-            using var writer = new CborWriter();
+            var writer = new CborWriter();
             writer.WriteUnixTimeSeconds(value);
 
-            byte[] encoding = writer.ToArray();
+            byte[] encoding = writer.Encode();
             AssertHelper.HexEqual(expectedHexEncoding.HexToByteArray(), encoding);
         }
 
@@ -129,7 +130,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         [InlineData(double.NegativeInfinity)]
         public static void WriteUnixTimeSeconds_Double_InvalidInput_ShouldThrowArgumentException(double value)
         {
-            using var writer = new CborWriter();
+            var writer = new CborWriter();
             Assert.Throws<ArgumentException>(() => writer.WriteUnixTimeSeconds(value));
         }
 
@@ -149,10 +150,10 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         {
             BigInteger value = BigInteger.Parse(valueString);
 
-            using var writer = new CborWriter();
+            var writer = new CborWriter();
             writer.WriteBigInteger(value);
 
-            byte[] encoding = writer.ToArray();
+            byte[] encoding = writer.Encode();
             AssertHelper.HexEqual(expectedHexEncoding.HexToByteArray(), encoding);
         }
 
@@ -170,10 +171,46 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         public static void WriteDecimal_SingleValue_HappyPath(string stringValue, string expectedHexEncoding)
         {
             decimal value = decimal.Parse(stringValue, Globalization.CultureInfo.InvariantCulture);
-            using var writer = new CborWriter();
+            var writer = new CborWriter();
             writer.WriteDecimal(value);
-            byte[] encoding = writer.ToArray();
+            byte[] encoding = writer.Encode();
             AssertHelper.HexEqual(expectedHexEncoding.HexToByteArray(), encoding);
         }
+
+        [Theory]
+        [MemberData(nameof(UnsupportedConformanceTaggedValues))]
+        public static void WriteTaggedValue_UnsupportedConformance_ShouldThrowInvalidOperationException(CborConformanceLevel level, object value)
+        {
+            var writer = new CborWriter(level);
+            Assert.Throws<InvalidOperationException>(() => Helpers.WriteValue(writer, value));
+            Assert.Equal(0, writer.BytesWritten);
+        }
+
+        public static IEnumerable<object[]> UnsupportedConformanceTaggedValues =>
+            from l in new[] { CborConformanceLevel.Ctap2Canonical }
+            from v in TaggedValues
+            select new object[] { l, v };
+
+        [Theory]
+        [MemberData(nameof(SupportedConformanceTaggedValues))]
+        public static void WriteTaggedValue_SupportedConformance_ShouldSucceed(CborConformanceLevel level, object value)
+        {
+            var writer = new CborWriter(level);
+            Helpers.WriteValue(writer, value);
+        }
+
+        public static IEnumerable<object[]> SupportedConformanceTaggedValues =>
+            from l in new[] { CborConformanceLevel.Lax, CborConformanceLevel.Strict, CborConformanceLevel.Canonical }
+            from v in TaggedValues
+            select new object[] { l, v };
+
+        private static object[] TaggedValues =>
+            new object[]
+            {
+                new object[] { CborTag.MimeMessage, 42 },
+                42.0m,
+                (BigInteger)1,
+                DateTimeOffset.UnixEpoch,
+            };
     }
 }

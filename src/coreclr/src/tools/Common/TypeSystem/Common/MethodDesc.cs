@@ -114,7 +114,33 @@ namespace Internal.TypeSystem
             }
         }
 
+        public bool HasEmbeddedSignatureData
+        {
+            get
+            {
+                return _embeddedSignatureData != null;
+            }
+        }
+
+        public EmbeddedSignatureData[] GetEmbeddedSignatureData()
+        {
+            if ((_embeddedSignatureData == null) || (_embeddedSignatureData.Length == 0))
+                return null;
+
+            return (EmbeddedSignatureData[])_embeddedSignatureData.Clone();
+        }
+
         public bool Equals(MethodSignature otherSignature)
+        {
+            return Equals(otherSignature, allowCovariantReturn: false);
+        }
+
+        public bool EqualsWithCovariantReturnType(MethodSignature otherSignature)
+        {
+            return Equals(otherSignature, allowCovariantReturn: true);
+        }
+
+        private bool Equals(MethodSignature otherSignature, bool allowCovariantReturn)
         {
             // TODO: Generics, etc.
             if (this._flags != otherSignature._flags)
@@ -124,7 +150,13 @@ namespace Internal.TypeSystem
                 return false;
 
             if (this._returnType != otherSignature._returnType)
-                return false;
+            {
+                if (!allowCovariantReturn)
+                    return false;
+
+                if (!otherSignature._returnType.IsCompatibleWith(this._returnType))
+                    return false;
+            }
 
             if (this._parameters.Length != otherSignature._parameters.Length)
                 return false;

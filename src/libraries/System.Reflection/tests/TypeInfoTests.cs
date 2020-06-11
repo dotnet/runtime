@@ -471,10 +471,10 @@ namespace System.Reflection.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/mono/mono/issues/15028", TestRuntimes.Mono)]
         public void IsEnumDefined_Invalid()
         {
-            AssertExtensions.Throws<ArgumentException>("", () => typeof(NonGenericClassWithNoInterfaces).GetTypeInfo().IsEnumDefined(10));
+            AssertExtensions.Throws<ArgumentException>("enumType", () => typeof(NonGenericClassWithNoInterfaces).GetTypeInfo().IsEnumDefined(10));
+            AssertExtensions.Throws<ArgumentException>("enumType", () => typeof(NonGenericClassWithNoInterfaces).GetTypeInfo().IsEnumDefined("10"));
             Assert.Throws<ArgumentNullException>(() => typeof(IntEnum).GetTypeInfo().IsEnumDefined(null));
             Assert.Throws<InvalidOperationException>(() => typeof(IntEnum).GetTypeInfo().IsEnumDefined(new NonGenericClassWithNoInterfaces()));
         }

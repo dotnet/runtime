@@ -346,40 +346,40 @@ namespace System.Net.Http
 
             try
             {
-                ArraySegment<byte> buffer;
-                if (TryGetBuffer(out buffer))
-                {
-                    return CopyToAsyncCore(stream.WriteAsync(new ReadOnlyMemory<byte>(buffer.Array, buffer.Offset, buffer.Count), cancellationToken));
-                }
-                else
-                {
-                    Task task = SerializeToStreamAsync(stream, context, cancellationToken);
-                    CheckTaskNotNull(task);
-                    return CopyToAsyncCore(new ValueTask(task));
-                }
+                return WaitAsync(InternalCopyToAsync(stream, context, cancellationToken));
             }
             catch (Exception e) when (StreamCopyExceptionNeedsWrapping(e))
             {
                 return Task.FromException(GetStreamCopyException(e));
             }
+
+            static async Task WaitAsync(ValueTask copyTask)
+            {
+                try
+                {
+                    await copyTask.ConfigureAwait(false);
+                }
+                catch (Exception e) when (StreamCopyExceptionNeedsWrapping(e))
+                {
+                    throw WrapStreamCopyException(e);
+                }
+            }
         }
 
-        private static async Task CopyToAsyncCore(ValueTask copyTask)
+        internal ValueTask InternalCopyToAsync(Stream stream, TransportContext? context, CancellationToken cancellationToken)
         {
-            try
+            if (TryGetBuffer(out ArraySegment<byte> buffer))
             {
-                await copyTask.ConfigureAwait(false);
+                return stream.WriteAsync(buffer, cancellationToken);
             }
-            catch (Exception e) when (StreamCopyExceptionNeedsWrapping(e))
-            {
-                throw WrapStreamCopyException(e);
-            }
+
+            Task task = SerializeToStreamAsync(stream, context, cancellationToken);
+            CheckTaskNotNull(task);
+            return new ValueTask(task);
         }
 
-        public Task LoadIntoBufferAsync()
-        {
-            return LoadIntoBufferAsync(MaxBufferSize);
-        }
+        public Task LoadIntoBufferAsync() =>
+            LoadIntoBufferAsync(MaxBufferSize);
 
         // No "CancellationToken" parameter needed since canceling the CTS will close the connection, resulting
         // in an exception being thrown while we're buffering.

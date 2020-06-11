@@ -14,11 +14,11 @@ namespace System.Text.Json.Serialization.Converters
     {
         protected override bool ReadAndCacheConstructorArgument(ref ReadStack state, ref Utf8JsonReader reader, JsonParameterInfo jsonParameterInfo)
         {
-            bool success = jsonParameterInfo.ReadJson(ref state, ref reader, out object? arg0);
+            bool success = jsonParameterInfo.ReadJson(ref state, ref reader, out object? arg);
 
             if (success)
             {
-                ((object[])state.Current.CtorArgumentState!.Arguments)[jsonParameterInfo.Position] = arg0!;
+                ((object[])state.Current.CtorArgumentState!.Arguments)[jsonParameterInfo.Position] = arg!;
             }
 
             return success;

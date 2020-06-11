@@ -182,7 +182,7 @@ namespace System.Threading.Threads.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/34543", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         [PlatformSpecific(TestPlatforms.Windows)]
         public static void ApartmentState_NoAttributePresent_DefaultState_Windows()
@@ -195,7 +195,7 @@ namespace System.Threading.Threads.Tests
             }).Dispose();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [PlatformSpecific(TestPlatforms.AnyUnix)]
         public static void ApartmentState_NoAttributePresent_DefaultState_Unix()
         {
@@ -206,8 +206,10 @@ namespace System.Threading.Threads.Tests
             }).Dispose();
         }
 
+        private static bool IsWindowsNanoServerAndRemoteExecutorSupported => PlatformDetection.IsWindowsNanoServer && RemoteExecutor.IsSupported;
+
         // Thread is always initialized as MTA irrespective of the attribute present.
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsWindowsNanoServer))]
+        [ConditionalFact(nameof(IsWindowsNanoServerAndRemoteExecutorSupported))]
         public static void ApartmentState_NoAttributePresent_DefaultState_Nano()
         {
             RemoteExecutor.Invoke(() =>
@@ -217,7 +219,7 @@ namespace System.Threading.Threads.Tests
             }).Dispose();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [PlatformSpecific(TestPlatforms.AnyUnix)]
         public static void ApartmentState_NoAttributePresent_STA_Unix()
         {
@@ -488,7 +490,7 @@ namespace System.Threading.Threads.Tests
             });
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public static void CurrentPrincipal_SetNull()
         {
             // We run test on remote process because we need to set same principal policy
@@ -649,6 +651,20 @@ namespace System.Threading.Threads.Tests
                 Assert.Throws<InvalidOperationException>(() => ct.Name = name + "b");
                 Assert.Equal(name, ct.Name);
             });
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public static void ThreadNameDoesNotAffectProcessName()
+        {
+            // On Linux, changing the main thread name affects ProcessName.
+            // To avoid that, .NET ignores requests to change the main thread name.
+            RemoteExecutor.Invoke(() =>
+            {
+                const string ThreadName = "my-thread";
+                Thread.CurrentThread.Name = ThreadName;
+                Assert.Equal(ThreadName, Thread.CurrentThread.Name);
+                Assert.NotEqual(ThreadName, Process.GetCurrentProcess().ProcessName);
+            }).Dispose();
         }
 
         [Fact]
@@ -1106,7 +1122,7 @@ namespace System.Threading.Threads.Tests
             Thread.Yield();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [PlatformSpecific(TestPlatforms.Windows)]
         public static void WindowsPrincipalPolicyTest_Windows()
         {
@@ -1118,7 +1134,7 @@ namespace System.Threading.Threads.Tests
         }
 
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/34543", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         [PlatformSpecific(TestPlatforms.Windows)]
         public static void WindowsPrincipalPolicyTest_Windows_NewThreads()
@@ -1149,7 +1165,7 @@ namespace System.Threading.Threads.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public static void NoPrincipalPolicyTest_NewThreads()
         {
             RemoteExecutor.Invoke(() =>
@@ -1168,7 +1184,7 @@ namespace System.Threading.Threads.Tests
             }).Dispose();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/34543", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         [PlatformSpecific(TestPlatforms.Windows)]
         public static void NoPrincipalToWindowsPrincipalPolicyTest_Windows_NewThreads()
@@ -1198,7 +1214,7 @@ namespace System.Threading.Threads.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [PlatformSpecific(TestPlatforms.AnyUnix)]
         public static void WindowsPrincipalPolicyTest_Unix()
         {
@@ -1209,7 +1225,7 @@ namespace System.Threading.Threads.Tests
             }).Dispose();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public static void UnauthenticatedPrincipalTest()
         {
             RemoteExecutor.Invoke(() =>
@@ -1219,7 +1235,7 @@ namespace System.Threading.Threads.Tests
             }).Dispose();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public static void DefaultPrincipalPolicyTest()
         {
             RemoteExecutor.Invoke(() =>

@@ -150,7 +150,7 @@ namespace System.Runtime.CompilerServices
         }
 
         internal static void AwaitOnCompleted<TAwaiter, TStateMachine>(
-            ref TAwaiter awaiter, ref TStateMachine stateMachine, [NotNull] ref StateMachineBox? box)
+            ref TAwaiter awaiter, ref TStateMachine stateMachine, ref StateMachineBox? box)
             where TAwaiter : INotifyCompletion
             where TStateMachine : IAsyncStateMachine
         {

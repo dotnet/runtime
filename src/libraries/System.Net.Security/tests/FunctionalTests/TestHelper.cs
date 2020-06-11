@@ -33,6 +33,9 @@ namespace System.Net.Security.Tests
                 clientSocket.Connect(listener.LocalEndPoint);
                 Socket serverSocket = listener.Accept();
 
+                serverSocket.NoDelay = true;
+                clientSocket.NoDelay = true;
+
                 return (new NetworkStream(clientSocket, ownsSocket: true), new NetworkStream(serverSocket, ownsSocket: true));
             }
 

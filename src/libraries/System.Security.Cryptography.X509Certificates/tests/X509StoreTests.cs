@@ -535,7 +535,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             }
         }
 #if Unix
-        [ConditionalFact(nameof(NotRunningAsRoot))] // root can read '2.pem'
+        [ConditionalFact(nameof(NotRunningAsRootAndRemoteExecutorSupported))] // root can read '2.pem'
         [PlatformSpecific(TestPlatforms.Linux)] // Windows/OSX doesn't use SSL_CERT_{DIR,FILE}.
         private void X509Store_MachineStoreLoadSkipsInvalidFiles()
         {
@@ -579,7 +579,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         [DllImport("libc")]
         private static extern uint geteuid();
 
-        public static bool NotRunningAsRoot => geteuid() != 0;
+        public static bool NotRunningAsRootAndRemoteExecutorSupported => geteuid() != 0 && RemoteExecutor.IsSupported;
 #endif
     }
 }

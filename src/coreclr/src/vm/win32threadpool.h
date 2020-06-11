@@ -824,7 +824,12 @@ public:
         return entry;
     }
 
+public:
     static void EnsureInitialized();
+private:
+    static void EnsureInitializedSlow();
+
+public:
     static void InitPlatformVariables();
 
     inline static BOOL IsInitialized()

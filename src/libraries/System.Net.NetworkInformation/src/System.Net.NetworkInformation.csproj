@@ -52,6 +52,8 @@
              Link="Common\System\Net\NetworkInformation\NetworkInformationException.cs" />
     <Compile Include="$(CommonPath)System\HexConverter.cs"
              Link="Common\System\HexConverter.cs" />
+    <Compile Include="$(CommonPath)System\Threading\Tasks\TaskToApm.cs"
+             Link="Common\System\Threading\Tasks\TaskToApm.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
     <!-- Logging -->
@@ -149,8 +151,6 @@
              Link="Common\Interop\Unix\System.Native\Interop.MapTcpState.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\Interop.Errors.cs"
              Link="Common\Interop\CoreLib\Unix\Interop.Errors.cs" />
-    <Compile Include="$(CommonPath)System\Threading\Tasks\TaskToApm.cs"
-             Link="Common\System\Threading\Tasks\TaskToApm.cs" />
     <Compile Include="$(CommonPath)System\IO\RowConfigReader.cs"
              Link="Common\System\IO\RowConfigReader.cs" />
   </ItemGroup>

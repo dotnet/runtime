@@ -26,7 +26,7 @@ namespace System.Xml
         private struct ParsingState
         {
             // character buffer
-            internal char[]? chars;
+            internal char[] chars;
             internal int charPos;
             internal int charsUsed;
             internal Encoding? encoding;
@@ -66,7 +66,7 @@ namespace System.Xml
 
             internal void Clear()
             {
-                chars = null;
+                chars = null!;
                 charPos = 0;
                 charsUsed = 0;
                 encoding = null;
@@ -200,7 +200,7 @@ namespace System.Xml
                 get { return _reader.DtdParserProxy_IsEof; }
             }
 
-            char[]? IDtdParserAdapter.ParsingBuffer
+            char[] IDtdParserAdapter.ParsingBuffer
             {
                 get { return _reader.DtdParserProxy_ParsingBuffer; }
             }
@@ -246,22 +246,22 @@ namespace System.Xml
                 return _reader.DtdParserProxy_ReadData();
             }
 
-            int IDtdParserAdapter.ParseNumericCharRef(StringBuilder internalSubsetBuilder)
+            int IDtdParserAdapter.ParseNumericCharRef(StringBuilder? internalSubsetBuilder)
             {
                 return _reader.DtdParserProxy_ParseNumericCharRef(internalSubsetBuilder);
             }
 
-            int IDtdParserAdapter.ParseNamedCharRef(bool expand, StringBuilder internalSubsetBuilder)
+            int IDtdParserAdapter.ParseNamedCharRef(bool expand, StringBuilder? internalSubsetBuilder)
             {
                 return _reader.DtdParserProxy_ParseNamedCharRef(expand, internalSubsetBuilder);
             }
 
-            void IDtdParserAdapter.ParsePI(StringBuilder sb)
+            void IDtdParserAdapter.ParsePI(StringBuilder? sb)
             {
                 _reader.DtdParserProxy_ParsePI(sb);
             }
 
-            void IDtdParserAdapter.ParseComment(StringBuilder sb)
+            void IDtdParserAdapter.ParseComment(StringBuilder? sb)
             {
                 _reader.DtdParserProxy_ParseComment(sb);
             }
@@ -276,7 +276,7 @@ namespace System.Xml
                 return _reader.DtdParserProxy_PopEntity(out oldEntity, out newEntityId);
             }
 
-            bool IDtdParserAdapter.PushExternalSubset(string systemId, string publicId)
+            bool IDtdParserAdapter.PushExternalSubset(string? systemId, string? publicId)
             {
                 return _reader.DtdParserProxy_PushExternalSubset(systemId, publicId);
             }
@@ -287,6 +287,7 @@ namespace System.Xml
                 _reader.DtdParserProxy_PushInternalDtd(baseUri, internalDtd);
             }
 
+            [DoesNotReturn]
             void IDtdParserAdapter.Throw(Exception e)
             {
                 _reader.DtdParserProxy_Throw(e);

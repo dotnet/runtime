@@ -151,8 +151,6 @@
              Link="Common\Interop\Unix\Interop.Permissions.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Pipe.cs"
              Link="Common\Interop\Unix\Interop.Pipe.cs" />
-    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Poll.cs"
-             Link="Common\Interop\Unix\Interop.Poll.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Read.Pipe.cs"
              Link="Common\Interop\Unix\Interop.Read.Pipe.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Unlink.cs"

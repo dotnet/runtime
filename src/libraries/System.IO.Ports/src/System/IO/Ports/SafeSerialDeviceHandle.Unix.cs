@@ -35,7 +35,7 @@ namespace System.IO.Ports
 
         protected override bool ReleaseHandle()
         {
-            Interop.Sys.Shutdown(handle, SocketShutdown.Both);
+            Interop.Serial.Shutdown(handle, SocketShutdown.Both);
             int result = Interop.Serial.SerialPortClose(handle);
 
             Debug.Assert(result == 0, $"Close failed with result {result} and error {Interop.Sys.GetLastErrorInfo()}");

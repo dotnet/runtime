@@ -3917,7 +3917,7 @@ DWORD ProfToEEInterfaceImpl::GetModuleFlags(Module * pModule)
     {
         NOTHROW;
         GC_NOTRIGGER;
-        CAN_TAKE_LOCK;     // IsWindowsRuntimeModule accesses metadata directly, which takes locks
+        CANNOT_TAKE_LOCK;
         MODE_ANY;
     }
     CONTRACTL_END;
@@ -3981,11 +3981,6 @@ DWORD ProfToEEInterfaceImpl::GetModuleFlags(Module * pModule)
     if (pModule->IsResource())
     {
         dwRet |= COR_PRF_MODULE_RESOURCE;
-    }
-
-    if (pModule->IsWindowsRuntimeModule())
-    {
-        dwRet |= COR_PRF_MODULE_WINDOWS_RUNTIME;
     }
 
     return dwRet;
@@ -4639,8 +4634,7 @@ HRESULT ProfToEEInterfaceImpl::ForceGC()
 
 #ifdef FEATURE_EVENT_TRACE
     // This helper, used by ETW and profAPI ensures a managed thread gets created for
-    // this thread before forcing the GC (to work around Jupiter issues where it's
-    // expected this thread is already managed before starting the GC).
+    // this thread before forcing the GC.
     HRESULT hr = ETW::GCLog::ForceGCForDiagnostics();
 #else // !FEATURE_EVENT_TRACE
     HRESULT hr = E_FAIL;
@@ -6540,9 +6534,13 @@ HRESULT ProfToEEInterfaceImpl::GetNativeCodeStartAddresses(FunctionID functionID
             NativeCodeVersionCollection nativeCodeVersions = ilCodeVersion.GetNativeCodeVersions(pMD);
             for (NativeCodeVersionIterator iter = nativeCodeVersions.Begin(); iter != nativeCodeVersions.End(); iter++)
             {
-                addresses.Append((*iter).GetNativeCode());
+                PCODE codeStart = (*iter).GetNativeCode();
 
-                ++trueLen;
+                if (codeStart != NULL)
+                {
+                    addresses.Append(codeStart);
+                    ++trueLen;
+                }
             }
         }
 
@@ -7080,6 +7078,7 @@ HRESULT ProfToEEInterfaceImpl::EventPipeDefineEvent(
     UINT64 keywords,
     UINT32 eventVersion,
     UINT32 level,
+    UINT8 opcode,
     BOOL needStack,
     UINT32 cParamDescs,
     COR_PRF_EVENTPIPE_PARAM_DESC pParamDescs[],
@@ -7110,10 +7109,21 @@ HRESULT ProfToEEInterfaceImpl::EventPipeDefineEvent(
         return E_INVALIDARG;
     }
 
+    for (UINT32 i = 0; i < cParamDescs; ++i)
+    {
+        if ((EventPipeParameterType)(pParamDescs[i].type) == EventPipeParameterType::Object)
+        {
+            // The native EventPipeMetadataGenerator only knows how to encode
+            // primitive types, it would not handle Object correctly
+            return E_INVALIDARG;
+        }
+    }
+
     HRESULT hr = S_OK;
     EX_TRY
     {
         static_assert(offsetof(EventPipeParameterDesc, Type) == offsetof(COR_PRF_EVENTPIPE_PARAM_DESC, type)
+                      && offsetof(EventPipeParameterDesc, ElementType) == offsetof(COR_PRF_EVENTPIPE_PARAM_DESC, elementType)
                       && offsetof(EventPipeParameterDesc, Name) == offsetof(COR_PRF_EVENTPIPE_PARAM_DESC, name)
                       && sizeof(EventPipeParameterDesc) == sizeof(COR_PRF_EVENTPIPE_PARAM_DESC),
             "Layouts of EventPipeParameterDesc type and COR_PRF_EVENTPIPE_PARAM_DESC type do not match!");
@@ -7126,6 +7136,7 @@ HRESULT ProfToEEInterfaceImpl::EventPipeDefineEvent(
             keywords,
             eventVersion,
             (EventPipeEventLevel)level,
+            opcode,
             params,
             cParamDescs,
             &metadataLength);
@@ -7152,8 +7163,8 @@ HRESULT ProfToEEInterfaceImpl::EventPipeDefineEvent(
 
 HRESULT ProfToEEInterfaceImpl::EventPipeWriteEvent(
     EVENTPIPE_EVENT eventHandle,
-    COR_PRF_EVENT_DATA data[],
     UINT32 cData,
+    COR_PRF_EVENT_DATA data[],
     LPCGUID pActivityId,
     LPCGUID pRelatedActivityId)
 {
@@ -8827,15 +8838,15 @@ HRESULT ProfToEEInterfaceImpl::GetReJITIDs(
         // The rejit tables use a lock
         CAN_TAKE_LOCK;
 
-
         PRECONDITION(CheckPointer(pcReJitIds, NULL_OK));
         PRECONDITION(CheckPointer(reJitIds, NULL_OK));
+        PRECONDITION((cReJitIds == 0) == (reJitIds == NULL));
 
     }
     CONTRACTL_END;
 
     PROFILER_TO_CLR_ENTRYPOINT_SYNC_EX(
-        kP2EEAllowableAfterAttach,
+        kP2EEAllowableAfterAttach | kP2EETriggers,
         (LF_CORPROF,
         LL_INFO1000,
         "**PROF: GetReJITIDs 0x%p.\n",
@@ -8846,7 +8857,7 @@ HRESULT ProfToEEInterfaceImpl::GetReJITIDs(
         return E_INVALIDARG;
     }
 
-    if ((cReJitIds == 0) || (pcReJitIds == NULL) || (reJitIds == NULL))
+    if ((pcReJitIds == NULL) || ((cReJitIds != 0) && (reJitIds == NULL)))
     {
         return E_INVALIDARG;
     }

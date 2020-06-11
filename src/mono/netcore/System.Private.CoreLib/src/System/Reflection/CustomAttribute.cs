@@ -551,7 +551,7 @@ namespace System.Reflection
         {
             if (attributeType == null)
                 throw new ArgumentNullException(nameof(attributeType));
-            if (!attributeType.IsSubclassOf(typeof(Attribute)) && attributeType != typeof(Attribute))
+            if (!attributeType.IsSubclassOf(typeof(Attribute)) && !attributeType.IsInterface && attributeType != typeof(Attribute))
                 throw new ArgumentException(SR.Argument_MustHaveAttributeBaseClass + " " + attributeType.FullName);
 
             AttributeUsageAttribute? usage = null;

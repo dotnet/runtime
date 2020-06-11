@@ -29,7 +29,7 @@ DWORD WINAPI DiagnosticServer::DiagnosticsServerThread(LPVOID)
         NOTHROW;
         GC_TRIGGERS;
         MODE_PREEMPTIVE;
-        PRECONDITION(IpcStreamFactory::HasActiveConnections());
+        PRECONDITION(s_shuttingDown || IpcStreamFactory::HasActiveConnections());
     }
     CONTRACTL_END;
 
@@ -224,7 +224,7 @@ bool DiagnosticServer::Shutdown()
                     szMessage);                                           // data2
             };
 
-            IpcStreamFactory::CloseConnections();
+            IpcStreamFactory::Shutdown(ErrorCallback);
         }
         fSuccess = true;
     }

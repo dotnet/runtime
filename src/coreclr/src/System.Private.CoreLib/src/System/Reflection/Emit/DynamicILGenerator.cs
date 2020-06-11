@@ -345,7 +345,7 @@ namespace System.Reflection.Emit
             if (CurrExcStackCount == 0)
                 throw new NotSupportedException(SR.Argument_NotInExceptionBlock);
 
-            __ExceptionInfo current = CurrExcStack[CurrExcStackCount - 1];
+            __ExceptionInfo current = CurrExcStack![CurrExcStackCount - 1];
 
             Label endLabel = current.GetEndLabel();
             Emit(OpCodes.Leave, endLabel);
@@ -359,7 +359,7 @@ namespace System.Reflection.Emit
             if (CurrExcStackCount == 0)
                 throw new NotSupportedException(SR.Argument_NotInExceptionBlock);
 
-            __ExceptionInfo current = CurrExcStack[CurrExcStackCount - 1];
+            __ExceptionInfo current = CurrExcStack![CurrExcStackCount - 1];
 
             RuntimeType? rtType = exceptionType as RuntimeType;
 
@@ -558,7 +558,7 @@ namespace System.Reflection.Emit
     internal class DynamicResolver : Resolver
     {
         #region Private Data Members
-        private __ExceptionInfo[] m_exceptions = null!;
+        private __ExceptionInfo[]? m_exceptions;
         private byte[]? m_exceptionHeader;
         private DynamicMethod m_method;
         private byte[] m_code;
@@ -571,7 +571,7 @@ namespace System.Reflection.Emit
         internal DynamicResolver(DynamicILGenerator ilGenerator)
         {
             m_stackSize = ilGenerator.GetMaxStackSize();
-            m_exceptions = ilGenerator.GetExceptions()!;
+            m_exceptions = ilGenerator.GetExceptions();
             m_code = ilGenerator.BakeByteArray()!;
             m_localSignature = ilGenerator.m_localSignature.InternalGetSignatureArray();
             m_scope = ilGenerator.m_scope;
@@ -586,7 +586,6 @@ namespace System.Reflection.Emit
             m_code = dynamicILInfo.Code;
             m_localSignature = dynamicILInfo.LocalSignature;
             m_exceptionHeader = dynamicILInfo.Exceptions;
-            // m_exceptions = dynamicILInfo.Exceptions;
             m_scope = dynamicILInfo.DynamicScope;
 
             m_method = dynamicILInfo.DynamicMethod;
@@ -740,6 +739,8 @@ namespace System.Reflection.Emit
 
         internal override unsafe void GetEHInfo(int excNumber, void* exc)
         {
+            Debug.Assert(m_exceptions != null);
+
             CORINFO_EH_CLAUSE* exception = (CORINFO_EH_CLAUSE*)exc;
             for (int i = 0; i < m_exceptions.Length; i++)
             {
@@ -819,11 +820,13 @@ namespace System.Reflection.Emit
             {
                 if (vaMeth.m_dynamicMethod == null)
                 {
-                    methodHandle = vaMeth.m_method.MethodHandle.Value;
+                    methodHandle = vaMeth.m_method!.MethodHandle.Value;
                     typeHandle = vaMeth.m_method.GetDeclaringTypeInternal().GetTypeHandleInternal().Value;
                 }
                 else
+                {
                     methodHandle = vaMeth.m_dynamicMethod.GetMethodDescriptor().Value;
+                }
 
                 return;
             }
@@ -1098,8 +1101,8 @@ namespace System.Reflection.Emit
 
     internal sealed class VarArgMethod
     {
-        internal RuntimeMethodInfo m_method = null!;
-        internal DynamicMethod m_dynamicMethod = null!;
+        internal RuntimeMethodInfo? m_method;
+        internal DynamicMethod? m_dynamicMethod;
         internal SignatureHelper m_signature;
 
         internal VarArgMethod(DynamicMethod dm, SignatureHelper signature)

@@ -197,7 +197,7 @@ namespace System.Reflection
         {
             if (className == null)
                 throw new ArgumentNullException(nameof(className));
-            if (className == string.Empty)
+            if (className.Length == 0)
                 throw new ArgumentException("Type name can't be empty");
             return assembly.InternalGetType(this, className, throwOnError, ignoreCase);
         }

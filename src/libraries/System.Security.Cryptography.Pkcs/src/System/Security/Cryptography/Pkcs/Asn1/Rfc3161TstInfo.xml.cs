@@ -5,9 +5,8 @@
 #pragma warning disable SA1028 // ignore whitespace warnings for generated code
 using System;
 using System.Collections.Generic;
+using System.Formats.Asn1;
 using System.Runtime.InteropServices;
-using System.Security.Cryptography;
-using System.Security.Cryptography.Asn1;
 
 namespace System.Security.Cryptography.Pkcs.Asn1
 {
@@ -17,7 +16,7 @@ namespace System.Security.Cryptography.Pkcs.Asn1
         private static ReadOnlySpan<byte> DefaultOrdering => new byte[] { 0x01, 0x01, 0x00 };
 
         internal int Version;
-        internal Oid Policy;
+        internal string Policy;
         internal System.Security.Cryptography.Pkcs.Asn1.MessageImprint MessageImprint;
         internal ReadOnlyMemory<byte> SerialNumber;
         internal DateTimeOffset GenTime;
@@ -49,10 +48,17 @@ namespace System.Security.Cryptography.Pkcs.Asn1
             writer.PushSequence(tag);
 
             writer.WriteInteger(Version);
-            writer.WriteObjectIdentifier(Policy);
+            try
+            {
+                writer.WriteObjectIdentifier(Policy);
+            }
+            catch (ArgumentException e)
+            {
+                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding, e);
+            }
             MessageImprint.Encode(writer);
             writer.WriteInteger(SerialNumber.Span);
-            writer.WriteGeneralizedTime(GenTime);
+            writer.WriteGeneralizedTime(GenTime, false);
 
             if (Accuracy.HasValue)
             {
@@ -62,15 +68,12 @@ namespace System.Security.Cryptography.Pkcs.Asn1
 
             // DEFAULT value handler for Ordering.
             {
-                using (AsnWriter tmp = new AsnWriter(AsnEncodingRules.DER))
-                {
-                    tmp.WriteBoolean(Ordering);
-                    ReadOnlySpan<byte> encoded = tmp.EncodeAsSpan();
+                AsnWriter tmp = new AsnWriter(AsnEncodingRules.DER);
+                tmp.WriteBoolean(Ordering);
 
-                    if (!encoded.SequenceEqual(DefaultOrdering))
-                    {
-                        writer.WriteEncodedValue(encoded);
-                    }
+                if (!tmp.EncodedValueEquals(DefaultOrdering))
+                {
+                    tmp.CopyTo(writer);
                 }
             }
 
@@ -111,11 +114,18 @@ namespace System.Security.Cryptography.Pkcs.Asn1
 
         internal static Rfc3161TstInfo Decode(Asn1Tag expectedTag, ReadOnlyMemory<byte> encoded, AsnEncodingRules ruleSet)
         {
-            AsnValueReader reader = new AsnValueReader(encoded.Span, ruleSet);
+            try
+            {
+                AsnValueReader reader = new AsnValueReader(encoded.Span, ruleSet);
 
-            Decode(ref reader, expectedTag, encoded, out Rfc3161TstInfo decoded);
-            reader.ThrowIfNotEmpty();
-            return decoded;
+                Decode(ref reader, expectedTag, encoded, out Rfc3161TstInfo decoded);
+                reader.ThrowIfNotEmpty();
+                return decoded;
+            }
+            catch (AsnContentException e)
+            {
+                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding, e);
+            }
         }
 
         internal static void Decode(ref AsnValueReader reader, ReadOnlyMemory<byte> rebind, out Rfc3161TstInfo decoded)
@@ -124,6 +134,18 @@ namespace System.Security.Cryptography.Pkcs.Asn1
         }
 
         internal static void Decode(ref AsnValueReader reader, Asn1Tag expectedTag, ReadOnlyMemory<byte> rebind, out Rfc3161TstInfo decoded)
+        {
+            try
+            {
+                DecodeCore(ref reader, expectedTag, rebind, out decoded);
+            }
+            catch (AsnContentException e)
+            {
+                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding, e);
+            }
+        }
+
+        private static void DecodeCore(ref AsnValueReader reader, Asn1Tag expectedTag, ReadOnlyMemory<byte> rebind, out Rfc3161TstInfo decoded)
         {
             decoded = default;
             AsnValueReader sequenceReader = reader.ReadSequence(expectedTag);

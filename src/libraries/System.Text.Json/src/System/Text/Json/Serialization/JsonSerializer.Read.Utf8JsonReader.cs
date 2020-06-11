@@ -12,30 +12,6 @@ namespace System.Text.Json
     public static partial class JsonSerializer
     {
         /// <summary>
-        /// Internal version that allows re-entry with preserving ReadStack so that JsonPath works correctly.
-        /// </summary>
-        internal static TValue Deserialize<TValue>(ref Utf8JsonReader reader, JsonSerializerOptions options, ref ReadStack state, string? propertyName = null)
-        {
-            if (options == null)
-            {
-                throw new ArgumentNullException(nameof(options));
-            }
-
-            state.Current.InitializeReEntry(typeof(TValue), options, propertyName);
-
-            JsonPropertyInfo jsonPropertyInfo = state.Current.JsonPropertyInfo!;
-
-            JsonConverter<TValue> converter = (JsonConverter<TValue>)jsonPropertyInfo.ConverterBase;
-            bool success = converter.TryRead(ref reader, jsonPropertyInfo.RuntimePropertyType!, options, ref state, out TValue value);
-            Debug.Assert(success);
-
-            // Clear the current property state since we are done processing it.
-            state.Current.EndProperty();
-
-            return value;
-        }
-
-        /// <summary>
         /// Reads one JSON value (including objects or arrays) from the provided reader into a <typeparamref name="TValue"/>.
         /// </summary>
         /// <returns>A <typeparamref name="TValue"/> representation of the JSON value.</returns>
@@ -162,6 +138,7 @@ namespace System.Text.Json
             }
         }
 
+        [return: MaybeNull]
         private static TValue ReadValueCore<TValue>(JsonSerializerOptions options, ref Utf8JsonReader reader, ref ReadStack state)
         {
             JsonReaderState readerState = reader.CurrentState;

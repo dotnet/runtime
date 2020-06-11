@@ -416,24 +416,10 @@ namespace System
             }
         }
 
-        public static int CursorLeft
+        public static (int Left, int Top) GetCursorPosition()
         {
-            get
-            {
-                int left, top;
-                TryGetCursorPosition(out left, out top);
-                return left;
-            }
-        }
-
-        public static int CursorTop
-        {
-            get
-            {
-                int left, top;
-                TryGetCursorPosition(out left, out top);
-                return top;
-            }
+            TryGetCursorPosition(out int left, out int top);
+            return (left, top);
         }
 
         /// <summary>
@@ -1279,7 +1265,7 @@ namespace System
                         // only the blocking behavior, and thus ignore any poll errors
                         // and loop around to do another write (which may correctly fail
                         // if something else has gone wrong).
-                        Interop.Sys.Poll(fd, Interop.Sys.PollEvents.POLLOUT, Timeout.Infinite, out Interop.Sys.PollEvents triggered);
+                        Interop.Sys.Poll(fd, Interop.PollEvents.POLLOUT, Timeout.Infinite, out Interop.PollEvents triggered);
                         continue;
                     }
                     else

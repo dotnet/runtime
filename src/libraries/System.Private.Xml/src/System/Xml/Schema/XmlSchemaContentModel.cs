@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 namespace System.Xml.Schema
 {
     using System.Xml.Serialization;
@@ -9,6 +10,6 @@ namespace System.Xml.Schema
     public abstract class XmlSchemaContentModel : XmlSchemaAnnotated
     {
         [XmlIgnore]
-        public abstract XmlSchemaContent Content { get; set; }
+        public abstract XmlSchemaContent? Content { get; set; }
     }
 }

@@ -1,19 +1,19 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <DefineConstants>$(DefineConstants);NOSPAN</DefineConstants>
+    <DefineConstants>$(DefineConstants);NOSPAN;SERIAL_PORTS</DefineConstants>
     <IncludeDllSafeSearchPathAttribute>true</IncludeDllSafeSearchPathAttribute>
     <Nullable>annotations</Nullable>
     <TargetFrameworks>netstandard2.0-Windows_NT;netstandard2.0-Linux;netstandard2.0-OSX;netstandard2.0;net461-Windows_NT;netstandard2.0-FreeBSD;$(NetFrameworkCurrent)-Windows_NT</TargetFrameworks>
     <ExcludeCurrentFullFrameworkFromPackage>true</ExcludeCurrentFullFrameworkFromPackage>
-    <ExcludeFromPackage Condition="'$(TargetFramework)' == 'netstandard2.0' AND '$(TargetsFreeBSD)' == 'true'">true</ExcludeFromPackage>
   </PropertyGroup>
   <!-- DesignTimeBuild requires all the TargetFramework Derived Properties to not be present in the first property group. -->
   <PropertyGroup>
     <IsPartialFacadeAssembly Condition="$(TargetFramework.StartsWith('net4'))">true</IsPartialFacadeAssembly>
     <GeneratePlatformNotSupportedAssemblyMessage Condition="$(TargetFramework.StartsWith('netstandard')) and '$(TargetsAnyOS)' == 'true'">SR.PlatformNotSupported_IOPorts</GeneratePlatformNotSupportedAssemblyMessage>
+    <ExcludeFromPackage Condition="'$(TargetFramework)' == 'netstandard2.0' AND '$(TargetsFreeBSD)' == 'true'">true</ExcludeFromPackage>
   </PropertyGroup>
-  <ItemGroup Condition="'$(TargetsNetStandard)' == 'true' and '$(TargetsAnyOS)' != 'true'">
+  <ItemGroup Condition="$(TargetFramework.StartsWith('netstandard')) and '$(TargetsAnyOS)' != 'true'">
     <Compile Include="System\IO\Ports\Handshake.cs" />
     <Compile Include="System\IO\Ports\InternalResources.cs" />
     <Compile Include="System\IO\Ports\Parity.cs" />
@@ -30,7 +30,7 @@
     <Compile Include="System\IO\Ports\SerialStream.cs" />
     <Compile Include="System\IO\Ports\StopBits.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsNetFx)' != 'true' and '$(TargetsWindows)' == 'true'">
+  <ItemGroup Condition="!$(TargetFramework.StartsWith('net4')) and '$(TargetsWindows)' == 'true'">
     <Compile Include="System\IO\Ports\SerialStream.Windows.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.DCB.cs"
              Link="Common\Interop\Windows\Kernel32\Interop.DCB.cs" />
@@ -101,7 +101,7 @@
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.FormatMessage.cs"
              Link="Common\Interop\Windows\Interop.FormatMessage.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsNetFx)' != 'true' and '$(TargetsWindows)' == 'true'">
+  <ItemGroup Condition="!$(TargetFramework.StartsWith('net4')) and '$(TargetsWindows)' == 'true'">
     <Compile Include="System\IO\Ports\SerialPort.Win32.cs" />
     <Compile Include="System\IO\Ports\SerialStream.Win32.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.CreateFile.cs"
@@ -129,22 +129,16 @@
              Link="Common\Interop\Unix\Interop.Errors.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\Interop.IOErrors.cs"
              Link="Common\Interop\Unix\Interop.IOErrors.cs" />
-    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Read.cs"
-             Link="Common\Interop\Unix\System.Native\Interop.Read.cs" />
-    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Write.cs"
-             Link="Common\Interop\Unix\System.Native\Interop.Write.cs" />
-    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Poll.cs"
-             Link="Common\Interop\Unix\System.Native\Interop.Poll.cs" />
-    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Shutdown.cs"
-             Link="Common\Interop\Unix\System.Native\Interop.Shutdown.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\Interop.Poll.Structs.cs"
+             Link="Common\Interop\Unix\Interop.Poll.Structs.cs" />
     <Compile Include="$(CommonPath)System\Threading\Tasks\TaskToApm.cs"
              Link="Common\System\Threading\Tasks\TaskToApm.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsNetFx)' == 'true'">
+  <ItemGroup Condition="$(TargetFramework.StartsWith('net4'))">
     <Reference Include="mscorlib" />
     <Reference Include="System" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsNetFx)' != 'true'">
+  <ItemGroup Condition="!$(TargetFramework.StartsWith('net4'))">
     <Reference Include="Microsoft.Win32.Registry" />
     <Reference Include="System.Memory" />
     <Reference Include="System.Threading.Tasks" />

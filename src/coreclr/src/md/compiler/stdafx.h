@@ -19,6 +19,10 @@
 #include <cor.h>
 #include <corpriv.h>
 
+#include "../hotdata/hotheap.h"
+#include <metamodelro.h>
+#include <liteweightstgdb.h>
+
 #include "nsutilpriv.h"
 
 #include "utsem.h"

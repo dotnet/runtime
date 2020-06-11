@@ -165,7 +165,7 @@ namespace System.Reflection.Tests
             });
 
 
-            Assert.Throws<ArgumentNullException>(null, () =>
+            Assert.Throws<ArgumentNullException>("name", () =>
             {
                 typeof(RuntimeReflectionExtensionsTests).GetRuntimeEvent(null);
             });

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System.Collections;
 using System.Diagnostics;
 using System.ComponentModel;
@@ -18,7 +19,7 @@ namespace System.Xml.Schema
 
         public abstract XmlTokenizedType TokenizedType { get; }
 
-        public abstract object ParseValue(string s, XmlNameTable nameTable, IXmlNamespaceResolver nsmgr);
+        public abstract object ParseValue(string s, XmlNameTable? nameTable, IXmlNamespaceResolver? nsmgr);
 
         public virtual XmlSchemaDatatypeVariety Variety { get { return XmlSchemaDatatypeVariety.Atomic; } }
 
@@ -67,15 +68,15 @@ namespace System.Xml.Schema
 
         internal abstract XmlValueConverter ValueConverter { get; }
 
-        internal abstract RestrictionFacets Restriction { get; set; }
+        internal abstract RestrictionFacets? Restriction { get; set; }
 
         internal abstract int Compare(object value1, object value2);
 
-        internal abstract object ParseValue(string s, XmlNameTable nameTable, IXmlNamespaceResolver nsmgr, bool createAtomicValue);
+        internal abstract object ParseValue(string s, XmlNameTable? nameTable, IXmlNamespaceResolver? nsmgr, bool createAtomicValue);
 
-        internal abstract Exception TryParseValue(string s, XmlNameTable nameTable, IXmlNamespaceResolver nsmgr, out object typedValue);
+        internal abstract Exception? TryParseValue(string s, XmlNameTable? nameTable, IXmlNamespaceResolver? nsmgr, out object? typedValue);
 
-        internal abstract Exception TryParseValue(object value, XmlNameTable nameTable, IXmlNamespaceResolver namespaceResolver, out object typedValue);
+        internal abstract Exception? TryParseValue(object value, XmlNameTable? nameTable, IXmlNamespaceResolver? namespaceResolver, out object? typedValue);
 
         internal abstract FacetsChecker FacetsChecker { get; }
 
@@ -188,11 +189,11 @@ namespace System.Xml.Schema
             if (t == typeof(IEnumerable) && t != typeof(string))
             {
                 StringBuilder bldr = new StringBuilder();
-                IEnumerator enumerator = (value as IEnumerable).GetEnumerator();
+                IEnumerator enumerator = (value as IEnumerable)!.GetEnumerator();
                 if (enumerator.MoveNext())
                 {
                     bldr.Append('{');
-                    object cur = enumerator.Current;
+                    object cur = enumerator.Current!;
                     if (cur is IFormattable)
                     {
                         bldr.Append(((IFormattable)cur).ToString("", CultureInfo.InvariantCulture));
@@ -204,7 +205,7 @@ namespace System.Xml.Schema
                     while (enumerator.MoveNext())
                     {
                         bldr.Append(" , ");
-                        cur = enumerator.Current;
+                        cur = enumerator.Current!;
                         if (cur is IFormattable)
                         {
                             bldr.Append(((IFormattable)cur).ToString("", CultureInfo.InvariantCulture));
@@ -224,22 +225,22 @@ namespace System.Xml.Schema
             }
             else
             {
-                stringValue = value.ToString();
+                stringValue = value.ToString()!;
             }
             return stringValue;
         }
 
-        internal static XmlSchemaDatatype FromXmlTokenizedType(XmlTokenizedType token)
+        internal static XmlSchemaDatatype? FromXmlTokenizedType(XmlTokenizedType token)
         {
             return DatatypeImplementation.FromXmlTokenizedType(token);
         }
 
-        internal static XmlSchemaDatatype FromXmlTokenizedTypeXsd(XmlTokenizedType token)
+        internal static XmlSchemaDatatype? FromXmlTokenizedTypeXsd(XmlTokenizedType token)
         {
             return DatatypeImplementation.FromXmlTokenizedTypeXsd(token);
         }
 
-        internal static XmlSchemaDatatype FromXdrName(string name)
+        internal static XmlSchemaDatatype? FromXdrName(string name)
         {
             return DatatypeImplementation.FromXdrName(name);
         }

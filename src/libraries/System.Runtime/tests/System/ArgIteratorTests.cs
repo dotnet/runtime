@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using Microsoft.DotNet.XUnitExtensions;
 using System.Globalization;
 using System.Reflection;
 using Xunit;
@@ -90,6 +91,12 @@ namespace System.Tests
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsArgIteratorNotSupported))]
         public static unsafe void ArgIterator_Throws_PlatformNotSupportedException()
         {
+            if (PlatformDetection.IsWindows && PlatformDetection.IsArmProcess)
+            {
+                // Active Issue: https://github.com/dotnet/runtime/issues/35754
+                throw new SkipTestException("ArgIterator doesn't throw not supported in ArmProcess");
+            }
+
             Assert.Throws<PlatformNotSupportedException>(() => new ArgIterator(new RuntimeArgumentHandle()));
             Assert.Throws<PlatformNotSupportedException>(() => {
                 fixed (void* p = "test")

@@ -22,8 +22,8 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         private FrameInfo[] _frameInfos;
         private byte[] _gcInfo;
         private ObjectData _ehInfo;
-        private OffsetMapping[] _debugLocInfos;
-        private NativeVarInfo[] _debugVarInfos;
+        private byte[] _debugLocInfos;
+        private byte[] _debugVarInfos;
         private DebugEHClauseInfo[] _debugEHClauseInfos;
         private List<ISymbolNode> _fixups;
         private MethodDesc[] _inlinedMethods;
@@ -44,6 +44,8 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         public MethodDesc Method => _method;
 
         public List<ISymbolNode> Fixups => _fixups;
+
+        public int Size => _methodCode.Data.Length;
 
         public bool IsEmpty => _methodCode.Data.Length == 0;
 
@@ -124,7 +126,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 return null;
             }
 
-            fixupCells.Sort(FixupCell.Comparer);
+            fixupCells.MergeSortAllowDuplicates(FixupCell.Comparer);
 
             // Deduplicate fixupCells
             int j = 0;
@@ -268,20 +270,24 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             _ehInfo = ehInfo;
         }
 
-        public OffsetMapping[] DebugLocInfos => _debugLocInfos;
-        public NativeVarInfo[] DebugVarInfos => _debugVarInfos;
+        public byte[] DebugLocInfos => _debugLocInfos;
+        public byte[] DebugVarInfos => _debugVarInfos;
         public DebugEHClauseInfo[] DebugEHClauseInfos => _debugEHClauseInfos;
 
         public void InitializeDebugLocInfos(OffsetMapping[] debugLocInfos)
         {
             Debug.Assert(_debugLocInfos == null);
-            _debugLocInfos = debugLocInfos;
+            // Process the debug info from JIT format to R2R format immediately as it is large
+            // and not used in the rest of the process except to emit.
+            _debugLocInfos = DebugInfoTableNode.CreateBoundsBlobForMethod(debugLocInfos);
         }
 
         public void InitializeDebugVarInfos(NativeVarInfo[] debugVarInfos)
         {
             Debug.Assert(_debugVarInfos == null);
-            _debugVarInfos = debugVarInfos;
+            // Process the debug info from JIT format to R2R format immediately as it is large
+            // and not used in the rest of the process except to emit.
+            _debugVarInfos = DebugInfoTableNode.CreateVarBlobForMethod(debugVarInfos);
         }
 
         public void InitializeDebugEHClauseInfos(DebugEHClauseInfo[] debugEHClauseInfos)
@@ -289,6 +295,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             Debug.Assert(_debugEHClauseInfos == null);
             _debugEHClauseInfos = debugEHClauseInfos;
         }
+
         public override int CompareToImpl(ISortableNode other, CompilerComparer comparer)
         {
             MethodWithGCInfo otherNode = (MethodWithGCInfo)other;

@@ -124,7 +124,7 @@ namespace System.Net.Sockets.Tests
             Assert.Contains(e.SocketErrorCode, new[] { SocketError.AccessDenied, SocketError.ProtocolNotSupported });
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [InlineData(true, 0)] // Accept
         [InlineData(false, 0)]
         [InlineData(true, 1)] // AcceptAsync

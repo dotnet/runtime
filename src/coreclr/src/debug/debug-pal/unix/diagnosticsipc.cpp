@@ -274,7 +274,7 @@ int32_t IpcStream::DiagnosticsIpc::Poll(IpcPollHandle *rgIpcPollHandles, uint32_
     return 1;
 }
 
-void IpcStream::DiagnosticsIpc::Close(ErrorCallback callback)
+void IpcStream::DiagnosticsIpc::Close(bool isShutdown, ErrorCallback callback)
 {
     if (_isClosed)
         return;
@@ -282,13 +282,19 @@ void IpcStream::DiagnosticsIpc::Close(ErrorCallback callback)
 
     if (_serverSocket != -1)
     {
-        if (::close(_serverSocket) == -1)
+        // only close the socket if not shutting down, let the OS handle it in that case
+        if (!isShutdown && ::close(_serverSocket) == -1)
         {
             if (callback != nullptr)
                 callback(strerror(errno), errno);
             _ASSERTE(!"Failed to close unix domain socket.");
         }
 
+        // N.B. - it is safe to unlink the unix domain socket file while the server
+        // is still alive:
+        // "The usual UNIX close-behind semantics apply; the socket can be unlinked 
+        // at any time and will be finally removed from the file system when the last 
+        // reference to it is closed." - unix(7) man page
         Unlink(callback);
     }
 }

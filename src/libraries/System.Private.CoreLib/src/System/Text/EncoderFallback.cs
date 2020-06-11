@@ -5,39 +5,15 @@
 using System.Buffers;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Threading;
 
 namespace System.Text
 {
     public abstract class EncoderFallback
     {
-        private static EncoderFallback? s_replacementFallback; // Default fallback, uses no best fit & "?"
-        private static EncoderFallback? s_exceptionFallback;
+        // Default fallback, uses no best fit & "?"
+        public static EncoderFallback ReplacementFallback => EncoderReplacementFallback.s_default;
 
-        // Get each of our generic fallbacks.
-
-        public static EncoderFallback ReplacementFallback
-        {
-            get
-            {
-                if (s_replacementFallback == null)
-                    Interlocked.CompareExchange<EncoderFallback?>(ref s_replacementFallback, new EncoderReplacementFallback(), null);
-
-                return s_replacementFallback;
-            }
-        }
-
-
-        public static EncoderFallback ExceptionFallback
-        {
-            get
-            {
-                if (s_exceptionFallback == null)
-                    Interlocked.CompareExchange<EncoderFallback?>(ref s_exceptionFallback, new EncoderExceptionFallback(), null);
-
-                return s_exceptionFallback;
-            }
-        }
+        public static EncoderFallback ExceptionFallback => EncoderExceptionFallback.s_default;
 
         // Fallback
         //

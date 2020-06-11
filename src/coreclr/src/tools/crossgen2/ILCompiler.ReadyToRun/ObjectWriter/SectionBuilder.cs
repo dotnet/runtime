@@ -705,7 +705,7 @@ namespace ILCompiler.PEWriter
         /// <param name="location">RVA and file location of the .edata section</param>
         private BlobBuilder SerializeExportSection(SectionLocation sectionLocation)
         {
-            _exportSymbols.Sort((es1, es2) => StringComparer.Ordinal.Compare(es1.Name, es2.Name));
+            _exportSymbols.MergeSort((es1, es2) => StringComparer.Ordinal.Compare(es1.Name, es2.Name));
             
             BlobBuilder builder = new BlobBuilder();
 

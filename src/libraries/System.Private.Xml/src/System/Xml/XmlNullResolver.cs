@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System.Net;
 
 namespace System.Xml
@@ -13,7 +14,7 @@ namespace System.Xml
         // Private constructor ensures existing only one instance of XmlNullResolver
         private XmlNullResolver() { }
 
-        public override object GetEntity(Uri absoluteUri, string role, Type ofObjectToReturn)
+        public override object GetEntity(Uri absoluteUri, string? role, Type? ofObjectToReturn)
         {
             throw new XmlException(SR.Xml_NullResolver, string.Empty);
         }

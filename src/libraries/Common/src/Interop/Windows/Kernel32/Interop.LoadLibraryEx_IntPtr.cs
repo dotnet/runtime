@@ -12,7 +12,7 @@ internal static partial class Interop
         internal const int LOAD_LIBRARY_AS_DATAFILE = 0x00000002;
         internal const int LOAD_LIBRARY_SEARCH_SYSTEM32 = 0x00000800;
 
-        [DllImport(Libraries.Kernel32, CharSet = CharSet.Unicode, EntryPoint = "LoadLibraryExW", SetLastError = true)]
+        [DllImport(Libraries.Kernel32, CharSet = CharSet.Unicode, EntryPoint = "LoadLibraryExW", SetLastError = true, ExactSpelling = true)]
         internal static extern IntPtr LoadLibraryEx(string libFilename, IntPtr reserved, int flags);
     }
 }

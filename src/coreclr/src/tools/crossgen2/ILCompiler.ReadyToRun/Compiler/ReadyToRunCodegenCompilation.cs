@@ -6,7 +6,6 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
-using System.Reflection.PortableExecutable;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
@@ -20,7 +19,6 @@ using ILCompiler.DependencyAnalysis;
 using ILCompiler.DependencyAnalysis.ReadyToRun;
 using ILCompiler.DependencyAnalysisFramework;
 using Internal.TypeSystem.Ecma;
-using System.Linq;
 
 namespace ILCompiler
 {
@@ -196,8 +194,11 @@ namespace ILCompiler
             public void AddCompilationRoot(MethodDesc method, string reason)
             {
                 MethodDesc canonMethod = method.GetCanonMethodTarget(CanonicalFormKind.Specific);
-                IMethodNode methodEntryPoint = _factory.MethodEntrypoint(canonMethod);
-                _rootAdder(methodEntryPoint, reason);
+                if (_factory.CompilationModuleGroup.ContainsMethodBody(canonMethod, false))
+                {
+                    IMethodNode methodEntryPoint = _factory.CompiledMethodNode(canonMethod);
+                    _rootAdder(methodEntryPoint, reason);
+                }
             }
         }
     }
@@ -227,6 +228,9 @@ namespace ILCompiler
 
         private bool _generateMapFile;
 
+        private ProfileDataManager _profileData;
+        private ReadyToRunFileLayoutOptimizer _fileLayoutOptimizer;
+
         public ReadyToRunSymbolNodeFactory SymbolNodeFactory { get; }
         public ReadyToRunCompilationModuleGroupBase CompilationModuleGroup { get; }
 
@@ -241,7 +245,10 @@ namespace ILCompiler
             InstructionSetSupport instructionSetSupport,
             bool resilient,
             bool generateMapFile,
-            int parallelism)
+            int parallelism,
+            ProfileDataManager profileData,
+            ReadyToRunMethodLayoutAlgorithm methodLayoutAlgorithm,
+            ReadyToRunFileLayoutAlgorithm fileLayoutAlgorithm)
             : base(
                   dependencyGraph,
                   nodeFactory,
@@ -265,12 +272,20 @@ namespace ILCompiler
             string instructionSetSupportString = ReadyToRunInstructionSetSupportSignature.ToInstructionSetSupportString(instructionSetSupport);
             ReadyToRunInstructionSetSupportSignature instructionSetSupportSig = new ReadyToRunInstructionSetSupportSignature(instructionSetSupportString);
             _dependencyGraph.AddRoot(new Import(NodeFactory.EagerImports, instructionSetSupportSig), "Baseline instruction set support");
+
+            _profileData = profileData;
+
+            _fileLayoutOptimizer = new ReadyToRunFileLayoutOptimizer(methodLayoutAlgorithm, fileLayoutAlgorithm, profileData, _nodeFactory);
         }
+
+
 
         public override void Compile(string outputFile)
         {
             _dependencyGraph.ComputeMarkedNodes();
             var nodes = _dependencyGraph.MarkedNodeList;
+
+            nodes = _fileLayoutOptimizer.ApplyProfilerGuidedMethodSort(nodes);
 
             using (PerfEventSource.StartStopEvents.EmittingEvents())
             {
@@ -299,7 +314,7 @@ namespace ILCompiler
             EcmaModule inputModule = NodeFactory.TypeSystemContext.GetModuleFromPath(inputFile);
 
             CopiedCorHeaderNode copiedCorHeader = new CopiedCorHeaderNode(inputModule);
-            DebugDirectoryNode debugDirectory = new DebugDirectoryNode(inputModule);
+            DebugDirectoryNode debugDirectory = new DebugDirectoryNode(inputModule, outputFile);
             NodeFactory componentFactory = new NodeFactory(
                 _nodeFactory.TypeSystemContext,
                 _nodeFactory.CompilationModuleGroup,

@@ -9,6 +9,7 @@ using System.Collections.ObjectModel;
 using System.Diagnostics.Tracing;
 using System.Globalization;
 using System.IO;
+using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using Microsoft.Diagnostics.NETCore.Client;
@@ -35,8 +36,9 @@ namespace EventPipeTests
 
         public static int RunTest()
         {
-            bool success = false;
+            bool success = true;
             int allTypesEventCount = 0;
+            int arrayTypeEventCount = 0;
             int emptyEventCount = 0;
             int simpleEventCount = 0;
             try
@@ -62,21 +64,26 @@ namespace EventPipeTests
 
                         if (traceEvent.EventName == "AllTypesEvent")
                         {
-                            success = ValidateAllTypesEvent(traceEvent);
+                            success &= ValidateAllTypesEvent(traceEvent);
                             ++allTypesEventCount;
                         }
                         else if (traceEvent.EventName == "EmptyEvent")
                         {
-                            ValidateEmptyEvent(traceEvent);
+                            success &= ValidateEmptyEvent(traceEvent);
                             ++emptyEventCount;
                         }
                         else if(traceEvent.EventName == "SimpleEvent")
                         {
-                            ValidateSimpleEvent(traceEvent, simpleEventCount);
+                            success &= ValidateSimpleEvent(traceEvent, simpleEventCount);
                             ++simpleEventCount;
                         }
+                        else if(traceEvent.EventName == "ArrayTypeEvent")
+                        {
+                            success &= ValidateArrayTypeEvent(traceEvent);
+                            ++arrayTypeEventCount;
+                        }
 
-                        if (AllEventsReceived(allTypesEventCount, emptyEventCount, simpleEventCount))
+                        if (AllEventsReceived(allTypesEventCount, arrayTypeEventCount, emptyEventCount, simpleEventCount))
                         {
                             allEventsReceivedEvent.Set();
                         }
@@ -102,7 +109,7 @@ namespace EventPipeTests
                 success = false;
             }
 
-            if (success && AllEventsReceived(allTypesEventCount, emptyEventCount, simpleEventCount))
+            if (success && AllEventsReceived(allTypesEventCount, arrayTypeEventCount, emptyEventCount, simpleEventCount))
             {
                 return 100;
             }
@@ -111,15 +118,17 @@ namespace EventPipeTests
                 Console.WriteLine("Test validation failed (EventPipeClient.exe)");
                 Console.WriteLine($"    success={success}");
                 Console.WriteLine($"    allTypesEventCount={allTypesEventCount} ");
+                Console.WriteLine($"    arrayTypeEventCount={arrayTypeEventCount} ");
                 Console.WriteLine($"    emptyEventCount={emptyEventCount}");
                 Console.WriteLine($"    simpleEventCount={simpleEventCount}");
                 return -1;
             }
         }
 
-        public static bool AllEventsReceived(int allTypesEventCount, int emptyEventCount, int simpleEventCount)
+        public static bool AllEventsReceived(int allTypesEventCount, int arrayTypeEvent, int emptyEventCount, int simpleEventCount)
         {
             return allTypesEventCount == 1
+                    && arrayTypeEvent == 1
                     && emptyEventCount == 10
                     && simpleEventCount == 10000;
         }
@@ -279,6 +288,44 @@ namespace EventPipeTests
             if (payloadNames[14] != "DateTime" || dt != DateTime.Parse("1/24/2020 8:18:36 PM"))
             {
                 Console.WriteLine($"Argument 14 failed to parse, got {dt}");
+                return false;
+            }
+
+            return true;
+        }
+
+        public static bool ValidateArrayTypeEvent(TraceEvent traceEvent)
+        {
+            if (traceEvent.EventName != "ArrayTypeEvent")
+            {
+                Console.WriteLine("Got an event that didn't match while parsing EmptyEvent");
+                return false;
+            }
+
+            if ((int)traceEvent.ID != 3)
+            {
+                Console.WriteLine("ArrayTypeEvent ID != 3");
+                return false;
+            }
+
+            // Could be 0 (old TraceEvent doesn't parse array types)
+            if (traceEvent.PayloadNames.Length == 0)
+            {
+                return true;
+            }
+
+            // Or could be 1 if TraceEvent gets updated
+            if (traceEvent.PayloadNames.Length != 1)
+            {
+                Console.WriteLine($"Expected 1 event arg for ArrayTypeEvent but got {traceEvent.PayloadNames.Length}.");
+                return false;
+            }
+
+            int[] intArray = (int[])traceEvent.PayloadValue(0);
+            if (traceEvent.PayloadNames[0] != "IntArray"
+                || !Enumerable.SequenceEqual(intArray, Enumerable.Range(1, 100).OrderByDescending(x => x)))
+            {
+                Console.WriteLine($"IntArray failed to parse, got {intArray}");
                 return false;
             }
 

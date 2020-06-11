@@ -481,6 +481,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
             SignerInfo signer = cms.SignerInfos[0];
 
             ArgumentOutOfRangeException ex = AssertExtensions.Throws<ArgumentOutOfRangeException>(
+                "index",
                 "childIndex",
                 () => signer.RemoveCounterSignature(-1));
 

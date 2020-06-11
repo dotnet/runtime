@@ -3,6 +3,9 @@ project(createdump)
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
 include_directories(BEFORE ${VM_DIR})
+if(CLR_CMAKE_HOST_OSX)
+  include_directories(${CLR_DIR}/src/inc/llvm)
+endif(CLR_CMAKE_HOST_OSX)
 
 remove_definitions(-DUNICODE)
 remove_definitions(-D_UNICODE)
@@ -45,6 +48,7 @@ else(CLR_CMAKE_HOST_WIN32)
     add_definitions(-DPAL_STDCPP_COMPAT)
 
     set(CREATEDUMP_SOURCES
+        main.cpp
         createdump.cpp
         crashinfo.cpp
         threadinfo.cpp
@@ -52,19 +56,23 @@ else(CLR_CMAKE_HOST_WIN32)
         dumpwriter.cpp
     )
 
-    _add_library(createdump_lib
+if(CLR_CMAKE_HOST_OSX)
+    _add_executable(createdump
+        crashinfomac.cpp
+        threadinfomac.cpp
         ${CREATEDUMP_SOURCES}
     )
-
+else()
     _add_executable(createdump
-        main.cpp
+        crashinfounix.cpp
+        threadinfounix.cpp
+        ${CREATEDUMP_SOURCES}
         ${PAL_REDEFINES_FILE}
     )
-
     add_dependencies(createdump pal_redefines_file)
+endif(CLR_CMAKE_HOST_OSX)
 
     target_link_libraries(createdump
-        createdump_lib
         corguids
         dbgutil
         # share the PAL in the dac module

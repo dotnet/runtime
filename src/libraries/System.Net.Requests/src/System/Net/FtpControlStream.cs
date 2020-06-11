@@ -595,7 +595,7 @@ namespace System.Net
 
             if (request.MethodInfo.Operation == FtpOperation.Rename)
             {
-                string baseDir = (requestDirectory == string.Empty)
+                string baseDir = (requestDirectory.Length == 0)
                     ? string.Empty : requestDirectory + "/";
                 commandList.Add(new PipelineEntry(FormatFtpCommand("RNFR", baseDir + requestFilename), flags));
 

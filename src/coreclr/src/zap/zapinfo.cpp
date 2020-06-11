@@ -2177,13 +2177,15 @@ DWORD FilterNamedIntrinsicMethodAttribs(ZapInfo* pZapInfo, DWORD attribs, CORINF
                 }
             }
 #if defined(TARGET_X86) || defined(TARGET_AMD64)
-            else if ((strcmp(isaName, "Avx") == 0) || (strcmp(isaName, "Fma") == 0) || (strcmp(isaName, "Avx2") == 0) || (strcmp(isaName, "Bmi1") == 0) || (strcmp(isaName, "Bmi2") == 0))
+            else if ((strcmp(isaName, "Avx") == 0) || (strcmp(isaName, "Fma") == 0) || (strcmp(isaName, "Avx2") == 0)
+                     || (strcmp(isaName, "Bmi1") == 0) || (strcmp(isaName, "Bmi2") == 0) || (strcmp(isaName, "Lzcnt") == 0))
             {
                 if ((enclosingClassName == nullptr) || fIsPlatformSubArchitecture)
                 {
-                    // If it is the get_IsSupported method for an ISA which requires the VEX
-                    // encoding we want to expand unconditionally. This will force those code
+                    // If it is the get_IsSupported method for an ISA which is intentionally not enabled
+                    // for crossgen, we want to expand unconditionally. This will force those code
                     // paths to be treated as dead code and dropped from the compilation.
+                    // See Zapper::InitializeCompilerFlags
                     //
                     // For all of the other intrinsics in an ISA which requires the VEX encoding
                     // we need to treat them as regular method calls. This is done because RyuJIT

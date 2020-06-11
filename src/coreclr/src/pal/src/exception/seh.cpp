@@ -264,24 +264,6 @@ SEHProcessException(PAL_SEHException* exception)
             // or in a jitter helper or it is a debugger breakpoint)
             if (g_safeExceptionCheckFunction(contextRecord, exceptionRecord))
             {
-                if (exceptionRecord->ExceptionCode == EXCEPTION_ACCESS_VIOLATION)
-                {
-                    // Check if the failed access has hit a stack guard page. In such case, it
-                    // was a stack probe that detected that there is not enough stack left.
-                    void* stackLimit = CPalThread::GetStackLimit();
-                    void* stackOverflowBottom = (void*)((size_t)stackLimit - GetVirtualPageSize());
-                    // On some versions of glibc / platforms the stackLimit is an address of the guard page, on some
-                    // it is right above the guard page.
-                    // So consider SIGSEGV in one page above and below stack limit to be stack overflow.
-                    void* stackOverflowTop = (void*)((size_t)stackLimit + GetVirtualPageSize());
-                    void* violationAddr = (void*)exceptionRecord->ExceptionInformation[1];
-
-                    if ((violationAddr >= stackOverflowBottom) && (violationAddr < stackOverflowTop))
-                    {
-                        exceptionRecord->ExceptionCode = EXCEPTION_STACK_OVERFLOW;
-                    }
-                }
-
                 EnsureExceptionRecordsOnHeap(exception);
                 if (g_hardwareExceptionHandler(exception))
                 {

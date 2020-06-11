@@ -3,75 +3,216 @@
 // See the LICENSE file in the project root for more information.
 
 #nullable enable
-using System.Buffers.Binary;
+using System.Collections.Generic;
+using System.Diagnostics;
 using System.Text;
 
-namespace System.Security.Cryptography.Encoding.Tests.Cbor
+namespace System.Formats.Cbor
 {
-    internal partial class CborWriter
+    public partial class CborWriter
     {
-        private static readonly System.Text.Encoding s_utf8Encoding = new System.Text.UTF8Encoding(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: true);
+        // Implements major type 2,3 encoding per https://tools.ietf.org/html/rfc7049#section-2.1
 
-        // Implements major type 2 encoding per https://tools.ietf.org/html/rfc7049#section-2.1
+        // keeps track of chunk offsets for written indefinite-length string ranges
+        private List<(int Offset, int Length)>? _currentIndefiniteLengthStringRanges = null;
+
+        /// <summary>
+        ///   Writes a buffer as a byte string encoding (major type 2).
+        /// </summary>
+        /// <param name="value">The value to write.</param>
+        /// <exception cref="InvalidOperationException">
+        ///   Writing a new value exceeds the definite length of the parent data item. -or-
+        ///   The major type of the encoded value is not permitted in the parent data item. -or-
+        ///   The written data is not accepted under the current conformance level
+        /// </exception>
         public void WriteByteString(ReadOnlySpan<byte> value)
         {
             WriteUnsignedInteger(CborMajorType.ByteString, (ulong)value.Length);
             EnsureWriteCapacity(value.Length);
+
+            if (ConvertIndefiniteLengthEncodings && _currentMajorType == CborMajorType.ByteString)
+            {
+                // operation is writing chunk of an indefinite-length string
+                // the string will be converted to a definite-length encoding later,
+                // so we need to record the ranges of each chunk
+                Debug.Assert(_currentIndefiniteLengthStringRanges != null);
+                _currentIndefiniteLengthStringRanges.Add((_offset, value.Length));
+            }
+
             value.CopyTo(_buffer.AsSpan(_offset));
             _offset += value.Length;
             AdvanceDataItemCounters();
         }
 
-        // Implements major type 3 encoding per https://tools.ietf.org/html/rfc7049#section-2.1
+        /// <summary>
+        ///   Writes the start of an indefinite-length byte string (major type 2).
+        /// </summary>
+        /// <exception cref="InvalidOperationException">
+        ///   Writing a new value exceeds the definite length of the parent data item. -or-
+        ///   The major type of the encoded value is not permitted in the parent data item. -or-
+        ///   The written data is not accepted under the current conformance level
+        /// </exception>
+        /// <remarks>
+        ///   Pushes a context where definite-length chunks of the same major type can be written.
+        ///   In canonical conformance levels, the writer will reject indefinite-length writes unless
+        ///   the <see cref="ConvertIndefiniteLengthEncodings"/> flag is enabled.
+        /// </remarks>
+        public void WriteStartByteString()
+        {
+            if (!ConvertIndefiniteLengthEncodings && CborConformanceLevelHelpers.RequiresDefiniteLengthItems(ConformanceLevel))
+            {
+                throw new InvalidOperationException(SR.Format(SR.Cbor_ConformanceLevel_IndefiniteLengthItemsNotSupported, ConformanceLevel));
+            }
+
+            if (ConvertIndefiniteLengthEncodings)
+            {
+                // Writer does not allow indefinite-length encodings.
+                // We need to keep track of chunk offsets to convert to
+                // a definite-length encoding once writing is complete.
+                _currentIndefiniteLengthStringRanges ??= new List<(int, int)>();
+            }
+
+            EnsureWriteCapacity(1);
+            WriteInitialByte(new CborInitialByte(CborMajorType.ByteString, CborAdditionalInfo.IndefiniteLength));
+            PushDataItem(CborMajorType.ByteString, definiteLength: null);
+        }
+
+        /// <summary>
+        ///   Writes the end of an indefinite-length byte string (major type 2).
+        /// </summary>
+        /// <exception cref="InvalidOperationException">
+        ///   The written data is not accepted under the current conformance level
+        /// </exception>
+        public void WriteEndByteString()
+        {
+            PopDataItem(CborMajorType.ByteString);
+            AdvanceDataItemCounters();
+        }
+
+        /// <summary>
+        ///   Writes a buffer as a UTF-8 string encoding (major type 3).
+        /// </summary>
+        /// <param name="value">The value to write.</param>
+        /// <exception cref="InvalidOperationException">
+        ///   Writing a new value exceeds the definite length of the parent data item. -or-
+        ///   The major type of the encoded value is not permitted in the parent data item. -or-
+        ///   The written data is not accepted under the current conformance level
+        /// </exception>
         public void WriteTextString(ReadOnlySpan<char> value)
         {
+            Encoding utf8Encoding = CborConformanceLevelHelpers.GetUtf8Encoding(ConformanceLevel);
+
             int length;
             try
             {
-                length = s_utf8Encoding.GetByteCount(value);
+                length = utf8Encoding.GetByteCount(value);
             }
             catch (EncoderFallbackException e)
             {
-                throw new ArgumentException("Provided text string is not valid UTF8.", e);
+                throw new ArgumentException(SR.Cbor_Writer_InvalidUtf8String, e);
             }
 
             WriteUnsignedInteger(CborMajorType.TextString, (ulong)length);
             EnsureWriteCapacity(length);
-            s_utf8Encoding.GetBytes(value, _buffer.AsSpan(_offset));
+
+            if (ConvertIndefiniteLengthEncodings && _currentMajorType == CborMajorType.TextString)
+            {
+                // operation is writing chunk of an indefinite-length string
+                // the string will be converted to a definite-length encoding later,
+                // so we need to record the ranges of each chunk
+                Debug.Assert(_currentIndefiniteLengthStringRanges != null);
+                _currentIndefiniteLengthStringRanges.Add((_offset, value.Length));
+            }
+
+            utf8Encoding.GetBytes(value, _buffer.AsSpan(_offset, length));
             _offset += length;
             AdvanceDataItemCounters();
         }
 
-        public void WriteStartByteStringIndefiniteLength()
+        /// <summary>
+        ///   Writes the start of an indefinite-length UTF-8 string (major type 3).
+        /// </summary>
+        /// <exception cref="InvalidOperationException">
+        ///   Writing a new value exceeds the definite length of the parent data item. -or-
+        ///   The major type of the encoded value is not permitted in the parent data item. -or-
+        ///   The written data is not accepted under the current conformance level
+        /// </exception>
+        /// <remarks>
+        ///   Pushes a context where definite-length chunks of the same major type can be written.
+        ///   In canonical conformance levels, the writer will reject indefinite-length writes unless
+        ///   the <see cref="ConvertIndefiniteLengthEncodings"/> flag is enabled.
+        /// </remarks>
+        public void WriteStartTextString()
         {
-            EnsureWriteCapacity(1);
-            WriteInitialByte(new CborInitialByte(CborMajorType.ByteString, CborAdditionalInfo.IndefiniteLength));
-            AdvanceDataItemCounters();
-            PushDataItem(CborMajorType.ByteString, expectedNestedItems: null);
-        }
+            if (!ConvertIndefiniteLengthEncodings && CborConformanceLevelHelpers.RequiresDefiniteLengthItems(ConformanceLevel))
+            {
+                throw new InvalidOperationException(SR.Format(SR.Cbor_ConformanceLevel_IndefiniteLengthItemsNotSupported, ConformanceLevel));
+            }
 
-        public void WriteEndByteStringIndefiniteLength()
-        {
-            PopDataItem(CborMajorType.ByteString);
-            // append break byte
-            EnsureWriteCapacity(1);
-            _buffer[_offset++] = CborInitialByte.IndefiniteLengthBreakByte;
-        }
+            if (ConvertIndefiniteLengthEncodings)
+            {
+                // Writer does not allow indefinite-length encodings.
+                // We need to keep track of chunk offsets to convert to
+                // a definite-length encoding once writing is complete.
+                _currentIndefiniteLengthStringRanges ??= new List<(int, int)>();
+            }
 
-        public void WriteStartTextStringIndefiniteLength()
-        {
             EnsureWriteCapacity(1);
             WriteInitialByte(new CborInitialByte(CborMajorType.TextString, CborAdditionalInfo.IndefiniteLength));
-            AdvanceDataItemCounters();
-            PushDataItem(CborMajorType.TextString, expectedNestedItems: null);
+            PushDataItem(CborMajorType.TextString, definiteLength: null);
         }
 
-        public void WriteEndTextStringIndefiniteLength()
+        /// <summary>
+        ///   Writes the end of an indefinite-length UTF-8 string (major type 3).
+        /// </summary>
+        /// <exception cref="InvalidOperationException">
+        ///   The written data is not accepted under the current conformance level
+        /// </exception>
+        public void WriteEndTextString()
         {
             PopDataItem(CborMajorType.TextString);
-            // append break byte
-            EnsureWriteCapacity(1);
-            _buffer[_offset++] = CborInitialByte.IndefiniteLengthBreakByte;
+            AdvanceDataItemCounters();
+        }
+
+        // perform an in-place conversion of an indefinite-length encoding into an equivalent definite-length
+        private void PatchIndefiniteLengthString(CborMajorType type)
+        {
+            Debug.Assert(type == CborMajorType.ByteString || type == CborMajorType.TextString);
+            Debug.Assert(_currentIndefiniteLengthStringRanges != null);
+
+            int initialOffset = _offset;
+
+            // calculate the definite length of the concatenated string
+            int definiteLength = 0;
+            foreach ((int _, int length) in _currentIndefiniteLengthStringRanges)
+            {
+                definiteLength += length;
+            }
+
+            Span<byte> buffer = _buffer.AsSpan();
+
+            // copy chunks to a temporary buffer
+            byte[] tempBuffer = s_bufferPool.Rent(definiteLength);
+            Span<byte> tempSpan = tempBuffer.AsSpan(0, definiteLength);
+
+            Span<byte> s = tempSpan;
+            foreach ((int offset, int length) in _currentIndefiniteLengthStringRanges)
+            {
+                buffer.Slice(offset, length).CopyTo(s);
+                s = s.Slice(length);
+            }
+            Debug.Assert(s.IsEmpty);
+
+            // write back to the original buffer
+            _offset = _frameOffset - 1;
+            WriteUnsignedInteger(type, (ulong)definiteLength);
+            tempSpan.CopyTo(buffer.Slice(_offset, definiteLength));
+            _offset += definiteLength;
+
+            // clean up
+            s_bufferPool.Return(tempBuffer);
+            _currentIndefiniteLengthStringRanges.Clear();
+            buffer.Slice(_offset, initialOffset - _offset).Fill(0x0);
         }
     }
 }

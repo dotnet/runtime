@@ -8,6 +8,7 @@ trigger:
     - '*'
     - src/libraries/System.Private.CoreLib/*
     exclude:
+    - .github/*
     - docs/*
     - CODE-OF-CONDUCT.md
     - CONTRIBUTING.md
@@ -97,28 +98,10 @@ jobs:
     jobTemplate: /eng/pipelines/common/templates/runtimes/build-test-job.yml
     buildConfig: checked
     platforms:
-    - OSX_x64
+    - CoreClrTestBuildHost # Either OSX_x64 or Linux_x64
     testGroup: outerloop
     jobParameters:
       liveLibrariesBuildConfig: Release
-      testBuildPhase: targetGeneric
-
-- template: /eng/pipelines/common/platform-matrix.yml
-  parameters:
-    jobTemplate: /eng/pipelines/common/templates/runtimes/build-test-job.yml
-    buildConfig: checked
-    platforms:
-    - Linux_arm
-    - Linux_arm64
-    - OSX_x64
-    - Windows_NT_arm
-    - Windows_NT_arm64
-    - Windows_NT_x64
-    - Windows_NT_x86
-    testGroup: outerloop
-    jobParameters:
-      liveLibrariesBuildConfig: Release
-      testBuildPhase: targetSpecific
 
 #
 # Checked JIT test runs
@@ -133,7 +116,6 @@ jobs:
     jobParameters:
       testGroup: outerloop
       liveLibrariesBuildConfig: Release
-      testBuildPhased: true
 
 #
 # Checked R2R test runs
@@ -159,7 +141,6 @@ jobs:
       readyToRun: true
       displayNameArgs: R2R
       liveLibrariesBuildConfig: Release
-      testBuildPhased: true
 
 #
 # Crossgen-comparison jobs
