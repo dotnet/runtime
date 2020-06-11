@@ -104,7 +104,7 @@ enum HWIntrinsicFlag : unsigned int
     HW_Flag_NoRMWSemantics = 0x4000,
 
     // NoContainment
-    // the intrinsic cannot be handled by comtainment,
+    // the intrinsic cannot be handled by containment,
     // all the intrinsic that have explicit memory load/store semantics should have this flag
     HW_Flag_NoContainment = 0x8000,
 
