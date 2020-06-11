@@ -12,49 +12,12 @@ namespace System.Net.Sockets
 {
     internal sealed unsafe class SocketAsyncEngine : IThreadPoolWorkItem
     {
-        //
-        // Encapsulates a particular SocketAsyncContext object's access to a SocketAsyncEngine.
-        //
-        public readonly struct Token
-        {
-            private readonly SocketAsyncEngine? _engine;
-            private readonly IntPtr _handle;
-
-            public Token(SocketAsyncContext context)
-            {
-                AllocateToken(context, out _engine, out _handle);
-            }
-
-            public bool WasAllocated
-            {
-                get { return _engine != null; }
-            }
-
-            public void Free()
-            {
-                if (WasAllocated)
-                {
-                    _engine!.FreeHandle(_handle);
-                }
-            }
-
-            public bool TryRegister(SafeSocketHandle socket, out Interop.Error error)
-            {
-                Debug.Assert(WasAllocated, "Expected WasAllocated to be true");
-                return _engine!.TryRegister(socket, _handle, out error);
-            }
-        }
-
         private const int EventBufferCount =
 #if DEBUG
             32;
 #else
             1024;
 #endif
-
-        private static readonly object s_lock = new object();
-
-        private static readonly int s_maxEngineCount = GetEngineCount();
 
         private static int GetEngineCount()
         {
@@ -83,56 +46,25 @@ namespace System.Net.Sockets
             return Math.Max(1, (int)Math.Round(Environment.ProcessorCount / (double)coresPerEngine));
         }
 
-        //
-        // The current engines. We replace an engine when it runs out of "handle" values.
-        // Must be accessed under s_lock.
-        //
-        private static readonly SocketAsyncEngine?[] s_currentEngines = new SocketAsyncEngine?[s_maxEngineCount];
-        private static int s_allocateFromEngine = 0;
+        private static readonly SocketAsyncEngine[] s_engines = CreateEngines();
+        private static int s_allocateFromEngine = -1;
+
+        private static SocketAsyncEngine[] CreateEngines()
+        {
+            int engineCount = GetEngineCount();
+
+            var engines = new SocketAsyncEngine[engineCount];
+
+            for (int i = 0; i < engineCount; i++)
+            {
+                engines[i] = new SocketAsyncEngine();
+            }
+
+            return engines;
+        }
 
         private readonly IntPtr _port;
         private readonly Interop.Sys.SocketEvent* _buffer;
-
-        //
-        // The read and write ends of a native pipe, used to signal that this instance's event loop should stop
-        // processing events.
-        //
-        private readonly int _shutdownReadPipe;
-        private readonly int _shutdownWritePipe;
-
-        //
-        // Each SocketAsyncContext is associated with a particular "handle" value, used to identify that
-        // SocketAsyncContext when events are raised.  These handle values are never reused, because we do not have
-        // a way to ensure that we will never see an event for a socket/handle that has been freed.  Instead, we
-        // allocate monotonically increasing handle values up to some limit; when we would exceed that limit,
-        // we allocate a new SocketAsyncEngine (and thus a new event port) and start the handle values over at zero.
-        // Thus we can uniquely identify a given SocketAsyncContext by the *pair* {SocketAsyncEngine, handle},
-        // and avoid any issues with misidentifying the target of an event we read from the port.
-        //
-#if DEBUG
-        //
-        // In debug builds, force rollover to new SocketAsyncEngine instances so that code doesn't go untested, since
-        // it's very unlikely that the "real" limits will ever be reached in test code.
-        //
-        private static readonly IntPtr MaxHandles = (IntPtr)(EventBufferCount * 2);
-#else
-        //
-        // In release builds, we use *very* high limits.  No 64-bit process running on release builds should ever
-        // reach the handle limit for a single event port, and even 32-bit processes should see this only very rarely.
-        //
-        private static readonly IntPtr MaxHandles = IntPtr.Size == 4 ? (IntPtr)int.MaxValue : (IntPtr)long.MaxValue;
-#endif
-        //
-        // Sentinel handle value to identify events from the "shutdown pipe," used to signal an event loop to stop
-        // processing events.
-        //
-        private static readonly IntPtr ShutdownHandle = (IntPtr)(-1);
-
-        //
-        // The next handle value to be allocated for this event port.
-        // Must be accessed under s_lock.
-        //
-        private IntPtr _nextHandle;
 
         //
         // Maps handle values to SocketAsyncContext instances.
@@ -152,86 +84,52 @@ namespace System.Net.Sockets
         private int _eventQueueProcessingRequested;
 
         //
-        // True if we've reached the handle value limit for this event port, and thus must allocate a new event port
-        // on the next handle allocation.
+        // Registers the Socket with a SocketAsyncEngine, and returns the associated engine.
         //
-        private bool IsFull { get { return _nextHandle == MaxHandles; } }
-
-        //
-        // Allocates a new {SocketAsyncEngine, handle} pair.
-        //
-        private static void AllocateToken(SocketAsyncContext context, out SocketAsyncEngine? engine, out IntPtr handle)
+        public static SocketAsyncEngine RegisterSocket(IntPtr socketHandle, SocketAsyncContext context)
         {
-            lock (s_lock)
+            int engineIndex = Math.Abs(Interlocked.Increment(ref s_allocateFromEngine) % s_engines.Length);
+            SocketAsyncEngine engine = s_engines[engineIndex];
+            engine.RegisterCore(socketHandle, context);
+            return engine;
+        }
+
+        private void RegisterCore(IntPtr socketHandle, SocketAsyncContext context)
+        {
+            bool added = _handleToContextMap.TryAdd(socketHandle, new SocketAsyncContextWrapper(context));
+            if (!added)
             {
-                engine = s_currentEngines[s_allocateFromEngine];
-                if (engine == null)
-                {
-                    s_currentEngines[s_allocateFromEngine] = engine = new SocketAsyncEngine();
-                }
+                // Using public SafeSocketHandle(IntPtr) a user can add the same handle
+                // from a different Socket instance.
+                throw new InvalidOperationException("Handle is already used by another Socket.");
+            }
 
-                handle = engine.AllocateHandle(context);
+            Interop.Error error = Interop.Sys.TryChangeSocketEventRegistration(_port, socketHandle, Interop.Sys.SocketEvents.None,
+                Interop.Sys.SocketEvents.Read | Interop.Sys.SocketEvents.Write, socketHandle);
+            if (error == Interop.Error.SUCCESS)
+            {
+                return;
+            }
 
-                if (engine.IsFull)
-                {
-                    // We'll need to create a new event port for the next handle.
-                    s_currentEngines[s_allocateFromEngine] = null;
-                }
-
-                // Round-robin to the next engine once we have sufficient sockets on this one.
-                s_allocateFromEngine = (s_allocateFromEngine + 1) % s_maxEngineCount;
+            _handleToContextMap.TryRemove(socketHandle, out _);
+            if (error == Interop.Error.ENOMEM || error == Interop.Error.ENOSPC)
+            {
+                throw new OutOfMemoryException();
+            }
+            else
+            {
+                throw new InternalException(error);
             }
         }
 
-        private IntPtr AllocateHandle(SocketAsyncContext context)
+        public void UnregisterSocket(IntPtr socketHandle)
         {
-            Debug.Assert(Monitor.IsEntered(s_lock), "Expected s_lock to be held");
-            Debug.Assert(!IsFull, "Expected !IsFull");
-
-            IntPtr handle = _nextHandle;
-            Debug.Assert(handle != ShutdownHandle, "ShutdownHandle must not be added to the dictionary");
-            bool added = _handleToContextMap.TryAdd(handle, new SocketAsyncContextWrapper(context));
-            Debug.Assert(added, "Add should always succeed");
-            _nextHandle = IntPtr.Add(_nextHandle, 1);
-
-            return handle;
-        }
-
-        private void FreeHandle(IntPtr handle)
-        {
-            Debug.Assert(handle != ShutdownHandle, $"Expected handle != ShutdownHandle: {handle}");
-
-            bool shutdownNeeded = false;
-
-            lock (s_lock)
-            {
-                if (_handleToContextMap.TryRemove(handle, out _))
-                {
-                    //
-                    // If we've allocated all possible handles for this instance, and freed them all, then
-                    // we don't need the event loop any more, and can reclaim resources.
-                    //
-                    if (IsFull && _handleToContextMap.IsEmpty)
-                    {
-                        shutdownNeeded = true;
-                    }
-                }
-            }
-
-            //
-            // Signal shutdown outside of the lock to reduce contention.
-            //
-            if (shutdownNeeded)
-            {
-                RequestEventLoopShutdown();
-            }
+            _handleToContextMap.TryRemove(socketHandle, out _);
         }
 
         private SocketAsyncEngine()
         {
             _port = (IntPtr)(-1);
-            _shutdownReadPipe = -1;
-            _shutdownWritePipe = -1;
             try
             {
                 //
@@ -243,25 +141,6 @@ namespace System.Net.Sockets
                     throw new InternalException(err);
                 }
                 err = Interop.Sys.CreateSocketEventBuffer(EventBufferCount, out _buffer);
-                if (err != Interop.Error.SUCCESS)
-                {
-                    throw new InternalException(err);
-                }
-
-                //
-                // Create the pipe for signaling shutdown, and register for "read" events for the pipe.  Now writing
-                // to the pipe will send an event to the event loop.
-                //
-                int* pipeFds = stackalloc int[2];
-                int pipeResult = Interop.Sys.Pipe(pipeFds, Interop.Sys.PipeFlags.O_CLOEXEC);
-                if (pipeResult != 0)
-                {
-                    throw new InternalException(pipeResult);
-                }
-                _shutdownReadPipe = pipeFds[Interop.Sys.ReadEndOfPipe];
-                _shutdownWritePipe = pipeFds[Interop.Sys.WriteEndOfPipe];
-
-                err = Interop.Sys.TryChangeSocketEventRegistration(_port, (IntPtr)_shutdownReadPipe, Interop.Sys.SocketEvents.None, Interop.Sys.SocketEvents.Read, ShutdownHandle);
                 if (err != Interop.Error.SUCCESS)
                 {
                     throw new InternalException(err);
@@ -293,13 +172,11 @@ namespace System.Net.Sockets
         {
             try
             {
-                bool shutdown = false;
                 Interop.Sys.SocketEvent* buffer = _buffer;
                 ConcurrentDictionary<IntPtr, SocketAsyncContextWrapper> handleToContextMap = _handleToContextMap;
                 ConcurrentQueue<SocketIOEvent> eventQueue = _eventQueue;
-                IntPtr shutdownHandle = ShutdownHandle;
                 SocketAsyncContext? context = null;
-                while (!shutdown)
+                while (true)
                 {
                     int numEvents = EventBufferCount;
                     Interop.Error err = Interop.Sys.WaitForSocketEvents(_port, buffer, &numEvents);
@@ -318,8 +195,6 @@ namespace System.Net.Sockets
 
                         if (handleToContextMap.TryGetValue(handle, out SocketAsyncContextWrapper contextWrapper) && (context = contextWrapper.Context) != null)
                         {
-                            Debug.Assert(handle.ToInt64() < MaxHandles.ToInt64(), $"Unexpected values: handle={handle}, MaxHandles={MaxHandles}");
-
                             Interop.Sys.SocketEvents events = context.HandleSyncEventsSpeculatively(socketEvent.Events);
                             if (events != Interop.Sys.SocketEvents.None)
                             {
@@ -339,10 +214,6 @@ namespace System.Net.Sockets
                             context = null;
                             contextWrapper = default;
                         }
-                        else if (handle == shutdownHandle)
-                        {
-                            shutdown = true;
-                        }
                     }
 
                     if (enqueuedEvent)
@@ -350,8 +221,6 @@ namespace System.Net.Sockets
                         ScheduleToProcessEvents();
                     }
                 }
-
-                FreeNativeResources();
             }
             catch (Exception e)
             {
@@ -425,29 +294,8 @@ namespace System.Net.Sockets
             ScheduleToProcessEvents();
         }
 
-        private void RequestEventLoopShutdown()
-        {
-            //
-            // Write to the pipe, which will wake up the event loop and cause it to exit.
-            //
-            byte b = 1;
-            int bytesWritten = Interop.Sys.Write((IntPtr)_shutdownWritePipe, &b, 1);
-            if (bytesWritten != 1)
-            {
-                throw new InternalException(bytesWritten);
-            }
-        }
-
         private void FreeNativeResources()
         {
-            if (_shutdownReadPipe != -1)
-            {
-                Interop.Sys.Close((IntPtr)_shutdownReadPipe);
-            }
-            if (_shutdownWritePipe != -1)
-            {
-                Interop.Sys.Close((IntPtr)_shutdownWritePipe);
-            }
             if (_buffer != null)
             {
                 Interop.Sys.FreeSocketEventBuffer(_buffer);
@@ -456,13 +304,6 @@ namespace System.Net.Sockets
             {
                 Interop.Sys.CloseSocketEventPort(_port);
             }
-        }
-
-        private bool TryRegister(SafeSocketHandle socket, IntPtr handle, out Interop.Error error)
-        {
-            error = Interop.Sys.TryChangeSocketEventRegistration(_port, socket, Interop.Sys.SocketEvents.None,
-                Interop.Sys.SocketEvents.Read | Interop.Sys.SocketEvents.Write, handle);
-            return error == Interop.Error.SUCCESS;
         }
 
         // struct wrapper is used in order to improve the performance of the epoll thread hot path by up to 3% of some TechEmpower benchmarks
