@@ -1442,15 +1442,16 @@ namespace System.DirectoryServices.Protocols
             {
                 timeout.tv_sec = 0;
                 timeout.tv_usec = 0;
+                // Initialize to 0
                 error = 0;
                 int iterationDelay = 1;
                 // Underlying native libraries don't support callback-based function, so we will instead use polling and
                 // use a Stopwatch to track the timeout manually.
                 Stopwatch watch = Stopwatch.StartNew();
-                while (watch.Elapsed < requestTimeOut)
+                while (true)
                 {
                     error = LdapPal.GetResultFromAsyncOperation(_ldapHandle, messageId, (int)resultType, timeout, ref ldapResult);
-                    if (error == 0 || error == -1)
+                    if (error == 0 || error == -1 || (requestTimeOut != Threading.Timeout.InfiniteTimeSpan && watch.Elapsed < requestTimeOut))
                     {
                         break;
                     }
