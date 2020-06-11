@@ -63,7 +63,7 @@ namespace System.Text.Json
             }
             else
             {
-                IsPropertyPolicy = true;
+                IsForClassInfo = true;
                 HasGetter = true;
                 HasSetter = true;
             }
@@ -86,7 +86,7 @@ namespace System.Text.Json
 
         public override object? GetValueAsObject(object obj)
         {
-            if (IsPropertyPolicy)
+            if (IsForClassInfo)
             {
                 return obj;
             }
