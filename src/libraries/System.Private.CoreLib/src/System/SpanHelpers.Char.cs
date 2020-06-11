@@ -419,10 +419,6 @@ namespace System
                     if (lengthToExamine > 0)
                     {
                         Vector128<ushort> values = Vector128.Create((ushort)value);
-
-                        // Mask to help select first lane that is set.
-                        // Each lane in the mask has different bit pattern to distinguish the lane selected.
-                        Vector128<byte> mask = Vector128.Create((byte)1, 4, 16, 64, 1, 4, 16, 64, 1, 4, 16, 64, 1, 4, 16, 64);
                         int matchedLane = 0;
 
                         do
@@ -432,7 +428,7 @@ namespace System
                             Vector128<ushort> search = LoadVector128(ref searchSpace, offset);
                             Vector128<ushort> compareResult = AdvSimd.CompareEqual(values, search);
 
-                            if (!TryFindFirstMatchedLane(mask, compareResult.AsByte(), ref matchedLane))
+                            if (!TryFindFirstMatchedLane(compareResult.AsByte(), ref matchedLane))
                             {
                                 // Zero flags set so no matches
                                 offset += Vector128<ushort>.Count;
@@ -440,7 +436,7 @@ namespace System
                                 continue;
                             }
 
-                            return (int)(offset + (matchedLane >> sizeof(char)));
+                            return (int)(offset + matchedLane);
                         } while (lengthToExamine > 0);
                     }
 
@@ -1092,6 +1088,24 @@ namespace System
             // If a GC does occur and alignment is lost, the GC cost will outweigh any gains from alignment so it
             // isn't too important to pin to maintain the alignment.
             return (nint)(uint)(-(int)Unsafe.AsPointer(ref searchSpace) / ElementsPerByte) & (Vector128<ushort>.Count - 1);
+        }
+
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static bool TryFindFirstMatchedLane(Vector128<byte> compareResult, ref int matchedLane)
+        {
+            Debug.Assert(AdvSimd.IsSupported);
+
+            ulong matches = AdvSimd.Arm64.MaxPairwise(compareResult, compareResult).AsUInt64().ToScalar();
+            if (matches == 0)
+            {
+                return false;
+            }
+
+            // Try to find the first lane that is set inside compareResult.
+            Vector128<byte> pairwiseSelectedLane = AdvSimd.Arm64.AddPairwise(compareResult, compareResult);
+            matchedLane = BitOperations.TrailingZeroCount(pairwiseSelectedLane.AsUInt64().ToScalar()) >> 3;
+            return true;
         }
     }
 }

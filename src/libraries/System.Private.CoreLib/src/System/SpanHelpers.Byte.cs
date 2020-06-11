@@ -377,9 +377,9 @@ namespace System
                 {
                     lengthToExamine = GetByteVector128SpanLength(offset, length);
 
-                    // Mask to help select first lane that is set.
-                    // Each lane in the mask has different bit pattern to distinguish the lane selected.
-                    Vector128<byte> mask = Vector128.Create((byte)1, 4, 16, 64, 1, 4, 16, 64, 1, 4, 16, 64, 1, 4, 16, 64);
+                    // Mask to help find the first lane in compareResult that is set.
+                    // MSB 0x10 corresponds to 1st lane, 0x01 corresponds to 0th lane and so forth.
+                    Vector128<byte> mask = Vector128.Create((ushort)0x1001).AsByte();
                     int matchedLane = 0;
 
                     Vector128<byte> values = Vector128.Create(value);
@@ -395,7 +395,7 @@ namespace System
                             continue;
                         }
 
-                        return (int)(offset + (uint)(matchedLane >> sizeof(byte)));
+                        return (int)(offset + (uint)matchedLane);
                     }
 
                     if (offset < (nuint)(uint)length)
@@ -1851,10 +1851,9 @@ namespace System
             }
 
             // Try to find the first lane that is set inside compareResult.
-            Vector128<byte> selectedLanes = AdvSimd.And(compareResult.AsByte(), mask);
+            Vector128<byte> selectedLanes = AdvSimd.And(compareResult, mask);
             Vector128<byte> pairwiseSelectedLane = AdvSimd.Arm64.AddPairwise(selectedLanes, selectedLanes);
-            pairwiseSelectedLane = AdvSimd.Arm64.AddPairwise(pairwiseSelectedLane, pairwiseSelectedLane);
-            matchedLane = BitOperations.TrailingZeroCount(pairwiseSelectedLane.AsUInt64().ToScalar());
+            matchedLane = BitOperations.TrailingZeroCount(pairwiseSelectedLane.AsUInt64().ToScalar()) >> 2;
             return true;
         }
     }
