@@ -65,7 +65,7 @@ namespace System.IO.Packaging
         /// <exception cref="ArgumentNullException">If parameter "package" is null</exception>
         /// <exception cref="ArgumentNullException">If parameter "partUri" is null</exception>
         /// <exception cref="ArgumentException">If parameter "partUri" does not conform to the valid partUri syntax</exception>
-        protected PackagePart(Package package, Uri partUri, string contentType)
+        protected PackagePart(Package package, Uri partUri, string? contentType)
             : this(package, partUri, contentType, CompressionOption.NotCompressed)
         {
         }

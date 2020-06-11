@@ -72,7 +72,7 @@ namespace System.IO.Packaging
     public abstract partial class PackagePart
     {
         protected PackagePart(System.IO.Packaging.Package package, System.Uri partUri) { }
-        protected PackagePart(System.IO.Packaging.Package package, System.Uri partUri, string contentType) { }
+        protected PackagePart(System.IO.Packaging.Package package, System.Uri partUri, string? contentType) { }
         protected PackagePart(System.IO.Packaging.Package package, System.Uri partUri, string? contentType, System.IO.Packaging.CompressionOption compressionOption) { }
         public System.IO.Packaging.CompressionOption CompressionOption { get { throw null; } }
         public string ContentType { get { throw null; } }
