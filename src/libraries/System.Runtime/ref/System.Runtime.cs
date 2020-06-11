@@ -9027,7 +9027,7 @@ namespace System.Runtime.CompilerServices
     {
     }
     [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
-    public static class IsExternalInit
+    public static partial class IsExternalInit
     {
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.All, Inherited=false)]
