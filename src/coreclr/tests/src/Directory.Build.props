@@ -98,10 +98,17 @@
         <TestNugetRuntimeId>ubuntu.14.04-$(TargetArchitecture)</TestNugetRuntimeId>
       </PropertyGroup>
     </When>
-    <When Condition="'$(TargetOS)'=='SunOS'">
+    <When Condition="'$(TargetOS)'=='illumos'">
       <PropertyGroup>
         <TargetsUnix>true</TargetsUnix>
-        <TargetsSunOS>true</TargetsSunOS>
+        <TargetsIllumos>true</TargetsIllumos>
+        <TestNugetRuntimeId>ubuntu.14.04-$(TargetArchitecture)</TestNugetRuntimeId>
+      </PropertyGroup>
+    </When>
+    <When Condition="'$(TargetOS)'=='Solaris'">
+      <PropertyGroup>
+        <TargetsUnix>true</TargetsUnix>
+        <TargetsSolaris>true</TargetsSolaris>
         <TestNugetRuntimeId>ubuntu.14.04-$(TargetArchitecture)</TestNugetRuntimeId>
       </PropertyGroup>
     </When>
@@ -130,7 +137,7 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <TargetsUnknownUnix Condition="'$(TargetsUnix)' == 'true' AND '$(TargetOS)' != 'FreeBSD' AND '$(TargetOS)' != 'Linux' AND '$(TargetOS)' != 'NetBSD' AND '$(TargetOS)' != 'OSX' AND '$(TargetOS)' != 'SunOS'">true</TargetsUnknownUnix>
+    <TargetsUnknownUnix Condition="'$(TargetsUnix)' == 'true' AND '$(TargetOS)' != 'FreeBSD' AND '$(TargetOS)' != 'Linux' AND '$(TargetOS)' != 'NetBSD' AND '$(TargetOS)' != 'OSX' AND '$(TargetOS)' != 'illumos' AND '$(TargetOS)' != 'Solaris'">true</TargetsUnknownUnix>
     <Language Condition="'$(Language)' == '' and  '$(MSBuildProjectExtension)' == '.csproj'">C#</Language>
     <Language Condition="'$(Language)' == '' and  '$(MSBuildProjectExtension)' == '.ilproj'">IL</Language>
   </PropertyGroup>

@@ -15,12 +15,12 @@
     <BeforeTargetFrameworkInferenceTargets>$(RepositoryEngineeringDir)BeforeTargetFrameworkInference.targets</BeforeTargetFrameworkInferenceTargets>
     <ToolSetCommonDirectory>$(RepoRoot)artifacts\toolset\Common\</ToolSetCommonDirectory>
     <IsSourceProject>$([System.Text.RegularExpressions.Regex]::IsMatch($(MSBuildProjectDirectory), 'src%24'))</IsSourceProject>
-    <IsReferenceAssembly Condition="'$(IsReferenceAssembly)' == '' and ($(MSBuildProjectFullPath.Contains('\ref\')) or $(MSBuildProjectFullPath.Contains('/ref/')))">true</IsReferenceAssembly> 
+    <IsReferenceAssembly Condition="'$(IsReferenceAssembly)' == '' and ($(MSBuildProjectFullPath.Contains('\ref\')) or $(MSBuildProjectFullPath.Contains('/ref/')))">true</IsReferenceAssembly>
     <LanguageTargets Condition="'$(MSBuildProjectExtension)' == '.depproj'">$(RepositoryEngineeringDir)depProj.common.targets</LanguageTargets>
     <RuntimeGraph>$(LibrariesProjectRoot)OSGroups.json</RuntimeGraph>
     <BuildTargetFramework>$(NetCoreAppCurrent)</BuildTargetFramework>
     <ShouldUnsetParentConfigurationAndPlatform>false</ShouldUnsetParentConfigurationAndPlatform>
-    <AdditionalBuildTargetFrameworks Condition="'$(BuildingInsideVisualStudio)' == 'true'">$(AdditionalBuildTargetFrameworks);$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent)-OSX;$(NetCoreAppCurrent)-Linux;$(NetCoreAppCurrent)-NetBSD;$(NetCoreAppCurrent)-FreeBSD</AdditionalBuildTargetFrameworks>
+    <AdditionalBuildTargetFrameworks Condition="'$(BuildingInsideVisualStudio)' == 'true'">$(AdditionalBuildTargetFrameworks);$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent)-OSX;$(NetCoreAppCurrent)-Linux;$(NetCoreAppCurrent)-NetBSD;$(NetCoreAppCurrent)-FreeBSD;$(NetCoreAppCurrent)-illumos;$(NetCoreAppCurrent)-Solaris</AdditionalBuildTargetFrameworks>
     <!-- Remove once is fixed: https://github.com/dotnet/roslyn/issues/42344 -->
     <GeneratePlatformNotSupportedAssemblyHeaderFile>$(RepositoryEngineeringDir)LicenseHeader.txt</GeneratePlatformNotSupportedAssemblyHeaderFile>
   </PropertyGroup>
@@ -30,7 +30,7 @@
   </PropertyGroup>
 
   <Import Sdk="Microsoft.DotNet.Build.Tasks.TargetFramework.Sdk" Project="Sdk.props" />
-  
+
   <PropertyGroup>
     <HostArch>$([System.Runtime.InteropServices.RuntimeInformation]::ProcessArchitecture.ToString().ToLowerInvariant)</HostArch>
     <TargetArchitecture Condition="'$(TargetArchitecture)' == '' and '$(HostArch)' == 'arm'">arm</TargetArchitecture>
@@ -42,7 +42,7 @@
     <!-- RuntimeOS is calculated based on the build system OS, however if building for Browser/iOS/Android we need to let
          the build system to use browser/ios/android as the RuntimeOS for produced package RIDs. -->
     <RuntimeOS Condition="'$(TargetsMobile)' == 'true'">$(TargetOS.ToLowerInvariant())</RuntimeOS>
- 
+
     <!-- Initialize BuildSettings from the individual properties if it wasn't already explicitly set -->
     <Configuration Condition="'$(Configuration)'==''">Debug</Configuration>
     <BuildTargetFramework Condition="'$(BuildAllProjects)' != 'true' and '$(TargetFramework)' != ''">$(TargetFramework)</BuildTargetFramework>
@@ -94,6 +94,8 @@
     <_portableOS Condition="'$(_runtimeOSFamily)' == 'win' or '$(TargetOS)' == 'Windows_NT'">win</_portableOS>
     <_portableOS Condition="'$(_runtimeOSFamily)' == 'osx'">osx</_portableOS>
     <_portableOS Condition="'$(_runtimeOSFamily)' == 'FreeBSD'">freebsd</_portableOS>
+    <_portableOS Condition="'$(_runtimeOSFamily)' == 'illumos'">illumos</_portableOS>
+    <_portableOS Condition="'$(_runtimeOSFamily)' == 'Solaris'">solaris</_portableOS>
     <_portableOS Condition="'$(RuntimeOS)' == 'Browser'">browser</_portableOS>
     <_portableOS Condition="'$(RuntimeOS)' == 'ios'">ios</_portableOS>
     <_portableOS Condition="'$(RuntimeOS)' == 'tvos'">tvos</_portableOS>
@@ -124,10 +126,10 @@
     <MicrosoftNetCoreIlasmPackageRuntimeId>$(ToolRuntimeRID)</MicrosoftNetCoreIlasmPackageRuntimeId>
 
     <!-- support cross-targeting by choosing a RID to restore when running on a different machine that what we're build for -->
-    <_portableOS Condition="'$(TargetOS)' == 'Unix' and '$(_runtimeOSFamily)' != 'osx' and '$(_runtimeOSFamily)' != 'FreeBSD' and '$(_runtimeOS)' != 'linux-musl'">linux</_portableOS>
+    <_portableOS Condition="'$(TargetOS)' == 'Unix' and '$(_runtimeOSFamily)' != 'osx' and '$(_runtimeOSFamily)' != 'FreeBSD' and '$(_runtimeOS)' != 'linux-musl' and '$(_runtimeOSFamily)' != 'illumos' and '$(_runtimeOSFamily)' != 'Solaris'">linux</_portableOS>
 
     <!-- support cross-targeting by choosing a RID to restore when running on a different machine that what we're build for -->
-    <_portableOS Condition="'$(TargetOS)' == 'Unix' and '$(_runtimeOSFamily)' != 'osx' and '$(_runtimeOSFamily)' != 'FreeBSD' and '$(_runtimeOS)' != 'linux-musl'">linux</_portableOS>
+    <_portableOS Condition="'$(TargetOS)' == 'Unix' and '$(_runtimeOSFamily)' != 'osx' and '$(_runtimeOSFamily)' != 'FreeBSD' and '$(_runtimeOS)' != 'linux-musl' and '$(_runtimeOSFamily)' != 'illumos' and '$(_runtimeOSFamily)' != 'Solaris'">linux</_portableOS>
 
     <_packageRID />
     <_packageRID Condition="'$(PortableBuild)' == 'true'">$(_portableOS)-$(TargetArchitecture)</_packageRID>
@@ -159,14 +161,14 @@
 
   <!-- Import packaging props -->
   <Import Project="$(RepositoryEngineeringDir)packaging.props" />
-  
+
   <PropertyGroup>
     <RefRootPath>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'ref'))</RefRootPath>
     <!-- Assembly bin directory where implementation and ref output are placed -->
-    <AssemblyBinDirOutputPath Condition="'$(ReferenceAssemblyOutputPath)' == ''">$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', '$(MSBuildProjectName)'))</AssemblyBinDirOutputPath>  
+    <AssemblyBinDirOutputPath Condition="'$(ReferenceAssemblyOutputPath)' == ''">$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', '$(MSBuildProjectName)'))</AssemblyBinDirOutputPath>
     <BaseIntermediateOutputPath>$([MSBuild]::NormalizeDirectory('$(ArtifactsObjDir)', '$(MSBuildProjectName)'))</BaseIntermediateOutputPath>
     <BaseIntermediateOutputPath Condition="'$(IsReferenceAssembly)' == 'true'">$([MSBuild]::NormalizeDirectory('$(ArtifactsObjDir)', '$(MSBuildProjectName)', 'ref'))</BaseIntermediateOutputPath>
-    <BaseOutputPath Condition="'$(IsReferenceAssembly)' == 'true'">$([MSBuild]::NormalizeDirectory('$(AssemblyBinDirOutputPath)', 'ref'))</BaseOutputPath>    
+    <BaseOutputPath Condition="'$(IsReferenceAssembly)' == 'true'">$([MSBuild]::NormalizeDirectory('$(AssemblyBinDirOutputPath)', 'ref'))</BaseOutputPath>
   </PropertyGroup>
 
   <Import Project="$(RepositoryEngineeringDir)targetframeworksuffix.props" Condition="'$(DesignTimeBuild)' != 'true'" />

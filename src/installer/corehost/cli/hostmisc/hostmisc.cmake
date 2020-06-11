@@ -5,6 +5,10 @@
 include(${CMAKE_CURRENT_LIST_DIR}/configure.cmake)
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
 
+if(CLR_CMAKE_TARGET_OS_ILLUMOS)
+    add_definitions(-DTARGET_ILLUMOS)
+endif()
+
 # CMake does not recommend using globbing since it messes with the freshness checks
 list(APPEND SOURCES
     ${CMAKE_CURRENT_LIST_DIR}/trace.cpp

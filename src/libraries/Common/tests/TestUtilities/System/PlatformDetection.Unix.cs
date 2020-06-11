@@ -166,6 +166,39 @@ namespace System
                 // What we want is major release as minor releases should be compatible.
                 result.VersionId = ToVersion(RuntimeInformation.OSDescription.Split()[1].Split('.')[0]);
             }
+            else if (IsIllumos)
+            {
+                // examples:
+                //   on OmniOS
+                //       SunOS 5.11 omnios-r151018-95eaa7e
+                //   on OpenIndiana Hipster:
+                //       SunOS 5.11 illumos-63878f749f
+                //   on SmartOS:
+                //       SunOS 5.11 joyent_20200408T231825Z
+                var versionDescription = RuntimeInformation.OSDescription.Split(' ')[2];
+                switch (versionDescription)
+                {
+                    case string version when version.StartsWith("omnios"):
+                        result.Id = "OmniOS";
+                        result.VersionId = ToVersion(version.Substring("omnios-r".Length, 2)); // e.g. 15
+                        break;
+                    case string version when version.StartsWith("joyent"):
+                        result.Id = "SmartOS";
+                        result.VersionId = ToVersion(version.Substring("joyent_".Length, 4)); // e.g. 2020
+                        break;
+                    case string version when version.StartsWith("illumos"):
+                        result.Id = "OpenIndiana";
+                        // version-less
+                        break;
+                }
+            }
+            else if (IsSolaris)
+            {
+                // example:
+                //   SunOS 5.11 11.3
+                result.Id = "Solaris";
+                result.VersionId = ToVersion(RuntimeInformation.OSDescription.Split(' ')[2]); // e.g. 11.3
+            }
             else if (File.Exists("/etc/os-release"))
             {
                 foreach (string line in File.ReadAllLines("/etc/os-release"))
