@@ -1842,10 +1842,7 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static bool TryFindFirstMatchedLane(Vector128<byte> mask, Vector128<byte> compareResult, ref int matchedLane)
         {
-            if (!AdvSimd.IsSupported)
-            {
-                return false;
-            }
+            Debug.Assert(AdvSimd.IsSupported);
 
             ulong matches = AdvSimd.Arm64.MaxPairwise(compareResult, compareResult).AsUInt64().ToScalar();
             if (matches == 0)
