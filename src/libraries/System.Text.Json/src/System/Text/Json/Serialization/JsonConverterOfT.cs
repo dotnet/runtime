@@ -239,7 +239,7 @@ namespace System.Text.Json.Serialization
             return success;
         }
 
-        internal bool TryWrite(Utf8JsonWriter writer, T value, JsonSerializerOptions options, ref WriteStack state)
+        internal bool TryWrite(Utf8JsonWriter writer, in T value, JsonSerializerOptions options, ref WriteStack state)
         {
             if (writer.CurrentDepth >= options.EffectiveMaxDepth)
             {

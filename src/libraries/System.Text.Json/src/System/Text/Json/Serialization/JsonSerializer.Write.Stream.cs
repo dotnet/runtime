@@ -114,9 +114,7 @@ namespace System.Text.Json
                 }
 
                 WriteStack state = default;
-                state.Initialize(inputType, options, supportContinuation: true);
-
-                JsonConverter converterBase = state.Current.JsonClassInfo!.PropertyInfoForClassInfo.ConverterBase;
+                JsonConverter converterBase = state.Initialize(inputType, options, supportContinuation: true);
 
                 bool isFinalBlock;
 

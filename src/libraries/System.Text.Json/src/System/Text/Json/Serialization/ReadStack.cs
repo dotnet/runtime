@@ -82,7 +82,12 @@ namespace System.Text.Json
 
         public void Initialize(Type type, JsonSerializerOptions options, bool supportContinuation)
         {
-            JsonClassInfo jsonClassInfo = options.GetOrAddClass(type);
+            JsonClassInfo? jsonClassInfo = options.LastClass;
+            if (jsonClassInfo?.Type != type)
+            {
+                jsonClassInfo = options.GetOrAddClass(type);
+                options.LastClass = jsonClassInfo;
+            }
 
             Current.JsonClassInfo = jsonClassInfo;
 

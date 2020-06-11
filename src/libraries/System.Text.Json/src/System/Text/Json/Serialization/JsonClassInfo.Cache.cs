@@ -442,18 +442,10 @@ namespace System.Text.Json
 
             if (length > 7)
             {
-                key = MemoryMarshal.Read<ulong>(propertyName);
-
-                // Max out the length byte.
-                // This will cause the comparison logic to always test for equality against the full contents
-                // when the first 7 bytes are the same.
-                key |= 0xFF00000000000000;
-
-                // It is also possible to include the length up to 0xFF in order to prevent false positives
-                // when the first 7 bytes match but a different length (up to 0xFF). However the extra logic
-                // slows key generation in the majority of cases:
-                // key &= 0x00FFFFFFFFFFFFFF;
-                // key |= (ulong) 7 << Math.Max(length, 0xFF);
+                key = MemoryMarshal.Read<ulong>(propertyName)
+                    & 0x00FFFFFFFFFFFFFF
+                    // Include the length with a max of 0xFF so we force comparisons when length >=0xFF.
+                    | ((ulong)Math.Min(length, 0xFF)) << (7 * BitsInByte);
             }
             else if (length > 3)
             {
@@ -509,13 +501,17 @@ namespace System.Text.Json
 
             // Verify key contains the embedded bytes as expected.
             Debug.Assert(
+                // Verify embedded characters.
                 (length < 1 || propertyName[0] == ((key & ((ulong)0xFF << 8 * 0)) >> 8 * 0)) &&
                 (length < 2 || propertyName[1] == ((key & ((ulong)0xFF << 8 * 1)) >> 8 * 1)) &&
                 (length < 3 || propertyName[2] == ((key & ((ulong)0xFF << 8 * 2)) >> 8 * 2)) &&
                 (length < 4 || propertyName[3] == ((key & ((ulong)0xFF << 8 * 3)) >> 8 * 3)) &&
                 (length < 5 || propertyName[4] == ((key & ((ulong)0xFF << 8 * 4)) >> 8 * 4)) &&
                 (length < 6 || propertyName[5] == ((key & ((ulong)0xFF << 8 * 5)) >> 8 * 5)) &&
-                (length < 7 || propertyName[6] == ((key & ((ulong)0xFF << 8 * 6)) >> 8 * 6)));
+                (length < 7 || propertyName[6] == ((key & ((ulong)0xFF << 8 * 6)) >> 8 * 6)) &&
+                // Verify embedded length.
+                ((length >= 0xFF || (key & ((ulong)0xFF << 8 * 7)) >> 8 * 7 == (ulong)length)) &&
+                ((length < 0xFF || (key & ((ulong)0xFF << 8 * 7)) >> 8 * 7 == 0xFF)));
 
             return key;
         }

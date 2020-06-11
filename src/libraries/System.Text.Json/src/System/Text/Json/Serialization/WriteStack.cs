@@ -66,9 +66,14 @@ namespace System.Text.Json
         /// <summary>
         /// Initialize the state without delayed initialization of the JsonClassInfo.
         /// </summary>
-        public void Initialize(Type type, JsonSerializerOptions options, bool supportContinuation)
+        public JsonConverter Initialize(Type type, JsonSerializerOptions options, bool supportContinuation)
         {
-            JsonClassInfo jsonClassInfo = options.GetOrAddClass(type);
+            JsonClassInfo? jsonClassInfo = options.LastClass;
+            if (jsonClassInfo?.Type != type)
+            {
+                jsonClassInfo = options.GetOrAddClass(type);
+                options.LastClass = jsonClassInfo;
+            }
 
             Current.JsonClassInfo = jsonClassInfo;
 
@@ -77,13 +82,14 @@ namespace System.Text.Json
                 Current.DeclaredJsonPropertyInfo = jsonClassInfo.PropertyInfoForClassInfo;
             }
 
-            bool preserveReferences = options.ReferenceHandler != null;
-            if (preserveReferences)
+            if (options.ReferenceHandler != null)
             {
                 ReferenceResolver = options.ReferenceHandler!.CreateResolver(writing: true);
             }
 
             SupportContinuation = supportContinuation;
+
+            return jsonClassInfo.PropertyInfoForClassInfo.ConverterBase;
         }
 
         public void Push()

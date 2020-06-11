@@ -21,6 +21,10 @@ namespace System.Text.Json
 
         private readonly ConcurrentDictionary<Type, JsonClassInfo> _classes = new ConcurrentDictionary<Type, JsonClassInfo>();
 
+        // Simple LRU cache for the public (de)serialize entry points that avoid some lookups in _classes.
+        // Although this may be written by multiple threads, 'volatile' was not added since any local affinity is fine.
+        internal JsonClassInfo? LastClass { get; set; }
+
         // For any new option added, adding it to the options copied in the copy constructor below must be considered.
 
         private MemberAccessor? _memberAccessorStrategy;

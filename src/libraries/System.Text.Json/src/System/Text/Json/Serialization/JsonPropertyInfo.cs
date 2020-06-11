@@ -5,6 +5,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Text.Json.Serialization;
 
 namespace System.Text.Json
@@ -23,9 +24,13 @@ namespace System.Text.Json
         public static JsonPropertyInfo GetPropertyPlaceholder()
         {
             JsonPropertyInfo info = new JsonPropertyInfo<object>();
+
             Debug.Assert(!info.IsForClassInfo);
             Debug.Assert(!info.ShouldDeserialize);
             Debug.Assert(!info.ShouldSerialize);
+
+            info.NameAsString = string.Empty;
+
             return info;
         }
 
@@ -82,11 +87,8 @@ namespace System.Text.Json
 
             Debug.Assert(NameAsString != null);
 
-            // At this point propertyName is valid UTF16, so just call the simple UTF16->UTF8 encoder.
             NameAsUtf8Bytes = Encoding.UTF8.GetBytes(NameAsString);
-
-            // Cache the escaped property name.
-            EscapedName = JsonEncodedText.Encode(NameAsString, NameAsUtf8Bytes, Options.Encoder);
+            EscapedNameSection = JsonHelpers.GetEscapedPropertyNameSection(NameAsUtf8Bytes, Options.Encoder);
         }
 
         private void DetermineSerializationCapabilities(JsonIgnoreCondition? ignoreCondition)
@@ -203,8 +205,7 @@ namespace System.Text.Json
         // There are 3 copies of the property name:
         // 1) NameAsString. The unescaped property name.
         // 2) NameAsUtf8Bytes. The Utf8 version of NameAsString. Used during during deserialization for property lookup.
-        // 3) EscapedName. The escaped verson of NameAsString and NameAsUtf8Bytes written during serialization. Internally shares
-        // the same instances of NameAsString and NameAsUtf8Bytes if there is no escaping.
+        // 3) EscapedNameSection. The escaped verson of NameAsUtf8Bytes plus the wrapping quotes and a trailing colon. Used during serialization.
 
         /// <summary>
         /// The unescaped name of the property.
@@ -212,20 +213,17 @@ namespace System.Text.Json
         /// the value specified in JsonPropertyNameAttribute,
         /// or the value returned from PropertyNamingPolicy(clrPropertyName).
         /// </summary>
-        public string? NameAsString { get; private set; }
+        public string NameAsString { get; private set; } = null!;
 
         /// <summary>
         /// Utf8 version of NameAsString.
         /// </summary>
-        public byte[]? NameAsUtf8Bytes { get; private set; }
+        public byte[] NameAsUtf8Bytes = null!;
 
         /// <summary>
         /// The escaped name passed to the writer.
         /// </summary>
-        /// <remarks>
-        /// JsonEncodedText is a value type so a field is used (not a property) to avoid unnecessary copies.
-        /// </remarks>
-        public JsonEncodedText? EscapedName;
+        public byte[] EscapedNameSection = null!;
 
         // Options can be referenced here since all JsonPropertyInfos originate from a JsonClassInfo that is cached on JsonSerializerOptions.
         protected JsonSerializerOptions Options { get; set; } = null!; // initialized in Init method

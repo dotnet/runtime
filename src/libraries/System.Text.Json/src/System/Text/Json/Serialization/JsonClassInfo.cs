@@ -170,7 +170,7 @@ namespace System.Text.Json
                         if (DetermineExtensionDataProperty(cache))
                         {
                             // Remove from cache since it is handled independently.
-                            cache.Remove(DataExtensionProperty!.NameAsString!);
+                            cache.Remove(DataExtensionProperty!.NameAsString);
 
                             cacheArray = new JsonPropertyInfo[cache.Count + 1];
 
@@ -265,10 +265,10 @@ namespace System.Text.Json
 
                         // One object property cannot map to multiple constructor
                         // parameters (ConvertName above can't return multiple strings).
-                        parameterCache.Add(jsonPropertyInfo.NameAsString!, jsonParameterInfo);
+                        parameterCache.Add(jsonPropertyInfo.NameAsString, jsonParameterInfo);
 
                         // Remove property from deserialization cache to reduce the number of JsonPropertyInfos considered during JSON matching.
-                        propertyCache.Remove(jsonPropertyInfo.NameAsString!);
+                        propertyCache.Remove(jsonPropertyInfo.NameAsString);
 
                         isBound = true;
                         firstMatch = propertyInfo;
@@ -278,7 +278,7 @@ namespace System.Text.Json
 
             // It is invalid for the extension data property to bind with a constructor argument.
             if (DataExtensionProperty != null &&
-                parameterCache.ContainsKey(DataExtensionProperty.NameAsString!))
+                parameterCache.ContainsKey(DataExtensionProperty.NameAsString))
             {
                 ThrowHelper.ThrowInvalidOperationException_ExtensionDataCannotBindToCtorParam(DataExtensionProperty.PropertyInfo!, Type, constructorInfo);
             }
