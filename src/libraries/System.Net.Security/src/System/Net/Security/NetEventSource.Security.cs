@@ -84,8 +84,9 @@ namespace System.Net
                 SslStreamCtor(IdOf(sslStream), localId, remoteId);
             }
         }
+
         [Event(SslStreamCtorId, Keywords = Keywords.Default, Level = EventLevel.Informational)]
-        private unsafe void SslStreamCtor(string thisOrContextObject, string? localId, string? remoteId ) =>
+        private unsafe void SslStreamCtor(string thisOrContextObject, string? localId, string? remoteId) =>
               WriteEvent(SslStreamCtorId, thisOrContextObject, localId, remoteId);
 
         [NonEvent]
