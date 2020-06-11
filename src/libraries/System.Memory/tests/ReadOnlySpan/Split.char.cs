@@ -69,12 +69,12 @@ namespace System.SpanTests
 
             SpanSplitEnumerator<char>  enumerator = buffer.Split(default(char));
             Assert.True(enumerator.MoveNext());
-            Assert.Equal(enumerator.Current, new Range(0, 0));
+            Assert.Equal(new Range(0, 0), enumerator.Current);
             Assert.False(enumerator.MoveNext());
 
             enumerator = buffer.Split(' ');
             Assert.True(enumerator.MoveNext());
-            Assert.Equal(enumerator.Current, new Range(0, 0));
+            Assert.Equal(new Range(0, 0), enumerator.Current);
             Assert.False(enumerator.MoveNext());
 
             // Empty buffer
@@ -82,12 +82,12 @@ namespace System.SpanTests
 
             enumerator = buffer.Split(default(char));
             Assert.True(enumerator.MoveNext());
-            Assert.Equal(enumerator.Current, new Range(0, 0));
+            Assert.Equal(new Range(0, 0), enumerator.Current);
             Assert.False(enumerator.MoveNext());
 
             enumerator = buffer.Split(' ');
             Assert.True(enumerator.MoveNext());
-            Assert.Equal(enumerator.Current, new Range(0, 0));
+            Assert.Equal(new Range(0, 0), enumerator.Current);
             Assert.False(enumerator.MoveNext());
 
             // Single whitespace buffer
@@ -114,17 +114,17 @@ namespace System.SpanTests
 
             SpanSplitEnumerator<char> enumerator = buffer.Split(null); // null is treated as empty string
             Assert.True(enumerator.MoveNext());
-            Assert.Equal(enumerator.Current, new Range(0, 0));
+            Assert.Equal(new Range(0, 0), enumerator.Current);
             Assert.False(enumerator.MoveNext());
 
             enumerator = buffer.Split("");
             Assert.True(enumerator.MoveNext());
-            Assert.Equal(enumerator.Current, new Range(0, 0));
+            Assert.Equal(new Range(0, 0), enumerator.Current);
             Assert.False(enumerator.MoveNext());
 
             enumerator = buffer.Split(" ");
             Assert.True(enumerator.MoveNext());
-            Assert.Equal(enumerator.Current, new Range(0, 0));
+            Assert.Equal(new Range(0, 0), enumerator.Current);
             Assert.False(enumerator.MoveNext());
 
             // Empty buffer
@@ -132,17 +132,17 @@ namespace System.SpanTests
 
             enumerator = buffer.Split(null);
             Assert.True(enumerator.MoveNext());
-            Assert.Equal(enumerator.Current, new Range(0, 0));
+            Assert.Equal(new Range(0, 0), enumerator.Current);
             Assert.False(enumerator.MoveNext());
 
             enumerator = buffer.Split("");
             Assert.True(enumerator.MoveNext());
-            Assert.Equal(enumerator.Current, new Range(0, 0));
+            Assert.Equal(new Range(0, 0), enumerator.Current);
             Assert.False(enumerator.MoveNext());
 
             enumerator = buffer.Split(" ");
             Assert.True(enumerator.MoveNext());
-            Assert.Equal(enumerator.Current, new Range(0, 0));
+            Assert.Equal(new Range(0, 0), enumerator.Current);
             Assert.False(enumerator.MoveNext());
 
             // Single whitespace buffer
@@ -150,24 +150,24 @@ namespace System.SpanTests
 
             enumerator = buffer.Split(null); // null is treated as empty string
             Assert.True(enumerator.MoveNext());
-            Assert.Equal(enumerator.Current, new Range(0, 0));
+            Assert.Equal(new Range(0, 0), enumerator.Current);
             Assert.True(enumerator.MoveNext());
-            Assert.Equal(enumerator.Current, new Range(1, 1));
+            Assert.Equal(new Range(1, 1), enumerator.Current);
             Assert.False(enumerator.MoveNext());
 
             enumerator = buffer.Split("");
             Assert.True(enumerator.MoveNext());
-            Assert.Equal(enumerator.Current, new Range(0, 0));
+            Assert.Equal(new Range(0, 0), enumerator.Current);
             Assert.True(enumerator.MoveNext());
-            Assert.Equal(enumerator.Current, new Range(1, 1));
+            Assert.Equal(new Range(1, 1), enumerator.Current);
             Assert.False(enumerator.MoveNext());
 
             enumerator = buffer.Split(" ");
-            Assert.Equal(enumerator.Current, new Range(0, 0));
+            Assert.Equal(new Range(0, 0), enumerator.Current);
             Assert.True(enumerator.MoveNext());
-            Assert.Equal(enumerator.Current, new Range(0, 0));
+            Assert.Equal(new Range(0, 0), enumerator.Current);
             Assert.True(enumerator.MoveNext());
-            Assert.Equal(enumerator.Current, new Range(1, 1));
+            Assert.Equal(new Range(1, 1), enumerator.Current);
             Assert.False(enumerator.MoveNext());
         }
 
