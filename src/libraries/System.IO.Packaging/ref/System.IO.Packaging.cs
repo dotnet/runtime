@@ -10,13 +10,13 @@ namespace System.IO
     public partial class FileFormatException : System.FormatException
     {
         public FileFormatException() { }
-        public FileFormatException(string message) { }
-        public FileFormatException(string message, System.Exception innerException) { }
-        public FileFormatException(System.Uri sourceUri) { }
-        public FileFormatException(System.Uri sourceUri, System.Exception innerException) { }
-        public FileFormatException(System.Uri sourceUri, string message) { }
-        public FileFormatException(System.Uri sourceUri, string message, System.Exception innerException) { }
-        public System.Uri SourceUri { get { throw null; } }
+        public FileFormatException(string? message) { }
+        public FileFormatException(string? message, System.Exception? innerException) { }
+        public FileFormatException(System.Uri? sourceUri) { }
+        public FileFormatException(System.Uri? sourceUri, System.Exception? innerException) { }
+        public FileFormatException(System.Uri? sourceUri, string? message) { }
+        public FileFormatException(System.Uri? sourceUri, string? message, System.Exception? innerException) { }
+        public System.Uri? SourceUri { get { throw null; } }
     }
 }
 namespace System.IO.Packaging
@@ -44,7 +44,7 @@ namespace System.IO.Packaging
         public System.IO.Packaging.PackagePart CreatePart(System.Uri partUri, string contentType, System.IO.Packaging.CompressionOption compressionOption) { throw null; }
         protected abstract System.IO.Packaging.PackagePart CreatePartCore(System.Uri partUri, string contentType, System.IO.Packaging.CompressionOption compressionOption);
         public System.IO.Packaging.PackageRelationship CreateRelationship(System.Uri targetUri, System.IO.Packaging.TargetMode targetMode, string relationshipType) { throw null; }
-        public System.IO.Packaging.PackageRelationship CreateRelationship(System.Uri targetUri, System.IO.Packaging.TargetMode targetMode, string relationshipType, string id) { throw null; }
+        public System.IO.Packaging.PackageRelationship CreateRelationship(System.Uri targetUri, System.IO.Packaging.TargetMode targetMode, string relationshipType, string? id) { throw null; }
         public void DeletePart(System.Uri partUri) { }
         protected abstract void DeletePartCore(System.Uri partUri);
         public void DeleteRelationship(string id) { }
@@ -52,7 +52,7 @@ namespace System.IO.Packaging
         public void Flush() { }
         protected abstract void FlushCore();
         public System.IO.Packaging.PackagePart GetPart(System.Uri partUri) { throw null; }
-        protected abstract System.IO.Packaging.PackagePart GetPartCore(System.Uri partUri);
+        protected abstract System.IO.Packaging.PackagePart? GetPartCore(System.Uri partUri);
         public System.IO.Packaging.PackagePartCollection GetParts() { throw null; }
         protected abstract System.IO.Packaging.PackagePart[] GetPartsCore();
         public System.IO.Packaging.PackageRelationship GetRelationship(string id) { throw null; }
@@ -72,14 +72,14 @@ namespace System.IO.Packaging
     public abstract partial class PackagePart
     {
         protected PackagePart(System.IO.Packaging.Package package, System.Uri partUri) { }
-        protected PackagePart(System.IO.Packaging.Package package, System.Uri partUri, string contentType) { }
-        protected PackagePart(System.IO.Packaging.Package package, System.Uri partUri, string contentType, System.IO.Packaging.CompressionOption compressionOption) { }
+        protected PackagePart(System.IO.Packaging.Package package, System.Uri partUri, string? contentType) { }
+        protected PackagePart(System.IO.Packaging.Package package, System.Uri partUri, string? contentType, System.IO.Packaging.CompressionOption compressionOption) { }
         public System.IO.Packaging.CompressionOption CompressionOption { get { throw null; } }
         public string ContentType { get { throw null; } }
         public System.IO.Packaging.Package Package { get { throw null; } }
         public System.Uri Uri { get { throw null; } }
         public System.IO.Packaging.PackageRelationship CreateRelationship(System.Uri targetUri, System.IO.Packaging.TargetMode targetMode, string relationshipType) { throw null; }
-        public System.IO.Packaging.PackageRelationship CreateRelationship(System.Uri targetUri, System.IO.Packaging.TargetMode targetMode, string relationshipType, string id) { throw null; }
+        public System.IO.Packaging.PackageRelationship CreateRelationship(System.Uri targetUri, System.IO.Packaging.TargetMode targetMode, string relationshipType, string? id) { throw null; }
         public void DeleteRelationship(string id) { }
         protected virtual string GetContentTypeCore() { throw null; }
         public System.IO.Packaging.PackageRelationship GetRelationship(string id) { throw null; }
@@ -88,7 +88,7 @@ namespace System.IO.Packaging
         public System.IO.Stream GetStream() { throw null; }
         public System.IO.Stream GetStream(System.IO.FileMode mode) { throw null; }
         public System.IO.Stream GetStream(System.IO.FileMode mode, System.IO.FileAccess access) { throw null; }
-        protected abstract System.IO.Stream GetStreamCore(System.IO.FileMode mode, System.IO.FileAccess access);
+        protected abstract System.IO.Stream? GetStreamCore(System.IO.FileMode mode, System.IO.FileAccess access);
         public bool RelationshipExists(string id) { throw null; }
     }
     public partial class PackagePartCollection : System.Collections.Generic.IEnumerable<System.IO.Packaging.PackagePart>, System.Collections.IEnumerable
@@ -101,22 +101,22 @@ namespace System.IO.Packaging
     public abstract partial class PackageProperties : System.IDisposable
     {
         protected PackageProperties() { }
-        public abstract string Category { get; set; }
-        public abstract string ContentStatus { get; set; }
-        public abstract string ContentType { get; set; }
+        public abstract string? Category { get; set; }
+        public abstract string? ContentStatus { get; set; }
+        public abstract string? ContentType { get; set; }
         public abstract System.DateTime? Created { get; set; }
-        public abstract string Creator { get; set; }
-        public abstract string Description { get; set; }
-        public abstract string Identifier { get; set; }
-        public abstract string Keywords { get; set; }
-        public abstract string Language { get; set; }
-        public abstract string LastModifiedBy { get; set; }
+        public abstract string? Creator { get; set; }
+        public abstract string? Description { get; set; }
+        public abstract string? Identifier { get; set; }
+        public abstract string? Keywords { get; set; }
+        public abstract string? Language { get; set; }
+        public abstract string? LastModifiedBy { get; set; }
         public abstract System.DateTime? LastPrinted { get; set; }
         public abstract System.DateTime? Modified { get; set; }
-        public abstract string Revision { get; set; }
-        public abstract string Subject { get; set; }
-        public abstract string Title { get; set; }
-        public abstract string Version { get; set; }
+        public abstract string? Revision { get; set; }
+        public abstract string? Subject { get; set; }
+        public abstract string? Title { get; set; }
+        public abstract string? Version { get; set; }
         public void Dispose() { }
         protected virtual void Dispose(bool disposing) { }
     }
@@ -152,7 +152,7 @@ namespace System.IO.Packaging
     public static partial class PackUriHelper
     {
         public static readonly string UriSchemePack;
-        public static int ComparePartUri(System.Uri firstPartUri, System.Uri secondPartUri) { throw null; }
+        public static int ComparePartUri(System.Uri? firstPartUri, System.Uri? secondPartUri) { throw null; }
         public static System.Uri CreatePartUri(System.Uri partUri) { throw null; }
         public static System.Uri GetNormalizedPartUri(System.Uri partUri) { throw null; }
         public static System.Uri GetRelationshipPartUri(System.Uri partUri) { throw null; }
@@ -173,12 +173,12 @@ namespace System.IO.Packaging
         protected override void DeletePartCore(System.Uri partUri) { }
         protected override void Dispose(bool disposing) { }
         protected override void FlushCore() { }
-        protected override System.IO.Packaging.PackagePart GetPartCore(System.Uri partUri) { throw null; }
+        protected override System.IO.Packaging.PackagePart? GetPartCore(System.Uri partUri) { throw null; }
         protected override System.IO.Packaging.PackagePart[] GetPartsCore() { throw null; }
     }
     public sealed partial class ZipPackagePart : System.IO.Packaging.PackagePart
     {
         internal ZipPackagePart() : base (default(System.IO.Packaging.Package), default(System.Uri)) { }
-        protected override System.IO.Stream GetStreamCore(System.IO.FileMode streamFileMode, System.IO.FileAccess streamFileAccess) { throw null; }
+        protected override System.IO.Stream? GetStreamCore(System.IO.FileMode streamFileMode, System.IO.FileAccess streamFileAccess) { throw null; }
     }
 }
