@@ -217,18 +217,21 @@ namespace Microsoft.Extensions.Internal
         private static void FindApplicableConstructor(
             Type instanceType,
             Type[] argumentTypes,
-            [NotNull] out ConstructorInfo? matchingConstructor,
-            [NotNull] out int?[]? parameterMap)
+            out ConstructorInfo matchingConstructor,
+            out int?[] matchingParameterMap)
         {
-            matchingConstructor = null;
-            parameterMap = null;
+            ConstructorInfo? constructorInfo = null;
+            int?[]? parameterMap = null;
 
-            if (!TryFindPreferredConstructor(instanceType, argumentTypes, ref matchingConstructor, ref parameterMap) &&
-                !TryFindMatchingConstructor(instanceType, argumentTypes, ref matchingConstructor, ref parameterMap))
+            if (!TryFindPreferredConstructor(instanceType, argumentTypes, ref constructorInfo, ref parameterMap) &&
+                !TryFindMatchingConstructor(instanceType, argumentTypes, ref constructorInfo, ref parameterMap))
             {
                 var message = $"A suitable constructor for type '{instanceType}' could not be located. Ensure the type is concrete and services are registered for all parameters of a public constructor.";
                 throw new InvalidOperationException(message);
             }
+
+            matchingConstructor = constructorInfo;
+            matchingParameterMap = parameterMap;
         }
 
         // Tries to find constructor based on provided argument types
