@@ -1,4 +1,4 @@
-// This is a non-atomic fake implementatino of stdatomics for when 
+// This is a non-atomic fake implementation of stdatomic.h for when
 // compiler C11 stdatomic support is missing and only single threaded
 // operation is required
 

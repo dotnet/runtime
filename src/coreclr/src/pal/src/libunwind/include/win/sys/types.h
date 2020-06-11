@@ -13,7 +13,7 @@
 #include <../ucrt/sys/types.h>
 #include <stddef.h>
 
-typedef size_t pid_t;
+typedef int pid_t;
 typedef ptrdiff_t ssize_t;
 
 #endif // _MSC_VER

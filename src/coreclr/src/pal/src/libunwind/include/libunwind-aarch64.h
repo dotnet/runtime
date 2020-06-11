@@ -194,7 +194,7 @@ struct unw_sigcontext
 	uint64_t sp;
 	uint64_t pc;
 	uint64_t pstate;
-	uint8_t alignas(16) __reserved[(66 * 8)];
+	alignas(16) uint8_t __reserved[(66 * 8)];
 };
 
 typedef struct

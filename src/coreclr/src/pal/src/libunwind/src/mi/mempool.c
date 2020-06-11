@@ -41,7 +41,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.  */
 # define MAX_ALIGN      MAX_ALIGN_(sizeof (long double))
 #endif
 
-static char alignas(MAX_ALIGN) sos_memory[SOS_MEMORY_SIZE];
+static alignas(MAX_ALIGN) char sos_memory[SOS_MEMORY_SIZE];
 static _Atomic size_t sos_memory_freepos = 0;
 static size_t pg_size;
 

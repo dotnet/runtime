@@ -77,7 +77,7 @@ typedef _Unwind_Reason_Code (*_Unwind_Stop_Fn) (int, _Unwind_Action,
    even on 32-bit machines for gcc compatibility.  */
 struct _Unwind_Exception
   {
-    uint64_t alignas(8) exception_class;
+    alignas(8) uint64_t exception_class;
     _Unwind_Exception_Cleanup_Fn exception_cleanup;
     unsigned long private_1;
     unsigned long private_2;
