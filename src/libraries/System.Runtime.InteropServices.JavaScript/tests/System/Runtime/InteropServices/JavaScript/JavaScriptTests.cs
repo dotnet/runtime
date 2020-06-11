@@ -7,6 +7,7 @@ using Xunit;
 
 namespace System.Runtime.InteropServices.JavaScript.Tests
 {
+    [PlatformSpecific(TestPlatforms.Browser)]
     public static class JavaScriptTests
     {
 
