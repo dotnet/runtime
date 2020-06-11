@@ -47,14 +47,14 @@ if(CLR_CMAKE_HOST_WIN32)
     # Fake it until support is added
     check_include_files(stdalign.h HAVE_STDALIGN_H)
     if (NOT HAVE_STDALIGN_H)
-        configure_file(include/win/fakestdalign.h.in ${CMAKE_CURRENT_BINARY_DIR}/include/stdalign.h)
+        configure_file(include/win/fakestdalign.h.in ${CMAKE_CURRENT_BINARY_DIR}/include/stdalign.h COPYONLY)
     endif (NOT HAVE_STDALIGN_H)
 
     # MSVC compiler is currently missing C11 stdatomic.h header
     # Fake it until support is added
     check_include_files(stdatomic.h HAVE_STDATOMIC_H)
     if (NOT HAVE_STDATOMIC_H)
-        configure_file(include/win/fakestdatomic.h.in ${CMAKE_CURRENT_BINARY_DIR}/include/stdatomic.h)
+        configure_file(include/win/fakestdatomic.h.in ${CMAKE_CURRENT_BINARY_DIR}/include/stdatomic.h COPYONLY)
     endif (NOT HAVE_STDATOMIC_H)
 
     # MSVC compiler is currently missing C11 _Thread_local
