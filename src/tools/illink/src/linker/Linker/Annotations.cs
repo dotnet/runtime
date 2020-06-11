@@ -460,7 +460,7 @@ namespace Mono.Linker
 		{
 			var attributes = GetLinkerAttributes<T> (member);
 			if (attributes.Count () > 1) {
-				context.LogWarning ($"Attribute '{typeof (T).FullName}' should only be used once on '{member}'.", 2027, MessageOrigin.TryGetOrigin (member));
+				context.LogWarning ($"Attribute '{typeof (T).FullName}' should only be used once on '{member}'.", 2027, member);
 			}
 
 			Debug.Assert (attributes.Count () <= 1);

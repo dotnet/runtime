@@ -92,8 +92,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
 		class NonTypeType
 		{
-			[LogContains ("warning IL2041: DynamicallyAccessedMembersAttribute is specified " +
-				"on method 'System.Reflection.MethodInfo Mono.Linker.Tests.Cases.DataFlow.MethodThisDataFlow/NonTypeType::GetMethod(System.String)'. " +
+			[LogContains ("warning IL2041: Mono.Linker.Tests.Cases.DataFlow.MethodThisDataFlow/NonTypeType::GetMethod(System.String): " +
 				"The DynamicallyAccessedMembersAttribute is only allowed on method parameters, return value or generic parameters.")]
 			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
 			public MethodInfo GetMethod (string name)
@@ -101,8 +100,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				return null;
 			}
 
-			[LogContains ("warning IL2041: DynamicallyAccessedMembersAttribute is specified " +
-				"on method 'System.Void Mono.Linker.Tests.Cases.DataFlow.MethodThisDataFlow/NonTypeType::StaticMethod()'. " +
+			[LogContains ("warning IL2041: Mono.Linker.Tests.Cases.DataFlow.MethodThisDataFlow/NonTypeType::StaticMethod(): " +
 				"The DynamicallyAccessedMembersAttribute is only allowed on method parameters, return value or generic parameters.")]
 			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
 			public static void StaticMethod ()
