@@ -626,11 +626,11 @@ namespace System.Globalization
             invariant._iFirstDayOfWeek = 0;                      // first day of week
             invariant._iFirstWeekOfYear = 0;                      // first week of year
 
+            // all available calendar type(s).  The first one is the default calendar
+            invariant._waCalendars = new CalendarId[] { CalendarId.GREGORIAN };
+
             if (!GlobalizationMode.Invariant)
             {
-                // all available calendar type(s).  The first one is the default calendar
-                invariant._waCalendars = new CalendarId[] { CalendarId.GREGORIAN };
-
                 // Store for specific data about each calendar
                 invariant._calendars = new CalendarData[CalendarData.MAX_CALENDARS];
                 invariant._calendars[0] = CalendarData.Invariant;
@@ -1671,7 +1671,7 @@ namespace System.Globalization
         {
             get
             {
-                if (_waCalendars == null)
+                if (_waCalendars == null && !GlobalizationMode.Invariant)
                 {
                     // We pass in an array of ints, and native side fills it up with count calendars.
                     // We then have to copy that list to a new array of the right size.
@@ -1739,7 +1739,7 @@ namespace System.Globalization
                     }
                 }
 
-                return _waCalendars;
+                return _waCalendars!;
             }
         }
 
