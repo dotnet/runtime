@@ -182,10 +182,13 @@ namespace System.Runtime.InteropServices.JavaScript
             JSObject? jsObject;
             if (rawObj is Delegate dele)
             {
+                jsObject = new JSObject(jsId, dele);
+                lock (_boundObjects)
+                {
+                    _boundObjects.Add(jsId, new WeakReference(jsObject));
+                }
                 lock (_weakDelegateTable)
                 {
-                    jsObject = new JSObject(jsId, dele);
-                    _boundObjects.Add(jsId, new WeakReference(jsObject));
                     _weakDelegateTable.Add(dele, jsObject);
                 }
             }
@@ -199,7 +202,7 @@ namespace System.Runtime.InteropServices.JavaScript
                     }
                 }
             }
-            return jsObject?.Int32Handle ?? -1;
+            return jsObject.Int32Handle;
         }
 
         private static int GetJSObjectId(object rawObj)
@@ -439,7 +442,6 @@ namespace System.Runtime.InteropServices.JavaScript
             return _addRefSucceeded;
         }
 
-        //[DynamicDependency(DynamicallyAccessedMemberTypes.All)]
         private static void SafeHandleRelease(SafeHandle safeHandle)
         {
             safeHandle.DangerousRelease();
@@ -453,7 +455,6 @@ namespace System.Runtime.InteropServices.JavaScript
 #endif
         }
 
-        //[DynamicDependency(DynamicallyAccessedMemberTypes.All)]
         private static void SafeHandleReleaseByHandle(int jsId)
         {
 #if DEBUG_HANDLE
@@ -486,11 +487,7 @@ namespace System.Runtime.InteropServices.JavaScript
 #if DEBUG_HANDLE
             Console.WriteLine($"SafeHandleGetHandle: {safeHandle.DangerousGetHandle()} / addRef {addRef}");
 #endif
-            if (addRef)
-                if (SafeHandleAddRef(safeHandle))
-                    return safeHandle.DangerousGetHandle();
-                else
-                    return IntPtr.Zero;
+            if (addRef && !SafeHandleAddRef(safeHandle)) return IntPtr.Zero;
             return safeHandle.DangerousGetHandle();
         }
 
