@@ -4,8 +4,9 @@
 #include "ep-rt-config.h"
 #if !defined(EP_INCLUDE_SOURCE_FILES) || defined(EP_FORCE_INCLUDE_SOURCE_FILES)
 
-#define EP_IMPL_GETTER_SETTER
-#include "ep.h"
+#define EP_IMPL_EVENT_GETTER_SETTER
+#include "ep-event.h"
+#include "ep-metadata-generator.h"
 
 /*
  * Forward declares of all static functions.
@@ -41,6 +42,7 @@ event_build_minimum_metadata (
 		ep_event->keywords,
 		ep_event->event_version,
 		ep_event->level,
+		0,
 		NULL,
 		0,
 		&output_len);
@@ -59,7 +61,7 @@ ep_event_alloc (
 	const uint8_t *metadata,
 	uint32_t metadata_len)
 {
-	ep_return_null_if_nok (provider != NULL);
+	EP_ASSERT (provider != NULL);
 
 	EventPipeEvent *instance = ep_rt_object_alloc (EventPipeEvent);
 	ep_raise_error_if_nok (instance != NULL);
@@ -88,7 +90,6 @@ ep_on_exit:
 
 ep_on_error:
 	ep_event_free (instance);
-
 	instance = NULL;
 	ep_exit_error_handler ();
 }
