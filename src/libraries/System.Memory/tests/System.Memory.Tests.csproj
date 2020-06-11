@@ -165,7 +165,6 @@
     <Compile Include="ReadOnlySpan\SequenceEqual.long.cs" />
     <Compile Include="ReadOnlySpan\SequenceEqual.T.cs" />
     <Compile Include="ReadOnlySpan\Slice.cs" />
-    <Compile Include="ReadOnlySpan\Split.char.cs" />
     <Compile Include="ReadOnlySpan\StartsWith.byte.cs" />
     <Compile Include="ReadOnlySpan\StartsWith.long.cs" />
     <Compile Include="ReadOnlySpan\StartsWith.T.cs" />
