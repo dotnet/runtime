@@ -19,7 +19,7 @@ namespace System.Runtime.CompilerServices
     /// - The method must be parameterless.
     /// - The method must return `void`.
     /// - The method must not be generic or be contained in a generic type.
-    ///  - The method's effective accessibility must be `internal` or `public`.
+    /// - The method's effective accessibility must be `internal` or `public`.
     ///
     /// The specification for module initializers in the .NET runtime can be found here:
     /// https://github.com/dotnet/runtime/blob/master/docs/design/specs/Ecma-335-Augments.md#module-initializer
