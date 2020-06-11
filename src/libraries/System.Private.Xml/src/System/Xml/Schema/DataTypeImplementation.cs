@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 namespace System.Xml.Schema
 {
     using System;
@@ -81,13 +82,13 @@ namespace System.Xml.Schema
         internal int Length;
         internal int MinLength;
         internal int MaxLength;
-        internal ArrayList Patterns;
-        internal ArrayList Enumeration;
+        internal ArrayList? Patterns;
+        internal ArrayList? Enumeration;
         internal XmlSchemaWhiteSpace WhiteSpace;
-        internal object MaxInclusive;
-        internal object MaxExclusive;
-        internal object MinInclusive;
-        internal object MinExclusive;
+        internal object? MaxInclusive;
+        internal object? MaxExclusive;
+        internal object? MinInclusive;
+        internal object? MinExclusive;
         internal int TotalDigits;
         internal int FractionDigits;
         internal RestrictionFlags Flags = 0;
@@ -97,20 +98,20 @@ namespace System.Xml.Schema
     internal abstract class DatatypeImplementation : XmlSchemaDatatype
     {
         private XmlSchemaDatatypeVariety _variety = XmlSchemaDatatypeVariety.Atomic;
-        private RestrictionFacets _restriction = null;
-        private DatatypeImplementation _baseType = null;
-        private XmlValueConverter _valueConverter;
-        private XmlSchemaType _parentSchemaType;
+        private RestrictionFacets? _restriction = null;
+        private DatatypeImplementation? _baseType = null;
+        private XmlValueConverter? _valueConverter;
+        private XmlSchemaType? _parentSchemaType;
 
         private static readonly Hashtable s_builtinTypes = new Hashtable();
         private static readonly XmlSchemaSimpleType[] s_enumToTypeCode = new XmlSchemaSimpleType[(int)XmlTypeCode.DayTimeDuration + 1];
-        private static XmlSchemaSimpleType s__anySimpleType;
-        private static XmlSchemaSimpleType s__anyAtomicType;
-        private static XmlSchemaSimpleType s__untypedAtomicType;
-        private static XmlSchemaSimpleType s_yearMonthDurationType;
-        private static XmlSchemaSimpleType s_dayTimeDurationType;
-        private static volatile XmlSchemaSimpleType s_normalizedStringTypeV1Compat;
-        private static volatile XmlSchemaSimpleType s_tokenTypeV1Compat;
+        private static XmlSchemaSimpleType s__anySimpleType = null!;
+        private static XmlSchemaSimpleType s__anyAtomicType = null!;
+        private static XmlSchemaSimpleType s__untypedAtomicType = null!;
+        private static XmlSchemaSimpleType s_yearMonthDurationType = null!;
+        private static XmlSchemaSimpleType s_dayTimeDurationType = null!;
+        private static volatile XmlSchemaSimpleType? s_normalizedStringTypeV1Compat;
+        private static volatile XmlSchemaSimpleType? s_tokenTypeV1Compat;
 
         private const int anySimpleTypeIndex = 11;
 
@@ -139,23 +140,23 @@ namespace System.Xml.Schema
         internal static XmlSchemaSimpleType AnyAtomicType { get { return s__anyAtomicType; } }
         internal static XmlSchemaSimpleType UntypedAtomicType { get { return s__untypedAtomicType; } }
 
-        internal static new DatatypeImplementation FromXmlTokenizedType(XmlTokenizedType token)
+        internal static new DatatypeImplementation? FromXmlTokenizedType(XmlTokenizedType token)
         {
             return s_tokenizedTypes[(int)token];
         }
 
-        internal static new DatatypeImplementation FromXmlTokenizedTypeXsd(XmlTokenizedType token)
+        internal static new DatatypeImplementation? FromXmlTokenizedTypeXsd(XmlTokenizedType token)
         {
             return s_tokenizedTypesXsd[(int)token];
         }
 
-        internal static new DatatypeImplementation FromXdrName(string name)
+        internal static new DatatypeImplementation? FromXdrName(string name)
         {
             int i = Array.BinarySearch(s_xdrTypes, name, null);
             return i < 0 ? null : (DatatypeImplementation)s_xdrTypes[i];
         }
 
-        private static DatatypeImplementation FromTypeName(string name)
+        private static DatatypeImplementation? FromTypeName(string name)
         {
             int i = Array.BinarySearch(s_xsdTypes, name, null);
             return i < 0 ? null : (DatatypeImplementation)s_xsdTypes[i];
@@ -190,7 +191,7 @@ namespace System.Xml.Schema
             // Create link from the derived type to the base type
             derivedType.SetBaseSchemaType(baseType);
             derivedType.SetDerivedBy(XmlSchemaDerivationMethod.Restriction);
-            if (derivedType.Datatype.Variety == XmlSchemaDatatypeVariety.Atomic)
+            if (derivedType.Datatype!.Variety == XmlSchemaDatatypeVariety.Atomic)
             { //Content is restriction
                 XmlSchemaSimpleTypeRestriction restContent = new XmlSchemaSimpleTypeRestriction();
                 restContent.BaseTypeName = baseType.QualifiedName;
@@ -227,7 +228,7 @@ namespace System.Xml.Schema
             //Build anySimpleType
             SchemaDatatypeMap sdm = s_xsdTypes[anySimpleTypeIndex]; //anySimpleType
             qname = new XmlQualifiedName(sdm.Name, XmlReservedNs.NsXs);
-            DatatypeImplementation dt = FromTypeName(qname.Name);
+            DatatypeImplementation dt = FromTypeName(qname.Name)!;
             s__anySimpleType = StartBuiltinType(qname, dt);
             dt._parentSchemaType = s__anySimpleType;
             s_builtinTypes.Add(qname, s__anySimpleType);
@@ -243,7 +244,7 @@ namespace System.Xml.Schema
                 sdm = s_xsdTypes[i];
 
                 qname = new XmlQualifiedName(sdm.Name, XmlReservedNs.NsXs);
-                dt = FromTypeName(qname.Name);
+                dt = FromTypeName(qname.Name)!;
                 simpleType = StartBuiltinType(qname, dt);
                 dt._parentSchemaType = simpleType;
 
@@ -261,8 +262,9 @@ namespace System.Xml.Schema
                 { //anySimpleType
                     continue;
                 }
+
                 sdm = s_xsdTypes[i];
-                XmlSchemaSimpleType derivedType = (XmlSchemaSimpleType)s_builtinTypes[new XmlQualifiedName(sdm.Name, XmlReservedNs.NsXs)];
+                XmlSchemaSimpleType derivedType = (XmlSchemaSimpleType)s_builtinTypes[new XmlQualifiedName(sdm.Name, XmlReservedNs.NsXs)]!;
                 XmlSchemaSimpleType baseType;
 
                 if (sdm.ParentIndex == anySimpleTypeIndex)
@@ -271,7 +273,7 @@ namespace System.Xml.Schema
                 }
                 else
                 { //derived types whose index > 0
-                    baseType = (XmlSchemaSimpleType)s_builtinTypes[new XmlQualifiedName(((SchemaDatatypeMap)(s_xsdTypes[sdm.ParentIndex])).Name, XmlReservedNs.NsXs)];
+                    baseType = (XmlSchemaSimpleType)s_builtinTypes[new XmlQualifiedName(((SchemaDatatypeMap)(s_xsdTypes[sdm.ParentIndex])).Name, XmlReservedNs.NsXs)]!;
                     FinishBuiltinType(derivedType, baseType);
                 }
             }
@@ -316,7 +318,7 @@ namespace System.Xml.Schema
 
         internal static XmlSchemaSimpleType GetSimpleTypeFromXsdType(XmlQualifiedName qname)
         {
-            return (XmlSchemaSimpleType)s_builtinTypes[qname];
+            return (XmlSchemaSimpleType)s_builtinTypes[qname]!;
         }
 
         internal static XmlSchemaSimpleType GetNormalizedStringTypeV1Compat()
@@ -324,12 +326,13 @@ namespace System.Xml.Schema
             if (s_normalizedStringTypeV1Compat == null)
             {
                 XmlSchemaSimpleType correctType = GetSimpleTypeFromTypeCode(XmlTypeCode.NormalizedString);
-                XmlSchemaSimpleType tempNormalizedStringTypeV1Compat = correctType.Clone() as XmlSchemaSimpleType;
+                XmlSchemaSimpleType tempNormalizedStringTypeV1Compat = (correctType.Clone() as XmlSchemaSimpleType)!;
                 tempNormalizedStringTypeV1Compat.SetDatatype(c_normalizedStringV1Compat);
                 tempNormalizedStringTypeV1Compat.ElementDecl = new SchemaElementDecl(c_normalizedStringV1Compat);
                 tempNormalizedStringTypeV1Compat.ElementDecl.SchemaType = tempNormalizedStringTypeV1Compat;
                 s_normalizedStringTypeV1Compat = tempNormalizedStringTypeV1Compat;
             }
+
             return s_normalizedStringTypeV1Compat;
         }
 
@@ -338,7 +341,7 @@ namespace System.Xml.Schema
             if (s_tokenTypeV1Compat == null)
             {
                 XmlSchemaSimpleType correctType = GetSimpleTypeFromTypeCode(XmlTypeCode.Token);
-                XmlSchemaSimpleType tempTokenTypeV1Compat = correctType.Clone() as XmlSchemaSimpleType;
+                XmlSchemaSimpleType tempTokenTypeV1Compat = (correctType.Clone() as XmlSchemaSimpleType)!;
                 tempTokenTypeV1Compat.SetDatatype(c_tokenV1Compat);
                 tempTokenTypeV1Compat.ElementDecl = new SchemaElementDecl(c_tokenV1Compat);
                 tempTokenTypeV1Compat.ElementDecl.SchemaType = tempTokenTypeV1Compat;
@@ -357,7 +360,7 @@ namespace System.Xml.Schema
             XmlSchemaSimpleType currentType = s_enumToTypeCode[(int)typeCode];
             while (currentType.BaseXmlSchemaType != DatatypeImplementation.AnySimpleType)
             {
-                currentType = currentType.BaseXmlSchemaType as XmlSchemaSimpleType;
+                currentType = (currentType.BaseXmlSchemaType as XmlSchemaSimpleType)!;
                 Debug.Assert(currentType != null);
             }
             return currentType.TypeCode;
@@ -378,7 +381,7 @@ namespace System.Xml.Schema
             return DeriveByList(0, schemaType);
         }
 
-        internal XmlSchemaDatatype DeriveByList(int minSize, XmlSchemaType schemaType)
+        internal XmlSchemaDatatype DeriveByList(int minSize, XmlSchemaType? schemaType)
         {
             if (_variety == XmlSchemaDatatypeVariety.List)
             {
@@ -415,13 +418,14 @@ namespace System.Xml.Schema
             }
 
             //Common case - Derived by restriction
-            for (DatatypeImplementation dt = this; dt != null; dt = dt._baseType)
+            for (DatatypeImplementation? dt = this; dt != null; dt = dt._baseType)
             {
                 if (dt == datatype)
                 {
                     return true;
                 }
             }
+
             if (((DatatypeImplementation)datatype)._baseType == null)
             { //Both are built-in types
                 Type derivedType = this.GetType();
@@ -464,7 +468,7 @@ namespace System.Xml.Schema
             return false;
         }
 
-        internal virtual XmlValueConverter CreateValueConverter(XmlSchemaType schemaType) { return null; }
+        internal abstract XmlValueConverter CreateValueConverter(XmlSchemaType? schemaType);
 
         internal override FacetsChecker FacetsChecker { get { return miscFacetsChecker; } }
 
@@ -488,7 +492,7 @@ namespace System.Xml.Schema
 
         public override XmlTypeCode TypeCode { get { return XmlTypeCode.None; } }
 
-        internal override RestrictionFacets Restriction
+        internal override RestrictionFacets? Restriction
         {
             get
             {
@@ -499,6 +503,7 @@ namespace System.Xml.Schema
                 _restriction = value;
             }
         }
+
         internal override bool HasLexicalFacets
         {
             get
@@ -524,7 +529,7 @@ namespace System.Xml.Schema
             }
         }
 
-        protected DatatypeImplementation Base { get { return _baseType; } }
+        protected DatatypeImplementation? Base { get { return _baseType; } }
 
         internal abstract Type ListValueType { get; }
 
@@ -532,32 +537,37 @@ namespace System.Xml.Schema
 
         internal override XmlSchemaWhiteSpace BuiltInWhitespaceFacet { get { return XmlSchemaWhiteSpace.Preserve; } }
 
-        public override object ParseValue(string s, XmlNameTable nameTable, IXmlNamespaceResolver nsmgr)
+        public override object ParseValue(string s, XmlNameTable? nameTable, IXmlNamespaceResolver? nsmgr)
         {
-            object typedValue;
-            Exception exception = TryParseValue(s, nameTable, nsmgr, out typedValue);
+            object? typedValue;
+            Exception? exception = TryParseValue(s, nameTable, nsmgr, out typedValue);
             if (exception != null)
             {
                 throw new XmlSchemaException(SR.Sch_InvalidValueDetailed, new string[] { s, GetTypeName(), exception.Message }, exception, null, 0, 0, null);
             }
+
+            Debug.Assert(typedValue != null);
+
             if (this.Variety == XmlSchemaDatatypeVariety.Union)
             {
-                XsdSimpleValue simpleValue = typedValue as XsdSimpleValue;
+                XsdSimpleValue simpleValue = (typedValue as XsdSimpleValue)!;
                 return simpleValue.TypedValue;
             }
             return typedValue;
         }
 
-        internal override object ParseValue(string s, XmlNameTable nameTable, IXmlNamespaceResolver nsmgr, bool createAtomicValue)
+        internal override object ParseValue(string s, XmlNameTable? nameTable, IXmlNamespaceResolver? nsmgr, bool createAtomicValue)
         {
             if (createAtomicValue)
             {
-                object typedValue;
-                Exception exception = TryParseValue(s, nameTable, nsmgr, out typedValue);
+                object? typedValue;
+                Exception? exception = TryParseValue(s, nameTable, nsmgr, out typedValue);
                 if (exception != null)
                 {
                     throw new XmlSchemaException(SR.Sch_InvalidValueDetailed, new string[] { s, GetTypeName(), exception.Message }, exception, null, 0, 0, null);
                 }
+
+                Debug.Assert(typedValue != null);
                 return typedValue;
             }
             else
@@ -566,15 +576,17 @@ namespace System.Xml.Schema
             }
         }
 
-        internal override Exception TryParseValue(object value, XmlNameTable nameTable, IXmlNamespaceResolver namespaceResolver, out object typedValue)
+        internal override Exception? TryParseValue(object value, XmlNameTable? nameTable, IXmlNamespaceResolver? namespaceResolver, out object? typedValue)
         {
-            Exception exception = null;
+            Exception? exception = null;
             typedValue = null;
+
             if (value == null)
             {
                 return new ArgumentNullException(nameof(value));
             }
-            string s = value as string;
+
+            string? s = value as string;
             if (s != null)
             {
                 return TryParseValue(s, nameTable, namespaceResolver, out typedValue);
@@ -623,7 +635,7 @@ namespace System.Xml.Schema
 
         internal string GetTypeName()
         {
-            XmlSchemaType simpleType = _parentSchemaType;
+            XmlSchemaType? simpleType = _parentSchemaType;
             string typeName;
             if (simpleType == null || simpleType.QualifiedName.IsEmpty)
             { //If no QName, get typecode, no line info since it is not pertinent without file name
@@ -741,10 +753,10 @@ namespace System.Xml.Schema
                 }
             }
 
-            public int CompareTo(object obj) { return string.Compare(_name, (string)obj, StringComparison.Ordinal); }
+            public int CompareTo(object? obj) { return string.Compare(_name, (string?)obj, StringComparison.Ordinal); }
         }
 
-        private static readonly DatatypeImplementation[] s_tokenizedTypes = {
+        private static readonly DatatypeImplementation?[] s_tokenizedTypes = {
             s_string,               // CDATA
             s_ID,                   // ID
             s_IDREF,                // IDREF
@@ -760,7 +772,7 @@ namespace System.Xml.Schema
             null
         };
 
-        private static readonly DatatypeImplementation[] s_tokenizedTypesXsd = {
+        private static readonly DatatypeImplementation?[] s_tokenizedTypesXsd = {
             s_string,               // CDATA
             s_ID,                   // ID
             s_IDREF,                // IDREF
@@ -913,11 +925,11 @@ namespace System.Xml.Schema
         private readonly DatatypeImplementation _itemType;
         private readonly int _minListSize;
 
-        internal override XmlValueConverter CreateValueConverter(XmlSchemaType schemaType)
+        internal override XmlValueConverter CreateValueConverter(XmlSchemaType? schemaType)
         {
-            XmlSchemaType listItemType = null;
-            XmlSchemaSimpleType simpleType;
-            XmlSchemaComplexType complexType;
+            XmlSchemaType? listItemType = null;
+            XmlSchemaSimpleType? simpleType;
+            XmlSchemaComplexType? complexType;
             complexType = schemaType as XmlSchemaComplexType;
 
             if (complexType != null)
@@ -940,7 +952,7 @@ namespace System.Xml.Schema
             {
                 do
                 {
-                    XmlSchemaSimpleTypeList listType = simpleType.Content as XmlSchemaSimpleTypeList;
+                    XmlSchemaSimpleTypeList? listType = simpleType.Content as XmlSchemaSimpleTypeList;
                     if (listType != null)
                     {
                         listItemType = listType.BaseItemType;
@@ -952,7 +964,7 @@ namespace System.Xml.Schema
 
             if (listItemType == null)
             { //Get built-in simple type for the typecode
-                listItemType = DatatypeImplementation.GetSimpleTypeFromTypeCode(schemaType.Datatype.TypeCode);
+                listItemType = DatatypeImplementation.GetSimpleTypeFromTypeCode(schemaType!.Datatype!.TypeCode);
             }
 
             return XmlListConverter.Create(listItemType.ValueConverter);
@@ -974,16 +986,17 @@ namespace System.Xml.Schema
             {
                 return -1;
             }
-            XmlAtomicValue[] atomicValues1 = arr1 as XmlAtomicValue[];
+
+            XmlAtomicValue[]? atomicValues1 = arr1 as XmlAtomicValue[];
             if (atomicValues1 != null)
             {
-                XmlAtomicValue[] atomicValues2 = arr2 as XmlAtomicValue[];
+                XmlAtomicValue[]? atomicValues2 = arr2 as XmlAtomicValue[];
                 Debug.Assert(atomicValues2 != null);
                 XmlSchemaType xmlType1;
                 for (int i = 0; i < atomicValues1.Length; i++)
                 {
                     xmlType1 = atomicValues1[i].XmlType;
-                    if (xmlType1 != atomicValues2[i].XmlType || !xmlType1.Datatype.IsEqual(atomicValues1[i].TypedValue, atomicValues2[i].TypedValue))
+                    if (xmlType1 != atomicValues2[i].XmlType || !xmlType1.Datatype!.IsEqual(atomicValues1[i].TypedValue, atomicValues2[i].TypedValue))
                     {
                         return -1;
                     }
@@ -994,7 +1007,7 @@ namespace System.Xml.Schema
             {
                 for (int i = 0; i < arr1.Length; i++)
                 {
-                    if (_itemType.Compare(arr1.GetValue(i), arr2.GetValue(i)) != 0)
+                    if (_itemType.Compare(arr1.GetValue(i)!, arr2.GetValue(i)!) != 0)
                     {
                         return -1;
                     }
@@ -1028,14 +1041,15 @@ namespace System.Xml.Schema
         }
         internal DatatypeImplementation ItemType { get { return _itemType; } }
 
-        internal override Exception TryParseValue(object value, XmlNameTable nameTable, IXmlNamespaceResolver namespaceResolver, out object typedValue)
+        internal override Exception? TryParseValue(object value, XmlNameTable? nameTable, IXmlNamespaceResolver? namespaceResolver, out object? typedValue)
         {
-            Exception exception;
+            Exception? exception;
             if (value == null)
             {
                 throw new ArgumentNullException(nameof(value));
             }
-            string s = value as string;
+
+            string? s = value as string;
             typedValue = null;
             if (s != null)
             {
@@ -1045,7 +1059,7 @@ namespace System.Xml.Schema
             try
             {
                 object valueToCheck = this.ValueConverter.ChangeType(value, this.ValueType, namespaceResolver);
-                Array valuesToCheck = valueToCheck as Array;
+                Array valuesToCheck = (valueToCheck as Array)!;
                 Debug.Assert(valuesToCheck != null);
 
                 bool checkItemLexical = _itemType.HasLexicalFacets;
@@ -1056,7 +1070,7 @@ namespace System.Xml.Schema
 
                 for (int i = 0; i < valuesToCheck.Length; i++)
                 {
-                    item = valuesToCheck.GetValue(i);
+                    item = valuesToCheck.GetValue(i)!;
                     if (checkItemLexical)
                     {
                         string s1 = (string)itemValueConverter.ChangeType(item, typeof(string), namespaceResolver);
@@ -1106,9 +1120,9 @@ namespace System.Xml.Schema
             return exception;
         }
 
-        internal override Exception TryParseValue(string s, XmlNameTable nameTable, IXmlNamespaceResolver nsmgr, out object typedValue)
+        internal override Exception? TryParseValue(string s, XmlNameTable? nameTable, IXmlNamespaceResolver? nsmgr, out object? typedValue)
         {
-            Exception exception;
+            Exception? exception;
 
             typedValue = null;
 
@@ -1119,13 +1133,15 @@ namespace System.Xml.Schema
             object array;
             if (_itemType.Variety == XmlSchemaDatatypeVariety.Union)
             {
-                object unionTypedValue;
+                object? unionTypedValue;
                 string[] splitString = XmlConvert.SplitString(s);
                 for (int i = 0; i < splitString.Length; ++i)
                 {
                     //Parse items in list according to the itemType
                     exception = _itemType.TryParseValue(splitString[i], nameTable, nsmgr, out unionTypedValue);
                     if (exception != null) goto Error;
+
+                    Debug.Assert(unionTypedValue != null);
 
                     XsdSimpleValue simpleValue = (XsdSimpleValue)unionTypedValue;
                     values.Add(new XmlAtomicValue(simpleValue.XmlType, simpleValue.TypedValue, nsmgr));
@@ -1169,7 +1185,7 @@ namespace System.Xml.Schema
         private static readonly Type s_listValueType = typeof(object[]);
         private readonly XmlSchemaSimpleType[] _types;
 
-        internal override XmlValueConverter CreateValueConverter(XmlSchemaType schemaType)
+        internal override XmlValueConverter CreateValueConverter(XmlSchemaType? schemaType)
         {
             return XmlUnionConverter.Create(schemaType);
         }
@@ -1181,21 +1197,23 @@ namespace System.Xml.Schema
 
         internal override int Compare(object value1, object value2)
         {
-            XsdSimpleValue simpleValue1 = value1 as XsdSimpleValue;
-            XsdSimpleValue simpleValue2 = value2 as XsdSimpleValue;
+            XsdSimpleValue? simpleValue1 = value1 as XsdSimpleValue;
+            XsdSimpleValue? simpleValue2 = value2 as XsdSimpleValue;
 
             if (simpleValue1 == null || simpleValue2 == null)
             {
                 return -1;
             }
+
             XmlSchemaType schemaType1 = simpleValue1.XmlType;
             XmlSchemaType schemaType2 = simpleValue2.XmlType;
 
             if (schemaType1 == schemaType2)
             {
-                XmlSchemaDatatype datatype = schemaType1.Datatype;
+                XmlSchemaDatatype datatype = schemaType1.Datatype!;
                 return datatype.Compare(simpleValue1.TypedValue, simpleValue2.TypedValue);
             }
+
             return -1;
         }
 
@@ -1228,7 +1246,7 @@ namespace System.Xml.Schema
         {
             for (int i = 0; i < _types.Length; ++i)
             {
-                if (_types[i].Datatype.Variety == XmlSchemaDatatypeVariety.List)
+                if (_types[i].Datatype!.Variety == XmlSchemaDatatypeVariety.List)
                 {
                     return false;
                 }
@@ -1240,7 +1258,7 @@ namespace System.Xml.Schema
         {
             for (int i = 0; i < _types.Length; ++i)
             {
-                if (derivedType.IsDerivedFrom(_types[i].Datatype))
+                if (derivedType.IsDerivedFrom(_types[i].Datatype!))
                 {
                     return true;
                 }
@@ -1248,10 +1266,10 @@ namespace System.Xml.Schema
             return false;
         }
 
-        internal override Exception TryParseValue(string s, XmlNameTable nameTable, IXmlNamespaceResolver nsmgr, out object typedValue)
+        internal override Exception? TryParseValue(string s, XmlNameTable? nameTable, IXmlNamespaceResolver? nsmgr, out object? typedValue)
         {
-            Exception exception;
-            XmlSchemaSimpleType memberType = null;
+            Exception? exception;
+            XmlSchemaSimpleType? memberType = null;
 
             typedValue = null;
 
@@ -1261,13 +1279,16 @@ namespace System.Xml.Schema
             //Parse string to CLR value
             for (int i = 0; i < _types.Length; ++i)
             {
-                exception = _types[i].Datatype.TryParseValue(s, nameTable, nsmgr, out typedValue);
+                exception = _types[i].Datatype!.TryParseValue(s, nameTable, nsmgr, out typedValue);
                 if (exception == null)
                 {
                     memberType = _types[i];
                     break;
                 }
             }
+
+            Debug.Assert(typedValue != null);
+
             if (memberType == null)
             {
                 exception = new XmlSchemaException(SR.Sch_UnionFailedEx, s);
@@ -1284,35 +1305,37 @@ namespace System.Xml.Schema
             return exception;
         }
 
-        internal override Exception TryParseValue(object value, XmlNameTable nameTable, IXmlNamespaceResolver nsmgr, out object typedValue)
+        internal override Exception? TryParseValue(object value, XmlNameTable? nameTable, IXmlNamespaceResolver? nsmgr, out object? typedValue)
         {
-            Exception exception;
+            Exception? exception;
             if (value == null)
             {
                 throw new ArgumentNullException(nameof(value));
             }
             typedValue = null;
-            string s = value as string;
+            string? s = value as string;
             if (s != null)
             {
                 return TryParseValue(s, nameTable, nsmgr, out typedValue);
             }
 
-            object valueToCheck = null;
-            XmlSchemaSimpleType memberType = null;
+            object? valueToCheck = null;
+            XmlSchemaSimpleType? memberType = null;
             for (int i = 0; i < _types.Length; ++i)
             {
-                if (_types[i].Datatype.TryParseValue(value, nameTable, nsmgr, out valueToCheck) == null)
+                if (_types[i].Datatype!.TryParseValue(value, nameTable, nsmgr, out valueToCheck) == null)
                 { //no error
                     memberType = _types[i];
                     break;
                 }
             }
+
             if (valueToCheck == null)
             {
                 exception = new XmlSchemaException(SR.Sch_UnionFailedEx, value.ToString());
                 goto Error;
             }
+
             try
             {
                 if (this.HasLexicalFacets)
@@ -1321,6 +1344,8 @@ namespace System.Xml.Schema
                     exception = unionFacetsChecker.CheckLexicalFacets(ref s1, this);
                     if (exception != null) goto Error;
                 }
+
+                Debug.Assert(memberType != null);
                 typedValue = new XsdSimpleValue(memberType, valueToCheck);
                 if (this.HasValueFacets)
                 {
@@ -1358,7 +1383,7 @@ namespace System.Xml.Schema
         private static readonly Type s_atomicValueType = typeof(string);
         private static readonly Type s_listValueType = typeof(string[]);
 
-        internal override XmlValueConverter CreateValueConverter(XmlSchemaType schemaType)
+        internal override XmlValueConverter CreateValueConverter(XmlSchemaType? schemaType)
         {
             return XmlUntypedConverter.Untyped;
         }
@@ -1383,7 +1408,7 @@ namespace System.Xml.Schema
             return string.Compare(value1.ToString(), value2.ToString(), StringComparison.Ordinal);
         }
 
-        internal override Exception TryParseValue(string s, XmlNameTable nameTable, IXmlNamespaceResolver nsmgr, out object typedValue)
+        internal override Exception? TryParseValue(string s, XmlNameTable? nameTable, IXmlNamespaceResolver? nsmgr, out object? typedValue)
         {
             typedValue = XmlComplianceUtil.NonCDataNormalize(s); //Whitespace facet is treated as collapse since thats the way it was in Everett
             return null;
@@ -1392,7 +1417,7 @@ namespace System.Xml.Schema
 
     internal class Datatype_anyAtomicType : Datatype_anySimpleType
     {
-        internal override XmlValueConverter CreateValueConverter(XmlSchemaType schemaType)
+        internal override XmlValueConverter CreateValueConverter(XmlSchemaType? schemaType)
         {
             return XmlAnyConverter.AnyAtomic;
         }
@@ -1403,7 +1428,7 @@ namespace System.Xml.Schema
 
     internal class Datatype_untypedAtomicType : Datatype_anyAtomicType
     {
-        internal override XmlValueConverter CreateValueConverter(XmlSchemaType schemaType)
+        internal override XmlValueConverter CreateValueConverter(XmlSchemaType? schemaType)
         {
             return XmlUntypedConverter.Untyped;
         }
@@ -1438,7 +1463,7 @@ namespace System.Xml.Schema
     */
     internal class Datatype_string : Datatype_anySimpleType
     {
-        internal override XmlValueConverter CreateValueConverter(XmlSchemaType schemaType)
+        internal override XmlValueConverter CreateValueConverter(XmlSchemaType? schemaType)
         {
             return XmlStringConverter.Create(schemaType);
         }
@@ -1464,9 +1489,9 @@ namespace System.Xml.Schema
             }
         }
 
-        internal override Exception TryParseValue(string s, XmlNameTable nameTable, IXmlNamespaceResolver nsmgr, out object typedValue)
+        internal override Exception? TryParseValue(string s, XmlNameTable? nameTable, IXmlNamespaceResolver? nsmgr, out object? typedValue)
         {
-            Exception exception;
+            Exception? exception;
 
             typedValue = null;
 
@@ -1509,7 +1534,7 @@ namespace System.Xml.Schema
         private static readonly Type s_atomicValueType = typeof(bool);
         private static readonly Type s_listValueType = typeof(bool[]);
 
-        internal override XmlValueConverter CreateValueConverter(XmlSchemaType schemaType)
+        internal override XmlValueConverter CreateValueConverter(XmlSchemaType? schemaType)
         {
             return XmlBooleanConverter.Create(schemaType);
         }
@@ -1538,9 +1563,9 @@ namespace System.Xml.Schema
             return ((bool)value1).CompareTo((bool)value2);
         }
 
-        internal override Exception TryParseValue(string s, XmlNameTable nameTable, IXmlNamespaceResolver nsmgr, out object typedValue)
+        internal override Exception? TryParseValue(string s, XmlNameTable? nameTable, IXmlNamespaceResolver? nsmgr, out object? typedValue)
         {
-            Exception exception;
+            Exception? exception;
             typedValue = null;
 
             exception = miscFacetsChecker.CheckLexicalFacets(ref s, this);
@@ -1589,7 +1614,7 @@ namespace System.Xml.Schema
         private static readonly Type s_atomicValueType = typeof(float);
         private static readonly Type s_listValueType = typeof(float[]);
 
-        internal override XmlValueConverter CreateValueConverter(XmlSchemaType schemaType)
+        internal override XmlValueConverter CreateValueConverter(XmlSchemaType? schemaType)
         {
             return XmlNumeric2Converter.Create(schemaType);
         }
@@ -1623,9 +1648,9 @@ namespace System.Xml.Schema
             return ((float)value1).CompareTo((float)value2);
         }
 
-        internal override Exception TryParseValue(string s, XmlNameTable nameTable, IXmlNamespaceResolver nsmgr, out object typedValue)
+        internal override Exception? TryParseValue(string s, XmlNameTable? nameTable, IXmlNamespaceResolver? nsmgr, out object? typedValue)
         {
-            Exception exception;
+            Exception? exception;
 
             typedValue = null;
 
@@ -1678,7 +1703,7 @@ namespace System.Xml.Schema
         private static readonly Type s_atomicValueType = typeof(double);
         private static readonly Type s_listValueType = typeof(double[]);
 
-        internal override XmlValueConverter CreateValueConverter(XmlSchemaType schemaType)
+        internal override XmlValueConverter CreateValueConverter(XmlSchemaType? schemaType)
         {
             return XmlNumeric2Converter.Create(schemaType);
         }
@@ -1712,9 +1737,9 @@ namespace System.Xml.Schema
             return ((double)value1).CompareTo((double)value2);
         }
 
-        internal override Exception TryParseValue(string s, XmlNameTable nameTable, IXmlNamespaceResolver nsmgr, out object typedValue)
+        internal override Exception? TryParseValue(string s, XmlNameTable? nameTable, IXmlNamespaceResolver? nsmgr, out object? typedValue)
         {
-            Exception exception;
+            Exception? exception;
             typedValue = null;
 
             exception = numeric2FacetsChecker.CheckLexicalFacets(ref s, this);
@@ -1770,7 +1795,7 @@ namespace System.Xml.Schema
         private static readonly Type s_listValueType = typeof(decimal[]);
         private static readonly FacetsChecker s_numeric10FacetsChecker = new Numeric10FacetsChecker(decimal.MinValue, decimal.MaxValue);
 
-        internal override XmlValueConverter CreateValueConverter(XmlSchemaType schemaType)
+        internal override XmlValueConverter CreateValueConverter(XmlSchemaType? schemaType)
         {
             return XmlNumeric10Converter.Create(schemaType);
         }
@@ -1806,9 +1831,9 @@ namespace System.Xml.Schema
             return ((decimal)value1).CompareTo((decimal)value2);
         }
 
-        internal override Exception TryParseValue(string s, XmlNameTable nameTable, IXmlNamespaceResolver nsmgr, out object typedValue)
+        internal override Exception? TryParseValue(string s, XmlNameTable? nameTable, IXmlNamespaceResolver? nsmgr, out object? typedValue)
         {
-            Exception exception;
+            Exception? exception;
 
             typedValue = null;
 
@@ -1862,7 +1887,7 @@ namespace System.Xml.Schema
         private static readonly Type s_atomicValueType = typeof(TimeSpan);
         private static readonly Type s_listValueType = typeof(TimeSpan[]);
 
-        internal override XmlValueConverter CreateValueConverter(XmlSchemaType schemaType)
+        internal override XmlValueConverter CreateValueConverter(XmlSchemaType? schemaType)
         {
             return XmlMiscConverter.Create(schemaType);
         }
@@ -1897,9 +1922,9 @@ namespace System.Xml.Schema
         }
 
 
-        internal override Exception TryParseValue(string s, XmlNameTable nameTable, IXmlNamespaceResolver nsmgr, out object typedValue)
+        internal override Exception? TryParseValue(string s, XmlNameTable? nameTable, IXmlNamespaceResolver? nsmgr, out object? typedValue)
         {
-            Exception exception;
+            Exception? exception;
             typedValue = null;
 
             if (s == null || s.Length == 0)
@@ -1928,9 +1953,9 @@ namespace System.Xml.Schema
 
     internal class Datatype_yearMonthDuration : Datatype_duration
     {
-        internal override Exception TryParseValue(string s, XmlNameTable nameTable, IXmlNamespaceResolver nsmgr, out object typedValue)
+        internal override Exception? TryParseValue(string s, XmlNameTable? nameTable, IXmlNamespaceResolver? nsmgr, out object? typedValue)
         {
-            Exception exception;
+            Exception? exception;
             typedValue = null;
 
             if (s == null || s.Length == 0)
@@ -1966,9 +1991,9 @@ namespace System.Xml.Schema
 
     internal class Datatype_dayTimeDuration : Datatype_duration
     {
-        internal override Exception TryParseValue(string s, XmlNameTable nameTable, IXmlNamespaceResolver nsmgr, out object typedValue)
+        internal override Exception? TryParseValue(string s, XmlNameTable? nameTable, IXmlNamespaceResolver? nsmgr, out object? typedValue)
         {
-            Exception exception;
+            Exception? exception;
 
             typedValue = null;
 
@@ -2008,7 +2033,7 @@ namespace System.Xml.Schema
         private static readonly Type s_listValueType = typeof(DateTime[]);
         private readonly XsdDateTimeFlags _dateTimeFlags;
 
-        internal override XmlValueConverter CreateValueConverter(XmlSchemaType schemaType)
+        internal override XmlValueConverter CreateValueConverter(XmlSchemaType? schemaType)
         {
             return XmlDateTimeConverter.Create(schemaType);
         }
@@ -2054,9 +2079,9 @@ namespace System.Xml.Schema
             return dateTime1.CompareTo(dateTime2.ToUniversalTime());
         }
 
-        internal override Exception TryParseValue(string s, XmlNameTable nameTable, IXmlNamespaceResolver nsmgr, out object typedValue)
+        internal override Exception? TryParseValue(string s, XmlNameTable? nameTable, IXmlNamespaceResolver? nsmgr, out object? typedValue)
         {
-            Exception exception;
+            Exception? exception;
             typedValue = null;
 
             exception = dateTimeFacetsChecker.CheckLexicalFacets(ref s, this);
@@ -2406,7 +2431,7 @@ namespace System.Xml.Schema
         private static readonly Type s_atomicValueType = typeof(byte[]);
         private static readonly Type s_listValueType = typeof(byte[][]);
 
-        internal override XmlValueConverter CreateValueConverter(XmlSchemaType schemaType)
+        internal override XmlValueConverter CreateValueConverter(XmlSchemaType? schemaType)
         {
             return XmlMiscConverter.Create(schemaType);
         }
@@ -2439,16 +2464,16 @@ namespace System.Xml.Schema
             return Compare((byte[])value1, (byte[])value2);
         }
 
-        internal override Exception TryParseValue(string s, XmlNameTable nameTable, IXmlNamespaceResolver nsmgr, out object typedValue)
+        internal override Exception? TryParseValue(string s, XmlNameTable? nameTable, IXmlNamespaceResolver? nsmgr, out object? typedValue)
         {
-            Exception exception;
+            Exception? exception;
 
             typedValue = null;
 
             exception = binaryFacetsChecker.CheckLexicalFacets(ref s, this);
             if (exception != null) goto Error;
 
-            byte[] byteArrayValue = null;
+            byte[]? byteArrayValue = null;
             try
             {
                 byteArrayValue = XmlConvert.FromBinHexString(s, false);
@@ -2507,7 +2532,7 @@ namespace System.Xml.Schema
         private static readonly Type s_atomicValueType = typeof(byte[]);
         private static readonly Type s_listValueType = typeof(byte[][]);
 
-        internal override XmlValueConverter CreateValueConverter(XmlSchemaType schemaType)
+        internal override XmlValueConverter CreateValueConverter(XmlSchemaType? schemaType)
         {
             return XmlMiscConverter.Create(schemaType);
         }
@@ -2540,16 +2565,16 @@ namespace System.Xml.Schema
             return Compare((byte[])value1, (byte[])value2);
         }
 
-        internal override Exception TryParseValue(string s, XmlNameTable nameTable, IXmlNamespaceResolver nsmgr, out object typedValue)
+        internal override Exception? TryParseValue(string s, XmlNameTable? nameTable, IXmlNamespaceResolver? nsmgr, out object? typedValue)
         {
-            Exception exception;
+            Exception? exception;
 
             typedValue = null;
 
             exception = binaryFacetsChecker.CheckLexicalFacets(ref s, this);
             if (exception != null) goto Error;
 
-            byte[] byteArrayValue = null;
+            byte[]? byteArrayValue = null;
             try
             {
                 byteArrayValue = Convert.FromBase64String(s);
@@ -2607,7 +2632,7 @@ namespace System.Xml.Schema
         private static readonly Type s_atomicValueType = typeof(Uri);
         private static readonly Type s_listValueType = typeof(Uri[]);
 
-        internal override XmlValueConverter CreateValueConverter(XmlSchemaType schemaType)
+        internal override XmlValueConverter CreateValueConverter(XmlSchemaType? schemaType)
         {
             return XmlMiscConverter.Create(schemaType);
         }
@@ -2647,18 +2672,20 @@ namespace System.Xml.Schema
             return ((Uri)value1).Equals((Uri)value2) ? 0 : -1;
         }
 
-        internal override Exception TryParseValue(string s, XmlNameTable nameTable, IXmlNamespaceResolver nsmgr, out object typedValue)
+        internal override Exception? TryParseValue(string s, XmlNameTable? nameTable, IXmlNamespaceResolver? nsmgr, out object? typedValue)
         {
-            Exception exception;
+            Exception? exception;
 
             typedValue = null;
 
             exception = stringFacetsChecker.CheckLexicalFacets(ref s, this);
             if (exception != null) goto Error;
 
-            Uri uri;
+            Uri? uri;
             exception = XmlConvert.TryToUri(s, out uri);
             if (exception != null) goto Error;
+
+            Debug.Assert(uri != null);
 
             string stringValue = uri.OriginalString;
             exception = ((StringFacetsChecker)stringFacetsChecker).CheckValueFacets(stringValue, this, false);
@@ -2703,7 +2730,7 @@ namespace System.Xml.Schema
         private static readonly Type s_atomicValueType = typeof(XmlQualifiedName);
         private static readonly Type s_listValueType = typeof(XmlQualifiedName[]);
 
-        internal override XmlValueConverter CreateValueConverter(XmlSchemaType schemaType)
+        internal override XmlValueConverter CreateValueConverter(XmlSchemaType? schemaType)
         {
             return XmlMiscConverter.Create(schemaType);
         }
@@ -2733,9 +2760,9 @@ namespace System.Xml.Schema
 
         internal override XmlSchemaWhiteSpace BuiltInWhitespaceFacet { get { return XmlSchemaWhiteSpace.Collapse; } }
 
-        internal override Exception TryParseValue(string s, XmlNameTable nameTable, IXmlNamespaceResolver nsmgr, out object typedValue)
+        internal override Exception? TryParseValue(string s, XmlNameTable? nameTable, IXmlNamespaceResolver? nsmgr, out object? typedValue)
         {
-            Exception exception;
+            Exception? exception;
 
             typedValue = null;
 
@@ -2747,11 +2774,11 @@ namespace System.Xml.Schema
             exception = qnameFacetsChecker.CheckLexicalFacets(ref s, this);
             if (exception != null) goto Error;
 
-            XmlQualifiedName qname = null;
+            XmlQualifiedName? qname = null;
             try
             {
                 string prefix;
-                qname = XmlQualifiedName.Parse(s, nsmgr, out prefix);
+                qname = XmlQualifiedName.Parse(s, nsmgr!, out prefix);
             }
             catch (ArgumentException e)
             {
@@ -2933,9 +2960,9 @@ namespace System.Xml.Schema
     {
         public override XmlTypeCode TypeCode { get { return XmlTypeCode.NCName; } }
 
-        internal override Exception TryParseValue(string s, XmlNameTable nameTable, IXmlNamespaceResolver nsmgr, out object typedValue)
+        internal override Exception? TryParseValue(string s, XmlNameTable? nameTable, IXmlNamespaceResolver? nsmgr, out object? typedValue)
         {
-            Exception exception;
+            Exception? exception;
 
             typedValue = null;
 
@@ -2945,7 +2972,7 @@ namespace System.Xml.Schema
             exception = stringFacetsChecker.CheckValueFacets(s, this);
             if (exception != null) goto Error;
 
-            nameTable.Add(s);
+            nameTable!.Add(s);
 
             typedValue = s;
             return null;
@@ -3039,7 +3066,7 @@ namespace System.Xml.Schema
         private static readonly Type s_atomicValueType = typeof(XmlQualifiedName);
         private static readonly Type s_listValueType = typeof(XmlQualifiedName[]);
 
-        internal override XmlValueConverter CreateValueConverter(XmlSchemaType schemaType)
+        internal override XmlValueConverter CreateValueConverter(XmlSchemaType? schemaType)
         {
             return XmlMiscConverter.Create(schemaType);
         }
@@ -3069,9 +3096,9 @@ namespace System.Xml.Schema
 
         internal override XmlSchemaWhiteSpace BuiltInWhitespaceFacet { get { return XmlSchemaWhiteSpace.Collapse; } }
 
-        internal override Exception TryParseValue(string s, XmlNameTable nameTable, IXmlNamespaceResolver nsmgr, out object typedValue)
+        internal override Exception? TryParseValue(string s, XmlNameTable? nameTable, IXmlNamespaceResolver? nsmgr, out object? typedValue)
         {
-            Exception exception;
+            Exception? exception;
 
             typedValue = null;
 
@@ -3083,11 +3110,11 @@ namespace System.Xml.Schema
             exception = qnameFacetsChecker.CheckLexicalFacets(ref s, this);
             if (exception != null) goto Error;
 
-            XmlQualifiedName qname = null;
+            XmlQualifiedName? qname = null;
             try
             {
                 string prefix;
-                qname = XmlQualifiedName.Parse(s, nsmgr, out prefix);
+                qname = XmlQualifiedName.Parse(s, nsmgr!, out prefix);
             }
             catch (ArgumentException e)
             {
@@ -3115,13 +3142,13 @@ namespace System.Xml.Schema
         {
             // Only datatypes that are derived from NOTATION by specifying a value for enumeration can be used in a schema.
             // Furthermore, the value of all enumeration facets must match the name of a notation declared in the current schema.                    //
-            for (Datatype_NOTATION dt = this; dt != null; dt = (Datatype_NOTATION)dt.Base)
+            for (Datatype_NOTATION? dt = this; dt != null; dt = (Datatype_NOTATION?)dt.Base)
             {
                 if (dt.Restriction != null && (dt.Restriction.Flags & RestrictionFlags.Enumeration) != 0)
                 {
-                    for (int i = 0; i < dt.Restriction.Enumeration.Count; ++i)
+                    for (int i = 0; i < dt.Restriction.Enumeration!.Count; ++i)
                     {
-                        XmlQualifiedName notation = (XmlQualifiedName)dt.Restriction.Enumeration[i];
+                        XmlQualifiedName notation = (XmlQualifiedName)dt.Restriction.Enumeration[i]!;
                         if (!notations.Contains(notation))
                         {
                             throw new XmlSchemaException(SR.Sch_NotationRequired, caller);
@@ -3149,9 +3176,9 @@ namespace System.Xml.Schema
     {
         public override XmlTypeCode TypeCode { get { return XmlTypeCode.Integer; } }
 
-        internal override Exception TryParseValue(string s, XmlNameTable nameTable, IXmlNamespaceResolver nsmgr, out object typedValue)
+        internal override Exception? TryParseValue(string s, XmlNameTable? nameTable, IXmlNamespaceResolver? nsmgr, out object? typedValue)
         {
-            Exception exception;
+            Exception? exception;
 
             typedValue = null;
 
@@ -3267,9 +3294,9 @@ namespace System.Xml.Schema
 
         internal override Type ListValueType { get { return s_listValueType; } }
 
-        internal override Exception TryParseValue(string s, XmlNameTable nameTable, IXmlNamespaceResolver nsmgr, out object typedValue)
+        internal override Exception? TryParseValue(string s, XmlNameTable? nameTable, IXmlNamespaceResolver? nsmgr, out object? typedValue)
         {
-            Exception exception;
+            Exception? exception;
 
             typedValue = null;
 
@@ -3323,9 +3350,9 @@ namespace System.Xml.Schema
 
         internal override Type ListValueType { get { return s_listValueType; } }
 
-        internal override Exception TryParseValue(string s, XmlNameTable nameTable, IXmlNamespaceResolver nsmgr, out object typedValue)
+        internal override Exception? TryParseValue(string s, XmlNameTable? nameTable, IXmlNamespaceResolver? nsmgr, out object? typedValue)
         {
-            Exception exception;
+            Exception? exception;
 
             typedValue = null;
 
@@ -3380,9 +3407,9 @@ namespace System.Xml.Schema
 
         internal override Type ListValueType { get { return s_listValueType; } }
 
-        internal override Exception TryParseValue(string s, XmlNameTable nameTable, IXmlNamespaceResolver nsmgr, out object typedValue)
+        internal override Exception? TryParseValue(string s, XmlNameTable? nameTable, IXmlNamespaceResolver? nsmgr, out object? typedValue)
         {
-            Exception exception;
+            Exception? exception;
 
             typedValue = null;
 
@@ -3436,9 +3463,9 @@ namespace System.Xml.Schema
 
         internal override Type ListValueType { get { return s_listValueType; } }
 
-        internal override Exception TryParseValue(string s, XmlNameTable nameTable, IXmlNamespaceResolver nsmgr, out object typedValue)
+        internal override Exception? TryParseValue(string s, XmlNameTable? nameTable, IXmlNamespaceResolver? nsmgr, out object? typedValue)
         {
-            Exception exception;
+            Exception? exception;
 
             typedValue = null;
 
@@ -3524,9 +3551,9 @@ namespace System.Xml.Schema
 
         internal override Type ListValueType { get { return s_listValueType; } }
 
-        internal override Exception TryParseValue(string s, XmlNameTable nameTable, IXmlNamespaceResolver nsmgr, out object typedValue)
+        internal override Exception? TryParseValue(string s, XmlNameTable? nameTable, IXmlNamespaceResolver? nsmgr, out object? typedValue)
         {
-            Exception exception;
+            Exception? exception;
 
             typedValue = null;
 
@@ -3580,9 +3607,9 @@ namespace System.Xml.Schema
 
         internal override Type ListValueType { get { return s_listValueType; } }
 
-        internal override Exception TryParseValue(string s, XmlNameTable nameTable, IXmlNamespaceResolver nsmgr, out object typedValue)
+        internal override Exception? TryParseValue(string s, XmlNameTable? nameTable, IXmlNamespaceResolver? nsmgr, out object? typedValue)
         {
-            Exception exception;
+            Exception? exception;
 
             typedValue = null;
 
@@ -3636,9 +3663,9 @@ namespace System.Xml.Schema
 
         internal override Type ListValueType { get { return s_listValueType; } }
 
-        internal override Exception TryParseValue(string s, XmlNameTable nameTable, IXmlNamespaceResolver nsmgr, out object typedValue)
+        internal override Exception? TryParseValue(string s, XmlNameTable? nameTable, IXmlNamespaceResolver? nsmgr, out object? typedValue)
         {
-            Exception exception;
+            Exception? exception;
 
             typedValue = null;
 
@@ -3691,9 +3718,9 @@ namespace System.Xml.Schema
 
         internal override Type ListValueType { get { return s_listValueType; } }
 
-        internal override Exception TryParseValue(string s, XmlNameTable nameTable, IXmlNamespaceResolver nsmgr, out object typedValue)
+        internal override Exception? TryParseValue(string s, XmlNameTable? nameTable, IXmlNamespaceResolver? nsmgr, out object? typedValue)
         {
-            Exception exception;
+            Exception? exception;
 
             typedValue = null;
 
@@ -3741,7 +3768,7 @@ namespace System.Xml.Schema
     */
     internal class Datatype_doubleXdr : Datatype_double
     {
-        public override object ParseValue(string s, XmlNameTable nameTable, IXmlNamespaceResolver nsmgr)
+        public override object ParseValue(string s, XmlNameTable? nameTable, IXmlNamespaceResolver? nsmgr)
         {
             double value;
             try
@@ -3763,7 +3790,7 @@ namespace System.Xml.Schema
 
     internal class Datatype_floatXdr : Datatype_float
     {
-        public override object ParseValue(string s, XmlNameTable nameTable, IXmlNamespaceResolver nsmgr)
+        public override object ParseValue(string s, XmlNameTable? nameTable, IXmlNamespaceResolver? nsmgr)
         {
             float value;
             try
@@ -3790,7 +3817,7 @@ namespace System.Xml.Schema
 
         public override XmlTokenizedType TokenizedType { get { return XmlTokenizedType.QName; } }
 
-        public override object ParseValue(string s, XmlNameTable nameTable, IXmlNamespaceResolver nsmgr)
+        public override object ParseValue(string s, XmlNameTable? nameTable, IXmlNamespaceResolver? nsmgr)
         {
             if (s == null || s.Length == 0)
             {
@@ -3842,7 +3869,7 @@ namespace System.Xml.Schema
             return ((char)value1).CompareTo((char)value2);
         }
 
-        public override object ParseValue(string s, XmlNameTable nameTable, IXmlNamespaceResolver nsmgr)
+        public override object ParseValue(string s, XmlNameTable? nameTable, IXmlNamespaceResolver? nsmgr)
         {
             try
             {
@@ -3858,9 +3885,9 @@ namespace System.Xml.Schema
             }
         }
 
-        internal override Exception TryParseValue(string s, XmlNameTable nameTable, IXmlNamespaceResolver nsmgr, out object typedValue)
+        internal override Exception? TryParseValue(string s, XmlNameTable? nameTable, IXmlNamespaceResolver? nsmgr, out object? typedValue)
         {
-            Exception exception;
+            Exception? exception;
 
             typedValue = null;
 
@@ -3879,13 +3906,13 @@ namespace System.Xml.Schema
 
     internal class Datatype_fixed : Datatype_decimal
     {
-        public override object ParseValue(string s, XmlNameTable nameTable, IXmlNamespaceResolver nsmgr)
+        public override object ParseValue(string s, XmlNameTable? nameTable, IXmlNamespaceResolver? nsmgr)
         {
-            Exception exception;
+            Exception? exception;
 
             try
             {
-                Numeric10FacetsChecker facetsChecker = this.FacetsChecker as Numeric10FacetsChecker;
+                Numeric10FacetsChecker facetsChecker = (this.FacetsChecker as Numeric10FacetsChecker)!;
                 decimal value = XmlConvert.ToDecimal(s);
                 exception = facetsChecker.CheckTotalAndFractionDigits(value, 14 + 4, 4, true, true);
                 if (exception != null) goto Error;
@@ -3904,9 +3931,9 @@ namespace System.Xml.Schema
             throw exception;
         }
 
-        internal override Exception TryParseValue(string s, XmlNameTable nameTable, IXmlNamespaceResolver nsmgr, out object typedValue)
+        internal override Exception? TryParseValue(string s, XmlNameTable? nameTable, IXmlNamespaceResolver? nsmgr, out object? typedValue)
         {
-            Exception exception;
+            Exception? exception;
 
             typedValue = null;
 
@@ -3914,7 +3941,7 @@ namespace System.Xml.Schema
             exception = XmlConvert.TryToDecimal(s, out decimalValue);
             if (exception != null) goto Error;
 
-            Numeric10FacetsChecker facetsChecker = this.FacetsChecker as Numeric10FacetsChecker;
+            Numeric10FacetsChecker facetsChecker = (this.FacetsChecker as Numeric10FacetsChecker)!;
             exception = facetsChecker.CheckTotalAndFractionDigits(decimalValue, 14 + 4, 4, true, true);
             if (exception != null) goto Error;
 
@@ -3943,7 +3970,7 @@ namespace System.Xml.Schema
             return ((Guid)value1).Equals(value2) ? 0 : -1;
         }
 
-        public override object ParseValue(string s, XmlNameTable nameTable, IXmlNamespaceResolver nsmgr)
+        public override object ParseValue(string s, XmlNameTable? nameTable, IXmlNamespaceResolver? nsmgr)
         {
             try
             {
@@ -3959,9 +3986,9 @@ namespace System.Xml.Schema
             }
         }
 
-        internal override Exception TryParseValue(string s, XmlNameTable nameTable, IXmlNamespaceResolver nsmgr, out object typedValue)
+        internal override Exception? TryParseValue(string s, XmlNameTable? nameTable, IXmlNamespaceResolver? nsmgr, out object? typedValue)
         {
-            Exception exception;
+            Exception? exception;
 
             typedValue = null;
 

@@ -2169,7 +2169,6 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 	guint32 vt_res_size = 0;
 	int op = -1;
 	int native = 0;
-	int is_void = 0;
 	int need_null_check = is_virtual;
 	gboolean is_delegate_invoke = FALSE;
 
@@ -2368,10 +2367,12 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 			vararg_stack = ALIGN_TO (vararg_stack, align);
 			vararg_stack += arg_size;
 		}
-		/* allocate space for the pointer to varargs space start */
-		vararg_stack += sizeof (gpointer);
-		vt_stack_used += ALIGN_TO (vararg_stack, MINT_VT_ALIGNMENT);
+		/*
+		 * MINT_CALL_VARARG needs this space on the vt stack. Make sure the
+		 * vtstack space is sufficient.
+		 */
 		PUSH_VT (td, vararg_stack);
+		POP_VT (td, vararg_stack);
 	}
 
 	if (need_null_check) {
@@ -2418,6 +2419,8 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 			vt_stack_used += size;
 		}
 	}
+	/* Pop the vt stack used by the arguments */
+	td->vt_sp -= vt_stack_used;
 
 	/* need to handle typedbyref ... */
 	if (csignature->ret->type != MONO_TYPE_VOID) {
@@ -2435,8 +2438,7 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 			PUSH_VT(td, vt_res_size);
 		}
 		PUSH_TYPE(td, stack_type[mt], klass);
-	} else
-		is_void = TRUE;
+	}
 
 	if (op >= 0) {
 		interp_add_ins (td, op);
@@ -2459,46 +2461,62 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 		interp_add_ins (td, MINT_JIT_CALL);
 		td->last_ins->data [0] = get_data_item_index (td, (void *)mono_interp_get_imethod (domain, target_method, error));
 		mono_error_assert_ok (error);
+		td->last_ins->data [1] = vt_stack_used;
 	} else {
-#ifndef MONO_ARCH_HAS_NO_PROPER_MONOCTX
-		/* Try using fast icall path for simple signatures */
-		if (native && !method->dynamic)
-			op = interp_icall_op_for_sig (csignature);
-#endif
-		if (csignature->call_convention == MONO_CALL_VARARG)
-			interp_add_ins (td, MINT_CALL_VARARG);
-		else if (is_delegate_invoke)
-			interp_add_ins (td, MINT_CALL_DELEGATE);
-		else if (calli)
-			interp_add_ins (td, native ? ((op != -1) ? MINT_CALLI_NAT_FAST : MINT_CALLI_NAT) : MINT_CALLI);
-		else if (is_virtual && !mono_class_is_marshalbyref (target_method->klass))
-			interp_add_ins (td, is_void ? MINT_VCALLVIRT_FAST : MINT_CALLVIRT_FAST);
-		else if (is_virtual)
-			interp_add_ins (td, is_void ? MINT_VCALLVIRT : MINT_CALLVIRT);
-		else
-			interp_add_ins (td, is_void ? MINT_VCALL : MINT_CALL);
-
 		if (is_delegate_invoke) {
+			interp_add_ins (td, MINT_CALL_DELEGATE);
 			td->last_ins->data [0] = get_data_item_index (td, (void *)csignature);
+			td->last_ins->data [1] = vt_stack_used;
 		} else if (calli) {
-			td->last_ins->data [0] = get_data_item_index (td, (void *)csignature);
+#ifndef MONO_ARCH_HAS_NO_PROPER_MONOCTX
+			/* Try using fast icall path for simple signatures */
+			if (native && !method->dynamic)
+				op = interp_icall_op_for_sig (csignature);
+#endif
+			if (op != -1) {
+				interp_add_ins (td, MINT_CALLI_NAT_FAST);
+				td->last_ins->data [1] = op;
+				td->last_ins->data [2] = save_last_error;
+			} else if (native && method->dynamic && csignature->pinvoke) {
+				interp_add_ins (td, MINT_CALLI_NAT_DYNAMIC);
+				td->last_ins->data [1] = vt_stack_used;
+			} else if (native) {
+				interp_add_ins (td, MINT_CALLI_NAT);
 #ifdef TARGET_X86
-			/* Windows not tested/supported yet */
-			if (td->last_ins->opcode == MINT_CALLI_NAT)
+				/* Windows not tested/supported yet */
 				g_assertf (csignature->call_convention == MONO_CALL_DEFAULT || csignature->call_convention == MONO_CALL_C, "Interpreter supports only cdecl pinvoke on x86");
 #endif
-
-			if (op != -1) {
-				td->last_ins->data[1] = op;
-				if (td->last_ins->opcode == MINT_CALLI_NAT_FAST)
-					td->last_ins->data[2] = save_last_error;
-			} else if (op == -1 && td->last_ins->opcode == MINT_CALLI_NAT) {
-				td->last_ins->data[1] = save_last_error;
+				td->last_ins->data [1] = vt_stack_used;
+				td->last_ins->data [2] = vt_res_size;
+				td->last_ins->data [3] = save_last_error;
+			} else {
+				interp_add_ins (td, MINT_CALLI);
+				td->last_ins->data [1] = vt_stack_used;
 			}
+			td->last_ins->data [0] = get_data_item_index (td, (void *)csignature);
 		} else {
 			InterpMethod *imethod = mono_interp_get_imethod (domain, target_method, error);
+			return_val_if_nok (error, FALSE);
+
+			if (csignature->call_convention == MONO_CALL_VARARG) {
+				interp_add_ins (td, MINT_CALL_VARARG);
+				td->last_ins->data [1] = get_data_item_index (td, (void *)csignature);
+			} else if (is_virtual && !mono_class_is_marshalbyref (target_method->klass)) {
+				interp_add_ins (td, MINT_CALLVIRT_FAST);
+				if (mono_class_is_interface (target_method->klass))
+					td->last_ins->data [1] = -2 * MONO_IMT_SIZE + mono_method_get_imt_slot (target_method);
+				else
+					td->last_ins->data [1] = mono_method_get_vtable_slot (target_method);
+			} else if (is_virtual) {
+				interp_add_ins (td, MINT_CALLVIRT);
+				td->last_ins->data [1] = imethod->param_count + imethod->hasthis;
+			} else {
+				interp_add_ins (td, MINT_CALL);
+				td->last_ins->data [1] = imethod->param_count + imethod->hasthis;
+			}
 			td->last_ins->data [0] = get_data_item_index (td, (void *)imethod);
-			td->last_ins->data [1] = imethod->param_count + imethod->hasthis;
+			td->last_ins->data [2] = vt_stack_used;
+
 #ifdef ENABLE_EXPERIMENT_TIERED
 			if (MINT_IS_PATCHABLE_CALL (td->last_ins->opcode)) {
 				g_assert (!calli && !is_virtual);
@@ -2506,25 +2524,9 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 				g_hash_table_insert (td->patchsite_hash, td->last_ins, target_method);
 			}
 #endif
-			return_val_if_nok (error, FALSE);
-			if (csignature->call_convention == MONO_CALL_VARARG)
-				td->last_ins->data [1] = get_data_item_index (td, (void *)csignature);
-			else if (is_virtual && !mono_class_is_marshalbyref (target_method->klass)) {
-				/* FIXME Use fastpath also for MBRO. Asserts in mono_method_get_vtable_slot */
-				if (mono_class_is_interface (target_method->klass))
-					td->last_ins->data [1] = -2 * MONO_IMT_SIZE + mono_method_get_imt_slot (target_method);
-				else
-					td->last_ins->data [1] = mono_method_get_vtable_slot (target_method);
-			}
 		}
 	}
 	td->ip += 5;
-	if (vt_stack_used != 0 || vt_res_size != 0) {
-		interp_add_ins (td, MINT_VTRESULT);
-		td->last_ins->data [0] = vt_res_size;
-		WRITE32_INS (td->last_ins, 1, &vt_stack_used);
-		td->vt_sp -= vt_stack_used;
-	}
 
 	return TRUE;
 }
@@ -3739,14 +3741,15 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 		}
 		case CEE_POP:
 			CHECK_STACK(td, 1);
-			SIMPLE_OP(td, MINT_POP);
 			if (td->sp [-1].type == STACK_TYPE_VT) {
 				int size = mono_class_value_size (td->sp [-1].klass, NULL);
 				size = ALIGN_TO (size, MINT_VT_ALIGNMENT);
-				interp_add_ins (td, MINT_VTRESULT);
-				td->last_ins->data [0] = 0;
-				WRITE32_INS (td->last_ins, 1, &size);
+				interp_add_ins (td, MINT_POP_VT);
+				WRITE32_INS (td->last_ins, 0, &size);
 				td->vt_sp -= size;
+				td->ip++;
+			} else {
+				SIMPLE_OP(td, MINT_POP);
 			}
 			--td->sp;
 			break;
@@ -4609,6 +4612,10 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 				if (m_class_get_parent (klass) == mono_defaults.array_class) {
 					interp_add_ins (td, MINT_NEWOBJ_ARRAY);
 					td->last_ins->data [0] = get_data_item_index (td, m->klass);
+					td->last_ins->data [1] = csignature->param_count;
+				} else if (klass == mono_defaults.string_class) {
+					interp_add_ins (td, MINT_NEWOBJ_STRING);
+					td->last_ins->data [0] = get_data_item_index (td, mono_interp_get_imethod (domain, m, error));
 					td->last_ins->data [1] = csignature->param_count;
 				} else if (m_class_get_image (klass) == mono_defaults.corlib &&
 						!strcmp (m_class_get_name (m->klass), "ByReference`1") &&
@@ -6431,16 +6438,10 @@ get_inst_stack_usage (TransformData *td, InterpInst *ins, int *pop, int *push)
 		case MINT_JIT_CALL:
 		case MINT_CALL:
 		case MINT_CALLVIRT:
-		case MINT_CALLVIRT_FAST:
-		case MINT_VCALL:
-		case MINT_VCALLVIRT:
-		case MINT_VCALLVIRT_FAST: {
+		case MINT_CALLVIRT_FAST: {
 			InterpMethod *imethod = (InterpMethod*) td->data_items [ins->data [0]];
 			*pop = imethod->param_count + imethod->hasthis;
-			if (opcode == MINT_JIT_CALL)
-				*push = imethod->rtype->type != MONO_TYPE_VOID;
-			else
-				*push = opcode == MINT_CALL || opcode == MINT_CALLVIRT || opcode == MINT_CALLVIRT_FAST;
+			*push = imethod->rtype->type != MONO_TYPE_VOID;
 			break;
 		}
 #ifndef ENABLE_NETCORE
@@ -6459,6 +6460,7 @@ get_inst_stack_usage (TransformData *td, InterpInst *ins, int *pop, int *push)
 		}
 		case MINT_CALLI:
 		case MINT_CALLI_NAT:
+		case MINT_CALLI_NAT_DYNAMIC:
 		case MINT_CALLI_NAT_FAST: {
 			MonoMethodSignature *csignature = (MonoMethodSignature*) td->data_items [ins->data [0]];
 			*pop = csignature->param_count + csignature->hasthis + 1;
@@ -6489,6 +6491,7 @@ get_inst_stack_usage (TransformData *td, InterpInst *ins, int *pop, int *push)
 			break;
 		}
 		case MINT_NEWOBJ_ARRAY:
+		case MINT_NEWOBJ_STRING:
 			*pop = ins->data [1];
 			*push = 1;
 			break;
@@ -7341,7 +7344,7 @@ retry:
 				sp [-i].ins = NULL;
 			memset (sp, 0, sizeof (StackContentInfo));
 			sp++;
-		} else if (ins->opcode == MINT_POP) {
+		} else if (ins->opcode == MINT_POP || ins->opcode == MINT_POP_VT) {
 			sp--;
 			if (sp->ins) {
 				// The top of the stack is not used by any instructions. Kill both the

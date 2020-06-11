@@ -4,9 +4,8 @@
 
 #pragma warning disable SA1028 // ignore whitespace warnings for generated code
 using System;
+using System.Formats.Asn1;
 using System.Runtime.InteropServices;
-using System.Security.Cryptography;
-using System.Security.Cryptography.Asn1;
 
 namespace System.Security.Cryptography.Pkcs.Asn1
 {
@@ -65,14 +64,33 @@ namespace System.Security.Cryptography.Pkcs.Asn1
 
         internal static KeyAgreeRecipientIdentifierAsn Decode(ReadOnlyMemory<byte> encoded, AsnEncodingRules ruleSet)
         {
-            AsnValueReader reader = new AsnValueReader(encoded.Span, ruleSet);
+            try
+            {
+                AsnValueReader reader = new AsnValueReader(encoded.Span, ruleSet);
 
-            Decode(ref reader, encoded, out KeyAgreeRecipientIdentifierAsn decoded);
-            reader.ThrowIfNotEmpty();
-            return decoded;
+                Decode(ref reader, encoded, out KeyAgreeRecipientIdentifierAsn decoded);
+                reader.ThrowIfNotEmpty();
+                return decoded;
+            }
+            catch (AsnContentException e)
+            {
+                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding, e);
+            }
         }
 
         internal static void Decode(ref AsnValueReader reader, ReadOnlyMemory<byte> rebind, out KeyAgreeRecipientIdentifierAsn decoded)
+        {
+            try
+            {
+                DecodeCore(ref reader, rebind, out decoded);
+            }
+            catch (AsnContentException e)
+            {
+                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding, e);
+            }
+        }
+
+        private static void DecodeCore(ref AsnValueReader reader, ReadOnlyMemory<byte> rebind, out KeyAgreeRecipientIdentifierAsn decoded)
         {
             decoded = default;
             Asn1Tag tag = reader.PeekTag();

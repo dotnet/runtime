@@ -6,6 +6,7 @@
         <ApplicationFileExtension>.exe</ApplicationFileExtension>
         <LibraryFilePrefix></LibraryFilePrefix>
         <LibraryFileExtension>.dll</LibraryFileExtension>
+        <StaticLibraryFileExtension>.lib</StaticLibraryFileExtension>
         <SymbolFileExtension>.pdb</SymbolFileExtension>
       </PropertyGroup>
     </When>
@@ -13,6 +14,7 @@
       <PropertyGroup>
         <LibraryFilePrefix Condition=" '$(SkipLibraryPrefixFromUnix)' == '' ">lib</LibraryFilePrefix>
         <LibraryFileExtension>.dylib</LibraryFileExtension>
+        <StaticLibraryFileExtension>.a</StaticLibraryFileExtension>
         <SymbolFileExtension>.dwarf</SymbolFileExtension>
       </PropertyGroup>
     </When>
@@ -20,6 +22,7 @@
       <PropertyGroup>
         <LibraryFilePrefix Condition=" '$(SkipLibraryPrefixFromUnix)' == '' ">lib</LibraryFilePrefix>
         <LibraryFileExtension>.so</LibraryFileExtension>
+        <StaticLibraryFileExtension>.a</StaticLibraryFileExtension>
         <!--symbols included in .so, like Linux, but can be generated externally and if so, uses .debug ext-->
         <SymbolFileExtension>.debug</SymbolFileExtension>
       </PropertyGroup>
@@ -28,6 +31,7 @@
       <PropertyGroup>
         <LibraryFilePrefix Condition=" '$(SkipLibraryPrefixFromUnix)' == '' ">lib</LibraryFilePrefix>
         <LibraryFileExtension>.so</LibraryFileExtension>
+        <StaticLibraryFileExtension>.a</StaticLibraryFileExtension>
         <SymbolFileExtension>.dbg</SymbolFileExtension>
       </PropertyGroup>
     </Otherwise>

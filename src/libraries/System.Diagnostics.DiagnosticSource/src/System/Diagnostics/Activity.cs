@@ -92,7 +92,7 @@ namespace System.Diagnostics
         /// reasonable, but arguments (e.g. specific accounts etc), should not be in
         /// the name but rather in the tags.
         /// </summary>
-        public string OperationName { get; } = null!;
+        public string OperationName { get; }
 
         /// <summary>Gets or sets the display name of the Activity</summary>
         /// <remarks>
@@ -334,7 +334,6 @@ namespace System.Diagnostics
             if (string.IsNullOrEmpty(operationName))
             {
                 NotifyError(new ArgumentException(SR.OperationNameInvalid));
-                return;
             }
 
             OperationName = operationName;

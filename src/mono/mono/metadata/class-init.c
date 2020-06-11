@@ -724,30 +724,73 @@ mono_generic_class_setup_parent (MonoClass *klass, MonoClass *gtd)
 	mono_loader_unlock ();
 }
 
-struct HasIsByrefLikeUD {
-	gboolean has_isbyreflike;
+struct FoundAttrUD {
+	/* inputs */
+	const char *nspace;
+	const char *name;
+	gboolean in_corlib;
+	/* output */
+	gboolean has_attr;
 };
 
 static gboolean
-has_isbyreflike_attribute_func (MonoImage *image, guint32 typeref_scope_token, const char *nspace, const char *name, guint32 method_token, gpointer user_data)
+has_wellknown_attribute_func (MonoImage *image, guint32 typeref_scope_token, const char *nspace, const char *name, guint32 method_token, gpointer user_data)
 {
-	struct HasIsByrefLikeUD *has_isbyreflike = (struct HasIsByrefLikeUD *)user_data;
-	if (!strcmp (name, "IsByRefLikeAttribute") && !strcmp (nspace, "System.Runtime.CompilerServices")) {
-		has_isbyreflike->has_isbyreflike = TRUE;
+	struct FoundAttrUD *has_attr = (struct FoundAttrUD *)user_data;
+	if (!strcmp (name, has_attr->name) && !strcmp (nspace, has_attr->nspace)) {
+		has_attr->has_attr = TRUE;
 		return TRUE;
 	}
+	/* TODO: use typeref_scope_token to check that attribute comes from
+	 * corlib if in_corlib is TRUE, without triggering an assembly load.
+	 * If we're inside corlib, expect the scope to be
+	 * MONO_RESOLUTION_SCOPE_MODULE I think, if we're outside it'll be an
+	 * MONO_RESOLUTION_SCOPE_ASSEMBLYREF and we'll need to check the
+	 * name.*/
 	return FALSE;
 }
 
 static gboolean
-class_has_isbyreflike_attribute (MonoClass *klass)
+class_has_wellknown_attribute (MonoClass *klass, const char *nspace, const char *name, gboolean in_corlib)
 {
-	struct HasIsByrefLikeUD has_isbyreflike;
-	has_isbyreflike.has_isbyreflike = FALSE;
-	mono_class_metadata_foreach_custom_attr (klass, has_isbyreflike_attribute_func, &has_isbyreflike);
-	return has_isbyreflike.has_isbyreflike;
+	struct FoundAttrUD has_attr;
+	has_attr.nspace = nspace;
+	has_attr.name = name;
+	has_attr.in_corlib = in_corlib;
+	has_attr.has_attr = FALSE;
+
+	mono_class_metadata_foreach_custom_attr (klass, has_wellknown_attribute_func, &has_attr);
+
+	return has_attr.has_attr;
 }
 
+static gboolean
+method_has_wellknown_attribute (MonoMethod *method, const char *nspace, const char *name, gboolean in_corlib)
+{
+	struct FoundAttrUD has_attr;
+	has_attr.nspace = nspace;
+	has_attr.name = name;
+	has_attr.in_corlib = in_corlib;
+	has_attr.has_attr = FALSE;
+
+	mono_method_metadata_foreach_custom_attr (method, has_wellknown_attribute_func, &has_attr);
+
+	return has_attr.has_attr;
+}
+
+
+static gboolean
+class_has_isbyreflike_attribute (MonoClass *klass)
+{
+	return class_has_wellknown_attribute (klass, "System.Runtime.CompilerServices", "IsByRefLikeAttribute", TRUE);
+}
+
+
+static gboolean G_GNUC_UNUSED
+method_has_preserve_base_overrides_attribute (MonoMethod *method)
+{
+	return method_has_wellknown_attribute (method, "System.Runtime.CompilerServices", "PreserveBaseOverridesAttribute", TRUE);
+}
 
 static gboolean
 check_valid_generic_inst_arguments (MonoGenericInst *inst, MonoError *error)
@@ -3252,7 +3295,7 @@ mono_class_setup_vtable_general (MonoClass *klass, MonoMethod **overrides, int o
 						g_assert (cm->slot < max_vtsize);
 						if (!override_map)
 							override_map = g_hash_table_new (mono_aligned_addr_hash, NULL);
-						TRACE_INTERFACE_VTABLE (printf ("adding iface override from %s [%p] to %s [%p]\n",
+						TRACE_INTERFACE_VTABLE (printf ("adding base class override from %s [%p] to %s [%p]\n",
 							mono_method_full_name (m1, 1), m1,
 							mono_method_full_name (cm, 1), cm));
 						g_hash_table_insert (override_map, m1, cm);

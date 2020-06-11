@@ -565,12 +565,16 @@ netcore_resolve_with_dll_import_resolver (MonoAssemblyLoadContext *alc, MonoAsse
 
 	HANDLE_FUNCTION_ENTER ();
 
-	MonoStringHandle scope_handle = mono_string_new_handle (domain, scope, error);
-	goto_if_nok (error, leave);
-	MonoReflectionAssemblyHandle assembly_handle = mono_assembly_get_object_handle (domain, assembly, error);
+	MonoStringHandle scope_handle;
+	scope_handle = mono_string_new_handle (domain, scope, error);
 	goto_if_nok (error, leave);
 
-	gboolean has_search_flags = flags != 0 ? TRUE : FALSE;
+	MonoReflectionAssemblyHandle assembly_handle;
+	assembly_handle = mono_assembly_get_object_handle (domain, assembly, error);
+	goto_if_nok (error, leave);
+
+	gboolean has_search_flags;
+	has_search_flags = flags != 0 ? TRUE : FALSE;
 	gpointer args [5];
 	args [0] = MONO_HANDLE_RAW (scope_handle);
 	args [1] = MONO_HANDLE_RAW (assembly_handle);
@@ -625,10 +629,12 @@ netcore_resolve_with_load (MonoAssemblyLoadContext *alc, const char *scope, Mono
 
 	HANDLE_FUNCTION_ENTER ();
 
-	MonoStringHandle scope_handle = mono_string_new_handle (mono_alc_domain (alc), scope, error);
+	MonoStringHandle scope_handle;
+	scope_handle = mono_string_new_handle (mono_alc_domain (alc), scope, error);
 	goto_if_nok (error, leave);
 
-	gpointer gchandle = GUINT_TO_POINTER (alc->gchandle);
+	gpointer gchandle;
+	gchandle = GUINT_TO_POINTER (alc->gchandle);
 	gpointer args [3];
 	args [0] = MONO_HANDLE_RAW (scope_handle);
 	args [1] = &gchandle;
@@ -682,12 +688,16 @@ netcore_resolve_with_resolving_event (MonoAssemblyLoadContext *alc, MonoAssembly
 
 	HANDLE_FUNCTION_ENTER ();
 
-	MonoStringHandle scope_handle = mono_string_new_handle (domain, scope, error);
-	goto_if_nok (error, leave);
-	MonoReflectionAssemblyHandle assembly_handle = mono_assembly_get_object_handle (domain, assembly, error);
+	MonoStringHandle scope_handle;
+	scope_handle = mono_string_new_handle (domain, scope, error);
 	goto_if_nok (error, leave);
 
-	gpointer gchandle = GUINT_TO_POINTER (alc->gchandle);
+	MonoReflectionAssemblyHandle assembly_handle;
+	assembly_handle = mono_assembly_get_object_handle (domain, assembly, error);
+	goto_if_nok (error, leave);
+
+	gpointer gchandle;
+	gchandle = GUINT_TO_POINTER (alc->gchandle);
 	gpointer args [4];
 	args [0] = MONO_HANDLE_RAW (scope_handle);
 	args [1] = MONO_HANDLE_RAW (assembly_handle);
@@ -758,7 +768,7 @@ netcore_lookup_native_library (MonoAssemblyLoadContext *alc, MonoImage *image, c
 	// We allow a special name to dlopen from the running process namespace, which is not present in CoreCLR
 	if (strcmp (scope, "__Internal") == 0) {
 		if (!internal_module)
-			internal_module = mono_dl_open (NULL, MONO_DL_LAZY, &error_msg);
+			internal_module = mono_dl_open_self (&error_msg);
 		module = internal_module;
 
 		if (!module) {
@@ -1240,6 +1250,9 @@ lookup_pinvoke_call_impl (MonoMethod *method, MonoLookupPInvokeStatus *status_ou
 #endif
 
 #ifdef ENABLE_NETCORE
+#ifndef HOST_WIN32
+retry_with_libcoreclr:
+#endif
 	// FIXME: these flags are not getting passed correctly
 	module = netcore_lookup_native_library (alc, image, new_scope, 0);
 #else
@@ -1262,6 +1275,13 @@ lookup_pinvoke_call_impl (MonoMethod *method, MonoLookupPInvokeStatus *status_ou
 	addr = pinvoke_probe_for_symbol (module, piinfo, new_import, &error_msg);
 
 	if (!addr) {
+#if defined(ENABLE_NETCORE) && !defined(HOST_WIN32)
+		if (strcmp (new_scope, "__Internal") == 0) {
+			g_free ((char *)new_scope);
+			new_scope = g_strdup (MONO_LOADER_LIBRARY_NAME);
+			goto retry_with_libcoreclr;
+		}
+#endif		
 		status_out->err_code = LOOKUP_PINVOKE_ERR_NO_SYM;
 		status_out->err_arg = g_strdup (new_import);
 		goto exit;

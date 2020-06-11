@@ -8,6 +8,7 @@ if (CLR_CMAKE_HOST_OS STREQUAL CLR_CMAKE_TARGET_OS)
     set (CLR_CROSS_COMPONENTS_LIST
         crossgen
         clrjit
+        jitinterface
     )
 endif()
 

@@ -101,6 +101,9 @@ namespace System.Text.Json
                                 ? StringComparer.OrdinalIgnoreCase
                                 : StringComparer.Ordinal);
 
+                        HashSet<string>? ignoredProperties = null;
+
+                        // We start from the most derived type and ascend to the base type.
                         for (Type? currentType = type; currentType != null; currentType = currentType.BaseType)
                         {
                             foreach (PropertyInfo propertyInfo in currentType.GetProperties(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.DeclaredOnly))
@@ -111,7 +114,47 @@ namespace System.Text.Json
                                     continue;
                                 }
 
-                                if (IsNonPublicProperty(propertyInfo))
+                                // For now we only support public properties (i.e. setter and/or getter is public).
+                                if (propertyInfo.GetMethod?.IsPublic == true ||
+                                    propertyInfo.SetMethod?.IsPublic == true)
+                                {
+                                    JsonPropertyInfo jsonPropertyInfo = AddProperty(propertyInfo, currentType, options);
+                                    Debug.Assert(jsonPropertyInfo != null && jsonPropertyInfo.NameAsString != null);
+
+                                    string propertyName = propertyInfo.Name;
+
+                                    // The JsonPropertyNameAttribute or naming policy resulted in a collision.
+                                    if (!JsonHelpers.TryAdd(cache, jsonPropertyInfo.NameAsString, jsonPropertyInfo))
+                                    {
+                                        JsonPropertyInfo other = cache[jsonPropertyInfo.NameAsString];
+
+                                        if (other.IsIgnored)
+                                        {
+                                            // Overwrite previously cached property since it has [JsonIgnore].
+                                            cache[jsonPropertyInfo.NameAsString] = jsonPropertyInfo;
+                                        }
+                                        else if (
+                                            // Does the current property have `JsonIgnoreAttribute`?
+                                            !jsonPropertyInfo.IsIgnored &&
+                                            // Is the current property hidden by the previously cached property
+                                            // (with `new` keyword, or by overriding)?
+                                            other.PropertyInfo!.Name != propertyName &&
+                                            // Was a property with the same CLR name was ignored? That property hid the current property,
+                                            // thus, if it was ignored, the current property should be ignored too.
+                                            ignoredProperties?.Contains(propertyName) != true)
+                                        {
+                                            // We throw if we have two public properties that have the same JSON property name, and neither have been ignored.
+                                            ThrowHelper.ThrowInvalidOperationException_SerializerPropertyNameConflict(Type, jsonPropertyInfo);
+                                        }
+                                        // Ignore the current property.
+                                    }
+
+                                    if (jsonPropertyInfo.IsIgnored)
+                                    {
+                                        (ignoredProperties ??= new HashSet<string>()).Add(propertyName);
+                                    }
+                                }
+                                else
                                 {
                                     if (JsonPropertyInfo.GetAttribute<JsonIncludeAttribute>(propertyInfo) != null)
                                     {
@@ -119,35 +162,6 @@ namespace System.Text.Json
                                     }
 
                                     // Non-public properties should not be included for (de)serialization.
-                                    continue;
-                                }
-
-                                // For now we only support public getters\setters
-                                if (propertyInfo.GetMethod?.IsPublic == true ||
-                                    propertyInfo.SetMethod?.IsPublic == true)
-                                {
-                                    JsonPropertyInfo jsonPropertyInfo = AddProperty(propertyInfo, currentType, options);
-                                    Debug.Assert(jsonPropertyInfo != null && jsonPropertyInfo.NameAsString != null);
-
-                                    // If the JsonPropertyNameAttribute or naming policy results in collisions, throw an exception.
-                                    if (!JsonHelpers.TryAdd(cache, jsonPropertyInfo.NameAsString, jsonPropertyInfo))
-                                    {
-                                        JsonPropertyInfo other = cache[jsonPropertyInfo.NameAsString];
-
-                                        if (other.ShouldDeserialize == false && other.ShouldSerialize == false)
-                                        {
-                                            // Overwrite the one just added since it has [JsonIgnore].
-                                            cache[jsonPropertyInfo.NameAsString] = jsonPropertyInfo;
-                                        }
-                                        else if (other.PropertyInfo?.Name != jsonPropertyInfo.PropertyInfo?.Name &&
-                                            (jsonPropertyInfo.ShouldDeserialize == true || jsonPropertyInfo.ShouldSerialize == true))
-                                        {
-                                            // Check for name equality is required to determine when a new slot is used for the member.
-                                            // Therefore, if names are not the same, there is conflict due to the name policy or attributes.
-                                            ThrowHelper.ThrowInvalidOperationException_SerializerPropertyNameConflict(Type, jsonPropertyInfo);
-                                        }
-                                        // else ignore jsonPropertyInfo since it has [JsonIgnore] or it's hidden by a new slot.
-                                    }
                                 }
                             }
                         }
@@ -211,17 +225,11 @@ namespace System.Text.Json
             }
         }
 
-        private static bool IsNonPublicProperty(PropertyInfo propertyInfo)
-        {
-            MethodInfo? getMethod = propertyInfo.GetMethod;
-            MethodInfo? setMethod = propertyInfo.SetMethod;
-            return !((getMethod != null && getMethod.IsPublic) || (setMethod != null && setMethod.IsPublic));
-        }
-
         private void InitializeConstructorParameters(Dictionary<string, JsonPropertyInfo> propertyCache, ConstructorInfo constructorInfo)
         {
             ParameterInfo[] parameters = constructorInfo!.GetParameters();
-            Dictionary<string, JsonParameterInfo> parameterCache = CreateParameterCache(parameters.Length, Options);
+            Dictionary<string, JsonParameterInfo> parameterCache = new Dictionary<string, JsonParameterInfo>(
+                parameters.Length, Options.PropertyNameCaseInsensitive ? StringComparer.OrdinalIgnoreCase : null);
 
             foreach (ParameterInfo parameterInfo in parameters)
             {

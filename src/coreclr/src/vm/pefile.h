@@ -195,7 +195,6 @@ public:
     CHECK CheckLoaded(BOOL allowNativeSkip = TRUE);
     void ValidateForExecution();
     BOOL IsMarkedAsNoPlatform();
-    BOOL IsMarkedAsContentTypeWindowsRuntime();
 
 
     // ------------------------------------------------------------
@@ -381,9 +380,7 @@ public:
 
     PEAssembly * LoadAssembly(
             mdAssemblyRef       kAssemblyRef,
-            IMDInternalImport * pImport = NULL,
-            LPCUTF8             szWinRtTypeNamespace = NULL,
-            LPCUTF8             szWinRtTypeClassName = NULL);
+            IMDInternalImport * pImport = NULL);
 
     // ------------------------------------------------------------
     // Logging
@@ -720,20 +717,11 @@ class PEAssembly : public PEFile
     PTR_PEFile GetCreator()
     { LIMITED_METHOD_CONTRACT; return m_creator; }
 
-    // Returns TRUE if the assembly is .winmd file (WinRT assembly)
-    bool IsWindowsRuntime();
-
-    // Used to determine if this assembly has an identity that may be used for
-    // binding purposes. Currently this is true for standard .NET assemblies
-    // and false for WinRT assemblies (where assemblies are identified by their
-    // member types).
-    bool HasBindableIdentity();
-
     // Indicates if the assembly can be cached in a binding cache such as AssemblySpecBindingCache.
     inline bool CanUseWithBindingCache()
     {
         STATIC_CONTRACT_WRAPPER;
-        return (HasBindableIdentity());
+        return true;
     }
 };
 

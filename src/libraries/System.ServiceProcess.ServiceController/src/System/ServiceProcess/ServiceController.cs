@@ -7,6 +7,7 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Runtime.InteropServices;
 using System.Security;
@@ -23,19 +24,19 @@ namespace System.ServiceProcess
         private readonly ManualResetEvent _waitForStatusSignal = new ManualResetEvent(false);
         private const string DefaultMachineName = ".";
 
-        private string _name;
-        private string _eitherName;
-        private string _displayName;
+        private string? _name;
+        private string? _eitherName;
+        private string? _displayName;
 
         private int _commandsAccepted;
         private bool _statusGenerated;
         private bool _startTypeInitialized;
         private int _type;
         private bool _disposed;
-        private SafeServiceHandle _serviceManagerHandle;
+        private SafeServiceHandle? _serviceManagerHandle;
         private ServiceControllerStatus _status;
-        private ServiceController[] _dependentServices;
-        private ServiceController[] _servicesDependedOn;
+        private ServiceController[]? _dependentServices;
+        private ServiceController[]? _servicesDependedOn;
         private ServiceStartMode _startType;
 
         public ServiceController()
@@ -298,7 +299,7 @@ namespace System.ServiceProcess
 
                         Interop.Advapi32.QUERY_SERVICE_CONFIG config = new Interop.Advapi32.QUERY_SERVICE_CONFIG();
                         Marshal.PtrToStructure(bufPtr, config);
-                        Dictionary<string, ServiceController> dependencyHash = null;
+                        Dictionary<string, ServiceController>? dependencyHash = null;
 
                         char* dependencyChar = config.lpDependencies;
                         if (dependencyChar != null)
@@ -321,8 +322,8 @@ namespace System.ServiceProcess
                                         Interop.Advapi32.ENUM_SERVICE_STATUS_PROCESS[] loadGroup = GetServicesInGroup(_machineName, dependencyNameStr.Substring(1));
                                         foreach (Interop.Advapi32.ENUM_SERVICE_STATUS_PROCESS groupMember in loadGroup)
                                         {
-                                            if (!dependencyHash.ContainsKey(groupMember.serviceName))
-                                                dependencyHash.Add(groupMember.serviceName, new ServiceController(MachineName, groupMember));
+                                            if (!dependencyHash.ContainsKey(groupMember.serviceName!))
+                                                dependencyHash.Add(groupMember.serviceName!, new ServiceController(MachineName, groupMember));
                                         }
                                     }
                                     else
@@ -477,6 +478,8 @@ namespace System.ServiceProcess
             }
         }
 
+        [MemberNotNull(nameof(_name))]
+        [MemberNotNull(nameof(_displayName))]
         private unsafe void GenerateNames()
         {
             GetDataBaseHandleWithConnectAccess();
@@ -485,13 +488,13 @@ namespace System.ServiceProcess
             {
                 // Figure out the _name based on the information we have.
                 // We must either have _displayName or the constructor parameter _eitherName.
-                string userGivenName = string.IsNullOrEmpty(_eitherName) ? _displayName : _eitherName;
+                string? userGivenName = string.IsNullOrEmpty(_eitherName) ? _displayName : _eitherName;
 
                 if (string.IsNullOrEmpty(userGivenName))
                     throw new InvalidOperationException(SR.Format(SR.ServiceName, userGivenName, ServiceBase.MaxNameLength.ToString()));
 
                 // Try it as a display name
-                string result = GetServiceKeyName(_serviceManagerHandle, userGivenName);
+                string? result = GetServiceKeyName(_serviceManagerHandle, userGivenName);
 
                 if (result != null)
                 {
@@ -517,7 +520,7 @@ namespace System.ServiceProcess
             else if (string.IsNullOrEmpty(_displayName))
             {
                 // We must have _name
-                string result = GetServiceDisplayName(_serviceManagerHandle, _name);
+                string? result = GetServiceDisplayName(_serviceManagerHandle, _name);
 
                 if (result == null)
                 {
@@ -533,7 +536,7 @@ namespace System.ServiceProcess
         /// Gets service name (key name) from service display name.
         /// Returns null if service is not found.
         /// </summary>
-        private unsafe string GetServiceKeyName(SafeServiceHandle SCMHandle, string serviceDisplayName)
+        private unsafe string? GetServiceKeyName(SafeServiceHandle? SCMHandle, string serviceDisplayName)
         {
             Span<char> initialBuffer = stackalloc char[256];
             var builder = new ValueStringBuilder(initialBuffer);
@@ -564,7 +567,7 @@ namespace System.ServiceProcess
             return builder.ToString();
         }
 
-        private unsafe string GetServiceDisplayName(SafeServiceHandle SCMHandle, string serviceName)
+        private unsafe string? GetServiceDisplayName(SafeServiceHandle? SCMHandle, string serviceName)
         {
             var builder = new ValueStringBuilder(4096);
             int bufLen;
@@ -596,7 +599,7 @@ namespace System.ServiceProcess
 
         private static SafeServiceHandle GetDataBaseHandleWithAccess(string machineName, int serviceControlManagerAccess)
         {
-            SafeServiceHandle databaseHandle = null;
+            SafeServiceHandle? databaseHandle = null;
             if (machineName.Equals(DefaultMachineName) || machineName.Length == 0)
             {
                 databaseHandle = new SafeServiceHandle(Interop.Advapi32.OpenSCManager(null, null, serviceControlManagerAccess));
@@ -684,7 +687,7 @@ namespace System.ServiceProcess
         }
 
         /// Helper for GetDevices, GetServices, and ServicesDependedOn
-        private static T[] GetServices<T>(string machineName, int serviceType, string group, Func<Interop.Advapi32.ENUM_SERVICE_STATUS_PROCESS, T> selector)
+        private static T[] GetServices<T>(string machineName, int serviceType, string? group, Func<Interop.Advapi32.ENUM_SERVICE_STATUS_PROCESS, T> selector)
         {
             int bytesNeeded;
             int servicesReturned;

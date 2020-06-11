@@ -13,6 +13,7 @@ using Internal.IL;
 
 using System.Linq;
 using System.IO;
+using System.Diagnostics;
 
 namespace ILCompiler.IBC
 {
@@ -126,15 +127,37 @@ namespace ILCompiler.IBC
             }
         }
 
+        enum MibcGroupParseState
+        {
+            LookingForNextMethod,
+            LookingForOptionalData,
+            ProcessingExclusiveWeight,
+            ProcessingCallgraphCount,
+            ProcessingCallgraphToken,
+            ProcessingCallgraphWeight,
+        }
+
         /// <summary>
         /// Parse MIbcGroup method and return enumerable of MethodProfileData
         ///
         /// Like the AssemblyDictionary method, data is encoded via IL instructions. The format is
         ///
         /// ldtoken methodInProfileData
-        /// Any series of instructions that does not include pop
+        /// Any series of instructions that does not include pop. Expansion data is encoded via ldstr "id"
+        /// followed by a expansion specific sequence of il opcodes.
         /// pop
         /// {Repeat N times for N methods described}
+        ///
+        /// Extensions supported with current parser:
+        ///
+        /// ldstr "ExclusiveWeight"
+        /// Any ldc.i4 or ldc.r4 or ldc.r8 instruction to indicate the exclusive weight
+        ///
+        /// ldstr "WeightedCallData"
+        /// ldc.i4 <Count of methods called>
+        /// Repeat <Count of methods called times>
+        ///  ldtoken <Method called from this method>
+        ///  ldc.i4 <Weight associated with calling the <Method called from this method>>
         ///
         /// This format is designed to be extensible to hold more data as we add new per method profile data without breaking existing parsers.
         /// </summary>
@@ -143,19 +166,28 @@ namespace ILCompiler.IBC
             EcmaMethodIL ilBody = EcmaMethodIL.Create(method);
             byte[] ilBytes = ilBody.GetILBytes();
             int currentOffset = 0;
+            object methodInProgress = null;
+            object metadataNotResolvable = new object();
             object metadataObject = null;
-            object methodNotResolvable = new object();
+            MibcGroupParseState state = MibcGroupParseState.LookingForNextMethod;
+            int intValue = 0;
+            int weightedCallGraphSize = 0;
+            int profileEntryFound = 0;
+            double exclusiveWeight = 0;
+            Dictionary<MethodDesc, int> weights = null;
+            bool processIntValue = false;
             while (currentOffset < ilBytes.Length)
             {
                 ILOpcode opcode = (ILOpcode)ilBytes[currentOffset];
                 if (opcode == ILOpcode.prefix1)
                     opcode = 0x100 + (ILOpcode)ilBytes[currentOffset + 1];
+                processIntValue = false;
                 switch (opcode)
                 {
                     case ILOpcode.ldtoken:
-                        if (metadataObject == null)
                         {
-                            uint token = (uint)(ilBytes[currentOffset + 1] + (ilBytes[currentOffset + 2] << 8) + (ilBytes[currentOffset + 3] << 16) + (ilBytes[currentOffset + 4] << 24));
+                            uint token = BitConverter.ToUInt32(ilBytes.AsSpan(currentOffset + 1, 4));
+                            metadataObject = null;
                             try
                             {
                                 metadataObject = ilBody.GetObject((int)token);
@@ -163,19 +195,186 @@ namespace ILCompiler.IBC
                             catch (TypeSystemException)
                             {
                                 // The method being referred to may be missing. In that situation,
-                                // use the methodNotResolvable sentinel to indicate that this record should be ignored
-                                metadataObject = methodNotResolvable;
+                                // use the metadataNotResolvable sentinel to indicate that this record should be ignored
+                                metadataObject = metadataNotResolvable;
+                            }
+                            switch (state)
+                            {
+                                case MibcGroupParseState.ProcessingCallgraphToken:
+                                    state = MibcGroupParseState.ProcessingCallgraphWeight;
+                                    break;
+                                case MibcGroupParseState.LookingForNextMethod:
+                                    methodInProgress = metadataObject;
+                                    state = MibcGroupParseState.LookingForOptionalData;
+                                    break;
+                                default:
+                                    state = MibcGroupParseState.LookingForOptionalData;
+                                    break;
                             }
                         }
                         break;
-                    case ILOpcode.pop:
-                        if (metadataObject != methodNotResolvable)
+
+                    case ILOpcode.ldc_r4:
                         {
-                            MethodProfileData mibcData = new MethodProfileData((MethodDesc)metadataObject, MethodProfilingDataFlags.ReadMethodCode, 0xFFFFFFFF);
+                            float fltValue = BitConverter.ToSingle(ilBytes.AsSpan(currentOffset + 1, 4));
+
+                            switch (state)
+                            {
+                                case MibcGroupParseState.ProcessingExclusiveWeight:
+                                    exclusiveWeight = fltValue;
+                                    state = MibcGroupParseState.LookingForOptionalData;
+                                    break;
+
+                                default:
+                                    state = MibcGroupParseState.LookingForOptionalData;
+                                    break;
+                            }
+
+                            break;
+                        }
+
+                    case ILOpcode.ldc_r8:
+                        {
+                            double dblValue = BitConverter.ToDouble(ilBytes.AsSpan(currentOffset + 1, 8));
+
+                            switch (state)
+                            {
+                                case MibcGroupParseState.ProcessingExclusiveWeight:
+                                    exclusiveWeight = dblValue;
+                                    state = MibcGroupParseState.LookingForOptionalData;
+                                    break;
+
+                                default:
+                                    state = MibcGroupParseState.LookingForOptionalData;
+                                    break;
+                            }
+                            break;
+                        }
+                    case ILOpcode.ldc_i4_0:
+                        intValue = 0;
+                        processIntValue = true;
+                        break;
+                    case ILOpcode.ldc_i4_1:
+                        intValue = 1;
+                        processIntValue = true;
+                        break;
+                    case ILOpcode.ldc_i4_2:
+                        intValue = 2;
+                        processIntValue = true;
+                        break;
+                    case ILOpcode.ldc_i4_3:
+                        intValue = 3;
+                        processIntValue = true;
+                        break;
+                    case ILOpcode.ldc_i4_4:
+                        intValue = 4;
+                        processIntValue = true;
+                        break;
+                    case ILOpcode.ldc_i4_5:
+                        intValue = 5;
+                        processIntValue = true;
+                        break;
+                    case ILOpcode.ldc_i4_6:
+                        intValue = 6;
+                        processIntValue = true;
+                        break;
+                    case ILOpcode.ldc_i4_7:
+                        intValue = 7;
+                        processIntValue = true;
+                        break;
+                    case ILOpcode.ldc_i4_8:
+                        intValue = 8;
+                        processIntValue = true;
+                        break;
+                    case ILOpcode.ldc_i4_m1:
+                        intValue = -1;
+                        processIntValue = true;
+                        break;
+                    case ILOpcode.ldc_i4_s:
+                        intValue = (sbyte)ilBytes[currentOffset + 1];
+                        processIntValue = true;
+                        break;
+                    case ILOpcode.ldc_i4:
+                        intValue = BitConverter.ToInt32(ilBytes.AsSpan(currentOffset + 1, 4));
+                        processIntValue = true;
+                        break;
+
+                    case ILOpcode.ldstr:
+                        {
+                            UInt32 userStringToken = BitConverter.ToUInt32(ilBytes.AsSpan(currentOffset + 1, 4));
+                            string optionalDataName = (string)ilBody.GetObject((int)userStringToken);
+                            switch (optionalDataName)
+                            {
+                                case "ExclusiveWeight":
+                                    state = MibcGroupParseState.ProcessingExclusiveWeight;
+                                    break;
+
+                                case "WeightedCallData":
+                                    state = MibcGroupParseState.ProcessingCallgraphCount;
+                                    break;
+
+                                default:
+                                    state = MibcGroupParseState.LookingForOptionalData;
+                                    break;
+                            }
+
+                        }
+                        break;
+                    case ILOpcode.pop:
+                        if (methodInProgress != metadataNotResolvable)
+                        {
+                            profileEntryFound++;
+                            if (exclusiveWeight == 0)
+                            {
+                                // If no exclusive weight is found assign a non zero value that assumes the order in the pgo file is significant.
+                                exclusiveWeight = Math.Min(1000000.0 - profileEntryFound, 0.0) / 1000000.0;
+                            }
+                            MethodProfileData mibcData = new MethodProfileData((MethodDesc)methodInProgress, MethodProfilingDataFlags.ReadMethodCode, exclusiveWeight, weights, 0xFFFFFFFF);
+                            state = MibcGroupParseState.LookingForNextMethod;
+                            exclusiveWeight = 0;
+                            weights = null;
                             yield return mibcData;
                         }
-                        metadataObject = null;
+                        methodInProgress = null;
                         break;
+                    default:
+                        state = MibcGroupParseState.LookingForOptionalData;
+                        break;
+                }
+
+                if (processIntValue)
+                {
+                    switch (state)
+                    {
+                        case MibcGroupParseState.ProcessingExclusiveWeight:
+                            exclusiveWeight = intValue;
+                            state = MibcGroupParseState.LookingForOptionalData;
+                            break;
+
+                        case MibcGroupParseState.ProcessingCallgraphCount:
+                            weightedCallGraphSize = intValue;
+                            weights = new Dictionary<MethodDesc, int>();
+                            if (weightedCallGraphSize > 0)
+                                state = MibcGroupParseState.ProcessingCallgraphToken;
+                            else
+                                state = MibcGroupParseState.LookingForOptionalData;
+                            break;
+
+                        case MibcGroupParseState.ProcessingCallgraphWeight:
+                            if (metadataObject != metadataNotResolvable)
+                            {
+                                weights.Add((MethodDesc)metadataObject, intValue);
+                            }
+                            weightedCallGraphSize--;
+                            if (weightedCallGraphSize > 0)
+                                state = MibcGroupParseState.ProcessingCallgraphToken;
+                            else
+                                state = MibcGroupParseState.LookingForOptionalData;
+                            break;
+                        default:
+                            state = MibcGroupParseState.LookingForOptionalData;
+                            break;
+                    }
                 }
 
                 // This isn't correct if there is a switch opcode, but since we won't do that, its ok

@@ -376,7 +376,7 @@ namespace System
                             }
                             else if (next + 2 < end)
                             {
-                                ch = EscapedAscii(pStr[next + 1], pStr[next + 2]);
+                                ch = DecodeHexChars(pStr[next + 1], pStr[next + 2]);
                                 // Unescape a good sequence if full unescape is requested
                                 if (unescapeMode >= UnescapeMode.UnescapeAll)
                                 {
@@ -510,7 +510,7 @@ namespace System
                                 break;
 
                             // already made sure we have 3 characters in str
-                            ch = EscapedAscii(pStr[next + 1], pStr[next + 2]);
+                            ch = DecodeHexChars(pStr[next + 1], pStr[next + 2]);
 
                             //invalid hex sequence ?
                             if (ch == Uri.c_DummyChar)
@@ -668,35 +668,40 @@ namespace System
             HexConverter.ToCharsBuffer(b, to.AppendSpan(2), 0, HexConverter.Casing.Upper);
         }
 
-        internal static char EscapedAscii(char digit, char next)
+        /// <summary>
+        /// Converts 2 hex chars to a byte (returned in a char), e.g, "0a" becomes (char)0x0A.
+        /// <para>If either char is not hex, returns <see cref="Uri.c_DummyChar"/>.</para>
+        /// </summary>
+        internal static char DecodeHexChars(uint first, uint second)
         {
-            if (!(((digit >= '0') && (digit <= '9'))
-                || ((digit >= 'A') && (digit <= 'F'))
-                || ((digit >= 'a') && (digit <= 'f'))))
+            first -= '0';
+
+            if (first <= 9)
             {
-                return Uri.c_DummyChar;
+                // first is already [0, 9]
             }
-
-            int res = (digit <= '9')
-                ? ((int)digit - (int)'0')
-                : (((digit <= 'F')
-                ? ((int)digit - (int)'A')
-                : ((int)digit - (int)'a'))
-                   + 10);
-
-            if (!(((next >= '0') && (next <= '9'))
-                || ((next >= 'A') && (next <= 'F'))
-                || ((next >= 'a') && (next <= 'f'))))
+            else if ((uint)((first - ('A' - '0')) & ~0x20) <= ('F' - 'A'))
             {
-                return Uri.c_DummyChar;
+                first = ((first + '0') | 0x20) - 'a' + 10;
             }
+            else goto Invalid;
 
-            return (char)((res << 4) + ((next <= '9')
-                    ? ((int)next - (int)'0')
-                    : (((next <= 'F')
-                        ? ((int)next - (int)'A')
-                        : ((int)next - (int)'a'))
-                       + 10)));
+            second -= '0';
+
+            if (second <= 9)
+            {
+                // second is already [0, 9]
+            }
+            else if ((uint)((second - ('A' - '0')) & ~0x20) <= ('F' - 'A'))
+            {
+                second = ((second + '0') | 0x20) - 'a' + 10;
+            }
+            else goto Invalid;
+
+            return (char)((first << 4) | second);
+
+        Invalid:
+            return Uri.c_DummyChar;
         }
 
         internal const string RFC3986ReservedMarks = @";/?:@&=+$,#[]!'()*";
@@ -721,7 +726,9 @@ namespace System
                 return true;
             }
 
-            return RFC3986ReservedMarks.IndexOf(ch) >= 0 || AdditionalUnsafeToUnescape.IndexOf(ch) >= 0;
+            const string NotSafeForUnescape = RFC3986ReservedMarks + AdditionalUnsafeToUnescape;
+
+            return NotSafeForUnescape.Contains(ch);
         }
 
         // "Reserved" and "Unreserved" characters are based on RFC 3986.

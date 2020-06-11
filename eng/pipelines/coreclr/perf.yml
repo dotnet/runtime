@@ -17,10 +17,6 @@ trigger:
     - README.md
     - SECURITY.md
     - THIRD-PARTY-NOTICES.TXT
-    - src/installer/*
-    - src/libraries/*
-    - eng/pipelines/installer/*
-    - eng/pipelines/libraries/*
 
 
 pr:
@@ -40,10 +36,6 @@ pr:
     - README.md
     - SECURITY.md
     - THIRD-PARTY-NOTICES.TXT
-    - src/installer/*
-    - src/libraries/*
-    - eng/pipelines/installer/*
-    - eng/pipelines/libraries/*
 
 jobs:
 #

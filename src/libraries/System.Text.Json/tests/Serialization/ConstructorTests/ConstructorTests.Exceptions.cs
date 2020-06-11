@@ -68,7 +68,7 @@ namespace System.Text.Json.Serialization.Tests
 
             // Metadata not supported with preserve ref feature on.
 
-            var options = new JsonSerializerOptions { ReferenceHandling = ReferenceHandling.Preserve };
+            var options = new JsonSerializerOptions { ReferenceHandler = ReferenceHandler.Preserve };
 
             NotSupportedException ex = Assert.Throws<NotSupportedException>(
                 () => Serializer.Deserialize<Employee>(json, options));
@@ -102,7 +102,7 @@ namespace System.Text.Json.Serialization.Tests
 
             // Metadata not supported with preserve ref feature on.
 
-            var options = new JsonSerializerOptions { ReferenceHandling = ReferenceHandling.Preserve };
+            var options = new JsonSerializerOptions { ReferenceHandler = ReferenceHandler.Preserve };
 
             NotSupportedException ex = Assert.Throws<NotSupportedException>(() => Serializer.Deserialize<Employee>(json, options));
             string exStr = ex.ToString();

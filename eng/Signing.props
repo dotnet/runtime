@@ -44,8 +44,10 @@
     <ItemsToSign Include="$(CoreCLRCrossgen2Dir)ILCompiler.DependencyAnalysisFramework.dll" />
     <ItemsToSign Include="$(CoreCLRCrossgen2Dir)ILCompiler.ReadyToRun.dll" />
     <ItemsToSign Include="$(CoreCLRCrossgen2Dir)ILCompiler.TypeSystem.ReadyToRun.dll" />
-    <ItemsToSign Include="$(CoreCLRCrossgen2Dir)clrjitilc.dll" />
     <ItemsToSign Include="$(CoreCLRCrossgen2Dir)jitinterface.dll" />
+
+    <ItemsToSign Condition="'$(TargetOS)' == 'Windows_NT'" Include="$(CoreCLRCrossgen2Dir)clrjit-win-$(TargetArchitecture).dll" />
+    <ItemsToSign Condition="'$(TargetOS)' != 'Windows_NT'" Include="$(CoreCLRCrossgen2Dir)clrjit-unix-$(TargetArchitecture).dll" />
 
     <ItemsToSign Include="@(CoreCLRCrossTargetItemsToSign)" />
 
@@ -67,11 +69,9 @@
     <ItemsToSign Include="$(BaseOutputRootPath)corehost/**/hostpolicy.dll" />
     <ItemsToSign Include="$(BaseOutputRootPath)corehost/**/dotnet.exe" />
     <ItemsToSign Include="$(BaseOutputRootPath)corehost/**/ijwhost.dll" />
-    <ItemsToSign Include="$(BaseOutputRootPath)corehost/**/winrthost.dll" />
     <ItemsToSign Include="$(BaseOutputRootPath)corehost/**/nethost.dll" />
 
     <!-- Sign managed libraries in installer subset. -->
-    <ItemsToSign Include="$(ArtifactsBinDir)Microsoft.DotNet.PlatformAbstractions/**/*.dll" />
     <ItemsToSign Include="$(ArtifactsBinDir)Microsoft.NET.HostModel/**/*.dll" />
   </ItemGroup>
 

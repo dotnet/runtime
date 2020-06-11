@@ -23,9 +23,9 @@ namespace System.Formats.Cbor.Tests
         public static void WriteSingle_SingleValue_HappyPath(float input, string hexExpectedEncoding)
         {
             byte[] expectedEncoding = hexExpectedEncoding.HexToByteArray();
-            using var writer = new CborWriter();
+            var writer = new CborWriter();
             writer.WriteSingle(input);
-            AssertHelper.HexEqual(expectedEncoding, writer.GetEncoding());
+            AssertHelper.HexEqual(expectedEncoding, writer.Encode());
         }
 
         [Theory]
@@ -39,18 +39,18 @@ namespace System.Formats.Cbor.Tests
         public static void WriteDouble_SingleValue_HappyPath(double input, string hexExpectedEncoding)
         {
             byte[] expectedEncoding = hexExpectedEncoding.HexToByteArray();
-            using var writer = new CborWriter();
+            var writer = new CborWriter();
             writer.WriteDouble(input);
-            AssertHelper.HexEqual(expectedEncoding, writer.GetEncoding());
+            AssertHelper.HexEqual(expectedEncoding, writer.Encode());
         }
 
         [Fact]
         public static void WriteNull_SingleValue_HappyPath()
         {
             byte[] expectedEncoding = "f6".HexToByteArray();
-            using var writer = new CborWriter();
+            var writer = new CborWriter();
             writer.WriteNull();
-            AssertHelper.HexEqual(expectedEncoding, writer.GetEncoding());
+            AssertHelper.HexEqual(expectedEncoding, writer.Encode());
         }
 
         [Theory]
@@ -59,9 +59,9 @@ namespace System.Formats.Cbor.Tests
         public static void WriteBoolean_SingleValue_HappyPath(bool input, string hexExpectedEncoding)
         {
             byte[] expectedEncoding = hexExpectedEncoding.HexToByteArray();
-            using var writer = new CborWriter();
+            var writer = new CborWriter();
             writer.WriteBoolean(input);
-            AssertHelper.HexEqual(expectedEncoding, writer.GetEncoding());
+            AssertHelper.HexEqual(expectedEncoding, writer.Encode());
         }
 
         [Theory]
@@ -75,9 +75,34 @@ namespace System.Formats.Cbor.Tests
         public static void WriteSimpleValue_SingleValue_HappyPath(CborSimpleValue input, string hexExpectedEncoding)
         {
             byte[] expectedEncoding = hexExpectedEncoding.HexToByteArray();
-            using var writer = new CborWriter();
+            var writer = new CborWriter();
             writer.WriteSimpleValue(input);
-            AssertHelper.HexEqual(expectedEncoding, writer.GetEncoding());
+            AssertHelper.HexEqual(expectedEncoding, writer.Encode());
+        }
+
+        [Theory]
+        [InlineData((CborSimpleValue)24, "f818")]
+        [InlineData((CborSimpleValue)31, "f81f")]
+        public static void WriteSimpleValue_InvalidValue_LaxConformance_ShouldSucceed(CborSimpleValue input, string hexExpectedEncoding)
+        {
+            byte[] expectedEncoding = hexExpectedEncoding.HexToByteArray();
+            var writer = new CborWriter(CborConformanceLevel.Lax);
+            writer.WriteSimpleValue(input);
+            AssertHelper.HexEqual(expectedEncoding, writer.Encode());
+        }
+
+        [Theory]
+        [InlineData(CborConformanceLevel.Strict, (CborSimpleValue)24)]
+        [InlineData(CborConformanceLevel.Canonical, (CborSimpleValue)24)]
+        [InlineData(CborConformanceLevel.Ctap2Canonical, (CborSimpleValue)24)]
+        [InlineData(CborConformanceLevel.Strict, (CborSimpleValue)31)]
+        [InlineData(CborConformanceLevel.Canonical, (CborSimpleValue)31)]
+        [InlineData(CborConformanceLevel.Ctap2Canonical, (CborSimpleValue)31)]
+
+        public static void WriteSimpleValue_InvalidValue_UnsupportedConformance_ShouldThrowArgumentOutOfRangeException(CborConformanceLevel conformanceLevel, CborSimpleValue input)
+        {
+            var writer = new CborWriter(conformanceLevel);
+            Assert.Throws<ArgumentOutOfRangeException>(() => writer.WriteSimpleValue(input));
         }
     }
 }

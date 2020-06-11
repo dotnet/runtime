@@ -1650,8 +1650,6 @@ public:
 
     inline bool IsBoxedValue();
 
-    inline bool IsSIMDEqualityOrInequality() const;
-
     static bool OperIsList(genTreeOps gtOper)
     {
         return gtOper == GT_LIST;
@@ -1710,7 +1708,7 @@ public:
     inline GenTree* gtEffectiveVal(bool commaOnly = false);
 
     // Tunnel through any GT_RET_EXPRs
-    inline GenTree* gtRetExprVal();
+    inline GenTree* gtRetExprVal(unsigned __int64* pbbFlags = nullptr);
 
     // Return the child of this node if it is a GT_RELOAD or GT_COPY; otherwise simply return the node itself
     inline GenTree* gtSkipReloadOrCopy();
@@ -4204,6 +4202,16 @@ struct GenTreeCall final : public GenTree
         return (gtFlags & GTF_CALL_INLINE_CANDIDATE) != 0;
     }
 
+    bool IsR2ROrVirtualStubRelativeIndir()
+    {
+#if defined(FEATURE_READYTORUN_COMPILER) && defined(TARGET_ARMARCH)
+        bool isVirtualStub = (gtFlags & GTF_CALL_VIRT_KIND_MASK) == GTF_CALL_VIRT_STUB;
+        return ((IsR2RRelativeIndir()) || (isVirtualStub && (IsVirtualStubRelativeIndir())));
+#else
+        return false;
+#endif // FEATURE_READYTORUN_COMPILER && TARGET_ARMARCH
+    }
+
     bool HasNonStandardAddedArgs(Compiler* compiler) const;
     int GetNonStandardAddedArgCount(Compiler* compiler) const;
 
@@ -4249,13 +4257,7 @@ struct GenTreeCall final : public GenTree
         {
             return true;
         }
-#elif defined(FEATURE_HFA) && defined(TARGET_ARM64)
-        // SIMD types are returned in vector regs on ARM64.
-        if (varTypeIsSIMD(gtType))
-        {
-            return false;
-        }
-#endif // FEATURE_HFA && TARGET_ARM64
+#endif
 
         if (!varTypeIsStruct(gtType) || HasRetBufArg())
         {
@@ -5620,6 +5622,8 @@ struct GenTreeRetExpr : public GenTree
 {
     GenTree* gtInlineCandidate;
 
+    unsigned __int64 bbFlags;
+
     CORINFO_CLASS_HANDLE gtRetClsHnd;
 
     GenTreeRetExpr(var_types type) : GenTree(GT_RET_EXPR, type)
@@ -6799,7 +6803,50 @@ inline bool GenTree::IsIntegralConstVector(ssize_t constVal)
         assert(gtGetOp2IfPresent() == nullptr);
         return true;
     }
-#endif
+#endif // FEATURE_SIMD
+
+#ifdef FEATURE_HW_INTRINSICS
+    if (gtOper == GT_HWINTRINSIC)
+    {
+        GenTreeHWIntrinsic* node = AsHWIntrinsic();
+
+        if (!varTypeIsIntegral(node->gtSIMDBaseType))
+        {
+            // Can't be an integral constant
+            return false;
+        }
+
+        GenTree* op1 = gtGetOp1();
+        GenTree* op2 = gtGetOp2();
+
+        NamedIntrinsic intrinsicId = node->gtHWIntrinsicId;
+
+        if (op1 == nullptr)
+        {
+            assert(op2 == nullptr);
+
+            if (constVal == 0)
+            {
+#if defined(TARGET_XARCH)
+                return (intrinsicId == NI_Vector128_get_Zero) || (intrinsicId == NI_Vector256_get_Zero);
+#elif defined(TARGET_ARM64)
+                return (intrinsicId == NI_Vector64_get_Zero) || (intrinsicId == NI_Vector128_get_Zero);
+#endif // !TARGET_XARCH && !TARGET_ARM64
+            }
+        }
+        else if ((op2 == nullptr) && !op1->OperIsList())
+        {
+            if (op1->IsIntegralConst(constVal))
+            {
+#if defined(TARGET_XARCH)
+                return (intrinsicId == NI_Vector128_Create) || (intrinsicId == NI_Vector256_Create);
+#elif defined(TARGET_ARM64)
+                return (intrinsicId == NI_Vector64_Create) || (intrinsicId == NI_Vector128_Create);
+#endif // !TARGET_XARCH && !TARGET_ARM64
+            }
+        }
+    }
+#endif // FEATURE_HW_INTRINSICS
 
     return false;
 }
@@ -6827,19 +6874,6 @@ inline bool GenTree::IsBoxedValue()
 {
     assert(gtOper != GT_BOX || AsBox()->BoxOp() != nullptr);
     return (gtOper == GT_BOX) && (gtFlags & GTF_BOX_VALUE);
-}
-
-inline bool GenTree::IsSIMDEqualityOrInequality() const
-{
-#ifdef FEATURE_SIMD
-    if (gtOper == GT_SIMD)
-    {
-        SIMDIntrinsicID id = AsSIMD()->gtSIMDIntrinsicID;
-        return (id == SIMDIntrinsicOpEquality) || (id == SIMDIntrinsicOpInEquality);
-    }
-#endif
-
-    return false;
 }
 
 inline GenTree* GenTree::MoveNext()
@@ -7002,6 +7036,11 @@ inline GenTree* GenTree::gtEffectiveVal(bool commaOnly)
 //-------------------------------------------------------------------------
 // gtRetExprVal - walk back through GT_RET_EXPRs
 //
+// Arguments:
+//    pbbFlags - out-parameter that is set to the flags of the basic block
+//               containing the inlinee return value. The value is 0
+//               for unsuccessful inlines.
+//
 // Returns:
 //    tree representing return value from a successful inline,
 //    or original call for failed or yet to be determined inline.
@@ -7010,17 +7049,25 @@ inline GenTree* GenTree::gtEffectiveVal(bool commaOnly)
 //    Multi-level inlines can form chains of GT_RET_EXPRs.
 //    This method walks back to the root of the chain.
 
-inline GenTree* GenTree::gtRetExprVal()
+inline GenTree* GenTree::gtRetExprVal(unsigned __int64* pbbFlags)
 {
-    GenTree* retExprVal = this;
+    GenTree*         retExprVal = this;
+    unsigned __int64 bbFlags    = 0;
+
     for (;;)
     {
         if (retExprVal->gtOper == GT_RET_EXPR)
         {
-            retExprVal = retExprVal->AsRetExpr()->gtInlineCandidate;
+            GenTreeRetExpr* retExp = retExprVal->AsRetExpr();
+            retExprVal             = retExp->gtInlineCandidate;
+            bbFlags                = retExp->bbFlags;
         }
         else
         {
+            if (pbbFlags != nullptr)
+            {
+                *pbbFlags = bbFlags;
+            }
             return retExprVal;
         }
     }

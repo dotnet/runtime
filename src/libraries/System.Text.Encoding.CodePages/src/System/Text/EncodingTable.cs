@@ -188,7 +188,7 @@ namespace System.Text
                 }
             }
 
-            //Nope, we didn't find it.
+            // Nope, we didn't find it.
             return null;
         }
     }

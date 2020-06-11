@@ -4,8 +4,10 @@
 
 #if defined(__arm__) || defined(__aarch64__)
 #define PAGE_SIZE sysconf(_SC_PAGESIZE)
-#define PAGE_MASK (~(PAGE_SIZE-1))
 #endif
+
+#undef PAGE_MASK 
+#define PAGE_MASK (~(PAGE_SIZE-1))
 
 #ifdef HOST_64BIT
 #define PRIA "016"
@@ -33,21 +35,20 @@ private:
     uint64_t m_offset;
 
     // The name used for NT_FILE output
-    const char* m_fileName;
+    std::string m_fileName;
 
 public:
     MemoryRegion(uint32_t flags, uint64_t start, uint64_t end) :
         m_flags(flags),
         m_startAddress(start),
         m_endAddress(end),
-        m_offset(0),
-        m_fileName(nullptr)
+        m_offset(0)
     {
         assert((start & ~PAGE_MASK) == 0);
         assert((end & ~PAGE_MASK) == 0);
     }
 
-    MemoryRegion(uint32_t flags, uint64_t start, uint64_t end, uint64_t offset, const char* filename) :
+    MemoryRegion(uint32_t flags, uint64_t start, uint64_t end, uint64_t offset, const std::string& filename) :
         m_flags(flags),
         m_startAddress(start),
         m_endAddress(end),
@@ -65,13 +66,12 @@ public:
         m_flags(flags),
         m_startAddress(start),
         m_endAddress(end),
-        m_offset(baseAddress),
-        m_fileName(nullptr)
+        m_offset(baseAddress)
     {
     }
 
     // copy with new file name constructor
-    MemoryRegion(const MemoryRegion& region, const char* fileName) :
+    MemoryRegion(const MemoryRegion& region, const std::string& fileName) :
         m_flags(region.m_flags),
         m_startAddress(region.m_startAddress),
         m_endAddress(region.m_endAddress),
@@ -85,8 +85,7 @@ public:
         m_flags(flags),
         m_startAddress(region.m_startAddress),
         m_endAddress(region.m_endAddress),
-        m_offset(region.m_offset),
-        m_fileName(nullptr)
+        m_offset(region.m_offset)
     {
     }
 
@@ -100,6 +99,10 @@ public:
     {
     }
 
+    ~MemoryRegion()
+    {
+    }
+
     uint32_t Permissions() const { return m_flags & MEMORY_REGION_FLAG_PERMISSIONS_MASK; }
     uint32_t Flags() const { return m_flags; }
     bool IsBackedByMemory() const { return (m_flags & MEMORY_REGION_FLAG_MEMORY_BACKED) != 0; }
@@ -107,7 +110,7 @@ public:
     uint64_t EndAddress() const { return m_endAddress; }
     uint64_t Size() const { return m_endAddress - m_startAddress; }
     uint64_t Offset() const { return m_offset; }
-    const char* FileName() const { return m_fileName; }
+    const std::string& FileName() const { return m_fileName; }
 
     bool operator<(const MemoryRegion& rhs) const
     {
@@ -120,19 +123,19 @@ public:
         return (m_startAddress <= rhs.m_startAddress) && (m_endAddress >= rhs.m_endAddress);
     }
 
-    // Free the file name memory
-    void Cleanup()
-    {
-        if (m_fileName != nullptr)
-        {
-            free((void*)m_fileName);
-            m_fileName = nullptr;
-        }
-    }
-
     void Trace() const
     {
-        TRACE("%s%" PRIA PRIx64 " - %" PRIA PRIx64 " (%06" PRId64 ") %" PRIA PRIx64 " %02x %s\n", IsBackedByMemory() ? "*" : " ", m_startAddress, m_endAddress,
-            Size() / PAGE_SIZE, m_offset, m_flags, m_fileName != nullptr ? m_fileName : "");
+        TRACE("%" PRIA PRIx64 " - %" PRIA PRIx64 " (%06" PRId64 ") %" PRIA PRIx64 " %c%c%c%c%c%c %s\n",
+            m_startAddress,
+            m_endAddress,
+            Size() / PAGE_SIZE,
+            m_offset,
+            (m_flags & PF_R) ? 'r' : '-',
+            (m_flags & PF_W) ? 'w' : '-',
+            (m_flags & PF_X) ? 'x' : '-',
+            (m_flags & MEMORY_REGION_FLAG_SHARED) ? 's' : '-',
+            (m_flags & MEMORY_REGION_FLAG_PRIVATE) ? 'p' : '-',
+            (m_flags & MEMORY_REGION_FLAG_MEMORY_BACKED) ? 'b' : '-',
+            m_fileName.c_str());
     }
 };

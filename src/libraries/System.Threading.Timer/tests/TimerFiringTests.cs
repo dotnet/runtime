@@ -244,15 +244,15 @@ namespace System.Threading.Tests
         [Fact]
         public async Task Timer_LongTimersDontFirePrematurely_ShortTimersFireSuccessfully()
         {
-            var tcsShort1 = new TaskCompletionSource<bool>();
-            var tcsShort2 = new TaskCompletionSource<bool>();
-            var tcsLong1 = new TaskCompletionSource<bool>();
-            var tcsLong2 = new TaskCompletionSource<bool>();
+            var tcsShort1 = new TaskCompletionSource();
+            var tcsShort2 = new TaskCompletionSource();
+            var tcsLong1 = new TaskCompletionSource();
+            var tcsLong2 = new TaskCompletionSource();
 
-            using (var timerLong1 = new Timer(_ => tcsLong1.SetResult(true), null, TimeSpan.FromDays(30), Timeout.InfiniteTimeSpan))
-            using (var timerLong2 = new Timer(_ => tcsLong2.SetResult(true), null, TimeSpan.FromDays(40), Timeout.InfiniteTimeSpan))
-            using (var timerShort1 = new Timer(_ => tcsShort1.SetResult(true), null, 100, -1))
-            using (var timerShort2 = new Timer(_ => tcsShort2.SetResult(true), null, 200, -1))
+            using (var timerLong1 = new Timer(_ => tcsLong1.SetResult(), null, TimeSpan.FromDays(30), Timeout.InfiniteTimeSpan))
+            using (var timerLong2 = new Timer(_ => tcsLong2.SetResult(), null, TimeSpan.FromDays(40), Timeout.InfiniteTimeSpan))
+            using (var timerShort1 = new Timer(_ => tcsShort1.SetResult(), null, 100, -1))
+            using (var timerShort2 = new Timer(_ => tcsShort2.SetResult(), null, 200, -1))
             {
                 await Task.WhenAll(tcsShort1.Task, tcsShort2.Task);
                 await Task.Delay(2_000); // wait a few seconds to see if long timers complete when they shouldn't
@@ -367,16 +367,16 @@ namespace System.Threading.Tests
         {
             // We could just use Task.Delay, but it only uses Timer as an implementation detail.
             // Since these are Timer tests, we use an implementation that explicitly uses Timer.
-            var tcs = new TaskCompletionSource<bool>();
-            var t = new Timer(_ => tcs.SetResult(true)); // rely on Timer(TimerCallback) rooting itself
+            var tcs = new TaskCompletionSource();
+            var t = new Timer(_ => tcs.SetResult()); // rely on Timer(TimerCallback) rooting itself
             t.Change(dueTime, -1);
             return tcs.Task;
         }
 
         private static async Task PeriodAsync(int period, int iterations)
         {
-            var tcs = new TaskCompletionSource<bool>();
-            using (var t = new Timer(_ => { if (Interlocked.Decrement(ref iterations) == 0) tcs.SetResult(true); })) // rely on Timer(TimerCallback) rooting itself
+            var tcs = new TaskCompletionSource();
+            using (var t = new Timer(_ => { if (Interlocked.Decrement(ref iterations) == 0) tcs.SetResult(); })) // rely on Timer(TimerCallback) rooting itself
             {
                 t.Change(period, period);
                 await tcs.Task.ConfigureAwait(false);

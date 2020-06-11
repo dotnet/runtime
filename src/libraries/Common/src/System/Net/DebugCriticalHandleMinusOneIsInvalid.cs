@@ -14,20 +14,14 @@ namespace System.Net
     //
     internal abstract class DebugCriticalHandleMinusOneIsInvalid : CriticalHandleMinusOneIsInvalid
     {
-        private string _trace = null!;
+        private string _trace;
 
         protected DebugCriticalHandleMinusOneIsInvalid() : base()
-        {
-            Trace();
-        }
-
-        private void Trace()
         {
             _trace = "WARNING! GC-ed  >>" + this.GetType().FullName + "<< (should be explicitly closed) \r\n";
             if (NetEventSource.IsEnabled) NetEventSource.Info(this, "Creating SafeHandle");
 #if TRACE_VERBOSE
-            string stacktrace = Environment.StackTrace;
-            _trace += stacktrace;
+            _trace += Environment.StackTrace;
 #endif //TRACE_VERBOSE
         }
 

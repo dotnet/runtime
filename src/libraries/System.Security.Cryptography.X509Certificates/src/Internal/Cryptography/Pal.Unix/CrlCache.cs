@@ -4,6 +4,7 @@
 
 using System;
 using System.Diagnostics;
+using System.Formats.Asn1;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
@@ -270,6 +271,10 @@ namespace Internal.Cryptography.Pal
                 }
             }
             catch (CryptographicException)
+            {
+                // Treat any ASN errors as if the extension was missing.
+            }
+            catch (AsnContentException)
             {
                 // Treat any ASN errors as if the extension was missing.
             }

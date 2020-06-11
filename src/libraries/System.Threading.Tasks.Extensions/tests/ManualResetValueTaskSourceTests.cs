@@ -93,8 +93,8 @@ namespace System.Threading.Tasks.Sources.Tests
             Assert.Equal(ValueTaskSourceStatus.Pending, mrvts.GetStatus(2));
             Assert.Throws<InvalidOperationException>(() => mrvts.GetResult(2));
 
-            var onCompletedRan = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
-            mrvts.OnCompleted(s => ((TaskCompletionSource<bool>)s).SetResult(true), onCompletedRan, 2, ValueTaskSourceOnCompletedFlags.None);
+            var onCompletedRan = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            mrvts.OnCompleted(s => ((TaskCompletionSource)s).SetResult(), onCompletedRan, 2, ValueTaskSourceOnCompletedFlags.None);
 
             Assert.False(onCompletedRan.Task.IsCompleted);
             await Task.Delay(1);
@@ -141,8 +141,8 @@ namespace System.Threading.Tasks.Sources.Tests
             Assert.Equal(ValueTaskSourceStatus.Pending, mrvts.GetStatus(2));
             Assert.Throws<InvalidOperationException>(() => mrvts.GetResult(2));
 
-            var onCompletedRan = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
-            mrvts.OnCompleted(s => ((TaskCompletionSource<bool>)s).SetResult(true), onCompletedRan, 2, ValueTaskSourceOnCompletedFlags.None);
+            var onCompletedRan = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            mrvts.OnCompleted(s => ((TaskCompletionSource)s).SetResult(), onCompletedRan, 2, ValueTaskSourceOnCompletedFlags.None);
 
             Assert.False(onCompletedRan.Task.IsCompleted);
             await Task.Delay(1);
@@ -312,12 +312,12 @@ namespace System.Threading.Tasks.Sources.Tests
                     mrvts.SetResult(42);
                 }
 
-                var tcs = new TaskCompletionSource<bool>();
+                var tcs = new TaskCompletionSource();
                 var sc = new TrackingSynchronizationContext();
                 SynchronizationContext.SetSynchronizationContext(sc);
                 Assert.Equal(0, sc.Posts);
                 mrvts.OnCompleted(
-                    _ => tcs.SetResult(true),
+                    _ => tcs.SetResult(),
                     null,
                     0,
                     captureSyncCtx ? ValueTaskSourceOnCompletedFlags.UseSchedulingContext : ValueTaskSourceOnCompletedFlags.None);
@@ -354,13 +354,13 @@ namespace System.Threading.Tasks.Sources.Tests
                     mrvts.SetResult(42);
                 }
 
-                var tcs = new TaskCompletionSource<bool>();
+                var tcs = new TaskCompletionSource();
                 var ts = new TrackingTaskScheduler();
                 Assert.Equal(0, ts.QueueTasks);
                 await Task.Factory.StartNew(() =>
                 {
                     mrvts.OnCompleted(
-                        _ => tcs.SetResult(true),
+                        _ => tcs.SetResult(),
                         null,
                         0,
                         captureTaskScheduler ? ValueTaskSourceOnCompletedFlags.UseSchedulingContext : ValueTaskSourceOnCompletedFlags.None);

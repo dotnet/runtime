@@ -174,13 +174,6 @@ public:
         return m_pModule != NULL;
     }
 
-    bool LoadOkay() const
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        return (m_pRecord->flags & FLAG_LOADOKAY) != 0;
-    }
-
     // UpdateNeedLevel called
     bool IsDependency() const
     {
@@ -700,7 +693,7 @@ HRESULT MulticoreJitProfilePlayer::UpdateModuleInfo()
     {
         PlayerModuleInfo & info = m_pModules[i];
 
-        if (! info.LoadOkay() && info.IsDependency() && ! info.IsModuleLoaded())
+        if (info.IsDependency() && ! info.IsModuleLoaded())
         {
             MulticoreJitTrace(("  Enumerate modules for player"));
 
@@ -727,7 +720,7 @@ HRESULT MulticoreJitProfilePlayer::UpdateModuleInfo()
         {
             PlayerModuleInfo & info = m_pModules[i];
 
-            if (! info.LoadOkay() && info.IsLowerLevel())
+            if (info.IsLowerLevel())
             {
                 if (info.IsModuleLoaded())
                 {
@@ -916,10 +909,7 @@ bool MulticoreJitProfilePlayer::HandleModuleDependency(unsigned jitInfo)
 
         if (mod.UpdateNeedLevel((FileLoadLevel) level))
         {
-            if (! mod.LoadOkay()) // allow first part WinMD to load in background thread
-            {
-                m_nBlockingCount ++;
-            }
+            m_nBlockingCount ++;
         }
     }
 

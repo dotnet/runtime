@@ -182,6 +182,10 @@ int LinearScan::BuildCall(GenTreeCall* call)
             ctrlExprCandidates = RBM_FASTTAILCALL_TARGET;
         }
     }
+    else if (call->IsR2ROrVirtualStubRelativeIndir())
+    {
+        buildInternalIntRegisterDefForNode(call);
+    }
 #ifdef TARGET_ARM
     else
     {
