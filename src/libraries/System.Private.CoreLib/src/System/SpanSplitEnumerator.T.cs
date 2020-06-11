@@ -43,7 +43,7 @@ namespace System
             _separators = separators;
             _separator = default!;
             _splitOnSingleToken = false;
-            _separatorLength = _separators.Length != 0 ? _separators.Length : 1;
+            _separatorLength = _separators.Length;
             _startCurrent = 0;
             _endCurrent = 0;
             _startNext = 0;
@@ -76,7 +76,22 @@ namespace System
             ReadOnlySpan<T> slice = _buffer.Slice(_startNext);
             _startCurrent = _startNext;
 
-            int separatorIndex = _splitOnSingleToken ? slice.IndexOf(_separator) : slice.IndexOf(_separators);
+            int separatorIndex;
+            if (_splitOnSingleToken)
+            {
+                separatorIndex = slice.IndexOf(_separator);
+            }
+            else if (_separators.Length > 0)
+            {
+                separatorIndex = slice.IndexOf(_separators);
+            }
+            else
+            {
+                _endCurrent = _startCurrent + slice.Length;
+                _startNext = _endCurrent + 1;
+                return true;
+            }
+
             int elementLength = (separatorIndex != -1 ? separatorIndex : slice.Length);
 
             _endCurrent = _startCurrent + elementLength;

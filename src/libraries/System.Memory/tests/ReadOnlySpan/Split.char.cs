@@ -15,7 +15,11 @@ namespace System.SpanTests
             ReadOnlySpan<char> value = "a b";
 
             string expected = value.ToString();
-            var enumerator = value.Split(',');
+            SpanSplitEnumerator<char> enumerator = value.Split(',');
+            Assert.True(enumerator.MoveNext());
+            Assert.Equal(expected, value[enumerator.Current].ToString());
+
+            enumerator = value.Split(",");
             Assert.True(enumerator.MoveNext());
             Assert.Equal(expected, value[enumerator.Current].ToString());
         }
@@ -23,7 +27,7 @@ namespace System.SpanTests
         [Fact]
         public static void DefaultSpanSplitEnumeratorBehavior()
         {
-            var charSpanEnumerator = new SpanSplitEnumerator<string>();
+            var charSpanEnumerator = new SpanSplitEnumerator<char>();
             Assert.Equal(new Range(0, 0), charSpanEnumerator.Current);
             Assert.False(charSpanEnumerator.MoveNext());
 
@@ -41,7 +45,7 @@ namespace System.SpanTests
         {
             ReadOnlySpan<char> buffer = default;
 
-            SpanSplitEnumerator<char>  enumerator = buffer.Split();
+            SpanSplitEnumerator<char> enumerator = buffer.Split();
             Assert.True(enumerator.MoveNext());
             Assert.Equal(new Range(0, 0), enumerator.Current);
             Assert.False(enumerator.MoveNext());
@@ -67,7 +71,7 @@ namespace System.SpanTests
             // Default buffer
             ReadOnlySpan<char> buffer = default;
 
-            SpanSplitEnumerator<char>  enumerator = buffer.Split(default(char));
+            SpanSplitEnumerator<char> enumerator = buffer.Split(default(char));
             Assert.True(enumerator.MoveNext());
             Assert.Equal(new Range(0, 0), enumerator.Current);
             Assert.False(enumerator.MoveNext());
@@ -150,20 +154,15 @@ namespace System.SpanTests
 
             enumerator = buffer.Split(null); // null is treated as empty string
             Assert.True(enumerator.MoveNext());
-            Assert.Equal(new Range(0, 0), enumerator.Current);
-            Assert.True(enumerator.MoveNext());
-            Assert.Equal(new Range(1, 1), enumerator.Current);
+            Assert.Equal(new Range(0, 1), enumerator.Current);
             Assert.False(enumerator.MoveNext());
 
             enumerator = buffer.Split("");
             Assert.True(enumerator.MoveNext());
-            Assert.Equal(new Range(0, 0), enumerator.Current);
-            Assert.True(enumerator.MoveNext());
-            Assert.Equal(new Range(1, 1), enumerator.Current);
+            Assert.Equal(new Range(0, 1), enumerator.Current);
             Assert.False(enumerator.MoveNext());
 
             enumerator = buffer.Split(" ");
-            Assert.Equal(new Range(0, 0), enumerator.Current);
             Assert.True(enumerator.MoveNext());
             Assert.Equal(new Range(0, 0), enumerator.Current);
             Assert.True(enumerator.MoveNext());
@@ -231,6 +230,14 @@ namespace System.SpanTests
         }
 
         [Theory]
+        [InlineData("a,b,c", null, new[] { "a,b,c" })]
+        [InlineData("a,b,c", "", new[] { "a,b,c" })]
+        [InlineData("a,b,c,", null, new[] { "a,b,c," })]
+        [InlineData("a,b,c,", "", new[] { "a,b,c," })]
+        [InlineData("  a,b,c,", null, new[] { "  a,b,c," })]
+        [InlineData("  a,b,c,", "", new[] { "  a,b,c," })]
+        [InlineData("aaabaaabaaa", "aa", new[] { "", "ab", "ab", "a" })]
+        [InlineData("this, is, a, string, with some spaces", ", ", new[] { "this", "is", "a", "string", "with some spaces" })]
         [InlineData(" Foo Bar Baz,", ", ", new[] { " Foo Bar Baz," })]
         [InlineData(" Foo Bar Baz, ", ", ", new[] { " Foo Bar Baz", "" })]
         [InlineData(", Foo Bar Baz, ", ", ", new[] { "", "Foo Bar Baz", "" })]
@@ -251,7 +258,7 @@ namespace System.SpanTests
             foreach (var item in items)
             {
                 Assert.True(source.MoveNext());
-                var slice = orig[source.Current];
+                ReadOnlySpan<T> slice = orig[source.Current];
                 Assert.Equal(item, slice.ToArray());
             }
             Assert.False(source.MoveNext());
