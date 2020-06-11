@@ -24,7 +24,7 @@ namespace Internal.TypeSystem
         /// Get TypeFlags of the reduced type of a type.
         /// The reduced type concept is described in ECMA 335 chapter I.8.7
         /// </summary>
-        static TypeFlags GetReducedTypeElementType(TypeDesc type)
+        private static TypeFlags GetReducedTypeElementType(TypeDesc type)
         {
             TypeFlags elemType = type.GetTypeFlags(TypeFlags.CategoryMask);
             switch (elemType)
@@ -48,7 +48,7 @@ namespace Internal.TypeSystem
         /// Get CorElementType of the verification type of a type.
         /// The verification type concepts is described in ECMA 335 chapter I.8.7
         /// </summary>
-        static TypeFlags GetVerificationTypeElementType(TypeDesc type)
+        private static TypeFlags GetVerificationTypeElementType(TypeDesc type)
         {
             TypeFlags reducedTypeElementType = GetReducedTypeElementType(type);
 
@@ -66,17 +66,22 @@ namespace Internal.TypeSystem
         /// <summary>
         /// Check if verification types of two types are equal
         /// </summary>
-        static bool AreVerificationTypesEqual(TypeDesc type1, TypeDesc type2)
+        private static bool AreVerificationTypesEqual(TypeDesc type1, TypeDesc type2)
         {
             if (type1 == type2)
             {
                 return true;
             }
 
-            TypeFlags e1 = GetVerificationTypeElementType(type1);
-            TypeFlags e2 = GetVerificationTypeElementType(type2);
+            if (type1.IsPrimitive && type2.IsPrimitive)
+            {
+                TypeFlags e1 = GetVerificationTypeElementType(type1);
+                TypeFlags e2 = GetVerificationTypeElementType(type2);
 
-            return type1.IsPrimitive && (e1 == e2);
+                return e1 == e2;
+            }
+
+            return false;
         }
 
         /// <summary>
@@ -84,7 +89,7 @@ namespace Internal.TypeSystem
         /// Note - this is a simplified version of what's described in the ECMA spec and it considers
         /// pointers to be method-signature-compatible-with only if the signatures are the same.
         /// </summary>
-        static bool IsMethodSignatureCompatibleWith(TypeDesc fn1Ttype, TypeDesc fn2Type)
+        private static bool IsMethodSignatureCompatibleWith(TypeDesc fn1Ttype, TypeDesc fn2Type)
         {
             return fn1Ttype == fn2Type;
         }

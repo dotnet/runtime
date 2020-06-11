@@ -991,9 +991,9 @@ CorElementType ClassLoader::GetReducedTypeElementType(TypeHandle hType)
             return ELEMENT_TYPE_I8;
         case ELEMENT_TYPE_U:
             return ELEMENT_TYPE_I;
+        default:
+            return elemType;
     }
-
-    return elemType;
 }
 
 // Get CorElementType of the verification type of a type.
@@ -1010,9 +1010,9 @@ CorElementType ClassLoader::GetVerificationTypeElementType(TypeHandle hType)
             return ELEMENT_TYPE_I1;
         case ELEMENT_TYPE_CHAR:
             return ELEMENT_TYPE_I2;
+        default:
+            return reducedTypeElementType;
     }
-
-    return reducedTypeElementType;
 }
 
 // Check if verification types of two types are equal
@@ -1026,9 +1026,14 @@ bool ClassLoader::AreVerificationTypesEqual(TypeHandle hType1, TypeHandle hType2
     }
 
     CorElementType e1 = GetVerificationTypeElementType(hType1);
+    if (!CorIsPrimitiveType(e1))
+    {
+        return false;
+    }
+
     CorElementType e2 = GetVerificationTypeElementType(hType2);
 
-    return CorIsPrimitiveType(e1) && (e1 == e2);
+    return e1 == e2;
 }
 
 // Check if signatures of two function pointers are compatible
