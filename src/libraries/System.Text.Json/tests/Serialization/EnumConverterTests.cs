@@ -261,8 +261,8 @@ namespace System.Text.Json.Serialization.Tests
             // Use multiple threads to perhaps go over the soft limit of 64, but not by more than a couple.
             Parallel.For(0, 8, i => JsonSerializer.Serialize((MyEnum)(46 + i), options));
 
-            // Write the remaining enum values. We should not store any more values in
-            // the cache. If we do, we may throw OutOfMemoryException on some machines.
+            // Write the remaining enum values. The cache is capped to avoid
+            // OutOfMemoryException due to having too many cached items.
             for (int i = 54; i <= MaxValue; i++)
             {
                 JsonSerializer.Serialize((MyEnum)i, options);
