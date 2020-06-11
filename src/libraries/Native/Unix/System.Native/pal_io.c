@@ -1034,7 +1034,7 @@ static int32_t CopyFile_ReadWrite(int inFd, int outFd)
         while ((bytesRead = read(inFd, buffer, BufferLength)) < 0 && errno == EINTR);
         if (bytesRead == -1)
         {
-            int tmp = errno;
+            const int tmp = errno;
             free(buffer);
             errno = tmp;
             return -1;
@@ -1053,7 +1053,7 @@ static int32_t CopyFile_ReadWrite(int inFd, int outFd)
             while ((bytesWritten = write(outFd, buffer + offset, (size_t)bytesRead)) < 0 && errno == EINTR);
             if (bytesWritten == -1)
             {
-                int tmp = errno;
+                const int tmp = errno;
                 free(buffer);
                 errno = tmp;
                 return -1;

@@ -3879,7 +3879,7 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
 
             // Get a new temp
             // Here we don't need unsafe value cls check since the addr of temp is used only in mkrefany
-            unsigned tmp = lvaGrabTemp(true DEBUGARG("by-value mkrefany struct argument"));
+            const unsigned tmp = lvaGrabTemp(true DEBUGARG("by-value mkrefany struct argument"));
             lvaSetStruct(tmp, impGetRefAnyClass(), false);
 
             // Build the mkrefany as a comma node:

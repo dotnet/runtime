@@ -1785,7 +1785,7 @@ size_t GCInfo::gcPtrTableSize(const InfoHdr& header, unsigned codeSize, size_t* 
 
     /* Compute the total size of the tables */
 
-    size_t size = gcMakeRegPtrTable(temp, 0, header, codeSize, pArgTabOffset);
+    const size_t size = gcMakeRegPtrTable(temp, 0, header, codeSize, pArgTabOffset);
 
     assert(temp[16] == 0xAB); // Check that marker didnt get overwritten
 
@@ -1990,7 +1990,7 @@ void PendingArgsStack::pasKill(unsigned gcCount)
 
     for (unsigned curPos = pasDepth; (curPos > BITS_IN_pasMask) && gcCount; curPos--)
     {
-        unsigned curIndex = curPos - BITS_IN_pasMask - 1;
+        const unsigned curIndex = curPos - BITS_IN_pasMask - 1;
 
         GCtype curArg = (GCtype)pasTopArray[curIndex];
 

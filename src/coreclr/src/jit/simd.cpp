@@ -1418,7 +1418,7 @@ GenTree* Compiler::getOp1ForConstructor(OPCODE opcode, GenTree* newobjThis, CORI
         assert(newobjThis->gtOper == GT_ADDR && newobjThis->AsOp()->gtOp1->gtOper == GT_LCL_VAR);
 
         // push newobj result on type stack
-        unsigned tmp = op1->AsOp()->gtOp1->AsLclVarCommon()->GetLclNum();
+        const unsigned tmp = op1->AsOp()->gtOp1->AsLclVarCommon()->GetLclNum();
         impPushOnStack(gtNewLclvNode(tmp, lvaGetRealType(tmp)), verMakeTypeInfo(clsHnd).NormaliseForStack());
     }
     else

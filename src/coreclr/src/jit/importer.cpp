@@ -2212,7 +2212,7 @@ GenTree* Compiler::impRuntimeLookupToTree(CORINFO_RESOLVED_TOKEN* pResolvedToken
         result                       = gtNewQmarkNode(TYP_I_IMPL, nullCheck, colonNullCheck);
     }
 
-    unsigned tmp = lvaGrabTemp(true DEBUGARG("spilling Runtime Lookup tree"));
+    const unsigned tmp = lvaGrabTemp(true DEBUGARG("spilling Runtime Lookup tree"));
 
     impAssignTempGen(tmp, result, (unsigned)CHECK_SPILL_NONE);
     return gtNewLclvNode(tmp, TYP_I_IMPL);
@@ -8489,7 +8489,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
             {
                 assert(newobjThis->gtOper == GT_ADDR && newobjThis->AsOp()->gtOp1->gtOper == GT_LCL_VAR);
 
-                unsigned tmp = newobjThis->AsOp()->gtOp1->AsLclVarCommon()->GetLclNum();
+                const unsigned tmp = newobjThis->AsOp()->gtOp1->AsLclVarCommon()->GetLclNum();
                 impPushOnStack(gtNewLclvNode(tmp, lvaGetRealType(tmp)), verMakeTypeInfo(clsHnd).NormaliseForStack());
             }
             else

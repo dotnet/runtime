@@ -542,7 +542,7 @@ void ComMTMemberInfoMap::SetupPropsForInterface(size_t sizeOfPtr)
     {
         MethodDesc* pMD = m_pMT->GetMethodDescForSlot(iMD);
         _ASSERTE(pMD != NULL);
-        ULONG tmp = pMD->GetComSlot();
+        const ULONG tmp = pMD->GetComSlot();
 
         if (tmp < ulComSlotMin)
             ulComSlotMin = tmp;
@@ -571,7 +571,7 @@ void ComMTMemberInfoMap::SetupPropsForInterface(size_t sizeOfPtr)
             {
                 MethodDesc* pMD = it.GetMethodDesc();
                 _ASSERTE(pMD != NULL);
-                ULONG tmp = pMD->GetComSlot();
+                const ULONG tmp = pMD->GetComSlot();
                 rSlotMap[tmp] = 0;
             }
         }

@@ -6323,7 +6323,7 @@ ptrdiff_t  gc_heap::get_allocation (int gen_number)
 inline
 BOOL grow_mark_stack (mark*& m, size_t& len, size_t init_len)
 {
-    size_t new_size = max (init_len, 2*len);
+    const size_t new_size = max (init_len, 2*len);
     mark* tmp = new (nothrow) mark [new_size];
     if (tmp)
     {
@@ -18835,7 +18835,7 @@ gc_heap::ha_mark_object_simple (uint8_t** po THREAD_NUMBER_DCL)
 
     if (heap_analyze_success && (internal_root_array_length <= internal_root_array_index))
     {
-        size_t new_size = 2*internal_root_array_length;
+        const size_t new_size = 2*internal_root_array_length;
 
         uint64_t available_physical = 0;
         get_memory_info (NULL, &available_physical);
@@ -19568,7 +19568,7 @@ recheck:
 
             if ((new_size * sizeof(mark)) > 100*1024)
             {
-                size_t new_max_size = (get_total_heap_size() / 10) / sizeof(mark);
+                const size_t new_max_size = (get_total_heap_size() / 10) / sizeof(mark);
 
                 new_size = min(new_max_size, new_size);
             }
@@ -19812,7 +19812,7 @@ recheck:
 
         if ((new_size * sizeof(mark)) > 100*1024)
         {
-            size_t new_max_size = (get_total_heap_size() / 10) / sizeof(mark);
+            const size_t new_max_size = (get_total_heap_size() / 10) / sizeof(mark);
 
             new_size = min(new_max_size, new_size);
         }

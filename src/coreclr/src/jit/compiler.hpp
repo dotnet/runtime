@@ -3870,7 +3870,7 @@ inline GenTree* Compiler::impCheckForNullPointer(GenTree* obj)
             return obj;
         }
 
-        unsigned tmp = lvaGrabTemp(true DEBUGARG("CheckForNullPointer"));
+        const unsigned tmp = lvaGrabTemp(true DEBUGARG("CheckForNullPointer"));
 
         // We don't need to spill while appending as we are only assigning
         // NULL to a freshly-grabbed temp.
