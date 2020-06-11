@@ -3033,6 +3033,120 @@ vtable_slot_has_preserve_base_overrides_attribute (MonoClass *klass, int slot, M
 	return FALSE;
 }
 
+/**
+ * is_ok_for_covariant_ret:
+ *
+ * Returns TRUE if the given pair of types are a valid return type for the covariant returns feature.
+ *
+ * This is the CanCastTo relation from ECMA (impl type can be cast to the decl
+ * type), except that we don't allow a valuetype to be cast to one of its
+ * implemented interfaces.
+ */
+static gboolean
+is_ok_for_covariant_ret (MonoType *type_impl, MonoType *type_decl)
+{
+	MonoClass *impl_class = mono_class_from_mono_type_internal (type_impl);
+	MonoClass *decl_class = mono_class_from_mono_type_internal (type_decl);
+
+	if (MONO_CLASS_IS_INTERFACE_INTERNAL (decl_class) && m_class_is_valuetype (decl_class))
+		return FALSE;
+	return mono_class_is_assignable_from_internal (decl_class, impl_class);
+
+}
+
+/**
+ * check_signature_covariant:
+ * \param klass the class with the explicit override
+ * \param impl_method method that implements the override. defined in \p klass
+ * \param decl_method method that is being overridden.
+ *
+ * Check that \p impl_method has a signature that is subsumed by the signature of \p decl_method.  That is,
+ *  that the argument types all match and that the return type of \p impl_method is castable to the return type of \p decl_method, except that
+ *  both must not be valuetypes or interfaces.
+ */
+static gboolean
+check_signature_covariant (MonoClass *klass, MonoMethod *impl_method, MonoMethod *decl_method, MonoError *error)
+{
+	MonoMethodSignature *impl_sig = mono_method_signature_internal (impl_method);
+
+	MonoMethodSignature *decl_sig = mono_method_signature_internal (decl_method);
+
+	if (mono_metadata_signature_equal (impl_sig, decl_sig))
+		return TRUE;
+
+	if (!mono_metadata_signature_equal_no_ret (impl_sig, decl_sig))
+		return FALSE;
+
+	MonoType *impl_ret = impl_sig->ret;
+	MonoType *decl_ret_0 = decl_sig->ret;
+
+	/*
+	 * Comparing return types of generic methods:
+	 *
+	 * Suppose decl is a generic method RetTy0`2[!!0,!!1] Method<T1,T2> (DeclArgTys...)
+	 * we need to check that:
+	 *
+	 * 1. impl is a generic method with the same number of type arguments
+	 *    ImplRetTy Method<S1,S2> (ImplArgTys...)
+         *    (because the number of generic arguments isn't allowed to change)
+	 * 2. Inflate RetTy0`2[T1,T2] with S1,S2 for T1,T2 to get RetTy0`2[S1,S2]
+	 * 3. Compare if ImplRetTy is assignable to RetTy0`2[S1,S2]
+	 *
+	 * (For example the decl method might return IReadOnlyDictionary<K,V>
+	 *  Foo<K,V>() and the impl method might be SortedList<A,B> Foo<A,B>(),
+	 *  so we want to check that SortedList<A,B> is assignable to
+	 *  IReadOnlyDictionary<A,B>.  If we naively check SortedList<A,B>
+	 *  against IReadOnlyDictionary<K,V> it will fail because the
+	 *  implementation of the assignable relation won't consider K and A
+	 *  equal)
+	 *
+	 * It's possible that actually mono_metadata_signature_equal will work
+	 * (because it does a signature check which considers !!0 equal to !!0
+	 * even if they come from different generic containers), so if the
+	 * return types are identical, we won't even get here, but for the
+	 * return type assignable checking, we need to inflate RetTy0 properly.
+	 */
+
+	/* We only inflate the return type, not the entire method signature,
+	 * because the signature_equal_no_ret check above can compare
+	 * corresponding positional type parameters even if they come from
+	 * different generic methods.  So since the arguments aren't allowed to
+	 * vary at all, we know they were already identical and we only need to
+	 * compare return types.
+	 */
+
+	/* both have to be non-generic, or both generic */
+	if ((impl_method->is_generic || decl_method->is_generic) &&
+	    !!impl_method->is_generic != !!decl_method->is_generic)
+		return FALSE;
+
+	MonoType *decl_ret;
+	MonoType *alloc_decl_ret = NULL;
+	if (!impl_method->is_generic) {
+		decl_ret = decl_ret_0;
+	} else {
+		g_assert (decl_method->is_generic);
+
+		MonoGenericContainer *impl_container = mono_method_get_generic_container (impl_method);
+		MonoGenericContainer *decl_container = mono_method_get_generic_container (decl_method);
+
+		g_assert (decl_container != NULL);
+		g_assert (impl_container != NULL);
+
+		if (impl_container->type_argc != decl_container->type_argc)
+			return FALSE;
+
+		/* inflate decl's return type with the type parameters of impl */
+		alloc_decl_ret = mono_class_inflate_generic_type_checked (decl_ret_0, &impl_container->context, error);
+		return_val_if_nok (error, FALSE);
+		decl_ret = alloc_decl_ret;
+	}
+
+	gboolean result = is_ok_for_covariant_ret (impl_ret, decl_ret);
+	mono_metadata_free_type (alloc_decl_ret);
+	return result;
+}
+
 /*
  * LOCKING: this is supposed to be called with the loader lock held.
  */
@@ -3361,6 +3475,7 @@ mono_class_setup_vtable_general (MonoClass *klass, MonoMethod **overrides, int o
 	for (i = 0; i < onum; i++) {
 		MonoMethod *decl = overrides [i*2];
 		MonoMethod *impl = overrides [i*2 + 1];
+		gboolean maybe_covariant = FALSE;
 		if (!MONO_CLASS_IS_INTERFACE_INTERNAL (decl->klass)) {
 			g_assert (decl->slot != -1);
 			vtable [decl->slot] = impl;
@@ -3375,38 +3490,68 @@ mono_class_setup_vtable_general (MonoClass *klass, MonoMethod **overrides, int o
 			g_hash_table_insert (override_map, decl, impl);
 
 			MonoClass *impl_class = impl->klass;
-			if (method_has_preserve_base_overrides_attribute (impl) ||
-			    (klass->parent &&
-			     vtable_slot_has_preserve_base_overrides_attribute (klass->parent, decl->slot, &impl_class))) {
+			gboolean has_preserve_base_overrides =
+				method_has_preserve_base_overrides_attribute (impl) ||
+				(klass->parent &&
+				 vtable_slot_has_preserve_base_overrides_attribute (klass->parent, decl->slot, &impl_class));
+
+			maybe_covariant =
+				has_preserve_base_overrides;
+
+			if (has_preserve_base_overrides) {
 				if (impl_class == decl->klass) {
 					TRACE_INTERFACE_VTABLE (printf ("preserve base overrides attribute is on slot %d is on the decl method %s; not adding any more overrides\n", decl->slot, mono_method_full_name (decl, 1)));
-					continue;
-				}
-				g_assert (impl_class == klass || decl->slot < impl_class->vtable_size);
-				MonoMethod *prev_impl = impl_class == klass ? impl : impl_class->vtable [decl->slot];
-				/* 
-				 * if we see any method that occupies the declared slot anywhere in the inheritance
-				 * chain, add a mapping to replace it with our current implementation.
-				 */
-				TRACE_INTERFACE_VTABLE (printf ("override decl [slot %d] %s in class %s has method %s in this slot and it has the preserve base overrides attribute.  overridden by %s\n", decl->slot, mono_method_full_name (decl, 1), mono_type_full_name (m_class_get_byval_arg (impl_class)), mono_method_full_name (prev_impl, 1), mono_method_full_name (impl, 1)));
-				g_assert (impl_class != NULL);
-				for (MonoClass *cur_class = klass->parent; cur_class ; cur_class = cur_class->parent) {
-					if (decl->slot >= cur_class->vtable_size)
-						break;
-					prev_impl = cur_class->vtable[decl->slot];
-					g_hash_table_insert (override_map, prev_impl, impl);
-					TRACE_INTERFACE_VTABLE (do {
-							char *full_name = mono_type_full_name (m_class_get_byval_arg (cur_class));
-							printf ("  slot %d of %s was %s adding override to %s\n", decl->slot, full_name, mono_method_full_name (prev_impl, 1), mono_method_full_name (impl, 1));
-							g_free (full_name);
-						} while (0));
-									
+				} else {
+					g_assert (impl_class == klass || decl->slot < impl_class->vtable_size);
+					MonoMethod *prev_impl = impl_class == klass ? impl : impl_class->vtable [decl->slot];
+					/*
+					 * if we see any method that occupies the declared slot anywhere in the inheritance
+					 * chain, add a mapping to replace it with our current implementation.
+					 */
+					TRACE_INTERFACE_VTABLE (printf ("override decl [slot %d] %s in class %s has method %s in this slot and it has the preserve base overrides attribute.  overridden by %s\n", decl->slot, mono_method_full_name (decl, 1), mono_type_full_name (m_class_get_byval_arg (impl_class)), mono_method_full_name (prev_impl, 1), mono_method_full_name (impl, 1)));
+					g_assert (impl_class != NULL);
+					for (MonoClass *cur_class = klass->parent; cur_class ; cur_class = cur_class->parent) {
+						if (decl->slot >= cur_class->vtable_size)
+							break;
+						prev_impl = cur_class->vtable[decl->slot];
+						g_hash_table_insert (override_map, prev_impl, impl);
+						TRACE_INTERFACE_VTABLE (do {
+								char *full_name = mono_type_full_name (m_class_get_byval_arg (cur_class));
+								printf ("  slot %d of %s was %s adding override to %s\n", decl->slot, full_name, mono_method_full_name (prev_impl, 1), mono_method_full_name (impl, 1));
+								g_free (full_name);
+							} while (0));
+					}
 				}
 
 			}
 
 			if (mono_security_core_clr_enabled ())
-				mono_security_core_clr_check_override (klass, vtable [decl->slot], decl); /* FIXME: covariant return checking */
+				mono_security_core_clr_check_override (klass, impl, decl);
+			if (maybe_covariant) {
+				TRACE_INTERFACE_VTABLE (printf (" checking covariant signature compatability of %s overriding %s\n", mono_method_full_name (impl, 1), mono_method_full_name (decl, 1)));
+				ERROR_DECL (local_error);
+				gboolean subsumed = check_signature_covariant (klass, impl, decl, local_error);
+				if (!is_ok (local_error) || !subsumed) {
+					const gboolean print_sig = TRUE;
+					const gboolean print_ret_type = TRUE;
+					char *decl_method_name = mono_method_get_name_full (decl, print_sig, print_ret_type, MONO_TYPE_NAME_FORMAT_IL);
+					char *impl_method_name = mono_method_get_name_full (impl, print_sig, print_ret_type, MONO_TYPE_NAME_FORMAT_IL);
+					const char *msg;
+					if (!is_ok (local_error)) {
+						msg = mono_error_get_message (local_error);
+					} else {
+						msg = "but with an incompatible signature";
+					}
+					mono_class_set_type_load_failure (klass, "Method '%s' overrides method '%s', %s",
+									  impl_method_name, decl_method_name, msg);
+					mono_error_cleanup (local_error);
+					g_free (decl_method_name);
+					g_free (impl_method_name);
+
+					goto fail;
+
+				}
+			}
 		}
 	}
 
