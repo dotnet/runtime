@@ -19,7 +19,7 @@ HINSTANCE LoadDbgHelp();
 
 #define cchMaxAssertModuleLen 60
 #define cchMaxAssertSymbolLen 257
-#define cfrMaxAssertStackLevels 20
+#define cfrMaxAssertStackLevels 50
 #define cchMaxAssertExprLen 257
 
 #ifdef HOST_64BIT
