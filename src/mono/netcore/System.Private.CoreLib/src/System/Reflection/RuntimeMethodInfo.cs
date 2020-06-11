@@ -30,6 +30,7 @@ using System.Runtime.InteropServices;
 using System.Reflection.Emit;
 using System.Text;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using InteropServicesCallingConvention = System.Runtime.InteropServices.CallingConvention;
 
 namespace System.Reflection
@@ -212,7 +213,7 @@ namespace System.Reflection
         }
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [PreserveDependency(".ctor(System.Reflection.ExceptionHandlingClause[],System.Reflection.LocalVariableInfo[],System.Byte[],System.Boolean,System.Int32,System.Int32)", "System.Reflection.RuntimeMethodBody")]
+        [DynamicDependency("#ctor(System.Reflection.ExceptionHandlingClause[],System.Reflection.LocalVariableInfo[],System.Byte[],System.Boolean,System.Int32,System.Int32)", typeof(RuntimeMethodBody))]
         internal static extern MethodBody GetMethodBodyInternal(IntPtr handle);
 
         internal static MethodBody GetMethodBody(IntPtr handle)

@@ -5,7 +5,7 @@
 using System.Collections;
 using System.Diagnostics;
 using System.Reflection;
-using System.Runtime.CompilerServices;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Text.Json.Serialization.Converters
 {
@@ -22,9 +22,9 @@ namespace System.Text.Json.Serialization.Converters
             return true;
         }
 
-        [PreserveDependency(".ctor", "System.Text.Json.Serialization.Converters.ObjectDefaultConverter`1")]
-        [PreserveDependency(".ctor", "System.Text.Json.Serialization.Converters.LargeObjectWithParameterizedConstructorConverter`1")]
-        [PreserveDependency(".ctor", "System.Text.Json.Serialization.Converters.SmallObjectWithParameterizedConstructorConverter`5")]
+        [DynamicDependency("#ctor", typeof(ObjectDefaultConverter<>))]
+        [DynamicDependency("#ctor", typeof(LargeObjectWithParameterizedConstructorConverter<>))]
+        [DynamicDependency("#ctor", typeof(SmallObjectWithParameterizedConstructorConverter<,,,,>))]
         public override JsonConverter CreateConverter(Type typeToConvert, JsonSerializerOptions options)
         {
             JsonConverter converter;
