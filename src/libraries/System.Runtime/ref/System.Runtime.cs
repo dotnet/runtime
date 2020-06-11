@@ -9155,6 +9155,11 @@ namespace System.Runtime.CompilerServices
         AggressiveOptimization = 512,
         InternalCall = 4096,
     }
+    [System.AttributeUsage(System.AttributeTargets.Method, Inherited=false)]
+    public sealed class ModuleInitializerAttribute : System.Attribute
+    {
+        public ModuleInitializerAttribute() { }
+    }
     [System.AttributeUsageAttribute(System.AttributeTargets.Assembly, AllowMultiple=false)]
     public sealed partial class ReferenceAssemblyAttribute : System.Attribute
     {
