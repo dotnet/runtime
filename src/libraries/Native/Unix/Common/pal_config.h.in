@@ -11,6 +11,7 @@
 #cmakedefine01 HAVE_GETIFADDRS
 #cmakedefine01 HAVE_UTSNAME_DOMAINNAME
 #cmakedefine01 HAVE_STAT64
+#cmakedefine01 HAVE_FORK
 #cmakedefine01 HAVE_VFORK
 #cmakedefine01 HAVE_PIPE2
 #cmakedefine01 HAVE_STAT_BIRTHTIME
@@ -25,6 +26,7 @@
 #cmakedefine01 HAVE_MNTINFO
 #cmakedefine01 HAVE_STATFS_FSTYPENAME
 #cmakedefine01 HAVE_STATVFS_FSTYPENAME
+#cmakedefine01 HAVE_NON_LEGACY_STATFS
 #cmakedefine01 HAVE_STRCPY_S
 #cmakedefine01 HAVE_STRLCPY
 #cmakedefine01 HAVE_SHM_OPEN_THAT_WORKS_WELL_ENOUGH_WITH_MMAP
@@ -35,6 +37,7 @@
 #cmakedefine01 HAVE_TIOCGWINSZ
 #cmakedefine01 HAVE_SCHED_GETAFFINITY
 #cmakedefine01 HAVE_SCHED_SETAFFINITY
+#cmakedefine01 HAVE_PTHREAD_SETCANCELSTATE
 #cmakedefine01 HAVE_ARC4RANDOM_BUF
 #cmakedefine01 KEVENT_HAS_VOID_UDATA
 #cmakedefine01 HAVE_FDS_BITS
@@ -61,11 +64,20 @@
 #cmakedefine01 HAVE_TCSANOW
 #cmakedefine01 HAVE_IN_PKTINFO
 #cmakedefine01 HAVE_IP_MREQN
-#cmakedefine01 HAVE_TCP_VAR_H
+#cmakedefine01 HAVE_NETINET_TCP_VAR_H
+#cmakedefine01 HAVE_NETINET_UDP_VAR_H
+#cmakedefine01 HAVE_NETINET_IP_VAR_H
+#cmakedefine01 HAVE_NETINET_ICMP_VAR_H
+#cmakedefine01 HAVE_IOS_NET_ROUTE_H
 #cmakedefine01 HAVE_RT_MSGHDR
 #cmakedefine01 HAVE_RT_MSGHDR2
 #cmakedefine01 HAVE_IF_MSGHDR2
 #cmakedefine01 HAVE_SYS_SYSCTL_H
+#cmakedefine01 HAVE_SYS_IOCTL_H
+#cmakedefine01 HAVE_SYS_FILIO_H
+#cmakedefine01 HAVE_NETPACKET_PACKET_H
+#cmakedefine01 HAVE_NET_IF_ARP_H
+#cmakedefine01 HAVE_SYS_MNTENT_H
 #cmakedefine01 HAVE_NET_IFMEDIA_H
 #cmakedefine01 HAVE_LINUX_RTNETLINK_H
 #cmakedefine01 HAVE_LINUX_CAN_H
@@ -96,6 +108,10 @@
 #cmakedefine01 HAVE_TCP_H_TCP_KEEPALIVE
 #cmakedefine01 HAVE_BUILTIN_MUL_OVERFLOW
 #cmakedefine01 HAVE_DISCONNECTX
+#cmakedefine01 HAVE_CFSETSPEED
+#cmakedefine01 HAVE_CFMAKERAW
+#cmakedefine01 HAVE_GETGROUPLIST
+#cmakedefine01 HAVE_SYS_PROCINFO_H
 
 // Mac OS X has stat64, but it is deprecated since plain stat now
 // provides the same 64-bit aware struct when targeting OS X > 10.5

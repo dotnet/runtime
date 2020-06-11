@@ -13,14 +13,14 @@ namespace Microsoft.VisualBasic.Tests
     {
         [Theory]
         [MemberData(nameof(DateAdd_DateInterval_TestData))]
-        public void DateAdd(DateInterval interval, double number, DateTime dateValue, DateTime expected)
+        public void DateAdd_DateInterval(DateInterval interval, double number, DateTime dateValue, DateTime expected)
         {
             Assert.Equal(expected, DateAndTime.DateAdd(interval, number, dateValue));
         }
 
         [Theory]
         [MemberData(nameof(DateAdd_DateInterval_ArgumentOutOfRangeException_TestData))]
-        public void DateAdd_ArgumentOutOfRangeException(DateInterval interval, double number, DateTime dateValue)
+        public void DateAdd_DateInterval_ArgumentOutOfRangeException(DateInterval interval, double number, DateTime dateValue)
         {
             Assert.Throws<ArgumentOutOfRangeException>(() => DateAndTime.DateAdd(interval, number, dateValue));
         }
@@ -125,14 +125,14 @@ namespace Microsoft.VisualBasic.Tests
 
         [Theory]
         [MemberData(nameof(DateAdd_StringInterval_TestData))]
-        public void DateAdd(string interval, double number, object dateValue, DateTime expected)
+        public void DateAdd_StringInterval(string interval, double number, object dateValue, DateTime expected)
         {
             Assert.Equal(expected, DateAndTime.DateAdd(interval, number, dateValue));
         }
 
         [Theory]
         [MemberData(nameof(DateAdd_StringInterval_ArgumentOutOfRangeException_TestData))]
-        public void DateAdd_ArgumentOutOfRangeException(string interval, double number, object dateValue)
+        public void DateAdd_StringInterval_ArgumentOutOfRangeException(string interval, double number, object dateValue)
         {
             Assert.Throws<ArgumentOutOfRangeException>(() => DateAndTime.DateAdd(interval, number, dateValue));
         }
@@ -237,7 +237,7 @@ namespace Microsoft.VisualBasic.Tests
 
         [Theory]
         [MemberData(nameof(DateDiff_DateInterval_TestData))]
-        public void DateDiff(DateInterval interval, DateTime dateTime1, DateTime dateTime2, long expected)
+        public void DateDiff_DateInterval(DateInterval interval, DateTime dateTime1, DateTime dateTime2, long expected)
         {
             Assert.Equal(expected, DateAndTime.DateDiff(interval, dateTime1, dateTime2));
         }
@@ -277,7 +277,7 @@ namespace Microsoft.VisualBasic.Tests
 
         [Theory]
         [MemberData(nameof(DateDiff_StringInterval_TestData))]
-        public void DateDiff(string interval, object dateTime1, object dateTime2, long expected)
+        public void DateDiff_StringInterval(string interval, object dateTime1, object dateTime2, long expected)
         {
             Assert.Equal(expected, DateAndTime.DateDiff(interval, dateTime1, dateTime2));
         }
@@ -317,7 +317,7 @@ namespace Microsoft.VisualBasic.Tests
 
         [Theory]
         [MemberData(nameof(DatePart_DateInterval_TestData))]
-        public void DatePart(DateInterval interval, DateTime dateValue, int expected)
+        public void DatePart_DateInterval(DateInterval interval, DateTime dateValue, int expected)
         {
             Assert.Equal(expected, DateAndTime.DatePart(interval, dateValue));
         }
@@ -337,7 +337,7 @@ namespace Microsoft.VisualBasic.Tests
 
         [Theory]
         [MemberData(nameof(DatePart_StringInterval_TestData))]
-        public void DatePart(string interval, object dateValue, int expected)
+        public void DatePart_StringInterval(string interval, object dateValue, int expected)
         {
             Assert.Equal(expected, DateAndTime.DatePart(interval, dateValue));
         }

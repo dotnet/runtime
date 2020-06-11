@@ -126,17 +126,12 @@ namespace System.Net.Sockets
 
             public readonly SocketAsyncContext AssociatedContext;
             public AsyncOperation Next = null!; // initialized by helper called from ctor
-            protected object? CallbackOrEvent;
             public SocketError ErrorCode;
             public byte[]? SocketAddress;
             public int SocketAddressLen;
             public CancellationTokenRegistration CancellationRegistration;
 
-            public ManualResetEventSlim? Event
-            {
-                get { return CallbackOrEvent as ManualResetEventSlim; }
-                set { CallbackOrEvent = value; }
-            }
+            public ManualResetEventSlim? Event { get; set; }
 
             public AsyncOperation(SocketAsyncContext context)
             {
@@ -147,6 +142,7 @@ namespace System.Net.Sockets
             public void Reset()
             {
                 _state = (int)State.Waiting;
+                Event = null;
                 Next = this;
 #if DEBUG
                 _callbackQueued = 0;
@@ -240,10 +236,10 @@ namespace System.Net.Sockets
                 // It's our responsibility to set the error code and queue the completion.
                 DoAbort();
 
-                var @event = CallbackOrEvent as ManualResetEventSlim;
-                if (@event != null)
+                ManualResetEventSlim? e = Event;
+                if (e != null)
                 {
-                    @event.Set();
+                    e.Set();
                 }
                 else
                 {
@@ -274,10 +270,20 @@ namespace System.Net.Sockets
                 }
                 else
                 {
-                    // Async operation.  Process the IO on the threadpool.
-                    ThreadPool.UnsafeQueueUserWorkItem(this, preferLocal: false);
+                    // Async operation.
+                    Schedule();
                 }
             }
+
+            public void Schedule()
+            {
+                Debug.Assert(Event == null);
+
+                // Async operation.  Process the IO on the threadpool.
+                ThreadPool.UnsafeQueueUserWorkItem(this, preferLocal: false);
+            }
+
+            public void Process() => ((IThreadPoolWorkItem)this).Execute();
 
             void IThreadPoolWorkItem.Execute()
             {
@@ -350,13 +356,10 @@ namespace System.Net.Sockets
 
             protected sealed override void Abort() { }
 
-            public Action<int, byte[]?, int, SocketFlags, SocketError>? Callback
-            {
-                set => CallbackOrEvent = value;
-            }
+            public Action<int, byte[]?, int, SocketFlags, SocketError>? Callback { get; set; }
 
             public override void InvokeCallback(bool allowPooling) =>
-                ((Action<int, byte[]?, int, SocketFlags, SocketError>)CallbackOrEvent!)(BytesTransferred, SocketAddress, SocketAddressLen, SocketFlags.None, ErrorCode);
+                Callback!(BytesTransferred, SocketAddress, SocketAddressLen, SocketFlags.None, ErrorCode);
         }
 
         private sealed class BufferMemorySendOperation : SendOperation
@@ -373,7 +376,7 @@ namespace System.Net.Sockets
 
             public override void InvokeCallback(bool allowPooling)
             {
-                var cb = (Action<int, byte[]?, int, SocketFlags, SocketError>)CallbackOrEvent!;
+                var cb = Callback!;
                 int bt = BytesTransferred;
                 byte[]? sa = SocketAddress;
                 int sal = SocketAddressLen;
@@ -402,7 +405,7 @@ namespace System.Net.Sockets
 
             public override void InvokeCallback(bool allowPooling)
             {
-                var cb = (Action<int, byte[]?, int, SocketFlags, SocketError>)CallbackOrEvent!;
+                var cb = Callback!;
                 int bt = BytesTransferred;
                 byte[]? sa = SocketAddress;
                 int sal = SocketAddressLen;
@@ -440,19 +443,16 @@ namespace System.Net.Sockets
 
             protected sealed override void Abort() { }
 
-            public Action<int, byte[]?, int, SocketFlags, SocketError>? Callback
-            {
-                set => CallbackOrEvent = value;
-            }
+            public Action<int, byte[]?, int, SocketFlags, SocketError>? Callback { get; set; }
 
             public override void InvokeCallback(bool allowPooling) =>
-                ((Action<int, byte[]?, int, SocketFlags, SocketError>)CallbackOrEvent!)(
-                    BytesTransferred, SocketAddress, SocketAddressLen, ReceivedFlags, ErrorCode);
+                Callback!(BytesTransferred, SocketAddress, SocketAddressLen, ReceivedFlags, ErrorCode);
         }
 
         private sealed class BufferMemoryReceiveOperation : ReceiveOperation
         {
             public Memory<byte> Buffer;
+            public bool SetReceivedFlags;
 
             public BufferMemoryReceiveOperation(SocketAsyncContext context) : base(context) { }
 
@@ -469,13 +469,23 @@ namespace System.Net.Sockets
                 }
                 else
                 {
-                    return SocketPal.TryCompleteReceiveFrom(context._socket, Buffer.Span, null, Flags, SocketAddress, ref SocketAddressLen, out BytesTransferred, out ReceivedFlags, out ErrorCode);
+                    if (!SetReceivedFlags)
+                    {
+                        Debug.Assert(SocketAddress == null);
+
+                        ReceivedFlags = SocketFlags.None;
+                        return SocketPal.TryCompleteReceive(context._socket, Buffer.Span, Flags, out BytesTransferred, out ErrorCode);
+                    }
+                    else
+                    {
+                        return SocketPal.TryCompleteReceiveFrom(context._socket, Buffer.Span, null, Flags, SocketAddress, ref SocketAddressLen, out BytesTransferred, out ReceivedFlags, out ErrorCode);
+                    }
                 }
             }
 
             public override void InvokeCallback(bool allowPooling)
             {
-                var cb = (Action<int, byte[]?, int, SocketFlags, SocketError>)CallbackOrEvent!;
+                var cb = Callback!;
                 int bt = BytesTransferred;
                 byte[]? sa = SocketAddress;
                 int sal = SocketAddressLen;
@@ -502,7 +512,7 @@ namespace System.Net.Sockets
 
             public override void InvokeCallback(bool allowPooling)
             {
-                var cb = (Action<int, byte[]?, int, SocketFlags, SocketError>)CallbackOrEvent!;
+                var cb = Callback!;
                 int bt = BytesTransferred;
                 byte[]? sa = SocketAddress;
                 int sal = SocketAddressLen;
@@ -545,17 +555,13 @@ namespace System.Net.Sockets
 
             protected sealed override void Abort() { }
 
-            public Action<int, byte[], int, SocketFlags, IPPacketInformation, SocketError> Callback
-            {
-                set => CallbackOrEvent = value;
-            }
+            public Action<int, byte[], int, SocketFlags, IPPacketInformation, SocketError>? Callback { get; set; }
 
             protected override bool DoTryComplete(SocketAsyncContext context) =>
                 SocketPal.TryCompleteReceiveMessageFrom(context._socket, Buffer.Span, Buffers, Flags, SocketAddress!, ref SocketAddressLen, IsIPv4, IsIPv6, out BytesTransferred, out ReceivedFlags, out IPPacketInformation, out ErrorCode);
 
             public override void InvokeCallback(bool allowPooling) =>
-                ((Action<int, byte[], int, SocketFlags, IPPacketInformation, SocketError>)CallbackOrEvent!)(
-                    BytesTransferred, SocketAddress!, SocketAddressLen, ReceivedFlags, IPPacketInformation, ErrorCode);
+                Callback!(BytesTransferred, SocketAddress!, SocketAddressLen, ReceivedFlags, IPPacketInformation, ErrorCode);
         }
 
         private sealed class AcceptOperation : ReadOperation
@@ -564,10 +570,7 @@ namespace System.Net.Sockets
 
             public AcceptOperation(SocketAsyncContext context) : base(context) { }
 
-            public Action<IntPtr, byte[], int, SocketError>? Callback
-            {
-                set => CallbackOrEvent = value;
-            }
+            public Action<IntPtr, byte[], int, SocketError>? Callback { get; set; }
 
             protected override void Abort() =>
                 AcceptedFileDescriptor = (IntPtr)(-1);
@@ -581,7 +584,7 @@ namespace System.Net.Sockets
 
             public override void InvokeCallback(bool allowPooling)
             {
-                var cb = (Action<IntPtr, byte[], int, SocketError>)CallbackOrEvent!;
+                var cb = Callback!;
                 IntPtr fd = AcceptedFileDescriptor;
                 byte[] sa = SocketAddress!;
                 int sal = SocketAddressLen;
@@ -600,10 +603,7 @@ namespace System.Net.Sockets
         {
             public ConnectOperation(SocketAsyncContext context) : base(context) { }
 
-            public Action<SocketError> Callback
-            {
-                set => CallbackOrEvent = value;
-            }
+            public Action<SocketError>? Callback { get; set; }
 
             protected override void Abort() { }
 
@@ -615,7 +615,7 @@ namespace System.Net.Sockets
             }
 
             public override void InvokeCallback(bool allowPooling) =>
-                ((Action<SocketError>)CallbackOrEvent!)(ErrorCode);
+                Callback!(ErrorCode);
         }
 
         private sealed class SendFileOperation : WriteOperation
@@ -629,13 +629,10 @@ namespace System.Net.Sockets
 
             protected override void Abort() { }
 
-            public Action<long, SocketError> Callback
-            {
-                set => CallbackOrEvent = value;
-            }
+            public Action<long, SocketError>? Callback { get; set; }
 
             public override void InvokeCallback(bool allowPooling) =>
-                ((Action<long, SocketError>)CallbackOrEvent!)(BytesTransferred, ErrorCode);
+                Callback!(BytesTransferred, ErrorCode);
 
             protected override bool DoTryComplete(SocketAsyncContext context) =>
                 SocketPal.TryCompleteSendFile(context._socket, FileHandle, ref Offset, ref Count, ref BytesTransferred, out ErrorCode);
@@ -689,7 +686,7 @@ namespace System.Net.Sockets
             // If we successfully process all enqueued operations, then the state becomes Ready;
             // otherwise, the state becomes Waiting and we wait for another epoll notification.
 
-            private enum QueueState : byte
+            private enum QueueState : int
             {
                 Ready = 0,          // Indicates that data MAY be available on the socket.
                                     // Queue must be empty.
@@ -706,6 +703,7 @@ namespace System.Net.Sockets
             // These fields define the queue state.
 
             private QueueState _state;      // See above
+            private bool _isNextOperationSynchronous;
             private int _sequenceNumber;    // This sequence number is updated when we receive an epoll notification.
                                             // It allows us to detect when a new epoll notification has arrived
                                             // since the last time we checked the state of the queue.
@@ -720,6 +718,8 @@ namespace System.Net.Sockets
 
             private LockToken Lock() => new LockToken(_queueLock);
 
+            public bool IsNextOperationSynchronous_Speculative => _isNextOperationSynchronous;
+
             public void Init()
             {
                 Debug.Assert(_queueLock == null);
@@ -729,18 +729,31 @@ namespace System.Net.Sockets
                 _sequenceNumber = 0;
             }
 
-            // IsReady returns the current _sequenceNumber, which must be passed to StartAsyncOperation below.
+            // IsReady returns whether an operation can be executed immediately.
+            // observedSequenceNumber must be passed to StartAsyncOperation.
             public bool IsReady(SocketAsyncContext context, out int observedSequenceNumber)
             {
-                using (Lock())
+                // It is safe to read _state and _sequence without using Lock.
+                // - The return value is soley based on Volatile.Read of _state.
+                // - The Volatile.Read of _sequenceNumber ensures we read a value before executing the operation.
+                //   This is needed to retry the operation in StartAsyncOperation in case the _sequenceNumber incremented.
+                // - Because no Lock is taken, it is possible we observe a sequence number increment before the state
+                //   becomes Ready. When that happens, observedSequenceNumber is decremented, and StartAsyncOperation will
+                //   execute the operation because the sequence number won't match.
+
+                Debug.Assert(sizeof(QueueState) == sizeof(int));
+                QueueState state = (QueueState)Volatile.Read(ref Unsafe.As<QueueState, int>(ref _state));
+                observedSequenceNumber = Volatile.Read(ref _sequenceNumber);
+
+                bool isReady = state == QueueState.Ready || state == QueueState.Stopped;
+                if (!isReady)
                 {
-                    observedSequenceNumber = _sequenceNumber;
-                    bool isReady = (_state == QueueState.Ready) || (_state == QueueState.Stopped);
-
-                    Trace(context, $"{isReady}");
-
-                    return isReady;
+                    observedSequenceNumber--;
                 }
+
+                Trace(context, $"{isReady}");
+
+                return isReady;
             }
 
             // Return true for pending, false for completed synchronously (including failure and abort)
@@ -779,7 +792,12 @@ namespace System.Net.Sockets
                                 // Enqueue the operation.
                                 Debug.Assert(operation.Next == operation, "Expected operation.Next == operation");
 
-                                if (_tail != null)
+                                if (_tail == null)
+                                {
+                                    Debug.Assert(!_isNextOperationSynchronous);
+                                    _isNextOperationSynchronous = operation.Event != null;
+                                }
+                                else
                                 {
                                     operation.Next = _tail.Next;
                                     _tail.Next = operation;
@@ -825,8 +843,7 @@ namespace System.Net.Sockets
                 }
             }
 
-            // Called on the epoll thread whenever we receive an epoll notification.
-            public void HandleEvent(SocketAsyncContext context)
+            public AsyncOperation? ProcessSyncEventOrGetAsyncEvent(SocketAsyncContext context, bool skipAsyncEvents = false)
             {
                 AsyncOperation op;
                 using (Lock())
@@ -839,12 +856,20 @@ namespace System.Net.Sockets
                             Debug.Assert(_tail == null, "State == Ready but queue is not empty!");
                             _sequenceNumber++;
                             Trace(context, $"Exit (previously ready)");
-                            return;
+                            return null;
 
                         case QueueState.Waiting:
                             Debug.Assert(_tail != null, "State == Waiting but queue is empty!");
-                            _state = QueueState.Processing;
                             op = _tail.Next;
+                            Debug.Assert(_isNextOperationSynchronous == (op.Event != null));
+                            if (skipAsyncEvents && !_isNextOperationSynchronous)
+                            {
+                                // Return the operation to indicate that the async operation was not processed, without making
+                                // any state changes because async operations are being skipped
+                                return op;
+                            }
+
+                            _state = QueueState.Processing;
                             // Break out and release lock
                             break;
 
@@ -852,21 +877,32 @@ namespace System.Net.Sockets
                             Debug.Assert(_tail != null, "State == Processing but queue is empty!");
                             _sequenceNumber++;
                             Trace(context, $"Exit (currently processing)");
-                            return;
+                            return null;
 
                         case QueueState.Stopped:
                             Debug.Assert(_tail == null);
                             Trace(context, $"Exit (stopped)");
-                            return;
+                            return null;
 
                         default:
                             Environment.FailFast("unexpected queue state");
-                            return;
+                            return null;
                     }
                 }
 
-                // Dispatch the op so we can try to process it.
-                op.Dispatch();
+                ManualResetEventSlim? e = op.Event;
+                if (e != null)
+                {
+                    // Sync operation.  Signal waiting thread to continue processing.
+                    e.Set();
+                    return null;
+                }
+                else
+                {
+                    // Async operation.  The caller will figure out how to process the IO.
+                    Debug.Assert(!skipAsyncEvents);
+                    return op;
+                }
             }
 
             internal void ProcessAsyncOperation(TOperation op)
@@ -991,6 +1027,7 @@ namespace System.Net.Sockets
                         {
                             // No more operations to process
                             _tail = null;
+                            _isNextOperationSynchronous = false;
                             _state = QueueState.Ready;
                             _sequenceNumber++;
                             Trace(context, $"Exit (finished queue)");
@@ -999,6 +1036,7 @@ namespace System.Net.Sockets
                         {
                             // Pop current operation and advance to next
                             nextOp = _tail.Next = op.Next;
+                            _isNextOperationSynchronous = nextOp.Event != null;
                         }
                     }
                 }
@@ -1033,11 +1071,13 @@ namespace System.Net.Sockets
                             {
                                 // No more operations
                                 _tail = null;
+                                _isNextOperationSynchronous = false;
                             }
                             else
                             {
                                 // Pop current operation and advance to next
                                 _tail.Next = op.Next;
+                                _isNextOperationSynchronous = op.Next.Event != null;
                             }
 
                             // We're the first op in the queue.
@@ -1060,6 +1100,7 @@ namespace System.Net.Sockets
                                 if (_tail == null)
                                 {
                                     _state = QueueState.Ready;
+                                    _sequenceNumber++;
                                 }
                             }
                         }
@@ -1112,6 +1153,7 @@ namespace System.Net.Sockets
                     }
 
                     _tail = null;
+                    _isNextOperationSynchronous = false;
 
                     Trace(context, $"Exit");
                 }
@@ -1424,13 +1466,13 @@ namespace System.Net.Sockets
             return SocketError.IOPending;
         }
 
-        public SocketError Receive(Memory<byte> buffer, ref SocketFlags flags, int timeout, out int bytesReceived)
+        public SocketError Receive(Memory<byte> buffer, SocketFlags flags, int timeout, out int bytesReceived)
         {
             int socketAddressLen = 0;
             return ReceiveFrom(buffer, ref flags, null, ref socketAddressLen, timeout, out bytesReceived);
         }
 
-        public SocketError Receive(Span<byte> buffer, ref SocketFlags flags, int timeout, out int bytesReceived)
+        public SocketError Receive(Span<byte> buffer, SocketFlags flags, int timeout, out int bytesReceived)
         {
             int socketAddressLen = 0;
             return ReceiveFrom(buffer, ref flags, null, ref socketAddressLen, timeout, out bytesReceived);
@@ -1504,6 +1546,39 @@ namespace System.Net.Sockets
             }
         }
 
+        public SocketError ReceiveAsync(Memory<byte> buffer, SocketFlags flags, out int bytesReceived, Action<int, byte[]?, int, SocketFlags, SocketError> callback, CancellationToken cancellationToken = default)
+        {
+            SetNonBlocking();
+
+            SocketError errorCode;
+            int observedSequenceNumber;
+            if (_receiveQueue.IsReady(this, out observedSequenceNumber) &&
+                SocketPal.TryCompleteReceive(_socket, buffer.Span, flags, out bytesReceived, out errorCode))
+            {
+                return errorCode;
+            }
+
+            BufferMemoryReceiveOperation operation = RentBufferMemoryReceiveOperation();
+            operation.SetReceivedFlags = false;
+            operation.Callback = callback;
+            operation.Buffer = buffer;
+            operation.Flags = flags;
+            operation.SocketAddress = null;
+            operation.SocketAddressLen = 0;
+
+            if (!_receiveQueue.StartAsyncOperation(this, operation, observedSequenceNumber, cancellationToken))
+            {
+                bytesReceived = operation.BytesTransferred;
+                errorCode = operation.ErrorCode;
+
+                ReturnOperation(operation);
+                return errorCode;
+            }
+
+            bytesReceived = 0;
+            return SocketError.IOPending;
+        }
+
         public SocketError ReceiveFromAsync(Memory<byte> buffer,  SocketFlags flags, byte[]? socketAddress, ref int socketAddressLen, out int bytesReceived, out SocketFlags receivedFlags, Action<int, byte[]?, int, SocketFlags, SocketError> callback, CancellationToken cancellationToken = default)
         {
             SetNonBlocking();
@@ -1517,6 +1592,7 @@ namespace System.Net.Sockets
             }
 
             BufferMemoryReceiveOperation operation = RentBufferMemoryReceiveOperation();
+            operation.SetReceivedFlags = true;
             operation.Callback = callback;
             operation.Buffer = buffer;
             operation.Flags = flags;
@@ -1538,7 +1614,7 @@ namespace System.Net.Sockets
             return SocketError.IOPending;
         }
 
-        public SocketError Receive(IList<ArraySegment<byte>> buffers, ref SocketFlags flags, int timeout, out int bytesReceived)
+        public SocketError Receive(IList<ArraySegment<byte>> buffers, SocketFlags flags, int timeout, out int bytesReceived)
         {
             return ReceiveFrom(buffers, ref flags, null, 0, timeout, out bytesReceived);
         }
@@ -1946,6 +2022,42 @@ namespace System.Net.Sockets
             return SocketError.IOPending;
         }
 
+        // Called on the epoll thread, speculatively tries to process synchronous events and errors for synchronous events, and
+        // returns any remaining events that remain to be processed. Taking a lock for each operation queue to deterministically
+        // handle synchronous events on the epoll thread seems to significantly reduce throughput in benchmarks. On the other
+        // hand, the speculative checks make it nondeterministic, where it would be possible for the epoll thread to think that
+        // the next operation in a queue is not synchronous when it is (due to a race, old caches, etc.) and cause the event to
+        // be scheduled instead. It's not functionally incorrect to schedule the release of a synchronous operation, just it may
+        // lead to thread pool starvation issues if the synchronous operations are blocking thread pool threads (typically not
+        // advised) and more threads are not immediately available to run work items that would release those operations.
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public Interop.Sys.SocketEvents HandleSyncEventsSpeculatively(Interop.Sys.SocketEvents events)
+        {
+            if ((events & Interop.Sys.SocketEvents.Error) != 0)
+            {
+                // Set the Read and Write flags; the processing for these events
+                // will pick up the error.
+                events ^= Interop.Sys.SocketEvents.Error;
+                events |= Interop.Sys.SocketEvents.Read | Interop.Sys.SocketEvents.Write;
+            }
+
+            if ((events & Interop.Sys.SocketEvents.Read) != 0 &&
+                _receiveQueue.IsNextOperationSynchronous_Speculative &&
+                _receiveQueue.ProcessSyncEventOrGetAsyncEvent(this, skipAsyncEvents: true) == null)
+            {
+                events ^= Interop.Sys.SocketEvents.Read;
+            }
+
+            if ((events & Interop.Sys.SocketEvents.Write) != 0 &&
+                _sendQueue.IsNextOperationSynchronous_Speculative &&
+                _sendQueue.ProcessSyncEventOrGetAsyncEvent(this, skipAsyncEvents: true) == null)
+            {
+                events ^= Interop.Sys.SocketEvents.Write;
+            }
+
+            return events;
+        }
+
         public unsafe void HandleEvents(Interop.Sys.SocketEvents events)
         {
             if ((events & Interop.Sys.SocketEvents.Error) != 0)
@@ -1955,14 +2067,23 @@ namespace System.Net.Sockets
                 events |= Interop.Sys.SocketEvents.Read | Interop.Sys.SocketEvents.Write;
             }
 
-            if ((events & Interop.Sys.SocketEvents.Read) != 0)
-            {
-                _receiveQueue.HandleEvent(this);
-            }
+            AsyncOperation? receiveOperation =
+                (events & Interop.Sys.SocketEvents.Read) != 0 ? _receiveQueue.ProcessSyncEventOrGetAsyncEvent(this) : null;
+            AsyncOperation? sendOperation =
+                (events & Interop.Sys.SocketEvents.Write) != 0 ? _sendQueue.ProcessSyncEventOrGetAsyncEvent(this) : null;
 
-            if ((events & Interop.Sys.SocketEvents.Write) != 0)
+            // This method is called from a thread pool thread. When we have only one operation to process, process it
+            // synchronously to avoid an extra thread pool work item. When we have two operations to process, processing both
+            // synchronously may delay the second operation, so schedule one onto the thread pool and process the other
+            // synchronously. There might be better ways of doing this.
+            if (sendOperation == null)
             {
-                _sendQueue.HandleEvent(this);
+                receiveOperation?.Process();
+            }
+            else
+            {
+                receiveOperation?.Schedule();
+                sendOperation.Process();
             }
         }
 

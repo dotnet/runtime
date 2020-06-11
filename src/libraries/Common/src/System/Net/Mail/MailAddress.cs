@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System.Text;
 
 namespace System.Net.Mail
@@ -13,7 +14,7 @@ namespace System.Net.Mail
             MailAddressParser.TryParseAddress(address, out ParseAddressInfo _, throwExceptionIfFail: true);
         }
 
-        internal MailAddress(string displayName, string localPart, string domain, Encoding displayNameEncoding)
+        internal MailAddress(string displayName, string localPart, string domain, Encoding? displayNameEncoding)
         {
         }
     }

@@ -5,10 +5,8 @@
 using Microsoft.Win32.SafeHandles;
 using System.Collections.Generic;
 using System.ComponentModel;
-using System.Globalization;
 using System.IO;
-using System.Linq;
-using System.Runtime.InteropServices;
+using System.Net.Sockets;
 using System.Security;
 using System.Text;
 using System.Threading;
@@ -86,11 +84,11 @@ namespace System.Diagnostics
         private bool GetHasExited(bool refresh)
             => GetWaitState().GetExited(out _, refresh);
 
-        private IEnumerable<Exception> KillTree()
+        private List<Exception>? KillTree()
         {
             List<Exception>? exceptions = null;
             KillTree(ref exceptions);
-            return exceptions ?? Enumerable.Empty<Exception>();
+            return exceptions;
         }
 
         private void KillTree(ref List<Exception>? exceptions)
@@ -111,7 +109,7 @@ namespace System.Diagnostics
                 // Ignore 'process no longer exists' error.
                 if (error != Interop.Error.ESRCH)
                 {
-                    AddException(ref exceptions, new Win32Exception());
+                    (exceptions ??= new List<Exception>()).Add(new Win32Exception());
                 }
                 return;
             }
@@ -125,7 +123,7 @@ namespace System.Diagnostics
                 // Ignore 'process no longer exists' error.
                 if (error != Interop.Error.ESRCH)
                 {
-                    AddException(ref exceptions, new Win32Exception());
+                    (exceptions ??= new List<Exception>()).Add(new Win32Exception());
                 }
             }
 
@@ -133,15 +131,6 @@ namespace System.Diagnostics
             {
                 childProcess.KillTree(ref exceptions);
                 childProcess.Dispose();
-            }
-
-            void AddException(ref List<Exception>? list, Exception e)
-            {
-                if (list == null)
-                {
-                    list = new List<Exception>();
-                }
-                list.Add(e);
             }
         }
 
@@ -773,16 +762,15 @@ namespace System.Diagnostics
             return TimeSpan.FromSeconds(ticks / (double)ticksPerSecond);
         }
 
-        /// <summary>Opens a stream around the specified file descriptor and with the specified access.</summary>
-        /// <param name="fd">The file descriptor.</param>
+        /// <summary>Opens a stream around the specified socket file descriptor and with the specified access.</summary>
+        /// <param name="fd">The socket file descriptor.</param>
         /// <param name="access">The access mode.</param>
         /// <returns>The opened stream.</returns>
-        private static FileStream OpenStream(int fd, FileAccess access)
+        private static Stream OpenStream(int fd, FileAccess access)
         {
             Debug.Assert(fd >= 0);
-            return new FileStream(
-                new SafeFileHandle((IntPtr)fd, ownsHandle: true),
-                access, StreamBufferSize, isAsync: false);
+            var socket = new Socket(new SafeSocketHandle((IntPtr)fd, ownsHandle: true));
+            return new NetworkStream(socket, access, ownsSocket: true);
         }
 
         /// <summary>Parses a command-line argument string into a list of arguments.</summary>

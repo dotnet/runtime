@@ -3,7 +3,8 @@
     <RootNamespace>System.Diagnostics.TraceSource</RootNamespace>
     <AssemblyName>System.Diagnostics.TraceSource</AssemblyName>
     <DefineConstants>$(DefineConstants);TRACE</DefineConstants>
-    <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)-FreeBSD;$(NetCoreAppCurrent)-Linux;$(NetCoreAppCurrent)-OSX</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)-FreeBSD;$(NetCoreAppCurrent)-Linux;$(NetCoreAppCurrent)-OSX;$(NetCoreAppCurrent)-iOS</TargetFrameworks>
+    <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System\Diagnostics\BooleanSwitch.cs" />
@@ -28,31 +29,24 @@
     <Compile Include="System\Diagnostics\TraceSwitch.cs" />
     <Compile Include="System\Diagnostics\SwitchAttribute.cs" />
     <Compile Include="System\Diagnostics\SwitchLevelAttribute.cs" />
-    <Compile Include="$(CommonPath)System\Diagnostics\TraceListenerHelpers.cs">
-      <Link>Common\System\Diagnostics\TraceListenerHelpers.cs</Link>
-    </Compile>
+    <Compile Include="$(CommonPath)System\Diagnostics\TraceListenerHelpers.cs"
+             Link="Common\System\Diagnostics\TraceListenerHelpers.cs" />
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetsWindows)' == 'true'">
-    <Compile Include="$(CommonPath)System\Diagnostics\TraceListenerHelpers.Windows.cs">
-      <Link>Common\System\Diagnostics\TraceListenerHelpers.Windows.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)Interop\Windows\Interop.Libraries.cs">
-      <Link>Common\Interop\Windows\Interop.Libraries.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetCurrentProcessId.cs">
-      <Link>Common\Interop\Windows\Interop.GetCurrentProcessId.cs</Link>
-    </Compile>
+    <Compile Include="$(CommonPath)System\Diagnostics\TraceListenerHelpers.Windows.cs"
+             Link="Common\System\Diagnostics\TraceListenerHelpers.Windows.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Interop.Libraries.cs"
+             Link="Common\Interop\Windows\Interop.Libraries.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetCurrentProcessId.cs"
+             Link="Common\Interop\Windows\Interop.GetCurrentProcessId.cs" />
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetsUnix)' == 'true'">
-    <Compile Include="$(CommonPath)Interop\Unix\Interop.Libraries.cs">
-      <Link>Common\Interop\Unix\Interop.Libraries.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.GetPid.cs">
-      <Link>Common\Interop\Unix\Interop.GetPid.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)System\Diagnostics\TraceListenerHelpers.Unix.cs">
-      <Link>Common\System\Diagnostics\TraceListenerHelpers.Unix.cs</Link>
-    </Compile>
+    <Compile Include="$(CommonPath)Interop\Unix\Interop.Libraries.cs"
+             Link="Common\Interop\Unix\Interop.Libraries.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.GetPid.cs"
+             Link="Common\Interop\Unix\Interop.GetPid.cs" />
+    <Compile Include="$(CommonPath)System\Diagnostics\TraceListenerHelpers.Unix.cs"
+             Link="Common\System\Diagnostics\TraceListenerHelpers.Unix.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\System.Collections\src\System.Collections.csproj" />

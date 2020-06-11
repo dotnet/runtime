@@ -4,6 +4,7 @@
     <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
     <ExcludeResourcesImport>true</ExcludeResourcesImport>
     <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)-Unix</TargetFrameworks>
+    <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>
     <ReferenceFromRuntime Include="System.Private.CoreLib" />

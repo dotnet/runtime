@@ -56,7 +56,6 @@
 #include "runtimehandles.h"
 #include "reflectioninvocation.h"
 #include "managedmdimport.hpp"
-#include "synchronizationcontextnative.h"
 #include "typestring.h"
 #include "comdependenthandle.h"
 #include "weakreferencenative.h"
@@ -67,6 +66,7 @@
 #include "variant.h"
 #include "oavariant.h"
 #include "mngstdinterfaces.h"
+#include "interoplibinterface.h"
 #endif // FEATURE_COMINTEROP
 
 #include "stubhelpers.h"
@@ -86,6 +86,8 @@
 #include "eventpipe.h"
 #include "eventpipeinternal.h"
 #endif //FEATURE_PERFTRACING
+
+#include "tailcallhelp.h"
 
 #endif // CROSSGEN_MSCORLIB
 
@@ -345,8 +347,6 @@ const MscorlibClassDescription c_rgMscorlibClassDescriptions[] =
 
     // Include all exception types here that are defined in mscorlib.  Omit exceptions defined elsewhere.
     #define DEFINE_EXCEPTION(ns, reKind, bHRformessage, ...) { ns , # reKind },
-    #define DEFINE_EXCEPTION_HR_WINRT_ONLY(ns, reKind, ...)
-    #define DEFINE_EXCEPTION_IN_OTHER_FX_ASSEMBLY(ns, reKind, assemblySimpleName, publicKeyToken, bHRformessage, ...)
     #include "rexcep.h"
 };
 const USHORT c_nMscorlibClassDescriptions = NumItems(c_rgMscorlibClassDescriptions);

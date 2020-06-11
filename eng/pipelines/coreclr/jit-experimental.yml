@@ -1,0 +1,51 @@
+trigger: none
+
+pr: none
+
+schedules:
+- cron: "0 22 * * 0,6"
+  displayName: Sun at 2:00 PM (UTC-8:00)
+  branches:
+    include:
+    - master
+  always: true
+
+jobs:
+#
+# Checkout repository
+#
+- template: /eng/pipelines/common/checkout-job.yml
+
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
+    jobTemplate: /eng/pipelines/common/build-coreclr-and-libraries-job.yml
+    buildConfig: checked
+    platforms:
+    - Linux_x64
+    - Windows_NT_x64
+    - CoreClrTestBuildHost # Either OSX_x64 or Linux_x64
+    jobParameters:
+      testGroup: jit-experimental
+
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
+    jobTemplate: /eng/pipelines/common/templates/runtimes/build-test-job.yml
+    buildConfig: checked
+    platforms:
+    - CoreClrTestBuildHost # Either OSX_x64 or Linux_x64
+    jobParameters:
+      testGroup: jit-experimental
+      liveLibrariesBuildConfig: Release
+
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
+    jobTemplate: /eng/pipelines/common/templates/runtimes/run-test-job.yml
+    buildConfig: checked
+    platforms:
+    - Linux_x64
+    - Windows_NT_x64
+    helixQueueGroup: ci
+    helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
+    jobParameters:
+      testGroup: jit-experimental
+      liveLibrariesBuildConfig: Release

@@ -5,6 +5,7 @@
 using System;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
+using Internal.TypeSystem;
 
 namespace Internal.JitInterface
 {
@@ -89,6 +90,10 @@ namespace Internal.JitInterface
     }
 
     public struct CORINFO_VarArgInfo
+    {
+    }
+    
+    public struct PatchpointInfo
     {
     }
 
@@ -448,6 +453,7 @@ namespace Internal.JitInterface
         CORINFO_INTRINSIC_StubHelpers_GetStubContext,
         CORINFO_INTRINSIC_StubHelpers_GetStubContextAddr,
         CORINFO_INTRINSIC_StubHelpers_GetNDirectTarget,
+        CORINFO_INTRINSIC_StubHelpers_NextCallReturnAddress,
         CORINFO_INTRINSIC_InterlockedAdd32,
         CORINFO_INTRINSIC_InterlockedAdd64,
         CORINFO_INTRINSIC_InterlockedXAdd32,
@@ -457,6 +463,7 @@ namespace Internal.JitInterface
         CORINFO_INTRINSIC_InterlockedCmpXchg32,
         CORINFO_INTRINSIC_InterlockedCmpXchg64,
         CORINFO_INTRINSIC_MemoryBarrier,
+        CORINFO_INTRINSIC_MemoryBarrierLoad,
         CORINFO_INTRINSIC_GetCurrentManagedThread,
         CORINFO_INTRINSIC_GetManagedThreadId,
         CORINFO_INTRINSIC_ByReference_Ctor,
@@ -627,7 +634,7 @@ namespace Internal.JitInterface
         CORINFO_FLG_ARRAY = 0x00080000, // class is an array class (initialized differently)
         CORINFO_FLG_OVERLAPPING_FIELDS = 0x00100000, // struct or class has fields that overlap (aka union)
         CORINFO_FLG_INTERFACE = 0x00200000, // it is an interface
-        // CORINFO_FLG_UNUSED = 0x00400000,
+        CORINFO_FLG_DONT_PROMOTE = 0x00400000, // don't try to promote fieds of types outside of AOT compilation version bubble
         CORINFO_FLG_CUSTOMLAYOUT = 0x00800000, // does this struct have custom layout?
         CORINFO_FLG_CONTAINS_GC_PTR = 0x01000000, // does the class contain a gc ptr ?
         CORINFO_FLG_DELEGATE = 0x02000000, // is this a subclass of delegate or multicast delegate ?
@@ -750,14 +757,6 @@ namespace Internal.JitInterface
         public void* pArg5;
     }
 
-    // When using CORINFO_HELPER_TAILCALL, the JIT needs to pass certain special
-    // calling convention/argument passing/handling details to the helper
-    public enum CorInfoHelperTailCallSpecialHandling
-    {
-        CORINFO_TAILCALL_NORMAL = 0x00000000,
-        CORINFO_TAILCALL_STUB_DISPATCH_ARG = 0x00000001,
-    }
-
     /*****************************************************************************/
     // These are flags passed to ICorJitInfo::allocMem
     // to guide the memory allocation for the code, readonly data, and read-write data
@@ -776,7 +775,6 @@ namespace Internal.JitInterface
         CORJIT_FUNC_HANDLER,       // a funclet associated with an EH handler (finally, fault, catch, filter handler)
         CORJIT_FUNC_FILTER         // a funclet associated with an EH filter
     }
-
 
     public unsafe struct CORINFO_METHOD_INFO
     {
@@ -896,6 +894,30 @@ namespace Internal.JitInterface
 
         public CORINFO_OS osType;
     }
+
+    // Flags passed from JIT to runtime.
+    public enum CORINFO_GET_TAILCALL_HELPERS_FLAGS
+    {
+        // The callsite is a callvirt instruction.
+        CORINFO_TAILCALL_IS_CALLVIRT = 0x00000001,
+    }
+
+    // Flags passed from runtime to JIT.
+    public enum CORINFO_TAILCALL_HELPERS_FLAGS
+    {
+        // The StoreArgs stub needs to be passed the target function pointer as the
+        // first argument.
+        CORINFO_TAILCALL_STORE_TARGET = 0x00000001,
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    public unsafe struct CORINFO_TAILCALL_HELPERS
+    {
+        CORINFO_TAILCALL_HELPERS_FLAGS flags;
+        CORINFO_METHOD_STRUCT_*        hStoreArgs;
+        CORINFO_METHOD_STRUCT_*        hCallTarget;
+        CORINFO_METHOD_STRUCT_*        hDispatcher;
+    };
 
     public enum CORINFO_THIS_TRANSFORM
     {
@@ -1286,9 +1308,6 @@ namespace Internal.JitInterface
         CORJIT_FLAG_UNUSED4 = 11,
         CORJIT_FLAG_UNUSED5 = 12,
         CORJIT_FLAG_UNUSED6 = 13,
-        CORJIT_FLAG_USE_AVX = 14,
-        CORJIT_FLAG_USE_AVX2 = 15,
-        CORJIT_FLAG_USE_AVX_512 = 16,
         CORJIT_FLAG_FEATURE_SIMD = 17,
         CORJIT_FLAG_MAKEFINALCODE = 18, // Use the final code generator, i.e., not the interpreter.
         CORJIT_FLAG_READYTORUN = 19, // Use version-resilient code generation
@@ -1315,53 +1334,17 @@ namespace Internal.JitInterface
         CORJIT_FLAG_TIER1 = 40, // This is the final tier (for now) for tiered compilation which should generate high quality code
         CORJIT_FLAG_RELATIVE_CODE_RELOCS = 41, // JIT should generate PC-relative address computations instead of EE relocation records
         CORJIT_FLAG_NO_INLINING = 42, // JIT should not inline any called method into this method
-
-#region TARGET_ARM64
-        CORJIT_FLAG_HAS_ARM64_AES           = 43, // ID_AA64ISAR0_EL1.AES is 1 or better
-        CORJIT_FLAG_HAS_ARM64_ATOMICS       = 44, // ID_AA64ISAR0_EL1.Atomic is 2 or better
-        CORJIT_FLAG_HAS_ARM64_CRC32         = 45, // ID_AA64ISAR0_EL1.CRC32 is 1 or better
-        CORJIT_FLAG_HAS_ARM64_DCPOP         = 46, // ID_AA64ISAR1_EL1.DPB is 1 or better
-        CORJIT_FLAG_HAS_ARM64_DP            = 47, // ID_AA64ISAR0_EL1.DP is 1 or better
-        CORJIT_FLAG_HAS_ARM64_FCMA          = 48, // ID_AA64ISAR1_EL1.FCMA is 1 or better
-        CORJIT_FLAG_HAS_ARM64_FP            = 49, // ID_AA64PFR0_EL1.FP is 0 or better
-        CORJIT_FLAG_HAS_ARM64_FP16          = 50, // ID_AA64PFR0_EL1.FP is 1 or better
-        CORJIT_FLAG_HAS_ARM64_JSCVT         = 51, // ID_AA64ISAR1_EL1.JSCVT is 1 or better
-        CORJIT_FLAG_HAS_ARM64_LRCPC         = 52, // ID_AA64ISAR1_EL1.LRCPC is 1 or better
-        CORJIT_FLAG_HAS_ARM64_PMULL         = 53, // ID_AA64ISAR0_EL1.AES is 2 or better
-        CORJIT_FLAG_HAS_ARM64_SHA1          = 54, // ID_AA64ISAR0_EL1.SHA1 is 1 or better
-        CORJIT_FLAG_HAS_ARM64_SHA256        = 55, // ID_AA64ISAR0_EL1.SHA2 is 1 or better
-        CORJIT_FLAG_HAS_ARM64_SHA512        = 56, // ID_AA64ISAR0_EL1.SHA2 is 2 or better
-        CORJIT_FLAG_HAS_ARM64_SHA3          = 57, // ID_AA64ISAR0_EL1.SHA3 is 1 or better
-        CORJIT_FLAG_HAS_ARM64_SIMD          = 58, // ID_AA64PFR0_EL1.AdvSIMD is 0 or better
-        CORJIT_FLAG_HAS_ARM64_SIMD_V81      = 59, // ID_AA64ISAR0_EL1.RDM is 1 or better
-        CORJIT_FLAG_HAS_ARM64_SIMD_FP16     = 60, // ID_AA64PFR0_EL1.AdvSIMD is 1 or better
-        CORJIT_FLAG_HAS_ARM64_SM3           = 61, // ID_AA64ISAR0_EL1.SM3 is 1 or better
-        CORJIT_FLAG_HAS_ARM64_SM4           = 62, // ID_AA64ISAR0_EL1.SM4 is 1 or better
-        CORJIT_FLAG_HAS_ARM64_SVE           = 63, // ID_AA64PFR0_EL1.SVE is 1 or better
-#endregion
-
-#region x86/x64
-        CORJIT_FLAG_USE_SSE3 = 43,
-        CORJIT_FLAG_USE_SSSE3 = 44,
-        CORJIT_FLAG_USE_SSE41 = 45,
-        CORJIT_FLAG_USE_SSE42 = 46,
-        CORJIT_FLAG_USE_AES = 47,
-        CORJIT_FLAG_USE_BMI1 = 48,
-        CORJIT_FLAG_USE_BMI2 = 49,
-        CORJIT_FLAG_USE_FMA = 50,
-        CORJIT_FLAG_USE_LZCNT = 51,
-        CORJIT_FLAG_USE_PCLMULQDQ = 52,
-        CORJIT_FLAG_USE_POPCNT = 53,
-#endregion
     }
 
     public struct CORJIT_FLAGS
     {
         private UInt64 _corJitFlags;
+        public InstructionSetFlags InstructionSetFlags;
 
         public void Reset()
         {
             _corJitFlags = 0;
+            InstructionSetFlags = default(InstructionSetFlags);
         }
 
         public void Set(CorJitFlag flag)
@@ -1377,21 +1360,6 @@ namespace Internal.JitInterface
         public bool IsSet(CorJitFlag flag)
         {
             return (_corJitFlags & (1UL << (int)flag)) != 0;
-        }
-
-        public void Add(ref CORJIT_FLAGS other)
-        {
-            _corJitFlags |= other._corJitFlags;
-        }
-
-        public void Remove(ref CORJIT_FLAGS other)
-        {
-            _corJitFlags &= ~other._corJitFlags;
-        }
-
-        public bool IsEmpty()
-        {
-            return _corJitFlags == 0;
         }
     }
 }

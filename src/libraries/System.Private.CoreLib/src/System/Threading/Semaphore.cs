@@ -35,8 +35,7 @@ namespace System.Threading
 
         public static Semaphore OpenExisting(string name)
         {
-            Semaphore? result;
-            switch (OpenExistingWorker(name, out result))
+            switch (OpenExistingWorker(name, out Semaphore? result))
             {
                 case OpenExistingResult.NameNotFound:
                     throw new WaitHandleCannotBeOpenedException();
@@ -51,7 +50,7 @@ namespace System.Threading
         }
 
         public static bool TryOpenExisting(string name, [NotNullWhen(true)] out Semaphore? result) =>
-            OpenExistingWorker(name, out result) == OpenExistingResult.Success;
+            OpenExistingWorker(name, out result!) == OpenExistingResult.Success;
 
         public int Release() => ReleaseCore(1);
 

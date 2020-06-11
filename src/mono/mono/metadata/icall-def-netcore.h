@@ -67,6 +67,19 @@ NOHANDLES(ICALL(DEBUGR_1, "IsAttached_internal", ves_icall_System_Diagnostics_De
 NOHANDLES(ICALL(DEBUGR_2, "IsLogging", ves_icall_System_Diagnostics_Debugger_IsLogging))
 NOHANDLES(ICALL(DEBUGR_3, "Log_icall", ves_icall_System_Diagnostics_Debugger_Log))
 
+ICALL_TYPE(EVENTPIPE, "System.Diagnostics.Tracing.EventPipeInternal", EVENTPIPE_1)
+HANDLES(EVENTPIPE_1, "CreateProvider", ves_icall_System_Diagnostics_Tracing_EventPipeInternal_CreateProvider, gconstpointer, 2, (MonoString, MonoDelegate))
+NOHANDLES(ICALL(EVENTPIPE_2, "DefineEvent", ves_icall_System_Diagnostics_Tracing_EventPipeInternal_DefineEvent))
+NOHANDLES(ICALL(EVENTPIPE_3, "DeleteProvider", ves_icall_System_Diagnostics_Tracing_EventPipeInternal_DeleteProvider))
+NOHANDLES(ICALL(EVENTPIPE_4, "Disable", ves_icall_System_Diagnostics_Tracing_EventPipeInternal_Disable))
+NOHANDLES(ICALL(EVENTPIPE_5, "Enable", ves_icall_System_Diagnostics_Tracing_EventPipeInternal_Enable))
+NOHANDLES(ICALL(EVENTPIPE_6, "EventActivityIdControl", ves_icall_System_Diagnostics_Tracing_EventPipeInternal_EventActivityIdControl))
+NOHANDLES(ICALL(EVENTPIPE_7, "GetNextEvent", ves_icall_System_Diagnostics_Tracing_EventPipeInternal_GetNextEvent))
+NOHANDLES(ICALL(EVENTPIPE_8, "GetProvider", ves_icall_System_Diagnostics_Tracing_EventPipeInternal_GetProvider))
+NOHANDLES(ICALL(EVENTPIPE_9, "GetSessionInfo", ves_icall_System_Diagnostics_Tracing_EventPipeInternal_GetSessionInfo))
+NOHANDLES(ICALL(EVENTPIPE_10, "GetWaitHandle", ves_icall_System_Diagnostics_Tracing_EventPipeInternal_GetWaitHandle))
+NOHANDLES(ICALL(EVENTPIPE_11, "WriteEventData", ves_icall_System_Diagnostics_Tracing_EventPipeInternal_WriteEventData))
+
 ICALL_TYPE(ENUM, "System.Enum", ENUM_1)
 HANDLES(ENUM_1, "GetEnumValuesAndNames", ves_icall_System_Enum_GetEnumValuesAndNames, MonoBoolean, 3, (MonoReflectionType, MonoArrayOut, MonoArrayOut))
 HANDLES(ENUM_2, "InternalBoxEnum", ves_icall_System_Enum_ToObject, MonoObject, 2, (MonoReflectionType, guint64))
@@ -89,7 +102,8 @@ HANDLES(ENV_16, "get_UserName", ves_icall_System_Environment_get_UserName, MonoS
 HANDLES(ENV_17, "internalGetEnvironmentVariable_native", ves_icall_System_Environment_GetEnvironmentVariable_native, MonoString, 1, (const_char_ptr))
 NOHANDLES(ICALL(ENV_20, "set_ExitCode", mono_environment_exitcode_set))
 
-ICALL_TYPE(GC, "System.GC", GC_10)
+ICALL_TYPE(GC, "System.GC", GC_13)
+HANDLES(GC_13, "AllocPinnedArray", ves_icall_System_GC_AllocPinnedArray, MonoArray, 2, (MonoReflectionType, gint32))
 NOHANDLES(ICALL(GC_10, "GetAllocatedBytesForCurrentThread", ves_icall_System_GC_GetAllocatedBytesForCurrentThread))
 NOHANDLES(ICALL(GC_0, "GetCollectionCount", ves_icall_System_GC_GetCollectionCount))
 HANDLES(GC_0a, "GetGeneration", ves_icall_System_GC_GetGeneration, int, 1, (MonoObject))
@@ -368,6 +382,7 @@ HANDLES(ALC_4, "InternalGetLoadedAssemblies", ves_icall_System_Runtime_Loader_As
 HANDLES(ALC_2, "InternalInitializeNativeALC", ves_icall_System_Runtime_Loader_AssemblyLoadContext_InternalInitializeNativeALC, gpointer, 3, (gpointer, MonoBoolean, MonoBoolean))
 HANDLES(ALC_1, "InternalLoadFile", ves_icall_System_Runtime_Loader_AssemblyLoadContext_InternalLoadFile, MonoReflectionAssembly, 3, (gpointer, MonoString, MonoStackCrawlMark_ptr))
 HANDLES(ALC_3, "InternalLoadFromStream", ves_icall_System_Runtime_Loader_AssemblyLoadContext_InternalLoadFromStream, MonoReflectionAssembly, 5, (gpointer, gpointer, gint32, gpointer, gint32))
+HANDLES(ALC_6, "PrepareForAssemblyLoadContextRelease", ves_icall_System_Runtime_Loader_AssemblyLoadContext_PrepareForAssemblyLoadContextRelease, void, 2, (gpointer, gpointer))
 
 ICALL_TYPE(RFH, "System.RuntimeFieldHandle", RFH_1)
 HANDLES(RFH_1, "GetValueDirect", ves_icall_System_RuntimeFieldHandle_GetValueDirect, MonoObject, 4, (MonoReflectionField, MonoReflectionType, MonoTypedRef_ptr, MonoReflectionType))

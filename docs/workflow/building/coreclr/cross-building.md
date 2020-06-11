@@ -6,14 +6,18 @@ Building ARM for Windows can be done using cross compilation.
 Requirements
 ------------
 
-Install the ARM tools and Windows SDK, as described [here](https://github.com/dotnet/coreclr/blob/master/Documentation/building/windows-instructions.md).
+Install the ARM tools and Windows SDK, as described [here](https://github.com/dotnet/runtime/blob/master/docs/workflow/requirements/windows-requirements.md).
 
 Cross compiling CoreCLR
 -----------------------
 
-Build using "-arm" as the architecture. For example:
+Build using "arm" as the architecture. For example:
 
-    C:\runtime> build.cmd -arm -debug
+    C:\runtime> build.cmd -subset clr.runtime -arch arm -c debug
+
+-or-
+
+    C:\runtime> src\coreclr\build-runtime.cmd -arm -debug
 
 
 Cross Compilation for ARM, ARM64 or x86 on Linux
@@ -95,11 +99,15 @@ and if you wanted to generate the rootfs elsewhere:
 
 Cross compiling CoreCLR
 -----------------------
-`ROOTFS_DIR` must be set when running `build.sh`.
+`ROOTFS_DIR` must be set when running `build-runtime.sh`.
 
-    ~/runtime/ $ ROOTFS_DIR=/home/arm ./build.sh arm debug verbose cross
+    ~/runtime/ $ ROOTFS_DIR=/home/arm ./build.sh --subset clr.runtime --arch arm -c debug -v verbose --cross
 
-As usual, the resulting binaries will be found in `artifacts/bin/coreclr/BuildOS.BuildArch.BuildType/`
+-or-
+
+    ~/runtime/ $ ROOTFS_DIR=/home/arm ./src/coreclr/build-runtime.sh -arm -debug -verbose -cross
+
+As usual, the resulting binaries will be found in `artifacts/bin/coreclr/TargetOS.BuildArch.BuildType/`
 
 Cross compiling CoreCLR for Other VFP configurations
 ----------------------------------------------------------
@@ -108,7 +116,7 @@ VFPv3 floating point with 32 64-bit FPU registers.
 
 CoreCLR JIT requires 16 64-bit or 32 32-bit FPU registers.
 
-A set of FPU configuration options have been provided via build.sh to accommodate different CPU types.
+A set of FPU configuration options have been provided via build-runtime.sh to accommodate different CPU types.
 These FPU configuration options are: CLR_ARM_FPU_CAPABILITY and CLR_ARM_FPU_TYPE.
 
 CLR_ARM_FPU_TYPE translates to a value given to -mfpu compiler option. Please refer to
@@ -125,7 +133,9 @@ Supported options are 0x3 and 0x7.
 
 If you wanted to support armv7 CPU with VFPv3-d16, you'd use the following compile options:
 
-./build.sh -cross -arm -cmakeargs -DCLR_ARM_FPU_CAPABILITY=0x3 -cmakeargs -DCLR_ARM_FPU_TYPE=vfpv3-d16
+```
+./src/coreclr/build-runtime.sh -cross -arm -cmakeargs -DCLR_ARM_FPU_CAPABILITY=0x3 -cmakeargs -DCLR_ARM_FPU_TYPE=vfpv3-d16
+```
 
 Build System.Private.CoreLib on Ubuntu
 --------------------------------------
@@ -134,13 +144,13 @@ The following instructions assume you are on a Linux machine such as Ubuntu 14.0
 To build System.Private.CoreLib for Linux, run the following command:
 
 ```
-    lgs@ubuntu ~/git/coreclr/ $ build.sh arm debug verbose
+    lgs@ubuntu ~/git/runtime/ $ ./build.sh --subset clr.corelib+clr.nativecorelib --arch arm -c debug -v verbose
 ```
 
-The output is at artifacts/Product/<BuildOS>.arm.Debug/System.Private.CoreLib.dll.
+The output is at `artifacts/bin/coreclr/<TargetOS>.arm.Debug/IL/System.Private.CoreLib.dll`.
 
 ```
-    lgs@ubuntu ~/git/coreclr/ $ file ./artifacts/Product/Linux.arm.Debug/System.Private.CoreLib.dll
-    ./artifacts/Product/Linux.arm.Debug/System.Private.CoreLib.dll: PE32 executable (DLL)
+    lgs@ubuntu ~/git/runtime/ $ file ./artifacts/bin/coreclr/Linux.arm.Debug/IL/System.Private.CoreLib.dll
+    ./artifacts/bin/coreclr/Linux.arm.Debug/IL/System.Private.CoreLib.dll: PE32 executable (DLL)
     (console) ARMv7 Thumb Mono/.NET assembly, for MS Windows
 ```

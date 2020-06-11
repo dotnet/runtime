@@ -413,8 +413,9 @@ void StackSampler::JitAndCollectTrace(MethodDesc* pMD)
             LOG((LF_JIT, LL_INFO100000, "Jitting the hot method desc using SuperPMI in the background thread -> "));
             LOG((LF_JIT, LL_INFO100000, "%s:%s\n", pMD->GetMethodTable()->GetClass()->GetDebugClassName(), pMD->GetName()));
 #endif
-
-            PCODE pCode = UnsafeJitFunction(NativeCodeVersion(pMD), pDecoder, flags);
+            NativeCodeVersion natCodeVer(pMD);
+            PrepareCodeConfigBuffer cfgBuffer(natCodeVer);
+            PCODE pCode = UnsafeJitFunction(cfgBuffer.GetConfig(), pDecoder, flags);
         }
 
         // Update that this method has been already JITted.

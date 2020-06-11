@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections;
-using System.Diagnostics;
 using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 
@@ -27,6 +26,13 @@ namespace System.Net.Tests
         }
 
         [Fact]
+        public void Unregister_Null_Throws()
+        {
+            Assert.Throws<ArgumentNullException>(() => AuthenticationManager.Unregister((IAuthenticationModule)null));
+            Assert.Throws<ArgumentNullException>(() => AuthenticationManager.Unregister((string)null));
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void Register_Unregister_ModuleCountUnchanged()
         {
             RemoteExecutor.Invoke(() =>
@@ -39,7 +45,7 @@ namespace System.Net.Tests
             }).Dispose();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void Register_UnregisterByScheme_ModuleCountUnchanged()
         {
             RemoteExecutor.Invoke(() =>
@@ -61,7 +67,7 @@ namespace System.Net.Tests
             Assert.Equal(0, count);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void CredentialPolicy_Roundtrip()
         {
             Assert.Null(AuthenticationManager.CredentialPolicy);
@@ -77,7 +83,7 @@ namespace System.Net.Tests
             }).Dispose();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void CustomTargetNameDictionary_ValidCollection()
         {
             Assert.NotNull(AuthenticationManager.CustomTargetNameDictionary);

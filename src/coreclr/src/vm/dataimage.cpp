@@ -757,7 +757,6 @@ FORCEINLINE static CorCompileSection GetSectionForNodeType(ZapNodeType type)
     case NodeTypeForItemKind(DataImage::ITEM_PARAM_TYPEDESC):
     case NodeTypeForItemKind(DataImage::ITEM_ARRAY_TYPEDESC):
     case NodeTypeForItemKind(DataImage::ITEM_EECLASS):
-    case NodeTypeForItemKind(DataImage::ITEM_FIELD_MARSHALERS):
     case NodeTypeForItemKind(DataImage::ITEM_FPTR_TYPEDESC):
 #ifdef FEATURE_COMINTEROP
     case NodeTypeForItemKind(DataImage::ITEM_SPARSE_VTABLE_MAP_TABLE):

@@ -13,7 +13,6 @@ using ILCompiler.Win32Resources;
 using Internal.IL;
 using Internal.JitInterface;
 using Internal.ReadyToRunConstants;
-using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
 
 namespace ILCompiler
@@ -25,15 +24,20 @@ namespace ILCompiler
         private bool _resilient;
         private bool _generateMapFile;
         private int _parallelism;
+        private InstructionSetSupport _instructionSetSupport;
+        private ProfileDataManager _profileData;
+        private ReadyToRunMethodLayoutAlgorithm _r2rMethodLayoutAlgorithm;
+        private ReadyToRunFileLayoutAlgorithm _r2rFileLayoutAlgorithm;
 
         private string _jitPath;
+        private string _outputFile;
 
         // These need to provide reasonable defaults so that the user can optionally skip
         // calling the Use/Configure methods and still get something reasonable back.
         private KeyValuePair<string, string>[] _ryujitOptions = Array.Empty<KeyValuePair<string, string>>();
         private ILProvider _ilProvider = new ReadyToRunILProvider();
 
-        public ReadyToRunCodegenCompilationBuilder(CompilerTypeSystemContext context, CompilationModuleGroup group, IEnumerable<string> inputFiles)
+        public ReadyToRunCodegenCompilationBuilder(CompilerTypeSystemContext context, ReadyToRunCompilationModuleGroupBase group, IEnumerable<string> inputFiles)
             : base(context, group, new CoreRTNameMangler())
         {
             _inputFiles = inputFiles;
@@ -96,6 +100,19 @@ namespace ILCompiler
             return this;
         }
 
+        public ReadyToRunCodegenCompilationBuilder UseProfileData(ProfileDataManager profileData)
+        {
+            _profileData = profileData;
+            return this;
+        }
+
+        public ReadyToRunCodegenCompilationBuilder FileLayoutAlgorithms(ReadyToRunMethodLayoutAlgorithm r2rMethodLayoutAlgorithm, ReadyToRunFileLayoutAlgorithm r2rFileLayoutAlgorithm)
+        {
+            _r2rMethodLayoutAlgorithm = r2rMethodLayoutAlgorithm;
+            _r2rFileLayoutAlgorithm = r2rFileLayoutAlgorithm;
+            return this;
+        }
+
         public ReadyToRunCodegenCompilationBuilder UseMapFile(bool generateMapFile)
         {
             _generateMapFile = generateMapFile;
@@ -108,13 +125,26 @@ namespace ILCompiler
             return this;
         }
 
+        public ReadyToRunCodegenCompilationBuilder UseInstructionSetSupport(InstructionSetSupport instructionSetSupport)
+        {
+            _instructionSetSupport = instructionSetSupport;
+            return this;
+        }
+
+        public ReadyToRunCodegenCompilationBuilder GenerateOutputFile(string outputFile)
+        {
+            _outputFile = outputFile;
+            return this;
+        }
+
         public override ICompilation ToCompilation()
         {
             // TODO: only copy COR headers for single-assembly build and for composite build with embedded MSIL
             IEnumerable<EcmaModule> inputModules = _compilationGroup.CompilationModuleSet;
-            CopiedCorHeaderNode corHeaderNode = (_compilationGroup.IsCompositeBuildMode ? null : new CopiedCorHeaderNode(inputModules.First()));
+            EcmaModule singleModule = _compilationGroup.IsCompositeBuildMode ? null : inputModules.First();
+            CopiedCorHeaderNode corHeaderNode = new CopiedCorHeaderNode(singleModule);
             // TODO: proper support for multiple input files
-            DebugDirectoryNode debugDirectoryNode = new DebugDirectoryNode(inputModules.First());
+            DebugDirectoryNode debugDirectoryNode = new DebugDirectoryNode(singleModule, _outputFile);
 
             // Produce a ResourceData where the IBC PROFILE_DATA entry has been filtered out
             // TODO: proper support for multiple input files
@@ -177,8 +207,7 @@ namespace ILCompiler
             if (_ibcTuning)
                 corJitFlags.Add(CorJitFlag.CORJIT_FLAG_BBINSTR);
 
-            corJitFlags.Add(CorJitFlag.CORJIT_FLAG_FEATURE_SIMD);
-            JitConfigProvider.Initialize(corJitFlags, _ryujitOptions, _jitPath);
+            JitConfigProvider.Initialize(_context.Target, corJitFlags, _ryujitOptions, _jitPath);
 
             return new ReadyToRunCodegenCompilation(
                 graph,
@@ -188,9 +217,13 @@ namespace ILCompiler
                 _logger,
                 new DependencyAnalysis.ReadyToRun.DevirtualizationManager(_compilationGroup),
                 _inputFiles,
+                _instructionSetSupport,
                 _resilient,
                 _generateMapFile,
-                _parallelism);
+                _parallelism,
+                _profileData,
+                _r2rMethodLayoutAlgorithm,
+                _r2rFileLayoutAlgorithm);
         }
     }
 }

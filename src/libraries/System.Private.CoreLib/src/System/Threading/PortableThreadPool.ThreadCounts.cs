@@ -13,7 +13,7 @@ namespace System.Threading
         /// Tracks information on the number of threads we want/have in different states in our thread pool.
         /// </summary>
         [StructLayout(LayoutKind.Explicit)]
-        struct ThreadCounts
+        private struct ThreadCounts
         {
             /// <summary>
             /// Max possible thread pool threads we want to have.

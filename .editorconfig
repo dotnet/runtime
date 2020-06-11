@@ -155,6 +155,7 @@ csharp_space_between_square_brackets = false
 
 # Analyzers
 dotnet_code_quality.ca1802.api_surface = private, internal
+dotnet_code_quality.CA2208.api_surface = public
 
 # C++ Files
 [*.{cpp,h,in}]
@@ -164,6 +165,9 @@ indent_brace_style = Allman
 # Xml project files
 [*.{csproj,vbproj,vcxproj,vcxproj.filters,proj,nativeproj,locproj}]
 indent_size = 2
+
+[*.{csproj,vbproj,proj,nativeproj,locproj}]
+charset = utf-8
 
 # Xml build files
 [*.builds]

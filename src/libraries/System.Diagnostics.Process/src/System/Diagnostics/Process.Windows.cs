@@ -116,6 +116,7 @@ namespace System.Diagnostics
         private void RefreshCore()
         {
             _signaled = false;
+            _haveMainWindow = false;
         }
 
         /// <summary>Additional logic invoked when the Process is closed.</summary>
@@ -535,7 +536,7 @@ namespace System.Diagnostics
                         environmentBlock = GetEnvironmentVariablesBlock(startInfo._environmentVariables!);
                     }
                     string workingDirectory = startInfo.WorkingDirectory;
-                    if (workingDirectory == string.Empty)
+                    if (workingDirectory.Length == 0)
                         workingDirectory = Directory.GetCurrentDirectory();
 
                     bool retVal;
@@ -679,14 +680,14 @@ namespace System.Diagnostics
             bool fileNameIsQuoted = (fileName.StartsWith('\"') && fileName.EndsWith('\"'));
             if (!fileNameIsQuoted)
             {
-                commandLine.Append("\"");
+                commandLine.Append('"');
             }
 
             commandLine.Append(fileName);
 
             if (!fileNameIsQuoted)
             {
-                commandLine.Append("\"");
+                commandLine.Append('"');
             }
 
             if (!string.IsNullOrEmpty(arguments))

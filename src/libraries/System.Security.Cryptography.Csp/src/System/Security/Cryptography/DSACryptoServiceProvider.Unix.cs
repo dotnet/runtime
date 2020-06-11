@@ -5,6 +5,7 @@
 using Internal.Cryptography;
 using Internal.NativeCrypto;
 using System.IO;
+using System.Diagnostics;
 
 namespace System.Security.Cryptography
 {

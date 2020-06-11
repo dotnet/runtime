@@ -22,6 +22,7 @@
 #include "eeconfig.h"
 #include "eehash.h"
 #include "interoputil.h"
+#include "comdelegate.h"
 #include "typedesc.h"
 #include "virtualcallstub.h"
 #include "contractimpl.h"
@@ -377,49 +378,6 @@ FCIMPL2(FC_BOOL_RET, RuntimeTypeHandle::TypeNEQ, Object* left, Object* right)
 FCIMPLEND
 
 #include <optdefault.h>
-
-
-
-
-#ifdef FEATURE_COMINTEROP
-FCIMPL1(FC_BOOL_RET, RuntimeTypeHandle::IsWindowsRuntimeObjectType, ReflectClassBaseObject *rtTypeUNSAFE)
-{
-    FCALL_CONTRACT;
-
-    BOOL isWindowsRuntimeType = FALSE;
-
-    TypeHandle typeHandle = rtTypeUNSAFE->GetType();
-    MethodTable *pMT = typeHandle.GetMethodTable();
-
-    if (pMT != NULL)
-    {
-        isWindowsRuntimeType = pMT->IsWinRTObjectType();
-    }
-
-    FC_RETURN_BOOL(isWindowsRuntimeType);
-}
-FCIMPLEND
-
-#ifdef FEATURE_COMINTEROP_WINRT_MANAGED_ACTIVATION
-FCIMPL1(FC_BOOL_RET, RuntimeTypeHandle::IsTypeExportedToWindowsRuntime, ReflectClassBaseObject *rtTypeUNSAFE)
-{
-    FCALL_CONTRACT;
-
-    BOOL isExportedToWinRT = FALSE;
-
-    TypeHandle typeHandle = rtTypeUNSAFE->GetType();
-    MethodTable *pMT = typeHandle.GetMethodTable();
-
-    if (pMT != NULL)
-    {
-        isExportedToWinRT = pMT->IsExportedToWinRT();
-    }
-
-    FC_RETURN_BOOL(isExportedToWinRT);
-}
-FCIMPLEND
-#endif
-#endif // FEATURE_COMINTEROP
 
 NOINLINE static MethodDesc * RestoreMethodHelper(MethodDesc * pMethod, LPVOID __me)
 {
@@ -1109,13 +1067,28 @@ PVOID QCALLTYPE RuntimeTypeHandle::GetGCHandle(QCall::TypeHandle pTypeHandle, IN
     GCX_COOP();
 
     TypeHandle th = pTypeHandle.AsTypeHandle();
-    assert(handleType >= HNDTYPE_WEAK_SHORT && handleType <= HNDTYPE_WEAK_WINRT);
+    assert(handleType >= HNDTYPE_WEAK_SHORT && handleType <= HNDTYPE_WEAK_NATIVE_COM);
     objHandle = AppDomain::GetCurrentDomain()->CreateTypedHandle(NULL, static_cast<HandleType>(handleType));
     th.GetLoaderAllocator()->RegisterHandleForCleanup(objHandle);
 
     END_QCALL;
 
     return objHandle;
+}
+
+void QCALLTYPE RuntimeTypeHandle::FreeGCHandle(QCall::TypeHandle pTypeHandle, OBJECTHANDLE objHandle)
+{
+    QCALL_CONTRACT;
+
+    BEGIN_QCALL;
+
+    GCX_COOP();
+
+    TypeHandle th = pTypeHandle.AsTypeHandle();
+    th.GetLoaderAllocator()->UnregisterHandleFromCleanup(objHandle);
+    DestroyTypedHandle(objHandle);
+
+    END_QCALL;
 }
 
 void QCALLTYPE RuntimeTypeHandle::VerifyInterfaceIsImplemented(QCall::TypeHandle pTypeHandle, QCall::TypeHandle pIFaceHandle)
@@ -1401,7 +1374,7 @@ void QCALLTYPE RuntimeTypeHandle::GetTypeByNameUsingCARules(LPCWSTR pwzClassName
 void QCALLTYPE RuntimeTypeHandle::GetTypeByName(LPCWSTR pwzClassName, BOOL bThrowOnError, BOOL bIgnoreCase,
                                                 QCall::StackCrawlMarkHandle pStackMark,
                                                 QCall::ObjectHandleOnStack pAssemblyLoadContext,
-                                                BOOL bLoadTypeFromPartialNameHack, QCall::ObjectHandleOnStack retType,
+                                                QCall::ObjectHandleOnStack retType,
                                                 QCall::ObjectHandleOnStack keepAlive)
 {
     QCALL_CONTRACT;
@@ -1429,7 +1402,7 @@ void QCALLTYPE RuntimeTypeHandle::GetTypeByName(LPCWSTR pwzClassName, BOOL bThro
 
         typeHandle = TypeName::GetTypeManaged(pwzClassName, NULL, bThrowOnError, bIgnoreCase, /*bProhibitAsmQualifiedName =*/ FALSE,
                                               SystemDomain::GetCallersAssembly(pStackMark),
-                                              bLoadTypeFromPartialNameHack, (OBJECTREF*)keepAlive.m_ppObject,
+                                              (OBJECTREF*)keepAlive.m_ppObject,
                                               pPrivHostBinder);
     }
 
@@ -1706,6 +1679,28 @@ FCIMPL1(IMDInternalImport*, RuntimeTypeHandle::GetMetadataImport, ReflectClassBa
 }
 FCIMPLEND
 
+PVOID QCALLTYPE RuntimeTypeHandle::AllocateTypeAssociatedMemory(QCall::TypeHandle type, UINT32 size)
+{
+    QCALL_CONTRACT;
+
+    void *allocatedMemory = nullptr;
+
+    BEGIN_QCALL;
+
+    TypeHandle typeHandle = type.AsTypeHandle();
+    _ASSERTE(!typeHandle.IsNull());
+
+    // Get the loader allocator for the associated type.
+    // Allocating using the type's associated loader allocator means
+    // that the memory will be freed when the type is unloaded.
+    PTR_LoaderAllocator loaderAllocator = typeHandle.GetMethodTable()->GetLoaderAllocator();
+    LoaderHeap* loaderHeap = loaderAllocator->GetHighFrequencyHeap();
+    allocatedMemory = loaderHeap->AllocMem(S_SIZE_T(size));
+
+    END_QCALL;
+
+    return allocatedMemory;
+}
 
 //***********************************************************************************
 //***********************************************************************************
@@ -1715,11 +1710,29 @@ void * QCALLTYPE RuntimeMethodHandle::GetFunctionPointer(MethodDesc * pMethod)
 {
     QCALL_CONTRACT;
 
-    void* funcPtr = 0;
+    void* funcPtr = NULL;
 
     BEGIN_QCALL;
 
+    // Ensure the method is active so
+    // the function pointer can be used.
+    pMethod->EnsureActive();
+
+#if defined(TARGET_X86)
+    // Deferring X86 support until a need is observed or
+    // time permits investigation into all the potential issues.
+    // https://github.com/dotnet/runtime/issues/33582
+    if (pMethod->HasUnmanagedCallersOnlyAttribute())
+    {
+        funcPtr = (void*)COMDelegate::ConvertToUnmanagedCallback(pMethod);
+    }
+    else
+    {
+        funcPtr = (void*)pMethod->GetMultiCallableAddrOfCode();
+    }
+#else
     funcPtr = (void*)pMethod->GetMultiCallableAddrOfCode();
+#endif
 
     END_QCALL;
 
@@ -2132,7 +2145,8 @@ FCIMPL2(FC_BOOL_RET, SignatureNative::CompareSig, SignatureNative* pLhsUNSAFE, S
     {
         ret = MetaSig::CompareMethodSigs(
             gc.pLhs->GetCorSig(), gc.pLhs->GetCorSigSize(), gc.pLhs->GetModule(), NULL,
-            gc.pRhs->GetCorSig(), gc.pRhs->GetCorSigSize(), gc.pRhs->GetModule(), NULL);
+            gc.pRhs->GetCorSig(), gc.pRhs->GetCorSigSize(), gc.pRhs->GetModule(), NULL,
+            FALSE);
     }
     HELPER_METHOD_FRAME_END();
     FC_RETURN_BOOL(ret);

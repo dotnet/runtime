@@ -969,7 +969,7 @@ namespace System.Threading.Tasks.Tests
                     Assert.True(usedScheduler == myTaskScheduler, "TestParallelScheduler:    > FAILED.  PInvoke: Failed to run with TS.Current when null was specified.");
 
                     // Some tests for wonky behavior seen before fixes
-                    TaskCompletionSource<object> tcs = new TaskCompletionSource<object>();
+                    TaskCompletionSource tcs = new TaskCompletionSource();
                     bool timeExpired = false;
                     Task continuation = tcs.Task.ContinueWith(delegate
                     {
@@ -980,7 +980,7 @@ namespace System.Threading.Tasks.Tests
                     Task delayedOperation = Task.Factory.StartNew(delegate
                     {
                         timeExpired = true;
-                        tcs.SetResult(null);
+                        tcs.SetResult();
                     });
 
                     Task.WaitAll(tcs.Task, continuation);

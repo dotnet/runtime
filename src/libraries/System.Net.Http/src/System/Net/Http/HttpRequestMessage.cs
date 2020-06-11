@@ -20,12 +20,12 @@ namespace System.Net.Http
         private int _sendStatus = MessageNotYetSent;
 
         private HttpMethod _method;
-        private Uri _requestUri;
-        private HttpRequestHeaders _headers;
+        private Uri? _requestUri;
+        private HttpRequestHeaders? _headers;
         private Version _version;
-        private HttpContent _content;
+        private HttpContent? _content;
         private bool _disposed;
-        private IDictionary<string, object> _properties;
+        private IDictionary<string, object?>? _properties;
 
         public Version Version
         {
@@ -42,7 +42,7 @@ namespace System.Net.Http
             }
         }
 
-        public HttpContent Content
+        public HttpContent? Content
         {
             get { return _content; }
             set
@@ -81,7 +81,7 @@ namespace System.Net.Http
             }
         }
 
-        public Uri RequestUri
+        public Uri? RequestUri
         {
             get { return _requestUri; }
             set
@@ -112,31 +112,31 @@ namespace System.Net.Http
 
         internal bool HasHeaders => _headers != null;
 
-        public IDictionary<string, object> Properties
+        public IDictionary<string, object?> Properties
         {
             get
             {
                 if (_properties == null)
                 {
-                    _properties = new Dictionary<string, object>();
+                    _properties = new Dictionary<string, object?>();
                 }
                 return _properties;
             }
         }
 
         public HttpRequestMessage()
-            : this(HttpMethod.Get, (Uri)null)
+            : this(HttpMethod.Get, (Uri?)null)
         {
         }
 
-        public HttpRequestMessage(HttpMethod method, Uri requestUri)
+        public HttpRequestMessage(HttpMethod method, Uri? requestUri)
         {
             if (NetEventSource.IsEnabled) NetEventSource.Enter(this, method, requestUri);
             InitializeValues(method, requestUri);
             if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
         }
 
-        public HttpRequestMessage(HttpMethod method, string requestUri)
+        public HttpRequestMessage(HttpMethod method, string? requestUri)
         {
             if (NetEventSource.IsEnabled) NetEventSource.Enter(this, method, requestUri);
 
@@ -177,7 +177,9 @@ namespace System.Net.Http
             return sb.ToString();
         }
 
-        private void InitializeValues(HttpMethod method, Uri requestUri)
+        [MemberNotNull(nameof(_method))]
+        [MemberNotNull(nameof(_version))]
+        private void InitializeValues(HttpMethod method, Uri? requestUri)
         {
             if (method == null)
             {

@@ -11,9 +11,7 @@
 #include "common.h"
 #include "pefile.h"
 #include "eecontract.h"
-#include "apithreadstress.h"
 #include "eeconfig.h"
-#include "product_version.h"
 #include "eventtrace.h"
 #include "dbginterface.h"
 #include "peimagelayout.inl"
@@ -297,12 +295,15 @@ void PEFile::LoadLibrary(BOOL allowNativeSkip/*=TRUE*/) // if allowNativeSkip==F
             if (GetILimage()->IsFile())
             {
 #ifdef TARGET_UNIX
-                if (GetILimage()->IsILOnly())
+                bool loadILImage = GetILimage()->IsILOnly();
+#else // TARGET_UNIX
+                bool loadILImage = GetILimage()->IsILOnly() && GetILimage()->IsInBundle();
+#endif // TARGET_UNIX
+                if (loadILImage)
                 {
                     GetILimage()->Load();
                 }
                 else
-#endif // TARGET_UNIX
                 {
                     GetILimage()->LoadFromMapped();
                 }
@@ -1123,10 +1124,10 @@ BOOL RuntimeVerifyNativeImageVersion(const CORCOMPILE_VERSION_INFO *info, PEAsse
     // Check that the EE version numbers are the same.
     //
 
-    if (info->wVersionMajor != CLR_MAJOR_VERSION
-        || info->wVersionMinor != CLR_MINOR_VERSION
-        || info->wVersionBuildNumber != CLR_BUILD_VERSION
-        || info->wVersionPrivateBuildNumber != CLR_BUILD_VERSION_QFE)
+    if (info->wVersionMajor != RuntimeFileMajorVersion
+        || info->wVersionMinor != RuntimeFileMinorVersion
+        || info->wVersionBuildNumber != RuntimeFileBuildVersion
+        || info->wVersionPrivateBuildNumber != RuntimeFileRevisionVersion)
     {
         RuntimeVerifyLog(LL_ERROR, pLogAsm, W("CLR version recorded in native image doesn't match the current CLR."));
         return FALSE;
@@ -1512,9 +1513,7 @@ void PEFile::GetEmbeddedResource(DWORD dwOffset, DWORD *cbResource, PBYTE *pbInM
 PEAssembly *
 PEFile::LoadAssembly(
     mdAssemblyRef       kAssemblyRef,
-    IMDInternalImport * pImport,                // = NULL
-    LPCUTF8             szWinRtTypeNamespace,   // = NULL
-    LPCUTF8             szWinRtTypeClassName)   // = NULL
+    IMDInternalImport * pImport)
 {
     CONTRACT(PEAssembly *)
     {
@@ -1540,8 +1539,6 @@ PEFile::LoadAssembly(
     AssemblySpec spec;
 
     spec.InitializeSpec(kAssemblyRef, pImport, GetAppDomain()->FindAssembly(GetAssembly()));
-    if (szWinRtTypeClassName != NULL)
-        spec.SetWindowsRuntimeType(szWinRtTypeNamespace, szWinRtTypeClassName);
 
     RETURN GetAppDomain()->BindAssemblySpec(&spec, TRUE);
 }
@@ -2480,14 +2477,6 @@ AssemblyLoadContext* PEFile::GetAssemblyLoadContext()
         IfFailThrow(pBindingContext->GetBinderID(&assemblyBinderID));
 
         pOpaqueBinder = reinterpret_cast<ICLRPrivBinder*>(assemblyBinderID);
-
-#ifdef FEATURE_COMINTEROP
-        // Treat WinRT assemblies (bound using the WinRT binder) as if they were loaded into the TPA ALC
-        if (AreSameBinderInstance(AppDomain::GetCurrentDomain()->GetWinRtBinder(), pOpaqueBinder))
-        {
-            pOpaqueBinder = NULL;
-        }
-#endif
     }
 
     return (pOpaqueBinder != NULL) ? (AssemblyLoadContext*)pOpaqueBinder : AppDomain::GetCurrentDomain()->GetTPABinderContext();

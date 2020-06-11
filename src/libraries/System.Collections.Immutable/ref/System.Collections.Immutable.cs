@@ -89,7 +89,7 @@ namespace System.Collections.Immutable
         public static System.Collections.Immutable.ImmutableArray<T> Create<T>(T item1, T item2) { throw null; }
         public static System.Collections.Immutable.ImmutableArray<T> Create<T>(T item1, T item2, T item3) { throw null; }
         public static System.Collections.Immutable.ImmutableArray<T> Create<T>(T item1, T item2, T item3, T item4) { throw null; }
-        public static System.Collections.Immutable.ImmutableArray<T> Create<T>(params T[] items) { throw null; }
+        public static System.Collections.Immutable.ImmutableArray<T> Create<T>(params T[]? items) { throw null; }
         public static System.Collections.Immutable.ImmutableArray<T> Create<T>(T[] items, int start, int length) { throw null; }
         public static System.Collections.Immutable.ImmutableArray<TSource> ToImmutableArray<TSource>(this System.Collections.Generic.IEnumerable<TSource> items) { throw null; }
         public static System.Collections.Immutable.ImmutableArray<TSource> ToImmutableArray<TSource>(this System.Collections.Immutable.ImmutableArray<TSource>.Builder builder) { throw null; }
@@ -413,7 +413,12 @@ namespace System.Collections.Immutable
         public static System.Collections.Immutable.ImmutableHashSet<TSource> ToImmutableHashSet<TSource>(this System.Collections.Generic.IEnumerable<TSource> source, System.Collections.Generic.IEqualityComparer<TSource>? equalityComparer) { throw null; }
         public static System.Collections.Immutable.ImmutableHashSet<TSource> ToImmutableHashSet<TSource>(this System.Collections.Immutable.ImmutableHashSet<TSource>.Builder builder) { throw null; }
     }
+
+    #if !NETSTANDARD1_0 && !NETSTANDARD1_3 && !NETSTANDARD2_0
+    public sealed partial class ImmutableHashSet<T> : System.Collections.Generic.ICollection<T>, System.Collections.Generic.IEnumerable<T>, System.Collections.Generic.IReadOnlyCollection<T>, System.Collections.Generic.ISet<T>, System.Collections.Generic.IReadOnlySet<T>, System.Collections.ICollection, System.Collections.IEnumerable, System.Collections.Immutable.IImmutableSet<T>
+#else
     public sealed partial class ImmutableHashSet<T> : System.Collections.Generic.ICollection<T>, System.Collections.Generic.IEnumerable<T>, System.Collections.Generic.IReadOnlyCollection<T>, System.Collections.Generic.ISet<T>, System.Collections.ICollection, System.Collections.IEnumerable, System.Collections.Immutable.IImmutableSet<T>
+#endif
     {
         internal ImmutableHashSet() { }
         public static readonly System.Collections.Immutable.ImmutableHashSet<T> Empty;
@@ -480,6 +485,7 @@ namespace System.Collections.Immutable
             public bool Remove(T item) { throw null; }
             public bool SetEquals(System.Collections.Generic.IEnumerable<T> other) { throw null; }
             public void SymmetricExceptWith(System.Collections.Generic.IEnumerable<T> other) { }
+            public bool TryGetValue(T equalValue, out T actualValue) { throw null; }
             void System.Collections.Generic.ICollection<T>.Add(T item) { }
             void System.Collections.Generic.ICollection<T>.CopyTo(T[] array, int arrayIndex) { }
             System.Collections.Generic.IEnumerator<T> System.Collections.Generic.IEnumerable<T>.GetEnumerator() { throw null; }
@@ -696,7 +702,7 @@ namespace System.Collections.Immutable
             System.Collections.Generic.IEnumerator<T> System.Collections.Generic.IEnumerable<T>.GetEnumerator() { throw null; }
             void System.Collections.ICollection.CopyTo(System.Array array, int arrayIndex) { }
             System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() { throw null; }
-            int System.Collections.IList.Add(object value) { throw null; }
+            int System.Collections.IList.Add(object? value) { throw null; }
             void System.Collections.IList.Clear() { }
             bool System.Collections.IList.Contains(object? value) { throw null; }
             int System.Collections.IList.IndexOf(object? value) { throw null; }
@@ -813,7 +819,7 @@ namespace System.Collections.Immutable
         bool System.Collections.Generic.IDictionary<TKey,TValue>.Remove(TKey key) { throw null; }
         System.Collections.Generic.IEnumerator<System.Collections.Generic.KeyValuePair<TKey, TValue>> System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<TKey,TValue>>.GetEnumerator() { throw null; }
         void System.Collections.ICollection.CopyTo(System.Array array, int index) { }
-        void System.Collections.IDictionary.Add(object key, object value) { }
+        void System.Collections.IDictionary.Add(object key, object? value) { }
         void System.Collections.IDictionary.Clear() { }
         bool System.Collections.IDictionary.Contains(object key) { throw null; }
         System.Collections.IDictionaryEnumerator System.Collections.IDictionary.GetEnumerator() { throw null; }
@@ -910,7 +916,12 @@ namespace System.Collections.Immutable
         public static System.Collections.Immutable.ImmutableSortedSet<TSource> ToImmutableSortedSet<TSource>(this System.Collections.Generic.IEnumerable<TSource> source, System.Collections.Generic.IComparer<TSource>? comparer) { throw null; }
         public static System.Collections.Immutable.ImmutableSortedSet<TSource> ToImmutableSortedSet<TSource>(this System.Collections.Immutable.ImmutableSortedSet<TSource>.Builder builder) { throw null; }
     }
+
+    #if !NETSTANDARD1_0 && !NETSTANDARD1_3 && !NETSTANDARD2_0
+    public sealed partial class ImmutableSortedSet<T> : System.Collections.Generic.ICollection<T>, System.Collections.Generic.IEnumerable<T>, System.Collections.Generic.IList<T>, System.Collections.Generic.IReadOnlyCollection<T>, System.Collections.Generic.IReadOnlyList<T>, System.Collections.Generic.ISet<T>, System.Collections.Generic.IReadOnlySet<T>, System.Collections.ICollection, System.Collections.IEnumerable, System.Collections.IList, System.Collections.Immutable.IImmutableSet<T>
+    #else
     public sealed partial class ImmutableSortedSet<T> : System.Collections.Generic.ICollection<T>, System.Collections.Generic.IEnumerable<T>, System.Collections.Generic.IList<T>, System.Collections.Generic.IReadOnlyCollection<T>, System.Collections.Generic.IReadOnlyList<T>, System.Collections.Generic.ISet<T>, System.Collections.ICollection, System.Collections.IEnumerable, System.Collections.IList, System.Collections.Immutable.IImmutableSet<T>
+    #endif
     {
         internal ImmutableSortedSet() { }
         public static readonly System.Collections.Immutable.ImmutableSortedSet<T> Empty;
@@ -1011,6 +1022,7 @@ namespace System.Collections.Immutable
             public System.Collections.Generic.IEnumerable<T> Reverse() { throw null; }
             public bool SetEquals(System.Collections.Generic.IEnumerable<T> other) { throw null; }
             public void SymmetricExceptWith(System.Collections.Generic.IEnumerable<T> other) { }
+            public bool TryGetValue(T equalValue, out T actualValue) { throw null; }
             void System.Collections.Generic.ICollection<T>.Add(T item) { }
             void System.Collections.Generic.ICollection<T>.CopyTo(T[] array, int arrayIndex) { }
             System.Collections.Generic.IEnumerator<T> System.Collections.Generic.IEnumerable<T>.GetEnumerator() { throw null; }

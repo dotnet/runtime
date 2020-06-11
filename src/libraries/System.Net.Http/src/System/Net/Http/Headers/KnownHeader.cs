@@ -17,11 +17,10 @@ namespace System.Net.Http.Headers
             Debug.Assert(name[0] == ':' || HttpRuleParser.GetTokenLength(name, 0) == name.Length);
         }
 
-        public KnownHeader(string name, HttpHeaderType headerType, HttpHeaderParser parser, string[] knownValues = null, int? http2StaticTableIndex = null, int? http3StaticTableIndex = null)
+        public KnownHeader(string name, HttpHeaderType headerType, HttpHeaderParser? parser, string[]? knownValues = null, int? http2StaticTableIndex = null, int? http3StaticTableIndex = null)
         {
             Debug.Assert(!string.IsNullOrEmpty(name));
             Debug.Assert(name[0] == ':' || HttpRuleParser.GetTokenLength(name, 0) == name.Length);
-            Debug.Assert(knownValues == null || (headerType & HttpHeaderType.Custom) != HttpHeaderType.Custom);
 
             Name = name;
             HeaderType = headerType;
@@ -45,13 +44,13 @@ namespace System.Net.Http.Headers
         }
 
         public string Name { get; }
-        public HttpHeaderParser Parser { get; }
+        public HttpHeaderParser? Parser { get; }
         public HttpHeaderType HeaderType { get; }
 
         /// <summary>
         /// If a raw string is a known value, this instance will be returned rather than allocating a new string.
         /// </summary>
-        public string[] KnownValues { get; }
+        public string[]? KnownValues { get; }
         public byte[] AsciiBytesWithColonSpace { get; }
         public HeaderDescriptor Descriptor => new HeaderDescriptor(this);
         public byte[] Http2EncodedName { get; }

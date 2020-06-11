@@ -18,8 +18,7 @@ namespace System.Net.Http
         internal const int MaxInt64Digits = 19;
         internal const int MaxInt32Digits = 10;
 
-        // iso-8859-1, Western European (ISO)
-        internal static readonly Encoding DefaultHttpEncoding = Encoding.GetEncoding(28591);
+        internal static Encoding DefaultHttpEncoding => Encoding.Latin1;
 
         private static bool[] CreateTokenChars()
         {
@@ -246,7 +245,7 @@ namespace System.Net.Http
             return current - startIndex;
         }
 
-        internal static int GetHostLength(string input, int startIndex, bool allowToken, out string host)
+        internal static int GetHostLength(string input, int startIndex, bool allowToken, out string? host)
         {
             Debug.Assert(input != null);
             Debug.Assert(startIndex >= 0);
@@ -425,8 +424,7 @@ namespace System.Net.Http
         private static bool IsValidHostName(string host)
         {
             // Also add user info (u@) to make sure 'host' doesn't include user info.
-            Uri hostUri;
-            return Uri.TryCreate("http://u@" + host + "/", UriKind.Absolute, out hostUri);
+            return Uri.TryCreate("http://u@" + host + "/", UriKind.Absolute, out Uri? hostUri);
         }
     }
 }

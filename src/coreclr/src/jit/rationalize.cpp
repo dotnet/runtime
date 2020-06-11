@@ -295,7 +295,7 @@ static void RewriteAssignmentIntoStoreLclCore(GenTreeOp* assignment,
         store->AsLclFld()->SetFieldSeq(var->AsLclFld()->GetFieldSeq());
     }
 
-    copyFlags(store, var, GTF_LIVENESS_MASK);
+    copyFlags(store, var, (GTF_LIVENESS_MASK | GTF_VAR_MULTIREG));
     store->gtFlags &= ~GTF_REVERSE_OPS;
 
     store->gtType = var->TypeGet();
@@ -768,6 +768,40 @@ Compiler::fgWalkResult Rationalizer::RewriteNode(GenTree** useEdge, Compiler::Ge
         break;
 #endif // FEATURE_SIMD
 
+#ifdef FEATURE_HW_INTRINSICS
+        case GT_HWINTRINSIC:
+        {
+            GenTreeHWIntrinsic* hwIntrinsicNode = node->AsHWIntrinsic();
+
+            if (!hwIntrinsicNode->isSIMD())
+            {
+                break;
+            }
+
+            noway_assert(comp->supportSIMDTypes());
+
+            // TODO-1stClassStructs: This should be handled more generally for enregistered or promoted
+            // structs that are passed or returned in a different register type than their enregistered
+            // type(s).
+            if ((hwIntrinsicNode->gtType == TYP_I_IMPL) && (hwIntrinsicNode->gtSIMDSize == TARGET_POINTER_SIZE))
+            {
+#ifdef TARGET_ARM64
+                // Special case for GetElement/ToScalar because they take Vector64<T> and return T
+                // and T can be long or ulong.
+                if (!(hwIntrinsicNode->gtHWIntrinsicId == NI_Vector64_GetElement ||
+                      hwIntrinsicNode->gtHWIntrinsicId == NI_Vector64_ToScalar))
+#endif
+                {
+                    // This happens when it is consumed by a GT_RET_EXPR.
+                    // It can only be a Vector2f or Vector2i.
+                    assert(genTypeSize(hwIntrinsicNode->gtSIMDBaseType) == 4);
+                    hwIntrinsicNode->gtType = TYP_SIMD8;
+                }
+            }
+            break;
+        }
+#endif // FEATURE_HW_INTRINSICS
+
         default:
             // These nodes should not be present in HIR.
             assert(!node->OperIs(GT_CMP, GT_SETCC, GT_JCC, GT_JCMP, GT_LOCKADD));
@@ -817,7 +851,13 @@ Compiler::fgWalkResult Rationalizer::RewriteNode(GenTree** useEdge, Compiler::Ge
     return Compiler::WALK_CONTINUE;
 }
 
-void Rationalizer::DoPhase()
+//------------------------------------------------------------------------
+// DoPhase: Run the rationalize over the method IR.
+//
+// Returns:
+//    PhaseStatus indicating, what, if anything, was modified
+//
+PhaseStatus Rationalizer::DoPhase()
 {
     class RationalizeVisitor final : public GenTreeVisitor<RationalizeVisitor>
     {
@@ -911,4 +951,6 @@ void Rationalizer::DoPhase()
     }
 
     comp->compRationalIRForm = true;
+
+    return PhaseStatus::MODIFIED_EVERYTHING;
 }

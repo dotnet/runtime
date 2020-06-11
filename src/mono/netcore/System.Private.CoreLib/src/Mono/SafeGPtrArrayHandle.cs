@@ -10,29 +10,33 @@
 //
 
 using System;
-using System.Runtime.CompilerServices;
 
-namespace Mono {
-	internal struct SafeGPtrArrayHandle : IDisposable {
-		RuntimeGPtrArrayHandle handle;
+namespace Mono
+{
+    internal struct SafeGPtrArrayHandle : IDisposable
+    {
+        private RuntimeGPtrArrayHandle handle;
 
-		internal SafeGPtrArrayHandle (IntPtr ptr)
-		{
-			handle = new RuntimeGPtrArrayHandle (ptr);
-		}
+        internal SafeGPtrArrayHandle(IntPtr ptr)
+        {
+            handle = new RuntimeGPtrArrayHandle(ptr);
+        }
 
-		public void Dispose () {
-			RuntimeGPtrArrayHandle.DestroyAndFree (ref handle);
-		}
+        public void Dispose()
+        {
+            RuntimeGPtrArrayHandle.DestroyAndFree(ref handle);
+        }
 
-		internal int Length {
-			get {
-				return handle.Length;
-			}
-		}
+        internal int Length
+        {
+            get
+            {
+                return handle.Length;
+            }
+        }
 
-		internal IntPtr this[int i] => handle[i];
-	}
+        internal IntPtr this[int i] => handle[i];
+    }
 
 
 }

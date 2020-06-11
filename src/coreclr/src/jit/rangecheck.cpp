@@ -348,7 +348,13 @@ bool RangeCheck::IsBinOpMonotonicallyIncreasing(GenTreeOp* binop)
             return IsMonotonicallyIncreasing(op1, true) && IsMonotonicallyIncreasing(op2, true);
 
         case GT_CNS_INT:
-            return (op2->AsIntConCommon()->IconValue() >= 0) && IsMonotonicallyIncreasing(op1, false);
+            if (op2->AsIntConCommon()->IconValue() < 0)
+            {
+                JITDUMP("Not monotonically increasing because of encountered negative constant\n");
+                return false;
+            }
+
+            return IsMonotonicallyIncreasing(op1, false);
 
         default:
             JITDUMP("Not monotonically increasing because expression is not recognized.\n");
@@ -419,6 +425,10 @@ bool RangeCheck::IsMonotonicallyIncreasing(GenTree* expr, bool rejectNegativeCon
             }
         }
         return true;
+    }
+    else if (expr->OperGet() == GT_COMMA)
+    {
+        return IsMonotonicallyIncreasing(expr->gtEffectiveVal(), rejectNegativeConst);
     }
     JITDUMP("Unknown tree type\n");
     return false;
@@ -729,7 +739,7 @@ void RangeCheck::MergeEdgeAssertions(GenTreeLclVarCommon* lcl, ASSERT_VALARG_TP 
 }
 
 // Merge assertions from the pred edges of the block, i.e., check for any assertions about "op's" value numbers for phi
-// arguments. If not a phi argument, check if we assertions about local variables.
+// arguments. If not a phi argument, check if we have assertions about local variables.
 void RangeCheck::MergeAssertion(BasicBlock* block, GenTree* op, Range* pRange DEBUGARG(int indent))
 {
     JITDUMP("Merging assertions from pred edges of " FMT_BB " for op [%06d] " FMT_VN "\n", block->bbNum,
@@ -763,7 +773,7 @@ void RangeCheck::MergeAssertion(BasicBlock* block, GenTree* op, Range* pRange DE
         assertions = block->bbAssertionIn;
     }
 
-    if (!BitVecOps::MayBeUninit(assertions))
+    if (!BitVecOps::MayBeUninit(assertions) && (m_pCompiler->GetAssertionCount() > 0))
     {
         // Perform the merge step to fine tune the range value.
         MergeEdgeAssertions(op->AsLclVarCommon(), assertions, pRange);
@@ -773,10 +783,52 @@ void RangeCheck::MergeAssertion(BasicBlock* block, GenTree* op, Range* pRange DE
 // Compute the range for a binary operation.
 Range RangeCheck::ComputeRangeForBinOp(BasicBlock* block, GenTreeOp* binop, bool monIncreasing DEBUGARG(int indent))
 {
-    assert(binop->OperIs(GT_ADD));
+    assert(binop->OperIs(GT_ADD, GT_AND, GT_RSH, GT_LSH, GT_UMOD));
 
     GenTree* op1 = binop->gtGetOp1();
     GenTree* op2 = binop->gtGetOp2();
+
+    if (binop->OperIs(GT_AND, GT_RSH, GT_LSH, GT_UMOD))
+    {
+        if (!op2->IsIntCnsFitsInI32())
+        {
+            // only cns is supported for op2 at the moment for &,%,<<,>> operators
+            return Range(Limit::keUnknown);
+        }
+
+        int icon = -1;
+        if (binop->OperIs(GT_AND))
+        {
+            // x & cns -> [0..cns]
+            icon = static_cast<int>(op2->AsIntCon()->IconValue());
+        }
+        else if (binop->OperIs(GT_UMOD))
+        {
+            // x % cns -> [0..cns-1]
+            icon = static_cast<int>(op2->AsIntCon()->IconValue()) - 1;
+        }
+        else if (binop->OperIs(GT_RSH, GT_LSH) && op1->OperIs(GT_AND) && op1->AsOp()->gtGetOp2()->IsIntCnsFitsInI32())
+        {
+            // (x & cns1) >> cns2 -> [0..cns1>>cns2]
+            int icon1 = static_cast<int>(op1->AsOp()->gtGetOp2()->AsIntCon()->IconValue());
+            int icon2 = static_cast<int>(op2->AsIntCon()->IconValue());
+            if ((icon1 >= 0) && (icon2 >= 0) && (icon2 < 32))
+            {
+                icon = binop->OperIs(GT_RSH) ? (icon1 >> icon2) : (icon1 << icon2);
+            }
+        }
+
+        if (icon < 0)
+        {
+            return Range(Limit::keUnknown);
+        }
+        Range range(Limit(Limit::keConstant, 0), Limit(Limit::keConstant, icon));
+        JITDUMP("Limit range to %s\n", range.ToString(m_pCompiler->getAllocatorDebugOnly()));
+        return range;
+    }
+
+    // other operators are expected to be handled above.
+    assert(binop->OperIs(GT_ADD));
 
     Range* op1RangeCached = nullptr;
     Range  op1Range       = Limit(Limit::keUndef);
@@ -847,7 +899,7 @@ Range RangeCheck::ComputeRangeForLocalDef(BasicBlock*          block,
     }
 #endif
     Range range = GetRange(ssaDef->GetBlock(), ssaDef->GetAssignment()->gtGetOp2(), monIncreasing DEBUGARG(indent));
-    if (!BitVecOps::MayBeUninit(block->bbAssertionIn))
+    if (!BitVecOps::MayBeUninit(block->bbAssertionIn) && (m_pCompiler->GetAssertionCount() > 0))
     {
         JITDUMP("Merge assertions from " FMT_BB ":%s for assignment about [%06d]\n", block->bbNum,
                 BitVecOps::ToString(m_pCompiler->apTraits, block->bbAssertionIn),
@@ -1032,6 +1084,12 @@ bool RangeCheck::ComputeDoesOverflow(BasicBlock* block, GenTree* expr)
     {
         overflows = DoesBinOpOverflow(block, expr->AsOp());
     }
+    // GT_AND, GT_UMOD, GT_LSH and GT_RSH don't overflow
+    // Actually, GT_LSH can overflow so it depends on the analysis done in ComputeRangeForBinOp
+    else if (expr->OperIs(GT_AND, GT_RSH, GT_LSH, GT_UMOD))
+    {
+        overflows = false;
+    }
     // Walk through phi arguments to check if phi arguments involve arithmetic that overflows.
     else if (expr->OperGet() == GT_PHI)
     {
@@ -1117,8 +1175,8 @@ Range RangeCheck::ComputeRange(BasicBlock* block, GenTree* expr, bool monIncreas
         range = ComputeRangeForLocalDef(block, expr->AsLclVarCommon(), monIncreasing DEBUGARG(indent + 1));
         MergeAssertion(block, expr, &range DEBUGARG(indent + 1));
     }
-    // If add, then compute the range for the operands and add them.
-    else if (expr->OperGet() == GT_ADD)
+    // compute the range for binary operation
+    else if (expr->OperIs(GT_ADD, GT_AND, GT_RSH, GT_LSH, GT_UMOD))
     {
         range = ComputeRangeForBinOp(block, expr->AsOp(), monIncreasing DEBUGARG(indent + 1));
     }
@@ -1168,6 +1226,10 @@ Range RangeCheck::ComputeRange(BasicBlock* block, GenTree* expr, bool monIncreas
         }
 
         JITDUMP("%s\n", range.ToString(m_pCompiler->getAllocatorDebugOnly()));
+    }
+    else if (expr->OperGet() == GT_COMMA)
+    {
+        range = GetRange(block, expr->gtEffectiveVal(), monIncreasing DEBUGARG(indent + 1));
     }
     else
     {

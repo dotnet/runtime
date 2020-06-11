@@ -97,7 +97,8 @@ enum gc_etw_segment_type
 enum gc_etw_alloc_kind
 {
     gc_etw_alloc_soh = 0,
-    gc_etw_alloc_loh = 1
+    gc_etw_alloc_loh = 1,
+    gc_etw_alloc_poh = 2
 };
 
 /* forward declerations */
@@ -261,8 +262,6 @@ public:
 
     virtual ~IGCHeapInternal() {}
 
-private:
-    virtual Object* AllocAlign8Common (void* hp, alloc_context* acontext, size_t size, uint32_t flags) = 0;
 public:
     virtual int GetNumberOfHeaps () = 0;
     virtual int GetHomeHeapNumber () = 0;

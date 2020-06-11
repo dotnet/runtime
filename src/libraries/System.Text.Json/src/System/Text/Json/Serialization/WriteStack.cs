@@ -35,7 +35,7 @@ namespace System.Text.Json
         public bool IsContinuation => _continuationCount != 0;
 
         // The bag of preservable references.
-        public DefaultReferenceResolver ReferenceResolver;
+        public ReferenceResolver ReferenceResolver;
 
         /// <summary>
         /// Internal flag to let us know that we need to read ahead in the inner read loop.
@@ -64,23 +64,23 @@ namespace System.Text.Json
         }
 
         /// <summary>
-        /// Initializes the state for the first type being serialized.
+        /// Initialize the state without delayed initialization of the JsonClassInfo.
         /// </summary>
-        public void InitializeRoot(Type type, JsonSerializerOptions options, bool supportContinuation)
+        public void Initialize(Type type, JsonSerializerOptions options, bool supportContinuation)
         {
             JsonClassInfo jsonClassInfo = options.GetOrAddClass(type);
-            Debug.Assert(jsonClassInfo.ClassType != ClassType.Invalid);
 
             Current.JsonClassInfo = jsonClassInfo;
 
             if ((jsonClassInfo.ClassType & (ClassType.Enumerable | ClassType.Dictionary)) == 0)
             {
-                Current.DeclaredJsonPropertyInfo = jsonClassInfo.PolicyProperty!;
+                Current.DeclaredJsonPropertyInfo = jsonClassInfo.PropertyInfoForClassInfo;
             }
 
-            if (options.ReferenceHandling.ShouldWritePreservedReferences())
+            bool preserveReferences = options.ReferenceHandler != null;
+            if (preserveReferences)
             {
-                ReferenceResolver = new DefaultReferenceResolver(writing: true);
+                ReferenceResolver = options.ReferenceHandler!.CreateResolver(writing: true);
             }
 
             SupportContinuation = supportContinuation;
@@ -103,7 +103,7 @@ namespace System.Text.Json
                     Current.Reset();
 
                     Current.JsonClassInfo = jsonClassInfo;
-                    Current.DeclaredJsonPropertyInfo = jsonClassInfo.PolicyProperty!;
+                    Current.DeclaredJsonPropertyInfo = jsonClassInfo.PropertyInfoForClassInfo;
                 }
             }
             else if (_continuationCount == 1)

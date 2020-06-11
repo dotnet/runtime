@@ -25,7 +25,7 @@ APIs and some code samples that show how it should be used. If changes are neces
 
 4. **Owner makes decision**. When the owner believes enough information is available to make a decision, they will update the issue accordingly:
 
-    * **Mark for review**. If the owner believes the proposal is actionable, they will label the issue with `api-ready-for-review`. [Here is a good example](https://github.com/dotnet/corefx/issues/4547) of as strong API proposal.
+    * **Mark for review**. If the owner believes the proposal is actionable, they will label the issue with `api-ready-for-review`. [Here is a good example](https://github.com/dotnet/runtime/issues/15725) of a strong API proposal.
     * **Close as not actionable**. In case the issue didn't get enough traction to be distilled into a concrete proposal, the owner will close the issue.
     * **Close as won't fix as proposed**. Sometimes, the issue that is raised is a good one but the owner thinks the concrete proposal is not the right way to tackle the problem. In most cases, the owner will try to steer the discussion in a direction that results in a design that we believe is appropriate. However, for some proposals the problem is at the heart of the design which can't easily be changed without starting a new proposal. In those cases, the owner will close the issue and explain the issue the design has.
     * **Close as won't fix**. Similarly, if proposal is taking the product in a direction we simply don't want to go, the issue might also get closed. In that case, the problem isn't the proposed design but in the issue itself.
@@ -37,6 +37,16 @@ APIs and some code samples that show how it should be used. If changes are neces
     * **Needs work**. In case we believe the proposal isn't ready yet, we'll
     replace the label `api-ready-for-review` with `api-needs-work`.
     * **Rejected**. In case we believe the proposal isn't a direction we want to go after, we simply write a comment and close the issue.
+
+## Review schedule
+
+ There are three methods to get an API review:
+
+* **Get into the backlog**. Generally speaking, filing an issue in `dotnet/runtime` and applying the label `api-ready-for-review` on it will make your issue show up during API reviews. The downside is that we generally walk the backlog oldest-newest, so your issue might not be looked at for a while.
+* **Fast track**. If you need to bypass the backlog apply both `api-ready-for-review` and `blocking`. All blocking issues are looked at before we walk the backlog.
+* **Dedicated review**. This only applies to area owners. If an issue you are the area owner for needs an hour or longer, send an email to FXDC and we book dedicated time. Rule of thumb: if the API proposal has more than a dozen APIs and/or the APIs have complex policy, then you need 60 min or more. When in doubt, send mail to FXDC.
+
+Unfortunately, we have throughput issues and try our best to get more stuff done. We normally have one two-hour slot per week, but we're currently operating at three two hour slots.
 
 ## Pull requests
 

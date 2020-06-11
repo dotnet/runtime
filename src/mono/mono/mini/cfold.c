@@ -13,7 +13,7 @@
 #include "mini.h"
 #include "ir-emit.h"
 
-/* WTF is this doing here?!?!? */
+/* What is this doing here?!?!? */
 int
 mono_is_power_of_two (guint32 val)
 {

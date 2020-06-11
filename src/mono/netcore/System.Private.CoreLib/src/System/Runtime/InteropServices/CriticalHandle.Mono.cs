@@ -4,10 +4,10 @@
 
 namespace System.Runtime.InteropServices
 {
-	partial class CriticalHandle
-	{
-		void ReleaseHandleFailed ()
-		{
-		}
-	}
+    public partial class CriticalHandle
+    {
+        private void ReleaseHandleFailed()
+        {
+        }
+    }
 }

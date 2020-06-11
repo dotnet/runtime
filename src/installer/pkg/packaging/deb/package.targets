@@ -318,14 +318,14 @@
       </SharedFrameworkTokenValue>
 
       <!--
-        In every runtime deps Deb package, include alternatives known to work with .NET Core.
+        In every runtime deps Deb package, include alternatives known to work with .NET.
         Specifying these as "or" dependencies lets us create one package that works on many distros.
       -->
       <SharedFrameworkTokenValue
         Include="%SSL_DEPENDENCY_LIST%"
         ReplacementString="libssl1.0.0 | libssl1.0.2 | libssl1.1" />
 
-      <KnownLibIcuVersion Include="63;60;57;55;52" />
+      <KnownLibIcuVersion Include="66;65;63;60;57;55;52" />
       <SharedFrameworkTokenValue
         Include="%LIBICU_DEPENDENCY_LIST%"
         ReplacementString="libicu | @(KnownLibIcuVersion -> 'libicu%(Identity)', ' | ')" />

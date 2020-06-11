@@ -4,7 +4,7 @@
 
 using System;
 using System.Diagnostics;
-using System.Numerics;
+using System.Formats.Asn1;
 using System.Security.Cryptography;
 using System.Security.Cryptography.Apple;
 using System.Security.Cryptography.Asn1;
@@ -102,24 +102,34 @@ namespace Internal.Cryptography.Pal
             {
                 SubjectPublicKeyInfoAsn spki = new SubjectPublicKeyInfoAsn
                 {
-                    Algorithm = new AlgorithmIdentifierAsn { Algorithm = new Oid(Oids.Dsa, null), Parameters = encodedParameters },
+                    Algorithm = new AlgorithmIdentifierAsn { Algorithm = Oids.Dsa, Parameters = encodedParameters },
                     SubjectPublicKey = encodedKeyValue,
                 };
 
-                using (AsnWriter writer = new AsnWriter(AsnEncodingRules.DER))
+                AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
+                spki.Encode(writer);
+
+                byte[] rented = CryptoPool.Rent(writer.GetEncodedLength());
+
+                if (!writer.TryEncode(rented, out int written))
                 {
-                    spki.Encode(writer);
-                    DSA dsa = DSA.Create();
-                    try
-                    {
-                        dsa.ImportSubjectPublicKeyInfo(writer.EncodeAsSpan(), out _);
-                        return dsa;
-                    }
-                    catch (Exception)
-                    {
-                        dsa.Dispose();
-                        throw;
-                    }
+                    Debug.Fail("TryEncode failed with a pre-allocated buffer");
+                    throw new InvalidOperationException();
+                }
+
+                DSA dsa = DSA.Create();
+                IDisposable? toDispose = dsa;
+
+                try
+                {
+                   dsa.ImportSubjectPublicKeyInfo(rented.AsSpan(0, written), out _);
+                   toDispose = null;
+                   return dsa;
+                }
+                finally
+                {
+                    toDispose?.Dispose();
+                    CryptoPool.Return(rented, written);
                 }
             }
 

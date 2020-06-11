@@ -24,14 +24,5 @@ namespace System.Tests
         {
             Assert.Throws<MissingMethodException>(() => Activator.CreateInstance(typeof(Utf8String)));
         }
-
-        [Fact]
-        public static void FormatterServices_GetUninitializedObject_Throws()
-        {
-            // Like String, shouldn't be able to create an uninitialized Utf8String.
-
-            Assert.Throws<ArgumentException>(() => FormatterServices.GetSafeUninitializedObject(typeof(Utf8String)));
-            Assert.Throws<ArgumentException>(() => FormatterServices.GetUninitializedObject(typeof(Utf8String)));
-        }
     }
 }

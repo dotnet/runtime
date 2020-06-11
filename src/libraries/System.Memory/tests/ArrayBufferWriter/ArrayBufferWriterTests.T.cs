@@ -156,7 +156,7 @@ namespace System.Buffers.Tests
 
         [Theory]
         [MemberData(nameof(SizeHints))]
-        public void GetSpan_DefaultCtor(int sizeHint)
+        public void GetSpan_DefaultCtor_WithSizeHint(int sizeHint)
         {
             var output = new ArrayBufferWriter<T>();
             Span<T> span = output.GetSpan(sizeHint);
@@ -173,7 +173,7 @@ namespace System.Buffers.Tests
 
         [Theory]
         [MemberData(nameof(SizeHints))]
-        public void GetSpan_InitSizeCtor(int sizeHint)
+        public void GetSpan_InitSizeCtor_WithSizeHint(int sizeHint)
         {
             {
                 var output = new ArrayBufferWriter<T>(256);
@@ -198,11 +198,18 @@ namespace System.Buffers.Tests
 
         [Theory]
         [MemberData(nameof(SizeHints))]
-        public void GetMemory_DefaultCtor(int sizeHint)
+        public void GetMemory_DefaultCtor_WithSizeHint(int sizeHint)
         {
             var output = new ArrayBufferWriter<T>();
             Memory<T> memory = output.GetMemory(sizeHint);
             Assert.Equal(sizeHint <= 256 ? 256 : sizeHint, memory.Length);
+        }
+
+        [Fact]
+        public void GetMemory_ExceedMaximumBufferSize_WithSmallStartingSize()
+        {
+            var output = new ArrayBufferWriter<T>(256);
+            Assert.Throws<OutOfMemoryException>(() => output.GetMemory(int.MaxValue));
         }
 
         [Fact]
@@ -215,7 +222,7 @@ namespace System.Buffers.Tests
 
         [Theory]
         [MemberData(nameof(SizeHints))]
-        public void GetMemory_InitSizeCtor(int sizeHint)
+        public void GetMemory_InitSizeCtor_WithSizeHint(int sizeHint)
         {
             {
                 var output = new ArrayBufferWriter<T>(256);

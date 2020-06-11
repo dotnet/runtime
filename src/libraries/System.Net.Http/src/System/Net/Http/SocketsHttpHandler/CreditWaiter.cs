@@ -14,7 +14,7 @@ namespace System.Net.Http
     internal class CreditWaiter : IValueTaskSource<int>
     {
         public int Amount;
-        public CreditWaiter Next;
+        public CreditWaiter? Next;
         protected ManualResetValueTaskSourceCore<int> _source;
 
         public CreditWaiter() => _source.RunContinuationsAsynchronously = true;
@@ -49,7 +49,7 @@ namespace System.Net.Http
             _source.GetResult(token);
         ValueTaskSourceStatus IValueTaskSource<int>.GetStatus(short token) =>
             _source.GetStatus(token);
-        void IValueTaskSource<int>.OnCompleted(Action<object> continuation, object state, short token, ValueTaskSourceOnCompletedFlags flags) =>
+        void IValueTaskSource<int>.OnCompleted(Action<object?> continuation, object? state, short token, ValueTaskSourceOnCompletedFlags flags) =>
             _source.OnCompleted(continuation, state, token, flags);
     }
 

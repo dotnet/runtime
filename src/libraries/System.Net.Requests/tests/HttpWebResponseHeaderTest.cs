@@ -9,7 +9,6 @@ using System.Threading.Tasks;
 using System.Runtime.Serialization.Formatters.Binary;
 
 using Xunit;
-using Xunit.Abstractions;
 using System.Runtime.Serialization;
 
 namespace System.Net.Tests

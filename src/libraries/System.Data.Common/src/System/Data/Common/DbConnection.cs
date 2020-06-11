@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 
 namespace System.Data.Common
 {
-    public abstract class DbConnection : Component, IDbConnection
+    public abstract class DbConnection : Component, IDbConnection, IAsyncDisposable
     {
 #pragma warning disable 649 // ignore unassigned field warning
         internal bool _suppressStateChangeForReconnection;
@@ -67,7 +67,7 @@ namespace System.Data.Common
         {
             if (cancellationToken.IsCancellationRequested)
             {
-                return new ValueTask<DbTransaction>(Task.FromCanceled<DbTransaction>(cancellationToken));
+                return ValueTask.FromCanceled<DbTransaction>(cancellationToken);
             }
 
             try
@@ -76,7 +76,7 @@ namespace System.Data.Common
             }
             catch (Exception e)
             {
-                return new ValueTask<DbTransaction>(Task.FromException<DbTransaction>(e));
+                return ValueTask.FromException<DbTransaction>(e);
             }
         }
 

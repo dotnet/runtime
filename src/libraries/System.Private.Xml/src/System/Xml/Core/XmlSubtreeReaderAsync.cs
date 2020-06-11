@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System;
 using System.Xml;
 using System.Diagnostics;
@@ -272,6 +273,8 @@ namespace System.Xml
                                 {
                                     return 0;
                                 }
+
+                                Debug.Assert(_binDecoder != null);
                                 _binDecoder.SetNextOutputBuffer(buffer, index, count);
                                 _nsIncReadOffset += _binDecoder.Decode(_curNode.value, _nsIncReadOffset, _curNode.value.Length - _nsIncReadOffset);
                                 return _binDecoder.DecodedCount;
@@ -408,6 +411,8 @@ namespace System.Xml
                                 {
                                     return 0;
                                 }
+
+                                Debug.Assert(_binDecoder != null);
                                 _binDecoder.SetNextOutputBuffer(buffer, index, count);
                                 _nsIncReadOffset += _binDecoder.Decode(_curNode.value, _nsIncReadOffset, _curNode.value.Length - _nsIncReadOffset);
                                 return _binDecoder.DecodedCount;

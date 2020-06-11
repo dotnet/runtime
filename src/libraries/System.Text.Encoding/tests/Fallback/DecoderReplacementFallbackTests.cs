@@ -59,7 +59,7 @@ namespace System.Text.Tests
 
         [Theory]
         [MemberData(nameof(Equals_TestData))]
-        public void Equals(DecoderReplacementFallback fallback, object value, bool expected)
+        public void EqualsTest(DecoderReplacementFallback fallback, object value, bool expected)
         {
             Assert.Equal(expected, fallback.Equals(value));
         }

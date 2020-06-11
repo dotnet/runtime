@@ -20,16 +20,16 @@ namespace System.Net.Http
         internal DecompressionMethods _automaticDecompression = HttpHandlerDefaults.DefaultAutomaticDecompression;
 
         internal bool _useCookies = HttpHandlerDefaults.DefaultUseCookies;
-        internal CookieContainer _cookieContainer;
+        internal CookieContainer? _cookieContainer;
 
         internal bool _useProxy = HttpHandlerDefaults.DefaultUseProxy;
-        internal IWebProxy _proxy;
-        internal ICredentials _defaultProxyCredentials;
+        internal IWebProxy? _proxy;
+        internal ICredentials? _defaultProxyCredentials;
         internal bool _defaultCredentialsUsedForProxy;
         internal bool _defaultCredentialsUsedForServer;
 
         internal bool _preAuthenticate = HttpHandlerDefaults.DefaultPreAuthenticate;
-        internal ICredentials _credentials;
+        internal ICredentials? _credentials;
 
         internal bool _allowAutoRedirect = HttpHandlerDefaults.DefaultAutomaticRedirection;
         internal int _maxAutomaticRedirections = HttpHandlerDefaults.DefaultMaxAutomaticRedirections;
@@ -51,9 +51,9 @@ namespace System.Net.Http
         // Used for testing until https://github.com/dotnet/runtime/issues/987
         internal bool _assumePrenegotiatedHttp3ForTesting;
 
-        internal SslClientAuthenticationOptions _sslOptions;
+        internal SslClientAuthenticationOptions? _sslOptions;
 
-        internal IDictionary<string, object> _properties;
+        internal IDictionary<string, object?>? _properties;
 
         public HttpConnectionSettings()
         {
@@ -120,7 +120,7 @@ namespace System.Net.Http
                 }
 
                 // AppContext switch wasn't used. Check the environment variable.
-                string envVar = Environment.GetEnvironmentVariable(Http2SupportEnvironmentVariableSettingName);
+                string? envVar = Environment.GetEnvironmentVariable(Http2SupportEnvironmentVariableSettingName);
                 if (envVar != null && (envVar.Equals("false", StringComparison.OrdinalIgnoreCase) || envVar.Equals("0")))
                 {
                     // Disallow HTTP/2 protocol.
@@ -146,7 +146,7 @@ namespace System.Net.Http
                 }
 
                 // AppContext switch wasn't used. Check the environment variable.
-                string envVar = Environment.GetEnvironmentVariable(Http2UnencryptedSupportEnvironmentVariableSettingName);
+                string? envVar = Environment.GetEnvironmentVariable(Http2UnencryptedSupportEnvironmentVariableSettingName);
                 if (envVar != null && (envVar.Equals("true", StringComparison.OrdinalIgnoreCase) || envVar.Equals("1")))
                 {
                     // Allow HTTP/2.0 protocol for HTTP endpoints.
@@ -172,7 +172,7 @@ namespace System.Net.Http
                 }
 
                 // AppContext switch wasn't used. Check the environment variable.
-                string envVar = Environment.GetEnvironmentVariable(Http3DraftSupportEnvironmentVariableSettingName);
+                string? envVar = Environment.GetEnvironmentVariable(Http3DraftSupportEnvironmentVariableSettingName);
                 if (envVar != null && (envVar.Equals("true", StringComparison.OrdinalIgnoreCase) || envVar.Equals("1")))
                 {
                     // Allow HTTP/3 protocol for HTTP endpoints.
@@ -184,7 +184,7 @@ namespace System.Net.Http
             }
         }
 
-        private byte[] _http3SettingsFrame;
+        private byte[]? _http3SettingsFrame;
         internal byte[] Http3SettingsFrame => _http3SettingsFrame ??= Http3Connection.BuildSettingsFrame(this);
     }
 }

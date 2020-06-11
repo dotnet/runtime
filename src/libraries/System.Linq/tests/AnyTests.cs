@@ -87,7 +87,7 @@ namespace System.Linq.Tests
 
         [Theory]
         [MemberData(nameof(TestDataWithPredicate))]
-        public void Any(IEnumerable<int> source, Func<int, bool> predicate, bool expected)
+        public void Any_Predicate(IEnumerable<int> source, Func<int, bool> predicate, bool expected)
         {
             if (predicate == null)
             {

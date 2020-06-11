@@ -19,23 +19,23 @@ namespace System.Net.Mail
             _innerExceptions = Array.Empty<SmtpFailedRecipientException>();
         }
 
-        public SmtpFailedRecipientsException(string message) : base(message)
+        public SmtpFailedRecipientsException(string? message) : base(message)
         {
             _innerExceptions = Array.Empty<SmtpFailedRecipientException>();
         }
 
-        public SmtpFailedRecipientsException(string message, Exception innerException) : base(message, innerException)
+        public SmtpFailedRecipientsException(string? message, Exception? innerException) : base(message, innerException)
         {
-            SmtpFailedRecipientException smtpException = innerException as SmtpFailedRecipientException;
+            SmtpFailedRecipientException? smtpException = innerException as SmtpFailedRecipientException;
             _innerExceptions = smtpException == null ? Array.Empty<SmtpFailedRecipientException>() : new SmtpFailedRecipientException[] { smtpException };
         }
 
         protected SmtpFailedRecipientsException(SerializationInfo info, StreamingContext context) : base(info, context)
         {
-            _innerExceptions = (SmtpFailedRecipientException[])info.GetValue("innerExceptions", typeof(SmtpFailedRecipientException[]));
+            _innerExceptions = (SmtpFailedRecipientException[])info.GetValue("innerExceptions", typeof(SmtpFailedRecipientException[]))!;
         }
 
-        public SmtpFailedRecipientsException(string message, SmtpFailedRecipientException[] innerExceptions) :
+        public SmtpFailedRecipientsException(string? message, SmtpFailedRecipientException[] innerExceptions) :
             base(message, innerExceptions != null && innerExceptions.Length > 0 ? innerExceptions[0].FailedRecipient : null,
             innerExceptions != null && innerExceptions.Length > 0 ? innerExceptions[0] : null)
         {

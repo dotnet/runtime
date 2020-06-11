@@ -155,14 +155,6 @@ public:
     static FCDECL2(FC_BOOL_RET, TypeEQ, Object* left, Object* right);
     static FCDECL2(FC_BOOL_RET, TypeNEQ, Object* left, Object* right);
 
-
-#ifdef FEATURE_COMINTEROP
-    static FCDECL1(FC_BOOL_RET, IsWindowsRuntimeObjectType, ReflectClassBaseObject *rtTypeUNSAFE);
-#ifdef FEATURE_COMINTEROP_WINRT_MANAGED_ACTIVATION
-    static FCDECL1(FC_BOOL_RET, IsTypeExportedToWindowsRuntime, ReflectClassBaseObject *rtTypeUNSAFE);
-#endif
-#endif //FEATURE_COMINTEROP
-
     static
     void QCALLTYPE PrepareMemberInfoCache(QCall::TypeHandle pMemberInfoCache);
 
@@ -176,7 +168,7 @@ public:
     void QCALLTYPE GetTypeByName(LPCWSTR pwzClassName, BOOL bThrowOnError, BOOL bIgnoreCase,
                                  QCall::StackCrawlMarkHandle pStackMark,
                                  QCall::ObjectHandleOnStack pAssemblyLoadContext,
-                                 BOOL bLoadTypeFromPartialNameHack, QCall::ObjectHandleOnStack retType,
+                                 QCall::ObjectHandleOnStack retType,
                                  QCall::ObjectHandleOnStack keepAlive);
 
     static FCDECL1(AssemblyBaseObject*, GetAssembly, ReflectClassBaseObject *pType);
@@ -236,6 +228,9 @@ public:
     static
     PVOID QCALLTYPE GetGCHandle(QCall::TypeHandle pTypeHandle, INT32 handleType);
 
+    static
+    void QCALLTYPE FreeGCHandle(QCall::TypeHandle pTypeHandle, OBJECTHANDLE objHandle);
+
     static FCDECL1(INT32, GetCorElementType, PTR_ReflectClassBaseObject pType);
     static FCDECL1(ReflectClassBaseObject*, GetElementType, ReflectClassBaseObject* pType);
 
@@ -258,6 +253,9 @@ public:
 
     static
     FCDECL1(IMDInternalImport*, GetMetadataImport, ReflectClassBaseObject * pModuleUNSAFE);
+
+    static
+    PVOID QCALLTYPE AllocateTypeAssociatedMemory(QCall::TypeHandle type, UINT32 size);
 };
 
 class RuntimeMethodHandle {

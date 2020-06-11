@@ -138,25 +138,11 @@ GcInfoDecoder::GcInfoDecoder(
     m_HasTailCalls             = ((headerFlags & GC_INFO_HAS_TAILCALLS) != 0);
 #endif // TARGET_AMD64
     int hasSizeOfEditAndContinuePreservedArea = headerFlags & GC_INFO_HAS_EDIT_AND_CONTINUE_PRESERVED_SLOTS;
+    int hasReversePInvokeFrame = headerFlags & GC_INFO_REVERSE_PINVOKE_FRAME;
 
-    int hasReversePInvokeFrame = false;
-    if (gcInfoToken.IsReversePInvokeFrameAvailable())
-    {
-        hasReversePInvokeFrame = headerFlags & GC_INFO_REVERSE_PINVOKE_FRAME;
-    }
-
-    if (gcInfoToken.IsReturnKindAvailable())
-    {
-        int returnKindBits = (slimHeader) ? SIZE_OF_RETURN_KIND_IN_SLIM_HEADER : SIZE_OF_RETURN_KIND_IN_FAT_HEADER;
-        m_ReturnKind =
-            (ReturnKind)((UINT32)m_Reader.Read(returnKindBits));
-    }
-    else
-    {
-#ifndef TARGET_X86
-        m_ReturnKind = RT_Unset;
-#endif // ! TARGET_X86
-    }
+    int returnKindBits = (slimHeader) ? SIZE_OF_RETURN_KIND_IN_SLIM_HEADER : SIZE_OF_RETURN_KIND_IN_FAT_HEADER;
+    m_ReturnKind =
+        (ReturnKind)((UINT32)m_Reader.Read(returnKindBits));
 
     if (flags == DECODE_RETURN_KIND) {
         // Bail, if we've decoded enough,

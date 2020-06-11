@@ -639,7 +639,8 @@ typedef struct _EVENT_DESCRIPTOR
 {
     int const Level;
     ULONGLONG const Keyword;
-} EVENT_DESCRIPTOR;""")
+} EVENT_DESCRIPTOR;
+""")
 
             if not is_windows:
                 Clrproviders.write(eventpipe_trace_context_typedef)  # define EVENTPIPE_TRACE_CONTEXT

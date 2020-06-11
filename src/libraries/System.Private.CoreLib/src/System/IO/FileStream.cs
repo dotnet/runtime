@@ -378,7 +378,7 @@ namespace System.IO
 
             if (cancellationToken.IsCancellationRequested)
             {
-                return new ValueTask<int>(Task.FromCanceled<int>(cancellationToken));
+                return ValueTask.FromCanceled<int>(cancellationToken);
             }
 
             if (IsClosed)
@@ -426,7 +426,7 @@ namespace System.IO
             ValidateReadWriteArgs(array, offset, count);
             if (_useAsyncIO)
             {
-                WriteAsyncInternal(new ReadOnlyMemory<byte>(array, offset, count), CancellationToken.None).GetAwaiter().GetResult();
+                WriteAsyncInternal(new ReadOnlyMemory<byte>(array, offset, count), CancellationToken.None).AsTask().GetAwaiter().GetResult();
             }
             else
             {
@@ -505,7 +505,7 @@ namespace System.IO
 
             if (cancellationToken.IsCancellationRequested)
             {
-                return new ValueTask(Task.FromCanceled<int>(cancellationToken));
+                return ValueTask.FromCanceled(cancellationToken);
             }
 
             if (IsClosed)

@@ -13,9 +13,8 @@
     <Compile Include="CounterCreationDataCollectionTests.cs" />
     <Compile Include="InstanceDataTests.cs" />
     <Compile Include="Helpers.cs" />
-    <Compile Include="$(CommonTestPath)System\ShouldNotBeInvokedException.cs">
-      <Link>Common\System\ShouldNotBeInvokedException.cs</Link>
-    </Compile>
+    <Compile Include="$(CommonTestPath)System\ShouldNotBeInvokedException.cs"
+             Link="Common\System\ShouldNotBeInvokedException.cs" />
     <Compile Include="PerformanceDataTests.cs" />
   </ItemGroup>
   <ItemGroup>

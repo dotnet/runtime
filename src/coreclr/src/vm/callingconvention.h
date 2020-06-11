@@ -212,7 +212,6 @@ struct TransitionBlock
         return offset >= ofsArgRegs && offset < (int) (ofsArgRegs + ARGUMENTREGISTERS_SIZE);
     }
 
-#ifndef TARGET_X86
     static UINT GetArgumentIndexFromOffset(int offset)
     {
         LIMITED_METHOD_CONTRACT;
@@ -229,8 +228,6 @@ struct TransitionBlock
 
         return (offset - TransitionBlock::GetOffsetOfArgs()) / STACK_ELEM_SIZE;
     }
-
-#endif
 
 #ifdef CALLDESCR_FPARGREGS
     static BOOL IsFloatArgumentRegisterOffset(int offset)
@@ -641,7 +638,7 @@ public:
 
         int cSlots = (GetArgSize() + 7)/ 8;
 
-        // Composites greater than 16bytes are passed by reference
+        // Composites greater than 16 bytes are passed by reference
         if (GetArgType() == ELEMENT_TYPE_VALUETYPE && GetArgSize() > ENREGISTERED_PARAMTYPE_MAXSIZE)
         {
             cSlots = 1;
@@ -1349,8 +1346,8 @@ int ArgIteratorTemplate<ARGITERATOR_BASE>::GetNextOffset()
 
     case ELEMENT_TYPE_VALUETYPE:
     {
-        // Handle HFAs: packed structures of 2-4 floats or doubles that are passed in FP argument
-        // registers if possible.
+        // Handle HFAs: packed structures of 1-4 floats, doubles, or short vectors
+        // that are passed in FP argument registers if possible.
         if (thValueType.IsHFA())
         {
             CorElementType type = thValueType.GetHFAType();

@@ -186,16 +186,10 @@ DEFINE_METASIG(SM(IntPtr_IntPtr_RefIntPtr_RetObj, I I r(I), j))
 #ifdef FEATURE_COMINTEROP
 DEFINE_METASIG(SM(Obj_IntPtr_RefIntPtr_RefBool_RetIntPtr, j I r(I) r(F), I))
 DEFINE_METASIG(SM(Obj_IntPtr_RefIntPtr_RetIntPtr, j I r(I), I))
-DEFINE_METASIG_T(SM(Obj_Str_RetICustomProperty, j s, C(ICUSTOMPROPERTY)))
-DEFINE_METASIG_T(SM(Obj_Str_PtrTypeName_RetICustomProperty, j s P(g(TYPENAMENATIVE)), C(ICUSTOMPROPERTY)))
-DEFINE_METASIG_T(SM(Obj_PtrTypeName_RetVoid, j P(g(TYPENAMENATIVE)), v))
-DEFINE_METASIG_T(SM(Type_PtrTypeName_RetVoid, C(TYPE) P(g(TYPENAMENATIVE)), v))
-DEFINE_METASIG_T(SM(PtrTypeName_RefType_RetVoid, P(g(TYPENAMENATIVE)) r(C(TYPE)), v))
-DEFINE_METASIG_T(SM(ArrType_PtrTypeName_RetVoid, a(C(TYPE)) P(g(TYPENAMENATIVE)), v))
-DEFINE_METASIG_T(SM(PtrTypeName_ArrType_RetVoid, P(g(TYPENAMENATIVE)) a(C(TYPE)), v))
-DEFINE_METASIG_T(SM(PtrTypeName_RetVoid, P(g(TYPENAMENATIVE)), v))
-DEFINE_METASIG_T(SM(PtrTypeName_Int_RetVoid, P(g(TYPENAMENATIVE)) i, v))
-DEFINE_METASIG_T(SM(Exception_IntPtr_RetException, C(EXCEPTION) I, C(EXCEPTION)))
+DEFINE_METASIG_T(SM(Scenario_ComWrappers_Obj_CreateFlags_RefInt_RetPtrVoid, g(COMWRAPPERSSCENARIO) C(COMWRAPPERS) j g(CREATECOMINTERFACEFLAGS) r(i), P(v)))
+DEFINE_METASIG_T(SM(Scenario_ComWrappers_IntPtr_CreateFlags_RetObj, g(COMWRAPPERSSCENARIO) C(COMWRAPPERS) I g(CREATEOBJECTFLAGS), j))
+DEFINE_METASIG_T(SM(ComWrappers_IEnumerable_RetVoid, C(COMWRAPPERS) C(IENUMERABLE), v))
+DEFINE_METASIG_T(SM(Obj_RefGuid_RefIntPtr_RetInt, j r(g(GUID)) r(I), i))
 #endif // FEATURE_COMINTEROP
 DEFINE_METASIG(SM(Int_RetVoid, i, v))
 DEFINE_METASIG(SM(Int_Int_RetVoid, i i, v))
@@ -313,6 +307,7 @@ DEFINE_METASIG_T(SM(RetMethodBase, _, C(METHOD_BASE)))
 DEFINE_METASIG(SM(RetVoid, _, v))
 DEFINE_METASIG(SM(Str_IntPtr_Int_RetVoid, s I i, v))
 DEFINE_METASIG(SM(Int_RetIntPtr, i, I))
+DEFINE_METASIG(SM(Int_IntPtr_RetIntPtr, i I, I))
 
 DEFINE_METASIG_T(SM(DateTime_RetDbl, g(DATE_TIME), d))
 DEFINE_METASIG(SM(Dbl_RetLong, d, l))
@@ -345,10 +340,6 @@ DEFINE_METASIG(SM(Obj_Obj_RefArrByte_RetArrByte, j j r(a(b)), a(b)))
 DEFINE_METASIG_T(SM(Obj_Int_RefVariant_RetVoid, j i r(g(VARIANT)), v))
 DEFINE_METASIG_T(SM(Obj_RefVariant_RetVoid, j r(g(VARIANT)), v))
 DEFINE_METASIG_T(SM(RefVariant_RetObject, r(g(VARIANT)), j))
-DEFINE_METASIG_T(SM(Str_PtrHStringHeader_RetIntPtr, s P(g(HSTRING_HEADER_MANAGED)), I))
-
-DEFINE_METASIG_T(SM(RefDateTimeOffset_RefDateTimeNative_RetVoid, r(g(DATE_TIME_OFFSET)) r(g(DATETIMENATIVE)), v))
-
 DEFINE_METASIG_T(IM(RuntimeTypeHandle_RefBool_RefIntPtr_RetVoid, g(RT_TYPE_HANDLE) r(F) r(I), v))
 
 #endif
@@ -394,9 +385,6 @@ DEFINE_METASIG(IM(RetBool, _, F))
 DEFINE_METASIG(IM(RetArrByte, _, a(b)))
 DEFINE_METASIG_T(IM(RetArrParameterInfo, _, a(C(PARAMETER))))
 DEFINE_METASIG_T(IM(RetCultureInfo, _, C(CULTURE_INFO)))
-#ifdef FEATURE_COMINTEROP
-DEFINE_METASIG_T(IM(RetCausalityTraceLevel, _, g(CAUSALITY_TRACE_LEVEL)))
-#endif // FEATURE_COMINTEROP
 
 DEFINE_METASIG(IM(Bool_RetIntPtr, F, I))
 DEFINE_METASIG_T(IM(Bool_RetMethodInfo, F, C(METHOD_INFO)))
@@ -611,6 +599,8 @@ DEFINE_METASIG_T(IM(Int_RetReadOnlyRefT, i, Q(INATTRIBUTE) r(G(0))))
 DEFINE_METASIG(GM(RetT, IMAGE_CEE_CS_CALLCONV_DEFAULT, 1, _, M(0)))
 
 DEFINE_METASIG_T(SM(Array_Int_Array_Int_Int_RetVoid, C(ARRAY) i C(ARRAY) i i, v))
+DEFINE_METASIG_T(SM(Array_Int_Obj_RetVoid, C(ARRAY) i j, v))
+DEFINE_METASIG_T(SM(Array_Int_PtrVoid_RetRefObj, C(ARRAY) i P(v), r(j)))
 
 // Undefine macros in case we include the file again in the compilation unit
 

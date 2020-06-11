@@ -194,9 +194,8 @@ namespace System.IO.Tests
 
             DateTime afterTime = DateTime.UtcNow.AddSeconds(1);
 
-            // Deleting doesn't change any info state
             info.Delete();
-            ValidateSetTimes(info, beforeTime, afterTime);
+            Assert.Equal(DateTime.FromFileTimeUtc(0), info.LastAccessTimeUtc);
         }
 
 

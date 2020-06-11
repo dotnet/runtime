@@ -142,7 +142,7 @@ namespace System.Reflection.Tests
         [InlineData(typeof(BaseClass), nameof(BaseClass.PublicEvent), typeof(BaseClass), nameof(BaseClass.PublicEvent), true)]
         [InlineData(typeof(BaseClass), nameof(BaseClass.PublicEvent), typeof(SubClass), nameof(SubClass.PublicEvent), false)]
         [InlineData(typeof(BaseClass), nameof(BaseClass.PublicEvent), typeof(BaseClass), nameof(BaseClass.PublicStaticEvent), false)]
-        public void Equals(Type type1, string name1, Type type2, string name2, bool expected)
+        public void EqualsTest(Type type1, string name1, Type type2, string name2, bool expected)
         {
             EventInfo eventInfo1 = GetEventInfo(type1, name1);
             EventInfo eventInfo2 = GetEventInfo(type2, name2);

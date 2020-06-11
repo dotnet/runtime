@@ -35,6 +35,7 @@ namespace System.Net
         ContextExpired,
         CredentialsNeeded,
         Renegotiate,
+        TryAgain,
 
         // Errors
         OutOfMemory,

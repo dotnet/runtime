@@ -262,7 +262,13 @@ namespace System.Net.Sockets
             return socket;
         }
 
-        public IAsyncResult BeginAcceptTcpClient(AsyncCallback? callback, object? state)
+        public IAsyncResult BeginAcceptTcpClient(AsyncCallback? callback, object? state) =>
+            BeginAcceptSocket(callback, state);
+
+        public TcpClient EndAcceptTcpClient(IAsyncResult asyncResult) =>
+            new TcpClient(EndAcceptSocket(asyncResult));
+
+        public Task<Socket> AcceptSocketAsync()
         {
             if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
 
@@ -271,47 +277,19 @@ namespace System.Net.Sockets
                 throw new InvalidOperationException(SR.net_stopped);
             }
 
-            IAsyncResult result = _serverSocket!.BeginAccept(callback, state);
-            if (NetEventSource.IsEnabled) NetEventSource.Exit(this, result);
+            Task<Socket> result = _serverSocket!.AcceptAsync();
+
+            if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
+
             return result;
-        }
-
-        public TcpClient EndAcceptTcpClient(IAsyncResult asyncResult)
-        {
-            if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
-
-            if (asyncResult == null)
-            {
-                throw new ArgumentNullException(nameof(asyncResult));
-            }
-
-            LazyAsyncResult? lazyResult = asyncResult as LazyAsyncResult;
-            Socket? asyncSocket = lazyResult == null ? null : lazyResult.AsyncObject as Socket;
-            if (asyncSocket == null)
-            {
-                throw new ArgumentException(SR.net_io_invalidasyncresult, nameof(asyncResult));
-            }
-
-            // This will throw ObjectDisposedException if Stop() has been called.
-            Socket socket = asyncSocket.EndAccept(asyncResult);
-            if (NetEventSource.IsEnabled) NetEventSource.Exit(this, socket);
-            return new TcpClient(socket);
-        }
-
-        public Task<Socket> AcceptSocketAsync()
-        {
-            return Task<Socket>.Factory.FromAsync(
-                (callback, state) => ((TcpListener)state!).BeginAcceptSocket(callback, state),
-                asyncResult => ((TcpListener)asyncResult.AsyncState!).EndAcceptSocket(asyncResult),
-                state: this);
         }
 
         public Task<TcpClient> AcceptTcpClientAsync()
         {
-            return Task<TcpClient>.Factory.FromAsync(
-                (callback, state) => ((TcpListener)state!).BeginAcceptTcpClient(callback, state),
-                asyncResult => ((TcpListener)asyncResult.AsyncState!).EndAcceptTcpClient(asyncResult),
-                state: this);
+            return WaitAndWrap(AcceptSocketAsync());
+
+            static async Task<TcpClient> WaitAndWrap(Task<Socket> task) =>
+                new TcpClient(await task.ConfigureAwait(false));
         }
 
 

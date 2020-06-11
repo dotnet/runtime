@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
-using System.ComponentModel;
 
 namespace System.Diagnostics
 {
@@ -15,9 +14,9 @@ namespace System.Diagnostics
     /// </summary>
     internal sealed class ProcessInfo
     {
-        internal readonly List<ThreadInfo> _threadInfoList = new List<ThreadInfo>();
+        internal readonly List<ThreadInfo> _threadInfoList;
         internal int BasePriority { get; set; }
-        internal string ProcessName { get; set; }
+        internal string ProcessName { get; set; } = string.Empty;
         internal int ProcessId { get; set; }
         internal long PoolPagedBytes { get; set; }
         internal long PoolNonPagedBytes { get; set; }
@@ -33,20 +32,12 @@ namespace System.Diagnostics
 
         internal ProcessInfo()
         {
-            BasePriority = 0;
-            ProcessName = "";
-            ProcessId = 0;
-            PoolPagedBytes = 0;
-            PoolNonPagedBytes = 0;
-            VirtualBytes = 0;
-            VirtualBytesPeak = 0;
-            WorkingSet = 0;
-            WorkingSetPeak = 0;
-            PageFileBytes = 0;
-            PageFileBytesPeak = 0;
-            PrivateBytes = 0;
-            SessionId = 0;
-            HandleCount = 0;
+            _threadInfoList = new List<ThreadInfo>();
+        }
+
+        internal ProcessInfo(int threadsNumber)
+        {
+            _threadInfoList = new List<ThreadInfo>(threadsNumber);
         }
     }
 }

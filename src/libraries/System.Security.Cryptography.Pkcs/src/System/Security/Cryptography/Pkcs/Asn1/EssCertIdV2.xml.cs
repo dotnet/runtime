@@ -4,16 +4,15 @@
 
 #pragma warning disable SA1028 // ignore whitespace warnings for generated code
 using System;
+using System.Formats.Asn1;
 using System.Runtime.InteropServices;
-using System.Security.Cryptography;
-using System.Security.Cryptography.Asn1;
 
 namespace System.Security.Cryptography.Pkcs.Asn1
 {
     [StructLayout(LayoutKind.Sequential)]
     internal partial struct EssCertIdV2
     {
-        private static readonly byte[] s_defaultHashAlgorithm = { 0x30, 0x0B, 0x06, 0x09, 0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x02, 0x01 };
+        private static ReadOnlySpan<byte> DefaultHashAlgorithm => new byte[] { 0x30, 0x0B, 0x06, 0x09, 0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x02, 0x01 };
 
         internal System.Security.Cryptography.Asn1.AlgorithmIdentifierAsn HashAlgorithm;
         internal ReadOnlyMemory<byte> Hash;
@@ -26,7 +25,7 @@ namespace System.Security.Cryptography.Pkcs.Asn1
             ReadOnlyMemory<byte> rebind = default;
             AsnValueReader reader;
 
-            reader = new AsnValueReader(s_defaultHashAlgorithm, AsnEncodingRules.DER);
+            reader = new AsnValueReader(DefaultHashAlgorithm, AsnEncodingRules.DER);
             System.Security.Cryptography.Asn1.AlgorithmIdentifierAsn.Decode(ref reader, rebind, out decoded.HashAlgorithm);
             reader.ThrowIfNotEmpty();
         }
@@ -44,15 +43,12 @@ namespace System.Security.Cryptography.Pkcs.Asn1
 
             // DEFAULT value handler for HashAlgorithm.
             {
-                using (AsnWriter tmp = new AsnWriter(AsnEncodingRules.DER))
-                {
-                    HashAlgorithm.Encode(tmp);
-                    ReadOnlySpan<byte> encoded = tmp.EncodeAsSpan();
+                AsnWriter tmp = new AsnWriter(AsnEncodingRules.DER);
+                HashAlgorithm.Encode(tmp);
 
-                    if (!encoded.SequenceEqual(s_defaultHashAlgorithm))
-                    {
-                        writer.WriteEncodedValue(encoded);
-                    }
+                if (!tmp.EncodedValueEquals(DefaultHashAlgorithm))
+                {
+                    tmp.CopyTo(writer);
                 }
             }
 
@@ -73,11 +69,18 @@ namespace System.Security.Cryptography.Pkcs.Asn1
 
         internal static EssCertIdV2 Decode(Asn1Tag expectedTag, ReadOnlyMemory<byte> encoded, AsnEncodingRules ruleSet)
         {
-            AsnValueReader reader = new AsnValueReader(encoded.Span, ruleSet);
+            try
+            {
+                AsnValueReader reader = new AsnValueReader(encoded.Span, ruleSet);
 
-            Decode(ref reader, expectedTag, encoded, out EssCertIdV2 decoded);
-            reader.ThrowIfNotEmpty();
-            return decoded;
+                Decode(ref reader, expectedTag, encoded, out EssCertIdV2 decoded);
+                reader.ThrowIfNotEmpty();
+                return decoded;
+            }
+            catch (AsnContentException e)
+            {
+                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding, e);
+            }
         }
 
         internal static void Decode(ref AsnValueReader reader, ReadOnlyMemory<byte> rebind, out EssCertIdV2 decoded)
@@ -86,6 +89,18 @@ namespace System.Security.Cryptography.Pkcs.Asn1
         }
 
         internal static void Decode(ref AsnValueReader reader, Asn1Tag expectedTag, ReadOnlyMemory<byte> rebind, out EssCertIdV2 decoded)
+        {
+            try
+            {
+                DecodeCore(ref reader, expectedTag, rebind, out decoded);
+            }
+            catch (AsnContentException e)
+            {
+                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding, e);
+            }
+        }
+
+        private static void DecodeCore(ref AsnValueReader reader, Asn1Tag expectedTag, ReadOnlyMemory<byte> rebind, out EssCertIdV2 decoded)
         {
             decoded = default;
             AsnValueReader sequenceReader = reader.ReadSequence(expectedTag);
@@ -101,12 +116,12 @@ namespace System.Security.Cryptography.Pkcs.Asn1
             }
             else
             {
-                defaultReader = new AsnValueReader(s_defaultHashAlgorithm, AsnEncodingRules.DER);
+                defaultReader = new AsnValueReader(DefaultHashAlgorithm, AsnEncodingRules.DER);
                 System.Security.Cryptography.Asn1.AlgorithmIdentifierAsn.Decode(ref defaultReader, rebind, out decoded.HashAlgorithm);
             }
 
 
-            if (sequenceReader.TryReadPrimitiveOctetStringBytes(out tmpSpan))
+            if (sequenceReader.TryReadPrimitiveOctetString(out tmpSpan))
             {
                 decoded.Hash = rebindSpan.Overlaps(tmpSpan, out offset) ? rebind.Slice(offset, tmpSpan.Length) : tmpSpan.ToArray();
             }

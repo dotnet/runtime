@@ -14,36 +14,26 @@
     <Compile Include="ZipArchive\zip_netcoreappTests.cs" />
     <Compile Include="ZipArchive\zip_ReadTests.cs" />
     <Compile Include="ZipArchive\zip_UpdateTests.cs" />
-    <Compile Include="$(CommonTestPath)System\IO\PathFeatures.cs">
-      <Link>Common\System\IO\PathFeatures.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonTestPath)System\IO\Compression\CRC.cs">
-      <Link>Common\System\IO\Compression\CRC.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonTestPath)System\IO\Compression\CompressionStreamTestBase.cs">
-      <Link>Common\System\IO\Compression\CompressionStreamTestBase.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonTestPath)System\IO\Compression\CompressionStreamUnitTestBase.cs">
-      <Link>Common\System\IO\Compression\CompressionStreamUnitTestBase.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonTestPath)System\IO\Compression\FileData.cs">
-      <Link>Common\System\IO\Compression\FileData.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonTestPath)System\IO\Compression\LocalMemoryStream.cs">
-      <Link>Common\System\IO\Compression\LocalMemoryStream.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonTestPath)System\IO\Compression\StreamHelpers.cs">
-      <Link>Common\System\IO\Compression\StreamHelpers.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonTestPath)System\IO\TempFile.cs">
-      <Link>Common\System\IO\TempFile.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonTestPath)System\IO\Compression\ZipTestHelper.cs">
-      <Link>Common\System\IO\Compression\ZipTestHelper.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)System\Threading\Tasks\TaskToApm.cs">
-      <Link>Common\System\Threading\Tasks\TaskToApm.cs</Link>
-    </Compile>
+    <Compile Include="$(CommonTestPath)System\IO\PathFeatures.cs"
+             Link="Common\System\IO\PathFeatures.cs" />
+    <Compile Include="$(CommonTestPath)System\IO\Compression\CRC.cs"
+             Link="Common\System\IO\Compression\CRC.cs" />
+    <Compile Include="$(CommonTestPath)System\IO\Compression\CompressionStreamTestBase.cs"
+             Link="Common\System\IO\Compression\CompressionStreamTestBase.cs" />
+    <Compile Include="$(CommonTestPath)System\IO\Compression\CompressionStreamUnitTestBase.cs"
+             Link="Common\System\IO\Compression\CompressionStreamUnitTestBase.cs" />
+    <Compile Include="$(CommonTestPath)System\IO\Compression\FileData.cs"
+             Link="Common\System\IO\Compression\FileData.cs" />
+    <Compile Include="$(CommonTestPath)System\IO\Compression\LocalMemoryStream.cs"
+             Link="Common\System\IO\Compression\LocalMemoryStream.cs" />
+    <Compile Include="$(CommonTestPath)System\IO\Compression\StreamHelpers.cs"
+             Link="Common\System\IO\Compression\StreamHelpers.cs" />
+    <Compile Include="$(CommonTestPath)System\IO\TempFile.cs"
+             Link="Common\System\IO\TempFile.cs" />
+    <Compile Include="$(CommonTestPath)System\IO\Compression\ZipTestHelper.cs"
+             Link="Common\System\IO\Compression\ZipTestHelper.cs" />
+    <Compile Include="$(CommonPath)System\Threading\Tasks\TaskToApm.cs"
+             Link="Common\System\Threading\Tasks\TaskToApm.cs" />
   </ItemGroup>
   <!--
     Manually copy the contentFiles over as on macOS 10.12 unicode characters cause items to be flagged with buildaction compile.

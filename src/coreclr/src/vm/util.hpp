@@ -42,7 +42,7 @@
 #define WszMessageBox __error("Use one of the EEMessageBox APIs (defined in eemessagebox.h) from inside the EE")
 
 // Hot cache lines need to be aligned to cache line size to improve performance
-#if defined(HOST_ARM64)
+#if defined(TARGET_ARM64)
 #define MAX_CACHE_LINE_SIZE 128
 #else
 #define MAX_CACHE_LINE_SIZE 64
@@ -585,18 +585,6 @@ public:
     }
 };
 
-#define CLRHOSTED           0x80000000
-
-GVAL_DECL(DWORD, g_fHostConfig);
-
-
-inline BOOL CLRHosted()
-{
-    LIMITED_METHOD_CONTRACT;
-
-    return g_fHostConfig;
-}
-
 #ifndef TARGET_UNIX
 HMODULE CLRLoadLibraryEx(LPCWSTR lpLibFileName, HANDLE hFile, DWORD dwFlags);
 #endif // !TARGET_UNIX
@@ -664,39 +652,18 @@ FORCEINLINE void VoidFreeNativeLibrary(NATIVE_LIBRARY_HANDLE h)
 
 typedef Wrapper<NATIVE_LIBRARY_HANDLE, DoNothing<NATIVE_LIBRARY_HANDLE>, VoidFreeNativeLibrary, NULL> NativeLibraryHandleHolder;
 
-#ifndef TARGET_UNIX
-
-// A holder for memory blocks allocated by Windows.  This holder (and any OS APIs you call
-// that allocate objects on your behalf) should not be used when the CLR is memory-hosted.
-
-FORCEINLINE void VoidFreeWinAllocatedBlock(LPVOID pv)
-{
-    LIMITED_METHOD_CONTRACT;
-
-#pragma push_macro("GetProcessHeap")
-#pragma push_macro("HeapFree")
-#undef GetProcessHeap
-#undef HeapFree
-    // 0: no special flags
-    ::HeapFree(::GetProcessHeap(), 0, pv);
-#pragma pop_macro("HeapFree")
-#pragma pop_macro("GetProcessHeap")
-}
-
-typedef Wrapper<LPVOID, DoNothing<LPVOID>, VoidFreeWinAllocatedBlock, NULL> WinAllocatedBlockHolder;
-
-#endif // !TARGET_UNIX
+extern thread_local size_t t_CantStopCount;
 
 // For debugging, we can track arbitrary Can't-Stop regions.
 // In V1.0, this was on the Thread object, but we need to track this for threads w/o a Thread object.
 FORCEINLINE void IncCantStopCount()
 {
-    ClrFlsIncrementValue(TlsIdx_CantStopCount, 1);
+    t_CantStopCount++;
 }
 
 FORCEINLINE void DecCantStopCount()
 {
-    ClrFlsIncrementValue(TlsIdx_CantStopCount, -1);
+    t_CantStopCount--;
 }
 
 typedef StateHolder<IncCantStopCount, DecCantStopCount> CantStopHolder;
@@ -704,9 +671,9 @@ typedef StateHolder<IncCantStopCount, DecCantStopCount> CantStopHolder;
 #ifdef _DEBUG
 // For debug-only, this can be used w/ a holder to ensure that we're keeping our CS count balanced.
 // We should never use this w/ control flow.
-inline int GetCantStopCount()
+inline size_t GetCantStopCount()
 {
-    return (int) (size_t) ClrFlsGetValue(TlsIdx_CantStopCount);
+    return t_CantStopCount;
 }
 
 // At places where we know we're calling out to native code, we can assert that we're NOT in a CS region.
@@ -964,4 +931,3 @@ HRESULT GetFileVersion(LPCWSTR wszFilePath, ULARGE_INTEGER* pFileVersion);
 #endif // !TARGET_UNIX
 
 #endif /* _H_UTIL */
-

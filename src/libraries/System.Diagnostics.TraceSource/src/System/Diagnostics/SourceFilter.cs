@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Diagnostics
 {
@@ -16,8 +17,8 @@ namespace System.Diagnostics
             Source = source;
         }
 
-        public override bool ShouldTrace(TraceEventCache cache, string source, TraceEventType eventType, int id, string formatOrMessage,
-                                         object[] args, object data1, object[] data)
+        public override bool ShouldTrace(TraceEventCache? cache, string source, TraceEventType eventType, int id, string? formatOrMessage,
+                                         object?[]? args, object? data1, object?[]? data)
         {
             if (source == null)
                 throw new ArgumentNullException(nameof(source));
@@ -31,6 +32,7 @@ namespace System.Diagnostics
             {
                 return _src;
             }
+            [MemberNotNull(nameof(_src))]
             set
             {
                 if (value == null)

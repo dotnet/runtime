@@ -28,16 +28,23 @@ namespace System.Net.Http.Functional.Tests
     {
         public HttpClientHandler_Cancellation_Test(ITestOutputHelper output) : base(output) { }
 
-        [Theory]
+        [ConditionalTheory]
         [InlineData(false, CancellationMode.Token)]
         [InlineData(true, CancellationMode.Token)]
         public async Task PostAsync_CancelDuringRequestContentSend_TaskCanceledQuickly(bool chunkedTransfer, CancellationMode mode)
         {
-            if (LoopbackServerFactory.Version >= HttpVersion.Version20 && chunkedTransfer)
+            if (LoopbackServerFactory.Version >= HttpVersion20.Value && chunkedTransfer)
             {
                 // There is no chunked encoding in HTTP/2 and later
                 return;
             }
+
+#if WINHTTPHANDLER_TEST
+            if (UseVersion >= HttpVersion20.Value)
+            {
+                throw new SkipTestException($"Test doesn't support {UseVersion} protocol.");
+            }
+#endif
 
             var serverRelease = new TaskCompletionSource<bool>();
             await LoopbackServerFactory.CreateClientAndServerAsync(async uri =>
@@ -76,15 +83,22 @@ namespace System.Net.Http.Functional.Tests
             });
         }
 
-        [Theory]
+        [ConditionalTheory]
         [MemberData(nameof(OneBoolAndCancellationMode))]
         public async Task GetAsync_CancelDuringResponseHeadersReceived_TaskCanceledQuickly(bool connectionClose, CancellationMode mode)
         {
-            if (LoopbackServerFactory.Version >= HttpVersion.Version20 && connectionClose)
+            if (LoopbackServerFactory.Version >= HttpVersion20.Value && connectionClose)
             {
                 // There is no Connection header in HTTP/2 and later
                 return;
             }
+
+#if WINHTTPHANDLER_TEST
+            if (UseVersion >= HttpVersion20.Value)
+            {
+                throw new SkipTestException($"Test doesn't support {UseVersion} protocol.");
+            }
+#endif
 
             using (HttpClient client = CreateHttpClient())
             {
@@ -130,7 +144,7 @@ namespace System.Net.Http.Functional.Tests
         [MemberData(nameof(TwoBoolsAndCancellationMode))]
         public async Task GetAsync_CancelDuringResponseBodyReceived_Buffered_TaskCanceledQuickly(bool chunkedTransfer, bool connectionClose, CancellationMode mode)
         {
-            if (LoopbackServerFactory.Version >= HttpVersion.Version20 && (chunkedTransfer || connectionClose))
+            if (LoopbackServerFactory.Version >= HttpVersion20.Value && (chunkedTransfer || connectionClose))
             {
                 // There is no chunked encoding or connection header in HTTP/2 and later
                 return;
@@ -182,15 +196,22 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        [Theory]
+        [ConditionalTheory]
         [MemberData(nameof(ThreeBools))]
         public async Task GetAsync_CancelDuringResponseBodyReceived_Unbuffered_TaskCanceledQuickly(bool chunkedTransfer, bool connectionClose, bool readOrCopyToAsync)
         {
-            if (LoopbackServerFactory.Version >= HttpVersion.Version20 && (chunkedTransfer || connectionClose))
+            if (LoopbackServerFactory.Version >= HttpVersion20.Value && (chunkedTransfer || connectionClose))
             {
                 // There is no chunked encoding or connection header in HTTP/2 and later
                 return;
             }
+
+#if WINHTTPHANDLER_TEST
+            if (UseVersion >= HttpVersion20.Value)
+            {
+                throw new SkipTestException($"Test doesn't support {UseVersion} protocol.");
+            }
+#endif
 
             using (HttpClient client = CreateHttpClient())
             {
@@ -237,14 +258,19 @@ namespace System.Net.Http.Functional.Tests
                 });
             }
         }
-
-        [Theory]
+        [ConditionalTheory]
         [InlineData(CancellationMode.CancelPendingRequests, false)]
         [InlineData(CancellationMode.DisposeHttpClient, false)]
         [InlineData(CancellationMode.CancelPendingRequests, true)]
         [InlineData(CancellationMode.DisposeHttpClient, true)]
         public async Task GetAsync_CancelPendingRequests_DoesntCancelReadAsyncOnResponseStream(CancellationMode mode, bool copyToAsync)
         {
+#if WINHTTPHANDLER_TEST
+            if (UseVersion >= HttpVersion20.Value)
+            {
+                throw new SkipTestException($"Test doesn't support {UseVersion} protocol.");
+            }
+#endif
             using (HttpClient client = CreateHttpClient())
             {
                 client.Timeout = Timeout.InfiniteTimeSpan;
@@ -312,10 +338,10 @@ namespace System.Net.Http.Functional.Tests
         [ConditionalFact]
         public async Task MaxConnectionsPerServer_WaitingConnectionsAreCancelable()
         {
-            if (LoopbackServerFactory.Version >= HttpVersion.Version20)
+            if (LoopbackServerFactory.Version >= HttpVersion20.Value)
             {
                 // HTTP/2 does not use connection limits.
-                throw new SkipTestException("Not supported on HTTP/2 and later");
+                return;
             }
 
             using (HttpClientHandler handler = CreateHttpClientHandler())
@@ -411,7 +437,7 @@ namespace System.Net.Http.Functional.Tests
                 bool called = false;
                 var content = new StreamContent(new DelegateStream(
                     canReadFunc: () => true,
-                    readAsyncFunc: (buffer, offset, count, cancellationToken) =>
+                    readAsyncFunc: async (buffer, offset, count, cancellationToken) =>
                     {
                         int result = 1;
                         if (called)
@@ -419,11 +445,17 @@ namespace System.Net.Http.Functional.Tests
                             result = 0;
                             Assert.False(cancellationToken.IsCancellationRequested);
                             tokenSource.Cancel();
-                            Assert.True(cancellationToken.IsCancellationRequested);
+
+                            // Wait for cancellation to occur.  It should be very quickly after it's been requested.
+                            var tcs = new TaskCompletionSource<bool>();
+                            using (cancellationToken.Register(() => tcs.SetResult(true)))
+                            {
+                                await tcs.Task;
+                            }
                         }
 
                         called = true;
-                        return Task.FromResult(result);
+                        return result;
                     }
                 ));
                 yield return new object[] { content, tokenSource };
@@ -441,7 +473,7 @@ namespace System.Net.Http.Functional.Tests
                     lengthFunc: () => 1,
                     positionGetFunc: () => 0,
                     positionSetFunc: _ => {},
-                    readAsyncFunc: (buffer, offset, count, cancellationToken) =>
+                    readAsyncFunc: async (buffer, offset, count, cancellationToken) =>
                     {
                         int result = 1;
                         if (called)
@@ -449,11 +481,17 @@ namespace System.Net.Http.Functional.Tests
                             result = 0;
                             Assert.False(cancellationToken.IsCancellationRequested);
                             tokenSource.Cancel();
-                            Assert.True(cancellationToken.IsCancellationRequested);
+
+                            // Wait for cancellation to occur.  It should be very quickly after it's been requested.
+                            var tcs = new TaskCompletionSource<bool>();
+                            using (cancellationToken.Register(() => tcs.SetResult(true)))
+                            {
+                                await tcs.Task;
+                            }
                         }
 
                         called = true;
-                        return Task.FromResult(result);
+                        return result;
                     }
                 )));
                 yield return new object[] { content, tokenSource };
@@ -471,7 +509,7 @@ namespace System.Net.Http.Functional.Tests
                     lengthFunc: () => 1,
                     positionGetFunc: () => 0,
                     positionSetFunc: _ => {},
-                    readAsyncFunc: (buffer, offset, count, cancellationToken) =>
+                    readAsyncFunc: async (buffer, offset, count, cancellationToken) =>
                     {
                         int result = 1;
                         if (called)
@@ -479,22 +517,34 @@ namespace System.Net.Http.Functional.Tests
                             result = 0;
                             Assert.False(cancellationToken.IsCancellationRequested);
                             tokenSource.Cancel();
-                            Assert.True(cancellationToken.IsCancellationRequested);
+
+                            // Wait for cancellation to occur.  It should be very quickly after it's been requested.
+                            var tcs = new TaskCompletionSource<bool>();
+                            using (cancellationToken.Register(() => tcs.SetResult(true)))
+                            {
+                                await tcs.Task;
+                            }
                         }
 
                         called = true;
-                        return Task.FromResult(result);
+                        return result;
                     }
                 )));
                 yield return new object[] { content, tokenSource };
             }
         }
 
+#if !NETFRAMEWORK
         [OuterLoop("Uses Task.Delay")]
-        [Theory]
+        [ConditionalTheory]
         [MemberData(nameof(PostAsync_Cancel_CancellationTokenPassedToContent_MemberData))]
         public async Task PostAsync_Cancel_CancellationTokenPassedToContent(HttpContent content, CancellationTokenSource cancellationTokenSource)
         {
+            if (IsWinHttpHandler)
+            {
+                return;
+            }
+
             await LoopbackServerFactory.CreateClientAndServerAsync(
                 async uri =>
                 {
@@ -518,6 +568,7 @@ namespace System.Net.Http.Functional.Tests
                     catch (Exception) { }
                 });
         }
+#endif
 
         private async Task ValidateClientCancellationAsync(Func<Task> clientBodyAsync)
         {

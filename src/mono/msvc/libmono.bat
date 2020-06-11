@@ -69,6 +69,7 @@ metadata.h ^
 mono-config.h ^
 mono-debug.h ^
 mono-gc.h ^
+mono-private-unstable.h ^
 object.h ^
 object-forward.h ^
 opcodes.h ^
@@ -88,15 +89,22 @@ mono-error.h ^
 mono-forward.h ^
 mono-jemalloc.h ^
 mono-logger.h ^
+mono-private-unstable.h ^
 mono-publib.h
+
+SET JIT_FILES=^
+jit.h ^
+mono-private-unstable.h
 
 ECHO Copying mono include files from %SOURCE_ROOT% to %TARGET_ROOT% ...
 
 SET RUN=%XCOPY_COMMAND% "%SOURCE_ROOT%\cil\opcode.def" "%TARGET_ROOT%\cil\" %OPTIONS%
 call :runCommand "%RUN%" %ARGUMENTS%
 
-SET RUN=%XCOPY_COMMAND% "%SOURCE_ROOT%\mini\jit.h" "%TARGET_ROOT%\jit\" %OPTIONS%
-call :runCommand "%RUN%" %ARGUMENTS%
+FOR %%a IN (%JIT_FILES%) DO (
+	SET RUN=%XCOPY_COMMAND% "%SOURCE_ROOT%\mini\%%a" "%TARGET_ROOT%\jit\" %OPTIONS%
+	call :runCommand "!RUN!" %ARGUMENTS%
+)
 
 FOR %%a IN (%META_DATA_FILES%) DO (
 	SET RUN=%XCOPY_COMMAND% "%SOURCE_ROOT%\metadata\%%a" "%TARGET_ROOT%\metadata\" %OPTIONS%

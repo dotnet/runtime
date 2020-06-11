@@ -4,7 +4,7 @@
       <Rule Id="CA1001" Action="None" />             <!-- Types that own disposable fields should be disposable -->
       <Rule Id="CA1003" Action="None" />             <!-- Use generic event handler instances -->
       <Rule Id="CA1008" Action="None" />             <!-- Enums should have zero value -->
-      <Rule Id="CA1010" Action="None" />             <!-- Collections should implement generic interface -->
+      <Rule Id="CA1010" Action="None" />             <!-- Generic interface should also be implemented -->
       <Rule Id="CA1012" Action="None" />             <!-- Abstract types should not have constructors -->
       <Rule Id="CA1014" Action="None" />             <!-- Mark assemblies with CLSCompliant -->
       <Rule Id="CA1016" Action="None" />             <!-- Mark assemblies with assembly version -->
@@ -41,7 +41,7 @@
       <Rule Id="CA1066" Action="None" />             <!-- Type {0} should implement IEquatable<T> because it overrides Equals -->
       <Rule Id="CA1067" Action="None" />             <!-- Override Object.Equals(object) when implementing IEquatable<T> -->
       <Rule Id="CA1068" Action="None" />             <!-- CancellationToken parameters must come last -->
-      <Rule Id="CA1069" Action="Warning" />          <!-- Enums values should not be duplicated -->
+      <Rule Id="CA1069" Action="None" />             <!-- Enums values should not be duplicated -->
       <Rule Id="CA1200" Action="Warning" />          <!-- Avoid using cref tags with a prefix -->
       <Rule Id="CA1303" Action="None" />             <!-- Do not pass literals as localized parameters -->
       <Rule Id="CA1304" Action="None" />             <!-- Specify CultureInfo -->
@@ -98,6 +98,7 @@
       <Rule Id="CA2010" Action="None" />             <!-- Always consume the value returned by methods marked with PreserveSigAttribute -->
       <Rule Id="CA2011" Action="Warning" />          <!-- Avoid infinite recursion -->
       <Rule Id="CA2012" Action="Warning" />          <!-- Use ValueTasks correctly -->
+      <Rule Id="CA2013" Action="Warning" />          <!-- Do not use ReferenceEquals with value types -->
       <Rule Id="CA2100" Action="None" />             <!-- Review SQL queries for security vulnerabilities -->
       <Rule Id="CA2101" Action="None" />             <!-- Specify marshaling for P/Invoke string arguments -->
       <Rule Id="CA2119" Action="None" />             <!-- Seal methods that satisfy private interfaces -->
@@ -105,7 +106,7 @@
       <Rule Id="CA2200" Action="Warning" />          <!-- Rethrow to preserve stack details. -->
       <Rule Id="CA2201" Action="None" />             <!-- Do not raise reserved exception types -->
       <Rule Id="CA2207" Action="Warning" />          <!-- Initialize value type static fields inline -->
-      <Rule Id="CA2208" Action="None" />             <!-- Instantiate argument exceptions correctly -->
+      <Rule Id="CA2208" Action="Info" />             <!-- Instantiate argument exceptions correctly -->
       <Rule Id="CA2211" Action="None" />             <!-- Non-constant fields should not be visible -->
       <Rule Id="CA2213" Action="None" />             <!-- Disposable fields should be disposed -->
       <Rule Id="CA2214" Action="None" />             <!-- Do not call overridable methods in constructors -->
@@ -209,6 +210,7 @@
       <Rule Id="CA5401" Action="None" />             <!-- Do not use CreateEncryptor with non-default IV -->
       <Rule Id="CA5402" Action="None" />             <!-- Use CreateEncryptor with the default IV  -->
       <Rule Id="CA5403" Action="None" />             <!-- Do not hard-code certificate -->
+      <Rule Id="CA9999" Action="Warning" />          <!-- Analyzer version mismatch -->
   </Rules>
   <Rules AnalyzerId="StyleCop.Analyzers" RuleNamespace="StyleCop.Analyzers">
     <Rule Id="AD0001" Action="None" /> <!-- Analyzer threw an exception -->
@@ -335,7 +337,6 @@
     <Rule Id="SA1649" Action="None" /> <!-- File name should match first type name -->
   </Rules>
   <Rules AnalyzerId="xunit.analyzers" RuleNamespace="xunit.analyzers">
-    <Rule Id="xUnit1024" Action="None" /> <!-- Test methods cannot have overloads -->
     <Rule Id="xUnit2013" Action="None" /> <!-- Do not use equality check to check for collection size. -->
     <Rule Id="xUnit2017" Action="None" /> <!-- Do not use Contains() to check if a value exists in a collection -->
   </Rules>

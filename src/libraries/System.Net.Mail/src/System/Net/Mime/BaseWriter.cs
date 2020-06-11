@@ -24,7 +24,7 @@ namespace System.Net.Mime
         private readonly EventHandler _onCloseHandler;
         private readonly bool _shouldEncodeLeadingDots;
         private readonly int _lineLength;
-        protected Stream _contentStream;
+        protected Stream _contentStream = null!; // set to null on dispose
         protected bool _isInContent;
 
         protected BaseWriter(Stream stream, bool shouldEncodeLeadingDots)
@@ -109,7 +109,7 @@ namespace System.Net.Mime
 
         internal Stream GetContentStream() => GetContentStream(null);
 
-        private Stream GetContentStream(MultiAsyncResult multiResult)
+        private Stream GetContentStream(MultiAsyncResult? multiResult)
         {
             if (_isInContent)
             {
@@ -128,7 +128,7 @@ namespace System.Net.Mime
             return cs;
         }
 
-        internal IAsyncResult BeginGetContentStream(AsyncCallback callback, object state)
+        internal IAsyncResult BeginGetContentStream(AsyncCallback? callback, object? state)
         {
             MultiAsyncResult multiResult = new MultiAsyncResult(this, callback, state);
 
@@ -146,7 +146,7 @@ namespace System.Net.Mime
 
         internal Stream EndGetContentStream(IAsyncResult result)
         {
-            object o = MultiAsyncResult.End(result);
+            object o = MultiAsyncResult.End(result)!;
             if (o is Exception e)
             {
                 ExceptionDispatchInfo.Throw(e);
@@ -158,7 +158,7 @@ namespace System.Net.Mime
 
         #region Cleanup
 
-        protected void Flush(MultiAsyncResult multiResult)
+        protected void Flush(MultiAsyncResult? multiResult)
         {
             if (_bufferBuilder.Length > 0)
             {
@@ -185,7 +185,7 @@ namespace System.Net.Mime
         {
             if (!result.CompletedSynchronously)
             {
-                MultiAsyncResult multiResult = (MultiAsyncResult)result.AsyncState;
+                MultiAsyncResult multiResult = (MultiAsyncResult)result.AsyncState!;
                 BaseWriter thisPtr = (BaseWriter)multiResult.Context;
                 try
                 {
@@ -201,7 +201,7 @@ namespace System.Net.Mime
 
         internal abstract void Close();
 
-        protected abstract void OnClose(object sender, EventArgs args);
+        protected abstract void OnClose(object? sender, EventArgs args);
 
         #endregion Cleanup
 

@@ -102,8 +102,7 @@ namespace System.Diagnostics.Tracing
                 EnsureEventSourceIndexAvailable(eventSourceIndex);
                 Debug.Assert(s_counterGroups != null);
                 WeakReference<CounterGroup> weakRef = CounterGroup.s_counterGroups[eventSourceIndex];
-                CounterGroup? ret = null;
-                if (weakRef == null || !weakRef.TryGetTarget(out ret))
+                if (weakRef == null || !weakRef.TryGetTarget(out CounterGroup? ret))
                 {
                     ret = new CounterGroup(eventSource);
                     CounterGroup.s_counterGroups[eventSourceIndex] = new WeakReference<CounterGroup>(ret);

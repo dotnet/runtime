@@ -4,26 +4,26 @@
 
 namespace System.Runtime
 {
-	partial class GCSettings
-	{
-		public static bool IsServerGC => false;
+    public partial class GCSettings
+    {
+        public static bool IsServerGC => false;
 
-		static GCLatencyMode GetGCLatencyMode() => GCLatencyMode.Batch;
+        private static GCLatencyMode GetGCLatencyMode() => GCLatencyMode.Batch;
 
-		static SetLatencyModeStatus SetGCLatencyMode(GCLatencyMode newLatencyMode)
-		{
-			if (newLatencyMode != GCLatencyMode.Batch)
-				throw new PlatformNotSupportedException ();
+        private static SetLatencyModeStatus SetGCLatencyMode(GCLatencyMode newLatencyMode)
+        {
+            if (newLatencyMode != GCLatencyMode.Batch)
+                throw new PlatformNotSupportedException();
 
-			return SetLatencyModeStatus.Succeeded;
-		}
+            return SetLatencyModeStatus.Succeeded;
+        }
 
-		static GCLargeObjectHeapCompactionMode GetLOHCompactionMode() => GCLargeObjectHeapCompactionMode.Default;
+        private static GCLargeObjectHeapCompactionMode GetLOHCompactionMode() => GCLargeObjectHeapCompactionMode.Default;
 
-		static void SetLOHCompactionMode (GCLargeObjectHeapCompactionMode newLOHCompactionMode)
-		{
-			if (newLOHCompactionMode != GCLargeObjectHeapCompactionMode.Default)
-				throw new PlatformNotSupportedException ();
-		}
-	}
+        private static void SetLOHCompactionMode(GCLargeObjectHeapCompactionMode newLOHCompactionMode)
+        {
+            if (newLOHCompactionMode != GCLargeObjectHeapCompactionMode.Default)
+                throw new PlatformNotSupportedException();
+        }
+    }
 }

@@ -116,6 +116,10 @@ int g_common_signal_handler_context_locvar_offset = 0;
 
 // TOP of special stack for handling stack overflow
 volatile void* g_stackOverflowHandlerStack = NULL;
+
+// Flag that is or-ed with SIGSEGV to indicate that the SIGSEGV was a stack overflow
+const int StackOverflowFlag = 0x40000000;
+
 #endif // !HAVE_MACH_EXCEPTIONS
 
 /* public function definitions ************************************************/
@@ -183,7 +187,11 @@ BOOL SEHInitializeSignals(CorUnix::CPalThread *pthrCurrent, DWORD flags)
         int stackOverflowStackSize = ALIGN_UP(sizeof(SignalHandlerWorkerReturnPoint), 16) + 7 * 4096;
         // Align the size to virtual page size and add one virtual page as a stack guard
         stackOverflowStackSize = ALIGN_UP(stackOverflowStackSize, GetVirtualPageSize()) + GetVirtualPageSize();
-        g_stackOverflowHandlerStack = mmap(NULL, stackOverflowStackSize, PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_STACK | MAP_PRIVATE, -1, 0);
+        int flags = MAP_ANONYMOUS | MAP_PRIVATE;
+#ifdef MAP_STACK
+        flags |= MAP_STACK;
+#endif
+        g_stackOverflowHandlerStack = mmap(NULL, stackOverflowStackSize, PROT_READ | PROT_WRITE, flags, -1, 0);
         if (g_stackOverflowHandlerStack == MAP_FAILED)
         {
             return FALSE;
@@ -525,7 +533,7 @@ static void sigsegv_handler(int code, siginfo_t *siginfo, void *context)
                     }
                 }
 
-                if (SwitchStackAndExecuteHandler(code, siginfo, context, (size_t)handlerStackTop))
+                if (SwitchStackAndExecuteHandler(code | StackOverflowFlag, siginfo, context, (size_t)handlerStackTop))
                 {
                     PROCAbort();
                 }
@@ -534,7 +542,7 @@ static void sigsegv_handler(int code, siginfo_t *siginfo, void *context)
             {
                 (void)write(STDERR_FILENO, StackOverflowMessage, sizeof(StackOverflowMessage) - 1);
                 PROCAbort();
-            }            
+            }
         }
 
         // Now that we know the SIGSEGV didn't happen due to a stack overflow, execute the common
@@ -837,7 +845,15 @@ static bool common_signal_handler(int code, siginfo_t *siginfo, void *sigcontext
     ucontext = (native_context_t *)sigcontext;
     g_common_signal_handler_context_locvar_offset = (int)((char*)&signalContextRecord - (char*)__builtin_frame_address(0));
 
-    exceptionRecord.ExceptionCode = CONTEXTGetExceptionCodeForSignal(siginfo, ucontext);
+    if (code == (SIGSEGV | StackOverflowFlag))
+    {
+        exceptionRecord.ExceptionCode = EXCEPTION_STACK_OVERFLOW;
+        code &= ~StackOverflowFlag;
+    }
+    else
+    {
+        exceptionRecord.ExceptionCode = CONTEXTGetExceptionCodeForSignal(siginfo, ucontext);
+    }
     exceptionRecord.ExceptionFlags = EXCEPTION_IS_SIGNAL;
     exceptionRecord.ExceptionRecord = NULL;
     exceptionRecord.ExceptionAddress = GetNativeContextPC(ucontext);

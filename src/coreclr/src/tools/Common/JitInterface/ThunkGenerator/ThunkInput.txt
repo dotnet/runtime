@@ -91,10 +91,12 @@ CORINFO_SIG_INFO*,,void*
 CORINFO_RESOLVED_TOKEN*,ref CORINFO_RESOLVED_TOKEN,void*
 CORINFO_RESOLVED_TOKEN_PTR,CORINFO_RESOLVED_TOKEN*,void*
 CORINFO_EE_INFO*,ref CORINFO_EE_INFO,void*
+CORINFO_TAILCALL_HELPERS*,ref CORINFO_TAILCALL_HELPERS,void*
 CORINFO_GENERICHANDLE_RESULT*,ref CORINFO_GENERICHANDLE_RESULT,void*
 CORINFO_METHOD_INFO*,CORINFO_METHOD_INFO*,void*
 CORINFO_FIELD_INFO*,CORINFO_FIELD_INFO*,void*
 CORINFO_CALL_INFO*,CORINFO_CALL_INFO*,void*
+PatchpointInfo*,PatchpointInfo*,void*
 DelegateCtorArgs*,ref DelegateCtorArgs,void*
 ICorDynamicInfo*,IntPtr,void*
 va_list,IntPtr
@@ -109,7 +111,6 @@ ICorJitInfo::BlockCounts**,ref BlockCounts*,void**
 
 ; Enums
 CorInfoClassId,,int
-CorInfoHelperTailCallSpecialHandling,,int
 CorInfoHelpFunc,,int
 CorInfoInitClassResult,,int
 CorInfoInlineTypeCheck,,int
@@ -126,10 +127,12 @@ InfoAccessType,,int
 CORINFO_LOOKUP_KIND
 CORINFO_ACCESS_FLAGS,,int
 CORINFO_CALLINFO_FLAGS,,int
+CORINFO_GET_TAILCALL_HELPERS_FLAGS,,int
 CorJitAllocMemFlag,,int
 CorJitFuncKind,,int
 CorJitResult,,int
 TypeCompareState,,int
+CORINFO_InstructionSet,InstructionSet,int
 
 ; Handle types
 CORINFO_MODULE_HANDLE,CORINFO_MODULE_STRUCT_*,void*
@@ -184,6 +187,8 @@ FUNCTIONS
     void methodMustBeLoadedBeforeCodeIsRun(        CORINFO_METHOD_HANDLE       method        );
     CORINFO_METHOD_HANDLE mapMethodDeclToMethodImpl(        CORINFO_METHOD_HANDLE       method        );
     void getGSCookie(        GSCookie * pCookieVal,        GSCookie ** ppCookieVal        );
+    void setPatchpointInfo(PatchpointInfo* patchpointInfo);
+    PatchpointInfo* getOSRInfo(unsigned * ilOffset);
     void resolveToken(CORINFO_RESOLVED_TOKEN * pResolvedToken);
     void tryResolveToken(CORINFO_RESOLVED_TOKEN * pResolvedToken);
     void findSig(        CORINFO_MODULE_HANDLE       module,        unsigned                    sigTOK,        CORINFO_CONTEXT_HANDLE      context,        CORINFO_SIG_INFO           *sig        );
@@ -308,8 +313,9 @@ FUNCTIONS
     void addActiveDependency(CORINFO_MODULE_HANDLE       moduleFrom, CORINFO_MODULE_HANDLE       moduleTo);
     CORINFO_METHOD_HANDLE GetDelegateCtor(CORINFO_METHOD_HANDLE  methHnd, CORINFO_CLASS_HANDLE   clsHnd, CORINFO_METHOD_HANDLE  targetMethodHnd, DelegateCtorArgs *     pCtorData);
     void MethodCompileComplete(CORINFO_METHOD_HANDLE methHnd);
-    void* getTailCallCopyArgsThunk (CORINFO_SIG_INFO       *pSig, CorInfoHelperTailCallSpecialHandling flags);
+    bool getTailCallHelpers(CORINFO_RESOLVED_TOKEN* callToken, CORINFO_SIG_INFO* sig, CORINFO_GET_TAILCALL_HELPERS_FLAGS flags, CORINFO_TAILCALL_HELPERS* pResult);
     bool convertPInvokeCalliToCall(CORINFO_RESOLVED_TOKEN * pResolvedToken, bool mustConvert);
+    void notifyInstructionSetUsage(CORINFO_InstructionSet instructionSet,bool supportEnabled);
     void allocMem(        ULONG               hotCodeSize,    ULONG               coldCodeSize,     ULONG               roDataSize,             ULONG               xcptnsCount,            CorJitAllocMemFlag  flag,        void**             hotCodeBlock,           void**             coldCodeBlock,          void**             roDataBlock             );
     void reserveUnwindInfo(BOOL isFunclet, BOOL isColdCode, ULONG unwindSize)
     void allocUnwindInfo(BYTE* pHotCode, BYTE* pColdCode, ULONG startOffset, ULONG endOffset, ULONG unwindSize, BYTE* pUnwindBlock, CorJitFuncKind funcKind)

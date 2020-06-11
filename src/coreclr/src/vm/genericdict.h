@@ -296,6 +296,11 @@ private:
         return GetSlot(numGenericArgs, i) == NULL;
     }
 
+    inline DWORD GetDictionarySlotsSize(DWORD numGenericArgs)
+    {
+        LIMITED_METHOD_CONTRACT;
+        return VolatileLoadWithoutBarrier((DWORD*)GetSlotAddr(numGenericArgs, 0));
+    }
 #endif // #ifndef DACCESS_COMPILE
 
 public:
@@ -315,9 +320,6 @@ public:
                                BOOL nonExpansive);
 
 private:
-    static DWORD GetDictionarySlotsSizeForType(MethodTable* pMT);
-    static DWORD GetDictionarySlotsSizeForMethod(MethodDesc* pMD);
-
     static Dictionary* GetTypeDictionaryWithSizeCheck(MethodTable* pMT, ULONG slotIndex);
     static Dictionary* GetMethodDictionaryWithSizeCheck(MethodDesc* pMD, ULONG slotIndex);
 

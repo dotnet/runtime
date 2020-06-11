@@ -21,35 +21,44 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Theory]
-        [InlineData(1)]
-        [InlineData(2)]
-        [InlineData(10)]
-        [InlineData(70)]
-        public static void WriteCyclicFail(int depth)
+        [InlineData(1, 2)]
+        [InlineData(2, 3)]
+        [InlineData(10, 11)]
+        [InlineData(70, 71)]
+        [InlineData(10, 0)] // 0 (or default) max depth is treated as 64
+        public static void WriteCyclic(int objectHierarchyDepth, int maxDepth)
         {
             var rootObj = new TestClassWithCycle("root");
-            CreateObjectHierarchy(1, depth, rootObj);
+            CreateObjectHierarchy(1, objectHierarchyDepth, rootObj);
 
-            {
-                var options = new JsonSerializerOptions();
-                options.MaxDepth = depth + 1;
+            var options = new JsonSerializerOptions();
+            options.MaxDepth = maxDepth;
 
-                // No exception since depth was not greater than MaxDepth.
-                string json = JsonSerializer.Serialize(rootObj, options);
-                Assert.False(string.IsNullOrEmpty(json));
-            }
+            string json = JsonSerializer.Serialize(rootObj, options);
+            Assert.False(string.IsNullOrEmpty(json));
+        }
 
-            {
-                var options = new JsonSerializerOptions();
-                options.MaxDepth = depth;
-                JsonException ex = Assert.Throws<JsonException>(() => JsonSerializer.Serialize(rootObj, options));
+        [Theory]
+        [InlineData(1, 1, 0)]
+        [InlineData(2, 2, 1)]
+        [InlineData(10, 10, 9)]
+        [InlineData(70, 70, 69)]
+        [InlineData(70, 0, 63)] // 0 (or default) max depth is treated as 64
+        public static void WriteCyclicFail(int objectHierarchyDepth, int maxDepth, int expectedPathDepth)
+        {
+            int effectiveMaxDepth = maxDepth == 0 ? 64 : maxDepth;
+            var rootObj = new TestClassWithCycle("root");
+            CreateObjectHierarchy(1, objectHierarchyDepth, rootObj);
 
-                // Exception should contain the path and MaxDepth.
-                // Since the last Parent property is null, the serializer moves onto the Children property.
-                string expectedPath = "$" + string.Concat(Enumerable.Repeat(".Parent", depth - 1));
-                Assert.Contains(expectedPath, ex.Path);
-                Assert.Contains(depth.ToString(), ex.ToString());
-            }
+            var options = new JsonSerializerOptions();
+            options.MaxDepth = maxDepth;
+            JsonException ex = Assert.Throws<JsonException>(() => JsonSerializer.Serialize(rootObj, options));
+
+            // Exception should contain the path and MaxDepth.
+            // Since the last Parent property is null, the serializer moves onto the Children property.
+            string expectedPath = "$" + string.Concat(Enumerable.Repeat(".Parent", expectedPathDepth));
+            Assert.Contains(expectedPath, ex.Path);
+            Assert.Contains(effectiveMaxDepth.ToString(), ex.Message);
         }
 
         private static TestClassWithCycle CreateObjectHierarchy(int i, int max, TestClassWithCycle previous)

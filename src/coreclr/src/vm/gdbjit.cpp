@@ -1133,7 +1133,7 @@ ClassTypeInfo::ClassTypeInfo(TypeHandle typeHandle, int num_members, FunctionMem
             break;
         case ELEMENT_TYPE_ARRAY:
         case ELEMENT_TYPE_SZARRAY:
-            m_type_size = pMT->GetClass()->GetSize();
+            m_type_size = typeHandle.AsMethodTable()->GetBaseSize();
             break;
         default:
             m_type_size = 0;
@@ -1791,16 +1791,6 @@ void VarDebugInfo::DumpDebugInfo(char* ptr, int& offset)
     offset += sizeof(DebugInfoVar);
     offset += len;
 }
-
-/* static data for symbol strings */
-struct Elf_Symbol {
-    const char* m_name;
-    int m_off;
-    TADDR m_value;
-    int m_section, m_size;
-    NewArrayHolder<char> m_symbol_name;
-    Elf_Symbol() : m_name(nullptr), m_off(0), m_value(0), m_section(0), m_size(0) {}
-};
 
 template <class T>
 static int countFuncs(T &arr, int n)

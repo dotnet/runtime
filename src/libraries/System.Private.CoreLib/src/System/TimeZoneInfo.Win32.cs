@@ -41,8 +41,7 @@ namespace System
             private static TimeZoneInfo GetCurrentOneYearLocal()
             {
                 // load the data from the OS
-                TIME_ZONE_INFORMATION timeZoneInformation;
-                uint result = Interop.Kernel32.GetTimeZoneInformation(out timeZoneInformation);
+                uint result = Interop.Kernel32.GetTimeZoneInformation(out TIME_ZONE_INFORMATION timeZoneInformation);
                 return result == Interop.Kernel32.TIME_ZONE_ID_INVALID ?
                     CreateCustomTimeZone(LocalId, TimeSpan.Zero, LocalId, LocalId) :
                     GetLocalTimeZoneFromWin32Data(timeZoneInformation, dstDisabled: false);
@@ -173,14 +172,12 @@ namespace System
             //
             // Create an AdjustmentRule with TransitionTime objects
             //
-            TransitionTime daylightTransitionStart;
-            if (!TransitionTimeFromTimeZoneInformation(timeZoneInformation, out daylightTransitionStart, readStartDate: true))
+            if (!TransitionTimeFromTimeZoneInformation(timeZoneInformation, out TransitionTime daylightTransitionStart, readStartDate: true))
             {
                 return null;
             }
 
-            TransitionTime daylightTransitionEnd;
-            if (!TransitionTimeFromTimeZoneInformation(timeZoneInformation, out daylightTransitionEnd, readStartDate: false))
+            if (!TransitionTimeFromTimeZoneInformation(timeZoneInformation, out TransitionTime daylightTransitionEnd, readStartDate: false))
             {
                 return null;
             }
@@ -242,9 +239,8 @@ namespace System
             // Try using the "kernel32!GetDynamicTimeZoneInformation" API to get the "id"
             //
 
-            TIME_DYNAMIC_ZONE_INFORMATION dynamicTimeZoneInformation;
             // call kernel32!GetDynamicTimeZoneInformation...
-            uint result = Interop.Kernel32.GetDynamicTimeZoneInformation(out dynamicTimeZoneInformation);
+            uint result = Interop.Kernel32.GetDynamicTimeZoneInformation(out TIME_DYNAMIC_ZONE_INFORMATION dynamicTimeZoneInformation);
             if (result == Interop.Kernel32.TIME_ZONE_ID_INVALID)
             {
                 // return a dummy entry
@@ -569,9 +565,8 @@ namespace System
                     }
 
                     // read the first year entry
-                    REG_TZI_FORMAT dtzi;
 
-                    if (!TryGetTimeZoneEntryFromRegistry(dynamicKey, first.ToString(CultureInfo.InvariantCulture), out dtzi))
+                    if (!TryGetTimeZoneEntryFromRegistry(dynamicKey, first.ToString(CultureInfo.InvariantCulture), out REG_TZI_FORMAT dtzi))
                     {
                         return false;
                     }
@@ -697,8 +692,7 @@ namespace System
                     return false;
                 }
 
-                REG_TZI_FORMAT registryTimeZoneInfo;
-                if (!TryGetTimeZoneEntryFromRegistry(key, TimeZoneInfoValue, out registryTimeZoneInfo))
+                if (!TryGetTimeZoneEntryFromRegistry(key, TimeZoneInfoValue, out REG_TZI_FORMAT registryTimeZoneInfo))
                 {
                     return false;
                 }
@@ -765,7 +759,6 @@ namespace System
             }
 
             string filePath;
-            int resourceId;
 
             // get the path to Windows\System32
             string system32 = Environment.SystemDirectory;
@@ -783,7 +776,7 @@ namespace System
                 return string.Empty;
             }
 
-            if (!int.TryParse(resources[1], NumberStyles.Integer, CultureInfo.InvariantCulture, out resourceId))
+            if (!int.TryParse(resources[1], NumberStyles.Integer, CultureInfo.InvariantCulture, out int resourceId))
             {
                 return string.Empty;
             }
@@ -939,16 +932,14 @@ namespace System
                     return TimeZoneInfoResult.TimeZoneNotFoundException;
                 }
 
-                REG_TZI_FORMAT defaultTimeZoneInformation;
-                if (!TryGetTimeZoneEntryFromRegistry(key, TimeZoneInfoValue, out defaultTimeZoneInformation))
+                if (!TryGetTimeZoneEntryFromRegistry(key, TimeZoneInfoValue, out REG_TZI_FORMAT defaultTimeZoneInformation))
                 {
                     // the registry value could not be cast to a byte array
                     value = null;
                     return TimeZoneInfoResult.InvalidTimeZoneException;
                 }
 
-                AdjustmentRule[]? adjustmentRules;
-                if (!TryCreateAdjustmentRules(id, defaultTimeZoneInformation, out adjustmentRules, out e, defaultTimeZoneInformation.Bias))
+                if (!TryCreateAdjustmentRules(id, defaultTimeZoneInformation, out AdjustmentRule[]? adjustmentRules, out e, defaultTimeZoneInformation.Bias))
                 {
                     value = null;
                     return TimeZoneInfoResult.InvalidTimeZoneException;

@@ -23,12 +23,8 @@
 // R2R Version 3.0 changes calling conventions to correctly handle explicit structures to spec.
 //     R2R 3.0 is not backward compatible with 2.x.
 
-struct READYTORUN_HEADER
+struct READYTORUN_CORE_HEADER
 {
-    DWORD                   Signature;      // READYTORUN_SIGNATURE
-    USHORT                  MajorVersion;   // READYTORUN_VERSION_XXX
-    USHORT                  MinorVersion;
-
     DWORD                   Flags;          // READYTORUN_FLAG_XXX
 
     DWORD                   NumberOfSections;
@@ -37,12 +33,29 @@ struct READYTORUN_HEADER
     // READYTORUN_SECTION   Sections[];
 };
 
+struct READYTORUN_HEADER
+{
+    DWORD                   Signature;      // READYTORUN_SIGNATURE
+    USHORT                  MajorVersion;   // READYTORUN_VERSION_XXX
+    USHORT                  MinorVersion;
+
+    READYTORUN_CORE_HEADER  CoreHeader;
+};
+
+struct READYTORUN_COMPONENT_ASSEMBLIES_ENTRY
+{
+    IMAGE_DATA_DIRECTORY CorHeader;
+    IMAGE_DATA_DIRECTORY ReadyToRunCoreHeader;
+};
+
 enum ReadyToRunFlag
 {
     READYTORUN_FLAG_PLATFORM_NEUTRAL_SOURCE     = 0x00000001,   // Set if the original IL assembly was platform-neutral
     READYTORUN_FLAG_SKIP_TYPE_VALIDATION        = 0x00000002,   // Set of methods with native code was determined using profile data
     READYTORUN_FLAG_PARTIAL                     = 0x00000004,
-    READYTORUN_FLAG_NONSHARED_PINVOKE_STUBS     = 0x00000008    // PInvoke stubs compiled into image are non-shareable (no secret parameter)
+    READYTORUN_FLAG_NONSHARED_PINVOKE_STUBS     = 0x00000008,   // PInvoke stubs compiled into image are non-shareable (no secret parameter)
+    READYTORUN_FLAG_EMBEDDED_MSIL               = 0x00000010,   // MSIL is embedded in the composite R2R executable
+    READYTORUN_FLAG_COMPONENT                   = 0x00000020,   // This is the header describing a component assembly of composite R2R
 };
 
 enum class ReadyToRunSectionType : uint32_t
@@ -62,6 +75,8 @@ enum class ReadyToRunSectionType : uint32_t
     ManifestMetadata            = 112, // Added in V2.3
     AttributePresence           = 113, // Added in V3.1
     InliningInfo2               = 114, // Added in V4.1
+    ComponentAssemblies         = 115, // Added in V4.1
+    OwnerCompositeExecutable    = 116, // Added in V4.1
 
     // If you add a new section consider whether it is a breaking or non-breaking change.
     // Usually it is non-breaking, but if it is preferable to have older runtimes fail
@@ -187,6 +202,8 @@ enum ReadyToRunFixupKind
 
     READYTORUN_FIXUP_IndirectPInvokeTarget      = 0x2E, /* Target (indirect) of an inlined pinvoke */
     READYTORUN_FIXUP_PInvokeTarget              = 0x2F, /* Target of an inlined pinvoke */
+
+    READYTORUN_FIXUP_Check_InstructionSetSupport= 0x30, /* Define the set of instruction sets that must be supported/unsupported to use the fixup */
 };
 
 //
@@ -241,6 +258,8 @@ enum ReadyToRunHelper
     READYTORUN_HELPER_PInvokeBegin              = 0x42,
     READYTORUN_HELPER_PInvokeEnd                = 0x43,
     READYTORUN_HELPER_GCPoll                    = 0x44,
+    READYTORUN_HELPER_ReversePInvokeEnter       = 0x45,
+    READYTORUN_HELPER_ReversePInvokeExit        = 0x46,
 
     // Get string handle lazily
     READYTORUN_HELPER_GetString                 = 0x50,
@@ -342,6 +361,8 @@ enum ReadyToRunHelper
     READYTORUN_HELPER_StackProbe                = 0x111,
 };
 
+#include "readytoruninstructionset.h"
+
 //
 // Exception info
 //
@@ -367,7 +388,8 @@ struct READYTORUN_EXCEPTION_CLAUSE
 
 enum ReadyToRunRuntimeConstants : DWORD
 {
-    READYTORUN_PInvokeTransitionFrameSizeInPointerUnits = 11
+    READYTORUN_PInvokeTransitionFrameSizeInPointerUnits = 11,
+    READYTORUN_ReversePInvokeTransitionFrameSizeInPointerUnits = 2
 };
 
 #endif // __READYTORUN_H__

@@ -11,8 +11,6 @@ namespace System.Diagnostics
 {
     public sealed partial class FileVersionInfo
     {
-        private static readonly char[] s_versionSeparators = new char[] { '.' };
-
         private FileVersionInfo(string fileName)
         {
             _fileName = fileName;
@@ -45,7 +43,7 @@ namespace System.Diagnostics
         {
             // First make sure it's a file we can actually read from.  Only regular files are relevant,
             // and attempting to open and read from a file such as a named pipe file could cause us to
-            // hang (waiting for someone else to open and write to the file).
+            // stop responding (waiting for someone else to open and write to the file).
             Interop.Sys.FileStatus fileStatus;
             if (Interop.Sys.Stat(_fileName, out fileStatus) != 0 ||
                 (fileStatus.Mode & Interop.Sys.FileTypes.S_IFMT) != Interop.Sys.FileTypes.S_IFREG)
@@ -204,7 +202,7 @@ namespace System.Diagnostics
 
             if (versionString != null)
             {
-                string[] parts = versionString.Split(s_versionSeparators);
+                string[] parts = versionString.Split('.');
                 if (parts.Length <= 4 && parts.Length > 0)
                 {
                     major = ParseUInt16UntilNonDigit(parts[0], out bool endedEarly);

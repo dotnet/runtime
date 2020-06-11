@@ -587,18 +587,6 @@ VMPTR_OBJECTHANDLE DacDbiInterfaceImpl::GetAppDomainObject(VMPTR_AppDomain vmApp
 
 }
 
-// Determine if the specified AppDomain is the default domain
-BOOL DacDbiInterfaceImpl::IsDefaultDomain(VMPTR_AppDomain   vmAppDomain)
-{
-    DD_ENTER_MAY_THROW;
-
-    AppDomain * pAppDomain = vmAppDomain.GetDacPtr();
-    BOOL fDefaultDomain = pAppDomain->IsDefaultDomain();
-
-    return fDefaultDomain;
-}
-
-
 // Get the full AD friendly name for the given EE AppDomain.
 void DacDbiInterfaceImpl::GetAppDomainFullName(
     VMPTR_AppDomain   vmAppDomain,
@@ -3765,45 +3753,7 @@ void DacDbiInterfaceImpl::GetCachedWinRTTypesForIIDs(
 					DacDbiArrayList<GUID> & iids,
     				OUT DacDbiArrayList<DebuggerIPCE_ExpandedTypeData> * pTypes)
 {
-#ifdef FEATURE_COMINTEROP
-
-    DD_ENTER_MAY_THROW;
-
-    AppDomain * pAppDomain = vmAppDomain.GetDacPtr();
-
-    {
-        pTypes->Alloc(iids.Count());
-
-        for (unsigned int i = 0; i < iids.Count(); ++i)
-        {
-            // There is the possiblity that we'll get this far with a dump and not fail, but still
-            // not be able to get full info for a particular param.
-            EX_TRY_ALLOW_DATATARGET_MISSING_MEMORY_WITH_HANDLER
-            {
-                PTR_MethodTable pMT = pAppDomain->LookupTypeByGuid(iids[i]);
-
-                // Fill in the struct using the current TypeHandle
-                VMPTR_TypeHandle vmTypeHandle = VMPTR_TypeHandle::NullPtr();
-                TypeHandle th = TypeHandle::FromTAddr(dac_cast<TADDR>(pMT));
-                vmTypeHandle.SetDacTargetPtr(th.AsTAddr());
-                TypeHandleToExpandedTypeInfo(NoValueTypeBoxing,
-                                             vmAppDomain,
-                                             vmTypeHandle,
-                                             &((*pTypes)[i]));
-            }
-            EX_CATCH_ALLOW_DATATARGET_MISSING_MEMORY_WITH_HANDLER
-            {
-                // On failure for a particular type, default it to NULL.
-                (*pTypes)[i].elementType = ELEMENT_TYPE_END;
-            }
-            EX_END_CATCH_ALLOW_DATATARGET_MISSING_MEMORY_WITH_HANDLER
-        }
-    }
-#else // FEATURE_COMINTEROP
-    {
-        pTypes->Alloc(0);
-    }
-#endif // FEATURE_COMINTEROP
+    pTypes->Alloc(0);
 }
 
 void DacDbiInterfaceImpl::GetCachedWinRTTypes(
@@ -3811,52 +3761,7 @@ void DacDbiInterfaceImpl::GetCachedWinRTTypes(
                     OUT DacDbiArrayList<GUID> * pGuids,
                     OUT DacDbiArrayList<DebuggerIPCE_ExpandedTypeData> * pTypes)
 {
-#ifdef FEATURE_COMINTEROP
-
-    DD_ENTER_MAY_THROW;
-
-    AppDomain * pAppDomain = vmAppDomain.GetDacPtr();
-
-    InlineSArray<PTR_MethodTable, 32> rgMT;
-    InlineSArray<GUID, 32> rgGuid;
-
-    {
-        pAppDomain->GetCachedWinRTTypes(&rgMT, &rgGuid, 0, NULL);
-
-        pTypes->Alloc(rgMT.GetCount());
-        pGuids->Alloc(rgGuid.GetCount());
-
-        for (COUNT_T i = 0; i < rgMT.GetCount(); ++i)
-        {
-            // There is the possiblity that we'll get this far with a dump and not fail, but still
-            // not be able to get full info for a particular param.
-            EX_TRY_ALLOW_DATATARGET_MISSING_MEMORY_WITH_HANDLER
-            {
-                // Fill in the struct using the current TypeHandle
-                VMPTR_TypeHandle vmTypeHandle = VMPTR_TypeHandle::NullPtr();
-                TypeHandle th = TypeHandle::FromTAddr(dac_cast<TADDR>(rgMT[i]));
-                vmTypeHandle.SetDacTargetPtr(th.AsTAddr());
-                TypeHandleToExpandedTypeInfo(NoValueTypeBoxing,
-                                             vmAppDomain,
-                                             vmTypeHandle,
-                                             &((*pTypes)[i]));
-            }
-            EX_CATCH_ALLOW_DATATARGET_MISSING_MEMORY_WITH_HANDLER
-            {
-                // On failure for a particular type, default it to NULL.
-                (*pTypes)[i].elementType = ELEMENT_TYPE_END;
-            }
-            EX_END_CATCH_ALLOW_DATATARGET_MISSING_MEMORY_WITH_HANDLER
-            (*pGuids)[i] = rgGuid[i];
-
-        }
-
-    }
-#else // FEATURE_COMINTEROP
-    {
-        pTypes->Alloc(0);
-    }
-#endif // FEATURE_COMINTEROP
+    pTypes->Alloc(0);
 }
 
 //-----------------------------------------------------------------------------
@@ -5585,9 +5490,6 @@ CorDebugUserState DacDbiInterfaceImpl::GetPartialUserState(VMPTR_Thread vmThread
         result |= USER_WAIT_SLEEP_JOIN;
     }
 
-    // CoreCLR does not support user-requested thread suspension
-    _ASSERTE(!(ts & Thread::TS_UserSuspendPending));
-
     if (pThread->IsThreadPoolThread())
     {
         result |= USER_THREADPOOL;
@@ -5877,13 +5779,6 @@ HRESULT DacDbiInterfaceImpl::IsWinRTModule(VMPTR_Module vmModule, BOOL& isWinRT)
 
     HRESULT hr = S_OK;
     isWinRT = FALSE;
-
-    EX_TRY
-    {
-        Module* pModule = vmModule.GetDacPtr();
-        isWinRT = pModule->GetFile()->GetAssembly()->IsWindowsRuntime();
-    }
-    EX_CATCH_HRESULT(hr);
 
     return hr;
 }
@@ -7506,8 +7401,8 @@ UINT32 DacRefWalker::GetHandleWalkerMask()
     if ((mHandleMask & CorHandleWeakRefCount) || (mHandleMask & CorHandleStrongRefCount))
         result |= (1 << HNDTYPE_REFCOUNTED);
 
-    if (mHandleMask & CorHandleWeakWinRT)
-        result |= (1 << HNDTYPE_WEAK_WINRT);
+    if (mHandleMask & CorHandleWeakNativeCom)
+        result |= (1 << HNDTYPE_WEAK_NATIVE_COM);
 #endif // FEATURE_COMINTEROP
 
     if (mHandleMask & CorHandleStrongDependent)
@@ -7682,8 +7577,8 @@ void CALLBACK DacHandleWalker::EnumCallbackDac(PTR_UNCHECKED_OBJECTREF handle, u
             data.i64ExtraData = refCnt;
             break;
 
-        case HNDTYPE_WEAK_WINRT:
-            data.dwType = (DWORD)CorHandleWeakWinRT;
+        case HNDTYPE_WEAK_NATIVE_COM:
+            data.dwType = (DWORD)CorHandleWeakNativeCom;
             break;
 #endif
 

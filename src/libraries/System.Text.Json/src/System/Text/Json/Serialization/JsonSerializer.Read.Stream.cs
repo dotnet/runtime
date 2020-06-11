@@ -23,10 +23,17 @@ namespace System.Text.Json
         /// <param name="cancellationToken">
         /// The <see cref="System.Threading.CancellationToken"/> which may be used to cancel the read operation.
         /// </param>
+        /// <exception cref="System.ArgumentNullException">
+        /// <paramref name="utf8Json"/>is <see langword="null"/>.
+        /// </exception>
         /// <exception cref="JsonException">
         /// Thrown when the JSON is invalid,
         /// <typeparamref name="TValue"/> is not compatible with the JSON,
         /// or when there is remaining data in the Stream.
+        /// </exception>
+        /// <exception cref="NotSupportedException">
+        /// There is no compatible <see cref="System.Text.Json.Serialization.JsonConverter"/>
+        /// for <typeparamref name="TValue"/> or its serializable members.
         /// </exception>
         public static ValueTask<TValue> DeserializeAsync<TValue>(
             Stream utf8Json,
@@ -34,7 +41,9 @@ namespace System.Text.Json
             CancellationToken cancellationToken = default)
         {
             if (utf8Json == null)
+            {
                 throw new ArgumentNullException(nameof(utf8Json));
+            }
 
             return ReadAsync<TValue>(utf8Json, typeof(TValue), options, cancellationToken);
         }
@@ -51,12 +60,16 @@ namespace System.Text.Json
         /// The <see cref="System.Threading.CancellationToken"/> which may be used to cancel the read operation.
         /// </param>
         /// <exception cref="System.ArgumentNullException">
-        /// Thrown if <paramref name="utf8Json"/> or <paramref name="returnType"/> is null.
+        /// <paramref name="utf8Json"/> or <paramref name="returnType"/> is <see langword="null"/>.
         /// </exception>
         /// <exception cref="JsonException">
         /// Thrown when the JSON is invalid,
         /// the <paramref name="returnType"/> is not compatible with the JSON,
         /// or when there is remaining data in the Stream.
+        /// </exception>
+        /// <exception cref="NotSupportedException">
+        /// There is no compatible <see cref="System.Text.Json.Serialization.JsonConverter"/>
+        /// for <paramref name="returnType"/> or its serializable members.
         /// </exception>
         public static ValueTask<object?> DeserializeAsync(
             Stream utf8Json,
@@ -76,8 +89,8 @@ namespace System.Text.Json
         private static async ValueTask<TValue> ReadAsync<TValue>(
             Stream utf8Json,
             Type returnType,
-            JsonSerializerOptions? options = null,
-            CancellationToken cancellationToken = default)
+            JsonSerializerOptions? options,
+            CancellationToken cancellationToken)
         {
             if (options == null)
             {
@@ -85,10 +98,9 @@ namespace System.Text.Json
             }
 
             ReadStack state = default;
-            state.InitializeRoot(returnType, options);
+            state.Initialize(returnType, options, supportContinuation: true);
 
-            // Ensures converters support contination due to having to re-populate the buffer from a Stream.
-            state.SupportContinuation = true;
+            JsonConverter converter = state.Current.JsonPropertyInfo!.ConverterBase;
 
             var readerState = new JsonReaderState(options.GetReaderOptions());
 
@@ -153,12 +165,13 @@ namespace System.Text.Json
                     }
 
                     // Process the data available
-                    ReadCore(
+                    TValue value = ReadCore<TValue>(
                         ref readerState,
                         isFinalBlock,
                         new ReadOnlySpan<byte>(buffer, start, bytesInBuffer),
                         options,
-                        ref state);
+                        ref state,
+                        converter);
 
                     Debug.Assert(state.BytesConsumed <= bytesInBuffer);
                     int bytesConsumed = checked((int)state.BytesConsumed);
@@ -167,7 +180,10 @@ namespace System.Text.Json
 
                     if (isFinalBlock)
                     {
-                        break;
+                        // The reader should have thrown if we have remaining bytes.
+                        Debug.Assert(bytesInBuffer == 0);
+
+                        return value;
                     }
 
                     // Check if we need to shift or expand the buffer because there wasn't enough data to complete deserialization.
@@ -198,19 +214,15 @@ namespace System.Text.Json
                 new Span<byte>(buffer, 0, clearMax).Clear();
                 ArrayPool<byte>.Shared.Return(buffer);
             }
-
-            // The reader should have thrown if we have remaining bytes.
-            Debug.Assert(bytesInBuffer == 0);
-
-            return (TValue)state.Current.ReturnValue!;
         }
 
-        private static void ReadCore(
+        private static TValue ReadCore<TValue>(
             ref JsonReaderState readerState,
             bool isFinalBlock,
             ReadOnlySpan<byte> buffer,
             JsonSerializerOptions options,
-            ref ReadStack state)
+            ref ReadStack state,
+            JsonConverter converterBase)
         {
             var reader = new Utf8JsonReader(buffer, isFinalBlock, readerState);
 
@@ -221,12 +233,10 @@ namespace System.Text.Json
             state.ReadAhead = !isFinalBlock;
             state.BytesConsumed = 0;
 
-            ReadCore(
-                options,
-                ref reader,
-                ref state);
+            TValue value = ReadCore<TValue>(converterBase, ref reader, options, ref state);
 
             readerState = reader.CurrentState;
+            return value!;
         }
     }
 }

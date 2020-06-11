@@ -65,7 +65,7 @@ namespace System.Security.AccessControl
                 {
                     throw new ArgumentException(
                         SR.Arg_MustBeIdentityReferenceType,
-nameof(targetType));
+                        nameof(targetType));
                 }
 
                 CommonAcl? acl = null;
@@ -288,7 +288,7 @@ nameof(targetType));
 
                         default:
                             throw new ArgumentOutOfRangeException(
-nameof(modification),
+                                nameof(modification),
                                 SR.ArgumentOutOfRange_Enum);
                     }
                 }
@@ -329,14 +329,14 @@ nameof(modification),
 
                         default:
                             throw new ArgumentOutOfRangeException(
-nameof(modification),
+                                nameof(modification),
                                 SR.ArgumentOutOfRange_Enum);
                     }
                 }
                 else
                 {
                     Debug.Fail("rule.AccessControlType unrecognized");
-                    throw new ArgumentException(SR.Format(SR.Arg_EnumIllegalVal, (int)rule.AccessControlType), "rule.AccessControlType");
+                    throw new ArgumentException(SR.Format(SR.Arg_EnumIllegalVal, (int)rule.AccessControlType), nameof(rule));
                 }
 
                 modified = result;
@@ -414,7 +414,7 @@ nameof(modification),
 
                     default:
                         throw new ArgumentOutOfRangeException(
-nameof(modification),
+                            nameof(modification),
                             SR.ArgumentOutOfRange_Enum);
                 }
 

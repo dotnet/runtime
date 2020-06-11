@@ -12,14 +12,14 @@ Below is a table of contents.
 - [Introduction to the Common Language Runtime](intro-to-clr.md)
 - [Garbage Collection Design](garbage-collection.md)
 - [Threading](threading.md)
-- [RyuJIT Overview](ryujit-overview.md)
-  - [Porting RyuJIT to other platforms](porting-ryujit.md)
+- [RyuJIT Overview](../jit/ryujit-overview.md)
+  - [Porting RyuJIT to other platforms](../jit/porting-ryujit.md)
 - [Type System](type-system.md)
 - [Type Loader](type-loader.md)
 - [Method Descriptor](method-descriptor.md)
 - [Virtual Stub Dispatch](virtual-stub-dispatch.md)
 - [Stack Walking](stackwalking.md)
-- [Mscorlib and Calling Into the Runtime](mscorlib.md)
+- [`System.Private.CoreLib` and calling into the runtime](corelib.md)
 - [Data Access Component (DAC) Notes](dac-notes.md)
 - [Profiling](profiling.md)
 - [Implementing Profilability](profilability.md)
@@ -29,6 +29,7 @@ Below is a table of contents.
 - [Cross-platform Minidumps](xplat-minidump-generation.md)
 - [Mixed Mode Assemblies](mixed-mode.md)
 - [Guide For Porting](guide-for-porting.md)
+- [Vectors and Intrinsics](vectors-and-intrinsics.md)
 
 
 It may be possible that this table is not complete.  You can get a complete list

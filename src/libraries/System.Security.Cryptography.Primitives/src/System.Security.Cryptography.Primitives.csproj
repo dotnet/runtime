@@ -24,24 +24,18 @@
     <Compile Include="System\Security\Cryptography\PbeEncryptionAlgorithm.cs" />
     <Compile Include="System\Security\Cryptography\PbeParameters.cs" />
     <Compile Include="System\Security\Cryptography\SymmetricAlgorithm.cs" />
-    <Compile Include="$(CommonPath)System\Threading\Tasks\ForceAsyncAwaiter.cs">
-      <Link>Common\System\Threading\Tasks\ForceAsyncAwaiter.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)Internal\Cryptography\Helpers.cs">
-      <Link>Internal\Cryptography\Helpers.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)System\Security\Cryptography\CryptoPool.cs">
-      <Link>Common\System\Security\Cryptography\CryptoPool.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)System\Security\Cryptography\KeySizeHelpers.cs">
-      <Link>Common\System\Security\Cryptography\KeySizeHelpers.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)System\Security\Cryptography\Oids.cs">
-      <Link>Common\System\Security\Cryptography\Oids.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)System\Threading\Tasks\TaskToApm.cs">
-      <Link>Common\System\Threading\Tasks\TaskToApm.cs</Link>
-    </Compile>
+    <Compile Include="$(CommonPath)System\Threading\Tasks\ForceAsyncAwaiter.cs"
+             Link="Common\System\Threading\Tasks\ForceAsyncAwaiter.cs" />
+    <Compile Include="$(CommonPath)Internal\Cryptography\Helpers.cs"
+             Link="Internal\Cryptography\Helpers.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\CryptoPool.cs"
+             Link="Common\System\Security\Cryptography\CryptoPool.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\KeySizeHelpers.cs"
+             Link="Common\System\Security\Cryptography\KeySizeHelpers.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\Oids.cs"
+             Link="Common\System\Security\Cryptography\Oids.cs" />
+    <Compile Include="$(CommonPath)System\Threading\Tasks\TaskToApm.cs"
+             Link="Common\System\Threading\Tasks\TaskToApm.cs" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="System.Memory" />

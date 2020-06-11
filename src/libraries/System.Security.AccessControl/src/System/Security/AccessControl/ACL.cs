@@ -13,6 +13,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Security.Principal;
 
 namespace System.Security.AccessControl
@@ -234,7 +235,7 @@ namespace System.Security.AccessControl
         #region Private Members
 
         private byte _revision;
-        private List<GenericAce> _aces = null!; // Initialized in helper
+        private List<GenericAce> _aces;
 
         #endregion
 
@@ -315,6 +316,7 @@ namespace System.Security.AccessControl
             binaryForm[offset + 7] = 0;
         }
 
+        [MemberNotNull(nameof(_aces))]
         internal void SetBinaryForm(byte[] binaryForm, int offset)
         {
             int count, length;
@@ -401,7 +403,7 @@ namespace System.Security.AccessControl
 
             throw new ArgumentException(
                 SR.ArgumentException_InvalidAclBinaryForm,
-nameof(binaryForm));
+                nameof(binaryForm));
         }
 
         #endregion
@@ -1950,7 +1952,7 @@ nameof(binaryForm));
                 accessType != AccessControlType.Deny)
             {
                 throw new ArgumentOutOfRangeException(
-nameof(accessType),
+                    nameof(accessType),
                     SR.ArgumentOutOfRange_Enum);
             }
         }
@@ -1968,20 +1970,20 @@ nameof(accessType),
                 {
                     throw new ArgumentException(
                         SR.Argument_InvalidAnyFlag,
-nameof(propagationFlags));
+                        nameof(propagationFlags));
                 }
             }
             else if (inheritanceFlags != InheritanceFlags.None)
             {
                 throw new ArgumentException(
                     SR.Argument_InvalidAnyFlag,
-nameof(inheritanceFlags));
+                    nameof(inheritanceFlags));
             }
             else if (propagationFlags != PropagationFlags.None)
             {
                 throw new ArgumentException(
                     SR.Argument_InvalidAnyFlag,
-nameof(propagationFlags));
+                    nameof(propagationFlags));
             }
 
             return;
@@ -2007,14 +2009,14 @@ nameof(propagationFlags));
             {
                 throw new ArgumentException(
                     SR.Arg_EnumAtLeastOneFlag,
-nameof(flags));
+                    nameof(flags));
             }
 
             if (accessMask == 0)
             {
                 throw new ArgumentException(
                     SR.Argument_ArgumentZero,
-nameof(accessMask));
+                    nameof(accessMask));
             }
 
             GenericAce newAce;
@@ -2086,14 +2088,14 @@ nameof(accessMask));
             {
                 throw new ArgumentException(
                     SR.Arg_EnumAtLeastOneFlag,
-nameof(flags));
+                    nameof(flags));
             }
 
             if (accessMask == 0)
             {
                 throw new ArgumentException(
                     SR.Argument_ArgumentZero,
-nameof(accessMask));
+                    nameof(accessMask));
             }
 
             ThrowIfNotCanonical();
@@ -2191,7 +2193,7 @@ nameof(accessMask));
             {
                 throw new ArgumentException(
                     SR.Argument_ArgumentZero,
-nameof(accessMask));
+                    nameof(accessMask));
             }
 
             if (qualifier == AceQualifier.SystemAudit &&
@@ -2199,7 +2201,7 @@ nameof(accessMask));
             {
                 throw new ArgumentException(
                     SR.Arg_EnumAtLeastOneFlag,
-nameof(flags));
+                    nameof(flags));
             }
 
             if (sid == null)
@@ -2634,7 +2636,7 @@ nameof(flags));
             {
                 throw new ArgumentException(
                     SR.Argument_ArgumentZero,
-nameof(accessMask));
+                    nameof(accessMask));
             }
 
             if (qualifier == AceQualifier.SystemAudit &&
@@ -2642,7 +2644,7 @@ nameof(accessMask));
             {
                 throw new ArgumentException(
                     SR.Arg_EnumAtLeastOneFlag,
-nameof(flags));
+                    nameof(flags));
             }
 
             if (sid == null)

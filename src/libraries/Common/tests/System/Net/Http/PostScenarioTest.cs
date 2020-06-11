@@ -28,6 +28,7 @@ namespace System.Net.Http.Functional.Tests
 
         public PostScenarioTest(ITestOutputHelper output) : base(output) { }
 
+#if !NETFRAMEWORK
         [OuterLoop("Uses external servers")]
         [Theory, MemberData(nameof(RemoteServersMemberData))]
         public async Task PostRewindableStreamContentMultipleTimes_StreamContentFullySent(Configuration.Http.RemoteServer remoteServer)
@@ -50,6 +51,7 @@ namespace System.Net.Http.Functional.Tests
                 }
             }
         }
+#endif
 
         [OuterLoop("Uses external servers")]
         [Theory, MemberData(nameof(RemoteServersMemberData))]

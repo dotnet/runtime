@@ -43,14 +43,14 @@ namespace System.Collections.Concurrent
     [DebuggerDisplay("Count = {Count}, Type = {_collection}")]
     public class BlockingCollection<T> : IEnumerable<T>, ICollection, IDisposable, IReadOnlyCollection<T>
     {
-        private IProducerConsumerCollection<T> _collection = null!;
+        private IProducerConsumerCollection<T> _collection;
         private int _boundedCapacity;
         private const int NON_BOUNDED = -1;
         private SemaphoreSlim? _freeNodes;
-        private SemaphoreSlim _occupiedNodes = null!;
+        private SemaphoreSlim _occupiedNodes;
         private bool _isDisposed;
-        private CancellationTokenSource _consumersCancellationTokenSource = null!;
-        private CancellationTokenSource _producersCancellationTokenSource = null!;
+        private CancellationTokenSource _consumersCancellationTokenSource;
+        private CancellationTokenSource _producersCancellationTokenSource;
 
         private volatile int _currentAdders;
         private const int COMPLETE_ADDING_ON_MASK = unchecked((int)0x80000000);
@@ -177,7 +177,7 @@ namespace System.Collections.Concurrent
             if (boundedCapacity < 1)
             {
                 throw new ArgumentOutOfRangeException(
-nameof(boundedCapacity), boundedCapacity,
+                    nameof(boundedCapacity), boundedCapacity,
                     SR.BlockingCollection_ctor_BoundedCapacityRange);
             }
             if (collection == null)
@@ -211,6 +211,10 @@ nameof(boundedCapacity), boundedCapacity,
         /// <param name="collection">The collection to use as the underlying data store.</param>
         /// <param name="boundedCapacity">The bounded size of the collection.</param>
         /// <param name="collectionCount">The number of items currently in the underlying collection.</param>
+        [MemberNotNull(nameof(_collection))]
+        [MemberNotNull(nameof(_consumersCancellationTokenSource))]
+        [MemberNotNull(nameof(_producersCancellationTokenSource))]
+        [MemberNotNull(nameof(_occupiedNodes))]
         private void Initialize(IProducerConsumerCollection<T> collection, int boundedCapacity, int collectionCount)
         {
             Debug.Assert(boundedCapacity > 0 || boundedCapacity == NON_BOUNDED);
@@ -755,7 +759,13 @@ nameof(boundedCapacity), boundedCapacity,
                     }
                 }
             }
+
+#pragma warning disable CS8762
+            // https://github.com/dotnet/runtime/issues/36132
+            // Compiler can't automatically deduce that nullability constraints
+            // for 'item' are satisfied at this exit point.
             return waitForSemaphoreWasSuccessful;
+#pragma warning restore CS8762
         }
 
 
@@ -1707,7 +1717,7 @@ nameof(boundedCapacity), boundedCapacity,
             {
                 //The number of WaitHandles must be <= 64 for MTA, and <=63 for STA, as we reserve one for CancellationToken
                 throw new ArgumentOutOfRangeException(
-nameof(collections), SR.BlockingCollection_ValidateCollectionsArray_LargeSize);
+                    nameof(collections), SR.BlockingCollection_ValidateCollectionsArray_LargeSize);
             }
 
             for (int i = 0; i < collections.Length; ++i)
@@ -1720,7 +1730,7 @@ nameof(collections), SR.BlockingCollection_ValidateCollectionsArray_LargeSize);
 
                 if (collections[i]._isDisposed)
                     throw new ObjectDisposedException(
-nameof(collections), SR.BlockingCollection_ValidateCollectionsArray_DispElems);
+                        nameof(collections), SR.BlockingCollection_ValidateCollectionsArray_DispElems);
 
                 if (isAddOperation && collections[i].IsAddingCompleted)
                 {

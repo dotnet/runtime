@@ -4,9 +4,8 @@
 
 #pragma warning disable SA1028 // ignore whitespace warnings for generated code
 using System;
+using System.Formats.Asn1;
 using System.Runtime.InteropServices;
-using System.Security.Cryptography;
-using System.Security.Cryptography.Asn1;
 
 namespace System.Security.Cryptography.X509Certificates.Asn1
 {
@@ -28,13 +27,13 @@ namespace System.Security.Cryptography.X509Certificates.Asn1
 
             if (RequireExplicitPolicyDepth.HasValue)
             {
-                writer.WriteInteger(new Asn1Tag(TagClass.ContextSpecific, 0), RequireExplicitPolicyDepth.Value);
+                writer.WriteInteger(RequireExplicitPolicyDepth.Value, new Asn1Tag(TagClass.ContextSpecific, 0));
             }
 
 
             if (InhibitMappingDepth.HasValue)
             {
-                writer.WriteInteger(new Asn1Tag(TagClass.ContextSpecific, 1), InhibitMappingDepth.Value);
+                writer.WriteInteger(InhibitMappingDepth.Value, new Asn1Tag(TagClass.ContextSpecific, 1));
             }
 
             writer.PopSequence(tag);
@@ -47,11 +46,18 @@ namespace System.Security.Cryptography.X509Certificates.Asn1
 
         internal static PolicyConstraintsAsn Decode(Asn1Tag expectedTag, ReadOnlyMemory<byte> encoded, AsnEncodingRules ruleSet)
         {
-            AsnValueReader reader = new AsnValueReader(encoded.Span, ruleSet);
+            try
+            {
+                AsnValueReader reader = new AsnValueReader(encoded.Span, ruleSet);
 
-            Decode(ref reader, expectedTag, encoded, out PolicyConstraintsAsn decoded);
-            reader.ThrowIfNotEmpty();
-            return decoded;
+                DecodeCore(ref reader, expectedTag, encoded, out PolicyConstraintsAsn decoded);
+                reader.ThrowIfNotEmpty();
+                return decoded;
+            }
+            catch (AsnContentException e)
+            {
+                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding, e);
+            }
         }
 
         internal static void Decode(ref AsnValueReader reader, ReadOnlyMemory<byte> rebind, out PolicyConstraintsAsn decoded)
@@ -61,6 +67,18 @@ namespace System.Security.Cryptography.X509Certificates.Asn1
 
         internal static void Decode(ref AsnValueReader reader, Asn1Tag expectedTag, ReadOnlyMemory<byte> rebind, out PolicyConstraintsAsn decoded)
         {
+            try
+            {
+                DecodeCore(ref reader, expectedTag, rebind, out decoded);
+            }
+            catch (AsnContentException e)
+            {
+                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding, e);
+            }
+        }
+
+        private static void DecodeCore(ref AsnValueReader reader, Asn1Tag expectedTag, ReadOnlyMemory<byte> rebind, out PolicyConstraintsAsn decoded)
+        {
             decoded = default;
             AsnValueReader sequenceReader = reader.ReadSequence(expectedTag);
 
@@ -68,7 +86,7 @@ namespace System.Security.Cryptography.X509Certificates.Asn1
             if (sequenceReader.HasData && sequenceReader.PeekTag().HasSameClassAndValue(new Asn1Tag(TagClass.ContextSpecific, 0)))
             {
 
-                if (sequenceReader.TryReadInt32(new Asn1Tag(TagClass.ContextSpecific, 0), out int tmpRequireExplicitPolicyDepth))
+                if (sequenceReader.TryReadInt32(out int tmpRequireExplicitPolicyDepth, new Asn1Tag(TagClass.ContextSpecific, 0)))
                 {
                     decoded.RequireExplicitPolicyDepth = tmpRequireExplicitPolicyDepth;
                 }
@@ -83,7 +101,7 @@ namespace System.Security.Cryptography.X509Certificates.Asn1
             if (sequenceReader.HasData && sequenceReader.PeekTag().HasSameClassAndValue(new Asn1Tag(TagClass.ContextSpecific, 1)))
             {
 
-                if (sequenceReader.TryReadInt32(new Asn1Tag(TagClass.ContextSpecific, 1), out int tmpInhibitMappingDepth))
+                if (sequenceReader.TryReadInt32(out int tmpInhibitMappingDepth, new Asn1Tag(TagClass.ContextSpecific, 1)))
                 {
                     decoded.InhibitMappingDepth = tmpInhibitMappingDepth;
                 }

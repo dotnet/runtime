@@ -50,7 +50,7 @@ public:
     void FireGCGenerationRange(uint8_t generation, void* rangeStart, uint64_t rangeUsedLength, uint64_t rangeReservedLength) = 0;
 
     virtual
-    void FireGCHeapStats_V1(
+    void FireGCHeapStats_V2(
         uint64_t generationSize0,
         uint64_t totalPromotedSize0,
         uint64_t generationSize1,
@@ -59,6 +59,8 @@ public:
         uint64_t totalPromotedSize2,
         uint64_t generationSize3,
         uint64_t totalPromotedSize3,
+        uint64_t generationSize4,
+        uint64_t totalPromotedSize4,
         uint64_t finalizationPromotedSize,
         uint64_t finalizationPromotedCount,
         uint32_t pinnedObjectCount,
@@ -148,7 +150,7 @@ public:
     virtual
     void FireBGCRevisit(uint64_t pages, uint64_t objects, uint32_t isLarge) = 0;
     virtual
-    void FireBGCOverflow(uint64_t min, uint64_t max, uint64_t objects, uint32_t isLarge) = 0;
+    void FireBGCOverflow_V1(uint64_t min, uint64_t max, uint64_t objects, uint32_t isLarge, uint32_t genNumber) = 0;
     virtual
     void FireBGCAllocWaitBegin(uint32_t reason) = 0;
     virtual
@@ -300,10 +302,10 @@ public:
     virtual
     void DiagWalkSurvivors(void* gcContext, bool fCompacting) = 0;
 
-    // During a full GC after we discover what objects to survive on LOH,
+    // During a full GC after we discover what objects to survive on UOH,
     // gives the diagnostics code a chance to run.
     virtual
-    void DiagWalkLOHSurvivors(void* gcContext) = 0;
+    void DiagWalkUOHSurvivors(void* gcContext, int gen) = 0;
 
     // At the end of a background GC, gives the diagnostics code a chance to run.
     virtual
@@ -346,13 +348,13 @@ public:
     // pointer is undefined. Otherwise, true is returned and the config key's value is written to
     // the passed-in pointer.
     virtual
-    bool GetBooleanConfigValue(const char* key, bool* value) = 0;
+    bool GetBooleanConfigValue(const char* privateKey, const char* publicKey, bool* value) = 0;
 
     virtual
-    bool GetIntConfigValue(const char* key, int64_t* value) = 0;
+    bool GetIntConfigValue(const char* privateKey, const char* publicKey, int64_t* value) = 0;
 
     virtual
-    bool GetStringConfigValue(const char* key, const char** value) = 0;
+    bool GetStringConfigValue(const char* privateKey, const char* publicKey, const char** value) = 0;
 
     virtual
     void FreeStringConfigValue(const char* value) = 0;

@@ -35,9 +35,6 @@
 #define g_InteropNS         g_RuntimeNS ".InteropServices"
 #define g_InteropTCENS      g_InteropNS ".TCEAdapterGen"
 #define g_ExpandoNS         g_InteropNS ".Expando"
-#ifdef FEATURE_COMINTEROP
-#define g_WinRTNS           g_InteropNS ".WindowsRuntime"
-#endif // FEATURE_COMINTEROP
 
 #define g_IntrinsicsNS g_RuntimeNS ".Intrinsics"
 #define g_NumericsNS   g_SystemNS  ".Numerics"
@@ -71,16 +68,6 @@
 #define g_SafeHandlesNS  g_Win32NS ".SafeHandles"
 
 #define g_StubHelpersNS     g_SystemNS ".StubHelpers"
-
-// Jupiter support requires accessing types in the System.Windows namespace & children,
-// but these types may show up in the Windows.UI.Xaml namespace.
-#define g_SysWindowsNS      g_SystemNS ".Windows"
-
-#define g_DirectUINS        "Windows.UI.Xaml"
-#define g_AutomationNS      g_DirectUINS ".Automation"
-#define g_MarkupNS          g_DirectUINS ".Markup"
-
-#define g_WindowsFoundationDiagNS    "Windows.Foundation.Diagnostics"
 
 #define g_ExceptionServicesNS         g_RuntimeNS ".ExceptionServices"
 

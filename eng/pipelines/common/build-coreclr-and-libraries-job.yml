@@ -8,7 +8,6 @@ parameters:
   crossrootfsDir: ''
   timeoutInMinutes: ''
   signBinaries: false
-  publishToBlobFeed: false
   stagedBuild: false
   variables: {}
   pool: ''
@@ -25,7 +24,6 @@ jobs:
     crossrootfsDir: ${{ parameters.crossrootfsDir }}
     timeoutInminutes: ${{ parameters.timeoutInMinutes }}
     signBinaries: ${{ parameters.signBinaries }}
-    publishToBlobFeed: ${{ parameters.publishToBlobFeed }}
     stagedBuild: ${{ parameters.stagedBuild }}
     variables: ${{ parameters.variables }}
     pool: ${{ parameters.pool }}
@@ -44,7 +42,6 @@ jobs:
     crossrootfsDir: ${{ parameters.crossrootfsDir }}
     timeoutInminutes: ${{ parameters.timeoutInMinutes }}
     signBinaries: ${{ parameters.signBinaries }}
-    publishToBlobFeed: ${{ parameters.publishToBlobFeed }}
     stagedBuild: ${{ parameters.stagedBuild }}
     variables: ${{ parameters.variables }}
     pool: ${{ parameters.pool }}

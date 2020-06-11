@@ -28,7 +28,7 @@
 #endif
 
 //********** Globals. *********************************************************
-#ifndef TARGET_UNIX
+#ifndef HOST_UNIX
 HINSTANCE       g_hInst;                // Instance handle to this piece of code.
 #endif
 
@@ -246,7 +246,7 @@ BOOL WINAPI DbgDllMain(HINSTANCE hInstance, DWORD dwReason, LPVOID lpReserved)
         case DLL_THREAD_DETACH:
         {
 #ifdef STRESS_LOG
-            StressLog::ThreadDetach((ThreadStressLog*) ClrFlsGetValue(TlsIdx_StressLog));
+            StressLog::ThreadDetach();
 #endif
 
 #ifdef RSCONTRACTS
@@ -472,40 +472,6 @@ STDAPI GetRequestedRuntimeInfo(LPCWSTR pExe,
     _ASSERTE(!"GetRequestedRuntimeInfo not impl");
     return E_NOTIMPL;
 }
-
-//-----------------------------------------------------------------------------
-// Replacement for legacy shim API GetCORRequiredVersion(...) used in linked libraries.
-// Used in code:TiggerStorage::GetDefaultVersion#CallTo_CLRRuntimeHostInternal_GetImageVersionString.
-//
-// Notes:
-//   Mscordbi does not statically link to mscoree.dll.
-//   This is used in EnC for IMetadataEmit2::GetSaveSize to computer size of header.
-//   see code:TiggerStorage::GetDefaultVersion.
-//
-//   Implemented by returning the version we're built for.  Mscordbi.dll has a tight coupling with
-//   the CLR version, so this will match exactly the build version we're debugging.
-//   One potential caveat is that the build version doesn't necessarily match the install string
-//   (eg. we may install as "v4.0.x86chk" but that's not captured in the build version).  But this should
-//   be internal scenarios only, and shouldn't actually matter here.  If it did, we could instead get
-//   the last components of the directory name the current mscordbi.dll is located in.
-//
-HRESULT
-CLRRuntimeHostInternal_GetImageVersionString(
-    __out_ecount_part(*pcchBuffer, *pcchBuffer) LPWSTR wszBuffer,
-    DWORD *pcchBuffer)
-{
-    // Construct the cannoncial version string we're built as - eg. "v4.0.1234"
-    const WCHAR k_wszBuiltFor[] = W("v") VER_PRODUCTVERSION_NO_QFE_STR_L;
-
-    // Copy our buffer in
-    HRESULT hr = HRESULT_FROM_WIN32(wcscpy_s(wszBuffer, *pcchBuffer, k_wszBuiltFor));
-
-    // Hand out length regardless of success - like GetCORRequiredVersion
-    *pcchBuffer = _countof(k_wszBuiltFor);
-
-    return hr;
-} // CLRRuntimeHostInternal_GetImageVersionString
-
 
 #ifdef TARGET_ARM
 BOOL

@@ -57,6 +57,6 @@ namespace System.Threading
         }
 
         public static bool TryOpenExisting(string name, [NotNullWhen(true)] out Mutex? result) =>
-            OpenExistingWorker(name, out result) == OpenExistingResult.Success;
+            OpenExistingWorker(name, out result!) == OpenExistingResult.Success;
     }
 }

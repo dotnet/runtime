@@ -3,9 +3,8 @@
     <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="$(CommonTestPath)System\IO\PositionValueStream.cs">
-      <Link>CommonTest\System\IO\PositionValueStream.cs</Link>
-    </Compile>
+    <Compile Include="$(CommonTestPath)System\IO\PositionValueStream.cs"
+             Link="CommonTest\System\IO\PositionValueStream.cs" />
     <Compile Include="AsymmetricAlgorithm\Trivial.cs" />
     <Compile Include="CryptoConfigTests.cs" />
     <Compile Include="CryptographicException.cs" />

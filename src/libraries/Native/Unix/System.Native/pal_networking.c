@@ -7,6 +7,7 @@
 #include "pal_io.h"
 #include "pal_safecrt.h"
 #include "pal_utilities.h"
+#include <pal_networking_common.h>
 #include <fcntl.h>
 
 #include <stdlib.h>
@@ -22,6 +23,10 @@
 #include <sys/event.h>
 #elif HAVE_SYS_POLL_H
 #include <sys/poll.h>
+#endif
+#if HAVE_SYS_PROCINFO_H
+#include <sys/proc_info.h>
+#include <libproc.h>
 #endif
 #include <errno.h>
 #include <netdb.h>
@@ -56,6 +61,10 @@
 #if HAVE_LINUX_CAN_H
 #include <linux/can.h>
 #endif
+#if HAVE_SYS_FILIO_H
+#include <sys/filio.h>
+#endif
+
 #if HAVE_KQUEUE
 #if KEVENT_HAS_VOID_UDATA
 static void* GetKeventUdata(uintptr_t udata)
@@ -394,7 +403,7 @@ int32_t SystemNative_GetHostEntryForName(const uint8_t* address, HostEntry* entr
                 }
 
                 // Skip loopback addresses if at least one interface has non-loopback one.
-                if ((!includeIPv4Loopback && ifa->ifa_addr->sa_family == AF_INET && (ifa->ifa_flags & IFF_LOOPBACK) != 0) || 
+                if ((!includeIPv4Loopback && ifa->ifa_addr->sa_family == AF_INET && (ifa->ifa_flags & IFF_LOOPBACK) != 0) ||
                     (!includeIPv6Loopback && ifa->ifa_addr->sa_family == AF_INET6 && (ifa->ifa_flags & IFF_LOOPBACK) != 0))
                 {
                     entry->IPAddressCount--;
@@ -531,7 +540,7 @@ int32_t SystemNative_GetDomainName(uint8_t* name, int32_t nameLength)
     // On Android, there's no getdomainname but we can use uname to fetch the domain name
     // of the current device
     size_t namelen = (uint32_t)nameLength;
-    utsname  uts;
+    struct utsname  uts;
 
     // If uname returns an error, bail out.
     if (uname(&uts) == -1)
@@ -547,7 +556,7 @@ int32_t SystemNative_GetDomainName(uint8_t* name, int32_t nameLength)
     }
 
     // Copy the domain name
-    SafeStringCopy((char*)name, nameLength, uts.domainname);
+    SafeStringCopy((char*)name, namelen, uts.domainname);
     return 0;
 #else
     // GetDomainName is not supported on this platform.
@@ -674,7 +683,7 @@ int32_t SystemNative_GetAddressFamily(const uint8_t* socketAddress, int32_t sock
 
     if (!TryConvertAddressFamilyPlatformToPal(sockAddr->sa_family, addressFamily))
     {
-        return Error_EAFNOSUPPORT;
+        *addressFamily = AddressFamily_AF_UNKNOWN;
     }
 
     return Error_SUCCESS;
@@ -904,7 +913,7 @@ static void ConvertMessageHeaderToMsghdr(struct msghdr* header, const MessageHea
         iovlen = (int)IOV_MAX;
     }
     header->msg_name = messageHeader->SocketAddress;
-    header->msg_namelen = (unsigned int)messageHeader->SocketAddressLen;
+    header->msg_namelen = (socklen_t)messageHeader->SocketAddressLen;
     header->msg_iov = (struct iovec*)messageHeader->IOVectors;
     header->msg_iovlen = (__typeof__(header->msg_iovlen))iovlen;
     header->msg_control = messageHeader->ControlBuffer;
@@ -1339,6 +1348,34 @@ static int32_t ConvertSocketFlagsPlatformToPal(int platformFlags)
            ((platformFlags & MSG_CTRUNC) == 0 ? 0 : SocketFlags_MSG_CTRUNC);
 }
 
+int32_t SystemNative_Receive(intptr_t socket, void* buffer, int32_t bufferLen, int32_t flags, int32_t* received)
+{
+    if (buffer == NULL || bufferLen < 0 || received == NULL)
+    {
+        return Error_EFAULT;
+    }
+
+    int fd = ToFileDescriptor(socket);
+
+    int socketFlags;
+    if (!ConvertSocketFlagsPalToPlatform(flags, &socketFlags))
+    {
+        return Error_ENOTSUP;
+    }
+
+    ssize_t res;
+    while ((res = recv(fd, buffer, (size_t)bufferLen, socketFlags)) < 0 && errno == EINTR);
+
+    if (res != -1)
+    {
+        *received = (int32_t)res;
+        return Error_SUCCESS;
+    }
+
+    *received = 0;
+    return SystemNative_ConvertErrorPlatformToPal(errno);
+}
+
 int32_t SystemNative_ReceiveMessage(intptr_t socket, MessageHeader* messageHeader, int32_t flags, int64_t* received)
 {
     if (messageHeader == NULL || received == NULL || messageHeader->SocketAddressLen < 0 ||
@@ -1382,6 +1419,38 @@ int32_t SystemNative_ReceiveMessage(intptr_t socket, MessageHeader* messageHeade
     return SystemNative_ConvertErrorPlatformToPal(errno);
 }
 
+int32_t SystemNative_Send(intptr_t socket, void* buffer, int32_t bufferLen, int32_t flags, int32_t* sent)
+{
+    if (buffer == NULL || bufferLen < 0 || sent == NULL)
+    {
+        return Error_EFAULT;
+    }
+
+    int fd = ToFileDescriptor(socket);
+
+    int socketFlags;
+    if (!ConvertSocketFlagsPalToPlatform(flags, &socketFlags))
+    {
+        return Error_ENOTSUP;
+    }
+
+    ssize_t res;
+#if defined(__APPLE__) && __APPLE__
+    // possible OSX kernel bug: https://github.com/dotnet/runtime/issues/27221
+    while ((res = send(fd, buffer, (size_t)bufferLen, socketFlags)) < 0 && (errno == EINTR || errno == EPROTOTYPE));
+#else
+    while ((res = send(fd, buffer, (size_t)bufferLen, socketFlags)) < 0 && errno == EINTR);
+#endif
+    if (res != -1)
+    {
+        *sent = (int32_t)res;
+        return Error_SUCCESS;
+    }
+
+    *sent = 0;
+    return SystemNative_ConvertErrorPlatformToPal(errno);
+}
+
 int32_t SystemNative_SendMessage(intptr_t socket, MessageHeader* messageHeader, int32_t flags, int64_t* sent)
 {
     if (messageHeader == NULL || sent == NULL || messageHeader->SocketAddressLen < 0 ||
@@ -1403,7 +1472,7 @@ int32_t SystemNative_SendMessage(intptr_t socket, MessageHeader* messageHeader, 
 
     ssize_t res;
 #if defined(__APPLE__) && __APPLE__
-    // possible OSX kernel bug:  #31927
+    // possible OSX kernel bug: https://github.com/dotnet/runtime/issues/27221
     while ((res = sendmsg(fd, &header, socketFlags)) < 0 && (errno == EINTR || errno == EPROTOTYPE));
 #else
     while ((res = sendmsg(fd, &header, socketFlags)) < 0 && errno == EINTR);
@@ -1474,7 +1543,7 @@ int32_t SystemNative_Bind(intptr_t socket, int32_t protocolType, uint8_t* socket
     if (socketAddress == NULL || socketAddressLen < 0)
     {
         return Error_EFAULT;
-    }   
+    }
 
     int fd = ToFileDescriptor(socket);
 
@@ -1524,7 +1593,6 @@ int32_t SystemNative_GetPeerName(intptr_t socket, uint8_t* socketAddress, int32_
         return SystemNative_ConvertErrorPlatformToPal(errno);
     }
 
-    assert(addrLen <= (socklen_t)*socketAddressLen);
     *socketAddressLen = (int32_t)addrLen;
     return Error_SUCCESS;
 }
@@ -1559,29 +1627,7 @@ int32_t SystemNative_Listen(intptr_t socket, int32_t backlog)
 
 int32_t SystemNative_Shutdown(intptr_t socket, int32_t socketShutdown)
 {
-    int fd = ToFileDescriptor(socket);
-
-    int how;
-    switch (socketShutdown)
-    {
-        case SocketShutdown_SHUT_READ:
-            how = SHUT_RD;
-            break;
-
-        case SocketShutdown_SHUT_WRITE:
-            how = SHUT_WR;
-            break;
-
-        case SocketShutdown_SHUT_BOTH:
-            how = SHUT_RDWR;
-            break;
-
-        default:
-            return Error_EINVAL;
-    }
-
-    int err = shutdown(fd, how);
-    return err == 0 ? Error_SUCCESS : SystemNative_ConvertErrorPlatformToPal(errno);
+    return Common_Shutdown(socket, socketShutdown);
 }
 
 int32_t SystemNative_GetSocketErrorOption(intptr_t socket, int32_t* error)
@@ -1606,14 +1652,14 @@ int32_t SystemNative_GetSocketErrorOption(intptr_t socket, int32_t* error)
     return Error_SUCCESS;
 }
 
-static bool TryGetPlatformSocketOption(int32_t socketOptionName, int32_t socketOptionLevel, int* optLevel, int* optName)
+static bool TryGetPlatformSocketOption(int32_t socketOptionLevel, int32_t socketOptionName, int* optLevel, int* optName)
 {
-    switch (socketOptionName)
+    switch (socketOptionLevel)
     {
         case SocketOptionLevel_SOL_SOCKET:
             *optLevel = SOL_SOCKET;
 
-            switch (socketOptionLevel)
+            switch (socketOptionName)
             {
                 case SocketOptionName_SO_DEBUG:
                     *optName = SO_DEBUG;
@@ -1694,7 +1740,7 @@ static bool TryGetPlatformSocketOption(int32_t socketOptionName, int32_t socketO
         case SocketOptionLevel_SOL_IP:
             *optLevel = IPPROTO_IP;
 
-            switch (socketOptionLevel)
+            switch (socketOptionName)
             {
                 case SocketOptionName_SO_IP_OPTIONS:
                     *optName = IP_OPTIONS;
@@ -1773,7 +1819,7 @@ static bool TryGetPlatformSocketOption(int32_t socketOptionName, int32_t socketO
         case SocketOptionLevel_SOL_IPV6:
             *optLevel = IPPROTO_IPV6;
 
-            switch (socketOptionLevel)
+            switch (socketOptionName)
             {
                 case SocketOptionName_SO_IPV6_HOPLIMIT:
                     *optName = IPV6_HOPLIMIT;
@@ -1807,7 +1853,7 @@ static bool TryGetPlatformSocketOption(int32_t socketOptionName, int32_t socketO
         case SocketOptionLevel_SOL_TCP:
             *optLevel = IPPROTO_TCP;
 
-            switch (socketOptionLevel)
+            switch (socketOptionName)
             {
                 case SocketOptionName_SO_TCP_NODELAY:
                     *optName = TCP_NODELAY;
@@ -1839,7 +1885,7 @@ static bool TryGetPlatformSocketOption(int32_t socketOptionName, int32_t socketO
         case SocketOptionLevel_SOL_UDP:
             *optLevel = IPPROTO_UDP;
 
-            switch (socketOptionLevel)
+            switch (socketOptionName)
             {
                 // case SocketOptionName_SO_UDP_NOCHECKSUM:
 
@@ -1903,7 +1949,7 @@ int32_t SystemNative_GetSockOpt(
     int fd = ToFileDescriptor(socket);
 
     //
-    // Handle some special cases for compatibility with Windows
+    // Handle some special cases for compatibility with Windows and OSX
     //
     if (socketOptionLevel == SocketOptionLevel_SOL_SOCKET)
     {
@@ -1940,6 +1986,25 @@ int32_t SystemNative_GetSockOpt(
 #endif
             return Error_SUCCESS;
         }
+#if defined(__APPLE__) && HAVE_SYS_PROCINFO_H
+        // OSX does not have SO_ACCEPTCONN getsockopt.
+        else if (socketOptionName == SocketOptionName_SO_ACCEPTCONN)
+        {
+            if (*optionLen != sizeof(int32_t))
+            {
+                return Error_EINVAL;
+            }
+
+            struct socket_fdinfo fdi;
+            if (proc_pidfdinfo(getpid(), fd, PROC_PIDFDSOCKETINFO, &fdi, sizeof(fdi)) < sizeof(fdi))
+            {
+                return SystemNative_ConvertErrorPlatformToPal(errno);
+            }
+            int value = (fdi.psi.soi_options & SO_ACCEPTCONN) != 0;
+            *(int32_t*)optionValue = value;
+            return Error_SUCCESS;
+        }
+#endif
     }
 
     int optLevel, optName;
@@ -1979,6 +2044,26 @@ int32_t SystemNative_GetSockOpt(
             }
             optLen = sizeof(int32_t);
         }
+    }
+
+    assert(optLen <= (socklen_t)*optionLen);
+    *optionLen = (int32_t)optLen;
+    return Error_SUCCESS;
+}
+
+int32_t SystemNative_GetRawSockOpt(
+    intptr_t socket, int32_t socketOptionLevel, int32_t socketOptionName, uint8_t* optionValue, int32_t* optionLen)
+{
+    if (optionLen == NULL || *optionLen < 0)
+    {
+        return Error_EFAULT;
+    }
+
+    socklen_t optLen = (socklen_t)*optionLen;
+    int err = getsockopt(ToFileDescriptor(socket), socketOptionLevel, socketOptionName, optionValue, &optLen);
+    if (err != 0)
+    {
+        return SystemNative_ConvertErrorPlatformToPal(errno);
     }
 
     assert(optLen <= (socklen_t)*optionLen);
@@ -2062,6 +2147,18 @@ SystemNative_SetSockOpt(intptr_t socket, int32_t socketOptionLevel, int32_t sock
     }
 
     int err = setsockopt(fd, optLevel, optName, optionValue, (socklen_t)optionLen);
+    return err == 0 ? Error_SUCCESS : SystemNative_ConvertErrorPlatformToPal(errno);
+}
+
+int32_t SystemNative_SetRawSockOpt(
+    intptr_t socket, int32_t socketOptionLevel, int32_t socketOptionName, uint8_t* optionValue, int32_t optionLen)
+{
+    if (optionLen < 0 || optionValue == NULL)
+    {
+        return Error_EFAULT;
+    }
+
+    int err = setsockopt(ToFileDescriptor(socket), socketOptionLevel, socketOptionName, optionValue, (socklen_t)optionLen);
     return err == 0 ? Error_SUCCESS : SystemNative_ConvertErrorPlatformToPal(errno);
 }
 
@@ -2222,6 +2319,128 @@ static bool TryConvertProtocolTypePalToPlatform(int32_t palAddressFamily, int32_
     }
 }
 
+static bool TryConvertProtocolTypePlatformToPal(int32_t palAddressFamily, int platformProtocolType, int32_t* palProtocolType)
+{
+    assert(palProtocolType != NULL);
+
+    switch (palAddressFamily)
+    {
+#ifdef AF_PACKET
+        case AddressFamily_AF_PACKET:
+            // protocol is the IEEE 802.3 protocol number in network order.
+            *palProtocolType = platformProtocolType;
+            return true;
+#endif
+#if HAVE_LINUX_CAN_H
+        case AddressFamily_AF_CAN:
+            switch (platformProtocolType)
+            {
+                case 0:
+                    *palProtocolType = ProtocolType_PT_UNSPECIFIED;
+                    return true;
+
+                case CAN_RAW:
+                    *palProtocolType = ProtocolType_PT_RAW;
+                    return true;
+
+                default:
+                    *palProtocolType = (int)platformProtocolType;
+                    return false;
+            }
+#endif
+        case AddressFamily_AF_INET:
+            switch (platformProtocolType)
+            {
+                case 0:
+                    *palProtocolType = ProtocolType_PT_UNSPECIFIED;
+                    return true;
+
+                case IPPROTO_ICMP:
+                    *palProtocolType = ProtocolType_PT_ICMP;
+                    return true;
+
+                case IPPROTO_TCP:
+                    *palProtocolType = ProtocolType_PT_TCP;
+                    return true;
+
+                case IPPROTO_UDP:
+                    *palProtocolType = ProtocolType_PT_UDP;
+                    return true;
+
+                case IPPROTO_IGMP:
+                    *palProtocolType = ProtocolType_PT_IGMP;
+                    return true;
+
+                case IPPROTO_RAW:
+                    *palProtocolType = ProtocolType_PT_RAW;
+                    return true;
+
+                default:
+                    *palProtocolType = (int32_t)(intptr_t)palProtocolType;
+                    return false;
+            }
+
+        case AddressFamily_AF_INET6:
+            switch (platformProtocolType)
+            {
+                case 0:
+                    *palProtocolType = ProtocolType_PT_UNSPECIFIED;
+                    return true;
+
+                case IPPROTO_ICMPV6:
+                    *palProtocolType = ProtocolType_PT_ICMPV6;
+                    return true;
+
+                case IPPROTO_TCP:
+                    *palProtocolType = ProtocolType_PT_TCP;
+                    return true;
+
+                case IPPROTO_UDP:
+                    *palProtocolType = ProtocolType_PT_UDP;
+                    return true;
+
+                case IPPROTO_IGMP:
+                    *palProtocolType = ProtocolType_PT_IGMP;
+                    return true;
+
+                case IPPROTO_RAW:
+                    *palProtocolType = ProtocolType_PT_RAW;
+                    return true;
+
+                case IPPROTO_DSTOPTS:
+                    *palProtocolType = ProtocolType_PT_DSTOPTS;
+                    return true;
+
+                case IPPROTO_NONE:
+                    *palProtocolType = ProtocolType_PT_NONE;
+                    return true;
+
+                case IPPROTO_ROUTING:
+                    *palProtocolType = ProtocolType_PT_ROUTING;
+                    return true;
+
+                case IPPROTO_FRAGMENT:
+                    *palProtocolType = ProtocolType_PT_FRAGMENT;
+                    return true;
+
+                default:
+                    *palProtocolType = (int)platformProtocolType;
+                    return false;
+            }
+
+        default:
+            switch (platformProtocolType)
+            {
+                case 0:
+                    *palProtocolType = ProtocolType_PT_UNSPECIFIED;
+                    return true;
+                default:
+                    *palProtocolType = (int)platformProtocolType;
+                    return false;
+            }
+    }
+}
+
 int32_t SystemNative_Socket(int32_t addressFamily, int32_t socketType, int32_t protocolType, intptr_t* createdSocket)
 {
     if (createdSocket == NULL)
@@ -2261,6 +2480,83 @@ int32_t SystemNative_Socket(int32_t addressFamily, int32_t socketType, int32_t p
 
 #ifndef SOCK_CLOEXEC
     fcntl(ToFileDescriptor(*createdSocket), F_SETFD, FD_CLOEXEC); // ignore any failures; this is best effort
+#endif
+    return Error_SUCCESS;
+}
+
+int32_t SystemNative_GetSocketType(intptr_t socket, int32_t* addressFamily, int32_t* socketType, int32_t* protocolType, int32_t* isListening)
+{
+    if (addressFamily == NULL || socketType == NULL || protocolType == NULL || isListening == NULL)
+    {
+        return Error_EFAULT;
+    }
+
+    int fd = ToFileDescriptor(socket);
+
+#if HAVE_SYS_PROCINFO_H
+    struct socket_fdinfo fdi;
+    if (proc_pidfdinfo(getpid(), fd, PROC_PIDFDSOCKETINFO, &fdi, sizeof(fdi)) < sizeof(fdi))
+    {
+        return Error_EFAULT;
+    }
+
+    if (!TryConvertAddressFamilyPlatformToPal((sa_family_t)fdi.psi.soi_family, addressFamily))
+    {
+        *addressFamily = AddressFamily_AF_UNKNOWN;
+    }
+
+    if (!TryConvertSocketTypePlatformToPal(fdi.psi.soi_type, socketType))
+    {
+        *socketType = SocketType_UNKNOWN;
+    }
+
+    if (!TryConvertProtocolTypePlatformToPal(*addressFamily, fdi.psi.soi_protocol, protocolType))
+    {
+        *protocolType = ProtocolType_PT_UNKNOWN;
+    }
+
+    *isListening = (fdi.psi.soi_options & SO_ACCEPTCONN) != 0;
+#else
+#ifdef SO_DOMAIN
+    int domainValue;
+    socklen_t domainLength = sizeof(int);
+    if (getsockopt(fd, SOL_SOCKET, SO_DOMAIN, &domainValue, &domainLength) != 0 ||
+        !TryConvertAddressFamilyPlatformToPal((sa_family_t)domainValue, addressFamily))
+#endif
+    {
+        *addressFamily = AddressFamily_AF_UNKNOWN;
+    }
+
+#ifdef SO_TYPE
+    int typeValue;
+    socklen_t typeLength = sizeof(int);
+    if (getsockopt(fd, SOL_SOCKET, SO_TYPE, &typeValue, &typeLength) != 0 ||
+        !TryConvertSocketTypePlatformToPal(typeValue, socketType))
+#endif
+    {
+        *socketType = SocketType_UNKNOWN;
+    }
+
+#ifdef SO_PROTOCOL
+    int protocolValue;
+    socklen_t protocolLength = sizeof(int);
+    if (getsockopt(fd, SOL_SOCKET, SO_PROTOCOL, &protocolValue, &protocolLength) != 0 ||
+        !TryConvertProtocolTypePlatformToPal(*addressFamily, protocolValue, protocolType))
+#endif
+    {
+        *protocolType = ProtocolType_PT_UNKNOWN;
+    }
+
+    int listeningValue;
+    socklen_t listeningLength = sizeof(int);
+    if (getsockopt(fd, SOL_SOCKET, SO_ACCEPTCONN, &listeningValue, &listeningLength) == 0)
+    {
+        *isListening = (listeningValue != 0);
+    }
+    else
+    {
+        *isListening = 0;
+    }
 #endif
     return Error_SUCCESS;
 }
@@ -2769,6 +3065,11 @@ void SystemNative_GetDomainSocketSizes(int32_t* pathOffset, int32_t* pathSize, i
     *pathOffset = offsetof(struct sockaddr_un, sun_path);
     *pathSize = sizeof(domainSocket.sun_path);
     *addressSize = sizeof(domainSocket);
+}
+
+int32_t SystemNative_GetMaximumAddressSize(void)
+{
+    return sizeof(struct sockaddr_storage);
 }
 
 int32_t SystemNative_Disconnect(intptr_t socket)

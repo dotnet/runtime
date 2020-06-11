@@ -31,7 +31,7 @@ namespace System.Net.Http.Headers
         {
             Debug.Assert(parameters != null);
 
-            NameValueHeaderValue qualityParameter = NameValueHeaderValue.Find(parameters, qualityName);
+            NameValueHeaderValue? qualityParameter = NameValueHeaderValue.Find(parameters, qualityName);
             if (value.HasValue)
             {
                 // Note that even if we check the value here, we can't prevent a user from adding an invalid quality
@@ -131,7 +131,7 @@ namespace System.Net.Http.Headers
         {
             Debug.Assert(parameters != null);
 
-            NameValueHeaderValue qualityParameter = NameValueHeaderValue.Find(parameters, qualityName);
+            NameValueHeaderValue? qualityParameter = NameValueHeaderValue.Find(parameters, qualityName);
             if (qualityParameter != null)
             {
                 // Note that the RFC requires decimal '.' regardless of the culture. I.e. using ',' as decimal
@@ -191,12 +191,12 @@ namespace System.Net.Http.Headers
             }
         }
 
-        internal static bool AreEqualCollections<T>(ObjectCollection<T> x, ObjectCollection<T> y) where T : class
+        internal static bool AreEqualCollections<T>(ObjectCollection<T>? x, ObjectCollection<T>? y) where T : class
         {
             return AreEqualCollections(x, y, null);
         }
 
-        internal static bool AreEqualCollections<T>(ObjectCollection<T> x, ObjectCollection<T> y, IEqualityComparer<T> comparer) where T : class
+        internal static bool AreEqualCollections<T>(ObjectCollection<T>? x, ObjectCollection<T>? y, IEqualityComparer<T>? comparer) where T : class
         {
             if (x == null)
             {
@@ -293,7 +293,7 @@ namespace System.Net.Http.Headers
         {
             Debug.Assert(store != null);
 
-            object storedValue = store.GetParsedValues(descriptor);
+            object? storedValue = store.GetParsedValues(descriptor);
             if (storedValue != null)
             {
                 return (DateTimeOffset)storedValue;
@@ -310,7 +310,7 @@ namespace System.Net.Http.Headers
         {
             Debug.Assert(store != null);
 
-            object storedValue = store.GetParsedValues(descriptor);
+            object? storedValue = store.GetParsedValues(descriptor);
             if (storedValue != null)
             {
                 return (TimeSpan)storedValue;
@@ -343,7 +343,7 @@ namespace System.Net.Http.Headers
             return long.TryParse(value.AsSpan(offset, length), NumberStyles.None, provider: null, out result);
         }
 
-        internal static void DumpHeaders(StringBuilder sb, params HttpHeaders[] headers)
+        internal static void DumpHeaders(StringBuilder sb, params HttpHeaders?[] headers)
         {
             // Appends all headers as string similar to:
             // {
@@ -358,7 +358,7 @@ namespace System.Net.Http.Headers
             {
                 if (headers[i] != null)
                 {
-                    foreach (var header in headers[i])
+                    foreach (var header in headers[i]!) // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/34644
                     {
                         foreach (var headerValue in header.Value)
                         {

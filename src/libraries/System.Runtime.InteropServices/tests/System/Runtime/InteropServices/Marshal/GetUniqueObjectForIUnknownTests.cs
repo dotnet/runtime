@@ -63,7 +63,7 @@ namespace System.Runtime.InteropServices.Tests
         [PlatformSpecific(TestPlatforms.Windows)]
         public void GetUniqueObjectForIUnknown_NullPointer_ThrowsArgumentNullException()
         {
-            AssertExtensions.Throws<ArgumentNullException>("pUnk", () => Marshal.GetUniqueObjectForIUnknown(IntPtr.Zero));
+            AssertExtensions.Throws<ArgumentNullException>("unknown", () => Marshal.GetUniqueObjectForIUnknown(IntPtr.Zero));
         }
 
         private static void NonGenericMethod(int i) { }

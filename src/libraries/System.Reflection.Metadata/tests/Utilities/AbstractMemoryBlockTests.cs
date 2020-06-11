@@ -120,6 +120,7 @@ namespace System.Reflection.Internal.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34493", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         public void FileStreamUnix()
         {
             try
@@ -134,6 +135,7 @@ namespace System.Reflection.Internal.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34493", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         public void FileStream()
         {
             string filePath = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString());

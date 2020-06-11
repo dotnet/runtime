@@ -57,7 +57,7 @@ jobs:
   steps:
   - checkout: self
     clean: true
-    fetchDepth: 1
+    fetchDepth: 5
     lfs: false
 
   - pwsh: |

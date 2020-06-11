@@ -24,7 +24,7 @@ what are in the repository. In particular
    associated with the repository, including
      * `coreclr` - This is the main runtime DLL (the GC, class loader, interop are all here)
      * `corjit` - This is the Just In Time (JIT) compiler that compiles .NET Intermediate language to native code.
-     * `corerun` - This is the simple host program that can load the CLR and run a .NET Core application
+     * `corerun` - This is the simple host program that can run a .NET application
      * `crossgen` - This is the host program that runs the JIT compiler and produces .NET Native images (`*.ni.dll`)
      for C# code.
 
@@ -38,7 +38,7 @@ Thus you can only launch this solution after you have built at least once.
 
 # See Also
 
-Before you make modifications, you probably want to learn more about the general architecture of .NET Core.
+Before you make modifications, you probably want to learn more about the general architecture of .NET Runtime.
 See the following docs for more.
 
- * [Documentation on the .NET Core Runtime](../README.md)
+ * [Documentation on the .NET Runtime](../README.md)

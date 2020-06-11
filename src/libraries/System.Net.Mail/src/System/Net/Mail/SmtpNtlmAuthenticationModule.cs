@@ -15,14 +15,14 @@ namespace System.Net.Mail
         {
         }
 
-        public Authorization Authenticate(string challenge, NetworkCredential credential, object sessionCookie, string spn, ChannelBinding channelBindingToken)
+        public Authorization? Authenticate(string? challenge, NetworkCredential? credential, object sessionCookie, string? spn, ChannelBinding? channelBindingToken)
         {
             if (NetEventSource.IsEnabled) NetEventSource.Enter(this, "Authenticate");
             try
             {
                 lock (_sessions)
                 {
-                    NTAuthentication clientContext;
+                    NTAuthentication? clientContext;
                     if (!_sessions.TryGetValue(sessionCookie, out clientContext))
                     {
                         if (credential == null)
@@ -36,7 +36,7 @@ namespace System.Net.Mail
 
                     }
 
-                    string resp = clientContext.GetOutgoingBlob(challenge);
+                    string? resp = clientContext.GetOutgoingBlob(challenge);
 
                     if (!clientContext.IsCompleted)
                     {

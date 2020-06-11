@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFrameworks>netstandard2.0</TargetFrameworks>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="Microsoft.Extensions.Logging.cs" />
+    <ProjectReference Include="..\..\Microsoft.Extensions.DependencyInjection.Abstractions\ref\Microsoft.Extensions.DependencyInjection.Abstractions.csproj" />
+    <ProjectReference Include="..\..\Microsoft.Extensions.Logging.Abstractions\ref\Microsoft.Extensions.Logging.Abstractions.csproj" />
+    <ProjectReference Include="..\..\Microsoft.Extensions.Options\ref\Microsoft.Extensions.Options.csproj" />
+  </ItemGroup>
+</Project>

@@ -106,16 +106,16 @@ BOOL __SwitchToThread(DWORD, DWORD)
 
 GPTR_IMPL(IGCHeap,g_pGCHeap);
 
-BOOL g_fEEOtherStartup=FALSE;
-BOOL g_fEEComActivatedStartup=FALSE;
-
-GVAL_IMPL_INIT(DWORD, g_fHostConfig, 0);
-
 GVAL_IMPL_INIT(GCHeapType, g_heap_type, GC_HEAP_WKS);
 
 HRESULT GetExceptionHResult(OBJECTREF throwable)
 {
     return E_FAIL;
+}
+
+DWORD GetCurrentExceptionCode()
+{
+    return 0;
 }
 
 //---------------------------------------------------------------------------------------

@@ -45,28 +45,28 @@ namespace System.Runtime.Loader
             {
                 // Setup error writer for this thread. This makes the hostpolicy redirect all error output
                 // to the writer specified. Have to store the previous writer to set it back once this is done.
-                corehost_error_writer_fn errorWriter = new corehost_error_writer_fn(message => errorMessage.AppendLine(message));
+                var errorWriter = new Interop.HostPolicy.corehost_error_writer_fn(message => errorMessage.AppendLine(message));
 
                 IntPtr errorWriterPtr = Marshal.GetFunctionPointerForDelegate(errorWriter);
-                IntPtr previousErrorWriterPtr = corehost_set_error_writer(errorWriterPtr);
+                IntPtr previousErrorWriterPtr = Interop.HostPolicy.corehost_set_error_writer(errorWriterPtr);
 
                 try
                 {
                     // Call hostpolicy to do the actual work of finding .deps.json, parsing it and extracting
                     // information from it.
-                    returnCode = corehost_resolve_component_dependencies(
+                    returnCode = Interop.HostPolicy.corehost_resolve_component_dependencies(
                         componentAssemblyPath,
-                        (assembly_paths, native_search_paths, resource_search_paths) =>
+                        (assemblyPaths, nativeSearchPaths, resourceSearchPaths) =>
                         {
-                            assemblyPathsList = assembly_paths;
-                            nativeSearchPathsList = native_search_paths;
-                            resourceSearchPathsList = resource_search_paths;
+                            assemblyPathsList = assemblyPaths;
+                            nativeSearchPathsList = nativeSearchPaths;
+                            resourceSearchPathsList = resourceSearchPaths;
                         });
                 }
                 finally
                 {
                     // Reset the error write to the one used before
-                    corehost_set_error_writer(previousErrorWriterPtr);
+                    Interop.HostPolicy.corehost_set_error_writer(previousErrorWriterPtr);
                     GC.KeepAlive(errorWriter);
                 }
             }
@@ -204,31 +204,5 @@ namespace System.Runtime.Loader
                 return pathsList.Split(Path.PathSeparator, StringSplitOptions.RemoveEmptyEntries);
             }
         }
-
-#if TARGET_WINDOWS
-        private const CharSet HostpolicyCharSet = CharSet.Unicode;
-#else
-        private const CharSet HostpolicyCharSet = CharSet.Ansi;
-#endif
-
-        [UnmanagedFunctionPointer(CallingConvention.Cdecl, CharSet = HostpolicyCharSet)]
-        internal delegate void corehost_resolve_component_dependencies_result_fn(
-            string assembly_paths,
-            string native_search_paths,
-            string resource_search_paths);
-
-        [UnmanagedFunctionPointer(CallingConvention.Cdecl, CharSet = HostpolicyCharSet)]
-        internal delegate void corehost_error_writer_fn(
-            string message);
-
-#pragma warning disable BCL0015 // Disable Pinvoke analyzer errors.
-        [DllImport("hostpolicy", CallingConvention = CallingConvention.Cdecl, CharSet = HostpolicyCharSet)]
-        private static extern int corehost_resolve_component_dependencies(
-            string component_main_assembly_path,
-            corehost_resolve_component_dependencies_result_fn result);
-
-        [DllImport("hostpolicy", CallingConvention = CallingConvention.Cdecl, CharSet = HostpolicyCharSet)]
-        private static extern IntPtr corehost_set_error_writer(IntPtr error_writer);
-#pragma warning restore
     }
 }

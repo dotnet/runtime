@@ -16,6 +16,7 @@ parameters:
   timeoutInMinutes: 320           # optional -- timeout for the job
   enableTelemetry: false          # optional -- enable for telemetry
   liveLibrariesBuildConfig: ''    # optional -- live-live libraries configuration to use for the run
+  runtimeType: 'coreclr'
 
 jobs:
 - template: xplat-pipeline-job.yml
@@ -103,3 +104,10 @@ jobs:
         WorkItemTimeout: 4:00 # 4 hours
         WorkItemDirectory: '$(WorkItemDirectory)' # WorkItemDirectory can not be empty, so we send it some docs to keep it happy
         CorrelationPayloadDirectory: '$(PayloadDirectory)' # it gets checked out to a folder with shorter path than WorkItemDirectory so we can avoid file name too long exceptions
+    - task: PublishPipelineArtifact@1
+      displayName: Publish Logs
+      inputs:
+        targetPath: $(Build.SourcesDirectory)/artifacts/log
+        artifactName: 'Performance_Run_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)_${{ parameters.runtimeType }}'
+      continueOnError: true
+      condition: always()

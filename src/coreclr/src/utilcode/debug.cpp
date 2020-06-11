@@ -23,6 +23,10 @@
 
 extern "C" _CRTIMP int __cdecl _flushall(void);
 
+#ifdef HOST_WINDOWS
+void CreateCrashDumpIfEnabled();
+#endif
+
 // Global state counter to implement SUPPRESS_ALLOCATION_ASSERTS_IN_THIS_SCOPE.
 Volatile<LONG> g_DbgSuppressAllocationAsserts = 0;
 
@@ -180,32 +184,13 @@ VOID TerminateOnAssert()
     STATIC_CONTRACT_DEBUG_ONLY;
 
     ShutdownLogging();
+#ifdef HOST_WINDOWS
+    CreateCrashDumpIfEnabled();
+#endif
     RaiseFailFastException(NULL, NULL, 0);
 }
 
-// Whether this thread is already displaying an assert dialog.
-BOOL IsDisplayingAssertDlg()
-{
-    STATIC_CONTRACT_NOTHROW;
-    STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_DEBUG_ONLY;
-
-    size_t flag = 0;
-    if (ClrFlsCheckValue(TlsIdx_AssertDlgStatus, (LPVOID *)&flag))
-    {
-        return (flag != 0);
-    }
-    return FALSE;
-}
-
-void SetDisplayingAssertDlg(BOOL value)
-{
-    STATIC_CONTRACT_NOTHROW;
-    STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_DEBUG_ONLY;
-
-    ClrFlsSetValue(TlsIdx_AssertDlgStatus, (LPVOID)(size_t)value);
-}
+thread_local bool f_bDisplayingAssertDlg;
 
 VOID LogAssert(
     LPCSTR      szFile,
@@ -440,7 +425,7 @@ bool _DbgBreakCheck(
         TerminateOnAssert();
     }
 
-    if (IsDisplayingAssertDlg())
+    if (f_bDisplayingAssertDlg)
     {
         // We are already displaying an assert dialog box on this thread. The reason why we came here is
         // the message loop run by the API we call to display the UI. A message was dispatched and execution
@@ -450,7 +435,7 @@ bool _DbgBreakCheck(
         return false;
     }
 
-    SetDisplayingAssertDlg(TRUE);
+    f_bDisplayingAssertDlg = true;
 
     // Tell user there was an error.
     _DbgBreakCount++;
@@ -467,7 +452,7 @@ bool _DbgBreakCheck(
     }
     --_DbgBreakCount;
 
-    SetDisplayingAssertDlg(FALSE);
+    f_bDisplayingAssertDlg = false;
 
     switch(ret)
     {
@@ -478,10 +463,13 @@ bool _DbgBreakCheck(
 #endif
     // For abort, just quit the app.
     case IDABORT:
+#ifdef HOST_WINDOWS
+        CreateCrashDumpIfEnabled();
+#endif
         TerminateProcess(GetCurrentProcess(), 1);
         break;
 
-    // Tell caller to break at the correct loction.
+    // Tell caller to break at the correct location.
     case IDRETRY:
         if (IsDebuggerPresent())
         {
@@ -845,6 +833,9 @@ void DECLSPEC_NORETURN __FreeBuildAssertFail(const char *szFile, int iLine, cons
 
     ShutdownLogging();
 
+#ifdef HOST_WINDOWS
+    CreateCrashDumpIfEnabled();
+#endif
     RaiseFailFastException(NULL, NULL, 0);
 
     UNREACHABLE();

@@ -89,11 +89,13 @@ namespace System.Collections
             return GetPrime(newSize);
         }
 
-#if TARGET_64BIT
-        // Returns approximate reciprocal of the divisor: ceil(2**64 / divisor)
-        public static ulong GetFastModMultiplier(uint divisor)
-            => ulong.MaxValue / divisor + 1;
+        /// <summary>Returns approximate reciprocal of the divisor: ceil(2**64 / divisor).</summary>
+        /// <remarks>This should only be used on 64-bit.</remarks>
+        public static ulong GetFastModMultiplier(uint divisor) =>
+            ulong.MaxValue / divisor + 1;
 
+        /// <summary>Performs a mod operation using the multiplier pre-computed with <see cref="GetFastModMultiplier"/>.</summary>
+        /// <remarks>This should only be used on 64-bit.</remarks>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static uint FastMod(uint value, uint divisor, ulong multiplier)
         {
@@ -101,14 +103,12 @@ namespace System.Collections
             // which allows to avoid the long multiplication if the divisor is less than 2**31.
             Debug.Assert(divisor <= int.MaxValue);
 
-            ulong lowbits = multiplier * value;
-            // 64bit * 64bit => 128bit isn't currently supported by Math https://github.com/dotnet/runtime/issues/31184
-            // otherwise we'd want this to be (uint)Math.BigMul(lowbits, divisor, out _)
-            uint highbits = (uint)((((lowbits >> 32) + 1) * divisor) >> 32);
+            // This is equivalent of (uint)Math.BigMul(multiplier * value, divisor, out _). This version
+            // is faster than BigMul currently because we only need the high bits.
+            uint highbits = (uint)(((((multiplier * value) >> 32) + 1) * divisor) >> 32);
 
             Debug.Assert(highbits == value % divisor);
             return highbits;
         }
-#endif
     }
 }

@@ -1649,7 +1649,7 @@ namespace System.Net.Sockets.Tests
                 args.RemoteEndPoint = new IPEndPoint(IPAddress.Loopback, UnusedPort);
                 args.SetBuffer(new byte[1], 0, 1);
 
-                AssertExtensions.Throws<ArgumentException>("RemoteEndPoint", () =>
+                AssertExtensions.Throws<ArgumentException>("e", () =>
                 {
                     socket.ReceiveFromAsync(args);
                 });
@@ -2188,7 +2188,7 @@ namespace System.Net.Sockets.Tests
                 args.RemoteEndPoint = new IPEndPoint(IPAddress.Loopback, UnusedPort);
                 args.SetBuffer(new byte[1], 0, 1);
 
-                AssertExtensions.Throws<ArgumentException>("RemoteEndPoint", () =>
+                AssertExtensions.Throws<ArgumentException>("e", () =>
                 {
                     socket.ReceiveMessageFromAsync(args);
                 });

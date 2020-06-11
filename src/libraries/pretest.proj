@@ -1,24 +1,42 @@
-<Project>
-  <Import Sdk="Microsoft.NET.Sdk" Project="Sdk.props" />
+<Project Sdk="Microsoft.Build.Traversal">
+  <Import Project="Sdk.props" Sdk="Microsoft.DotNet.Build.Tasks.SharedFramework.Sdk" />
 
   <PropertyGroup>
-    <BuildDependsOnTargets>GenerateLaunchSettingsFiles</BuildDependsOnTargets>
-    <BuildDependsOnTargets Condition="'$(BinplaceTestSharedFramework)' == 'true'">$(BuildDependsOnTargets);GenerateTestSharedFrameworkDepsFile</BuildDependsOnTargets>
-    <BuildDependsOnTargets Condition="'$(PlatformManifestFile)' != ''">$(BuildDependsOnTargets);GenerateFileVersionProps</BuildDependsOnTargets>
-    <TargetFrameworkIdentifier>netcoreapp</TargetFrameworkIdentifier>
-    <TargetFrameworkVersion>5.0</TargetFrameworkVersion>
+    <TraversalGlobalProperties>BuildAllProjects=true</TraversalGlobalProperties>
   </PropertyGroup>
 
+  <PropertyGroup Condition="'$(ContinuousIntegrationBuild)' != 'true'">
+    <!-- Create an intermediate runsettings file to enable VSTest discovery. -->
+    <EnableRunSettingsSupport>true</EnableRunSettingsSupport>
+    <CreateIntermediateRunSettingsFile>true</CreateIntermediateRunSettingsFile>
+  </PropertyGroup>
+
+  <!-- Explicitly build the runtime.depproj project first to correctly set up the testhost. -->
   <ItemGroup>
-    <!-- This is necessary as inside VS project references that aren't part of the sln aren't built. -->
-    <Project Include="$(CommonTestPath)\CoreFx.Private.TestUtilities\CoreFx.Private.TestUtilities.csproj" />
+    <RuntimeProject Include="$(MSBuildThisFileDirectory)restore\runtime\runtime.depproj" />
+    <ProjectReference Include="@(RuntimeProject)" Condition="'$(MSBuildRestoreSessionId)' != ''" />
+
+    <ProjectReference Include="$(CommonTestPath)AppleTestRunner\AppleTestRunner.csproj" Condition="'$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'tvOS'"/>
+    <ProjectReference Include="$(CommonTestPath)AndroidTestRunner\AndroidTestRunner.csproj" Condition="'$(TargetOS)' == 'Android'" />
+    <ProjectReference Include="$(CommonTestPath)WasmTestRunner\WasmTestRunner.csproj" Condition="'$(TargetOS)' == 'Browser'" />
   </ItemGroup>
+
+  <Target Name="RestoreTestHost"
+          BeforeTargets="Build">
+    <MSBuild Targets="Build"
+             Projects="@(RuntimeProject)"
+             Properties="$(TraversalGlobalProperties)" />
+  </Target>
+
+  <Target Name="CreateIntermediateRunSettingsFile"
+          Condition="'$(CreateIntermediateRunSettingsFile)' == 'true'"
+          DependsOnTargets="GenerateRunSettingsFile"
+          BeforeTargets="Build" />
 
   <!-- Microsoft.XmlSerializer.Generator should not be marked as a platform item and be copy-local instead. -->
   <Target Name="CollectSharedFrameworkRuntimeFiles"
-          Condition="'$(PlatformManifestFile)' != ''"
-          BeforeTargets="GenerateFileVersionProps">
-    <ItemGroup Condition="'$(BuildingNETCoreAppVertical)' == 'true'">
+          Condition="'$(BuildTargetFramework)' == '$(NetCoreAppCurrent)'">
+    <ItemGroup>
       <_manualSharedFrameworkRuntimeFiles Include="System.Security.Cryptography.Native.OpenSsl.so" />
       <_manualSharedFrameworkRuntimeFiles Include="System.Security.Cryptography.Native.Apple.dylib" />
       <_manualSharedFrameworkRuntimeFiles Include="System.Security.Cryptography.Native.OpenSsl.dylib" />
@@ -31,13 +49,21 @@
   </Target>
 
   <UsingTask TaskName="GenerateFileVersionProps" AssemblyFile="$(InstallerTasksAssemblyPath)"/>
-  <Target Name="GenerateFileVersionProps" Condition="'$(BuildTargetFramework)' == '$(NetCoreAppCurrent)'">
+  <Target Name="GenerateFileVersionProps"
+          DependsOnTargets="CollectSharedFrameworkRuntimeFiles"
+          Condition="'$(PlatformManifestFile)' != '' and '$(BuildTargetFramework)' == '$(NetCoreAppCurrent)'"
+          AfterTargets="RestoreTestHost">
     <GenerateFileVersionProps Files="@(SharedFrameworkRuntimeFiles)"
-                              PackageId="Microsoft.NETCore.App"
+                              PackageId="$(SharedFrameworkName)"
                               PackageVersion="$(ProductVersion)"
                               PlatformManifestFile="$(PlatformManifestFile)"
-                              PreferredPackages="Microsoft.NetCore.App"
+                              PreferredPackages="$(SharedFrameworkName)"
                               PermitDllAndExeFilesLackingFileVersion="true" />
+
+    <Copy SourceFiles="$(PlatformManifestFile)"
+          DestinationFolder="$(MicrosoftNetCoreAppRefPackDataDir)"
+          UseHardlinksIfPossible="true"
+          SkipUnchangedFiles="true" />
   </Target>
 
   <!--
@@ -46,42 +72,49 @@
     To use invoke target directly specifying NETCoreAppTestSharedFrameworkPath property.
   -->
   <UsingTask TaskName="GenerateTestSharedFrameworkDepsFile" AssemblyFile="$(InstallerTasksAssemblyPath)"/>
-  <Target Name="GenerateTestSharedFrameworkDepsFile" Condition="'$(BuildTargetFramework)' == '$(NetCoreAppCurrent)'">
+  <Target Name="GenerateTestSharedFrameworkDepsFile"
+          Condition="'$(BinplaceTestSharedFramework)' == 'true' and '$(BuildTargetFramework)' == '$(NetCoreAppCurrent)'"
+          AfterTargets="RestoreTestHost">
     <GenerateTestSharedFrameworkDepsFile SharedFrameworkDirectory="$(NETCoreAppTestSharedFrameworkPath)"
                                          RuntimeGraphFiles="$(RuntimeIdGraphDefinitionFile)"
                                          TargetRuntimeIdentifier="$(PackageRID)" />
   </Target>
 
-  <!-- Generate launch settings support files to enable VS debugging. -->
-  <Target Name="GenerateLaunchSettingsFiles" Condition="'$(EnableLaunchSettings)' == 'true'">
+  <UsingTask TaskName="CreateFrameworkListFile" AssemblyFile="$(DotNetBuildTasksSharedFrameworkTaskFile)"/>
+  <Target Name="GenerateFrameworkListFile"
+          Condition="'$(BuildTargetFramework)' == '$(NetCoreAppCurrent)'"
+          AfterTargets="RestoreTestHost">
     <PropertyGroup>
-      <_TestProjectRootDir>$(LibrariesProjectRoot)</_TestProjectRootDir>
-      <_TestProjectRootDir Condition="'$(DirectoryToBuild)'!=''">$(DirectoryToBuild)</_TestProjectRootDir>
+      <_frameworkListFile>$(MicrosoftNetCoreAppRuntimePackDir)data\RuntimeList.xml</_frameworkListFile>
+      <_targetFrameworkPath>runtimes/$(PackageRID)/</_targetFrameworkPath>
     </PropertyGroup>
+
     <ItemGroup>
-      <!-- Keep in sync with pattern for test projects in tests.proj -->
-      <TestProjects Include="$(_TestProjectRootDir)*\tests\**\*.Tests.csproj" />
+      <_runtimePackLibFiles Include="$(MicrosoftNetCoreAppRuntimePackRidLibTfmDir)*.*">
+        <TargetPath>$(_targetFrameworkPath)lib/$(NetCoreAppCurrent)</TargetPath>
+        <IsSymbolFile Condition="$([System.String]::Copy('%(Identity)').EndsWith('pdb'))">true</IsSymbolFile>
+      </_runtimePackLibFiles>
+      <_runtimePackNativeFiles Include="$(MicrosoftNetCoreAppRuntimePackNativeDir)*.*">
+        <TargetPath>$(_targetFrameworkPath)native</TargetPath>
+        <IsNative>true</IsNative>
+      </_runtimePackNativeFiles>
+
+      <FrameworkListRootAttributes Include="Name" Value="$(NetCoreAppCurrentBrandName)" />
+      <FrameworkListRootAttributes Include="TargetFrameworkIdentifier" Value="$(NetCoreAppCurrentIdentifier)" />
+      <FrameworkListRootAttributes Include="TargetFrameworkVersion" Value="$(NetCoreAppCurrentVersion)" />
+      <FrameworkListRootAttributes Include="FrameworkName" Value="$(SharedFrameworkName)" />
     </ItemGroup>
 
-    <MSBuild Projects="@(TestProjects)"
-             Targets="GenerateLaunchSettingsFile"
-             ContinueOnError="ErrorAndContinue" />
+    <CreateFrameworkListFile Files="@(_runtimePackLibFiles);@(_runtimePackNativeFiles)"
+                             TargetFile="$(_frameworkListFile)"
+                             TargetFilePrefixes="ref/;runtimes/"
+                             RootAttributes="@(FrameworkListRootAttributes)" />
+
+    <Copy SourceFiles="$(_frameworkListFile)"
+          DestinationFolder="$(MicrosoftNetCoreAppRefPackDataDir)"
+          UseHardlinksIfPossible="true"
+          SkipUnchangedFiles="true" />
   </Target>
 
-  <Import Sdk="Microsoft.NET.Sdk" Project="Sdk.targets" />
-
-  <Target Name="Build"
-          Condition="'$(SkipPrepareTest)' != 'true'"
-          DependsOnTargets="GenerateLaunchSettingsFiles;GenerateTestSharedFrameworkDepsFile;GenerateFileVersionProps">
-
-    <MSBuild Targets="Build"
-             Projects="@(Project)"
-             Properties="TargetFramework=$(BuildTargetFramework);%(Project.AdditionalProperties)"
-             BuildInParallel="true"
-             ContinueOnError="ErrorAndStop" />
-
-    <!-- Given we ErrorAndContinue we need to propagate the error if the overall task failed -->
-    <Error Condition="'$(MSBuildLastTaskResult)' == 'false'" />
-
-  </Target>
+  <Import Project="Sdk.targets" Sdk="Microsoft.DotNet.Build.Tasks.SharedFramework.Sdk" />
 </Project>

@@ -837,23 +837,6 @@ void TransitionFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
 
 #endif
 
-#ifndef	CROSSGEN_COMPILE
-
-void TailCallFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
-{
-    LOG((LF_GCROOTS, LL_INFO100000, "STACKWALK    TailCallFrame::UpdateRegDisplay(pc:%p, sp:%p)\n", pRD->ControlPC, pRD->SP));
-    _ASSERTE(!"ARM64:NYI");
-}
-
-#ifndef DACCESS_COMPILE
-void TailCallFrame::InitFromContext(T_CONTEXT * pContext)
-{
-    _ASSERTE(!"ARM64:NYI");
-}
-#endif // !DACCESS_COMPILE
-
-#endif // CROSSGEN_COMPILE
-
 void FaultingExceptionFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
 {
     LIMITED_METHOD_DAC_CONTRACT;

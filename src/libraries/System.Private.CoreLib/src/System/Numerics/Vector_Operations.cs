@@ -230,7 +230,7 @@ namespace System.Numerics
         public static bool LessThanAll<T>(Vector<T> left, Vector<T> right) where T : struct
         {
             Vector<int> cond = (Vector<int>)Vector<T>.LessThan(left, right);
-            return cond.Equals(Vector<int>.AllOnes);
+            return cond.Equals(Vector<int>.AllBitsSet);
         }
 
         /// <summary>
@@ -328,7 +328,7 @@ namespace System.Numerics
         public static bool LessThanOrEqualAll<T>(Vector<T> left, Vector<T> right) where T : struct
         {
             Vector<int> cond = (Vector<int>)Vector<T>.LessThanOrEqual(left, right);
-            return cond.Equals(Vector<int>.AllOnes);
+            return cond.Equals(Vector<int>.AllBitsSet);
         }
 
         /// <summary>
@@ -427,7 +427,7 @@ namespace System.Numerics
         public static bool GreaterThanAll<T>(Vector<T> left, Vector<T> right) where T : struct
         {
             Vector<int> cond = (Vector<int>)Vector<T>.GreaterThan(left, right);
-            return cond.Equals(Vector<int>.AllOnes);
+            return cond.Equals(Vector<int>.AllBitsSet);
         }
 
         /// <summary>
@@ -526,7 +526,7 @@ namespace System.Numerics
         public static bool GreaterThanOrEqualAll<T>(Vector<T> left, Vector<T> right) where T : struct
         {
             Vector<int> cond = (Vector<int>)Vector<T>.GreaterThanOrEqual(left, right);
-            return cond.Equals(Vector<int>.AllOnes);
+            return cond.Equals(Vector<int>.AllBitsSet);
         }
 
         /// <summary>
@@ -625,6 +625,70 @@ namespace System.Numerics
         public static Vector<T> SquareRoot<T>(Vector<T> value) where T : struct
         {
             return Vector<T>.SquareRoot(value);
+        }
+
+        /// <summary>
+        /// Returns a new vector whose elements are the smallest integral values that are greater than or equal to the given vector's elements.
+        /// </summary>
+        /// <param name="value">The source vector.</param>
+        /// <returns>
+        /// The vector whose elements are the smallest integral values that are greater than or equal to the given vector's elements.
+        /// If a value is equal to <see cref="float.NaN"/>, <see cref="float.NegativeInfinity"/> or <see cref="float.PositiveInfinity"/>, that value is returned.
+        /// Note that this method returns a <see cref="float"/> instead of an integral type.
+        /// </returns>
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector<float> Ceiling(Vector<float> value)
+        {
+            return Vector<float>.Ceiling(value);
+        }
+
+        /// <summary>
+        /// Returns a new vector whose elements are the smallest integral values that are greater than or equal to the given vector's elements.
+        /// </summary>
+        /// <param name="value">The source vector.</param>
+        /// <returns>
+        /// The vector whose elements are the smallest integral values that are greater than or equal to the given vector's elements.
+        /// If a value is equal to <see cref="double.NaN"/>, <see cref="double.NegativeInfinity"/> or <see cref="double.PositiveInfinity"/>, that value is returned.
+        /// Note that this method returns a <see cref="double"/> instead of an integral type.
+        /// </returns>
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector<double> Ceiling(Vector<double> value)
+        {
+            return Vector<double>.Ceiling(value);
+        }
+
+        /// <summary>
+        /// Returns a new vector whose elements are the largest integral values that are less than or equal to the given vector's elements.
+        /// </summary>
+        /// <param name="value">The source vector.</param>
+        /// <returns>
+        /// The vector whose elements are the largest integral values that are less than or equal to the given vector's elements.
+        /// If a value is equal to <see cref="float.NaN"/>, <see cref="float.NegativeInfinity"/> or <see cref="float.PositiveInfinity"/>, that value is returned.
+        /// Note that this method returns a <see cref="float"/> instead of an integral type.
+        /// </returns>
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector<float> Floor(Vector<float> value)
+        {
+            return Vector<float>.Floor(value);
+        }
+
+        /// <summary>
+        /// Returns a new vector whose elements are the largest integral values that are less than or equal to the given vector's elements.
+        /// </summary>
+        /// <param name="value">The source vector.</param>
+        /// <returns>
+        /// The vector whose elements are the largest integral values that are less than or equal to the given vector's elements.
+        /// If a value is equal to <see cref="double.NaN"/>, <see cref="double.NegativeInfinity"/> or <see cref="double.PositiveInfinity"/>, that value is returned.
+        /// Note that this method returns a <see cref="double"/> instead of an integral type.
+        /// </returns>
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector<double> Floor(Vector<double> value)
+        {
+            return Vector<double>.Floor(value);
         }
         #endregion Vector Math Methods
 

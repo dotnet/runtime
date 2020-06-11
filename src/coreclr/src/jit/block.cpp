@@ -344,6 +344,14 @@ void BasicBlock::dspFlags()
     {
         printf("bwd ");
     }
+    if (bbFlags & BBF_BACKWARD_JUMP_TARGET)
+    {
+        printf("bwd-target ");
+    }
+    if (bbFlags & BBF_PATCHPOINT)
+    {
+        printf("ppoint ");
+    }
     if (bbFlags & BBF_RETLESS_CALL)
     {
         printf("retless ");
@@ -628,7 +636,6 @@ bool BasicBlock::CloneBlockState(
     VarSetOps::AssignAllowUninitRhs(compiler, to->bbScope, from->bbScope);
     to->bbNatLoopNum = from->bbNatLoopNum;
 #ifdef DEBUG
-    to->bbLoopNum     = from->bbLoopNum;
     to->bbTgtStkDepth = from->bbTgtStkDepth;
 #endif // DEBUG
 

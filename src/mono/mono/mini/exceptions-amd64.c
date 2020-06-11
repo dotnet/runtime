@@ -1407,7 +1407,7 @@ mono_arch_unwindinfo_insert_range_in_table (const gpointer code_block, gsize blo
 	AcquireSRWLockExclusive (&g_dynamic_function_table_lock);
 	init_table_no_lock ();
 	new_entry = find_range_in_table_no_lock (code_block, block_size);
-	if (new_entry == NULL) {
+	if (new_entry == NULL && block_size != 0) {
 		// Allocate new entry.
 		new_entry = g_new0 (DynamicFunctionTableEntry, 1);
 		if (new_entry != NULL) {

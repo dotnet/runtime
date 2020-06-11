@@ -3,12 +3,9 @@
 // See the LICENSE file in the project root for more information.
 //
 
-//
-
 
 #include "common.h"
 
-#include "hosting.h"
 #include "mscoree.h"
 #include "corhost.h"
 #include "threads.h"
@@ -17,10 +14,8 @@
 #define countof(x) (sizeof(x) / sizeof(x[0]))
 
 
-HANDLE g_ExecutableHeapHandle = NULL;
-
 #undef VirtualAlloc
-LPVOID EEVirtualAlloc(LPVOID lpAddress, SIZE_T dwSize, DWORD flAllocationType, DWORD flProtect) {
+LPVOID ClrVirtualAlloc(LPVOID lpAddress, SIZE_T dwSize, DWORD flAllocationType, DWORD flProtect) {
     CONTRACTL
     {
         NOTHROW;
@@ -36,7 +31,10 @@ LPVOID EEVirtualAlloc(LPVOID lpAddress, SIZE_T dwSize, DWORD flAllocationType, D
 
 #ifdef _DEBUG
         if (g_fEEStarted) {
-            _ASSERTE (!EEAllocationDisallowed());
+            // On Debug build we make sure that a thread is not going to do memory allocation
+            // after it suspends another thread, since the another thread may be suspended while
+            // having OS Heap lock.
+            _ASSERTE (Thread::Debug_AllowCallout());
         }
         _ASSERTE (lpAddress || (dwSize % g_SystemInfo.dwAllocationGranularity) == 0);
 #endif
@@ -89,7 +87,7 @@ LPVOID EEVirtualAlloc(LPVOID lpAddress, SIZE_T dwSize, DWORD flAllocationType, D
 #define VirtualAlloc(lpAddress, dwSize, flAllocationType, flProtect) Dont_Use_VirtualAlloc(lpAddress, dwSize, flAllocationType, flProtect)
 
 #undef VirtualFree
-BOOL EEVirtualFree(LPVOID lpAddress, SIZE_T dwSize, DWORD dwFreeType) {
+BOOL ClrVirtualFree(LPVOID lpAddress, SIZE_T dwSize, DWORD dwFreeType) {
     CONTRACTL
     {
         NOTHROW;
@@ -102,7 +100,7 @@ BOOL EEVirtualFree(LPVOID lpAddress, SIZE_T dwSize, DWORD dwFreeType) {
 #define VirtualFree(lpAddress, dwSize, dwFreeType) Dont_Use_VirtualFree(lpAddress, dwSize, dwFreeType)
 
 #undef VirtualQuery
-SIZE_T EEVirtualQuery(LPCVOID lpAddress, PMEMORY_BASIC_INFORMATION lpBuffer, SIZE_T dwLength)
+SIZE_T ClrVirtualQuery(LPCVOID lpAddress, PMEMORY_BASIC_INFORMATION lpBuffer, SIZE_T dwLength)
 {
     CONTRACTL
     {
@@ -117,8 +115,14 @@ SIZE_T EEVirtualQuery(LPCVOID lpAddress, PMEMORY_BASIC_INFORMATION lpBuffer, SIZ
 }
 #define VirtualQuery(lpAddress, lpBuffer, dwLength) Dont_Use_VirtualQuery(lpAddress, lpBuffer, dwLength)
 
+#if defined(_DEBUG) && !defined(TARGET_UNIX)
+static VolatilePtr<BYTE> s_pStartOfUEFSection = NULL;
+static VolatilePtr<BYTE> s_pEndOfUEFSectionBoundary = NULL;
+static Volatile<DWORD> s_dwProtection = 0;
+#endif // _DEBUG && !TARGET_UNIX
+
 #undef VirtualProtect
-BOOL EEVirtualProtect(LPVOID lpAddress, SIZE_T dwSize, DWORD flNewProtect, PDWORD lpflOldProtect)
+BOOL ClrVirtualProtect(LPVOID lpAddress, SIZE_T dwSize, DWORD flNewProtect, PDWORD lpflOldProtect)
 {
     CONTRACTL
     {
@@ -127,243 +131,121 @@ BOOL EEVirtualProtect(LPVOID lpAddress, SIZE_T dwSize, DWORD flNewProtect, PDWOR
     }
     CONTRACTL_END;
 
+    // Get the UEF installation details - we will use these to validate
+    // that the calls to ClrVirtualProtect are not going to affect the UEF.
+    //
+    // The OS UEF invocation mechanism was updated. When a UEF is setup,the OS captures
+    // the following details about it:
+    //  1) Protection of the pages in which the UEF lives
+    //  2) The size of the region in which the UEF lives
+    //  3) The region's Allocation Base
+    //
+    //  The OS verifies details surrounding the UEF before invocation.  For security reasons
+    //  the page protection cannot change between SetUnhandledExceptionFilter and invocation.
+    //
+    // Prior to this change, the UEF lived in a common section of code_Seg, along with
+    // JIT_PatchedCode. Thus, their pages have the same protection, they live
+    //  in the same region (and thus, its size is the same).
+    //
+    // In EEStartupHelper, when we setup the UEF and then invoke InitJitHelpers1 and InitJitHelpers2,
+    // they perform some optimizations that result in the memory page protection being changed. When
+    // the UEF is to be invoked, the OS does the check on the UEF's cached details against the current
+    // memory pages. This check used to fail when on 64bit retail builds when JIT_PatchedCode was
+    // aligned after the UEF with a different memory page protection (post the optimizations by InitJitHelpers).
+    // Thus, the UEF was never invoked.
+    //
+    // To circumvent this, we put the UEF in its own section in the code segment so that any modifications
+    // to memory pages will not affect the UEF details that the OS cached. This is done in Excep.cpp
+    // using the "#pragma code_seg" directives.
+    //
+    // Below, we double check that:
+    //
+    // 1) the address being protected does not lie in the region of of the UEF.
+    // 2) the section after UEF is not having the same memory protection as UEF section.
+    //
+    // We assert if either of the two conditions above are true.
+
+#if defined(_DEBUG) && !defined(TARGET_UNIX)
+   // We do this check in debug/checked builds only
+
+    // Do we have the UEF details?
+    if (s_pEndOfUEFSectionBoundary.Load() == NULL)
     {
-        return ::VirtualProtect(lpAddress, dwSize, flNewProtect, lpflOldProtect);
+        CONTRACT_VIOLATION(ThrowsViolation);
+
+        // Get reference to MSCORWKS image in memory...
+        PEDecoder pe(g_hThisInst);
+
+        // Find the UEF section from the image
+        IMAGE_SECTION_HEADER* pUEFSection = pe.FindSection(CLR_UEF_SECTION_NAME);
+        _ASSERTE(pUEFSection != NULL);
+        if (pUEFSection)
+        {
+            // We got our section - get the start of the section
+            BYTE* pStartOfUEFSection = static_cast<BYTE*>(pe.GetBase()) + pUEFSection->VirtualAddress;
+            s_pStartOfUEFSection = pStartOfUEFSection;
+
+            // Now we need the protection attributes for the memory region in which the
+            // UEF section is...
+            MEMORY_BASIC_INFORMATION uefInfo;
+            if (ClrVirtualQuery(pStartOfUEFSection, &uefInfo, sizeof(uefInfo)) != 0)
+            {
+                // Calculate how many pages does the UEF section take to get to the start of the
+                // next section. We dont calculate this as
+                //
+                // pStartOfUEFSection + uefInfo.RegionSize
+                //
+                // because the section following UEF will also be included in the region size
+                // if it has the same protection as the UEF section.
+                DWORD dwUEFSectionPageCount = ((pUEFSection->Misc.VirtualSize + GetOsPageSize() - 1) / GetOsPageSize());
+
+                BYTE* pAddressOfFollowingSection = pStartOfUEFSection + (GetOsPageSize() * dwUEFSectionPageCount);
+
+                // Ensure that the section following us is having different memory protection
+                MEMORY_BASIC_INFORMATION nextSectionInfo;
+                _ASSERTE(ClrVirtualQuery(pAddressOfFollowingSection, &nextSectionInfo, sizeof(nextSectionInfo)) != 0);
+                _ASSERTE(nextSectionInfo.Protect != uefInfo.Protect);
+
+                // save the memory protection details
+                s_dwProtection = uefInfo.Protect;
+
+                // Get the end of the UEF section
+                BYTE* pEndOfUEFSectionBoundary = pAddressOfFollowingSection - 1;
+
+                // Set the end of UEF section boundary
+                FastInterlockExchangePointer(s_pEndOfUEFSectionBoundary.GetPointer(), pEndOfUEFSectionBoundary);
+            }
+            else
+            {
+                _ASSERTE(!"Unable to get UEF Details!");
+            }
+        }
     }
+
+    if (s_pEndOfUEFSectionBoundary.Load() != NULL)
+    {
+        // Is the protection being changed?
+        if (flNewProtect != s_dwProtection)
+        {
+            // Is the target address NOT affecting the UEF ? Possible cases:
+            // 1) Starts and ends before the UEF start
+            // 2) Starts after the UEF start
+
+            void* pEndOfRangeAddr = static_cast<BYTE*>(lpAddress) + dwSize - 1;
+
+            _ASSERTE_MSG(((pEndOfRangeAddr < s_pStartOfUEFSection.Load()) || (lpAddress > s_pEndOfUEFSectionBoundary.Load())),
+                "Do not virtual protect the section in which UEF lives!");
+        }
+    }
+#endif // _DEBUG && !TARGET_UNIX
+
+    return ::VirtualProtect(lpAddress, dwSize, flNewProtect, lpflOldProtect);
 }
 #define VirtualProtect(lpAddress, dwSize, flNewProtect, lpflOldProtect) Dont_Use_VirtualProtect(lpAddress, dwSize, flNewProtect, lpflOldProtect)
 
-#undef GetProcessHeap
-HANDLE EEGetProcessHeap()
-{
-    // Note: this can be called a little early for real contracts, so we use static contracts instead.
-    STATIC_CONTRACT_NOTHROW;
-    STATIC_CONTRACT_GC_NOTRIGGER;
-
-    return GetProcessHeap();
-}
-#define GetProcessHeap() Dont_Use_GetProcessHeap()
-
-#undef HeapCreate
-HANDLE EEHeapCreate(DWORD flOptions, SIZE_T dwInitialSize, SIZE_T dwMaximumSize)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-    }
-    CONTRACTL_END;
-
-#ifndef TARGET_UNIX
-
-    {
-        return ::HeapCreate(flOptions, dwInitialSize, dwMaximumSize);
-    }
-#else // !TARGET_UNIX
-    return NULL;
-#endif // !TARGET_UNIX
-}
-#define HeapCreate(flOptions, dwInitialSize, dwMaximumSize) Dont_Use_HeapCreate(flOptions, dwInitialSize, dwMaximumSize)
-
-#undef HeapDestroy
-BOOL EEHeapDestroy(HANDLE hHeap)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-    }
-    CONTRACTL_END;
-
-#ifndef TARGET_UNIX
-
-    {
-        return ::HeapDestroy(hHeap);
-    }
-#else // !TARGET_UNIX
-    UNREACHABLE();
-#endif // !TARGET_UNIX
-}
-#define HeapDestroy(hHeap) Dont_Use_HeapDestroy(hHeap)
-
-#ifdef _DEBUG
-#ifdef TARGET_X86
-#define OS_HEAP_ALIGN 8
-#else
-#define OS_HEAP_ALIGN 16
-#endif
-#endif
-
-
-#undef HeapAlloc
-LPVOID EEHeapAlloc(HANDLE hHeap, DWORD dwFlags, SIZE_T dwBytes)
-{
-    STATIC_CONTRACT_NOTHROW;
-
-#ifdef FAILPOINTS_ENABLED
-    if (RFS_HashStack ())
-        return NULL;
-#endif
-
-
-    {
-
-        LPVOID p = NULL;
-#ifdef _DEBUG
-        // Store the heap handle to detect heap contamination
-        p = ::HeapAlloc (hHeap, dwFlags, dwBytes + OS_HEAP_ALIGN);
-        if(p)
-        {
-            *((HANDLE*)p) = hHeap;
-            p = (BYTE*)p + OS_HEAP_ALIGN;
-        }
-#else
-        p = ::HeapAlloc (hHeap, dwFlags, dwBytes);
-#endif
-
-        if(p == NULL
-            //under OOM, we might not be able to get Execution Engine and can't access stress log
-            && GetExecutionEngine ()
-           // If we have not created StressLog ring buffer, we should not try to use it.
-           // StressLog is going to do a memory allocation.  We may enter an endless loop.
-           && ClrFlsGetValue(TlsIdx_StressLog) != NULL )
-        {
-            STRESS_LOG_OOM_STACK(dwBytes);
-        }
-
-        return p;
-    }
-}
-#define HeapAlloc(hHeap, dwFlags, dwBytes) Dont_Use_HeapAlloc(hHeap, dwFlags, dwBytes)
-
-LPVOID EEHeapAllocInProcessHeap(DWORD dwFlags, SIZE_T dwBytes)
-{
-    WRAPPER_NO_CONTRACT;
-
-    static HANDLE ProcessHeap = NULL;
-
-    if (ProcessHeap == NULL)
-        ProcessHeap = EEGetProcessHeap();
-
-    return EEHeapAlloc(ProcessHeap,dwFlags,dwBytes);
-}
-
-#undef HeapFree
-BOOL EEHeapFree(HANDLE hHeap, DWORD dwFlags, LPVOID lpMem)
-{
-    STATIC_CONTRACT_NOTHROW;
-    STATIC_CONTRACT_GC_NOTRIGGER;
-
-    BOOL retVal = FALSE;
-
-    {
-#ifdef _DEBUG
-        if (lpMem != NULL)
-        {
-            // Check the heap handle to detect heap contamination
-            lpMem = (BYTE*)lpMem - OS_HEAP_ALIGN;
-            HANDLE storedHeapHandle = *((HANDLE*)lpMem);
-            if(storedHeapHandle != hHeap)
-                _ASSERTE(!"Heap contamination detected! HeapFree was called on a heap other than the one that memory was allocated from.\n"
-                         "Possible cause: you used new (executable) to allocate the memory, but didn't use DeleteExecutable() to free it.");
-        }
-#endif
-        // DON'T REMOVE THIS SEEMINGLY USELESS CAST
-        //
-        // On AMD64 the OS HeapFree calls RtlFreeHeap which returns a 1byte
-        // BOOLEAN, HeapFree then doesn't correctly clean the return value
-        // so the other 3 bytes which come back can be junk and in that case
-        // this return value can never be false.
-        retVal =  (BOOL)(BYTE)::HeapFree (hHeap, dwFlags, lpMem);
-    }
-
-    return retVal;
-}
-#define HeapFree(hHeap, dwFlags, lpMem) Dont_Use_HeapFree(hHeap, dwFlags, lpMem)
-
-BOOL EEHeapFreeInProcessHeap(DWORD dwFlags, LPVOID lpMem)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    static HANDLE ProcessHeap = NULL;
-
-    if (ProcessHeap == NULL)
-        ProcessHeap = EEGetProcessHeap();
-
-    return EEHeapFree(ProcessHeap,dwFlags,lpMem);
-}
-
-
-#undef HeapValidate
-BOOL EEHeapValidate(HANDLE hHeap, DWORD dwFlags, LPCVOID lpMem) {
-    STATIC_CONTRACT_NOTHROW;
-    STATIC_CONTRACT_GC_NOTRIGGER;
-
-#ifndef TARGET_UNIX
-
-    {
-        return ::HeapValidate(hHeap, dwFlags, lpMem);
-    }
-#else // !TARGET_UNIX
-    return TRUE;
-#endif // !TARGET_UNIX
-}
-#define HeapValidate(hHeap, dwFlags, lpMem) Dont_Use_HeapValidate(hHeap, dwFlags, lpMem)
-
-HANDLE EEGetProcessExecutableHeap() {
-    // Note: this can be called a little early for real contracts, so we use static contracts instead.
-    STATIC_CONTRACT_NOTHROW;
-    STATIC_CONTRACT_GC_NOTRIGGER;
-
-
-#ifndef TARGET_UNIX
-
-    //
-    // Create the executable heap lazily
-    //
-#undef HeapCreate
-#undef HeapDestroy
-    if (g_ExecutableHeapHandle == NULL)
-    {
-
-        HANDLE ExecutableHeapHandle = HeapCreate(
-                                    HEAP_CREATE_ENABLE_EXECUTE,                 // heap allocation attributes
-                                    0,                                          // initial heap size
-                                    0                                           // maximum heap size; 0 == growable
-                                    );
-
-        if (ExecutableHeapHandle == NULL)
-            return NULL;
-
-        HANDLE ExistingValue = InterlockedCompareExchangeT(&g_ExecutableHeapHandle, ExecutableHeapHandle, NULL);
-        if (ExistingValue != NULL)
-        {
-            HeapDestroy(ExecutableHeapHandle);
-        }
-    }
-
-#define HeapCreate(flOptions, dwInitialSize, dwMaximumSize) Dont_Use_HeapCreate(flOptions, dwInitialSize, dwMaximumSize)
-#define HeapDestroy(hHeap) Dont_Use_HeapDestroy(hHeap)
-
-#else // !TARGET_UNIX
-    UNREACHABLE();
-#endif // !TARGET_UNIX
-
-
-    // TODO: implement hosted executable heap
-    return g_ExecutableHeapHandle;
-}
-
-
 #undef SleepEx
 #undef Sleep
-DWORD EESleepEx(DWORD dwMilliseconds, BOOL bAlertable)
+DWORD ClrSleepEx(DWORD dwMilliseconds, BOOL bAlertable)
 {
     CONTRACTL
     {
@@ -490,7 +372,7 @@ static inline Crst *CookieToCrst(CRITSEC_COOKIE cookie) {
     return (Crst *) cookie;
 }
 
-CRITSEC_COOKIE EECreateCriticalSection(CrstType crstType, CrstFlags flags) {
+CRITSEC_COOKIE ClrCreateCriticalSection(CrstType crstType, CrstFlags flags) {
     CONTRACTL
     {
         NOTHROW;
@@ -518,7 +400,7 @@ CRITSEC_COOKIE EECreateCriticalSection(CrstType crstType, CrstFlags flags) {
     return ret;
 }
 
-void EEDeleteCriticalSection(CRITSEC_COOKIE cookie)
+void ClrDeleteCriticalSection(CRITSEC_COOKIE cookie)
 {
     CONTRACTL
     {
@@ -533,7 +415,7 @@ void EEDeleteCriticalSection(CRITSEC_COOKIE cookie)
     delete pCrst;
 }
 
-DEBUG_NOINLINE void EEEnterCriticalSection(CRITSEC_COOKIE cookie) {
+DEBUG_NOINLINE void ClrEnterCriticalSection(CRITSEC_COOKIE cookie) {
 
     // Entering a critical section has many different contracts
     // depending on the flags used to initialize the critical section.
@@ -555,7 +437,7 @@ DEBUG_NOINLINE void EEEnterCriticalSection(CRITSEC_COOKIE cookie) {
     pCrst->Enter();
 }
 
-DEBUG_NOINLINE void EELeaveCriticalSection(CRITSEC_COOKIE cookie)
+DEBUG_NOINLINE void ClrLeaveCriticalSection(CRITSEC_COOKIE cookie)
 {
     CONTRACTL
     {
@@ -571,78 +453,3 @@ DEBUG_NOINLINE void EELeaveCriticalSection(CRITSEC_COOKIE cookie)
 
     pCrst->Leave();
 }
-
-LPVOID EETlsGetValue(DWORD slot)
-{
-    STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_NOTHROW;
-    STATIC_CONTRACT_MODE_ANY;
-    STATIC_CONTRACT_CANNOT_TAKE_LOCK;
-
-    //
-    // @todo: we don't want TlsGetValue to throw, but CheckThreadState throws right now. Either modify
-    // CheckThreadState to not throw, or catch any exception and just return NULL.
-    //
-    //CONTRACT_VIOLATION(ThrowsViolation);
-    SCAN_IGNORE_THROW;
-
-    void **pTlsData = CExecutionEngine::CheckThreadState(slot, FALSE);
-
-    if (pTlsData)
-        return pTlsData[slot];
-    else
-        return NULL;
-}
-
-BOOL EETlsCheckValue(DWORD slot, LPVOID * pValue)
-{
-    STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_NOTHROW;
-    STATIC_CONTRACT_MODE_ANY;
-
-    //
-    // @todo: we don't want TlsGetValue to throw, but CheckThreadState throws right now. Either modify
-    // CheckThreadState to not throw, or catch any exception and just return NULL.
-    //
-    //CONTRACT_VIOLATION(ThrowsViolation);
-    SCAN_IGNORE_THROW;
-
-    void **pTlsData = CExecutionEngine::CheckThreadState(slot, FALSE);
-
-    if (pTlsData)
-    {
-        *pValue = pTlsData[slot];
-        return TRUE;
-    }
-
-    return FALSE;
-}
-
-VOID EETlsSetValue(DWORD slot, LPVOID pData)
-{
-    STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_THROWS;
-    STATIC_CONTRACT_MODE_ANY;
-
-    void **pTlsData = CExecutionEngine::CheckThreadState(slot);
-
-    if (pTlsData)  // Yes, CheckThreadState(slot, TRUE) can return NULL now.
-    {
-        pTlsData[slot] = pData;
-    }
-}
-
-BOOL EEAllocationDisallowed()
-{
-    WRAPPER_NO_CONTRACT;
-
-#ifdef _DEBUG
-    // On Debug build we make sure that a thread is not going to do memory allocation
-    // after it suspends another thread, since the another thread may be suspended while
-    // having OS Heap lock.
-    return !Thread::Debug_AllowCallout();
-#else
-    return FALSE;
-#endif
-}
-

@@ -6,6 +6,7 @@
 
 #include "pal_compiler.h"
 #include <Security/Security.h>
+#include <Security/SecureTransport.h>
 
 enum
 {

@@ -2,42 +2,49 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 
 namespace System
 {
-	partial class WeakReference<T>
-	{
-		GCHandle handle;
-		bool trackResurrection;
+    public partial class WeakReference<T>
+    {
+        private GCHandle handle;
+        private bool trackResurrection;
 
-		T Target {
-			get {
-				GCHandle h = handle;
-				return h.IsAllocated ? (T) h.Target : null;
-			}
-		}
+        [MaybeNull]
+        private T Target
+        {
+            get
+            {
+                GCHandle h = handle;
+                return h.IsAllocated ? (T)h.Target : null;
+            }
+        }
 
-		~WeakReference ()
-		{
-			handle.Free ();
-		}
+        ~WeakReference()
+        {
+            handle.Free();
+        }
 
-		void Create (T target, bool trackResurrection)
-		{
-			if (trackResurrection) {
-				trackResurrection = true;
-				handle = GCHandle.Alloc (target, GCHandleType.WeakTrackResurrection);
-			} else {
-				handle = GCHandle.Alloc (target, GCHandleType.Weak);
-			}
-		}
+        private void Create(T target, bool trackResurrection)
+        {
+            if (trackResurrection)
+            {
+                this.trackResurrection = true;
+                handle = GCHandle.Alloc(target, GCHandleType.WeakTrackResurrection);
+            }
+            else
+            {
+                handle = GCHandle.Alloc(target, GCHandleType.Weak);
+            }
+        }
 
-		public void SetTarget (T target)
-		{
-			handle.Target = target;
-		}		
+        public void SetTarget(T target)
+        {
+            handle.Target = target;
+        }
 
-		bool IsTrackResurrection () => trackResurrection;
-	}
+        private bool IsTrackResurrection() => trackResurrection;
+    }
 }

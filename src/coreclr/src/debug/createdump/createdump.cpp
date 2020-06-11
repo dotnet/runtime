@@ -7,37 +7,20 @@
 bool g_diagnostics = false;
 
 //
-// The common create dump code
+// The Linux create dump code
 //
 bool
-CreateDumpCommon(const char* dumpPathTemplate, MINIDUMP_TYPE minidumpType, CrashInfo* crashInfo)
+CreateDump(const char* dumpPath, int pid, MINIDUMP_TYPE minidumpType)
 {
-    ReleaseHolder<DumpWriter> dumpWriter = new DumpWriter(*crashInfo);
+    ReleaseHolder<CrashInfo> crashInfo = new CrashInfo(pid);
+    DumpWriter dumpWriter(*crashInfo);
     bool result = false;
 
-    ArrayHolder<char> dumpPath = new char[PATH_MAX];
-    snprintf(dumpPath, PATH_MAX, dumpPathTemplate, crashInfo->Pid());
-
-    const char* dumpType = "minidump";
-    switch (minidumpType)
+    // Initialize the crash info 
+    if (!crashInfo->Initialize())
     {
-        case MiniDumpWithPrivateReadWriteMemory:
-            dumpType = "minidump with heap";
-            break;
-
-        case MiniDumpFilterTriage:
-            dumpType = "triage minidump";
-            break;
-
-        case MiniDumpWithFullMemory:
-            dumpType = "full dump";
-            break;
-
-        default:
-            break;
+        goto exit;
     }
-    printf("Writing %s to file %s\n", dumpType, (char*)dumpPath);
-
     // Suspend all the threads in the target process and build the list of threads
     if (!crashInfo->EnumerateAndSuspendThreads())
     {
@@ -48,26 +31,16 @@ CreateDumpCommon(const char* dumpPathTemplate, MINIDUMP_TYPE minidumpType, Crash
     {
         goto exit;
     }
-    if (!dumpWriter->OpenDump(dumpPath))
+    if (!dumpWriter.OpenDump(dumpPath))
     {
         goto exit;
     }
-    if (!dumpWriter->WriteDump())
+    if (!dumpWriter.WriteDump())
     {
         goto exit;
     }
     result = true;
 exit:
-    crashInfo->ResumeThreads();
+    crashInfo->CleanupAndResumeProcess();
     return result;
-}
-
-//
-// Entry point for SOS createdump command
-//
-bool
-CreateDumpForSOS(const char* programPath, const char* dumpPathTemplate, pid_t pid, MINIDUMP_TYPE minidumpType, ICLRDataTarget* dataTarget)
-{
-    ReleaseHolder<CrashInfo> crashInfo = new CrashInfo(pid, dataTarget, true);
-    return CreateDumpCommon(dumpPathTemplate, minidumpType, crashInfo);
 }

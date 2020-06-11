@@ -117,10 +117,10 @@ class DefaultSHashTraits
 
     static const bool s_supports_remove = true;
 
-    static ELEMENT Null() { return (const ELEMENT) 0; }
-    static ELEMENT Deleted() { return (const ELEMENT) -1; }
-    static bool IsNull(const ELEMENT &e) { return e == (const ELEMENT) 0; }
-    static bool IsDeleted(const ELEMENT &e) { return e == (const ELEMENT) -1; }
+    static ELEMENT Null() { return (ELEMENT)(TADDR)0; }
+    static ELEMENT Deleted() { return (ELEMENT)(TADDR)-1; }
+    static bool IsNull(const ELEMENT &e) { return e == (ELEMENT)(TADDR)0; }
+    static bool IsDeleted(const ELEMENT &e) { return e == (ELEMENT)(TADDR)-1; }
 
     static inline void OnDestructPerEntryCleanupAction(const ELEMENT& e) { /* Do nothing */ }
     static const bool s_DestructPerEntryCleanupAction = false;
@@ -218,6 +218,10 @@ class EMPTY_BASES_DECL SHash : public TRAITS
     // Return the number of elements currently stored in the table
 
     count_t GetCount() const;
+
+    // Return the number of elements allocated in the table
+
+    count_t GetCapacity() const;
 
     // Resizes a hash table for growth.  The new size is computed based
     // on the current population, growth factor, and maximum density factor.

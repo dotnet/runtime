@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.IO;
 using System.Text;
@@ -11,7 +12,7 @@ namespace System.Net.Http.Headers
 {
     public class ContentRangeHeaderValue : ICloneable
     {
-        private string _unit;
+        private string _unit = null!;
         private long? _from;
         private long? _to;
         private long? _length;
@@ -119,9 +120,9 @@ namespace System.Net.Http.Headers
             _unit = source._unit;
         }
 
-        public override bool Equals(object obj)
+        public override bool Equals(object? obj)
         {
-            ContentRangeHeaderValue other = obj as ContentRangeHeaderValue;
+            ContentRangeHeaderValue? other = obj as ContentRangeHeaderValue;
 
             if (other == null)
             {
@@ -157,8 +158,9 @@ namespace System.Net.Http.Headers
 
             if (HasRange)
             {
-                sb.Append(_from.Value);
+                sb.Append(_from!.Value);
                 sb.Append('-');
+                Debug.Assert(_to.HasValue);
                 sb.Append(_to.Value);
             }
             else
@@ -169,7 +171,7 @@ namespace System.Net.Http.Headers
             sb.Append('/');
             if (HasLength)
             {
-                sb.Append(_length.Value);
+                sb.Append(_length!.Value);
             }
             else
             {
@@ -179,27 +181,26 @@ namespace System.Net.Http.Headers
             return StringBuilderCache.GetStringAndRelease(sb);
         }
 
-        public static ContentRangeHeaderValue Parse(string input)
+        public static ContentRangeHeaderValue Parse(string? input)
         {
             int index = 0;
             return (ContentRangeHeaderValue)GenericHeaderParser.ContentRangeParser.ParseValue(input, null, ref index);
         }
 
-        public static bool TryParse(string input, out ContentRangeHeaderValue parsedValue)
+        public static bool TryParse([NotNullWhen(true)] string? input, [NotNullWhen(true)] out ContentRangeHeaderValue? parsedValue)
         {
             int index = 0;
-            object output;
             parsedValue = null;
 
-            if (GenericHeaderParser.ContentRangeParser.TryParseValue(input, null, ref index, out output))
+            if (GenericHeaderParser.ContentRangeParser.TryParseValue(input, null, ref index, out object? output))
             {
-                parsedValue = (ContentRangeHeaderValue)output;
+                parsedValue = (ContentRangeHeaderValue)output!;
                 return true;
             }
             return false;
         }
 
-        internal static int GetContentRangeLength(string input, int startIndex, out object parsedValue)
+        internal static int GetContentRangeLength(string? input, int startIndex, out object? parsedValue)
         {
             Debug.Assert(startIndex >= 0);
 
@@ -358,7 +359,7 @@ namespace System.Net.Http.Headers
         }
 
         private static bool TryCreateContentRange(string input, string unit, int fromStartIndex, int fromLength,
-            int toStartIndex, int toLength, int lengthStartIndex, int lengthLength, out object parsedValue)
+            int toStartIndex, int toLength, int lengthStartIndex, int lengthLength, [NotNullWhen(true)] out object? parsedValue)
         {
             parsedValue = null;
 

@@ -1,34 +1,18 @@
 <Project>
+  <!-- Run target (F5) support. -->
   <PropertyGroup>
-    <TargetOSCategory Condition="'$(TargetOS)' == 'Windows_NT'">nonwindowstests</TargetOSCategory>
-    <TargetOSCategory Condition="'$(TargetOS)' == 'Linux'">nonlinuxtests</TargetOSCategory>
-    <TargetOSCategory Condition="'$(TargetOS)' == 'OSX'">nonosxtests</TargetOSCategory>
-    <TargetOSCategory Condition="'$(TargetOS)' == 'FreeBSD'">nonfreebsdtests</TargetOSCategory>
-    <TargetOSCategory Condition="'$(TargetOS)' == 'NetBSD'">nonnetbsdtests</TargetOSCategory>
-
-    <!-- Default and user defined categories -->
-    <_withCategories Condition="'$(WithCategories)' != ''">;$(WithCategories.Trim(';'))</_withCategories>
-    <_withoutCategories Condition="'$(WithoutCategories)' != ''">;$(WithoutCategories.Trim(';'))</_withoutCategories>
-
-    <TestScope Condition="'$(TestScope)' == '' and '$(Outerloop)' == 'true'">all</TestScope>
-    <_withCategories Condition="'$(TestScope)' == 'outerloop'">$(_withCategories);OuterLoop</_withCategories>
-    <_withoutCategories Condition="'$(ArchiveTests)' == 'true'">$(_withoutCategories);IgnoreForCI</_withoutCategories>
-    <_withoutCategories Condition="'$(TestScope)' == '' or '$(TestScope)' == 'innerloop'">$(_withoutCategories);OuterLoop</_withoutCategories>
-    <_withoutCategories Condition="!$(_withCategories.Contains('failing'))">$(_withoutCategories);failing</_withoutCategories>
-
-    <_targetCategory Condition="'$(TargetsNetCoreApp)' == 'true'">netcoreapp</_targetCategory>
-    <_targetCategory Condition="'$(TargetsNetFx)' == 'true'">netfx</_targetCategory>
-
-    <_withoutCategories>$(_withoutCategories);non$(_targetCategory)tests</_withoutCategories>
-    <_withoutCategories Condition="'$(TargetOSCategory)' != ''">$(_withoutCategories);$(TargetOSCategory)</_withoutCategories>
+    <RunWorkingDirectory>$(OutDir)</RunWorkingDirectory>
   </PropertyGroup>
 
-  <Target Name="ValidateTargetOSCategory"
-          BeforeTargets="GenerateRunScript">
-    <Error Condition="'$(TargetOSCategory)' == ''"
-           Text="TargetOS [$(TargetOS)] is unknown so we don't know how to configure the test run for this project [$(TestProjectName)]" />
-  </Target>
+  <PropertyGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
+    <RunCommand>$(DotNetTool)</RunCommand>
+    <RunArguments>test $(TargetPath) --settings $(OutDir).runsettings</RunArguments>
+  </PropertyGroup>
 
-  <Import Project="$(MSBuildThisFileDirectory)xunit.console.targets" Condition="'$(TestRunner)' == 'xunit.console'" />
-  <Import Project="$(MSBuildThisFileDirectory)vstest.targets" Condition="'$(TestRunner)' == 'vstest'" />
+  <PropertyGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
+    <RunCommand>$(DevEnvDir)Extensions\TestPlatform\vstest.console.exe</RunCommand>
+    <RunArguments>$(TargetPath) --settings:$(OutDir).runsettings</RunArguments>
+  </PropertyGroup>
+
+  <Import Project="$(MSBuildThisFileDirectory)xunit.console.targets" />
 </Project>

@@ -1,9 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <ReferenceSystemPrivateCoreLib>true</ReferenceSystemPrivateCoreLib>
   </PropertyGroup>
-  <Import Project="$([MSBuild]::GetPathOfFileAbove(Interop.settings.targets))" />
   <ItemGroup>
     <Compile Include="$(MSBuildProjectName).cs" />
   </ItemGroup>

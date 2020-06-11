@@ -18,7 +18,7 @@ namespace System.Net.Http
 
             public override int Read(Span<byte> buffer)
             {
-                HttpConnection connection = _connection;
+                HttpConnection? connection = _connection;
                 if (connection == null || buffer.Length == 0)
                 {
                     // Response body fully consumed or the caller didn't ask for any data
@@ -40,7 +40,7 @@ namespace System.Net.Http
             {
                 CancellationHelper.ThrowIfCancellationRequested(cancellationToken);
 
-                HttpConnection connection = _connection;
+                HttpConnection? connection = _connection;
                 if (connection == null || buffer.Length == 0)
                 {
                     // Response body fully consumed or the caller didn't ask for any data
@@ -97,7 +97,7 @@ namespace System.Net.Http
                     return Task.FromCanceled(cancellationToken);
                 }
 
-                HttpConnection connection = _connection;
+                HttpConnection? connection = _connection;
                 if (connection == null)
                 {
                     // null if response body fully consumed

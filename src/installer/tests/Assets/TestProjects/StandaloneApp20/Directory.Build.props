@@ -1,0 +1,10 @@
+<Project>
+
+  <!-- This project targets a released verison of .net core, don't use workaround. -->
+  <PropertyGroup>
+    <UseMicrosoftNETCoreAppInternalWorkaround>false</UseMicrosoftNETCoreAppInternalWorkaround>
+  </PropertyGroup>
+
+  <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.props, $(MSBuildThisFileDirectory)..))" />
+
+</Project>

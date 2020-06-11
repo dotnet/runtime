@@ -2,44 +2,43 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-#nullable disable
 using System.Runtime.InteropServices;
 
 namespace Mono
 {
-	[StructLayout (LayoutKind.Sequential)]
-	internal sealed class MonoDomainSetup
-	{
-		#region Sync with object-internals.h
-		string application_base;
-		string application_name;
-		string cache_path;
-		string configuration_file;
-		string dynamic_base;
-		string license_file;
-		string private_bin_path;
-		string private_bin_path_probe;
-		string shadow_copy_directories;
-		string shadow_copy_files;
-		bool publisher_policy;
-		private bool path_changed;
-		private int loader_optimization;
-		bool disallow_binding_redirects;
-		bool disallow_code_downloads;
+    [StructLayout(LayoutKind.Sequential)]
+    internal sealed class MonoDomainSetup
+    {
+        #region Sync with object-internals.h
+        private string? application_base;
+        private string? application_name;
+        private string? cache_path;
+        private string? configuration_file;
+        private string? dynamic_base;
+        private string? license_file;
+        private string? private_bin_path;
+        private string? private_bin_path_probe;
+        private string? shadow_copy_directories;
+        private string? shadow_copy_files;
+        private bool publisher_policy;
+        private bool path_changed;
+        private int loader_optimization;
+        private bool disallow_binding_redirects;
+        private bool disallow_code_downloads;
 
-		object _activationArguments;
-		object domain_initializer;
-		object application_trust;
-		string [] domain_initializer_args;
+        private object? _activationArguments;
+        private object? domain_initializer;
+        private object? application_trust;
+        private string[]? domain_initializer_args;
 
-		bool disallow_appbase_probe;
-		byte [] configuration_bytes;
+        private bool disallow_appbase_probe;
+        private byte[]? configuration_bytes;
 
-		byte [] serialized_non_primitives;
-		#endregion
+        private byte[]? serialized_non_primitives;
+        #endregion
 
-		public MonoDomainSetup ()
-		{
-		}
-	}
+        public MonoDomainSetup()
+        {
+        }
+    }
 }

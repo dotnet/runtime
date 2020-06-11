@@ -352,12 +352,19 @@ CONFIG_STRING(JitFuncInfoFile, W("JitFuncInfoLogFile")) // If set, gather JIT fu
 CONFIG_STRING(JitTimeLogCsv, W("JitTimeLogCsv")) // If set, gather JIT throughput data and write to a CSV file. This
                                                  // mode must be used in internal retail builds.
 CONFIG_STRING(TailCallOpt, W("TailCallOpt"))
+CONFIG_INTEGER(FastTailCalls, W("FastTailCalls"), 1) // If set, allow fast tail calls; otherwise allow only helper-based
+                                                     // calls
+                                                     // for explicit tail calls.
 
 CONFIG_INTEGER(JitMeasureNowayAssert, W("JitMeasureNowayAssert"), 0) // Set to 1 to measure noway_assert usage. Only
                                                                      // valid if MEASURE_NOWAY is defined.
 CONFIG_STRING(JitMeasureNowayAssertFile,
               W("JitMeasureNowayAssertFile")) // Set to file to write noway_assert usage to a file (if not
                                               // set: stdout). Only valid if MEASURE_NOWAY is defined.
+#if defined(DEBUG)
+CONFIG_INTEGER(EnableExtraSuperPmiQueries, W("EnableExtraSuperPmiQueries"), 0) // Make extra queries to somewhat
+                                                                               // future-proof SuperPmi method contexts.
+#endif                                                                         // DEBUG
 
 #if defined(DEBUG) || defined(INLINE_DATA)
 CONFIG_INTEGER(JitInlineDumpData, W("JitInlineDumpData"), 0)
@@ -394,6 +401,11 @@ CONFIG_INTEGER(JitGuardedDevirtualizationGuessUniqueInterface, W("JitGuardedDevi
 CONFIG_INTEGER(JitGuardedDevirtualizationGuessBestClass, W("JitGuardedDevirtualizationGuessBestClass"), 1)
 #endif // DEBUG
 
+// Enable insertion of patchpoints into Tier0 methods with loops.
+CONFIG_INTEGER(TC_OnStackReplacement, W("TC_OnStackReplacement"), 0)
+// Initial patchpoint counter value used by jitted code
+CONFIG_INTEGER(TC_OnStackReplacement_InitialCounter, W("TC_OnStackReplacement_InitialCounter"), 1000)
+
 #if defined(DEBUG)
 // JitFunctionFile: Name of a file that contains a list of functions. If the currently compiled function is in the
 // file, certain other JIT config variables will be active. If the currently compiled function is not in the file,
@@ -424,6 +436,9 @@ CONFIG_STRING(JitFunctionFile, W("JitFunctionFile"))
 CONFIG_INTEGER(JitSaveFpLrWithCalleeSavedRegisters, W("JitSaveFpLrWithCalleeSavedRegisters"), 0)
 #endif // defined(TARGET_ARM64)
 #endif // DEBUG
+
+CONFIG_INTEGER(JitDoOldStructRetyping, W("JitDoOldStructRetyping"), 1) // Allow Jit to retype structs as primitive types
+                                                                       // when possible.
 
 #undef CONFIG_INTEGER
 #undef CONFIG_STRING

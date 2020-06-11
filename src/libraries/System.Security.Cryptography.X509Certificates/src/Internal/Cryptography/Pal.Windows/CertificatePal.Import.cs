@@ -35,7 +35,7 @@ namespace Internal.Cryptography.Pal
             bool loadFromFile = (fileName != null);
 
             PfxCertStoreFlags pfxCertStoreFlags = MapKeyStorageFlags(keyStorageFlags);
-            bool persistKeySet = (0 != (keyStorageFlags & X509KeyStorageFlags.PersistKeySet));
+            bool deleteKeyContainer = false;
 
             CertEncodingType msgAndCertEncodingType;
             ContentType contentType;
@@ -87,9 +87,16 @@ namespace Internal.Cryptography.Pal
                         if (loadFromFile)
                             rawData = File.ReadAllBytes(fileName!);
                         pCertContext = FilterPFXStore(rawData!, password, pfxCertStoreFlags);
+
+                        // If PersistKeySet is set we don't delete the key, so that it persists.
+                        // If EphemeralKeySet is set we don't delete the key, because there's no file, so it's a wasteful call.
+                        const X509KeyStorageFlags DeleteUnless =
+                            X509KeyStorageFlags.PersistKeySet | X509KeyStorageFlags.EphemeralKeySet;
+
+                        deleteKeyContainer = ((keyStorageFlags & DeleteUnless) == 0);
                     }
 
-                    CertificatePal pal = new CertificatePal(pCertContext, deleteKeyContainer: !persistKeySet);
+                    CertificatePal pal = new CertificatePal(pCertContext, deleteKeyContainer);
                     pCertContext = null;
                     return pal;
                 }

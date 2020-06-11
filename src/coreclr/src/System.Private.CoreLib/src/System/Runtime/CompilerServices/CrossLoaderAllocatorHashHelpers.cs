@@ -30,7 +30,7 @@ namespace System.Runtime.CompilerServices
     [StructLayout(LayoutKind.Sequential)]
     internal class LAHashKeyToTrackers
     {
-        private object _trackerOrTrackerSet = null!;
-        private object _laLocalKeyValueStore = null!;
+        private object? _trackerOrTrackerSet;
+        private object? _laLocalKeyValueStore;
     }
 }

@@ -5,6 +5,12 @@
 #ifndef _ASSEMBLYLOADCONTEXT_H
 #define _ASSEMBLYLOADCONTEXT_H
 
+#include "crst.h"
+#include <sarray.h>
+
+class NativeImage;
+class Module;
+
 //
 // Unmanaged counter-part of System.Runtime.Loader.AssemblyLoadContext
 //
@@ -15,6 +21,11 @@ public:
 
     STDMETHOD(GetBinderID)(
         /* [retval][out] */ UINT_PTR* pBinderId);
+
+    NativeImage *LoadNativeImage(Module *componentModule, LPCUTF8 nativeImageName);
+
+private:
+    SArray<NativeImage *> m_nativeImages;
 };
 
 #endif

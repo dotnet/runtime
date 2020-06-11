@@ -11,7 +11,7 @@ namespace System.Globalization
     /// </summary>
     public sealed partial class SortKey
     {
-        private readonly string _localeName;
+        private readonly CompareInfo _compareInfo;
         private readonly CompareOptions _options;
         private readonly string _string;
         private readonly byte[] _keyData;
@@ -20,10 +20,10 @@ namespace System.Globalization
         /// The following constructor is designed to be called from CompareInfo to get the
         /// the sort key of specific string for synthetic culture
         /// </summary>
-        internal SortKey(string localeName, string str, CompareOptions options, byte[] keyData)
+        internal SortKey(CompareInfo compareInfo, string str, CompareOptions options, byte[] keyData)
         {
             _keyData = keyData;
-            _localeName = localeName;
+            _compareInfo = compareInfo;
             _options = options;
             _string = str;
         }
@@ -75,13 +75,12 @@ namespace System.Globalization
 
         public override int GetHashCode()
         {
-            // keep this in sync with CompareInfo.GetHashCodeOfString
-            return Marvin.ComputeHash32(_keyData, Marvin.DefaultSeed);
+            return _compareInfo.GetHashCode(_string, _options);
         }
 
         public override string ToString()
         {
-            return "SortKey - " + _localeName + ", " + _options + ", " + _string;
+            return "SortKey - " + _compareInfo.Name + ", " + _options + ", " + _string;
         }
     }
 }

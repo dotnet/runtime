@@ -26,9 +26,9 @@ namespace System.Threading.Tasks.Dataflow
     public sealed class ActionBlock<TInput> : ITargetBlock<TInput>, IDebuggerDisplay
     {
         /// <summary>The core implementation of this message block when in default mode.</summary>
-        private readonly TargetCore<TInput> _defaultTarget;
+        private readonly TargetCore<TInput>? _defaultTarget;
         /// <summary>The core implementation of this message block when in SPSC mode.</summary>
-        private readonly SpscTargetCore<TInput> _spscTarget;
+        private readonly SpscTargetCore<TInput>? _spscTarget;
 
         /// <summary>Initializes the <see cref="ActionBlock{T}"/> with the specified <see cref="System.Action{T}"/>.</summary>
         /// <param name="action">The action to invoke with each data element received.</param>
@@ -113,7 +113,7 @@ namespace System.Threading.Tasks.Dataflow
 
                 // Handle async cancellation requests by declining on the target
                 Common.WireCancellationToComplete(
-                    dataflowBlockOptions.CancellationToken, Completion, state => ((TargetCore<TInput>)state).Complete(exception: null, dropPendingMessages: true), _defaultTarget);
+                    dataflowBlockOptions.CancellationToken, Completion, state => ((TargetCore<TInput>)state!).Complete(exception: null, dropPendingMessages: true), _defaultTarget);
             }
 #if FEATURE_TRACING
             DataflowEtwProvider etwLog = DataflowEtwProvider.Log;
@@ -131,6 +131,7 @@ namespace System.Threading.Tasks.Dataflow
         /// <param name="messageWithId">The message to be processed.</param>
         private void ProcessMessage(Action<TInput> action, KeyValuePair<TInput, long> messageWithId)
         {
+            Debug.Assert(_defaultTarget != null);
             try
             {
                 action(messageWithId.Key);
@@ -154,10 +155,11 @@ namespace System.Threading.Tasks.Dataflow
         private void ProcessMessageWithTask(Func<TInput, Task> action, KeyValuePair<TInput, long> messageWithId)
         {
             Debug.Assert(action != null, "action needed for processing");
+            Debug.Assert(_defaultTarget != null);
 
             // Run the action to get the task that represents the operation's completion
-            Task task = null;
-            Exception caughtException = null;
+            Task? task = null;
+            Exception? caughtException = null;
             try
             {
                 task = action(messageWithId.Key);
@@ -188,7 +190,7 @@ namespace System.Threading.Tasks.Dataflow
                 // Otherwise, join with the asynchronous operation when it completes.
                 task.ContinueWith((completed, state) =>
                 {
-                    ((ActionBlock<TInput>)state).AsyncCompleteProcessMessageWithTask(completed);
+                    ((ActionBlock<TInput>)state!).AsyncCompleteProcessMessageWithTask(completed);
                 }, this, CancellationToken.None, Common.GetContinuationOptions(TaskContinuationOptions.ExecuteSynchronously), TaskScheduler.Default);
             }
         }
@@ -199,6 +201,7 @@ namespace System.Threading.Tasks.Dataflow
         {
             Debug.Assert(completed != null, "Need completed task for processing");
             Debug.Assert(completed.IsCompleted, "The task to be processed must be completed by now.");
+            Debug.Assert(_defaultTarget != null);
 
             // If the task faulted, store its errors. We must add the exception before declining
             // and signaling completion, as the exception is part of the operation, and the completion conditions
@@ -224,6 +227,7 @@ namespace System.Threading.Tasks.Dataflow
             }
             else
             {
+                Debug.Assert(_spscTarget != null);
                 _spscTarget.Complete(exception: null);
             }
         }
@@ -239,6 +243,7 @@ namespace System.Threading.Tasks.Dataflow
             }
             else
             {
+                Debug.Assert(_spscTarget != null);
                 _spscTarget.Complete(exception);
             }
         }
@@ -246,7 +251,7 @@ namespace System.Threading.Tasks.Dataflow
         /// <include file='XmlDocs/CommonXmlDocComments.xml' path='CommonXmlDocComments/Blocks/Member[@name="Completion"]/*' />
         public Task Completion
         {
-            get { return _defaultTarget != null ? _defaultTarget.Completion : _spscTarget.Completion; }
+            get { return _defaultTarget != null ? _defaultTarget.Completion : _spscTarget!.Completion; }
         }
 
         /// <summary>Posts an item to the <see cref="System.Threading.Tasks.Dataflow.ITargetBlock{T}"/>.</summary>
@@ -273,33 +278,33 @@ namespace System.Threading.Tasks.Dataflow
 
             return _defaultTarget != null ?
                 _defaultTarget.OfferMessage(Common.SingleMessageHeader, item, null, false) == DataflowMessageStatus.Accepted :
-                _spscTarget.Post(item);
+                _spscTarget!.Post(item);
         }
 
         /// <include file='XmlDocs/CommonXmlDocComments.xml' path='CommonXmlDocComments/Targets/Member[@name="OfferMessage"]/*' />
-        DataflowMessageStatus ITargetBlock<TInput>.OfferMessage(DataflowMessageHeader messageHeader, TInput messageValue, ISourceBlock<TInput> source, bool consumeToAccept)
+        DataflowMessageStatus ITargetBlock<TInput>.OfferMessage(DataflowMessageHeader messageHeader, TInput messageValue, ISourceBlock<TInput>? source, bool consumeToAccept)
         {
             return _defaultTarget != null ?
                 _defaultTarget.OfferMessage(messageHeader, messageValue, source, consumeToAccept) :
-                _spscTarget.OfferMessage(messageHeader, messageValue, source, consumeToAccept);
+                _spscTarget!.OfferMessage(messageHeader, messageValue, source, consumeToAccept);
         }
 
         /// <include file='XmlDocs/CommonXmlDocComments.xml' path='CommonXmlDocComments/Targets/Member[@name="InputCount"]/*' />
         public int InputCount
         {
-            get { return _defaultTarget != null ? _defaultTarget.InputCount : _spscTarget.InputCount; }
+            get { return _defaultTarget != null ? _defaultTarget.InputCount : _spscTarget!.InputCount; }
         }
 
         /// <summary>Gets the number of messages waiting to be processed. This must only be used from the debugger.</summary>
         private int InputCountForDebugger
         {
-            get { return _defaultTarget != null ? _defaultTarget.GetDebuggingInformation().InputCount : _spscTarget.InputCount; }
+            get { return _defaultTarget != null ? _defaultTarget.GetDebuggingInformation().InputCount : _spscTarget!.InputCount; }
         }
 
         /// <include file='XmlDocs/CommonXmlDocComments.xml' path='CommonXmlDocComments/Blocks/Member[@name="ToString"]/*' />
         public override string ToString()
         {
-            return Common.GetNameForDebugger(this, _defaultTarget != null ? _defaultTarget.DataflowBlockOptions : _spscTarget.DataflowBlockOptions);
+            return Common.GetNameForDebugger(this, _defaultTarget != null ? _defaultTarget.DataflowBlockOptions : _spscTarget!.DataflowBlockOptions);
         }
 
         /// <summary>The data to display in the debugger display attribute.</summary>
@@ -308,7 +313,7 @@ namespace System.Threading.Tasks.Dataflow
             get
             {
                 return string.Format("{0}, InputCount={1}",
-                    Common.GetNameForDebugger(this, _defaultTarget != null ? _defaultTarget.DataflowBlockOptions : _spscTarget.DataflowBlockOptions),
+                    Common.GetNameForDebugger(this, _defaultTarget != null ? _defaultTarget.DataflowBlockOptions : _spscTarget!.DataflowBlockOptions),
                     InputCountForDebugger);
             }
         }
@@ -321,9 +326,9 @@ namespace System.Threading.Tasks.Dataflow
             /// <summary>The action block being viewed.</summary>
             private readonly ActionBlock<TInput> _actionBlock;
             /// <summary>The action block's default target being viewed.</summary>
-            private readonly TargetCore<TInput>.DebuggingInformation _defaultDebugInfo;
+            private readonly TargetCore<TInput>.DebuggingInformation? _defaultDebugInfo;
             /// <summary>The action block's SPSC target being viewed.</summary>
-            private readonly SpscTargetCore<TInput>.DebuggingInformation _spscDebugInfo;
+            private readonly SpscTargetCore<TInput>.DebuggingInformation? _spscDebugInfo;
 
             /// <summary>Initializes the debug view.</summary>
             /// <param name="actionBlock">The target being debugged.</param>
@@ -333,21 +338,21 @@ namespace System.Threading.Tasks.Dataflow
                 _actionBlock = actionBlock;
                 if (_actionBlock._defaultTarget != null)
                 {
-                    _defaultDebugInfo = actionBlock._defaultTarget.GetDebuggingInformation();
+                    _defaultDebugInfo = actionBlock._defaultTarget!.GetDebuggingInformation();
                 }
                 else
                 {
-                    _spscDebugInfo = actionBlock._spscTarget.GetDebuggingInformation();
+                    _spscDebugInfo = actionBlock._spscTarget!.GetDebuggingInformation();
                 }
             }
 
             /// <summary>Gets the messages waiting to be processed.</summary>
             public IEnumerable<TInput> InputQueue
             {
-                get { return _defaultDebugInfo != null ? _defaultDebugInfo.InputQueue : _spscDebugInfo.InputQueue; }
+                get { return _defaultDebugInfo != null ? _defaultDebugInfo.InputQueue : _spscDebugInfo!.InputQueue; }
             }
             /// <summary>Gets any postponed messages.</summary>
-            public QueuedMap<ISourceBlock<TInput>, DataflowMessageHeader> PostponedMessages
+            public QueuedMap<ISourceBlock<TInput>, DataflowMessageHeader>? PostponedMessages
             {
                 get { return _defaultDebugInfo != null ? _defaultDebugInfo.PostponedMessages : null; }
             }
@@ -355,23 +360,23 @@ namespace System.Threading.Tasks.Dataflow
             /// <summary>Gets the number of outstanding input operations.</summary>
             public int CurrentDegreeOfParallelism
             {
-                get { return _defaultDebugInfo != null ? _defaultDebugInfo.CurrentDegreeOfParallelism : _spscDebugInfo.CurrentDegreeOfParallelism; }
+                get { return _defaultDebugInfo != null ? _defaultDebugInfo.CurrentDegreeOfParallelism : _spscDebugInfo!.CurrentDegreeOfParallelism; }
             }
 
             /// <summary>Gets the ExecutionDataflowBlockOptions used to configure this block.</summary>
             public ExecutionDataflowBlockOptions DataflowBlockOptions
             {
-                get { return _defaultDebugInfo != null ? _defaultDebugInfo.DataflowBlockOptions : _spscDebugInfo.DataflowBlockOptions; }
+                get { return _defaultDebugInfo != null ? _defaultDebugInfo.DataflowBlockOptions : _spscDebugInfo!.DataflowBlockOptions; }
             }
             /// <summary>Gets whether the block is declining further messages.</summary>
             public bool IsDecliningPermanently
             {
-                get { return _defaultDebugInfo != null ? _defaultDebugInfo.IsDecliningPermanently : _spscDebugInfo.IsDecliningPermanently; }
+                get { return _defaultDebugInfo != null ? _defaultDebugInfo.IsDecliningPermanently : _spscDebugInfo!.IsDecliningPermanently; }
             }
             /// <summary>Gets whether the block is completed.</summary>
             public bool IsCompleted
             {
-                get { return _defaultDebugInfo != null ? _defaultDebugInfo.IsCompleted : _spscDebugInfo.IsCompleted; }
+                get { return _defaultDebugInfo != null ? _defaultDebugInfo.IsCompleted : _spscDebugInfo!.IsCompleted; }
             }
             /// <summary>Gets the block's Id.</summary>
             public int Id { get { return Common.GetBlockId(_actionBlock); } }

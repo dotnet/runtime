@@ -8,7 +8,13 @@
 
 #pragma once
 
+#if defined(TARGET_UNIX)
+
 #include "config.h"
+
+#if defined(TARGET_ANDROID)
+#include "pal_icushim_internal_android.h"
+#else
 
 #define U_DISABLE_RENAMING 1
 
@@ -32,6 +38,23 @@
 #include <unicode/utypes.h>
 #include <unicode/urename.h>
 #include <unicode/ustring.h>
+
+#endif
+
+#elif defined(TARGET_WINDOWS)
+
+#include "icu.h"
+
+#ifndef __typeof
+#define __typeof decltype
+#endif
+
+#define HAVE_SET_MAX_VARIABLE 1
+#define UDAT_STANDALONE_SHORTER_WEEKDAYS 1
+
+#endif
+
+#include "pal_compiler.h"
 
 // List of all functions from the ICU libraries that are used in the System.Globalization.Native.so
 #define FOR_ALL_UNCONDITIONAL_ICU_FUNCTIONS \
@@ -64,8 +87,6 @@
     PER_FUNCTION_BLOCK(ucol_safeClone, libicui18n) \
     PER_FUNCTION_BLOCK(ucol_setAttribute, libicui18n) \
     PER_FUNCTION_BLOCK(ucol_strcoll, libicui18n) \
-    PER_FUNCTION_BLOCK(ucurr_forLocale, libicui18n) \
-    PER_FUNCTION_BLOCK(ucurr_getName, libicui18n) \
     PER_FUNCTION_BLOCK(udat_close, libicui18n) \
     PER_FUNCTION_BLOCK(udat_countSymbols, libicui18n) \
     PER_FUNCTION_BLOCK(udat_getSymbols, libicui18n) \
@@ -82,9 +103,6 @@
     PER_FUNCTION_BLOCK(uidna_nameToASCII, libicuuc) \
     PER_FUNCTION_BLOCK(uidna_nameToUnicode, libicuuc) \
     PER_FUNCTION_BLOCK(uidna_openUTS46, libicuuc) \
-    PER_FUNCTION_BLOCK(uldn_close, libicui18n) \
-    PER_FUNCTION_BLOCK(uldn_keyValueDisplayName, libicui18n) \
-    PER_FUNCTION_BLOCK(uldn_open, libicui18n) \
     PER_FUNCTION_BLOCK(uloc_canonicalize, libicuuc) \
     PER_FUNCTION_BLOCK(uloc_countAvailable, libicuuc) \
     PER_FUNCTION_BLOCK(uloc_getAvailable, libicuuc) \
@@ -103,6 +121,7 @@
     PER_FUNCTION_BLOCK(uloc_getName, libicuuc) \
     PER_FUNCTION_BLOCK(uloc_getParent, libicuuc) \
     PER_FUNCTION_BLOCK(uloc_setKeywordValue, libicuuc) \
+    PER_FUNCTION_BLOCK(ulocdata_getCLDRVersion, libicui18n) \
     PER_FUNCTION_BLOCK(ulocdata_getMeasurementSystem, libicui18n) \
     PER_FUNCTION_BLOCK(unorm2_getNFCInstance, libicuuc) \
     PER_FUNCTION_BLOCK(unorm2_getNFDInstance, libicuuc) \
@@ -127,17 +146,39 @@
     PER_FUNCTION_BLOCK(usearch_openFromCollator, libicui18n)
 
 #if HAVE_SET_MAX_VARIABLE
-#define FOR_ALL_ICU_FUNCTIONS \
-    FOR_ALL_UNCONDITIONAL_ICU_FUNCTIONS \
+#define FOR_ALL_SET_VARIABLE_ICU_FUNCTIONS \
     PER_FUNCTION_BLOCK(ucol_setMaxVariable, libicui18n)
 #else
-#define FOR_ALL_ICU_FUNCTIONS \
-    FOR_ALL_UNCONDITIONAL_ICU_FUNCTIONS \
+
+#define FOR_ALL_SET_VARIABLE_ICU_FUNCTIONS \
     PER_FUNCTION_BLOCK(ucol_setVariableTop, libicui18n)
 #endif
 
+#if defined(TARGET_WINDOWS)
+#define FOR_ALL_OS_CONDITIONAL_ICU_FUNCTIONS \
+    PER_FUNCTION_BLOCK(ucurr_forLocale, libicuuc) \
+    PER_FUNCTION_BLOCK(ucurr_getName, libicuuc) \
+    PER_FUNCTION_BLOCK(uldn_close, libicuuc) \
+    PER_FUNCTION_BLOCK(uldn_keyValueDisplayName, libicuuc) \
+    PER_FUNCTION_BLOCK(uldn_open, libicuuc)
+#else
+    // Unix ICU is dynamically resolved at runtime and these APIs in old versions
+    // of ICU were in libicui18n
+#define FOR_ALL_OS_CONDITIONAL_ICU_FUNCTIONS \
+    PER_FUNCTION_BLOCK(ucurr_forLocale, libicui18n) \
+    PER_FUNCTION_BLOCK(ucurr_getName, libicui18n) \
+    PER_FUNCTION_BLOCK(uldn_close, libicui18n) \
+    PER_FUNCTION_BLOCK(uldn_keyValueDisplayName, libicui18n) \
+    PER_FUNCTION_BLOCK(uldn_open, libicui18n)
+#endif
+
+#define FOR_ALL_ICU_FUNCTIONS \
+    FOR_ALL_UNCONDITIONAL_ICU_FUNCTIONS \
+    FOR_ALL_SET_VARIABLE_ICU_FUNCTIONS \
+    FOR_ALL_OS_CONDITIONAL_ICU_FUNCTIONS
+
 // Declare pointers to all the used ICU functions
-#define PER_FUNCTION_BLOCK(fn, lib) extern __typeof(fn)* fn##_ptr;
+#define PER_FUNCTION_BLOCK(fn, lib) EXTERN_C __typeof(fn)* fn##_ptr;
 FOR_ALL_ICU_FUNCTIONS
 #undef PER_FUNCTION_BLOCK
 
@@ -216,6 +257,7 @@ FOR_ALL_ICU_FUNCTIONS
 #define uloc_getName(...) uloc_getName_ptr(__VA_ARGS__)
 #define uloc_getParent(...) uloc_getParent_ptr(__VA_ARGS__)
 #define uloc_setKeywordValue(...) uloc_setKeywordValue_ptr(__VA_ARGS__)
+#define ulocdata_getCLDRVersion(...) ulocdata_getCLDRVersion_ptr(__VA_ARGS__)
 #define ulocdata_getMeasurementSystem(...) ulocdata_getMeasurementSystem_ptr(__VA_ARGS__)
 #define unorm2_getNFCInstance(...) unorm2_getNFCInstance_ptr(__VA_ARGS__)
 #define unorm2_getNFDInstance(...) unorm2_getNFDInstance_ptr(__VA_ARGS__)

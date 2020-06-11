@@ -16,10 +16,7 @@ if (CLR_CMAKE_HOST_WIN32)
     add_link_options(/INCREMENTAL:NO)
 
     # Delay load libraries required for WinRT as that is not supported on all platforms
-    add_link_options("/DELAYLOAD:api-ms-win-core-winrt-string-l1-1-0.dll")
     add_link_options("/DELAYLOAD:api-ms-win-core-winrt-l1-1-0.dll")
-    add_link_options("/DELAYLOAD:api-ms-win-core-winrt-roparameterizediid-l1-1-0.dll")
-    add_link_options("/DELAYLOAD:api-ms-win-ro-typeresolution-l1-1-0.dll")
 
     # Delay load version.dll so that we can specify how to search when loading it as it is not part of Windows' known DLLs
     add_link_options("/DELAYLOAD:version.dll")
@@ -32,10 +29,10 @@ else(CLR_CMAKE_HOST_WIN32)
     set(EXPORTS_FILE ${CMAKE_CURRENT_BINARY_DIR}/coreclr.exports)
     generate_exports_file(${DEF_SOURCES} ${EXPORTS_FILE})
 
-    if(CLR_CMAKE_TARGET_LINUX OR CLR_CMAKE_TARGET_FREEBSD OR CLR_CMAKE_TARGET_NETBSD)
+    if(CLR_CMAKE_TARGET_LINUX OR CLR_CMAKE_TARGET_FREEBSD OR CLR_CMAKE_TARGET_NETBSD OR CLR_CMAKE_TARGET_SUNOS)
         # This option is necessary to ensure that the overloaded delete operator defined inside
         # of the utilcode will be used instead of the standard library delete operator.
-        add_link_options("LINKER:-Bsymbolic,-Bsymbolic-functions")
+        add_link_options("LINKER:-Bsymbolic")
 
         # The following linked options can be inserted into the linker libraries list to
         # ensure proper resolving of circular references between a subset of the libraries.
@@ -46,16 +43,24 @@ else(CLR_CMAKE_HOST_WIN32)
         set(START_WHOLE_ARCHIVE -Wl,--whole-archive)
         set(END_WHOLE_ARCHIVE -Wl,--no-whole-archive)
 
-        set(EXPORTS_LINKER_OPTION -Wl,--version-script=${EXPORTS_FILE})
-    endif(CLR_CMAKE_TARGET_LINUX OR CLR_CMAKE_TARGET_FREEBSD OR CLR_CMAKE_TARGET_NETBSD)
+        if(CLR_CMAKE_TARGET_SUNOS)
+            set(EXPORTS_LINKER_OPTION -Wl,-M,${EXPORTS_FILE})
+        elseif(CLR_CMAKE_TARGET_SUNOS)
+            set(EXPORTS_LINKER_OPTION -Wl,--version-script=${EXPORTS_FILE})
+        endif(CLR_CMAKE_TARGET_SUNOS)
+    endif(CLR_CMAKE_TARGET_LINUX OR CLR_CMAKE_TARGET_FREEBSD OR CLR_CMAKE_TARGET_NETBSD OR CLR_CMAKE_TARGET_SUNOS)
 
-    if(CLR_CMAKE_TARGET_DARWIN)
+    if(CLR_CMAKE_TARGET_OSX)
         # These options are used to force every object to be included even if it's unused.
         set(START_WHOLE_ARCHIVE -force_load)
         set(END_WHOLE_ARCHIVE )
 
         set(EXPORTS_LINKER_OPTION -Wl,-exported_symbols_list,${EXPORTS_FILE})
-    endif(CLR_CMAKE_TARGET_DARWIN)
+    endif(CLR_CMAKE_TARGET_OSX)
+
+    if(CLR_CMAKE_TARGET_ANDROID AND CLR_CMAKE_HOST_ARCH_ARM)
+        set(EXPORTS_LINKER_OPTION "${EXPORTS_LINKER_OPTION} -Wl,--no-warn-shared-textrel")
+    endif(CLR_CMAKE_TARGET_ANDROID AND CLR_CMAKE_HOST_ARCH_ARM)
 
 endif (CLR_CMAKE_HOST_WIN32)
 
@@ -101,17 +106,19 @@ set(CORECLR_LIBRARIES
     ${CLRJIT_STATIC}
     comfloat_wks
     corguids
-    gcinfo # Condition="'$(TargetCpu)'=='amd64' or '$(TargetCpu)' == 'arm' or '$(TargetCpu)' == 'arm64'"
+    gcinfo
     ildbsymlib
     utilcode
+    v3binder
     libraries-native
+    System.Globalization.Native-Static
+    interop
 )
 
 if(CLR_CMAKE_TARGET_WIN32)
     list(APPEND CORECLR_LIBRARIES
         ${STATIC_MT_CRT_LIB}
         ${STATIC_MT_VCRT_LIB}
-        mdwinmd_wks
         kernel32.lib
         advapi32.lib
         ole32.lib
@@ -128,9 +135,8 @@ else()
         ${START_WHOLE_ARCHIVE} # force all PAL objects to be included so all exports are available
         coreclrpal
         ${END_WHOLE_ARCHIVE}
-        mscorrc_debug
+        mscorrc
         palrt
-        System.Globalization.Native-Static
     )
 endif(CLR_CMAKE_TARGET_WIN32)
 
@@ -139,6 +145,10 @@ if(CLR_CMAKE_TARGET_LINUX)
         ${START_WHOLE_ARCHIVE}
         tracepointprovider
         ${END_WHOLE_ARCHIVE}
+    )
+elseif(CLR_CMAKE_TARGET_SUNOS)
+    list(APPEND CORECLR_LIBRARIES
+        socket
     )
 endif(CLR_CMAKE_TARGET_LINUX)
 
@@ -157,6 +167,12 @@ if(FEATURE_EVENT_TRACE)
 endif(FEATURE_EVENT_TRACE)
 
 target_link_libraries(coreclr ${CORECLR_LIBRARIES})
+
+# Create the runtime module index header file containing the coreclr build id
+# for xplat and the timestamp/size on Windows.
+if(FEATURE_SINGLE_FILE_DIAGNOSTICS)
+    generate_module_index(coreclr ${GENERATED_INCLUDE_DIR}/runtimemoduleindex.h)
+endif(FEATURE_SINGLE_FILE_DIAGNOSTICS)
 
 if(CLR_CMAKE_TARGET_WIN32)
     if (NOT CMAKE_GENERATOR MATCHES "Visual Studio .*")
@@ -207,8 +223,7 @@ if(CLR_CMAKE_TARGET_WIN32)
 endif(CLR_CMAKE_TARGET_WIN32)
 
 # add the install targets
-install_clr(TARGETS coreclr)
-install_clr(TARGETS coreclr DESTINATION sharedFramework SKIP_STRIP)
+install_clr(TARGETS coreclr ADDITIONAL_DESTINATION sharedFramework)
 
 # Enable profile guided optimization
 add_pgo(coreclr)

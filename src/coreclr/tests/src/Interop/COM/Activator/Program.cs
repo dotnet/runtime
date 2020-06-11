@@ -157,9 +157,16 @@ namespace Activator
                 string.Empty,
                 string.Empty))
             {
-                foreach (string typename in new[] { "ValidRegistrationTypeCallbacks",  "ValidRegistrationStringCallbacks" })
+                string[] typeNamesToValidate = {
+                    "ValidRegistrationTypeCallbacks",
+                    "ValidRegistrationStringCallbacks",
+                    "InheritedRegistrationTypeCallbacks",
+                    "InheritedRegistrationStringCallbacks"
+                };
+
+                foreach (string typeName in typeNamesToValidate)
                 {
-                    Console.WriteLine($"Validating {typename}...");
+                    Console.WriteLine($"Validating {typeName}...");
 
                     var cxt = new ComActivationContext()
                     {
@@ -167,7 +174,7 @@ namespace Activator
                         InterfaceId = typeof(IClassFactory).GUID,
                         AssemblyPath = assemblyAPath,
                         AssemblyName = "AssemblyA",
-                        TypeName = typename
+                        TypeName = typeName
                     };
 
                     var factory = (IClassFactory)ComActivator.GetClassFactoryForType(cxt);
@@ -183,8 +190,8 @@ namespace Activator
                     ComActivator.ClassRegistrationScenarioForType(cxt, register: true);
                     ComActivator.ClassRegistrationScenarioForType(cxt, register: false);
 
-                    Assert.IsTrue(inst.DidRegister());
-                    Assert.IsTrue(inst.DidUnregister());
+                    Assert.IsTrue(inst.DidRegister(), $"User-defined register function should have been called.");
+                    Assert.IsTrue(inst.DidUnregister(), $"User-defined unregister function should have been called.");
                 }
             }
 

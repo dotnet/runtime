@@ -146,16 +146,6 @@ typedef UNALIGNED void const *UVCP_CONSTANT;
 
 #define SWITCHOUT_HANDLE_VALUE ((HANDLE)(LONG_PTR)-2)
 
-//
-// CoInitializeEE flags.
-//
-typedef enum tagCOINITEE
-{
-    COINITEE_DEFAULT        = 0x0,          // Default initialization mode.
-    COINITEE_DLL            = 0x1,          // Initialization mode for loading DLL.
-    COINITEE_MAIN           = 0x2           // Initialize prior to entering the main routine
-} COINITIEE;
-
 //*****************************************************************************
 //*****************************************************************************
 //
@@ -1834,27 +1824,6 @@ DECLARE_INTERFACE_(IMetaDataInfo, IUnknown)
         ULONGLONG *   pcbData,              // [out] Size of the mapped memory region.
         DWORD *       pdwMappingType) PURE; // [out] Type of file mapping (code:CorFileMapping).
 };  // class IMetaDataInfo
-
-
-//-------------------------------------
-//--- IMetaDataWinMDImport
-//-------------------------------------
-// {969EA0C5-964E-411B-A807-B0F3C2DFCBD4}
-EXTERN_GUID(IID_IMetaDataWinMDImport, 0x969ea0c5, 0x964e, 0x411b, 0xa8, 0x7, 0xb0, 0xf3, 0xc2, 0xdf, 0xcb, 0xd4);
-
-//---
-#undef  INTERFACE
-#define INTERFACE IMetaDataWinMDImport
-DECLARE_INTERFACE_(IMetaDataWinMDImport, IUnknown)
-{
-       STDMETHOD(GetUntransformedTypeRefProps)( // S_OK or error.
-        mdTypeRef   tr,                         // [IN] TypeRef token.
-        mdToken     *ptkResolutionScope,        // [OUT] Resolution scope, ModuleRef or AssemblyRef.
-      _Out_writes_to_opt_(cchName, *pchName)
-        LPWSTR      szName,                     // [OUT] Name of the TypeRef.
-        ULONG       cchName,                    // [IN] Size of buffer.
-        ULONG       *pchName) PURE;             // [OUT] Size of Name.
-};  // class IMetaDataWinMDImport
 
 //**********************************************************************
 //

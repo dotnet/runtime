@@ -168,8 +168,7 @@ namespace System.Reflection.Emit
                                                                Guid languageVendor,
                                                                Guid documentType)
             {
-                PunkSafeHandle psymUnmanagedDocumentWriter;
-                int hr = m_vtable.DefineDocument(m_pWriter, url, ref language, ref languageVendor, ref documentType, out psymUnmanagedDocumentWriter);
+                int hr = m_vtable.DefineDocument(m_pWriter, url, ref language, ref languageVendor, ref documentType, out PunkSafeHandle psymUnmanagedDocumentWriter);
                 if (hr < 0)
                 {
                     throw Marshal.GetExceptionForHR(hr)!;
@@ -268,8 +267,7 @@ namespace System.Reflection.Emit
             //------------------------------------------------------------------------------
             int ISymbolWriter.OpenScope(int startOffset)
             {
-                int ret;
-                int hr = m_vtable.OpenScope(m_pWriter, startOffset, out ret);
+                int hr = m_vtable.OpenScope(m_pWriter, startOffset, out int ret);
                 if (hr < 0)
                 {
                     throw Marshal.GetExceptionForHR(hr)!;

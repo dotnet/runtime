@@ -26,6 +26,8 @@ namespace System.Runtime.InteropServices
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern int SizeOfHelper(Type t, bool throwIfNotMarshalable);
 
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2006:UnrecognizedReflectionPattern",
+            Justification = "Trimming doesn't affect types eligible for marshalling. Different exception for invalid inputs doesn't matter.")]
         public static IntPtr OffsetOf(Type t, string fieldName)
         {
             if (t is null)
@@ -326,6 +328,11 @@ namespace System.Runtime.InteropServices
         /// </summary>
         public static IntPtr /* IUnknown* */ GetIUnknownForObject(object o)
         {
+            if (o is null)
+            {
+                throw new ArgumentNullException(nameof(o));
+            }
+
             return GetIUnknownForObjectNative(o, false);
         }
 
@@ -340,11 +347,37 @@ namespace System.Runtime.InteropServices
         internal static extern IntPtr /* IUnknown* */ GetRawIUnknownForComObjectNoAddRef(object o);
 
         /// <summary>
+        /// Return the IDispatch* for an Object.
+        /// </summary>
+        public static IntPtr /* IDispatch */ GetIDispatchForObject(object o)
+        {
+            if (o is null)
+            {
+                throw new ArgumentNullException(nameof(o));
+            }
+
+            return GetIDispatchForObjectNative(o, false);
+        }
+
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        private static extern IntPtr /* IDispatch* */ GetIDispatchForObjectNative(object o, bool onlyInContext);
+
+        /// <summary>
         /// Return the IUnknown* representing the interface for the Object.
         /// Object o should support Type T
         /// </summary>
         public static IntPtr /* IUnknown* */ GetComInterfaceForObject(object o, Type T)
         {
+            if (o is null)
+            {
+                throw new ArgumentNullException(nameof(o));
+            }
+
+            if (T is null)
+            {
+                throw new ArgumentNullException(nameof(T));
+            }
+
             return GetComInterfaceForObjectNative(o, T, false, true);
         }
 
@@ -357,15 +390,48 @@ namespace System.Runtime.InteropServices
         /// </summary>
         public static IntPtr /* IUnknown* */ GetComInterfaceForObject(object o, Type T, CustomQueryInterfaceMode mode)
         {
+            if (o is null)
+            {
+                throw new ArgumentNullException(nameof(o));
+            }
+
+            if (T is null)
+            {
+                throw new ArgumentNullException(nameof(T));
+            }
+
             bool bEnableCustomizedQueryInterface = ((mode == CustomQueryInterfaceMode.Allow) ? true : false);
             return GetComInterfaceForObjectNative(o, T, false, bEnableCustomizedQueryInterface);
         }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern IntPtr /* IUnknown* */ GetComInterfaceForObjectNative(object o, Type t, bool onlyInContext, bool fEnalbeCustomizedQueryInterface);
+        private static extern IntPtr /* IUnknown* */ GetComInterfaceForObjectNative(object o, Type t, bool onlyInContext, bool fEnableCustomizedQueryInterface);
+
+        /// <summary>
+        /// Return the managed object representing the IUnknown*
+        /// </summary>
+        public static object GetObjectForIUnknown(IntPtr /* IUnknown* */ pUnk)
+        {
+            if (pUnk == IntPtr.Zero)
+            {
+                throw new ArgumentNullException(nameof(pUnk));
+            }
+
+            return GetObjectForIUnknownNative(pUnk);
+        }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        public static extern object GetObjectForIUnknown(IntPtr /* IUnknown* */ pUnk);
+        private static extern object GetObjectForIUnknownNative(IntPtr /* IUnknown* */ pUnk);
+
+        public static object GetUniqueObjectForIUnknown(IntPtr unknown)
+        {
+            if (unknown == IntPtr.Zero)
+            {
+                throw new ArgumentNullException(nameof(unknown));
+            }
+
+            return GetUniqueObjectForIUnknownNative(unknown);
+        }
 
         /// <summary>
         /// Return a unique Object given an IUnknown.  This ensures that you receive a fresh
@@ -374,7 +440,7 @@ namespace System.Runtime.InteropServices
         /// ReleaseComObject on a RCW and not worry about other active uses ofsaid RCW.
         /// </summary>
         [MethodImpl(MethodImplOptions.InternalCall)]
-        public static extern object GetUniqueObjectForIUnknown(IntPtr unknown);
+        private static extern object GetUniqueObjectForIUnknownNative(IntPtr unknown);
 
         /// <summary>
         /// Return an Object for IUnknown, using the Type T.
@@ -538,10 +604,6 @@ namespace System.Runtime.InteropServices
             {
                 throw new ArgumentException(SR.Argument_ObjNotComObject, nameof(obj));
             }
-            if (obj.GetType().IsWindowsRuntimeObject)
-            {
-                throw new ArgumentException(SR.Argument_ObjIsWinRTObject, nameof(obj));
-            }
 
             // Retrieve the data from the __ComObject.
             return co.GetData(key);
@@ -567,10 +629,6 @@ namespace System.Runtime.InteropServices
             {
                 throw new ArgumentException(SR.Argument_ObjNotComObject, nameof(obj));
             }
-            if (obj.GetType().IsWindowsRuntimeObject)
-            {
-                throw new ArgumentException(SR.Argument_ObjIsWinRTObject, nameof(obj));
-            }
 
             // Retrieve the data from the __ComObject.
             return co.SetData(key, data);
@@ -595,10 +653,6 @@ namespace System.Runtime.InteropServices
             {
                 throw new ArgumentException(SR.Argument_NeedNonGenericType, nameof(t));
             }
-            if (t.IsWindowsRuntimeObject)
-            {
-                throw new ArgumentException(SR.Argument_TypeIsWinRTType, nameof(t));
-            }
 
             if (o is null)
             {
@@ -608,10 +662,6 @@ namespace System.Runtime.InteropServices
             if (!o.GetType().IsCOMObject)
             {
                 throw new ArgumentException(SR.Argument_ObjNotComObject, nameof(o));
-            }
-            if (o.GetType().IsWindowsRuntimeObject)
-            {
-                throw new ArgumentException(SR.Argument_ObjIsWinRTObject, nameof(o));
             }
 
             // Check to see if we have nothing to do.

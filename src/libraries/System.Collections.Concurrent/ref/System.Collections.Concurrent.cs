@@ -113,7 +113,7 @@ namespace System.Collections.Concurrent
         void System.Collections.Generic.IDictionary<TKey, TValue>.Add(TKey key, TValue value) { }
         bool System.Collections.Generic.IDictionary<TKey, TValue>.Remove(TKey key) { throw null; }
         void System.Collections.ICollection.CopyTo(System.Array array, int index) { }
-        void System.Collections.IDictionary.Add(object key, object value) { }
+        void System.Collections.IDictionary.Add(object key, object? value) { }
         bool System.Collections.IDictionary.Contains(object key) { throw null; }
         System.Collections.IDictionaryEnumerator System.Collections.IDictionary.GetEnumerator() { throw null; }
         void System.Collections.IDictionary.Remove(object key) { }

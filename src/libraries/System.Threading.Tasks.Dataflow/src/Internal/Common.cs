@@ -71,7 +71,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
         /// <param name="stateOut">Output state for the predicate in order to avoid closure allocations.</param>
         /// <returns>True if the predicate was evaluated and it returned true. False otherwise.</returns>
         internal static bool TryKeepAliveUntil<TStateIn, TStateOut>(KeepAlivePredicate<TStateIn, TStateOut> predicate,
-                                                                    TStateIn stateIn, out TStateOut stateOut)
+                                                                    TStateIn stateIn, [MaybeNullWhen(false)] out TStateOut stateOut)
         {
             Debug.Assert(predicate != null, "Non-null predicate to execute is required.");
             const int ITERATION_LIMIT = 16;
@@ -94,12 +94,12 @@ namespace System.Threading.Tasks.Dataflow.Internal
         /// <typeparam name="T">The type of the data to be unwrapped.</typeparam>
         /// <param name="state">The weak reference.</param>
         /// <returns>The T instance.</returns>
+        [return: MaybeNull]
         internal static T UnwrapWeakReference<T>(object state) where T : class
         {
             var wr = state as WeakReference<T>;
             Debug.Assert(wr != null, "Expected a WeakReference<T> as the state argument");
-            T item;
-            return wr.TryGetTarget(out item) ? item : null;
+            return wr.TryGetTarget(out T? item) ? item : null;
         }
 
         /// <summary>Gets an ID for the dataflow block.</summary>
@@ -109,7 +109,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
         {
             Debug.Assert(block != null, "Block required to extract an Id.");
             const int NOTASKID = 0; // tasks don't have 0 as ids
-            Task t = Common.GetPotentiallyNotSupportedCompletionTask(block);
+            Task? t = Common.GetPotentiallyNotSupportedCompletionTask(block);
             return t != null ? t.Id : NOTASKID;
         }
 
@@ -121,7 +121,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
         /// <returns>The name of the object.</returns>
         /// <remarks>This is used from DebuggerDisplay attributes.</remarks>
         internal static string GetNameForDebugger(
-            IDataflowBlock block, DataflowBlockOptions options = null)
+            IDataflowBlock block, DataflowBlockOptions? options = null)
         {
             Debug.Assert(block != null, "Should only be used with valid objects being displayed in the debugger.");
             Debug.Assert(options == null || options.NameFormat != null, "If options are provided, NameFormat must be valid.");
@@ -179,7 +179,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
         /// <param name="completeAction">An action that will decline permanently on the state passed to it.</param>
         /// <param name="completeState">The block on which to decline permanently.</param>
         internal static void WireCancellationToComplete(
-            CancellationToken cancellationToken, Task completionTask, Action<object> completeAction, object completeState)
+            CancellationToken cancellationToken, Task completionTask, Action<object?> completeAction, object completeState)
         {
             Debug.Assert(completionTask != null, "A task to wire up for completion is needed.");
             Debug.Assert(completeAction != null, "An action to invoke upon cancellation is required.");
@@ -196,7 +196,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
             else if (cancellationToken.CanBeCanceled)
             {
                 CancellationTokenRegistration reg = cancellationToken.Register(completeAction, completeState);
-                completionTask.ContinueWith((completed, state) => ((CancellationTokenRegistration)state).Dispose(),
+                completionTask.ContinueWith((completed, state) => ((CancellationTokenRegistration)state!).Dispose(),
                     reg, cancellationToken, Common.GetContinuationOptions(), TaskScheduler.Default);
             }
         }
@@ -225,7 +225,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
             Debug.Assert(exc != null, "The exception into which data should be stored must be provided.");
 
             // Get the string value to store
-            string strValue = messageValue as string;
+            string? strValue = messageValue as string;
             if (strValue == null && messageValue != null)
             {
                 try
@@ -295,7 +295,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
         internal static void ThrowAsync(Exception error)
         {
             ExceptionDispatchInfo edi = ExceptionDispatchInfo.Capture(error);
-            ThreadPool.QueueUserWorkItem(state => { ((ExceptionDispatchInfo)state).Throw(); }, edi);
+            ThreadPool.QueueUserWorkItem(state => { ((ExceptionDispatchInfo)state!).Throw(); }, edi);
         }
 
         /// <summary>Adds the exception to the list, first initializing the list if the list is null.</summary>
@@ -303,25 +303,25 @@ namespace System.Threading.Tasks.Dataflow.Internal
         /// <param name="exception">The exception to add or whose inner exception(s) should be added.</param>
         /// <param name="unwrapInnerExceptions">Unwrap and add the inner exception(s) rather than the specified exception directly.</param>
         /// <remarks>This method is not thread-safe, in that it manipulates <paramref name="list"/> without any synchronization.</remarks>
-        internal static void AddException(ref List<Exception> list, Exception exception, bool unwrapInnerExceptions = false)
+        internal static void AddException([NotNull] ref List<Exception>? list, Exception exception, bool unwrapInnerExceptions = false)
         {
             Debug.Assert(exception != null, "An exception to add is required.");
             Debug.Assert(!unwrapInnerExceptions || exception.InnerException != null,
                 "If unwrapping is requested, an inner exception is required.");
 
             // Make sure the list of exceptions is initialized (lazily).
-            if (list == null) list = new List<Exception>();
+            list ??= new List<Exception>();
 
             if (unwrapInnerExceptions)
             {
-                AggregateException aggregate = exception as AggregateException;
+                AggregateException? aggregate = exception as AggregateException;
                 if (aggregate != null)
                 {
                     list.AddRange(aggregate.InnerExceptions);
                 }
                 else
                 {
-                    list.Add(exception.InnerException);
+                    list.Add(exception.InnerException!);
                 }
             }
             else list.Add(exception);
@@ -346,7 +346,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
         private static TaskCompletionSource<T> CreateCachedTaskCompletionSource<T>()
         {
             var tcs = new TaskCompletionSource<T>();
-            tcs.SetResult(default(T));
+            tcs.SetResult(default(T)!);
             return tcs;
         }
 
@@ -376,7 +376,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
         /// <summary>Gets the completion task of a block, and protects against common cases of the completion task not being implemented or supported.</summary>
         /// <param name="block">The block.</param>
         /// <returns>The completion task, or null if the block's completion task is not implemented or supported.</returns>
-        internal static Task GetPotentiallyNotSupportedCompletionTask(IDataflowBlock block)
+        internal static Task? GetPotentiallyNotSupportedCompletionTask(IDataflowBlock block)
         {
             Debug.Assert(block != null, "We need a block from which to retrieve a cancellation task.");
             try
@@ -444,7 +444,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
         /// <param name="task">Task to be started.</param>
         /// <param name="scheduler">TaskScheduler to schedule the task on.</param>
         /// <returns>null on success, an exception reference on scheduling error. In the latter case, the task reference is nulled out.</returns>
-        internal static Exception StartTaskSafe(Task task, TaskScheduler scheduler)
+        internal static Exception? StartTaskSafe(Task task, TaskScheduler scheduler)
         {
             Debug.Assert(task != null, "Task to start is required.");
             Debug.Assert(scheduler != null, "Scheduler on which to start the task is required.");
@@ -462,12 +462,12 @@ namespace System.Threading.Tasks.Dataflow.Internal
         /// <param name="task">Task to be started.</param>
         /// <param name="scheduler">TaskScheduler to schedule the task on.</param>
         /// <returns>null on success, an exception reference on scheduling error. In the latter case, the task reference is nulled out.</returns>
-        private static Exception StartTaskSafeCore(Task task, TaskScheduler scheduler)
+        private static Exception? StartTaskSafeCore(Task task, TaskScheduler scheduler)
         {
             Debug.Assert(task != null, "Task to start is needed.");
             Debug.Assert(scheduler != null, "Scheduler on which to start the task is required.");
 
-            Exception schedulingException = null;
+            Exception? schedulingException = null;
 
             try
             {
@@ -479,7 +479,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
                 Debug.Assert(task.IsFaulted, "The task should have been faulted if it failed to start.");
 
                 // Observe the task's exception
-                AggregateException ignoredTaskException = task.Exception;
+                _ = task.Exception;
 
                 schedulingException = caughtException;
             }
@@ -491,7 +491,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
         /// <remarks>No locks should be held at this time. Unfortunately we cannot assert that.</remarks>
         internal static void ReleaseAllPostponedMessages<T>(ITargetBlock<T> target,
                                     QueuedMap<ISourceBlock<T>, DataflowMessageHeader> postponedMessages,
-                                    ref List<Exception> exceptions)
+                                    ref List<Exception>? exceptions)
         {
             Debug.Assert(target != null, "There must be a subject target.");
             Debug.Assert(postponedMessages != null, "The stacked map of postponed messages must exist.");
@@ -538,13 +538,13 @@ namespace System.Threading.Tasks.Dataflow.Internal
         /// <param name="sourceCompletionTask">The task whose completion is to be propagated. It must be completed.</param>
         /// <param name="target">The block where completion is propagated.</param>
         /// <param name="exceptionHandler">Handler for exceptions from the target. May be null which would propagate the exception to the caller.</param>
-        internal static void PropagateCompletion(Task sourceCompletionTask, IDataflowBlock target, Action<Exception> exceptionHandler)
+        internal static void PropagateCompletion(Task sourceCompletionTask, IDataflowBlock target, Action<Exception>? exceptionHandler)
         {
             Debug.Assert(sourceCompletionTask != null, "sourceCompletionTask may not be null.");
             Debug.Assert(target != null, "The target where completion is to be propagated may not be null.");
             Debug.Assert(sourceCompletionTask.IsCompleted, "sourceCompletionTask must be completed in order to propagate its completion.");
 
-            AggregateException exception = sourceCompletionTask.IsFaulted ? sourceCompletionTask.Exception : null;
+            AggregateException? exception = sourceCompletionTask.IsFaulted ? sourceCompletionTask.Exception : null;
 
             try
             {
@@ -565,7 +565,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
         {
             Debug.Assert(sourceCompletionTask != null, "sourceCompletionTask may not be null.");
             Debug.Assert(target != null, "The target where completion is to be propagated may not be null.");
-            sourceCompletionTask.ContinueWith((task, state) => Common.PropagateCompletion(task, (IDataflowBlock)state, AsyncExceptionHandler),
+            sourceCompletionTask.ContinueWith((task, state) => Common.PropagateCompletion(task, (IDataflowBlock)state!, AsyncExceptionHandler),
                 target, CancellationToken.None, Common.GetContinuationOptions(), TaskScheduler.Default);
         }
 
@@ -588,7 +588,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
         private static class CachedGenericDelegates<T>
         {
             /// <summary>A function that returns the default value of T.</summary>
-            internal static readonly Func<T> DefaultTResultFunc = () => default(T);
+            internal static readonly Func<T> DefaultTResultFunc = () => default(T)!;
             /// <summary>
             /// A function to use as the body of ActionOnDispose in CreateUnlinkerShim.
             /// Passed a tuple of the sync obj, the target registry, and the target block as the state parameter.
@@ -667,7 +667,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
     internal class BoundingStateWithPostponedAndTask<TInput> : BoundingStateWithPostponed<TInput>
     {
         /// <summary>The task used to process messages.</summary>
-        internal Task TaskForInputProcessing;
+        internal Task? TaskForInputProcessing;
 
         /// <summary>Initializes the BoundingState.</summary>
         /// <param name="boundedCapacity">The positive bounded capacity.</param>

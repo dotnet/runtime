@@ -343,6 +343,20 @@ namespace System.Text.RegularExpressions.Tests
             }
         }
 
+        [Theory]
+        [InlineData("ab", 1, false)]
+        [InlineData("a b", 1, true)]
+        [InlineData("a b", 2, true)]
+        [InlineData("\u200Da", 1, false)]
+        [InlineData("\u200D\u200C", 1, false)]
+        [InlineData("\u200Ca", 1, false)]
+        [InlineData("\u200C a", 1, true)]
+        public void IsBoundary_ReturnsExpectedResult(string text, int pos, bool expectedBoundary)
+        {
+            var r = new DerivedRunner(text);
+            Assert.Equal(expectedBoundary, r.IsBoundary(pos, 0, text.Length));
+        }
+
         private static HashSet<char> ComputeIncludedSet(Func<char, bool> func)
         {
             var included = new HashSet<char>();
@@ -369,6 +383,45 @@ namespace System.Text.RegularExpressions.Tests
 
             Assert.Throws<XunitException>(() => ValidateSet("[b]", RegexOptions.None, null, new HashSet<char>() { 'b' }));
             Assert.Throws<XunitException>(() => ValidateSet("[b]", RegexOptions.None, null, new HashSet<char>() { 'b' }, validateEveryChar: true));
+        }
+
+        [Fact]
+        public void RegexRunner_Legacy_CharInSet()
+        {
+            Assert.True(DerivedRunner.CharInSet('a', "ab", ""));
+            Assert.False(DerivedRunner.CharInSet('x', "ab", ""));
+
+            Assert.True(DerivedRunner.CharInSet('x', "\0\0ab", ""));
+            Assert.False(DerivedRunner.CharInSet('a', "\0\0ab", ""));
+
+            Assert.True(DerivedRunner.CharInSet('4', "", "\x0009"));
+            Assert.False(DerivedRunner.CharInSet('a', "", "\x0009"));
+
+            Assert.True(DerivedRunner.CharInSet('4', "xz", "\x0009"));
+            Assert.True(DerivedRunner.CharInSet('a', "az", "\x0009"));
+            Assert.False(DerivedRunner.CharInSet('a', "xz", "\x0009"));
+        }
+
+        private sealed class DerivedRunner : RegexRunner
+        {
+            public DerivedRunner() { }
+
+            public DerivedRunner(string text)
+            {
+                runtext = text;
+                runtextbeg = 0;
+                runtextstart = 0;
+                runtextend = text.Length;
+                runtextpos = 0;
+            }
+
+            public new bool IsBoundary(int index, int startpos, int endpos) => base.IsBoundary(index, startpos, endpos);
+
+            public static new bool CharInSet(char ch, string set, string category) => RegexRunner.CharInSet(ch, set, category);
+
+            protected override bool FindFirstChar() => throw new NotImplementedException();
+            protected override void Go() => throw new NotImplementedException();
+            protected override void InitTrackCount() => throw new NotImplementedException();
         }
 
         private static void ValidateSet(string regex, RegexOptions options, HashSet<char> included, HashSet<char> excluded, bool validateEveryChar = false)

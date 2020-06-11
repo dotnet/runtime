@@ -237,6 +237,19 @@ void interceptor_ICJI::getGSCookie(GSCookie*  pCookieVal, // OUT
     original_ICorJitInfo->getGSCookie(pCookieVal, ppCookieVal);
 }
 
+
+// Provide patchpoint info for the method currently being jitted.
+void interceptor_ICJI::setPatchpointInfo(PatchpointInfo* patchpointInfo)
+{
+    original_ICorJitInfo->setPatchpointInfo(patchpointInfo);
+}
+
+// Get OSR info for the method currently being jitted
+PatchpointInfo* interceptor_ICJI::getOSRInfo(unsigned* ilOffset)
+{
+    return original_ICorJitInfo->getOSRInfo(ilOffset);
+}
+
 /**********************************************************************************/
 //
 // ICorModuleInfo
@@ -1272,10 +1285,13 @@ void interceptor_ICJI::MethodCompileComplete(CORINFO_METHOD_HANDLE methHnd)
     original_ICorJitInfo->MethodCompileComplete(methHnd);
 }
 
-// return a thunk that will copy the arguments for the given signature.
-void* interceptor_ICJI::getTailCallCopyArgsThunk(CORINFO_SIG_INFO* pSig, CorInfoHelperTailCallSpecialHandling flags)
+bool interceptor_ICJI::getTailCallHelpers(
+        CORINFO_RESOLVED_TOKEN* callToken,
+        CORINFO_SIG_INFO* sig,
+        CORINFO_GET_TAILCALL_HELPERS_FLAGS flags,
+        CORINFO_TAILCALL_HELPERS* pResult)
 {
-    return original_ICorJitInfo->getTailCallCopyArgsThunk(pSig, flags);
+    return original_ICorJitInfo->getTailCallHelpers(callToken, sig, flags, pResult);
 }
 
 // Stuff directly on ICorJitInfo
@@ -1463,4 +1479,9 @@ WORD interceptor_ICJI::getRelocTypeHint(void* target)
 DWORD interceptor_ICJI::getExpectedTargetArchitecture()
 {
     return original_ICorJitInfo->getExpectedTargetArchitecture();
+}
+
+void interceptor_ICJI::notifyInstructionSetUsage(CORINFO_InstructionSet instructionSet, bool supported)
+{
+    original_ICorJitInfo->notifyInstructionSetUsage(instructionSet, supported);
 }

@@ -2,14 +2,12 @@
 
 ## Overview
 
-* Our goal is to provide high-performance JSON APIs built into .NET Core.
+* Our goal is to provide high-performance JSON APIs built into .NET Runtime.
   See the [announcement](https://github.com/dotnet/announcements/issues/90) for more details.
   - For the first version of the library, our objective is to remove the
     dependency on JSON.NET within the shared framework. 
   - The primary focus will be on core functionality with emphasis on performance
     over capabilities and additional features.
-  - These APIs will be targeting .NET Core specifically as part of v1.
-    Providing a netstandard implementation can be considered in the future.
 
 ![Core Components Overview](images/core-components.png)
 

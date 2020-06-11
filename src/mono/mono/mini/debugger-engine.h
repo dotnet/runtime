@@ -232,7 +232,7 @@ mono_debugger_get_thread_state (DebuggerTlsData *ref);
 
 typedef struct {
 	MonoContext *(*tls_get_restore_state) (void *tls);
-	gboolean (*try_process_suspend) (void *tls, MonoContext *ctx);
+	gboolean (*try_process_suspend) (void *tls, MonoContext *ctx, gboolean from_breakpoint);
 	gboolean (*begin_breakpoint_processing) (void *tls, MonoContext *ctx, MonoJitInfo *ji, gboolean from_signal);
 	void (*begin_single_step_processing) (MonoContext *ctx, gboolean from_signal);
 
@@ -284,6 +284,7 @@ void mono_de_stop_single_stepping (void);
 void mono_de_process_breakpoint (void *tls, gboolean from_signal);
 void mono_de_process_single_step (void *tls, gboolean from_signal);
 DbgEngineErrorCode mono_de_ss_create (MonoInternalThread *thread, StepSize size, StepDepth depth, StepFilter filter, EventRequest *req);
-void mono_de_cancel_ss (void);
+void mono_de_cancel_ss (SingleStepReq *req);
+void mono_de_cancel_all_ss (void);
 
 #endif

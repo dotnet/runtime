@@ -23,7 +23,7 @@
 #define __int16     short int
 #define __int8      char        // assumes char is signed
 
-#endif 
+#endif
 
 #include <cstddef>
 
@@ -50,7 +50,7 @@ DestroyMenu(
 
 EXPORT_API
 unsigned __int32
-AppendMenuA(
+AppendMenu(
     HMENU hMenu,
     unsigned __int32 uFlags,
     unsigned __int32 uID,
@@ -69,7 +69,7 @@ AppendMenuA(
 
 EXPORT_API
 __int32
-GetMenuStringA(
+GetMenuString(
     HMENU hMenu,
     unsigned __int32 uIDItem,
     char * lpString,
@@ -79,16 +79,16 @@ GetMenuStringA(
 {
     if (flags != 0x400)
     {
-        throw "GetMenuStringA: only MF_BYPOSITION (0x400) supported for flags";
+        throw "GetMenuString: only MF_BYPOSITION (0x400) supported for flags";
     }
 
     if (cchMax < 0)
     {
-        throw "GetMenuStringA: invalid argument (cchMax)";
+        throw "GetMenuString: invalid argument (cchMax)";
     }
 
     if (uIDItem >= hMenu->size())
-    { 
+    {
         return 0;
     }
 
@@ -105,7 +105,7 @@ GetMenuStringA(
     {
         cch = cchMax - 1;
     }
-   
+
     memcpy(lpString, str.c_str(), cch);
     lpString[cch] = '\0';
 

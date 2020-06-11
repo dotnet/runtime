@@ -22,22 +22,37 @@ enum NamedIntrinsic : unsigned short
     NI_System_Type_get_IsValueType,
     NI_System_Type_IsAssignableFrom,
 
-#ifdef FEATURE_HW_INTRINSICS
+    // These are used by HWIntrinsics but are defined more generally
+    // to allow dead code optimization and handle the recursion case
+
     NI_IsSupported_True,
     NI_IsSupported_False,
     NI_Throw_PlatformNotSupportedException,
 
+#ifdef FEATURE_HW_INTRINSICS
     NI_HW_INTRINSIC_START,
 #if defined(TARGET_XARCH)
-#define HARDWARE_INTRINSIC(id, name, isa, ival, size, numarg, t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, category, flag) \
-    NI_##id,
+#define HARDWARE_INTRINSIC(isa, name, size, numarg, t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, category, flag)           \
+    NI_##isa##_##name,
 #include "hwintrinsiclistxarch.h"
 #elif defined(TARGET_ARM64)
-#define HARDWARE_INTRINSIC(isa, name, ival, size, numarg, t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, category, flag)     \
+#define HARDWARE_INTRINSIC(isa, name, size, numarg, t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, category, flag)           \
     NI_##isa##_##name,
 #include "hwintrinsiclistarm64.h"
 #endif // !defined(TARGET_XARCH) && !defined(TARGET_ARM64)
     NI_HW_INTRINSIC_END,
+
+    NI_SIMD_AS_HWINTRINSIC_START,
+#if defined(TARGET_XARCH)
+#define SIMD_AS_HWINTRINSIC(classId, id, name, numarg, t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, flag)                  \
+    NI_##classId##_##id,
+#include "simdashwintrinsiclistxarch.h"
+#elif defined(TARGET_ARM64)
+#define SIMD_AS_HWINTRINSIC(classId, id, name, numarg, t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, flag)                  \
+    NI_##classId##_##id,
+#include "simdashwintrinsiclistarm64.h"
+#endif // !defined(TARGET_XARCH) && !defined(TARGET_ARM64)
+    NI_SIMD_AS_HWINTRINSIC_END,
 #endif // FEATURE_HW_INTRINSICS
 
 };

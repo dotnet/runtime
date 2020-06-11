@@ -2,23 +2,21 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-#nullable enable
 #pragma warning disable SA1028 // ignore whitespace warnings for generated code
 using System;
+using System.Formats.Asn1;
 using System.Runtime.InteropServices;
-using System.Security.Cryptography;
-using System.Security.Cryptography.Asn1;
 
 namespace System.Security.Cryptography.Asn1
 {
     [StructLayout(LayoutKind.Sequential)]
     internal partial struct DirectoryStringAsn
     {
-        internal string TeletexString;
-        internal string PrintableString;
+        internal string? TeletexString;
+        internal string? PrintableString;
         internal ReadOnlyMemory<byte>? UniversalString;
-        internal string Utf8String;
-        internal string BmpString;
+        internal string? Utf8String;
+        internal string? BmpString;
 
 #if DEBUG
         static DirectoryStringAsn()
@@ -78,7 +76,14 @@ namespace System.Security.Cryptography.Asn1
                     }
                 }
 
-                writer.WriteEncodedValue(UniversalString.Value.Span);
+                try
+                {
+                    writer.WriteEncodedValue(UniversalString.Value.Span);
+                }
+                catch (ArgumentException e)
+                {
+                    throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding, e);
+                }
                 wroteValue = true;
             }
 
@@ -108,14 +113,33 @@ namespace System.Security.Cryptography.Asn1
 
         internal static DirectoryStringAsn Decode(ReadOnlyMemory<byte> encoded, AsnEncodingRules ruleSet)
         {
-            AsnValueReader reader = new AsnValueReader(encoded.Span, ruleSet);
+            try
+            {
+                AsnValueReader reader = new AsnValueReader(encoded.Span, ruleSet);
 
-            Decode(ref reader, encoded, out DirectoryStringAsn decoded);
-            reader.ThrowIfNotEmpty();
-            return decoded;
+                DecodeCore(ref reader, encoded, out DirectoryStringAsn decoded);
+                reader.ThrowIfNotEmpty();
+                return decoded;
+            }
+            catch (AsnContentException e)
+            {
+                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding, e);
+            }
         }
 
         internal static void Decode(ref AsnValueReader reader, ReadOnlyMemory<byte> rebind, out DirectoryStringAsn decoded)
+        {
+            try
+            {
+                DecodeCore(ref reader, rebind, out decoded);
+            }
+            catch (AsnContentException e)
+            {
+                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding, e);
+            }
+        }
+
+        private static void DecodeCore(ref AsnValueReader reader, ReadOnlyMemory<byte> rebind, out DirectoryStringAsn decoded)
         {
             decoded = default;
             Asn1Tag tag = reader.PeekTag();

@@ -62,7 +62,7 @@ namespace System.Net
             _callback = callback;
         }
 
-        internal object AsyncObject => UserAsyncResult.AsyncObject;
+        internal object? AsyncObject => UserAsyncResult.AsyncObject;
 
         //
         // Notify protocol so a next stage could be started.

@@ -528,11 +528,7 @@ namespace System
             return (char)value;
         }
 
-        public static char ToChar(int value)
-        {
-            if (value < 0 || value > char.MaxValue) ThrowCharOverflowException();
-            return (char)value;
-        }
+        public static char ToChar(int value) => ToChar((uint)value);
 
         [CLSCompliant(false)]
         public static char ToChar(uint value)
@@ -541,11 +537,7 @@ namespace System
             return (char)value;
         }
 
-        public static char ToChar(long value)
-        {
-            if (value < 0 || value > char.MaxValue) ThrowCharOverflowException();
-            return (char)value;
-        }
+        public static char ToChar(long value) => ToChar((ulong)value);
 
         [CLSCompliant(false)]
         public static char ToChar(ulong value)
@@ -667,7 +659,7 @@ namespace System
         [CLSCompliant(false)]
         public static sbyte ToSByte(uint value)
         {
-            if (value > sbyte.MaxValue) ThrowSByteOverflowException();
+            if (value > (uint)sbyte.MaxValue) ThrowSByteOverflowException();
             return (sbyte)value;
         }
 
@@ -708,13 +700,13 @@ namespace System
         {
             if (value == null)
                 return 0;
-            return sbyte.Parse(value, CultureInfo.CurrentCulture);
+            return sbyte.Parse(value);
         }
 
         [CLSCompliant(false)]
         public static sbyte ToSByte(string value, IFormatProvider? provider)
         {
-            return sbyte.Parse(value, NumberStyles.Integer, provider);
+            return sbyte.Parse(value, provider);
         }
 
         [CLSCompliant(false)]
@@ -757,13 +749,13 @@ namespace System
         [CLSCompliant(false)]
         public static byte ToByte(sbyte value)
         {
-            if (value < byte.MinValue) ThrowByteOverflowException();
+            if (value < 0) ThrowByteOverflowException();
             return (byte)value;
         }
 
         public static byte ToByte(short value)
         {
-            if (value < byte.MinValue || value > byte.MaxValue) ThrowByteOverflowException();
+            if ((uint)value > byte.MaxValue) ThrowByteOverflowException();
             return (byte)value;
         }
 
@@ -774,11 +766,7 @@ namespace System
             return (byte)value;
         }
 
-        public static byte ToByte(int value)
-        {
-            if (value < byte.MinValue || value > byte.MaxValue) ThrowByteOverflowException();
-            return (byte)value;
-        }
+        public static byte ToByte(int value) => ToByte((uint)value);
 
         [CLSCompliant(false)]
         public static byte ToByte(uint value)
@@ -787,11 +775,7 @@ namespace System
             return (byte)value;
         }
 
-        public static byte ToByte(long value)
-        {
-            if (value < byte.MinValue || value > byte.MaxValue) ThrowByteOverflowException();
-            return (byte)value;
-        }
+        public static byte ToByte(long value) => ToByte((ulong)value);
 
         [CLSCompliant(false)]
         public static byte ToByte(ulong value)
@@ -819,14 +803,14 @@ namespace System
         {
             if (value == null)
                 return 0;
-            return byte.Parse(value, CultureInfo.CurrentCulture);
+            return byte.Parse(value);
         }
 
         public static byte ToByte(string? value, IFormatProvider? provider)
         {
             if (value == null)
                 return 0;
-            return byte.Parse(value, NumberStyles.Integer, provider);
+            return byte.Parse(value, provider);
         }
 
         public static byte ToByte(DateTime value)
@@ -887,7 +871,7 @@ namespace System
         [CLSCompliant(false)]
         public static short ToInt16(uint value)
         {
-            if (value > short.MaxValue) ThrowInt16OverflowException();
+            if (value > (uint)short.MaxValue) ThrowInt16OverflowException();
             return (short)value;
         }
 
@@ -928,14 +912,14 @@ namespace System
         {
             if (value == null)
                 return 0;
-            return short.Parse(value, CultureInfo.CurrentCulture);
+            return short.Parse(value);
         }
 
         public static short ToInt16(string? value, IFormatProvider? provider)
         {
             if (value == null)
                 return 0;
-            return short.Parse(value, NumberStyles.Integer, provider);
+            return short.Parse(value, provider);
         }
 
         public static short ToInt16(DateTime value)
@@ -993,11 +977,7 @@ namespace System
         }
 
         [CLSCompliant(false)]
-        public static ushort ToUInt16(int value)
-        {
-            if (value < 0 || value > ushort.MaxValue) ThrowUInt16OverflowException();
-            return (ushort)value;
-        }
+        public static ushort ToUInt16(int value) => ToUInt16((uint)value);
 
         [CLSCompliant(false)]
         public static ushort ToUInt16(ushort value)
@@ -1013,11 +993,7 @@ namespace System
         }
 
         [CLSCompliant(false)]
-        public static ushort ToUInt16(long value)
-        {
-            if (value < 0 || value > ushort.MaxValue) ThrowUInt16OverflowException();
-            return (ushort)value;
-        }
+        public static ushort ToUInt16(long value) => ToUInt16((ulong)value);
 
         [CLSCompliant(false)]
         public static ushort ToUInt16(ulong value)
@@ -1049,7 +1025,7 @@ namespace System
         {
             if (value == null)
                 return 0;
-            return ushort.Parse(value, CultureInfo.CurrentCulture);
+            return ushort.Parse(value);
         }
 
         [CLSCompliant(false)]
@@ -1057,7 +1033,7 @@ namespace System
         {
             if (value == null)
                 return 0;
-            return ushort.Parse(value, NumberStyles.Integer, provider);
+            return ushort.Parse(value, provider);
         }
 
         [CLSCompliant(false)]
@@ -1116,7 +1092,7 @@ namespace System
         [CLSCompliant(false)]
         public static int ToInt32(uint value)
         {
-            if (value > int.MaxValue) ThrowInt32OverflowException();
+            if ((int)value < 0) ThrowInt32OverflowException();
             return (int)value;
         }
 
@@ -1177,14 +1153,14 @@ namespace System
         {
             if (value == null)
                 return 0;
-            return int.Parse(value, CultureInfo.CurrentCulture);
+            return int.Parse(value);
         }
 
         public static int ToInt32(string? value, IFormatProvider? provider)
         {
             if (value == null)
                 return 0;
-            return int.Parse(value, NumberStyles.Integer, provider);
+            return int.Parse(value, provider);
         }
 
         public static int ToInt32(DateTime value)
@@ -1261,11 +1237,7 @@ namespace System
         }
 
         [CLSCompliant(false)]
-        public static uint ToUInt32(long value)
-        {
-            if (value < 0 || value > uint.MaxValue) ThrowUInt32OverflowException();
-            return (uint)value;
-        }
+        public static uint ToUInt32(long value) => ToUInt32((ulong)value);
 
         [CLSCompliant(false)]
         public static uint ToUInt32(ulong value)
@@ -1304,7 +1276,7 @@ namespace System
         {
             if (value == null)
                 return 0;
-            return uint.Parse(value, CultureInfo.CurrentCulture);
+            return uint.Parse(value);
         }
 
         [CLSCompliant(false)]
@@ -1312,7 +1284,7 @@ namespace System
         {
             if (value == null)
                 return 0;
-            return uint.Parse(value, NumberStyles.Integer, provider);
+            return uint.Parse(value, provider);
         }
 
         [CLSCompliant(false)]
@@ -1382,7 +1354,7 @@ namespace System
         [CLSCompliant(false)]
         public static long ToInt64(ulong value)
         {
-            if (value > long.MaxValue) ThrowInt64OverflowException();
+            if ((long)value < 0) ThrowInt64OverflowException();
             return (long)value;
         }
 
@@ -1410,14 +1382,14 @@ namespace System
         {
             if (value == null)
                 return 0;
-            return long.Parse(value, CultureInfo.CurrentCulture);
+            return long.Parse(value);
         }
 
         public static long ToInt64(string? value, IFormatProvider? provider)
         {
             if (value == null)
                 return 0;
-            return long.Parse(value, NumberStyles.Integer, provider);
+            return long.Parse(value, provider);
         }
 
         public static long ToInt64(DateTime value)
@@ -1529,7 +1501,7 @@ namespace System
         {
             if (value == null)
                 return 0;
-            return ulong.Parse(value, CultureInfo.CurrentCulture);
+            return ulong.Parse(value);
         }
 
         [CLSCompliant(false)]
@@ -1537,7 +1509,7 @@ namespace System
         {
             if (value == null)
                 return 0;
-            return ulong.Parse(value, NumberStyles.Integer, provider);
+            return ulong.Parse(value, provider);
         }
 
         [CLSCompliant(false)]
@@ -1629,14 +1601,14 @@ namespace System
         {
             if (value == null)
                 return 0;
-            return float.Parse(value, CultureInfo.CurrentCulture);
+            return float.Parse(value);
         }
 
         public static float ToSingle(string? value, IFormatProvider? provider)
         {
             if (value == null)
                 return 0;
-            return float.Parse(value, NumberStyles.Float | NumberStyles.AllowThousands, provider);
+            return float.Parse(value, provider);
         }
 
         public static float ToSingle(bool value)
@@ -1732,14 +1704,14 @@ namespace System
         {
             if (value == null)
                 return 0;
-            return double.Parse(value, CultureInfo.CurrentCulture);
+            return double.Parse(value);
         }
 
         public static double ToDouble(string? value, IFormatProvider? provider)
         {
             if (value == null)
                 return 0;
-            return double.Parse(value, NumberStyles.Float | NumberStyles.AllowThousands, provider);
+            return double.Parse(value, provider);
         }
 
         public static double ToDouble(bool value)
@@ -1830,14 +1802,14 @@ namespace System
         {
             if (value == null)
                 return 0m;
-            return decimal.Parse(value, CultureInfo.CurrentCulture);
+            return decimal.Parse(value);
         }
 
         public static decimal ToDecimal(string? value, IFormatProvider? provider)
         {
             if (value == null)
                 return 0m;
-            return decimal.Parse(value, NumberStyles.Number, provider);
+            return decimal.Parse(value, provider);
         }
 
         public static decimal ToDecimal(decimal value)
@@ -1879,7 +1851,7 @@ namespace System
         {
             if (value == null)
                 return new DateTime(0);
-            return DateTime.Parse(value, CultureInfo.CurrentCulture);
+            return DateTime.Parse(value);
         }
 
         public static DateTime ToDateTime(string? value, IFormatProvider? provider)
@@ -2000,7 +1972,7 @@ namespace System
         [CLSCompliant(false)]
         public static string ToString(sbyte value)
         {
-            return value.ToString(CultureInfo.CurrentCulture);
+            return value.ToString();
         }
 
         [CLSCompliant(false)]
@@ -2011,7 +1983,7 @@ namespace System
 
         public static string ToString(byte value)
         {
-            return value.ToString(CultureInfo.CurrentCulture);
+            return value.ToString();
         }
 
         public static string ToString(byte value, IFormatProvider? provider)
@@ -2021,7 +1993,7 @@ namespace System
 
         public static string ToString(short value)
         {
-            return value.ToString(CultureInfo.CurrentCulture);
+            return value.ToString();
         }
 
         public static string ToString(short value, IFormatProvider? provider)
@@ -2032,7 +2004,7 @@ namespace System
         [CLSCompliant(false)]
         public static string ToString(ushort value)
         {
-            return value.ToString(CultureInfo.CurrentCulture);
+            return value.ToString();
         }
 
         [CLSCompliant(false)]
@@ -2043,7 +2015,7 @@ namespace System
 
         public static string ToString(int value)
         {
-            return value.ToString(CultureInfo.CurrentCulture);
+            return value.ToString();
         }
 
         public static string ToString(int value, IFormatProvider? provider)
@@ -2054,7 +2026,7 @@ namespace System
         [CLSCompliant(false)]
         public static string ToString(uint value)
         {
-            return value.ToString(CultureInfo.CurrentCulture);
+            return value.ToString();
         }
 
         [CLSCompliant(false)]
@@ -2065,7 +2037,7 @@ namespace System
 
         public static string ToString(long value)
         {
-            return value.ToString(CultureInfo.CurrentCulture);
+            return value.ToString();
         }
 
         public static string ToString(long value, IFormatProvider? provider)
@@ -2076,7 +2048,7 @@ namespace System
         [CLSCompliant(false)]
         public static string ToString(ulong value)
         {
-            return value.ToString(CultureInfo.CurrentCulture);
+            return value.ToString();
         }
 
         [CLSCompliant(false)]
@@ -2087,7 +2059,7 @@ namespace System
 
         public static string ToString(float value)
         {
-            return value.ToString(CultureInfo.CurrentCulture);
+            return value.ToString();
         }
 
         public static string ToString(float value, IFormatProvider? provider)
@@ -2097,7 +2069,7 @@ namespace System
 
         public static string ToString(double value)
         {
-            return value.ToString(CultureInfo.CurrentCulture);
+            return value.ToString();
         }
 
         public static string ToString(double value, IFormatProvider? provider)
@@ -2107,7 +2079,7 @@ namespace System
 
         public static string ToString(decimal value)
         {
-            return value.ToString(CultureInfo.CurrentCulture);
+            return value.ToString();
         }
 
         public static string ToString(decimal value, IFormatProvider? provider)
@@ -2157,7 +2129,7 @@ namespace System
             }
 
             int r = ParseNumbers.StringToInt(value.AsSpan(), fromBase, ParseNumbers.IsTight | ParseNumbers.TreatAsUnsigned);
-            if (r < byte.MinValue || r > byte.MaxValue)
+            if ((uint)r > byte.MaxValue)
                 ThrowByteOverflowException();
             return (byte)r;
         }
@@ -2231,7 +2203,7 @@ namespace System
             }
 
             int r = ParseNumbers.StringToInt(value.AsSpan(), fromBase, ParseNumbers.IsTight | ParseNumbers.TreatAsUnsigned);
-            if (r < ushort.MinValue || r > ushort.MaxValue)
+            if ((uint)r > ushort.MaxValue)
                 ThrowUInt16OverflowException();
             return (ushort)r;
         }

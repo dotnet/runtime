@@ -15,8 +15,76 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public static void NullWriterThrows()
         {
-            Assert.Throws<ArgumentNullException>(() => JsonSerializer.Serialize(null, 1));
-            Assert.Throws<ArgumentNullException>(() => JsonSerializer.Serialize(null, 1, typeof(int)));
+            ArgumentNullException ex;
+
+            ex = Assert.Throws<ArgumentNullException>(() => JsonSerializer.Serialize(null, 1));
+            Assert.Contains("writer", ex.ToString());
+
+            ex = Assert.Throws<ArgumentNullException>(() => JsonSerializer.Serialize(null, 1, typeof(int)));
+            Assert.Contains("writer", ex.ToString());
+        }
+
+        [Fact]
+        public async static void NullInputTypeThrows()
+        {
+            ArgumentException ex;
+            Utf8JsonWriter writer = new Utf8JsonWriter(new MemoryStream());
+
+            ex = Assert.Throws<ArgumentNullException>(() => JsonSerializer.Serialize(writer: writer, value: null, inputType: null));
+            Assert.Contains("inputType", ex.ToString());
+
+            ex = Assert.Throws<ArgumentNullException>(() => JsonSerializer.Serialize(writer, value: null, inputType: null));
+            Assert.Contains("inputType", ex.ToString());
+
+            ex = Assert.Throws<ArgumentNullException>(() => JsonSerializer.Serialize(1, inputType: null));
+            Assert.Contains("inputType", ex.ToString());
+
+            ex = Assert.Throws<ArgumentNullException>(() => JsonSerializer.SerializeToUtf8Bytes(null, inputType: null));
+            Assert.Contains("inputType", ex.ToString());
+
+            ex = await Assert.ThrowsAsync<ArgumentNullException>(async () => await JsonSerializer.SerializeAsync(new MemoryStream(), null, inputType: null));
+            Assert.Contains("inputType", ex.ToString());
+        }
+
+        [Fact]
+        public async static void NullValueWithValueTypeThrows()
+        {
+            JsonException ex;
+
+            Utf8JsonWriter writer = new Utf8JsonWriter(new MemoryStream());
+            ex = Assert.Throws<JsonException>(() => JsonSerializer.Serialize(writer: writer, value: null, inputType: typeof(int)));
+            Assert.Contains(typeof(int).ToString(), ex.ToString());
+
+            ex = Assert.Throws<JsonException>(() => JsonSerializer.Serialize(value: null, inputType: typeof(int)));
+            Assert.Contains(typeof(int).ToString(), ex.ToString());
+
+            ex = Assert.Throws<JsonException>(() => JsonSerializer.SerializeToUtf8Bytes(value: null, inputType: typeof(int)));
+            Assert.Contains(typeof(int).ToString(), ex.ToString());
+
+            ex = await Assert.ThrowsAsync<JsonException>(async () => await JsonSerializer.SerializeAsync(new MemoryStream(), value: null, inputType: typeof(int)));
+            Assert.Contains(typeof(int).ToString(), ex.ToString());
+        }
+
+        [Fact]
+        public async static void NullValueWithNullableSuccess()
+        {
+            byte[] nullUtf8Literal = Encoding.UTF8.GetBytes("null");
+
+            var stream = new MemoryStream();
+            Utf8JsonWriter writer = new Utf8JsonWriter(stream);
+            JsonSerializer.Serialize(writer: writer, value: null, inputType: typeof(int?));
+            byte[] jsonBytes = stream.ToArray();
+            Assert.Equal(nullUtf8Literal, jsonBytes);
+
+            string jsonString = JsonSerializer.Serialize(value: null, inputType: typeof(int?));
+            Assert.Equal("null", jsonString);
+
+            jsonBytes = JsonSerializer.SerializeToUtf8Bytes(value: null, inputType: typeof(int?));
+            Assert.Equal(nullUtf8Literal, jsonBytes);
+
+            stream = new MemoryStream();
+            await JsonSerializer.SerializeAsync(stream, value: null, inputType: typeof(int?));
+            Assert.Equal(nullUtf8Literal, stream.ToArray());
         }
 
         [Fact]

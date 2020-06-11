@@ -11,6 +11,9 @@
 // Do reads/writes in large 256MB chunks.
 #define BUFFER_SIZE 0x10000000
 
+// static member
+RemoveDup verbMerge::m_removeDups;
+
 // MergePathStrings: take two file system path components, compose them together, and return the merged pathname string.
 // The caller must delete the returned string with delete[].
 //
@@ -36,20 +39,21 @@ char* verbMerge::ConvertWideCharToMultiByte(LPCWSTR wstr)
     return encodedStr;
 }
 
-// AppendFile: append the file named by 'fileName' to the output file referred to by 'hFileOut'. The 'hFileOut'
+// AppendFileRaw: append the file named by 'fileFullPath' to the output file referred to by 'hFileOut'. The 'hFileOut'
 // handle is assumed to be open, and the file position is assumed to be at the correct spot for writing, to append.
+// The file is simply appended.
 //
 // 'buffer' is memory that can be used to do reading/buffering.
 //
 // static
-int verbMerge::AppendFile(HANDLE hFileOut, LPCWSTR fileName, unsigned char* buffer, size_t bufferSize)
+int verbMerge::AppendFileRaw(HANDLE hFileOut, LPCWSTR fileFullPath, unsigned char* buffer, size_t bufferSize)
 {
     int result = 0; // default to zero == success
 
-    char* fileNameAsChar = ConvertWideCharToMultiByte(fileName);
+    char* fileNameAsChar = ConvertWideCharToMultiByte(fileFullPath);
     LogInfo("Appending file '%s'", fileNameAsChar);
 
-    HANDLE hFileIn = CreateFileW(fileName, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING,
+    HANDLE hFileIn = CreateFileW(fileFullPath, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING,
                                  FILE_ATTRIBUTE_NORMAL | FILE_FLAG_SEQUENTIAL_SCAN, NULL);
     if (hFileIn == INVALID_HANDLE_VALUE)
     {
@@ -101,6 +105,37 @@ CLEAN_UP:
     {
         LogError("CloseHandle failed. GetLastError()=%u", GetLastError());
         result = -1;
+    }
+
+    return result;
+}
+
+// AppendFile: append the file named by 'fileFullPath' to the output file referred to by 'hFileOut'. The 'hFileOut'
+// handle is assumed to be open, and the file position is assumed to be at the correct spot for writing, to append.
+//
+// 'buffer' is memory that can be used to do reading/buffering.
+//
+// static
+int verbMerge::AppendFile(HANDLE hFileOut, LPCWSTR fileFullPath, bool dedup, unsigned char* buffer, size_t bufferSize)
+{
+    int result = 0; // default to zero == success
+
+    if (dedup)
+    {
+        // Need to conver the fileFullPath to non-Unicode.
+        char* fileFullPathAsChar = ConvertWideCharToMultiByte(fileFullPath);
+        LogInfo("Appending file '%s'", fileFullPathAsChar);
+        bool ok = m_removeDups.CopyAndRemoveDups(fileFullPathAsChar, hFileOut);
+        delete[] fileFullPathAsChar;
+        if (!ok)
+        {
+            LogError("Failed to remove dups");
+            return -1;
+        }
+    }
+    else
+    {
+        result = AppendFileRaw(hFileOut, fileFullPath, buffer, bufferSize);
     }
 
     return result;
@@ -294,6 +329,7 @@ int verbMerge::AppendAllInDir(HANDLE              hFileOut,
                               unsigned char*      buffer,
                               size_t              bufferSize,
                               bool                recursive,
+                              bool                dedup,
                               /* out */ LONGLONG* size)
 {
     int      result    = 0; // default to zero == success
@@ -316,7 +352,11 @@ int verbMerge::AppendAllInDir(HANDLE              hFileOut,
 
         if (wcslen(fileFullPath) > MAX_PATH) // This path is too long, use \\?\ to access it.
         {
-            assert(wcscmp(dir, W(".")) != 0 && "can't access the relative path with UNC");
+            if (wcscmp(dir, W(".")) == 0)
+            {
+                LogError("can't access the relative path with UNC");
+                goto CLEAN_UP;
+            }
             LPWSTR newBuffer = new WCHAR[wcslen(fileFullPath) + 30];
             wcscpy(newBuffer, W("\\\\?\\"));
             if (*fileFullPath == '\\') // It is UNC path, use \\?\UNC\serverName to access it.
@@ -347,7 +387,7 @@ int verbMerge::AppendAllInDir(HANDLE              hFileOut,
         }
         else
         {
-            result = AppendFile(hFileOut, fileFullPath, buffer, bufferSize);
+            result = AppendFile(hFileOut, fileFullPath, dedup, buffer, bufferSize);
             if (result != 0)
             {
                 // Error was already logged.
@@ -381,7 +421,7 @@ int verbMerge::AppendAllInDir(HANDLE              hFileOut,
             const _WIN32_FIND_DATAW& findData = fileArray[i];
 
             LPWSTR fileFullPath = MergePathStrings(dir, findData.cFileName);
-            result              = AppendAllInDir(hFileOut, fileFullPath, file, buffer, bufferSize, recursive, &dirSize);
+            result              = AppendAllInDir(hFileOut, fileFullPath, file, buffer, bufferSize, recursive, dedup, &dirSize);
             delete[] fileFullPath;
             if (result != 0)
             {
@@ -416,13 +456,26 @@ CLEAN_UP:
 // If "recursive" is true, then the pattern is searched for in the specified directory (or implicit current directory)
 // and all sub-directories, recursively.
 //
+// If "dedup" is true, the we remove duplicates while we are merging. If "stripCR" is also true, we remove CompileResults
+// while deduplicating.
+//
 // static
-int verbMerge::DoWork(const char* nameOfOutputFile, const char* pattern, bool recursive)
+int verbMerge::DoWork(const char* nameOfOutputFile, const char* pattern, bool recursive, bool dedup, bool stripCR)
 {
     int         result = 0; // default to zero == success
     SimpleTimer st1;
 
     LogInfo("Merging files matching '%s' into '%s'", pattern, nameOfOutputFile);
+
+    if (dedup)
+    {
+        // Initialize the deduplication object
+        if (!m_removeDups.Initialize(stripCR, /* legacyCompare */ false, /* cleanup */ false))
+        {
+            LogError("Failed to initialize the deduplicator");
+            return -1;
+        }
+    }
 
     int    nameLength              = (int)strlen(nameOfOutputFile) + 1;
     LPWSTR nameOfOutputFileAsWchar = new WCHAR[nameLength];
@@ -491,7 +544,7 @@ int verbMerge::DoWork(const char* nameOfOutputFile, const char* pattern, bool re
 
     st1.Start();
 
-    result = AppendAllInDir(hFileOut, dir, file, buffer, BUFFER_SIZE, recursive, &dirSize);
+    result = AppendAllInDir(hFileOut, dir, file, buffer, BUFFER_SIZE, recursive, dedup, &dirSize);
     if (result != 0)
     {
         goto CLEAN_UP;

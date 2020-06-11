@@ -99,9 +99,18 @@ namespace System.IO
             return new FileInfo(destinationPath, isNormalized: true);
         }
 
-        public FileStream Create() => File.Create(NormalizedPath);
+        public FileStream Create()
+        {
+            FileStream fileStream = File.Create(NormalizedPath);
+            Invalidate();
+            return fileStream;
+        }
 
-        public override void Delete() => FileSystem.DeleteFile(FullPath);
+        public override void Delete()
+        {
+            FileSystem.DeleteFile(FullPath);
+            Invalidate();
+        }
 
         public FileStream Open(FileMode mode)
             => Open(mode, (mode == FileMode.Append ? FileAccess.Write : FileAccess.ReadWrite), FileShare.None);

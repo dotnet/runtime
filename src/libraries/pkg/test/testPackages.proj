@@ -3,6 +3,8 @@
 
   <ItemGroup>
     <TestPackages Condition="'$(TestPackages)' != ''" Include="$(TestPackages)" />
+    <!-- transport package not expected to be closure complete  -->
+    <ExcludePackages Include="Microsoft.Extensions.Internal.Transport" />
     <ExcludePackages Include="$(ExcludePackages)" />
 
     <PackageReports Condition="'@(TestPackages)' == ''" Include="$(PackageReportDir)*.json" Exclude="@(ExcludePackages->'$(PackageReportDir)%(Identity).json')"/>
@@ -175,7 +177,7 @@
           Condition="'$(ArchiveTests)' != 'true'">
 
     <PropertyGroup>
-      <TestRestoreCommand>$(TestDotNetPath)</TestRestoreCommand>
+      <TestRestoreCommand>"$(TestDotNetPath)"</TestRestoreCommand>
       <TestRestoreCommand>$(TestRestoreCommand) restore</TestRestoreCommand>
       <TestRestoreCommand>$(TestRestoreCommand) --packages "$(TestPackageDir)"</TestRestoreCommand>
       <TestRestoreCommand>$(TestRestoreCommand) /p:LocalPackagesPath=$(PackageOutputPath)</TestRestoreCommand>
@@ -193,7 +195,7 @@
           Condition="'$(ArchiveTests)' != 'true'">
 
     <PropertyGroup>
-      <TestBuildCommand>$(TestDotNetPath)</TestBuildCommand>
+      <TestBuildCommand>"$(TestDotNetPath)"</TestBuildCommand>
       <TestBuildCommand>$(TestBuildCommand) msbuild</TestBuildCommand>
       <TestBuildCommand>$(TestBuildCommand) /t:Test</TestBuildCommand>
       <TestBuildCommand>$(TestBuildCommand) /nr:false</TestBuildCommand>

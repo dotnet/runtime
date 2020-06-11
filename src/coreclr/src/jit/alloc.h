@@ -181,15 +181,9 @@ inline void* ArenaAllocator::allocateMemory(size_t size)
     {
         // Force the underlying memory allocator (either the OS or the CLR hoster)
         // to allocate the memory. Any fault injection will kick in.
-        void* p = ClrAllocInProcessHeap(0, S_SIZE_T(1));
-        if (p != nullptr)
-        {
-            ClrFreeInProcessHeap(0, p);
-        }
-        else
-        {
-            NOMEM(); // Throw!
-        }
+        size_t size;
+        void*  p = allocateHostMemory(1, &size);
+        freeHostMemory(p, size);
     }
 #endif
 

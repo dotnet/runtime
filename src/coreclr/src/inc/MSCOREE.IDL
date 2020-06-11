@@ -10,11 +10,6 @@
  **                                                                                  **
  **************************************************************************************/
 
-cpp_quote("#define DECLARE_DEPRECATED ")
-cpp_quote("#define DEPRECATED_CLR_STDAPI STDAPI")
-
-cpp_quote("")
-
 //
 // Interface descriptions
 //
@@ -134,61 +129,6 @@ typedef struct _BucketParameters
     WCHAR pszParams[BucketParamsCount][BucketParamLength];    // Parameter strings.
 } BucketParameters;
 
-
-typedef enum
-{
-    OPR_ThreadAbort,
-    OPR_ThreadRudeAbortInNonCriticalRegion,
-    OPR_ThreadRudeAbortInCriticalRegion,
-    OPR_AppDomainUnload,
-    OPR_AppDomainRudeUnload,
-    OPR_ProcessExit,
-    OPR_FinalizerRun,
-    MaxClrOperation
-    // Do not add anything after this
-} EClrOperation;
-
-typedef enum
-{
-    FAIL_NonCriticalResource,
-    FAIL_CriticalResource,
-    FAIL_FatalRuntime,
-    FAIL_OrphanedLock,
-    FAIL_StackOverflow,
-    // In CoreCLR, we will treat AV specially, based upon the escalation policy.
-    // Currently only used in CoreCLR.
-    FAIL_AccessViolation,
-    FAIL_CodeContract,
-    MaxClrFailure
-    // Do not add anything after this
-} EClrFailure;
-
-typedef enum
-{
-        eRuntimeDeterminedPolicy,       // default
-        eHostDeterminedPolicy,          // revert back to Everett behavior, i.e. swallow all exception
-} EClrUnhandledException;
-
-typedef enum
-{
-    // !!! Please keep these ordered by severity
-    // !!! If you don't, you need to change EEPolicy::IsValidActionForOperation
-    // !!! and EEPolicy::IsValidActionForFailure
-    eNoAction,
-    eThrowException,
-    eAbortThread,
-    eRudeAbortThread,
-    eUnloadAppDomain,
-    eRudeUnloadAppDomain,
-    eExitProcess,
-        // Look at CorHost2::Stop.  For eFastExitProcess, eRudeExitProcess, eDisableRuntime,
-        // Stop bypasses finalizer run.
-    eFastExitProcess,
-    eRudeExitProcess,
-    MaxPolicyAction
-} EPolicyAction;
-
-
 //*****************************************************************************
 // New interface for hosting mscoree
 //*****************************************************************************
@@ -301,7 +241,3 @@ interface ICLRRuntimeHost4 : ICLRRuntimeHost2
                                           [in] BOOL fWaitUntilDone,
                                           [out] int *pLatchedExitCode);
 };
-
-cpp_quote("#undef DEPRECATED_CLR_STDAPI")
-cpp_quote("#undef DECLARE_DEPRECATED")
-cpp_quote("#undef DEPRECATED_CLR_API_MESG")

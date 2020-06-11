@@ -1174,8 +1174,6 @@ private:
     virtual void DebuggerDetachClean();
 
   public:
-    static const BYTE *g_pMSCorEEStart, *g_pMSCorEEEnd;
-
     static const BYTE *GetILPrestubDestination(const BYTE *prestub);
     static const BYTE *GetILFunctionCode(MethodDesc *fd);
 

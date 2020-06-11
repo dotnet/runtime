@@ -9,7 +9,7 @@ namespace System.Globalization.Tests
 {
     /// <summary>
     /// Class to read data obtained from http://www.unicode.org/Public/idna.  For more information read the information
-    /// contained in Data\Unicode_11_0\IdnaTestV2.txt
+    /// contained in Data\Unicode_11_0\IdnaTest_11.txt
     ///
     /// The structure of the data set is a semicolon delimited list with the following columns:
     ///
@@ -34,52 +34,20 @@ namespace System.Globalization.Tests
     ///
     /// If the value of toUnicode or toAsciiN is the same as source, the column will be blank.
     /// </summary>
-    public class Unicode_11_0_IdnaTest : IConformanceIdnaTest
+    public class Unicode_11_0_IdnaTest : Unicode_IdnaTest
     {
-        public IdnType Type => IdnType.Nontransitional;
-        public string Source { get; set; }
-        public ConformanceIdnaUnicodeTestResult UnicodeResult { get; set; }
-        public ConformanceIdnaTestResult ASCIIResult { get; set; }
-        public int LineNumber { get; set; }
-
         public Unicode_11_0_IdnaTest(string line, int lineNumber)
         {
             var split = line.Split(';');
 
+            Type = IdnType.Nontransitional;
+
             Source = EscapedToLiteralString(split[0], lineNumber);
-            UnicodeResult = new ConformanceIdnaUnicodeTestResult(EscapedToLiteralString(split[1], lineNumber), Source);
-            ASCIIResult = new ConformanceIdnaTestResult(EscapedToLiteralString(split[3], lineNumber), UnicodeResult.Value);
+
+            UnicodeResult = new ConformanceIdnaUnicodeTestResult(EscapedToLiteralString(split[1], lineNumber), Source, EscapedToLiteralString(split[2], lineNumber), string.Empty);
+            ASCIIResult = new ConformanceIdnaTestResult(EscapedToLiteralString(split[3], lineNumber), UnicodeResult.Value, EscapedToLiteralString(split[4], lineNumber), UnicodeResult.StatusValue);
+
             LineNumber = lineNumber;
-        }
-
-        /// <summary>
-        /// This will convert strings with escaped sequences to literal characters.  The input string is
-        /// expected to have escaped sequences in the form of '\uXXXX'.
-        ///
-        /// Example: "a\u0020b" will be converted to 'a b'.
-        /// </summary>
-        private static string EscapedToLiteralString(string escaped, int lineNumber)
-        {
-            var sb = new StringBuilder();
-
-            for (int i = 0; i < escaped.Length; i++)
-            {
-                if (i + 1 < escaped.Length && escaped[i] == '\\' && escaped[i + 1] == 'u')
-                {
-                    // Verify that the escaped sequence is not malformed
-                    Assert.True(i + 5 < escaped.Length, "There was a problem converting to literal string on Line " + lineNumber);
-
-                    var codepoint = Convert.ToInt32(escaped.Substring(i + 2, 4), 16);
-                    sb.Append((char)codepoint);
-                    i += 5;
-                }
-                else
-                {
-                    sb.Append(escaped[i]);
-                }
-            }
-
-            return sb.ToString().Trim();
         }
     }
 }

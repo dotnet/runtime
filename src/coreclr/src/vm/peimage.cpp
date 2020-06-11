@@ -12,7 +12,6 @@
 
 #include "peimage.h"
 #include "eeconfig.h"
-#include "apithreadstress.h"
 #include <objbase.h>
 
 #include "eventtrace.h"
@@ -206,29 +205,6 @@ BOOL PEImage::CompareIJWDataBase(UPTR base, UPTR mapping)
 
     return ((BYTE *)(base << 1) == ((IJWFixupData*)mapping)->GetBase());
 }
-
-    // Thread stress
-#if 0
-class OpenFileStress : APIThreadStress
-    {
-      public:
-        const SString &path;
-    PEImage::Layout layout;
-    OpenFileStress(const SString &path, PEImage::Layout layout)
-          : path(path), layout(layout)
-        {
-            WRAPPER_NO_CONTRACT;
-
-            path.Normalize();
-        }
-        void Invoke()
-        {
-            WRAPPER_NO_CONTRACT;
-
-            PEImageHolder result(PEImage::Open(path, layout));
-        }
-};
-#endif
 
 ULONG PEImage::Release()
 {
@@ -997,7 +973,7 @@ PTR_PEImageLayout PEImage::GetLayoutInternal(DWORD imageLayoutMask,DWORD flags)
         BOOL bIsFlatLayoutSuitable = ((imageLayoutMask & PEImageLayout::LAYOUT_FLAT) != 0);
 
 #if !defined(TARGET_UNIX)
-        if (bIsMappedLayoutSuitable)
+        if (!IsInBundle() && bIsMappedLayoutSuitable)
         {
             bIsFlatLayoutSuitable = FALSE;
         }
@@ -1207,7 +1183,14 @@ void PEImage::Load()
     }
 
 #ifdef TARGET_UNIX
-    if (m_pLayouts[IMAGE_FLAT] != NULL
+    bool canUseLoadedFlat = true;
+#else
+    bool canUseLoadedFlat = IsInBundle();
+#endif // TARGET_UNIX
+
+
+    if (canUseLoadedFlat
+        && m_pLayouts[IMAGE_FLAT] != NULL
         && m_pLayouts[IMAGE_FLAT]->CheckILOnlyFormat()
         && !m_pLayouts[IMAGE_FLAT]->HasWriteableSections())
     {
@@ -1224,7 +1207,6 @@ void PEImage::Load()
         SetLayout(IMAGE_LOADED, m_pLayouts[IMAGE_FLAT]);
     }
     else
-#endif // TARGET_UNIX
     {
         if(!IsFile())
         {
@@ -1352,19 +1334,19 @@ HANDLE PEImage::GetFileHandle()
 
     {
         ErrorModeHolder mode(SEM_NOOPENFILEERRORBOX|SEM_FAILCRITICALERRORS);
-        m_hFile=WszCreateFile((LPCWSTR) m_path,
-                                            GENERIC_READ,
-                                            FILE_SHARE_READ|FILE_SHARE_DELETE,
-                                            NULL,
-                                            OPEN_EXISTING,
-                                            FILE_ATTRIBUTE_NORMAL,
-                                            NULL);
+        m_hFile=WszCreateFile((LPCWSTR) GetPathToLoad(),
+                               GENERIC_READ,
+                               FILE_SHARE_READ|FILE_SHARE_DELETE,
+                               NULL,
+                               OPEN_EXISTING,
+                               FILE_ATTRIBUTE_NORMAL,
+                               NULL);
     }
 
     if (m_hFile == INVALID_HANDLE_VALUE)
     {
 #if !defined(DACCESS_COMPILE)
-        EEFileLoadException::Throw(m_path, HRESULT_FROM_WIN32(GetLastError()));
+        EEFileLoadException::Throw(GetPathToLoad(), HRESULT_FROM_WIN32(GetLastError()));
 #else // defined(DACCESS_COMPILE)
         ThrowLastError();
 #endif // !defined(DACCESS_COMPILE)
@@ -1398,14 +1380,14 @@ HRESULT PEImage::TryOpenFile()
     if (m_hFile!=INVALID_HANDLE_VALUE)
         return S_OK;
     {
-        ErrorModeHolder mode(SEM_NOOPENFILEERRORBOX|SEM_FAILCRITICALERRORS);
-        m_hFile=WszCreateFile((LPCWSTR) m_path,
-                                            GENERIC_READ,
-                                            FILE_SHARE_READ|FILE_SHARE_DELETE,
-                                            NULL,
-                                            OPEN_EXISTING,
-                                            FILE_ATTRIBUTE_NORMAL,
-                                            NULL);
+        ErrorModeHolder mode(SEM_NOOPENFILEERRORBOX | SEM_FAILCRITICALERRORS);
+        m_hFile=WszCreateFile((LPCWSTR)GetPathToLoad(), 
+                              GENERIC_READ,
+                              FILE_SHARE_READ|FILE_SHARE_DELETE,
+                              NULL,
+                              OPEN_EXISTING,
+                              FILE_ATTRIBUTE_NORMAL,
+                              NULL);
     }
     if (m_hFile != INVALID_HANDLE_VALUE)
             return S_OK;

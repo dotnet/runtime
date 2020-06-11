@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -89,7 +90,7 @@ namespace System
 
         public string ToString(IFormatProvider? provider)
         {
-            return ToString(null, provider);
+            return Number.FormatInt32(m_value, 0, null, provider);
         }
 
         public string ToString(string? format, IFormatProvider? provider)
@@ -145,7 +146,7 @@ namespace System
         // Parses an integer from a String. Returns false rather
         // than throwing exceptin if input is invalid
         //
-        public static bool TryParse(string? s, out int result)
+        public static bool TryParse([NotNullWhen(true)] string? s, out int result)
         {
             if (s == null)
             {
@@ -164,7 +165,7 @@ namespace System
         // Parses an integer from a String in the given style. Returns false rather
         // than throwing exceptin if input is invalid
         //
-        public static bool TryParse(string? s, NumberStyles style, IFormatProvider? provider, out int result)
+        public static bool TryParse([NotNullWhen(true)] string? s, NumberStyles style, IFormatProvider? provider, out int result)
         {
             NumberFormatInfo.ValidateParseStyleInteger(style);
 

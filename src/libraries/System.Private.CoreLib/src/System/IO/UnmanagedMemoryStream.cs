@@ -4,17 +4,9 @@
 
 using System.Buffers;
 using System.Diagnostics;
-using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
-
-#pragma warning disable SA1121 // explicitly using type aliases instead of built-in types
-#if TARGET_64BIT
-using nuint = System.UInt64;
-#else
-using nuint = System.UInt32;
-#endif
 
 namespace System.IO
 {
@@ -128,7 +120,6 @@ namespace System.IO
             unsafe
             {
                 byte* pointer = null;
-                RuntimeHelpers.PrepareConstrainedRegions();
                 try
                 {
                     buffer.AcquirePointer(ref pointer);
@@ -260,7 +251,6 @@ namespace System.IO
                 {
                     byte* pointer = null;
 
-                    RuntimeHelpers.PrepareConstrainedRegions();
                     try
                     {
                         _buffer.AcquirePointer(ref pointer);
@@ -418,7 +408,7 @@ namespace System.IO
                     throw new IOException(SR.IO_SeekBeforeBegin);
                 long newPosition = (long)value - (long)_mem;
                 if (newPosition < 0)
-                    throw new ArgumentOutOfRangeException("offset", SR.ArgumentOutOfRange_UnmanagedMemStreamLength);
+                    throw new ArgumentOutOfRangeException(nameof(value), SR.ArgumentOutOfRange_UnmanagedMemStreamLength);
 
                 Interlocked.Exchange(ref _position, newPosition);
             }
@@ -490,7 +480,6 @@ namespace System.IO
                     {
                         byte* pointer = null;
 
-                        RuntimeHelpers.PrepareConstrainedRegions();
                         try
                         {
                             _buffer.AcquirePointer(ref pointer);
@@ -558,7 +547,7 @@ namespace System.IO
         {
             if (cancellationToken.IsCancellationRequested)
             {
-                return new ValueTask<int>(Task.FromCanceled<int>(cancellationToken));
+                return ValueTask.FromCanceled<int>(cancellationToken);
             }
 
             try
@@ -582,7 +571,7 @@ namespace System.IO
             }
             catch (Exception ex)
             {
-                return new ValueTask<int>(Task.FromException<int>(ex));
+                return ValueTask.FromException<int>(ex);
             }
         }
 
@@ -606,7 +595,6 @@ namespace System.IO
                 unsafe
                 {
                     byte* pointer = null;
-                    RuntimeHelpers.PrepareConstrainedRegions();
                     try
                     {
                         _buffer.AcquirePointer(ref pointer);
@@ -786,7 +774,6 @@ namespace System.IO
                     }
 
                     byte* pointer = null;
-                    RuntimeHelpers.PrepareConstrainedRegions();
                     try
                     {
                         _buffer.AcquirePointer(ref pointer);
@@ -853,7 +840,7 @@ namespace System.IO
         {
             if (cancellationToken.IsCancellationRequested)
             {
-                return new ValueTask(Task.FromCanceled(cancellationToken));
+                return ValueTask.FromCanceled(cancellationToken);
             }
 
             try
@@ -872,7 +859,7 @@ namespace System.IO
             }
             catch (Exception ex)
             {
-                return new ValueTask(Task.FromException(ex));
+                return ValueTask.FromException(ex);
             }
         }
 
@@ -920,7 +907,6 @@ namespace System.IO
                 unsafe
                 {
                     byte* pointer = null;
-                    RuntimeHelpers.PrepareConstrainedRegions();
                     try
                     {
                         _buffer.AcquirePointer(ref pointer);

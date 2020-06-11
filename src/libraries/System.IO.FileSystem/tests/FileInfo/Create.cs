@@ -32,6 +32,18 @@ namespace System.IO.Tests
             }
         }
 
+        [Fact]
+        public void FileInfoInvalidAfterCreate()
+        {
+            DirectoryInfo testDir = Directory.CreateDirectory(GetTestFilePath());
+            string testFilePath = Path.Combine(testDir.FullName, GetTestFileName());
+            FileInfo info = new FileInfo(testFilePath);
+            using (FileStream fileStream = info.Create())
+            {
+                Assert.True(info.Exists);
+            }
+        }
+
         #endregion
     }
 }

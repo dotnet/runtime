@@ -78,7 +78,7 @@ namespace System.ComponentModel.DataAnnotations.Tests
 
         [Theory]
         [MemberData(nameof(Equals_TestData))]
-        public void Equals(FilterUIHintAttribute attribute, object obj, bool expected)
+        public void EqualsTest(FilterUIHintAttribute attribute, object obj, bool expected)
         {
             Assert.Equal(expected, attribute.Equals(obj));
             Assert.Equal(attribute.GetHashCode(), attribute.GetHashCode());

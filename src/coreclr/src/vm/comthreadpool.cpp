@@ -217,6 +217,7 @@ FCIMPLEND
 FCIMPL0(VOID, ThreadPoolNative::NotifyRequestProgress)
 {
     FCALL_CONTRACT;
+    _ASSERTE(ThreadpoolMgr::IsInitialized()); // can't be here without requesting a thread first
 
     ThreadpoolMgr::NotifyWorkItemCompleted();
 
@@ -247,6 +248,7 @@ FCIMPLEND
 FCIMPL0(FC_BOOL_RET, ThreadPoolNative::NotifyRequestComplete)
 {
     FCALL_CONTRACT;
+    _ASSERTE(ThreadpoolMgr::IsInitialized()); // can't be here without requesting a thread first
 
     ThreadpoolMgr::NotifyWorkItemCompleted();
 
@@ -305,15 +307,14 @@ FCIMPLEND
 
 /*****************************************************************************************************/
 
-void QCALLTYPE ThreadPoolNative::InitializeVMTp(CLR_BOOL* pEnableWorkerTracking)
+FCIMPL0(FC_BOOL_RET, ThreadPoolNative::GetEnableWorkerTracking)
 {
-    QCALL_CONTRACT;
+    FCALL_CONTRACT;
 
-    BEGIN_QCALL;
-    ThreadpoolMgr::EnsureInitialized();
-    *pEnableWorkerTracking = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_ThreadPool_EnableWorkerTracking) ? TRUE : FALSE;
-    END_QCALL;
+    BOOL result = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_ThreadPool_EnableWorkerTracking) ? TRUE : FALSE;
+    FC_RETURN_BOOL(result);
 }
+FCIMPLEND
 
 /*****************************************************************************************************/
 
@@ -381,18 +382,11 @@ VOID NTAPI RegisterWaitForSingleObjectCallback(PVOID delegateInfo, BOOLEAN Timer
     }
     CONTRACTL_END;
 
-    // This thread should not have any locks held at entry point.
-    _ASSERTE(pThread->m_dwLockCount == 0);
-
     GCX_COOP();
 
     RegisterWaitForSingleObjectCallback_Args args = { ((DelegateInfo*) delegateInfo), TimerOrWaitFired };
 
     ManagedThreadBase::ThreadPool(RegisterWaitForSingleObjectCallback_Worker, &args);
-
-    // We should have released all locks.
-    _ASSERTE(g_fEEShutDown || pThread->m_dwLockCount == 0 || pThread->m_fRudeAborted);
-    return;
 }
 
 FCIMPL5(LPVOID, ThreadPoolNative::CorRegisterWaitForSingleObject,
@@ -465,9 +459,6 @@ VOID QueueUserWorkItemManagedCallback(PVOID pArg)
 
     _ASSERTE(NULL != pArg);
 
-    // This thread should not have any locks held at entry point.
-    _ASSERTE(GetThread()->m_dwLockCount == 0);
-
     bool* wasNotRecalled = (bool*)pArg;
 
     MethodDescCallSite dispatch(METHOD__TP_WAIT_CALLBACK__PERFORM_WAIT_CALLBACK);
@@ -483,6 +474,7 @@ BOOL QCALLTYPE ThreadPoolNative::RequestWorkerThread()
 
     BEGIN_QCALL;
 
+    ThreadpoolMgr::EnsureInitialized();
     ThreadpoolMgr::SetAppDomainRequestsActive();
 
     res = ThreadpoolMgr::QueueUserWorkItem(NULL,
@@ -661,9 +653,6 @@ void __stdcall BindIoCompletionCallbackStubEx(DWORD ErrorCode,
     }
     CONTRACTL_END;
 
-    // This thread should not have any locks held at entry point.
-    _ASSERTE(pThread->m_dwLockCount == 0);
-
     LOG((LF_INTEROP, LL_INFO10000, "In IO_CallBackStub thread 0x%x retCode 0x%x, overlap 0x%x\n",  pThread, ErrorCode, lpOverlapped));
 
     GCX_COOP();
@@ -672,9 +661,6 @@ void __stdcall BindIoCompletionCallbackStubEx(DWORD ErrorCode,
     ManagedThreadBase::ThreadPool(BindIoCompletionCallBack_Worker, &args);
 
     LOG((LF_INTEROP, LL_INFO10000, "Leaving IO_CallBackStub thread 0x%x retCode 0x%x, overlap 0x%x\n",  pThread, ErrorCode, lpOverlapped));
-        // We should have released all locks.
-    _ASSERTE(g_fEEShutDown || pThread->m_dwLockCount == 0 || pThread->m_fRudeAborted);
-    return;
 }
 
 void WINAPI BindIoCompletionCallbackStub(DWORD ErrorCode,
@@ -814,16 +800,10 @@ VOID WINAPI AppDomainTimerCallback(PVOID callbackState, BOOLEAN timerOrWaitFired
     }
     CONTRACTL_END;
 
-    // This thread should not have any locks held at entry point.
-    _ASSERTE(pThread->m_dwLockCount == 0);
-
     GCX_COOP();
 
     ThreadpoolMgr::TimerInfoContext* pTimerInfoContext = (ThreadpoolMgr::TimerInfoContext*)callbackState;
     ManagedThreadBase::ThreadPool(AppDomainTimerCallback_Worker, pTimerInfoContext);
-
-    // We should have released all locks.
-    _ASSERTE(g_fEEShutDown || pThread->m_dwLockCount == 0 || pThread->m_fRudeAborted);
 }
 
 HANDLE QCALLTYPE AppDomainTimerNative::CreateAppDomainTimer(INT32 dueTime, INT32 timerId)

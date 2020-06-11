@@ -1,0 +1,45 @@
+<Project>
+  <!-- Add path globs specific to native binaries to exclude unnecessary files from packages. -->
+  <Choose>
+    <When Condition=" '$(_runtimeOSFamily)' == 'win' OR $(RuntimeIdentifier.StartsWith('win')) ">
+      <PropertyGroup>
+        <ApplicationFileExtension>.exe</ApplicationFileExtension>
+        <LibraryFilePrefix></LibraryFilePrefix>
+        <LibraryFileExtension>.dll</LibraryFileExtension>
+        <StaticLibraryFileExtension>.lib</StaticLibraryFileExtension>
+        <SymbolFileExtension>.pdb</SymbolFileExtension>
+      </PropertyGroup>
+    </When>
+    <When Condition=" '$(_runtimeOSFamily)' == 'osx' or $(RuntimeIdentifier.StartsWith('osx')) or '$(_runtimeOSFamily)' == 'ios' or $(RuntimeIdentifier.StartsWith('ios'))">
+      <PropertyGroup>
+        <LibraryFilePrefix Condition=" '$(SkipLibraryPrefixFromUnix)' == '' ">lib</LibraryFilePrefix>
+        <LibraryFileExtension>.dylib</LibraryFileExtension>
+        <StaticLibraryFileExtension>.a</StaticLibraryFileExtension>
+        <SymbolFileExtension>.dwarf</SymbolFileExtension>
+      </PropertyGroup>
+    </When>
+    <When Condition=" '$(_runtimeOSFamily)' == 'android' ">
+      <PropertyGroup>
+        <LibraryFilePrefix Condition=" '$(SkipLibraryPrefixFromUnix)' == '' ">lib</LibraryFilePrefix>
+        <LibraryFileExtension>.so</LibraryFileExtension>
+        <StaticLibraryFileExtension>.a</StaticLibraryFileExtension>
+        <!--symbols included in .so, like Linux, but can be generated externally and if so, uses .debug ext-->
+        <SymbolFileExtension>.debug</SymbolFileExtension>
+      </PropertyGroup>
+    </When>
+    <Otherwise>
+      <PropertyGroup>
+        <LibraryFilePrefix Condition=" '$(SkipLibraryPrefixFromUnix)' == '' ">lib</LibraryFilePrefix>
+        <LibraryFileExtension>.so</LibraryFileExtension>
+        <StaticLibraryFileExtension>.a</StaticLibraryFileExtension>
+        <SymbolFileExtension>.dbg</SymbolFileExtension>
+      </PropertyGroup>
+    </Otherwise>
+  </Choose>
+
+  <ItemGroup>
+    <AdditionalLibPackageExcludes Condition="'$(SymbolFileExtension)' != ''" Include="%2A%2A\%2A$(SymbolFileExtension)" />
+    <AdditionalSymbolPackageExcludes Condition="'$(LibraryFileExtension)' != ''" Include="%2A%2A\%2A.a;%2A%2A\%2A$(LibraryFileExtension)" />
+  </ItemGroup>
+
+</Project>

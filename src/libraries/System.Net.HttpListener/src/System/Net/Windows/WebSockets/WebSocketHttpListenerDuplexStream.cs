@@ -27,7 +27,7 @@ namespace System.Net.WebSockets
         private WebSocketBase _webSocket;
         private HttpListenerAsyncEventArgs _writeEventArgs;
         private HttpListenerAsyncEventArgs _readEventArgs;
-        private TaskCompletionSource<object> _writeTaskCompletionSource;
+        private TaskCompletionSource _writeTaskCompletionSource;
         private TaskCompletionSource<int> _readTaskCompletionSource;
         private int _cleanedUp;
 
@@ -280,6 +280,11 @@ namespace System.Net.WebSockets
                     eventArgs.FinishOperationSuccess((int)bytesReturned, true);
                     completedAsynchronouslyOrWithError = false;
                 }
+                else if (statusCode == Interop.HttpApi.ERROR_HANDLE_EOF)
+                {
+                    eventArgs.FinishOperationSuccess(0, true);
+                    completedAsynchronouslyOrWithError = false;
+                }
                 else
                 {
                     completedAsynchronouslyOrWithError = true;
@@ -372,7 +377,7 @@ namespace System.Net.WebSockets
                 Debug.Assert(Interlocked.Increment(ref _outstandingOperations._writes) == 1,
                     "Only one outstanding write allowed at any given time.");
 #endif
-                _writeTaskCompletionSource = new TaskCompletionSource<object>();
+                _writeTaskCompletionSource = new TaskCompletionSource();
                 _writeEventArgs.SetBuffer(null, 0, 0);
                 _writeEventArgs.BufferList = sendBuffers;
                 if (WriteAsyncFast(_writeEventArgs))
@@ -441,7 +446,7 @@ namespace System.Net.WebSockets
                     Debug.Assert(Interlocked.Increment(ref _outstandingOperations._writes) == 1,
                         "Only one outstanding write allowed at any given time.");
 #endif
-                    _writeTaskCompletionSource = new TaskCompletionSource<object>();
+                    _writeTaskCompletionSource = new TaskCompletionSource();
                     _writeEventArgs.BufferList = null;
                     _writeEventArgs.SetBuffer(buffer, offset, count);
                     if (WriteAsyncFast(_writeEventArgs))
@@ -623,7 +628,7 @@ namespace System.Net.WebSockets
                 Debug.Assert(Interlocked.Increment(ref _outstandingOperations._writes) == 1,
                     "Only one outstanding write allowed at any given time.");
 #endif
-                _writeTaskCompletionSource = new TaskCompletionSource<object>();
+                _writeTaskCompletionSource = new TaskCompletionSource();
                 _writeEventArgs.SetShouldCloseOutput();
                 if (WriteAsyncFast(_writeEventArgs))
                 {
@@ -661,10 +666,7 @@ namespace System.Net.WebSockets
                     _readTaskCompletionSource.TrySetCanceled();
                 }
 
-                if (_writeTaskCompletionSource != null)
-                {
-                    _writeTaskCompletionSource.TrySetCanceled();
-                }
+                _writeTaskCompletionSource?.TrySetCanceled();
 
                 if (_readEventArgs != null)
                 {
@@ -717,19 +719,8 @@ namespace System.Net.WebSockets
             }
             catch { }
 
-            TaskCompletionSource<int> readTaskCompletionSourceSnapshot = thisPtr._readTaskCompletionSource;
-
-            if (readTaskCompletionSourceSnapshot != null)
-            {
-                readTaskCompletionSourceSnapshot.TrySetCanceled();
-            }
-
-            TaskCompletionSource<object> writeTaskCompletionSourceSnapshot = thisPtr._writeTaskCompletionSource;
-
-            if (writeTaskCompletionSourceSnapshot != null)
-            {
-                writeTaskCompletionSourceSnapshot.TrySetCanceled();
-            }
+            thisPtr._readTaskCompletionSource?.TrySetCanceled();
+            thisPtr._writeTaskCompletionSource?.TrySetCanceled();
 
             if (NetEventSource.IsEnabled)
             {
@@ -788,7 +779,7 @@ namespace System.Net.WebSockets
             }
             else
             {
-                thisPtr._writeTaskCompletionSource.TrySetResult(null);
+                thisPtr._writeTaskCompletionSource.TrySetResult();
             }
 
             if (NetEventSource.IsEnabled)

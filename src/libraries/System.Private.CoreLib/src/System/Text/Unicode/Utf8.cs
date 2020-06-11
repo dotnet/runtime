@@ -4,12 +4,21 @@
 
 using System.Buffers;
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+
+#if SYSTEM_PRIVATE_CORELIB
 using Internal.Runtime.CompilerServices;
+#endif
 
 namespace System.Text.Unicode
 {
-    public static class Utf8
+#if SYSTEM_PRIVATE_CORELIB
+    public
+#else
+    internal
+#endif
+        static class Utf8
     {
         /*
          * OperationStatus-based APIs for transcoding of chunked data.

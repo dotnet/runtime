@@ -1323,7 +1323,7 @@ inline void PEDecoder::GetPEKindAndMachine(DWORD * pdwPEKind, DWORD *pdwMachine)
                     dwMachine = IMAGE_FILE_MACHINE_NATIVE;
                 }
 
-                if ((GetReadyToRunHeader()->Flags & READYTORUN_FLAG_PLATFORM_NEUTRAL_SOURCE) != 0)
+                if ((GetReadyToRunHeader()->CoreHeader.Flags & READYTORUN_FLAG_PLATFORM_NEUTRAL_SOURCE) != 0)
                 {
                     // Supply the original PEKind/Machine to the assembly binder to make the full assembly name look like the original
                     dwKind = peILonly;
@@ -1353,6 +1353,21 @@ inline BOOL PEDecoder::IsPlatformNeutral()
     DWORD dwKind, dwMachine;
     GetPEKindAndMachine(&dwKind, &dwMachine);
     return ((dwKind & (peILonly | pe32Plus | pe32BitRequired)) == peILonly) && (dwMachine == IMAGE_FILE_MACHINE_I386);
+}
+
+inline BOOL PEDecoder::IsComponentAssembly() const
+{
+    CONTRACTL
+    {
+        INSTANCE_CHECK;
+        NOTHROW;
+        GC_NOTRIGGER;
+        CANNOT_TAKE_LOCK;
+        SUPPORTS_DAC;
+    }
+    CONTRACTL_END;
+
+    return HasReadyToRunHeader() && (m_pReadyToRunHeader->CoreHeader.Flags & READYTORUN_FLAG_COMPONENT) != 0;
 }
 
 inline BOOL PEDecoder::HasReadyToRunHeader() const

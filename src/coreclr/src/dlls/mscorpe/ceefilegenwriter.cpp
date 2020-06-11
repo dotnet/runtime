@@ -17,10 +17,6 @@
 #include <posterror.h>
 #include <shlwapi.h>
 
-// Globals.
-HINSTANCE       g_hThisInst;            // This library.
-
-
 #ifdef EMIT_FIXUPS
 
 // Emitted PEFIXUP structure looks like this
@@ -941,178 +937,11 @@ HRESULT CeeFileGenWriter::emitExeMain()
     return S_OK;
 } // HRESULT CeeFileGenWriter::emitExeMain()
 
-
-HRESULT GetClrSystemDirectory(SString& pbuffer)
-{
-    HRESULT hr = S_OK;
-
-
-    PathString pPath;
-    DWORD dwPath;
-
-    _ASSERTE (g_hThisInst);
-
-    dwPath = WszGetModuleFileName(g_hThisInst, pPath);
-    if(dwPath == 0)
-    {
-        hr = HRESULT_FROM_GetLastErrorNA();
-        return (hr);
-    }
-
-    return CopySystemDirectory(pPath, pbuffer);
-}
-
 #ifndef TARGET_UNIX
-BOOL RunProcess(LPCWSTR tempResObj, LPCWSTR pszFilename, DWORD* pdwExitCode, PEWriter &pewriter)
-{
-    BOOL fSuccess = FALSE;
-
-    PROCESS_INFORMATION pi;
-
-    PathString wszSystemDir;
-    if (FAILED(GetClrSystemDirectory(wszSystemDir)))
-        return FALSE;
-
-    const WCHAR* wzMachine;
-    if(pewriter.isIA64())
-        wzMachine = L"IA64";
-    else if(pewriter.isAMD64())
-        wzMachine = L"AMD64";
-    else if(pewriter.isARM())
-        wzMachine = L"ARM";
-    else
-        wzMachine = L"IX86";
-
-    // Res file, so convert it
-    StackSString ssCmdLine;
-
-    LPWSTR ext = PathFindExtension(pszFilename);
-    if(*ext == NULL)
-    {
-        ssCmdLine.Printf(L"%scvtres.exe /NOLOGO /READONLY /MACHINE:%s \"/OUT:%s\" \"%s.\"",
-                    wszSystemDir.GetUnicode(),
-                    wzMachine,
-                    tempResObj,
-                    pszFilename);
-    }
-    else
-    {
-        ssCmdLine.Printf(L"%scvtres.exe /NOLOGO /READONLY /MACHINE:%s \"/OUT:%s\" \"%s\"",
-                    wszSystemDir.GetUnicode(),
-                    wzMachine,
-                    tempResObj,
-                    pszFilename);
-    }
-
-    STARTUPINFOW start;
-    ZeroMemory(&start, sizeof(start));
-    start.cb = sizeof(start);
-    start.dwFlags = STARTF_USESHOWWINDOW;
-    start.wShowWindow = SW_HIDE;
-
-    fSuccess = WszCreateProcess(
-                                NULL,
-                                ssCmdLine.GetUnicode(),
-                                NULL,
-                                NULL,
-                                true,
-                                0,
-                                0,
-                                NULL,
-                                &start,
-                                &pi);
-
-    // If process runs, wait for it to finish
-    if (fSuccess) {
-        WaitForSingleObject(pi.hProcess, INFINITE);
-
-        GetExitCodeProcess(pi.hProcess, pdwExitCode);
-
-        CloseHandle(pi.hProcess);
-
-        CloseHandle(pi.hThread);
-    }
-    return fSuccess;
-} // BOOL RunProcess()
-
-// Ensure that pszFilename is an object file (not just a binary resource)
-// If we convert, then return obj filename in pszTempFilename
-HRESULT ConvertResource(const WCHAR * pszFilename, __in_ecount(cchTempFilename) WCHAR *pszTempFilename, size_t cchTempFilename, PEWriter &pewriter)
-{
-    HANDLE hFile = WszCreateFile(pszFilename, GENERIC_READ,
-        FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
-
-// failure
-    if (!hFile || (hFile == INVALID_HANDLE_VALUE))
-    {
-        //dbprintf("Can't find resource files:%S\n", pszFilename);
-        return HRESULT_FROM_GetLastError();
-    }
-
-// Read first 4 bytes. If they're all 0, we have a win32 .res file which must be
-// converted. (So call CvtRes.exe). Else it's an obj file.
-
-    DWORD dwCount = -1;
-    DWORD dwData  = -1;
-
-    BOOL fRet = ReadFile(hFile,
-                    &dwData,
-                    4,
-                    &dwCount,
-                    NULL
-    );
-
-    CloseHandle(hFile);
-
-    if (!fRet) {
-        //dbprintf("Invalid resource file:%S\n", pszFilename);
-        return HRESULT_FROM_GetLastError();
-    }
-
-    if (dwData != 0)
-    {
-        return S_OK;
-    }
-
-    PathString tempResObj;
-    PathString tempResPath;
-
-    // Create the temp file where the temp path is at rather than where the application is at.
-    if (!WszGetTempPath( tempResPath))
-    {
-        return HRESULT_FROM_GetLastError();
-    }
-
-    if (!WszGetTempFileName(tempResPath, L"RES", 0, tempResObj))
-    {
-        //dbprintf("GetTempFileName failed\n");
-        return HRESULT_FROM_GetLastError();
-    }
-
-    DWORD dwExitCode;
-    fRet = RunProcess(tempResObj, pszFilename, &dwExitCode, pewriter);
-
-    if (!fRet)
-    {   // Couldn't run cvtres.exe
-        return PostError(CEE_E_CVTRES_NOT_FOUND);
-    }
-    else if (dwExitCode != 0)
-    {   // CvtRes.exe ran, but failed
-        return HRESULT_FROM_WIN32(ERROR_RESOURCE_DATA_NOT_FOUND);
-    }
-    else
-    {   // Conversion succesful, so return filename.
-        wcscpy_s(pszTempFilename, cchTempFilename, tempResObj);
-    }
-
-    return S_OK;
-} // HRESULT ConvertResource()
-
-
 
 // This function reads a resource file and emits it into the generated PE file.
 // 1. We can only link resources in obj format. Must convert from .res to .obj
-// with CvtRes.exe.
+// with CvtRes.exe. See https://github.com/dotnet/runtime/issues/11412.
 // 2. Must touch up all COFF relocs from .rsrc$01 (resource header) to .rsrc$02
 // (resource raw data)
 HRESULT CeeFileGenWriter::emitResourceSection()
@@ -1120,21 +949,7 @@ HRESULT CeeFileGenWriter::emitResourceSection()
     if (m_resourceFileName == NULL)
         return S_OK;
 
-    // Make sure szResFileName is an obj, not just a .res; change name if we convert
-    WCHAR szTempFileName[MAX_PATH+1];
-    szTempFileName[0] = L'\0';
-    HRESULT hr = ConvertResource(m_resourceFileName, szTempFileName,
-                                 MAX_PATH+1, getPEWriter());
-    if (FAILED(hr)) return hr;
-
-    // Filename may change (if we convert .res to .obj), so have floating pointer
-    const WCHAR* szResFileName;
-    if (*szTempFileName)
-        szResFileName = szTempFileName;
-    else
-        szResFileName = m_resourceFileName;
-
-    _ASSERTE(szResFileName);
+    const WCHAR* szResFileName = m_resourceFileName;
 
     // read the resource file and spit it out in the .rsrc section
 
@@ -1142,7 +957,7 @@ HRESULT CeeFileGenWriter::emitResourceSection()
     HANDLE hMap = NULL;
     IMAGE_FILE_HEADER *hMod = NULL;
 
-    hr = S_OK;
+    HRESULT hr = S_OK;
 
     struct Param
     {
@@ -1436,9 +1251,6 @@ lDone: ;
         CloseHandle(hMap);
     if (hFile != INVALID_HANDLE_VALUE)
         CloseHandle(hFile);
-    if (szResFileName == szTempFileName)
-        // delete temporary file if we created one
-        WszDeleteFile(szResFileName);
 
     return hr;
 } // HRESULT CeeFileGenWriter::emitResourceSection()
@@ -1981,34 +1793,3 @@ HRESULT CeeFileGenWriter::TestEmitFixups()
 }
 #endif // TEST_EMIT_FIXUPS
 #endif // EMIT_FIXUPS
-
-#ifndef FEATURE_MERGE_JIT_AND_ENGINE
-
-//*****************************************************************************
-// Handle lifetime of loaded library.
-//*****************************************************************************
-extern "C"
-BOOL WINAPI DllMain(HANDLE hInstance, DWORD dwReason, LPVOID lpReserved)
-{
-    switch (dwReason)
-    {
-    case DLL_PROCESS_ATTACH:
-        {   // Save the module handle.
-            g_hThisInst = (HINSTANCE)hInstance;
-            DisableThreadLibraryCalls((HMODULE)hInstance);
-        }
-        break;
-    case DLL_PROCESS_DETACH:
-        break;
-    }
-
-    return (true);
-} // BOOL WINAPI DllMain()
-
-
-HINSTANCE GetModuleInst()
-{
-    return (g_hThisInst);
-} // HINSTANCE GetModuleInst()
-
-#endif //FEATURE_MERGE_JIT_AND_ENGINE

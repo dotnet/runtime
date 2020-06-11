@@ -11,7 +11,7 @@ namespace System.Net.Http
 {
     internal sealed class HttpConnectionResponseContent : HttpContent
     {
-        private Stream _stream;
+        private Stream? _stream;
         private bool _consumedStream; // separate from _stream so that Dispose can drain _stream
 
         public void SetStream(Stream stream)
@@ -34,10 +34,10 @@ namespace System.Net.Http
             return _stream;
         }
 
-        protected sealed override Task SerializeToStreamAsync(Stream stream, TransportContext context) =>
+        protected sealed override Task SerializeToStreamAsync(Stream stream, TransportContext? context) =>
             SerializeToStreamAsync(stream, context, CancellationToken.None);
 
-        protected sealed override async Task SerializeToStreamAsync(Stream stream, TransportContext context, CancellationToken cancellationToken)
+        protected sealed override async Task SerializeToStreamAsync(Stream stream, TransportContext? context, CancellationToken cancellationToken)
         {
             Debug.Assert(stream != null);
 

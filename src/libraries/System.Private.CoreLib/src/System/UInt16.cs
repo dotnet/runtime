@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -68,12 +69,12 @@ namespace System
         // Converts the current value to a String in base-10 with no extra padding.
         public override string ToString()
         {
-            return Number.UInt32ToDecStr(m_value, -1);
+            return Number.UInt32ToDecStr(m_value);
         }
 
         public string ToString(IFormatProvider? provider)
         {
-            return Number.FormatUInt32(m_value, null, provider);
+            return Number.UInt32ToDecStr(m_value);
         }
 
         public string ToString(string? format)
@@ -91,14 +92,12 @@ namespace System
             return Number.TryFormatUInt32(m_value, format, provider, destination, out charsWritten);
         }
 
-        [CLSCompliant(false)]
         public static ushort Parse(string s)
         {
             if (s == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
             return Parse((ReadOnlySpan<char>)s, NumberStyles.Integer, NumberFormatInfo.CurrentInfo);
         }
 
-        [CLSCompliant(false)]
         public static ushort Parse(string s, NumberStyles style)
         {
             NumberFormatInfo.ValidateParseStyleInteger(style);
@@ -106,14 +105,12 @@ namespace System
             return Parse((ReadOnlySpan<char>)s, style, NumberFormatInfo.CurrentInfo);
         }
 
-        [CLSCompliant(false)]
         public static ushort Parse(string s, IFormatProvider? provider)
         {
             if (s == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
             return Parse((ReadOnlySpan<char>)s, NumberStyles.Integer, NumberFormatInfo.GetInstance(provider));
         }
 
-        [CLSCompliant(false)]
         public static ushort Parse(string s, NumberStyles style, IFormatProvider? provider)
         {
             NumberFormatInfo.ValidateParseStyleInteger(style);
@@ -121,7 +118,6 @@ namespace System
             return Parse((ReadOnlySpan<char>)s, style, NumberFormatInfo.GetInstance(provider));
         }
 
-        [CLSCompliant(false)]
         public static ushort Parse(ReadOnlySpan<char> s, NumberStyles style = NumberStyles.Integer, IFormatProvider? provider = null)
         {
             NumberFormatInfo.ValidateParseStyleInteger(style);
@@ -140,8 +136,7 @@ namespace System
             return (ushort)i;
         }
 
-        [CLSCompliant(false)]
-        public static bool TryParse(string? s, out ushort result)
+        public static bool TryParse([NotNullWhen(true)] string? s, out ushort result)
         {
             if (s == null)
             {
@@ -152,14 +147,12 @@ namespace System
             return TryParse((ReadOnlySpan<char>)s, NumberStyles.Integer, NumberFormatInfo.CurrentInfo, out result);
         }
 
-        [CLSCompliant(false)]
         public static bool TryParse(ReadOnlySpan<char> s, out ushort result)
         {
             return TryParse(s, NumberStyles.Integer, NumberFormatInfo.CurrentInfo, out result);
         }
 
-        [CLSCompliant(false)]
-        public static bool TryParse(string? s, NumberStyles style, IFormatProvider? provider, out ushort result)
+        public static bool TryParse([NotNullWhen(true)] string? s, NumberStyles style, IFormatProvider? provider, out ushort result)
         {
             NumberFormatInfo.ValidateParseStyleInteger(style);
 
@@ -172,7 +165,6 @@ namespace System
             return TryParse((ReadOnlySpan<char>)s, style, NumberFormatInfo.GetInstance(provider), out result);
         }
 
-        [CLSCompliant(false)]
         public static bool TryParse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider? provider, out ushort result)
         {
             NumberFormatInfo.ValidateParseStyleInteger(style);

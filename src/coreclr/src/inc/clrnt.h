@@ -935,18 +935,6 @@ typedef struct _UNWIND_INFO {
 } UNWIND_INFO, *PUNWIND_INFO;
 
 #if defined(TARGET_UNIX) || defined(HOST_X86)
-EXTERN_C
-NTSYSAPI
-VOID
-NTAPI
-RtlUnwindEx (
-    __in_opt PVOID TargetFrame,
-    __in_opt PVOID TargetIp,
-    __in_opt PEXCEPTION_RECORD ExceptionRecord,
-    __in PVOID ReturnValue,
-    __in PT_CONTEXT ContextRecord,
-    __in_opt PVOID HistoryTable
-    );
 
 EXTERN_C
 NTSYSAPI

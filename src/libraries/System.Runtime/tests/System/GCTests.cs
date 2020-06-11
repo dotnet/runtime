@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Diagnostics;
@@ -24,7 +25,7 @@ namespace System.Tests
 
             if (s_is32Bits)
             {
-                AssertExtensions.Throws<ArgumentOutOfRangeException>("pressure", () => GC.AddMemoryPressure((long)int.MaxValue + 1)); // Bytes allocated > int.MaxValue on 32 bit platforms
+                AssertExtensions.Throws<ArgumentOutOfRangeException>("bytesAllocated", () => GC.AddMemoryPressure((long)int.MaxValue + 1)); // Bytes allocated > int.MaxValue on 32 bit platforms
             }
         }
 
@@ -418,13 +419,15 @@ namespace System.Tests
         }
 
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/31657", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         [PlatformSpecific(TestPlatforms.Windows)] //Concurrent GC is not enabled on Unix. Recombine to TestLatencyRoundTrips once addressed.
         [InlineData(GCLatencyMode.LowLatency)]
         [InlineData(GCLatencyMode.SustainedLowLatency)]
         public static void LatencyRoundtrips_LowLatency(GCLatencyMode value) => LatencyRoundtrips(value);
     }
 
-    public class GCExtendedTests    {
+    public class GCExtendedTests
+    {
         private const int TimeoutMilliseconds = 10 * 30 * 1000; //if full GC is triggered it may take a while
 
         /// <summary>
@@ -439,7 +442,7 @@ namespace System.Tests
         /// </summary>
         private const int NoGCRequestedBudget = 8192;
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [OuterLoop]
         public static void GetGeneration_WeakReference()
         {
@@ -489,7 +492,7 @@ namespace System.Tests
             Assert.Throws<ArgumentOutOfRangeException>(() => GC.WaitForFullGCComplete(-2));
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [InlineData(true, -1)]
         [InlineData(false, -1)]
         [InlineData(true, 0)]
@@ -509,7 +512,7 @@ namespace System.Tests
                 }, approach.ToString(), timeout.ToString(), options).Dispose();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [OuterLoop]
         public static void TryStartNoGCRegion_EndNoGCRegion_ThrowsInvalidOperationException()
         {
@@ -531,7 +534,7 @@ namespace System.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [OuterLoop]
         public static void TryStartNoGCRegion_ExitThroughAllocation()
         {
@@ -549,7 +552,7 @@ namespace System.Tests
                 }, options).Dispose();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [OuterLoop]
         public static void TryStartNoGCRegion_StartWhileInNoGCRegion()
         {
@@ -564,7 +567,7 @@ namespace System.Tests
             }, options).Dispose();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [OuterLoop]
         public static void TryStartNoGCRegion_StartWhileInNoGCRegion_BlockingCollection()
         {
@@ -579,7 +582,7 @@ namespace System.Tests
             }, options).Dispose();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [OuterLoop]
         public static void TryStartNoGCRegion_StartWhileInNoGCRegion_LargeObjectHeapSize()
         {
@@ -594,7 +597,7 @@ namespace System.Tests
             }, options).Dispose();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [OuterLoop]
         public static void TryStartNoGCRegion_StartWhileInNoGCRegion_BlockingCollectionAndLOH()
         {
@@ -609,7 +612,7 @@ namespace System.Tests
             }, options).Dispose();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [OuterLoop]
         public static void TryStartNoGCRegion_SettingLatencyMode_ThrowsInvalidOperationException()
         {
@@ -630,7 +633,7 @@ namespace System.Tests
             }, options).Dispose();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [OuterLoop]
         public static void TryStartNoGCRegion_SOHSize()
         {
@@ -644,7 +647,7 @@ namespace System.Tests
                 }, options).Dispose();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [OuterLoop]
         public static void TryStartNoGCRegion_SOHSize_BlockingCollection()
         {
@@ -658,7 +661,7 @@ namespace System.Tests
             }, options).Dispose();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [OuterLoop]
         public static void TryStartNoGCRegion_SOHSize_LOHSize()
         {
@@ -672,7 +675,7 @@ namespace System.Tests
             }, options).Dispose();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [OuterLoop]
         public static void TryStartNoGCRegion_SOHSize_LOHSize_BlockingCollection()
         {
@@ -686,7 +689,7 @@ namespace System.Tests
             }, options).Dispose();
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [OuterLoop]
         [InlineData(0)]
         [InlineData(-1)]
@@ -700,7 +703,7 @@ namespace System.Tests
             }, size.ToString(), options).Dispose();
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [OuterLoop]
         [InlineData(0)]                   // invalid because lohSize ==
         [InlineData(-1)]                  // invalid because lohSize < 0
@@ -781,8 +784,10 @@ namespace System.Tests
             Assert.True((end - start) < 5 * size, $"Allocated too much: start: {start} end: {end} size: {size}");
         }
 
+        private static bool IsNotArmProcessAndRemoteExecutorSupported => PlatformDetection.IsNotArmProcess && RemoteExecutor.IsSupported;
+
         [ActiveIssue("https://github.com/mono/mono/issues/15236", TestRuntimes.Mono)]
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotArmProcess))] // [ActiveIssue("https://github.com/dotnet/runtime/issues/29434")]
+        [ConditionalFact(nameof(IsNotArmProcessAndRemoteExecutorSupported))] // [ActiveIssue("https://github.com/dotnet/runtime/issues/29434")]
         public static void GetGCMemoryInfo()
         {
             RemoteExecutor.Invoke(() =>
@@ -846,6 +851,7 @@ namespace System.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/2280", TestRuntimes.Mono)]
         public static void GetTotalAllocatedBytes()
         {
             byte[] stash;
@@ -889,6 +895,173 @@ namespace System.Tests
             {
                 stash = new byte[1234];
                 previous = CallGetTotalAllocatedBytes(previous);
+            }
+        }
+
+        [Fact]
+        [OuterLoop]
+        private static void AllocateUninitializedArray()
+        {
+            // allocate a bunch of SOH byte arrays and touch them.
+            var r = new Random(1234);
+            for (int i = 0; i < 10000; i++)
+            {
+                int size = r.Next(10000);
+                var arr = GC.AllocateUninitializedArray<byte>(size, pinned: i % 2 == 1);
+
+                if (size > 1)
+                {
+                    arr[0] = 5;
+                    arr[size - 1] = 17;
+                    Assert.True(arr[0] == 5 && arr[size - 1] == 17);
+                }
+            }
+
+            // allocate a bunch of LOH int arrays and touch them.
+            for (int i = 0; i < 1000; i++)
+            {
+                int size = r.Next(100000, 1000000);
+                var arr = GC.AllocateUninitializedArray<int>(size, pinned: i % 2 == 1);
+
+                arr[0] = 5;
+                arr[size - 1] = 17;
+                Assert.True(arr[0] == 5 && arr[size - 1] == 17);
+            }
+
+            // allocate a string array
+            {
+                int i = 100;
+                var arr = GC.AllocateUninitializedArray<string>(i);
+
+                arr[0] = "5";
+                arr[i - 1] = "17";
+                Assert.True(arr[0] == "5" && arr[i - 1] == "17");
+            }
+
+            // allocate max size byte array
+            {
+                if (IntPtr.Size == 8)
+                {
+                    int i = 0x7FFFFFC7;
+                    var arr = GC.AllocateUninitializedArray<byte>(i);
+
+                    arr[0] = 5;
+                    arr[i - 1] = 17;
+                    Assert.True(arr[0] == 5 && arr[i - 1] == 17);
+                }
+            }
+        }
+
+        [Fact]
+        [OuterLoop]
+        private static void AllocateArray()
+        {
+            // allocate a bunch of SOH byte arrays and touch them.
+            var r = new Random(1234);
+            for (int i = 0; i < 10000; i++)
+            {
+                int size = r.Next(10000);
+                var arr = GC.AllocateArray<byte>(size, pinned: i % 2 == 1);
+
+                if (size > 1)
+                {
+                    arr[0] = 5;
+                    arr[size - 1] = 17;
+                    Assert.True(arr[0] == 5 && arr[size - 1] == 17);
+                }
+            }
+
+            // allocate a bunch of LOH int arrays and touch them.
+            for (int i = 0; i < 1000; i++)
+            {
+                int size = r.Next(100000, 1000000);
+                var arr = GC.AllocateArray<int>(size, pinned: i % 2 == 1);
+
+                arr[0] = 5;
+                arr[size - 1] = 17;
+                Assert.True(arr[0] == 5 && arr[size - 1] == 17);
+            }
+
+            // allocate a string array
+            {
+                int i = 100;
+                var arr = GC.AllocateArray<string>(i);
+
+                arr[0] = "5";
+                arr[i - 1] = "17";
+                Assert.True(arr[0] == "5" && arr[i - 1] == "17");
+            }
+
+            // allocate max size byte array
+            {
+                if (IntPtr.Size == 8)
+                {
+                    int i = 0x7FFFFFC7;
+                    var arr = GC.AllocateArray<byte>(i);
+
+                    arr[0] = 5;
+                    arr[i - 1] = 17;
+                    Assert.True(arr[0] == 5 && arr[i - 1] == 17);
+                }
+            }
+        }
+
+        [Theory]
+        [InlineData(-1)]
+        private static void AllocateArrayNegativeSize(int negValue)
+        {
+            Assert.Throws<OverflowException>(() => GC.AllocateUninitializedArray<byte>(-1));
+            Assert.Throws<OverflowException>(() => GC.AllocateUninitializedArray<byte>(negValue));
+            Assert.Throws<OverflowException>(() => GC.AllocateUninitializedArray<byte>(-1, pinned: true));
+            Assert.Throws<OverflowException>(() => GC.AllocateUninitializedArray<byte>(negValue, pinned: true));
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotIntMaxValueArrayIndexSupported))]
+        private static void AllocateArrayTooLarge()
+        {
+            Assert.Throws<OutOfMemoryException>(() => GC.AllocateUninitializedArray<double>(int.MaxValue));
+            Assert.Throws<OutOfMemoryException>(() => GC.AllocateUninitializedArray<double>(int.MaxValue, pinned: true));
+        }
+
+        [Fact]
+        private static void AllocateArrayRefType()
+        {
+            GC.AllocateUninitializedArray<string>(100);
+            Assert.Throws<ArgumentException>(() => GC.AllocateUninitializedArray<string>(100, pinned: true));
+        }
+
+        [Fact]
+        private unsafe static void AllocateArrayCheckPinning()
+        {
+            var list = new List<long[]>();
+
+            var r = new Random(1234);
+            for (int i = 0; i < 10000; i++)
+            {
+                int size = r.Next(2, 100);
+                var arr = i % 2 == 1 ?
+                    GC.AllocateArray<long>(size, pinned: true) :
+                    GC.AllocateUninitializedArray<long>(size, pinned: true) ;
+
+                fixed (long* pElem = &arr[0])
+                {
+                    *pElem = (long)pElem;
+                }
+
+                if (r.Next(100) % 2 == 0)
+                {
+                    list.Add(arr);
+                }
+            }
+
+            GC.Collect();
+
+            foreach (var arr in list)
+            {
+                fixed (long* pElem = &arr[0])
+                {
+                    Assert.Equal(*pElem, (long)pElem);
+                }
             }
         }
     }

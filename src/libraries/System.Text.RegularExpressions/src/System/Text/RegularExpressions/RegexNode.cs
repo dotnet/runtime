@@ -80,6 +80,7 @@ namespace System.Text.RegularExpressions
         public const int Oneloopatomic = RegexCode.Oneloopatomic;        // c,n      (?> a*)
         public const int Notoneloopatomic = RegexCode.Notoneloopatomic;  // c,n      (?> .*)
         public const int Setloopatomic = RegexCode.Setloopatomic;        // set,n    (?> \d*)
+        public const int UpdateBumpalong = RegexCode.UpdateBumpalong;
 
         // Interior nodes do not correspond to primitive operations, but
         // control structures compositing other operations
@@ -235,6 +236,7 @@ namespace System.Text.RegularExpressions
                     case Setloop:
                     case Setloopatomic:
                     case Start:
+                    case UpdateBumpalong:
                         Debug.Assert(childCount == 0, $"Expected zero children for {node.TypeName}, got {childCount}.");
                         break;
 
@@ -307,6 +309,47 @@ namespace System.Text.RegularExpressions
                 // since nothing would ever backtrack into it anyway.  Doing this then makes the construct available
                 // to implementations that don't support backtracking.
                 EliminateEndingBacktracking(rootNode.Child(0), DefaultMaxRecursionDepth);
+
+                // Optimization: unnecessary re-processing of starting loops.
+                // If an expression is guaranteed to begin with a single-character unbounded loop that isn't part of an alternation (in which case it
+                // wouldn't be guaranteed to be at the beginning) or a capture (in which case a back reference could be influenced by its length), then we
+                // can update the tree with a temporary node to indicate that the implementation should use that node's ending position in the input text
+                // as the next starting position at which to start the next match. This avoids redoing matches we've already performed, e.g. matching
+                // "\w+@dot.net" against "is this a valid address@dot.net", the \w+ will initially match the "is" and then will fail to match the "@".
+                // Rather than bumping the scan loop by 1 and trying again to match at the "s", we can instead start at the " ".  For functional correctness
+                // we can only consider unbounded loops, as to be able to start at the end of the loop we need the loop to have consumed all possible matches;
+                // otherwise, you could end up with a pattern like "a{1,3}b" matching against "aaaabc", which should match, but if we pre-emptively stop consuming
+                // after the first three a's and re-start from that position, we'll end up failing the match even though it should have succeeded.  We can also
+                // apply this optimization to non-atomic loops. Even though backtracking could be necessary, such backtracking would be handled within the processing
+                // of a single starting position.
+                {
+                    RegexNode node = rootNode.Child(0); // skip implicit root capture node
+                    while (true)
+                    {
+                        switch (node.Type)
+                        {
+                            case Atomic:
+                            case Concatenate:
+                                node = node.Child(0);
+                                continue;
+
+                            case Oneloop when node.N == int.MaxValue:
+                            case Oneloopatomic when node.N == int.MaxValue:
+                            case Notoneloop when node.N == int.MaxValue:
+                            case Notoneloopatomic when node.N == int.MaxValue:
+                            case Setloop when node.N == int.MaxValue:
+                            case Setloopatomic when node.N == int.MaxValue:
+                                RegexNode? parent = node.Next;
+                                if (parent != null && parent.Type == Concatenate)
+                                {
+                                    parent.InsertChild(1, new RegexNode(UpdateBumpalong, node.Options));
+                                }
+                                break;
+                        }
+
+                        break;
+                    }
+                }
 
                 // Optimization: implicit anchoring.
                 // If the expression begins with a .* loop, add an anchor to the beginning:
@@ -1455,7 +1498,7 @@ namespace System.Text.RegularExpressions
                     case Concatenate:
                     case Capture:
                     case Atomic:
-                    case Require:
+                    case Require when (subsequent.Options & RegexOptions.RightToLeft) == 0: // only lookaheads, not lookbehinds (represented as RTL Require nodes)
                     case Loop when subsequent.M > 0:
                     case Lazyloop when subsequent.M > 0:
                         subsequent = subsequent.Child(0);
@@ -1465,10 +1508,8 @@ namespace System.Text.RegularExpressions
                 break;
             }
 
-            // If the two nodes don't agree on case-insensitivity, don't try to optimize.
-            // If they're both case sensitive or both case insensitive, then their tokens
-            // will be comparable.
-            if ((node.Options & RegexOptions.IgnoreCase) != (subsequent.Options & RegexOptions.IgnoreCase))
+            // If the two nodes don't agree on options in any way, don't try to optimize them.
+            if (node.Options != subsequent.Options)
             {
                 return false;
             }
@@ -1541,10 +1582,6 @@ namespace System.Text.RegularExpressions
                         case Onelazy when subsequent.M > 0 && !RegexCharClass.CharInClass(subsequent.Ch, node.Str!):
                         case Oneloop when subsequent.M > 0 && !RegexCharClass.CharInClass(subsequent.Ch, node.Str!):
                         case Oneloopatomic when subsequent.M > 0 && !RegexCharClass.CharInClass(subsequent.Ch, node.Str!):
-                        case Notone when RegexCharClass.CharInClass(subsequent.Ch, node.Str!):
-                        case Notonelazy when subsequent.M > 0 && RegexCharClass.CharInClass(subsequent.Ch, node.Str!):
-                        case Notoneloop when subsequent.M > 0 && RegexCharClass.CharInClass(subsequent.Ch, node.Str!):
-                        case Notoneloopatomic when subsequent.M > 0 && RegexCharClass.CharInClass(subsequent.Ch, node.Str!):
                         case Multi when !RegexCharClass.CharInClass(subsequent.Str![0], node.Str!):
                         case Set when !RegexCharClass.MayOverlap(node.Str!, subsequent.Str!):
                         case Setlazy when subsequent.M > 0 && !RegexCharClass.MayOverlap(node.Str!, subsequent.Str!):
@@ -1609,7 +1646,7 @@ namespace System.Text.RegularExpressions
                     case Lazyloop:
                     case Loop:
                         // A node graph repeated at least M times.
-                        return node.M * ComputeMinLength(node.Child(0), maxDepth - 1);
+                        return (int)Math.Min(int.MaxValue, (long)node.M * ComputeMinLength(node.Child(0), maxDepth - 1));
 
                     case Alternate:
                         // The minimum required length for any of the alternation's branches.
@@ -1627,13 +1664,13 @@ namespace System.Text.RegularExpressions
                     case Concatenate:
                         // The sum of all of the concatenation's children.
                         {
-                            int sum = 0;
+                            long sum = 0;
                             int childCount = node.ChildCount();
                             for (int i = 0; i < childCount; i++)
                             {
                                 sum += ComputeMinLength(node.Child(i), maxDepth - 1);
                             }
-                            return sum;
+                            return (int)Math.Min(int.MaxValue, sum);
                         }
 
                     case Atomic:
@@ -1645,8 +1682,9 @@ namespace System.Text.RegularExpressions
 
                     case Empty:
                     case Nothing:
+                    case UpdateBumpalong:
                     // Nothing to match. In the future, we could potentially use Nothing to say that the min length
-                    // is infinite, but that would require a different structure, as that would only applies if the
+                    // is infinite, but that would require a different structure, as that would only apply if the
                     // Nothing match is required in all cases (rather than, say, as one branch of an alternation).
                     case Beginning:
                     case Bol:
@@ -1674,7 +1712,7 @@ namespace System.Text.RegularExpressions
 #if DEBUG
                         Debug.Fail($"Unknown node: {node.TypeName}");
 #endif
-                        return 0;
+                        goto case Empty;
                 }
             }
         }
@@ -1720,6 +1758,17 @@ namespace System.Text.RegularExpressions
             {
                 ((List<RegexNode>)Children).Add(newChild);
             }
+        }
+
+        public void InsertChild(int index, RegexNode newChild)
+        {
+            Debug.Assert(Children is List<RegexNode>);
+
+            newChild.Next = this; // so that the child can see its parent while being reduced
+            newChild = newChild.Reduce();
+            newChild.Next = this; // in case Reduce returns a different node that needs to be reparented
+
+            ((List<RegexNode>)Children).Insert(index, newChild);
         }
 
         public void ReplaceChild(int index, RegexNode newChild)
@@ -1805,6 +1854,7 @@ namespace System.Text.RegularExpressions
                 Atomic => nameof(Atomic),
                 Testref => nameof(Testref),
                 Testgroup => nameof(Testgroup),
+                UpdateBumpalong => nameof(UpdateBumpalong),
                 _ => $"(unknown {Type})"
             };
 

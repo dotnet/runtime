@@ -28,7 +28,6 @@ set(UTILCODE_COMMON_SOURCES
   comex.cpp
   delayloadhelpers.cpp
   guidfromname.cpp
-  jitperf.cpp
   memorypool.cpp
   iallocator.cpp
   loaderheap.cpp
@@ -74,7 +73,6 @@ endif(CLR_CMAKE_TARGET_WIN32)
 
 set(UTILCODE_SOURCES
   ${UTILCODE_COMMON_SOURCES}
-  perflog.cpp
 )
 
 set(UTILCODE_DAC_SOURCES
@@ -85,7 +83,6 @@ set(UTILCODE_DAC_SOURCES
 set(UTILCODE_CROSSGEN_SOURCES
   ${UTILCODE_COMMON_SOURCES}
   hostimpl.cpp
-  perflog.cpp
 )
 
 set(UTILCODE_STATICNOHOST_SOURCES

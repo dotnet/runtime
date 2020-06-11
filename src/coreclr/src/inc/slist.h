@@ -160,13 +160,13 @@ public:
     void Init()
     {
         LIMITED_METHOD_CONTRACT;
-        m_pHead = &m_link;
+        m_pHead = PTR_SLink(&m_link);
         // NOTE :: fHead variable is template argument
         // the following code is a compiled in, only if the fHead flag
         // is set to false,
         if (!fHead)
         {
-            m_pTail = &m_link;
+            m_pTail = PTR_SLink(&m_link);
         }
     }
 
@@ -274,7 +274,7 @@ public:
         SLink   *ret = SLink::FindAndRemove(m_pHead, GetLink(pObj), &prior);
 
         if (ret == m_pTail)
-            m_pTail = prior;
+            m_pTail = PTR_SLink(prior);
 
         return GetObject(ret);
     }

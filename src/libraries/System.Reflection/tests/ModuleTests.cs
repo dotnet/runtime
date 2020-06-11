@@ -69,7 +69,7 @@ namespace System.Reflection.Tests
         [InlineData("OutsideModuleTest[]", typeof(OutsideModuleTest[]))]
         [InlineData("OutsideModuleTest[,,]", typeof(OutsideModuleTest[,,]))]
         [InlineData("OutsideModuleTest[][]", typeof(OutsideModuleTest[][]))]
-        public void GetType(string className, Type expectedType)
+        public void GetTypeTest(string className, Type expectedType)
         {
             Module module = expectedType.GetTypeInfo().Module;
 

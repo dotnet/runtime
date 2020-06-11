@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Diagnostics.CodeAnalysis;
+
 namespace System.Diagnostics
 {
     [AttributeUsage(AttributeTargets.Class)]
@@ -17,6 +19,7 @@ namespace System.Diagnostics
         public Type SwitchLevelType
         {
             get { return _type; }
+            [MemberNotNull(nameof(_type))]
             set
             {
                 if (value == null)

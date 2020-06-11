@@ -19,8 +19,7 @@
 #define MINT_TYPE_R4 6
 #define MINT_TYPE_R8 7
 #define MINT_TYPE_O  8
-#define MINT_TYPE_P  9
-#define MINT_TYPE_VT 10
+#define MINT_TYPE_VT 9
 
 #define INLINED_METHOD_FLAG 0xffff
 #define TRACING_FLAG 0x1
@@ -43,9 +42,11 @@ enum {
 #if SIZEOF_VOID_P == 4
 typedef guint32 mono_u;
 typedef gint32  mono_i;
+#define MINT_TYPE_I MINT_TYPE_I4
 #elif SIZEOF_VOID_P == 8
 typedef guint64 mono_u;
 typedef gint64  mono_i;
+#define MINT_TYPE_I MINT_TYPE_I8
 #endif
 
 
@@ -147,9 +148,7 @@ struct InterpMethod {
 	void **data_items;
 	guint32 *local_offsets;
 	guint32 *exvar_offsets;
-	gpointer jit_wrapper;
-	gpointer jit_addr;
-	MonoMethodSignature *jit_sig;
+	gpointer jit_call_info;
 	gpointer jit_entry;
 	gpointer llvmonly_unbox_entry;
 	MonoType *rtype;
@@ -180,7 +179,11 @@ typedef struct _StackFragment StackFragment;
 struct _StackFragment {
 	guint8 *pos, *end;
 	struct _StackFragment *next;
-	double data [1];
+#if SIZEOF_VOID_P == 4
+	/* Align data field to MINT_VT_ALIGNMENT */
+	gint32 pad;
+#endif
+	double data [MONO_ZERO_LEN_ARRAY];
 };
 
 typedef struct {
@@ -199,8 +202,6 @@ typedef struct {
 	unsigned char *vt_sp;
 	const unsigned short  *ip;
 	GSList *finally_ips;
-	FrameClauseArgs *clause_args;
-	gboolean is_void : 1;
 } InterpState;
 
 struct InterpFrame {
@@ -212,8 +213,6 @@ struct InterpFrame {
 	InterpFrame    *next_free;
 	/* Stack fragments this frame was allocated from */
 	StackFragment *data_frag;
-	/* exception info */
-	const unsigned short  *ip;
 	/* State saved before calls */
 	/* This is valid if state.ip != NULL */
 	InterpState state;
@@ -245,6 +244,7 @@ typedef struct {
 	gint32 movlocs;
 	gint32 copy_propagations;
 	gint32 constant_folds;
+	gint32 ldlocas_removed;
 	gint32 killed_instructions;
 	gint32 emitted_instructions;
 	gint32 super_instructions;
@@ -279,7 +279,7 @@ mint_type(MonoType *type_)
 {
 	MonoType *type = mini_native_type_replace_type (type_);
 	if (type->byref)
-		return MINT_TYPE_P;
+		return MINT_TYPE_I;
 enum_type:
 	switch (type->type) {
 	case MONO_TYPE_I1:
@@ -297,13 +297,8 @@ enum_type:
 		return MINT_TYPE_I4;
 	case MONO_TYPE_I:
 	case MONO_TYPE_U:
-#if SIZEOF_VOID_P == 4
-		return MINT_TYPE_I4;
-#else
-		return MINT_TYPE_I8;
-#endif
 	case MONO_TYPE_PTR:
-		return MINT_TYPE_P;
+		return MINT_TYPE_I;
 	case MONO_TYPE_R4:
 		return MINT_TYPE_R4;
 	case MONO_TYPE_I8:

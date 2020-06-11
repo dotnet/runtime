@@ -19,12 +19,12 @@ namespace System.Net.Http
         {
         }
 
-        public StringContent(string content, Encoding encoding)
+        public StringContent(string content, Encoding? encoding)
             : this(content, encoding, null)
         {
         }
 
-        public StringContent(string content, Encoding encoding, string mediaType)
+        public StringContent(string content, Encoding? encoding, string? mediaType)
             : base(GetContentByteArray(content, encoding))
         {
             // Initialize the 'Content-Type' header with information provided by parameters.
@@ -37,7 +37,7 @@ namespace System.Net.Http
         // A StringContent is essentially a ByteArrayContent. We serialize the string into a byte-array in the
         // constructor using encoding information provided by the caller (if any). When this content is sent, the
         // Content-Length can be retrieved easily (length of the array).
-        private static byte[] GetContentByteArray(string content, Encoding encoding)
+        private static byte[] GetContentByteArray(string content, Encoding? encoding)
         {
             // In this case we treat 'null' strings different from string.Empty in order to be consistent with our
             // other *Content constructors: 'null' throws, empty values are allowed.
@@ -54,13 +54,13 @@ namespace System.Net.Http
             return encoding.GetBytes(content);
         }
 
-        protected override Task SerializeToStreamAsync(Stream stream, TransportContext context, CancellationToken cancellationToken) =>
+        protected override Task SerializeToStreamAsync(Stream stream, TransportContext? context, CancellationToken cancellationToken) =>
             // Only skip the original protected virtual SerializeToStreamAsync if this
             // isn't a derived type that may have overridden the behavior.
             GetType() == typeof(StringContent) ? SerializeToStreamAsyncCore(stream, cancellationToken) :
             base.SerializeToStreamAsync(stream, context, cancellationToken);
 
-        internal override Stream TryCreateContentReadStream() =>
+        internal override Stream? TryCreateContentReadStream() =>
             GetType() == typeof(StringContent) ? CreateMemoryStreamForByteArray() : // type check ensures we use possible derived type's CreateContentReadStreamAsync override
             null;
     }

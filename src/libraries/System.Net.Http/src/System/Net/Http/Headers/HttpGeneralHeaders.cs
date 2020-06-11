@@ -11,20 +11,20 @@ namespace System.Net.Http.Headers
     // functionality in both HttpRequestHeaders and HttpResponseHeaders.
     internal sealed class HttpGeneralHeaders
     {
-        private HttpHeaderValueCollection<string> _connection;
-        private HttpHeaderValueCollection<string> _trailer;
-        private HttpHeaderValueCollection<TransferCodingHeaderValue> _transferEncoding;
-        private HttpHeaderValueCollection<ProductHeaderValue> _upgrade;
-        private HttpHeaderValueCollection<ViaHeaderValue> _via;
-        private HttpHeaderValueCollection<WarningHeaderValue> _warning;
-        private HttpHeaderValueCollection<NameValueHeaderValue> _pragma;
+        private HttpHeaderValueCollection<string>? _connection;
+        private HttpHeaderValueCollection<string>? _trailer;
+        private HttpHeaderValueCollection<TransferCodingHeaderValue>? _transferEncoding;
+        private HttpHeaderValueCollection<ProductHeaderValue>? _upgrade;
+        private HttpHeaderValueCollection<ViaHeaderValue>? _via;
+        private HttpHeaderValueCollection<WarningHeaderValue>? _warning;
+        private HttpHeaderValueCollection<NameValueHeaderValue>? _pragma;
         private readonly HttpHeaders _parent;
         private bool _transferEncodingChunkedSet;
         private bool _connectionCloseSet;
 
-        public CacheControlHeaderValue CacheControl
+        public CacheControlHeaderValue? CacheControl
         {
-            get { return (CacheControlHeaderValue)_parent.GetParsedValues(KnownHeaders.CacheControl.Descriptor); }
+            get { return (CacheControlHeaderValue?)_parent.GetParsedValues(KnownHeaders.CacheControl.Descriptor); }
             set { _parent.SetOrRemoveParsedValue(KnownHeaders.CacheControl.Descriptor, value); }
         }
 
@@ -57,7 +57,7 @@ namespace System.Net.Http.Headers
             }
         }
 
-        internal static bool? GetConnectionClose(HttpHeaders parent, HttpGeneralHeaders headers)
+        internal static bool? GetConnectionClose(HttpHeaders parent, HttpGeneralHeaders? headers)
         {
             // If we've already initialized the connection header value collection
             // and it contains the special value, or if we haven't and the headers contain
@@ -117,7 +117,7 @@ namespace System.Net.Http.Headers
             get { return TransferEncodingCore; }
         }
 
-        internal static bool? GetTransferEncodingChunked(HttpHeaders parent, HttpGeneralHeaders headers)
+        internal static bool? GetTransferEncodingChunked(HttpHeaders parent, HttpGeneralHeaders? headers)
         {
             // If we've already initialized the transfer encoding header value collection
             // and it contains the special value, or if we haven't and the headers contain

@@ -12,7 +12,7 @@ namespace System
         {
             try
             {
-                object config = AppContext.GetData(configName);
+                object? config = AppContext.GetData(configName);
                 int result = defaultValue;
                 switch (config)
                 {
@@ -54,7 +54,7 @@ namespace System
         {
             try
             {
-                object config = AppContext.GetData(configName);
+                object? config = AppContext.GetData(configName);
                 short result = defaultValue;
                 switch (config)
                 {

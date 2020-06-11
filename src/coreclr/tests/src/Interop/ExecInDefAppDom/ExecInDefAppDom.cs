@@ -4,8 +4,6 @@
 using System;
 using System.Runtime.InteropServices;
 
-using Console = Internal.Console;
-
 public class FakeInjectedCode
 {
     int NonStatic(String argument) { return 0;}

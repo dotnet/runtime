@@ -24,7 +24,16 @@ namespace System.Security.Cryptography
 #endif
         public sealed partial class DSAOpenSsl : DSA
         {
+            // The biggest key allowed by FIPS 186-4 has N=256 (bit), which
+            // maximally produces a 72-byte DER signature.
+            // If a future version of the standard continues to enhance DSA,
+            // we may want to bump this limit to allow the max-1 (expected size)
+            // TryCreateSignature to pass.
+            // Future updates seem unlikely, though, as FIPS 186-5 October 2019 draft has
+            // DSA as a no longer supported/updated algorithm.
+            private const int SignatureStackBufSize = 72;
             private const int BitsPerByte = 8;
+
             private Lazy<SafeDsaHandle> _key = null!;
 
             public DSAOpenSsl()
@@ -210,71 +219,118 @@ namespace System.Security.Cryptography
 
                 SafeDsaHandle key = GetKey();
                 int signatureSize = Interop.Crypto.DsaEncodedSignatureSize(key);
-                byte[] signature = CryptoPool.Rent(signatureSize);
-                try
-                {
-                    bool success = Interop.Crypto.DsaSign(key, rgbHash, new Span<byte>(signature, 0, signatureSize), out signatureSize);
-                    if (!success)
-                    {
-                        throw Interop.Crypto.CreateOpenSslCryptographicException();
-                    }
+                int signatureFieldSize = Interop.Crypto.DsaSignatureFieldSize(key) * BitsPerByte;
+                Span<byte> signDestination = stackalloc byte[SignatureStackBufSize];
 
-                    Debug.Assert(
-                        signatureSize <= signature.Length,
-                        "DSA_sign reported an unexpected signature size",
-                        "DSA_sign reported signatureSize was {0}, when <= {1} was expected",
-                        signatureSize,
-                        signature.Length);
-
-                    int signatureFieldSize = Interop.Crypto.DsaSignatureFieldSize(key) * BitsPerByte;
-                    return AsymmetricAlgorithmHelpers.ConvertDerToIeee1363(signature, 0, signatureSize, signatureFieldSize);
-                }
-                finally
-                {
-                    CryptoPool.Return(signature, signatureSize);
-                }
+                ReadOnlySpan<byte> derSignature = SignHash(rgbHash, signDestination, signatureSize, key);
+                return AsymmetricAlgorithmHelpers.ConvertDerToIeee1363(derSignature, signatureFieldSize);
             }
 
-            public override bool TryCreateSignature(ReadOnlySpan<byte> hash, Span<byte> destination, out int bytesWritten)
+#if INTERNAL_ASYMMETRIC_IMPLEMENTATIONS
+            public override bool TryCreateSignature(
+                ReadOnlySpan<byte> hash,
+                Span<byte> destination,
+                out int bytesWritten)
             {
-                byte[] converted;
+                return TryCreateSignatureCore(
+                    hash,
+                    destination,
+                    DSASignatureFormat.IeeeP1363FixedFieldConcatenation,
+                    out bytesWritten);
+            }
+
+            protected override bool TryCreateSignatureCore(
+                ReadOnlySpan<byte> hash,
+                Span<byte> destination,
+                DSASignatureFormat signatureFormat,
+                out int bytesWritten)
+#else
+            public override bool TryCreateSignature(ReadOnlySpan<byte> hash, Span<byte> destination, out int bytesWritten)
+#endif
+            {
                 SafeDsaHandle key = GetKey();
-                int signatureSize = Interop.Crypto.DsaEncodedSignatureSize(key);
-                byte[] signature = CryptoPool.Rent(signatureSize);
-                try
+                int maxSignatureSize = Interop.Crypto.DsaEncodedSignatureSize(key);
+                Span<byte> signDestination = stackalloc byte[SignatureStackBufSize];
+
+#if INTERNAL_ASYMMETRIC_IMPLEMENTATIONS
+                if (signatureFormat == DSASignatureFormat.IeeeP1363FixedFieldConcatenation)
+#endif
                 {
-                    bool success = Interop.Crypto.DsaSign(key, hash, new Span<byte>(signature, 0, signatureSize), out signatureSize);
-                    if (!success)
+                    int fieldSizeBytes = Interop.Crypto.DsaSignatureFieldSize(key);
+                    int p1363SignatureSize = 2 * fieldSizeBytes;
+
+                    if (destination.Length < p1363SignatureSize)
                     {
-                        throw Interop.Crypto.CreateOpenSslCryptographicException();
+                        bytesWritten = 0;
+                        return false;
                     }
 
-                    Debug.Assert(
-                        signatureSize <= signature.Length,
-                        "DSA_sign reported an unexpected signature size",
-                        "DSA_sign reported signatureSize was {0}, when <= {1} was expected",
-                        signatureSize,
-                        signature.Length);
+                    int fieldSizeBits = fieldSizeBytes * 8;
 
-                    int signatureFieldSize = Interop.Crypto.DsaSignatureFieldSize(key) * BitsPerByte;
-                    converted = AsymmetricAlgorithmHelpers.ConvertDerToIeee1363(signature, 0, signatureSize, signatureFieldSize);
-                }
-                finally
-                {
-                    CryptoPool.Return(signature, signatureSize);
-                }
-
-                if (converted.Length <= destination.Length)
-                {
-                    new ReadOnlySpan<byte>(converted).CopyTo(destination);
-                    bytesWritten = converted.Length;
+                    ReadOnlySpan<byte> derSignature = SignHash(hash, signDestination, maxSignatureSize, key);
+                    bytesWritten = AsymmetricAlgorithmHelpers.ConvertDerToIeee1363(derSignature, fieldSizeBits, destination);
+                    Debug.Assert(bytesWritten == p1363SignatureSize);
                     return true;
+                }
+#if INTERNAL_ASYMMETRIC_IMPLEMENTATIONS
+                else if (signatureFormat == DSASignatureFormat.Rfc3279DerSequence)
+                {
+                    if (destination.Length >= maxSignatureSize)
+                    {
+                        signDestination = destination;
+                    }
+                    else if (maxSignatureSize > signDestination.Length)
+                    {
+                        Debug.Fail($"Stack-based signDestination is insufficient ({maxSignatureSize} needed)");
+                        bytesWritten = 0;
+                        return false;
+                    }
+
+                    ReadOnlySpan<byte> derSignature = SignHash(hash, signDestination, maxSignatureSize, key);
+
+                    if (destination == signDestination)
+                    {
+                        bytesWritten = derSignature.Length;
+                        return true;
+                    }
+
+                    return Helpers.TryCopyToDestination(derSignature, destination, out bytesWritten);
                 }
                 else
                 {
-                    bytesWritten = 0;
-                    return false;
+                    Debug.Fail($"Missing internal implementation handler for signature format {signatureFormat}");
+                    throw new CryptographicException(
+                        SR.Cryptography_UnknownSignatureFormat,
+                        signatureFormat.ToString());
                 }
+#endif
+            }
+
+            private static ReadOnlySpan<byte> SignHash(
+                ReadOnlySpan<byte> hash,
+                Span<byte> destination,
+                int signatureLength,
+                SafeDsaHandle key)
+            {
+                if (signatureLength > destination.Length)
+                {
+                    Debug.Fail($"Stack-based signDestination is insufficient ({signatureLength} needed)");
+                    destination = new byte[signatureLength];
+                }
+
+                if (!Interop.Crypto.DsaSign(key, hash, destination, out int actualLength))
+                {
+                    throw Interop.Crypto.CreateOpenSslCryptographicException();
+                }
+
+                Debug.Assert(
+                    actualLength <= signatureLength,
+                    "DSA_sign reported an unexpected signature size",
+                    "DSA_sign reported signatureSize was {0}, when <= {1} was expected",
+                    actualLength,
+                    signatureLength);
+
+                return destination.Slice(0, actualLength);
             }
 
             public override bool VerifySignature(byte[] rgbHash, byte[] rgbSignature)
@@ -287,20 +343,44 @@ namespace System.Security.Cryptography
                 return VerifySignature((ReadOnlySpan<byte>)rgbHash, (ReadOnlySpan<byte>)rgbSignature);
             }
 
+#if INTERNAL_ASYMMETRIC_IMPLEMENTATIONS
+
+            public override bool VerifySignature(ReadOnlySpan<byte> hash, ReadOnlySpan<byte> signature) =>
+                VerifySignatureCore(hash, signature, DSASignatureFormat.IeeeP1363FixedFieldConcatenation);
+
+            protected override bool VerifySignatureCore(
+                ReadOnlySpan<byte> hash,
+                ReadOnlySpan<byte> signature,
+                DSASignatureFormat signatureFormat)
+#else
             public override bool VerifySignature(ReadOnlySpan<byte> hash, ReadOnlySpan<byte> signature)
+#endif
             {
                 SafeDsaHandle key = GetKey();
 
-                int expectedSignatureBytes = Interop.Crypto.DsaSignatureFieldSize(key) * 2;
-                if (signature.Length != expectedSignatureBytes)
+#if INTERNAL_ASYMMETRIC_IMPLEMENTATIONS
+                if (signatureFormat == DSASignatureFormat.IeeeP1363FixedFieldConcatenation)
                 {
-                    // The input isn't of the right length (assuming no DER), so we can't sensibly re-encode it with DER.
-                    return false;
+#endif
+                    int expectedSignatureBytes = Interop.Crypto.DsaSignatureFieldSize(key) * 2;
+                    if (signature.Length != expectedSignatureBytes)
+                    {
+                        // The input isn't of the right length (assuming no DER), so we can't sensibly re-encode it with DER.
+                        return false;
+                    }
+
+                    signature = AsymmetricAlgorithmHelpers.ConvertIeee1363ToDer(signature);
+#if INTERNAL_ASYMMETRIC_IMPLEMENTATIONS
                 }
-
-                byte[] openSslFormat = AsymmetricAlgorithmHelpers.ConvertIeee1363ToDer(signature);
-
-                return Interop.Crypto.DsaVerify(key, hash, openSslFormat);
+                else if (signatureFormat != DSASignatureFormat.Rfc3279DerSequence)
+                {
+                    Debug.Fail($"Missing internal implementation handler for signature format {signatureFormat}");
+                    throw new CryptographicException(
+                        SR.Cryptography_UnknownSignatureFormat,
+                        signatureFormat.ToString());
+                }
+#endif
+                return Interop.Crypto.DsaVerify(key, hash, signature);
             }
 
             private void ThrowIfDisposed()

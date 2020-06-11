@@ -1,4 +1,4 @@
-# Running .NET Core Tests
+# Running Tests
 
 Details on test metadata can be found in [test-configuration.md](test-configuration.md).
 
@@ -31,9 +31,9 @@ Note:  CoreCLR must be built prior to building an individual test. See the first
 * Native Test: Build the generated CMake projects
   * Projects are auto-generated when the `build-test.sh`/`build-test.cmd` script is run
     * It is possible to explicitly run only the native test build with `build-test.sh/cmd skipmanaged`
-* Managed Test: Invoke `dotnet msbuild` on the project directly. `dotnet` can be the `dotnet.sh` or `dotnet.cmd` script in the repo root.
+* Managed Test: Invoke `dotnet build` on the project directly. `dotnet` can be the `dotnet.sh` or `dotnet.cmd` script in the repo root.
 ```
-<runtime-repo-root>/dotnet.sh msbuild <runtime-repo-root>/src/coreclr/tests/src/JIT/CodegenBringupTests/Array1_d.csproj /p:__BuildType=Release
+<runtime-repo-root>/dotnet.sh build <runtime-repo-root>/src/coreclr/tests/src/JIT/CodegenBringupTests/Array1_d.csproj /p:Configuration=Release
 ```
 
 ## Additional Documents

@@ -4,8 +4,8 @@
 
 namespace System.Runtime.InteropServices
 {
-    [StructLayout (LayoutKind.Sequential)]
-    partial class MarshalAsAttribute
+    [StructLayout(LayoutKind.Sequential)]
+    public partial class MarshalAsAttribute
     {
     }
 }

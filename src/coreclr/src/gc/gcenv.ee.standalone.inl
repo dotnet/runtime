@@ -161,10 +161,10 @@ inline void GCToEEInterface::DiagWalkSurvivors(void* gcContext, bool fCompacting
     g_theGCToCLR->DiagWalkSurvivors(gcContext, fCompacting);
 }
 
-inline void GCToEEInterface::DiagWalkLOHSurvivors(void* gcContext)
+inline void GCToEEInterface::DiagWalkUOHSurvivors(void* gcContext, int gen)
 {
     assert(g_theGCToCLR != nullptr);
-    g_theGCToCLR->DiagWalkLOHSurvivors(gcContext);
+    g_theGCToCLR->DiagWalkUOHSurvivors(gcContext, gen);
 }
 
 inline void GCToEEInterface::DiagWalkBGCSurvivors(void* gcContext)
@@ -203,22 +203,22 @@ inline MethodTable* GCToEEInterface::GetFreeObjectMethodTable()
     return g_theGCToCLR->GetFreeObjectMethodTable();
 }
 
-inline bool GCToEEInterface::GetBooleanConfigValue(const char* key, bool* value)
+inline bool GCToEEInterface::GetBooleanConfigValue(const char* privateKey, const char* publicKey, bool* value)
 {
     assert(g_theGCToCLR != nullptr);
-    return g_theGCToCLR->GetBooleanConfigValue(key, value);
+    return g_theGCToCLR->GetBooleanConfigValue(privateKey, publicKey, value);
 }
 
-inline bool GCToEEInterface::GetIntConfigValue(const char* key, int64_t* value)
+inline bool GCToEEInterface::GetIntConfigValue(const char* privateKey, const char* publicKey, int64_t* value)
 {
     assert(g_theGCToCLR != nullptr);
-    return g_theGCToCLR->GetIntConfigValue(key, value);
+    return g_theGCToCLR->GetIntConfigValue(privateKey, publicKey, value);
 }
 
-inline bool GCToEEInterface::GetStringConfigValue(const char* key, const char** value)
+inline bool GCToEEInterface::GetStringConfigValue(const char* privateKey, const char* publicKey, const char** value)
 {
     assert(g_theGCToCLR != nullptr);
-    return g_theGCToCLR->GetStringConfigValue(key, value);
+    return g_theGCToCLR->GetStringConfigValue(privateKey, publicKey, value);
 }
 
 inline void GCToEEInterface::FreeStringConfigValue(const char* value)

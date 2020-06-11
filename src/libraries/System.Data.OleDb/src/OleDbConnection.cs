@@ -355,7 +355,8 @@ namespace System.Data.OleDb
         private void DisposeMe(bool disposing)
         {
             if (disposing)
-            { // release mananged objects
+            {
+                // release mananged objects
                 if (DesignMode)
                 {
                     // release the object pool in design-mode so that
@@ -547,7 +548,7 @@ namespace System.Data.OleDb
                             StringBuilder builder = new StringBuilder();
                             Debug.Assert(1 == propSet.PropertySetCount, "too many PropertySets");
 
-                            tagDBPROP[] dbprops = propSet.GetPropertySet(0, out propertySet);
+                            ItagDBPROP[] dbprops = propSet.GetPropertySet(0, out propertySet);
                             Debug.Assert(1 == dbprops.Length, "too many Properties");
 
                             ODB.PropsetSetFailure(builder, description, dbprops[0].dwStatus);

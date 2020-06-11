@@ -117,10 +117,13 @@ mono_core_preload_hook (MonoAssemblyLoadContext *alc, MonoAssemblyName *aname, c
 	g_assert (aname->name);
 	g_assert (!refonly);
 	/* alc might be a user ALC - we get here from alc.LoadFromAssemblyName(), but we should load TPA assemblies into the default alc */
-	MonoAssemblyLoadContext *default_alc = mono_domain_default_alc (mono_alc_domain (alc));
+	MonoAssemblyLoadContext *default_alc;
+	default_alc = mono_domain_default_alc (mono_alc_domain (alc));
 
 	basename = g_strconcat (aname->name, ".dll", (const char*)NULL); /* TODO: make sure CoreCLR never needs to load .exe files */
-	size_t basename_len = strlen (basename);
+
+	size_t basename_len;
+	basename_len = strlen (basename);
 
 	for (int i = 0; i < a->assembly_count; ++i) {
 		if (basename_len == a->basename_lens [i] && !g_strncasecmp (basename, a->basenames [i], a->basename_lens [i])) {
@@ -149,7 +152,7 @@ leave:
 	if (!result) {
 		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_ASSEMBLY, "netcore preload hook: did not find '%s'.", aname->name);
 	} else {
-		mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_ASSEMBLY, "netcore preload hook: loading '%s' from '%s'.", aname->name, result->image->name);
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_ASSEMBLY, "netcore preload hook: loading '%s' from '%s'.", aname->name, result->image->name);
 	}
 	return result;
 }
@@ -157,7 +160,7 @@ leave:
 static void
 install_assembly_loader_hooks (void)
 {
-	mono_install_assembly_preload_hook_v2 (mono_core_preload_hook, (void*)trusted_platform_assemblies, FALSE);
+	mono_install_assembly_preload_hook_v2 (mono_core_preload_hook, (void*)trusted_platform_assemblies, FALSE, FALSE);
 }
 
 static gboolean
@@ -181,6 +184,12 @@ parse_properties (int propertyCount, const char **propertyKeys, const char **pro
 		} else if (prop_len == 30 && !strncmp (propertyKeys [i], "System.Globalization.Invariant", 30)) {
 			// TODO: Ideally we should propagate this through AppContext options
 			g_setenv ("DOTNET_SYSTEM_GLOBALIZATION_INVARIANT", propertyValues [i], TRUE);
+		} else if (prop_len == 27 && !strncmp (propertyKeys [i], "System.Globalization.UseNls", 27)) {
+			// TODO: Ideally we should propagate this through AppContext options
+			g_setenv ("DOTNET_SYSTEM_GLOBALIZATION_USENLS", propertyValues [i], TRUE);
+		} else if (prop_len == 32 && !strncmp (propertyKeys [i], "System.Globalization.AppLocalIcu", 32)) {
+			// TODO: Ideally we should propagate this through AppContext options
+			g_setenv ("DOTNET_SYSTEM_GLOBALIZATION_APPLOCALICU", propertyValues [i], TRUE);
 		} else {
 #if 0
 			// can't use mono logger, it's not initialized yet.

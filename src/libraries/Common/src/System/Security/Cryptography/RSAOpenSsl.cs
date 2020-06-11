@@ -5,9 +5,8 @@
 #nullable enable
 using System.Buffers;
 using System.Diagnostics;
+using System.Formats.Asn1;
 using System.IO;
-using System.Runtime.InteropServices;
-using System.Security.Cryptography.Asn1;
 using Microsoft.Win32.SafeHandles;
 using Internal.Cryptography;
 
@@ -27,7 +26,7 @@ namespace System.Security.Cryptography
         private const int BitsPerByte = 8;
 
         // 65537 (0x10001) in big-endian form
-        private static readonly byte[] s_defaultExponent = { 0x01, 0x00, 0x01 };
+        private static ReadOnlySpan<byte> DefaultExponent => new byte[] { 0x01, 0x00, 0x01 };
 
         private Lazy<SafeRsaHandle> _key;
 
@@ -442,27 +441,34 @@ namespace System.Security.Cryptography
         {
             ThrowIfDisposed();
 
-            fixed (byte* ptr = &MemoryMarshal.GetReference(source))
+            int read;
+
+            try
             {
-                using (MemoryManager<byte> manager = new PointerMemoryManager<byte>(ptr, source.Length))
-                {
-                    AsnReader reader = new AsnReader(manager.Memory, AsnEncodingRules.BER);
-                    ReadOnlyMemory<byte> firstElement = reader.PeekEncodedValue();
-
-                    SafeRsaHandle key = Interop.Crypto.DecodeRsaPublicKey(firstElement.Span);
-
-                    Interop.Crypto.CheckValidOpenSslHandle(key);
-
-                    FreeKey();
-                    _key = new Lazy<SafeRsaHandle>(key);
-
-                    // Use ForceSet instead of the property setter to ensure that LegalKeySizes doesn't interfere
-                    // with the already loaded key.
-                    ForceSetKeySize(BitsPerByte * Interop.Crypto.RsaSize(key));
-
-                    bytesRead = firstElement.Length;
-                }
+                AsnDecoder.ReadEncodedValue(
+                    source,
+                    AsnEncodingRules.BER,
+                    out _,
+                    out _,
+                    out read);
             }
+            catch (AsnContentException e)
+            {
+                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding, e);
+            }
+
+            SafeRsaHandle key = Interop.Crypto.DecodeRsaPublicKey(source.Slice(0, read));
+
+            Interop.Crypto.CheckValidOpenSslHandle(key);
+
+            FreeKey();
+            _key = new Lazy<SafeRsaHandle>(key);
+
+            // Use ForceSet instead of the property setter to ensure that LegalKeySizes doesn't interfere
+            // with the already loaded key.
+            ForceSetKeySize(BitsPerByte * Interop.Crypto.RsaSize(key));
+
+            bytesRead = read;
         }
 
         public override void ImportEncryptedPkcs8PrivateKey(
@@ -593,7 +599,7 @@ namespace System.Security.Cryptography
 
             try
             {
-                using (SafeBignumHandle exponent = Interop.Crypto.CreateBignum(s_defaultExponent))
+                using (SafeBignumHandle exponent = Interop.Crypto.CreateBignum(DefaultExponent))
                 {
                     // The documentation for RSA_generate_key_ex does not say that it returns only
                     // 0 or 1, so the call marshals it back as a full Int32 and checks for a value

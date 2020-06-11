@@ -37,7 +37,7 @@ namespace System.ComponentModel.Composition
 
         public bool Succeeded
         {
-            get { return _errors == null || !_errors.FastAny(); }
+            get { return _errors == null || !_errors.Any(); }
         }
 
         public IEnumerable<CompositionError> Errors

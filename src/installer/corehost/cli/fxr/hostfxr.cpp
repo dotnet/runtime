@@ -14,6 +14,7 @@
 #include "sdk_resolver.h"
 #include "hostfxr.h"
 #include "host_context.h"
+#include "bundle/info.h"
 
 namespace
 {
@@ -23,6 +24,23 @@ namespace
         trace::info(_X("--- Invoked %s [commit hash: %s]"), entry_point, _STRINGIFY(REPO_COMMIT_HASH));
     }
 }
+
+SHARED_API int HOSTFXR_CALLTYPE hostfxr_main_bundle_startupinfo(const int argc, const pal::char_t* argv[], const pal::char_t* host_path, const pal::char_t* dotnet_root, const pal::char_t* app_path, int64_t bundle_header_offset)
+{
+    trace_hostfxr_entry_point(_X("hostfxr_main_bundle_startupinfo"));
+
+    StatusCode bundleStatus = bundle::info_t::process_bundle(host_path, app_path, bundle_header_offset);
+    if (bundleStatus != StatusCode::Success)
+    {
+        trace::error(_X("A fatal error occured while processing application bundle"));
+        return bundleStatus;
+    }
+
+    host_startup_info_t startup_info(host_path, dotnet_root, app_path);
+
+    return fx_muxer_t::execute(pal::string_t(), argc, argv, startup_info, nullptr, 0, nullptr);
+}
+
 
 SHARED_API int HOSTFXR_CALLTYPE hostfxr_main_startupinfo(const int argc, const pal::char_t* argv[], const pal::char_t* host_path, const pal::char_t* dotnet_root, const pal::char_t* app_path)
 {
@@ -420,7 +438,7 @@ namespace
         if (startup_info.dotnet_root.empty())
         {
             pal::string_t mod_path;
-            if (!pal::get_own_module_path(&mod_path))
+            if (!pal::get_method_module_path(&mod_path, (void*)&hostfxr_set_error_writer))
                 return StatusCode::CoreHostCurHostFindFailure;
 
             startup_info.dotnet_root = get_dotnet_root_from_fxr_path(mod_path);
@@ -618,7 +636,11 @@ namespace
 // Return value:
 //     The error code result.
 //
-// The host_context_handle must have been initialized using hostfxr_initialize_for_runtime_config.
+// If the host_context_handle was initialized using hostfxr_initialize_for_runtime_config,
+// then all delegate types are supported.
+// If the host_context_handle was initialized using hostfxr_initialize_for_dotnet_command_line,
+// then only the following delegate types are currently supported:
+//     hdt_load_assembly_and_get_function_pointer
 //
 SHARED_API int32_t HOSTFXR_CALLTYPE hostfxr_get_runtime_delegate(
     const hostfxr_handle host_context_handle,
@@ -636,7 +658,11 @@ SHARED_API int32_t HOSTFXR_CALLTYPE hostfxr_get_runtime_delegate(
     if (context == nullptr)
         return StatusCode::InvalidArgFailure;
 
-    return fx_muxer_t::get_runtime_delegate(context, hostfxr_delegate_to_coreclr_delegate(type), delegate);
+    coreclr_delegate_type delegate_type = hostfxr_delegate_to_coreclr_delegate(type);
+    if (delegate_type == coreclr_delegate_type::invalid)
+        return StatusCode::InvalidArgFailure;
+
+    return fx_muxer_t::get_runtime_delegate(context, delegate_type, delegate);
 }
 
 //

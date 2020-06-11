@@ -455,16 +455,18 @@ mono_arch_find_static_call_vtable (host_mgreg_t *regs, guint8 *code)
 	return (MonoVTable*) regs [MONO_ARCH_RGCTX_REG];
 }
 
+GSList*
+mono_arch_get_cie_program (void)
+{
+	GSList *l = NULL;
+
+	return l;
+}
+
 gpointer
 mono_arch_build_imt_trampoline (MonoVTable *vtable, MonoDomain *domain, MonoIMTCheckItem **imt_entries, int count, gpointer fail_tramp)
 {
 	g_error ("mono_arch_build_imt_trampoline");
-}
-
-guint32
-mono_arch_cpu_enumerate_simd_versions (void)
-{
-	return 0;
 }
 
 guint32

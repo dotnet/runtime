@@ -487,7 +487,7 @@ namespace System.Xml.Schema
             {
                 if (examplar.FinalResolved == XmlSchemaDerivationMethod.All)
                 {
-                    SendValidationEvent(SR.Sch_InvalidExamplar, examplar);
+                    SendValidationEvent(SR.Sch_InvalidExamplar, examplar.Name, examplar);
                 }
                 //Build transitive members
                 ArrayList newMembers = null;

@@ -6,6 +6,8 @@
 using System.Buffers;
 using System.Collections;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
+using System.Formats.Asn1;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography.Asn1;
 
@@ -77,17 +79,29 @@ namespace System.Security.Cryptography
 
         internal static unsafe ECParameters FromECPrivateKey(ReadOnlySpan<byte> key, out int bytesRead)
         {
-            fixed (byte* ptr = &MemoryMarshal.GetReference(key))
+            try
             {
-                using (MemoryManager<byte> manager = new PointerMemoryManager<byte>(ptr, key.Length))
+                AsnDecoder.ReadEncodedValue(
+                    key,
+                    AsnEncodingRules.BER,
+                    out _,
+                    out _,
+                    out int firstValueLength);
+
+                fixed (byte* ptr = &MemoryMarshal.GetReference(key))
                 {
-                    AsnReader reader = new AsnReader(manager.Memory, AsnEncodingRules.BER);
-                    AlgorithmIdentifierAsn algId = default;
-                    ReadOnlyMemory<byte> firstValue = reader.PeekEncodedValue();
-                    FromECPrivateKey(firstValue, algId, out ECParameters ret);
-                    bytesRead = firstValue.Length;
-                    return ret;
+                    using (MemoryManager<byte> manager = new PointerMemoryManager<byte>(ptr, firstValueLength))
+                    {
+                        AlgorithmIdentifierAsn algId = default;
+                        FromECPrivateKey(manager.Memory, algId, out ECParameters ret);
+                        bytesRead = firstValueLength;
+                        return ret;
+                    }
                 }
+            }
+            catch (AsnContentException e)
+            {
+                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding, e);
             }
         }
 
@@ -97,7 +111,14 @@ namespace System.Security.Cryptography
             out ECParameters ret)
         {
             ECPrivateKey key = ECPrivateKey.Decode(keyData, AsnEncodingRules.BER);
+            FromECPrivateKey(key, algId, out ret);
+        }
 
+        internal static void FromECPrivateKey(
+            ECPrivateKey key,
+            in AlgorithmIdentifierAsn algId,
+            out ECParameters ret)
+        {
             ValidateParameters(key.Parameters, algId);
 
             if (key.Version != 1)
@@ -105,30 +126,33 @@ namespace System.Security.Cryptography
                 throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
             }
 
-            // Implementation limitation
-            if (key.PublicKey == null)
-            {
-                throw new CryptographicException(SR.Cryptography_NotValidPublicOrPrivateKey);
-            }
+            byte[]? x = null;
+            byte[]? y = null;
 
-            ReadOnlySpan<byte> publicKeyBytes = key.PublicKey.Value.Span;
-
-            if (publicKeyBytes.Length == 0)
+            if (key.PublicKey != null)
             {
-                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
-            }
+                ReadOnlySpan<byte> publicKeyBytes = key.PublicKey.Value.Span;
 
-            // Implementation limitation
-            // 04 (Uncompressed ECPoint) is almost always used.
-            if (publicKeyBytes[0] != 0x04)
-            {
-                throw new CryptographicException(SR.Cryptography_NotValidPublicOrPrivateKey);
-            }
+                if (publicKeyBytes.Length == 0)
+                {
+                    throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
+                }
 
-            // https://www.secg.org/sec1-v2.pdf, 2.3.4, #3 (M has length 2 * CEIL(log2(q)/8) + 1)
-            if (publicKeyBytes.Length != 2 * key.PrivateKey.Length + 1)
-            {
-                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
+                // Implementation limitation
+                // 04 (Uncompressed ECPoint) is almost always used.
+                if (publicKeyBytes[0] != 0x04)
+                {
+                    throw new CryptographicException(SR.Cryptography_NotValidPublicOrPrivateKey);
+                }
+
+                // https://www.secg.org/sec1-v2.pdf, 2.3.4, #3 (M has length 2 * CEIL(log2(q)/8) + 1)
+                if (publicKeyBytes.Length != 2 * key.PrivateKey.Length + 1)
+                {
+                    throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
+                }
+
+                x = publicKeyBytes.Slice(1, key.PrivateKey.Length).ToArray();
+                y = publicKeyBytes.Slice(1 + key.PrivateKey.Length).ToArray();
             }
 
             ECDomainParameters domainParameters;
@@ -142,13 +166,15 @@ namespace System.Security.Cryptography
                 domainParameters = ECDomainParameters.Decode(algId.Parameters!.Value, AsnEncodingRules.DER);
             }
 
+            Debug.Assert((x == null) == (y == null));
+
             ret = new ECParameters
             {
                 Curve = GetCurve(domainParameters),
                 Q =
                 {
-                    X = publicKeyBytes.Slice(1, key.PrivateKey.Length).ToArray(),
-                    Y = publicKeyBytes.Slice(1 + key.PrivateKey.Length).ToArray(),
+                    X = x,
+                    Y = y,
                 },
                 D = key.PrivateKey.ToArray(),
             };
@@ -221,14 +247,12 @@ namespace System.Security.Cryptography
                 // X.509 SubjectPublicKeyInfo specifies DER encoding.
                 // RFC 5915 specifies DER encoding for EC Private Keys.
                 // So we can compare as DER.
-                using (AsnWriter writer = new AsnWriter(AsnEncodingRules.DER))
-                {
-                    keyParameters.Value.Encode(writer);
+                AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
+                keyParameters.Value.Encode(writer);
 
-                    if (!writer.ValueEquals(algIdParameters))
-                    {
-                        throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
-                    }
+                if (!writer.EncodedValueEquals(algIdParameters))
+                {
+                    throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
                 }
             }
         }
@@ -245,9 +269,9 @@ namespace System.Security.Cryptography
                 throw new CryptographicException(SR.Cryptography_ECC_NamedCurvesOnly);
             }
 
-            Oid curveOid = domainParameters.Named;
+            Oid curveOid;
 
-            switch (curveOid.Value)
+            switch (domainParameters.Named)
             {
                 case Oids.secp256r1:
                     curveOid = new Oid(Oids.secp256r1, nameof(ECCurve.NamedCurves.nistP256));
@@ -258,12 +282,27 @@ namespace System.Security.Cryptography
                 case Oids.secp521r1:
                     curveOid = new Oid(Oids.secp521r1, nameof(ECCurve.NamedCurves.nistP521));
                     break;
+                default:
+                    curveOid = new Oid(domainParameters.Named);
+                    break;
             }
 
             return ECCurve.CreateFromOid(curveOid);
         }
 
         private static ECCurve GetSpecifiedECCurve(SpecifiedECDomain specifiedParameters)
+        {
+            try
+            {
+                return GetSpecifiedECCurveCore(specifiedParameters);
+            }
+            catch (AsnContentException e)
+            {
+                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding, e);
+            }
+        }
+
+        private static ECCurve GetSpecifiedECCurveCore(SpecifiedECDomain specifiedParameters)
         {
             // sec1-v2 C.3:
             //
@@ -289,6 +328,7 @@ namespace System.Security.Cryptography
                     prime = true;
                     AsnReader primeReader = new AsnReader(specifiedParameters.FieldID.Parameters, AsnEncodingRules.BER);
                     ReadOnlySpan<byte> primeValue = primeReader.ReadIntegerBytes().Span;
+                    primeReader.ThrowIfNotEmpty();
 
                     if (primeValue[0] == 0)
                     {
@@ -324,7 +364,7 @@ namespace System.Security.Cryptography
                     int k2 = -1;
                     int k3 = -1;
 
-                    switch (innerReader.ReadObjectIdentifierAsString())
+                    switch (innerReader.ReadObjectIdentifier())
                     {
                         case Oids.EcChar2TrinomialBasis:
                             // Trinomial ::= INTEGER
@@ -463,7 +503,7 @@ namespace System.Security.Cryptography
             writer.PopSequence();
         }
 
-        internal static AsnWriter WritePkcs8PrivateKey(ECParameters ecParameters)
+        internal static AsnWriter WritePkcs8PrivateKey(ECParameters ecParameters, AttributeAsn[]? attributes = null)
         {
             ecParameters.Validate();
 
@@ -473,11 +513,30 @@ namespace System.Security.Cryptography
             }
 
             // Don't need the domain parameters because they're contained in the algId.
-            using (AsnWriter ecPrivateKey = WriteEcPrivateKey(ecParameters, includeDomainParameters: false))
-            using (AsnWriter algorithmIdentifier = WriteAlgorithmIdentifier(ecParameters))
+            AsnWriter ecPrivateKey = WriteEcPrivateKey(ecParameters, includeDomainParameters: false);
+            AsnWriter algorithmIdentifier = WriteAlgorithmIdentifier(ecParameters);
+            AsnWriter? attributeWriter = WritePrivateKeyInfoAttributes(attributes);
+
+            return KeyFormatHelper.WritePkcs8(algorithmIdentifier, ecPrivateKey, attributeWriter);
+        }
+
+        [return: NotNullIfNotNull("attributes")]
+        private static AsnWriter? WritePrivateKeyInfoAttributes(AttributeAsn[]? attributes)
+        {
+            if (attributes == null)
+                return null;
+
+            AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
+            Asn1Tag tag = new Asn1Tag(TagClass.ContextSpecific, 0);
+            writer.PushSetOf(tag);
+
+            for (int i = 0; i < attributes.Length; i++)
             {
-                return KeyFormatHelper.WritePkcs8(algorithmIdentifier, ecPrivateKey);
+                attributes[i].Encode(writer);
             }
+
+            writer.PopSetOf(tag);
+            return writer;
         }
 
         private static void WriteEcParameters(ECParameters ecParameters, AsnWriter writer)
@@ -731,16 +790,12 @@ namespace System.Security.Cryptography
         private static void WriteUncompressedPublicKey(in ECParameters ecParameters, AsnWriter writer)
         {
             int publicKeyLength = ecParameters.Q.X!.Length * 2 + 1;
+            byte[] publicKeyBytes = CryptoPool.Rent(publicKeyLength);
+            publicKeyBytes[0] = 0x04;
+            ecParameters.Q.X.AsSpan().CopyTo(publicKeyBytes.AsSpan(1));
+            ecParameters.Q.Y.AsSpan().CopyTo(publicKeyBytes.AsSpan(1 + ecParameters.Q.X!.Length));
 
-            writer.WriteBitString(
-                publicKeyLength,
-                ecParameters.Q,
-                (publicKeyBytes, point) =>
-                {
-                    publicKeyBytes[0] = 0x04;
-                    point.X.AsSpan().CopyTo(publicKeyBytes.Slice(1));
-                    point.Y.AsSpan().CopyTo(publicKeyBytes.Slice(1 + point.X!.Length));
-                });
+            writer.WriteBitString(publicKeyBytes.AsSpan(0, publicKeyLength));
         }
 
         internal static AsnWriter WriteECPrivateKey(in ECParameters ecParameters)
@@ -750,52 +805,42 @@ namespace System.Security.Cryptography
 
         private static AsnWriter WriteEcPrivateKey(in ECParameters ecParameters, bool includeDomainParameters)
         {
-            bool returning = false;
             AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
 
-            try
+            // ECPrivateKey
+            writer.PushSequence();
+
+            // version 1
+            writer.WriteInteger(1);
+
+            // privateKey
+            writer.WriteOctetString(ecParameters.D);
+
+            // domainParameters
+            if (includeDomainParameters)
             {
-                // ECPrivateKey
-                writer.PushSequence();
+                Asn1Tag explicit0 = new Asn1Tag(TagClass.ContextSpecific, 0, isConstructed: true);
+                writer.PushSequence(explicit0);
 
-                // version 1
-                writer.WriteInteger(1);
+                WriteEcParameters(ecParameters, writer);
 
-                // privateKey
-                writer.WriteOctetString(ecParameters.D);
-
-                // domainParameters
-                if (includeDomainParameters)
-                {
-                    Asn1Tag explicit0 = new Asn1Tag(TagClass.ContextSpecific, 0, isConstructed: true);
-                    writer.PushSequence(explicit0);
-
-                    WriteEcParameters(ecParameters, writer);
-
-                    writer.PopSequence(explicit0);
-                }
-
-                // publicKey
-                {
-                    Asn1Tag explicit1 = new Asn1Tag(TagClass.ContextSpecific, 1, isConstructed: true);
-                    writer.PushSequence(explicit1);
-
-                    WriteUncompressedPublicKey(ecParameters, writer);
-
-                    writer.PopSequence(explicit1);
-                }
-
-                writer.PopSequence();
-                returning = true;
-                return writer;
+                writer.PopSequence(explicit0);
             }
-            finally
+
+            // publicKey
+            if (ecParameters.Q.X != null)
             {
-                if (!returning)
-                {
-                    writer.Dispose();
-                }
+                Debug.Assert(ecParameters.Q.Y != null);
+                Asn1Tag explicit1 = new Asn1Tag(TagClass.ContextSpecific, 1, isConstructed: true);
+                writer.PushSequence(explicit1);
+
+                WriteUncompressedPublicKey(ecParameters, writer);
+
+                writer.PopSequence(explicit1);
             }
+
+            writer.PopSequence();
+            return writer;
         }
     }
 }

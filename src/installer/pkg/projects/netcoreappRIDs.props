@@ -11,6 +11,8 @@
     <OfficialBuildRID Include="osx-x64" />
     <!-- Not currently built by CoreFX. -->
     <!-- <OfficialBuildRID Include="freebsd-x64" /> -->
+    <!-- <OfficialBuildRID Include="netbsd-x64" /> -->
+    <!-- <OfficialBuildRID Include="sunos-x64" /> -->
     <OfficialBuildRID Include="win-x86">
       <Platform>x86</Platform>
     </OfficialBuildRID>
@@ -34,6 +36,7 @@
     <!-- The following RIDs are not officically supported and are not
          built during official builds, however we wish to include them
          in our runtime.json to enable others to provide them.  -->
+    <UnofficialBuildRID Include="freebsd-x64" />
     <UnofficialBuildRID Include="tizen.4.0.0-armel">
       <Platform>armel</Platform>
     </UnofficialBuildRID>

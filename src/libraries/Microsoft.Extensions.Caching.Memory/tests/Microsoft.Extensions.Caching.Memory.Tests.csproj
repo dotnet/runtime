@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>$(NetCoreAppCurrent);$(NetFrameworkCurrent)</TargetFrameworks>
+    <EnableDefaultItems>true</EnableDefaultItems>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="..\..\Common\tests\Extensions\TestingUtils\Microsoft.AspNetCore.Testing\src\ExceptionAssertions.cs"
+             Link="Common\tests\Extensions\TestingUtils\Microsoft.AspNetCore.Testing\src\ExceptionAssertions.cs" />
+    <Compile Include="..\..\Common\tests\Extensions\TestingUtils\Microsoft.AspNetCore.Testing\src\CultureReplacer.cs"
+             Link="Common\tests\Extensions\TestingUtils\Microsoft.AspNetCore.Testing\src\CultureReplacer.cs" />
+    <ReferenceFromRuntime Include="Microsoft.Extensions.Caching.Memory" />
+  </ItemGroup>
+
+</Project>

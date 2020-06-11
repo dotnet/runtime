@@ -696,7 +696,7 @@ OBJECTREF InvokeUtil::CreateObjectAfterInvoke(TypeHandle th, void * pValue) {
     case ELEMENT_TYPE_FNPTR:
         {
             LPVOID capturedValue = *(LPVOID*)pValue;
-            INDEBUG(pValue = (LPVOID)0xcccccccc); // We're about to allocate a GC object - can no longer trust pValue
+            INDEBUG(pValue = (LPVOID)(size_t)0xcccccccc); // We're about to allocate a GC object - can no longer trust pValue
             obj = AllocateObject(MscorlibBinder::GetElementType(ELEMENT_TYPE_I));
             *(LPVOID*)(obj->UnBox()) = capturedValue;
         }

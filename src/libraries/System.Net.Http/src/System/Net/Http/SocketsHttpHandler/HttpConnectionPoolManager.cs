@@ -36,15 +36,15 @@ namespace System.Net.Http
         /// <summary>The pools, indexed by endpoint.</summary>
         private readonly ConcurrentDictionary<HttpConnectionKey, HttpConnectionPool> _pools;
         /// <summary>Timer used to initiate cleaning of the pools.</summary>
-        private readonly Timer _cleaningTimer;
+        private readonly Timer? _cleaningTimer;
         /// <summary>The maximum number of connections allowed per pool. <see cref="int.MaxValue"/> indicates unlimited.</summary>
         private readonly int _maxConnectionsPerServer;
         // Temporary
         private readonly HttpConnectionSettings _settings;
-        private readonly IWebProxy _proxy;
-        private readonly ICredentials _proxyCredentials;
+        private readonly IWebProxy? _proxy;
+        private readonly ICredentials? _proxyCredentials;
 
-        private NetworkChangeCleanup _networkChangeCleanup;
+        private NetworkChangeCleanup? _networkChangeCleanup;
 
         /// <summary>
         /// Keeps track of whether or not the cleanup timer is running. It helps us avoid the expensive
@@ -105,8 +105,8 @@ namespace System.Net.Http
                     // implementation until the handler is Disposed (or indefinitely if it's not).
                     _cleaningTimer = new Timer(s =>
                     {
-                        var wr = (WeakReference<HttpConnectionPoolManager>)s;
-                        if (wr.TryGetTarget(out HttpConnectionPoolManager thisRef))
+                        var wr = (WeakReference<HttpConnectionPoolManager>)s!;
+                        if (wr.TryGetTarget(out HttpConnectionPoolManager? thisRef))
                         {
                             thisRef.RemoveStalePools();
                         }
@@ -149,7 +149,7 @@ namespace System.Net.Http
             var poolsRef = new WeakReference<ConcurrentDictionary<HttpConnectionKey, HttpConnectionPool>>(_pools);
             NetworkAddressChangedEventHandler networkChangedDelegate = delegate
             {
-                if (poolsRef.TryGetTarget(out ConcurrentDictionary<HttpConnectionKey, HttpConnectionPool> pools))
+                if (poolsRef.TryGetTarget(out ConcurrentDictionary<HttpConnectionKey, HttpConnectionPool>? pools))
                 {
                     foreach (HttpConnectionPool pool in pools.Values)
                     {
@@ -201,7 +201,7 @@ namespace System.Net.Http
         }
 
         public HttpConnectionSettings Settings => _settings;
-        public ICredentials ProxyCredentials => _proxyCredentials;
+        public ICredentials? ProxyCredentials => _proxyCredentials;
 
         private static string ParseHostNameFromHeader(string hostHeader)
         {
@@ -232,9 +232,10 @@ namespace System.Net.Http
             return hostHeader;
         }
 
-        private HttpConnectionKey GetConnectionKey(HttpRequestMessage request, Uri proxyUri, bool isProxyConnect)
+        private HttpConnectionKey GetConnectionKey(HttpRequestMessage request, Uri? proxyUri, bool isProxyConnect)
         {
-            Uri uri = request.RequestUri;
+            Uri? uri = request.RequestUri;
+            Debug.Assert(uri != null);
 
             if (isProxyConnect)
             {
@@ -242,10 +243,10 @@ namespace System.Net.Http
                 return new HttpConnectionKey(HttpConnectionKind.ProxyConnect, uri.IdnHost, uri.Port, null, proxyUri, GetIdentityIfDefaultCredentialsUsed(_settings._defaultCredentialsUsedForProxy));
             }
 
-            string sslHostName = null;
+            string? sslHostName = null;
             if (HttpUtilities.IsSupportedSecureScheme(uri.Scheme))
             {
-                string hostHeader = request.Headers.Host;
+                string? hostHeader = request.Headers.Host;
                 if (hostHeader != null)
                 {
                     sslHostName = ParseHostNameFromHeader(hostHeader);
@@ -293,11 +294,11 @@ namespace System.Net.Http
             }
         }
 
-        public Task<HttpResponseMessage> SendAsyncCore(HttpRequestMessage request, Uri proxyUri, bool doRequestAuth, bool isProxyConnect, CancellationToken cancellationToken)
+        public Task<HttpResponseMessage> SendAsyncCore(HttpRequestMessage request, Uri? proxyUri, bool doRequestAuth, bool isProxyConnect, CancellationToken cancellationToken)
         {
             HttpConnectionKey key = GetConnectionKey(request, proxyUri, isProxyConnect);
 
-            HttpConnectionPool pool;
+            HttpConnectionPool? pool;
             while (!_pools.TryGetValue(key, out pool))
             {
                 pool = new HttpConnectionPool(this, key.Kind, key.Host, key.Port, key.SslHostName, key.ProxyUri, _maxConnectionsPerServer);
@@ -345,9 +346,10 @@ namespace System.Net.Http
             }
 
             // Do proxy lookup.
-            Uri proxyUri = null;
+            Uri? proxyUri = null;
             try
             {
+                Debug.Assert(request.RequestUri != null);
                 if (!_proxy.IsBypassed(request.RequestUri))
                 {
                     if (_proxy is IMultiWebProxy multiWebProxy)
@@ -385,9 +387,9 @@ namespace System.Net.Http
         /// </summary>
         /// <param name="multiProxy">The set of proxies to use.</param>
         /// <param name="firstProxy">The first proxy try.</param>
-        private async Task<HttpResponseMessage> SendAsyncMultiProxy(HttpRequestMessage request, bool doRequestAuth, MultiProxy multiProxy, Uri firstProxy, CancellationToken cancellationToken)
+        private async Task<HttpResponseMessage> SendAsyncMultiProxy(HttpRequestMessage request, bool doRequestAuth, MultiProxy multiProxy, Uri? firstProxy, CancellationToken cancellationToken)
         {
-            HttpRequestException rethrowException = null;
+            HttpRequestException rethrowException;
 
             do
             {
@@ -424,7 +426,7 @@ namespace System.Net.Http
         {
             try
             {
-                _cleaningTimer.Change(timeout, timeout);
+                _cleaningTimer!.Change(timeout, timeout);
                 _timerIsRunning = timeout != Timeout.InfiniteTimeSpan;
             }
             catch (ObjectDisposedException)
@@ -486,13 +488,13 @@ namespace System.Net.Http
         internal readonly struct HttpConnectionKey : IEquatable<HttpConnectionKey>
         {
             public readonly HttpConnectionKind Kind;
-            public readonly string Host;
+            public readonly string? Host;
             public readonly int Port;
-            public readonly string SslHostName;     // null if not SSL
-            public readonly Uri ProxyUri;
+            public readonly string? SslHostName;     // null if not SSL
+            public readonly Uri? ProxyUri;
             public readonly string Identity;
 
-            public HttpConnectionKey(HttpConnectionKind kind, string host, int port, string sslHostName, Uri proxyUri, string identity)
+            public HttpConnectionKey(HttpConnectionKind kind, string? host, int port, string? sslHostName, Uri? proxyUri, string identity)
             {
                 Kind = kind;
                 Host = host;
@@ -508,10 +510,9 @@ namespace System.Net.Http
                     HashCode.Combine(Kind, Host, Port, ProxyUri, Identity) :
                     HashCode.Combine(Kind, Host, Port, SslHostName, ProxyUri, Identity));
 
-            public override bool Equals(object obj) =>
-                obj != null &&
-                obj is HttpConnectionKey &&
-                Equals((HttpConnectionKey)obj);
+            public override bool Equals(object? obj) =>
+                obj is HttpConnectionKey hck &&
+                Equals(hck);
 
             public bool Equals(HttpConnectionKey other) =>
                 Kind == other.Kind &&

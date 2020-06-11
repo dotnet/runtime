@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System;
 using System.Collections.Generic;
 
@@ -45,7 +46,7 @@ namespace System.Xml
         /// <param name="prefix">The prefix of the attribute list to look for</param>
         /// <param name="localName">The local name of the attribute list to look for</param>
         /// <returns>Interface representing an attribute list or null if none was found.</returns>
-        IDtdAttributeListInfo LookupAttributeList(string prefix, string localName);
+        IDtdAttributeListInfo? LookupAttributeList(string prefix, string localName);
 
         /// <summary>
         /// Returns an enumerator of all attribute lists defined in the DTD.
@@ -215,15 +216,15 @@ namespace System.Xml
         /// <summary>
         /// SYSTEM identifier (URI) of the entity value - only used for external entities
         /// </summary>
-        string SystemId { get; }
+        string? SystemId { get; }
         /// <summary>
         /// PUBLIC identifier of the entity value - only used for external entities
         /// </summary>
-        string PublicId { get; }
+        string? PublicId { get; }
         /// <summary>
         /// Replacement text of an entity. Valid only for internal entities.
         /// </summary>
-        string Text { get; }
+        string? Text { get; }
         /// <summary>
         /// The line number of the entity value
         /// </summary>

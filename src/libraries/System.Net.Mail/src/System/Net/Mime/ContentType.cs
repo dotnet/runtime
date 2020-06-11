@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Specialized;
+using System.Diagnostics.CodeAnalysis;
 using System.Net.Mail;
 using System.Text;
 
@@ -49,7 +50,7 @@ namespace System.Net.Mime
             {
                 throw new ArgumentNullException(nameof(contentType));
             }
-            if (contentType == string.Empty)
+            if (contentType.Length == 0)
             {
                 throw new ArgumentException(SR.Format(SR.net_emptystringcall, nameof(contentType)), nameof(contentType));
             }
@@ -59,12 +60,12 @@ namespace System.Net.Mime
             ParseValue();
         }
 
-        public string Boundary
+        public string? Boundary
         {
             get { return Parameters["boundary"]; }
             set
             {
-                if (value == null || value == string.Empty)
+                if (string.IsNullOrEmpty(value))
                 {
                     Parameters.Remove("boundary");
                 }
@@ -75,12 +76,12 @@ namespace System.Net.Mime
             }
         }
 
-        public string CharSet
+        public string? CharSet
         {
             get { return Parameters["charset"]; }
             set
             {
-                if (value == null || value == string.Empty)
+                if (string.IsNullOrEmpty(value))
                 {
                     Parameters.Remove("charset");
                 }
@@ -104,7 +105,7 @@ namespace System.Net.Mime
                     throw new ArgumentNullException(nameof(value));
                 }
 
-                if (value == string.Empty)
+                if (value.Length == 0)
                 {
                     throw new ArgumentException(SR.net_emptystringset, nameof(value));
                 }
@@ -125,18 +126,18 @@ namespace System.Net.Mime
             }
         }
 
-
+        [AllowNull]
         public string Name
         {
             get
             {
-                string value = Parameters["name"];
-                Encoding nameEncoding = MimeBasePart.DecodeEncoding(value);
+                string? value = Parameters["name"];
+                Encoding? nameEncoding = MimeBasePart.DecodeEncoding(value);
                 if (nameEncoding != null)
                 {
                     value = MimeBasePart.DecodeHeaderValue(value);
                 }
-                return value;
+                return value!;
             }
             set
             {
@@ -151,14 +152,13 @@ namespace System.Net.Mime
             }
         }
 
-
         public StringDictionary Parameters => _parameters;
 
         internal void Set(string contentType, HeaderCollection headers)
         {
             _type = contentType;
             ParseValue();
-            headers.InternalSet(MailHeaderInfo.GetString(MailHeaderID.ContentType), ToString());
+            headers.InternalSet(MailHeaderInfo.GetString(MailHeaderID.ContentType)!, ToString());
             _isPersisted = true;
         }
 
@@ -166,7 +166,7 @@ namespace System.Net.Mime
         {
             if (IsChanged || !_isPersisted || forcePersist)
             {
-                headers.InternalSet(MailHeaderInfo.GetString(MailHeaderID.ContentType), ToString());
+                headers.InternalSet(MailHeaderInfo.GetString(MailHeaderID.ContentType)!, ToString());
                 _isPersisted = true;
             }
         }
@@ -194,12 +194,12 @@ namespace System.Net.Mime
             builder.Append(_subType);  // Must not have unicode, already validated
 
             // Validate and encode unicode where required
-            foreach (string key in Parameters.Keys)
+            foreach (string? key in Parameters.Keys) // TODO-NULLABLE: https://github.com/dotnet/csharplang/issues/3214
             {
                 builder.Append("; ");
-                EncodeToBuffer(key, builder, allowUnicode);
+                EncodeToBuffer(key!, builder, allowUnicode);
                 builder.Append('=');
-                EncodeToBuffer(_parameters[key], builder, allowUnicode);
+                EncodeToBuffer(_parameters[key!]!, builder, allowUnicode);
             }
 
             return builder.ToString();
@@ -207,7 +207,7 @@ namespace System.Net.Mime
 
         private static void EncodeToBuffer(string value, StringBuilder builder, bool allowUnicode)
         {
-            Encoding encoding = MimeBasePart.DecodeEncoding(value);
+            Encoding? encoding = MimeBasePart.DecodeEncoding(value);
             if (encoding != null) // Manually encoded elsewhere, pass through
             {
                 builder.Append('\"').Append(value).Append('"');
@@ -225,92 +225,77 @@ namespace System.Net.Mime
             }
         }
 
-        public override bool Equals(object rparam) =>
+        public override bool Equals(object? rparam) =>
             rparam == null ? false : string.Equals(ToString(), rparam.ToString(), StringComparison.OrdinalIgnoreCase);
 
         public override int GetHashCode() => ToString().ToLowerInvariant().GetHashCode();
 
         // Helper methods.
-
+        [MemberNotNull(nameof(_mediaType))]
+        [MemberNotNull(nameof(_subType))]
         private void ParseValue()
         {
-            int offset = 0;
-            Exception exception = null;
-
             try
             {
+                int offset = 0;
+
                 _mediaType = MailBnfHelper.ReadToken(_type, ref offset, null);
                 if (_mediaType == null || _mediaType.Length == 0 || offset >= _type.Length || _type[offset++] != '/')
                 {
-                    exception = new FormatException(SR.ContentTypeInvalid);
+                    throw new FormatException(SR.ContentTypeInvalid);
                 }
 
-                if (exception == null)
+                _subType = MailBnfHelper.ReadToken(_type, ref offset, null);
+                if (_subType == null || _subType.Length == 0)
                 {
-                    _subType = MailBnfHelper.ReadToken(_type, ref offset, null);
-                    if (_subType == null || _subType.Length == 0)
-                    {
-                        exception = new FormatException(SR.ContentTypeInvalid);
-                    }
+                    throw new FormatException(SR.ContentTypeInvalid);
                 }
 
-                if (exception == null)
+                while (MailBnfHelper.SkipCFWS(_type, ref offset))
                 {
-                    while (MailBnfHelper.SkipCFWS(_type, ref offset))
+                    if (_type[offset++] != ';')
                     {
-                        if (_type[offset++] != ';')
-                        {
-                            exception = new FormatException(SR.ContentTypeInvalid);
-                            break;
-                        }
-
-                        if (!MailBnfHelper.SkipCFWS(_type, ref offset))
-                        {
-                            break;
-                        }
-
-                        string paramAttribute = MailBnfHelper.ReadParameterAttribute(_type, ref offset, null);
-
-                        if (paramAttribute == null || paramAttribute.Length == 0)
-                        {
-                            exception = new FormatException(SR.ContentTypeInvalid);
-                            break;
-                        }
-
-                        string paramValue;
-                        if (offset >= _type.Length || _type[offset++] != '=')
-                        {
-                            exception = new FormatException(SR.ContentTypeInvalid);
-                            break;
-                        }
-
-                        if (!MailBnfHelper.SkipCFWS(_type, ref offset))
-                        {
-                            exception = new FormatException(SR.ContentTypeInvalid);
-                            break;
-                        }
-
-                        paramValue = _type[offset] == '"' ?
-                            MailBnfHelper.ReadQuotedString(_type, ref offset, null) :
-                            MailBnfHelper.ReadToken(_type, ref offset, null);
-
-                        if (paramValue == null)
-                        {
-                            exception = new FormatException(SR.ContentTypeInvalid);
-                            break;
-                        }
-
-                        _parameters.Add(paramAttribute, paramValue);
+                        throw new FormatException(SR.ContentTypeInvalid);
                     }
+
+                    if (!MailBnfHelper.SkipCFWS(_type, ref offset))
+                    {
+                        break;
+                    }
+
+                    string? paramAttribute = MailBnfHelper.ReadParameterAttribute(_type, ref offset, null);
+
+                    if (paramAttribute == null || paramAttribute.Length == 0)
+                    {
+                        throw new FormatException(SR.ContentTypeInvalid);
+                    }
+
+                    string? paramValue;
+                    if (offset >= _type.Length || _type[offset++] != '=')
+                    {
+                        throw new FormatException(SR.ContentTypeInvalid);
+                    }
+
+                    if (!MailBnfHelper.SkipCFWS(_type, ref offset))
+                    {
+                        throw new FormatException(SR.ContentTypeInvalid);
+                    }
+
+                    paramValue = _type[offset] == '"' ?
+                        MailBnfHelper.ReadQuotedString(_type, ref offset, null) :
+                        MailBnfHelper.ReadToken(_type, ref offset, null);
+
+                    if (paramValue == null)
+                    {
+                        throw new FormatException(SR.ContentTypeInvalid);
+                    }
+
+                    _parameters.Add(paramAttribute, paramValue);
                 }
+
                 _parameters.IsChanged = false;
             }
-            catch (FormatException)
-            {
-                throw new FormatException(SR.ContentTypeInvalid);
-            }
-
-            if (exception != null)
+            catch (FormatException fe) when (fe.Message != SR.ContentTypeInvalid)
             {
                 throw new FormatException(SR.ContentTypeInvalid);
             }

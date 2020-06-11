@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
@@ -41,6 +42,7 @@ namespace System.Net.Http
             InitializeContent(content, bufferSize);
         }
 
+        [MemberNotNull(nameof(_content))]
         private void InitializeContent(Stream content, int bufferSize)
         {
             _content = content;
@@ -52,10 +54,10 @@ namespace System.Net.Http
             if (NetEventSource.IsEnabled) NetEventSource.Associate(this, content);
         }
 
-        protected override Task SerializeToStreamAsync(Stream stream, TransportContext context) =>
+        protected override Task SerializeToStreamAsync(Stream stream, TransportContext? context) =>
             SerializeToStreamAsyncCore(stream, default);
 
-        protected override Task SerializeToStreamAsync(Stream stream, TransportContext context, CancellationToken cancellationToken) =>
+        protected override Task SerializeToStreamAsync(Stream stream, TransportContext? context, CancellationToken cancellationToken) =>
             // Only skip the original protected virtual SerializeToStreamAsync if this
             // isn't a derived type that may have overridden the behavior.
             GetType() == typeof(StreamContent) ? SerializeToStreamAsyncCore(stream, cancellationToken) :
@@ -102,7 +104,7 @@ namespace System.Net.Http
             return Task.FromResult<Stream>(new ReadOnlyStream(_content));
         }
 
-        internal override Stream TryCreateContentReadStream() =>
+        internal override Stream? TryCreateContentReadStream() =>
             GetType() == typeof(StreamContent) ? new ReadOnlyStream(_content) : // type check ensures we use possible derived type's CreateContentReadStreamAsync override
             null;
 

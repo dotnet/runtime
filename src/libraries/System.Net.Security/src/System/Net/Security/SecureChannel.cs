@@ -625,7 +625,7 @@ namespace System.Net.Security
         //
         // Acquire Server Side Certificate information and set it on the class.
         //
-        private bool AcquireServerCredentials(ref byte[]? thumbPrint, ReadOnlySpan<byte> clientHello)
+        private bool AcquireServerCredentials(ref byte[]? thumbPrint)
         {
             if (NetEventSource.IsEnabled)
                 NetEventSource.Enter(this);
@@ -639,13 +639,13 @@ namespace System.Net.Security
             // with .NET Framework), and if neither is set we fall back to using ServerCertificate.
             if (_sslAuthenticationOptions.ServerCertSelectionDelegate != null)
             {
-                string? serverIdentity = SniHelper.GetServerName(clientHello);
-                localCertificate = _sslAuthenticationOptions.ServerCertSelectionDelegate(serverIdentity);
-
+                localCertificate = _sslAuthenticationOptions.ServerCertSelectionDelegate(_sslAuthenticationOptions.TargetHost);
                 if (localCertificate == null)
                 {
                     throw new AuthenticationException(SR.net_ssl_io_no_server_cert);
                 }
+                if (NetEventSource.IsEnabled)
+                    NetEventSource.Info(this, "Use delegate selected Cert");
             }
             else if (_sslAuthenticationOptions.CertSelectionDelegate != null)
             {
@@ -784,7 +784,7 @@ namespace System.Net.Security
                     if (_refreshCredentialNeeded)
                     {
                         cachedCreds = _sslAuthenticationOptions.IsServer
-                                        ? AcquireServerCredentials(ref thumbPrint, inputBuffer)
+                                        ? AcquireServerCredentials(ref thumbPrint)
                                         : AcquireClientCredentials(ref thumbPrint);
                     }
 

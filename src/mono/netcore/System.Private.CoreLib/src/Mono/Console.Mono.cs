@@ -10,7 +10,7 @@ namespace Internal
     // Some CoreCLR tests use it for internal printf-style debugging in System.Private.CoreLib
     public static class Console
     {
-        public static void Write(string? s) => DebugProvider.WriteCore(s);
+        public static void Write(string? s) => DebugProvider.WriteCore(s ?? string.Empty);
 
         public static void WriteLine(string? s) => Write(s + Environment.NewLineConst);
 

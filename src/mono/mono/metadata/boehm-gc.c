@@ -722,6 +722,12 @@ mono_gc_alloc_obj (MonoVTable *vtable, size_t size)
 }
 
 MonoArray*
+mono_gc_alloc_pinned_vector (MonoVTable *vtable, size_t size, uintptr_t max_length)
+{
+	return mono_gc_alloc_vector (vtable, size, max_length);
+}
+
+MonoArray*
 mono_gc_alloc_vector (MonoVTable *vtable, size_t size, uintptr_t max_length)
 {
 	MonoArray *obj;
@@ -1456,7 +1462,7 @@ alloc_handle (HandleData *handles, MonoObject *obj, gboolean track)
 MonoGCHandle
 mono_gchandle_new_internal (MonoObject *obj, gboolean pinned)
 {
-	return (MonoGCHandle)(size_t)alloc_handle (&gc_handles [pinned? HANDLE_PINNED: HANDLE_NORMAL], obj, FALSE);
+	return MONO_GC_HANDLE_FROM_UINT(alloc_handle (&gc_handles [pinned? HANDLE_PINNED: HANDLE_NORMAL], obj, FALSE));
 }
 
 /**

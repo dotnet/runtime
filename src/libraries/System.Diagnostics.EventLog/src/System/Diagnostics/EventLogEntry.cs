@@ -217,7 +217,7 @@ namespace System.Diagnostics
                     {
                         strings[i] = buf.ToString();
                         i++;
-                        buf = new StringBuilder();
+                        buf.Clear();
                     }
 
                     bufpos += 2;

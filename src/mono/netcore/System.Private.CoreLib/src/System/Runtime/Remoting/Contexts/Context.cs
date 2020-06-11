@@ -5,40 +5,41 @@
 using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
 
-namespace System.Runtime.Remoting.Contexts {
+namespace System.Runtime.Remoting.Contexts
+{
 
-	[StructLayout (LayoutKind.Sequential)]
-	/* FIXME: Mono: this was public in mscorlib */
-	internal class Context 
-	{
+    [StructLayout(LayoutKind.Sequential)]
+    /* FIXME: Mono: this was public in mscorlib */
+    internal class Context
+    {
 #pragma warning disable 169, 414
-		#region Sync with domain-internals.h
-		int domain_id;
-		int context_id;
-		UIntPtr static_data; /* GC-tracked */
-		UIntPtr data;
-		#endregion
+        #region Sync with domain-internals.h
+        private int domain_id;
+        private int context_id;
+        private UIntPtr static_data; /* GC-tracked */
+        private UIntPtr data;
+        #endregion
 #pragma warning restore 169, 414
 
-		[MethodImpl (MethodImplOptions.InternalCall)]
-		extern static void RegisterContext (Context ctx);
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        private static extern void RegisterContext(Context ctx);
 
-		[MethodImpl (MethodImplOptions.InternalCall)]
-		extern static void ReleaseContext (Context ctx);
-		
-		public Context ()
-		{
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        private static extern void ReleaseContext(Context ctx);
+
+        public Context()
+        {
 #if false
 			domain_id = Thread.GetDomainID();
 			context_id = Interlocked.Increment (ref global_count);
 
 			RegisterContext (this);
 #endif
-		}
+        }
 
-		~Context ()
-		{
-			ReleaseContext (this);
-		}
-	}
+        ~Context()
+        {
+            ReleaseContext(this);
+        }
+    }
 }

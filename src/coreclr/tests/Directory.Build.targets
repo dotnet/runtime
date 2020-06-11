@@ -6,6 +6,6 @@
   <Target Name="RebuildAndTest" DependsOnTargets="Rebuild;Test" />
   <Target Name="Test" />
 
-  <Import Project="disableversioncheck.targets" />
+  <Import Project="disableversioncheck.targets" Condition="'$(DisableVersionCheckImported)' != 'true'" />
 
 </Project>

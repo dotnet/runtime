@@ -288,6 +288,21 @@ void MyICJI::getGSCookie(GSCookie*  pCookieVal, // OUT
     jitInstance->mc->repGetGSCookie(pCookieVal, ppCookieVal);
 }
 
+// Provide patchpoint info for the method currently being jitted.
+void MyICJI::setPatchpointInfo(PatchpointInfo* patchpointInfo)
+{
+    jitInstance->mc->cr->AddCall("setPatchpointInfo");
+    jitInstance->mc->cr->recSetPatchpointInfo(patchpointInfo);
+    freeArray(patchpointInfo); // See note in recSetPatchpointInfo... we own destroying this array
+}
+
+// Get OSR info for the method currently being jitted
+PatchpointInfo* MyICJI::getOSRInfo(unsigned* ilOffset)
+{
+    jitInstance->mc->cr->AddCall("getOSRInfo");
+    return jitInstance->mc->repGetOSRInfo(ilOffset);
+}
+
 /**********************************************************************************/
 //
 // ICorModuleInfo
@@ -1525,17 +1540,25 @@ void MyICJI::MethodCompileComplete(CORINFO_METHOD_HANDLE methHnd)
     DebugBreakorAV(118);
 }
 
-// return a thunk that will copy the arguments for the given signature.
-void* MyICJI::getTailCallCopyArgsThunk(CORINFO_SIG_INFO* pSig, CorInfoHelperTailCallSpecialHandling flags)
+bool MyICJI::getTailCallHelpers(
+        CORINFO_RESOLVED_TOKEN* callToken,
+        CORINFO_SIG_INFO* sig,
+        CORINFO_GET_TAILCALL_HELPERS_FLAGS flags,
+        CORINFO_TAILCALL_HELPERS* pResult)
 {
-    jitInstance->mc->cr->AddCall("getTailCallCopyArgsThunk");
-    return jitInstance->mc->repGetTailCallCopyArgsThunk(pSig, flags);
+    jitInstance->mc->cr->AddCall("getTailCallHelpers");
+    return jitInstance->mc->repGetTailCallHelpers(callToken, sig, flags, pResult);
 }
 
 bool MyICJI::convertPInvokeCalliToCall(CORINFO_RESOLVED_TOKEN* pResolvedToken, bool fMustConvert)
 {
     jitInstance->mc->cr->AddCall("convertPInvokeCalliToCall");
     return jitInstance->mc->repConvertPInvokeCalliToCall(pResolvedToken, fMustConvert);
+}
+
+void MyICJI::notifyInstructionSetUsage(CORINFO_InstructionSet instructionSet, bool supported)
+{
+    jitInstance->mc->cr->AddCall("notifyInstructionSetUsage");
 }
 
 // Stuff directly on ICorJitInfo
@@ -1555,6 +1578,18 @@ bool MyICJI::runWithErrorTrap(void (*function)(void*), void* param)
     return RunWithErrorTrap(function, param);
 }
 
+// Ideally we'd just use the copies of this in standardmacros.h
+// however, superpmi is missing various other dependencies as well
+static size_t ALIGN_UP_SPMI(size_t val, size_t alignment)
+{
+    return (val + (alignment - 1)) & ~(alignment - 1);
+}
+
+static void* ALIGN_UP_SPMI(void* val, size_t alignment)
+{
+    return (void*)ALIGN_UP_SPMI((size_t)val, alignment);
+}
+
 // get a block of memory for the code, readonly data, and read-write data
 void MyICJI::allocMem(ULONG              hotCodeSize,   /* IN */
                       ULONG              coldCodeSize,  /* IN */
@@ -1567,13 +1602,46 @@ void MyICJI::allocMem(ULONG              hotCodeSize,   /* IN */
                       )
 {
     jitInstance->mc->cr->AddCall("allocMem");
-    // TODO-Cleanup: investigate if we need to check roDataBlock as well. Could hot block size be ever 0?
-    *hotCodeBlock = HeapAlloc(jitInstance->mc->cr->getCodeHeap(), 0, hotCodeSize);
+
+    // TODO-Cleanup: Could hot block size be ever 0?
+    *hotCodeBlock = jitInstance->mc->cr->allocateMemory(hotCodeSize);
+
     if (coldCodeSize > 0)
-        *coldCodeBlock = HeapAlloc(jitInstance->mc->cr->getCodeHeap(), 0, coldCodeSize);
+        *coldCodeBlock = jitInstance->mc->cr->allocateMemory(coldCodeSize);
     else
         *coldCodeBlock = nullptr;
-    *roDataBlock       = HeapAlloc(jitInstance->mc->cr->getCodeHeap(), 0, roDataSize);
+
+    if (roDataSize > 0)
+    {
+        size_t roDataAlignment   = sizeof(void*);
+        size_t roDataAlignedSize = static_cast<size_t>(roDataSize);
+
+        if ((flag & CORJIT_ALLOCMEM_FLG_RODATA_32BYTE_ALIGN) != 0)
+        {
+            roDataAlignment = 32;
+        }
+        else if ((flag & CORJIT_ALLOCMEM_FLG_RODATA_16BYTE_ALIGN) != 0)
+        {
+            roDataAlignment = 16;
+        }
+        else if (roDataSize >= 8)
+        {
+            roDataAlignment = 8;
+        }
+
+        // We need to round the roDataSize up to the alignment size and then
+        // overallocate by at most alignment - sizeof(void*) to ensure that
+        // we can offset roDataBlock to be an aligned address and that the
+        // allocation contains at least the originally requested size after
+
+        roDataAlignedSize = ALIGN_UP_SPMI(roDataAlignedSize, roDataAlignment);
+        roDataAlignedSize = roDataAlignedSize + (roDataAlignment - sizeof(void*));
+        *roDataBlock = jitInstance->mc->cr->allocateMemory(roDataAlignedSize);
+        *roDataBlock = ALIGN_UP_SPMI(*roDataBlock, roDataAlignment);
+    }
+    else
+        *roDataBlock = nullptr;
+
     jitInstance->mc->cr->recAllocMem(hotCodeSize, coldCodeSize, roDataSize, xcptnsCount, flag, hotCodeBlock,
                                      coldCodeBlock, roDataBlock);
 }
@@ -1637,7 +1705,7 @@ void* MyICJI::allocGCInfo(size_t size /* IN */
                           )
 {
     jitInstance->mc->cr->AddCall("allocGCInfo");
-    void* temp = (unsigned char*)HeapAlloc(jitInstance->mc->cr->getCodeHeap(), 0, size);
+    void* temp = jitInstance->mc->cr->allocateMemory(size);
     jitInstance->mc->cr->recAllocGCInfo(size, temp);
 
     return temp;

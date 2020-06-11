@@ -4,6 +4,8 @@
 
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics;
+using System.Runtime.Intrinsics.X86;
 
 using Internal.Runtime.CompilerServices;
 
@@ -449,24 +451,52 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static unsafe long DoubleToInt64Bits(double value)
         {
+            // Workaround for https://github.com/dotnet/runtime/issues/11413
+            if (Sse2.X64.IsSupported)
+            {
+                Vector128<long> vec = Vector128.CreateScalarUnsafe(value).AsInt64();
+                return Sse2.X64.ConvertToInt64(vec);
+            }
+
             return *((long*)&value);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static unsafe double Int64BitsToDouble(long value)
         {
+            // Workaround for https://github.com/dotnet/runtime/issues/11413
+            if (Sse2.X64.IsSupported)
+            {
+                Vector128<double> vec = Vector128.CreateScalarUnsafe(value).AsDouble();
+                return vec.ToScalar();
+            }
+
             return *((double*)&value);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static unsafe int SingleToInt32Bits(float value)
         {
+            // Workaround for https://github.com/dotnet/runtime/issues/11413
+            if (Sse2.IsSupported)
+            {
+                Vector128<int> vec = Vector128.CreateScalarUnsafe(value).AsInt32();
+                return Sse2.ConvertToInt32(vec);
+            }
+
             return *((int*)&value);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static unsafe float Int32BitsToSingle(int value)
         {
+            // Workaround for https://github.com/dotnet/runtime/issues/11413
+            if (Sse2.IsSupported)
+            {
+                Vector128<float> vec = Vector128.CreateScalarUnsafe(value).AsSingle();
+                return vec.ToScalar();
+            }
+
             return *((float*)&value);
         }
     }

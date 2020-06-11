@@ -243,7 +243,7 @@ namespace System.Threading
                     break;
 
                 default:
-                    throw new ArgumentOutOfRangeException(SR.ArgumentOutOfRange_Enum, nameof(state));
+                    throw new ArgumentOutOfRangeException(nameof(state), SR.ArgumentOutOfRange_Enum);
             }
 
             return TrySetApartmentStateUnchecked(state);
@@ -347,8 +347,7 @@ namespace System.Threading
                 Dictionary<string, LocalDataStoreSlot> nameToSlotMap = EnsureNameToSlotMap();
                 lock (nameToSlotMap)
                 {
-                    LocalDataStoreSlot? slot;
-                    if (!nameToSlotMap.TryGetValue(name, out slot))
+                    if (!nameToSlotMap.TryGetValue(name, out LocalDataStoreSlot? slot))
                     {
                         slot = AllocateSlot();
                         nameToSlotMap[name] = slot;

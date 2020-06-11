@@ -84,6 +84,8 @@
 //    |   |
 //    |   +-StubDispatchFrame   - represents a call into the virtual call stub manager
 //    |   |
+//    |   +-CallCountingHelperFrame - represents a call into the call counting helper when the
+//    |   |                           call count threshold is reached
 //    |   |
 //    |   +-ExternalMethodFrame  - represents a call from an ExternalMethdThunk
 //    |   |
@@ -106,9 +108,10 @@
 //    | +-UMThkCallFrame        - this frame represents an unmanaged->managed
 //    |                           transition through N/Direct
 #endif
-//    |
+#if defined(TARGET_X86) && !defined(UNIX_X86_ABI)
 //    +-TailCallFrame           - padding for tailcalls
 //    |
+#endif
 //    +-ProtectByRefsFrame
 //    |
 //    +-ProtectValueClassFrame
@@ -221,6 +224,7 @@ FRAME_TYPE_NAME(PInvokeCalliFrame)
 FRAME_TYPE_NAME(HijackFrame)
 #endif // FEATURE_HIJACK
 FRAME_TYPE_NAME(PrestubMethodFrame)
+FRAME_TYPE_NAME(CallCountingHelperFrame)
 FRAME_TYPE_NAME(StubDispatchFrame)
 FRAME_TYPE_NAME(ExternalMethodFrame)
 #ifdef FEATURE_READYTORUN
@@ -239,7 +243,9 @@ FRAME_TYPE_NAME(DebuggerU2MCatchHandlerFrame)
 FRAME_TYPE_NAME(UMThkCallFrame)
 #endif
 FRAME_TYPE_NAME(InlinedCallFrame)
+#if defined(TARGET_X86) && !defined(UNIX_X86_ABI)
 FRAME_TYPE_NAME(TailCallFrame)
+#endif
 FRAME_TYPE_NAME(ExceptionFilterFrame)
 #if defined(_DEBUG)
 FRAME_TYPE_NAME(AssumeByrefFromJITStack)
@@ -736,11 +742,7 @@ private:
     friend class StackFrameIterator;
     friend class TailCallFrame;
     friend class AppDomain;
-    friend VOID RealCOMPlusThrow(OBJECTREF
-#ifdef FEATURE_CORRUPTING_EXCEPTIONS
-        , CorruptionSeverity severity
-#endif // FEATURE_CORRUPTING_EXCEPTIONS
-        );
+    friend VOID RealCOMPlusThrow(OBJECTREF);
     friend FCDECL0(VOID, JIT_StressGC);
 #ifdef _DEBUG
     friend LONG WINAPI CLRVectoredExceptionHandlerShim(PEXCEPTION_POINTERS pExceptionInfo);
@@ -2225,6 +2227,31 @@ private:
 
 typedef VPTR(class StubDispatchFrame) PTR_StubDispatchFrame;
 
+class CallCountingHelperFrame : public FramedMethodFrame
+{
+    VPTR_VTABLE_CLASS(CallCountingHelperFrame, FramedMethodFrame);
+
+public:
+    CallCountingHelperFrame(TransitionBlock *pTransitionBlock, MethodDesc *pMD);
+
+    virtual void GcScanRoots(promote_func *fn, ScanContext *sc); // override
+    virtual BOOL TraceFrame(Thread *thread, BOOL fromPatch, TraceDestination *trace, REGDISPLAY *regs); // override
+
+    virtual int GetFrameType() // override
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+        return TYPE_CALL;
+    }
+
+    virtual Interception GetInterception() // override
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+        return INTERCEPTION_NONE;
+    }
+
+    // Keep as last entry in class
+    DEFINE_VTABLE_GETTER_AND_CTOR_AND_DTOR(CallCountingHelperFrame)
+};
 
 //------------------------------------------------------------------------
 // This represents a call from an ExternalMethodThunk or a VirtualImportThunk
@@ -2757,6 +2784,12 @@ protected:
 };
 #endif // TARGET_X86 && !TARGET_UNIX
 
+// Frame for the Reverse PInvoke (i.e. UnmanagedCallersOnlyAttribute).
+struct ReversePInvokeFrame
+{
+    Thread* currentThread;
+};
+
 #if defined(TARGET_X86) && defined(FEATURE_COMINTEROP)
 //-------------------------------------------------------------------------
 // Exception handler for COM to managed frame
@@ -2972,8 +3005,8 @@ public:
 //bool isLegalManagedCodeCaller(TADDR retAddr);
 bool isRetAddr(TADDR retAddr, TADDR* whereCalled);
 
+#if defined(TARGET_X86) && !defined(UNIX_X86_ABI)
 //------------------------------------------------------------------------
-#ifdef TARGET_X86
 // This frame is used as padding for virtual stub dispatch tailcalls.
 // When A calls B via virtual stub dispatch, the stub dispatch stub resolves
 // the target code for B and jumps to it. If A wants to do a tail call,
@@ -2990,69 +3023,18 @@ bool isRetAddr(TADDR retAddr, TADDR* whereCalled);
 // We could eliminate TailCallFrame if we factor the VSD stub to return
 // the target code address. This is currently not a very important scenario
 // as tail calls on interface calls are uncommon.
-#else
-// This frame is used as padding for tailcalls which require more space
-// than the caller has in it's incoming argument space.
-// To do a tail call from A to B, A calls JIT_TailCall, which unwinds A's frame
-// and sets up a TailCallFrame and the arguments. It then jumps to B.
-// If B also does a tail call, then we reuse the
-// existing TailCallFrame instead of setting up a second one.
-//
-// This is also used whenever value types that aren't enregisterable are
-// passed by value instead of ref. This is currently not a very important
-// scenario as tail calls are uncommon.
-#endif
 //------------------------------------------------------------------------
 
 class TailCallFrame : public Frame
 {
     VPTR_VTABLE_CLASS(TailCallFrame, Frame)
 
-#if defined(TARGET_X86)
     TADDR           m_CallerAddress;    // the address the tailcall was initiated from
     CalleeSavedRegisters    m_regs;     // callee saved registers - the stack walk assumes that all non-JIT frames have them
     TADDR           m_ReturnAddress;    // the return address of the tailcall
-#elif defined(TARGET_AMD64)
-    TADDR                 m_pGCLayout;
-    TADDR                 m_padding;    // code:StubLinkerCPU::CreateTailCallCopyArgsThunk expects the size of TailCallFrame to be 16-byte aligned
-    CalleeSavedRegisters  m_calleeSavedRegisters;
-    TADDR                 m_ReturnAddress;
-#elif defined(TARGET_ARM)
-    union {
-        CalleeSavedRegisters m_calleeSavedRegisters;
-        // alias saved link register as m_ReturnAddress
-        struct {
-            INT32 r4, r5, r6, r7, r8, r9, r10;
-            INT32 r11;
-            TADDR m_ReturnAddress;
-        };
-    };
-#else
-    TADDR                 m_ReturnAddress;
-#endif
 
 public:
-#ifndef	CROSSGEN_COMPILE
-#if !defined(TARGET_X86)
-
-#ifndef DACCESS_COMPILE
-    TailCallFrame(T_CONTEXT * pContext, Thread * pThread)
-    {
-        InitFromContext(pContext);
-        m_Next = pThread->GetFrame();
-    }
-
-    void InitFromContext(T_CONTEXT * pContext);
-
-    // Architecture-specific method to initialize a CONTEXT record as if the first
-    // part of the TailCallHelperStub had executed
-    static TailCallFrame * AdjustContextForTailCallHelperStub(_CONTEXT * pContext, size_t cbNewArgArea, Thread * pThread);
-#endif
-
-    static TailCallFrame * GetFrameFromContext(CONTEXT * pContext);
-#endif // !TARGET_X86
-
-#if defined(TARGET_X86)
+#ifndef CROSSGEN_COMPILE
     static TailCallFrame* FindTailCallFrame(Frame* pFrame)
     {
         LIMITED_METHOD_CONTRACT;
@@ -3067,7 +3049,6 @@ public:
         LIMITED_METHOD_CONTRACT;
         return m_CallerAddress;
     }
-#endif // TARGET_X86
 
     virtual TADDR GetReturnAddressPtr()
     {
@@ -3083,26 +3064,12 @@ public:
 
     virtual void UpdateRegDisplay(const PREGDISPLAY pRD);
 #endif // !CROSSGEN_COMPILE
-#ifdef TARGET_AMD64
-    void SetGCLayout(TADDR pGCLayout)
-    {
-        LIMITED_METHOD_CONTRACT;
-        m_pGCLayout = pGCLayout;
-    }
-
-    virtual void GcScanRoots(promote_func *fn, ScanContext* sc);
-#else
-    void SetGCLayout(TADDR pGCLayout)
-    {
-        LIMITED_METHOD_CONTRACT;
-        _ASSERTE(pGCLayout == NULL);
-    }
-#endif
 
 private:
     // Keep as last entry in class
     DEFINE_VTABLE_GETTER_AND_CTOR_AND_DTOR(TailCallFrame)
 };
+#endif // TARGET_X86 && !UNIX_X86_ABI
 
 //------------------------------------------------------------------------
 // ExceptionFilterFrame is a small frame whose only purpose in
@@ -3261,10 +3228,6 @@ public:
     FrameWithCookie(DebuggerEval *pDebuggerEval, TADDR returnAddress, BOOL showFrame) :
         m_gsCookie(GetProcessGSCookie()), m_frame(pDebuggerEval, returnAddress, showFrame) { WRAPPER_NO_CONTRACT; }
 #endif // DEBUGGING_SUPPORTED
-
-    // TailCallFrame
-    FrameWithCookie(T_CONTEXT * pContext, Thread *thread) :
-        m_gsCookie(GetProcessGSCookie()), m_frame(pContext, thread) { WRAPPER_NO_CONTRACT; }
 
 #ifndef DACCESS_COMPILE
     // GSCookie for HelperMethodFrames is initialized in a common HelperMethodFrame init method

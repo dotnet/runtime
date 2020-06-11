@@ -20,6 +20,9 @@
 #if HAVE_SYS_SYSCTL_H
 #include <sys/sysctl.h>
 #endif
+#if HAVE_SYS_IOCTL_H
+#include <sys/ioctl.h>
+#endif
 #if HAVE_ETHTOOL_H
 #include <linux/ethtool.h>
 #include <linux/sockios.h>
@@ -28,11 +31,11 @@
 
 #if defined(AF_PACKET)
 #include <sys/ioctl.h>
-#if defined(_WASM_)
+#if HAVE_NETPACKET_PACKET_H
 #include <netpacket/packet.h>
-#else // _WASM_
+#else
 #include <linux/if_packet.h>
-#endif // _WASM_
+#endif
 #elif defined(AF_LINK)
 #include <net/if_dl.h>
 #include <net/if_types.h>
@@ -41,9 +44,14 @@
 #endif
 
 #if HAVE_RT_MSGHDR
+#if HAVE_IOS_NET_ROUTE_H
+#include "ios/net/route.h"
+#else
 #include <net/route.h>
 #endif
+#endif
 
+#if HAVE_GETIFADDRS
 // Convert mask to prefix length e.g. 255.255.255.0 -> 24
 // mask parameter is pointer to buffer where address starts and length is
 // buffer length e.g. 4 for IPv4 and 16 for IPv6.
@@ -83,11 +91,13 @@ static inline uint8_t mask2prefix(uint8_t* mask, int length)
 
     return len;
 }
+#endif
 
 int32_t SystemNative_EnumerateInterfaceAddresses(IPv4AddressFound onIpv4Found,
                                                IPv6AddressFound onIpv6Found,
                                                LinkLayerAddressFound onLinkLayerFound)
 {
+#if HAVE_GETIFADDRS
     struct ifaddrs* headAddr;
     if (getifaddrs(&headAddr) == -1)
     {
@@ -110,7 +120,7 @@ int32_t SystemNative_EnumerateInterfaceAddresses(IPv4AddressFound onIpv4Found,
             freeifaddrs(headAddr);
             return -1;
         }
-        
+
         assert(result == actualName);
         int family = current->ifa_addr->sa_family;
         if (family == AF_INET)
@@ -199,10 +209,19 @@ int32_t SystemNative_EnumerateInterfaceAddresses(IPv4AddressFound onIpv4Found,
 
     freeifaddrs(headAddr);
     return 0;
+#else
+    // Not supported on e.g. Android. Also, prevent a compiler error because parameters are unused
+    (void)onIpv4Found;
+    (void)onIpv6Found;
+    (void)onLinkLayerFound;
+    errno = ENOTSUP;
+    return -1;
+#endif
 }
 
 int32_t SystemNative_GetNetworkInterfaces(int32_t * interfaceCount, NetworkInterfaceInfo **interfaceList, int32_t * addressCount, IpAddressInfo **addressList )
 {
+#if HAVE_GETIFADDRS
     struct ifaddrs* head;   // Pointer to block allocated by getifaddrs().
     struct ifaddrs* ifaddrsEntry;
     IpAddressInfo *ai;
@@ -373,7 +392,11 @@ int32_t SystemNative_GetNetworkInterfaces(int32_t * interfaceCount, NetworkInter
                         ecmd.cmd = ETHTOOL_GSET;
                         if (ioctl(socketfd, SIOCETHTOOL, &ifr) == 0)
                         {
+#ifdef TARGET_ANDROID
+                            nii->Speed = (int64_t)ecmd.speed;
+#else
                             nii->Speed = (int64_t)ethtool_cmd_speed(&ecmd);
+#endif
                             if (nii->Speed > 0)
                             {
                                 // If we did not get -1
@@ -400,9 +423,18 @@ int32_t SystemNative_GetNetworkInterfaces(int32_t * interfaceCount, NetworkInter
     }
 
     return 0;
+#else
+    // Not supported on e.g. Android. Also, prevent a compiler error because parameters are unused
+    (void)interfaceCount;
+    (void)interfaceList;
+    (void)addressCount;
+    (void)addressList;
+    errno = ENOTSUP;
+    return -1;
+#endif
 }
 
-#if HAVE_RT_MSGHDR
+#if HAVE_RT_MSGHDR && defined(CTL_NET)
 int32_t SystemNative_EnumerateGatewayAddressesForInterface(uint32_t interfaceIndex, GatewayAddressFound onGatewayFound)
 {
     static struct in6_addr anyaddr = IN6ADDR_ANY_INIT;

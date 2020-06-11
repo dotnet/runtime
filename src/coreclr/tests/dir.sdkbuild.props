@@ -9,7 +9,7 @@
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
     <EnableDefaultItems>false</EnableDefaultItems>
-    <Platform>$(BuildArch)</Platform>
+    <Platform>AnyCPU</Platform>
 
     <!-- [ARCADE REMOVE] This line should be removed we use the Arcade Sdk. -->
     <DeterministicSourcePaths>false</DeterministicSourcePaths>

@@ -6,24 +6,18 @@
     <Compile Include="BrotliEncoderTests.cs" />
     <Compile Include="BrotliGoogleTestData.cs" />
     <Compile Include="CompressionStreamUnitTests.Brotli.cs" />
-    <Compile Include="$(CommonTestPath)System\IO\Compression\CompressionStreamTestBase.cs">
-      <Link>Common\System\IO\Compression\CompressionStreamTestBase.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonTestPath)System\IO\Compression\CompressionStreamUnitTestBase.cs">
-      <Link>Common\System\IO\Compression\CompressionStreamUnitTestBase.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonTestPath)System\IO\Compression\LocalMemoryStream.cs">
-      <Link>Common\System\IO\Compression\LocalMemoryStream.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonTestPath)System\IO\Compression\StreamHelpers.cs">
-      <Link>Common\System\IO\Compression\StreamHelpers.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonTestPath)System\IO\TempFile.cs">
-      <Link>Common\System\IO\TempFile.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)System\Threading\Tasks\TaskToApm.cs">
-      <Link>Common\System\Threading\Tasks\TaskToApm.cs</Link>
-    </Compile>
+    <Compile Include="$(CommonTestPath)System\IO\Compression\CompressionStreamTestBase.cs"
+             Link="Common\System\IO\Compression\CompressionStreamTestBase.cs" />
+    <Compile Include="$(CommonTestPath)System\IO\Compression\CompressionStreamUnitTestBase.cs"
+             Link="Common\System\IO\Compression\CompressionStreamUnitTestBase.cs" />
+    <Compile Include="$(CommonTestPath)System\IO\Compression\LocalMemoryStream.cs"
+             Link="Common\System\IO\Compression\LocalMemoryStream.cs" />
+    <Compile Include="$(CommonTestPath)System\IO\Compression\StreamHelpers.cs"
+             Link="Common\System\IO\Compression\StreamHelpers.cs" />
+    <Compile Include="$(CommonTestPath)System\IO\TempFile.cs"
+             Link="Common\System\IO\TempFile.cs" />
+    <Compile Include="$(CommonPath)System\Threading\Tasks\TaskToApm.cs"
+             Link="Common\System\Threading\Tasks\TaskToApm.cs" />
   </ItemGroup>
   <!--
     Manually copy the contentFiles over as on macOS 10.12 unicode characters cause items to be flagged with buildaction compile.

@@ -22,6 +22,13 @@
 
 G_BEGIN_DECLS
 
+typedef enum {
+#define INTRINS(id, llvm_id) INTRINS_ ## id,
+#define INTRINS_OVR(id, llvm_id) INTRINS_ ## id,
+#include "llvm-intrinsics.h"
+	INTRINS_NUM
+} IntrinsicId;
+
 /*
  * Keep in sync with the enum in utils/mono-memory-model.h.
  */
@@ -35,6 +42,8 @@ typedef enum {
 typedef enum {
 	LLVM_ATOMICRMW_OP_XCHG = 0,
 	LLVM_ATOMICRMW_OP_ADD = 1,
+	LLVM_ATOMICRMW_OP_AND = 2,
+	LLVM_ATOMICRMW_OP_OR = 3,
 } AtomicRMWOp;
 
 typedef enum {
@@ -94,6 +103,9 @@ mono_llvm_build_cmpxchg (LLVMBuilderRef builder, LLVMValueRef addr, LLVMValueRef
 
 LLVMValueRef
 mono_llvm_build_weighted_branch (LLVMBuilderRef builder, LLVMValueRef cond, LLVMBasicBlockRef t, LLVMBasicBlockRef f, uint32_t t_weight, uint32_t f_weight);
+
+LLVMValueRef
+mono_llvm_build_exact_ashr (LLVMBuilderRef builder, LLVMValueRef lhs, LLVMValueRef rhs);
 
 void
 mono_llvm_add_string_metadata (LLVMValueRef insref, const char* label, const char* text);
@@ -194,6 +206,12 @@ typedef struct {
 
 int
 mono_llvm_check_cpu_features (const CpuFeatureAliasFlag *features, int length);
+
+LLVMValueRef
+mono_llvm_register_intrinsic (LLVMModuleRef module, IntrinsicId id);
+
+LLVMValueRef
+mono_llvm_register_overloaded_intrinsic (LLVMModuleRef module, IntrinsicId id, LLVMTypeRef *types, int ntypes);
 
 G_END_DECLS
 

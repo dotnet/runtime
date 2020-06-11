@@ -62,12 +62,11 @@ enum class common_property
     AppContextDepsFiles,
     FxDepsFile,
     ProbingDirectories,
-    FxProductVersion,
-    JitPath,
     StartUpHooks,
     AppPaths,
     AppNIPaths,
-
+    RuntimeIdentifier,
+    BundleProbe,
     // Sentinel value - new values should be defined above
     Last
 };

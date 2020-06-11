@@ -11,6 +11,8 @@
  *
  */
 
+#include "gcrefmap.h"
+
 void GCToEEInterface::SuspendEE(SUSPEND_REASON reason)
 {
     WRAPPER_NO_CONTRACT;
@@ -154,18 +156,60 @@ static void ScanStackRoots(Thread * pThread, promote_func* fn, ScanContext* sc)
     }
 }
 
+static void ScanTailCallArgBufferRoots(Thread* pThread, promote_func* fn, ScanContext* sc)
+{
+    void* gcDesc;
+    char* argBuffer = pThread->GetTailCallTls()->GetArgBuffer(&gcDesc);
+    if (gcDesc == NULL)
+        return;
+
+    GCRefMapDecoder decoder(static_cast<PTR_BYTE>(gcDesc));
+    while (!decoder.AtEnd())
+    {
+        int pos = decoder.CurrentPos();
+        int token = decoder.ReadToken();
+
+        PTR_TADDR ppObj = dac_cast<PTR_TADDR>(argBuffer + pos * sizeof(TADDR));
+        switch (token)
+        {
+        case GCREFMAP_SKIP:
+            break;
+        case GCREFMAP_REF:
+            fn(dac_cast<PTR_PTR_Object>(ppObj), sc, CHECK_APP_DOMAIN);
+            break;
+        case GCREFMAP_INTERIOR:
+            PromoteCarefully(fn, dac_cast<PTR_PTR_Object>(ppObj), sc, GC_CALL_INTERIOR);
+            break;
+        case GCREFMAP_METHOD_PARAM:
+            if (sc->promotion)
+            {
+#ifndef DACCESS_COMPILE
+                MethodDesc *pMDReal = dac_cast<PTR_MethodDesc>(*ppObj);
+                if (pMDReal != NULL)
+                    GcReportLoaderAllocator(fn, sc, pMDReal->GetLoaderAllocator());
+#endif
+            }
+            break;
+        case GCREFMAP_TYPE_PARAM:
+            if (sc->promotion)
+            {
+#ifndef DACCESS_COMPILE
+                MethodTable *pMTReal = dac_cast<PTR_MethodTable>(*ppObj);
+                if (pMTReal != NULL)
+                    GcReportLoaderAllocator(fn, sc, pMTReal->GetLoaderAllocator());
+#endif
+            }
+            break;
+        default:
+            _ASSERTE(!"Unhandled GCREFMAP token in arg buffer GC desc");
+            break;
+        }
+    }
+}
+
 void GCToEEInterface::GcScanRoots(promote_func* fn, int condemned, int max_gen, ScanContext* sc)
 {
     STRESS_LOG1(LF_GCROOTS, LL_INFO10, "GCScan: Promotion Phase = %d\n", sc->promotion);
-
-    // In server GC, we should be competing for marking the statics
-    if (GCHeapUtilities::MarkShouldCompeteForStatics())
-    {
-        if (condemned == max_gen && sc->promotion)
-        {
-            SystemDomain::EnumAllStaticGCRefs(fn, sc);
-        }
-    }
 
     Thread* pThread = NULL;
     while ((pThread = ThreadStore::GetThreadList(pThread)) != NULL)
@@ -180,11 +224,26 @@ void GCToEEInterface::GcScanRoots(promote_func* fn, int condemned, int max_gen, 
             sc->dwEtwRootKind = kEtwGCRootKindStack;
 #endif // FEATURE_EVENT_TRACE
             ScanStackRoots(pThread, fn, sc);
+            ScanTailCallArgBufferRoots(pThread, fn, sc);
 #ifdef FEATURE_EVENT_TRACE
             sc->dwEtwRootKind = kEtwGCRootKindOther;
 #endif // FEATURE_EVENT_TRACE
         }
         STRESS_LOG2(LF_GC | LF_GCROOTS, LL_INFO100, "Ending scan of Thread %p ID = 0x%x }\n", pThread, pThread->GetThreadId());
+    }
+
+    // In server GC, we should be competing for marking the statics
+    // It's better to do this *after* stack scanning, because this way
+    // we can make up for imbalances in stack scanning
+    // This would not apply to the initial mark phase in background GC,
+    // but it would apply to blocking Gen 2 collections and the final
+    // marking stage in background GC where we catch up to the user program
+    if (GCHeapUtilities::MarkShouldCompeteForStatics())
+    {
+        if (condemned == max_gen && sc->promotion)
+        {
+            SystemDomain::EnumAllStaticGCRefs(fn, sc);
+        }
     }
 }
 
@@ -209,17 +268,7 @@ void GCToEEInterface::GcStartWork (int condemned, int max_gen)
 #endif
 
 #ifdef FEATURE_COMINTEROP
-    //
-    // Let GC detect managed/native cycles with input from jupiter
-    // Jupiter will
-    // 1. Report reference from RCW to CCW based on native reference in Jupiter
-    // 2. Identify the subset of CCWs that needs to be rooted
-    //
-    // We'll build the references from RCW to CCW using
-    // 1. Preallocated arrays
-    // 2. Dependent handles
-    //
-    RCWWalker::OnGCStarted(condemned);
+    Interop::OnGCStarted(condemned);
 #endif // FEATURE_COMINTEROP
 
     if (condemned == max_gen)
@@ -238,10 +287,7 @@ void GCToEEInterface::GcDone(int condemned)
     CONTRACTL_END;
 
 #ifdef FEATURE_COMINTEROP
-    //
-    // Tell Jupiter GC has finished
-    //
-    RCWWalker::OnGCFinished(condemned);
+    Interop::OnGCFinished(condemned);
 #endif // FEATURE_COMINTEROP
 }
 
@@ -504,6 +550,7 @@ void GcScanRootsForProfilerAndETW(promote_func* fn, int condemned, int max_gen, 
         sc->dwEtwRootKind = kEtwGCRootKindStack;
 #endif // FEATURE_EVENT_TRACE
         ScanStackRoots(pThread, fn, sc);
+        ScanTailCallArgBufferRoots(pThread, fn, sc);
 #ifdef FEATURE_EVENT_TRACE
         sc->dwEtwRootKind = kEtwGCRootKindOther;
 #endif // FEATURE_EVENT_TRACE
@@ -771,14 +818,14 @@ void GCToEEInterface::DiagWalkSurvivors(void* gcContext, bool fCompacting)
 #endif //GC_PROFILING || FEATURE_EVENT_TRACE
 }
 
-void GCToEEInterface::DiagWalkLOHSurvivors(void* gcContext)
+void GCToEEInterface::DiagWalkUOHSurvivors(void* gcContext, int gen)
 {
 #if defined(GC_PROFILING) || defined(FEATURE_EVENT_TRACE)
     if (ShouldTrackSurvivorsForProfilerOrEtw())
     {
         size_t context = 0;
         ETW::GCLog::BeginMovedReferences(&context);
-        GCHeapUtilities::GetGCHeap()->DiagWalkSurvivorsWithType(gcContext, &WalkMovedReferences, (void*)context, walk_for_loh);
+        GCHeapUtilities::GetGCHeap()->DiagWalkSurvivorsWithType(gcContext, &WalkMovedReferences, (void*)context, walk_for_uoh, gen);
         ETW::GCLog::EndMovedReferences(context);
     }
 #endif //GC_PROFILING || FEATURE_EVENT_TRACE
@@ -1031,7 +1078,7 @@ MethodTable* GCToEEInterface::GetFreeObjectMethodTable()
 // longer than these lengths.
 const size_t MaxConfigKeyLength = 255;
 
-bool GCToEEInterface::GetBooleanConfigValue(const char* key, bool* value)
+bool GCToEEInterface::GetBooleanConfigValue(const char* privateKey, const char* publicKey, bool* value)
 {
     CONTRACTL {
         NOTHROW;
@@ -1039,26 +1086,26 @@ bool GCToEEInterface::GetBooleanConfigValue(const char* key, bool* value)
     } CONTRACTL_END;
 
     // these configuration values are given to us via startup flags.
-    if (strcmp(key, "gcServer") == 0)
+    if (strcmp(privateKey, "gcServer") == 0)
     {
         *value = g_heap_type == GC_HEAP_SVR;
         return true;
     }
 
-    if (strcmp(key, "gcConcurrent") == 0)
+    if (strcmp(privateKey, "gcConcurrent") == 0)
     {
         *value = !!g_pConfig->GetGCconcurrent();
         return true;
     }
 
-    if (strcmp(key, "GCRetainVM") == 0)
+    if (strcmp(privateKey, "GCRetainVM") == 0)
     {
         *value = !!g_pConfig->GetGCRetainVM();
         return true;
     }
 
     WCHAR configKey[MaxConfigKeyLength];
-    if (MultiByteToWideChar(CP_ACP, 0, key, -1 /* key is null-terminated */, configKey, MaxConfigKeyLength) == 0)
+    if (MultiByteToWideChar(CP_ACP, 0, privateKey, -1 /* key is null-terminated */, configKey, MaxConfigKeyLength) == 0)
     {
         // whatever this is... it's not something we care about. (It was too long, wasn't unicode, etc.)
         return false;
@@ -1071,49 +1118,38 @@ bool GCToEEInterface::GetBooleanConfigValue(const char* key, bool* value)
         *value = CLRConfig::GetConfigValue(info) != 0;
         return true;
     }
+    else if (publicKey != NULL)
+    {
+        if (MultiByteToWideChar(CP_ACP, 0, publicKey, -1 /* key is null-terminated */, configKey, MaxConfigKeyLength) == 0)
+        {
+            // whatever this is... it's not something we care about. (It was too long, wasn't unicode, etc.)
+            return false;
+        }
+        if (Configuration::GetKnobStringValue(configKey) != NULL)
+        {
+            *value = Configuration::GetKnobBooleanValue(configKey, false);
+            return true;
+        }
+    }
 
     return false;
 }
 
-bool GCToEEInterface::GetIntConfigValue(const char* key, int64_t* value)
+bool GCToEEInterface::GetIntConfigValue(const char* privateKey, const char* publicKey, int64_t* value)
 {
     CONTRACTL {
       NOTHROW;
       GC_NOTRIGGER;
     } CONTRACTL_END;
 
-    if (strcmp(key, "GCSegmentSize") == 0)
-    {
-        *value = g_pConfig->GetSegmentSize();
-        return true;
-    }
-
-    if (strcmp(key, "GCgen0size") == 0)
-    {
-        *value = g_pConfig->GetGCgen0size();
-        return true;
-    }
-
-    if (strcmp(key, "GCHeapHardLimit") == 0)
-    {
-        *value = g_pConfig->GetGCHeapHardLimit();
-        return true;
-    }
-
-    if (strcmp(key, "GCHeapHardLimitPercent") == 0)
-    {
-        *value = g_pConfig->GetGCHeapHardLimitPercent();
-        return true;
-    }
-
-    if (strcmp(key, "GCLOHThreshold") == 0)
+    if (strcmp(privateKey, "GCLOHThreshold") == 0)
     {
         *value = g_pConfig->GetGCLOHThreshold();
         return true;
     }
 
     WCHAR configKey[MaxConfigKeyLength];
-    if (MultiByteToWideChar(CP_ACP, 0, key, -1 /* key is null-terminated */, configKey, MaxConfigKeyLength) == 0)
+    if (MultiByteToWideChar(CP_ACP, 0, privateKey, -1 /* key is null-terminated */, configKey, MaxConfigKeyLength) == 0)
     {
         // whatever this is... it's not something we care about. (It was too long, wasn't unicode, etc.)
         return false;
@@ -1148,11 +1184,24 @@ bool GCToEEInterface::GetIntConfigValue(const char* key, int64_t* value)
         CLRConfig::FreeConfigString(out);
         return true;
     }
+    else if (publicKey != NULL)
+    {
+        if (MultiByteToWideChar(CP_ACP, 0, publicKey, -1 /* key is null-terminated */, configKey, MaxConfigKeyLength) == 0)
+        {
+            // whatever this is... it's not something we care about. (It was too long, wasn't unicode, etc.)
+            return false;
+        }
+        if (Configuration::GetKnobStringValue(configKey) != NULL)
+        {
+            *value = Configuration::GetKnobULONGLONGValue(configKey, 0);
+            return true;
+        }
+    }
 
     return false;
 }
 
-bool GCToEEInterface::GetStringConfigValue(const char* key, const char** value)
+bool GCToEEInterface::GetStringConfigValue(const char* privateKey, const char* publicKey, const char** value)
 {
     CONTRACTL {
       NOTHROW;
@@ -1160,18 +1209,30 @@ bool GCToEEInterface::GetStringConfigValue(const char* key, const char** value)
     } CONTRACTL_END;
 
     WCHAR configKey[MaxConfigKeyLength];
-    if (MultiByteToWideChar(CP_ACP, 0, key, -1 /* key is null-terminated */, configKey, MaxConfigKeyLength) == 0)
+    if (MultiByteToWideChar(CP_ACP, 0, privateKey, -1 /* key is null-terminated */, configKey, MaxConfigKeyLength) == 0)
     {
         // whatever this is... it's not something we care about. (It was too long, wasn't unicode, etc.)
         return false;
     }
 
     CLRConfig::ConfigStringInfo info { configKey, CLRConfig::EEConfig_default };
-    LPWSTR out = CLRConfig::GetConfigValue(info);
-    if (!out)
+    LPWSTR fromClrConfig = CLRConfig::GetConfigValue(info);
+    LPCWSTR out = fromClrConfig;
+    if (out == NULL)
     {
-        // config not found
-        return false;
+        if (publicKey != NULL)
+        {
+            if (MultiByteToWideChar(CP_ACP, 0, publicKey, -1 /* key is null-terminated */, configKey, MaxConfigKeyLength) == 0)
+            {
+                // whatever this is... it's not something we care about. (It was too long, wasn't unicode, etc.)
+                return false;
+            }
+            out =  Configuration::GetKnobStringValue(configKey);
+            if (out == NULL)
+            {
+                return false;
+            }
+        }
     }
 
     int charCount = WideCharToMultiByte(CP_ACP, 0, out, -1 /* out is null-terminated */, NULL, 0, nullptr, nullptr);
@@ -1179,7 +1240,10 @@ bool GCToEEInterface::GetStringConfigValue(const char* key, const char** value)
     {
         // this should only happen if the config subsystem gives us a string that's not valid
         // unicode.
-        CLRConfig::FreeConfigString(out);
+        if (fromClrConfig)
+        {
+            CLRConfig::FreeConfigString(fromClrConfig);
+        }
         return false;
     }
 
@@ -1187,7 +1251,10 @@ bool GCToEEInterface::GetStringConfigValue(const char* key, const char** value)
     AStringHolder configResult = new (nothrow) char[charCount];
     if (!configResult)
     {
-        CLRConfig::FreeConfigString(out);
+        if (fromClrConfig)
+        {
+            CLRConfig::FreeConfigString(fromClrConfig);
+        }
         return false;
     }
 
@@ -1197,12 +1264,18 @@ bool GCToEEInterface::GetStringConfigValue(const char* key, const char** value)
         // this should never happen, the previous call to WideCharToMultiByte that computed the charCount should
         // have caught all issues.
         assert(false);
-        CLRConfig::FreeConfigString(out);
+        if (fromClrConfig)
+        {
+            CLRConfig::FreeConfigString(fromClrConfig);
+        }
         return false;
     }
 
     *value = configResult.Extract();
-    CLRConfig::FreeConfigString(out);
+    if (fromClrConfig)
+    {
+        CLRConfig::FreeConfigString(fromClrConfig);
+    }
     return true;
 }
 

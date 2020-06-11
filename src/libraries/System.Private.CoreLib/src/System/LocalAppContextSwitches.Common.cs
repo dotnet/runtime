@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System.Runtime.CompilerServices;
 
 namespace System
@@ -23,9 +24,8 @@ namespace System
 
         private static bool GetCachedSwitchValueInternal(string switchName, ref int cachedSwitchValue)
         {
-            bool isSwitchEnabled;
 
-            bool hasSwitch = AppContext.TryGetSwitch(switchName, out isSwitchEnabled);
+            bool hasSwitch = AppContext.TryGetSwitch(switchName, out bool isSwitchEnabled);
             if (!hasSwitch)
             {
                 isSwitchEnabled = GetSwitchDefaultValue(switchName);

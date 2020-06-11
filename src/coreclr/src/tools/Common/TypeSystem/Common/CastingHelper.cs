@@ -20,6 +20,31 @@ namespace Internal.TypeSystem
             return thisType.CanCastToInternal(otherType, null);
         }
 
+        public static bool IsCompatibleWith(this TypeDesc thisType, TypeDesc otherType)
+        {
+            // Structs can be cast to the interfaces they implement, but they are not compatible according to ECMA I.8.7.1
+            bool isCastFromValueTypeToReferenceType = otherType.IsValueType && !thisType.IsValueType;
+            if (isCastFromValueTypeToReferenceType)
+            {
+                return false;
+            }
+
+            // Nullable<T> can be cast to T, but this is not compatible according to ECMA I.8.7.1
+            bool isCastFromNullableOfTtoT = thisType.IsNullable && otherType.IsEquivalentTo(thisType.Instantiation[0]);
+            if (isCastFromNullableOfTtoT)
+            {
+                return false;
+            }
+
+            return otherType.CanCastTo(thisType);
+        }
+
+        private static bool IsEquivalentTo(this TypeDesc thisType, TypeDesc otherType)
+        {
+            // TODO: Once type equivalence is implemented, this implementation needs to be enhanced to honor it.
+            return thisType.Equals(otherType);
+        }
+
         private static bool CanCastToInternal(this TypeDesc thisType, TypeDesc otherType, StackOverflowProtect protect)
         {
             if (thisType == otherType)

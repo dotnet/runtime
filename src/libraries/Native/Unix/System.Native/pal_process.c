@@ -21,9 +21,8 @@
 #if HAVE_CRT_EXTERNS_H
 #include <crt_externs.h>
 #endif
-#if HAVE_PIPE2
 #include <fcntl.h>
-#endif
+#include <sys/socket.h>
 #include <pthread.h>
 
 #if HAVE_SCHED_SETAFFINITY || HAVE_SCHED_GETAFFINITY
@@ -42,33 +41,13 @@ c_static_assert(PAL_LOG_WARNING == LOG_WARNING);
 c_static_assert(PAL_LOG_NOTICE == LOG_NOTICE);
 c_static_assert(PAL_LOG_INFO == LOG_INFO);
 c_static_assert(PAL_LOG_DEBUG == LOG_DEBUG);
-c_static_assert(PAL_LOG_KERN == LOG_KERN);
-c_static_assert(PAL_LOG_USER == LOG_USER);
-c_static_assert(PAL_LOG_MAIL == LOG_MAIL);
-c_static_assert(PAL_LOG_DAEMON == LOG_DAEMON);
-c_static_assert(PAL_LOG_AUTH == LOG_AUTH);
-c_static_assert(PAL_LOG_SYSLOG == LOG_SYSLOG);
-c_static_assert(PAL_LOG_LPR == LOG_LPR);
-c_static_assert(PAL_LOG_NEWS == LOG_NEWS);
-c_static_assert(PAL_LOG_UUCP == LOG_UUCP);
-c_static_assert(PAL_LOG_CRON == LOG_CRON);
-c_static_assert(PAL_LOG_AUTHPRIV == LOG_AUTHPRIV);
-c_static_assert(PAL_LOG_FTP == LOG_FTP);
-c_static_assert(PAL_LOG_LOCAL0 == LOG_LOCAL0);
-c_static_assert(PAL_LOG_LOCAL1 == LOG_LOCAL1);
-c_static_assert(PAL_LOG_LOCAL2 == LOG_LOCAL2);
-c_static_assert(PAL_LOG_LOCAL3 == LOG_LOCAL3);
-c_static_assert(PAL_LOG_LOCAL4 == LOG_LOCAL4);
-c_static_assert(PAL_LOG_LOCAL5 == LOG_LOCAL5);
-c_static_assert(PAL_LOG_LOCAL6 == LOG_LOCAL6);
-c_static_assert(PAL_LOG_LOCAL7 == LOG_LOCAL7);
 
 // Validate that out PriorityWhich values are correct for the platform
 c_static_assert(PAL_PRIO_PROCESS == (int)PRIO_PROCESS);
 c_static_assert(PAL_PRIO_PGRP == (int)PRIO_PGRP);
 c_static_assert(PAL_PRIO_USER == (int)PRIO_USER);
 
-#if !HAVE_PIPE2
+#ifndef SOCK_CLOEXEC
 static pthread_mutex_t ProcessCreateLock = PTHREAD_MUTEX_INITIALIZER;
 #endif
 
@@ -154,7 +133,7 @@ static int compare_groups(const void * a, const void * b)
 
 static int SetGroups(uint32_t* userGroups, int32_t userGroupsLength, uint32_t* processGroups)
 {
-#if defined(__linux__) || defined(_WASM_)
+#if defined(__linux__) || defined(TARGET_WASM)
     size_t platformGroupsLength = Int32ToSizeT(userGroupsLength);
 #else // BSD
     int platformGroupsLength = userGroupsLength;
@@ -203,6 +182,31 @@ static int SetGroups(uint32_t* userGroups, int32_t userGroupsLength, uint32_t* p
     return rv;
 }
 
+static int32_t SocketPair(int32_t sv[2])
+{
+    int32_t result;
+
+    int type = SOCK_STREAM;
+#ifdef SOCK_CLOEXEC
+    type |= SOCK_CLOEXEC;
+#endif
+
+    while ((result = socketpair(AF_UNIX, type, 0, sv)) < 0 && errno == EINTR);
+
+#ifndef SOCK_CLOEXEC
+    if (result == 0)
+    {
+        while ((result = fcntl(sv[READ_END_OF_PIPE], F_SETFD, FD_CLOEXEC)) < 0 && errno == EINTR);
+        if (result == 0)
+        {
+            while ((result = fcntl(sv[WRITE_END_OF_PIPE], F_SETFD, FD_CLOEXEC)) < 0 && errno == EINTR);
+        }
+    }
+#endif
+
+    return result;
+}
+
 int32_t SystemNative_ForkAndExecProcess(const char* filename,
                                       char* const argv[],
                                       char* const envp[],
@@ -220,19 +224,23 @@ int32_t SystemNative_ForkAndExecProcess(const char* filename,
                                       int32_t* stdoutFd,
                                       int32_t* stderrFd)
 {
-#if !HAVE_PIPE2
+#if HAVE_FORK
+#ifndef SOCK_CLOEXEC
     bool haveProcessCreateLock = false;
 #endif
     bool success = true;
     int stdinFds[2] = {-1, -1}, stdoutFds[2] = {-1, -1}, stderrFds[2] = {-1, -1}, waitForChildToExecPipe[2] = {-1, -1};
     pid_t processId = -1;
     uint32_t* getGroupsBuffer = NULL;
-    int thread_cancel_state;
     sigset_t signal_set;
     sigset_t old_signal_set;
 
+#if HAVE_PTHREAD_SETCANCELSTATE
+    int thread_cancel_state;
+
     // None of this code can be canceled without leaking handles, so just don't allow it
     pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, &thread_cancel_state);
+#endif
 
     // Validate arguments
     if (NULL == filename || NULL == argv || NULL == envp || NULL == stdinFd || NULL == stdoutFd ||
@@ -273,11 +281,11 @@ int32_t SystemNative_ForkAndExecProcess(const char* filename,
         goto done;
     }
 
-#if !HAVE_PIPE2
-    // We do not have pipe2(); take the lock to emulate it race free.
-    // If another process were to be launched between the pipe creation and the fcntl call to set CLOEXEC on it, that
-    // file descriptor will be inherited into the other child process, eventually causing a deadlock either in the loop
-    // below that waits for that pipe to be closed or in StreamReader.ReadToEnd() in the calling code.
+#ifndef SOCK_CLOEXEC
+    // We do not have SOCK_CLOEXEC; take the lock to emulate it race free.
+    // If another process were to be launched between the socket creation and the fcntl call to set CLOEXEC on it, that
+    // file descriptor would be inherited into the other child process, eventually causing a deadlock either in the loop
+    // below that waits for that socket to be closed or in StreamReader.ReadToEnd() in the calling code.
     if (pthread_mutex_lock(&ProcessCreateLock) != 0)
     {
         // This check is pretty much just checking for trashed memory.
@@ -289,9 +297,9 @@ int32_t SystemNative_ForkAndExecProcess(const char* filename,
 
     // Open pipes for any requests to redirect stdin/stdout/stderr and set the
     // close-on-exec flag to the pipe file descriptors.
-    if ((redirectStdin  && SystemNative_Pipe(stdinFds,  PAL_O_CLOEXEC) != 0) ||
-        (redirectStdout && SystemNative_Pipe(stdoutFds, PAL_O_CLOEXEC) != 0) ||
-        (redirectStderr && SystemNative_Pipe(stderrFds, PAL_O_CLOEXEC) != 0))
+    if ((redirectStdin  && SocketPair(stdinFds) != 0) ||
+        (redirectStdout && SocketPair(stdoutFds) != 0) ||
+        (redirectStderr && SocketPair(stderrFds) != 0))
     {
         success = false;
         goto done;
@@ -379,7 +387,7 @@ int32_t SystemNative_ForkAndExecProcess(const char* filename,
             }
             if (!sigaction(sig, NULL, &sa_old))
             {
-                void (*oldhandler)(int) = (sa_old.sa_flags & SA_SIGINFO) ? (void (*)(int))sa_old.sa_sigaction : sa_old.sa_handler;
+                void (*oldhandler)(int) = (((unsigned int)sa_old.sa_flags) & SA_SIGINFO) ? (void (*)(int))sa_old.sa_sigaction : sa_old.sa_handler;
                 if (oldhandler != SIG_IGN && oldhandler != SIG_DFL)
                 {
                     // It has a custom handler, put the default handler back.
@@ -442,7 +450,7 @@ int32_t SystemNative_ForkAndExecProcess(const char* filename,
     *stderrFd = stderrFds[READ_END_OF_PIPE];
 
 done:;
-#if !HAVE_PIPE2
+#ifndef SOCK_CLOEXEC
     if (haveProcessCreateLock)
     {
         pthread_mutex_unlock(&ProcessCreateLock);
@@ -498,12 +506,17 @@ done:;
         errno = priorErrno;
     }
 
+#if HAVE_PTHREAD_SETCANCELSTATE
     // Restore thread cancel state
     pthread_setcancelstate(thread_cancel_state, &thread_cancel_state);
-  
+#endif
+
     free(getGroupsBuffer);
 
     return success ? 0 : -1;
+#else
+    return -1;
+#endif
 }
 
 FILE* SystemNative_POpen(const char* command, const char* type)
@@ -537,12 +550,21 @@ static int32_t ConvertRLimitResourcesPalToPlatform(RLimitResources value)
             return RLIMIT_CORE;
         case PAL_RLIMIT_AS:
             return RLIMIT_AS;
+#ifdef RLIMIT_RSS
         case PAL_RLIMIT_RSS:
             return RLIMIT_RSS;
+#endif
+#ifdef RLIMIT_MEMLOCK
         case PAL_RLIMIT_MEMLOCK:
             return RLIMIT_MEMLOCK;
+#elif defined(RLIMIT_VMEM)
+        case PAL_RLIMIT_MEMLOCK:
+            return RLIMIT_VMEM;
+#endif
+#ifdef RLIMIT_NPROC
         case PAL_RLIMIT_NPROC:
             return RLIMIT_NPROC;
+#endif
         case PAL_RLIMIT_NOFILE:
             return RLIMIT_NOFILE;
     }
@@ -593,7 +615,7 @@ static void ConvertFromPalRLimitToManaged(const struct rlimit* native, RLimit* p
     pal->MaximumLimit = ConvertFromNativeRLimitInfinityToManagedIfNecessary(native->rlim_max);
 }
 
-#if defined __USE_GNU && !defined __cplusplus
+#if defined(__USE_GNU) && !defined(__cplusplus) && !defined(TARGET_ANDROID)
 typedef __rlimit_resource_t rlimitResource;
 typedef __priority_which_t priorityWhich;
 #else
@@ -647,7 +669,7 @@ int32_t SystemNative_GetSid(int32_t pid)
 
 void SystemNative_SysLog(SysLogPriority priority, const char* message, const char* arg1)
 {
-    syslog((int)priority, message, arg1);
+    syslog((int)(LOG_USER | priority), message, arg1);
 }
 
 int32_t SystemNative_WaitIdAnyExitedNoHangNoWait()
@@ -788,7 +810,7 @@ int32_t SystemNative_SchedSetAffinity(int32_t pid, intptr_t* mask)
     cpu_set_t set;
     CPU_ZERO(&set);
 
-    intptr_t bits = *mask; 
+    intptr_t bits = *mask;
     for (int cpu = 0; cpu < maxCpu; cpu++)
     {
         if ((bits & (((intptr_t)1u) << cpu)) != 0)
@@ -796,7 +818,7 @@ int32_t SystemNative_SchedSetAffinity(int32_t pid, intptr_t* mask)
             CPU_SET(cpu, &set);
         }
     }
- 
+
     return sched_setaffinity(pid, sizeof(cpu_set_t), &set);
 }
 #endif

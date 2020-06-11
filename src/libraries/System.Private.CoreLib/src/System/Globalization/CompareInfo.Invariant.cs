@@ -40,9 +40,9 @@ namespace System.Globalization
             }
         }
 
-        internal static unsafe int InvariantLastIndexOf(string source, string value, int startIndex, int count, bool ignoreCase)
+        private static unsafe int InvariantLastIndexOf(string source, string value, int startIndex, int count, bool ignoreCase)
         {
-            Debug.Assert(source != null);
+            Debug.Assert(!string.IsNullOrEmpty(source));
             Debug.Assert(value != null);
             Debug.Assert(startIndex >= 0 && startIndex < source.Length);
 
@@ -73,7 +73,7 @@ namespace System.Globalization
 
             if (valueCount == 0)
             {
-                return fromBeginning ? 0 : sourceCount - 1;
+                return fromBeginning ? 0 : sourceCount;
             }
 
             if (sourceCount < valueCount)
@@ -243,7 +243,7 @@ namespace System.Globalization
                 }
             }
 
-            return new SortKey(Name, source, options, keyData);
+            return new SortKey(this, source, options, keyData);
         }
 
         private static void InvariantCreateSortKeyOrdinal(ReadOnlySpan<char> source, Span<byte> sortKey)
@@ -268,6 +268,53 @@ namespace System.Globalization
                 BinaryPrimitives.WriteUInt16BigEndian(sortKey, (ushort)InvariantCaseFold(source[i]));
                 sortKey = sortKey.Slice(sizeof(ushort));
             }
+        }
+
+        private int InvariantGetSortKey(ReadOnlySpan<char> source, Span<byte> destination, CompareOptions options)
+        {
+            Debug.Assert(GlobalizationMode.Invariant);
+            Debug.Assert((options & ValidCompareMaskOffFlags) == 0);
+
+            // Make sure the destination buffer is large enough to hold the source projection.
+            // Using unsigned arithmetic below also checks for buffer overflow since the incoming
+            // length is always a non-negative signed integer.
+
+            if ((uint)destination.Length < (uint)source.Length * sizeof(char))
+            {
+                ThrowHelper.ThrowArgumentException_DestinationTooShort();
+            }
+
+            if ((options & CompareOptions.IgnoreCase) == 0)
+            {
+                InvariantCreateSortKeyOrdinal(source, destination);
+            }
+            else
+            {
+                InvariantCreateSortKeyOrdinalIgnoreCase(source, destination);
+            }
+
+            return source.Length * sizeof(char);
+        }
+
+        private int InvariantGetSortKeyLength(ReadOnlySpan<char> source, CompareOptions options)
+        {
+            Debug.Assert(GlobalizationMode.Invariant);
+            Debug.Assert((options & ValidCompareMaskOffFlags) == 0);
+
+            // In invariant mode, sort keys are simply a byte projection of the source input,
+            // optionally with casing modifications. We need to make sure we don't overflow
+            // while computing the length.
+
+            int byteLength = source.Length * sizeof(char);
+
+            if (byteLength < 0)
+            {
+                throw new ArgumentException(
+                    paramName: nameof(source),
+                    message: SR.ArgumentOutOfRange_GetByteCountOverflow);
+            }
+
+            return byteLength;
         }
     }
 }

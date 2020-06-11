@@ -30,12 +30,13 @@ namespace System.Net.Http
             Port = port;
         }
 
-        public bool Equals(HttpAuthority other)
+        public bool Equals(HttpAuthority? other)
         {
+            Debug.Assert(other != null);
             return string.Equals(IdnHost, other.IdnHost) && Port == other.Port;
         }
 
-        public override bool Equals(object obj)
+        public override bool Equals(object? obj)
         {
             return obj is HttpAuthority other && Equals(other);
         }

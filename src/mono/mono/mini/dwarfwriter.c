@@ -182,6 +182,12 @@ emit_int32 (MonoDwarfWriter *w, int value)
 }
 
 static void
+emit_symbol (MonoDwarfWriter *w, const char *symbol)
+{
+	mono_img_writer_emit_symbol (w->w, symbol);
+}
+
+static void
 emit_symbol_diff (MonoDwarfWriter *w, const char *end, const char* start, int offset) 
 { 
 	mono_img_writer_emit_symbol_diff (w->w, end, start, offset); 
@@ -799,6 +805,7 @@ mono_dwarf_writer_emit_base_info (MonoDwarfWriter *w, const char *cu_name, GSLis
 	w->cie_program = base_unwind_program;
 
 	emit_section_change (w, ".debug_abbrev", 0);
+	emit_label (w, ".Ldebug_abbrev_start");
 	emit_dwarf_abbrev (w, ABBREV_COMPILE_UNIT, DW_TAG_compile_unit, TRUE, 
 					   compile_unit_attr, G_N_ELEMENTS (compile_unit_attr));
 	emit_dwarf_abbrev (w, ABBREV_SUBPROGRAM, DW_TAG_subprogram, TRUE, 
@@ -842,7 +849,7 @@ mono_dwarf_writer_emit_base_info (MonoDwarfWriter *w, const char *cu_name, GSLis
 	emit_symbol_diff (w, ".Ldebug_info_end", ".Ldebug_info_begin", 0); /* length */
 	emit_label (w, ".Ldebug_info_begin");
 	emit_int16 (w, 0x2); /* DWARF version 2 */
-	emit_int32 (w, 0); /* .debug_abbrev offset */
+	emit_symbol (w, ".Ldebug_abbrev_start"); /* .debug_abbrev offset */
 	emit_byte (w, sizeof (target_mgreg_t)); /* address size */
 
 	/* Compilation unit */

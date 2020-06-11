@@ -7,6 +7,7 @@ using System.Net.Test.Common;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -46,9 +47,15 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact]
         public async Task SetAfterUse_Throws()
         {
+#if WINHTTPHANDLER_TEST
+            if (UseVersion >= HttpVersion20.Value)
+            {
+                throw new SkipTestException($"Test doesn't support {UseVersion} protocol.");
+            }
+#endif
             await LoopbackServerFactory.CreateClientAndServerAsync(async uri =>
             {
                 using HttpClientHandler handler = CreateHttpClientHandler();

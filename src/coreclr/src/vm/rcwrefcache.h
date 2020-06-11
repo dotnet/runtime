@@ -18,7 +18,7 @@
 #ifndef _H_RCWREFCACHE_
 #define _H_RCWREFCACHE_
 
-#ifdef FEATURE_COMINTEROP
+#ifdef FEATURE_COMWRAPPERS
 
 class RCWRefCache
 {
@@ -27,50 +27,9 @@ public :
     ~RCWRefCache();
 
     //
-    // Add a reference from RCW to CCW
+    // Add a reference from obj1 to obj2
     //
-    HRESULT AddReferenceFromRCWToCCW(RCW *pRCW, ComCallWrapper *pCCW);
-
-    //
-    // Enumerate all Jupiter RCWs in the RCW cache and do the callback
-    // I'm using template here so there is no perf penality
-    //
-    template<class Function, class T> HRESULT EnumerateAllJupiterRCWs(Function fn, T userData)
-    {
-        CONTRACTL
-        {
-            NOTHROW;
-            GC_NOTRIGGER;
-            MODE_COOPERATIVE;
-        }
-        CONTRACTL_END;
-
-        HRESULT hr;
-
-        // Go through the RCW cache and call the callback for all Jupiter objects
-        RCWCache *pRCWCache = m_pAppDomain->GetRCWCacheNoCreate();
-        if (pRCWCache != NULL)
-        {
-            SHash<RCWCache::RCWCacheTraits> *pHashMap = &pRCWCache->m_HashMap;
-
-            for (SHash<RCWCache::RCWCacheTraits>::Iterator it = pHashMap->Begin(); it != pHashMap->End(); it++)
-            {
-                RCW *pRCW = *it;
-                _ASSERTE(pRCW != NULL);
-
-                if (pRCW->IsJupiterObject())
-                {
-                    hr = fn(pRCW, userData);
-                    if (FAILED(hr))
-                    {
-                        return hr;
-                    }
-                }
-            }
-        }
-
-        return S_OK;
-    }
+    HRESULT AddReferenceFromObjectToObject(OBJECTREF obj1, OBJECTREF obj2);
 
     //
     // Reset dependent handle cache by assigning 0 to m_dwDepHndListFreeIndex.
@@ -84,10 +43,10 @@ public :
 
 private :
     //
-    // Add RCW -> CCW reference using dependent handle
+    // Add obj1 -> obj2 reference using dependent handle
     // May fail if OOM
     //
-    HRESULT AddReferenceUsingDependentHandle(RCW *pRCW, ComCallWrapper *pCCW);
+    HRESULT AddReferenceUsingDependentHandle(OBJECTREF obj1, OBJECTREF obj2);
 
 private :
     AppDomain      *m_pAppDomain;                   // Domain
@@ -98,6 +57,6 @@ private :
     DWORD                           m_dwShrinkHint;             // Keep track of how many times we use less than half handles
 };
 
-#endif // FEATURE_COMINTEROP
+#endif // FEATURE_COMWRAPPERS
 
 #endif // _H_RCWREFCACHE_

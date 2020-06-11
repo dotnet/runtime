@@ -58,7 +58,7 @@ mono_gc_wait_for_bridge_processing (void)
 	if (!mono_bridge_processing_in_progress)
 		return;
 
-	mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_GC, "GC_BRIDGE waiting for bridge processing to finish");
+	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_GC, "GC_BRIDGE waiting for bridge processing to finish");
 
 	sgen_gc_lock ();
 	sgen_gc_unlock ();
@@ -476,7 +476,7 @@ sgen_bridge_processing_finish (int generation)
 	if (compare_bridge_processors ())
 		compare_to_bridge_processor.processing_after_callback (generation);
 
-	mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_GC, "GC_BRIDGE: Complete, was running for %.2fms", mono_time_since_last_stw () / 10000.0f);
+	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_GC, "GC_BRIDGE: Complete, was running for %.2fms", mono_time_since_last_stw () / 10000.0f);
 
 	mono_bridge_processing_in_progress = FALSE;
 }

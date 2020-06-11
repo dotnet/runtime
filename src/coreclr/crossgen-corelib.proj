@@ -1,0 +1,24 @@
+<Project>
+  <Import Project="Directory.Build.props" />
+  <Import Project="Directory.Build.targets" />
+
+  <Target Name="Build">
+    <ItemGroup>
+      <_CoreClrBuildArg Condition="'$(TargetArchitecture)' != ''" Include="-$(TargetArchitecture)" />
+      <_CoreClrBuildArg Include="-$(Configuration.ToLower())" />
+      <_CoreClrBuildArg Condition="!$([MSBuild]::IsOsPlatform(Windows))" Include="-os $(TargetOS)" />
+    </ItemGroup>
+
+    <PropertyGroup>
+      <_CoreClrBuildScript Condition="$([MSBuild]::IsOsPlatform(Windows))">crossgen-corelib.cmd</_CoreClrBuildScript>
+      <_CoreClrBuildScript Condition="!$([MSBuild]::IsOsPlatform(Windows))">crossgen-corelib.sh</_CoreClrBuildScript>
+    </PropertyGroup>
+
+    <!-- Use IgnoreStandardErrorWarningFormat because Arcade sets WarnAsError and there's an existing warning in the native build. -->
+    <Exec Command="&quot;$(MSBuildThisFileDirectory)$(_CoreClrBuildScript)&quot; @(_CoreClrBuildArg->'%(Identity)',' ')" />
+  </Target>
+
+  <Target Name="Restore" />
+  <Target Name="Test" />
+  <Target Name="Pack" />
+</Project>

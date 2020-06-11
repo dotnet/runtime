@@ -14,7 +14,7 @@ namespace System.Text.Json
     [DebuggerDisplay("{DebuggerDisplay,nq}")]
     public readonly partial struct JsonElement
     {
-        internal readonly object _parent;
+        private readonly JsonDocument _parent;
         private readonly int _idx;
 
         internal JsonElement(JsonDocument parent, int idx)
@@ -28,24 +28,12 @@ namespace System.Text.Json
             _idx = idx;
         }
 
-        internal JsonElement(JsonNode parent)
-        {
-            _parent = parent;
-            _idx = -1;
-        }
-
-        /// <summary>
-        ///   Indicates whether or not this instance is immutable.
-        /// </summary>
-        public bool IsImmutable => _idx != -1;
-
         [DebuggerBrowsable(DebuggerBrowsableState.Never)]
         private JsonTokenType TokenType
         {
             get
             {
-                JsonDocument document = (JsonDocument)_parent;
-                return document?.GetJsonTokenType(_idx) ?? JsonTokenType.None;
+                return _parent?.GetJsonTokenType(_idx) ?? JsonTokenType.None;
             }
         }
         /// <summary>
@@ -54,21 +42,7 @@ namespace System.Text.Json
         /// <exception cref="ObjectDisposedException">
         ///   The parent <see cref="JsonDocument"/> has been disposed.
         /// </exception>
-        public JsonValueKind ValueKind
-        {
-            get
-            {
-                if (IsImmutable)
-                {
-                    return TokenType.ToValueKind();
-                }
-
-                Debug.Assert(_parent != null);
-                var jsonNode = (JsonNode)_parent;
-
-                return jsonNode.ValueKind;
-            }
-        }
+        public JsonValueKind ValueKind => TokenType.ToValueKind();
 
         /// <summary>
         ///   Get the value at a specified index when the current value is a
@@ -89,19 +63,7 @@ namespace System.Text.Json
             {
                 CheckValidInstance();
 
-                if (_parent is JsonDocument document)
-                {
-                    return document.GetArrayIndexElement(_idx, index);
-                }
-
-                var jsonNode = (JsonNode)_parent;
-
-                if (jsonNode is JsonArray jsonArray)
-                {
-                    return jsonArray[index].AsJsonElement();
-                }
-
-                throw ThrowHelper.GetJsonElementWrongTypeException(JsonValueKind.Array, jsonNode.ValueKind);
+                return _parent.GetArrayIndexElement(_idx, index);
             }
         }
 
@@ -119,19 +81,7 @@ namespace System.Text.Json
         {
             CheckValidInstance();
 
-            if (_parent is JsonDocument document)
-            {
-                return document.GetArrayLength(_idx);
-            }
-
-            var jsonNode = (JsonNode)_parent;
-
-            if (jsonNode is JsonArray jsonArray)
-            {
-                return jsonArray.Count;
-            }
-
-            throw ThrowHelper.GetJsonElementWrongTypeException(JsonValueKind.Array, jsonNode.ValueKind);
+            return _parent.GetArrayLength(_idx);
         }
 
         /// <summary>
@@ -321,26 +271,7 @@ namespace System.Text.Json
         {
             CheckValidInstance();
 
-            if (_parent is JsonDocument document)
-            {
-                return document.TryGetNamedPropertyValue(_idx, propertyName, out value);
-            }
-
-            var jsonNode = (JsonNode)_parent;
-
-            if (jsonNode is JsonObject jsonObject)
-            {
-                if (jsonObject.TryGetPropertyValue(propertyName.ToString(), out JsonNode? nodeValue))
-                {
-                    value = nodeValue.AsJsonElement();
-                    return true;
-                }
-
-                value = default;
-                return false;
-            }
-
-            throw ThrowHelper.GetJsonElementWrongTypeException(JsonValueKind.Object, jsonNode.ValueKind);
+            return _parent.TryGetNamedPropertyValue(_idx, propertyName, out value);
         }
 
         /// <summary>
@@ -376,26 +307,7 @@ namespace System.Text.Json
         {
             CheckValidInstance();
 
-            if (_parent is JsonDocument document)
-            {
-                return document.TryGetNamedPropertyValue(_idx, utf8PropertyName, out value);
-            }
-
-            var jsonNode = (JsonNode)_parent;
-
-            if (jsonNode is JsonObject jsonObject)
-            {
-                if (jsonObject.TryGetPropertyValue(JsonHelpers.Utf8GetString(utf8PropertyName), out JsonNode? nodeValue))
-                {
-                    value = nodeValue.AsJsonElement();
-                    return true;
-                }
-
-                value = default;
-                return false;
-            }
-
-            throw ThrowHelper.GetJsonElementWrongTypeException(JsonValueKind.Object, jsonNode.ValueKind);
+            return _parent.TryGetNamedPropertyValue(_idx, utf8PropertyName, out value);
         }
 
         /// <summary>
@@ -414,26 +326,15 @@ namespace System.Text.Json
         /// </exception>
         public bool GetBoolean()
         {
-            CheckValidInstance();
+            // CheckValidInstance is redundant.  Asking for the type will
+            // return None, which then throws the same exception in the return statement.
 
-            if (_parent is JsonDocument document)
-            {
-                JsonTokenType type = TokenType;
+            JsonTokenType type = TokenType;
 
-                return
-                    type == JsonTokenType.True ? true :
-                    type == JsonTokenType.False ? false :
-                    throw ThrowHelper.GetJsonElementWrongTypeException(nameof(Boolean), type);
-            }
-
-            var jsonNode = (JsonNode)_parent;
-
-            if (_parent is JsonBoolean jsonBoolean)
-            {
-                return jsonBoolean.Value;
-            }
-
-            throw ThrowHelper.GetJsonElementWrongTypeException(nameof(Boolean), jsonNode.ValueKind);
+            return
+                type == JsonTokenType.True ? true :
+                type == JsonTokenType.False ? false :
+                throw ThrowHelper.GetJsonElementWrongTypeException(nameof(Boolean), type);
         }
 
         /// <summary>
@@ -454,19 +355,7 @@ namespace System.Text.Json
         {
             CheckValidInstance();
 
-            if (_parent is JsonDocument document)
-            {
-                return document.GetString(_idx, JsonTokenType.String);
-            }
-
-            var jsonNode = (JsonNode)_parent;
-
-            if (jsonNode is JsonString jsonString)
-            {
-                return jsonString.Value;
-            }
-
-            throw ThrowHelper.GetJsonElementWrongTypeException(JsonValueKind.String, jsonNode.ValueKind);
+            return _parent.GetString(_idx, JsonTokenType.String);
         }
 
         /// <summary>
@@ -490,19 +379,7 @@ namespace System.Text.Json
         {
             CheckValidInstance();
 
-            if (_parent is JsonDocument document)
-            {
-                return document.TryGetValue(_idx, out value);
-            }
-
-            var jsonNode = (JsonNode)_parent;
-
-            if (jsonNode is JsonString jsonString)
-            {
-                return jsonString.TryGetBytesFromBase64(out value);
-            }
-
-            throw ThrowHelper.GetJsonElementWrongTypeException(JsonValueKind.String, jsonNode.ValueKind);
+            return _parent.TryGetValue(_idx, out value);
         }
 
         /// <summary>
@@ -554,19 +431,7 @@ namespace System.Text.Json
         {
             CheckValidInstance();
 
-            if (_parent is JsonDocument document)
-            {
-                return document.TryGetValue(_idx, out value);
-            }
-
-            var jsonNode = (JsonNode)_parent;
-
-            if (jsonNode is JsonNumber jsonNumber)
-            {
-                return jsonNumber.TryGetSByte(out value);
-            }
-
-            throw ThrowHelper.GetJsonElementWrongTypeException(JsonValueKind.Number, jsonNode.ValueKind);
+            return _parent.TryGetValue(_idx, out value);
         }
 
         /// <summary>
@@ -614,19 +479,7 @@ namespace System.Text.Json
         {
             CheckValidInstance();
 
-            if (_parent is JsonDocument document)
-            {
-                return document.TryGetValue(_idx, out value);
-            }
-
-            var jsonNode = (JsonNode)_parent;
-
-            if (jsonNode is JsonNumber jsonNumber)
-            {
-                return jsonNumber.TryGetByte(out value);
-            }
-
-            throw ThrowHelper.GetJsonElementWrongTypeException(JsonValueKind.Number, jsonNode.ValueKind);
+            return _parent.TryGetValue(_idx, out value);
         }
 
         /// <summary>
@@ -676,19 +529,7 @@ namespace System.Text.Json
         {
             CheckValidInstance();
 
-            if (_parent is JsonDocument document)
-            {
-                return document.TryGetValue(_idx, out value);
-            }
-
-            var jsonNode = (JsonNode)_parent;
-
-            if (_parent is JsonNumber jsonNumber)
-            {
-                return jsonNumber.TryGetInt16(out value);
-            }
-
-            throw ThrowHelper.GetJsonElementWrongTypeException(JsonValueKind.Number, jsonNode.ValueKind);
+            return _parent.TryGetValue(_idx, out value);
         }
 
         /// <summary>
@@ -736,19 +577,7 @@ namespace System.Text.Json
         {
             CheckValidInstance();
 
-            if (_parent is JsonDocument document)
-            {
-                return document.TryGetValue(_idx, out value);
-            }
-
-            var jsonNode = (JsonNode)_parent;
-
-            if (_parent is JsonNumber jsonNumber)
-            {
-                return jsonNumber.TryGetUInt16(out value);
-            }
-
-            throw ThrowHelper.GetJsonElementWrongTypeException(JsonValueKind.Number, jsonNode.ValueKind);
+            return _parent.TryGetValue(_idx, out value);
         }
 
         /// <summary>
@@ -799,19 +628,7 @@ namespace System.Text.Json
         {
             CheckValidInstance();
 
-            if (_parent is JsonDocument document)
-            {
-                return document.TryGetValue(_idx, out value);
-            }
-
-            var jsonNode = (JsonNode)_parent;
-
-            if (jsonNode is JsonNumber jsonNumber)
-            {
-                return jsonNumber.TryGetInt32(out value);
-            }
-
-            throw ThrowHelper.GetJsonElementWrongTypeException(JsonValueKind.Number, jsonNode.ValueKind);
+            return _parent.TryGetValue(_idx, out value);
         }
 
         /// <summary>
@@ -859,19 +676,7 @@ namespace System.Text.Json
         {
             CheckValidInstance();
 
-            if (_parent is JsonDocument document)
-            {
-                return document.TryGetValue(_idx, out value);
-            }
-
-            var jsonNode = (JsonNode)_parent;
-
-            if (jsonNode is JsonNumber jsonNumber)
-            {
-                return jsonNumber.TryGetUInt32(out value);
-            }
-
-            throw ThrowHelper.GetJsonElementWrongTypeException(JsonValueKind.Number, jsonNode.ValueKind);
+            return _parent.TryGetValue(_idx, out value);
         }
 
         /// <summary>
@@ -922,19 +727,7 @@ namespace System.Text.Json
         {
             CheckValidInstance();
 
-            if (_parent is JsonDocument document)
-            {
-                return document.TryGetValue(_idx, out value);
-            }
-
-            var jsonNode = (JsonNode)_parent;
-
-            if (jsonNode is JsonNumber jsonNumber)
-            {
-                return jsonNumber.TryGetInt64(out value);
-            }
-
-            throw ThrowHelper.GetJsonElementWrongTypeException(JsonValueKind.Number, jsonNode.ValueKind);
+            return _parent.TryGetValue(_idx, out value);
         }
 
         /// <summary>
@@ -985,19 +778,7 @@ namespace System.Text.Json
         {
             CheckValidInstance();
 
-            if (_parent is JsonDocument document)
-            {
-                return document.TryGetValue(_idx, out value);
-            }
-
-            var jsonNode = (JsonNode)_parent;
-
-            if (jsonNode is JsonNumber jsonNumber)
-            {
-                return jsonNumber.TryGetUInt64(out value);
-            }
-
-            throw ThrowHelper.GetJsonElementWrongTypeException(JsonValueKind.Number, jsonNode.ValueKind);
+            return _parent.TryGetValue(_idx, out value);
         }
 
         /// <summary>
@@ -1057,19 +838,7 @@ namespace System.Text.Json
         {
             CheckValidInstance();
 
-            if (_parent is JsonDocument document)
-            {
-                return document.TryGetValue(_idx, out value);
-            }
-
-            var jsonNode = (JsonNode)_parent;
-
-            if (_parent is JsonNumber jsonNumber)
-            {
-                return jsonNumber.TryGetDouble(out value);
-            }
-
-            throw ThrowHelper.GetJsonElementWrongTypeException(JsonValueKind.Number, jsonNode.ValueKind);
+            return _parent.TryGetValue(_idx, out value);
         }
 
         /// <summary>
@@ -1136,19 +905,7 @@ namespace System.Text.Json
         {
             CheckValidInstance();
 
-            if (_parent is JsonDocument document)
-            {
-                return document.TryGetValue(_idx, out value);
-            }
-
-            var jsonNode = (JsonNode)_parent;
-
-            if (jsonNode is JsonNumber jsonNumber)
-            {
-                return jsonNumber.TryGetSingle(out value);
-            }
-
-            throw ThrowHelper.GetJsonElementWrongTypeException(JsonValueKind.Number, jsonNode.ValueKind);
+            return _parent.TryGetValue(_idx, out value);
         }
 
         /// <summary>
@@ -1207,19 +964,7 @@ namespace System.Text.Json
         {
             CheckValidInstance();
 
-            if (_parent is JsonDocument document)
-            {
-                return document.TryGetValue(_idx, out value);
-            }
-
-            var jsonNode = (JsonNode)_parent;
-
-            if (jsonNode is JsonNumber jsonNumber)
-            {
-                return jsonNumber.TryGetDecimal(out value);
-            }
-
-            throw ThrowHelper.GetJsonElementWrongTypeException(JsonValueKind.Number, jsonNode.ValueKind);
+            return _parent.TryGetValue(_idx, out value);
         }
 
         /// <summary>
@@ -1270,19 +1015,7 @@ namespace System.Text.Json
         {
             CheckValidInstance();
 
-            if (_parent is JsonDocument document)
-            {
-                return document.TryGetValue(_idx, out value);
-            }
-
-            var jsonNode = (JsonNode)_parent;
-
-            if (jsonNode is JsonString jsonString)
-            {
-                return jsonString.TryGetDateTime(out value);
-            }
-
-            throw ThrowHelper.GetJsonElementWrongTypeException(JsonValueKind.String, jsonNode.ValueKind);
+            return _parent.TryGetValue(_idx, out value);
         }
 
         /// <summary>
@@ -1333,19 +1066,7 @@ namespace System.Text.Json
         {
             CheckValidInstance();
 
-            if (_parent is JsonDocument document)
-            {
-                return document.TryGetValue(_idx, out value);
-            }
-
-            var jsonNode = (JsonNode)_parent;
-
-            if (jsonNode is JsonString jsonString)
-            {
-                return jsonString.TryGetDateTimeOffset(out value);
-            }
-
-            throw ThrowHelper.GetJsonElementWrongTypeException(JsonValueKind.String, jsonNode.ValueKind);
+            return _parent.TryGetValue(_idx, out value);
         }
 
         /// <summary>
@@ -1396,19 +1117,7 @@ namespace System.Text.Json
         {
             CheckValidInstance();
 
-            if (_parent is JsonDocument document)
-            {
-                return document.TryGetValue(_idx, out value);
-            }
-
-            var jsonNode = (JsonNode)_parent;
-
-            if (jsonNode is JsonString jsonString)
-            {
-                return jsonString.TryGetGuid(out value);
-            }
-
-            throw ThrowHelper.GetJsonElementWrongTypeException(JsonValueKind.String, jsonNode.ValueKind);
+            return _parent.TryGetValue(_idx, out value);
         }
 
         /// <summary>
@@ -1442,8 +1151,7 @@ namespace System.Text.Json
         {
             CheckValidInstance();
 
-            var document = (JsonDocument)_parent;
-            return document.GetNameOfPropertyValue(_idx);
+            return _parent.GetNameOfPropertyValue(_idx);
         }
 
         /// <summary>
@@ -1452,9 +1160,6 @@ namespace System.Text.Json
         /// <returns>
         ///   The original input data backing this value, returning it as a <see cref="string"/>.
         /// </returns>
-        /// <remarks>
-        ///   For JsonElement built from <see cref="JsonNode"/>, the value of <see cref="JsonNode.ToJsonString"/> is returned.
-        /// </remarks>
         /// <exception cref="ObjectDisposedException">
         ///   The parent <see cref="JsonDocument"/> has been disposed.
         /// </exception>
@@ -1462,21 +1167,14 @@ namespace System.Text.Json
         {
             CheckValidInstance();
 
-            if (_parent is JsonDocument document)
-            {
-                return document.GetRawValueAsString(_idx);
-            }
-
-            var jsonNode = (JsonNode)_parent;
-            return jsonNode.ToJsonString();
+            return _parent.GetRawValueAsString(_idx);
         }
 
         internal string GetPropertyRawText()
         {
             CheckValidInstance();
 
-            var document = (JsonDocument)_parent;
-            return document.GetPropertyRawValueAsString(_idx);
+            return _parent.GetPropertyRawValueAsString(_idx);
         }
 
         /// <summary>
@@ -1567,16 +1265,14 @@ namespace System.Text.Json
         {
             CheckValidInstance();
 
-            var document = (JsonDocument)_parent;
-            return document.TextEquals(_idx, utf8Text, isPropertyName);
+            return _parent.TextEquals(_idx, utf8Text, isPropertyName);
         }
 
         internal bool TextEqualsHelper(ReadOnlySpan<char> text, bool isPropertyName)
         {
             CheckValidInstance();
 
-            var document = (JsonDocument)_parent;
-            return document.TextEquals(_idx, text, isPropertyName);
+            return _parent.TextEquals(_idx, text, isPropertyName);
         }
 
         /// <summary>
@@ -1601,15 +1297,7 @@ namespace System.Text.Json
 
             CheckValidInstance();
 
-            if (_parent is JsonDocument document)
-            {
-                document.WriteElementTo(_idx, writer);
-            }
-            else
-            {
-                var jsonNode = (JsonNode)_parent;
-                jsonNode.WriteTo(writer);
-            }
+            _parent.WriteElementTo(_idx, writer);
         }
 
         /// <summary>
@@ -1628,21 +1316,11 @@ namespace System.Text.Json
         {
             CheckValidInstance();
 
-            if (_parent is JsonDocument)
-            {
-                JsonTokenType tokenType = TokenType;
+            JsonTokenType tokenType = TokenType;
 
-                if (tokenType != JsonTokenType.StartArray)
-                {
-                    throw ThrowHelper.GetJsonElementWrongTypeException(JsonTokenType.StartArray, tokenType);
-                }
-            }
-            else if (_parent is JsonNode node)
+            if (tokenType != JsonTokenType.StartArray)
             {
-                if (node.ValueKind != JsonValueKind.Array)
-                {
-                    throw new InvalidOperationException();
-                }
+                throw ThrowHelper.GetJsonElementWrongTypeException(JsonTokenType.StartArray, tokenType);
             }
 
             return new ArrayEnumerator(this);
@@ -1664,21 +1342,11 @@ namespace System.Text.Json
         {
             CheckValidInstance();
 
-            if (_parent is JsonDocument)
-            {
-                JsonTokenType tokenType = TokenType;
+            JsonTokenType tokenType = TokenType;
 
-                if (tokenType != JsonTokenType.StartObject)
-                {
-                    throw ThrowHelper.GetJsonElementWrongTypeException(JsonTokenType.StartObject, tokenType);
-                }
-            }
-            else if (_parent is JsonNode node)
+            if (tokenType != JsonTokenType.StartObject)
             {
-                if (node.ValueKind != JsonValueKind.Object)
-                {
-                    throw new InvalidOperationException();
-                }
+                throw ThrowHelper.GetJsonElementWrongTypeException(JsonTokenType.StartObject, tokenType);
             }
 
             return new ObjectEnumerator(this);
@@ -1711,10 +1379,6 @@ namespace System.Text.Json
         ///   <para>
         ///     For other types, the value of <see cref="GetRawText"/>() is returned.
         ///   </para>
-        ///
-        ///   <para>
-        ///     For JsonElement built from <see cref="JsonNode"/>, the value of <see cref="JsonNode.ToJsonString"/> is returned.
-        ///   </para>
         /// </remarks>
         /// <returns>
         ///   A string representation for the current value appropriate to the value type.
@@ -1724,11 +1388,6 @@ namespace System.Text.Json
         /// </exception>
         public override string? ToString()
         {
-            if (_parent is JsonNode jsonNode)
-            {
-                return jsonNode.ToJsonString();
-            }
-
             switch (TokenType)
             {
                 case JsonTokenType.None:
@@ -1771,26 +1430,17 @@ namespace System.Text.Json
         ///     a value contained within another JsonElement which was the output of a previous
         ///     call to Clone, this method results in no additional memory allocation.
         ///   </para>
-        ///   <para>
-        ///     For <see cref="JsonElement"/> built from <see cref="JsonNode"/>, performs <see cref="JsonNode.Clone"/>.
-        ///   </para>
         /// </remarks>
         public JsonElement Clone()
         {
             CheckValidInstance();
 
-            if (_parent is JsonDocument document)
+            if (!_parent.IsDisposable)
             {
-                if (!document.IsDisposable)
-                {
-                    return this;
-                }
-
-                return document.CloneElement(_idx);
+                return this;
             }
 
-            var jsonNode = (JsonNode)_parent;
-            return jsonNode.Clone().AsJsonElement();
+            return _parent.CloneElement(_idx);
         }
 
         private void CheckValidInstance()
@@ -1799,8 +1449,6 @@ namespace System.Text.Json
             {
                 throw new InvalidOperationException();
             }
-
-            Debug.Assert(_parent is JsonDocument || _parent is JsonNode);
         }
 
         [DebuggerBrowsable(DebuggerBrowsableState.Never)]

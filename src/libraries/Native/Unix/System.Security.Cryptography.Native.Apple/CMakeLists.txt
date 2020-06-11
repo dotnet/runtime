@@ -21,6 +21,14 @@ set(NATIVECRYPTO_SOURCES
     pal_x509chain.c
 )
 
+if (CLR_CMAKE_TARGET_IOS)
+    add_definitions(-DTARGET_IOS)
+endif()
+
+if (CLR_CMAKE_TARGET_TVOS)
+    add_definitions(-DTARGET_TVOS)
+endif()
+
 add_library(System.Security.Cryptography.Native.Apple
     SHARED
     ${NATIVECRYPTO_SOURCES}
@@ -32,11 +40,6 @@ add_library(System.Security.Cryptography.Native.Apple-Static
     ${NATIVECRYPTO_SOURCES}
 )
 
-# Disable the "lib" prefix.
-set_target_properties(System.Security.Cryptography.Native.Apple PROPERTIES PREFIX "")
-
-# Disable the "lib" prefix and override default name
-set_target_properties(System.Security.Cryptography.Native.Apple-Static PROPERTIES PREFIX "")
 set_target_properties(System.Security.Cryptography.Native.Apple-Static PROPERTIES OUTPUT_NAME System.Security.Cryptography.Native.Apple CLEAN_DIRECT_OUTPUT 1)
 
 target_link_libraries(System.Security.Cryptography.Native.Apple
@@ -44,5 +47,5 @@ target_link_libraries(System.Security.Cryptography.Native.Apple
     ${SECURITY_LIBRARY}
 )
 
-install_library_and_symbols (System.Security.Cryptography.Native.Apple)
+install_with_stripped_symbols (System.Security.Cryptography.Native.Apple PROGRAMS .)
 install (TARGETS System.Security.Cryptography.Native.Apple-Static DESTINATION .)

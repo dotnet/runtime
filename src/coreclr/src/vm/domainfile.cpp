@@ -31,8 +31,6 @@
 #include "dllimportcallback.h"
 #include "peimagelayout.inl"
 
-#include "winrthelpers.h"
-
 #ifdef FEATURE_PERFMAP
 #include "perfmap.h"
 #endif // FEATURE_PERFMAP
@@ -825,14 +823,6 @@ void DomainFile::ClearNativeImageStress()
     if (g_pConfig->RequireZaps() != EEConfig::REQUIRE_ZAPS_NONE)
         return;
 
-    // Its OK to ClearNativeImage even for a shared assembly, as the current PEFile will
-    // be discarded if we decide to share the assembly. However, we always use the same
-    // PEFile for the system assembly. So discarding the native image in the current
-    // AppDomain will actually affect the system assembly in the shared domain, and other
-    // appdomains may have already committed to using its ngen image.
-    if (GetFile()->IsSystem() && !this->GetAppDomain()->IsDefaultDomain())
-        return;
-
     if (g_IBCLogger.InstrEnabled())
         return;
 
@@ -1008,44 +998,6 @@ void DomainFile::FinishLoad()
 
     // Are we absolutely required to use a native image?
     CheckZapRequired();
-
-#if defined(FEATURE_COMINTEROP)
-    // If this is a winmd file, ensure that the ngen reference namespace is loadable.
-    // This is necessary as on the phone we don't check ngen image dependencies, and thus we can get in a situation
-    // where a winmd is loaded as a dependency of an ngen image, but the type used to build cross module references
-    // in winmd files isn't loaded.
-    PEFile* peFile = GetFile();
-    if (peFile && peFile->AsAssembly()->IsWindowsRuntime() && peFile->HasHostAssembly())
-    {
-        IMDInternalImport *pImport = GetFile()->GetPersistentMDImport();
-        LPCSTR  szNameSpace;
-        LPCSTR  szTypeName;
-        // It does not make sense to pass the file name to recieve fake type name for empty WinMDs, because we would use the name
-        // for binding in next call to BindAssemblySpec which would fail for fake WinRT type name
-        // We will throw/return the error instead and the caller will recognize it and react to it by not creating the ngen image -
-        // see code:Zapper::ComputeDependenciesInCurrentDomain
-        if (SUCCEEDED(::GetFirstWinRTTypeDef(pImport, &szNameSpace, &szTypeName, NULL, NULL)))
-        {
-            // Build assembly spec to describe binding to that WinRT type.
-            AssemblySpec spec;
-            IfFailThrow(spec.Init("WindowsRuntimeAssemblyName, ContentType=WindowsRuntime"));
-            spec.SetWindowsRuntimeType(szNameSpace, szTypeName);
-
-            // Bind to assembly using the CLRPriv binder infrastructure. (All WinRT loads are done through CLRPriv binders
-            ReleaseHolder<IAssemblyName> pAssemblyName;
-            IfFailThrow(spec.CreateFusionName(&pAssemblyName, FALSE, TRUE));
-            ReleaseHolder<ICLRPrivAssembly> pPrivAssembly;
-            IfFailThrow(GetFile()->GetHostAssembly()->BindAssemblyByName(pAssemblyName, &pPrivAssembly));
-
-            // Verify that we found this. If this invariant doesn't hold, then the ngen images that reference this winmd are be invalid.
-            // ALSO, this winmd file is invalid as it doesn't follow spec about how it is distributed.
-            if (GetAppDomain()->FindAssembly(pPrivAssembly) != this)
-            {
-                ThrowHR(COR_E_BADIMAGEFORMAT);
-            }
-        }
-    }
-#endif //defined(FEATURE_COMINTEROP)
 #endif // FEATURE_PREJIT
 
     // Flush any log messages
@@ -1693,10 +1645,10 @@ void DomainAssembly::GetCurrentVersionInfo(CORCOMPILE_VERSION_INFO *pNativeVersi
 
     pNativeVersionInfo->wMachine = IMAGE_FILE_MACHINE_NATIVE_NI;
 
-    pNativeVersionInfo->wVersionMajor = CLR_MAJOR_VERSION;
-    pNativeVersionInfo->wVersionMinor = CLR_MINOR_VERSION;
-    pNativeVersionInfo->wVersionBuildNumber = CLR_BUILD_VERSION;
-    pNativeVersionInfo->wVersionPrivateBuildNumber = CLR_BUILD_VERSION_QFE;
+    pNativeVersionInfo->wVersionMajor = RuntimeFileMajorVersion;
+    pNativeVersionInfo->wVersionMinor = RuntimeFileMinorVersion;
+    pNativeVersionInfo->wVersionBuildNumber = RuntimeFileBuildVersion;
+    pNativeVersionInfo->wVersionPrivateBuildNumber = RuntimeFileRevisionVersion;
 
     GetNGenCpuInfo(&pNativeVersionInfo->cpuInfo);
 
@@ -2273,50 +2225,6 @@ void DomainAssembly::NotifyDebuggerUnload()
 
 }
 
-// This will enumerate for static GC refs (but not thread static GC refs)
-
-void DomainAssembly::EnumStaticGCRefs(promote_func* fn, ScanContext* sc)
-{
-    CONTRACT_VOID
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-    }
-    CONTRACT_END;
-
-    _ASSERTE(GCHeapUtilities::IsGCInProgress() &&
-         GCHeapUtilities::IsServerHeap()   &&
-         IsGCSpecialThread());
-
-    if (IsCollectible())
-    {
-        // Collectible assemblies have statics stored in managed arrays, so they don't need special handlings
-        return;
-    }
-
-    DomainModuleIterator i = IterateModules(kModIterIncludeLoaded);
-    while (i.Next())
-    {
-        DomainFile* pDomainFile = i.GetDomainFile();
-
-        if (pDomainFile->IsActive())
-        {
-            // We guarantee that at this point the module has it's DomainLocalModule set up
-            // , as we create it while we load the module
-            _ASSERTE(pDomainFile->GetLoadedModule()->GetDomainLocalModule());
-            pDomainFile->GetLoadedModule()->EnumRegularStaticGCRefs(fn, sc);
-
-            // We current to do not iterate over the ThreadLocalModules that correspond
-            // to this Module. The GC discovers thread statics through the handle table.
-        }
-    }
-
-    RETURN;
-}
-
-
-
-
 #endif // #ifndef DACCESS_COMPILE
 
 #ifdef DACCESS_COMPILE
@@ -2366,6 +2274,4 @@ DomainAssembly::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
     }
 }
 
-
 #endif // #ifdef DACCESS_COMPILE
-

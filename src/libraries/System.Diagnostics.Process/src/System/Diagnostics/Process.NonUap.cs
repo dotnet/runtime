@@ -4,7 +4,6 @@
 
 using System.Collections.Generic;
 using System.ComponentModel;
-using System.Linq;
 
 namespace System.Diagnostics
 {
@@ -23,9 +22,9 @@ namespace System.Diagnostics
                 if (IsSelfOrDescendantOf(GetCurrentProcess()))
                     throw new InvalidOperationException(SR.KillEntireProcessTree_DisallowedBecauseTreeContainsCallingProcess);
 
-                IEnumerable<Exception> result = KillTree();
+                List<Exception>? result = KillTree();
 
-                if (result.Any())
+                if (result != null && result.Count != 0)
                     throw new AggregateException(SR.KillEntireProcessTree_TerminationIncomplete, result);
             }
         }

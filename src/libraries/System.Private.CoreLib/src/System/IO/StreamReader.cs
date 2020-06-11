@@ -980,7 +980,7 @@ namespace System.IO
 
             if (cancellationToken.IsCancellationRequested)
             {
-                return new ValueTask<int>(Task.FromCanceled<int>(cancellationToken));
+                return ValueTask.FromCanceled<int>(cancellationToken);
             }
 
             return ReadAsyncInternal(buffer, cancellationToken);
@@ -1204,7 +1204,7 @@ namespace System.IO
 
             if (cancellationToken.IsCancellationRequested)
             {
-                return new ValueTask<int>(Task.FromCanceled<int>(cancellationToken));
+                return ValueTask.FromCanceled<int>(cancellationToken);
             }
 
             ValueTask<int> vt = ReadBlockAsyncInternal(buffer, cancellationToken);

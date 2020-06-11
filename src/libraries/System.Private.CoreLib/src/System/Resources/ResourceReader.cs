@@ -6,6 +6,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Text;
 
@@ -84,8 +85,8 @@ namespace System.Resources
         private unsafe int* _nameHashesPtr;  // In case we're using UnmanagedMemoryStream
         private int[]? _namePositions; // relative locations of names
         private unsafe int* _namePositionsPtr;  // If we're using UnmanagedMemoryStream
-        private Type?[] _typeTable = null!;    // Lazy array of Types for resource values.
-        private int[] _typeNamePositions = null!;  // To delay initialize type table
+        private Type?[] _typeTable;    // Lazy array of Types for resource values.
+        private int[] _typeNamePositions;  // To delay initialize type table
         private int _numResources;    // Num of resources files, in case arrays aren't allocated.
 
         // We'll include a separate code path that uses UnmanagedMemoryStream to
@@ -442,11 +443,11 @@ namespace System.Resources
                 {
                     throw new FormatException(SR.Format(SR.BadImageFormat_ResourcesDataInvalidOffset, dataPos));
                 }
-                ResourceTypeCode junk;
+
                 if (_version == 1)
                     return LoadObjectV1(dataPos);
                 else
-                    return LoadObjectV2(dataPos, out junk);
+                    return LoadObjectV2(dataPos, out _);
             }
         }
 
@@ -739,6 +740,8 @@ namespace System.Resources
         // Reads in the header information for a .resources file.  Verifies some
         // of the assumptions about this resource set, and builds the class table
         // for the default resource file format.
+        [MemberNotNull(nameof(_typeTable))]
+        [MemberNotNull(nameof(_typeNamePositions))]
         private void ReadResources()
         {
             Debug.Assert(_store != null, "ResourceReader is closed!");
@@ -759,6 +762,8 @@ namespace System.Resources
             }
         }
 
+        [MemberNotNull(nameof(_typeTable))]
+        [MemberNotNull(nameof(_typeNamePositions))]
         private void _ReadResources()
         {
             // Read ResourceManager header
@@ -1044,8 +1049,7 @@ namespace System.Resources
                         lock (_reader._resCache)
                         {
                             key = _reader.AllocateStringForNameIndex(_currentName, out _dataPosition); // AllocateStringForNameIndex could lock on _reader
-                            ResourceLocator locator;
-                            if (_reader._resCache.TryGetValue(key, out locator))
+                            if (_reader._resCache.TryGetValue(key, out ResourceLocator locator))
                             {
                                 value = locator.Value;
                             }

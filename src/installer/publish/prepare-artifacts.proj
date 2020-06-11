@@ -1,4 +1,4 @@
-<Project>
+<Project DefaultTargets="Build">
   <Import Project="Sdk.props" Sdk="Microsoft.NET.Sdk" />
 
   <UsingTask TaskName="GenerateChecksums" AssemblyFile="$(InstallerTasksAssemblyPath)" />
@@ -26,29 +26,6 @@
       Projects="$(SigningToolsDir)\SignFinalPackages.proj"
       Targets="Build"
       Properties="DownloadDirectory=$(DownloadDirectory)" />
-  </Target>
-
-  <Target Name="UploadPreparedArtifactsToPipeline"
-          DependsOnTargets="
-            FindDownloadedArtifacts;
-            SignPackages;
-            CreateChecksums">
-    <PropertyGroup>
-      <PreparedFileUploadDir>$(ArtifactsObjDir)PreparedFileUpload\</PreparedFileUploadDir>
-    </PropertyGroup>
-
-    <ItemGroup>
-      <AllFilesToBlobStorage Include="@(UploadToBlobStorageFile);@(UploadToBlobStorageFile)" />
-    </ItemGroup>
-
-    <Copy SourceFiles="@(AllFilesToBlobStorage)" DestinationFolder="$(PreparedFileUploadDir)">
-      <Output TaskParameter="CopiedFiles" ItemName="CopiedUploadToBlobStorageFile" />
-    </Copy>
-
-    <Message Importance="High" Text="Uploading PreparedArtifacts to pipeline" />
-    <Message
-      Text="##vso[artifact.upload containerfolder=PreparedArtifacts;artifactname=PreparedArtifacts]%(CopiedUploadToBlobStorageFile.Identity)"
-      Importance="High" />
   </Target>
 
   <Target Name="PreparePublishToAzureBlobFeed">
@@ -159,7 +136,9 @@
   -->
   <Target Name="Build"
           DependsOnTargets="
-            UploadPreparedArtifactsToPipeline;
+            FindDownloadedArtifacts;
+            SignPackages;
+            CreateChecksums;
             PreparePublishToAzureBlobFeed;
             PreparePublishFilesToAzureBlobFeed">
     <Message Importance="High" Text="Complete!" />

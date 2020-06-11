@@ -4,22 +4,21 @@
 
 #pragma warning disable SA1028 // ignore whitespace warnings for generated code
 using System;
+using System.Formats.Asn1;
 using System.Runtime.InteropServices;
-using System.Security.Cryptography;
-using System.Security.Cryptography.Asn1;
 
 namespace System.Security.Cryptography.Asn1
 {
     [StructLayout(LayoutKind.Sequential)]
     internal partial struct PssParamsAsn
     {
-        private static readonly byte[] s_defaultHashAlgorithm = { 0x30, 0x09, 0x06, 0x05, 0x2B, 0x0E, 0x03, 0x02, 0x1A, 0x05, 0x00 };
+        private static ReadOnlySpan<byte> DefaultHashAlgorithm => new byte[] { 0x30, 0x09, 0x06, 0x05, 0x2B, 0x0E, 0x03, 0x02, 0x1A, 0x05, 0x00 };
 
-        private static readonly byte[] s_defaultMaskGenAlgorithm = { 0x30, 0x16, 0x06, 0x09, 0x2A, 0x86, 0x48, 0x86, 0xF7, 0x0D, 0x01, 0x01, 0x08, 0x30, 0x09, 0x06, 0x05, 0x2B, 0x0E, 0x03, 0x02, 0x1A, 0x05, 0x00 };
+        private static ReadOnlySpan<byte> DefaultMaskGenAlgorithm => new byte[] { 0x30, 0x16, 0x06, 0x09, 0x2A, 0x86, 0x48, 0x86, 0xF7, 0x0D, 0x01, 0x01, 0x08, 0x30, 0x09, 0x06, 0x05, 0x2B, 0x0E, 0x03, 0x02, 0x1A, 0x05, 0x00 };
 
-        private static readonly byte[] s_defaultSaltLength = { 0x02, 0x01, 0x14 };
+        private static ReadOnlySpan<byte> DefaultSaltLength => new byte[] { 0x02, 0x01, 0x14 };
 
-        private static readonly byte[] s_defaultTrailerField = { 0x02, 0x01, 0x01 };
+        private static ReadOnlySpan<byte> DefaultTrailerField => new byte[] { 0x02, 0x01, 0x01 };
 
         internal System.Security.Cryptography.Asn1.AlgorithmIdentifierAsn HashAlgorithm;
         internal System.Security.Cryptography.Asn1.AlgorithmIdentifierAsn MaskGenAlgorithm;
@@ -33,15 +32,15 @@ namespace System.Security.Cryptography.Asn1
             ReadOnlyMemory<byte> rebind = default;
             AsnValueReader reader;
 
-            reader = new AsnValueReader(s_defaultHashAlgorithm, AsnEncodingRules.DER);
+            reader = new AsnValueReader(DefaultHashAlgorithm, AsnEncodingRules.DER);
             System.Security.Cryptography.Asn1.AlgorithmIdentifierAsn.Decode(ref reader, rebind, out decoded.HashAlgorithm);
             reader.ThrowIfNotEmpty();
 
-            reader = new AsnValueReader(s_defaultMaskGenAlgorithm, AsnEncodingRules.DER);
+            reader = new AsnValueReader(DefaultMaskGenAlgorithm, AsnEncodingRules.DER);
             System.Security.Cryptography.Asn1.AlgorithmIdentifierAsn.Decode(ref reader, rebind, out decoded.MaskGenAlgorithm);
             reader.ThrowIfNotEmpty();
 
-            reader = new AsnValueReader(s_defaultSaltLength, AsnEncodingRules.DER);
+            reader = new AsnValueReader(DefaultSaltLength, AsnEncodingRules.DER);
 
             if (!reader.TryReadInt32(out decoded.SaltLength))
             {
@@ -50,7 +49,7 @@ namespace System.Security.Cryptography.Asn1
 
             reader.ThrowIfNotEmpty();
 
-            reader = new AsnValueReader(s_defaultTrailerField, AsnEncodingRules.DER);
+            reader = new AsnValueReader(DefaultTrailerField, AsnEncodingRules.DER);
 
             if (!reader.TryReadInt32(out decoded.TrailerField))
             {
@@ -73,68 +72,56 @@ namespace System.Security.Cryptography.Asn1
 
             // DEFAULT value handler for HashAlgorithm.
             {
-                using (AsnWriter tmp = new AsnWriter(AsnEncodingRules.DER))
-                {
-                    HashAlgorithm.Encode(tmp);
-                    ReadOnlySpan<byte> encoded = tmp.EncodeAsSpan();
+                AsnWriter tmp = new AsnWriter(AsnEncodingRules.DER);
+                HashAlgorithm.Encode(tmp);
 
-                    if (!encoded.SequenceEqual(s_defaultHashAlgorithm))
-                    {
-                        writer.PushSequence(new Asn1Tag(TagClass.ContextSpecific, 0));
-                        writer.WriteEncodedValue(encoded);
-                        writer.PopSequence(new Asn1Tag(TagClass.ContextSpecific, 0));
-                    }
+                if (!tmp.EncodedValueEquals(DefaultHashAlgorithm))
+                {
+                    writer.PushSequence(new Asn1Tag(TagClass.ContextSpecific, 0));
+                    tmp.CopyTo(writer);
+                    writer.PopSequence(new Asn1Tag(TagClass.ContextSpecific, 0));
                 }
             }
 
 
             // DEFAULT value handler for MaskGenAlgorithm.
             {
-                using (AsnWriter tmp = new AsnWriter(AsnEncodingRules.DER))
-                {
-                    MaskGenAlgorithm.Encode(tmp);
-                    ReadOnlySpan<byte> encoded = tmp.EncodeAsSpan();
+                AsnWriter tmp = new AsnWriter(AsnEncodingRules.DER);
+                MaskGenAlgorithm.Encode(tmp);
 
-                    if (!encoded.SequenceEqual(s_defaultMaskGenAlgorithm))
-                    {
-                        writer.PushSequence(new Asn1Tag(TagClass.ContextSpecific, 1));
-                        writer.WriteEncodedValue(encoded);
-                        writer.PopSequence(new Asn1Tag(TagClass.ContextSpecific, 1));
-                    }
+                if (!tmp.EncodedValueEquals(DefaultMaskGenAlgorithm))
+                {
+                    writer.PushSequence(new Asn1Tag(TagClass.ContextSpecific, 1));
+                    tmp.CopyTo(writer);
+                    writer.PopSequence(new Asn1Tag(TagClass.ContextSpecific, 1));
                 }
             }
 
 
             // DEFAULT value handler for SaltLength.
             {
-                using (AsnWriter tmp = new AsnWriter(AsnEncodingRules.DER))
-                {
-                    tmp.WriteInteger(SaltLength);
-                    ReadOnlySpan<byte> encoded = tmp.EncodeAsSpan();
+                AsnWriter tmp = new AsnWriter(AsnEncodingRules.DER);
+                tmp.WriteInteger(SaltLength);
 
-                    if (!encoded.SequenceEqual(s_defaultSaltLength))
-                    {
-                        writer.PushSequence(new Asn1Tag(TagClass.ContextSpecific, 2));
-                        writer.WriteEncodedValue(encoded);
-                        writer.PopSequence(new Asn1Tag(TagClass.ContextSpecific, 2));
-                    }
+                if (!tmp.EncodedValueEquals(DefaultSaltLength))
+                {
+                    writer.PushSequence(new Asn1Tag(TagClass.ContextSpecific, 2));
+                    tmp.CopyTo(writer);
+                    writer.PopSequence(new Asn1Tag(TagClass.ContextSpecific, 2));
                 }
             }
 
 
             // DEFAULT value handler for TrailerField.
             {
-                using (AsnWriter tmp = new AsnWriter(AsnEncodingRules.DER))
-                {
-                    tmp.WriteInteger(TrailerField);
-                    ReadOnlySpan<byte> encoded = tmp.EncodeAsSpan();
+                AsnWriter tmp = new AsnWriter(AsnEncodingRules.DER);
+                tmp.WriteInteger(TrailerField);
 
-                    if (!encoded.SequenceEqual(s_defaultTrailerField))
-                    {
-                        writer.PushSequence(new Asn1Tag(TagClass.ContextSpecific, 3));
-                        writer.WriteEncodedValue(encoded);
-                        writer.PopSequence(new Asn1Tag(TagClass.ContextSpecific, 3));
-                    }
+                if (!tmp.EncodedValueEquals(DefaultTrailerField))
+                {
+                    writer.PushSequence(new Asn1Tag(TagClass.ContextSpecific, 3));
+                    tmp.CopyTo(writer);
+                    writer.PopSequence(new Asn1Tag(TagClass.ContextSpecific, 3));
                 }
             }
 
@@ -148,11 +135,18 @@ namespace System.Security.Cryptography.Asn1
 
         internal static PssParamsAsn Decode(Asn1Tag expectedTag, ReadOnlyMemory<byte> encoded, AsnEncodingRules ruleSet)
         {
-            AsnValueReader reader = new AsnValueReader(encoded.Span, ruleSet);
+            try
+            {
+                AsnValueReader reader = new AsnValueReader(encoded.Span, ruleSet);
 
-            Decode(ref reader, expectedTag, encoded, out PssParamsAsn decoded);
-            reader.ThrowIfNotEmpty();
-            return decoded;
+                DecodeCore(ref reader, expectedTag, encoded, out PssParamsAsn decoded);
+                reader.ThrowIfNotEmpty();
+                return decoded;
+            }
+            catch (AsnContentException e)
+            {
+                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding, e);
+            }
         }
 
         internal static void Decode(ref AsnValueReader reader, ReadOnlyMemory<byte> rebind, out PssParamsAsn decoded)
@@ -161,6 +155,18 @@ namespace System.Security.Cryptography.Asn1
         }
 
         internal static void Decode(ref AsnValueReader reader, Asn1Tag expectedTag, ReadOnlyMemory<byte> rebind, out PssParamsAsn decoded)
+        {
+            try
+            {
+                DecodeCore(ref reader, expectedTag, rebind, out decoded);
+            }
+            catch (AsnContentException e)
+            {
+                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding, e);
+            }
+        }
+
+        private static void DecodeCore(ref AsnValueReader reader, Asn1Tag expectedTag, ReadOnlyMemory<byte> rebind, out PssParamsAsn decoded)
         {
             decoded = default;
             AsnValueReader sequenceReader = reader.ReadSequence(expectedTag);
@@ -176,7 +182,7 @@ namespace System.Security.Cryptography.Asn1
             }
             else
             {
-                defaultReader = new AsnValueReader(s_defaultHashAlgorithm, AsnEncodingRules.DER);
+                defaultReader = new AsnValueReader(DefaultHashAlgorithm, AsnEncodingRules.DER);
                 System.Security.Cryptography.Asn1.AlgorithmIdentifierAsn.Decode(ref defaultReader, rebind, out decoded.HashAlgorithm);
             }
 
@@ -189,7 +195,7 @@ namespace System.Security.Cryptography.Asn1
             }
             else
             {
-                defaultReader = new AsnValueReader(s_defaultMaskGenAlgorithm, AsnEncodingRules.DER);
+                defaultReader = new AsnValueReader(DefaultMaskGenAlgorithm, AsnEncodingRules.DER);
                 System.Security.Cryptography.Asn1.AlgorithmIdentifierAsn.Decode(ref defaultReader, rebind, out decoded.MaskGenAlgorithm);
             }
 
@@ -207,7 +213,7 @@ namespace System.Security.Cryptography.Asn1
             }
             else
             {
-                defaultReader = new AsnValueReader(s_defaultSaltLength, AsnEncodingRules.DER);
+                defaultReader = new AsnValueReader(DefaultSaltLength, AsnEncodingRules.DER);
 
                 if (!defaultReader.TryReadInt32(out decoded.SaltLength))
                 {
@@ -230,7 +236,7 @@ namespace System.Security.Cryptography.Asn1
             }
             else
             {
-                defaultReader = new AsnValueReader(s_defaultTrailerField, AsnEncodingRules.DER);
+                defaultReader = new AsnValueReader(DefaultTrailerField, AsnEncodingRules.DER);
 
                 if (!defaultReader.TryReadInt32(out decoded.TrailerField))
                 {

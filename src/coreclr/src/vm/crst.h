@@ -119,10 +119,9 @@ template <typename ELEMENT>
 friend class ListLockBase;
 template <typename ELEMENT>
 friend class ListLockEntryBase;
-//friend class CExecutionEngine;
 friend struct SavedExceptionInfo;
-friend void EEEnterCriticalSection(CRITSEC_COOKIE cookie);
-friend void EELeaveCriticalSection(CRITSEC_COOKIE cookie);
+friend void ClrEnterCriticalSection(CRITSEC_COOKIE cookie);
+friend void ClrLeaveCriticalSection(CRITSEC_COOKIE cookie);
 friend class CodeVersionManager;
 
 friend class Debugger;
@@ -261,9 +260,6 @@ public:
         return m_holderthreadid.IsCurrentThread();
 #endif
     }
-
-    CrstBase *GetThreadsOwnedCrsts();
-    void SetThreadsOwnedCrsts(CrstBase *pCrst);
 
     NOINLINE EEThreadId GetHolderThreadId()
     {

@@ -29,7 +29,7 @@ namespace System.Composition.AttributeModel.Tests
         [Theory]
         [InlineData(null)]
         [InlineData(typeof(string))]
-        public void Ctor_ContractName(Type contractType)
+        public void Ctor_ContractType(Type contractType)
         {
             var attribute = new ExportAttribute(contractType);
             Assert.Null(attribute.ContractName);

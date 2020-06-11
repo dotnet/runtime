@@ -2,8 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Net.Mime;
 
 namespace System.Net.Mail
@@ -69,7 +71,7 @@ namespace System.Net.Mail
             Debug.Assert(index >= 0 && index < data.Length, "Index out of range: " + index + ", " + data.Length);
 
             // Parsed components to be assembled as a MailAddress later
-            string displayName;
+            string? displayName;
 
             // Skip comments and whitespace
             if (!TryReadCfwsAndThrowIfIncomplete(data, index, out index, throwExceptionIfFail))
@@ -87,7 +89,7 @@ namespace System.Net.Mail
                 index--;
             }
 
-            if (!TryParseDomain(data, ref index, out string domain, throwExceptionIfFail))
+            if (!TryParseDomain(data, ref index, out string? domain, throwExceptionIfFail))
             {
                 parseAddressInfo = default;
                 return false;
@@ -110,7 +112,7 @@ namespace System.Net.Mail
             // Skip the '@' symbol
             index--;
 
-            if (!TryParseLocalPart(data, ref index, expectAngleBracket, expectMultipleAddresses, out string localPart, throwExceptionIfFail))
+            if (!TryParseLocalPart(data, ref index, expectAngleBracket, expectMultipleAddresses, out string? localPart, throwExceptionIfFail))
             {
                 parseAddressInfo = default;
                 return false;
@@ -206,7 +208,7 @@ namespace System.Net.Mail
         // Throws a FormatException or returns false:
         // - For invalid un-escaped chars, including Unicode
         // - If the start of the data string is reached
-        private static bool TryParseDomain(string data, ref int index, out string domain, bool throwExceptionIfFail)
+        private static bool TryParseDomain(string data, ref int index, [NotNullWhen(true)] out string? domain, bool throwExceptionIfFail)
         {
             // Skip comments and whitespace
             if (!TryReadCfwsAndThrowIfIncomplete(data, index, out index, throwExceptionIfFail))
@@ -268,7 +270,7 @@ namespace System.Net.Mail
         // - For invalid un-escaped chars, including Unicode
         // - If the final value of data[index] is not a valid character to precede the local-part
         private static bool TryParseLocalPart(string data, ref int index, bool expectAngleBracket,
-            bool expectMultipleAddresses, out string localPart, bool throwExceptionIfFail)
+            bool expectMultipleAddresses, [NotNullWhen(true)] out string? localPart, bool throwExceptionIfFail)
         {
             // Skip comments and whitespace
             if (!TryReadCfwsAndThrowIfIncomplete(data, index, out index, throwExceptionIfFail))
@@ -354,7 +356,7 @@ namespace System.Net.Mail
         // Throws a FormatException or false is returned:
         // - For invalid un-escaped chars, except Unicode
         // - If the postconditions cannot be met.
-        private static bool TryParseDisplayName(string data, ref int index, bool expectMultipleAddresses, out string displayName, bool throwExceptionIfFail)
+        private static bool TryParseDisplayName(string data, ref int index, bool expectMultipleAddresses, [NotNullWhen(true)] out string? displayName, bool throwExceptionIfFail)
         {
             // Whatever is left over must be the display name. The display name should be a single word/atom or a
             // quoted string, but for robustness we allow the quotes to be omitted, so long as we can find the comma
@@ -432,7 +434,7 @@ namespace System.Net.Mail
             return true;
         }
 
-        internal static bool TryNormalizeOrThrow(string input, out string normalizedString, bool throwExceptionIfFail)
+        internal static bool TryNormalizeOrThrow(string input, [NotNullWhen(true)] out string? normalizedString, bool throwExceptionIfFail)
         {
             try
             {

@@ -18,21 +18,11 @@
 
 GCSystemInfo g_SystemInfo;
 
-typedef BOOL (WINAPI *PGET_PROCESS_MEMORY_INFO)(HANDLE handle, PROCESS_MEMORY_COUNTERS* memCounters, uint32_t cb);
-static PGET_PROCESS_MEMORY_INFO GCGetProcessMemoryInfo = 0;
-
 static size_t g_RestrictedPhysicalMemoryLimit = (size_t)UINTPTR_MAX;
-
-// For 32-bit processes the virtual address range could be smaller than the amount of physical
-// memory on the machine/in the container, we need to restrict by the VM.
-static bool g_UseRestrictedVirtualMemory = false;
 
 static bool g_SeLockMemoryPrivilegeAcquired = false;
 
 static AffinitySet g_processAffinitySet;
-
-typedef BOOL (WINAPI *PIS_PROCESS_IN_JOB)(HANDLE processHandle, HANDLE jobHandle, BOOL* result);
-typedef BOOL (WINAPI *PQUERY_INFORMATION_JOB_OBJECT)(HANDLE jobHandle, JOBOBJECTINFOCLASS jobObjectInfoClass, void* lpJobObjectInfo, DWORD cbJobObjectInfoLength, LPDWORD lpReturnLength);
 
 namespace {
 
@@ -297,36 +287,14 @@ static size_t GetRestrictedPhysicalMemoryLimit()
     uint64_t total_virtual = 0;
     uint64_t total_physical = 0;
     BOOL in_job_p = FALSE;
-    HINSTANCE hinstKernel32 = 0;
 
-    PIS_PROCESS_IN_JOB GCIsProcessInJob = 0;
-    PQUERY_INFORMATION_JOB_OBJECT GCQueryInformationJobObject = 0;
-
-    hinstKernel32 = LoadLibraryEx(L"kernel32.dll", nullptr, LOAD_LIBRARY_SEARCH_SYSTEM32);
-    if (!hinstKernel32)
-        goto exit;
-
-    GCIsProcessInJob = (PIS_PROCESS_IN_JOB)GetProcAddress(hinstKernel32, "IsProcessInJob");
-    if (!GCIsProcessInJob)
-        goto exit;
-
-    if (!GCIsProcessInJob(GetCurrentProcess(), NULL, &in_job_p))
+    if (!IsProcessInJob(GetCurrentProcess(), NULL, &in_job_p))
         goto exit;
 
     if (in_job_p)
     {
-        GCGetProcessMemoryInfo = (PGET_PROCESS_MEMORY_INFO)GetProcAddress(hinstKernel32, "K32GetProcessMemoryInfo");
-
-        if (!GCGetProcessMemoryInfo)
-            goto exit;
-
-        GCQueryInformationJobObject = (PQUERY_INFORMATION_JOB_OBJECT)GetProcAddress(hinstKernel32, "QueryInformationJobObject");
-
-        if (!GCQueryInformationJobObject)
-            goto exit;
-
         JOBOBJECT_EXTENDED_LIMIT_INFORMATION limit_info;
-        if (GCQueryInformationJobObject (NULL, JobObjectExtendedLimitInformation, &limit_info,
+        if (QueryInformationJobObject (NULL, JobObjectExtendedLimitInformation, &limit_info,
             sizeof(limit_info), NULL))
         {
             size_t job_memory_limit = (size_t)UINTPTR_MAX;
@@ -373,13 +341,6 @@ exit:
     if (job_physical_memory_limit == (size_t)UINTPTR_MAX)
     {
         job_physical_memory_limit = 0;
-
-        if (hinstKernel32 != 0)
-        {
-            FreeLibrary(hinstKernel32);
-            hinstKernel32 = 0;
-            GCGetProcessMemoryInfo = 0;
-        }
     }
 
     // Check to see if we are limited by VM.
@@ -399,15 +360,8 @@ exit:
 
     if (total_virtual < total_physical)
     {
-        if (hinstKernel32 != 0)
-        {
-            // We can also free the lib here - if we are limited by VM we will not be calling
-            // GetProcessMemoryInfo.
-            FreeLibrary(hinstKernel32);
-            GCGetProcessMemoryInfo = 0;
-        }
-        g_UseRestrictedVirtualMemory = true;
-        job_physical_memory_limit = (size_t)total_virtual;
+        // Limited by virtual address space
+        job_physical_memory_limit = 0;
     }
 
     VolatileStore(&g_RestrictedPhysicalMemoryLimit, job_physical_memory_limit);
@@ -899,107 +853,9 @@ size_t GCToOSInterface::GetCacheSizePerLogicalCpu(bool trueSize)
 
     size_t maxSize, maxTrueSize;
 
-#ifdef HOST_X86
-    int dwBuffer[4];
-
-    __cpuid(dwBuffer, 0);
-
-    int maxCpuId = dwBuffer[0];
-
-    if (dwBuffer[1] == 'uneG')
-    {
-        if (dwBuffer[3] == 'Ieni')
-        {
-            if (dwBuffer[2] == 'letn')
-            {
-                maxTrueSize = GetLogicalProcessorCacheSizeFromOS(); //use OS API for cache enumeration on LH and above
-#ifdef HOST_64BIT
-                if (maxCpuId >= 2)
-                {
-                    // If we're running on a Prescott or greater core, EM64T tests
-                    // show that starting with a gen0 larger than LLC improves performance.
-                    // Thus, start with a gen0 size that is larger than the cache.  The value of
-                    // 3 is a reasonable tradeoff between workingset and performance.
-                    maxSize = maxTrueSize * 3;
-                }
-                else
-#endif
-                {
-                    maxSize = maxTrueSize;
-                }
-            }
-        }
-    }
-
-    if (dwBuffer[1] == 'htuA') {
-        if (dwBuffer[3] == 'itne') {
-            if (dwBuffer[2] == 'DMAc') {
-                __cpuid(dwBuffer, 0x80000000);
-                if (dwBuffer[0] >= 0x80000006)
-                {
-                    __cpuid(dwBuffer, 0x80000006);
-
-                    DWORD dwL2CacheBits = dwBuffer[2];
-                    DWORD dwL3CacheBits = dwBuffer[3];
-
-                    maxTrueSize = (size_t)((dwL2CacheBits >> 16) * 1024);    // L2 cache size in ECX bits 31-16
-
-                    __cpuid(dwBuffer, 0x1);
-                    DWORD dwBaseFamily = (dwBuffer[0] & (0xF << 8)) >> 8;
-                    DWORD dwExtFamily  = (dwBuffer[0] & (0xFF << 20)) >> 20;
-                    DWORD dwFamily = dwBaseFamily >= 0xF ? dwBaseFamily + dwExtFamily : dwBaseFamily;
-
-                    if (dwFamily >= 0x10)
-                    {
-                        BOOL bSkipAMDL3 = FALSE;
-
-                        if (dwFamily == 0x10)   // are we running on a Barcelona (Family 10h) processor?
-                        {
-                            // check model
-                            DWORD dwBaseModel = (dwBuffer[0] & (0xF << 4)) >> 4 ;
-                            DWORD dwExtModel  = (dwBuffer[0] & (0xF << 16)) >> 16;
-                            DWORD dwModel = dwBaseFamily >= 0xF ? (dwExtModel << 4) | dwBaseModel : dwBaseModel;
-
-                            switch (dwModel)
-                            {
-                                case 0x2:
-                                    // 65nm parts do not benefit from larger Gen0
-                                    bSkipAMDL3 = TRUE;
-                                    break;
-
-                                case 0x4:
-                                default:
-                                    bSkipAMDL3 = FALSE;
-                            }
-                        }
-
-                        if (!bSkipAMDL3)
-                        {
-                            // 45nm Greyhound parts (and future parts based on newer northbridge) benefit
-                            // from increased gen0 size, taking L3 into account
-                            __cpuid(dwBuffer, 0x80000008);
-                            DWORD dwNumberOfCores = (dwBuffer[2] & (0xFF)) + 1;     // NC is in ECX bits 7-0
-
-                            DWORD dwL3CacheSize = (size_t)((dwL3CacheBits >> 18) * 512 * 1024);  // L3 size in EDX bits 31-18 * 512KB
-                            // L3 is shared between cores
-                            dwL3CacheSize = dwL3CacheSize / dwNumberOfCores;
-                            maxTrueSize += dwL3CacheSize;       // due to exclusive caches, add L3 size (possibly zero) to L2
-                                                                // L1 is too small to worry about, so ignore it
-                        }
-                    }
-
-
-                    maxSize = maxTrueSize;
-                }
-            }
-        }
-    }
-
-#else
     maxSize = maxTrueSize = GetLogicalProcessorCacheSizeFromOS() ; // Returns the size of the highest level processor cache
-#endif
 
-#if defined(HOST_ARM64)
+#if defined(TARGET_ARM64)
     // Bigger gen0 size helps arm64 targets
     maxSize = maxTrueSize * 3;
 #endif
@@ -1142,7 +998,7 @@ uint32_t GCToOSInterface::GetCurrentProcessCpuCount()
 
 // Return the size of the user-mode portion of the virtual address space of this process.
 // Return:
-//  non zero if it has succeeded, 0 if it has failed
+//  non zero if it has succeeded, (size_t)-1 if not available
 size_t GCToOSInterface::GetVirtualMemoryLimit()
 {
     MEMORYSTATUSEX memStatus;
@@ -1165,7 +1021,7 @@ uint64_t GCToOSInterface::GetPhysicalMemoryLimit(bool* is_restricted)
     size_t restricted_limit = GetRestrictedPhysicalMemoryLimit();
     if (restricted_limit != 0)
     {
-        if (is_restricted && !g_UseRestrictedVirtualMemory)
+        if (is_restricted)
             *is_restricted = true;
 
         return restricted_limit;
@@ -1179,23 +1035,22 @@ uint64_t GCToOSInterface::GetPhysicalMemoryLimit(bool* is_restricted)
 
 // Get memory status
 // Parameters:
+//  restricted_limit - The amount of physical memory in bytes that the current process is being restricted to. If non-zero, it used to calculate
+//      memory_load and available_physical. If zero, memory_load and available_physical is calculate based on all available memory.
 //  memory_load - A number between 0 and 100 that specifies the approximate percentage of physical memory
 //      that is in use (0 indicates no memory use and 100 indicates full memory use).
 //  available_physical - The amount of physical memory currently available, in bytes.
 //  available_page_file - The maximum amount of memory the current process can commit, in bytes.
-void GCToOSInterface::GetMemoryStatus(uint32_t* memory_load, uint64_t* available_physical, uint64_t* available_page_file)
+void GCToOSInterface::GetMemoryStatus(uint64_t restricted_limit, uint32_t* memory_load, uint64_t* available_physical, uint64_t* available_page_file)
 {
-    uint64_t restricted_limit = GetRestrictedPhysicalMemoryLimit();
     if (restricted_limit != 0)
     {
         size_t workingSetSize;
         BOOL status = FALSE;
-        if (!g_UseRestrictedVirtualMemory)
-        {
-            PROCESS_MEMORY_COUNTERS pmc;
-            status = GCGetProcessMemoryInfo(GetCurrentProcess(), &pmc, sizeof(pmc));
-            workingSetSize = pmc.WorkingSetSize;
-        }
+
+        PROCESS_MEMORY_COUNTERS pmc;
+        status = GetProcessMemoryInfo(GetCurrentProcess(), &pmc, sizeof(pmc));
+        workingSetSize = pmc.WorkingSetSize;
 
         if(status)
         {
@@ -1221,9 +1076,10 @@ void GCToOSInterface::GetMemoryStatus(uint32_t* memory_load, uint64_t* available
     MEMORYSTATUSEX ms;
     ::GetProcessMemoryLoad(&ms);
 
-    if (g_UseRestrictedVirtualMemory)
+    // For 32-bit processes the virtual address range could be smaller than the amount of physical
+    // memory on the machine/in the container, we need to restrict by the VM.
+    if (ms.ullTotalVirtual < ms.ullTotalPhys)
     {
-        _ASSERTE (ms.ullTotalVirtual == restricted_limit);
         if (memory_load != NULL)
             *memory_load = (uint32_t)((float)(ms.ullTotalVirtual - ms.ullAvailVirtual) * 100.0 / (float)ms.ullTotalVirtual);
         if (available_physical != NULL)

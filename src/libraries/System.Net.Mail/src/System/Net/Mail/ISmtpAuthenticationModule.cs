@@ -10,7 +10,7 @@ namespace System.Net.Mail
 {
     internal interface ISmtpAuthenticationModule
     {
-        Authorization Authenticate(string challenge, NetworkCredential credentials, object sessionCookie, string spn, ChannelBinding channelBindingToken);
+        Authorization? Authenticate(string? challenge, NetworkCredential? credentials, object sessionCookie, string? spn, ChannelBinding? channelBindingToken);
         string AuthenticationType { get; }
 
         //

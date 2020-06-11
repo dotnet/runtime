@@ -160,7 +160,7 @@ namespace System.Net.Http
             }
         }
 
-        public CookieContainer CookieContainer
+        public CookieContainer? CookieContainer
         {
             get
             {
@@ -193,7 +193,7 @@ namespace System.Net.Http
             X509Certificate2,
             X509Chain,
             SslPolicyErrors,
-            bool> ServerCertificateValidationCallback
+            bool>? ServerCertificateValidationCallback
         {
             get
             {
@@ -273,7 +273,7 @@ namespace System.Net.Http
             }
         }
 
-        public ICredentials ServerCredentials
+        public ICredentials? ServerCredentials
         {
             get
             {
@@ -308,7 +308,7 @@ namespace System.Net.Http
             }
         }
 
-        public ICredentials DefaultProxyCredentials
+        public ICredentials? DefaultProxyCredentials
         {
             get
             {
@@ -322,7 +322,7 @@ namespace System.Net.Http
             }
         }
 
-        public IWebProxy Proxy
+        public IWebProxy? Proxy
         {
             get
             {
@@ -786,6 +786,8 @@ namespace System.Net.Http
             {
                 EnsureSessionHandleExists(state);
 
+                SetEnableHttp2PlusClientCertificate(state.RequestMessage.RequestUri, state.RequestMessage.Version);
+
                 // Specify an HTTP server.
                 connectHandle = Interop.WinHttp.WinHttpConnect(
                     _sessionHandle,
@@ -996,7 +998,7 @@ namespace System.Net.Http
             SetRequestHandleRedirectionOptions(state.RequestHandle);
             SetRequestHandleCookieOptions(state.RequestHandle);
             SetRequestHandleTlsOptions(state.RequestHandle);
-            SetRequestHandleClientCertificateOptions(state.RequestHandle, state.RequestMessage.RequestUri);
+            SetRequestHandleClientCertificateOptions(state.RequestHandle, state.RequestMessage.RequestUri, state.RequestMessage.Version);
             SetRequestHandleCredentialsOptions(state);
             SetRequestHandleBufferingOptions(state.RequestHandle);
             SetRequestHandleHttp2Options(state.RequestHandle, state.RequestMessage.Version);
@@ -1153,7 +1155,7 @@ namespace System.Net.Http
             }
         }
 
-        private void SetRequestHandleClientCertificateOptions(SafeWinHttpHandle requestHandle, Uri requestUri)
+        private void SetRequestHandleClientCertificateOptions(SafeWinHttpHandle requestHandle, Uri requestUri, Version requestVersion)
         {
             if (requestUri.Scheme != UriScheme.Https)
             {
@@ -1181,6 +1183,29 @@ namespace System.Net.Http
             else
             {
                 SetNoClientCertificate(requestHandle);
+            }
+        }
+
+        private void SetEnableHttp2PlusClientCertificate(Uri requestUri, Version requestVersion)
+        {
+            if (requestUri.Scheme != UriScheme.Https || requestVersion != HttpVersion20)
+            {
+                return;
+            }
+
+            // Newer versions of WinHTTP fully support HTTP/2 with TLS client certificates.
+            // But the support must be opted in.
+            uint optionData = Interop.WinHttp.WINHTTP_HTTP2_PLUS_CLIENT_CERT_FLAG;
+            if (Interop.WinHttp.WinHttpSetOption(
+                _sessionHandle,
+                Interop.WinHttp.WINHTTP_OPTION_ENABLE_HTTP2_PLUS_CLIENT_CERT,
+                ref optionData))
+            {
+                if (NetEventSource.IsEnabled) NetEventSource.Info(this, "HTTP/2 with TLS client cert supported");
+            }
+            else
+            {
+                if (NetEventSource.IsEnabled) NetEventSource.Info(this, "HTTP/2 with TLS client cert not supported");
             }
         }
 

@@ -5,6 +5,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using System.Text.Json.Serialization;
 
 namespace System.Text.Json
@@ -26,6 +27,9 @@ namespace System.Text.Json
 
         private List<ReadStackFrame> _previous;
 
+        // State cache when deserializing objects with parameterized constructors.
+        private List<ArgumentState>? _ctorArgStateCache;
+
         /// <summary>
         /// Bytes consumed in the current loop.
         /// </summary>
@@ -43,12 +47,17 @@ namespace System.Text.Json
         public bool ReadAhead;
 
         // The bag of preservable references.
-        public DefaultReferenceResolver ReferenceResolver;
+        public ReferenceResolver ReferenceResolver;
 
         /// <summary>
         /// Whether we need to read ahead in the inner read loop.
         /// </summary>
         public bool SupportContinuation;
+
+        /// <summary>
+        /// Whether we can read without the need of saving state for stream and preserve references cases.
+        /// </summary>
+        public bool UseFastPath;
 
         private void AddCurrent()
         {
@@ -71,20 +80,23 @@ namespace System.Text.Json
             _count++;
         }
 
-        public void InitializeRoot(Type type, JsonSerializerOptions options)
+        public void Initialize(Type type, JsonSerializerOptions options, bool supportContinuation)
         {
             JsonClassInfo jsonClassInfo = options.GetOrAddClass(type);
-            Debug.Assert(jsonClassInfo.ClassType != ClassType.Invalid);
 
             Current.JsonClassInfo = jsonClassInfo;
 
             // The initial JsonPropertyInfo will be used to obtain the converter.
-            Current.JsonPropertyInfo = jsonClassInfo.PolicyProperty!;
+            Current.JsonPropertyInfo = jsonClassInfo.PropertyInfoForClassInfo;
 
-            if (options.ReferenceHandling.ShouldReadPreservedReferences())
+            bool preserveReferences = options.ReferenceHandler != null;
+            if (preserveReferences)
             {
-                ReferenceResolver = new DefaultReferenceResolver(writing: false);
+                ReferenceResolver = options.ReferenceHandler!.CreateResolver(writing: false);
             }
+
+            SupportContinuation = supportContinuation;
+            UseFastPath = !supportContinuation && !preserveReferences;
         }
 
         public void Push()
@@ -99,7 +111,18 @@ namespace System.Text.Json
                 else
                 {
                     JsonClassInfo jsonClassInfo;
-                    if ((Current.JsonClassInfo.ClassType & (ClassType.Object | ClassType.Value | ClassType.NewValue)) != 0)
+                    if (Current.JsonClassInfo.ClassType == ClassType.Object)
+                    {
+                        if (Current.JsonPropertyInfo != null)
+                        {
+                            jsonClassInfo = Current.JsonPropertyInfo.RuntimeClassInfo;
+                        }
+                        else
+                        {
+                            jsonClassInfo = Current.CtorArgumentState!.JsonParameterInfo!.RuntimeClassInfo;
+                        }
+                    }
+                    else if ((Current.JsonClassInfo.ClassType & (ClassType.Value | ClassType.NewValue)) != 0)
                     {
                         // Although ClassType.Value doesn't push, a custom custom converter may re-enter serialization.
                         jsonClassInfo = Current.JsonPropertyInfo!.RuntimeClassInfo;
@@ -113,7 +136,7 @@ namespace System.Text.Json
                     Current.Reset();
 
                     Current.JsonClassInfo = jsonClassInfo;
-                    Current.JsonPropertyInfo = jsonClassInfo.PolicyProperty!;
+                    Current.JsonPropertyInfo = jsonClassInfo.PropertyInfoForClassInfo;
                 }
             }
             else if (_continuationCount == 1)
@@ -137,6 +160,8 @@ namespace System.Text.Json
                     _count++;
                 }
             }
+
+            SetConstrutorArgumentState();
         }
 
         public void Pop(bool success)
@@ -186,6 +211,8 @@ namespace System.Text.Json
             {
                 Current = _previous[--_count -1];
             }
+
+            SetConstrutorArgumentState();
         }
 
         // Return a JSONPath using simple dot-notation when possible. When special characters are present, bracket-notation is used:
@@ -224,8 +251,10 @@ namespace System.Text.Json
                         return;
                     }
 
-                    // Once all elements are read, the exception is not within the array.
-                    if (frame.ObjectState < StackFrameObjectState.ReadElements)
+                    // For continuation scenarios only, before or after all elements are read, the exception is not within the array.
+                    if (frame.ObjectState == StackFrameObjectState.None ||
+                        frame.ObjectState == StackFrameObjectState.CreatedObject ||
+                        frame.ObjectState == StackFrameObjectState.ReadElements)
                     {
                         sb.Append('[');
                         sb.Append(GetCount(enumerable));
@@ -277,13 +306,17 @@ namespace System.Text.Json
                 byte[]? utf8PropertyName = frame.JsonPropertyName;
                 if (utf8PropertyName == null)
                 {
-                    // Attempt to get the JSON property name from the JsonPropertyInfo.
-                    utf8PropertyName = frame.JsonPropertyInfo?.JsonPropertyName;
-                    if (utf8PropertyName == null)
+                    if (frame.JsonPropertyNameAsString != null)
                     {
                         // Attempt to get the JSON property name set manually for dictionary
-                        // keys and serializer re-entry cases where a property is specified.
+                        // keys and KeyValuePair property names.
                         propertyName = frame.JsonPropertyNameAsString;
+                    }
+                    else
+                    {
+                        // Attempt to get the JSON property name from the JsonPropertyInfo or JsonParameterInfo.
+                        utf8PropertyName = frame.JsonPropertyInfo?.NameAsUtf8Bytes ??
+                            frame.CtorArgumentState?.JsonParameterInfo?.NameAsUtf8Bytes;
                     }
                 }
 
@@ -293,6 +326,31 @@ namespace System.Text.Json
                 }
 
                 return propertyName;
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private void SetConstrutorArgumentState()
+        {
+            if (Current.JsonClassInfo.ParameterCount > 0)
+            {
+                // A zero index indicates a new stack frame.
+                if (Current.CtorArgumentStateIndex == 0)
+                {
+                    if (_ctorArgStateCache == null)
+                    {
+                        _ctorArgStateCache = new List<ArgumentState>();
+                    }
+
+                    var newState = new ArgumentState();
+                    _ctorArgStateCache.Add(newState);
+
+                    (Current.CtorArgumentStateIndex, Current.CtorArgumentState) = (_ctorArgStateCache.Count, newState);
+                }
+                else
+                {
+                    Current.CtorArgumentState = _ctorArgStateCache![Current.CtorArgumentStateIndex - 1];
+                }
             }
         }
     }

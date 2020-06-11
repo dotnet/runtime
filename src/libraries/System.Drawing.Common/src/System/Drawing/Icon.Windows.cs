@@ -639,9 +639,8 @@ namespace System.Drawing
                 {
                     try
                     {
-                        // We threw this way on NetFX
                         if (outputStream == null)
-                            throw new ArgumentNullException("dataStream");
+                            throw new ArgumentNullException(nameof(outputStream));
 
                         picture.SaveAsFile(new GPStream(outputStream, makeSeekable: false), -1, out int temp);
                     }
@@ -738,7 +737,7 @@ namespace System.Drawing
                         uint* pixelPtr = (uint*)bmpdata.Scan0.ToPointer();
 
                         // jumping the image header
-                        int newOffset = (int)(_bestImageOffset + Marshal.SizeOf(typeof(SafeNativeMethods.BITMAPINFOHEADER)));
+                        int newOffset = (int)(_bestImageOffset + sizeof(NativeMethods.BITMAPINFOHEADER));
                         // there is no color table that we need to skip since we're 32bpp
 
                         int lineLength = Size.Width * 4;

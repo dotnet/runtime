@@ -14,11 +14,9 @@
 #include "compileresult.h"
 #include "lightweightmap.h"
 #include "errorhandling.h"
+#include "hash.h"
 
 #define METHOD_IDENTITY_INFO_SIZE 0x10000 // We assume that the METHOD_IDENTITY_INFO_SIZE will not exceed 64KB
-
-#define MD5_HASH_BYTE_SIZE 16   // MD5 is 128-bit, so we need 16 bytes to store it
-#define MD5_HASH_BUFFER_SIZE 33 // MD5 is 128-bit, so we need 32 chars + 1 char to store null-terminator
 
 class MethodContext
 {
@@ -176,6 +174,11 @@ public:
         DWORD targetAbi;
         DWORD osType;
     };
+    struct Agnostic_GetOSRInfo
+    {
+        DWORD index;
+        unsigned ilOffset;
+    };
     struct Agnostic_GetFieldAddress
     {
         DWORDLONG ppIndirection;
@@ -228,6 +231,7 @@ public:
         DWORD     indirections;
         DWORD     testForNull;
         DWORD     testForFixup;
+        WORD      sizeOffset;
         DWORDLONG offsets[CORINFO_MAXINDIRECTIONS];
         DWORD     indirectFirstOffset;
         DWORD     indirectSecondOffset;
@@ -432,10 +436,19 @@ public:
         DWORDLONG ProfilerHandle;
         DWORD     bIndirectedHandles;
     };
-    struct Agnostic_GetTailCallCopyArgsThunk
+    struct Agnostic_GetTailCallHelpers
     {
-        Agnostic_CORINFO_SIG_INFO Sig;
-        DWORD                     flags;
+        Agnostic_CORINFO_RESOLVED_TOKEN callToken;
+        Agnostic_CORINFO_SIG_INFO sig;
+        DWORD flags;
+    };
+    struct Agnostic_CORINFO_TAILCALL_HELPERS
+    {
+        bool result;
+        DWORD flags;
+        DWORDLONG hStoreArgs;
+        DWORDLONG hCallTarget;
+        DWORDLONG hDispatcher;
     };
     struct Agnostic_GetArgClass_Value
     {
@@ -578,8 +591,8 @@ public:
     static int dumpStatTitleToBuffer(char* buff, int len);
     int methodSize;
 
-    int dumpMethodIdentityInfoToBuffer(char* buff, int len, bool ignoreMethodName = false);
-    int dumpMethodMD5HashToBuffer(char* buff, int len, bool ignoreMethodName = false);
+    int dumpMethodIdentityInfoToBuffer(char* buff, int len, bool ignoreMethodName = false, CORINFO_METHOD_INFO* optInfo = nullptr, unsigned optFlags = 0);
+    int dumpMethodMD5HashToBuffer(char* buff, int len, bool ignoreMethodName = false, CORINFO_METHOD_INFO* optInfo = nullptr, unsigned optFlags = 0);
 
     void recGlobalContext(const MethodContext& other);
 
@@ -986,6 +999,10 @@ public:
     void dmpGetGSCookie(DWORD key, DLDL value);
     void repGetGSCookie(GSCookie* pCookieVal, GSCookie** ppCookieVal);
 
+    void recGetOSRInfo(PatchpointInfo* patchpointInfo, unsigned* ilOffset);
+    void dmpGetOSRInfo(DWORD key, const Agnostic_GetOSRInfo& value);
+    PatchpointInfo* repGetOSRInfo(unsigned* ilOffset);
+
     void recGetClassModuleIdForStatics(CORINFO_CLASS_HANDLE   cls,
                                        CORINFO_MODULE_HANDLE* pModule,
                                        void**                 ppIndirection,
@@ -1247,9 +1264,17 @@ public:
     void dmpAppendClassName(const Agnostic_AppendClassName& key, DWORD value);
     const WCHAR* repAppendClassName(CORINFO_CLASS_HANDLE cls, BOOL fNamespace, BOOL fFullInst, BOOL fAssembly);
 
-    void recGetTailCallCopyArgsThunk(CORINFO_SIG_INFO* pSig, CorInfoHelperTailCallSpecialHandling flags, void* result);
-    void dmpGetTailCallCopyArgsThunk(const Agnostic_GetTailCallCopyArgsThunk& key, DWORDLONG value);
-    void* repGetTailCallCopyArgsThunk(CORINFO_SIG_INFO* pSig, CorInfoHelperTailCallSpecialHandling flags);
+    void recGetTailCallHelpers(
+        CORINFO_RESOLVED_TOKEN* callToken,
+        CORINFO_SIG_INFO* sig,
+        CORINFO_GET_TAILCALL_HELPERS_FLAGS flags,
+        CORINFO_TAILCALL_HELPERS* pResult);
+    void dmpGetTailCallHelpers(const Agnostic_GetTailCallHelpers& key, const Agnostic_CORINFO_TAILCALL_HELPERS& value);
+    bool repGetTailCallHelpers(
+        CORINFO_RESOLVED_TOKEN* callToken,
+        CORINFO_SIG_INFO* sig,
+        CORINFO_GET_TAILCALL_HELPERS_FLAGS flags,
+        CORINFO_TAILCALL_HELPERS* pResult);
 
     void recGetMethodDefFromMethod(CORINFO_METHOD_HANDLE hMethod, mdMethodDef result);
     void dmpGetMethodDefFromMethod(DWORDLONG key, DWORD value);
@@ -1306,10 +1331,13 @@ private:
 #define LWM(map, key, value) LightWeightMap<key, value>* map;
 #define DENSELWM(map, value) DenseLightWeightMap<value>* map;
 #include "lwmlist.h"
+
+    // MD5 hasher
+    static Hash m_hash;
 };
 
 // ********************* Please keep this up-to-date to ease adding more ***************
-// Highest packet number: 175
+// Highest packet number: 178
 // *************************************************************************************
 enum mcPackets
 {
@@ -1420,13 +1448,15 @@ enum mcPackets
     Packet_GetMethodVTableOffset                         = 78,
     Packet_GetNewArrHelper                               = 79,
     Packet_GetNewHelper                                  = 80,
+    Packet_GetOSRInfo                                    = 177, // Added 3/5/2020
     Packet_GetParentType                                 = 81,
     Packet_GetPInvokeUnmanagedTarget                     = 82, // Retired 2/18/2020
     Packet_GetProfilingHandle                            = 83,
     Packet_GetRelocTypeHint                              = 84,
     Packet_GetSecurityPrologHelper                       = 85, // Retired 2/18/2020
     Packet_GetSharedCCtorHelper                          = 86,
-    Packet_GetTailCallCopyArgsThunk                      = 87,
+    Packet_GetTailCallCopyArgsThunk                      = 87, // Retired 4/27/2020
+    Packet_GetTailCallHelpers                            = 178, // Added 3/18/2020
     Packet_GetThreadTLSIndex                             = 88,
     Packet_GetTokenTypeAsHandle                          = 89,
     Packet_GetTypeForBox                                 = 90,
@@ -1487,6 +1517,7 @@ enum mcPackets
     PacketCR_SetEHinfo                         = 128,
     PacketCR_SetMethodAttribs                  = 129,
     PacketCR_SetVars                           = 130,
+    PacketCR_SetPatchpointInfo                 = 176, // added 8/5/2019
     PacketCR_RecordCallSite                    = 146, // Added 10/28/2013 - to support indirect calls
 };
 

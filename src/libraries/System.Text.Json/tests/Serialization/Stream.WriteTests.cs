@@ -13,6 +13,13 @@ namespace System.Text.Json.Serialization.Tests
     public static partial class StreamTests
     {
         [Fact]
+        public static async Task WriteNullArgumentFail()
+        {
+            await Assert.ThrowsAsync<ArgumentNullException>(async () => await JsonSerializer.SerializeAsync((Stream)null, 1));
+            await Assert.ThrowsAsync<ArgumentNullException>(async () => await JsonSerializer.SerializeAsync((Stream)null, 1, typeof(int)));
+        }
+
+        [Fact]
         public static async Task VerifyValueFail()
         {
             MemoryStream stream = new MemoryStream();

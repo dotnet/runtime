@@ -19,6 +19,7 @@
 #include "cor.h"
 #include "corinfo.h"
 #include "volatile.h"
+#include "mdfileformat.h"
 
 #ifndef DACCESS_COMPILE
 UINT32 g_nClrInstanceId = 0;
@@ -2935,8 +2936,6 @@ LPWSTR *SegmentCommandLine(LPCWSTR lpCmdLine, DWORD *pNumArgs)
     return argv;
 }
 
-Volatile<PVOID> ForbidCallsIntoHostOnThisThread::s_pvOwningFiber = NULL;
-
 //======================================================================
 // This function returns true, if it can determine that the instruction pointer
 // refers to a code address that belongs in the range of the given image.
@@ -3032,70 +3031,10 @@ lDone: ;
     return param.fRet;
 }
 
-#ifdef FEATURE_CORRUPTING_EXCEPTIONS
-
-// To include definition of EXCEPTION_SOFTSO
-#include "corexcep.h"
-
-// These functions provide limited support for corrupting exceptions
-// outside the VM folder. Its limited since we don't have access to the
-// throwable.
-//
-// These functions are also wrapped by the corresponding CEHelper
-// methods in excep.cpp.
-
-// Given an exception code, this method returns a BOOL to indicate if the
-// code belongs to a corrupting exception or not.
-BOOL IsProcessCorruptedStateException(DWORD dwExceptionCode, BOOL fCheckForSO /*=TRUE*/)
-{
-    LIMITED_METHOD_CONTRACT;
-
-    // By default, assume its not corrupting
-    BOOL fIsCorruptedStateException = FALSE;
-
-    if (CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_legacyCorruptedStateExceptionsPolicy) == 1)
-    {
-        return fIsCorruptedStateException;
-    }
-
-    // If we have been asked not to include SO in the CSE check
-    // and the code represent SO, then exit now.
-    if ((fCheckForSO == FALSE) && (dwExceptionCode == STATUS_STACK_OVERFLOW))
-    {
-        return fIsCorruptedStateException;
-    }
-
-    switch(dwExceptionCode)
-    {
-        case STATUS_ACCESS_VIOLATION:
-        case STATUS_STACK_OVERFLOW:
-        case EXCEPTION_ILLEGAL_INSTRUCTION:
-        case EXCEPTION_IN_PAGE_ERROR:
-        case EXCEPTION_INVALID_DISPOSITION:
-        case EXCEPTION_NONCONTINUABLE_EXCEPTION:
-        case EXCEPTION_PRIV_INSTRUCTION:
-        case STATUS_UNWIND_CONSOLIDATE:
-            fIsCorruptedStateException = TRUE;
-            break;
-    }
-
-    return fIsCorruptedStateException;
-}
-
-#endif // FEATURE_CORRUPTING_EXCEPTIONS
-
-void EnableTerminationOnHeapCorruption()
-{
-    HeapSetInformation(NULL, HeapEnableTerminationOnCorruption, NULL, 0);
-}
-
 namespace Clr
 {
 namespace Util
 {
-    static BOOL g_fLocalAppDataDirectoryInitted = FALSE;
-    static WCHAR *g_wszLocalAppDataDirectory = NULL;
-
 #ifdef HOST_WINDOWS
     // Struct used to scope suspension of client impersonation for the current thread.
     // https://docs.microsoft.com/en-us/windows/desktop/secauthz/client-impersonation

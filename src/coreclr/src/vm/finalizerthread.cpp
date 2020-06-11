@@ -347,7 +347,6 @@ VOID FinalizerThread::FinalizerThreadWorker(void *args)
         }
 
         FinalizeAllObjects(0);
-        _ASSERTE(GetFinalizerThread()->GetDomain()->IsDefaultDomain());
 
         // We may still have the finalizer thread for abort.  If so the abort request is for previous finalizer method, not for next one.
         if (GetFinalizerThread()->IsAbortRequested())
@@ -377,8 +376,6 @@ DWORD WINAPI FinalizerThread::FinalizerThreadStart(void *args)
 
     LOG((LF_GC, LL_INFO10, "Finalizer thread starting...\n"));
 
-    _ASSERTE(GetFinalizerThread()->GetDomain()->IsDefaultDomain());
-
 #if defined(FEATURE_COMINTEROP_APARTMENT_SUPPORT) && !defined(FEATURE_COMINTEROP)
     // Make sure the finalizer thread is set to MTA to avoid hitting
     // DevDiv Bugs 180773 - [Stress Failure] AV at CoreCLR!SafeQueryInterfaceHelper
@@ -395,11 +392,7 @@ DWORD WINAPI FinalizerThread::FinalizerThreadStart(void *args)
     if (s_FinalizerThreadOK)
     {
         INSTALL_UNHANDLED_MANAGED_EXCEPTION_TRAP;
-
-#ifdef _DEBUG       // The only purpose of this try/finally is to trigger an assertion
-        EE_TRY_FOR_FINALLY(void *, unused, NULL)
         {
-#endif
             GetFinalizerThread()->SetBackground(TRUE);
 
             EnsureYieldProcessorNormalizedInitialized();
@@ -424,24 +417,9 @@ DWORD WINAPI FinalizerThread::FinalizerThreadStart(void *args)
             _ASSERTE(GetFinalizerThread()->PreemptiveGCDisabled());
 
             hEventFinalizerToShutDown->Set();
-
-#ifdef _DEBUG       // The only purpose of this try/finally is to trigger an assertion
         }
-        EE_FINALLY
-        {
-            // We can have exception to reach here if policy tells us to
-            // let exception go on finalizer thread.
-            //
-            if (GOT_EXCEPTION() && SwallowUnhandledExceptions())
-                _ASSERTE(!"Exception in the finalizer thread!");
-
-        }
-        EE_END_FINALLY;
-#endif
         UNINSTALL_UNHANDLED_MANAGED_EXCEPTION_TRAP;
     }
-    // finalizer should always park in default domain
-    _ASSERTE(GetThread()->GetDomain()->IsDefaultDomain());
 
     LOG((LF_GC, LL_INFO10, "Finalizer thread done."));
 

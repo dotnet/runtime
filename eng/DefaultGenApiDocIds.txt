@@ -8,7 +8,9 @@ T:System.ComponentModel.ToolboxItemAttribute
 T:System.ComponentModel.TypeDescriptionProviderAttribute
 T:System.Configuration.ConfigurationPropertyAttribute
 T:System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverageAttribute
+T:System.Diagnostics.CodeAnalysis.MemberNotNullAttribute
 T:System.Diagnostics.CodeAnalysis.SuppressMessageAttribute
+T:System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute
 T:System.Diagnostics.DebuggerBrowsableAttribute
 T:System.Diagnostics.DebuggerDisplayAttribute
 T:System.Diagnostics.DebuggerHiddenAttribute
@@ -27,6 +29,7 @@ T:System.Runtime.CompilerServices.NullableAttribute
 T:System.Runtime.CompilerServices.NullableContextAttribute
 T:System.Runtime.CompilerServices.PreserveDependencyAttribute
 T:System.Runtime.CompilerServices.TypeForwardedFromAttribute
+T:System.Runtime.ConstrainedExecution.PrePrepareMethodAttribute
 T:System.Runtime.ConstrainedExecution.ReliabilityContractAttribute
 T:System.Runtime.InteropServices.ClassInterfaceAttribute
 T:System.Runtime.InteropServices.ComDefaultInterfaceAttribute

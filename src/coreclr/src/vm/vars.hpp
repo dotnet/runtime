@@ -347,7 +347,7 @@ GARY_DECL(TypeHandle, g_pPredefinedArrayTypes, ELEMENT_TYPE_MAX);
 
 extern "C" Volatile<LONG>   g_TrapReturningThreads;
 
-EXTERN HINSTANCE            g_pMSCorEE;
+EXTERN HINSTANCE            g_hThisInst;
 EXTERN BBSweep              g_BBSweep;
 EXTERN IBCLogger            g_IBCLogger;
 
@@ -392,7 +392,6 @@ GPTR_DECL(MethodTable,      g_TypedReferenceMT);
 
 #ifdef FEATURE_COMINTEROP
 GPTR_DECL(MethodTable,      g_pBaseCOMObject);
-GPTR_DECL(MethodTable,      g_pBaseRuntimeClass);
 #endif
 
 #ifdef FEATURE_ICASTABLE
@@ -466,12 +465,6 @@ EXTERN HINSTANCE            g_pDebuggerDll;
 // Global default for Concurrent GC. The default is on (value 1)
 EXTERN int g_IGCconcurrent;
 extern int g_IGCHoardVM;
-
-#ifdef GCTRIMCOMMIT
-extern int g_IGCTrimCommit;
-#endif
-
-extern BOOL g_fEnableETW;
 
 // Returns a BOOL to indicate if the runtime is active or not
 BOOL IsRuntimeActive();
@@ -629,12 +622,6 @@ inline bool CORDebuggerAttached()
 
 
 
-
-//
-// IJW needs the shim HINSTANCE
-//
-EXTERN HINSTANCE g_hInstShim;
-
 #ifndef TARGET_UNIX
 GVAL_DECL(SIZE_T, g_runtimeLoadedBaseAddress);
 GVAL_DECL(SIZE_T, g_runtimeVirtualSize);
@@ -702,12 +689,23 @@ struct ModuleIndex
 
 typedef DPTR(GSCookie) PTR_GSCookie;
 
+#ifdef _MSC_VER
+#define READONLY_ATTR
+#else
+#ifdef __APPLE__
+#define READONLY_ATTR_ARGS section("__TEXT,__const")
+#else
+#define READONLY_ATTR_ARGS section(".rodata")
+#endif
+#define READONLY_ATTR __attribute__((READONLY_ATTR_ARGS))
+#endif
+
 #ifndef DACCESS_COMPILE
 // const is so that it gets placed in the .text section (which is read-only)
 // volatile is so that accesses to it do not get optimized away because of the const
 //
 
-extern "C" RAW_KEYWORD(volatile) const GSCookie s_gsCookie;
+extern "C" RAW_KEYWORD(volatile) READONLY_ATTR const GSCookie s_gsCookie;
 
 inline
 GSCookie * GetProcessGSCookiePtr() { return  const_cast<GSCookie *>(&s_gsCookie); }

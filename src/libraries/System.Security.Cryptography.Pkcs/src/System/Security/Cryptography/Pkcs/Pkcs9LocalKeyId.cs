@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Diagnostics.CodeAnalysis;
-using System.Security.Cryptography.Asn1;
+using System.Formats.Asn1;
 using Internal.Cryptography;
 
 namespace System.Security.Cryptography.Pkcs
@@ -26,11 +26,9 @@ namespace System.Security.Cryptography.Pkcs
         public Pkcs9LocalKeyId(ReadOnlySpan<byte> keyId)
             : this()
         {
-            using (AsnWriter writer = new AsnWriter(AsnEncodingRules.DER))
-            {
-                writer.WriteOctetString(keyId);
-                RawData = writer.Encode();
-            }
+            AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
+            writer.WriteOctetString(keyId);
+            RawData = writer.Encode();
         }
 
         public ReadOnlyMemory<byte> KeyId =>

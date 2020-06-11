@@ -1593,7 +1593,6 @@ namespace System.Data
         [TypeConverter(typeof(PrimaryKeyTypeConverter))]
         public DataColumn[] PrimaryKey
         {
-            [PreserveDependency(".ctor", "System.Data.PrimaryKeyTypeConverter")] // TODO: Remove when https://github.com/mono/linker/issues/800 is fixed
             get
             {
                 UniqueConstraint primayKeyConstraint = _primaryKey;
@@ -1604,7 +1603,6 @@ namespace System.Data
                 }
                 return Array.Empty<DataColumn>();
             }
-            [PreserveDependency(".ctor", "System.Data.DefaultValueTypeConverter")] // TODO: Remove when https://github.com/mono/linker/issues/800 is fixed
             set
             {
                 UniqueConstraint key = null;

@@ -72,20 +72,12 @@ mono_arch_patch_plt_entry (guint8 *code, gpointer *got, host_mgreg_t *regs, guin
 guint8*
 mono_arch_get_call_target (guint8 *code)
 {
-	guint32 imm;
-	int disp;
-
 	code -= 4;
-
-	imm = *(guint32*)code;
+	guint32 ins = *(guint32 *)code;
 	/* Should be a b/bl */
-	g_assert (((imm >> 26) & 0x7) == 0x5);
-
-	disp = (imm & 0x3ffffff);
-	if ((disp >> 25) != 0)
-		/* Negative, sing extend to 32 bits */
-		disp = disp | 0xfc000000;
-
+	if (((ins >> 26) & 0x1f) != 0x5)
+		return NULL;
+	gint32 disp = ((gint32)((ins & 0x3ffffff) << 6)) >> 6;
 	return code + (disp * 4);
 }
 

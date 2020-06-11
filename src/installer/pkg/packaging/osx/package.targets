@@ -5,13 +5,13 @@
   <UsingTask TaskName="ReplaceFileContents" AssemblyFile="$(InstallerTasksAssemblyPath)"/>
 
   <Target Name="InitPkg"
-          Condition="'$(OSGroup)' == 'OSX'">
+          Condition="'$(TargetOS)' == 'OSX' or '$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'tvOS'">
     <MakeDir Condition="!Exists('$(PackagesIntermediateDir)')"
              Directories="$(PackagesIntermediateDir)" />
   </Target>
 
   <Target Name="GeneratePkgs"
-          Condition="'$(OSGroup)' == 'OSX'"
+          Condition="'$(TargetOS)' == 'OSX' or '$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'tvOS'"
           DependsOnTargets="GetInstallerBrandingNames;InitPkg">
     <ItemGroup>
         <OSXPackages Include="sharedframework">

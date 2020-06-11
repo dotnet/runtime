@@ -128,9 +128,6 @@ get_runtimes_from_exe (const char *exe_file, MonoImage **exe_image);
 static const MonoRuntimeInfo*
 get_runtime_by_version (const char *version);
 
-static void
-mono_domain_alcs_destroy (MonoDomain *domain);
-
 #ifdef ENABLE_NETCORE
 static void
 mono_domain_alcs_lock (MonoDomain *domain);
@@ -465,7 +462,7 @@ mono_domain_create (void)
 
 	mono_coop_mutex_init_recursive (&domain->lock);
 
-	mono_os_mutex_init_recursive (&domain->assemblies_lock);
+	mono_coop_mutex_init_recursive (&domain->assemblies_lock);
 	mono_os_mutex_init_recursive (&domain->jit_code_hash_lock);
 	mono_os_mutex_init_recursive (&domain->finalizable_objects_hash_lock);
 
@@ -816,6 +813,11 @@ mono_init_internal (const char *filename, const char *exe_filename, const char *
 	mono_defaults.generic_ienumerator_class = mono_class_load_from_name (
 	        mono_defaults.corlib, "System.Collections.Generic", "IEnumerator`1");
 
+#ifdef ENABLE_NETCORE
+	mono_defaults.alc_class = mono_class_get_assembly_load_context_class ();
+	mono_defaults.appcontext_class = mono_class_try_load_from_name (mono_defaults.corlib, "System", "AppContext");
+#endif
+
 #ifndef ENABLE_NETCORE
 	MonoClass *threadpool_wait_callback_class = mono_class_load_from_name (
 		mono_defaults.corlib, "System.Threading", "_ThreadPoolWaitCallback");
@@ -1118,6 +1120,7 @@ unregister_vtable_reflection_type (MonoVTable *vtable)
 void
 mono_domain_free (MonoDomain *domain, gboolean force)
 {
+#ifndef ENABLE_NETCORE
 	int code_size, code_alloc;
 	GSList *tmp;
 	gpointer *p;
@@ -1189,7 +1192,7 @@ mono_domain_free (MonoDomain *domain, gboolean force)
 		MonoAssembly *ass = (MonoAssembly *)tmp->data;
 		if (!ass->image || !image_is_dynamic (ass->image))
 			continue;
-		mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_ASSEMBLY, "Unloading domain %s[%p], assembly %s[%p], ref_count=%d", domain->friendly_name, domain, ass->aname.name, ass, ass->ref_count);
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_ASSEMBLY, "Unloading domain %s[%p], assembly %s[%p], ref_count=%d", domain->friendly_name, domain, ass->aname.name, ass, ass->ref_count);
 		if (!mono_assembly_close_except_image_pools (ass))
 			tmp->data = NULL;
 	}
@@ -1200,7 +1203,7 @@ mono_domain_free (MonoDomain *domain, gboolean force)
 			continue;
 		if (!ass->image || image_is_dynamic (ass->image))
 			continue;
-		mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_ASSEMBLY, "Unloading domain %s[%p], assembly %s[%p], ref_count=%d", domain->friendly_name, domain, ass->aname.name, ass, ass->ref_count);
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_ASSEMBLY, "Unloading domain %s[%p], assembly %s[%p], ref_count=%d", domain->friendly_name, domain, ass->aname.name, ass, ass->ref_count);
 		if (!mono_assembly_close_except_image_pools (ass))
 			tmp->data = NULL;
 	}
@@ -1294,14 +1297,8 @@ mono_domain_free (MonoDomain *domain, gboolean force)
 		domain->method_to_dyn_method = NULL;
 	}
 
-	mono_domain_alcs_destroy (domain);
-
-#ifdef ENABLE_NETCORE
-	mono_coop_mutex_destroy (&domain->alcs_lock);
-#endif
-
 	mono_os_mutex_destroy (&domain->finalizable_objects_hash_lock);
-	mono_os_mutex_destroy (&domain->assemblies_lock);
+	mono_coop_mutex_destroy (&domain->assemblies_lock);
 	mono_os_mutex_destroy (&domain->jit_code_hash_lock);
 
 	mono_coop_mutex_destroy (&domain->lock);
@@ -1323,6 +1320,9 @@ mono_domain_free (MonoDomain *domain, gboolean force)
 
 	if (domain == mono_root_domain)
 		mono_root_domain = NULL;
+#else
+	g_assert_not_reached ();
+#endif
 }
 
 /**
@@ -2088,12 +2088,9 @@ mono_domain_alcs_unlock (MonoDomain *domain)
 {
 	mono_coop_mutex_unlock (&domain->alcs_lock);
 }
-#endif
 
-
-#ifdef ENABLE_NETCORE
 static MonoAssemblyLoadContext *
-create_alc (MonoDomain *domain, gboolean is_default)
+create_alc (MonoDomain *domain, gboolean is_default, gboolean collectible)
 {
 	MonoAssemblyLoadContext *alc = NULL;
 
@@ -2102,7 +2099,7 @@ create_alc (MonoDomain *domain, gboolean is_default)
 		goto leave;
 
 	alc = g_new0 (MonoAssemblyLoadContext, 1);
-	mono_alc_init (alc, domain);
+	mono_alc_init (alc, domain, collectible);
 
 	domain->alcs = g_slist_prepend (domain->alcs, alc);
 	if (is_default)
@@ -2111,22 +2108,19 @@ leave:
 	mono_domain_alcs_unlock (domain);
 	return alc;
 }
-#endif
 
-#ifdef ENABLE_NETCORE
 void
 mono_domain_create_default_alc (MonoDomain *domain)
 {
 	if (domain->default_alc)
 		return;
-	create_alc (domain, TRUE);
+	create_alc (domain, TRUE, FALSE);
 }
 
 MonoAssemblyLoadContext *
-mono_domain_create_individual_alc (MonoDomain *domain, uint32_t this_gchandle, gboolean collectible, MonoError *error)
+mono_domain_create_individual_alc (MonoDomain *domain, MonoGCHandle this_gchandle, gboolean collectible, MonoError *error)
 {
-	g_assert (!collectible); /* TODO: implement collectible ALCs */
-	MonoAssemblyLoadContext *alc = create_alc (domain, FALSE);
+	MonoAssemblyLoadContext *alc = create_alc (domain, FALSE, collectible);
 	alc->gchandle = this_gchandle;
 	return alc;
 }
@@ -2138,19 +2132,3 @@ mono_alc_free (MonoAssemblyLoadContext *alc)
 	g_free (alc);
 }
 #endif
-
-void
-mono_domain_alcs_destroy (MonoDomain *domain)
-{
-#ifdef ENABLE_NETCORE
-	mono_domain_alcs_lock (domain);
-	GSList *alcs = domain->alcs;
-	domain->alcs = NULL;
-	domain->default_alc = NULL;
-	mono_domain_alcs_unlock (domain);
-
-	for (GSList *iter = alcs; iter; iter = g_slist_next (iter)) {
-		mono_alc_free ((MonoAssemblyLoadContext*)iter->data);
-	}
-#endif
-}

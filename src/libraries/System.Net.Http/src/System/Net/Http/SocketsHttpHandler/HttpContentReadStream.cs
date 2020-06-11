@@ -61,8 +61,8 @@ namespace System.Net.Http
 
             private async Task DrainOnDisposeAsync()
             {
-                HttpConnection connection = _connection;        // Will be null after drain succeeds
-
+                HttpConnection? connection = _connection;        // Will be null after drain succeeds
+                Debug.Assert(connection != null);
                 try
                 {
                     bool drained = await DrainAsync(connection._pool.Settings._maxResponseDrainSize).ConfigureAwait(false);

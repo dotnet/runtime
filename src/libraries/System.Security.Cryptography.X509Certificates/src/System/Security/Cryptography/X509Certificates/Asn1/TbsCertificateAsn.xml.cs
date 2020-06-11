@@ -5,16 +5,15 @@
 #pragma warning disable SA1028 // ignore whitespace warnings for generated code
 using System;
 using System.Collections.Generic;
+using System.Formats.Asn1;
 using System.Runtime.InteropServices;
-using System.Security.Cryptography;
-using System.Security.Cryptography.Asn1;
 
 namespace System.Security.Cryptography.X509Certificates.Asn1
 {
     [StructLayout(LayoutKind.Sequential)]
     internal partial struct TbsCertificateAsn
     {
-        private static readonly byte[] s_defaultVersion = { 0x02, 0x01, 0x00 };
+        private static ReadOnlySpan<byte> DefaultVersion => new byte[] { 0x02, 0x01, 0x00 };
 
         internal int Version;
         internal ReadOnlyMemory<byte> SerialNumber;
@@ -25,7 +24,7 @@ namespace System.Security.Cryptography.X509Certificates.Asn1
         internal System.Security.Cryptography.Asn1.SubjectPublicKeyInfoAsn SubjectPublicKeyInfo;
         internal ReadOnlyMemory<byte>? IssuerUniqueId;
         internal ReadOnlyMemory<byte>? SubjectUniqueId;
-        internal System.Security.Cryptography.Asn1.X509ExtensionAsn[] Extensions;
+        internal System.Security.Cryptography.Asn1.X509ExtensionAsn[]? Extensions;
 
 #if DEBUG
         static TbsCertificateAsn()
@@ -33,7 +32,7 @@ namespace System.Security.Cryptography.X509Certificates.Asn1
             TbsCertificateAsn decoded = default;
             AsnValueReader reader;
 
-            reader = new AsnValueReader(s_defaultVersion, AsnEncodingRules.DER);
+            reader = new AsnValueReader(DefaultVersion, AsnEncodingRules.DER);
 
             if (!reader.TryReadInt32(out decoded.Version))
             {
@@ -56,17 +55,14 @@ namespace System.Security.Cryptography.X509Certificates.Asn1
 
             // DEFAULT value handler for Version.
             {
-                using (AsnWriter tmp = new AsnWriter(AsnEncodingRules.DER))
-                {
-                    tmp.WriteInteger(Version);
-                    ReadOnlySpan<byte> encoded = tmp.EncodeAsSpan();
+                AsnWriter tmp = new AsnWriter(AsnEncodingRules.DER);
+                tmp.WriteInteger(Version);
 
-                    if (!encoded.SequenceEqual(s_defaultVersion))
-                    {
-                        writer.PushSequence(new Asn1Tag(TagClass.ContextSpecific, 0));
-                        writer.WriteEncodedValue(encoded);
-                        writer.PopSequence(new Asn1Tag(TagClass.ContextSpecific, 0));
-                    }
+                if (!tmp.EncodedValueEquals(DefaultVersion))
+                {
+                    writer.PushSequence(new Asn1Tag(TagClass.ContextSpecific, 0));
+                    tmp.CopyTo(writer);
+                    writer.PopSequence(new Asn1Tag(TagClass.ContextSpecific, 0));
                 }
             }
 
@@ -81,7 +77,14 @@ namespace System.Security.Cryptography.X509Certificates.Asn1
                 }
             }
 
-            writer.WriteEncodedValue(Issuer.Span);
+            try
+            {
+                writer.WriteEncodedValue(Issuer.Span);
+            }
+            catch (ArgumentException e)
+            {
+                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding, e);
+            }
             Validity.Encode(writer);
             // Validator for tag constraint for Subject
             {
@@ -92,18 +95,25 @@ namespace System.Security.Cryptography.X509Certificates.Asn1
                 }
             }
 
-            writer.WriteEncodedValue(Subject.Span);
+            try
+            {
+                writer.WriteEncodedValue(Subject.Span);
+            }
+            catch (ArgumentException e)
+            {
+                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding, e);
+            }
             SubjectPublicKeyInfo.Encode(writer);
 
             if (IssuerUniqueId.HasValue)
             {
-                writer.WriteBitString(new Asn1Tag(TagClass.ContextSpecific, 1), IssuerUniqueId.Value.Span);
+                writer.WriteBitString(IssuerUniqueId.Value.Span, 0, new Asn1Tag(TagClass.ContextSpecific, 1));
             }
 
 
             if (SubjectUniqueId.HasValue)
             {
-                writer.WriteBitString(new Asn1Tag(TagClass.ContextSpecific, 2), SubjectUniqueId.Value.Span);
+                writer.WriteBitString(SubjectUniqueId.Value.Span, 0, new Asn1Tag(TagClass.ContextSpecific, 2));
             }
 
 
@@ -131,11 +141,18 @@ namespace System.Security.Cryptography.X509Certificates.Asn1
 
         internal static TbsCertificateAsn Decode(Asn1Tag expectedTag, ReadOnlyMemory<byte> encoded, AsnEncodingRules ruleSet)
         {
-            AsnValueReader reader = new AsnValueReader(encoded.Span, ruleSet);
+            try
+            {
+                AsnValueReader reader = new AsnValueReader(encoded.Span, ruleSet);
 
-            Decode(ref reader, expectedTag, encoded, out TbsCertificateAsn decoded);
-            reader.ThrowIfNotEmpty();
-            return decoded;
+                DecodeCore(ref reader, expectedTag, encoded, out TbsCertificateAsn decoded);
+                reader.ThrowIfNotEmpty();
+                return decoded;
+            }
+            catch (AsnContentException e)
+            {
+                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding, e);
+            }
         }
 
         internal static void Decode(ref AsnValueReader reader, ReadOnlyMemory<byte> rebind, out TbsCertificateAsn decoded)
@@ -144,6 +161,18 @@ namespace System.Security.Cryptography.X509Certificates.Asn1
         }
 
         internal static void Decode(ref AsnValueReader reader, Asn1Tag expectedTag, ReadOnlyMemory<byte> rebind, out TbsCertificateAsn decoded)
+        {
+            try
+            {
+                DecodeCore(ref reader, expectedTag, rebind, out decoded);
+            }
+            catch (AsnContentException e)
+            {
+                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding, e);
+            }
+        }
+
+        private static void DecodeCore(ref AsnValueReader reader, Asn1Tag expectedTag, ReadOnlyMemory<byte> rebind, out TbsCertificateAsn decoded)
         {
             decoded = default;
             AsnValueReader sequenceReader = reader.ReadSequence(expectedTag);
@@ -168,7 +197,7 @@ namespace System.Security.Cryptography.X509Certificates.Asn1
             }
             else
             {
-                defaultReader = new AsnValueReader(s_defaultVersion, AsnEncodingRules.DER);
+                defaultReader = new AsnValueReader(DefaultVersion, AsnEncodingRules.DER);
 
                 if (!defaultReader.TryReadInt32(out decoded.Version))
                 {
@@ -200,13 +229,13 @@ namespace System.Security.Cryptography.X509Certificates.Asn1
             if (sequenceReader.HasData && sequenceReader.PeekTag().HasSameClassAndValue(new Asn1Tag(TagClass.ContextSpecific, 1)))
             {
 
-                if (sequenceReader.TryReadPrimitiveBitStringValue(new Asn1Tag(TagClass.ContextSpecific, 1), out _, out tmpSpan))
+                if (sequenceReader.TryReadPrimitiveBitString(out _, out tmpSpan, new Asn1Tag(TagClass.ContextSpecific, 1)))
                 {
                     decoded.IssuerUniqueId = rebindSpan.Overlaps(tmpSpan, out offset) ? rebind.Slice(offset, tmpSpan.Length) : tmpSpan.ToArray();
                 }
                 else
                 {
-                    decoded.IssuerUniqueId = sequenceReader.ReadBitString(new Asn1Tag(TagClass.ContextSpecific, 1), out _);
+                    decoded.IssuerUniqueId = sequenceReader.ReadBitString(out _, new Asn1Tag(TagClass.ContextSpecific, 1));
                 }
 
             }
@@ -215,13 +244,13 @@ namespace System.Security.Cryptography.X509Certificates.Asn1
             if (sequenceReader.HasData && sequenceReader.PeekTag().HasSameClassAndValue(new Asn1Tag(TagClass.ContextSpecific, 2)))
             {
 
-                if (sequenceReader.TryReadPrimitiveBitStringValue(new Asn1Tag(TagClass.ContextSpecific, 2), out _, out tmpSpan))
+                if (sequenceReader.TryReadPrimitiveBitString(out _, out tmpSpan, new Asn1Tag(TagClass.ContextSpecific, 2)))
                 {
                     decoded.SubjectUniqueId = rebindSpan.Overlaps(tmpSpan, out offset) ? rebind.Slice(offset, tmpSpan.Length) : tmpSpan.ToArray();
                 }
                 else
                 {
-                    decoded.SubjectUniqueId = sequenceReader.ReadBitString(new Asn1Tag(TagClass.ContextSpecific, 2), out _);
+                    decoded.SubjectUniqueId = sequenceReader.ReadBitString(out _, new Asn1Tag(TagClass.ContextSpecific, 2));
                 }
 
             }

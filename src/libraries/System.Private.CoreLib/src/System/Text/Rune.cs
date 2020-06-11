@@ -20,6 +20,13 @@ namespace System.Text
     [DebuggerDisplay("{DebuggerDisplay,nq}")]
     public readonly struct Rune : IComparable<Rune>, IEquatable<Rune>
     {
+        internal const int MaxUtf16CharsPerRune = 2; // supplementary plane code points are encoded as 2 UTF-16 code units
+        internal const int MaxUtf8BytesPerRune = 4; // supplementary plane code points are encoded as 4 UTF-8 code units
+
+        private const char HighSurrogateStart = '\ud800';
+        private const char LowSurrogateStart = '\udc00';
+        private const int HighSurrogateRange = 0x3FF;
+
         private const byte IsWhiteSpaceFlag = 0x80;
         private const byte IsLetterOrDigitFlag = 0x40;
         private const byte UnicodeCategoryMask = 0x1F;
@@ -159,7 +166,15 @@ namespace System.Text
         /// <remarks>
         /// The return value will be 1 or 2.
         /// </remarks>
-        public int Utf16SequenceLength => UnicodeUtility.GetUtf16SequenceLength(_value);
+        public int Utf16SequenceLength
+        {
+            get
+            {
+                int codeUnitCount = UnicodeUtility.GetUtf16SequenceLength(_value);
+                Debug.Assert(codeUnitCount > 0 && codeUnitCount <= MaxUtf16CharsPerRune);
+                return codeUnitCount;
+            }
+        }
 
         /// <summary>
         /// Returns the length in code units of the
@@ -168,20 +183,29 @@ namespace System.Text
         /// <remarks>
         /// The return value will be 1 through 4, inclusive.
         /// </remarks>
-        public int Utf8SequenceLength => UnicodeUtility.GetUtf8SequenceLength(_value);
+        public int Utf8SequenceLength
+        {
+            get
+            {
+                int codeUnitCount = UnicodeUtility.GetUtf8SequenceLength(_value);
+                Debug.Assert(codeUnitCount > 0 && codeUnitCount <= MaxUtf8BytesPerRune);
+                return codeUnitCount;
+            }
+        }
 
         /// <summary>
         /// Returns the Unicode scalar value as an integer.
         /// </summary>
         public int Value => (int)_value;
 
+#if SYSTEM_PRIVATE_CORELIB
         private static Rune ChangeCaseCultureAware(Rune rune, TextInfo textInfo, bool toUpper)
         {
             Debug.Assert(!GlobalizationMode.Invariant, "This should've been checked by the caller.");
             Debug.Assert(textInfo != null, "This should've been checked by the caller.");
 
-            Span<char> original = stackalloc char[2]; // worst case scenario = 2 code units (for a surrogate pair)
-            Span<char> modified = stackalloc char[2]; // case change should preserve UTF-16 code unit count
+            Span<char> original = stackalloc char[MaxUtf16CharsPerRune];
+            Span<char> modified = stackalloc char[MaxUtf16CharsPerRune];
 
             int charCount = rune.EncodeToUtf16(original);
             original = original.Slice(0, charCount);
@@ -209,6 +233,42 @@ namespace System.Text
                 return UnsafeCreate(UnicodeUtility.GetScalarFromUtf16SurrogatePair(modified[0], modified[1]));
             }
         }
+#else
+        private static Rune ChangeCaseCultureAware(Rune rune, CultureInfo culture, bool toUpper)
+        {
+            Debug.Assert(!GlobalizationMode.Invariant, "This should've been checked by the caller.");
+            Debug.Assert(culture != null, "This should've been checked by the caller.");
+
+            Span<char> original = stackalloc char[MaxUtf16CharsPerRune]; // worst case scenario = 2 code units (for a surrogate pair)
+            Span<char> modified = stackalloc char[MaxUtf16CharsPerRune]; // case change should preserve UTF-16 code unit count
+
+            int charCount = rune.EncodeToUtf16(original);
+            original = original.Slice(0, charCount);
+            modified = modified.Slice(0, charCount);
+
+            if (toUpper)
+            {
+                MemoryExtensions.ToUpper(original, modified, culture);
+            }
+            else
+            {
+                MemoryExtensions.ToLower(original, modified, culture);
+            }
+
+            // We use simple case folding rules, which disallows moving between the BMP and supplementary
+            // planes when performing a case conversion. The helper methods which reconstruct a Rune
+            // contain debug asserts for this condition.
+
+            if (rune.IsBmp)
+            {
+                return UnsafeCreate(modified[0]);
+            }
+            else
+            {
+                return UnsafeCreate(UnicodeUtility.GetScalarFromUtf16SurrogatePair(modified[0], modified[1]));
+            }
+        }
+#endif
 
         public int CompareTo(Rune other) => _value.CompareTo(other._value);
 
@@ -827,6 +887,7 @@ namespace System.Text
         /// </summary>
         public override string ToString()
         {
+#if SYSTEM_PRIVATE_CORELIB
             if (IsBmp)
             {
                 return string.CreateFromChar((char)_value);
@@ -836,6 +897,18 @@ namespace System.Text
                 UnicodeUtility.GetUtf16SurrogatesFromSupplementaryPlaneScalar(_value, out char high, out char low);
                 return string.CreateFromChar(high, low);
             }
+#else
+            if (IsBmp)
+            {
+                return ((char)_value).ToString();
+            }
+            else
+            {
+                Span<char> buffer = stackalloc char[MaxUtf16CharsPerRune];
+                UnicodeUtility.GetUtf16SurrogatesFromSupplementaryPlaneScalar(_value, out buffer[0], out buffer[1]);
+                return buffer.ToString();
+            }
+#endif
         }
 
         /// <summary>
@@ -865,17 +938,17 @@ namespace System.Text
             // First, extend both to 32 bits, then calculate the offset of
             // each candidate surrogate char from the start of its range.
 
-            uint highSurrogateOffset = (uint)highSurrogate - CharUnicodeInfo.HIGH_SURROGATE_START;
-            uint lowSurrogateOffset = (uint)lowSurrogate - CharUnicodeInfo.LOW_SURROGATE_START;
+            uint highSurrogateOffset = (uint)highSurrogate - HighSurrogateStart;
+            uint lowSurrogateOffset = (uint)lowSurrogate - LowSurrogateStart;
 
             // This is a single comparison which allows us to check both for validity at once since
             // both the high surrogate range and the low surrogate range are the same length.
             // If the comparison fails, we call to a helper method to throw the correct exception message.
 
-            if ((highSurrogateOffset | lowSurrogateOffset) <= CharUnicodeInfo.HIGH_SURROGATE_RANGE)
+            if ((highSurrogateOffset | lowSurrogateOffset) <= HighSurrogateRange)
             {
                 // The 0x40u << 10 below is to account for uuuuu = wwww + 1 in the surrogate encoding.
-                result = UnsafeCreate((highSurrogateOffset << 10) + ((uint)lowSurrogate - CharUnicodeInfo.LOW_SURROGATE_START) + (0x40u << 10));
+                result = UnsafeCreate((highSurrogateOffset << 10) + ((uint)lowSurrogate - LowSurrogateStart) + (0x40u << 10));
                 return true;
             }
             else
@@ -1070,7 +1143,15 @@ namespace System.Text
             else
             {
                 // not an ASCII char; fall back to globalization table
+#if SYSTEM_PRIVATE_CORELIB
                 return CharUnicodeInfo.GetNumericValue(value.Value);
+#else
+                if (value.IsBmp)
+                {
+                    return CharUnicodeInfo.GetNumericValue((char)value._value);
+                }
+                return CharUnicodeInfo.GetNumericValue(value.ToString(), 0);
+#endif
             }
         }
 
@@ -1089,7 +1170,15 @@ namespace System.Text
         private static UnicodeCategory GetUnicodeCategoryNonAscii(Rune value)
         {
             Debug.Assert(!value.IsAscii, "Shouldn't use this non-optimized code path for ASCII characters.");
+#if !NETSTANDARD2_0
             return CharUnicodeInfo.GetUnicodeCategory(value.Value);
+#else
+            if (value.IsBmp)
+            {
+                return CharUnicodeInfo.GetUnicodeCategory((char)value._value);
+            }
+            return CharUnicodeInfo.GetUnicodeCategory(value.ToString(), 0);
+#endif
         }
 
         // Returns true iff this Unicode category represents a letter
@@ -1240,7 +1329,12 @@ namespace System.Text
             // Only BMP code points can be white space, so only call into CharUnicodeInfo
             // if the incoming value is within the BMP.
 
-            return value.IsBmp && CharUnicodeInfo.GetIsWhiteSpace((char)value._value);
+            return value.IsBmp &&
+#if SYSTEM_PRIVATE_CORELIB
+                CharUnicodeInfo.GetIsWhiteSpace((char)value._value);
+#else
+                char.IsWhiteSpace((char)value._value);
+#endif
         }
 
         public static Rune ToLower(Rune value, CultureInfo culture)
@@ -1259,7 +1353,11 @@ namespace System.Text
                 return ToLowerInvariant(value);
             }
 
-            return ChangeCaseCultureAware(value, culture!.TextInfo, toUpper: false);
+#if SYSTEM_PRIVATE_CORELIB
+            return ChangeCaseCultureAware(value, culture.TextInfo, toUpper: false);
+#else
+            return ChangeCaseCultureAware(value, culture, toUpper: false);
+#endif
         }
 
         public static Rune ToLowerInvariant(Rune value)
@@ -1283,7 +1381,11 @@ namespace System.Text
 
             // Non-ASCII data requires going through the case folding tables.
 
+#if SYSTEM_PRIVATE_CORELIB
             return ChangeCaseCultureAware(value, TextInfo.Invariant, toUpper: false);
+#else
+            return ChangeCaseCultureAware(value, CultureInfo.InvariantCulture, toUpper: false);
+#endif
         }
 
         public static Rune ToUpper(Rune value, CultureInfo culture)
@@ -1302,7 +1404,11 @@ namespace System.Text
                 return ToUpperInvariant(value);
             }
 
-            return ChangeCaseCultureAware(value, culture!.TextInfo, toUpper: true);
+#if SYSTEM_PRIVATE_CORELIB
+            return ChangeCaseCultureAware(value, culture.TextInfo, toUpper: true);
+#else
+            return ChangeCaseCultureAware(value, culture, toUpper: true);
+#endif
         }
 
         public static Rune ToUpperInvariant(Rune value)
@@ -1326,7 +1432,11 @@ namespace System.Text
 
             // Non-ASCII data requires going through the case folding tables.
 
+#if SYSTEM_PRIVATE_CORELIB
             return ChangeCaseCultureAware(value, TextInfo.Invariant, toUpper: true);
+#else
+            return ChangeCaseCultureAware(value, CultureInfo.InvariantCulture, toUpper: true);
+#endif
         }
     }
 }

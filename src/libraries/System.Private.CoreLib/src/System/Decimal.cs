@@ -4,6 +4,7 @@
 
 using System.Buffers.Binary;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -480,7 +481,7 @@ namespace System
             return Number.ParseDecimal(s, style, NumberFormatInfo.GetInstance(provider));
         }
 
-        public static bool TryParse(string? s, out decimal result)
+        public static bool TryParse([NotNullWhen(true)] string? s, out decimal result)
         {
             if (s == null)
             {
@@ -496,7 +497,7 @@ namespace System
             return Number.TryParseDecimal(s, NumberStyles.Number, NumberFormatInfo.CurrentInfo, out result) == Number.ParsingStatus.OK;
         }
 
-        public static bool TryParse(string? s, NumberStyles style, IFormatProvider? provider, out decimal result)
+        public static bool TryParse([NotNullWhen(true)] string? s, NumberStyles style, IFormatProvider? provider, out decimal result)
         {
             NumberFormatInfo.ValidateParseStyleFloatingPoint(style);
 
@@ -936,9 +937,9 @@ namespace System
         [CLSCompliant(false)]
         public static explicit operator ulong(decimal value) => ToUInt64(value);
 
-        public static explicit operator float(decimal value) => ToSingle(value);
+        public static explicit operator float(decimal value) => DecCalc.VarR4FromDec(in value);
 
-        public static explicit operator double(decimal value) => ToDouble(value);
+        public static explicit operator double(decimal value) => DecCalc.VarR8FromDec(in value);
 
         public static decimal operator +(decimal d) => d;
 
@@ -1051,12 +1052,12 @@ namespace System
 
         float IConvertible.ToSingle(IFormatProvider? provider)
         {
-            return Convert.ToSingle(this);
+            return DecCalc.VarR4FromDec(in this);
         }
 
         double IConvertible.ToDouble(IFormatProvider? provider)
         {
-            return Convert.ToDouble(this);
+            return DecCalc.VarR8FromDec(in this);
         }
 
         decimal IConvertible.ToDecimal(IFormatProvider? provider)

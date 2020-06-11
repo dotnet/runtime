@@ -1201,7 +1201,7 @@ processing_after_callback (int generation)
 
 	cleanup_time = step_timer (&curtime);
 
-	mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_GC, "GC_TAR_BRIDGE bridges %d objects %d opaque %d colors %d colors-bridged %d colors-visible %d xref %d cache-hit %d cache-%s %d cache-miss %d setup %.2fms tarjan %.2fms scc-setup %.2fms gather-xref %.2fms xref-setup %.2fms cleanup %.2fms",
+	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_GC, "GC_TAR_BRIDGE bridges %d objects %d opaque %d colors %d colors-bridged %d colors-visible %d xref %d cache-hit %d cache-%s %d cache-miss %d setup %.2fms tarjan %.2fms scc-setup %.2fms gather-xref %.2fms xref-setup %.2fms cleanup %.2fms",
 		bridge_count, object_count, ignored_objects,
 		color_count, colors_with_bridges_count, num_sccs, xref_count,
 		cache_hits, (scc_precise_merge ? "abstain" : "semihit"), cache_semihits, cache_misses,

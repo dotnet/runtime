@@ -2,9 +2,9 @@
   <PropertyGroup>
     <TargetFrameworks>netstandard2.0</TargetFrameworks>
     <Nullable>enable</Nullable>
-    <!-- We only plan to use this ref in netcoreapp. For all other netstandard compatible frameworks we should use the lib
-    asset instead. -->
-    <PackageTargetFramework Condition="'$(TargetFramework)' == 'netstandard2.0'">netcoreapp2.0</PackageTargetFramework>
+    <!-- We only plan to use this ref in netcoreapp. For all other netstandard compatible frameworks
+    we should use the lib asset instead. -->
+    <PackageTargetFramework>netcoreapp2.0</PackageTargetFramework>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System.IO.Pipelines.cs" />

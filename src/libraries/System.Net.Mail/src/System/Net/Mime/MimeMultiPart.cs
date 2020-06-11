@@ -13,9 +13,9 @@ namespace System.Net.Mime
 {
     internal class MimeMultiPart : MimeBasePart
     {
-        private Collection<MimeBasePart> _parts;
+        private Collection<MimeBasePart>? _parts;
         private static int s_boundary;
-        private AsyncCallback _mimePartSentCallback;
+        private AsyncCallback? _mimePartSentCallback;
         private bool _allowUnicode;
 
         internal MimeMultiPart(MimeMultiPartType type)
@@ -53,22 +53,22 @@ namespace System.Net.Mime
             }
         }
 
-        internal void Complete(IAsyncResult result, Exception e)
+        internal void Complete(IAsyncResult result, Exception? e)
         {
             //if we already completed and we got called again,
             //it mean's that there was an exception in the callback and we
             //should just rethrow it.
 
-            MimePartContext context = (MimePartContext)result.AsyncState;
+            MimePartContext context = (MimePartContext)result.AsyncState!;
 
             if (context._completed)
             {
-                ExceptionDispatchInfo.Throw(e);
+                ExceptionDispatchInfo.Throw(e!);
             }
 
             try
             {
-                context._outputStream.Close();
+                context._outputStream!.Close();
             }
             catch (Exception ex)
             {
@@ -88,7 +88,7 @@ namespace System.Net.Mime
                 return;
             }
 
-            ((MimePartContext)result.AsyncState)._completedSynchronously = false;
+            ((MimePartContext)result.AsyncState!)._completedSynchronously = false;
 
             try
             {
@@ -102,7 +102,7 @@ namespace System.Net.Mime
 
         private void MimeWriterCloseCallbackHandler(IAsyncResult result)
         {
-            MimePartContext context = (MimePartContext)result.AsyncState;
+            MimePartContext context = (MimePartContext)result.AsyncState!;
             ((MimeWriter)context._writer).EndClose(result);
             Complete(result, null);
         }
@@ -114,7 +114,7 @@ namespace System.Net.Mime
                 return;
             }
 
-            ((MimePartContext)result.AsyncState)._completedSynchronously = false;
+            ((MimePartContext)result.AsyncState!)._completedSynchronously = false;
 
             try
             {
@@ -128,14 +128,14 @@ namespace System.Net.Mime
 
         private void MimePartSentCallbackHandler(IAsyncResult result)
         {
-            MimePartContext context = (MimePartContext)result.AsyncState;
+            MimePartContext context = (MimePartContext)result.AsyncState!;
             MimeBasePart part = (MimeBasePart)context._partsEnumerator.Current;
             part.EndSend(result);
 
             if (context._partsEnumerator.MoveNext())
             {
                 part = (MimeBasePart)context._partsEnumerator.Current;
-                IAsyncResult sendResult = part.BeginSend(context._writer, _mimePartSentCallback, _allowUnicode, context);
+                IAsyncResult sendResult = part.BeginSend(context._writer, _mimePartSentCallback!, _allowUnicode, context);
                 if (sendResult.CompletedSynchronously)
                 {
                     MimePartSentCallbackHandler(sendResult);
@@ -159,7 +159,7 @@ namespace System.Net.Mime
                 return;
             }
 
-            ((MimePartContext)result.AsyncState)._completedSynchronously = false;
+            ((MimePartContext)result.AsyncState!)._completedSynchronously = false;
 
             try
             {
@@ -173,9 +173,9 @@ namespace System.Net.Mime
 
         private void ContentStreamCallbackHandler(IAsyncResult result)
         {
-            MimePartContext context = (MimePartContext)result.AsyncState;
+            MimePartContext context = (MimePartContext)result.AsyncState!;
             context._outputStream = context._writer.EndGetContentStream(result);
-            context._writer = new MimeWriter(context._outputStream, ContentType.Boundary);
+            context._writer = new MimeWriter(context._outputStream!, ContentType.Boundary!);
             if (context._partsEnumerator.MoveNext())
             {
                 MimeBasePart part = (MimeBasePart)context._partsEnumerator.Current;
@@ -198,8 +198,8 @@ namespace System.Net.Mime
             }
         }
 
-        internal override IAsyncResult BeginSend(BaseWriter writer, AsyncCallback callback, bool allowUnicode,
-            object state)
+        internal override IAsyncResult BeginSend(BaseWriter writer, AsyncCallback? callback, bool allowUnicode,
+            object? state)
         {
             _allowUnicode = allowUnicode;
             PrepareHeaders(allowUnicode);
@@ -224,7 +224,7 @@ namespace System.Net.Mime
             }
 
             internal IEnumerator<MimeBasePart> _partsEnumerator;
-            internal Stream _outputStream;
+            internal Stream? _outputStream;
             internal LazyAsyncResult _result;
             internal BaseWriter _writer;
             internal bool _completed;
@@ -236,7 +236,7 @@ namespace System.Net.Mime
             PrepareHeaders(allowUnicode);
             writer.WriteHeaders(Headers, allowUnicode);
             Stream outputStream = writer.GetContentStream();
-            MimeWriter mimeWriter = new MimeWriter(outputStream, ContentType.Boundary);
+            MimeWriter mimeWriter = new MimeWriter(outputStream, ContentType.Boundary!);
 
             foreach (MimeBasePart part in Parts)
             {

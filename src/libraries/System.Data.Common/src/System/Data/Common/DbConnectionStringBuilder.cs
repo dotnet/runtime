@@ -170,8 +170,11 @@ namespace System.Data.Common
                     _connectionString = null;
                 }
                 catch (ArgumentException)
-                { // restore original string
+                {
+                    // restore original string
+#pragma warning disable CA2011 // avoid infinite recursion, but this isn't that; it's restoring the original string
                     ConnectionString = originalValue;
+#pragma warning restore CA2011
                     _connectionString = originalValue;
                     throw;
                 }

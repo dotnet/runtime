@@ -97,6 +97,12 @@ namespace System
         }
 
         [DoesNotReturn]
+        internal static void ThrowArgumentException_BadComparer(object? comparer)
+        {
+            throw new ArgumentException(SR.Format(SR.Arg_BogusIComparer, comparer));
+        }
+
+        [DoesNotReturn]
         internal static void ThrowIndexArgumentOutOfRange_NeedNonNegNumException()
         {
             throw GetArgumentOutOfRangeException(ExceptionArgument.index,
@@ -688,6 +694,12 @@ namespace System
                     return "codePoint";
                 case ExceptionArgument.str:
                     return "str";
+                case ExceptionArgument.options:
+                    return "options";
+                case ExceptionArgument.prefix:
+                    return "prefix";
+                case ExceptionArgument.suffix:
+                    return "suffix";
                 default:
                     Debug.Fail("The enum value is not defined, please check the ExceptionArgument Enum.");
                     return "";
@@ -842,6 +854,8 @@ namespace System
                     return SR.Arg_TypeNotSupported;
                 case ExceptionResource.Argument_SpansMustHaveSameLength:
                     return SR.Argument_SpansMustHaveSameLength;
+                case ExceptionResource.Argument_InvalidFlag:
+                    return SR.Argument_InvalidFlag;
                 default:
                     Debug.Fail("The enum value is not defined, please check the ExceptionResource Enum.");
                     return "";
@@ -941,6 +955,9 @@ namespace System
         year,
         codePoint,
         str,
+        options,
+        prefix,
+        suffix,
     }
 
     //
@@ -1014,5 +1031,6 @@ namespace System
         Rank_MultiDimNotSupported,
         Arg_TypeNotSupported,
         Argument_SpansMustHaveSameLength,
+        Argument_InvalidFlag,
     }
 }

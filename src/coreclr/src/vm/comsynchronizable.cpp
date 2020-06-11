@@ -300,42 +300,7 @@ ULONG WINAPI ThreadNative::KickOffThread(void* pass)
 
     _ASSERTE(pThread != NULL);
 
-    BOOL ok = TRUE;
-
-    {
-        EX_TRY
-        {
-            CExecutionEngine::CheckThreadState(0);
-        }
-        EX_CATCH
-        {
-            // OOM might be thrown from CheckThreadState, so it's important
-            // that we don't rethrow it; if we do then the process will die
-            // because there are no installed handlers at this point, so
-            // swallow the exception.  this will set the thread's state to
-            // FailStarted which will result in a ThreadStartException being
-            // thrown from the thread that attempted to start this one.
-            if (!GET_EXCEPTION()->IsTransient() && !SwallowUnhandledExceptions())
-                EX_RETHROW;
-        }
-        EX_END_CATCH(SwallowAllExceptions);
-        if (CExecutionEngine::CheckThreadStateNoCreate(0) == NULL)
-        {
-            // We can not
-            pThread->SetThreadState(Thread::TS_FailStarted);
-            pThread->DetachThread(FALSE);
-            // !!! Do not touch any field of Thread object.  The Thread object is subject to delete
-            // !!! after DetachThread call.
-            ok = FALSE;
-        }
-    }
-
-    if (ok)
-    {
-        ok = pThread->HasStarted();
-    }
-
-    if (ok)
+    if (pThread->HasStarted())
     {
         // Do not swallow the unhandled exception here
         //
@@ -875,9 +840,6 @@ FCIMPL1(INT32, ThreadNative::GetThreadState, ThreadBaseObject* pThisUNSAFE)
 
     if (state & Thread::TS_Interruptible)
         res |= ThreadWaitSleepJoin;
-
-    // CoreCLR does not support user-requested thread suspension
-    _ASSERTE(!(state & Thread::TS_UserSuspendPending));
 
     HELPER_METHOD_POLL();
     HELPER_METHOD_FRAME_END();

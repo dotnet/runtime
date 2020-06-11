@@ -4319,8 +4319,6 @@ private:
 
     CordbAssembly * ResolveAssemblyInternal(mdToken tkAssemblyRef);
 
-    BOOL IsWinMD();
-
     //-----------------------------------------------------------
     // Convenience routines
     //-----------------------------------------------------------
@@ -4383,19 +4381,11 @@ public:
 
 private:
 
-    enum ILWinMDState
-    {
-        Uninitialized,
-        False,
-        True
-    };
-
     // Base Address and size of this module in debuggee's process. Maybe null if unknown.
     TargetBuffer m_PEBuffer;
 
     BOOL             m_fDynamic; // Dynamic modules can grow (like Reflection Emit)
     BOOL             m_fInMemory; // In memory modules don't have file-backing.
-    ILWinMDState     m_isIlWinMD; // WinMD modules don't support all metadata interfaces
 
     // Indicates that the module must serialize its metadata in process as part of metadata
     // refresh. This is required for modules updated on the fly by the profiler
@@ -10608,18 +10598,16 @@ private:
 #endif
 
     HRESULT EnableSSAfterBP();
-    bool GetEEThreadCantStopHelper();
 
     HRESULT GetTlsSlot(DWORD slot, REMOTE_PTR *pValue);
     HRESULT SetTlsSlot(DWORD slot, REMOTE_PTR value);
-    REMOTE_PTR GetPreDefTlsSlot(SIZE_T slot, bool * pRead);
+    REMOTE_PTR GetPreDefTlsSlot(SIZE_T slot);
 
     void * m_pPatchSkipAddress;
 
     UINT m_continueCountCached;
 
     DWORD_PTR GetEEThreadValue();
-    REMOTE_PTR GetEETlsDataBlock();
     HRESULT GetClrModuleTlsDataAddress(REMOTE_PTR* pAddress);
 
 public:

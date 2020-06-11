@@ -46,7 +46,7 @@ For example the `hostfxr` may look at its location and try to deduce the locatio
 
 * `LibHostInitFailure` (`0x8000808e`) - Initialization of the `hostpolicy` library failed. The `corehost_load` method takes a structure with lot of initialization parameters. If the version of this structure doesn't match the expected value, this error code is returned. This would in general mean incompatibility between the `hostfxr` and `hostpolicy`, which should really only happen if somehow a newer `hostpolicy` is used by older `hostfxr`. This typically means corrupted installation.
 
-* `LibHostSdkFindFailure` (`0x80008091`) - Failure to find the requested SDK. This happens in the `hostfxr` when an SDK (also called CLI) command is used with `dotnet`. In this case the hosting layer tries to find an installed .NET Core SDK to run the command on. The search is based on deduced install location and on the requested version from potential `global.json` file. If either no matching SDK version can be found, or that version exists, but it's missing the `dotnet.dll` file, this error code is returned.
+* `LibHostSdkFindFailure` (`0x80008091`) - Failure to find the requested SDK. This happens in the `hostfxr` when an SDK (also called CLI) command is used with `dotnet`. In this case the hosting layer tries to find an installed .NET SDK to run the command on. The search is based on deduced install location and on the requested version from potential `global.json` file. If either no matching SDK version can be found, or that version exists, but it's missing the `dotnet.dll` file, this error code is returned.
 
 * `LibHostInvalidArgs` (`0x80008092`) - Arguments to `hostpolicy` are invalid. This is used in three unrelated places in the `hostpolicy`, but in all cases it means the component calling `hostpolicy` did something wrong:
   * Command line arguments for the app - the failure would typically mean that wrong argument was passed or such. For example if the application main assembly is not specified on the command line. On its own this should not happen as `hostfxr` should have parsed and validated all command line arguments.
@@ -109,3 +109,5 @@ For example if `hostfxr_get_runtime_property_value` is called with the `host_con
 * `HostPropertyNotFound` (`0x800080a4`) - property requested by `hostfxr_get_runtime_property_value` doesn't exist.
 
 * `CoreHostIncompatibleConfig` (`0x800080a5`) - Error returned by `hostfxr_initialize_for_runtime_config` if the component being initialized requires framework which is not available or incompatible with the frameworks loaded by the runtime already in the process. For example trying to load a component which requires 3.0 into a process which is already running a 2.0 runtime.
+
+* `HostApiUnsupportedScenario` (`0x800080a6`) - Error returned by `hostfxr_get_runtime_delegate` when `hostfxr` doesn't currently support requesting the given delegate type using the given context.

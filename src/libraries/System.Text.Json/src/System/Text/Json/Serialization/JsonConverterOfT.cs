@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 
@@ -11,7 +12,7 @@ namespace System.Text.Json.Serialization
     /// Converts an object or value to or from JSON.
     /// </summary>
     /// <typeparam name="T">The <see cref="Type"/> to convert.</typeparam>
-    public abstract class JsonConverter<T> : JsonConverter
+    public abstract partial class JsonConverter<T> : JsonConverter
     {
         /// <summary>
         /// When overidden, constructs a new <see cref="JsonConverter{T}"/> instance.
@@ -21,7 +22,9 @@ namespace System.Text.Json.Serialization
             // Today only typeof(object) can have polymorphic writes.
             // In the future, this will be check for !IsSealed (and excluding value types).
             CanBePolymorphic = TypeToConvert == typeof(object);
-
+            IsValueType = TypeToConvert.IsValueType;
+            HandleNull = IsValueType;
+            CanBeNull = !IsValueType || Nullable.GetUnderlyingType(TypeToConvert) != null;
             IsInternalConverter = GetType().Assembly == typeof(JsonConverter).Assembly;
             CanUseDirectReadOrWrite = !CanBePolymorphic && IsInternalConverter && ClassType == ClassType.Value;
         }
@@ -46,12 +49,33 @@ namespace System.Text.Json.Serialization
             return new JsonPropertyInfo<T>();
         }
 
+        internal override sealed JsonParameterInfo CreateJsonParameterInfo()
+        {
+            return new JsonParameterInfo<T>();
+        }
+
         internal override Type? ElementType => null;
+
+        /// <summary>
+        /// Indicates whether <see langword="null"/> should be passed to the converter on serialization,
+        /// and whether <see cref="JsonTokenType.Null"/> should be passed on deserialization.
+        /// </summary>
+        /// <remarks>
+        /// The default value is <see langword="true"/> for converters for value types, and <see langword="false"/> for converters for reference types.
+        /// </remarks>
+        public virtual bool HandleNull { get; }
+
+        /// <summary>
+        /// Can <see langword="null"/> be assigned to <see cref="TypeToConvert"/>?
+        /// </summary>
+        internal bool CanBeNull { get; }
 
         /// <summary>
         /// Is the converter built-in.
         /// </summary>
         internal bool IsInternalConverter { get; set; }
+
+        internal readonly EqualityComparer<T> _defaultComparer = EqualityComparer<T>.Default;
 
         // This non-generic API is sealed as it just forwards to the generic version.
         internal sealed override bool TryWriteAsObject(Utf8JsonWriter writer, object? value, JsonSerializerOptions options, ref WriteStack state)
@@ -63,29 +87,12 @@ namespace System.Text.Json.Serialization
         // Provide a default implementation for value converters.
         internal virtual bool OnTryWrite(Utf8JsonWriter writer, T value, JsonSerializerOptions options, ref WriteStack state)
         {
-            // TODO: https://github.com/dotnet/runtime/issues/32523
-            Write(writer, value!, options);
+            Write(writer, value, options);
             return true;
         }
 
-        // This non-generic API is sealed as it just forwards to the generic version.
-        internal sealed override bool TryReadAsObject(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options, ref ReadStack state, out object? value)
-        {
-            bool success = TryRead(ref reader, typeToConvert, options, ref state, out T valueOfT);
-            if (success)
-            {
-                value = valueOfT;
-            }
-            else
-            {
-                value = default;
-            }
-
-            return success;
-        }
-
         // Provide a default implementation for value converters.
-        internal virtual bool OnTryRead(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options, ref ReadStack state, out T value)
+        internal virtual bool OnTryRead(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options, ref ReadStack state, [MaybeNull] out T value)
         {
             value = Read(ref reader, typeToConvert, options);
             return true;
@@ -101,9 +108,10 @@ namespace System.Text.Json.Serialization
         /// <param name="typeToConvert">The <see cref="Type"/> being converted.</param>
         /// <param name="options">The <see cref="JsonSerializerOptions"/> being used.</param>
         /// <returns>The value that was converted.</returns>
+        [return: MaybeNull]
         public abstract T Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options);
 
-        internal bool TryRead(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options, ref ReadStack state, out T value)
+        internal bool TryRead(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options, ref ReadStack state, [MaybeNull] out T value)
         {
             if (ClassType == ClassType.Value)
             {
@@ -111,9 +119,14 @@ namespace System.Text.Json.Serialization
                 Debug.Assert(!state.IsContinuation);
 
                 // For perf and converter simplicity, handle null here instead of forwarding to the converter.
-                if (reader.TokenType == JsonTokenType.Null && !HandleNullValue)
+                if (reader.TokenType == JsonTokenType.Null && !HandleNull)
                 {
-                    value = default!;
+                    if (!CanBeNull)
+                    {
+                        ThrowHelper.ThrowJsonException_DeserializeUnableToConvertValue(TypeToConvert);
+                    }
+
+                    value = default;
                     return true;
                 }
 
@@ -153,10 +166,15 @@ namespace System.Text.Json.Serialization
             // For performance, only perform validation on internal converters on debug builds.
             if (IsInternalConverter)
             {
-                if (reader.TokenType == JsonTokenType.Null && !HandleNullValue && !wasContinuation)
+                if (reader.TokenType == JsonTokenType.Null && !HandleNull && !wasContinuation)
                 {
+                    if (!CanBeNull)
+                    {
+                        ThrowHelper.ThrowJsonException_DeserializeUnableToConvertValue(TypeToConvert);
+                    }
+
                     // For perf and converter simplicity, handle null here instead of forwarding to the converter.
-                    value = default!;
+                    value = default;
                     success = true;
                 }
                 else
@@ -170,9 +188,14 @@ namespace System.Text.Json.Serialization
                 if (!wasContinuation)
                 {
                     // For perf and converter simplicity, handle null here instead of forwarding to the converter.
-                    if (reader.TokenType == JsonTokenType.Null && !HandleNullValue)
+                    if (reader.TokenType == JsonTokenType.Null && !HandleNull)
                     {
-                        value = default!;
+                        if (!CanBeNull)
+                        {
+                            ThrowHelper.ThrowJsonException_DeserializeUnableToConvertValue(TypeToConvert);
+                        }
+
+                        value = default;
                         state.Pop(true);
                         return true;
                     }
@@ -212,14 +235,27 @@ namespace System.Text.Json.Serialization
         {
             if (writer.CurrentDepth >= options.EffectiveMaxDepth)
             {
-                ThrowHelper.ThrowInvalidOperationException_SerializerCycleDetected(options.MaxDepth);
+                ThrowHelper.ThrowJsonException_SerializerCycleDetected(options.EffectiveMaxDepth);
             }
 
             if (CanBePolymorphic)
             {
                 if (value == null)
                 {
-                    writer.WriteNullValue();
+                    if (!HandleNull)
+                    {
+                        writer.WriteNullValue();
+                    }
+                    else
+                    {
+                        Debug.Assert(ClassType == ClassType.Value);
+                        Debug.Assert(!state.IsContinuation);
+
+                        int originalPropertyDepth = writer.CurrentDepth;
+                        Write(writer, value, options);
+                        VerifyWrite(originalPropertyDepth, writer);
+                    }
+
                     return true;
                 }
 
@@ -242,6 +278,13 @@ namespace System.Text.Json.Serialization
                     }
                 }
             }
+            else if (value == null && !HandleNull)
+            {
+                // We do not pass null values to converters unless HandleNull is true. Null values for properties were
+                // already handled in GetMemberAndWriteJson() so we don't need to check for IgnoreNullValues here.
+                writer.WriteNullValue();
+                return true;
+            }
 
             if (ClassType == ClassType.Value)
             {
@@ -249,10 +292,8 @@ namespace System.Text.Json.Serialization
 
                 int originalPropertyDepth = writer.CurrentDepth;
 
-                // TODO: https://github.com/dotnet/runtime/issues/32523
-                Write(writer, value!, options);
+                Write(writer, value, options);
                 VerifyWrite(originalPropertyDepth, writer);
-
                 return true;
             }
 
@@ -280,54 +321,45 @@ namespace System.Text.Json.Serialization
 
         internal bool TryWriteDataExtensionProperty(Utf8JsonWriter writer, T value, JsonSerializerOptions options, ref WriteStack state)
         {
+            Debug.Assert(value != null);
+
+            if (!IsInternalConverter)
+            {
+                return TryWrite(writer, value, options, ref state);
+            }
+
             Debug.Assert(this is JsonDictionaryConverter<T>);
+
+            state.Current.PolymorphicJsonPropertyInfo = state.Current.DeclaredJsonPropertyInfo!.RuntimeClassInfo.ElementClassInfo!.PropertyInfoForClassInfo;
 
             if (writer.CurrentDepth >= options.EffectiveMaxDepth)
             {
-                ThrowHelper.ThrowInvalidOperationException_SerializerCycleDetected(options.MaxDepth);
+                ThrowHelper.ThrowJsonException_SerializerCycleDetected(options.EffectiveMaxDepth);
             }
 
-            bool success;
             JsonDictionaryConverter<T> dictionaryConverter = (JsonDictionaryConverter<T>)this;
 
-            if (ClassType == ClassType.Value)
+            bool isContinuation = state.IsContinuation;
+            bool success;
+
+            state.Push();
+
+            if (!isContinuation)
             {
-                Debug.Assert(!state.IsContinuation);
-
-                int originalPropertyDepth = writer.CurrentDepth;
-
-                // Ignore the naming policy for extension data.
-                state.Current.IgnoreDictionaryKeyPolicy = true;
-
-                success = dictionaryConverter.OnWriteResume(writer, value, options, ref state);
-                if (success)
-                {
-                    VerifyWrite(originalPropertyDepth, writer);
-                }
+                Debug.Assert(state.Current.OriginalDepth == 0);
+                state.Current.OriginalDepth = writer.CurrentDepth;
             }
-            else
+
+            // Ignore the naming policy for extension data.
+            state.Current.IgnoreDictionaryKeyPolicy = true;
+
+            success = dictionaryConverter.OnWriteResume(writer, value, options, ref state);
+            if (success)
             {
-                bool isContinuation = state.IsContinuation;
-
-                state.Push();
-
-                if (!isContinuation)
-                {
-                    Debug.Assert(state.Current.OriginalDepth == 0);
-                    state.Current.OriginalDepth = writer.CurrentDepth;
-                }
-
-                // Ignore the naming policy for extension data.
-                state.Current.IgnoreDictionaryKeyPolicy = true;
-
-                success = dictionaryConverter.OnWriteResume(writer, value, options, ref state);
-                if (success)
-                {
-                    VerifyWrite(state.Current.OriginalDepth, writer);
-                }
-
-                state.Pop(success);
+                VerifyWrite(state.Current.OriginalDepth, writer);
             }
+
+            state.Pop(success);
 
             return success;
         }
@@ -395,6 +427,6 @@ namespace System.Text.Json.Serialization
         /// <param name="writer">The <see cref="Utf8JsonWriter"/> to write to.</param>
         /// <param name="value">The value to convert.</param>
         /// <param name="options">The <see cref="JsonSerializerOptions"/> being used.</param>
-        public abstract void Write(Utf8JsonWriter writer, [DisallowNull] T value, JsonSerializerOptions options);
+        public abstract void Write(Utf8JsonWriter writer, T value, JsonSerializerOptions options);
     }
 }

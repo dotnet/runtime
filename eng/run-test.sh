@@ -15,12 +15,12 @@ wait_on_pids()
 
 usage()
 {
-    echo "Runs .NET CoreFX tests on FreeBSD, NetBSD or Linux"
+    echo "Runs .NET CoreFX tests on FreeBSD, Linux, NetBSD or SunOS"
     echo "usage: run-test [options]"
     echo
     echo "Input sources:"
     echo "    --runtime <location>              Location of root of the binaries directory"
-    echo "                                      containing the FreeBSD, NetBSD or Linux runtime"
+    echo "                                      containing the FreeBSD, Linux, NetBSD or SunOS runtime"
     echo "                                      default: <repo_root>/bin/testhost/netcoreapp-<OS>-<Configuration>-<Arch>"
     echo "    --corefx-tests <location>         Location of the root binaries location containing"
     echo "                                      the tests to run"
@@ -29,7 +29,7 @@ usage()
     echo "Flavor/OS/Architecture options:"
     echo "    --configuration <config>     Configuration to run (Debug/Release)"
     echo "                                      default: Debug"
-    echo "    --os <os>                         OS to run (FreeBSD, NetBSD or Linux)"
+    echo "    --os <os>                         OS to run (FreeBSD, Linux, NetBSD or SunOS)"
     echo "                                      default: detect current OS"
     echo "    --arch <Architecture>             Architecture to run (x64, arm, armel, x86, arm64)"
     echo "                                      default: detect current architecture"
@@ -67,58 +67,10 @@ ProjectRoot="$(dirname "$(dirname "$(realpath ${BASH_SOURCE[0]})")")"
 # Location parameters
 # OS/Configuration defaults
 Configuration="Debug"
-OSName=$(uname -s)
-case $OSName in
-    FreeBSD)
-        OS=FreeBSD
-        ;;
+source $ProjectRoot/eng/native/init-os-and-arch.sh
 
-    NetBSD)
-        OS=NetBSD
-        ;;
-
-    Linux)
-        OS=Linux
-        ;;
-
-    *)
-        echo "Unsupported OS $OSName detected, configuring as if for Linux"
-        OS=Linux
-        ;;
-esac
-
-# Use uname to determine what the CPU is.
-CPUName=$(uname -p)
-# Some Linux platforms report unknown for platform, but the arch for machine.
-if [ "$CPUName" == "unknown" ]; then
-    CPUName=$(uname -m)
-fi
-
-case $CPUName in
-    i686)
-        echo "Unsupported CPU $CPUName detected, test might not succeed!"
-        __Arch=x86
-        ;;
-
-    x86_64)
-        __Arch=x64
-        ;;
-
-    armv7l)
-        __Arch=armel
-        ;;
-
-    aarch64)
-        __Arch=arm64
-        ;;
-    amd64)
-        __Arch=x64
-        ;;
-    *)
-        echo "Unknown CPU $CPUName detected, configuring as if for x64"
-        __Arch=x64
-        ;;
-esac
+OS=$os
+__Arch=$arch
 
 # Misc defaults
 TestSelection=".*"
@@ -284,34 +236,34 @@ done
 
 # Compute paths to the binaries if they haven't already been computed
 
-if [ "$Runtime" == "" ]
+if [ -z "$Runtime" ]
 then
     Runtime="$ProjectRoot/artifacts/bin/testhost/netcoreapp-$OS-$Configuration-$__Arch"
 fi
 
-if [ "$CoreFxTests" == "" ]
+if [ -z "$CoreFxTests" ]
 then
     CoreFxTests="$ProjectRoot/artifacts/bin"
 fi
 
 # Check parameters up front for valid values:
 
-if [ ! "$Configuration" == "Debug" ] && [ ! "$Configuration" == "Release" ]
+if [ "$Configuration" != "Debug" ] && [ "$Configuration" != "Release" ]
 then
     echo "error: Configuration should be Debug or Release"
     exit 1
 fi
 
-if [ ! "$OS" == "FreeBSD" ] && [ ! "$OS" == "NetBSD" ] && [ ! "$OS" == "Linux" ]
+if [ "$OS" != "FreeBSD" ] && [ "$OS" != "Linux" ] && [ "$OS" != "NetBSD" ] && [ "$OS" != "SunOS" ]
 then
-    echo "error: OS should be FreeBSD, NetBSD or Linux"
+    echo "error: OS should be FreeBSD, Linux, NetBSD or Linux"
     exit 1
 fi
 
 export CORECLR_SERVER_GC="$serverGC"
 export PAL_OUTPUTDEBUGSTRING="1"
 
-if [ "$LANG" == "" ]
+if [ -z "$LANG" ]
 then
     export LANG="en_US.UTF-8"
 fi
@@ -333,7 +285,10 @@ if [ $RunTestSequential -eq 1 ]
 then
     maxProcesses=1;
 else
-    if [ `uname` = "NetBSD" ] || [ `uname` = "FreeBSD" ]; then
+    platform="$(uname)"
+    if [ "$platform" = "FreeBSD" ]; then
+      maxProcesses=$(sysctl hw.ncpu | awk '{ print $2+1 }')
+    if [ "$platform" = "NetBSD" ] || [ "$platform" = "SunOS" ] ; then
       maxProcesses=$(($(getconf NPROCESSORS_ONLN)+1))
     else
       maxProcesses=$(($(getconf _NPROCESSORS_ONLN)+1))

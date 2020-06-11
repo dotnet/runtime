@@ -199,11 +199,11 @@ namespace
         _X("APP_CONTEXT_DEPS_FILES"),
         _X("FX_DEPS_FILE"),
         _X("PROBING_DIRECTORIES"),
-        _X("FX_PRODUCT_VERSION"),
-        _X("JIT_PATH"),
         _X("STARTUP_HOOKS"),
         _X("APP_PATHS"),
-        _X("APP_NI_PATHS")
+        _X("APP_NI_PATHS"),
+        _X("RUNTIME_IDENTIFIER"),
+        _X("BUNDLE_PROBE")
     };
 
     static_assert((sizeof(PropertyNameMapping) / sizeof(*PropertyNameMapping)) == static_cast<size_t>(common_property::Last), "Invalid property count");

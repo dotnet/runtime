@@ -217,11 +217,11 @@ TODO: Talk about initializing strutures before use
 #endif
 #endif
 
-SELECTANY const GUID JITEEVersionIdentifier = { /* b2e40020-6125-41e4-a0fc-821127ec192a */
-    0xb2e40020,
-    0x6125,
-    0x41e4,
-    {0xa0, 0xfc, 0x82, 0x11, 0x27, 0xec, 0x19, 0x2a}
+SELECTANY const GUID JITEEVersionIdentifier = { /* 8b2226a2-ac30-4f5c-ae5c-926c792ecdb9 */
+    0x8b2226a2,
+    0xac30,
+    0x4f5c,
+    { 0xae, 0x5c, 0x92, 0x6c, 0x79, 0x2e, 0xcd, 0xb9 }
 };
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -337,6 +337,8 @@ private:
         }
     }
 };
+
+#include "corinfoinstructionset.h"
 
 // CorInfoHelpFunc defines the set of helpers (accessed via the ICorDynamicInfo::getHelperFtn())
 // These helpers can be called by native code which executes in the runtime.
@@ -631,6 +633,8 @@ enum CorInfoHelpFunc
 
     CORINFO_HELP_STACK_PROBE,               // Probes each page of the allocated stack frame
 
+    CORINFO_HELP_PATCHPOINT,                // Notify runtime that code has reached a patchpoint
+
     CORINFO_HELP_COUNT,
 };
 
@@ -818,7 +822,7 @@ enum CorInfoFlag
     CORINFO_FLG_ARRAY                 = 0x00080000, // class is an array class (initialized differently)
     CORINFO_FLG_OVERLAPPING_FIELDS    = 0x00100000, // struct or class has fields that overlap (aka union)
     CORINFO_FLG_INTERFACE             = 0x00200000, // it is an interface
-    // unused                         = 0x00400000,
+    CORINFO_FLG_DONT_PROMOTE          = 0x00400000, // don't try to promote fields (used for types outside of AOT compilation version bubble)
     CORINFO_FLG_CUSTOMLAYOUT          = 0x00800000, // does this struct have custom layout?
     CORINFO_FLG_CONTAINS_GC_PTR       = 0x01000000, // does the class contain a gc ptr ?
     CORINFO_FLG_DELEGATE              = 0x02000000, // is this a subclass of delegate or multicast delegate ?
@@ -933,6 +937,7 @@ enum CorInfoIntrinsics
     CORINFO_INTRINSIC_StubHelpers_GetStubContext,
     CORINFO_INTRINSIC_StubHelpers_GetStubContextAddr,
     CORINFO_INTRINSIC_StubHelpers_GetNDirectTarget,
+    CORINFO_INTRINSIC_StubHelpers_NextCallReturnAddress,
     CORINFO_INTRINSIC_InterlockedAdd32,
     CORINFO_INTRINSIC_InterlockedAdd64,
     CORINFO_INTRINSIC_InterlockedXAdd32,
@@ -942,6 +947,7 @@ enum CorInfoIntrinsics
     CORINFO_INTRINSIC_InterlockedCmpXchg32,
     CORINFO_INTRINSIC_InterlockedCmpXchg64,
     CORINFO_INTRINSIC_MemoryBarrier,
+    CORINFO_INTRINSIC_MemoryBarrierLoad,
     CORINFO_INTRINSIC_GetCurrentManagedThread,
     CORINFO_INTRINSIC_GetManagedThreadId,
     CORINFO_INTRINSIC_ByReference_Ctor,
@@ -1070,18 +1076,14 @@ enum CorInfoIndirectCallReason
     CORINFO_INDIRECT_CALL_COUNT
 };
 
-// When using CORINFO_HELPER_TAILCALL, the JIT needs to pass certain special
-// calling convention/argument passing/handling details to the helper
-enum CorInfoHelperTailCallSpecialHandling
-{
-    CORINFO_TAILCALL_NORMAL =               0x00000000,
-    CORINFO_TAILCALL_STUB_DISPATCH_ARG =    0x00000001,
-};
-
-
 inline bool dontInline(CorInfoInline val) {
     return(val < 0);
 }
+
+// Patchpoint info is passed back and forth across the interface
+// but is opaque.
+
+struct PatchpointInfo;
 
 // Cookie types consumed by the code generator (these are opaque values
 // not inspected by the code generator):
@@ -1603,7 +1605,7 @@ struct CORINFO_CALL_INFO
 
     unsigned                classFlags;         //flags for CORINFO_RESOLVED_TOKEN::hClass
 
-    CORINFO_SIG_INFO       sig;
+    CORINFO_SIG_INFO        sig;
 
     //Verification information
     unsigned                verMethodFlags;     // flags for CORINFO_RESOLVED_TOKEN::hMethod
@@ -1785,6 +1787,30 @@ struct CORINFO_EE_INFO
     CORINFO_RUNTIME_ABI targetAbi;
 
     CORINFO_OS  osType;
+};
+
+// Flags passed from JIT to runtime.
+enum CORINFO_GET_TAILCALL_HELPERS_FLAGS
+{
+    // The callsite is a callvirt instruction.
+    CORINFO_TAILCALL_IS_CALLVIRT       = 0x00000001,
+    CORINFO_TAILCALL_THIS_ARG_IS_BYREF = 0x00000002,
+};
+
+// Flags passed from runtime to JIT.
+enum CORINFO_TAILCALL_HELPERS_FLAGS
+{
+    // The StoreArgs stub needs to be passed the target function pointer as the
+    // first argument.
+    CORINFO_TAILCALL_STORE_TARGET = 0x00000001,
+};
+
+struct CORINFO_TAILCALL_HELPERS
+{
+    CORINFO_TAILCALL_HELPERS_FLAGS flags;
+    CORINFO_METHOD_HANDLE          hStoreArgs;
+    CORINFO_METHOD_HANDLE          hCallTarget;
+    CORINFO_METHOD_HANDLE          hDispatcher;
 };
 
 // This is used to indicate that a finally has been called
@@ -2143,6 +2169,16 @@ public:
     virtual void getGSCookie(
             GSCookie * pCookieVal,                     // OUT
             GSCookie ** ppCookieVal                    // OUT
+            ) = 0;
+
+    // Provide patchpoint info for the method currently being jitted.
+    virtual void setPatchpointInfo(
+            PatchpointInfo* patchpointInfo
+            ) = 0;
+
+    // Get patchpoint info and il offset for the method currently being jitted.
+    virtual PatchpointInfo* getOSRInfo(
+            unsigned                       *ilOffset        // [OUT] il offset of OSR entry point
             ) = 0;
 
     /**********************************************************************************/
@@ -3096,17 +3132,31 @@ public:
                 CORINFO_METHOD_HANDLE methHnd
                 ) = 0;
 
-    // return a thunk that will copy the arguments for the given signature.
-    virtual void* getTailCallCopyArgsThunk (
-                    CORINFO_SIG_INFO       *pSig,
-                    CorInfoHelperTailCallSpecialHandling flags
-                    ) = 0;
+    // Obtain tailcall help for the specified call site.
+    virtual bool getTailCallHelpers(
+
+        // The resolved token for the call. Can be null for calli.
+        CORINFO_RESOLVED_TOKEN* callToken,
+
+        // The signature at the callsite.
+        CORINFO_SIG_INFO* sig,
+
+        // Flags for the tailcall site.
+        CORINFO_GET_TAILCALL_HELPERS_FLAGS flags,
+
+        // The resulting help.
+        CORINFO_TAILCALL_HELPERS* pResult) = 0;
 
     // Optionally, convert calli to regular method call. This is for PInvoke argument marshalling.
     virtual bool convertPInvokeCalliToCall(
                     CORINFO_RESOLVED_TOKEN * pResolvedToken,
                     bool fMustConvert
                     ) = 0;
+
+    virtual void notifyInstructionSetUsage(
+                CORINFO_InstructionSet instructionSet,
+                bool supportEnabled
+            ) = 0;
 };
 
 /**********************************************************************************/

@@ -14,7 +14,7 @@ It's possible that installing the package might fail with an error similar to th
 install-package : NU1605: Detected package downgrade: Microsoft.NETCore.Platforms from 3.0.0-preview6.19251.6 to 3.0.0-preview6.19223.2. Reference the package directly from the project to select a different version.
 ```
 
-This can occur if the NuGet client attempts to install a newer version of the package than allowed by the .NET Core version your application is targeting. For now you can work around this error by specifying the explicit package version in the install command. Match the version passed to the NuGet client (shown below) to the version specified in the error message (shown above).
+This can occur if the NuGet client attempts to install a newer version of the package than allowed by the .NET Runtime version your application is targeting. For now you can work around this error by specifying the explicit package version in the install command. Match the version passed to the NuGet client (shown below) to the version specified in the error message (shown above).
 
 ```ps
 install-package System.Utf8String.Experimental -prerelease -source https://dotnetfeed.blob.core.windows.net/dotnet-core/index.json -version 3.0.0-preview6.19223.2

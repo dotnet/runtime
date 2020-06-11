@@ -205,10 +205,6 @@ HRESULT FindNativeInfoInILVariableArray(DWORD dwIndex,
                                         unsigned int nativeInfoCount,
                                         ICorDebugInfo::NativeVarInfo *nativeInfo);
 
-
-#define VALIDATE_HEAP
-//HeapValidate(GetProcessHeap(), 0, NULL);
-
 //  struct DebuggerILToNativeMap:   Holds the IL to Native offset map
 //  Great pains are taken to ensure that this each entry corresponds to the
 //  first IL instruction in a source line.  It isn't actually a mapping

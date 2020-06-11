@@ -305,7 +305,7 @@ namespace System.Drawing
         [System.ComponentModel.DesignerSerializationVisibilityAttribute(System.ComponentModel.DesignerSerializationVisibility.Hidden)]
         public string Name { get { throw null; } }
         [System.ComponentModel.BrowsableAttribute(false)]
-        public string OriginalFontName { get { throw null; } }
+        public string? OriginalFontName { get { throw null; } }
         public float Size { get { throw null; } }
         [System.ComponentModel.BrowsableAttribute(false)]
         public float SizeInPoints { get { throw null; } }
@@ -2105,6 +2105,9 @@ namespace System.Drawing.Imaging
         public static readonly System.Drawing.Imaging.Encoder ScanMethod;
         public static readonly System.Drawing.Imaging.Encoder Transformation;
         public static readonly System.Drawing.Imaging.Encoder Version;
+        public static readonly System.Drawing.Imaging.Encoder ColorSpace;
+        public static readonly System.Drawing.Imaging.Encoder ImageItems;
+        public static readonly System.Drawing.Imaging.Encoder SaveAsCmyk;
         public Encoder(System.Guid guid) { }
         public System.Guid Guid { get { throw null; } }
     }
@@ -2152,6 +2155,7 @@ namespace System.Drawing.Imaging
         ValueTypeLongRange = 6,
         ValueTypeUndefined = 7,
         ValueTypeRationalRange = 8,
+        ValueTypePointer = 9,
     }
     public enum EncoderValue
     {

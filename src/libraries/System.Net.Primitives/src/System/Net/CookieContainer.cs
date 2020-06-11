@@ -118,7 +118,7 @@ namespace System.Net
         {
             if (capacity <= 0)
             {
-                throw new ArgumentException(SR.net_toosmall, "Capacity");
+                throw new ArgumentException(SR.net_toosmall, nameof(capacity));
             }
             m_maxCookies = capacity;
         }
@@ -132,7 +132,7 @@ namespace System.Net
             m_maxCookiesPerDomain = perDomainCapacity;
             if (maxCookieSize <= 0)
             {
-                throw new ArgumentException(SR.net_toosmall, "MaxCookieSize");
+                throw new ArgumentException(SR.net_toosmall, nameof(maxCookieSize));
             }
             m_maxCookieSize = maxCookieSize;
         }
@@ -230,7 +230,7 @@ namespace System.Net
             {
                 throw new ArgumentException(
                     SR.Format(SR.net_emptystringcall, nameof(cookie) + "." + nameof(cookie.Domain)),
-                    nameof(cookie) + "." + nameof(cookie.Domain));
+                    nameof(cookie));
             }
 
             Uri? uri;

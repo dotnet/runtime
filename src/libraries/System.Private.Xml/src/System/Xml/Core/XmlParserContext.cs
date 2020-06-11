@@ -2,17 +2,19 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System.Xml;
 using System.Text;
 using System;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Xml
 {
     // Specifies the context that the XmLReader will use for xml fragment
     public class XmlParserContext
     {
-        private XmlNameTable _nt = null;
-        private XmlNamespaceManager _nsMgr = null;
+        private XmlNameTable? _nt = null;
+        private XmlNamespaceManager? _nsMgr = null;
         private string _docTypeName = string.Empty;
         private string _pubId = string.Empty;
         private string _sysId = string.Empty;
@@ -20,31 +22,31 @@ namespace System.Xml
         private string _xmlLang = string.Empty;
         private XmlSpace _xmlSpace;
         private string _baseURI = string.Empty;
-        private Encoding _encoding = null;
+        private Encoding? _encoding = null;
 
-        public XmlParserContext(XmlNameTable nt, XmlNamespaceManager nsMgr, string xmlLang, XmlSpace xmlSpace)
+        public XmlParserContext(XmlNameTable? nt, XmlNamespaceManager? nsMgr, string? xmlLang, XmlSpace xmlSpace)
         : this(nt, nsMgr, null, null, null, null, string.Empty, xmlLang, xmlSpace)
         {
             // Intentionally Empty
         }
 
-        public XmlParserContext(XmlNameTable nt, XmlNamespaceManager nsMgr, string xmlLang, XmlSpace xmlSpace, Encoding enc)
+        public XmlParserContext(XmlNameTable? nt, XmlNamespaceManager? nsMgr, string? xmlLang, XmlSpace xmlSpace, Encoding? enc)
         : this(nt, nsMgr, null, null, null, null, string.Empty, xmlLang, xmlSpace, enc)
         {
             // Intentionally Empty
         }
 
-        public XmlParserContext(XmlNameTable nt, XmlNamespaceManager nsMgr, string docTypeName,
-                  string pubId, string sysId, string internalSubset, string baseURI,
-                  string xmlLang, XmlSpace xmlSpace)
+        public XmlParserContext(XmlNameTable? nt, XmlNamespaceManager? nsMgr, string? docTypeName,
+                  string? pubId, string? sysId, string? internalSubset, string? baseURI,
+                  string? xmlLang, XmlSpace xmlSpace)
         : this(nt, nsMgr, docTypeName, pubId, sysId, internalSubset, baseURI, xmlLang, xmlSpace, null)
         {
             // Intentionally Empty
         }
 
-        public XmlParserContext(XmlNameTable nt, XmlNamespaceManager nsMgr, string docTypeName,
-                          string pubId, string sysId, string internalSubset, string baseURI,
-                          string xmlLang, XmlSpace xmlSpace, Encoding enc)
+        public XmlParserContext(XmlNameTable? nt, XmlNamespaceManager? nsMgr, string? docTypeName,
+                          string? pubId, string? sysId, string? internalSubset, string? baseURI,
+                          string? xmlLang, XmlSpace xmlSpace, Encoding? enc)
         {
             if (nsMgr != null)
             {
@@ -54,10 +56,11 @@ namespace System.Xml
                 }
                 else
                 {
-                    if ((object)nt != (object)nsMgr.NameTable)
+                    if ((object)nt != (object?)nsMgr.NameTable)
                     {
                         throw new XmlException(SR.Xml_NotSameNametable, string.Empty);
                     }
+
                     _nt = nt;
                 }
             }
@@ -77,7 +80,7 @@ namespace System.Xml
             _encoding = enc;
         }
 
-        public XmlNameTable NameTable
+        public XmlNameTable? NameTable
         {
             get
             {
@@ -89,7 +92,7 @@ namespace System.Xml
             }
         }
 
-        public XmlNamespaceManager NamespaceManager
+        public XmlNamespaceManager? NamespaceManager
         {
             get
             {
@@ -101,6 +104,7 @@ namespace System.Xml
             }
         }
 
+        [AllowNull]
         public string DocTypeName
         {
             get
@@ -113,6 +117,7 @@ namespace System.Xml
             }
         }
 
+        [AllowNull]
         public string PublicId
         {
             get
@@ -125,6 +130,7 @@ namespace System.Xml
             }
         }
 
+        [AllowNull]
         public string SystemId
         {
             get
@@ -137,6 +143,7 @@ namespace System.Xml
             }
         }
 
+        [AllowNull]
         public string BaseURI
         {
             get
@@ -149,6 +156,7 @@ namespace System.Xml
             }
         }
 
+        [AllowNull]
         public string InternalSubset
         {
             get
@@ -161,6 +169,7 @@ namespace System.Xml
             }
         }
 
+        [AllowNull]
         public string XmlLang
         {
             get
@@ -185,7 +194,7 @@ namespace System.Xml
             }
         }
 
-        public Encoding Encoding
+        public Encoding? Encoding
         {
             get
             {

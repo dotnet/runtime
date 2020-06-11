@@ -44,8 +44,7 @@ namespace System.Reflection
             {
                 MetadataImport scope = RuntimeTypeHandle.GetMetadataImport(RuntimeMethodHandle.GetDeclaringType(methodHandle));
 
-                MetadataEnumResult tkParamDefs;
-                scope.EnumParams(tkMethodDef, out tkParamDefs);
+                scope.EnumParams(tkMethodDef, out MetadataEnumResult tkParamDefs);
 
                 cParamDefs = tkParamDefs.Length;
 
@@ -57,10 +56,9 @@ namespace System.Reflection
                 for (int i = 0; i < cParamDefs; i++)
                 {
                     #region Populate ParameterInfos
-                    ParameterAttributes attr;
-                    int position, tkParamDef = tkParamDefs[i];
+                    int tkParamDef = tkParamDefs[i];
 
-                    scope.GetParamDefProps(tkParamDef, out position, out attr);
+                    scope.GetParamDefProps(tkParamDef, out int position, out ParameterAttributes attr);
 
                     position--;
 
@@ -115,7 +113,7 @@ namespace System.Reflection
         #region Private Data Members
         private int m_tkParamDef;
         private MetadataImport m_scope;
-        private Signature m_signature = null!;
+        private Signature? m_signature;
         private volatile bool m_nameIsCached = false;
         private readonly bool m_noMetadata = false;
         private bool m_noDefaultValue = false;
@@ -219,6 +217,8 @@ namespace System.Reflection
                 // only instance of ParameterInfo has ClassImpl, all its subclasses don't
                 if (ClassImpl == null)
                 {
+                    Debug.Assert(m_signature != null);
+
                     RuntimeType parameterType;
                     if (PositionImpl == -1)
                         parameterType = m_signature.ReturnType;
@@ -483,12 +483,16 @@ namespace System.Reflection
 
         public override Type[] GetRequiredCustomModifiers()
         {
-            return m_signature.GetCustomModifiers(PositionImpl + 1, true);
+            return m_signature is null ?
+                Type.EmptyTypes :
+                m_signature.GetCustomModifiers(PositionImpl + 1, true);
         }
 
         public override Type[] GetOptionalCustomModifiers()
         {
-            return m_signature.GetCustomModifiers(PositionImpl + 1, false);
+            return m_signature is null ?
+                Type.EmptyTypes :
+                m_signature.GetCustomModifiers(PositionImpl + 1, false);
         }
 
         #endregion

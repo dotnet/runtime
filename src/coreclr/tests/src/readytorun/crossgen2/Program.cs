@@ -8,6 +8,8 @@ using System.IO;
 using System.Linq.Expressions;
 using System.Numerics;
 using System.Reflection;
+using System.Reflection.Metadata;
+using System.Reflection.PortableExecutable;
 using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
 using System.Text;
@@ -563,6 +565,25 @@ internal class Program
         using (var enumerator = listOfString.GetEnumerator())
         {
             Console.WriteLine($@"DisposeEnumeratorTest: {enumerator}");
+        }
+        return true;
+    }
+
+    private static bool DisposeEnumeratorTestWithConstrainedCall()
+    {
+        string thisAssembly = Assembly.GetExecutingAssembly().Location;
+
+        using (var fs = new FileStream(thisAssembly, FileMode.Open, FileAccess.Read))
+        {
+            using (var pereader = new PEReader(fs))
+            {
+                var reader = pereader.GetMetadataReader();
+                var methodDefinitionHandleCollection = reader.MethodDefinitions;
+                foreach (var methodDefinitionHandle in methodDefinitionHandleCollection)
+                {
+                    break;
+                }
+            }
         }
         return true;
     }
@@ -1189,6 +1210,26 @@ internal class Program
         return true;
     }
 
+    enum TestEnum
+    {
+        A,
+        B
+    }
+
+    private static bool EnumValuesToStringTest()
+    {
+        string buffer = "";
+        foreach (TestEnum val in Enum.GetValues(typeof(TestEnum)))
+        {
+            buffer += val.ToString();
+        }
+
+        if (buffer != "AB")
+            return false;
+
+        return true;
+    }
+
     private static string EmitTextFileForTesting()
     {
         string file = Path.GetTempFileName();
@@ -1211,9 +1252,7 @@ internal class Program
         RunTest("ChkCast", ChkCast());
         RunTest("ChkCastValueType", ChkCastValueType());
         RunTest("BoxUnbox", BoxUnbox());
-        // TODO: enabling this test requires fixes to IsManagedSequential I'm going to send out
-        // in a subsequent PR together with removal of this temporary clause [trylek]
-        // RunTest("NullableWithExplicitLayoutTest", NullableWithExplicitLayoutTest());
+        RunTest("NullableWithExplicitLayoutTest", NullableWithExplicitLayoutTest());
         RunTest("CastClassWithCharTest", CastClassWithCharTest());
         RunTest("TypeHandle", TypeHandle());
         RunTest("RuntimeTypeHandle", RuntimeTypeHandle());
@@ -1231,6 +1270,7 @@ internal class Program
         RunTest("DisposeStructTest", DisposeStructTest());
         RunTest("DisposeClassTest", DisposeClassTest());
         RunTest("DisposeEnumeratorTest", DisposeEnumeratorTest());
+        RunTest("DisposeEnumeratorTestWithConstrainedCall", DisposeEnumeratorTestWithConstrainedCall());
         RunTest("EmptyArrayOfInt", EmptyArrayOfInt());
         RunTest("EnumerateEmptyArrayOfInt", EnumerateEmptyArrayOfInt());
         RunTest("EmptyArrayOfString", EmptyArrayOfString());
@@ -1255,6 +1295,7 @@ internal class Program
         RunTest("ObjectGetTypeOnGenericParamTest", ObjectGetTypeOnGenericParamTest());
         RunTest("ObjectToStringOnGenericParamTestSByte", ObjectToStringOnGenericParamTestSByte());
         RunTest("ObjectToStringOnGenericParamTestVersionBubbleLocalStruct", ObjectToStringOnGenericParamTestVersionBubbleLocalStruct());
+        RunTest("EnumValuesToStringTest", EnumValuesToStringTest());
 
         File.Delete(TextFileName);
 

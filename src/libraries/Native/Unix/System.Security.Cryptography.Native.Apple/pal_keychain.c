@@ -5,6 +5,7 @@
 #include "pal_keychain.h"
 #include "pal_utilities.h"
 
+#if !defined(TARGET_IOS) && !defined(TARGET_TVOS)
 int32_t AppleCryptoNative_SecKeychainItemCopyKeychain(SecKeychainItemRef item, SecKeychainRef* pKeychainOut)
 {
     if (pKeychainOut != NULL)
@@ -465,3 +466,4 @@ AppleCryptoNative_X509StoreRemoveCertificate(CFTypeRef certOrIdentity, SecKeycha
     CFRelease(cert);
     return *pOSStatus == noErr;
 }
+#endif

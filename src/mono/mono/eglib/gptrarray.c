@@ -40,9 +40,8 @@ typedef struct _GPtrArrayPriv {
 static void 
 g_ptr_array_grow(GPtrArrayPriv *array, guint length)
 {
+	g_assert (array);
 	guint new_length = array->len + length;
-
-	g_return_if_fail(array != NULL);
 
 	if(new_length <= array->size) {
 		return;
@@ -84,8 +83,8 @@ gpointer *
 g_ptr_array_free(GPtrArray *array, gboolean free_seg)
 {
 	gpointer *data = NULL;
-	
-	g_return_val_if_fail(array != NULL, NULL);
+
+	g_assert (array);
 
 	if(free_seg) {
 		g_free(array->pdata);
@@ -101,7 +100,7 @@ g_ptr_array_free(GPtrArray *array, gboolean free_seg)
 void
 g_ptr_array_set_size(GPtrArray *array, gint length)
 {
-	g_return_if_fail(array != NULL);
+	g_assert (array);
 
 	if((size_t)length > array->len) {
 		g_ptr_array_grow((GPtrArrayPriv *)array, length);
@@ -115,7 +114,7 @@ g_ptr_array_set_size(GPtrArray *array, gint length)
 void
 g_ptr_array_add(GPtrArray *array, gpointer data)
 {
-	g_return_if_fail(array != NULL);
+	g_assert (array);
 	g_ptr_array_grow((GPtrArrayPriv *)array, 1);
 	array->pdata[array->len++] = data;
 }
@@ -124,8 +123,8 @@ gpointer
 g_ptr_array_remove_index(GPtrArray *array, guint index)
 {
 	gpointer removed_node;
-	
-	g_return_val_if_fail(array != NULL, NULL);
+
+	g_assert (array);
 	g_return_val_if_fail(index < array->len, NULL);
 
 	removed_node = array->pdata[index];
@@ -146,7 +145,7 @@ g_ptr_array_remove_index_fast(GPtrArray *array, guint index)
 {
 	gpointer removed_node;
 
-	g_return_val_if_fail(array != NULL, NULL);
+	g_assert (array);
 	g_return_val_if_fail(index < array->len, NULL);
 
 	removed_node = array->pdata[index];
@@ -167,7 +166,7 @@ g_ptr_array_remove(GPtrArray *array, gpointer data)
 {
 	guint i;
 
-	g_return_val_if_fail(array != NULL, FALSE);
+	g_assert (array);
 
 	for(i = 0; i < array->len; i++) {
 		if(array->pdata[i] == data) {
@@ -184,7 +183,7 @@ g_ptr_array_remove_fast(GPtrArray *array, gpointer data)
 {
 	guint i;
 
-	g_return_val_if_fail(array != NULL, FALSE);
+	g_assert (array);
 
 	for(i = 0; i < array->len; i++) {
 		if(array->pdata[i] == data) {
@@ -213,14 +212,14 @@ g_ptr_array_foreach(GPtrArray *array, GFunc func, gpointer user_data)
 void
 g_ptr_array_sort(GPtrArray *array, GCompareFunc compare)
 {
-	g_return_if_fail(array != NULL);
+	g_assert (array);
 	mono_qsort (array->pdata, array->len, sizeof(gpointer), compare);
 }
 
 void
 g_ptr_array_sort_with_data (GPtrArray *array, GCompareDataFunc compare, gpointer user_data)
 {
-	g_return_if_fail (array != NULL);
+	g_assert (array);
 	
 	g_qsort_with_data (array->pdata, array->len, sizeof (gpointer), compare, user_data);
 }

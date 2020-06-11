@@ -1,5 +1,3 @@
-#nullable disable
-
 //
 // Copyright (C) 2004 Novell, Inc (http://www.novell.com)
 //
@@ -10,10 +8,10 @@
 // distribute, sublicense, and/or sell copies of the Software, and to
 // permit persons to whom the Software is furnished to do so, subject to
 // the following conditions:
-// 
+//
 // The above copyright notice and this permission notice shall be
 // included in all copies or substantial portions of the Software.
-// 
+//
 // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
 // EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
 // MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
@@ -33,186 +31,207 @@
 //
 
 #if MONO_FEATURE_SRE
-using System;
-using System.Reflection;
-using System.Reflection.Emit;
 using System.Globalization;
-using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
-namespace System.Reflection.Emit {
-	[StructLayout (LayoutKind.Sequential)]
-	public sealed partial class PropertyBuilder : PropertyInfo {
+namespace System.Reflection.Emit
+{
+    [StructLayout(LayoutKind.Sequential)]
+    public sealed partial class PropertyBuilder : PropertyInfo
+    {
 
-// Managed version of MonoReflectionPropertyBuilder
+        // Managed version of MonoReflectionPropertyBuilder
 #pragma warning disable 169, 414
-		private PropertyAttributes attrs;
-		private string name;
-		private Type type;
-		private Type[] parameters;
-		private CustomAttributeBuilder[] cattrs;
-		private object def_value;
-		private MethodBuilder set_method;
-		private MethodBuilder get_method;
-		private int table_idx = 0;
-		internal TypeBuilder typeb;
-		private Type[] returnModReq;
-		private Type[] returnModOpt;
-		private Type[][] paramModReq;
-		private Type[][] paramModOpt;
-		CallingConventions callingConvention;		
+        private PropertyAttributes attrs;
+        private string name;
+        private Type type;
+        private Type[]? parameters;
+        private CustomAttributeBuilder[]? cattrs;
+        private object? def_value;
+        private MethodBuilder? set_method;
+        private MethodBuilder? get_method;
+        private int table_idx = 0;
+        internal TypeBuilder typeb;
+        private Type[]? returnModReq;
+        private Type[]? returnModOpt;
+        private Type[][]? paramModReq;
+        private Type[][]? paramModOpt;
+        private CallingConventions callingConvention;
 #pragma warning restore 169, 414
-		
-		internal PropertyBuilder (TypeBuilder tb, string name, PropertyAttributes attributes, CallingConventions callingConvention, Type returnType, Type[] returnModReq, Type[] returnModOpt, Type[] parameterTypes, Type[][] paramModReq, Type[][] paramModOpt)
-		{
-			this.name = name;
-			this.attrs = attributes;
-			this.callingConvention = callingConvention;
-			this.type = returnType;
-			this.returnModReq = returnModReq;
-			this.returnModOpt = returnModOpt;
-			this.paramModReq = paramModReq;
-			this.paramModOpt = paramModOpt;
-			if (parameterTypes != null) {
-				this.parameters = new Type [parameterTypes.Length];
-				System.Array.Copy (parameterTypes, this.parameters, this.parameters.Length);
-			}
-			typeb = tb;
-			table_idx = tb.get_next_table_index (this, 0x17, 1);
-		}
 
-		public override PropertyAttributes Attributes {
-			get {return attrs;}
-		}
-		public override bool CanRead {
-			get {return get_method != null;}
-		}
-		public override bool CanWrite {
-			get {return set_method != null;}
-		}
-		public override Type DeclaringType {
-			get {return typeb;}
-		}
-		public override string Name {
-			get {return name;}
-		}
-		public PropertyToken PropertyToken {
-			get {return new PropertyToken ();}
-		}
-		public override Type PropertyType {
-			get {return type;}
-		}
-		public override Type ReflectedType {
-			get {return typeb;}
-		}
+        internal PropertyBuilder(TypeBuilder tb, string name, PropertyAttributes attributes, CallingConventions callingConvention, Type returnType, Type[]? returnModReq, Type[]? returnModOpt, Type[]? parameterTypes, Type[][]? paramModReq, Type[][]? paramModOpt)
+        {
+            this.name = name;
+            this.attrs = attributes;
+            this.callingConvention = callingConvention;
+            this.type = returnType;
+            this.returnModReq = returnModReq;
+            this.returnModOpt = returnModOpt;
+            this.paramModReq = paramModReq;
+            this.paramModOpt = paramModOpt;
+            if (parameterTypes != null)
+            {
+                this.parameters = new Type[parameterTypes.Length];
+                Array.Copy(parameterTypes, this.parameters, this.parameters.Length);
+            }
+            typeb = tb;
+            table_idx = tb.get_next_table_index(this, 0x17, 1);
+        }
 
-		public void AddOtherMethod (MethodBuilder mdBuilder)
-		{
-			if (mdBuilder == null)
-				throw new ArgumentNullException (nameof (mdBuilder));
-			typeb.check_not_created ();
-		}
+        public override PropertyAttributes Attributes
+        {
+            get { return attrs; }
+        }
+        public override bool CanRead
+        {
+            get { return get_method != null; }
+        }
+        public override bool CanWrite
+        {
+            get { return set_method != null; }
+        }
+        public override Type DeclaringType
+        {
+            get { return typeb; }
+        }
+        public override string Name
+        {
+            get { return name; }
+        }
+        public PropertyToken PropertyToken
+        {
+            get { return default; }
+        }
+        public override Type PropertyType
+        {
+            get { return type; }
+        }
+        public override Type ReflectedType
+        {
+            get { return typeb; }
+        }
 
-		public override MethodInfo[] GetAccessors( bool nonPublic) {
-			return null;
-		}
-		public override object[] GetCustomAttributes(bool inherit) {
-			throw not_supported ();
-		}
-		public override object[] GetCustomAttributes(Type attributeType, bool inherit) {
-			throw not_supported ();
-		}
-		public override MethodInfo GetGetMethod( bool nonPublic) {
-			return get_method;
-		}
-		public override ParameterInfo[] GetIndexParameters() {
-			throw not_supported ();
-		}
-		public override MethodInfo GetSetMethod( bool nonPublic) {
-			return set_method;
-		}
+        public void AddOtherMethod(MethodBuilder mdBuilder)
+        {
+            if (mdBuilder == null)
+                throw new ArgumentNullException(nameof(mdBuilder));
+            typeb.check_not_created();
+        }
 
-		public override object GetValue (object obj, object[] index)
-		{
-			throw not_supported ();
-		}
+        public override MethodInfo[] GetAccessors(bool nonPublic)
+        {
+            return null!; // FIXME: coreclr throws
+        }
+        public override object[] GetCustomAttributes(bool inherit)
+        {
+            throw not_supported();
+        }
+        public override object[] GetCustomAttributes(Type attributeType, bool inherit)
+        {
+            throw not_supported();
+        }
+        public override MethodInfo? GetGetMethod(bool nonPublic)
+        {
+            return get_method;
+        }
+        public override ParameterInfo[] GetIndexParameters()
+        {
+            throw not_supported();
+        }
+        public override MethodInfo? GetSetMethod(bool nonPublic)
+        {
+            return set_method;
+        }
 
-		public override object GetValue (object obj, BindingFlags invokeAttr, Binder binder, object[] index, CultureInfo culture)
-		{
-			throw not_supported ();
-		}
-		public override bool IsDefined( Type attributeType, bool inherit) {
-			throw not_supported ();
-		}
-		public void SetConstant (object defaultValue)
-		{
-			typeb.check_not_created ();
-			def_value = defaultValue;
-		}
+        public override object? GetValue(object? obj, object?[]? index)
+        {
+            throw not_supported();
+        }
 
-		public void SetCustomAttribute (CustomAttributeBuilder customBuilder)
-		{
-			if (customBuilder == null)
-				throw new ArgumentNullException (nameof (customBuilder));
-			typeb.check_not_created ();
-			string attrname = customBuilder.Ctor.ReflectedType.FullName;
-			if (attrname == "System.Runtime.CompilerServices.SpecialNameAttribute") {
-				attrs |= PropertyAttributes.SpecialName;
-				return;
-			}
+        public override object? GetValue(object? obj, BindingFlags invokeAttr, Binder? binder, object?[]? index, CultureInfo? culture)
+        {
+            throw not_supported();
+        }
+        public override bool IsDefined(Type attributeType, bool inherit)
+        {
+            throw not_supported();
+        }
+        public void SetConstant(object? defaultValue)
+        {
+            typeb.check_not_created();
+            def_value = defaultValue;
+        }
 
-			if (cattrs != null) {
-				CustomAttributeBuilder[] new_array = new CustomAttributeBuilder [cattrs.Length + 1];
-				cattrs.CopyTo (new_array, 0);
-				new_array [cattrs.Length] = customBuilder;
-				cattrs = new_array;
-			} else {
-				cattrs = new CustomAttributeBuilder [1];
-				cattrs [0] = customBuilder;
-			}
-		}
+        public void SetCustomAttribute(CustomAttributeBuilder customBuilder)
+        {
+            if (customBuilder == null)
+                throw new ArgumentNullException(nameof(customBuilder));
+            typeb.check_not_created();
+            string? attrname = customBuilder.Ctor.ReflectedType!.FullName;
+            if (attrname == "System.Runtime.CompilerServices.SpecialNameAttribute")
+            {
+                attrs |= PropertyAttributes.SpecialName;
+                return;
+            }
 
-		[ComVisible (true)]
-		public void SetCustomAttribute (ConstructorInfo con, byte[] binaryAttribute) {
-			SetCustomAttribute (new CustomAttributeBuilder (con, binaryAttribute));
-		}
+            if (cattrs != null)
+            {
+                CustomAttributeBuilder[] new_array = new CustomAttributeBuilder[cattrs.Length + 1];
+                cattrs.CopyTo(new_array, 0);
+                new_array[cattrs.Length] = customBuilder;
+                cattrs = new_array;
+            }
+            else
+            {
+                cattrs = new CustomAttributeBuilder[1];
+                cattrs[0] = customBuilder;
+            }
+        }
 
-		public void SetGetMethod (MethodBuilder mdBuilder)
-		{
-			typeb.check_not_created ();
-			if (mdBuilder == null)
-				throw new ArgumentNullException (nameof (mdBuilder));
-			get_method = mdBuilder;
-		}
+        [ComVisible(true)]
+        public void SetCustomAttribute(ConstructorInfo con, byte[] binaryAttribute)
+        {
+            SetCustomAttribute(new CustomAttributeBuilder(con, binaryAttribute));
+        }
 
-		public void SetSetMethod (MethodBuilder mdBuilder)
-		{
-			if (mdBuilder == null)
-				throw new ArgumentNullException (nameof (mdBuilder));
-			set_method = mdBuilder;
-		}
+        public void SetGetMethod(MethodBuilder mdBuilder)
+        {
+            typeb.check_not_created();
+            if (mdBuilder == null)
+                throw new ArgumentNullException(nameof(mdBuilder));
+            get_method = mdBuilder;
+        }
 
-		public override void SetValue (object obj, object value, object[] index)
-		{
-			throw not_supported ();
-		}
+        public void SetSetMethod(MethodBuilder mdBuilder)
+        {
+            if (mdBuilder == null)
+                throw new ArgumentNullException(nameof(mdBuilder));
+            set_method = mdBuilder;
+        }
 
-		public override void SetValue (object obj, object value, BindingFlags invokeAttr, Binder binder, object[] index, CultureInfo culture)
-		{
-			throw not_supported ();
-		}
+        public override void SetValue(object? obj, object? value, object?[]? index)
+        {
+            throw not_supported();
+        }
 
-		public override Module Module {
-			get {
-				return base.Module;
-			}
-		}
+        public override void SetValue(object? obj, object? value, BindingFlags invokeAttr, Binder? binder, object?[]? index, CultureInfo? culture)
+        {
+            throw not_supported();
+        }
 
-		private Exception not_supported ()
-		{
-			return new NotSupportedException ("The invoked member is not supported in a dynamic module.");
-		}
-	}
+        public override Module Module
+        {
+            get
+            {
+                return base.Module;
+            }
+        }
+
+        private Exception not_supported()
+        {
+            return new NotSupportedException("The invoked member is not supported in a dynamic module.");
+        }
+    }
 }
 
 #endif

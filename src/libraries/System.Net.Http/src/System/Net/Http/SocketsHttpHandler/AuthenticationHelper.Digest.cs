@@ -40,17 +40,17 @@ namespace System.Net.Http
         // 48='0', 65='A', 97='a'
         private static readonly int[] s_alphaNumChooser = new int[] { 48, 65, 97 };
 
-        public static async Task<string> GetDigestTokenForCredential(NetworkCredential credential, HttpRequestMessage request, DigestResponse digestResponse)
+        public static async Task<string?> GetDigestTokenForCredential(NetworkCredential credential, HttpRequestMessage request, DigestResponse digestResponse)
         {
             StringBuilder sb = StringBuilderCache.Acquire();
 
             // It is mandatory for servers to implement sha-256 per RFC 7616
             // Keep MD5 for backward compatibility.
-            string algorithm;
+            string? algorithm;
             bool isAlgorithmSpecified = digestResponse.Parameters.TryGetValue(Algorithm, out algorithm);
             if (isAlgorithmSpecified)
             {
-                if (!algorithm.Equals(Sha256, StringComparison.OrdinalIgnoreCase) &&
+                if (!algorithm!.Equals(Sha256, StringComparison.OrdinalIgnoreCase) &&
                     !algorithm.Equals(Md5, StringComparison.OrdinalIgnoreCase) &&
                     !algorithm.Equals(Sha256Sess, StringComparison.OrdinalIgnoreCase) &&
                     !algorithm.Equals(MD5Sess, StringComparison.OrdinalIgnoreCase))
@@ -65,7 +65,7 @@ namespace System.Net.Http
             }
 
             // Check if nonce is there in challenge
-            string nonce;
+            string? nonce;
             if (!digestResponse.Parameters.TryGetValue(Nonce, out nonce))
             {
                 if (NetEventSource.IsEnabled) NetEventSource.Error(digestResponse, "Nonce missing");
@@ -73,10 +73,10 @@ namespace System.Net.Http
             }
 
             // opaque token may or may not exist
-            string opaque;
+            string? opaque;
             digestResponse.Parameters.TryGetValue(Opaque, out opaque);
 
-            string realm;
+            string? realm;
             if (!digestResponse.Parameters.TryGetValue(Realm, out realm))
             {
                 if (NetEventSource.IsEnabled) NetEventSource.Error(digestResponse, "Realm missing");
@@ -84,7 +84,7 @@ namespace System.Net.Http
             }
 
             // Add username
-            string userhash;
+            string? userhash;
             if (digestResponse.Parameters.TryGetValue(UserHash, out userhash) && userhash == "true")
             {
                 sb.AppendKeyValue(Username, ComputeHash(credential.UserName + ":" + realm, algorithm));
@@ -110,6 +110,7 @@ namespace System.Net.Http
             // Add nonce
             sb.AppendKeyValue(Nonce, nonce);
 
+            Debug.Assert(request.RequestUri != null);
             // Add uri
             sb.AppendKeyValue(Uri, request.RequestUri.PathAndQuery);
 
@@ -204,8 +205,7 @@ namespace System.Net.Http
 
         public static bool IsServerNonceStale(DigestResponse digestResponse)
         {
-            string stale = null;
-            return digestResponse.Parameters.TryGetValue(Stale, out stale) && stale == "true";
+            return digestResponse.Parameters.TryGetValue(Stale, out string? stale) && stale == "true";
         }
 
         private static string GetRandomAlphaNumericString()
@@ -256,7 +256,7 @@ namespace System.Net.Http
             internal readonly Dictionary<string, string> Parameters = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
             internal const string NonceCount = "00000001";
 
-            internal DigestResponse(string challenge)
+            internal DigestResponse(string? challenge)
             {
                 if (!string.IsNullOrEmpty(challenge))
                     Parse(challenge);
@@ -274,7 +274,7 @@ namespace System.Net.Http
                     key.Equals(Opaque, StringComparison.OrdinalIgnoreCase) || key.Equals(Qop, StringComparison.OrdinalIgnoreCase);
             }
 
-            private string GetNextKey(string data, int currentIndex, out int parsedIndex)
+            private string? GetNextKey(string data, int currentIndex, out int parsedIndex)
             {
                 // Skip leading space or tab.
                 while (currentIndex < data.Length && CharIsSpaceOrTab(data[currentIndex]))
@@ -329,7 +329,7 @@ namespace System.Net.Http
                 return data.Substring(start, length);
             }
 
-            private string GetNextValue(string data, int currentIndex, bool expectQuotes, out int parsedIndex)
+            private string? GetNextValue(string data, int currentIndex, bool expectQuotes, out int parsedIndex)
             {
                 Debug.Assert(currentIndex < data.Length && !CharIsSpaceOrTab(data[currentIndex]));
 
@@ -406,15 +406,16 @@ namespace System.Net.Http
                 while (parsedIndex < challenge.Length)
                 {
                     // Get the key.
-                    string key = GetNextKey(challenge, parsedIndex, out parsedIndex);
+                    string? key = GetNextKey(challenge, parsedIndex, out parsedIndex);
                     // Ensure key is not empty and parsedIndex is still in range.
                     if (string.IsNullOrEmpty(key) || parsedIndex >= challenge.Length)
                         break;
 
                     // Get the value.
-                    string value = GetNextValue(challenge, parsedIndex, MustValueBeQuoted(key), out parsedIndex);
+                    string? value = GetNextValue(challenge, parsedIndex, MustValueBeQuoted(key), out parsedIndex);
                     // Ensure value is valid.
-                    if (string.IsNullOrEmpty(value))
+                    if (string.IsNullOrEmpty(value)
+                        && (value == null || !key.Equals(Opaque, StringComparison.OrdinalIgnoreCase)))
                         break;
 
                     // Add the key-value pair to Parameters.

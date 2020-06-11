@@ -10,4 +10,8 @@ if(CLR_CMAKE_TARGET_WIN32)
         dotnet.manifest)
 endif()
 
+list(APPEND SOURCES
+    ../apphost/standalone/hostfxr_resolver_t.cpp
+)
+
 include(../exe.cmake)

@@ -20,7 +20,7 @@ namespace trace
     void println();
     void flush();
 
-    typedef void (*error_writer_fn)(const pal::char_t* message);
+    typedef void (__cdecl *error_writer_fn)(const pal::char_t* message);
 
     // Sets a callback which is called whenever error is to be written
     // The setting is per-thread (thread local). If no error writer is set for a given thread

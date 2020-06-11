@@ -56,10 +56,11 @@ namespace System.Net.Http
 
             HttpResponseMessage response = await _innerHandler.SendAsync(request, cancellationToken).ConfigureAwait(false);
 
+            Debug.Assert(response.Content != null);
             ICollection<string> contentEncodings = response.Content.Headers.ContentEncoding;
             if (contentEncodings.Count > 0)
             {
-                string last = null;
+                string? last = null;
                 foreach (string encoding in contentEncodings)
                 {
                     last = encoding;
@@ -108,7 +109,7 @@ namespace System.Net.Http
                 Headers.AddHeaders(originalContent.Headers);
                 Headers.ContentLength = null;
                 Headers.ContentEncoding.Clear();
-                string prevEncoding = null;
+                string? prevEncoding = null;
                 foreach (string encoding in originalContent.Headers.ContentEncoding)
                 {
                     if (prevEncoding != null)
@@ -121,10 +122,10 @@ namespace System.Net.Http
 
             protected abstract Stream GetDecompressedStream(Stream originalStream);
 
-            protected override Task SerializeToStreamAsync(Stream stream, TransportContext context) =>
+            protected override Task SerializeToStreamAsync(Stream stream, TransportContext? context) =>
                 SerializeToStreamAsync(stream, context, CancellationToken.None);
 
-            protected override async Task SerializeToStreamAsync(Stream stream, TransportContext context, CancellationToken cancellationToken)
+            protected override async Task SerializeToStreamAsync(Stream stream, TransportContext? context, CancellationToken cancellationToken)
             {
                 using (Stream decompressedStream = TryCreateContentReadStream() ?? await CreateContentReadStreamAsync(cancellationToken).ConfigureAwait(false))
                 {
@@ -145,9 +146,9 @@ namespace System.Net.Http
                 return GetDecompressedStream(originalStream);
             }
 
-            internal override Stream TryCreateContentReadStream()
+            internal override Stream? TryCreateContentReadStream()
             {
-                Stream originalStream = _originalContent.TryReadAsStream();
+                Stream? originalStream = _originalContent.TryReadAsStream();
                 return originalStream is null ? null : GetDecompressedStream(originalStream);
             }
 

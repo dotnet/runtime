@@ -8,10 +8,7 @@ if(FEATURE_READYTORUN)
   add_definitions(-DFEATURE_READYTORUN_COMPILER)
 endif(FEATURE_READYTORUN)
 
-add_jit(clrjit)
-
-# add the install targets
-install_clr(TARGETS clrjit DESTINATION sharedFramework SKIP_STRIP)
+add_jit(clrjit ADDITIONAL_DESTINATION sharedFramework)
 
 # Enable profile guided optimization
 add_pgo(clrjit)

@@ -91,6 +91,8 @@ namespace System.Reflection.Emit
 
         public override Type? BaseType => m_typeBuilder.BaseType;
 
+        public override bool IsByRefLike => false;
+
         protected override ConstructorInfo? GetConstructorImpl(BindingFlags bindingAttr, Binder? binder,
                 CallingConventions callConvention, Type[] types, ParameterModifier[]? modifiers)
         {

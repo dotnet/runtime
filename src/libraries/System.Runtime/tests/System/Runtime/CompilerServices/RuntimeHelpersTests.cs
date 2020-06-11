@@ -71,22 +71,6 @@ namespace System.Runtime.CompilerServices.Tests
         }
 
         [Fact]
-        public static unsafe void OffsetToStringData()
-        {
-            // RuntimeHelpers.OffsetToStringData
-            char[] expectedValues = new char[] { 'a', 'b', 'c', 'd', 'e', 'f' };
-            string s = "abcdef";
-
-            fixed (char* values = s) // Compiler will use OffsetToStringData with fixed statements
-            {
-                for (int i = 0; i < expectedValues.Length; i++)
-                {
-                    Assert.Equal(expectedValues[i], values[i]);
-                }
-            }
-        }
-
-        [Fact]
         public static void InitializeArray()
         {
             // Void RuntimeHelpers.InitializeArray(Array, RuntimeFieldHandle)
@@ -262,6 +246,22 @@ namespace System.Runtime.CompilerServices.Tests
 
             range = new Range(Index.FromStart(0), Index.FromStart(a.Length + 1));
             Assert.Throws<ArgumentOutOfRangeException>(() => { int [] array = RuntimeHelpers.GetSubArray(a, range); });
+        }
+
+        [Fact]
+        [SkipOnMono("Not presently implemented on Mono")]
+        public static void AllocateTypeAssociatedMemoryInvalidArguments()
+        {
+            Assert.Throws<ArgumentException>(() => { RuntimeHelpers.AllocateTypeAssociatedMemory(null, 10); });
+            Assert.Throws<ArgumentOutOfRangeException>(() => { RuntimeHelpers.AllocateTypeAssociatedMemory(typeof(RuntimeHelpersTests), -1); });
+        }
+
+        [Fact]
+        [SkipOnMono("Not presently implemented on Mono")]
+        public static void AllocateTypeAssociatedMemoryValidArguments()
+        {
+            IntPtr memory = RuntimeHelpers.AllocateTypeAssociatedMemory(typeof(RuntimeHelpersTests), 32);
+            Assert.NotEqual(memory, IntPtr.Zero);
         }
 
         [StructLayoutAttribute(LayoutKind.Sequential)]

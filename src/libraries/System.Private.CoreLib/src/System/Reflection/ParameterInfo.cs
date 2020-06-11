@@ -60,8 +60,7 @@ namespace System.Reflection
             if (MemberImpl == null)
                 throw new SerializationException(SR.Serialization_InsufficientState);
 
-            ParameterInfo[]? args = null;
-
+            ParameterInfo[] args;
             switch (MemberImpl.MemberType)
             {
                 case MemberTypes.Constructor:

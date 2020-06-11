@@ -99,11 +99,11 @@ namespace ILCompiler.Reflection.ReadyToRun.x86
             sb.Append("        EpilogAtEnd: ");
             sb.AppendLine(EpilogAtEnd ? "yes" : "no");
 
-            sb.Append($"        Callee-saved regs  = ");
-            if (EdiSaved) sb.Append("EDI");
-            if (EsiSaved) sb.Append("ESI");
-            if (EbxSaved) sb.Append("EBX");
-            if (EbpSaved) sb.Append("EBP");
+            sb.Append($"        Callee-saved regs  =");
+            if (EdiSaved) sb.Append(" EDI");
+            if (EsiSaved) sb.Append(" ESI");
+            if (EbxSaved) sb.Append(" EBX");
+            if (EbpSaved) sb.Append(" EBP");
             sb.AppendLine();
 
             sb.Append($"        EbpFrame: ");
