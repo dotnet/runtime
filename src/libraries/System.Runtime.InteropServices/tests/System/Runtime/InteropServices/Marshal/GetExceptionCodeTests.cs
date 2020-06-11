@@ -8,10 +8,10 @@ using Xunit;
 namespace System.Runtime.InteropServices.Tests
 {
     [SkipOnMono("Marshal.GetExceptionCode will not be implemented in Mono, see https://github.com/mono/mono/issues/15085.")]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/37093", TestPlatforms.Android)]
     public class GetExceptionCodeTests
     {
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/37093", TestPlatforms.Android)]
         public void GetExceptionCode_NoException_ReturnsZero()
         {
             Assert.Equal(0, Marshal.GetExceptionCode());
@@ -20,7 +20,6 @@ namespace System.Runtime.InteropServices.Tests
         [Theory]
         [InlineData(-1)]
         [InlineData(10)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/37093", TestPlatforms.Android)]
         public void GetExceptionCode_NormalExceptionInsideCatch_ReturnsExpected(int hresult)
         {
             try
@@ -41,7 +40,6 @@ namespace System.Runtime.InteropServices.Tests
         [Theory]
         [InlineData(-1)]
         [InlineData(10)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/37093", TestPlatforms.Android)]
         public void GetExceptionCode_ComExceptionInsideCatch_ReturnsExpected(int errorCode)
         {
             try
