@@ -9,6 +9,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Diagnostics;
 using System.Threading;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.IO.Packaging
 {
@@ -52,14 +53,14 @@ namespace System.IO.Packaging
         }
 
         public XmlCompatibilityReader(XmlReader baseReader,
-            IsXmlNamespaceSupportedCallback isXmlNamespaceSupported)
+            IsXmlNamespaceSupportedCallback? isXmlNamespaceSupported)
             : this(baseReader)
         {
             _namespaceCallback = isXmlNamespaceSupported;
         }
 
         public XmlCompatibilityReader(XmlReader baseReader,
-            IsXmlNamespaceSupportedCallback isXmlNamespaceSupported,
+            IsXmlNamespaceSupportedCallback? isXmlNamespaceSupported,
             IEnumerable<string> supportedNamespaces)
             : this(baseReader, isXmlNamespaceSupported)
         {
@@ -97,8 +98,7 @@ namespace System.IO.Packaging
                 AddSubsumingNamespace(newNamespace);
 
                 // If newNamespace is mapped to a namespace,
-                string tempNamespace;
-                if (_namespaceMap.TryGetValue(newNamespace, out tempNamespace))
+                if (_namespaceMap.TryGetValue(newNamespace, out string? tempNamespace))
                 {
                     // If we have mapped newNamespace already get the newest name.
                     // We don't have to do this recursively because of the code below
@@ -209,7 +209,7 @@ namespace System.IO.Packaging
                 // the element type, and call the appropriate delegate.  If the element is not recognized
                 // we throw an exception.
                 string elementName = Reader.LocalName;
-                HandleElementCallback elementCB;
+                HandleElementCallback? elementCB;
                 if (!_elementHandler.TryGetValue(elementName, out elementCB))
                 {
                     Error(SR.XCRUnknownCompatElement, elementName);
@@ -340,7 +340,7 @@ namespace System.IO.Packaging
         /// </returns>
         public override string GetAttribute(int i)
         {
-            string result = null;
+            string? result = null;
 
             if (_ignoredAttributeCount == 0)
             {
@@ -370,9 +370,9 @@ namespace System.IO.Packaging
         /// <returns>
         /// The value of the specified attribute. If the attribute is not found, a null reference is returned.
         /// </returns>
-        public override string GetAttribute(string name)
+        public override string? GetAttribute(string name)
         {
-            string result = null;
+            string? result = null;
 
             if (_ignoredAttributeCount == 0)
             {
@@ -406,9 +406,9 @@ namespace System.IO.Packaging
         /// <returns>
         /// The value of the specified attribute. If the attribute is not found, a null reference is returned.
         /// </returns>
-        public override string GetAttribute(string localName, string namespaceURI)
+        public override string? GetAttribute(string localName, string namespaceURI)
         {
-            string result = null;
+            string? result = null;
 
             if (_ignoredAttributeCount == 0 || !ShouldIgnoreNamespace(namespaceURI))
             {
@@ -593,7 +593,7 @@ namespace System.IO.Packaging
         /// <returns>
         /// The namespace URI to which the prefix maps or a null reference if no matching prefix is found.
         /// </returns>
-        public override string LookupNamespace(string prefix)
+        public override string? LookupNamespace(string prefix)
         {
             string namespaceName = Reader.LookupNamespace(prefix);
 
@@ -614,7 +614,7 @@ namespace System.IO.Packaging
         /// for the xmlns attribute reflects all the
         /// compatibility (subsuming) rules.
         /// </summary>
-        public override string Value
+        public override string? Value
         {
             get
             {
@@ -713,7 +713,7 @@ namespace System.IO.Packaging
         /// </returns>
         private string GetMappedNamespace(string namespaceName)
         {
-            string mappedNamespace;
+            string? mappedNamespace;
 
             // if the namespace is not null, get the mapped namespace (which may be itself)
             if (!_namespaceMap.TryGetValue(namespaceName, out mappedNamespace))
@@ -763,7 +763,7 @@ namespace System.IO.Packaging
                     else
                     {
                         // subsume namespace with mappedNamespace.
-                        string tempNamespace;
+                        string? tempNamespace;
 
                         if (!_namespaceMap.TryGetValue(mappedNamespace, out tempNamespace))
                         {
@@ -787,7 +787,7 @@ namespace System.IO.Packaging
                 {
                     // if the namespace is not supported, we enter null into the namespaceMap as a placeholder
                     // so that we do not call the callback again on this namespace.
-                    _namespaceMap[namespaceName] = null;
+                    _namespaceMap[namespaceName] = null!;
                 }
             }
 
@@ -817,7 +817,7 @@ namespace System.IO.Packaging
         private void AddSubsumingNamespace(string namespaceName)
         {
             if (_subsumingNamespaces == null)
-                _subsumingNamespaces = new Dictionary<string, object>();
+                _subsumingNamespaces = new Dictionary<string, object?>();
             _subsumingNamespaces[namespaceName] = null;
         }
 
@@ -844,7 +844,7 @@ namespace System.IO.Packaging
         private void AddKnownNamespace(string namespaceName)
         {
             if (_knownNamespaces == null)
-                _knownNamespaces = new Dictionary<string, object>();
+                _knownNamespaces = new Dictionary<string, object?>();
             _knownNamespaces[namespaceName] = null;
         }
 
@@ -887,7 +887,7 @@ namespace System.IO.Packaging
         /// <returns>
         /// the list of namespace/element pairs
         /// </returns>
-        private IEnumerable<NamespaceElementPair> ParseContentToNamespaceElementPair(string content, string callerContext)
+        private IEnumerable<NamespaceElementPair> ParseContentToNamespaceElementPair(string content, string? callerContext)
         {
             foreach (string pair in content.Trim().Split(' '))
             {
@@ -906,7 +906,7 @@ namespace System.IO.Packaging
 
                     string prefix = pair.Substring(0, colonIndex);
                     string elementName = pair.Substring(colonIndex + 1, length - 1 - colonIndex);
-                    string namespaceName = LookupNamespace(prefix);
+                    string? namespaceName = LookupNamespace(prefix);
 
                     if (namespaceName == null)
                     {
@@ -942,7 +942,7 @@ namespace System.IO.Packaging
                 // check each non-null, non-empty space-delineated prefix
                 if (!string.IsNullOrEmpty(prefix))
                 {
-                    string namespaceUri = LookupNamespace(prefix);
+                    string? namespaceUri = LookupNamespace(prefix);
 
                     if (namespaceUri == null)
                     {
@@ -1013,7 +1013,7 @@ namespace System.IO.Packaging
                             // if the attribute is in the markup-compatibility namespace
                             // find and call the appropriate attribute handler callback.
                             string attributeName = Reader.LocalName;
-                            HandleAttributeCallback attributeCB;
+                            HandleAttributeCallback? attributeCB;
                             if (!_attributeHandler.TryGetValue(attributeName, out attributeCB))
                             {
                                 Error(SR.XCRUnknownCompatAttrib, attributeName);
@@ -1077,7 +1077,7 @@ namespace System.IO.Packaging
         /// </summary>
         private void PopScope()
         {
-            _compatibilityScope = _compatibilityScope.Previous;
+            _compatibilityScope = _compatibilityScope.Previous!;
         }
 
         /// <summary>
@@ -1403,9 +1403,10 @@ namespace System.IO.Packaging
         /// <summary>
         /// helper method to generate an exception
         /// </summary>
-        private void Error(string message, params object[] args)
+        [DoesNotReturn]
+        private void Error(string message, params object?[] args)
         {
-            IXmlLineInfo info = Reader as IXmlLineInfo;
+            IXmlLineInfo? info = Reader as IXmlLineInfo;
             throw new XmlException(string.Format(CultureInfo.InvariantCulture, message, args), null, info == null ? 1 : info.LineNumber,
                 info == null ? 1 : info.LinePosition);
         }
@@ -1560,7 +1561,7 @@ namespace System.IO.Packaging
         /// </summary>
         private class CompatibilityScope
         {
-            private readonly CompatibilityScope _previous;
+            private readonly CompatibilityScope? _previous;
             private readonly int _depth;
             private bool _fallbackSeen;
             private bool _inAlternateContent;
@@ -1568,19 +1569,19 @@ namespace System.IO.Packaging
             private bool _choiceTaken;
             private bool _choiceSeen;
             private readonly XmlCompatibilityReader _reader;
-            private Dictionary<string, object> _ignorables;
-            private Dictionary<string, ProcessContentSet> _processContents;
-            private Dictionary<string, PreserveItemSet> _preserveElements;
-            private Dictionary<string, PreserveItemSet> _preserveAttributes;
+            private Dictionary<string, object?>? _ignorables;
+            private Dictionary<string, ProcessContentSet>? _processContents;
+            private Dictionary<string, PreserveItemSet>? _preserveElements;
+            private Dictionary<string, PreserveItemSet>? _preserveAttributes;
 
-            public CompatibilityScope(CompatibilityScope previous, int depth, XmlCompatibilityReader reader)
+            public CompatibilityScope(CompatibilityScope? previous, int depth, XmlCompatibilityReader reader)
             {
                 _previous = previous;
                 _depth = depth;
                 _reader = reader;
             }
 
-            public CompatibilityScope Previous
+            public CompatibilityScope? Previous
             {
                 get
                 {
@@ -1729,7 +1730,7 @@ namespace System.IO.Packaging
             public bool ShouldProcessContent(string namespaceName, string elementName)
             {
                 bool result = false;
-                ProcessContentSet set;
+                ProcessContentSet? set;
                 if (_processContents != null && _processContents.TryGetValue(namespaceName, out set))
                 {
                     result = set.ShouldProcessContent(elementName);
@@ -1746,7 +1747,7 @@ namespace System.IO.Packaging
             {
                 if (_ignorables == null)
                 {
-                    _ignorables = new Dictionary<string, object>();
+                    _ignorables = new Dictionary<string, object?>();
                 }
                 _ignorables[namespaceName] = null; // we don't care about value, just key
             }
@@ -1757,7 +1758,7 @@ namespace System.IO.Packaging
                 {
                     _processContents = new Dictionary<string, ProcessContentSet>();
                 }
-                ProcessContentSet processContentSet;
+                ProcessContentSet? processContentSet;
                 if (!_processContents.TryGetValue(namespaceName, out processContentSet))
                 {
                     processContentSet = new ProcessContentSet(namespaceName, _reader);
@@ -1772,7 +1773,7 @@ namespace System.IO.Packaging
                 {
                     _preserveElements = new Dictionary<string, PreserveItemSet>();
                 }
-                PreserveItemSet preserveElementSet;
+                PreserveItemSet? preserveElementSet;
                 if (!_preserveElements.TryGetValue(namespaceName, out preserveElementSet))
                 {
                     preserveElementSet = new PreserveItemSet(namespaceName, _reader);
@@ -1787,7 +1788,7 @@ namespace System.IO.Packaging
                 {
                     _preserveAttributes = new Dictionary<string, PreserveItemSet>();
                 }
-                PreserveItemSet preserveAttributeSet;
+                PreserveItemSet? preserveAttributeSet;
                 if (!_preserveAttributes.TryGetValue(namespaceName, out preserveAttributeSet))
                 {
                     preserveAttributeSet = new PreserveItemSet(namespaceName, _reader);
@@ -1839,7 +1840,7 @@ namespace System.IO.Packaging
             private bool _all;
             private readonly string _namespaceName;
             private readonly XmlCompatibilityReader _reader;
-            private Dictionary<string, object> _names;
+            private Dictionary<string, object?>? _names;
 
             public ProcessContentSet(string namespaceName, XmlCompatibilityReader reader)
             {
@@ -1881,7 +1882,7 @@ namespace System.IO.Packaging
                 {
                     if (_names == null)
                     {
-                        _names = new Dictionary<string, object>();
+                        _names = new Dictionary<string, object?>();
                     }
 
                     _names[elementName] = null; // we don't care about value, just key
@@ -1894,7 +1895,7 @@ namespace System.IO.Packaging
             private bool _all;
             private readonly string _namespaceName;
             private readonly XmlCompatibilityReader _reader;
-            private Dictionary<string, string> _names;
+            private Dictionary<string, string>? _names;
 
             public PreserveItemSet(string namespaceName, XmlCompatibilityReader reader)
             {
@@ -1947,26 +1948,26 @@ namespace System.IO.Packaging
 
         #region Private Fields
         private bool _inAttribute; // for Save/Restore ReaderPosition
-        private string _currentName; // for Save/Restore ReaderPosition
-        private readonly IsXmlNamespaceSupportedCallback _namespaceCallback;
-        private Dictionary<string, object> _knownNamespaces;
+        private string? _currentName; // for Save/Restore ReaderPosition
+        private readonly IsXmlNamespaceSupportedCallback? _namespaceCallback;
+        private Dictionary<string, object?>? _knownNamespaces;
         private readonly Dictionary<string, string> _namespaceMap = new Dictionary<string, string>();
-        private Dictionary<string, object> _subsumingNamespaces;
+        private Dictionary<string, object?>? _subsumingNamespaces;
         private readonly Dictionary<string, HandleElementCallback> _elementHandler = new Dictionary<string, HandleElementCallback>();
         private readonly Dictionary<string, HandleAttributeCallback> _attributeHandler = new Dictionary<string, HandleAttributeCallback>();
         private int _depthOffset; // offset for Depth method, to account for elements that should be ignored by client
         private int _ignoredAttributeCount;
         private int _attributePosition; // used for ScanForCompatibility / HandleIgnorable
-        private string _compatibilityUri;
-        private string _alternateContent;
-        private string _choice;
-        private string _fallback;
-        private string _requires;
-        private string _ignorable;
-        private string _mustUnderstand;
-        private string _processContent;
-        private string _preserveElements;
-        private string _preserveAttributes;
+        private string? _compatibilityUri;
+        private string? _alternateContent;
+        private string? _choice;
+        private string? _fallback;
+        private string? _requires;
+        private string? _ignorable;
+        private string? _mustUnderstand;
+        private string? _processContent;
+        private string? _preserveElements;
+        private string? _preserveAttributes;
         private CompatibilityScope _compatibilityScope;
 
         private bool _isPreviousElementEmpty;

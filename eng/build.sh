@@ -29,7 +29,7 @@ usage()
   echo "  --librariesConfiguration (-lc)  Libraries build configuration: Debug or Release."
   echo "                                  [Default: Debug]"
   echo "  --os                            Target operating system: Windows_NT, Linux, FreeBSD, OSX, tvOS, iOS, Android,"
-  echo "                                  Browser, NetBSD or SunOS."
+  echo "                                  Browser, NetBSD, illumos or Solaris."
   echo "                                  [Default: Your machine's OS.]"
   echo "  --projects <value>              Project or solution file(s) to build."
   echo "  --runtimeConfiguration (-rc)    Runtime build configuration: Debug, Release or Checked."
@@ -115,7 +115,7 @@ usage()
 
 initDistroRid()
 {
-    source $scriptroot/native/init-distro-rid.sh
+    source "$scriptroot"/native/init-distro-rid.sh
 
     local passedRootfsDir=""
     local targetOs="$1"
@@ -206,7 +206,7 @@ while [[ $# > 0 ]]; do
       ;;
 
      -configuration|-c)
-      if [ -z ${2+x} ]; then 
+      if [ -z ${2+x} ]; then
         echo "No configuration supplied. See help (--help) for supported configurations." 1>&2
         exit 1
       fi
@@ -258,11 +258,13 @@ while [[ $# > 0 ]]; do
           os="Android" ;;
         browser)
           os="Browser" ;;
-        sunos)
-          os="SunOS" ;;
+        illumos)
+          os="illumos" ;;
+        solaris)
+          os="Solaris" ;;
         *)
           echo "Unsupported target OS '$2'."
-          echo "The allowed values are Windows_NT, Linux, FreeBSD, OSX, tvOS, iOS, Android, Browser, and SunOS."
+          echo "The allowed values are Windows_NT, Linux, FreeBSD, OSX, tvOS, iOS, Android, Browser, illumos and Solaris."
           exit 1
           ;;
       esac

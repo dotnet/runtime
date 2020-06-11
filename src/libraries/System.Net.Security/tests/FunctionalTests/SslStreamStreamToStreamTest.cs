@@ -593,6 +593,7 @@ namespace System.Net.Security.Tests
             using (var stream = new VirtualNetworkStream(network, isServer: false))
             using (var sslStream = new SslStream(stream, false, AllowAnyServerCertificate))
             {
+                stream.DelayFlush = true;
                 Task task = sslStream.FlushAsync();
 
                 Assert.False(task.IsCompleted);

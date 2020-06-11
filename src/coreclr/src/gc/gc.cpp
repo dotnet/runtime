@@ -5610,7 +5610,7 @@ bool gc_heap::virtual_commit (void* address, size_t size, gc_oh_num oh, int h_nu
 
         if (heap_hard_limit_oh[0] != 0)
         {
-            if ((committed_by_oh[oh] + size) > heap_hard_limit_oh[oh])
+            if ((oh != gc_oh_num::none) && (committed_by_oh[oh] + size) > heap_hard_limit_oh[oh])
             {
                 exceeded_p = true;
             }

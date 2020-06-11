@@ -625,7 +625,24 @@ namespace System.Net.Sockets
             Interop.Error err;
             try
             {
-                err = Interop.Sys.GetSocketErrorOption(socket, &socketError);
+                // Due to fd recyling, TryCompleteConnect may be called when there was a write event
+                // for the previous socket that used the fd.
+                // The SocketErrorOption in that case is the same as for a succesful connect.
+                // To filter out these false events, we check whether the socket is writable, before
+                // reading the socket option.
+                Interop.PollEvents outEvents;
+                err = Interop.Sys.Poll(socket, Interop.PollEvents.POLLOUT, timeout: 0, out outEvents);
+                if (err == Interop.Error.SUCCESS)
+                {
+                    if (outEvents == Interop.PollEvents.POLLNONE)
+                    {
+                        socketError = Interop.Error.EINPROGRESS;
+                    }
+                    else
+                    {
+                        err = Interop.Sys.GetSocketErrorOption(socket, &socketError);
+                    }
+                }
             }
             catch (ObjectDisposedException)
             {

@@ -15,6 +15,7 @@ class TreeLifeUpdater
 public:
     TreeLifeUpdater(Compiler* compiler);
     void UpdateLife(GenTree* tree);
+    bool UpdateLifeFieldVar(GenTreeLclVar* lclNode, unsigned multiRegIndex);
 
 private:
     void UpdateLifeVar(GenTree* tree);

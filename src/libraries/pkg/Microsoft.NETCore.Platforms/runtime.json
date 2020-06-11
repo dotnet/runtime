@@ -898,6 +898,17 @@
         "linux-x64"
       ]
     },
+    "illumos": {
+      "#import": [
+        "unix"
+      ]
+    },
+    "illumos-x64": {
+      "#import": [
+        "illumos",
+        "unix-x64"
+      ]
+    },
     "ios": {
       "#import": [
         "unix"
@@ -1397,6 +1408,39 @@
         "rhel.8.0-x64"
       ]
     },
+    "omnios": {
+      "#import": [
+        "illumos"
+      ]
+    },
+    "omnios-x64": {
+      "#import": [
+        "omnios",
+        "illumos-x64"
+      ]
+    },
+    "omnios.15": {
+      "#import": [
+        "omnios"
+      ]
+    },
+    "omnios.15-x64": {
+      "#import": [
+        "omnios.15",
+        "omnios-x64"
+      ]
+    },
+    "openindiana": {
+      "#import": [
+        "illumos"
+      ]
+    },
+    "openindiana-x64": {
+      "#import": [
+        "openindiana",
+        "illumos-x64"
+      ]
+    },
     "opensuse": {
       "#import": [
         "linux"
@@ -1821,6 +1865,61 @@
       "#import": [
         "sles.15.1",
         "sles.15-x64"
+      ]
+    },
+    "smartos": {
+      "#import": [
+        "illumos"
+      ]
+    },
+    "smartos-x64": {
+      "#import": [
+        "smartos",
+        "illumos-x64"
+      ]
+    },
+    "smartos.2020": {
+      "#import": [
+        "smartos"
+      ]
+    },
+    "smartos.2020-x64": {
+      "#import": [
+        "smartos.2020",
+        "smartos-x64"
+      ]
+    },
+    "smartos.2021": {
+      "#import": [
+        "smartos.2020"
+      ]
+    },
+    "smartos.2021-x64": {
+      "#import": [
+        "smartos.2021",
+        "smartos.2020-x64"
+      ]
+    },
+    "solaris": {
+      "#import": [
+        "unix"
+      ]
+    },
+    "solaris-x64": {
+      "#import": [
+        "solaris",
+        "unix-x64"
+      ]
+    },
+    "solaris.11": {
+      "#import": [
+        "solaris"
+      ]
+    },
+    "solaris.11-x64": {
+      "#import": [
+        "solaris.11",
+        "solaris-x64"
       ]
     },
     "tizen": {
