@@ -285,6 +285,9 @@ HRESULT
 RegMeta::CreateNewPortablePdbMD()
 {
     HRESULT hr = NOERROR;
+    // TODO: move the constant to a better location
+    static const char* PDB_VERSION = "PDB v1.0";
+    size_t len = strlen(PDB_VERSION) + 1;
 
     m_OpenFlags = ofWrite;
 
@@ -300,9 +303,6 @@ RegMeta::CreateNewPortablePdbMD()
     IfFailGo(hr = m_pStgdb->InitNew());
 
     // Set up the pdb version
-    // TODO: move the constant to a better location
-    static const char* PDB_VERSION = "PDB v1.0";
-    size_t len = strlen(PDB_VERSION) + 1;
     m_OptionValue.m_RuntimeVersion = new char[len];
     strcpy_s(m_OptionValue.m_RuntimeVersion, len, PDB_VERSION);
 

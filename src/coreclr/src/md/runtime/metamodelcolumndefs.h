@@ -402,15 +402,12 @@
     //-------------------------------------------------------------------------
     //Dummy tables to fill the gap to 0x30
     SCHEMA_TABLE_START(Dummy1)
-    NULL
     SCHEMA_TABLE_END(Dummy1)
 
     SCHEMA_TABLE_START(Dummy2)
-    NULL
     SCHEMA_TABLE_END(Dummy2)
 
     SCHEMA_TABLE_START(Dummy3)
-    NULL
     SCHEMA_TABLE_END(Dummy3)
 
     //-------------------------------------------------------------------------

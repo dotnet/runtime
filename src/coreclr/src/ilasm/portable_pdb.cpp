@@ -312,6 +312,13 @@ BOOL PortablePdbWritter::_DefineLocalScope(mdMethodDef methodDefToken, Scope* cu
 {
     BOOL fSuccess = FALSE;
     ARG_NAME_LIST* pLocalVar = currScope->pLocals;
+    ULONG methodRid = RidFromToken(methodDefToken);
+    ULONG importScopeRid = RidFromToken(mdImportScopeNil);          // TODO: not supported for now
+    ULONG firstLocalVarRid = 0;
+    ULONG firstLocalConstRid = RidFromToken(mdLocalConstantNil);    // TODO: not supported for now
+    ULONG start = 0;
+    ULONG length = 0;
+
     while (pLocalVar != NULL)
     {
         mdLocalVariable locVarToken = mdLocalScopeNil;
@@ -325,12 +332,9 @@ BOOL PortablePdbWritter::_DefineLocalScope(mdMethodDef methodDefToken, Scope* cu
         pLocalVar = pLocalVar->pNext;
     }
 
-    ULONG methodRid = RidFromToken(methodDefToken);
-    ULONG importScopeRid = RidFromToken(mdImportScopeNil);          // TODO: not supported for now
-    ULONG firstLocalVarRid = RidFromToken(*firstLocVarToken);
-    ULONG firstLocalConstRid = RidFromToken(mdLocalConstantNil);    // TODO: not supported for now
-    ULONG start = currScope->dwStart;
-    ULONG length = currScope->dwEnd - currScope->dwStart;
+    firstLocalVarRid = RidFromToken(*firstLocVarToken);
+    start = currScope->dwStart;
+    length = currScope->dwEnd - currScope->dwStart;
     if (FAILED(m_pdbEmitter->DefineLocalScope(methodRid, importScopeRid, firstLocalVarRid, firstLocalConstRid, start, length))) goto exit;
 
     fSuccess = TRUE;

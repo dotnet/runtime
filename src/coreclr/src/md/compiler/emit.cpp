@@ -2066,6 +2066,9 @@ STDMETHODIMP RegMeta::GetReferencedTypeSysTables(   // S_OK or error.
 
     ULONG64 refTablesBitVector = 0;
     ULONG count = 0;
+    ULONG* ptr = NULL;
+    ULONG rowsSize = 0;
+
     for (ULONG i = 0; i < TBL_COUNT; i++)
     {
         if (m_pStgdb->m_MiniMd.m_Tables[i].GetRecordCount() > 0)
@@ -2085,10 +2088,10 @@ STDMETHODIMP RegMeta::GetReferencedTypeSysTables(   // S_OK or error.
     *refTables = refTablesBitVector;
     *tableRowsSize = count;
 
-    ULONG* ptr = refTableRows;
+    ptr = refTableRows;
     for (ULONG i = 0; i < TBL_COUNT; i++)
     {
-        ULONG rowsSize = m_pStgdb->m_MiniMd.m_Tables[i].GetRecordCount();
+        rowsSize = m_pStgdb->m_MiniMd.m_Tables[i].GetRecordCount();
         if (rowsSize > 0)
             *ptr++ = rowsSize;
     }
@@ -2143,6 +2146,15 @@ STDMETHODIMP RegMeta::DefineDocument(       // S_OK or error.
     return E_NOTIMPL;
 #else //!FEATURE_METADATA_EMIT_IN_DEBUGGER
     HRESULT hr = S_OK;
+    char delim[2] = "";
+    ULONG partsCount = 0;
+    ULONG docNameBlobSize = 0;
+    ULONG docNameBlobMaxSize = 0;
+    BYTE* docNameBlob = NULL;
+    BYTE* docNameBlobPtr = NULL;
+    UINT32* partsIndexes = NULL;
+    UINT32* partsIndexesPtr = NULL;
+    char* stringToken = NULL;
 
     BEGIN_ENTRYPOINT_NOTHROW;
 
@@ -2153,21 +2165,19 @@ STDMETHODIMP RegMeta::DefineDocument(       // S_OK or error.
     IfFailGo(m_pStgdb->m_MiniMd.PreUpdate());
 
     // determine separator and number of separated parts
-    char delim[2] = "";
-    ULONG partsCount = 0;
     GetPathSeparator(docName, delim, &partsCount);
     delim[1] = '\0';
 
     // allocate the maximum size of a document blob
     // treating each compressed index to take maximum of 4 bytes.
     // the actual size will be calculated once we compress each index.
-    ULONG docNameBlobMaxSize = sizeof(char) + sizeof(ULONG) * partsCount; // (delim + 4 * partsCount)
-    BYTE* docNameBlob = new BYTE[docNameBlobMaxSize];
-    UINT32* partsIndexes = new UINT32[partsCount];
+    docNameBlobMaxSize = sizeof(char) + sizeof(ULONG) * partsCount; // (delim + 4 * partsCount)
+    docNameBlob = new BYTE[docNameBlobMaxSize];
+    partsIndexes = new UINT32[partsCount];
 
     // add path parts to blob heap and store their indexes
-    UINT32* partsIndexesPtr = partsIndexes;
-    char* stringToken = strtok(docName, (const char*)delim);
+    partsIndexesPtr = partsIndexes;
+    stringToken = strtok(docName, (const char*)delim);
     while (stringToken != NULL)
     {
         IfFailGo(m_pStgdb->m_MiniMd.m_BlobHeap.AddBlob(MetaData::DataBlob((BYTE*)stringToken, (ULONG)strlen(stringToken)), partsIndexesPtr++));
@@ -2175,8 +2185,7 @@ STDMETHODIMP RegMeta::DefineDocument(       // S_OK or error.
     }
 
     // build up the documentBlob ::= separator part+
-    ULONG docNameBlobSize = 0;
-    BYTE* docNameBlobPtr = docNameBlob;
+    docNameBlobPtr = docNameBlob;
     // put separator
     *docNameBlobPtr = delim[0];
     docNameBlobPtr++;
