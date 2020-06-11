@@ -378,7 +378,7 @@ namespace Mono.Linker.Steps
 				} catch (Exception e) when (!(e is LinkerFatalErrorException)) {
 					throw new LinkerFatalErrorException (
 						MessageContainer.CreateErrorMessage ($"Error processing method '{method.FullName}' in assembly '{method.Module.Name}'", 1005,
-						origin: MessageOrigin.TryGetOrigin (method)), e);
+						origin: new MessageOrigin (method)), e);
 				}
 			}
 		}
@@ -582,7 +582,7 @@ namespace Mono.Linker.Steps
 			if (dynamicDependency.AssemblyName != null) {
 				assembly = _context.GetLoadedAssembly (dynamicDependency.AssemblyName);
 				if (assembly == null) {
-					_context.LogWarning ($"Unresolved assembly '{dynamicDependency.AssemblyName}' in DynamicDependencyAttribute on '{context}'", 2035, MessageOrigin.TryGetOrigin (context.Resolve ()));
+					_context.LogWarning ($"Unresolved assembly '{dynamicDependency.AssemblyName}' in DynamicDependencyAttribute on '{context}'", 2035, context.Resolve ());
 					return;
 				}
 			} else {
@@ -594,19 +594,19 @@ namespace Mono.Linker.Steps
 			if (dynamicDependency.TypeName is string typeName) {
 				type = DocumentationSignatureParser.GetTypeByDocumentationSignature (assembly, typeName);
 				if (type == null) {
-					_context.LogWarning ($"Unresolved type '{typeName}' in DynamicDependencyAttribute on '{context}'", 2036, MessageOrigin.TryGetOrigin (context.Resolve ()));
+					_context.LogWarning ($"Unresolved type '{typeName}' in DynamicDependencyAttribute on '{context}'", 2036, context.Resolve ());
 					return;
 				}
 			} else if (dynamicDependency.Type is TypeReference typeReference) {
 				type = typeReference.Resolve ();
 				if (type == null) {
-					_context.LogWarning ($"Unresolved type '{typeReference}' in DynamicDependencyAtribute on '{context}'", 2036, MessageOrigin.TryGetOrigin (context.Resolve ()));
+					_context.LogWarning ($"Unresolved type '{typeReference}' in DynamicDependencyAtribute on '{context}'", 2036, context.Resolve ());
 					return;
 				}
 			} else {
 				type = context.DeclaringType.Resolve ();
 				if (type == null) {
-					_context.LogWarning ($"Unresolved type '{context.DeclaringType}' in DynamicDependencyAttribute on '{context}'", 2036, MessageOrigin.TryGetOrigin (context.Resolve ()));
+					_context.LogWarning ($"Unresolved type '{context.DeclaringType}' in DynamicDependencyAttribute on '{context}'", 2036, context.Resolve ());
 					return;
 				}
 			}
@@ -615,14 +615,14 @@ namespace Mono.Linker.Steps
 			if (dynamicDependency.MemberSignature is string memberSignature) {
 				members = DocumentationSignatureParser.GetMembersByDocumentationSignature (type, memberSignature, acceptName: true);
 				if (!members.Any ()) {
-					_context.LogWarning ($"No members were resolved for '{memberSignature}' in DynamicDependencyAttribute on '{context}'", 2037, MessageOrigin.TryGetOrigin (context.Resolve ()));
+					_context.LogWarning ($"No members were resolved for '{memberSignature}'.", 2037, context.Resolve ());
 					return;
 				}
 			} else {
 				var memberTypes = dynamicDependency.MemberTypes;
 				members = DynamicallyAccessedMembersBinder.GetDynamicallyAccessedMembers (type, memberTypes);
 				if (!members.Any ()) {
-					_context.LogWarning ($"No members were resolved for '{memberTypes}' in DynamicDependencyAttribute on '{context}'", 2037, MessageOrigin.TryGetOrigin (context.Resolve ()));
+					_context.LogWarning ($"No members were resolved for '{memberTypes}'.", 2037, context.Resolve ());
 					return;
 				}
 			}
@@ -2376,7 +2376,7 @@ namespace Mono.Linker.Steps
 				var baseType = method.DeclaringType.BaseType.Resolve ();
 				if (!MarkDefaultConstructor (baseType, new DependencyInfo (DependencyKind.BaseDefaultCtorForStubbedMethod, method)))
 					throw new LinkerFatalErrorException (MessageContainer.CreateErrorMessage ($"Cannot stub constructor on '{method.DeclaringType}' when base type does not have default constructor",
-						1006, origin: MessageOrigin.TryGetOrigin (method)));
+						1006, origin: new MessageOrigin (method)));
 
 				break;
 

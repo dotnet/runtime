@@ -512,9 +512,9 @@ namespace Mono.Linker
 		/// <param name="code">Unique warning ID. Please see https://github.com/mono/linker/blob/master/doc/error-codes.md for the list of warnings and possibly add a new one</param>
 		/// <param name="origin">Type or member where the warning is coming from</param>
 		/// <param name="subcategory">Optionally, further categorize this warning</param>
-		public void LogWarning (string text, int code, IMemberDefinition origin, string subcategory = MessageSubCategory.None)
+		public void LogWarning (string text, int code, IMemberDefinition origin, int? ilOffset = null, string subcategory = MessageSubCategory.None)
 		{
-			MessageOrigin _origin = new MessageOrigin (origin);
+			MessageOrigin _origin = new MessageOrigin (origin, ilOffset);
 			LogWarning (text, code, _origin, subcategory);
 		}
 

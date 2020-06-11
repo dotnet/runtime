@@ -186,7 +186,7 @@ error and warning codes.
 
 - The number of arguments correspond to a certain type constructor, but the type of arguments specified in the xml does not match the type of arguments in the constructor.
 
-#### `IL2033`: Deprecated PreserveDependencyAttribute on 'member'. Use DynamicDependencyAttribute instead.
+#### `IL2033`: PreserveDependencyAttribute is deprecated. Use DynamicDependencyAttribute instead.
 
 - PreserveDependencyAttribute was an internal attribute that was never officially supported. Instead, use the similar DynamicDependencyAttribute.
 
@@ -202,7 +202,7 @@ error and warning codes.
 
 - The type in a DynamicDependencyAttribute constructor could not be resolved. Ensure that the argument specifies a valid type name or type reference, that the type exists in the specified assembly, and that the assembly is available to the linker.
 
-### `IL2037`: No members were resolved for 'memberSignature/memberTypes' in DynamicDependencyAttribute on 'member'
+### `IL2037`: No members were resolved for 'memberSignature/memberTypes'.
 
 - The member signature or DynamicallyAccessedMemberTypes in a DynamicDependencyAttribute constructor did not resolve to any members on the type. If you using a signature, ensure that it refers to an existing member, and that it uses the format defined at https://github.com/dotnet/csharplang/blob/master/spec/documentation-comments.md#id-string-format. If using DynamicallyAccessedMemberTypes, ensure that the type contains members of the specified member types.
 
@@ -218,9 +218,9 @@ error and warning codes.
 
 - The resource name in a substitution file could not be found in the specified assembly. Ensure that the resource name matches the name of an embedded resource in the assembly.
 
-#### `IL2041`: DynamicallyAccessedMembersAttribute is specified on method 'method'. The DynamicallyAccessedMembersAttribute is only allowed on method parameters, return value or generic parameters.
+#### `IL2041`: DynamicallyAccessedMembersAttribute is only allowed on method parameters, return value or generic parameters.
 
-- Method 'method' has the DynamicallyAccessedMembersAttribute directly on the method itself. This is only allowed for instance methods on System.Type and similar classes. Usually this means the attribute should be placed on the return value of the method (or one of its parameters).
+- DynamicallyAccessedMembersAttribute was put directly on the member itself. This is only allowed for instance methods on System.Type and similar classes. Usually this means the attribute should be placed on the return value of the method (or one of its parameters).
 
 #### `IL2042`: Could not find a unique backing field for property 'property' to propagate DynamicallyAccessedMembersAttribute
 

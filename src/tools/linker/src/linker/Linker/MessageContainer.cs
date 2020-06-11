@@ -132,15 +132,23 @@ namespace Mono.Linker
 				sb.Append (" ")
 					.Append (cat)
 					.Append (" IL")
-					.Append (Code.Value.ToString ("D4"));
-
-				if (!string.IsNullOrEmpty (Text))
-					sb.Append (": ").Append (Text);
+					.Append (Code.Value.ToString ("D4"))
+					.Append (": ");
 			} else {
-				sb.Append (" ").Append (Text);
+				sb.Append (" ");
 			}
 
-			// Expected output $"{Origin}: {SubCategory}{Category} IL{Code}: {Text}");
+			if (Origin?.MemberDefinition != null) {
+				if (Origin?.MemberDefinition is MethodDefinition method)
+					sb.Append (method.GetDisplayName ());
+				else
+					sb.Append (Origin?.MemberDefinition.FullName);
+
+				sb.Append (": ");
+			}
+
+			// Expected output $"{FileName(SourceLine, SourceColumn)}: {SubCategory}{Category} IL{Code}: ({MemberDisplayName}: ){Text}");
+			sb.Append (Text);
 			return sb.ToString ();
 		}
 

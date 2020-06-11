@@ -8,6 +8,40 @@ namespace Mono.Linker
 {
 	public static class MethodReferenceExtensions
 	{
+		public static string GetDisplayName (this MethodReference method)
+		{
+			var builder = new System.Text.StringBuilder ();
+			builder.Append (method.DeclaringType.FullName);
+			builder.Append ("::");
+			if (method.Name == ".ctor")
+				builder.Append (method.DeclaringType.Name);
+			else
+				builder.Append (method.Name);
+
+			if (method.HasGenericParameters) {
+				builder.Append ('<');
+
+				for (int i = 0; i < method.GenericParameters.Count - 1; i++)
+					builder.Append ($"{method.GenericParameters[i]},");
+
+				builder.Append ($"{method.GenericParameters[method.GenericParameters.Count - 1]}>");
+			}
+
+			builder.Append ("(");
+
+			if (method.HasParameters) {
+				for (int i = 0; i < method.Parameters.Count - 1; i++) {
+					builder.Append ($"{method.Parameters[i].ParameterType},");
+				}
+
+				builder.Append (method.Parameters[method.Parameters.Count - 1].ParameterType);
+			}
+
+			builder.Append (")");
+
+			return builder.ToString ();
+		}
+
 		public static TypeReference GetReturnType (this MethodReference method)
 		{
 			if (method.DeclaringType is GenericInstanceType genericInstance)
