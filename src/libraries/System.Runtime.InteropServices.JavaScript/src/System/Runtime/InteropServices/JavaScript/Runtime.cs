@@ -464,15 +464,8 @@ namespace System.Runtime.InteropServices.JavaScript
             {
                 if (_boundObjects.TryGetValue(jsId, out WeakReference? reference))
                 {
-                    if (reference.Target != null)
-                    {
-                        SafeHandleRelease((AnyRef)reference.Target);
-                    }
-                    else
-                    {
-                        Console.WriteLine($"\tSafeHandleReleaseByHandle: did not find active target {jsId} / target: {reference.Target}");
-                    }
-
+                    System.Diagnostics.Debug.Assert(reference.Target != null, $"\tSafeHandleReleaseByHandle: did not find active target {jsId} / target: {reference.Target}");
+                    SafeHandleRelease((AnyRef)reference.Target);
                 }
                 else
                 {
