@@ -40,7 +40,7 @@
     <DotNetCliVersion>$([System.Text.RegularExpressions.Regex]::Match($(GlobalJsonContent), '(%3F&lt;="dotnet": ").*(%3F=")'))</DotNetCliVersion>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(TargetsMobile)' == 'true'">
+  <PropertyGroup Condition="'$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'tvOS' or '$(TargetOS)' == 'Android'">
     <IncludeDotNetCli>true</IncludeDotNetCli>
   </PropertyGroup>
 
@@ -61,7 +61,7 @@
     <HelixCommand>$(HelixCommand) /p:LocalPackagesPath="%HELIX_CORRELATION_PAYLOAD%\packages\"</HelixCommand>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(HelixCommand)' == '' and '$(TargetsMobile)' != 'true'">
+  <PropertyGroup Condition="'$(HelixCommand)' == '' and '$(TargetOS)' != 'iOS' and '$(TargetOS)' != 'tvOS' and '$(TargetOS)' != 'Android'">
     <HelixPreCommands Condition="'$(MonoEnvOptions)' != '' and '$(OSGroup)' == 'Windows_NT'">set MONO_ENV_OPTIONS='$(MonoEnvOptions)'</HelixPreCommands>
     <HelixPreCommands Condition="'$(MonoEnvOptions)' != '' and '$(OSGroup)' != 'Windows_NT'">export MONO_ENV_OPTIONS='$(MonoEnvOptions)'</HelixPreCommands>
     
@@ -89,7 +89,7 @@
   <Target Name="CompressRuntimeDirectory"
           Inputs="@(_RuntimeInputs);@(TestArchiveRuntimeDependency)"
           Outputs="$(TestArchiveRuntimeFile)"
-          Condition="'$(BuildAllConfigurations)' != 'true' and '$(TargetsMobile)' != 'true'">
+          Condition="'$(BuildAllConfigurations)' != 'true' and '$(TargetOS)' != 'iOS' and '$(TargetOS)' != 'tvOS' and '$(TargetOS)' != 'Android'">
 
     <MakeDir Directories="$(TestArchiveRuntimeRoot)" />
     <ZipDirectory SourceDirectory="$(TestHostRootPath)"
@@ -111,8 +111,8 @@
       </XHarnessAppFolderToTest>
     </ItemGroup>
 
-    <ItemGroup Condition="'$(TargetsMobile)' == 'false'">
-      <HelixCorrelationPayload Include="$(HelixCorrelationPayload)" />
+    <ItemGroup Condition="'$(TargetOS)' != 'iOS' and '$(TargetOS)' != 'tvOS' and '$(TargetOS)' != 'Android'">
+      <HelixCorrelationPayload Condition="'$(TargetOS)' != 'Browser'" Include="$(HelixCorrelationPayload)" />
 
       <_WorkItem Include="$(WorkItemArchiveWildCard)" Exclude="$(HelixCorrelationPayload)" />
 
