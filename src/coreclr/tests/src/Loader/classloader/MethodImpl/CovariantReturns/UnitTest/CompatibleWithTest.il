@@ -391,6 +391,84 @@
     }
 }
 
+.class public auto ansi beforefieldinit C24 extends C1
+{
+    .method public hidebysig specialname rtspecialname instance void  .ctor() cil managed { ret }
+
+    .method public hidebysig newslot virtual instance bool& M15()
+    {
+        .override method instance bool* C1::M15()
+        ldc.i4.0
+        conv.u
+        ret
+    }
+}
+
+.class public auto ansi beforefieldinit C25 extends C1
+{
+    .method public hidebysig specialname rtspecialname instance void  .ctor() cil managed { ret }
+
+    .method public hidebysig newslot virtual instance method explicit instance int32 *(class Base) M15()
+    {
+        .override method instance bool* C1::M15()
+        ldc.i4.0
+        conv.u
+        ret
+    }
+}
+
+.class public auto ansi beforefieldinit C26 extends C1
+{
+    .method public hidebysig specialname rtspecialname instance void  .ctor() cil managed { ret }
+
+    .method public hidebysig newslot virtual instance char* M14()
+    {
+        .override method instance char& C1::M14()
+        ldc.i4.0
+        conv.u
+        ret
+    }
+}
+
+.class public auto ansi beforefieldinit C27 extends C1
+{
+    .method public hidebysig specialname rtspecialname instance void  .ctor() cil managed { ret }
+
+    .method public hidebysig newslot virtual instance method explicit instance int32 *(class Base) M14()
+    {
+        .override method instance char& C1::M14()
+        ldc.i4.0
+        conv.u
+        ret
+    }
+}
+
+.class public auto ansi beforefieldinit C28 extends C1
+{
+    .method public hidebysig specialname rtspecialname instance void  .ctor() cil managed { ret }
+
+    .method public hidebysig newslot virtual instance int32* M9()
+    {
+        .override method instance method explicit instance int32 *(class Base) C1::M9()
+        ldc.i4.0
+        conv.u
+        ret
+    }
+}
+
+.class public auto ansi beforefieldinit C29 extends C1
+{
+    .method public hidebysig specialname rtspecialname instance void  .ctor() cil managed { ret }
+
+    .method public hidebysig newslot virtual instance int32& M9()
+    {
+        .override method instance method explicit instance int32 *(class Base) C1::M9()
+        ldc.i4.0
+        conv.u
+        ret
+    }
+}
+
 .class public auto ansi beforefieldinit Main extends [mscorlib]System.Object
 {
     .method public static void RunTestC1() noinlining 
@@ -617,6 +695,66 @@
     {
         newobj instance void class C23::.ctor()
         callvirt instance bool* class C1::M15()
+        pop
+        ldstr "Succeeded"
+        call void [System.Console]System.Console::WriteLine(string)
+        ret
+    }
+
+    .method public static void RunTestC24() noinlining
+    {
+        newobj instance void class C24::.ctor()
+        callvirt instance bool* class C1::M15()
+        pop
+        ldstr "Succeeded"
+        call void [System.Console]System.Console::WriteLine(string)
+        ret
+    }
+
+    .method public static void RunTestC25() noinlining
+    {
+        newobj instance void class C25::.ctor()
+        callvirt instance bool* class C1::M15()
+        pop
+        ldstr "Succeeded"
+        call void [System.Console]System.Console::WriteLine(string)
+        ret
+    }
+
+    .method public static void RunTestC26() noinlining
+    {
+        newobj instance void class C26::.ctor()
+        callvirt instance char& class C1::M14()
+        pop
+        ldstr "Succeeded"
+        call void [System.Console]System.Console::WriteLine(string)
+        ret
+    }
+
+    .method public static void RunTestC27() noinlining
+    {
+        newobj instance void class C27::.ctor()
+        callvirt instance char& class C1::M14()
+        pop
+        ldstr "Succeeded"
+        call void [System.Console]System.Console::WriteLine(string)
+        ret
+    }
+
+    .method public static void RunTestC28() noinlining
+    {
+        newobj instance void class C28::.ctor()
+        callvirt instance method explicit instance int32 *(class Base) class C1::M9()
+        pop
+        ldstr "Succeeded"
+        call void [System.Console]System.Console::WriteLine(string)
+        ret
+    }
+
+    .method public static void RunTestC29() noinlining
+    {
+        newobj instance void class C29::.ctor()
+        callvirt instance method explicit instance int32 *(class Base) class C1::M9()
         pop
         ldstr "Succeeded"
         call void [System.Console]System.Console::WriteLine(string)
@@ -1030,12 +1168,120 @@ CC22:
             leave.s CC23
         }
 CC23:
-        ldstr "C21: override bool* M15() by uint32* M15()"
+        ldstr "C23: override bool* M15() by uint32* M15()"
         call void [System.Console]System.Console::WriteLine(string)
 
         .try
         {
             call void Main::RunTestC23()
+            ldc.i4.0
+            stloc.0
+            leave.s CC24
+        }
+        catch [mscorlib]System.TypeLoadException
+        {
+            ldstr "Caught expected TypeLoadException:"
+            call       void [System.Console]System.Console::WriteLine(string)
+            call       void [System.Console]System.Console::WriteLine(object)
+            leave.s CC24
+        }
+CC24:
+        ldstr "C24: override bool* M15() by bool& M15()"
+        call void [System.Console]System.Console::WriteLine(string)
+
+        .try
+        {
+            call void Main::RunTestC24()
+            ldc.i4.0
+            stloc.0
+            leave.s CC25
+        }
+        catch [mscorlib]System.TypeLoadException
+        {
+            ldstr "Caught expected TypeLoadException:"
+            call       void [System.Console]System.Console::WriteLine(string)
+            call       void [System.Console]System.Console::WriteLine(object)
+            leave.s CC25
+        }
+CC25:
+        ldstr "C25: override bool* M15() by int32 *(class Base) M15()"
+        call void [System.Console]System.Console::WriteLine(string)
+
+        .try
+        {
+            call void Main::RunTestC25()
+            ldc.i4.0
+            stloc.0
+            leave.s CC26
+        }
+        catch [mscorlib]System.TypeLoadException
+        {
+            ldstr "Caught expected TypeLoadException:"
+            call       void [System.Console]System.Console::WriteLine(string)
+            call       void [System.Console]System.Console::WriteLine(object)
+            leave.s CC26
+        }
+CC26:
+        ldstr "C26: override char& M14() by char* M14()"
+        call void [System.Console]System.Console::WriteLine(string)
+
+        .try
+        {
+            call void Main::RunTestC26()
+            ldc.i4.0
+            stloc.0
+            leave.s CC27
+        }
+        catch [mscorlib]System.TypeLoadException
+        {
+            ldstr "Caught expected TypeLoadException:"
+            call       void [System.Console]System.Console::WriteLine(string)
+            call       void [System.Console]System.Console::WriteLine(object)
+            leave.s CC27
+        }
+CC27:
+        ldstr "C27: override char& M14() by int32 *(class Base) M14()"
+        call void [System.Console]System.Console::WriteLine(string)
+
+        .try
+        {
+            call void Main::RunTestC27()
+            ldc.i4.0
+            stloc.0
+            leave.s CC28
+        }
+        catch [mscorlib]System.TypeLoadException
+        {
+            ldstr "Caught expected TypeLoadException:"
+            call       void [System.Console]System.Console::WriteLine(string)
+            call       void [System.Console]System.Console::WriteLine(object)
+            leave.s CC28
+        }
+CC28:
+        ldstr "C28: override int32 *(class Base) M9() by int32* M9()"
+        call void [System.Console]System.Console::WriteLine(string)
+
+        .try
+        {
+            call void Main::RunTestC28()
+            ldc.i4.0
+            stloc.0
+            leave.s CC29
+        }
+        catch [mscorlib]System.TypeLoadException
+        {
+            ldstr "Caught expected TypeLoadException:"
+            call       void [System.Console]System.Console::WriteLine(string)
+            call       void [System.Console]System.Console::WriteLine(object)
+            leave.s CC29
+        }
+CC29:
+        ldstr "C29: override int32 *(class Base) M9() by int32& M9()"
+        call void [System.Console]System.Console::WriteLine(string)
+
+        .try
+        {
+            call void Main::RunTestC29()
             ldc.i4.0
             stloc.0
             leave.s DONE
