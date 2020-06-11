@@ -1194,7 +1194,7 @@ void CodeGen::genUnspillRegIfNeeded(GenTree* tree)
             unsigned regCount = unspillTree->GetMultiRegCount();
             for (unsigned i = 0; i < regCount; ++i)
             {
-                genUnspillRegIfNeeded(unspillTree, i);
+                genUnspillRegIfNeeded(tree, i);
             }
             unspillTree->gtFlags &= ~GTF_SPILLED;
         }
