@@ -51,6 +51,15 @@
     <HelixType Condition="'$(BuildAllConfigurations)' == 'true'">test/functional/packaging/</HelixType>
   </PropertyGroup>
 
+  <PropertyGroup Condition="'$(TargetOS)' == 'Browser'">
+    <IncludeDotNetCli>true</IncludeDotNetCli>
+    <DotNetCliPackageType>sdk</DotNetCliPackageType>
+    <DotNetCliVersion>3.1.201</DotNetCliVersion>
+    <HelixPreCommands>$(HelixPreCommands) "$HELIX_CORRELATION_PAYLOAD"/dotnet/dotnet tool install --tool-path "$HELIX_CORRELATION_PAYLOAD"/xharness-cli --version $(MicrosoftDotNetXHarnessTestRunnersCLIVersion) --add-source https://dnceng.pkgs.visualstudio.com/public/_packaging/dotnet-eng/nuget/v3/index.json Microsoft.DotNet.XHarness.CLI;</HelixPreCommands>
+    <HelixPreCommands>$(HelixPreCommands) export DOTNET_ROOT="$HELIX_CORRELATION_PAYLOAD"/dotnet;</HelixPreCommands>
+    <HelixPreCommands>$(HelixPreCommands) export PATH="$HELIX_CORRELATION_PAYLOAD"/xharness-cli:$PATH;</HelixPreCommands>
+  </PropertyGroup>
+
   <PropertyGroup Condition="'$(HelixCommand)' == '' and '$(BuildAllConfigurations)' == 'true'">
     <HelixPreCommands>set DOTNET_CLI_TELEMETRY_OPTOUT=1;set DOTNET_SKIP_FIRST_TIME_EXPERIENCE=1;set DOTNET_MULTILEVEL_LOOKUP=0</HelixPreCommands>
 
