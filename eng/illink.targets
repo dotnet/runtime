@@ -191,7 +191,6 @@
     <ILLink AssemblyPaths="$(ILLinkTrimInputAssembly)"
             RootAssemblyNames=""
             OutputDirectory="$(ILLinkTrimOutputPath)"
-            ClearInitLocals="$(ILLinkClearInitLocals)"
             ExtraArgs="$(ILLinkArgs)"
             ToolExe="$(_DotNetHostFileName)"
             ToolPath="$(_DotNetHostDirectory)" />

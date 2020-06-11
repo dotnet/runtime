@@ -78,7 +78,7 @@ namespace System.Text.Json.Serialization
 
             int parameterCount = constructor.GetParameters().Length;
 
-            Debug.Assert(parameterCount < JsonConstants.UnboxedParameterCountThreshold);
+            Debug.Assert(parameterCount <= JsonConstants.UnboxedParameterCountThreshold);
 
             return (arg0, arg1, arg2, arg3) =>
             {

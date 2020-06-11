@@ -36,15 +36,20 @@ namespace ILCompiler
 
     public class MethodProfileData
     {
-        public MethodProfileData(MethodDesc method, MethodProfilingDataFlags flags, uint scenarioMask)
+        public MethodProfileData(MethodDesc method, MethodProfilingDataFlags flags, double exclusiveWeight, Dictionary<MethodDesc, int> callWeights, uint scenarioMask)
         {
             Method = method;
             Flags = flags;
             ScenarioMask = scenarioMask;
+            ExclusiveWeight = exclusiveWeight;
+            CallWeights = callWeights;
         }
+
         public readonly MethodDesc Method;
         public readonly MethodProfilingDataFlags Flags;
         public readonly uint ScenarioMask;
+        public readonly double ExclusiveWeight;
+        public readonly Dictionary<MethodDesc, int> CallWeights;
     }
 
     public abstract class ProfileData
@@ -179,7 +184,27 @@ namespace ILCompiler
                 MethodProfileData dataToMerge;
                 if (mergedProfileData.TryGetValue(data.Method, out dataToMerge))
                 {
-                    mergedProfileData[data.Method] = new MethodProfileData(data.Method, dataToMerge.Flags | data.Flags, dataToMerge.ScenarioMask | data.ScenarioMask);
+                    var mergedCallWeights = data.CallWeights;
+                    if (mergedCallWeights == null)
+                    {
+                        mergedCallWeights = dataToMerge.CallWeights;
+                    }
+                    else if (dataToMerge.CallWeights != null)
+                    {
+                        mergedCallWeights = new Dictionary<MethodDesc, int>(data.CallWeights);
+                        foreach (var entry in dataToMerge.CallWeights)
+                        {
+                            if (mergedCallWeights.TryGetValue(entry.Key, out var initialWeight))
+                            {
+                                mergedCallWeights[entry.Key] = initialWeight + entry.Value;
+                            }
+                            else
+                            {
+                                mergedCallWeights[entry.Key] = entry.Value;
+                            }
+                        }
+                    }
+                    mergedProfileData[data.Method] = new MethodProfileData(data.Method, dataToMerge.Flags | data.Flags, data.ExclusiveWeight + dataToMerge.ExclusiveWeight, mergedCallWeights, dataToMerge.ScenarioMask | data.ScenarioMask);
                 }
                 else
                 {
@@ -213,6 +238,15 @@ namespace ILCompiler
         public bool IsMethodInProfileData(MethodDesc method)
         {
             return _placedProfileMethodsAll.Contains(method);
+        }
+
+        public MethodProfileData this[MethodDesc method]
+        {
+            get
+            {
+                _mergedProfileData.TryGetValue(method, out var profileData);
+                return profileData;
+            }
         }
     }
 }

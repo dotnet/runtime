@@ -332,6 +332,7 @@ namespace System.Net.Security.Tests
             using (var stream = new VirtualNetworkStream(network, isServer: false))
             using (var negotiateStream = new NegotiateStream(stream))
             {
+                stream.DelayFlush = true;
                 Task task = negotiateStream.FlushAsync();
 
                 Assert.False(task.IsCompleted);

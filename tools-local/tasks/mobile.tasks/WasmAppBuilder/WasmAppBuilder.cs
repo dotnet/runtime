@@ -108,6 +108,8 @@ public class WasmAppBuilder : Task
 
     private void Add(MetadataLoadContext mlc, Assembly assembly)
     {
+        if (_assemblies!.ContainsKey(assembly.GetName().Name!))
+            return;
         _assemblies![assembly.GetName().Name!] = assembly;
         foreach (var aname in assembly.GetReferencedAssemblies())
         {

@@ -45,6 +45,8 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         public List<ISymbolNode> Fixups => _fixups;
 
+        public int Size => _methodCode.Data.Length;
+
         public bool IsEmpty => _methodCode.Data.Length == 0;
 
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly)
@@ -293,6 +295,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             Debug.Assert(_debugEHClauseInfos == null);
             _debugEHClauseInfos = debugEHClauseInfos;
         }
+
         public override int CompareToImpl(ISortableNode other, CompilerComparer comparer)
         {
             MethodWithGCInfo otherNode = (MethodWithGCInfo)other;

@@ -181,10 +181,11 @@ precompile_coreroot_fx()
     local totalPrecompiled=0
     local failedToPrecompile=0
     local compositeCommandLine="${__DotNetCli}"
-    compositeCommandLine+=" $__BinDir/crossgen2/crossgen2.dll"
+    compositeCommandLine+=" $__Crossgen2Dll"
     compositeCommandLine+=" --composite"
     compositeCommandLine+=" -O"
     compositeCommandLine+=" --out:$outputDir/framework-r2r.dll"
+    compositeCommandLine+=" --targetarch ${__BuildArch}"
     declare -a failedAssemblies
 
     filesToPrecompile=$(find -L "$overlayDir" -maxdepth 1 -iname Microsoft.\*.dll -o -iname System.\*.dll -o -iname netstandard.dll -o -iname mscorlib.dll -type f)
@@ -206,7 +207,7 @@ precompile_coreroot_fx()
         fi
 
         if [[ "$__DoCrossgen2" != 0 ]]; then
-            commandLine="${__DotNetCli} $overlayDir/crossgen2/crossgen2.dll $crossgen2References -O --inputbubble --out $outputDir/$(basename $filename) $filename"
+            commandLine="${__DotNetCli} $__Crossgen2Dll $crossgen2References -O --inputbubble --out $outputDir/$(basename $filename) $filename --targetarch ${__BuildArch}"
         fi
 
         echo Precompiling "$filename"
@@ -696,6 +697,7 @@ if [[ "$__CrossBuild" == 1 ]]; then
 fi
 __CrossgenCoreLibLog="$__LogsDir/CrossgenCoreLib_$__TargetOS.$BuildArch.$__BuildType.log"
 __CrossgenExe="$__CrossComponentBinDir/crossgen"
+__Crossgen2Dll="$__CrossComponentBinDir/crossgen2/crossgen2.dll"
 
 # CI_SPECIFIC - On CI machines, $HOME may not be set. In such a case, create a subfolder and set the variable to it.
 # This is needed by CLI to function.
