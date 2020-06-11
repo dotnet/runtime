@@ -1137,11 +1137,7 @@ namespace System.Reflection.Emit
             Emit(OpCodes.Throw);
         }
 
-        [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)]
-        private static Type GetConsoleType()
-        {
-            return Type.GetType("System.Console, System.Console", throwOnError: true)!;
-        }
+        private const string ConsoleTypeFullName = "System.Console, System.Console";
 
         public virtual void EmitWriteLine(string value)
         {
@@ -1150,7 +1146,8 @@ namespace System.Reflection.Emit
             Emit(OpCodes.Ldstr, value);
             Type[] parameterTypes = new Type[1];
             parameterTypes[0] = typeof(string);
-            MethodInfo mi = GetConsoleType().GetMethod("WriteLine", parameterTypes)!;
+            Type consoleType = Type.GetType(ConsoleTypeFullName, throwOnError: true)!;
+            MethodInfo mi = consoleType.GetMethod("WriteLine", parameterTypes)!;
             Emit(OpCodes.Call, mi);
         }
 
@@ -1166,7 +1163,8 @@ namespace System.Reflection.Emit
                 throw new ArgumentException(SR.InvalidOperation_BadILGeneratorUsage);
             }
 
-            MethodInfo prop = GetConsoleType().GetMethod("get_Out")!;
+            Type consoleType = Type.GetType(ConsoleTypeFullName, throwOnError: true)!;
+            MethodInfo prop = consoleType.GetMethod("get_Out")!;
             Emit(OpCodes.Call, prop);
             Emit(OpCodes.Ldloc, localBuilder);
             Type[] parameterTypes = new Type[1];
@@ -1197,7 +1195,8 @@ namespace System.Reflection.Emit
                 throw new ArgumentNullException(nameof(fld));
             }
 
-            MethodInfo prop = GetConsoleType().GetMethod("get_Out")!;
+            Type consoleType = Type.GetType(ConsoleTypeFullName, throwOnError: true)!;
+            MethodInfo prop = consoleType.GetMethod("get_Out")!;
             Emit(OpCodes.Call, prop);
 
             if ((fld.Attributes & FieldAttributes.Static) != 0)

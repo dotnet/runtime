@@ -888,11 +888,7 @@ namespace System.Reflection.Emit
             Emit(opcode, helper);
         }
 
-        [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)]
-        private static Type GetConsoleType()
-        {
-            return Type.GetType("System.Console, System.Console", throwOnError: true)!;
-        }
+        private const string ConsoleTypeFullName = "System.Console, System.Console";
 
         public virtual void EmitWriteLine(FieldInfo fld)
         {
@@ -909,7 +905,8 @@ namespace System.Reflection.Emit
                 Emit(OpCodes.Ldarg_0);
                 Emit(OpCodes.Ldfld, fld);
             }
-            Emit(OpCodes.Call, GetConsoleType().GetMethod("WriteLine", new Type[1] { fld.FieldType })!);
+            Type consoleType = Type.GetType(ConsoleTypeFullName, throwOnError: true)!;
+            Emit(OpCodes.Call, consoleType.GetMethod("WriteLine", new Type[1] { fld.FieldType })!);
         }
 
         public virtual void EmitWriteLine(LocalBuilder localBuilder)
@@ -921,13 +918,15 @@ namespace System.Reflection.Emit
             // The MS implementation does not check for valuetypes here but it
             // should.
             Emit(OpCodes.Ldloc, localBuilder);
-            Emit(OpCodes.Call, GetConsoleType().GetMethod("WriteLine", new Type[1] { localBuilder.LocalType })!);
+            Type consoleType = Type.GetType(ConsoleTypeFullName, throwOnError: true)!;
+            Emit(OpCodes.Call, consoleType.GetMethod("WriteLine", new Type[1] { localBuilder.LocalType })!);
         }
 
         public virtual void EmitWriteLine(string value)
         {
             Emit(OpCodes.Ldstr, value);
-            Emit(OpCodes.Call, GetConsoleType().GetMethod("WriteLine", new Type[1] { typeof(string) })!);
+            Type consoleType = Type.GetType(ConsoleTypeFullName, throwOnError: true)!;
+            Emit(OpCodes.Call, consoleType.GetMethod("WriteLine", new Type[1] { typeof(string) })!);
         }
 
         public virtual void EndExceptionBlock()
