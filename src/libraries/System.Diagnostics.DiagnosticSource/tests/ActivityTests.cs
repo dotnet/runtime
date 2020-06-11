@@ -188,30 +188,6 @@ namespace System.Diagnostics.Tests
             Assert.Equal('#', activity.Id[activity.Id.Length - 1]);
         }
 
-        /// <summary>
-        /// Tests overflow in Id generation when parentId has a single (root) node
-        /// </summary>
-        [Fact]
-        public void ActivityIdNonHierarchicalOverflow()
-        {
-            // find out Activity Id length on this platform in this AppDomain
-            Activity testActivity = new Activity("activity")
-                .Start();
-            var expectedIdLength = testActivity.Id.Length;
-            testActivity.Stop();
-
-            // check that if parentId '|aaa...a' 1024 bytes long is set with single node (no dots or underscores in the Id)
-            // it causes overflow during Id generation, and new root Id is generated for the new Activity
-            var parentId = '|' + new string('a', 1022) + '.';
-
-            var activity = new Activity("activity")
-                .SetParentId(parentId)
-                .Start();
-
-            Assert.Equal(parentId, activity.ParentId);
-
-            Assert.DoesNotContain('#', activity.Id);
-        }
 
         /// <summary>
         /// Tests activity start and stop
@@ -534,7 +510,7 @@ namespace System.Diagnostics.Tests
         /****** WC3 Format tests *****/
 
         [Fact]
-        public void IdFormat_HierarchicalIsDefault()
+        public void IdFormat_W3CIsDefault()
         {
             Activity activity = new Activity("activity1");
             activity.Start();
@@ -632,7 +608,7 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
-        public void IdFormat_ZeroTraceIdAndSpanIdWithHierarchicalFormat()
+        public void IdFormat_ZeroTraceIdAndSpanIdWithW3CFormat()
         {
             Activity activity = new Activity("activity");
             activity.Start();
