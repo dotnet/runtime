@@ -22,9 +22,8 @@ namespace System.Text.Tests
         {
             Encoding encoding = Encoding.GetEncoding("latin1");
             Assert.Equal(1, encoding.EncoderFallback.MaxCharCount);
-            Assert.Equal(28591, encoding.EncoderFallback.GetHashCode());
-            Assert.Equal(1, encoding.DecoderFallback.MaxCharCount);
-            Assert.Equal(28591, encoding.DecoderFallback.GetHashCode());
+            Assert.True(encoding.EncoderFallback.IsLatin1BestFitFallback());
+            Assert.Equal(DecoderFallback.ReplacementFallback, encoding.DecoderFallback);
         }
 
         public static IEnumerable<object[]> Encodings_TestData()

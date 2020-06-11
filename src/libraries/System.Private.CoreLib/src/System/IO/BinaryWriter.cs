@@ -351,7 +351,7 @@ namespace System.IO
 
         // Writes a length-prefixed string to this stream in the BinaryWriter's
         // current Encoding. This method first writes the length of the string as
-        // a four-byte unsigned integer, and then writes that many characters
+        // an encoded unsigned integer with variable length, and then writes that many characters
         // to the stream.
         //
         public virtual unsafe void Write(string value)
@@ -359,8 +359,8 @@ namespace System.IO
             if (value == null)
                 throw new ArgumentNullException(nameof(value));
 
-            int len = _encoding.GetByteCount(value);
-            Write7BitEncodedInt(len);
+            int totalBytes = _encoding.GetByteCount(value);
+            Write7BitEncodedInt(totalBytes);
 
             if (_largeByteBuffer == null)
             {
@@ -368,54 +368,88 @@ namespace System.IO
                 _maxChars = _largeByteBuffer.Length / _encoding.GetMaxByteCount(1);
             }
 
-            if (len <= _largeByteBuffer.Length)
+            if (totalBytes <= _largeByteBuffer.Length)
             {
-                _encoding.GetBytes(value, 0, value.Length, _largeByteBuffer, 0);
-                OutStream.Write(_largeByteBuffer, 0, len);
+                _encoding.GetBytes(value, _largeByteBuffer);
+                OutStream.Write(_largeByteBuffer, 0, totalBytes);
+                return;
             }
-            else
+
+            int numLeft = value.Length;
+            int charStart = 0;
+            ReadOnlySpan<char> str = value;
+
+            // The previous implementation had significant issues packing encoded
+            // characters efficiently into the byte buffer. This was due to the assumption,
+            // that every input character will take up the maximum possible size of a character in any given encoding,
+            // thus resulting in a lot of unused space within the byte buffer.
+            // However, in scenarios where the number of characters aligns perfectly with the buffer size the new
+            // implementation saw some performance regressions, therefore in such scenarios (ASCIIEncoding)
+            // work will be delegated to the previous implementation.
+            if (_encoding.GetType() == typeof(UTF8Encoding))
             {
-                // Aggressively try to not allocate memory in this loop for
-                // runtime performance reasons.  Use an Encoder to write out
-                // the string correctly (handling surrogates crossing buffer
-                // boundaries properly).
-                int charStart = 0;
-                int numLeft = value.Length;
-#if DEBUG
-                int totalBytes = 0;
-#endif
                 while (numLeft > 0)
                 {
-                    // Figure out how many chars to process this round.
-                    int charCount = (numLeft > _maxChars) ? _maxChars : numLeft;
-                    int byteLen;
+                    _encoder.Convert(str.Slice(charStart), _largeByteBuffer, numLeft <= _maxChars, out int charCount, out int byteCount, out bool _);
 
-                    checked
-                    {
-                        if (charStart < 0 || charCount < 0 || charStart > value.Length - charCount)
-                        {
-                            throw new ArgumentOutOfRangeException(nameof(value));
-                        }
-                        fixed (char* pChars = value)
-                        {
-                            fixed (byte* pBytes = &_largeByteBuffer[0])
-                            {
-                                byteLen = _encoder.GetBytes(pChars + charStart, charCount, pBytes, _largeByteBuffer.Length, charCount == numLeft);
-                            }
-                        }
-                    }
-#if DEBUG
-                    totalBytes += byteLen;
-                    Debug.Assert(totalBytes <= len && byteLen <= _largeByteBuffer.Length, "BinaryWriter::Write(String) - More bytes encoded than expected!");
-#endif
-                    OutStream.Write(_largeByteBuffer, 0, byteLen);
+                    OutStream.Write(_largeByteBuffer, 0, byteCount);
                     charStart += charCount;
                     numLeft -= charCount;
                 }
-#if DEBUG
-                Debug.Assert(totalBytes == len, "BinaryWriter::Write(String) - Didn't write out all the bytes!");
-#endif
             }
+
+            else
+            {
+                WriteWhenEncodingIsNotUtf8(value, totalBytes);
+            }
+        }
+
+        private unsafe void WriteWhenEncodingIsNotUtf8(string value, int len)
+        {
+            // This method should only be called from BinaryWriter(string), which does a null-check
+            Debug.Assert(_largeByteBuffer != null);
+
+            int numLeft = value.Length;
+            int charStart = 0;
+
+            // Aggressively try to not allocate memory in this loop for
+            // runtime performance reasons.  Use an Encoder to write out
+            // the string correctly (handling surrogates crossing buffer
+            // boundaries properly).
+#if DEBUG
+            int totalBytes = 0;
+#endif
+            while (numLeft > 0)
+            {
+                // Figure out how many chars to process this round.
+                int charCount = (numLeft > _maxChars) ? _maxChars : numLeft;
+                int byteLen;
+
+                checked
+                {
+                    if (charStart < 0 || charCount < 0 || charStart > value.Length - charCount)
+                    {
+                        throw new ArgumentOutOfRangeException(nameof(value));
+                    }
+                    fixed (char* pChars = value)
+                    {
+                        fixed (byte* pBytes = &_largeByteBuffer[0])
+                        {
+                            byteLen = _encoder.GetBytes(pChars + charStart, charCount, pBytes, _largeByteBuffer.Length, charCount == numLeft);
+                        }
+                    }
+                }
+#if DEBUG
+                totalBytes += byteLen;
+                Debug.Assert(totalBytes <= len && byteLen <= _largeByteBuffer.Length, "BinaryWriter::Write(String) - More bytes encoded than expected!");
+#endif
+                OutStream.Write(_largeByteBuffer, 0, byteLen);
+                charStart += charCount;
+                numLeft -= charCount;
+            }
+#if DEBUG
+            Debug.Assert(totalBytes == len, "BinaryWriter::Write(String) - Didn't write out all the bytes!");
+#endif
         }
 
         public virtual void Write(ReadOnlySpan<byte> buffer)

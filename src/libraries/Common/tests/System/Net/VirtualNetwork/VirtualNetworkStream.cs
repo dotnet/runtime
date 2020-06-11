@@ -36,10 +36,17 @@ namespace System.Net.Test.Common
 
         public override long Position { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
 
+        public bool DelayFlush { get; set; }
+
         public override void Flush() => HasBeenSyncFlushed = true;
 
         public override Task FlushAsync(CancellationToken cancellationToken)
         {
+            if (!DelayFlush)
+            {
+                return Task.CompletedTask;
+            }
+
             if (_flushTcs != null)
             {
                 throw new InvalidOperationException();

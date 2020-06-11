@@ -38,8 +38,8 @@ namespace ILCompiler
         public bool Resilient { get; set; }
         public bool Map { get; set; }
         public int Parallelism { get; set; }
-
-
+        public ReadyToRunMethodLayoutAlgorithm MethodLayout { get; set; }
+        public ReadyToRunFileLayoutAlgorithm FileLayout { get; set; }
         public string SingleMethodTypeName { get; set; }
         public string SingleMethodName { get; set; }
         public string[] SingleMethodGenericArgs { get; set; }
@@ -177,6 +177,14 @@ namespace ILCompiler
                 new Option(new[] { "--map" }, SR.MapFileOption)
                 {
                     Argument = new Argument<bool>()
+                },
+                new Option(new[] { "--method-layout" }, SR.MethodLayoutOption)
+                {
+                    Argument = new Argument<ReadyToRunMethodLayoutAlgorithm>()
+                },
+                new Option(new[] { "--file-layout" }, SR.FileLayoutOption)
+                {
+                    Argument = new Argument<ReadyToRunFileLayoutAlgorithm>()
                 },
             };
         }

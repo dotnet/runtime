@@ -169,6 +169,7 @@
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\TypesTableNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\Win32ResourcesNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRunSymbolNodeFactory.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\SortableDependencyNodeCompilerSpecific.cs" />
     <Compile Include="Compiler\DependencyAnalysis\TypeAndMethod.cs" />
     <Compile Include="Compiler\IRootingServiceProvider.cs" />
     <Compile Include="Compiler\MethodExtensions.cs" />
@@ -183,6 +184,7 @@
     <Compile Include="Compiler\ReadyToRunCompilerContext.cs" />
     <Compile Include="Compiler\ReadyToRunCodegenCompilation.cs" />
     <Compile Include="Compiler\ReadyToRunCodegenCompilationBuilder.cs" />
+    <Compile Include="Compiler\ReadyToRunFileLayoutOptimizer.cs" />
     <Compile Include="Compiler\ReadyToRunMetadataFieldLayoutAlgorithm.cs" />
     <Compile Include="Compiler\ReadyToRunSingleAssemblyCompilationModuleGroup.cs" />
     <Compile Include="Compiler\ReadyToRunTableManager.cs" />

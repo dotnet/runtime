@@ -106,7 +106,7 @@ if [ ! -z ${RunCrossGen2+x} ]%3B then
     echo -r:$CORE_ROOT/System.*.dll>>$__ResponseFile
     echo -r:$CORE_ROOT/Microsoft.*.dll>>$__ResponseFile
     echo -r:$CORE_ROOT/mscorlib.dll>>$__ResponseFile
-    echo --targetarch=x64>>$__ResponseFile
+    echo --targetarch:$(TargetArchitecture)>>$__ResponseFile
     echo -O>>$__ResponseFile
 
     echo "Response file: $__ResponseFile"
@@ -204,7 +204,7 @@ if defined RunCrossGen2 (
     )
 
     echo -o:!__OutputFile!>>!__ResponseFile!
-    echo --targetarch:x64>>!__ResponseFile!
+    echo --targetarch:$(TargetArchitecture)>>!__ResponseFile!
     echo -O>>!__ResponseFile!
     echo -r:!CORE_ROOT!\System.*.dll>>!__ResponseFile!
     echo -r:!CORE_ROOT!\Microsoft.*.dll>>!__ResponseFile!

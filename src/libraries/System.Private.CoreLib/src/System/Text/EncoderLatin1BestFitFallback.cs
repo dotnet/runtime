@@ -8,73 +8,31 @@
 
 using System.Diagnostics;
 using System.Globalization;
-using System.Threading;
 
 namespace System.Text
 {
-    internal class InternalEncoderBestFitFallback : EncoderFallback
+    internal sealed class EncoderLatin1BestFitFallback : EncoderFallback
     {
-        // Our variables
-        internal Encoding _encoding;
-        internal char[]? _arrayBestFit = null;
+        // Provides access to the singleton instance of this fallback mechanism
+        internal static readonly EncoderLatin1BestFitFallback SingletonInstance = new EncoderLatin1BestFitFallback();
 
-        internal InternalEncoderBestFitFallback(Encoding encoding)
+        private EncoderLatin1BestFitFallback()
         {
-            // Need to load our replacement characters table.
-            _encoding = encoding;
         }
 
         public override EncoderFallbackBuffer CreateFallbackBuffer() =>
-            new InternalEncoderBestFitFallbackBuffer(this);
+            new EncoderLatin1BestFitFallbackBuffer();
 
         // Maximum number of characters that this instance of this fallback could return
         public override int MaxCharCount => 1;
-
-        public override bool Equals(object? value) =>
-            value is InternalEncoderBestFitFallback that &&
-            _encoding.CodePage == that._encoding.CodePage;
-
-        public override int GetHashCode() => _encoding.CodePage;
     }
 
-    internal sealed class InternalEncoderBestFitFallbackBuffer : EncoderFallbackBuffer
+    internal sealed partial class EncoderLatin1BestFitFallbackBuffer : EncoderFallbackBuffer
     {
         // Our variables
         private char _cBestFit = '\0';
-        private readonly InternalEncoderBestFitFallback _oFallback;
         private int _iCount = -1;
         private int _iSize;
-
-        // Private object for locking instead of locking on a public type for SQL reliability work.
-        private static object? s_InternalSyncObject;
-        private static object InternalSyncObject
-        {
-            get
-            {
-                if (s_InternalSyncObject == null)
-                {
-                    object o = new object();
-                    Interlocked.CompareExchange<object?>(ref s_InternalSyncObject, o, null);
-                }
-                return s_InternalSyncObject;
-            }
-        }
-
-        // Constructor
-        public InternalEncoderBestFitFallbackBuffer(InternalEncoderBestFitFallback fallback)
-        {
-            _oFallback = fallback;
-
-            if (_oFallback._arrayBestFit == null)
-            {
-                // Lock so we don't confuse ourselves.
-                lock (InternalSyncObject)
-                {
-                    // Double check before we do it again.
-                    _oFallback._arrayBestFit ??= fallback._encoding.GetBestFitUnicodeToBytesData();
-                }
-            }
-        }
 
         // Fallback methods
         public override bool Fallback(char charUnknown, int index)
@@ -82,7 +40,7 @@ namespace System.Text
             // If we had a buffer already we're being recursive, throw, it's probably at the suspect
             // character in our array.
             // Shouldn't be able to get here for all of our code pages, table would have to be messed up.
-            Debug.Assert(_iCount < 1, "[InternalEncoderBestFitFallbackBuffer.Fallback(non surrogate)] Fallback char " + ((int)_cBestFit).ToString("X4", CultureInfo.InvariantCulture) + " caused recursive fallback");
+            Debug.Assert(_iCount < 1, "[EncoderLatin1BestFitFallbackBuffer.Fallback(non surrogate)] Fallback char " + ((int)_cBestFit).ToString("X4", CultureInfo.InvariantCulture) + " caused recursive fallback");
 
             _iCount = _iSize = 1;
             _cBestFit = TryBestFit(charUnknown);
@@ -108,7 +66,7 @@ namespace System.Text
             // If we had a buffer already we're being recursive, throw, it's probably at the suspect
             // character in our array.  0 is processing last character, < 0 is not falling back
             // Shouldn't be able to get here, table would have to be messed up.
-            Debug.Assert(_iCount < 1, "[InternalEncoderBestFitFallbackBuffer.Fallback(surrogate)] Fallback char " + ((int)_cBestFit).ToString("X4", CultureInfo.InvariantCulture) + " caused recursive fallback");
+            Debug.Assert(_iCount < 1, "[EncoderLatin1BestFitFallbackBuffer.Fallback(surrogate)] Fallback char " + ((int)_cBestFit).ToString("X4", CultureInfo.InvariantCulture) + " caused recursive fallback");
 
             // Go ahead and get our fallback, surrogates don't have best fit
             _cBestFit = '?';
@@ -166,8 +124,8 @@ namespace System.Text
         {
             // Need to figure out our best fit character, low is beginning of array, high is 1 AFTER end of array
             int lowBound = 0;
-            Debug.Assert(_oFallback._arrayBestFit != null);
-            int highBound = _oFallback._arrayBestFit.Length;
+            Debug.Assert(s_arrayCharBestFit != null);
+            int highBound = s_arrayCharBestFit.Length;
             int index;
 
             // Binary search the array
@@ -179,13 +137,13 @@ namespace System.Text
                 // Also note that index can never == highBound (because diff is rounded down)
                 index = ((iDiff / 2) + lowBound) & 0xFFFE;
 
-                char cTest = _oFallback._arrayBestFit[index];
+                char cTest = s_arrayCharBestFit[index];
                 if (cTest == cUnknown)
                 {
                     // We found it
-                    Debug.Assert(index + 1 < _oFallback._arrayBestFit.Length,
-                        "[InternalEncoderBestFitFallbackBuffer.TryBestFit]Expected replacement character at end of array");
-                    return _oFallback._arrayBestFit[index + 1];
+                    Debug.Assert(index + 1 < s_arrayCharBestFit.Length,
+                        "[EncoderLatin1BestFitFallbackBuffer.TryBestFit]Expected replacement character at end of array");
+                    return s_arrayCharBestFit[index + 1];
                 }
                 else if (cTest < cUnknown)
                 {
@@ -201,12 +159,12 @@ namespace System.Text
 
             for (index = lowBound; index < highBound; index += 2)
             {
-                if (_oFallback._arrayBestFit[index] == cUnknown)
+                if (s_arrayCharBestFit[index] == cUnknown)
                 {
                     // We found it
-                    Debug.Assert(index + 1 < _oFallback._arrayBestFit.Length,
-                        "[InternalEncoderBestFitFallbackBuffer.TryBestFit]Expected replacement character at end of array");
-                    return _oFallback._arrayBestFit[index + 1];
+                    Debug.Assert(index + 1 < s_arrayCharBestFit.Length,
+                        "[EncoderLatin1BestFitFallbackBuffer.TryBestFit]Expected replacement character at end of array");
+                    return s_arrayCharBestFit[index + 1];
                 }
             }
 
