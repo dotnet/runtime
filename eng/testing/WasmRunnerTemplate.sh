@@ -7,7 +7,11 @@ cd $EXECUTION_DIR
 
 XHARNESS_OUT="$EXECUTION_DIR/xharness-output"
 
-dotnet xharness wasm test --engine=$JAVASCRIPT_ENGINE \
+if [ ! -x "$(command -v xharness)" ]; then
+	HARNESS_RUNNER="dotnet"
+fi
+
+$HARNESS_RUNNER xharness wasm test --engine=$JAVASCRIPT_ENGINE \
     --js-file=runtime.js -v \
     --output-directory=$XHARNESS_OUT \
     -- --enable-gc --run WasmTestRunner.dll ${@:2}
