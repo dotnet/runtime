@@ -11,7 +11,7 @@ namespace System.Runtime.CompilerServices
     /// <remarks>
     /// When one or more valid methods
     /// with this attribute are found in a compilation, the compiler will
-    /// emit a `&lt;Module&gt;..cctor` which calls each of the attributed methods.
+    /// emit a module initializer which calls each of the attributed methods.
     ///
     /// Certain requirements are imposed on any method targeted with this attribute:
     /// - The method must be `static`.
@@ -19,8 +19,7 @@ namespace System.Runtime.CompilerServices
     /// - The method must be parameterless.
     /// - The method must return `void`.
     /// - The method must not be generic or be contained in a generic type.
-    /// - The method must be accessible from the `&lt;Module&gt;` class.
-    ///   - This means the method's effective accessibility must be `internal` or `public`.
+    ///  - The method's effective accessibility must be `internal` or `public`.
     ///
     /// The specification for module initializers in the .NET runtime can be found here:
     /// https://github.com/dotnet/runtime/blob/master/docs/design/specs/Ecma-335-Augments.md#module-initializer
