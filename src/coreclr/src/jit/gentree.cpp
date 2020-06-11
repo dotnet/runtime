@@ -15756,9 +15756,14 @@ void Compiler::gtExtractSideEffList(GenTree*    expr,
     while (!extractor.m_sideEffects.Empty())
     {
         GenTree* expr = extractor.m_sideEffects.Pop();
-        // Change dead indirections to null checks, unless we're in CSE in which case
-        // we can't change it.
-        if ((flags & GTF_IS_IN_CSE) == 0)
+        // Change dead indirections to null checks, if we're in the backend.
+        // We'd like to do this anytime we're *not* in CSE, but that causes us to
+        // miss cases where we could eliminate an indirection in a loop because there's
+        // a dead indirection prior to the loop. What we'd like this condition to be
+        // is:
+        //     if ((flags & GTF_IS_IN_CSE) == 0)
+        // And while this gives a net improvement in code size, there are many regressions.
+        if (compRationalIRForm)
         {
             expr = gtFixupDeadIndirection(expr, block);
         }
