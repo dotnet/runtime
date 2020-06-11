@@ -31,11 +31,12 @@ namespace Mono.Linker.Steps
 
 		protected override void Process ()
 		{
-			if (_resource != null && Context.StripSubstitutions)
-				Context.Annotations.AddResourceToRemove (_resourceAssembly, _resource);
-
-			if (_resource != null && Context.IgnoreSubstitutions)
-				return;
+			if (_resource != null) {
+				if (Context.StripSubstitutions)
+					Context.Annotations.AddResourceToRemove (_resourceAssembly, _resource);
+				if (Context.IgnoreSubstitutions)
+					return;
+			}
 
 			ReadSubstitutions (_document);
 		}

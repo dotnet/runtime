@@ -104,7 +104,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 				res.Source.FileMustExist ().Copy (InputDirectory.Combine (res.DestinationFileName));
 			}
 
-			foreach (var res in metadataProvider.GetAttributeDefinitionFiles ()) {
+			foreach (var res in metadataProvider.GetLinkAttributesFiles ()) {
 				res.Source.FileMustExist ().Copy (InputDirectory.Combine (res.DestinationFileName));
 			}
 

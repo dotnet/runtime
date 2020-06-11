@@ -1,0 +1,11 @@
+﻿<linker>
+  <assembly fullname="test, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null">
+    <type fullname="Mono.Linker.Tests.Cases.DataFlow.EmbeddedLinkAttributes">
+      <field name="_typeWithDefaultConstructor">
+        <attribute fullname="System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute">
+          <argument>DefaultConstructor</argument>
+        </attribute>
+      </field>
+    </type>
+  </assembly>
+</linker>

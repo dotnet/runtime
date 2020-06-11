@@ -185,6 +185,7 @@ namespace Mono.Linker
 			var resolve_from_assembly_steps = new Stack<(string, ResolveFromAssemblyStep.RootVisibility)> ();
 			var resolve_from_xml_steps = new Stack<string> ();
 			var body_substituter_steps = new Stack<string> ();
+			var xml_custom_attribute_steps = new Stack<string> ();
 			var custom_steps = new Stack<string> ();
 			var set_optimizations = new List<(CodeOptimizations, string, bool)> ();
 			bool dumpDependencies = false;
@@ -252,6 +253,12 @@ namespace Mono.Linker
 
 					case "--strip-substitutions":
 						if (!GetBoolParam (token, l => context.StripSubstitutions = l))
+							return -1;
+
+						continue;
+
+					case "--strip-link-attributes":
+						if (!GetBoolParam (token, l => context.StripLinkAttributes = l))
 							return -1;
 
 						continue;
@@ -335,6 +342,12 @@ namespace Mono.Linker
 
 						continue;
 
+					case "--ignore-link-attributes":
+						if (!GetBoolParam (token, l => context.IgnoreLinkAttributes = l))
+							return -1;
+
+						continue;
+
 					case "--disable-opt": {
 							string optName = null;
 							if (!GetStringParam (token, l => optName = l))
@@ -407,13 +420,16 @@ namespace Mono.Linker
 
 						continue;
 
-					case "--attribute-defs":
+					case "--link-attributes":
 						if (arguments.Count < 1) {
 							ErrorMissingArgument (token);
 							return -1;
 						}
 
-						if (!GetStringParam (token, l => context.AddAttributeDefinitionFile (l)))
+						if (!GetStringParam (token, l => {
+							foreach (string file in GetFiles (l))
+								xml_custom_attribute_steps.Push (file);
+						}))
 							return -1;
 
 						continue;
@@ -573,6 +589,8 @@ namespace Mono.Linker
 			foreach (var file in resolve_from_xapi_steps)
 				p.PrependStep (new ResolveFromXApiStep (new XPathDocument (file)));
 #endif
+			foreach (var file in xml_custom_attribute_steps)
+				AddLinkAttributesStep (p, file);
 
 			foreach (var file in resolve_from_xml_steps)
 				AddResolveFromXmlStep (p, file);
@@ -633,6 +651,8 @@ namespace Mono.Linker
 			//   dynamically adds steps:
 			//     ResolveFromXmlStep [optional, possibly many]
 			//     BodySubstituterStep [optional, possibly many]
+			//     LinkAttributesStep [optional, possibly many]
+			// LinkAttributesStep [optional, possibly many]
 			// DynamicDependencyLookupStep
 			// [mono only] PreserveCalendarsStep [optional]
 			// TypeMapStep
@@ -707,6 +727,11 @@ namespace Mono.Linker
 		protected virtual void AddResolveFromXmlStep (Pipeline pipeline, string file)
 		{
 			pipeline.PrependStep (new ResolveFromXmlStep (new XPathDocument (file), file));
+		}
+
+		protected virtual void AddLinkAttributesStep (Pipeline pipeline, string file)
+		{
+			pipeline.AddStepAfter (typeof (BlacklistStep), new LinkAttributesStep (new XPathDocument (file), file));
 		}
 
 		void AddBodySubstituterStep (Pipeline pipeline, string file)
@@ -1032,7 +1057,9 @@ namespace Mono.Linker
 			Console.WriteLine ("  --ignore-substitutions    Skips reading embedded substitutions. Defaults to false");
 			Console.WriteLine ("  --strip-substitutions     Remove XML substitution resources for linked assemblies. Defaults to true");
 			Console.WriteLine ("  --used-attrs-only         Attribute usage is removed if the attribute type is not used. Defaults to false");
-			Console.WriteLine ("  --attribute-defs FILE     Supplementary custom attribute definitions for attributes controlling the linker behavior.");
+			Console.WriteLine ("  --link-attributes FILE    Supplementary custom attribute definitions for attributes controlling the linker behavior.");
+			Console.WriteLine ("  --ignore-link-attributes  Skips reading embedded attributes. Defaults to false");
+			Console.WriteLine ("  --strip-link-attributes   Remove XML link attributes resources for linked assemblies. Defaults to true");
 
 			Console.WriteLine ();
 			Console.WriteLine ("Analyzer");

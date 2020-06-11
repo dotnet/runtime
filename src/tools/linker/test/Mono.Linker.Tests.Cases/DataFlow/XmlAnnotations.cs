@@ -12,7 +12,7 @@ using System.Text;
 namespace Mono.Linker.Tests.Cases.DataFlow
 {
 	[SkipKeptItemsValidation]
-	[SetupLinkerAttributeDefinitionsFile ("XmlAnnotations.xml")]
+	[SetupLinkAttributesFile ("XmlAnnotations.xml")]
 	[LogContains ("XmlAnnotations.xml: warning IL2031: Attribute type 'System.DoesNotExistattribute' could not be found")]
 	[LogContains ("XmlAnnotations.xml: warning IL2021: Could not parse argument 'NonValidArgument' specified in *", true)]
 	class XmlAnnotations

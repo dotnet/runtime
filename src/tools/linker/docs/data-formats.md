@@ -246,7 +246,7 @@ are applied.
 </linker>
 ```
 
-###Custom attribute on type
+### Custom attribute on type
 
 This allows to add a custom attribute to a class, interface, delegate, struct or enum 
 

@@ -80,12 +80,12 @@ namespace Mono.Linker.Steps
 			if (!nav.MoveToChild ("linker", _ns))
 				return;
 
-			if (_resource != null && Context.StripDescriptors)
-				Context.Annotations.AddResourceToRemove (_resourceAssembly, _resource);
-
-			if (_resource != null && Context.IgnoreDescriptors)
-				return;
-
+			if (_resource != null) {
+				if (Context.StripDescriptors)
+					Context.Annotations.AddResourceToRemove (_resourceAssembly, _resource);
+				if (Context.IgnoreDescriptors)
+					return;
+			}
 			try {
 				ProcessAssemblies (Context, nav.SelectChildren ("assembly", _ns));
 			} catch (Exception ex) when (!(ex is LinkerFatalErrorException)) {

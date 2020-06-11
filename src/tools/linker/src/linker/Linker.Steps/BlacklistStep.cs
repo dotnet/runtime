@@ -86,6 +86,17 @@ namespace Mono.Linker.Steps
 						Context.LogError ($"Error processing {rsc.Name}: {ex}", 1003);
 					}
 				}
+
+				foreach (var rsc in embeddedXml
+									.Where (res => res.Name.Equals ("ILLink.LinkAttributes.xml", StringComparison.OrdinalIgnoreCase))
+									.Cast<EmbeddedResource> ()) {
+					try {
+						Context.LogMessage (MessageContainer.CreateInfoMessage ($"Processing embedded {rsc.Name} from {asm.Name}"));
+						steps_to_add.Push (GetExternalLinkAttributesStep (rsc, asm));
+					} catch (XmlException ex) {
+						Context.LogMessage (MessageContainer.CreateErrorMessage ($"Error processing {rsc.Name} from {asm.Name}: {ex}", 1003));
+					}
+				}
 			}
 
 			foreach (var step in steps_to_add)
@@ -136,6 +147,11 @@ namespace Mono.Linker.Steps
 		IStep GetExternalSubstitutionStep (EmbeddedResource resource, AssemblyDefinition assembly)
 		{
 			return new BodySubstituterStep (GetExternalDescriptor (resource), resource, assembly, "resource " + resource.Name + " in " + assembly.FullName);
+		}
+
+		IStep GetExternalLinkAttributesStep (EmbeddedResource resource, AssemblyDefinition assembly)
+		{
+			return new LinkAttributesStep (GetExternalDescriptor (resource), resource, assembly, "resource " + resource.Name + " in " + assembly.FullName);
 		}
 
 		static ResolveFromXmlStep GetResolveStep (string descriptor)

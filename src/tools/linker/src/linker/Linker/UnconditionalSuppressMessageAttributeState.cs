@@ -146,7 +146,7 @@ namespace Mono.Linker
 
 		public void LookForModuleLevelAndGlobalSuppressions (ModuleDefinition module, ICustomAttributeProvider provider)
 		{
-			var attributes = provider.CustomAttributes.
+			var attributes = _context.CustomAttributes.GetCustomAttributes (provider).
 					Where (a => TypeRefHasUnconditionalSuppressions (a.AttributeType));
 			foreach (var instance in attributes) {
 				SuppressMessageInfo info;
