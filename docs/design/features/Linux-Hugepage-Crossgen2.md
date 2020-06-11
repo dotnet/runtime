@@ -44,7 +44,7 @@ int main(int argc, char** argv)
     if (argc != 3)
     {
         printf("Incorrect number arguments specified. Arguments are <src> <dest>");
-        return 0;
+        return 1;
     }
 
     void *addrSrc, *addrDest;
