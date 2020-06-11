@@ -10,7 +10,7 @@ using System.Diagnostics.Tracing;
 /// </summary>
 namespace ILCompiler.DependencyAnalysisFramework
 {
-    [EventSource(Name = "Microsoft-ILCompiler-Perf")]
+    [EventSource(Name = "Microsoft-ILCompiler-Graph-Perf")]
     public class PerfEventSource : EventSource
     {
         private PerfEventSource() { }
