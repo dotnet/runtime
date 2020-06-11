@@ -363,7 +363,7 @@ namespace System.Net.Security
 
                 while (true)
                 {
-                    int readBytes = await adapter.ReadAllAsync(_readHeader).ConfigureAwait(false);
+                    int readBytes = await ReadAllAsync(adapter, _readHeader).ConfigureAwait(false);
                     if (readBytes == 0)
                     {
                         return 0;
@@ -387,7 +387,7 @@ namespace System.Net.Security
                     {
                         _readBuffer = new byte[readBytes];
                     }
-                    readBytes = await adapter.ReadAllAsync(new Memory<byte>(_readBuffer, 0, readBytes)).ConfigureAwait(false);
+                    readBytes = await ReadAllAsync(adapter, new Memory<byte>(_readBuffer, 0, readBytes)).ConfigureAwait(false);
                     if (readBytes == 0)
                     {
                         // We already checked that the frame body is bigger than 0 bytes. Hence, this is an EOF.
@@ -422,6 +422,29 @@ namespace System.Net.Security
             finally
             {
                 _readInProgress = 0;
+            }
+
+            static async ValueTask<int> ReadAllAsync(TAdapter adapter, Memory<byte> buffer)
+            {
+                int length = buffer.Length;
+
+                do
+                {
+                    int bytes = await adapter.ReadAsync(buffer).ConfigureAwait(false);
+                    if (bytes == 0)
+                    {
+                        if (!buffer.IsEmpty)
+                        {
+                            throw new IOException(SR.net_io_eof);
+                        }
+                        break;
+                    }
+
+                    buffer = buffer.Slice(bytes);
+                }
+                while (!buffer.IsEmpty);
+
+                return length;
             }
         }
 
