@@ -147,24 +147,24 @@ jobs:
 
 # WebAssembly
 
-# - ${{ if containsValue(parameters.platforms, 'Browser_wasm') }}:
-#   - template: xplat-setup.yml
-#     parameters:
-#       jobTemplate: ${{ parameters.jobTemplate }}
-#       helixQueuesTemplate: ${{ parameters.helixQueuesTemplate }}
-#       osGroup: Browser
-#       archType: wasm
-#       platform: Browser_wasm
-#       container:
-#         image: ubuntu-18.04-webassembly-20200529220811-6a6da63
-#         registry: mcr
-#       jobParameters:
-#         runtimeFlavor: ${{ parameters.runtimeFlavor }}
-#         stagedBuild: ${{ parameters.stagedBuild }}
-#         buildConfig: ${{ parameters.buildConfig }}
-#         ${{ if eq(parameters.passPlatforms, true) }}:
-#           platforms: ${{ parameters.platforms }}
-#         ${{ insert }}: ${{ parameters.jobParameters }}
+- ${{ if containsValue(parameters.platforms, 'Browser_wasm') }}:
+  - template: xplat-setup.yml
+    parameters:
+      jobTemplate: ${{ parameters.jobTemplate }}
+      helixQueuesTemplate: ${{ parameters.helixQueuesTemplate }}
+      osGroup: Browser
+      archType: wasm
+      platform: Browser_wasm
+      container:
+        image: ubuntu-18.04-webassembly-20200529220811-6a6da63
+        registry: mcr
+      jobParameters:
+        runtimeFlavor: ${{ parameters.runtimeFlavor }}
+        stagedBuild: ${{ parameters.stagedBuild }}
+        buildConfig: ${{ parameters.buildConfig }}
+        ${{ if eq(parameters.passPlatforms, true) }}:
+          platforms: ${{ parameters.platforms }}
+        ${{ insert }}: ${{ parameters.jobParameters }}
 
 # FreeBSD
 # - ${{ if containsValue(parameters.platforms, 'FreeBSD_x64') }}:
@@ -315,23 +315,23 @@ jobs:
 
 # iOS x64
 
-- ${{ if containsValue(parameters.platforms, 'iOS_x64') }}:
-  - template: xplat-setup.yml
-    parameters:
-      jobTemplate: ${{ parameters.jobTemplate }}
-      helixQueuesTemplate: ${{ parameters.helixQueuesTemplate }}
-      osGroup: iOS
-      archType: x64
-      platform: iOS_x64
-      jobParameters:
-        runtimeFlavor: mono
-        stagedBuild: ${{ parameters.stagedBuild }}
-        buildConfig: ${{ parameters.buildConfig }}
-        ${{ if eq(parameters.passPlatforms, true) }}:
-          platforms: ${{ parameters.platforms }}
-        helixQueueGroup: ${{ parameters.helixQueueGroup }}
-        managedTestBuildOsGroup: OSX
-        ${{ insert }}: ${{ parameters.jobParameters }}
+# - ${{ if containsValue(parameters.platforms, 'iOS_x64') }}:
+#   - template: xplat-setup.yml
+#     parameters:
+#       jobTemplate: ${{ parameters.jobTemplate }}
+#       helixQueuesTemplate: ${{ parameters.helixQueuesTemplate }}
+#       osGroup: iOS
+#       archType: x64
+#       platform: iOS_x64
+#       jobParameters:
+#         runtimeFlavor: mono
+#         stagedBuild: ${{ parameters.stagedBuild }}
+#         buildConfig: ${{ parameters.buildConfig }}
+#         ${{ if eq(parameters.passPlatforms, true) }}:
+#           platforms: ${{ parameters.platforms }}
+#         helixQueueGroup: ${{ parameters.helixQueueGroup }}
+#         managedTestBuildOsGroup: OSX
+#         ${{ insert }}: ${{ parameters.jobParameters }}
 
 # iOS x86
 
