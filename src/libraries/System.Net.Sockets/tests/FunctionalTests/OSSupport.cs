@@ -112,7 +112,7 @@ namespace System.Net.Sockets.Tests
 
                         // OOB data read, read pointer at mark.
                         Assert.Equal(4, client.IOControl(IOControlCode.OobDataRead, null, siocatmarkResult));
-                        Assert.Equal(PlatformDetection.IsOSX ? 0 : 1, BitConverter.ToInt32(siocatmarkResult, 0));
+                        Assert.Equal(PlatformDetection.IsOSXLike ? 0 : 1, BitConverter.ToInt32(siocatmarkResult, 0));
                     }
                 }
             }
