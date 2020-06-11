@@ -524,16 +524,16 @@ Disp::DefinePortablePdbScope(
     pMeta = new (nothrow) RegMeta();
     IfNullGo(pMeta);
 
-    IfFailGo(hr = pMeta->SetOption(&optionForNewScope));
+    IfFailGo(pMeta->SetOption(&optionForNewScope));
 
     // Create the MiniMd-style scope for portable pdb
-    IfFailGo(hr = pMeta->CreateNewPortablePdbMD());
+    IfFailGo(pMeta->CreateNewPortablePdbMD());
 
     // Get the requested interface.
-    IfFailGo(hr = pMeta->QueryInterface(riid, (void**)ppIUnk));
+    IfFailGo(pMeta->QueryInterface(riid, (void**)ppIUnk));
 
     // Add the new RegMeta to the cache.
-    IfFailGo(hr = pMeta->AddToCache());
+    IfFailGo(pMeta->AddToCache());
 
     LOG((LOGMD, "{%08x} Created new emit scope\n", pMeta));
 

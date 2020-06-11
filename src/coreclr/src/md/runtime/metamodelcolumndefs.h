@@ -400,17 +400,6 @@
 
     /* Portable PDB tables */
     //-------------------------------------------------------------------------
-    //Dummy tables to fill the gap to 0x30
-    SCHEMA_TABLE_START(Dummy1)
-    SCHEMA_TABLE_END(Dummy1)
-
-    SCHEMA_TABLE_START(Dummy2)
-    SCHEMA_TABLE_END(Dummy2)
-
-    SCHEMA_TABLE_START(Dummy3)
-    SCHEMA_TABLE_END(Dummy3)
-
-    //-------------------------------------------------------------------------
     //Document
     SCHEMA_TABLE_START(Document)
     SCHEMA_ITEM_BLOB(Document, Name)

@@ -76,6 +76,15 @@
 #undef SCHEMA_ITEM_CDTKN
 #undef SCHEMA_TABLE_END
 
+/* Portable PDB tables */
+//Dummy tables to fill the gap to 0x30
+static CMiniColDef rDummy1Cols[] = { { 0 } };
+static CMiniColDef rDummy2Cols[] = { { 0 } };
+static CMiniColDef rDummy3Cols[] = { { 0 } };
+static const char* rDummy1ColNames[] = { "" };
+static const char* rDummy2ColNames[] = { "" };
+static const char* rDummy3ColNames[] = { "" };
+
 //-----------------------------------------------------------------------------
 // End of column definitions.
 //-----------------------------------------------------------------------------
