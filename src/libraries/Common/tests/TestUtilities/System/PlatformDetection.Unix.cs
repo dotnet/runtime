@@ -38,8 +38,6 @@ namespace System
             RuntimeInformation.IsOSPlatform(OSPlatform.Create("TVOS"));
         public static bool IsOSX => RuntimeInformation.IsOSPlatform(OSPlatform.OSX);
         public static bool IsNotOSX => !IsOSX;
-        public static bool IsMacOsHighSierraOrHigher => IsOSX && Environment.OSVersion.Version >= new Version(10, 13);
-        public static bool IsNotMacOsHighSierraOrHigher => !IsMacOsHighSierraOrHigher;
         public static bool IsMacOsMojaveOrHigher => IsOSX && Environment.OSVersion.Version >= new Version(10, 14);
         public static bool IsMacOsCatalinaOrHigher => IsOSX && Environment.OSVersion.Version >= new Version(10, 15);
 
