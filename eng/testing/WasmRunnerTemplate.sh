@@ -5,6 +5,7 @@ EXECUTION_DIR=$(dirname $0)
 cd $EXECUTION_DIR
 
 XHARNESS_OUT="$EXECUTION_DIR/xharness-output"
+chmod +x $EXECUTION_DIR/runtime.js
 
 if [ ! -x "$(command -v xharness)" ]; then
 	HARNESS_RUNNER="dotnet"
