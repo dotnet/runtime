@@ -131,8 +131,13 @@ case "$OSName" in
         ;;
 
     SunOS)
-        __TargetOS=SunOS
-        __HostOS=SunOS
+        if uname -o 2>&1 | grep -q illumos; then
+            __TargetOS=illumos
+            __HostOS=illumos
+        else
+            __TargetOS=Solaris
+            __HostOS=Solaris
+        fi
         ;;
 
     *)

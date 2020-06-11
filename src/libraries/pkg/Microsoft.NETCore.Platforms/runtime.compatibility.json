@@ -2063,6 +2063,20 @@
     "any",
     "base"
   ],
+  "illumos": [
+    "illumos",
+    "unix",
+    "any",
+    "base"
+  ],
+  "illumos-x64": [
+    "illumos-x64",
+    "illumos",
+    "unix-x64",
+    "unix",
+    "any",
+    "base"
+  ],
   "ios": [
     "ios",
     "unix",
@@ -3298,6 +3312,60 @@
     "any",
     "base"
   ],
+  "omnios": [
+    "omnios",
+    "illumos",
+    "unix",
+    "any",
+    "base"
+  ],
+  "omnios-x64": [
+    "omnios-x64",
+    "omnios",
+    "illumos-x64",
+    "illumos",
+    "unix-x64",
+    "unix",
+    "any",
+    "base"
+  ],
+  "omnios.15": [
+    "omnios.15",
+    "omnios",
+    "illumos",
+    "unix",
+    "any",
+    "base"
+  ],
+  "omnios.15-x64": [
+    "omnios.15-x64",
+    "omnios.15",
+    "omnios-x64",
+    "omnios",
+    "illumos-x64",
+    "illumos",
+    "unix-x64",
+    "unix",
+    "any",
+    "base"
+  ],
+  "openindiana": [
+    "openindiana",
+    "illumos",
+    "unix",
+    "any",
+    "base"
+  ],
+  "openindiana-x64": [
+    "openindiana-x64",
+    "openindiana",
+    "illumos-x64",
+    "illumos",
+    "unix-x64",
+    "unix",
+    "any",
+    "base"
+  ],
   "opensuse": [
     "opensuse",
     "linux",
@@ -4245,6 +4313,97 @@
     "sles",
     "linux-x64",
     "linux",
+    "unix-x64",
+    "unix",
+    "any",
+    "base"
+  ],
+  "smartos": [
+    "smartos",
+    "illumos",
+    "unix",
+    "any",
+    "base"
+  ],
+  "smartos-x64": [
+    "smartos-x64",
+    "smartos",
+    "illumos-x64",
+    "illumos",
+    "unix-x64",
+    "unix",
+    "any",
+    "base"
+  ],
+  "smartos.2020": [
+    "smartos.2020",
+    "smartos",
+    "illumos",
+    "unix",
+    "any",
+    "base"
+  ],
+  "smartos.2020-x64": [
+    "smartos.2020-x64",
+    "smartos.2020",
+    "smartos-x64",
+    "smartos",
+    "illumos-x64",
+    "illumos",
+    "unix-x64",
+    "unix",
+    "any",
+    "base"
+  ],
+  "smartos.2021": [
+    "smartos.2021",
+    "smartos.2020",
+    "smartos",
+    "illumos",
+    "unix",
+    "any",
+    "base"
+  ],
+  "smartos.2021-x64": [
+    "smartos.2021-x64",
+    "smartos.2021",
+    "smartos.2020-x64",
+    "smartos.2020",
+    "smartos-x64",
+    "smartos",
+    "illumos-x64",
+    "illumos",
+    "unix-x64",
+    "unix",
+    "any",
+    "base"
+  ],
+  "solaris": [
+    "solaris",
+    "unix",
+    "any",
+    "base"
+  ],
+  "solaris-x64": [
+    "solaris-x64",
+    "solaris",
+    "unix-x64",
+    "unix",
+    "any",
+    "base"
+  ],
+  "solaris.11": [
+    "solaris.11",
+    "solaris",
+    "unix",
+    "any",
+    "base"
+  ],
+  "solaris.11-x64": [
+    "solaris.11-x64",
+    "solaris.11",
+    "solaris-x64",
+    "solaris",
     "unix-x64",
     "unix",
     "any",
