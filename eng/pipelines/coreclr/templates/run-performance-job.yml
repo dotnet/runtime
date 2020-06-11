@@ -50,15 +50,17 @@ jobs:
 
     - IsInternal: ''
     - HelixApiAccessToken: ''
+    - HelixPreCommandStemWindows: 'py -3 -m venv %HELIX_WORKITEM_PAYLOAD%\.venv;call %HELIX_WORKITEM_PAYLOAD%\.venv\Scripts\activate.bat;set PYTHONPATH=;py -3 -m pip install --user azure.storage.blob==12.0.0 --force-reinstall;py -3 -m pip install --user azure.storage.queue==12.0.0 --force-reinstall;set "PERFLAB_UPLOAD_TOKEN=$(PerfCommandUploadToken)"'
+    - HelixPreCommandStemLinux: 'sudo apt-get -y install python3-venv;python3 -m venv $HELIX_WORKITEM_PAYLOAD/.venv;source $HELIX_WORKITEM_PAYLOAD/.venv/Scripts/activate;export PYTHONPATH=;pip3 install --user azure.storage.blob==12.0.0 --force-reinstall;pip3 install --user azure.storage.queue==12.0.0 --force-reinstall;export PERFLAB_UPLOAD_TOKEN="$(PerfCommandUploadTokenLinux)"'
     - HelixPreCommand: ''
     - Interpreter: ''
 
     - ${{ if and(ne(variables['System.TeamProject'], 'public'), notin(variables['Build.Reason'], 'PullRequest')) }}:
       - ${{ if eq( parameters.osGroup, 'Windows_NT') }}:
-        - HelixPreCommand: 'py -3 -m venv %HELIX_WORKITEM_PAYLOAD%\.venv;call %HELIX_WORKITEM_PAYLOAD%\.venv\Scripts\activate.bat;set PYTHONPATH=;py -3 -m pip install --user azure.storage.blob==12.0.0 --force-reinstall;py -3 -m pip install --user azure.storage.queue==12.0.0 --force-reinstall;set "PERFLAB_UPLOAD_TOKEN=$(PerfCommandUploadToken)"'
+        - HelixPreCommand: $(HelixPreCommandStemWindows)
         - IsInternal: -Internal
       - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
-        - HelixPreCommand: 'sudo apt-get -y install python3-venv;python3 -m venv $HELIX_WORKITEM_PAYLOAD/.venv;source $HELIX_WORKITEM_PAYLOAD/.venv/Scripts/activate;export PYTHONPATH=;pip3 install --user azure.storage.blob==12.0.0 --force-reinstall;pip3 install --user azure.storage.queue==12.0.0 --force-reinstall;export PERFLAB_UPLOAD_TOKEN="$(PerfCommandUploadTokenLinux)"'
+        - HelixPreCommand: $(HelixPreCommandStemLinux)
         - IsInternal: --internal
         
       - group: DotNet-HelixApi-Access
@@ -66,11 +68,19 @@ jobs:
 
     - ${{ if and(eq(parameters.codeGenType, 'Interpreter'), eq(parameters.runtimeType, 'mono')) }}:
       - ${{ if eq( parameters.osGroup, 'Windows_NT') }}:
-        - HelixPreCommand: '$(HelixPreCommand);set MONO_ENV_OPTIONS="--interpreter"'
-        - Interpreter: ' -MonoInterpreter'
+        - ${{ if and(ne(variables['System.TeamProject'], 'public'), notin(variables['Build.Reason'], 'PullRequest')) }}:
+          - HelixPreCommand: '$(HelixPreCommandStemWindows);set MONO_ENV_OPTIONS="--interpreter"'
+          - Interpreter: ' -MonoInterpreter'
+        - ${{ if not(and(ne(variables['System.TeamProject'], 'public'), notin(variables['Build.Reason'], 'PullRequest'))) }}:
+          - HelixPreCommand: 'set MONO_ENV_OPTIONS="--interpreter"'
+          - Interpreter: ' -MonoInterpreter'
       - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
-        - HelixPreCommand: '$(HelixPreCommand);export MONO_ENV_OPTIONS="--interpreter"'
-        - Interpreter: ' --monointerpreter'
+        - ${{ if and(ne(variables['System.TeamProject'], 'public'), notin(variables['Build.Reason'], 'PullRequest')) }}:
+          - HelixPreCommand: '$(HelixPreCommandStemLinux);export MONO_ENV_OPTIONS="--interpreter"'
+          - Interpreter: ' --monointerpreter'
+        - ${{ if not(and(ne(variables['System.TeamProject'], 'public'), notin(variables['Build.Reason'], 'PullRequest'))) }}:
+          - HelixPreCommand: '$(HelixPreCommandStemLinux);export MONO_ENV_OPTIONS="--interpreter"'
+          - Interpreter: ' --monointerpreter'
 
     workspace:
       clean: all
