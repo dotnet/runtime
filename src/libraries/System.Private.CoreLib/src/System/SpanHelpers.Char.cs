@@ -420,7 +420,8 @@ namespace System
                     {
                         Vector128<ushort> values = Vector128.Create((ushort)value);
 
-                        // Mask to help select first lane that is set. Each lane in the mask has different bit pattern.
+                        // Mask to help select first lane that is set.
+                        // Each lane in the mask has different bit pattern to distinguish the lane selected.
                         Vector128<byte> mask = Vector128.Create((byte)1, 4, 16, 64, 1, 4, 16, 64, 1, 4, 16, 64, 1, 4, 16, 64);
                         int matchedLane = 0;
 
@@ -439,7 +440,7 @@ namespace System
                                 continue;
                             }
 
-                            return (int)(offset + (matchedLane >> 2));
+                            return (int)(offset + (matchedLane >> sizeof(char)));
                         } while (lengthToExamine > 0);
                     }
 

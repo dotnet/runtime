@@ -377,7 +377,8 @@ namespace System
                 {
                     lengthToExamine = GetByteVector128SpanLength(offset, length);
 
-                    // Mask to help select first lane that is set. Each lane in the mask has different bit pattern.
+                    // Mask to help select first lane that is set.
+                    // Each lane in the mask has different bit pattern to distinguish the lane selected.
                     Vector128<byte> mask = Vector128.Create((byte)1, 4, 16, 64, 1, 4, 16, 64, 1, 4, 16, 64, 1, 4, 16, 64);
                     int matchedLane = 0;
 
@@ -394,7 +395,7 @@ namespace System
                             continue;
                         }
 
-                        return (int)(offset + (uint)(matchedLane >> 1));
+                        return (int)(offset + (uint)(matchedLane >> sizeof(byte)));
                     }
 
                     if (offset < (nuint)(uint)length)
