@@ -16,6 +16,7 @@ namespace System.Data.Common
     }
 
     [PlatformSpecific(~TestPlatforms.Browser)]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/36841", TestPlatforms.Android)]
     public class DbProviderFactoriesTests
     {
         [Fact]
@@ -60,7 +61,6 @@ namespace System.Data.Common
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/36841", TestPlatforms.Android)]
         public void GetFactoryWithDataRowTest()
         {
             ClearRegisteredFactories();
@@ -68,7 +68,6 @@ namespace System.Data.Common
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/36841", TestPlatforms.Android)]
         public void RegisterFactoryWithTypeNameTest()
         {
             ClearRegisteredFactories();
@@ -76,7 +75,6 @@ namespace System.Data.Common
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/36841", TestPlatforms.Android)]
         public void RegisterFactoryWithTypeTest()
         {
             ClearRegisteredFactories();
@@ -84,7 +82,6 @@ namespace System.Data.Common
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/36841", TestPlatforms.Android)]
         public void RegisterFactoryWithInstanceTest()
         {
             ClearRegisteredFactories();
@@ -108,7 +105,6 @@ namespace System.Data.Common
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/36841", TestPlatforms.Android)]
         public void RegisterFactoryWithAssemblyQualifiedNameTest()
         {
             ClearRegisteredFactories();
@@ -132,7 +128,6 @@ namespace System.Data.Common
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/36841", TestPlatforms.Android)]
         public void UnregisterFactoryTest()
         {
             ClearRegisteredFactories();
@@ -155,7 +150,6 @@ namespace System.Data.Common
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/36841", TestPlatforms.Android)]
         public void ReplaceFactoryWithRegisterFactoryWithTypeTest()
         {
             ClearRegisteredFactories();
@@ -170,7 +164,6 @@ namespace System.Data.Common
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/36841", TestPlatforms.Android)]
         public void GetProviderInvariantNamesTest()
         {
             ClearRegisteredFactories();
