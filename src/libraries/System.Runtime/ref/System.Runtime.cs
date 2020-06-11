@@ -6984,9 +6984,7 @@ namespace System.IO
         public override long Position { get { throw null; } set { } }
         public override System.IAsyncResult BeginRead(byte[] buffer, int offset, int count, System.AsyncCallback? callback, object? state) { throw null; }
         public override System.IAsyncResult BeginWrite(byte[] buffer, int offset, int count, System.AsyncCallback? callback, object? state) { throw null; }
-        public override void CopyTo(System.Buffers.ReadOnlySpanAction<byte, object?> callback, object? state, int bufferSize) { }
         public override void CopyTo(System.IO.Stream destination, int bufferSize) { }
-        public override System.Threading.Tasks.Task CopyToAsync(System.Func<System.ReadOnlyMemory<byte>, object?, System.Threading.CancellationToken, System.Threading.Tasks.ValueTask> callback, object? state, int bufferSize, System.Threading.CancellationToken cancellationToken) { throw null; }
         public override System.Threading.Tasks.Task CopyToAsync(System.IO.Stream destination, int bufferSize, System.Threading.CancellationToken cancellationToken) { throw null; }
         protected override void Dispose(bool disposing) { }
         public override int EndRead(System.IAsyncResult asyncResult) { throw null; }
@@ -7093,14 +7091,12 @@ namespace System.IO
         public virtual System.IAsyncResult BeginRead(byte[] buffer, int offset, int count, System.AsyncCallback? callback, object? state) { throw null; }
         public virtual System.IAsyncResult BeginWrite(byte[] buffer, int offset, int count, System.AsyncCallback? callback, object? state) { throw null; }
         public virtual void Close() { }
-        public virtual void CopyTo(System.Buffers.ReadOnlySpanAction<byte, object?> callback, object? state, int bufferSize) { }
         public void CopyTo(System.IO.Stream destination) { }
         public virtual void CopyTo(System.IO.Stream destination, int bufferSize) { }
         public System.Threading.Tasks.Task CopyToAsync(System.IO.Stream destination) { throw null; }
         public System.Threading.Tasks.Task CopyToAsync(System.IO.Stream destination, int bufferSize) { throw null; }
         public virtual System.Threading.Tasks.Task CopyToAsync(System.IO.Stream destination, int bufferSize, System.Threading.CancellationToken cancellationToken) { throw null; }
         public System.Threading.Tasks.Task CopyToAsync(System.IO.Stream destination, System.Threading.CancellationToken cancellationToken) { throw null; }
-        public virtual System.Threading.Tasks.Task CopyToAsync(System.Func<System.ReadOnlyMemory<byte>, object?, System.Threading.CancellationToken, System.Threading.Tasks.ValueTask> callback, object? state, int bufferSize, System.Threading.CancellationToken cancellationToken) { throw null; }
         [System.ObsoleteAttribute("CreateWaitHandle will be removed eventually.  Please use \"new ManualResetEvent(false)\" instead.")]
         protected virtual System.Threading.WaitHandle CreateWaitHandle() { throw null; }
         public void Dispose() { }
@@ -7371,7 +7367,6 @@ namespace System.IO
         public override long Position { get { throw null; } set { } }
         [System.CLSCompliantAttribute(false)]
         public unsafe byte* PositionPointer { get { throw null; } set { } }
-        public override void CopyTo(System.Buffers.ReadOnlySpanAction<byte, object?> callback, object? state, int bufferSize) { }
         protected override void Dispose(bool disposing) { }
         public override void Flush() { }
         public override System.Threading.Tasks.Task FlushAsync(System.Threading.CancellationToken cancellationToken) { throw null; }
