@@ -1,0 +1,19 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<linker>
+  <assembly fullname="Test">
+    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
+      <argument>Test</argument>
+      <argument>IL2006</argument>
+    </attribute>
+    <type fullname="Mono.Linker.Tests.Cases.DataFlow.SupressWarningWithLinkAttributes">
+      <field name="_typeWithDefaultConstructor">
+        <attribute fullname="System.DoesNotExistattribute" assembly="Mono.Linker.Tests.Cases.Expectations">
+          <argument>0</argument>
+        </attribute>
+        <attribute fullname="System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute">
+          <argument>DefaultConstructor</argument>
+        </attribute>
+      </field>
+    </type>
+  </assembly>
+</linker>

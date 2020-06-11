@@ -14,12 +14,10 @@ namespace Mono.Linker.Dataflow
 	class FlowAnnotations
 	{
 		readonly LinkContext _context;
-		readonly CustomAttributeSource _source;
 		readonly Dictionary<TypeDefinition, TypeAnnotations> _annotations = new Dictionary<TypeDefinition, TypeAnnotations> ();
 
-		public FlowAnnotations (LinkContext context, CustomAttributeSource annotationSource)
+		public FlowAnnotations (LinkContext context)
 		{
-			_source = annotationSource;
 			_context = context;
 		}
 
@@ -83,9 +81,9 @@ namespace Mono.Linker.Dataflow
 
 		DynamicallyAccessedMemberTypes GetMemberTypesForDynamicallyAccessedMemberAttribute (ICustomAttributeProvider provider, IMemberDefinition locationMember = null)
 		{
-			if (!_source.HasCustomAttributes (provider))
+			if (!_context.CustomAttributes.HasCustomAttributes (provider))
 				return DynamicallyAccessedMemberTypes.None;
-			foreach (var attribute in _source.GetCustomAttributes (provider)) {
+			foreach (var attribute in _context.CustomAttributes.GetCustomAttributes (provider)) {
 				if (!IsDynamicallyAccessedMembersAttribute (attribute))
 					continue;
 				if (attribute.ConstructorArguments.Count == 1)

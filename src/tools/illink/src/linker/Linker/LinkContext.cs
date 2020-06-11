@@ -64,9 +64,14 @@ namespace Mono.Linker
 		ISymbolWriterProvider _symbolWriterProvider;
 
 		readonly AnnotationStore _annotations;
+		readonly CustomAttributeSource _customAttributes;
 
 		public Pipeline Pipeline {
 			get { return _pipeline; }
+		}
+
+		public CustomAttributeSource CustomAttributes {
+			get { return _customAttributes; }
 		}
 
 		public AnnotationStore Annotations {
@@ -120,9 +125,13 @@ namespace Mono.Linker
 
 		public bool IgnoreSubstitutions { get; set; }
 
+		public bool IgnoreLinkAttributes { get; set; }
+
 		public bool StripDescriptors { get; set; }
 
 		public bool StripSubstitutions { get; set; }
+
+		public bool StripLinkAttributes { get; set; }
 
 		public Dictionary<string, bool> FeatureSettings { get; private set; }
 
@@ -198,6 +207,7 @@ namespace Mono.Linker
 			_actions = new Dictionary<string, AssemblyAction> ();
 			_parameters = new Dictionary<string, string> (StringComparer.Ordinal);
 			_readerParameters = readerParameters;
+			_customAttributes = new CustomAttributeSource ();
 
 			SymbolReaderProvider = new DefaultSymbolReaderProvider (false);
 
@@ -211,6 +221,7 @@ namespace Mono.Linker
 			MarkedKnownMembers = new KnownMembers ();
 			StripDescriptors = true;
 			StripSubstitutions = true;
+			StripLinkAttributes = true;
 			PInvokes = new List<PInvokeInfo> ();
 			Suppressions = new UnconditionalSuppressMessageAttributeState (this);
 

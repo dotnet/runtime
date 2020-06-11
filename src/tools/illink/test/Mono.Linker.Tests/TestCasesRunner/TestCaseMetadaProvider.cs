@@ -33,6 +33,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 				Il8n = GetOptionAttributeValue (nameof (Il8nAttribute), "none"),
 				IgnoreDescriptors = GetOptionAttributeValue (nameof (IgnoreDescriptorsAttribute), true),
 				IgnoreSubstitutions = GetOptionAttributeValue (nameof (IgnoreSubstitutionsAttribute), true),
+				IgnoreLinkAttributes = GetOptionAttributeValue (nameof (IgnoreLinkAttributesAttribute), true),
 				KeepTypeForwarderOnlyAssemblies = GetOptionAttributeValue (nameof (KeepTypeForwarderOnlyAssembliesAttribute), string.Empty),
 				KeepDebugMembers = GetOptionAttributeValue (nameof (SetupLinkerKeepDebugMembersAttribute), string.Empty),
 				LinkSymbols = GetOptionAttributeValue (nameof (SetupLinkerLinkSymbolsAttribute), string.Empty),
@@ -41,6 +42,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 				SkipUnresolved = GetOptionAttributeValue (nameof (SkipUnresolvedAttribute), false),
 				StripDescriptors = GetOptionAttributeValue (nameof (StripDescriptorsAttribute), true),
 				StripSubstitutions = GetOptionAttributeValue (nameof (StripSubstitutionsAttribute), true),
+				StripLinkAttributes = GetOptionAttributeValue (nameof (StripLinkAttributesAttribute), true),
 			};
 
 			foreach (var assemblyAction in _testCaseTypeDefinition.CustomAttributes.Where (attr => attr.AttributeType.Name == nameof (SetupLinkerActionAttribute))) {
@@ -60,10 +62,10 @@ namespace Mono.Linker.Tests.TestCasesRunner
 				tclo.Substitutions.Add (Path.Combine (inputPath, file));
 			}
 
-			foreach (var attrFile in _testCaseTypeDefinition.CustomAttributes.Where (attr => attr.AttributeType.Name == nameof (SetupLinkerAttributeDefinitionsFile))) {
-				var ca = attrFile.ConstructorArguments;
+			foreach (var linkAttrFile in _testCaseTypeDefinition.CustomAttributes.Where (attr => attr.AttributeType.Name == nameof (SetupLinkAttributesFile))) {
+				var ca = linkAttrFile.ConstructorArguments;
 				var file = (string) ca[0].Value;
-				tclo.AttributeDefinitions.Add (Path.Combine (inputPath, file));
+				tclo.LinkAttributes.Add (Path.Combine (inputPath, file));
 			}
 
 			foreach (var additionalArgumentAttr in _testCaseTypeDefinition.CustomAttributes.Where (attr => attr.AttributeType.Name == nameof (SetupLinkerArgumentAttribute))) {
@@ -222,10 +224,10 @@ namespace Mono.Linker.Tests.TestCasesRunner
 				.Select (GetSourceAndRelativeDestinationValue);
 		}
 
-		public virtual IEnumerable<SourceAndDestinationPair> GetAttributeDefinitionFiles ()
+		public virtual IEnumerable<SourceAndDestinationPair> GetLinkAttributesFiles ()
 		{
 			return _testCaseTypeDefinition.CustomAttributes
-				.Where (attr => attr.AttributeType.Name == nameof (SetupLinkerAttributeDefinitionsFile))
+				.Where (attr => attr.AttributeType.Name == nameof (SetupLinkAttributesFile))
 				.Select (GetSourceAndRelativeDestinationValue);
 		}
 

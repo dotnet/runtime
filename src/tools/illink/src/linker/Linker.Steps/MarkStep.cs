@@ -172,10 +172,7 @@ namespace Mono.Linker.Steps
 		public virtual void Process (LinkContext context)
 		{
 			_context = context;
-
-			CustomAttributeSource annotationSources = new CustomAttributeSource (_context);
-
-			_flowAnnotations = new FlowAnnotations (_context, annotationSources);
+			_flowAnnotations = new FlowAnnotations (_context);
 
 			Initialize ();
 			Process ();
