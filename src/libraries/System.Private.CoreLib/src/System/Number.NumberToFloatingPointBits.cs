@@ -26,6 +26,14 @@ namespace System
                 infinityBits: 0x7F800000
             );
 
+            public static readonly FloatingPointInfo Half = new FloatingPointInfo(
+                denormalMantissaBits: 10,
+                exponentBits: 5,
+                maxBinaryExponent: 15,
+                exponentBias: 15,
+                infinityBits: 0x7C00
+            );
+
             public ulong ZeroBits { get; }
             public ulong InfinityBits { get; }
 

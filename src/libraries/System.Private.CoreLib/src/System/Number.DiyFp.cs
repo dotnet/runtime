@@ -20,6 +20,7 @@ namespace System
         {
             public const int DoubleImplicitBitIndex = 52;
             public const int SingleImplicitBitIndex = 23;
+            public const int HalfImplicitBitIndex = 10;
 
             public const int SignificandSize = 64;
 

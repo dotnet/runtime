@@ -5,7 +5,6 @@
 using System.Diagnostics;
 using System.Globalization;
 using System.Numerics;
-using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 namespace System
@@ -15,7 +14,6 @@ namespace System
     /// <summary>
     /// An IEEE 754 compliant float16 type.
     /// </summary>
-    [Serializable]
     [StructLayout(LayoutKind.Sequential)]
     public readonly struct Half : IComparable, IFormattable, IComparable<Half>, IEquatable<Half>, ISpanFormattable
     {
@@ -58,27 +56,33 @@ namespace System
         private const ushort MaxValueBits = 0x7BFF;
 
 
-        //
         // Well-defined and commonly used values
-        //
 
-        public static readonly Half Epsilon = new Half(EpsilonBits);                        //  5.9604645E-08
+        private static readonly Half s_epsilon = new Half(EpsilonBits);                        //  5.9604645E-08
+        public static Half Epsilon => s_epsilon;
 
-        public static readonly Half PositiveInfinity = new Half(PositiveInfinityBits);      //  1.0 / 0.0
-        public static readonly Half NegativeInfinity = new Half(NegativeInfinityBits);      // -1.0 / 0.0
+        private static readonly Half s_positiveInfinity = new Half(PositiveInfinityBits);      //  1.0 / 0.0
+        public static Half PositiveInfinity => s_positiveInfinity;
 
-        public static readonly Half NaN = new Half(NegativeQNaNBits);                       //  0.0 / 0.0
+        private static readonly Half s_negativeInfinity = new Half(NegativeInfinityBits);      // -1.0 / 0.0
+        public static Half NegativeInfinity => s_negativeInfinity;
 
-        public static readonly Half MinValue = new Half(MinValueBits);                      // -65504
-        public static readonly Half MaxValue = new Half(MaxValueBits);                      //  65504
+        private static readonly Half s_naN = new Half(NegativeQNaNBits);                       //  0.0 / 0.0
+        public static Half NaN => s_naN;
+
+        private static readonly Half _MinValue = new Half(MinValueBits);                      // -65504
+        public static Half MinValue => _MinValue;
+
+        private static readonly Half s_maxValue = new Half(MaxValueBits);                      //  65504
+        public static Half MaxValue => s_maxValue;
 
         // We use these explicit definitions to avoid the confusion between 0.0 and -0.0.
         private static readonly Half PositiveZero = new Half(PositiveZeroBits);            //  0.0
         private static readonly Half NegativeZero = new Half(NegativeZeroBits);            // -0.0
 
-        private readonly ushort m_value; // Do not rename (binary serialization)
+        private readonly ushort m_value;
 
-        private Half(ushort value)
+        internal Half(ushort value)
         {
             m_value = value;
         }
@@ -163,35 +167,30 @@ namespace System
         }
 
         /// <summary>Determines whether the specified value is finite (zero, subnormal, or normal).</summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool IsFinite(Half value)
         {
             return StripSign(value) < PositiveInfinityBits;
         }
 
         /// <summary>Determines whether the specified value is infinite.</summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool IsInfinity(Half value)
         {
             return StripSign(value) == PositiveInfinityBits;
         }
 
         /// <summary>Determines whether the specified value is NaN.</summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool IsNaN(Half value)
         {
             return StripSign(value) > PositiveInfinityBits;
         }
 
         /// <summary>Determines whether the specified value is negative.</summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool IsNegative(Half value)
         {
             return (short)(value.m_value) < 0;
         }
 
         /// <summary>Determines whether the specified value is negative infinity.</summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool IsNegativeInfinity(Half value)
         {
             return value.m_value == NegativeInfinityBits;
@@ -208,7 +207,6 @@ namespace System
         }
 
         /// <summary>Determines whether the specified value is positive infinity.</summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool IsPositiveInfinity(Half value)
         {
             return value.m_value == PositiveInfinityBits;
@@ -342,7 +340,6 @@ namespace System
             return ret;
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static bool AreZero(Half left, Half right)
         {
             // IEEE defines that positive and negative zero are equal, this gives us a quick equality check
@@ -351,13 +348,11 @@ namespace System
             return (ushort)((left.m_value | right.m_value) & ~SignMask) == 0;
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static bool IsNaNOrZero(Half value)
         {
             return ((value.m_value - 1) & ~SignMask) >= PositiveInfinityBits;
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static ushort StripSign(Half value)
         {
             return (ushort)(value.m_value & ~SignMask);
@@ -383,17 +378,17 @@ namespace System
         /// <returns>A value less than zero if this is less than <paramref name="other"/>, zero if this is equal to <paramref name="other"/>, or a value greater than zero if this is greater than <paramref name="other"/>.</returns>
         public int CompareTo(Half other)
         {
-            if ((short)(m_value) < (short)(other.m_value))
+            if (this < other)
             {
                 return -1;
             }
 
-            if ((short)(m_value) > (short)(other.m_value))
+            if (this > other)
             {
                 return 1;
             }
 
-            if (m_value == other.m_value)
+            if (this == other)
             {
                 return 0;
             }
@@ -412,7 +407,7 @@ namespace System
         /// </summary>
         public override bool Equals(object? obj)
         {
-            return (obj is Half) && Equals((Half)(obj));
+            return (obj is Half other) && Equals(other);
         }
 
         /// <summary>
@@ -448,7 +443,7 @@ namespace System
         /// </summary>
         public override string ToString()
         {
-            return ToString(format: null, formatProvider: null);
+            return Number.FormatHalf(this, null, NumberFormatInfo.CurrentInfo);
         }
 
         /// <summary>
@@ -456,23 +451,23 @@ namespace System
         /// </summary>
         public string ToString(string? format)
         {
-            return ((float)this).ToString(format);
+            return Number.FormatHalf(this, format, NumberFormatInfo.CurrentInfo);
         }
 
         /// <summary>
-        /// Returns a string representation of the current value with the specified <paramref name="formatProvider"/>.
+        /// Returns a string representation of the current value with the specified <paramref name="provider"/>.
         /// </summary>
-        public string ToString(IFormatProvider? formatProvider)
+        public string ToString(IFormatProvider? provider)
         {
-            return ((float)this).ToString(formatProvider);
+            return Number.FormatHalf(this, null, NumberFormatInfo.GetInstance(provider));
         }
 
         /// <summary>
-        /// Returns a string representation of the current value using the specified <paramref name="format"/> and <paramref name="formatProvider"/>.
+        /// Returns a string representation of the current value using the specified <paramref name="format"/> and <paramref name="provider"/>.
         /// </summary>
-        public string ToString(string? format, IFormatProvider? formatProvider)
+        public string ToString(string? format, IFormatProvider? provider)
         {
-            return ((float)this).ToString(format: null, formatProvider);
+            return Number.FormatHalf(this, format, NumberFormatInfo.GetInstance(provider));
 
         }
 
@@ -482,11 +477,11 @@ namespace System
         /// <param name="destination">When this method returns, this instance's value formatted as a span of characters.</param>
         /// <param name="charsWritten">When this method returns, the number of characters that were written in <paramref name="destination"/>.</param>
         /// <param name="format">A span containing the characters that represent a standard or custom format string that defines the acceptable format for <paramref name="destination"/>.</param>
-        /// <param name="formatProvider">An optional object that supplies culture-specific formatting information for <paramref name="destination"/>.</param>
+        /// <param name="provider">An optional object that supplies culture-specific formatting information for <paramref name="destination"/>.</param>
         /// <returns></returns>
-        public bool TryFormat(Span<char> destination, out int charsWritten, ReadOnlySpan<char> format = default, IFormatProvider? formatProvider = null)
+        public bool TryFormat(Span<char> destination, out int charsWritten, ReadOnlySpan<char> format = default, IFormatProvider? provider = null)
         {
-            return ((float)this).TryFormat(destination, out charsWritten, format, formatProvider);
+            return Number.TryFormatHalf(this, format, NumberFormatInfo.GetInstance(provider), destination, out charsWritten);
         }
 
         // -----------------------Start of to-half conversions-------------------------
@@ -602,20 +597,26 @@ namespace System
             return CreateDouble(sign, (ushort)(exp + 0x3F0), (ulong)sig << 42);
         }
 
+        // IEEE 754 specifies NaNs to be propagated
+        internal static Half Negate(Half value)
+        {
+            return IsNaN(value) ? value : new Half((ushort)(value.m_value ^ SignMask));
+        }
+
         private static (int Exp, uint Sig) NormSubnormalF16Sig(uint sig)
         {
-            int shiftDist = BitOperations.LeadingZeroCount(sig) - 16 - 5; // No LZCNT for 16-bit
+            int shiftDist = BitOperations.LeadingZeroCount(sig) - 16 - 5;
             return (1 - shiftDist, sig << shiftDist);
         }
 
         #region Utilities
 
-        internal static uint ToUInt32(float value)
+        private static uint ToUInt32(float value)
                    => (uint)BitConverter.SingleToInt32Bits(value);
 
         // Significand bits should be shifted towards to the left end before calling these methods
         // Creates Quiet NaN if significand == 0
-        internal static Half CreateHalfNaN(bool sign, ulong significand)
+        private static Half CreateHalfNaN(bool sign, ulong significand)
         {
             const uint NaNBits = ExponentMask | 0x200; // Most significant significand bit
 
@@ -625,10 +626,10 @@ namespace System
             return CreateHalf((ushort)(signInt | NaNBits | sigInt));
         }
 
-        internal static unsafe Half CreateHalf(ushort value)
+        private static unsafe Half CreateHalf(ushort value)
             => *(Half*)&value;
 
-        internal static ushort RoundPackToHalf(bool sign, short exp, ushort sig)
+        private static ushort RoundPackToHalf(bool sign, short exp, ushort sig)
         {
             const int roundIncrement = 0x8; // Depends on rounding mode but it's always towards closest / ties to even
             int roundBits = sig & 0xF;
@@ -660,16 +661,16 @@ namespace System
         // If any bits are lost by shifting, "jam" them into the LSB.
         // if dist > bit count, Will be 1 or 0 depending on i
         // (unlike bitwise operators that masks the lower 5 bits)
-        internal static uint ShiftRightJam(uint i, int dist)
+        private static uint ShiftRightJam(uint i, int dist)
             => dist < 31 ? (i >> dist) | (i << (-dist & 31) != 0 ? 1U : 0U) : (i != 0 ? 1U : 0U);
 
-        internal static ulong ShiftRightJam(ulong l, int dist)
+        private static ulong ShiftRightJam(ulong l, int dist)
             => dist < 63 ? (l >> dist) | (l << (-dist & 63) != 0 ? 1UL : 0UL) : (l != 0 ? 1UL : 0UL);
 
-        internal static ulong ToUInt64(double value)
+        private static ulong ToUInt64(double value)
             => (ulong)BitConverter.DoubleToInt64Bits(value);
 
-        internal static float CreateSingleNaN(bool sign, ulong significand)
+        private static float CreateSingleNaN(bool sign, ulong significand)
         {
             const uint NaNBits = float.ExponentMask | 0x400000; // Most significant significand bit
 
@@ -679,7 +680,7 @@ namespace System
             return CreateSingle(signInt | NaNBits | sigInt);
         }
 
-        internal static double CreateDoubleNaN(bool sign, ulong significand)
+        private static double CreateDoubleNaN(bool sign, ulong significand)
         {
             const ulong NaNBits = double.ExponentMask | 0x80000_00000000; // Most significant significand bit
 
@@ -689,16 +690,16 @@ namespace System
             return CreateDouble(signInt | NaNBits | sigInt);
         }
 
-        internal static double CreateDouble(ulong value)
+        private static double CreateDouble(ulong value)
             => BitConverter.Int64BitsToDouble((long)value);
 
-        internal static float CreateSingle(uint value)
+        private static float CreateSingle(uint value)
             => BitConverter.Int32BitsToSingle((int)value);
 
-        internal static float CreateSingle(bool sign, byte exp, uint sig)
+        private static float CreateSingle(bool sign, byte exp, uint sig)
             => BitConverter.Int32BitsToSingle((int)(((sign ? 1U : 0U) << float.SignShift) | ((uint)exp << float.ExponentShift) | sig));
 
-        internal static double CreateDouble(bool sign, ushort exp, ulong sig)
+        private static double CreateDouble(bool sign, ushort exp, ulong sig)
             => BitConverter.Int64BitsToDouble((long)(((sign ? 1UL : 0UL) << double.SignShift) | ((ulong)exp << double.ExponentShift) | sig));
 
         #endregion
