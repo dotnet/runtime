@@ -1235,7 +1235,9 @@ namespace System.Net.Sockets
             aborted |= _sendQueue.StopAndAbort(this);
             aborted |= _receiveQueue.StopAndAbort(this);
 
-            // The handle is still valid and about to be closed.
+            // We don't need to synchronize with Register.
+            // This method is called when the handle gets released.
+            // The Register method will throw ODE when it tries to use the handle at this point.
             _asyncEngine?.UnregisterSocket(_socket.DangerousGetHandle());
 
             return aborted;
