@@ -8,11 +8,11 @@ using Xunit;
 //
 // System.Console BCL test cases
 //
+[ActiveIssue("https://github.com/dotnet/runtime/issues/37465", TestPlatforms.Android)]
 public class TimeOut
 {
     [Fact]
     [PlatformSpecific(~TestPlatforms.Browser)]
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/37465", TestPlatforms.Android)]
     public static void OpenStandardXXX_WriteTimeOut()
     {
         using (Stream standardOut = Console.OpenStandardOutput(), standardIn = Console.OpenStandardInput(), standardError = Console.OpenStandardError())
@@ -29,7 +29,6 @@ public class TimeOut
 
     [Fact]
     [PlatformSpecific(~TestPlatforms.Browser)]
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/37465", TestPlatforms.Android)]
     public static void OpenStandardXXX_ReadTimeOut()
     {
         using (Stream standardOut = Console.OpenStandardOutput(), standardIn = Console.OpenStandardInput(), standardError = Console.OpenStandardError())
@@ -46,7 +45,6 @@ public class TimeOut
 
     [Fact]
     [PlatformSpecific(~TestPlatforms.Browser)]
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/37465", TestPlatforms.Android)]
     public static void OpenStandardXXX_CanTimeOut()
     {
         using (Stream standardOut = Console.OpenStandardOutput(), standardIn = Console.OpenStandardInput(), standardError = Console.OpenStandardError())
