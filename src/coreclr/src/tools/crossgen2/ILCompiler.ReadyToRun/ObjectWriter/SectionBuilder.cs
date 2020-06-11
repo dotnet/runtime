@@ -860,10 +860,9 @@ namespace ILCompiler.PEWriter
         public void RelocateOutputFile(
             BlobBuilder peFile,
             ulong defaultImageBase,
-            Stream outputStream,
-            List<(int,int)> paddingToInject)
+            Stream outputStream)
         {
-            RelocationHelper relocationHelper = new RelocationHelper(outputStream, defaultImageBase, peFile, paddingToInject);
+            RelocationHelper relocationHelper = new RelocationHelper(outputStream, defaultImageBase, peFile);
 
             // Traverse relocations in all sections in their RVA order
             foreach (Section section in _sections.OrderBy((sec) => sec.RVAWhenPlaced))

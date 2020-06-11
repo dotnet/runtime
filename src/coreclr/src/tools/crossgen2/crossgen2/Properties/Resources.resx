@@ -259,7 +259,10 @@
     <value>Warning: overriding -Ot with -Os</value>
   </data>
   <data name="CustomPESectionAlignmentOption" xml:space="preserve">
-    <value>Use custom alignment for PE sections in PE generated PE file</value>
+    <value>Use custom alignment for PE sections in generated PE file</value>
+  </data>
+  <data name="InvalidCustomPESectionAlignment" xml:space="preserve">
+    <value>Custom PE Section Alignment must be a power of two greater than 4096.</value>
   </data>
   <data name="ErrorMultipleInputFilesCompositeModeOnly" xml:space="preserve">
     <value>Error: multiple input files are only supported in composite build mode: {0}</value>

@@ -119,6 +119,23 @@ namespace ILCompiler
             if (_commandLineOptions.OutputFilePath == null)
                 throw new CommandLineException(SR.MissingOutputFile);
 
+            if (_commandLineOptions.CustomPESectionAlignment != null)
+            {
+                int alignment = _commandLineOptions.CustomPESectionAlignment.Value;
+                bool invalidArgument = false;
+                if (alignment <= 4096)
+                {
+                    invalidArgument = true;
+                }
+                if ((alignment & (alignment - 1)) != 0)
+                {
+                    invalidArgument = true; // Alignment not power of two
+                }
+
+                if (invalidArgument)
+                    throw new CommandLineException(SR.InvalidCustomPESectionAlignment);
+            }
+
             //
             // Set target Architecture and OS
             //

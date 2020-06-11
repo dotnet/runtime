@@ -123,8 +123,13 @@ namespace ILCompiler.PEWriter
         /// </summary>
         private int[] _sectionRVAs;
 
+        /// <summary>
+        /// Pointers to the location of the raw data. Needed to allow phyical file alignment
+        /// beyond 4KB. PEBuilder doesn't support this today so that we
+        /// must store the RVA's and post-process the produced PE by patching the section
+        /// headers in the PE header.
+        /// </summary>
         private int[] _sectionPointerToRawData;
-        List<(int, int)> _paddingToInject = new List<(int, int)>();
 
         /// <summary>
         /// Maximum of virtual and physical size for each section.
@@ -156,11 +161,6 @@ namespace ILCompiler.PEWriter
         /// This is used to support loading via large pages on Linux
         /// </summary>
         private readonly int? _customPESectionAlignment;
-
-        /// <summary>
-        /// Physical file padding that has already been determined.
-        /// </summary>
-        private int _previouslyInjectedPadding = 0;
 
         /// <summary>
         /// Constructor initializes the various control structures and combines the section list.
@@ -284,9 +284,13 @@ namespace ILCompiler.PEWriter
             BlobBuilder outputPeFile = new BlobBuilder();
             Serialize(outputPeFile);
 
-            _sectionBuilder.RelocateOutputFile(outputPeFile, Header.ImageBase, outputStream, _paddingToInject);
+            _sectionBuilder.RelocateOutputFile(outputPeFile, Header.ImageBase, outputStream);
 
-            UpdateSectionRVAs(outputStream, _customPESectionAlignment);
+            UpdateSectionRVAs(outputStream);
+
+            if (_customPESectionAlignment.HasValue)
+                SetPEHeaderSectionAlignment(outputStream, _customPESectionAlignment.Value);
+
             ApplyMachineOSOverride(outputStream);
 
             SetPEHeaderTimeStamp(outputStream, timeDateStamp);
@@ -346,7 +350,8 @@ namespace ILCompiler.PEWriter
         const int OffsetOfSizeOfImage = OffsetOfChecksum - 2 * sizeof(int); // SizeOfHeaders, SizeOfImage
 
         const int SectionHeaderNameSize = 8;
-        const int SectionHeaderRVAOffset = SectionHeaderNameSize + sizeof(int); // skip 8 bytes Name + 4 bytes VirtualSize
+        const int SectionHeaderVirtualSize = SectionHeaderNameSize; // VirtualSize follows 
+        const int SectionHeaderRVAOffset = SectionHeaderVirtualSize + sizeof(int); // RVA Offset follows VirtualSize + 4 bytes VirtualSize
         const int SectionHeaderSizeOfRawData = SectionHeaderRVAOffset + sizeof(int); // SizeOfRawData follows RVA
         const int SectionHeaderPointerToRawDataOffset = SectionHeaderSizeOfRawData + sizeof(int); // PointerToRawData immediately follows the SizeOfRawData
 
@@ -371,16 +376,8 @@ namespace ILCompiler.PEWriter
         /// we're performing the same transformation on Windows where it is a no-op.
         /// </summary>
         /// <param name="outputStream"></param>
-        private void UpdateSectionRVAs(Stream outputStream, int? updateSectionAlign)
+        private void UpdateSectionRVAs(Stream outputStream)
         {
-            if (updateSectionAlign.HasValue)
-            {
-                outputStream.Seek(DosHeaderSize + PESignatureSize + COFFHeaderSize + OffsetOfSectionAlign, SeekOrigin.Begin);
-                byte[] alignBytes = BitConverter.GetBytes(updateSectionAlign.Value);
-                Debug.Assert(alignBytes.Length == sizeof(int));
-                outputStream.Write(alignBytes, 0, alignBytes.Length);
-            }
-
             int peHeaderSize =
                 OffsetOfChecksum +
                 sizeof(int) +             // Checksum
@@ -395,6 +392,24 @@ namespace ILCompiler.PEWriter
             int sectionCount = _sectionRVAs.Length;
             for (int sectionIndex = 0; sectionIndex < sectionCount; sectionIndex++)
             {
+                if (_customPESectionAlignment != null)
+                {
+                    // When _customPESectionAlignment is set, the phyical and virtual sizes are the same
+                    byte[] sizeBytes = BitConverter.GetBytes(_sectionRawSizes[sectionIndex]);
+                    Debug.Assert(sizeBytes.Length == sizeof(int));
+
+                    // Update VirtualSize
+                    {
+                        outputStream.Seek(sectionHeaderOffset + SectionHeaderSize * sectionIndex + SectionHeaderVirtualSize, SeekOrigin.Begin);
+                        outputStream.Write(sizeBytes, 0, sizeBytes.Length);
+                    }
+                    // Update SizeOfRawData
+                    {
+                        outputStream.Seek(sectionHeaderOffset + SectionHeaderSize * sectionIndex + SectionHeaderSizeOfRawData, SeekOrigin.Begin);
+                        outputStream.Write(sizeBytes, 0, sizeBytes.Length);
+                    }
+                }
+
                 // Update RVAs
                 {
                     outputStream.Seek(sectionHeaderOffset + SectionHeaderSize * sectionIndex + SectionHeaderRVAOffset, SeekOrigin.Begin);
@@ -418,6 +433,19 @@ namespace ILCompiler.PEWriter
             byte[] sizeOfImageBytes = BitConverter.GetBytes(sizeOfImage);
             Debug.Assert(sizeOfImageBytes.Length == sizeof(int));
             outputStream.Write(sizeOfImageBytes, 0, sizeOfImageBytes.Length);
+        }
+
+        /// <summary>
+        /// Set PE header section alignment, for alignments not supported by the System.Reflection.Metadata
+        /// </summary>
+        /// <param name="outputStream">Output stream representing the R2R PE executable</param>
+        /// <param name="customAlignment">Timestamp to set in the R2R PE header</param>
+        private void SetPEHeaderSectionAlignment(Stream outputStream, int customAlignment)
+        {
+            outputStream.Seek(DosHeaderSize + PESignatureSize + COFFHeaderSize + OffsetOfSectionAlign, SeekOrigin.Begin);
+            byte[] alignBytes = BitConverter.GetBytes(customAlignment);
+            Debug.Assert(alignBytes.Length == sizeof(int));
+            outputStream.Write(alignBytes, 0, alignBytes.Length);
         }
 
         /// <summary>
@@ -538,6 +566,7 @@ namespace ILCompiler.PEWriter
                 outputSectionIndex--;
             }
 
+            int injectedPadding = 0;
             if (_customPESectionAlignment.HasValue && _customPESectionAlignment.Value != 0)
             {
                 if (outputSectionIndex > 0)
@@ -546,14 +575,15 @@ namespace ILCompiler.PEWriter
                 }
 
                 int newSectionStartRva = AlignmentHelper.AlignUp(sectionStartRva, _customPESectionAlignment.Value);
-                if (newSectionStartRva > sectionStartRva)
+                int newSectionPointerToRawData = AlignmentHelper.AlignUp(location.PointerToRawData, _customPESectionAlignment.Value);
+                if (newSectionPointerToRawData > location.PointerToRawData)
                 {
-                    int padding = newSectionStartRva - (location.PointerToRawData + _previouslyInjectedPadding);
-                    _paddingToInject.Add((location.PointerToRawData + _previouslyInjectedPadding, padding));
-                    _previouslyInjectedPadding += padding;
+                    sectionDataBuilder = new BlobBuilder();
+                    injectedPadding = newSectionPointerToRawData - location.PointerToRawData;
+                    sectionDataBuilder.WriteBytes(1, injectedPadding);
                 }
                 sectionStartRva = newSectionStartRva;
-                location = new SectionLocation(sectionStartRva, sectionStartRva);
+                location = new SectionLocation(sectionStartRva, newSectionPointerToRawData);
             }
 
             if (!_target.IsWindows)
@@ -603,16 +633,19 @@ namespace ILCompiler.PEWriter
                 sectionDataBuilder.WriteByte(0);
             }
 
+            int sectionRawSize = sectionDataBuilder.Count - injectedPadding;
+
             if (_customPESectionAlignment.HasValue && _customPESectionAlignment.Value != 0)
             {
                 // Align the end of the section to the padding offset
-                int count = AlignmentHelper.AlignUp(sectionDataBuilder.Count, _customPESectionAlignment.Value);
-                sectionDataBuilder.WriteBytes(0, count - sectionDataBuilder.Count);
+                int count = AlignmentHelper.AlignUp(sectionRawSize, _customPESectionAlignment.Value);
+                sectionDataBuilder.WriteBytes(0, count - sectionRawSize);
+                sectionRawSize = count;
             }
 
             if (outputSectionIndex >= 0)
             {
-                _sectionRawSizes[outputSectionIndex] = sectionDataBuilder.Count;
+                _sectionRawSizes[outputSectionIndex] = sectionRawSize;
             }
 
             return sectionDataBuilder;
