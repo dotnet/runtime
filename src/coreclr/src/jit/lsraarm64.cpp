@@ -1040,6 +1040,9 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree)
 
             case NI_AdvSimd_ExtractVector64:
             case NI_AdvSimd_ExtractVector128:
+            case NI_AdvSimd_ShiftLeftLogicalAndInsert:
+            case NI_AdvSimd_ShiftLeftLogicalAndInsertScalar:
+            case NI_AdvSimd_ShiftRightAndInsert:
             case NI_AdvSimd_ShiftRightArithmeticAdd:
             case NI_AdvSimd_ShiftRightArithmeticAddScalar:
             case NI_AdvSimd_ShiftRightArithmeticNarrowingSaturateUnsignedUpper:
@@ -1050,6 +1053,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree)
             case NI_AdvSimd_ShiftRightArithmeticRoundedNarrowingSaturateUpper:
             case NI_AdvSimd_ShiftRightLogicalAdd:
             case NI_AdvSimd_ShiftRightLogicalAddScalar:
+            case NI_AdvSimd_ShiftRightLogicalAndInsertScalar:
             case NI_AdvSimd_ShiftRightLogicalNarrowingSaturateUpper:
             case NI_AdvSimd_ShiftRightLogicalNarrowingUpper:
             case NI_AdvSimd_ShiftRightLogicalRoundedAdd:
