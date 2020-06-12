@@ -2,13 +2,13 @@
 
   <!-- This project uses the Helix SDK, documented at
        https://github.com/dotnet/arcade/tree/master/src/Microsoft.DotNet.Helix/Sdk,
-       to send test jobs to helix.
+       to send test jobs to Helix.
   -->
 
   <PropertyGroup>
     <TargetsWindows Condition="'$(TargetOS)' == 'Windows_NT'">true</TargetsWindows>
 
-    <!-- Set helix build to build number if available -->
+    <!-- Set Helix build to build number if available -->
     <HelixBuild Condition="'$(HelixBuild)' == ''">$(BUILD_BUILDNUMBER)</HelixBuild>
     <HelixBuild Condition="'$(HelixBuild)' == ''">default</HelixBuild>
 
@@ -25,11 +25,8 @@
          Package testing doesn't run on xunit. -->
     <EnableXunitReporter Condition="'$(BuildAllConfigurations)' != 'true'">true</EnableXunitReporter>
     
+    <!-- The Helix runtime payload and the tests to run -->
     <!-- TestArchiveRuntimeFile will be passed as a property by the calling project -->
-    <TestArchiveRuntimeFile Condition="'$(TestArchiveRuntimeFile)' == ''">$(TestArchiveRuntimeRoot)test-runtime-$(BuildSettings).zip</TestArchiveRuntimeFile>
-    <TestArchiveRuntimeFile Condition="'$(TestArchiveRuntimeFile)' == '' and '$(BuildAllConfigurations)' == 'true'">$(TestArchiveRuntimeRoot)packages-testPayload-$(Configuration).zip</TestArchiveRuntimeFile>
-
-    <!-- The helix runtime payload and the tests to run -->
     <HelixCorrelationPayload Condition="'$(HelixCorrelationPayload)' == ''">$(TestArchiveRuntimeFile)</HelixCorrelationPayload>
     <WorkItemArchiveWildCard Condition="'$(WorkItemArchiveWildCard)' == ''">$(TestArchiveTestsRoot)**/*.zip</WorkItemArchiveWildCard>
 
@@ -49,7 +46,7 @@
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(BuildAllConfigurations)' == 'true'">
-    <!-- Use helix feature to include dotnet CLI for every workitem and add it to the path -->
+    <!-- Use Helix feature to include dotnet CLI for every workitem and add it to the path -->
     <IncludeDotNetCli>true</IncludeDotNetCli>
     <DotNetCliPackageType>sdk</DotNetCliPackageType>
 
@@ -126,14 +123,6 @@
     <HelixCommand Condition="'$(TargetsWindows)' == 'true'">call RunTests.cmd --runtime-path %HELIX_CORRELATION_PAYLOAD%</HelixCommand>
     <HelixCommand Condition="'$(TargetsWindows)' != 'true'">./RunTests.sh --runtime-path "$HELIX_CORRELATION_PAYLOAD"</HelixCommand>
   </PropertyGroup>
-
-  <!--
-    We need to include all dlls in the runtime path as inputs to make it really incremental if we use the root folder,
-    if a dll is updated, the folder's timestamp is not updated, therefore skipped.
-  -->
-  <ItemGroup>
-    <_RuntimeInputs Include="$(TestHostRootPath)**/*.dll" />
-  </ItemGroup>
 
   <ItemGroup>
     <HelixProperties Condition="'$(RuntimeFlavor)' != ''" Include="runtimeFlavor" Value="$(RuntimeFlavor)" />
