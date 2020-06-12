@@ -91,6 +91,7 @@ namespace Internal.TypeSystem
         /// </summary>
         private static bool IsMethodSignatureCompatibleWith(TypeDesc fn1Ttype, TypeDesc fn2Type)
         {
+            Debug.Assert(fn1Ttype.IsFunctionPointer && fn2Type.IsFunctionPointer);
             return fn1Ttype == fn2Type;
         }
 
