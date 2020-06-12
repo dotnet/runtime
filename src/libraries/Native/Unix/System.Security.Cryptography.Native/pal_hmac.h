@@ -63,3 +63,17 @@ PALEXPORT int32_t CryptoNative_HmacUpdate(HMAC_CTX* ctx, const uint8_t* data, in
  * Returns 1 for success or 0 for failure. (Always succeeds on platforms where HMAC_Update returns void.)
  */
 PALEXPORT int32_t CryptoNative_HmacFinal(HMAC_CTX* ctx, uint8_t* md, int32_t* len);
+
+/**
+ * Duplicates the state of an HMAC_CTX into a new HMAC_CTX.
+ *
+ * Returns the duplicated HMAC_CTX on success, NULL on failure.
+ */
+PALEXPORT HMAC_CTX* CryptoNative_HmacDup(const HMAC_CTX* ctx);
+
+/**
+ * Retrieves the HMAC for the data already accumulated in ctx without finalizing the state.
+ *
+ * Returns 1 for success or 0 for failure.
+ */
+PALEXPORT int32_t CryptoNative_HmacCurrent(const HMAC_CTX* ctx, uint8_t* md, int32_t* len);
