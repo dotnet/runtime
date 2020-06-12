@@ -12,7 +12,6 @@ namespace System.Runtime.InteropServices.JavaScript
 
         public Int16Array(int length) : base(length) { }
 
-
         public Int16Array(ArrayBuffer buffer) : base(buffer) { }
 
         public Int16Array(ArrayBuffer buffer, int byteOffset) : base(buffer, byteOffset) { }
@@ -25,7 +24,7 @@ namespace System.Runtime.InteropServices.JavaScript
 
         public Int16Array(SharedArrayBuffer buffer, int byteOffset, int length) : base(buffer, byteOffset, length) { }
 
-        internal Int16Array(IntPtr js_handle) : base(js_handle)
+        internal Int16Array(IntPtr jsHandle, bool ownsHandle) : base(jsHandle, ownsHandle)
         { }
 
         /// <summary>
