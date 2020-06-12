@@ -126,7 +126,6 @@
 
     <FeatureManagedEtwChannels>true</FeatureManagedEtwChannels>
     <FeatureManagedEtw>true</FeatureManagedEtw>
-    <FeaturePortableTimer>true</FeaturePortableTimer>
     <FeaturePortableThreadPool>true</FeaturePortableThreadPool>
     <FeaturePerfTracing>true</FeaturePerfTracing>
     <FeatureHardwareIntrinsics>true</FeatureHardwareIntrinsics>
@@ -292,6 +291,9 @@
       <Compile Include="$(CommonPath)Interop\OSX\System.Native\Interop.SearchPath.cs">
         <Link>Common\Interop\OSX\Interop.SearchPath.cs</Link>
       </Compile>
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetsBrowser)' == 'true'">
+	<Compile Include="$(BclSourcesRoot)\System\Threading\TimerQueue.Browser.cs" />
   </ItemGroup>
   <ItemGroup>
       <Compile Include="$(BclSourcesRoot)\Mono\RuntimeStructs.cs" />
