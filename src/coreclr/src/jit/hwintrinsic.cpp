@@ -535,9 +535,9 @@ GenTree* Compiler::addRangeCheckIfNeeded(
     // because the imm-parameter of the intrinsic method is a byte.
     // AVX2 Gather intrinsics no not need the range-check
     // because their imm-parameter have discrete valid values that are handle by managed code
-    if (mustExpand && !HWIntrinsicInfo::HasFullRangeImm(intrinsic) && HWIntrinsicInfo::isImmOp(intrinsic, immOp)
+    if (mustExpand && HWIntrinsicInfo::isImmOp(intrinsic, immOp)
 #ifdef TARGET_XARCH
-        && !HWIntrinsicInfo::isAVX2GatherIntrinsic(intrinsic)
+        && !HWIntrinsicInfo::isAVX2GatherIntrinsic(intrinsic) && !HWIntrinsicInfo::HasFullRangeImm(intrinsic)
 #endif
             )
     {
