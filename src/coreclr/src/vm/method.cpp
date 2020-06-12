@@ -4865,6 +4865,14 @@ bool MethodDesc::IsJitOptimizationDisabled()
 {
     WRAPPER_NO_CONTRACT;
 
+#ifdef FEATURE_INTERPRETER
+    static ConfigDWORD s_ForceInterpreterTier0;
+    if (s_ForceInterpreterTier0.val(CLRConfig::INTERNAL_ForceInterpreterTier0) != 0)
+    {
+        return false;
+    }
+#endif
+
     return
         g_pConfig->JitMinOpts() ||
 #ifdef _DEBUG

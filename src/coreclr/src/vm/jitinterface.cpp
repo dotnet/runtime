@@ -12261,9 +12261,8 @@ CorJitResult invokeCompileMethodHelper(EEJitManager *jitMgr,
     static ConfigDWORD s_InterpreterFallback;
     static ConfigDWORD s_ForceInterpreterTier0;
 
-    bool isInterpreterStub     = false;
-    bool interpreterFallback   = (s_InterpreterFallback.val(CLRConfig::INTERNAL_InterpreterFallback) != 0);
-    bool forceInterpreterTier0 = (s_ForceInterpreterTier0.val(CLRConfig::INTERNAL_ForceInterpreterTier0) != 0);
+    bool isInterpreterStub   = false;
+    bool interpreterFallback = (s_InterpreterFallback.val(CLRConfig::INTERNAL_InterpreterFallback) != 0);
 
     if (interpreterFallback == false)
     {
@@ -12271,7 +12270,7 @@ CorJitResult invokeCompileMethodHelper(EEJitManager *jitMgr,
         // (We assume that importation is completely architecture-independent, or at least nearly so.)
         if (FAILED(ret) &&
             !jitFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_IMPORT_ONLY) &&
-            (!jitFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_MAKEFINALCODE) || forceInterpreterTier0))
+            !jitFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_MAKEFINALCODE))
         {
             if (SUCCEEDED(ret = Interpreter::GenerateInterpreterStub(comp, info, nativeEntry, nativeSizeOfCode)))
             {
@@ -12296,7 +12295,7 @@ CorJitResult invokeCompileMethodHelper(EEJitManager *jitMgr,
         // (We assume that importation is completely architecture-independent, or at least nearly so.)
         if (FAILED(ret) &&
             !jitFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_IMPORT_ONLY) &&
-            (!jitFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_MAKEFINALCODE) || forceInterpreterTier0))
+            !jitFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_MAKEFINALCODE))
         {
             if (SUCCEEDED(ret = Interpreter::GenerateInterpreterStub(comp, info, nativeEntry, nativeSizeOfCode)))
             {
