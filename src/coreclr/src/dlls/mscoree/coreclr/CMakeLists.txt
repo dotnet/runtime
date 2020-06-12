@@ -110,7 +110,6 @@ set(CORECLR_LIBRARIES
     ildbsymlib
     utilcode
     v3binder
-    libraries-native
     System.Globalization.Native-Static
     interop
 )

@@ -31,6 +31,18 @@ typedef struct MonoLookupPInvokeStatus {
 gpointer
 mono_lookup_pinvoke_qcall_internal (MonoMethod *method, MonoLookupPInvokeStatus *error);
 
+typedef struct
+{
+    void ** m_ppObject;
+    MonoReflectionAssemblyHandle m_pAssembly;
+} AssemblyHandle;
+
+typedef struct
+{
+    void ** m_ppObject;
+    MonoImage** m_pModule;
+} ModuleHandle;
+
 #define BEGIN_QCALL ERROR_DECL (error)
 #define END_QCALL mono_error_set_pending_exception (error)
 

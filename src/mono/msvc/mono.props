@@ -50,7 +50,6 @@
     <MONO_LLVM_DEFAULT_API_VERSION>610</MONO_LLVM_DEFAULT_API_VERSION>
     <SHIM_GLOBALIZATION Condition="'$(MONO_ENABLE_NETCORE)'=='true'">$(top_srcdir)/../libraries/Native/Unix/System.Globalization.Native</SHIM_GLOBALIZATION>
     <SHIM_GLOBALIZATION_COMMON Condition="'$(MONO_ENABLE_NETCORE)'=='true'">$(top_srcdir)/../libraries/Native/Unix/Common</SHIM_GLOBALIZATION_COMMON>
-    <SHIM_GLOBALIZATION_QCALL Condition="'$(MONO_ENABLE_NETCORE)'=='true'">$(top_srcdir)/../coreclr/src/libraries-native</SHIM_GLOBALIZATION_QCALL>
     <SHIM_GLOBALIZATION_INCLUDE_DIR Condition="'$(MONO_ENABLE_NETCORE)'=='true'">$(SHIM_GLOBALIZATION_COMMON);$(SHIM_GLOBALIZATION)</SHIM_GLOBALIZATION_INCLUDE_DIR>
     <MONO_LLVM_DEFAULT_INCLUDE_DIR>$(MONO_DIR)/external/llvm-project/llvm/include</MONO_LLVM_DEFAULT_INCLUDE_DIR>
   </PropertyGroup>

@@ -13,6 +13,20 @@
 #include "mono/metadata/native-library.h"
 #include "mono/metadata/qcalllist.h"
 
+enum {
+    func_flag_end_of_array   = 0x01,
+    func_flag_has_signature = 0x02,
+    func_flag_unreferenced = 0x04, // Suppress unused fcall check
+    func_flag_qcall        = 0x08, // QCall - mscorlib.dll to mscorwks.dll transition implemented as PInvoke
+};
+
+
+static const MonoQCallDef c_qcalls[] =
+{
+    #define FCClassElement(name,namespace,funcs) {name, namespace, funcs},
+    #include "mono/metadata/qcall-def.h"
+    #undef FCClassElement
+};
 
 const int c_nECClasses = sizeof(c_qcalls)/sizeof(c_qcalls[0]);
 
@@ -88,10 +102,16 @@ gpointer
 mono_lookup_pinvoke_qcall_internal (MonoMethod *method, MonoLookupPInvokeStatus *status_out)
 {
     int pos_class = find_impls_index_for_class (method);
-    if (pos_class < 0)
+    if (pos_class < 0) {
+        mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_QCALL,
+            "Couldn't find class: '%s' in namespace '%s'.", m_class_get_name(method->klass), m_class_get_name_space(method->klass));
         return NULL;
+    }
     int pos_method = find_index_for_method (method, c_qcalls[pos_class].functions);
-    if (pos_method < 0)
+    if (pos_method < 0) {
+        mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_QCALL,
+            "Couldn't find method: '%s' in class '%s' in namespace '%s'.", method->name, m_class_get_name(method->klass), m_class_get_name_space(method->klass));
         return NULL;
+    }
     return  (gpointer)c_qcalls[pos_class].functions[pos_method+1];
-} 
+}

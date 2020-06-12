@@ -61,6 +61,7 @@ set(NATIVEGLOBALIZATION_SOURCES
     pal_normalization.c
     pal_timeZoneInfo.c
     pal_icushim.c
+    entrypoints.c
 )
 
 include_directories("../Common")

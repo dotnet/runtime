@@ -155,7 +155,7 @@ nodist_libmonoruntime_shimglobalization_la_SOURCES = \
 									@ICU_SHIM_PATH@/pal_normalization.c \
 									@ICU_SHIM_PATH@/pal_timeZoneInfo.c \
 									@ICU_SHIM_PATH@/pal_icushim.c \
-									@ICU_SHIM_QCALLS_PATH@/entrypoints.c
+									@ICU_SHIM_PATH@/entrypoints.c
 
 libmonoruntime_shimglobalization_la_CFLAGS = @ICU_CFLAGS@ -I$(top_srcdir)/../libraries/Native/Unix/System.Globalization.Native/ -I$(top_srcdir)/../libraries/Native/Unix/Common/
 endif
@@ -267,7 +267,7 @@ common_sources = \
 	domain-internals.h	\
 	environment.c		\
 	environment.h		\
-	qcall-eventpipe.c	\
+	icall-eventpipe.c	\
 	exception.c		\
 	exception.h		\
 	exception-internals.h	\

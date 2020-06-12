@@ -6815,7 +6815,6 @@ if test x$with_core = xonly; then
 	fi
 	if test x$have_shim_globalization = xyes || test x$cross_compiling = xyes; then
 		ICU_SHIM_PATH=../../../libraries/Native/Unix/System.Globalization.Native
-		ICU_SHIM_QCALLS_PATH=../../../coreclr/src/libraries-native
 		if test x$target_osx = xyes; then
 			ORIG_CPPFLAGS=$CPPFLAGS
 			# adding icu path to pkg_config_path
@@ -6849,7 +6848,6 @@ if test x$with_core = xonly; then
 	fi
 fi
 AC_SUBST(ICU_SHIM_PATH)
-AC_SUBST(ICU_SHIM_QCALLS_PATH)
 AM_CONDITIONAL(HAVE_SYS_ICU, test x$have_sys_icu = xyes)
 
 AC_SUBST(CFLAGS)
