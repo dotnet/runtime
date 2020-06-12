@@ -7,6 +7,7 @@
 // that the ABI is correctly implemented, but this test is here to enable
 // these cases to be manually verified (and diffed).
 //
+using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.Intrinsics;
 
@@ -30,13 +31,36 @@ struct S3 { Vector128<byte> x; WrappedVector256 y; }
 static class Runtime_35144
 {
     [MethodImpl(MethodImplOptions.NoInlining)]
-    static void Foo<T>(T x) { }
+    static void Foo<T>(T x, object o)
+    {
+        if (o.GetType() != typeof(string)) throw new Exception();
+        if (((string)o) != "SomeString") throw new Exception();
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
+    static void FooOpt<T>(T x, object o)
+    {
+        if (o.GetType() != typeof(string)) throw new Exception();
+        if (((string)o) != "SomeString") throw new Exception();
+    }
 
     static int Main()
     {
-        Foo(new S1());
-        Foo(new S2());
-        Foo(new S3());
-        return 100;
+        int returnVal = 100;
+        try
+        {
+            Foo(new S1(), "SomeString");
+            Foo(new S2(), "SomeString");
+            Foo(new S3(), "SomeString");
+            FooOpt(new S1(), "SomeString");
+            FooOpt(new S2(), "SomeString");
+            FooOpt(new S3(), "SomeString");
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine("Unexpected exception " + e.Message);
+            returnVal = -1;
+        }
+        return returnVal;
     }
 }
