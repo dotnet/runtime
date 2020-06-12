@@ -276,7 +276,7 @@ namespace System.Xml.Schema
         /// If the given schema references other namespaces, the schemas for those other
         /// namespaces are NOT automatically loaded.
         /// </summary>
-        public XmlSchema? Add(string targetNamespace, string schemaUri)
+        public XmlSchema? Add(string? targetNamespace, string schemaUri)
         {
             if (schemaUri == null || schemaUri.Length == 0)
             {
@@ -326,7 +326,7 @@ namespace System.Xml.Schema
         /// If the given schema references other namespaces, the schemas for those
         /// other namespaces are NOT automatically loaded.
         /// </summary>
-        public XmlSchema? Add(string targetNamespace, XmlReader schemaDocument)
+        public XmlSchema? Add(string? targetNamespace, XmlReader schemaDocument)
         {
             if (schemaDocument == null)
             {

@@ -424,12 +424,12 @@ namespace System.Xml.Schema
 
         // SxS: This method passes null as resource names and does not expose any resources to the caller.
         // It's OK to suppress the SxS warning.
-        public void ValidateElement(string localName, string namespaceUri, XmlSchemaInfo schemaInfo)
+        public void ValidateElement(string localName, string namespaceUri, XmlSchemaInfo? schemaInfo)
         {
             ValidateElement(localName, namespaceUri, schemaInfo, null, null, null, null);
         }
 
-        public void ValidateElement(string localName, string namespaceUri, XmlSchemaInfo schemaInfo, string? xsiType, string? xsiNil, string? xsiSchemaLocation, string? xsiNoNamespaceSchemaLocation)
+        public void ValidateElement(string localName, string namespaceUri, XmlSchemaInfo? schemaInfo, string? xsiType, string? xsiNil, string? xsiSchemaLocation, string? xsiNoNamespaceSchemaLocation)
         {
             if (localName == null)
             {
@@ -518,7 +518,7 @@ namespace System.Xml.Schema
             }
         }
 
-        public object? ValidateAttribute(string localName, string namespaceUri, string attributeValue, XmlSchemaInfo schemaInfo)
+        public object? ValidateAttribute(string localName, string namespaceUri, string attributeValue, XmlSchemaInfo? schemaInfo)
         {
             if (attributeValue == null)
             {
@@ -528,7 +528,7 @@ namespace System.Xml.Schema
             return ValidateAttribute(localName, namespaceUri, null, attributeValue, schemaInfo);
         }
 
-        public object? ValidateAttribute(string localName, string namespaceUri, XmlValueGetter attributeValue, XmlSchemaInfo schemaInfo)
+        public object? ValidateAttribute(string localName, string namespaceUri, XmlValueGetter attributeValue, XmlSchemaInfo? schemaInfo)
         {
             if (attributeValue == null)
             {
@@ -538,7 +538,7 @@ namespace System.Xml.Schema
             return ValidateAttribute(localName, namespaceUri, attributeValue, null, schemaInfo);
         }
 
-        private object? ValidateAttribute(string localName, string namespaceUri, XmlValueGetter? attributeValueGetter, string? attributeStringValue, XmlSchemaInfo schemaInfo)
+        private object? ValidateAttribute(string localName, string namespaceUri, XmlValueGetter? attributeValueGetter, string? attributeStringValue, XmlSchemaInfo? schemaInfo)
         {
             if (localName == null)
             {
@@ -766,7 +766,7 @@ namespace System.Xml.Schema
             GetUnspecifiedDefaultAttributes(defaultAttributes, false);
         }
 
-        public void ValidateEndOfAttributes(XmlSchemaInfo schemaInfo)
+        public void ValidateEndOfAttributes(XmlSchemaInfo? schemaInfo)
         {
             CheckStateTransition(ValidatorState.EndOfAttributes, s_methodNames[(int)ValidatorState.EndOfAttributes]);
             //Check required attributes
@@ -934,12 +934,12 @@ namespace System.Xml.Schema
             }
         }
 
-        public object? ValidateEndElement(XmlSchemaInfo schemaInfo)
+        public object? ValidateEndElement(XmlSchemaInfo? schemaInfo)
         {
             return InternalValidateEndElement(schemaInfo, null);
         }
 
-        public object? ValidateEndElement(XmlSchemaInfo schemaInfo, object typedValue)
+        public object? ValidateEndElement(XmlSchemaInfo? schemaInfo, object typedValue)
         {
             if (typedValue == null)
             {
@@ -953,7 +953,7 @@ namespace System.Xml.Schema
             return InternalValidateEndElement(schemaInfo, typedValue);
         }
 
-        public void SkipToEndElement(XmlSchemaInfo schemaInfo)
+        public void SkipToEndElement(XmlSchemaInfo? schemaInfo)
         {
             if (_validationStack.Length <= 1)
             {
@@ -1223,7 +1223,7 @@ namespace System.Xml.Schema
             return _textValue.ToString();
         }
 
-        private object? InternalValidateEndElement(XmlSchemaInfo schemaInfo, object? typedValue)
+        private object? InternalValidateEndElement(XmlSchemaInfo? schemaInfo, object? typedValue)
         {
             if (_validationStack.Length <= 1)
             {

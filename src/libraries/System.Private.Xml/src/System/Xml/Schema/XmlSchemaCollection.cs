@@ -98,7 +98,7 @@ namespace System.Xml.Schema
         /// If the given schema references other namespaces, the schemas for those other
         /// namespaces are NOT automatically loaded.
         /// </summary>
-        public XmlSchema? Add(string ns, string uri)
+        public XmlSchema? Add(string? ns, string uri)
         {
             if (uri == null || uri.Length == 0)
                 throw new ArgumentNullException(nameof(uri));
@@ -118,7 +118,7 @@ namespace System.Xml.Schema
             return schema;
         }
 
-        public XmlSchema? Add(string ns, XmlReader reader)
+        public XmlSchema? Add(string? ns, XmlReader reader)
         {
             return Add(ns, reader, _xmlResolver);
         }
@@ -128,7 +128,7 @@ namespace System.Xml.Schema
         /// If the given schema references other namespaces, the schemas for those
         /// other namespaces are NOT automatically loaded.
         /// </summary>
-        public XmlSchema? Add(string ns, XmlReader reader, XmlResolver? resolver)
+        public XmlSchema? Add(string? ns, XmlReader reader, XmlResolver? resolver)
         {
             if (reader == null)
                 throw new ArgumentNullException(nameof(reader));
@@ -215,7 +215,7 @@ namespace System.Xml.Schema
             return this[schema.TargetNamespace] != null;
         }
 
-        public bool Contains(string ns)
+        public bool Contains(string? ns)
         {
             return _collection[(ns != null) ? ns : string.Empty] != null;
         }
@@ -285,7 +285,7 @@ namespace System.Xml.Schema
             get { return _collection.Count; }
         }
 
-        internal SchemaInfo? GetSchemaInfo(string ns)
+        internal SchemaInfo? GetSchemaInfo(string? ns)
         {
             XmlSchemaCollectionNode? node = (XmlSchemaCollectionNode?)_collection[(ns != null) ? ns : string.Empty];
             return (node != null) ? node.SchemaInfo : null;
@@ -307,7 +307,7 @@ namespace System.Xml.Schema
             }
         }
 
-        internal XmlSchema? Add(string ns, SchemaInfo schemaInfo, XmlSchema? schema, bool compile)
+        internal XmlSchema? Add(string? ns, SchemaInfo schemaInfo, XmlSchema? schema, bool compile)
         {
             return Add(ns, schemaInfo, schema, compile, _xmlResolver);
         }
