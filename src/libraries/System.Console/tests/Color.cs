@@ -19,7 +19,7 @@ public class Color
         AssertExtensions.Throws<ArgumentException>(null, () => Console.ForegroundColor = (ConsoleColor)42);
     }
 
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
     public static void RoundtrippingColor()
     {
         Console.BackgroundColor = Console.BackgroundColor;
@@ -31,7 +31,7 @@ public class Color
         // simple ensure that getting/setting doesn't throw.
     }
 
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
     public static void RedirectedOutputDoesNotUseAnsiSequences()
     {
         // Make sure that redirecting to a memory stream causes Console not to write out the ANSI sequences

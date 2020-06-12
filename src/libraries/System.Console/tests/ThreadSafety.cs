@@ -12,7 +12,7 @@ public class ThreadSafety
 {
     const int NumberOfIterations = 100;
 
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
     public static void OpenStandardXXXCanBeCalledConcurrently()
     {
         Parallel.For(0, NumberOfIterations, i =>
@@ -40,7 +40,7 @@ public class ThreadSafety
         });
     }
 
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
     public static void SetStandardXXXCanBeCalledConcurrently()
     {
         TextReader savedStandardInput = Console.In;
@@ -82,7 +82,7 @@ public class ThreadSafety
         }
     }
 
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
     public static void ReadMayBeCalledConcurrently()
     {
         const char TestChar = '+';

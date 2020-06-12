@@ -16,7 +16,7 @@ namespace Microsoft.Extensions.Http.Logging
 {
     public class RedactedLogValueIntegrationTest
     {
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public async Task RedactHeaderValueWithHeaderList_ValueIsRedactedBeforeLogging()
         {
             // Arrange
@@ -94,7 +94,7 @@ Y-Non-Sensitive: innocuous value
 ", message.Message);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public async Task RedactHeaderValueWithPredicate_ValueIsRedactedBeforeLogging()
         {
             // Arrange

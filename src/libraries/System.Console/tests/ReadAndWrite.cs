@@ -343,7 +343,7 @@ public class ReadAndWrite
         "Hello World",
     };
 
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
     public static void ReadAndReadLine()
     {
         TextWriter savedStandardOutput = Console.Out;

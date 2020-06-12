@@ -11,7 +11,7 @@ using Xunit;
 //
 public class SetIn
 {
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
     public static void SetInThrowsOnNull()
     {
         TextReader savedIn = Console.In;
@@ -25,7 +25,7 @@ public class SetIn
         }
     }
 
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
     public static void SetInReadLine()
     {
         const string TextStringFormat = "Test {0}";

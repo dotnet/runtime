@@ -21,7 +21,7 @@ public partial class ConsoleEncoding
         yield return new object[] { "\uD800" };
     }
 
-    [Theory]
+    [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
     [MemberData(nameof(InputData))]
     public void TestEncoding(string inputString)
     {
@@ -78,7 +78,7 @@ public partial class ConsoleEncoding
         }
     }
 
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
     public void TestValidEncodings()
     {
         Action<Encoding> check = encoding =>
