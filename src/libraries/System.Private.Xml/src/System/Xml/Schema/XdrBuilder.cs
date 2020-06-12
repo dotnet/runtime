@@ -610,7 +610,7 @@ namespace System.Xml.Schema
 
         private void Pop()
         {
-            _CurState = (XdrEntry?)_StateHistory.Pop()!;
+            _CurState = (XdrEntry)_StateHistory.Pop()!;
         }
 
         //

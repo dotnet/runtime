@@ -445,7 +445,7 @@ namespace System.Xml.Schema
                 return;
             }
 
-            XmlSchemaElement examplar = (XmlSchemaElement)_schema!.Elements[substitutionGroup.Examplar]!;
+            XmlSchemaElement? examplar = (XmlSchemaElement?)_schema!.Elements[substitutionGroup.Examplar];
             if (substitutionGroup.Members.Contains(examplar))
             {// already checked
                 return;

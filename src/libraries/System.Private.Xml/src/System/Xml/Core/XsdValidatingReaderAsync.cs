@@ -702,7 +702,7 @@ namespace System.Xml
                         originalStringValue = (schemaAttr.DefaultValue != null) ? schemaAttr.DefaultValue : schemaAttr.FixedValue!;
                     }
 
-                    tuple = new Tuple<string, object>(originalStringValue, ReturnBoxedValue(_attributePSVI.typedAttributeValue, AttributeSchemaInfo.XmlType!, unwrapTypedValue)!);
+                    tuple = new Tuple<string, object>(originalStringValue, ReturnBoxedValue(_attributePSVI.typedAttributeValue, AttributeSchemaInfo.XmlType!, unwrapTypedValue));
                     return tuple;
                 }
                 else
@@ -736,7 +736,7 @@ namespace System.Xml
                 if (_validator.CurrentContentType == XmlSchemaContentType.TextOnly)
                 {
                     // if current element is of simple type
-                    object? value = ReturnBoxedValue(await ReadTillEndElementAsync().ConfigureAwait(false), _xmlSchemaInfo.XmlType!, unwrapTypedValue)!;
+                    object? value = ReturnBoxedValue(await ReadTillEndElementAsync().ConfigureAwait(false), _xmlSchemaInfo.XmlType!, unwrapTypedValue);
                     Debug.Assert(value != null);
 
                     Debug.Assert(_originalAtomicValueString != null);
@@ -787,7 +787,7 @@ namespace System.Xml
             {
                 if (_xmlSchemaInfo.ContentType == XmlSchemaContentType.TextOnly)
                 {
-                    typedValue = ReturnBoxedValue(_atomicValue, _xmlSchemaInfo.XmlType!, unwrapTypedValue)!;
+                    typedValue = ReturnBoxedValue(_atomicValue, _xmlSchemaInfo.XmlType!, unwrapTypedValue);
                 }
                 else
                 {
@@ -812,7 +812,7 @@ namespace System.Xml
                 {
                     if (_xmlSchemaInfo.ContentType == XmlSchemaContentType.TextOnly)
                     {
-                        typedValue = ReturnBoxedValue(_atomicValue, _xmlSchemaInfo.XmlType!, unwrapTypedValue)!;
+                        typedValue = ReturnBoxedValue(_atomicValue, _xmlSchemaInfo.XmlType!, unwrapTypedValue);
                     }
                     else
                     {

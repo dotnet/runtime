@@ -373,7 +373,7 @@ namespace System.Xml.Schema
                     string elemNS = _namespaceManager!.LookupNamespace(r.Prefix)!;
                     if (elemNS != string.Empty)
                     {
-                        XmlAttribute attr = CreateXmlNsAttribute(r.Prefix, elemNS!);
+                        XmlAttribute attr = CreateXmlNsAttribute(r.Prefix, elemNS);
                         attributes.Append(attr);
                     }
                 }

@@ -319,7 +319,7 @@ namespace System.Xml.Schema
             }
         }
 
-        private void CleanupComplexType(XmlSchemaComplexType? complexType)
+        private void CleanupComplexType(XmlSchemaComplexType complexType)
         {
             if (complexType!.QualifiedName == DatatypeImplementation.QnAnyType)
             { //if it is built-in anyType dont clean it.
@@ -348,20 +348,20 @@ namespace System.Xml.Schema
                     if (complexContent.Content is XmlSchemaComplexContentExtension)
                     {
                         XmlSchemaComplexContentExtension complexExtension = (XmlSchemaComplexContentExtension)complexContent.Content;
-                        CleanupParticle(complexExtension.Particle!);
+                        CleanupParticle(complexExtension.Particle);
                         CleanupAttributes(complexExtension.Attributes);
                     }
                     else
                     { //XmlSchemaComplexContentRestriction
                         XmlSchemaComplexContentRestriction complexRestriction = (XmlSchemaComplexContentRestriction)complexContent.Content!;
-                        CleanupParticle(complexRestriction.Particle!);
+                        CleanupParticle(complexRestriction.Particle);
                         CleanupAttributes(complexRestriction.Attributes);
                     }
                 }
             }
             else
             { //equals XmlSchemaComplexContent with baseType is anyType
-                CleanupParticle(complexType.Particle!);
+                CleanupParticle(complexType.Particle);
                 CleanupAttributes(complexType.Attributes);
             }
 
@@ -375,7 +375,7 @@ namespace System.Xml.Schema
             //Clean up the original type if this is a redefined type
             if (complexType.Redefined != null)
             {
-                CleanupComplexType(complexType.Redefined as XmlSchemaComplexType);
+                CleanupComplexType((complexType.Redefined as XmlSchemaComplexType)!);
             }
         }
 
@@ -429,7 +429,7 @@ namespace System.Xml.Schema
 
         private void CleanupGroup(XmlSchemaGroup group)
         {
-            CleanupParticle(group.Particle!);
+            CleanupParticle(group.Particle);
             group.CanonicalParticle = null;
             //Clean up the original group if this is a redefined group
             if (group.Redefined != null)
@@ -438,7 +438,7 @@ namespace System.Xml.Schema
             }
         }
 
-        private void CleanupParticle(XmlSchemaParticle particle)
+        private void CleanupParticle(XmlSchemaParticle? particle)
         {
             XmlSchemaElement? element = particle as XmlSchemaElement;
             if (element != null)

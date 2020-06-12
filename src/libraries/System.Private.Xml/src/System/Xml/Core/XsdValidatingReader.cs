@@ -2389,7 +2389,7 @@ namespace System.Xml
                         originalStringValue = (schemaAttr.DefaultValue != null) ? schemaAttr.DefaultValue : schemaAttr.FixedValue!;
                     }
 
-                    return ReturnBoxedValue(_attributePSVI.typedAttributeValue, AttributeSchemaInfo.XmlType!, unwrapTypedValue)!;
+                    return ReturnBoxedValue(_attributePSVI.typedAttributeValue, AttributeSchemaInfo.XmlType!, unwrapTypedValue);
                 }
                 else
                 {
@@ -2418,7 +2418,7 @@ namespace System.Xml
                 if (_validator.CurrentContentType == XmlSchemaContentType.TextOnly)
                 {
                     // if current element is of simple type
-                    object? value = ReturnBoxedValue(ReadTillEndElement(), _xmlSchemaInfo.XmlType!, unwrapTypedValue)!;
+                    object? value = ReturnBoxedValue(ReadTillEndElement(), _xmlSchemaInfo.XmlType!, unwrapTypedValue);
                     originalStringValue = _originalAtomicValueString!;
 
                     return value;
@@ -2727,7 +2727,7 @@ namespace System.Xml
             }
         }
 
-        private object? ReturnBoxedValue(object? typedValue, XmlSchemaType xmlType, bool unWrap)
+        private object ReturnBoxedValue(object? typedValue, XmlSchemaType xmlType, bool unWrap)
         {
             if (typedValue != null)
             {
