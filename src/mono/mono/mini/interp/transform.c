@@ -4882,6 +4882,11 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 
 			MonoClass *field_klass = mono_class_from_mono_type_internal (ftype);
 			mt = mint_type (m_class_get_byval_arg (field_klass));
+			int field_size = mono_class_value_size (field_klass, NULL);
+			field_size = ALIGN_TO (field_size, MINT_VT_ALIGNMENT);
+			int obj_size = mono_class_value_size (klass, NULL);
+			obj_size = ALIGN_TO (obj_size, MINT_VT_ALIGNMENT);
+
 #ifndef DISABLE_REMOTING
 			if ((m_class_get_marshalbyref (klass) && !(signature->hasthis && td->last_ins->opcode == MINT_LDARG_P0)) ||
 					mono_class_is_contextbound (klass) ||
@@ -4896,6 +4901,17 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 					interp_add_ins (td, MINT_POP);
 					interp_emit_sfld_access (td, field, field_klass, mt, TRUE, error);
 					goto_if_nok (error, exit);
+				} else if (td->sp [-1].type == STACK_TYPE_VT) {
+					/* First we pop the vt object from the stack. Then we push the field */
+					/* FIXME unaligned field load ? */
+					int opcode = MINT_LDFLD_VT_I1 + mt - MINT_TYPE_I1;
+					interp_add_ins (td, opcode);
+					g_assert (m_class_is_valuetype (klass));
+					td->last_ins->data [0] = field->offset - MONO_ABI_SIZEOF (MonoObject);
+					td->last_ins->data [1] = obj_size;
+					if (mt == MINT_TYPE_VT)
+						td->last_ins->data [2] = field_size;
+					POP_VT (td, obj_size);
 				} else {
 					int opcode = MINT_LDFLD_I1 + mt - MINT_TYPE_I1;
 #ifdef NO_UNALIGNED_ACCESS
@@ -4910,31 +4926,8 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 					}
 				}
 			}
-			if (mt == MINT_TYPE_VT) {
-				int size = mono_class_value_size (field_klass, NULL);
-				PUSH_VT (td, size);
-			}
-			if (td->sp [-1].type == STACK_TYPE_VT) {
-				int size = mono_class_value_size (klass, NULL);
-				size = ALIGN_TO (size, MINT_VT_ALIGNMENT);
-				int field_vt_size = 0;
-				if (mt == MINT_TYPE_VT) {
-					/*
-					 * Pop the loaded field from the vtstack (it will still be present
-					 * at the same vtstack address) and we will load it in place of the
-					 * containing valuetype with the second MINT_VTRESULT.
-					 */
-					field_vt_size = mono_class_value_size (field_klass, NULL);
-					field_vt_size = ALIGN_TO (field_vt_size, MINT_VT_ALIGNMENT);
-					interp_add_ins (td, MINT_VTRESULT);
-					td->last_ins->data [0] = 0;
-					WRITE32_INS (td->last_ins, 1, &field_vt_size);
-				}
-				td->vt_sp -= size;
-				interp_add_ins (td, MINT_VTRESULT);
-				td->last_ins->data [0] = field_vt_size;
-				WRITE32_INS (td->last_ins, 1, &size);
-			}
+			if (mt == MINT_TYPE_VT)
+				PUSH_VT (td, field_size);
 			td->ip += 5;
 			SET_TYPE (td->sp - 1, stack_type [mt], field_klass);
 			BARRIER_IF_VOLATILE (td, MONO_MEMORY_BARRIER_ACQ);
