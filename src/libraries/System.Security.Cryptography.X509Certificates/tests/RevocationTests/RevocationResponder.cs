@@ -164,7 +164,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
                 responded = true;
                 context.Response.StatusCode = 200;
                 context.Response.ContentType = "application/pkix-cert";
-                context.Response.Close(certData, willBlock: false);
+                context.Response.Close(certData, willBlock: true);
                 Trace($"Responded with {certData.Length}-byte certificate from {authority.SubjectName}.");
                 return;
             }
@@ -176,7 +176,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
                 responded = true;
                 context.Response.StatusCode = 200;
                 context.Response.ContentType = "application/pkix-crl";
-                context.Response.Close(crl, willBlock: false);
+                context.Response.Close(crl, willBlock: true);
                 Trace($"Responded with {crl.Length}-byte CRL from {authority.SubjectName}.");
                 return;
             }
@@ -214,7 +214,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
                         context.Response.StatusCode = 200;
                         context.Response.StatusDescription = "OK";
                         context.Response.ContentType = "application/ocsp-response";
-                        context.Response.Close(ocspResponse, willBlock: false);
+                        context.Response.Close(ocspResponse, willBlock: true);
 
                         if (authority.HasOcspDelegation)
                         {
