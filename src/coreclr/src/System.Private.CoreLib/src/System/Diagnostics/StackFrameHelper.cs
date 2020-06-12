@@ -84,6 +84,7 @@ namespace System.Diagnostics
         // done by GetStackFramesInternal (on Windows for old PDB format).
         //
 
+        // TODO: Remove these DynamicDependencyAttributes when https://github.com/mono/linker/issues/943 is fixed.
         // This is necessary because linker can't add new assemblies to the closure when recognizing Type.GetType
         // so the code below is actually recognized by linker, but fails to resolve the type since the System.Diagnostics.StackTrace
         // is not always part of the closure linker works on.

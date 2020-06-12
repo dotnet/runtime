@@ -86,6 +86,7 @@ namespace System.ComponentModel
         [EditorBrowsable(EditorBrowsableState.Advanced)]
         public static Type InterfaceType
         {
+            // TODO: replace this with DynamicallyAccessedMembersAttribute
             [DynamicDependency("#ctor", typeof(TypeDescriptorInterface))]
             get => typeof(TypeDescriptorInterface);
         }

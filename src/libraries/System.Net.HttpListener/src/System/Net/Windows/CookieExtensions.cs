@@ -13,7 +13,7 @@ namespace System.Net
     {
         private static Func<Cookie, string> s_toServerStringFunc;
 
-        [DynamicDependency("ToServerString", "System.Net.Cookie", "System.Net.Primitives")]
+        [DynamicDependency("ToServerString", typeof(Cookie))]
         public static string ToServerString(this Cookie cookie)
         {
             s_toServerStringFunc ??= (Func<Cookie, string>)typeof(Cookie).GetMethod("ToServerString", BindingFlags.Instance | BindingFlags.NonPublic).CreateDelegate(typeof(Func<Cookie, string>));
@@ -23,7 +23,7 @@ namespace System.Net
 
         private static Func<Cookie, Cookie> s_cloneFunc;
 
-        [DynamicDependency("Clone", "System.Net.Cookie", "System.Net.Primitives")]
+        [DynamicDependency("Clone", typeof(Cookie))]
         public static Cookie Clone(this Cookie cookie)
         {
             s_cloneFunc ??= (Func<Cookie, Cookie>)typeof(Cookie).GetMethod("Clone", BindingFlags.Instance | BindingFlags.NonPublic).CreateDelegate(typeof(Func<Cookie, Cookie>));
@@ -42,7 +42,7 @@ namespace System.Net
 
         private static Func<Cookie, CookieVariant> s_getVariantFunc;
 
-        [DynamicDependency("get_Variant", "System.Net.Cookie", "System.Net.Primitives")]
+        [DynamicDependency("get_Variant", typeof(Cookie))]
         public static bool IsRfc2965Variant(this Cookie cookie)
         {
             s_getVariantFunc ??= (Func<Cookie, CookieVariant>)typeof(Cookie).GetProperty("Variant", BindingFlags.Instance | BindingFlags.NonPublic).GetGetMethod(true).CreateDelegate(typeof(Func<Cookie, CookieVariant>));
@@ -55,7 +55,7 @@ namespace System.Net
     {
         private static Func<CookieCollection, Cookie, bool, int> s_internalAddFunc;
 
-        [DynamicDependency("InternalAdd", "System.Net.CookieCollection", "System.Net.Primitives")]
+        [DynamicDependency("InternalAdd", typeof(CookieCollection))]
         public static int InternalAdd(this CookieCollection cookieCollection, Cookie cookie, bool isStrict)
         {
             s_internalAddFunc ??= (Func<CookieCollection, Cookie, bool, int>)typeof(CookieCollection).GetMethod("InternalAdd", BindingFlags.Instance | BindingFlags.NonPublic).CreateDelegate(typeof(Func<CookieCollection, Cookie, bool, int>));

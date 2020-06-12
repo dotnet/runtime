@@ -128,7 +128,7 @@ namespace System.Data.SqlTypes
 
         private static MethodInfo CreateSqlReaderMethodInfo
         {
-            [DynamicDependency("CreateSqlReader", "System.Xml.XmlReader", "System.Private.Xml")]
+            [DynamicDependency("CreateSqlReader", typeof(System.Xml.XmlReader))]
             get
             {
                 if (s_createSqlReaderMethodInfo == null)

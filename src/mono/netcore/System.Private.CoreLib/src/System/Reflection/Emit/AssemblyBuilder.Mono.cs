@@ -218,12 +218,12 @@ namespace System.Reflection.Emit
         private bool manifest_module_used;
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        [DynamicDependency("RuntimeResolve", typeof(ModuleBuilder))]
         private static extern void basic_init(AssemblyBuilder ab);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern void UpdateNativeCustomAttributes(AssemblyBuilder ab);
 
-        [DynamicDependency("RuntimeResolve", typeof(ModuleBuilder))]
         internal AssemblyBuilder(AssemblyName n, string? directory, AssemblyBuilderAccess access, bool corlib_internal)
         {
             aname = (AssemblyName)n.Clone();
