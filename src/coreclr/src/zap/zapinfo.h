@@ -467,7 +467,7 @@ public:
                                      CORINFO_CLASS_HANDLE *vcTypeRet);
     CORINFO_CLASS_HANDLE getArgClass(CORINFO_SIG_INFO* sig,
                                                CORINFO_ARG_LIST_HANDLE args);
-    CorInfoType getHFAType(CORINFO_CLASS_HANDLE hClass);
+    CorInfoHFAElemType getHFAType(CORINFO_CLASS_HANDLE hClass);
 
     // ICorDebugInfo
 

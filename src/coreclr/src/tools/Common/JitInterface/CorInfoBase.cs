@@ -214,7 +214,7 @@ namespace Internal.JitInterface
         [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
         delegate CORINFO_CLASS_STRUCT_* __getArgClass(IntPtr _this, IntPtr* ppException, CORINFO_SIG_INFO* sig, CORINFO_ARG_LIST_STRUCT_* args);
         [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
-        delegate CorInfoType __getHFAType(IntPtr _this, IntPtr* ppException, CORINFO_CLASS_STRUCT_* hClass);
+        delegate CorInfoHFAElemType __getHFAType(IntPtr _this, IntPtr* ppException, CORINFO_CLASS_STRUCT_* hClass);
         [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
         delegate HRESULT __GetErrorHRESULT(IntPtr _this, IntPtr* ppException, _EXCEPTION_POINTERS* pExceptionPointers);
         [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
@@ -1743,7 +1743,7 @@ namespace Internal.JitInterface
             }
         }
 
-        static CorInfoType _getHFAType(IntPtr thisHandle, IntPtr* ppException, CORINFO_CLASS_STRUCT_* hClass)
+        static CorInfoHFAElemType _getHFAType(IntPtr thisHandle, IntPtr* ppException, CORINFO_CLASS_STRUCT_* hClass)
         {
             var _this = GetThis(thisHandle);
             try
@@ -1753,7 +1753,7 @@ namespace Internal.JitInterface
             catch (Exception ex)
             {
                 *ppException = _this.AllocException(ex);
-                return default(CorInfoType);
+                return default(CorInfoHFAElemType);
             }
         }
 

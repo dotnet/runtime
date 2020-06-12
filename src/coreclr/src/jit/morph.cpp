@@ -773,6 +773,7 @@ void fgArgTabEntry::Dump()
     printf("fgArgTabEntry[arg %u", argNum);
     printf(" %d.%s", GetNode()->gtTreeID, GenTree::OpName(GetNode()->OperGet()));
     printf(" %s", varTypeName(argType));
+    printf(" (%s)", passedByRef ? "By ref" : "By value");
     if (GetRegNum() != REG_STK)
     {
         printf(", %u reg%s:", numRegs, numRegs == 1 ? "" : "s");
@@ -1005,7 +1006,7 @@ fgArgTabEntry* fgArgInfo::AddRegArg(unsigned          argNum,
     curArgTabEntry->needPlace = false;
     curArgTabEntry->processed = false;
 #ifdef FEATURE_HFA
-    curArgTabEntry->_hfaElemKind = HFA_ELEM_NONE;
+    curArgTabEntry->_hfaElemKind = CORINFO_HFA_ELEM_NONE;
 #endif
     curArgTabEntry->isBackFilled  = false;
     curArgTabEntry->isNonStandard = false;
@@ -1087,7 +1088,7 @@ fgArgTabEntry* fgArgInfo::AddStkArg(unsigned          argNum,
     curArgTabEntry->needPlace = false;
     curArgTabEntry->processed = false;
 #ifdef FEATURE_HFA
-    curArgTabEntry->_hfaElemKind = HFA_ELEM_NONE;
+    curArgTabEntry->_hfaElemKind = CORINFO_HFA_ELEM_NONE;
 #endif
     curArgTabEntry->isBackFilled  = false;
     curArgTabEntry->isNonStandard = false;
@@ -4422,12 +4423,7 @@ GenTree* Compiler::fgMorphMultiregStructArg(GenTree* arg, fgArgTabEntry* fgEntry
                 )
         {
             // We have a HFA struct.
-            // Note that GetHfaType may not be the same as elemType, since TYP_SIMD8 is handled the same as TYP_DOUBLE.
-            var_types useElemType = elemType;
-#if defined(TARGET_ARM64) & defined(FEATURE_SIMD)
-            useElemType = (elemType == TYP_SIMD8) ? TYP_DOUBLE : useElemType;
-#endif // TARGET_ARM64 && FEATURE_SIMD
-            noway_assert(useElemType == varDsc->GetHfaType());
+            noway_assert(elemType == varDsc->GetHfaType());
             noway_assert(elemSize == genTypeSize(elemType));
             noway_assert(elemCount == (varDsc->lvExactSize / elemSize));
             noway_assert(elemSize * elemCount == varDsc->lvExactSize);

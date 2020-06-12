@@ -2203,20 +2203,18 @@ namespace Internal.JitInterface
             }
         }
 
-        private CorInfoType getHFAType(CORINFO_CLASS_STRUCT_* hClass)
+        private CorInfoHFAElemType getHFAType(CORINFO_CLASS_STRUCT_* hClass)
         {
             var type = (DefType)HandleToObject(hClass);
 
-            // For 8-byte vectors return CORINFO_TYPE_DOUBLE, which is mapped by JIT to SIMD8.
-            // For 16-byte vectors return CORINFO_TYPE_VALUECLASS, which is mapped by JIT to SIMD16.
             // See MethodTable::GetHFAType and Compiler::GetHfaType.
             return (type.ValueTypeShapeCharacteristics & ValueTypeShapeCharacteristics.AggregateMask) switch
             {
-                ValueTypeShapeCharacteristics.Float32Aggregate => CorInfoType.CORINFO_TYPE_FLOAT,
-                ValueTypeShapeCharacteristics.Float64Aggregate => CorInfoType.CORINFO_TYPE_DOUBLE,
-                ValueTypeShapeCharacteristics.Vector64Aggregate => CorInfoType.CORINFO_TYPE_DOUBLE,
-                ValueTypeShapeCharacteristics.Vector128Aggregate => CorInfoType.CORINFO_TYPE_VALUECLASS,
-                _ => CorInfoType.CORINFO_TYPE_UNDEF
+                ValueTypeShapeCharacteristics.Float32Aggregate => CorInfoHFAElemType.CORINFO_HFA_ELEM_FLOAT,
+                ValueTypeShapeCharacteristics.Float64Aggregate => CorInfoHFAElemType.CORINFO_HFA_ELEM_DOUBLE,
+                ValueTypeShapeCharacteristics.Vector64Aggregate => CorInfoHFAElemType.CORINFO_HFA_ELEM_VECTOR64,
+                ValueTypeShapeCharacteristics.Vector128Aggregate => CorInfoHFAElemType.CORINFO_HFA_ELEM_VECTOR128,
+                _ => CorInfoHFAElemType.CORINFO_HFA_ELEM_NONE
             };
         }
 
