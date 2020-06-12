@@ -275,8 +275,6 @@ namespace System.Net.Sockets
             }
         }
 
-        }
-
         // The JIT is allowed to arbitrarily extend the lifetime of locals, which may retain SocketAsyncContext references,
         // indirectly preventing Socket instances to be finalized, despite being no longer referenced by user code.
         // To avoid this, the event handling logic is delegated to a non-inlined processing method.
@@ -284,7 +282,6 @@ namespace System.Net.Sockets
         // SocketEventHandler holds an on-stack cache of SocketAsyncEngine members needed by the handler method.
         private struct SocketEventHandler
         {
-            public bool Shutdown { get; private set; }
             public Interop.Sys.SocketEvent* Buffer { get; }
 
             private readonly ConcurrentDictionary<IntPtr, SocketAsyncContextWrapper> _handleToContextMap;
@@ -292,7 +289,6 @@ namespace System.Net.Sockets
 
             public SocketEventHandler(SocketAsyncEngine engine)
             {
-                Shutdown = false;
                 Buffer = engine._buffer;
                 _handleToContextMap = engine._handleToContextMap;
                 _eventQueue = engine._eventQueue;
@@ -308,7 +304,6 @@ namespace System.Net.Sockets
 
                     if (_handleToContextMap.TryGetValue(handle, out SocketAsyncContextWrapper contextWrapper))
                     {
-                        Debug.Assert(handle.ToInt64() < MaxHandles.ToInt64(), $"Unexpected values: handle={handle}, MaxHandles={MaxHandles}");
                         SocketAsyncContext context = contextWrapper.Context;
 
                         Interop.Sys.SocketEvents events = context.HandleSyncEventsSpeculatively(socketEvent.Events);
@@ -319,14 +314,12 @@ namespace System.Net.Sockets
                             enqueuedEvent = true;
                         }
                     }
-                    else if (handle == ShutdownHandle)
-                    {
-                        Shutdown = true;
-                    }
                 }
 
                 return enqueuedEvent;
             }
+        }
+
         // struct wrapper is used in order to improve the performance of the epoll thread hot path by up to 3% of some TechEmpower benchmarks
         // the goal is to have a dedicated generic instantiation and using:
         // System.Collections.Concurrent.ConcurrentDictionary`2[System.IntPtr,System.Net.Sockets.SocketAsyncContextWrapper]::TryGetValueInternal(!0,int32,!1&)
