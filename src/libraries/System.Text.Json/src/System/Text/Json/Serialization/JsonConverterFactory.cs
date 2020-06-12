@@ -77,6 +77,17 @@ namespace System.Text.Json.Serialization
             throw new InvalidOperationException();
         }
 
+        internal sealed override bool TryReadAsObject(
+            ref Utf8JsonReader reader,
+            JsonSerializerOptions options,
+            ref ReadStack state,
+            out object? value)
+        {
+            Debug.Fail("We should never get here.");
+
+            throw new InvalidOperationException();
+        }
+
         internal sealed override bool TryWriteAsObject(
             Utf8JsonWriter writer,
             object? value,
