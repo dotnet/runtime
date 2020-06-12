@@ -29,6 +29,9 @@ public class WasmAppBuilder : Task
     public ITaskItem[]? AssemblySearchPaths { get; set; }
     public ITaskItem[]? ExtraAssemblies { get; set; }
     public ITaskItem[]? FilesToIncludeInFileSystem { get; set; }
+    public ITaskItem[]? AssetSources { get; set; }
+    public ITaskItem[]? Assets { get; set; }
+
     Dictionary<string, Assembly>? _assemblies;
     Resolver? _resolver;
 
@@ -144,7 +147,20 @@ public class WasmAppBuilder : Task
                 sw.WriteLine("\t},");
             }
             sw.WriteLine ("\t],");
-            sw.WriteLine ("}");
+
+            if (AssetSources!.Length > 0) {
+                sw.WriteLine("\truntime_asset_sources: [");
+                foreach (var source in AssetSources!)
+                    sw.WriteLine("\t\t\"" + source.ItemSpec + "\", ");
+                sw.WriteLine ("],");
+            }
+            if (Assets!.Length > 0) {
+                sw.WriteLine("\truntime_assets: [");
+                foreach (var asset in Assets!)
+                    sw.WriteLine("\t\t\"" + asset.ItemSpec + "\", ");
+                sw.WriteLine ("],");
+            }
+            sw.WriteLine ("};");
         }
 
         using (var sw = File.CreateText(Path.Join(AppDir, "run-v8.sh")))

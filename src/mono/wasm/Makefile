@@ -57,10 +57,16 @@ MONO_LIBS = \
 	$(ICU_LIBDIR)/libicui18n.a
 
 ifeq ($(ICU_REPO),)
-	@echo "ICU_REPO is not set."
+$(error ICU_REPO not set!)
 else
-	MONO_LIBS := $(MONO_LIBS) $(ICU_REPO)/icu4c/source/wasm-build/lib/{libicui18n.a,libicuio.a,libicuuc.a,libicutu.a} \
-	$(ICU_REPO)/icu4c/source/wasm-build/stubdata/libicudata.a
+ICU_LIB_DIRECTORY = $(ICU_REPO)/icu4c/source/wasm-build/lib
+ICU_STUBDATA_DIRECTORY = $(ICU_REPO)/icu4c/source/wasm-build/stubdata
+
+MONO_LIBS := $(MONO_LIBS) $(ICU_LIB_DIRECTORY)/libicui18n.a \
+$(ICU_LIB_DIRECTORY)/libicuio.a \
+$(ICU_LIB_DIRECTORY)/libicuuc.a \
+$(ICU_LIB_DIRECTORY)/libicutu.a \
+$(ICU_STUBDATA_DIRECTORY)/libicudata.a
 endif
 
 

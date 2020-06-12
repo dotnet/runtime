@@ -4,20 +4,53 @@
 //
 
 #include <stdlib.h>
+#include <stdio.h>
 #include "pal_icushim_internal.h"
 #include "pal_icushim.h"
 #include <unicode/putil.h>
 #include <unicode/uversion.h>
 
+static void log_icu_error (const char * name, UErrorCode status) {
+    const char * statusText = u_errorName(status);
+    fprintf(stderr, "ICU call %s failed with error #%d '%s'.\n", name, status, statusText);
+}
+
+#ifdef __EMSCRIPTEN__
+#include <emscripten.h>
+
+EMSCRIPTEN_KEEPALIVE int32_t mono_wasm_load_icu_data (void * pData);
+
+EMSCRIPTEN_KEEPALIVE int32_t mono_wasm_load_icu_data (void * pData) {
+    UErrorCode status = 0;
+    udata_setCommonData (pData, &status);
+
+    if (U_FAILURE(status)) {
+        log_icu_error("udata_setCommonData", status);
+        return 0;
+    } else {
+        return 1;
+    }
+}
+#endif
+
 int32_t GlobalizationNative_LoadICU(void)
 {
     const char* icudir = getenv("DOTNET_ICU_DIR");
-    if (!icudir)
-        return 0;
+    if (icudir)
+        u_setDataDirectory(icudir);
+    else
+        ; // default ICU search path behavior will be used, see http://userguide.icu-project.org/icudata
 
-    // path to a directory with icudt___.dat (e.g. icudt67l.dat)
-    // we can also use `udata_setCommonData(const void *data, UErrorCode *err)` API here
-    u_setDataDirectory(icudir);
+    UErrorCode status = 0;
+    // Invoking u_init will probe to see if ICU common data is already available and if it is missing,
+    //  attempt to load it from the local filesystem.
+    u_init(&status);
+
+    if (U_FAILURE(status)) {
+        log_icu_error("u_init", status);
+        return 0;
+    }
+
     return 1;
 }
 

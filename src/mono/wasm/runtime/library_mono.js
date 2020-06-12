@@ -44,11 +44,11 @@ var MonoSupportLib = {
 			decode: function (start, end, save) {
 				if (!MONO.mono_text_decoder) {
 					MONO.mono_text_decoder = typeof TextDecoder !== 'undefined' ? new TextDecoder('utf-16le') : undefined;
-                }
+				}
 
 				var str = "";
 				if (MONO.mono_text_decoder) {
-					// When threading is enabled, TextDecoder does not accept a view of a 
+					// When threading is enabled, TextDecoder does not accept a view of a
 					// SharedArrayBuffer, we must make a copy of the array first.
 					var subArray = typeof SharedArrayBuffer !== 'undefined' && Module.HEAPU8.buffer instanceof SharedArrayBuffer
 						? Module.HEAPU8.slice(start, end)
@@ -337,12 +337,12 @@ var MonoSupportLib = {
 					var real_obj = this._call_function_res_cache [objectId];
 					if (args.accessorPropertiesOnly) {
 						// var val_accessors = JSON.stringify ([
-						// 	{
-						// 		name: "__proto__",
-						// 		get: { type: "function", className: "Function", description: "function get __proto__ () {}", objectId: "dotnet:cfo_res:9999" },
-						// 		set: { type: "function", className: "Function", description: "function set __proto__ () {}", objectId: "dotnet:cfo_res:8888" },
-						// 		isOwn: false
-						// 	}], undefined, 4);
+						//  {
+						//      name: "__proto__",
+						//      get: { type: "function", className: "Function", description: "function get __proto__ () {}", objectId: "dotnet:cfo_res:9999" },
+						//      set: { type: "function", className: "Function", description: "function set __proto__ () {}", objectId: "dotnet:cfo_res:8888" },
+						//      isOwn: false
+						//  }], undefined, 4);
 						return { __value_as_json_string__:  "[]" };
 					}
 
@@ -480,7 +480,7 @@ var MonoSupportLib = {
 		},
 
 		// Set environment variable NAME to VALUE
-		// Should be called before mono_load_runtime_and_bcl () in most cases 
+		// Should be called before mono_load_runtime_and_bcl () in most cases
 		mono_wasm_setenv: function (name, value) {
 			if (!this.wasm_setenv)
 				this.wasm_setenv = Module.cwrap ('mono_wasm_setenv', null, ['string', 'string']);
@@ -536,109 +536,268 @@ var MonoSupportLib = {
 			Module.ccall ('mono_wasm_load_profiler_coverage', null, ['string'], [arg]);
 		},
 
-		mono_load_runtime_and_bcl: function (vfs_prefix, deploy_prefix, enable_debugging, file_list, loaded_cb, fetch_file_cb) {
-			var pending = file_list.length;
+		// Initializes the runtime and loads assemblies, debug information, and other files.
+		// @args is a dictionary-style Object with the following properties:
+		//    vfs_prefix: (required)
+		//    deploy_prefix: (required)
+		//    enable_debugging: (required)
+		//    assembly_list: (required) a list of assemblies and related files to load along
+		//      with the runtime. .pdb files in this list will be treated as optional.
+		//    loaded_cb: (required) a function () invoked when loading has completed.
+		//    fetch_file_cb: (optional) a function (string) invoked to fetch a given file.
+		//      If no callback is provided a default implementation appropriate for the current
+		//      environment will be selected (readFileSync in node, fetch elsewhere).
+		//      If no default implementation is available this call will fail.
+		//    runtime_assets: (optional) a list of asset filenames to load along with the runtime.
+		//      runtime assets are loaded into wasm memory and MONO.loaded_runtime_assets is populated
+		//      with [offset, length] tuples for each asset
+		//    runtime_asset_sources: (optional) additional search locations for runtime assets.
+		//      if no runtime asset sources are provided the default will be ["./"].
+		//      sources will be checked in sequential order until the asset is found.
+		//      the string "./" indicates to load from the application directory (as with the
+		//      files in assembly_list), and a fully-qualified URL like "https://example.com/" indicates
+		//      that asset loads can be attempted from a remote server. Sources must end with a /.
+		//    environment_variables: (optional) dictionary-style Object containing environment variables
+		//    runtime_options: (optional) array of runtime options as strings
+		//    aot_profiler_options: (optional) dictionary-style Object. see the comments for
+		//      mono_wasm_init_aot_profiler. If omitted, aot profiler will not be initialized.
+		//    coverage_profiler_options: (optional) dictionary-style Object. see the comments for
+		//      mono_wasm_init_coverage_profiler. If omitted, coverage profiler will not be initialized.
+		//    globalization_mode: (optional) configures the runtime's globalization mode:
+		//      "icu": load ICU globalization data from the runtime asset "icudt.dat"
+		//      "invariant": operate in invariant globalization mode.
+		//      "auto" (default): if icudt.dat is present, use ICU, otherwise invariant.
+
+		mono_load_runtime_and_bcl_args: function (args) {
+			var deploy_prefix = args.deploy_prefix;
+			var assembly_list = args.assembly_list;
+			var loaded_cb = args.loaded_cb;
+			var fetch_file_cb = args.fetch_file_cb;
+			var runtime_assets = (args.runtime_assets || []);
+
+			if (!assembly_list)
+				throw new Error ("assembly_list not provided");
+			if (!loaded_cb)
+				throw new Error ("loaded_cb not provided");
+
+			console.log ("mono_wasm_load_runtime_with_args", JSON.stringify(args));
+
+			var pending = assembly_list.length + runtime_assets.length;
 			var loaded_files = [];
+			var loaded_runtime_assets = {};
 			var mono_wasm_add_assembly = Module.cwrap ('mono_wasm_add_assembly', null, ['string', 'number', 'number']);
+
+			for (var k in (args.environment_variables || {}))
+				this.mono_wasm_setenv (k, args.environment_variables[k]);
+
+			if (args.runtime_options)
+				this.mono_wasm_set_runtime_options (args.runtime_options);
+
+			if (args.aot_profiler_options)
+				this.mono_wasm_init_aot_profiler (args.aot_profiler_options);
+
+			if (args.coverage_profiler_options)
+				this.mono_wasm_init_coverage_profiler (args.coverage_profiler_options);
 
 			if (!fetch_file_cb) {
 				if (ENVIRONMENT_IS_NODE) {
 					var fs = require('fs');
 					fetch_file_cb = function (asset) {
-						console.log("MONO_WASM: Loading... " + asset);
+						console.log ("MONO_WASM: Loading... " + asset);
 						var binary = fs.readFileSync (asset);
-						var resolve_func2 = function(resolve, reject) {
-							resolve(new Uint8Array (binary));
+						var resolve_func2 = function (resolve, reject) {
+							resolve (new Uint8Array (binary));
 						};
 
-						var resolve_func1 = function(resolve, reject) {
+						var resolve_func1 = function (resolve, reject) {
 							var response = {
 								ok: true,
 								url: asset,
-								arrayBuffer: function() {
-									return new Promise(resolve_func2);
+								arrayBuffer: function () {
+									return new Promise (resolve_func2);
 								}
 							};
-							resolve(response);
+							resolve (response);
 						};
 
-						return new Promise(resolve_func1);
+						return new Promise (resolve_func1);
 					};
-				} else {
+				} else if (typeof (fetch) === "function") {
 					fetch_file_cb = function (asset) {
 						return fetch (asset, { credentials: 'same-origin' });
 					}
+				} else {
+					throw new Error ("No fetch_file_cb was provided and this environment does not expose 'fetch'.");
 				}
 			}
 
-			file_list.forEach (function(file_name) {
-				
-				var fetch_promise = fetch_file_cb (locateFile(deploy_prefix + "/" + file_name));
+			var onPendingRequestComplete = function () {
+				--pending;
 
-				fetch_promise.then (function (response) {
+				if (pending == 0) {
+					MONO.loaded_files = loaded_files;
+					MONO.loaded_runtime_assets = loaded_runtime_assets;
+
+					MONO._globalization_init (args, loaded_runtime_assets);
+
+					var load_runtime = Module.cwrap ('mono_wasm_load_runtime', null, ['string', 'number']);
+
+					console.log ("MONO_WASM: Initializing mono runtime");
+					if (ENVIRONMENT_IS_SHELL || ENVIRONMENT_IS_NODE) {
+						try {
+							load_runtime (args.vfs_prefix, args.enable_debugging);
+						} catch (ex) {
+							print ("MONO_WASM: load_runtime () failed: " + ex);
+							var err = new Error();
+							print ("MONO_WASM: Stacktrace: \n");
+							print (err.stack);
+
+							var wasm_exit = Module.cwrap ('mono_wasm_exit', null, ['number']);
+							wasm_exit (1);
+						}
+					} else {
+						load_runtime (args.vfs_prefix, args.enable_debugging);
+					}
+					MONO.mono_wasm_runtime_ready ();
+					loaded_cb ();
+				}
+			};
+
+			var runtime_asset_sources = args.runtime_asset_sources || [""];
+
+			var processFetchResponseBuffer = function (file_name, is_runtime_asset, blob) {
+				try {
+					var asm = new Uint8Array (blob);
+					console.log ("MONO_WASM: Loaded:", file_name, asm.length);
+
+					var memoryOffset = Module._malloc (asm.length);
+					var heapBytes = new Uint8Array (Module.HEAPU8.buffer, memoryOffset, asm.length);
+					heapBytes.set (asm);
+
+					if (is_runtime_asset) {
+						loaded_runtime_assets [file_name] = [memoryOffset, asm.length];
+					} else {
+						if (/(\.pdb|\.exe|\.dll)$/.test (file_name)) {
+							mono_wasm_add_assembly (file_name, memoryOffset, asm.length);
+						} else {
+							console.log ("MONO_WASM: Skipping add_assembly for", file_name);
+						}
+					}
+
+					onPendingRequestComplete ();
+				} catch (exc) {
+					console.log ("Unhandled exception", exc);
+				}
+			};
+
+			runtime_assets.forEach (function (file_name) {
+				var sourceIndex = 0;
+				var attemptNextSource;
+
+				var handleFetchResponse = function (file_name, response) {
+					if (!response.ok) {
+						attemptNextSource (file_name);
+					} else {
+						loaded_files.push (response.url);
+						var bufferPromise = response ['arrayBuffer'] ();
+						bufferPromise.then (
+							processFetchResponseBuffer.bind (this, file_name, true)
+						);
+					}
+				};
+
+				attemptNextSource = function (file_name) {
+					if (sourceIndex >= runtime_asset_sources.length) {
+						console.error ("MONO_WASM: Failed to load " + file_name);
+						--pending;
+						return;
+					}
+
+					var sourcePrefix = runtime_asset_sources[sourceIndex];
+					sourceIndex++;
+
+					// HACK: Special-case because MSBuild doesn't allow "" as an attribute
+					if (sourcePrefix === "./")
+						sourcePrefix = "";
+
+					var attemptUrl = sourcePrefix + file_name;
+
+					try {
+						var fetch_promise = fetch_file_cb (attemptUrl);
+						fetch_promise.then (handleFetchResponse.bind (this, file_name));
+					} catch (exc) {
+						console.error ("MONO_WASM: Error fetching " + attemptUrl, exc);
+						attemptNextSource (file_name);
+					}
+				};
+
+				attemptNextSource (file_name);
+			});
+
+			assembly_list.forEach (function (file_name) {
+				var handleFetchResponse = function (response) {
 					if (!response.ok) {
 						// If it's a 404 on a .pdb, we don't want to block the app from starting up.
 						// We'll just skip that file and continue (though the 404 is logged in the console).
-						if (response.status === 404 && file_name.match(/\.pdb$/) && MONO.mono_wasm_ignore_pdb_load_errors) {
+						if (response.status === 404 && file_name.match (/\.pdb$/) && MONO.mono_wasm_ignore_pdb_load_errors) {
 							--pending;
-							throw "MONO-WASM: Skipping failed load for .pdb file: '" + file_name + "'";
+							throw new Error ("MONO-WASM: Skipping failed load for .pdb file: '" + file_name + "'");
 						}
 						else {
-							throw "MONO_WASM: Failed to load file: '" + file_name + "'";
+							throw new Error ("MONO_WASM: Failed to load file: '" + file_name + "'");
 						}
 					}
 					else {
 						loaded_files.push (response.url);
 						return response ['arrayBuffer'] ();
 					}
-				}).then (function (blob) {
-					var asm = new Uint8Array (blob);
-					var memory = Module._malloc(asm.length);
-					var heapBytes = new Uint8Array(Module.HEAPU8.buffer, memory, asm.length);
-					heapBytes.set (asm);
-					mono_wasm_add_assembly (file_name, memory, asm.length);
+				};
 
-					//console.log ("MONO_WASM: Loaded: " + file_name);
-					--pending;
-					if (pending == 0) {
-						MONO.loaded_files = loaded_files;
-						var load_runtime = Module.cwrap ('mono_wasm_load_runtime', null, ['string', 'number']);
+				var fetch_promise = fetch_file_cb (locateFile (deploy_prefix + "/" + file_name));
 
-						console.log ("MONO_WASM: Initializing mono runtime");
-						if (ENVIRONMENT_IS_SHELL || ENVIRONMENT_IS_NODE) {
-							try {
-								load_runtime (vfs_prefix, enable_debugging);
-							} catch (ex) {
-								print ("MONO_WASM: load_runtime () failed: " + ex);
-								var err = new Error();
-								print ("MONO_WASM: Stacktrace: \n");
-								print (err.stack);
-
-								var wasm_exit = Module.cwrap ('mono_wasm_exit', null, ['number']);
-								wasm_exit (1);
-							}
-						} else {
-							load_runtime (vfs_prefix, enable_debugging);
-						}
-						MONO.mono_wasm_runtime_ready ();
-						loaded_cb ();
-					}
-				});
+				fetch_promise.then (handleFetchResponse)
+					.then (processFetchResponseBuffer.bind(this, file_name, false))
 			});
+		},
+
+		_globalization_init: function (args, assets) {
+			var invariantMode = false;
+
+			if (args.globalization_mode === "invariant")
+				invariantMode = true;
+
+			if (!invariantMode) {
+				var icudt = assets ["icudt.dat"];
+
+				if (icudt) {
+					console.log ("MONO_WASM: Loading ICU data archive icudt.dat");
+					var mono_wasm_load_icu_data = Module.cwrap ('mono_wasm_load_icu_data', 'number', ['number']);
+					var result = mono_wasm_load_icu_data (icudt[0]);
+					if (result !== 1)
+						console.log ("MONO_WASM: mono_wasm_load_icu_data returned", result);
+				} else if (args.globalization_mode !== "icu") {
+					console.log ("MONO_WASM: icudt.dat not present, using invariant globalization mode");
+					invariantMode = true;
+				} else {
+					console.log ("MONO_WASM: ERROR: icudt.dat not found and invariant globalization mode is inactive.");
+				}
+			}
+
+			this.mono_wasm_setenv("DOTNET_SYSTEM_GLOBALIZATION_INVARIANT", invariantMode ? "1" : "0");
 		},
 
 		mono_wasm_get_loaded_files: function() {
 			console.log(">>>mono_wasm_get_loaded_files");
 			return this.loaded_files;
 		},
-		
+
 		mono_wasm_clear_all_breakpoints: function() {
 			if (!this.mono_clear_bps)
 				this.mono_clear_bps = Module.cwrap ('mono_wasm_clear_all_breakpoints', null);
 
 			this.mono_clear_bps ();
 		},
-		
+
 		mono_wasm_add_null_var: function(className)
 		{
 			fixed_class_name = MONO._mono_csharp_fixup_class_name(Module.UTF8ToString (className));

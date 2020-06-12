@@ -8,5 +8,7 @@ public class Test
 {
     public static void Main (String[] args) {
         Console.WriteLine ("Hello, World!");
+        var now = DateTime.Now;
+        Console.WriteLine ("Now: {0}", now);
     }
 }
