@@ -4,3 +4,4 @@
 
 DllMain
 __progname
+environ
