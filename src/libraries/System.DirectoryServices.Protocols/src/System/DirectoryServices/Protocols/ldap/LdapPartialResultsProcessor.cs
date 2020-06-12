@@ -6,6 +6,7 @@ using System.Globalization;
 using System.Threading;
 using System.Collections;
 using System.Diagnostics;
+using System.Threading.Tasks;
 
 namespace System.DirectoryServices.Protocols
 {
@@ -135,7 +136,9 @@ namespace System.DirectoryServices.Protocols
 
             try
             {
-                SearchResponse response = (SearchResponse)connection.ConstructResponse(asyncResult._messageID, LdapOperation.LdapSearch, resultType, asyncResult._requestTimeout, false);
+                ValueTask<DirectoryResponse> vt = connection.ConstructResponseAsync(asyncResult._messageID, LdapOperation.LdapSearch, resultType, asyncResult._requestTimeout, false, sync: true);
+                Debug.Assert(vt.IsCompleted);
+                SearchResponse response = (SearchResponse)vt.GetAwaiter().GetResult();
 
                 // This should only happen in the polling thread case.
                 if (response == null)
