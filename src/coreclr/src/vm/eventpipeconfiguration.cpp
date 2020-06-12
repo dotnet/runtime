@@ -146,10 +146,16 @@ bool EventPipeConfiguration::RegisterProvider(EventPipeProvider &provider, Event
     }
     CONTRACTL_END;
 
-    // See if we've already registered this provider.
-    EventPipeProvider *pExistingProvider = GetProviderNoLock(provider.GetProviderName());
-    if (pExistingProvider != nullptr)
-        return false;
+    // See if we've already registered this provider. Allow there to be multiple DotNETRuntime providers that may each produce
+    // different sets of events by component through different event sources.
+    // TODO: This change to allow multiple DotNETRuntime providers is temporary to get EventPipe working for
+    // PortableThreadPoolEventSource. Once a long-term solution is figured out, this change should be reverted.
+    if (!provider.GetProviderName().Equals(W("Microsoft-Windows-DotNETRuntime")))
+    {
+        EventPipeProvider *pExistingProvider = GetProviderNoLock(provider.GetProviderName());
+        if (pExistingProvider != nullptr)
+            return false;
+    }
 
     // The provider list should be non-NULL, but can be NULL on shutdown.
     if (m_pProviderList != nullptr)
