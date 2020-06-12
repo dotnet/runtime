@@ -1497,11 +1497,7 @@
 	<ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/MethodImpl/CovariantReturns/ReturnTypeValidation/**">
 	  <Issue>https://github.com/dotnet/runtime/issues/37509</Issue>
 	</ExcludeList>
-	<ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/MethodImpl/CovariantReturns/Structs/**">
-	  <Issue>https://github.com/dotnet/runtime/issues/37509</Issue>
-	</ExcludeList>
-	<ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/MethodImpl/CovariantReturns/UnitTest/**"
-		     Exclude="$(XunitTestBinBase)/Loader/classloader/MethodImpl/CovariantReturns/UnitTest/AttributeTesting/*;$(XunitTestBinBase)/Loader/classloader/MethodImpl/CovariantReturns/UnitTest/UnitTest/*;$(XunitTestBinBase)/Loader/classloader/MethodImpl/CovariantReturns/UnitTest/UnitTestDelegates/*;$(XunitTestBinBase)/Loader/classloader/MethodImpl/CovariantReturns/UnitTest/OverrideMoreDerivedReturn/*">
+	<ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/MethodImpl/CovariantReturns/UnitTest/UnitTest_GVM/**">
 	  <Issue>https://github.com/dotnet/runtime/issues/37509</Issue>
 	</ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/regressions/347422/b347422/**">
