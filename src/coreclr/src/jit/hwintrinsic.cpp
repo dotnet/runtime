@@ -785,14 +785,26 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
 
     if ((retType == TYP_STRUCT) && featureSIMD)
     {
-        unsigned int sizeBytes;
-        baseType = getBaseTypeAndSizeOfSIMDType(sig->retTypeSigClass, &sizeBytes);
-        retType  = getSIMDTypeForSize(sizeBytes);
-        assert(sizeBytes != 0);
+        unsigned int sizeBytes = 0;
+        baseType               = getBaseTypeAndSizeOfSIMDType(sig->retTypeSigClass, &sizeBytes);
+        bool checkBaseType     = true;
+#ifdef TARGET_XARCH
+        if (sizeBytes == 0)
+        {
+            assert((intrinsic == NI_BMI2_MultiplyNoFlags2) || (intrinsic == NI_BMI2_X64_MultiplyNoFlags2));
+            assert(retType == TYP_STRUCT);
+            checkBaseType = false;
+        }
+        else
+        {
+            retType = getSIMDTypeForSize(sizeBytes);
+            assert(retType != TYP_STRUCT);
+        }
+#endif
 
         // We want to return early here for cases where retType was TYP_STRUCT as per method signature and
         // rather than deferring the decision after getting the baseType of arg.
-        if (!isSupportedBaseType(intrinsic, baseType))
+        if (checkBaseType && !isSupportedBaseType(intrinsic, baseType))
         {
             return nullptr;
         }

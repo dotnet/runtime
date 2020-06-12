@@ -343,6 +343,10 @@ int LinearScan::BuildNode(GenTree* tree)
 #ifdef FEATURE_HW_INTRINSICS
         case GT_HWINTRINSIC:
             srcCount = BuildHWIntrinsic(tree->AsHWIntrinsic());
+            if (tree->AsHWIntrinsic()->TypeGet() == TYP_STRUCT)
+            {
+                dstCount = 2;
+            }
             break;
 #endif // FEATURE_HW_INTRINSICS
 
@@ -1352,7 +1356,7 @@ int LinearScan::BuildBlockStore(GenTreeBlk* blkNode)
             dstAddrRegMask = RBM_RDI;
             srcRegMask     = RBM_RSI;
         }
-        else
+        else if (!src->OperIsHWIntrinsic())
         {
             switch (blkNode->gtBlkOpKind)
             {
@@ -1423,7 +1427,16 @@ int LinearScan::BuildBlockStore(GenTreeBlk* blkNode)
         useCount += BuildAddrUses(dstAddr);
     }
 
-    if (srcAddrOrFill != nullptr)
+    if (src->IsMultiRegNode())
+    {
+        int srcCount = src->GetMultiRegCount();
+        for (int i = 0; i < srcCount; ++i)
+        {
+            BuildUse(src, RBM_NONE, i);
+        }
+        useCount += srcCount;
+    }
+    else if (srcAddrOrFill != nullptr)
     {
         if (!srcAddrOrFill->isContained())
         {
@@ -2396,21 +2409,28 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree)
             }
 #endif // TARGET_X86
 
+            case NI_BMI2_MultiplyNoFlags2:
+            case NI_BMI2_X64_MultiplyNoFlags2:
+                dstCount = 2;
+                __fallthrough;
+
             case NI_BMI2_MultiplyNoFlags:
             case NI_BMI2_X64_MultiplyNoFlags:
             {
-                assert(numArgs == 2 || numArgs == 3);
-                srcCount += BuildOperandUses(op1, RBM_EDX);
-                srcCount += BuildOperandUses(op2);
-                if (numArgs == 3)
+                assert(numArgs == 2);
+                regMaskTP op1Candidates = RBM_EDX;
+                regMaskTP op2Candidates = RBM_NONE;
+                if (op2->OperIs(GT_LCL_VAR))
                 {
-                    // op3 reg should be different from target reg to
-                    // store the lower half result after executing the instruction
-                    srcCount += BuildDelayFreeUses(op3);
-                    // Need a internal register different from the dst to take the lower half result
-                    buildInternalIntRegisterDefForNode(intrinsicTree);
-                    setInternalRegsDelayFree = true;
+                    LclVarDsc* varDsc = compiler->lvaGetDesc(op2->AsLclVar());
+                    if (isCandidateVar(varDsc) && (getIntervalForLocalVar(varDsc->lvVarIndex)->physReg == REG_EDX))
+                    {
+                        op1Candidates = RBM_NONE;
+                        op2Candidates = RBM_EDX;
+                    }
                 }
+                srcCount += BuildOperandUses(op1, op1Candidates);
+                srcCount += BuildOperandUses(op2, op2Candidates);
                 buildUses = false;
                 break;
             }
@@ -2599,13 +2619,14 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree)
         buildInternalRegisterUses();
     }
 
-    if (dstCount == 1)
+    assert(dstCount <= 2);
+    if (dstCount != 0)
     {
         BuildDef(intrinsicTree, dstCandidates);
-    }
-    else
-    {
-        assert(dstCount == 0);
+        if (dstCount == 2)
+        {
+            BuildDef(intrinsicTree, dstCandidates, 1);
+        }
     }
 
     return srcCount;
