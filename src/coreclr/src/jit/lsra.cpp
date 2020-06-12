@@ -6547,10 +6547,13 @@ void LinearScan::resolveLocalRef(BasicBlock* block, GenTreeLclVar* treeNode, Ref
             assert(currentRefPosition->refType == RefTypeExpUse);
         }
     }
-    else if (spillAfter && !RefTypeIsUse(currentRefPosition->refType))
+    else if (spillAfter && !RefTypeIsUse(currentRefPosition->refType) &&
+             (!treeNode->IsMultiReg() || treeNode->gtGetOp1()->IsMultiRegNode()))
     {
         // In the case of a pure def, don't bother spilling - just assign it to the
         // stack.  However, we need to remember that it was spilled.
+        // We can't do this in the case of a multi-reg node with a non-multireg source as
+        // we need the register to extract into.
 
         assert(interval->isSpilled);
         varDsc->SetRegNum(REG_STK);
